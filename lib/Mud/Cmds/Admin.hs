@@ -220,8 +220,8 @@ adminAdmin p = patternMatchFail "adminAdmin" [ showText p ]
 
 
 adminAs :: ActionFun
-adminAs p@AdviseNoArgs                     = advise p [ prefixAdminCmd "as" ] adviceAAsNoArgs
-adminAs p@(AdviseOneArg a)                 = advise p [ prefixAdminCmd "as" ] . adviceAAsNoCmd $ a
+adminAs p@(NoArgs' i mq    ) = advise p [ prefixAdminCmd "as" ] adviceAAsNoArgs    >> sendDfltPrompt mq i
+adminAs p@(OneArg  i mq _ a) = advise p [ prefixAdminCmd "as" ] (adviceAAsNoCmd a) >> sendDfltPrompt mq i
 adminAs (WithTarget i mq cols target rest) = getState >>= \ms ->
     let SingleTarget { .. } = mkSingleTarget mq cols target "The target ID"
         as targetId         = let s = getSing targetId ms in case getType targetId ms of
@@ -229,18 +229,18 @@ adminAs (WithTarget i mq cols target rest) = getState >>= \ms ->
                          notPossessed = do
                              ioHelper targetId s
                              liftIO . atomically . writeTQueue npcMq . ExternCmd mq cols $ rest
-                         isPossessed pi = sendFun $ if pi == i
+                         isPossessed pi = sorry $ if pi == i
                            then sorryAlreadyPossessing s
                            else sorryAlreadyPossessed  s . getSing pi $ ms
                      in maybe notPossessed isPossessed . getPossessor targetId $ ms
-          PCType  | targetId == i                                            -> sendFun sorryAsSelf
-                  | isAdmin          . getPla targetId $ ms                  -> sendFun sorryAsAdmin
-                  | not . isLoggedIn . getPla targetId $ ms                  -> sendFun . sorryLoggedOut $ s
+          PCType  | targetId == i                                            -> sorry sorryAsSelf
+                  | isAdmin          . getPla targetId $ ms                  -> sorry sorryAsAdmin
+                  | not . isLoggedIn . getPla targetId $ ms                  -> sorry . sorryLoggedOut $ s
                   | (targetMq, targetCols) <- getMsgQueueColumns targetId ms -> do
                       ioHelper targetId s
                       wrapSend targetMq targetCols asMsg
                       fakeClientInput targetMq rest
-          t -> sendFun . sorryAsType $ t
+          t -> sorry . sorryAsType $ t
         ioHelper targetId s = do
             sendFun . parensQuote $ "Executing as " <> aOrAnOnLower s <> "..."
             logPla "adminAs" i . T.concat $ [ "Executing "
@@ -248,9 +248,10 @@ adminAs (WithTarget i mq cols target rest) = getState >>= \ms ->
                                             , " as "
                                             , aOrAnOnLower . descSingId targetId $ ms
                                             , "." ]
-        sorryParse = sendFun . sorryParseId $ strippedTarget'
+        sorry txt  = sendFun txt >> sendDfltPrompt mq i
+        sorryParse = sorry . sorryParseId $ strippedTarget'
     in case reads . T.unpack $ strippedTarget :: [(Int, String)] of
-      [(targetId, "")] | targetId < 0                                -> sendFun sorryWtf
+      [(targetId, "")] | targetId < 0                                -> sorry sorryWtf
                        | targetId `notElem` (ms^.typeTbl.to IM.keys) -> sorryParse
                        | otherwise                                   -> as targetId
       _                                                              -> sorryParse
@@ -818,7 +819,7 @@ adminPersist p              = withoutArgs adminPersist p
 
 -- TODO: Help.
 adminPossess :: ActionFun
-adminPossess p@AdviseNoArgs                  = advise p [ prefixAdminCmd "possess" ] adviceAPossessNoArgs
+adminPossess p@(NoArgs' i mq) = advise p [ prefixAdminCmd "possess" ] adviceAPossessNoArgs >> sendDfltPrompt mq i
 adminPossess (OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
   where
     helper ms =
@@ -835,7 +836,7 @@ adminPossess (OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
                                     , logPla "adminPossess" i $ "started possessing "                 <>
                                                                 aOrAnOnLower (descSingId targetId ms) <>
                                                                 "." ] )
-            sorry = (ms, ) . pure . sendFun
+            sorry txt = (ms, [ sendFun txt, sendDfltPrompt mq i ])
         in case reads . T.unpack $ strippedTarget :: [(Int, String)] of
           [(targetId, "")]
             | targetId < 0                                -> sorry sorryWtf
@@ -843,8 +844,10 @@ adminPossess (OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
             | otherwise                                   -> case getPossessing i ms of
               Nothing -> possess targetId
               Just pi -> sorry . sorryAlreadyPossessing . getSing pi $ ms
-          _ -> sorry . sorryParseId $ strippedTarget' -- TODO: No prompt!
-adminPossess ActionParams { plaMsgQueue, plaCols } = wrapSend plaMsgQueue plaCols adviceAPossessExcessArgs
+          _ -> sorry . sorryParseId $ strippedTarget'
+adminPossess ActionParams { myId, plaMsgQueue, plaCols } = do
+    wrapSend plaMsgQueue plaCols adviceAPossessExcessArgs
+    sendDfltPrompt plaMsgQueue myId
 
 
 -----

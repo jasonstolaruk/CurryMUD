@@ -85,7 +85,7 @@ import qualified Mud.Util.Misc as U (patternMatchFail)
 import Control.Arrow ((***), first)
 import Control.Lens (Getter, _1, _2, _3, _4, at, both, each, to, view, views)
 import Control.Lens.Operators ((%~), (&), (.~), (<>~), (?~), (^.))
-import Control.Monad (guard)
+import Control.Monad (guard, when)
 import Control.Monad.IO.Class (liftIO)
 import Data.Char (isLower)
 import Data.Function (on)
@@ -202,10 +202,11 @@ mkReadyMsgs spv tpv i d s = (  T.concat [ "You ", spv, " the ", s, "." ]
 -----
 
 
-execIfPossessed :: ActionParams -> CmdName -> ActionFun -> MudStack ()
-execIfPossessed p@(WithArgs i mq cols _) cn f = getState >>= \ms -> let s = getSing i ms in case getPossessor i ms of
-  Nothing -> wrapSend mq cols . sorryNotPossessed s $ cn
-  Just _  -> f p
+execIfPossessed :: ActionParams -> CmdName -> (ActionFun, Bool) -> MudStack ()
+execIfPossessed p@(WithArgs i mq cols _) cn (f, b) = getState >>= \ms ->
+    let s = getSing i ms in case getPossessor i ms of
+      Nothing -> wrapSend mq cols (sorryNotPossessed s cn) >> when b (sendDfltPrompt mq i)
+      Just _  -> f p
 execIfPossessed p cn _ = patternMatchFail "execIfPossessed" [ showText p, cn ]
 
 

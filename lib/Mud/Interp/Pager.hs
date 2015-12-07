@@ -10,7 +10,6 @@ import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
-import Mud.Interp.Misc
 import Mud.Misc.ANSI
 import Mud.Util.Misc
 import Mud.Util.Quoting
@@ -33,7 +32,7 @@ interpPager pageLen txtLen (left, right) (T.toLower -> cn) (NoArgs i mq cols) = 
     let next = if length right + 3 <= pageLen
                  then do
                      send mq . nl . T.unlines $ right
-                     prompt mq . mkPrompt i $ ms
+                     sendDfltPrompt mq i
                      setInterp i Nothing
                  else let (page, right') = splitAt (pageLen - 2) right in do
                      send mq . T.unlines $ page
@@ -45,7 +44,7 @@ interpPager pageLen txtLen (left, right) (T.toLower -> cn) (NoArgs i mq cols) = 
                   "f" -> next
                   "n" -> next
                   "p" -> prev
-                  "q" -> (prompt mq . nlPrefix . mkPrompt i $ ms) >> setInterp i Nothing
+                  "q" -> (sendPrompt mq . nlPrefix . mkDfltPrompt i $ ms) >> setInterp i Nothing
                   "u" -> prev
                   _   -> promptRetry mq cols
   where
@@ -60,11 +59,8 @@ interpPager _ _ _ _ ActionParams { plaMsgQueue, plaCols } = promptRetry plaMsgQu
 
 sendPagerPrompt :: MsgQueue -> PageLen -> EntireTxtLen -> MudStack ()
 sendPagerPrompt mq pageLen txtLen =
-    prompt mq . colorWith pagerPromptColor . spaced . bracketQuote . spaced . T.concat $ [ showText pageLen
-                                                                                         , " of "
-                                                                                         , showText txtLen
-                                                                                         , " lines "
-                                                                                         , parensQuote $ per <> "%" ]
+    let txt = T.concat [ showText pageLen, " of ", showText txtLen, " lines ", parensQuote $ per <> "%" ]
+    in sendPrompt mq . colorWith pagerPromptColor . spaced . bracketQuote . spaced $ txt
   where
     per = uncurry (<>) . second (T.take 2) . T.breakOn "." . showText $ pageLen `divide` txtLen * 100
 

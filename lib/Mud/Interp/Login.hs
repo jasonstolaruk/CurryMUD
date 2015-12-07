@@ -13,7 +13,6 @@ import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
-import Mud.Interp.Misc
 import Mud.Misc.ANSI
 import Mud.Misc.Database
 import Mud.Misc.Logging hiding (logNotice, logPla)
@@ -113,14 +112,14 @@ interpName (T.toLower -> cn@(capitalize -> cn')) p@(NoArgs i mq cols)
           else case matches of [(pi, _)] -> logIn i ms (newPla^.currHostName) (newPla^.connectTime) pi
                                _         -> (ms, (ms, Left Nothing))
     nextPrompt = do
-        prompt mq . nlPrefix $ "Your name will be " <> dblQuote (cn' <> ",") <> " is that OK? [yes/no]"
+        sendPrompt mq . nlPrefix $ "Your name will be " <> dblQuote (cn' <> ",") <> " is that OK? [yes/no]"
         setInterp i . Just . interpConfirmName $ cn'
 interpName _ ActionParams { plaMsgQueue } = promptRetryName plaMsgQueue sorryInterpNameExcessArgs
 
 
 promptRetryName :: MsgQueue -> T.Text -> MudStack ()
 promptRetryName mq msg =
-    (send mq . nlPrefix $ msg |!| nl msg) >> prompt mq "Let's try this again. By what name are you known?"
+    (send mq . nlPrefix $ msg |!| nl msg) >> sendPrompt mq "Let's try this again. By what name are you known?"
 
 
 logIn :: Id -> MudState -> HostName -> Maybe UTCTime -> Id -> (MudState, (MudState, Either (Maybe T.Text) Id))
@@ -260,7 +259,7 @@ handleLogin s params@ActionParams { .. } = do
     showMotd plaMsgQueue plaCols
     (ms, p) <- showRetainedMsgs
     look params
-    prompt plaMsgQueue . mkPrompt myId =<< getState
+    sendDfltPrompt plaMsgQueue myId
     when (getPlaFlag IsAdmin p) stopInacTimer
     runRegenAsync myId
     notifyArrival ms
@@ -291,4 +290,4 @@ handleLogin s params@ActionParams { .. } = do
 
 
 promptRetryYesNo :: MsgQueue -> MudStack ()
-promptRetryYesNo mq = prompt mq . T.concat $ [ "Please answer ", dblQuote "yes", " or ", dblQuote "no", "." ]
+promptRetryYesNo mq = sendPrompt mq . T.concat $ [ "Please answer ", dblQuote "yes", " or ", dblQuote "no", "." ]

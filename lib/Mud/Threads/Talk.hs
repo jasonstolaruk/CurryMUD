@@ -71,8 +71,8 @@ threadTalk h host = helper `finally` cleanUp
         setThreadType . Talk $ i
         handle (plaThreadExHandler "talk" i) $ onEnv $ \md -> do
             liftIO configBuffer
-            dumpTitle mq
-            prompt    mq "By what name are you known?"
+            dumpTitle  mq
+            sendPrompt mq "By what name are you known?"
             bcastAdmins $ "A new player has connected: " <> s <> "."
             logNotice "threadTalk helper" $ "new PC name for incoming player: " <> s <> "."
             liftIO . void . forkIO . runReaderT (threadInacTimer i mq tq) $ md

@@ -63,7 +63,7 @@ threadServer h i mq tq = sequence_ [ setThreadType . Server $ i, loop `catch` pl
       InacStop       -> stopTimerThread tq                 >> loop
       MsgBoot msg    -> sendBootMsg h msg                  >> sayonara
       Peeped  msg    -> (liftIO . T.hPutStr h $ msg)       >> loop
-      Prompt  p      -> sendPrompt i h p                   >> loop
+      Prompt  p      -> promptHelper i h p                 >> loop
       Quit           -> cowbye h                           >> sayonara
       Shutdown       -> shutDown                           >> loop
       SilentBoot     ->                                       sayonara
@@ -117,8 +117,8 @@ sendBootMsg :: Handle -> T.Text -> MudStack ()
 sendBootMsg h = liftIO . T.hPutStrLn h . nl . colorWith bootMsgColor
 
 
-sendPrompt :: Id -> Handle -> T.Text -> MudStack ()
-sendPrompt i h = handleFromServer i h False . nl
+promptHelper :: Id -> Handle -> T.Text -> MudStack ()
+promptHelper i h = handleFromServer i h False . nl
 
 
 cowbye :: Handle -> MudStack ()

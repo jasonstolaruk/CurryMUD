@@ -1489,11 +1489,11 @@ newChan p = patternMatchFail "newChan" [ showText p ]
 
 
 npcAsSelf :: ActionFun
-npcAsSelf p = execIfPossessed p "." npcAsSelfHelper
+npcAsSelf p = execIfPossessed p "." (npcAsSelfHelper, True)
 
 
 npcAsSelfHelper :: ActionFun
-npcAsSelfHelper p@AdviseNoArgs       = advise p [] adviceAsSelfNoArgs
+npcAsSelfHelper p@(NoArgs' i mq)     = advise p [] adviceAsSelfNoArgs >> sendDfltPrompt mq i
 npcAsSelfHelper (WithArgs i mq _ as) = do
     logPlaExecArgs "." as i
     liftIO . atomically . writeTQueue mq . AsSelf . nl . T.unwords $ as
@@ -1512,7 +1512,7 @@ npcDispCmdList p                  = patternMatchFail "npcDispCmdList" [ showText
 
 
 npcStop :: ActionFun
-npcStop p = execIfPossessed p "stop" npcStopHelper
+npcStop p = execIfPossessed p "stop" (npcStopHelper, False)
 
 
 npcStopHelper :: ActionFun

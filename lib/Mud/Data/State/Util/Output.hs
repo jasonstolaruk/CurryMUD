@@ -1,4 +1,5 @@
-{-# LANGUAGE LambdaCase, OverloadedStrings, RecordWildCards, TupleSections, ViewPatterns #-}
+{-# OPTIONS_GHC -fno-warn-type-defaults #-}
+{-# LANGUAGE LambdaCase, MultiWayIf, OverloadedStrings, RecordWildCards, TupleSections, ViewPatterns #-}
 
 module Mud.Data.State.Util.Output ( bcast
                                   , bcastAdmins
@@ -13,14 +14,16 @@ module Mud.Data.State.Util.Output ( bcast
                                   , massMsg
                                   , massSend
                                   , mkBcast
+                                  , mkDfltPrompt
                                   , mkNTBcast
                                   , multiWrapSend
                                   , ok
                                   , parseDesig
-                                  , prompt
                                   , retainedMsg
                                   , send
+                                  , sendDfltPrompt
                                   , sendMsgBoot
+                                  , sendPrompt
                                   , wrapSend ) where
 
 import Mud.Cmds.Msgs.Misc
@@ -235,13 +238,6 @@ expandEntName i ms (mkCapsFun -> f) en@(headTail -> (h, t)) idToExpand ((i `dele
 -----
 
 
-prompt :: MsgQueue -> T.Text -> MudStack ()
-prompt mq = liftIO . atomically . writeTQueue mq . Prompt
-
-
------
-
-
 retainedMsg :: Id -> MudState -> T.Text -> MudStack ()
 retainedMsg targetId ms msg@(T.uncons -> Just (x, xs))
   | isNpc targetId ms                 = bcastNl . mkBcast targetId $ stripMarker
@@ -264,8 +260,40 @@ send mq = liftIO . atomically . writeTQueue mq . FromServer
 -----
 
 
+sendDfltPrompt :: MsgQueue -> Id -> MudStack ()
+sendDfltPrompt mq i = sendPrompt mq . mkDfltPrompt i =<< getState
+
+
+mkDfltPrompt :: Id -> MudState -> T.Text
+mkDfltPrompt i ms = let (hps, mps, pps, fps) = getXps i ms
+                        marker               = colorWith indentColor " "
+                    in marker <> " " <> spaces [ f "h" hps
+                                               , f "m" mps
+                                               , f "p" pps
+                                               , f "f" fps ]
+  where
+    indentColor = isNpc i ms ? toNpcColor :? promptIndentColor
+    f a (x, y)  = let c   = if | x == y    -> green
+                               | per > 67  -> cyan
+                               | per > 33  -> yellow
+                               | per > 10  -> red
+                               | otherwise -> magenta
+                      per = round $ x `divide` y * 100
+                  in colorWith c a <> showText x
+
+
+-----
+
+
 sendMsgBoot :: MsgQueue -> Maybe T.Text -> MudStack ()
 sendMsgBoot mq = liftIO . atomically . writeTQueue mq . MsgBoot . fromMaybe dfltBootMsg
+
+
+-----
+
+
+sendPrompt :: MsgQueue -> T.Text -> MudStack ()
+sendPrompt mq = liftIO . atomically . writeTQueue mq . Prompt
 
 
 -----
