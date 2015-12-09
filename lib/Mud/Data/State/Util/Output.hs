@@ -223,9 +223,8 @@ parseDesig i ms = loop (getIntroduced i ms)
 
 expandEntName :: Id -> MudState -> ShouldCap -> T.Text -> Id -> Inv -> T.Text
 expandEntName i ms (mkCapsFun -> f) en@(headTail -> (h, t)) idToExpand ((i `delete`) -> idsInRm)
-  | isPC idToExpand ms = T.concat [ f "the ", xth, expandSex h, " ", t ]
-  | otherwise          = let n = views entName fromJust . getEnt idToExpand $ ms
-                         in n |&| (isCapital n ? id :? f . ("the " <>))
+  | isPC idToExpand ms         = T.concat [ f "the ", xth, expandSex h, " ", t ]
+  | s <- getSing idToExpand ms = s |&| (isCapital s ? id :? f . ("the " <>))
   where
     -- TODO: The below lambda doesn't take into account the fact that some of the "idsInRm" may be known by "i".
     xth = let matches = foldr (\pi acc -> mkUnknownPCEntName pi ms == en ? pi : acc :? acc) [] idsInRm

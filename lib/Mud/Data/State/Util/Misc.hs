@@ -257,9 +257,9 @@ mkSerializedNonStdDesig :: Id -> MudState -> Sing -> AOrThe -> ShouldCap -> T.Te
 mkSerializedNonStdDesig i ms s aot (mkCapsFun -> f) =
     serialize NonStdDesig { nsDesigEntSing = s, nsDesc = helper }
   where
-    helper | isPC i ms = (t <>) $ let (pp *** pp -> (sexy, r)) = getSexRace i ms in sexy <> " " <> r
-           | otherwise = (not (isCapital s) |?| t) <> s
-    t = f (pp aot) <> " "
+    helper | isPC i ms = g $ let (pp *** pp -> (sexy, r)) = getSexRace i ms in sexy <> " " <> r
+           | otherwise = s |&| (isCapital s ? id :? g)
+    g = f . (pp aot <>) . (" " <>)
 
 
 mkCapsFun :: ShouldCap -> T.Text -> T.Text

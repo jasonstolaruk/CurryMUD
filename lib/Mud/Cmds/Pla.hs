@@ -875,33 +875,32 @@ tryMove i mq cols p dir = helper |&| modifyState >=> \case
         in case findExit originRm dir of
           Nothing -> (ms, Left sorry)
           Just (linkTxt, destId, maybeOriginMsg, maybeDestMsg) ->
-            let originDesig = mkStdDesig i ms DoCap
-                s           = fromJust . sDesigEntSing $ originDesig
-                originPCIds = i `delete` desigIds originDesig
-                destPCIds   = findMobIds ms $ ms^.invTbl.ind destId
-                ms'         = ms & mobTbl.ind i.rmId   .~ destId
-                                 & invTbl.ind originId %~ (i `delete`)
-                                 & invTbl.ind destId   %~ (sortInv ms . (++ pure i))
-                msgAtOrigin = nlnl $ case maybeOriginMsg of
-                                Nothing  -> T.concat [ serialize originDesig, spaced verb, expandLinkName dir, "." ]
-                                Just msg -> T.replace "%" (serialize originDesig) msg
-                msgAtDest   = let destDesig = mkSerializedNonStdDesig i ms s A DoCap in nlnl $ case maybeDestMsg of
-                                Nothing  -> T.concat [ destDesig, " arrives from ", expandOppLinkName dir, "." ]
-                                Just msg -> T.replace "%" destDesig msg
-                logMsg      = T.concat [ "moved "
-                                       , linkTxt
-                                       , " from room "
-                                       , showRm originId originRm
-                                       , " to room "
-                                       , showRm destId . getRm destId $ ms
-                                       , "." ]
-            in (ms', Right ([ (msgAtOrigin, originPCIds), (msgAtDest, destPCIds) ], logMsg))
+            let originDesig  = mkStdDesig i ms DoCap
+                s            = fromJust . sDesigEntSing $ originDesig
+                originMobIds = i `delete` desigIds originDesig
+                destMobIds   = findMobIds ms $ ms^.invTbl.ind destId
+                ms'          = ms & mobTbl.ind i.rmId   .~ destId
+                                  & invTbl.ind originId %~ (i `delete`)
+                                  & invTbl.ind destId   %~ (sortInv ms . (++ pure i))
+                msgAtOrigin  = nlnl $ case maybeOriginMsg of
+                                 Nothing  -> T.concat [ serialize originDesig, spaced verb, expandLinkName dir, "." ]
+                                 Just msg -> T.replace "%" (serialize originDesig) msg
+                msgAtDest    = let destDesig = mkSerializedNonStdDesig i ms s A DoCap in nlnl $ case maybeDestMsg of
+                                 Nothing  -> T.concat [ destDesig, " arrives from ", expandOppLinkName dir, "." ]
+                                 Just msg -> T.replace "%" destDesig msg
+                logMsg       = T.concat [ "moved "
+                                        , linkTxt
+                                        , " from room "
+                                        , showRm originId originRm
+                                        , " to room "
+                                        , showRm destId . getRm destId $ ms
+                                        , "." ]
+            in (ms', Right ([ (msgAtOrigin, originMobIds), (msgAtDest, destMobIds) ], logMsg))
     sorry = dir `elem` stdLinkNames ? sorryGoExit :? sorryGoParseDir dir
-    verb
-      | dir == "u"              = "goes"
-      | dir == "d"              = "heads"
-      | dir `elem` stdLinkNames = "leaves"
-      | otherwise               = "enters"
+    verb | dir == "u"              = "goes"
+         | dir == "d"              = "heads"
+         | dir `elem` stdLinkNames = "leaves"
+         | otherwise               = "enters"
     showRm (showText -> ri) (views rmName parensQuote -> rn) = ri <> " " <> rn
 
 
