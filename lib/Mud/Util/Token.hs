@@ -97,6 +97,7 @@ expandStyleCode (toLower -> code)            = case code of
   'q' -> quoteColor
   'r' -> arrowColor
   's' -> syntaxSymbolColor
+  't' -> toNpcColor
   'u' -> underlineANSI
   'z' -> zingColor
   x   -> patternMatchFail "expandStyleCode" [ T.singleton x ]

@@ -239,7 +239,7 @@ mkPriorityAbbrevCmd cfn cpat f cd = unfoldr helper (T.init cfn) ++ [ Cmd { cmdNa
 
 npcCmds :: [Cmd]
 npcCmds = map (uncurry4 mkRegularCmd)
-    [ (".",      npcAsSelf,      False, "Execute a command as your true self.")
+    [ (".",      npcAsSelf,      False, "Execute a command as your admin PC.")
     , ("?",      npcDispCmdList, True,  "Display or search this command list.")
     , ("bars",   bars,           True,  "Display one or more status bars.")
     , ("clear",  clear,          True,  "Clear the screen.")
@@ -1510,6 +1510,7 @@ npcDispCmdList p                  = patternMatchFail "npcDispCmdList" [ showText
 -----
 
 
+-- TODO: This cmd is followed by the NPC's prompt...
 npcStop :: ActionFun
 npcStop p = execIfPossessed p "stop" (npcStopHelper, False)
 

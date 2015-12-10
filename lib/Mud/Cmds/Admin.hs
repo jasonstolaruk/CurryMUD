@@ -133,7 +133,7 @@ adminCmds =
                                                      \players."
     , mkAdminCmd "peep"       adminPeep        True  "Start or stop peeping one or more players."
     , mkAdminCmd "persist"    adminPersist     True  "Persist the world (save the current world state to disk)."
-    , mkAdminCmd "possess"    adminPossess     False "Possess an NPC."
+    , mkAdminCmd "possess"    adminPossess     False "Temporarily take control of an NPC."
     , mkAdminCmd "print"      adminPrint       True  "Print a message to the server console."
     , mkAdminCmd "profanity"  adminProfanity   True  "Dump the profanity database."
     , mkAdminCmd "search"     adminSearch      True  "Search for names and IDs using a regular expression."
@@ -817,7 +817,6 @@ adminPersist p              = withoutArgs adminPersist p
 -----
 
 
--- TODO: Help.
 adminPossess :: ActionFun
 adminPossess p@(NoArgs' i mq) = advise p [ prefixAdminCmd "possess" ] adviceAPossessNoArgs >> sendDfltPrompt mq i
 adminPossess (OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
