@@ -253,7 +253,7 @@ npcCmds = map (uncurry4 mkRegularCmd)
     , ("nw",     go "nw",        True,  "Go northwest.")
     , ("s",      go "s",         True,  "Go south.")
     , ("se",     go "se",        True,  "Go southeast.")
-    , ("stop",   npcStop,        True,  "Stop possessing.")
+    , ("stop",   npcStop,        False, "Stop possessing.")
     , ("sw",     go "sw",        True,  "Go southwest.")
     , ("u",      go "u",         True,  "Go up.")
     , ("w",      go "w",         True,  "Go west.")
@@ -1488,7 +1488,7 @@ newChan p = patternMatchFail "newChan" [ showText p ]
 
 
 npcAsSelf :: ActionFun
-npcAsSelf p = execIfPossessed p "." (npcAsSelfHelper, True)
+npcAsSelf p = execIfPossessed p "." npcAsSelfHelper
 
 
 npcAsSelfHelper :: ActionFun
@@ -1510,14 +1510,14 @@ npcDispCmdList p                  = patternMatchFail "npcDispCmdList" [ showText
 -----
 
 
--- TODO: This cmd is followed by the NPC's prompt...
 npcStop :: ActionFun
-npcStop p = execIfPossessed p "stop" (npcStopHelper, False)
+npcStop p = execIfPossessed p "stop" npcStopHelper
 
 
 npcStopHelper :: ActionFun
 npcStopHelper (NoArgs i mq cols) = getState >>= \ms -> let pi = fromJust . getPossessor i $ ms in do
     wrapSend mq cols $ "You stop possessing " <> aOrAnOnLower (getSing    i ms) <> "."
+    sendDfltPrompt mq pi
     logPla "stop" i  $ "stopped possessing "  <> aOrAnOnLower (descSingId i ms) <> "."
     tweaks [ plaTbl.ind pi.possessing .~ Nothing, npcTbl.ind i.possessor .~ Nothing ]
 npcStopHelper p = withoutArgs npcStopHelper p

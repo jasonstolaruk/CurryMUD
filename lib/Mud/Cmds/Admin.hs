@@ -832,6 +832,7 @@ adminPossess (OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
                 canPossess      = ( ms & plaTbl.ind i       .possessing .~ Just targetId
                                        & npcTbl.ind targetId.possessor  .~ Just i
                                   , [ sendFun $ "You are now possessing " <> aOrAnOnLower targetSing <> "."
+                                    , sendDfltPrompt mq targetId
                                     , logPla "adminPossess" i $ "started possessing "                 <>
                                                                 aOrAnOnLower (descSingId targetId ms) <>
                                                                 "." ] )
