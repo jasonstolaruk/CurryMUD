@@ -308,7 +308,7 @@ adminChanProcExpCmd i ms tunedIds tunedSings (map T.toLower . unmsg -> [cn, targ
             then Left . sorryExpCmdRequiresTarget $ match
             else case findTarget of
               Nothing -> Left . sorryAdminChanTargetName $ target
-              Just n  -> let targetId = getIdForPCSing n ms
+              Just n  -> let targetId = getIdForMobSing n ms
                              toSelf'  = format (Just n) toSelf
                          in Right ( (colorizeYous . format Nothing $ toTarget, pure targetId              ) :
                                     (format (Just n) toOthers,                 tunedIds \\ [ i, targetId ]) :
@@ -319,7 +319,7 @@ adminChanProcExpCmd i ms tunedIds tunedSings (map T.toLower . unmsg -> [cn, targ
                        , toSelf )
             else case findTarget of
               Nothing -> Left . sorryAdminChanTargetName $ target
-              Just n  -> let targetId          = getIdForPCSing n ms
+              Just n  -> let targetId          = getIdForMobSing n ms
                              toSelfWithTarget' = format (Just n) toSelfWithTarget
                          in Right ( (colorizeYous . format Nothing $ toTarget, pure targetId              ) :
                                     (format (Just n) toOthersWithTarget,       tunedIds \\ [ i, targetId ]) :

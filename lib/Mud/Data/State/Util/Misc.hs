@@ -8,7 +8,7 @@ module Mud.Data.State.Util.Misc ( aOrAnType
                                 , getAdminIds
                                 , getEffBothGramNos
                                 , getEffName
-                                , getIdForPCSing
+                                , getIdForMobSing
                                 , getLoggedInAdminIds
                                 , getLoggedInPlaIds
                                 , getMobRmNonIncogInvCoins
@@ -141,8 +141,8 @@ mkUnknownPCEntName i ms = views entName (fromMaybe helper) . getEnt i $ ms
 -----
 
 
-getIdForPCSing :: Sing -> MudState -> Id
-getIdForPCSing s ms = let [(i, _)] = views entTbl (IM.toList . IM.filter (views sing (== s))) ms in i
+getIdForMobSing :: Sing -> MudState -> Id
+getIdForMobSing s ms = let [(i, _)] = views entTbl (IM.toList . IM.filter (views sing (== s))) ms in i
 
 
 -----

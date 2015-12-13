@@ -429,7 +429,7 @@ chan (OneArg i mq cols a@(T.toLower -> a')) = getState >>= \ms ->
                                                                  | (i', _, isTuned') <- combo' ]
                   else wrapSend mq cols . sorryTunedOutICChan $ cn
         (cs, cns, s)           = mkChanBindings i ms
-        mkTriple (s', isTuned) = (getIdForPCSing s' ms, s', isTuned)
+        mkTriple (s', isTuned) = (getIdForMobSing s' ms, s', isTuned)
     in findFullNameForAbbrev a' (map T.toLower cns) |&| maybe notFound found
 chan (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
     let notFound    = wrapSend mq cols . sorryChanName $ target
@@ -453,7 +453,7 @@ chan (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
                          withDbExHandler_ "chan" . insertDbTblChan . ChanRec ts (c^.chanId) cn s $ logMsg
                      sendToWiretappers tappedMsg =
                          let cn' = colorWith wiretapColor . spaced . parensQuote $ cn
-                             is  = c^.wiretappers.to (map (`getIdForPCSing` ms))
+                             is  = c^.wiretappers.to (map (`getIdForMobSing` ms))
                              is' = filter (isLoggedIn . (`getPla` ms)) is
                          in bcastNl . pure $ (T.concat [ cn', " ", s, ": ", tappedMsg ], is')
                      cc   = ChanContext "chan" (Just cn) False
@@ -505,7 +505,7 @@ color p = withoutArgs color p
 connect :: ActionFun
 connect p@AdviseNoArgs       = advise p ["connect"] adviceConnectNoArgs
 connect p@(AdviseOneArg a)   = advise p ["connect"] . adviceConnectNoChan $ a
-connect (Lower i mq cols as) = getState >>= \ms -> let getIds = map (`getIdForPCSing` ms) in
+connect (Lower i mq cols as) = getState >>= \ms -> let getIds = map (`getIdForMobSing` ms) in
     if isIncognitoId i ms
       then wrapSend mq cols . sorryIncog $ "connect"
       else connectHelper i (mkLastArgWithNubbedOthers as) |&| modifyState >=> \case
@@ -590,7 +590,7 @@ connectHelper i (target, as) ms =
 disconnect :: ActionFun
 disconnect p@AdviseNoArgs       = advise p ["disconnect"] adviceDisconnectNoArgs
 disconnect p@(AdviseOneArg a)   = advise p ["disconnect"] . adviceDisconnectNoChan $ a
-disconnect (Lower i mq cols as) = getState >>= \ms -> let getIds = map (`getIdForPCSing` ms) in
+disconnect (Lower i mq cols as) = getState >>= \ms -> let getIds = map (`getIdForMobSing` ms) in
     if isIncognitoId i ms
       then wrapSend mq cols . sorryIncog $ "disconnect"
       else getAllChanIdNames i ms >>= \idNamesTbl ->
@@ -684,7 +684,7 @@ dropAction (LowerNub' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
             invCoins               = getInvCoins i ms
             d                      = mkStdDesig  i ms DoCap
             ri                     = getRmId     i ms
-            (eiss, ecs)            = uncurry (resolvePCInvCoins i ms inInvs) invCoins
+            (eiss, ecs)            = uncurry (resolveMobInvCoins i ms inInvs) invCoins
             (ms',  bs,  logMsgs )  = foldl' (helperDropEitherInv      i d      i ri) (ms,  [], []     ) eiss
             (ms'', bs', logMsgs')  =         helperGetDropEitherCoins i d Drop i ri  (ms', bs, logMsgs) ecs
         in if ()!# invCoins
@@ -771,7 +771,7 @@ equip (LowerNub i mq cols as) = getState >>= \ms ->
     let em@(M.elems -> is) = getEqMap i ms in send mq $ if ()!# em
       then let (inInvs, inEqs, inRms)                = sortArgsInvEqRm InEq as
                (gecrs, miss, rcs)                    = resolveEntCoinNames i ms inEqs is mempty
-               eiss                                  = zipWith (curry procGecrMisPCEq) gecrs miss
+               eiss                                  = zipWith (curry procGecrMisMobEq) gecrs miss
                invDesc                               = foldl' helperEitherInv "" eiss
                helperEitherInv acc (Left  msg)       = (acc <>) . wrapUnlinesNl cols $ msg
                helperEitherInv acc (Right targetIds) = nl $ acc <> mkEntDescs i cols ms targetIds
@@ -1127,7 +1127,7 @@ inv (NoArgs   i mq cols   ) = getState >>= \ms@(getSing i -> s) -> send mq . nl 
 inv (LowerNub i mq cols as) = getState >>= \ms ->
     let (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv as
         invCoins               = getInvCoins i ms
-        (eiss, ecs)            = uncurry (resolvePCInvCoins i ms inInvs) invCoins
+        (eiss, ecs)            = uncurry (resolveMobInvCoins i ms inInvs) invCoins
         invDesc                = foldl' (helperEitherInv ms) "" eiss
         coinsDesc              = foldl' helperEitherCoins    "" ecs
     in send mq $ if ()!# invCoins
@@ -1160,7 +1160,7 @@ leave (WithArgs i mq cols (nub -> as)) = helper |&| modifyState >=> \(ms, chanId
         msgs       = ()# sorryMsgs ? toSelfMsgs :? sorryMsgs ++ (toSelfMsgs |!| "" : toSelfMsgs)
         f bs ci    = let c        = getChan ci ms
                          otherIds = views chanConnTbl g c
-                         g        = filter (`isAwake` ms) . map (`getIdForPCSing` ms) . M.keys . M.filter id
+                         g        = filter (`isAwake` ms) . map (`getIdForMobSing` ms) . M.keys . M.filter id
                      in (bs ++) <$> forM otherIds (\i' -> [ ( T.concat [ "You sense that "
                                                                        , n
                                                                        , " has left the "
@@ -1328,33 +1328,37 @@ look (LowerNub i mq cols as) = helper |&| modifyState >=> \(msg, bs, maybeTarget
                                = logPla "look" i $ "looked at: " <> commas targetSings <> "."
     maybeVoid logHelper maybeTargetDesigs
   where
-    helper ms = let invCoins = first (i `delete`) . getMobRmNonIncogInvCoins i $ ms in if ()!# invCoins
-        then let (inInvs, inEqs, inRms) = sortArgsInvEqRm InRm as
-                 sorryInInv             = wrapUnlinesNl cols . sorryEquipInvLook LookCmd $ InvCmd
-                 sorryInEq              = wrapUnlinesNl cols . sorryEquipInvLook LookCmd $ EquipCmd
-                 (eiss, ecs)            = uncurry (resolveRmInvCoins i ms inRms) invCoins
-                 invDesc                = foldl' (helperLookEitherInv ms) "" eiss
-                 coinsDesc              = foldl' helperLookEitherCoins    "" ecs
-                 (pt, msg)              = firstLook i cols (ms^.plaTbl, T.concat [ inInvs |!| sorryInInv
-                                                                                 , inEqs  |!| sorryInEq
-                                                                                 , invDesc
-                                                                                 , coinsDesc ])
-                 selfDesig              = mkStdDesig i ms DoCap
-                 selfDesig'             = serialize selfDesig
-                 is                     = i `delete` desigIds selfDesig
-                 targetDesigs           = [ mkStdDesig targetId ms Don'tCap | targetId <- extractMobIdsFromEiss ms eiss ]
-                 mkBsForTarget targetDesig acc =
-                     let targetId = desigId targetDesig
-                         toTarget = (nlnl $ selfDesig' <> " looks at you.", pure targetId)
-                         toOthers = ( nlnl . T.concat $ [ selfDesig', " looks at ", serialize targetDesig, "." ]
-                                    , targetId `delete` is)
-                     in toTarget : toOthers : acc
-                 ms' = ms & plaTbl .~ pt
-             in (ms', (msg, foldr mkBsForTarget [] targetDesigs, targetDesigs |!| Just targetDesigs))
-        else let msg        = wrapUnlinesNl cols sorryLookNothingHere
-                 (pt, msg') = firstLook i cols (ms^.plaTbl, msg)
-                 ms'        = ms & plaTbl .~ pt
-             in (ms', (msg', [], Nothing))
+    helper ms =
+        let invCoins = first (i `delete`) . getMobRmNonIncogInvCoins i $ ms
+            f        | isPC i ms = firstLook i cols
+                     | otherwise = id
+        in if ()!# invCoins
+          then let (inInvs, inEqs, inRms) = sortArgsInvEqRm InRm as
+                   sorryInInv             = wrapUnlinesNl cols . sorryEquipInvLook LookCmd $ InvCmd
+                   sorryInEq              = wrapUnlinesNl cols . sorryEquipInvLook LookCmd $ EquipCmd
+                   (eiss, ecs)            = uncurry (resolveRmInvCoins i ms inRms) invCoins
+                   invDesc                = foldl' (helperLookEitherInv ms) "" eiss
+                   coinsDesc              = foldl' helperLookEitherCoins    "" ecs
+                   (pt, msg)              = f (ms^.plaTbl, T.concat [ inInvs |!| sorryInInv
+                                                                    , inEqs  |!| sorryInEq
+                                                                    , invDesc
+                                                                    , coinsDesc ])
+                   selfDesig              = mkStdDesig i ms DoCap
+                   selfDesig'             = serialize selfDesig
+                   is                     = i `delete` desigIds selfDesig
+                   targetDesigs           = [ mkStdDesig targetId ms Don'tCap | targetId <- extractMobIdsFromEiss ms eiss ]
+                   mkBsForTarget targetDesig acc =
+                       let targetId = desigId targetDesig
+                           toTarget = (nlnl $ selfDesig' <> " looks at you.", pure targetId)
+                           toOthers = ( nlnl . T.concat $ [ selfDesig', " looks at ", serialize targetDesig, "." ]
+                                      , targetId `delete` is)
+                       in toTarget : toOthers : acc
+                   ms' = ms & plaTbl .~ pt
+               in (ms', (msg, foldr mkBsForTarget [] targetDesigs, targetDesigs |!| Just targetDesigs))
+          else let msg        = wrapUnlinesNl cols sorryLookNothingHere
+                   (pt, msg') = f (ms^.plaTbl, msg)
+                   ms'        = ms & plaTbl .~ pt
+               in (ms', (msg', [], Nothing))
     helperLookEitherInv _  acc (Left  msg ) = acc <> wrapUnlinesNl cols msg
     helperLookEitherInv ms acc (Right is  ) = nl $ acc <> mkEntDescs i cols ms is
     helperLookEitherCoins  acc (Left  msgs) = (acc <>) . multiWrapNl cols . intersperse "" $ msgs
@@ -1543,7 +1547,7 @@ putAction (Lower' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
     helper ms | (d, pcInvCoins, rmInvCoins, conName, argsWithoutCon) <- mkPutRemoveBindings i ms as =
       if ()!# pcInvCoins
         then case singleArgInvEqRm InInv conName of
-          (InInv, conName') -> shufflePut i ms d conName' False argsWithoutCon pcInvCoins pcInvCoins procGecrMisPCInv
+          (InInv, conName') -> shufflePut i ms d conName' False argsWithoutCon pcInvCoins pcInvCoins procGecrMisMobInv
           (InEq,  _       ) -> (ms, (mkBcast i . sorryConInEq $ Put, []))
           (InRm,  conName') -> if ()!# fst rmInvCoins
             then shufflePut i ms d conName' True argsWithoutCon rmInvCoins pcInvCoins procGecrMisRm
@@ -1579,8 +1583,8 @@ shufflePut i ms d conName icir as invCoinsWithCon@(invWithCon, _) pcInvCoins f =
                    sorryInEq = inEqs |!| mkBcast i sorryPutInEq
                    sorryInRm = inRms |!| mkBcast i sorryPutInRm
                    (gecrs, miss, rcs)  = uncurry (resolveEntCoinNames i ms inInvs) pcInvCoins
-                   eiss                = zipWith (curry procGecrMisPCInv) gecrs miss
-                   ecs                 = map procReconciledCoinsPCInv rcs
+                   eiss                = zipWith (curry procGecrMisMobInv) gecrs miss
+                   ecs                 = map procReconciledCoinsMobInv rcs
                    mnom                = mkMaybeNthOfM ms icir conId conSing invWithCon
                    (it, bs,  logMsgs ) = foldl' (helperPutRemEitherInv   i ms d Put mnom i conId conSing)
                                                 (ms^.invTbl,   [], [])
@@ -1992,7 +1996,7 @@ remove (Lower' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
   where
     helper ms | (d, pcInvCoins, rmInvCoins, conName, argsWithoutCon) <- mkPutRemoveBindings i ms as =
         case singleArgInvEqRm InInv conName of
-          (InInv, conName') -> shuffleRem i ms d conName' False argsWithoutCon pcInvCoins procGecrMisPCInv
+          (InInv, conName') -> shuffleRem i ms d conName' False argsWithoutCon pcInvCoins procGecrMisMobInv
           (InEq,  _       ) -> (ms, (mkBcast i . sorryConInEq $ Rem, []))
           (InRm,  conName') -> if ()!# fst rmInvCoins
             then shuffleRem i ms d conName' True argsWithoutCon rmInvCoins procGecrMisRm
@@ -2111,7 +2115,9 @@ say p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
                                          , ", "
                                          , msg ]
                 toOthersBcast = (nlnl toOthersMsg, i `delete` desigIds d)
-                (pt, hint)    = firstMobSay i $ ms^.plaTbl
+                f             | isPC i ms = firstMobSay i
+                              | otherwise = (, "")
+                (pt, hint)    = ms^.plaTbl.to f
             in (ms & plaTbl .~ pt, ((toOthersBcast :) . mkBcast i . nlnl $ toSelfMsg <> hint, pure toSelfMsg))
     sayTo maybeAdverb msg _ = patternMatchFail "say sayTo" [ showText maybeAdverb, msg ]
     formatMsg                 = dblQuote . capitalizeMsg . punctuateMsg
@@ -2237,7 +2243,7 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
   where
     tryThisInstead = " Try showing something to someone in your current room."
     showInv ms d invCoins inInvs IdSingTypeDesig { .. } = if ()!# invCoins
-      then let (eiss, ecs)                         = uncurry (resolvePCInvCoins i ms inInvs) invCoins
+      then let (eiss, ecs)                         = uncurry (resolveMobInvCoins i ms inInvs) invCoins
                showInvHelper                       = foldl' helperEitherInv ([], []) eiss
                helperEitherInv acc (Left  msg    ) = acc & _1 <>~ mkBcast i msg
                helperEitherInv acc (Right itemIds) = acc & _1 <>~ mkBs
@@ -2325,7 +2331,7 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
       else (mkBcast i dudeYourHandsAreEmpty, "")
     showEq ms d eqMap inEqs IdSingTypeDesig { .. } = if ()!# eqMap
       then let (gecrs, miss, rcs)                  = resolveEntCoinNames i ms inEqs (M.elems eqMap) mempty
-               eiss                                = zipWith (curry procGecrMisPCEq) gecrs miss
+               eiss                                = zipWith (curry procGecrMisMobEq) gecrs miss
                showEqHelper                        = foldl' helperEitherInv ([], []) eiss
                helperEitherInv acc (Left  msg    ) = acc & _1 <>~ mkBcast i msg
                helperEitherInv acc (Right itemIds) = acc & _1 <>~ mkBs
@@ -2495,7 +2501,7 @@ tele p = patternMatchFail "tele" [ showText p ]
 getDblLinkedSings :: Id -> MudState -> ([Sing], [Sing])
 getDblLinkedSings i ms = foldr helper ([], []) . getLinked i $ ms
   where
-    helper s pair = let lens = isAwake (getIdForPCSing s ms) ms ? _1 :? _2
+    helper s pair = let lens = isAwake (getIdForMobSing s ms) ms ? _1 :? _2
                     in pair & lens %~ (s :)
 
 
@@ -2504,7 +2510,7 @@ getDblLinkedSings i ms = foldr helper ([], []) . getLinked i $ ms
 
 tune :: ActionFun
 tune (NoArgs i mq cols) = getState >>= \ms ->
-    let linkPairs   = map (first (`getIdForPCSing` ms) . dup) . getLinked i $ ms
+    let linkPairs   = map (first (`getIdForMobSing` ms) . dup) . getLinked i $ ms
         linkSings   = sort . map snd . filter (isDblLinked ms . (i, ) . fst) $ linkPairs
         styleds     = styleAbbrevs Don'tQuote linkSings
         linkTunings = foldr (\s -> (linkTbl M.! s :)) [] linkSings
@@ -2604,7 +2610,7 @@ unlink (LowerNub i mq cols as) =
                     sorry msg     = a & _2 <>~ (mkBcast i . nlnl $ msg)
                     procArgHelper
                       | not . hasPp i ms' $ 3 = sorry . sorryPp $ "sever your link with " <> targetSing
-                      | targetId <- getIdForPCSing targetSing ms'
+                      | targetId <- getIdForMobSing targetSing ms'
                       , s        <- getSing i ms
                       , srcMsg   <- T.concat [ focusingInnateMsg, "you sever your link with ", targetSing, "." ]
                       , targetBs <- let bs       = mkBcast targetId . nlnl . colorize . unlinkMsg tingleLoc $ s
@@ -2637,7 +2643,7 @@ unready (LowerNub' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
             d                      = mkStdDesig i ms DoCap
             is                     = M.elems . getEqMap i $ ms
             (gecrs, miss, rcs)     = resolveEntCoinNames i ms inEqs is mempty
-            eiss                   = zipWith (curry procGecrMisPCEq) gecrs miss
+            eiss                   = zipWith (curry procGecrMisMobEq) gecrs miss
             bs                     = rcs |!| mkBcast i sorryUnreadyCoins
             (et, it, bs', logMsgs) = foldl' (helperUnready i ms d) (ms^.eqTbl, ms^.invTbl, bs, []) eiss
         in if ()!# is

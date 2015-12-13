@@ -3,12 +3,12 @@
 
 module Mud.Misc.NameResolution ( ReconciledCoins
                                , procGecrMisCon
-                               , procGecrMisPCEq
-                               , procGecrMisPCInv
+                               , procGecrMisMobEq
+                               , procGecrMisMobInv
                                , procGecrMisReady
                                , procGecrMisRm
                                , procReconciledCoinsCon
-                               , procReconciledCoinsPCInv
+                               , procReconciledCoinsMobInv
                                , procReconciledCoinsRm
                                , resolveEntCoinNames
                                , resolveEntCoinNamesWithRols
@@ -274,17 +274,17 @@ pattern SorryCoins       <- (SorryIndexedCoins,                                 
 pattern GenericSorry n   <- (Sorry   {            nameSearchedFor = (aOrAn -> n)                     }, Nothing)
 
 
-procGecrMisPCInv :: (GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv
-procGecrMisPCInv DupIdsEmpty        | res <- dupIdsRes               = res
-procGecrMisPCInv (SorryOne     (don'tHaveInv    -> res))             = res
-procGecrMisPCInv (NoneMult     (don'tHaveAnyInv -> res))             = res
-procGecrMisPCInv (FoundMult                        res)              = res
-procGecrMisPCInv (NoneIndexed  (don'tHaveAnyInv -> res))             = res
-procGecrMisPCInv (SorryIndexed x p) | res <- don'tHaveIndexedInv x p = res
-procGecrMisPCInv (FoundIndexed                     res)              = res
-procGecrMisPCInv SorryCoins         | res <- sorryIndexedCoins       = res
-procGecrMisPCInv (GenericSorry (don'tHaveInv    -> res))             = res
-procGecrMisPCInv gecrMis = patternMatchFail "procGecrMisPCInv" [ showText gecrMis ]
+procGecrMisMobInv :: (GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv
+procGecrMisMobInv DupIdsEmpty        | res <- dupIdsRes               = res
+procGecrMisMobInv (SorryOne     (don'tHaveInv    -> res))             = res
+procGecrMisMobInv (NoneMult     (don'tHaveAnyInv -> res))             = res
+procGecrMisMobInv (FoundMult                        res)              = res
+procGecrMisMobInv (NoneIndexed  (don'tHaveAnyInv -> res))             = res
+procGecrMisMobInv (SorryIndexed x p) | res <- don'tHaveIndexedInv x p = res
+procGecrMisMobInv (FoundIndexed                     res)              = res
+procGecrMisMobInv SorryCoins         | res <- sorryIndexedCoins       = res
+procGecrMisMobInv (GenericSorry (don'tHaveInv    -> res))             = res
+procGecrMisMobInv gecrMis = patternMatchFail "procGecrMisMobInv" [ showText gecrMis ]
 
 
 dupIdsRes :: Either T.Text Inv
@@ -310,7 +310,7 @@ sorryIndexedCoins =
 
 procGecrMisReady :: (GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv
 procGecrMisReady (Sorry (sorryBadSlot -> txt), Nothing) = Left txt
-procGecrMisReady gecrMis                                = procGecrMisPCInv gecrMis
+procGecrMisReady gecrMis                                = procGecrMisMobInv gecrMis
 
 
 sorryBadSlot :: T.Text -> T.Text
@@ -333,17 +333,17 @@ ringHelp = T.concat [ "For rings, specify ", mkSlotTxt "r", " or ", mkSlotTxt "l
                     , colorWith quoteColor (dblQuote "p") <> nl " for pinky finger." ]
 
 
-procGecrMisPCEq :: (GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv
-procGecrMisPCEq DupIdsEmpty        | res <- dupIdsRes              = res
-procGecrMisPCEq (SorryOne     (don'tHaveEq    -> res))             = res
-procGecrMisPCEq (NoneMult     (don'tHaveAnyEq -> res))             = res
-procGecrMisPCEq (FoundMult                       res)              = res
-procGecrMisPCEq (NoneIndexed  (don'tHaveAnyEq -> res))             = res
-procGecrMisPCEq (SorryIndexed x p) | res <- don'tHaveIndexedEq x p = res
-procGecrMisPCEq (FoundIndexed                    res)              = res
-procGecrMisPCEq SorryCoins         | res <- sorryIndexedCoins      = res
-procGecrMisPCEq (GenericSorry (don'tHaveEq    -> res))             = res
-procGecrMisPCEq gecrMis = patternMatchFail "procGecrMisPCEq" [ showText gecrMis ]
+procGecrMisMobEq :: (GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv
+procGecrMisMobEq DupIdsEmpty        | res <- dupIdsRes              = res
+procGecrMisMobEq (SorryOne     (don'tHaveEq    -> res))             = res
+procGecrMisMobEq (NoneMult     (don'tHaveAnyEq -> res))             = res
+procGecrMisMobEq (FoundMult                       res)              = res
+procGecrMisMobEq (NoneIndexed  (don'tHaveAnyEq -> res))             = res
+procGecrMisMobEq (SorryIndexed x p) | res <- don'tHaveIndexedEq x p = res
+procGecrMisMobEq (FoundIndexed                    res)              = res
+procGecrMisMobEq SorryCoins         | res <- sorryIndexedCoins      = res
+procGecrMisMobEq (GenericSorry (don'tHaveEq    -> res))             = res
+procGecrMisMobEq gecrMis = patternMatchFail "procGecrMisMobEq" [ showText gecrMis ]
 
 
 don'tHaveEq :: T.Text -> Either T.Text Inv
@@ -418,20 +418,20 @@ doesn'tContainIndexed cn x = Left . sformat m cn x
 -- Processing "ReconciledCoins":
 
 
-procReconciledCoinsPCInv :: ReconciledCoins -> Either [T.Text] Coins
-procReconciledCoinsPCInv (Left  Empty)                            = Left . pure $ "You don't have any coins."
-procReconciledCoinsPCInv (Left  (NoneOf (Coins (cop, sil, gol)))) = Left . extractCoinsTxt $ [ c, s, g ]
+procReconciledCoinsMobInv :: ReconciledCoins -> Either [T.Text] Coins
+procReconciledCoinsMobInv (Left  Empty)                            = Left . pure $ "You don't have any coins."
+procReconciledCoinsMobInv (Left  (NoneOf (Coins (cop, sil, gol)))) = Left . extractCoinsTxt $ [ c, s, g ]
   where
     c = msgOnNonzero cop "You don't have any copper pieces."
     s = msgOnNonzero sil "You don't have any silver pieces."
     g = msgOnNonzero gol "You don't have any gold pieces."
-procReconciledCoinsPCInv (Right (SomeOf c                      )) = Right c
-procReconciledCoinsPCInv (Left  (SomeOf (Coins (cop, sil, gol)))) = Left . extractCoinsTxt $ [ c, s, g ]
+procReconciledCoinsMobInv (Right (SomeOf c                      )) = Right c
+procReconciledCoinsMobInv (Left  (SomeOf (Coins (cop, sil, gol)))) = Left . extractCoinsTxt $ [ c, s, g ]
   where
     c = msgOnNonzero cop . sformat ("You don't have " % int % " copper pieces.") $ cop
     s = msgOnNonzero sil . sformat ("You don't have " % int % " silver pieces.") $ sil
     g = msgOnNonzero gol . sformat ("You don't have " % int % " gold pieces."  ) $ gol
-procReconciledCoinsPCInv rc = patternMatchFail "procReconciledCoinsPCInv" [ showText rc ]
+procReconciledCoinsMobInv rc = patternMatchFail "procReconciledCoinsMobInv" [ showText rc ]
 
 
 extractCoinsTxt :: [Maybe T.Text] -> [T.Text]

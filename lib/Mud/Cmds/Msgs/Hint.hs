@@ -57,7 +57,7 @@ hintGet :: T.Text
 hintGet = hintHelper [ "it appears that you want to remove an object from a container. In that case, please use the "
                      , dblQuote "remove"
                      , " command. For example, to remove a ring from your sack, type "
-                     , colorWith quoteColor "remove ring sack"
+                     , colorWith quoteColor "rem ring sack"
                      , "." ]
 
 
@@ -68,15 +68,15 @@ hintLook = hintHelper [ "use the "
                         \inventory, use the "
                       , dblQuote "inventory"
                       , " command "
-                      , parensQuote $ "for example: " <> colorWith quoteColor "inventory bread"
+                      , parensQuote $ "for example: " <> colorWith quoteColor "i bread"
                       , ". To examine items in your readied equipment, use the "
                       , dblQuote "equipment"
                       , " command "
-                      , parensQuote $ "for example: " <> colorWith quoteColor "equipment sword"
+                      , parensQuote $ "for example: " <> colorWith quoteColor "eq sword"
                       , ". "
-                      , colorWith quoteColor "inventory"
+                      , colorWith quoteColor "i"
                       , " and "
-                      , colorWith quoteColor "equipment"
+                      , colorWith quoteColor "eq"
                       , " alone will list the items in your inventory and readied equipment, respectively." ]
 
 

@@ -48,7 +48,7 @@ module Mud.Cmds.Util.Pla ( armSubToSlot
                          , notFoundSuggestAsleeps
                          , otherHand
                          , putOnMsgs
-                         , resolvePCInvCoins
+                         , resolveMobInvCoins
                          , resolveRmInvCoins ) where
 
 import Mud.Cmds.Msgs.Dude
@@ -160,7 +160,7 @@ checkMutuallyTuned i ms targetSing = case areMutuallyTuned of
   (True,  False, _      ) -> Left . (effortsBlockedMsg <>) . sorryTunedOutPCTarget $ targetSing
   (True,  True, targetId) -> Right targetId
   where
-    areMutuallyTuned | targetId <- getIdForPCSing targetSing ms
+    areMutuallyTuned | targetId <- getIdForMobSing targetSing ms
                      , a <- (M.! targetSing) . getTeleLinkTbl i        $ ms
                      , b <- (M.! s         ) . getTeleLinkTbl targetId $ ms
                      = (a, b, targetId)
@@ -827,7 +827,7 @@ notFoundSuggestAsleeps :: T.Text -> [Sing] -> MudState -> T.Text
 notFoundSuggestAsleeps a@(capitalize . T.toLower -> a') asleepSings ms =
     case findFullNameForAbbrev a' asleepSings of
       Just asleepTarget ->
-          let (heShe, _, _) = mkPros . getSex (getIdForPCSing asleepTarget ms) $ ms
+          let (heShe, _, _) = mkPros . getSex (getIdForMobSing asleepTarget ms) $ ms
               guess         = a' /= asleepTarget |?| ("Perhaps you mean " <> asleepTarget <> "? ")
           in T.concat [ guess
                       , "Unfortunately, "
@@ -855,9 +855,8 @@ putOnMsgs = mkReadyMsgs "put on" "puts on"
 -----
 
 
--- TODO: Needs to be adjusted for NPCs.
-resolvePCInvCoins :: Id -> MudState -> Args -> Inv -> Coins -> ([Either T.Text Inv], [Either [T.Text] Coins])
-resolvePCInvCoins i ms = resolveHelper i ms procGecrMisPCInv procReconciledCoinsPCInv
+resolveMobInvCoins :: Id -> MudState -> Args -> Inv -> Coins -> ([Either T.Text Inv], [Either [T.Text] Coins])
+resolveMobInvCoins i ms = resolveHelper i ms procGecrMisMobInv procReconciledCoinsMobInv
 
 
 resolveHelper :: Id
