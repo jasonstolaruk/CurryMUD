@@ -33,6 +33,7 @@ module Mud.Util.Misc ( atLst1
                      , unadulterated
                      , uncurry3
                      , uncurry4
+                     , uncurry5
                      , unit ) where
 
 import Mud.Util.Quoting
@@ -202,6 +203,10 @@ uncurry3 f (a, b, c) = f a b c
 
 uncurry4 :: (a -> b -> c -> d -> e) -> (a, b, c, d) -> e
 uncurry4 f (a, b, c, d) = f a b c d
+
+
+uncurry5 :: (a -> b -> c -> d -> e -> f) -> (a, b, c, d, e) -> f
+uncurry5 f (a, b, c, d, e) = f a b c d e
 
 
 unit :: (Monad m) => m ()

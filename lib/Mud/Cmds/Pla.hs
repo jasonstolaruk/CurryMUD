@@ -188,43 +188,44 @@ mkRegularCmd cfn f b cd = Cmd { cmdName           = cfn
 
 
 priorityAbbrevCmds :: [Cmd]
-priorityAbbrevCmds = concatMap (uncurry4 mkPriorityAbbrevCmd)
-    [ ("clear",      "cl",  clear,      "Clear the screen.")
-    , ("color",      "col", color,      "Perform a color test.")
-    , ("connect",    "co",  connect,    "Connect one or more people to a telepathic channel.")
-    , ("disconnect", "di",  disconnect, "Disconnect one or more people from a telepathic channel.")
-    , ("drop",       "dr",  dropAction, "Drop one or more items.")
-    , ("emote",      "em",  emote,      "Freely describe an action.")
-    , ("exits",      "ex",  exits,      "Display obvious exits.")
-    , ("get",        "g",   getAction,  "Pick up one or more items.")
-    , ("help",       "h",   help,       "Get help on one or more commands or topics.")
-    , ("intro",      "in",  intro,      "Display a list of the people who have introduced themselves to you, or \
-                                        \introduce yourself to one or more people.")
-    , ("inventory",  "i",   inv,        "Display your inventory, or examine one or more items in your inventory.")
-    , ("leave",      "le",  leave,      "Sever your connections to one or more telepathic channels.")
-    , ("link",       "li",  link,       "Display a list of the people with whom you have established a telepathic \
-                                        \link, or establish a telepathic link with one or more people.")
-    , ("look",       "l",   look,       "Display a description of your current room, or examine one or more things in \
-                                        \your current room.")
-    , ("motd",       "m",   motd,       "Display the message of the day.")
-    , ("put",        "p",   putAction,  "Put one or more items into a container.")
-    , ("ready",      "r",   ready,      "Ready one or more items.")
-    , ("say",        "sa",  say,        "Say something out loud.")
-    , ("show",       "sh",  showAction, "Show one or more items in your inventory and/or readied equipment to another \
-                                        \person.")
-    , ("stats",      "st",  stats,      "Display your stats.")
-    , ("telepathy",  "t",   tele,       "Send a private message to a person with whom you have established a two-way \
-                                        \telepathic link.")
-    , ("unready",    "un",  unready,    "Unready one or more items.")
-    , ("who",        "wh",  who,        "Display or search a list of who is currently awake.") ]
+priorityAbbrevCmds = concatMap (uncurry5 mkPriorityAbbrevCmd)
+    [ ("clear",      "cl",  clear,      True, "Clear the screen.")
+    , ("color",      "col", color,      True, "Perform a color test.")
+    , ("connect",    "co",  connect,    True, "Connect one or more people to a telepathic channel.")
+    , ("disconnect", "di",  disconnect, True, "Disconnect one or more people from a telepathic channel.")
+    , ("drop",       "dr",  dropAction, True, "Drop one or more items.")
+    , ("emote",      "em",  emote,      True, "Freely describe an action.")
+    , ("exits",      "ex",  exits,      True, "Display obvious exits.")
+    , ("get",        "g",   getAction,  True, "Pick up one or more items.")
+    , ("help",       "h",   help,       True, "Get help on one or more commands or topics.")
+    , ("intro",      "in",  intro,      True, "Display a list of the people who have introduced themselves to you, or \
+                                              \introduce yourself to one or more people.")
+    , ("inventory",  "i",   inv,        True, "Display your inventory, or examine one or more items in your inventory.")
+    , ("leave",      "le",  leave,      True, "Sever your connections to one or more telepathic channels.")
+    , ("link",       "li",  link,       True, "Display a list of the people with whom you have established a \
+                                              \telepathic link, or establish a telepathic link with one or more \
+                                              \people.")
+    , ("look",       "l",   look,       True, "Display a description of your current room, or examine one or more \
+                                              \things in your current room.")
+    , ("motd",       "m",   motd,       True, "Display the message of the day.")
+    , ("put",        "p",   putAction,  True, "Put one or more items into a container.")
+    , ("ready",      "r",   ready,      True, "Ready one or more items.")
+    , ("say",        "sa",  say,        True, "Say something out loud.")
+    , ("show",       "sh",  showAction, True, "Show one or more items in your inventory and/or readied equipment to \
+                                              \another person.")
+    , ("stats",      "st",  stats,      True, "Display your stats.")
+    , ("telepathy",  "t",   tele,       True, "Send a private message to a person with whom you have established a \
+                                              \two-way telepathic link.")
+    , ("unready",    "un",  unready,    True, "Unready one or more items.")
+    , ("who",        "wh",  who,        True, "Display or search a list of who is currently awake.") ]
 
 
-mkPriorityAbbrevCmd :: CmdFullName -> CmdPriorityAbbrevTxt -> ActionFun -> CmdDesc -> [Cmd]
-mkPriorityAbbrevCmd cfn cpat f cd = unfoldr helper (T.init cfn) ++ [ Cmd { cmdName           = cfn
-                                                                         , cmdPriorityAbbrev = Just cpat
-                                                                         , cmdFullName       = cfn
-                                                                         , cmdAction         = Action f True
-                                                                         , cmdDesc           = cd } ]
+mkPriorityAbbrevCmd :: CmdFullName -> CmdPriorityAbbrevTxt -> ActionFun -> Bool -> CmdDesc -> [Cmd]
+mkPriorityAbbrevCmd cfn cpat f b cd = unfoldr helper (T.init cfn) ++ [ Cmd { cmdName           = cfn
+                                                                           , cmdPriorityAbbrev = Just cpat
+                                                                           , cmdFullName       = cfn
+                                                                           , cmdAction         = Action f b
+                                                                           , cmdDesc           = cd } ]
   where
     helper ""                      = Nothing
     helper abbrev | abbrev == cpat = Just (mkExplicitAbbrevCmd, "")
@@ -233,31 +234,46 @@ mkPriorityAbbrevCmd cfn cpat f cd = unfoldr helper (T.init cfn) ++ [ Cmd { cmdNa
         mkExplicitAbbrevCmd = Cmd { cmdName           = abbrev
                                   , cmdPriorityAbbrev = Nothing
                                   , cmdFullName       = cfn
-                                  , cmdAction         = Action f True
+                                  , cmdAction         = Action f b
                                   , cmdDesc           = "" }
 
 
+-----
+
+
 npcCmds :: [Cmd]
-npcCmds = map (uncurry4 mkRegularCmd)
-    [ (".",      npcAsSelf,      False, "Execute a command as your admin PC.")
-    , ("?",      npcDispCmdList, True,  "Display or search this command list.")
-    , ("bars",   bars,           True,  "Display one or more status bars.")
-    , ("clear",  clear,          True,  "Clear the screen.")
-    , ("d",      go "d",         True,  "Go down.")
-    , ("e",      go "e",         True,  "Go east.")
-    , ("exits",  exits,          True,  "Display obvious exits.")
-    , ("look",   look,           True,  "Display a description of your current room, or examine one or more things in \
-                                        \your current room.")
-    , ("n",      go "n",         True,  "Go north.")
-    , ("ne",     go "ne",        True,  "Go northeast.")
-    , ("nw",     go "nw",        True,  "Go northwest.")
-    , ("s",      go "s",         True,  "Go south.")
-    , ("se",     go "se",        True,  "Go southeast.")
-    , ("stop",   npcStop,        False, "Stop possessing.")
-    , ("sw",     go "sw",        True,  "Go southwest.")
-    , ("u",      go "u",         True,  "Go up.")
-    , ("w",      go "w",         True,  "Go west.")
-    , ("whoami", whoAmI,         True,  "Confirm who " <> parensQuote "or what" <> " you are.") ]
+npcCmds = sort $ npcRegularCmds ++ npcPriorityAbbrevCmds ++ expCmds
+
+
+npcRegularCmds :: [Cmd]
+npcRegularCmds = map (uncurry4 mkRegularCmd)
+    [ (".",          npcAsSelf,      False, "Execute a command as your admin PC.")
+    , ("?",          npcDispCmdList, True,  "Display or search this command list.")
+    , ("bars",       bars,           True,  "Display one or more status bars.")
+    , ("d",          go "d",         True,  "Go down.")
+    , ("e",          go "e",         True,  "Go east.")
+    , ("equipment",  equip,          True,  "Display your readied equipment, or examine one or more items in your \
+                                            \readied equipment.")
+    , ("expressive", expCmdList,     True,  "Display or search a list of available expressive commands and their \
+                                            \results.")
+    , ("n",          go "n",         True,  "Go north.")
+    , ("ne",         go "ne",        True,  "Go northeast.")
+    , ("nw",         go "nw",        True,  "Go northwest.")
+    , ("s",          go "s",         True,  "Go south.")
+    , ("se",         go "se",        True,  "Go southeast.")
+    , ("sw",         go "sw",        True,  "Go southwest.")
+    , ("u",          go "u",         True,  "Go up.")
+    , ("w",          go "w",         True,  "Go west.") ]
+
+
+npcPriorityAbbrevCmds :: [Cmd]
+npcPriorityAbbrevCmds = concatMap (uncurry5 mkPriorityAbbrevCmd)
+    [ ("clear",  "cl", clear,   True,  "Clear the screen.")
+    , ("exits",  "ex", exits,   True,  "Display obvious exits.")
+    , ("look",   "l",  look,    True,  "Display a description of your current room, or examine one or more things in \
+                                       \your current room.")
+    , ("stop",   "st", npcStop, False, "Stop possessing.")
+    , ("whoami", "wh", whoAmI,  True,  "Confirm who " <> parensQuote "or what" <> " you are.") ]
 
 
 -----
