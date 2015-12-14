@@ -639,7 +639,7 @@ mkPros sexy = (mkThrPerPro, mkPossPro, mkReflexPro) & each %~ (sexy |&|)
 mkReflexPro :: Sex -> T.Text
 mkReflexPro Male   = "himself"
 mkReflexPro Female = "herself"
-mkReflexPro s      = patternMatchFail "mkReflexPro" [ showText s ]
+mkReflexPro NoSex  = "itself"
 
 
 -----
@@ -679,7 +679,7 @@ mkSingleTarget mq cols target (sorryIgnoreLocPref -> sorryMsg) =
 mkThrPerPro :: Sex -> T.Text
 mkThrPerPro Male   = "he"
 mkThrPerPro Female = "she"
-mkThrPerPro s      = patternMatchFail "mkThrPerPro" [ showText s ]
+mkThrPerPro NoSex  = "it"
 
 
 -----

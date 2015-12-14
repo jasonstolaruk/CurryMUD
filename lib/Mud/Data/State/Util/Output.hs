@@ -136,8 +136,9 @@ bcastOtherAdmins = bcastAdminsHelper . delete
 
 bcastOthersInRm :: Id -> T.Text -> MudStack ()
 bcastOthersInRm i msg = getState >>= \ms ->
-    unless (isIncognitoId i ms) $ let ((i `delete`) -> ris) = getMobRmInv i ms
-                                  in bcast . pure $ (msg, findMobIds ms ris)
+    let helper = let ((i `delete`) -> ris) = getMobRmInv i ms
+                 in bcast . pure $ (msg, findMobIds ms ris)
+    in isPC i ms ? unless (isIncognito . getPla i $ ms) helper :? helper
 
 
 -----
@@ -146,7 +147,9 @@ bcastOthersInRm i msg = getState >>= \ms ->
 bcastSelfOthers :: Id -> MudState -> [Broadcast] -> [Broadcast] -> MudStack ()
 bcastSelfOthers i ms toSelf toOthers = do
     bcast toSelf
-    unless (isIncognitoId i ms) . bcast $ toOthers
+    isPC i ms ? unless (isIncognito . getPla i $ ms) f :? f
+  where
+    f = bcast toOthers
 
 
 -----
