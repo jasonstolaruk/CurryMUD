@@ -9,7 +9,6 @@ module Mud.Data.State.Util.Output ( bcast
                                   , bcastNl
                                   , bcastOtherAdmins
                                   , bcastOthersInRm
-                                  , bcastSelfOthers
                                   , frame
                                   , massMsg
                                   , massSend
@@ -42,7 +41,6 @@ import Mud.Util.Text
 import Mud.Util.Wrapping
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
-import Control.Arrow (second)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Lens (views)
@@ -64,6 +62,7 @@ patternMatchFail = U.patternMatchFail "Mud.Data.State.Util.Output"
 -- ============================================================
 
 
+-- TODO: "bcast" and related functions should not be used to send a message to the executor of a command.
 bcast :: [Broadcast] -> MudStack ()
 bcast [] = unit
 bcast bs = getState >>= \ms -> liftIO . atomically . forM_ bs . sendBcastSTM $ ms
@@ -101,9 +100,9 @@ bcastAdminsExcept = bcastAdminsHelper . flip (\\)
 
 
 bcastIfNotIncog :: Id -> [Broadcast] -> MudStack ()
-bcastIfNotIncog i bs = getState >>= \ms -> bcast . (bs |&|) $ if isPC i ms
-  then (isIncognito . getPla i $ ms) ? map (second (filter (== i))) :? id
-  else id
+bcastIfNotIncog i bs = getState >>= \ms -> if isPC i ms
+  then unless (isIncognito . getPla i $ ms) . bcast $ bs
+  else unit
 
 
 -----
@@ -139,17 +138,6 @@ bcastOthersInRm i msg = getState >>= \ms ->
     let helper = let ((i `delete`) -> ris) = getMobRmInv i ms
                  in bcast . pure $ (msg, findMobIds ms ris)
     in isPC i ms ? unless (isIncognito . getPla i $ ms) helper :? helper
-
-
------
-
-
-bcastSelfOthers :: Id -> MudState -> [Broadcast] -> [Broadcast] -> MudStack ()
-bcastSelfOthers i ms toSelf toOthers = do
-    bcast toSelf
-    isPC i ms ? unless (isIncognito . getPla i $ ms) f :? f
-  where
-    f = bcast toOthers
 
 
 -----

@@ -716,20 +716,22 @@ getExpCmdByName cn = head . S.toList . S.filter (\(ExpCmd cn' _) -> cn' == cn) $
 
 
 expCmd :: ExpCmdName -> ExpCmdType -> ActionFun
-expCmd ecn HasTarget {} p@NoArgs {}  = advise p [] . sorryExpCmdRequiresTarget $ ecn
-expCmd ecn ect          (NoArgs'' i) = case ect of
+expCmd ecn HasTarget {} p@NoArgs {}        = advise p [] . sorryExpCmdRequiresTarget $ ecn
+expCmd ecn ect          (NoArgs i mq cols) = case ect of
   (NoTarget  toSelf toOthers      ) -> helper toSelf toOthers
   (Versatile toSelf toOthers _ _ _) -> helper toSelf toOthers
   _                                 -> patternMatchFail "expCmd" [ ecn, showText ect ]
   where
     helper toSelf toOthers = getState >>= \ms ->
-        let toSelfBcast                 = mkBcast i . nlnl $ toSelf
-            d                           = mkStdDesig i ms DoCap
+        let d                           = mkStdDesig i ms DoCap
             serialized                  = mkSerializedDesig d toOthers
             (heShe, hisHer, himHerself) = mkPros . getSex i $ ms
             substitutions               = [ ("%", serialized), ("^", heShe), ("&", hisHer), ("*", himHerself) ]
             toOthersBcast               = pure (nlnl . replace substitutions $ toOthers, i `delete` desigIds d)
-        in bcastSelfOthers i ms toSelfBcast toOthersBcast >> (logPlaOut ecn i . pure $ toSelf)
+        in do
+            wrapSend mq cols toSelf
+            bcastIfNotIncog i toOthersBcast
+            logPlaOut ecn i . pure $ toSelf
 expCmd ecn NoTarget {} p@(WithArgs     _ _  _    (_:_) ) = advise p [] . sorryExpCmdIllegalTarget $ ecn
 expCmd ecn ect           (OneArgNubbed i mq cols target) = case ect of
   (HasTarget     toSelf toTarget toOthers) -> helper toSelf toTarget toOthers
@@ -747,23 +749,17 @@ expCmd ecn ect           (OneArgNubbed i mq cols target) = case ect of
               ([ Left sorryMsg    ], _                   ) -> wrapSend mq cols sorryMsg
               ([ Right (_:_:_)    ], _                   ) -> wrapSend mq cols adviceExpCmdExcessArgs
               ([ Right [targetId] ], _                   ) ->
-                let pcTarget targetDesigTxt =
-                        let (toSelf', toSelfBcast, toOthers', substitutions) = mkBindings targetDesigTxt
+                let ioHelper targetDesigTxt =
+                        let (toSelf', toOthers', substitutions) = mkBindings targetDesigTxt
                             toOthersBcast = (nlnl toOthers', desigIds d \\ [ i, targetId ])
                             toTarget'     = replace substitutions toTarget
                             toTargetBcast = (nlnl toTarget', pure targetId)
                         in do
-                            bcastSelfOthers i ms toSelfBcast [ toTargetBcast, toOthersBcast ]
-                            logPlaOut ecn i . pure . parseDesig i ms $ toSelf'
-                    npcTarget targetNoun =
-                        let (toSelf', toSelfBcast, toOthers', _) = mkBindings targetNoun
-                            toOthersBcast                        = pure (nlnl toOthers', i `delete` desigIds d)
-                        in do
-                            bcastSelfOthers i ms toSelfBcast toOthersBcast
+                            wrapSend mq cols toSelf'
+                            bcastIfNotIncog i [ toTargetBcast, toOthersBcast ]
                             logPlaOut ecn i . pure $ toSelf'
                     mkBindings targetTxt =
-                        let toSelf'                     = replace (pure ("@", targetTxt)) toSelf
-                            toSelfBcast                 = mkBcast i . nlnl $ toSelf'
+                        let toSelf'                     = parseDesig i ms . replace (pure ("@", targetTxt)) $ toSelf
                             serialized                  = mkSerializedDesig d toOthers
                             (heShe, hisHer, himHerself) = mkPros . getSex i $ ms
                             toOthers'                   = replace substitutions toOthers
@@ -772,11 +768,10 @@ expCmd ecn ect           (OneArgNubbed i mq cols target) = case ect of
                                                           , ("^", heShe)
                                                           , ("&", hisHer)
                                                           , ("*", himHerself) ]
-                        in (toSelf', toSelfBcast, toOthers', substitutions)
-                in case getType targetId ms of
-                  PCType  -> pcTarget  . serialize . mkStdDesig targetId ms $ Don'tCap
-                  NpcType -> npcTarget . theOnLower . getSing targetId $ ms
-                  _       -> wrapSend mq cols sorryExpCmdTargetType
+                        in (toSelf', toOthers', substitutions)
+                in if getType targetId ms `elem` [ PCType, NpcType ]
+                  then ioHelper . serialize . mkStdDesig targetId ms $ Don'tCap
+                  else wrapSend mq cols sorryExpCmdTargetType
               x -> patternMatchFail "expCmd helper" [ showText x ]
             else wrapSend mq cols sorryNoOneHere
       (x, _) -> wrapSend mq cols . sorryExpCmdInInvEq $ x
