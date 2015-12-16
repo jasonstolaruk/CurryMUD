@@ -436,7 +436,8 @@ happy ms xformed = let (toSelf, toTargets, toOthers) = unzip3 . rights $ xformed
                        consWord xs = const . patternMatchFail "happy consWord" $ [ showText xs ]
                        selectiveCons p targetId isPoss word = IM.mapWithKey helper
                          where
-                           helper k v = let targetSing = getSing k ms |&| (isPoss ? (<> "'s") :? id)
+                           -- TODO: Why aren't mob names colored?
+                           helper k v = let targetSing = idOnFalse (getSing k ms) isPoss (<> "'s")
                                         in (: v) $ if k == targetId
                                           then colorWith emoteTargetColor targetSing <> p
                                           else word

@@ -15,6 +15,7 @@ module Mud.Util.Misc ( atLst1
                      , fromEither
                      , fromLeft
                      , fromRight
+                     , idOnFalse
                      , idOnTrue
                      , ifThenElse
                      , ind
@@ -125,8 +126,18 @@ fromRight (Right x) = x
 fromRight x         = blowUp "Mud.Util.Misc" "fromRight" "Left" [ T.pack . show $ x ]
 
 
+-- TODO: Use this.
+idOnFalse :: a -> Bool -> (a -> a) -> a
+idOnFalse = idOnHelper not
+
+
+idOnHelper :: (Bool -> Bool) -> a -> Bool -> (a -> a) -> a
+idOnHelper g a b f = a |&| (g b ? id :? f)
+
+
+-- TODO: Use this.
 idOnTrue :: a -> Bool -> (a -> a) -> a
-idOnTrue a b f = a |&| (b ? id :? f)
+idOnTrue = idOnHelper id
 
 
 ifThenElse :: Bool -> a -> a -> a

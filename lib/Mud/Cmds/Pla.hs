@@ -717,18 +717,18 @@ emote :: ActionFun
 emote p@AdviseNoArgs                                                     = advise p ["emote"] adviceEmoteNoArgs
 emote p@ActionParams { args } | any (`elem` yous) . map T.toLower $ args = advise p ["emote"] adviceYouEmote
 emote (WithArgs i mq cols as) = getState >>= \ms ->
-    let d@(sDesigEntSing -> Just s) = mkStdDesig i ms DoCap
-        ser                         = serialize d
-        d'                          = d { shouldCap = Don'tCap }
-        ser'                        = serialize d'
-        xformed                     = xformArgs True as
-        xformArgs _      []         = []
-        xformArgs isHead [x]
-          | (h, t) <- headTail x
-          , h == emoteNameChar
-          , all isPunc . T.unpack $ t
-          = pure . mkRightForNonTargets $ expandEnc isHead & each <>~ t
-        xformArgs isHead (x:xs)    = (: xformArgs False xs) $ if
+    let d                    = mkStdDesig i ms DoCap
+        s                    = idOnTrue (fromJust . sDesigEntSing $ d) (isPC i ms) theOnLower
+        ser                  = serialize d
+        d'                   = d { shouldCap = Don'tCap }
+        ser'                 = serialize d'
+        xformed              = xformArgs True as
+        xformArgs _      []  = []
+        xformArgs isHead [x] | (h, t) <- headTail x
+                             , h == emoteNameChar
+                             , all isPunc . T.unpack $ t
+                             = pure . mkRightForNonTargets $ expandEnc isHead & each <>~ t
+        xformArgs isHead (x:xs) = (: xformArgs False xs) $ if
           | x == enc               -> mkRightForNonTargets . expandEnc $ isHead
           | x == enc's             -> mkRightForNonTargets $ expandEnc isHead & each <>~ "'s"
           | enc `T.isInfixOf` x    -> Left . adviceEnc $ "emote "
@@ -740,11 +740,11 @@ emote (WithArgs i mq cols as) = getState >>= \ms ->
                                                                      & _2 %~ (ser <>)
                                                                      & _3 %~ (ser <>)
           | otherwise              -> mkRightForNonTargets . dup3 $ x
-        expandEnc isHead = (isHead ? (ser, ser) :? (ser', ser')) |&| uncurry (s, , )
+        expandEnc isHead = (isHead ? (ser, ser) :? (ser', ser')) |&| uncurry (idOnFalse s isHead capitalize, , )
     in case lefts xformed of
       [] -> let (toSelf, toOthers, targetIds, toTargetBs) = happy ms xformed
             in do
-                wrapSend mq cols toSelf
+                wrapSend mq cols . parseDesig i ms $ toSelf
                 bcastNl $ (toOthers, desigIds d \\ (i : targetIds)) : toTargetBs
       advices -> multiWrapSend mq cols . nub $ advices
   where
@@ -1129,8 +1129,8 @@ intro (LowerNub i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
                               & _4 %~  (targetId :)
           _      -> let b = head . mkNTB . sorryIntroType $ targetSing
                     in a' & _2 %~ (`appendIfUnique` b)
-    helperIntroEitherCoins a (Left  msgs) = a & _1 <>~ (mkNTBcast i . T.concat $ [ nlnl msg | msg <- msgs ])
-    helperIntroEitherCoins a (Right {}  ) =
+    helperIntroEitherCoins a (Left msgs) = a & _1 <>~ (mkNTBcast i . T.concat $ [ nlnl msg | msg <- msgs ])
+    helperIntroEitherCoins a Right {}    =
         let cb = head . mkNTB $ sorryIntroCoin
         in first (`appendIfUnique` cb) a
     fromClassifiedBcast (TargetBcast    b) = b
@@ -1319,8 +1319,8 @@ link (LowerNub i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
                 in a' & _2 %~ (`appendIfUnique` b)
           where
             act = rndmDo (calcProbLinkFlinch targetId ms) . mkExpAction "flinch" . mkActionParams targetId ms $ []
-    helperLinkEitherCoins a (Left  msgs) = a & _1 <>~ (mkBcast i . T.concat $ [ nlnl msg | msg <- msgs ])
-    helperLinkEitherCoins a (Right {}  ) = let b = (nlnl sorryLinkCoin, pure i) in first (`appendIfUnique` b) a
+    helperLinkEitherCoins a (Left msgs) = a & _1 <>~ (mkBcast i . T.concat $ [ nlnl msg | msg <- msgs ])
+    helperLinkEitherCoins a Right {}    = let b = (nlnl sorryLinkCoin, pure i) in first (`appendIfUnique` b) a
 link p = patternMatchFail "link" [ showText p ]
 
 
@@ -1425,7 +1425,7 @@ isKnownPCSing s = case T.words s of [ "male",   _ ] -> False
 extractMobIdsFromEiss :: MudState -> [Either T.Text Inv] -> [Id]
 extractMobIdsFromEiss ms = foldl' helper []
   where
-    helper acc (Left  {}) = acc
+    helper acc Left   {}  = acc
     helper acc (Right is) = acc ++ findMobIds ms is
 
 
