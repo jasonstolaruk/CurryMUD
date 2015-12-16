@@ -15,6 +15,7 @@ module Mud.Util.Misc ( atLst1
                      , fromEither
                      , fromLeft
                      , fromRight
+                     , idOnTrue
                      , ifThenElse
                      , ind
                      , isVowel
@@ -36,6 +37,7 @@ module Mud.Util.Misc ( atLst1
                      , uncurry5
                      , unit ) where
 
+import Mud.Util.Operators
 import Mud.Util.Quoting
 
 import Control.Lens (_1, _2, lens, Lens')
@@ -121,6 +123,10 @@ fromLeft x        = blowUp "Mud.Util.Misc" "fromLeft" "Right" [ T.pack . show $ 
 fromRight :: (Show a, Show b) => Either a b -> b
 fromRight (Right x) = x
 fromRight x         = blowUp "Mud.Util.Misc" "fromRight" "Left" [ T.pack . show $ x ]
+
+
+idOnTrue :: a -> Bool -> (a -> a) -> a
+idOnTrue a b f = a |&| (b ? id :? f)
 
 
 ifThenElse :: Bool -> a -> a -> a

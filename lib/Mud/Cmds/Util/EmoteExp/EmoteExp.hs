@@ -48,9 +48,7 @@ targetify :: Id -> ChanContext -> [(Id, T.Text, T.Text)] -> T.Text -> Either T.T
 targetify i cc triples msg@(T.words -> ws@(headTail . head -> (c, rest)))
   | isBracketed ws               = Left sorryBracketedMsg
   | isHeDon't chanTargetChar msg = Left sorryWtf
-  | c == chanTargetChar          = fmap Right . procChanTarget i cc triples . (tail ws |&|) $ if ()# rest
-    then id
-    else (rest :)
+  | c == chanTargetChar          = fmap Right . procChanTarget i cc triples . parseOutDenotative ws $ rest
   | otherwise = Right . Left $ ()
 
 
@@ -77,9 +75,7 @@ procChanTarget _ _ _ as = patternMatchFail "procChanTarget" as
 emotify :: Id -> MudState -> ChanContext -> [(Id, T.Text, T.Text)] -> T.Text -> Either [T.Text] (Either () [Broadcast])
 emotify i ms cc triples msg@(T.words -> ws@(headTail . head -> (c, rest)))
   | isHeDon't emoteChar msg = Left . pure $ sorryWtf
-  | c == emoteChar          = fmap Right . procEmote i ms cc triples . (tail ws |&|) $ if ()# rest
-    then id
-    else (rest :)
+  | c == emoteChar          = fmap Right . procEmote i ms cc triples . parseOutDenotative ws $ rest
   | otherwise = Right . Left $ ()
 
 
@@ -135,9 +131,7 @@ procEmote i ms cc triples as             =
 expCmdify :: Id -> MudState -> ChanContext -> [(Id, T.Text, T.Text)] -> T.Text -> Either T.Text ([Broadcast], T.Text)
 expCmdify i ms cc triples msg@(T.words -> ws@(headTail . head -> (c, rest)))
   | isHeDon't expCmdChar msg = Left sorryWtf
-  | c == expCmdChar          = fmap format . procExpCmd i ms cc triples . (tail ws |&|) $ if ()# rest
-    then id
-    else (rest :)
+  | c == expCmdChar          = fmap format . procExpCmd i ms cc triples . parseOutDenotative ws $ rest
   | otherwise = Right (pure (msg, i : map (view _1) triples), msg)
   where
     format xs = xs & _1 %~ map (_1 %~ angleBracketQuote)
@@ -200,9 +194,8 @@ adminChanTargetify :: Inv -> [Sing] -> T.Text -> Either T.Text (Either () [Broad
 adminChanTargetify tunedIds tunedSings msg@(T.words -> ws@(headTail . head -> (c, rest)))
   | isBracketed ws               = Left sorryBracketedMsg
   | isHeDon't chanTargetChar msg = Left sorryWtf
-  | c == chanTargetChar          = fmap Right . adminChanProcChanTarget tunedIds tunedSings . (tail ws |&|) $ if ()# rest
-    then id
-    else (rest :)
+  | c == chanTargetChar          =
+      fmap Right . adminChanProcChanTarget tunedIds tunedSings . parseOutDenotative ws $ rest
   | otherwise = Right . Left $ ()
 
 
@@ -226,9 +219,8 @@ adminChanProcChanTarget _ _ as = patternMatchFail "adminChanProcChanTarget" as
 adminChanEmotify :: Id -> MudState -> Inv -> [Sing] -> T.Text -> Either [T.Text] (Either () [Broadcast])
 adminChanEmotify i ms tunedIds tunedSings msg@(T.words -> ws@(headTail . head -> (c, rest)))
   | isHeDon't emoteChar msg = Left . pure $ sorryWtf
-  | c == emoteChar          = fmap Right . adminChanProcEmote i ms tunedIds tunedSings . (tail ws |&|) $ if ()# rest
-    then id
-    else (rest :)
+  | c == emoteChar          =
+      fmap Right . adminChanProcEmote i ms tunedIds tunedSings . parseOutDenotative ws $ rest
   | otherwise = Right . Left $ ()
 
 
@@ -283,9 +275,8 @@ adminChanProcEmote i ms tunedIds tunedSings as =
 adminChanExpCmdify :: Id -> MudState -> Inv -> [Sing] -> T.Text -> Either T.Text ([Broadcast], T.Text)
 adminChanExpCmdify i ms tunedIds tunedSings msg@(T.words -> ws@(headTail . head -> (c, rest)))
   | isHeDon't expCmdChar msg = Left sorryWtf
-  | c == expCmdChar          = fmap format . adminChanProcExpCmd i ms tunedIds tunedSings . (tail ws |&|) $ if ()# rest
-    then id
-    else (rest :)
+  | c == expCmdChar          =
+      fmap format . adminChanProcExpCmd i ms tunedIds tunedSings . parseOutDenotative ws $ rest
   | otherwise = Right (pure (msg, tunedIds), msg)
   where
     format xs = xs & _1 %~ map (_1 %~ angleBracketQuote)

@@ -100,9 +100,7 @@ bcastAdminsExcept = bcastAdminsHelper . flip (\\)
 
 
 bcastIfNotIncog :: Id -> [Broadcast] -> MudStack ()
-bcastIfNotIncog i bs = getState >>= \ms -> if isPC i ms
-  then unless (isIncognito . getPla i $ ms) . bcast $ bs
-  else unit
+bcastIfNotIncog i bs = getState >>= \ms -> idOnTrue (bcast bs) (isNpc i ms) . unless $ (isIncognito . getPla i $ ms)
 
 
 -----

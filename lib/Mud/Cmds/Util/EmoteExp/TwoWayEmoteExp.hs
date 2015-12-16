@@ -37,9 +37,7 @@ emotifyTwoWay :: T.Text -> Id -> MudState -> Id -> T.Text -> Either [T.Text] (Ei
 emotifyTwoWay cn i ms targetId msg@(T.words -> ws@(headTail . head -> (c, rest)))
   | isBracketed ws          = Left . pure $ sorryBracketedMsg
   | isHeDon't emoteChar msg = Left . pure $ sorryWtf
-  | c == emoteChar = fmap Right . procTwoWayEmote cn i ms targetId . (tail ws |&|) $ if ()# rest
-    then id
-    else (rest :)
+  | c == emoteChar = fmap Right . procTwoWayEmote cn i ms targetId . parseOutDenotative ws $ rest
   | otherwise = Right . Left $ ()
 
 
@@ -75,9 +73,7 @@ procTwoWayEmote cn i ms targetId as =
 expCmdifyTwoWay :: Id -> MudState -> Id -> Sing -> T.Text -> Either T.Text [Broadcast]
 expCmdifyTwoWay i ms targetId targetSing msg@(T.words -> ws@(headTail . head -> (c, rest)))
   | isHeDon't expCmdChar msg = Left sorryWtf
-  | c == expCmdChar = procExpCmdTwoWay i ms targetId targetSing . (tail ws |&|) $ if ()# rest
-    then id
-    else (rest :)
+  | c == expCmdChar = procExpCmdTwoWay i ms targetId targetSing . parseOutDenotative ws $ rest
   | otherwise = Right [ (msg, pure i), (msg, pure targetId) ]
 
 

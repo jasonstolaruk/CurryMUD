@@ -53,6 +53,7 @@ module Mud.Cmds.Util.Misc ( asterisk
                           , mkThrPerPro
                           , mkWhoHeader
                           , pager
+                          , parseOutDenotative
                           , punc
                           , questionChanContext
                           , sendGenericErrorMsg
@@ -702,6 +703,13 @@ pager i mq txt@(length -> txtLen) = getState >>= \ms -> let pl = getPageLines i 
       send mq . T.unlines $ page
       sendPagerPrompt mq (pl - 2) txtLen
       setInterp i . Just $ interpPager pl txtLen (page, rest)
+
+
+-----
+
+
+parseOutDenotative :: [T.Text] -> T.Text -> [T.Text]
+parseOutDenotative ws rest = idOnTrue (tail ws) (()# rest) (rest :)
 
 
 -----

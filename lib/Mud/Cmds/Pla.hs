@@ -269,6 +269,7 @@ npcRegularCmds = map (uncurry4 mkRegularCmd)
 npcPriorityAbbrevCmds :: [Cmd]
 npcPriorityAbbrevCmds = concatMap (uncurry5 mkPriorityAbbrevCmd)
     [ ("clear",  "cl", clear,   True,  "Clear the screen.")
+    , ("emote",  "em", emote,   True,  "Freely describe an action.")
     , ("exits",  "ex", exits,   True,  "Display obvious exits.")
     , ("look",   "l",  look,    True,  "Display a description of your current room, or examine one or more things in \
                                        \your current room.")
@@ -742,7 +743,9 @@ emote (WithArgs i mq cols as) = getState >>= \ms ->
         expandEnc isHead = (isHead ? (ser, ser) :? (ser', ser')) |&| uncurry (s, , )
     in case lefts xformed of
       [] -> let (toSelf, toOthers, targetIds, toTargetBs) = happy ms xformed
-            in bcastNl $ (toSelf, pure i) : (toOthers, desigIds d \\ (i : targetIds)) : toTargetBs
+            in do
+                wrapSend mq cols toSelf
+                bcastNl $ (toOthers, desigIds d \\ (i : targetIds)) : toTargetBs
       advices -> multiWrapSend mq cols . nub $ advices
   where
     procTarget ms word =
