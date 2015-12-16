@@ -718,7 +718,7 @@ emote p@AdviseNoArgs                                                     = advis
 emote p@ActionParams { args } | any (`elem` yous) . map T.toLower $ args = advise p ["emote"] adviceYouEmote
 emote (WithArgs i mq cols as) = getState >>= \ms ->
     let d                    = mkStdDesig i ms DoCap
-        s                    = idOnTrue (fromJust . sDesigEntSing $ d) (isPC i ms) theOnLower
+        s                    = onFalse (fromJust . sDesigEntSing $ d) (isPC i ms) theOnLower
         ser                  = serialize d
         d'                   = d { shouldCap = Don'tCap }
         ser'                 = serialize d'
@@ -740,7 +740,7 @@ emote (WithArgs i mq cols as) = getState >>= \ms ->
                                                                      & _2 %~ (ser <>)
                                                                      & _3 %~ (ser <>)
           | otherwise              -> mkRightForNonTargets . dup3 $ x
-        expandEnc isHead = (isHead ? (ser, ser) :? (ser', ser')) |&| uncurry (idOnFalse s isHead capitalize, , )
+        expandEnc isHead = (isHead ? (ser, ser) :? (ser', ser')) |&| uncurry (onTrue s isHead capitalize, , )
     in case lefts xformed of
       [] -> let (toSelf, toOthers, targetIds, toTargetBs) = happy ms xformed
             in do

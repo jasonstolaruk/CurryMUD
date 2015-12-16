@@ -15,8 +15,6 @@ module Mud.Util.Misc ( atLst1
                      , fromEither
                      , fromLeft
                      , fromRight
-                     , idOnFalse
-                     , idOnTrue
                      , ifThenElse
                      , ind
                      , isVowel
@@ -28,7 +26,9 @@ module Mud.Util.Misc ( atLst1
                      , mkTimestamp
                      , mUnless
                      , mWhen
+                     , onFalse
                      , onLeft
+                     , onTrue
                      , patternMatchFail
                      , reverseLookup
                      , sortEithers
@@ -127,17 +127,17 @@ fromRight x         = blowUp "Mud.Util.Misc" "fromRight" "Left" [ T.pack . show 
 
 
 -- TODO: Use this.
-idOnFalse :: a -> Bool -> (a -> a) -> a
-idOnFalse = idOnHelper not
+onFalse :: a -> Bool -> (a -> a) -> a
+onFalse = onHelper id
 
 
-idOnHelper :: (Bool -> Bool) -> a -> Bool -> (a -> a) -> a
-idOnHelper g a b f = a |&| (g b ? id :? f)
+onHelper :: (Bool -> Bool) -> a -> Bool -> (a -> a) -> a
+onHelper g a b f = a |&| (g b ? id :? f)
 
 
 -- TODO: Use this.
-idOnTrue :: a -> Bool -> (a -> a) -> a
-idOnTrue = idOnHelper id
+onTrue :: a -> Bool -> (a -> a) -> a
+onTrue = onHelper not
 
 
 ifThenElse :: Bool -> a -> a -> a
