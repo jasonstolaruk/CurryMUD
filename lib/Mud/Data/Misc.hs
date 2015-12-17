@@ -561,7 +561,7 @@ data IdSingTypeDesig = IdSingTypeDesig { theId    :: Id
 -----
 
 
-data InInvEqRm = InInv | InEq | InRm deriving (Show)
+data InInvEqRm = InInv | InEq | InRm deriving Show
 
 
 -----
@@ -613,13 +613,13 @@ data RightOrLeft = R
 -----
 
 
-data ShouldQuote = DoQuote | Don'tQuote
+data ShouldQuote = DoQuote | Don'tQuote deriving Eq
 
 
 -----
 
 
-data ShouldLog = DoLog | Don'tLog deriving (Show)
+data ShouldLog = DoLog | Don'tLog deriving Show
 
 
 -----

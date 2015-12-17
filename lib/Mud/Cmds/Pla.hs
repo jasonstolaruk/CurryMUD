@@ -346,7 +346,7 @@ adminList (NoArgs i mq cols) = (multiWrapSend mq cols =<< helper =<< getState) >
             mkSuffix ai = let { ap = getPla ai ms; isIncog = isIncognito ap } in if isAdmin p && isIncog
               then (inOut . isLoggedIn $ ap) <> " " <> parensQuote "incognito"
               else inOut (isLoggedIn ap && not isIncog)
-            singSuffixes' = singSuffixes |&| (isAdmin p ? id :? filter f)
+            singSuffixes' = onFalse (isAdmin p) (filter f) singSuffixes 
               where
                 f (a, b) | a == "Root" = b == " logged in"
                          | otherwise   = otherwise
@@ -565,7 +565,6 @@ connectHelper :: Id -> (T.Text, Args) -> MudState -> (MudState, ([Either T.Text 
 connectHelper i (target, as) ms =
     let (f, guessWhat) | any hasLocPref as = (stripLocPref, sorryConnectIgnore)
                        | otherwise         = (id,           ""                )
-        g           = ()# guessWhat ? id :? (Left guessWhat :)
         as'         = map (capitalize . T.toLower . f) as
         notFound    = sorry . sorryChanName $ target
         found match = let (cn, c) = getMatchingChanWithName match cns cs in if views chanConnTbl (M.! s) c
@@ -594,7 +593,7 @@ connectHelper i (target, as) ms =
                                               , targetCns <- map (views chanName T.toLower) targetCs
                                               = T.toLower cn `elem` targetCns
                    (ms'', res)                = foldl' procTarget (ms, []) as'
-               in (ms'', (g res, Just ci))
+               in (ms'', (onTrue (()!# guessWhat) (Left guessWhat :) res, Just ci))
           else sorry . sorryTunedOutICChan $ cn
         (cs, cns, s) = mkChanBindings i ms
         sorry msg    = (ms, (pure . Left $ msg, Nothing))
@@ -657,7 +656,6 @@ disconnectHelper :: Id
 disconnectHelper i (target, as) idNamesTbl ms =
     let (f, guessWhat) | any hasLocPref as = (stripLocPref, sorryDisconnectIgnore)
                        | otherwise         = (id,           ""                   )
-        g           = ()# guessWhat ? id :? (Left guessWhat :)
         as'         = map (T.toLower . f) as
         notFound    = sorry . sorryChanName $ target
         found match = let (cn, c) = getMatchingChanWithName match cns cs in if views chanConnTbl (M.! s) c
@@ -675,11 +673,10 @@ disconnectHelper i (target, as) idNamesTbl ms =
                                          , b )
                      xs -> patternMatchFail "disconnectHelper found" [ showText xs ]
                      where
-                       hint | b         = id
-                            | otherwise = (<> hintDisconnect) . (<> " ")
+                       hint = onFalse b ((<> hintDisconnect) . (<> " "))
                    ci               = c^.chanId
                    ((ms'', res), _) = foldl' procTarget ((ms, []), False) as'
-               in (ms'', (g res, Just ci))
+               in (ms'', (onTrue (()!# guessWhat) (Left guessWhat :) res, Just ci))
           else sorry . sorryTunedOutICChan $ cn
         (cs, cns, s) = mkChanBindings i ms
         sorry msg    = (ms, (pure . Left $ msg, Nothing))
@@ -718,7 +715,7 @@ emote p@AdviseNoArgs                                                     = advis
 emote p@ActionParams { args } | any (`elem` yous) . map T.toLower $ args = advise p ["emote"] adviceYouEmote
 emote (WithArgs i mq cols as) = getState >>= \ms ->
     let d                    = mkStdDesig i ms DoCap
-        s                    = onFalse (fromJust . sDesigEntSing $ d) (isPC i ms) theOnLower
+        s                    = onTrue (isNpc i ms) theOnLower . fromJust . sDesigEntSing $ d
         ser                  = serialize d
         d'                   = d { shouldCap = Don'tCap }
         ser'                 = serialize d'
@@ -740,7 +737,7 @@ emote (WithArgs i mq cols as) = getState >>= \ms ->
                                                                      & _2 %~ (ser <>)
                                                                      & _3 %~ (ser <>)
           | otherwise              -> mkRightForNonTargets . dup3 $ x
-        expandEnc isHead = (isHead ? (ser, ser) :? (ser', ser')) |&| uncurry (onTrue s isHead capitalize, , )
+        expandEnc isHead = (isHead ? (ser, ser) :? (ser', ser')) |&| uncurry (onTrue isHead capitalize s, , )
     in case lefts xformed of
       [] -> let (toSelf, toOthers, targetIds, toTargetBs) = happy ms xformed
             in do
@@ -775,7 +772,7 @@ emote (WithArgs i mq cols as) = getState >>= \ms ->
                         _       -> Left . sorryEmoteTargetType $ targetSing
                   x -> patternMatchFail "emote procTarget" [ showText x ]
               else Left sorryNoOneHere
-    addSuffix   isPoss p = (<> p) . (isPoss ? (<> "'s") :? id)
+    addSuffix   isPoss p = (<> p) . onTrue isPoss (<> "'s")
     mkEmoteWord isPoss   = isPoss ? ForTargetPoss :? ForTarget
     sorry t              = Left . quoteWith' (t, sorryEmoteTargetRmOnly) $ " "
 emote p = patternMatchFail "emote" [ showText p ]
@@ -1236,8 +1233,7 @@ link (NoArgs i mq cols) = do
             oneWayFromMeMsgs = [ "One-way links from your mind:", mkSingsList False oneWaysFromMe ]
             oneWayToMeMsgs   = [ "One-way links to your mind:",   mkSingsList False oneWaysToMe   ]
             mkSingsList doStyle ss = let (awakes, asleeps) = sortAwakesAsleeps ss
-                                         f                 = doStyle ? styleAbbrevs Don'tQuote :? id
-                                     in commas $ f awakes ++ asleeps
+                                     in commas $ onTrue doStyle (styleAbbrevs Don'tQuote) awakes ++ asleeps
             sortAwakesAsleeps      = foldr sorter ([], [])
             sorter linkSing acc    =
                 let linkId   = head . filter ((== linkSing) . flip getSing ms) $ ms^.pcTbl.to IM.keys
@@ -1375,7 +1371,7 @@ look (LowerNub i mq cols as) = helper |&| modifyState >=> \(msg, bs, maybeTarget
                    ms' = ms & plaTbl .~ pt
                in (ms', (msg, foldr mkBsForTarget [] targetDesigs, targetDesigs |!| Just targetDesigs))
           else let msg        = wrapUnlinesNl cols sorryLookNothingHere
-                   (pt, msg') = f (ms^.plaTbl, msg)
+                   (pt, msg') = onTrue (isPC i ms) (firstLook i cols) (ms^.plaTbl, msg)
                    ms'        = ms & plaTbl .~ pt
                in (ms', (msg', [], Nothing))
     helperLookEitherInv _  acc (Left  msg ) = acc <> wrapUnlinesNl cols msg
@@ -2173,7 +2169,7 @@ setAction p = patternMatchFail "setAction" [ showText p ]
 
 mkSettingPairs :: Id -> MudState -> [(T.Text, T.Text)]
 mkSettingPairs i ms = let p = getPla i ms
-                      in pairs p |&| (isAdmin p ? (adminPair p :) :? id)
+                      in onTrue (isAdmin p) (adminPair p :) . pairs $ p
   where
     pairs p   = [ ("columns",  showText . getColumns   i  $ ms)
                 , ("lines",    showText . getPageLines i  $ ms)
@@ -2609,7 +2605,6 @@ unlink p@AdviseNoArgs          = advise p ["unlink"] adviceUnlinkNoArgs
 unlink (LowerNub i mq cols as) =
     let (f, guessWhat) | any hasLocPref as = (stripLocPref, sorryUnlinkIgnore)
                        | otherwise         = (id,           ""               )
-        g        = ()# guessWhat ? id :? ((guessWhat, pure i) :)
         as'      = map (capitalize . T.toLower . f) as
     in do
         tingleLoc <- rndmElem [ "behind your eyes"
@@ -2643,7 +2638,9 @@ unlink (LowerNub i mq cols as) =
                       = a & _1 .~  ms''
                           & _2 <>~ (nlnl srcMsg, pure i) : targetBs
                           & _3 <>~ pure targetSing
-            in helper |&| modifyState >=> \(bs, logMsgs) -> bcast (g bs) >> logMsgs |#| logPla "unlink" i . slashes
+            in helper |&| modifyState >=> \(bs, logMsgs) -> do
+                bcast . onTrue (()!# guessWhat) ((guessWhat, pure i) :) $ bs
+                logMsgs |#| logPla "unlink" i . slashes
 unlink p = patternMatchFail "unlink" [ showText p ]
 
 

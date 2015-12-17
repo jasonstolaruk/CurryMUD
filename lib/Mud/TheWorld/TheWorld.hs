@@ -143,7 +143,7 @@ loadTbl tblFile lens path = let absolute = path </> tblFile in
 movePCs :: MudStack ()
 movePCs = tweak $ \ms ->
     let idsWithRmIds       = let pairs   = views mobTbl (IM.foldrWithKey f []) ms
-                                 f i mob = isPC i ms ? ((i, mob^.rmId) :) :? id
+                                 f i mob = onTrue (isPC i ms) ((i, mob^.rmId) :)
                              in filter ((/= iLoggedOut) . snd) pairs
         helper (i, ri) ms' = ms' & invTbl.ind ri         %~ (i `delete`)
                                  & invTbl.ind iLoggedOut %~ (i :)

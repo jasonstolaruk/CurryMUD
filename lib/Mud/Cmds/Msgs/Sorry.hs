@@ -170,6 +170,7 @@ import Mud.Data.State.Util.Misc
 import Mud.Misc.ANSI
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
+import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Quoting
 import Mud.Util.Text
 import qualified Mud.Util.Misc as U (patternMatchFail)
@@ -445,7 +446,7 @@ sorryExpCmdInInvEq loc = can'tTarget $ "an item in your " <> loc' <> " with an e
   where
     loc' = case loc of InEq  -> "readied equipment"
                        InInv -> "inventory"
-                       _     -> patternMatchFail "sorryExpCmdInEqInv loc'" [ showText loc ]
+                       _     -> patternMatchFail "sorryExpCmdInInvEq loc'" [ showText loc ]
 
 
 sorryExpCmdLen :: T.Text
@@ -1045,13 +1046,10 @@ sorryTunedOutICChan = sorryTunedOutChan "tune" DoQuote
 
 sorryTunedOutChan :: CmdName -> ShouldQuote -> T.Text -> T.Text
 sorryTunedOutChan x sq y = T.concat [ "You have tuned out the "
-                                    , f y
+                                    , onTrue (sq == DoQuote) dblQuote y
                                     , " channel. Type "
                                     , colorWith quoteColor . T.concat $ [ x, " ", y, "=in" ]
                                     , " to tune it back in." ]
-  where
-    f = case sq of DoQuote    -> dblQuote
-                   Don'tQuote -> id
 
 
 sorryTunedOutOOCChan :: T.Text -> T.Text

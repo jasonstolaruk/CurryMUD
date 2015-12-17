@@ -100,7 +100,7 @@ bcastAdminsExcept = bcastAdminsHelper . flip (\\)
 
 
 bcastIfNotIncog :: Id -> [Broadcast] -> MudStack ()
-bcastIfNotIncog i bs = getState >>= \ms -> onFalse (bcast bs) (isNpc i ms) . unless $ (isIncognito . getPla i $ ms)
+bcastIfNotIncog i bs = getState >>= \ms -> onTrue (isPC i ms) (unless (isIncognito . getPla i $ ms)) . bcast $ bs
 
 
 -----
@@ -215,10 +215,10 @@ parseDesig i ms = loop (getIntroduced i ms)
 expandEntName :: Id -> MudState -> ShouldCap -> T.Text -> Id -> Inv -> T.Text
 expandEntName i ms (mkCapsFun -> f) en@(headTail -> (h, t)) idToExpand ((i `delete`) -> idsInRm)
   | isPC idToExpand ms         = T.concat [ f "the ", xth, expandSex h, " ", t ]
-  | s <- getSing idToExpand ms = s |&| (isCapital s ? id :? f . ("the " <>))
+  | s <- getSing idToExpand ms = onFalse (isCapital s) (f . ("the " <>)) s
   where
     -- TODO: The below lambda doesn't take into account the fact that some of the "idsInRm" may be known by "i".
-    xth = let matches = foldr (\pi acc -> mkUnknownPCEntName pi ms == en ? pi : acc :? acc) [] idsInRm
+    xth = let matches = foldr (\pi acc -> onTrue (mkUnknownPCEntName pi ms == en) (pi :) acc) [] idsInRm
           in length matches > 1 |?| (<> " ") . mkOrdinal . succ . fromJust . elemIndex idToExpand $ matches
     expandSex 'm'                = "male"
     expandSex 'f'                = "female"

@@ -126,17 +126,15 @@ fromRight (Right x) = x
 fromRight x         = blowUp "Mud.Util.Misc" "fromRight" "Left" [ T.pack . show $ x ]
 
 
--- TODO: Use this.
-onFalse :: a -> Bool -> (a -> a) -> a
+onFalse :: Bool -> (a -> a) -> a -> a
 onFalse = onHelper id
 
 
-onHelper :: (Bool -> Bool) -> a -> Bool -> (a -> a) -> a
-onHelper g a b f = a |&| (g b ? id :? f)
+onHelper :: (Bool -> Bool) -> Bool -> (a -> a) -> a -> a
+onHelper g b f = g b ? id :? f
 
 
--- TODO: Use this.
-onTrue :: a -> Bool -> (a -> a) -> a
+onTrue :: Bool -> (a -> a) -> a -> a
 onTrue = onHelper not
 
 

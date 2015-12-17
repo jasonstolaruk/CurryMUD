@@ -191,10 +191,7 @@ checkIllegalNames ms mq cn = checkSet cn (promptRetryName mq sorryInterpNameTake
     insertRaceNames = foldr helper S.empty (allValues :: [Race])
       where
         helper (uncapitalize . showText -> r) acc = foldr S.insert acc . (r :) . map (`T.cons` r) $ "mf"
-    insertEntNames = views entTbl (flip (IM.foldr (views entName helper))) ms
-      where
-        helper Nothing  = id
-        helper (Just n) = S.insert n
+    insertEntNames = views entTbl (flip (IM.foldr (views entName (maybe id S.insert)))) ms
 
 
 checkPropNamesDict :: MsgQueue -> CmdName -> MudStack Any

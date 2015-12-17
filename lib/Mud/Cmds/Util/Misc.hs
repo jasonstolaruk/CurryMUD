@@ -255,7 +255,7 @@ expandEmbeddedIds ms ChanContext { revealAdminNames } = concatMapM helper
           let embeddedId = read . T.unpack $ numTxt :: Int
               f i | g . isLinked ms $ (i, embeddedId) = return (rebuild . getSing embeddedId $ ms, pure i)
                   | otherwise = ((, pure i) . rebuild . underline) <$> updateRndmName i embeddedId
-              g       = revealAdminNames ? (isAdminId embeddedId ms || ) :? id
+              g       = onTrue revealAdminNames (isAdminId embeddedId ms ||)
               rebuild = quoteWith' (x, y)
           in mapM f is >>= concatMapM helper
 
@@ -437,7 +437,7 @@ happy ms xformed = let (toSelf, toTargets, toOthers) = unzip3 . rights $ xformed
                        selectiveCons p targetId isPoss word = IM.mapWithKey helper
                          where
                            -- TODO: Why aren't mob names colored?
-                           helper k v = let targetSing = onTrue (getSing k ms) isPoss (<> "'s")
+                           helper k v = let targetSing = onTrue isPoss (<> "'s") . getSing k $ ms
                                         in (: v) $ if k == targetId
                                           then colorWith emoteTargetColor targetSing <> p
                                           else word
@@ -710,7 +710,7 @@ pager i mq txt@(length -> txtLen) = getState >>= \ms -> let pl = getPageLines i 
 
 
 parseOutDenotative :: [T.Text] -> T.Text -> [T.Text]
-parseOutDenotative ws rest = onFalse (tail ws) (()# rest) (rest :)
+parseOutDenotative ws rest = onTrue (()!# rest) (rest :) . tail $ ws 
 
 
 -----

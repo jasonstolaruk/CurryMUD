@@ -5,6 +5,7 @@ module Mud.Cmds.Util.Abbrev (styleAbbrevs) where
 import Mud.Data.Misc
 import Mud.Misc.ANSI
 import Mud.Util.List (nubSort)
+import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Quoting
 import Mud.Util.Text
 import qualified Mud.Util.Misc as U (patternMatchFail)
@@ -26,12 +27,11 @@ type FullWord = T.Text
 
 
 styleAbbrevs :: ShouldQuote -> [FullWord] -> [FullWord]
-styleAbbrevs sq fws = let abbrevs   = mkAbbrevs fws
-                          helper fw = let [(_, (abbrev, rest))] = filter ((fw ==) . fst) abbrevs
-                                          f                     = case sq of DoQuote    -> bracketQuote
-                                                                             Don'tQuote -> id
-                                      in f $ quoteWith' (abbrevColor, dfltColor') abbrev <> rest
-                      in map helper fws
+styleAbbrevs sq fws =
+    let abbrevs   = mkAbbrevs fws
+        helper fw = let [(_, (abbrev, rest))] = filter ((fw ==) . fst) abbrevs
+                    in onTrue (sq == DoQuote) bracketQuote . quoteWith' (abbrevColor, dfltColor') $ abbrev <> rest
+    in map helper fws
 
 
 type Abbrev         = T.Text

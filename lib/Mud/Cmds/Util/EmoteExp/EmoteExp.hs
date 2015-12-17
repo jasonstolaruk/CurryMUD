@@ -120,7 +120,7 @@ procEmote i ms cc triples as             =
                              , [ mkEmoteWord isPoss p targetId, ForNonTargets txt ]
                              , txt )
             in findFullNameForAbbrev (T.toLower target) (map (views _2 T.toLower) triples) |&| maybe notFound found
-    addSuffix   isPoss p = (<> p) . (isPoss ? (<> "'s") :? id)
+    addSuffix   isPoss p = (<> p) . onTrue isPoss (<> "'s")
     mkEmoteWord isPoss   = isPoss ? ForTargetPoss :? ForTarget
     tunedIds             = map (view _1) triples
 
@@ -265,7 +265,7 @@ adminChanProcEmote i ms tunedIds tunedSings as =
                              , [ mkEmoteWord isPoss p targetId, ForNonTargets targetSing' ]
                              , targetSing' )
             in findFullNameForAbbrev target' (getSing i ms `delete` tunedSings) |&| maybe notFound found
-    addSuffix   isPoss p = (<> p) . (isPoss ? (<> "'s") :? id)
+    addSuffix   isPoss p = (<> p) . onTrue isPoss (<> "'s")
     mkEmoteWord isPoss   = isPoss ? ForTargetPoss :? ForTarget
 
 

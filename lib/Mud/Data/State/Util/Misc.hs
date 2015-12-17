@@ -258,7 +258,7 @@ mkSerializedNonStdDesig i ms s aot (mkCapsFun -> f) =
     serialize NonStdDesig { nsDesigEntSing = s, nsDesc = helper }
   where
     helper | isPC i ms = g $ let (pp *** pp -> (sexy, r)) = getSexRace i ms in sexy <> " " <> r
-           | otherwise = s |&| (isCapital s ? id :? g)
+           | otherwise = onFalse (isCapital s) g s
     g = f . (pp aot <>) . (" " <>)
 
 
