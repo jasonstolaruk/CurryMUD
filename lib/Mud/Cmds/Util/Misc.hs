@@ -436,7 +436,6 @@ happy ms xformed = let (toSelf, toTargets, toOthers) = unzip3 . rights $ xformed
                        consWord xs = const . patternMatchFail "happy consWord" $ [ showText xs ]
                        selectiveCons p targetId isPoss word = IM.mapWithKey helper
                          where
-                           -- TODO: Why aren't mob names colored?
                            helper k v = let targetSing = onTrue isPoss (<> "'s") . getSing k $ ms
                                         in (: v) $ if k == targetId
                                           then colorWith emoteTargetColor targetSing <> p
@@ -710,7 +709,7 @@ pager i mq txt@(length -> txtLen) = getState >>= \ms -> let pl = getPageLines i 
 
 
 parseOutDenotative :: [T.Text] -> T.Text -> [T.Text]
-parseOutDenotative ws rest = onTrue (()!# rest) (rest :) . tail $ ws 
+parseOutDenotative ws rest = onTrue (()!# rest) (rest :) . tail $ ws
 
 
 -----

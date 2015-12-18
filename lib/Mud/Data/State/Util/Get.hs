@@ -46,6 +46,10 @@ isPC :: Id -> MudState -> Bool
 isPC i = (== PCType) . getType i
 
 
+isNpcPC :: Id -> MudState -> Bool
+isNpcPC i ms = getType i ms `elem` [ NpcType, PCType ]
+
+
 -- ============================================================
 -- Getters:
 

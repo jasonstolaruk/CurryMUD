@@ -346,7 +346,7 @@ adminList (NoArgs i mq cols) = (multiWrapSend mq cols =<< helper =<< getState) >
             mkSuffix ai = let { ap = getPla ai ms; isIncog = isIncognito ap } in if isAdmin p && isIncog
               then (inOut . isLoggedIn $ ap) <> " " <> parensQuote "incognito"
               else inOut (isLoggedIn ap && not isIncog)
-            singSuffixes' = onFalse (isAdmin p) (filter f) singSuffixes 
+            singSuffixes' = onFalse (isAdmin p) (filter f) singSuffixes
               where
                 f (a, b) | a == "Root" = b == " logged in"
                          | otherwise   = otherwise
@@ -763,13 +763,12 @@ emote (WithArgs i mq cols as) = getState >>= \ms ->
                   ([ Right (_:_:_)    ], _             ) -> Left sorryEmoteExcessTargets
                   ([ Right [targetId] ], _             ) ->
                       let targetSing = getSing targetId ms
-                      in case getType targetId ms of
-                        PCType  -> let targetDesig = addSuffix isPoss p . serialize . mkStdDesig targetId ms $ Don'tCap
-                                   in Right ( targetDesig
-                                            , [ mkEmoteWord isPoss p targetId, ForNonTargets targetDesig ]
-                                            , targetDesig )
-                        NpcType -> mkRightForNonTargets . dup3 . addSuffix isPoss p . theOnLower $ targetSing
-                        _       -> Left . sorryEmoteTargetType $ targetSing
+                      in if not . isNpcPC targetId $ ms
+                        then Left . sorryEmoteTargetType $ targetSing
+                        else let targetDesig = addSuffix isPoss p . serialize . mkStdDesig targetId ms $ Don'tCap
+                             in Right ( targetDesig
+                                      , [ mkEmoteWord isPoss p targetId, ForNonTargets targetDesig ]
+                                      , targetDesig )
                   x -> patternMatchFail "emote procTarget" [ showText x ]
               else Left sorryNoOneHere
     addSuffix   isPoss p = (<> p) . onTrue isPoss (<> "'s")

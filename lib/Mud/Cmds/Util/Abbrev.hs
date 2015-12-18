@@ -30,7 +30,7 @@ styleAbbrevs :: ShouldQuote -> [FullWord] -> [FullWord]
 styleAbbrevs sq fws =
     let abbrevs   = mkAbbrevs fws
         helper fw = let [(_, (abbrev, rest))] = filter ((fw ==) . fst) abbrevs
-                    in onTrue (sq == DoQuote) bracketQuote . quoteWith' (abbrevColor, dfltColor') $ abbrev <> rest
+                    in onTrue (sq == DoQuote) bracketQuote $ quoteWith' (abbrevColor, dfltColor') abbrev <> rest
     in map helper fws
 
 
