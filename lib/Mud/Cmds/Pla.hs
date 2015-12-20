@@ -259,6 +259,7 @@ npcRegularCmds = map (uncurry4 mkRegularCmd)
     , ("n",          go "n",         True,  "Go north.")
     , ("ne",         go "ne",        True,  "Go northeast.")
     , ("nw",         go "nw",        True,  "Go northwest.")
+    , ("remove",     remove,         True,  "Remove one or more items from a container.")
     , ("s",          go "s",         True,  "Go south.")
     , ("se",         go "se",        True,  "Go southeast.")
     , ("sw",         go "sw",        True,  "Go southwest.")
@@ -268,13 +269,16 @@ npcRegularCmds = map (uncurry4 mkRegularCmd)
 
 npcPriorityAbbrevCmds :: [Cmd]
 npcPriorityAbbrevCmds = concatMap (uncurry5 mkPriorityAbbrevCmd)
-    [ ("clear",  "cl", clear,   True,  "Clear the screen.")
-    , ("emote",  "em", emote,   True,  "Freely describe an action.")
-    , ("exits",  "ex", exits,   True,  "Display obvious exits.")
-    , ("look",   "l",  look,    True,  "Display a description of your current room, or examine one or more things in \
-                                       \your current room.")
-    , ("stop",   "st", npcStop, False, "Stop possessing.")
-    , ("whoami", "wh", whoAmI,  True,  "Confirm who " <> parensQuote "or what" <> " you are.") ]
+    [ ("clear",  "cl", clear,      True,  "Clear the screen.")
+    , ("drop",   "dr", dropAction, True,  "Drop one or more items.")
+    , ("emote",  "em", emote,      True,  "Freely describe an action.")
+    , ("exits",  "ex", exits,      True,  "Display obvious exits.")
+    , ("get",    "g",  getAction,  True,  "Pick up one or more items.")
+    , ("look",   "l",  look,       True,  "Display a description of your current room, or examine one or more things \
+                                          \in your current room.")
+    , ("put",    "p",  putAction,  True,  "Put one or more items into a container.")
+    , ("stop",   "st", npcStop,    False, "Stop possessing.")
+    , ("whoami", "wh", whoAmI,     True,  "Confirm who " <> parensQuote "or what" <> " you are.") ]
 
 
 -----
@@ -742,7 +746,7 @@ emote (WithArgs i mq cols as) = getState >>= \ms ->
       [] -> let (toSelf, toOthers, targetIds, toTargetBs) = happy ms xformed
             in do
                 wrapSend mq cols . parseDesig i ms $ toSelf
-                bcastNl $ (toOthers, desigIds d \\ (i : targetIds)) : toTargetBs
+                bcastNl $ (toOthers, desigIds d \\ (i : targetIds)) : toTargetBs -- TODO: What if incog?
       advices -> multiWrapSend mq cols . nub $ advices
   where
     procTarget ms word =
@@ -845,23 +849,24 @@ mkExpCmdListTxt =
 getAction :: ActionFun
 getAction p@AdviseNoArgs = advise p ["get"] adviceGetNoArgs
 getAction (Lower _ mq cols as) | length as >= 3, (head . tail . reverse $ as) == "from" = wrapSend mq cols hintGet
-getAction (LowerNub' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
-    bcastIfNotIncogNl i bs >> logMsgs |#| logPlaOut "get" i
+getAction (LowerNub i mq cols as) = helper |&| modifyState >=> \(toSelfs, bs, logMsgs) -> do
+    multiWrapSend mq cols toSelfs
+    bcastIfNotIncogNl i bs
+    logMsgs |#| logPlaOut "get" i
   where
     helper ms =
         let (inInvs, inEqs, inRms) = sortArgsInvEqRm InRm as
-
-            sorryInInv = inInvs |!| mkBcast i sorryGetInInv
-            sorryInEq  = inEqs  |!| mkBcast i sorryGetInEq
-            ri                    = getRmId i ms
-            invCoins              = first (i `delete`) . getNonIncogInvCoins ri $ ms
-            d                     = mkStdDesig i ms DoCap
-            (eiss, ecs)           = uncurry (resolveRmInvCoins i ms inRms) invCoins
-            (ms',  bs,  logMsgs ) = foldl' (helperGetEitherInv       i d     ri i) (ms,  [], []     ) eiss
-            (ms'', bs', logMsgs') =         helperGetDropEitherCoins i d Get ri i  (ms', bs, logMsgs) ecs
+            sorryInInv             = inInvs |!| sorryGetInInv
+            sorryInEq              = inEqs  |!| sorryGetInEq
+            ri                     = getRmId i ms
+            invCoins               = first (i `delete`) . getNonIncogInvCoins ri $ ms
+            d                      = mkStdDesig i ms DoCap
+            (eiss, ecs)            = uncurry (resolveRmInvCoins i ms inRms) invCoins
+            (ms',  toSelfs,  bs,  logMsgs ) = foldl' (helperGetEitherInv       i d     ri i) (ms,  [],      [], []     ) eiss
+            (ms'', toSelfs', bs', logMsgs') =         helperGetDropEitherCoins i d Get ri i  (ms', toSelfs, bs, logMsgs) ecs
         in if ()!# invCoins
-          then (ms'', (sorryInInv ++ sorryInEq ++ bs', logMsgs'))
-          else (ms,   (mkBcast i sorryGetNothingHere,  []      ))
+          then (ms'', (sorryInInv ++ sorryInEq ++ toSelfs', bs', logMsgs'))
+          else (ms,   (pure sorryGetNothingHere,            [],  []      ))
 getAction p = patternMatchFail "getAction" [ showText p ]
 
 
@@ -1334,8 +1339,8 @@ look (NoArgs i mq cols) = getState >>= \ms ->
   where
     filler       = T.singleton indentFiller
     formatRmDesc = map (T.replicate rmDescIndentAmt filler <>) . T.lines
-look (LowerNub i mq cols as) = helper |&| modifyState >=> \(msg, bs, maybeTargetDesigs) -> do
-    send mq msg
+look (LowerNub i mq cols as) = helper |&| modifyState >=> \(toSelf, bs, maybeTargetDesigs) -> do
+    send mq toSelf
     bcastIfNotIncog i bs
     let logHelper targetDesigs | targetSings <- [ fromJust . sDesigEntSing $ targetDesig
                                                 | targetDesig <- targetDesigs ]
@@ -1353,7 +1358,7 @@ look (LowerNub i mq cols as) = helper |&| modifyState >=> \(msg, bs, maybeTarget
                    (eiss, ecs)            = uncurry (resolveRmInvCoins i ms inRms) invCoins
                    invDesc                = foldl' (helperLookEitherInv ms) "" eiss
                    coinsDesc              = foldl' helperLookEitherCoins    "" ecs
-                   (pt, msg)              = f (ms^.plaTbl, T.concat [ inInvs |!| sorryInInv
+                   (pt, toSelf)           = f (ms^.plaTbl, T.concat [ inInvs |!| sorryInInv
                                                                     , inEqs  |!| sorryInEq
                                                                     , invDesc
                                                                     , coinsDesc ])
@@ -1368,11 +1373,11 @@ look (LowerNub i mq cols as) = helper |&| modifyState >=> \(msg, bs, maybeTarget
                                       , targetId `delete` is)
                        in toTarget : toOthers : acc
                    ms' = ms & plaTbl .~ pt
-               in (ms', (msg, foldr mkBsForTarget [] targetDesigs, targetDesigs |!| Just targetDesigs))
-          else let msg        = wrapUnlinesNl cols sorryLookNothingHere
-                   (pt, msg') = onTrue (isPC i ms) (firstLook i cols) (ms^.plaTbl, msg)
-                   ms'        = ms & plaTbl .~ pt
-               in (ms', (msg', [], Nothing))
+               in (ms', (toSelf, foldr mkBsForTarget [] targetDesigs, targetDesigs |!| Just targetDesigs))
+          else let toSelf        = wrapUnlinesNl cols sorryLookNothingHere
+                   (pt, toSelf') = onTrue (isPC i ms) (firstLook i cols) (ms^.plaTbl, toSelf)
+                   ms'           = ms & plaTbl .~ pt
+               in (ms', (toSelf', [], Nothing))
     helperLookEitherInv _  acc (Left  msg ) = acc <> wrapUnlinesNl cols msg
     helperLookEitherInv ms acc (Right is  ) = nl $ acc <> mkEntDescs i cols ms is
     helperLookEitherCoins  acc (Left  msgs) = (acc <>) . multiWrapNl cols . intersperse "" $ msgs
