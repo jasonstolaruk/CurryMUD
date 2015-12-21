@@ -269,20 +269,20 @@ helperDropEitherInv :: Id
                     -> Desig
                     -> FromId
                     -> ToId
-                    -> (MudState, [Broadcast], [T.Text])
+                    -> (MudState, [T.Text], [Broadcast])
                     -> Either T.Text Inv
-                    -> (MudState, [Broadcast], [T.Text])
+                    -> (MudState, [T.Text], [Broadcast])
 helperDropEitherInv i d fi ti a@(ms, _, _) = \case
-  Left  (mkBcast i -> b) -> a & _2 <>~ b
-  Right is               -> let (toSelfs, bs) = mkGetDropInvDesc i ms d Drop is
-                            in a & _1.invTbl.ind fi %~  (\\ is)
-                                 & _1.invTbl.ind ti %~  (sortInv ms . (++ is))
-                                 & _2               <>~ bs
-                                 & _3               <>~ toSelfs
+  Left  msg -> a & _2 <>~ pure msg
+  Right is  -> let (toSelfs, bs) = mkGetDropInvDescs i ms d Drop is
+               in a & _1.invTbl.ind fi %~  (\\ is)
+                    & _1.invTbl.ind ti %~  (sortInv ms . (++ is))
+                    & _2               <>~ toSelfs
+                    & _3               <>~ bs
 
 
-mkGetDropInvDesc :: Id -> MudState -> Desig -> GetOrDrop -> Inv -> ([T.Text], [Broadcast])
-mkGetDropInvDesc i ms d god (mkNameCountBothList i ms -> ncbs) =
+mkGetDropInvDescs :: Id -> MudState -> Desig -> GetOrDrop -> Inv -> ([T.Text], [Broadcast])
+mkGetDropInvDescs i ms d god (mkNameCountBothList i ms -> ncbs) =
     let (toSelfs, bs) = unzip . map helper $ ncbs in (toSelfs, bs)
   where
     helper (_, c, (s, _)) | c == 1 =
@@ -329,15 +329,15 @@ helperGetDropEitherCoins i d god fi ti (ms, toSelfs, bs, logMsgs) ecs =
     let (ms', toSelfs', logMsgs', canCoins) = foldl' helper (ms, toSelfs, logMsgs, mempty) ecs
     in (ms', toSelfs', bs ++ mkGetDropCoinsDescOthers i d god canCoins, logMsgs')
   where
-    helper a@(ms', _, _, _) = \case
+    helper a = \case
       Left  msgs -> a & _2 <>~ msgs
       Right c    -> let (can, can't) = case god of Get  -> partitionByEnc c
                                                    Drop -> (c, mempty)
-                        toSelfs      = mkGetDropCoinsDescSelf i god can
+                        toSelfs'     = mkGetDropCoinsDescsSelf god can
                     in a & _1.coinsTbl.ind fi %~  (<> negateCoins can)
                          & _1.coinsTbl.ind ti %~  (<>             can)
-                         & _2                 <>~ toSelfs ++ mkCan'tGetCoinsDesc i can't
-                         & _3                 <>~ toSelfs
+                         & _2                 <>~ toSelfs' ++ mkCan'tGetCoinsDesc can't
+                         & _3                 <>~ toSelfs'
                          & _4                 <>~ can
       where
         partitionByEnc c = let maxEnc           = calcMaxEnc i ms
@@ -361,8 +361,8 @@ mkGetDropCoinsDescOthers i d god c =
   c |!| [ (T.concat [ serialize d, spaced . mkGodVerb god $ ThrPer, aCoinSomeCoins c, "." ], i `delete` desigIds d) ]
 
 
-mkGetDropCoinsDescSelf :: Id -> GetOrDrop -> Coins -> [T.Text]
-mkGetDropCoinsDescSelf i god = mkCoinsMsgs helper
+mkGetDropCoinsDescsSelf :: GetOrDrop -> Coins -> [T.Text]
+mkGetDropCoinsDescsSelf god = mkCoinsMsgs helper
   where
     helper 1 cn = T.concat [ "You ", mkGodVerb god SndPer, " ", aOrAn cn,             "."  ]
     helper a cn = T.concat [ "You ", mkGodVerb god SndPer, spaced . showText $ a, cn, "s." ]
@@ -376,8 +376,8 @@ mkCoinsMsgs f (Coins (cop, sil, gol)) = catMaybes [ c, s, g ]
     g = Sum gol |!| Just . f gol $ "gold piece"
 
 
-mkCan'tGetCoinsDesc :: Id -> Coins -> [T.Text]
-mkCan'tGetCoinsDesc i = mkCoinsMsgs helper
+mkCan'tGetCoinsDesc :: Coins -> [T.Text]
+mkCan'tGetCoinsDesc = mkCoinsMsgs helper
   where
     helper a cn = sorryGetEnc <> (a == 1 ? ("the " <> cn <> ".") :? T.concat [ showText a, " ", cn, "s." ])
 
@@ -396,13 +396,13 @@ helperGetEitherInv i d fi ti a@(ms, _, _, _) = \case
   Left  msg                                 -> a & _2 <>~ pure msg
   Right (sortByType -> (pcs, mobs, others)) ->
     let (_, cans, can'ts) = foldl' (partitionByEnc (calcMaxEnc i ms)) (calcWeight i ms, [], []) others
-        (toSelfs, bs)     = mkGetDropInvDesc i ms d Get cans
+        (toSelfs, bs)     = mkGetDropInvDescs i ms d Get cans
     in a & _1.invTbl.ind fi %~  (\\ cans)
          & _1.invTbl.ind ti %~  (sortInv ms . (++ cans))
          & _2               <>~ concat [ map sorryPC pcs
                                        , map sorryMob mobs
                                        , toSelfs
-                                       , mkCan'tGetInvDesc i ms can'ts ]
+                                       , mkCan'tGetInvDescs i ms can'ts ]
          & _3               <>~ bs
          & _4               <>~ toSelfs
   where
@@ -417,8 +417,8 @@ helperGetEitherInv i d fi ti a@(ms, _, _, _) = \case
     sorryMob targetId = sorryGetType . theOnLower . getSing targetId $ ms
 
 
-mkCan'tGetInvDesc :: Id -> MudState -> Inv -> [T.Text]
-mkCan'tGetInvDesc i ms = map helper . mkNameCountBothList i ms
+mkCan'tGetInvDescs :: Id -> MudState -> Inv -> [T.Text]
+mkCan'tGetInvDescs i ms = map helper . mkNameCountBothList i ms
   where
     helper (_, c, b@(s, _)) = sorryGetEnc <> (c == 1 ?  ("the " <> s <> ".")
                                                      :? T.concat [ showText c, " ", mkPlurFromBoth b, "." ])
@@ -447,6 +447,7 @@ type NthOfM = (Int, Int)
 type ToSing = Sing
 
 
+-- TODO: Check for encumbrance when a player removes something from a container in the room.
 helperPutRemEitherCoins :: Id
                         -> Desig
                         -> PutOrRem
@@ -454,20 +455,20 @@ helperPutRemEitherCoins :: Id
                         -> FromId
                         -> ToId
                         -> ToSing
-                        -> (CoinsTbl, [Broadcast], [T.Text])
+                        -> (CoinsTbl, [T.Text], [Broadcast], [T.Text])
                         -> [Either [T.Text] Coins]
-                        -> (CoinsTbl, [Broadcast], [T.Text])
-helperPutRemEitherCoins i d por mnom fi ti ts (origCoinsTbl, origBs, origMsgs) ecs =
-    let (finalCoinsTbl, finalBs, finalMsgs, canCoins) = foldl' helper (origCoinsTbl, origBs, origMsgs, mempty) ecs
-    in (finalCoinsTbl, finalBs ++ mkPutRemCoinsDescOthers i d por mnom canCoins ts, finalMsgs)
+                        -> (CoinsTbl, [T.Text], [Broadcast], [T.Text])
+helperPutRemEitherCoins i d por mnom fi ti ts (ct, toSelfs, bs, logMsgs) ecs =
+    let (ct', toSelfs', logMsgs', canCoins) = foldl' helper (ct, toSelfs, logMsgs, mempty) ecs
+    in (ct', toSelfs', bs ++ mkPutRemCoinsDescOthers i d por mnom canCoins ts, logMsgs')
   where
     helper a = \case
-      Left  msgs -> a & _2 <>~ (mkBcast i . T.concat $ msgs)
-      Right c    -> let (bs, logMsgs) = mkPutRemCoinsDescsSelf i por mnom c ts
+      Left  msgs -> a & _2 <>~ msgs
+      Right c    -> let toSelfs' = mkPutRemCoinsDescsSelf por mnom c ts
                     in a & _1.ind fi %~ (<> negateCoins c)
                          & _1.ind ti %~ (<> c)
-                         & _2 <>~ bs
-                         & _3 <>~ logMsgs
+                         & _2 <>~ toSelfs' -- TODO: Append a "can't remove coins" message. See "helperGetDropEitherCoins".
+                         & _3 <>~ toSelfs'
                          & _4 <>~ c
 
 
@@ -481,11 +482,11 @@ mkPutRemCoinsDescOthers i d por mnom c ts = c |!| [ ( T.concat [ serialize d
                                                     , i `delete` desigIds d ) ]
 
 
-mkPutRemCoinsDescsSelf :: Id -> PutOrRem -> Maybe NthOfM -> Coins -> ToSing -> ([Broadcast], [T.Text])
-mkPutRemCoinsDescsSelf i por mnom c ts | bs <- mkCoinsMsgs c helper = (bs, extractLogMsgs i bs)
+mkPutRemCoinsDescsSelf :: PutOrRem -> Maybe NthOfM -> Coins -> ToSing -> [T.Text]
+mkPutRemCoinsDescsSelf por mnom c ts = mkCoinsMsgs helper c
   where
-    helper a cn | a == 1 = [ (T.concat [ start, aOrAn cn,   " ",           rest ], pure i) ]
-    helper a cn          = [ (T.concat [ start, showText a, " ", cn, "s ", rest ], pure i) ]
+    helper a cn | a == 1 = T.concat [ start, aOrAn cn,   " ",           rest ]
+    helper a cn          = T.concat [ start, showText a, " ", cn, "s ", rest ]
     start                = "You " <> mkPorVerb por SndPer <> " "
     rest                 = mkPorPrep por SndPer mnom ts <> onTheGround mnom <> "."
 
@@ -536,7 +537,7 @@ helperPutRemEitherInv i ms d por mnom fi ti ts a@(_, bs, _) = \case
   Right is -> let (is', bs')      = if ti `elem` is
                                       then (filter (/= ti) is, (bs ++) . mkBcast i . sorryPutInsideSelf $ ts)
                                       else (is, bs)
-                  (bs'', logMsgs) = mkPutRemInvDesc i ms d por mnom is' ts
+                  (bs'', logMsgs) = mkPutRemInvDescs i ms d por mnom is' ts
               in ()# (a^._1.ind fi) ? sorry :? (a & _1.ind fi %~  (\\ is')
                                                   & _1.ind ti %~  (sortInv ms . (++ is'))
                                                   & _2        .~  (bs' ++ bs'')
@@ -545,8 +546,8 @@ helperPutRemEitherInv i ms d por mnom fi ti ts a@(_, bs, _) = \case
     sorry = a & _2 <>~ (mkBcast i . sorryRemEmpty . getSing fi $ ms)
 
 
-mkPutRemInvDesc :: Id -> MudState -> Desig -> PutOrRem -> Maybe NthOfM -> Inv -> ToSing -> ([Broadcast], [T.Text])
-mkPutRemInvDesc i ms d por mnom is ts =
+mkPutRemInvDescs :: Id -> MudState -> Desig -> PutOrRem -> Maybe NthOfM -> Inv -> ToSing -> ([Broadcast], [T.Text])
+mkPutRemInvDescs i ms d por mnom is ts =
     let bs = concatMap helper . mkNameCountBothList i ms $ is in (bs, extractLogMsgs i bs)
   where
     helper (_, c, (s, _)) | c == 1 =

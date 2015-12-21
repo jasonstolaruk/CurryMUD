@@ -692,22 +692,24 @@ disconnectHelper i (target, as) idNamesTbl ms =
 
 dropAction :: ActionFun
 dropAction p@AdviseNoArgs   = advise p ["drop"] adviceDropNoArgs
-dropAction (LowerNub' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
-    bcastIfNotIncogNl i bs >> logMsgs |#| logPlaOut "drop" i
+dropAction (LowerNub i mq cols as) = helper |&| modifyState >=> \(toSelfs, bs, logMsgs) -> do
+    multiWrapSend mq cols toSelfs
+    bcastIfNotIncogNl i bs
+    logMsgs |#| logPlaOut "drop" i
   where
     helper ms =
         let (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv as
-            sorryInEq              = inEqs |!| mkBcast i sorryDropInEq
-            sorryInRm              = inRms |!| mkBcast i sorryDropInRm
+            sorryInEq              = inEqs |!| sorryDropInEq
+            sorryInRm              = inRms |!| sorryDropInRm
             invCoins               = getInvCoins i ms
             d                      = mkStdDesig  i ms DoCap
             ri                     = getRmId     i ms
             (eiss, ecs)            = uncurry (resolveMobInvCoins i ms inInvs) invCoins
-            (ms',  bs,  logMsgs )  = foldl' (helperDropEitherInv      i d      i ri) (ms,  [], []     ) eiss
-            (ms'', bs', logMsgs')  =         helperGetDropEitherCoins i d Drop i ri  (ms', bs, logMsgs) ecs
+            (ms',  toSelfs,  bs          ) = foldl' (helperDropEitherInv      i d      i ri) (ms,  [],      []         ) eiss
+            (ms'', toSelfs', bs', logMsgs) =         helperGetDropEitherCoins i d Drop i ri  (ms', toSelfs, bs, toSelfs) ecs
         in if ()!# invCoins
-          then (ms'', (sorryInEq ++ sorryInRm ++ bs',   logMsgs'))
-          else (ms,   (mkBcast i dudeYourHandsAreEmpty, []      ))
+          then (ms'', (dropEmpties $ [ sorryInEq, sorryInRm ] ++ toSelfs', bs', logMsgs))
+          else (ms,   (pure dudeYourHandsAreEmpty,                         [],  []     ))
 dropAction p = patternMatchFail "dropAction" [ showText p ]
 
 
@@ -865,8 +867,8 @@ getAction (LowerNub i mq cols as) = helper |&| modifyState >=> \(toSelfs, bs, lo
             (ms',  toSelfs,  bs,  logMsgs ) = foldl' (helperGetEitherInv       i d     ri i) (ms,  [],      [], []     ) eiss
             (ms'', toSelfs', bs', logMsgs') =         helperGetDropEitherCoins i d Get ri i  (ms', toSelfs, bs, logMsgs) ecs
         in if ()!# invCoins
-          then (ms'', (sorryInInv ++ sorryInEq ++ toSelfs', bs', logMsgs'))
-          else (ms,   (pure sorryGetNothingHere,            [],  []      ))
+          then (ms'', (dropEmpties $ [ sorryInInv, sorryInEq ] ++ toSelfs', bs', logMsgs'))
+          else (ms,   (pure sorryGetNothingHere,                            [],  []      ))
 getAction p = patternMatchFail "getAction" [ showText p ]
 
 
@@ -1608,7 +1610,7 @@ shufflePut i ms d conName icir as invCoinsWithCon@(invWithCon, _) pcInvCoins f =
                    (it, bs,  logMsgs ) = foldl' (helperPutRemEitherInv   i ms d Put mnom i conId conSing)
                                                 (ms^.invTbl,   [], [])
                                                 eiss
-                   (ct, bs', logMsgs') =         helperPutRemEitherCoins i    d Put mnom i conId conSing
+                   (ct, bs', logMsgs') =        helperPutRemEitherCoins i    d Put mnom i conId conSing
                                                 (ms^.coinsTbl, bs, logMsgs)
                                                 ecs
                in (ms & invTbl .~ it & coinsTbl .~ ct, (sorryInEq ++ sorryInRm ++ bs', logMsgs'))
