@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
-{-# LANGUAGE LambdaCase, MonadComprehensions, MultiWayIf, NamedFieldPuns, OverloadedStrings, ParallelListComp, PatternSynonyms, RecordWildCards, TransformListComp, TupleSections, TypeFamilies, ViewPatterns #-}
+{-# LANGUAGE FlexibleContexts, LambdaCase, MonadComprehensions, MultiWayIf, NamedFieldPuns, OverloadedStrings, ParallelListComp, PatternSynonyms, RecordWildCards, TransformListComp, TupleSections, TypeFamilies, ViewPatterns #-}
 
 module Mud.Cmds.Pla ( getRecordUptime
                     , getUptime
@@ -1560,20 +1560,22 @@ plaDispCmdList p                  = patternMatchFail "plaDispCmdList" [ showText
 
 
 putAction :: ActionFun
-putAction p@AdviseNoArgs     = advise p ["put"] advicePutNoArgs
-putAction p@(AdviseOneArg a) = advise p ["put"] . advicePutNoCon $ a
-putAction (Lower' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
-    bcastIfNotIncogNl i bs >> logMsgs |#| logPlaOut "put" i
+putAction p@AdviseNoArgs       = advise p ["put"] advicePutNoArgs
+putAction p@(AdviseOneArg a)   = advise p ["put"] . advicePutNoCon $ a
+putAction (Lower i mq cols as) = helper |&| modifyState >=> \(toSelfs, bs, logMsgs) -> do
+    multiWrapSend mq cols toSelfs
+    bcastIfNotIncogNl i bs
+    logMsgs |#| logPlaOut "put" i
   where
     helper ms | (d, pcInvCoins, rmInvCoins, conName, argsWithoutCon) <- mkPutRemoveBindings i ms as =
       if ()!# pcInvCoins
         then case singleArgInvEqRm InInv conName of
           (InInv, conName') -> shufflePut i ms d conName' False argsWithoutCon pcInvCoins pcInvCoins procGecrMisMobInv
-          (InEq,  _       ) -> (ms, (mkBcast i . sorryConInEq $ Put, []))
+          (InEq,  _       ) -> (ms, (pure . sorryConInEq $ Put, [], []))
           (InRm,  conName') -> if ()!# fst rmInvCoins
             then shufflePut i ms d conName' True argsWithoutCon rmInvCoins pcInvCoins procGecrMisRm
-            else (ms, (mkBcast i sorryNoConHere, []))
-        else (ms, (mkBcast i dudeYourHandsAreEmpty, []))
+            else (ms, (pure sorryNoConHere,        [], []))
+        else     (ms, (pure dudeYourHandsAreEmpty, [], []))
 putAction p = patternMatchFail "putAction" [ showText p ]
 
 
@@ -1591,7 +1593,7 @@ shufflePut :: Id
            -> (InvWithCon, CoinsWithCon)
            -> (PCInv, PCCoins)
            -> ((GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv)
-           -> (MudState, ([Broadcast], [T.Text]))
+           -> (MudState, ([T.Text], [Broadcast], [T.Text]))
 shufflePut i ms d conName icir as invCoinsWithCon@(invWithCon, _) pcInvCoins f =
     let (conGecrs, conMiss, conRcs) = uncurry (resolveEntCoinNames i ms (pure conName)) invCoinsWithCon
     in if ()# conMiss && ()!# conRcs
@@ -1601,22 +1603,22 @@ shufflePut i ms d conName icir as invCoinsWithCon@(invWithCon, _) pcInvCoins f =
         Right [conId] -> let conSing = getSing conId ms in if getType conId ms /= ConType
           then sorry . sorryCon $ conSing
           else let (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv as
-                   sorryInEq = inEqs |!| mkBcast i sorryPutInEq
-                   sorryInRm = inRms |!| mkBcast i sorryPutInRm
+                   sorryInEq = inEqs |!| sorryPutInEq
+                   sorryInRm = inRms |!| sorryPutInRm
                    (gecrs, miss, rcs)  = uncurry (resolveEntCoinNames i ms inInvs) pcInvCoins
                    eiss                = zipWith (curry procGecrMisMobInv) gecrs miss
                    ecs                 = map procReconciledCoinsMobInv rcs
                    mnom                = mkMaybeNthOfM ms icir conId conSing invWithCon
-                   (it, bs,  logMsgs ) = foldl' (helperPutRemEitherInv   i ms d Put mnom i conId conSing)
-                                                (ms^.invTbl,   [], [])
-                                                eiss
-                   (ct, bs', logMsgs') =        helperPutRemEitherCoins i    d Put mnom i conId conSing
-                                                (ms^.coinsTbl, bs, logMsgs)
-                                                ecs
-               in (ms & invTbl .~ it & coinsTbl .~ ct, (sorryInEq ++ sorryInRm ++ bs', logMsgs'))
+                   (it, toSelfs,  bs,  logMsgs ) = foldl' (helperPutRemEitherInv   i ms d Put mnom i conId conSing)
+                                                          (ms^.invTbl, [], [], [])
+                                                          eiss
+                   (ct, toSelfs', bs', logMsgs') =        helperPutRemEitherCoins  i    d Put mnom i conId conSing
+                                                          (ms^.coinsTbl, toSelfs, bs, logMsgs)
+                                                          ecs
+               in (ms & invTbl .~ it & coinsTbl .~ ct, (dropBlanks $ [ sorryInEq, sorryInRm ] ++ toSelfs', bs', logMsgs'))
         Right {} -> sorry sorryPutExcessCon
   where
-    sorry msg = (ms, (mkBcast i msg, []))
+    sorry msg = (ms, (pure msg, [], []))
 
 
 -----
@@ -2033,7 +2035,7 @@ shuffleRem :: Id
            -> Args
            -> (InvWithCon, CoinsWithCon)
            -> ((GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv)
-           -> (MudState, ([Broadcast], [T.Text]))
+           -> (MudState, ([T.Text], [Broadcast], [T.Text]))
 shuffleRem i ms d conName icir as invCoinsWithCon@(invWithCon, _) f =
     let (conGecrs, conMiss, conRcs) = uncurry (resolveEntCoinNames i ms (pure conName)) invCoinsWithCon
     in if ()# conMiss && ()!# conRcs
@@ -2048,20 +2050,21 @@ shuffleRem i ms d conName icir as invCoinsWithCon@(invWithCon, _) f =
                    eiss                = zipWith (curry $ procGecrMisCon conSing) gecrs miss
                    ecs                 = map (procReconciledCoinsCon conSing) rcs
                    mnom                = mkMaybeNthOfM ms icir conId conSing invWithCon
-                   (it, bs,  logMsgs ) = foldl' (helperPutRemEitherInv   i ms d Rem mnom conId i conSing)
-                                                (ms^.invTbl, [], [])
-                                                eiss
-                   (ct, bs', logMsgs') =         helperPutRemEitherCoins i    d Rem mnom conId i conSing
-                                                (ms^.coinsTbl, bs, logMsgs)
-                                                ecs
+                   (it, toSelfs,  bs,  logMsgs ) = foldl' (helperPutRemEitherInv   i ms d Rem mnom conId i conSing)
+                                                          (ms^.invTbl, [], [], [])
+                                                          eiss
+                   (ct, toSelfs', bs', logMsgs') =        helperPutRemEitherCoins  i    d Rem mnom conId i conSing
+                                                          (ms^.coinsTbl, toSelfs, bs, logMsgs)
+                                                          ecs
                in if ()!# invCoinsInCon
-                 then (ms & invTbl .~ it & coinsTbl .~ ct, (guessWhat ++ bs', logMsgs'))
+                 then (ms & invTbl .~ it & coinsTbl .~ ct, (guessWhat ++ toSelfs', bs', logMsgs'))
                  else sorry . sorryRemEmpty $ conSing
         Right {} -> sorry sorryRemExcessCon
   where
-    sorry msg                         = (ms, (mkBcast i msg, []))
-    stripLocPrefs | any hasLocPref as = (map stripLocPref as, mkBcast i sorryRemIgnore)
-                  | otherwise         = (as,                  []                      )
+    sorry msg     = (ms, (msg, [], []))
+    stripLocPrefs = onTrue (any hasLocPref as) g (as, [])
+    g pair        = pair & _1 %~ map stripLocPref
+                         & _2 .~ pure sorryRemIgnore
 
 
 -----

@@ -282,8 +282,7 @@ helperDropEitherInv i d fi ti a@(ms, _, _) = \case
 
 
 mkGetDropInvDescs :: Id -> MudState -> Desig -> GetOrDrop -> Inv -> ([T.Text], [Broadcast])
-mkGetDropInvDescs i ms d god (mkNameCountBothList i ms -> ncbs) =
-    let (toSelfs, bs) = unzip . map helper $ ncbs in (toSelfs, bs)
+mkGetDropInvDescs i ms d god (mkNameCountBothList i ms -> ncbs) = unzip . map helper $ ncbs
   where
     helper (_, c, (s, _)) | c == 1 =
         (  T.concat [ "You ",               mkGodVerb god SndPer, " the ", s, "." ]
@@ -301,10 +300,6 @@ mkNameCountBothList i ms targetIds = let ens   = [ getEffName        i ms target
                                          cs    = mkCountList ebgns
                                          ebgns = [ getEffBothGramNos i ms targetId | targetId <- targetIds ]
                                      in nub . zip3 ens cs $ ebgns
-
-
-extractLogMsgs :: Id -> [Broadcast] -> [T.Text] -- TODO: We ought to be able to delete this function at some point.
-extractLogMsgs i bs = [ msg | (msg, targetIds) <- bs, targetIds == pure i ]
 
 
 mkGodVerb :: GetOrDrop -> Verb -> T.Text
@@ -447,7 +442,7 @@ type NthOfM = (Int, Int)
 type ToSing = Sing
 
 
--- TODO: Check for encumbrance when a player removes something from a container in the room.
+-- TODO: Check for encumbrance when a player removes coins from a container in the room.
 helperPutRemEitherCoins :: Id
                         -> Desig
                         -> PutOrRem
@@ -521,6 +516,7 @@ onTheGround = (|!| " on the ground") . ((both %~ Sum) <$>)
 -----
 
 
+-- TODO: Check for encumbrance when a player removes something from a container in the room.
 helperPutRemEitherInv :: Id
                       -> MudState
                       -> Desig
@@ -529,55 +525,55 @@ helperPutRemEitherInv :: Id
                       -> FromId
                       -> ToId
                       -> ToSing
-                      -> (InvTbl, [Broadcast], [T.Text])
+                      -> (InvTbl, [T.Text], [Broadcast], [T.Text])
                       -> Either T.Text Inv
-                      -> (InvTbl, [Broadcast], [T.Text])
-helperPutRemEitherInv i ms d por mnom fi ti ts a@(_, bs, _) = \case
-  Left  (mkBcast i -> b) -> a & _2 <>~ b
-  Right is -> let (is', bs')      = if ti `elem` is
-                                      then (filter (/= ti) is, (bs ++) . mkBcast i . sorryPutInsideSelf $ ts)
-                                      else (is, bs)
-                  (bs'', logMsgs) = mkPutRemInvDescs i ms d por mnom is' ts
-              in ()# (a^._1.ind fi) ? sorry :? (a & _1.ind fi %~  (\\ is')
-                                                  & _1.ind ti %~  (sortInv ms . (++ is'))
-                                                  & _2        .~  (bs' ++ bs'')
-                                                  & _3        <>~ logMsgs)
+                      -> (InvTbl, [T.Text], [Broadcast], [T.Text])
+helperPutRemEitherInv i ms d por mnom fi ti ts a = \case
+  Left  msg -> a & _2 <>~ pure msg
+  Right is  -> let (is', toSelfs) = onTrue (ti `elem` is) f (is, view _2 a)
+                   f pair         = pair & _1 %~  filter (/= ti)
+                                         & _2 <>~ (pure . sorryPutInsideSelf $ ts)
+                   (toSelfs', bs) = mkPutRemInvDescs i ms d por mnom is' ts
+               in ()# (a^._1.ind fi) ? sorry :? (a & _1.ind fi %~  (\\ is')
+                                                   & _1.ind ti %~  (sortInv ms . (++ is'))
+                                                   & _2        .~  (toSelfs ++ toSelfs')
+                                                   & _3        <>~ bs
+                                                   & _4        <>~ toSelfs')
   where
-    sorry = a & _2 <>~ (mkBcast i . sorryRemEmpty . getSing fi $ ms)
+    sorry = a & _2 <>~ (pure . sorryRemEmpty . getSing fi $ ms)
 
 
-mkPutRemInvDescs :: Id -> MudState -> Desig -> PutOrRem -> Maybe NthOfM -> Inv -> ToSing -> ([Broadcast], [T.Text])
-mkPutRemInvDescs i ms d por mnom is ts =
-    let bs = concatMap helper . mkNameCountBothList i ms $ is in (bs, extractLogMsgs i bs)
+mkPutRemInvDescs :: Id -> MudState -> Desig -> PutOrRem -> Maybe NthOfM -> Inv -> ToSing -> ([T.Text], [Broadcast])
+mkPutRemInvDescs i ms d por mnom is ts = unzip . map helper . mkNameCountBothList i ms $ is
   where
     helper (_, c, (s, _)) | c == 1 =
-        [ (T.concat [ "You "
+        (  T.concat [ "You "
                     , mkPorVerb por SndPer
                     , spaced withArticle
                     , mkPorPrep por SndPer mnom ts
-                    , rest ], pure i)
+                    , rest ]
         , (T.concat [ serialize d
                     , spaced . mkPorVerb por $ ThrPer
                     , aOrAn s
                     , " "
                     , mkPorPrep por ThrPer mnom ts
-                    , rest ], otherIds) ]
+                    , rest ], otherIds) )
       where
         withArticle = por == Put ? "the " <> s :? aOrAn s
     helper (_, c, b) =
-        [ (T.concat [ "You "
+        (  T.concat [ "You "
                     , mkPorVerb por SndPer
                     , spaced . showText $ c
                     , mkPlurFromBoth b
                     , " "
                     , mkPorPrep por SndPer mnom ts
-                    , rest ], pure i)
+                    , rest ]
         , (T.concat [ serialize d
                     , spaced . mkPorVerb por $ ThrPer
                     , showText c
                     , spaced . mkPlurFromBoth $ b
                     , mkPorPrep por ThrPer mnom ts
-                    , rest ], otherIds) ]
+                    , rest ], otherIds) )
     rest     = onTheGround mnom <> "."
     otherIds = i `delete` desigIds d
 
