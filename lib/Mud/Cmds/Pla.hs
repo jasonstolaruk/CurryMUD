@@ -269,16 +269,17 @@ npcRegularCmds = map (uncurry4 mkRegularCmd)
 
 npcPriorityAbbrevCmds :: [Cmd]
 npcPriorityAbbrevCmds = concatMap (uncurry5 mkPriorityAbbrevCmd)
-    [ ("clear",  "cl", clear,      True,  "Clear the screen.")
-    , ("drop",   "dr", dropAction, True,  "Drop one or more items.")
-    , ("emote",  "em", emote,      True,  "Freely describe an action.")
-    , ("exits",  "ex", exits,      True,  "Display obvious exits.")
-    , ("get",    "g",  getAction,  True,  "Pick up one or more items.")
-    , ("look",   "l",  look,       True,  "Display a description of your current room, or examine one or more things \
-                                          \in your current room.")
-    , ("put",    "p",  putAction,  True,  "Put one or more items into a container.")
-    , ("stop",   "st", npcStop,    False, "Stop possessing.")
-    , ("whoami", "wh", whoAmI,     True,  "Confirm who " <> parensQuote "or what" <> " you are.") ]
+    [ ("clear",     "cl", clear,      True,  "Clear the screen.")
+    , ("drop",      "dr", dropAction, True,  "Drop one or more items.")
+    , ("emote",     "em", emote,      True,  "Freely describe an action.")
+    , ("exits",     "ex", exits,      True,  "Display obvious exits.")
+    , ("get",       "g",  getAction,  True,  "Pick up one or more items.")
+    , ("inventory", "i",  inv,        True,  "Display your inventory, or examine one or more items in your inventory.")
+    , ("look",      "l",  look,       True,  "Display a description of your current room, or examine one or more \
+                                             \things in your current room.")
+    , ("put",       "p",  putAction,  True,  "Put one or more items into a container.")
+    , ("stop",      "st", npcStop,    False, "Stop possessing.")
+    , ("whoami",    "wh", whoAmI,     True,  "Confirm who " <> parensQuote "or what" <> " you are.") ]
 
 
 -----
@@ -600,7 +601,7 @@ connectHelper i (target, as) ms =
                in (ms'', (onTrue (()!# guessWhat) (Left guessWhat :) res, Just ci))
           else sorry . sorryTunedOutICChan $ cn
         (cs, cns, s) = mkChanBindings i ms
-        sorry msg    = (ms, (pure . Left $ msg, Nothing))
+        sorry        = (ms, ) . (, Nothing) . pure . Left
     in findFullNameForAbbrev target (map T.toLower cns) |&| maybe notFound found
 
 
@@ -683,7 +684,7 @@ disconnectHelper i (target, as) idNamesTbl ms =
                in (ms'', (onTrue (()!# guessWhat) (Left guessWhat :) res, Just ci))
           else sorry . sorryTunedOutICChan $ cn
         (cs, cns, s) = mkChanBindings i ms
-        sorry msg    = (ms, (pure . Left $ msg, Nothing))
+        sorry        = (ms, ) . (, Nothing) . pure . Left
     in findFullNameForAbbrev target (map T.toLower cns) |&| maybe notFound found
 
 
@@ -1061,8 +1062,8 @@ getHelpByName cols hs name = findFullNameForAbbrev name [ (h, helpName h) | h <-
 
 intro :: ActionFun
 intro (NoArgs i mq cols) = getState >>= \ms -> let intros = getIntroduced i ms in if ()# intros
-  then let introsTxt = "No one has introduced themselves to you yet." in
-      wrapSend mq cols introsTxt >> (logPlaOut "intro" i . pure $ introsTxt)
+  then let introsTxt = "No one has introduced themselves to you yet."
+       in wrapSend mq cols introsTxt >> (logPlaOut "intro" i . pure $ introsTxt)
   else let introsTxt = commas intros in do
       multiWrapSend mq cols [ "You know the following names:", introsTxt ]
       logPla "intro" i $ "known names: " <> introsTxt
@@ -1609,7 +1610,7 @@ shufflePut i ms d conName icir as invCoinsWithCon@(invWithCon, _) pcInvCoins f =
                in (ms & invTbl .~ it & coinsTbl .~ ct, (dropBlanks $ [ sorryInEq, sorryInRm ] ++ toSelfs', bs', logMsgs'))
         Right {} -> sorry sorryPutExcessCon
   where
-    sorry msg = (ms, (pure msg, [], []))
+    sorry     = (ms, ) . (, [], []) . pure
 
 
 -----
@@ -2105,7 +2106,7 @@ say p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
               x -> patternMatchFail "say sayTo" [ showText x ]
           else sorry sorrySayNoOneHere
       where
-        sorry msg       = (ms, (mkBcast i . nlnl $ msg, []))
+        sorry           = (ms, ) . (, []) . mkBcast i . nlnl
         parseRearAdverb = case maybeAdverb of
           Just adverb                          -> Right (adverb <> " ", "", formatMsg . T.unwords $ rest)
           Nothing | T.head r == adverbOpenChar -> case parseAdverb . T.unwords $ rest of
