@@ -746,7 +746,7 @@ emote (WithArgs i mq cols as) = getState >>= \ms ->
       [] -> let (toSelf, toOthers, targetIds, toTargetBs) = happy ms xformed
             in do
                 wrapSend mq cols . parseDesig i ms $ toSelf
-                bcastNl $ (toOthers, desigIds d \\ (i : targetIds)) : toTargetBs -- TODO: What if incog?
+                bcastIfNotIncogNl i $ (toOthers, desigIds d \\ (i : targetIds)) : toTargetBs
       advices -> multiWrapSend mq cols . nub $ advices
   where
     procTarget ms word =
@@ -2101,7 +2101,7 @@ say p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
               ([ Right [targetId] ], _             ) | targetSing <- getSing targetId ms -> case getType targetId ms of
                 PCType  -> let targetDesig = serialize . mkStdDesig targetId ms $ Don'tCap
                            in parseRearAdverb |&| either sorry (sayToHelper d targetId targetDesig)
-                NpcType -> parseRearAdverb |&| either sorry (sayToMobHelper d targetSing)
+                NpcType -> parseRearAdverb |&| either sorry (sayToMobHelper d targetId targetSing)
                 _       -> sorry . sorrySayTargetType $ targetSing
               x -> patternMatchFail "say sayTo" [ showText x ]
           else sorry sorrySayNoOneHere
@@ -2121,8 +2121,10 @@ say p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
                 toOthersMsg   = T.concat [ serialize d, " says ", frontAdv, "to ", targetDesig, rearAdv, ", ", msg ]
                 toOthersBcast = (nlnl toOthersMsg, desigIds d \\ [ i, targetId ])
             in (ms, ([ toSelfBcast, toTargetBcast, toOthersBcast ], [ parseDesig i ms toSelfMsg ]))
-        sayToMobHelper d targetSing (frontAdv, rearAdv, msg) =
+        sayToMobHelper d targetId targetSing (frontAdv, rearAdv, msg) =
             let toSelfMsg     = T.concat [ "You say ", frontAdv, "to ", theOnLower targetSing, rearAdv, ", ", msg ]
+                toTargetMsg   = T.concat [ serialize d, " says ", frontAdv, "to you",          rearAdv, ", ", msg ]
+                toTargetBcast = (nlnl toTargetMsg, pure targetId)
                 toOthersMsg   = T.concat [ serialize d
                                          , " says "
                                          , frontAdv
@@ -2131,11 +2133,12 @@ say p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
                                          , rearAdv
                                          , ", "
                                          , msg ]
-                toOthersBcast = (nlnl toOthersMsg, i `delete` desigIds d)
+                toOthersBcast = (nlnl toOthersMsg, desigIds d \\ [ i, targetId ])
                 f             | isPC i ms = firstMobSay i
                               | otherwise = (, "")
                 (pt, hint)    = ms^.plaTbl.to f
-            in (ms & plaTbl .~ pt, ((toOthersBcast :) . mkBcast i . nlnl $ toSelfMsg <> hint, pure toSelfMsg))
+            in ( ms & plaTbl .~ pt
+               , ((++ [ toTargetBcast, toOthersBcast ]) . mkBcast i . nlnl $ toSelfMsg <> hint, pure toSelfMsg) )
     sayTo maybeAdverb msg _ = patternMatchFail "say sayTo" [ showText maybeAdverb, msg ]
     formatMsg                 = dblQuote . capitalizeMsg . punctuateMsg
     bcastAndLog (bs, logMsgs) = bcast bs >> logMsgs |#| logPlaOut "say" i

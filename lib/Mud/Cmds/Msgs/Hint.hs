@@ -81,7 +81,7 @@ hintLook = hintHelper [ "use the "
 
 
 hintSay :: T.Text
-hintSay = hintHelper [ "to communicate with non-player characters, use the "
+hintSay = hintHelper [ "when communicating with non-player characters, you may also try the "
                      , dblQuote "ask"
                      , " command. For example, to ask a city guard about crime, type "
                      , colorWith quoteColor "ask guard crime"
