@@ -247,7 +247,7 @@ instance Pretty Cloth where
 instance Pretty Hand where
   pp RHand  = "right-handed"
   pp LHand  = "left-handed"
-  pp NoHand = "none"
+  pp NoHand = "not handed"
 
 
 instance Pretty LinkDir where

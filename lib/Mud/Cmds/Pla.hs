@@ -267,19 +267,21 @@ npcRegularCmds = map (uncurry4 mkRegularCmd)
     , ("w",          go "w",         True,  "Go west.") ]
 
 
+-- TODO: Add "ready", "say", "show", "unready".
 npcPriorityAbbrevCmds :: [Cmd]
 npcPriorityAbbrevCmds = concatMap (uncurry5 mkPriorityAbbrevCmd)
-    [ ("clear",     "cl", clear,      True,  "Clear the screen.")
-    , ("drop",      "dr", dropAction, True,  "Drop one or more items.")
-    , ("emote",     "em", emote,      True,  "Freely describe an action.")
-    , ("exits",     "ex", exits,      True,  "Display obvious exits.")
-    , ("get",       "g",  getAction,  True,  "Pick up one or more items.")
-    , ("inventory", "i",  inv,        True,  "Display your inventory, or examine one or more items in your inventory.")
-    , ("look",      "l",  look,       True,  "Display a description of your current room, or examine one or more \
-                                             \things in your current room.")
-    , ("put",       "p",  putAction,  True,  "Put one or more items into a container.")
-    , ("stop",      "st", npcStop,    False, "Stop possessing.")
-    , ("whoami",    "wh", whoAmI,     True,  "Confirm who " <> parensQuote "or what" <> " you are.") ]
+    [ ("clear",     "cl",  clear,      True,  "Clear the screen.")
+    , ("drop",      "dr",  dropAction, True,  "Drop one or more items.")
+    , ("emote",     "em",  emote,      True,  "Freely describe an action.")
+    , ("exits",     "ex",  exits,      True,  "Display obvious exits.")
+    , ("get",       "g",   getAction,  True,  "Pick up one or more items.")
+    , ("inventory", "i",   inv,        True,  "Display your inventory, or examine one or more items in your inventory.")
+    , ("look",      "l",   look,       True,  "Display a description of your current room, or examine one or more \
+                                              \things in your current room.")
+    , ("put",       "p",   putAction,  True,  "Put one or more items into a container.")
+    , ("stats",     "st",  stats,      True,  "Display your stats.")
+    , ("stop",      "sto", npcStop,    False, "Stop possessing.")
+    , ("whoami",    "wh",  whoAmI,     True,  "Confirm who " <> parensQuote "or what" <> " you are.") ]
 
 
 -----
@@ -2470,11 +2472,13 @@ mkSlotDesc i ms s = case s of
 
 stats :: ActionFun
 stats (NoArgs i mq cols) = getState >>= \ms ->
-    let mkStats   = [ T.concat [ getSing i ms, ", the ", sexy, " ", r ]
+    let mkStats   = [ top
                     , pp . getHand i $ ms
                     , "level " <> showText l
                     , (commaEvery3 . showText $ x  ) <> " experience points"
                     , (commaEvery3 . showText $ nxt) <> " experience points to next level" ]
+        top       = onTrue (isPC i ms) (<> sexRace) . getSing i $ ms
+        sexRace   = T.concat [ ", the ", sexy, " ", r ]
         (sexy, r) = (uncapitalize . showText *** uncapitalize . showText) . getSexRace i $ ms
         (l, x)    = getLvlExp i ms
         nxt       = subtract x . snd $ calcLvlExps !! l
