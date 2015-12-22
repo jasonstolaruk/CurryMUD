@@ -323,6 +323,7 @@ sorryChanTargetNameFromContext n ChanContext { .. } = sorryChanTargetName effCha
 -----
 
 
+-- TODO: You can see a PC's name when you try to put something in a "mhuman" etc.
 sorryCon :: Sing -> T.Text
 sorryCon s = theOnLowerCap s <> " isn't a container."
 

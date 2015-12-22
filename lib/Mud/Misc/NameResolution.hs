@@ -305,7 +305,7 @@ don'tHaveIndexedInv x = Left . sformat (do { "You don't have " % int % " "; "." 
 
 sorryIndexedCoins :: Either T.Text Inv
 sorryIndexedCoins =
-    Left . nl . sformat (do { "Sorry, but "; " cannot be used with coins." }) . dblQuote . T.singleton $ indexChar
+    Left . sformat (do { "Sorry, but "; " cannot be used with coins." }) . dblQuote . T.singleton $ indexChar
 
 
 procGecrMisReady :: (GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv

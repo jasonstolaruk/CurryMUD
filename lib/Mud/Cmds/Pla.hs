@@ -691,11 +691,8 @@ disconnectHelper i (target, as) idNamesTbl ms =
 
 
 dropAction :: ActionFun
-dropAction p@AdviseNoArgs   = advise p ["drop"] adviceDropNoArgs
-dropAction (LowerNub i mq cols as) = helper |&| modifyState >=> \(toSelfs, bs, logMsgs) -> do
-    multiWrapSend mq cols toSelfs
-    bcastIfNotIncogNl i bs
-    logMsgs |#| logPlaOut "drop" i
+dropAction p@AdviseNoArgs     = advise p ["drop"] adviceDropNoArgs
+dropAction p@(LowerNub' i as) = genericAction p helper "drop"
   where
     helper ms =
         let (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv as
@@ -849,12 +846,9 @@ mkExpCmdListTxt =
 
 
 getAction :: ActionFun
-getAction p@AdviseNoArgs = advise p ["get"] adviceGetNoArgs
-getAction (Lower _ mq cols as) | length as >= 3, (head . tail . reverse $ as) == "from" = wrapSend mq cols hintGet
-getAction (LowerNub i mq cols as) = helper |&| modifyState >=> \(toSelfs, bs, logMsgs) -> do
-    multiWrapSend mq cols toSelfs
-    bcastIfNotIncogNl i bs
-    logMsgs |#| logPlaOut "get" i
+getAction p@AdviseNoArgs             = advise p ["get"] adviceGetNoArgs
+getAction   (Lower     _ mq cols as) | length as >= 3, (head . tail . reverse $ as) == "from" = wrapSend mq cols hintGet
+getAction p@(LowerNub' i         as) = genericAction p helper "get"
   where
     helper ms =
         let (inInvs, inEqs, inRms) = sortArgsInvEqRm InRm as
@@ -1560,12 +1554,9 @@ plaDispCmdList p                  = patternMatchFail "plaDispCmdList" [ showText
 
 
 putAction :: ActionFun
-putAction p@AdviseNoArgs       = advise p ["put"] advicePutNoArgs
-putAction p@(AdviseOneArg a)   = advise p ["put"] . advicePutNoCon $ a
-putAction (Lower i mq cols as) = helper |&| modifyState >=> \(toSelfs, bs, logMsgs) -> do
-    multiWrapSend mq cols toSelfs
-    bcastIfNotIncogNl i bs
-    logMsgs |#| logPlaOut "put" i
+putAction p@AdviseNoArgs     = advise p ["put"] advicePutNoArgs
+putAction p@(AdviseOneArg a) = advise p ["put"] . advicePutNoCon $ a
+putAction p@(Lower' i as)    = genericAction p helper "put"
   where
     helper ms | (d, pcInvCoins, rmInvCoins, conName, argsWithoutCon) <- mkPutRemoveBindings i ms as =
       if ()!# pcInvCoins
@@ -2014,16 +2005,17 @@ getAvailArmSlot ms (armSubToSlot -> slot) em = maybeSingleSlot em slot |&| maybe
 remove :: ActionFun
 remove p@AdviseNoArgs     = advise p ["remove"] adviceRemoveNoArgs
 remove p@(AdviseOneArg a) = advise p ["remove"] . adviceRemoveNoCon $ a
-remove (Lower' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
-    bcastIfNotIncogNl i bs >> logMsgs |#| logPlaOut "remove" i
+remove p@(Lower' i as)    = genericAction p helper "remove"
   where
     helper ms | (d, pcInvCoins, rmInvCoins, conName, argsWithoutCon) <- mkPutRemoveBindings i ms as =
         case singleArgInvEqRm InInv conName of
           (InInv, conName') -> shuffleRem i ms d conName' False argsWithoutCon pcInvCoins procGecrMisMobInv
-          (InEq,  _       ) -> (ms, (mkBcast i . sorryConInEq $ Rem, []))
+          (InEq,  _       ) -> sorry . sorryConInEq $ Rem
           (InRm,  conName') -> if ()!# fst rmInvCoins
             then shuffleRem i ms d conName' True argsWithoutCon rmInvCoins procGecrMisRm
-            else (ms, (mkBcast i sorryNoConHere, []))
+            else sorry sorryNoConHere
+      where
+        sorry = (ms, ) . (, [], []) . pure
 remove p = patternMatchFail "remove" [ showText p ]
 
 
@@ -2061,7 +2053,7 @@ shuffleRem i ms d conName icir as invCoinsWithCon@(invWithCon, _) f =
                  else sorry . sorryRemEmpty $ conSing
         Right {} -> sorry sorryRemExcessCon
   where
-    sorry msg     = (ms, (msg, [], []))
+    sorry         = (ms, ) . (, [], []) . pure
     stripLocPrefs = onTrue (any hasLocPref as) g (as, [])
     g pair        = pair & _1 %~ map stripLocPref
                          & _2 .~ pure sorryRemIgnore

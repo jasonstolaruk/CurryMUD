@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleContexts, LambdaCase, MonadComprehensions, MultiWayIf, OverloadedStrings, PatternSynonyms, RankNTypes, TupleSections, ViewPatterns #-}
+{-# LANGUAGE FlexibleContexts, LambdaCase, MonadComprehensions, MultiWayIf, OverloadedStrings, PatternSynonyms, RankNTypes, RecordWildCards, TupleSections, ViewPatterns #-}
 
 -- This module contains helper functions used by multiple functions in "Mud.Cmds.Pla", as well as helper functions used
 -- by both "Mud.Cmds.Pla" and "Mud.Cmds.ExpCmds".
@@ -11,6 +11,7 @@ module Mud.Cmds.Util.Pla ( armSubToSlot
                          , execIfPossessed
                          , fillerToSpcs
                          , findAvailSlot
+                         , genericAction
                          , getMatchingChanWithName
                          , getRelativePCName
                          , hasFp
@@ -85,7 +86,7 @@ import qualified Mud.Util.Misc as U (patternMatchFail)
 import Control.Arrow ((***), first)
 import Control.Lens (Getter, _1, _2, _3, _4, at, both, each, to, view, views)
 import Control.Lens.Operators ((%~), (&), (.~), (<>~), (?~), (^.))
-import Control.Monad (guard)
+import Control.Monad ((>=>), guard)
 import Control.Monad.IO.Class (liftIO)
 import Data.Char (isLower)
 import Data.Function (on)
@@ -215,6 +216,19 @@ execIfPossessed p cn _ = patternMatchFail "execIfPossessed" [ showText p, cn ]
 
 fillerToSpcs :: T.Text -> T.Text
 fillerToSpcs = T.replace (T.singleton indentFiller) " "
+
+
+-----
+
+
+genericAction :: ActionParams
+              -> (MudState -> (MudState, ([T.Text], [Broadcast], [T.Text])))
+              -> T.Text
+              -> MudStack ()
+genericAction ActionParams { .. } helper fn = helper |&| modifyState >=> \(toSelfs, bs, logMsgs) -> do
+    multiWrapSend plaMsgQueue plaCols toSelfs
+    bcastIfNotIncogNl myId bs
+    logMsgs |#| logPlaOut fn myId
 
 
 -----
