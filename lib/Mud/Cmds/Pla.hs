@@ -208,7 +208,7 @@ priorityAbbrevCmds = concatMap (uncurry5 mkPriorityAbbrevCmd)
     , ("look",       "l",   look,       True, cmdDescLook)
     , ("motd",       "m",   motd,       True, "Display the message of the day.")
     , ("put",        "p",   putAction,  True, cmdDescPut)
-    , ("ready",      "r",   ready,      True, "Ready one or more items.")
+    , ("ready",      "r",   ready,      True, cmdDescReady)
     , ("say",        "sa",  say,        True, "Say something out loud.")
     , ("show",       "sh",  showAction, True, "Show one or more items in your inventory and/or readied equipment to \
                                               \another person.")
@@ -264,7 +264,7 @@ npcRegularCmds = map (uncurry4 mkRegularCmd)
     , ("w",          go "w",         True,  cmdDescGoWest) ]
 
 
--- TODO: Add "ready", "say", "show", "unready".
+-- TODO: Add "say", "show", "unready".
 npcPriorityAbbrevCmds :: [Cmd]
 npcPriorityAbbrevCmds = concatMap (uncurry5 mkPriorityAbbrevCmd)
     [ ("clear",     "cl",  clear,      True,  cmdDescClear)
@@ -275,6 +275,7 @@ npcPriorityAbbrevCmds = concatMap (uncurry5 mkPriorityAbbrevCmd)
     , ("inventory", "i",   inv,        True,  cmdDescInv)
     , ("look",      "l",   look,       True,  cmdDescLook)
     , ("put",       "p",   putAction,  True,  cmdDescPut)
+    , ("ready",     "r",   ready,      True,  cmdDescReady)
     , ("stats",     "st",  stats,      True,  cmdDescStats)
     , ("stop",      "sto", npcStop,    False, "Stop possessing.")
     , ("whoami",    "wh",  whoAmI,     True,  "Confirm who " <> parensQuote "or what" <> " you are.") ]
@@ -1748,43 +1749,44 @@ quitCan'tAbbrev p                  = withoutArgs quitCan'tAbbrev p
 
 
 ready :: ActionFun
-ready p@AdviseNoArgs   = advise p ["ready"] adviceReadyNoArgs
-ready (LowerNub' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
-    bcastIfNotIncogNl i bs >> logMsgs |#| logPlaOut "ready" i
+ready p@AdviseNoArgs     = advise p ["ready"] adviceReadyNoArgs
+ready p@(LowerNub' i as) = genericAction p helper "ready"
   where
     helper ms =
-        let (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv as
-            sorryInEq = inEqs |!| mkBcast i sorryReadyInEq
-            sorryInRm = inRms |!| mkBcast i sorryReadyInRm
+        let (inInvs, inEqs, inRms)    = sortArgsInvEqRm InInv as
+            sorryInEq                 = inEqs |!| sorryReadyInEq
+            sorryInRm                 = inRms |!| sorryReadyInRm
+            sorryCoins                = rcs   |!| sorryReadyCoins
             invCoins@(is, _)          = getInvCoins i ms
             d                         = mkStdDesig  i ms DoCap
             (gecrs, mrols, miss, rcs) = resolveEntCoinNamesWithRols i ms inInvs is mempty
             eiss                      = zipWith (curry procGecrMisReady) gecrs miss
-            bs                        = rcs |!| mkBcast i sorryReadyCoins
-            (et, it, bs', logMsgs)    = foldl' (helperReady i ms d) (ms^.eqTbl, ms^.invTbl, bs, []) . zip eiss $ mrols
+            (et, it, toSelfs, bs, logMsgs) = foldl' (helperReady i ms d) (ms^.eqTbl, ms^.invTbl, [], [], []) . zip eiss $ mrols
         in if ()!# invCoins
-          then (ms & eqTbl .~ et & invTbl .~ it, (sorryInEq ++ sorryInRm ++ bs', logMsgs))
-          else (ms, (mkBcast i dudeYourHandsAreEmpty, []))
+          then (ms & eqTbl .~ et & invTbl .~ it, ( dropEmpties $ [ sorryInEq, sorryInRm, sorryCoins ] ++ toSelfs
+                                                 , bs
+                                                 , logMsgs ))
+          else (ms, (pure dudeYourHandsAreEmpty, [], []))
 ready p = patternMatchFail "ready" [ showText p ]
 
 
 helperReady :: Id
             -> MudState
             -> Desig
-            -> (EqTbl, InvTbl, [Broadcast], [Text])
+            -> (EqTbl, InvTbl, [Text], [Broadcast], [Text])
             -> (Either Text Inv, Maybe RightOrLeft)
-            -> (EqTbl, InvTbl, [Broadcast], [Text])
-helperReady i _  _ a (Left  (mkBcast i -> b), _   ) = a & _3 <>~ b
-helperReady i ms d a (Right targetIds,        mrol) = foldl' (readyDispatcher i ms d mrol) a targetIds
+            -> (EqTbl, InvTbl, [Text], [Broadcast], [Text])
+helperReady _ _  _ a (Left  msg,       _   ) = a & _3 <>~ pure msg
+helperReady i ms d a (Right targetIds, mrol) = foldl' (readyDispatcher i ms d mrol) a targetIds
 
 
 readyDispatcher :: Id
                 -> MudState
                 -> Desig
                 -> Maybe RightOrLeft
-                -> (EqTbl, InvTbl, [Broadcast], [Text])
+                -> (EqTbl, InvTbl, [Text], [Broadcast], [Text])
                 -> Id
-                -> (EqTbl, InvTbl, [Broadcast], [Text])
+                -> (EqTbl, InvTbl, [Text], [Broadcast], [Text])
 readyDispatcher i ms d mrol a targetId = let targetSing = getSing targetId ms in
     helper |&| maybe (sorry targetSing) (\f -> f i ms d mrol a targetId targetSing)
   where
@@ -1794,7 +1796,7 @@ readyDispatcher i ms d mrol a targetId = let targetSing = getSing targetId ms in
       WpnType   -> Just readyWpn
       ArmType   -> Just readyArm
       _         -> Nothing
-    sorry targetSing = a & _3 <>~ (mkBcast i . sorryReadyType $ targetSing)
+    sorry targetSing = a & _3 <>~ (pure . sorryReadyType $ targetSing)
 
 
 -- Readying clothing:
@@ -1804,14 +1806,14 @@ readyCloth :: Id
            -> MudState
            -> Desig
            -> Maybe RightOrLeft
-           -> (EqTbl, InvTbl, [Broadcast], [Text])
+           -> (EqTbl, InvTbl, [Text], [Broadcast], [Text])
            -> Id
            -> Sing
-           -> (EqTbl, InvTbl, [Broadcast], [Text])
-readyCloth i ms d mrol a@(et, _, _, _) clothId clothSing | em <- et ! i, cloth <- getCloth clothId ms =
+           -> (EqTbl, InvTbl, [Text], [Broadcast], [Text])
+readyCloth i ms d mrol a@(et, _, _, _, _) clothId clothSing | em <- et ! i, cloth <- getCloth clothId ms =
   case mrol |&| maybe (getAvailClothSlot i ms cloth em) (getDesigClothSlot ms clothSing cloth em) of
-      Left  (mkBcast i -> b) -> a & _3 <>~ b
-      Right slot             -> moveReadiedItem i a slot clothId . mkReadyClothMsgs slot $ cloth
+      Left  msg  -> a & _3 <>~ pure msg
+      Right slot -> moveReadiedItem i a slot clothId . mkReadyClothMsgs slot $ cloth
   where
     mkReadyClothMsgs (pp -> slot) = \case
       Earring  -> wearMsgs
@@ -1845,21 +1847,22 @@ getAvailClothSlot i ms cloth em | sexy <- getSex i ms, h <- getHand i ms =
     getEarringSlotForSex sexy = findAvailSlot em $ case sexy of
       Male   -> lEarringSlots
       Female -> rEarringSlots
-      _      -> patternMatchFail "getAvailClothSlot getEarringSlotForSex"   [ showText sexy ]
+      NoSex  -> rEarringSlots
     getBraceletSlotForHand h  = findAvailSlot em $ case h of
       RHand  -> lBraceletSlots
       LHand  -> rBraceletSlots
-      _      -> patternMatchFail "getAvailClothSlot getBraceletSlotForHand" [ showText h    ]
+      NoHand -> lBraceletSlots
     getRingSlot sexy h        = findAvailSlot em $ case sexy of
-      Male    -> case h of
-        RHand -> [ RingLRS, RingLIS, RingRRS, RingRIS, RingLMS, RingRMS, RingLPS, RingRPS ]
-        LHand -> [ RingRRS, RingRIS, RingLRS, RingLIS, RingRMS, RingLMS, RingRPS, RingLPS ]
-        _     -> patternMatchFail "getAvailClothSlot getRingSlot" [ showText h ]
-      Female  -> case h of
-        RHand -> [ RingLRS, RingLIS, RingRRS, RingRIS, RingLPS, RingRPS, RingLMS, RingRMS ]
-        LHand -> [ RingRRS, RingRIS, RingLRS, RingLIS, RingRPS, RingLPS, RingRMS, RingLMS ]
-        _     -> patternMatchFail "getAvailClothSlot getRingSlot" [ showText h    ]
-      _       -> patternMatchFail "getAvailClothSlot getRingSlot" [ showText sexy ]
+      Male   -> case h of
+        RHand  -> [ RingLRS, RingLIS, RingRRS, RingRIS, RingLMS, RingRMS, RingLPS, RingRPS ]
+        LHand  -> [ RingRRS, RingRIS, RingLRS, RingLIS, RingRMS, RingLMS, RingRPS, RingLPS ]
+        NoHand -> noSexHand
+      Female -> case h of
+        RHand  -> [ RingLRS, RingLIS, RingRRS, RingRIS, RingLPS, RingRPS, RingLMS, RingRMS ]
+        LHand  -> [ RingRRS, RingRIS, RingLRS, RingLIS, RingRPS, RingLPS, RingRMS, RingLMS ]
+        NoHand -> noSexHand
+      NoSex  -> noSexHand
+    noSexHand =   [ RingRIS, RingRMS, RingRRS, RingRPS, RingLIS, RingLMS, RingLRS, RingLPS ]
     sorry | cloth `elem` [ Earring .. Ring ]                   = sorryReadyClothFull      . pp $ cloth
           | cloth `elem` [ Skirt, Dress, Backpack, Cloak ]     = sorryReadyAlreadyWearing . pp $ cloth
           | ci <- em M.! clothToSlot cloth, s <- getSing ci ms = sorryReadyAlreadyWearing        s
@@ -1913,16 +1916,16 @@ readyWpn :: Id
          -> MudState
          -> Desig
          -> Maybe RightOrLeft
-         -> (EqTbl, InvTbl, [Broadcast], [Text])
+         -> (EqTbl, InvTbl, [Text], [Broadcast], [Text])
          -> Id
          -> Sing
-         -> (EqTbl, InvTbl, [Broadcast], [Text])
-readyWpn i ms d mrol a@(et, _, _, _) wpnId wpnSing | em <- et ! i, wpn <- getWpn wpnId ms, sub <- wpn^.wpnSub =
+         -> (EqTbl, InvTbl, [Text], [Broadcast], [Text])
+readyWpn i ms d mrol a@(et, _, _, _, _) wpnId wpnSing | em <- et ! i, wpn <- getWpn wpnId ms, sub <- wpn^.wpnSub =
     if not . isSlotAvail em $ BothHandsS
-      then let b = mkBcast i sorryReadyAlreadyWieldingTwoHanded in a & _3 <>~ b
-               else case mrol |&| maybe (getAvailWpnSlot ms i em) (getDesigWpnSlot ms wpnSing em) of
-        Left  (mkBcast i -> b) -> a & _3 <>~ b
-        Right slot             -> case sub of
+      then sorry sorryReadyAlreadyWieldingTwoHanded
+      else case mrol |&| maybe (getAvailWpnSlot ms i em) (getDesigWpnSlot ms wpnSing em) of
+        Left  msg  -> sorry msg
+        Right slot -> case sub of
           OneHanded -> let readyMsgs = (   T.concat [ "You wield the ", wpnSing, " with your ", pp slot, "." ]
                                        , ( T.concat [ serialize d
                                                     , " wields "
@@ -1940,9 +1943,9 @@ readyWpn i ms d mrol a@(et, _, _, _) wpnId wpnSing | em <- et ! i, wpn <- getWpn
                                 , ( T.concat [ serialize d, " wields ", aOrAn wpnSing, " with both hands." ]
                                   , otherPCIds ) )
                 in moveReadiedItem i a BothHandsS wpnId readyMsgs
-            | otherwise -> let b = mkBcast i . sorryReadyWpnHands $ wpnSing
-                           in a & _3 <>~ b
+            | otherwise -> sorry . sorryReadyWpnHands $ wpnSing
   where
+    sorry msg  = a & _3 <>~ pure msg
     poss       = mkPossPro . getSex i $ ms
     otherPCIds = i `delete` desigIds d
 
@@ -1951,9 +1954,9 @@ getAvailWpnSlot :: MudState -> Id -> EqMap -> Either Text Slot
 getAvailWpnSlot ms i em = let h@(otherHand -> oh) = getHand i ms in
     (findAvailSlot em . map getSlotForHand $ [ h, oh ]) |&| maybe (Left sorryReadyAlreadyWieldingTwoWpns) Right
   where
-    getSlotForHand h = case h of RHand -> RHandS
-                                 LHand -> LHandS
-                                 _     -> patternMatchFail "getAvailWpnSlot getSlotForHand" [ showText h ]
+    getSlotForHand h = case h of RHand  -> RHandS
+                                 LHand  -> LHandS
+                                 NoHand -> RHandS
 
 
 getDesigWpnSlot :: MudState -> Sing -> EqMap -> RightOrLeft -> Either Text Slot
@@ -1974,14 +1977,14 @@ readyArm :: Id
          -> MudState
          -> Desig
          -> Maybe RightOrLeft
-         -> (EqTbl, InvTbl, [Broadcast], [Text])
+         -> (EqTbl, InvTbl, [Text], [Broadcast], [Text])
          -> Id
          -> Sing
-         -> (EqTbl, InvTbl, [Broadcast], [Text])
-readyArm i ms d mrol a@(et, _, _, _) armId armSing | em <- et ! i, sub <- getArmSub armId ms =
+         -> (EqTbl, InvTbl, [Text], [Broadcast], [Text])
+readyArm i ms d mrol a@(et, _, _, _, _) armId armSing | em <- et ! i, sub <- getArmSub armId ms =
     case mrol |&| maybe (getAvailArmSlot ms sub em) sorry of
-      Left  (mkBcast i -> b) -> a & _3 <>~ b
-      Right slot             -> moveReadiedItem i a slot armId . mkReadyArmMsgs $ sub
+      Left  msg  -> a & _3 <>~ pure msg
+      Right slot -> moveReadiedItem i a slot armId . mkReadyArmMsgs $ sub
   where
     sorry          = Left . sorryReadyRol armSing
     mkReadyArmMsgs = \case

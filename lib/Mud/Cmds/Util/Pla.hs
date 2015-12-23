@@ -84,7 +84,7 @@ import qualified Mud.Misc.Logging as L (logPla, logPlaOut)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Arrow ((***), first)
-import Control.Lens (Getter, _1, _2, _3, _4, at, both, each, to, view, views)
+import Control.Lens (Getter, _1, _2, _3, _4, _5, at, both, each, to, view, views)
 import Control.Lens.Operators ((%~), (&), (.~), (<>~), (?~), (^.))
 import Control.Monad ((>=>), guard)
 import Control.Monad.IO.Class (liftIO)
@@ -821,15 +821,16 @@ mkPutRemoveBindings i ms as = let d                 = mkStdDesig  i ms DoCap
 
 
 moveReadiedItem :: Id
-                -> (EqTbl, InvTbl, [Broadcast], [Text])
+                -> (EqTbl, InvTbl, [Text], [Broadcast], [Text])
                 -> Slot
                 -> Id
                 -> (Text, Broadcast)
-                -> (EqTbl, InvTbl, [Broadcast], [Text])
+                -> (EqTbl, InvTbl, [Text], [Broadcast], [Text])
 moveReadiedItem i a s targetId (msg, b) = a & _1.ind i.at s ?~ targetId
                                             & _2.ind i %~ (targetId `delete`)
-                                            & _3 <>~ (mkBcast i msg ++ pure b)
-                                            & _4 <>~ pure msg
+                                            & _3 <>~ pure msg
+                                            & _4 <>~ pure b
+                                            & _5 <>~ pure msg
 
 
 -----
@@ -854,7 +855,7 @@ notFoundSuggestAsleeps a@(capitalize . T.toLower -> a') asleepSings ms =
 otherHand :: Hand -> Hand
 otherHand RHand  = LHand
 otherHand LHand  = RHand
-otherHand NoHand = NoHand
+otherHand NoHand = LHand
 
 
 -----

@@ -93,6 +93,10 @@ cmdDescPut :: Text
 cmdDescPut = "Put one or more items into a container."
 
 
+cmdDescReady :: Text
+cmdDescReady = "Ready one or more items."
+
+
 cmdDescRemove :: Text
 cmdDescRemove = "Remove one or more items from a container."
 
