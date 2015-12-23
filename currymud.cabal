@@ -34,6 +34,7 @@ library
                        Mud.Cmds.Debug
                        Mud.Cmds.ExpCmds
                        Mud.Cmds.Msgs.Advice
+                       Mud.Cmds.Msgs.CmdDesc
                        Mud.Cmds.Msgs.Dude
                        Mud.Cmds.Msgs.Hint
                        Mud.Cmds.Msgs.Misc

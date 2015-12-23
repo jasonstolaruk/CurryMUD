@@ -4,6 +4,7 @@ module Mud.Cmds.Admin (adminCmds) where
 
 import Mud.Cmds.ExpCmds
 import Mud.Cmds.Msgs.Advice
+import Mud.Cmds.Msgs.CmdDesc
 import Mud.Cmds.Msgs.Hint
 import Mud.Cmds.Msgs.Misc
 import Mud.Cmds.Msgs.Sorry
@@ -111,7 +112,7 @@ massLogPla = L.massLogPla "Mud.Cmds.Admin"
 
 adminCmds :: [Cmd]
 adminCmds =
-    [ mkAdminCmd "?"          adminDispCmdList True  "Display or search this command list."
+    [ mkAdminCmd "?"          adminDispCmdList True  cmdDescDispCmdList
     , mkAdminCmd "admin"      adminAdmin       True  ("Send a message on the admin channel " <> plusRelatedMsg)
     , mkAdminCmd "as"         adminAs          False "Execute a command as someone else."
     , mkAdminCmd "banhost"    adminBanHost     True  "Dump the banned hostname database, or ban/unban a host."

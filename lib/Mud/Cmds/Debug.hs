@@ -6,6 +6,7 @@ module Mud.Cmds.Debug ( debugCmds
                       , ) where -- Not a typo.
 
 import Mud.Cmds.Msgs.Advice
+import Mud.Cmds.Msgs.CmdDesc
 import Mud.Cmds.Msgs.Misc
 import Mud.Cmds.Msgs.Sorry
 import Mud.Cmds.Util.CmdPrefixes
@@ -101,7 +102,7 @@ logPlaExecArgs = L.logPlaExecArgs "Mud.Cmds.Debug"
 
 debugCmds :: [Cmd]
 debugCmds =
-    [ mkDebugCmd "?"          debugDispCmdList "Display or search this command list."
+    [ mkDebugCmd "?"          debugDispCmdList cmdDescDispCmdList
     , mkDebugCmd "ap"         debugAp          "Show \"ActionParams\", including any arguments you provide."
     , mkDebugCmd "boot"       debugBoot        "Boot all players (including yourself)."
     , mkDebugCmd "broadcast"  debugBcast       "Broadcast (to yourself) a multi-line message."

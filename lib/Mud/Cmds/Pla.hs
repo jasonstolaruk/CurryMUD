@@ -12,6 +12,7 @@ module Mud.Cmds.Pla ( getRecordUptime
 
 import Mud.Cmds.ExpCmds
 import Mud.Cmds.Msgs.Advice
+import Mud.Cmds.Msgs.CmdDesc
 import Mud.Cmds.Msgs.Dude
 import Mud.Cmds.Msgs.Hint
 import Mud.Cmds.Msgs.Misc
@@ -144,38 +145,36 @@ plaCmds = sort $ regularCmds ++ priorityAbbrevCmds ++ expCmds
 -- TODO: "give" command.
 regularCmds :: [Cmd]
 regularCmds = map (uncurry4 mkRegularCmd)
-    [ ("?",          plaDispCmdList,  True,  "Display or search this command list.")
+    [ ("?",          plaDispCmdList,  True,  cmdDescDispCmdList)
     , ("about",      about,           True,  "About CurryMUD.")
     , ("admin",      admin,           True,  "Display a list of administrators, or send a message to an administrator.")
-    , ("bars",       bars,            True,  "Display one or more status bars.")
+    , ("bars",       bars,            True,  cmdDescBars)
     , ("bug",        bug,             True,  "Report a bug.")
     , ("channel",    chan,            True,  "Send a message on a telepathic channel " <> plusRelatedMsg)
-    , ("d",          go "d",          True,  "Go down.")
-    , ("e",          go "e",          True,  "Go east.")
-    , ("equipment",  equip,           True,  "Display your readied equipment, or examine one or more items in your \
-                                             \readied equipment.")
-    , ("expressive", expCmdList,      True,  "Display or search a list of available expressive commands and their \
-                                             \results.")
-    , ("n",          go "n",          True,  "Go north.")
-    , ("ne",         go "ne",         True,  "Go northeast.")
+    , ("d",          go "d",          True,  cmdDescGoDown)
+    , ("e",          go "e",          True,  cmdDescGoEast)
+    , ("equipment",  equip,           True,  cmdDescEquip)
+    , ("expressive", expCmdList,      True,  cmdDescExpCmdList)
+    , ("n",          go "n",          True,  cmdDescGoNorth)
+    , ("ne",         go "ne",         True,  cmdDescGoNortheast)
     , ("newchannel", newChan,         True,  "Create one or more new telepathic channels.")
-    , ("nw",         go "nw",         True,  "Go northwest.")
+    , ("nw",         go "nw",         True,  cmdDescGoNorthwest)
     , ("question",   question,        True,  "Ask/answer newbie questions " <> plusRelatedMsg)
     , ("qui",        quitCan'tAbbrev, True,  "")
     , ("quit",       quit,            False, "Quit playing CurryMUD.")
-    , ("remove",     remove,          True,  "Remove one or more items from a container.")
-    , ("s",          go "s",          True,  "Go south.")
-    , ("se",         go "se",         True,  "Go southeast.")
+    , ("remove",     remove,          True,  cmdDescRemove)
+    , ("s",          go "s",          True,  cmdDescGoSouth)
+    , ("se",         go "se",         True,  cmdDescGoSoutheast)
     , ("set",        setAction,       True,  "View or change settings.")
-    , ("sw",         go "sw",         True,  "Go southwest.")
-    , ("take",       getAction,       True,  "Pick up one or more items.")
+    , ("sw",         go "sw",         True,  cmdDescGoSouthwest)
+    , ("take",       getAction,       True,  cmdDescGet)
     , ("tune",       tune,            True,  "Display a list of your telepathic connections, or tune in/out one or \
                                              \more telepathic connections.")
     , ("typo",       typo,            True,  "Report a typo.")
-    , ("u",          go "u",          True,  "Go up.")
+    , ("u",          go "u",          True,  cmdDescGoUp)
     , ("unlink",     unlink,          True,  "Sever one or more telepathic links.")
     , ("uptime",     uptime,          True,  "Display how long CurryMUD has been running.")
-    , ("w",          go "w",          True,  "Go west.")
+    , ("w",          go "w",          True,  cmdDescGoWest)
     , ("whoami",     whoAmI,          True,  "Confirm your name, sex, and race.") ]
 
 
@@ -189,31 +188,30 @@ mkRegularCmd cfn f b cd = Cmd { cmdName           = cfn
 
 priorityAbbrevCmds :: [Cmd]
 priorityAbbrevCmds = concatMap (uncurry5 mkPriorityAbbrevCmd)
-    [ ("clear",      "cl",  clear,      True, "Clear the screen.")
+    [ ("clear",      "cl",  clear,      True, cmdDescClear)
     , ("color",      "col", color,      True, "Perform a color test.")
     , ("connect",    "co",  connect,    True, "Connect one or more people to a telepathic channel.")
     , ("disconnect", "di",  disconnect, True, "Disconnect one or more people from a telepathic channel.")
-    , ("drop",       "dr",  dropAction, True, "Drop one or more items.")
-    , ("emote",      "em",  emote,      True, "Freely describe an action.")
-    , ("exits",      "ex",  exits,      True, "Display obvious exits.")
-    , ("get",        "g",   getAction,  True, "Pick up one or more items.")
+    , ("drop",       "dr",  dropAction, True, cmdDescDrop)
+    , ("emote",      "em",  emote,      True, cmdDescEmote)
+    , ("exits",      "ex",  exits,      True, cmdDescExits)
+    , ("get",        "g",   getAction,  True, cmdDescGet)
     , ("help",       "h",   help,       True, "Get help on one or more commands or topics.")
     , ("intro",      "in",  intro,      True, "Display a list of the people who have introduced themselves to you, or \
                                               \introduce yourself to one or more people.")
-    , ("inventory",  "i",   inv,        True, "Display your inventory, or examine one or more items in your inventory.")
+    , ("inventory",  "i",   inv,        True, cmdDescInv)
     , ("leave",      "le",  leave,      True, "Sever your connections to one or more telepathic channels.")
     , ("link",       "li",  link,       True, "Display a list of the people with whom you have established a \
                                               \telepathic link, or establish a telepathic link with one or more \
                                               \people.")
-    , ("look",       "l",   look,       True, "Display a description of your current room, or examine one or more \
-                                              \things in your current room.")
+    , ("look",       "l",   look,       True, cmdDescLook)
     , ("motd",       "m",   motd,       True, "Display the message of the day.")
-    , ("put",        "p",   putAction,  True, "Put one or more items into a container.")
+    , ("put",        "p",   putAction,  True, cmdDescPut)
     , ("ready",      "r",   ready,      True, "Ready one or more items.")
     , ("say",        "sa",  say,        True, "Say something out loud.")
     , ("show",       "sh",  showAction, True, "Show one or more items in your inventory and/or readied equipment to \
                                               \another person.")
-    , ("stats",      "st",  stats,      True, "Display your stats.")
+    , ("stats",      "st",  stats,      True, cmdDescStats)
     , ("telepathy",  "t",   tele,       True, "Send a private message to a person with whom you have established a \
                                               \two-way telepathic link.")
     , ("unready",    "un",  unready,    True, "Unready one or more items.")
@@ -248,38 +246,35 @@ npcCmds = sort $ npcRegularCmds ++ npcPriorityAbbrevCmds ++ expCmds
 npcRegularCmds :: [Cmd]
 npcRegularCmds = map (uncurry4 mkRegularCmd)
     [ (".",          npcAsSelf,      False, "Execute a command as your admin PC.")
-    , ("?",          npcDispCmdList, True,  "Display or search this command list.")
-    , ("bars",       bars,           True,  "Display one or more status bars.")
-    , ("d",          go "d",         True,  "Go down.")
-    , ("e",          go "e",         True,  "Go east.")
-    , ("equipment",  equip,          True,  "Display your readied equipment, or examine one or more items in your \
-                                            \readied equipment.")
-    , ("expressive", expCmdList,     True,  "Display or search a list of available expressive commands and their \
-                                            \results.")
-    , ("n",          go "n",         True,  "Go north.")
-    , ("ne",         go "ne",        True,  "Go northeast.")
-    , ("nw",         go "nw",        True,  "Go northwest.")
-    , ("remove",     remove,         True,  "Remove one or more items from a container.")
-    , ("s",          go "s",         True,  "Go south.")
-    , ("se",         go "se",        True,  "Go southeast.")
-    , ("sw",         go "sw",        True,  "Go southwest.")
-    , ("u",          go "u",         True,  "Go up.")
-    , ("w",          go "w",         True,  "Go west.") ]
+    , ("?",          npcDispCmdList, True,  cmdDescDispCmdList)
+    , ("bars",       bars,           True,  cmdDescBars)
+    , ("d",          go "d",         True,  cmdDescGoDown)
+    , ("e",          go "e",         True,  cmdDescGoEast)
+    , ("equipment",  equip,          True,  cmdDescEquip)
+    , ("expressive", expCmdList,     True,  cmdDescExpCmdList)
+    , ("n",          go "n",         True,  cmdDescGoNorth)
+    , ("ne",         go "ne",        True,  cmdDescGoNortheast)
+    , ("nw",         go "nw",        True,  cmdDescGoNorthwest)
+    , ("remove",     remove,         True,  cmdDescRemove)
+    , ("s",          go "s",         True,  cmdDescGoSouth)
+    , ("se",         go "se",        True,  cmdDescGoSoutheast)
+    , ("sw",         go "sw",        True,  cmdDescGoSouthwest)
+    , ("u",          go "u",         True,  cmdDescGoUp)
+    , ("w",          go "w",         True,  cmdDescGoWest) ]
 
 
 -- TODO: Add "ready", "say", "show", "unready".
 npcPriorityAbbrevCmds :: [Cmd]
 npcPriorityAbbrevCmds = concatMap (uncurry5 mkPriorityAbbrevCmd)
-    [ ("clear",     "cl",  clear,      True,  "Clear the screen.")
-    , ("drop",      "dr",  dropAction, True,  "Drop one or more items.")
-    , ("emote",     "em",  emote,      True,  "Freely describe an action.")
-    , ("exits",     "ex",  exits,      True,  "Display obvious exits.")
-    , ("get",       "g",   getAction,  True,  "Pick up one or more items.")
-    , ("inventory", "i",   inv,        True,  "Display your inventory, or examine one or more items in your inventory.")
-    , ("look",      "l",   look,       True,  "Display a description of your current room, or examine one or more \
-                                              \things in your current room.")
-    , ("put",       "p",   putAction,  True,  "Put one or more items into a container.")
-    , ("stats",     "st",  stats,      True,  "Display your stats.")
+    [ ("clear",     "cl",  clear,      True,  cmdDescClear)
+    , ("drop",      "dr",  dropAction, True,  cmdDescDrop)
+    , ("emote",     "em",  emote,      True,  cmdDescEmote)
+    , ("exits",     "ex",  exits,      True,  cmdDescExits)
+    , ("get",       "g",   getAction,  True,  cmdDescGet)
+    , ("inventory", "i",   inv,        True,  cmdDescInv)
+    , ("look",      "l",   look,       True,  cmdDescLook)
+    , ("put",       "p",   putAction,  True,  cmdDescPut)
+    , ("stats",     "st",  stats,      True,  cmdDescStats)
     , ("stop",      "sto", npcStop,    False, "Stop possessing.")
     , ("whoami",    "wh",  whoAmI,     True,  "Confirm who " <> parensQuote "or what" <> " you are.") ]
 
