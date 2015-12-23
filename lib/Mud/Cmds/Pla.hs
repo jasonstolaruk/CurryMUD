@@ -59,7 +59,7 @@ import Control.Arrow ((***), first, second)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception.Lifted (catch, try)
-import Control.Lens (_1, _2, _3, _4, at, both, each, set, to, view, views)
+import Control.Lens (_1, _2, _3, _4, _5, at, both, each, set, to, view, views)
 import Control.Lens.Operators ((%~), (&), (+~), (-~), (.~), (<>~), (?~), (^.))
 import Control.Monad ((>=>), foldM, forM, forM_, guard, mplus, unless)
 import Control.Monad.IO.Class (liftIO)
@@ -215,7 +215,7 @@ priorityAbbrevCmds = concatMap (uncurry5 mkPriorityAbbrevCmd)
     , ("stats",      "st",  stats,      True, cmdDescStats)
     , ("telepathy",  "t",   tele,       True, "Send a private message to a person with whom you have established a \
                                               \two-way telepathic link.")
-    , ("unready",    "un",  unready,    True, "Unready one or more items.")
+    , ("unready",    "un",  unready,    True, cmdDescUnready)
     , ("who",        "wh",  who,        True, "Display or search a list of who is currently awake.") ]
 
 
@@ -264,7 +264,7 @@ npcRegularCmds = map (uncurry4 mkRegularCmd)
     , ("w",          go "w",         True,  cmdDescGoWest) ]
 
 
--- TODO: Add "say", "show", "unready".
+-- TODO: Add "say", "show".
 npcPriorityAbbrevCmds :: [Cmd]
 npcPriorityAbbrevCmds = concatMap (uncurry5 mkPriorityAbbrevCmd)
     [ ("clear",     "cl",  clear,      True,  cmdDescClear)
@@ -278,6 +278,7 @@ npcPriorityAbbrevCmds = concatMap (uncurry5 mkPriorityAbbrevCmd)
     , ("ready",     "r",   ready,      True,  cmdDescReady)
     , ("stats",     "st",  stats,      True,  cmdDescStats)
     , ("stop",      "sto", npcStop,    False, "Stop possessing.")
+    , ("unready",   "un",  unready,    True,  cmdDescUnready)
     , ("whoami",    "wh",  whoAmI,     True,  "Confirm who " <> parensQuote "or what" <> " you are.") ]
 
 
@@ -713,6 +714,10 @@ dropAction p = patternMatchFail "dropAction" [ showText p ]
 -----
 
 
+{- TODO
+em hisses at >mv
+[the rock cavy hisses at the male vulpenoid.]
+-}
 emote :: ActionFun
 emote p@AdviseNoArgs                                                     = advise p ["emote"] adviceEmoteNoArgs
 emote p@ActionParams { args } | any (`elem` yous) . map T.toLower $ args = advise p ["emote"] adviceYouEmote
@@ -1761,7 +1766,8 @@ ready p@(LowerNub' i as) = genericAction p helper "ready"
             d                         = mkStdDesig  i ms DoCap
             (gecrs, mrols, miss, rcs) = resolveEntCoinNamesWithRols i ms inInvs is mempty
             eiss                      = zipWith (curry procGecrMisReady) gecrs miss
-            (et, it, toSelfs, bs, logMsgs) = foldl' (helperReady i ms d) (ms^.eqTbl, ms^.invTbl, [], [], []) . zip eiss $ mrols
+            (et, it, toSelfs, bs, logMsgs) =
+                foldl' (helperReady i ms d) (ms^.eqTbl, ms^.invTbl, [], [], []) . zip eiss $ mrols
         in if ()!# invCoins
           then (ms & eqTbl .~ et & invTbl .~ it, ( dropEmpties $ [ sorryInEq, sorryInRm, sorryCoins ] ++ toSelfs
                                                  , bs
@@ -2656,39 +2662,41 @@ unlink p = patternMatchFail "unlink" [ showText p ]
 
 
 unready :: ActionFun
-unready p@AdviseNoArgs   = advise p ["unready"] adviceUnreadyNoArgs
-unready (LowerNub' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
-    bcastIfNotIncogNl i bs >> logMsgs |#| logPlaOut "unready" i
+unready p@AdviseNoArgs     = advise p ["unready"] adviceUnreadyNoArgs
+unready p@(LowerNub' i as) = genericAction p helper "unready"
   where
     helper ms =
         let (inInvs, inEqs, inRms) = sortArgsInvEqRm InEq as
-            sorryInInv             = inInvs |!| mkBcast i sorryUnreadyInInv
-            sorryInRm              = inRms  |!| mkBcast i sorryUnreadyInRm
+            sorryInInv             = inInvs |!| sorryUnreadyInInv
+            sorryInRm              = inRms  |!| sorryUnreadyInRm
+            sorryCoins             = rcs    |!| sorryUnreadyCoins
             d                      = mkStdDesig i ms DoCap
             is                     = M.elems . getEqMap i $ ms
             (gecrs, miss, rcs)     = resolveEntCoinNames i ms inEqs is mempty
             eiss                   = zipWith (curry procGecrMisMobEq) gecrs miss
-            bs                     = rcs |!| mkBcast i sorryUnreadyCoins
-            (et, it, bs', logMsgs) = foldl' (helperUnready i ms d) (ms^.eqTbl, ms^.invTbl, bs, []) eiss
+            (et, it, toSelfs, bs, logMsgs) = foldl' (helperUnready i ms d) (ms^.eqTbl, ms^.invTbl, [], [], []) eiss
         in if ()!# is
-          then (ms & eqTbl .~ et & invTbl .~ it, (sorryInInv ++ sorryInRm ++ bs', logMsgs))
-          else (ms, (mkBcast i dudeYou'reNaked, []))
+          then (ms & eqTbl .~ et & invTbl .~ it, ( dropEmpties $ [ sorryInInv, sorryInRm, sorryCoins ] ++ toSelfs
+                                                 , bs
+                                                 , logMsgs ))
+          else (ms, (pure dudeYou'reNaked, [], []))
 unready p = patternMatchFail "unready" [ showText p ]
 
 
 helperUnready :: Id
               -> MudState
               -> Desig
-              -> (EqTbl, InvTbl, [Broadcast], [Text])
+              -> (EqTbl, InvTbl, [Text], [Broadcast], [Text])
               -> Either Text Inv
-              -> (EqTbl, InvTbl, [Broadcast], [Text])
+              -> (EqTbl, InvTbl, [Text], [Broadcast], [Text])
 helperUnready i ms d a = \case
-  Left  (mkBcast i -> b) -> a & _3 <>~ b
-  Right targetIds        -> let (bs, msgs) = mkUnreadyDescs i ms d targetIds
-                            in a & _1.ind i %~ M.filter (`notElem` targetIds)
-                                 & _2.ind i %~ (sortInv ms . (++ targetIds))
-                                 & _3 <>~ bs
-                                 & _4 <>~ msgs
+  Left  msg       -> a & _3 <>~ pure msg
+  Right targetIds -> let (bs, msgs) = mkUnreadyDescs i ms d targetIds
+                     in a & _1.ind i %~ M.filter (`notElem` targetIds)
+                          & _2.ind i %~ (sortInv ms . (++ targetIds))
+                          & _3 <>~ msgs
+                          & _4 <>~ bs
+                          & _5 <>~ msgs
 
 
 mkUnreadyDescs :: Id
@@ -2696,12 +2704,12 @@ mkUnreadyDescs :: Id
                -> Desig
                -> Inv
                -> ([Broadcast], [Text])
-mkUnreadyDescs i ms d targetIds = first concat . unzip $ [ helper icb | icb <- mkIdCountBothList i ms targetIds ]
+mkUnreadyDescs i ms d targetIds = unzip [ helper icb | icb <- mkIdCountBothList i ms targetIds ]
   where
     helper (targetId, count, b@(targetSing, _)) = if count == 1
       then let toSelfMsg   = T.concat [ "You ", mkVerb targetId SndPer, " the ", targetSing, "." ]
                toOthersMsg = T.concat [ serialize d, spaced . mkVerb targetId $ ThrPer, aOrAn targetSing,  "." ]
-           in ((toOthersMsg, otherPCIds) : mkBcast i toSelfMsg, toSelfMsg)
+           in ((toOthersMsg, otherPCIds), toSelfMsg)
       else let toSelfMsg   = T.concat [ "You "
                                       , mkVerb targetId SndPer
                                       , spaced . showText $ count
@@ -2713,7 +2721,7 @@ mkUnreadyDescs i ms d targetIds = first concat . unzip $ [ helper icb | icb <- m
                                       , " "
                                       , mkPlurFromBoth b
                                       , "." ]
-           in ((toOthersMsg, otherPCIds) : mkBcast i toSelfMsg, toSelfMsg)
+           in ((toOthersMsg, otherPCIds), toSelfMsg)
     mkVerb targetId person = case getType targetId ms of
       ClothType -> case getCloth targetId ms of
         Earring  -> mkVerbRemove  person

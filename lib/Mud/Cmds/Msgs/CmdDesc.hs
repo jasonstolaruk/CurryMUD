@@ -103,3 +103,7 @@ cmdDescRemove = "Remove one or more items from a container."
 
 cmdDescStats :: Text
 cmdDescStats = "Display your stats."
+
+
+cmdDescUnready :: Text
+cmdDescUnready = "Unready one or more items."
