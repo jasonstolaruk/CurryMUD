@@ -23,6 +23,7 @@ import Control.Exception.Lifted (catch)
 import Control.Monad ((>=>))
 import Control.Monad.IO.Class (liftIO)
 import Data.Monoid ((<>))
+import Data.Text (Text)
 import qualified Data.Text as T
 import System.Time.Utils (renderSecs)
 
@@ -33,11 +34,11 @@ default (Int)
 -----
 
 
-logNotice :: T.Text -> T.Text -> MudStack ()
+logNotice :: Text -> Text -> MudStack ()
 logNotice = L.logNotice "Mud.Threads.InacTimer"
 
 
-logPla :: T.Text -> Id -> T.Text -> MudStack ()
+logPla :: Text -> Id -> Text -> MudStack ()
 logPla = L.logPla "Mud.Threads.InacTimer"
 
 

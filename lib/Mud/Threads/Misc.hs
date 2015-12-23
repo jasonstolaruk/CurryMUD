@@ -34,20 +34,20 @@ import Control.Monad (void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (runReaderT)
 import Data.Monoid ((<>))
+import Data.Text (Text)
 import Data.Typeable (Typeable)
 import qualified Data.IntMap.Lazy as IM (filter, keys)
-import qualified Data.Text as T
 
 
-logExMsg :: T.Text -> T.Text -> SomeException -> MudStack ()
+logExMsg :: Text -> Text -> SomeException -> MudStack ()
 logExMsg = L.logExMsg "Mud.Threads.Misc"
 
 
-logNotice :: T.Text -> T.Text -> MudStack ()
+logNotice :: Text -> Text -> MudStack ()
 logNotice = L.logNotice "Mud.Threads.Misc"
 
 
-logPla :: T.Text -> Id -> T.Text -> MudStack ()
+logPla :: Text -> Id -> Text -> MudStack ()
 logPla = L.logPla "Mud.Threads.Misc"
 
 
@@ -81,7 +81,7 @@ concurrentTree = foldr helper (return [])
 -----
 
 
-die :: Maybe Id -> T.Text -> PlsDie -> MudStack ()
+die :: Maybe Id -> Text -> PlsDie -> MudStack ()
 die mi threadName = const . f $ "the " <> threadName <> " thread is dying."
   where
     f = maybe (logNotice "die") (logPla "die") mi
@@ -101,13 +101,13 @@ findNpcIds = views typeTbl (IM.keys . IM.filter (== NpcType))
 -----
 
 
-plaThreadExHandler :: T.Text -> Id -> SomeException -> MudStack ()
+plaThreadExHandler :: Text -> Id -> SomeException -> MudStack ()
 plaThreadExHandler threadName i e
   | Just ThreadKilled <- fromException e = closePlaLog i
   | otherwise                            = threadExHandler threadName e
 
 
-threadExHandler :: T.Text -> SomeException -> MudStack ()
+threadExHandler :: Text -> SomeException -> MudStack ()
 threadExHandler threadName e = do
     logExMsg "threadExHandler" (rethrowExMsg $ "on " <> threadName <> " thread") e
     throwToListenThread e

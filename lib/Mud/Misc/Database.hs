@@ -38,50 +38,51 @@ import Mud.TopLvlDefs.Misc
 
 import Control.Monad (forM_)
 import Data.Monoid ((<>))
+import Data.Text (Text)
 import Database.SQLite.Simple (FromRow, Only(..), Query(..), ToRow, execute, execute_, field, fromRow, query_, toRow, withConnection)
 import Database.SQLite.Simple.FromRow (RowParser)
 import qualified Data.Text as T
 
 
-data AdminChanRec = AdminChanRec { adminChanTimestamp :: T.Text
-                                 , adminChanName      :: T.Text
-                                 , adminChanMsg       :: T.Text }
-data AdminMsgRec  = AdminMsgRec  { adminMsgTimestamp  :: T.Text
-                                 , adminMsgFromName   :: T.Text
-                                 , adminMsgToName     :: T.Text
-                                 , adminMsgMsg        :: T.Text }
-data BanHostRec   = BanHostRec   { banHostTimestamp   :: T.Text
-                                 , banHostHost        :: T.Text
+data AdminChanRec = AdminChanRec { adminChanTimestamp :: Text
+                                 , adminChanName      :: Text
+                                 , adminChanMsg       :: Text }
+data AdminMsgRec  = AdminMsgRec  { adminMsgTimestamp  :: Text
+                                 , adminMsgFromName   :: Text
+                                 , adminMsgToName     :: Text
+                                 , adminMsgMsg        :: Text }
+data BanHostRec   = BanHostRec   { banHostTimestamp   :: Text
+                                 , banHostHost        :: Text
                                  , banHostIsBanned    :: Bool
-                                 , banHostReason      :: T.Text }
-data BanPlaRec    = BanPlaRec    { banPlaTimestamp    :: T.Text
-                                 , banPlaName         :: T.Text
+                                 , banHostReason      :: Text }
+data BanPlaRec    = BanPlaRec    { banPlaTimestamp    :: Text
+                                 , banPlaName         :: Text
                                  , banPlaIsBanned     :: Bool
-                                 , banPlaReason       :: T.Text }
-data BugRec       = BugRec       { bugTimestamp       :: T.Text
-                                 , bugName            :: T.Text
-                                 , bugLoc             :: T.Text
-                                 , bugDesc            :: T.Text
+                                 , banPlaReason       :: Text }
+data BugRec       = BugRec       { bugTimestamp       :: Text
+                                 , bugName            :: Text
+                                 , bugLoc             :: Text
+                                 , bugDesc            :: Text
                                  , bugIsOpen          :: Bool   }
-data ChanRec      = ChanRec      { chanTimestamp      :: T.Text
+data ChanRec      = ChanRec      { chanTimestamp      :: Text
                                  , chanChanId         :: Int
-                                 , chanChanName       :: T.Text
-                                 , chanPCName         :: T.Text
-                                 , chanMsg            :: T.Text }
-data ProfRec      = ProfRec      { profTimestamp      :: T.Text
-                                 , profHost           :: T.Text
-                                 , profProfanity      :: T.Text }
-data QuestionRec  = QuestionRec  { questionTimestamp  :: T.Text
-                                 , questionName       :: T.Text
-                                 , questionMsg        :: T.Text }
-data TeleRec      = TeleRec      { teleTimestamp      :: T.Text
-                                 , teleFromName       :: T.Text
-                                 , teleToName         :: T.Text
-                                 , teleMsg            :: T.Text }
-data TypoRec      = TypoRec      { typoTimestamp      :: T.Text
-                                 , typoName           :: T.Text
-                                 , typoLoc            :: T.Text
-                                 , typoDesc           :: T.Text
+                                 , chanChanName       :: Text
+                                 , chanPCName         :: Text
+                                 , chanMsg            :: Text }
+data ProfRec      = ProfRec      { profTimestamp      :: Text
+                                 , profHost           :: Text
+                                 , profProfanity      :: Text }
+data QuestionRec  = QuestionRec  { questionTimestamp  :: Text
+                                 , questionName       :: Text
+                                 , questionMsg        :: Text }
+data TeleRec      = TeleRec      { teleTimestamp      :: Text
+                                 , teleFromName       :: Text
+                                 , teleToName         :: Text
+                                 , teleMsg            :: Text }
+data TypoRec      = TypoRec      { typoTimestamp      :: Text
+                                 , typoName           :: Text
+                                 , typoLoc            :: Text
+                                 , typoDesc           :: Text
                                  , typoIsOpen         :: Bool   }
 
 
@@ -192,7 +193,7 @@ createDbTbls = forM_ qs $ \q -> withConnection dbFile (`execute_` q)
 -----
 
 
-getDbTblRecs :: (FromRow a) => T.Text -> IO [a]
+getDbTblRecs :: (FromRow a) => Text -> IO [a]
 getDbTblRecs tblName = withConnection dbFile helper
   where
     helper conn = query_ conn . Query $ "select * from " <> tblName
@@ -270,7 +271,7 @@ countDbTblRecsTele :: IO [Only Int]
 countDbTblRecsTele = countHelper "tele"
 
 
-countHelper :: T.Text -> IO [Only Int]
+countHelper :: Text -> IO [Only Int]
 countHelper tblName = withConnection dbFile helper
   where
     helper conn = query_ conn . Query $ "select count(*) from " <> tblName
@@ -299,7 +300,7 @@ purgeDbTblTele :: IO ()
 purgeDbTblTele = purgeHelper "tele"
 
 
-purgeHelper :: T.Text -> IO ()
+purgeHelper :: Text -> IO ()
 purgeHelper tblName = withConnection dbFile helper
   where
     helper conn = execute conn q x

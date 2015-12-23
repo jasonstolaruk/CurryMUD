@@ -8,7 +8,7 @@ import Mud.Util.Misc
 
 import Control.Lens (at)
 import Control.Lens.Operators ((.~))
-import qualified Data.Text as T
+import Data.Text (Text)
 
 
 putArm :: Id -> Ent -> Obj -> Arm -> MudStack ()
@@ -113,7 +113,7 @@ putRm i is c r = tweaks [ coinsTbl.ind i .~ c
 -----
 
 
-putRmTeleName :: Id -> T.Text -> MudStack ()
+putRmTeleName :: Id -> Text -> MudStack ()
 putRmTeleName i tn = tweak $ rmTeleNameTbl.ind i .~ tn
 
 

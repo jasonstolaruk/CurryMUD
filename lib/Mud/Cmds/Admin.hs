@@ -54,6 +54,7 @@ import Data.Function (on)
 import Data.List (delete, foldl', intercalate, intersperse, partition, sortBy)
 import Data.Maybe (fromJust, fromMaybe, isJust)
 import Data.Monoid ((<>), Any(..), Sum(..), getSum)
+import Data.Text (Text)
 import Data.Time (TimeZone, UTCTime, defaultTimeLocale, diffUTCTime, formatTime, getCurrentTime, getCurrentTimeZone, getZonedTime, utcToLocalTime)
 import GHC.Exts (sortWith)
 import Prelude hiding (exp, pi)
@@ -72,22 +73,22 @@ default (Int)
 -----
 
 
-patternMatchFail :: T.Text -> [T.Text] -> a
+patternMatchFail :: Text -> [Text] -> a
 patternMatchFail = U.patternMatchFail "Mud.Cmds.Admin"
 
 
 -----
 
 
-logIOEx :: T.Text -> IOException -> MudStack ()
+logIOEx :: Text -> IOException -> MudStack ()
 logIOEx = L.logIOEx "Mud.Cmds.Admin"
 
 
-logNotice :: T.Text -> T.Text -> MudStack ()
+logNotice :: Text -> Text -> MudStack ()
 logNotice = L.logNotice "Mud.Cmds.Admin"
 
 
-logPla :: T.Text -> Id -> T.Text -> MudStack ()
+logPla :: Text -> Id -> Text -> MudStack ()
 logPla = L.logPla "Mud.Cmds.Admin"
 
 
@@ -99,11 +100,11 @@ logPlaExecArgs :: CmdName -> Args -> Id -> MudStack ()
 logPlaExecArgs = L.logPlaExecArgs "Mud.Cmds.Admin"
 
 
-logPlaOut :: CmdName -> Id -> [T.Text] -> MudStack ()
+logPlaOut :: CmdName -> Id -> [Text] -> MudStack ()
 logPlaOut = L.logPlaOut "Mud.Cmds.Admin"
 
 
-massLogPla :: T.Text -> T.Text -> MudStack ()
+massLogPla :: Text -> Text -> MudStack ()
 massLogPla = L.massLogPla "Mud.Cmds.Admin"
 
 
@@ -154,7 +155,7 @@ adminCmds =
     , mkAdminCmd "wiretap"    adminWire        True  "Start or stop tapping one or more telepathic channels." ]
 
 
-mkAdminCmd :: T.Text -> ActionFun -> Bool -> CmdDesc -> Cmd
+mkAdminCmd :: Text -> ActionFun -> Bool -> CmdDesc -> Cmd
 mkAdminCmd (prefixAdminCmd -> cn) f b cd = Cmd { cmdName           = cn
                                                , cmdPriorityAbbrev = Nothing
                                                , cmdFullName       = cn
@@ -295,7 +296,7 @@ dumpDbTblHelper mq cols [] = wrapSend mq cols dbEmptyMsg
 dumpDbTblHelper mq cols xs = multiWrapSend mq cols . map pp $ xs
 
 
-notifyBan :: (Pretty a) => Id -> MsgQueue -> Cols -> Sing -> T.Text -> Bool -> a -> MudStack ()
+notifyBan :: (Pretty a) => Id -> MsgQueue -> Cols -> Sing -> Text -> Bool -> a -> MudStack ()
 notifyBan i mq cols selfSing target newStatus x =
     let fn          = "notifyBan"
         (v, suffix) = newStatus ? ("banned", [ ": " <> pp x ]) :? ("unbanned", [ ": " <> pp x ])
@@ -399,7 +400,7 @@ informNoChans :: MsgQueue -> Cols -> MudStack ()
 informNoChans mq cols = wrapSend mq cols "No channels exist!"
 
 
-adminChanIOHelper :: Id -> MsgQueue -> [[T.Text]] -> MudStack ()
+adminChanIOHelper :: Id -> MsgQueue -> [[Text]] -> MudStack ()
 adminChanIOHelper i mq reports =
     (pager i mq . intercalate [""] $ reports) >> logPlaExec (prefixAdminCmd "channel") i
 
@@ -441,7 +442,7 @@ adminExamine (LowerNub i mq cols as) = getState >>= \ms ->
 adminExamine p = patternMatchFail "adminExamine" [ showText p ]
 
 
-examineHelper :: MudState -> Id -> [T.Text]
+examineHelper :: MudState -> Id -> [Text]
 examineHelper ms targetId = let t = getType targetId ms in helper t $ case t of
   ObjType   -> [ examineEnt, examineObj ]
   ClothType -> [ examineEnt, examineObj, examineCloth ]
@@ -456,7 +457,7 @@ examineHelper ms targetId = let t = getType targetId ms in helper t $ case t of
                   in header : "" : concatMap (\f -> f targetId ms) fs
 
 
-type ExamineHelper = Id -> MudState -> [T.Text]
+type ExamineHelper = Id -> MudState -> [Text]
 
 
 examineArm :: ExamineHelper
@@ -521,7 +522,7 @@ examineNpc :: ExamineHelper
 examineNpc i ms = [ "Possessor: " <> (descMaybeId ms . getPossessor i $ ms) ]
 
 
-descMaybeId :: MudState -> Maybe Id -> T.Text
+descMaybeId :: MudState -> Maybe Id -> Text
 descMaybeId ms = maybe none (`descSingId` ms)
 
 
@@ -610,7 +611,7 @@ adminHost (LowerNub i mq cols as) = do
 adminHost p = patternMatchFail "adminHost" [ showText p ]
 
 
-mkHostReport :: MudState -> UTCTime -> TimeZone -> Id -> Sing -> [T.Text]
+mkHostReport :: MudState -> UTCTime -> TimeZone -> Id -> Sing -> [Text]
 mkHostReport ms now zone i s = (header ++) $ case getHostMap s ms of
   Nothing      -> [ "There are no host records for " <> s <> "." ]
   Just hostMap | dur       <- ili |?| duration
@@ -745,7 +746,7 @@ adminMsg (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsgs
 adminMsg p = patternMatchFail "adminMsg" [ showText p ]
 
 
-firstAdminMsg :: Id -> Sing -> MudStack [T.Text]
+firstAdminMsg :: Id -> Sing -> MudStack [Text]
 firstAdminMsg i adminSing =
     modifyState $ (, [ "", hintAMsg adminSing ]) . (plaTbl.ind i %~ setPlaFlag IsNotFirstAdminMsg True)
 
@@ -899,7 +900,7 @@ adminSearch (WithArgs i mq cols (T.unwords -> a)) = getState >>= \ms -> do
 adminSearch p = patternMatchFail "adminSearch" [ showText p ]
 
 
-applyRegex :: T.Text -> T.Text -> (T.Text, T.Text, T.Text)
+applyRegex :: Text -> Text -> (Text, Text, Text)
 applyRegex searchTerm target = let f = (=~) `on` T.unpack in target `f` searchTerm |&| each %~ T.pack
 
 
@@ -912,7 +913,7 @@ adminShutdown (Msg'    i mq msg) = shutdownHelper i mq . Just $ msg
 adminShutdown p                  = patternMatchFail "adminShutdown" [ showText p ]
 
 
-shutdownHelper :: Id -> MsgQueue -> Maybe T.Text -> MudStack ()
+shutdownHelper :: Id -> MsgQueue -> Maybe Text -> MudStack ()
 shutdownHelper i mq maybeMsg = getState >>= \ms ->
     let s    = getSing i ms
         rest = maybeMsg |&| maybe (" " <> parensQuote "no message given" <> ".") (("; message: " <>) . dblQuote)
@@ -1001,8 +1002,8 @@ teleHelper :: ActionParams
            -> MudState
            -> Id
            -> Id
-           -> T.Text
-           -> Maybe T.Text
+           -> Text
+           -> Maybe Text
            -> (Id -> [Broadcast] -> [Broadcast])
            -> (MudState, [MudStack ()])
 teleHelper p@ActionParams { myId } ms originId destId destName mt f =
@@ -1108,7 +1109,7 @@ adminWhoIn :: ActionFun
 adminWhoIn = whoHelper LoggedIn "whoin"
 
 
-whoHelper :: LoggedInOrOut -> T.Text -> ActionFun
+whoHelper :: LoggedInOrOut -> Text -> ActionFun
 whoHelper inOrOut cn (NoArgs i mq cols) = do
     pager i mq =<< [ concatMap (wrapIndent 20 cols) charListTxt | charListTxt <- mkCharListTxt inOrOut <$> getState ]
     logPlaExecArgs (prefixAdminCmd cn) [] i
@@ -1116,7 +1117,7 @@ whoHelper inOrOut cn p@ActionParams { myId, args } =
     (dispMatches p 20 =<< mkCharListTxt inOrOut <$> getState) >> logPlaExecArgs (prefixAdminCmd cn) args myId
 
 
-mkCharListTxt :: LoggedInOrOut -> MudState -> [T.Text]
+mkCharListTxt :: LoggedInOrOut -> MudState -> [Text]
 mkCharListTxt inOrOut ms =
     let is               = IM.keys . IM.filter predicate $ ms^.plaTbl
         (is', ss)        = unzip [ (i, s) | i <- is, let s = getSing i ms, then sortWith by s ]

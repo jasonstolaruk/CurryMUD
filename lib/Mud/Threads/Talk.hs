@@ -36,6 +36,7 @@ import Control.Monad.Reader (runReaderT)
 import Data.Bits (zeroBits)
 import Data.List ((\\))
 import Data.Monoid ((<>))
+import Data.Text (Text)
 import Data.Time (getCurrentTime)
 import Network (HostName)
 import Prelude hiding (pi)
@@ -48,7 +49,7 @@ import System.IO (BufferMode(..), Handle, Newline(..), NewlineMode(..), hClose, 
 import System.Random (randomIO, randomRIO)
 
 
-logNotice :: T.Text -> T.Text -> MudStack ()
+logNotice :: Text -> Text -> MudStack ()
 logNotice = L.logNotice "Mud.Threads.Talk"
 
 

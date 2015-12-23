@@ -13,17 +13,18 @@ import qualified Mud.Util.Misc as U (patternMatchFail)
 import Control.Arrow (first)
 import Data.Maybe (fromJust)
 import Data.Monoid ((<>))
+import Data.Text (Text)
 import qualified Data.Text as T
 
 
-patternMatchFail :: T.Text -> [T.Text] -> a
+patternMatchFail :: Text -> [Text] -> a
 patternMatchFail = U.patternMatchFail "Mud.Cmds.Util.Abbrevs"
 
 
 -- ==================================================
 
 
-type FullWord = T.Text
+type FullWord = Text
 
 
 styleAbbrevs :: ShouldQuote -> [FullWord] -> [FullWord]
@@ -34,9 +35,9 @@ styleAbbrevs sq fws =
     in map helper fws
 
 
-type Abbrev         = T.Text
-type Rest           = T.Text
-type PrevWordInList = T.Text
+type Abbrev         = Text
+type Rest           = Text
+type PrevWordInList = Text
 
 
 mkAbbrevs :: [FullWord] -> [(FullWord, (Abbrev, Rest))]
@@ -49,7 +50,7 @@ mkAbbrevs = helper "" . nubSort
                          in (x, (abbrev, fromJust $ abbrev `T.stripPrefix` x)) : helper x xs
 
 
-calcAbbrev :: T.Text -> T.Text -> T.Text
+calcAbbrev :: Text -> Text -> Text
 calcAbbrev (T.uncons -> Just (x, _ )) ""                                  = T.singleton x
 calcAbbrev (T.uncons -> Just (x, xs)) (T.uncons -> Just (y, ys)) | x == y = T.singleton x <> calcAbbrev xs ys
                                                                  | x /= y = T.singleton x

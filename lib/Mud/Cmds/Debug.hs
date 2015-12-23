@@ -55,6 +55,7 @@ import Data.Ix (inRange)
 import Data.List (delete, intercalate, sort)
 import Data.Maybe (fromJust)
 import Data.Monoid ((<>), Sum(..))
+import Data.Text (Text)
 import GHC.Conc (threadStatus)
 import Numeric (readInt)
 import Prelude hiding (pi)
@@ -74,18 +75,18 @@ import System.IO (hClose, hGetBuffering, openTempFile)
 -- ==================================================
 
 
-patternMatchFail :: T.Text -> [T.Text] -> a
+patternMatchFail :: Text -> [Text] -> a
 patternMatchFail = U.patternMatchFail "Mud.Cmds.Debug"
 
 
 -----
 
 
-logAndDispIOEx :: MsgQueue -> Cols -> T.Text -> IOException -> MudStack ()
+logAndDispIOEx :: MsgQueue -> Cols -> Text -> IOException -> MudStack ()
 logAndDispIOEx mq cols = L.logAndDispIOEx mq cols "Mud.Cmds.Debug"
 
 
-logNotice :: T.Text -> T.Text -> MudStack ()
+logNotice :: Text -> Text -> MudStack ()
 logNotice = L.logNotice "Mud.Cmds.Debug"
 
 
@@ -141,7 +142,7 @@ debugCmds =
   where
 
 
-mkDebugCmd :: T.Text -> ActionFun -> CmdDesc -> Cmd
+mkDebugCmd :: Text -> ActionFun -> CmdDesc -> Cmd
 mkDebugCmd (prefixDebugCmd -> cn) f cd = Cmd { cmdName           = cn
                                              , cmdPriorityAbbrev = Nothing
                                              , cmdFullName       = cn
@@ -216,7 +217,7 @@ debugCins (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
           logPlaExecArgs (prefixDebugCmd "cins") (pure a) i
       where
         header = T.concat [ "All channel ID/names "
-                          , parensQuote "IM.IntMap [(Id, T.Text)]"
+                          , parensQuote "IM.IntMap [(Id, Text)]"
                           , " for ID "
                           , targetIdTxt
                           , ":" ]
@@ -229,7 +230,7 @@ debugCins p = advise p [] adviceDCinsExcessArgs
 debugColor :: ActionFun
 debugColor (NoArgs' i mq) = (send mq . nl . T.concat $ msg) >> logPlaExec (prefixDebugCmd "color") i
   where
-    msg :: [] T.Text
+    msg :: [] Text
     msg = [ nl $ (pad 15 . showText $ ansi) <> mkColorDesc fg bg <> (colorWith ansi . spaced $ "CurryMUD")
           | fgi <- intensities, fgc <- colors, bgi <- intensities, bgc <- colors
           , let fg = (fgi, fgc), let bg = (bgi, bgc), let ansi = mkColorANSI fg bg ]
@@ -281,7 +282,7 @@ debugDispEnv p@ActionParams { myId, args } = do
     logPlaExecArgs (prefixDebugCmd "env") args myId
 
 
-mkEnvListTxt :: [(String, String)] -> [T.Text]
+mkEnvListTxt :: [(String, String)] -> [Text]
 mkEnvListTxt = map (mkAssocTxt . (both %~ T.pack))
   where
     mkAssocTxt (a, b) = colorWith envVarColor (a <> ": ") <> b
@@ -344,7 +345,7 @@ tblToList :: Optical (->) (->) (Const [(Id, a)]) MudState MudState (IM.IntMap a)
 tblToList lens = views lens IM.toList
 
 
-mkTblNameKeysList :: MudState -> [(T.Text, Inv)]
+mkTblNameKeysList :: MudState -> [(Text, Inv)]
 mkTblNameKeysList ms = [ ("Arm",              tblKeys armTbl           ms)
                        , ("Chan",             tblKeys chanTbl          ms)
                        , ("Cloth",            tblKeys clothTbl         ms)
@@ -426,7 +427,7 @@ debugNumber (WithArgs i mq cols [ numTxt, baseTxt ]) =
 debugNumber p = advise p [] adviceDNumberExcessArgs
 
 
-inBase :: T.Text -> Base -> [(Int, String)]
+inBase :: Text -> Base -> [(Int, String)]
 numTxt `inBase` base = readInt base (isValidDigit base) letterToNum . T.unpack $ numTxt
 
 
@@ -476,7 +477,7 @@ debugPidge p = withoutArgs debugPidge p
 debugPmf :: ActionFun
 debugPmf (NoArgs'' i) = do
     logPlaExec (prefixDebugCmd "pmf") i
-    patternMatchFail "debugPmf" [ "text", showText [ "list" :: T.Text, "of", "text" ], showText [ 0 .. 9 ] ]
+    patternMatchFail "debugPmf" [ "text", showText [ "list" :: Text, "of", "text" ], showText [ 0 .. 9 ] ]
 debugPmf p = withoutArgs debugPmf p
 
 
@@ -595,7 +596,7 @@ debugThreads p@ActionParams { myId, args } = do
     logPlaExecArgs (prefixDebugCmd "threads") args myId
 
 
-descThreads :: MudStack [T.Text]
+descThreads :: MudStack [Text]
 descThreads = do
     (uncurry (:) . ((, Notice) *** pure . (, Error)) -> logAsyncKvs) <- asks $ (both %~ asyncThreadId) . getLogAsyncs
     (plt, M.assocs -> threadTblKvs) <- (view plaLogTbl *** view threadTbl) . dup <$> getState
@@ -726,10 +727,10 @@ debugWrap (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
 debugWrap p = advise p [] adviceDWrapExcessArgs
 
 
-wrapMsg :: T.Text
+wrapMsg :: Text
 wrapMsg = (<> dfltColor) . T.unwords $ wordy
   where
-    wordy :: [] T.Text
+    wordy :: [] Text
     wordy = [ T.concat [ u
                        , mkFgColorANSI (Dull, c)
                        , "This is "

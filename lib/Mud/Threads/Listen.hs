@@ -35,6 +35,7 @@ import Control.Monad (forever, void)
 import Control.Monad.IO.Class (liftIO)
 import Data.Int (Int64)
 import Data.Monoid ((<>), Any(..), getSum)
+import Data.Text (Text)
 import Network (PortID(..), accept, listenOn, sClose)
 import qualified Data.IntMap.Lazy as IM (map)
 import qualified Data.Text as T
@@ -43,15 +44,15 @@ import System.IO (hClose)
 import System.Time.Utils (renderSecs)
 
 
-logExMsg :: T.Text -> T.Text -> SomeException -> MudStack ()
+logExMsg :: Text -> Text -> SomeException -> MudStack ()
 logExMsg = L.logExMsg "Mud.Threads.Listen"
 
 
-logIOEx :: T.Text -> IOException -> MudStack ()
+logIOEx :: Text -> IOException -> MudStack ()
 logIOEx = L.logIOEx "Mud.Threads.Listen"
 
 
-logNotice :: T.Text -> T.Text -> MudStack ()
+logNotice :: Text -> Text -> MudStack ()
 logNotice = L.logNotice "Mud.Threads.Listen"
 
 

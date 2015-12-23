@@ -12,11 +12,12 @@ import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Data.Char (isDigit, isSpace)
 import Data.Monoid ((<>))
-import Test.Tasty.QuickCheck ((==>), Property, choose, forAll)
+import Data.Text (Text)
 import qualified Data.Text as T
+import Test.Tasty.QuickCheck ((==>), Property, choose, forAll)
 
 
-patternMatchFail :: T.Text -> [T.Text] -> a
+patternMatchFail :: Text -> [Text] -> a
 patternMatchFail = U.patternMatchFail "MudTests.Util.Wrapping"
 
 
@@ -44,7 +45,7 @@ prop_wrapIndent_indents = forAll (choose (0, maxCols + 10)) $ \n ->
     in resIsIndented (adjustIndent n c) res
 
 
-resIsIndented :: Int -> [T.Text] -> Bool
+resIsIndented :: Int -> [Text] -> Bool
 resIsIndented n (t:wrapped) = ()!# t && all lineIsIndented wrapped
   where
     lineIsIndented (T.splitAt n -> (indent, rest)) = T.all isSpace indent && ()!# rest

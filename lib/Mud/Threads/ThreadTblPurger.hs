@@ -18,10 +18,10 @@ import Control.Lens (at, views)
 import Control.Lens.Operators ((&), (.~), (^.))
 import Control.Monad (forever)
 import Control.Monad.IO.Class (liftIO)
+import Data.Text (Text)
 import GHC.Conc (ThreadStatus(..), threadStatus)
 import qualified Data.IntMap.Lazy as IM (assocs)
 import qualified Data.Map.Lazy as M (elems, keys)
-import qualified Data.Text as T
 
 
 default (Int)
@@ -30,7 +30,7 @@ default (Int)
 -----
 
 
-logNotice :: T.Text -> T.Text -> MudStack ()
+logNotice :: Text -> Text -> MudStack ()
 logNotice = L.logNotice "Mud.Threads.ThreadTblPurger"
 
 

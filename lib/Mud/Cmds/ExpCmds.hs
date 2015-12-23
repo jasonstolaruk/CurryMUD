@@ -24,18 +24,19 @@ import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Arrow (first)
 import Data.List ((\\), delete)
+import Data.Text (Text)
 import qualified Data.Set as S (Set, filter, foldr, fromList, map, toList)
 import qualified Data.Text as T
 
 
-patternMatchFail :: T.Text -> [T.Text] -> a
+patternMatchFail :: Text -> [Text] -> a
 patternMatchFail = U.patternMatchFail "Mud.Cmds.ExpCmds"
 
 
 -----
 
 
-logPlaOut :: T.Text -> Id -> [T.Text] -> MudStack ()
+logPlaOut :: Text -> Id -> [Text] -> MudStack ()
 logPlaOut = L.logPlaOut "Mud.Cmds.ExpCmds"
 
 
@@ -704,7 +705,7 @@ expCmds = S.foldr helper [] expCmdSet
         (theCmd :)
 
 
-expCmdNames :: [T.Text]
+expCmdNames :: [Text]
 expCmdNames = S.toList . S.map (\(ExpCmd n _) -> n) $ expCmdSet
 
 
@@ -778,14 +779,14 @@ expCmd ecn ect           (OneArgNubbed i mq cols target) = case ect of
 expCmd _ _ p = advise p [] adviceExpCmdExcessArgs
 
 
-mkSerializedDesig :: Desig -> T.Text -> T.Text
+mkSerializedDesig :: Desig -> Text -> Text
 mkSerializedDesig d toOthers = serialize (T.head toOthers == '%' ? d :? d { shouldCap = Don'tCap })
 
 
 -----
 
 
-mkExpAction :: T.Text -> ActionFun
+mkExpAction :: Text -> ActionFun
 mkExpAction name = let [ExpCmd ecn ect] = S.toList . S.filter helper $ expCmdSet
                    in expCmd ecn ect
   where

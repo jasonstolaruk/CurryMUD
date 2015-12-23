@@ -2,100 +2,100 @@
 
 module Mud.Cmds.Msgs.CmdDesc where
 
-import qualified Data.Text as T
+import Data.Text (Text)
 
 
-cmdDescBars :: T.Text
+cmdDescBars :: Text
 cmdDescBars = "Display one or more status bars."
 
 
-cmdDescClear :: T.Text
+cmdDescClear :: Text
 cmdDescClear = "Clear the screen."
 
 
-cmdDescDispCmdList :: T.Text
+cmdDescDispCmdList :: Text
 cmdDescDispCmdList = "Display or search this command list."
 
 
-cmdDescDrop :: T.Text
+cmdDescDrop :: Text
 cmdDescDrop = "Drop one or more items."
 
 
-cmdDescEmote :: T.Text
+cmdDescEmote :: Text
 cmdDescEmote = "Freely describe an action."
 
 
-cmdDescEquip :: T.Text
+cmdDescEquip :: Text
 cmdDescEquip = "Display your readied equipment, or examine one or more items in your readied equipment."
 
 
-cmdDescExits :: T.Text
+cmdDescExits :: Text
 cmdDescExits = "Display obvious exits."
 
 
-cmdDescExpCmdList :: T.Text
+cmdDescExpCmdList :: Text
 cmdDescExpCmdList = "Display or search a list of available expressive commands and their results."
 
 
-cmdDescGet :: T.Text
+cmdDescGet :: Text
 cmdDescGet = "Pick up one or more items."
 
 
-cmdDescGoDown :: T.Text
+cmdDescGoDown :: Text
 cmdDescGoDown = "Go down."
 
 
-cmdDescGoEast :: T.Text
+cmdDescGoEast :: Text
 cmdDescGoEast = "Go east."
 
 
-cmdDescGoNorth :: T.Text
+cmdDescGoNorth :: Text
 cmdDescGoNorth = "Go north."
 
 
-cmdDescGoNortheast :: T.Text
+cmdDescGoNortheast :: Text
 cmdDescGoNortheast = "Go northeast."
 
 
-cmdDescGoNorthwest :: T.Text
+cmdDescGoNorthwest :: Text
 cmdDescGoNorthwest = "Go northwest."
 
 
-cmdDescGoSouth :: T.Text
+cmdDescGoSouth :: Text
 cmdDescGoSouth = "Go south."
 
 
-cmdDescGoSoutheast :: T.Text
+cmdDescGoSoutheast :: Text
 cmdDescGoSoutheast = "Go southeast."
 
 
-cmdDescGoSouthwest :: T.Text
+cmdDescGoSouthwest :: Text
 cmdDescGoSouthwest = "Go southwest."
 
 
-cmdDescGoUp :: T.Text
+cmdDescGoUp :: Text
 cmdDescGoUp = "Go up."
 
 
-cmdDescGoWest :: T.Text
+cmdDescGoWest :: Text
 cmdDescGoWest = "Go west."
 
 
-cmdDescInv :: T.Text
+cmdDescInv :: Text
 cmdDescInv = "Display your inventory, or examine one or more items in your inventory."
 
 
-cmdDescLook :: T.Text
+cmdDescLook :: Text
 cmdDescLook = "Display a description of your current room, or examine one or more things in your current room."
 
 
-cmdDescPut :: T.Text
+cmdDescPut :: Text
 cmdDescPut = "Put one or more items into a container."
 
 
-cmdDescRemove :: T.Text
+cmdDescRemove :: Text
 cmdDescRemove = "Remove one or more items from a container."
 
 
-cmdDescStats :: T.Text
+cmdDescStats :: Text
 cmdDescStats = "Display your stats."

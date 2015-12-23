@@ -6,9 +6,10 @@ import Mud.TopLvlDefs.Chars
 import Paths_currymud
 
 import Data.Monoid ((<>))
+import Data.Text (Text)
 import Data.Version (showVersion)
-import System.Posix.Types (FileOffset)
 import qualified Data.Text as T
+import System.Posix.Types (FileOffset)
 
 
 default (Int)
@@ -23,19 +24,19 @@ default (Int)
 -- ==================================================
 
 
-aggregateCoinNames :: [T.Text]
+aggregateCoinNames :: [Text]
 aggregateCoinNames = [ "coin", "coins" ]
 
 
-allCoinNames :: [T.Text]
+allCoinNames :: [Text]
 allCoinNames = coinNames ++ aggregateCoinNames
 
 
-coinNames :: [T.Text]
+coinNames :: [Text]
 coinNames = [ "cp", "sp", "gp" ]
 
 
-coinFullNames :: [T.Text]
+coinFullNames :: [Text]
 coinFullNames = [ "copper piece", "silver piece", "gold piece" ]
 
 
@@ -43,7 +44,7 @@ dbTblPurgerDelay :: Int
 dbTblPurgerDelay = 60 * 60 -- one hr
 
 
-acl, aop, enc, enc's, etc :: T.Text
+acl, aop, enc, enc's, etc :: Text
 acl   = T.singleton adverbCloseChar
 aop   = T.singleton adverbOpenChar
 enc   = T.singleton emoteNameChar
@@ -89,7 +90,7 @@ maxInacSecs = 10 * 60 -- ten mins
 
 
 maxNameLen,    minNameLen    :: Int
-maxNameLenTxt, minNameLenTxt :: T.Text
+maxNameLenTxt, minNameLenTxt :: Text
 maxNameLen    = 12
 maxNameLenTxt = "twelve"
 minNameLen    = 3
@@ -129,7 +130,7 @@ rmDescIndentAmt :: Int
 rmDescIndentAmt = 2
 
 
-stdLinkNames :: [T.Text]
+stdLinkNames :: [Text]
 stdLinkNames = [ "n", "ne", "e", "se", "s", "sw", "w", "nw", "u", "d" ]
 
 
@@ -137,7 +138,7 @@ threadTblPurgerDelay :: Int
 threadTblPurgerDelay = 60 * 60 -- one hr
 
 
-ver :: T.Text
+ver :: Text
 ver = T.pack . showVersion $ version
 
 
@@ -145,7 +146,7 @@ worldPersisterDelay :: Int
 worldPersisterDelay = 10 * 60 -- ten mins
 
 
-yous :: [T.Text]
+yous :: [Text]
 yous = [ "you"
        , "you'd"
        , "you'll"

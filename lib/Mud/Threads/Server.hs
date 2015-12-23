@@ -38,13 +38,14 @@ import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (runReaderT)
 import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>))
+import Data.Text (Text)
 import qualified Data.Map.Lazy as M (elems)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (hPutStr, hPutStrLn, readFile)
 import System.IO (Handle)
 
 
-logNotice :: T.Text -> T.Text -> MudStack ()
+logNotice :: Text -> Text -> MudStack ()
 logNotice = L.logNotice "Mud.Threads.Server"
 
 
@@ -71,7 +72,7 @@ threadServer h i mq tq = sequence_ [ setThreadType . Server $ i, loop `catch` pl
     sayonara = sequence_ [ stopTimerThread tq, handleEgress i ]
 
 
-handleFromClient :: Id -> MsgQueue -> TimerQueue -> Bool -> T.Text -> MudStack ()
+handleFromClient :: Id -> MsgQueue -> TimerQueue -> Bool -> Text -> MudStack ()
 handleFromClient i mq tq isAsSelf (T.strip . stripControl . stripTelnet -> msg) = getState >>= \ms ->
     let p                  = getPla i ms
         poss               = p^.possessing
@@ -88,7 +89,7 @@ handleFromClient i mq tq isAsSelf (T.strip . stripControl . stripTelnet -> msg) 
         f cn . WithArgs asId mq (p^.columns) $ as
 
 
-forwardToPeepers :: Id -> Inv -> ToOrFromThePeeped -> T.Text -> MudStack ()
+forwardToPeepers :: Id -> Inv -> ToOrFromThePeeped -> Text -> MudStack ()
 forwardToPeepers i peeperIds toOrFrom msg = liftIO . atomically . helperSTM =<< getState
   where
     helperSTM ms = forM_ [ getMsgQueue peeperId ms | peeperId <- peeperIds ]
@@ -100,7 +101,7 @@ forwardToPeepers i peeperIds toOrFrom msg = liftIO . atomically . helperSTM =<< 
         rest = [ spaced . bracketQuote $ s, dfltColor, " ", msg ]
 
 
-handleFromServer :: Id -> Handle -> Bool -> T.Text -> MudStack ()
+handleFromServer :: Id -> Handle -> Bool -> Text -> MudStack ()
 handleFromServer i h isToNpc msg = getState >>= \ms -> if isToNpc
   then helper . prefix $ msg
   else forwardToPeepers i (getPeepers i ms) ToThePeeped msg >> helper msg
@@ -113,11 +114,11 @@ sendInacBootMsg :: Handle -> MudStack ()
 sendInacBootMsg h = liftIO . T.hPutStrLn h . nl . colorWith bootMsgColor $ inacBootMsg
 
 
-sendBootMsg :: Handle -> T.Text -> MudStack ()
+sendBootMsg :: Handle -> Text -> MudStack ()
 sendBootMsg h = liftIO . T.hPutStrLn h . nl . colorWith bootMsgColor
 
 
-promptHelper :: Id -> Handle -> T.Text -> MudStack ()
+promptHelper :: Id -> Handle -> Text -> MudStack ()
 promptHelper i h = handleFromServer i h False . nl
 
 

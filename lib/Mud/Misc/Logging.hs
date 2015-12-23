@@ -45,6 +45,7 @@ import Control.Monad.Reader (asks)
 import Data.List (sort)
 import Data.Maybe (fromJust)
 import Data.Monoid ((<>))
+import Data.Text (Text)
 import qualified Data.IntMap.Lazy as IM (elems, lookup)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (appendFile, hPutStrLn)
@@ -66,7 +67,7 @@ default (Int)
 -----
 
 
-patternMatchFail :: T.Text -> [T.Text] -> a
+patternMatchFail :: Text -> [Text] -> a
 patternMatchFail = U.patternMatchFail "Mud.Misc.Logging"
 
 
@@ -85,7 +86,7 @@ initLogging DoLog    (Just logExLock) = do
 initLogging DoLog Nothing = patternMatchFail "initLogging" [ showText DoLog, "Nothing" ]
 
 
-type LogName    = T.Text
+type LogName    = Text
 type LoggingFun = String -> String -> IO ()
 
 
@@ -118,7 +119,7 @@ spawnLogger fn p (T.unpack -> ln) f q logExLock =
             loop =<< initLog
 
 
-loggingThreadExHandler :: Lock -> T.Text -> SomeException -> IO ()
+loggingThreadExHandler :: Lock -> Text -> SomeException -> IO ()
 loggingThreadExHandler logExLock n e = guard (fromException e /= Just ThreadKilled) >> mkTimestamp >>= \ts ->
     let msg = T.concat [ ts
                        , " "
@@ -187,56 +188,56 @@ closeLogs = asks mkBindings >>= \((ea, eq), (na, nq)) -> do
 -- Logging messages:
 
 
-registerMsg :: T.Text -> LogQueue -> MudStack ()
+registerMsg :: Text -> LogQueue -> MudStack ()
 registerMsg msg = liftIO . atomically . flip writeTQueue (LogMsg msg)
 
 
-logNotice :: T.Text -> T.Text -> T.Text -> MudStack ()
+logNotice :: Text -> Text -> Text -> MudStack ()
 logNotice modName (dblQuote -> funName) msg = onEnv $ maybeVoid (helper . snd) . view noticeLog
   where
     helper = registerMsg (T.concat [ modName, " ", funName, ": ", msg ])
 
 
-logError :: T.Text -> MudStack ()
+logError :: Text -> MudStack ()
 logError msg = onEnv $ maybeVoid (registerMsg msg . snd) . view errorLog
 
 
-logExMsg :: T.Text -> T.Text -> T.Text -> SomeException -> MudStack ()
+logExMsg :: Text -> Text -> Text -> SomeException -> MudStack ()
 logExMsg modName (dblQuote -> funName) msg (dblQuote . showText -> e) =
     logError . T.concat $ [ modName, " ", funName, ": ", msg, ". ", e ]
 
 
-logIOEx :: T.Text -> T.Text -> IOException -> MudStack ()
+logIOEx :: Text -> Text -> IOException -> MudStack ()
 logIOEx modName (dblQuote -> funName) (dblQuote . showText -> e) =
     logError . T.concat $ [ modName, " ", funName, ": ", e ]
 
 
-logAndDispIOEx :: MsgQueue -> Cols -> T.Text -> T.Text -> IOException -> MudStack ()
+logAndDispIOEx :: MsgQueue -> Cols -> Text -> Text -> IOException -> MudStack ()
 logAndDispIOEx mq cols modName (dblQuote -> funName) (dblQuote . showText -> e) =
     let msg = T.concat [ modName, " ", funName, ": ", e ] in logError msg >> wrapSend mq cols msg
 
 
-logPla :: T.Text -> T.Text -> Id -> T.Text -> MudStack ()
+logPla :: Text -> Text -> Id -> Text -> MudStack ()
 logPla modName (dblQuote -> funName) i msg =
     doIfLogging i . registerMsg . T.concat $ [ modName, " ", funName, ": ", msg ]
 
 
-logPlaExec :: T.Text -> CmdName -> Id -> MudStack ()
+logPlaExec :: Text -> CmdName -> Id -> MudStack ()
 logPlaExec modName cn i = logPla modName cn i $ "executed " <> dblQuote cn <> "."
 
 
-logPlaExecArgs :: T.Text -> CmdName -> Args -> Id -> MudStack ()
+logPlaExecArgs :: Text -> CmdName -> Args -> Id -> MudStack ()
 logPlaExecArgs modName cn as i = logPla modName cn i $ "executed " <> helper <> "."
   where
     helper | ()# as    = dblQuote cn <> " with no arguments"
            | otherwise = dblQuote . T.unwords $ cn : as
 
 
-logPlaOut :: T.Text -> CmdName -> Id -> [T.Text] -> MudStack ()
+logPlaOut :: Text -> CmdName -> Id -> [Text] -> MudStack ()
 logPlaOut modName cn i (slashes -> msgs) = logPla modName cn i $ parensQuote "output" <> " " <> msgs
 
 
-massLogPla :: T.Text -> T.Text -> T.Text -> MudStack ()
+massLogPla :: Text -> Text -> Text -> MudStack ()
 massLogPla modName (dblQuote -> funName) msg = liftIO . atomically . helperSTM =<< getState
   where
     helperSTM (views plaLogTbl (map snd . IM.elems) -> qs) =

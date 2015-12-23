@@ -14,12 +14,13 @@ import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception.Lifted (catch)
 import Control.Monad.IO.Class (liftIO)
+import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (hGetLine)
 import System.IO (Handle, hIsEOF)
 
 
-logPla :: T.Text -> Id -> T.Text -> MudStack ()
+logPla :: Text -> Id -> Text -> MudStack ()
 logPla = L.logPla "Mud.Threads.Receive"
 
 

@@ -10,10 +10,11 @@ import Mud.Util.Text
 
 import Data.Char (chr, isSpace)
 import Data.Monoid ((<>))
+import Data.Text (Text)
+import qualified Data.Text as T
 import Test.QuickCheck.Modifiers (NonEmptyList(..))
 import Test.Tasty.HUnit ((@?=), Assertion)
 import Test.Tasty.QuickCheck ((==>), Property)
-import qualified Data.Text as T
 
 
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
@@ -22,19 +23,19 @@ import qualified Data.Text as T
 -- ==================================================
 
 
-prop_aOrAn :: T.Text -> Property
+prop_aOrAn :: Text -> Property
 prop_aOrAn t = (()!# T.strip t) ==>
   let (a, b) = T.break isSpace . aOrAn $ t
   in a == ((isVowel . T.head . T.tail $ b) ? "an" :? "a")
 
 
-prop_findFullNameForAbbrev_findsNothing :: NonEmptyList Char -> [T.Text] -> Property
+prop_findFullNameForAbbrev_findsNothing :: NonEmptyList Char -> [Text] -> Property
 prop_findFullNameForAbbrev_findsNothing (NonEmpty (T.pack -> needle)) hay = any (()!#) hay &&
                                                                             all (not . (needle `T.isInfixOf`)) hay ==>
   (()#) . findFullNameForAbbrev needle $ hay
 
 
-prop_findFullNameForAbbrev_findsMatch :: NonEmptyList Char -> [T.Text] -> Property
+prop_findFullNameForAbbrev_findsMatch :: NonEmptyList Char -> [Text] -> Property
 prop_findFullNameForAbbrev_findsMatch (NonEmpty (T.pack -> needle)) hay = any (()!#) hay &&
                                                                           all (not . (needle `T.isInfixOf`)) hay ==>
   let nonEmpty = head . filter (()!#) $ hay
@@ -46,7 +47,7 @@ prop_findFullNameForAbbrev_findsMatch (NonEmpty (T.pack -> needle)) hay = any ((
 -- ==================================================
 
 
-telnetCodes :: T.Text
+telnetCodes :: Text
 telnetCodes = T.pack . map chr $ [ 255, 252, 3, 255, 250, 201, 67, 111, 114, 101, 46, 83, 117, 112, 112, 111, 114, 116, 115, 46, 83, 101, 116, 32, 91, 93, 255, 240 ]
 
 

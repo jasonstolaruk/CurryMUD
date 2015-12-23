@@ -93,6 +93,7 @@ import Data.Function (on)
 import Data.List ((\\), delete, elemIndex, find, foldl', intercalate, nub, sortBy)
 import Data.Maybe (catMaybes, fromJust)
 import Data.Monoid ((<>), Sum(..))
+import Data.Text (Text)
 import qualified Data.IntMap.Lazy as IM (keys)
 import qualified Data.Map.Lazy as M ((!), notMember, toList)
 import qualified Data.Text as T
@@ -104,18 +105,18 @@ import qualified Data.Text as T
 -----
 
 
-patternMatchFail :: T.Text -> [T.Text] -> a
+patternMatchFail :: Text -> [Text] -> a
 patternMatchFail = U.patternMatchFail "Mud.Cmds.Util.Pla"
 
 
 -----
 
 
-logPla :: T.Text -> Id -> T.Text -> MudStack ()
+logPla :: Text -> Id -> Text -> MudStack ()
 logPla = L.logPla "Mud.Cmds.Util.Pla"
 
 
-logPlaOut :: T.Text -> Id -> [T.Text] -> MudStack ()
+logPlaOut :: Text -> Id -> [Text] -> MudStack ()
 logPlaOut = L.logPlaOut "Mud.Cmds.Util.Pla"
 
 
@@ -155,7 +156,7 @@ bugTypoLogger p wl = patternMatchFail "bugTypoLogger" [ showText p, showText wl 
 -----
 
 
-checkMutuallyTuned :: Id -> MudState -> Sing -> Either T.Text Id
+checkMutuallyTuned :: Id -> MudState -> Sing -> Either Text Id
 checkMutuallyTuned i ms targetSing = case areMutuallyTuned of
   (False, _,    _       ) -> Left . sorryTunedOutPCSelf $ targetSing
   (True,  False, _      ) -> Left . (effortsBlockedMsg <>) . sorryTunedOutPCTarget $ targetSing
@@ -187,15 +188,15 @@ clothToSlot = \case Shirt    -> ShirtS
 -----
 
 
-donMsgs :: Id -> Desig -> Sing -> (T.Text, Broadcast)
+donMsgs :: Id -> Desig -> Sing -> (Text, Broadcast)
 donMsgs = mkReadyMsgs "don" "dons"
 
 
-type SndPerVerb = T.Text
-type ThrPerVerb = T.Text
+type SndPerVerb = Text
+type ThrPerVerb = Text
 
 
-mkReadyMsgs :: SndPerVerb -> ThrPerVerb -> Id -> Desig -> Sing -> (T.Text, Broadcast)
+mkReadyMsgs :: SndPerVerb -> ThrPerVerb -> Id -> Desig -> Sing -> (Text, Broadcast)
 mkReadyMsgs spv tpv i d s = (  T.concat [ "You ", spv, " the ", s, "." ]
                             , (T.concat [ serialize d, spaced tpv, aOrAn s, "." ], i `delete` desigIds d) )
 
@@ -214,7 +215,7 @@ execIfPossessed p cn _ = patternMatchFail "execIfPossessed" [ showText p, cn ]
 -----
 
 
-fillerToSpcs :: T.Text -> T.Text
+fillerToSpcs :: Text -> Text
 fillerToSpcs = T.replace (T.singleton indentFiller) " "
 
 
@@ -222,8 +223,8 @@ fillerToSpcs = T.replace (T.singleton indentFiller) " "
 
 
 genericAction :: ActionParams
-              -> (MudState -> (MudState, ([T.Text], [Broadcast], [T.Text])))
-              -> T.Text
+              -> (MudState -> (MudState, ([Text], [Broadcast], [Text])))
+              -> Text
               -> MudStack ()
 genericAction ActionParams { .. } helper fn = helper |&| modifyState >=> \(toSelfs, bs, logMsgs) -> do
     multiWrapSend plaMsgQueue plaCols toSelfs
@@ -234,7 +235,7 @@ genericAction ActionParams { .. } helper fn = helper |&| modifyState >=> \(toSel
 -----
 
 
-getMatchingChanWithName :: T.Text -> [ChanName] -> [Chan] -> (ChanName, Chan)
+getMatchingChanWithName :: Text -> [ChanName] -> [Chan] -> (ChanName, Chan)
 getMatchingChanWithName match cns cs = let cn  = head . filter ((== match) . T.toLower) $ cns
                                            c   = head . filter (views chanName (== cn)) $ cs
                                        in (cn, c)
@@ -243,7 +244,7 @@ getMatchingChanWithName match cns cs = let cn  = head . filter ((== match) . T.t
 -----
 
 
-getRelativePCName :: MudState -> (Id, Id) -> MudStack T.Text
+getRelativePCName :: MudState -> (Id, Id) -> MudStack Text
 getRelativePCName ms pair@(_, y)
   | isLinked ms pair = return . getSing y $ ms
   | otherwise        = underline <$> uncurry updateRndmName pair
@@ -283,9 +284,9 @@ helperDropEitherInv :: Id
                     -> Desig
                     -> FromId
                     -> ToId
-                    -> (MudState, [T.Text], [Broadcast])
-                    -> Either T.Text Inv
-                    -> (MudState, [T.Text], [Broadcast])
+                    -> (MudState, [Text], [Broadcast])
+                    -> Either Text Inv
+                    -> (MudState, [Text], [Broadcast])
 helperDropEitherInv i d fi ti a@(ms, _, _) = \case
   Left  msg -> a & _2 <>~ pure msg
   Right is  -> let (toSelfs, bs) = mkGetDropInvDescs i ms d Drop is
@@ -295,7 +296,7 @@ helperDropEitherInv i d fi ti a@(ms, _, _) = \case
                     & _3               <>~ bs
 
 
-mkGetDropInvDescs :: Id -> MudState -> Desig -> GetOrDrop -> Inv -> ([T.Text], [Broadcast])
+mkGetDropInvDescs :: Id -> MudState -> Desig -> GetOrDrop -> Inv -> ([Text], [Broadcast])
 mkGetDropInvDescs i ms d god (mkNameCountBothList i ms -> ncbs) = unzip . map helper $ ncbs
   where
     helper (_, c, (s, _)) | c == 1 =
@@ -309,14 +310,14 @@ mkGetDropInvDescs i ms d god (mkNameCountBothList i ms -> ncbs) = unzip . map he
     otherIds = i `delete` desigIds d
 
 
-mkNameCountBothList :: Id -> MudState -> Inv -> [(T.Text, Int, BothGramNos)]
+mkNameCountBothList :: Id -> MudState -> Inv -> [(Text, Int, BothGramNos)]
 mkNameCountBothList i ms targetIds = let ens   = [ getEffName        i ms targetId | targetId <- targetIds ]
                                          cs    = mkCountList ebgns
                                          ebgns = [ getEffBothGramNos i ms targetId | targetId <- targetIds ]
                                      in nub . zip3 ens cs $ ebgns
 
 
-mkGodVerb :: GetOrDrop -> Verb -> T.Text
+mkGodVerb :: GetOrDrop -> Verb -> Text
 mkGodVerb Get  SndPer = "pick up"
 mkGodVerb Get  ThrPer = "picks up"
 mkGodVerb Drop SndPer = "drop"
@@ -331,9 +332,9 @@ helperGetDropEitherCoins :: Id
                          -> GetOrDrop
                          -> FromId
                          -> ToId
-                         -> (MudState, [T.Text], [Broadcast], [T.Text])
-                         -> [Either [T.Text] Coins]
-                         -> (MudState, [T.Text], [Broadcast], [T.Text])
+                         -> (MudState, [Text], [Broadcast], [Text])
+                         -> [Either [Text] Coins]
+                         -> (MudState, [Text], [Broadcast], [Text])
 helperGetDropEitherCoins i d god fi ti (ms, toSelfs, bs, logMsgs) ecs =
     let (ms', toSelfs', logMsgs', canCoins) = foldl' helper (ms, toSelfs, logMsgs, mempty) ecs
     in (ms', toSelfs', bs ++ mkGetDropCoinsDescOthers i d god canCoins, logMsgs')
@@ -370,14 +371,14 @@ mkGetDropCoinsDescOthers i d god c =
   c |!| [ (T.concat [ serialize d, spaced . mkGodVerb god $ ThrPer, aCoinSomeCoins c, "." ], i `delete` desigIds d) ]
 
 
-mkGetDropCoinsDescsSelf :: GetOrDrop -> Coins -> [T.Text]
+mkGetDropCoinsDescsSelf :: GetOrDrop -> Coins -> [Text]
 mkGetDropCoinsDescsSelf god = mkCoinsMsgs helper
   where
     helper 1 cn = T.concat [ "You ", mkGodVerb god SndPer, " ", aOrAn cn,             "."  ]
     helper a cn = T.concat [ "You ", mkGodVerb god SndPer, spaced . showText $ a, cn, "s." ]
 
 
-mkCoinsMsgs :: (Int -> T.Text -> T.Text) -> Coins -> [T.Text]
+mkCoinsMsgs :: (Int -> Text -> Text) -> Coins -> [Text]
 mkCoinsMsgs f (Coins (cop, sil, gol)) = catMaybes [ c, s, g ]
   where
     c = Sum cop |!| Just . f cop $ "copper piece"
@@ -385,7 +386,7 @@ mkCoinsMsgs f (Coins (cop, sil, gol)) = catMaybes [ c, s, g ]
     g = Sum gol |!| Just . f gol $ "gold piece"
 
 
-mkCan'tGetCoinsDesc :: Coins -> [T.Text]
+mkCan'tGetCoinsDesc :: Coins -> [Text]
 mkCan'tGetCoinsDesc = mkCoinsMsgs helper
   where
     helper a cn = sorryGetEnc <> (a == 1 ? ("the " <> cn <> ".") :? T.concat [ showText a, " ", cn, "s." ])
@@ -398,9 +399,9 @@ helperGetEitherInv :: Id
                    -> Desig
                    -> FromId
                    -> ToId
-                   -> (MudState, [T.Text], [Broadcast], [T.Text])
-                   -> Either T.Text Inv
-                   -> (MudState, [T.Text], [Broadcast], [T.Text])
+                   -> (MudState, [Text], [Broadcast], [Text])
+                   -> Either Text Inv
+                   -> (MudState, [Text], [Broadcast], [Text])
 helperGetEitherInv i d fi ti a@(ms, _, _, _) = \case
   Left  msg                                 -> a & _2 <>~ pure msg
   Right (sortByType -> (pcs, mobs, others)) ->
@@ -426,7 +427,7 @@ helperGetEitherInv i d fi ti a@(ms, _, _, _) = \case
     sorryMob targetId = sorryGetType . theOnLower . getSing targetId $ ms
 
 
-mkCan'tGetInvDescs :: Id -> MudState -> Inv -> [T.Text]
+mkCan'tGetInvDescs :: Id -> MudState -> Inv -> [Text]
 mkCan'tGetInvDescs i ms = map helper . mkNameCountBothList i ms
   where
     helper (_, c, b@(s, _)) = sorryGetEnc <> (c == 1 ?  ("the " <> s <> ".")
@@ -436,7 +437,7 @@ mkCan'tGetInvDescs i ms = map helper . mkNameCountBothList i ms
 -----
 
 
-helperLinkUnlink :: MudState -> Id -> MsgQueue -> Cols -> MudStack (Maybe ([T.Text], [T.Text], [T.Text]))
+helperLinkUnlink :: MudState -> Id -> MsgQueue -> Cols -> MudStack (Maybe ([Text], [Text], [Text]))
 helperLinkUnlink ms i mq cols =
     let s                = getSing   i ms
         othersLinkedToMe = getLinked i ms
@@ -464,9 +465,9 @@ helperPutRemEitherCoins :: Id
                         -> FromId
                         -> ToId
                         -> ToSing
-                        -> (CoinsTbl, [T.Text], [Broadcast], [T.Text])
-                        -> [Either [T.Text] Coins]
-                        -> (CoinsTbl, [T.Text], [Broadcast], [T.Text])
+                        -> (CoinsTbl, [Text], [Broadcast], [Text])
+                        -> [Either [Text] Coins]
+                        -> (CoinsTbl, [Text], [Broadcast], [Text])
 helperPutRemEitherCoins i d por mnom fi ti ts (ct, toSelfs, bs, logMsgs) ecs =
     let (ct', toSelfs', logMsgs', canCoins) = foldl' helper (ct, toSelfs, logMsgs, mempty) ecs
     in (ct', toSelfs', bs ++ mkPutRemCoinsDescOthers i d por mnom canCoins ts, logMsgs')
@@ -491,7 +492,7 @@ mkPutRemCoinsDescOthers i d por mnom c ts = c |!| [ ( T.concat [ serialize d
                                                     , i `delete` desigIds d ) ]
 
 
-mkPutRemCoinsDescsSelf :: PutOrRem -> Maybe NthOfM -> Coins -> ToSing -> [T.Text]
+mkPutRemCoinsDescsSelf :: PutOrRem -> Maybe NthOfM -> Coins -> ToSing -> [Text]
 mkPutRemCoinsDescsSelf por mnom c ts = mkCoinsMsgs helper c
   where
     helper a cn | a == 1 = T.concat [ start, aOrAn cn,   " ",           rest ]
@@ -500,14 +501,14 @@ mkPutRemCoinsDescsSelf por mnom c ts = mkCoinsMsgs helper c
     rest                 = mkPorPrep por SndPer mnom ts <> onTheGround mnom <> "."
 
 
-mkPorVerb :: PutOrRem -> Verb -> T.Text
+mkPorVerb :: PutOrRem -> Verb -> Text
 mkPorVerb Put SndPer = "put"
 mkPorVerb Put ThrPer = "puts"
 mkPorVerb Rem SndPer = "remove"
 mkPorVerb Rem ThrPer = "removes"
 
 
-mkPorPrep :: PutOrRem -> Verb -> Maybe NthOfM -> Sing -> T.Text
+mkPorPrep :: PutOrRem -> Verb -> Maybe NthOfM -> Sing -> Text
 mkPorPrep Put SndPer Nothing       = ("in the "   <>)
 mkPorPrep Put SndPer (Just (n, m)) = ("in the "   <>) . (descNthOfM n m <>)
 mkPorPrep Rem SndPer Nothing       = ("from the " <>)
@@ -518,12 +519,12 @@ mkPorPrep Rem ThrPer Nothing       = ("from "     <>) . aOrAn
 mkPorPrep Rem ThrPer (Just (n, m)) = ("from the " <>) . (descNthOfM n m <>)
 
 
-descNthOfM :: Int -> Int -> T.Text
+descNthOfM :: Int -> Int -> Text
 descNthOfM 1 1 = ""
 descNthOfM n _ = mkOrdinal n <> " "
 
 
-onTheGround :: Maybe NthOfM -> T.Text
+onTheGround :: Maybe NthOfM -> Text
 onTheGround = (|!| " on the ground") . ((both %~ Sum) <$>)
 
 
@@ -539,9 +540,9 @@ helperPutRemEitherInv :: Id
                       -> FromId
                       -> ToId
                       -> ToSing
-                      -> (InvTbl, [T.Text], [Broadcast], [T.Text])
-                      -> Either T.Text Inv
-                      -> (InvTbl, [T.Text], [Broadcast], [T.Text])
+                      -> (InvTbl, [Text], [Broadcast], [Text])
+                      -> Either Text Inv
+                      -> (InvTbl, [Text], [Broadcast], [Text])
 helperPutRemEitherInv i ms d por mnom fi ti ts a = \case
   Left  msg -> a & _2 <>~ pure msg
   Right is  -> let (is', toSelfs) = onTrue (ti `elem` is) f (is, view _2 a)
@@ -557,7 +558,7 @@ helperPutRemEitherInv i ms d por mnom fi ti ts a = \case
     sorry = a & _2 <>~ (pure . sorryRemEmpty . getSing fi $ ms)
 
 
-mkPutRemInvDescs :: Id -> MudState -> Desig -> PutOrRem -> Maybe NthOfM -> Inv -> ToSing -> ([T.Text], [Broadcast])
+mkPutRemInvDescs :: Id -> MudState -> Desig -> PutOrRem -> Maybe NthOfM -> Inv -> ToSing -> ([Text], [Broadcast])
 mkPutRemInvDescs i ms d por mnom is ts = unzip . map helper . mkNameCountBothList i ms $ is
   where
     helper (_, c, (s, _)) | c == 1 =
@@ -595,7 +596,7 @@ mkPutRemInvDescs i ms d por mnom is ts = unzip . map helper . mkNameCountBothLis
 -----
 
 
-inOutOnOffs :: [(T.Text, Bool)]
+inOutOnOffs :: [(Text, Bool)]
 inOutOnOffs = [ ("i",   otherwise)
               , ("in",  otherwise)
               , ("o",   likewise )
@@ -618,7 +619,7 @@ isRingRol = \case R -> False
 -----
 
 
-isRndmName :: T.Text -> Bool
+isRndmName :: Text -> Bool
 isRndmName = isLower . T.head . dropANSI
 
 
@@ -653,7 +654,7 @@ mkChanBindings i ms = let cs  = getPCChans i ms
 -----
 
 
-mkChanNamesTunings :: Id -> MudState -> ([T.Text], [Bool])
+mkChanNamesTunings :: Id -> MudState -> ([Text], [Bool])
 mkChanNamesTunings i ms = unzip . sortBy (compare `on` fst) . map helper . getPCChans i $ ms
   where
     helper = (view chanName *** views chanConnTbl (M.! getSing i ms)) . dup
@@ -662,7 +663,7 @@ mkChanNamesTunings i ms = unzip . sortBy (compare `on` fst) . map helper . getPC
 -----
 
 
-mkCoinsDesc :: Cols -> Coins -> T.Text
+mkCoinsDesc :: Cols -> Coins -> Text
 mkCoinsDesc cols (Coins (each %~ Sum -> (cop, sil, gol))) =
     T.unlines . intercalate [""] . map (wrap cols) . dropEmpties $ [ cop |!| copDesc
                                                                    , sil |!| silDesc
@@ -676,11 +677,11 @@ mkCoinsDesc cols (Coins (each %~ Sum -> (cop, sil, gol))) =
 -----
 
 
-mkEntDescs :: Id -> Cols -> MudState -> Inv -> T.Text
+mkEntDescs :: Id -> Cols -> MudState -> Inv -> Text
 mkEntDescs i cols ms eis = T.intercalate "\n" [ mkEntDesc i cols ms (ei, e) | ei <- eis, let e = getEnt ei ms ]
 
 
-mkEntDesc :: Id -> Cols -> MudState -> (Id, Ent) -> T.Text
+mkEntDesc :: Id -> Cols -> MudState -> (Id, Ent) -> Text
 mkEntDesc i cols ms (ei, e) | ed <- views entDesc (wrapUnlines cols) e, s <- getSing ei ms, t <- getType ei ms =
     case t of ConType ->                 (ed <>) . mkInvCoinsDesc i cols ms ei $ s
               NpcType ->                 (ed <>) . mkEqDesc       i cols ms ei   s $ t
@@ -691,7 +692,7 @@ mkEntDesc i cols ms (ei, e) | ed <- views entDesc (wrapUnlines cols) e, s <- get
     mkPCDescHeader | (pp *** pp -> (s, r)) <- getSexRace ei ms = T.concat [ "You see a ", s, " ", r, "." ]
 
 
-mkInvCoinsDesc :: Id -> Cols -> MudState -> Id -> Sing -> T.Text
+mkInvCoinsDesc :: Id -> Cols -> MudState -> Id -> Sing -> Text
 mkInvCoinsDesc i cols ms targetId targetSing | targetInv <- getInv targetId ms, targetCoins <- getCoins targetId ms =
     case ((()#) *** (()#)) (targetInv, targetCoins) of
       (True,  True ) -> wrapUnlines cols (targetId == i ? dudeYourHandsAreEmpty :? "The " <> targetSing <> " is empty.")
@@ -703,7 +704,7 @@ mkInvCoinsDesc i cols ms targetId targetSing | targetInv <- getInv targetId ms, 
     footer = targetId == i |?| nl $ (showText . calcEncPer i $ ms) <> "% encumbered."
 
 
-mkEntsInInvDesc :: Id -> Cols -> MudState -> Inv -> T.Text
+mkEntsInInvDesc :: Id -> Cols -> MudState -> Inv -> Text
 mkEntsInInvDesc i cols ms =
     T.unlines . concatMap (wrapIndent entNamePadding cols . helper) . mkStyledName_Count_BothList i ms
   where
@@ -711,21 +712,21 @@ mkEntsInInvDesc i cols ms =
     helper (padEntName -> en, c, b     )          = T.concat [ en, showText c, " ", mkPlurFromBoth b ]
 
 
-mkStyledName_Count_BothList :: Id -> MudState -> Inv -> [(T.Text, Int, BothGramNos)]
+mkStyledName_Count_BothList :: Id -> MudState -> Inv -> [(Text, Int, BothGramNos)]
 mkStyledName_Count_BothList i ms is =
     let styleds                       = styleAbbrevs DoQuote [ getEffName        i ms targetId | targetId <- is ]
         boths@(mkCountList -> counts) =                      [ getEffBothGramNos i ms targetId | targetId <- is ]
     in nub . zip3 styleds counts $ boths
 
 
-mkCoinsSummary :: Cols -> Coins -> T.Text
+mkCoinsSummary :: Cols -> Coins -> Text
 mkCoinsSummary cols c = helper . zipWith mkNameAmt coinNames . coinsToList $ c
   where
     helper         = T.unlines . wrapIndent 2 cols . commas . filter (()!#)
     mkNameAmt cn a = Sum a |!| showText a <> " " <> bracketQuote (colorWith abbrevColor cn)
 
 
-mkEqDesc :: Id -> Cols -> MudState -> Id -> Sing -> Type -> T.Text
+mkEqDesc :: Id -> Cols -> MudState -> Id -> Sing -> Type -> Text
 mkEqDesc i cols ms descId descSing descType = let descs = descId == i ? mkDescsSelf :? mkDescsOther in
     ()# descs ? noDescs :? ((header <>) . T.unlines . concatMap (wrapIndent 15 cols) $ descs)
   where
@@ -752,7 +753,7 @@ mkEqDesc i cols ms descId descSing descType = let descs = descId == i ? mkDescsS
 -----
 
 
-mkExitsSummary :: Cols -> Rm -> T.Text
+mkExitsSummary :: Cols -> Rm -> Text
 mkExitsSummary cols (view rmLinks -> rls) =
     let stdNames    = [ rl^.linkDir .to (colorWith exitsColor . linkDirToCmdName) | rl <- rls, not . isNonStdLink $ rl ]
         customNames = [ rl^.linkName.to (colorWith exitsColor                   ) | rl <- rls,       isNonStdLink   rl ]
@@ -797,7 +798,7 @@ mkMaybeNthOfM ms icir conId conSing invWithCon = guard icir >> return helper
 -----
 
 
-mkLastArgWithNubbedOthers :: Args -> (T.Text, Args)
+mkLastArgWithNubbedOthers :: Args -> (Text, Args)
 mkLastArgWithNubbedOthers as = let lastArg = last as
                                    otherArgs = init $ case as of
                                      [_, _] -> as
@@ -820,11 +821,11 @@ mkPutRemoveBindings i ms as = let d                 = mkStdDesig  i ms DoCap
 
 
 moveReadiedItem :: Id
-                -> (EqTbl, InvTbl, [Broadcast], [T.Text])
+                -> (EqTbl, InvTbl, [Broadcast], [Text])
                 -> Slot
                 -> Id
-                -> (T.Text, Broadcast)
-                -> (EqTbl, InvTbl, [Broadcast], [T.Text])
+                -> (Text, Broadcast)
+                -> (EqTbl, InvTbl, [Broadcast], [Text])
 moveReadiedItem i a s targetId (msg, b) = a & _1.ind i.at s ?~ targetId
                                             & _2.ind i %~ (targetId `delete`)
                                             & _3 <>~ (mkBcast i msg ++ pure b)
@@ -834,7 +835,7 @@ moveReadiedItem i a s targetId (msg, b) = a & _1.ind i.at s ?~ targetId
 -----
 
 
-notFoundSuggestAsleeps :: T.Text -> [Sing] -> MudState -> T.Text
+notFoundSuggestAsleeps :: Text -> [Sing] -> MudState -> Text
 notFoundSuggestAsleeps a@(capitalize . T.toLower -> a') asleepSings ms =
     case findFullNameForAbbrev a' asleepSings of
       Just asleepTarget ->
@@ -859,29 +860,29 @@ otherHand NoHand = NoHand
 -----
 
 
-putOnMsgs :: Id -> Desig -> Sing -> (T.Text, Broadcast)
+putOnMsgs :: Id -> Desig -> Sing -> (Text, Broadcast)
 putOnMsgs = mkReadyMsgs "put on" "puts on"
 
 
 -----
 
 
-resolveMobInvCoins :: Id -> MudState -> Args -> Inv -> Coins -> ([Either T.Text Inv], [Either [T.Text] Coins])
+resolveMobInvCoins :: Id -> MudState -> Args -> Inv -> Coins -> ([Either Text Inv], [Either [Text] Coins])
 resolveMobInvCoins i ms = resolveHelper i ms procGecrMisMobInv procReconciledCoinsMobInv
 
 
 resolveHelper :: Id
               -> MudState
-              -> ((GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv)
-              -> (ReconciledCoins -> Either [T.Text] Coins)
+              -> ((GetEntsCoinsRes, Maybe Inv) -> Either Text Inv)
+              -> (ReconciledCoins -> Either [Text] Coins)
               -> Args
               -> Inv
               -> Coins
-              -> ([Either T.Text Inv], [Either [T.Text] Coins])
+              -> ([Either Text Inv], [Either [Text] Coins])
 resolveHelper i ms f g as is c | (gecrs, miss, rcs) <- resolveEntCoinNames i ms as is c
                                , eiss               <- zipWith (curry f) gecrs miss
                                , ecs                <- map g rcs = (eiss, ecs)
 
 
-resolveRmInvCoins :: Id -> MudState -> Args -> Inv -> Coins -> ([Either T.Text Inv], [Either [T.Text] Coins])
+resolveRmInvCoins :: Id -> MudState -> Args -> Inv -> Coins -> ([Either Text Inv], [Either [Text] Coins])
 resolveRmInvCoins i ms = resolveHelper i ms procGecrMisRm procReconciledCoinsRm

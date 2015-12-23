@@ -50,12 +50,13 @@ import Control.Monad.IO.Class (liftIO)
 import Data.List ((\\), delete, elemIndex)
 import Data.Maybe (fromJust, fromMaybe)
 import Data.Monoid ((<>))
+import Data.Text (Text)
 import Prelude hiding (pi)
 import qualified Data.IntMap.Lazy as IM (elems, toList)
 import qualified Data.Text as T
 
 
-patternMatchFail :: T.Text -> [T.Text] -> a
+patternMatchFail :: Text -> [Text] -> a
 patternMatchFail = U.patternMatchFail "Mud.Data.State.Util.Output"
 
 
@@ -80,11 +81,11 @@ bcast bs = getState >>= \ms -> liftIO . atomically . forM_ bs . sendBcastSTM $ m
 -----
 
 
-bcastAdmins :: T.Text -> MudStack ()
+bcastAdmins :: Text -> MudStack ()
 bcastAdmins = bcastAdminsHelper id
 
 
-bcastAdminsHelper :: (Inv -> Inv) -> T.Text -> MudStack ()
+bcastAdminsHelper :: (Inv -> Inv) -> Text -> MudStack ()
 bcastAdminsHelper f msg =
     bcastNl . pure . (colorWith adminBcastColor msg, ) =<< f . getLoggedInAdminIds <$> getState
 
@@ -92,7 +93,7 @@ bcastAdminsHelper f msg =
 -----
 
 
-bcastAdminsExcept :: Inv -> T.Text -> MudStack ()
+bcastAdminsExcept :: Inv -> Text -> MudStack ()
 bcastAdminsExcept = bcastAdminsHelper . flip (\\)
 
 
@@ -124,14 +125,14 @@ bcastNl = bcast . appendNlBs
 -----
 
 
-bcastOtherAdmins :: Id -> T.Text -> MudStack ()
+bcastOtherAdmins :: Id -> Text -> MudStack ()
 bcastOtherAdmins = bcastAdminsHelper . delete
 
 
 -----
 
 
-bcastOthersInRm :: Id -> T.Text -> MudStack ()
+bcastOthersInRm :: Id -> Text -> MudStack ()
 bcastOthersInRm i msg = getState >>= \ms ->
     let helper = let ((i `delete`) -> ris) = getMobRmInv i ms
                  in bcast . pure $ (msg, findMobIds ms ris)
@@ -150,7 +151,7 @@ massMsg msg = liftIO . atomically . helperSTM =<< getState
 -----
 
 
-massSend :: T.Text -> MudStack ()
+massSend :: Text -> MudStack ()
 massSend msg = liftIO . atomically . helperSTM =<< getState
   where
     helperSTM ms@(views msgQueueTbl IM.toList -> kvs) = forM_ kvs $ \(i, mq) ->
@@ -161,21 +162,21 @@ massSend msg = liftIO . atomically . helperSTM =<< getState
 -----
 
 
-mkBcast :: Id -> T.Text -> [Broadcast]
+mkBcast :: Id -> Text -> [Broadcast]
 mkBcast i = pure . (, pure i)
 
 
 -----
 
 
-mkNTBcast :: Id -> T.Text -> [ClassifiedBcast]
+mkNTBcast :: Id -> Text -> [ClassifiedBcast]
 mkNTBcast i = pure . NonTargetBcast . (, pure i)
 
 
 -----
 
 
-multiWrapSend :: MsgQueue -> Cols -> [T.Text] -> MudStack ()
+multiWrapSend :: MsgQueue -> Cols -> [Text] -> MudStack ()
 multiWrapSend mq cols = send mq . multiWrapNl cols
 
 
@@ -189,7 +190,7 @@ ok mq = send mq . nlnl $ "OK!"
 -----
 
 
-parseDesig :: Id -> MudState -> T.Text -> T.Text
+parseDesig :: Id -> MudState -> Text -> Text
 parseDesig i ms = loop (getIntroduced i ms)
   where
     loop intros txt
@@ -212,7 +213,7 @@ parseDesig i ms = loop (getIntroduced i ms)
       = (left, pcd, rest)
 
 
-expandEntName :: Id -> MudState -> ShouldCap -> T.Text -> Id -> Inv -> T.Text
+expandEntName :: Id -> MudState -> ShouldCap -> Text -> Id -> Inv -> Text
 expandEntName i ms (mkCapsFun -> f) en@(headTail -> (h, t)) idToExpand ((i `delete`) -> idsInRm)
   | isPC idToExpand ms         = T.concat [ f "the ", xth, expandSex h, " ", t ]
   | s <- getSing idToExpand ms = onFalse (isCapital s) (f . ("the " <>)) s
@@ -228,7 +229,7 @@ expandEntName i ms (mkCapsFun -> f) en@(headTail -> (h, t)) idToExpand ((i `dele
 -----
 
 
-retainedMsg :: Id -> MudState -> T.Text -> MudStack ()
+retainedMsg :: Id -> MudState -> Text -> MudStack ()
 retainedMsg targetId ms msg@(T.uncons -> Just (x, xs))
   | isNpc targetId ms                 = bcastNl . mkBcast targetId $ stripMarker
   | isLoggedIn . getPla targetId $ ms = let (targetMq, targetCols) = getMsgQueueColumns targetId ms
@@ -243,7 +244,7 @@ retainedMsg _ _ _ = unit
 -----
 
 
-send :: MsgQueue -> T.Text -> MudStack ()
+send :: MsgQueue -> Text -> MudStack ()
 send mq = liftIO . atomically . writeTQueue mq . FromServer
 
 
@@ -254,7 +255,7 @@ sendDfltPrompt :: MsgQueue -> Id -> MudStack ()
 sendDfltPrompt mq i = sendPrompt mq . mkDfltPrompt i =<< getState
 
 
-mkDfltPrompt :: Id -> MudState -> T.Text
+mkDfltPrompt :: Id -> MudState -> Text
 mkDfltPrompt i ms = let (hps, mps, pps, fps) = getXps i ms
                         marker               = colorWith indentColor " "
                     in marker <> " " <> spaces [ f "h" hps
@@ -275,19 +276,19 @@ mkDfltPrompt i ms = let (hps, mps, pps, fps) = getXps i ms
 -----
 
 
-sendMsgBoot :: MsgQueue -> Maybe T.Text -> MudStack ()
+sendMsgBoot :: MsgQueue -> Maybe Text -> MudStack ()
 sendMsgBoot mq = liftIO . atomically . writeTQueue mq . MsgBoot . fromMaybe dfltBootMsg
 
 
 -----
 
 
-sendPrompt :: MsgQueue -> T.Text -> MudStack ()
+sendPrompt :: MsgQueue -> Text -> MudStack ()
 sendPrompt mq = liftIO . atomically . writeTQueue mq . Prompt
 
 
 -----
 
 
-wrapSend :: MsgQueue -> Cols -> T.Text -> MudStack ()
+wrapSend :: MsgQueue -> Cols -> Text -> MudStack ()
 wrapSend mq cols = send mq . wrapUnlinesNl cols

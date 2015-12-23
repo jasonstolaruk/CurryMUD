@@ -61,19 +61,20 @@ import Data.IORef (atomicModifyIORef, readIORef)
 import Data.List (delete, foldl', sortBy)
 import Data.Maybe (fromJust, fromMaybe)
 import Data.Monoid (Sum(..), (<>))
+import Data.Text (Text)
 import GHC.Exts (sortWith)
 import qualified Data.IntMap.Lazy as IM (filter, keys, toList)
 import qualified Data.Text as T
 
 
-patternMatchFail :: T.Text -> [T.Text] -> a
+patternMatchFail :: Text -> [Text] -> a
 patternMatchFail = U.patternMatchFail "Mud.Data.State.Util.Misc"
 
 
 -- ==================================================
 
 
-aOrAnType :: Type -> T.Text
+aOrAnType :: Type -> Text
 aOrAnType t@ClothType = pp t
 aOrAnType t@ArmType   = pp t
 aOrAnType t           = aOrAn . pp $ t
@@ -123,7 +124,7 @@ getEffBothGramNos i ms targetId =
 -----
 
 
-getEffName :: Id -> MudState -> Id -> T.Text
+getEffName :: Id -> MudState -> Id -> Text
 getEffName i ms targetId = let targetEnt = getEnt targetId ms
                            in fromMaybe (helper $ targetEnt^.sing) $ targetEnt^.entName
   where
@@ -132,7 +133,7 @@ getEffName i ms targetId = let targetEnt = getEnt targetId ms
       | otherwise                                                              = uncapitalize targetSing
 
 
-mkUnknownPCEntName :: Id -> MudState -> T.Text
+mkUnknownPCEntName :: Id -> MudState -> Text
 mkUnknownPCEntName i ms = views entName (fromMaybe helper) . getEnt i $ ms
   where
     helper = let (T.head . pp *** pp -> (h, r)) = getSexRace i ms in h `T.cons` r
@@ -253,7 +254,7 @@ mkPlurFromBoth (_, p ) = p
 -----
 
 
-mkSerializedNonStdDesig :: Id -> MudState -> Sing -> AOrThe -> ShouldCap -> T.Text
+mkSerializedNonStdDesig :: Id -> MudState -> Sing -> AOrThe -> ShouldCap -> Text
 mkSerializedNonStdDesig i ms s aot (mkCapsFun -> f) =
     serialize NonStdDesig { nsDesigEntSing = s, nsDesc = helper }
   where
@@ -262,7 +263,7 @@ mkSerializedNonStdDesig i ms s aot (mkCapsFun -> f) =
     g = f . (pp aot <>) . (" " <>)
 
 
-mkCapsFun :: ShouldCap -> T.Text -> T.Text
+mkCapsFun :: ShouldCap -> Text -> Text
 mkCapsFun = \case DoCap    -> capitalize
                   Don'tCap -> id
 
@@ -298,7 +299,7 @@ pcNpc i ms a b = case getType i ms of
 -----
 
 
-pluralize :: BothGramNos -> Int -> T.Text
+pluralize :: BothGramNos -> Int -> Text
 pluralize (s, p) x = x == 1 ? s :? p
 
 

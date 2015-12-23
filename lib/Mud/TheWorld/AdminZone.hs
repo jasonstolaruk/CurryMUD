@@ -11,11 +11,11 @@ import qualified Mud.Misc.Logging as L (logNotice)
 import Data.Bits (setBit, zeroBits)
 import Data.List (foldl')
 import Data.Monoid ((<>))
+import Data.Text (Text)
 import qualified Data.Map.Lazy as M (empty, fromList)
-import qualified Data.Text as T
 
 
-logNotice :: T.Text -> T.Text -> MudStack ()
+logNotice :: Text -> Text -> MudStack ()
 logNotice = L.logNotice "Mud.TheWorld.AdminZone"
 
 

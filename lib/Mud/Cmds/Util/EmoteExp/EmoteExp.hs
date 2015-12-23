@@ -33,18 +33,19 @@ import Data.Char (isLetter)
 import Data.Either (lefts)
 import Data.List ((\\), delete, intersperse, nub)
 import Data.Monoid ((<>))
+import Data.Text (Text)
 import Data.Tuple (swap)
 import qualified Data.Text as T
 
 
-patternMatchFail :: T.Text -> [T.Text] -> a
+patternMatchFail :: Text -> [Text] -> a
 patternMatchFail = U.patternMatchFail "Mud.Cmds.Util.EmoteExp.EmoteExp"
 
 
 -- ==================================================
 
 
-targetify :: Id -> ChanContext -> [(Id, T.Text, T.Text)] -> T.Text -> Either T.Text (Either () [Broadcast])
+targetify :: Id -> ChanContext -> [(Id, Text, Text)] -> Text -> Either Text (Either () [Broadcast])
 targetify i cc triples msg@(T.words -> ws@(headTail . head -> (c, rest)))
   | isBracketed ws               = Left sorryBracketedMsg
   | isHeDon't chanTargetChar msg = Left sorryWtf
@@ -52,7 +53,7 @@ targetify i cc triples msg@(T.words -> ws@(headTail . head -> (c, rest)))
   | otherwise = Right . Left $ ()
 
 
-procChanTarget :: Id -> ChanContext -> [(Id, T.Text, T.Text)] -> Args -> Either T.Text [Broadcast]
+procChanTarget :: Id -> ChanContext -> [(Id, Text, Text)] -> Args -> Either Text [Broadcast]
 procChanTarget i cc triples ((T.toLower -> target):rest)
   | ()# rest  = Left sorryChanMsg
   | otherwise = case findFullNameForAbbrev target . map (views _2 T.toLower) $ triples of
@@ -72,14 +73,14 @@ procChanTarget _ _ _ as = patternMatchFail "procChanTarget" as
 -----
 
 
-emotify :: Id -> MudState -> ChanContext -> [(Id, T.Text, T.Text)] -> T.Text -> Either [T.Text] (Either () [Broadcast])
+emotify :: Id -> MudState -> ChanContext -> [(Id, Text, Text)] -> Text -> Either [Text] (Either () [Broadcast])
 emotify i ms cc triples msg@(T.words -> ws@(headTail . head -> (c, rest)))
   | isHeDon't emoteChar msg = Left . pure $ sorryWtf
   | c == emoteChar          = fmap Right . procEmote i ms cc triples . parseOutDenotative ws $ rest
   | otherwise = Right . Left $ ()
 
 
-procEmote :: Id -> MudState -> ChanContext -> [(Id, T.Text, T.Text)] -> Args -> Either [T.Text] [Broadcast]
+procEmote :: Id -> MudState -> ChanContext -> [(Id, Text, Text)] -> Args -> Either [Text] [Broadcast]
 procEmote _ _  cc _       as | hasYou as = Left . pure . adviceYouEmoteChar . pp $ cc
 procEmote i ms cc triples as             =
     let me                      = (getSing i ms, embedId i, embedId i)
@@ -128,7 +129,7 @@ procEmote i ms cc triples as             =
 -----
 
 
-expCmdify :: Id -> MudState -> ChanContext -> [(Id, T.Text, T.Text)] -> T.Text -> Either T.Text ([Broadcast], T.Text)
+expCmdify :: Id -> MudState -> ChanContext -> [(Id, Text, Text)] -> Text -> Either Text ([Broadcast], Text)
 expCmdify i ms cc triples msg@(T.words -> ws@(headTail . head -> (c, rest)))
   | isHeDon't expCmdChar msg = Left sorryWtf
   | c == expCmdChar          = fmap format . procExpCmd i ms cc triples . parseOutDenotative ws $ rest
@@ -138,7 +139,7 @@ expCmdify i ms cc triples msg@(T.words -> ws@(headTail . head -> (c, rest)))
                    & _2 %~ angleBracketQuote
 
 
-procExpCmd :: Id -> MudState -> ChanContext -> [(Id, T.Text, T.Text)] -> Args -> Either T.Text ([Broadcast], T.Text)
+procExpCmd :: Id -> MudState -> ChanContext -> [(Id, Text, Text)] -> Args -> Either Text ([Broadcast], Text)
 procExpCmd _ _  _  _       (_:_:_:_) = Left sorryExpCmdLen
 procExpCmd i ms cc triples (map T.toLower . unmsg -> [cn, target]) =
     findFullNameForAbbrev cn expCmdNames |&| maybe notFound found
@@ -190,7 +191,7 @@ procExpCmd _ _ _ _ as = patternMatchFail "procExpCmd" as
 -----
 
 
-adminChanTargetify :: Inv -> [Sing] -> T.Text -> Either T.Text (Either () [Broadcast])
+adminChanTargetify :: Inv -> [Sing] -> Text -> Either Text (Either () [Broadcast])
 adminChanTargetify tunedIds tunedSings msg@(T.words -> ws@(headTail . head -> (c, rest)))
   | isBracketed ws               = Left sorryBracketedMsg
   | isHeDon't chanTargetChar msg = Left sorryWtf
@@ -199,7 +200,7 @@ adminChanTargetify tunedIds tunedSings msg@(T.words -> ws@(headTail . head -> (c
   | otherwise = Right . Left $ ()
 
 
-adminChanProcChanTarget :: Inv -> [Sing] -> Args -> Either T.Text [Broadcast]
+adminChanProcChanTarget :: Inv -> [Sing] -> Args -> Either Text [Broadcast]
 adminChanProcChanTarget tunedIds tunedSings ((capitalize . T.toLower -> target):rest) =
     ()# rest ? Left sorryChanMsg :? (findFullNameForAbbrev target tunedSings |&| maybe notFound found)
   where
@@ -216,7 +217,7 @@ adminChanProcChanTarget _ _ as = patternMatchFail "adminChanProcChanTarget" as
 -----
 
 
-adminChanEmotify :: Id -> MudState -> Inv -> [Sing] -> T.Text -> Either [T.Text] (Either () [Broadcast])
+adminChanEmotify :: Id -> MudState -> Inv -> [Sing] -> Text -> Either [Text] (Either () [Broadcast])
 adminChanEmotify i ms tunedIds tunedSings msg@(T.words -> ws@(headTail . head -> (c, rest)))
   | isHeDon't emoteChar msg = Left . pure $ sorryWtf
   | c == emoteChar          =
@@ -224,7 +225,7 @@ adminChanEmotify i ms tunedIds tunedSings msg@(T.words -> ws@(headTail . head ->
   | otherwise = Right . Left $ ()
 
 
-adminChanProcEmote :: Id -> MudState -> Inv -> [Sing] -> Args -> Either [T.Text] [Broadcast]
+adminChanProcEmote :: Id -> MudState -> Inv -> [Sing] -> Args -> Either [Text] [Broadcast]
 adminChanProcEmote _ _  _        _          as | hasYou as = Left . pure . adviceYouEmoteChar . prefixAdminCmd $ "admin"
 adminChanProcEmote i ms tunedIds tunedSings as =
     let s                       = getSing i ms
@@ -272,7 +273,7 @@ adminChanProcEmote i ms tunedIds tunedSings as =
 -----
 
 
-adminChanExpCmdify :: Id -> MudState -> Inv -> [Sing] -> T.Text -> Either T.Text ([Broadcast], T.Text)
+adminChanExpCmdify :: Id -> MudState -> Inv -> [Sing] -> Text -> Either Text ([Broadcast], Text)
 adminChanExpCmdify i ms tunedIds tunedSings msg@(T.words -> ws@(headTail . head -> (c, rest)))
   | isHeDon't expCmdChar msg = Left sorryWtf
   | c == expCmdChar          =
@@ -283,7 +284,7 @@ adminChanExpCmdify i ms tunedIds tunedSings msg@(T.words -> ws@(headTail . head 
                    & _2 %~ angleBracketQuote
 
 
-adminChanProcExpCmd :: Id -> MudState -> Inv -> [Sing] -> Args -> Either T.Text ([Broadcast], T.Text)
+adminChanProcExpCmd :: Id -> MudState -> Inv -> [Sing] -> Args -> Either Text ([Broadcast], Text)
 adminChanProcExpCmd _ _ _ _ (_:_:_:_) = Left sorryExpCmdLen
 adminChanProcExpCmd i ms tunedIds tunedSings (map T.toLower . unmsg -> [cn, target]) =
     findFullNameForAbbrev cn expCmdNames |&| maybe notFound found

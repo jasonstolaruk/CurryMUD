@@ -2,7 +2,7 @@
 
 module Mud.Cmds.Msgs.Dude where
 
-import qualified Data.Text as T
+import Data.Text (Text)
 
 
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
@@ -11,13 +11,13 @@ import qualified Data.Text as T
 -- ==================================================
 
 
-dudeYou'reNaked :: T.Text
+dudeYou'reNaked :: Text
 dudeYou'reNaked = "You don't have anything readied. You're naked!"
 
 
-dudeYou'reScrewed :: T.Text
+dudeYou'reScrewed :: Text
 dudeYou'reScrewed = "You aren't carrying anything, and you don't have anything readied. You're naked!"
 
 
-dudeYourHandsAreEmpty :: T.Text
+dudeYourHandsAreEmpty :: Text
 dudeYourHandsAreEmpty = "You aren't carrying anything."

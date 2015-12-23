@@ -7,71 +7,72 @@ import Mud.TopLvlDefs.Padding
 import Mud.Util.Quoting
 
 import Data.Monoid ((<>))
+import Data.Text (Text)
 import qualified Data.Text as T
 
 
-quoteWithAndPad :: (T.Text, T.Text) -> Int -> T.Text -> T.Text
+quoteWithAndPad :: (Text, Text) -> Int -> Text -> Text
 quoteWithAndPad q x t = quoteWith' q t' <> T.replicate (x - T.length t' - 2) " "
   where
     t' = T.take (pred $ x - l) t
     l  = sum . map T.length $ [ fst q, snd q ]
 
 
-bracketPad :: Int -> T.Text -> T.Text
+bracketPad :: Int -> Text -> Text
 bracketPad = quoteWithAndPad ("[", "]")
 
 
-pad :: Int -> T.Text -> T.Text
+pad :: Int -> Text -> Text
 pad x t@(T.length . dropANSI -> l)
   | l >= x    = t
   | otherwise = t <> T.replicate (x - l) " "
 
 
-padChanName :: T.Text -> T.Text
+padChanName :: Text -> Text
 padChanName = pad chanNamePadding
 
 
-padCmdName :: T.Text -> T.Text
+padCmdName :: Text -> Text
 padCmdName = pad cmdNamePadding
 
 
-padColorName :: T.Text -> T.Text
+padColorName :: Text -> Text
 padColorName = pad colorNamePadding
 
 
-padEntName :: T.Text -> T.Text
+padEntName :: Text -> Text
 padEntName = pad entNamePadding
 
 
-padHelpTopic :: T.Text -> T.Text
+padHelpTopic :: Text -> Text
 padHelpTopic = pad helpTopicPadding
 
 
-padId :: T.Text -> T.Text
+padId :: Text -> Text
 padId = pad idPadding
 
 
-padName :: T.Text -> T.Text
+padName :: Text -> Text
 padName = pad namePadding
 
 
-padRace :: T.Text -> T.Text
+padRace :: Text -> Text
 padRace = pad racePadding
 
 
-padSettingName :: T.Text -> T.Text
+padSettingName :: Text -> Text
 padSettingName = pad settingNamePadding
 
 
-padSex :: T.Text -> T.Text
+padSex :: Text -> Text
 padSex = pad sexPadding
 
 
-parensPad :: Int -> T.Text -> T.Text
+parensPad :: Int -> Text -> Text
 parensPad = quoteWithAndPad ("(", ")")
 
 
-padOrTrunc :: Int -> T.Text -> T.Text
+padOrTrunc :: Int -> Text -> Text
 padOrTrunc x _                 | x < 0 = ""
 padOrTrunc x t@(T.length -> l) | l < x = t <> T.replicate (x - l) " "
                                | l > x = T.take x t

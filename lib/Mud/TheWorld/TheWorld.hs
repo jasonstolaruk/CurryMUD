@@ -26,6 +26,7 @@ import Data.Aeson (FromJSON, eitherDecode)
 import Data.IORef (newIORef)
 import Data.List (delete, sort)
 import Data.Monoid ((<>))
+import Data.Text (Text)
 import Data.Tuple (swap)
 import qualified Data.ByteString.Lazy as B (readFile)
 import qualified Data.IntMap.Lazy as IM (empty, foldrWithKey, toList, map)
@@ -37,7 +38,7 @@ import System.FilePath ((</>))
 import System.Random.MWC (createSystemRandom)
 
 
-logNotice :: T.Text -> T.Text -> MudStack ()
+logNotice :: Text -> Text -> MudStack ()
 logNotice = L.logNotice "Mud.TheWorld.TheWorld"
 
 

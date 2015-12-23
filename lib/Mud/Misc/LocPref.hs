@@ -9,14 +9,15 @@ import Mud.Data.Misc
 import Mud.TopLvlDefs.Chars
 import Mud.Util.Operators
 import Mud.Util.Text
-import qualified Data.Text as T
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Lens (_1, _2, _3)
 import Control.Lens.Operators ((%~), (&))
+import Data.Text (Text)
+import qualified Data.Text as T
 
 
-patternMatchFail :: T.Text -> [T.Text] -> a
+patternMatchFail :: Text -> [Text] -> a
 patternMatchFail = U.patternMatchFail "Mud.Misc.LocPref"
 
 
@@ -34,7 +35,7 @@ pattern AtLst1       <- (_:_)
 -----
 
 
-hasLocPref :: T.Text -> Bool
+hasLocPref :: Text -> Bool
 hasLocPref = \case InvPref -> True
                    EqPref  -> True
                    RmPref  -> True
@@ -44,7 +45,7 @@ hasLocPref = \case InvPref -> True
 -----
 
 
-singleArgInvEqRm :: InInvEqRm -> T.Text -> (InInvEqRm, T.Text)
+singleArgInvEqRm :: InInvEqRm -> Text -> (InInvEqRm, Text)
 singleArgInvEqRm dflt arg = case sortArgsInvEqRm dflt . pure $ arg of
   ([a], [],  [] ) -> (InInv, a)
   ([],  [a], [] ) -> (InEq,  a)
@@ -73,5 +74,5 @@ sortArgsInvEqRm dflt = foldr f mempty
 -----
 
 
-stripLocPref :: T.Text -> T.Text
+stripLocPref :: Text -> Text
 stripLocPref arg = hasLocPref arg ? T.drop 2 arg :? arg

@@ -23,17 +23,18 @@ import Control.Lens.Operators ((%~))
 import Data.Either (lefts, rights)
 import Data.List (intersperse, nub)
 import Data.Monoid ((<>))
+import Data.Text (Text)
 import qualified Data.Text as T
 
 
-patternMatchFail :: T.Text -> [T.Text] -> a
+patternMatchFail :: Text -> [Text] -> a
 patternMatchFail = U.patternMatchFail "Mud.Cmds.Util.EmoteExp.TwoWayEmoteExp"
 
 
 -- ==================================================
 
 
-emotifyTwoWay :: T.Text -> Id -> MudState -> Id -> T.Text -> Either [T.Text] (Either () [Broadcast])
+emotifyTwoWay :: Text -> Id -> MudState -> Id -> Text -> Either [Text] (Either () [Broadcast])
 emotifyTwoWay cn i ms targetId msg@(T.words -> ws@(headTail . head -> (c, rest)))
   | isBracketed ws          = Left . pure $ sorryBracketedMsg
   | isHeDon't emoteChar msg = Left . pure $ sorryWtf
@@ -41,7 +42,7 @@ emotifyTwoWay cn i ms targetId msg@(T.words -> ws@(headTail . head -> (c, rest))
   | otherwise = Right . Left $ ()
 
 
-procTwoWayEmote :: T.Text -> Id -> MudState -> Id -> Args -> Either [T.Text] [Broadcast]
+procTwoWayEmote :: Text -> Id -> MudState -> Id -> Args -> Either [Text] [Broadcast]
 procTwoWayEmote cn i ms targetId as =
     let s       = getSing i ms
         xformed = xformArgs True as
@@ -70,14 +71,14 @@ procTwoWayEmote cn i ms targetId as =
 -----
 
 
-expCmdifyTwoWay :: Id -> MudState -> Id -> Sing -> T.Text -> Either T.Text [Broadcast]
+expCmdifyTwoWay :: Id -> MudState -> Id -> Sing -> Text -> Either Text [Broadcast]
 expCmdifyTwoWay i ms targetId targetSing msg@(T.words -> ws@(headTail . head -> (c, rest)))
   | isHeDon't expCmdChar msg = Left sorryWtf
   | c == expCmdChar = procExpCmdTwoWay i ms targetId targetSing . parseOutDenotative ws $ rest
   | otherwise = Right [ (msg, pure i), (msg, pure targetId) ]
 
 
-procExpCmdTwoWay :: Id -> MudState -> Id -> Sing -> Args -> Either T.Text [Broadcast]
+procExpCmdTwoWay :: Id -> MudState -> Id -> Sing -> Args -> Either Text [Broadcast]
 procExpCmdTwoWay _ _  _        _          (_:_:_:_) = Left sorryExpCmdLen
 procExpCmdTwoWay i ms targetId targetSing (map T.toLower . unmsg -> [cn, target]) =
     findFullNameForAbbrev cn expCmdNames |&| maybe notFound found

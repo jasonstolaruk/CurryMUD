@@ -6,25 +6,25 @@ module Mud.Data.State.MsgQueue ( Msg(..)
                                , NpcMsgQueue ) where
 
 import Control.Concurrent.STM.TQueue (TQueue)
-import qualified Data.Text as T
+import Data.Text (Text)
 
 
 type MsgQueue = TQueue Msg
 
 
-data Msg = AsSelf     T.Text
+data Msg = AsSelf     Text
          | Dropped
-         | FromClient T.Text
-         | FromServer T.Text
+         | FromClient Text
+         | FromServer Text
          | InacBoot
          | InacStop
-         | MsgBoot    T.Text
-         | Peeped     T.Text
-         | Prompt     T.Text
+         | MsgBoot    Text
+         | Peeped     Text
+         | Prompt     Text
          | Quit
          | Shutdown
          | SilentBoot
-         | ToNpc      T.Text
+         | ToNpc      Text
 
 
 -----
@@ -33,7 +33,7 @@ data Msg = AsSelf     T.Text
 type NpcMsgQueue = TQueue NpcMsg
 
 
-data NpcMsg = ExternCmd MsgQueue Cols T.Text
+data NpcMsg = ExternCmd MsgQueue Cols Text
             | StopNpcServer
 
 

@@ -35,6 +35,7 @@ import Data.Char (isDigit)
 import Data.List ((\\), foldl')
 import Data.Monoid ((<>))
 import Data.String (fromString)
+import Data.Text (Text)
 import Data.Text.Read (decimal)
 import Formatting (Format, (%), sformat)
 import Formatting.Formatters (int, stext)
@@ -48,18 +49,18 @@ import qualified Prelude ((>>))
 -----
 
 
-(>>) :: Format (T.Text -> b) a -> Format c b -> Format c a
+(>>) :: Format (Text -> b) a -> Format c b -> Format c a
 a >> b = a % stext % b
 
 
 -----
 
 
-blowUp :: T.Text -> T.Text -> [T.Text] -> a
+blowUp :: Text -> Text -> [Text] -> a
 blowUp = U.blowUp "Mud.Misc.NameResolution"
 
 
-patternMatchFail :: T.Text -> [T.Text] -> a
+patternMatchFail :: Text -> [Text] -> a
 patternMatchFail = U.patternMatchFail "Mud.Misc.NameResolution"
 
 
@@ -152,7 +153,7 @@ distillEnscs enscs | Empty `elem` enscs               = pure Empty
     fromEnsCoins ensc       = patternMatchFail "distillEnscs fromEnsCoins" [ showText ensc ]
 
 
-mkGecr :: Id -> MudState -> Inv -> Coins -> T.Text -> GetEntsCoinsRes
+mkGecr :: Id -> MudState -> Inv -> Coins -> Text -> GetEntsCoinsRes
 mkGecr i ms searchIs searchCoins searchName@(headTail -> (h, t))
   | searchName == T.singleton allChar
   , allEs <- [ getEnt si ms | si <- searchIs ] = Mult { amount          = length searchIs
@@ -175,12 +176,12 @@ mkGecr i ms searchIs searchCoins searchName@(headTail -> (h, t))
              | otherwise           -> Sorry searchName
 
 
-mkGecrMult :: Id -> MudState -> Amount -> T.Text -> Inv -> Coins -> GetEntsCoinsRes
+mkGecrMult :: Id -> MudState -> Amount -> Text -> Inv -> Coins -> GetEntsCoinsRes
 mkGecrMult i ms a n is c | n `elem` allCoinNames = mkGecrMultForCoins     a n c
                          | otherwise             = mkGecrMultForEnts i ms a n is
 
 
-mkGecrMultForCoins :: Amount -> T.Text -> Coins -> GetEntsCoinsRes
+mkGecrMultForCoins :: Amount -> Text -> Coins -> GetEntsCoinsRes
 mkGecrMultForCoins a n c@(Coins (cop, sil, gol)) = Mult { amount          = a
                                                         , nameSearchedFor = n
                                                         , entsRes         = Nothing
@@ -209,7 +210,7 @@ distributeAmt amt (c:cs) | diff <- amt - c, diff >= 0 = c   : distributeAmt diff
                          | otherwise                  = amt : distributeAmt 0    cs
 
 
-mkGecrMultForEnts :: Id -> MudState -> Amount -> T.Text -> Inv -> GetEntsCoinsRes
+mkGecrMultForEnts :: Id -> MudState -> Amount -> Text -> Inv -> GetEntsCoinsRes
 mkGecrMultForEnts i ms a n is = let effNames = [ getEffName i ms targetId | targetId <- is ] in
     uncurry (Mult a n) (findFullNameForAbbrev n effNames |&| maybe notFound (found effNames))
   where
@@ -219,7 +220,7 @@ mkGecrMultForEnts i ms a n is = let effNames = [ getEffName i ms targetId | targ
                                                                     , effName == fullName ]
 
 
-mkGecrIndexed :: Id -> MudState -> Index -> T.Text -> Inv -> GetEntsCoinsRes
+mkGecrIndexed :: Id -> MudState -> Index -> Text -> Inv -> GetEntsCoinsRes
 mkGecrIndexed i ms x n is
   | n `elem` allCoinNames = SorryIndexedCoins
   | otherwise             = let effNames = [ getEffName i ms targetId | targetId <- is ]
@@ -247,7 +248,7 @@ resolveEntCoinNamesWithRols i ms (map T.toLower -> as) is c =
     in (gecrs', mrols, miss, rcs)
 
 
-mkGecrWithRol :: Id -> MudState -> Inv -> Coins -> T.Text -> (GetEntsCoinsRes, Maybe RightOrLeft)
+mkGecrWithRol :: Id -> MudState -> Inv -> Coins -> Text -> (GetEntsCoinsRes, Maybe RightOrLeft)
 mkGecrWithRol i ms is c n@(T.breakOn (T.singleton slotChar) -> (a, b))
   | ()# b           = (mkGecr i ms is c n, Nothing)
   | T.length b == 1 = sorry
@@ -274,7 +275,7 @@ pattern SorryCoins       <- (SorryIndexedCoins,                                 
 pattern GenericSorry n   <- (Sorry   {            nameSearchedFor = (aOrAn -> n)                     }, Nothing)
 
 
-procGecrMisMobInv :: (GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv
+procGecrMisMobInv :: (GetEntsCoinsRes, Maybe Inv) -> Either Text Inv
 procGecrMisMobInv DupIdsEmpty        | res <- dupIdsRes               = res
 procGecrMisMobInv (SorryOne     (don'tHaveInv    -> res))             = res
 procGecrMisMobInv (NoneMult     (don'tHaveAnyInv -> res))             = res
@@ -287,33 +288,33 @@ procGecrMisMobInv (GenericSorry (don'tHaveInv    -> res))             = res
 procGecrMisMobInv gecrMis = patternMatchFail "procGecrMisMobInv" [ showText gecrMis ]
 
 
-dupIdsRes :: Either T.Text Inv
+dupIdsRes :: Either Text Inv
 dupIdsRes = Left ""
 
 
-don'tHaveInv :: T.Text -> Either T.Text Inv
+don'tHaveInv :: Text -> Either Text Inv
 don'tHaveInv = Left . sformat (do { "You don't have "; "." })
 
 
-don'tHaveAnyInv :: T.Text -> Either T.Text Inv
+don'tHaveAnyInv :: Text -> Either Text Inv
 don'tHaveAnyInv = Left . sformat (do { "You don't have any "; "s." })
 
 
-don'tHaveIndexedInv :: Int -> T.Text -> Either T.Text Inv
+don'tHaveIndexedInv :: Int -> Text -> Either Text Inv
 don'tHaveIndexedInv x = Left . sformat (do { "You don't have " % int % " "; "." }) x
 
 
-sorryIndexedCoins :: Either T.Text Inv
+sorryIndexedCoins :: Either Text Inv
 sorryIndexedCoins =
     Left . sformat (do { "Sorry, but "; " cannot be used with coins." }) . dblQuote . T.singleton $ indexChar
 
 
-procGecrMisReady :: (GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv
+procGecrMisReady :: (GetEntsCoinsRes, Maybe Inv) -> Either Text Inv
 procGecrMisReady (Sorry (sorryBadSlot -> txt), Nothing) = Left txt
 procGecrMisReady gecrMis                                = procGecrMisMobInv gecrMis
 
 
-sorryBadSlot :: T.Text -> T.Text
+sorryBadSlot :: Text -> Text
 sorryBadSlot n
   | T.singleton slotChar `T.isInfixOf` n = sformat m (mkSlotTxt "r") (mkSlotTxt "l") (nlPrefix ringHelp)
   | otherwise                            = sformat (do { "You don't have "; "." }) . aOrAn $ n
@@ -321,11 +322,11 @@ sorryBadSlot n
     m = do { "Please specify "; " or "; "."; "" }
 
 
-mkSlotTxt :: T.Text -> T.Text
+mkSlotTxt :: Text -> Text
 mkSlotTxt = colorWith quoteColor . dblQuote . (T.singleton slotChar <>)
 
 
-ringHelp :: T.Text
+ringHelp :: Text
 ringHelp = T.concat [ "For rings, specify ", mkSlotTxt "r", " or ", mkSlotTxt "l", nl " immediately followed by:"
                     , colorWith quoteColor (dblQuote "i") <> nl " for index finger,"
                     , colorWith quoteColor (dblQuote "m") <> nl " for middle finger,"
@@ -333,7 +334,7 @@ ringHelp = T.concat [ "For rings, specify ", mkSlotTxt "r", " or ", mkSlotTxt "l
                     , colorWith quoteColor (dblQuote "p") <> nl " for pinky finger." ]
 
 
-procGecrMisMobEq :: (GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv
+procGecrMisMobEq :: (GetEntsCoinsRes, Maybe Inv) -> Either Text Inv
 procGecrMisMobEq DupIdsEmpty        | res <- dupIdsRes              = res
 procGecrMisMobEq (SorryOne     (don'tHaveEq    -> res))             = res
 procGecrMisMobEq (NoneMult     (don'tHaveAnyEq -> res))             = res
@@ -346,19 +347,19 @@ procGecrMisMobEq (GenericSorry (don'tHaveEq    -> res))             = res
 procGecrMisMobEq gecrMis = patternMatchFail "procGecrMisMobEq" [ showText gecrMis ]
 
 
-don'tHaveEq :: T.Text -> Either T.Text Inv
+don'tHaveEq :: Text -> Either Text Inv
 don'tHaveEq = Left . sformat (do { "You don't have "; " among your readied equipment." })
 
 
-don'tHaveAnyEq :: T.Text -> Either T.Text Inv
+don'tHaveAnyEq :: Text -> Either Text Inv
 don'tHaveAnyEq = Left . sformat (do { "You don't have any "; "s among your readied equipment." })
 
 
-don'tHaveIndexedEq :: Int -> T.Text -> Either T.Text Inv
+don'tHaveIndexedEq :: Int -> Text -> Either Text Inv
 don'tHaveIndexedEq x = Left . sformat (do { "You don't have " % int % " "; " among your readied equipment." }) x
 
 
-procGecrMisRm :: (GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv
+procGecrMisRm :: (GetEntsCoinsRes, Maybe Inv) -> Either Text Inv
 procGecrMisRm DupIdsEmpty        | res <- dupIdsRes           = res
 procGecrMisRm (SorryOne     (don'tSee    -> res))             = res
 procGecrMisRm (NoneMult     (don'tSeeAny -> res))             = res
@@ -371,19 +372,19 @@ procGecrMisRm (GenericSorry (don'tSee    -> res))             = res
 procGecrMisRm gecrMis = patternMatchFail "procGecrMisRm" [ showText gecrMis ]
 
 
-don'tSee :: T.Text -> Either T.Text Inv
+don'tSee :: Text -> Either Text Inv
 don'tSee = Left . sformat (do { "You don't see "; " here." })
 
 
-don'tSeeAny :: T.Text -> Either T.Text Inv
+don'tSeeAny :: Text -> Either Text Inv
 don'tSeeAny = Left . sformat (do { "You don't see any "; "s here." })
 
 
-don'tSeeIndexed :: Int -> T.Text -> Either T.Text Inv
+don'tSeeIndexed :: Int -> Text -> Either Text Inv
 don'tSeeIndexed x = Left . sformat (do { "You don't see " % int % " "; " here." }) x
 
 
-procGecrMisCon :: ConName -> (GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv
+procGecrMisCon :: ConName -> (GetEntsCoinsRes, Maybe Inv) -> Either Text Inv
 procGecrMisCon _  DupIdsEmpty        | res <- dupIdsRes                    = res
 procGecrMisCon cn (SorryOne     (doesn'tContain    cn -> res))             = res
 procGecrMisCon cn (NoneMult     (doesn'tContainAny cn -> res))             = res
@@ -396,19 +397,19 @@ procGecrMisCon cn (GenericSorry (doesn'tContain    cn -> res))             = res
 procGecrMisCon cn gecrMis = patternMatchFail "procGecrMisCon" [ cn, showText gecrMis ]
 
 
-doesn'tContain :: T.Text -> T.Text -> Either T.Text Inv
+doesn'tContain :: Text -> Text -> Either Text Inv
 doesn'tContain cn = Left . sformat m cn
   where
     m = do { "The "; " doesn't contain "; "." }
 
 
-doesn'tContainAny :: T.Text -> T.Text -> Either T.Text Inv
+doesn'tContainAny :: Text -> Text -> Either Text Inv
 doesn'tContainAny cn = Left . sformat m cn
   where
     m = do { "The "; " doesn't contain any "; "s." }
 
 
-doesn'tContainIndexed :: T.Text -> Int -> T.Text -> Either T.Text Inv
+doesn'tContainIndexed :: Text -> Int -> Text -> Either Text Inv
 doesn'tContainIndexed cn x = Left . sformat m cn x
   where
     m = do { "The "; " doesn't contain " % int % " "; "." }
@@ -418,7 +419,7 @@ doesn'tContainIndexed cn x = Left . sformat m cn x
 -- Processing "ReconciledCoins":
 
 
-procReconciledCoinsMobInv :: ReconciledCoins -> Either [T.Text] Coins
+procReconciledCoinsMobInv :: ReconciledCoins -> Either [Text] Coins
 procReconciledCoinsMobInv (Left  Empty)                            = Left . pure $ "You don't have any coins."
 procReconciledCoinsMobInv (Left  (NoneOf (Coins (cop, sil, gol)))) = Left . extractCoinsTxt $ [ c, s, g ]
   where
@@ -434,17 +435,17 @@ procReconciledCoinsMobInv (Left  (SomeOf (Coins (cop, sil, gol)))) = Left . extr
 procReconciledCoinsMobInv rc = patternMatchFail "procReconciledCoinsMobInv" [ showText rc ]
 
 
-extractCoinsTxt :: [Maybe T.Text] -> [T.Text]
+extractCoinsTxt :: [Maybe Text] -> [Text]
 extractCoinsTxt []           = []
 extractCoinsTxt (Nothing:xs) =     extractCoinsTxt xs
 extractCoinsTxt (Just  x:xs) = x : extractCoinsTxt xs
 
 
-msgOnNonzero :: Int -> T.Text -> Maybe T.Text
+msgOnNonzero :: Int -> Text -> Maybe Text
 msgOnNonzero x msg = guard (x /= 0) Prelude.>> return msg
 
 
-procReconciledCoinsRm :: ReconciledCoins -> Either [T.Text] Coins
+procReconciledCoinsRm :: ReconciledCoins -> Either [Text] Coins
 procReconciledCoinsRm (Left  Empty)                            = Left . pure $ "You don't see any coins here."
 procReconciledCoinsRm (Left  (NoneOf (Coins (cop, sil, gol)))) = Left . extractCoinsTxt $ [ c, s, g ]
   where
@@ -460,7 +461,7 @@ procReconciledCoinsRm (Left  (SomeOf (Coins (cop, sil, gol)))) = Left . extractC
 procReconciledCoinsRm rc = patternMatchFail "procReconciledCoinsRm" [ showText rc ]
 
 
-procReconciledCoinsCon :: ConName -> ReconciledCoins -> Either [T.Text] Coins
+procReconciledCoinsCon :: ConName -> ReconciledCoins -> Either [Text] Coins
 procReconciledCoinsCon cn (Left  Empty)                            = doesn'tContainAnyCoins cn
 procReconciledCoinsCon cn (Left  (NoneOf (Coins (cop, sil, gol)))) = Left . extractCoinsTxt $ [ c, s, g ]
   where
@@ -476,5 +477,5 @@ procReconciledCoinsCon cn (Left  (SomeOf (Coins (cop, sil, gol)))) = Left . extr
 procReconciledCoinsCon cn rc = patternMatchFail "procReconciledCoinsCon" [ cn, showText rc ]
 
 
-doesn'tContainAnyCoins :: T.Text -> Either [T.Text] Coins
+doesn'tContainAnyCoins :: Text -> Either [Text] Coins
 doesn'tContainAnyCoins cn = Left [ sformat (do { "The "; " doesn't contain any coins." }) cn ]

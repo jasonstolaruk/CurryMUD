@@ -13,7 +13,7 @@ import Control.Concurrent (threadDelay)
 import Control.Exception.Lifted (catch, handle)
 import Control.Monad (forever)
 import Control.Monad.IO.Class (liftIO)
-import qualified Data.Text as T
+import Data.Text (Text)
 
 
 default (Int)
@@ -22,7 +22,7 @@ default (Int)
 -----
 
 
-logNotice :: T.Text -> T.Text -> MudStack ()
+logNotice :: Text -> Text -> MudStack ()
 logNotice = L.logNotice "Mud.Threads.WorldPersister"
 
 

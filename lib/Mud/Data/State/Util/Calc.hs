@@ -31,6 +31,7 @@ import Mud.Util.Operators
 import Mud.Util.Text
 import qualified Mud.Util.Misc as U (blowUp)
 
+import Data.Text (Text)
 import qualified Data.Map.Lazy as M (elems)
 import qualified Data.Text as T
 
@@ -41,7 +42,7 @@ default (Int, Double)
 -----
 
 
-blowUp :: T.Text -> T.Text -> [T.Text] -> a
+blowUp :: Text -> Text -> [Text] -> a
 blowUp = U.blowUp "Mud.Data.State.Util.Calc"
 
 

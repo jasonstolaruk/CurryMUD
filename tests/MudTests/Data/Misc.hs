@@ -7,8 +7,9 @@ import Mud.TopLvlDefs.Chars
 import Mud.Util.Quoting
 
 import Data.Monoid ((<>))
-import Test.Tasty.HUnit ((@?=), Assertion)
+import Data.Text (Text)
 import qualified Data.Text as T
+import Test.Tasty.HUnit ((@?=), Assertion)
 
 
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
@@ -17,7 +18,7 @@ import qualified Data.Text as T
 -- ==================================================
 
 
-std, non, d :: T.Text
+std, non, d :: Text
 std = T.singleton stdDesigDelimiter
 non = T.singleton nonStdDesigDelimiter
 d   = T.singleton desigDelimiter
@@ -26,19 +27,19 @@ d   = T.singleton desigDelimiter
 test_serializeStdDesig :: Assertion
 test_serializeStdDesig = actual @?= expected
   where
-    actual   = serialize StdDesig { stdPCEntSing = Just "Taro"
-                                  , shouldCap    = Don'tCap
-                                  , pcEntName    = "mhuman"
-                                  , pcId         = 50
-                                  , pcIds        = [50..55] }
+    actual   = serialize StdDesig { sDesigEntSing = Just "Taro"
+                                  , shouldCap     = Don'tCap
+                                  , desigEntName  = "mhuman"
+                                  , desigId       = 50
+                                  , desigIds      = [50..55] }
     expected = quoteWith std . T.intercalate d $ [ "Taro", "Don'tCap", "mhuman", "50", "[50,51,52,53,54,55]" ]
 
 
 test_serializeNonStdDesig :: Assertion
 test_serializeNonStdDesig = actual @?= expected
   where
-    actual   = serialize NonStdDesig { nonStdPCEntSing = "Taro"
-                                     , nonStdDesc      = "A male human" }
+    actual   = serialize NonStdDesig { nsDesigEntSing = "Taro"
+                                     , nsDesc         = "A male human" }
     expected = quoteWith non $ "Taro" <> d <> "A male human"
 
 

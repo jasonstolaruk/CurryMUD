@@ -26,11 +26,12 @@ import Control.Lens (at, to)
 import Control.Lens.Operators ((&), (.~), (^.))
 import Control.Monad ((>=>), unless)
 import Control.Monad.IO.Class (liftIO)
+import Data.Text (Text)
 import Prelude hiding (pi)
 import qualified Data.Text as T
 
 
-logNotice :: T.Text -> T.Text -> MudStack ()
+logNotice :: Text -> Text -> MudStack ()
 logNotice = L.logNotice "Mud.Threads.NpcServer"
 
 
@@ -76,7 +77,7 @@ threadNpcServer i npcMq = do
       StopNpcServer         -> unit
 
 
-handleExternCmd :: Id -> MsgQueue -> Cols -> T.Text -> MudStack ()
+handleExternCmd :: Id -> MsgQueue -> Cols -> Text -> MudStack ()
 handleExternCmd i mq cols msg = getState >>= \ms ->
     let (cn, as)      = ()# msg ? ("", []) :? (headTail . T.words $ msg)
         mkWithArgs i' = WithArgs i' mq cols as

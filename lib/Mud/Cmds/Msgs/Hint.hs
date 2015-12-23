@@ -8,21 +8,22 @@ import Mud.Util.Quoting
 import Mud.Util.Text
 
 import Data.Monoid ((<>))
+import Data.Text (Text)
 import qualified Data.Text as T
 
 
-hintHelper :: [T.Text] -> T.Text
+hintHelper :: [Text] -> Text
 hintHelper t = quoteWith' (hintANSI, noHintANSI) "Hint:" <> " " <> T.concat t
 
 
-specifyFullHelper :: T.Text -> T.Text
+specifyFullHelper :: Text -> Text
 specifyFullHelper t = parensQuote $ "Note that you must specify the full " <> t <> "."
 
 
 -----
 
 
-hintAMsg :: Sing -> T.Text
+hintAMsg :: Sing -> Text
 hintAMsg s = hintHelper [ "the above is a message from "
                         , s
                         , ", a CurryMUD administrator. To reply, type "
@@ -34,26 +35,26 @@ hintAMsg s = hintHelper [ "the above is a message from "
                         , "." ]
 
 
-hintABan :: T.Text
+hintABan :: Text
 hintABan = specifyFullHelper "PC name of the player you wish to ban"
 
 
-hintABoot :: T.Text
+hintABoot :: Text
 hintABoot = specifyFullHelper "PC name of the player you wish to boot"
 
 
-hintASudoer :: T.Text
+hintASudoer :: Text
 hintASudoer = specifyFullHelper "PC name of the player you wish to promote/demote"
 
 
 -----
 
 
-hintDisconnect :: T.Text
+hintDisconnect :: Text
 hintDisconnect = specifyFullHelper "name of the person you would like to disconnect"
 
 
-hintGet :: T.Text
+hintGet :: Text
 hintGet = hintHelper [ "it appears that you want to remove an object from a container. In that case, please use the "
                      , dblQuote "remove"
                      , " command. For example, to remove a ring from your sack, type "
@@ -61,7 +62,7 @@ hintGet = hintHelper [ "it appears that you want to remove an object from a cont
                      , "." ]
 
 
-hintLook :: T.Text
+hintLook :: Text
 hintLook = hintHelper [ "use the "
                       , dblQuote "look"
                       , " command to examine one or more items in your current room. To examine items in your \
@@ -80,7 +81,7 @@ hintLook = hintHelper [ "use the "
                       , " alone will list the items in your inventory and readied equipment, respectively." ]
 
 
-hintSay :: T.Text
+hintSay :: Text
 hintSay = hintHelper [ "when communicating with non-player characters, you may also try the "
                      , dblQuote "ask"
                      , " command. For example, to ask a city guard about crime, type "
@@ -88,5 +89,5 @@ hintSay = hintHelper [ "when communicating with non-player characters, you may a
                      , "." ]
 
 
-hintUnlink :: T.Text
+hintUnlink :: Text
 hintUnlink = specifyFullHelper "name of the person with whom you would like to unlink"

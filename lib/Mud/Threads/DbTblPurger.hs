@@ -22,6 +22,7 @@ import Control.Exception.Lifted (catch, handle)
 import Control.Monad (forever)
 import Control.Monad.IO.Class (liftIO)
 import Data.Monoid ((<>))
+import Data.Text (Text)
 import Database.SQLite.Simple (Only(..))
 import qualified Data.Text as T
 
@@ -32,14 +33,14 @@ default (Int)
 -----
 
 
-logNotice :: T.Text -> T.Text -> MudStack ()
+logNotice :: Text -> Text -> MudStack ()
 logNotice = L.logNotice "Mud.Threads.DbTblPurger"
 
 
 -- ==================================================
 
 
-dbTblPurger :: T.Text -> IO [Only Int] -> IO () -> MudStack ()
+dbTblPurger :: Text -> IO [Only Int] -> IO () -> MudStack ()
 dbTblPurger tblName countFun purgeFun = handle (threadExHandler threadName) $ do
     setThreadType DbTblPurger
     logNotice "dbTblPurger" $ "database table purger started for the " <> dblQuote tblName <> " table."

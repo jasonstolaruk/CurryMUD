@@ -6,16 +6,17 @@ import Mud.Data.State.MudData
 import Mud.TopLvlDefs.Chars
 
 import Data.Monoid ((<>))
+import Data.Text (Text)
 import qualified Data.Text as T
 
 
-prefixAdminCmd :: T.Text -> CmdName
+prefixAdminCmd :: Text -> CmdName
 prefixAdminCmd = prefixCmd adminCmdChar
 
 
-prefixDebugCmd :: T.Text -> CmdName
+prefixDebugCmd :: Text -> CmdName
 prefixDebugCmd = prefixCmd debugCmdChar
 
 
-prefixCmd :: Char -> CmdName -> T.Text
+prefixCmd :: Char -> CmdName -> Text
 prefixCmd (T.singleton -> prefix) cn = prefix <> cn

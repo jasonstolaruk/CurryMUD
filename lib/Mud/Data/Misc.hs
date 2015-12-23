@@ -70,6 +70,7 @@ import Data.Function (on)
 import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>))
 import Data.String (fromString)
+import Data.Text (Text)
 import Prelude hiding ((>>), pi)
 import qualified Data.Text as T
 
@@ -80,7 +81,7 @@ import qualified Data.Text as T
 -----
 
 
-patternMatchFail :: T.Text -> [T.Text] -> a
+patternMatchFail :: Text -> [Text] -> a
 patternMatchFail = U.patternMatchFail "Mud.Data.Misc"
 
 
@@ -108,10 +109,10 @@ instance FromRol Slot where
 
 
 class BanRecord a where
-  recTimestamp :: a -> T.Text
-  recTarget    :: a -> T.Text
+  recTimestamp :: a -> Text
+  recTarget    :: a -> Text
   recIsBanned  :: a -> Bool
-  recReason    :: a -> T.Text
+  recReason    :: a -> Text
 
 
 instance BanRecord BanHostRec where
@@ -188,7 +189,7 @@ setPlaFlag = setFlag
 
 
 class Pretty a where
-  pp :: a -> T.Text
+  pp :: a -> Text
 
 
 instance Pretty AOrThe where
@@ -366,8 +367,8 @@ instance Pretty WpnSub where
 
 
 class Serializable a where
-  serialize   :: a -> T.Text
-  deserialize :: T.Text -> a
+  serialize   :: a -> Text
+  deserialize :: Text -> a
 
 
 instance Serializable Desig where
@@ -405,10 +406,10 @@ instance Serializable Desig where
 -- Data types:
 
 
-type Punc = T.Text
+type Punc = Text
 
 
-data EmoteWord = ForNonTargets T.Text
+data EmoteWord = ForNonTargets Text
                | ForTarget     Punc Id
                | ForTargetPoss Punc Id deriving (Eq, Show)
 
@@ -416,14 +417,14 @@ data EmoteWord = ForNonTargets T.Text
 -----
 
 
-type ExpCmdName = T.Text
+type ExpCmdName = Text
 
 
-type ToSelf             = T.Text
-type ToOthers           = T.Text
-type ToSelfWithTarget   = T.Text
-type ToTarget           = T.Text
-type ToOthersWithTarget = T.Text
+type ToSelf             = Text
+type ToOthers           = Text
+type ToSelfWithTarget   = Text
+type ToTarget           = Text
+type ToOthersWithTarget = Text
 
 
 data ExpCmdType = NoTarget  ToSelf ToOthers
@@ -443,7 +444,7 @@ data AOrThe = A | The
 -----
 
 
-data ChanContext = ChanContext { someCmdName      :: T.Text
+data ChanContext = ChanContext { someCmdName      :: Text
                                , someChanName     :: Maybe ChanName
                                , revealAdminNames :: Bool }
 
@@ -451,7 +452,7 @@ data ChanContext = ChanContext { someCmdName      :: T.Text
 -----
 
 
-type Broadcast = (T.Text, Inv)
+type Broadcast = (Text, Inv)
 
 
 data ClassifiedBcast = TargetBcast    Broadcast
@@ -467,9 +468,9 @@ instance Ord ClassifiedBcast where
 -----
 
 
-type CmdPriorityAbbrevTxt = T.Text
-type CmdFullName          = T.Text
-type CmdDesc              = T.Text
+type CmdPriorityAbbrevTxt = Text
+type CmdFullName          = Text
+type CmdDesc              = Text
 
 
 data Cmd = Cmd { cmdName           :: CmdName
@@ -516,13 +517,13 @@ type Index  = Int
 
 
 data GetEntsCoinsRes = Mult    { amount          :: Amount
-                               , nameSearchedFor :: T.Text
+                               , nameSearchedFor :: Text
                                , entsRes         :: Maybe [Ent]
                                , coinsRes        :: Maybe (EmptyNoneSome Coins) }
                      | Indexed { index           :: Index
-                               , nameSearchedFor :: T.Text
+                               , nameSearchedFor :: Text
                                , entRes          :: Either Plur Ent }
-                     | Sorry   { nameSearchedFor :: T.Text }
+                     | Sorry   { nameSearchedFor :: Text }
                      | SorryIndexedCoins deriving Show
 
 
@@ -540,7 +541,7 @@ data GetOrDrop = Get | Drop
 -----
 
 
-type HelpName = T.Text
+type HelpName = Text
 
 
 data Help = Help { helpName     :: HelpName
@@ -555,7 +556,7 @@ data Help = Help { helpName     :: HelpName
 data IdSingTypeDesig = IdSingTypeDesig { theId    :: Id
                                        , theSing  :: Sing
                                        , theType  :: Type
-                                       , theDesig :: T.Text }
+                                       , theDesig :: Text }
 
 
 -----
@@ -583,13 +584,13 @@ type LvlExp = (Lvl, Exp)
 
 
 -- TODO: Hopefully I can clean up the "s~" and "ns~" record names after GHC 8 comes out.
-data Desig = StdDesig    { sDesigEntSing  :: Maybe T.Text
+data Desig = StdDesig    { sDesigEntSing  :: Maybe Text
                          , shouldCap      :: ShouldCap
-                         , desigEntName   :: T.Text
+                         , desigEntName   :: Text
                          , desigId        :: Id
                          , desigIds       :: Inv }
-           | NonStdDesig { nsDesigEntSing :: T.Text
-                         , nsDesc         :: T.Text } deriving (Eq, Show)
+           | NonStdDesig { nsDesigEntSing :: Text
+                         , nsDesc         :: Text } deriving (Eq, Show)
 
 
 data ShouldCap = DoCap | Don'tCap deriving (Eq, Read, Show)
@@ -625,11 +626,11 @@ data ShouldLog = DoLog | Don'tLog deriving Show
 -----
 
 
-data SingleTarget = SingleTarget { strippedTarget   :: T.Text
-                                 , strippedTarget'  :: T.Text
-                                 , sendFun          :: T.Text   -> MudStack ()
-                                 , multiSendFun     :: [T.Text] -> MudStack ()
-                                 , consLocPrefMsg   :: [T.Text] -> [T.Text]
+data SingleTarget = SingleTarget { strippedTarget   :: Text
+                                 , strippedTarget'  :: Text
+                                 , sendFun          :: Text   -> MudStack ()
+                                 , multiSendFun     :: [Text] -> MudStack ()
+                                 , consLocPrefMsg   :: [Text] -> [Text]
                                  , consLocPrefBcast :: Id -> [Broadcast] -> [Broadcast] }
 
 

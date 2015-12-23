@@ -112,6 +112,7 @@ import Data.Function (on)
 import Data.List (delete, intercalate, nub, partition, sortBy, unfoldr)
 import Data.Maybe (fromJust)
 import Data.Monoid ((<>), Any(..))
+import Data.Text (Text)
 import Prelude hiding (exp)
 import qualified Data.IntMap.Lazy as IM (IntMap, empty, filter, foldlWithKey', foldr, fromList, keys, map, mapWithKey)
 import qualified Data.Map.Lazy as M ((!), elems, keys, lookup, toList)
@@ -128,40 +129,40 @@ import System.IO.Error (isAlreadyInUseError, isDoesNotExistError, isPermissionEr
 -----
 
 
-blowUp :: T.Text -> T.Text -> [T.Text] -> a
+blowUp :: Text -> Text -> [Text] -> a
 blowUp = U.blowUp "Mud.Cmds.Util.Misc"
 
 
-patternMatchFail :: T.Text -> [T.Text] -> a
+patternMatchFail :: Text -> [Text] -> a
 patternMatchFail = U.patternMatchFail "Mud.Cmds.Util.Misc"
 
 
 -----
 
 
-logExMsg :: T.Text -> T.Text -> SomeException -> MudStack ()
+logExMsg :: Text -> Text -> SomeException -> MudStack ()
 logExMsg = L.logExMsg "Mud.Cmds.Util.Misc"
 
 
-logIOEx :: T.Text -> IOException -> MudStack ()
+logIOEx :: Text -> IOException -> MudStack ()
 logIOEx = L.logIOEx "Mud.Cmds.Util.Misc"
 
 
-logPla :: T.Text -> Id -> T.Text -> MudStack ()
+logPla :: Text -> Id -> Text -> MudStack ()
 logPla = L.logPla "Mud.Cmds.Util.Misc"
 
 
 -- ==================================================
 
 
-asterisk :: T.Text
+asterisk :: Text
 asterisk = colorWith asteriskColor "*"
 
 
 -----
 
 
-awardExp :: Exp -> T.Text -> Id -> MudStack ()
+awardExp :: Exp -> Text -> Id -> MudStack ()
 awardExp amt reason i = helper |&| modifyState >=> \(ms, (msgs, logMsgs)) -> do
     mapM_ (retainedMsg i ms) msgs
     let logMsg = T.concat [ "awarded "
@@ -187,7 +188,7 @@ awardExp amt reason i = helper |&| modifyState >=> \(ms, (msgs, logMsgs)) -> do
 -----
 
 
-dbExHandler :: T.Text -> SomeException -> MudStack ()
+dbExHandler :: Text -> SomeException -> MudStack ()
 dbExHandler fn e =
     logExMsg "dbExHandler" (rethrowExMsg $ "during a database operation in " <> dblQuote fn) e >> throwToListenThread e
 
@@ -195,7 +196,7 @@ dbExHandler fn e =
 -----
 
 
-descSingId :: Id -> MudState -> T.Text
+descSingId :: Id -> MudState -> Text
 descSingId i ms = quoteWith' (getSing i ms, parensQuote . showText $ i) " "
 
 
@@ -207,12 +208,12 @@ dispCmdList cmds (NoArgs i mq cols) = pager i mq . concatMap (wrapIndent cmdName
 dispCmdList cmds p                  = dispMatches p cmdNamePadding . mkCmdListText $ cmds
 
 
-mkCmdListText :: [Cmd] -> [T.Text]
+mkCmdListText :: [Cmd] -> [Text]
 mkCmdListText cmds = let zipped = zip (styleCmdAbbrevs cmds) [ cmdDesc cmd | cmd <- cmds ]
                      in [ padCmdName n <> d | (n, d) <- zipped, ()!# d ]
 
 
-styleCmdAbbrevs :: [Cmd] -> [T.Text]
+styleCmdAbbrevs :: [Cmd] -> [Text]
 styleCmdAbbrevs cmds = let cmdNames       = [ cmdName           cmd | cmd <- cmds ]
                            cmdPAs         = [ cmdPriorityAbbrev cmd | cmd <- cmds ]
                            styledCmdNames = styleAbbrevs Don'tQuote cmdNames
@@ -225,7 +226,7 @@ styleCmdAbbrevs cmds = let cmdNames       = [ cmdName           cmd | cmd <- cmd
 -----
 
 
-dispMatches :: ActionParams -> Int -> [T.Text] -> MudStack ()
+dispMatches :: ActionParams -> Int -> [Text] -> MudStack ()
 dispMatches (LowerNub i mq cols needles) indent haystack = let (dropEmpties -> matches) = map grep needles in
     if ()# matches
       then wrapSend mq cols sorrySearch
@@ -239,7 +240,7 @@ dispMatches p indent haystack = patternMatchFail "dispMatches" [ showText p, sho
 -----
 
 
-embedId :: Id -> T.Text
+embedId :: Id -> Text
 embedId = quoteWith (T.singleton plaIdDelimiter) . showText
 
 
@@ -260,11 +261,11 @@ expandEmbeddedIds ms ChanContext { revealAdminNames } = concatMapM helper
           in mapM f is >>= concatMapM helper
 
 
-breakIt :: T.Text -> (T.Text, T.Text)
+breakIt :: Text -> (Text, Text)
 breakIt = T.break (== plaIdDelimiter)
 
 
-expandEmbeddedIdsToSings :: MudState -> T.Text -> T.Text
+expandEmbeddedIdsToSings :: MudState -> Text -> Text
 expandEmbeddedIdsToSings ms = helper
   where
     helper msg = case breakIt msg of
@@ -276,14 +277,14 @@ expandEmbeddedIdsToSings ms = helper
 -----
 
 
-fakeClientInput :: MsgQueue -> T.Text -> MudStack ()
+fakeClientInput :: MsgQueue -> Text -> MudStack ()
 fakeClientInput mq = liftIO . atomically . writeTQueue mq . FromClient . nl
 
 
 -----
 
 
-fileIOExHandler :: T.Text -> IOException -> MudStack ()
+fileIOExHandler :: Text -> IOException -> MudStack ()
 fileIOExHandler fn e = do
     logIOEx fn e
     let rethrow = throwToListenThread . toException $ e
@@ -297,7 +298,7 @@ throwToListenThread e = flip throwTo e . getListenThreadId =<< getState
 -----
 
 
-formatChanMsg :: T.Text -> T.Text -> T.Text -> T.Text
+formatChanMsg :: Text -> Text -> Text -> Text
 formatChanMsg cn n msg = T.concat [ parensQuote cn
                                   , " "
                                   , n
@@ -321,14 +322,14 @@ formatQuestion i ms (txt, is)
 -----
 
 
-getAllChanIdNames :: Id -> MudState -> MudStack (IM.IntMap [(Id, T.Text)])
+getAllChanIdNames :: Id -> MudState -> MudStack (IM.IntMap [(Id, Text)])
 getAllChanIdNames i ms = let tunedChans = foldr helper [] . getPCChans i $ ms in
     IM.fromList . zipWith (\chan -> (chan^.chanId, )) tunedChans <$> forM tunedChans (flip (getChanIdNames i) ms)
   where
     helper chan acc = views chanConnTbl (M.! getSing i ms) chan ? (chan : acc) :? acc
 
 
-getChanIdNames :: Id -> Chan -> MudState -> MudStack [(Id, T.Text)]
+getChanIdNames :: Id -> Chan -> MudState -> MudStack [(Id, Text)]
 getChanIdNames i c ms = let (linkeds, nonLinkedIds) = getChanLinkeds_nonLinkedIds i c ms in
     sortBy (compare `on` snd) . (linkeds ++) . zip nonLinkedIds <$> mapM (updateRndmName i) nonLinkedIds
 
@@ -345,7 +346,7 @@ getChanLinkeds_nonLinkedIds i c ms =
     in (linkeds, nonLinkedIds)
 
 
-getChanStyleds :: Id -> Chan -> MudState -> MudStack [(Id, T.Text, T.Text)]
+getChanStyleds :: Id -> Chan -> MudState -> MudStack [(Id, Text, Text)]
 getChanStyleds i c ms = let (linkeds, nonLinkedIds) = getChanLinkeds_nonLinkedIds i c ms in
     mapM (updateRndmName i) nonLinkedIds >>= \rndmNames ->
         let nonLinkeds' = zip nonLinkedIds rndmNames
@@ -385,7 +386,7 @@ getPCChans i ms = views chanTbl (IM.foldr helper []) ms
 -----
 
 
-getQuestionStyleds :: Id -> MudState -> MudStack [(Id, T.Text, T.Text)]
+getQuestionStyleds :: Id -> MudState -> MudStack [(Id, Text, Text)]
 getQuestionStyleds i ms =
     let (plaIds,    adminIds) = getTunedQuestionIds i ms
         (linkedIds, otherIds) = partition (isLinked ms . (i, )) plaIds
@@ -421,7 +422,7 @@ getTunedQuestionIds i ms = let pair = (getLoggedInPlaIds ms, getNonIncogLoggedIn
 -----
 
 
-happy :: MudState -> [Either T.Text (T.Text, [EmoteWord], T.Text)] -> (T.Text, T.Text, [Id], [Broadcast])
+happy :: MudState -> [Either Text (Text, [EmoteWord], Text)] -> (Text, Text, [Id], [Broadcast])
 happy ms xformed = let (toSelf, toTargets, toOthers) = unzip3 . rights $ xformed
                        targetIds = nub . foldr extractIds [] $ toTargets
                        extractIds [ForNonTargets _           ] acc = acc
@@ -459,7 +460,7 @@ hasEnc as = any (`elem` [ enc, enc's ]) as || last as == enc <> "."
 -----
 
 
-hasYou :: [T.Text] -> Bool
+hasYou :: [Text] -> Bool
 hasYou = any (`elem` yous) . map (T.dropAround (not . isLetter) . T.toLower)
 
 
@@ -473,14 +474,14 @@ isAwake = onPla (uncurry (&&) . (isLoggedIn *** not . isIncognito) . dup) True
 -----
 
 
-isHeDon't :: Char -> T.Text -> Bool
+isHeDon't :: Char -> Text -> Bool
 isHeDon't c msg = msg == T.singleton c <> "."
 
 
 -----
 
 
-isBracketed :: [T.Text] -> Bool
+isBracketed :: [Text] -> Bool
 isBracketed ws = or [ (T.head . head $ ws) `elem` ("[<" :: String)
                     , "]." `T.isSuffixOf` last ws
                     , ">." `T.isSuffixOf` last ws ]
@@ -489,11 +490,11 @@ isBracketed ws = or [ (T.head . head $ ws) `elem` ("[<" :: String)
 -----
 
 
-isHostBanned :: T.Text -> IO Any
+isHostBanned :: Text -> IO Any
 isHostBanned host = isBanned host <$> (getDbTblRecs "ban_host" :: IO [BanHostRec])
 
 
-isBanned :: (BanRecord a) => T.Text -> [a] -> Any
+isBanned :: (BanRecord a) => Text -> [a] -> Any
 isBanned target banRecs = helper . reverse $ banRecs
   where
     helper [] = Any False
@@ -534,7 +535,7 @@ isPlaBanned banSing = isBanned banSing <$> (getDbTblRecs "ban_pla" :: IO [BanPla
 -----
 
 
-locateHelper :: MudState -> [T.Text] -> Id -> (Id, T.Text)
+locateHelper :: MudState -> [Text] -> Id -> (Id, Text)
 locateHelper ms txts i = case getType i ms of
   RmType -> (i, commas txts)
   _      -> maybe oops (uncurry (locateHelper ms)) $ searchInvs `mplus` searchEqs
@@ -548,20 +549,20 @@ locateHelper ms txts i = case getType i ms of
 -----
 
 
-loggedInOut :: Bool -> T.Text
+loggedInOut :: Bool -> Text
 loggedInOut = loggedInOutHelper id
 
 
-loggedInOutHelper :: (T.Text -> T.Text) -> Bool -> T.Text
+loggedInOutHelper :: (Text -> Text) -> Bool -> Text
 loggedInOutHelper f = ("logged " <>) . f . inOut
 
 
-inOut :: Bool -> T.Text
+inOut :: Bool -> Text
 inOut True  = "in"
 inOut False = "out"
 
 
-loggedInOutColorize :: Bool -> T.Text
+loggedInOutColorize :: Bool -> Text
 loggedInOutColorize True  = loggedInOutHelper (colorWith loggedInColor) True
 loggedInOutColorize False = loggedInOutHelper id                        False
 
@@ -569,7 +570,7 @@ loggedInOutColorize False = loggedInOutHelper id                        False
 -----
 
 
-mkInterfaceList :: IO T.Text
+mkInterfaceList :: IO Text
 mkInterfaceList = NI.getNetworkInterfaces >>= \ns -> return . commas $ [ T.concat [ showText . NI.name $ n
                                                                                   , ": "
                                                                                   , showText . NI.ipv4 $ n ]
@@ -579,7 +580,7 @@ mkInterfaceList = NI.getNetworkInterfaces >>= \ns -> return . commas $ [ T.conca
 -----
 
 
-mkNameTypeIdDesc :: Id -> MudState -> T.Text
+mkNameTypeIdDesc :: Id -> MudState -> Text
 mkNameTypeIdDesc i ms = let (n, typeTxt) = case getType i ms of RmType -> (getRmName i ms, pp RmType)
                                                                 t      -> (getSing   i ms, pp t     )
                         in n <> spaced (parensQuote typeTxt) <> bracketQuote (showText i)
@@ -598,7 +599,7 @@ mkActionParams i ms as = ActionParams { myId        = i
 -----
 
 
-mkChanReport :: Id -> MudState -> Chan -> [T.Text]
+mkChanReport :: Id -> MudState -> Chan -> [Text]
 mkChanReport i ms (Chan ci cn cct tappers) =
     let desc    = commas . map descPla . f $ [ (s, t, l) | (s, t) <- M.toList cct
                                                          , let p = getPla (getIdForMobSing s ms) ms
@@ -613,7 +614,7 @@ mkChanReport i ms (Chan ci cn cct tappers) =
 -----
 
 
-mkPossPro :: Sex -> T.Text
+mkPossPro :: Sex -> Text
 mkPossPro Male   = "his"
 mkPossPro Female = "her"
 mkPossPro NoSex  = "its"
@@ -622,7 +623,7 @@ mkPossPro NoSex  = "its"
 -----
 
 
-mkPrettifiedSexRaceLvl :: Id -> MudState -> (T.Text, T.Text, T.Text)
+mkPrettifiedSexRaceLvl :: Id -> MudState -> (Text, Text, Text)
 mkPrettifiedSexRaceLvl i ms = let (s, r, l) = getSexRaceLvl i ms
                               in (pp s, pp r, showText l)
 
@@ -630,14 +631,14 @@ mkPrettifiedSexRaceLvl i ms = let (s, r, l) = getSexRaceLvl i ms
 -----
 
 
-mkPros :: Sex -> (T.Text, T.Text, T.Text)
+mkPros :: Sex -> (Text, Text, Text)
 mkPros sexy = (mkThrPerPro, mkPossPro, mkReflexPro) & each %~ (sexy |&|)
 
 
 -----
 
 
-mkReflexPro :: Sex -> T.Text
+mkReflexPro :: Sex -> Text
 mkReflexPro Male   = "himself"
 mkReflexPro Female = "herself"
 mkReflexPro NoSex  = "itself"
@@ -646,21 +647,21 @@ mkReflexPro NoSex  = "itself"
 -----
 
 
-mkRetainedMsgFromPerson :: Sing -> T.Text -> T.Text
+mkRetainedMsgFromPerson :: Sing -> Text -> Text
 mkRetainedMsgFromPerson s msg = fromPersonMarker `T.cons` (quoteWith "__" s <> " " <> msg)
 
 
 -----
 
 
-mkRightForNonTargets :: (T.Text, T.Text, T.Text) -> Either T.Text (T.Text, [EmoteWord], T.Text)
+mkRightForNonTargets :: (Text, Text, Text) -> Either Text (Text, [EmoteWord], Text)
 mkRightForNonTargets = Right . (_2 %~ (pure . ForNonTargets))
 
 
 -----
 
 
-mkSingleTarget :: MsgQueue -> Cols -> T.Text -> T.Text -> SingleTarget
+mkSingleTarget :: MsgQueue -> Cols -> Text -> Text -> SingleTarget
 mkSingleTarget mq cols target (sorryIgnoreLocPref -> sorryMsg) =
     SingleTarget { strippedTarget   = capitalize   t
                  , strippedTarget'  = uncapitalize t
@@ -677,7 +678,7 @@ mkSingleTarget mq cols target (sorryIgnoreLocPref -> sorryMsg) =
 -----
 
 
-mkThrPerPro :: Sex -> T.Text
+mkThrPerPro :: Sex -> Text
 mkThrPerPro Male   = "he"
 mkThrPerPro Female = "she"
 mkThrPerPro NoSex  = "it"
@@ -686,7 +687,7 @@ mkThrPerPro NoSex  = "it"
 -----
 
 
-mkWhoHeader :: [T.Text]
+mkWhoHeader :: [Text]
 mkWhoHeader = T.concat [ padName "Name"
                        , padSex  "Sex"
                        , padRace "Race"
@@ -696,7 +697,7 @@ mkWhoHeader = T.concat [ padName "Name"
 -----
 
 
-pager :: Id -> MsgQueue -> [T.Text] -> MudStack ()
+pager :: Id -> MsgQueue -> [Text] -> MudStack ()
 pager i mq txt@(length -> txtLen) = getState >>= \ms -> let pl = getPageLines i ms in if txtLen + 3 <= pl
   then send mq . nl . T.unlines $ txt
   else let (page, rest) = splitAt (pl - 2) txt in do
@@ -708,7 +709,7 @@ pager i mq txt@(length -> txtLen) = getState >>= \ms -> let pl = getPageLines i 
 -----
 
 
-parseOutDenotative :: [T.Text] -> T.Text -> [T.Text]
+parseOutDenotative :: [Text] -> Text -> [Text]
 parseOutDenotative ws rest = onTrue (()!# rest) (rest :) . tail $ ws
 
 
@@ -740,15 +741,15 @@ sendGenericErrorMsg mq cols = wrapSend mq cols genericErrorMsg
 -----
 
 
-tunedInOut :: Bool -> T.Text
+tunedInOut :: Bool -> Text
 tunedInOut = tunedInOutHelper id
 
 
-tunedInOutHelper :: (T.Text -> T.Text) -> Bool -> T.Text
+tunedInOutHelper :: (Text -> Text) -> Bool -> Text
 tunedInOutHelper f = ("tuned " <>) . f . inOut
 
 
-tunedInOutColorize :: Bool -> T.Text
+tunedInOutColorize :: Bool -> Text
 tunedInOutColorize True  = tunedInOutHelper (colorWith tunedInColor) True
 tunedInOutColorize False = tunedInOutHelper id                       False
 
@@ -756,7 +757,7 @@ tunedInOutColorize False = tunedInOutHelper id                       False
 -----
 
 
-unmsg :: [T.Text] -> [T.Text]
+unmsg :: [Text] -> [Text]
 unmsg [cn        ] = [ T.init cn, ""            ]
 unmsg [cn, target] = [ cn,        T.init target ]
 unmsg xs           = patternMatchFail "unmsg" xs
@@ -794,11 +795,11 @@ updateRndmName i targetId = do
 -----
 
 
-withDbExHandler :: (Monoid a) => T.Text -> IO a -> MudStack (Maybe a)
+withDbExHandler :: (Monoid a) => Text -> IO a -> MudStack (Maybe a)
 withDbExHandler fn f = liftIO (Just <$> f) `catch` (emptied . dbExHandler fn)
 
 
-withDbExHandler_ :: T.Text -> IO () -> MudStack ()
+withDbExHandler_ :: Text -> IO () -> MudStack ()
 withDbExHandler_ fn f = liftIO f `catch` dbExHandler fn
 
 

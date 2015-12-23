@@ -13,10 +13,10 @@ import Control.Arrow ((***))
 import Control.Concurrent (ThreadId)
 import Control.Lens (at, to, view)
 import Control.Lens.Operators ((^.))
+import Data.Text (Text)
 import Data.Time (UTCTime)
 import Network (HostName)
 import Prelude hiding (exp)
-import qualified Data.Text as T
 
 
 -- ============================================================
@@ -131,7 +131,7 @@ getEnt i = view (entTbl.ind i)
 -----
 
 
-getEntDesc :: Id -> MudState -> T.Text
+getEntDesc :: Id -> MudState -> Text
 getEntDesc i = view entDesc . getEnt i
 
 
@@ -397,7 +397,7 @@ getRmId i = view rmId . getMob i
 -----
 
 
-getRmName :: Id -> MudState -> T.Text
+getRmName :: Id -> MudState -> Text
 getRmName i = view rmName . getRm i
 
 

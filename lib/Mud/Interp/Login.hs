@@ -42,6 +42,7 @@ import Data.Ix (inRange)
 import Data.List (delete, intersperse, partition)
 import Data.Maybe (fromJust)
 import Data.Monoid ((<>), Any(..))
+import Data.Text (Text)
 import Data.Time (UTCTime)
 import Network (HostName)
 import Prelude hiding (pi)
@@ -51,11 +52,11 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
 
 
-logNotice :: T.Text -> T.Text -> MudStack ()
+logNotice :: Text -> Text -> MudStack ()
 logNotice = L.logNotice "Mud.Interp.Login"
 
 
-logPla :: T.Text -> Id -> T.Text -> MudStack ()
+logPla :: Text -> Id -> Text -> MudStack ()
 logPla = L.logPla "Mud.Interp.Login"
 
 
@@ -117,12 +118,12 @@ interpName (T.toLower -> cn@(capitalize -> cn')) p@(NoArgs i mq cols)
 interpName _ ActionParams { plaMsgQueue } = promptRetryName plaMsgQueue sorryInterpNameExcessArgs
 
 
-promptRetryName :: MsgQueue -> T.Text -> MudStack ()
+promptRetryName :: MsgQueue -> Text -> MudStack ()
 promptRetryName mq msg =
     (send mq . nlPrefix $ msg |!| nl msg) >> sendPrompt mq "Let's try this again. By what name are you known?"
 
 
-logIn :: Id -> MudState -> HostName -> Maybe UTCTime -> Id -> (MudState, (MudState, Either (Maybe T.Text) Id))
+logIn :: Id -> MudState -> HostName -> Maybe UTCTime -> Id -> (MudState, (MudState, Either (Maybe Text) Id))
 logIn newId ms newHost newTime originId = let ms' = peepNewId . movePC $ adoptNewId
                                           in (ms', (ms', Right originId))
   where
@@ -174,14 +175,14 @@ checkProfanitiesDict i mq cn = checkNameHelper (Just profanitiesFile) "checkProf
         logNotice "checkProfanitiesDict sorry" logMsg
 
 
-checkNameHelper :: Maybe FilePath -> T.Text -> MudStack () -> CmdName -> MudStack Any
+checkNameHelper :: Maybe FilePath -> Text -> MudStack () -> CmdName -> MudStack Any
 checkNameHelper Nothing     _       _     _  = return mempty
 checkNameHelper (Just file) funName sorry cn = (liftIO . T.readFile $ file) |&| try >=> either
                                                    (emptied . fileIOExHandler funName)
                                                    (checkSet cn sorry . S.fromList . T.lines . T.toLower)
 
 
-checkSet :: CmdName -> MudStack () -> S.Set T.Text -> MudStack Any
+checkSet :: CmdName -> MudStack () -> S.Set Text -> MudStack Any
 checkSet cn sorry set = let isNG = cn `S.member` set in when isNG sorry >> (return . Any $ isNG)
 
 
@@ -242,7 +243,7 @@ notifyQuestion i ms =
     in bcastNl =<< expandEmbeddedIds ms questionChanContext =<< formatQuestion i ms (msg, tunedIds)
 
 
-yesNo :: T.Text -> Maybe Bool
+yesNo :: Text -> Maybe Bool
 yesNo (T.toLower -> a) = guard (()!# a) >> helper
   where
     helper | a `T.isPrefixOf` "yes" = return True

@@ -48,6 +48,7 @@ import Data.Function (on)
 import Data.IntMap.Lazy ((!))
 import Data.List (delete)
 import Data.Monoid ((<>))
+import Data.Text (Text)
 import Data.Time (getZonedTime)
 import qualified Data.IntMap.Lazy as IM (IntMap, insert)
 import qualified Data.Map.Lazy as M (Map, assocs)
@@ -74,7 +75,7 @@ concatMapM  :: (Monad m, Traversable t) => (a -> m [b]) -> t a -> m [b]
 concatMapM f = fmap concat . mapM f
 
 
-blowUp :: T.Text -> T.Text -> T.Text -> [T.Text] -> a
+blowUp :: Text -> Text -> Text -> [Text] -> a
 blowUp modName funName msg (T.intercalate ", " . map backQuote -> vals) =
     error . T.unpack . T.concat $ [ modName, " ", funName, ": ", msg, "; values: ", vals ]
 
@@ -178,13 +179,13 @@ mWhen :: (Monad m) => m Bool -> m () -> m ()
 mWhen p x = mIf p x unit
 
 
-mkDateTimeTxt :: IO (T.Text, T.Text)
+mkDateTimeTxt :: IO (Text, Text)
 mkDateTimeTxt = helper <$> (T.words . T.pack . show) `fmap` getZonedTime
   where
     helper = (,) <$> head <*> (T.init . T.dropWhileEnd (/= '.') . head . tail)
 
 
-mkTimestamp :: IO T.Text
+mkTimestamp :: IO Text
 mkTimestamp = [ bracketQuote $ date <> " " <> time | (date, time) <- mkDateTimeTxt ]
 
 
@@ -193,7 +194,7 @@ onLeft f (Left  a) = Left . f $ a
 onLeft _ x         = blowUp "Mud.Util.Misc" "onLeft" "Right" [ T.pack . show $ x ]
 
 
-patternMatchFail :: T.Text -> T.Text -> [T.Text] -> a
+patternMatchFail :: Text -> Text -> [Text] -> a
 patternMatchFail modName funName = blowUp modName funName "pattern match failure"
 
 

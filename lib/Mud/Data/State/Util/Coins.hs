@@ -16,17 +16,18 @@ import Control.Lens (_1, _2, each)
 import Control.Lens.Operators ((%~), (&), (<>~), (^..))
 import Data.List (foldl')
 import Data.Monoid ((<>))
+import Data.Text (Text)
 import qualified Data.Text as T
 
 
-patternMatchFail :: T.Text -> [T.Text] -> a
+patternMatchFail :: Text -> [Text] -> a
 patternMatchFail = U.patternMatchFail "Mud.Data.State.Util.Coins"
 
 
 -- ============================================================
 
 
-aCoinSomeCoins :: Coins -> T.Text
+aCoinSomeCoins :: Coins -> Text
 aCoinSomeCoins = \case (Coins (1, 0, 0)) -> "a copper piece"
                        (Coins (0, 1, 0)) -> "a silver piece"
                        (Coins (0, 0, 1)) -> "a gold piece"
@@ -42,14 +43,14 @@ coinsToList :: Coins -> [Int]
 coinsToList (Coins c) = c^..each
 
 
-distillEcs :: [Either [T.Text] Coins] -> (Coins, [T.Text])
+distillEcs :: [Either [Text] Coins] -> (Coins, [Text])
 distillEcs = foldl' helper mempty
   where
     helper acc (Right c   ) = acc & _1 <>~ c
     helper acc (Left  msgs) = acc & _2 <>~ msgs
 
 
-mkCoinTxt :: Coins -> T.Text
+mkCoinTxt :: Coins -> Text
 mkCoinTxt coins = case mkCoinTxtList of
   [ c, s, g ] -> T.concat [ c, ", ", s, ", and ", g ]
   [ x, y    ] -> x <> " and " <> y

@@ -16,15 +16,15 @@ import Control.Monad.Reader (ReaderT)
 import Data.Aeson ((.:), (.=), FromJSON(..), ToJSON(..), Value(..), defaultOptions, genericToJSON, object)
 import Data.Aeson.Types (Parser)
 import Data.IORef (IORef)
+import Data.Text (Text)
 import Data.Time (UTCTime)
 import GHC.Generics (Generic)
 import Network (HostName)
+import qualified Data.IntMap.Lazy as IM (IntMap)
+import qualified Data.Map.Lazy as M (Map)
 import System.Clock (TimeSpec)
 import System.Random (Random, random, randomR)
 import System.Random.MWC (GenIO)
-import qualified Data.IntMap.Lazy as IM (IntMap)
-import qualified Data.Map.Lazy as M (Map)
-import qualified Data.Text as T
 
 
 type MudStack = ReaderT MudData IO
@@ -84,7 +84,7 @@ type PCTbl            = IM.IntMap PC
 type PlaLogTbl        = IM.IntMap LogService
 type PlaTbl           = IM.IntMap Pla
 type RmTbl            = IM.IntMap Rm
-type RmTeleNameTbl    = IM.IntMap T.Text
+type RmTeleNameTbl    = IM.IntMap Text
 type RndmNamesMstrTbl = IM.IntMap RndmNamesTbl
 type TalkAsyncTbl     = M.Map ThreadId TalkAsync
 type TeleLinkMstrTbl  = IM.IntMap TeleLinkTbl
@@ -122,7 +122,7 @@ data Chan = Chan { _chanId      :: Int
                  , _wiretappers :: [Sing] } deriving (Eq, Generic, Show)
 
 
-type ChanName = T.Text
+type ChanName = Text
 
 
 type ChanConnTbl = M.Map Sing IsTuned
@@ -186,27 +186,27 @@ data Con = Con { _isCloth :: Bool
 type Cap = Int
 
 
-type ConName = T.Text
+type ConName = Text
 
 
 -- ==================================================
 
 
 data Ent = Ent { _entId    :: Id
-               , _entName  :: Maybe T.Text
+               , _entName  :: Maybe Text
                , _sing     :: Sing
                , _plur     :: Plur
-               , _entDesc  :: T.Text
+               , _entDesc  :: Text
                , _entFlags :: Int } deriving (Eq, Generic, Show)
 
 
 type Id = Int
 
 
-type Sing = T.Text
+type Sing = Text
 
 
-type Plur = T.Text
+type Plur = Text
 
 
 data EntFlags = IsInvis deriving Enum
@@ -289,7 +289,7 @@ type LogAsync = Async ()
 type LogQueue = TQueue LogCmd
 
 
-data LogCmd = LogMsg T.Text
+data LogCmd = LogMsg Text
             | RotateLog
             | StopLog
             | Throw
@@ -431,7 +431,7 @@ data Pla = Pla { _currHostName :: HostName
                , _peepers      :: Inv
                , _peeping      :: Inv
                , _possessing   :: Maybe Id
-               , _retainedMsgs :: [T.Text]
+               , _retainedMsgs :: [Text]
                , _lastRmId     :: Maybe Id }
 
 
@@ -447,7 +447,7 @@ data PlaFlags = IsAdmin
 type Interp  = CmdName -> ActionParams -> MudStack ()
 
 
-type CmdName = T.Text
+type CmdName = Text
 
 
 instance FromJSON Pla where parseJSON = jsonToPla
@@ -488,8 +488,8 @@ type RndmNamesTbl = M.Map Sing Sing
 
 
 -- Has an inventory and coins.
-data Rm = Rm { _rmName  :: T.Text
-             , _rmDesc  :: T.Text
+data Rm = Rm { _rmName  :: Text
+             , _rmDesc  :: Text
              , _rmFlags :: Int
              , _rmLinks :: [RmLink] } deriving (Eq, Generic)
 
@@ -501,8 +501,8 @@ data RmLink = StdLink    { _linkDir      :: LinkDir
                          , _stdDestId    :: Id }
             | NonStdLink { _linkName     :: LinkName
                          , _nonStdDestId :: Id
-                         , _originMsg    :: T.Text
-                         , _destMsg      :: T.Text } deriving (Eq, Generic)
+                         , _originMsg    :: Text
+                         , _destMsg      :: Text } deriving (Eq, Generic)
 
 
 data LinkDir = North
@@ -517,7 +517,7 @@ data LinkDir = North
              | Down deriving (Eq, Generic, Show)
 
 
-type LinkName = T.Text
+type LinkName = Text
 
 
 -- ==================================================

@@ -2,42 +2,43 @@
 
 module Mud.Util.Quoting where
 
+import Data.Text (Text)
 import qualified Data.Text as T
 
 
-quoteWith :: T.Text -> T.Text -> T.Text
+quoteWith :: Text -> Text -> Text
 quoteWith quote = quoteWith' (quote, quote)
 
 
-quoteWith' :: (T.Text, T.Text) -> T.Text -> T.Text
+quoteWith' :: (Text, Text) -> Text -> Text
 quoteWith' (a, b) t = T.concat [ a, t, b ]
 
 
-singleQuote :: T.Text -> T.Text
+singleQuote :: Text -> Text
 singleQuote = quoteWith "'"
 
 
-dblQuote :: T.Text -> T.Text
+dblQuote :: Text -> Text
 dblQuote = quoteWith "\""
 
 
-angleBracketQuote :: T.Text -> T.Text
+angleBracketQuote :: Text -> Text
 angleBracketQuote = quoteWith' ("<", ">")
 
 
-asteriskQuote :: T.Text -> T.Text
+asteriskQuote :: Text -> Text
 asteriskQuote = quoteWith' ("*** ", " ***")
 
 
-backQuote :: T.Text -> T.Text
+backQuote :: Text -> Text
 backQuote = quoteWith "`"
 
 
-bracketQuote :: T.Text -> T.Text
+bracketQuote :: Text -> Text
 bracketQuote = quoteWith' ("[", "]")
 
 
-parensQuote :: T.Text -> T.Text
+parensQuote :: Text -> Text
 parensQuote = quoteWith' ("(", ")")
 
 
@@ -47,9 +48,9 @@ Code matching either of these regex may be refactored so as to utilize the "spac
 \" \", .*, \" \"
 " "\n.*\n *, " "
 -}
-spaced :: T.Text -> T.Text
+spaced :: Text -> Text
 spaced = quoteWith " "
 
 
-unquote :: T.Text -> T.Text
+unquote :: Text -> Text
 unquote = T.init . T.tail

@@ -74,20 +74,21 @@ import Data.List ((\\), delete, foldl', intercalate, intersperse, nub, nubBy, pa
 import Data.List.Split (chunksOf)
 import Data.Maybe (fromJust, fromMaybe)
 import Data.Monoid ((<>), All(..), Sum(..))
+import Data.Text (Text)
 import Data.Time (diffUTCTime, getCurrentTime)
 import Data.Tuple (swap)
 import GHC.Exts (sortWith)
 import Prelude hiding (log, pi)
-import System.Clock (Clock(..), TimeSpec(..), getTime)
-import System.Console.ANSI (ColorIntensity(..), clearScreenCode)
-import System.Directory (doesFileExist, getDirectoryContents)
-import System.FilePath ((</>))
-import System.Time.Utils (renderSecs)
 import qualified Data.IntMap.Lazy as IM (IntMap, (!), keys)
 import qualified Data.Map.Lazy as M ((!), elems, filter, fromList, keys, lookup, map, singleton, size, toList)
 import qualified Data.Set as S (filter, toList)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
+import System.Clock (Clock(..), TimeSpec(..), getTime)
+import System.Console.ANSI (ColorIntensity(..), clearScreenCode)
+import System.Directory (doesFileExist, getDirectoryContents)
+import System.FilePath ((</>))
+import System.Time.Utils (renderSecs)
 
 
 default (Int, Double)
@@ -104,22 +105,22 @@ default (Int, Double)
 -----
 
 
-blowUp :: T.Text -> T.Text -> [T.Text] -> a
+blowUp :: Text -> Text -> [Text] -> a
 blowUp = U.blowUp "Mud.Cmds.Pla"
 
 
-patternMatchFail :: T.Text -> [T.Text] -> a
+patternMatchFail :: Text -> [Text] -> a
 patternMatchFail = U.patternMatchFail "Mud.Cmds.Pla"
 
 
 -----
 
 
-logNotice :: T.Text -> T.Text -> MudStack ()
+logNotice :: Text -> Text -> MudStack ()
 logNotice = L.logNotice "Mud.Cmds.Pla"
 
 
-logPla :: T.Text -> Id -> T.Text -> MudStack ()
+logPla :: Text -> Id -> Text -> MudStack ()
 logPla = L.logPla "Mud.Cmds.Pla"
 
 
@@ -131,7 +132,7 @@ logPlaExecArgs :: CmdName -> Args -> Id -> MudStack ()
 logPlaExecArgs = L.logPlaExecArgs "Mud.Cmds.Pla"
 
 
-logPlaOut :: T.Text -> Id -> [T.Text] -> MudStack ()
+logPlaOut :: Text -> Id -> [Text] -> MudStack ()
 logPlaOut = L.logPlaOut "Mud.Cmds.Pla"
 
 
@@ -385,7 +386,7 @@ bars (LowerNub i mq cols as) = getState >>= \ms ->
 bars p = patternMatchFail "bars" [ showText p ]
 
 
-mkBar :: Int -> T.Text -> (Int, Int) -> T.Text
+mkBar :: Int -> Text -> (Int, Int) -> Text
 mkBar x txt (c, m) = let ratio  = c `divide` m
                          greens = round $ fromIntegral x * ratio
                          reds   = x - greens
@@ -398,7 +399,7 @@ mkBar x txt (c, m) = let ratio  = c `divide` m
                                  , "%" ]
 
 
-mkPointPairs :: Id -> MudState -> [(T.Text, (Int, Int))]
+mkPointPairs :: Id -> MudState -> [(Text, (Int, Int))]
 mkPointPairs i ms = let (hps, mps, pps, fps) = getXps i ms
                     in [ ("hp", hps), ("mp", mps), ("pp", pps), ("fp", fps) ]
 
@@ -563,7 +564,7 @@ connect (Lower i mq cols as) = getState >>= \ms -> let getIds = map (`getIdForMo
 connect p = patternMatchFail "connect" [ showText p ]
 
 
-connectHelper :: Id -> (T.Text, Args) -> MudState -> (MudState, ([Either T.Text Sing], Maybe Id))
+connectHelper :: Id -> (Text, Args) -> MudState -> (MudState, ([Either Text Sing], Maybe Id))
 connectHelper i (target, as) ms =
     let (f, guessWhat) | any hasLocPref as = (stripLocPref, sorryConnectIgnore)
                        | otherwise         = (id,           ""                )
@@ -651,10 +652,10 @@ disconnect p = patternMatchFail "disconnect" [ showText p ]
 
 
 disconnectHelper :: Id
-                 -> (T.Text, Args)
-                 -> IM.IntMap [(Id, T.Text)]
+                 -> (Text, Args)
+                 -> IM.IntMap [(Id, Text)]
                  -> MudState
-                 -> (MudState, ([Either T.Text (Id, Sing, T.Text)], Maybe Id))
+                 -> (MudState, ([Either Text (Id, Sing, Text)], Maybe Id))
 disconnectHelper i (target, as) idNamesTbl ms =
     let (f, guessWhat) | any hasLocPref as = (stripLocPref, sorryDisconnectIgnore)
                        | otherwise         = (id,           ""                   )
@@ -819,7 +820,7 @@ expCmdList p@ActionParams { myId, args } =
     dispMatches p cmdNamePadding mkExpCmdListTxt >> logPlaExecArgs "expressive" args myId
 
 
-mkExpCmdListTxt :: [T.Text]
+mkExpCmdListTxt :: [Text]
 mkExpCmdListTxt =
     let cmdNames       = [ cmdName cmd | cmd <- plaCmds ]
         styledCmdNames = styleAbbrevs Don'tQuote cmdNames
@@ -867,7 +868,7 @@ getAction p = patternMatchFail "getAction" [ showText p ]
 -----
 
 
-go :: T.Text -> ActionFun
+go :: Text -> ActionFun
 go dir p@ActionParams { args = [] } = goDispatcher p { args = pure dir   }
 go dir p@ActionParams { args      } = goDispatcher p { args = dir : args }
 
@@ -878,7 +879,7 @@ goDispatcher p@(Lower i mq cols as)     = mapM_ (tryMove i mq cols p { args = []
 goDispatcher p                          = patternMatchFail "goDispatcher" [ showText p ]
 
 
-tryMove :: Id -> MsgQueue -> Cols -> ActionParams -> T.Text -> MudStack ()
+tryMove :: Id -> MsgQueue -> Cols -> ActionParams -> Text -> MudStack ()
 tryMove i mq cols p dir = helper |&| modifyState >=> \case
   Left  msg          -> wrapSend mq cols msg
   Right (bs, logMsg) -> look p >> bcastIfNotIncog i bs >> logPla "tryMove" i logMsg
@@ -918,7 +919,7 @@ tryMove i mq cols p dir = helper |&| modifyState >=> \case
     showRm (showText -> ri) (views rmName parensQuote -> rn) = ri <> " " <> rn
 
 
-findExit :: Rm -> LinkName -> Maybe (T.Text, Id, Maybe T.Text, Maybe T.Text)
+findExit :: Rm -> LinkName -> Maybe (Text, Id, Maybe Text, Maybe Text)
 findExit (view rmLinks -> rls) ln =
     case [ (showLink rl, getDestId rl, getOriginMsg rl, getDestMsg rl) | rl <- rls, isValid rl ] of
       [] -> Nothing
@@ -936,7 +937,7 @@ findExit (view rmLinks -> rls) ln =
     getDestMsg   _                 = Nothing
 
 
-expandLinkName :: T.Text -> T.Text
+expandLinkName :: Text -> Text
 expandLinkName "n"  = "north"
 expandLinkName "ne" = "northeast"
 expandLinkName "e"  = "east"
@@ -950,7 +951,7 @@ expandLinkName "d"  = "down"
 expandLinkName x    = patternMatchFail "expandLinkName" [x]
 
 
-expandOppLinkName :: T.Text -> T.Text
+expandOppLinkName :: Text -> Text
 expandOppLinkName "n"  = "the south"
 expandOppLinkName "ne" = "the southwest"
 expandOppLinkName "e"  = "the west"
@@ -974,7 +975,7 @@ mkCmdForRmLink (T.toLower . mkCmdNameForRmLink -> cn) =
     Cmd { cmdName = cn, cmdPriorityAbbrev = Nothing, cmdFullName = cn, cmdAction = Action (go cn) True, cmdDesc = "" }
 
 
-mkCmdNameForRmLink :: RmLink -> T.Text
+mkCmdNameForRmLink :: RmLink -> Text
 mkCmdNameForRmLink rl = T.toLower $ case rl of StdLink    { .. } -> linkDirToCmdName _linkDir
                                                NonStdLink { .. } -> _linkName
 
@@ -1035,14 +1036,14 @@ mkHelpData ia = helpDirs |&| mapM getHelpDirectoryContents >=> \[ plaHelpCmdName
     getHelpDirectoryContents dir = dropIrrelevantFilenames . sort <$> getDirectoryContents dir
 
 
-parseHelpTxt :: Cols -> T.Text -> [T.Text]
+parseHelpTxt :: Cols -> Text -> [Text]
 parseHelpTxt cols = concat . wrapLines cols . map expandDividers . T.lines . parseTokens
   where
     expandDividers l | l == T.singleton dividerToken = T.replicate cols "-"
                      | otherwise                     = l
 
 
-getHelpByName :: Cols -> [Help] -> HelpName -> MudStack (T.Text, T.Text)
+getHelpByName :: Cols -> [Help] -> HelpName -> MudStack (Text, Text)
 getHelpByName cols hs name = findFullNameForAbbrev name [ (h, helpName h) | h <- hs ] |&| maybe sorry found
   where
     sorry                                      = return (sorryHelpName name, "")
@@ -1379,7 +1380,7 @@ look (LowerNub i mq cols as) = helper |&| modifyState >=> \(toSelf, bs, maybeTar
 look p = patternMatchFail "look" [ showText p ]
 
 
-mkRmInvCoinsDesc :: Id -> Cols -> MudState -> Id -> T.Text
+mkRmInvCoinsDesc :: Id -> Cols -> MudState -> Id -> Text
 mkRmInvCoinsDesc i cols ms ri =
     let (ris, c)            = first (i `delete`) . getNonIncogInvCoins ri $ ms
         (pcNcbs, otherNcbs) = splitPCsOthers . mkIsPC_StyledName_Count_BothList i ms $ ris
@@ -1395,7 +1396,7 @@ mkRmInvCoinsDesc i cols ms ri =
     mkOtherDesc (en, c, (s, _)) | c == 1 = aOrAnOnLower s <> " " <> en
     mkOtherDesc (en, c, b     )          = showText c <> spaced (mkPlurFromBoth b) <> en
 
-mkIsPC_StyledName_Count_BothList :: Id -> MudState -> Inv -> [(Bool, (T.Text, Int, BothGramNos))]
+mkIsPC_StyledName_Count_BothList :: Id -> MudState -> Inv -> [(Bool, (Text, Int, BothGramNos))]
 mkIsPC_StyledName_Count_BothList i ms targetIds =
   let isPCs   =                      [ getType targetId ms == PCType   | targetId <- targetIds ]
       styleds = styleAbbrevs DoQuote [ getEffName        i ms targetId | targetId <- targetIds ]
@@ -1404,7 +1405,7 @@ mkIsPC_StyledName_Count_BothList i ms targetIds =
   in nub . zip isPCs . zip3 styleds counts $ boths
 
 
-firstLook :: Id -> Cols -> (PlaTbl, T.Text) -> (PlaTbl, T.Text)
+firstLook :: Id -> Cols -> (PlaTbl, Text) -> (PlaTbl, Text)
 firstLook i cols a@(pt, _)
   | pt^.ind i.to isNotFirstLook = a
   | otherwise = a & _1.ind i %~ setPlaFlag IsNotFirstLook True & _2 <>~ wrapUnlinesNl cols hintLook
@@ -1416,7 +1417,7 @@ isKnownPCSing s = case T.words s of [ "male",   _ ] -> False
                                     _               -> True
 
 
-extractMobIdsFromEiss :: MudState -> [Either T.Text Inv] -> [Id]
+extractMobIdsFromEiss :: MudState -> [Either Text Inv] -> [Id]
 extractMobIdsFromEiss ms = foldl' helper []
   where
     helper acc Left   {}  = acc
@@ -1581,8 +1582,8 @@ shufflePut :: Id
            -> Args
            -> (InvWithCon, CoinsWithCon)
            -> (PCInv, PCCoins)
-           -> ((GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv)
-           -> (MudState, ([T.Text], [Broadcast], [T.Text]))
+           -> ((GetEntsCoinsRes, Maybe Inv) -> Either Text Inv)
+           -> (MudState, ([Text], [Broadcast], [Text]))
 shufflePut i ms d conName icir as invCoinsWithCon@(invWithCon, _) pcInvCoins f =
     let (conGecrs, conMiss, conRcs) = uncurry (resolveEntCoinNames i ms (pure conName)) invCoinsWithCon
     in if ()# conMiss && ()!# conRcs
@@ -1770,9 +1771,9 @@ ready p = patternMatchFail "ready" [ showText p ]
 helperReady :: Id
             -> MudState
             -> Desig
-            -> (EqTbl, InvTbl, [Broadcast], [T.Text])
-            -> (Either T.Text Inv, Maybe RightOrLeft)
-            -> (EqTbl, InvTbl, [Broadcast], [T.Text])
+            -> (EqTbl, InvTbl, [Broadcast], [Text])
+            -> (Either Text Inv, Maybe RightOrLeft)
+            -> (EqTbl, InvTbl, [Broadcast], [Text])
 helperReady i _  _ a (Left  (mkBcast i -> b), _   ) = a & _3 <>~ b
 helperReady i ms d a (Right targetIds,        mrol) = foldl' (readyDispatcher i ms d mrol) a targetIds
 
@@ -1781,9 +1782,9 @@ readyDispatcher :: Id
                 -> MudState
                 -> Desig
                 -> Maybe RightOrLeft
-                -> (EqTbl, InvTbl, [Broadcast], [T.Text])
+                -> (EqTbl, InvTbl, [Broadcast], [Text])
                 -> Id
-                -> (EqTbl, InvTbl, [Broadcast], [T.Text])
+                -> (EqTbl, InvTbl, [Broadcast], [Text])
 readyDispatcher i ms d mrol a targetId = let targetSing = getSing targetId ms in
     helper |&| maybe (sorry targetSing) (\f -> f i ms d mrol a targetId targetSing)
   where
@@ -1803,10 +1804,10 @@ readyCloth :: Id
            -> MudState
            -> Desig
            -> Maybe RightOrLeft
-           -> (EqTbl, InvTbl, [Broadcast], [T.Text])
+           -> (EqTbl, InvTbl, [Broadcast], [Text])
            -> Id
            -> Sing
-           -> (EqTbl, InvTbl, [Broadcast], [T.Text])
+           -> (EqTbl, InvTbl, [Broadcast], [Text])
 readyCloth i ms d mrol a@(et, _, _, _) clothId clothSing | em <- et ! i, cloth <- getCloth clothId ms =
   case mrol |&| maybe (getAvailClothSlot i ms cloth em) (getDesigClothSlot ms clothSing cloth em) of
       Left  (mkBcast i -> b) -> a & _3 <>~ b
@@ -1831,7 +1832,7 @@ readyCloth i ms d mrol a@(et, _, _, _) clothId clothSing | em <- et ! i, cloth <
         otherPCIds = i `delete` desigIds d
 
 
-getAvailClothSlot :: Id -> MudState -> Cloth -> EqMap -> Either T.Text Slot
+getAvailClothSlot :: Id -> MudState -> Cloth -> EqMap -> Either Text Slot
 getAvailClothSlot i ms cloth em | sexy <- getSex i ms, h <- getHand i ms =
     maybe (Left sorry) Right $ case cloth of
       Earring  -> getEarringSlotForSex sexy `mplus` (getEarringSlotForSex . otherSex $ sexy)
@@ -1879,7 +1880,7 @@ rBraceletSlots = [ BraceletR1S .. BraceletR3S ]
 lBraceletSlots = [ BraceletL1S .. BraceletL3S ]
 
 
-getDesigClothSlot :: MudState -> Sing -> Cloth -> EqMap -> RightOrLeft -> Either T.Text Slot
+getDesigClothSlot :: MudState -> Sing -> Cloth -> EqMap -> RightOrLeft -> Either Text Slot
 getDesigClothSlot ms clothSing cloth em rol
   | cloth `elem` [ NoseRing, Necklace ] ++ [ Shirt .. Cloak ] = sorryRol
   | isRingRol rol, cloth /= Ring                              = sorryRol
@@ -1912,10 +1913,10 @@ readyWpn :: Id
          -> MudState
          -> Desig
          -> Maybe RightOrLeft
-         -> (EqTbl, InvTbl, [Broadcast], [T.Text])
+         -> (EqTbl, InvTbl, [Broadcast], [Text])
          -> Id
          -> Sing
-         -> (EqTbl, InvTbl, [Broadcast], [T.Text])
+         -> (EqTbl, InvTbl, [Broadcast], [Text])
 readyWpn i ms d mrol a@(et, _, _, _) wpnId wpnSing | em <- et ! i, wpn <- getWpn wpnId ms, sub <- wpn^.wpnSub =
     if not . isSlotAvail em $ BothHandsS
       then let b = mkBcast i sorryReadyAlreadyWieldingTwoHanded in a & _3 <>~ b
@@ -1946,7 +1947,7 @@ readyWpn i ms d mrol a@(et, _, _, _) wpnId wpnSing | em <- et ! i, wpn <- getWpn
     otherPCIds = i `delete` desigIds d
 
 
-getAvailWpnSlot :: MudState -> Id -> EqMap -> Either T.Text Slot
+getAvailWpnSlot :: MudState -> Id -> EqMap -> Either Text Slot
 getAvailWpnSlot ms i em = let h@(otherHand -> oh) = getHand i ms in
     (findAvailSlot em . map getSlotForHand $ [ h, oh ]) |&| maybe (Left sorryReadyAlreadyWieldingTwoWpns) Right
   where
@@ -1955,7 +1956,7 @@ getAvailWpnSlot ms i em = let h@(otherHand -> oh) = getHand i ms in
                                  _     -> patternMatchFail "getAvailWpnSlot getSlotForHand" [ showText h ]
 
 
-getDesigWpnSlot :: MudState -> Sing -> EqMap -> RightOrLeft -> Either T.Text Slot
+getDesigWpnSlot :: MudState -> Sing -> EqMap -> RightOrLeft -> Either Text Slot
 getDesigWpnSlot ms wpnSing em rol
   | isRingRol rol = Left . sorryReadyWpnRol $ wpnSing
   | otherwise     = M.lookup desigSlot em |&| maybe (Right desigSlot) (Left . sorry)
@@ -1973,10 +1974,10 @@ readyArm :: Id
          -> MudState
          -> Desig
          -> Maybe RightOrLeft
-         -> (EqTbl, InvTbl, [Broadcast], [T.Text])
+         -> (EqTbl, InvTbl, [Broadcast], [Text])
          -> Id
          -> Sing
-         -> (EqTbl, InvTbl, [Broadcast], [T.Text])
+         -> (EqTbl, InvTbl, [Broadcast], [Text])
 readyArm i ms d mrol a@(et, _, _, _) armId armSing | em <- et ! i, sub <- getArmSub armId ms =
     case mrol |&| maybe (getAvailArmSlot ms sub em) sorry of
       Left  (mkBcast i -> b) -> a & _3 <>~ b
@@ -1991,7 +1992,7 @@ readyArm i ms d mrol a@(et, _, _, _) armId armSing | em <- et ! i, sub <- getArm
       _      -> donMsgs                       i d armSing
 
 
-getAvailArmSlot :: MudState -> ArmSub -> EqMap -> Either T.Text Slot
+getAvailArmSlot :: MudState -> ArmSub -> EqMap -> Either Text Slot
 getAvailArmSlot ms (armSubToSlot -> slot) em = maybeSingleSlot em slot |&| maybe (Left sorry) Right
   where
     sorry | i <- em M.! slot, s <- getSing i ms = sorryReadyAlreadyWearing s
@@ -2024,8 +2025,8 @@ shuffleRem :: Id
            -> IsConInRm
            -> Args
            -> (InvWithCon, CoinsWithCon)
-           -> ((GetEntsCoinsRes, Maybe Inv) -> Either T.Text Inv)
-           -> (MudState, ([T.Text], [Broadcast], [T.Text]))
+           -> ((GetEntsCoinsRes, Maybe Inv) -> Either Text Inv)
+           -> (MudState, ([Text], [Broadcast], [Text]))
 shuffleRem i ms d conName icir as invCoinsWithCon@(invWithCon, _) f =
     let (conGecrs, conMiss, conRcs) = uncurry (resolveEntCoinNames i ms (pure conName)) invCoinsWithCon
     in if ()# conMiss && ()!# conRcs
@@ -2149,7 +2150,7 @@ say p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
 say p = patternMatchFail "say" [ showText p ]
 
 
-firstMobSay :: Id -> PlaTbl -> (PlaTbl, T.Text)
+firstMobSay :: Id -> PlaTbl -> (PlaTbl, Text)
 firstMobSay i pt | pt^.ind i.to isNotFirstMobSay = (pt, "")
                  | otherwise = (pt & ind i %~ setPlaFlag IsNotFirstMobSay True, nlnlPrefix hintSay)
 
@@ -2169,7 +2170,7 @@ setAction (Lower' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
 setAction p = patternMatchFail "setAction" [ showText p ]
 
 
-mkSettingPairs :: Id -> MudState -> [(T.Text, T.Text)]
+mkSettingPairs :: Id -> MudState -> [(Text, Text)]
 mkSettingPairs i ms = let p = getPla i ms
                       in onTrue (isAdmin p) (adminPair p :) . pairs $ p
   where
@@ -2179,7 +2180,7 @@ mkSettingPairs i ms = let p = getPla i ms
     adminPair = ("admin", ) . inOut . isTunedAdmin
 
 
-helperSettings :: Id -> MudState -> (Pla, [T.Text], [T.Text]) -> T.Text -> (Pla, [T.Text], [T.Text])
+helperSettings :: Id -> MudState -> (Pla, [Text], [Text]) -> Text -> (Pla, [Text], [Text])
 helperSettings _ _ a@(_, msgs, _) arg@(T.length . T.filter (== '=') -> noOfEqs)
   | or [ noOfEqs /= 1, T.head arg == '=', T.last arg == '=' ] =
       let msg    = sorryParseArg arg
@@ -2409,7 +2410,7 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
 showAction p = patternMatchFail "showAction" [ showText p ]
 
 
-mkSlotDesc :: Id -> MudState -> Slot -> T.Text
+mkSlotDesc :: Id -> MudState -> Slot -> Text
 mkSlotDesc i ms s = case s of
   -- Clothing slots:
   EarringR1S  -> wornOn -- "right ear"
@@ -2558,7 +2559,7 @@ tune (Lower' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
 tune p = patternMatchFail "tune" [ showText p ]
 
 
-helperTune :: Sing -> (TeleLinkTbl, [Chan], [T.Text], [T.Text]) -> T.Text -> (TeleLinkTbl, [Chan], [T.Text], [T.Text])
+helperTune :: Sing -> (TeleLinkTbl, [Chan], [Text], [Text]) -> Text -> (TeleLinkTbl, [Chan], [Text], [Text])
 helperTune _ a arg@(T.length . T.filter (== '=') -> noOfEqs)
   | or [ noOfEqs /= 1, T.head arg == '=', T.last arg == '=' ] = a & _3 %~ tuneInvalidArg arg
 helperTune s a@(linkTbl, chans, _, _) arg@(T.breakOn "=" -> (name, T.tail -> value)) = case lookup value inOutOnOffs of
@@ -2588,7 +2589,7 @@ helperTune s a@(linkTbl, chans, _, _) arg@(T.breakOn "=" -> (name, T.tail -> val
                 in appendMsg (views chanName dblQuote match) & _2 .~ (match & chanConnTbl.at s ?~ val) : others
 
 
-tuneInvalidArg :: T.Text -> [T.Text] -> [T.Text]
+tuneInvalidArg :: Text -> [Text] -> [Text]
 tuneInvalidArg arg msgs = let msg = sorryParseArg arg in
     msgs |&| (any (adviceTuneInvalid `T.isInfixOf`) msgs ? (++ pure msg) :? (++ [ msg <> adviceTuneInvalid ]))
 
@@ -2675,9 +2676,9 @@ unready p = patternMatchFail "unready" [ showText p ]
 helperUnready :: Id
               -> MudState
               -> Desig
-              -> (EqTbl, InvTbl, [Broadcast], [T.Text])
-              -> Either T.Text Inv
-              -> (EqTbl, InvTbl, [Broadcast], [T.Text])
+              -> (EqTbl, InvTbl, [Broadcast], [Text])
+              -> Either Text Inv
+              -> (EqTbl, InvTbl, [Broadcast], [Text])
 helperUnready i ms d a = \case
   Left  (mkBcast i -> b) -> a & _3 <>~ b
   Right targetIds        -> let (bs, msgs) = mkUnreadyDescs i ms d targetIds
@@ -2691,7 +2692,7 @@ mkUnreadyDescs :: Id
                -> MudState
                -> Desig
                -> Inv
-               -> ([Broadcast], [T.Text])
+               -> ([Broadcast], [Text])
 mkUnreadyDescs i ms d targetIds = first concat . unzip $ [ helper icb | icb <- mkIdCountBothList i ms targetIds ]
   where
     helper (targetId, count, b@(targetSing, _)) = if count == 1
@@ -2760,7 +2761,7 @@ getUptime :: MudStack Int64
 getUptime = ((-) `on` sec) <$> (liftIO . getTime $ Monotonic) <*> asks (view startTime)
 
 
-uptimeHelper :: Int64 -> MudStack T.Text
+uptimeHelper :: Int64 -> MudStack Text
 uptimeHelper up = helper <$> (fmap . fmap) getSum getRecordUptime
   where
     helper         = maybe mkUptimeTxt (\recUp -> up > recUp ? mkNewRecTxt :? mkRecTxt recUp)
@@ -2789,12 +2790,12 @@ who p@ActionParams { myId, args } = getState >>= \ms ->
     (dispMatches p namePadding . mkWhoTxt myId $ ms) >> logPlaExecArgs "who" args myId
 
 
-mkWhoTxt :: Id -> MudState -> [T.Text]
+mkWhoTxt :: Id -> MudState -> [Text]
 mkWhoTxt i ms = let txts = mkCharList i ms
                 in (++ [ mkFooter i ms ]) $ txts |!| mkWhoHeader ++ txts
 
 
-mkCharList :: Id -> MudState -> [T.Text]
+mkCharList :: Id -> MudState -> [Text]
 mkCharList i ms =
     let plaIds                = i `delete` getLoggedInPlaIds ms
         (linkeds,  others   ) = partition (isLinked    ms . (i, )) plaIds
@@ -2828,7 +2829,7 @@ isTunedIn :: MudState -> (Id, Id) -> Bool
 isTunedIn ms (i, i') | s <- getSing i' ms = fromMaybe False (view (at s) . getTeleLinkTbl i $ ms)
 
 
-mkFooter :: Id -> MudState -> T.Text
+mkFooter :: Id -> MudState -> Text
 mkFooter i ms = let plaIds@(length -> x) = getLoggedInPlaIds ms
                     y                    = length . filter (== True) $ maruBatsus
                 in T.concat [ showText x

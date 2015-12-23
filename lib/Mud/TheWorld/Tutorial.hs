@@ -7,12 +7,11 @@ import Mud.Data.State.Util.Put
 import Mud.TheWorld.TutorialIds
 import qualified Mud.Misc.Logging as L (logNotice)
 
--- import qualified Data.Map.Lazy as M (empty, fromList)
 import Data.Bits (zeroBits)
-import qualified Data.Text as T
+import Data.Text (Text)
 
 
-logNotice :: T.Text -> T.Text -> MudStack ()
+logNotice :: Text -> Text -> MudStack ()
 logNotice = L.logNotice "Mud.TheWorld.Tutorial"
 
 

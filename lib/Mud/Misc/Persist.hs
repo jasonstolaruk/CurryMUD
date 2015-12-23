@@ -24,22 +24,23 @@ import Data.Aeson (encode, toJSON)
 import Data.Conduit (($$), (=$), yield)
 import Data.IORef (readIORef)
 import Data.List (sort)
+import Data.Text (Text)
 import Data.Tuple (swap)
-import System.Directory (createDirectory, doesDirectoryExist, getDirectoryContents, removeDirectoryRecursive)
-import System.FilePath ((</>))
 import qualified Data.ByteString.Lazy as B (toStrict)
 import qualified Data.Conduit.Binary as CB (sinkFile)
 import qualified Data.Conduit.List as CL (map)
 import qualified Data.IntMap.Lazy as IM (fromList, map)
 import qualified Data.Map.Lazy as M (toList)
 import qualified Data.Text as T
+import System.Directory (createDirectory, doesDirectoryExist, getDirectoryContents, removeDirectoryRecursive)
+import System.FilePath ((</>))
 
 
-logExMsg :: T.Text -> T.Text -> SomeException -> MudStack ()
+logExMsg :: Text -> Text -> SomeException -> MudStack ()
 logExMsg = L.logExMsg "Mud.Misc.Persist"
 
 
-logNotice :: T.Text -> T.Text -> MudStack ()
+logNotice :: Text -> Text -> MudStack ()
 logNotice = L.logNotice "Mud.Misc.Persist"
 
 

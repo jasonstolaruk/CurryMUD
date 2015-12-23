@@ -23,7 +23,7 @@ import Control.Lens.Operators ((&), (.~), (?~), (^.))
 import Control.Monad ((>=>), forever, void, when)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (runReaderT)
-import qualified Data.Text as T
+import Data.Text (Text)
 
 
 default (Int)
@@ -32,11 +32,11 @@ default (Int)
 -----
 
 
-logPla :: T.Text -> Id -> T.Text -> MudStack ()
+logPla :: Text -> Id -> Text -> MudStack ()
 logPla = L.logPla "Mud.Threads.Regen"
 
 
-logNotice :: T.Text -> T.Text -> MudStack ()
+logNotice :: Text -> Text -> MudStack ()
 logNotice = L.logNotice "Mud.Threads.Regen"
 
 

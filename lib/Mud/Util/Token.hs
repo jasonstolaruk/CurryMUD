@@ -10,17 +10,18 @@ import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Data.Char (toLower)
 import Data.Monoid ((<>))
+import Data.Text (Text)
 import qualified Data.Text as T
 
 
-patternMatchFail :: T.Text -> [T.Text] -> a
+patternMatchFail :: Text -> [Text] -> a
 patternMatchFail = U.patternMatchFail "Mud.Util.Token"
 
 
 -- ==================================================
 
 
-parseTokens :: T.Text -> T.Text
+parseTokens :: Text -> Text
 parseTokens = parseCharTokens . parseMsgTokens . parseStyleTokens
 
 
@@ -30,7 +31,7 @@ parseTokens = parseCharTokens . parseMsgTokens . parseStyleTokens
 type Delimiter = Char
 
 
-parser :: (Char -> T.Text) -> Delimiter -> T.Text -> T.Text
+parser :: (Char -> Text) -> Delimiter -> Text -> Text
 parser f d t
   | T.singleton d `notInfixOf` t = t
   | (left, headTail . T.tail -> (c, right)) <- T.breakOn (T.singleton d) t = left <> f c <> parser f d right
@@ -39,11 +40,11 @@ parser f d t
 -----
 
 
-parseCharTokens :: T.Text -> T.Text
+parseCharTokens :: Text -> Text
 parseCharTokens = parser expandCharCode charTokenDelimiter
 
 
-expandCharCode :: Char -> T.Text
+expandCharCode :: Char -> Text
 expandCharCode c | c == charTokenDelimiter = T.singleton charTokenDelimiter
 expandCharCode (toLower -> code)           = T.singleton $ case code of
   'a' -> allChar
@@ -66,11 +67,11 @@ expandCharCode (toLower -> code)           = T.singleton $ case code of
 -----
 
 
-parseMsgTokens :: T.Text -> T.Text
+parseMsgTokens :: Text -> Text
 parseMsgTokens = parser expandMsgCode msgTokenDelimiter
 
 
-expandMsgCode :: Char -> T.Text
+expandMsgCode :: Char -> Text
 expandMsgCode c | c == msgTokenDelimiter = T.singleton msgTokenDelimiter
 expandMsgCode (toLower -> code)          = case code of
   'b' -> dfltBootMsg
@@ -81,11 +82,11 @@ expandMsgCode (toLower -> code)          = case code of
 -----
 
 
-parseStyleTokens :: T.Text -> T.Text
+parseStyleTokens :: Text -> Text
 parseStyleTokens = parser expandStyleCode styleTokenDelimiter
 
 
-expandStyleCode :: Char -> T.Text
+expandStyleCode :: Char -> Text
 expandStyleCode c | c == styleTokenDelimiter = T.singleton styleTokenDelimiter
 expandStyleCode (toLower -> code)            = case code of
   'a' -> abbrevColor

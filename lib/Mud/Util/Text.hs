@@ -46,10 +46,11 @@ import Data.Function (on)
 import Data.Ix (inRange)
 import Data.List (intercalate, sortBy)
 import Data.Monoid ((<>))
+import Data.Text (Text)
 import qualified Data.Text as T
 
 
-blowUp :: T.Text -> T.Text -> [T.Text] -> a
+blowUp :: Text -> Text -> [Text] -> a
 blowUp = U.blowUp "Mud.Util.Text"
 
 
@@ -57,14 +58,14 @@ blowUp = U.blowUp "Mud.Util.Text"
 
 
 class HasText a where
-  extractText :: a -> T.Text
+  extractText :: a -> Text
 
 
-instance HasText T.Text where
+instance HasText Text where
   extractText = id
 
 
-instance HasText (a, T.Text) where
+instance HasText (a, Text) where
   extractText = snd
 
 
@@ -76,12 +77,12 @@ class Nullable a where
   none   :: a
 
 
-instance Nullable T.Text where
+instance Nullable Text where
   isNull = T.null
   none   = "none."
 
 
-instance Nullable [T.Text] where
+instance Nullable [Text] where
   isNull = null
   none   = pure "none."
 
@@ -89,18 +90,18 @@ instance Nullable [T.Text] where
 -----
 
 
-aOrAn :: T.Text -> T.Text
+aOrAn :: Text -> Text
 aOrAn (T.strip -> t) | ()# t                = ""
                      | isVowel . T.head $ t = "an " <> t
                      | otherwise            = "a "  <> t
 
 
-aOrAnOnLower :: T.Text -> T.Text
+aOrAnOnLower :: Text -> Text
 aOrAnOnLower t | isCapital t = t
                | otherwise   = aOrAn t
 
 
-isCapital :: T.Text -> Bool
+isCapital :: Text -> Bool
 isCapital ""            = False
 isCapital (T.head -> h) = isUpper h
 
@@ -108,29 +109,29 @@ isCapital (T.head -> h) = isUpper h
 -----
 
 
-capitalize :: T.Text -> T.Text
+capitalize :: Text -> Text
 capitalize = capsHelper toUpper
 
 
-uncapitalize :: T.Text -> T.Text
+uncapitalize :: Text -> Text
 uncapitalize = capsHelper toLower
 
 
-capsHelper :: (Char -> Char) -> T.Text -> T.Text
+capsHelper :: (Char -> Char) -> Text -> Text
 capsHelper f (headTail -> (T.singleton . f -> h, t)) = h <> t
 
 
 -----
 
 
-commaEvery3 :: T.Text -> T.Text
+commaEvery3 :: Text -> Text
 commaEvery3 = T.reverse . T.intercalate "," . T.chunksOf 3 . T.reverse
 
 
 -----
 
 
-commas :: [T.Text] -> T.Text
+commas :: [Text] -> Text
 commas = T.intercalate ", "
 
 
@@ -140,14 +141,14 @@ commas = T.intercalate ", "
 type Cols = Int
 
 
-divider :: Cols -> T.Text
+divider :: Cols -> Text
 divider = (`T.replicate` "=")
 
 
 -----
 
 
-dropBlanks :: [T.Text] -> [T.Text]
+dropBlanks :: [Text] -> [Text]
 dropBlanks []      = []
 dropBlanks ("":xs) =     dropBlanks xs
 dropBlanks ( x:xs) = x : dropBlanks xs
@@ -156,7 +157,7 @@ dropBlanks ( x:xs) = x : dropBlanks xs
 -----
 
 
-findFullNameForAbbrev :: (Eq a, HasText a) => T.Text -> [a] -> Maybe a
+findFullNameForAbbrev :: (Eq a, HasText a) => Text -> [a] -> Maybe a
 findFullNameForAbbrev needle hay =
     let res = sortBy (compare `on` extractText) . filter ((needle `T.isPrefixOf`) . extractText) $ hay
     in guard (()!# res) >> (return . head $ res)
@@ -165,28 +166,28 @@ findFullNameForAbbrev needle hay =
 -----
 
 
-frame :: Cols -> T.Text -> T.Text
+frame :: Cols -> Text -> Text
 frame cols | d <- nl . divider $ cols = nl . (<> d) . (d <>)
 
 
 -----
 
 
-headTail :: T.Text -> (Char, T.Text)
+headTail :: Text -> (Char, Text)
 headTail = (T.head *** T.tail) . dup
 
 
 -----
 
 
-intercalateDivider :: Cols -> [[T.Text]] -> [T.Text]
+intercalateDivider :: Cols -> [[Text]] -> [Text]
 intercalateDivider cols = intercalate [ "", divider cols, "" ]
 
 
 -----
 
 
-mkOrdinal :: Int -> T.Text
+mkOrdinal :: Int -> Text
 mkOrdinal 11              = "11th"
 mkOrdinal 12              = "12th"
 mkOrdinal 13              = "13th"
@@ -199,19 +200,19 @@ mkOrdinal (showText -> n) = n <> case T.last n of '1' -> "st"
 -----
 
 
-nl :: T.Text -> T.Text
+nl :: Text -> Text
 nl = (<> "\n")
 
 
-nlnl :: T.Text -> T.Text
+nlnl :: Text -> Text
 nlnl = nl . nl
 
 
-nlPrefix :: T.Text -> T.Text
+nlPrefix :: Text -> Text
 nlPrefix = ("\n" <>)
 
 
-nlnlPrefix :: T.Text -> T.Text
+nlnlPrefix :: Text -> Text
 nlnlPrefix = nlPrefix . nlPrefix
 
 
@@ -225,7 +226,7 @@ noneOnNull a = isNull a ? none :? a
 -----
 
 
-readNum :: T.Text -> Int
+readNum :: Text -> Int
 readNum txt = case reads . T.unpack $ txt :: [(Int, String)] of
   [(x, "")] -> x
   _         -> blowUp "readNum" "parse failed" . pure $ txt
@@ -234,49 +235,49 @@ readNum txt = case reads . T.unpack $ txt :: [(Int, String)] of
 -----
 
 
-replace :: [(T.Text, T.Text)] -> T.Text -> T.Text
+replace :: [(Text, Text)] -> Text -> Text
 replace = foldr ((.) . uncurry T.replace) id
 
 
 -----
 
 
-notInfixOf :: T.Text -> T.Text -> Bool
+notInfixOf :: Text -> Text -> Bool
 notInfixOf needle = not . T.isInfixOf needle
 
 
 -----
 
 
-showText :: (Show a) => a -> T.Text
+showText :: (Show a) => a -> Text
 showText = T.pack . show
 
 
 -----
 
 
-slashes :: [T.Text] -> T.Text
+slashes :: [Text] -> Text
 slashes = T.intercalate " / "
 
 
 -----
 
 
-spaces :: [T.Text] -> T.Text
+spaces :: [Text] -> Text
 spaces = T.intercalate " "
 
 
 -----
 
 
-stripControl :: T.Text -> T.Text
+stripControl :: Text -> Text
 stripControl = T.filter (inRange ('\32', '\126'))
 
 
 -----
 
 
-stripTelnet :: T.Text -> T.Text
+stripTelnet :: Text -> Text
 stripTelnet t
   | T.singleton telnetIAC `T.isInfixOf` t, (left, right) <- T.breakOn (T.singleton telnetIAC) t = left <> helper right
   | otherwise = t
@@ -291,17 +292,17 @@ stripTelnet t
 -----
 
 
-theLetterS :: Bool -> T.Text
+theLetterS :: Bool -> Text
 theLetterS = (|?| "s")
 
 
 -----
 
 
-theOnLower :: T.Text -> T.Text
+theOnLower :: Text -> Text
 theOnLower t | isCapital t = t
              | otherwise   = "the " <> t
 
 
-theOnLowerCap :: T.Text -> T.Text
+theOnLowerCap :: Text -> Text
 theOnLowerCap = capitalize . theOnLower

@@ -9,9 +9,10 @@ import Control.Monad (replicateM)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (runReaderT)
 import Data.Char (chr)
+import Data.Text (Text)
+import qualified Data.Text as T
 import Test.QuickCheck (Gen, choose)
 import Test.QuickCheck.Monadic (PropertyM, run)
-import qualified Data.Text as T
 
 
 inWorld :: MudStack a -> PropertyM IO a
@@ -24,15 +25,15 @@ genAsciiAlphaNum :: Gen Char
 genAsciiAlphaNum = chr <$> choose (32, 126)
 
 
-genTextOfLen :: Int -> Gen T.Text
+genTextOfLen :: Int -> Gen Text
 genTextOfLen n = T.pack <$> replicateM n genAsciiAlphaNum
 
 
-genTextOfRandLen :: (Int, Int) -> Gen T.Text
+genTextOfRandLen :: (Int, Int) -> Gen Text
 genTextOfRandLen (nMin, nMax) = genTextOfLen =<< choose (nMin, nMax)
 
 
-genTextLongerThan :: Int -> Gen T.Text
+genTextLongerThan :: Int -> Gen Text
 genTextLongerThan x = genTextOfLen . (x +) =<< choose (1, 50)
 
 

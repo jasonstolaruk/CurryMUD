@@ -20,6 +20,7 @@ import Control.Arrow (second)
 import Control.Lens (both)
 import Control.Lens.Operators ((%~), (&))
 import Data.Monoid ((<>))
+import Data.Text (Text)
 import qualified Data.Text as T
 
 
@@ -27,7 +28,7 @@ type PageLen      = Int
 type EntireTxtLen = Int
 
 
-interpPager :: PageLen -> EntireTxtLen -> ([T.Text], [T.Text]) -> Interp
+interpPager :: PageLen -> EntireTxtLen -> ([Text], [Text]) -> Interp
 interpPager pageLen txtLen (left, right) (T.toLower -> cn) (NoArgs i mq cols) = getState >>= \ms ->
     let next = if length right + 3 <= pageLen
                  then do

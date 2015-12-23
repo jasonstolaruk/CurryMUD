@@ -23,17 +23,18 @@ import Control.Lens (both)
 import Control.Lens.Operators ((%~), (&))
 import Data.Char (isDigit, isSpace)
 import Data.Monoid ((<>))
+import Data.Text (Text)
 import qualified Data.Text as T
 
 
-patternMatchFail :: T.Text -> [T.Text] -> a
+patternMatchFail :: Text -> [Text] -> a
 patternMatchFail = U.patternMatchFail "Mud.Util.Wrapping"
 
 
 -- ==================================================
 
 
-wrap :: Int -> T.Text -> [T.Text]
+wrap :: Int -> Text -> [Text]
 wrap cols t | extracted <- extractANSI t
             , wrapped   <- wrapIt . T.concat . map fst $ extracted = insertANSI extracted wrapped
   where
@@ -46,36 +47,36 @@ wrap cols t | extracted <- extractANSI t
         (beforeMax, afterMax) = T.splitAt cols txt
 
 
-breakEnd :: T.Text -> (T.Text, T.Text)
+breakEnd :: Text -> (Text, Text)
 breakEnd (T.break isSpace . T.reverse -> (after, before)) = (before, after) & both %~ T.reverse
 
 
 -----
 
 
-wrapUnlines :: Int -> T.Text -> T.Text
+wrapUnlines :: Int -> Text -> Text
 wrapUnlines cols = T.unlines . wrap cols
 
 
-wrapUnlinesNl :: Int -> T.Text -> T.Text
+wrapUnlinesNl :: Int -> Text -> Text
 wrapUnlinesNl cols = nl . wrapUnlines cols
 
 
 -----
 
 
-multiWrap :: Int -> [T.Text] -> T.Text
+multiWrap :: Int -> [Text] -> Text
 multiWrap cols = T.unlines . concatMap (wrap cols)
 
 
-multiWrapNl :: Int -> [T.Text] -> T.Text
+multiWrapNl :: Int -> [Text] -> Text
 multiWrapNl cols = nl . multiWrap cols
 
 
 -----
 
 
-wrapIndent :: Int -> Int -> T.Text -> [T.Text]
+wrapIndent :: Int -> Int -> Text -> [Text]
 wrapIndent n cols t = let extracted = extractANSI t
                           wrapped   = helper . T.concat . map fst $ extracted
                       in map leadingFillerToSpcs . insertANSI extracted $ wrapped
@@ -91,15 +92,15 @@ wrapIndent n cols t = let extracted = extractANSI t
         leadingIndent         = T.replicate (adjustIndent n cols) . T.singleton $ indentFiller
 
 
-leadingSpcsToFiller :: T.Text -> T.Text
+leadingSpcsToFiller :: Text -> Text
 leadingSpcsToFiller = xformLeading ' ' indentFiller
 
 
-leadingFillerToSpcs :: T.Text -> T.Text
+leadingFillerToSpcs :: Text -> Text
 leadingFillerToSpcs = xformLeading indentFiller ' '
 
 
-xformLeading :: Char -> Char -> T.Text -> T.Text
+xformLeading :: Char -> Char -> Text -> Text
 xformLeading _ _                  ""                                       = ""
 xformLeading a (T.singleton -> b) (T.span (== a) -> (T.length -> n, rest)) = T.replicate n b <> rest
 
@@ -111,7 +112,7 @@ adjustIndent n cols = n >= cols ? pred cols :? n
 -----
 
 
-wrapLines :: Int -> [T.Text] -> [[T.Text]]
+wrapLines :: Int -> [Text] -> [[Text]]
 wrapLines _    []                     = []
 wrapLines cols [t]                    = [ wrapIndent (noOfLeadingSpcs t) cols t ]
 wrapLines cols (a:b:rest) | ()# a     = [""]     : wrapNext
@@ -127,11 +128,11 @@ wrapLines cols (a:b:rest) | ()# a     = [""]     : wrapNext
     (nolsa, nolsb)   = (a, b) & both %~ noOfLeadingSpcs
 
 
-noOfLeadingSpcs :: T.Text -> Int
+noOfLeadingSpcs :: Text -> Int
 noOfLeadingSpcs = T.length . T.takeWhile isSpace
 
 
-wrapLineWithIndentTag :: Int -> T.Text -> [T.Text]
+wrapLineWithIndentTag :: Int -> Text -> [Text]
 wrapLineWithIndentTag cols (T.break (not . isDigit) . T.reverse . T.init -> broken) = wrapIndent n cols t
   where
     (numTxt, t) = broken & both %~ T.reverse
@@ -144,7 +145,7 @@ wrapLineWithIndentTag cols (T.break (not . isDigit) . T.reverse . T.init -> brok
       | otherwise   = adjustIndent indent cols
 
 
-calcIndent :: T.Text -> Int
+calcIndent :: Text -> Int
 calcIndent (T.break isSpace -> (T.length -> lenOfFirstWord, rest))
   | ()# rest  = 0
   | otherwise = lenOfFirstWord + noOfLeadingSpcs rest
