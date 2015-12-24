@@ -715,16 +715,11 @@ dropAction p = patternMatchFail "dropAction" [ showText p ]
 -----
 
 
-{- TODO
-em hisses at >mv
-[the rock cavy hisses at the male vulpenoid.]
--}
 emote :: ActionFun
 emote p@AdviseNoArgs                                                     = advise p ["emote"] adviceEmoteNoArgs
 emote p@ActionParams { args } | any (`elem` yous) . map T.toLower $ args = advise p ["emote"] adviceYouEmote
 emote (WithArgs i mq cols as) = getState >>= \ms ->
     let d                    = mkStdDesig i ms DoCap
-        s                    = onTrue (isNpc i ms) theOnLower . fromJust . sDesigEntSing $ d
         ser                  = serialize d
         d'                   = d { shouldCap = Don'tCap }
         ser'                 = serialize d'
@@ -742,16 +737,18 @@ emote (WithArgs i mq cols as) = getState >>= \ms ->
           | T.take 1 x == etc      -> isHead ? Left adviceEtcHead :? (procTarget ms . T.tail $ x)
           | etc `T.isInfixOf` x    -> Left . adviceEtc $ "emote "
           | isHead, hasEnc as      -> mkRightForNonTargets $ dup3 x  & each %~ capitalizeMsg
-          | isHead, x' <- " " <> x -> mkRightForNonTargets $ dup3 x' & _1 %~ (s   <>)
-                                                                     & _2 %~ (ser <>)
-                                                                     & _3 %~ (ser <>)
+          | isHead, x' <- " " <> x -> mkRightForNonTargets $ dup3 x' & _1   %~ (myName True <>)
+                                                                     & _2   %~ (ser         <>)
+                                                                     & _3   %~ (ser         <>)
           | otherwise              -> mkRightForNonTargets . dup3 $ x
-        expandEnc isHead = (isHead ? (ser, ser) :? (ser', ser')) |&| uncurry (onTrue isHead capitalize s, , )
+        expandEnc isHead = (isHead ? (ser, ser) :? (ser', ser')) |&| uncurry (myName isHead, , )
+        myName    isHead = onTrue isHead capitalize . onTrue (isNpc i ms) theOnLower . fromJust . sDesigEntSing $ d
     in case lefts xformed of
-      []      -> let (toSelf, toOthers, targetIds, toTargetBs) = happy ms xformed
-                 in do -- TODO: Where is the logging? (Don't forget to parseDesig the log msg.)
-                     wrapSend mq cols . parseDesig i ms $ toSelf
+      []      -> let (parseDesig i ms -> toSelf, toOthers, targetIds, toTargetBs) = happy ms xformed
+                 in do
+                     wrapSend mq cols toSelf
                      bcastIfNotIncogNl i $ (toOthers, desigIds d \\ (i : targetIds)) : toTargetBs
+                     logPlaOut "emote" i . pure $ toSelf
       advices -> multiWrapSend mq cols . nub $ advices
   where
     procTarget ms word =
@@ -2124,9 +2121,9 @@ say p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
         sayToHelper d targetId targetDesig (frontAdv, rearAdv, msg) =
             let toSelfMsg     = T.concat [ "You say ",            frontAdv, "to ", targetDesig, rearAdv, ", ", msg ]
                 toTargetMsg   = T.concat [ serialize d, " says ", frontAdv, "to you",           rearAdv, ", ", msg ]
-                toTargetBcast = (nlnl toTargetMsg, pure targetId)
+                toTargetBcast = (nl toTargetMsg, pure targetId)
                 toOthersMsg   = T.concat [ serialize d, " says ", frontAdv, "to ", targetDesig, rearAdv, ", ", msg ]
-                toOthersBcast = (nlnl toOthersMsg, desigIds d \\ [ i, targetId ])
+                toOthersBcast = (nl toOthersMsg, desigIds d \\ [ i, targetId ])
                 f             | isNpc targetId ms = firstMobSay i
                               | otherwise         = (, "")
                 (pt, hint)    = ms^.plaTbl.to f
@@ -2144,7 +2141,7 @@ say p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
         return $ let d             = mkStdDesig i ms DoCap
                      toSelfMsg     = T.concat [ "You say", adverb, ", ", msg ]
                      toOthersMsg   = T.concat [ serialize d, " says", adverb, ", ", msg ]
-                     toOthersBcast = (nlnl toOthersMsg, i `delete` desigIds d)
+                     toOthersBcast = (nl toOthersMsg, i `delete` desigIds d)
                  in (toSelfMsg, pure toOthersBcast, toSelfMsg)
 say p = patternMatchFail "say" [ showText p ]
 
