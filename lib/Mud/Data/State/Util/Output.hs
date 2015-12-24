@@ -63,7 +63,6 @@ patternMatchFail = U.patternMatchFail "Mud.Data.State.Util.Output"
 -- ============================================================
 
 
--- TODO: "bcast" and related functions should not be used to send a message to the executor of a command (at least for NPC commands).
 bcast :: [Broadcast] -> MudStack ()
 bcast [] = unit
 bcast bs = getState >>= \ms -> liftIO . atomically . forM_ bs . sendBcastSTM $ ms

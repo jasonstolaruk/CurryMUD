@@ -228,7 +228,7 @@ genericAction :: ActionParams
               -> MudStack ()
 genericAction ActionParams { .. } helper fn = helper |&| modifyState >=> \(toSelfs, bs, logMsgs) -> do
     ms <- getState
-    multiWrapSend plaMsgQueue plaCols [ parseDesig myId ms msg | msg <- toSelfs ] -- TODO: Are there places where we are already doing this?
+    multiWrapSend plaMsgQueue plaCols [ parseDesig myId ms msg | msg <- toSelfs ]
     bcastIfNotIncogNl myId bs
     logMsgs |#| logPlaOut fn myId
 

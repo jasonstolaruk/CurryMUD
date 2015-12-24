@@ -101,6 +101,10 @@ cmdDescRemove :: Text
 cmdDescRemove = "Remove one or more items from a container."
 
 
+cmdDescSay :: Text
+cmdDescSay = "Say something out loud."
+
+
 cmdDescStats :: Text
 cmdDescStats = "Display your stats."
 
