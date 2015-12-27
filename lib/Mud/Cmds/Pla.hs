@@ -1604,22 +1604,23 @@ shufflePut i ms d conName icir as invCoinsWithCon@(invWithCon, _) pcInvCoins f =
       then sorry sorryPutInCoin
       else case f . head . zip conGecrs $ conMiss of
         Left  msg     -> sorry msg
-        Right [conId] -> let conSing = getSing conId ms in if getType conId ms /= ConType
-          then sorry . sorryCon $ conSing
-          else let (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv as
-                   sorryInEq = inEqs |!| sorryPutInEq
-                   sorryInRm = inRms |!| sorryPutInRm
-                   (gecrs, miss, rcs)  = uncurry (resolveEntCoinNames i ms inInvs) pcInvCoins
-                   eiss                = zipWith (curry procGecrMisMobInv) gecrs miss
-                   ecs                 = map procReconciledCoinsMobInv rcs
-                   mnom                = mkMaybeNthOfM ms icir conId conSing invWithCon
-                   (it, toSelfs,  bs,  logMsgs ) = foldl' (helperPutRemEitherInv   i ms d Put mnom i conId conSing)
-                                                          (ms^.invTbl, [], [], [])
-                                                          eiss
-                   (ct, toSelfs', bs', logMsgs') =        helperPutRemEitherCoins  i    d Put mnom i conId conSing
-                                                          (ms^.coinsTbl, toSelfs, bs, logMsgs)
-                                                          ecs
-               in (ms & invTbl .~ it & coinsTbl .~ ct, (dropBlanks $ [ sorryInEq, sorryInRm ] ++ toSelfs', bs', logMsgs'))
+        Right [conId] | (conSing, conType) <- (uncurry getSing *** uncurry getType) . dup $ (conId, ms) ->
+            if conType /= ConType
+              then sorry . sorryConHelper i ms conId $ conSing
+              else let (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv as
+                       sorryInEq = inEqs |!| sorryPutInEq
+                       sorryInRm = inRms |!| sorryPutInRm
+                       (gecrs, miss, rcs)  = uncurry (resolveEntCoinNames i ms inInvs) pcInvCoins
+                       eiss                = zipWith (curry procGecrMisMobInv) gecrs miss
+                       ecs                 = map procReconciledCoinsMobInv rcs
+                       mnom                = mkMaybeNthOfM ms icir conId conSing invWithCon
+                       (it, toSelfs,  bs,  logMsgs ) = foldl' (helperPutRemEitherInv   i ms d Put mnom i conId conSing)
+                                                              (ms^.invTbl, [], [], [])
+                                                              eiss
+                       (ct, toSelfs', bs', logMsgs') =        helperPutRemEitherCoins  i    d Put mnom i conId conSing
+                                                              (ms^.coinsTbl, toSelfs, bs, logMsgs)
+                                                              ecs
+                   in (ms & invTbl .~ it & coinsTbl .~ ct, (dropBlanks $ [ sorryInEq, sorryInRm ] ++ toSelfs', bs', logMsgs'))
         Right {} -> sorry sorryPutExcessCon
   where
     sorry = (ms, ) . (, [], []) . pure
@@ -2050,23 +2051,24 @@ shuffleRem i ms d conName icir as invCoinsWithCon@(invWithCon, _) f =
       then sorry sorryRemCoin
       else case f . head . zip conGecrs $ conMiss of
         Left  msg     -> sorry msg
-        Right [conId] -> let conSing = getSing conId ms in if getType conId ms /= ConType
-          then sorry . sorryCon $ conSing
-          else let (as', guessWhat)    = stripLocPrefs
-                   invCoinsInCon       = getInvCoins conId ms
-                   (gecrs, miss, rcs)  = uncurry (resolveEntCoinNames i ms as') invCoinsInCon
-                   eiss                = zipWith (curry $ procGecrMisCon conSing) gecrs miss
-                   ecs                 = map (procReconciledCoinsCon conSing) rcs
-                   mnom                = mkMaybeNthOfM ms icir conId conSing invWithCon
-                   (it, toSelfs,  bs,  logMsgs ) = foldl' (helperPutRemEitherInv   i ms d Rem mnom conId i conSing)
-                                                          (ms^.invTbl, [], [], [])
-                                                          eiss
-                   (ct, toSelfs', bs', logMsgs') =        helperPutRemEitherCoins  i    d Rem mnom conId i conSing
-                                                          (ms^.coinsTbl, toSelfs, bs, logMsgs)
-                                                          ecs
-               in if ()!# invCoinsInCon
-                 then (ms & invTbl .~ it & coinsTbl .~ ct, (guessWhat ++ toSelfs', bs', logMsgs'))
-                 else sorry . sorryRemEmpty $ conSing
+        Right [conId] | (conSing, conType) <- (uncurry getSing *** uncurry getType) . dup $ (conId, ms) ->
+            if conType /= ConType
+              then sorry . sorryConHelper i ms conId $ conSing
+              else let (as', guessWhat)    = stripLocPrefs
+                       invCoinsInCon       = getInvCoins conId ms
+                       (gecrs, miss, rcs)  = uncurry (resolveEntCoinNames i ms as') invCoinsInCon
+                       eiss                = zipWith (curry $ procGecrMisCon conSing) gecrs miss
+                       ecs                 = map (procReconciledCoinsCon conSing) rcs
+                       mnom                = mkMaybeNthOfM ms icir conId conSing invWithCon
+                       (it, toSelfs,  bs,  logMsgs ) = foldl' (helperPutRemEitherInv   i ms d Rem mnom conId i conSing)
+                                                              (ms^.invTbl, [], [], [])
+                                                              eiss
+                       (ct, toSelfs', bs', logMsgs') =        helperPutRemEitherCoins  i    d Rem mnom conId i conSing
+                                                              (ms^.coinsTbl, toSelfs, bs, logMsgs)
+                                                              ecs
+                   in if ()!# invCoinsInCon
+                     then (ms & invTbl .~ it & coinsTbl .~ ct, (guessWhat ++ toSelfs', bs', logMsgs'))
+                     else sorry . sorryRemEmpty $ conSing
         Right {} -> sorry sorryRemExcessCon
   where
     sorry         = (ms, ) . (, [], []) . pure

@@ -50,7 +50,8 @@ module Mud.Cmds.Util.Pla ( armSubToSlot
                          , otherHand
                          , putOnMsgs
                          , resolveMobInvCoins
-                         , resolveRmInvCoins ) where
+                         , resolveRmInvCoins
+                         , sorryConHelper ) where
 
 import Mud.Cmds.Msgs.Dude
 import Mud.Cmds.Msgs.Misc
@@ -886,3 +887,12 @@ resolveHelper i ms f g as is c | (gecrs, miss, rcs) <- resolveEntCoinNames i ms 
 
 resolveRmInvCoins :: Id -> MudState -> Args -> Inv -> Coins -> ([Either Text Inv], [Either [Text] Coins])
 resolveRmInvCoins i ms = resolveHelper i ms procGecrMisRm procReconciledCoinsRm
+
+
+-----
+
+
+sorryConHelper :: Id -> MudState -> Id -> Sing -> Text
+sorryConHelper i ms conId conSing
+  | isNpcPC conId ms = sorryCon . parseDesig i ms . serialize . mkStdDesig conId ms $ Don'tCap
+  | otherwise        = sorryCon conSing
