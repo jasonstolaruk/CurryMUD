@@ -1844,11 +1844,11 @@ readyCloth i ms d mrol a@(et, _, _, _, _) clothId clothSing | em <- et ! i, clot
         slideMsgs  = (   T.concat [ "You slide the ", clothSing, " on your ", slot, "." ]
                      , ( T.concat [ serialize d, " slides ", aOrAn clothSing, " on ", poss, " ", slot, "." ]
                        , otherPCIds) )
-        poss       = mkPossPro . getSex i $ ms -- TODO: Test w/ NoSex.
+        poss       = mkPossPro . getSex i $ ms
         otherPCIds = i `delete` desigIds d
 
 
-getAvailClothSlot :: Id -> MudState -> Cloth -> EqMap -> Either Text Slot -- TODO: Test w/ NoSex.
+getAvailClothSlot :: Id -> MudState -> Cloth -> EqMap -> Either Text Slot
 getAvailClothSlot i ms cloth em | sexy <- getSex i ms, h <- getHand i ms =
     maybe (Left sorry) Right $ case cloth of
       Earring  -> getEarringSlotForSex sexy `mplus` (getEarringSlotForSex . otherSex $ sexy)
@@ -1861,7 +1861,7 @@ getAvailClothSlot i ms cloth em | sexy <- getSex i ms, h <- getHand i ms =
     getEarringSlotForSex sexy = findAvailSlot em $ case sexy of
       Male   -> lEarringSlots
       Female -> rEarringSlots
-      NoSex  -> rEarringSlots
+      NoSex  -> lEarringSlots
     getBraceletSlotForHand h  = findAvailSlot em $ case h of
       RHand  -> lBraceletSlots
       LHand  -> rBraceletSlots
@@ -1885,7 +1885,7 @@ getAvailClothSlot i ms cloth em | sexy <- getSex i ms, h <- getHand i ms =
 otherSex :: Sex -> Sex
 otherSex Male   = Female
 otherSex Female = Male
-otherSex NoSex  = NoSex
+otherSex NoSex  = Female
 
 
 rEarringSlots, lEarringSlots, noseRingSlots, necklaceSlots, rBraceletSlots, lBraceletSlots :: [Slot]
@@ -1960,7 +1960,7 @@ readyWpn i ms d mrol a@(et, _, _, _, _) wpnId wpnSing | em <- et ! i, wpn <- get
             | otherwise -> sorry . sorryReadyWpnHands $ wpnSing
   where
     sorry msg  = a & _3 <>~ pure msg
-    poss       = mkPossPro . getSex i $ ms -- TODO: Test w/ NoSex.
+    poss       = mkPossPro . getSex i $ ms
     otherPCIds = i `delete` desigIds d
 
 

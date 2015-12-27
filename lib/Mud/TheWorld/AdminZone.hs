@@ -243,7 +243,7 @@ createAdminZone = do
             zeroBits
             [ StdLink East iBasement ])
   putRm iMobCloset
-        [ iRockCavy1, iRockCavy2, iPidge ]
+        [ iRockCavy1, iRockCavy2, iPidge, iSkeleton ]
         mempty
         (Rm "Mob closet"
             "This closet holds mobs."
@@ -1023,3 +1023,22 @@ createAdminZone = do
               zeroBits)
          (Obj 300 1)
          (Arm Feet 1)
+  putNpc iSkeleton
+         (Ent iSkeleton
+              (Just "skeleton")
+              "undead skeleton" ""
+              "This mindless, bipedal skeleton has been animated and tasked with doing its master's bidding."
+              zeroBits)
+         []
+         mempty
+         M.empty
+         (Mob NoSex
+              50 50 50 50 50
+              10 10
+              10 10
+              10 10
+              10 10
+              10
+              RHand
+              iMobCloset
+              Nothing Nothing)

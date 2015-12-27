@@ -206,6 +206,8 @@ iLoungeEntrance = 96 :: Int
 
 iBasement = 97 :: Int
 
-iRoot = 98 :: Int
+iSkeleton = 98 :: Int
 
-iCurry = 99 :: Int
+iRoot = 99 :: Int
+
+iCurry = 100 :: Int
