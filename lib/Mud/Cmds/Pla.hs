@@ -240,6 +240,17 @@ mkPriorityAbbrevCmd cfn cpat f b cd = unfoldr helper (T.init cfn) ++ [ Cmd { cmd
 -----
 
 
+{-
+NPC commands must conform to the following rules:
+* Messages should not be sent to the executor of the command in the form of broadcasts. (Otherwise they will be
+erroneously indented with "toNpcColor" in the case that the executor is an NPC.)
+* Given the above, "toSelf" messages should be subjected to "parseDesig", as necessary, before being sent to the
+executor (via "wrapSend" or a related function). Log messages may likewise need to be subjected to "parseDesig",
+depending on their content.
+* When an NPC executes a command, that NPC's name should be represented as a "Desig" in any broadcasts sent to others.
+-}
+
+
 npcCmds :: [Cmd]
 npcCmds = sort $ npcRegularCmds ++ npcPriorityAbbrevCmds ++ expCmds
 
@@ -267,7 +278,7 @@ npcRegularCmds = map (uncurry4 mkRegularCmd)
 -- TODO: Add "show".
 npcPriorityAbbrevCmds :: [Cmd]
 npcPriorityAbbrevCmds = concatMap (uncurry5 mkPriorityAbbrevCmd)
-    [ ("clear",     "cl",  clear,      True,  cmdDescClear)
+    [ ("clear",     "c",   clear,      True,  cmdDescClear)
     , ("drop",      "dr",  dropAction, True,  cmdDescDrop)
     , ("emote",     "em",  emote,      True,  cmdDescEmote)
     , ("exits",     "ex",  exits,      True,  cmdDescExits)
@@ -762,7 +773,7 @@ emote (WithArgs i mq cols as) = getState >>= \ms ->
               then case singleArgInvEqRm InRm target of
                 (InInv, _      ) -> sorry sorryEmoteTargetInInv
                 (InEq,  _      ) -> sorry sorryEmoteTargetInEq
-                (InRm,  target') -> case uncurry (resolveRmInvCoins i ms [target']) invCoins of
+                (InRm,  target') -> case uncurry (resolveRmInvCoins i ms (pure target')) invCoins of
                   (_,                    [ Left [msg] ]) -> Left msg
                   (_,                    Right  _:_    ) -> sorry sorryEmoteTargetCoins
                   ([ Left  msg        ], _             ) -> Left msg
@@ -1343,13 +1354,12 @@ look (LowerNub i mq cols as) = helper |&| modifyState >=> \(toSelf, bs, maybeTar
     bcastIfNotIncog i bs
     let logHelper targetDesigs | targetSings <- [ fromJust . sDesigEntSing $ targetDesig
                                                 | targetDesig <- targetDesigs ]
-                               = logPla "look" i $ "looked at: " <> commas targetSings <> "."
+                               = logPla "look" i $ "looked at " <> commas targetSings <> "."
     maybeVoid logHelper maybeTargetDesigs
   where
     helper ms =
         let invCoins = first (i `delete`) . getMobRmNonIncogInvCoins i $ ms
-            f        | isPC i ms = firstLook i cols
-                     | otherwise = id
+            f        = onTrue (isPC i ms) (firstLook i cols)
         in if ()!# invCoins
           then let (inInvs, inEqs, inRms) = sortArgsInvEqRm InRm as
                    sorryInInv             = wrapUnlinesNl cols . sorryEquipInvLook LookCmd $ InvCmd
@@ -1361,10 +1371,10 @@ look (LowerNub i mq cols as) = helper |&| modifyState >=> \(toSelf, bs, maybeTar
                                                                     , inEqs  |!| sorryInEq
                                                                     , invDesc
                                                                     , coinsDesc ])
-                   selfDesig              = mkStdDesig i ms DoCap
-                   selfDesig'             = serialize selfDesig
-                   is                     = i `delete` desigIds selfDesig
-                   targetDesigs           = [ mkStdDesig targetId ms Don'tCap | targetId <- extractMobIdsFromEiss ms eiss ]
+                   selfDesig    = mkStdDesig i ms DoCap
+                   selfDesig'   = serialize selfDesig
+                   is           = i `delete` desigIds selfDesig
+                   targetDesigs = [ mkStdDesig targetId ms Don'tCap | targetId <- extractMobIdsFromEiss ms eiss ]
                    mkBsForTarget targetDesig acc =
                        let targetId = desigId targetDesig
                            toTarget = (nlnl $ selfDesig' <> " looks at you.", pure targetId)
@@ -1374,7 +1384,7 @@ look (LowerNub i mq cols as) = helper |&| modifyState >=> \(toSelf, bs, maybeTar
                    ms' = ms & plaTbl .~ pt
                in (ms', (toSelf, foldr mkBsForTarget [] targetDesigs, targetDesigs |!| Just targetDesigs))
           else let toSelf        = wrapUnlinesNl cols sorryLookNothingHere
-                   (pt, toSelf') = onTrue (isPC i ms) (firstLook i cols) (ms^.plaTbl, toSelf)
+                   (pt, toSelf') = f (ms^.plaTbl, toSelf)
                    ms'           = ms & plaTbl .~ pt
                in (ms', (toSelf', [], Nothing))
     helperLookEitherInv _  acc (Left  msg ) = acc <> wrapUnlinesNl cols msg
@@ -1612,7 +1622,7 @@ shufflePut i ms d conName icir as invCoinsWithCon@(invWithCon, _) pcInvCoins f =
                in (ms & invTbl .~ it & coinsTbl .~ ct, (dropBlanks $ [ sorryInEq, sorryInRm ] ++ toSelfs', bs', logMsgs'))
         Right {} -> sorry sorryPutExcessCon
   where
-    sorry     = (ms, ) . (, [], []) . pure
+    sorry = (ms, ) . (, [], []) . pure
 
 
 -----
@@ -1834,11 +1844,11 @@ readyCloth i ms d mrol a@(et, _, _, _, _) clothId clothSing | em <- et ! i, clot
         slideMsgs  = (   T.concat [ "You slide the ", clothSing, " on your ", slot, "." ]
                      , ( T.concat [ serialize d, " slides ", aOrAn clothSing, " on ", poss, " ", slot, "." ]
                        , otherPCIds) )
-        poss       = mkPossPro . getSex i $ ms
+        poss       = mkPossPro . getSex i $ ms -- TODO: Test w/ NoSex.
         otherPCIds = i `delete` desigIds d
 
 
-getAvailClothSlot :: Id -> MudState -> Cloth -> EqMap -> Either Text Slot
+getAvailClothSlot :: Id -> MudState -> Cloth -> EqMap -> Either Text Slot -- TODO: Test w/ NoSex.
 getAvailClothSlot i ms cloth em | sexy <- getSex i ms, h <- getHand i ms =
     maybe (Left sorry) Right $ case cloth of
       Earring  -> getEarringSlotForSex sexy `mplus` (getEarringSlotForSex . otherSex $ sexy)
@@ -1950,7 +1960,7 @@ readyWpn i ms d mrol a@(et, _, _, _, _) wpnId wpnSing | em <- et ! i, wpn <- get
             | otherwise -> sorry . sorryReadyWpnHands $ wpnSing
   where
     sorry msg  = a & _3 <>~ pure msg
-    poss       = mkPossPro . getSex i $ ms
+    poss       = mkPossPro . getSex i $ ms -- TODO: Test w/ NoSex.
     otherPCIds = i `delete` desigIds d
 
 
@@ -2111,7 +2121,7 @@ say p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
               x -> patternMatchFail "say sayTo" [ showText x ]
           else sorry sorrySayNoOneHere
       where
-        sorry           = (ms, ) . (, [], "")
+        sorry           = (ms, ) . (, [], "") . pure
         parseRearAdverb = case maybeAdverb of
           Just adverb                          -> Right (adverb <> " ", "", formatMsg . T.unwords $ rest)
           Nothing | T.head r == adverbOpenChar -> case parseAdverb . T.unwords $ rest of
@@ -2124,31 +2134,33 @@ say p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
                 toTargetBcast = (nl toTargetMsg, pure targetId)
                 toOthersMsg   = T.concat [ serialize d, " says ", frontAdv, "to ", targetDesig, rearAdv, ", ", msg ]
                 toOthersBcast = (nl toOthersMsg, desigIds d \\ [ i, targetId ])
-                f             | isNpc targetId ms = firstMobSay i
-                              | otherwise         = (, "")
-                (pt, hint)    = ms^.plaTbl.to f
-            in (ms & plaTbl .~ pt, (toSelfMsg <> hint, [ toTargetBcast, toOthersBcast ], toSelfMsg))
+                f             | isNpc i        ms = (, [])
+                              | isNpc targetId ms = firstMobSay i
+                              | otherwise         = (, [])
+                (pt, hints)   = ms^.plaTbl.to f
+            in (ms & plaTbl .~ pt, ( onTrue (()!# hints) (++ hints) . pure $ toSelfMsg
+                                   , [ toTargetBcast, toOthersBcast ]
+                                   , toSelfMsg ))
     sayTo maybeAdverb msg _ = patternMatchFail "say sayTo" [ showText maybeAdverb, msg ]
     formatMsg               = dblQuote . capitalizeMsg . punctuateMsg
-    ioHelper ms triple      =
-        let f                    = parseDesig i ms
-            (toSelf, bs, logMsg) = triple & _1 %~ f & _3 %~ f
-        in do
-            wrapSend mq cols toSelf
-            bcastIfNotIncogNl i bs
-            logMsg |#| logPlaOut "say" i . pure
+    ioHelper ms triple@(x:xs, _, _) | f                     <- parseDesig i ms
+                                    , (toSelfs, bs, logMsg) <- triple & _1 .~ f x : xs
+                                                                      & _3 %~ f = do { multiWrapSend mq cols toSelfs
+                                                                                     ; bcastIfNotIncogNl i bs
+                                                                                     ; logMsg |#| logPlaOut "say" i . pure }
+    ioHelper _  triple              = patternMatchFail "say ioHelper" [ showText triple ]
     simpleSayHelper ms (maybe "" (" " <>) -> adverb) (formatMsg -> msg) =
         return $ let d             = mkStdDesig i ms DoCap
                      toSelfMsg     = T.concat [ "You say", adverb, ", ", msg ]
                      toOthersMsg   = T.concat [ serialize d, " says", adverb, ", ", msg ]
                      toOthersBcast = (nl toOthersMsg, i `delete` desigIds d)
-                 in (toSelfMsg, pure toOthersBcast, toSelfMsg)
+                 in (pure toSelfMsg, pure toOthersBcast, toSelfMsg)
 say p = patternMatchFail "say" [ showText p ]
 
 
-firstMobSay :: Id -> PlaTbl -> (PlaTbl, Text)
-firstMobSay i pt | pt^.ind i.to isNotFirstMobSay = (pt, "")
-                 | otherwise = (pt & ind i %~ setPlaFlag IsNotFirstMobSay True, nlnlPrefix hintSay)
+firstMobSay :: Id -> PlaTbl -> (PlaTbl, [Text])
+firstMobSay i pt | pt^.ind i.to isNotFirstMobSay = (pt, pure "")
+                 | otherwise = (pt & ind i %~ setPlaFlag IsNotFirstMobSay True, [ "", hintSay ])
 
 
 -----

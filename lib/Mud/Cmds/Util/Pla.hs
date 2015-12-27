@@ -404,28 +404,26 @@ helperGetEitherInv :: Id
                    -> Either Text Inv
                    -> (MudState, [Text], [Broadcast], [Text])
 helperGetEitherInv i d fi ti a@(ms, _, _, _) = \case
-  Left  msg                                 -> a & _2 <>~ pure msg
-  Right (sortByType -> (pcs, mobs, others)) ->
+  Left  msg                              -> a & _2 <>~ pure msg
+  Right (sortByType -> (npcPCs, others)) ->
     let (_, cans, can'ts) = foldl' (partitionByEnc (calcMaxEnc i ms)) (calcWeight i ms, [], []) others
-        (toSelfs, bs)     = mkGetDropInvDescs i ms d Get cans
+        (toSelfs, bs    ) = mkGetDropInvDescs i ms d Get cans
     in a & _1.invTbl.ind fi %~  (\\ cans)
          & _1.invTbl.ind ti %~  (sortInv ms . (++ cans))
-         & _2               <>~ concat [ map sorryPC pcs
-                                       , map sorryMob mobs
+         & _2               <>~ concat [ map sorryType npcPCs
                                        , toSelfs
                                        , mkCan'tGetInvDescs i ms can'ts ]
          & _3               <>~ bs
          & _4               <>~ toSelfs
   where
-    sortByType             = foldr helper ([], [], [])
+    sortByType             = foldr helper ([], [])
     helper targetId sorted = let lens = case getType targetId ms of PCType  -> _1
-                                                                    NpcType -> _2
-                                                                    _       -> _3
+                                                                    NpcType -> _1
+                                                                    _       -> _2
                              in sorted & lens %~ (targetId :)
     partitionByEnc maxEnc acc@(w, _, _) targetId = let w' = w + calcWeight targetId ms in
         w' <= maxEnc ? (acc & _1 .~ w' & _2 <>~ pure targetId) :? (acc & _3 <>~ pure targetId)
-    sorryPC  targetId = sorryGetType . serialize . mkStdDesig targetId ms $ Don'tCap
-    sorryMob targetId = sorryGetType . theOnLower . getSing targetId $ ms
+    sorryType targetId = sorryGetType . serialize . mkStdDesig targetId ms $ Don'tCap
 
 
 mkCan'tGetInvDescs :: Id -> MudState -> Inv -> [Text]

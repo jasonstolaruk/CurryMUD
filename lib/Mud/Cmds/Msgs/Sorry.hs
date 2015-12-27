@@ -931,7 +931,7 @@ sorryRemExcessCon = "You can only remove things from one container at a time."
 
 
 sorryRemIgnore :: Text
-sorryRemIgnore = sorryIgnoreLocPrefPlur "The names of the items to be removed from a container "
+sorryRemIgnore = sorryIgnoreLocPrefPlur "The names of the items to be removed from a container"
 
 
 -----
@@ -1090,7 +1090,7 @@ sorryTwoWayTargetName cn s = T.concat [ "In a telepathic message to "
 
 
 sorryUnlinkIgnore :: Text
-sorryUnlinkIgnore = sorryIgnoreLocPrefPlur "The names of the items to be removed from a container "
+sorryUnlinkIgnore = sorryIgnoreLocPrefPlur "The names of the people with whom you would like to unlink"
 
 
 sorryUnlinkName :: Text -> Text

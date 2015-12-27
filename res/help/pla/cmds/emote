@@ -17,7 +17,7 @@ Your action may target one or more people in your current room. To specify a tar
 \qemote \l#e's\q leg twitches involuntarily as she laughs with gusto\d \r->\d [Hanako's leg twitches involuntarily as she laughs with gusto.]4`
 \qemote slowly turns her head to look directly at \l#r\qtaro\d \r->\d [Hanako slowly turns her head to look directly at Taro.]4`
 \qemote places her hand firmly on \l#r\qtaro\l's\q shoulder\d \r->\d [Hanako places her hand firmly on Taro's shoulder.]4`
-\qemote ignoring \l#r\qmnymph\q, \l#e\q takes \l#r\qtaro\l's\q hand and points east\d \r->\d [Ignoring the male nymph, Hanako takes Taro's hand and gestures eastward.]4`
+\qemote ignoring \l#r\qmnymph\q, \l#e\q takes \l#r\qtaro\l's\q hand and gestures eastward\d \r->\d [Ignoring the male nymph, Hanako takes Taro's hand and gestures eastward.]4`
 
 \uRULES\n
 In order to preserve the integrity of the virtual world along with the enjoyment of all, the following rules must be followed. Violation of these rules is grounds for discipline including banishment from CurryMUD.
