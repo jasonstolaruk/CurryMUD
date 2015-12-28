@@ -514,10 +514,10 @@ debugRegen (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] o
           multiWrapSend mq cols . descRegens $ ms
           logPlaExecArgs (prefixDebugCmd "regen") (pure a) i
       where
-        descRegens ms = map (uncurry3 (descRegen ms)) [ ("hp", calcRegenHpAmt, calcRegenHpDelay)
-                                                      , ("mp", calcRegenMpAmt, calcRegenMpDelay)
-                                                      , ("pp", calcRegenPpAmt, calcRegenPpDelay)
-                                                      , ("fp", calcRegenFpAmt, calcRegenFpDelay) ]
+        descRegens ms = map (uncurry3 . descRegen $ ms) [ ("hp", calcRegenHpAmt, calcRegenHpDelay)
+                                                        , ("mp", calcRegenMpAmt, calcRegenMpDelay)
+                                                        , ("pp", calcRegenPpAmt, calcRegenPpDelay)
+                                                        , ("fp", calcRegenFpAmt, calcRegenFpDelay) ]
         descRegen ms t calcAmt calcDelay = T.concat [ t
                                                     , ": "
                                                     , showText . calcAmt   targetId $ ms

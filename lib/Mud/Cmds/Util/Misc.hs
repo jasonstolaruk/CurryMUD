@@ -538,7 +538,7 @@ isPlaBanned banSing = isBanned banSing <$> (getDbTblRecs "ban_pla" :: IO [BanPla
 locateHelper :: MudState -> [Text] -> Id -> (Id, Text)
 locateHelper ms txts i = case getType i ms of
   RmType -> (i, commas txts)
-  _      -> maybe oops (uncurry (locateHelper ms)) $ searchInvs `mplus` searchEqs
+  _      -> maybe oops (uncurry . locateHelper $ ms) $ searchInvs `mplus` searchEqs
   where
     searchInvs = views invTbl (fmap (mkDescId "in"         ) . listToMaybe . IM.keys . IM.filter ( i `elem`)           ) ms
     searchEqs  = views eqTbl  (fmap (mkDescId "equipped by") . listToMaybe . IM.keys . IM.filter ((i `elem`) . M.elems)) ms

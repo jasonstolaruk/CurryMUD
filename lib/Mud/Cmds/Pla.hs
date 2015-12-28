@@ -275,7 +275,6 @@ npcRegularCmds = map (uncurry4 mkRegularCmd)
     , ("w",          go "w",         True,  cmdDescGoWest) ]
 
 
--- TODO: Add "show".
 npcPriorityAbbrevCmds :: [Cmd]
 npcPriorityAbbrevCmds = concatMap (uncurry5 mkPriorityAbbrevCmd)
     [ ("clear",     "c",   clear,      True,  cmdDescClear)
@@ -288,6 +287,8 @@ npcPriorityAbbrevCmds = concatMap (uncurry5 mkPriorityAbbrevCmd)
     , ("put",       "p",   putAction,  True,  cmdDescPut)
     , ("ready",     "r",   ready,      True,  cmdDescReady)
     , ("say",       "sa",  say,        True,  cmdDescSay)
+    , ("show",      "sh",  showAction, True,  "Show one or more items in your inventory and/or readied equipment to \
+                                              \another person.")
     , ("stats",     "st",  stats,      True,  cmdDescStats)
     , ("stop",      "sto", npcStop,    False, "Stop possessing.")
     , ("unready",   "un",  unready,    True,  cmdDescUnready)
@@ -313,7 +314,7 @@ admin :: ActionFun
 admin p@(NoArgs''     _) = adminList p
 admin p@(AdviseOneArg a) = advise p ["admin"] . adviceAdminNoMsg $ a
 admin (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsgs ->
-    logMsgs |#| let f = uncurry (logPla "admin") in mapM_ f
+    logMsgs |#| let f = uncurry . logPla $ "admin" in mapM_ f
   where
     helper ms =
         let SingleTarget { .. } = mkSingleTarget mq cols target "The name of the administrator you wish to message"
@@ -379,7 +380,7 @@ adminList p = patternMatchFail "adminList" [ showText p ]
 
 bars :: ActionFun
 bars (NoArgs i mq cols) = getState >>= \ms ->
-    let mkBars = map (uncurry (mkBar (calcBarLen cols))) . mkPointPairs i $ ms
+    let mkBars = map (uncurry . mkBar . calcBarLen $ cols) . mkPointPairs i $ ms
     in multiWrapSend mq cols mkBars >> logPlaExecArgs "bars" [] i
 bars (LowerNub i mq cols as) = getState >>= \ms ->
     let mkBars  = case second nub . partitionEithers . foldr f [] $ as of
@@ -388,7 +389,7 @@ bars (LowerNub i mq cols as) = getState >>= \ms ->
                     (x:xs, barTxts) -> barTxts ++ [""] ++ ((x <> " " <> hint) : xs)
         f a acc = (: acc) $ case filter ((a `T.isPrefixOf`) . fst) . mkPointPairs i $ ms of
           []      -> Left . sorryParseArg $ a
-          [match] -> Right . uncurry (mkBar (calcBarLen cols)) $ match
+          [match] -> Right . uncurry (mkBar . calcBarLen $ cols) $ match
           xs      -> patternMatchFail "bars f" [ showText xs ]
     in multiWrapSend mq cols mkBars >> logPlaExecArgs "bars" as i
   where
@@ -773,7 +774,7 @@ emote (WithArgs i mq cols as) = getState >>= \ms ->
               then case singleArgInvEqRm InRm target of
                 (InInv, _      ) -> sorry sorryEmoteTargetInInv
                 (InEq,  _      ) -> sorry sorryEmoteTargetInEq
-                (InRm,  target') -> case uncurry (resolveRmInvCoins i ms (pure target')) invCoins of
+                (InRm,  target') -> case uncurry (resolveRmInvCoins i ms . pure $ target') invCoins of
                   (_,                    [ Left [msg] ]) -> Left msg
                   (_,                    Right  _:_    ) -> sorry sorryEmoteTargetCoins
                   ([ Left  msg        ], _             ) -> Left msg
@@ -1599,7 +1600,7 @@ shufflePut :: Id
            -> ((GetEntsCoinsRes, Maybe Inv) -> Either Text Inv)
            -> (MudState, ([Text], [Broadcast], [Text]))
 shufflePut i ms d conName icir as invCoinsWithCon@(invWithCon, _) pcInvCoins f =
-    let (conGecrs, conMiss, conRcs) = uncurry (resolveEntCoinNames i ms (pure conName)) invCoinsWithCon
+    let (conGecrs, conMiss, conRcs) = uncurry (resolveEntCoinNames i ms . pure $ conName) invCoinsWithCon
     in if ()# conMiss && ()!# conRcs
       then sorry sorryPutInCoin
       else case f . head . zip conGecrs $ conMiss of
@@ -1694,7 +1695,7 @@ handleEgress i = liftIO getCurrentTime >>= \now -> do
         closePlaLog    i
         bcast bs
         bcastAdmins $ s <> " has left CurryMUD."
-        forM_ logMsgs $ uncurry (logPla "handleEgress")
+        forM_ logMsgs . uncurry . logPla $ "handleEgress"
         logNotice "handleEgress" . T.concat $ [ "player ", showText i, " ", parensQuote s, " has left CurryMUD." ]
   where
     informEgress = getState >>= \ms -> let d = serialize . mkStdDesig i ms $ DoCap in
@@ -2046,7 +2047,7 @@ shuffleRem :: Id
            -> ((GetEntsCoinsRes, Maybe Inv) -> Either Text Inv)
            -> (MudState, ([Text], [Broadcast], [Text]))
 shuffleRem i ms d conName icir as invCoinsWithCon@(invWithCon, _) f =
-    let (conGecrs, conMiss, conRcs) = uncurry (resolveEntCoinNames i ms (pure conName)) invCoinsWithCon
+    let (conGecrs, conMiss, conRcs) = uncurry (resolveEntCoinNames i ms . pure $ conName) invCoinsWithCon
     in if ()# conMiss && ()!# conRcs
       then sorry sorryRemCoin
       else case f . head . zip conGecrs $ conMiss of
@@ -2110,7 +2111,7 @@ say p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
           then case singleArgInvEqRm InRm target of
             (InInv, _      ) -> sorry sorrySayInInv
             (InEq,  _      ) -> sorry sorrySayInEq
-            (InRm,  target') -> case uncurry (resolveRmInvCoins i ms (pure target')) invCoins of
+            (InRm,  target') -> case uncurry (resolveRmInvCoins i ms . pure $ target') invCoins of
               (_,                    [ Left [msg] ]) -> sorry msg
               (_,                    Right  _:_    ) -> sorry sorrySayCoins
               ([ Left  msg        ], _             ) -> sorry msg
@@ -2227,8 +2228,8 @@ helperSettings i ms a (T.breakOn "=" -> (name, T.tail -> value)) =
 
 
 showAction :: ActionFun
-showAction p@AdviseNoArgs     = advise p ["show"] adviceShowNoArgs
-showAction p@(AdviseOneArg a) = advise p ["show"] . adviceShowNoName $ a
+showAction p@AdviseNoArgs       = advise p ["show"] adviceShowNoArgs
+showAction p@(AdviseOneArg a)   = advise p ["show"] . adviceShowNoName $ a
 showAction (Lower i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
   then wrapSend mq cols . sorryIncog $ "show"
   else let eqMap      = getEqMap    i ms
@@ -2237,13 +2238,13 @@ showAction (Lower i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
        in if
          | ()# eqMap && ()# invCoins -> wrapSend mq cols dudeYou'reScrewed
          | ()# rmInvCoins            -> wrapSend mq cols sorryNoOneHere
-         | otherwise                 -> case singleArgInvEqRm InRm (last as) of
+         | otherwise                 -> case singleArgInvEqRm InRm . last $ as of
            (InInv, _     ) -> wrapSend mq cols $ sorryShowTarget "item in your inventory"         <> tryThisInstead
            (InEq,  _     ) -> wrapSend mq cols $ sorryShowTarget "item in your readied equipment" <> tryThisInstead
            (InRm,  target) ->
              let argsWithoutTarget                    = init $ case as of [_, _] -> as
                                                                           _      -> (++ pure target) . nub . init $ as
-                 (targetGecrs, targetMiss, targetRcs) = uncurry (resolveEntCoinNames i ms (pure target)) rmInvCoins
+                 (targetGecrs, targetMiss, targetRcs) = uncurry (resolveEntCoinNames i ms . pure $ target) rmInvCoins
              in if ()# targetMiss && ()!# targetRcs
                then wrapSend mq cols . sorryShowTarget $ "coin"
                else case procGecrMisRm . head . zip targetGecrs $ targetMiss of

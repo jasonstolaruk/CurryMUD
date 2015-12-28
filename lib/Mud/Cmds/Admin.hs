@@ -604,7 +604,7 @@ adminHost (LowerNub i mq cols as) = do
     ms          <- getState
     (now, zone) <- (,) <$> liftIO getCurrentTime <*> liftIO getCurrentTimeZone
     let helper target = let notFound = pure . sorryPCName $ target
-                            found    = uncurry (mkHostReport ms now zone)
+                            found    = uncurry . mkHostReport ms now $ zone
                         in findFullNameForAbbrev target (mkAdminPlaIdSingList ms) |&| maybe notFound found
     multiWrapSend mq cols . intercalate [""] . map (helper . capitalize . T.toLower) $ as
     logPlaExec (prefixAdminCmd "host") i
@@ -698,7 +698,7 @@ adminMsg :: ActionFun
 adminMsg p@AdviseNoArgs     = advise p [ prefixAdminCmd "message" ] adviceAMsgNoArgs
 adminMsg p@(AdviseOneArg a) = advise p [ prefixAdminCmd "message" ] . adviceAMsgNoMsg $ a
 adminMsg (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsgs ->
-    logMsgs |#| let f = uncurry (logPla "adminMsg") in mapM_ f
+    logMsgs |#| let f = uncurry . logPla $ "adminMsg" in mapM_ f
   where
     helper ms =
         let SingleTarget { .. } = mkSingleTarget mq cols target "The PC name of the player you wish to message"
@@ -780,7 +780,7 @@ adminPeep (LowerNub i mq cols as) = do
     (msgs, unzip -> (logMsgsSelf, logMsgsOthers)) <- modifyState helper
     multiWrapSend mq cols msgs
     logPla "adminPeep" i . (<> ".") . slashes $ logMsgsSelf
-    forM_ logMsgsOthers $ uncurry (logPla "adminPeep")
+    forM_ logMsgsOthers . uncurry . logPla $ "adminPeep"
   where
     helper ms =
         let s     = getSing i ms
