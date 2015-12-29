@@ -481,7 +481,7 @@ examineCon i ms = let c = getCon i ms in [ "Is clothing: " <> c^.isCloth.to show
 examineEnt :: ExamineHelper
 examineEnt i ms = let e = getEnt i ms in [ "Name: "         <> e^.sing
                                          , "Description: "  <> e^.entDesc
-                                         , "Entity flags: " <> (commas . dropEmpties . descFlags $ e) ]
+                                         , "Entity flags: " <> (commas . dropBlanks . descFlags $ e) ]
   where
     descFlags e | e^.entFlags == zeroBits = none
                 | otherwise               = let pairs = [(isInvis, "invisible")]
@@ -541,7 +541,7 @@ examinePla :: ExamineHelper
 examinePla i ms = let p = getPla i ms
                   in [ "Host: "              <> p^.currHostName.to (noneOnNull . T.pack)
                      , "Connect time: "      <> p^.connectTime .to (maybe none showText)
-                     , "Player flags: "      <> (commas . dropEmpties . descFlags $ p)
+                     , "Player flags: "      <> (commas . dropBlanks . descFlags $ p)
                      , "Columns: "           <> p^.columns     .to showText
                      , "Lines: "             <> p^.pageLines   .to showText
                      , "Peepers: "           <> p^.peepers     .to (noneOnNull . helper)
@@ -566,7 +566,7 @@ examinePla i ms = let p = getPla i ms
 examineRm :: ExamineHelper
 examineRm i ms = let r = getRm i ms in [ "Name: "        <> r^.rmName
                                        , "Description: " <> r^.rmDesc
-                                       , "Room flags: "  <> (commas . dropEmpties . descFlags $ r)
+                                       , "Room flags: "  <> (commas . dropBlanks . descFlags $ r)
                                        , "Links: "       <> views rmLinks (noneOnNull . commas . map helper) r ]
   where
     descFlags r | r^.rmFlags == zeroBits = none
