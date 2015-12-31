@@ -46,6 +46,8 @@ module Mud.Cmds.Msgs.Sorry  ( sorryAdminChanSelf
                             , sorryGetInInv
                             , sorryGetNothingHere
                             , sorryGetType
+                            , sorryGiveInEq
+                            , sorryGiveInRm
                             , sorryGoExit
                             , sorryGoParseDir
                             , sorryHelpName
@@ -374,7 +376,7 @@ sorryDisconnectIgnore = sorryIgnoreLocPrefPlur "The names of the people you woul
 
 
 sorryDropInEq :: Text
-sorryDropInEq = butCan't "drop items in your readied equipment. Please unready the item(s) first."
+sorryDropInEq = butCan't "drop an item in your readied equipment. Please unready the item(s) first."
 
 
 sorryDropInRm :: Text
@@ -495,6 +497,17 @@ sorryGetNothingHere = "You don't see anything here to pick up."
 
 sorryGetType :: Text -> Text
 sorryGetType t = can't $ "pick up " <> t <> "."
+
+
+-----
+
+
+sorryGiveInEq :: Text
+sorryGiveInEq = butCan't "give an item in your readied equipment. Please unready the item(s) first."
+
+
+sorryGiveInRm :: Text
+sorryGiveInRm = butCan't "give an item that in your current room. Please pick up the item(s) first."
 
 
 -----
@@ -822,11 +835,11 @@ sorryPutInCoin = can't "put something inside a coin."
 
 
 sorryPutInEq :: Text
-sorryPutInEq = butCan't "put items in your readied equipment into a container. Please unready the item(s) first."
+sorryPutInEq = butCan't "put an item in your readied equipment into a container. Please unready the item(s) first."
 
 
 sorryPutInRm :: Text
-sorryPutInRm = butCan't "put items in your current room into a container. Please pick up the item(s) first."
+sorryPutInRm = butCan't "put item in your current room into a container. Please pick up the item(s) first."
 
 
 sorryPutInsideSelf :: Sing -> Text
@@ -888,7 +901,7 @@ sorryReadyInEq = can't "ready an item that's already in your readied equipment."
 
 
 sorryReadyInRm :: Text
-sorryReadyInRm = butCan't "ready items in your current room. Please pick up the item(s) first."
+sorryReadyInRm = butCan't "ready an item in your current room. Please pick up the item(s) first."
 
 
 sorryReadyRol :: Sing -> RightOrLeft -> Text
@@ -1104,11 +1117,11 @@ sorryUnreadyCoins = can't "unready coins."
 
 
 sorryUnreadyInInv :: Text
-sorryUnreadyInInv = can't "unready items in your inventory."
+sorryUnreadyInInv = can't "unready an item in your inventory."
 
 
 sorryUnreadyInRm :: Text
-sorryUnreadyInRm = can't "unready items in your current room."
+sorryUnreadyInRm = can't "unready an item in your current room."
 
 
 -----

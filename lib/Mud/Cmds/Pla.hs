@@ -197,6 +197,7 @@ priorityAbbrevCmds = concatMap (uncurry5 mkPriorityAbbrevCmd)
     , ("emote",      "em",  emote,      True, cmdDescEmote)
     , ("exits",      "ex",  exits,      True, cmdDescExits)
     , ("get",        "g",   getAction,  True, cmdDescGet)
+    , ("give",       "gi",  give,       True, cmdDescGive)
     , ("help",       "h",   help,       True, "Get help on one or more commands or topics.")
     , ("intro",      "in",  intro,      True, "Display a list of the people who have introduced themselves to you, or \
                                               \introduce yourself to one or more people.")
@@ -282,6 +283,7 @@ npcPriorityAbbrevCmds = concatMap (uncurry5 mkPriorityAbbrevCmd)
     , ("emote",     "em",  emote,      True,  cmdDescEmote)
     , ("exits",     "ex",  exits,      True,  cmdDescExits)
     , ("get",       "g",   getAction,  True,  cmdDescGet)
+    , ("give",      "gi",  give,       True,  cmdDescGive)
     , ("inventory", "i",   inv,        True,  cmdDescInv)
     , ("look",      "l",   look,       True,  cmdDescLook)
     , ("put",       "p",   putAction,  True,  cmdDescPut)
@@ -879,6 +881,29 @@ getAction p@(LowerNub' i         as) = genericAction p helper "get"
           then (ms'', (dropBlanks $ [ sorryInInv, sorryInEq ] ++ toSelfs', bs', logMsgs'))
           else (ms,   (pure sorryGetNothingHere,                           [],  []      ))
 getAction p = patternMatchFail "getAction" [ showText p ]
+
+
+-----
+
+
+-- TODO: Help.
+give :: ActionFun
+give p@AdviseNoArgs     = advise p ["give"] adviceGiveNoArgs
+give p@(AdviseOneArg a) = advise p ["give"] . adviceGiveNoName $ a
+give p@(Lower' i as   ) = genericAction p helper "put"
+  where
+    helper ms =
+        let b@LastArgIsTargetBindings { targetArg } = mkLastArgIsTargetBindings i ms as
+            f                                       = case singleArgInvEqRm InInv targetArg of
+              (InInv, target) -> shuffleGive i ms b target
+              (InEq,  _     ) -> genericSorry ms sorryGiveInEq
+              (InRm,  _     ) -> genericSorry ms sorryGiveInRm
+        in withEmptyInvChecks ms b sorryNoOneHere f
+give p = patternMatchFail "give" [ showText p ]
+
+
+shuffleGive :: Id -> MudState -> LastArgIsTargetBindings -> Text -> GenericRes
+shuffleGive _ _ _ _ = undefined
 
 
 -----
@@ -1572,15 +1597,13 @@ putAction p@AdviseNoArgs     = advise p ["put"] advicePutNoArgs
 putAction p@(AdviseOneArg a) = advise p ["put"] . advicePutNoCon $ a
 putAction p@(Lower' i as)    = genericAction p helper "put"
   where
-    helper ms | (d, pcInvCoins, rmInvCoins, conName, argsWithoutCon) <- mkPutRemoveBindings i ms as =
-      if ()!# pcInvCoins
-        then case singleArgInvEqRm InInv conName of
-          (InInv, conName') -> shufflePut i ms d conName' False argsWithoutCon pcInvCoins pcInvCoins procGecrMisMobInv
-          (InEq,  _       ) -> (ms, (pure . sorryConInEq $ Put, [], []))
-          (InRm,  conName') -> if ()!# fst rmInvCoins
-            then shufflePut i ms d conName' True argsWithoutCon rmInvCoins pcInvCoins procGecrMisRm
-            else (ms, (pure sorryNoConHere,        [], []))
-        else     (ms, (pure dudeYourHandsAreEmpty, [], []))
+    helper ms =
+      let b@LastArgIsTargetBindings { .. } = mkLastArgIsTargetBindings i ms as
+          f                                = case singleArgInvEqRm InInv targetArg of
+            (InInv, target) -> shufflePut i ms srcDesig target False otherArgs srcInvCoins srcInvCoins procGecrMisMobInv
+            (InEq,  _     ) -> genericSorry ms . sorryConInEq $ Put
+            (InRm,  target) -> shufflePut i ms srcDesig target True  otherArgs rmInvCoins  srcInvCoins procGecrMisRm
+      in withEmptyInvChecks ms b sorryNoConHere f
 putAction p = patternMatchFail "putAction" [ showText p ]
 
 
@@ -1598,20 +1621,20 @@ shufflePut :: Id
            -> (InvWithCon, CoinsWithCon)
            -> (PCInv, PCCoins)
            -> ((GetEntsCoinsRes, Maybe Inv) -> Either Text Inv)
-           -> (MudState, ([Text], [Broadcast], [Text]))
-shufflePut i ms d conName icir as invCoinsWithCon@(invWithCon, _) pcInvCoins f =
+           -> GenericRes
+shufflePut i ms d conName icir as invCoinsWithCon@(invWithCon, _) mobInvCoins f =
     let (conGecrs, conMiss, conRcs) = uncurry (resolveEntCoinNames i ms . pure $ conName) invCoinsWithCon
     in if ()# conMiss && ()!# conRcs
-      then sorry sorryPutInCoin
+      then genericSorry ms sorryPutInCoin
       else case f . head . zip conGecrs $ conMiss of
-        Left  msg     -> sorry msg
+        Left  msg     -> genericSorry ms msg
         Right [conId] | (conSing, conType) <- (uncurry getSing *** uncurry getType) . dup $ (conId, ms) ->
             if conType /= ConType
-              then sorry . sorryConHelper i ms conId $ conSing
+              then genericSorry ms . sorryConHelper i ms conId $ conSing
               else let (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv as
                        sorryInEq = inEqs |!| sorryPutInEq
                        sorryInRm = inRms |!| sorryPutInRm
-                       (gecrs, miss, rcs)  = uncurry (resolveEntCoinNames i ms inInvs) pcInvCoins
+                       (gecrs, miss, rcs)  = uncurry (resolveEntCoinNames i ms inInvs) mobInvCoins
                        eiss                = zipWith (curry procGecrMisMobInv) gecrs miss
                        ecs                 = map procReconciledCoinsMobInv rcs
                        mnom                = mkMaybeNthOfM ms icir conId conSing invWithCon
@@ -1622,9 +1645,7 @@ shufflePut i ms d conName icir as invCoinsWithCon@(invWithCon, _) pcInvCoins f =
                                                               (ms^.coinsTbl, toSelfs, bs, logMsgs)
                                                               ecs
                    in (ms & invTbl .~ it & coinsTbl .~ ct, (dropBlanks $ [ sorryInEq, sorryInRm ] ++ toSelfs', bs', logMsgs'))
-        Right {} -> sorry sorryPutExcessCon
-  where
-    sorry = (ms, ) . (, [], []) . pure
+        Right {} -> genericSorry ms sorryPutExcessCon
 
 
 -----
@@ -1782,7 +1803,7 @@ ready p@(LowerNub' i as) = genericAction p helper "ready"
           then (ms & eqTbl .~ et & invTbl .~ it, ( dropBlanks $ [ sorryInEq, sorryInRm, sorryCoins ] ++ toSelfs
                                                  , bs
                                                  , logMsgs ))
-          else (ms, (pure dudeYourHandsAreEmpty, [], []))
+          else genericSorry ms dudeYourHandsAreEmpty
 ready p = patternMatchFail "ready" [ showText p ]
 
 
@@ -2025,15 +2046,13 @@ remove p@AdviseNoArgs     = advise p ["remove"] adviceRemoveNoArgs
 remove p@(AdviseOneArg a) = advise p ["remove"] . adviceRemoveNoCon $ a
 remove p@(Lower' i as)    = genericAction p helper "remove"
   where
-    helper ms | (d, pcInvCoins, rmInvCoins, conName, argsWithoutCon) <- mkPutRemoveBindings i ms as =
-        case singleArgInvEqRm InInv conName of
-          (InInv, conName') -> shuffleRem i ms d conName' False argsWithoutCon pcInvCoins procGecrMisMobInv
-          (InEq,  _       ) -> sorry . sorryConInEq $ Rem
-          (InRm,  conName') -> if ()!# fst rmInvCoins
-            then shuffleRem i ms d conName' True argsWithoutCon rmInvCoins procGecrMisRm
-            else sorry sorryNoConHere
-      where
-        sorry = (ms, ) . (, [], []) . pure
+    helper ms =
+      let b@LastArgIsTargetBindings { .. } = mkLastArgIsTargetBindings i ms as
+          f                                = case singleArgInvEqRm InInv targetArg of
+            (InInv, target) -> shuffleRem i ms srcDesig target False otherArgs srcInvCoins procGecrMisMobInv
+            (InEq,  _     ) -> genericSorry ms . sorryConInEq $ Put
+            (InRm,  target) -> shuffleRem i ms srcDesig target True  otherArgs rmInvCoins  procGecrMisRm
+      in withEmptyInvChecks ms b sorryNoConHere f
 remove p = patternMatchFail "remove" [ showText p ]
 
 
@@ -2045,16 +2064,16 @@ shuffleRem :: Id
            -> Args
            -> (InvWithCon, CoinsWithCon)
            -> ((GetEntsCoinsRes, Maybe Inv) -> Either Text Inv)
-           -> (MudState, ([Text], [Broadcast], [Text]))
+           -> GenericRes
 shuffleRem i ms d conName icir as invCoinsWithCon@(invWithCon, _) f =
     let (conGecrs, conMiss, conRcs) = uncurry (resolveEntCoinNames i ms . pure $ conName) invCoinsWithCon
     in if ()# conMiss && ()!# conRcs
-      then sorry sorryRemCoin
+      then genericSorry ms sorryRemCoin
       else case f . head . zip conGecrs $ conMiss of
-        Left  msg     -> sorry msg
+        Left  msg     -> genericSorry ms msg
         Right [conId] | (conSing, conType) <- (uncurry getSing *** uncurry getType) . dup $ (conId, ms) ->
             if conType /= ConType
-              then sorry . sorryConHelper i ms conId $ conSing
+              then genericSorry ms . sorryConHelper i ms conId $ conSing
               else let (as', guessWhat)    = stripLocPrefs
                        invCoinsInCon       = getInvCoins conId ms
                        (gecrs, miss, rcs)  = uncurry (resolveEntCoinNames i ms as') invCoinsInCon
@@ -2069,10 +2088,9 @@ shuffleRem i ms d conName icir as invCoinsWithCon@(invWithCon, _) f =
                                                               ecs
                    in if ()!# invCoinsInCon
                      then (ms & invTbl .~ it & coinsTbl .~ ct, (guessWhat ++ toSelfs', bs', logMsgs'))
-                     else sorry . sorryRemEmpty $ conSing
-        Right {} -> sorry sorryRemExcessCon
+                     else genericSorry ms . sorryRemEmpty $ conSing
+        Right {} -> genericSorry ms sorryRemExcessCon
   where
-    sorry         = (ms, ) . (, [], []) . pure
     stripLocPrefs = onTrue (any hasLocPref as) g (as, [])
     g pair        = pair & _1 %~ map stripLocPref
                          & _2 .~ pure sorryRemIgnore
@@ -2626,7 +2644,7 @@ unready p@(LowerNub' i as) = genericAction p helper "unready"
           then (ms & eqTbl .~ et & invTbl .~ it, ( dropBlanks $ [ sorryInInv, sorryInRm, sorryCoins ] ++ toSelfs
                                                  , bs
                                                  , logMsgs ))
-          else (ms, (pure dudeYou'reNaked, [], []))
+          else genericSorry ms dudeYou'reNaked
 unready p = patternMatchFail "unready" [ showText p ]
 
 

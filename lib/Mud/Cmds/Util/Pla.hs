@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleContexts, LambdaCase, MonadComprehensions, MultiWayIf, OverloadedStrings, PatternSynonyms, RankNTypes, RecordWildCards, TupleSections, ViewPatterns #-}
+{-# LANGUAGE FlexibleContexts, LambdaCase, MonadComprehensions, MultiWayIf, NamedFieldPuns, OverloadedStrings, PatternSynonyms, RankNTypes, RecordWildCards, TupleSections, ViewPatterns #-}
 
 -- This module contains helper functions used by multiple functions in "Mud.Cmds.Pla", as well as helper functions used
 -- by both "Mud.Cmds.Pla" and "Mud.Cmds.ExpCmds".
@@ -12,6 +12,7 @@ module Mud.Cmds.Util.Pla ( armSubToSlot
                          , fillerToSpcs
                          , findAvailSlot
                          , genericAction
+                         , genericSorry
                          , getMatchingChanWithName
                          , getRelativePCName
                          , hasFp
@@ -41,9 +42,9 @@ module Mud.Cmds.Util.Pla ( armSubToSlot
                          , mkEqDesc
                          , mkExitsSummary
                          , mkInvCoinsDesc
+                         , mkLastArgIsTargetBindings
                          , mkLastArgWithNubbedOthers
                          , mkMaybeNthOfM
-                         , mkPutRemoveBindings
                          , mkReadyMsgs
                          , moveReadiedItem
                          , notFoundSuggestAsleeps
@@ -51,7 +52,8 @@ module Mud.Cmds.Util.Pla ( armSubToSlot
                          , putOnMsgs
                          , resolveMobInvCoins
                          , resolveRmInvCoins
-                         , sorryConHelper ) where
+                         , sorryConHelper
+                         , withEmptyInvChecks ) where
 
 import Mud.Cmds.Msgs.Dude
 import Mud.Cmds.Msgs.Misc
@@ -87,7 +89,7 @@ import qualified Mud.Util.Misc as U (patternMatchFail)
 import Control.Arrow ((***), first)
 import Control.Lens (Getter, _1, _2, _3, _4, _5, at, both, each, to, view, views)
 import Control.Lens.Operators ((%~), (&), (.~), (<>~), (?~), (^.))
-import Control.Monad ((>=>), guard)
+import Control.Monad ((>=>), guard, mplus)
 import Control.Monad.IO.Class (liftIO)
 import Data.Char (isLower)
 import Data.Function (on)
@@ -224,7 +226,7 @@ fillerToSpcs = T.replace (T.singleton indentFiller) " "
 
 
 genericAction :: ActionParams
-              -> (MudState -> (MudState, ([Text], [Broadcast], [Text])))
+              -> (MudState -> GenericRes)
               -> Text
               -> MudStack ()
 genericAction ActionParams { .. } helper fn = helper |&| modifyState >=> \(toSelfs, bs, logMsgs) -> do
@@ -232,6 +234,13 @@ genericAction ActionParams { .. } helper fn = helper |&| modifyState >=> \(toSel
     multiWrapSend plaMsgQueue plaCols [ parseDesig myId ms msg | msg <- toSelfs ]
     bcastIfNotIncogNl myId bs
     logMsgs |#| logPlaOut fn myId
+
+
+-----
+
+
+genericSorry :: MudState -> Text -> GenericRes
+genericSorry ms = (ms, ) . (, [], []) . pure
 
 
 -----
@@ -798,23 +807,24 @@ mkMaybeNthOfM ms icir conId conSing invWithCon = guard icir >> return helper
 -----
 
 
+mkLastArgIsTargetBindings :: Id -> MudState -> Args -> LastArgIsTargetBindings
+mkLastArgIsTargetBindings i ms as | (lastArg, others) <- mkLastArgWithNubbedOthers as =
+    LastArgIsTargetBindings { srcDesig    = mkStdDesig  i ms DoCap
+                            , srcInvCoins = getInvCoins i ms
+                            , rmInvCoins  = first (i `delete`) . getMobRmNonIncogInvCoins i $ ms
+                            , targetArg   = lastArg
+                            , otherArgs   = others }
+
+
+-----
+
+
 mkLastArgWithNubbedOthers :: Args -> (Text, Args)
 mkLastArgWithNubbedOthers as = let lastArg = last as
                                    otherArgs = init $ case as of
                                      [_, _] -> as
                                      _      -> (++ pure lastArg) . nub . init $ as
                                in (lastArg, otherArgs)
-
-
------
-
-
-mkPutRemoveBindings :: Id -> MudState -> Args -> (Desig, (Inv, Coins), (Inv, Coins), ConName, Args)
-mkPutRemoveBindings i ms as = let d                 = mkStdDesig  i ms DoCap
-                                  pcInvCoins        = getInvCoins i ms
-                                  rmInvCoins        = first (i `delete`) . getMobRmNonIncogInvCoins i $ ms
-                                  (conName, others) = mkLastArgWithNubbedOthers as
-                              in (d, pcInvCoins, rmInvCoins, conName, others)
 
 
 -----
@@ -896,3 +906,17 @@ sorryConHelper :: Id -> MudState -> Id -> Sing -> Text
 sorryConHelper i ms conId conSing
   | isNpcPC conId ms = sorryCon . parseDesig i ms . serialize . mkStdDesig conId ms $ Don'tCap
   | otherwise        = sorryCon conSing
+
+
+-----
+
+
+withEmptyInvChecks :: MudState
+                   -> LastArgIsTargetBindings
+                   -> Text
+                   -> GenericRes
+                   -> GenericRes
+withEmptyInvChecks ms LastArgIsTargetBindings { srcInvCoins, rmInvCoins } sorry f = maybe f (genericSorry ms) res
+  where
+    res = ( ()# srcInvCoins |?| Just dudeYourHandsAreEmpty
+          , ()# rmInvCoins  |?| Just sorry) |&| uncurry mplus

@@ -41,6 +41,10 @@ cmdDescGet :: Text
 cmdDescGet = "Pick up one or more items."
 
 
+cmdDescGive :: Text
+cmdDescGive = "Give one or more items to someone else."
+
+
 cmdDescGoDown :: Text
 cmdDescGoDown = "Go down."
 

@@ -60,6 +60,8 @@ module Mud.Cmds.Msgs.Advice ( adviceAAnnounceNoArgs
                             , adviceEtcInTwoWay
                             , adviceExpCmdExcessArgs
                             , adviceGetNoArgs
+                            , adviceGiveNoArgs
+                            , adviceGiveNoName
                             , adviceLeaveNoArgs
                             , adviceNewChanNoArgs
                             , advicePutNoArgs
@@ -482,6 +484,18 @@ adviceGetNoArgs :: Text
 adviceGetNoArgs = "Please specify one or more items to pick up, as in " <>
                   colorWith quoteColor "get sword"                      <>
                   "."
+
+
+adviceGiveNoArgs :: Text
+adviceGiveNoArgs = "Please specify one or more items to give followed by the name of a person, as in " <>
+                   colorWith quoteColor "give ring taro"                                               <>
+                   "."
+
+
+adviceGiveNoName :: Text -> Text
+adviceGiveNoName a = "Please also provide the name of a person, as in " <>
+                     colorWith quoteColor ("give " <> a <> " taro")     <>
+                     "."
 
 
 adviceLeaveNoArgs :: Text

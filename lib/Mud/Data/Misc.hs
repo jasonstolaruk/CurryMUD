@@ -23,6 +23,7 @@ module Mud.Data.Misc ( Action(..)
                      , ExpCmdName
                      , ExpCmdType(..)
                      , fromRol
+                     , GenericRes
                      , getEntFlag
                      , GetEntsCoinsRes(..)
                      , GetOrDrop(..)
@@ -33,6 +34,7 @@ module Mud.Data.Misc ( Action(..)
                      , IdSingTypeDesig(..)
                      , Index
                      , InInvEqRm(..)
+                     , LastArgIsTargetBindings(..)
                      , LoggedInOrOut(..)
                      , Lvl
                      , LvlExp
@@ -512,6 +514,12 @@ instance Show EquipInvLookCmd where
 -----
 
 
+type GenericRes = (MudState, ([Text], [Broadcast], [Text]))
+
+
+-----
+
+
 type Amount = Int
 type Index  = Int
 
@@ -563,6 +571,16 @@ data IdSingTypeDesig = IdSingTypeDesig { theId    :: Id
 
 
 data InInvEqRm = InInv | InEq | InRm deriving Show
+
+
+-----
+
+
+data LastArgIsTargetBindings = LastArgIsTargetBindings { srcDesig    :: Desig
+                                                       , srcInvCoins :: (Inv, Coins)
+                                                       , rmInvCoins  :: (Inv, Coins)
+                                                       , targetArg   :: Text
+                                                       , otherArgs   :: Args }
 
 
 -----

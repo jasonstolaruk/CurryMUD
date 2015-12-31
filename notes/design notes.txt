@@ -47,7 +47,7 @@ Have one pool of points go towards attributes, and an entirely separate pool of 
 "Warning: don't have skills or attributes that affect how quickly characters learn skills. If you do, players will max them out at the first opportunity." p.367
 
 If a character's crafting skill increases on the basis of use, then players are likely to create many items solely so that their crafting skill will rise, leading to a severe over-production of goods. p.565
-Consider awarding experience points to crafters when someone buys their goods. p.368
+Award experience points to crafters when someone buys their goods. p.368
 
 Players who want to craft items must pay dues to a merchants guild. By paying dues, they gain access to the raw materials needed to construct items. The items that a character can craft depend on the character's skills.
 
@@ -142,7 +142,7 @@ Have an in-game calendar.
 Have in-game mail and BBS. Have a special BBS dedicated to OOC topics.
 
 Recommend that players use an external text editor with spell checking for composing multi-line input.
-The MUD could it self check spelling...
+The MUD could itself check spelling...
 
 Make a library or similar area where players may read, for example, the history and backstory of the virtual world.
 A museum-like facility could fill this role. There could be a statue for each race and god, along with a description on a placard. Refer to the Pantheon in "City Sites."
@@ -371,8 +371,6 @@ Some spells can hit more than one mobile.
 ==========
 
 QUESTIONS:
-
-Can administrators/wizards arbitrarily take control of NPCs? p.294
 
 How can the game be tailored to the visually impaired?
 This question is best answered by the actual community of visually impaired players.
