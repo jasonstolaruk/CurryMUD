@@ -88,7 +88,7 @@ import Prelude hiding (pi)
 import qualified Mud.Misc.Logging as L (logPla, logPlaOut)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
-import Control.Arrow ((***), first)
+import Control.Arrow ((***), first, second)
 import Control.Lens (Getter, _1, _2, _3, _4, _5, at, both, each, to, view, views)
 import Control.Lens.Operators ((%~), (&), (.~), (<>~), (?~), (^.))
 import Control.Monad ((>=>), guard, mplus)
@@ -354,7 +354,7 @@ helperGetDropEitherCoins i d god fi ti (ms, toSelfs, bs, logMsgs) ecs =
   where
     helper a = \case
       Left  msgs -> a & _2 <>~ msgs
-      Right c    -> let (can, can't) = case god of Get  -> partitionByEnc c
+      Right c    -> let (can, can't) = case god of Get  -> partitionCoinsByEnc i ms c
                                                    Drop -> (c, mempty)
                         toSelfs'     = mkGetDropCoinsDescsSelf god can
                     in a & _1.coinsTbl.ind fi %~  (<> negateCoins can)
@@ -362,21 +362,24 @@ helperGetDropEitherCoins i d god fi ti (ms, toSelfs, bs, logMsgs) ecs =
                          & _2                 <>~ toSelfs' ++ mkCan'tGetCoinsDesc can't
                          & _3                 <>~ toSelfs'
                          & _4                 <>~ can
-      where
-        partitionByEnc c = let maxEnc           = calcMaxEnc i ms
-                               w                = calcWeight i ms
-                               noOfCoins        = sum . coinsToList $ c
-                               totalCoinsWeight = noOfCoins * coinWeight
-                           in if w + totalCoinsWeight <= maxEnc
-                             then (c, mempty)
-                             else let availWeight  = maxEnc - w
-                                      canNoOfCoins = availWeight `quot` coinWeight
-                                  in mkCanCan't c canNoOfCoins
-        mkCanCan't (Coins (c, 0, 0)) n = (Coins (n, 0, 0), Coins (c - n, 0,     0    ))
-        mkCanCan't (Coins (0, s, 0)) n = (Coins (0, n, 0), Coins (0,     s - n, 0    ))
-        mkCanCan't (Coins (0, 0, g)) n = (Coins (0, 0, n), Coins (0,     0,     g - n))
-        mkCanCan't c                 n = patternMatchFail "helperGetDropEitherCoins mkCanCan't" [ showText c
-                                                                                                , showText n ]
+
+
+partitionCoinsByEnc :: Id -> MudState -> Coins -> (Coins, Coins)
+partitionCoinsByEnc i ms coins = let maxEnc           = calcMaxEnc i ms
+                                     w                = calcWeight i ms
+                                     noOfCoins        = sum . coinsToList $ coins
+                                     totalCoinsWeight = noOfCoins * coinWeight
+                                 in if w + totalCoinsWeight <= maxEnc
+                                   then (coins, mempty)
+                                   else let availWeight  = maxEnc - w
+                                            canNoOfCoins = availWeight `quot` coinWeight
+                                         in mkCanCan't coins canNoOfCoins
+  where
+    mkCanCan't (Coins (c, 0, 0)) n = (Coins (n, 0, 0), Coins (c - n, 0,     0    ))
+    mkCanCan't (Coins (0, s, 0)) n = (Coins (0, n, 0), Coins (0,     s - n, 0    ))
+    mkCanCan't (Coins (0, 0, g)) n = (Coins (0, 0, n), Coins (0,     0,     g - n))
+    mkCanCan't c                 n = patternMatchFail "helperGetDropEitherCoins mkCanCan't" [ showText c
+                                                                                            , showText n ]
 
 
 mkGetDropCoinsDescOthers :: Id -> Desig -> GetOrDrop -> Coins -> [Broadcast]
@@ -418,7 +421,7 @@ helperGetEitherInv :: Id
 helperGetEitherInv i d fi ti a@(ms, _, _, _) = \case
   Left  msg                              -> a & _2 <>~ pure msg
   Right (sortByType -> (npcPCs, others)) ->
-    let (_, cans, can'ts) = foldl' (partitionByEnc (calcMaxEnc i ms)) (calcWeight i ms, [], []) others
+    let (_, cans, can'ts) = foldl' (partitionInvByEnc ms . calcMaxEnc i $ ms) (calcWeight i ms, [], []) others
         (toSelfs, bs    ) = mkGetDropInvDescs i ms d Get cans
     in a & _1.invTbl.ind fi %~  (\\ cans)
          & _1.invTbl.ind ti %~  (sortInv ms . (++ cans))
@@ -433,9 +436,12 @@ helperGetEitherInv i d fi ti a@(ms, _, _, _) = \case
                                                                     NpcType -> _1
                                                                     _       -> _2
                              in sorted & lens %~ (targetId :)
-    partitionByEnc maxEnc acc@(w, _, _) targetId = let w' = w + calcWeight targetId ms in
-        w' <= maxEnc ? (acc & _1 .~ w' & _2 <>~ pure targetId) :? (acc & _3 <>~ pure targetId)
     sorryType targetId = sorryGetType . serialize . mkStdDesig targetId ms $ Don'tCap
+
+
+partitionInvByEnc :: MudState -> Int -> (Int, Inv, Inv) -> Id -> (Int, Inv, Inv)
+partitionInvByEnc ms maxEnc acc@(w, _, _) targetId = let w' = w + calcWeight targetId ms in
+    w' <= maxEnc ? (acc & _1 .~ w' & _2 <>~ pure targetId) :? (acc & _3 <>~ pure targetId)
 
 
 mkCan'tGetInvDescs :: Id -> MudState -> Inv -> [Text]
@@ -449,28 +455,91 @@ mkCan'tGetInvDescs i ms = map helper . mkNameCountBothList i ms
 
 
 helperGiveEitherCoins :: Id
-                      -> MudState
                       -> Desig
                       -> ToId
-                      -> ToSing
                       -> GenericIntermediateRes
                       -> [Either [Text] Coins]
                       -> GenericIntermediateRes
-helperGiveEitherCoins _ _ _ _ _ _ _ = undefined
+helperGiveEitherCoins i d targetId (ms, toSelfs, bs, logMsgs) ecs =
+    let targetDesig                         = serialize . mkStdDesig targetId ms $ Don'tCap
+        (ms', toSelfs', logMsgs', canCoins) = foldl' (helper targetDesig) (ms, toSelfs, logMsgs, mempty) ecs
+    in (ms', toSelfs', bs ++ mkGiveCoinsDescOthers i d targetId targetDesig canCoins, logMsgs')
+  where
+    helper targetDesig a = \case
+      Left  msgs -> a & _2 <>~ msgs
+      Right c    -> let (can, can't) = partitionCoinsByEnc i ms c
+                        toSelfs'     = mkGiveCoinsDescsSelf targetDesig can
+                    in a & _1.coinsTbl.ind i        %~  (<> negateCoins can)
+                         & _1.coinsTbl.ind targetId %~  (<>             can)
+                         & _2                       <>~ toSelfs' ++ mkCan'tGiveCoinsDesc targetDesig can't
+                         & _3                       <>~ toSelfs'
+                         & _4                       <>~ can
+
+
+mkGiveCoinsDescOthers :: Id -> Desig -> ToId -> Text -> Coins -> [Broadcast]
+mkGiveCoinsDescOthers i d targetId targetDesig c =
+  c |!| [ (T.concat [ serialize d, " gives ", aCoinSomeCoins c, " to ", targetDesig, "." ], desigIds d \\ [ i, targetId ])
+        , (T.concat [ serialize d, " gives you " {- TODO -}                              ], pure targetId                ) ]
+
+
+mkGiveCoinsDescsSelf :: Text -> Coins -> [Text]
+mkGiveCoinsDescsSelf targetDesig = mkCoinsMsgs helper
+  where
+    helper 1 cn = T.concat [ "You give ", aOrAn cn,                  " to ",  targetDesig, "." ]
+    helper a cn = T.concat [ "You give",  spaced . showText $ a, cn, "s to ", targetDesig, "." ]
+
+
+mkCan'tGiveCoinsDesc :: Text -> Coins -> [Text]
+mkCan'tGiveCoinsDesc targetDesig = mkCoinsMsgs helper
+  where
+    helper a cn = sorryGiveEnc targetDesig <> (a == 1 ? ("the " <> cn <> ".") :? T.concat [ showText a, " ", cn, "s." ])
 
 
 -----
 
 
 helperGiveEitherInv :: Id
-                    -> MudState
                     -> Desig
                     -> ToId
-                    -> ToSing
                     -> GenericIntermediateRes
                     -> Either Text Inv
                     -> GenericIntermediateRes
-helperGiveEitherInv _ _ _ _ _ _ _ = undefined
+helperGiveEitherInv i d targetId a@(ms, _, _, _) = \case
+  Left  msg -> a & _2 <>~ pure msg
+  Right is  ->
+    let (_, cans, can'ts) = foldl' (partitionInvByEnc ms . calcMaxEnc targetId $ ms) (calcWeight targetId ms, [], []) is
+        (toSelfs, bs    ) = mkGiveInvDescs i ms d targetId targetDesig cans
+        targetDesig       = serialize . mkStdDesig targetId ms $ Don'tCap
+    in a & _1.invTbl.ind i        %~  (\\ cans)
+         & _1.invTbl.ind targetId %~  (sortInv ms . (++ cans))
+         & _2                     <>~ toSelfs ++ mkCan'tGiveInvDescs i ms targetDesig can'ts
+         & _3                     <>~ bs
+         & _4                     <>~ toSelfs
+
+
+mkGiveInvDescs :: Id -> MudState -> Desig -> ToId -> Text -> Inv -> ([Text], [Broadcast])
+mkGiveInvDescs i ms d targetId targetDesig = second concat . unzip . map helper . mkNameCountBothList i ms
+  where
+    helper (_, c, (s, _)) | c == 1 =
+        ( T.concat [ "You give the ", s, " to ", targetDesig, "." ]
+        , [ (T.concat [ serialize d, " gives ",     aOrAn s, " to ", targetDesig, "." ], otherIds     )
+          , (T.concat [ serialize d, " gives you ", aOrAn s,                      "." ], pure targetId) ] )
+    helper (_, c, b) =
+        ( T.concat [ "You give", stuff, " to ", targetDesig, "." ]
+        , [ (T.concat [ serialize d, " gives",     stuff, " to ", targetDesig, "." ], otherIds     )
+          , (T.concat [ serialize d, " gives you", stuff,                      "." ], pure targetId) ] )
+      where
+        stuff = spaced (showText c) <> mkPlurFromBoth b
+    otherIds = desigIds d \\ [ i, targetId ]
+
+
+mkCan'tGiveInvDescs :: Id -> MudState -> Text -> Inv -> [Text]
+mkCan'tGiveInvDescs i ms targetDesig = map helper . mkNameCountBothList i ms
+  where
+    helper (_, c, b@(s, _)) = sorryGiveEnc targetDesig <> rest
+      where
+        rest = c == 1 ?  ("the " <> s <> ".")
+                      :? T.concat [ showText c, " ", mkPlurFromBoth b, "." ]
 
 
 -----

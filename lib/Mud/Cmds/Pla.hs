@@ -249,6 +249,7 @@ executor (via "wrapSend" or a related function). Log messages may likewise need 
 depending on their content.
 * When an NPC executes a command, that NPC's name should be represented as a "Desig" in any broadcasts sent to others.
 -}
+-- TODO: Does the "give" command hold up?
 
 
 npcCmds :: [Cmd]
@@ -886,6 +887,7 @@ getAction p = patternMatchFail "getAction" [ showText p ]
 
 
 -- TODO: Help.
+-- TOOD: Log msgs should be subjected to "parseDesig".
 give :: ActionFun
 give p@AdviseNoArgs     = advise p ["give"] adviceGiveNoArgs
 give p@(AdviseOneArg a) = advise p ["give"] . adviceGiveNoName $ a
@@ -901,7 +903,6 @@ give p@(Lower' i as   ) = genericAction p helper "give"
 give p = patternMatchFail "give" [ showText p ]
 
 
--- TODO: Check encumbrance.
 shuffleGive :: Id -> MudState -> LastArgIsTargetBindings -> GenericRes
 shuffleGive i ms LastArgIsTargetBindings { .. } =
     let (targetGecrs, targetMiss, targetRcs) = uncurry (resolveEntCoinNames i ms . pure $ targetArg) rmInvCoins
@@ -909,7 +910,7 @@ shuffleGive i ms LastArgIsTargetBindings { .. } =
       then genericSorry ms sorryGiveToCoin
       else case procGecrMisRm . head . zip targetGecrs $ targetMiss of
         Left  msg        -> genericSorry ms msg
-        Right [targetId] | (targetSing, targetType) <- (uncurry getSing *** uncurry getType) . dup $ (targetId, ms) ->
+        Right [targetId] | targetType <- getType targetId ms ->
           if isNpcPC targetId ms
             then let (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv otherArgs
                      sorryInEq              = inEqs |!| sorryGiveInEq
@@ -917,10 +918,10 @@ shuffleGive i ms LastArgIsTargetBindings { .. } =
                      (gecrs, miss, rcs) = uncurry (resolveEntCoinNames i ms inInvs) srcInvCoins
                      eiss               = zipWith (curry procGecrMisMobInv) gecrs miss
                      ecs                = map procReconciledCoinsMobInv rcs
-                     (ms',  toSelfs,  bs,  logMsgs ) = foldl' (helperGiveEitherInv   i ms srcDesig targetId targetSing)
+                     (ms',  toSelfs,  bs,  logMsgs ) = foldl' (helperGiveEitherInv  i srcDesig targetId)
                                                               (ms, [], [], [])
                                                               eiss
-                     (ms'', toSelfs', bs', logMsgs') =        helperGiveEitherCoins  i ms srcDesig targetId targetSing
+                     (ms'', toSelfs', bs', logMsgs') =        helperGiveEitherCoins i srcDesig targetId
                                                               (ms', toSelfs, bs, logMsgs)
                                                               ecs
                  in (ms'', (dropBlanks $ [ sorryInEq, sorryInRm ] ++ toSelfs', bs', logMsgs'))

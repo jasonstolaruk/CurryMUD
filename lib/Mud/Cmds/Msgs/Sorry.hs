@@ -46,6 +46,7 @@ module Mud.Cmds.Msgs.Sorry  ( sorryAdminChanSelf
                             , sorryGetInInv
                             , sorryGetNothingHere
                             , sorryGetType
+                            , sorryGiveEnc
                             , sorryGiveExcessTargets
                             , sorryGiveInEq
                             , sorryGiveInRm
@@ -505,6 +506,10 @@ sorryGetType t = can't $ "pick up " <> t <> "."
 
 
 -----
+
+
+sorryGiveEnc :: Text -> Text
+sorryGiveEnc = (<> " is too encumbered to hold ")
 
 
 sorryGiveExcessTargets :: Text
