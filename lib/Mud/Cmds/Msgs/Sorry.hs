@@ -46,8 +46,13 @@ module Mud.Cmds.Msgs.Sorry  ( sorryAdminChanSelf
                             , sorryGetInInv
                             , sorryGetNothingHere
                             , sorryGetType
+                            , sorryGiveExcessTargets
                             , sorryGiveInEq
                             , sorryGiveInRm
+                            , sorryGiveToCoin
+                            , sorryGiveToEq
+                            , sorryGiveToInv
+                            , sorryGiveType
                             , sorryGoExit
                             , sorryGoParseDir
                             , sorryHelpName
@@ -502,12 +507,32 @@ sorryGetType t = can't $ "pick up " <> t <> "."
 -----
 
 
+sorryGiveExcessTargets :: Text
+sorryGiveExcessTargets = but "you can only give things to one person at a time."
+
+
 sorryGiveInEq :: Text
 sorryGiveInEq = butCan't "give an item in your readied equipment. Please unready the item(s) first."
 
 
 sorryGiveInRm :: Text
-sorryGiveInRm = butCan't "give an item that in your current room. Please pick up the item(s) first."
+sorryGiveInRm = butCan't "give an item in your current room. Please pick up the item(s) first."
+
+
+sorryGiveToCoin :: Text
+sorryGiveToCoin = can't "give something to a coin."
+
+
+sorryGiveToEq :: Text
+sorryGiveToEq = can't "give something to an item in your readied equipment."
+
+
+sorryGiveToInv :: Text
+sorryGiveToInv = can't "give something to an item in your inventory."
+
+
+sorryGiveType :: Type -> Text
+sorryGiveType t = can't $ "give something to " <> aOrAnType t <> "."
 
 
 -----

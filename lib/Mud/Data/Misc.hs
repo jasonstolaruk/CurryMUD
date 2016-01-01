@@ -23,6 +23,7 @@ module Mud.Data.Misc ( Action(..)
                      , ExpCmdName
                      , ExpCmdType(..)
                      , fromRol
+                     , GenericIntermediateRes
                      , GenericRes
                      , getEntFlag
                      , GetEntsCoinsRes(..)
@@ -514,7 +515,10 @@ instance Show EquipInvLookCmd where
 -----
 
 
-type GenericRes = (MudState, ([Text], [Broadcast], [Text]))
+type GenericIntermediateRes = (MudState,  [Text], [Broadcast], [Text])
+
+
+type GenericRes             = (MudState, ([Text], [Broadcast], [Text]))
 
 
 -----

@@ -143,7 +143,6 @@ plaCmds :: [Cmd]
 plaCmds = sort $ regularCmds ++ priorityAbbrevCmds ++ expCmds
 
 
--- TODO: "give" command.
 regularCmds :: [Cmd]
 regularCmds = map (uncurry4 mkRegularCmd)
     [ ("?",          plaDispCmdList,  True,  cmdDescDispCmdList)
@@ -890,20 +889,43 @@ getAction p = patternMatchFail "getAction" [ showText p ]
 give :: ActionFun
 give p@AdviseNoArgs     = advise p ["give"] adviceGiveNoArgs
 give p@(AdviseOneArg a) = advise p ["give"] . adviceGiveNoName $ a
-give p@(Lower' i as   ) = genericAction p helper "put"
+give p@(Lower' i as   ) = genericAction p helper "give"
   where
     helper ms =
         let b@LastArgIsTargetBindings { targetArg } = mkLastArgIsTargetBindings i ms as
-            f                                       = case singleArgInvEqRm InInv targetArg of
-              (InInv, target) -> shuffleGive i ms b target
-              (InEq,  _     ) -> genericSorry ms sorryGiveInEq
-              (InRm,  _     ) -> genericSorry ms sorryGiveInRm
+            f                                       = case singleArgInvEqRm InRm targetArg of
+              (InInv, _     ) -> genericSorry ms sorryGiveToInv
+              (InEq,  _     ) -> genericSorry ms sorryGiveToEq
+              (InRm,  target) -> shuffleGive i ms b { targetArg = target }
         in withEmptyInvChecks ms b sorryNoOneHere f
 give p = patternMatchFail "give" [ showText p ]
 
 
-shuffleGive :: Id -> MudState -> LastArgIsTargetBindings -> Text -> GenericRes
-shuffleGive _ _ _ _ = undefined
+-- TODO: Check encumbrance.
+shuffleGive :: Id -> MudState -> LastArgIsTargetBindings -> GenericRes
+shuffleGive i ms LastArgIsTargetBindings { .. } =
+    let (targetGecrs, targetMiss, targetRcs) = uncurry (resolveEntCoinNames i ms . pure $ targetArg) rmInvCoins
+    in if ()# targetMiss && ()!# targetRcs
+      then genericSorry ms sorryGiveToCoin
+      else case procGecrMisRm . head . zip targetGecrs $ targetMiss of
+        Left  msg        -> genericSorry ms msg
+        Right [targetId] | (targetSing, targetType) <- (uncurry getSing *** uncurry getType) . dup $ (targetId, ms) ->
+          if isNpcPC targetId ms
+            then let (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv otherArgs
+                     sorryInEq              = inEqs |!| sorryGiveInEq
+                     sorryInRm              = inRms |!| sorryGiveInRm
+                     (gecrs, miss, rcs) = uncurry (resolveEntCoinNames i ms inInvs) srcInvCoins
+                     eiss               = zipWith (curry procGecrMisMobInv) gecrs miss
+                     ecs                = map procReconciledCoinsMobInv rcs
+                     (ms',  toSelfs,  bs,  logMsgs ) = foldl' (helperGiveEitherInv   i ms srcDesig targetId targetSing)
+                                                              (ms, [], [], [])
+                                                              eiss
+                     (ms'', toSelfs', bs', logMsgs') =        helperGiveEitherCoins  i ms srcDesig targetId targetSing
+                                                              (ms', toSelfs, bs, logMsgs)
+                                                              ecs
+                 in (ms'', (dropBlanks $ [ sorryInEq, sorryInRm ] ++ toSelfs', bs', logMsgs'))
+            else genericSorry ms . sorryGiveType $ targetType
+        Right {} -> genericSorry ms sorryGiveExcessTargets
 
 
 -----
@@ -1632,12 +1654,12 @@ shufflePut i ms d conName icir as invCoinsWithCon@(invWithCon, _) mobInvCoins f 
             if conType /= ConType
               then genericSorry ms . sorryConHelper i ms conId $ conSing
               else let (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv as
-                       sorryInEq = inEqs |!| sorryPutInEq
-                       sorryInRm = inRms |!| sorryPutInRm
-                       (gecrs, miss, rcs)  = uncurry (resolveEntCoinNames i ms inInvs) mobInvCoins
-                       eiss                = zipWith (curry procGecrMisMobInv) gecrs miss
-                       ecs                 = map procReconciledCoinsMobInv rcs
-                       mnom                = mkMaybeNthOfM ms icir conId conSing invWithCon
+                       sorryInEq              = inEqs |!| sorryPutInEq
+                       sorryInRm              = inRms |!| sorryPutInRm
+                       (gecrs, miss, rcs)     = uncurry (resolveEntCoinNames i ms inInvs) mobInvCoins
+                       eiss                   = zipWith (curry procGecrMisMobInv) gecrs miss
+                       ecs                    = map procReconciledCoinsMobInv rcs
+                       mnom                   = mkMaybeNthOfM ms icir conId conSing invWithCon
                        (it, toSelfs,  bs,  logMsgs ) = foldl' (helperPutRemEitherInv   i ms d Put mnom i conId conSing)
                                                               (ms^.invTbl, [], [], [])
                                                               eiss
@@ -2074,12 +2096,12 @@ shuffleRem i ms d conName icir as invCoinsWithCon@(invWithCon, _) f =
         Right [conId] | (conSing, conType) <- (uncurry getSing *** uncurry getType) . dup $ (conId, ms) ->
             if conType /= ConType
               then genericSorry ms . sorryConHelper i ms conId $ conSing
-              else let (as', guessWhat)    = stripLocPrefs
-                       invCoinsInCon       = getInvCoins conId ms
-                       (gecrs, miss, rcs)  = uncurry (resolveEntCoinNames i ms as') invCoinsInCon
-                       eiss                = zipWith (curry $ procGecrMisCon conSing) gecrs miss
-                       ecs                 = map (procReconciledCoinsCon conSing) rcs
-                       mnom                = mkMaybeNthOfM ms icir conId conSing invWithCon
+              else let (as', guessWhat)   = stripLocPrefs
+                       invCoinsInCon      = getInvCoins conId ms
+                       (gecrs, miss, rcs) = uncurry (resolveEntCoinNames i ms as') invCoinsInCon
+                       eiss               = zipWith (curry . procGecrMisCon $ conSing) gecrs miss
+                       ecs                = map (procReconciledCoinsCon conSing) rcs
+                       mnom               = mkMaybeNthOfM ms icir conId conSing invWithCon
                        (it, toSelfs,  bs,  logMsgs ) = foldl' (helperPutRemEitherInv   i ms d Rem mnom conId i conSing)
                                                               (ms^.invTbl, [], [], [])
                                                               eiss

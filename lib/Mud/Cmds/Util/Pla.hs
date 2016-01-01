@@ -22,6 +22,8 @@ module Mud.Cmds.Util.Pla ( armSubToSlot
                          , helperDropEitherInv
                          , helperGetDropEitherCoins
                          , helperGetEitherInv
+                         , helperGiveEitherCoins
+                         , helperGiveEitherInv
                          , helperLinkUnlink
                          , helperPutRemEitherCoins
                          , helperPutRemEitherInv
@@ -343,9 +345,9 @@ helperGetDropEitherCoins :: Id
                          -> GetOrDrop
                          -> FromId
                          -> ToId
-                         -> (MudState, [Text], [Broadcast], [Text])
+                         -> GenericIntermediateRes
                          -> [Either [Text] Coins]
-                         -> (MudState, [Text], [Broadcast], [Text])
+                         -> GenericIntermediateRes
 helperGetDropEitherCoins i d god fi ti (ms, toSelfs, bs, logMsgs) ecs =
     let (ms', toSelfs', logMsgs', canCoins) = foldl' helper (ms, toSelfs, logMsgs, mempty) ecs
     in (ms', toSelfs', bs ++ mkGetDropCoinsDescOthers i d god canCoins, logMsgs')
@@ -410,9 +412,9 @@ helperGetEitherInv :: Id
                    -> Desig
                    -> FromId
                    -> ToId
-                   -> (MudState, [Text], [Broadcast], [Text])
+                   -> GenericIntermediateRes
                    -> Either Text Inv
-                   -> (MudState, [Text], [Broadcast], [Text])
+                   -> GenericIntermediateRes
 helperGetEitherInv i d fi ti a@(ms, _, _, _) = \case
   Left  msg                              -> a & _2 <>~ pure msg
   Right (sortByType -> (npcPCs, others)) ->
@@ -441,6 +443,34 @@ mkCan'tGetInvDescs i ms = map helper . mkNameCountBothList i ms
   where
     helper (_, c, b@(s, _)) = sorryGetEnc <> (c == 1 ?  ("the " <> s <> ".")
                                                      :? T.concat [ showText c, " ", mkPlurFromBoth b, "." ])
+
+
+-----
+
+
+helperGiveEitherCoins :: Id
+                      -> MudState
+                      -> Desig
+                      -> ToId
+                      -> ToSing
+                      -> GenericIntermediateRes
+                      -> [Either [Text] Coins]
+                      -> GenericIntermediateRes
+helperGiveEitherCoins _ _ _ _ _ _ _ = undefined
+
+
+-----
+
+
+helperGiveEitherInv :: Id
+                    -> MudState
+                    -> Desig
+                    -> ToId
+                    -> ToSing
+                    -> GenericIntermediateRes
+                    -> Either Text Inv
+                    -> GenericIntermediateRes
+helperGiveEitherInv _ _ _ _ _ _ _ = undefined
 
 
 -----
