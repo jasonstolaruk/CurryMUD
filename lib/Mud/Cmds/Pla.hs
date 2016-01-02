@@ -885,7 +885,6 @@ getAction p = patternMatchFail "getAction" [ showText p ]
 -----
 
 
--- TODO: Help.
 give :: ActionFun
 give p@AdviseNoArgs     = advise p ["give"] adviceGiveNoArgs
 give p@(AdviseOneArg a) = advise p ["give"] . adviceGiveNoName $ a

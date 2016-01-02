@@ -42,7 +42,7 @@ cmdDescGet = "Pick up one or more items."
 
 
 cmdDescGive :: Text
-cmdDescGive = "Give one or more items to someone else."
+cmdDescGive = "Give one or more items to a person."
 
 
 cmdDescGoDown :: Text

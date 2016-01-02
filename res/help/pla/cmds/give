@@ -1,0 +1,22 @@
+\h GIVE \d
+
+\uUSAGE\n
+give item \s...\d person
+
+\uDESCRIPTION\n
+Give one or more items to a person.
+
+\uEXAMPLES\n
+\qgive ring taro\d to give your ring to Taro.4`
+\qgive ring bracelet taro\d to give your ring and your bracelet to Taro.4`
+\qgive \p2#i\qring taro\d to give your second ring to Taro.4`
+\qgive \p2#m\qring taro\d to give your first two rings to Taro.4`
+\qgive \p3#i\qring \p3#m\qbracelet taro\d to give your third ring and your first three bracelets to Taro.4`
+\qgive \p#a\qring melf\d to give all of your rings to the male elf.4`
+\qgive \p#a\q melf\d to give all of the items in your inventory to the male elf.4`
+\qgive \p#a\q \p2#i\qmelf\d to give all of the items in your inventory to the second male elf.4`
+\qgive \p5#m\qgp \p#a\qsp felf\d to give five of your gold pieces and all of your silver pieces to the female elf.4`
+\qgive \p#a\qcoin felf\d to give all of your coins to the female elf.4`
+
+
+\uSEE ALSO\n
