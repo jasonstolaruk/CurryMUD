@@ -352,9 +352,9 @@ helperGetDropEitherCoins i d god fi ti (ms, toSelfs, bs, logMsgs) ecs =
     let (ms', toSelfs', logMsgs', canCoins) = foldl' helper (ms, toSelfs, logMsgs, mempty) ecs
     in (ms', toSelfs', bs ++ mkGetDropCoinsDescOthers i d god canCoins, logMsgs')
   where
-    helper a = \case
+    helper a@(ms', _, _, _) = \case
       Left  msgs -> a & _2 <>~ msgs
-      Right c    -> let (can, can't) = case god of Get  -> partitionCoinsByEnc i ms c
+      Right c    -> let (can, can't) = case god of Get  -> partitionCoinsByEnc i ms' c
                                                    Drop -> (c, mempty)
                         toSelfs'     = mkGetDropCoinsDescsSelf god can
                     in a & _1.coinsTbl.ind fi %~  (<> negateCoins can)
@@ -378,8 +378,7 @@ partitionCoinsByEnc i ms coins = let maxEnc           = calcMaxEnc i ms
     mkCanCan't (Coins (c, 0, 0)) n = (Coins (n, 0, 0), Coins (c - n, 0,     0    ))
     mkCanCan't (Coins (0, s, 0)) n = (Coins (0, n, 0), Coins (0,     s - n, 0    ))
     mkCanCan't (Coins (0, 0, g)) n = (Coins (0, 0, n), Coins (0,     0,     g - n))
-    mkCanCan't c                 n = patternMatchFail "helperGetDropEitherCoins mkCanCan't" [ showText c
-                                                                                            , showText n ]
+    mkCanCan't c                 n = patternMatchFail "partitionCoinsByEnc" [ showText c, showText n ]
 
 
 mkGetDropCoinsDescOthers :: Id -> Desig -> GetOrDrop -> Coins -> [Broadcast]
@@ -465,9 +464,9 @@ helperGiveEitherCoins i d targetId (ms, toSelfs, bs, logMsgs) ecs =
         (ms', toSelfs', logMsgs', canCoins) = foldl' (helper targetDesig) (ms, toSelfs, logMsgs, mempty) ecs
     in (ms', toSelfs', bs ++ mkGiveCoinsDescOthers i d targetId targetDesig canCoins, logMsgs')
   where
-    helper targetDesig a = \case
+    helper targetDesig a@(ms', _, _, _) = \case
       Left  msgs -> a & _2 <>~ msgs
-      Right c    -> let (can, can't) = partitionCoinsByEnc i ms c
+      Right c    -> let (can, can't) = partitionCoinsByEnc targetId ms' c
                         toSelfs'     = mkGiveCoinsDescsSelf targetDesig can
                     in a & _1.coinsTbl.ind i        %~  (<> negateCoins can)
                          & _1.coinsTbl.ind targetId %~  (<>             can)
@@ -477,9 +476,13 @@ helperGiveEitherCoins i d targetId (ms, toSelfs, bs, logMsgs) ecs =
 
 
 mkGiveCoinsDescOthers :: Id -> Desig -> ToId -> Text -> Coins -> [Broadcast]
-mkGiveCoinsDescOthers i d targetId targetDesig c =
-  c |!| [ (T.concat [ serialize d, " gives ", aCoinSomeCoins c, " to ", targetDesig, "." ], desigIds d \\ [ i, targetId ])
-        , (T.concat [ serialize d, " gives you " {- TODO -}                              ], pure targetId                ) ]
+mkGiveCoinsDescOthers i d targetId targetDesig c = c |!| toOthers : [ (msg, pure targetId) | msg <- toTarget ]
+  where
+    toOthers    = ( T.concat [ serialize d, " gives ", aCoinSomeCoins c, " to ", targetDesig, "." ]
+                  , desigIds d \\ [ i, targetId ] )
+    toTarget    = mkCoinsMsgs helper c
+    helper 1 cn = T.concat [ serialize d, " gives you ", aOrAn cn,                  "."  ]
+    helper a cn = T.concat [ serialize d, " gives you",  spaced . showText $ a, cn, "s." ]
 
 
 mkGiveCoinsDescsSelf :: Text -> Coins -> [Text]
@@ -508,11 +511,12 @@ helperGiveEitherInv i d targetId a@(ms, _, _, _) = \case
   Left  msg -> a & _2 <>~ pure msg
   Right is  ->
     let (_, cans, can'ts) = foldl' (partitionInvByEnc ms . calcMaxEnc targetId $ ms) (calcWeight targetId ms, [], []) is
-        (toSelfs, bs    ) = mkGiveInvDescs i ms d targetId targetDesig cans
-        targetDesig       = serialize . mkStdDesig targetId ms $ Don'tCap
+        (toSelfs, bs    ) = mkGiveInvDescs i ms d targetId (serialize targetDesig) cans
+        targetDesig       = mkStdDesig targetId ms Don'tCap
     in a & _1.invTbl.ind i        %~  (\\ cans)
          & _1.invTbl.ind targetId %~  (sortInv ms . (++ cans))
-         & _2                     <>~ toSelfs ++ mkCan'tGiveInvDescs i ms targetDesig can'ts
+         & _2                     <>~ toSelfs ++
+                                      mkCan'tGiveInvDescs i ms (serialize targetDesig { shouldCap = DoCap }) can'ts
          & _3                     <>~ bs
          & _4                     <>~ toSelfs
 

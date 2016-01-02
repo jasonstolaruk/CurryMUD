@@ -249,7 +249,6 @@ executor (via "wrapSend" or a related function). Log messages may likewise need 
 depending on their content.
 * When an NPC executes a command, that NPC's name should be represented as a "Desig" in any broadcasts sent to others.
 -}
--- TODO: Does the "give" command hold up?
 
 
 npcCmds :: [Cmd]
@@ -887,7 +886,6 @@ getAction p = patternMatchFail "getAction" [ showText p ]
 
 
 -- TODO: Help.
--- TOOD: Log msgs should be subjected to "parseDesig".
 give :: ActionFun
 give p@AdviseNoArgs     = advise p ["give"] adviceGiveNoArgs
 give p@(AdviseOneArg a) = advise p ["give"] . adviceGiveNoName $ a
@@ -924,7 +922,7 @@ shuffleGive i ms LastArgIsTargetBindings { .. } =
                      (ms'', toSelfs', bs', logMsgs') =        helperGiveEitherCoins i srcDesig targetId
                                                               (ms', toSelfs, bs, logMsgs)
                                                               ecs
-                 in (ms'', (dropBlanks $ [ sorryInEq, sorryInRm ] ++ toSelfs', bs', logMsgs'))
+                 in (ms'', (dropBlanks $ [ sorryInEq, sorryInRm ] ++ toSelfs', bs', map (parseDesig i ms) logMsgs'))
             else genericSorry ms . sorryGiveType $ targetType
         Right {} -> genericSorry ms sorryGiveExcessTargets
 

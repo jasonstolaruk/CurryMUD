@@ -168,46 +168,48 @@ iLeatherApron = 77 :: Int
 
 iTraveler'sBoots = 78 :: Int
 
-i100Lb = 79 :: Int
+i190Lb = 79 :: Int
 
-i75Lb = 80 :: Int
+i100Lb = 80 :: Int
 
-i50Lb1 = 81 :: Int
+i75Lb = 81 :: Int
 
-i50Lb2 = 82 :: Int
+i50Lb1 = 82 :: Int
 
-i25Lb1 = 83 :: Int
+i50Lb2 = 83 :: Int
 
-i25Lb2 = 84 :: Int
+i25Lb1 = 84 :: Int
 
-i10Lb1 = 85 :: Int
+i25Lb2 = 85 :: Int
 
-i10Lb2 = 86 :: Int
+i10Lb1 = 86 :: Int
 
-i5Lb1 = 87 :: Int
+i10Lb2 = 87 :: Int
 
-i5Lb2 = 88 :: Int
+i5Lb1 = 88 :: Int
 
-i1Lb1 = 89 :: Int
+i5Lb2 = 89 :: Int
 
-i1Lb2 = 90 :: Int
+i1Lb1 = 90 :: Int
 
-i1Lb3 = 91 :: Int
+i1Lb2 = 91 :: Int
 
-i1Lb4 = 92 :: Int
+i1Lb3 = 92 :: Int
 
-i1Lb5 = 93 :: Int
+i1Lb4 = 93 :: Int
 
-iWeightRm = 94 :: Int
+i1Lb5 = 94 :: Int
 
-iTutEntrance = 95 :: Int
+iWeightRm = 95 :: Int
 
-iLoungeEntrance = 96 :: Int
+iTutEntrance = 96 :: Int
 
-iBasement = 97 :: Int
+iLoungeEntrance = 97 :: Int
 
-iSkeleton = 98 :: Int
+iBasement = 98 :: Int
 
-iRoot = 99 :: Int
+iSkeleton = 99 :: Int
 
-iCurry = 100 :: Int
+iRoot = 100 :: Int
+
+iCurry = 101 :: Int

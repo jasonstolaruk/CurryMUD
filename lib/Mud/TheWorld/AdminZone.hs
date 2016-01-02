@@ -142,7 +142,8 @@ createAdminZone = do
             , StdLink Up        iCentral
             , NonStdLink "manhole" iVoid "% climbs into the manhole." "% climbs out of the manhole." ])
   putRm iWeightRm
-        [ i100Lb
+        [ i190Lb
+        , i100Lb
         , i75Lb
         , i50Lb1
         , i50Lb2
@@ -311,6 +312,13 @@ createAdminZone = do
               zeroBits)
          (Obj 25 1)
   let weightDesc = "It's a heavy slab of metal."
+  putObj i190Lb
+         (Ent i190Lb
+              (Just "weight")
+              "190 lb weight" ""
+              weightDesc
+              zeroBits)
+         (Obj 19000 1)
   putObj i100Lb
          (Ent i100Lb
               (Just "weight")
