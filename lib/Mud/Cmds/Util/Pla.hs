@@ -430,17 +430,16 @@ can'tCoinsDescHelper t a cn = t <> (a == 1 ? ("the " <> cn <> ".") :? T.concat [
 helperGetEitherInv :: Id
                    -> Desig
                    -> FromId
-                   -> ToId
                    -> GenericIntermediateRes
                    -> Either Text Inv
                    -> GenericIntermediateRes
-helperGetEitherInv i d fi ti a@(ms, _, _, _) = \case
+helperGetEitherInv i d fi a@(ms, _, _, _) = \case
   Left  msg                              -> a & _2 <>~ pure msg
   Right (sortByType -> (npcPCs, others)) ->
     let (_, cans, can'ts) = foldl' (partitionInvByEnc ms . calcMaxEnc i $ ms) (calcWeight i ms, [], []) others
         (toSelfs, bs    ) = mkGetDropInvDescs i ms d Get cans
     in a & _1.invTbl.ind fi %~  (\\ cans)
-         & _1.invTbl.ind ti %~  (sortInv ms . (++ cans))
+         & _1.invTbl.ind i  %~  (sortInv ms . (++ cans))
          & _2               <>~ concat [ map sorryType npcPCs
                                        , toSelfs
                                        , mkCan'tGetInvDescs i ms can'ts ]
@@ -588,6 +587,7 @@ type NthOfM = (Int, Int)
 type ToSing = Sing
 
 
+-- TODO: After you finish your refactoring, thoroughly review and test put and remove.
 helperPutEitherCoins :: Id
                      -> Desig
                      -> Maybe NthOfM
@@ -615,23 +615,23 @@ partitionCoinsByVol :: Id -> MudState -> Coins -> (Coins, Coins)
 partitionCoinsByVol = partitionCoinsHelper getCapacity calcVol coinVol
 
 
-mkPutRemCoinsDescOthers :: Id -> Desig -> PutOrRem -> Maybe NthOfM -> Coins -> ToSing -> [Broadcast]
-mkPutRemCoinsDescOthers i d por mnom c ts = c |!| pure ( T.concat [ serialize d
-                                                                  , spaced . mkPorVerb por $ ThrPer
-                                                                  , aCoinSomeCoins c
-                                                                  , " "
-                                                                  , mkPorPrep por ThrPer mnom ts
-                                                                  , onTheGround mnom <> "." ]
-                                                       , i `delete` desigIds d )
+mkPutRemCoinsDescOthers :: Id -> Desig -> PutOrRem -> Maybe NthOfM -> Coins -> Sing -> [Broadcast]
+mkPutRemCoinsDescOthers i d por mnom c targetSing = c |!| pure ( T.concat [ serialize d
+                                                                          , spaced . mkPorVerb por $ ThrPer
+                                                                          , aCoinSomeCoins c
+                                                                          , " "
+                                                                          , mkPorPrep por ThrPer mnom targetSing
+                                                                          , onTheGround mnom <> "." ]
+                                                               , i `delete` desigIds d )
 
 
-mkPutRemCoinsDescsSelf :: PutOrRem -> Maybe NthOfM -> Coins -> ToSing -> [Text]
-mkPutRemCoinsDescsSelf por mnom c ts = mkCoinsMsgs helper c
+mkPutRemCoinsDescsSelf :: PutOrRem -> Maybe NthOfM -> Coins -> Sing -> [Text]
+mkPutRemCoinsDescsSelf por mnom c conSing = mkCoinsMsgs helper c
   where
     helper a cn | a == 1 = T.concat [ start, aOrAn cn,   " ",           rest ]
     helper a cn          = T.concat [ start, showText a, " ", cn, "s ", rest ]
     start                = "You " <> mkPorVerb por SndPer <> " "
-    rest                 = mkPorPrep por SndPer mnom ts <> onTheGround mnom <> "."
+    rest                 = mkPorPrep por SndPer mnom conSing <> onTheGround mnom <> "."
 
 
 mkPorVerb :: PutOrRem -> Verb -> Text
@@ -697,20 +697,20 @@ partitionInvByVol :: MudState -> Int -> (Int, Inv, Inv) -> Id -> (Int, Inv, Inv)
 partitionInvByVol = partitionInvHelper calcVol
 
 
-mkPutRemInvDescs :: Id -> MudState -> Desig -> PutOrRem -> Maybe NthOfM -> Inv -> ToSing -> ([Text], [Broadcast])
-mkPutRemInvDescs i ms d por mnom is ts = unzip . map helper . mkNameCountBothList i ms $ is
+mkPutRemInvDescs :: Id -> MudState -> Desig -> PutOrRem -> Maybe NthOfM -> Inv -> Sing -> ([Text], [Broadcast])
+mkPutRemInvDescs i ms d por mnom is conSing = unzip . map helper . mkNameCountBothList i ms $ is
   where
     helper (_, c, (s, _)) | c == 1 =
         (  T.concat [ "You "
                     , mkPorVerb por SndPer
                     , spaced withArticle
-                    , mkPorPrep por SndPer mnom ts
+                    , mkPorPrep por SndPer mnom conSing
                     , rest ]
         , (T.concat [ serialize d
                     , spaced . mkPorVerb por $ ThrPer
                     , aOrAn s
                     , " "
-                    , mkPorPrep por ThrPer mnom ts
+                    , mkPorPrep por ThrPer mnom conSing
                     , rest ], otherIds) )
       where
         withArticle = por == Put ? "the " <> s :? aOrAn s
@@ -720,13 +720,13 @@ mkPutRemInvDescs i ms d por mnom is ts = unzip . map helper . mkNameCountBothLis
                     , spaced . showText $ c
                     , mkPlurFromBoth b
                     , " "
-                    , mkPorPrep por SndPer mnom ts
+                    , mkPorPrep por SndPer mnom conSing
                     , rest ]
         , (T.concat [ serialize d
                     , spaced . mkPorVerb por $ ThrPer
                     , showText c
                     , spaced . mkPlurFromBoth $ b
-                    , mkPorPrep por ThrPer mnom ts
+                    , mkPorPrep por ThrPer mnom conSing
                     , rest ], otherIds) )
     rest     = onTheGround mnom <> "."
     otherIds = i `delete` desigIds d
@@ -744,55 +744,51 @@ mkCan'tPutInvDescs i ms targetSing = map helper . mkNameCountBothList i ms
 
 helperRemEitherCoins :: Id
                      -> Desig
-                     -> PutOrRem
                      -> Maybe NthOfM
                      -> FromId
-                     -> ToId
-                     -> ToSing
-                     -> (CoinsTbl, [Text], [Broadcast], [Text])
+                     -> Sing
+                     -> GenericIntermediateRes
                      -> [Either [Text] Coins]
-                     -> (CoinsTbl, [Text], [Broadcast], [Text])
-helperRemEitherCoins i d por mnom fi ti ts (ct, toSelfs, bs, logMsgs) ecs =
-    let (ct', toSelfs', logMsgs', canCoins) = foldl' helper (ct, toSelfs, logMsgs, mempty) ecs
-    in (ct', toSelfs', bs ++ mkPutRemCoinsDescOthers i d por mnom canCoins ts, logMsgs')
+                     -> GenericIntermediateRes
+helperRemEitherCoins i d mnom targetId targetSing (ms, toSelfs, bs, logMsgs) ecs =
+    let (ms', toSelfs', logMsgs', canCoins) = foldl' helper (ms, toSelfs, logMsgs, mempty) ecs
+    in (ms', toSelfs', bs ++ mkPutRemCoinsDescOthers i d Rem mnom canCoins targetSing, logMsgs')
   where
-    helper a = \case
+    helper a@(ms', _, _, _) = \case
       Left  msgs -> a & _2 <>~ msgs
-      Right c    -> let toSelfs' = mkPutRemCoinsDescsSelf por mnom c ts
-                    in a & _1.ind fi %~ (<> negateCoins c)
-                         & _1.ind ti %~ (<> c)
-                         & _2 <>~ toSelfs' -- TODO: Append a "can't remove coins" message. See "helperGetDropEitherCoins".
+      Right c    -> let (can, can't) = partitionCoinsByEnc i ms' c -- TODO: Only do this for containers on the ground.
+                        toSelfs'     = mkPutRemCoinsDescsSelf Rem mnom can targetSing
+                    in a & _1.coinsTbl.ind targetId %~ (<> negateCoins can)
+                         & _1.coinsTbl.ind i        %~ (<>             can)
+                         & _2 <>~ toSelfs' ++ mkCan'tRemCoinsDesc can't
                          & _3 <>~ toSelfs'
                          & _4 <>~ c
+
+
+mkCan'tRemCoinsDesc :: Coins -> [Text]
+mkCan'tRemCoinsDesc = mkCoinsMsgs (can'tCoinsDescHelper sorryRemEnc)
 
 
 -----
 
 
+-- TODO: Still needs to be refactored for enc.
 helperRemEitherInv :: Id
-                   -> MudState
                    -> Desig
-                   -> PutOrRem
                    -> Maybe NthOfM
                    -> FromId
-                   -> ToId
-                   -> ToSing
-                   -> (InvTbl, [Text], [Broadcast], [Text])
+                   -> Sing
+                   -> GenericIntermediateRes
                    -> Either Text Inv
-                   -> (InvTbl, [Text], [Broadcast], [Text])
-helperRemEitherInv i ms d por mnom fi ti ts a = \case
+                   -> GenericIntermediateRes
+helperRemEitherInv i d mnom targetId targetSing a@(ms, _, _, _) = \case
   Left  msg -> a & _2 <>~ pure msg
-  Right is  -> let (is', toSelfs) = onTrue (ti `elem` is) f (is, view _2 a)
-                   f pair         = pair & _1 %~  filter (/= ti)
-                                         & _2 <>~ (pure . sorryPutInsideSelf $ ts)
-                   (toSelfs', bs) = mkPutRemInvDescs i ms d por mnom is' ts
-               in ()# (a^._1.ind fi) ? sorry :? (a & _1.ind fi %~  (\\ is')
-                                                   & _1.ind ti %~  (sortInv ms . (++ is'))
-                                                   & _2        .~  (toSelfs ++ toSelfs')
-                                                   & _3        <>~ bs
-                                                   & _4        <>~ toSelfs')
-  where
-    sorry = a & _2 <>~ (pure . sorryRemEmpty . getSing fi $ ms)
+  Right is  -> let (toSelfs, bs) = mkPutRemInvDescs i ms d Rem mnom is targetSing
+               in a & _1.invTbl.ind targetId %~  (\\ is)
+                    & _1.invTbl.ind i        %~  (sortInv ms . (++ is))
+                    & _2                     <>~ toSelfs
+                    & _3                     <>~ bs
+                    & _4                     <>~ toSelfs
 
 
 -----

@@ -135,6 +135,7 @@ module Mud.Cmds.Msgs.Sorry  ( sorryAdminChanSelf
                             , sorryRegPlaName
                             , sorryRemCoin
                             , sorryRemEmpty
+                            , sorryRemEnc
                             , sorryRemExcessCon
                             , sorryRemIgnore
                             , sorrySayCoins
@@ -483,7 +484,7 @@ sorryExpCmdTargetType = but "expressive commands can only target people."
 
 
 sorryGetEnc :: Text
-sorryGetEnc = "You are too encumbered to pick up "
+sorryGetEnc = "You are too encumbered to carry "
 
 
 sorryGetInEq :: Text
@@ -965,12 +966,16 @@ sorryRegPlaName n = "There is no regular player by the name of " <> dblQuote n <
 -----
 
 
-sorryRemCoin :: Text
-sorryRemCoin = can't "remove something from a coin."
-
-
 sorryRemEmpty :: Sing -> Text
 sorryRemEmpty s = "The " <> s <> " is empty."
+
+
+sorryRemEnc :: Text
+sorryRemEnc = sorryGetEnc
+
+
+sorryRemCoin :: Text
+sorryRemCoin = can't "remove something from a coin."
 
 
 sorryRemExcessCon :: Text

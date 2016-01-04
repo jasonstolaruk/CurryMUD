@@ -874,8 +874,8 @@ getAction p@(LowerNub' i         as) = genericAction p helper "get"
             invCoins               = first (i `delete`) . getNonIncogInvCoins ri $ ms
             d                      = mkStdDesig i ms DoCap
             (eiss, ecs)            = uncurry (resolveRmInvCoins i ms inRms) invCoins
-            (ms',  toSelfs,  bs,  logMsgs ) = foldl' (helperGetEitherInv       i d     ri i) (ms,  [],      [], []     ) eiss
-            (ms'', toSelfs', bs', logMsgs') =         helperGetDropEitherCoins i d Get ri i  (ms', toSelfs, bs, logMsgs) ecs
+            (ms',  toSelfs,  bs,  logMsgs ) = foldl' (helperGetEitherInv       i d     ri)  (ms,  [],      [], []     ) eiss
+            (ms'', toSelfs', bs', logMsgs') =         helperGetDropEitherCoins i d Get ri i (ms', toSelfs, bs, logMsgs) ecs
         in if ()!# invCoins
           then (ms'', (dropBlanks $ [ sorryInInv, sorryInEq ] ++ toSelfs', bs', logMsgs'))
           else (ms,   (pure sorryGetNothingHere,                           [],  []      ))
@@ -2100,14 +2100,14 @@ shuffleRem i ms d conName icir as invCoinsWithCon@(invWithCon, _) f =
                        eiss               = zipWith (curry . procGecrMisCon $ conSing) gecrs miss
                        ecs                = map (procReconciledCoinsCon conSing) rcs
                        mnom               = mkMaybeNthOfM ms icir conId conSing invWithCon
-                       (it, toSelfs,  bs,  logMsgs ) = foldl' (helperRemEitherInv  i ms d Rem mnom conId i conSing)
-                                                              (ms^.invTbl, [], [], [])
-                                                              eiss
-                       (ct, toSelfs', bs', logMsgs') =        helperRemEitherCoins i    d Rem mnom conId i conSing
-                                                              (ms^.coinsTbl, toSelfs, bs, logMsgs)
-                                                              ecs
+                       (ms',  toSelfs,  bs,  logMsgs ) = foldl' (helperRemEitherInv  i d mnom conId conSing)
+                                                                (ms, [], [], [])
+                                                                eiss
+                       (ms'', toSelfs', bs', logMsgs') =        helperRemEitherCoins i d mnom conId conSing
+                                                                (ms', toSelfs, bs, logMsgs)
+                                                                ecs
                    in if ()!# invCoinsInCon
-                     then (ms & invTbl .~ it & coinsTbl .~ ct, (guessWhat ++ toSelfs', bs', logMsgs'))
+                     then (ms'', (guessWhat ++ toSelfs', bs', logMsgs'))
                      else genericSorry ms . sorryRemEmpty $ conSing
         Right {} -> genericSorry ms sorryRemExcessCon
   where
