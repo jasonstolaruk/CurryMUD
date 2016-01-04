@@ -1658,13 +1658,13 @@ shufflePut i ms d conName icir as invCoinsWithCon@(invWithCon, _) mobInvCoins f 
                        eiss                   = zipWith (curry procGecrMisMobInv) gecrs miss
                        ecs                    = map procReconciledCoinsMobInv rcs
                        mnom                   = mkMaybeNthOfM ms icir conId conSing invWithCon
-                       (it, toSelfs,  bs,  logMsgs ) = foldl' (helperPutRemEitherInv   i ms d Put mnom i conId conSing)
-                                                              (ms^.invTbl, [], [], [])
-                                                              eiss
-                       (ct, toSelfs', bs', logMsgs') =        helperPutRemEitherCoins  i    d Put mnom i conId conSing
-                                                              (ms^.coinsTbl, toSelfs, bs, logMsgs)
-                                                              ecs
-                   in (ms & invTbl .~ it & coinsTbl .~ ct, (dropBlanks $ [ sorryInEq, sorryInRm ] ++ toSelfs', bs', logMsgs'))
+                       (it,  toSelfs,  bs,  logMsgs ) = foldl' (helperPutEitherInv  i ms d Put mnom i conId conSing)
+                                                               (ms^.invTbl, [], [], [])
+                                                               eiss
+                       (ms', toSelfs', bs', logMsgs') =        helperPutEitherCoins i    d     mnom   conId conSing
+                                                               (ms, toSelfs, bs, logMsgs)
+                                                               ecs
+                   in (ms' & invTbl .~ it, (dropBlanks $ [ sorryInEq, sorryInRm ] ++ toSelfs', bs', logMsgs'))
         Right {} -> genericSorry ms sorryPutExcessCon
 
 
@@ -2100,10 +2100,10 @@ shuffleRem i ms d conName icir as invCoinsWithCon@(invWithCon, _) f =
                        eiss               = zipWith (curry . procGecrMisCon $ conSing) gecrs miss
                        ecs                = map (procReconciledCoinsCon conSing) rcs
                        mnom               = mkMaybeNthOfM ms icir conId conSing invWithCon
-                       (it, toSelfs,  bs,  logMsgs ) = foldl' (helperPutRemEitherInv   i ms d Rem mnom conId i conSing)
+                       (it, toSelfs,  bs,  logMsgs ) = foldl' (helperRemEitherInv  i ms d Rem mnom conId i conSing)
                                                               (ms^.invTbl, [], [], [])
                                                               eiss
-                       (ct, toSelfs', bs', logMsgs') =        helperPutRemEitherCoins  i    d Rem mnom conId i conSing
+                       (ct, toSelfs', bs', logMsgs') =        helperRemEitherCoins i    d Rem mnom conId i conSing
                                                               (ms^.coinsTbl, toSelfs, bs, logMsgs)
                                                               ecs
                    in if ()!# invCoinsInCon

@@ -18,7 +18,9 @@ module Mud.Data.State.Util.Calc ( calcBarLen
                                 , calcRegenMpDelay
                                 , calcRegenPpAmt
                                 , calcRegenPpDelay
+                                , calcVol
                                 , calcWeight
+                                , coinVol
                                 , coinWeight ) where
 
 import Mud.Data.Misc
@@ -163,3 +165,22 @@ calcWeight i ms = case getType i ms of
 
 coinWeight :: Int
 coinWeight = 2
+
+
+-----
+
+
+calcVol :: Id -> MudState -> Vol
+calcVol i ms = calcHelper i
+  where
+    calcHelper i' = case getType i' ms of
+      ConType -> sum [ onTrue (i' /= i) (+ getVol i' ms) 0, calcInvVol, calcCoinsVol ]
+      _       -> getVol i' ms
+      where
+        calcInvVol   = helper . getInv i' $ ms
+        helper       = sum . map calcHelper
+        calcCoinsVol = (* coinVol) . sum . coinsToList . getCoins i' $ ms
+
+
+coinVol :: Vol
+coinVol = 1

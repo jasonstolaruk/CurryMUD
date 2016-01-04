@@ -474,8 +474,8 @@ examineCoins i ms = let (map showText . coinsToList -> cs) = getCoins i ms in [ 
 
 
 examineCon :: ExamineHelper
-examineCon i ms = let c = getCon i ms in [ "Is clothing: " <> c^.isCloth.to showText
-                                         , "Capacity: "    <> c^.cap    .to showText ]
+examineCon i ms = let c = getCon i ms in [ "Is clothing: " <> c^.isCloth .to showText
+                                         , "Capacity: "    <> c^.capacity.to showText ]
 
 
 examineEnt :: ExamineHelper

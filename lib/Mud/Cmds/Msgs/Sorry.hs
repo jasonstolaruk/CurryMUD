@@ -116,6 +116,7 @@ module Mud.Cmds.Msgs.Sorry  ( sorryAdminChanSelf
                             , sorryPutInEq
                             , sorryPutInRm
                             , sorryPutInsideSelf
+                            , sorryPutVol
                             , sorryQuitCan'tAbbrev
                             , sorryReadyAlreadyWearing
                             , sorryReadyAlreadyWearingRing
@@ -874,6 +875,10 @@ sorryPutInRm = butCan't "put item in your current room into a container. Please 
 
 sorryPutInsideSelf :: Sing -> Text
 sorryPutInsideSelf s = can't $ "put the " <> s <> " inside itself."
+
+
+sorryPutVol :: Sing -> Text
+sorryPutVol s = "The " <> s <> " is too full to contain "
 
 
 -----

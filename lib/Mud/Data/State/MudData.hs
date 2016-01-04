@@ -179,11 +179,11 @@ instance Monoid Coins where
 
 
 -- Has an object (and an entity) and an inventory and coins.
-data Con = Con { _isCloth :: Bool
-               , _cap     :: Cap } deriving (Eq, Generic, Show)
+data Con = Con { _isCloth  :: Bool
+               , _capacity :: Vol } deriving (Eq, Generic, Show)
 
 
-type Cap = Int
+type Vol = Int
 
 
 type ConName = Text
@@ -392,7 +392,7 @@ type NpcServerAsync = Async ()
 
 -- Has an entity.
 data Obj = Obj { _weight :: Int
-               , _vol    :: Int } deriving (Eq, Generic, Show)
+               , _vol    :: Vol } deriving (Eq, Generic, Show)
 
 
 -- ==================================================

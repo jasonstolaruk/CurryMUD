@@ -25,8 +25,10 @@ module Mud.Cmds.Util.Pla ( armSubToSlot
                          , helperGiveEitherCoins
                          , helperGiveEitherInv
                          , helperLinkUnlink
-                         , helperPutRemEitherCoins
-                         , helperPutRemEitherInv
+                         , helperPutEitherCoins
+                         , helperPutEitherInv
+                         , helperRemEitherCoins
+                         , helperRemEitherInv
                          , inOutOnOffs
                          , InvWithCon
                          , IsConInRm
@@ -365,20 +367,33 @@ helperGetDropEitherCoins i d god fi ti (ms, toSelfs, bs, logMsgs) ecs =
 
 
 partitionCoinsByEnc :: Id -> MudState -> Coins -> (Coins, Coins)
-partitionCoinsByEnc i ms coins = let maxEnc           = calcMaxEnc i ms
-                                     w                = calcWeight i ms
-                                     noOfCoins        = sum . coinsToList $ coins
-                                     totalCoinsWeight = noOfCoins * coinWeight
-                                 in if w + totalCoinsWeight <= maxEnc
-                                   then (coins, mempty)
-                                   else let availWeight  = maxEnc - w
-                                            canNoOfCoins = availWeight `quot` coinWeight
-                                         in mkCanCan't coins canNoOfCoins
-  where
-    mkCanCan't (Coins (c, 0, 0)) n = (Coins (n, 0, 0), Coins (c - n, 0,     0    ))
-    mkCanCan't (Coins (0, s, 0)) n = (Coins (0, n, 0), Coins (0,     s - n, 0    ))
-    mkCanCan't (Coins (0, 0, g)) n = (Coins (0, 0, n), Coins (0,     0,     g - n))
-    mkCanCan't c                 n = patternMatchFail "partitionCoinsByEnc" [ showText c, showText n ]
+partitionCoinsByEnc = partitionCoinsHelper calcMaxEnc calcWeight coinWeight
+
+
+partitionCoinsHelper :: (Id -> MudState -> Int)
+                     -> (Id -> MudState -> Int)
+                     -> Int
+                     -> Id
+                     -> MudState
+                     -> Coins
+                     -> (Coins, Coins)
+partitionCoinsHelper calcMax calcCurr factor i ms coins =
+    let maxAmt    = calcMax  i ms
+        currAmt   = calcCurr i ms
+        noOfCoins = sum . coinsToList $ coins
+        coinsAmt  = noOfCoins * factor
+    in if currAmt + coinsAmt <= maxAmt
+      then (coins, mempty)
+      else let availAmt     = maxAmt - currAmt
+               canNoOfCoins = availAmt `quot` factor
+           in mkCanCan'tCoins coins canNoOfCoins
+
+
+mkCanCan'tCoins :: Coins -> Int -> (Coins, Coins)
+mkCanCan'tCoins (Coins (c, 0, 0)) n = (Coins (n, 0, 0), Coins (c - n, 0,     0    ))
+mkCanCan'tCoins (Coins (0, s, 0)) n = (Coins (0, n, 0), Coins (0,     s - n, 0    ))
+mkCanCan'tCoins (Coins (0, 0, g)) n = (Coins (0, 0, n), Coins (0,     0,     g - n))
+mkCanCan'tCoins c                 n = patternMatchFail "mkCanCan'tCoins" [ showText c, showText n ]
 
 
 mkGetDropCoinsDescOthers :: Id -> Desig -> GetOrDrop -> Coins -> [Broadcast]
@@ -402,9 +417,11 @@ mkCoinsMsgs f (Coins (cop, sil, gol)) = catMaybes [ c, s, g ]
 
 
 mkCan'tGetCoinsDesc :: Coins -> [Text]
-mkCan'tGetCoinsDesc = mkCoinsMsgs helper
-  where
-    helper a cn = sorryGetEnc <> (a == 1 ? ("the " <> cn <> ".") :? T.concat [ showText a, " ", cn, "s." ])
+mkCan'tGetCoinsDesc = mkCoinsMsgs (can'tCoinsDescHelper sorryGetEnc)
+
+
+can'tCoinsDescHelper :: Text -> Int -> Text -> Text
+can'tCoinsDescHelper t a cn = t <> (a == 1 ? ("the " <> cn <> ".") :? T.concat [ showText a, " ", cn, "s." ])
 
 
 -----
@@ -493,9 +510,7 @@ mkGiveCoinsDescsSelf targetDesig = mkCoinsMsgs helper
 
 
 mkCan'tGiveCoinsDesc :: Text -> Coins -> [Text]
-mkCan'tGiveCoinsDesc targetDesig = mkCoinsMsgs helper
-  where
-    helper a cn = sorryGiveEnc targetDesig <> (a == 1 ? ("the " <> cn <> ".") :? T.concat [ showText a, " ", cn, "s." ])
+mkCan'tGiveCoinsDesc targetDesig = mkCoinsMsgs (can'tCoinsDescHelper (sorryGiveEnc targetDesig))
 
 
 -----
@@ -569,29 +584,31 @@ type NthOfM = (Int, Int)
 type ToSing = Sing
 
 
--- TODO: Check for encumbrance when a player removes coins from a container in the room.
-helperPutRemEitherCoins :: Id
-                        -> Desig
-                        -> PutOrRem
-                        -> Maybe NthOfM
-                        -> FromId
-                        -> ToId
-                        -> ToSing
-                        -> (CoinsTbl, [Text], [Broadcast], [Text])
-                        -> [Either [Text] Coins]
-                        -> (CoinsTbl, [Text], [Broadcast], [Text])
-helperPutRemEitherCoins i d por mnom fi ti ts (ct, toSelfs, bs, logMsgs) ecs =
-    let (ct', toSelfs', logMsgs', canCoins) = foldl' helper (ct, toSelfs, logMsgs, mempty) ecs
-    in (ct', toSelfs', bs ++ mkPutRemCoinsDescOthers i d por mnom canCoins ts, logMsgs')
+helperPutEitherCoins :: Id
+                     -> Desig
+                     -> Maybe NthOfM
+                     -> ToId
+                     -> ToSing
+                     -> GenericIntermediateRes
+                     -> [Either [Text] Coins]
+                     -> GenericIntermediateRes
+helperPutEitherCoins i d mnom targetId targetSing (ms, toSelfs, bs, logMsgs) ecs =
+    let (ms', toSelfs', logMsgs', canCoins) = foldl' helper (ms, toSelfs, logMsgs, mempty) ecs
+    in (ms', toSelfs', bs ++ mkPutRemCoinsDescOthers i d Put mnom canCoins targetSing, logMsgs')
   where
-    helper a = \case
+    helper a@(ms', _, _, _) = \case
       Left  msgs -> a & _2 <>~ msgs
-      Right c    -> let toSelfs' = mkPutRemCoinsDescsSelf por mnom c ts
-                    in a & _1.ind fi %~ (<> negateCoins c)
-                         & _1.ind ti %~ (<> c)
-                         & _2 <>~ toSelfs' -- TODO: Append a "can't remove coins" message. See "helperGetDropEitherCoins".
-                         & _3 <>~ toSelfs'
-                         & _4 <>~ c
+      Right c    -> let (can, can't) = partitionCoinsByVol targetId ms' c
+                        toSelfs'     = mkPutRemCoinsDescsSelf Put mnom can targetSing
+                    in a & _1.coinsTbl.ind i        %~  (<> negateCoins can)
+                         & _1.coinsTbl.ind targetId %~  (<>             can)
+                         & _2                       <>~ toSelfs' ++ mkCan'tPutCoinsDesc can't targetSing
+                         & _3                       <>~ toSelfs'
+                         & _4                       <>~ can
+
+
+partitionCoinsByVol :: Id -> MudState -> Coins -> (Coins, Coins)
+partitionCoinsByVol = partitionCoinsHelper getCapacity calcVol coinVol
 
 
 mkPutRemCoinsDescOthers :: Id -> Desig -> PutOrRem -> Maybe NthOfM -> Coins -> ToSing -> [Broadcast]
@@ -640,22 +657,25 @@ onTheGround :: Maybe NthOfM -> Text
 onTheGround = (|!| " on the ground") . ((both %~ Sum) <$>)
 
 
+mkCan'tPutCoinsDesc :: Coins -> Sing -> [Text]
+mkCan'tPutCoinsDesc can't targetSing = mkCoinsMsgs (can'tCoinsDescHelper (sorryPutVol targetSing)) can't
+
+
 -----
 
 
--- TODO: Check for encumbrance when a player removes something from a container in the room.
-helperPutRemEitherInv :: Id
-                      -> MudState
-                      -> Desig
-                      -> PutOrRem
-                      -> Maybe NthOfM
-                      -> FromId
-                      -> ToId
-                      -> ToSing
-                      -> (InvTbl, [Text], [Broadcast], [Text])
-                      -> Either Text Inv
-                      -> (InvTbl, [Text], [Broadcast], [Text])
-helperPutRemEitherInv i ms d por mnom fi ti ts a = \case
+helperPutEitherInv :: Id
+                   -> MudState
+                   -> Desig
+                   -> PutOrRem
+                   -> Maybe NthOfM
+                   -> FromId
+                   -> ToId
+                   -> ToSing
+                   -> (InvTbl, [Text], [Broadcast], [Text])
+                   -> Either Text Inv
+                   -> (InvTbl, [Text], [Broadcast], [Text])
+helperPutEitherInv i ms d por mnom fi ti ts a = \case
   Left  msg -> a & _2 <>~ pure msg
   Right is  -> let (is', toSelfs) = onTrue (ti `elem` is) f (is, view _2 a)
                    f pair         = pair & _1 %~  filter (/= ti)
@@ -703,6 +723,62 @@ mkPutRemInvDescs i ms d por mnom is ts = unzip . map helper . mkNameCountBothLis
                     , rest ], otherIds) )
     rest     = onTheGround mnom <> "."
     otherIds = i `delete` desigIds d
+
+
+-----
+
+
+helperRemEitherCoins :: Id
+                     -> Desig
+                     -> PutOrRem
+                     -> Maybe NthOfM
+                     -> FromId
+                     -> ToId
+                     -> ToSing
+                     -> (CoinsTbl, [Text], [Broadcast], [Text])
+                     -> [Either [Text] Coins]
+                     -> (CoinsTbl, [Text], [Broadcast], [Text])
+helperRemEitherCoins i d por mnom fi ti ts (ct, toSelfs, bs, logMsgs) ecs =
+    let (ct', toSelfs', logMsgs', canCoins) = foldl' helper (ct, toSelfs, logMsgs, mempty) ecs
+    in (ct', toSelfs', bs ++ mkPutRemCoinsDescOthers i d por mnom canCoins ts, logMsgs')
+  where
+    helper a = \case
+      Left  msgs -> a & _2 <>~ msgs
+      Right c    -> let toSelfs' = mkPutRemCoinsDescsSelf por mnom c ts
+                    in a & _1.ind fi %~ (<> negateCoins c)
+                         & _1.ind ti %~ (<> c)
+                         & _2 <>~ toSelfs' -- TODO: Append a "can't remove coins" message. See "helperGetDropEitherCoins".
+                         & _3 <>~ toSelfs'
+                         & _4 <>~ c
+
+
+-----
+
+
+helperRemEitherInv :: Id
+                   -> MudState
+                   -> Desig
+                   -> PutOrRem
+                   -> Maybe NthOfM
+                   -> FromId
+                   -> ToId
+                   -> ToSing
+                   -> (InvTbl, [Text], [Broadcast], [Text])
+                   -> Either Text Inv
+                   -> (InvTbl, [Text], [Broadcast], [Text])
+helperRemEitherInv i ms d por mnom fi ti ts a = \case
+  Left  msg -> a & _2 <>~ pure msg
+  Right is  -> let (is', toSelfs) = onTrue (ti `elem` is) f (is, view _2 a)
+                   f pair         = pair & _1 %~  filter (/= ti)
+                                         & _2 <>~ (pure . sorryPutInsideSelf $ ts)
+                   (toSelfs', bs) = mkPutRemInvDescs i ms d por mnom is' ts
+               in ()# (a^._1.ind fi) ? sorry :? (a & _1.ind fi %~  (\\ is')
+                                                   & _1.ind ti %~  (sortInv ms . (++ is'))
+                                                   & _2        .~  (toSelfs ++ toSelfs')
+                                                   & _3        <>~ bs
+                                                   & _4        <>~ toSelfs')
+  where
+    sorry = a & _2 <>~ (pure . sorryRemEmpty . getSing fi $ ms)
 
 
 -----

@@ -68,6 +68,13 @@ getArmSub i = view armSub . getArm i
 -----
 
 
+getCapacity :: Id -> MudState -> Vol
+getCapacity i = view capacity . getCon i
+
+
+-----
+
+
 getChan :: Id -> MudState -> Chan
 getChan i = view (chanTbl.ind i)
 
@@ -448,6 +455,13 @@ getTeleLinkTbl i = view (teleLinkMstrTbl.ind i)
 
 getType :: Id -> MudState -> Type
 getType i = view (typeTbl.ind i)
+
+
+-----
+
+
+getVol :: Id -> MudState -> Vol
+getVol i = view vol . getObj i
 
 
 -----

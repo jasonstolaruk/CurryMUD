@@ -39,6 +39,7 @@ CurryMUD will have the following features:
 * ANSI color.
 * Systems for reporting bugs and typos.
 * Weight and encumbrance.
+* Volume and container capacity.
 
 I am still in the initial stage of developing basic commands. There is very little content in the virtual world.
 
