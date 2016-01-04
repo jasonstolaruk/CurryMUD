@@ -1658,13 +1658,13 @@ shufflePut i ms d conName icir as invCoinsWithCon@(invWithCon, _) mobInvCoins f 
                        eiss                   = zipWith (curry procGecrMisMobInv) gecrs miss
                        ecs                    = map procReconciledCoinsMobInv rcs
                        mnom                   = mkMaybeNthOfM ms icir conId conSing invWithCon
-                       (it,  toSelfs,  bs,  logMsgs ) = foldl' (helperPutEitherInv  i ms d Put mnom i conId conSing)
-                                                               (ms^.invTbl, [], [], [])
-                                                               eiss
-                       (ms', toSelfs', bs', logMsgs') =        helperPutEitherCoins i    d     mnom   conId conSing
-                                                               (ms, toSelfs, bs, logMsgs)
-                                                               ecs
-                   in (ms' & invTbl .~ it, (dropBlanks $ [ sorryInEq, sorryInRm ] ++ toSelfs', bs', logMsgs'))
+                       (ms',  toSelfs,  bs,  logMsgs ) = foldl' (helperPutEitherInv  i d mnom conId conSing)
+                                                                (ms, [], [], [])
+                                                                eiss
+                       (ms'', toSelfs', bs', logMsgs') =        helperPutEitherCoins i d mnom conId conSing
+                                                                (ms', toSelfs, bs, logMsgs)
+                                                                ecs
+                   in (ms'', (dropBlanks $ [ sorryInEq, sorryInRm ] ++ toSelfs', bs', logMsgs'))
         Right {} -> genericSorry ms sorryPutExcessCon
 
 
