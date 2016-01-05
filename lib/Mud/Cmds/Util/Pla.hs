@@ -464,10 +464,14 @@ partitionInvHelper f ms maxAmt acc@(x, _, _) targetId = let x' = x + f targetId 
 
 
 mkCan'tGetInvDescs :: Id -> MudState -> Inv -> [Text]
-mkCan'tGetInvDescs i ms = map helper . mkNameCountBothList i ms
+mkCan'tGetInvDescs = can'tInvDescsHelper sorryGetEnc
+
+
+can'tInvDescsHelper :: Text -> Id -> MudState -> Inv -> [Text]
+can'tInvDescsHelper t i ms = map helper . mkNameCountBothList i ms
   where
-    helper (_, c, b@(s, _)) = sorryGetEnc <> (c == 1 ?  ("the " <> s <> ".")
-                                                     :? T.concat [ showText c, " ", mkPlurFromBoth b, "." ])
+    helper (_, c, b@(s, _)) = t <> (c == 1 ?  ("the " <> s <> ".")
+                                           :? T.concat [ showText c, " ", mkPlurFromBoth b, "." ])
 
 
 -----
@@ -513,7 +517,7 @@ mkGiveCoinsDescsSelf targetDesig = mkCoinsMsgs helper
 
 
 mkCan'tGiveCoinsDesc :: Text -> Coins -> [Text]
-mkCan'tGiveCoinsDesc targetDesig = mkCoinsMsgs (can'tCoinsDescHelper (sorryGiveEnc targetDesig))
+mkCan'tGiveCoinsDesc targetDesig = mkCoinsMsgs (can'tCoinsDescHelper . sorryGiveEnc $ targetDesig)
 
 
 -----
@@ -534,7 +538,7 @@ helperGiveEitherInv i d targetId a@(ms, _, _, _) = \case
     in a & _1.invTbl.ind i        %~  (\\ cans)
          & _1.invTbl.ind targetId %~  (sortInv ms . (++ cans))
          & _2                     <>~ toSelfs ++
-                                      mkCan'tGiveInvDescs i ms (serialize targetDesig { shouldCap = DoCap }) can'ts
+                                      mkCan'tGiveInvDescs (serialize targetDesig { shouldCap = DoCap }) i ms can'ts
          & _3                     <>~ bs
          & _4                     <>~ toSelfs
 
@@ -555,13 +559,8 @@ mkGiveInvDescs i ms d targetId targetDesig = second concat . unzip . map helper 
     otherIds = desigIds d \\ [ i, targetId ]
 
 
-mkCan'tGiveInvDescs :: Id -> MudState -> Text -> Inv -> [Text]
-mkCan'tGiveInvDescs i ms targetDesig = map helper . mkNameCountBothList i ms
-  where
-    helper (_, c, b@(s, _)) = sorryGiveEnc targetDesig <> rest
-      where
-        rest = c == 1 ?  ("the " <> s <> ".")
-                      :? T.concat [ showText c, " ", mkPlurFromBoth b, "." ]
+mkCan'tGiveInvDescs :: Text -> Id -> MudState -> Inv -> [Text]
+mkCan'tGiveInvDescs = can'tInvDescsHelper
 
 
 -----
@@ -662,7 +661,7 @@ onTheGround = (|!| " on the ground") . ((both %~ Sum) <$>)
 
 
 mkCan'tPutCoinsDesc :: Coins -> Sing -> [Text]
-mkCan'tPutCoinsDesc can't targetSing = mkCoinsMsgs (can'tCoinsDescHelper (sorryPutVol targetSing)) can't
+mkCan'tPutCoinsDesc can't targetSing = mkCoinsMsgs (can'tCoinsDescHelper . sorryPutVol $ targetSing) can't
 
 
 -----
@@ -688,7 +687,7 @@ helperPutEitherInv i d mnom targetId targetSing a@(ms, _, _, _) = \case
          & _1.invTbl.ind targetId %~  (sortInv ms . (++ cans))
          & _2                     .~  concat [ toSelfs
                                              , toSelfs'
-                                             , mkCan'tPutInvDescs i ms targetSing can'ts ]
+                                             , mkCan'tPutInvDescs targetSing i ms can'ts ]
          & _3                     <>~ bs
          & _4                     <>~ toSelfs'
 
@@ -732,11 +731,8 @@ mkPutRemInvDescs i ms d por mnom is conSing = unzip . map helper . mkNameCountBo
     otherIds = i `delete` desigIds d
 
 
-mkCan'tPutInvDescs :: Id -> MudState -> ToSing -> Inv -> [Text]
-mkCan'tPutInvDescs i ms targetSing = map helper . mkNameCountBothList i ms
-  where
-    helper (_, c, b@(s, _)) = sorryPutVol targetSing <> (c == 1 ?  ("the " <> s <> ".")
-                                                                :? T.concat [ showText c, " ", mkPlurFromBoth b, "." ])
+mkCan'tPutInvDescs :: ToSing -> Id -> MudState -> Inv -> [Text]
+mkCan'tPutInvDescs = can'tInvDescsHelper . sorryPutVol
 
 
 -----
@@ -772,7 +768,6 @@ mkCan'tRemCoinsDesc = mkCoinsMsgs (can'tCoinsDescHelper sorryRemEnc)
 -----
 
 
--- TODO: Still needs to be refactored for enc.
 helperRemEitherInv :: Id
                    -> Desig
                    -> Maybe NthOfM
@@ -783,12 +778,17 @@ helperRemEitherInv :: Id
                    -> GenericIntermediateRes
 helperRemEitherInv i d mnom targetId targetSing a@(ms, _, _, _) = \case
   Left  msg -> a & _2 <>~ pure msg
-  Right is  -> let (toSelfs, bs) = mkPutRemInvDescs i ms d Rem mnom is targetSing
-               in a & _1.invTbl.ind targetId %~  (\\ is)
-                    & _1.invTbl.ind i        %~  (sortInv ms . (++ is))
-                    & _2                     <>~ toSelfs
+  Right is  -> let (_, cans, can'ts) = foldl' (partitionInvByEnc ms . calcMaxEnc i $ ms) (calcWeight i ms, [], []) is
+                   (toSelfs, bs)     = mkPutRemInvDescs i ms d Rem mnom cans targetSing
+               in a & _1.invTbl.ind targetId %~  (\\ cans)
+                    & _1.invTbl.ind i        %~  (sortInv ms . (++ cans))
+                    & _2                     <>~ toSelfs ++ mkCan'tRemInvDescs i ms can'ts
                     & _3                     <>~ bs
                     & _4                     <>~ toSelfs
+
+
+mkCan'tRemInvDescs :: Id -> MudState -> Inv -> [Text]
+mkCan'tRemInvDescs = can'tInvDescsHelper sorryRemEnc
 
 
 -----
