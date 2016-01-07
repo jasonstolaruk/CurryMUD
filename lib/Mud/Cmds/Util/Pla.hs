@@ -743,17 +743,20 @@ helperRemEitherCoins :: Id
                      -> Maybe NthOfM
                      -> FromId
                      -> Sing
+                     -> IsConInRm
                      -> GenericIntermediateRes
                      -> [Either [Text] Coins]
                      -> GenericIntermediateRes
-helperRemEitherCoins i d mnom targetId targetSing (ms, toSelfs, bs, logMsgs) ecs =
+helperRemEitherCoins i d mnom targetId targetSing icir (ms, toSelfs, bs, logMsgs) ecs =
     let (ms', toSelfs', logMsgs', canCoins) = foldl' helper (ms, toSelfs, logMsgs, mempty) ecs
     in (ms', toSelfs', bs ++ mkPutRemCoinsDescOthers i d Rem mnom canCoins targetSing, logMsgs')
   where
     helper a@(ms', _, _, _) = \case
       Left  msgs -> a & _2 <>~ msgs
-      Right c    -> let (can, can't) = partitionCoinsByEnc i ms' c -- TODO: Only do this for containers on the ground.
-                        toSelfs'     = mkPutRemCoinsDescsSelf Rem mnom can targetSing
+      Right c    -> let (can, can't)  = f c
+                        f | icir      = partitionCoinsByEnc i ms'
+                          | otherwise = (, mempty)
+                        toSelfs'      = mkPutRemCoinsDescsSelf Rem mnom can targetSing
                     in a & _1.coinsTbl.ind targetId %~ (<> negateCoins can)
                          & _1.coinsTbl.ind i        %~ (<>             can)
                          & _2 <>~ toSelfs' ++ mkCan'tRemCoinsDesc can't
@@ -773,12 +776,15 @@ helperRemEitherInv :: Id
                    -> Maybe NthOfM
                    -> FromId
                    -> Sing
+                   -> IsConInRm
                    -> GenericIntermediateRes
                    -> Either Text Inv
                    -> GenericIntermediateRes
-helperRemEitherInv i d mnom targetId targetSing a@(ms, _, _, _) = \case
+helperRemEitherInv i d mnom targetId targetSing icir a@(ms, _, _, _) = \case
   Left  msg -> a & _2 <>~ pure msg
-  Right is  -> let (_, cans, can'ts) = foldl' (partitionInvByEnc ms . calcMaxEnc i $ ms) (calcWeight i ms, [], []) is
+  Right is  -> let (_, cans, can'ts) = f is
+                   f | icir          = foldl' (partitionInvByEnc ms . calcMaxEnc i $ ms) (calcWeight i ms, [], [])
+                     | otherwise     = (0, , [])
                    (toSelfs, bs)     = mkPutRemInvDescs i ms d Rem mnom cans targetSing
                in a & _1.invTbl.ind targetId %~  (\\ cans)
                     & _1.invTbl.ind i        %~  (sortInv ms . (++ cans))

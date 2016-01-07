@@ -2100,10 +2100,10 @@ shuffleRem i ms d conName icir as invCoinsWithCon@(invWithCon, _) f =
                        eiss               = zipWith (curry . procGecrMisCon $ conSing) gecrs miss
                        ecs                = map (procReconciledCoinsCon conSing) rcs
                        mnom               = mkMaybeNthOfM ms icir conId conSing invWithCon
-                       (ms',  toSelfs,  bs,  logMsgs ) = foldl' (helperRemEitherInv  i d mnom conId conSing)
+                       (ms',  toSelfs,  bs,  logMsgs ) = foldl' (helperRemEitherInv  i d mnom conId conSing icir)
                                                                 (ms, [], [], [])
                                                                 eiss
-                       (ms'', toSelfs', bs', logMsgs') =        helperRemEitherCoins i d mnom conId conSing
+                       (ms'', toSelfs', bs', logMsgs') =        helperRemEitherCoins i d mnom conId conSing icir
                                                                 (ms', toSelfs, bs, logMsgs)
                                                                 ecs
                    in if ()!# invCoinsInCon
