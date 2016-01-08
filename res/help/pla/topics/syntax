@@ -1,0 +1,90 @@
+\h SYNTAX \d
+
+This help topic concerns CurryMUD command syntax: first we address some key points to keep in mind, then we consider how CurryMUD commands are structured according to a handful of patterns.
+
+-
+
+\uCONCISION\d
+CurryMUD commands aim to be concise. To this end, commands do not accept grammatical articles ("a," "the," etc.) or prepositions ("to," "from," etc.). Rather than "give an apple to Taro", we simply have \qgive apple taro\d.
+
+\uABBREVIATION\d
+The names of commands and the names of just about everything else may be abbreviated. You may, for example, simply type \qeq\d instead of the much longer \qequipment\d.
+
+The subject of abbreviation is fully covered in its own help topic (type \qhelp abbreviation\d - or just \qh a\d (!) - for more information).
+
+\uPREFIXES\d
+You can add prefixes to the names of things in your commands so as to indicate location, ordinal number, and amount. Here are some example use cases:
+* You want to put something into a container in the room (as opposed to a container in your inventory)... use the \lr#l\d (room) prefix: \qput bread \lr#l\qsack\d2`
+  (In addition to \lr#l\d, \li#l\d indicates inventory, while \le#l\d indicates readied equipment.)
+* You want to drop your second potion... use the \p#i\d (ordinal) prefix: \qdrop \p2#i\qpotion\d2`
+* You want to give 5 gold pieces to Hanako... use the \p#m\d (amount) prefix: \qgive \p5#m\qgp hanako\d2`
+* You want to give all your bread to the male dwarf... use the \p#a\d (all) prefix: \qgive \p#a\qbread mdwarf\d2`
+
+The subject of prefixes is fully covered in it's own help topic (type \qhelp prefixes\d for more information).
+
+-
+
+\uSYNTACTIC PATTERNS\d
+
+While there are many commands available to you in CurryMUD, each command is structured according to one of a handful of syntactic patterns. Taking a few minutes to review the most significant patterns will help you to remember the many commands and how to use them.
+
+COMMANDS THAT DO NOT ACCEPT ARGUMENTS
+
+Many commands do not accept arguments, and will simply ignore them when provided.
+Examples include "bars", "color", "exits", "motd", "stats", "uptime", and "whoami".
+
+MOVEMENT COMMANDS
+
+The various movement commands ("n", "s", "e", "w", etc.) may be used alone, or strung together: type \qn ne u\d to go north, northeast, then up, in succession.
+
+ONE ORE MORE
+
+The majority of CurryMUD commands allow you to specify one or more things. While \qgive apple taro\d is perfectly fine, \qgive apple orange pear taro\d is also legal.
+
+GET A LIST, OR GET DESCRIPTIONS
+
+The "inventory", "equipment", and "look" commands have been designed to reflect the fact that in the virtual world, entities may exist in one of three places: one's inventory, one's readied equipment, or a room. These three commands have the following in common:
+1) When executed without arguments, they show you a list of things (in the case of the "look" command, you get the description of your current room along with a list of what's in the room).3`
+2) When you specify the names of one or more things, you get the description(s) of those things.3`
+
+Consider the following example:
+* You type \ql\d ("look") and see that there is a ring in the room. Typing \ql ring\d gives you a description of the ring.2`
+* You pick up the ring (\qget ring\d). The ring is now in your inventory, which you can verify by typing \qi\d ("inventory") to get a list of all the items in your inventory. Now \qi ring\d will give you the description of the ring.2`
+* You wear the ring (\qready ring\d). The ring is now in your readied equipment, which you can verify by typing \qeq\d ("equipment") to get a list of all the items you've readied. Now \qeq ring\d will give you the description of the ring.2`
+
+GET THE FULL LIST, OR SEARCH THE LIST
+
+The "?", "expressive", and "who" commands have the following in common:
+1) When executed without arguments, they show you a list of things:3`
+   \q?\d will give you a list of available commands along with short descriptions of what they do.
+   \qexpressive\d will give you a list of available expressive commands along with illustrations of what they do.
+   \qwho\d will give you a list of all the people that are currently "awake" (logged in).
+2) When you specify one or more terms, the list is searched for those terms and you see the results.3`
+   \qexpressive laugh\d will display entries in the expressive command list containing the word "laugh".
+
+COMMAND_NAME + OBJECT(S) + TARGET
+
+\qshow flower hanako\d4`
+\qgive flower hanako\d4`
+\qput tunic box\d4`
+\qremove tunic box\d4`
+\qconnect taro hunt\d (to connect Taro to the "hunt" channel)4`
+\qdisconnect taro hunt\d4`
+
+COMMAND_NAME + MESSAGE
+
+\qsay nice to meet you, too\d (everyone in the room will hear you)4`
+\qquestion how can I see which administrators are currently logged in?\d (to ask a question on the question channel)4`
+
+COMMAND_NAME + TARGET + MESSAGE
+
+\qadmin jason are you available? I need your assistance\d (to send a message to Jason)4`
+\qtelepathy hanako where have you been? I've missed you!\d (to telepathically send a message to Hanako)4`
+\qchannel hunt hello!\d (to telepathically send a message on the "hunt" channel)4`
+
+CHANGE SETTINGS
+
+\qset columns=40 lines=20\d (to change your columns setting to 40 and your lines setting to 20)4`
+\qtune taro=in hanako=out\d (to tune Taro in and Hanako out)4`
+
+\uSEE ALSO\n
