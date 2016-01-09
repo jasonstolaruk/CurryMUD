@@ -1,6 +1,6 @@
 \h SYNTAX \d
 
-This help topic concerns CurryMUD command syntax. First we address some key points to keep in mind, then we examine how CurryMUD commands are structured according to a handful of patterns.
+Command "syntax" is concerned with the structure of commands, in terms of what sort of arguments are expected where, and what those arguments should look like. Here, we discuss CurryMUD's command syntax: first we address some key points to keep in mind, then we examine how CurryMUD commands are structured according to a handful of patterns.
 
 -
 
@@ -10,21 +10,24 @@ CurryMUD commands aim to be concise. To this end, commands do not accept grammat
 \uABBREVIATION\d
 The names of commands themselves, and the names of just about everything else, may be abbreviated. You may, for example, simply type \qeq\d instead of the much longer \qequipment\d.
 
-The subject of abbreviation is fully covered in its own help topic (type \qhelp abbreviation\d - or just \qh a\d (!) - for more information).
+The subject of abbreviation is fully covered in its own help topic (type \qhelp abbreviation\d - or just \qh a\d - for more information).
 
 \uSTACKING MOVEMENT COMMANDS\d
-
 The various movement commands ("n", "s", "e", "w", etc.) are unique in that may be used alone, or strung together: type \qn ne u\d to go north, northeast, then up, in succession.
 
 \uPREFIXES\d
 You can add prefixes to the names of things in your commands so as to indicate location, ordinal number, and amount. Here are some example use cases:
-* You want to put something into a container in the room (as opposed to a container in your inventory)... use the \lr#l\d (room) prefix: \qput bread \lr#l\qsack\d2`
+* You want to put something into a container in the room (as opposed to a container in your inventory)... use the \lr#l\d (room) prefix:
+  \qput bread \lr#l\qsack\d2`
   (In addition to \lr#l\d, \li#l\d indicates inventory, while \le#l\d indicates readied equipment.)
-* You want to drop your second potion... use the \p#i\d (ordinal) prefix: \qdrop \p2#i\qpotion\d2`
-* You want to give 5 gold pieces to Hanako... use the \p#m\d (amount) prefix: \qgive \p5#m\qgp hanako\d2`
-* You want to give all of your bread to the male dwarf... use the \p#a\d (all) prefix: \qgive \p#a\qbread mdwarf\d2`
+* You want to drop your second potion... use the \p#i\d (ordinal) prefix:
+  \qdrop \p2#i\qpotion\d2`
+* You want to give 5 gold pieces to Hanako... use the \p#m\d (amount) prefix:
+  \qgive \p5#m\qgp hanako\d2`
+* You want to give all of your bread to the male dwarf... use the \p#a\d (all) prefix:
+  \qgive \p#a\qbread mdwarf\d2`
 
-The subject of prefixes is fully covered in it's own help topic (type \qhelp prefixes\d for more information).
+The subject of prefixes is fully covered in its own help topic (type \qhelp prefixes\d for more information).
 
 -
 
@@ -64,28 +67,35 @@ The "?", "expressive", and "who" commands have the following in common:
 
 COMMAND_NAME + OBJECT(S) + TARGET
 
-\qshow flower hanako\d4`
-\qgive flower hanako\d4`
-\qput tunic box\d4`
-\qremove tunic box\d4`
-\qconnect taro hunt\d (to connect Taro to the "hunt" channel)4`
-\qdisconnect taro hunt\d4`
+Examples of this pattern:
+\qshow flower hanako\d2`
+\qgive flower hanako\d2`
+\qput tunic box\d2`
+\qremove tunic box\d2`
+\qconnect taro hunt\d (to connect Taro to the "hunt" channel)2`
+\qdisconnect taro hunt\d2`
 
 COMMAND_NAME + MESSAGE
 
-\qsay nice to meet you, too\d (everyone in the room will hear you)4`
-\qquestion how can I see which administrators are currently logged in?\d (to ask a question on the question channel)4`
+There are two commands of note that follow this pattern: "say" and "question".
+\qsay nice to meet you, too\d (everyone in the room will hear you)2`
+\qquestion how can I see which administrators are currently logged in?\d (to ask a question on the question channel)2`
+
+Note that it is possible to address your message to a particular person, like so:
+\qsay \l#t\qmelf hello\d (to say hello to the male elf in the room)2`
+\qquestion \l#h\qdog welcome back!\d (to greet \udog\n on the question channel)2`
 
 COMMAND_NAME + TARGET + MESSAGE
 
-\qadmin jason are you available? I need your assistance\d (to send a message to Jason, a CurryMUD administrator)4`
-\qtelepathy hanako where have you been? I've missed you!\d (to telepathically send a message to Hanako)4`
-\qchannel hunt hello!\d (to telepathically send a message on the "hunt" channel)4`
+Examples of this pattern:
+\qadmin jason are you available? I need your assistance\d (to send a message to Jason, a CurryMUD administrator)2`
+\qtelepathy hanako where have you been? I've missed you!\d (to telepathically send a message to Hanako)2`
+\qchannel hunt hello!\d (to telepathically send a message on the "hunt" channel)2`
 
 SETTING=VALUE
 
 The "set" and "tune" commands accept arguments in the form of "setting=command":
-\qset columns=40 lines=20\d (to change your columns setting to 40 and your lines setting to 20)4`
-\qtune taro=in hanako=out\d (to tune Taro in and Hanako out)4`
+\qset columns=40 lines=20\d (to change your columns setting to 40 and your lines setting to 20)2`
+\qtune taro=in hanako=out\d (to tune Taro in and Hanako out)2`
 
 \uSEE ALSO\n
