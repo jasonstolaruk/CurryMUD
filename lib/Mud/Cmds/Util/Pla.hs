@@ -455,7 +455,7 @@ helperGetEitherInv i d fromId a@(ms, _, _, _) = \case
     sorryType targetId = sorryGetType . serialize . mkStdDesig targetId ms $ Don'tCap
 
 
-partitionInvByEnc :: MudState -> Int -> (Int, Inv, Inv) -> Id -> (Int, Inv, Inv)
+partitionInvByEnc :: MudState -> Weight -> (Weight, Inv, Inv) -> Id -> (Weight, Inv, Inv)
 partitionInvByEnc = partitionInvHelper calcWeight
 
 
@@ -586,6 +586,7 @@ helperLinkUnlink ms i mq cols =
 type NthOfM = (Int, Int)
 
 
+-- TODO: We still need to test put and remove.
 helperPutEitherCoins :: Id
                      -> Desig
                      -> Maybe NthOfM
@@ -690,7 +691,7 @@ helperPutEitherInv i d mnom toId toSing a@(ms, origToSelfs, _, _) = \case
          & _4                 <>~ toSelfs'
 
 
-partitionInvByVol :: MudState -> Int -> (Int, Inv, Inv) -> Id -> (Int, Inv, Inv)
+partitionInvByVol :: MudState -> Vol -> (Vol, Inv, Inv) -> Id -> (Vol, Inv, Inv)
 partitionInvByVol = partitionInvHelper calcVol
 
 

@@ -391,8 +391,11 @@ type NpcServerAsync = Async ()
 
 
 -- Has an entity.
-data Obj = Obj { _weight :: Int
+data Obj = Obj { _weight :: Weight
                , _vol    :: Vol } deriving (Eq, Generic, Show)
+
+
+type Weight = Int
 
 
 -- ==================================================

@@ -467,7 +467,7 @@ getVol i = view vol . getObj i
 -----
 
 
-getWeight :: Id -> MudState -> Int
+getWeight :: Id -> MudState -> Weight
 getWeight i = view weight . getObj i
 
 

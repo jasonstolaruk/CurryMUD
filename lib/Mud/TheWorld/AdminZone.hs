@@ -6,6 +6,8 @@ import Mud.Data.State.MudData
 import Mud.Data.State.Util.Put
 import Mud.TheWorld.AdminZoneIds
 import Mud.TheWorld.TutorialIds (iTutWelcome)
+import Mud.TopLvlDefs.Vols
+import Mud.TopLvlDefs.Weights
 import qualified Mud.Misc.Logging as L (logNotice)
 
 import Data.Bits (setBit, zeroBits)
@@ -292,7 +294,7 @@ createAdminZone = do
   -- ==================================================
   -- Room teleport names:
   putRmTeleName iCentral "central"
-  putRmTeleName iLounge "lounge"
+  putRmTeleName iLounge  "lounge"
 
   -- ==================================================
   -- Objects:
@@ -303,14 +305,14 @@ createAdminZone = do
               "kewpie doll" ""
               kewpieDesc
               zeroBits)
-         (Obj 25 1)
+         (Obj dollWeight dollVol)
   putObj iKewpie2
          (Ent iKewpie2
               (Just "doll")
               "kewpie doll" ""
               kewpieDesc
               zeroBits)
-         (Obj 25 1)
+         (Obj dollWeight dollVol)
   let weightDesc = "It's a heavy slab of metal."
   putObj i190Lb
          (Ent i190Lb
@@ -318,112 +320,112 @@ createAdminZone = do
               "190 lb weight" ""
               weightDesc
               zeroBits)
-         (Obj 19000 1)
+         (Obj 19000 9500)
   putObj i100Lb
          (Ent i100Lb
               (Just "weight")
               "100 lb weight" ""
               weightDesc
               zeroBits)
-         (Obj 10000 1)
+         (Obj 10000 5000)
   putObj i75Lb
          (Ent i75Lb
               (Just "weight")
               "75 lb weight" ""
               weightDesc
               zeroBits)
-         (Obj 7500 1)
+         (Obj 7500 3750)
   putObj i50Lb1
          (Ent i50Lb1
               (Just "weight")
               "50 lb weight" ""
               weightDesc
               zeroBits)
-         (Obj 5000 1)
+         (Obj 5000 2500)
   putObj i50Lb2
          (Ent i50Lb2
               (Just "weight")
               "50 lb weight" ""
               weightDesc
               zeroBits)
-         (Obj 5000 1)
+         (Obj 5000 2500)
   putObj i25Lb1
          (Ent i25Lb1
               (Just "weight")
               "25 lb weight" ""
               weightDesc
               zeroBits)
-         (Obj 2500 1)
+         (Obj 2500 1250)
   putObj i25Lb2
          (Ent i25Lb2
               (Just "weight")
               "25 lb weight" ""
               weightDesc
               zeroBits)
-         (Obj 2500 1)
+         (Obj 2500 1250)
   putObj i10Lb1
          (Ent i10Lb1
               (Just "weight")
               "10 lb weight" ""
               weightDesc
               zeroBits)
-         (Obj 1000 1)
+         (Obj 1000 500)
   putObj i10Lb2
          (Ent i10Lb2
               (Just "weight")
               "10 lb weight" ""
               weightDesc
               zeroBits)
-         (Obj 1000 1)
+         (Obj 1000 500)
   putObj i5Lb1
          (Ent i5Lb1
               (Just "weight")
               "5 lb weight" ""
               weightDesc
               zeroBits)
-         (Obj 500 1)
+         (Obj 500 250)
   putObj i5Lb2
          (Ent i5Lb2
               (Just "weight")
               "5 lb weight" ""
               weightDesc
               zeroBits)
-         (Obj 500 1)
+         (Obj 500 250)
   putObj i1Lb1
          (Ent i1Lb1
               (Just "weight")
               "1 lb weight" ""
               weightDesc
               zeroBits)
-         (Obj 100 1)
+         (Obj 100 50)
   putObj i1Lb2
          (Ent i1Lb2
               (Just "weight")
               "1 lb weight" ""
               weightDesc
               zeroBits)
-         (Obj 100 1)
+         (Obj 100 50)
   putObj i1Lb3
          (Ent i1Lb3
               (Just "weight")
               "1 lb weight" ""
               weightDesc
               zeroBits)
-         (Obj 100 1)
+         (Obj 100 50)
   putObj i1Lb4
          (Ent i1Lb4
               (Just "weight")
               "1 lb weight" ""
               weightDesc
               zeroBits)
-         (Obj 100 1)
+         (Obj 100 50)
   putObj i1Lb5
          (Ent i1Lb5
               (Just "weight")
               "1 lb weight" ""
               weightDesc
               zeroBits)
-         (Obj 100 1)
+         (Obj 100 50)
 
   -- ==================================================
   -- Clothing:
@@ -434,7 +436,7 @@ createAdminZone = do
                 "azure earring" ""
                 earringDesc
                 zeroBits)
-           (Obj 2 1)
+           (Obj earWeight earVol)
            Earring
   putCloth iEar2
            (Ent iEar2
@@ -442,7 +444,7 @@ createAdminZone = do
                 "crimson earring" ""
                 earringDesc
                 zeroBits)
-           (Obj 2 1)
+           (Obj earWeight earVol)
            Earring
   putCloth iEar3
            (Ent iEar3
@@ -450,7 +452,7 @@ createAdminZone = do
                 "sea green earring" ""
                 earringDesc
                 zeroBits)
-           (Obj 2 1)
+           (Obj earWeight earVol)
            Earring
   putCloth iEar4
            (Ent iEar4
@@ -458,7 +460,7 @@ createAdminZone = do
                 "onyx earring" ""
                 earringDesc
                 zeroBits)
-           (Obj 2 1)
+           (Obj earWeight earVol)
            Earring
   putCloth iEar5
            (Ent iEar5
@@ -466,7 +468,7 @@ createAdminZone = do
                 "azure earring" ""
                 earringDesc
                 zeroBits)
-           (Obj 2 1)
+           (Obj earWeight earVol)
            Earring
   putCloth iEar6
            (Ent iEar6
@@ -474,7 +476,7 @@ createAdminZone = do
                 "crimson earring" ""
                 earringDesc
                 zeroBits)
-           (Obj 2 1)
+           (Obj earWeight earVol)
            Earring
   putCloth iEar7
            (Ent iEar7
@@ -482,7 +484,7 @@ createAdminZone = do
                 "sea green earring" ""
                 earringDesc
                 zeroBits)
-           (Obj 2 1)
+           (Obj earWeight earVol)
            Earring
   putCloth iEar8
            (Ent iEar8
@@ -490,7 +492,7 @@ createAdminZone = do
                 "onyx earring" ""
                 earringDesc
                 zeroBits)
-           (Obj 2 1)
+           (Obj earWeight earVol)
            Earring
   let noseRingDesc = "It's a plain copper stud, intended to be worn on the nose."
   putCloth iNoseRing1
@@ -499,7 +501,7 @@ createAdminZone = do
                 "nose ring" ""
                 noseRingDesc
                 zeroBits)
-           (Obj 2 1)
+           (Obj noseWeight noseVol)
            NoseRing
   putCloth iNoseRing2
            (Ent iNoseRing2
@@ -507,7 +509,7 @@ createAdminZone = do
                 "nose ring" ""
                 noseRingDesc
                 zeroBits)
-           (Obj 2 1)
+           (Obj noseWeight noseVol)
            NoseRing
   putCloth iNoseRing3
            (Ent iNoseRing3
@@ -515,7 +517,7 @@ createAdminZone = do
                 "nose ring" ""
                 noseRingDesc
                 zeroBits)
-           (Obj 2 1)
+           (Obj noseWeight noseVol)
            NoseRing
   let mkNecklaceDesc x = "It's a simple " <> x <> " chain."
   putCloth iNeck1
@@ -524,7 +526,7 @@ createAdminZone = do
                 "bronze necklace" ""
                 (mkNecklaceDesc "bronze")
                 zeroBits)
-           (Obj 4 1)
+           (Obj neckWeight neckVol)
            Necklace
   putCloth iNeck2
            (Ent iNeck2
@@ -532,7 +534,7 @@ createAdminZone = do
                 "silver necklace" ""
                 (mkNecklaceDesc "silver")
                 zeroBits)
-           (Obj 4 1)
+           (Obj neckWeight neckVol)
            Necklace
   putCloth iNeck3
            (Ent iNeck3
@@ -540,7 +542,7 @@ createAdminZone = do
                 "gold necklace" ""
                 (mkNecklaceDesc "gold")
                 zeroBits)
-           (Obj 4 1)
+           (Obj neckWeight neckVol)
            Necklace
   putCloth iNeck4
            (Ent iNeck4
@@ -548,7 +550,7 @@ createAdminZone = do
                 "platinum necklace" ""
                 (mkNecklaceDesc "platinum")
                 zeroBits)
-           (Obj 4 1)
+           (Obj neckWeight neckVol)
            Necklace
   let charmBraceletDesc = "The bracelet is adorned with a variety of quaint charms in the shape of musical \
                           \instruments, fashioned out of pewter."
@@ -558,7 +560,7 @@ createAdminZone = do
                 "charm bracelet" ""
                 charmBraceletDesc
                 zeroBits)
-           (Obj 10 1)
+           (Obj 10 braceletVol)
            Bracelet
   let bangleBraceletDesc = "The bangle bracelet is made of smooth polished wood, stained an earthy shade of brown, and \
                            \about half an inch wide."
@@ -568,7 +570,7 @@ createAdminZone = do
                 "wooden bangle bracelet" ""
                 bangleBraceletDesc
                 zeroBits)
-           (Obj 1 1)
+           (Obj 1 braceletVol)
            Bracelet
   let beadedBraceletDesc = "This classic bracelet consist of small, spherical wooden beads, alternating black and \
                            \white in color."
@@ -578,7 +580,7 @@ createAdminZone = do
                 "beaded bracelet" ""
                 beadedBraceletDesc
                 zeroBits)
-           (Obj 2 1)
+           (Obj 2 braceletVol)
            Bracelet
   let pearlBraceletDesc = "Lustrous white pearls are strung together to make an eye-catching, fashionable accessory."
   putCloth iBracelet4
@@ -587,7 +589,7 @@ createAdminZone = do
                 "pearl bracelet" ""
                 pearlBraceletDesc
                 zeroBits)
-           (Obj 4 1)
+           (Obj 4 braceletVol)
            Bracelet
   putCloth iBracelet5
            (Ent iBracelet5
@@ -595,7 +597,7 @@ createAdminZone = do
                 "charm bracelet" ""
                 charmBraceletDesc
                 zeroBits)
-           (Obj 10 1)
+           (Obj 10 braceletVol)
            Bracelet
   putCloth iBracelet6
            (Ent iBracelet6
@@ -603,7 +605,7 @@ createAdminZone = do
                 "wooden bangle bracelet" ""
                 bangleBraceletDesc
                 zeroBits)
-           (Obj 1 1)
+           (Obj 1 braceletVol)
            Bracelet
   putCloth iBracelet7
            (Ent iBracelet7
@@ -611,7 +613,7 @@ createAdminZone = do
                 "beaded bracelet" ""
                 beadedBraceletDesc
                 zeroBits)
-           (Obj 2 1)
+           (Obj 2 braceletVol)
            Bracelet
   putCloth iBracelet8
            (Ent iBracelet8
@@ -619,7 +621,7 @@ createAdminZone = do
                 "pearl bracelet" ""
                 pearlBraceletDesc
                 zeroBits)
-           (Obj 4 1)
+           (Obj 4 braceletVol)
            Bracelet
   let mkRingDesc x = "It's a simple copper band prominently featuring a beautiful " <> x <> " stone."
   putCloth iRing1
@@ -628,7 +630,7 @@ createAdminZone = do
                 "garnet ring" ""
                 (mkRingDesc "garnet")
                 zeroBits)
-           (Obj 5 1)
+           (Obj ringWeight ringVol)
            Ring
   putCloth iRing2
            (Ent iRing2
@@ -636,7 +638,7 @@ createAdminZone = do
                 "amethyst ring" ""
                 (mkRingDesc "amethyst")
                 zeroBits)
-           (Obj 5 1)
+           (Obj ringWeight ringVol)
            Ring
   putCloth iRing3
            (Ent iRing3
@@ -644,7 +646,7 @@ createAdminZone = do
                 "aquamarine ring" ""
                 (mkRingDesc "aquamarine")
                 zeroBits)
-           (Obj 5 1)
+           (Obj ringWeight ringVol)
            Ring
   putCloth iRing4
            (Ent iRing4
@@ -652,7 +654,7 @@ createAdminZone = do
                 "diamond ring" ""
                 (mkRingDesc "diamond")
                 zeroBits)
-           (Obj 5 1)
+           (Obj ringWeight ringVol)
            Ring
   putCloth iRing5
            (Ent iRing5
@@ -660,7 +662,7 @@ createAdminZone = do
                 "garnet ring" ""
                 (mkRingDesc "garnet")
                 zeroBits)
-           (Obj 5 1)
+           (Obj ringWeight ringVol)
            Ring
   putCloth iRing6
            (Ent iRing6
@@ -668,7 +670,7 @@ createAdminZone = do
                 "amethyst ring" ""
                 (mkRingDesc "amethyst")
                 zeroBits)
-           (Obj 5 1)
+           (Obj ringWeight ringVol)
            Ring
   putCloth iRing7
            (Ent iRing7
@@ -676,7 +678,7 @@ createAdminZone = do
                 "aquamarine ring" ""
                 (mkRingDesc "aquamarine")
                 zeroBits)
-           (Obj 5 1)
+           (Obj ringWeight ringVol)
            Ring
   putCloth iRing8
            (Ent iRing8
@@ -684,7 +686,7 @@ createAdminZone = do
                 "diamond ring" ""
                 (mkRingDesc "diamond")
                 zeroBits)
-           (Obj 5 1)
+           (Obj ringWeight ringVol)
            Ring
   putCloth iRing9
            (Ent iRing9
@@ -692,7 +694,7 @@ createAdminZone = do
                 "emerald ring" ""
                 (mkRingDesc "emerald")
                 zeroBits)
-           (Obj 5 1)
+           (Obj ringWeight ringVol)
            Ring
   putCloth iChemise
            (Ent iChemise
@@ -701,7 +703,7 @@ createAdminZone = do
                 "This voluminous frock, worn on the upper body, is fashioned out of thin, smooth linen. It hangs just \
                 \below the waist, while its loose-cut, wide sleeves are elbow length."
                 zeroBits)
-           (Obj 100 1)
+           (Obj shirtWeight shirtVol)
            Shirt
   putCloth iTunic
            (Ent iTunic
@@ -710,7 +712,7 @@ createAdminZone = do
                 "This heavy wool tunic is waist length and short-sleeved. Decorative white embroidery along the neck, \
                 \sleeves, and waist adds an eye-catching touch."
                 zeroBits)
-           (Obj 225 1)
+           (Obj tunicWeight tunicVol)
            Shirt
   putCloth iApron
            (Ent iApron
@@ -718,7 +720,7 @@ createAdminZone = do
                 "heavy brown apron" ""
                 "This sturdy padded utility apron provides adequate protection while its wearer labors and toils."
                 zeroBits)
-           (Obj 225 1)
+           (Obj apronHeavyWeight apronHeavyVol)
            Smock
   putCloth iTabard
            (Ent iTabard
@@ -728,7 +730,7 @@ createAdminZone = do
                 \blue, a contrasting bright orange trim adds a distinct accent along the hems. There is a short collar \
                 \around the neck, complete with a small decorative yellow bowtie."
                 zeroBits)
-           (Obj 150 1)
+           (Obj tabardWeight tabardVol)
            Smock
   putCloth iGreyCoat
            (Ent iGreyCoat
@@ -737,7 +739,7 @@ createAdminZone = do
                 "Sure to keep its wearer warm in all but the coldest of weather, this heavy, long-sleeved coat reaches \
                 \the knees, and features a tall collar followed by ten large silver buttons along its length."
                 zeroBits)
-           (Obj 1000 1)
+           (Obj coatHeavyWeight coatHeavyVol)
            Coat
   putCloth iFrockCoat
            (Ent iFrockCoat
@@ -747,7 +749,7 @@ createAdminZone = do
                 \floral brochade. Six black buttons from the collar down the chest, when fastened, make this a \
                 \particularly figure-flattering garment."
                 zeroBits)
-           (Obj 150 1)
+           (Obj coatWeight coatVol)
            Coat
   let breechesDesc = "These thin, tight-fitting breeches extend just past the knees, where short drawstrings allow \
                      \them to be neatly secured."
@@ -757,7 +759,7 @@ createAdminZone = do
                 "pair of knee-length yellow breeches" "pairs of knee-length yellow breeches"
                 breechesDesc
                 zeroBits)
-           (Obj 100 1)
+           (Obj trousersWeight trousersVol)
            Trousers
   putCloth iBreeches2
            (Ent iBreeches2
@@ -765,7 +767,7 @@ createAdminZone = do
                 "pair of knee-length yellow breeches" "pairs of knee-length yellow breeches"
                 breechesDesc
                 zeroBits)
-           (Obj 100 1)
+           (Obj trousersWeight trousersVol)
            Trousers
   let trousersDesc = "These wool trousers are loose-fitting so as to grant uninhibited movement. A rugged hemp \
                      \drawstring allows them to be snugly tightened at the waist."
@@ -775,7 +777,7 @@ createAdminZone = do
                 "pair of baggy beige trousers" "pairs of baggy beige trousers"
                 trousersDesc
                 zeroBits)
-           (Obj 125 1)
+           (Obj trousersBaggyWeight trousersBaggyVol)
            Trousers
   putCloth iTrousers2
            (Ent iTrousers2
@@ -783,7 +785,7 @@ createAdminZone = do
                 "pair of baggy beige trousers" "pairs of baggy beige trousers"
                 trousersDesc
                 zeroBits)
-           (Obj 125 1)
+           (Obj trousersBaggyWeight trousersBaggyVol)
            Trousers
 
   -- ==================================================
@@ -795,7 +797,7 @@ createAdminZone = do
               "cloth sack" ""
               (mkSackDesc "red")
               zeroBits)
-         (Obj 100 1)
+         (Obj 100 1) -- TODO: Left off here.
          []
          mempty
          Nothing

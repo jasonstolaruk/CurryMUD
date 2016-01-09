@@ -89,6 +89,8 @@ library
                        Mud.TopLvlDefs.FilePaths
                        Mud.TopLvlDefs.Misc
                        Mud.TopLvlDefs.Padding
+                       Mud.TopLvlDefs.Vols
+                       Mud.TopLvlDefs.Weights
                        Mud.Util.List
                        Mud.Util.Misc
                        Mud.Util.Operators

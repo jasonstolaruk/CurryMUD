@@ -27,6 +27,8 @@ import Mud.Data.Misc
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Coins
 import Mud.Data.State.Util.Get
+import Mud.TopLvlDefs.Vols
+import Mud.TopLvlDefs.Weights
 import Mud.Util.List
 import Mud.Util.Misc hiding (blowUp)
 import Mud.Util.Operators
@@ -148,7 +150,7 @@ calcRegenFpDelay i ms = calcRegenDelay $ (getHt i ms + getSt i ms) `divide` 2
 -----
 
 
-calcWeight :: Id -> MudState -> Int
+calcWeight :: Id -> MudState -> Weight
 calcWeight i ms = case getType i ms of
   ConType -> sum [ getWeight i ms, calcInvWeight, calcCoinsWeight ]
   NpcType -> npcPC
@@ -161,10 +163,6 @@ calcWeight i ms = case getType i ms of
     calcEqWeight    = helper . M.elems . getEqMap i $ ms
     helper          = sum . map (`calcWeight` ms)
     calcCoinsWeight = (* coinWeight) . sum . coinsToList . getCoins i $ ms
-
-
-coinWeight :: Int
-coinWeight = 2
 
 
 -----
@@ -180,7 +178,3 @@ calcVol i ms = calcHelper i
         calcInvVol   = helper . getInv i' $ ms
         helper       = sum . map calcHelper
         calcCoinsVol = (* coinVol) . sum . coinsToList . getCoins i' $ ms
-
-
-coinVol :: Vol
-coinVol = 1
