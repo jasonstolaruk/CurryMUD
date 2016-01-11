@@ -10,6 +10,7 @@ import Mud.TopLvlDefs.Vols
 import Mud.TopLvlDefs.Weights
 import qualified Mud.Misc.Logging as L (logNotice)
 
+import Control.Monad (forM_)
 import Data.Bits (setBit, zeroBits)
 import Data.List (foldl')
 import Data.Monoid ((<>))
@@ -164,7 +165,17 @@ createAdminZone = do
         (Rm "Weight closet"
             "This closet holds weights."
             zeroBits
-            [ StdLink South iBasement ])
+            [ StdLink    South iBasement
+            , NonStdLink "u"  iAttic "% climbs up the ladder and into the hole in the ceiling."
+                                     "% climbs up the ladder and out of the hole in the ceiling." ])
+  putRm iAttic
+        [ iCube1 .. iCube1 + 19 ]
+        mempty
+        (Rm "The attic."
+            "Though the confined attic is dusty, its cozy atmosphere creates an oddly welcoming space."
+            zeroBits
+            [ NonStdLink "d" iWeightRm "% climbs down the ladder and into the hole in the floor."
+                                       "% climbs down the ladder and out of the hole in the ceiling." ])
   putRm iObjCloset
         [ iKewpie1, iKewpie2 ]
         mempty
@@ -426,6 +437,14 @@ createAdminZone = do
               weightDesc
               zeroBits)
          (Obj 100 350)
+  forM_ [ iCube1 .. iCube1 + 19 ] $ \i ->
+      putObj i
+             (Ent i
+                  (Just "cube")
+                  "cube" ""
+                  "The solid, white cube measures 6\" x 6\" x 6\"."
+                  zeroBits)
+             (Obj cubeWeight cubeVol)
 
   -- ==================================================
   -- Clothing:

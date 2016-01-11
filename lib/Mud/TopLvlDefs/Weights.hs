@@ -37,6 +37,10 @@ coinWeight :: Weight
 coinWeight = 2
 
 
+cubeWeight :: Weight
+cubeWeight = 25
+
+
 dollWeight :: Weight
 dollWeight = 100
 

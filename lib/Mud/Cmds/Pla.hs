@@ -1618,12 +1618,13 @@ putAction p@(AdviseOneArg a) = advise p ["put"] . advicePutNoCon $ a
 putAction p@(Lower' i as)    = genericAction p helper "put"
   where
     helper ms =
-      let b@LastArgIsTargetBindings { .. } = mkLastArgIsTargetBindings i ms as
-          f                                = case singleArgInvEqRm InInv targetArg of
-            (InInv, target) -> shufflePut i ms srcDesig target False otherArgs srcInvCoins srcInvCoins procGecrMisMobInv
-            (InEq,  _     ) -> genericSorry ms . sorryConInEq $ Put
-            (InRm,  target) -> shufflePut i ms srcDesig target True  otherArgs rmInvCoins  srcInvCoins procGecrMisRm
-      in withEmptyInvChecks ms b sorryNoConHere f
+      let LastArgIsTargetBindings { .. } = mkLastArgIsTargetBindings i ms as
+      in case singleArgInvEqRm InInv targetArg of
+        (InInv, target) -> shufflePut i ms srcDesig target False otherArgs srcInvCoins srcInvCoins procGecrMisMobInv
+        (InEq,  _     ) -> genericSorry ms . sorryConInEq $ Put
+        (InRm,  target) -> if ()# rmInvCoins
+          then genericSorry ms sorryNoConHere
+          else shufflePut i ms srcDesig target True otherArgs rmInvCoins srcInvCoins procGecrMisRm
 putAction p = patternMatchFail "putAction" [ showText p ]
 
 
@@ -2067,12 +2068,13 @@ remove p@(AdviseOneArg a) = advise p ["remove"] . adviceRemoveNoCon $ a
 remove p@(Lower' i as)    = genericAction p helper "remove"
   where
     helper ms =
-      let b@LastArgIsTargetBindings { .. } = mkLastArgIsTargetBindings i ms as
-          f                                = case singleArgInvEqRm InInv targetArg of
-            (InInv, target) -> shuffleRem i ms srcDesig target False otherArgs srcInvCoins procGecrMisMobInv
-            (InEq,  _     ) -> genericSorry ms . sorryConInEq $ Put
-            (InRm,  target) -> shuffleRem i ms srcDesig target True  otherArgs rmInvCoins  procGecrMisRm
-      in withEmptyInvChecks ms b sorryNoConHere f
+      let LastArgIsTargetBindings { .. } = mkLastArgIsTargetBindings i ms as
+      in case singleArgInvEqRm InInv targetArg of
+        (InInv, target) -> shuffleRem i ms srcDesig target False otherArgs srcInvCoins procGecrMisMobInv
+        (InEq,  _     ) -> genericSorry ms . sorryConInEq $ Rem
+        (InRm,  target) -> if ()# rmInvCoins
+          then genericSorry ms sorryNoConHere
+          else shuffleRem i ms srcDesig target True otherArgs rmInvCoins procGecrMisRm
 remove p = patternMatchFail "remove" [ showText p ]
 
 

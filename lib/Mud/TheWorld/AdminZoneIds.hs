@@ -213,3 +213,9 @@ iSkeleton = 99 :: Int
 iRoot = 100 :: Int
 
 iCurry = 101 :: Int
+
+iAttic = 102 :: Int
+
+iCube1 = 103 :: Int -- 20
+
+iNext = 123 :: Int

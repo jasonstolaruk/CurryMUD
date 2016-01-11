@@ -22,7 +22,7 @@ apronHeavyVol = plusQuarter apronVol
 
 
 backCap, backSmlCap, backLrgCap :: Vol
-backCap    = 1525
+backCap    = 2450 * 100
 backSmlCap = minusQuarter backCap
 backLrgCap = plusQuarter  backCap
 
@@ -54,6 +54,10 @@ coinVol :: Vol
 coinVol = 10
 
 
+cubeVol :: Vol
+cubeVol = 6 * 6 * 6 * 100
+
+
 dollVol :: Vol
 dollVol = 4 * 2 * 10 * 100
 
@@ -63,7 +67,7 @@ earVol = 2
 
 
 helmLeatherVol :: Vol
-helmLeatherVol = 10 * 8 * 8
+helmLeatherVol = 10 * 8 * 8 * 100
 
 
 knifeVol :: Vol

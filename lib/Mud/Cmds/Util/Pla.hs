@@ -586,7 +586,6 @@ helperLinkUnlink ms i mq cols =
 type NthOfM = (Int, Int)
 
 
--- TODO: We still need to test put and remove.
 helperPutEitherCoins :: Id
                      -> Desig
                      -> Maybe NthOfM
