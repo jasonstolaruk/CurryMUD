@@ -167,11 +167,11 @@ createAdminZone = do
             zeroBits
             [ StdLink    South iBasement
             , NonStdLink "u"  iAttic "% climbs up the ladder and into the hole in the ceiling."
-                                     "% climbs up the ladder and out of the hole in the ceiling." ])
+                                     "% climbs up the ladder and out of the hole in the floor." ])
   putRm iAttic
         [ iCube1 .. iCube1 + 19 ]
         mempty
-        (Rm "The attic."
+        (Rm "The attic"
             "Though the confined attic is dusty, its cozy atmosphere creates an oddly welcoming space."
             zeroBits
             [ NonStdLink "d" iWeightRm "% climbs down the ladder and into the hole in the floor."
@@ -236,7 +236,7 @@ createAdminZone = do
             zeroBits
             [ StdLink Northwest iBasement ])
   putRm iConCloset
-        [ iSack1, iSack2, iBackpack1, iBackpack2 ]
+        [ iSack1, iSack2, iSackSml, iSackLrg, iBackpack1, iBackpack2, iBackpackSml, iBackpackLrg ]
         mempty
         (Rm "Container closet"
             "This closet holds containers."
@@ -809,12 +809,12 @@ createAdminZone = do
 
   -- ==================================================
   -- Containers:
-  let mkSackDesc x = "It's a typical cloth sack, perfect for holding your treasure. It's " <> x <> "."
+  let mkClothSackDesc x = "It's a typical cloth sack, perfect for holding your treasure. It's " <> x <> "."
   putCon iSack1
          (Ent iSack1
               (Just "sack")
               "cloth sack" ""
-              (mkSackDesc "red")
+              (mkClothSackDesc "red")
               zeroBits)
          (Obj sackWeight sackVol)
          []
@@ -825,13 +825,37 @@ createAdminZone = do
          (Ent iSack2
               (Just "sack")
               "cloth sack" ""
-              (mkSackDesc "blue")
+              (mkClothSackDesc "blue")
               zeroBits)
          (Obj sackWeight sackVol)
          []
          mempty
          Nothing
          (Con False sackCap)
+  let mkWovenSackDesc x = "The durable sack is made from a coarse, woven fabric, dyed " <> x <> " so as to give it \
+                          \some flair."
+  putCon iSackSml
+         (Ent iSackSml
+              (Just "sack")
+              "small sack" ""
+              (mkWovenSackDesc "light blue")
+              zeroBits)
+         (Obj sackSmlWeight sackSmlVol)
+         []
+         mempty
+         Nothing
+         (Con False sackSmlCap)
+  putCon iSackLrg
+         (Ent iSackLrg
+              (Just "sack")
+              "large sack" ""
+              (mkWovenSackDesc "red")
+              zeroBits)
+         (Obj sackLrgWeight sackLrgVol)
+         []
+         mempty
+         Nothing
+         (Con False sackLrgCap)
   let backpackDesc = "The sturdy backpack is made of leather."
   putCon iBackpack1
          (Ent iBackpack1
@@ -855,6 +879,28 @@ createAdminZone = do
          mempty
          (Just Backpack)
          (Con True backCap)
+  putCon iBackpackSml
+         (Ent iBackpackSml
+              (Just "back")
+              "small backpack" ""
+              backpackDesc
+              zeroBits)
+         (Obj backSmlWeight backSmlVol)
+         []
+         mempty
+         (Just Backpack)
+         (Con True backSmlCap)
+  putCon iBackpackLrg
+         (Ent iBackpackLrg
+              (Just "back")
+              "large backpack" ""
+              backpackDesc
+              zeroBits)
+         (Obj backLrgWeight backLrgVol)
+         []
+         mempty
+         (Just Backpack)
+         (Con True backLrgCap)
 
   -- ==================================================
   -- Weapons:

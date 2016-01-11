@@ -218,4 +218,10 @@ iAttic = 102 :: Int
 
 iCube1 = 103 :: Int -- 20
 
-iNext = 123 :: Int
+iSackSml = 123 :: Int
+
+iSackLrg = 124 :: Int
+
+iBackpackSml = 125 :: Int
+
+iBackpackLrg = 126 :: Int
