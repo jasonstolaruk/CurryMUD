@@ -320,112 +320,112 @@ createAdminZone = do
               "190 lb weight" ""
               weightDesc
               zeroBits)
-         (Obj 19000 9500)
+         (Obj 19000 66995)
   putObj i100Lb
          (Ent i100Lb
               (Just "weight")
               "100 lb weight" ""
               weightDesc
               zeroBits)
-         (Obj 10000 5000)
+         (Obj 10000 35260)
   putObj i75Lb
          (Ent i75Lb
               (Just "weight")
               "75 lb weight" ""
               weightDesc
               zeroBits)
-         (Obj 7500 3750)
+         (Obj 7500 26445)
   putObj i50Lb1
          (Ent i50Lb1
               (Just "weight")
               "50 lb weight" ""
               weightDesc
               zeroBits)
-         (Obj 5000 2500)
+         (Obj 5000 17630)
   putObj i50Lb2
          (Ent i50Lb2
               (Just "weight")
               "50 lb weight" ""
               weightDesc
               zeroBits)
-         (Obj 5000 2500)
+         (Obj 5000 17630)
   putObj i25Lb1
          (Ent i25Lb1
               (Just "weight")
               "25 lb weight" ""
               weightDesc
               zeroBits)
-         (Obj 2500 1250)
+         (Obj 2500 8815)
   putObj i25Lb2
          (Ent i25Lb2
               (Just "weight")
               "25 lb weight" ""
               weightDesc
               zeroBits)
-         (Obj 2500 1250)
+         (Obj 2500 8815)
   putObj i10Lb1
          (Ent i10Lb1
               (Just "weight")
               "10 lb weight" ""
               weightDesc
               zeroBits)
-         (Obj 1000 500)
+         (Obj 1000 3525)
   putObj i10Lb2
          (Ent i10Lb2
               (Just "weight")
               "10 lb weight" ""
               weightDesc
               zeroBits)
-         (Obj 1000 500)
+         (Obj 1000 3525)
   putObj i5Lb1
          (Ent i5Lb1
               (Just "weight")
               "5 lb weight" ""
               weightDesc
               zeroBits)
-         (Obj 500 250)
+         (Obj 500 1760)
   putObj i5Lb2
          (Ent i5Lb2
               (Just "weight")
               "5 lb weight" ""
               weightDesc
               zeroBits)
-         (Obj 500 250)
+         (Obj 500 1760)
   putObj i1Lb1
          (Ent i1Lb1
               (Just "weight")
               "1 lb weight" ""
               weightDesc
               zeroBits)
-         (Obj 100 50)
+         (Obj 100 350)
   putObj i1Lb2
          (Ent i1Lb2
               (Just "weight")
               "1 lb weight" ""
               weightDesc
               zeroBits)
-         (Obj 100 50)
+         (Obj 100 350)
   putObj i1Lb3
          (Ent i1Lb3
               (Just "weight")
               "1 lb weight" ""
               weightDesc
               zeroBits)
-         (Obj 100 50)
+         (Obj 100 350)
   putObj i1Lb4
          (Ent i1Lb4
               (Just "weight")
               "1 lb weight" ""
               weightDesc
               zeroBits)
-         (Obj 100 50)
+         (Obj 100 350)
   putObj i1Lb5
          (Ent i1Lb5
               (Just "weight")
               "1 lb weight" ""
               weightDesc
               zeroBits)
-         (Obj 100 50)
+         (Obj 100 350)
 
   -- ==================================================
   -- Clothing:
@@ -712,7 +712,7 @@ createAdminZone = do
                 "This heavy wool tunic is waist length and short-sleeved. Decorative white embroidery along the neck, \
                 \sleeves, and waist adds an eye-catching touch."
                 zeroBits)
-           (Obj tunicWeight tunicVol)
+           (Obj tunicHeavyWeight tunicHeavyVol)
            Shirt
   putCloth iApron
            (Ent iApron
@@ -797,22 +797,22 @@ createAdminZone = do
               "cloth sack" ""
               (mkSackDesc "red")
               zeroBits)
-         (Obj 100 1) -- TODO: Left off here.
+         (Obj sackWeight sackVol)
          []
          mempty
          Nothing
-         (Con False 10)
+         (Con False sackCap)
   putCon iSack2
          (Ent iSack2
               (Just "sack")
               "cloth sack" ""
               (mkSackDesc "blue")
               zeroBits)
-         (Obj 100 1)
+         (Obj sackWeight sackVol)
          []
          mempty
          Nothing
-         (Con False 10)
+         (Con False sackCap)
   let backpackDesc = "The sturdy backpack is made of leather."
   putCon iBackpack1
          (Ent iBackpack1
@@ -820,22 +820,22 @@ createAdminZone = do
               "backpack" ""
               backpackDesc
               zeroBits)
-         (Obj 500 1)
+         (Obj backWeight backVol)
          []
          mempty
          (Just Backpack)
-         (Con True 10)
+         (Con True backCap)
   putCon iBackpack2
          (Ent iBackpack2
               (Just "back")
               "backpack" ""
               backpackDesc
               zeroBits)
-         (Obj 500 1)
+         (Obj backWeight backVol)
          []
          mempty
          (Just Backpack)
-         (Con True 10)
+         (Con True backCap)
 
   -- ==================================================
   -- Weapons:
@@ -846,7 +846,7 @@ createAdminZone = do
               "short sword" ""
               swordDesc
               zeroBits)
-         (Obj 200 1)
+         (Obj swordWeight swordVol)
          (Wpn OneHanded 1 10)
   putWpn iSword2
          (Ent iSword2
@@ -854,7 +854,7 @@ createAdminZone = do
               "short sword" ""
               swordDesc
               zeroBits)
-         (Obj 200 1)
+         (Obj swordWeight swordVol)
          (Wpn OneHanded 1 10)
   putWpn iLongSword
          (Ent iLongSword
@@ -862,7 +862,7 @@ createAdminZone = do
               "two-handed long sword" ""
               "With the right technique, this bulky sword could do a great deal of damage."
               zeroBits)
-         (Obj 400 1)
+         (Obj swordLongWeight swordLongVol)
          (Wpn TwoHanded 1 10)
   putWpn iClub
          (Ent iClub
@@ -870,7 +870,7 @@ createAdminZone = do
               "wooden club" ""
               "It's a crude wooden club, the type a neanderthal might use to great effect."
               zeroBits)
-         (Obj 300 1)
+         (Obj clubWeight clubVol)
          (Wpn OneHanded 1 10)
   let knifeDesc = "This small knife could be useful in a pinch."
   putWpn iKnife1
@@ -879,7 +879,7 @@ createAdminZone = do
               "utility knife" "utility knives"
               knifeDesc
               zeroBits)
-         (Obj 50 1)
+         (Obj knifeWeight knifeVol)
          (Wpn OneHanded 1 10)
   putWpn iKnife2
          (Ent iKnife2
@@ -887,7 +887,7 @@ createAdminZone = do
               "utility knife" "utility knives"
               knifeDesc
               zeroBits)
-         (Obj 50 1)
+         (Obj knifeWeight knifeVol)
          (Wpn OneHanded 1 10)
 
   -- ==================================================
@@ -898,7 +898,7 @@ createAdminZone = do
               "knit cap" ""
               "It's a simple knit cap, designed to keep your head warm in cold weather."
               zeroBits)
-         (Obj 10 1)
+         (Obj knitCapWeight knitCapVol)
          (Arm Head 1)
   putArm iHelm
          (Ent iHelm
@@ -906,7 +906,7 @@ createAdminZone = do
               "leather helmet" ""
               "The functional leather helmet provides a comfortable fit."
               zeroBits)
-         (Obj 300 1)
+         (Obj helmLeatherWeight helmLeatherVol)
          (Arm Head 1)
   let sandalsDesc = "These humble leather sandals offer little in the way of fashion; they will, however, adequately \
                     \protect the soles of your feet."
@@ -916,7 +916,7 @@ createAdminZone = do
               "pair of leather sandals" "pairs of leather sandals"
               sandalsDesc
               zeroBits)
-         (Obj 50 1)
+         (Obj sandalsWeight sandalsVol)
          (Arm Feet 1)
   putArm iSandals2
          (Ent iSandals2
@@ -924,7 +924,7 @@ createAdminZone = do
               "pair of leather sandals" "pairs of leather sandals"
               sandalsDesc
               zeroBits)
-         (Obj 50 1)
+         (Obj sandalsWeight sandalsVol)
          (Arm Feet 1)
   putArm iBoots
          (Ent iBoots
@@ -932,7 +932,7 @@ createAdminZone = do
               "pair of leather boots" "pairs of leather boots"
               "These rugged, sturdy boots make excellent footwear for traveling across a variety of terrain."
               zeroBits)
-         (Obj 300 1)
+         (Obj bootsWeight bootsVol)
          (Arm Feet 1)
 
   -- ==================================================
@@ -1008,7 +1008,7 @@ createAdminZone = do
                 "This shirt, favored by skilled laborers and lowly bumpkins alike, represents the epitome of function \
                 \over fashion."
                 zeroBits)
-           (Obj 100 1)
+           (Obj shirtWeight shirtVol)
            Shirt
   putCloth iOveralls
            (Ent iOveralls
@@ -1016,7 +1016,7 @@ createAdminZone = do
                 "pair of many-pocketed brown overalls" "pairs of many-pocketed brown overalls"
                 "These durable overalls are adorned with a multitude of little pockets."
                 zeroBits)
-           (Obj 225 1)
+           (Obj overallsWeight overallsVol)
            Trousers
   putCloth iLeatherApron
            (Ent iLeatherApron
@@ -1024,14 +1024,14 @@ createAdminZone = do
                 "leather apron" ""
                 "This heavy apron, though bulky, is a must for those who undertake dirty and dangerous chores."
                 zeroBits)
-           (Obj 325 1)
+           (Obj apronHeavyWeight apronHeavyVol)
            Smock
   putArm iTraveler'sBoots
          (Ent iTraveler'sBoots (Just "boots")
               "pair of jet-black traveler's boots" "pair of jet-black traveler's boots"
               "These well-crafted, thigh-high boots are rugged and durable."
               zeroBits)
-         (Obj 300 1)
+         (Obj bootsWeight bootsVol)
          (Arm Feet 1)
   putNpc iSkeleton
          (Ent iSkeleton

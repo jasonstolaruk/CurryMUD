@@ -3,15 +3,34 @@
 module Mud.TopLvlDefs.Weights where
 
 import Mud.Data.State.MudData
+import Mud.Util.Misc
 
 
-apronHeavyWeight :: Weight
-apronHeavyWeight = 225
+-- 100 "Weight" = 1 lb
+
+
+apronWeight, apronHeavyWeight :: Weight
+apronWeight      = 75
+apronHeavyWeight = plusQuarter apronWeight
+
+
+backWeight, backSmlWeight, backLrgWeight :: Weight
+backWeight    = 100
+backSmlWeight = minusQuarter backWeight
+backLrgWeight = plusQuarter  backWeight
+
+
+bootsWeight :: Weight
+bootsWeight = 250
+
+
+clubWeight :: Weight
+clubWeight = 325
 
 
 coatWeight, coatHeavyWeight :: Weight
-coatWeight      = 150
-coatHeavyWeight = coatWeight * 5
+coatWeight      = 125
+coatHeavyWeight = plusQuarter coatWeight
 
 
 coinWeight :: Weight
@@ -19,37 +38,69 @@ coinWeight = 2
 
 
 dollWeight :: Weight
-dollWeight = 25
+dollWeight = 100
 
 
 earWeight :: Weight
-earWeight = 2
+earWeight = 1
+
+
+helmLeatherWeight :: Weight
+helmLeatherWeight = 30
+
+
+knifeWeight :: Weight
+knifeWeight = 15
+
+
+knitCapWeight :: Weight
+knitCapWeight = 5
 
 
 neckWeight :: Weight
-neckWeight = 4
+neckWeight = 5
 
 
 noseWeight :: Weight
 noseWeight = earWeight
 
 
+overallsWeight :: Weight
+overallsWeight = tabardWeight + trousersWeight
+
+
 ringWeight :: Weight
-ringWeight = 5
+ringWeight = 2
+
+
+sackWeight, sackSmlWeight, sackLrgWeight :: Weight
+sackWeight    = 40
+sackSmlWeight = minusQuarter sackWeight
+sackLrgWeight = plusQuarter  sackWeight
+
+
+sandalsWeight :: Weight
+sandalsWeight = 50
 
 
 shirtWeight :: Weight
-shirtWeight = 100
+shirtWeight = 35
+
+
+swordWeight, swordLongWeight :: Weight
+swordWeight     = 300
+swordLongWeight = plusQuarter swordWeight
 
 
 tabardWeight :: Weight
-tabardWeight = 150
+tabardWeight = 50
 
 
 trousersWeight, trousersBaggyWeight :: Weight
 trousersWeight      = 100
-trousersBaggyWeight = trousersWeight + 25
+trousersBaggyWeight = plusQuarter trousersWeight
 
 
-tunicWeight :: Weight
-tunicWeight = 225
+tunicWeight, tunicHeavyWeight :: Weight
+tunicWeight      = 50
+tunicHeavyWeight = plusQuarter tunicWeight
