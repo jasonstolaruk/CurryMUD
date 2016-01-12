@@ -15,7 +15,7 @@ import Data.Bits (setBit, zeroBits)
 import Data.List (foldl')
 import Data.Monoid ((<>))
 import Data.Text (Text)
-import qualified Data.Map.Lazy as M (empty, fromList)
+import qualified Data.Map.Lazy as M (empty, fromList, singleton)
 
 
 logNotice :: Text -> Text -> MudStack ()
@@ -32,6 +32,13 @@ adminFlags = foldl' setBit zeroBits . map fromEnum $ [ IsAdmin
                                                      , IsNotFirstMobSay
                                                      , IsTunedAdmin
                                                      , IsTunedQuestion ]
+
+
+-----
+
+
+lookSignHook :: HookFun
+lookSignHook = return ()
 
 
 -----
@@ -63,7 +70,7 @@ createAdminZone = do
               iLoggedOut
               Nothing Nothing)
          M.empty
-         (M.fromList [("Curry", True)])
+         (M.singleton "Curry" True)
          (PC Human ["Curry"] ["Curry"])
          (Pla "" Nothing
               (setBit adminFlags . fromEnum $ IsIncognito)
@@ -91,7 +98,7 @@ createAdminZone = do
               iLoggedOut
               Nothing Nothing)
          M.empty
-         (M.fromList [("Root", True)])
+         (M.singleton "Root" True)
          (PC Human ["Root"] ["Root"])
          (Pla "" Nothing
               adminFlags
@@ -108,14 +115,16 @@ createAdminZone = do
         (Rm "Logged out room"
             "PCs are placed here when their players log out."
             zeroBits
-            [])
+            []
+            M.empty)
   putRm iWelcome
         []
         mempty
         (Rm "Welcome room"
             "Ad-hoc PCs created for new connections are placed here."
             zeroBits
-            [])
+            []
+            M.empty)
   putRm iCentral
         []
         mempty
@@ -125,7 +134,8 @@ createAdminZone = do
             \of CurryMUD.\n\
             \A spiral staircase leads down."
             zeroBits
-            [ StdLink Down iBasement ])
+            [ StdLink Down iBasement ]
+            M.empty)
   putRm iBasement
         []
         mempty
@@ -143,7 +153,8 @@ createAdminZone = do
             , StdLink West      iArmCloset
             , StdLink Northwest iMobCloset
             , StdLink Up        iCentral
-            , NonStdLink "manhole" iVoid "% climbs into the manhole." "% climbs out of the manhole." ])
+            , NonStdLink "manhole" iVoid "% climbs into the manhole." "% climbs out of the manhole." ]
+            M.empty)
   putRm iWeightRm
         [ i190Lb
         , i100Lb
@@ -167,7 +178,8 @@ createAdminZone = do
             zeroBits
             [ StdLink    South iBasement
             , NonStdLink "u"  iAttic "% climbs up the ladder and into the hole in the ceiling."
-                                     "% climbs up the ladder and out of the hole in the floor." ])
+                                     "% climbs up the ladder and out of the hole in the floor." ]
+                                     M.empty)
   putRm iAttic
         [ iCube1 .. iCube1 + 19 ]
         mempty
@@ -175,21 +187,24 @@ createAdminZone = do
             "Though the confined attic is dusty, its cozy atmosphere creates an oddly welcoming space."
             zeroBits
             [ NonStdLink "d" iWeightRm "% climbs down the ladder and into the hole in the floor."
-                                       "% climbs down the ladder and out of the hole in the ceiling." ])
+                                       "% climbs down the ladder and out of the hole in the ceiling." ]
+                                       M.empty)
   putRm iObjCloset
         [ iKewpie1, iKewpie2 ]
         mempty
         (Rm "Object closet"
             "This closet holds objects."
             zeroBits
-            [ StdLink Southwest iBasement ])
+            [ StdLink Southwest iBasement ]
+            M.empty)
   putRm iClothCloset
         [ iChemise, iTunic, iApron, iTabard, iGreyCoat, iFrockCoat, iBreeches1, iBreeches2, iTrousers1, iTrousers2 ]
         mempty
         (Rm "Clothing closet"
             "This closet holds clothing."
             zeroBits
-            [ StdLink West iBasement, StdLink Down iAccessoriesCloset ])
+            [ StdLink West iBasement, StdLink Down iAccessoriesCloset ]
+            M.empty)
   putRm iAccessoriesCloset
         [ iEar1
         , iEar2
@@ -227,42 +242,48 @@ createAdminZone = do
         (Rm "Accessories closet"
             "This closet holds accessories."
             zeroBits
-            [ StdLink Up iClothCloset ])
+            [ StdLink Up iClothCloset ]
+            M.empty)
   putRm iCoinsCloset
         []
         (Coins (100, 100, 100))
         (Rm "Coin closet"
             "This closet holds coins."
             zeroBits
-            [ StdLink Northwest iBasement ])
+            [ StdLink Northwest iBasement ]
+            M.empty)
   putRm iConCloset
         [ iSack1, iSack2, iSackSml, iSackLrg, iBackpack1, iBackpack2, iBackpackSml, iBackpackLrg ]
         mempty
         (Rm "Container closet"
             "This closet holds containers."
             zeroBits
-            [ StdLink North iBasement ])
+            [ StdLink North iBasement ]
+            M.empty)
   putRm iWpnCloset
         [ iSword1, iSword2, iLongSword, iClub, iKnife1, iKnife2 ]
         mempty
         (Rm "Weapon closet"
             "This closet holds weapons."
             zeroBits
-            [ StdLink Northeast iBasement ])
+            [ StdLink Northeast iBasement ]
+            M.empty)
   putRm iArmCloset
         [ iCap, iHelm, iSandals1, iSandals2, iBoots ]
         mempty
         (Rm "Armor closet"
             "This closet holds armor."
             zeroBits
-            [ StdLink East iBasement ])
+            [ StdLink East iBasement ]
+            M.empty)
   putRm iMobCloset
         [ iRockCavy1, iRockCavy2, iPidge, iSkeleton ]
         mempty
         (Rm "Mob closet"
             "This closet holds mobs."
             zeroBits
-            [ StdLink Southeast iBasement ])
+            [ StdLink Southeast iBasement ]
+            M.empty)
   putRm iVoid
         []
         mempty
@@ -273,7 +294,8 @@ createAdminZone = do
             zeroBits
             [ StdLink North iTutEntrance
             , StdLink South iLoungeEntrance
-            , NonStdLink "manhole" iBasement "% climbs into the manhole." "% climbs out of the manhole." ])
+            , NonStdLink "manhole" iBasement "% climbs into the manhole." "% climbs out of the manhole." ]
+            M.empty)
   putRm iTutEntrance
         []
         mempty
@@ -284,7 +306,8 @@ createAdminZone = do
             zeroBits
             [ StdLink South iVoid
             , NonStdLink "portal" iTutWelcome "% floats into the portal, and promptly disappears."
-                                              "% arrives in the tutorial." ])
+                                              "% arrives in the tutorial." ]
+            M.empty)
   putRm iLoungeEntrance
         []
         mempty
@@ -293,19 +316,33 @@ createAdminZone = do
             \affixed to the door is a small sign reading, \"Admin Lounge.\""
             zeroBits
             [ StdLink North iVoid
-            , NonStdLink "lounge" iLounge "% enters the lounge." "% enters the lounge." ])
+            , NonStdLink "lounge" iLounge "% enters the lounge." "% enters the lounge." ]
+            M.empty)
   putRm iLounge
         []
         mempty
         (Rm "The admin lounge"
             "Welcome, admin! Have a seat by the fire and relax for awhile."
             zeroBits
-            [ NonStdLink "out" iLoungeEntrance "% exits the lounge." "% exits the lounge." ])
+            [ NonStdLink "out" iLoungeEntrance "% exits the lounge." "% exits the lounge." ]
+            M.empty)
+  let lookSignHookName = "AdminZone_iEmpty_lookSign"
+  putRm iEmpty
+        []
+        mempty
+        (Rm "The empty room"
+            "This small room is strikingly barren. There doesn't even seem to be a door on any of its white walls, \
+            \though you can't miss the small wooden sign affixed to the north wall."
+            zeroBits
+            []
+            (M.singleton "look" . pure . Hook "sign" $ lookSignHookName))
+  putHookFun lookSignHookName lookSignHook
 
   -- ==================================================
   -- Room teleport names:
   putRmTeleName iCentral "central"
   putRmTeleName iLounge  "lounge"
+  putRmTeleName iEmpty   "empty"
 
   -- ==================================================
   -- Objects:

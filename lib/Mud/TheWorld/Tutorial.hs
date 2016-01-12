@@ -9,6 +9,7 @@ import qualified Mud.Misc.Logging as L (logNotice)
 
 import Data.Bits (zeroBits)
 import Data.Text (Text)
+import qualified Data.Map.Lazy as M (empty)
 
 
 logNotice :: Text -> Text -> MudStack ()
@@ -28,6 +29,7 @@ createTutorial = do
         (Rm "Welcome to the tutorial"
             "Hello!"
             zeroBits
-            [])
+            []
+            M.empty)
 
   putRmTeleName iTutWelcome "tutorial"

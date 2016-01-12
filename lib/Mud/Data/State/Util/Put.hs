@@ -51,6 +51,13 @@ putCon i e o is coi mc con = tweaks [ clothTbl.at  i .~ mc
 -----
 
 
+putHookFun :: HookName -> HookFun -> MudStack ()
+putHookFun n f = tweak $ hookFunTbl.at n .~ Just f
+
+
+-----
+
+
 putNpc :: Id -> Ent -> Inv -> Coins -> EqMap -> Mob -> MudStack ()
 putNpc i e is c em m = tweaks [ coinsTbl.ind i .~ c
                               , entTbl  .ind i .~ e

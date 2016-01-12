@@ -48,6 +48,7 @@ data MudState = MudState { _armTbl           :: ArmTbl
                          , _conTbl           :: ConTbl
                          , _entTbl           :: EntTbl
                          , _eqTbl            :: EqTbl
+                         , _hookFunTbl       :: HookFunTbl
                          , _hostTbl          :: HostTbl
                          , _invTbl           :: InvTbl
                          , _mobTbl           :: MobTbl
@@ -74,6 +75,7 @@ type CoinsTbl         = IM.IntMap Coins
 type ConTbl           = IM.IntMap Con
 type EntTbl           = IM.IntMap Ent
 type EqTbl            = IM.IntMap EqMap
+type HookFunTbl       = M.Map HookName HookFun
 type HostTbl          = M.Map Sing HostMap
 type InvTbl           = IM.IntMap Inv
 type MobTbl           = IM.IntMap Mob
@@ -494,7 +496,8 @@ type RndmNamesTbl = M.Map Sing Sing
 data Rm = Rm { _rmName  :: Text
              , _rmDesc  :: Text
              , _rmFlags :: Int
-             , _rmLinks :: [RmLink] } deriving (Eq, Generic)
+             , _rmLinks :: [RmLink]
+             , _hookMap :: HookMap } deriving (Eq, Generic)
 
 
 data RmFlags = RmFlagsTODO deriving Enum
@@ -521,6 +524,19 @@ data LinkDir = North
 
 
 type LinkName = Text
+
+
+type HookMap = M.Map CmdName [Hook]
+
+
+data Hook = Hook { hookName :: HookName
+                 , trigger  :: Text } deriving (Eq, Generic)
+
+
+type HookName = Text
+
+
+type HookFun = MudStack () -- TODO
 
 
 -- ==================================================
@@ -591,6 +607,7 @@ instance FromJSON Coins
 instance FromJSON Con
 instance FromJSON Ent
 instance FromJSON Hand
+instance FromJSON Hook
 instance FromJSON HostRecord
 instance FromJSON LinkDir
 instance FromJSON Obj
@@ -626,6 +643,9 @@ instance ToJSON   Ent
   where
     toJSON = genericToJSON defaultOptions
 instance ToJSON   Hand
+  where
+    toJSON = genericToJSON defaultOptions
+instance ToJSON   Hook
   where
     toJSON = genericToJSON defaultOptions
 instance ToJSON   HostRecord

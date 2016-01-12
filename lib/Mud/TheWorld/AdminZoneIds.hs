@@ -225,3 +225,5 @@ iSackLrg = 124 :: Int
 iBackpackSml = 125 :: Int
 
 iBackpackLrg = 126 :: Int
+
+iEmpty = 127 :: Int

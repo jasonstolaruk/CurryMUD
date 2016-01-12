@@ -80,7 +80,7 @@ import Data.Tuple (swap)
 import GHC.Exts (sortWith)
 import Prelude hiding (log, pi)
 import qualified Data.IntMap.Lazy as IM (IntMap, (!), keys)
-import qualified Data.Map.Lazy as M ((!), elems, filter, fromList, keys, lookup, map, singleton, size, toList)
+import qualified Data.Map.Lazy as M ((!), elems, filter, keys, lookup, map, singleton, size, toList)
 import qualified Data.Set as S (filter, toList)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
@@ -1532,7 +1532,7 @@ newChan (WithArgs i mq cols (nub -> as)) = helper |&| modifyState >=> \(unzip ->
           , match <- head . filter ((== a') . T.toLower) $ myChanNames = sorryNewChanExisting match `sorry` triple
           | not . hasPp i ms' $ 3 = sorryPp ("create a new channel named " <> dblQuote a) `sorry` triple
           | otherwise = let ci = views chanTbl (head . ([0..] \\) . IM.keys) $ triple^._1
-                            c  = Chan ci a (M.fromList . pure $ (s, True)) []
+                            c  = Chan ci a (M.singleton s True) []
                             cr = ChanRec "" ci a s . asteriskQuote $ "New channel created."
                         in triple & _1.chanTbl.at ci ?~ c
                                   & _1.mobTbl.ind i.curPp -~ 3

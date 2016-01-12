@@ -57,6 +57,7 @@ initMudData shouldLog = do
                                  , _conTbl           = IM.empty
                                  , _entTbl           = IM.empty
                                  , _eqTbl            = IM.empty
+                                 , _hookFunTbl       =  M.empty
                                  , _hostTbl          =  M.empty
                                  , _invTbl           = IM.empty
                                  , _mobTbl           = IM.empty
