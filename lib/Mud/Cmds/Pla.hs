@@ -1395,13 +1395,14 @@ look (NoArgs i mq cols) = getState >>= \ms ->
   where
     filler       = T.singleton indentFiller
     formatRmDesc = map (T.replicate rmDescIndentAmt filler <>) . T.lines
-look (LowerNub i mq cols as) = helper |&| modifyState >=> \(toSelf, bs, maybeTargetDesigs) -> do
+look (LowerNub i mq cols as) = helper |&| modifyState >=> \(toSelf, bs, hookLogMsg, maybeTargetDesigs) -> do
     send mq toSelf
     bcastIfNotIncog i bs
     let logHelper targetDesigs | targetSings <- [ fromJust . sDesigEntSing $ targetDesig
                                                 | targetDesig <- targetDesigs ]
                                = logPla "look" i $ "looked at " <> commas targetSings <> "."
     maybeVoid logHelper maybeTargetDesigs
+    hookLogMsg |#| logPla "look" i -- TODO: Tighten up logging?
   where
     helper ms =
         let invCoins = first (i `delete`) . getMobRmNonIncogInvCoins i $ ms
@@ -1410,7 +1411,19 @@ look (LowerNub i mq cols as) = helper |&| modifyState >=> \(toSelf, bs, maybeTar
           then let (inInvs, inEqs, inRms) = sortArgsInvEqRm InRm as
                    sorryInInv             = wrapUnlinesNl cols . sorryEquipInvLook LookCmd $ InvCmd
                    sorryInEq              = wrapUnlinesNl cols . sorryEquipInvLook LookCmd $ EquipCmd
-                   (eiss, ecs)            = uncurry (resolveRmInvCoins i ms inRms) invCoins
+
+                   initAcc     = (inRms, (ms, [], [], []))
+                   (inRms', a) = case views hookMap (M.lookup "look") . getMobRm i $ ms of
+                     Nothing    -> initAcc
+                     Just hooks ->
+                         let hookHelper acc@(args, _) Hook { .. }
+                               | trigger `elem` args = getHookFun hookName ms i acc
+                               | otherwise           = acc
+                         in foldl' hookHelper initAcc hooks
+                   hookToSelf = a^._2.to (T.intercalate "\n") -- TODO: Wrap properly, knowing that the text may contain line breaks.
+                   hookLogMsg = a^._4.to slashes
+
+                   (eiss, ecs)            = uncurry (resolveRmInvCoins i ms inRms') invCoins
                    invDesc                = foldl' (helperLookEitherInv ms) "" eiss
                    coinsDesc              = foldl' helperLookEitherCoins    "" ecs
                    (pt, toSelf)           = f (ms^.plaTbl, T.concat [ inInvs |!| sorryInInv
@@ -1428,11 +1441,14 @@ look (LowerNub i mq cols as) = helper |&| modifyState >=> \(toSelf, bs, maybeTar
                                       , targetId `delete` is)
                        in toTarget : toOthers : acc
                    ms' = ms & plaTbl .~ pt
-               in (ms', (toSelf, foldr mkBsForTarget [] targetDesigs, targetDesigs |!| Just targetDesigs))
+               in (ms', ( hookToSelf <> toSelf
+                        , foldr mkBsForTarget [] targetDesigs
+                        , hookLogMsg
+                        , targetDesigs |!| Just targetDesigs ))
           else let toSelf        = wrapUnlinesNl cols sorryLookNothingHere
                    (pt, toSelf') = f (ms^.plaTbl, toSelf)
                    ms'           = ms & plaTbl .~ pt
-               in (ms', (toSelf', [], Nothing))
+               in (ms', (toSelf', [], "", Nothing))
     helperLookEitherInv _  acc (Left  msg ) = acc <> wrapUnlinesNl cols msg
     helperLookEitherInv ms acc (Right is  ) = nl $ acc <> mkEntDescs i cols ms is
     helperLookEitherCoins  acc (Left  msgs) = (acc <>) . multiWrapNl cols . intersperse "" $ msgs

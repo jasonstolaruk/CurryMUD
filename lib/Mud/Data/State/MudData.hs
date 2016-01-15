@@ -3,6 +3,7 @@
 module Mud.Data.State.MudData where
 
 import Mud.Data.State.ActionParams.ActionParams
+import Mud.Data.State.ActionParams.Misc
 import Mud.Data.State.MsgQueue
 
 import Control.Applicative (empty)
@@ -536,7 +537,16 @@ data Hook = Hook { hookName :: HookName
 type HookName = Text
 
 
-type HookFun = MudStack () -- TODO
+type HookFun = Id -> (Args, GenericIntermediateRes) -> (Args, GenericIntermediateRes)
+
+
+type GenericIntermediateRes = (MudState,  [Text], [Broadcast], [Text])
+
+
+type GenericRes             = (MudState, ([Text], [Broadcast], [Text]))
+
+
+type Broadcast = (Text, Inv)
 
 
 -- ==================================================

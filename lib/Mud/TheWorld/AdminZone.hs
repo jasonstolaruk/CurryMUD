@@ -2,17 +2,22 @@
 
 module Mud.TheWorld.AdminZone (createAdminZone) where
 
+import Mud.Data.Misc
 import Mud.Data.State.MudData
+import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Put
 import Mud.TheWorld.AdminZoneIds
 import Mud.TheWorld.TutorialIds (iTutWelcome)
 import Mud.TopLvlDefs.Vols
 import Mud.TopLvlDefs.Weights
+import Mud.Util.Quoting
 import qualified Mud.Misc.Logging as L (logNotice)
 
+import Control.Lens (_2, _3, _4)
+import Control.Lens.Operators ((&), (<>~))
 import Control.Monad (forM_)
 import Data.Bits (setBit, zeroBits)
-import Data.List (foldl')
+import Data.List (delete, foldl')
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import qualified Data.Map.Lazy as M (empty, fromList, singleton)
@@ -38,7 +43,17 @@ adminFlags = foldl' setBit zeroBits . map fromEnum $ [ IsAdmin
 
 
 lookSignHook :: HookFun
-lookSignHook = return ()
+lookSignHook i (as, a@(ms, _, _, _)) =
+    let selfDesig = mkStdDesig i ms DoCap
+    in ( "sign" `delete` as
+       , a & _2 <>~ pure signTxt
+           & _3 <>~ pure (serialize selfDesig <> " reads the sign on the wall.", i `delete` desigIds selfDesig)
+           & _4 <>~ pure (parensQuote "lookSignHook" <> " read sign") )
+  where
+    signTxt = "The following message has been painted on the sign in a tight, flowing script:\n\
+              \Welcome to the empty room. You have been summoned here by a CurryMUD administrator. As there are no \
+              \exits, you will need the assistance of an administrator when the time comes for you to leave. We hope \
+              \you enjoy your stay!"
 
 
 -----
@@ -335,8 +350,8 @@ createAdminZone = do
             \though you can't miss the small wooden sign affixed to the north wall."
             zeroBits
             []
-            (M.singleton "look" . pure . Hook "sign" $ lookSignHookName))
-  putHookFun lookSignHookName lookSignHook
+            (M.singleton "look" . pure . Hook lookSignHookName $ "sign"))
+  putHookFun lookSignHookName lookSignHook -- TODO: Put hooks after creating or loading world.
 
   -- ==================================================
   -- Room teleport names:

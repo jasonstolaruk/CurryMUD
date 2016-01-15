@@ -6,7 +6,6 @@ module Mud.Data.Misc ( Action(..)
                      , AOrThe(..)
                      , Args
                      , BanRecord(..)
-                     , Broadcast
                      , ChanContext(..)
                      , ClassifiedBcast(..)
                      , Cmd(..)
@@ -455,9 +454,6 @@ data ChanContext = ChanContext { someCmdName      :: Text
 -----
 
 
-type Broadcast = (Text, Inv)
-
-
 data ClassifiedBcast = TargetBcast    Broadcast
                      | NonTargetBcast Broadcast deriving Eq
 
@@ -510,15 +506,6 @@ instance Show EquipInvLookCmd where
   show EquipCmd = "equipment"
   show InvCmd   = "inventory"
   show LookCmd  = "look"
-
-
------
-
-
-type GenericIntermediateRes = (MudState,  [Text], [Broadcast], [Text])
-
-
-type GenericRes             = (MudState, ([Text], [Broadcast], [Text]))
 
 
 -----
