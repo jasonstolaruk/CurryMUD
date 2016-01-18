@@ -85,8 +85,13 @@ initMudData shouldLog = do
 
 
 initWorld :: MudStack Bool
-initWorld = dropIrrelevantFilenames . sort <$> (liftIO . getDirectoryContents $ persistDir) >>= \cont ->
+initWorld = dropIrrelevantFilenames . sort <$> (liftIO . getDirectoryContents $ persistDir) >>= \cont -> do
+    initHookFunTbl
     ()# cont ? (createWorld >> return True) :? (loadWorld . last $ cont)
+
+
+initHookFunTbl :: MudStack ()
+initHookFunTbl = tweak $ hookFunTbl .~ M.fromList adminZoneHooks
 
 
 createWorld :: MudStack ()

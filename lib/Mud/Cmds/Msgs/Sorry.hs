@@ -87,6 +87,7 @@ module Mud.Cmds.Msgs.Sorry  ( sorryAdminChanSelf
                             , sorryLinkNoOneHere
                             , sorryLinkType
                             , sorryLoggedOut
+                            , sorryLookNoInvCoins
                             , sorryLookNothingHere
                             , sorryMsgIncog
                             , sorryNewChanExisting
@@ -704,6 +705,10 @@ sorryLoggedOut s = s <> " is not logged in."
 
 
 -----
+
+
+sorryLookNoInvCoins :: Text
+sorryLookNoInvCoins = "You don't see anything to look at on the ground here."
 
 
 sorryLookNothingHere :: Text

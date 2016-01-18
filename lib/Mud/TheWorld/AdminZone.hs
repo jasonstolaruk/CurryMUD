@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Mud.TheWorld.AdminZone (createAdminZone) where
+module Mud.TheWorld.AdminZone ( adminZoneHooks
+                              , createAdminZone ) where
 
 import Mud.Data.Misc
 import Mud.Data.State.MudData
@@ -42,18 +43,40 @@ adminFlags = foldl' setBit zeroBits . map fromEnum $ [ IsAdmin
 -----
 
 
+adminZoneHooks :: [(HookName, HookFun)]
+adminZoneHooks = [ (lookSignHookName,  lookSignHook )
+                 , (lookWallsHookName, lookWallsHook) ]
+
+
+lookSignHookName :: HookName
+lookSignHookName = "AdminZone_iEmpty_lookSign"
+
+
 lookSignHook :: HookFun
-lookSignHook i (as, a@(ms, _, _, _)) =
+lookSignHook i a@(ms, _, _, _) =
     let selfDesig = mkStdDesig i ms DoCap
-    in ( "sign" `delete` as
-       , a & _2 <>~ pure signTxt
-           & _3 <>~ pure (serialize selfDesig <> " reads the sign on the wall.", i `delete` desigIds selfDesig)
-           & _4 <>~ pure (parensQuote "lookSignHook" <> " read sign") )
+    in a & _2 <>~ pure signTxt
+         & _3 <>~ pure (serialize selfDesig <> " reads the sign on the wall.", i `delete` desigIds selfDesig)
+         & _4 <>~ pure (parensQuote "lookSignHook" <> " looked at sign")
   where
     signTxt = "The following message has been painted on the sign in a tight, flowing script:\n\
               \Welcome to the empty room. You have been summoned here by a CurryMUD administrator. As there are no \
               \exits, you will need the assistance of an administrator when the time comes for you to leave. We hope \
               \you enjoy your stay!"
+
+
+lookWallsHookName :: HookName
+lookWallsHookName = "AdminZone_iEmpty_lookWalls"
+
+
+lookWallsHook :: HookFun
+lookWallsHook i a@(ms, _, _, _) =
+    let selfDesig = mkStdDesig i ms DoCap
+    in a & _2 <>~ pure wallTxt
+         & _3 <>~ pure (serialize selfDesig <> " looks at the walls.", i `delete` desigIds selfDesig)
+         & _4 <>~ pure (parensQuote "lookWallsHook" <> " looked at walls")
+  where
+    wallTxt = "You are enclosed by four smooth, dense walls, with no means of exit in sight."
 
 
 -----
@@ -341,7 +364,6 @@ createAdminZone = do
             zeroBits
             [ NonStdLink "out" iLoungeEntrance "% exits the lounge." "% exits the lounge." ]
             M.empty)
-  let lookSignHookName = "AdminZone_iEmpty_lookSign"
   putRm iEmpty
         []
         mempty
@@ -350,8 +372,9 @@ createAdminZone = do
             \though you can't miss the small wooden sign affixed to the north wall."
             zeroBits
             []
-            (M.singleton "look" . pure . Hook lookSignHookName $ "sign"))
-  putHookFun lookSignHookName lookSignHook -- TODO: Put hooks after creating or loading world.
+            (M.singleton "look" [ Hook lookSignHookName  "sign"
+                                , Hook lookWallsHookName "wall"
+                                , Hook lookWallsHookName "walls" ]))
 
   -- ==================================================
   -- Room teleport names:

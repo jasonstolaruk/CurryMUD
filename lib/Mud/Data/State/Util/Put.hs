@@ -7,7 +7,7 @@ import Mud.Data.State.Util.Misc
 import Mud.Util.Misc
 
 import Control.Lens (at)
-import Control.Lens.Operators ((.~), (?~))
+import Control.Lens.Operators ((.~))
 import Data.Text (Text)
 
 
@@ -46,13 +46,6 @@ putCon i e o is coi mc con = tweaks [ clothTbl.at  i .~ mc
                                     , invTbl  .ind i .~ is
                                     , objTbl  .ind i .~ o
                                     , typeTbl .ind i .~ ConType ]
-
-
------
-
-
-putHookFun :: HookName -> HookFun -> MudStack ()
-putHookFun n f = tweak $ hookFunTbl.at n ?~ f
 
 
 -----

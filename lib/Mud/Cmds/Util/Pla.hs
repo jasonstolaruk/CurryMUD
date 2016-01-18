@@ -13,6 +13,7 @@ module Mud.Cmds.Util.Pla ( armSubToSlot
                          , findAvailSlot
                          , genericAction
                          , genericSorry
+                         , getHookFun
                          , getMatchingChanWithName
                          , getRelativePCName
                          , hasFp
@@ -37,6 +38,7 @@ module Mud.Cmds.Util.Pla ( armSubToSlot
                          , isRndmName
                          , isSlotAvail
                          , linkDirToCmdName
+                         , lookupHooks
                          , maybeSingleSlot
                          , mkChanBindings
                          , mkChanNamesTunings
@@ -53,6 +55,7 @@ module Mud.Cmds.Util.Pla ( armSubToSlot
                          , moveReadiedItem
                          , notFoundSuggestAsleeps
                          , otherHand
+                         , procHooks
                          , putOnMsgs
                          , resolveMobInvCoins
                          , resolveRmInvCoins
@@ -80,7 +83,7 @@ import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
 import Mud.TopLvlDefs.Padding
 import Mud.Util.List
-import Mud.Util.Misc hiding (patternMatchFail)
+import Mud.Util.Misc hiding (blowUp, patternMatchFail)
 import Mud.Util.Operators
 import Mud.Util.Padding
 import Mud.Util.Quoting
@@ -88,7 +91,7 @@ import Mud.Util.Text
 import Mud.Util.Wrapping
 import Prelude hiding (pi)
 import qualified Mud.Misc.Logging as L (logPla, logPlaOut)
-import qualified Mud.Util.Misc as U (patternMatchFail)
+import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 
 import Control.Arrow ((***), first, second)
 import Control.Lens (Getter, _1, _2, _3, _4, _5, at, both, each, to, view, views)
@@ -98,15 +101,22 @@ import Control.Monad.IO.Class (liftIO)
 import Data.Char (isLower)
 import Data.Function (on)
 import Data.List ((\\), delete, elemIndex, find, foldl', intercalate, nub, sortBy)
-import Data.Maybe (catMaybes, fromJust)
+import Data.Maybe (catMaybes, fromJust, fromMaybe)
 import Data.Monoid ((<>), Sum(..))
 import Data.Text (Text)
 import qualified Data.IntMap.Lazy as IM (keys)
-import qualified Data.Map.Lazy as M ((!), notMember, toList)
+import qualified Data.Map.Lazy as M ((!), lookup, notMember, toList)
 import qualified Data.Text as T
 
 
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
+
+
+-----
+
+
+blowUp :: Text -> Text -> [Text] -> a
+blowUp = U.blowUp "Mud.Cmds.Util.Pla"
 
 
 -----
@@ -245,6 +255,15 @@ genericAction ActionParams { .. } helper fn = helper |&| modifyState >=> \(toSel
 
 genericSorry :: MudState -> Text -> GenericRes
 genericSorry ms = (ms, ) . (, [], []) . pure
+
+
+-----
+
+
+getHookFun :: HookName -> MudState -> HookFun
+getHookFun n = views (hookFunTbl.at n) (fromMaybe oops)
+  where
+    oops = blowUp "getHookFun" "Hook name not found in hook function table." . pure $ n
 
 
 -----
@@ -839,6 +858,13 @@ findAvailSlot em = find (isSlotAvail em)
 -----
 
 
+lookupHooks :: Id -> MudState -> CmdName -> Maybe [Hook]
+lookupHooks i ms cn = views hookMap (M.lookup cn) . getMobRm i $ ms
+
+
+-----
+
+
 maybeSingleSlot :: EqMap -> Slot -> Maybe Slot
 maybeSingleSlot em s = boolToMaybe (isSlotAvail em s) s
 
@@ -1059,6 +1085,20 @@ otherHand :: Hand -> Hand
 otherHand RHand  = LHand
 otherHand LHand  = RHand
 otherHand NoHand = LHand
+
+
+-----
+
+
+procHooks :: Id -> MudState -> CmdName -> Args -> (Args, GenericIntermediateRes)
+procHooks i ms cn as | initAcc <- (as, (ms, [], [], [])) = case lookupHooks i ms cn of
+  Nothing    -> initAcc
+  Just hooks -> let hookHelper a@(args, gir@(ms', _, _, _)) arg =
+                        case [ hookName | Hook { .. } <- hooks, trigger == arg ] of
+                          [hn] -> (arg `delete` args, getHookFun hn ms' i gir)
+                          []   -> a
+                          xs   -> patternMatchFail "procHooks" [ showText xs ]
+                in foldl' hookHelper initAcc as
 
 
 -----

@@ -1397,62 +1397,58 @@ look (NoArgs i mq cols) = getState >>= \ms ->
     formatRmDesc = map (T.replicate rmDescIndentAmt filler <>) . T.lines
 look (LowerNub i mq cols as) = helper |&| modifyState >=> \(toSelf, bs, hookLogMsg, maybeTargetDesigs) -> do
     send mq toSelf
-    bcastIfNotIncog i bs
-    let logHelper targetDesigs | targetSings <- [ fromJust . sDesigEntSing $ targetDesig
-                                                | targetDesig <- targetDesigs ]
-                               = logPla "look" i $ "looked at " <> commas targetSings <> "."
-    maybeVoid logHelper maybeTargetDesigs
-    hookLogMsg |#| logPla "look" i -- TODO: Tighten up logging?
+    bcastIfNotIncogNl i bs
+    let mkLogMsgForDesigs targetDesigs | targetSings <- [ fromJust . sDesigEntSing $ targetDesig
+                                                        | targetDesig <- targetDesigs ]
+                                       = "looked at " <> commas targetSings
+        logMsg = T.intercalate " / " . dropBlanks $ [ maybe "" mkLogMsgForDesigs maybeTargetDesigs, hookLogMsg ]
+    logMsg |#| logPla "look" i . (<> ".")
   where
     helper ms =
         let invCoins = first (i `delete`) . getMobRmNonIncogInvCoins i $ ms
-            f        = onTrue (isPC i ms) (firstLook i cols)
-        in if ()!# invCoins
-          then let (inInvs, inEqs, inRms) = sortArgsInvEqRm InRm as
-                   sorryInInv             = wrapUnlinesNl cols . sorryEquipInvLook LookCmd $ InvCmd
-                   sorryInEq              = wrapUnlinesNl cols . sorryEquipInvLook LookCmd $ EquipCmd
-
-                   initAcc     = (inRms, (ms, [], [], []))
-                   (inRms', a) = case views hookMap (M.lookup "look") . getMobRm i $ ms of
-                     Nothing    -> initAcc
-                     Just hooks ->
-                         let hookHelper acc@(args, _) Hook { .. }
-                               | trigger `elem` args = getHookFun hookName ms i acc
-                               | otherwise           = acc
-                         in foldl' hookHelper initAcc hooks
-                   hookToSelf = a^._2.to (T.intercalate "\n") -- TODO: Wrap properly, knowing that the text may contain line breaks.
-                   hookLogMsg = a^._4.to slashes
-
-                   (eiss, ecs)            = uncurry (resolveRmInvCoins i ms inRms') invCoins
-                   invDesc                = foldl' (helperLookEitherInv ms) "" eiss
-                   coinsDesc              = foldl' helperLookEitherCoins    "" ecs
-                   (pt, toSelf)           = f (ms^.plaTbl, T.concat [ inInvs |!| sorryInInv
-                                                                    , inEqs  |!| sorryInEq
-                                                                    , invDesc
-                                                                    , coinsDesc ])
-                   selfDesig    = mkStdDesig i ms DoCap
-                   selfDesig'   = serialize selfDesig
-                   is           = i `delete` desigIds selfDesig
-                   targetDesigs = [ mkStdDesig targetId ms Don'tCap | targetId <- extractMobIdsFromEiss ms eiss ]
-                   mkBsForTarget targetDesig acc =
-                       let targetId = desigId targetDesig
-                           toTarget = (nlnl $ selfDesig' <> " looks at you.", pure targetId)
-                           toOthers = ( nlnl . T.concat $ [ selfDesig', " looks at ", serialize targetDesig, "." ]
-                                      , targetId `delete` is)
-                       in toTarget : toOthers : acc
-                   ms' = ms & plaTbl .~ pt
-               in (ms', ( hookToSelf <> toSelf
-                        , foldr mkBsForTarget [] targetDesigs
-                        , hookLogMsg
-                        , targetDesigs |!| Just targetDesigs ))
-          else let toSelf        = wrapUnlinesNl cols sorryLookNothingHere
-                   (pt, toSelf') = f (ms^.plaTbl, toSelf)
-                   ms'           = ms & plaTbl .~ pt
-               in (ms', (toSelf', [], "", Nothing))
+            (inInvs, inEqs, inRms) = sortArgsInvEqRm InRm as
+            sorry                  = T.concat [ inInvs |!| sorryInInv, inEqs  |!| sorryInEq ]
+            sorryInInv             = wrapUnlinesNl cols . sorryEquipInvLook LookCmd $ InvCmd
+            sorryInEq              = wrapUnlinesNl cols . sorryEquipInvLook LookCmd $ EquipCmd
+        in applyFirstLook $ case ((()!#) *** (()!#)) (invCoins, lookupHooks i ms "look") of
+          (False, False) -> (ms, (wrapUnlinesNl cols sorryLookNothingHere, [], "", Nothing))
+          -----
+          (True,  False) -> let (toSelf, bs, maybeDesigs) = invCoinsHelper ms inRms invCoins
+                            in (ms, (sorry <> toSelf, bs, "", maybeDesigs))
+          -----
+          (False, True ) -> let (inRms', (ms', toSelf, bs, logMsg)) = hooksHelper ms inRms
+                                sorry' = sorry <> (inRms' |!| wrapUnlinesNl cols sorryLookNoInvCoins)
+                            in (ms', (sorry' <> toSelf, bs, logMsg, Nothing))
+          -----
+          (True,  True ) -> let (inRms', (ms', hooksToSelf, hooksBs, logMsg)) = hooksHelper ms inRms
+                                (invCoinsToSelf, invCoinsBs, maybeDesigs)     = invCoinsHelper ms' inRms' invCoins
+                            in (ms', (sorry <> invCoinsToSelf <> hooksToSelf, invCoinsBs ++ hooksBs, logMsg, maybeDesigs))
+    applyFirstLook (ms, gir@(toSelf, _, _, _)) =
+        let (pt, toSelf') = onTrue (isPC i ms) (firstLook i cols) (ms^.plaTbl, toSelf)
+        in (ms & plaTbl .~ pt, gir & _1 .~ toSelf')
+    -----
+    invCoinsHelper ms args invCoins =
+        let (eiss, ecs)  = uncurry (resolveRmInvCoins i ms args) invCoins
+            invDesc      = foldl' (helperLookEitherInv ms) "" eiss
+            coinsDesc    = foldl' helperLookEitherCoins    "" ecs
+            selfDesig    = mkStdDesig i ms DoCap
+            selfDesig'   = serialize selfDesig
+            is           = i `delete` desigIds selfDesig
+            targetDesigs = [ mkStdDesig targetId ms Don'tCap | targetId <- extractMobIdsFromEiss ms eiss ]
+            mkBsForTarget targetDesig acc =
+                let targetId = desigId targetDesig
+                    toTarget = (nl $ selfDesig' <> " looks at you.", pure targetId)
+                    toOthers = ( nl . T.concat $ [ selfDesig', " looks at ", serialize targetDesig, "." ]
+                               , targetId `delete` is)
+                in toTarget : toOthers : acc
+        in (invDesc <> coinsDesc, foldr mkBsForTarget [] targetDesigs, targetDesigs |!| Just targetDesigs)
     helperLookEitherInv _  acc (Left  msg ) = acc <> wrapUnlinesNl cols msg
     helperLookEitherInv ms acc (Right is  ) = nl $ acc <> mkEntDescs i cols ms is
     helperLookEitherCoins  acc (Left  msgs) = (acc <>) . multiWrapNl cols . intersperse "" $ msgs
     helperLookEitherCoins  acc (Right c   ) = nl $ acc <> mkCoinsDesc cols c
+    -----
+    hooksHelper ms args = procHooks i ms "look" args & _2._2 %~ (T.unlines . map (multiWrap cols . T.lines))
+                                                     & _2._4 %~ slashes
 look p = patternMatchFail "look" [ showText p ]
 
 

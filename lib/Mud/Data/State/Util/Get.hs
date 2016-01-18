@@ -13,7 +13,6 @@ import Control.Arrow ((***))
 import Control.Concurrent (ThreadId)
 import Control.Lens (at, to, view)
 import Control.Lens.Operators ((^.))
-import Data.Maybe (fromJust)
 import Data.Text (Text)
 import Data.Time (UTCTime)
 import Network (HostName)
@@ -162,13 +161,6 @@ getExp i = view exp . getMob i
 
 getHand :: Id -> MudState -> Hand
 getHand i = view hand . getMob i
-
-
------
-
-
-getHookFun :: HookName -> MudState -> HookFun
-getHookFun n = view (hookFunTbl.at n.to fromJust) -- TODO: Blow up on Nothing.
 
 
 -----
