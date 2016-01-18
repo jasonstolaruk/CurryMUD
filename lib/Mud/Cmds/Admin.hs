@@ -1015,7 +1015,7 @@ teleHelper p@ActionParams { myId } ms originId destId destName mt f =
         destMobIds   = findMobIds ms $ ms^.invTbl.ind destId
         ms'          = ms & mobTbl.ind myId.rmId .~ destId
                           & invTbl.ind originId  %~ (myId `delete`)
-                          & invTbl.ind destId    %~ (sortInv ms . (++ pure myId))
+                          & invTbl.ind destId    %~ (sortInv ms . (myId :))
     in (ms', [ bcastIfNotIncog myId . f myId . g $ [ (nlnl   teleDescMsg,                             pure myId   )
                                                    , (nlnl . teleOriginMsg . serialize $ originDesig, originMobIds)
                                                    , (nlnl . teleDestMsg               $ destDesig,   destMobIds  ) ]

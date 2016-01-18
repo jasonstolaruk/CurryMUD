@@ -49,6 +49,10 @@ earWeight :: Weight
 earWeight = 1
 
 
+flowerWeight :: Weight
+flowerWeight = 10
+
+
 helmLeatherWeight :: Weight
 helmLeatherWeight = 30
 

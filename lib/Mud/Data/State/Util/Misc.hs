@@ -17,6 +17,7 @@ module Mud.Data.State.Util.Misc ( aOrAnType
                                 , getNonIncogLoggedInAdminIds
                                 , getNpcIds
                                 , getState
+                                , getUnusedId
                                 , isLoggedIn
                                 , isNpc
                                 , isPC
@@ -29,6 +30,7 @@ module Mud.Data.State.Util.Misc ( aOrAnType
                                 , mkStdDesig
                                 , mkUnknownPCEntName
                                 , modifyState
+                                , newObj
                                 , onEnv
                                 , pcNpc
                                 , pluralize
@@ -58,7 +60,7 @@ import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (ask)
 import Data.IntMap.Lazy ((!))
 import Data.IORef (atomicModifyIORef, readIORef)
-import Data.List (delete, foldl', sortBy)
+import Data.List ((\\), delete, foldl', sortBy)
 import Data.Maybe (fromJust, fromMaybe)
 import Data.Monoid (Sum(..), (<>))
 import Data.Text (Text)
@@ -211,6 +213,13 @@ onEnv = (ask >>=)
 -----
 
 
+getUnusedId :: MudState -> Id
+getUnusedId = views typeTbl (head . ([0..] \\) . IM.keys)
+
+
+-----
+
+
 isLoggedIn :: Pla -> Bool
 isLoggedIn = views lastRmId ((()#) . (Sum <$>))
 
@@ -284,6 +293,19 @@ mkStdDesig i ms sc = StdDesig { sDesigEntSing = Just . getSing i $ ms
 
 modifyState :: (MudState -> (MudState, a)) -> MudStack a
 modifyState f = ask >>= \md -> liftIO .  atomicModifyIORef (md^.mudStateIORef) $ f
+
+
+-----
+
+
+type InvId = Id
+
+
+newObj :: MudState -> Ent -> Obj -> InvId -> MudState
+newObj ms e@(view entId -> i) o invId = let ms' = ms & entTbl .ind i .~ e
+                                                     & objTbl .ind i .~ o
+                                                     & typeTbl.ind i .~ ObjType
+                                        in ms' & invTbl.ind invId %~ (sortInv ms' . (i :))
 
 
 -----

@@ -66,6 +66,10 @@ earVol :: Vol
 earVol = 2
 
 
+flowerVol :: Vol
+flowerVol = round (0.5 * 0.5 * 10 * 100 :: Double)
+
+
 helmLeatherVol :: Vol
 helmLeatherVol = 10 * 8 * 8 * 100
 

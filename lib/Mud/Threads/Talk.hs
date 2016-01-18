@@ -1,13 +1,11 @@
 {-# LANGUAGE OverloadedStrings, TupleSections, ViewPatterns #-}
 
-module Mud.Threads.Talk ( getUnusedId
-                        , runTalkAsync
+module Mud.Threads.Talk ( runTalkAsync
                         , threadTalk ) where
 
 import Mud.Cmds.Util.Misc
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
-import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Interp.Login
@@ -28,19 +26,17 @@ import Control.Concurrent.Async (asyncThreadId, race_)
 import Control.Concurrent.STM.TMQueue (newTMQueueIO)
 import Control.Concurrent.STM.TQueue (newTQueueIO)
 import Control.Exception.Lifted (finally, handle, try)
-import Control.Lens (at, views)
-import Control.Lens.Operators ((&), (.~), (?~))
+import Control.Lens (at)
+import Control.Lens.Operators ((%~), (&), (.~), (?~))
 import Control.Monad (void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (runReaderT)
 import Data.Bits (zeroBits)
-import Data.List ((\\))
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import Data.Time (getCurrentTime)
 import Network (HostName)
 import Prelude hiding (pi)
-import qualified Data.IntMap.Lazy as IM (keys)
 import qualified Data.Map.Lazy as M (empty)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
@@ -131,7 +127,6 @@ adHoc mq host = do
                        & entTbl          .ind i        .~ e
                        & eqTbl           .ind i        .~ M.empty
                        & invTbl          .ind i        .~ []
-                       & invTbl          .ind iWelcome .~ getInv iWelcome ms ++ pure i
                        & mobTbl          .ind i        .~ m
                        & msgQueueTbl     .ind i        .~ mq
                        & pcTbl           .ind i        .~ pc
@@ -139,7 +134,7 @@ adHoc mq host = do
                        & rndmNamesMstrTbl.ind i        .~ M.empty
                        & teleLinkMstrTbl .ind i        .~ M.empty
                        & typeTbl         .ind i        .~ PCType
-        in (ms', (i, s))
+        in (ms' & invTbl.ind iWelcome %~ (sortInv ms' . (i :)), (i, s))
 
 
 randomSex :: IO Sex
@@ -148,10 +143,6 @@ randomSex = ([ Male, Female ] !!) . fromEnum <$> (randomIO :: IO Bool)
 
 randomRace :: IO Race
 randomRace = randomIO
-
-
-getUnusedId :: MudState -> Id
-getUnusedId = views typeTbl (head . ([0..] \\) . IM.keys)
 
 
 dumpTitle :: MsgQueue -> MudStack ()

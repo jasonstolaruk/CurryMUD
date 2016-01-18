@@ -151,7 +151,7 @@ logIn newId ms newHost newTime originId = let ms' = peepNewId . movePC $ adoptNe
     movePC ms'  = let newRmId = fromJust . getLastRmId newId $ ms'
                   in ms' & invTbl  .ind iWelcome       %~ (newId    `delete`)
                          & invTbl  .ind iLoggedOut     %~ (originId `delete`)
-                         & invTbl  .ind newRmId        %~ (sortInv ms' . (++ pure newId))
+                         & invTbl  .ind newRmId        %~ (sortInv ms' . (newId :))
                          & mobTbl  .ind newId.rmId     .~ newRmId
                          & plaTbl  .ind newId.lastRmId .~ Nothing
     peepNewId ms'@(getPeepers newId -> peeperIds) =
@@ -230,7 +230,7 @@ interpConfirmName s cn params@(NoArgs' i mq) = case yesNo cn of
                                & mobTbl.ind i.rmId     .~ iCentral
                                & mobTbl.ind i.interp   .~ Nothing
                                & plaTbl.ind i.plaFlags .~ (setBit zeroBits . fromEnum $ IsTunedQuestion)
-                    ms'' = ms' & invTbl.ind iCentral   %~ (sortInv ms' . (++ pure i))
+                    ms'' = ms' & invTbl.ind iCentral   %~ (sortInv ms' . (i :))
                 in (ms'', (ms'', getSing i ms))
 interpConfirmName _ _ ActionParams { plaMsgQueue } = promptRetryYesNo plaMsgQueue
 

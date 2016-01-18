@@ -957,7 +957,7 @@ tryMove i mq cols p dir = helper |&| modifyState >=> \case
                 destMobIds   = findMobIds ms $ ms^.invTbl.ind destId
                 ms'          = ms & mobTbl.ind i.rmId   .~ destId
                                   & invTbl.ind originId %~ (i `delete`)
-                                  & invTbl.ind destId   %~ (sortInv ms . (++ pure i))
+                                  & invTbl.ind destId   %~ (sortInv ms . (i :))
                 msgAtOrigin  = nlnl $ case maybeOriginMsg of
                                  Nothing  -> T.concat [ serialize originDesig, spaced verb, expandLinkName dir, "." ]
                                  Just msg -> T.replace "%" (serialize originDesig) msg
@@ -1407,7 +1407,7 @@ look (LowerNub i mq cols as) = helper |&| modifyState >=> \(toSelf, bs, hookLogM
     helper ms =
         let invCoins = first (i `delete`) . getMobRmNonIncogInvCoins i $ ms
             (inInvs, inEqs, inRms) = sortArgsInvEqRm InRm as
-            sorry                  = T.concat [ inInvs |!| sorryInInv, inEqs  |!| sorryInEq ]
+            sorry                  = T.concat [ inInvs |!| sorryInInv, inEqs |!| sorryInEq ]
             sorryInInv             = wrapUnlinesNl cols . sorryEquipInvLook LookCmd $ InvCmd
             sorryInEq              = wrapUnlinesNl cols . sorryEquipInvLook LookCmd $ EquipCmd
         in applyFirstLook $ case ((()!#) *** (()!#)) (invCoins, lookupHooks i ms "look") of
@@ -1423,9 +1423,9 @@ look (LowerNub i mq cols as) = helper |&| modifyState >=> \(toSelf, bs, hookLogM
           (True,  True ) -> let (inRms', (ms', hooksToSelf, hooksBs, logMsg)) = hooksHelper ms inRms
                                 (invCoinsToSelf, invCoinsBs, maybeDesigs)     = invCoinsHelper ms' inRms' invCoins
                             in (ms', (sorry <> invCoinsToSelf <> hooksToSelf, invCoinsBs ++ hooksBs, logMsg, maybeDesigs))
-    applyFirstLook (ms, gir@(toSelf, _, _, _)) =
+    applyFirstLook (ms, a@(toSelf, _, _, _)) =
         let (pt, toSelf') = onTrue (isPC i ms) (firstLook i cols) (ms^.plaTbl, toSelf)
-        in (ms & plaTbl .~ pt, gir & _1 .~ toSelf')
+        in (ms & plaTbl .~ pt, a & _1 .~ toSelf')
     -----
     invCoinsHelper ms args invCoins =
         let (eiss, ecs)  = uncurry (resolveRmInvCoins i ms args) invCoins
