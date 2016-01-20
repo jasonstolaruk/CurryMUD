@@ -109,6 +109,10 @@ cmdDescSay :: Text
 cmdDescSay = "Say something out loud."
 
 
+cmdDescShow :: Text
+cmdDescShow = "Show one or more items in your inventory and/or readied equipment to another person."
+
+
 cmdDescStats :: Text
 cmdDescStats = "Display your stats."
 

@@ -336,7 +336,7 @@ Just 1
 Note that "Nothing `mplus` Just 5" returns "Just 5", while "Nothing >> Just 5" returns "Nothing".
 "Just 5 `mplus` Just 6" returns "Just 5".
 
-"msum" form "MonadPlus" is analogous to "mconcat" from "Monoid" (but keep in mind that while "MonadPlus" types take a type variable, "Monoid" types do not; there are also more instances of "Monoid" than there are of "MonadPlus").
+"msum" from "MonadPlus" is analogous to "mconcat" from "Monoid" (but keep in mind that while "MonadPlus" types take a type variable, "Monoid" types do not; there are also more instances of "Monoid" than there are of "MonadPlus").
 λ> :t msum
 msum :: MonadPlus m => [m a] -> m a
 λ> msum [Just 1, Nothing, Just 2] -- Keep the first "successful" value.

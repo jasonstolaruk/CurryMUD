@@ -210,8 +210,7 @@ priorityAbbrevCmds = concatMap (uncurry5 mkPriorityAbbrevCmd)
     , ("put",        "p",   putAction,  True, cmdDescPut)
     , ("ready",      "r",   ready,      True, cmdDescReady)
     , ("say",        "sa",  say,        True, cmdDescSay)
-    , ("show",       "sh",  showAction, True, "Show one or more items in your inventory and/or readied equipment to \
-                                              \another person.")
+    , ("show",       "sh",  showAction, True, cmdDescShow)
     , ("stats",      "st",  stats,      True, cmdDescStats)
     , ("telepathy",  "t",   tele,       True, "Send a private message to a person with whom you have established a \
                                               \two-way telepathic link.")
@@ -288,8 +287,7 @@ npcPriorityAbbrevCmds = concatMap (uncurry5 mkPriorityAbbrevCmd)
     , ("put",       "p",   putAction,  True,  cmdDescPut)
     , ("ready",     "r",   ready,      True,  cmdDescReady)
     , ("say",       "sa",  say,        True,  cmdDescSay)
-    , ("show",      "sh",  showAction, True,  "Show one or more items in your inventory and/or readied equipment to \
-                                              \another person.")
+    , ("show",      "sh",  showAction, True,  cmdDescShow) -- TODO: It appears I forgot to modify this cmd for NPCs.
     , ("stats",     "st",  stats,      True,  cmdDescStats)
     , ("stop",      "sto", npcStop,    False, "Stop possessing.")
     , ("unready",   "un",  unready,    True,  cmdDescUnready)
