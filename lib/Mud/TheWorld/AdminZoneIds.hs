@@ -227,3 +227,9 @@ iBackpackSml = 125 :: Int
 iBackpackLrg = 126 :: Int
 
 iEmpty = 127 :: Int
+
+iHallwayWest = 128 :: Int
+
+iHallwayEast = 129 :: Int
+
+iAtrium = 130 :: Int

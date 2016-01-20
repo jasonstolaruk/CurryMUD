@@ -1,7 +1,7 @@
 import MudTests.Data.Misc
+import MudTests.Data.State.Util.Misc
 import MudTests.Data.State.Util.Random
 import MudTests.TheWorld.TheWorld
-import MudTests.Threads.Talk
 import MudTests.Util.List
 import MudTests.Util.Misc
 import MudTests.Util.Padding
@@ -31,9 +31,9 @@ tests = testGroup "tests" [ propertyTests, unitTests ]
 
 
 propertyTests :: TestTree
-propertyTests = testGroup "property tests" [ propTests_Mud_Data_State_Util_Random
+propertyTests = testGroup "property tests" [ propTests_Mud_Data_State_Util_Misc
+                                           , propTests_Mud_Data_State_Util_Random
                                            , propTests_Mud_TheWorld_TheWorld
-                                           , propTests_Mud_Threads_Talk
                                            , propTests_Mud_Util_List
                                            , propTests_Mud_Util_Padding
                                            , propTests_Mud_Util_Text
@@ -43,11 +43,23 @@ propertyTests = testGroup "property tests" [ propTests_Mud_Data_State_Util_Rando
 -- --------------------------------------------------
 
 
+propTests_Mud_Data_State_Util_Misc :: TestTree
+propTests_Mud_Data_State_Util_Misc = testGroup "property tests Mud.Data.State.Util.Misc"
+    [ QC.testProperty "prop_getUnusedId" prop_getUnusedId ]
+
+
+-- --------------------------------------------------
+
+
 propTests_Mud_Data_State_Util_Random :: TestTree
 propTests_Mud_Data_State_Util_Random = testGroup "property tests Mud.Data.State.Util.Random"
-    [ QC.testProperty "prop_rndmRs_within_range"  prop_rndmRs_within_range
-    , QC.testProperty "prop_rndmRs_no_range"      prop_rndmRs_no_range
-    , QC.testProperty "prop_rndmRs_minimal_range" prop_rndmRs_minimal_range ]
+    [ QC.testProperty "prop_rndmIntToRange_within_range_from_zero"  prop_rndmIntToRange_within_range_from_zero
+    , QC.testProperty "prop_rndmIntToRange_within_range_from_other" prop_rndmIntToRange_within_range_from_zero
+    , QC.testProperty "prop_rndmIntToRange_distribution"            prop_rndmIntToRange_distribution
+    , QC.testProperty "prop_rndmIntToRangeHelper_low_max"           prop_rndmIntToRangeHelper_low_max
+    , QC.testProperty "prop_rndmRs_within_range"                    prop_rndmRs_within_range
+    , QC.testProperty "prop_rndmRs_no_range"                        prop_rndmRs_no_range
+    , QC.testProperty "prop_rndmRs_minimal_range"                   prop_rndmRs_minimal_range ]
 
 
 -- --------------------------------------------------
@@ -56,14 +68,6 @@ propTests_Mud_Data_State_Util_Random = testGroup "property tests Mud.Data.State.
 propTests_Mud_TheWorld_TheWorld :: TestTree
 propTests_Mud_TheWorld_TheWorld = testGroup "property tests Mud.TheWorld.TheWorld"
     [ QC.testProperty "prop_noDupIds" prop_noDupIds ]
-
-
--- --------------------------------------------------
-
-
-propTests_Mud_Threads_Talk :: TestTree
-propTests_Mud_Threads_Talk = testGroup "property tests Mud.Misc.Threads"
-    [ QC.testProperty "prop_getUnusedId" prop_getUnusedId ]
 
 
 -- --------------------------------------------------

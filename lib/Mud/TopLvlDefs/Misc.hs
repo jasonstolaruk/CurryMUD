@@ -130,6 +130,10 @@ rmDescIndentAmt :: Int
 rmDescIndentAmt = 2
 
 
+rndmVectorLen :: Int
+rndmVectorLen = 5
+
+
 stdLinkNames :: [Text]
 stdLinkNames = [ "n", "ne", "e", "se", "s", "sw", "w", "nw", "u", "d" ]
 

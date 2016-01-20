@@ -159,6 +159,7 @@ library
                        , transformers >=0.4 && <0.5
                        , transformers-base >=0.4 && <0.5
                        , unix >=2.7 && <3.0
+                       , vector >=0.11 && <0.12
   hs-source-dirs:      lib
 
 test-suite             test
@@ -182,3 +183,4 @@ test-suite             test
                        , tasty-quickcheck >=0.8 && <0.9
                        , text >=1.2 && <2.0
                        , transformers >=0.4 && <0.5
+                       , vector >=0.11 && <0.12

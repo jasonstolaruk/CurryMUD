@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, ViewPatterns #-}
 
 module Mud.TheWorld.AdminZone ( adminZoneHooks
                               , createAdminZone ) where
@@ -9,11 +9,14 @@ import Mud.Data.State.MudData
 import Mud.Data.State.Util.Calc
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Put
+import Mud.Data.State.Util.Random
 import Mud.TheWorld.AdminZoneIds
 import Mud.TheWorld.TutorialIds (iTutWelcome)
 import Mud.TopLvlDefs.Vols
 import Mud.TopLvlDefs.Weights
 import Mud.Util.Quoting
+import Mud.Util.Text
+import qualified Data.Vector.Unboxed as V (Vector, head)
 import qualified Mud.Misc.Logging as L (logNotice)
 
 import Control.Lens (_1, _2, _3, _4)
@@ -56,10 +59,10 @@ getFlowerHookName = "AdminZone_iGarden_getFlower"
 
 
 getFlowerHook :: HookFun
-getFlowerHook i a@(ms, _, _, _)
+getFlowerHook i v a@(ms, _, _, _)
   | calcWeight i ms + flowerWeight > calcMaxEnc i ms = a & _2 .~ pure (sorryGetEnc <> rest)
   | otherwise = let selfDesig = mkStdDesig i ms DoCap
-                in a & _1 .~  mkFlower i ms
+                in a & _1 .~  mkFlower i ms v
                      & _2 <>~ pure ("You pick " <> rest)
                      & _3 <>~ pure (serialize selfDesig <> " picks " <> rest, i `delete` desigIds selfDesig)
                      & _4 <>~ pure (parensQuote "getFlowerHook" <> " picked a flower")
@@ -67,15 +70,21 @@ getFlowerHook i a@(ms, _, _, _)
     rest = "a flower from the flowerbed."
 
 
-mkFlower :: Id -> MudState -> MudState
-mkFlower i ms = let flowerId = getUnusedId ms
-                    e        = Ent flowerId
-                                   (Just "flower")
-                                   "flower" ""
-                                   "The flower is beautiful." -- TODO
-                                   zeroBits
-                    o        = Obj flowerWeight flowerVol
-                in newObj ms e o i
+mkFlower :: Id -> MudState -> V.Vector Int -> MudState
+mkFlower i ms v = let flowerId = getUnusedId ms
+                      e        = Ent flowerId
+                                     (Just "flower")
+                                     "flower" ""
+                                     rndmDesc
+                                     zeroBits
+                      o        = Obj flowerWeight flowerVol
+                  in newObj ms e o i
+  where
+    rndmDesc = rndmIntToElem (V.head v) descs
+    descs    = [ "It's a fragrant daffodil sporting a collar of white pedals."
+               , "It's a hardy hibiscus with pink-tinged pedals surrounding a distinctly red center."
+               , "This eye-popping chrysanthemum has a fiery-orange bloom composed of many tiny pedals."
+               , "This blue lily has six large, independent petals opening widely from its base." ]
 
 
 lookSignHookName :: HookName
@@ -83,16 +92,18 @@ lookSignHookName = "AdminZone_iEmpty_lookSign"
 
 
 lookSignHook :: HookFun
-lookSignHook i a@(ms, _, _, _) =
+lookSignHook i (V.head -> r) a@(ms, _, _, _) =
     let selfDesig = mkStdDesig i ms DoCap
     in a & _2 <>~ pure signTxt
          & _3 <>~ pure (serialize selfDesig <> " reads the sign on the wall.", i `delete` desigIds selfDesig)
          & _4 <>~ pure (parensQuote "lookSignHook" <> " read sign")
   where
     signTxt = "The following message has been painted on the sign in a tight, flowing script:\n\
-              \Welcome to the empty room. You have been summoned here by a CurryMUD administrator. As there are no \
+              \\"Welcome to the empty room. You have been summoned here by a CurryMUD administrator. As there are no \
               \exits, you will need the assistance of an administrator when the time comes for you to leave. We hope \
-              \you enjoy your stay!"
+              \you enjoy your stay!\n\
+              \This message has been brought to you by the number " <> x <> ".\""
+    x       = showText . rndmIntToRange r $ percent
 
 
 lookWallsHookName :: HookName
@@ -100,7 +111,7 @@ lookWallsHookName = "AdminZone_iEmpty_lookWalls"
 
 
 lookWallsHook :: HookFun
-lookWallsHook i a@(ms, _, _, _) =
+lookWallsHook i _ a@(ms, _, _, _) =
     let selfDesig = mkStdDesig i ms DoCap
     in a & _2 <>~ pure wallTxt
          & _3 <>~ pure (serialize selfDesig <> " looks at the walls.", i `delete` desigIds selfDesig)
@@ -200,10 +211,39 @@ createAdminZone = do
             "Welcome to the heart of the machine. Sprawled about this dome-shaped, white room is a cluster of \
             \electronic displays and control panels, used by the admins to monitor and supervise the daily operations \
             \of CurryMUD.\n\
-            \A spiral staircase leads down."
+            \A spiral staircase leads down, while a door opens to a hallway leading east."
             zeroBits
-            [ StdLink Down iBasement ]
+            [ StdLink Down iBasement, StdLink East iHallwayWest ]
             M.empty)
+  putRm iHallwayWest
+        []
+        mempty
+        (Rm "Hallway"
+            "You are in a wide hallway leading east. A door to the west opens into the central control room."
+            zeroBits
+            [ StdLink West iCentral, StdLink East iHallwayEast ]
+            M.empty)
+  putRm iHallwayEast
+        []
+        mempty
+        (Rm "Hallway"
+            "You are in a wide hallway leading west. To your east, the hallway opens up into an atrium."
+            zeroBits
+            [ StdLink West iHallwayWest, StdLink East iAtrium ]
+            M.empty)
+  putRm iAtrium
+        []
+        mempty
+        (Rm "The atrium"
+            "The large, airy atrium is sparsely furnished so as to accentuate its open feel. The focal point of the \
+            \atrium is a shallow pool positioned directly under a large opening in the ceiling, allowing the pool to \
+            \freely collect rainwater. At each corner of the square pool, a marble column purposefully rises up to \
+            \support the ceiling. Next to the pool is a raised flowerbed, surrounded by four unembellished stone \
+            \benches.\n\
+            \An opening in the west wall leads out into a hallway."
+            zeroBits
+            [ StdLink West iHallwayEast ]
+            (M.singleton "look" . pure . Hook getFlowerHookName $ "flower")) -- TODO: "get"
   putRm iBasement
         []
         mempty
@@ -408,9 +448,10 @@ createAdminZone = do
 
   -- ==================================================
   -- Room teleport names:
+  putRmTeleName iAtrium  "atrium"
   putRmTeleName iCentral "central"
-  putRmTeleName iLounge  "lounge"
   putRmTeleName iEmpty   "empty"
+  putRmTeleName iLounge  "lounge"
 
   -- ==================================================
   -- Objects:
@@ -1163,7 +1204,7 @@ createAdminZone = do
                      , (FeetS,     iTraveler'sBoots) ])
          (Mob Female
               50 50 50 50 50
-              10  100 -- TODO: Poor Pidge...
+              100 100
               100 100
               100 100
               100 100

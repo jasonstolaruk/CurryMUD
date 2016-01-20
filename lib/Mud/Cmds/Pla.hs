@@ -1395,16 +1395,17 @@ look (NoArgs i mq cols) = getState >>= \ms ->
   where
     filler       = T.singleton indentFiller
     formatRmDesc = map (T.replicate rmDescIndentAmt filler <>) . T.lines
-look (LowerNub i mq cols as) = helper |&| modifyState >=> \(toSelf, bs, hookLogMsg, maybeTargetDesigs) -> do
-    send mq toSelf
-    bcastIfNotIncogNl i bs
-    let mkLogMsgForDesigs targetDesigs | targetSings <- [ fromJust . sDesigEntSing $ targetDesig
-                                                        | targetDesig <- targetDesigs ]
-                                       = "looked at " <> commas targetSings
-        logMsg = T.intercalate " / " . dropBlanks $ [ maybe "" mkLogMsgForDesigs maybeTargetDesigs, hookLogMsg ]
-    logMsg |#| logPla "look" i . (<> ".")
+look (LowerNub i mq cols as) = mkRndmVector >>= \v ->
+    helper v |&| modifyState >=> \(toSelf, bs, hookLogMsg, maybeTargetDesigs) -> do
+        send mq toSelf
+        bcastIfNotIncogNl i bs
+        let mkLogMsgForDesigs targetDesigs | targetSings <- [ fromJust . sDesigEntSing $ targetDesig
+                                                            | targetDesig <- targetDesigs ]
+                                           = "looked at " <> commas targetSings
+            logMsg = T.intercalate " / " . dropBlanks $ [ maybe "" mkLogMsgForDesigs maybeTargetDesigs, hookLogMsg ]
+        logMsg |#| logPla "look" i . (<> ".")
   where
-    helper ms =
+    helper v ms =
         let invCoins = first (i `delete`) . getMobRmNonIncogInvCoins i $ ms
             (inInvs, inEqs, inRms) = sortArgsInvEqRm InRm as
             sorry                  = T.concat [ inInvs |!| sorryInInv, inEqs |!| sorryInEq ]
@@ -1416,11 +1417,11 @@ look (LowerNub i mq cols as) = helper |&| modifyState >=> \(toSelf, bs, hookLogM
           (True,  False) -> let (toSelf, bs, maybeDesigs) = invCoinsHelper ms inRms invCoins
                             in (ms, (sorry <> toSelf, bs, "", maybeDesigs))
           -----
-          (False, True ) -> let (inRms', (ms', toSelf, bs, logMsg)) = hooksHelper ms inRms
+          (False, True ) -> let (inRms', (ms', toSelf, bs, logMsg)) = hooksHelper ms v inRms
                                 sorry' = sorry <> (inRms' |!| wrapUnlinesNl cols sorryLookNoInvCoins)
                             in (ms', (sorry' <> toSelf, bs, logMsg, Nothing))
           -----
-          (True,  True ) -> let (inRms', (ms', hooksToSelf, hooksBs, logMsg)) = hooksHelper ms inRms
+          (True,  True ) -> let (inRms', (ms', hooksToSelf, hooksBs, logMsg)) = hooksHelper ms v inRms
                                 (invCoinsToSelf, invCoinsBs, maybeDesigs)     = invCoinsHelper ms' inRms' invCoins
                             in (ms', (sorry <> invCoinsToSelf <> hooksToSelf, invCoinsBs ++ hooksBs, logMsg, maybeDesigs))
     applyFirstLook (ms, a@(toSelf, _, _, _)) =
@@ -1447,8 +1448,8 @@ look (LowerNub i mq cols as) = helper |&| modifyState >=> \(toSelf, bs, hookLogM
     helperLookEitherCoins  acc (Left  msgs) = (acc <>) . multiWrapNl cols . intersperse "" $ msgs
     helperLookEitherCoins  acc (Right c   ) = nl $ acc <> mkCoinsDesc cols c
     -----
-    hooksHelper ms args = procHooks i ms "look" args & _2._2 %~ (T.unlines . map (multiWrap cols . T.lines))
-                                                     & _2._4 %~ slashes
+    hooksHelper ms v args = procHooks i ms v "look" args & _2._2 %~ (T.unlines . map (multiWrap cols . T.lines))
+                                                         & _2._4 %~ slashes
 look p = patternMatchFail "look" [ showText p ]
 
 

@@ -52,6 +52,7 @@ module Mud.Cmds.Util.Pla ( armSubToSlot
                          , mkLastArgWithNubbedOthers
                          , mkMaybeNthOfM
                          , mkReadyMsgs
+                         , mkRndmVector
                          , moveReadiedItem
                          , notFoundSuggestAsleeps
                          , otherHand
@@ -76,6 +77,7 @@ import Mud.Data.State.Util.Coins
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
+import Mud.Data.State.Util.Random
 import Mud.Misc.ANSI
 import Mud.Misc.Database
 import Mud.Misc.NameResolution
@@ -107,6 +109,7 @@ import Data.Text (Text)
 import qualified Data.IntMap.Lazy as IM (keys)
 import qualified Data.Map.Lazy as M ((!), lookup, notMember, toList)
 import qualified Data.Text as T
+import qualified Data.Vector.Unboxed as V (Vector)
 
 
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
@@ -1049,6 +1052,13 @@ mkLastArgWithNubbedOthers as = let lastArg = last as
 -----
 
 
+mkRndmVector :: MudStack (V.Vector Int)
+mkRndmVector = rndmVector rndmVectorLen
+
+
+-----
+
+
 moveReadiedItem :: Id
                 -> (EqTbl, InvTbl, [Text], [Broadcast], [Text])
                 -> Slot
@@ -1090,12 +1100,12 @@ otherHand NoHand = LHand
 -----
 
 
-procHooks :: Id -> MudState -> CmdName -> Args -> (Args, GenericIntermediateRes)
-procHooks i ms cn as | initAcc <- (as, (ms, [], [], [])) = case lookupHooks i ms cn of
+procHooks :: Id -> MudState -> V.Vector Int -> CmdName -> Args -> (Args, GenericIntermediateRes)
+procHooks i ms v cn as | initAcc <- (as, (ms, [], [], [])) = case lookupHooks i ms cn of
   Nothing    -> initAcc
   Just hooks -> let hookHelper a@(args, gir@(ms', _, _, _)) arg =
                         case [ hookName | Hook { .. } <- hooks, trigger == arg ] of
-                          [hn] -> (arg `delete` args, getHookFun hn ms' i gir)
+                          [hn] -> (arg `delete` args, getHookFun hn ms' i v gir)
                           []   -> a
                           xs   -> patternMatchFail "procHooks" [ showText xs ]
                 in foldl' hookHelper initAcc as

@@ -22,6 +22,7 @@ import GHC.Generics (Generic)
 import Network (HostName)
 import qualified Data.IntMap.Lazy as IM (IntMap)
 import qualified Data.Map.Lazy as M (Map)
+import qualified Data.Vector.Unboxed as V (Vector)
 import System.Clock (TimeSpec)
 import System.Random (Random, random, randomR)
 import System.Random.MWC (GenIO)
@@ -536,7 +537,7 @@ data Hook = Hook { hookName :: HookName
 type HookName = Text
 
 
-type HookFun = Id -> GenericIntermediateRes -> GenericIntermediateRes
+type HookFun = Id -> V.Vector Int -> GenericIntermediateRes -> GenericIntermediateRes
 
 
 type GenericIntermediateRes = (MudState,  [Text], [Broadcast], [Text])
