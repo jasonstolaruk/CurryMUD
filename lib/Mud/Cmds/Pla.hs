@@ -707,7 +707,7 @@ dropAction :: ActionFun
 dropAction p@AdviseNoArgs     = advise p ["drop"] adviceDropNoArgs
 dropAction p@(LowerNub' i as) = genericAction p helper "drop"
   where
-    helper ms =
+    helper _ ms =
         let (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv as
             sorryInEq              = inEqs |!| sorryDropInEq
             sorryInRm              = inRms |!| sorryDropInRm
@@ -864,7 +864,7 @@ getAction p@AdviseNoArgs             = advise p ["get"] adviceGetNoArgs
 getAction   (Lower     _ mq cols as) | length as >= 3, (head . tail . reverse $ as) == "from" = wrapSend mq cols hintGet
 getAction p@(LowerNub' i         as) = genericAction p helper "get"
   where
-    helper ms =
+    helper _ ms =
         let (inInvs, inEqs, inRms) = sortArgsInvEqRm InRm as
             sorryInInv             = inInvs |!| sorryGetInInv
             sorryInEq              = inEqs  |!| sorryGetInEq
@@ -888,7 +888,7 @@ give p@AdviseNoArgs     = advise p ["give"] adviceGiveNoArgs
 give p@(AdviseOneArg a) = advise p ["give"] . adviceGiveNoName $ a
 give p@(Lower' i as   ) = genericAction p helper "give"
   where
-    helper ms =
+    helper _ ms =
         let b@LastArgIsTargetBindings { targetArg } = mkLastArgIsTargetBindings i ms as
             f                                       = case singleArgInvEqRm InRm targetArg of
               (InInv, _     ) -> genericSorry ms sorryGiveToInv
@@ -1628,7 +1628,7 @@ putAction p@AdviseNoArgs     = advise p ["put"] advicePutNoArgs
 putAction p@(AdviseOneArg a) = advise p ["put"] . advicePutNoCon $ a
 putAction p@(Lower' i as)    = genericAction p helper "put"
   where
-    helper ms =
+    helper _ ms =
       let LastArgIsTargetBindings { .. } = mkLastArgIsTargetBindings i ms as
       in case singleArgInvEqRm InInv targetArg of
         (InInv, target) -> shufflePut i ms srcDesig target False otherArgs srcInvCoins srcInvCoins procGecrMisMobInv
@@ -1820,7 +1820,7 @@ ready :: ActionFun
 ready p@AdviseNoArgs     = advise p ["ready"] adviceReadyNoArgs
 ready p@(LowerNub' i as) = genericAction p helper "ready"
   where
-    helper ms =
+    helper _ ms =
         let (inInvs, inEqs, inRms)    = sortArgsInvEqRm InInv as
             sorryInEq                 = inEqs |!| sorryReadyInEq
             sorryInRm                 = inRms |!| sorryReadyInRm
@@ -2078,7 +2078,7 @@ remove p@AdviseNoArgs     = advise p ["remove"] adviceRemoveNoArgs
 remove p@(AdviseOneArg a) = advise p ["remove"] . adviceRemoveNoCon $ a
 remove p@(Lower' i as)    = genericAction p helper "remove"
   where
-    helper ms =
+    helper _ ms =
       let LastArgIsTargetBindings { .. } = mkLastArgIsTargetBindings i ms as
       in case singleArgInvEqRm InInv targetArg of
         (InInv, target) -> shuffleRem i ms srcDesig target False otherArgs srcInvCoins procGecrMisMobInv
@@ -2663,7 +2663,7 @@ unready :: ActionFun
 unready p@AdviseNoArgs     = advise p ["unready"] adviceUnreadyNoArgs
 unready p@(LowerNub' i as) = genericAction p helper "unready"
   where
-    helper ms =
+    helper _ ms =
         let (inInvs, inEqs, inRms) = sortArgsInvEqRm InEq as
             sorryInInv             = inInvs |!| sorryUnreadyInInv
             sorryInRm              = inRms  |!| sorryUnreadyInRm

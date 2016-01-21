@@ -243,7 +243,8 @@ createAdminZone = do
             \An opening in the west wall leads out into a hallway."
             zeroBits
             [ StdLink West iHallwayEast ]
-            (M.singleton "look" . pure . Hook getFlowerHookName $ "flower")) -- TODO: "get"
+            (M.fromList [ ("look", pure . Hook getFlowerHookName $ "flower") -- TODO: Should be "get".
+                        , ("pick", pure . Hook getFlowerHookName $ "flower") ]))
   putRm iBasement
         []
         mempty

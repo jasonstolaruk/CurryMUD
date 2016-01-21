@@ -12,7 +12,6 @@ import Mud.Interp.Misc
 import Mud.TopLvlDefs.Misc
 import Mud.Util.Operators
 
-import Data.List (sort)
 import qualified Data.Text as T
 
 
@@ -21,8 +20,7 @@ centralDispatch = dispatch findAction
 
 
 findAction :: FindActionFun
-findAction i ms (T.toLower -> cn) = findActionHelper cn $ let ia = getPlaFlag IsAdmin . getPla i $ ms
-                                                          in sort . concat $ [ plaCmds
-                                                                             , mkNonStdRmLinkCmds . getMobRm i $ ms
-                                                                             , ia            |?| adminCmds
-                                                                             , ia && isDebug |?| debugCmds ]
+findAction i ms (T.toLower -> cn) = findActionHelper i ms cn $ let ia = getPlaFlag IsAdmin . getPla i $ ms
+                                                               in concat [ plaCmds
+                                                                         , ia            |?| adminCmds
+                                                                         , ia && isDebug |?| debugCmds ]
