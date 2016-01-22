@@ -530,14 +530,14 @@ type LinkName = Text
 type HookMap = M.Map CmdName [Hook]
 
 
-data Hook = Hook { hookName :: HookName
-                 , trigger  :: Text } deriving (Eq, Generic)
+data Hook = Hook { hookName  :: HookName
+                 , triggers  :: [Text] } deriving (Eq, Generic, Show)
 
 
 type HookName = Text
 
 
-type HookFun = Id -> V.Vector Int -> (Args, GenericIntermediateRes) -> (Args, GenericIntermediateRes)
+type HookFun = Id -> Hook -> V.Vector Int -> (Args, GenericIntermediateRes) -> (Args, GenericIntermediateRes)
 
 
 type Args = [Text]

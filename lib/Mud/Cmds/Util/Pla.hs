@@ -1104,12 +1104,22 @@ otherHand NoHand = LHand
 procHooks :: Id -> MudState -> V.Vector Int -> CmdName -> Args -> (Args, GenericIntermediateRes)
 procHooks i ms v cn as | initAcc <- (as, (ms, [], [], [])) = case lookupHooks i ms cn of
   Nothing    -> initAcc
-  Just hooks -> let hookHelper a@(_, (ms', _, _, _)) arg =
-                        case [ hookName | Hook { .. } <- hooks, trigger == arg ] of
-                          [hn] -> getHookFun hn ms' i v a
-                          []   -> a
-                          xs   -> patternMatchFail "procHooks" [ showText xs ]
-                in foldl' hookHelper initAcc as
+  Just hooks -> if ()# [ h | h@Hook { triggers } <- hooks, any (`elem` triggers) as ]
+    then initAcc
+    else let xformedArgs = foldl' f as hooks
+             f as' Hook { triggers } | any (`elem` triggers) as' = dropSynonyms triggers as'
+                                     | otherwise                 = as'
+             hookHelper a@(_, (ms', _, _, _)) arg = case [ h | h@Hook { triggers } <- hooks, arg `elem` triggers ] of
+               [h@Hook { hookName }] -> getHookFun hookName ms' i h v a
+               []                    -> a
+               xs                    -> patternMatchFail "procHooks" [ showText xs ]
+         in foldl' hookHelper initAcc xformedArgs
+
+
+dropSynonyms :: [Text] -> Args -> Args
+dropSynonyms _        []                         = []
+dropSynonyms triggers (x:xs) | x `elem` triggers = x : filter (`notElem` triggers) xs
+                             | otherwise         = x : dropSynonyms triggers xs
 
 
 -----

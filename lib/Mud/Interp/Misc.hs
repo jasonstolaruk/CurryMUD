@@ -11,9 +11,10 @@ import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
-import Mud.Util.Text
+import Mud.Util.Text hiding (none)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
+import Control.Lens (none)
 import Control.Monad (when)
 import Data.List (sort)
 import Data.Maybe (isNothing)
@@ -58,14 +59,14 @@ findActionHelper i ms cn cmds =
 
 
 mkActionForAdHocCmdHook :: Id -> Hook -> Action
-mkActionForAdHocCmdHook ri Hook { .. } = Action f True
+mkActionForAdHocCmdHook ri h@Hook { .. } = Action f True
   where
     f p@(LowerNub' i as) = genericAction p helper hookName
       where
         helper v ms
-          | getRmId i ms /= ri   = (ms, (pure sorryAlteredRm,   [], []))
-          | trigger `notElem` as = (ms, (pure sorryCmdNotFound, [], []))
-          | otherwise            =
-              let (_, (ms', toSelfs, bs, logMsgs)) = getHookFun hookName ms i v (as, (ms, [], [], []))
+          | getRmId i ms /= ri        = (ms, (pure sorryAlteredRm,   [], []))
+          | none (`elem` triggers) as = (ms, (pure sorryCmdNotFound, [], []))
+          | otherwise                 =
+              let (_, (ms', toSelfs, bs, logMsgs)) = getHookFun hookName ms i h v (as, (ms, [], [], []))
               in (ms', (toSelfs, bs, logMsgs))
     f p = patternMatchFail hookName [ showText p ]
