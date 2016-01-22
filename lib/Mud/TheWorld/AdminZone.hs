@@ -39,10 +39,11 @@ logNotice = L.logNotice "Mud.TheWorld.AdminZone"
 
 
 adminZoneHooks :: [(HookName, HookFun)]
-adminZoneHooks = [ (getFlowerHookName,  getFlowerHook )
-                 , (lookSignHookName,   lookSignHook  )
-                 , (lookWallsHookName,  lookWallsHook )
-                 , (pickFlowerHookName, pickFlowerHook) ]
+adminZoneHooks = [ (getFlowerHookName,     getFlowerHookFun  )
+                 , (lookFlowerbedHookName, lookFlowerbedHookFun)
+                 , (lookSignHookName,      lookSignHookFun   )
+                 , (lookWallsHookName,     lookWallsHookFun  )
+                 , (pickFlowerHookName,    pickFlowerHookFun ) ]
 
 
 -----
@@ -52,8 +53,8 @@ getFlowerHookName :: HookName
 getFlowerHookName = "AdminZone_iAtrium_getFlower"
 
 
-getFlowerHook :: HookFun
-getFlowerHook i v = first ("flower" `delete`) . flowerHookHelper i v
+getFlowerHookFun :: HookFun
+getFlowerHookFun i v = first ("flower" `delete`) . flowerHookHelper i v
 
 
 flowerHookHelper :: HookFun
@@ -61,10 +62,11 @@ flowerHookHelper i v a@(_, (ms, _, _, _)) = if calcWeight i ms + flowerWeight > 
   then a & _2._2 .~ pure (sorryGetEnc <> rest)
   else let selfDesig = mkStdDesig i ms DoCap
        in a & _2._1 .~  mkFlower i ms v
-            & _2._2 <>~ pure ("You pick " <> rest)
+            & _2._2 <>~ pure msg
             & _2._3 <>~ pure (serialize selfDesig <> " picks " <> rest, i `delete` desigIds selfDesig)
-            & _2._4 <>~ pure (parensQuote "getFlowerHook" <> " picked a flower")
+            & _2._4 <>~ pure (parensQuote "flowerHookHelper" <> " " <> msg)
   where
+    msg  = "You pick " <> rest
     rest = "a flower from the flowerbed."
 
 
@@ -89,11 +91,30 @@ pickFlowerHookName :: HookName
 pickFlowerHookName = "AdminZone_iAtrium_pickFlower"
 
 
-pickFlowerHook :: HookFun
-pickFlowerHook i v a@(as, _) = (flowerHookHelper i v a |&|) $ case as of
+pickFlowerHookFun :: HookFun
+pickFlowerHookFun i v a@(as, _) = (flowerHookHelper i v a |&|) $ case as of
   ("flower":_:_) -> _2._2 <>~ pure sorryPickFlower
   ["flower"]     -> id
   _              -> _2._2 %~  (sorryPickFlower :)
+
+
+-----
+
+
+lookFlowerbedHookName :: HookName
+lookFlowerbedHookName = "AdminZone_iAtrium_lookFlowerbed"
+
+
+lookFlowerbedHookFun :: HookFun
+lookFlowerbedHookFun i _ a@(_, (ms, _, _, _)) =
+    let selfDesig = mkStdDesig i ms DoCap
+    in a &    _1 %~  (\\ [ "flower", "flowers", "flowerbed" ])
+         & _2._2 <>~ pure flowerTxt
+         & _2._3 <>~ pure (serialize selfDesig <> " looks at the flowerbed.", i `delete` desigIds selfDesig)
+         & _2._4 <>~ pure (parensQuote "lookFlowerbedHookFun" <> " looked at flowerbed")
+  where
+    flowerTxt = "The tasteful flowerbed prominently features daffodils, hibiscuses, chrysanthemums, and lilies, all in \
+                \a pleasing array of colors."
 
 
 -----
@@ -103,13 +124,13 @@ lookSignHookName :: HookName
 lookSignHookName = "AdminZone_iEmpty_lookSign"
 
 
-lookSignHook :: HookFun
-lookSignHook i (V.head -> r) a@(_, (ms, _, _, _)) =
+lookSignHookFun :: HookFun
+lookSignHookFun i (V.head -> r) a@(_, (ms, _, _, _)) =
     let selfDesig = mkStdDesig i ms DoCap
     in a &    _1 %~  ("sign" `delete`)
          & _2._2 <>~ pure signTxt
          & _2._3 <>~ pure (serialize selfDesig <> " reads the sign on the wall.", i `delete` desigIds selfDesig)
-         & _2._4 <>~ pure (parensQuote "lookSignHook" <> " read sign")
+         & _2._4 <>~ pure (parensQuote "lookSignHookFun" <> " read sign")
   where
     signTxt = "The following message has been painted on the sign in a tight, flowing script:\n\
               \\"Welcome to the empty room. You have been summoned here by a CurryMUD administrator. As there are no \
@@ -126,13 +147,13 @@ lookWallsHookName :: HookName
 lookWallsHookName = "AdminZone_iEmpty_lookWalls"
 
 
-lookWallsHook :: HookFun
-lookWallsHook i _ a@(_, (ms, _, _, _)) =
+lookWallsHookFun :: HookFun
+lookWallsHookFun i _ a@(_, (ms, _, _, _)) =
     let selfDesig = mkStdDesig i ms DoCap
     in a &    _1 %~  (\\ [ "wall", "walls" ])
          & _2._2 <>~ pure wallTxt
          & _2._3 <>~ pure (serialize selfDesig <> " looks at the walls.", i `delete` desigIds selfDesig)
-         & _2._4 <>~ pure (parensQuote "lookWallsHook" <> " looked at walls")
+         & _2._4 <>~ pure (parensQuote "lookWallsHookFun" <> " looked at walls")
   where
     wallTxt = "You are enclosed by four smooth, dense walls, with no means of exit in sight."
 
@@ -270,6 +291,9 @@ createAdminZone = do
             zeroBits
             [ StdLink West iHallwayEast ]
             (M.fromList [ ("get",  pure . Hook getFlowerHookName  $ "flower")
+                        , ("look", [ Hook lookFlowerbedHookName "flowerbed"
+                                   , Hook lookFlowerbedHookName "flower"
+                                   , Hook lookFlowerbedHookName "flowers" ])
                         , ("pick", pure . Hook pickFlowerHookName $ "flower") ]))
   putRm iBasement
         []

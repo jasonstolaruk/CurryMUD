@@ -46,6 +46,7 @@ module Mud.Cmds.Msgs.Sorry  ( sorryAdminChanSelf
                             , sorryGetEnc
                             , sorryGetInEq
                             , sorryGetInInv
+                            , sorryGetNoInvCoins
                             , sorryGetNothingHere
                             , sorryGetType
                             , sorryGiveEnc
@@ -515,6 +516,10 @@ sorryGetInEq = butCan't $ "get an item in your readied equipment. If you want to
 sorryGetInInv :: Text
 sorryGetInInv = can't "get an item that's already in your inventory. If you're intent on picking it up, try dropping \
                       \it first!"
+
+
+sorryGetNoInvCoins :: Text
+sorryGetNoInvCoins = "You don't see anything to pick up on the ground here."
 
 
 sorryGetNothingHere :: Text

@@ -859,25 +859,37 @@ mkExpCmdListTxt =
 -----
 
 
--- TODO: Hooks.
 getAction :: ActionFun
 getAction p@AdviseNoArgs             = advise p ["get"] adviceGetNoArgs
 getAction   (Lower     _ mq cols as) | length as >= 3, (head . tail . reverse $ as) == "from" = wrapSend mq cols hintGet
 getAction p@(LowerNub' i         as) = genericAction p helper "get"
   where
-    helper _ ms =
+    helper v ms =
         let (inInvs, inEqs, inRms) = sortArgsInvEqRm InRm as
-            sorryInInv             = inInvs |!| sorryGetInInv
-            sorryInEq              = inEqs  |!| sorryGetInEq
+            sorrys                 = dropEmpties [ inInvs |!| sorryGetInInv, inEqs |!| sorryGetInEq ]
+            d                      = mkStdDesig i ms DoCap
             ri                     = getRmId i ms
             invCoins               = first (i `delete`) . getNonIncogInvCoins ri $ ms
-            d                      = mkStdDesig i ms DoCap
-            (eiss, ecs)            = uncurry (resolveRmInvCoins i ms inRms) invCoins
+        in case ((()!#) *** (()!#)) (invCoins, lookupHooks i ms "get") of
+          (False, False) -> (ms, (pure sorryGetNothingHere, [], []))
+          -----
+          (True,  False) -> invCoinsHelper ms inRms d ri invCoins & _2._1 %~ (sorrys ++)
+          -----
+          (False, True ) -> let (inRms', (ms', toSelfs, bs, logMsgs)) = procHooks i ms v "get" inRms
+                                sorrys'                               = sorrys ++ (inRms' |!| pure sorryGetNoInvCoins)
+                            in (ms', (sorrys' ++ toSelfs, bs, logMsgs))
+          -----
+          (True,  True ) ->
+            let (inRms', (ms', hooksToSelfs, hooksBs, hooksLogMsgs))   = procHooks i ms v "get" inRms
+                (ms'', (invCoinsToSelfs, invCoinsBs, invCoinsLogMsgs)) = invCoinsHelper ms' inRms' d ri invCoins
+            in (ms'', ( concat [ sorrys, hooksToSelfs, invCoinsToSelfs ]
+                      , hooksBs      ++ invCoinsBs
+                      , hooksLogMsgs ++ invCoinsLogMsgs ))
+    invCoinsHelper ms args d ri invCoins =
+        let (eiss, ecs)                     = uncurry (resolveRmInvCoins i ms args) invCoins
             (ms',  toSelfs,  bs,  logMsgs ) = foldl' (helperGetEitherInv       i d     ri)  (ms,  [],      [], []     ) eiss
             (ms'', toSelfs', bs', logMsgs') =         helperGetDropEitherCoins i d Get ri i (ms', toSelfs, bs, logMsgs) ecs
-        in if ()!# invCoins
-          then (ms'', (dropBlanks $ [ sorryInInv, sorryInEq ] ++ toSelfs', bs', logMsgs'))
-          else (ms,   (pure sorryGetNothingHere,                           [],  []      ))
+        in (ms'', (toSelfs', bs', logMsgs'))
 getAction p = patternMatchFail "getAction" [ showText p ]
 
 
@@ -1405,7 +1417,7 @@ look (LowerNub i mq cols as) = mkRndmVector >>= \v ->
         logMsg |#| logPla "look" i . (<> ".")
   where
     helper v ms =
-        let invCoins = first (i `delete`) . getMobRmNonIncogInvCoins i $ ms
+        let invCoins               = first (i `delete`) . getMobRmNonIncogInvCoins i $ ms
             (inInvs, inEqs, inRms) = sortArgsInvEqRm InRm as
             sorry                  = T.concat [ inInvs |!| sorryInInv, inEqs |!| sorryInEq ]
             sorryInInv             = wrapUnlinesNl cols . sorryEquipInvLook LookCmd $ InvCmd
@@ -1422,7 +1434,10 @@ look (LowerNub i mq cols as) = mkRndmVector >>= \v ->
           -----
           (True,  True ) -> let (inRms', (ms', hooksToSelf, hooksBs, logMsg)) = hooksHelper ms v inRms
                                 (invCoinsToSelf, invCoinsBs, maybeDesigs)     = invCoinsHelper ms' inRms' invCoins
-                            in (ms', (sorry <> invCoinsToSelf <> hooksToSelf, invCoinsBs ++ hooksBs, logMsg, maybeDesigs))
+                            in (ms', ( sorry <> hooksToSelf <> invCoinsToSelf
+                                     , hooksBs ++ invCoinsBs
+                                     , logMsg
+                                     , maybeDesigs ))
     applyFirstLook (ms, a@(toSelf, _, _, _)) =
         let (pt, toSelf') = onTrue (isPC i ms) (firstLook i cols) (ms^.plaTbl, toSelf)
         in (ms & plaTbl .~ pt, a & _1 .~ toSelf')
