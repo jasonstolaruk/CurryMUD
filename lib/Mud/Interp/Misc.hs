@@ -36,15 +36,16 @@ dispatch f cn p@ActionParams { myId, plaMsgQueue } = getState >>= \ms -> maybe n
 -- TODO: Continue from here.
 findActionHelper :: Id -> MudState -> CmdName -> [Cmd] -> MudStack (Maybe Action)
 findActionHelper i ms cn cmds =
-    let ri       = getRmId i ms
-        cmds'    = sort $ cmds ++ mkNonStdRmLinkCmds (getRm ri ms)
-        hookActs = case lookupHooks i ms cn of
-          Nothing    -> Nothing
-          Just hooks | cn `notElem` map cmdName cmds -> Just . mkActionForAdHocCmdHook i ri . head $ hooks
-                     | otherwise                     -> Nothing
-    in return $ case hookActs of
-      Nothing  -> cmdAction . fst <$> findFullNameForAbbrev cn [ (cmd, cmdName cmd) | cmd <- cmds' ]
-      Just act -> Just act
+    let ri           = getRmId i ms
+        cmds'        = sort $ cmds ++ mkNonStdRmLinkCmds (getRm ri ms)
+        helper       = cmdAction . fst <$> findFullNameForAbbrev cn [ (cmd, cmdName cmd) | cmd <- cmds' ]
+        maybeHookAct = maybe Nothing f . lookupHooks i ms $ cn
+        f hooks | cn `notElem` map cmdName cmds = Just . mkActionForAdHocCmdHook i ri . head $ hooks
+                | otherwise                     = Nothing
+    in return . onNothing helper $ maybeHookAct
+  where
+    onNothing x Nothing = x
+    onNothing _ just    = just
 
 
 mkActionForAdHocCmdHook :: Id -> Id -> Hook -> Action
