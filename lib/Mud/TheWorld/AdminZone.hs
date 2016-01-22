@@ -25,7 +25,7 @@ import Control.Lens (_1, _2, _3, _4)
 import Control.Lens.Operators ((%~), (&), (.~), (<>~))
 import Control.Monad (forM_)
 import Data.Bits (setBit, zeroBits)
-import Data.List (delete, foldl')
+import Data.List ((\\), delete, foldl')
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import qualified Data.Map.Lazy as M (empty, fromList, singleton)
@@ -38,18 +38,6 @@ logNotice = L.logNotice "Mud.TheWorld.AdminZone"
 -- ==================================================
 
 
-adminFlags :: Int
-adminFlags = foldl' setBit zeroBits . map fromEnum $ [ IsAdmin
-                                                     , IsNotFirstAdminMsg
-                                                     , IsNotFirstLook
-                                                     , IsNotFirstMobSay
-                                                     , IsTunedAdmin
-                                                     , IsTunedQuestion ]
-
-
------
-
-
 adminZoneHooks :: [(HookName, HookFun)]
 adminZoneHooks = [ (getFlowerHookName,  getFlowerHook )
                  , (lookSignHookName,   lookSignHook  )
@@ -57,12 +45,15 @@ adminZoneHooks = [ (getFlowerHookName,  getFlowerHook )
                  , (pickFlowerHookName, pickFlowerHook) ]
 
 
+-----
+
+
 getFlowerHookName :: HookName
 getFlowerHookName = "AdminZone_iAtrium_getFlower"
 
 
 getFlowerHook :: HookFun
-getFlowerHook i v = first tail . flowerHookHelper i v
+getFlowerHook i v = first ("flower" `delete`) . flowerHookHelper i v
 
 
 flowerHookHelper :: HookFun
@@ -94,41 +85,6 @@ mkFlower i ms v = let flowerId = getUnusedId ms
                , "This blue lily has six large, independent petals opening widely from its base." ]
 
 
-lookSignHookName :: HookName
-lookSignHookName = "AdminZone_iEmpty_lookSign"
-
-
-lookSignHook :: HookFun
-lookSignHook i (V.head -> r) a@(_, (ms, _, _, _)) =
-    let selfDesig = mkStdDesig i ms DoCap
-    in a &    _1 %~  tail
-         & _2._2 <>~ pure signTxt
-         & _2._3 <>~ pure (serialize selfDesig <> " reads the sign on the wall.", i `delete` desigIds selfDesig)
-         & _2._4 <>~ pure (parensQuote "lookSignHook" <> " read sign")
-  where
-    signTxt = "The following message has been painted on the sign in a tight, flowing script:\n\
-              \\"Welcome to the empty room. You have been summoned here by a CurryMUD administrator. As there are no \
-              \exits, you will need the assistance of an administrator when the time comes for you to leave. We hope \
-              \you enjoy your stay!\n\
-              \This message has been brought to you by the number " <> x <> ".\""
-    x       = showText . rndmIntToRange r $ percent
-
-
-lookWallsHookName :: HookName
-lookWallsHookName = "AdminZone_iEmpty_lookWalls"
-
-
-lookWallsHook :: HookFun
-lookWallsHook i _ a@(_, (ms, _, _, _)) =
-    let selfDesig = mkStdDesig i ms DoCap
-    in a &    _1 %~  tail
-         & _2._2 <>~ pure wallTxt
-         & _2._3 <>~ pure (serialize selfDesig <> " looks at the walls.", i `delete` desigIds selfDesig)
-         & _2._4 <>~ pure (parensQuote "lookWallsHook" <> " looked at walls")
-  where
-    wallTxt = "You are enclosed by four smooth, dense walls, with no means of exit in sight."
-
-
 pickFlowerHookName :: HookName
 pickFlowerHookName = "AdminZone_iAtrium_pickFlower"
 
@@ -141,6 +97,56 @@ pickFlowerHook i v a@(as, _) = (flowerHookHelper i v a |&|) $ case as of
 
 
 -----
+
+
+lookSignHookName :: HookName
+lookSignHookName = "AdminZone_iEmpty_lookSign"
+
+
+lookSignHook :: HookFun
+lookSignHook i (V.head -> r) a@(_, (ms, _, _, _)) =
+    let selfDesig = mkStdDesig i ms DoCap
+    in a &    _1 %~  ("sign" `delete`)
+         & _2._2 <>~ pure signTxt
+         & _2._3 <>~ pure (serialize selfDesig <> " reads the sign on the wall.", i `delete` desigIds selfDesig)
+         & _2._4 <>~ pure (parensQuote "lookSignHook" <> " read sign")
+  where
+    signTxt = "The following message has been painted on the sign in a tight, flowing script:\n\
+              \\"Welcome to the empty room. You have been summoned here by a CurryMUD administrator. As there are no \
+              \exits, you will need the assistance of an administrator when the time comes for you to leave. We hope \
+              \you enjoy your stay!\n\
+              \This message has been brought to you by the number " <> x <> ".\""
+    x       = showText . rndmIntToRange r $ percent
+
+
+-----
+
+
+lookWallsHookName :: HookName
+lookWallsHookName = "AdminZone_iEmpty_lookWalls"
+
+
+lookWallsHook :: HookFun
+lookWallsHook i _ a@(_, (ms, _, _, _)) =
+    let selfDesig = mkStdDesig i ms DoCap
+    in a &    _1 %~  (\\ [ "wall", "walls" ])
+         & _2._2 <>~ pure wallTxt
+         & _2._3 <>~ pure (serialize selfDesig <> " looks at the walls.", i `delete` desigIds selfDesig)
+         & _2._4 <>~ pure (parensQuote "lookWallsHook" <> " looked at walls")
+  where
+    wallTxt = "You are enclosed by four smooth, dense walls, with no means of exit in sight."
+
+
+  -- ==================================================
+
+
+adminFlags :: Int
+adminFlags = foldl' setBit zeroBits . map fromEnum $ [ IsAdmin
+                                                     , IsNotFirstAdminMsg
+                                                     , IsNotFirstLook
+                                                     , IsNotFirstMobSay
+                                                     , IsTunedAdmin
+                                                     , IsTunedQuestion ]
 
 
 createAdminZone :: MudStack ()
