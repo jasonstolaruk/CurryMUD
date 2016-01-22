@@ -111,6 +111,7 @@ massLogPla = L.massLogPla "Mud.Cmds.Admin"
 -- ==================================================
 
 
+-- TODO: "summon" cmd.
 adminCmds :: [Cmd]
 adminCmds =
     [ mkAdminCmd "?"          adminDispCmdList True  cmdDescDispCmdList

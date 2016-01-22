@@ -859,6 +859,7 @@ mkExpCmdListTxt =
 -----
 
 
+-- TODO: Hooks.
 getAction :: ActionFun
 getAction p@AdviseNoArgs             = advise p ["get"] adviceGetNoArgs
 getAction   (Lower     _ mq cols as) | length as >= 3, (head . tail . reverse $ as) == "from" = wrapSend mq cols hintGet

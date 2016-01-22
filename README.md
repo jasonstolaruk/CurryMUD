@@ -26,14 +26,16 @@ CurryMUD will have the following features:
 * Commands have a consistent structure and a unique syntax for indicating target locations and quantities.
 * About 55 player commands and 40 administrator commands.
 * About 180 built-in emotes.
+* Unique commands, accessible only when a player is in a particular room, may be created.
 * PCs can introduce themselves to each other.
 * PCs can "link" with each other so as to enable "tells."
+* Players can interact with permanent room fixtures that are not listed in the room's inventory.
 * Players can create their own ad-hoc channels.
 * Question channel for OOC newbie Q&A.
 * Free-form emotes and built-in emotes may be used in "tells" and channel communications.
 * Functionality enabling one-on-one communication between players and administrators.
 * NPCs can execute commands, either from within code or via the ":as" administrator command.
-* Help files for (almost) all existing non-debug commands.
+* Help files for all existing non-debug commands. Help topics.
 * The virtual world is automatically persisted at regular intervals and at shutdown.
 * Logging.
 * ANSI color.
@@ -63,7 +65,6 @@ The code is available here on GitHub under the 3-clause BSD license (refer to th
   * `PatternSynonyms`
   * `RebindableSyntax`
   * `RecordWildCards`
-  * `TemplateHaskell`
   * `TupleSections`
   * `ViewPatterns`
 * About 70 modules, excluding tests.
