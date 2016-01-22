@@ -14,13 +14,15 @@ import Mud.TheWorld.AdminZoneIds
 import Mud.TheWorld.TutorialIds (iTutWelcome)
 import Mud.TopLvlDefs.Vols
 import Mud.TopLvlDefs.Weights
+import Mud.Util.Operators
 import Mud.Util.Quoting
 import Mud.Util.Text
 import qualified Data.Vector.Unboxed as V (Vector, head)
 import qualified Mud.Misc.Logging as L (logNotice)
 
+import Control.Arrow (first)
 import Control.Lens (_1, _2, _3, _4)
-import Control.Lens.Operators ((&), (.~), (<>~))
+import Control.Lens.Operators ((%~), (&), (.~), (<>~))
 import Control.Monad (forM_)
 import Data.Bits (setBit, zeroBits)
 import Data.List (delete, foldl')
@@ -49,23 +51,28 @@ adminFlags = foldl' setBit zeroBits . map fromEnum $ [ IsAdmin
 
 
 adminZoneHooks :: [(HookName, HookFun)]
-adminZoneHooks = [ (getFlowerHookName, getFlowerHook)
-                 , (lookSignHookName,  lookSignHook )
-                 , (lookWallsHookName, lookWallsHook) ]
+adminZoneHooks = [ (getFlowerHookName,  getFlowerHook )
+                 , (lookSignHookName,   lookSignHook  )
+                 , (lookWallsHookName,  lookWallsHook )
+                 , (pickFlowerHookName, pickFlowerHook) ]
 
 
 getFlowerHookName :: HookName
-getFlowerHookName = "AdminZone_iGarden_getFlower"
+getFlowerHookName = "AdminZone_iAtrium_getFlower"
 
 
 getFlowerHook :: HookFun
-getFlowerHook i v a@(ms, _, _, _)
-  | calcWeight i ms + flowerWeight > calcMaxEnc i ms = a & _2 .~ pure (sorryGetEnc <> rest)
-  | otherwise = let selfDesig = mkStdDesig i ms DoCap
-                in a & _1 .~  mkFlower i ms v
-                     & _2 <>~ pure ("You pick " <> rest)
-                     & _3 <>~ pure (serialize selfDesig <> " picks " <> rest, i `delete` desigIds selfDesig)
-                     & _4 <>~ pure (parensQuote "getFlowerHook" <> " picked a flower")
+getFlowerHook i v = first tail . flowerHookHelper i v
+
+
+flowerHookHelper :: HookFun
+flowerHookHelper i v a@(_, (ms, _, _, _)) = if calcWeight i ms + flowerWeight > calcMaxEnc i ms
+  then a & _2._2 .~ pure (sorryGetEnc <> rest)
+  else let selfDesig = mkStdDesig i ms DoCap
+       in a & _2._1 .~  mkFlower i ms v
+            & _2._2 <>~ pure ("You pick " <> rest)
+            & _2._3 <>~ pure (serialize selfDesig <> " picks " <> rest, i `delete` desigIds selfDesig)
+            & _2._4 <>~ pure (parensQuote "getFlowerHook" <> " picked a flower")
   where
     rest = "a flower from the flowerbed."
 
@@ -92,11 +99,12 @@ lookSignHookName = "AdminZone_iEmpty_lookSign"
 
 
 lookSignHook :: HookFun
-lookSignHook i (V.head -> r) a@(ms, _, _, _) =
+lookSignHook i (V.head -> r) a@(_, (ms, _, _, _)) =
     let selfDesig = mkStdDesig i ms DoCap
-    in a & _2 <>~ pure signTxt
-         & _3 <>~ pure (serialize selfDesig <> " reads the sign on the wall.", i `delete` desigIds selfDesig)
-         & _4 <>~ pure (parensQuote "lookSignHook" <> " read sign")
+    in a &    _1 %~  tail
+         & _2._2 <>~ pure signTxt
+         & _2._3 <>~ pure (serialize selfDesig <> " reads the sign on the wall.", i `delete` desigIds selfDesig)
+         & _2._4 <>~ pure (parensQuote "lookSignHook" <> " read sign")
   where
     signTxt = "The following message has been painted on the sign in a tight, flowing script:\n\
               \\"Welcome to the empty room. You have been summoned here by a CurryMUD administrator. As there are no \
@@ -111,13 +119,25 @@ lookWallsHookName = "AdminZone_iEmpty_lookWalls"
 
 
 lookWallsHook :: HookFun
-lookWallsHook i _ a@(ms, _, _, _) =
+lookWallsHook i _ a@(_, (ms, _, _, _)) =
     let selfDesig = mkStdDesig i ms DoCap
-    in a & _2 <>~ pure wallTxt
-         & _3 <>~ pure (serialize selfDesig <> " looks at the walls.", i `delete` desigIds selfDesig)
-         & _4 <>~ pure (parensQuote "lookWallsHook" <> " looked at walls")
+    in a &    _1 %~  tail
+         & _2._2 <>~ pure wallTxt
+         & _2._3 <>~ pure (serialize selfDesig <> " looks at the walls.", i `delete` desigIds selfDesig)
+         & _2._4 <>~ pure (parensQuote "lookWallsHook" <> " looked at walls")
   where
     wallTxt = "You are enclosed by four smooth, dense walls, with no means of exit in sight."
+
+
+pickFlowerHookName :: HookName
+pickFlowerHookName = "AdminZone_iAtrium_pickFlower"
+
+
+pickFlowerHook :: HookFun
+pickFlowerHook i v a@(as, _) = (flowerHookHelper i v a |&|) $ case as of
+  ("flower":_:_) -> _2._2 <>~ pure sorryPickFlower
+  ["flower"]     -> id
+  _              -> _2._2 %~  (sorryPickFlower :)
 
 
 -----
@@ -243,8 +263,8 @@ createAdminZone = do
             \An opening in the west wall leads out into a hallway."
             zeroBits
             [ StdLink West iHallwayEast ]
-            (M.fromList [ ("look", pure . Hook getFlowerHookName $ "flower") -- TODO: Should be "get".
-                        , ("pick", pure . Hook getFlowerHookName $ "flower") ]))
+            (M.fromList [ ("look", pure . Hook getFlowerHookName  $ "flower")
+                        , ("pick", pure . Hook pickFlowerHookName $ "flower") ]))
   putRm iBasement
         []
         mempty

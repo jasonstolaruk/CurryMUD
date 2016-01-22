@@ -5,6 +5,7 @@ module Mud.Cmds.Msgs.Sorry  ( sorryAdminChanSelf
                             , sorryAdminName
                             , sorryAlreadyPossessed
                             , sorryAlreadyPossessing
+                            , sorryAlteredRm
                             , sorryAsAdmin
                             , sorryAsSelf
                             , sorryAsType
@@ -18,6 +19,7 @@ module Mud.Cmds.Msgs.Sorry  ( sorryAdminChanSelf
                             , sorryChanNoOneListening
                             , sorryChanTargetName
                             , sorryChanTargetNameFromContext
+                            , sorryCmdNotFound
                             , sorryCon
                             , sorryConInEq
                             , sorryConnectAlready
@@ -110,6 +112,7 @@ module Mud.Cmds.Msgs.Sorry  ( sorryAdminChanSelf
                             , sorryPCNameLoggedIn
                             , sorryPeepAdmin
                             , sorryPeepSelf
+                            , sorryPickFlower
                             , sorryPossessType
                             , sorryPp
                             , sorryPutExcessCon
@@ -250,6 +253,13 @@ sorryAlreadyPossessing s = "You are already possessing " <> theOnLower s <> "."
 -----
 
 
+sorryAlteredRm :: Text
+sorryAlteredRm = "Too late! You moved."
+
+
+-----
+
+
 sorryAsAdmin :: Text
 sorryAsAdmin = can'tTarget $ "an admin" <> withAs
 
@@ -330,6 +340,13 @@ sorryChanTargetNameFromContext :: Text -> ChanContext -> Text
 sorryChanTargetNameFromContext n ChanContext { .. } = sorryChanTargetName effChanName n
   where
     effChanName = maybe someCmdName dblQuote someChanName
+
+
+-----
+
+
+sorryCmdNotFound :: Text
+sorryCmdNotFound = "What?"
 
 
 -----
@@ -847,6 +864,14 @@ sorryPeepSelf = can't "peep yourself."
 
 
 -----
+
+
+sorryPickFlower :: Text
+sorryPickFlower = "You can only pick flowers here."
+
+
+-----
+
 
 
 sorryPossessType :: Type -> Text

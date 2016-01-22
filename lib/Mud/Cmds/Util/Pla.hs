@@ -1104,9 +1104,9 @@ otherHand NoHand = LHand
 procHooks :: Id -> MudState -> V.Vector Int -> CmdName -> Args -> (Args, GenericIntermediateRes)
 procHooks i ms v cn as | initAcc <- (as, (ms, [], [], [])) = case lookupHooks i ms cn of
   Nothing    -> initAcc
-  Just hooks -> let hookHelper a@(args, gir@(ms', _, _, _)) arg =
+  Just hooks -> let hookHelper a@(_, (ms', _, _, _)) arg =
                         case [ hookName | Hook { .. } <- hooks, trigger == arg ] of
-                          [hn] -> (arg `delete` args, getHookFun hn ms' i v gir)
+                          [hn] -> getHookFun hn ms' i v a
                           []   -> a
                           xs   -> patternMatchFail "procHooks" [ showText xs ]
                 in foldl' hookHelper initAcc as

@@ -537,7 +537,10 @@ data Hook = Hook { hookName :: HookName
 type HookName = Text
 
 
-type HookFun = Id -> V.Vector Int -> GenericIntermediateRes -> GenericIntermediateRes
+type HookFun = Id -> V.Vector Int -> (Args, GenericIntermediateRes) -> (Args, GenericIntermediateRes)
+
+
+type Args = [Text]
 
 
 type GenericIntermediateRes = (MudState,  [Text], [Broadcast], [Text])

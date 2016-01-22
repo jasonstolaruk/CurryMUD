@@ -56,7 +56,6 @@ module Mud.Data.Misc ( Action(..)
                      , WhichLog(..) ) where
 
 import Mud.Data.State.ActionParams.ActionParams
-import Mud.Data.State.ActionParams.Misc
 import Mud.Data.State.MudData
 import Mud.Misc.Database
 import Mud.TopLvlDefs.Chars
