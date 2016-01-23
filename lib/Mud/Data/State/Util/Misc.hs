@@ -44,7 +44,7 @@ module Mud.Data.State.Util.Misc ( aOrAnType
 import Mud.Data.Misc
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
-import Mud.TheWorld.AdminZoneIds (iWelcome)
+import Mud.TheWorld.Zones.AdminZoneIds (iWelcome)
 import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Operators
 import Mud.Util.Text

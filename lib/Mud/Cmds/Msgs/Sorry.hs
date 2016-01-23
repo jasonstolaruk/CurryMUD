@@ -123,6 +123,7 @@ module Mud.Cmds.Msgs.Sorry  ( sorryAdminChanSelf
                             , sorryPutInsideSelf
                             , sorryPutVol
                             , sorryQuitCan'tAbbrev
+                            , sorryReadSign
                             , sorryReadyAlreadyWearing
                             , sorryReadyAlreadyWearingRing
                             , sorryReadyAlreadyWielding
@@ -926,6 +927,13 @@ sorryQuitCan'tAbbrev = T.concat [ "The "
                                 , " command may not be abbreviated. Type "
                                 , dblQuote "quit"
                                 , " with no arguments to quit CurryMUD." ]
+
+
+-----
+
+
+sorryReadSign :: Text
+sorryReadSign = "The only thing to read here is the sign."
 
 
 -----

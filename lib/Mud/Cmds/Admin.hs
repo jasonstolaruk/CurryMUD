@@ -27,7 +27,7 @@ import Mud.Data.State.Util.Random
 import Mud.Misc.ANSI
 import Mud.Misc.Database
 import Mud.Misc.Persist
-import Mud.TheWorld.AdminZoneIds (iLoggedOut, iRoot)
+import Mud.TheWorld.Zones.AdminZoneIds (iLoggedOut, iRoot)
 import Mud.TopLvlDefs.Misc
 import Mud.Util.List hiding (headTail)
 import Mud.Util.Misc hiding (patternMatchFail)

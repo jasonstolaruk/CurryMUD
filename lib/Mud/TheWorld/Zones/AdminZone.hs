@@ -1,7 +1,7 @@
 {-# LANGUAGE MultiWayIf, NamedFieldPuns, OverloadedStrings, RecordWildCards, ViewPatterns #-}
 
-module Mud.TheWorld.AdminZone ( adminZoneHooks
-                              , createAdminZone ) where
+module Mud.TheWorld.Zones.AdminZone ( adminZoneHooks
+                                    , createAdminZone ) where
 
 import Mud.Cmds.Msgs.Sorry
 import Mud.Data.Misc
@@ -10,8 +10,8 @@ import Mud.Data.State.Util.Calc
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Put
 import Mud.Data.State.Util.Random
-import Mud.TheWorld.AdminZoneIds
-import Mud.TheWorld.TutorialIds (iTutWelcome)
+import Mud.TheWorld.Zones.AdminZoneIds
+import Mud.TheWorld.Zones.TutorialIds (iTutWelcome)
 import Mud.TopLvlDefs.Vols
 import Mud.TopLvlDefs.Weights
 import Mud.Util.Operators
@@ -39,11 +39,14 @@ logNotice = L.logNotice "Mud.TheWorld.AdminZone"
 
 
 adminZoneHooks :: [(HookName, HookFun)]
-adminZoneHooks = [ (getFlowerHookName,     getFlowerHookFun  )
+adminZoneHooks = [ (getFlowerHookName,     getFlowerHookFun    )
                  , (lookFlowerbedHookName, lookFlowerbedHookFun)
-                 , (lookSignHookName,      lookSignHookFun   )
-                 , (lookWallsHookName,     lookWallsHookFun  )
-                 , (pickFlowerHookName,    pickFlowerHookFun ) ]
+                 , (lookSignHookName,      lookSignHookFun     )
+                 , (lookTrashHookName,     lookTrashHookFun    )
+                 , (lookWallsHookName,     lookWallsHookFun    )
+                 , (pickFlowerHookName,    pickFlowerHookFun   )
+                 , (readSignHookName,      readSignHookFun     )
+                 , (trashHookName,         trashHookFun        ) ]
 
 
 -----
@@ -64,7 +67,7 @@ flowerHookHelper i Hook { hookName } v a@(_, (ms, _, _, _)) = if calcWeight i ms
        in a & _2._1 .~  mkFlower i ms v
             & _2._2 <>~ pure msg
             & _2._3 <>~ pure (serialize selfDesig <> " picks " <> rest, i `delete` desigIds selfDesig)
-            & _2._4 <>~ pure (parensQuote hookName <> " " <> msg)
+            & _2._4 <>~ pure (bracketQuote hookName <> " " <> msg)
   where
     msg  = "You pick " <> rest
     rest = "a flower from the flowerbed."
@@ -92,10 +95,14 @@ pickFlowerHookName = "AdminZone_iAtrium_pickFlower"
 
 
 pickFlowerHookFun :: HookFun
-pickFlowerHookFun i h@Hook { triggers } v a@(as, _) = (flowerHookHelper i h v a |&|) $ if
+pickFlowerHookFun = adHocCmdHookHelper flowerHookHelper sorryPickFlower
+
+
+adHocCmdHookHelper :: HookFun -> Text -> HookFun
+adHocCmdHookHelper hookFun sorry i h@Hook { triggers } v a@(as, _) = (hookFun i h v a |&|) $ if
   | all (`elem` triggers) as -> id
-  | head as `elem` triggers  -> _2._2 <>~ pure sorryPickFlower
-  | otherwise                -> _2._2 %~  (sorryPickFlower :)
+  | head as `elem` triggers  -> _2._2 <>~ [ "", sorry ]
+  | otherwise                -> _2._2 %~  ([ sorry, "" ] ++)
 
 
 -----
@@ -109,12 +116,12 @@ lookFlowerbedHookFun :: HookFun
 lookFlowerbedHookFun i Hook { .. } _ a@(_, (ms, _, _, _)) =
     let selfDesig = mkStdDesig i ms DoCap
     in a &    _1 %~  (\\ triggers)
-         & _2._2 <>~ pure flowerTxt
+         & _2._2 <>~ pure flowerbedDesc
          & _2._3 <>~ pure (serialize selfDesig <> " looks at the flowerbed.", i `delete` desigIds selfDesig)
-         & _2._4 <>~ pure (parensQuote hookName <> " looked at flowerbed")
+         & _2._4 <>~ pure (bracketQuote hookName <> " looked at flowerbed")
   where
-    flowerTxt = "The tasteful flowerbed prominently features daffodils, hibiscuses, chrysanthemums, and lilies, all in \
-                \a pleasing array of colors."
+    flowerbedDesc = "The tasteful flowerbed prominently features daffodils, hibiscuses, chrysanthemums, and lilies, \
+                    \all in a pleasing array of colors."
 
 
 -----
@@ -124,20 +131,56 @@ lookSignHookName :: HookName
 lookSignHookName = "AdminZone_iEmpty_lookSign"
 
 
-lookSignHookFun :: HookFun -- TODO: Make a "read sign" hook.
-lookSignHookFun i Hook { .. } (V.head -> r) a@(_, (ms, _, _, _)) =
+lookSignHookFun :: HookFun
+lookSignHookFun i h@Hook { triggers } v = first (\\ triggers) . signHookHelper i h v
+
+
+signHookHelper :: HookFun
+signHookHelper i Hook { .. } (V.head -> r) a@(_, (ms, _, _, _)) =
     let selfDesig = mkStdDesig i ms DoCap
     in a &    _1 %~  (\\ triggers)
-         & _2._2 <>~ pure signTxt
+         & _2._2 <>~ signDesc
          & _2._3 <>~ pure (serialize selfDesig <> " reads the sign on the wall.", i `delete` desigIds selfDesig)
-         & _2._4 <>~ pure (parensQuote hookName <> " read sign")
+         & _2._4 <>~ pure (bracketQuote hookName <> " read sign")
   where
-    signTxt = "The following message has been painted on the sign in a tight, flowing script:\n\
-              \\"Welcome to the empty room. You have been summoned here by a CurryMUD administrator. As there are no \
-              \exits, you will need the assistance of an administrator when the time comes for you to leave. We hope \
-              \you enjoy your stay!\n\
-              \This message has been brought to you by the number " <> x <> ".\""
-    x       = showText . rndmIntToRange r $ percent
+    signDesc = [ "The following message has been painted on the sign in a tight, flowing script:"
+               , "\"Welcome to the empty room. You have been summoned here by a CurryMUD administrator. As there are \
+                 \no exits, you will need the assistance of an administrator when the time comes for you to leave. We \
+                 \hope you enjoy your stay!"
+               , "This message has been brought to you by the number " <> x <> ".\"" ]
+    x        = showText . rndmIntToRange r $ percent
+
+
+readSignHookName :: HookName
+readSignHookName = "AdminZone_iEmpty_readSign"
+
+
+readSignHookFun :: HookFun
+readSignHookFun = adHocCmdHookHelper signHookHelper sorryReadSign
+
+
+-----
+
+
+lookTrashHookName :: HookName
+lookTrashHookName = "AdminZone_iCentral_lookTrash"
+
+
+lookTrashHookFun :: HookFun
+lookTrashHookFun i Hook { .. } _ a@(_, (ms, _, _, _)) =
+    let selfDesig = mkStdDesig i ms DoCap
+    in a &    _1 %~  (\\ triggers)
+         & _2._2 <>~ trashDesc
+         & _2._3 <>~ pure (serialize selfDesig <> " looks at the trash bin.", i `delete` desigIds selfDesig)
+         & _2._4 <>~ pure (bracketQuote hookName <> " looked at trash bin")
+  where
+    trashDesc = [ "The trash bin is an oblong metal container, about 3 feet tall, with a lid connected to the body by \
+                  \hinges. Affixed to the lid is a bronze plate, on which the following has been neatly etched:"
+                , "\"Magic Trash Bin"
+                , "Items placed in this bin will be magically expunged, and are entirely unrecoverable."
+                , "Thank you for keeping xxx clean.\"" -- TODO
+                , "Carefully lifting open the lid and peaking inside, you find only an ominous darkness; not even the \
+                  \bottom of the bin is visible." ]
 
 
 -----
@@ -151,11 +194,22 @@ lookWallsHookFun :: HookFun
 lookWallsHookFun i Hook { .. } _ a@(_, (ms, _, _, _)) =
     let selfDesig = mkStdDesig i ms DoCap
     in a &    _1 %~  (\\ triggers)
-         & _2._2 <>~ pure wallTxt
+         & _2._2 <>~ pure wallsDesc
          & _2._3 <>~ pure (serialize selfDesig <> " looks at the walls.", i `delete` desigIds selfDesig)
-         & _2._4 <>~ pure (parensQuote hookName <> " looked at walls")
+         & _2._4 <>~ pure (bracketQuote hookName <> " looked at walls")
   where
-    wallTxt = "You are enclosed by four smooth, dense walls, with no means of exit in sight."
+    wallsDesc = "You are enclosed by four smooth, dense walls, with no means of exit in sight."
+
+
+-----
+
+
+trashHookName :: HookName
+trashHookName = "AdminZone_iCentral_trash"
+
+
+trashHookFun :: HookFun
+trashHookFun _ _ _ _ = undefined -- TODO
 
 
   -- ==================================================
@@ -262,7 +316,8 @@ createAdminZone = do
             \to the spiral staircase."
             zeroBits
             [ StdLink Down iBasement, StdLink East iHallwayWest ]
-            M.empty) -- TODO
+            (M.fromList [ ("look",  pure . Hook lookTrashHookName $ [ "trash", "bin" ])
+                        , ("trash", pure . Hook trashHookName . pure $ "") ]))
   putRm iHallwayWest
         []
         mempty
@@ -492,8 +547,9 @@ createAdminZone = do
             \though you can't miss the small wooden sign affixed to the north wall."
             zeroBits
             []
-            (M.singleton "look" [ Hook lookSignHookName . pure $ "sign"
-                                , Hook lookWallsHookName [ "wall", "walls" ] ]))
+            (M.fromList [ ("look", [ Hook lookSignHookName . pure $ "sign"
+                                   , Hook lookWallsHookName [ "wall", "walls" ] ])
+                        , ("read", pure . Hook readSignHookName . pure $ "sign") ]))
 
   -- ==================================================
   -- Room teleport names:

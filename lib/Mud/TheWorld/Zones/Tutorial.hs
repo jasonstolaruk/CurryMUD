@@ -1,10 +1,10 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Mud.TheWorld.Tutorial (createTutorial) where
+module Mud.TheWorld.Zones.Tutorial (createTutorial) where
 
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Put
-import Mud.TheWorld.TutorialIds
+import Mud.TheWorld.Zones.TutorialIds
 import qualified Mud.Misc.Logging as L (logNotice)
 
 import Data.Bits (zeroBits)

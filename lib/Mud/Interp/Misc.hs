@@ -50,8 +50,8 @@ findActionHelper i ms cn cmds =
         cmds'        = sort $ cmds ++ mkNonStdRmLinkCmds (getRm ri ms)
         helper       = cmdAction . fst <$> findFullNameForAbbrev cn [ (cmd, cmdName cmd) | cmd <- cmds' ]
         maybeHookAct = maybe Nothing f . lookupHooks i ms $ cn
-        f hooks      | cn `notElem` map cmdName cmds = Just . mkActionForAdHocCmdHook ri . head $ hooks
-                     | otherwise                     = Nothing
+        f hooks      | cn `notElem` map cmdFullName cmds = Just . mkActionForAdHocCmdHook ri . head $ hooks
+                     | otherwise                         = Nothing
     in return . onNothing helper $ maybeHookAct
   where
     onNothing x Nothing = x

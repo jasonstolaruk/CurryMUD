@@ -22,7 +22,7 @@ import Mud.Data.State.Util.Output
 import Mud.Data.State.Util.Random
 import Mud.Misc.ANSI
 import Mud.Misc.Persist
-import Mud.TheWorld.AdminZoneIds (iLoggedOut, iPidge)
+import Mud.TheWorld.Zones.AdminZoneIds (iLoggedOut, iPidge)
 import Mud.Threads.NpcServer
 import Mud.Threads.ThreadTblPurger
 import Mud.TopLvlDefs.Chars

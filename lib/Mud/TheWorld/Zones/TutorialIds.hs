@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Mud.TheWorld.TutorialIds where
+module Mud.TheWorld.Zones.TutorialIds where
 
 
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}

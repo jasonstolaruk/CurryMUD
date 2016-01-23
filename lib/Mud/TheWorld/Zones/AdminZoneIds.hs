@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Mud.TheWorld.AdminZoneIds where
+module Mud.TheWorld.Zones.AdminZoneIds where
 
 
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}

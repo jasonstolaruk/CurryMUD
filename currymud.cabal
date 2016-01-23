@@ -69,11 +69,11 @@ library
                        Mud.Misc.Logging
                        Mud.Misc.NameResolution
                        Mud.Misc.Persist
-                       Mud.TheWorld.AdminZone
-                       Mud.TheWorld.AdminZoneIds
                        Mud.TheWorld.TheWorld
-                       Mud.TheWorld.Tutorial
-                       Mud.TheWorld.TutorialIds
+                       Mud.TheWorld.Zones.AdminZone
+                       Mud.TheWorld.Zones.AdminZoneIds
+                       Mud.TheWorld.Zones.Tutorial
+                       Mud.TheWorld.Zones.TutorialIds
                        Mud.Threads.DbTblPurger
                        Mud.Threads.InacTimer
                        Mud.Threads.Listen

@@ -9,9 +9,9 @@ import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Misc.Logging hiding (logNotice)
-import Mud.TheWorld.AdminZone
-import Mud.TheWorld.AdminZoneIds (iLoggedOut, iWelcome)
-import Mud.TheWorld.Tutorial
+import Mud.TheWorld.Zones.AdminZone
+import Mud.TheWorld.Zones.AdminZoneIds (iLoggedOut, iWelcome)
+import Mud.TheWorld.Zones.Tutorial
 import Mud.TopLvlDefs.FilePaths
 import Mud.Util.Misc
 import Mud.Util.Operators
