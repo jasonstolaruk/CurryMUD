@@ -40,8 +40,11 @@ coinFullNames :: [Text]
 coinFullNames = [ "copper piece", "silver piece", "gold piece" ]
 
 
-dbTblPurgerDelay :: Int
-dbTblPurgerDelay = 60 * 60 -- one hr
+type Seconds = Int
+
+
+dbTblPurgerDelay :: Seconds
+dbTblPurgerDelay = 60 {- mins -} * 60 {- secs -} -- one hr
 
 
 acl, aop, enc, enc's, etc :: Text
@@ -60,8 +63,8 @@ likewise :: Bool
 likewise = not otherwise
 
 
-logRotationDelay :: Int
-logRotationDelay = 60 * 60 -- one hr
+logRotationDelay :: Seconds
+logRotationDelay = 60 {- mins -} * 60 {- secs -} -- one hr
 
 
 maxChanNameLen :: Int
@@ -86,7 +89,7 @@ maxHelpTopicLen = 12
 
 
 maxInacSecs :: Integer
-maxInacSecs = 10 * 60 -- ten mins
+maxInacSecs = 10 {- mins -} * 60 {- secs -} -- ten mins
 
 
 maxNameLen,    minNameLen    :: Int
@@ -138,16 +141,20 @@ stdLinkNames :: [Text]
 stdLinkNames = [ "n", "ne", "e", "se", "s", "sw", "w", "nw", "u", "d" ]
 
 
-threadTblPurgerDelay :: Int
-threadTblPurgerDelay = 60 * 60 -- one hr
+threadTblPurgerDelay :: Seconds
+threadTblPurgerDelay = 60 {- mins -} * 60 {- secs -} -- one hr
+
+
+trashDumpPurgerDelay :: Seconds -- TODO
+trashDumpPurgerDelay = 6 {- hrs -} * 60 {- mins -} * 60 {- secs -} -- six hrs
 
 
 ver :: Text
 ver = T.pack . showVersion $ version
 
 
-worldPersisterDelay :: Int
-worldPersisterDelay = 10 * 60 -- ten mins
+worldPersisterDelay :: Seconds
+worldPersisterDelay = 10 {- mins -} * 60 {- secs -} -- ten mins
 
 
 yous :: [Text]

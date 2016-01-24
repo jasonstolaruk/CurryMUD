@@ -217,8 +217,6 @@ Certain objects (typically those that are a permanent fixture in a room) should 
 
 Have designated places where objects can be destroyed (trash bins).
 
-In a garden, where players can pick flowers, consider implementing a flower generator, which will generate a flower every time the player picks one. When a player drops a flower while still in the garden, you might just have the flower disappear.
-
 Players should be able to empty out containers that have liquid inside of them.
 
 Consider not allowing more than one type of liquid to be put in a container at once.

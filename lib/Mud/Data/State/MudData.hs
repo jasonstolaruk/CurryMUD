@@ -580,6 +580,7 @@ data ThreadType = DbTblPurger
                 | Server      Id
                 | Talk        Id
                 | ThreadTblPurger
+                | TrashDumpPurger
                 | WorldPersister deriving (Eq, Ord, Show)
 
 

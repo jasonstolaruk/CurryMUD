@@ -73,6 +73,7 @@ flowerHookHelper i Hook { hookName } v a@(_, (ms, _, _, _)) = if calcWeight i ms
     rest = "a flower from the flowerbed."
 
 
+-- TODO: "Some objects, such as starter maps, should disappear after having been left on the ground for some time."
 mkFlower :: Id -> MudState -> V.Vector Int -> MudState
 mkFlower i ms v = let flowerId = getUnusedId ms
                       e        = Ent flowerId
@@ -204,12 +205,20 @@ lookWallsHookFun i Hook { .. } _ a@(_, (ms, _, _, _)) =
 -----
 
 
+putTrashHookName :: HookName
+putTrashHookName = "AdminZone_iCentral_putTrash"
+
+
+-----
+
+
 trashHookName :: HookName
 trashHookName = "AdminZone_iCentral_trash"
 
 
+-- TODO: Burping.
 trashHookFun :: HookFun
-trashHookFun _ _ _ _ = undefined -- TODO
+trashHookFun _ _ _ _ = undefined
 
 
   -- ==================================================
@@ -297,6 +306,14 @@ createAdminZone = do
             zeroBits
             []
             M.empty)
+  putRm iTrashDump
+        []
+        mempty
+        (Rm "The trash dump"
+            "Items deposited in magic trash bins end up here."
+            zeroBits
+            []
+            M.empty)
   putRm iWelcome
         []
         mempty
@@ -313,10 +330,11 @@ createAdminZone = do
             \electronic displays and control panels, used by the admins to monitor and supervise the daily operations \
             \of CurryMUD.\n\
             \A spiral staircase leads down, while a door opens to a hallway leading east. A trash bin sits adjascent \
-            \to the spiral staircase."
+            \to the spiral staircase." -- TODO: Put another trash bin in the tutorial zone.
             zeroBits
             [ StdLink Down iBasement, StdLink East iHallwayWest ]
             (M.fromList [ ("look",  pure . Hook lookTrashHookName $ [ "trash", "bin" ])
+                        , ("put",   pure . Hook putTrashHookName  $ [ "trash", "bin" ]) -- TODO
                         , ("trash", pure . Hook trashHookName . pure $ "") ]))
   putRm iHallwayWest
         []
@@ -553,10 +571,11 @@ createAdminZone = do
 
   -- ==================================================
   -- Room teleport names:
-  putRmTeleName iAtrium  "atrium"
-  putRmTeleName iCentral "central"
-  putRmTeleName iEmpty   "empty"
-  putRmTeleName iLounge  "lounge"
+  putRmTeleName iAtrium    "atrium"
+  putRmTeleName iCentral   "central"
+  putRmTeleName iTrashDump "dump"
+  putRmTeleName iEmpty     "empty"
+  putRmTeleName iLounge    "lounge"
 
   -- ==================================================
   -- Objects:

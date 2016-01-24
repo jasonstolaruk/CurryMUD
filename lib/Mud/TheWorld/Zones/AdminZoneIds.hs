@@ -233,3 +233,5 @@ iHallwayWest = 128 :: Int
 iHallwayEast = 129 :: Int
 
 iAtrium = 130 :: Int
+
+iTrashDump = 131 :: Int

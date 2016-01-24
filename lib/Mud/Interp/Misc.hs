@@ -1,4 +1,4 @@
-{-# LANGUAGE NamedFieldPuns, OverloadedStrings, RecordWildCards #-}
+{-# LANGUAGE MultiWayIf, NamedFieldPuns, OverloadedStrings, RecordWildCards, TupleSections #-}
 
 module Mud.Interp.Misc where
 
@@ -11,6 +11,7 @@ import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
+import Mud.Util.Operators
 import Mud.Util.Text hiding (none)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
@@ -63,10 +64,11 @@ mkActionForAdHocCmdHook ri h@Hook { .. } = Action f True
   where
     f p@(LowerNub' i as) = genericAction p helper hookName
       where
-        helper v ms
-          | getRmId i ms /= ri        = (ms, (pure sorryAlteredRm,   [], []))
-          | none (`elem` triggers) as = (ms, (pure sorryCmdNotFound, [], []))
-          | otherwise                 =
-              let (_, (ms', toSelfs, bs, logMsgs)) = getHookFun hookName ms i h v (as, (ms, [], [], []))
-              in (ms', (toSelfs, bs, logMsgs))
+        helper v ms = let sorry   = (ms, ) . (, [], []) . pure
+                          goAhead | (_, (ms', toSelfs, bs, logMsgs)) <- getHookFun hookName ms i h v (as, (ms, [], [], []))
+                                  = (ms', (toSelfs, bs, logMsgs))
+                      in if | getRmId i ms /= ri        -> sorry sorryAlteredRm
+                            | ()# triggers              -> goAhead
+                            | none (`elem` triggers) as -> sorry sorryCmdNotFound
+                            | otherwise                 -> goAhead
     f p = patternMatchFail hookName [ showText p ]

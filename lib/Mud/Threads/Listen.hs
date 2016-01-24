@@ -17,6 +17,7 @@ import Mud.Threads.NpcServer
 import Mud.Threads.Regen
 import Mud.Threads.Talk
 import Mud.Threads.ThreadTblPurger
+import Mud.Threads.TrashDumpPurger
 import Mud.Threads.WorldPersister
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
@@ -91,6 +92,7 @@ listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed 
                                    , threadQuestionChanTblPurger
                                    , threadTeleTblPurger
                                    , threadThreadTblPurger
+                                   , threadTrashDumpPurger
                                    , threadWorldPersister ]
         (forever . loop $ sock) `finally` cleanUp auxAsyncs sock
     initialize = do

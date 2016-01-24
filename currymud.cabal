@@ -84,6 +84,7 @@ library
                        Mud.Threads.Server
                        Mud.Threads.Talk
                        Mud.Threads.ThreadTblPurger
+                       Mud.Threads.TrashDumpPurger
                        Mud.Threads.WorldPersister
                        Mud.TopLvlDefs.Chars
                        Mud.TopLvlDefs.FilePaths
