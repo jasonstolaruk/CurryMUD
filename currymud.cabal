@@ -69,6 +69,7 @@ library
                        Mud.Misc.Logging
                        Mud.Misc.NameResolution
                        Mud.Misc.Persist
+                       Mud.TheWorld.Misc
                        Mud.TheWorld.TheWorld
                        Mud.TheWorld.Zones.AdminZone
                        Mud.TheWorld.Zones.AdminZoneIds

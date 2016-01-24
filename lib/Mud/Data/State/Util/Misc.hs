@@ -24,6 +24,8 @@ module Mud.Data.State.Util.Misc ( aOrAnType
                                 , mkAdminIdSingList
                                 , mkAdminPlaIdSingList
                                 , mkCapsFun
+                                , mkCoinsMsgs
+                                , mkNameCountBothList
                                 , mkPlaIdSingList
                                 , mkPlurFromBoth
                                 , mkSerializedNonStdDesig
@@ -45,6 +47,7 @@ import Mud.Data.Misc
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
 import Mud.TheWorld.Zones.AdminZoneIds (iWelcome)
+import Mud.Util.List
 import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Operators
 import Mud.Util.Text
@@ -60,8 +63,8 @@ import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (ask)
 import Data.IntMap.Lazy ((!))
 import Data.IORef (atomicModifyIORef, readIORef)
-import Data.List ((\\), delete, foldl', sortBy)
-import Data.Maybe (fromJust, fromMaybe)
+import Data.List ((\\), delete, foldl', nub, sortBy)
+import Data.Maybe (catMaybes, fromJust, fromMaybe)
 import Data.Monoid (Sum(..), (<>))
 import Data.Text (Text)
 import GHC.Exts (sortWith)
@@ -243,6 +246,27 @@ mkIdSingListHelper f ms@(view plaTbl -> pt) = [ (i, s) | i <- IM.keys pt
 
 mkAdminPlaIdSingList :: MudState -> [(Id, Sing)]
 mkAdminPlaIdSingList = mkIdSingListHelper (const True)
+
+
+-----
+
+
+mkCoinsMsgs :: (Int -> Text -> Text) -> Coins -> [Text]
+mkCoinsMsgs f (Coins (cop, sil, gol)) = catMaybes [ c, s, g ]
+  where
+    c = Sum cop |!| Just . f cop $ "copper piece"
+    s = Sum sil |!| Just . f sil $ "silver piece"
+    g = Sum gol |!| Just . f gol $ "gold piece"
+
+
+-----
+
+
+mkNameCountBothList :: Id -> MudState -> Inv -> [(Text, Int, BothGramNos)]
+mkNameCountBothList i ms targetIds = let ens   = [ getEffName        i ms targetId | targetId <- targetIds ]
+                                         cs    = mkCountList ebgns
+                                         ebgns = [ getEffBothGramNos i ms targetId | targetId <- targetIds ]
+                                     in nub . zip3 ens cs $ ebgns
 
 
 -----

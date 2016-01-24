@@ -10,6 +10,7 @@ import Mud.Data.State.Util.Calc
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Put
 import Mud.Data.State.Util.Random
+import Mud.TheWorld.Misc
 import Mud.TheWorld.Zones.AdminZoneIds
 import Mud.TheWorld.Zones.TutorialIds (iTutWelcome)
 import Mud.TopLvlDefs.Vols
@@ -45,6 +46,7 @@ adminZoneHooks = [ (getFlowerHookName,     getFlowerHookFun    )
                  , (lookTrashHookName,     lookTrashHookFun    )
                  , (lookWallsHookName,     lookWallsHookFun    )
                  , (pickFlowerHookName,    pickFlowerHookFun   )
+                 , (putTrashHookName,      putTrashHookFun     )
                  , (readSignHookName,      readSignHookFun     )
                  , (trashHookName,         trashHookFun        ) ]
 
@@ -140,15 +142,16 @@ signHookHelper :: HookFun
 signHookHelper i Hook { .. } (V.head -> r) a@(_, (ms, _, _, _)) =
     let selfDesig = mkStdDesig i ms DoCap
     in a &    _1 %~  (\\ triggers)
-         & _2._2 <>~ signDesc
+         & _2._2 <>~ pure signDesc
          & _2._3 <>~ pure (serialize selfDesig <> " reads the sign on the wall.", i `delete` desigIds selfDesig)
          & _2._4 <>~ pure (bracketQuote hookName <> " read sign")
   where
-    signDesc = [ "The following message has been painted on the sign in a tight, flowing script:"
-               , "\"Welcome to the empty room. You have been summoned here by a CurryMUD administrator. As there are \
-                 \no exits, you will need the assistance of an administrator when the time comes for you to leave. We \
-                 \hope you enjoy your stay!"
-               , "This message has been brought to you by the number " <> x <> ".\"" ]
+    -- TODO: Works with "look sign", but for "read sign", the text is incorrectly wrapped.
+    signDesc = "The following message has been painted on the sign in a tight, flowing script:\n\
+               \\"Welcome to the empty room. You have been summoned here by a CurryMUD administrator. As there are no \
+               \exits, you will need the assistance of an administrator when the time comes for you to leave. We hope \
+               \you enjoy your stay!\n\
+               \This message has been brought to you by the number " <> x <> ".\""
     x        = showText . rndmIntToRange r $ percent
 
 
@@ -158,30 +161,6 @@ readSignHookName = "AdminZone_iEmpty_readSign"
 
 readSignHookFun :: HookFun
 readSignHookFun = adHocCmdHookHelper signHookHelper sorryReadSign
-
-
------
-
-
-lookTrashHookName :: HookName
-lookTrashHookName = "AdminZone_iCentral_lookTrash"
-
-
-lookTrashHookFun :: HookFun
-lookTrashHookFun i Hook { .. } _ a@(_, (ms, _, _, _)) =
-    let selfDesig = mkStdDesig i ms DoCap
-    in a &    _1 %~  (\\ triggers)
-         & _2._2 <>~ trashDesc
-         & _2._3 <>~ pure (serialize selfDesig <> " looks at the trash bin.", i `delete` desigIds selfDesig)
-         & _2._4 <>~ pure (bracketQuote hookName <> " looked at trash bin")
-  where
-    trashDesc = [ "The trash bin is an oblong metal container, about 3 feet tall, with a lid connected to the body by \
-                  \hinges. Affixed to the lid is a bronze plate, on which the following has been neatly etched:"
-                , "\"Magic Trash Bin"
-                , "Items placed in this bin will be magically expunged, and are entirely unrecoverable."
-                , "Thank you for keeping xxx clean.\"" -- TODO
-                , "Carefully lifting open the lid and peaking inside, you find only an ominous darkness; not even the \
-                  \bottom of the bin is visible." ]
 
 
 -----
@@ -200,25 +179,6 @@ lookWallsHookFun i Hook { .. } _ a@(_, (ms, _, _, _)) =
          & _2._4 <>~ pure (bracketQuote hookName <> " looked at walls")
   where
     wallsDesc = "You are enclosed by four smooth, dense walls, with no means of exit in sight."
-
-
------
-
-
-putTrashHookName :: HookName
-putTrashHookName = "AdminZone_iCentral_putTrash"
-
-
------
-
-
-trashHookName :: HookName
-trashHookName = "AdminZone_iCentral_trash"
-
-
--- TODO: Burping.
-trashHookFun :: HookFun
-trashHookFun _ _ _ _ = undefined
 
 
   -- ==================================================
@@ -334,8 +294,8 @@ createAdminZone = do
             zeroBits
             [ StdLink Down iBasement, StdLink East iHallwayWest ]
             (M.fromList [ ("look",  pure . Hook lookTrashHookName $ [ "trash", "bin" ])
-                        , ("put",   pure . Hook putTrashHookName  $ [ "trash", "bin" ]) -- TODO
-                        , ("trash", pure . Hook trashHookName . pure $ "") ]))
+                        , ("put",   pure . Hook putTrashHookName  $ [ "trash", "bin" ])
+                        , ("trash", pure . Hook trashHookName     $ []                ) ]))
   putRm iHallwayWest
         []
         mempty

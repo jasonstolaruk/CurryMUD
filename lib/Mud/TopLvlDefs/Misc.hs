@@ -145,7 +145,7 @@ threadTblPurgerDelay :: Seconds
 threadTblPurgerDelay = 60 {- mins -} * 60 {- secs -} -- one hr
 
 
-trashDumpPurgerDelay :: Seconds -- TODO
+trashDumpPurgerDelay :: Seconds
 trashDumpPurgerDelay = 6 {- hrs -} * 60 {- mins -} * 60 {- secs -} -- six hrs
 
 

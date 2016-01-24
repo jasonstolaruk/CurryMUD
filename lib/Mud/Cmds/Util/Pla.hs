@@ -103,7 +103,7 @@ import Control.Monad.IO.Class (liftIO)
 import Data.Char (isLower)
 import Data.Function (on)
 import Data.List ((\\), delete, elemIndex, find, foldl', intercalate, nub, sortBy)
-import Data.Maybe (catMaybes, fromJust, fromMaybe)
+import Data.Maybe (fromJust, fromMaybe)
 import Data.Monoid ((<>), Sum(..))
 import Data.Text (Text)
 import qualified Data.IntMap.Lazy as IM (keys)
@@ -319,6 +319,7 @@ type FromSing = Sing
 type ToId     = Id
 type ToSing   = Sing
 
+
 helperDropEitherInv :: Id
                     -> Desig
                     -> FromId
@@ -347,13 +348,6 @@ mkGetDropInvDescs i ms d god (mkNameCountBothList i ms -> ncbs) = unzip . map he
       where
         rest = spaced (showText c) <> mkPlurFromBoth b <> "."
     otherIds = i `delete` desigIds d
-
-
-mkNameCountBothList :: Id -> MudState -> Inv -> [(Text, Int, BothGramNos)]
-mkNameCountBothList i ms targetIds = let ens   = [ getEffName        i ms targetId | targetId <- targetIds ]
-                                         cs    = mkCountList ebgns
-                                         ebgns = [ getEffBothGramNos i ms targetId | targetId <- targetIds ]
-                                     in nub . zip3 ens cs $ ebgns
 
 
 mkGodVerb :: GetOrDrop -> Verb -> Text
@@ -430,14 +424,6 @@ mkGetDropCoinsDescsSelf god = mkCoinsMsgs helper
   where
     helper 1 cn = T.concat [ "You ", mkGodVerb god SndPer, " ", aOrAn cn,             "."  ]
     helper a cn = T.concat [ "You ", mkGodVerb god SndPer, spaced . showText $ a, cn, "s." ]
-
-
-mkCoinsMsgs :: (Int -> Text -> Text) -> Coins -> [Text]
-mkCoinsMsgs f (Coins (cop, sil, gol)) = catMaybes [ c, s, g ]
-  where
-    c = Sum cop |!| Just . f cop $ "copper piece"
-    s = Sum sil |!| Just . f sil $ "silver piece"
-    g = Sum gol |!| Just . f gol $ "gold piece"
 
 
 mkCan'tGetCoinsDesc :: Coins -> [Text]
