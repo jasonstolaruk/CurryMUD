@@ -478,13 +478,6 @@ data Cmd = Cmd { cmdName           :: CmdName
                , cmdDesc           :: CmdDesc }
 
 
-type ActionFun = ActionParams -> MudStack ()
-
-
-data Action = Action { actionFun    :: ActionFun
-                     , shouldPrompt :: Bool }
-
-
 instance Eq Cmd where
   (==) (Cmd cn1 cpa1 cfn1 _ cd1)
        (Cmd cn2 cpa2 cfn2 _ cd2) = and [ c1 == c2 | c1 <- [ cn1, fromMaybe "" cpa1, cfn1, cd1 ]

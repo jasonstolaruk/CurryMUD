@@ -9,6 +9,7 @@ import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Misc.Logging hiding (logNotice)
+import Mud.TheWorld.Misc
 import Mud.TheWorld.Zones.AdminZone
 import Mud.TheWorld.Zones.AdminZoneIds (iLoggedOut, iWelcome)
 import Mud.TheWorld.Zones.Tutorial
@@ -67,6 +68,7 @@ initMudData shouldLog = do
                                  , _pcTbl            = IM.empty
                                  , _plaLogTbl        = IM.empty
                                  , _plaTbl           = IM.empty
+                                 , _rmActionFunTbl   =  M.empty
                                  , _rmTbl            = IM.empty
                                  , _rmTeleNameTbl    = IM.empty
                                  , _rndmNamesMstrTbl = IM.empty
@@ -87,11 +89,16 @@ initMudData shouldLog = do
 initWorld :: MudStack Bool
 initWorld = dropIrrelevantFilenames . sort <$> (liftIO . getDirectoryContents $ persistDir) >>= \cont -> do
     initHookFunTbl
+    initRmActionFunTbl
     ()# cont ? (createWorld >> return True) :? (loadWorld . last $ cont)
 
 
 initHookFunTbl :: MudStack ()
 initHookFunTbl = tweak $ hookFunTbl .~ M.fromList adminZoneHooks
+
+
+initRmActionFunTbl :: MudStack ()
+initRmActionFunTbl = tweak $ rmActionFunTbl .~ M.fromList rmActionFunList
 
 
 createWorld :: MudStack ()

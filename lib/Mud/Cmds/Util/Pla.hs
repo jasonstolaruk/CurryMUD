@@ -85,7 +85,7 @@ import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
 import Mud.TopLvlDefs.Padding
 import Mud.Util.List
-import Mud.Util.Misc hiding (blowUp, patternMatchFail)
+import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Operators
 import Mud.Util.Padding
 import Mud.Util.Quoting
@@ -93,7 +93,7 @@ import Mud.Util.Text
 import Mud.Util.Wrapping
 import Prelude hiding (pi)
 import qualified Mud.Misc.Logging as L (logPla, logPlaOut)
-import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
+import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Arrow ((***), first, second)
 import Control.Lens (Getter, _1, _2, _3, _4, _5, at, both, each, to, view, views)
@@ -103,7 +103,7 @@ import Control.Monad.IO.Class (liftIO)
 import Data.Char (isLower)
 import Data.Function (on)
 import Data.List ((\\), delete, elemIndex, find, foldl', intercalate, nub, sortBy)
-import Data.Maybe (fromJust, fromMaybe)
+import Data.Maybe (fromJust)
 import Data.Monoid ((<>), Sum(..))
 import Data.Text (Text)
 import qualified Data.IntMap.Lazy as IM (keys)
@@ -113,13 +113,6 @@ import qualified Data.Vector.Unboxed as V (Vector)
 
 
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
-
-
------
-
-
-blowUp :: Text -> Text -> [Text] -> a
-blowUp = U.blowUp "Mud.Cmds.Util.Pla"
 
 
 -----
@@ -259,15 +252,6 @@ genericAction ActionParams { .. } helper fn = mkRndmVector >>= \v ->
 
 genericSorry :: MudState -> Text -> GenericRes
 genericSorry ms = (ms, ) . (, [], []) . pure
-
-
------
-
-
-getHookFun :: HookName -> MudState -> HookFun
-getHookFun n = views (hookFunTbl.at n) (fromMaybe oops)
-  where
-    oops = blowUp "getHookFun" "Hook name not found in hook function table." . pure $ n
 
 
 -----

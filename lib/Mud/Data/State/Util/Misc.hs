@@ -8,6 +8,7 @@ module Mud.Data.State.Util.Misc ( aOrAnType
                                 , getAdminIds
                                 , getEffBothGramNos
                                 , getEffName
+                                , getHookFun
                                 , getIdForMobSing
                                 , getLoggedInAdminIds
                                 , getLoggedInPlaIds
@@ -16,6 +17,7 @@ module Mud.Data.State.Util.Misc ( aOrAnType
                                 , getNonIncogInvCoins
                                 , getNonIncogLoggedInAdminIds
                                 , getNpcIds
+                                , getRmActionFun
                                 , getState
                                 , getUnusedId
                                 , isLoggedIn
@@ -48,10 +50,10 @@ import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
 import Mud.TheWorld.Zones.AdminZoneIds (iWelcome)
 import Mud.Util.List
-import Mud.Util.Misc hiding (patternMatchFail)
+import Mud.Util.Misc hiding (blowUp, patternMatchFail)
 import Mud.Util.Operators
 import Mud.Util.Text
-import qualified Mud.Util.Misc as U (patternMatchFail)
+import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 
 import Control.Arrow ((***))
 import Control.Concurrent.STM (atomically)
@@ -70,6 +72,10 @@ import Data.Text (Text)
 import GHC.Exts (sortWith)
 import qualified Data.IntMap.Lazy as IM (filter, keys, toList)
 import qualified Data.Text as T
+
+
+blowUp :: Text -> Text -> [Text] -> a
+blowUp = U.blowUp "Mud.Data.State.Util.Misc"
 
 
 patternMatchFail :: Text -> [Text] -> a
@@ -147,6 +153,15 @@ mkUnknownPCEntName i ms = views entName (fromMaybe helper) . getEnt i $ ms
 -----
 
 
+getHookFun :: HookName -> MudState -> HookFun
+getHookFun n = views (hookFunTbl.at n) (fromMaybe oops)
+  where
+    oops = blowUp "getHookFun" "Hook name not found in hook function table." . pure $ n
+
+
+-----
+
+
 getIdForMobSing :: Sing -> MudState -> Id
 getIdForMobSing s ms = let [(i, _)] = views entTbl (IM.toList . IM.filter (views sing (== s))) ms in i
 
@@ -200,6 +215,15 @@ getNonIncogLoggedInAdminIds ms = let adminIds = getLoggedInAdminIds ms
 
 getNpcIds :: MudState -> Inv
 getNpcIds = views npcTbl IM.keys
+
+
+-----
+
+
+getRmActionFun :: RmActionFunName -> MudState -> RmActionFun
+getRmActionFun n = views (rmActionFunTbl.at n) (fromMaybe oops)
+  where
+    oops = blowUp "getRmActionFun" "Function name not found in room action function table." . pure $ n
 
 
 -----

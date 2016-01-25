@@ -59,6 +59,7 @@ data MudState = MudState { _armTbl           :: ArmTbl
                          , _pcTbl            :: PCTbl
                          , _plaLogTbl        :: PlaLogTbl
                          , _plaTbl           :: PlaTbl
+                         , _rmActionFunTbl   :: RmActionFunTbl
                          , _rmTbl            :: RmTbl
                          , _rmTeleNameTbl    :: RmTeleNameTbl
                          , _rndmNamesMstrTbl :: RndmNamesMstrTbl
@@ -86,6 +87,7 @@ type ObjTbl           = IM.IntMap Obj
 type PCTbl            = IM.IntMap PC
 type PlaLogTbl        = IM.IntMap LogService
 type PlaTbl           = IM.IntMap Pla
+type RmActionFunTbl   = M.Map RmActionFunName RmActionFun
 type RmTbl            = IM.IntMap Rm
 type RmTeleNameTbl    = IM.IntMap Text
 type RndmNamesMstrTbl = IM.IntMap RndmNamesTbl
@@ -94,6 +96,19 @@ type TeleLinkMstrTbl  = IM.IntMap TeleLinkTbl
 type ThreadTbl        = M.Map ThreadId ThreadType
 type TypeTbl          = IM.IntMap Type
 type WpnTbl           = IM.IntMap Wpn
+
+
+-- ==================================================
+
+
+data Action = Action { actionFun    :: ActionFun
+                     , shouldPrompt :: Bool }
+
+
+type ActionFun = ActionParams -> MudStack ()
+
+
+type RmActionFun = Id -> ActionFun
 
 
 -- ==================================================
@@ -494,11 +509,12 @@ type RndmNamesTbl = M.Map Sing Sing
 
 
 -- Has an inventory and coins.
-data Rm = Rm { _rmName  :: Text
-             , _rmDesc  :: Text
-             , _rmFlags :: Int
-             , _rmLinks :: [RmLink]
-             , _hookMap :: HookMap } deriving (Eq, Generic)
+data Rm = Rm { _rmName    :: Text
+             , _rmDesc    :: Text
+             , _rmFlags   :: Int
+             , _rmLinks   :: [RmLink]
+             , _hookMap   :: HookMap
+             , _rmActions :: [RmAction] } deriving (Eq, Generic)
 
 
 data RmFlags = RmFlagsTODO deriving Enum
@@ -530,8 +546,8 @@ type LinkName = Text
 type HookMap = M.Map CmdName [Hook]
 
 
-data Hook = Hook { hookName  :: HookName
-                 , triggers  :: [Text] } deriving (Eq, Generic, Show)
+data Hook = Hook { hookName :: HookName
+                 , triggers :: [Text] } deriving (Eq, Generic, Show)
 
 
 type HookName = Text
@@ -550,6 +566,13 @@ type GenericRes             = (MudState, ([Text], [Broadcast], [Text]))
 
 
 type Broadcast = (Text, Inv)
+
+
+data RmAction = RmAction { rmActionCmdName :: CmdName
+                         , rmActionFunName :: RmActionFunName } deriving (Eq, Generic, Show)
+
+
+type RmActionFunName = Text
 
 
 -- ==================================================
@@ -628,6 +651,7 @@ instance FromJSON Obj
 instance FromJSON PC
 instance FromJSON Race
 instance FromJSON Rm
+instance FromJSON RmAction
 instance FromJSON RmLink
 instance FromJSON Sex
 instance FromJSON Slot
@@ -678,6 +702,9 @@ instance ToJSON   Race
   where
     toJSON = genericToJSON defaultOptions
 instance ToJSON   Rm
+  where
+    toJSON = genericToJSON defaultOptions
+instance ToJSON   RmAction
   where
     toJSON = genericToJSON defaultOptions
 instance ToJSON   RmLink

@@ -47,28 +47,9 @@ dispatch f cn p@ActionParams { myId, plaMsgQueue } = getState >>= \ms -> maybe n
 
 findActionHelper :: Id -> MudState -> CmdName -> [Cmd] -> MudStack (Maybe Action)
 findActionHelper i ms cn cmds =
-    let ri           = getRmId i ms
-        cmds'        = sort $ cmds ++ mkNonStdRmLinkCmds (getRm ri ms)
-        helper       = cmdAction . fst <$> findFullNameForAbbrev cn [ (cmd, cmdName cmd) | cmd <- cmds' ]
-        maybeHookAct = maybe Nothing f . lookupHooks i ms $ cn
-        f hooks      | cn `notElem` map cmdFullName cmds = Just . mkActionForAdHocCmdHook ri . head $ hooks
-                     | otherwise                         = Nothing
-    in return . onNothing helper $ maybeHookAct
-  where
-    onNothing x Nothing = x
-    onNothing _ just    = just
-
-
-mkActionForAdHocCmdHook :: Id -> Hook -> Action
-mkActionForAdHocCmdHook ri h@Hook { .. } = Action f True
-  where
-    f p@(LowerNub' i as) = genericAction p helper hookName
-      where
-        helper v ms = let sorry   = (ms, ) . (, [], []) . pure
-                          goAhead | (_, (ms', toSelfs, bs, logMsgs)) <- getHookFun hookName ms i h v (as, (ms, [], [], []))
-                                  = (ms', (toSelfs, bs, logMsgs))
-                      in if | getRmId i ms /= ri        -> sorry sorryAlteredRm
-                            | ()# triggers              -> goAhead
-                            | none (`elem` triggers) as -> sorry sorryCmdNotFound
-                            | otherwise                 -> goAhead
-    f p = patternMatchFail hookName [ showText p ]
+    let (ri, r) | ri <- getRmId i ms = (ri, getRm ri ms)
+        ras     = view rmActions r
+        cmds'   = sort $ cmds ++ mkNonStdRmLinkCmds r
+    in case [ ra | ra <- ras, cn == rmActionCmdName ra ] of
+      []   -> cmdAction . fst <$> findFullNameForAbbrev cn [ (cmd, cmdName cmd) | cmd <- cmds' ]
+      [ra] -> return . Just . Action (getRmActionFun (rmActionFunName ra) ms ri) $ True

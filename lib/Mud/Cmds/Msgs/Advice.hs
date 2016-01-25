@@ -78,6 +78,7 @@ module Mud.Cmds.Msgs.Advice ( adviceAAnnounceNoArgs
                             , adviceShowNoName
                             , adviceTeleNoArgs
                             , adviceTeleNoMsg
+                            , adviceTrashNoArgs
                             , adviceTuneInvalid
                             , adviceTypoNoArgs
                             , adviceUnlinkNoArgs
@@ -593,6 +594,12 @@ adviceTeleNoArgs = "Please provide the name of a person followed by a message to
 adviceTeleNoMsg :: Text -> Text
 adviceTeleNoMsg a = "Please also provide a message to send, as in "                              <>
                     colorWith quoteColor ("telepathy " <> a <>  " i'll meet you there in a few") <>
+                    "."
+
+
+adviceTrashNoArgs :: Text
+adviceTrashNoArgs = "Please specify one or more items to dispose of, as in " <>
+                    colorWith quoteColor "trash sword"                       <>
                     "."
 
 

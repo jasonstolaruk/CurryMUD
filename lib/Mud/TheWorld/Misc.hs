@@ -1,33 +1,57 @@
-{-# LANGUAGE FlexibleContexts, LambdaCase, OverloadedStrings, RecordWildCards, ViewPatterns #-}
+{-# LANGUAGE FlexibleContexts, LambdaCase, MultiWayIf, OverloadedStrings, RecordWildCards, TupleSections, ViewPatterns #-}
 
 module Mud.TheWorld.Misc ( lookTrashHookFun
                          , lookTrashHookName
+                         , pickRmActionFunName
                          , putTrashHookFun
                          , putTrashHookName
-                         , trashHookFun
-                         , trashHookName ) where
+                         , readRmActionFunName
+                         , rmActionFunList
+                         , trashRmActionFunName ) where
 
+import Mud.Cmds.Msgs.Advice
 import Mud.Cmds.Msgs.Dude
 import Mud.Cmds.Msgs.Sorry
 import Mud.Cmds.Util.Pla
 import Mud.Data.Misc
+import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Coins
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
+import Mud.Data.State.Util.Output
+import Mud.Data.State.Util.Random
 import Mud.Misc.LocPref
 import Mud.TheWorld.Zones.AdminZoneIds
-import Mud.Util.Misc
+import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Operators
 import Mud.Util.Quoting
 import Mud.Util.Text
+import qualified Mud.Misc.Logging as L (logPlaOut)
+import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Lens (_1, _2, _3, _4)
-import Control.Lens.Operators ((%~), (&), (.~), (<>~))
+import Control.Lens.Operators ((%~), (&), (<>~))
+import Control.Monad ((>=>))
 import Data.List ((\\), delete, foldl')
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import qualified Data.Text as T
+
+
+patternMatchFail :: Text -> [Text] -> a
+patternMatchFail = U.patternMatchFail "Mud.TheWorld.Misc"
+
+
+-----
+
+
+logPlaOut :: Text -> Id -> [Text] -> MudStack ()
+logPlaOut = L.logPlaOut "Mud.TheWorld.Misc"
+
+
+  -- ==================================================
+  -- Common hooks:
 
 
 lookTrashHookName :: HookName
@@ -59,30 +83,73 @@ putTrashHookName = "(misc)_putTrash"
 
 
 putTrashHookFun :: HookFun
-putTrashHookFun _ _ _ _ = undefined
+putTrashHookFun _ _ _ _ = undefined -- TODO
+
+
+  -- ==================================================
+  -- Room action functions:
+
+
+rmActionFunList :: [(RmActionFunName, RmActionFun)]
+rmActionFunList = [ (pickRmActionFunName,  pick      )
+                  , (readRmActionFunName,  readAction)
+                  , (trashRmActionFunName, trash     ) ]
 
 
 -----
 
 
-trashHookName :: HookName
-trashHookName = "(misc)_trash"
+pickRmActionFunName :: RmActionFunName
+pickRmActionFunName = "pick"
 
 
--- TODO: "The lid of the trash bin momentarily opens of its own accord as a loud belch is emitted from inside the bin."
-trashHookFun :: HookFun
-trashHookFun i Hook { .. } _ a@(as, (ms, _, _, _)) =
-    let (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv as
-        sorryInEq              = inEqs |!| sorryTrashInEq
-        sorryInRm              = inRms |!| sorryTrashInRm
-        invCoins               = getInvCoins i ms
-        d                      = mkStdDesig  i ms DoCap
-        (eiss, ecs)            = uncurry (resolveMobInvCoins i ms inInvs) invCoins
-        (ms',  toSelfs,  bs          ) = foldl' (helperTrashEitherInv   i d) (ms,  [],      []         ) eiss
-        res                            =         helperTrashEitherCoins i d  (ms', toSelfs, bs, toSelfs) ecs
-    in if ()!# invCoins
-      then a & _2    .~ (res & _2 %~ (dropBlanks . ([ sorryInEq, sorryInRm ] ++)))
-      else a & _2._2 .~ pure dudeYourHandsAreEmpty
+pick :: RmActionFun
+pick = undefined
+
+
+-----
+
+
+readRmActionFunName :: RmActionFunName
+readRmActionFunName = "read"
+
+
+readAction :: RmActionFun
+readAction = undefined
+
+
+-----
+
+
+trashRmActionFunName :: RmActionFunName
+trashRmActionFunName = "trash"
+
+
+-- TODO: We haven't tested this cmd much...
+-- TODO: "The lid of the trash bin momentarily opens of its own accord as a loud belch is emitted from inside the container."
+trash :: RmActionFun
+trash _  p@AdviseNoArgs          = advise p [] adviceTrashNoArgs
+trash ri (LowerNub i mq cols as) = helper |&| modifyState >=> \(toSelfs, bs, logMsgs) -> do
+    _  <- rndmPer
+    multiWrapSend mq cols toSelfs
+    bcastIfNotIncogNl i bs
+    logMsgs |#| logPlaOut "trash" i
+  where
+    helper ms =
+        let (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv as
+            sorryInEq              = inEqs |!| sorryTrashInEq
+            sorryInRm              = inRms |!| sorryTrashInRm
+            invCoins               = getInvCoins i ms
+            d                      = mkStdDesig  i ms DoCap
+            (eiss, ecs)            = uncurry (resolveMobInvCoins i ms inInvs) invCoins
+            (ms',  toSelfs,  bs          ) = foldl' (helperTrashEitherInv   i d) (ms,  [],      []         ) eiss
+            (ms'', toSelfs', bs', logMsgs) =         helperTrashEitherCoins i d  (ms', toSelfs, bs, toSelfs) ecs
+        in if | getRmId i ms /= ri -> sorry sorryAlteredRm
+              | ()# invCoins       -> sorry dudeYourHandsAreEmpty
+              | otherwise          -> (ms'', (dropBlanks $ [ sorryInEq, sorryInRm ] ++ toSelfs', bs', logMsgs))
+      where
+        sorry = (ms, ) . (, [], []) . pure
+trash _ p = patternMatchFail "trash" [ showText p ]
 
 
 helperTrashEitherInv :: Id

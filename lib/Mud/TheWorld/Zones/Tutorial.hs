@@ -30,6 +30,6 @@ createTutorial = do
             "Hello!"
             zeroBits
             []
-            M.empty)
+            M.empty [])
 
   putRmTeleName iTutWelcome "tutorial"
