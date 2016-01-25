@@ -30,9 +30,9 @@ formatMsgArgs as = capitalizeMsg . punctuateMsg . T.unwords $ as
 
 
 capitalizeMsg :: Text -> Text
-capitalizeMsg x@(T.uncons         -> Just (_, "")) = T.toUpper  x
-capitalizeMsg   (T.break isLetter ->      ("", x)) = capitalize x
-capitalizeMsg   (T.break isLetter ->      (x, "")) = x
+capitalizeMsg x@(T.uncons         -> Just (_,  "")) = T.toUpper  x
+capitalizeMsg   (T.break isLetter ->      ("", x )) = capitalize x
+capitalizeMsg   (T.break isLetter ->      (x,  "")) = x
 capitalizeMsg x@(T.break isLetter -> (T.uncons -> Just (c, ""), y)) | c `elem` punc = c `T.cons` capitalize y
                                                                     | otherwise     = x
   where
