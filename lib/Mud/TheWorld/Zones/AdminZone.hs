@@ -119,7 +119,6 @@ lookSignHookFun i Hook { .. } (V.head -> r) a@(_, (ms, _, _, _)) =
          & _2._3 <>~ pure (serialize selfDesig <> " reads the sign on the wall.", i `delete` desigIds selfDesig)
          & _2._4 <>~ pure (bracketQuote hookName <> " read sign")
   where
-    -- TODO: Works with "look sign", but for "read sign", the text is incorrectly wrapped.
     signDesc = "The following message has been painted on the sign in a tight, flowing script:\n\
                \\"Welcome to the empty room. You have been summoned here by a CurryMUD administrator. As there are no \
                \exits, you will need the assistance of an administrator when the time comes for you to leave. We hope \

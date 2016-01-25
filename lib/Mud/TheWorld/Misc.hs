@@ -70,7 +70,7 @@ lookTrashHookFun i Hook { .. } _ a@(_, (ms, _, _, _)) =
     trashDesc = "The trash bin is an oblong metal container, about 3 feet tall, with a lid connected to the body by \
                 \hinges. Affixed to the lid is a bronze plate, on which the following has been neatly etched:\n\
                 \\"Magic Trash Bin: items placed in this bin will be magically expunged, and are entirely \
-                \unrecoverable. Thank you for keeping xxx clean.\"\n\
+                \unrecoverable.\"\n\
                 \Carefully lifting open the lid and peaking inside, you find only an ominous darkness; not even the \
                 \bottom of the bin is visible."
 
@@ -126,11 +126,10 @@ trashRmActionFunName = "trash"
 
 
 -- TODO: We haven't tested this cmd much...
--- TODO: "The lid of the trash bin momentarily opens of its own accord as a loud belch is emitted from inside the container."
 trash :: RmActionFun
 trash _  p@AdviseNoArgs          = advise p [] adviceTrashNoArgs
 trash ri (LowerNub i mq cols as) = helper |&| modifyState >=> \(toSelfs, bs, logMsgs) -> do
-    _  <- rndmPer
+    _  <- rndmPer -- TODO: "The lid of the trash bin momentarily opens of its own accord as a loud belch is emitted from inside the container."
     multiWrapSend mq cols toSelfs
     bcastIfNotIncogNl i bs
     logMsgs |#| logPlaOut "trash" i
