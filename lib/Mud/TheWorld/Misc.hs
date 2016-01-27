@@ -30,9 +30,12 @@ import Mud.Util.Text
 import qualified Mud.Misc.Logging as L (logPlaOut)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
+import Control.Concurrent (forkIO, threadDelay) 
 import Control.Lens (_1, _2, _3, _4)
 import Control.Lens.Operators ((%~), (&), (<>~))
-import Control.Monad ((>=>))
+import Control.Monad ((>=>), unless, void)
+import Control.Monad.IO.Class (liftIO)
+import Control.Monad.Reader (runReaderT)
 import Data.List ((\\), delete, foldl')
 import Data.Monoid ((<>))
 import Data.Text (Text)
@@ -129,10 +132,10 @@ trashRmActionFunName = "trash"
 trash :: RmActionFun
 trash _  p@AdviseNoArgs          = advise p [] adviceTrashNoArgs
 trash ri (LowerNub i mq cols as) = helper |&| modifyState >=> \(toSelfs, bs, logMsgs) -> do
-    _  <- rndmPer -- TODO: "The lid of the trash bin momentarily opens of its own accord as a loud belch is emitted from inside the container."
     multiWrapSend mq cols toSelfs
     bcastIfNotIncogNl i bs
     logMsgs |#| logPlaOut "trash" i
+    unless (()# logMsgs) . rndmDo 10 . onEnv $ liftIO . void . forkIO . runReaderT belch
   where
     helper ms =
         let (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv as
@@ -148,6 +151,11 @@ trash ri (LowerNub i mq cols as) = helper |&| modifyState >=> \(toSelfs, bs, log
               | otherwise          -> (ms'', (dropBlanks $ [ sorryInEq, sorryInRm ] ++ toSelfs', bs', logMsgs))
       where
         sorry = (ms, ) . (, [], []) . pure
+    belch = let msg = "The lid of the trash bin momentarily opens of its own accord as a loud belch is emitted from \
+                      \inside the container."
+            in do
+                liftIO . threadDelay $ 3 * 10 ^ 6
+                getState >>= \ms -> bcastNl . pure $ (msg, findMobIds ms . getInv ri $ ms)
 trash _ p = patternMatchFail "trash" [ showText p ]
 
 
