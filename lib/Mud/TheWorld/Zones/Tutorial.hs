@@ -13,7 +13,7 @@ import qualified Data.Map.Lazy as M (empty)
 
 
 logNotice :: Text -> Text -> MudStack ()
-logNotice = L.logNotice "Mud.TheWorld.Tutorial"
+logNotice = L.logNotice "Mud.TheWorld.Zones.Tutorial"
 
 
 -- ==================================================

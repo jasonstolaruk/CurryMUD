@@ -1,12 +1,13 @@
+{-# OPTIONS_GHC -fno-warn-type-defaults #-}
 {-# LANGUAGE FlexibleContexts, LambdaCase, MultiWayIf, OverloadedStrings, RecordWildCards, TupleSections, ViewPatterns #-}
 
 module Mud.TheWorld.Misc ( lookTrashHookFun
                          , lookTrashHookName
-                         , pickRmActionFunName
                          , putTrashHookFun
                          , putTrashHookName
+                         , readAction
                          , readRmActionFunName
-                         , rmActionFunList
+                         , trash
                          , trashRmActionFunName ) where
 
 import Mud.Cmds.Msgs.Advice
@@ -30,7 +31,7 @@ import Mud.Util.Text
 import qualified Mud.Misc.Logging as L (logPlaOut)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
-import Control.Concurrent (forkIO, threadDelay) 
+import Control.Concurrent (forkIO, threadDelay)
 import Control.Lens (_1, _2, _3, _4)
 import Control.Lens.Operators ((%~), (&), (<>~))
 import Control.Monad ((>=>), unless, void)
@@ -53,8 +54,8 @@ logPlaOut :: Text -> Id -> [Text] -> MudStack ()
 logPlaOut = L.logPlaOut "Mud.TheWorld.Misc"
 
 
-  -- ==================================================
-  -- Common hooks:
+-- ==================================================
+-- Common hooks:
 
 
 lookTrashHookName :: HookName
@@ -89,28 +90,8 @@ putTrashHookFun :: HookFun
 putTrashHookFun _ _ _ _ = undefined -- TODO
 
 
-  -- ==================================================
-  -- Room action functions:
-
-
-rmActionFunList :: [(RmActionFunName, RmActionFun)]
-rmActionFunList = [ (pickRmActionFunName,  pick      )
-                  , (readRmActionFunName,  readAction)
-                  , (trashRmActionFunName, trash     ) ]
-
-
------
-
-
-pickRmActionFunName :: RmActionFunName
-pickRmActionFunName = "pick"
-
-
-pick :: RmActionFun
-pick = undefined
-
-
------
+-- ==================================================
+-- Common room action functions:
 
 
 readRmActionFunName :: RmActionFunName
@@ -118,7 +99,7 @@ readRmActionFunName = "read"
 
 
 readAction :: RmActionFun
-readAction = undefined
+readAction = undefined -- TODO
 
 
 -----
@@ -146,11 +127,9 @@ trash ri (LowerNub i mq cols as) = helper |&| modifyState >=> \(toSelfs, bs, log
             (eiss, ecs)            = uncurry (resolveMobInvCoins i ms inInvs) invCoins
             (ms',  toSelfs,  bs          ) = foldl' (helperTrashEitherInv   i d) (ms,  [],      []         ) eiss
             (ms'', toSelfs', bs', logMsgs) =         helperTrashEitherCoins i d  (ms', toSelfs, bs, toSelfs) ecs
-        in if | getRmId i ms /= ri -> sorry sorryAlteredRm
-              | ()# invCoins       -> sorry dudeYourHandsAreEmpty
+        in if | getRmId i ms /= ri -> genericSorry ms sorryAlteredRm
+              | ()# invCoins       -> genericSorry ms dudeYourHandsAreEmpty
               | otherwise          -> (ms'', (dropBlanks $ [ sorryInEq, sorryInRm ] ++ toSelfs', bs', logMsgs))
-      where
-        sorry = (ms, ) . (, [], []) . pure
     belch = let msg = "The lid of the trash bin momentarily opens of its own accord as a loud belch is emitted from \
                       \inside the container."
             in do

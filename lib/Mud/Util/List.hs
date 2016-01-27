@@ -5,6 +5,7 @@ module Mud.Util.List ( allValues
                      , countOcc
                      , countOccs
                      , dropEmpties
+                     , dropSynonyms
                      , fstList
                      , headLast
                      , headTail
@@ -38,6 +39,12 @@ countOccs = map ((head *** length) . dup) . group . sort
 
 dropEmpties :: (Eq a, Monoid a) => [a] -> [a]
 dropEmpties = filter (()!#)
+
+
+dropSynonyms :: (Eq a) => [a] -> [a] -> [a]
+dropSynonyms _        []                         = []
+dropSynonyms synonyms (x:xs) | x `elem` synonyms = x : filter (`notElem` synonyms) xs
+                             | otherwise         = x : dropSynonyms synonyms xs
 
 
 fstList :: (a -> a) -> [a] -> [a]

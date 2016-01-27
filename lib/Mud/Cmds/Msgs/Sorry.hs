@@ -113,7 +113,9 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryPCNameLoggedIn
                            , sorryPeepAdmin
                            , sorryPeepSelf
-                           , sorryPickFlower
+                           , sorryPickInEq
+                           , sorryPickInInv
+                           , sorryPickNotFlower
                            , sorryPossessType
                            , sorryPp
                            , sorryPutExcessCon
@@ -874,8 +876,16 @@ sorryPeepSelf = can't "peep yourself."
 -----
 
 
-sorryPickFlower :: Text
-sorryPickFlower = "You can only pick flowers here."
+sorryPickNotFlower :: Text -> Text
+sorryPickNotFlower t = can't $ "pick " <> aOrAn t <> "."
+
+
+sorryPickInEq :: Text
+sorryPickInEq = can't "pick an item in your readied equipment."
+
+
+sorryPickInInv :: Text
+sorryPickInInv = can't "pick an item in your inventory."
 
 
 -----

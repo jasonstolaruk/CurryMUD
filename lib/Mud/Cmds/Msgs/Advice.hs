@@ -64,6 +64,7 @@ module Mud.Cmds.Msgs.Advice ( adviceAAnnounceNoArgs
                             , adviceGiveNoName
                             , adviceLeaveNoArgs
                             , adviceNewChanNoArgs
+                            , advicePickNoArgs
                             , advicePutNoArgs
                             , advicePutNoCon
                             , adviceQuitExcessArgs
@@ -509,6 +510,12 @@ adviceNewChanNoArgs :: Text
 adviceNewChanNoArgs = "Please specify one or more new channel names, as in " <>
                       colorWith quoteColor "newchannel hunt"                 <>
                       "."
+
+
+advicePickNoArgs :: Text
+advicePickNoArgs = "Please specify one or more items to pick, as in " <>
+                   colorWith quoteColor "pick flower"                 <>
+                   "."
 
 
 advicePutNoArgs :: Text

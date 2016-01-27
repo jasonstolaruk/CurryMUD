@@ -13,7 +13,6 @@ module Mud.Cmds.Util.Pla ( armSubToSlot
                          , findAvailSlot
                          , genericAction
                          , genericSorry
-                         , getHookFun
                          , getMatchingChanWithName
                          , getRelativePCName
                          , hasFp
@@ -1084,12 +1083,6 @@ procHooks i ms v cn as | initAcc <- (as, (ms, [], [], [])) = case lookupHooks i 
                []                    -> a
                xs                    -> patternMatchFail "procHooks" [ showText xs ]
          in foldl' hookHelper initAcc xformedArgs
-
-
-dropSynonyms :: [Text] -> Args -> Args
-dropSynonyms _        []                         = []
-dropSynonyms triggers (x:xs) | x `elem` triggers = x : filter (`notElem` triggers) xs
-                             | otherwise         = x : dropSynonyms triggers xs
 
 
 -----

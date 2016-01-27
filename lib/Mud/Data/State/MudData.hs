@@ -658,8 +658,7 @@ instance FromJSON Slot
 instance FromJSON Type
 instance FromJSON Wpn
 instance FromJSON WpnSub
-instance ToJSON   Arm
-  -- TODO: Temporary fix for aeson issue. https://github.com/bos/aeson/issues/290
+instance ToJSON   Arm -- TODO: Temporary fix for aeson issue. https://github.com/bos/aeson/issues/290
   where
     toJSON = genericToJSON defaultOptions
 instance ToJSON   ArmSub

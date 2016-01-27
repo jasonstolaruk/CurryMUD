@@ -1,24 +1,33 @@
 {-# LANGUAGE MultiWayIf, NamedFieldPuns, OverloadedStrings, RecordWildCards, ViewPatterns #-}
 
 module Mud.TheWorld.Zones.AdminZone ( adminZoneHooks
+                                    , adminZoneRmActionFuns
                                     , createAdminZone ) where
 
+import Mud.Cmds.Msgs.Advice
 import Mud.Cmds.Msgs.Sorry
+import Mud.Cmds.Util.Pla
 import Mud.Data.Misc
+import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Calc
+import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Put
 import Mud.Data.State.Util.Random
+import Mud.Misc.LocPref
 import Mud.TheWorld.Misc
 import Mud.TheWorld.Zones.AdminZoneIds
 import Mud.TheWorld.Zones.TutorialIds (iTutWelcome)
 import Mud.TopLvlDefs.Vols
 import Mud.TopLvlDefs.Weights
+import Mud.Util.List
+import Mud.Util.Operators
 import Mud.Util.Quoting
 import Mud.Util.Text
 import qualified Data.Vector.Unboxed as V (Vector, head)
 import qualified Mud.Misc.Logging as L (logNotice)
+import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Lens (_1, _2, _3, _4)
 import Control.Lens.Operators ((%~), (&), (.~), (<>~))
@@ -30,11 +39,19 @@ import Data.Text (Text)
 import qualified Data.Map.Lazy as M (empty, fromList, singleton)
 
 
+patternMatchFail :: Text -> [Text] -> a
+patternMatchFail = U.patternMatchFail "Mud.TheWorld.Zones.AdminZone"
+
+
+-----
+
+
 logNotice :: Text -> Text -> MudStack ()
-logNotice = L.logNotice "Mud.TheWorld.AdminZone"
+logNotice = L.logNotice "Mud.TheWorld.Zones.AdminZone"
 
 
 -- ==================================================
+-- Hooks:
 
 
 adminZoneHooks :: [(HookName, HookFun)]
@@ -47,6 +64,10 @@ adminZoneHooks = [ (getFlowerHookName,     getFlowerHookFun    )
 
 
 -----
+
+
+getFlowerHook :: Hook
+getFlowerHook = Hook getFlowerHookName  [ "flower", "flowers" ]
 
 
 getFlowerHookName :: HookName
@@ -145,7 +166,40 @@ lookWallsHookFun i Hook { .. } _ a@(_, (ms, _, _, _)) =
     wallsDesc = "You are enclosed by four smooth, dense walls, with no means of exit in sight."
 
 
-  -- ==================================================
+-- ==================================================
+-- Room action functions:
+
+
+adminZoneRmActionFuns :: [(RmActionFunName, RmActionFun)]
+adminZoneRmActionFuns = pure (pickRmActionFunName, pick)
+
+
+-----
+
+
+pickRmActionFunName :: RmActionFunName
+pickRmActionFunName = "pick"
+
+
+pick :: RmActionFun
+pick _  p@AdviseNoArgs     = advise p [] advicePickNoArgs
+pick ri p@(LowerNub' i as) = genericAction p helper "pick"
+  where
+    helper v ms =
+        let (inInvs, inEqs, inRms) = sortArgsInvEqRm InRm as
+            sorrys                 = dropEmpties [ inInvs |!| sorryPickInInv, inEqs |!| sorryPickInEq ]
+            h@Hook { .. }          = getFlowerHook
+            initAcc                = (inRms, (ms, [], [], []))
+            (_, (ms', toSelfs, bs, logMsgs)) | any (`elem` triggers) inRms = getHookFun hookName ms i h v initAcc
+                                             | otherwise                   = initAcc
+            toSelfs'                         = map mkMsg . dropSynonyms triggers $ inRms
+            mkMsg arg | arg `elem` triggers  = head toSelfs
+                      | otherwise            = sorryPickNotFlower arg
+        in getRmId i ms /= ri ? genericSorry ms sorryAlteredRm :? (ms', (sorrys ++ toSelfs', bs, logMsgs))
+pick _ p = patternMatchFail "pick" [ showText p ]
+
+
+-----
 
 
 adminFlags :: Int
@@ -288,7 +342,7 @@ createAdminZone = do
             \An opening in the west wall leads out into a hallway."
             zeroBits
             [ StdLink West iHallwayEast ]
-            (M.fromList [ ("get",  [ Hook getFlowerHookName     [ "flower", "flowers"              ] ])
+            (M.fromList [ ("get",  [ getFlowerHook ])
                         , ("look", [ Hook lookFlowerbedHookName [ "flower", "flowers", "flowerbed" ] ]) ])
             [ RmAction "pick" pickRmActionFunName ])
   putRm iBasement
