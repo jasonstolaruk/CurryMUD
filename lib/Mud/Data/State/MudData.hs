@@ -547,10 +547,17 @@ type HookMap = M.Map CmdName [Hook]
 
 
 data Hook = Hook { hookName :: HookName
-                 , triggers :: [Text] } deriving (Eq, Generic, Show)
+                 , triggers :: [Text] {- Triggers -} } deriving (Eq, Generic, Show)
 
 
 type HookName = Text
+
+
+-- TODO: Should I roll w/ this? This is because "putTrashHook" will need to match on the last arg, and "procHooks" needs to know how to determine a match.
+{-
+data Triggers = MatchingAnyArg  [Text]
+              | MatchingLastArg [Text] deriving (Eq, Generic, Show)
+-}
 
 
 type HookFun = Id -> Hook -> V.Vector Int -> (Args, GenericIntermediateRes) -> (Args, GenericIntermediateRes)
