@@ -192,7 +192,7 @@ pickRmAction = RmAction "pick" pickRmActionFunName
 
 
 pickRmActionFunName :: RmActionFunName
-pickRmActionFunName = "pick"
+pickRmActionFunName = "AdminZone_iAtrium_pick"
 
 
 pick :: RmActionFun
@@ -559,7 +559,7 @@ createAdminZone = do
             zeroBits
             []
             (M.singleton "look" [ lookSignHook, lookWallsHook ])
-            [ readRmAction ])
+            [ {- TODO: Use "mkReadRmActionFun". -} ])
 
   -- ==================================================
   -- Room teleport names:

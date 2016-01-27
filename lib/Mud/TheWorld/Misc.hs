@@ -4,8 +4,8 @@
 module Mud.TheWorld.Misc ( commonHooks
                          , commonRmActionFuns
                          , lookTrashHook
+                         , mkReadRmActionFun
                          , putTrashHook
-                         , readRmAction
                          , trashRmAction ) where
 
 import Mud.Cmds.Msgs.Advice
@@ -109,23 +109,7 @@ putTrashHookFun _ _ _ _ = undefined -- TODO
 
 
 commonRmActionFuns :: [(RmActionFunName, RmActionFun)]
-commonRmActionFuns = [ (readRmActionFunName,  readAction)
-                     , (trashRmActionFunName, trash     ) ]
-
-
------
-
-
-readRmAction :: RmAction
-readRmAction = RmAction "read" readRmActionFunName
-
-
-readRmActionFunName :: RmActionFunName
-readRmActionFunName = "read"
-
-
-readAction :: RmActionFun
-readAction = undefined -- TODO
+commonRmActionFuns = pure (trashRmActionFunName, trash)
 
 
 -----
@@ -136,7 +120,7 @@ trashRmAction = RmAction "trash" trashRmActionFunName
 
 
 trashRmActionFunName :: RmActionFunName
-trashRmActionFunName = "trash"
+trashRmActionFunName = "(common)_trash"
 
 
 trash :: RmActionFun
@@ -223,3 +207,11 @@ mkTrashCoinsDescsSelf = mkCoinsMsgs helper
   where
     helper 1 cn = T.concat [ "You deposit ", aOrAn cn,             " into the trash bin." ]
     helper a cn = T.concat [ "You deposit ", showText a, " ", cn, "s into the trash bin." ]
+
+
+-- ==================================================
+-- Room action helper functions:
+
+
+mkReadRmActionFun :: Text -> RmActionFun
+mkReadRmActionFun = undefined -- TODO
