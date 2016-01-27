@@ -58,16 +58,14 @@ adminZoneHooks :: [(HookName, HookFun)]
 adminZoneHooks = [ (getFlowerHookName,     getFlowerHookFun    )
                  , (lookFlowerbedHookName, lookFlowerbedHookFun)
                  , (lookSignHookName,      lookSignHookFun     )
-                 , (lookTrashHookName,     lookTrashHookFun    )
-                 , (lookWallsHookName,     lookWallsHookFun    )
-                 , (putTrashHookName,      putTrashHookFun     ) ]
+                 , (lookWallsHookName,     lookWallsHookFun    ) ]
 
 
 -----
 
 
 getFlowerHook :: Hook
-getFlowerHook = Hook getFlowerHookName  [ "flower", "flowers" ]
+getFlowerHook = Hook getFlowerHookName [ "flower", "flowers" ]
 
 
 getFlowerHookName :: HookName
@@ -109,6 +107,10 @@ mkFlower i ms v = let flowerId = getUnusedId ms
 -----
 
 
+lookFlowerbedHook :: Hook
+lookFlowerbedHook = Hook lookFlowerbedHookName [ "flowerbed", "flower", "flowers" ]
+
+
 lookFlowerbedHookName :: HookName
 lookFlowerbedHookName = "AdminZone_iAtrium_lookFlowerbed"
 
@@ -126,6 +128,10 @@ lookFlowerbedHookFun i Hook { .. } _ a@(_, (ms, _, _, _)) =
 
 
 -----
+
+
+lookSignHook :: Hook
+lookSignHook = Hook lookSignHookName ["sign"]
 
 
 lookSignHookName :: HookName
@@ -149,6 +155,10 @@ lookSignHookFun i Hook { .. } (V.head -> r) a@(_, (ms, _, _, _)) =
 
 
 -----
+
+
+lookWallsHook :: Hook
+lookWallsHook = Hook lookWallsHookName [ "walls", "wall" ]
 
 
 lookWallsHookName :: HookName
@@ -177,6 +187,10 @@ adminZoneRmActionFuns = pure (pickRmActionFunName, pick)
 -----
 
 
+pickRmAction :: RmAction
+pickRmAction = RmAction "pick" pickRmActionFunName
+
+
 pickRmActionFunName :: RmActionFunName
 pickRmActionFunName = "pick"
 
@@ -199,7 +213,8 @@ pick ri p@(LowerNub' i as) = genericAction p helper "pick"
 pick _ p = patternMatchFail "pick" [ showText p ]
 
 
------
+-- ==================================================
+-- Zone definition:
 
 
 adminFlags :: Int
@@ -308,12 +323,12 @@ createAdminZone = do
             \electronic displays and control panels, used by the admins to monitor and supervise the daily operations \
             \of CurryMUD.\n\
             \A spiral staircase leads down, while a door opens to a hallway leading east. A trash bin sits adjascent \
-            \to the spiral staircase." -- TODO: Put another trash bin in the tutorial zone.
+            \to the spiral staircase."
             zeroBits
             [ StdLink Down iBasement, StdLink East iHallwayWest ]
-            (M.fromList [ ("look",  [ Hook lookTrashHookName [ "trash", "bin" ] ])
-                        , ("put",   [ Hook putTrashHookName  [ "trash", "bin" ] ]) ])
-            [ RmAction "trash" trashRmActionFunName ])
+            (M.fromList [ ("look", [ lookTrashHook ])
+                        , ("put",  [ putTrashHook  ]) ])
+            [ trashRmAction ])
   putRm iHallwayWest
         []
         mempty
@@ -342,9 +357,9 @@ createAdminZone = do
             \An opening in the west wall leads out into a hallway."
             zeroBits
             [ StdLink West iHallwayEast ]
-            (M.fromList [ ("get",  [ getFlowerHook ])
-                        , ("look", [ Hook lookFlowerbedHookName [ "flower", "flowers", "flowerbed" ] ]) ])
-            [ RmAction "pick" pickRmActionFunName ])
+            (M.fromList [ ("get",  [ getFlowerHook     ])
+                        , ("look", [ lookFlowerbedHook ]) ])
+            [ pickRmAction ])
   putRm iBasement
         []
         mempty
@@ -543,9 +558,8 @@ createAdminZone = do
             \though you can't miss the small wooden sign affixed to the north wall."
             zeroBits
             []
-            (M.singleton "look" [ Hook lookSignHookName  ["sign"]
-                                , Hook lookWallsHookName [ "wall", "walls" ] ])
-            [ RmAction "read" readRmActionFunName ])
+            (M.singleton "look" [ lookSignHook, lookWallsHook ])
+            [ readRmAction ])
 
   -- ==================================================
   -- Room teleport names:

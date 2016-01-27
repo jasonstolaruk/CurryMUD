@@ -1,14 +1,12 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
 {-# LANGUAGE FlexibleContexts, LambdaCase, MultiWayIf, OverloadedStrings, RecordWildCards, TupleSections, ViewPatterns #-}
 
-module Mud.TheWorld.Misc ( lookTrashHookFun
-                         , lookTrashHookName
-                         , putTrashHookFun
-                         , putTrashHookName
-                         , readAction
-                         , readRmActionFunName
-                         , trash
-                         , trashRmActionFunName ) where
+module Mud.TheWorld.Misc ( commonHooks
+                         , commonRmActionFuns
+                         , lookTrashHook
+                         , putTrashHook
+                         , readRmAction
+                         , trashRmAction ) where
 
 import Mud.Cmds.Msgs.Advice
 import Mud.Cmds.Msgs.Dude
@@ -58,8 +56,20 @@ logPlaOut = L.logPlaOut "Mud.TheWorld.Misc"
 -- Common hooks:
 
 
+commonHooks :: [(HookName, HookFun)]
+commonHooks = [ (lookTrashHookName, lookTrashHookFun)
+              , (putTrashHookName,  putTrashHookFun ) ]
+
+
+-----
+
+
+lookTrashHook :: Hook
+lookTrashHook = Hook lookTrashHookName [ "trash", "bin" ]
+
+
 lookTrashHookName :: HookName
-lookTrashHookName = "(misc)_lookTrash"
+lookTrashHookName = "(common)_lookTrash"
 
 
 lookTrashHookFun :: HookFun
@@ -82,8 +92,12 @@ lookTrashHookFun i Hook { .. } _ a@(_, (ms, _, _, _)) =
 -----
 
 
+putTrashHook :: Hook
+putTrashHook = Hook putTrashHookName  [ "trash", "bin" ]
+
+
 putTrashHookName :: HookName
-putTrashHookName = "(misc)_putTrash"
+putTrashHookName = "(common)_putTrash"
 
 
 putTrashHookFun :: HookFun
@@ -92,6 +106,18 @@ putTrashHookFun _ _ _ _ = undefined -- TODO
 
 -- ==================================================
 -- Common room action functions:
+
+
+commonRmActionFuns :: [(RmActionFunName, RmActionFun)]
+commonRmActionFuns = [ (readRmActionFunName,  readAction)
+                     , (trashRmActionFunName, trash     ) ]
+
+
+-----
+
+
+readRmAction :: RmAction
+readRmAction = RmAction "read" readRmActionFunName
 
 
 readRmActionFunName :: RmActionFunName
@@ -105,11 +131,14 @@ readAction = undefined -- TODO
 -----
 
 
+trashRmAction :: RmAction
+trashRmAction = RmAction "trash" trashRmActionFunName
+
+
 trashRmActionFunName :: RmActionFunName
 trashRmActionFunName = "trash"
 
 
--- TODO: We haven't tested this cmd much...
 trash :: RmActionFun
 trash _  p@AdviseNoArgs          = advise p [] adviceTrashNoArgs
 trash ri (LowerNub i mq cols as) = helper |&| modifyState >=> \(toSelfs, bs, logMsgs) -> do

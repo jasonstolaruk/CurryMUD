@@ -716,7 +716,8 @@ dropAction p@(LowerNub' i as) = genericAction p helper "drop"
             ri                     = getRmId     i ms
             (eiss, ecs)            = uncurry (resolveMobInvCoins i ms inInvs) invCoins
             (ms',  toSelfs,  bs          ) = foldl' (helperDropEitherInv      i d      i ri) (ms,  [],      []         ) eiss
-            (ms'', toSelfs', bs', logMsgs) =         helperGetDropEitherCoins i d Drop i ri  (ms', toSelfs, bs, toSelfs) ecs
+            (ms'', toSelfs', bs', logMsgs) =         helperGetDropEitherCoins i d Drop i ri  (ms', toSelfs {- TODO: Here. -}, bs, toSelfs) ecs
+            -- TODO: The "toSelfs" above may include "You don't have a ..." msgs, which are then logged... A handful of cmds are like this.
         in if ()!# invCoins
           then (ms'', (dropBlanks $ [ sorryInEq, sorryInRm ] ++ toSelfs', bs', logMsgs))
           else (ms,   (pure dudeYourHandsAreEmpty,                        [],  []     ))

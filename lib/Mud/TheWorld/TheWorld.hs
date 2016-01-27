@@ -9,6 +9,7 @@ import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Misc.Logging hiding (logNotice)
+import Mud.TheWorld.Misc
 import Mud.TheWorld.Zones.AdminZone
 import Mud.TheWorld.Zones.AdminZoneIds (iLoggedOut, iWelcome)
 import Mud.TheWorld.Zones.Tutorial
@@ -93,11 +94,15 @@ initWorld = dropIrrelevantFilenames . sort <$> (liftIO . getDirectoryContents $ 
 
 
 initHookFunTbl :: MudStack ()
-initHookFunTbl = tweak $ hookFunTbl .~ M.fromList adminZoneHooks
+initHookFunTbl = tweak $ hookFunTbl .~ M.fromList list
+  where
+    list = concat [ commonHooks, adminZoneHooks, tutorialHooks ]
 
 
 initRmActionFunTbl :: MudStack ()
-initRmActionFunTbl = tweak $ rmActionFunTbl .~ M.fromList adminZoneRmActionFuns
+initRmActionFunTbl = tweak $ rmActionFunTbl .~ M.fromList list
+  where
+    list = concat [ commonRmActionFuns, adminZoneRmActionFuns, tutorialRmActionFuns ]
 
 
 createWorld :: MudStack ()

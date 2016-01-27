@@ -1147,7 +1147,7 @@ sorryTrashInEq = butCan't "dispose of an item in your readied equipment. Please 
 
 
 sorryTrashInRm :: Text
-sorryTrashInRm = can't "dispose of an item in your current room. Please pick up the item(s) first."
+sorryTrashInRm = butCan't "dispose of an item in your current room. Please pick up the item(s) first."
 
 
 -----
