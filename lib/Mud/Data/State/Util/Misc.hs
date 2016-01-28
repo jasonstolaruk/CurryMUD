@@ -22,6 +22,7 @@ module Mud.Data.State.Util.Misc ( aOrAnType
                                 , getState
                                 , getUnusedId
                                 , isLoggedIn
+                                , isMatchingHook
                                 , isNpc
                                 , isPC
                                 , lookupHooks

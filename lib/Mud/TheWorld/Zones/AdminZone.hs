@@ -197,7 +197,6 @@ pickRmActionFunName :: RmActionFunName
 pickRmActionFunName = "AdminZone_iAtrium_pick"
 
 
--- TODO: Should pick make use of "dropPrefixes"?
 pick :: RmActionFun
 pick _  p@AdviseNoArgs     = advise p [] advicePickNoArgs
 pick ri p@(LowerNub' i as) = genericAction p helper "pick"
@@ -206,13 +205,13 @@ pick ri p@(LowerNub' i as) = genericAction p helper "pick"
         let (inInvs, inEqs, inRms) = sortArgsInvEqRm InRm as
             sorrys                 = dropEmpties [ inInvs |!| sorryPickInInv, inEqs |!| sorryPickInEq ]
             h@Hook { .. }          = getFlowerHook
-            initAcc                = (inRms, (ms, [], [], []))
-            (_, (ms', toSelfs, bs, logMsgs)) | any (`elem` triggers) inRms = getHookFun hookName ms i h v initAcc
-                                             | otherwise                   = initAcc
-            toSelfs'                         = map mkMsg . dropSynonyms triggers $ inRms
-            mkMsg arg | arg `elem` triggers  = head toSelfs
-                      | otherwise            = sorryPickNotFlower arg
-        in getRmId i ms /= ri ? genericSorry ms sorryAlteredRm :? (ms', (sorrys ++ toSelfs', bs, logMsgs))
+            inRms'                 = dropSynonyms triggers . dropPrefixes (pure h) $ inRms
+            initAcc                = (inRms', (ms, [], [], []))
+            (_, (ms', toSelfs, bs, logMsgs)) | isMatchingHook inRms' h = getHookFun hookName ms i h v initAcc
+                                             | otherwise               = initAcc
+            mkMsgForArg arg | arg `elem` triggers = head toSelfs
+                            | otherwise           = sorryPickNotFlower arg
+        in getRmId i ms /= ri ? genericSorry ms sorryAlteredRm :? (ms', (sorrys ++ map mkMsgForArg inRms', bs, logMsgs))
 pick _ p = patternMatchFail "pick" [ showText p ]
 
 
