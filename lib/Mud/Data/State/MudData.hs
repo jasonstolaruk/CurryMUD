@@ -546,18 +546,16 @@ type LinkName = Text
 type HookMap = M.Map CmdName [Hook]
 
 
-data Hook = Hook { hookName :: HookName
-                 , triggers :: [Text] {- Triggers -} } deriving (Eq, Generic, Show)
+data Hook = Hook { hookName    :: HookName
+                 , triggers    :: [Text]
+                 , matchingArg :: MatchingArg } deriving (Eq, Generic, Show)
 
 
 type HookName = Text
 
 
--- TODO: Should I roll w/ this? This is because "putTrashHook" will need to match on the last arg, and "procHooks" needs to know how to determine a match.
-{-
-data Triggers = MatchingAnyArg  [Text]
-              | MatchingLastArg [Text] deriving (Eq, Generic, Show)
--}
+data MatchingArg = MatchAnyArg
+                 | MatchLastArg deriving (Eq, Generic, Show)
 
 
 type HookFun = Id -> Hook -> V.Vector Int -> (Args, GenericIntermediateRes) -> (Args, GenericIntermediateRes)
@@ -654,6 +652,7 @@ instance FromJSON Hand
 instance FromJSON Hook
 instance FromJSON HostRecord
 instance FromJSON LinkDir
+instance FromJSON MatchingArg
 instance FromJSON Obj
 instance FromJSON PC
 instance FromJSON Race
@@ -696,6 +695,9 @@ instance ToJSON   HostRecord
   where
     toJSON = genericToJSON defaultOptions
 instance ToJSON   LinkDir
+  where
+    toJSON = genericToJSON defaultOptions
+instance ToJSON   MatchingArg
   where
     toJSON = genericToJSON defaultOptions
 instance ToJSON   Obj

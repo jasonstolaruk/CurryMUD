@@ -65,7 +65,7 @@ commonHooks = [ (lookTrashHookName, lookTrashHookFun)
 
 
 lookTrashHook :: Hook
-lookTrashHook = Hook lookTrashHookName [ "trash", "bin" ]
+lookTrashHook = Hook lookTrashHookName [ "trash", "bin" ] MatchAnyArg
 
 
 lookTrashHookName :: HookName
@@ -93,7 +93,7 @@ lookTrashHookFun i Hook { .. } _ a@(_, (ms, _, _, _)) =
 
 
 putTrashHook :: Hook
-putTrashHook = Hook putTrashHookName  [ "trash", "bin" ]
+putTrashHook = Hook putTrashHookName  [ "trash", "bin" ] MatchLastArg
 
 
 putTrashHookName :: HookName

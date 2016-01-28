@@ -65,7 +65,7 @@ adminZoneHooks = [ (getFlowerHookName,     getFlowerHookFun    )
 
 
 getFlowerHook :: Hook
-getFlowerHook = Hook getFlowerHookName [ "flower", "flowers" ]
+getFlowerHook = Hook getFlowerHookName [ "flower", "flowers" ] MatchAnyArg
 
 
 getFlowerHookName :: HookName
@@ -108,7 +108,7 @@ mkFlower i ms v = let flowerId = getUnusedId ms
 
 
 lookFlowerbedHook :: Hook
-lookFlowerbedHook = Hook lookFlowerbedHookName [ "flowerbed", "flower", "flowers" ]
+lookFlowerbedHook = Hook lookFlowerbedHookName [ "flowerbed", "flower", "flowers" ] MatchAnyArg
 
 
 lookFlowerbedHookName :: HookName
@@ -131,7 +131,7 @@ lookFlowerbedHookFun i Hook { .. } _ a@(_, (ms, _, _, _)) =
 
 
 lookSignHook :: Hook
-lookSignHook = Hook lookSignHookName ["sign"]
+lookSignHook = Hook lookSignHookName ["sign"] MatchAnyArg
 
 
 lookSignHookName :: HookName
@@ -158,7 +158,7 @@ lookSignHookFun i Hook { .. } (V.head -> r) a@(_, (ms, _, _, _)) =
 
 
 lookWallsHook :: Hook
-lookWallsHook = Hook lookWallsHookName [ "walls", "wall" ]
+lookWallsHook = Hook lookWallsHookName [ "walls", "wall" ] MatchAnyArg
 
 
 lookWallsHookName :: HookName
