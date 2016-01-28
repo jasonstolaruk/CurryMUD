@@ -14,3 +14,13 @@ import Test.Tasty.QuickCheck (Property)
 prop_getUnusedId :: Property
 prop_getUnusedId = monadicIO $ inWorld getState >>= \ms ->
     assert $ getUnusedId ms `notElem` ms^.typeTbl.to IM.keys
+
+
+-- TODO
+test_dropPrefixes :: Assertion
+test_dropPrefixes = actual @?= expected
+  where
+    actual   = dropPrefixes [] []
+    expected = []
+
+

@@ -4,6 +4,7 @@
 
 module Mud.Data.State.Util.Misc ( aOrAnType
                                 , BothGramNos
+                                , dropPrefixes
                                 , findMobIds
                                 , getAdminIds
                                 , getEffBothGramNos
@@ -23,6 +24,7 @@ module Mud.Data.State.Util.Misc ( aOrAnType
                                 , isLoggedIn
                                 , isNpc
                                 , isPC
+                                , lookupHooks
                                 , mkAdminIdSingList
                                 , mkAdminPlaIdSingList
                                 , mkCapsFun
@@ -38,24 +40,25 @@ module Mud.Data.State.Util.Misc ( aOrAnType
                                 , onEnv
                                 , pcNpc
                                 , pluralize
+                                , procHooks
                                 , removeAdHoc
                                 , setInterp
                                 , sortInv
                                 , tweak
                                 , tweaks
                                 , withLock ) where
-
 import Mud.Data.Misc
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
 import Mud.TheWorld.Zones.AdminZoneIds (iWelcome)
+import Mud.TopLvlDefs.Chars
 import Mud.Util.List
 import Mud.Util.Misc hiding (blowUp, patternMatchFail)
 import Mud.Util.Operators
 import Mud.Util.Text
 import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 
-import Control.Arrow ((***))
+import Control.Arrow ((***), first)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TMVar (putTMVar, takeTMVar)
 import Control.Exception.Lifted (bracket)
@@ -71,7 +74,10 @@ import Data.Monoid (Sum(..), (<>))
 import Data.Text (Text)
 import GHC.Exts (sortWith)
 import qualified Data.IntMap.Lazy as IM (filter, keys, toList)
+import qualified Data.Map.Lazy as M (lookup)
 import qualified Data.Text as T
+import qualified Data.Vector.Unboxed as V (Vector)
+import Text.Regex.Posix ((=~))
 
 
 blowUp :: Text -> Text -> [Text] -> a
@@ -254,6 +260,13 @@ isLoggedIn = views lastRmId ((()#) . (Sum <$>))
 -----
 
 
+lookupHooks :: Id -> MudState -> CmdName -> Maybe [Hook]
+lookupHooks i ms cn = views hookMap (M.lookup cn) . getMobRm i $ ms
+
+
+-----
+
+
 mkAdminIdSingList :: MudState -> [(Id, Sing)]
 mkAdminIdSingList = mkIdSingListHelper id
 
@@ -371,6 +384,47 @@ pcNpc i ms a b = case getType i ms of
 
 pluralize :: BothGramNos -> Int -> Text
 pluralize (s, p) x = x == 1 ? s :? p
+
+
+-----
+
+
+procHooks :: Id -> MudState -> V.Vector Int -> CmdName -> Args -> (Args, GenericIntermediateRes)
+procHooks i ms v cn as | initAcc <- (as, (ms, [], [], [])) = case lookupHooks i ms cn of
+  Nothing    -> initAcc
+  Just hooks | as' <- dropPrefixes hooks as -> case filter (isMatchingHook as') hooks of
+    []      -> initAcc
+    matches ->
+      let xformedArgs                                      = foldl' f as' matches
+          f args (Hook _ trigs m)                          = onTrue (m == MatchAnyArg) (dropSynonyms trigs) args
+          hookHelper a@(_, (ms', _, _, _)) h@(Hook hn _ _) = getHookFun hn ms' i h v a
+      in foldl' hookHelper (first (const xformedArgs) initAcc) matches
+
+
+dropPrefixes :: [Hook] -> Args -> Args
+dropPrefixes hs = let helper _     []     = []
+                      helper trigs (a:as) | a' <- dropPrefixesHelper a, a' `elem` trigs = a' : rest
+                                          | otherwise                                   = a  : rest
+                        where
+                          rest = helper trigs as
+                  in helper (concatMap triggers hs)
+
+
+dropPrefixesHelper :: Text -> Text
+dropPrefixesHelper     (T.uncons -> Just (x, xs)) | x == allChar, ()!# xs = xs
+dropPrefixesHelper arg@(T.unpack -> arg'        )
+  | triple@(_, _, c) <- arg' =~ mkRegex indexChar,  isMatch triple = T.pack c
+  | triple@(_, _, c) <- arg' =~ mkRegex amountChar, isMatch triple = T.pack c
+  | otherwise                                                      = arg
+  where
+    isMatch :: (String, String, String) -> Bool
+    isMatch (a, b, c)  = and [ ()# a, ()!# b, ()!# c ]
+    mkRegex c          = "[0-9]+\\" <> pure c :: String
+
+
+isMatchingHook :: Args -> Hook -> Bool
+isMatchingHook as (Hook _ trigs MatchAnyArg ) = any (`elem` trigs) as
+isMatchingHook as (Hook _ trigs MatchLastArg) = last as `elem` trigs
 
 
 -----
