@@ -118,6 +118,7 @@ propTests_Mud_Util_Wrapping = testGroup "property tests Mud.Util.Wrapping"
 
 unitTests :: TestTree
 unitTests = testGroup "unit tests" [ unitTests_Mud_Data_Misc
+                                   , unitTests_Mud_Data_State_Util_Misc
                                    , unitTests_Mud_Util_Misc
                                    , unitTests_Mud_Util_Text ]
 
@@ -136,12 +137,23 @@ unitTests_Mud_Data_Misc = testGroup "unit tests Mud.Data.Misc"
 -- --------------------------------------------------
 
 
+unitTests_Mud_Data_State_Util_Misc :: TestTree
+unitTests_Mud_Data_State_Util_Misc = testGroup "unit tests Mud.Data.State.Util.Misc"
+    [ testCase "dropPrefixes_no_prefixes"  test_dropPrefixes_no_prefixes
+    , testCase "dropPrefixes_no_matches"   test_dropPrefixes_no_matches
+    , testCase "dropPrefixes_with_matches" test_dropPrefixes_with_matches
+    , testCase "dropPrefixes_abbrev"       test_dropPrefixes_abbrev ]
+
+
+-- --------------------------------------------------
+
+
 unitTests_Mud_Util_Misc :: TestTree
 unitTests_Mud_Util_Misc = testGroup "unit tests Mud.Util.Misc"
-    [ testCase "test_mWhen_IO_True"    test_mWhen_IO_True
-    , testCase "test_mWhen_IO_False"   test_mWhen_IO_False
-    , testCase "test_mUnless_IO_True"  test_mUnless_IO_True
-    , testCase "test_mUnless_IO_False" test_mUnless_IO_False ]
+    [ testCase "mWhen_IO_True"    test_mWhen_IO_True
+    , testCase "mWhen_IO_False"   test_mWhen_IO_False
+    , testCase "mUnless_IO_True"  test_mUnless_IO_True
+    , testCase "mUnless_IO_False" test_mUnless_IO_False ]
 
 
 -- --------------------------------------------------
