@@ -1073,16 +1073,18 @@ otherHand NoHand = LHand
 procHooks :: Id -> MudState -> V.Vector Int -> CmdName -> Args -> (Args, GenericIntermediateRes)
 procHooks i ms v cn as | initAcc <- (as, (ms, [], [], [])) = case lookupHooks i ms cn of
   Nothing    -> initAcc
-  Just hooks -> if ()# [ h | h@Hook { triggers } <- hooks, any (`elem` triggers) as ]
-    then initAcc
-    else let xformedArgs = foldl' f as hooks
-             f as' Hook { triggers } | any (`elem` triggers) as' = dropSynonyms triggers as'
-                                     | otherwise                 = as'
-             hookHelper a@(_, (ms', _, _, _)) arg = case [ h | h@Hook { triggers } <- hooks, arg `elem` triggers ] of
-               [h@Hook { hookName }] -> getHookFun hookName ms' i h v a
-               []                    -> a
-               xs                    -> patternMatchFail "procHooks" [ showText xs ]
-         in foldl' hookHelper initAcc xformedArgs
+  Just hooks -> case filter (isMatchingHook as) hooks of
+    []      -> initAcc
+    matches ->
+      let xformedArgs             = foldl' f as matches
+          f args (Hook _ trigs m) = onTrue (m == MatchAnyArg) (dropSynonyms trigs) args
+          hookHelper a@(_, (ms', _, _, _)) h@(Hook hn _ _) = getHookFun hn ms' i h v a
+      in foldl' hookHelper (first (const xformedArgs) initAcc) matches
+
+
+isMatchingHook :: Args -> Hook -> Bool
+isMatchingHook as (Hook _ trigs MatchAnyArg ) = any (`elem` trigs) as
+isMatchingHook as (Hook _ trigs MatchLastArg) = last as `elem` trigs
 
 
 -----
