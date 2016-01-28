@@ -109,6 +109,7 @@ import qualified Data.IntMap.Lazy as IM (keys)
 import qualified Data.Map.Lazy as M ((!), lookup, notMember, toList)
 import qualified Data.Text as T
 import qualified Data.Vector.Unboxed as V (Vector)
+import Text.Regex.Posix ((=~))
 
 
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
@@ -1073,13 +1074,37 @@ otherHand NoHand = LHand
 procHooks :: Id -> MudState -> V.Vector Int -> CmdName -> Args -> (Args, GenericIntermediateRes)
 procHooks i ms v cn as | initAcc <- (as, (ms, [], [], [])) = case lookupHooks i ms cn of
   Nothing    -> initAcc
-  Just hooks -> case filter (isMatchingHook as) hooks of
+  Just hooks | as' <- dropPrefixes hooks as -> case filter (isMatchingHook as') hooks of
     []      -> initAcc
     matches ->
-      let xformedArgs             = foldl' f as matches
-          f args (Hook _ trigs m) = onTrue (m == MatchAnyArg) (dropSynonyms trigs) args
+      let xformedArgs                                      = foldl' f as' matches
+          f args (Hook _ trigs m)                          = onTrue (m == MatchAnyArg) (dropSynonyms trigs) args
           hookHelper a@(_, (ms', _, _, _)) h@(Hook hn _ _) = getHookFun hn ms' i h v a
       in foldl' hookHelper (first (const xformedArgs) initAcc) matches
+
+
+-- TODO: Write tests.
+dropPrefixes :: [Hook] -> Args -> Args
+dropPrefixes hs = let helper _     []     = []
+                      helper trigs (a:as) | a' <- dropPrefixesHelper a, a' `elem` trigs = a' : rest
+                                          | otherwise                                   = a  : rest
+                        where
+                          rest = helper trigs as
+                  in helper (concatMap triggers hs)
+
+
+dropPrefixesHelper :: Text -> Text
+dropPrefixesHelper     (T.uncons -> Just (x, xs)) | x == allChar, ()!# xs = xs
+dropPrefixesHelper arg@(T.unpack -> arg'        )
+  | triple@(_, _, c) <- arg' =~ amountPrefixRegex,  isMatch triple = T.pack c
+  | triple@(_, _, c) <- arg' =~ orginalPrefixRegex, isMatch triple = T.pack c
+  | otherwise                                                      = arg
+  where
+    isMatch :: (String, String, String) -> Bool
+    isMatch (a, b, c)  = and [ ()# a, ()!# b, ()!# c ]
+    mkRegex c          = "[0-9]+\\" <> pure c :: String
+    amountPrefixRegex  = mkRegex amountChar
+    orginalPrefixRegex = mkRegex indexChar
 
 
 isMatchingHook :: Args -> Hook -> Bool

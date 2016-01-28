@@ -195,6 +195,7 @@ pickRmActionFunName :: RmActionFunName
 pickRmActionFunName = "AdminZone_iAtrium_pick"
 
 
+-- TODO: Should pick make use of "dropPrefixes"?
 pick :: RmActionFun
 pick _  p@AdviseNoArgs     = advise p [] advicePickNoArgs
 pick ri p@(LowerNub' i as) = genericAction p helper "pick"
