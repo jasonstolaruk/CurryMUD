@@ -139,10 +139,10 @@ unitTests_Mud_Data_Misc = testGroup "unit tests Mud.Data.Misc"
 
 unitTests_Mud_Data_State_Util_Misc :: TestTree
 unitTests_Mud_Data_State_Util_Misc = testGroup "unit tests Mud.Data.State.Util.Misc"
-    [ testCase "dropPrefixesForHook_no_prefixes"  test_dropPrefixesForHook_no_prefixes
-    , testCase "dropPrefixesForHook_no_matches"   test_dropPrefixesForHook_no_matches
-    , testCase "dropPrefixesForHook_with_matches" test_dropPrefixesForHook_with_matches
-    , testCase "dropPrefixesForHook_abbrev"       test_dropPrefixesForHook_abbrev ]
+    [ testCase "dropPrefixesForHook_no_prefixes"  test_dropPrefixesForHooks_no_prefixes
+    , testCase "dropPrefixesForHook_no_matches"   test_dropPrefixesForHooks_no_matches
+    , testCase "dropPrefixesForHook_with_matches" test_dropPrefixesForHooks_with_matches
+    , testCase "dropPrefixesForHook_abbrev"       test_dropPrefixesForHooks_abbrev ]
 
 
 -- --------------------------------------------------

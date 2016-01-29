@@ -67,7 +67,7 @@ adminZoneHooks = [ (getFlowerHookName,     getFlowerHookFun    )
 
 
 getFlowerHook :: Hook
-getFlowerHook = Hook getFlowerHookName [ "flower", "flowers" ] MatchAnyArg
+getFlowerHook = Hook getFlowerHookName [ "flower", "flowers" ]
 
 
 getFlowerHookName :: HookName
@@ -110,7 +110,7 @@ mkFlower i ms v = let flowerId = getUnusedId ms
 
 
 lookFlowerbedHook :: Hook
-lookFlowerbedHook = Hook lookFlowerbedHookName [ "flowerbed", "flower", "flowers" ] MatchAnyArg
+lookFlowerbedHook = Hook lookFlowerbedHookName [ "flowerbed", "flower", "flowers" ]
 
 
 lookFlowerbedHookName :: HookName
@@ -133,7 +133,7 @@ lookFlowerbedHookFun i Hook { .. } _ a@(_, (ms, _, _, _)) =
 
 
 lookSignHook :: Hook
-lookSignHook = Hook lookSignHookName ["sign"] MatchAnyArg
+lookSignHook = Hook lookSignHookName ["sign"]
 
 
 lookSignHookName :: HookName
@@ -160,7 +160,7 @@ lookSignHookFun i Hook { .. } (V.head -> r) a@(_, (ms, _, _, _)) =
 
 
 lookWallsHook :: Hook
-lookWallsHook = Hook lookWallsHookName [ "walls", "wall" ] MatchAnyArg
+lookWallsHook = Hook lookWallsHookName [ "walls", "wall" ]
 
 
 lookWallsHookName :: HookName
@@ -207,8 +207,8 @@ pick ri p@(LowerNub' i as) = genericAction p helper "pick"
             h@Hook { .. }          = getFlowerHook
             inRms'                 = dropSynonyms triggers . dropPrefixesForHooks (pure h) $ inRms
             initAcc                = (inRms', (ms, [], [], []))
-            (_, (ms', toSelfs, bs, logMsgs)) | isMatchingHook inRms' h = getHookFun hookName ms i h v initAcc
-                                             | otherwise               = initAcc
+            (_, (ms', toSelfs, bs, logMsgs)) | any (`elem` triggers) inRms' = getHookFun hookName ms i h v initAcc
+                                             | otherwise                    = initAcc
             mkMsgForArg arg | arg `elem` triggers = head toSelfs
                             | otherwise           = sorryPickNotFlower arg
         in getRmId i ms /= ri ? genericSorry ms sorryAlteredRm :? (ms', (sorrys ++ map mkMsgForArg inRms', bs, logMsgs))

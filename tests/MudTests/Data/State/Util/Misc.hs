@@ -31,7 +31,7 @@ test_dropPrefixesForHooks_no_prefixes :: Assertion
 test_dropPrefixesForHooks_no_prefixes = actual @?= expected
   where
     args     = [ "abc", "def", "ghi" ]
-    actual   = dropPrefixes [ getFlowerHook, lookFlowerbedHook ] args
+    actual   = dropPrefixesForHooks [ getFlowerHook, lookFlowerbedHook ] args
     expected = args
 
 
@@ -41,7 +41,7 @@ test_dropPrefixesForHooks_no_matches = actual @?= expected
     args     = [ attachPrefix ""   allChar    "abc"
                , attachPrefix "5"  amountChar "def"
                , attachPrefix "10" indexChar  "ghi" ]
-    actual   = dropPrefixes [ getFlowerHook, lookFlowerbedHook ] args
+    actual   = dropPrefixesForHooks [ getFlowerHook, lookFlowerbedHook ] args
     expected = args
 
 
@@ -58,7 +58,7 @@ test_dropPrefixesForHooks_with_matches = actual @?= expected
                , attachPrefix "5"  amountChar "flowers"
                , attachPrefix "10" indexChar  "ghi"
                , attachPrefix "10" indexChar  "flowerbed" ]
-    actual   = dropPrefixes [ getFlowerHook, lookFlowerbedHook ] args
+    actual   = dropPrefixesForHooks [ getFlowerHook, lookFlowerbedHook ] args
     expected = [ attachPrefix ""   allChar    "abc"
                , "flower"
                , attachPrefix "5"  amountChar "def"
@@ -72,6 +72,6 @@ test_dropPrefixesForHooks_abbrev = actual @?= expected
   where
     args     = [ attachPrefix "" allChar "flowe"
                , attachPrefix "" allChar "flower" ]
-    actual   = dropPrefixes [ getFlowerHook, lookFlowerbedHook ] args
+    actual   = dropPrefixesForHooks [ getFlowerHook, lookFlowerbedHook ] args
     expected = [ attachPrefix "" allChar "flowe"
                , "flower" ]

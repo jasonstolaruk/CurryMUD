@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleContexts, LambdaCase, OverloadedStrings, TransformListComp, TupleSections, ViewPatterns #-}
+{-# LANGUAGE FlexibleContexts, LambdaCase, NamedFieldPuns, OverloadedStrings, TransformListComp, TupleSections, ViewPatterns #-}
 
 -- This module contains state-related functions used by multiple modules.
 
@@ -23,7 +23,6 @@ module Mud.Data.State.Util.Misc ( aOrAnType
                                 , getState
                                 , getUnusedId
                                 , isLoggedIn
-                                , isMatchingHook
                                 , isNpc
                                 , isPC
                                 , lookupHooks
@@ -391,19 +390,20 @@ pluralize (s, p) x = x == 1 ? s :? p
 -----
 
 
+-- Suitable for hooks whose triggers match on any argument.
 procHooks :: Id -> MudState -> V.Vector Int -> CmdName -> Args -> (Args, GenericIntermediateRes)
 procHooks i ms v cn as | initAcc <- (as, (ms, [], [], [])) = case lookupHooks i ms cn of
   Nothing    -> initAcc
-  Just hooks | as' <- dropPrefixesForHooks hooks as -> case filter (isMatchingHook as') hooks of
-    []      -> initAcc
-    matches ->
-      let xformedArgs                                      = foldl' f as' matches
-          f args (Hook _ trigs m)                          = onTrue (m == MatchAnyArg) (dropSynonyms trigs) args
-          hookHelper a@(_, (ms', _, _, _)) h@(Hook hn _ _) = getHookFun hn ms' i h v a
-      in foldl' hookHelper (first (const xformedArgs) initAcc) matches
+  Just hooks ->
+    let as' = dropPrefixesForHooks hooks as
+    in case filter (\Hook { triggers } -> any (`elem` triggers) as') hooks of
+      []      -> initAcc
+      matches ->
+        let xformedArgs = foldr (\Hook { triggers } -> dropSynonyms triggers) as' matches
+            hookHelper a@(_, (ms', _, _, _)) h@(Hook hn _ ) = getHookFun hn ms' i h v a
+        in foldl' hookHelper (first (const xformedArgs) initAcc) matches
 
 
--- TODO: In the case of a MatchLastArg hook, drop the prefix of the last arg only. Or do we never pass a MatchLastArg hook?
 dropPrefixesForHooks :: [Hook] -> Args -> Args
 dropPrefixesForHooks hs = let helper _     []     = []
                               helper trigs (a:as) | a' <- dropPrefixes a, a' `elem` trigs = a' : rest
@@ -423,11 +423,6 @@ dropPrefixes arg@(T.unpack -> arg'        )
     isMatch :: (String, String, String) -> Bool
     isMatch (a, b, c) = and [ ()# a, ()!# b, ()!# c ]
     mkRegex c         = "^[0-9]+\\" <> pure c :: String
-
-
-isMatchingHook :: Args -> Hook -> Bool
-isMatchingHook as (Hook _ trigs MatchAnyArg ) = any (`elem` trigs) as
-isMatchingHook as (Hook _ trigs MatchLastArg) = last as `elem` trigs
 
 
 -----
