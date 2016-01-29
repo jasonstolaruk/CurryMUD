@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiWayIf, NamedFieldPuns, OverloadedStrings, RecordWildCards, ViewPatterns #-}
+{-# LANGUAGE OverloadedStrings, RecordWildCards, ViewPatterns #-}
 
 module Mud.TheWorld.Zones.AdminZone ( adminZoneHooks
                                     , adminZoneRmActionFuns
@@ -205,7 +205,7 @@ pick ri p@(LowerNub' i as) = genericAction p helper "pick"
         let (inInvs, inEqs, inRms) = sortArgsInvEqRm InRm as
             sorrys                 = dropEmpties [ inInvs |!| sorryPickInInv, inEqs |!| sorryPickInEq ]
             h@Hook { .. }          = getFlowerHook
-            inRms'                 = dropSynonyms triggers . dropPrefixes (pure h) $ inRms
+            inRms'                 = dropSynonyms triggers . dropPrefixesForHooks (pure h) $ inRms
             initAcc                = (inRms', (ms, [], [], []))
             (_, (ms', toSelfs, bs, logMsgs)) | isMatchingHook inRms' h = getHookFun hookName ms i h v initAcc
                                              | otherwise               = initAcc

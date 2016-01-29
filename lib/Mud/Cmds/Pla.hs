@@ -877,7 +877,7 @@ getAction p@(LowerNub' i         as) = genericAction p helper "get"
           (True,  False) -> invCoinsHelper ms inRms d ri invCoins & _2._1 %~ (sorrys ++)
           -----
           (False, True ) -> let (inRms', (ms', toSelfs, bs, logMsgs)) = procHooks i ms v "get" inRms
-                                sorrys'                               = sorrys ++ (inRms' |!| pure sorryGetNoInvCoins)
+                                sorrys'                               = sorrys ++ (inRms' |!| pure sorryGetEmptyRm)
                             in (ms', (sorrys' ++ toSelfs, bs, logMsgs))
           -----
           (True,  True ) ->
@@ -1430,7 +1430,7 @@ look (LowerNub i mq cols as) = mkRndmVector >>= \v ->
                             in (ms, (sorry <> toSelf, bs, "", maybeDesigs))
           -----
           (False, True ) -> let (inRms', (ms', toSelf, bs, logMsg)) = hooksHelper ms v inRms
-                                sorry' = sorry <> (inRms' |!| wrapUnlinesNl cols sorryLookNoInvCoins)
+                                sorry' = sorry <> (inRms' |!| wrapUnlinesNl cols sorryLookEmptyRm)
                             in (ms', (sorry' <> toSelf, bs, logMsg, Nothing))
           -----
           (True,  True ) -> let (inRms', (ms', hooksToSelf, hooksBs, logMsg)) = hooksHelper ms v inRms
@@ -1645,14 +1645,27 @@ putAction p@AdviseNoArgs     = advise p ["put"] advicePutNoArgs
 putAction p@(AdviseOneArg a) = advise p ["put"] . advicePutNoCon $ a
 putAction p@(Lower' i as)    = genericAction p helper "put"
   where
-    helper _ ms =
+    helper v ms =
       let LastArgIsTargetBindings { .. } = mkLastArgIsTargetBindings i ms as
+          shuffler target b is           = shufflePut i ms srcDesig target b otherArgs is srcInvCoins
       in case singleArgInvEqRm InInv targetArg of
-        (InInv, target) -> shufflePut i ms srcDesig target False otherArgs srcInvCoins srcInvCoins procGecrMisMobInv
+        (InInv, target) -> shuffler target False srcInvCoins procGecrMisMobInv
         (InEq,  _     ) -> genericSorry ms . sorryConInEq $ Put
-        (InRm,  target) -> if ()# rmInvCoins
-          then genericSorry ms sorryNoConHere
-          else shufflePut i ms srcDesig target True otherArgs rmInvCoins srcInvCoins procGecrMisRm
+        (InRm,  target) ->
+            let invCoinsHelper = shuffler target True rmInvCoins procGecrMisRm
+                f hooks g      = case filter ((dropPrefixes target `elem`) . triggers) hooks of
+                                   []      -> g
+                                   matches -> hooksHelper otherArgs matches
+            in case (()!# rmInvCoins, lookupHooks i ms "put") of
+              (False, Nothing   ) -> genericSorry ms sorryNoConHere
+              (True,  Nothing   ) -> invCoinsHelper
+              (False, Just hooks) -> f hooks . genericSorry ms . sorryPutEmptyRm $ target
+              (True,  Just hooks) -> f hooks invCoinsHelper
+      where
+        hooksHelper args matches =
+            let h@Hook { hookName }              = head matches
+                (_, (ms', toSelfs, bs, logMsgs)) = getHookFun hookName ms i h v (args, (ms, [], [], []))
+            in (ms', (toSelfs, bs, logMsgs))
 putAction p = patternMatchFail "putAction" [ showText p ]
 
 

@@ -27,18 +27,18 @@ prop_getUnusedId = monadicIO $ inWorld getState >>= \ms ->
 -- ==================================================
 
 
-test_dropPrefixes_no_prefixes :: Assertion
-test_dropPrefixes_no_prefixes = actual @?= expected
+test_dropPrefixesForHooks_no_prefixes :: Assertion
+test_dropPrefixesForHooks_no_prefixes = actual @?= expected
   where
     args     = [ "abc", "def", "ghi" ]
     actual   = dropPrefixes [ getFlowerHook, lookFlowerbedHook ] args
     expected = args
 
 
-test_dropPrefixes_no_matches :: Assertion
-test_dropPrefixes_no_matches = actual @?= expected
+test_dropPrefixesForHooks_no_matches :: Assertion
+test_dropPrefixesForHooks_no_matches = actual @?= expected
   where
-    args     = [ attachPrefix ""   allChar    "abc" 
+    args     = [ attachPrefix ""   allChar    "abc"
                , attachPrefix "5"  amountChar "def"
                , attachPrefix "10" indexChar  "ghi" ]
     actual   = dropPrefixes [ getFlowerHook, lookFlowerbedHook ] args
@@ -49,17 +49,17 @@ attachPrefix :: Text -> Char -> Text -> Text
 attachPrefix digits c t = digits <> (c `T.cons` t)
 
 
-test_dropPrefixes_with_matches :: Assertion
-test_dropPrefixes_with_matches = actual @?= expected
+test_dropPrefixesForHooks_with_matches :: Assertion
+test_dropPrefixesForHooks_with_matches = actual @?= expected
   where
-    args     = [ attachPrefix ""   allChar    "abc" 
+    args     = [ attachPrefix ""   allChar    "abc"
                , attachPrefix ""   allChar    "flower"
                , attachPrefix "5"  amountChar "def"
                , attachPrefix "5"  amountChar "flowers"
                , attachPrefix "10" indexChar  "ghi"
                , attachPrefix "10" indexChar  "flowerbed" ]
     actual   = dropPrefixes [ getFlowerHook, lookFlowerbedHook ] args
-    expected = [ attachPrefix ""   allChar    "abc" 
+    expected = [ attachPrefix ""   allChar    "abc"
                , "flower"
                , attachPrefix "5"  amountChar "def"
                , "flowers"
@@ -67,10 +67,10 @@ test_dropPrefixes_with_matches = actual @?= expected
                , "flowerbed" ]
 
 
-test_dropPrefixes_abbrev :: Assertion
-test_dropPrefixes_abbrev = actual @?= expected
+test_dropPrefixesForHooks_abbrev :: Assertion
+test_dropPrefixesForHooks_abbrev = actual @?= expected
   where
-    args     = [ attachPrefix "" allChar "flowe" 
+    args     = [ attachPrefix "" allChar "flowe"
                , attachPrefix "" allChar "flower" ]
     actual   = dropPrefixes [ getFlowerHook, lookFlowerbedHook ] args
     expected = [ attachPrefix "" allChar "flowe"

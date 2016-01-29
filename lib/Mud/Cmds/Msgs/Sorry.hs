@@ -43,10 +43,10 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryExpCmdName
                            , sorryExpCmdRequiresTarget
                            , sorryExpCmdTargetType
+                           , sorryGetEmptyRm
                            , sorryGetEnc
                            , sorryGetInEq
                            , sorryGetInInv
-                           , sorryGetNoInvCoins
                            , sorryGetNothingHere
                            , sorryGetType
                            , sorryGiveEnc
@@ -90,7 +90,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryLinkNoOneHere
                            , sorryLinkType
                            , sorryLoggedOut
-                           , sorryLookNoInvCoins
+                           , sorryLookEmptyRm
                            , sorryLookNothingHere
                            , sorryMsgIncog
                            , sorryNewChanExisting
@@ -118,6 +118,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryPickNotFlower
                            , sorryPossessType
                            , sorryPp
+                           , sorryPutEmptyRm
                            , sorryPutExcessCon
                            , sorryPutInCoin
                            , sorryPutInEq
@@ -507,6 +508,10 @@ sorryExpCmdTargetType = but "expressive commands can only target people."
 -----
 
 
+sorryGetEmptyRm :: Text
+sorryGetEmptyRm = "You don't see anything to pick up on the ground here."
+
+
 sorryGetEnc :: Text
 sorryGetEnc = "You are too encumbered to carry "
 
@@ -521,10 +526,6 @@ sorryGetInEq = butCan't $ "get an item in your readied equipment. If you want to
 sorryGetInInv :: Text
 sorryGetInInv = can't "get an item that's already in your inventory. If you're intent on picking it up, try dropping \
                       \it first!"
-
-
-sorryGetNoInvCoins :: Text
-sorryGetNoInvCoins = "You don't see anything to pick up on the ground here."
 
 
 sorryGetNothingHere :: Text
@@ -734,8 +735,8 @@ sorryLoggedOut s = s <> " is not logged in."
 -----
 
 
-sorryLookNoInvCoins :: Text
-sorryLookNoInvCoins = "You don't see anything to look at on the ground here."
+sorryLookEmptyRm :: Text
+sorryLookEmptyRm = "You don't see anything to look at on the ground here."
 
 
 sorryLookNothingHere :: Text
@@ -904,6 +905,10 @@ sorryPp t = "You don't have enough psionic energy to " <> t <> "."
 
 
 -----
+
+
+sorryPutEmptyRm :: Text -> Text
+sorryPutEmptyRm t = "You don't see " <> aOrAn t <> " here."
 
 
 sorryPutExcessCon :: Text

@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
-{-# LANGUAGE FlexibleContexts, LambdaCase, MultiWayIf, OverloadedStrings, RecordWildCards, TupleSections, ViewPatterns #-}
+{-# LANGUAGE FlexibleContexts, LambdaCase, OverloadedStrings, RecordWildCards, ViewPatterns #-}
 
 module Mud.TheWorld.Misc ( commonHooks
                          , commonRmActionFuns
@@ -31,7 +31,7 @@ import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Concurrent (forkIO, threadDelay)
 import Control.Lens (_1, _2, _3, _4)
-import Control.Lens.Operators ((%~), (&), (<>~))
+import Control.Lens.Operators ((%~), (&), (.~), (<>~))
 import Control.Monad ((>=>), unless, void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (runReaderT)
@@ -83,8 +83,8 @@ lookTrashHookFun i Hook { .. } _ a@(_, (ms, _, _, _)) =
     -- TODO: "Thank you for keeping xxx clean."
     trashDesc = "The trash bin is an oblong metal container, about 3 feet tall, with a lid connected to the body by \
                 \hinges. Affixed to the lid is a bronze plate, on which the following has been neatly etched:\n\
-                \\"Magic Trash Bin: items placed in this bin will be magically expunged, and are entirely \
-                \unrecoverable.\"\n\
+                \\"Magic Trash Bin: you may dispose of unwanted items by \"trash\"ing them here. Items placed in this \
+                \bin are magically expunged, and entirely unrecoverable.\"\n\
                 \Carefully lifting open the lid and peaking inside, you find only an ominous darkness; not even the \
                 \bottom of the bin is visible."
 
@@ -101,7 +101,22 @@ putTrashHookName = "(common)_putTrash"
 
 
 putTrashHookFun :: HookFun
-putTrashHookFun _ _ _ _ = undefined -- TODO
+putTrashHookFun i _ _ a@(as, (ms, _, _, _)) = a & _2 .~ trashHelper i ms as
+
+
+trashHelper :: Id -> MudState -> Args -> GenericIntermediateRes
+trashHelper i ms as =
+    let (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv as
+        sorryInEq              = inEqs |!| sorryTrashInEq
+        sorryInRm              = inRms |!| sorryTrashInRm
+        invCoins               = getInvCoins i ms
+        d                      = mkStdDesig  i ms DoCap
+        (eiss, ecs)            = uncurry (resolveMobInvCoins i ms inInvs) invCoins
+        (ms', toSelfs, bs)     = foldl' (helperTrashEitherInv   i d) (ms,  [],      []         ) eiss
+        gir                    =         helperTrashEitherCoins i d  (ms', toSelfs, bs, toSelfs) ecs
+    in (gir &) $ if ()# invCoins
+      then _2 .~ pure dudeYourHandsAreEmpty
+      else _2 %~ (dropBlanks [ sorryInEq, sorryInRm ] ++)
 
 
 -- ==================================================
@@ -131,18 +146,9 @@ trash ri (LowerNub i mq cols as) = helper |&| modifyState >=> \(toSelfs, bs, log
     logMsgs |#| logPlaOut "trash" i
     unless (()# logMsgs) . rndmDo 10 . onEnv $ liftIO . void . forkIO . runReaderT belch
   where
-    helper ms =
-        let (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv as
-            sorryInEq              = inEqs |!| sorryTrashInEq
-            sorryInRm              = inRms |!| sorryTrashInRm
-            invCoins               = getInvCoins i ms
-            d                      = mkStdDesig  i ms DoCap
-            (eiss, ecs)            = uncurry (resolveMobInvCoins i ms inInvs) invCoins
-            (ms',  toSelfs,  bs          ) = foldl' (helperTrashEitherInv   i d) (ms,  [],      []         ) eiss
-            (ms'', toSelfs', bs', logMsgs) =         helperTrashEitherCoins i d  (ms', toSelfs, bs, toSelfs) ecs
-        in if | getRmId i ms /= ri -> genericSorry ms sorryAlteredRm
-              | ()# invCoins       -> genericSorry ms dudeYourHandsAreEmpty
-              | otherwise          -> (ms'', (dropBlanks $ [ sorryInEq, sorryInRm ] ++ toSelfs', bs', logMsgs))
+    helper ms = if getRmId i ms /= ri
+      then genericSorry ms sorryAlteredRm
+      else let (ms', toSelfs, bs, logMsgs) = trashHelper i ms as in (ms', (toSelfs, bs, logMsgs))
     belch = let msg = "The lid of the trash bin momentarily opens of its own accord as a loud belch is emitted from \
                       \inside the container."
             in do

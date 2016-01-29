@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleContexts, LambdaCase, MonadComprehensions, MultiWayIf, NamedFieldPuns, OverloadedStrings, PatternSynonyms, RankNTypes, RecordWildCards, TupleSections, ViewPatterns #-}
+{-# LANGUAGE FlexibleContexts, LambdaCase, MultiWayIf, NamedFieldPuns, OverloadedStrings, RankNTypes, RecordWildCards, TupleSections, ViewPatterns #-}
 
 -- This module contains helper functions used by multiple functions in "Mud.Cmds.Pla", as well as helper functions used
 -- by both "Mud.Cmds.Pla" and "Mud.Cmds.ExpCmds".
@@ -54,7 +54,6 @@ module Mud.Cmds.Util.Pla ( armSubToSlot
                          , moveReadiedItem
                          , notFoundSuggestAsleeps
                          , otherHand
-                         , procHooks
                          , putOnMsgs
                          , resolveMobInvCoins
                          , resolveRmInvCoins

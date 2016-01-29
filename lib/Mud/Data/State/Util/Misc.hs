@@ -5,6 +5,7 @@
 module Mud.Data.State.Util.Misc ( aOrAnType
                                 , BothGramNos
                                 , dropPrefixes
+                                , dropPrefixesForHooks
                                 , findMobIds
                                 , getAdminIds
                                 , getEffBothGramNos
@@ -393,7 +394,7 @@ pluralize (s, p) x = x == 1 ? s :? p
 procHooks :: Id -> MudState -> V.Vector Int -> CmdName -> Args -> (Args, GenericIntermediateRes)
 procHooks i ms v cn as | initAcc <- (as, (ms, [], [], [])) = case lookupHooks i ms cn of
   Nothing    -> initAcc
-  Just hooks | as' <- dropPrefixes hooks as -> case filter (isMatchingHook as') hooks of
+  Just hooks | as' <- dropPrefixesForHooks hooks as -> case filter (isMatchingHook as') hooks of
     []      -> initAcc
     matches ->
       let xformedArgs                                      = foldl' f as' matches
@@ -402,18 +403,19 @@ procHooks i ms v cn as | initAcc <- (as, (ms, [], [], [])) = case lookupHooks i 
       in foldl' hookHelper (first (const xformedArgs) initAcc) matches
 
 
-dropPrefixes :: [Hook] -> Args -> Args
-dropPrefixes hs = let helper _     []     = []
-                      helper trigs (a:as) | a' <- dropPrefixesHelper a, a' `elem` trigs = a' : rest
-                                          | otherwise                                   = a  : rest
-                        where
-                          rest = helper trigs as
-                  in helper (concatMap triggers hs)
+-- TODO: In the case of a MatchLastArg hook, drop the prefix of the last arg only. Or do we never pass a MatchLastArg hook?
+dropPrefixesForHooks :: [Hook] -> Args -> Args
+dropPrefixesForHooks hs = let helper _     []     = []
+                              helper trigs (a:as) | a' <- dropPrefixes a, a' `elem` trigs = a' : rest
+                                                  | otherwise                             = a  : rest
+                                where
+                                  rest = helper trigs as
+                          in helper (concatMap triggers hs)
 
 
-dropPrefixesHelper :: Text -> Text
-dropPrefixesHelper     (T.uncons -> Just (x, xs)) | x == allChar, ()!# xs = xs
-dropPrefixesHelper arg@(T.unpack -> arg'        )
+dropPrefixes :: Text -> Text
+dropPrefixes     (T.uncons -> Just (x, xs)) | x == allChar, ()!# xs = xs
+dropPrefixes arg@(T.unpack -> arg'        )
   | triple@(_, _, c) <- arg' =~ mkRegex indexChar,  isMatch triple = T.pack c
   | triple@(_, _, c) <- arg' =~ mkRegex amountChar, isMatch triple = T.pack c
   | otherwise                                                      = arg
