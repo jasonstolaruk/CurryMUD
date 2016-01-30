@@ -85,7 +85,7 @@ maxDbTblRecs = 10000
 
 
 maxHelpTopicLen :: Int
-maxHelpTopicLen = 12
+maxHelpTopicLen = 13
 
 
 maxInacSecs :: Integer

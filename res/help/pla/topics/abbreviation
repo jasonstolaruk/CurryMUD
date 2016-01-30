@@ -30,4 +30,6 @@ Referring back to our example... The names of commands may also be abbreviated. 
 Note that the identifiers for coins (listed below) may NOT be abbreviated:
 "cp" (for copper pieces), "sp" (for silver pieces), "gp" (for gold pieces), "coin", and "coins"
 
+In addition, there do exist undocumented commands that may only be used in certain rooms (one example is the "trash" command, which only works when you are in a room with a trash bin). Keep in mind that the names of undocumented commands cannot be abbreviated.
+
 \uSEE ALSO\n
