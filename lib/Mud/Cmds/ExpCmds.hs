@@ -623,6 +623,8 @@ expCmdSet = S.fromList
                                       "% breaks out in a sweat.")
     , ExpCmd "tears"       (NoTarget  "Tears roll down your face."
                                       "Tears roll down %'s face.")
+    , ExpCmd "throat"      (NoTarget  "You clear your throat."
+                                      "% clears & throat.")
     , ExpCmd "thumbsdown"  (Versatile "You give a thumbs down."
                                       "% gives a thumbs down."
                                       "You give a thumbs down to @."

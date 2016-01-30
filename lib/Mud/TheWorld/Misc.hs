@@ -4,7 +4,6 @@
 module Mud.TheWorld.Misc ( commonHooks
                          , commonRmActionFuns
                          , lookTrashHook
-                         , mkReadRmActionFun
                          , putTrashHook
                          , trashRmAction ) where
 
@@ -213,11 +212,3 @@ mkTrashCoinsDescsSelf = mkCoinsMsgs helper
   where
     helper 1 cn = T.concat [ "You deposit ", aOrAn cn,             " into the trash bin." ]
     helper a cn = T.concat [ "You deposit ", showText a, " ", cn, "s into the trash bin." ]
-
-
--- ==================================================
--- Room action helper functions:
-
-
-mkReadRmActionFun :: Text -> RmActionFun
-mkReadRmActionFun = undefined -- TODO

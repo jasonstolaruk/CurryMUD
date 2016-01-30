@@ -141,7 +141,7 @@ lookSignHookName = "AdminZone_iEmpty_lookSign"
 
 
 lookSignHookFun :: HookFun
-lookSignHookFun i Hook { .. } (V.head -> r) a@(_, (ms, _, _, _)) =
+lookSignHookFun i Hook { .. } _ a@(_, (ms, _, _, _)) =
     let selfDesig = mkStdDesig i ms DoCap
     in a &    _1 %~  (\\ triggers)
          & _2._2 <>~ pure signDesc
@@ -151,9 +151,7 @@ lookSignHookFun i Hook { .. } (V.head -> r) a@(_, (ms, _, _, _)) =
     signDesc = "The following message has been painted on the sign in a tight, flowing script:\n\
                \\"Welcome to the empty room. You have been summoned here by a CurryMUD administrator. As there are no \
                \exits, you will need the assistance of an administrator when the time comes for you to leave. We hope \
-               \you enjoy your stay!\n\
-               \This message has been brought to you by the number " <> x <> ".\""
-    x        = showText . rndmIntToRange r $ percent
+               \you enjoy your stay!\""
 
 
 -----
@@ -561,7 +559,7 @@ createAdminZone = do
             zeroBits
             []
             (M.singleton "look" [ lookSignHook, lookWallsHook ])
-            [ {- TODO: Use "mkReadRmActionFun". -} ])
+            [])
 
   -- ==================================================
   -- Room teleport names:
