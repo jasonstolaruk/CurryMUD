@@ -88,7 +88,7 @@ import Mud.Util.Padding
 import Mud.Util.Quoting
 import Mud.Util.Text
 import Mud.Util.Wrapping
-import Prelude hiding (pi)
+import Prelude hiding (pi, recip)
 import qualified Mud.Misc.Logging as L (logPla, logPlaOut)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
@@ -875,10 +875,11 @@ mkEntDescs i cols ms eis = T.intercalate "\n" [ mkEntDesc i cols ms (ei, e) | ei
 
 mkEntDesc :: Id -> Cols -> MudState -> (Id, Ent) -> Text
 mkEntDesc i cols ms (ei, e) | ed <- views entDesc (wrapUnlines cols) e, s <- getSing ei ms, t <- getType ei ms =
-    case t of ConType ->                 (ed <>) . mkInvCoinsDesc i cols ms ei $ s
-              NpcType ->                 (ed <>) . mkEqDesc       i cols ms ei   s $ t
-              PCType  -> (pcHeader <>) . (ed <>) . mkEqDesc       i cols ms ei   s $ t
-              _       -> ed
+    case t of ConType      ->                 (ed <>) . mkInvCoinsDesc i cols ms   ei $ s
+              NpcType      ->                 (ed <>) . mkEqDesc       i cols ms   ei   s $ t
+              PCType       -> (pcHeader <>) . (ed <>) . mkEqDesc       i cols ms   ei   s $ t
+              WritableType ->                 (ed <>) $ mkWritableDesc   cols ms $ ei
+              _            -> ed
   where
     pcHeader = wrapUnlines cols mkPCDescHeader
     mkPCDescHeader | (pp *** pp -> (s, r)) <- getSexRace ei ms = T.concat [ "You see a ", s, " ", r, "." ]
@@ -914,7 +915,7 @@ mkStyledName_Count_BothList i ms is =
 mkCoinsSummary :: Cols -> Coins -> Text
 mkCoinsSummary cols c = helper . zipWith mkNameAmt coinNames . coinsToList $ c
   where
-    helper         = T.unlines . wrapIndent 2 cols . commas . filter (()!#)
+    helper         = T.unlines . wrapIndent 2 cols . commas . dropEmpties
     mkNameAmt cn a = Sum a |!| showText a <> " " <> bracketQuote (colorWith abbrevColor cn)
 
 
@@ -940,6 +941,16 @@ mkEqDesc i cols ms descId descSing descType = let descs = descId == i ? mkDescsS
       | descType == PCType -> parseDesig i ms $ d  <> " has readied the following equipment:"
       | otherwise          -> theOnLowerCap descSing <> " has readied the following equipment:"
     d = mkSerializedNonStdDesig descId ms descSing The DoCap
+
+
+mkWritableDesc :: Cols -> MudState -> Id -> Text
+mkWritableDesc cols ms targetId =
+    let (msg, r) = (view message *** view recip) . dup . getWritable targetId $ ms
+    in case msg of Nothing        -> ""
+                   Just (_, lang) -> case r of
+                     Nothing -> let langDesc = lang == UnknownLang ? "a language you don't recognize" :? pp lang
+                                in wrapUnlines cols $ "There is something written on it in " <> langDesc <> "."
+                     Just _  -> undefined -- TODO: Magic writing which can only be read by a designated person.
 
 
 -----
