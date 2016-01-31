@@ -68,6 +68,7 @@ module Mud.Cmds.Msgs.Advice ( adviceAAnnounceNoArgs
                             , advicePutNoArgs
                             , advicePutNoCon
                             , adviceQuitExcessArgs
+                            , adviceReadNoArgs
                             , adviceReadyNoArgs
                             , adviceRemoveNoArgs
                             , adviceRemoveNoCon
@@ -535,6 +536,13 @@ adviceQuitExcessArgs :: Text
 adviceQuitExcessArgs = "Type "                     <>
                        colorWith quoteColor "quit" <>
                        " with no arguments to quit CurryMUD."
+
+
+adviceReadNoArgs :: Text
+adviceReadNoArgs = "Please specify the names of one or more things to read, as in " <>
+                   colorWith quoteColor "read parchment"                            <>
+                   "."
+
 
 
 adviceReadyNoArgs :: Text

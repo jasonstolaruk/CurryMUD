@@ -59,8 +59,8 @@ logNotice = L.logNotice "Mud.TheWorld.Zones.AdminZone"
 adminZoneHooks :: [(HookName, HookFun)]
 adminZoneHooks = [ (getFlowerHookName,     getFlowerHookFun    )
                  , (lookFlowerbedHookName, lookFlowerbedHookFun)
-                 , (lookSignHookName,      lookSignHookFun     )
-                 , (lookWallsHookName,     lookWallsHookFun    ) ]
+                 , (lookWallsHookName,     lookWallsHookFun    )
+                 , (readLookSignHookName,  readLookSignHookFun ) ]
 
 
 -----
@@ -132,31 +132,6 @@ lookFlowerbedHookFun i Hook { .. } _ a@(_, (ms, _, _, _)) =
 -----
 
 
-lookSignHook :: Hook
-lookSignHook = Hook lookSignHookName ["sign"]
-
-
-lookSignHookName :: HookName
-lookSignHookName = "AdminZone_iEmpty_lookSign"
-
-
-lookSignHookFun :: HookFun
-lookSignHookFun i Hook { .. } _ a@(_, (ms, _, _, _)) =
-    let selfDesig = mkStdDesig i ms DoCap
-    in a &    _1 %~  (\\ triggers)
-         & _2._2 <>~ pure signDesc
-         & _2._3 <>~ pure (serialize selfDesig <> " reads the sign on the wall.", i `delete` desigIds selfDesig)
-         & _2._4 <>~ pure (bracketQuote hookName <> " read sign")
-  where
-    signDesc = "The following message has been painted on the sign in a tight, flowing script:\n\
-               \\"Welcome to the empty room. You have been summoned here by a CurryMUD administrator. As there are no \
-               \exits, you will need the assistance of an administrator when the time comes for you to leave. We hope \
-               \you enjoy your stay!\""
-
-
------
-
-
 lookWallsHook :: Hook
 lookWallsHook = Hook lookWallsHookName [ "walls", "wall" ]
 
@@ -174,6 +149,31 @@ lookWallsHookFun i Hook { .. } _ a@(_, (ms, _, _, _)) =
          & _2._4 <>~ pure (bracketQuote hookName <> " looked at walls")
   where
     wallsDesc = "You are enclosed by four smooth, dense walls, with no means of exit in sight."
+
+
+-----
+
+
+readLookSignHook :: Hook
+readLookSignHook = Hook readLookSignHookName ["sign"]
+
+
+readLookSignHookName :: HookName
+readLookSignHookName = "AdminZone_iEmpty_readLookSign"
+
+
+readLookSignHookFun :: HookFun
+readLookSignHookFun i Hook { .. } _ a@(_, (ms, _, _, _)) =
+    let selfDesig = mkStdDesig i ms DoCap
+    in a &    _1 %~  (\\ triggers)
+         & _2._2 <>~ pure signDesc
+         & _2._3 <>~ pure (serialize selfDesig <> " reads the sign on the wall.", i `delete` desigIds selfDesig)
+         & _2._4 <>~ pure (bracketQuote hookName <> " read sign")
+  where
+    signDesc = "The following message has been painted on the sign in a tight, flowing script:\n\
+               \\"Welcome to the empty room. You have been summoned here by a CurryMUD administrator. As there are no \
+               \exits, you will need the assistance of an administrator when the time comes for you to leave. We hope \
+               \you enjoy your stay!\""
 
 
 -- ==================================================
@@ -416,7 +416,7 @@ createAdminZone = do
                                        "% climbs down the ladder and out of the hole in the ceiling." ]
             M.empty [])
   putRm iObjCloset
-        [ iKewpie1, iKewpie2, iSmlPaper, iParchment ]
+        [ iKewpie1, iKewpie2, iSmlPaper, iParchment1, iParchment2, iParchment3 ]
         mempty
         (Rm "Object closet"
             "This closet holds objects."
@@ -560,7 +560,8 @@ createAdminZone = do
             \though you can't miss the small wooden sign affixed to the north wall."
             zeroBits
             []
-            (M.singleton "look" [ lookSignHook, lookWallsHook ])
+            (M.fromList [ ("look", [ readLookSignHook, lookWallsHook ])
+                        , ("read", [ readLookSignHook ]) ])
             [])
 
   -- ==================================================
@@ -727,14 +728,33 @@ createAdminZone = do
                                 \programming language."
                               , CommonLang ))
                         Nothing)
-  putWritable iParchment
-              (Ent iParchment
+  let parchmentDesc = "It's an everyday piece of parchment, made from processed animal skin."
+  putWritable iParchment1
+              (Ent iParchment1
                    (Just "parchment")
                    "piece of parchment" "pieces of parchment"
-                   "It's an everyday piece of parchment, made from processed animal skin."
+                   parchmentDesc
                    zeroBits)
               (Obj paperWeight paperVol)
               (Writable Nothing Nothing)
+  putWritable iParchment2
+              (Ent iParchment2
+                   (Just "parchment")
+                   "piece of parchment" "pieces of parchment"
+                   parchmentDesc
+                   zeroBits)
+              (Obj paperWeight paperVol)
+              (Writable (Just ("Tap on a stone bridge before crossing.", NymphLang))
+                        Nothing)
+  putWritable iParchment3
+              (Ent iParchment3
+                   (Just "parchment")
+                   "piece of parchment" "pieces of parchment"
+                   parchmentDesc
+                   zeroBits)
+              (Obj paperWeight paperVol)
+              (Writable (Just ("blah blah blah", UnknownLang))
+                        Nothing)
 
   -- ==================================================
   -- Clothing:

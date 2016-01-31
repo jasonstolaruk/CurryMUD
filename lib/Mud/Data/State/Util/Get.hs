@@ -215,6 +215,13 @@ getIsCloth i = view isCloth . getCon i
 -----
 
 
+getKnownLangs :: Id -> MudState -> [Lang]
+getKnownLangs i = view knownLangs . getMob i
+
+
+-----
+
+
 getLastRmId :: Id -> MudState -> Maybe Id
 getLastRmId = onPla (view lastRmId) Nothing
 

@@ -43,7 +43,8 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryExpCmdName
                            , sorryExpCmdRequiresTarget
                            , sorryExpCmdTargetType
-                           , sorryGetEmptyRm
+                           , sorryGetEmptyRmNoHooks
+                           , sorryGetEmptyRmWithHooks
                            , sorryGetEnc
                            , sorryGetInEq
                            , sorryGetInInv
@@ -90,8 +91,8 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryLinkNoOneHere
                            , sorryLinkType
                            , sorryLoggedOut
-                           , sorryLookEmptyRm
-                           , sorryLookNothingHere
+                           , sorryLookEmptyRmNoHooks
+                           , sorryLookEmptyRmWithHooks
                            , sorryMsgIncog
                            , sorryNewChanExisting
                            , sorryNewChanName
@@ -118,7 +119,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryPickNotFlower
                            , sorryPossessType
                            , sorryPp
-                           , sorryPutEmptyRm
+                           , sorryPutEmptyRmWithHooks
                            , sorryPutExcessCon
                            , sorryPutInCoin
                            , sorryPutInEq
@@ -126,7 +127,13 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryPutInsideSelf
                            , sorryPutVol
                            , sorryQuitCan'tAbbrev
-                           , sorryReadSign
+                           , sorryReadCoins
+                           , sorryReadInEq
+                           , sorryReadLang
+                           , sorryReadNoHooks
+                           , sorryReadType
+                           , sorryReadUnknownLang
+                           , sorryReadWithHooks
                            , sorryReadyAlreadyWearing
                            , sorryReadyAlreadyWearingRing
                            , sorryReadyAlreadyWielding
@@ -508,8 +515,12 @@ sorryExpCmdTargetType = but "expressive commands can only target people."
 -----
 
 
-sorryGetEmptyRm :: Text
-sorryGetEmptyRm = "You don't see anything to pick up on the ground here."
+sorryGetEmptyRmNoHooks :: Text
+sorryGetEmptyRmNoHooks = "You don't see anything to pick up here."
+
+
+sorryGetEmptyRmWithHooks :: Text
+sorryGetEmptyRmWithHooks = "You don't see anything to pick up on the ground here."
 
 
 sorryGetEnc :: Text
@@ -529,7 +540,7 @@ sorryGetInInv = can't "get an item that's already in your inventory. If you're i
 
 
 sorryGetNothingHere :: Text
-sorryGetNothingHere = "You don't see anything here to pick up."
+sorryGetNothingHere = "You don't see anything to pick up here."
 
 
 sorryGetType :: Text -> Text
@@ -735,12 +746,12 @@ sorryLoggedOut s = s <> " is not logged in."
 -----
 
 
-sorryLookEmptyRm :: Text
-sorryLookEmptyRm = "You don't see anything to look at on the ground here."
+sorryLookEmptyRmNoHooks :: Text
+sorryLookEmptyRmNoHooks = "You don't see anything to look at here."
 
 
-sorryLookNothingHere :: Text
-sorryLookNothingHere = "You don't see anything here to look at."
+sorryLookEmptyRmWithHooks :: Text
+sorryLookEmptyRmWithHooks = "You don't see anything to look at on the ground here."
 
 
 -----
@@ -907,8 +918,8 @@ sorryPp t = "You don't have enough psionic energy to " <> t <> "."
 -----
 
 
-sorryPutEmptyRm :: Text -> Text
-sorryPutEmptyRm t = "You don't see " <> aOrAn t <> " here."
+sorryPutEmptyRmWithHooks :: Text -> Text
+sorryPutEmptyRmWithHooks t = "You don't see " <> aOrAn t <> " here."
 
 
 sorryPutExcessCon :: Text
@@ -949,8 +960,39 @@ sorryQuitCan'tAbbrev = T.concat [ "The "
 -----
 
 
-sorryReadSign :: Text
-sorryReadSign = "The only thing to read here is the sign."
+sorryReadCoins :: Text
+sorryReadCoins = can't "read a coin."
+
+
+sorryReadInEq :: Text
+sorryReadInEq = can't "read an item in your readied equipment."
+
+
+sorryReadLang :: Sing -> Lang -> Text
+sorryReadLang s lang = T.concat [ "Although you recognize that the text on the "
+                                , s
+                                , " is written in "
+                                , pp lang
+                                , ", you can't make heads or tails of it." ]
+
+
+sorryReadNoHooks :: Text
+sorryReadNoHooks = "You don't see anything to read here. " <>
+                   parensQuote "If you'd like to read an item on the ground here, please pick up the item first."
+
+
+sorryReadType :: Sing -> Text
+sorryReadType s = can't $ "read the " <> s <> "."
+
+
+sorryReadUnknownLang :: Sing -> Text
+sorryReadUnknownLang s = "The text written on the " <> s <> " is in a language you don't recognize."
+
+
+sorryReadWithHooks :: Text -> Text
+sorryReadWithHooks t = dblQuote t                                                      <>
+                       " does not match the name of a readable fixture of this room. " <>
+                       parensQuote "If you'd like to read an item on the ground here, please pick up the item first."
 
 
 -----

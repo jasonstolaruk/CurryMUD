@@ -878,7 +878,7 @@ mkEntDesc i cols ms (ei, e) | ed <- views entDesc (wrapUnlines cols) e, s <- get
     case t of ConType      ->                 (ed <>) . mkInvCoinsDesc i cols ms   ei $ s
               NpcType      ->                 (ed <>) . mkEqDesc       i cols ms   ei   s $ t
               PCType       -> (pcHeader <>) . (ed <>) . mkEqDesc       i cols ms   ei   s $ t
-              WritableType ->                 (ed <>) $ mkWritableDesc   cols ms $ ei
+              WritableType ->                 (ed <>) . mkWritableDesc   cols ms $ ei
               _            -> ed
   where
     pcHeader = wrapUnlines cols mkPCDescHeader
@@ -948,9 +948,13 @@ mkWritableDesc cols ms targetId =
     let (msg, r) = (view message *** view recip) . dup . getWritable targetId $ ms
     in case msg of Nothing        -> ""
                    Just (_, lang) -> case r of
-                     Nothing -> let langDesc = lang == UnknownLang ? "a language you don't recognize" :? pp lang
-                                in wrapUnlines cols $ "There is something written on it in " <> langDesc <> "."
+                     Nothing -> wrapUnlines cols $ "There is something written on it in " <> descLang lang <> "."
                      Just _  -> undefined -- TODO: Magic writing which can only be read by a designated person.
+
+
+descLang :: Lang -> Text
+descLang UnknownLang = "a language you don't recognize"
+descLang lang        = pp lang
 
 
 -----

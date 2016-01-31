@@ -146,7 +146,7 @@ trash ri (LowerNub i mq cols as) = helper |&| modifyState >=> \(toSelfs, bs, log
     unless (()# logMsgs) . rndmDo 10 . onEnv $ liftIO . void . forkIO . runReaderT belch
   where
     helper ms = if getRmId i ms /= ri
-      then genericSorry ms sorryAlteredRm
+      then genericSorry ms sorryAlteredRm -- TODO: Is this really necessary?
       else let (ms', toSelfs, bs, logMsgs) = trashHelper i ms as in (ms', (toSelfs, bs, logMsgs))
     belch = let msg = "The lid of the trash bin momentarily opens of its own accord as a loud belch is emitted from \
                       \inside the container."

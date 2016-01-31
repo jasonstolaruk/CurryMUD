@@ -22,6 +22,7 @@ module Mud.Data.State.Util.Misc ( aOrAnType
                                 , getRmActionFun
                                 , getState
                                 , getUnusedId
+                                , isKnownLang
                                 , isLoggedIn
                                 , isNpc
                                 , isPC
@@ -249,6 +250,13 @@ onEnv = (ask >>=)
 
 getUnusedId :: MudState -> Id
 getUnusedId = views typeTbl (head . ([0..] \\) . IM.keys)
+
+
+-----
+
+
+isKnownLang :: Id -> MudState -> Lang -> Bool
+isKnownLang i ms = (`elem` CommonLang : getKnownLangs i ms)
 
 
 -----

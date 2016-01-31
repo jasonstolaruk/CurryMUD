@@ -162,6 +162,8 @@ regularCmds = map (uncurry4 mkRegularCmd)
     , ("question",   question,        True,  "Ask/answer newbie questions " <> plusRelatedMsg)
     , ("qui",        quitCan'tAbbrev, True,  "")
     , ("quit",       quit,            False, "Quit playing CurryMUD.")
+    , ("read",       readAction,      True,  "Read the text that is written on an object in your inventory or a \
+                                             \fixture of your current room.")
     , ("remove",     remove,          True,  cmdDescRemove)
     , ("s",          go "s",          True,  cmdDescGoSouth)
     , ("se",         go "se",         True,  cmdDescGoSoutheast)
@@ -872,12 +874,12 @@ getAction p@(LowerNub' i         as) = genericAction p helper "get"
             ri                     = getRmId i ms
             invCoins               = first (i `delete`) . getNonIncogInvCoins ri $ ms
         in case ((()!#) *** (()!#)) (invCoins, lookupHooks i ms "get") of
-          (False, False) -> (ms, (pure sorryGetNothingHere, [], []))
+          (False, False) -> (ms, (pure sorryGetEmptyRmNoHooks, [], []))
           -----
           (True,  False) -> invCoinsHelper ms inRms d ri invCoins & _2._1 %~ (sorrys ++)
           -----
           (False, True ) -> let (inRms', (ms', toSelfs, bs, logMsgs)) = procHooks i ms v "get" inRms
-                                sorrys'                               = sorrys ++ (inRms' |!| pure sorryGetEmptyRm)
+                                sorrys'                               = sorrys ++ (inRms' |!| pure sorryGetEmptyRmWithHooks)
                             in (ms', (sorrys' ++ toSelfs, bs, logMsgs))
           -----
           (True,  True ) ->
@@ -1222,7 +1224,7 @@ inv (LowerNub i mq cols as) = getState >>= \ms ->
     then T.concat [ inEqs |!| sorryInEq, inRms |!| sorryInRm, invDesc, coinsDesc ]
       else wrapUnlinesNl cols dudeYourHandsAreEmpty
   where
-    helperEitherInv _  acc (Left  msg ) = (acc <>) . wrapUnlinesNl cols $ msg
+    helperEitherInv _  acc (Left  msg ) = acc <> wrapUnlinesNl cols msg
     helperEitherInv ms acc (Right is  ) = nl $ acc <> mkEntDescs i cols ms is
     helperEitherCoins  acc (Left  msgs) = (acc <>) . multiWrapNl cols . intersperse "" $ msgs
     helperEitherCoins  acc (Right c   ) = nl $ acc <> mkCoinsDesc cols c
@@ -1424,13 +1426,13 @@ look (LowerNub i mq cols as) = mkRndmVector >>= \v ->
             sorryInInv             = wrapUnlinesNl cols . sorryEquipInvLook LookCmd $ InvCmd
             sorryInEq              = wrapUnlinesNl cols . sorryEquipInvLook LookCmd $ EquipCmd
         in applyFirstLook $ case ((()!#) *** (()!#)) (invCoins, lookupHooks i ms "look") of
-          (False, False) -> (ms, (wrapUnlinesNl cols sorryLookNothingHere, [], "", Nothing))
+          (False, False) -> (ms, (wrapUnlinesNl cols sorryLookEmptyRmNoHooks, [], "", Nothing))
           -----
           (True,  False) -> let (toSelf, bs, maybeDesigs) = invCoinsHelper ms inRms invCoins
                             in (ms, (sorry <> toSelf, bs, "", maybeDesigs))
           -----
           (False, True ) -> let (inRms', (ms', toSelf, bs, logMsg)) = hooksHelper ms v inRms
-                                sorry' = sorry <> (inRms' |!| wrapUnlinesNl cols sorryLookEmptyRm)
+                                sorry' = sorry <> (inRms' |!| wrapUnlinesNl cols sorryLookEmptyRmWithHooks)
                             in (ms', (sorry' <> toSelf, bs, logMsg, Nothing))
           -----
           (True,  True ) -> let (inRms', (ms', hooksToSelf, hooksBs, logMsg)) = hooksHelper ms v inRms
@@ -1659,7 +1661,7 @@ putAction p@(Lower' i as)    = genericAction p helper "put"
             in case (()!# rmInvCoins, lookupHooks i ms "put") of
               (False, Nothing   ) -> genericSorry ms sorryNoConHere
               (True,  Nothing   ) -> invCoinsHelper
-              (False, Just hooks) -> f hooks . genericSorry ms . sorryPutEmptyRm $ target
+              (False, Just hooks) -> f hooks . genericSorry ms . sorryPutEmptyRmWithHooks $ target
               (True,  Just hooks) -> f hooks invCoinsHelper
       where
         hooksHelper args matches =
@@ -1842,6 +1844,72 @@ quitCan'tAbbrev :: ActionFun
 quitCan'tAbbrev (NoArgs _ mq cols) = wrapSend mq cols sorryQuitCan'tAbbrev
 quitCan'tAbbrev p                  = withoutArgs quitCan'tAbbrev p
 
+
+-----
+
+
+readAction :: ActionFun
+readAction p@AdviseNoArgs          = advise p ["read"] adviceReadNoArgs
+readAction (LowerNub i mq cols as) = (,) <$> getState <*> mkRndmVector >>= \(ms, v) ->
+    let (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv as
+        sorryInEq              = inEqs |!| wrapUnlinesNl cols sorryReadInEq
+        sorryInRm              = inRms |!| wrapUnlinesNl cols sorryReadNoHooks
+        d                      = mkStdDesig  i ms DoCap
+        invCoins               = getInvCoins i ms
+    in case ((()!#) *** (()!#)) (invCoins, lookupHooks i ms "read") of
+      (False, False) -> let sorry = inInvs |!| wrapUnlinesNl cols dudeYourHandsAreEmpty
+                        in send mq . T.concat $ [ sorry, sorryInEq, sorryInRm ]
+      -----
+      (True,  False) -> let sorry = sorryInEq <> sorryInRm
+                        in ioHelper (invCoinsHelper ms inInvs d invCoins & _1 %~ (sorry <>))
+      -----
+      (False, True ) -> let sorry = (inInvs |!| wrapUnlinesNl cols dudeYourHandsAreEmpty) <> sorryInEq
+                            (inRms', (_, toSelfs, bs, logMsgs)) = procHooks i ms v "read" inRms
+                            sorry' = sorry <> (multiWrap cols . map sorryReadWithHooks $ inRms')
+                        in ioHelper (sorry' <> wrapper toSelfs, bs, logMsgs)
+      -----
+      (True,  True ) ->
+        let (inRms', (_, hooksToSelfs, hooksBs, hooksLogMsgs)) = procHooks i ms v "read" inRms
+            sorry = sorryInEq <> (multiWrap cols . map sorryReadWithHooks $ inRms')
+            (invCoinsToSelf, invCoinsBs, invCoinsLogMsgs) = invCoinsHelper ms inInvs d invCoins
+        in ioHelper ( T.concat [ sorry, wrapper hooksToSelfs, invCoinsToSelf ]
+                    , hooksBs      ++ invCoinsBs
+                    , hooksLogMsgs ++ invCoinsLogMsgs )
+  where
+    invCoinsHelper ms args d invCoins =
+        let (eiss, ecs) = uncurry (resolveMobInvCoins i ms args) invCoins
+            a           = foldl' helperEitherInv ("", [], []) eiss
+        in foldl' helperEitherCoins a ecs
+      where
+        helperEitherInv   acc (Left  msg ) = acc & _1 <>~ wrapUnlinesNl cols msg
+        helperEitherInv   acc (Right is  ) = readHelper i cols ms d acc is
+        helperEitherCoins acc (Left  msgs) = acc & _1 <>~ (multiWrapNl cols . intersperse "" $ msgs)
+        helperEitherCoins acc (Right _   ) = acc & _1 <>~ wrapUnlinesNl cols sorryReadCoins
+    ioHelper (toSelf, bs, logMsgs) = do
+        send mq toSelf
+        bcastIfNotIncogNl i bs
+        logMsgs |#| logPla "read" i . slashes
+    wrapper = T.unlines . map (multiWrap cols . T.lines)
+readAction p = patternMatchFail "readAction" [ showText p ]
+
+
+readHelper :: Id -> Cols -> MudState -> Desig -> (Text, [Broadcast], [Text]) -> Inv -> (Text, [Broadcast], [Text])
+readHelper i cols ms d = foldl' helper
+  where
+    helper acc targetId = let s = getSing targetId ms in case getType targetId ms of
+      WritableType ->
+          let (Writable msg r) = getWritable targetId ms in case msg of
+            Nothing          -> acc & _1 <>~ wrapUnlinesNl cols (blankWritableMsg s)
+            Just (txt, lang) -> case r of
+              Nothing -> if isKnownLang i ms lang
+                then let header = T.concat [ "The following is written on the ", s, " in ", pp lang, ":\n" ]
+                     in acc & _1 <>~ (multiWrapNl cols . T.lines $ header <> txt)
+                            & _2 <>~ pure (T.concat [ serialize d, " reads ", aOrAn s, "." ], i `delete` desigIds d)
+                            & _3 <>~ pure (s <> " " <> parensQuote (showText targetId))
+                else let t = lang == UnknownLang ? sorryReadUnknownLang s :? sorryReadLang s lang
+                     in acc & _1 <>~ wrapUnlinesNl cols t
+              Just _  -> undefined -- TODO: Magic writing which can only be read by a designated person.
+      _ -> acc & _1 <>~ wrapUnlinesNl cols (sorryReadType s)
 
 -----
 

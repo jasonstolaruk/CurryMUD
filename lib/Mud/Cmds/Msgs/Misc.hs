@@ -18,6 +18,10 @@ bannedMsg :: Text
 bannedMsg = "You have been banned from CurryMUD!"
 
 
+blankWritableMsg :: Sing -> Text
+blankWritableMsg s = "There isn't anything written on the " <> s <> "."
+
+
 dbEmptyMsg :: Text
 dbEmptyMsg = "The database is empty."
 

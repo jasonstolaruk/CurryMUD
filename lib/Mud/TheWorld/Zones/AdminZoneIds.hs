@@ -238,4 +238,8 @@ iTrashDump = 131 :: Int
 
 iSmlPaper = 132 :: Int
 
-iParchment = 133 :: Int
+iParchment1 = 133 :: Int
+
+iParchment2 = 134 :: Int
+
+iParchment3 = 135 :: Int
