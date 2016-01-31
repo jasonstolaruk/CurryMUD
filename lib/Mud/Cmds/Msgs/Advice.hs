@@ -301,7 +301,7 @@ adviceDRntExcessArgs = "Sorry, but you can only generate a random name for one P
 adviceDWeightExcessArgs :: Text
 adviceDWeightExcessArgs =
     "Please provide one argument: the ID for which you would like to calculate weight, as in " <>
-    quoteWith quoteColor (prefixDebugCmd "weight" <> " 100")                                   <>
+    colorWith quoteColor (prefixDebugCmd "weight" <> " 100")                                   <>
     "."
 
 
@@ -539,7 +539,7 @@ adviceQuitExcessArgs = "Type "                     <>
 
 adviceReadyNoArgs :: Text
 adviceReadyNoArgs = "Please specify one or more items to ready, as in " <>
-                    quoteWith quoteColor "ready sword"                  <>
+                    colorWith quoteColor "ready sword"                  <>
                     "."
 
 

@@ -125,3 +125,14 @@ putWpn i e o w = tweaks [ entTbl .ind i .~ e
                         , objTbl .ind i .~ o
                         , typeTbl.ind i .~ WpnType
                         , wpnTbl .ind i .~ w ]
+
+
+-----
+
+
+putWritable :: Id -> Ent -> Obj -> Writable -> MudStack ()
+putWritable i e o w = tweaks [ entTbl     .ind i .~ e
+                             , objTbl     .ind i .~ o
+                             , typeTbl    .ind i .~ WritableType
+                             , writableTbl.ind i .~ w ]
+

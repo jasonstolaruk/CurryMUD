@@ -249,6 +249,7 @@ createAdminZone = do
               100 100
               0
               RHand
+              allValues
               iLoggedOut
               Nothing Nothing)
          M.empty
@@ -277,6 +278,7 @@ createAdminZone = do
               100 100
               0
               RHand
+              allValues
               iLoggedOut
               Nothing Nothing)
          M.empty
@@ -414,7 +416,7 @@ createAdminZone = do
                                        "% climbs down the ladder and out of the hole in the ceiling." ]
             M.empty [])
   putRm iObjCloset
-        [ iKewpie1, iKewpie2 ]
+        [ iKewpie1, iKewpie2, iSmlPaper, iParchment ]
         mempty
         (Rm "Object closet"
             "This closet holds objects."
@@ -707,6 +709,32 @@ createAdminZone = do
                   "The solid, white cube measures 6\" x 6\" x 6\"."
                   zeroBits)
              (Obj cubeWeight cubeVol)
+
+  -- ==================================================
+  -- Writables:
+  putWritable iSmlPaper
+              (Ent iSmlPaper
+                   (Just "paper")
+                   "small piece of paper" "small pieces of paper"
+                   "It's a rectangular piece of plain white paper."
+                   zeroBits)
+              (Obj paperWeight paperVol)
+              (Writable (Just ( "CurryMud - A Multi-User Dungeon by Jason Stolaruk.\n\
+                                \Copyright 2016 Jason Stolaruk and Detroit Labs LLC.\n\
+                                \Version 0.1.0.0 (in development since October 2013).\n\
+                                \CurryMUD@gmail.com\n\
+                                \CurryMUD is comprised of an original codebase written entirely in the Haskell \
+                                \programming language."
+                              , CommonLang ))
+                        Nothing)
+  putWritable iParchment
+              (Ent iParchment
+                   (Just "parchment")
+                   "piece of parchment" "pieces of parchment"
+                   "It's an everyday piece of parchment, made from processed animal skin."
+                   zeroBits)
+              (Obj paperWeight paperVol)
+              (Writable Nothing Nothing)
 
   -- ==================================================
   -- Clothing:
@@ -1284,6 +1312,7 @@ createAdminZone = do
               10 10
               10
               NoHand
+              []
               iMobCloset
               Nothing Nothing)
   putNpc iRockCavy2
@@ -1303,14 +1332,15 @@ createAdminZone = do
               10 10
               10
               NoHand
+              []
               iMobCloset
               Nothing Nothing)
   putNpc iPidge
          (Ent iPidge
               (Just "pidge")
               "Pidge" ""
-              "Pidge is a female dwarf with walnut-colored skin and large, brown eyes. She wears her silver-white hair \
-              \in shoulder-length pigtails. Her small, round face is positively adorable."
+              "Pidge is a female halfling with walnut-colored skin and large, brown eyes. She wears her silver-white \
+              \hair in shoulder-length pigtails. Her small, round face is positively adorable."
               zeroBits)
          []
          mempty
@@ -1326,6 +1356,7 @@ createAdminZone = do
               100 100
               0
               RHand
+              [ HalflingLang ]
               iMobCloset
               Nothing Nothing)
   putCloth iPeasant'sShirt
@@ -1377,5 +1408,6 @@ createAdminZone = do
               10 10
               10
               RHand
+              []
               iMobCloset
               Nothing Nothing)

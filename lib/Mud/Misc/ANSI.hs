@@ -36,6 +36,7 @@ module Mud.Misc.ANSI ( abbrevColor
                      , mkFgColorANSI
                      , motdColor
                      , newRecordColor
+                     , nlColor
                      , noBlinkANSI
                      , noHintANSI
                      , noUnderlineANSI
@@ -223,6 +224,10 @@ motdColor = yellow
 
 newRecordColor :: Text
 newRecordColor = magenta
+
+
+nlColor :: Text
+nlColor = yellow
 
 
 noBlinkANSI :: Text

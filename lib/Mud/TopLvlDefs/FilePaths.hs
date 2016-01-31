@@ -63,7 +63,7 @@ typoLogFile      = logDir </> "typo"                     <.> "log"
 -- Persistence files:
 
 
-armTblFile, chanTblFile, clothTblFile, coinsTblFile, conTblFile, entTblFile, eqTblFile, hostTblFile, invTblFile, mobTblFile, objTblFile, pcTblFile, plaTblFile, rmTblFile, rmTeleNameTblFile, rndmNamesMstrTblFile, teleLinkMstrTblFile, typeTblFile, wpnTblFile :: FilePath
+armTblFile, chanTblFile, clothTblFile, coinsTblFile, conTblFile, entTblFile, eqTblFile, hostTblFile, invTblFile, mobTblFile, objTblFile, pcTblFile, plaTblFile, rmTblFile, rmTeleNameTblFile, rndmNamesMstrTblFile, teleLinkMstrTblFile, typeTblFile, wpnTblFile, writableTblFile :: FilePath
 armTblFile           = "armTbl.json"
 chanTblFile          = "chanTbl.json"
 clothTblFile         = "clothTbl.json"
@@ -83,6 +83,7 @@ rndmNamesMstrTblFile = "rndmNamesMstrTbl.json"
 teleLinkMstrTblFile  = "teleLinkMstrTbl.json"
 typeTblFile          = "typeTbl.json"
 wpnTblFile           = "wpnTbl.json"
+writableTblFile      = "writableTbl.json"
 
 
 -- ==================================================

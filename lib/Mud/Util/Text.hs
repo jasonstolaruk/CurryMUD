@@ -79,12 +79,12 @@ class Nullable a where
 
 instance Nullable Text where
   isNull = T.null
-  none   = "none."
+  none   = "none"
 
 
 instance Nullable [Text] where
   isNull = null
-  none   = pure "none."
+  none   = pure "none"
 
 
 -----

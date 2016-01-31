@@ -77,6 +77,10 @@ overallsWeight :: Weight
 overallsWeight = tabardWeight + trousersWeight
 
 
+paperWeight :: Weight
+paperWeight = 1
+
+
 ringWeight :: Weight
 ringWeight = 2
 

@@ -3,7 +3,7 @@
 
 module Mud.Cmds.Debug ( debugCmds
                       , purgeThreadTbls
-                      , ) where -- Not a typo.
+                      , {- Not a typo. -} ) where
 
 import Mud.Cmds.Msgs.Advice
 import Mud.Cmds.Msgs.CmdDesc
@@ -367,7 +367,8 @@ mkTblNameKeysList ms = [ ("Arm",              tblKeys armTbl           ms)
                        , ("TeleLinkMstrTbl",  tblKeys teleLinkMstrTbl  ms)
                        , ("TeleLinkTbl",      tblKeys teleLinkMstrTbl  ms)
                        , ("Type",             tblKeys typeTbl          ms)
-                       , ("Wpn",              tblKeys wpnTbl           ms) ]
+                       , ("Wpn",              tblKeys wpnTbl           ms)
+                       , ("Writable",         tblKeys writableTbl      ms) ]
 
 
 tblKeys :: Optical (->) (->) (Const [Id]) MudState MudState (IM.IntMap a) (IM.IntMap a) -> MudState -> [Id]

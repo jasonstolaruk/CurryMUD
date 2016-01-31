@@ -16,7 +16,7 @@ import Control.Lens.Operators ((^.))
 import Data.Text (Text)
 import Data.Time (UTCTime)
 import Network (HostName)
-import Prelude hiding (exp)
+import Prelude hiding (exp, recip)
 
 
 -- ============================================================
@@ -250,6 +250,13 @@ getMa i = view ma . getMob i
 -----
 
 
+getMessage :: Id -> MudState -> Maybe (Text, Lang)
+getMessage i = view message . getWritable i
+
+
+-----
+
+
 getMob :: Id -> MudState -> Mob
 getMob i = view (mobTbl.ind i)
 
@@ -390,6 +397,13 @@ getRace i = view race . getPC i
 -----
 
 
+getRecip :: Id -> MudState -> Maybe Sing
+getRecip i = view recip . getWritable i
+
+
+-----
+
+
 getRm :: Id -> MudState -> Rm
 getRm i = view (rmTbl.ind i)
 
@@ -483,6 +497,13 @@ getWpn i = view (wpnTbl.ind i)
 
 getWpnSub :: Id -> MudState -> WpnSub
 getWpnSub i = view wpnSub . getWpn i
+
+
+-----
+
+
+getWritable :: Id -> MudState -> Writable
+getWritable i = view (writableTbl.ind i)
 
 
 -----

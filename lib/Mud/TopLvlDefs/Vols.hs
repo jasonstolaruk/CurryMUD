@@ -90,8 +90,12 @@ noseVol :: Vol
 noseVol = earVol
 
 
-overallsVol :: Weight
+overallsVol :: Vol
 overallsVol = tabardVol + trousersVol
+
+
+paperVol :: Vol
+paperVol = round (8.5 * 0.002 * 11 * 100 :: Double)
 
 
 ringVol :: Vol

@@ -79,7 +79,8 @@ persistHelper l ms = withLock l $ do
                                              , write (ms^.rndmNamesMstrTbl) $ path </> rndmNamesMstrTblFile
                                              , write (ms^.teleLinkMstrTbl ) $ path </> teleLinkMstrTblFile
                                              , write (ms^.typeTbl         ) $ path </> typeTblFile
-                                             , write (ms^.wpnTbl          ) $ path </> wpnTblFile ]
+                                             , write (ms^.wpnTbl          ) $ path </> wpnTblFile
+                                             , write (ms^.writableTbl     ) $ path </> writableTblFile ]
   where
     getNonExistingPath path = mIf (doesDirectoryExist path)
                                   (getNonExistingPath $ path ++ "_")

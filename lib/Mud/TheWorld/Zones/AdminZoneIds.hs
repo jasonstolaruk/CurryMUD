@@ -235,3 +235,7 @@ iHallwayEast = 129 :: Int
 iAtrium = 130 :: Int
 
 iTrashDump = 131 :: Int
+
+iSmlPaper = 132 :: Int
+
+iParchment = 133 :: Int

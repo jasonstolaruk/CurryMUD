@@ -252,6 +252,19 @@ instance Pretty Hand where
   pp NoHand = "not handed"
 
 
+instance Pretty Lang where
+  pp CommonLang    = "common"
+  pp DwarfLang     = "dwarvish"
+  pp ElfLang       = "elvish"
+  pp FelinoidLang  = "felinoidean"
+  pp HalflingLang  = "halfling"
+  pp HumanLang     = "hominal"
+  pp LagomorphLang = "lagomorphean"
+  pp NymphLang     = "naelyni"
+  pp VulpenoidLang = "vulpenoidean"
+  pp UnknownLang   = "unknown"
+
+
 instance Pretty LinkDir where
   pp = uncapitalize . showText
 
@@ -336,14 +349,15 @@ instance Pretty Slot where
 
 
 instance Pretty Type where
-  pp ObjType   = "object"
-  pp ClothType = "clothing"
-  pp ConType   = "container"
-  pp WpnType   = "weapon"
-  pp ArmType   = "armor"
-  pp NpcType   = "NPC"
-  pp PCType    = "PC"
-  pp RmType    = "room"
+  pp ObjType      = "object"
+  pp ClothType    = "clothing"
+  pp ConType      = "container"
+  pp WpnType      = "weapon"
+  pp ArmType      = "armor"
+  pp NpcType      = "NPC"
+  pp PCType       = "PC"
+  pp RmType       = "room"
+  pp WritableType = "writable"
 
 
 instance Pretty TypoRec where

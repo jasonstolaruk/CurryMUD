@@ -107,6 +107,7 @@ adHoc mq host = do
                        , _maxFp      = 100, _curFp = 100
                        , _exp        = 0
                        , _hand       = RHand
+                       , _knownLangs = []
                        , _rmId       = iWelcome
                        , _regenAsync = Nothing
                        , _interp     = Just interpName }

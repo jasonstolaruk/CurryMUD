@@ -76,7 +76,8 @@ initMudData shouldLog = do
                                  , _teleLinkMstrTbl  = IM.empty
                                  , _threadTbl        =  M.empty
                                  , _typeTbl          = IM.empty
-                                 , _wpnTbl           = IM.empty }
+                                 , _wpnTbl           = IM.empty
+                                 , _writableTbl      = IM.empty }
     start   <- getTime Monotonic
     return MudData { _errorLog      = errorLogService
                    , _gen           = genIO
@@ -133,7 +134,8 @@ loadWorld dir@((persistDir </>) -> path) = do
                                                  , loadTbl rndmNamesMstrTblFile rndmNamesMstrTbl
                                                  , loadTbl teleLinkMstrTblFile  teleLinkMstrTbl
                                                  , loadTbl typeTblFile          typeTbl
-                                                 , loadTbl wpnTblFile           wpnTbl ]
+                                                 , loadTbl wpnTblFile           wpnTbl
+                                                 , loadTbl writableTblFile      writableTbl ]
     tweak $ \ms -> foldr removeAdHoc ms . getInv iWelcome $ ms
     movePCs
     return . and $ res

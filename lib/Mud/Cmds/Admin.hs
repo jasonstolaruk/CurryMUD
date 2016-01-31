@@ -57,7 +57,7 @@ import Data.Monoid ((<>), Any(..), Sum(..), getSum)
 import Data.Text (Text)
 import Data.Time (TimeZone, UTCTime, defaultTimeLocale, diffUTCTime, formatTime, getCurrentTime, getCurrentTimeZone, getZonedTime, utcToLocalTime)
 import GHC.Exts (sortWith)
-import Prelude hiding (exp, pi)
+import Prelude hiding (exp, pi, recip)
 import qualified Data.IntMap.Lazy as IM (elems, filter, keys, size, toList)
 import qualified Data.Map.Lazy as M (foldl, foldrWithKey, toList)
 import qualified Data.Text as T
@@ -445,14 +445,15 @@ adminExamine p = patternMatchFail "adminExamine" [ showText p ]
 
 examineHelper :: MudState -> Id -> [Text]
 examineHelper ms targetId = let t = getType targetId ms in helper t $ case t of
-  ObjType   -> [ examineEnt, examineObj ]
-  ClothType -> [ examineEnt, examineObj, examineCloth ]
-  ConType   -> [ examineEnt, examineObj, examineInv, examineCoins, examineCon ]
-  WpnType   -> [ examineEnt, examineObj, examineWpn ]
-  ArmType   -> [ examineEnt, examineObj, examineArm ]
-  NpcType   -> [ examineEnt, examineInv, examineCoins, examineEqMap, examineMob, examineNpc ]
-  PCType    -> [ examineEnt, examineInv, examineCoins, examineEqMap, examineMob, examinePC, examinePla ]
-  RmType    -> [ examineInv, examineCoins, examineRm ]
+  ObjType      -> [ examineEnt, examineObj ]
+  ClothType    -> [ examineEnt, examineObj,   examineCloth ]
+  ConType      -> [ examineEnt, examineObj,   examineInv,   examineCoins, examineCon ]
+  WpnType      -> [ examineEnt, examineObj,   examineWpn ]
+  ArmType      -> [ examineEnt, examineObj,   examineArm ]
+  NpcType      -> [ examineEnt, examineInv,   examineCoins, examineEqMap, examineMob, examineNpc ]
+  PCType       -> [ examineEnt, examineInv,   examineCoins, examineEqMap, examineMob, examinePC, examinePla ]
+  RmType       -> [ examineInv, examineCoins, examineRm ]
+  WritableType -> [ examineEnt, examineObj,   examineWritable ]
   where
     helper t fs = let header = T.concat [ showText targetId, " ", parensQuote . pp $ t ]
                   in header : "" : concatMap (\f -> f targetId ms) fs
@@ -498,25 +499,26 @@ examineEqMap i ms = map helper . M.toList . getEqMap i $ ms
 examineInv :: ExamineHelper
 examineInv i ms = let is  = getInv i ms
                       txt = commas . map (`descSingId` ms) $ is
-                  in [ "Contains: " <> (()# txt ? "nothing." :? txt) ]
+                  in [ "Contents: " <> noneOnNull txt ]
 
 
 examineMob :: ExamineHelper
 examineMob i ms = let m           = getMob i ms
                       showPts x y = m^.x.to showText <> " / " <> m^.y.to showText
-                  in [ "Sex: "        <> m^.sex.to pp
-                     , "ST: "         <> m^.st .to showText
-                     , "DX: "         <> m^.dx .to showText
-                     , "HT: "         <> m^.ht .to showText
-                     , "MA: "         <> m^.ma .to showText
-                     , "HP: "         <> showPts curHp maxHp
-                     , "MP: "         <> showPts curMp maxMp
-                     , "PP: "         <> showPts curPp maxPp
-                     , "FP: "         <> showPts curFp maxFp
-                     , "Exp: "        <> m^.exp .to showText
-                     , "Handedness: " <> m^.hand.to pp
-                     , "Room: "       <> let ri = m^.rmId
-                                         in getRmName ri ms <> " " <> parensQuote (showText ri) ]
+                  in [ "Sex: "            <> m^.sex.to pp
+                     , "ST: "             <> m^.st .to showText
+                     , "DX: "             <> m^.dx .to showText
+                     , "HT: "             <> m^.ht .to showText
+                     , "MA: "             <> m^.ma .to showText
+                     , "HP: "             <> showPts curHp maxHp
+                     , "MP: "             <> showPts curMp maxMp
+                     , "PP: "             <> showPts curPp maxPp
+                     , "FP: "             <> showPts curFp maxFp
+                     , "Exp: "            <> m^.exp .to showText
+                     , "Handedness: "     <> m^.hand.to pp
+                     , "Know languages: " <> m^.knownLangs.to (noneOnNull . commas . map pp)
+                     , "Room: "           <> let ri = m^.rmId
+                                             in getRmName ri ms <> " " <> parensQuote (showText ri) ]
 
 
 examineNpc :: ExamineHelper
@@ -566,9 +568,9 @@ examinePla i ms = let p = getPla i ms
 
 examineRm :: ExamineHelper
 examineRm i ms = let r = getRm i ms in [ "Name: "        <> r^.rmName
-                                       , "Description: " <> r^.rmDesc
+                                       , "Description: " <> r^.rmDesc.to xformNls
                                        , "Room flags: "  <> (commas . dropBlanks . descFlags $ r)
-                                       , "Links: "       <> views rmLinks (noneOnNull . commas . map helper) r ]
+                                       , "Links: "       <> r^.rmLinks.to (noneOnNull . commas . map helper) ]
   where
     descFlags r | r^.rmFlags == zeroBits = none
                 | otherwise              = none -- TODO: Room flags.
@@ -578,9 +580,19 @@ examineRm i ms = let r = getRm i ms in [ "Name: "        <> r^.rmName
         f dir destId = T.concat [ dir, " to ", getRmName destId ms, " ", parensQuote (showText destId) ]
 
 
+xformNls :: Text -> Text
+xformNls = T.replace "\n" (colorWith nlColor "\\n")
+
+
 examineWpn :: ExamineHelper
 examineWpn i ms = let w = getWpn i ms in [ "Type: "   <> w^.wpnSub.to pp
                                          , "Damage: " <> w^.minDmg.to showText <> " / " <> w^.maxDmg.to showText ]
+
+
+examineWritable :: ExamineHelper
+examineWritable i ms = let w = getWritable i ms in [ "Message: "   <> w^.message.to (maybe none (xformNls . fst))
+                                                   , "Language: "  <> w^.message.to (maybe none (pp . snd))
+                                                   , "Recipient: " <> w^.recip  .to (fromMaybe none) ]
 
 
 -----

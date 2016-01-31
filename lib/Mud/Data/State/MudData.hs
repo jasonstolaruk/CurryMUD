@@ -67,7 +67,8 @@ data MudState = MudState { _armTbl           :: ArmTbl
                          , _teleLinkMstrTbl  :: TeleLinkMstrTbl
                          , _threadTbl        :: ThreadTbl
                          , _typeTbl          :: TypeTbl
-                         , _wpnTbl           :: WpnTbl }
+                         , _wpnTbl           :: WpnTbl
+                         , _writableTbl      :: WritableTbl }
 
 
 type ArmTbl           = IM.IntMap Arm
@@ -96,6 +97,7 @@ type TeleLinkMstrTbl  = IM.IntMap TeleLinkTbl
 type ThreadTbl        = M.Map ThreadId ThreadType
 type TypeTbl          = IM.IntMap Type
 type WpnTbl           = IM.IntMap Wpn
+type WritableTbl      = IM.IntMap Writable
 
 
 -- ==================================================
@@ -325,6 +327,7 @@ data Mob = Mob { _sex                    :: Sex
                , _curFp, _maxFp          :: Int
                , _exp                    :: Exp
                , _hand                   :: Hand
+               , _knownLangs             :: [Lang]
                , _rmId                   :: Id
                , _regenAsync             :: Maybe RegenAsync
                , _interp                 :: Maybe Interp }
@@ -343,6 +346,18 @@ data Hand = RHand
           | NoHand deriving (Eq, Generic, Show)
 
 
+data Lang = CommonLang
+          | DwarfLang
+          | ElfLang
+          | FelinoidLang
+          | HalflingLang
+          | HumanLang
+          | LagomorphLang
+          | NymphLang
+          | VulpenoidLang
+          | UnknownLang deriving (Bounded, Enum, Eq, Generic, Show)
+
+
 type RegenAsync = Async ()
 
 
@@ -351,23 +366,24 @@ instance ToJSON   Mob where toJSON    = mobToJSON
 
 
 mobToJSON :: Mob -> Value
-mobToJSON Mob { .. } = object [ "_sex"   .= _sex
-                              , "_st"    .= _st
-                              , "_dx"    .= _dx
-                              , "_ht"    .= _ht
-                              , "_ma"    .= _ma
-                              , "_ps"    .= _ps
-                              , "_curHp" .= _curHp
-                              , "_maxHp" .= _maxHp
-                              , "_curMp" .= _curMp
-                              , "_maxMp" .= _maxMp
-                              , "_curPp" .= _curPp
-                              , "_maxPp" .= _maxPp
-                              , "_curFp" .= _curFp
-                              , "_maxFp" .= _maxFp
-                              , "_exp"   .= _exp
-                              , "_hand"  .= _hand
-                              , "_rmId"  .= _rmId ]
+mobToJSON Mob { .. } = object [ "_sex"        .= _sex
+                              , "_st"         .= _st
+                              , "_dx"         .= _dx
+                              , "_ht"         .= _ht
+                              , "_ma"         .= _ma
+                              , "_ps"         .= _ps
+                              , "_curHp"      .= _curHp
+                              , "_maxHp"      .= _maxHp
+                              , "_curMp"      .= _curMp
+                              , "_maxMp"      .= _maxMp
+                              , "_curPp"      .= _curPp
+                              , "_maxPp"      .= _maxPp
+                              , "_curFp"      .= _curFp
+                              , "_maxFp"      .= _maxFp
+                              , "_exp"        .= _exp
+                              , "_hand"       .= _hand
+                              , "_knownLangs" .= _knownLangs
+                              , "_rmId"       .= _rmId ]
 
 
 jsonToMob :: Value -> Parser Mob
@@ -387,6 +403,7 @@ jsonToMob (Object o) = Mob <$> o .: "_sex"
                            <*> o .: "_maxFp"
                            <*> o .: "_exp"
                            <*> o .: "_hand"
+                           <*> o .: "_knownLangs"
                            <*> o .: "_rmId"
                            <*> pure Nothing
                            <*> pure Nothing
@@ -617,7 +634,8 @@ data Type = ObjType
           | ArmType
           | NpcType
           | PCType
-          | RmType deriving (Eq, Generic, Show)
+          | RmType
+          | WritableType deriving (Eq, Generic, Show)
 
 
 -- ==================================================
@@ -636,6 +654,14 @@ data WpnSub = OneHanded
 -- ==================================================
 
 
+-- Has an object (and an entity).
+data Writable = Writable { _message :: Maybe (Text, Lang)
+                         , _recip   :: Maybe Sing {- for magically scribed msgs -} } deriving (Eq, Generic, Show)
+
+
+-- ==================================================
+
+
 instance FromJSON Arm
 instance FromJSON ArmSub
 instance FromJSON Chan
@@ -646,6 +672,7 @@ instance FromJSON Ent
 instance FromJSON Hand
 instance FromJSON Hook
 instance FromJSON HostRecord
+instance FromJSON Lang
 instance FromJSON LinkDir
 instance FromJSON Obj
 instance FromJSON PC
@@ -658,6 +685,7 @@ instance FromJSON Slot
 instance FromJSON Type
 instance FromJSON Wpn
 instance FromJSON WpnSub
+instance FromJSON Writable
 instance ToJSON   Arm -- TODO: Temporary fix for aeson issue. https://github.com/bos/aeson/issues/290
   where
     toJSON = genericToJSON defaultOptions
@@ -686,6 +714,9 @@ instance ToJSON   Hook
   where
     toJSON = genericToJSON defaultOptions
 instance ToJSON   HostRecord
+  where
+    toJSON = genericToJSON defaultOptions
+instance ToJSON   Lang
   where
     toJSON = genericToJSON defaultOptions
 instance ToJSON   LinkDir
@@ -724,6 +755,9 @@ instance ToJSON   Wpn
 instance ToJSON   WpnSub
   where
     toJSON = genericToJSON defaultOptions
+instance ToJSON   Writable
+  where
+    toJSON = genericToJSON defaultOptions
 
 
 -- ==================================================
@@ -745,3 +779,4 @@ makeLenses ''Pla
 makeLenses ''Rm
 makeLenses ''RmLink
 makeLenses ''Wpn
+makeLenses ''Writable
