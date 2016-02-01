@@ -944,12 +944,9 @@ mkEqDesc i cols ms descId descSing descType = let descs = descId == i ? mkDescsS
 
 
 mkWritableDesc :: Cols -> MudState -> Id -> Text
-mkWritableDesc cols ms targetId =
-    let (msg, r) = (view message *** view recip) . dup . getWritable targetId $ ms
-    in case msg of Nothing        -> ""
-                   Just (_, lang) -> case r of
-                     Nothing -> wrapUnlines cols $ "There is something written on it in " <> descLang lang <> "."
-                     Just _  -> undefined -- TODO: Magic writing which can only be read by a designated person.
+mkWritableDesc cols ms targetId = maybe "" (helper . snd) . getMessage targetId $ ms
+  where
+    helper lang = wrapUnlines cols $ "There is something written on it in " <> descLang lang <> "."
 
 
 descLang :: Lang -> Text

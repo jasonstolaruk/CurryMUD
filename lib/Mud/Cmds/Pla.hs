@@ -1896,20 +1896,33 @@ readAction p = patternMatchFail "readAction" [ showText p ]
 readHelper :: Id -> Cols -> MudState -> Desig -> (Text, [Broadcast], [Text]) -> Inv -> (Text, [Broadcast], [Text])
 readHelper i cols ms d = foldl' helper
   where
-    helper acc targetId = let s = getSing targetId ms in case getType targetId ms of
-      WritableType ->
-          let (Writable msg r) = getWritable targetId ms in case msg of
-            Nothing          -> acc & _1 <>~ wrapUnlinesNl cols (blankWritableMsg s)
-            Just (txt, lang) -> case r of
-              Nothing -> if isKnownLang i ms lang
-                then let header = T.concat [ "The following is written on the ", s, " in ", pp lang, ":\n" ]
-                     in acc & _1 <>~ (multiWrapNl cols . T.lines $ header <> txt)
-                            & _2 <>~ pure (T.concat [ serialize d, " reads ", aOrAn s, "." ], i `delete` desigIds d)
-                            & _3 <>~ pure (s <> " " <> parensQuote (showText targetId))
-                else let t = lang == UnknownLang ? sorryReadUnknownLang s :? sorryReadLang s lang
-                     in acc & _1 <>~ wrapUnlinesNl cols t
-              Just _  -> undefined -- TODO: Magic writing which can only be read by a designated person.
-      _ -> acc & _1 <>~ wrapUnlinesNl cols (sorryReadType s)
+    helper acc targetId =
+        let s                 = getSing targetId ms
+            readIt txt header = acc & _1 <>~ (multiWrapNl cols . T.lines $ header <> txt)
+                                    & _2 <>~ pure ( T.concat [ serialize d, " reads ", aOrAn s, "." ]
+                                                  , i `delete` desigIds d )
+                                    & _3 <>~ pure (s <> " " <> parensQuote (showText targetId))
+        in case getType targetId ms of
+          WritableType ->
+              let (Writable msg r) = getWritable targetId ms in case msg of
+                Nothing          -> acc & _1 <>~ wrapUnlinesNl cols (blankWritableMsg s)
+                Just (txt, lang) -> case r of
+                  Nothing -> if isKnownLang i ms lang
+                    then readIt txt . T.concat $ [ "The following is written on the ", s, " in ", pp lang, ":\n" ]
+                    else let t = lang == UnknownLang ? sorryReadUnknownLang s :? sorryReadLang s lang
+                         in acc & _1 <>~ wrapUnlinesNl cols t
+                  Just recipSing
+                    | getSing i ms == recipSing -> readIt txt . magicMsgHeader $ s
+                    | otherwise                 -> acc & _1 <>~ wrapUnlinesNl cols (sorryReadUnknownLang s)
+          _ -> acc & _1 <>~ wrapUnlinesNl cols (sorryReadType s)
+    magicMsgHeader s =
+        "At first glance, the writing on the " <> s <> " appears to be in a language you don't recognize. Then \
+        \suddenly the unfamiliar glyphs come alive, squirming and melting into new forms. In a matter of seconds, the \
+        \text transforms into the following message, written in everyday common:\n"
+-- TODO: Admins should be able to read the text regardless.
+-- TODO: What if the magic msg was written in a language that the recip doesn't know?
+-- TODO: Is "UnknownLang" really needed?
+
 
 -----
 
