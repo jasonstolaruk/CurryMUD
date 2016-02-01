@@ -138,22 +138,20 @@ trashRmActionFunName = "(common)_trash"
 
 
 trash :: RmActionFun
-trash _  p@AdviseNoArgs          = advise p [] adviceTrashNoArgs
-trash ri (LowerNub i mq cols as) = helper |&| modifyState >=> \(toSelfs, bs, logMsgs) -> do
+trash p@AdviseNoArgs          = advise p [] adviceTrashNoArgs
+trash (LowerNub i mq cols as) = helper |&| modifyState >=> \(toSelfs, bs, logMsgs) -> do
     multiWrapSend mq cols toSelfs
     bcastIfNotIncogNl i bs
     logMsgs |#| logPlaOut "trash" i
     unless (()# logMsgs) . rndmDo 10 . onEnv $ liftIO . void . forkIO . runReaderT belch
   where
-    helper ms = if getRmId i ms /= ri
-      then genericSorry ms sorryAlteredRm -- TODO: Is this really necessary?
-      else let (ms', toSelfs, bs, logMsgs) = trashHelper i ms as in (ms', (toSelfs, bs, logMsgs))
-    belch = let msg = "The lid of the trash bin momentarily opens of its own accord as a loud belch is emitted from \
-                      \inside the container."
-            in do
-                liftIO . threadDelay $ 3 * 10 ^ 6
-                getState >>= \ms -> bcastNl . pure $ (msg, findMobIds ms . getInv ri $ ms)
-trash _ p = patternMatchFail "trash" [ showText p ]
+    helper ms = let (ms', toSelfs, bs, logMsgs) = trashHelper i ms as in (ms', (toSelfs, bs, logMsgs))
+    belch     = let msg = "The lid of the trash bin momentarily opens of its own accord as a loud belch is emitted \
+                          \from inside the container."
+                in do
+                    liftIO . threadDelay $ 3 * 10 ^ 6
+                    getState >>= \ms -> bcastNl . pure $ (msg, findMobIds ms . getMobRmInv i $ ms)
+trash p = patternMatchFail "trash" [ showText p ]
 
 
 helperTrashEitherInv :: Id

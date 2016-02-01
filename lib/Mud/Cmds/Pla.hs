@@ -1848,6 +1848,7 @@ quitCan'tAbbrev p                  = withoutArgs quitCan'tAbbrev p
 -----
 
 
+-- TODO: Help.
 readAction :: ActionFun
 readAction p@AdviseNoArgs          = advise p ["read"] adviceReadNoArgs
 readAction (LowerNub i mq cols as) = (,) <$> getState <*> mkRndmVector >>= \(ms, v) ->
@@ -1865,12 +1866,12 @@ readAction (LowerNub i mq cols as) = (,) <$> getState <*> mkRndmVector >>= \(ms,
       -----
       (False, True ) -> let sorry = (inInvs |!| wrapUnlinesNl cols dudeYourHandsAreEmpty) <> sorryInEq
                             (inRms', (_, toSelfs, bs, logMsgs)) = procHooks i ms v "read" inRms
-                            sorry' = sorry <> (multiWrap cols . map sorryReadWithHooks $ inRms')
+                            sorry' = sorry <> (wrapper . map sorryReadWithHooks $ inRms')
                         in ioHelper (sorry' <> wrapper toSelfs, bs, logMsgs)
       -----
       (True,  True ) ->
         let (inRms', (_, hooksToSelfs, hooksBs, hooksLogMsgs)) = procHooks i ms v "read" inRms
-            sorry = sorryInEq <> (multiWrap cols . map sorryReadWithHooks $ inRms')
+            sorry = sorryInEq <> (wrapper . map sorryReadWithHooks $ inRms')
             (invCoinsToSelf, invCoinsBs, invCoinsLogMsgs) = invCoinsHelper ms inInvs d invCoins
         in ioHelper ( T.concat [ sorry, wrapper hooksToSelfs, invCoinsToSelf ]
                     , hooksBs      ++ invCoinsBs

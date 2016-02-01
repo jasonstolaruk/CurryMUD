@@ -45,11 +45,10 @@ dispatch f cn p@ActionParams { myId, plaMsgQueue } = getState >>= \ms -> maybe n
 
 findActionHelper :: Id -> MudState -> CmdName -> [Cmd] -> MudStack (Maybe Action)
 findActionHelper i ms cn cmds =
-    let ri    = getRmId i ms
-        r     = getRm ri ms
+    let r     = getMobRm i ms
         ras   = view rmActions r
         cmds' = sort $ cmds ++ mkNonStdRmLinkCmds r
     in return $ case [ ra | ra <- ras, cn == rmActionCmdName ra ] of
       []   -> cmdAction . fst <$> findFullNameForAbbrev cn [ (cmd, cmdName cmd) | cmd <- cmds' ]
-      [ra] -> Just . Action (getRmActionFun (rmActionFunName ra) ms ri) $ True
+      [ra] -> Just . Action (getRmActionFun (rmActionFunName ra) ms) $ True
       xs   -> patternMatchFail "findActionHelper" [ showText xs ]

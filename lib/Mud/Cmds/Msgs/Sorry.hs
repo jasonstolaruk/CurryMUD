@@ -5,7 +5,6 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryAdminName
                            , sorryAlreadyPossessed
                            , sorryAlreadyPossessing
-                           , sorryAlteredRm
                            , sorryAsAdmin
                            , sorryAsSelf
                            , sorryAsType
@@ -262,13 +261,6 @@ sorryAlreadyPossessed a b = but . T.concat $ [ theOnLower a, " is already posses
 
 sorryAlreadyPossessing :: Sing -> Text
 sorryAlreadyPossessing s = "You are already possessing " <> theOnLower s <> "."
-
-
------
-
-
-sorryAlteredRm :: Text
-sorryAlteredRm = "Too late! You moved."
 
 
 -----
@@ -978,7 +970,7 @@ sorryReadLang s lang = T.concat [ "Although you recognize that the text on the "
 
 sorryReadNoHooks :: Text
 sorryReadNoHooks = "You don't see anything to read here. " <>
-                   parensQuote "If you'd like to read an item on the ground here, please pick up the item first."
+                   parensQuote "If you'd like to read an item on the ground, please pick up the item first."
 
 
 sorryReadType :: Sing -> Text
@@ -992,7 +984,7 @@ sorryReadUnknownLang s = "The text written on the " <> s <> " is in a language y
 sorryReadWithHooks :: Text -> Text
 sorryReadWithHooks t = dblQuote t                                                      <>
                        " does not match the name of a readable fixture of this room. " <>
-                       parensQuote "If you'd like to read an item on the ground here, please pick up the item first."
+                       parensQuote "If you'd like to read an item on the ground, please pick up the item first."
 
 
 -----

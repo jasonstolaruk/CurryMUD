@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, RecordWildCards #-}
+{-# LANGUAGE OverloadedStrings, RecordWildCards, ViewPatterns #-}
 
 module Mud.TheWorld.Zones.AdminZone ( adminZoneHooks
                                     , adminZoneRmActionFuns
@@ -13,7 +13,6 @@ import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Calc
-import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Put
 import Mud.Data.State.Util.Random
@@ -41,6 +40,12 @@ import Data.Text (Text)
 import qualified Data.Map.Lazy as M (empty, fromList, singleton)
 
 
+{-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
+
+
+-----
+
+
 patternMatchFail :: Text -> [Text] -> a
 patternMatchFail = U.patternMatchFail "Mud.TheWorld.Zones.AdminZone"
 
@@ -57,10 +62,12 @@ logNotice = L.logNotice "Mud.TheWorld.Zones.AdminZone"
 
 
 adminZoneHooks :: [(HookName, HookFun)]
-adminZoneHooks = [ (getFlowerHookName,     getFlowerHookFun    )
-                 , (lookFlowerbedHookName, lookFlowerbedHookFun)
-                 , (lookWallsHookName,     lookWallsHookFun    )
-                 , (readLookSignHookName,  readLookSignHookFun ) ]
+adminZoneHooks = [ (getFlowerHookName,                 getFlowerHookFun                )
+                 , (lookFlowerbedHookName,             lookFlowerbedHookFun            )
+                 , (lookWallsHookName,                 lookWallsHookFun                )
+                 , (readLookPaperHookName,             readLookPaperHookFun            )
+                 , (readLookSign_iEmptyHookName,       readLookSign_iEmptyHookFun      )
+                 , (readLookSign_iTutEntranceHookName, readLookSign_iTutEntranceHookFun) ]
 
 
 -----
@@ -154,16 +161,39 @@ lookWallsHookFun i Hook { .. } _ a@(_, (ms, _, _, _)) =
 -----
 
 
-readLookSignHook :: Hook
-readLookSignHook = Hook readLookSignHookName ["sign"]
+readLookPaperHook :: Hook
+readLookPaperHook = Hook readLookPaperHookName ["paper"]
 
 
-readLookSignHookName :: HookName
-readLookSignHookName = "AdminZone_iEmpty_readLookSign"
+readLookPaperHookName :: HookName
+readLookPaperHookName = "AdminZone_iTutEntrance_readLookPaper"
 
 
-readLookSignHookFun :: HookFun
-readLookSignHookFun i Hook { .. } _ a@(_, (ms, _, _, _)) =
+readLookPaperHookFun :: HookFun
+readLookPaperHookFun i Hook { .. } (V.head -> r) a@(_, (ms, _, _, _)) =
+    let selfDesig = mkStdDesig i ms DoCap
+    in a &    _1 %~  (\\ triggers)
+         & _2._2 <>~ pure signDesc
+         & _2._3 <>~ pure (serialize selfDesig <> " reads the piece of paper nailed to the sign.", i `delete` desigIds selfDesig)
+         & _2._4 <>~ pure (bracketQuote hookName <> " read paper")
+  where
+    signDesc = "Scrawled on the piece of paper is the following message:\n\"Your lucky number is " <> x <> ".\""
+    x        = showText . rndmIntToPer $ r
+
+
+-----
+
+
+readLookSign_iEmptyHook :: Hook
+readLookSign_iEmptyHook = Hook readLookSign_iEmptyHookName ["sign"]
+
+
+readLookSign_iEmptyHookName :: HookName
+readLookSign_iEmptyHookName = "AdminZone_iEmpty_readLookSign"
+
+
+readLookSign_iEmptyHookFun :: HookFun
+readLookSign_iEmptyHookFun i Hook { .. } _ a@(_, (ms, _, _, _)) =
     let selfDesig = mkStdDesig i ms DoCap
     in a &    _1 %~  (\\ triggers)
          & _2._2 <>~ pure signDesc
@@ -174,6 +204,28 @@ readLookSignHookFun i Hook { .. } _ a@(_, (ms, _, _, _)) =
                \\"Welcome to the empty room. You have been summoned here by a CurryMUD administrator. As there are no \
                \exits, you will need the assistance of an administrator when the time comes for you to leave. We hope \
                \you enjoy your stay!\""
+
+
+-----
+
+readLookSign_iTutEntranceHook :: Hook
+readLookSign_iTutEntranceHook = Hook readLookSign_iTutEntranceHookName ["sign"]
+
+
+readLookSign_iTutEntranceHookName :: HookName
+readLookSign_iTutEntranceHookName = "AdminZone_iTutEntrance_readLookSign"
+
+
+readLookSign_iTutEntranceHookFun :: HookFun
+readLookSign_iTutEntranceHookFun i Hook { .. } _ a@(_, (ms, _, _, _)) =
+    let selfDesig = mkStdDesig i ms DoCap
+    in a &    _1 %~  (\\ triggers)
+         & _2._2 <>~ pure signDesc
+         & _2._3 <>~ pure (serialize selfDesig <> " reads the sign floating above the portal.", i `delete` desigIds selfDesig)
+         & _2._4 <>~ pure (bracketQuote hookName <> " read sign")
+  where
+    signDesc = "The sign reads, \"Tutorial this way. No re-entry!\"\n\
+               \A small, square piece of paper has been nailed to the bottom-right corner of the sign."
 
 
 -- ==================================================
@@ -196,8 +248,8 @@ pickRmActionFunName = "AdminZone_iAtrium_pick"
 
 
 pick :: RmActionFun
-pick _  p@AdviseNoArgs     = advise p [] advicePickNoArgs
-pick ri p@(LowerNub' i as) = genericAction p helper "pick"
+pick p@AdviseNoArgs     = advise p [] advicePickNoArgs
+pick p@(LowerNub' i as) = genericAction p helper "pick"
   where
     helper v ms =
         let (inInvs, inEqs, inRms) = sortArgsInvEqRm InRm as
@@ -209,8 +261,8 @@ pick ri p@(LowerNub' i as) = genericAction p helper "pick"
                                              | otherwise                    = initAcc
             mkMsgForArg arg | arg `elem` triggers = head toSelfs
                             | otherwise           = sorryPickNotFlower arg
-        in getRmId i ms /= ri ? genericSorry ms sorryAlteredRm :? (ms', (sorrys ++ map mkMsgForArg inRms', bs, logMsgs))
-pick _ p = patternMatchFail "pick" [ showText p ]
+        in (ms', (sorrys ++ map mkMsgForArg inRms', bs, logMsgs))
+pick p = patternMatchFail "pick" [ showText p ]
 
 
 -- ==================================================
@@ -528,12 +580,14 @@ createAdminZone = do
         (Rm "The portal"
             "Floating before you is a large round portal in which dazzling shapes and colors spin and dance. You feel \
             \a peculiar pulling sensation in your abdomen, as if the portal is attempting to draw you towards itself.\n\
-            \Suspended above the portal is a wooden plaque reading, \"TUTORIAL THIS WAY.\""
+            \A wooden sign is suspended above the portal."
             zeroBits
             [ StdLink South iVoid
             , NonStdLink "portal" iTutWelcome "% floats into the portal, and promptly disappears."
                                               "% arrives in the tutorial." ]
-            M.empty [])
+            (M.fromList [ ("look", [ readLookSign_iTutEntranceHook, readLookPaperHook ])
+                        , ("read", [ readLookSign_iTutEntranceHook, readLookPaperHook ]) ])
+            [])
   putRm iLoungeEntrance
         []
         mempty
@@ -560,8 +614,8 @@ createAdminZone = do
             \though you can't miss the small wooden sign affixed to the north wall."
             zeroBits
             []
-            (M.fromList [ ("look", [ readLookSignHook, lookWallsHook ])
-                        , ("read", [ readLookSignHook ]) ])
+            (M.fromList [ ("look", [ readLookSign_iEmptyHook, lookWallsHook ])
+                        , ("read", [ readLookSign_iEmptyHook ]) ])
             [])
 
   -- ==================================================
@@ -744,7 +798,7 @@ createAdminZone = do
                    parchmentDesc
                    zeroBits)
               (Obj paperWeight paperVol)
-              (Writable (Just ("Tap on a stone bridge before crossing.", NymphLang))
+              (Writable (Just ("Tap a stone bridge before crossing.", NymphLang))
                         Nothing)
   putWritable iParchment3
               (Ent iParchment3

@@ -5,6 +5,7 @@ module Mud.Data.State.Util.Random ( percent
                                   , rndmDos
                                   , rndmElem
                                   , rndmIntToElem
+                                  , rndmIntToPer
                                   , rndmIntToRange
                                   , rndmIntToRangeHelper
                                   , rndmPer
@@ -68,6 +69,10 @@ rndmElem xs = (xs !!) <$> rndmR (0, length xs - 1)
 
 rndmIntToElem :: Int -> [a] -> a
 rndmIntToElem r xs = xs !! rndmIntToRange r (0, length xs - 1)
+
+
+rndmIntToPer :: Int -> Int
+rndmIntToPer = flip rndmIntToRange percent
 
 
 rndmIntToRange :: Int -> Range -> Int

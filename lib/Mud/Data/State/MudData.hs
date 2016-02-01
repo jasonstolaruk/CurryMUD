@@ -110,7 +110,7 @@ data Action = Action { actionFun    :: ActionFun
 type ActionFun = ActionParams -> MudStack ()
 
 
-type RmActionFun = Id -> ActionFun
+type RmActionFun = ActionFun
 
 
 -- ==================================================

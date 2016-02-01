@@ -409,7 +409,7 @@ procHooks i ms v cn as | initAcc <- (as, (ms, [], [], [])) = case lookupHooks i 
       matches ->
         let xformedArgs = foldr (\Hook { triggers } -> dropSynonyms triggers) as' matches
             hookHelper a@(_, (ms', _, _, _)) h@(Hook hn _ ) = getHookFun hn ms' i h v a
-        in foldl' hookHelper (first (const xformedArgs) initAcc) matches
+        in foldl' hookHelper (first (const xformedArgs) initAcc) matches -- TODO: The order of matches may not be the same as the order of arguments.
 
 
 dropPrefixesForHooks :: [Hook] -> Args -> Args

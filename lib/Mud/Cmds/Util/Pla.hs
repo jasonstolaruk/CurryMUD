@@ -899,10 +899,10 @@ mkInvCoinsDesc i cols ms targetId targetSing | targetInv <- getInv targetId ms, 
 
 mkEntsInInvDesc :: Id -> Cols -> MudState -> Inv -> Text
 mkEntsInInvDesc i cols ms =
-    T.unlines . concatMap (wrapIndent entNamePadding cols . helper) . mkStyledName_Count_BothList i ms
+    T.unlines . concatMap (wrapIndent bracketedEntNamePadding cols . helper) . mkStyledName_Count_BothList i ms
   where
-    helper (padEntName -> en, c, (s, _)) | c == 1 = en <> "1 " <> s
-    helper (padEntName -> en, c, b     )          = T.concat [ en, showText c, " ", mkPlurFromBoth b ]
+    helper (padBracketedEntName -> en, c, (s, _)) | c == 1 = en <> "1 " <> s
+    helper (padBracketedEntName -> en, c, b     )          = T.concat [ en, showText c, " ", mkPlurFromBoth b ]
 
 
 mkStyledName_Count_BothList :: Id -> MudState -> Inv -> [(Text, Int, BothGramNos)]

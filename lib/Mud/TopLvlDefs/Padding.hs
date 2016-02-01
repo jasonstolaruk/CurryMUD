@@ -6,6 +6,10 @@ import Mud.Data.State.Util.Calc
 import Mud.TopLvlDefs.Misc
 
 
+bracketedEntNamePadding :: Int
+bracketedEntNamePadding = 12
+
+
 chanNamePadding :: Int
 chanNamePadding = succ maxChanNameLen
 
@@ -16,10 +20,6 @@ cmdNamePadding = succ maxCmdLen
 
 colorNamePadding :: Int
 colorNamePadding = 8
-
-
-entNamePadding :: Int
-entNamePadding = 11
 
 
 helpTopicPadding :: Int
