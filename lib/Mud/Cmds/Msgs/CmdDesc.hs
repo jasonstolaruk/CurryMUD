@@ -97,6 +97,10 @@ cmdDescPut :: Text
 cmdDescPut = "Put one or more items into a container."
 
 
+cmdDescRead :: Text
+cmdDescRead = "Read the text that is written on an item in your inventory or a fixture of your current room."
+
+
 cmdDescReady :: Text
 cmdDescReady = "Ready one or more items."
 

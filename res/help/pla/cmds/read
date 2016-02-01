@@ -1,0 +1,27 @@
+\h READ \d
+
+\uUSAGE\n
+read thing \s...\d
+
+\uDESCRIPTION\n
+Read the text that is written on an item in your inventory or a fixture of your current room.
+
+To read an item on the ground in your current room, you must first pick the item up.
+A room may contain readable fixtures, such as signs, that are depicted in the room's fixed description. The names of these fixtures must be prefixed with \lr#l\d, and may not be abbreviated.
+
+To read the parchment in your inventory:
+\qread \li#l\qparchment\d4`
+...or just...
+\qread parchment\d4`
+
+To read the sign in the room:
+\qread \lr#l\qsign\d ("sign" may not be abbreviated)4`
+
+\uEXAMPLES\n
+\qread paper\d to read the piece of paper in your inventory.4`
+\qread \p2#i\qpaper\d to read the second piece of paper in your inventory.4`
+\qread \p2#m\qpaper\d to read the first two pieces of paper in your inventory.4`
+\qread \p#a\qpaper\d to read all of the pieces of paper in your inventory.4`
+\qread \lr#l\qplaque\d to read the plaque in the room.4`
+
+\uSEE ALSO\n

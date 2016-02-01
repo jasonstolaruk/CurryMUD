@@ -346,7 +346,7 @@ createAdminZone = do
   -- ==================================================
   -- Rooms:
   putRm iLoggedOut
-        [iRoot]
+        [ iRoot ]
         mempty
         (Rm "Logged out room"
             "PCs are placed here when their players log out."

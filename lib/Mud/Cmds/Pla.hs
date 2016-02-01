@@ -162,8 +162,7 @@ regularCmds = map (uncurry4 mkRegularCmd)
     , ("question",   question,        True,  "Ask/answer newbie questions " <> plusRelatedMsg)
     , ("qui",        quitCan'tAbbrev, True,  "")
     , ("quit",       quit,            False, "Quit playing CurryMUD.")
-    , ("read",       readAction,      True,  "Read the text that is written on an object in your inventory or a \
-                                             \fixture of your current room.")
+    , ("read",       readAction,      True,  cmdDescRead)
     , ("remove",     remove,          True,  cmdDescRemove)
     , ("s",          go "s",          True,  cmdDescGoSouth)
     , ("se",         go "se",         True,  cmdDescGoSoutheast)
@@ -268,6 +267,7 @@ npcRegularCmds = map (uncurry4 mkRegularCmd)
     , ("n",          go "n",         True,  cmdDescGoNorth)
     , ("ne",         go "ne",        True,  cmdDescGoNortheast)
     , ("nw",         go "nw",        True,  cmdDescGoNorthwest)
+    , ("read",       readAction,     True,  cmdDescRead)
     , ("remove",     remove,         True,  cmdDescRemove)
     , ("s",          go "s",         True,  cmdDescGoSouth)
     , ("se",         go "se",        True,  cmdDescGoSoutheast)
@@ -1848,7 +1848,6 @@ quitCan'tAbbrev p                  = withoutArgs quitCan'tAbbrev p
 -----
 
 
--- TODO: Help.
 readAction :: ActionFun
 readAction p@AdviseNoArgs          = advise p ["read"] adviceReadNoArgs
 readAction (LowerNub i mq cols as) = (,) <$> getState <*> mkRndmVector >>= \(ms, v) ->
