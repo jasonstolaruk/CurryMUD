@@ -68,7 +68,7 @@ The code is available here on GitHub under the 3-clause BSD license (refer to th
   * `TupleSections`
   * `ViewPatterns`
 * About 70 modules, excluding tests.
-* A handful of unit and property tests exist (I'm using the [tasty testing framework](https://hackage.haskell.org/package/tasty)).
+* About 50 unit and property tests exist (I'm using the [tasty testing framework](https://hackage.haskell.org/package/tasty)).
 
 ### How to try it out
 
