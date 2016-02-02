@@ -20,16 +20,19 @@ Imagine that you'd like to examine the club and the sack. This is accomplished w
 As you can see, "club" may be abbreviated down to "c", and "sack" may be abbreviated down to "s".
 The shortest possible abbreviation can be easily ascertained, as it is indicated by \athis color\d in the bracketed words. In fact, whenever you see a word that is partially written in \athis color\d, you know that it may be abbreviated.
 
-Referring back to our example... The names of commands may also be abbreviated. Thus any of the following are valid:
+Referring back to our example... The names of commands may also be abbreviated. All of the following are valid:
 
 \qlook c s\d
 \qloo c s\d
 \qlo c s\d
 \ql c s\d
 
-Note that the identifiers for coins (listed below) may NOT be abbreviated:
-"cp" (for copper pieces), "sp" (for silver pieces), "gp" (for gold pieces), "coin", and "coins"
+\uEXCEPTIONS\d
 
-In addition, there do exist undocumented commands that may only be used in certain rooms (one example is the "trash" command, which only works when you are in a room with a trash bin). Keep in mind that the names of undocumented commands cannot be abbreviated.
+Some things may not be abbreviated:
+* The identifiers for coins:2`
+  "cp" (for copper pieces), "sp" (for silver pieces), "gp" (for gold pieces), "coin", and "coins"2`
+* The names undocumented commands.2`
+* The names of room fixtures.2`
 
 \uSEE ALSO\n

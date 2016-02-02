@@ -1,0 +1,9 @@
+\h ROOM FIXTURES \d
+
+A "room fixture" is a permanent feature of a room (such as a sign) with which you can interact via one or more commands. Room fixtures are depicted in the static description of a room.
+
+Frequently, you'll find that you can use everyday commands such as "look" and "read" to interact with room fixtures; however, in some cases, undocumented commands do exist.
+
+Keep in mind that the names of room fixtures may not be abbreviated. \qlook sign\d is legal, while \qlook sig\d, or any other abbreviated form, is not.
+
+\uSEE ALSO\n

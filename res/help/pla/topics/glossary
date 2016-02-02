@@ -12,6 +12,9 @@ Analogous to a named "chat room" (though there is no shared "space"). Provides t
 \uExpressive Commands\d
 Commands that facilitate the execution of discreet actions In-Character (IC); commands such as "bow", "cry", "kiss", etc. (there are about 200 such commands). Sometimes referred to as "built-in emotes."
 
+\uFixture\d
+See "Room Fixture."
+
 \uIn-Character\d
 Something said or done as a character, in the context of role-playing. Or, in the context of the virtual world.
 
@@ -57,6 +60,9 @@ Used to describe a MUD with rules requiring that players stay In-Character (IC).
 \uRoom\d
 A singular place/space, of arbitrary dimensions, in the virtual world. Typing \qlook\d will give you a description of your "current room" (that is, the room in which you are presently located); use the movement commands ("n" for north, "s", "e", "w", etc.) to move between rooms.
 
+\uRoom Fixture\d
+A permanent feature of a room (such as a sign) with which you can interact via one or more commands ("look", "read", etc.). Room fixtures are depicted in a room's static description.
+
 \uTelepathic Channel\d
 An ad-hoc channel created by a player for In-Character (IC) communication. Using her innate psionic powers, a Player Character (PC) may create and name a channel, then connect to it anyone with whom she is two-way linked.
 
@@ -65,3 +71,6 @@ A psionic connection between two Player Characters (PCs), linking their minds to
 
 \uTwo-Way Link\d
 A telepathic connection between two Player Characters (PCs), where each PC has linked with the other.
+
+\uUndocumented Command\d
+A commands for which there is no help available via the "help" command. You are meant to discover these commands in the course of your gameplay and exploration.

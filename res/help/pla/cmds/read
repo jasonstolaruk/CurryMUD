@@ -6,8 +6,7 @@ read thing \s...\d
 \uDESCRIPTION\n
 Read the text that is written on an item in your inventory or a fixture of your current room.
 
-To read an item on the ground in your current room, you must first pick the item up.
-A room may contain readable fixtures, such as signs, that are depicted in the room's fixed description. The names of these fixtures must be prefixed with \lr#l\d, and may not be abbreviated.
+A room may contain readable fixtures, such as signs, that are depicted in the room's static description. The names of these fixtures must be prefixed with \lr#l\d, and may not be abbreviated.
 
 To read the parchment in your inventory:
 \qread \li#l\qparchment\d4`
@@ -16,6 +15,8 @@ To read the parchment in your inventory:
 
 To read the sign in the room:
 \qread \lr#l\qsign\d ("sign" may not be abbreviated)4`
+
+(To read an item on the ground in your current room, you must first pick the item up.)
 
 \uEXAMPLES\n
 \qread paper\d to read the piece of paper in your inventory.4`

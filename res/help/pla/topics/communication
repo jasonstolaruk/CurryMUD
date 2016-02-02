@@ -5,13 +5,13 @@ TODO: Whisper? Racial languages?
 \uChannel\d
 Analogous to a named "chat room" (though there is no shared "space"). Provides the ability for a group of players to message each other in real-time. There is the "question channel" (OOC) along with "telepathic channels" (IC).
 
-\uOOC COMMUNICATION\n
+\uOOC COMMUNICATION\d
 admin
 question
 
 set
 
-\uIC COMMUNICATION\n
+\uIC COMMUNICATION\d
 say
 telepathy
 channel
