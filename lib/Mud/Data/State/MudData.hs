@@ -354,8 +354,7 @@ data Lang = CommonLang
           | HumanLang
           | LagomorphLang
           | NymphLang
-          | VulpenoidLang
-          | UnknownLang deriving (Bounded, Enum, Eq, Generic, Show)
+          | VulpenoidLang deriving (Bounded, Enum, Eq, Generic, Show)
 
 
 type RegenAsync = Async ()
@@ -426,11 +425,15 @@ type NpcServerAsync = Async ()
 
 
 -- Has an entity.
-data Obj = Obj { _weight :: Weight
-               , _vol    :: Vol } deriving (Eq, Generic, Show)
+data Obj = Obj { _weight   :: Weight
+               , _vol      :: Vol
+               , _objFlags :: Int } deriving (Eq, Generic, Show)
 
 
 type Weight = Int
+
+
+data ObjFlags = IsBiodegradable deriving Enum
 
 
 -- ==================================================

@@ -26,6 +26,7 @@ module Mud.Data.Misc ( Action(..)
                      , GenericRes
                      , getEntFlag
                      , GetEntsCoinsRes(..)
+                     , getObjFlag
                      , GetOrDrop(..)
                      , getPlaFlag
                      , getRmFlag
@@ -45,6 +46,7 @@ module Mud.Data.Misc ( Action(..)
                      , Serializable
                      , serialize
                      , setEntFlag
+                     , setObjFlag
                      , setPlaFlag
                      , setRmFlag
                      , ShouldCap(..)
@@ -160,6 +162,19 @@ setEntFlag :: EntFlags -> Bool -> Ent -> Ent
 setEntFlag = setFlag
 
 
+instance HasFlags Obj where
+  flagGetter = objFlags
+  flagSetter = objFlags
+
+
+getObjFlag :: ObjFlags -> Obj -> Bool
+getObjFlag = getFlag
+
+
+setObjFlag :: ObjFlags -> Bool -> Obj -> Obj
+setObjFlag = setFlag
+
+
 instance HasFlags Rm where
   flagGetter = rmFlags
   flagSetter = rmFlags
@@ -262,7 +277,6 @@ instance Pretty Lang where
   pp LagomorphLang = "lagomorphean"
   pp NymphLang     = "naelyni"
   pp VulpenoidLang = "vulpenoidean"
-  pp UnknownLang   = "unknown"
 
 
 instance Pretty LinkDir where

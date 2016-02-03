@@ -545,6 +545,25 @@ isInvisId = entFlagHelper IsInvis
 
 
 -- ==================================================
+-- Object flag getters:
+
+
+objFlagHelper :: ObjFlags -> Id -> MudState -> Bool
+objFlagHelper flag i = getObjFlag flag . getObj i
+
+
+-----
+
+
+isBiodegradable :: Obj -> Bool
+isBiodegradable = getObjFlag IsBiodegradable
+
+
+isBiodegradableId :: Id -> MudState -> Bool
+isBiodegradableId = objFlagHelper IsBiodegradable
+
+
+-- ==================================================
 -- Player flag getters:
 
 

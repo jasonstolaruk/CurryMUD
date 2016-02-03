@@ -43,12 +43,14 @@ module Mud.Data.State.Util.Misc ( aOrAnType
                                 , pcNpc
                                 , pluralize
                                 , procHooks
+                                , raceToLang
                                 , removeAdHoc
                                 , setInterp
                                 , sortInv
                                 , tweak
                                 , tweaks
                                 , withLock ) where
+
 import Mud.Data.Misc
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
@@ -256,7 +258,8 @@ getUnusedId = views typeTbl (head . ([0..] \\) . IM.keys)
 
 
 isKnownLang :: Id -> MudState -> Lang -> Bool
-isKnownLang i ms = (`elem` CommonLang : getKnownLangs i ms)
+isKnownLang i ms lang | isAdminId i ms = True
+                      | otherwise      = lang `elem` CommonLang : getKnownLangs i ms
 
 
 -----
@@ -431,6 +434,20 @@ dropPrefixes arg@(T.unpack -> arg'        )
     isMatch :: (String, String, String) -> Bool
     isMatch (a, b, c) = and [ ()# a, ()!# b, ()!# c ]
     mkRegex c         = "^[0-9]+\\" <> pure c :: String
+
+
+-----
+
+
+raceToLang :: Race -> Lang
+raceToLang Dwarf     = DwarfLang
+raceToLang Elf       = ElfLang
+raceToLang Felinoid  = FelinoidLang
+raceToLang Halfling  = HalflingLang
+raceToLang Human     = HumanLang
+raceToLang Lagomorph = LagomorphLang
+raceToLang Nymph     = NymphLang
+raceToLang Vulpenoid = VulpenoidLang
 
 
 -----

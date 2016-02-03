@@ -1909,19 +1909,23 @@ readHelper i cols ms d = foldl' helper
                 Just (txt, lang) -> case r of
                   Nothing -> if isKnownLang i ms lang
                     then readIt txt . T.concat $ [ "The following is written on the ", s, " in ", pp lang, ":\n" ]
-                    else let t = lang == UnknownLang ? sorryReadUnknownLang s :? sorryReadLang s lang
-                         in acc & _1 <>~ wrapUnlinesNl cols t
+                    else acc & _1 <>~ wrapUnlinesNl cols (sorryReadLang s lang)
                   Just recipSing
-                    | getSing i ms == recipSing -> readIt txt . magicMsgHeader $ s
-                    | otherwise                 -> acc & _1 <>~ wrapUnlinesNl cols (sorryReadUnknownLang s)
+                    | isPC    i ms
+                    , getSing i ms == recipSing || isAdminId i ms
+                    , b    <- isKnownLang i ms lang
+                    , txt' <- onFalse b (const . sorryReadOrigLang $ lang) txt
+                    -> readIt txt' . mkMagicMsgHeader s b $ lang
+                    | otherwise -> acc & _1 <>~ wrapUnlinesNl cols (sorryReadUnknownLang s)
           _ -> acc & _1 <>~ wrapUnlinesNl cols (sorryReadType s)
-    magicMsgHeader s =
-        "At first glance, the writing on the " <> s <> " appears to be in a language you don't recognize. Then \
-        \suddenly the unfamiliar glyphs come alive, squirming and melting into new forms. In a matter of seconds, the \
-        \text transforms into the following message, written in everyday common:\n"
--- TODO: Admins should be able to read the text regardless.
--- TODO: What if the magic msg was written in a language that the recip doesn't know?
--- TODO: Is "UnknownLang" really needed?
+    mkMagicMsgHeader s b lang =
+        T.concat [ "At first glance, the writing on the "
+                 , s
+                 , " appears to be in a language you don't recognize. Then suddenly the unfamiliar glyphs come alive, \
+                   \squirming and melting into new forms. In a matter of seconds, the text transforms into "
+                 , nl $ if b
+                     then "the following message, written in " <> pp lang <> ":"
+                     else "a message written in "              <> pp lang <> "." ]
 
 
 -----

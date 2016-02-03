@@ -130,6 +130,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryReadInEq
                            , sorryReadLang
                            , sorryReadNoHooks
+                           , sorryReadOrigLang
                            , sorryReadType
                            , sorryReadUnknownLang
                            , sorryReadWithHooks
@@ -971,6 +972,10 @@ sorryReadLang s lang = T.concat [ "Although you recognize that the text on the "
 sorryReadNoHooks :: Text
 sorryReadNoHooks = "You don't see anything to read here. " <>
                    parensQuote "If you'd like to read an item on the ground, please pick up the item first."
+
+
+sorryReadOrigLang :: Lang -> Text
+sorryReadOrigLang lang = "Most unfortunately, as you don't know " <> pp lang <> ", you cannot read the text."
 
 
 sorryReadType :: Sing -> Text

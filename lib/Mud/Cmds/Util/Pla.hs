@@ -944,14 +944,12 @@ mkEqDesc i cols ms descId descSing descType = let descs = descId == i ? mkDescsS
 
 
 mkWritableDesc :: Cols -> MudState -> Id -> Text
-mkWritableDesc cols ms targetId = maybe "" (helper . snd) . getMessage targetId $ ms
+mkWritableDesc cols ms targetId = case getWritable targetId ms of
+  (Writable Nothing          _       ) -> ""
+  (Writable (Just _        ) (Just _)) -> helper "a language you don't recognize"
+  (Writable (Just (_, lang)) Nothing ) -> helper . pp $ lang
   where
-    helper lang = wrapUnlines cols $ "There is something written on it in " <> descLang lang <> "."
-
-
-descLang :: Lang -> Text
-descLang UnknownLang = "a language you don't recognize"
-descLang lang        = pp lang
+    helper txt = wrapUnlines cols $ "There is something written on it in " <> txt <> "."
 
 
 -----
