@@ -68,7 +68,8 @@ data MudState = MudState { _armTbl           :: ArmTbl
                          , _threadTbl        :: ThreadTbl
                          , _typeTbl          :: TypeTbl
                          , _wpnTbl           :: WpnTbl
-                         , _writableTbl      :: WritableTbl }
+                         , _writableTbl      :: WritableTbl
+                         , _opList           :: [Operation] }
 
 
 type ArmTbl           = IM.IntMap Arm
@@ -98,6 +99,7 @@ type ThreadTbl        = M.Map ThreadId ThreadType
 type TypeTbl          = IM.IntMap Type
 type WpnTbl           = IM.IntMap Wpn
 type WritableTbl      = IM.IntMap Writable
+type Operation        = MudStack ()
 
 
 -- ==================================================
@@ -425,15 +427,37 @@ type NpcServerAsync = Async ()
 
 
 -- Has an entity.
-data Obj = Obj { _weight   :: Weight
-               , _vol      :: Vol
-               , _objFlags :: Int } deriving (Eq, Generic, Show)
+data Obj = Obj { _weight           :: Weight
+               , _vol              :: Vol
+               , _objFlags         :: Int
+               , _biodegraderAsync :: Maybe BiodegraderAsync }
 
 
 type Weight = Int
 
 
 data ObjFlags = IsBiodegradable deriving Enum
+
+
+type BiodegraderAsync = Async ()
+
+
+instance FromJSON Obj where parseJSON = jsonToObj
+instance ToJSON   Obj where toJSON    = objToJSON
+
+
+objToJSON :: Obj -> Value
+objToJSON Obj { .. } = object [ "_weight"   .= _weight
+                              , "_vol"      .= _vol
+                              , "_objFlags" .= _objFlags ]
+
+
+jsonToObj :: Value -> Parser Obj
+jsonToObj (Object o) = Obj <$> o .: "_weight"
+                           <*> o .: "_vol"
+                           <*> o .: "_objFlags"
+                           <*> pure Nothing
+jsonToObj _          = empty
 
 
 -- ==================================================
@@ -610,12 +634,14 @@ type TeleLinkTbl = M.Map Sing IsTuned
 -- ==================================================
 
 
-data ThreadType = DbTblPurger
+data ThreadType = Biodegrader Id
+                | DbTblPurger
                 | Error
                 | InacTimer   Id
                 | Listen
                 | Notice
                 | NpcServer   Id
+                | OpListMonitor
                 | PlaLog      Id
                 | Receive     Id
                 | RegenChild  Id
@@ -677,7 +703,6 @@ instance FromJSON Hook
 instance FromJSON HostRecord
 instance FromJSON Lang
 instance FromJSON LinkDir
-instance FromJSON Obj
 instance FromJSON PC
 instance FromJSON Race
 instance FromJSON Rm
@@ -723,9 +748,6 @@ instance ToJSON   Lang
   where
     toJSON = genericToJSON defaultOptions
 instance ToJSON   LinkDir
-  where
-    toJSON = genericToJSON defaultOptions
-instance ToJSON   Obj
   where
     toJSON = genericToJSON defaultOptions
 instance ToJSON   PC

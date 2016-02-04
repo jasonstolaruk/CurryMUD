@@ -53,8 +53,10 @@ library
                        Mud.Data.State.MudData
                        Mud.Data.State.Util.Calc
                        Mud.Data.State.Util.Coins
+                       Mud.Data.State.Util.Destroy
                        Mud.Data.State.Util.Get
                        Mud.Data.State.Util.Misc
+                       Mud.Data.State.Util.New
                        Mud.Data.State.Util.Output
                        Mud.Data.State.Util.Put
                        Mud.Data.State.Util.Random
@@ -75,11 +77,13 @@ library
                        Mud.TheWorld.Zones.AdminZoneIds
                        Mud.TheWorld.Zones.Tutorial
                        Mud.TheWorld.Zones.TutorialIds
+                       Mud.Threads.Biodegrader
                        Mud.Threads.DbTblPurger
                        Mud.Threads.InacTimer
                        Mud.Threads.Listen
                        Mud.Threads.Misc
                        Mud.Threads.NpcServer
+                       Mud.Threads.OpListMonitor
                        Mud.Threads.Receive
                        Mud.Threads.Regen
                        Mud.Threads.Server

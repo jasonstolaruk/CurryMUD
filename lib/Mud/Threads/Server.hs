@@ -15,6 +15,7 @@ import Mud.Data.State.Util.Output
 import Mud.Interp.CentralDispatch
 import Mud.Misc.ANSI
 import Mud.Misc.Persist
+import Mud.Threads.Biodegrader
 import Mud.Threads.Misc
 import Mud.Threads.NpcServer
 import Mud.Threads.Regen
@@ -25,7 +26,7 @@ import Mud.Util.Quoting
 import Mud.Util.Text hiding (headTail)
 import qualified Mud.Misc.Logging as L (logNotice)
 
-import Control.Concurrent (forkIO, killThread)
+import Control.Concurrent (killThread)
 import Control.Concurrent.Async (wait)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TMQueue (writeTMQueue)
@@ -33,9 +34,8 @@ import Control.Concurrent.STM.TQueue (readTQueue, writeTQueue)
 import Control.Exception.Lifted (catch)
 import Control.Lens (view)
 import Control.Lens.Operators ((^.))
-import Control.Monad ((>=>), forM_, void)
+import Control.Monad ((>=>), forM_)
 import Control.Monad.IO.Class (liftIO)
-import Control.Monad.Reader (runReaderT)
 import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>))
 import Data.Text (Text)
@@ -131,13 +131,14 @@ cowbye h = liftIO takeADump `catch` fileIOExHandler "cowbye"
 shutDown :: MudStack ()
 shutDown = do
     massMsg SilentBoot
-    onEnv $ liftIO . void . forkIO . runReaderT commitSuicide
+    onNewThread commitSuicide
   where
     commitSuicide = do
         liftIO . mapM_ wait . M.elems . view talkAsyncTbl =<< getState
         logNotice "shutDown commitSuicide" "all players have been disconnected."
         stopNpcRegens
         stopNpcServers
+        stopBiodegraders
         persist
         logNotice "shutDown commitSuicide" "killing the listen thread."
         liftIO . killThread . getListenThreadId =<< getState

@@ -6,6 +6,7 @@ module Mud.Data.State.Util.Misc ( aOrAnType
                                 , BothGramNos
                                 , dropPrefixes
                                 , dropPrefixesForHooks
+                                , findInvContaining
                                 , findMobIds
                                 , getAdminIds
                                 , getEffBothGramNos
@@ -38,7 +39,6 @@ module Mud.Data.State.Util.Misc ( aOrAnType
                                 , mkStdDesig
                                 , mkUnknownPCEntName
                                 , modifyState
-                                , newObj
                                 , onEnv
                                 , pcNpc
                                 , pluralize
@@ -99,6 +99,14 @@ aOrAnType :: Type -> Text
 aOrAnType t@ClothType = pp t
 aOrAnType t@ArmType   = pp t
 aOrAnType t           = aOrAn . pp $ t
+
+
+-----
+
+
+findInvContaining :: Id -> MudState -> Maybe Id
+findInvContaining i ms = let matches = views invTbl (IM.keys . IM.filter (i `elem`)) ms
+                         in ()# matches ? Nothing :? Just (head matches)
 
 
 -----
@@ -366,19 +374,6 @@ mkStdDesig i ms sc = StdDesig { sDesigEntSing = Just . getSing i $ ms
 
 modifyState :: (MudState -> (MudState, a)) -> MudStack a
 modifyState f = ask >>= \md -> liftIO .  atomicModifyIORef (md^.mudStateIORef) $ f
-
-
------
-
-
-type InvId = Id
-
-
-newObj :: MudState -> Ent -> Obj -> InvId -> MudState
-newObj ms e@(view entId -> i) o invId = let ms' = ms & entTbl .ind i .~ e
-                                                     & objTbl .ind i .~ o
-                                                     & typeTbl.ind i .~ ObjType
-                                        in ms' & invTbl.ind invId %~ (sortInv ms' . (i :))
 
 
 -----

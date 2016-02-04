@@ -23,6 +23,7 @@ import Mud.Data.State.Util.Random
 import Mud.Misc.ANSI
 import Mud.Misc.Persist
 import Mud.TheWorld.Zones.AdminZoneIds (iLoggedOut, iPidge)
+import Mud.Threads.Misc
 import Mud.Threads.NpcServer
 import Mud.Threads.ThreadTblPurger
 import Mud.TopLvlDefs.Chars
@@ -39,7 +40,7 @@ import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Applicative (Const)
 import Control.Arrow ((***))
-import Control.Concurrent (forkIO, getNumCapabilities, myThreadId)
+import Control.Concurrent (getNumCapabilities, myThreadId)
 import Control.Concurrent.Async (asyncThreadId, poll)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
@@ -47,9 +48,9 @@ import Control.Exception (ArithException(..), IOException)
 import Control.Exception.Lifted (throwIO, try)
 import Control.Lens (Optical, both, view, views)
 import Control.Lens.Operators ((%~), (&), (^.))
-import Control.Monad ((>=>), replicateM_, unless, void)
+import Control.Monad ((>=>), replicateM_, unless)
 import Control.Monad.IO.Class (liftIO)
-import Control.Monad.Reader (asks, runReaderT)
+import Control.Monad.Reader (asks)
 import Data.Char (ord, digitToInt, isDigit, toLower)
 import Data.Ix (inRange)
 import Data.List (delete, intercalate, sort)
@@ -393,7 +394,7 @@ debugKeys p = withoutArgs debugKeys p
 debugLog :: ActionFun
 debugLog (NoArgs' i mq) = helper >> ok mq >> logPlaExec (prefixDebugCmd "log") i
   where
-    helper       = replicateM_ 100 . onEnv $ liftIO . void . forkIO . runReaderT heavyLogging
+    helper       = replicateM_ 100 . onNewThread $ heavyLogging
     heavyLogging = replicateM_ 100 . logNotice "debugLog heavyLogging" =<< mkMsg
     mkMsg        = [ "Logging from " <> ti <> "." | (showText -> ti) <- liftIO myThreadId ]
 debugLog p = withoutArgs debugLog p

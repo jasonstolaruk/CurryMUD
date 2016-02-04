@@ -11,9 +11,11 @@ import Mud.Data.State.Util.Output
 import Mud.Misc.Database
 import Mud.Misc.Logging hiding (logExMsg, logIOEx, logNotice)
 import Mud.TheWorld.TheWorld
+import Mud.Threads.Biodegrader
 import Mud.Threads.DbTblPurger
 import Mud.Threads.Misc
 import Mud.Threads.NpcServer
+import Mud.Threads.OpListMonitor
 import Mud.Threads.Regen
 import Mud.Threads.Talk
 import Mud.Threads.ThreadTblPurger
@@ -89,6 +91,7 @@ listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed 
         auxAsyncs <- mapM runAsync [ threadAdminChanTblPurger
                                    , threadAdminMsgTblPurger
                                    , threadChanTblPurger
+                                   , threadOpListMonitor
                                    , threadQuestionChanTblPurger
                                    , threadTeleTblPurger
                                    , threadThreadTblPurger
@@ -98,6 +101,7 @@ listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed 
     initialize = do
         startNpcRegens
         startNpcServers
+        startBiodegraders
         logNotice "listen initialize" "creating database tables."
         liftIO createDbTbls `catch` dbExHandler "listen initialize"
         sortAllInvs

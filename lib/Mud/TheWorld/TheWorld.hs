@@ -77,7 +77,8 @@ initMudData shouldLog = do
                                  , _threadTbl        =  M.empty
                                  , _typeTbl          = IM.empty
                                  , _wpnTbl           = IM.empty
-                                 , _writableTbl      = IM.empty }
+                                 , _writableTbl      = IM.empty
+                                 , _opList           = [] }
     start   <- getTime Monotonic
     return MudData { _errorLog      = errorLogService
                    , _gen           = genIO

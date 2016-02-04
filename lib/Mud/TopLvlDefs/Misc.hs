@@ -32,15 +32,23 @@ allCoinNames :: [Text]
 allCoinNames = coinNames ++ aggregateCoinNames
 
 
+type Seconds = Int
+
+
+biodegraderDelay :: Seconds
+biodegraderDelay = 10
+
+
+biodegradationDuration :: Seconds
+biodegradationDuration = 30 -- TODO: 5 {- mins -} * 60 {- secs -} -- five mins
+
+
 coinNames :: [Text]
 coinNames = [ "cp", "sp", "gp" ]
 
 
 coinFullNames :: [Text]
 coinFullNames = [ "copper piece", "silver piece", "gold piece" ]
-
-
-type Seconds = Int
 
 
 dbTblPurgerDelay :: Seconds
