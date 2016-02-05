@@ -124,14 +124,8 @@ lookFlowerbedHookName :: HookName
 lookFlowerbedHookName = "AdminZone_iAtrium_lookFlowerbed"
 
 
--- TODO: Make a helper function that makes a look (or read?) hook fun for you.
 lookFlowerbedHookFun :: HookFun
-lookFlowerbedHookFun i Hook { .. } _ a@(_, (ms, _, _, _)) =
-    let selfDesig = mkStdDesig i ms DoCap
-    in a &    _1 %~  (\\ triggers)
-         & _2._2 <>~ pure flowerbedDesc
-         & _2._3 <>~ pure (serialize selfDesig <> " looks at the flowerbed.", i `delete` desigIds selfDesig)
-         & _2._4 <>~ pure (bracketQuote hookName <> " looked at flowerbed")
+lookFlowerbedHookFun = mkLookReadHookFun flowerbedDesc "looks at the flowerbed." "looked at flowerbed"
   where
     flowerbedDesc = "The tasteful flowerbed prominently features daffodils, hibiscuses, chrysanthemums, and lilies, \
                     \all in a pleasing array of colors."
@@ -149,12 +143,7 @@ lookWallsHookName = "AdminZone_iEmpty_lookWalls"
 
 
 lookWallsHookFun :: HookFun
-lookWallsHookFun i Hook { .. } _ a@(_, (ms, _, _, _)) =
-    let selfDesig = mkStdDesig i ms DoCap
-    in a &    _1 %~  (\\ triggers)
-         & _2._2 <>~ pure wallsDesc
-         & _2._3 <>~ pure (serialize selfDesig <> " looks at the walls.", i `delete` desigIds selfDesig)
-         & _2._4 <>~ pure (bracketQuote hookName <> " looked at walls")
+lookWallsHookFun = mkLookReadHookFun wallsDesc "looks at the walls." "looked at walls"
   where
     wallsDesc = "You are enclosed by four smooth, dense walls, with no means of exit in sight."
 
@@ -194,12 +183,7 @@ readLookSign_iEmptyHookName = "AdminZone_iEmpty_readLookSign"
 
 
 readLookSign_iEmptyHookFun :: HookFun
-readLookSign_iEmptyHookFun i Hook { .. } _ a@(_, (ms, _, _, _)) =
-    let selfDesig = mkStdDesig i ms DoCap
-    in a &    _1 %~  (\\ triggers)
-         & _2._2 <>~ pure signDesc
-         & _2._3 <>~ pure (serialize selfDesig <> " reads the sign on the wall.", i `delete` desigIds selfDesig)
-         & _2._4 <>~ pure (bracketQuote hookName <> " read sign")
+readLookSign_iEmptyHookFun = mkLookReadHookFun signDesc "reads the sign on the wall." "read sign"
   where
     signDesc = "The following message has been painted on the sign in a tight, flowing script:\n\
                \\"Welcome to the empty room. You have been summoned here by a CurryMUD administrator. As there are no \
@@ -218,12 +202,7 @@ readLookSign_iTutEntranceHookName = "AdminZone_iTutEntrance_readLookSign"
 
 
 readLookSign_iTutEntranceHookFun :: HookFun
-readLookSign_iTutEntranceHookFun i Hook { .. } _ a@(_, (ms, _, _, _)) =
-    let selfDesig = mkStdDesig i ms DoCap
-    in a &    _1 %~  (\\ triggers)
-         & _2._2 <>~ pure signDesc
-         & _2._3 <>~ pure (serialize selfDesig <> " reads the sign floating above the portal.", i `delete` desigIds selfDesig)
-         & _2._4 <>~ pure (bracketQuote hookName <> " read sign")
+readLookSign_iTutEntranceHookFun = mkLookReadHookFun signDesc "reads the sign floating above the portal." "read sign"
   where
     signDesc = "The sign reads, \"Tutorial this way. No re-entry!\"\n\
                \A small, square piece of paper has been nailed to the bottom-right corner of the sign."

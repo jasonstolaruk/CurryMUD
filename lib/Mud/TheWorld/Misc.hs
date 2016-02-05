@@ -4,6 +4,7 @@
 module Mud.TheWorld.Misc ( commonHooks
                          , commonRmActionFuns
                          , lookTrashHook
+                         , mkLookReadHookFun
                          , putTrashHook
                          , trashRmAction ) where
 
@@ -71,12 +72,7 @@ lookTrashHookName = "(common)_lookTrash"
 
 
 lookTrashHookFun :: HookFun
-lookTrashHookFun i Hook { .. } _ a@(_, (ms, _, _, _)) =
-    let selfDesig = mkStdDesig i ms DoCap
-    in a &    _1 %~  (\\ triggers)
-         & _2._2 <>~ pure trashDesc
-         & _2._3 <>~ pure (serialize selfDesig <> " looks at the trash bin.", i `delete` desigIds selfDesig)
-         & _2._4 <>~ pure (bracketQuote hookName <> " looked at trash bin")
+lookTrashHookFun = mkLookReadHookFun trashDesc "looks at the trash bin." "looked at trash bin"
   where
     -- TODO: "Thank you for keeping xxx clean."
     trashDesc = "The trash bin is an oblong metal container, about 3 feet tall, with a lid connected to the body by \
@@ -85,6 +81,17 @@ lookTrashHookFun i Hook { .. } _ a@(_, (ms, _, _, _)) =
                 \bin are magically expunged, and entirely unrecoverable.\"\n\
                 \Carefully lifting open the lid and peaking inside, you find only an ominous darkness; not even the \
                 \bottom of the bin is visible."
+
+
+mkLookReadHookFun :: Text -> Text -> Text -> HookFun
+mkLookReadHookFun toSelf bcastTxt logMsgTxt = f
+  where
+    f i Hook { .. } _ a@(_, (ms, _, _, _)) =
+        let selfDesig = mkStdDesig i ms DoCap
+        in a &    _1 %~  (\\ triggers)
+             & _2._2 <>~ pure toSelf
+             & _2._3 <>~ pure (serialize selfDesig <> " " <> bcastTxt, i `delete` desigIds selfDesig)
+             & _2._4 <>~ pure (bracketQuote hookName <> " " <> logMsgTxt)
 
 
 -----
@@ -122,7 +129,6 @@ trashHelper i ms as =
                      in do
                          liftIO . threadDelay $ 3 * 10 ^ 6
                          getState >>= \ms' -> bcastNl . pure $ (msg, findMobIds ms' . getMobRmInv i $ ms')
-
 
 
 -- ==================================================

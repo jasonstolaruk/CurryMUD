@@ -619,6 +619,32 @@ data RmAction = RmAction { rmActionCmdName :: CmdName
 type RmActionFunName = Text
 
 
+type RmAsync = Async () -- TODO: Use this.
+
+
+instance FromJSON Rm where parseJSON = jsonToRm
+instance ToJSON   Rm where toJSON    = rmToJSON
+
+
+rmToJSON :: Rm -> Value
+rmToJSON Rm { .. } = object [ "_rmName"    .= _rmName
+                            , "_rmDesc"    .= _rmDesc
+                            , "_rmFlags"   .= _rmFlags
+                            , "_rmLinks"   .= _rmLinks
+                            , "_hookMap"   .= _hookMap
+                            , "_rmActions" .= _rmActions ]
+
+
+jsonToRm :: Value -> Parser Rm
+jsonToRm (Object o) = Rm <$> o .: "_rmName"
+                         <*> o .: "_rmDesc"
+                         <*> o .: "_rmFlags"
+                         <*> o .: "_rmLinks"
+                         <*> o .: "_hookMap"
+                         <*> o .: "_rmActions"
+jsonToRm _          = empty
+
+
 -- ==================================================
 
 
@@ -705,7 +731,6 @@ instance FromJSON Lang
 instance FromJSON LinkDir
 instance FromJSON PC
 instance FromJSON Race
-instance FromJSON Rm
 instance FromJSON RmAction
 instance FromJSON RmLink
 instance FromJSON Sex
@@ -754,9 +779,6 @@ instance ToJSON   PC
   where
     toJSON = genericToJSON defaultOptions
 instance ToJSON   Race
-  where
-    toJSON = genericToJSON defaultOptions
-instance ToJSON   Rm
   where
     toJSON = genericToJSON defaultOptions
 instance ToJSON   RmAction
