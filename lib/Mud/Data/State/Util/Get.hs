@@ -68,6 +68,13 @@ getArmSub i = view armSub . getArm i
 -----
 
 
+getBiodegraderAsync :: Id -> MudState -> Maybe BiodegraderAsync
+getBiodegraderAsync i = view biodegraderAsync . getObj i
+
+
+-----
+
+
 getCapacity :: Id -> MudState -> Vol
 getCapacity i = view capacity . getCon i
 

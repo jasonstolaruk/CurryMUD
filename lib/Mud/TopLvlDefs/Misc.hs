@@ -40,7 +40,7 @@ biodegraderDelay = 10
 
 
 biodegradationDuration :: Seconds
-biodegradationDuration = 30 -- TODO: 5 {- mins -} * 60 {- secs -} -- five mins
+biodegradationDuration = 5 {- mins -} * 60 {- secs -} -- five mins
 
 
 coinNames :: [Text]

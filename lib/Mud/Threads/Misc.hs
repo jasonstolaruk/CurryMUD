@@ -12,8 +12,8 @@ module Mud.Threads.Misc ( concurrentTree
                         , setThreadType
                         , stopTimerThread
                         , threadExHandler
+                        , throwDeath
                         , throwWait
-                        , throwWaitBiodegrader
                         , TimerMsg(..)
                         , TimerQueue ) where
 
@@ -24,7 +24,6 @@ import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Misc.Logging hiding (logExMsg, logNotice, logPla)
 import Mud.Util.Misc
-import Mud.Util.Operators
 import qualified Mud.Misc.Logging as L (logExMsg, logNotice, logPla)
 
 import Control.Concurrent (forkIO, myThreadId)
@@ -34,8 +33,8 @@ import Control.Concurrent.STM.TMQueue (TMQueue, closeTMQueue)
 import Control.Exception (AsyncException(..), Exception, SomeException, fromException)
 import Control.Exception.Lifted (throwTo)
 import Control.Lens (at, views)
-import Control.Lens.Operators ((&), (.~), (?~), (^.))
-import Control.Monad ((>=>), void)
+import Control.Lens.Operators ((?~))
+import Control.Monad (void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (runReaderT)
 import Data.Monoid ((<>))
@@ -158,15 +157,12 @@ stopTimerThread = liftIO . atomically . closeTMQueue
 -----
 
 
-throwWait :: Async () -> MudStack ()
-throwWait a = throwTo (asyncThreadId a) PlsDie >> (liftIO . void . wait $ a)
+throwDeath :: Async () -> MudStack ()
+throwDeath a = throwTo (asyncThreadId a) PlsDie
 
 
 -----
 
 
-throwWaitBiodegrader :: Id -> MudStack ()
-throwWaitBiodegrader i = helper |&| modifyState >=> maybeVoid throwWait
-  where
-    helper ms = let a = ms^.objTbl.ind i.biodegraderAsync
-                in (ms & objTbl.ind i.biodegraderAsync .~ Nothing, a)
+throwWait :: Async () -> MudStack ()
+throwWait a = throwDeath a >> (liftIO . void . wait $ a)

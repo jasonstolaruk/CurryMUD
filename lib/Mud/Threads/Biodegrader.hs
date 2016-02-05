@@ -12,13 +12,15 @@ import Mud.Data.State.Util.Misc
 import Mud.Threads.Misc
 import Mud.TopLvlDefs.Misc
 import Mud.Util.Misc
+import Mud.Util.Operators
 import Mud.Util.Quoting
 import Mud.Util.Text
 import qualified Mud.Misc.Logging as L (logNotice)
 
 import Control.Concurrent (threadDelay)
 import Control.Exception.Lifted (catch, handle)
-import Control.Lens.Operators ((?~))
+import Control.Lens.Operators ((&), (.~), (?~), (^.))
+import Control.Monad ((>=>))
 import Control.Monad.IO.Class (liftIO)
 import Data.Monoid ((<>))
 import Data.Text (Text)
@@ -54,6 +56,13 @@ stopBiodegraders = do
     mapM_ throwWaitBiodegrader . findBiodegradableIds =<< getState
 
 
+throwWaitBiodegrader :: Id -> MudStack ()
+throwWaitBiodegrader i = helper |&| modifyState >=> maybeVoid throwWait
+  where
+    helper ms = let a = ms^.objTbl.ind i.biodegraderAsync
+                in (ms & objTbl.ind i.biodegraderAsync .~ Nothing, a)
+
+
 -----
 
 
@@ -65,19 +74,19 @@ threadBiodegrader i = handle (threadExHandler threadName) $ getSing i <$> getSta
   where
     threadName               = "biodegrader " <> idTxt
     idTxt                    = parensQuote . showText $ i
-    loop secs lastMaybeInvId = getState >>= \ms -> do -- TODO: Refactor.
+    loop secs lastMaybeInvId = getState >>= \ms -> do
         let newMaybeInvId = findInvContaining i ms
         case newMaybeInvId of
-          Nothing    -> delay >> loop 0 Nothing
-          Just invId -> if newMaybeInvId == lastMaybeInvId
-            then if secs < biodegradationDuration
+          Nothing -> delay >> loop 0 Nothing
+          Just invId
+            | newMaybeInvId == lastMaybeInvId -> if secs < biodegradationDuration
               then delay >> loop (secs + biodegraderDelay) lastMaybeInvId
-              else case filter (`isPC` ms) . getInv invId $ ms of
-                [] -> do
-                    tweak $ flip destroy (pure i)
-                    logNotice "threadBiodegrader" . T.concat $ [ getSing i ms, " ", idTxt, " has biodegraded." ]
-                _  -> delay >> loop secs lastMaybeInvId
-            else case getType invId ms of
-              RmType -> delay >> loop biodegraderDelay newMaybeInvId
-              _      -> delay >> loop 0 Nothing
+              else let pcsInRm = filter (`isPC` ms) . getInv invId $ ms
+                       helper  = do
+                           tweak $ flip destroy (pure i)
+                           logNotice "threadBiodegrader" . T.concat $ [ getSing i ms, " ", idTxt, " has biodegraded." ]
+                   in ()!# pcsInRm ? (delay >> loop secs lastMaybeInvId) :? helper
+            | otherwise -> (delay >>) $ case getType invId ms of
+              RmType -> loop biodegraderDelay newMaybeInvId
+              _      -> loop 0 Nothing
     delay = liftIO . threadDelay $ biodegraderDelay * 10 ^ 6

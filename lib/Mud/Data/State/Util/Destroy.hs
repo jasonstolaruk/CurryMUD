@@ -35,8 +35,9 @@ destroy = foldr helper
         destroyCon   = conTbl  .at i .~ Nothing
         destroyEnt   = entTbl  .at i .~ Nothing
         destroyInv   = invTbl  .at i .~ Nothing
-        destroyObj ms' = ms' & objTbl.at i .~ Nothing
-                             & opList <>~ pure (throwWaitBiodegrader i)
+        destroyObj ms' = let ops = maybe [] (pure . throwDeath) . getBiodegraderAsync i $ ms'
+                         in ms' & objTbl.at i .~ Nothing
+                                & opList <>~ ops
         destroyType  = typeTbl .at i .~ Nothing
         destroyWpn   = wpnTbl  .at i .~ Nothing
         rest ms'     = ms' & destroyType & invTblHelper
