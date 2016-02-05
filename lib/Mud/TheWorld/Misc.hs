@@ -21,7 +21,6 @@ import Mud.Data.State.Util.Output
 import Mud.Data.State.Util.Random
 import Mud.Misc.LocPref
 import Mud.TheWorld.Zones.AdminZoneIds
-import Mud.Threads.Misc
 import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Operators
 import Mud.Util.Quoting
@@ -32,7 +31,7 @@ import qualified Mud.Util.Misc as U (patternMatchFail)
 import Control.Concurrent (threadDelay)
 import Control.Lens (_1, _2, _3, _4)
 import Control.Lens.Operators ((%~), (&), (.~), (<>~))
-import Control.Monad ((>=>), unless)
+import Control.Monad ((>=>))
 import Control.Monad.IO.Class (liftIO)
 import Data.List ((\\), delete, foldl')
 import Data.Monoid ((<>))
@@ -113,9 +112,17 @@ trashHelper i ms as =
         (eiss, ecs)            = uncurry (resolveMobInvCoins i ms inInvs) invCoins
         (ms', toSelfs, bs)     = foldl' (helperTrashEitherInv   i d) (ms,  [],      []         ) eiss
         gir                    =         helperTrashEitherCoins i d  (ms', toSelfs, bs, toSelfs) ecs
-    in (gir &) $ if ()# invCoins
+    in (belchHelper gir &) $ if ()# invCoins
       then _2 .~ pure dudeYourHandsAreEmpty
       else _2 %~ (dropBlanks [ sorryInEq, sorryInRm ] ++)
+  where
+    belchHelper gir@(_, _, _, logMsgs) = onTrue (()!# logMsgs) (_1.opList <>~ pure op) gir
+    op = rndmDo 10 $ let msg = "The lid of the trash bin momentarily opens of its own accord as a loud belch is \
+                               \emitted from inside the container."
+                     in do
+                         liftIO . threadDelay $ 3 * 10 ^ 6
+                         getState >>= \ms' -> bcastNl . pure $ (msg, findMobIds ms' . getMobRmInv i $ ms')
+
 
 
 -- ==================================================
@@ -143,14 +150,8 @@ trash (LowerNub i mq cols as) = helper |&| modifyState >=> \(toSelfs, bs, logMsg
     multiWrapSend mq cols toSelfs
     bcastIfNotIncogNl i bs
     logMsgs |#| logPlaOut "trash" i
-    unless (()# logMsgs) . rndmDo 10 . onNewThread $ belch
   where
     helper ms = let (ms', toSelfs, bs, logMsgs) = trashHelper i ms as in (ms', (toSelfs, bs, logMsgs))
-    belch     = let msg = "The lid of the trash bin momentarily opens of its own accord as a loud belch is emitted \
-                          \from inside the container."
-                in do
-                    liftIO . threadDelay $ 3 * 10 ^ 6
-                    getState >>= \ms -> bcastNl . pure $ (msg, findMobIds ms . getMobRmInv i $ ms)
 trash p = patternMatchFail "trash" [ showText p ]
 
 

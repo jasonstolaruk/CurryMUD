@@ -124,6 +124,7 @@ lookFlowerbedHookName :: HookName
 lookFlowerbedHookName = "AdminZone_iAtrium_lookFlowerbed"
 
 
+-- TODO: Make a helper function that makes a look (or read?) hook fun for you.
 lookFlowerbedHookFun :: HookFun
 lookFlowerbedHookFun i Hook { .. } _ a@(_, (ms, _, _, _)) =
     let selfDesig = mkStdDesig i ms DoCap
