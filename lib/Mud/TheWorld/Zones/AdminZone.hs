@@ -1,4 +1,3 @@
-{-# OPTIONS_GHC -fno-warn-type-defaults #-}
 {-# LANGUAGE OverloadedStrings, RecordWildCards, ViewPatterns #-}
 
 module Mud.TheWorld.Zones.AdminZone ( adminZoneHooks
@@ -15,17 +14,14 @@ import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Calc
-import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.New
-import Mud.Data.State.Util.Output
 import Mud.Data.State.Util.Put
 import Mud.Data.State.Util.Random
 import Mud.Misc.LocPref
 import Mud.TheWorld.Misc
 import Mud.TheWorld.Zones.AdminZoneIds
 import Mud.TheWorld.Zones.TutorialIds (iTutWelcome)
-import Mud.Threads.Misc
 import Mud.TopLvlDefs.Vols
 import Mud.TopLvlDefs.Weights
 import Mud.Util.List
@@ -36,24 +32,14 @@ import qualified Data.Vector.Unboxed as V (Vector, head)
 import qualified Mud.Misc.Logging as L (logNotice)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
-import Control.Concurrent (threadDelay)
-import Control.Exception.Lifted (catch, handle)
 import Control.Lens (_1, _2, _3, _4)
 import Control.Lens.Operators ((%~), (&), (.~), (<>~))
-import Control.Monad (forM_, unless)
-import Control.Monad.IO.Class (liftIO)
+import Control.Monad (forM_)
 import Data.Bits (setBit, zeroBits)
 import Data.List ((\\), delete, foldl')
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import qualified Data.Map.Lazy as M (empty, fromList, singleton)
-import qualified Data.Text as T
-
-
-default (Int)
-
-
------
 
 
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
@@ -82,6 +68,7 @@ adminZoneHooks = [ (getFlowerHookName,                 getFlowerHookFun         
                  , (lookFlowerbedHookName,             lookFlowerbedHookFun            )
                  , (lookWallsHookName,                 lookWallsHookFun                )
                  , (readLookPaperHookName,             readLookPaperHookFun            )
+                 , (readLookPosterHookName,            readLookPosterHookFun           )
                  , (readLookSign_iEmptyHookName,       readLookSign_iEmptyHookFun      )
                  , (readLookSign_iTutEntranceHookName, readLookSign_iTutEntranceHookFun) ]
 
@@ -189,6 +176,32 @@ readLookPaperHookFun i Hook { .. } (V.head -> r) a@(_, (ms, _, _, _)) =
 -----
 
 
+readLookPosterHook :: Hook
+readLookPosterHook = Hook readLookPosterHookName ["poster"]
+
+
+readLookPosterHookName :: HookName
+readLookPosterHookName = "AdminZone_iCentral_readLookPoster"
+
+
+readLookPosterHookFun :: HookFun
+readLookPosterHookFun = mkLookReadHookFun posterDesc "reads the poster on the wall." "read poster"
+  where
+    posterDesc =
+        "The poster reads:\n\
+        \WELCOME TO THE ADMIN ZONE - What is this place?\n\
+        \Greetings, admin! (You're an admin, aren't you? If not, what are you doing here?) ...Anyway, let me tell you \
+        \about this area. The Admin Zone was written incrementally during the early stages of CurryMUD development. \
+        \Whenever I came up with new core functionality, I'd need a way to test it; often that meant tacking on a room \
+        \to this zone - the only zone that existed at the time. There was never any unifying theme for the Admin Zone, \
+        \just the notion that players would likely never step foot in it (hence the name). As such, it kind of has a \
+        \makeshift funhouse vibe; in the very least, it's a restricted area where admins can hang out.\n\
+        \-Jason"
+
+
+-----
+
+
 readLookSign_iEmptyHook :: Hook
 readLookSign_iEmptyHook = Hook readLookSign_iEmptyHookName ["sign"]
 
@@ -265,7 +278,8 @@ pick p = patternMatchFail "pick" [ showText p ]
 
 
 adminZoneRmFuns :: [(FunName, Fun)]
-adminZoneRmFuns = pure (beepRmFunName, beep)
+adminZoneRmFuns = [ (beepRmFunName,    beep)
+                  , (beeBuzzRmFunName, beeBuzz) ]
 
 
 -----
@@ -276,18 +290,22 @@ beepRmFunName = "AdminZone_iCentral_beep"
 
 
 beep :: Fun
-beep = handle (threadExHandler threadName) $ do
-    setThreadType . RmFun $ iCentral
-    logNotice "beep" $ "room function started for iCentral " <> idTxt <> "."
-    loop `catch` die Nothing threadName
+beep = mkRndmBcastRmFun iCentral "iCentral" beepRmFunName 25 30 beepMsg
   where
-    threadName = T.concat [ "room function ", dblQuote "beep", " iCentral ", idTxt ]
-    idTxt      = parensQuote . showText $ iCentral
-    loop       = getState >>= \ms -> do
-        let is = filter (`isPC` ms) . getInv iCentral $ ms
-        unless (()# is) . rndmDo 25 . bcastNl . pure $ (beepMsg, is)
-        (liftIO . threadDelay $ 30 * 10 ^ 6) >> loop
     beepMsg = "A series of blips and beeps can be heard, originating from one of the control panels."
+
+
+-----
+
+
+beeBuzzRmFunName :: FunName
+beeBuzzRmFunName = "AdminZone_iAtrium_beeBuzz"
+
+
+beeBuzz :: Fun
+beeBuzz = mkRndmBcastRmFun iAtrium "iAtrium" beeBuzzRmFunName 25 30 beeBuzzMsg
+  where
+    beeBuzzMsg = "A plump bumblebee happily buzzes around the flowerbed."
 
 
 -- ==================================================
@@ -401,12 +419,14 @@ createAdminZone = do
             "Welcome to the heart of the machine! Sprawled about this dome-shaped, white room is a cluster of \
             \electronic displays and control panels, used by the admins to monitor and supervise the daily operations \
             \of CurryMUD.\n\
+            \There is a large poster on the wall.\n\
             \A spiral staircase leads down, while a door opens to a hallway leading east. A trash bin sits adjascent \
             \to the spiral staircase."
             zeroBits
             [ StdLink Down iBasement, StdLink East iHallwayWest ]
-            (M.fromList [ ("look", [ lookTrashHook ])
-                        , ("put",  [ putTrashHook  ]) ])
+            (M.fromList [ ("look", [ lookTrashHook, readLookPosterHook ])
+                        , ("put",  [ putTrashHook                      ])
+                        , ("read", [ readLookPosterHook                ]) ])
             [ trashRmAction ]
             [ beepRmFunName ]
             [])
@@ -441,7 +461,8 @@ createAdminZone = do
             (M.fromList [ ("get",  [ getFlowerHook     ])
                         , ("look", [ lookFlowerbedHook ]) ])
             [ pickRmAction ]
-            [] [])
+            [ beeBuzzRmFunName ]
+            [])
   putRm iBasement
         []
         mempty
@@ -643,7 +664,7 @@ createAdminZone = do
             zeroBits
             []
             (M.fromList [ ("look", [ readLookSign_iEmptyHook, lookWallsHook ])
-                        , ("read", [ readLookSign_iEmptyHook ]) ])
+                        , ("read", [ readLookSign_iEmptyHook                ]) ])
             [] [] [])
 
   -- ==================================================

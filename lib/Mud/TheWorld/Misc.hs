@@ -5,6 +5,7 @@ module Mud.TheWorld.Misc ( commonHooks
                          , commonRmActionFuns
                          , lookTrashHook
                          , mkLookReadHookFun
+                         , mkRndmBcastRmFun
                          , putTrashHook
                          , trashRmAction ) where
 
@@ -22,17 +23,20 @@ import Mud.Data.State.Util.Output
 import Mud.Data.State.Util.Random
 import Mud.Misc.LocPref
 import Mud.TheWorld.Zones.AdminZoneIds
+import Mud.Threads.Misc
+import Mud.TopLvlDefs.Misc
 import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Operators
 import Mud.Util.Quoting
 import Mud.Util.Text
-import qualified Mud.Misc.Logging as L (logPlaOut)
+import qualified Mud.Misc.Logging as L (logNotice, logPlaOut)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Concurrent (threadDelay)
+import Control.Exception.Lifted (catch, handle)
 import Control.Lens (_1, _2, _3, _4)
 import Control.Lens.Operators ((%~), (&), (.~), (<>~))
-import Control.Monad ((>=>))
+import Control.Monad ((>=>), unless)
 import Control.Monad.IO.Class (liftIO)
 import Data.List ((\\), delete, foldl')
 import Data.Monoid ((<>))
@@ -45,6 +49,10 @@ patternMatchFail = U.patternMatchFail "Mud.TheWorld.Misc"
 
 
 -----
+
+
+logNotice :: Text -> Text -> MudStack ()
+logNotice = L.logNotice "Mud.TheWorld.Misc"
 
 
 logPlaOut :: Text -> Id -> [Text] -> MudStack ()
@@ -217,3 +225,21 @@ mkTrashCoinsDescsSelf = mkCoinsMsgs helper
   where
     helper 1 cn = T.concat [ "You deposit ", aOrAn cn,             " into the trash bin." ]
     helper a cn = T.concat [ "You deposit ", showText a, " ", cn, "s into the trash bin." ]
+
+
+-- ==================================================
+-- Other:
+
+
+mkRndmBcastRmFun :: Id -> Text -> FunName -> Int -> Seconds -> Text -> Fun
+mkRndmBcastRmFun i idName fn prob secs msg = handle (threadExHandler threadName) $ do
+    setThreadType . RmFun $ i
+    logNotice fn . T.concat $ [ "room function started for ", idName, " ", idTxt, "." ]
+    loop `catch` die Nothing threadName
+  where
+    threadName = T.concat [ "room function ", dblQuote fn, " ", idName, " ", idTxt ]
+    idTxt      = parensQuote . showText $ i
+    loop       = getState >>= \ms -> do
+        let is = filter (`isPC` ms) . getInv i $ ms
+        unless (()# is) . rndmDo prob . bcastNl . pure $ (msg, is)
+        (liftIO . threadDelay $ secs * 10 ^ 6) >> loop

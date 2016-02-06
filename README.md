@@ -42,7 +42,8 @@ CurryMUD will have the following features:
 * Systems for reporting bugs and typos.
 * Weight and encumbrance.
 * Volume and container capacity.
-* Objects can be configured so as to automatically disappear when left on the ground for some time.
+* Objects can be configured to automatically disappear when left on the ground for some time.
+* Threads associated with a given room may be spawned.
 
 I am still in the initial stage of developing basic commands. There is very little content in the virtual world.
 
