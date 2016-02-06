@@ -11,6 +11,7 @@ module Mud.Data.State.Util.Misc ( aOrAnType
                                 , getAdminIds
                                 , getEffBothGramNos
                                 , getEffName
+                                , getFun
                                 , getHookFun
                                 , getIdForMobSing
                                 , getLoggedInAdminIds
@@ -166,6 +167,15 @@ mkUnknownPCEntName :: Id -> MudState -> Text
 mkUnknownPCEntName i ms = views entName (fromMaybe helper) . getEnt i $ ms
   where
     helper = let (T.head . pp *** pp -> (h, r)) = getSexRace i ms in h `T.cons` r
+
+
+-----
+
+
+getFun :: FunName -> MudState -> Fun
+getFun n = views (funTbl.at n) (fromMaybe oops)
+  where
+    oops = blowUp "getFun" "Function name not found in function table." . pure $ n
 
 
 -----

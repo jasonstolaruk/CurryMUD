@@ -86,6 +86,7 @@ library
                        Mud.Threads.OpListMonitor
                        Mud.Threads.Receive
                        Mud.Threads.Regen
+                       Mud.Threads.RmFuns
                        Mud.Threads.Server
                        Mud.Threads.Talk
                        Mud.Threads.ThreadTblPurger

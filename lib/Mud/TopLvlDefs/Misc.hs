@@ -36,7 +36,7 @@ type Seconds = Int
 
 
 biodegraderDelay :: Seconds
-biodegraderDelay = 10
+biodegraderDelay = 5
 
 
 biodegradationDuration :: Seconds

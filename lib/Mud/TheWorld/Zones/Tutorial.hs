@@ -53,6 +53,7 @@ createTutorial = do
             []
             (M.fromList [ ("look", [ lookTrashHook ])
                         , ("put",  [ putTrashHook  ]) ])
-            [ trashRmAction ])
+            [ trashRmAction ]
+            [] [])
 
   putRmTeleName iTutWelcome "tutorial"

@@ -17,6 +17,7 @@ import Mud.Threads.Misc
 import Mud.Threads.NpcServer
 import Mud.Threads.OpListMonitor
 import Mud.Threads.Regen
+import Mud.Threads.RmFuns
 import Mud.Threads.Talk
 import Mud.Threads.ThreadTblPurger
 import Mud.Threads.TrashDumpPurger
@@ -101,6 +102,7 @@ listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed 
     initialize = do
         startNpcRegens
         startNpcServers
+        startRmFuns
         startBiodegraders
         logNotice "listen initialize" "creating database tables."
         liftIO createDbTbls `catch` dbExHandler "listen initialize"

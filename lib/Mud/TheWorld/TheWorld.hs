@@ -58,6 +58,7 @@ initMudData shouldLog = do
                                  , _conTbl           = IM.empty
                                  , _entTbl           = IM.empty
                                  , _eqTbl            = IM.empty
+                                 , _funTbl           =  M.empty
                                  , _hookFunTbl       =  M.empty
                                  , _hostTbl          =  M.empty
                                  , _invTbl           = IM.empty
@@ -90,9 +91,16 @@ initMudData shouldLog = do
 
 initWorld :: MudStack Bool
 initWorld = dropIrrelevantFilenames . sort <$> (liftIO . getDirectoryContents $ persistDir) >>= \cont -> do
+    initFunTbl
     initHookFunTbl
     initRmActionFunTbl
     ()# cont ? (createWorld >> return True) :? (loadWorld . last $ cont)
+
+
+initFunTbl :: MudStack ()
+initFunTbl = tweak $ funTbl .~ M.fromList list
+  where
+    list = adminZoneRmFuns
 
 
 initHookFunTbl :: MudStack ()

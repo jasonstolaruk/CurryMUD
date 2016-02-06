@@ -49,6 +49,7 @@ data MudState = MudState { _armTbl           :: ArmTbl
                          , _conTbl           :: ConTbl
                          , _entTbl           :: EntTbl
                          , _eqTbl            :: EqTbl
+                         , _funTbl           :: FunTbl
                          , _hookFunTbl       :: HookFunTbl
                          , _hostTbl          :: HostTbl
                          , _invTbl           :: InvTbl
@@ -79,6 +80,7 @@ type CoinsTbl         = IM.IntMap Coins
 type ConTbl           = IM.IntMap Con
 type EntTbl           = IM.IntMap Ent
 type EqTbl            = IM.IntMap EqMap
+type FunTbl           = M.Map FunName Fun
 type HookFunTbl       = M.Map HookName HookFun
 type HostTbl          = M.Map Sing HostMap
 type InvTbl           = IM.IntMap Inv
@@ -110,9 +112,6 @@ data Action = Action { actionFun    :: ActionFun
 
 
 type ActionFun = ActionParams -> MudStack ()
-
-
-type RmActionFun = ActionFun
 
 
 -- ==================================================
@@ -267,6 +266,15 @@ data Slot = HeadS                                   -- armor
           | FeetS                                   -- armor
           | BackpackS                               -- container/clothing
           deriving (Enum, Eq, Generic, Ord)
+
+
+-- ==================================================
+
+
+type FunName = Text
+
+
+type Fun = MudStack ()
 
 
 -- ==================================================
@@ -546,19 +554,15 @@ jsonToPla _          = empty
 -- ======================================================================
 
 
-type RndmNamesTbl = M.Map Sing Sing
-
-
--- ======================================================================
-
-
 -- Has an inventory and coins.
-data Rm = Rm { _rmName    :: Text
-             , _rmDesc    :: Text
-             , _rmFlags   :: Int
-             , _rmLinks   :: [RmLink]
-             , _hookMap   :: HookMap
-             , _rmActions :: [RmAction] } deriving (Eq, Generic)
+data Rm = Rm { _rmName      :: Text
+             , _rmDesc      :: Text
+             , _rmFlags     :: Int
+             , _rmLinks     :: [RmLink]
+             , _hookMap     :: HookMap
+             , _rmActions   :: [RmAction]
+             , _rmFunNames  :: [FunName]
+             , _rmFunAsyncs :: [RmFunAsync] } deriving (Eq, Generic)
 
 
 data RmFlags = RmFlagsTODO deriving Enum
@@ -616,10 +620,7 @@ data RmAction = RmAction { rmActionCmdName :: CmdName
                          , rmActionFunName :: RmActionFunName } deriving (Eq, Generic, Show)
 
 
-type RmActionFunName = Text
-
-
-type RmAsync = Async () -- TODO: Use this.
+type RmFunAsync = Async ()
 
 
 instance FromJSON Rm where parseJSON = jsonToRm
@@ -627,12 +628,13 @@ instance ToJSON   Rm where toJSON    = rmToJSON
 
 
 rmToJSON :: Rm -> Value
-rmToJSON Rm { .. } = object [ "_rmName"    .= _rmName
-                            , "_rmDesc"    .= _rmDesc
-                            , "_rmFlags"   .= _rmFlags
-                            , "_rmLinks"   .= _rmLinks
-                            , "_hookMap"   .= _hookMap
-                            , "_rmActions" .= _rmActions ]
+rmToJSON Rm { .. } = object [ "_rmName"     .= _rmName
+                            , "_rmDesc"     .= _rmDesc
+                            , "_rmFlags"    .= _rmFlags
+                            , "_rmLinks"    .= _rmLinks
+                            , "_hookMap"    .= _hookMap
+                            , "_rmActions"  .= _rmActions
+                            , "_rmFunNames" .= _rmFunNames ]
 
 
 jsonToRm :: Value -> Parser Rm
@@ -642,10 +644,27 @@ jsonToRm (Object o) = Rm <$> o .: "_rmName"
                          <*> o .: "_rmLinks"
                          <*> o .: "_hookMap"
                          <*> o .: "_rmActions"
+                         <*> o .: "_rmFunNames"
+                         <*> pure []
 jsonToRm _          = empty
 
 
 -- ==================================================
+
+
+type RmActionFunName = Text
+
+
+type RmActionFun = ActionFun
+
+
+-- ==================================================
+
+
+type RndmNamesTbl = M.Map Sing Sing
+
+
+-- ======================================================================
 
 
 type TalkAsync = Async ()
@@ -672,6 +691,7 @@ data ThreadType = Biodegrader Id
                 | Receive     Id
                 | RegenChild  Id
                 | RegenParent Id
+                | RmFun       Id
                 | Server      Id
                 | Talk        Id
                 | ThreadTblPurger

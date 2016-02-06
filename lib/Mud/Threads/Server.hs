@@ -19,6 +19,7 @@ import Mud.Threads.Biodegrader
 import Mud.Threads.Misc
 import Mud.Threads.NpcServer
 import Mud.Threads.Regen
+import Mud.Threads.RmFuns
 import Mud.TopLvlDefs.FilePaths
 import Mud.Util.List
 import Mud.Util.Operators
@@ -138,6 +139,7 @@ shutDown = do
         logNotice "shutDown commitSuicide" "all players have been disconnected."
         stopNpcRegens
         stopNpcServers
+        stopRmFuns
         stopBiodegraders
         persist
         logNotice "shutDown commitSuicide" "killing the listen thread."

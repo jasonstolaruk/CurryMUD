@@ -1,7 +1,9 @@
+{-# OPTIONS_GHC -fno-warn-type-defaults #-}
 {-# LANGUAGE OverloadedStrings, RecordWildCards, ViewPatterns #-}
 
 module Mud.TheWorld.Zones.AdminZone ( adminZoneHooks
                                     , adminZoneRmActionFuns
+                                    , adminZoneRmFuns
                                     , createAdminZone
                                     , getFlowerHook
                                     , lookFlowerbedHook ) where
@@ -13,14 +15,17 @@ import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Calc
+import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.New
+import Mud.Data.State.Util.Output
 import Mud.Data.State.Util.Put
 import Mud.Data.State.Util.Random
 import Mud.Misc.LocPref
 import Mud.TheWorld.Misc
 import Mud.TheWorld.Zones.AdminZoneIds
 import Mud.TheWorld.Zones.TutorialIds (iTutWelcome)
+import Mud.Threads.Misc
 import Mud.TopLvlDefs.Vols
 import Mud.TopLvlDefs.Weights
 import Mud.Util.List
@@ -31,14 +36,24 @@ import qualified Data.Vector.Unboxed as V (Vector, head)
 import qualified Mud.Misc.Logging as L (logNotice)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
+import Control.Concurrent (threadDelay)
+import Control.Exception.Lifted (catch, handle)
 import Control.Lens (_1, _2, _3, _4)
 import Control.Lens.Operators ((%~), (&), (.~), (<>~))
-import Control.Monad (forM_)
+import Control.Monad (forM_, unless)
+import Control.Monad.IO.Class (liftIO)
 import Data.Bits (setBit, zeroBits)
 import Data.List ((\\), delete, foldl')
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import qualified Data.Map.Lazy as M (empty, fromList, singleton)
+import qualified Data.Text as T
+
+
+default (Int)
+
+
+-----
 
 
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
@@ -246,6 +261,36 @@ pick p = patternMatchFail "pick" [ showText p ]
 
 
 -- ==================================================
+-- Room functions:
+
+
+adminZoneRmFuns :: [(FunName, Fun)]
+adminZoneRmFuns = pure (beepRmFunName, beep)
+
+
+-----
+
+
+beepRmFunName :: FunName
+beepRmFunName = "AdminZone_iCentral_beep"
+
+
+beep :: Fun
+beep = handle (threadExHandler threadName) $ do
+    setThreadType . RmFun $ iCentral
+    logNotice "beep" $ "room function started for iCentral " <> idTxt <> "."
+    loop `catch` die Nothing threadName
+  where
+    threadName = T.concat [ "room function ", dblQuote "beep", " iCentral ", idTxt ]
+    idTxt      = parensQuote . showText $ iCentral
+    loop       = getState >>= \ms -> do
+        let is = filter (`isPC` ms) . getInv iCentral $ ms
+        unless (()# is) . rndmDo 25 . bcastNl . pure $ (beepMsg, is)
+        (liftIO . threadDelay $ 30 * 10 ^ 6) >> loop
+    beepMsg = "A series of blips and beeps can be heard, originating from one of the control panels."
+
+
+-- ==================================================
 -- Zone definition:
 
 
@@ -332,7 +377,7 @@ createAdminZone = do
             "PCs are placed here when their players log out."
             zeroBits
             []
-            M.empty [])
+            M.empty [] [] [])
   putRm iTrashDump
         []
         mempty
@@ -340,7 +385,7 @@ createAdminZone = do
             "Items deposited in magic trash bins end up here."
             zeroBits
             []
-            M.empty [])
+            M.empty [] [] [])
   putRm iWelcome
         []
         mempty
@@ -348,12 +393,12 @@ createAdminZone = do
             "Ad-hoc PCs created for new connections are placed here."
             zeroBits
             []
-            M.empty [])
+            M.empty [] [] [])
   putRm iCentral
         []
         mempty
         (Rm "Central control room"
-            "Welcome to the heart of the machine. Sprawled about this dome-shaped, white room is a cluster of \
+            "Welcome to the heart of the machine! Sprawled about this dome-shaped, white room is a cluster of \
             \electronic displays and control panels, used by the admins to monitor and supervise the daily operations \
             \of CurryMUD.\n\
             \A spiral staircase leads down, while a door opens to a hallway leading east. A trash bin sits adjascent \
@@ -362,7 +407,9 @@ createAdminZone = do
             [ StdLink Down iBasement, StdLink East iHallwayWest ]
             (M.fromList [ ("look", [ lookTrashHook ])
                         , ("put",  [ putTrashHook  ]) ])
-            [ trashRmAction ])
+            [ trashRmAction ]
+            [ beepRmFunName ]
+            [])
   putRm iHallwayWest
         []
         mempty
@@ -370,7 +417,7 @@ createAdminZone = do
             "You are in a wide hallway leading east. A door to the west opens into the central control room."
             zeroBits
             [ StdLink West iCentral, StdLink East iHallwayEast ]
-            M.empty [])
+            M.empty [] [] [])
   putRm iHallwayEast
         []
         mempty
@@ -378,7 +425,7 @@ createAdminZone = do
             "You are in a wide hallway leading west. To your east, the hallway opens up into an atrium."
             zeroBits
             [ StdLink West iHallwayWest, StdLink East iAtrium ]
-            M.empty [])
+            M.empty [] [] [])
   putRm iAtrium
         []
         mempty
@@ -393,7 +440,8 @@ createAdminZone = do
             [ StdLink West iHallwayEast ]
             (M.fromList [ ("get",  [ getFlowerHook     ])
                         , ("look", [ lookFlowerbedHook ]) ])
-            [ pickRmAction ])
+            [ pickRmAction ]
+            [] [])
   putRm iBasement
         []
         mempty
@@ -412,7 +460,7 @@ createAdminZone = do
             , StdLink Northwest iMobCloset
             , StdLink Up        iCentral
             , NonStdLink "manhole" iVoid "% climbs into the manhole." "% climbs out of the manhole." ]
-            M.empty [])
+            M.empty [] [] [])
   putRm iWeightRm
         [ i190Lb
         , i100Lb
@@ -437,7 +485,7 @@ createAdminZone = do
             [ StdLink    South iBasement
             , NonStdLink "u"  iAttic "% climbs up the ladder and into the hole in the ceiling."
                                      "% climbs up the ladder and out of the hole in the floor." ]
-            M.empty [])
+            M.empty [] [] [])
   putRm iAttic
         [ iCube1 .. iCube1 + 19 ]
         mempty
@@ -446,7 +494,7 @@ createAdminZone = do
             zeroBits
             [ NonStdLink "d" iWeightRm "% climbs down the ladder and into the hole in the floor."
                                        "% climbs down the ladder and out of the hole in the ceiling." ]
-            M.empty [])
+            M.empty [] [] [])
   putRm iObjCloset
         [ iKewpie1, iKewpie2, iSmlPaper, iParchment1, iParchment2, iParchment3, iParchment4, iParchment5 ]
         mempty
@@ -454,7 +502,7 @@ createAdminZone = do
             "This closet holds objects."
             zeroBits
             [ StdLink Southwest iBasement ]
-            M.empty [])
+            M.empty [] [] [])
   putRm iClothCloset
         [ iChemise, iTunic, iApron, iTabard, iGreyCoat, iFrockCoat, iBreeches1, iBreeches2, iTrousers1, iTrousers2 ]
         mempty
@@ -462,7 +510,7 @@ createAdminZone = do
             "This closet holds clothing."
             zeroBits
             [ StdLink West iBasement, StdLink Down iAccessoriesCloset ]
-            M.empty [])
+            M.empty [] [] [])
   putRm iAccessoriesCloset
         [ iEar1
         , iEar2
@@ -501,7 +549,7 @@ createAdminZone = do
             "This closet holds accessories."
             zeroBits
             [ StdLink Up iClothCloset ]
-            M.empty [])
+            M.empty [] [] [])
   putRm iCoinsCloset
         []
         (Coins (100, 100, 100))
@@ -509,7 +557,7 @@ createAdminZone = do
             "This closet holds coins."
             zeroBits
             [ StdLink Northwest iBasement ]
-            M.empty [])
+            M.empty [] [] [])
   putRm iConCloset
         [ iSack1, iSack2, iSackSml, iSackLrg, iBackpack1, iBackpack2, iBackpackSml, iBackpackLrg ]
         mempty
@@ -517,7 +565,7 @@ createAdminZone = do
             "This closet holds containers."
             zeroBits
             [ StdLink North iBasement ]
-            M.empty [])
+            M.empty [] [] [])
   putRm iWpnCloset
         [ iSword1, iSword2, iLongSword, iClub, iKnife1, iKnife2 ]
         mempty
@@ -525,7 +573,7 @@ createAdminZone = do
             "This closet holds weapons."
             zeroBits
             [ StdLink Northeast iBasement ]
-            M.empty [])
+            M.empty [] [] [])
   putRm iArmCloset
         [ iCap, iHelm, iSandals1, iSandals2, iBoots ]
         mempty
@@ -533,7 +581,7 @@ createAdminZone = do
             "This closet holds armor."
             zeroBits
             [ StdLink East iBasement ]
-            M.empty [])
+            M.empty [] [] [])
   putRm iMobCloset
         [ iRockCavy1, iRockCavy2, iPidge, iSkeleton ]
         mempty
@@ -541,7 +589,7 @@ createAdminZone = do
             "This closet holds mobs."
             zeroBits
             [ StdLink Southeast iBasement ]
-            M.empty [])
+            M.empty [] [] [])
   putRm iVoid
         []
         mempty
@@ -553,7 +601,7 @@ createAdminZone = do
             [ StdLink North iTutEntrance
             , StdLink South iLoungeEntrance
             , NonStdLink "manhole" iBasement "% climbs into the manhole." "% climbs out of the manhole." ]
-            M.empty [])
+            M.empty [] [] [])
   putRm iTutEntrance
         []
         mempty
@@ -567,7 +615,7 @@ createAdminZone = do
                                               "% arrives in the tutorial." ]
             (M.fromList [ ("look", [ readLookSign_iTutEntranceHook, readLookPaperHook ])
                         , ("read", [ readLookSign_iTutEntranceHook, readLookPaperHook ]) ])
-            [])
+            [] [] [])
   putRm iLoungeEntrance
         []
         mempty
@@ -577,7 +625,7 @@ createAdminZone = do
             zeroBits
             [ StdLink North iVoid
             , NonStdLink "lounge" iLounge "% enters the lounge." "% enters the lounge." ]
-            M.empty [])
+            M.empty [] [] [])
   putRm iLounge
         []
         mempty
@@ -585,7 +633,7 @@ createAdminZone = do
             "Welcome, admin! Have a seat by the fire and relax for awhile."
             zeroBits
             [ NonStdLink "out" iLoungeEntrance "% exits the lounge." "% exits the lounge." ]
-            M.empty [])
+            M.empty [] [] [])
   putRm iEmpty
         []
         mempty
@@ -596,7 +644,7 @@ createAdminZone = do
             []
             (M.fromList [ ("look", [ readLookSign_iEmptyHook, lookWallsHook ])
                         , ("read", [ readLookSign_iEmptyHook ]) ])
-            [])
+            [] [] [])
 
   -- ==================================================
   -- Room teleport names:
