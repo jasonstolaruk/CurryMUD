@@ -65,6 +65,7 @@ logNotice = L.logNotice "Mud.TheWorld.Zones.AdminZone"
 
 adminZoneHooks :: [(HookName, HookFun)]
 adminZoneHooks = [ (getFlowerHookName,                 getFlowerHookFun                )
+                 , (lookCeilingHookName,               lookCeilingHookFun              )
                  , (lookFlowerbedHookName,             lookFlowerbedHookFun            )
                  , (lookWallsHookName,                 lookWallsHookFun                )
                  , (readLookPaperHookName,             readLookPaperHookFun            )
@@ -113,6 +114,24 @@ mkFlower i ms v = let flowerId = getUnusedId ms
                , "It's a hardy hibiscus with pink-tinged pedals surrounding a distinctly red center."
                , "This eye-popping chrysanthemum has a fiery-orange bloom composed of many tiny petals."
                , "This blue lily has six large, independent petals opening widely from its base." ]
+
+
+-----
+
+
+lookCeilingHook :: Hook
+lookCeilingHook = Hook lookCeilingHookName [ "ceiling", "up" ]
+
+
+lookCeilingHookName :: HookName
+lookCeilingHookName = "AdminZone_iEmpty_lookCeiling"
+
+
+lookCeilingHookFun :: HookFun
+lookCeilingHookFun = mkLookReadHookFun ceilingDesc "looks up at the ceiling." "looked ceiling"
+  where
+    ceilingDesc = "The tall ceiling looks identical to the walls: plain and white. Even if there was a means of exit \
+                  \up there, you can't imagine how you'd reach it..."
 
 
 -----
@@ -663,8 +682,8 @@ createAdminZone = do
             \though you can't miss the small wooden sign affixed to the north wall."
             zeroBits
             []
-            (M.fromList [ ("look", [ readLookSign_iEmptyHook, lookWallsHook ])
-                        , ("read", [ readLookSign_iEmptyHook                ]) ])
+            (M.fromList [ ("look", [ readLookSign_iEmptyHook, lookWallsHook, lookCeilingHook ])
+                        , ("read", [ readLookSign_iEmptyHook                                 ]) ])
             [] [] [])
 
   -- ==================================================
@@ -848,7 +867,6 @@ createAdminZone = do
   putParchment iParchment5 (Writable (Just ("Toss away stuff you don't need in the end, but keep what's important and \
                                             \know who's your friend.", ElfLang))
                                            (Just "Zaa"))
-
 
   -- ==================================================
   -- Clothing:

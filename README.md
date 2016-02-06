@@ -2,7 +2,7 @@
 
 A textual Multi-User Dungeon ("MUD") server in Haskell. (If you are unfamiliar with the term "MUD," please refer to [this Wikipedia article](http://en.wikipedia.org/wiki/MUD).)
 
-CurryMUD is essentially the hobby project and brainchild of a single developer (me). It's been in active development for about 2 years, but is still very much a work in progress.
+CurryMUD is essentially the hobby project and brainchild of a single developer (me). It's been in active development for over 2 years, but is still very much a work in progress.
 
 ## My goals
 
@@ -24,7 +24,7 @@ CurryMUD will have the following features:
 * Incoming connections are accepted and players are prompted for their character name.
 * The names of commands, as well as the names of the targets they act upon, may be abbreviated.
 * Commands have a consistent structure and a unique syntax for indicating target locations and quantities.
-* About 55 player commands and 40 administrator commands.
+* About 55 player commands and 35 administrator commands.
 * About 180 built-in emotes.
 * Unique commands, accessible only when a player is in a particular room, may be created.
 * PCs can introduce themselves to each other.
@@ -69,14 +69,14 @@ The code is available here on GitHub under the 3-clause BSD license (refer to th
   * `RecordWildCards`
   * `TupleSections`
   * `ViewPatterns`
-* About 70 modules, excluding tests.
-* About 50 unit and property tests exist (I'm using the [tasty testing framework](https://hackage.haskell.org/package/tasty)).
+* About 80 modules, excluding tests.
+* About 60 unit and property tests exist (I'm using the [tasty testing framework](https://hackage.haskell.org/package/tasty)).
 
 ### How to try it out
 
 If you'd like to try out what I have so far, clone the repo from your home directory. While you can build CurryMUD via the usual `cabal install`, you may also utilize the included [build-sandbox.sh](https://github.com/jasonstolaruk/CurryMUD/blob/master/build-sandbox.sh) script, which builds the project dependencies in a new cabal sandbox.
 
-You'll need GHC 7.10 with base 4.8. You shouldn't have any issues compiling on Mac OS X or Linux (I do not plan on explicitly supporting Windows). If you do run into issues, please email me and let me know.
+You'll need at least GHC 7.10 with base 4.8. You shouldn't have any issues compiling on Mac OS X or Linux (I do not plan on explicitly supporting Windows). If you do run into issues, please email me and let me know.
 
 Once you have the server up and running, just telnet to localhost port 9696 to play.
 
