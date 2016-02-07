@@ -305,16 +305,17 @@ helperDropEitherInv :: Id
                     -> Desig
                     -> FromId
                     -> ToId
-                    -> (MudState, [Text], [Broadcast])
+                    -> GenericIntermediateRes
                     -> Either Text Inv
-                    -> (MudState, [Text], [Broadcast])
-helperDropEitherInv i d fromId toId a@(ms, _, _) = \case
+                    -> GenericIntermediateRes
+helperDropEitherInv i d fromId toId a@(ms, _, _, _) = \case
   Left  msg -> a & _2 <>~ pure msg
   Right is  -> let (toSelfs, bs) = mkGetDropInvDescs i ms d Drop is
                in a & _1.invTbl.ind fromId %~  (\\ is)
-                    & _1.invTbl.ind toId   %~  (sortInv ms . (++ is))
+                    & _1.invTbl.ind toId   %~  addToInv ms is
                     & _2                   <>~ toSelfs
                     & _3                   <>~ bs
+                    & _4                   <>~ toSelfs
 
 
 mkGetDropInvDescs :: Id -> MudState -> Desig -> GetOrDrop -> Inv -> ([Text], [Broadcast])
@@ -430,7 +431,7 @@ helperGetEitherInv i d fromId a@(ms, _, _, _) = \case
     let (_, cans, can'ts) = foldl' (partitionInvByEnc ms . calcMaxEnc i $ ms) (calcWeight i ms, [], []) others
         (toSelfs, bs    ) = mkGetDropInvDescs i ms d Get cans
     in a & _1.invTbl.ind fromId %~  (\\ cans)
-         & _1.invTbl.ind i      %~  (sortInv ms . (++ cans))
+         & _1.invTbl.ind i      %~  addToInv ms cans
          & _2                   <>~ concat [ map sorryType npcPCs
                                            , toSelfs
                                            , mkCan'tGetInvDescs i ms can'ts ]
@@ -527,7 +528,7 @@ helperGiveEitherInv i d toId a@(ms, _, _, _) = \case
         (toSelfs, bs    ) = mkGiveInvDescs i ms d toId (serialize toDesig) cans
         toDesig           = mkStdDesig toId ms Don'tCap
     in a & _1.invTbl.ind i    %~  (\\ cans)
-         & _1.invTbl.ind toId %~  (sortInv ms . (++ cans))
+         & _1.invTbl.ind toId %~  addToInv ms cans
          & _2                 <>~ toSelfs ++
                                   mkCan'tGiveInvDescs (serialize toDesig { shouldCap = DoCap }) i ms can'ts
          & _3                 <>~ bs
@@ -672,7 +673,7 @@ helperPutEitherInv i d mnom toId toSing a@(ms, origToSelfs, _, _) = \case
         (_, cans,  can'ts) = foldl' (partitionInvByVol ms . getCapacity toId $ ms) (calcVol toId ms, [], []) is'
         (toSelfs', bs    ) = mkPutRemInvDescs i ms d Put mnom toSing cans
     in a & _1.invTbl.ind i    %~  (\\ cans)
-         & _1.invTbl.ind toId %~  (sortInv ms . (++ cans))
+         & _1.invTbl.ind toId %~  addToInv ms cans
          & _2                 .~  concat [ toSelfs
                                          , toSelfs'
                                          , mkCan'tPutInvDescs toSing i ms can'ts ]
@@ -775,7 +776,7 @@ helperRemEitherInv i d mnom fromId fromSing icir a@(ms, _, _, _) = \case
                      | otherwise     = (0, , [])
                    (toSelfs, bs)     = mkPutRemInvDescs i ms d Rem mnom fromSing cans
                in a & _1.invTbl.ind fromId %~  (\\ cans)
-                    & _1.invTbl.ind i      %~  (sortInv ms . (++ cans))
+                    & _1.invTbl.ind i      %~  addToInv ms cans
                     & _2                   <>~ toSelfs ++ mkCan'tRemInvDescs i ms can'ts
                     & _3                   <>~ bs
                     & _4                   <>~ toSelfs

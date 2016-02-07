@@ -196,12 +196,12 @@ parseDesig i ms = loop (getIntroduced i ms)
       | T.singleton stdDesigDelimiter `T.isInfixOf` txt
       , (left, pcd, rest) <- extractDesigTxt stdDesigDelimiter txt
       = case pcd of
-        StdDesig { sDesigEntSing = Just es, .. } ->
-          left                                                                                  <>
-          (es `elem` intros ? es :? expandEntName i ms shouldCap desigEntName desigId desigIds) <>
+        d@StdDesig { sDesigEntSing = Just es, .. } ->
+          left                                            <>
+          (es `elem` intros ? es :? expandEntName i ms d) <>
           loop intros rest
-        StdDesig { sDesigEntSing = Nothing,  .. } ->
-          left <> expandEntName i ms shouldCap desigEntName desigId desigIds <> loop intros rest
+        d@StdDesig { sDesigEntSing = Nothing,  .. } ->
+          left <> expandEntName i ms d <> loop intros rest
         _ -> patternMatchFail "parseDesig loop" [ showText pcd ]
       | T.singleton nonStdDesigDelimiter `T.isInfixOf` txt
       , (left, NonStdDesig { .. }, rest) <- extractDesigTxt nonStdDesigDelimiter txt
@@ -212,17 +212,22 @@ parseDesig i ms = loop (getIntroduced i ms)
       = (left, pcd, rest)
 
 
-expandEntName :: Id -> MudState -> ShouldCap -> Text -> Id -> Inv -> Text
-expandEntName i ms (mkCapsFun -> f) en@(headTail -> (h, t)) idToExpand ((i `delete`) -> idsInRm)
-  | isPC idToExpand ms         = T.concat [ f "the ", xth, expandSex h, " ", t ]
-  | s <- getSing idToExpand ms = onFalse (isCapital s) (f . ("the " <>)) s
+expandEntName :: Id -> MudState -> Desig -> Text
+expandEntName i ms StdDesig { .. } =
+  let f      = mkCapsFun shouldCap
+      (h, t) = headTail desigEntName
+  in if isPC desigId ms
+    then T.concat [ f "the ", xth, expandSex h, " ", t ]
+    else let s = getSing desigId ms in onFalse (isCapital s) (f . ("the " <>)) s
   where
-    -- TODO: The below lambda doesn't take into account the fact that some of the "idsInRm" may be known by "i".
-    xth = let matches = foldr (\pi acc -> onTrue (mkUnknownPCEntName pi ms == en) (pi :) acc) [] idsInRm
-          in length matches > 1 |?| (<> " ") . mkOrdinal . succ . fromJust . elemIndex idToExpand $ matches
+    xth = let intros  = getIntroduced i ms
+              idsInRm = filter ((`notElem` intros) . (`getSing` ms)) $ i `delete` desigIds
+              matches = foldr (\pi acc -> onTrue (mkUnknownPCEntName pi ms == desigEntName) (pi :) acc) [] idsInRm
+          in length matches > 1 |?| (<> " ") . mkOrdinal . succ . fromJust . elemIndex desigId $ matches
     expandSex 'm'                = "male"
     expandSex 'f'                = "female"
     expandSex (T.singleton -> x) = patternMatchFail "expandEntName expandSex" [x]
+expandEntName _ _ d = patternMatchFail "expandEntName" [ showText d ]
 
 
 -----

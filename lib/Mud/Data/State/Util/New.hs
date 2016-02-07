@@ -20,6 +20,6 @@ newObj ms e@(view entId -> i) o invId = let ms' = ms & entTbl .ind i .~ e
                                                      & objTbl .ind i .~ o
                                                      & typeTbl.ind i .~ ObjType
                                                      & helper
-                                        in ms' & invTbl.ind invId %~ (sortInv ms' . (i :))
+                                        in ms' & invTbl.ind invId %~ addToInv ms' (pure i)
   where
     helper = onTrue (isBiodegradable o) (opList <>~ pure (runBiodegraderAsync i))

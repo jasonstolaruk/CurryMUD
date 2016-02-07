@@ -135,7 +135,7 @@ adHoc mq host = do
                        & rndmNamesMstrTbl.ind i        .~ M.empty
                        & teleLinkMstrTbl .ind i        .~ M.empty
                        & typeTbl         .ind i        .~ PCType
-        in (ms' & invTbl.ind iWelcome %~ (sortInv ms' . (i :)), (i, s))
+        in (ms' & invTbl.ind iWelcome %~ addToInv ms' (pure i), (i, s))
 
 
 randomSex :: IO Sex

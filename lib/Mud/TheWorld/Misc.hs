@@ -178,7 +178,7 @@ helperTrashEitherInv i d a@(ms, _, _) = \case
   Left  msg -> a & _2 <>~ pure msg
   Right is  -> let (toSelfs, bs) = mkTrashInvDescs i ms d is
                in a & _1.invTbl.ind i          %~  (\\ is)
-                    & _1.invTbl.ind iTrashDump %~  (sortInv ms . (++ is))
+                    & _1.invTbl.ind iTrashDump %~  addToInv ms is
                     & _2                       <>~ toSelfs
                     & _3                       <>~ bs
 

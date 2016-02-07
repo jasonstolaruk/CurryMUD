@@ -2,7 +2,8 @@
 
 -- This module contains state-related functions used by multiple modules.
 
-module Mud.Data.State.Util.Misc ( aOrAnType
+module Mud.Data.State.Util.Misc ( addToInv
+                                , aOrAnType
                                 , BothGramNos
                                 , dropPrefixes
                                 , dropPrefixesForHooks
@@ -94,6 +95,13 @@ patternMatchFail = U.patternMatchFail "Mud.Data.State.Util.Misc"
 
 
 -- ==================================================
+
+
+addToInv :: MudState -> Inv -> Inv -> Inv
+addToInv ms addThese toThese = sortInv ms $ toThese ++ addThese
+
+
+-----
 
 
 aOrAnType :: Type -> Text
@@ -411,13 +419,16 @@ procHooks :: Id -> MudState -> V.Vector Int -> CmdName -> Args -> (Args, Generic
 procHooks i ms v cn as | initAcc <- (as, (ms, [], [], [])) = case lookupHooks i ms cn of
   Nothing    -> initAcc
   Just hooks ->
-    let as' = dropPrefixesForHooks hooks as
-    in case filter (\Hook { triggers } -> any (`elem` triggers) as') hooks of
+    let helper acc arg = case filter (\Hook { triggers } -> arg `elem` triggers) $ hooks of
+                           []        -> acc
+                           (match:_) -> acc ++ pure match
+        as'            = dropPrefixesForHooks hooks as
+    in case foldl' helper [] as' of
       []      -> initAcc
       matches ->
         let xformedArgs = foldr (\Hook { triggers } -> dropSynonyms triggers) as' matches
             hookHelper a@(_, (ms', _, _, _)) h@(Hook hn _ ) = getHookFun hn ms' i h v a
-        in foldl' hookHelper (first (const xformedArgs) initAcc) matches -- TODO: The order of matches may not be the same as the order of arguments.
+        in foldl' hookHelper (first (const xformedArgs) initAcc) . nub $ matches
 
 
 dropPrefixesForHooks :: [Hook] -> Args -> Args

@@ -289,7 +289,7 @@ npcPriorityAbbrevCmds = concatMap (uncurry5 mkPriorityAbbrevCmd)
     , ("put",       "p",   putAction,  True,  cmdDescPut)
     , ("ready",     "r",   ready,      True,  cmdDescReady)
     , ("say",       "sa",  say,        True,  cmdDescSay)
-    , ("show",      "sh",  showAction, True,  cmdDescShow) -- TODO: It appears I forgot to modify this cmd for NPCs.
+    , ("show",      "sh",  showAction, True,  cmdDescShow)
     , ("stats",     "st",  stats,      True,  cmdDescStats)
     , ("stop",      "sto", npcStop,    False, "Stop possessing.")
     , ("unready",   "un",  unready,    True,  cmdDescUnready)
@@ -717,12 +717,11 @@ dropAction p@(LowerNub' i as) = genericAction p helper "drop"
             d                      = mkStdDesig  i ms DoCap
             ri                     = getRmId     i ms
             (eiss, ecs)            = uncurry (resolveMobInvCoins i ms inInvs) invCoins
-            (ms',  toSelfs,  bs          ) = foldl' (helperDropEitherInv      i d      i ri) (ms,  [],      []         ) eiss
-            (ms'', toSelfs', bs', logMsgs) =         helperGetDropEitherCoins i d Drop i ri  (ms', toSelfs {- TODO: Here. -}, bs, toSelfs) ecs
-            -- TODO: The "toSelfs" above may include "You don't have a ..." msgs, which are then logged... A handful of cmds are like this.
+            (ms',  toSelfs,  bs,  logMsgs ) = foldl' (helperDropEitherInv      i d      i ri) (ms,  [],      [], []     ) eiss
+            (ms'', toSelfs', bs', logMsgs') =         helperGetDropEitherCoins i d Drop i ri  (ms', toSelfs, bs, logMsgs) ecs
         in if ()!# invCoins
-          then (ms'', (dropBlanks $ [ sorryInEq, sorryInRm ] ++ toSelfs', bs', logMsgs))
-          else (ms,   (pure dudeYourHandsAreEmpty,                        [],  []     ))
+          then (ms'', (dropBlanks $ [ sorryInEq, sorryInRm ] ++ toSelfs', bs', logMsgs'))
+          else (ms,   (pure dudeYourHandsAreEmpty,                        [],  []      ))
 dropAction p = patternMatchFail "dropAction" [ showText p ]
 
 
@@ -971,7 +970,7 @@ tryMove i mq cols p dir = helper |&| modifyState >=> \case
                 destMobIds   = findMobIds ms $ ms^.invTbl.ind destId
                 ms'          = ms & mobTbl.ind i.rmId   .~ destId
                                   & invTbl.ind originId %~ (i `delete`)
-                                  & invTbl.ind destId   %~ (sortInv ms . (i :))
+                                  & invTbl.ind destId   %~ addToInv ms (pure i)
                 msgAtOrigin  = nlnl $ case maybeOriginMsg of
                                  Nothing  -> T.concat [ serialize originDesig, spaced verb, expandLinkName dir, "." ]
                                  Just msg -> T.replace "%" (serialize originDesig) msg
@@ -1176,7 +1175,7 @@ intro (LowerNub i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
                                                , desigId       = i
                                                , desigIds      = is }
                         himHerself  = mkReflexPro . getSex i $ ms
-                        targetMsg   = nlnl . T.concat $ [ serialize srcDesig
+                        targetMsg   = nlnl . T.concat $ [ parseDesig targetId ms . serialize $ srcDesig
                                                         , " introduces "
                                                         , himHerself
                                                         , " to you as "
@@ -2806,7 +2805,7 @@ helperUnready i ms d a = \case
   Left  msg       -> a & _3 <>~ pure msg
   Right targetIds -> let (bs, msgs) = mkUnreadyDescs i ms d targetIds
                      in a & _1.ind i %~ M.filter (`notElem` targetIds)
-                          & _2.ind i %~ (sortInv ms . (++ targetIds))
+                          & _2.ind i %~ addToInv ms targetIds
                           & _3 <>~ msgs
                           & _4 <>~ bs
                           & _5 <>~ msgs
