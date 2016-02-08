@@ -6,6 +6,8 @@ module Mud.Cmds.Pla ( getRecordUptime
                     , handleEgress
                     , look
                     , mkNonStdRmLinkCmds
+                    , noOfNpcCmds
+                    , noOfPlaCmds
                     , npcCmds
                     , plaCmds
                     , showMotd ) where
@@ -144,7 +146,11 @@ plaCmds = sort $ regularCmds ++ priorityAbbrevCmds ++ expCmds
 
 
 regularCmds :: [Cmd]
-regularCmds = map (uncurry4 mkRegularCmd)
+regularCmds = map (uncurry4 mkRegularCmd) regularCmdTuples
+
+
+regularCmdTuples :: [(CmdFullName, ActionFun, Bool, CmdDesc)]
+regularCmdTuples =
     [ ("?",          plaDispCmdList,  True,  cmdDescDispCmdList)
     , ("about",      about,           True,  "About CurryMUD.")
     , ("admin",      admin,           True,  "Display a list of administrators, or send a message to an administrator.")
@@ -188,7 +194,11 @@ mkRegularCmd cfn f b cd = Cmd { cmdName           = cfn
 
 
 priorityAbbrevCmds :: [Cmd]
-priorityAbbrevCmds = concatMap (uncurry5 mkPriorityAbbrevCmd)
+priorityAbbrevCmds = concatMap (uncurry5 mkPriorityAbbrevCmd) priorityAbbrevCmdTuples
+
+
+priorityAbbrevCmdTuples :: [(CmdFullName, CmdPriorityAbbrevTxt, ActionFun, Bool, CmdDesc)]
+priorityAbbrevCmdTuples =
     [ ("clear",      "cl",  clear,      True, cmdDescClear)
     , ("color",      "col", color,      True, "Perform a color test.")
     , ("connect",    "co",  connect,    True, "Connect one or more people to a telepathic channel.")
@@ -237,6 +247,10 @@ mkPriorityAbbrevCmd cfn cpat f b cd = unfoldr helper (T.init cfn) ++ [ Cmd { cmd
                                   , cmdDesc           = "" }
 
 
+noOfPlaCmds :: Int
+noOfPlaCmds = length regularCmdTuples + length priorityAbbrevCmdTuples
+
+
 -----
 
 
@@ -256,7 +270,11 @@ npcCmds = sort $ npcRegularCmds ++ npcPriorityAbbrevCmds ++ expCmds
 
 
 npcRegularCmds :: [Cmd]
-npcRegularCmds = map (uncurry4 mkRegularCmd)
+npcRegularCmds = map (uncurry4 mkRegularCmd) npcRegularCmdTuples
+
+
+npcRegularCmdTuples :: [(CmdFullName, ActionFun, Bool, CmdDesc)]
+npcRegularCmdTuples =
     [ (".",          npcAsSelf,      False, "Execute a command as your admin PC.")
     , ("?",          npcDispCmdList, True,  cmdDescDispCmdList)
     , ("bars",       bars,           True,  cmdDescBars)
@@ -277,7 +295,11 @@ npcRegularCmds = map (uncurry4 mkRegularCmd)
 
 
 npcPriorityAbbrevCmds :: [Cmd]
-npcPriorityAbbrevCmds = concatMap (uncurry5 mkPriorityAbbrevCmd)
+npcPriorityAbbrevCmds = concatMap (uncurry5 mkPriorityAbbrevCmd) npcPriorityAbbrevCmdTuples
+
+
+npcPriorityAbbrevCmdTuples :: [(CmdFullName, CmdPriorityAbbrevTxt, ActionFun, Bool, CmdDesc)]
+npcPriorityAbbrevCmdTuples =
     [ ("clear",     "c",   clear,      True,  cmdDescClear)
     , ("drop",      "dr",  dropAction, True,  cmdDescDrop)
     , ("emote",     "em",  emote,      True,  cmdDescEmote)
@@ -294,6 +316,10 @@ npcPriorityAbbrevCmds = concatMap (uncurry5 mkPriorityAbbrevCmd)
     , ("stop",      "sto", npcStop,    False, "Stop possessing.")
     , ("unready",   "un",  unready,    True,  cmdDescUnready)
     , ("whoami",    "wh",  whoAmI,     True,  "Confirm who " <> parensQuote "or what" <> " you are.") ]
+
+
+noOfNpcCmds :: Int
+noOfNpcCmds = length npcRegularCmdTuples + length npcPriorityAbbrevCmdTuples
 
 
 -----

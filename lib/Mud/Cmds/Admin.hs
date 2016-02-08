@@ -8,6 +8,7 @@ import Mud.Cmds.Msgs.CmdDesc
 import Mud.Cmds.Msgs.Hint
 import Mud.Cmds.Msgs.Misc
 import Mud.Cmds.Msgs.Sorry
+import Mud.Cmds.Debug
 import Mud.Cmds.Pla
 import Mud.Cmds.Util.Abbrev
 import Mud.Cmds.Util.CmdPrefixes
@@ -51,15 +52,15 @@ import Control.Monad.IO.Class (liftIO)
 import Data.Bits (zeroBits)
 import Data.Either (rights)
 import Data.Function (on)
-import Data.List (delete, foldl', intercalate, intersperse, partition, sortBy)
+import Data.List ((\\), delete, foldl', intercalate, intersperse, partition, sortBy)
 import Data.Maybe (fromJust, fromMaybe, isJust)
 import Data.Monoid ((<>), Any(..), Sum(..), getSum)
 import Data.Text (Text)
 import Data.Time (TimeZone, UTCTime, defaultTimeLocale, diffUTCTime, formatTime, getCurrentTime, getCurrentTimeZone, getZonedTime, utcToLocalTime)
 import GHC.Exts (sortWith)
 import Prelude hiding (exp, pi, recip)
-import qualified Data.IntMap.Lazy as IM (elems, filter, keys, size, toList)
-import qualified Data.Map.Lazy as M (foldl, foldrWithKey, toList)
+import qualified Data.IntMap.Lazy as IM (elems, filter, filterWithKey, keys, size, toList)
+import qualified Data.Map.Lazy as M (foldl, foldrWithKey, size, toList)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (putStrLn)
 import System.Process (readProcess)
@@ -111,8 +112,6 @@ massLogPla = L.massLogPla "Mud.Cmds.Admin"
 -- ==================================================
 
 
--- TODO: Make a "count" command to count the number of player cmds, admin cmds, debug cmds, and exp cmds.
--- Also hooks, room actions, room functions, number of threads... There are many possibilities.
 adminCmds :: [Cmd]
 adminCmds =
     [ mkAdminCmd "?"          adminDispCmdList True  cmdDescDispCmdList
@@ -124,6 +123,7 @@ adminCmds =
     , mkAdminCmd "boot"       adminBoot        True  "Boot a player, optionally with a custom message."
     , mkAdminCmd "bug"        adminBug         True  "Dump the bug database."
     , mkAdminCmd "channel"    adminChan        True  "Display information about one or more telepathic channels."
+    , mkAdminCmd "count"      adminCount       True  "Display or search a list of miscellaneous running totals."
     , mkAdminCmd "date"       adminDate        True  "Display the current system date."
     , mkAdminCmd "examine"    adminExamine     True  "Display the properties of one or more IDs."
     , mkAdminCmd "experience" adminExp         True  "Dump the experience table."
@@ -406,6 +406,65 @@ informNoChans mq cols = wrapSend mq cols "No channels exist!"
 adminChanIOHelper :: Id -> MsgQueue -> [[Text]] -> MudStack ()
 adminChanIOHelper i mq reports =
     (pager i mq . intercalate [""] $ reports) >> logPlaExec (prefixAdminCmd "channel") i
+
+
+-----
+
+
+-- TODO: Help.
+adminCount :: ActionFun
+adminCount (NoArgs i mq cols) = do
+    pager i mq . concatMap (wrapIndent 2 cols) . mkCountTxt =<< getState
+    logPlaExecArgs (prefixAdminCmd "count") [] i
+adminCount p@ActionParams { myId, args } = do
+    dispMatches p 2 . mkCountTxt =<< getState
+    logPlaExecArgs (prefixAdminCmd "count") args myId
+
+
+-- TODO: Threads.
+mkCountTxt :: MudState -> [Text]
+mkCountTxt ms = map (uncurry mappend . second showText) pairs
+  where
+    pairs =
+        [ ("Objects: ",            countType ObjType     )
+        , ("Clothing: ",           countType ClothType   )
+        , ("Containers: ",         countType ConType     )
+        , ("Weapons: ",            countType WpnType     )
+        , ("Armor: ",              countType ArmType     )
+        , ("NPCs: ",               countType NpcType     )
+        , ("PCs: ",                countType PCType      )
+        , ("Rooms: ",              countType RmType      )
+        , ("Writables: ",          countType WritableType)
+        , ("Typed things: ",       ms^.typeTbl.to IM.size)
+        , ("Players logged in: ",  length . getLoggedInPlaIds $ ms                  )
+        , ("Players logged out: ", countLoggedOutPlas                               )
+        , ("Admins logged in: ",   length . getLoggedInAdminIds $ ms                )
+        , ("Admins logged out: ",  length $ getAdminIds ms \\ getLoggedInAdminIds ms)
+        , ("Male players: ",       countMaleFemale Male  )
+        , ("Female players: ",     countMaleFemale Female)
+        , ("Dwarves: ",            countRace Dwarf       )
+        , ("Elves: ",              countRace Elf         )
+        , ("Felinoids: ",          countRace Felinoid    )
+        , ("Halflings: ",          countRace Halfling    )
+        , ("Humans: ",             countRace Human       )
+        , ("Lagomorphs: ",         countRace Lagomorph   )
+        , ("Nymphs: ",             countRace Nymph       )
+        , ("Vulpenoids: ",         countRace Vulpenoid   )
+        , ("Player commands: ",    noOfPlaCmds     )
+        , ("NPC commands: ",       noOfNpcCmds     )
+        , ("Exp commands: ",       length expCmds  )
+        , ("Admin commands: ",     length adminCmds)
+        , ("Debug commands: ",     length debugCmds)
+        , ("Functions in the function table: ", ms^.funTbl        .to M.size )
+        , ("Hook functions: ",                  ms^.hookFunTbl    .to M.size )
+        , ("Room action functions: ",           ms^.rmActionFunTbl.to M.size )
+        , ("Channels: ",                        ms^.chanTbl       .to IM.size) ]
+    countType t          = views typeTbl (IM.size . IM.filter (== t)) ms
+    countLoggedOutPlas   = views plaTbl  (length . (\\ getLoggedInPlaIds ms) . IM.keys . IM.filter (not . isAdmin)) ms
+    countMaleFemale sexy = views plaTbl  (IM.size . IM.filterWithKey helper) ms
+      where
+        helper i p = getSex i ms == sexy && not (isAdmin p)
+    countRace r = views plaTbl (length . filter ((== r) . (`getRace` ms)) . IM.keys . IM.filter (not . isAdmin)) ms
 
 
 -----

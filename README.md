@@ -24,8 +24,8 @@ CurryMUD will have the following features:
 * Incoming connections are accepted and players are prompted for their character name.
 * The names of commands, as well as the names of the targets they act upon, may be abbreviated.
 * Commands have a consistent structure and a unique syntax for indicating target locations and quantities.
-* About 55 player commands and 35 administrator commands.
-* About 180 built-in emotes.
+* About 55 player commands and 40 administrator commands.
+* Nearly 200 built-in emotes.
 * Unique commands, accessible only when a player is in a particular room, may be created.
 * PCs can introduce themselves to each other.
 * PCs can "link" with each other so as to enable "tells."
