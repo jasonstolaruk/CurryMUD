@@ -2,13 +2,13 @@
 
 module Mud.Cmds.Admin (adminCmds) where
 
+import Mud.Cmds.Debug
 import Mud.Cmds.ExpCmds
 import Mud.Cmds.Msgs.Advice
 import Mud.Cmds.Msgs.CmdDesc
 import Mud.Cmds.Msgs.Hint
 import Mud.Cmds.Msgs.Misc
 import Mud.Cmds.Msgs.Sorry
-import Mud.Cmds.Debug
 import Mud.Cmds.Pla
 import Mud.Cmds.Util.Abbrev
 import Mud.Cmds.Util.CmdPrefixes
@@ -29,6 +29,7 @@ import Mud.Misc.ANSI
 import Mud.Misc.Database
 import Mud.Misc.Persist
 import Mud.TheWorld.Zones.AdminZoneIds (iLoggedOut, iRoot)
+import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
 import Mud.Util.List hiding (headTail)
 import Mud.Util.Misc hiding (patternMatchFail)
@@ -63,6 +64,7 @@ import qualified Data.IntMap.Lazy as IM (elems, filter, filterWithKey, keys, siz
 import qualified Data.Map.Lazy as M (foldl, foldrWithKey, size, toList)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (putStrLn)
+import System.Directory (getDirectoryContents)
 import System.Process (readProcess)
 import System.Time.Utils (renderSecs)
 import Text.Regex.Posix ((=~))
@@ -116,10 +118,10 @@ adminCmds :: [Cmd]
 adminCmds =
     [ mkAdminCmd "?"          adminDispCmdList True  cmdDescDispCmdList
     , mkAdminCmd "admin"      adminAdmin       True  ("Send a message on the admin channel " <> plusRelatedMsg)
+    , mkAdminCmd "announce"   adminAnnounce    True  "Send a message to all players."
     , mkAdminCmd "as"         adminAs          False "Execute a command as someone else."
     , mkAdminCmd "banhost"    adminBanHost     True  "Dump the banned hostname database, or ban/unban a host."
     , mkAdminCmd "banplayer"  adminBanPla      True  "Dump the banned player database, or ban/unban a player."
-    , mkAdminCmd "announce"   adminAnnounce    True  "Send a message to all players."
     , mkAdminCmd "boot"       adminBoot        True  "Boot a player, optionally with a custom message."
     , mkAdminCmd "bug"        adminBug         True  "Dump the bug database."
     , mkAdminCmd "channel"    adminChan        True  "Display information about one or more telepathic channels."
@@ -413,57 +415,64 @@ adminChanIOHelper i mq reports =
 
 adminCount :: ActionFun
 adminCount (NoArgs i mq cols) = do
-    pager i mq . concatMap (wrapIndent 2 cols) . mkCountTxt =<< getState
+    pager i mq . concatMap (wrapIndent 2 cols) =<< mkCountTxt
     logPlaExecArgs (prefixAdminCmd "count") [] i
 adminCount p@ActionParams { myId, args } = do
-    dispMatches p 2 . mkCountTxt =<< getState
+    dispMatches p 2 =<< mkCountTxt
     logPlaExecArgs (prefixAdminCmd "count") args myId
 
 
 -- TODO: Threads.
-mkCountTxt :: MudState -> [Text]
-mkCountTxt ms = map (uncurry mappend . second showText) pairs
+mkCountTxt :: MudStack [Text]
+mkCountTxt = map (uncurry mappend . second showText) <$> helper
   where
-    pairs =
-        [ ("Objects: ",            countType ObjType     )
-        , ("Clothing: ",           countType ClothType   )
-        , ("Containers: ",         countType ConType     )
-        , ("Weapons: ",            countType WpnType     )
-        , ("Armor: ",              countType ArmType     )
-        , ("NPCs: ",               countType NpcType     )
-        , ("PCs: ",                countType PCType      )
-        , ("Rooms: ",              countType RmType      )
-        , ("Writables: ",          countType WritableType)
-        , ("Typed things: ",       ms^.typeTbl.to IM.size)
-        , ("Players logged in: ",  length . getLoggedInPlaIds $ ms                  )
-        , ("Players logged out: ", countLoggedOutPlas                               )
-        , ("Admins logged in: ",   length . getLoggedInAdminIds $ ms                )
-        , ("Admins logged out: ",  length $ getAdminIds ms \\ getLoggedInAdminIds ms)
-        , ("Male players: ",       countMaleFemale Male  )
-        , ("Female players: ",     countMaleFemale Female)
-        , ("Dwarves: ",            countRace Dwarf       )
-        , ("Elves: ",              countRace Elf         )
-        , ("Felinoids: ",          countRace Felinoid    )
-        , ("Halflings: ",          countRace Halfling    )
-        , ("Humans: ",             countRace Human       )
-        , ("Lagomorphs: ",         countRace Lagomorph   )
-        , ("Nymphs: ",             countRace Nymph       )
-        , ("Vulpenoids: ",         countRace Vulpenoid   )
-        , ("Player commands: ",    noOfPlaCmds     )
-        , ("NPC commands: ",       noOfNpcCmds     )
-        , ("Exp commands: ",       length expCmds  )
-        , ("Admin commands: ",     length adminCmds)
-        , ("Debug commands: ",     length debugCmds)
-        , ("Functions in the function table: ", ms^.funTbl        .to M.size )
-        , ("Hook functions: ",                  ms^.hookFunTbl    .to M.size )
-        , ("Room action functions: ",           ms^.rmActionFunTbl.to M.size )
-        , ("Channels: ",                        ms^.chanTbl       .to IM.size) ]
-    countType t          = views typeTbl (IM.size . IM.filter (== t)) ms
-    countLoggedOutPlas   = views plaTbl  (length . (\\ getLoggedInPlaIds ms) . IM.keys . IM.filter (not . isAdmin)) ms
-    countMaleFemale sexy = views plaTbl  (IM.size . IM.filterWithKey helper) ms
-      where
-        helper i p = getSex i ms == sexy && not (isAdmin p)
-    countRace r = views plaTbl (length . filter ((== r) . (`getRace` ms)) . IM.keys . IM.filter (not . isAdmin)) ms
+    helper = getState >>= \ms -> do
+        let countType t          = views typeTbl (IM.size . IM.filter (== t)) ms
+            countLoggedOutPlas   = views plaTbl  (length . (\\ getLoggedInPlaIds ms) . IM.keys . IM.filter (not . isAdmin)) ms
+            countMaleFemale sexy = views plaTbl  (IM.size . IM.filterWithKey f) ms
+              where
+                f i p = getSex i ms == sexy && not (isAdmin p)
+            countRace r = views plaTbl (length . filter ((== r) . (`getRace` ms)) . IM.keys . IM.filter (not . isAdmin)) ms
+        [ noOfPlaHelpCmds, noOfPlaHelpTopics, noOfAdminHelpCmds, noOfAdminHelpTopics ] <- countHelps
+        return [ ("Objects: ",      countType ObjType     )
+               , ("Clothing: ",     countType ClothType   )
+               , ("Containers: ",   countType ConType     )
+               , ("Weapons: ",      countType WpnType     )
+               , ("Armor: ",        countType ArmType     )
+               , ("NPCs: ",         countType NpcType     )
+               , ("PCs: ",          countType PCType      )
+               , ("Rooms: ",        countType RmType      )
+               , ("Writables: ",    countType WritableType)
+               , ("Typed things: ", ms^.typeTbl.to IM.size)
+               , ("Players logged in: ",  length . getLoggedInPlaIds $ ms                  )
+               , ("Players logged out: ", countLoggedOutPlas                               )
+               , ("Admins logged in: ",   length . getLoggedInAdminIds $ ms                )
+               , ("Admins logged out: ",  length $ getAdminIds ms \\ getLoggedInAdminIds ms)
+               , ("Male players: ",    countMaleFemale Male  )
+               , ("Female players: ",  countMaleFemale Female)
+               , ("Dwarves: ",         countRace Dwarf       )
+               , ("Elves: ",           countRace Elf         )
+               , ("Felinoids: ",       countRace Felinoid    )
+               , ("Halflings: ",       countRace Halfling    )
+               , ("Humans: ",          countRace Human       )
+               , ("Lagomorphs: ",      countRace Lagomorph   )
+               , ("Nymphs: ",          countRace Nymph       )
+               , ("Vulpenoids: ",      countRace Vulpenoid   )
+               , ("Channels: ",        ms^.chanTbl.to IM.size)
+               , ("Player commands: ", noOfPlaCmds           )
+               , ("NPC commands: ",    noOfNpcCmds           )
+               , ("Exp commands: ",    length expCmds        )
+               , ("Admin commands: ",  length adminCmds      )
+               , ("Debug commands: ",  length debugCmds      )
+               , ("Player help commands: ", noOfPlaHelpCmds    )
+               , ("Player help topics: ",   noOfPlaHelpTopics  )
+               , ("Admin help commands: ",  noOfAdminHelpCmds  )
+               , ("Admin help topics: ",    noOfAdminHelpTopics)
+               , ("Functions in the function table: ", ms^.funTbl        .to M.size )
+               , ("Hook functions: ",                  ms^.hookFunTbl    .to M.size )
+               , ("Room action functions: ",           ms^.rmActionFunTbl.to M.size ) ]
+    countHelps = liftIO . mapM countFiles $ [ plaHelpCmdsDir, plaHelpTopicsDir, adminHelpCmdsDir, adminHelpTopicsDir ]
+    countFiles dir = length . dropIrrelevantFilenames <$> getDirectoryContents dir -- TODO: Handle exceptions.
 
 
 -----

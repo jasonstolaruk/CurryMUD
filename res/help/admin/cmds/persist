@@ -1,0 +1,10 @@
+\h #dPERSIST \d
+
+\uUSAGE\n
+#dpersist
+
+\uDESCRIPTION\n
+Persist the world (save the current world state to disk).
+(Note that the virtual world is automatically persisted at regular intervals and at shutdown.)
+
+\uSEE ALSO\n

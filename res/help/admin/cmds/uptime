@@ -1,0 +1,9 @@
+\h #dUPTIME \d
+
+\uUSAGE\n
+#duptime
+
+\uDESCRIPTION\n
+Display the system uptime (that is, show the results of running the "uptime" external command).
+
+\uSEE ALSO\n

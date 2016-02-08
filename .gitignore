@@ -3,7 +3,7 @@
 *.hi
 *.o
 *sublime*
-.cabal-sandbox/
+/.cabal-sandbox/
 .DS_Store
 .hsenv
 .virtualenv
@@ -11,9 +11,9 @@ cabal-dev
 cabal.config
 cabal.sandbox.config
 codex.tags
-db/
-dist
+/db/
+/dist
 hscope.out
-logs/
-persist/
-uptime
+/logs/
+/persist/
+/uptime

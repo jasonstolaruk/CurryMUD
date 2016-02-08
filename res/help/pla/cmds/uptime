@@ -1,0 +1,9 @@
+\h UPTIME \d
+
+\uUSAGE\n
+uptime
+
+\uDESCRIPTION\n
+Display how long CurryMUD has been running.
+
+\uSEE ALSO\n
