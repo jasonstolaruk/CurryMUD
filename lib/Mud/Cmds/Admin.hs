@@ -411,7 +411,6 @@ adminChanIOHelper i mq reports =
 -----
 
 
--- TODO: Help.
 adminCount :: ActionFun
 adminCount (NoArgs i mq cols) = do
     pager i mq . concatMap (wrapIndent 2 cols) . mkCountTxt =<< getState

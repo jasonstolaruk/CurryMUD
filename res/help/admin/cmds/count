@@ -1,0 +1,13 @@
+\h #dCOUNT \d
+
+\uUSAGE\n
+#dcount \s[\dterm \s...]\d
+
+\uDESCRIPTION\n
+Display a list of miscellaneous running totals. Optionally, search the list for one or more terms.
+
+\uEXAMPLES\n
+\q#dcount\d to display the full list.4`
+\q#dcount admin\d to display entries containing "admin".4`
+
+\uSEE ALSO\n
