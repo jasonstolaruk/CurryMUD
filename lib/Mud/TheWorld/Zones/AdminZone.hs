@@ -660,8 +660,8 @@ createAdminZone = do
         []
         mempty
         (Rm "The floating door"
-            "Floating before you is polished wooden door surrounded by featureless white trimming. Hanging from a nail \
-            \affixed to the door is a small sign reading, \"Admin Lounge.\""
+            "Floating before you is a polished wooden door surrounded by featureless white trimming. Hanging from a \
+            \nail affixed to the door is a small sign reading, \"Admin Lounge.\""
             zeroBits
             [ StdLink North iVoid
             , NonStdLink "lounge" iLounge "% enters the lounge." "% enters the lounge." ]

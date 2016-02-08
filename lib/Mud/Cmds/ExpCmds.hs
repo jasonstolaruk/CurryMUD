@@ -162,6 +162,8 @@ expCmdSet = S.fromList
                                       "You cringe at @."
                                       "% cringes at you."
                                       "% cringes at @.")
+    , ExpCmd "cross"       (NoTarget  "You cross your arms."
+                                      "% crosses & arms.")
     , ExpCmd "cry"         (NoTarget  "You cry."
                                       "% cries.")
     , ExpCmd "cryanger"    (Versatile "You cry out in anger."
@@ -242,11 +244,11 @@ expCmdSet = S.fromList
                                       "You make a funny face at @."
                                       "% makes a funny face at you."
                                       "% makes a funny face at @.")
-    , ExpCmd "gag"         (Versatile "You gag."
-                                      "% gags."
-                                      "You gag in reaction to @."
-                                      "% gags in reaction to you."
-                                      "% gags in reaction to @.")
+    , ExpCmd "gape"        (Versatile "You gape."
+                                      "% gapes."
+                                      "You gape at @."
+                                      "% gapes at you."
+                                      "% gapes at @.")
     , ExpCmd "gasp"        (Versatile "You gasp."
                                       "% gasps."
                                       "You gasp at @."
@@ -619,6 +621,8 @@ expCmdSet = S.fromList
                                       "%'s stomach growls.")
     , ExpCmd "stretch"     (NoTarget  "You stretch your muscles."
                                       "% stretches & muscles.")
+    , ExpCmd "suckthumb"   (NoTarget  "You suck your thumb."
+                                      "% sucks & thumb.")
     , ExpCmd "sweat"       (NoTarget  "You break out in a sweat."
                                       "% breaks out in a sweat.")
     , ExpCmd "tears"       (NoTarget  "Tears roll down your face."
@@ -645,6 +649,9 @@ expCmdSet = S.fromList
                                       "You tremble in fear of @."
                                       "% trembles in fear of you."
                                       "% trembles in fear of @.")
+    , ExpCmd "turnhead"    (HasTarget "You turn your head to look at @."
+                                      "% turns & head to look at you."
+                                      "% turns & head to look at @.")
     , ExpCmd "unamused"    (Versatile "You are plainly unamused."
                                       "% is plainly unamused."
                                       "You are plainly unamused by @'s antics."
@@ -673,6 +680,13 @@ expCmdSet = S.fromList
                                       "You whimper at @."
                                       "% whimpers at you."
                                       "% whimpers at @.")
+    , ExpCmd "whistle"     (NoTarget  "You whistle."
+                                      "% whistles.")
+    , ExpCmd "wince"       (Versatile "You wince."
+                                      "% winces."
+                                      "You wince at @."
+                                      "% winces at you."
+                                      "% winces at @.")
     , ExpCmd "wink"        (Versatile "You wink."
                                       "% winks."
                                       "You wink at @."
@@ -688,11 +702,8 @@ expCmdSet = S.fromList
                                       "You look genuinely worried for @."
                                       "% looks genuinely worried for you."
                                       "% looks genuinely worried for @.")
-    , ExpCmd "yawn"        (Versatile "You yawn."
-                                      "% yawns."
-                                      "You yawn at @."
-                                      "% yawns at you."
-                                      "% yawns at @.") ]
+    , ExpCmd "yawn"        (NoTarget  "You yawn."
+                                      "% yawns.") ]
 
 
 expCmds :: [Cmd]

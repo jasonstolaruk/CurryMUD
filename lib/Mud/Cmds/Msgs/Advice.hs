@@ -22,6 +22,8 @@ module Mud.Cmds.Msgs.Advice ( adviceAAnnounceNoArgs
                             , adviceAsSelfNoArgs
                             , adviceASudoerExcessArgs
                             , adviceASudoerNoArgs
+                            , adviceASummonExcessArgs
+                            , adviceASummonNoArgs
                             , adviceATeleIdExcessArgs
                             , adviceATeleIdNoArgs
                             , adviceATelePCExcessArgs
@@ -220,6 +222,14 @@ adviceASudoerExcessArgs = "Sorry, but you can only promote/demote one player at 
 
 adviceASudoerNoArgs :: Text
 adviceASudoerNoArgs = "Please specify the full PC name of the player you wish to promote/demote."
+
+
+adviceASummonExcessArgs :: Text
+adviceASummonExcessArgs = "You can only summon one PC at a time."
+
+
+adviceASummonNoArgs :: Text
+adviceASummonNoArgs = "Please specify the name of the PC you wish to summon."
 
 
 adviceATeleIdExcessArgs :: Text

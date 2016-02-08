@@ -168,6 +168,9 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryShowTarget
                            , sorrySudoerDemoteRoot
                            , sorrySudoerDemoteSelf
+                           , sorrySummonAdmin
+                           , sorrySummonAlready
+                           , sorrySummonSelf
                            , sorryTeleAlready
                            , sorryTeleLoggedOutRm
                            , sorryTeleRmName
@@ -1159,6 +1162,21 @@ sorrySudoerDemoteRoot = can't "demote Root."
 
 sorrySudoerDemoteSelf :: Text
 sorrySudoerDemoteSelf = can't "demote yourself."
+
+
+-----
+
+
+sorrySummonAdmin :: Text
+sorrySummonAdmin = butCan't "summon an admin."
+
+
+sorrySummonAlready :: Sing -> Text
+sorrySummonAlready s = s <> " is already here!"
+
+
+sorrySummonSelf :: Text
+sorrySummonSelf = can't "summon yourself."
 
 
 -----

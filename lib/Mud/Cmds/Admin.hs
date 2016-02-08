@@ -111,7 +111,8 @@ massLogPla = L.massLogPla "Mud.Cmds.Admin"
 -- ==================================================
 
 
--- TODO: "summon" cmd.
+-- TODO: Make a "count" command to count the number of player cmds, admin cmds, debug cmds, and exp cmds.
+-- Also hooks, room actions, room functions, number of threads... There are many possibilities.
 adminCmds :: [Cmd]
 adminCmds =
     [ mkAdminCmd "?"          adminDispCmdList True  cmdDescDispCmdList
@@ -142,6 +143,7 @@ adminCmds =
     , mkAdminCmd "search"     adminSearch      True  "Search for names and IDs using a regular expression."
     , mkAdminCmd "shutdown"   adminShutdown    False "Shut down CurryMUD, optionally with a custom message."
     , mkAdminCmd "sudoer"     adminSudoer      True  "Toggle a player's admin status."
+    , mkAdminCmd "summon"     adminSummon      True  "Teleport a PC to your current room."
     , mkAdminCmd "teleid"     adminTeleId      True  "Teleport to an entity or room by ID."
     , mkAdminCmd "telepc"     adminTelePC      True  "Teleport to a PC by name."
     , mkAdminCmd "telerm"     adminTeleRm      True  "Display a list of named rooms to which you may teleport, or \
@@ -979,6 +981,33 @@ adminSudoer (OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
                                               & plaTbl.ind targetId %~ setPlaFlag IsTunedAdmin (not ia), fs)
         xs -> patternMatchFail "adminSudoer helper" [ showText xs ]
 adminSudoer p = advise p [] adviceASudoerExcessArgs
+
+
+-----
+
+
+adminSummon :: ActionFun
+adminSummon p@AdviseNoArgs                  = advise p [ prefixAdminCmd "summon" ] adviceASummonNoArgs
+adminSummon (OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
+  where
+    helper ms =
+        let SingleTarget { .. } = mkSingleTarget mq cols target "The name of the PC you wish to summon"
+            idSings             = [ idSing | idSing@(api, _) <- mkAdminPlaIdSingList ms, isLoggedIn . getPla api $ ms ]
+            destId              = getRmId i ms
+            rn                  = getRmName destId ms
+            destName            = rn <> " " <> parensQuote ("summoned by " <> s)
+            s                   = getSing i ms
+            sorry               = (ms, ) . pure . sendFun
+            found (targetId@((`getRmId` ms) -> originId), targetSing)
+              | targetSing == s       = sorry sorrySummonSelf
+              | isAdminId targetId ms = sorry sorrySummonAdmin
+              | destId == originId    = sorry . sorrySummonAlready $ targetSing
+              | p   <- mkActionParams targetId ms []
+              , res <- teleHelper p ms originId destId destName Nothing consLocPrefBcast
+              = res & _2 <>~ pure (logPla "adminSummon" i . T.concat $ [ "summoned ", targetSing, " to ", dblQuote rn, "." ])
+            notFound = sorry . sorryPCNameLoggedIn $ strippedTarget
+        in findFullNameForAbbrev strippedTarget idSings |&| maybe notFound found
+adminSummon ActionParams { plaMsgQueue, plaCols } = wrapSend plaMsgQueue plaCols adviceASummonExcessArgs
 
 
 -----
