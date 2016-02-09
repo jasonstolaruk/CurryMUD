@@ -124,6 +124,13 @@ getConnectTime i = view connectTime . getPla i
 -----
 
 
+getContents :: Id -> MudState -> Maybe Contents
+getContents i = view contents . getVessel i
+
+
+-----
+
+
 getCurrHostName :: Id -> MudState -> HostName
 getCurrHostName i = view currHostName . getPla i
 
@@ -259,6 +266,13 @@ getLogQueue i = view (plaLogTbl.ind i.to snd)
 
 getMa :: Id -> MudState -> Int
 getMa i = view ma . getMob i
+
+
+-----
+
+
+getMaxQuaffs :: Id -> MudState -> Quaffs
+getMaxQuaffs i = view maxQuaffs . getVessel i
 
 
 -----
@@ -483,6 +497,13 @@ getTeleLinkTbl i = view (teleLinkMstrTbl.ind i)
 
 getType :: Id -> MudState -> Type
 getType i = view (typeTbl.ind i)
+
+
+-----
+
+
+getVessel :: Id -> MudState -> Vessel
+getVessel i = view (vesselTbl.ind i)
 
 
 -----

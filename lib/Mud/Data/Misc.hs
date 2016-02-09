@@ -283,6 +283,10 @@ instance Pretty LinkDir where
   pp = uncapitalize . showText
 
 
+instance Pretty Liquid where
+  pp Water = "water"
+
+
 instance Pretty LoggedInOrOut where
   pp LoggedIn  = "logged in"
   pp LoggedOut = "logged out"
@@ -371,6 +375,7 @@ instance Pretty Type where
   pp NpcType      = "NPC"
   pp PCType       = "PC"
   pp RmType       = "room"
+  pp VesselType   = "vessel"
   pp WritableType = "writable"
 
 

@@ -120,6 +120,16 @@ putRmTeleName i tn = tweak $ rmTeleNameTbl.ind i .~ tn
 -----
 
 
+putVessel :: Id -> Ent -> Obj -> Vessel -> MudStack ()
+putVessel i e o v = tweaks [ entTbl   .ind i .~ e
+                           , objTbl   .ind i .~ o
+                           , typeTbl  .ind i .~ VesselType
+                           , vesselTbl.ind i .~ v ]
+
+
+-----
+
+
 putWpn :: Id -> Ent -> Obj -> Wpn -> MudStack ()
 putWpn i e o w = tweaks [ entTbl .ind i .~ e
                         , objTbl .ind i .~ o

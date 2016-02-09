@@ -449,6 +449,7 @@ mkCountTxt = map (uncurry mappend . second showText) <$> helper
                , ("NPCs: ",         countType NpcType     )
                , ("PCs: ",          countType PCType      )
                , ("Rooms: ",        countType RmType      )
+               , ("Vessels: ",      countType VesselType  )
                , ("Writables: ",    countType WritableType)
                , ("Typed things: ", ms^.typeTbl.to IM.size)
                , ("Players logged in: ",  length . getLoggedInPlaIds $ ms                  )
@@ -537,7 +538,8 @@ examineHelper ms targetId = let t = getType targetId ms in helper t $ case t of
   ArmType      -> [ examineEnt, examineObj,   examineArm ]
   NpcType      -> [ examineEnt, examineInv,   examineCoins, examineEqMap, examineMob, examineNpc ]
   PCType       -> [ examineEnt, examineInv,   examineCoins, examineEqMap, examineMob, examinePC, examinePla ]
-  RmType       -> [ examineInv, examineCoins, examineRm ]
+  RmType       -> [ examineInv, examineCoins, examineRm       ]
+  VesselType   -> [ examineEnt, examineObj,   examineVessel   ]
   WritableType -> [ examineEnt, examineObj,   examineWritable ]
   where
     helper t fs = let header = T.concat [ showText targetId, " ", parensQuote . pp $ t ]
@@ -667,6 +669,14 @@ examineRm i ms = let r = getRm i ms in [ "Name: "        <> r^.rmName
 
 xformNls :: Text -> Text
 xformNls = T.replace "\n" (colorWith nlColor "\\n")
+
+
+examineVessel :: ExamineHelper
+examineVessel i ms = let v = getVessel i ms in [ "Max quaffs: " <> v^.maxQuaffs.to showText
+                                               , "Contents: "   <> v^.contents .to descCont ]
+  where
+    descCont Nothing       = "none"
+    descCont (Just (l, q)) = showText q <> " quaffs of " <> pp l
 
 
 examineWpn :: ExamineHelper

@@ -364,10 +364,10 @@ mkTblNameKeysList ms = [ ("Arm",              tblKeys armTbl           ms)
                        , ("Pla",              tblKeys plaTbl           ms)
                        , ("Rm",               tblKeys rmTbl            ms)
                        , ("RmTeleNameTbl",    tblKeys rmTeleNameTbl    ms)
-                       , ("RndmNamesMstrTbl", tblKeys rndmNamesMstrTbl ms)
-                       , ("TeleLinkMstrTbl",  tblKeys teleLinkMstrTbl  ms)
+                       , ("RndmNamesTbl",     tblKeys rndmNamesMstrTbl ms)
                        , ("TeleLinkTbl",      tblKeys teleLinkMstrTbl  ms)
                        , ("Type",             tblKeys typeTbl          ms)
+                       , ("Vessel",           tblKeys vesselTbl        ms)
                        , ("Wpn",              tblKeys wpnTbl           ms)
                        , ("Writable",         tblKeys writableTbl      ms) ]
 

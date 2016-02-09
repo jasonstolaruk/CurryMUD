@@ -77,6 +77,7 @@ initMudData shouldLog = do
                                  , _teleLinkMstrTbl  = IM.empty
                                  , _threadTbl        =  M.empty
                                  , _typeTbl          = IM.empty
+                                 , _vesselTbl        = IM.empty
                                  , _wpnTbl           = IM.empty
                                  , _writableTbl      = IM.empty
                                  , _opList           = [] }
@@ -143,6 +144,7 @@ loadWorld dir@((persistDir </>) -> path) = do
                                                  , loadTbl rndmNamesMstrTblFile rndmNamesMstrTbl
                                                  , loadTbl teleLinkMstrTblFile  teleLinkMstrTbl
                                                  , loadTbl typeTblFile          typeTbl
+                                                 , loadTbl vesselTblFile        vesselTbl
                                                  , loadTbl wpnTblFile           wpnTbl
                                                  , loadTbl writableTblFile      writableTbl ]
     tweak $ \ms -> foldr removeAdHoc ms . getInv iWelcome $ ms

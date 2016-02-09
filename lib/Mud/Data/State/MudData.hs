@@ -68,6 +68,7 @@ data MudState = MudState { _armTbl           :: ArmTbl
                          , _teleLinkMstrTbl  :: TeleLinkMstrTbl
                          , _threadTbl        :: ThreadTbl
                          , _typeTbl          :: TypeTbl
+                         , _vesselTbl        :: VesselTbl
                          , _wpnTbl           :: WpnTbl
                          , _writableTbl      :: WritableTbl
                          , _opList           :: [Operation] }
@@ -99,6 +100,7 @@ type TalkAsyncTbl     = M.Map ThreadId TalkAsync
 type TeleLinkMstrTbl  = IM.IntMap TeleLinkTbl
 type ThreadTbl        = M.Map ThreadId ThreadType
 type TypeTbl          = IM.IntMap Type
+type VesselTbl        = IM.IntMap Vessel
 type WpnTbl           = IM.IntMap Wpn
 type WritableTbl      = IM.IntMap Writable
 type Operation        = MudStack ()
@@ -710,7 +712,25 @@ data Type = ObjType
           | NpcType
           | PCType
           | RmType
+          | VesselType
           | WritableType deriving (Eq, Generic, Show)
+
+
+-- ==================================================
+
+
+-- Has an object (and an entity).
+data Vessel = Vessel { _maxQuaffs :: Quaffs
+                     , _contents  :: Maybe Contents } deriving (Eq, Generic, Show)
+
+
+type Quaffs = Int
+
+
+type Contents = (Liquid, Quaffs)
+
+
+data Liquid = Water deriving (Eq, Generic, Show)
 
 
 -- ==================================================
@@ -749,6 +769,7 @@ instance FromJSON Hook
 instance FromJSON HostRecord
 instance FromJSON Lang
 instance FromJSON LinkDir
+instance FromJSON Liquid
 instance FromJSON PC
 instance FromJSON Race
 instance FromJSON RmAction
@@ -756,6 +777,7 @@ instance FromJSON RmLink
 instance FromJSON Sex
 instance FromJSON Slot
 instance FromJSON Type
+instance FromJSON Vessel
 instance FromJSON Wpn
 instance FromJSON WpnSub
 instance FromJSON Writable
@@ -795,6 +817,9 @@ instance ToJSON   Lang
 instance ToJSON   LinkDir
   where
     toJSON = genericToJSON defaultOptions
+instance ToJSON   Liquid
+  where
+    toJSON = genericToJSON defaultOptions
 instance ToJSON   PC
   where
     toJSON = genericToJSON defaultOptions
@@ -814,6 +839,9 @@ instance ToJSON   Slot
   where
     toJSON = genericToJSON defaultOptions
 instance ToJSON   Type
+  where
+    toJSON = genericToJSON defaultOptions
+instance ToJSON   Vessel
   where
     toJSON = genericToJSON defaultOptions
 instance ToJSON   Wpn
@@ -845,5 +873,6 @@ makeLenses ''PC
 makeLenses ''Pla
 makeLenses ''Rm
 makeLenses ''RmLink
+makeLenses ''Vessel
 makeLenses ''Wpn
 makeLenses ''Writable
