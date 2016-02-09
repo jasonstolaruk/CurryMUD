@@ -1086,7 +1086,7 @@ mkCmdNameForRmLink rl = T.toLower $ case rl of StdLink    { .. } -> linkDirToCmd
 help :: ActionFun
 help (NoArgs i mq cols) = (liftIO . T.readFile $ helpDir </> "root") |&| try >=> either handler helper
   where
-    handler e = fileIOExHandler "help" e >> wrapSend mq cols helpRootErrorMsg
+    handler e          = fileIOExHandler "help" e >> wrapSend mq cols helpRootErrorMsg
     helper rootHelpTxt = (isAdminId i <$> getState) >>= \ia -> do
         (sortBy (compare `on` helpName) -> hs) <- liftIO . mkHelpData $ ia
         let zipped                 = zip (styleAbbrevs Don'tQuote [ helpName h | h <- hs ]) hs

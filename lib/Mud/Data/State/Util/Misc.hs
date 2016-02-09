@@ -15,6 +15,7 @@ module Mud.Data.State.Util.Misc ( addToInv
                                 , getFun
                                 , getHookFun
                                 , getIdForMobSing
+                                , getLogAsyncs
                                 , getLoggedInAdminIds
                                 , getLoggedInPlaIds
                                 , getMobRmNonIncogInvCoins
@@ -200,6 +201,15 @@ getHookFun n = views (hookFunTbl.at n) (fromMaybe oops)
 
 getIdForMobSing :: Sing -> MudState -> Id
 getIdForMobSing s ms = let [(i, _)] = views entTbl (IM.toList . IM.filter (views sing (== s))) ms in i
+
+
+-----
+
+
+getLogAsyncs :: MudData -> (LogAsync, LogAsync)
+getLogAsyncs = (getAsync noticeLog *** getAsync errorLog) . dup
+  where
+    getAsync = flip views (fst . fromJust)
 
 
 -----

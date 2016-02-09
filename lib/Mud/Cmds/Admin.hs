@@ -42,14 +42,16 @@ import qualified Mud.Misc.Logging as L (logIOEx, logNotice, logPla, logPlaExec, 
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Arrow ((***), first, second)
+import Control.Concurrent.Async (asyncThreadId)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception (IOException)
-import Control.Exception.Lifted (try)
-import Control.Lens (_1, _2, _3, at, each, to, view, views)
+import Control.Exception.Lifted (catch, try)
+import Control.Lens (_1, _2, _3, at, both, each, to, view, views)
 import Control.Lens.Operators ((%~), (&), (.~), (<>~), (^.))
 import Control.Monad ((>=>), forM_, unless, when)
 import Control.Monad.IO.Class (liftIO)
+import Control.Monad.Reader (asks)
 import Data.Bits (zeroBits)
 import Data.Either (rights)
 import Data.Function (on)
@@ -58,10 +60,11 @@ import Data.Maybe (fromJust, fromMaybe, isJust)
 import Data.Monoid ((<>), Any(..), Sum(..), getSum)
 import Data.Text (Text)
 import Data.Time (TimeZone, UTCTime, defaultTimeLocale, diffUTCTime, formatTime, getCurrentTime, getCurrentTimeZone, getZonedTime, utcToLocalTime)
+import GHC.Conc (ThreadStatus(..), threadStatus)
 import GHC.Exts (sortWith)
 import Prelude hiding (exp, pi, recip)
 import qualified Data.IntMap.Lazy as IM (elems, filter, filterWithKey, keys, size, toList)
-import qualified Data.Map.Lazy as M (foldl, foldrWithKey, size, toList)
+import qualified Data.Map.Lazy as M (foldl, foldrWithKey, keys, size, toList)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (putStrLn)
 import System.Directory (getDirectoryContents)
@@ -422,7 +425,6 @@ adminCount p@ActionParams { myId, args } = do
     logPlaExecArgs (prefixAdminCmd "count") args myId
 
 
--- TODO: Threads.
 mkCountTxt :: MudStack [Text]
 mkCountTxt = map (uncurry mappend . second showText) <$> helper
   where
@@ -434,6 +436,11 @@ mkCountTxt = map (uncurry mappend . second showText) <$> helper
                 f i p = getSex i ms == sexy && not (isAdmin p)
             countRace r = views plaTbl (length . filter ((== r) . (`getRace` ms)) . IM.keys . IM.filter (not . isAdmin)) ms
         [ noOfPlaHelpCmds, noOfPlaHelpTopics, noOfAdminHelpCmds, noOfAdminHelpTopics ] <- countHelps
+        (noticeThrId, errorThrId) <- asks $ (both %~ asyncThreadId) . getLogAsyncs
+        let plaLogThrIds = views plaLogTbl (map (asyncThreadId . fst) . IM.elems) ms
+            otherThrIds  = views threadTbl M.keys ms
+            threadIds    = noticeThrId : errorThrId : plaLogThrIds ++ otherThrIds
+        noOfThreads <- length . filterThreads <$> mapM (liftIO . threadStatus) threadIds
         return [ ("Objects: ",      countType ObjType     )
                , ("Clothing: ",     countType ClothType   )
                , ("Containers: ",   countType ConType     )
@@ -468,11 +475,20 @@ mkCountTxt = map (uncurry mappend . second showText) <$> helper
                , ("Player help topics: ",   noOfPlaHelpTopics  )
                , ("Admin help commands: ",  noOfAdminHelpCmds  )
                , ("Admin help topics: ",    noOfAdminHelpTopics)
-               , ("Functions in the function table: ", ms^.funTbl        .to M.size )
-               , ("Hook functions: ",                  ms^.hookFunTbl    .to M.size )
-               , ("Room action functions: ",           ms^.rmActionFunTbl.to M.size ) ]
-    countHelps = liftIO . mapM countFiles $ [ plaHelpCmdsDir, plaHelpTopicsDir, adminHelpCmdsDir, adminHelpTopicsDir ]
-    countFiles dir = length . dropIrrelevantFilenames <$> getDirectoryContents dir -- TODO: Handle exceptions.
+               , ("Functions in the function table: ", ms^.funTbl        .to M.size)
+               , ("Hook functions: ",                  ms^.hookFunTbl    .to M.size)
+               , ("Room action functions: ",           ms^.rmActionFunTbl.to M.size)
+               , ("Active threads: ",                  noOfThreads                 ) ]
+    countHelps     = liftIO . mapM countFiles $ [ plaHelpCmdsDir, plaHelpTopicsDir, adminHelpCmdsDir, adminHelpTopicsDir ]
+    countFiles dir = (length . dropIrrelevantFilenames <$> getDirectoryContents dir) `catch` handler
+      where
+        handler :: IOException -> IO Int
+        handler _ = return 0
+    filterThreads = filter f
+      where
+        f = \case ThreadRunning   -> True
+                  ThreadBlocked _ -> True
+                  _               -> False
 
 
 -----
