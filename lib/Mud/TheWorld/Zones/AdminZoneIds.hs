@@ -247,3 +247,19 @@ iParchment3 = 135 :: Int
 iParchment4 = 136 :: Int
 
 iParchment5 = 137 :: Int
+
+iFlask = 139 :: Int
+
+iWaterskin = 140 :: Int
+
+iCanteen = 141 :: Int
+
+iJar = 142 :: Int
+
+iJug = 143 :: Int
+
+iSmlBottle = 144 :: Int
+
+iBottle = 145 :: Int
+
+iLrgBottle = 146 :: Int
