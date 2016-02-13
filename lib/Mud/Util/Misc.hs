@@ -23,6 +23,7 @@ module Mud.Util.Misc ( atLst1
                      , maybeVoid
                      , mIf
                      , minusQuarter
+                     , minusThird
                      , mkDateTimeTxt
                      , mkTimestamp
                      , mUnless
@@ -32,6 +33,7 @@ module Mud.Util.Misc ( atLst1
                      , onTrue
                      , patternMatchFail
                      , plusQuarter
+                     , plusThird
                      , reverseLookup
                      , sortEithers
                      , unadulterated
@@ -177,6 +179,10 @@ minusQuarter :: Int -> Int
 minusQuarter x = round (fromIntegral x * 0.75 :: Double)
 
 
+minusThird :: Int -> Int
+minusThird x = round (fromIntegral x * 0.66 :: Double)
+
+
 mUnless :: (Monad m) => m Bool -> m () -> m ()
 mUnless p = mIf p unit
 
@@ -206,6 +212,10 @@ patternMatchFail modName funName = blowUp modName funName "pattern match failure
 
 plusQuarter :: Int -> Int
 plusQuarter x = round (fromIntegral x * 1.25 :: Double)
+
+
+plusThird :: Int -> Int
+plusThird x = round (fromIntegral x * 1.33 :: Double)
 
 
 reverseLookup :: (Eq v) => v -> M.Map k v -> k

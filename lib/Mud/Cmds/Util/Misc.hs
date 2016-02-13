@@ -495,7 +495,7 @@ isHostBanned host = isBanned host <$> (getDbTblRecs "ban_host" :: IO [BanHostRec
 
 
 isBanned :: (BanRecord a) => Text -> [a] -> Any
-isBanned target banRecs = helper . reverse $ banRecs
+isBanned target = helper . reverse
   where
     helper [] = Any False
     helper (x:xs) | recTarget x == target = Any . recIsBanned $ x

@@ -167,7 +167,7 @@ mkGecr i ms searchIs searchCoins searchName@(headTail -> (h, t))
   = numText /= "0" ? parse rest numInt :? Sorry searchName
   | otherwise = mkGecrMult i ms 1 searchName searchIs searchCoins
   where
-    oops numText = blowUp "mkGecr" "unable to convert Text to Int" . pure $ numText
+    oops = blowUp "mkGecr" "unable to convert Text to Int" . pure
     parse rest numInt
       | T.length rest < 2               = Sorry searchName
       | (delim, rest') <- headTail rest =

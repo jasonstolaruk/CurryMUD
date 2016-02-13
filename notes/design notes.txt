@@ -209,13 +209,9 @@ MXP for markup, menus, etc.?
 
 OBJECTS:
 
-Objects have varying degrees of persistence. Some objects, such as starter maps, should disappear after having been left on the ground for some time. Corpses decay...
+Objects have varying degrees of persistence. Corpses decay...
 
 Objects have wear and tear.
-
-Certain objects (typically those that are a permanent fixture in a room) should not be listed in a room's inventory when a player "look"s.
-
-Have designated places where objects can be destroyed (trash bins).
 
 Players should be able to empty out containers that have liquid inside of them.
 

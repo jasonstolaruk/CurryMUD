@@ -14,9 +14,9 @@ apronWeight      = 75
 apronHeavyWeight = plusQuarter apronWeight
 
 
-backWeight, backSmlWeight, backLrgWeight :: Weight
-backWeight    = 100
+backSmlWeight, backWeight, backLrgWeight :: Weight
 backSmlWeight = minusQuarter backWeight
+backWeight    = 100
 backLrgWeight = plusQuarter  backWeight
 
 
@@ -85,9 +85,9 @@ ringWeight :: Weight
 ringWeight = 2
 
 
-sackWeight, sackSmlWeight, sackLrgWeight :: Weight
-sackWeight    = 40
+sackSmlWeight, sackWeight, sackLrgWeight :: Weight
 sackSmlWeight = minusQuarter sackWeight
+sackWeight    = 40
 sackLrgWeight = plusQuarter  sackWeight
 
 

@@ -21,16 +21,22 @@ apronVol      = round (12 * 8 * 0.25 * 100 :: Double)
 apronHeavyVol = plusQuarter apronVol
 
 
-backCap, backSmlCap, backLrgCap :: Vol
-backCap    = 2450 * 100
+backSmlCap, backCap, backLrgCap :: Vol
 backSmlCap = minusQuarter backCap
+backCap    = 2450 * 100
 backLrgCap = plusQuarter  backCap
 
 
-backVol, backSmlVol, backLrgVol :: Vol
-backVol    = 12 * 8 * 3 * 100
+backSmlVol, backVol, backLrgVol :: Vol
 backSmlVol = minusQuarter backVol
+backVol    = 12 * 8 * 3 * 100
 backLrgVol = plusQuarter  backVol
+
+
+bottleSmlVol, bottleVol, bottleLrgVol :: Vol
+bottleSmlVol = minusThird bottleVol
+bottleVol    = 45 * 100
+bottleLrgVol = plusThird  bottleVol
 
 
 bootsVol :: Vol
@@ -66,12 +72,28 @@ earVol :: Vol
 earVol = 2
 
 
+flaskVol :: Vol
+flaskVol = 14 * 100
+
+
 flowerVol :: Vol
 flowerVol = round (0.5 * 0.5 * 10 * 100 :: Double)
 
 
 helmLeatherVol :: Vol
 helmLeatherVol = 10 * 8 * 8 * 100
+
+
+jarSmlVol, jarVol, jarLrgVol :: Vol
+jarSmlVol = minusThird jarVol
+jarVol    = 40 * 100
+jarLrgVol = plusThird jarVol
+
+
+jugSmlVol, jugVol, jugLrgVol :: Vol
+jugSmlVol = minusThird jugVol
+jugVol    = 230 * 100
+jugLrgVol = plusThird jugVol
 
 
 knifeVol :: Vol
@@ -102,15 +124,15 @@ ringVol :: Vol
 ringVol = round (0.75 * 0.25 * 0.75 * 100 :: Double)
 
 
-sackCap, sackSmlCap, sackLrgCap :: Vol
-sackCap    = backCap
+sackSmlCap, sackCap, sackLrgCap :: Vol
 sackSmlCap = backSmlCap
+sackCap    = backCap
 sackLrgCap = backLrgCap
 
 
-sackVol, sackSmlVol, sackLrgVol :: Vol
-sackVol    = round (12 * 8 * 0.5 * 100 :: Double)
+sackSmlVol, sackVol, sackLrgVol :: Vol
 sackSmlVol = minusQuarter sackVol
+sackVol    = round (12 * 8 * 0.5 * 100 :: Double)
 sackLrgVol = plusQuarter  sackVol
 
 
@@ -138,3 +160,7 @@ trousersBaggyVol = plusQuarter trousersVol
 
 tunicHeavyVol :: Vol
 tunicHeavyVol = plusQuarter shirtVol
+
+
+waterskinVol :: Vol
+waterskinVol = bottleSmlVol

@@ -16,7 +16,7 @@ cabal-version:         >=1.10
 
 executable             curry
   default-language:    Haskell2010
-  ghc-options:         -O2 -threaded -rtsopts -with-rtsopts=-N -Wall -Werror
+  ghc-options:         -O2 -threaded -rtsopts -with-rtsopts=-N -funfolding-use-threshold=16 -optc-O3 -Wall -Werror
   main-is:             Main.hs
   other-extensions:    OverloadedStrings
   build-depends:         base >=4.8 && <5.0
@@ -29,7 +29,7 @@ executable             curry
 
 library
   default-language:    Haskell2010
-  ghc-options:         -O2 -threaded -rtsopts -with-rtsopts=-N -Wall -Werror
+  ghc-options:         -O2 -threaded -rtsopts -with-rtsopts=-N -funfolding-use-threshold=16 -optc-O3 -Wall -Werror
   exposed-modules:     Mud.Cmds.Admin
                        Mud.Cmds.Debug
                        Mud.Cmds.ExpCmds
@@ -137,7 +137,7 @@ library
                        , async >=2.0 && <3.0
                        , base >=4.8 && <5.0
                        , bytestring >=0.10 && <0.11
-                       , clock >=0.4 && <0.5
+                       , clock >=0.6 && <0.7
                        , conduit >=1.2 && <2.0
                        , conduit-extra >=1.1 && <2.0
                        , containers >=0.5 && <0.6
@@ -147,7 +147,7 @@ library
                        , hslogger >=1.2 && <2.0
                        , lens >=4.11 && <5.0
                        , lifted-base >=0.2 && <0.3
-                       , monad-control >=0.3 && <0.4
+                       , monad-control >=1.0 && <2.0
                        , monad-loops >=0.4 && <0.5
                        , mtl >=2.2 && <3.0
                        , mwc-random >=0.13 && <0.14
@@ -171,7 +171,7 @@ library
 
 test-suite             test
   default-language:    Haskell2010
-  ghc-options:         -O2 -threaded -rtsopts -with-rtsopts=-N -Wall -Werror
+  ghc-options:         -Wall -Werror
   type:                exitcode-stdio-1.0
   hs-source-dirs:      tests
   main-is:             test.hs

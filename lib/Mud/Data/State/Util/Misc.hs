@@ -87,6 +87,12 @@ import qualified Data.Vector.Unboxed as V (Vector)
 import Text.Regex.Posix ((=~))
 
 
+{-# ANN module ("HLint: ignore Use &&" :: String) #-}
+
+
+-----
+
+
 blowUp :: Text -> Text -> [Text] -> a
 blowUp = U.blowUp "Mud.Data.State.Util.Misc"
 
@@ -429,7 +435,7 @@ procHooks :: Id -> MudState -> V.Vector Int -> CmdName -> Args -> (Args, Generic
 procHooks i ms v cn as | initAcc <- (as, (ms, [], [], [])) = case lookupHooks i ms cn of
   Nothing    -> initAcc
   Just hooks ->
-    let helper acc arg = case filter (\Hook { triggers } -> arg `elem` triggers) $ hooks of
+    let helper acc arg = case filter (\Hook { triggers } -> arg `elem` triggers) hooks of
                            []        -> acc
                            (match:_) -> acc ++ pure match
         as'            = dropPrefixesForHooks hooks as

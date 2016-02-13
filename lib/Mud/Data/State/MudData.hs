@@ -13,7 +13,7 @@ import Control.Concurrent.STM.TMVar (TMVar)
 import Control.Concurrent.STM.TQueue (TQueue)
 import Control.Lens (makeLenses)
 import Control.Monad.Reader (ReaderT)
-import Data.Aeson ((.:), (.=), FromJSON(..), ToJSON(..), Value(..), defaultOptions, genericToJSON, object)
+import Data.Aeson ((.:), (.=), FromJSON(..), ToJSON(..), Value(..), object)
 import Data.Aeson.Types (Parser)
 import Data.IORef (IORef)
 import Data.Text (Text)
@@ -782,77 +782,29 @@ instance FromJSON Wpn
 instance FromJSON WpnSub
 instance FromJSON Writable
 instance ToJSON   Arm -- TODO: Temporary fix for aeson issue. https://github.com/bos/aeson/issues/290
-  where
-    toJSON = genericToJSON defaultOptions
 instance ToJSON   ArmSub
-  where
-    toJSON = genericToJSON defaultOptions
 instance ToJSON   Chan
-  where
-    toJSON = genericToJSON defaultOptions
 instance ToJSON   Cloth
-  where
-    toJSON = genericToJSON defaultOptions
 instance ToJSON   Coins
-  where
-    toJSON = genericToJSON defaultOptions
 instance ToJSON   Con
-  where
-    toJSON = genericToJSON defaultOptions
 instance ToJSON   Ent
-  where
-    toJSON = genericToJSON defaultOptions
 instance ToJSON   Hand
-  where
-    toJSON = genericToJSON defaultOptions
 instance ToJSON   Hook
-  where
-    toJSON = genericToJSON defaultOptions
 instance ToJSON   HostRecord
-  where
-    toJSON = genericToJSON defaultOptions
 instance ToJSON   Lang
-  where
-    toJSON = genericToJSON defaultOptions
 instance ToJSON   LinkDir
-  where
-    toJSON = genericToJSON defaultOptions
 instance ToJSON   Liquid
-  where
-    toJSON = genericToJSON defaultOptions
 instance ToJSON   PC
-  where
-    toJSON = genericToJSON defaultOptions
 instance ToJSON   Race
-  where
-    toJSON = genericToJSON defaultOptions
 instance ToJSON   RmAction
-  where
-    toJSON = genericToJSON defaultOptions
 instance ToJSON   RmLink
-  where
-    toJSON = genericToJSON defaultOptions
 instance ToJSON   Sex
-  where
-    toJSON = genericToJSON defaultOptions
 instance ToJSON   Slot
-  where
-    toJSON = genericToJSON defaultOptions
 instance ToJSON   Type
-  where
-    toJSON = genericToJSON defaultOptions
 instance ToJSON   Vessel
-  where
-    toJSON = genericToJSON defaultOptions
 instance ToJSON   Wpn
-  where
-    toJSON = genericToJSON defaultOptions
 instance ToJSON   WpnSub
-  where
-    toJSON = genericToJSON defaultOptions
 instance ToJSON   Writable
-  where
-    toJSON = genericToJSON defaultOptions
 
 
 -- ==================================================

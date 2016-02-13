@@ -914,7 +914,7 @@ mkStyledName_Count_BothList i ms is =
 
 
 mkCoinsSummary :: Cols -> Coins -> Text
-mkCoinsSummary cols c = helper . zipWith mkNameAmt coinNames . coinsToList $ c
+mkCoinsSummary cols = helper . zipWith mkNameAmt coinNames . coinsToList
   where
     helper         = T.unlines . wrapIndent 2 cols . commas . dropEmpties
     mkNameAmt cn a = Sum a |!| showText a <> " " <> bracketQuote (colorWith abbrevColor cn)

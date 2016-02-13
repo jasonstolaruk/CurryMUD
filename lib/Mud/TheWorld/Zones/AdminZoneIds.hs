@@ -248,18 +248,24 @@ iParchment4 = 136 :: Int
 
 iParchment5 = 137 :: Int
 
-iFlask = 139 :: Int
+iFlask = 138 :: Int
 
-iWaterskin = 140 :: Int
+iWaterskin = 139 :: Int
 
-iCanteen = 141 :: Int
+iSmlJar = 140 :: Int
 
-iJar = 142 :: Int
+iJar = 141 :: Int
 
-iJug = 143 :: Int
+iLrgJar = 142 :: Int
 
-iSmlBottle = 144 :: Int
+iSmlJug = 143 :: Int
 
-iBottle = 145 :: Int
+iJug = 144 :: Int
 
-iLrgBottle = 146 :: Int
+iLrgJug = 145 :: Int
+
+iSmlBottle = 146 :: Int
+
+iBottle = 147 :: Int
+
+iLrgBottle = 148 :: Int
