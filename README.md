@@ -29,7 +29,7 @@ CurryMUD will have the following features:
 * Unique commands, accessible only when a player is in a particular room, may be created.
 * PCs can introduce themselves to each other.
 * PCs can "link" with each other so as to enable "tells."
-* Players can interact with permanent room fixtures that are not listed in the room's inventory.
+* Players can interact with permanent room fixtures that are not listed in a room's inventory.
 * Players can create their own ad-hoc channels.
 * Question channel for OOC newbie Q&A.
 * Free-form emotes and built-in emotes may be used in "tells" and channel communications.
@@ -43,7 +43,6 @@ CurryMUD will have the following features:
 * Weight and encumbrance.
 * Volume and container capacity.
 * Objects can be configured to automatically disappear when left on the ground for some time.
-* Threads associated with a given room may be spawned.
 
 I am still in the initial stage of developing basic commands. There is very little content in the virtual world.
 
@@ -74,9 +73,8 @@ The code is available here on GitHub under the 3-clause BSD license (refer to th
 
 ### How to try it out
 
-If you'd like to try out what I have so far, clone the repo from your home directory. While you can build CurryMUD via the usual `cabal install`, you may also utilize the included [build-sandbox.sh](https://github.com/jasonstolaruk/CurryMUD/blob/master/build-sandbox.sh) script, which builds the project dependencies in a new cabal sandbox.
-
-You'll need at least GHC 7.10 with base 4.8. You shouldn't have any issues compiling on Mac OS X or Linux (I do not plan on explicitly supporting Windows). If you do run into issues, please email me and let me know.
+If you'd like to try out what I have so far, clone the repo from your home directory (the server expects to find various folders located under `$HOME/CurryMUD`). Having done that, please build and run the project using [slack](http://docs.haskellstack.org/en/stable/README.html) (otherwise, I cannot guarantee that CurryMUD will build on your system).
+Please note that I do not plan on explicitly supporting Windows.
 
 Once you have the server up and running, just telnet to localhost port 9696 to play.
 
