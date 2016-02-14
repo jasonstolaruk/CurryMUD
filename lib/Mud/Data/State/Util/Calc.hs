@@ -5,6 +5,7 @@ module Mud.Data.State.Util.Calc ( calcBarLen
                                 , calcEncPer
                                 , calcLvlExps
                                 , calcMaxEnc
+                                , calcMaxQuaffs
                                 , calcMaxRaceLen
                                 , calcProbConnectBlink
                                 , calcProbLinkFlinch
@@ -33,6 +34,7 @@ import Mud.Util.Operators
 import Mud.Util.Text
 import qualified Mud.Util.Misc as U (blowUp)
 
+import Control.Lens (views)
 import Data.Text (Text)
 import Prelude hiding (getContents)
 import qualified Data.Map.Lazy as M (elems)
@@ -65,6 +67,13 @@ calcEncPer i ms = round . (100 *) $ calcWeight i ms `divide` calcMaxEnc i ms
 
 calcMaxEnc :: Id -> MudState -> Int
 calcMaxEnc i ms = round . (100 *) $ getSt i ms ^ 2 `divide` 13
+
+
+-----
+
+
+calcMaxQuaffs :: Obj -> Quaffs
+calcMaxQuaffs = views vol (round . (`divide` quaffVol))
 
 
 -----

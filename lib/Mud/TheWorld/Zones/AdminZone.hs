@@ -598,8 +598,10 @@ createAdminZone = do
             zeroBits
             [ StdLink Northwest iBasement ]
             M.empty [] [] [])
+  let conIds    = [ iSack1, iSack2, iSackSml, iSackLrg, iBack1, iBack2, iBackSml, iBackLrg ]
+  let vesselIds = [ iPotionFlask1 .. iPotionFlask1 + 9 ] -- TODO: iWaterskin, iWaterskinLrg, iJarSml, iJar, iJarLrg, iJugSml, iJug, iJugLrg, iBottleSml, iBottle, iBottleLrg
   putRm iConCloset
-        [ iSack1, iSack2, iSackSml, iSackLrg, iBack1, iBack2, iBackSml, iBackLrg ]
+        (conIds ++ vesselIds)
         mempty
         (Rm "Container closet"
             "This closet holds containers."
@@ -1323,6 +1325,30 @@ createAdminZone = do
          mempty
          (Just Backpack)
          (Con True backLrgCap)
+
+  -- ==================================================
+  -- Vessels:
+  let flaskIds   = [ iPotionFlask1 + i | i <- [0..9] ]
+      flaskConts = [ Just (Water, maxBound)
+                   , Nothing
+                   , Nothing
+                   , Nothing
+                   , Nothing
+                   , Nothing
+                   , Nothing
+                   , Nothing
+                   , Nothing
+                   , Nothing ]
+  forM_ (zip flaskIds flaskConts) $ \(i, mc) ->
+      putVessel i
+                (Ent i
+                     (Just "flask")
+                     "potion flask" ""
+                     "This small, glass flask complete with cork stopper is the ideal vessel for potion storage and \
+                     \transportation."
+                     zeroBits)
+                (Obj potionFlaskWeight potionFlaskVol zeroBits Nothing)
+                mc
 
   -- ==================================================
   -- Weapons:

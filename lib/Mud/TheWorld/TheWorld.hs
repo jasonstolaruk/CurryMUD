@@ -51,7 +51,8 @@ initMudData shouldLog = do
     (logExLock,       perLock         ) <- (,) <$> newTMVarIO Done <*> newTMVarIO Done
     (errorLogService, noticeLogService) <- initLogging shouldLog . Just $ logExLock
     genIO   <- createSystemRandom
-    msIORef <- newIORef MudState { _armTbl           = IM.empty
+    msIORef <- newIORef MudState { _activeEffectsTbl = IM.empty
+                                 , _armTbl           = IM.empty
                                  , _chanTbl          = IM.empty
                                  , _clothTbl         = IM.empty
                                  , _coinsTbl         = IM.empty
@@ -66,6 +67,7 @@ initMudData shouldLog = do
                                  , _msgQueueTbl      = IM.empty
                                  , _npcTbl           = IM.empty
                                  , _objTbl           = IM.empty
+                                 , _pausedEffectsTbl = IM.empty
                                  , _pcTbl            = IM.empty
                                  , _plaLogTbl        = IM.empty
                                  , _plaTbl           = IM.empty
@@ -137,6 +139,7 @@ loadWorld dir@((persistDir </>) -> path) = do
                                                  , loadTbl invTblFile           invTbl
                                                  , loadTbl mobTblFile           mobTbl
                                                  , loadTbl objTblFile           objTbl
+                                                 , loadTbl pausedEffectsTblFile pausedEffectsTbl
                                                  , loadTbl pcTblFile            pcTbl
                                                  , loadTbl plaTblFile           plaTbl
                                                  , loadTbl rmTblFile            rmTbl

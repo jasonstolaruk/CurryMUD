@@ -283,8 +283,9 @@ instance Pretty LinkDir where
   pp = uncapitalize . showText
 
 
-instance Pretty Liquid where
+instance Pretty Liquid where -- TODO: Used by ":examine".
   pp Water = "water"
+  pp x     = showText x
 
 
 instance Pretty LoggedInOrOut where

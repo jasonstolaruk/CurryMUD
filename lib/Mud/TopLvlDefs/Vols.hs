@@ -121,7 +121,7 @@ potionFlaskVol = 14 * 100 -- 1 cup
 
 
 quaffVol :: Vol
-quaffVol = 2 * 100 -- 1/8th cup
+quaffVol = 175 -- 1/8th cup
 
 
 ringVol :: Vol

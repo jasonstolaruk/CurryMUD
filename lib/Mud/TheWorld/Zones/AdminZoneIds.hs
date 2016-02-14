@@ -248,26 +248,26 @@ iParchment4 = 136 :: Int
 
 iParchment5 = 137 :: Int
 
-iPotionFlask = 138 :: Int
+iPotionFlask1 = 138 :: Int -- 10
 
-iWaterskin = 139 :: Int
+iWaterskin = 148 :: Int
 
-iWaterskinLrg = 140 :: Int
+iWaterskinLrg = 149 :: Int
 
-iJarSml = 141 :: Int
+iJarSml = 150 :: Int
 
-iJar = 142 :: Int
+iJar = 151 :: Int
 
-iJarLrg = 143 :: Int
+iJarLrg = 152 :: Int
 
-iJugSml = 144 :: Int
+iJugSml = 153 :: Int
 
-iJug = 145 :: Int
+iJug = 154 :: Int
 
-iJugLrg = 146 :: Int
+iJugLrg = 155 :: Int
 
-iBottleSml = 147 :: Int
+iBottleSml = 156 :: Int
 
-iBottle = 148 :: Int
+iBottle = 157 :: Int
 
-iBottleLrg = 149 :: Int
+iBottleLrg = 158 :: Int

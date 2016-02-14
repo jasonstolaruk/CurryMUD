@@ -481,6 +481,7 @@ getSing i = view sing . getEnt i
 -----
 
 
+-- TODO: Rename to "getBaseSt".
 getSt :: Id -> MudState -> Int
 getSt i = view st . getMob i
 

@@ -3,9 +3,11 @@
 module Mud.Data.State.Util.Put where
 
 import Mud.Data.State.MudData
+import Mud.Data.State.Util.Calc
 import Mud.Data.State.Util.Misc
 import Mud.Util.Misc
 
+import Control.Arrow (second)
 import Control.Lens (at)
 import Control.Lens.Operators ((.~))
 import Data.Text (Text)
@@ -120,11 +122,15 @@ putRmTeleName i tn = tweak $ rmTeleNameTbl.ind i .~ tn
 -----
 
 
-putVessel :: Id -> Ent -> Obj -> Vessel -> MudStack ()
-putVessel i e o v = tweaks [ entTbl   .ind i .~ e
-                           , objTbl   .ind i .~ o
-                           , typeTbl  .ind i .~ VesselType
-                           , vesselTbl.ind i .~ v ]
+putVessel :: Id -> Ent -> Obj -> Maybe Contents -> MudStack ()
+putVessel i e o mc = tweaks [ entTbl   .ind i .~ e
+                            , objTbl   .ind i .~ o
+                            , typeTbl  .ind i .~ VesselType
+                            , vesselTbl.ind i .~ mkVessel ]
+  where
+    mkVessel = let maxQs = calcMaxQuaffs o
+                   mc'   = second (min maxQs) <$> mc
+               in Vessel maxQs mc'
 
 
 -----
@@ -145,4 +151,3 @@ putWritable i e o w = tweaks [ entTbl     .ind i .~ e
                              , objTbl     .ind i .~ o
                              , typeTbl    .ind i .~ WritableType
                              , writableTbl.ind i .~ w ]
-

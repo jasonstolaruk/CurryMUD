@@ -4,6 +4,7 @@ module Mud.Data.State.MudData where
 
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MsgQueue
+import Mud.TopLvlDefs.Misc
 
 import Control.Applicative (empty)
 import Control.Arrow ((***), first)
@@ -42,7 +43,8 @@ data MudData = MudData { _errorLog      :: Maybe LogService
                        , _startTime     :: TimeSpec }
 
 
-data MudState = MudState { _armTbl           :: ArmTbl
+data MudState = MudState { _activeEffectsTbl :: ActiveEffectsTbl
+                         , _armTbl           :: ArmTbl
                          , _chanTbl          :: ChanTbl
                          , _clothTbl         :: ClothTbl
                          , _coinsTbl         :: CoinsTbl
@@ -57,6 +59,7 @@ data MudState = MudState { _armTbl           :: ArmTbl
                          , _msgQueueTbl      :: MsgQueueTbl
                          , _npcTbl           :: NpcTbl
                          , _objTbl           :: ObjTbl
+                         , _pausedEffectsTbl :: PausedEffectsTbl
                          , _pcTbl            :: PCTbl
                          , _plaLogTbl        :: PlaLogTbl
                          , _plaTbl           :: PlaTbl
@@ -74,6 +77,7 @@ data MudState = MudState { _armTbl           :: ArmTbl
                          , _opList           :: [Operation] }
 
 
+type ActiveEffectsTbl = IM.IntMap [ActiveEffect]
 type ArmTbl           = IM.IntMap Arm
 type ChanTbl          = IM.IntMap Chan
 type ClothTbl         = IM.IntMap Cloth
@@ -89,6 +93,8 @@ type MobTbl           = IM.IntMap Mob
 type MsgQueueTbl      = IM.IntMap MsgQueue
 type NpcTbl           = IM.IntMap Npc
 type ObjTbl           = IM.IntMap Obj
+type Operation        = MudStack ()
+type PausedEffectsTbl = IM.IntMap [PausedEffect]
 type PCTbl            = IM.IntMap PC
 type PlaLogTbl        = IM.IntMap LogService
 type PlaTbl           = IM.IntMap Pla
@@ -103,7 +109,6 @@ type TypeTbl          = IM.IntMap Type
 type VesselTbl        = IM.IntMap Vessel
 type WpnTbl           = IM.IntMap Wpn
 type WritableTbl      = IM.IntMap Writable
-type Operation        = MudStack ()
 
 
 -- ==================================================
@@ -114,6 +119,49 @@ data Action = Action { actionFun    :: ActionFun
 
 
 type ActionFun = ActionParams -> MudStack ()
+
+
+-- ==================================================
+
+
+data ActiveEffect = ActiveEffect { effect        :: Effect
+                                 , effectService :: EffectService }
+
+
+data Effect = EffectArm   ArmEffect
+            | EffectEnt   EntEffect
+            | EffectMob   MobEffect
+            | EffectRm    RmEffect
+            | EffectOther FunName deriving (Eq, Generic, Show)
+
+
+data ArmEffect = ArmEffectAC AC deriving (Eq, Generic, Show)
+
+
+data EntEffect = EntEffectFlags Int deriving (Eq, Generic, Show)
+
+
+data MobEffect = MobEffectAttrib Attrib Int
+               | MobEffectAC AC deriving (Eq, Generic, Show)
+
+
+data Attrib = St | Dx | Ht | Ma | Ps deriving (Eq, Generic, Show)
+
+
+data RmEffect = RmEffectFlags Int deriving (Eq, Generic, Show)
+
+
+type EffectService = (EffectAsync, EffectQueue)
+
+
+type EffectAsync = Async ()
+
+
+type EffectQueue = TQueue EffectCmd
+
+
+data EffectCmd = StopEffect
+               | PauseEffect (TMVar Seconds)
 
 
 -- ==================================================
@@ -288,6 +336,26 @@ type HostMap = M.Map HostName HostRecord
 data HostRecord = HostRecord { _noOfLogouts   :: Int
                              , _secsConnected :: Integer
                              , _lastLogout    :: UTCTime } deriving (Eq, Generic, Show)
+
+
+-- ==================================================
+
+
+data InstaEffect = InstaEffectEnt EntInstaEffect
+                 | InstaEffectMob MobInstaEffect
+                 | InstaEffectRm  RmInstaEffect deriving (Eq, Generic, Show)
+
+
+data EntInstaEffect = EntInstaEffectFlags Int deriving (Eq, Generic, Show)
+
+
+data MobInstaEffect = MobInstaEffectPts PtsType Int deriving (Eq, Generic, Show)
+
+
+data PtsType = CurHp | CurMp | CurPp | CurFp deriving (Eq, Generic, Show)
+
+
+data RmInstaEffect = RmInstaEffectFlags Int deriving (Eq, Generic, Show)
 
 
 -- ==================================================
@@ -468,6 +536,13 @@ jsonToObj (Object o) = Obj <$> o .: "_weight"
                            <*> o .: "_objFlags"
                            <*> pure Nothing
 jsonToObj _          = empty
+
+
+-- ==================================================
+
+
+data PausedEffect = PausedEffect { pausedEffect  :: Effect
+                                 , timeRemaining :: Seconds } deriving (Eq, Generic, Show)
 
 
 -- ==================================================
@@ -720,7 +795,7 @@ data Type = ObjType
 
 
 -- Has an object (and an entity).
-data Vessel = Vessel { _maxQuaffs :: Quaffs -- TODO: maxQuaffs could be calculated from vessel vol / quaff vol.
+data Vessel = Vessel { _maxQuaffs :: Quaffs -- obj vol / quaff vol
                      , _contents  :: Maybe Contents } deriving (Eq, Generic, Show)
 
 
@@ -730,7 +805,9 @@ type Quaffs = Int
 type Contents = (Liquid, Quaffs)
 
 
-data Liquid = Water deriving (Eq, Generic, Show)
+data Liquid = Water
+            | Potion Effect Seconds
+            | InstaPotion InstaEffect deriving (Eq, Generic, Show)
 
 
 -- ==================================================
@@ -758,21 +835,33 @@ data Writable = Writable { _message :: Maybe (Text, Lang)
 
 
 instance FromJSON Arm
+instance FromJSON ArmEffect
 instance FromJSON ArmSub
+instance FromJSON Attrib
 instance FromJSON Chan
 instance FromJSON Cloth
 instance FromJSON Coins
 instance FromJSON Con
+instance FromJSON Effect
 instance FromJSON Ent
+instance FromJSON EntEffect
+instance FromJSON EntInstaEffect
 instance FromJSON Hand
 instance FromJSON Hook
 instance FromJSON HostRecord
+instance FromJSON InstaEffect
 instance FromJSON Lang
 instance FromJSON LinkDir
 instance FromJSON Liquid
+instance FromJSON MobEffect
+instance FromJSON MobInstaEffect
+instance FromJSON PausedEffect
 instance FromJSON PC
+instance FromJSON PtsType
 instance FromJSON Race
 instance FromJSON RmAction
+instance FromJSON RmEffect
+instance FromJSON RmInstaEffect
 instance FromJSON RmLink
 instance FromJSON Sex
 instance FromJSON Slot
@@ -782,21 +871,33 @@ instance FromJSON Wpn
 instance FromJSON WpnSub
 instance FromJSON Writable
 instance ToJSON   Arm
+instance ToJSON   ArmEffect
 instance ToJSON   ArmSub
+instance ToJSON   Attrib
 instance ToJSON   Chan
 instance ToJSON   Cloth
 instance ToJSON   Coins
 instance ToJSON   Con
+instance ToJSON   Effect
 instance ToJSON   Ent
+instance ToJSON   EntEffect
+instance ToJSON   EntInstaEffect
 instance ToJSON   Hand
 instance ToJSON   Hook
 instance ToJSON   HostRecord
+instance ToJSON   InstaEffect
 instance ToJSON   Lang
 instance ToJSON   LinkDir
 instance ToJSON   Liquid
+instance ToJSON   MobEffect
+instance ToJSON   MobInstaEffect
+instance ToJSON   PausedEffect
 instance ToJSON   PC
+instance ToJSON   PtsType
 instance ToJSON   Race
 instance ToJSON   RmAction
+instance ToJSON   RmEffect
+instance ToJSON   RmInstaEffect
 instance ToJSON   RmLink
 instance ToJSON   Sex
 instance ToJSON   Slot
