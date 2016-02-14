@@ -81,6 +81,8 @@ import Mud.Misc.NameResolution
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
 import Mud.TopLvlDefs.Padding
+import Mud.TopLvlDefs.Vols
+import Mud.TopLvlDefs.Weights
 import Mud.Util.List
 import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Operators
@@ -886,6 +888,7 @@ mkEntDesc i cols ms (ei, e) | ed <- views entDesc (wrapUnlines cols) e, s <- get
     mkPCDescHeader | (pp *** pp -> (s, r)) <- getSexRace ei ms = T.concat [ "You see a ", s, " ", r, "." ]
 
 
+-- TODO: Show % full for containers and vessels.
 mkInvCoinsDesc :: Id -> Cols -> MudState -> Id -> Sing -> Text
 mkInvCoinsDesc i cols ms targetId targetSing | targetInv <- getInv targetId ms, targetCoins <- getCoins targetId ms =
     case ((()#) *** (()#)) (targetInv, targetCoins) of

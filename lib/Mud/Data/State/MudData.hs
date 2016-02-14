@@ -720,7 +720,7 @@ data Type = ObjType
 
 
 -- Has an object (and an entity).
-data Vessel = Vessel { _maxQuaffs :: Quaffs
+data Vessel = Vessel { _maxQuaffs :: Quaffs -- TODO: maxQuaffs could be calculated from vessel vol / quaff vol.
                      , _contents  :: Maybe Contents } deriving (Eq, Generic, Show)
 
 
@@ -781,7 +781,7 @@ instance FromJSON Vessel
 instance FromJSON Wpn
 instance FromJSON WpnSub
 instance FromJSON Writable
-instance ToJSON   Arm -- TODO: Temporary fix for aeson issue. https://github.com/bos/aeson/issues/290
+instance ToJSON   Arm
 instance ToJSON   ArmSub
 instance ToJSON   Chan
 instance ToJSON   Cloth

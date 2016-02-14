@@ -19,9 +19,7 @@ module Mud.Data.State.Util.Calc ( calcBarLen
                                 , calcRegenPpAmt
                                 , calcRegenPpDelay
                                 , calcVol
-                                , calcWeight
-                                , coinVol
-                                , coinWeight ) where
+                                , calcWeight ) where
 
 import Mud.Data.Misc
 import Mud.Data.State.MudData
@@ -36,6 +34,7 @@ import Mud.Util.Text
 import qualified Mud.Util.Misc as U (blowUp)
 
 import Data.Text (Text)
+import Prelude hiding (getContents)
 import qualified Data.Map.Lazy as M (elems)
 import qualified Data.Text as T
 
@@ -152,17 +151,19 @@ calcRegenFpDelay i ms = calcRegenDelay $ (getHt i ms + getSt i ms) `divide` 2
 
 calcWeight :: Id -> MudState -> Weight
 calcWeight i ms = case getType i ms of
-  ConType -> sum [ getWeight i ms, calcInvWeight, calcCoinsWeight ]
-  NpcType -> npcPC
-  PCType  -> npcPC
-  RmType  -> blowUp "calcWeight" "cannot calculate the weight of a room" [ showText i ]
-  _       -> getWeight i ms
+  ConType    -> sum [ getWeight i ms, calcInvWeight, calcCoinsWeight ]
+  NpcType    -> npcPC
+  PCType     -> npcPC
+  RmType     -> blowUp "calcWeight" "cannot calculate the weight of a room" [ showText i ]
+  VesselType -> getWeight i ms + calcContentsWeight
+  _          -> getWeight i ms
   where
-    npcPC           = sum [ calcInvWeight, calcCoinsWeight, calcEqWeight ]
-    calcInvWeight   = helper .           getInv   i $ ms
-    calcEqWeight    = helper . M.elems . getEqMap i $ ms
-    helper          = sum . map (`calcWeight` ms)
-    calcCoinsWeight = (* coinWeight) . sum . coinsToList . getCoins i $ ms
+    npcPC              = sum [ calcInvWeight, calcCoinsWeight, calcEqWeight ]
+    calcInvWeight      = helper .           getInv   i $ ms
+    calcEqWeight       = helper . M.elems . getEqMap i $ ms
+    helper             = sum . map (`calcWeight` ms)
+    calcCoinsWeight    = (* coinWeight) . sum . coinsToList . getCoins i $ ms
+    calcContentsWeight = maybe 0 ((* quaffWeight) . snd) . getContents i $ ms
 
 
 -----

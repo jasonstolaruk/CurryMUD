@@ -72,10 +72,6 @@ earVol :: Vol
 earVol = 2
 
 
-flaskVol :: Vol
-flaskVol = 14 * 100
-
-
 flowerVol :: Vol
 flowerVol = round (0.5 * 0.5 * 10 * 100 :: Double)
 
@@ -92,7 +88,7 @@ jarLrgVol = plusThird jarVol
 
 jugSmlVol, jugVol, jugLrgVol :: Vol
 jugSmlVol = minusThird jugVol
-jugVol    = 230 * 100
+jugVol    = 115 * 100
 jugLrgVol = plusThird jugVol
 
 
@@ -118,6 +114,14 @@ overallsVol = tabardVol + trousersVol
 
 paperVol :: Vol
 paperVol = round (8.5 * 0.002 * 11 * 100 :: Double)
+
+
+potionFlaskVol :: Vol
+potionFlaskVol = 14 * 100 -- 1 cup
+
+
+quaffVol :: Vol
+quaffVol = 2 * 100 -- 1/8th cup
 
 
 ringVol :: Vol
@@ -162,5 +166,6 @@ tunicHeavyVol :: Vol
 tunicHeavyVol = plusQuarter shirtVol
 
 
-waterskinVol :: Vol
-waterskinVol = bottleSmlVol
+waterskinVol, waterskinLrgVol :: Vol
+waterskinVol    = 60
+waterskinLrgVol = 120

@@ -73,7 +73,7 @@ The code is available here on GitHub under the 3-clause BSD license (refer to th
 
 ### How to try it out
 
-If you'd like to try out what I have so far, clone the repo from your home directory (the server expects to find various folders located under `$HOME/CurryMUD`). Having done that, please build and run the project using [stack](http://docs.haskellstack.org/en/stable/README.html) (otherwise, I cannot guarantee that CurryMUD will build on your system). Please note that I do not plan on explicitly supporting Windows.
+If you'd like to try out what I have so far, clone the repo from your home directory (the server expects to find various folders located under `$HOME/CurryMUD`). Having done that, please build and run the project using [stack](http://docs.haskellstack.org/en/stable/README.html) (otherwise, I cannot guarantee that CurryMUD will build on your machine). Please note that I do not plan on explicitly supporting Windows.
 
 Once you have the server up and running, just telnet to localhost port 9696 to play.
 

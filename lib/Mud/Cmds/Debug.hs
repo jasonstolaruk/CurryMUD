@@ -61,7 +61,8 @@ import GHC.Conc (threadStatus)
 import Numeric (readInt)
 import Prelude hiding (pi)
 import qualified Data.IntMap.Lazy as IM (IntMap, assocs, keys, toList)
-import qualified Data.Map.Lazy as M (assocs, elems, toList)
+import qualified Data.Map.Lazy as M (assocs, elems, keysSet, toList)
+import qualified Data.Set as S (toAscList)
 import qualified Data.Text as T
 import System.Console.ANSI (Color(..), ColorIntensity(..))
 import System.CPUTime (getCPUTime)
@@ -115,6 +116,8 @@ debugCmds =
     , mkDebugCmd "cpu"        debugCPU         "Display the CPU time."
     , mkDebugCmd "env"        debugDispEnv     "Display or search system environment variables."
     , mkDebugCmd "exp"        debugExp         "Award yourself 100,000 exp."
+    , mkDebugCmd "fun"        debugFun         "Dump the keys of the \"FunTbl\", \"HookFunTbl\", and \
+                                               \\"RmActionFunTbl\"."
     , mkDebugCmd "id"         debugId          "Search the \"MudState\" tables for a given ID."
     , mkDebugCmd "keys"       debugKeys        "Dump a list of \"MudState\" table keys."
     , mkDebugCmd "log"        debugLog         "Put the logging service under heavy load."
@@ -298,6 +301,19 @@ debugExp (NoArgs' i mq) = let cn = prefixDebugCmd "exp" in do
     logPlaExec cn i
     awardExp 100000 ("executed " <> dblQuote cn) i
 debugExp p = withoutArgs debugExp p
+
+
+-----
+
+
+debugFun :: ActionFun
+debugFun (NoArgs i mq cols) = getState >>= \ms -> do
+    let helper t lens = t <> ":" : views lens (S.toAscList . M.keysSet) ms
+    pager i mq . intercalateDivider cols $ [ helper "FunTbl"         funTbl
+                                           , helper "HookFunTbl"     hookFunTbl
+                                           , helper "RmActionFunTbl" rmActionFunTbl ]
+    logPlaExec (prefixDebugCmd "fun") i
+debugFun p = withoutArgs debugFun p
 
 
 -----

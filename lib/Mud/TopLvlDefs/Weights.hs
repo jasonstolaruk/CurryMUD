@@ -24,6 +24,12 @@ bootsWeight :: Weight
 bootsWeight = 250
 
 
+bottleSmlWeight, bottleWeight, bottleLrgWeight :: Weight
+bottleSmlWeight = minusThird bottleWeight
+bottleWeight    = 250
+bottleLrgWeight = plusThird  bottleWeight
+
+
 clubWeight :: Weight
 clubWeight = 325
 
@@ -57,6 +63,18 @@ helmLeatherWeight :: Weight
 helmLeatherWeight = 30
 
 
+jarSmlWeight, jarWeight, jarLrgWeight :: Weight
+jarSmlWeight = minusThird jarWeight
+jarWeight    = 120
+jarLrgWeight = plusThird  jarWeight
+
+
+jugSmlWeight, jugWeight, jugLrgWeight :: Weight
+jugSmlWeight = minusThird jugWeight
+jugWeight    = 340
+jugLrgWeight = plusThird  jugWeight
+
+
 knifeWeight :: Weight
 knifeWeight = 15
 
@@ -79,6 +97,14 @@ overallsWeight = tabardWeight + trousersWeight
 
 paperWeight :: Weight
 paperWeight = 1
+
+
+potionFlaskWeight :: Weight
+potionFlaskWeight = 40
+
+
+quaffWeight :: Weight
+quaffWeight = 6
 
 
 ringWeight :: Weight
@@ -116,3 +142,8 @@ trousersBaggyWeight = plusQuarter trousersWeight
 tunicWeight, tunicHeavyWeight :: Weight
 tunicWeight      = 50
 tunicHeavyWeight = plusQuarter tunicWeight
+
+
+waterskinWeight, waterskinLrgWeight :: Weight
+waterskinWeight    = 20
+waterskinLrgWeight = 35

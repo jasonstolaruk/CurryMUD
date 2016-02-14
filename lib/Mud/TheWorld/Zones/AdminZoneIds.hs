@@ -76,9 +76,9 @@ iSack1 = 31 :: Int
 
 iSack2 = 32 :: Int
 
-iBackpack1 = 33 :: Int
+iBack1 = 33 :: Int
 
-iBackpack2 = 34 :: Int
+iBack2 = 34 :: Int
 
 iSword1 = 35 :: Int
 
@@ -222,9 +222,9 @@ iSackSml = 123 :: Int
 
 iSackLrg = 124 :: Int
 
-iBackpackSml = 125 :: Int
+iBackSml = 125 :: Int
 
-iBackpackLrg = 126 :: Int
+iBackLrg = 126 :: Int
 
 iEmpty = 127 :: Int
 
@@ -236,7 +236,7 @@ iAtrium = 130 :: Int
 
 iTrashDump = 131 :: Int
 
-iSmlPaper = 132 :: Int
+iPaperSml = 132 :: Int
 
 iParchment1 = 133 :: Int
 
@@ -248,24 +248,26 @@ iParchment4 = 136 :: Int
 
 iParchment5 = 137 :: Int
 
-iFlask = 138 :: Int
+iPotionFlask = 138 :: Int
 
 iWaterskin = 139 :: Int
 
-iSmlJar = 140 :: Int
+iWaterskinLrg = 140 :: Int
 
-iJar = 141 :: Int
+iJarSml = 141 :: Int
 
-iLrgJar = 142 :: Int
+iJar = 142 :: Int
 
-iSmlJug = 143 :: Int
+iJarLrg = 143 :: Int
 
-iJug = 144 :: Int
+iJugSml = 144 :: Int
 
-iLrgJug = 145 :: Int
+iJug = 145 :: Int
 
-iSmlBottle = 146 :: Int
+iJugLrg = 146 :: Int
 
-iBottle = 147 :: Int
+iBottleSml = 147 :: Int
 
-iLrgBottle = 148 :: Int
+iBottle = 148 :: Int
+
+iBottleLrg = 149 :: Int

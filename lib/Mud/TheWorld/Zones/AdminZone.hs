@@ -536,7 +536,7 @@ createAdminZone = do
                                        "% climbs down the ladder and out of the hole in the ceiling." ]
             M.empty [] [] [])
   putRm iObjCloset
-        [ iKewpie1, iKewpie2, iSmlPaper, iParchment1, iParchment2, iParchment3, iParchment4, iParchment5 ]
+        [ iKewpie1, iKewpie2, iPaperSml, iParchment1, iParchment2, iParchment3, iParchment4, iParchment5 ]
         mempty
         (Rm "Object closet"
             "This closet holds objects."
@@ -599,7 +599,7 @@ createAdminZone = do
             [ StdLink Northwest iBasement ]
             M.empty [] [] [])
   putRm iConCloset
-        [ iSack1, iSack2, iSackSml, iSackLrg, iBackpack1, iBackpack2, iBackpackSml, iBackpackLrg ]
+        [ iSack1, iSack2, iSackSml, iSackLrg, iBack1, iBack2, iBackSml, iBackLrg ]
         mempty
         (Rm "Container closet"
             "This closet holds containers."
@@ -835,8 +835,8 @@ createAdminZone = do
 
   -- ==================================================
   -- Writables:
-  putWritable iSmlPaper
-              (Ent iSmlPaper
+  putWritable iPaperSml
+              (Ent iPaperSml
                    (Just "paper")
                    "small piece of paper" "small pieces of paper"
                    "It's a rectangular piece of plain white paper."
@@ -1278,45 +1278,45 @@ createAdminZone = do
          mempty
          Nothing
          (Con False sackLrgCap)
-  let backpackDesc = "The sturdy backpack is made of leather."
-  putCon iBackpack1
-         (Ent iBackpack1
+  let backDesc = "The sturdy backpack is made of leather."
+  putCon iBack1
+         (Ent iBack1
               (Just "back")
               "backpack" ""
-              backpackDesc
+              backDesc
               zeroBits)
          (Obj backWeight backVol zeroBits Nothing)
          []
          mempty
          (Just Backpack)
          (Con True backCap)
-  putCon iBackpack2
-         (Ent iBackpack2
+  putCon iBack2
+         (Ent iBack2
               (Just "back")
               "backpack" ""
-              backpackDesc
+              backDesc
               zeroBits)
          (Obj backWeight backVol zeroBits Nothing)
          []
          mempty
          (Just Backpack)
          (Con True backCap)
-  putCon iBackpackSml
-         (Ent iBackpackSml
+  putCon iBackSml
+         (Ent iBackSml
               (Just "back")
               "small backpack" ""
-              backpackDesc
+              backDesc
               zeroBits)
          (Obj backSmlWeight backSmlVol zeroBits Nothing)
          []
          mempty
          (Just Backpack)
          (Con True backSmlCap)
-  putCon iBackpackLrg
-         (Ent iBackpackLrg
+  putCon iBackLrg
+         (Ent iBackLrg
               (Just "back")
               "large backpack" ""
-              backpackDesc
+              backDesc
               zeroBits)
          (Obj backLrgWeight backLrgVol zeroBits Nothing)
          []
