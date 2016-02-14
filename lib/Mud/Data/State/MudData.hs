@@ -124,8 +124,8 @@ type ActionFun = ActionParams -> MudStack ()
 -- ==================================================
 
 
-data ActiveEffect = ActiveEffect { effect        :: Effect
-                                 , effectService :: EffectService }
+data ActiveEffect = ActiveEffect { _effect        :: Effect
+                                 , _effectService :: EffectService }
 
 
 data Effect = EffectArm   ArmEffect
@@ -167,7 +167,7 @@ data EffectCmd = StopEffect
 -- ==================================================
 
 
--- Has an object (and an entity).
+-- Has an object (and an entity and active effects).
 data Arm = Arm { _armSub   :: ArmSub
                , _armClass :: AC } deriving (Eq, Generic, Show)
 
@@ -205,7 +205,7 @@ type IsTuned = Bool
 -- ==================================================
 
 
--- Has an object (and an entity).
+-- Has an object (and an entity and active effects).
 data Cloth = Earring
            | NoseRing
            | Necklace
@@ -249,7 +249,7 @@ instance Monoid Coins where
 -- ============================================================
 
 
--- Has an object (and an entity) and an inventory and coins.
+-- Has an object (and an entity and active effects) and an inventory and coins.
 data Con = Con { _isCloth  :: Bool
                , _capacity :: Vol } deriving (Eq, Generic, Show)
 
@@ -263,6 +263,7 @@ type ConName = Text
 -- ==================================================
 
 
+-- Has active effects.
 data Ent = Ent { _entId    :: Id
                , _entName  :: Maybe Text
                , _sing     :: Sing
@@ -398,7 +399,7 @@ data LogCmd = LogMsg Text
 -- ==================================================
 
 
--- Has an entity and an inventory and coins and equipment.
+-- Has an entity (and active effects) and an inventory and coins and equipment.
 data Mob = Mob { _sex                    :: Sex
                , _st, _dx, _ht, _ma, _ps :: Int
                , _curHp, _maxHp          :: Int
@@ -492,7 +493,7 @@ jsonToMob _          = empty
 -- ==================================================
 
 
--- Has a mob (and an entity and an inventory and coins and equipment).
+-- Has a mob (and an entity and active effects and an inventory and coins and equipment).
 data Npc = Npc { _npcMsgQueue    :: NpcMsgQueue
                , _npcServerAsync :: NpcServerAsync
                , _possessor      :: Maybe Id }
@@ -504,7 +505,7 @@ type NpcServerAsync = Async ()
 -- ==================================================
 
 
--- Has an entity.
+-- Has an entity (and active effects).
 data Obj = Obj { _weight           :: Weight
                , _vol              :: Vol
                , _objFlags         :: Int
@@ -541,14 +542,14 @@ jsonToObj _          = empty
 -- ==================================================
 
 
-data PausedEffect = PausedEffect { pausedEffect  :: Effect
-                                 , timeRemaining :: Seconds } deriving (Eq, Generic, Show)
+data PausedEffect = PausedEffect { _pausedEffect  :: Effect
+                                 , _timeRemaining :: Seconds } deriving (Eq, Generic, Show)
 
 
 -- ==================================================
 
 
--- Has a mob (and an entity and an inventory and coins and equipment).
+-- Has a mob (and an entity and active effects and an inventory and coins and equipment).
 data PC = PC { _race       :: Race
              , _introduced :: [Sing]
              , _linked     :: [Sing] } deriving (Eq, Generic, Show)
@@ -572,7 +573,7 @@ instance Random Race where
 -- ==================================================
 
 
--- Has a PC (and a mob and an entity and an inventory and coins and equipment) and a random names table and a telepathic link table.
+-- Has a PC (and a mob and an entity and active effects and an inventory and coins and equipment) and a random names table and a telepathic link table.
 data Pla = Pla { _currHostName :: HostName
                , _connectTime  :: Maybe UTCTime
                , _plaFlags     :: Int
@@ -794,7 +795,7 @@ data Type = ObjType
 -- ==================================================
 
 
--- Has an object (and an entity).
+-- Has an object (and an entity and active effects).
 data Vessel = Vessel { _maxQuaffs :: Quaffs -- obj vol / quaff vol
                      , _contents  :: Maybe Contents } deriving (Eq, Generic, Show)
 
@@ -813,7 +814,7 @@ data Liquid = Water
 -- ==================================================
 
 
--- Has an object (and an entity).
+-- Has an object (and an entity and active effects).
 data Wpn = Wpn { _wpnSub :: WpnSub
                , _minDmg :: Int
                , _maxDmg :: Int } deriving (Eq, Generic, Show)
@@ -826,7 +827,7 @@ data WpnSub = OneHanded
 -- ==================================================
 
 
--- Has an object (and an entity).
+-- Has an object (and an entity and active effects).
 data Writable = Writable { _message :: Maybe (Text, Lang)
                          , _recip   :: Maybe Sing {- for magically scribed msgs -} } deriving (Eq, Generic, Show)
 
@@ -911,6 +912,7 @@ instance ToJSON   Writable
 -- ==================================================
 
 
+makeLenses ''ActiveEffect
 makeLenses ''Arm
 makeLenses ''Chan
 makeLenses ''Con
@@ -922,6 +924,7 @@ makeLenses ''MudData
 makeLenses ''MudState
 makeLenses ''Npc
 makeLenses ''Obj
+makeLenses ''PausedEffect
 makeLenses ''PC
 makeLenses ''Pla
 makeLenses ''Rm

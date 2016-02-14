@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE LambdaCase, OverloadedStrings #-}
 
 -- This module contains straightforward getter methods that do little or no calculation.
 
@@ -54,6 +54,13 @@ isNpcPC i ms = getType i ms `elem` [ NpcType, PCType ]
 -- Getters:
 
 
+getActiveEffects :: Id -> MudState -> [ActiveEffect]
+getActiveEffects i = view (activeEffectsTbl.ind i)
+
+
+-----
+
+
 getArm :: Id -> MudState -> Arm
 getArm i = view (armTbl.ind i)
 
@@ -63,6 +70,52 @@ getArm i = view (armTbl.ind i)
 
 getArmSub :: Id -> MudState -> ArmSub
 getArmSub i = view armSub . getArm i
+
+
+-----
+
+
+getBaseAttrib :: Attrib -> Id -> MudState -> Int
+getBaseAttrib = \case St -> getBaseSt
+                      Dx -> getBaseDx
+                      Ht -> getBaseHt
+                      Ma -> getBaseMa
+                      Ps -> getBasePs
+
+
+-----
+
+
+getBaseDx :: Id -> MudState -> Int
+getBaseDx i = view dx . getMob i
+
+
+-----
+
+
+getBaseHt :: Id -> MudState -> Int
+getBaseHt i = view ht . getMob i
+
+
+-----
+
+
+getBaseMa :: Id -> MudState -> Int
+getBaseMa i = view ma . getMob i
+
+
+-----
+
+
+getBasePs :: Id -> MudState -> Int
+getBasePs i = view ps . getMob i
+
+
+-----
+
+
+getBaseSt :: Id -> MudState -> Int
+getBaseSt i = view st . getMob i
 
 
 -----
@@ -138,13 +191,6 @@ getCurrHostName i = view currHostName . getPla i
 -----
 
 
-getDx :: Id -> MudState -> Int
-getDx i = view dx . getMob i
-
-
------
-
-
 getEnt :: Id -> MudState -> Ent
 getEnt i = view (entTbl.ind i)
 
@@ -182,13 +228,6 @@ getHand i = view hand . getMob i
 
 getHostMap :: Sing -> MudState -> Maybe HostMap
 getHostMap s = view (hostTbl.at s)
-
-
------
-
-
-getHt :: Id -> MudState -> Int
-getHt i = view ht . getMob i
 
 
 -----
@@ -259,13 +298,6 @@ getListenThreadId = reverseLookup Listen . view threadTbl
 
 getLogQueue :: Id -> MudState -> LogQueue
 getLogQueue i = view (plaLogTbl.ind i.to snd)
-
-
------
-
-
-getMa :: Id -> MudState -> Int
-getMa i = view ma . getMob i
 
 
 -----
@@ -411,13 +443,6 @@ getPossessor i = view possessor . getNpc i
 -----
 
 
-getPs :: Id -> MudState -> Int
-getPs i = view ps . getMob i
-
-
------
-
-
 getRace :: Id -> MudState -> Race
 getRace i = view race . getPC i
 
@@ -476,14 +501,6 @@ getSexRace i = (getSex i *** getRace i) . dup
 
 getSing :: Id -> MudState -> Sing
 getSing i = view sing . getEnt i
-
-
------
-
-
--- TODO: Rename to "getBaseSt".
-getSt :: Id -> MudState -> Int
-getSt i = view st . getMob i
 
 
 -----

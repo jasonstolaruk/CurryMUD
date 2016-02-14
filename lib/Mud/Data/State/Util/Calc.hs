@@ -2,6 +2,11 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Mud.Data.State.Util.Calc ( calcBarLen
+                                , calcEffDx
+                                , calcEffHt
+                                , calcEffMa
+                                , calcEffPs
+                                , calcEffSt
                                 , calcEncPer
                                 , calcLvlExps
                                 , calcMaxEnc
@@ -34,7 +39,8 @@ import Mud.Util.Operators
 import Mud.Util.Text
 import qualified Mud.Util.Misc as U (blowUp)
 
-import Control.Lens (views)
+import Control.Lens (view, views)
+import Data.List (foldl')
 import Data.Text (Text)
 import Prelude hiding (getContents)
 import qualified Data.Map.Lazy as M (elems)
@@ -61,12 +67,54 @@ calcBarLen cols = cols < 59 ? (cols - 9) :? 50
 -----
 
 
+calcEffDx :: Id -> MudState -> Int
+calcEffDx = calcEffAttrib Dx
+
+
+calcEffAttrib :: Attrib -> Id -> MudState -> Int
+calcEffAttrib attrib i ms = let effects = map (view effect) . getActiveEffects i $ ms
+                                helper acc (EffectMob (MobEffectAttrib a x)) | a == attrib = acc + x
+                                helper acc _                                               = acc
+                            in foldl' helper (getBaseAttrib attrib i ms) effects
+
+
+-----
+
+
+calcEffHt :: Id -> MudState -> Int
+calcEffHt = calcEffAttrib Ht
+
+
+-----
+
+
+calcEffMa :: Id -> MudState -> Int
+calcEffMa = calcEffAttrib Ma
+
+
+-----
+
+
+calcEffPs :: Id -> MudState -> Int
+calcEffPs = calcEffAttrib Ps
+
+
+-----
+
+
+calcEffSt :: Id -> MudState -> Int
+calcEffSt = calcEffAttrib St
+
+
+-----
+
+
 calcEncPer :: Id -> MudState -> Int
 calcEncPer i ms = round . (100 *) $ calcWeight i ms `divide` calcMaxEnc i ms
 
 
 calcMaxEnc :: Id -> MudState -> Int
-calcMaxEnc i ms = round . (100 *) $ getSt i ms ^ 2 `divide` 13
+calcMaxEnc i ms = round . (100 *) $ calcEffSt i ms ^ 2 `divide` 13
 
 
 -----
@@ -94,7 +142,7 @@ calcLvlExps = [ (lvl, 1250 * lvl ^ 2) | lvl <- [1..] ]
 
 
 calcProbLinkFlinch :: Id -> MudState -> Int
-calcProbLinkFlinch i ms = (getHt i ms - 100) ^ 2 `quot` 125
+calcProbLinkFlinch i ms = (calcEffHt i ms - 100) ^ 2 `quot` 125
 
 
 calcProbConnectBlink :: Id -> MudState -> Int
@@ -106,7 +154,7 @@ calcProbTeleShudder = calcProbLinkFlinch
 
 
 calcProbTeleVomit :: Id -> MudState -> Int
-calcProbTeleVomit i ms = (getHt i ms - 100) ^ 2 `quot` 250
+calcProbTeleVomit i ms = (calcEffHt i ms - 100) ^ 2 `quot` 250
 
 
 -----
@@ -117,19 +165,19 @@ calcRegenAmt x = round $ x / 10
 
 
 calcRegenHpAmt :: Id -> MudState -> Int
-calcRegenHpAmt i = calcRegenAmt . fromIntegral . getHt i
+calcRegenHpAmt i = calcRegenAmt . fromIntegral . calcEffHt i
 
 
 calcRegenMpAmt :: Id -> MudState -> Int
-calcRegenMpAmt i ms = calcRegenAmt $ (getHt i ms + getMa i ms) `divide` 2
+calcRegenMpAmt i ms = calcRegenAmt $ (calcEffHt i ms + calcEffMa i ms) `divide` 2
 
 
 calcRegenPpAmt :: Id -> MudState -> Int
-calcRegenPpAmt i ms = calcRegenAmt $ (getHt i ms + getPs i ms) `divide` 2
+calcRegenPpAmt i ms = calcRegenAmt $ (calcEffHt i ms + calcEffPs i ms) `divide` 2
 
 
 calcRegenFpAmt :: Id -> MudState -> Int
-calcRegenFpAmt i ms = calcRegenAmt $ (getHt i ms + getSt i ms) `divide` 2
+calcRegenFpAmt i ms = calcRegenAmt $ (calcEffHt i ms + calcEffSt i ms) `divide` 2
 
 
 -----
@@ -140,19 +188,19 @@ calcRegenDelay x = (30 +) . round $ ((x - 50) ^ 2) / 250
 
 
 calcRegenHpDelay :: Id -> MudState -> Int
-calcRegenHpDelay i = calcRegenDelay . fromIntegral . getHt i
+calcRegenHpDelay i = calcRegenDelay . fromIntegral . calcEffHt i
 
 
 calcRegenMpDelay :: Id -> MudState -> Int
-calcRegenMpDelay i ms = calcRegenDelay $ (getHt i ms + getMa i ms) `divide` 2
+calcRegenMpDelay i ms = calcRegenDelay $ (calcEffHt i ms + calcEffMa i ms) `divide` 2
 
 
 calcRegenPpDelay :: Id -> MudState -> Int
-calcRegenPpDelay i ms = calcRegenDelay $ (getHt i ms + getPs i ms) `divide` 2
+calcRegenPpDelay i ms = calcRegenDelay $ (calcEffHt i ms + calcEffPs i ms) `divide` 2
 
 
 calcRegenFpDelay :: Id -> MudState -> Int
-calcRegenFpDelay i ms = calcRegenDelay $ (getHt i ms + getSt i ms) `divide` 2
+calcRegenFpDelay i ms = calcRegenDelay $ (calcEffHt i ms + calcEffSt i ms) `divide` 2
 
 
 -----
