@@ -3,6 +3,7 @@
 module Mud.TheWorld.TheWorld ( initMudData
                              , initWorld ) where
 
+import Mud.Cmds.Debug
 import Mud.Cmds.Msgs.Misc
 import Mud.Data.Misc
 import Mud.Data.State.MudData
@@ -105,7 +106,7 @@ initWorld = dropIrrelevantFilenames . sort <$> (liftIO . getDirectoryContents $ 
 initEffectFunTbl :: MudStack ()
 initEffectFunTbl = tweak $ effectFunTbl .~ M.fromList list
   where
-    list = [] -- TODO
+    list = debugEffectFuns
 
 
 initFunTbl :: MudStack ()

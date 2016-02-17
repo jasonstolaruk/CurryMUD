@@ -56,9 +56,9 @@ startEffect i e secs = do
 
 
 threadEffect :: Id -> Effect -> EffectQueue -> Seconds -> MudStack ()
-threadEffect i e q secs = handleHelper "effect" . onEnv $ \md -> do
+threadEffect i e q secs = handle (threadExHandler ("effect" <> " " <> parensQuote idTxt)) . onEnv $ \md -> do
     ti <- liftIO myThreadId
-    let effectTimer ior = setThreadType (EffectTimer i) >> handleHelper "effect timer" (loop secs) `finally` done
+    let effectTimer ior = setThreadType (EffectTimer i) >> loop secs `finally` done
           where
             loop x = liftIO (atomicWriteIORef ior x) >> if x == 0
               then unit
@@ -67,7 +67,7 @@ threadEffect i e q secs = handleHelper "effect" . onEnv $ \md -> do
                 f = case e of EffectOther fn -> runEffectFun fn i x
                               _              -> unit
         done = tweak $ activeEffectsTbl.ind i %~ filter (views effectService ((/= ti) . asyncThreadId . fst))
-        queueListener ior = handleHelper "effect queue listener" $ do
+        queueListener ior = do
             setThreadType . EffectListener $ i
             q |&| liftIO . atomically . readTQueue >=> \case
               PauseEffect tmv -> liftIO (atomically . putTMVar tmv =<< readIORef ior)
@@ -78,9 +78,8 @@ threadEffect i e q secs = handleHelper "effect" . onEnv $ \md -> do
     racer md (effectTimer ior) . queueListener $ ior
     logHelper "is finishing."
   where
-    handleHelper txt = handle (threadExHandler (txt <> " " <> parensQuote idTxt))
-    idTxt            = showText i
-    logHelper rest   = logNotice "threadEffect" . T.concat $ [ "effect thread for ID ", idTxt, " ", rest ]
+    idTxt          = showText i
+    logHelper rest = logNotice "threadEffect" . T.concat $ [ "effect thread for ID ", idTxt, " ", rest ]
 
 
 pauseEffects :: Id -> MudStack () -- When a player logs out.

@@ -409,14 +409,14 @@ adminList p = patternMatchFail "adminList" [ showText p ]
 
 bars :: ActionFun
 bars (NoArgs i mq cols) = getState >>= \ms ->
-    let mkBars = map (uncurry . mkBar . calcBarLen $ cols) . mkPointPairs i $ ms
+    let mkBars = map (uncurry . mkBar . calcBarLen $ cols) . mkPtPairs i $ ms
     in multiWrapSend mq cols mkBars >> logPlaExecArgs "bars" [] i
 bars (LowerNub i mq cols as) = getState >>= \ms ->
     let mkBars  = case second nub . partitionEithers . foldr f [] $ as of
                     (x:xs, []     ) -> (x <> " " <> hint) : xs
                     ([],   barTxts) -> barTxts
                     (x:xs, barTxts) -> barTxts ++ [""] ++ ((x <> " " <> hint) : xs)
-        f a acc = (: acc) $ case filter ((a `T.isPrefixOf`) . fst) . mkPointPairs i $ ms of
+        f a acc = (: acc) $ case filter ((a `T.isPrefixOf`) . fst) . mkPtPairs i $ ms of
           []      -> Left . sorryParseArg $ a
           [match] -> Right . uncurry (mkBar . calcBarLen $ cols) $ match
           xs      -> patternMatchFail "bars f" [ showText xs ]
@@ -443,9 +443,9 @@ mkBar x txt (c, m) = let ratio  = c `divide` m
                                  , "%" ]
 
 
-mkPointPairs :: Id -> MudState -> [(Text, (Int, Int))]
-mkPointPairs i ms = let (hps, mps, pps, fps) = getXps i ms
-                    in [ ("hp", hps), ("mp", mps), ("pp", pps), ("fp", fps) ]
+mkPtPairs :: Id -> MudState -> [(Text, (Int, Int))]
+mkPtPairs i ms = let (hps, mps, pps, fps) = getPts i ms
+                 in [ ("hp", hps), ("mp", mps), ("pp", pps), ("fp", fps) ]
 
 
 -----

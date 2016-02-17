@@ -297,8 +297,8 @@ pick p = patternMatchFail "pick" [ showText p ]
 
 
 adminZoneRmFuns :: [(FunName, Fun)]
-adminZoneRmFuns = [ (beepRmFunName,    beep)
-                  , (beeBuzzRmFunName, beeBuzz) ]
+adminZoneRmFuns = [ (beepRmFunName,    beepRmFun   )
+                  , (beeBuzzRmFunName, beeBuzzRmFun) ]
 
 
 -----
@@ -308,8 +308,8 @@ beepRmFunName :: FunName
 beepRmFunName = "AdminZone_iCentral_beep"
 
 
-beep :: Fun
-beep = mkRndmBcastRmFun iCentral "iCentral" beepRmFunName 25 30 beepMsg
+beepRmFun :: Fun
+beepRmFun = mkRndmBcastRmFun iCentral "iCentral" beepRmFunName 25 30 beepMsg
   where
     beepMsg = "A series of blips and beeps can be heard, originating from one of the control panels."
 
@@ -321,8 +321,8 @@ beeBuzzRmFunName :: FunName
 beeBuzzRmFunName = "AdminZone_iAtrium_beeBuzz"
 
 
-beeBuzz :: Fun
-beeBuzz = mkRndmBcastRmFun iAtrium "iAtrium" beeBuzzRmFunName 25 30 beeBuzzMsg
+beeBuzzRmFun :: Fun
+beeBuzzRmFun = mkRndmBcastRmFun iAtrium "iAtrium" beeBuzzRmFunName 25 30 beeBuzzMsg
   where
     beeBuzzMsg = "A plump bumblebee happily buzzes around the flowerbed."
 

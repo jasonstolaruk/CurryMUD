@@ -260,7 +260,7 @@ sendDfltPrompt mq i = sendPrompt mq . mkDfltPrompt i =<< getState
 
 
 mkDfltPrompt :: Id -> MudState -> Text
-mkDfltPrompt i ms = let (hps, mps, pps, fps) = getXps i ms
+mkDfltPrompt i ms = let (hps, mps, pps, fps) = getPts i ms
                         marker               = colorWith indentColor " "
                     in marker <> " " <> spaces [ f "h" hps
                                                , f "m" mps

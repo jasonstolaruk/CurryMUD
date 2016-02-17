@@ -401,6 +401,18 @@ getPC i = view (pcTbl.ind i)
 -----
 
 
+getPts :: Id -> MudState -> ((Int, Int), (Int, Int), (Int, Int), (Int, Int))
+getPts i ms = let m   = getMob i ms
+                  hps = (m^.curHp, m^.maxHp)
+                  mps = (m^.curMp, m^.maxMp)
+                  pps = (m^.curPp, m^.maxPp)
+                  fps = (m^.curFp, m^.maxFp)
+              in (hps, mps, pps, fps)
+
+
+-----
+
+
 getPageLines :: Id -> MudState -> Int
 getPageLines = onPla (view pageLines) 24
 
@@ -564,18 +576,6 @@ getWpnSub i = view wpnSub . getWpn i
 
 getWritable :: Id -> MudState -> Writable
 getWritable i = view (writableTbl.ind i)
-
-
------
-
-
-getXps :: Id -> MudState -> ((Int, Int), (Int, Int), (Int, Int), (Int, Int))
-getXps i ms = let m   = getMob i ms
-                  hps = (m^.curHp, m^.maxHp)
-                  mps = (m^.curMp, m^.maxMp)
-                  pps = (m^.curPp, m^.maxPp)
-                  fps = (m^.curFp, m^.maxFp)
-              in (hps, mps, pps, fps)
 
 
 -- ==================================================

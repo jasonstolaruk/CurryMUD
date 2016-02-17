@@ -2,6 +2,7 @@
 {-# LANGUAGE LambdaCase, MonadComprehensions, NamedFieldPuns, OverloadedStrings, PatternSynonyms, TupleSections, ViewPatterns #-}
 
 module Mud.Cmds.Debug ( debugCmds
+                      , debugEffectFuns
                       , purgeThreadTbls
                       , {- Not a typo. -} ) where
 
@@ -118,8 +119,8 @@ debugCmds =
     , mkDebugCmd "effect"     debugEffect      "Add 10 to your HT for 30 seconds."
     , mkDebugCmd "env"        debugEnv         "Display or search system environment variables."
     , mkDebugCmd "exp"        debugExp         "Award yourself 100,000 exp."
-    , mkDebugCmd "fun"        debugFun         "Dump the keys of the \"FunTbl\", \"HookFunTbl\", and \
-                                               \\"RmActionFunTbl\"." -- TODO: Add the EffectFunTbl.
+    , mkDebugCmd "fun"        debugFun         "Dump the keys of the \"FunTbl\", \"HookFunTbl\", \"RmActionFunTbl\", \
+                                               \and \"EffectFunTbl\"."
     , mkDebugCmd "id"         debugId          "Search the \"MudState\" tables for a given ID."
     , mkDebugCmd "keys"       debugKeys        "Dump a list of \"MudState\" table keys."
     , mkDebugCmd "log"        debugLog         "Put the logging service under heavy load."
@@ -139,6 +140,7 @@ debugCmds =
     , mkDebugCmd "threads"    debugThreads     "Display or search the thread table."
     , mkDebugCmd "throw"      debugThrow       "Throw an exception."
     , mkDebugCmd "throwlog"   debugThrowLog    "Throw an exception on your player log thread."
+    , mkDebugCmd "tinnitus"   debugTinnitus    "Ringing in the ears."
     , mkDebugCmd "token"      debugToken       "Test token parsing."
     , mkDebugCmd "underline"  debugUnderline   "Test underlining."
     , mkDebugCmd "weight"     debugWeight      "Calculate weight for a given ID."
@@ -324,7 +326,8 @@ debugFun (NoArgs i mq cols) = getState >>= \ms -> do
     let helper t lens = t <> ":" : views lens (S.toAscList . M.keysSet) ms
     pager i mq . intercalateDivider cols $ [ helper "FunTbl"         funTbl
                                            , helper "HookFunTbl"     hookFunTbl
-                                           , helper "RmActionFunTbl" rmActionFunTbl ]
+                                           , helper "RmActionFunTbl" rmActionFunTbl
+                                           , helper "EffectFunTbl"   effectFunTbl ]
     logPlaExec (prefixDebugCmd "fun") i
 debugFun p = withoutArgs debugFun p
 
@@ -669,6 +672,32 @@ debugThrowLog :: ActionFun
 debugThrowLog (NoArgs' i mq) = getState >>= \ms -> let lq = getLogQueue i ms in
     (liftIO . atomically . writeTQueue lq $ Throw) >> ok mq >> logPlaExec (prefixDebugCmd "throwlog") i
 debugThrowLog p = withoutArgs debugThrowLog p
+
+
+-----
+
+
+debugTinnitus :: ActionFun
+debugTinnitus (NoArgs' i mq) = do
+    ok mq
+    startEffect i (EffectOther tinnitusEffectFunName) 60
+    logPlaExec (prefixDebugCmd "tinnitus") i
+debugTinnitus p = withoutArgs debugTinnitus p
+
+
+debugEffectFuns :: [(FunName, EffectFun)]
+debugEffectFuns = pure (tinnitusEffectFunName, tinnitusEffectFun)
+
+
+tinnitusEffectFunName :: FunName
+tinnitusEffectFunName = "debug_tinnitus"
+
+
+tinnitusEffectFun :: EffectFun
+tinnitusEffectFun i secs
+  | secs `mod` 5 == 0 = rndmDo 25 $ getMsgQueueColumns i <$> getState >>= \(mq, cols) ->
+      wrapSend mq cols "You hear an awful ringing in your ears."
+  | otherwise = unit
 
 
 -----
