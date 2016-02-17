@@ -48,6 +48,7 @@ module Mud.Data.State.Util.Misc ( addToInv
                                 , procHooks
                                 , raceToLang
                                 , removeAdHoc
+                                , runEffectFun
                                 , setInterp
                                 , sortInv
                                 , tweak
@@ -59,6 +60,7 @@ import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
 import Mud.TheWorld.Zones.AdminZoneIds (iWelcome)
 import Mud.TopLvlDefs.Chars
+import Mud.TopLvlDefs.Misc
 import Mud.Util.List
 import Mud.Util.Misc hiding (blowUp, patternMatchFail)
 import Mud.Util.Operators
@@ -272,7 +274,7 @@ getNpcIds = views npcTbl IM.keys
 -----
 
 
-getRmActionFun :: RmActionFunName -> MudState -> RmActionFun
+getRmActionFun :: FunName -> MudState -> RmActionFun
 getRmActionFun n = views (rmActionFunTbl.at n) (fromMaybe oops)
   where
     oops = blowUp "getRmActionFun" "Function name not found in room action function table." . pure $ n
@@ -486,16 +488,29 @@ raceToLang Vulpenoid = VulpenoidLang
 
 
 removeAdHoc :: Id -> MudState -> MudState
-removeAdHoc i ms = ms & coinsTbl   .at  i        .~ Nothing
-                      & entTbl     .at  i        .~ Nothing
-                      & eqTbl      .at  i        .~ Nothing
-                      & invTbl     .at  i        .~ Nothing
-                      & invTbl     .ind iWelcome %~ (i `delete`)
-                      & mobTbl     .at  i        .~ Nothing
-                      & msgQueueTbl.at  i        .~ Nothing
-                      & pcTbl      .at  i        .~ Nothing
-                      & plaTbl     .at  i        .~ Nothing
-                      & typeTbl    .at  i        .~ Nothing
+removeAdHoc i ms = ms & activeEffectsTbl.at  i        .~ Nothing
+                      & coinsTbl        .at  i        .~ Nothing
+                      & entTbl          .at  i        .~ Nothing
+                      & eqTbl           .at  i        .~ Nothing
+                      & invTbl          .at  i        .~ Nothing
+                      & invTbl          .ind iWelcome %~ (i `delete`)
+                      & mobTbl          .at  i        .~ Nothing
+                      & msgQueueTbl     .at  i        .~ Nothing
+                      & pausedEffectsTbl.at  i        .~ Nothing
+                      & pcTbl           .at  i        .~ Nothing
+                      & plaTbl          .at  i        .~ Nothing
+                      & rndmNamesMstrTbl.at  i        .~ Nothing
+                      & teleLinkMstrTbl .at  i        .~ Nothing
+                      & typeTbl         .at  i        .~ Nothing
+
+
+-----
+
+
+runEffectFun :: FunName -> Id -> Seconds -> MudStack ()
+runEffectFun n i secs = views (effectFunTbl.at n) (maybe oops (\f -> f i secs)) =<< getState
+  where
+    oops = blowUp "runEffectFun" "Function name not found in effect function table." . pure $ n
 
 
 -----

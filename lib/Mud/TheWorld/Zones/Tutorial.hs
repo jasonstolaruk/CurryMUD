@@ -31,7 +31,7 @@ tutorialHooks = []
 -- Room action functions:
 
 
-tutorialRmActionFuns :: [(RmActionFunName, RmActionFun)]
+tutorialRmActionFuns :: [(FunName, RmActionFun)]
 tutorialRmActionFuns = []
 
 

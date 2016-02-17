@@ -17,6 +17,7 @@ import Mud.Misc.ANSI
 import Mud.Misc.Database
 import Mud.Misc.Logging hiding (logNotice, logPla)
 import Mud.TheWorld.Zones.AdminZoneIds (iCentral, iLoggedOut, iWelcome)
+import Mud.Threads.Effect
 import Mud.Threads.Regen
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.FilePaths
@@ -127,33 +128,37 @@ logIn :: Id -> MudState -> HostName -> Maybe UTCTime -> Id -> (MudState, (MudSta
 logIn newId ms newHost newTime originId = let ms' = peepNewId . movePC $ adoptNewId
                                           in (ms', (ms', Right originId))
   where
-    adoptNewId  =    ms  & coinsTbl        .ind newId         .~ getCoins        originId ms
-                         & coinsTbl        .at  originId      .~ Nothing
-                         & entTbl          .ind newId         .~ (getEnt         originId ms & entId .~ newId)
-                         & entTbl          .at  originId      .~ Nothing
-                         & eqTbl           .ind newId         .~ getEqMap        originId ms
-                         & eqTbl           .at  originId      .~ Nothing
-                         & invTbl          .ind newId         .~ getInv          originId ms
-                         & invTbl          .at  originId      .~ Nothing
-                         & mobTbl          .ind newId         .~ getMob          originId ms
-                         & mobTbl          .at  originId      .~ Nothing
-                         & pcTbl           .ind newId         .~ getPC           originId ms
-                         & pcTbl           .at  originId      .~ Nothing
-                         & plaTbl          .ind newId         .~ (getPla         originId ms & currHostName .~ newHost
-                                                                                             & connectTime  .~ newTime)
-                         & plaTbl          .ind newId.peepers .~ getPeepers      originId ms
-                         & plaTbl          .at  originId      .~ Nothing
-                         & rndmNamesMstrTbl.ind newId         .~ getRndmNamesTbl originId ms
-                         & rndmNamesMstrTbl.at  originId      .~ Nothing
-                         & teleLinkMstrTbl .ind newId         .~ getTeleLinkTbl  originId ms
-                         & teleLinkMstrTbl .at  originId      .~ Nothing
-                         & typeTbl         .at  originId      .~ Nothing
-    movePC ms'  = let newRmId = fromJust . getLastRmId newId $ ms'
-                  in ms' & invTbl  .ind iWelcome       %~ (newId    `delete`)
-                         & invTbl  .ind iLoggedOut     %~ (originId `delete`)
-                         & invTbl  .ind newRmId        %~ addToInv ms' (pure newId)
-                         & mobTbl  .ind newId.rmId     .~ newRmId
-                         & plaTbl  .ind newId.lastRmId .~ Nothing
+    adoptNewId = ms & activeEffectsTbl.ind newId         .~ getActiveEffects originId ms
+                    & activeEffectsTbl.at  originId      .~ Nothing
+                    & coinsTbl        .ind newId         .~ getCoins         originId ms
+                    & coinsTbl        .at  originId      .~ Nothing
+                    & entTbl          .ind newId         .~ (getEnt          originId ms & entId .~ newId)
+                    & entTbl          .at  originId      .~ Nothing
+                    & eqTbl           .ind newId         .~ getEqMap         originId ms
+                    & eqTbl           .at  originId      .~ Nothing
+                    & invTbl          .ind newId         .~ getInv           originId ms
+                    & invTbl          .at  originId      .~ Nothing
+                    & mobTbl          .ind newId         .~ getMob           originId ms
+                    & mobTbl          .at  originId      .~ Nothing
+                    & pausedEffectsTbl.ind newId         .~ getPausedEffects originId ms
+                    & pausedEffectsTbl.at  originId      .~ Nothing
+                    & pcTbl           .ind newId         .~ getPC            originId ms
+                    & pcTbl           .at  originId      .~ Nothing
+                    & plaTbl          .ind newId         .~ (getPla          originId ms & currHostName .~ newHost
+                                                                                         & connectTime  .~ newTime)
+                    & plaTbl          .ind newId.peepers .~ getPeepers       originId ms
+                    & plaTbl          .at  originId      .~ Nothing
+                    & rndmNamesMstrTbl.ind newId         .~ getRndmNamesTbl  originId ms
+                    & rndmNamesMstrTbl.at  originId      .~ Nothing
+                    & teleLinkMstrTbl .ind newId         .~ getTeleLinkTbl   originId ms
+                    & teleLinkMstrTbl .at  originId      .~ Nothing
+                    & typeTbl         .at  originId      .~ Nothing
+    movePC ms' = let newRmId = fromJust . getLastRmId newId $ ms'
+                 in ms' & invTbl  .ind iWelcome       %~ (newId    `delete`)
+                        & invTbl  .ind iLoggedOut     %~ (originId `delete`)
+                        & invTbl  .ind newRmId        %~ addToInv ms' (pure newId)
+                        & mobTbl  .ind newId.rmId     .~ newRmId
+                        & plaTbl  .ind newId.lastRmId .~ Nothing
     peepNewId ms'@(getPeepers newId -> peeperIds) =
         let replaceId = (newId :) . (originId `delete`)
         in ms' & plaTbl %~ flip (foldr (\peeperId -> ind peeperId.peeping %~ replaceId)) peeperIds
@@ -259,7 +264,8 @@ handleLogin s params@ActionParams { .. } = do
     look params
     sendDfltPrompt plaMsgQueue myId
     when (getPlaFlag IsAdmin p) stopInacTimer
-    runRegenAsync myId
+    runRegenAsync        myId
+    restartPausedEffects myId
     notifyArrival ms
   where
     greet = wrapSend plaMsgQueue plaCols . nlPrefix $ if s == "Root"

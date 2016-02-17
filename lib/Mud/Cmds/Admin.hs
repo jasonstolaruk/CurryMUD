@@ -568,13 +568,17 @@ examineCon i ms = let c = getCon i ms in [ "Is clothing: " <> c^.isCloth .to sho
 
 
 examineEnt :: ExamineHelper
-examineEnt i ms = let e = getEnt i ms in [ "Name: "         <> e^.sing
-                                         , "Description: "  <> e^.entDesc
-                                         , "Entity flags: " <> (commas . dropBlanks . descFlags $ e) ]
+examineEnt i ms = let e = getEnt i ms in [ "Name: "           <> e^.sing
+                                         , "Description: "    <> e^.entDesc
+                                         , "Entity flags: "   <> (commas . dropBlanks . descFlags $ e)
+                                         , "Active effects: " <> descActiveEffects
+                                         , "Paused effects: " <> descPausedEffects ]
   where
     descFlags e | e^.entFlags == zeroBits = none
                 | otherwise               = let pairs = [(isInvis, "invisible")]
                                             in [ f e |?| t | (f, t) <- pairs ]
+    descActiveEffects = noneOnNull . commas . map (views effect pp) . getActiveEffects i $ ms
+    descPausedEffects = noneOnNull . commas . map pp                . getPausedEffects i $ ms
 
 
 examineEqMap :: ExamineHelper
@@ -590,22 +594,25 @@ examineInv i ms = let is  = getInv i ms
 
 
 examineMob :: ExamineHelper
-examineMob i ms = let m           = getMob i ms
-                      showPts x y = m^.x.to showText <> " / " <> m^.y.to showText
-                  in [ "Sex: "            <> m^.sex.to pp
-                     , "ST: "             <> m^.st .to showText
-                     , "DX: "             <> m^.dx .to showText
-                     , "HT: "             <> m^.ht .to showText
-                     , "MA: "             <> m^.ma .to showText
-                     , "HP: "             <> showPts curHp maxHp
-                     , "MP: "             <> showPts curMp maxMp
-                     , "PP: "             <> showPts curPp maxPp
-                     , "FP: "             <> showPts curFp maxFp
-                     , "Exp: "            <> m^.exp .to showText
-                     , "Handedness: "     <> m^.hand.to pp
-                     , "Know languages: " <> m^.knownLangs.to (noneOnNull . commas . map pp)
-                     , "Room: "           <> let ri = m^.rmId
-                                             in getRmName ri ms <> " " <> parensQuote (showText ri) ]
+examineMob i ms =
+    let m            = getMob i ms
+        showAttrib a = showText (getBaseAttrib a i ms) <> " " <> (parensQuote . showText . calcEffAttrib a i $ ms)
+        showPts x y  = m^.x.to showText <> " / " <> m^.y.to showText
+    in [ "Sex: "            <> m^.sex.to pp
+       , "ST: "             <> showAttrib St
+       , "DX: "             <> showAttrib Dx
+       , "HT: "             <> showAttrib Ht
+       , "MA: "             <> showAttrib Ma
+       , "PS: "             <> showAttrib Ps
+       , "HP: "             <> showPts curHp maxHp
+       , "MP: "             <> showPts curMp maxMp
+       , "PP: "             <> showPts curPp maxPp
+       , "FP: "             <> showPts curFp maxFp
+       , "Exp: "            <> m^.exp .to showText
+       , "Handedness: "     <> m^.hand.to pp
+       , "Know languages: " <> m^.knownLangs.to (noneOnNull . commas . map pp)
+       , "Room: "           <> let ri = m^.rmId
+                               in getRmName ri ms <> " " <> parensQuote (showText ri) ]
 
 
 examineNpc :: ExamineHelper
@@ -623,8 +630,8 @@ examineObj i ms = let o = getObj i ms in [ "Weight: " <> o^.weight.to showText
 
 examinePC :: ExamineHelper
 examinePC i ms = let p = getPC i ms in [ "Race: "        <> p^.race      .to pp
-                                       , "Known names: " <> p^.introduced.to commas
-                                       , "Links: "       <> p^.linked    .to commas ]
+                                       , "Known names: " <> p^.introduced.to (noneOnNull . commas)
+                                       , "Links: "       <> p^.linked    .to (noneOnNull . commas) ]
 
 
 examinePla :: ExamineHelper

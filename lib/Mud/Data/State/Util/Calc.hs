@@ -2,6 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Mud.Data.State.Util.Calc ( calcBarLen
+                                , calcEffAttrib
                                 , calcEffDx
                                 , calcEffHt
                                 , calcEffMa

@@ -16,6 +16,7 @@ import Mud.Interp.CentralDispatch
 import Mud.Misc.ANSI
 import Mud.Misc.Persist
 import Mud.Threads.Biodegrader
+import Mud.Threads.Effect
 import Mud.Threads.Misc
 import Mud.Threads.NpcServer
 import Mud.Threads.Regen
@@ -136,11 +137,12 @@ shutDown = do
   where
     commitSuicide = do
         liftIO . mapM_ wait . M.elems . view talkAsyncTbl =<< getState
-        logNotice "shutDown commitSuicide" "all players have been disconnected."
-        stopNpcRegens
-        stopNpcServers
-        stopRmFuns
+        logNotice "shutDown commitSuicide" "everyone has been disconnected."
         stopBiodegraders
+        stopRmFuns
+        massPauseEffects
+        stopNpcServers
+        stopNpcRegens
         persist
         logNotice "shutDown commitSuicide" "killing the listen thread."
         liftIO . killThread . getListenThreadId =<< getState

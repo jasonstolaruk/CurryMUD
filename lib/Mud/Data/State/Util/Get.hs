@@ -387,6 +387,13 @@ getObj i = view (objTbl.ind i)
 -----
 
 
+getPausedEffects :: Id -> MudState -> [PausedEffect]
+getPausedEffects i = view (pausedEffectsTbl.ind i)
+
+
+-----
+
+
 getPC :: Id -> MudState -> PC
 getPC i = view (pcTbl.ind i)
 

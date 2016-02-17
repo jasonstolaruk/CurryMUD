@@ -23,6 +23,7 @@ import Mud.Data.State.Util.Random
 import Mud.Misc.ANSI
 import Mud.Misc.Persist
 import Mud.TheWorld.Zones.AdminZoneIds (iLoggedOut, iPidge)
+import Mud.Threads.Effect
 import Mud.Threads.Misc
 import Mud.Threads.NpcServer
 import Mud.Threads.ThreadTblPurger
@@ -114,10 +115,11 @@ debugCmds =
     , mkDebugCmd "color"      debugColor       "Perform a color test."
     , mkDebugCmd "cores"      debugCores       "Display the number of processor cores."
     , mkDebugCmd "cpu"        debugCPU         "Display the CPU time."
-    , mkDebugCmd "env"        debugDispEnv     "Display or search system environment variables."
+    , mkDebugCmd "effect"     debugEffect      "Add 10 to your HT for 30 seconds."
+    , mkDebugCmd "env"        debugEnv         "Display or search system environment variables."
     , mkDebugCmd "exp"        debugExp         "Award yourself 100,000 exp."
     , mkDebugCmd "fun"        debugFun         "Dump the keys of the \"FunTbl\", \"HookFunTbl\", and \
-                                               \\"RmActionFunTbl\"."
+                                               \\"RmActionFunTbl\"." -- TODO: Add the EffectFunTbl.
     , mkDebugCmd "id"         debugId          "Search the \"MudState\" tables for a given ID."
     , mkDebugCmd "keys"       debugKeys        "Dump a list of \"MudState\" table keys."
     , mkDebugCmd "log"        debugLog         "Put the logging service under heavy load."
@@ -277,11 +279,22 @@ debugDispCmdList p                  = patternMatchFail "debugDispCmdList" [ show
 -----
 
 
-debugDispEnv :: ActionFun
-debugDispEnv (NoArgs i mq cols)  = do
+debugEffect :: ActionFun
+debugEffect (NoArgs' i mq) = do
+    ok mq
+    startEffect i (EffectMob (MobEffectAttrib Ht 10)) 30
+    logPlaExec (prefixDebugCmd "effect") i
+debugEffect p = withoutArgs debugEffect p
+
+
+-----
+
+
+debugEnv :: ActionFun
+debugEnv (NoArgs i mq cols) = do
     pager i mq =<< [ concatMap (wrapIndent 2 cols) . mkEnvListTxt $ env | env <- liftIO getEnvironment ]
     logPlaExecArgs (prefixDebugCmd "env") [] i
-debugDispEnv p@ActionParams { myId, args } = do
+debugEnv p@ActionParams { myId, args } = do
     dispMatches p 2 =<< [ mkEnvListTxt env | env <- liftIO getEnvironment ]
     logPlaExecArgs (prefixDebugCmd "env") args myId
 
@@ -363,7 +376,8 @@ tblToList lens = views lens IM.toList
 
 
 mkTblNameKeysList :: MudState -> [(Text, Inv)]
-mkTblNameKeysList ms = [ ("Arm",              tblKeys armTbl           ms)
+mkTblNameKeysList ms = [ ("ActiveEffectsTbl", tblKeys activeEffectsTbl ms)
+                       , ("Arm",              tblKeys armTbl           ms)
                        , ("Chan",             tblKeys chanTbl          ms)
                        , ("Cloth",            tblKeys clothTbl         ms)
                        , ("Coins",            tblKeys coinsTbl         ms)
@@ -376,6 +390,7 @@ mkTblNameKeysList ms = [ ("Arm",              tblKeys armTbl           ms)
                        , ("Npc",              tblKeys npcTbl           ms)
                        , ("Obj",              tblKeys objTbl           ms)
                        , ("PC",               tblKeys pcTbl            ms)
+                       , ("PausedEffectsTbl", tblKeys pausedEffectsTbl ms)
                        , ("PlaLogTbl",        tblKeys plaLogTbl        ms)
                        , ("Pla",              tblKeys plaTbl           ms)
                        , ("Rm",               tblKeys rmTbl            ms)
@@ -623,17 +638,20 @@ descThreads = do
   where
     mkDesc (ti, bracketPad 20 . mkTypeName -> tn) = [ T.concat [ padOrTrunc 16 . showText $ ti, tn, ts ]
                                                     | (showText -> ts) <- liftIO . threadStatus $ ti ]
-    mkTypeName (Biodegrader (showText -> pi)) = padOrTrunc 12 "Biodegrader" <> pi
-    mkTypeName (InacTimer   (showText -> pi)) = padOrTrunc 12 "InacTimer"   <> pi
-    mkTypeName (NpcServer   (showText -> pi)) = padOrTrunc 12 "NpcServer"   <> pi
-    mkTypeName (PlaLog      (showText -> pi)) = padOrTrunc 12 "PlaLog"      <> pi
-    mkTypeName (Receive     (showText -> pi)) = padOrTrunc 12 "Receive"     <> pi
-    mkTypeName (RegenChild  (showText -> pi)) = padOrTrunc 12 "RegenChild"  <> pi
-    mkTypeName (RegenParent (showText -> pi)) = padOrTrunc 12 "RegenParent" <> pi
-    mkTypeName (RmFun       (showText -> pi)) = padOrTrunc 12 "RmFun"       <> pi
-    mkTypeName (Server      (showText -> pi)) = padOrTrunc 12 "Server"      <> pi
-    mkTypeName (Talk        (showText -> pi)) = padOrTrunc 12 "Talk"        <> pi
-    mkTypeName (showText -> tt)               = tt
+    mkTypeName (Biodegrader    (showText -> pi)) = padOrTrunc 12 "Biodegrader" <> pi
+    mkTypeName (EffectListener (showText -> pi)) = padOrTrunc 12 "Eff Listen"  <> pi
+    mkTypeName (EffectThread   (showText -> pi)) = padOrTrunc 12 "Eff Thread"  <> pi
+    mkTypeName (EffectTimer    (showText -> pi)) = padOrTrunc 12 "Eff Timer"   <> pi
+    mkTypeName (InacTimer      (showText -> pi)) = padOrTrunc 12 "InacTimer"   <> pi
+    mkTypeName (NpcServer      (showText -> pi)) = padOrTrunc 12 "NpcServer"   <> pi
+    mkTypeName (PlaLog         (showText -> pi)) = padOrTrunc 12 "PlaLog"      <> pi
+    mkTypeName (Receive        (showText -> pi)) = padOrTrunc 12 "Receive"     <> pi
+    mkTypeName (RegenChild     (showText -> pi)) = padOrTrunc 12 "RegenChild"  <> pi
+    mkTypeName (RegenParent    (showText -> pi)) = padOrTrunc 12 "RegenParent" <> pi
+    mkTypeName (RmFun          (showText -> pi)) = padOrTrunc 12 "RmFun"       <> pi
+    mkTypeName (Server         (showText -> pi)) = padOrTrunc 12 "Server"      <> pi
+    mkTypeName (Talk           (showText -> pi)) = padOrTrunc 12 "Talk"        <> pi
+    mkTypeName (showText -> tt)                  = tt
 
 
 -----

@@ -22,7 +22,7 @@ import Mud.Util.Text
 import qualified Mud.Misc.Logging as L (logNotice)
 
 import Control.Concurrent (forkIO)
-import Control.Concurrent.Async (asyncThreadId, race_)
+import Control.Concurrent.Async (asyncThreadId)
 import Control.Concurrent.STM.TMQueue (newTMQueueIO)
 import Control.Concurrent.STM.TQueue (newTQueueIO)
 import Control.Exception.Lifted (finally, handle, try)
@@ -66,15 +66,14 @@ threadTalk h host = helper `finally` cleanUp
         (mq, tq)           <- liftIO $ (,) <$> newTQueueIO <*> newTMQueueIO
         (i, dblQuote -> s) <- adHoc mq host
         setThreadType . Talk $ i
-        handle (plaThreadExHandler "talk" i) $ onEnv $ \md -> do
+        handle (plaThreadExHandler "talk" i) . onEnv $ \md -> do
             liftIO configBuffer
             dumpTitle  mq
             sendPrompt mq "By what name are you known?"
             bcastAdmins $ "A new player has connected: " <> s <> "."
             logNotice "threadTalk helper" $ "new PC name for incoming player: " <> s <> "."
             liftIO . void . forkIO . runReaderT (threadInacTimer i mq tq) $ md
-            liftIO $ race_ (runReaderT (threadServer  h i mq tq) md)
-                           (runReaderT (threadReceive h i mq)    md)
+            racer md (threadServer  h i mq tq) . threadReceive h i $ mq
     configBuffer = hSetBuffering h LineBuffering >> hSetNewlineMode h nlMode >> hSetEncoding h latin1
     nlMode       = NewlineMode { inputNL = CRLF, outputNL = CRLF }
     cleanUp      = do
@@ -124,17 +123,19 @@ adHoc mq host = do
                        , _possessing   = Nothing
                        , _retainedMsgs = []
                        , _lastRmId     = Nothing }
-            ms'  = ms  & coinsTbl        .ind i        .~ mempty
-                       & entTbl          .ind i        .~ e
-                       & eqTbl           .ind i        .~ M.empty
-                       & invTbl          .ind i        .~ []
-                       & mobTbl          .ind i        .~ m
-                       & msgQueueTbl     .ind i        .~ mq
-                       & pcTbl           .ind i        .~ pc
-                       & plaTbl          .ind i        .~ pla
-                       & rndmNamesMstrTbl.ind i        .~ M.empty
-                       & teleLinkMstrTbl .ind i        .~ M.empty
-                       & typeTbl         .ind i        .~ PCType
+            ms'  = ms  & activeEffectsTbl.ind i .~ []
+                       & coinsTbl        .ind i .~ mempty
+                       & entTbl          .ind i .~ e
+                       & eqTbl           .ind i .~ M.empty
+                       & invTbl          .ind i .~ []
+                       & mobTbl          .ind i .~ m
+                       & msgQueueTbl     .ind i .~ mq
+                       & pausedEffectsTbl.ind i .~ []
+                       & pcTbl           .ind i .~ pc
+                       & plaTbl          .ind i .~ pla
+                       & rndmNamesMstrTbl.ind i .~ M.empty
+                       & teleLinkMstrTbl .ind i .~ M.empty
+                       & typeTbl         .ind i .~ PCType
         in (ms' & invTbl.ind iWelcome %~ addToInv ms' (pure i), (i, s))
 
 

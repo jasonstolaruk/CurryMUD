@@ -13,6 +13,7 @@ import Mud.Misc.Logging hiding (logExMsg, logIOEx, logNotice)
 import Mud.TheWorld.TheWorld
 import Mud.Threads.Biodegrader
 import Mud.Threads.DbTblPurger
+import Mud.Threads.Effect
 import Mud.Threads.Misc
 import Mud.Threads.NpcServer
 import Mud.Threads.OpListMonitor
@@ -102,6 +103,7 @@ listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed 
     initialize = do
         startNpcRegens
         startNpcServers
+        massRestartPausedEffects
         startRmFuns
         startBiodegraders
         logNotice "listen initialize" "creating database tables."

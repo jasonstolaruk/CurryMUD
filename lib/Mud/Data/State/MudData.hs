@@ -49,6 +49,7 @@ data MudState = MudState { _activeEffectsTbl :: ActiveEffectsTbl
                          , _clothTbl         :: ClothTbl
                          , _coinsTbl         :: CoinsTbl
                          , _conTbl           :: ConTbl
+                         , _effectFunTbl     :: EffectFunTbl
                          , _entTbl           :: EntTbl
                          , _eqTbl            :: EqTbl
                          , _funTbl           :: FunTbl
@@ -83,6 +84,7 @@ type ChanTbl          = IM.IntMap Chan
 type ClothTbl         = IM.IntMap Cloth
 type CoinsTbl         = IM.IntMap Coins
 type ConTbl           = IM.IntMap Con
+type EffectFunTbl     = M.Map FunName EffectFun
 type EntTbl           = IM.IntMap Ent
 type EqTbl            = IM.IntMap EqMap
 type FunTbl           = M.Map FunName Fun
@@ -98,7 +100,7 @@ type PausedEffectsTbl = IM.IntMap [PausedEffect]
 type PCTbl            = IM.IntMap PC
 type PlaLogTbl        = IM.IntMap LogService
 type PlaTbl           = IM.IntMap Pla
-type RmActionFunTbl   = M.Map RmActionFunName RmActionFun
+type RmActionFunTbl   = M.Map FunName RmActionFun
 type RmTbl            = IM.IntMap Rm
 type RmTeleNameTbl    = IM.IntMap Text
 type RndmNamesMstrTbl = IM.IntMap RndmNamesTbl
@@ -160,14 +162,17 @@ type EffectAsync = Async ()
 type EffectQueue = TQueue EffectCmd
 
 
-data EffectCmd = StopEffect
-               | PauseEffect (TMVar Seconds)
+data EffectCmd = PauseEffect (TMVar Seconds)
+               | StopEffect
+
+
+type EffectFun = Id -> Seconds -> MudStack ()
 
 
 -- ==================================================
 
 
--- Has an object (and an entity and active effects).
+-- Has an object (and an entity and effects).
 data Arm = Arm { _armSub   :: ArmSub
                , _armClass :: AC } deriving (Eq, Generic, Show)
 
@@ -205,7 +210,7 @@ type IsTuned = Bool
 -- ==================================================
 
 
--- Has an object (and an entity and active effects).
+-- Has an object (and an entity and effects).
 data Cloth = Earring
            | NoseRing
            | Necklace
@@ -249,7 +254,7 @@ instance Monoid Coins where
 -- ============================================================
 
 
--- Has an object (and an entity and active effects) and an inventory and coins.
+-- Has an object (and an entity and effects) and an inventory and coins.
 data Con = Con { _isCloth  :: Bool
                , _capacity :: Vol } deriving (Eq, Generic, Show)
 
@@ -263,7 +268,7 @@ type ConName = Text
 -- ==================================================
 
 
--- Has active effects.
+-- Has effects.
 data Ent = Ent { _entId    :: Id
                , _entName  :: Maybe Text
                , _sing     :: Sing
@@ -399,7 +404,7 @@ data LogCmd = LogMsg Text
 -- ==================================================
 
 
--- Has an entity (and active effects) and an inventory and coins and equipment.
+-- Has an entity (and effects) and an inventory and coins and equipment.
 data Mob = Mob { _sex                    :: Sex
                , _st, _dx, _ht, _ma, _ps :: Int
                , _curHp, _maxHp          :: Int
@@ -493,7 +498,7 @@ jsonToMob _          = empty
 -- ==================================================
 
 
--- Has a mob (and an entity and active effects and an inventory and coins and equipment).
+-- Has a mob (and an entity and effects and an inventory and coins and equipment).
 data Npc = Npc { _npcMsgQueue    :: NpcMsgQueue
                , _npcServerAsync :: NpcServerAsync
                , _possessor      :: Maybe Id }
@@ -505,7 +510,7 @@ type NpcServerAsync = Async ()
 -- ==================================================
 
 
--- Has an entity (and active effects).
+-- Has an entity (and effects).
 data Obj = Obj { _weight           :: Weight
                , _vol              :: Vol
                , _objFlags         :: Int
@@ -549,7 +554,7 @@ data PausedEffect = PausedEffect { _pausedEffect  :: Effect
 -- ==================================================
 
 
--- Has a mob (and an entity and active effects and an inventory and coins and equipment).
+-- Has a mob (and an entity and effects and an inventory and coins and equipment).
 data PC = PC { _race       :: Race
              , _introduced :: [Sing]
              , _linked     :: [Sing] } deriving (Eq, Generic, Show)
@@ -573,7 +578,7 @@ instance Random Race where
 -- ==================================================
 
 
--- Has a PC (and a mob and an entity and active effects and an inventory and coins and equipment) and a random names table and a telepathic link table.
+-- Has a PC (and a mob and an entity and effects and an inventory and coins and equipment) and a random names table and a telepathic link table.
 data Pla = Pla { _currHostName :: HostName
                , _connectTime  :: Maybe UTCTime
                , _plaFlags     :: Int
@@ -632,7 +637,7 @@ jsonToPla _          = empty
 -- ======================================================================
 
 
--- Has an inventory and coins.
+-- Has effects and an inventory and coins.
 data Rm = Rm { _rmName      :: Text
              , _rmDesc      :: Text
              , _rmFlags     :: Int
@@ -695,7 +700,7 @@ type Broadcast = (Text, Inv)
 
 
 data RmAction = RmAction { rmActionCmdName :: CmdName
-                         , rmActionFunName :: RmActionFunName } deriving (Eq, Generic, Show)
+                         , rmActionFunName :: FunName } deriving (Eq, Generic, Show)
 
 
 type RmFunAsync = Async ()
@@ -730,9 +735,6 @@ jsonToRm _          = empty
 -- ==================================================
 
 
-type RmActionFunName = Text
-
-
 type RmActionFun = ActionFun
 
 
@@ -757,21 +759,24 @@ type TeleLinkTbl = M.Map Sing IsTuned
 -- ==================================================
 
 
-data ThreadType = Biodegrader Id
+data ThreadType = Biodegrader    Id
                 | DbTblPurger
+                | EffectListener Id
+                | EffectThread   Id
+                | EffectTimer    Id
                 | Error
-                | InacTimer   Id
+                | InacTimer      Id
                 | Listen
                 | Notice
-                | NpcServer   Id
+                | NpcServer      Id
                 | OpListMonitor
-                | PlaLog      Id
-                | Receive     Id
-                | RegenChild  Id
-                | RegenParent Id
-                | RmFun       Id
-                | Server      Id
-                | Talk        Id
+                | PlaLog         Id
+                | Receive        Id
+                | RegenChild     Id
+                | RegenParent    Id
+                | RmFun          Id
+                | Server         Id
+                | Talk           Id
                 | ThreadTblPurger
                 | TrashDumpPurger
                 | WorldPersister deriving (Eq, Ord, Show)
@@ -795,7 +800,7 @@ data Type = ObjType
 -- ==================================================
 
 
--- Has an object (and an entity and active effects).
+-- Has an object (and an entity and effects).
 data Vessel = Vessel { _maxQuaffs :: Quaffs -- obj vol / quaff vol
                      , _contents  :: Maybe Contents } deriving (Eq, Generic, Show)
 
@@ -814,7 +819,7 @@ data Liquid = Water
 -- ==================================================
 
 
--- Has an object (and an entity and active effects).
+-- Has an object (and an entity and effects).
 data Wpn = Wpn { _wpnSub :: WpnSub
                , _minDmg :: Int
                , _maxDmg :: Int } deriving (Eq, Generic, Show)
@@ -827,7 +832,7 @@ data WpnSub = OneHanded
 -- ==================================================
 
 
--- Has an object (and an entity and active effects).
+-- Has an object (and an entity and effects).
 data Writable = Writable { _message :: Maybe (Text, Lang)
                          , _recip   :: Maybe Sing {- for magically scribed msgs -} } deriving (Eq, Generic, Show)
 

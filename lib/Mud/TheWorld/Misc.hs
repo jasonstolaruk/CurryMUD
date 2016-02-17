@@ -143,7 +143,7 @@ trashHelper i ms as =
 -- Common room action functions:
 
 
-commonRmActionFuns :: [(RmActionFunName, RmActionFun)]
+commonRmActionFuns :: [(FunName, RmActionFun)]
 commonRmActionFuns = pure (trashRmActionFunName, trash)
 
 
@@ -154,7 +154,7 @@ trashRmAction :: RmAction
 trashRmAction = RmAction "trash" trashRmActionFunName
 
 
-trashRmActionFunName :: RmActionFunName
+trashRmActionFunName :: FunName
 trashRmActionFunName = "(common)_trash"
 
 

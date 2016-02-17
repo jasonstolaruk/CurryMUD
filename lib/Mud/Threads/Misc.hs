@@ -8,6 +8,7 @@ module Mud.Threads.Misc ( concurrentTree
                         , onNewThread
                         , plaThreadExHandler
                         , PlsDie(..)
+                        , racer
                         , runAsync
                         , setThreadType
                         , stopTimerThread
@@ -27,7 +28,7 @@ import Mud.Util.Misc
 import qualified Mud.Misc.Logging as L (logExMsg, logNotice, logPla)
 
 import Control.Concurrent (forkIO, myThreadId)
-import Control.Concurrent.Async (Async, async, asyncThreadId, concurrently, wait)
+import Control.Concurrent.Async (Async, async, asyncThreadId, concurrently, race_, wait)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TMQueue (TMQueue, closeTMQueue)
 import Control.Exception (AsyncException(..), Exception, SomeException, fromException)
@@ -129,6 +130,13 @@ threadExHandler :: Text -> SomeException -> MudStack ()
 threadExHandler threadName e = do
     logExMsg "threadExHandler" (rethrowExMsg $ "on " <> threadName <> " thread") e
     throwToListenThread e
+
+
+-----
+
+
+racer :: MudData -> MudStack () -> MudStack () -> MudStack ()
+racer md a b = liftIO . race_ (runReaderT a md) . runReaderT b $ md
 
 
 -----

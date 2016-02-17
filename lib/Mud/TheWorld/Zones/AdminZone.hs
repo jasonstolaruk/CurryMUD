@@ -259,7 +259,7 @@ readLookSign_iTutEntranceHookFun = mkLookReadHookFun signDesc "reads the sign fl
 -- Room action functions:
 
 
-adminZoneRmActionFuns :: [(RmActionFunName, RmActionFun)]
+adminZoneRmActionFuns :: [(FunName, RmActionFun)]
 adminZoneRmActionFuns = pure (pickRmActionFunName, pick)
 
 
@@ -270,7 +270,7 @@ pickRmAction :: RmAction
 pickRmAction = RmAction "pick" pickRmActionFunName
 
 
-pickRmActionFunName :: RmActionFunName
+pickRmActionFunName :: FunName
 pickRmActionFunName = "AdminZone_iAtrium_pick"
 
 

@@ -79,6 +79,7 @@ library
                        Mud.TheWorld.Zones.TutorialIds
                        Mud.Threads.Biodegrader
                        Mud.Threads.DbTblPurger
+                       Mud.Threads.Effect
                        Mud.Threads.InacTimer
                        Mud.Threads.Listen
                        Mud.Threads.Misc

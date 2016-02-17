@@ -213,9 +213,21 @@ instance Pretty AOrThe where
   pp The = "the"
 
 
+instance Pretty ArmEffect where
+  pp (ArmEffectAC x) = "AC by " <> showText x
+
+
 instance Pretty ArmSub where
   pp LowerBody = "lower body"
   pp x         = uncapitalize . showText $ x
+
+
+instance Pretty Attrib where
+  pp St = "ST"
+  pp Dx = "DX"
+  pp Ht = "HT"
+  pp Ma = "MA"
+  pp Ps = "PS"
 
 
 instance Pretty BanHostRec where
@@ -261,6 +273,18 @@ instance Pretty Cloth where
   pp Trousers = "trousers"
 
 
+instance Pretty Effect where
+  pp (EffectArm   e ) = "armor "  <> pp e
+  pp (EffectEnt   e ) = "entity " <> pp e
+  pp (EffectMob   e ) = "mob "    <> pp e
+  pp (EffectRm    e ) = "room "   <> pp e
+  pp (EffectOther fn) = "other "  <> parensQuote fn
+
+
+instance Pretty EntEffect where
+  pp (EntEffectFlags _) = undefined -- TODO
+
+
 instance Pretty Hand where
   pp RHand  = "right-handed"
   pp LHand  = "left-handed"
@@ -293,6 +317,15 @@ instance Pretty LoggedInOrOut where
   pp LoggedOut = "logged out"
 
 
+instance Pretty MobEffect where
+  pp (MobEffectAttrib a x) = pp a <> " by " <> showText x
+  pp (MobEffectAC       x) = "AC by "       <> showText x
+
+
+instance Pretty PausedEffect where
+  pp (PausedEffect e secs) = pp e <> " " <> parensQuote (commaEvery3 (showText secs) <> " secs")
+
+
 instance Pretty ProfRec where
   pp ProfRec { .. } = spaces [ profTimestamp, profHost, profProfanity ]
 
@@ -312,6 +345,10 @@ instance Pretty RightOrLeft where
   pp R   = "right"
   pp L   = "left"
   pp rol = pp (fromRol rol :: Slot)
+
+
+instance Pretty RmEffect where
+  pp (RmEffectFlags _) = undefined -- TODO
 
 
 instance Pretty Sex where

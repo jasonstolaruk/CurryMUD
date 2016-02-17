@@ -30,7 +30,7 @@ import Data.Monoid ((<>))
 import Data.Text (Text)
 import Data.Tuple (swap)
 import qualified Data.ByteString.Lazy as B (readFile)
-import qualified Data.IntMap.Lazy as IM (empty, foldrWithKey, toList, map)
+import qualified Data.IntMap.Lazy as IM (empty, foldrWithKey, fromList, keys, toList, map)
 import qualified Data.Map.Lazy as M (empty, fromList)
 import qualified Data.Text as T
 import System.Clock (Clock(..), getTime)
@@ -57,6 +57,7 @@ initMudData shouldLog = do
                                  , _clothTbl         = IM.empty
                                  , _coinsTbl         = IM.empty
                                  , _conTbl           = IM.empty
+                                 , _effectFunTbl     =  M.empty
                                  , _entTbl           = IM.empty
                                  , _eqTbl            = IM.empty
                                  , _funTbl           =  M.empty
@@ -94,10 +95,17 @@ initMudData shouldLog = do
 
 initWorld :: MudStack Bool
 initWorld = dropIrrelevantFilenames . sort <$> (liftIO . getDirectoryContents $ persistDir) >>= \cont -> do
+    initEffectFunTbl
     initFunTbl
     initHookFunTbl
     initRmActionFunTbl
     ()# cont ? (createWorld >> return True) :? (loadWorld . last $ cont)
+
+
+initEffectFunTbl :: MudStack ()
+initEffectFunTbl = tweak $ effectFunTbl .~ M.fromList list
+  where
+    list = [] -- TODO
 
 
 initFunTbl :: MudStack ()
@@ -151,6 +159,7 @@ loadWorld dir@((persistDir </>) -> path) = do
                                                  , loadTbl wpnTblFile           wpnTbl
                                                  , loadTbl writableTblFile      writableTbl ]
     tweak $ \ms -> foldr removeAdHoc ms . getInv iWelcome $ ms
+    initActiveEffectsTbl
     movePCs
     return . and $ res
 
@@ -172,6 +181,10 @@ loadTbl tblFile lens path = let absolute = path </> tblFile in
     eitherDecode <$> (liftIO . B.readFile $ absolute) >>= \case
       Left  err -> sorry absolute err
       Right tbl -> tweak (lens .~ tbl) >> return True
+
+
+initActiveEffectsTbl :: MudStack ()
+initActiveEffectsTbl = tweak $ \ms -> ms & activeEffectsTbl .~ IM.fromList [ (i, []) | i <- views entTbl IM.keys ms ]
 
 
 movePCs :: MudStack ()
