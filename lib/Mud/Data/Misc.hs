@@ -208,6 +208,12 @@ class Pretty a where
   pp :: a -> Text
 
 
+instance Pretty ActiveEffect where
+  pp (ActiveEffect e tag _) = pp e <> descTag
+    where
+      descTag = maybe "" ((" " <>) . bracketQuote) tag
+
+
 instance Pretty AOrThe where
   pp A   = "a"
   pp The = "the"
@@ -309,7 +315,6 @@ instance Pretty LinkDir where
 
 instance Pretty Liquid where -- TODO: Used by ":examine".
   pp Water = "water"
-  pp x     = showText x
 
 
 instance Pretty LoggedInOrOut where
@@ -323,7 +328,9 @@ instance Pretty MobEffect where
 
 
 instance Pretty PausedEffect where
-  pp (PausedEffect e secs) = pp e <> " " <> parensQuote (commaEvery3 (showText secs) <> " secs")
+  pp (PausedEffect e tag secs) = pp e <> " " <> descTag <> parensQuote (commaEvery3 (showText secs) <> " secs")
+    where
+      descTag = maybe "" ((<> " ") . bracketQuote) tag
 
 
 instance Pretty ProfRec where

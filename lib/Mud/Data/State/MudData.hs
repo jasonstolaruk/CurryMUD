@@ -127,9 +127,11 @@ type ActionFun = ActionParams -> MudStack ()
 
 
 data ActiveEffect = ActiveEffect { _effect        :: Effect
+                                 , _effectTag     :: Maybe Text
                                  , _effectService :: EffectService }
 
 
+-- Effects that have a duration.
 data Effect = EffectArm   ArmEffect
             | EffectEnt   EntEffect
             | EffectMob   MobEffect
@@ -162,8 +164,10 @@ type EffectAsync = Async ()
 type EffectQueue = TQueue EffectCmd
 
 
-data EffectCmd = PauseEffect (TMVar Seconds)
+data EffectCmd = PauseEffect  (TMVar Seconds)
+               | QueryRemTime (TMVar Seconds)
                | StopEffect
+
 
 
 type EffectFun = Id -> Seconds -> MudStack ()
@@ -347,9 +351,11 @@ data HostRecord = HostRecord { _noOfLogouts   :: Int
 -- ==================================================
 
 
-data InstaEffect = InstaEffectEnt EntInstaEffect
-                 | InstaEffectMob MobInstaEffect
-                 | InstaEffectRm  RmInstaEffect deriving (Eq, Generic, Show)
+-- Effects that are instantaneous.
+data InstaEffect = InstaEffectEnt   EntInstaEffect
+                 | InstaEffectMob   MobInstaEffect
+                 | InstaEffectRm    RmInstaEffect
+                 | InstaEffectOther FunName deriving (Eq, Generic, Show)
 
 
 data EntInstaEffect = EntInstaEffectFlags Int deriving (Eq, Generic, Show)
@@ -547,8 +553,9 @@ jsonToObj _          = empty
 -- ==================================================
 
 
-data PausedEffect = PausedEffect { _pausedEffect  :: Effect
-                                 , _timeRemaining :: Seconds } deriving (Eq, Generic, Show)
+data PausedEffect = PausedEffect { _pausedEffect    :: Effect
+                                 , _pausedEffectTag :: Maybe Text
+                                 , _timeRemaining   :: Seconds } deriving (Eq, Generic, Show)
 
 
 -- ==================================================
@@ -811,9 +818,7 @@ type Quaffs = Int
 type Contents = (Liquid, Quaffs)
 
 
-data Liquid = Water
-            | Potion Effect Seconds
-            | InstaPotion InstaEffect deriving (Eq, Generic, Show)
+data Liquid = Water deriving (Eq, Generic, Show)
 
 
 -- ==================================================

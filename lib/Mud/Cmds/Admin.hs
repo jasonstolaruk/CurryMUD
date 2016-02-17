@@ -577,8 +577,9 @@ examineEnt i ms = let e = getEnt i ms in [ "Name: "           <> e^.sing
     descFlags e | e^.entFlags == zeroBits = none
                 | otherwise               = let pairs = [(isInvis, "invisible")]
                                             in [ f e |?| t | (f, t) <- pairs ]
-    descActiveEffects = noneOnNull . commas . map (views effect pp) . getActiveEffects i $ ms
-    descPausedEffects = noneOnNull . commas . map pp                . getPausedEffects i $ ms
+    descActiveEffects = descEffect getActiveEffects
+    descPausedEffects = descEffect getPausedEffects
+    descEffect f      = noneOnNull . commas . map pp . f i $ ms
 
 
 examineEqMap :: ExamineHelper

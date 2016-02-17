@@ -48,11 +48,11 @@ logNotice = L.logNotice "Mud.Threads.Effect"
 -- ==================================================
 
 
-startEffect :: Id -> Effect -> Seconds -> MudStack ()
-startEffect i e secs = do
+startEffect :: Id -> Effect -> Maybe Text -> Seconds -> MudStack ()
+startEffect i e tag secs = do
     q <- liftIO newTQueueIO
     a <- runAsync . threadEffect i e q $ secs
-    tweak $ activeEffectsTbl.ind i <>~ pure (ActiveEffect e (a, q))
+    tweak $ activeEffectsTbl.ind i <>~ pure (ActiveEffect e tag (a, q))
 
 
 threadEffect :: Id -> Effect -> EffectQueue -> Seconds -> MudStack ()
@@ -67,11 +67,13 @@ threadEffect i e q secs = handle (threadExHandler ("effect" <> " " <> parensQuot
                 f = case e of EffectOther fn -> runEffectFun fn i x
                               _              -> unit
         done = tweak $ activeEffectsTbl.ind i %~ filter (views effectService ((/= ti) . asyncThreadId . fst))
-        queueListener ior = do
-            setThreadType . EffectListener $ i
-            q |&| liftIO . atomically . readTQueue >=> \case
-              PauseEffect tmv -> liftIO (atomically . putTMVar tmv =<< readIORef ior)
-              StopEffect      -> unit
+        queueListener ior = setThreadType (EffectListener i) >> loop
+          where
+            loop = q |&| liftIO . atomically . readTQueue >=> \case
+              PauseEffect  tmv -> putTMVarHelper tmv
+              QueryRemTime tmv -> putTMVarHelper tmv >> loop
+              StopEffect       -> unit
+            putTMVarHelper tmv = liftIO (atomically . putTMVar tmv =<< readIORef ior)
     setThreadType . EffectThread $ i
     logHelper "has started."
     ior <- liftIO . newIORef $ secs
@@ -91,10 +93,10 @@ pauseEffects i = getState >>= \ms ->
         tweaks [ activeEffectsTbl.ind i .~  []
                , pausedEffectsTbl.ind i <>~ pes ]
   where
-    helper (ActiveEffect e (_, q)) = do
+    helper (ActiveEffect e tag (_, q)) = do
         tmv <- liftIO newEmptyTMVarIO
         liftIO . atomically . writeTQueue q . PauseEffect $ tmv
-        PausedEffect e <$> (liftIO . atomically . takeTMVar $ tmv)
+        PausedEffect e tag <$> (liftIO . atomically . takeTMVar $ tmv)
 
 
 massPauseEffects :: MudStack () -- At server shutdown, after everyone has been disconnected.
@@ -111,7 +113,7 @@ restartPausedEffects i = do
 
 restartPausedHelper :: Id -> [PausedEffect] -> MudStack ()
 restartPausedHelper i pes = do
-    forM_ pes $ \(PausedEffect e secs) -> startEffect i e secs
+    forM_ pes $ \(PausedEffect e tag secs) -> startEffect i e tag secs
     tweak $ pausedEffectsTbl.ind i .~ []
 
 

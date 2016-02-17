@@ -284,7 +284,7 @@ debugDispCmdList p                  = patternMatchFail "debugDispCmdList" [ show
 debugEffect :: ActionFun
 debugEffect (NoArgs' i mq) = do
     ok mq
-    startEffect i (EffectMob (MobEffectAttrib Ht 10)) 30
+    startEffect i (EffectMob (MobEffectAttrib Ht 10)) Nothing 30
     logPlaExec (prefixDebugCmd "effect") i
 debugEffect p = withoutArgs debugEffect p
 
@@ -680,7 +680,7 @@ debugThrowLog p = withoutArgs debugThrowLog p
 debugTinnitus :: ActionFun
 debugTinnitus (NoArgs' i mq) = do
     ok mq
-    startEffect i (EffectOther tinnitusEffectFunName) 60
+    startEffect i (EffectOther tinnitusEffectFunName) (Just tinnitusEffectFunName) 60
     logPlaExec (prefixDebugCmd "tinnitus") i
 debugTinnitus p = withoutArgs debugTinnitus p
 
@@ -690,7 +690,7 @@ debugEffectFuns = pure (tinnitusEffectFunName, tinnitusEffectFun)
 
 
 tinnitusEffectFunName :: FunName
-tinnitusEffectFunName = "debug_tinnitus"
+tinnitusEffectFunName = "debug_Effect_tinnitus"
 
 
 tinnitusEffectFun :: EffectFun
