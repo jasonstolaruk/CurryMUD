@@ -121,17 +121,17 @@ putRmTeleName i tn = tweak $ rmTeleNameTbl.ind i .~ tn
 -----
 
 
-putVessel :: Id -> Ent -> Obj -> Maybe Contents -> MudStack ()
-putVessel i e o mc = tweaks [ activeEffectsTbl.ind i .~ []
-                            , entTbl          .ind i .~ e
-                            , objTbl          .ind i .~ o
-                            , pausedEffectsTbl.ind i .~ []
-                            , typeTbl         .ind i .~ VesselType
-                            , vesselTbl       .ind i .~ mkVessel ]
+putVessel :: Id -> Ent -> Obj -> Maybe VesselCont -> MudStack ()
+putVessel i e o c = tweaks [ activeEffectsTbl.ind i .~ []
+                           , entTbl          .ind i .~ e
+                           , objTbl          .ind i .~ o
+                           , pausedEffectsTbl.ind i .~ []
+                           , typeTbl         .ind i .~ VesselType
+                           , vesselTbl       .ind i .~ mkVessel ]
   where
     mkVessel = let maxQs = calcMaxQuaffs o
-                   mc'   = second (min maxQs) <$> mc
-               in Vessel maxQs mc'
+                   c'    = second (min maxQs) <$> c
+               in Vessel maxQs c'
 
 
 -----

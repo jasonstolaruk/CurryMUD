@@ -272,6 +272,24 @@ type ConName = Text
 -- ==================================================
 
 
+data EdibleEffects = EdibleEffects { _digestEffects  :: Maybe DigestEffects
+                                   , _consumpEffects :: Maybe ConsumpEffects } deriving (Eq, Generic, Show)
+
+
+type DigestEffects = EffectList
+
+
+type EffectList = [Either InstaEffect Effect]
+
+
+data ConsumpEffects = ConsumpEffects { _consumpAmt      :: Int
+                                     , _consumpInterval :: Seconds
+                                     , _effectList      :: EffectList } deriving (Eq, Generic, Show)
+
+
+-- ==================================================
+
+
 -- Has effects.
 data Ent = Ent { _entId    :: Id
                , _entName  :: Maybe Text
@@ -379,6 +397,14 @@ type Inv = [Id]
 -- ==================================================
 
 
+data Liq = Liq { _liqName          :: Text
+               , _liqTaste         :: Text
+               , _liqEdibleEffects :: EdibleEffects } deriving (Eq, Generic, Show)
+
+
+-- ==================================================
+
+
 data Locks = Locks { _loggingExLock :: Lock
                    , _persistLock   :: Lock }
 
@@ -417,6 +443,8 @@ data Mob = Mob { _sex                    :: Sex
                , _curMp, _maxMp          :: Int
                , _curPp, _maxPp          :: Int
                , _curFp, _maxFp          :: Int
+               , _stomach                :: Stomach
+               , _stomachAsync           :: Maybe StomachAsync
                , _exp                    :: Exp
                , _hand                   :: Hand
                , _knownLangs             :: [Lang]
@@ -428,6 +456,16 @@ data Mob = Mob { _sex                    :: Sex
 data Sex = Male
          | Female
          | NoSex deriving (Eq, Generic, Show)
+
+
+type Stomach = [StomachCont]
+
+
+-- TODO: We need a field identifying the food/liquid.
+data StomachCont = StomachCont { _cosumpTime :: UTCTime } deriving (Eq, Generic, Show)
+
+
+type StomachAsync = Async ()
 
 
 type Exp = Int
@@ -471,6 +509,7 @@ mobToJSON Mob { .. } = object [ "_sex"        .= _sex
                               , "_maxPp"      .= _maxPp
                               , "_curFp"      .= _curFp
                               , "_maxFp"      .= _maxFp
+                              , "_stomach"    .= _stomach
                               , "_exp"        .= _exp
                               , "_hand"       .= _hand
                               , "_knownLangs" .= _knownLangs
@@ -492,6 +531,8 @@ jsonToMob (Object o) = Mob <$> o .: "_sex"
                            <*> o .: "_maxPp"
                            <*> o .: "_curFp"
                            <*> o .: "_maxFp"
+                           <*> o .: "_stomach"
+                           <*> pure Nothing
                            <*> o .: "_exp"
                            <*> o .: "_hand"
                            <*> o .: "_knownLangs"
@@ -808,17 +849,14 @@ data Type = ObjType
 
 
 -- Has an object (and an entity and effects).
-data Vessel = Vessel { _maxQuaffs :: Quaffs -- obj vol / quaff vol
-                     , _contents  :: Maybe Contents } deriving (Eq, Generic, Show)
+data Vessel = Vessel { _maxQuaffs  :: Quaffs -- obj vol / quaff vol
+                     , _vesselCont :: Maybe VesselCont } deriving (Eq, Generic, Show)
 
 
 type Quaffs = Int
 
 
-type Contents = (Liquid, Quaffs)
-
-
-data Liquid = Water deriving (Eq, Generic, Show)
+type VesselCont = (Liq, Quaffs)
 
 
 -- ==================================================
@@ -853,6 +891,8 @@ instance FromJSON Chan
 instance FromJSON Cloth
 instance FromJSON Coins
 instance FromJSON Con
+instance FromJSON ConsumpEffects
+instance FromJSON EdibleEffects
 instance FromJSON Effect
 instance FromJSON Ent
 instance FromJSON EntEffect
@@ -863,7 +903,7 @@ instance FromJSON HostRecord
 instance FromJSON InstaEffect
 instance FromJSON Lang
 instance FromJSON LinkDir
-instance FromJSON Liquid
+instance FromJSON Liq
 instance FromJSON MobEffect
 instance FromJSON MobInstaEffect
 instance FromJSON PausedEffect
@@ -876,6 +916,7 @@ instance FromJSON RmInstaEffect
 instance FromJSON RmLink
 instance FromJSON Sex
 instance FromJSON Slot
+instance FromJSON StomachCont
 instance FromJSON Type
 instance FromJSON Vessel
 instance FromJSON Wpn
@@ -889,6 +930,8 @@ instance ToJSON   Chan
 instance ToJSON   Cloth
 instance ToJSON   Coins
 instance ToJSON   Con
+instance ToJSON   ConsumpEffects
+instance ToJSON   EdibleEffects
 instance ToJSON   Effect
 instance ToJSON   Ent
 instance ToJSON   EntEffect
@@ -899,7 +942,7 @@ instance ToJSON   HostRecord
 instance ToJSON   InstaEffect
 instance ToJSON   Lang
 instance ToJSON   LinkDir
-instance ToJSON   Liquid
+instance ToJSON   Liq
 instance ToJSON   MobEffect
 instance ToJSON   MobInstaEffect
 instance ToJSON   PausedEffect
@@ -912,6 +955,7 @@ instance ToJSON   RmInstaEffect
 instance ToJSON   RmLink
 instance ToJSON   Sex
 instance ToJSON   Slot
+instance ToJSON   StomachCont
 instance ToJSON   Type
 instance ToJSON   Vessel
 instance ToJSON   Wpn
@@ -926,8 +970,11 @@ makeLenses ''ActiveEffect
 makeLenses ''Arm
 makeLenses ''Chan
 makeLenses ''Con
+makeLenses ''ConsumpEffects
+makeLenses ''EdibleEffects
 makeLenses ''Ent
 makeLenses ''HostRecord
+makeLenses ''Liq
 makeLenses ''Locks
 makeLenses ''Mob
 makeLenses ''MudData
@@ -939,6 +986,7 @@ makeLenses ''PC
 makeLenses ''Pla
 makeLenses ''Rm
 makeLenses ''RmLink
+makeLenses ''StomachCont
 makeLenses ''Vessel
 makeLenses ''Wpn
 makeLenses ''Writable

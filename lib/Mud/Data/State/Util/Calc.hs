@@ -213,15 +213,15 @@ calcWeight i ms = case getType i ms of
   NpcType    -> npcPC
   PCType     -> npcPC
   RmType     -> blowUp "calcWeight" "cannot calculate the weight of a room" [ showText i ]
-  VesselType -> getWeight i ms + calcContentsWeight
+  VesselType -> getWeight i ms + calcVesselContWeight
   _          -> getWeight i ms
   where
-    npcPC              = sum [ calcInvWeight, calcCoinsWeight, calcEqWeight ]
-    calcInvWeight      = helper .           getInv   i $ ms
-    calcEqWeight       = helper . M.elems . getEqMap i $ ms
-    helper             = sum . map (`calcWeight` ms)
-    calcCoinsWeight    = (* coinWeight) . sum . coinsToList . getCoins i $ ms
-    calcContentsWeight = maybe 0 ((* quaffWeight) . snd) . getContents i $ ms
+    npcPC                = sum [ calcInvWeight, calcCoinsWeight, calcEqWeight ]
+    calcInvWeight        = helper .           getInv   i $ ms
+    calcEqWeight         = helper . M.elems . getEqMap i $ ms
+    helper               = sum . map (`calcWeight` ms)
+    calcCoinsWeight      = (* coinWeight) . sum . coinsToList . getCoins i $ ms
+    calcVesselContWeight = maybe 0 ((* quaffWeight) . snd) . getVesselCont i $ ms
 
 
 -----

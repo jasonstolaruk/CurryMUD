@@ -177,13 +177,6 @@ getConnectTime i = view connectTime . getPla i
 -----
 
 
-getContents :: Id -> MudState -> Maybe Contents
-getContents i = view contents . getVessel i
-
-
------
-
-
 getCurrHostName :: Id -> MudState -> HostName
 getCurrHostName i = view currHostName . getPla i
 
@@ -541,6 +534,13 @@ getType i = view (typeTbl.ind i)
 
 getVessel :: Id -> MudState -> Vessel
 getVessel i = view (vesselTbl.ind i)
+
+
+-----
+
+
+getVesselCont :: Id -> MudState -> Maybe VesselCont
+getVesselCont i = view vesselCont . getVessel i
 
 
 -----

@@ -313,10 +313,6 @@ instance Pretty LinkDir where
   pp = uncapitalize . showText
 
 
-instance Pretty Liquid where -- TODO: Used by ":examine".
-  pp Water = "water"
-
-
 instance Pretty LoggedInOrOut where
   pp LoggedIn  = "logged in"
   pp LoggedOut = "logged out"

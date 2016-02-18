@@ -361,6 +361,7 @@ createAdminZone = do
               100 100
               100 100
               100 100
+              [] Nothing
               0
               RHand
               allValues
@@ -390,6 +391,7 @@ createAdminZone = do
               100 100
               100 100
               100 100
+              [] Nothing
               0
               RHand
               allValues
@@ -1329,7 +1331,7 @@ createAdminZone = do
   -- ==================================================
   -- Vessels:
   let flaskIds   = [ iPotionFlask1 + i | i <- [0..9] ]
-      flaskConts = [ Just (Water, maxBound)
+      flaskConts = [ Nothing
                    , Nothing
                    , Nothing
                    , Nothing
@@ -1468,6 +1470,7 @@ createAdminZone = do
               10 10
               10 10
               10 10
+              [] Nothing
               10
               NoHand
               []
@@ -1488,6 +1491,7 @@ createAdminZone = do
               10 10
               10 10
               10 10
+              [] Nothing
               10
               NoHand
               []
@@ -1512,6 +1516,7 @@ createAdminZone = do
               100 100
               100 100
               100 100
+              [] Nothing
               0
               RHand
               [ HalflingLang ]
@@ -1564,6 +1569,7 @@ createAdminZone = do
               10 10
               10 10
               10 10
+              [] Nothing
               10
               RHand
               []

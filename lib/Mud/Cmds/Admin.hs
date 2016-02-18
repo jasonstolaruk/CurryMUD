@@ -680,11 +680,17 @@ xformNls = T.replace "\n" (colorWith nlColor "\\n")
 
 
 examineVessel :: ExamineHelper
-examineVessel i ms = let v = getVessel i ms in [ "Max quaffs: " <> v^.maxQuaffs.to showText
-                                               , "Contents: "   <> v^.contents .to descCont ]
+examineVessel i ms = let v = getVessel i ms in [ "Max quaffs: "            <> v^.maxQuaffs .to showText
+                                               , "Vessel contents: "       <> v^.vesselCont.to descCont
+                                               , "Liquid taste: "          <> v^.vesselCont.to descTaste
+                                               , "Liquid edible effects: " <> v^.vesselCont.to descEffects ]
   where
-    descCont Nothing       = "none"
-    descCont (Just (l, q)) = showText q <> " quaffs of " <> pp l
+    descCont    Nothing       = "none"
+    descCont    (Just (l, q)) = showText q <> " quaffs of " <> l^.liqName
+    descTaste   Nothing       = "none"
+    descTaste   (Just (l, _)) = l^.liqTaste
+    descEffects Nothing       = "none"
+    descEffects (Just (_, _)) = "?" -- TODO: Describe edible effects.
 
 
 examineWpn :: ExamineHelper
