@@ -63,6 +63,7 @@ data MudState = MudState { _activeEffectsTbl :: ActiveEffectsTbl
                          , _msgQueueTbl      :: MsgQueueTbl
                          , _npcTbl           :: NpcTbl
                          , _objTbl           :: ObjTbl
+                         , _opList           :: [Operation]
                          , _pausedEffectsTbl :: PausedEffectsTbl
                          , _pcTbl            :: PCTbl
                          , _plaLogTbl        :: PlaLogTbl
@@ -77,8 +78,7 @@ data MudState = MudState { _activeEffectsTbl :: ActiveEffectsTbl
                          , _typeTbl          :: TypeTbl
                          , _vesselTbl        :: VesselTbl
                          , _wpnTbl           :: WpnTbl
-                         , _writableTbl      :: WritableTbl
-                         , _opList           :: [Operation] }
+                         , _writableTbl      :: WritableTbl }
 
 
 type ActiveEffectsTbl = IM.IntMap [ActiveEffect]
@@ -87,8 +87,8 @@ type ChanTbl          = IM.IntMap Chan
 type ClothTbl         = IM.IntMap Cloth
 type CoinsTbl         = IM.IntMap Coins
 type ConTbl           = IM.IntMap Con
-type DistinctFoodTbl  = M.Map FoodTag DistinctFood
-type DistinctLiqTbl   = M.Map LiqTag DistinctLiq
+type DistinctFoodTbl  = M.Map DistinctFoodId DistinctFood
+type DistinctLiqTbl   = M.Map DistinctLiqId DistinctLiq
 type EffectFunTbl     = M.Map FunName EffectFun
 type EntTbl           = IM.IntMap Ent
 type EqTbl            = IM.IntMap EqMap
@@ -355,14 +355,14 @@ data Slot = HeadS                                   -- armor
 
 
 -- Has an object (and an entity and paused/active effects).
-data Food = Food { _foodTag      :: FoodTag
-                 , _remFoodUnits :: FoodUnits } deriving (Eq, Generic, Show)
+data Food = Food { _foodId        :: DistinctFoodId
+                 , _foodSmellDesc :: Text
+                 , _foodTasteDesc :: Text
+                 , _eatDesc       :: Text
+                 , _remFoodUnits  :: FoodUnits } deriving (Eq, Generic, Show)
 
 
-newtype FoodTag = FoodTag DistinctTag deriving (Eq, Generic, Ord, Show)
-
-
-type DistinctTag = Text
+newtype DistinctFoodId = DistinctFoodId Id deriving (Eq, Generic, Ord, Show)
 
 
 type FoodUnits = Int
@@ -423,11 +423,14 @@ type Inv = [Id]
 -- ==================================================
 
 
-data Liq = Liq { _liqTag  :: LiqTag
-               , _liqName :: Text } deriving (Eq, Generic, Show)
+data Liq = Liq { _liqId        :: DistinctLiqId
+               , _liqName      :: Text
+               , _liqSmellDesc :: Text
+               , _liqTasteDesc :: Text
+               , _drinkDesc    :: Text } deriving (Eq, Generic, Show)
 
 
-newtype LiqTag = LiqTag DistinctTag deriving (Eq, Generic, Ord, Show)
+newtype DistinctLiqId = DistinctLiqId Id  deriving (Eq, Generic, Ord, Show)
 
 
 data DistinctLiq = DistinctLiq { _liqEdibleEffects :: EdibleEffects } deriving (Eq, Generic, Show)
@@ -492,8 +495,8 @@ data Sex = Male
 type Stomach = [StomachCont]
 
 
-data StomachCont = StomachCont { _distinctTag :: Either LiqTag FoodTag
-                               , _cosumpTime  :: UTCTime } deriving (Eq, Generic, Show)
+data StomachCont = StomachCont { _distinctId :: Either DistinctLiqId DistinctFoodId
+                               , _cosumpTime :: UTCTime } deriving (Eq, Generic, Show)
 
 
 type StomachAsync = Async ()
@@ -591,6 +594,8 @@ type NpcServerAsync = Async ()
 -- Has an entity (and paused/active effects).
 data Obj = Obj { _weight           :: Weight
                , _vol              :: Vol
+               , _objSmell         :: Maybe Text
+               , _objTaste         :: Maybe Text
                , _objFlags         :: Int
                , _biodegraderAsync :: Maybe BiodegraderAsync }
 
@@ -611,12 +616,16 @@ instance ToJSON   Obj where toJSON    = objToJSON
 objToJSON :: Obj -> Value
 objToJSON Obj { .. } = object [ "_weight"   .= _weight
                               , "_vol"      .= _vol
+                              , "_objSmell" .= _objSmell
+                              , "_objTaste" .= _objTaste
                               , "_objFlags" .= _objFlags ]
 
 
 jsonToObj :: Value -> Parser Obj
 jsonToObj (Object o) = Obj <$> o .: "_weight"
                            <*> o .: "_vol"
+                           <*> o .: "_objSmell"
+                           <*> o .: "_objTaste"
                            <*> o .: "_objFlags"
                            <*> pure Nothing
 jsonToObj _          = empty
@@ -718,6 +727,7 @@ jsonToPla _          = empty
 -- Has effects and an inventory and coins.
 data Rm = Rm { _rmName      :: Text
              , _rmDesc      :: Text
+             , _rmListen    :: Maybe Text
              , _rmFlags     :: Int
              , _rmLinks     :: [RmLink]
              , _hookMap     :: HookMap
@@ -791,6 +801,7 @@ instance ToJSON   Rm where toJSON    = rmToJSON
 rmToJSON :: Rm -> Value
 rmToJSON Rm { .. } = object [ "_rmName"     .= _rmName
                             , "_rmDesc"     .= _rmDesc
+                            , "_rmListen"   .= _rmListen
                             , "_rmFlags"    .= _rmFlags
                             , "_rmLinks"    .= _rmLinks
                             , "_hookMap"    .= _hookMap
@@ -801,6 +812,7 @@ rmToJSON Rm { .. } = object [ "_rmName"     .= _rmName
 jsonToRm :: Value -> Parser Rm
 jsonToRm (Object o) = Rm <$> o .: "_rmName"
                          <*> o .: "_rmDesc"
+                         <*> o .: "_rmListen"
                          <*> o .: "_rmFlags"
                          <*> o .: "_rmLinks"
                          <*> o .: "_hookMap"
@@ -923,13 +935,14 @@ instance FromJSON Cloth
 instance FromJSON Coins
 instance FromJSON Con
 instance FromJSON ConsumpEffects
+instance FromJSON DistinctFoodId
+instance FromJSON DistinctLiqId
 instance FromJSON EdibleEffects
 instance FromJSON Effect
 instance FromJSON Ent
 instance FromJSON EntEffect
 instance FromJSON EntInstaEffect
 instance FromJSON Food
-instance FromJSON FoodTag
 instance FromJSON Hand
 instance FromJSON Hook
 instance FromJSON HostRecord
@@ -937,7 +950,6 @@ instance FromJSON InstaEffect
 instance FromJSON Lang
 instance FromJSON LinkDir
 instance FromJSON Liq
-instance FromJSON LiqTag
 instance FromJSON MobEffect
 instance FromJSON MobInstaEffect
 instance FromJSON PausedEffect
@@ -965,13 +977,14 @@ instance ToJSON   Cloth
 instance ToJSON   Coins
 instance ToJSON   Con
 instance ToJSON   ConsumpEffects
+instance ToJSON   DistinctFoodId
+instance ToJSON   DistinctLiqId
 instance ToJSON   EdibleEffects
 instance ToJSON   Effect
 instance ToJSON   Ent
 instance ToJSON   EntEffect
 instance ToJSON   EntInstaEffect
 instance ToJSON   Food
-instance ToJSON   FoodTag
 instance ToJSON   Hand
 instance ToJSON   Hook
 instance ToJSON   HostRecord
@@ -979,7 +992,6 @@ instance ToJSON   InstaEffect
 instance ToJSON   Lang
 instance ToJSON   LinkDir
 instance ToJSON   Liq
-instance ToJSON   LiqTag
 instance ToJSON   MobEffect
 instance ToJSON   MobInstaEffect
 instance ToJSON   PausedEffect

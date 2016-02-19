@@ -685,8 +685,8 @@ xformNls = T.replace "\n" (colorWith nlColor "\\n")
 
 
 examineVessel :: ExamineHelper -- TODO: Describe liquid.
-examineVessel i ms = let v = getVessel i ms in [ "Max quaffs: "            <> v^.maxQuaffs .to showText
-                                               , "Vessel contents: "       <> v^.vesselCont.to descCont ]
+examineVessel i ms = let v = getVessel i ms in [ "Max quaffs: "      <> v^.maxQuaffs .to showText
+                                               , "Vessel contents: " <> v^.vesselCont.to descCont ]
   where
     descCont Nothing       = "none"
     descCont (Just (l, q)) = showText q <> " quaffs of " <> l^.liqName

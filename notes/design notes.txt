@@ -172,8 +172,6 @@ Avoid teleportation mechanisms, as they tend to have a devastating effect on vir
 
 COMMANDS:
 
-You should be able to use "smell" and "listen" with no arguments. "smell air" could have the same effect as "smell" with no arguments.
-
 When a PC dies, all those who have linked with him/her should be notified.
 
 Encourage players to create aliases (using their MUD clients) for emotes unique to their characters. This will give their characters personality and make them more vibrant.
