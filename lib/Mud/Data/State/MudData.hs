@@ -87,8 +87,8 @@ type ChanTbl          = IM.IntMap Chan
 type ClothTbl         = IM.IntMap Cloth
 type CoinsTbl         = IM.IntMap Coins
 type ConTbl           = IM.IntMap Con
-type DistinctFoodTbl  = M.Map DistinctFoodId DistinctFood
-type DistinctLiqTbl   = M.Map DistinctLiqId DistinctLiq
+type DistinctFoodTbl  = IM.IntMap DistinctFood
+type DistinctLiqTbl   = IM.IntMap DistinctLiq
 type EffectFunTbl     = M.Map FunName EffectFun
 type EntTbl           = IM.IntMap Ent
 type EqTbl            = IM.IntMap EqMap
@@ -172,7 +172,6 @@ type EffectQueue = TQueue EffectCmd
 data EffectCmd = PauseEffect  (TMVar Seconds)
                | QueryRemTime (TMVar Seconds)
                | StopEffect
-
 
 
 type EffectFun = Id -> Seconds -> MudStack ()
@@ -278,18 +277,18 @@ type ConName = Text
 
 
 data EdibleEffects = EdibleEffects { _digestEffects  :: Maybe DigestEffects
-                                   , _consumpEffects :: Maybe ConsumpEffects } deriving (Eq, Generic, Show)
+                                   , _consumpEffects :: Maybe ConsumpEffects }
 
 
 type DigestEffects = EffectList
 
 
-type EffectList = [Either InstaEffect Effect]
+newtype EffectList = EffectList [Either InstaEffect Effect]
 
 
 data ConsumpEffects = ConsumpEffects { _consumpAmt      :: Int -- Number of food units or quaffs.
                                      , _consumpInterval :: Seconds
-                                     , _effectList      :: EffectList } deriving (Eq, Generic, Show)
+                                     , _effectList      :: EffectList }
 
 
 -- ==================================================
@@ -369,7 +368,7 @@ type FoodUnits = Int
 
 
 data DistinctFood = DistinctFood { _foodUnits         :: FoodUnits
-                                 , _foodEdibleEffects :: EdibleEffects } deriving (Eq, Generic, Show)
+                                 , _foodEdibleEffects :: EdibleEffects }
 
 
 -- ==================================================
@@ -433,7 +432,7 @@ data Liq = Liq { _liqId        :: DistinctLiqId
 newtype DistinctLiqId = DistinctLiqId Id  deriving (Eq, Generic, Ord, Show)
 
 
-data DistinctLiq = DistinctLiq { _liqEdibleEffects :: EdibleEffects } deriving (Eq, Generic, Show)
+data DistinctLiq = DistinctLiq { _liqEdibleEffects :: EdibleEffects }
 
 
 -- ==================================================
@@ -934,10 +933,8 @@ instance FromJSON Chan
 instance FromJSON Cloth
 instance FromJSON Coins
 instance FromJSON Con
-instance FromJSON ConsumpEffects
 instance FromJSON DistinctFoodId
 instance FromJSON DistinctLiqId
-instance FromJSON EdibleEffects
 instance FromJSON Effect
 instance FromJSON Ent
 instance FromJSON EntEffect
@@ -976,10 +973,8 @@ instance ToJSON   Chan
 instance ToJSON   Cloth
 instance ToJSON   Coins
 instance ToJSON   Con
-instance ToJSON   ConsumpEffects
 instance ToJSON   DistinctFoodId
 instance ToJSON   DistinctLiqId
-instance ToJSON   EdibleEffects
 instance ToJSON   Effect
 instance ToJSON   Ent
 instance ToJSON   EntEffect

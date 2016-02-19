@@ -590,7 +590,30 @@ examineEqMap i ms = map helper . M.toList . getEqMap i $ ms
 
 
 examineFood :: ExamineHelper
-examineFood _ _ = [] -- TODO
+examineFood i ms =
+    let f  = getFood i ms
+        df = getDistinctFood f ms
+    in [ "Distinct food ID: "     <> f^.foodId.to showText
+       , "Food smell: "           <> f^.foodSmellDesc
+       , "Food taste: "           <> f^.foodTasteDesc
+       , "Eat description: "      <> f^.eatDesc
+       , "Remaining food units: " <> f^.remFoodUnits.to showText
+       , "Distinct food units: "  <> df^.foodUnits.to showText ] ++ df^.foodEdibleEffects.to descEdibleEffects
+
+
+descEdibleEffects :: EdibleEffects -> [Text]
+descEdibleEffects (EdibleEffects d c) =
+    [ "Digest effect list: "           <> maybe "none" descEffectList                         d
+    , "Consumption effects amount: "   <> maybe "none" (views consumpAmt      showText      ) c
+    , "Consumption effects interval: " <> maybe "none" (views consumpInterval showText      ) c
+    , "Consumption effect list: "      <> maybe "none" (views effectList      descEffectList) c ]
+
+
+descEffectList :: EffectList -> Text
+descEffectList (EffectList xs) = commas . map helper $ xs
+  where
+    helper (Left  instaEff) = pp instaEff
+    helper (Right eff     ) = pp eff
 
 
 examineInv :: ExamineHelper
@@ -684,12 +707,18 @@ xformNls :: Text -> Text
 xformNls = T.replace "\n" (colorWith nlColor "\\n")
 
 
-examineVessel :: ExamineHelper -- TODO: Describe liquid.
-examineVessel i ms = let v = getVessel i ms in [ "Max quaffs: "      <> v^.maxQuaffs .to showText
-                                               , "Vessel contents: " <> v^.vesselCont.to descCont ]
+examineVessel :: ExamineHelper
+examineVessel i ms = let v = getVessel i ms in
+    [ "Max quaffs: "      <> v^.maxQuaffs .to showText
+    , "Vessel contents: " <> v^.vesselCont.to descCont ] ++ views vesselCont (maybe [] (descLiq . fst)) v
   where
     descCont Nothing       = "none"
     descCont (Just (l, q)) = showText q <> " quaffs of " <> l^.liqName
+    descLiq l = let dl = getDistinctLiq l ms
+                in [ "Distinct liquid ID: "             <> l^.liqId.to showText
+                   , "Liquid smell: "                   <> l^.liqSmellDesc
+                   , "Liquid taste: "                   <> l^.liqTasteDesc
+                   , "Drink description: "              <> l^.drinkDesc ] ++ dl^.liqEdibleEffects.to descEdibleEffects
 
 
 examineWpn :: ExamineHelper

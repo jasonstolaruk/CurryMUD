@@ -58,8 +58,8 @@ initMudData shouldLog = do
                                  , _clothTbl         = IM.empty
                                  , _coinsTbl         = IM.empty
                                  , _conTbl           = IM.empty
-                                 , _distinctFoodTbl  =  M.empty
-                                 , _distinctLiqTbl   =  M.empty
+                                 , _distinctFoodTbl  = IM.empty
+                                 , _distinctLiqTbl   = IM.empty
                                  , _effectFunTbl     =  M.empty
                                  , _entTbl           = IM.empty
                                  , _eqTbl            = IM.empty
@@ -133,13 +133,13 @@ initRmActionFunTbl = tweak $ rmActionFunTbl .~ M.fromList list
 
 
 initDistinctFoodTbl :: MudStack ()
-initDistinctFoodTbl = tweak $ distinctFoodTbl .~ M.fromList list
+initDistinctFoodTbl = tweak $ distinctFoodTbl .~ IM.fromList list
   where
     list = [] -- TODO
 
 
 initDistinctLiqTbl :: MudStack ()
-initDistinctLiqTbl = tweak $ distinctLiqTbl .~ M.fromList list
+initDistinctLiqTbl = tweak $ distinctLiqTbl .~ IM.fromList list
   where
     list = [] -- TODO
 

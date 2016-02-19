@@ -1,4 +1,4 @@
-{-# LANGUAGE LambdaCase, OverloadedStrings #-}
+{-# LANGUAGE LambdaCase, OverloadedStrings, ViewPatterns #-}
 
 -- This module contains straightforward getter methods that do little or no calculation.
 
@@ -184,6 +184,20 @@ getCurrHostName i = view currHostName . getPla i
 -----
 
 
+getDistinctFood :: Food -> MudState -> DistinctFood
+getDistinctFood (view foodId -> DistinctFoodId i) = view (distinctFoodTbl.ind i)
+
+
+-----
+
+
+getDistinctLiq :: Liq -> MudState -> DistinctLiq
+getDistinctLiq (view liqId -> DistinctLiqId i) = view (distinctLiqTbl.ind i)
+
+
+-----
+
+
 getEnt :: Id -> MudState -> Ent
 getEnt i = view (entTbl.ind i)
 
@@ -207,6 +221,13 @@ getEqMap i = view (eqTbl.ind i)
 
 getExp :: Id -> MudState -> Exp
 getExp i = view exp . getMob i
+
+
+-----
+
+
+getFood :: Id -> MudState -> Food
+getFood i = view (foodTbl.ind i)
 
 
 -----

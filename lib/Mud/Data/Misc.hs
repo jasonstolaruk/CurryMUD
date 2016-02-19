@@ -278,21 +278,40 @@ instance Pretty Cloth where
 
 
 instance Pretty Effect where
-  pp (EffectArm   e ) = "armor "  <> pp e
-  pp (EffectEnt   e ) = "entity " <> pp e
-  pp (EffectMob   e ) = "mob "    <> pp e
-  pp (EffectRm    e ) = "room "   <> pp e
-  pp (EffectOther fn) = "other "  <> parensQuote fn
+  pp (EffectArm   e ) = effectLabel <> "armor "  <> pp e
+  pp (EffectEnt   e ) = effectLabel <> "entity " <> pp e
+  pp (EffectMob   e ) = effectLabel <> "mob "    <> pp e
+  pp (EffectRm    e ) = effectLabel <> "room "   <> pp e
+  pp (EffectOther fn) = effectLabel <> "other "  <> parensQuote fn
+
+
+effectLabel :: Text
+effectLabel = bracketQuote "durational" <> " "
 
 
 instance Pretty EntEffect where
   pp (EntEffectFlags _) = undefined -- TODO
 
 
+instance Pretty EntInstaEffect where
+  pp (EntInstaEffectFlags _) = undefined -- TODO
+
+
 instance Pretty Hand where
   pp RHand  = "right-handed"
   pp LHand  = "left-handed"
   pp NoHand = "not handed"
+
+
+instance Pretty InstaEffect where
+  pp (InstaEffectEnt   e ) = instaEffectLabel <> "entity " <> pp e
+  pp (InstaEffectMob   e ) = instaEffectLabel <> "mob "    <> pp e
+  pp (InstaEffectRm    e ) = instaEffectLabel <> "room "   <> pp e
+  pp (InstaEffectOther fn) = instaEffectLabel <> "other "  <> parensQuote fn
+
+
+instaEffectLabel :: Text
+instaEffectLabel = bracketQuote "instantaneous" <> " "
 
 
 instance Pretty Lang where
@@ -321,12 +340,23 @@ instance Pretty MobEffect where
   pp (MobEffectAC       x) = "AC by "       <> showText x
 
 
+instance Pretty MobInstaEffect where
+  pp (MobInstaEffectPts p x) = pp p <> " by " <> showText x
+
+
 instance Pretty PausedEffect where
   pp (PausedEffect e secs) = pp e <> " " <> parensQuote (commaEvery3 (showText secs) <> " secs")
 
 
 instance Pretty ProfRec where
   pp ProfRec { .. } = spaces [ profTimestamp, profHost, profProfanity ]
+
+
+instance Pretty PtsType where
+  pp CurHp = "cur HP"
+  pp CurMp = "cur MP"
+  pp CurPp = "cur PP"
+  pp CurFp = "cur FP"
 
 
 instance Pretty Race where
@@ -348,6 +378,10 @@ instance Pretty RightOrLeft where
 
 instance Pretty RmEffect where
   pp (RmEffectFlags _) = undefined -- TODO
+
+
+instance Pretty RmInstaEffect where
+  pp (RmInstaEffectFlags _) = undefined -- TODO
 
 
 instance Pretty Sex where
