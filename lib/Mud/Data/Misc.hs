@@ -209,9 +209,7 @@ class Pretty a where
 
 
 instance Pretty ActiveEffect where
-  pp (ActiveEffect e tag _) = pp e <> descTag
-    where
-      descTag = maybe "" ((" " <>) . bracketQuote) tag
+  pp (ActiveEffect e _) = pp e
 
 
 instance Pretty AOrThe where
@@ -324,9 +322,7 @@ instance Pretty MobEffect where
 
 
 instance Pretty PausedEffect where
-  pp (PausedEffect e tag secs) = pp e <> " " <> descTag <> parensQuote (commaEvery3 (showText secs) <> " secs")
-    where
-      descTag = maybe "" ((<> " ") . bracketQuote) tag
+  pp (PausedEffect e secs) = pp e <> " " <> parensQuote (commaEvery3 (showText secs) <> " secs")
 
 
 instance Pretty ProfRec where
@@ -408,15 +404,16 @@ instance Pretty Slot where
 
 
 instance Pretty Type where
-  pp ObjType      = "object"
+  pp ArmType      = "armor"
   pp ClothType    = "clothing"
   pp ConType      = "container"
-  pp WpnType      = "weapon"
-  pp ArmType      = "armor"
+  pp FoodType     = "food"
   pp NpcType      = "NPC"
+  pp ObjType      = "object"
   pp PCType       = "PC"
   pp RmType       = "room"
   pp VesselType   = "vessel"
+  pp WpnType      = "weapon"
   pp WritableType = "writable"
 
 

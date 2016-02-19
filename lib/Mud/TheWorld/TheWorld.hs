@@ -58,9 +58,12 @@ initMudData shouldLog = do
                                  , _clothTbl         = IM.empty
                                  , _coinsTbl         = IM.empty
                                  , _conTbl           = IM.empty
+                                 , _distinctFoodTbl  =  M.empty
+                                 , _distinctLiqTbl   =  M.empty
                                  , _effectFunTbl     =  M.empty
                                  , _entTbl           = IM.empty
                                  , _eqTbl            = IM.empty
+                                 , _foodTbl          = IM.empty
                                  , _funTbl           =  M.empty
                                  , _hookFunTbl       =  M.empty
                                  , _hostTbl          =  M.empty
@@ -96,23 +99,25 @@ initMudData shouldLog = do
 
 initWorld :: MudStack Bool
 initWorld = dropIrrelevantFilenames . sort <$> (liftIO . getDirectoryContents $ persistDir) >>= \cont -> do
-    initEffectFunTbl
     initFunTbl
+    initEffectFunTbl
     initHookFunTbl
     initRmActionFunTbl
+    initDistinctFoodTbl
+    initDistinctLiqTbl
     ()# cont ? (createWorld >> return True) :? (loadWorld . last $ cont)
-
-
-initEffectFunTbl :: MudStack ()
-initEffectFunTbl = tweak $ effectFunTbl .~ M.fromList list
-  where
-    list = debugEffectFuns
 
 
 initFunTbl :: MudStack ()
 initFunTbl = tweak $ funTbl .~ M.fromList list
   where
     list = adminZoneRmFuns
+
+
+initEffectFunTbl :: MudStack ()
+initEffectFunTbl = tweak $ effectFunTbl .~ M.fromList list
+  where
+    list = debugEffectFuns
 
 
 initHookFunTbl :: MudStack ()
@@ -125,6 +130,18 @@ initRmActionFunTbl :: MudStack ()
 initRmActionFunTbl = tweak $ rmActionFunTbl .~ M.fromList list
   where
     list = concat [ commonRmActionFuns, adminZoneRmActionFuns, tutorialRmActionFuns ]
+
+
+initDistinctFoodTbl :: MudStack ()
+initDistinctFoodTbl = tweak $ distinctFoodTbl .~ M.fromList list
+  where
+    list = [] -- TODO
+
+
+initDistinctLiqTbl :: MudStack ()
+initDistinctLiqTbl = tweak $ distinctLiqTbl .~ M.fromList list
+  where
+    list = [] -- TODO
 
 
 createWorld :: MudStack ()
@@ -144,6 +161,7 @@ loadWorld dir@((persistDir </>) -> path) = do
                                                  , loadTbl coinsTblFile         coinsTbl
                                                  , loadTbl conTblFile           conTbl
                                                  , loadTbl entTblFile           entTbl
+                                                 , loadTbl foodTblFile          foodTbl
                                                  , loadTbl hostTblFile          hostTbl
                                                  , loadTbl invTblFile           invTbl
                                                  , loadTbl mobTblFile           mobTbl

@@ -49,9 +49,12 @@ data MudState = MudState { _activeEffectsTbl :: ActiveEffectsTbl
                          , _clothTbl         :: ClothTbl
                          , _coinsTbl         :: CoinsTbl
                          , _conTbl           :: ConTbl
+                         , _distinctFoodTbl  :: DistinctFoodTbl
+                         , _distinctLiqTbl   :: DistinctLiqTbl
                          , _effectFunTbl     :: EffectFunTbl
                          , _entTbl           :: EntTbl
                          , _eqTbl            :: EqTbl
+                         , _foodTbl          :: FoodTbl
                          , _funTbl           :: FunTbl
                          , _hookFunTbl       :: HookFunTbl
                          , _hostTbl          :: HostTbl
@@ -84,9 +87,12 @@ type ChanTbl          = IM.IntMap Chan
 type ClothTbl         = IM.IntMap Cloth
 type CoinsTbl         = IM.IntMap Coins
 type ConTbl           = IM.IntMap Con
+type DistinctFoodTbl  = M.Map FoodTag DistinctFood
+type DistinctLiqTbl   = M.Map LiqTag DistinctLiq
 type EffectFunTbl     = M.Map FunName EffectFun
 type EntTbl           = IM.IntMap Ent
 type EqTbl            = IM.IntMap EqMap
+type FoodTbl          = IM.IntMap Food
 type FunTbl           = M.Map FunName Fun
 type HookFunTbl       = M.Map HookName HookFun
 type HostTbl          = M.Map Sing HostMap
@@ -127,7 +133,6 @@ type ActionFun = ActionParams -> MudStack ()
 
 
 data ActiveEffect = ActiveEffect { _effect        :: Effect
-                                 , _effectTag     :: Maybe Text
                                  , _effectService :: EffectService }
 
 
@@ -176,7 +181,7 @@ type EffectFun = Id -> Seconds -> MudStack ()
 -- ==================================================
 
 
--- Has an object (and an entity and effects).
+-- Has an object (and an entity and paused/active effects).
 data Arm = Arm { _armSub   :: ArmSub
                , _armClass :: AC } deriving (Eq, Generic, Show)
 
@@ -214,7 +219,7 @@ type IsTuned = Bool
 -- ==================================================
 
 
--- Has an object (and an entity and effects).
+-- Has an object (and an entity and paused/active effects).
 data Cloth = Earring
            | NoseRing
            | Necklace
@@ -258,7 +263,7 @@ instance Monoid Coins where
 -- ============================================================
 
 
--- Has an object (and an entity and effects) and an inventory and coins.
+-- Has an object (and an entity and paused/active effects) and an inventory and coins.
 data Con = Con { _isCloth  :: Bool
                , _capacity :: Vol } deriving (Eq, Generic, Show)
 
@@ -282,7 +287,7 @@ type DigestEffects = EffectList
 type EffectList = [Either InstaEffect Effect]
 
 
-data ConsumpEffects = ConsumpEffects { _consumpAmt      :: Int
+data ConsumpEffects = ConsumpEffects { _consumpAmt      :: Int -- Number of food units or quaffs.
                                      , _consumpInterval :: Seconds
                                      , _effectList      :: EffectList } deriving (Eq, Generic, Show)
 
@@ -349,6 +354,27 @@ data Slot = HeadS                                   -- armor
 -- ==================================================
 
 
+-- Has an object (and an entity and paused/active effects).
+data Food = Food { _foodTag      :: FoodTag
+                 , _remFoodUnits :: FoodUnits } deriving (Eq, Generic, Show)
+
+
+newtype FoodTag = FoodTag DistinctTag deriving (Eq, Generic, Ord, Show)
+
+
+type DistinctTag = Text
+
+
+type FoodUnits = Int
+
+
+data DistinctFood = DistinctFood { _foodUnits         :: FoodUnits
+                                 , _foodEdibleEffects :: EdibleEffects } deriving (Eq, Generic, Show)
+
+
+-- ==================================================
+
+
 type FunName = Text
 
 
@@ -397,9 +423,14 @@ type Inv = [Id]
 -- ==================================================
 
 
-data Liq = Liq { _liqName          :: Text
-               , _liqTaste         :: Text
-               , _liqEdibleEffects :: EdibleEffects } deriving (Eq, Generic, Show)
+data Liq = Liq { _liqTag  :: LiqTag
+               , _liqName :: Text } deriving (Eq, Generic, Show)
+
+
+newtype LiqTag = LiqTag DistinctTag deriving (Eq, Generic, Ord, Show)
+
+
+data DistinctLiq = DistinctLiq { _liqEdibleEffects :: EdibleEffects } deriving (Eq, Generic, Show)
 
 
 -- ==================================================
@@ -436,7 +467,7 @@ data LogCmd = LogMsg Text
 -- ==================================================
 
 
--- Has an entity (and effects) and an inventory and coins and equipment.
+-- Has an entity (and paused/active effects) and an inventory and coins and equipment.
 data Mob = Mob { _sex                    :: Sex
                , _st, _dx, _ht, _ma, _ps :: Int
                , _curHp, _maxHp          :: Int
@@ -461,8 +492,8 @@ data Sex = Male
 type Stomach = [StomachCont]
 
 
--- TODO: We need a field identifying the food/liquid.
-data StomachCont = StomachCont { _cosumpTime :: UTCTime } deriving (Eq, Generic, Show)
+data StomachCont = StomachCont { _distinctTag :: Either LiqTag FoodTag
+                               , _cosumpTime  :: UTCTime } deriving (Eq, Generic, Show)
 
 
 type StomachAsync = Async ()
@@ -545,7 +576,7 @@ jsonToMob _          = empty
 -- ==================================================
 
 
--- Has a mob (and an entity and effects and an inventory and coins and equipment).
+-- Has a mob (and an entity and paused/active effects and an inventory and coins and equipment).
 data Npc = Npc { _npcMsgQueue    :: NpcMsgQueue
                , _npcServerAsync :: NpcServerAsync
                , _possessor      :: Maybe Id }
@@ -557,7 +588,7 @@ type NpcServerAsync = Async ()
 -- ==================================================
 
 
--- Has an entity (and effects).
+-- Has an entity (and paused/active effects).
 data Obj = Obj { _weight           :: Weight
                , _vol              :: Vol
                , _objFlags         :: Int
@@ -595,14 +626,13 @@ jsonToObj _          = empty
 
 
 data PausedEffect = PausedEffect { _pausedEffect    :: Effect
-                                 , _pausedEffectTag :: Maybe Text
                                  , _timeRemaining   :: Seconds } deriving (Eq, Generic, Show)
 
 
 -- ==================================================
 
 
--- Has a mob (and an entity and effects and an inventory and coins and equipment).
+-- Has a mob (and an entity and paused/active effects and an inventory and coins and equipment).
 data PC = PC { _race       :: Race
              , _introduced :: [Sing]
              , _linked     :: [Sing] } deriving (Eq, Generic, Show)
@@ -626,7 +656,7 @@ instance Random Race where
 -- ==================================================
 
 
--- Has a PC (and a mob and an entity and effects and an inventory and coins and equipment) and a random names table and a telepathic link table.
+-- Has a PC (and a mob and an entity and paused/active effects and an inventory and coins and equipment) and a random names table and a telepathic link table.
 data Pla = Pla { _currHostName :: HostName
                , _connectTime  :: Maybe UTCTime
                , _plaFlags     :: Int
@@ -836,6 +866,7 @@ data ThreadType = Biodegrader    Id
 data Type = ObjType
           | ClothType
           | ConType
+          | FoodType
           | WpnType
           | ArmType
           | NpcType
@@ -848,7 +879,7 @@ data Type = ObjType
 -- ==================================================
 
 
--- Has an object (and an entity and effects).
+-- Has an object (and an entity and paused/active effects).
 data Vessel = Vessel { _maxQuaffs  :: Quaffs -- obj vol / quaff vol
                      , _vesselCont :: Maybe VesselCont } deriving (Eq, Generic, Show)
 
@@ -862,7 +893,7 @@ type VesselCont = (Liq, Quaffs)
 -- ==================================================
 
 
--- Has an object (and an entity and effects).
+-- Has an object (and an entity and paused/active effects).
 data Wpn = Wpn { _wpnSub :: WpnSub
                , _minDmg :: Int
                , _maxDmg :: Int } deriving (Eq, Generic, Show)
@@ -875,7 +906,7 @@ data WpnSub = OneHanded
 -- ==================================================
 
 
--- Has an object (and an entity and effects).
+-- Has an object (and an entity and paused/active effects).
 data Writable = Writable { _message :: Maybe (Text, Lang)
                          , _recip   :: Maybe Sing {- for magically scribed msgs -} } deriving (Eq, Generic, Show)
 
@@ -897,6 +928,8 @@ instance FromJSON Effect
 instance FromJSON Ent
 instance FromJSON EntEffect
 instance FromJSON EntInstaEffect
+instance FromJSON Food
+instance FromJSON FoodTag
 instance FromJSON Hand
 instance FromJSON Hook
 instance FromJSON HostRecord
@@ -904,6 +937,7 @@ instance FromJSON InstaEffect
 instance FromJSON Lang
 instance FromJSON LinkDir
 instance FromJSON Liq
+instance FromJSON LiqTag
 instance FromJSON MobEffect
 instance FromJSON MobInstaEffect
 instance FromJSON PausedEffect
@@ -936,6 +970,8 @@ instance ToJSON   Effect
 instance ToJSON   Ent
 instance ToJSON   EntEffect
 instance ToJSON   EntInstaEffect
+instance ToJSON   Food
+instance ToJSON   FoodTag
 instance ToJSON   Hand
 instance ToJSON   Hook
 instance ToJSON   HostRecord
@@ -943,6 +979,7 @@ instance ToJSON   InstaEffect
 instance ToJSON   Lang
 instance ToJSON   LinkDir
 instance ToJSON   Liq
+instance ToJSON   LiqTag
 instance ToJSON   MobEffect
 instance ToJSON   MobInstaEffect
 instance ToJSON   PausedEffect
@@ -971,8 +1008,11 @@ makeLenses ''Arm
 makeLenses ''Chan
 makeLenses ''Con
 makeLenses ''ConsumpEffects
+makeLenses ''DistinctFood
+makeLenses ''DistinctLiq
 makeLenses ''EdibleEffects
 makeLenses ''Ent
+makeLenses ''Food
 makeLenses ''HostRecord
 makeLenses ''Liq
 makeLenses ''Locks

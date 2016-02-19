@@ -284,7 +284,7 @@ debugDispCmdList p                  = patternMatchFail "debugDispCmdList" [ show
 debugEffect :: ActionFun
 debugEffect (NoArgs' i mq) = do
     ok mq
-    startEffect i (EffectMob (MobEffectAttrib Ht 10)) Nothing 30
+    startEffect i (EffectMob (MobEffectAttrib Ht 10)) 30
     logPlaExec (prefixDebugCmd "effect") i
 debugEffect p = withoutArgs debugEffect p
 
@@ -379,31 +379,32 @@ tblToList lens = views lens IM.toList
 
 
 mkTblNameKeysList :: MudState -> [(Text, Inv)]
-mkTblNameKeysList ms = [ ("ActiveEffectsTbl", tblKeys activeEffectsTbl ms)
-                       , ("Arm",              tblKeys armTbl           ms)
-                       , ("Chan",             tblKeys chanTbl          ms)
-                       , ("Cloth",            tblKeys clothTbl         ms)
-                       , ("Coins",            tblKeys coinsTbl         ms)
-                       , ("Con",              tblKeys conTbl           ms)
-                       , ("Ent",              tblKeys entTbl           ms)
-                       , ("EqMap",            tblKeys eqTbl            ms)
-                       , ("Inv",              tblKeys invTbl           ms)
-                       , ("Mob",              tblKeys mobTbl           ms)
-                       , ("MsgQueue",         tblKeys msgQueueTbl      ms)
-                       , ("Npc",              tblKeys npcTbl           ms)
-                       , ("Obj",              tblKeys objTbl           ms)
-                       , ("PC",               tblKeys pcTbl            ms)
-                       , ("PausedEffectsTbl", tblKeys pausedEffectsTbl ms)
-                       , ("PlaLogTbl",        tblKeys plaLogTbl        ms)
-                       , ("Pla",              tblKeys plaTbl           ms)
-                       , ("Rm",               tblKeys rmTbl            ms)
-                       , ("RmTeleNameTbl",    tblKeys rmTeleNameTbl    ms)
-                       , ("RndmNamesTbl",     tblKeys rndmNamesMstrTbl ms)
-                       , ("TeleLinkTbl",      tblKeys teleLinkMstrTbl  ms)
-                       , ("Type",             tblKeys typeTbl          ms)
-                       , ("Vessel",           tblKeys vesselTbl        ms)
-                       , ("Wpn",              tblKeys wpnTbl           ms)
-                       , ("Writable",         tblKeys writableTbl      ms) ]
+mkTblNameKeysList ms = [ ("ActiveEffects", tblKeys activeEffectsTbl ms)
+                       , ("Arm",           tblKeys armTbl           ms)
+                       , ("Chan",          tblKeys chanTbl          ms)
+                       , ("Cloth",         tblKeys clothTbl         ms)
+                       , ("Coins",         tblKeys coinsTbl         ms)
+                       , ("Con",           tblKeys conTbl           ms)
+                       , ("Ent",           tblKeys entTbl           ms)
+                       , ("EqMap",         tblKeys eqTbl            ms)
+                       , ("Food",          tblKeys foodTbl          ms)
+                       , ("Inv",           tblKeys invTbl           ms)
+                       , ("Mob",           tblKeys mobTbl           ms)
+                       , ("MsgQueue",      tblKeys msgQueueTbl      ms)
+                       , ("Npc",           tblKeys npcTbl           ms)
+                       , ("Obj",           tblKeys objTbl           ms)
+                       , ("PC",            tblKeys pcTbl            ms)
+                       , ("PausedEffects", tblKeys pausedEffectsTbl ms)
+                       , ("PlaLog",        tblKeys plaLogTbl        ms)
+                       , ("Pla",           tblKeys plaTbl           ms)
+                       , ("Rm",            tblKeys rmTbl            ms)
+                       , ("RmTeleName",    tblKeys rmTeleNameTbl    ms)
+                       , ("RndmNames",     tblKeys rndmNamesMstrTbl ms)
+                       , ("TeleLink",      tblKeys teleLinkMstrTbl  ms)
+                       , ("Type",          tblKeys typeTbl          ms)
+                       , ("Vessel",        tblKeys vesselTbl        ms)
+                       , ("Wpn",           tblKeys wpnTbl           ms)
+                       , ("Writable",      tblKeys writableTbl      ms) ]
 
 
 tblKeys :: Optical (->) (->) (Const [Id]) MudState MudState (IM.IntMap a) (IM.IntMap a) -> MudState -> [Id]
@@ -680,7 +681,7 @@ debugThrowLog p = withoutArgs debugThrowLog p
 debugTinnitus :: ActionFun
 debugTinnitus (NoArgs' i mq) = do
     ok mq
-    startEffect i (EffectOther tinnitusEffectFunName) (Just tinnitusEffectFunName) 60
+    startEffect i (EffectOther tinnitusEffectFunName) 60
     logPlaExec (prefixDebugCmd "tinnitus") i
 debugTinnitus p = withoutArgs debugTinnitus p
 

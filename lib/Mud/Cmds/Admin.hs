@@ -531,15 +531,16 @@ adminExamine p = patternMatchFail "adminExamine" [ showText p ]
 
 examineHelper :: MudState -> Id -> [Text]
 examineHelper ms targetId = let t = getType targetId ms in helper t $ case t of
-  ObjType      -> [ examineEnt, examineObj ]
+  ArmType      -> [ examineEnt, examineObj,   examineArm   ]
   ClothType    -> [ examineEnt, examineObj,   examineCloth ]
   ConType      -> [ examineEnt, examineObj,   examineInv,   examineCoins, examineCon ]
-  WpnType      -> [ examineEnt, examineObj,   examineWpn ]
-  ArmType      -> [ examineEnt, examineObj,   examineArm ]
+  FoodType     -> [ examineEnt, examineObj,   examineFood ]
   NpcType      -> [ examineEnt, examineInv,   examineCoins, examineEqMap, examineMob, examineNpc ]
+  ObjType      -> [ examineEnt, examineObj ]
   PCType       -> [ examineEnt, examineInv,   examineCoins, examineEqMap, examineMob, examinePC, examinePla ]
   RmType       -> [ examineInv, examineCoins, examineRm       ]
   VesselType   -> [ examineEnt, examineObj,   examineVessel   ]
+  WpnType      -> [ examineEnt, examineObj,   examineWpn      ]
   WritableType -> [ examineEnt, examineObj,   examineWritable ]
   where
     helper t fs = let header = T.concat [ showText targetId, " ", parensQuote . pp $ t ]
@@ -586,6 +587,10 @@ examineEqMap :: ExamineHelper
 examineEqMap i ms = map helper . M.toList . getEqMap i $ ms
   where
     helper (slot, i') = bracketQuote (pp slot) <> " " <> descSingId i' ms
+
+
+examineFood :: ExamineHelper
+examineFood _ _ = [] -- TODO
 
 
 examineInv :: ExamineHelper
@@ -679,18 +684,12 @@ xformNls :: Text -> Text
 xformNls = T.replace "\n" (colorWith nlColor "\\n")
 
 
-examineVessel :: ExamineHelper
+examineVessel :: ExamineHelper -- TODO: Describe liquid.
 examineVessel i ms = let v = getVessel i ms in [ "Max quaffs: "            <> v^.maxQuaffs .to showText
-                                               , "Vessel contents: "       <> v^.vesselCont.to descCont
-                                               , "Liquid taste: "          <> v^.vesselCont.to descTaste
-                                               , "Liquid edible effects: " <> v^.vesselCont.to descEffects ]
+                                               , "Vessel contents: "       <> v^.vesselCont.to descCont ]
   where
-    descCont    Nothing       = "none"
-    descCont    (Just (l, q)) = showText q <> " quaffs of " <> l^.liqName
-    descTaste   Nothing       = "none"
-    descTaste   (Just (l, _)) = l^.liqTaste
-    descEffects Nothing       = "none"
-    descEffects (Just (_, _)) = "?" -- TODO: Describe edible effects.
+    descCont Nothing       = "none"
+    descCont (Just (l, q)) = showText q <> " quaffs of " <> l^.liqName
 
 
 examineWpn :: ExamineHelper
