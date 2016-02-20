@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, ViewPatterns #-}
 
 module Mud.Data.State.Util.Calc ( calcBarLen
                                 , calcEffAttrib
@@ -25,6 +25,7 @@ module Mud.Data.State.Util.Calc ( calcBarLen
                                 , calcRegenMpDelay
                                 , calcRegenPpAmt
                                 , calcRegenPpDelay
+                                , calcVesselPerFull
                                 , calcVol
                                 , calcWeight ) where
 
@@ -207,21 +208,8 @@ calcRegenFpDelay i ms = calcRegenDelay $ (calcEffHt i ms + calcEffSt i ms) `divi
 -----
 
 
-calcWeight :: Id -> MudState -> Weight
-calcWeight i ms = case getType i ms of
-  ConType    -> sum [ getWeight i ms, calcInvWeight, calcCoinsWeight ]
-  NpcType    -> npcPC
-  PCType     -> npcPC
-  RmType     -> blowUp "calcWeight" "cannot calculate the weight of a room" [ showText i ]
-  VesselType -> getWeight i ms + calcVesselContWeight
-  _          -> getWeight i ms
-  where
-    npcPC                = sum [ calcInvWeight, calcCoinsWeight, calcEqWeight ]
-    calcInvWeight        = helper .           getInv   i $ ms
-    calcEqWeight         = helper . M.elems . getEqMap i $ ms
-    helper               = sum . map (`calcWeight` ms)
-    calcCoinsWeight      = (* coinWeight) . sum . coinsToList . getCoins i $ ms
-    calcVesselContWeight = maybe 0 ((* quaffWeight) . snd) . getVesselCont i $ ms
+calcVesselPerFull :: Vessel -> Quaffs -> Int
+calcVesselPerFull (view maxQuaffs -> m) q = round . (100 *) $ q `divide` m
 
 
 -----
@@ -237,3 +225,23 @@ calcVol i ms = calcHelper i
         calcInvVol   = helper . getInv i' $ ms
         helper       = sum . map calcHelper
         calcCoinsVol = (* coinVol) . sum . coinsToList . getCoins i' $ ms
+
+
+-----
+
+
+calcWeight :: Id -> MudState -> Weight
+calcWeight i ms = case getType i ms of
+  ConType    -> sum [ getWeight i ms, calcInvWeight, calcCoinsWeight ]
+  NpcType    -> npcPC
+  PCType     -> npcPC
+  RmType     -> blowUp "calcWeight" "cannot calculate the weight of a room" [ showText i ]
+  VesselType -> getWeight i ms + calcVesselContWeight
+  _          -> getWeight i ms
+  where
+    npcPC                = sum [ calcInvWeight, calcCoinsWeight, calcEqWeight ]
+    calcInvWeight        = helper .           getInv   i $ ms
+    calcEqWeight         = helper . M.elems . getEqMap i $ ms
+    helper               = sum . map (`calcWeight` ms)
+    calcCoinsWeight      = (* coinWeight) . sum . coinsToList . getCoins i $ ms
+    calcVesselContWeight = maybe 0 ((* quaffWeight) . snd) . getVesselCont i $ ms

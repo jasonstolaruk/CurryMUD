@@ -3,6 +3,8 @@
 
 module Mud.TheWorld.Zones.AdminZoneIds where
 
+import Mud.Data.State.MudData (Id)
+
 
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
 
@@ -10,264 +12,264 @@ module Mud.TheWorld.Zones.AdminZoneIds where
 -- ==================================================
 
 
-iLoggedOut = 0 :: Int
+iLoggedOut = 0 :: Id
 
-iWelcome = 1 :: Int
+iWelcome = 1 :: Id
 
-iCentral = 2 :: Int
+iCentral = 2 :: Id
 
-iObjCloset = 3 :: Int
+iObjCloset = 3 :: Id
 
-iClothCloset = 4 :: Int
+iClothCloset = 4 :: Id
 
-iCoinsCloset = 5 :: Int
+iCoinsCloset = 5 :: Id
 
-iConCloset = 6 :: Int
+iConCloset = 6 :: Id
 
-iWpnCloset = 7 :: Int
+iWpnCloset = 7 :: Id
 
-iArmCloset = 8 :: Int
+iArmCloset = 8 :: Id
 
-iMobCloset = 9 :: Int
+iMobCloset = 9 :: Id
 
-iKewpie1 = 10 :: Int
+iKewpie1 = 10 :: Id
 
-iKewpie2 = 11 :: Int
+iKewpie2 = 11 :: Id
 
-iEar1 = 12 :: Int
+iEar1 = 12 :: Id
 
-iEar2 = 13 :: Int
+iEar2 = 13 :: Id
 
-iEar3 = 14 :: Int
+iEar3 = 14 :: Id
 
-iEar4 = 15 :: Int
+iEar4 = 15 :: Id
 
-iNoseRing1 = 16 :: Int
+iNoseRing1 = 16 :: Id
 
-iNoseRing2 = 17 :: Int
+iNoseRing2 = 17 :: Id
 
-iNoseRing3 = 18 :: Int
+iNoseRing3 = 18 :: Id
 
-iNeck1 = 19 :: Int
+iNeck1 = 19 :: Id
 
-iNeck2 = 20 :: Int
+iNeck2 = 20 :: Id
 
-iNeck3 = 21 :: Int
+iNeck3 = 21 :: Id
 
-iNeck4 = 22 :: Int
+iNeck4 = 22 :: Id
 
-iBracelet1 = 23 :: Int
+iBracelet1 = 23 :: Id
 
-iBracelet2 = 24 :: Int
+iBracelet2 = 24 :: Id
 
-iBracelet3 = 25 :: Int
+iBracelet3 = 25 :: Id
 
-iBracelet4 = 26 :: Int
+iBracelet4 = 26 :: Id
 
-iRing1 = 27 :: Int
+iRing1 = 27 :: Id
 
-iRing2 = 28 :: Int
+iRing2 = 28 :: Id
 
-iRing3 = 29:: Int
+iRing3 = 29:: Id
 
-iRing4 = 30 :: Int
+iRing4 = 30 :: Id
 
-iSack1 = 31 :: Int
+iSack1 = 31 :: Id
 
-iSack2 = 32 :: Int
+iSack2 = 32 :: Id
 
-iBack1 = 33 :: Int
+iBack1 = 33 :: Id
 
-iBack2 = 34 :: Int
+iBack2 = 34 :: Id
 
-iSword1 = 35 :: Int
+iSword1 = 35 :: Id
 
-iSword2 = 36 :: Int
+iSword2 = 36 :: Id
 
-iClub = 37 :: Int
+iClub = 37 :: Id
 
-iLongSword = 38 :: Int
+iLongSword = 38 :: Id
 
-iKnife1 = 39 :: Int
+iKnife1 = 39 :: Id
 
-iKnife2 = 40 :: Int
+iKnife2 = 40 :: Id
 
-iCap = 41 :: Int
+iCap = 41 :: Id
 
-iHelm = 42 :: Int
+iHelm = 42 :: Id
 
-iSandals1 = 43 :: Int
+iSandals1 = 43 :: Id
 
-iSandals2 = 44 :: Int
+iSandals2 = 44 :: Id
 
-iBoots = 45 :: Int
+iBoots = 45 :: Id
 
-iRockCavy1 = 46 :: Int
+iRockCavy1 = 46 :: Id
 
-iRockCavy2 = 47 :: Int
+iRockCavy2 = 47 :: Id
 
-iVoid = 48 :: Int
+iVoid = 48 :: Id
 
-iLounge = 49 :: Int
+iLounge = 49 :: Id
 
-iEar5 = 50 :: Int
+iEar5 = 50 :: Id
 
-iEar6 = 51 :: Int
+iEar6 = 51 :: Id
 
-iEar7 = 52 :: Int
+iEar7 = 52 :: Id
 
-iEar8 = 53 :: Int
+iEar8 = 53 :: Id
 
-iBracelet5 = 54 :: Int
+iBracelet5 = 54 :: Id
 
-iBracelet6 = 55 :: Int
+iBracelet6 = 55 :: Id
 
-iBracelet7 = 56 :: Int
+iBracelet7 = 56 :: Id
 
-iBracelet8 = 57 :: Int
+iBracelet8 = 57 :: Id
 
-iRing5 = 58 :: Int
+iRing5 = 58 :: Id
 
-iRing6 = 59 :: Int
+iRing6 = 59 :: Id
 
-iRing7 = 60 :: Int
+iRing7 = 60 :: Id
 
-iRing8 = 61 :: Int
+iRing8 = 61 :: Id
 
-iRing9 = 62 :: Int
+iRing9 = 62 :: Id
 
-iAccessoriesCloset = 63 :: Int
+iAccessoriesCloset = 63 :: Id
 
-iChemise = 64 :: Int
+iChemise = 64 :: Id
 
-iTunic = 65 :: Int
+iTunic = 65 :: Id
 
-iApron = 66 :: Int
+iApron = 66 :: Id
 
-iTabard = 67 :: Int
+iTabard = 67 :: Id
 
-iGreyCoat = 68 :: Int
+iGreyCoat = 68 :: Id
 
-iFrockCoat = 69 :: Int
+iFrockCoat = 69 :: Id
 
-iBreeches1 = 70 :: Int
+iBreeches1 = 70 :: Id
 
-iBreeches2 = 71 :: Int
+iBreeches2 = 71 :: Id
 
-iTrousers1 = 72 :: Int
+iTrousers1 = 72 :: Id
 
-iTrousers2 = 73 :: Int
+iTrousers2 = 73 :: Id
 
-iPidge = 74 :: Int
+iPidge = 74 :: Id
 
-iPeasant'sShirt = 75 :: Int
+iPeasant'sShirt = 75 :: Id
 
-iOveralls = 76 :: Int
+iOveralls = 76 :: Id
 
-iLeatherApron = 77 :: Int
+iLeatherApron = 77 :: Id
 
-iTraveler'sBoots = 78 :: Int
+iTraveler'sBoots = 78 :: Id
 
-i190Lb = 79 :: Int
+i190Lb = 79 :: Id
 
-i100Lb = 80 :: Int
+i100Lb = 80 :: Id
 
-i75Lb = 81 :: Int
+i75Lb = 81 :: Id
 
-i50Lb1 = 82 :: Int
+i50Lb1 = 82 :: Id
 
-i50Lb2 = 83 :: Int
+i50Lb2 = 83 :: Id
 
-i25Lb1 = 84 :: Int
+i25Lb1 = 84 :: Id
 
-i25Lb2 = 85 :: Int
+i25Lb2 = 85 :: Id
 
-i10Lb1 = 86 :: Int
+i10Lb1 = 86 :: Id
 
-i10Lb2 = 87 :: Int
+i10Lb2 = 87 :: Id
 
-i5Lb1 = 88 :: Int
+i5Lb1 = 88 :: Id
 
-i5Lb2 = 89 :: Int
+i5Lb2 = 89 :: Id
 
-i1Lb1 = 90 :: Int
+i1Lb1 = 90 :: Id
 
-i1Lb2 = 91 :: Int
+i1Lb2 = 91 :: Id
 
-i1Lb3 = 92 :: Int
+i1Lb3 = 92 :: Id
 
-i1Lb4 = 93 :: Int
+i1Lb4 = 93 :: Id
 
-i1Lb5 = 94 :: Int
+i1Lb5 = 94 :: Id
 
-iWeightRm = 95 :: Int
+iWeightRm = 95 :: Id
 
-iTutEntrance = 96 :: Int
+iTutEntrance = 96 :: Id
 
-iLoungeEntrance = 97 :: Int
+iLoungeEntrance = 97 :: Id
 
-iBasement = 98 :: Int
+iBasement = 98 :: Id
 
-iSkeleton = 99 :: Int
+iSkeleton = 99 :: Id
 
-iRoot = 100 :: Int
+iRoot = 100 :: Id
 
-iCurry = 101 :: Int
+iCurry = 101 :: Id
 
-iAttic = 102 :: Int
+iAttic = 102 :: Id
 
-iCube1 = 103 :: Int -- 20
+iCube1 = 103 :: Id -- 20
 
-iSackSml = 123 :: Int
+iSackSml = 123 :: Id
 
-iSackLrg = 124 :: Int
+iSackLrg = 124 :: Id
 
-iBackSml = 125 :: Int
+iBackSml = 125 :: Id
 
-iBackLrg = 126 :: Int
+iBackLrg = 126 :: Id
 
-iEmpty = 127 :: Int
+iEmpty = 127 :: Id
 
-iHallwayWest = 128 :: Int
+iHallwayWest = 128 :: Id
 
-iHallwayEast = 129 :: Int
+iHallwayEast = 129 :: Id
 
-iAtrium = 130 :: Int
+iAtrium = 130 :: Id
 
-iTrashDump = 131 :: Int
+iTrashDump = 131 :: Id
 
-iPaperSml = 132 :: Int
+iPaperSml = 132 :: Id
 
-iParchment1 = 133 :: Int
+iParchment1 = 133 :: Id
 
-iParchment2 = 134 :: Int
+iParchment2 = 134 :: Id
 
-iParchment3 = 135 :: Int
+iParchment3 = 135 :: Id
 
-iParchment4 = 136 :: Int
+iParchment4 = 136 :: Id
 
-iParchment5 = 137 :: Int
+iParchment5 = 137 :: Id
 
-iPotionFlask1 = 138 :: Int -- 10
+iPotionFlask1 = 138 :: Id -- 10
 
-iWaterskin = 148 :: Int
+iWaterskin = 148 :: Id
 
-iWaterskinLrg = 149 :: Int
+iWaterskinLrg = 149 :: Id
 
-iJarSml = 150 :: Int
+iJarSml = 150 :: Id
 
-iJar = 151 :: Int
+iJar = 151 :: Id
 
-iJarLrg = 152 :: Int
+iJarLrg = 152 :: Id
 
-iJugSml = 153 :: Int
+iJugSml = 153 :: Id
 
-iJug = 154 :: Int
+iJug = 154 :: Id
 
-iJugLrg = 155 :: Int
+iJugLrg = 155 :: Id
 
-iBottleSml = 156 :: Int
+iBottleSml = 156 :: Id
 
-iBottle = 157 :: Int
+iBottle = 157 :: Id
 
-iBottleLrg = 158 :: Int
+iBottleLrg = 158 :: Id

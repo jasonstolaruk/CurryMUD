@@ -10,6 +10,8 @@ import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Misc.Logging hiding (logNotice)
+import Mud.TheWorld.Foods
+import Mud.TheWorld.Liqs
 import Mud.TheWorld.Misc
 import Mud.TheWorld.Zones.AdminZone
 import Mud.TheWorld.Zones.AdminZoneIds (iLoggedOut, iWelcome)
@@ -133,15 +135,11 @@ initRmActionFunTbl = tweak $ rmActionFunTbl .~ M.fromList list
 
 
 initDistinctFoodTbl :: MudStack ()
-initDistinctFoodTbl = tweak $ distinctFoodTbl .~ IM.fromList list
-  where
-    list = [] -- TODO
+initDistinctFoodTbl = tweak $ distinctFoodTbl .~ IM.fromList distinctFoodList
 
 
 initDistinctLiqTbl :: MudStack ()
-initDistinctLiqTbl = tweak $ distinctLiqTbl .~ IM.fromList list
-  where
-    list = [] -- TODO
+initDistinctLiqTbl = tweak $ distinctLiqTbl .~ IM.fromList distinctLiqList
 
 
 createWorld :: MudStack ()

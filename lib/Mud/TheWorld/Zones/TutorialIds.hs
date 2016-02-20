@@ -3,6 +3,8 @@
 
 module Mud.TheWorld.Zones.TutorialIds where
 
+import Mud.Data.State.MudData (Id)
+
 
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
 
@@ -10,4 +12,4 @@ module Mud.TheWorld.Zones.TutorialIds where
 -- ==================================================
 
 
-iTutWelcome = 500 :: Int
+iTutWelcome = 500 :: Id

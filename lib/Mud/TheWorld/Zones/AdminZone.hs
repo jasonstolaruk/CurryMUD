@@ -19,6 +19,7 @@ import Mud.Data.State.Util.New
 import Mud.Data.State.Util.Put
 import Mud.Data.State.Util.Random
 import Mud.Misc.LocPref
+import Mud.TheWorld.Liqs
 import Mud.TheWorld.Misc
 import Mud.TheWorld.Zones.AdminZoneIds
 import Mud.TheWorld.Zones.TutorialIds (iTutWelcome)
@@ -1359,7 +1360,7 @@ createAdminZone = do
   -- ==================================================
   -- Vessels:
   let flaskIds   = [ iPotionFlask1 + i | i <- [0..9] ]
-      flaskConts = [ Nothing
+      flaskConts = [ Just (waterLiq, maxBound)
                    , Nothing
                    , Nothing
                    , Nothing

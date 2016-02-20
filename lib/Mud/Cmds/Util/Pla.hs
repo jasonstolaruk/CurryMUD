@@ -878,10 +878,11 @@ mkEntDescs i cols ms eis = T.intercalate "\n" [ mkEntDesc i cols ms (ei, e) | ei
 
 mkEntDesc :: Id -> Cols -> MudState -> (Id, Ent) -> Text
 mkEntDesc i cols ms (ei, e) | ed <- views entDesc (wrapUnlines cols) e, s <- getSing ei ms, t <- getType ei ms =
-    case t of ConType      ->                 (ed <>) . mkInvCoinsDesc i cols ms   ei $ s
-              NpcType      ->                 (ed <>) . mkEqDesc       i cols ms   ei   s $ t
-              PCType       -> (pcHeader <>) . (ed <>) . mkEqDesc       i cols ms   ei   s $ t
-              WritableType ->                 (ed <>) . mkWritableDesc   cols ms $ ei
+    case t of ConType      ->                 (ed <>) . mkInvCoinsDesc i  cols ms   ei $ s
+              NpcType      ->                 (ed <>) . mkEqDesc       i  cols ms   ei   s $ t
+              PCType       -> (pcHeader <>) . (ed <>) . mkEqDesc       i  cols ms   ei   s $ t
+              VesselType   ->                 (ed <>) . mkVesselContDesc  cols ms $ ei
+              WritableType ->                 (ed <>) . mkWritableMsgDesc cols ms $ ei
               _            -> ed
   where
     pcHeader = wrapUnlines cols mkPCDescHeader
@@ -947,8 +948,23 @@ mkEqDesc i cols ms descId descSing descType = let descs = descId == i ? mkDescsS
     d = mkSerializedNonStdDesig descId ms descSing The DoCap
 
 
-mkWritableDesc :: Cols -> MudState -> Id -> Text
-mkWritableDesc cols ms targetId = case getWritable targetId ms of
+mkVesselContDesc :: Cols -> MudState -> Id -> Text
+mkVesselContDesc cols ms targetId =
+    let s = getSing   targetId ms
+        v = getVessel targetId ms
+        emptyDesc         = "The " <> s <> " is empty." |&| wrapUnlines cols
+        mkContDesc (l, q) = T.concat [ "The "
+                                     , s
+                                     , " contains "
+                                     , l^.liqName
+                                     , " "
+                                     , parensQuote $ showText (calcVesselPerFull v q) <> "% full"
+                                     , "." ] |&| wrapUnlines cols
+    in views vesselCont (maybe emptyDesc mkContDesc) v
+
+
+mkWritableMsgDesc :: Cols -> MudState -> Id -> Text
+mkWritableMsgDesc cols ms targetId = case getWritable targetId ms of
   (Writable Nothing          _       ) -> ""
   (Writable (Just _        ) (Just _)) -> helper "a language you don't recognize"
   (Writable (Just (_, lang)) Nothing ) -> helper . pp $ lang
