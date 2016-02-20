@@ -519,7 +519,7 @@ sorryGetEmptyRmWithHooks :: Text
 sorryGetEmptyRmWithHooks = "You don't see anything to pick up on the ground here."
 
 
-sorryGetEnc :: Text
+sorryGetEnc :: Text -- TODO: Handle the case when the target object is exceptionally heavy.
 sorryGetEnc = "You are too encumbered to carry "
 
 

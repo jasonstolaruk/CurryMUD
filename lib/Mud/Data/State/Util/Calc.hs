@@ -2,6 +2,7 @@
 {-# LANGUAGE OverloadedStrings, ViewPatterns #-}
 
 module Mud.Data.State.Util.Calc ( calcBarLen
+                                , calcConPerFull
                                 , calcEffAttrib
                                 , calcEffDx
                                 , calcEffHt
@@ -64,6 +65,15 @@ blowUp = U.blowUp "Mud.Data.State.Util.Calc"
 
 calcBarLen :: Cols -> Int
 calcBarLen cols = cols < 59 ? (cols - 9) :? 50
+
+
+-----
+
+
+calcConPerFull :: Id -> MudState -> Int
+calcConPerFull i ms = let total           = foldr helper 0 . getInv i $ ms
+                          helper targetId = (calcVol targetId ms +)
+                      in round . (100 *) $ total `divide` getCapacity i ms
 
 
 -----

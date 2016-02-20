@@ -889,7 +889,6 @@ mkEntDesc i cols ms (ei, e) | ed <- views entDesc (wrapUnlines cols) e, s <- get
     mkPCDescHeader | (pp *** pp -> (s, r)) <- getSexRace ei ms = T.concat [ "You see a ", s, " ", r, "." ]
 
 
--- TODO: Show % full for containers and vessels.
 mkInvCoinsDesc :: Id -> Cols -> MudState -> Id -> Sing -> Text
 mkInvCoinsDesc i cols ms targetId targetSing | targetInv <- getInv targetId ms, targetCoins <- getCoins targetId ms =
     case ((()#) *** (()#)) (targetInv, targetCoins) of
@@ -899,7 +898,8 @@ mkInvCoinsDesc i cols ms targetId targetSing | targetInv <- getInv targetId ms, 
       (False, False) -> header <> mkEntsInInvDesc i cols ms targetInv <> mkCoinsSummary cols targetCoins <> footer
   where
     header = targetId == i ? nl "You are carrying:" :? wrapUnlines cols ("The " <> targetSing <> " contains:")
-    footer = targetId == i |?| nl $ (showText . calcEncPer i $ ms) <> "% encumbered."
+    footer | targetId == i = nl $ showText (calcEncPer     i        ms) <> "% encumbered."
+           | otherwise     = nl $ showText (calcConPerFull targetId ms) <> "% full."
 
 
 mkEntsInInvDesc :: Id -> Cols -> MudState -> Inv -> Text
