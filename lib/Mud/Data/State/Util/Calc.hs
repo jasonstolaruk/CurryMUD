@@ -85,8 +85,8 @@ calcEffDx = calcEffAttrib Dx
 
 calcEffAttrib :: Attrib -> Id -> MudState -> Int
 calcEffAttrib attrib i ms = let effects = map (view effect) . getActiveEffects i $ ms
-                                helper acc (EffectMob (MobEffectAttrib a x)) | a == attrib = acc + x
-                                helper acc _                                               = acc
+                                helper acc (EffectMob _ (MobEffectAttrib a x)) | a == attrib = acc + x
+                                helper acc _                                                 = acc
                             in foldl' helper (getBaseAttrib attrib i ms) effects
 
 

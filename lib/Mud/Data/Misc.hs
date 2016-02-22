@@ -61,6 +61,7 @@ import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MudData
 import Mud.Misc.Database
 import Mud.TopLvlDefs.Chars
+import Mud.TopLvlDefs.Misc
 import Mud.Util.Operators
 import Mud.Util.Quoting
 import Mud.Util.Text
@@ -278,15 +279,19 @@ instance Pretty Cloth where
 
 
 instance Pretty Effect where
-  pp (EffectArm   e ) = effectLabel <> "armor "  <> pp e
-  pp (EffectEnt   e ) = effectLabel <> "entity " <> pp e
-  pp (EffectMob   e ) = effectLabel <> "mob "    <> pp e
-  pp (EffectRm    e ) = effectLabel <> "room "   <> pp e
-  pp (EffectOther fn) = effectLabel <> "other "  <> parensQuote fn
+  pp (EffectArm   secs e ) = ppEffectHelper "armor"  (pp e          ) secs
+  pp (EffectEnt   secs e ) = ppEffectHelper "entity" (pp e          ) secs
+  pp (EffectMob   secs e ) = ppEffectHelper "mob"    (pp e          ) secs
+  pp (EffectRm    secs e ) = ppEffectHelper "room"   (pp e          ) secs
+  pp (EffectOther secs fn) = ppEffectHelper "other"  (parensQuote fn) secs
 
 
-effectLabel :: Text
-effectLabel = bracketQuote "durational" <> " "
+ppEffectHelper :: Text -> Text -> Seconds -> Text
+ppEffectHelper a b secs = T.concat [ bracketQuote "durational", " ", a, " ", b, " ", showSecs secs ]
+
+
+showSecs :: Seconds -> Text
+showSecs secs = parensQuote $ commaEvery3 (showText secs) <> " secs"
 
 
 instance Pretty EntEffect where
@@ -304,14 +309,14 @@ instance Pretty Hand where
 
 
 instance Pretty InstaEffect where
-  pp (InstaEffectEnt   e ) = instaEffectLabel <> "entity " <> pp e
-  pp (InstaEffectMob   e ) = instaEffectLabel <> "mob "    <> pp e
-  pp (InstaEffectRm    e ) = instaEffectLabel <> "room "   <> pp e
-  pp (InstaEffectOther fn) = instaEffectLabel <> "other "  <> parensQuote fn
+  pp (InstaEffectEnt   e ) = ppInstaEffectHelper "entity" . pp $ e
+  pp (InstaEffectMob   e ) = ppInstaEffectHelper "mob"    . pp $ e
+  pp (InstaEffectRm    e ) = ppInstaEffectHelper "room"   . pp $ e
+  pp (InstaEffectOther fn) = ppInstaEffectHelper "other"  . parensQuote $ fn
 
 
-instaEffectLabel :: Text
-instaEffectLabel = bracketQuote "instantaneous" <> " "
+ppInstaEffectHelper :: Text -> Text -> Text
+ppInstaEffectHelper a b = T.concat [ bracketQuote "instantaneous", " ", a, " ", b ]
 
 
 instance Pretty Lang where
@@ -345,7 +350,7 @@ instance Pretty MobInstaEffect where
 
 
 instance Pretty PausedEffect where
-  pp (PausedEffect e secs) = pp e <> " " <> parensQuote (commaEvery3 (showText secs) <> " secs")
+  pp (PausedEffect e secs) = pp e <> " " <> showSecs secs
 
 
 instance Pretty ProfRec where

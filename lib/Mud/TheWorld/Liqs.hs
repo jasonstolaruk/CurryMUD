@@ -1,17 +1,26 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Mud.TheWorld.Liqs ( distinctLiqList
+                         , potInstantStLiq
                          , waterLiq ) where
 
 import Mud.Data.State.MudData
 
 
 distinctLiqList :: [(Id, DistinctLiq)]
-distinctLiqList = pure (iLiqWater, waterDistinctLiq)
+distinctLiqList = [ (iLiqWater,        waterDistinctLiq)
+                  , (iLiqPotInstantSt, potInstantStDistinctLiq) ]
 
 
 iLiqWater :: Id
 iLiqWater = 0
+
+
+iLiqPotInstantSt :: Id
+iLiqPotInstantSt = 1
+
+
+-----
 
 
 waterDistinctLiq :: DistinctLiq
@@ -24,3 +33,21 @@ waterLiq = Liq (DistinctLiqId iLiqWater)
                "The water is entirely odorless."
                "The water is entirely tasteless."
                "The cool, clear water feels refreshing as it goes down."
+
+
+-----
+
+
+potInstantStDistinctLiq :: DistinctLiq
+potInstantStDistinctLiq = DistinctLiq . EdibleEffects Nothing . Just $ ce
+  where
+    ce = ConsumpEffects 8 30 el
+    el = EffectList . pure . Right . EffectMob (5 * 60) . MobEffectAttrib St $ 10
+
+
+potInstantStLiq :: Liq
+potInstantStLiq = Liq (DistinctLiqId iLiqPotInstantSt)
+                      "a frothy brown liquid"
+                      ""
+                      ""
+                      ""

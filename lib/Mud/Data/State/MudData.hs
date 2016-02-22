@@ -137,11 +137,11 @@ data ActiveEffect = ActiveEffect { _effect        :: Effect
 
 
 -- Effects that have a duration.
-data Effect = EffectArm   ArmEffect
-            | EffectEnt   EntEffect
-            | EffectMob   MobEffect
-            | EffectRm    RmEffect
-            | EffectOther FunName deriving (Eq, Generic, Show)
+data Effect = EffectArm   Seconds ArmEffect
+            | EffectEnt   Seconds EntEffect
+            | EffectMob   Seconds MobEffect
+            | EffectRm    Seconds RmEffect
+            | EffectOther Seconds FunName deriving (Eq, Generic, Show)
 
 
 data ArmEffect = ArmEffectAC AC deriving (Eq, Generic, Show)
@@ -495,7 +495,8 @@ type Stomach = [StomachCont]
 
 
 data StomachCont = StomachCont { _distinctId :: Either DistinctLiqId DistinctFoodId
-                               , _cosumpTime :: UTCTime } deriving (Eq, Generic, Show)
+                               , _cosumpTime :: UTCTime
+                               , _countedTowardsConsumpEffect :: Bool } deriving (Eq, Generic, Show)
 
 
 type StomachAsync = Async ()

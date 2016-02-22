@@ -150,7 +150,7 @@ regularCmds :: [Cmd]
 regularCmds = map (uncurry4 mkRegularCmd) regularCmdTuples
 
 
--- TODO: The "drink" cmd should allow you to specify how much to drink. "drink 2.flask=5"
+-- TODO: The "drink" cmd should allow you to specify how much to drink. "drink 5 flask"
 regularCmdTuples :: [(CmdFullName, ActionFun, Bool, CmdDesc)]
 regularCmdTuples =
     [ ("?",          plaDispCmdList,  True,  cmdDescDispCmdList)
