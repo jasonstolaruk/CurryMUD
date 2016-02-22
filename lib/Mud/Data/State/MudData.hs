@@ -14,8 +14,8 @@ import Control.Concurrent.STM.TMVar (TMVar)
 import Control.Concurrent.STM.TQueue (TQueue)
 import Control.Lens (makeLenses)
 import Control.Monad.Reader (ReaderT)
-import Data.Aeson ((.:), (.=), FromJSON(..), ToJSON(..), Value(..), object)
-import Data.Aeson.Types (Parser)
+import Data.Aeson ((.:), (.=), FromJSON(..), ToJSON(..), Value(..), genericParseJSON, genericToJSON, object)
+import Data.Aeson.Types (Options, Parser, defaultOptions, fieldLabelModifier)
 import Data.IORef (IORef)
 import Data.Text (Text)
 import Data.Time (UTCTime)
@@ -528,48 +528,48 @@ instance ToJSON   Mob where toJSON    = mobToJSON
 
 
 mobToJSON :: Mob -> Value
-mobToJSON Mob { .. } = object [ "_sex"        .= _sex
-                              , "_st"         .= _st
-                              , "_dx"         .= _dx
-                              , "_ht"         .= _ht
-                              , "_ma"         .= _ma
-                              , "_ps"         .= _ps
-                              , "_curHp"      .= _curHp
-                              , "_maxHp"      .= _maxHp
-                              , "_curMp"      .= _curMp
-                              , "_maxMp"      .= _maxMp
-                              , "_curPp"      .= _curPp
-                              , "_maxPp"      .= _maxPp
-                              , "_curFp"      .= _curFp
-                              , "_maxFp"      .= _maxFp
-                              , "_stomach"    .= _stomach
-                              , "_exp"        .= _exp
-                              , "_hand"       .= _hand
-                              , "_knownLangs" .= _knownLangs
-                              , "_rmId"       .= _rmId ]
+mobToJSON Mob { .. } = object [ "sex"        .= _sex
+                              , "st"         .= _st
+                              , "dx"         .= _dx
+                              , "ht"         .= _ht
+                              , "ma"         .= _ma
+                              , "ps"         .= _ps
+                              , "curHp"      .= _curHp
+                              , "maxHp"      .= _maxHp
+                              , "curMp"      .= _curMp
+                              , "maxMp"      .= _maxMp
+                              , "curPp"      .= _curPp
+                              , "maxPp"      .= _maxPp
+                              , "curFp"      .= _curFp
+                              , "maxFp"      .= _maxFp
+                              , "stomach"    .= _stomach
+                              , "exp"        .= _exp
+                              , "hand"       .= _hand
+                              , "knownLangs" .= _knownLangs
+                              , "rmId"       .= _rmId ]
 
 
 jsonToMob :: Value -> Parser Mob
-jsonToMob (Object o) = Mob <$> o .: "_sex"
-                           <*> o .: "_st"
-                           <*> o .: "_dx"
-                           <*> o .: "_ht"
-                           <*> o .: "_ma"
-                           <*> o .: "_ps"
-                           <*> o .: "_curHp"
-                           <*> o .: "_maxHp"
-                           <*> o .: "_curMp"
-                           <*> o .: "_maxMp"
-                           <*> o .: "_curPp"
-                           <*> o .: "_maxPp"
-                           <*> o .: "_curFp"
-                           <*> o .: "_maxFp"
-                           <*> o .: "_stomach"
+jsonToMob (Object o) = Mob <$> o .: "sex"
+                           <*> o .: "st"
+                           <*> o .: "dx"
+                           <*> o .: "ht"
+                           <*> o .: "ma"
+                           <*> o .: "ps"
+                           <*> o .: "curHp"
+                           <*> o .: "maxHp"
+                           <*> o .: "curMp"
+                           <*> o .: "maxMp"
+                           <*> o .: "curPp"
+                           <*> o .: "maxPp"
+                           <*> o .: "curFp"
+                           <*> o .: "maxFp"
+                           <*> o .: "stomach"
                            <*> pure Nothing
-                           <*> o .: "_exp"
-                           <*> o .: "_hand"
-                           <*> o .: "_knownLangs"
-                           <*> o .: "_rmId"
+                           <*> o .: "exp"
+                           <*> o .: "hand"
+                           <*> o .: "knownLangs"
+                           <*> o .: "rmId"
                            <*> pure Nothing
                            <*> pure Nothing
 jsonToMob _          = empty
@@ -613,19 +613,19 @@ instance ToJSON   Obj where toJSON    = objToJSON
 
 
 objToJSON :: Obj -> Value
-objToJSON Obj { .. } = object [ "_weight"   .= _weight
-                              , "_vol"      .= _vol
-                              , "_objSmell" .= _objSmell
-                              , "_objTaste" .= _objTaste
-                              , "_objFlags" .= _objFlags ]
+objToJSON Obj { .. } = object [ "weight"   .= _weight
+                              , "vol"      .= _vol
+                              , "objSmell" .= _objSmell
+                              , "objTaste" .= _objTaste
+                              , "objFlags" .= _objFlags ]
 
 
 jsonToObj :: Value -> Parser Obj
-jsonToObj (Object o) = Obj <$> o .: "_weight"
-                           <*> o .: "_vol"
-                           <*> o .: "_objSmell"
-                           <*> o .: "_objTaste"
-                           <*> o .: "_objFlags"
+jsonToObj (Object o) = Obj <$> o .: "weight"
+                           <*> o .: "vol"
+                           <*> o .: "objSmell"
+                           <*> o .: "objTaste"
+                           <*> o .: "objFlags"
                            <*> pure Nothing
 jsonToObj _          = empty
 
@@ -697,26 +697,26 @@ instance ToJSON   Pla where toJSON    = plaToJSON
 
 
 plaToJSON :: Pla -> Value
-plaToJSON Pla { .. } = object [ "_currHostName" .= _currHostName
-                              , "_connectTime"  .= _connectTime
-                              , "_plaFlags"     .= _plaFlags
-                              , "_columns"      .= _columns
-                              , "_pageLines"    .= _pageLines
-                              , "_retainedMsgs" .= _retainedMsgs
-                              , "_lastRmId"     .= _lastRmId ]
+plaToJSON Pla { .. } = object [ "currHostName" .= _currHostName
+                              , "connectTime"  .= _connectTime
+                              , "plaFlags"     .= _plaFlags
+                              , "columns"      .= _columns
+                              , "pageLines"    .= _pageLines
+                              , "retainedMsgs" .= _retainedMsgs
+                              , "lastRmId"     .= _lastRmId ]
 
 
 jsonToPla :: Value -> Parser Pla
-jsonToPla (Object o) = Pla <$> o .: "_currHostName"
-                           <*> o .: "_connectTime"
-                           <*> o .: "_plaFlags"
-                           <*> o .: "_columns"
-                           <*> o .: "_pageLines"
+jsonToPla (Object o) = Pla <$> o .: "currHostName"
+                           <*> o .: "connectTime"
+                           <*> o .: "plaFlags"
+                           <*> o .: "columns"
+                           <*> o .: "pageLines"
                            <*> pure []
                            <*> pure []
                            <*> pure Nothing
-                           <*> o .: "_retainedMsgs"
-                           <*> o .: "_lastRmId"
+                           <*> o .: "retainedMsgs"
+                           <*> o .: "lastRmId"
 jsonToPla _          = empty
 
 
@@ -798,25 +798,25 @@ instance ToJSON   Rm where toJSON    = rmToJSON
 
 
 rmToJSON :: Rm -> Value
-rmToJSON Rm { .. } = object [ "_rmName"     .= _rmName
-                            , "_rmDesc"     .= _rmDesc
-                            , "_rmListen"   .= _rmListen
-                            , "_rmFlags"    .= _rmFlags
-                            , "_rmLinks"    .= _rmLinks
-                            , "_hookMap"    .= _hookMap
-                            , "_rmActions"  .= _rmActions
-                            , "_rmFunNames" .= _rmFunNames ]
+rmToJSON Rm { .. } = object [ "rmName"     .= _rmName
+                            , "rmDesc"     .= _rmDesc
+                            , "rmListen"   .= _rmListen
+                            , "rmFlags"    .= _rmFlags
+                            , "rmLinks"    .= _rmLinks
+                            , "hookMap"    .= _hookMap
+                            , "rmActions"  .= _rmActions
+                            , "rmFunNames" .= _rmFunNames ]
 
 
 jsonToRm :: Value -> Parser Rm
-jsonToRm (Object o) = Rm <$> o .: "_rmName"
-                         <*> o .: "_rmDesc"
-                         <*> o .: "_rmListen"
-                         <*> o .: "_rmFlags"
-                         <*> o .: "_rmLinks"
-                         <*> o .: "_hookMap"
-                         <*> o .: "_rmActions"
-                         <*> o .: "_rmFunNames"
+jsonToRm (Object o) = Rm <$> o .: "rmName"
+                         <*> o .: "rmDesc"
+                         <*> o .: "rmListen"
+                         <*> o .: "rmFlags"
+                         <*> o .: "rmLinks"
+                         <*> o .: "hookMap"
+                         <*> o .: "rmActions"
+                         <*> o .: "rmFunNames"
                          <*> pure []
 jsonToRm _          = empty
 
@@ -925,86 +925,90 @@ data Writable = Writable { _message :: Maybe (Text, Lang)
 -- ==================================================
 
 
-instance FromJSON Arm
+instance FromJSON Arm            where parseJSON = genericParseJSON dropUnderscore
 instance FromJSON ArmEffect
 instance FromJSON ArmSub
 instance FromJSON Attrib
-instance FromJSON Chan
+instance FromJSON Chan           where parseJSON = genericParseJSON dropUnderscore
 instance FromJSON Cloth
 instance FromJSON Coins
-instance FromJSON Con
-instance FromJSON DistinctFoodId
-instance FromJSON DistinctLiqId
+instance FromJSON Con            where parseJSON = genericParseJSON dropUnderscore
+instance FromJSON DistinctFoodId where parseJSON = genericParseJSON dropUnderscore
+instance FromJSON DistinctLiqId  where parseJSON = genericParseJSON dropUnderscore
 instance FromJSON Effect
-instance FromJSON Ent
+instance FromJSON Ent            where parseJSON = genericParseJSON dropUnderscore
 instance FromJSON EntEffect
 instance FromJSON EntInstaEffect
-instance FromJSON Food
+instance FromJSON Food           where parseJSON = genericParseJSON dropUnderscore
 instance FromJSON Hand
 instance FromJSON Hook
-instance FromJSON HostRecord
+instance FromJSON HostRecord     where parseJSON = genericParseJSON dropUnderscore
 instance FromJSON InstaEffect
 instance FromJSON Lang
 instance FromJSON LinkDir
-instance FromJSON Liq
+instance FromJSON Liq            where parseJSON = genericParseJSON dropUnderscore
 instance FromJSON MobEffect
 instance FromJSON MobInstaEffect
-instance FromJSON PausedEffect
-instance FromJSON PC
+instance FromJSON PausedEffect   where parseJSON = genericParseJSON dropUnderscore
+instance FromJSON PC             where parseJSON = genericParseJSON dropUnderscore
 instance FromJSON PtsType
 instance FromJSON Race
 instance FromJSON RmAction
 instance FromJSON RmEffect
 instance FromJSON RmInstaEffect
-instance FromJSON RmLink
+instance FromJSON RmLink         where parseJSON = genericParseJSON dropUnderscore
 instance FromJSON Sex
 instance FromJSON Slot
-instance FromJSON StomachCont
+instance FromJSON StomachCont    where parseJSON = genericParseJSON dropUnderscore
 instance FromJSON Type
-instance FromJSON Vessel
-instance FromJSON Wpn
+instance FromJSON Vessel         where parseJSON = genericParseJSON dropUnderscore
+instance FromJSON Wpn            where parseJSON = genericParseJSON dropUnderscore
 instance FromJSON WpnSub
-instance FromJSON Writable
-instance ToJSON   Arm
-instance ToJSON   ArmEffect
-instance ToJSON   ArmSub
-instance ToJSON   Attrib
-instance ToJSON   Chan
-instance ToJSON   Cloth
-instance ToJSON   Coins
-instance ToJSON   Con
-instance ToJSON   DistinctFoodId
-instance ToJSON   DistinctLiqId
-instance ToJSON   Effect
-instance ToJSON   Ent
-instance ToJSON   EntEffect
-instance ToJSON   EntInstaEffect
-instance ToJSON   Food
-instance ToJSON   Hand
-instance ToJSON   Hook
-instance ToJSON   HostRecord
-instance ToJSON   InstaEffect
-instance ToJSON   Lang
-instance ToJSON   LinkDir
-instance ToJSON   Liq
-instance ToJSON   MobEffect
-instance ToJSON   MobInstaEffect
-instance ToJSON   PausedEffect
-instance ToJSON   PC
-instance ToJSON   PtsType
-instance ToJSON   Race
-instance ToJSON   RmAction
-instance ToJSON   RmEffect
-instance ToJSON   RmInstaEffect
-instance ToJSON   RmLink
-instance ToJSON   Sex
-instance ToJSON   Slot
-instance ToJSON   StomachCont
-instance ToJSON   Type
-instance ToJSON   Vessel
-instance ToJSON   Wpn
-instance ToJSON   WpnSub
-instance ToJSON   Writable
+instance FromJSON Writable       where parseJSON = genericParseJSON dropUnderscore
+instance ToJSON Arm              where toJSON    = genericToJSON    dropUnderscore
+instance ToJSON ArmEffect
+instance ToJSON ArmSub
+instance ToJSON Attrib
+instance ToJSON Chan             where toJSON    = genericToJSON    dropUnderscore
+instance ToJSON Cloth
+instance ToJSON Coins
+instance ToJSON Con              where toJSON    = genericToJSON    dropUnderscore
+instance ToJSON DistinctFoodId   where toJSON    = genericToJSON    dropUnderscore
+instance ToJSON DistinctLiqId    where toJSON    = genericToJSON    dropUnderscore
+instance ToJSON Effect
+instance ToJSON Ent              where toJSON    = genericToJSON    dropUnderscore
+instance ToJSON EntEffect
+instance ToJSON EntInstaEffect
+instance ToJSON Food             where toJSON    = genericToJSON    dropUnderscore
+instance ToJSON Hand
+instance ToJSON Hook
+instance ToJSON HostRecord       where toJSON    = genericToJSON    dropUnderscore
+instance ToJSON InstaEffect
+instance ToJSON Lang
+instance ToJSON LinkDir
+instance ToJSON Liq              where toJSON    = genericToJSON    dropUnderscore
+instance ToJSON MobEffect
+instance ToJSON MobInstaEffect
+instance ToJSON PausedEffect     where toJSON    = genericToJSON    dropUnderscore
+instance ToJSON PC               where toJSON    = genericToJSON    dropUnderscore
+instance ToJSON PtsType
+instance ToJSON Race
+instance ToJSON RmAction
+instance ToJSON RmEffect
+instance ToJSON RmInstaEffect
+instance ToJSON RmLink           where toJSON    = genericToJSON    dropUnderscore
+instance ToJSON Sex
+instance ToJSON Slot
+instance ToJSON StomachCont      where toJSON    = genericToJSON    dropUnderscore
+instance ToJSON Type
+instance ToJSON Vessel           where toJSON    = genericToJSON    dropUnderscore
+instance ToJSON Wpn              where toJSON    = genericToJSON    dropUnderscore
+instance ToJSON WpnSub
+instance ToJSON Writable         where toJSON    = genericToJSON    dropUnderscore
+
+
+dropUnderscore :: Options
+dropUnderscore = defaultOptions { fieldLabelModifier = tail }
 
 
 -- ==================================================

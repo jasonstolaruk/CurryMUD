@@ -67,6 +67,10 @@ isDebug :: Bool
 isDebug = True
 
 
+isEKGing :: Bool
+isEKGing = False
+
+
 likewise :: Bool
 likewise = not otherwise
 
