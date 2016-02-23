@@ -61,7 +61,6 @@ import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MudData
 import Mud.Misc.Database
 import Mud.TopLvlDefs.Chars
-import Mud.TopLvlDefs.Misc
 import Mud.Util.Operators
 import Mud.Util.Quoting
 import Mud.Util.Text
@@ -218,10 +217,6 @@ instance Pretty AOrThe where
   pp The = "the"
 
 
-instance Pretty ArmEffect where
-  pp (ArmEffectAC x) = "AC by " <> showText x
-
-
 instance Pretty ArmSub where
   pp LowerBody = "lower body"
   pp x         = uncapitalize . showText $ x
@@ -279,27 +274,27 @@ instance Pretty Cloth where
 
 
 instance Pretty Effect where
-  pp (EffectArm   secs e ) = ppEffectHelper "armor"  (pp e          ) secs
-  pp (EffectEnt   secs e ) = ppEffectHelper "entity" (pp e          ) secs
-  pp (EffectMob   secs e ) = ppEffectHelper "mob"    (pp e          ) secs
-  pp (EffectRm    secs e ) = ppEffectHelper "room"   (pp e          ) secs
-  pp (EffectOther secs fn) = ppEffectHelper "other"  (parensQuote fn) secs
+  pp (Effect effSub effVal secs) =
+      let secsTxt = parensQuote $ commaEvery3 (showText secs) <> " secs"
+      in T.concat [ bracketQuote "durational", " ", pp effSub, " by ", effectValHelper effVal, " ", secsTxt ]
 
 
-ppEffectHelper :: Text -> Text -> Seconds -> Text
-ppEffectHelper a b secs = T.concat [ bracketQuote "durational", " ", a, " ", b, " ", showSecs secs ]
+effectValHelper :: Maybe EffectVal -> Text
+effectValHelper = maybe (parensQuote "no value") pp
 
 
-showSecs :: Seconds -> Text
-showSecs secs = parensQuote $ commaEvery3 (showText secs) <> " secs"
+instance Pretty EffectSub where
+  pp ArmEffectAC              = "armor AC"
+  pp EntEffectFlags           = "ent flags"
+  pp (MobEffectAttrib attrib) = "mob "   <> pp attrib
+  pp MobEffectAC              = "mob AC"
+  pp RmEffectFlags            = "room flags"
+  pp (EffectOther fn)         = "other " <> parensQuote fn
 
 
-instance Pretty EntEffect where
-  pp (EntEffectFlags _) = undefined -- TODO
-
-
-instance Pretty EntInstaEffect where
-  pp (EntInstaEffectFlags _) = undefined -- TODO
+instance Pretty EffectVal where
+  pp (DefiniteVal x     ) = showText x
+  pp (RangeVal    (x, y)) = showText x <> "-" <> showText y
 
 
 instance Pretty Hand where
@@ -309,14 +304,14 @@ instance Pretty Hand where
 
 
 instance Pretty InstaEffect where
-  pp (InstaEffectEnt   e ) = ppInstaEffectHelper "entity" . pp $ e
-  pp (InstaEffectMob   e ) = ppInstaEffectHelper "mob"    . pp $ e
-  pp (InstaEffectRm    e ) = ppInstaEffectHelper "room"   . pp $ e
-  pp (InstaEffectOther fn) = ppInstaEffectHelper "other"  . parensQuote $ fn
+  pp (InstaEffect effSub effVal) = T.concat [ bracketQuote "instantaneous", " ", pp effSub, " by ", effectValHelper effVal ]
 
 
-ppInstaEffectHelper :: Text -> Text -> Text
-ppInstaEffectHelper a b = T.concat [ bracketQuote "instantaneous", " ", a, " ", b ]
+instance Pretty InstaEffectSub where
+  pp EntInstaEffectFlags         = "ent flags"
+  pp (MobInstaEffectPts ptsType) = "mob "   <> pp ptsType
+  pp RmInstaEffectFlags          = "room flags"
+  pp (InstaEffectOther fn)       = "other " <> parensQuote fn
 
 
 instance Pretty Lang where
@@ -340,17 +335,8 @@ instance Pretty LoggedInOrOut where
   pp LoggedOut = "logged out"
 
 
-instance Pretty MobEffect where
-  pp (MobEffectAttrib a x) = pp a <> " by " <> showText x
-  pp (MobEffectAC       x) = "AC by "       <> showText x
-
-
-instance Pretty MobInstaEffect where
-  pp (MobInstaEffectPts p x) = pp p <> " by " <> showText x
-
-
 instance Pretty PausedEffect where
-  pp (PausedEffect e secs) = pp e <> " " <> showSecs secs
+  pp (PausedEffect e) = pp e
 
 
 instance Pretty ProfRec where
@@ -379,14 +365,6 @@ instance Pretty RightOrLeft where
   pp R   = "right"
   pp L   = "left"
   pp rol = pp (fromRol rol :: Slot)
-
-
-instance Pretty RmEffect where
-  pp (RmEffectFlags _) = undefined -- TODO
-
-
-instance Pretty RmInstaEffect where
-  pp (RmInstaEffectFlags _) = undefined -- TODO
 
 
 instance Pretty Sex where

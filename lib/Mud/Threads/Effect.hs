@@ -10,8 +10,8 @@ module Mud.Threads.Effect ( massPauseEffects
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
+import Mud.Data.State.Util.Random
 import Mud.Threads.Misc
-import Mud.TopLvlDefs.Misc
 import Mud.Util.Misc
 import Mud.Util.Operators
 import Mud.Util.Quoting
@@ -25,7 +25,7 @@ import Control.Concurrent.STM.TMVar (newEmptyTMVarIO, putTMVar, takeTMVar)
 import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
 import Control.Exception.Lifted (finally, handle)
 import Control.Lens (views)
-import Control.Lens.Operators ((%~), (.~), (<>~))
+import Control.Lens.Operators ((%~), (&), (.~), (<>~), (?~))
 import Control.Monad ((>=>), forM_, unless)
 import Control.Monad.IO.Class (liftIO)
 import Data.IORef (atomicWriteIORef, newIORef, readIORef)
@@ -48,15 +48,20 @@ logNotice = L.logNotice "Mud.Threads.Effect"
 -- ==================================================
 
 
-startEffect :: Id -> Effect -> Seconds -> MudStack ()
-startEffect i e secs = do
+startEffect :: Id -> Effect -> MudStack ()
+startEffect i e@(Effect _ (Just (RangeVal range)) _) = rndmR range >>= \x -> startEffectHelper i (e & effectVal ?~ DefiniteVal x)
+startEffect i e                                      = startEffectHelper i e
+
+
+startEffectHelper :: Id -> Effect -> MudStack ()
+startEffectHelper i e = do
     q <- liftIO newTQueueIO
-    a <- runAsync . threadEffect i e q $ secs
+    a <- runAsync . threadEffect i e $ q
     tweak $ activeEffectsTbl.ind i <>~ pure (ActiveEffect e (a, q))
 
 
-threadEffect :: Id -> Effect -> EffectQueue -> Seconds -> MudStack ()
-threadEffect i e q secs = handle (threadExHandler ("effect" <> " " <> parensQuote idTxt)) . onEnv $ \md -> do
+threadEffect :: Id -> Effect -> EffectQueue -> MudStack ()
+threadEffect i (Effect effSub _ secs) q = handle (threadExHandler tn) . onEnv $ \md -> do
     ti <- liftIO myThreadId
     let effectTimer ior = setThreadType (EffectTimer i) >> loop secs `finally` done
           where
@@ -64,8 +69,8 @@ threadEffect i e q secs = handle (threadExHandler ("effect" <> " " <> parensQuot
               then unit
               else liftIO (threadDelay $ 1 * 10 ^ 6) >> f >> loop (pred x)
               where
-                f = case e of EffectOther fn -> runEffectFun fn i x
-                              _              -> unit
+                f = case effSub of EffectOther fn -> runEffectFun fn i x
+                                   _              -> unit
         done = tweak $ activeEffectsTbl.ind i %~ filter (views effectService ((/= ti) . asyncThreadId . fst))
         queueListener ior = setThreadType (EffectListener i) >> loop
           where
@@ -80,6 +85,7 @@ threadEffect i e q secs = handle (threadExHandler ("effect" <> " " <> parensQuot
     racer md (effectTimer ior) . queueListener $ ior
     logHelper "is finishing."
   where
+    tn             = "effect" <> " " <> parensQuote idTxt
     idTxt          = showText i
     logHelper rest = logNotice "threadEffect" . T.concat $ [ "effect thread for ID ", idTxt, " ", rest ]
 
@@ -96,7 +102,8 @@ pauseEffects i = getState >>= \ms ->
     helper (ActiveEffect e (_, q)) = do
         tmv <- liftIO newEmptyTMVarIO
         liftIO . atomically . writeTQueue q . PauseEffect $ tmv
-        PausedEffect e <$> (liftIO . atomically . takeTMVar $ tmv)
+        secs <- liftIO . atomically . takeTMVar $ tmv
+        return . PausedEffect $ e & dur .~ secs
 
 
 massPauseEffects :: MudStack () -- At server shutdown, after everyone has been disconnected.
@@ -113,7 +120,7 @@ restartPausedEffects i = do
 
 restartPausedHelper :: Id -> [PausedEffect] -> MudStack ()
 restartPausedHelper i pes = do
-    forM_ pes $ \(PausedEffect e secs) -> startEffect i e secs
+    forM_ pes $ \(PausedEffect e) -> startEffect i e
     tweak $ pausedEffectsTbl.ind i .~ []
 
 

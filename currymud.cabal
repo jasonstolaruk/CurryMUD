@@ -179,6 +179,16 @@ test-suite             test
   type:                exitcode-stdio-1.0
   hs-source-dirs:      tests
   main-is:             test.hs
+  other-modules:       MudTests.Data.Misc
+                       MudTests.Data.State.Util.Misc
+                       MudTests.Data.State.Util.Random
+                       MudTests.TestUtil
+                       MudTests.TheWorld.TheWorld
+                       MudTests.Util.List
+                       MudTests.Util.Misc
+                       MudTests.Util.Padding
+                       MudTests.Util.Text
+                       MudTests.Util.Wrapping
   other-extensions:    OverloadedStrings
                        TupleSections
                        ViewPatterns

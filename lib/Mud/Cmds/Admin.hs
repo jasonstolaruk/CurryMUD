@@ -764,8 +764,8 @@ adminHost p = patternMatchFail "adminHost" [ showText p ]
 mkHostReport :: MudState -> UTCTime -> TimeZone -> Id -> Sing -> [Text]
 mkHostReport ms now zone i s = (header ++) $ case getHostMap s ms of
   Nothing      -> [ "There are no host records for " <> s <> "." ]
-  Just hostMap | dur       <- ili |?| duration
-               , total     <- M.foldl (\acc -> views secsConnected (+ acc)) 0 hostMap + getSum dur
+  Just hostMap | duration' <- ili |?| duration
+               , total     <- M.foldl (\acc -> views secsConnected (+ acc)) 0 hostMap + getSum duration'
                , totalDesc <- "Grand total time connected: " <> renderIt total
                -> M.foldrWithKey helper [] hostMap ++ pure totalDesc
   where

@@ -116,7 +116,7 @@ debugCmds =
     , mkDebugCmd "color"      debugColor       "Perform a color test."
     , mkDebugCmd "cores"      debugCores       "Display the number of processor cores."
     , mkDebugCmd "cpu"        debugCPU         "Display the CPU time."
-    , mkDebugCmd "effect"     debugEffect      "Add 10 to your HT for 30 seconds."
+    , mkDebugCmd "effect"     debugEffect      "Add 10-20 to your HT for 30 seconds."
     , mkDebugCmd "env"        debugEnv         "Display or search system environment variables."
     , mkDebugCmd "exp"        debugExp         "Award yourself 100,000 exp."
     , mkDebugCmd "fun"        debugFun         "Dump the keys of the \"FunTbl\", \"HookFunTbl\", \"RmActionFunTbl\", \
@@ -284,7 +284,7 @@ debugDispCmdList p                  = patternMatchFail "debugDispCmdList" [ show
 debugEffect :: ActionFun
 debugEffect (NoArgs' i mq) = do
     ok mq
-    startEffect i (EffectMob (MobEffectAttrib Ht 10)) 30
+    startEffect i . Effect (MobEffectAttrib Ht) (Just . RangeVal $ (10, 20)) $ 30
     logPlaExec (prefixDebugCmd "effect") i
 debugEffect p = withoutArgs debugEffect p
 
@@ -681,7 +681,7 @@ debugThrowLog p = withoutArgs debugThrowLog p
 debugTinnitus :: ActionFun
 debugTinnitus (NoArgs' i mq) = do
     ok mq
-    startEffect i (EffectOther tinnitusEffectFunName) 60
+    startEffect i . Effect (EffectOther tinnitusEffectFunName) Nothing $ 60
     logPlaExec (prefixDebugCmd "tinnitus") i
 debugTinnitus p = withoutArgs debugTinnitus p
 

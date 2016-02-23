@@ -42,7 +42,8 @@ potInstantStDistinctLiq :: DistinctLiq
 potInstantStDistinctLiq = DistinctLiq . EdibleEffects Nothing . Just $ ce
   where
     ce = ConsumpEffects 8 30 el
-    el = EffectList . pure . Right . EffectMob (5 * 60) . MobEffectAttrib St $ 10
+    el = EffectList . pure . Right $ e
+    e  = Effect (MobEffectAttrib St) (Just . RangeVal $ (8, 12)) $ 5 * 60
 
 
 potInstantStLiq :: Liq

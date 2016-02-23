@@ -137,27 +137,27 @@ data ActiveEffect = ActiveEffect { _effect        :: Effect
 
 
 -- Effects that have a duration.
-data Effect = EffectArm   Seconds ArmEffect
-            | EffectEnt   Seconds EntEffect
-            | EffectMob   Seconds MobEffect
-            | EffectRm    Seconds RmEffect
-            | EffectOther Seconds FunName deriving (Eq, Generic, Show)
+data Effect = Effect { _effectSub :: EffectSub
+                     , _effectVal :: Maybe EffectVal
+                     , _dur       :: Seconds } deriving (Eq, Generic, Show)
 
 
-data ArmEffect = ArmEffectAC AC deriving (Eq, Generic, Show)
-
-
-data EntEffect = EntEffectFlags Int deriving (Eq, Generic, Show)
-
-
-data MobEffect = MobEffectAttrib Attrib Int
-               | MobEffectAC AC deriving (Eq, Generic, Show)
+data EffectSub = ArmEffectAC
+               | EntEffectFlags
+               | MobEffectAttrib Attrib
+               | MobEffectAC
+               | RmEffectFlags
+               | EffectOther FunName deriving (Eq, Generic, Show)
 
 
 data Attrib = St | Dx | Ht | Ma | Ps deriving (Eq, Generic, Show)
 
 
-data RmEffect = RmEffectFlags Int deriving (Eq, Generic, Show)
+data EffectVal = DefiniteVal Int
+               | RangeVal    Range deriving (Eq, Generic, Show)
+
+
+type Range = (Int, Int)
 
 
 type EffectService = (EffectAsync, EffectQueue)
@@ -395,22 +395,17 @@ data HostRecord = HostRecord { _noOfLogouts   :: Int
 
 
 -- Effects that are instantaneous.
-data InstaEffect = InstaEffectEnt   EntInstaEffect
-                 | InstaEffectMob   MobInstaEffect
-                 | InstaEffectRm    RmInstaEffect
-                 | InstaEffectOther FunName deriving (Eq, Generic, Show)
+data InstaEffect = InstaEffect { _instaEffectSub :: InstaEffectSub
+                               , _instaEffectVal :: Maybe EffectVal } deriving (Eq, Generic, Show)
 
 
-data EntInstaEffect = EntInstaEffectFlags Int deriving (Eq, Generic, Show)
-
-
-data MobInstaEffect = MobInstaEffectPts PtsType Int deriving (Eq, Generic, Show)
+data InstaEffectSub = EntInstaEffectFlags
+                    | MobInstaEffectPts PtsType
+                    | RmInstaEffectFlags
+                    | InstaEffectOther FunName deriving (Eq, Generic, Show)
 
 
 data PtsType = CurHp | CurMp | CurPp | CurFp deriving (Eq, Generic, Show)
-
-
-data RmInstaEffect = RmInstaEffectFlags Int deriving (Eq, Generic, Show)
 
 
 -- ==================================================
@@ -634,8 +629,7 @@ jsonToObj _          = empty
 -- ==================================================
 
 
-data PausedEffect = PausedEffect { _pausedEffect    :: Effect
-                                 , _timeRemaining   :: Seconds } deriving (Eq, Generic, Show)
+newtype PausedEffect = PausedEffect Effect deriving (Eq, Generic, Show)
 
 
 -- ==================================================
@@ -927,7 +921,6 @@ data Writable = Writable { _message :: Maybe (Text, Lang)
 
 
 instance FromJSON Arm            where parseJSON = genericParseJSON dropUnderscore
-instance FromJSON ArmEffect
 instance FromJSON ArmSub
 instance FromJSON Attrib
 instance FromJSON Chan           where parseJSON = genericParseJSON dropUnderscore
@@ -936,27 +929,24 @@ instance FromJSON Coins
 instance FromJSON Con            where parseJSON = genericParseJSON dropUnderscore
 instance FromJSON DistinctFoodId where parseJSON = genericParseJSON dropUnderscore
 instance FromJSON DistinctLiqId  where parseJSON = genericParseJSON dropUnderscore
-instance FromJSON Effect
+instance FromJSON Effect         where parseJSON = genericParseJSON dropUnderscore
+instance FromJSON EffectSub
+instance FromJSON EffectVal
 instance FromJSON Ent            where parseJSON = genericParseJSON dropUnderscore
-instance FromJSON EntEffect
-instance FromJSON EntInstaEffect
 instance FromJSON Food           where parseJSON = genericParseJSON dropUnderscore
 instance FromJSON Hand
 instance FromJSON Hook
 instance FromJSON HostRecord     where parseJSON = genericParseJSON dropUnderscore
-instance FromJSON InstaEffect
+instance FromJSON InstaEffect    where parseJSON = genericParseJSON dropUnderscore
+instance FromJSON InstaEffectSub
 instance FromJSON Lang
 instance FromJSON LinkDir
 instance FromJSON Liq            where parseJSON = genericParseJSON dropUnderscore
-instance FromJSON MobEffect
-instance FromJSON MobInstaEffect
 instance FromJSON PausedEffect   where parseJSON = genericParseJSON dropUnderscore
 instance FromJSON PC             where parseJSON = genericParseJSON dropUnderscore
 instance FromJSON PtsType
 instance FromJSON Race
 instance FromJSON RmAction
-instance FromJSON RmEffect
-instance FromJSON RmInstaEffect
 instance FromJSON RmLink         where parseJSON = genericParseJSON dropUnderscore
 instance FromJSON Sex
 instance FromJSON Slot
@@ -967,7 +957,6 @@ instance FromJSON Wpn            where parseJSON = genericParseJSON dropUndersco
 instance FromJSON WpnSub
 instance FromJSON Writable       where parseJSON = genericParseJSON dropUnderscore
 instance ToJSON Arm              where toJSON    = genericToJSON    dropUnderscore
-instance ToJSON ArmEffect
 instance ToJSON ArmSub
 instance ToJSON Attrib
 instance ToJSON Chan             where toJSON    = genericToJSON    dropUnderscore
@@ -976,27 +965,24 @@ instance ToJSON Coins
 instance ToJSON Con              where toJSON    = genericToJSON    dropUnderscore
 instance ToJSON DistinctFoodId   where toJSON    = genericToJSON    dropUnderscore
 instance ToJSON DistinctLiqId    where toJSON    = genericToJSON    dropUnderscore
-instance ToJSON Effect
+instance ToJSON Effect           where toJSON    = genericToJSON    dropUnderscore
+instance ToJSON EffectSub
+instance ToJSON EffectVal
 instance ToJSON Ent              where toJSON    = genericToJSON    dropUnderscore
-instance ToJSON EntEffect
-instance ToJSON EntInstaEffect
 instance ToJSON Food             where toJSON    = genericToJSON    dropUnderscore
 instance ToJSON Hand
 instance ToJSON Hook
 instance ToJSON HostRecord       where toJSON    = genericToJSON    dropUnderscore
-instance ToJSON InstaEffect
+instance ToJSON InstaEffect      where toJSON    = genericToJSON    dropUnderscore
+instance ToJSON InstaEffectSub
 instance ToJSON Lang
 instance ToJSON LinkDir
 instance ToJSON Liq              where toJSON    = genericToJSON    dropUnderscore
-instance ToJSON MobEffect
-instance ToJSON MobInstaEffect
 instance ToJSON PausedEffect     where toJSON    = genericToJSON    dropUnderscore
 instance ToJSON PC               where toJSON    = genericToJSON    dropUnderscore
 instance ToJSON PtsType
 instance ToJSON Race
 instance ToJSON RmAction
-instance ToJSON RmEffect
-instance ToJSON RmInstaEffect
 instance ToJSON RmLink           where toJSON    = genericToJSON    dropUnderscore
 instance ToJSON Sex
 instance ToJSON Slot
@@ -1023,9 +1009,11 @@ makeLenses ''ConsumpEffects
 makeLenses ''DistinctFood
 makeLenses ''DistinctLiq
 makeLenses ''EdibleEffects
+makeLenses ''Effect
 makeLenses ''Ent
 makeLenses ''Food
 makeLenses ''HostRecord
+makeLenses ''InstaEffect
 makeLenses ''Liq
 makeLenses ''Locks
 makeLenses ''Mob

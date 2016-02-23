@@ -37,7 +37,6 @@ blowUp = U.blowUp "Mud.Data.State.Util.Random"
 
 
 type Count = Int
-type Range = (Int, Int)
 
 
 getGen :: MudStack GenIO
