@@ -43,80 +43,82 @@ data MudData = MudData { _errorLog      :: Maybe LogService
                        , _startTime     :: TimeSpec }
 
 
-data MudState = MudState { _activeEffectsTbl :: ActiveEffectsTbl
-                         , _armTbl           :: ArmTbl
-                         , _chanTbl          :: ChanTbl
-                         , _clothTbl         :: ClothTbl
-                         , _coinsTbl         :: CoinsTbl
-                         , _conTbl           :: ConTbl
-                         , _distinctFoodTbl  :: DistinctFoodTbl
-                         , _distinctLiqTbl   :: DistinctLiqTbl
-                         , _effectFunTbl     :: EffectFunTbl
-                         , _entTbl           :: EntTbl
-                         , _eqTbl            :: EqTbl
-                         , _foodTbl          :: FoodTbl
-                         , _funTbl           :: FunTbl
-                         , _hookFunTbl       :: HookFunTbl
-                         , _hostTbl          :: HostTbl
-                         , _invTbl           :: InvTbl
-                         , _mobTbl           :: MobTbl
-                         , _msgQueueTbl      :: MsgQueueTbl
-                         , _npcTbl           :: NpcTbl
-                         , _objTbl           :: ObjTbl
-                         , _opList           :: [Operation]
-                         , _pausedEffectsTbl :: PausedEffectsTbl
-                         , _pcTbl            :: PCTbl
-                         , _plaLogTbl        :: PlaLogTbl
-                         , _plaTbl           :: PlaTbl
-                         , _rmActionFunTbl   :: RmActionFunTbl
-                         , _rmTbl            :: RmTbl
-                         , _rmTeleNameTbl    :: RmTeleNameTbl
-                         , _rndmNamesMstrTbl :: RndmNamesMstrTbl
-                         , _talkAsyncTbl     :: TalkAsyncTbl
-                         , _teleLinkMstrTbl  :: TeleLinkMstrTbl
-                         , _threadTbl        :: ThreadTbl
-                         , _typeTbl          :: TypeTbl
-                         , _vesselTbl        :: VesselTbl
-                         , _wpnTbl           :: WpnTbl
-                         , _writableTbl      :: WritableTbl }
+data MudState = MudState { _activeEffectsTbl  :: ActiveEffectsTbl
+                         , _armTbl            :: ArmTbl
+                         , _chanTbl           :: ChanTbl
+                         , _clothTbl          :: ClothTbl
+                         , _coinsTbl          :: CoinsTbl
+                         , _conTbl            :: ConTbl
+                         , _distinctFoodTbl   :: DistinctFoodTbl
+                         , _distinctLiqTbl    :: DistinctLiqTbl
+                         , _effectFunTbl      :: EffectFunTbl
+                         , _entTbl            :: EntTbl
+                         , _eqTbl             :: EqTbl
+                         , _foodTbl           :: FoodTbl
+                         , _funTbl            :: FunTbl
+                         , _hookFunTbl        :: HookFunTbl
+                         , _hostTbl           :: HostTbl
+                         , _instaEffectFunTbl :: InstaEffectFunTbl
+                         , _invTbl            :: InvTbl
+                         , _mobTbl            :: MobTbl
+                         , _msgQueueTbl       :: MsgQueueTbl
+                         , _npcTbl            :: NpcTbl
+                         , _objTbl            :: ObjTbl
+                         , _opList            :: [Operation]
+                         , _pausedEffectsTbl  :: PausedEffectsTbl
+                         , _pcTbl             :: PCTbl
+                         , _plaLogTbl         :: PlaLogTbl
+                         , _plaTbl            :: PlaTbl
+                         , _rmActionFunTbl    :: RmActionFunTbl
+                         , _rmTbl             :: RmTbl
+                         , _rmTeleNameTbl     :: RmTeleNameTbl
+                         , _rndmNamesMstrTbl  :: RndmNamesMstrTbl
+                         , _talkAsyncTbl      :: TalkAsyncTbl
+                         , _teleLinkMstrTbl   :: TeleLinkMstrTbl
+                         , _threadTbl         :: ThreadTbl
+                         , _typeTbl           :: TypeTbl
+                         , _vesselTbl         :: VesselTbl
+                         , _wpnTbl            :: WpnTbl
+                         , _writableTbl       :: WritableTbl }
 
 
-type ActiveEffectsTbl = IM.IntMap [ActiveEffect]
-type ArmTbl           = IM.IntMap Arm
-type ChanTbl          = IM.IntMap Chan
-type ClothTbl         = IM.IntMap Cloth
-type CoinsTbl         = IM.IntMap Coins
-type ConTbl           = IM.IntMap Con
-type DistinctFoodTbl  = IM.IntMap DistinctFood
-type DistinctLiqTbl   = IM.IntMap DistinctLiq
-type EffectFunTbl     = M.Map FunName EffectFun
-type EntTbl           = IM.IntMap Ent
-type EqTbl            = IM.IntMap EqMap
-type FoodTbl          = IM.IntMap Food
-type FunTbl           = M.Map FunName Fun
-type HookFunTbl       = M.Map HookName HookFun
-type HostTbl          = M.Map Sing HostMap
-type InvTbl           = IM.IntMap Inv
-type MobTbl           = IM.IntMap Mob
-type MsgQueueTbl      = IM.IntMap MsgQueue
-type NpcTbl           = IM.IntMap Npc
-type ObjTbl           = IM.IntMap Obj
-type Operation        = MudStack ()
-type PausedEffectsTbl = IM.IntMap [PausedEffect]
-type PCTbl            = IM.IntMap PC
-type PlaLogTbl        = IM.IntMap LogService
-type PlaTbl           = IM.IntMap Pla
-type RmActionFunTbl   = M.Map FunName RmActionFun
-type RmTbl            = IM.IntMap Rm
-type RmTeleNameTbl    = IM.IntMap Text
-type RndmNamesMstrTbl = IM.IntMap RndmNamesTbl
-type TalkAsyncTbl     = M.Map ThreadId TalkAsync
-type TeleLinkMstrTbl  = IM.IntMap TeleLinkTbl
-type ThreadTbl        = M.Map ThreadId ThreadType
-type TypeTbl          = IM.IntMap Type
-type VesselTbl        = IM.IntMap Vessel
-type WpnTbl           = IM.IntMap Wpn
-type WritableTbl      = IM.IntMap Writable
+type ActiveEffectsTbl  = IM.IntMap [ActiveEffect]
+type ArmTbl            = IM.IntMap Arm
+type ChanTbl           = IM.IntMap Chan
+type ClothTbl          = IM.IntMap Cloth
+type CoinsTbl          = IM.IntMap Coins
+type ConTbl            = IM.IntMap Con
+type DistinctFoodTbl   = IM.IntMap DistinctFood
+type DistinctLiqTbl    = IM.IntMap DistinctLiq
+type EffectFunTbl      = M.Map FunName EffectFun
+type EntTbl            = IM.IntMap Ent
+type EqTbl             = IM.IntMap EqMap
+type FoodTbl           = IM.IntMap Food
+type FunTbl            = M.Map FunName Fun
+type HookFunTbl        = M.Map HookName HookFun
+type HostTbl           = M.Map Sing HostMap
+type InstaEffectFunTbl = M.Map FunName InstaEffectFun
+type InvTbl            = IM.IntMap Inv
+type MobTbl            = IM.IntMap Mob
+type MsgQueueTbl       = IM.IntMap MsgQueue
+type NpcTbl            = IM.IntMap Npc
+type ObjTbl            = IM.IntMap Obj
+type Operation         = MudStack ()
+type PausedEffectsTbl  = IM.IntMap [PausedEffect]
+type PCTbl             = IM.IntMap PC
+type PlaLogTbl         = IM.IntMap LogService
+type PlaTbl            = IM.IntMap Pla
+type RmActionFunTbl    = M.Map FunName RmActionFun
+type RmTbl             = IM.IntMap Rm
+type RmTeleNameTbl     = IM.IntMap Text
+type RndmNamesMstrTbl  = IM.IntMap RndmNamesTbl
+type TalkAsyncTbl      = M.Map ThreadId TalkAsync
+type TeleLinkMstrTbl   = IM.IntMap TeleLinkTbl
+type ThreadTbl         = M.Map ThreadId ThreadType
+type TypeTbl           = IM.IntMap Type
+type VesselTbl         = IM.IntMap Vessel
+type WpnTbl            = IM.IntMap Wpn
+type WritableTbl       = IM.IntMap Writable
 
 
 -- ==================================================
@@ -406,6 +408,9 @@ data InstaEffectSub = EntInstaEffectFlags
 
 
 data PtsType = CurHp | CurMp | CurPp | CurFp deriving (Eq, Generic, Show)
+
+
+type InstaEffectFun = Id -> MudStack ()
 
 
 -- ==================================================

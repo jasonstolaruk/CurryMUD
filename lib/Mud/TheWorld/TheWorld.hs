@@ -3,12 +3,12 @@
 module Mud.TheWorld.TheWorld ( initMudData
                              , initWorld ) where
 
-import Mud.Cmds.Debug
 import Mud.Cmds.Msgs.Misc
 import Mud.Data.Misc
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
+import Mud.Misc.EffectFuns
 import Mud.Misc.Logging hiding (logNotice)
 import Mud.TheWorld.Foods
 import Mud.TheWorld.Liqs
@@ -54,42 +54,43 @@ initMudData shouldLog = do
     (logExLock,       perLock         ) <- (,) <$> newTMVarIO Done <*> newTMVarIO Done
     (errorLogService, noticeLogService) <- initLogging shouldLog . Just $ logExLock
     genIO   <- createSystemRandom
-    msIORef <- newIORef MudState { _activeEffectsTbl = IM.empty
-                                 , _armTbl           = IM.empty
-                                 , _chanTbl          = IM.empty
-                                 , _clothTbl         = IM.empty
-                                 , _coinsTbl         = IM.empty
-                                 , _conTbl           = IM.empty
-                                 , _distinctFoodTbl  = IM.empty
-                                 , _distinctLiqTbl   = IM.empty
-                                 , _effectFunTbl     =  M.empty
-                                 , _entTbl           = IM.empty
-                                 , _eqTbl            = IM.empty
-                                 , _foodTbl          = IM.empty
-                                 , _funTbl           =  M.empty
-                                 , _hookFunTbl       =  M.empty
-                                 , _hostTbl          =  M.empty
-                                 , _invTbl           = IM.empty
-                                 , _mobTbl           = IM.empty
-                                 , _msgQueueTbl      = IM.empty
-                                 , _npcTbl           = IM.empty
-                                 , _objTbl           = IM.empty
-                                 , _opList           = []
-                                 , _pausedEffectsTbl = IM.empty
-                                 , _pcTbl            = IM.empty
-                                 , _plaLogTbl        = IM.empty
-                                 , _plaTbl           = IM.empty
-                                 , _rmActionFunTbl   =  M.empty
-                                 , _rmTbl            = IM.empty
-                                 , _rmTeleNameTbl    = IM.empty
-                                 , _rndmNamesMstrTbl = IM.empty
-                                 , _talkAsyncTbl     =  M.empty
-                                 , _teleLinkMstrTbl  = IM.empty
-                                 , _threadTbl        =  M.empty
-                                 , _typeTbl          = IM.empty
-                                 , _vesselTbl        = IM.empty
-                                 , _wpnTbl           = IM.empty
-                                 , _writableTbl      = IM.empty }
+    msIORef <- newIORef MudState { _activeEffectsTbl  = IM.empty
+                                 , _armTbl            = IM.empty
+                                 , _chanTbl           = IM.empty
+                                 , _clothTbl          = IM.empty
+                                 , _coinsTbl          = IM.empty
+                                 , _conTbl            = IM.empty
+                                 , _distinctFoodTbl   = IM.empty
+                                 , _distinctLiqTbl    = IM.empty
+                                 , _effectFunTbl      =  M.empty
+                                 , _entTbl            = IM.empty
+                                 , _eqTbl             = IM.empty
+                                 , _foodTbl           = IM.empty
+                                 , _funTbl            =  M.empty
+                                 , _hookFunTbl        =  M.empty
+                                 , _hostTbl           =  M.empty
+                                 , _instaEffectFunTbl =  M.empty
+                                 , _invTbl            = IM.empty
+                                 , _mobTbl            = IM.empty
+                                 , _msgQueueTbl       = IM.empty
+                                 , _npcTbl            = IM.empty
+                                 , _objTbl            = IM.empty
+                                 , _opList            = []
+                                 , _pausedEffectsTbl  = IM.empty
+                                 , _pcTbl             = IM.empty
+                                 , _plaLogTbl         = IM.empty
+                                 , _plaTbl            = IM.empty
+                                 , _rmActionFunTbl    =  M.empty
+                                 , _rmTbl             = IM.empty
+                                 , _rmTeleNameTbl     = IM.empty
+                                 , _rndmNamesMstrTbl  = IM.empty
+                                 , _talkAsyncTbl      =  M.empty
+                                 , _teleLinkMstrTbl   = IM.empty
+                                 , _threadTbl         =  M.empty
+                                 , _typeTbl           = IM.empty
+                                 , _vesselTbl         = IM.empty
+                                 , _wpnTbl            = IM.empty
+                                 , _writableTbl       = IM.empty }
     start   <- getTime Monotonic
     return MudData { _errorLog      = errorLogService
                    , _gen           = genIO
@@ -101,12 +102,13 @@ initMudData shouldLog = do
 
 initWorld :: MudStack Bool
 initWorld = dropIrrelevantFilenames . sort <$> (liftIO . getDirectoryContents $ persistDir) >>= \cont -> do
-    initFunTbl
-    initEffectFunTbl
-    initHookFunTbl
-    initRmActionFunTbl
-    initDistinctFoodTbl
-    initDistinctLiqTbl
+    sequence_ [ initFunTbl
+              , initEffectFunTbl
+              , initInstaEffectFunTbl
+              , initHookFunTbl
+              , initRmActionFunTbl
+              , initDistinctFoodTbl
+              , initDistinctLiqTbl ]
     ()# cont ? (createWorld >> return True) :? (loadWorld . last $ cont)
 
 
@@ -119,7 +121,13 @@ initFunTbl = tweak $ funTbl .~ M.fromList list
 initEffectFunTbl :: MudStack ()
 initEffectFunTbl = tweak $ effectFunTbl .~ M.fromList list
   where
-    list = debugEffectFuns
+    list = effectFuns
+
+
+initInstaEffectFunTbl :: MudStack ()
+initInstaEffectFunTbl = tweak $ instaEffectFunTbl .~ M.fromList list
+  where
+    list = instaEffectFuns
 
 
 initHookFunTbl :: MudStack ()

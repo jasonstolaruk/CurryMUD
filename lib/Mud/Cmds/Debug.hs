@@ -2,7 +2,6 @@
 {-# LANGUAGE LambdaCase, MonadComprehensions, NamedFieldPuns, OverloadedStrings, PatternSynonyms, TupleSections, ViewPatterns #-}
 
 module Mud.Cmds.Debug ( debugCmds
-                      , debugEffectFuns
                       , purgeThreadTbls
                       , {- Not a typo. -} ) where
 
@@ -22,6 +21,7 @@ import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Data.State.Util.Random
 import Mud.Misc.ANSI
+import Mud.Misc.EffectFuns
 import Mud.Misc.Persist
 import Mud.TheWorld.Zones.AdminZoneIds (iLoggedOut, iPidge)
 import Mud.Threads.Effect
@@ -681,24 +681,9 @@ debugThrowLog p = withoutArgs debugThrowLog p
 debugTinnitus :: ActionFun
 debugTinnitus (NoArgs' i mq) = do
     ok mq
-    startEffect i . Effect (EffectOther tinnitusEffectFunName) Nothing $ 60
+    startEffect i . Effect (EffectOther tinnitusEffectFunName) Nothing $ 2 * 60
     logPlaExec (prefixDebugCmd "tinnitus") i
 debugTinnitus p = withoutArgs debugTinnitus p
-
-
-debugEffectFuns :: [(FunName, EffectFun)]
-debugEffectFuns = pure (tinnitusEffectFunName, tinnitusEffectFun)
-
-
-tinnitusEffectFunName :: FunName
-tinnitusEffectFunName = "debug_Effect_tinnitus"
-
-
-tinnitusEffectFun :: EffectFun
-tinnitusEffectFun i secs
-  | secs `mod` 5 == 0 = rndmDo 25 $ getMsgQueueColumns i <$> getState >>= \(mq, cols) ->
-      wrapSend mq cols "You hear an awful ringing in your ears."
-  | otherwise = unit
 
 
 -----
