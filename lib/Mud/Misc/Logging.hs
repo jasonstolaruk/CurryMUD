@@ -177,7 +177,7 @@ closeLogs = asks mkBindings >>= \((ea, eq), (na, nq)) -> do
     logNotice "Mud.Logging" "closeLogs" "closing the logs."
     (as, qs) <- unzip . views plaLogTbl IM.elems <$> getState
     liftIO $ do
-        atomically . mapM_ (`writeTQueue` StopLog) $ eq : nq : qs
+        mapM_ (atomically . (`writeTQueue` StopLog)) $ eq : nq : qs
         mapM_ wait $ ea : na : as
         removeAllHandlers
   where

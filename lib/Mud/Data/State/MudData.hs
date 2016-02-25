@@ -296,7 +296,7 @@ data ConsumpEffects = ConsumpEffects { _consumpAmt      :: Int -- Number of food
 -- ==================================================
 
 
--- Has effects.
+-- Has paused/active effects.
 data Ent = Ent { _entId    :: Id
                , _entName  :: Maybe Text
                , _sing     :: Sing
@@ -874,16 +874,16 @@ data ThreadType = Biodegrader    Id
 -- ==================================================
 
 
-data Type = ObjType
+data Type = ArmType
           | ClothType
           | ConType
           | FoodType
-          | WpnType
-          | ArmType
           | NpcType
+          | ObjType
           | PCType
           | RmType
           | VesselType
+          | WpnType
           | WritableType deriving (Eq, Generic, Show)
 
 

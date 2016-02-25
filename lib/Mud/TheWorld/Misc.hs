@@ -135,7 +135,8 @@ trashHelper i ms as =
     op = rndmDo 10 $ let msg = "The lid of the trash bin momentarily opens of its own accord as a loud belch is \
                                \emitted from inside the container."
                      in do
-                         liftIO . threadDelay $ 3 * 10 ^ 6
+                         secs <- rndmR (1, 4)
+                         liftIO . threadDelay $ secs * 10 ^ 6
                          getState >>= \ms' -> bcastNl . pure $ (msg, findMobIds ms' . getMobRmInv i $ ms')
 
 

@@ -28,7 +28,7 @@ import Control.Lens (views)
 import Control.Lens.Operators ((%~), (&), (.~), (<>~), (?~))
 import Control.Monad ((>=>), forM_, unless)
 import Control.Monad.IO.Class (liftIO)
-import Data.IORef (atomicWriteIORef, newIORef, readIORef)
+import Data.IORef (newIORef, readIORef)
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import qualified Data.IntMap.Lazy as IM (keys, toList)
@@ -65,7 +65,7 @@ threadEffect i (Effect effSub _ secs) q = handle (threadExHandler tn) . onEnv $ 
     ti <- liftIO myThreadId
     let effectTimer ior = setThreadType (EffectTimer i) >> loop secs `finally` done
           where
-            loop x = liftIO (atomicWriteIORef ior x) >> if x == 0
+            loop x = liftIO (atomicWriteIORef' ior x) >> if x == 0
               then unit
               else liftIO (threadDelay $ 1 * 10 ^ 6) >> f >> loop (pred x)
               where

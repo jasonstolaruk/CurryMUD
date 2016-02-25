@@ -16,6 +16,7 @@ import Control.Lens.Operators ((&), (.~), (^.))
 import Control.Monad ((>=>), forever)
 import Control.Monad.IO.Class (liftIO)
 import Data.Text (Text)
+--import Debug.Trace (traceEventIO)
 
 
 default (Int)
@@ -39,9 +40,10 @@ threadOpListMonitor = handle (threadExHandler "operation list monitor") $ do
 
 
 loop :: MudStack ()
-loop = view opList <$> getState >>= \case
+loop = {- traceEventHelper >> -} view opList <$> getState >>= \case
   [] -> delay
   _  -> (helper |&| modifyState >=> mapM_ onNewThread) >> delay
   where
-    delay     = liftIO . threadDelay $ 10 ^ 5 -- 0.1 secs
+    --traceEventHelper = liftIO . traceEventIO $ "*** OpListMonitor loop tick"
+    delay     = liftIO . threadDelay $ 250000 -- 0.25 secs
     helper ms = (ms & opList .~ [], ms^.opList)

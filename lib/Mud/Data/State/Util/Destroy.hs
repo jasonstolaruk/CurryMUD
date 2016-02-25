@@ -4,41 +4,53 @@ module Mud.Data.State.Util.Destroy where
 
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
+import Mud.Data.State.Util.Misc
 import Mud.Threads.Misc
+import Mud.Util.Misc
 
 import Control.Lens (at)
-import Control.Lens.Operators ((%~), (&), (.~), (<>~))
+import Control.Lens.Operators ((%~), (&), (.~))
 import Data.List (delete)
 import qualified Data.IntMap.Lazy as IM (map)
 
 
-destroy :: MudState -> Inv -> MudState
-destroy = foldr helper
+destroy :: Inv -> MudStack ()
+destroy is = stopBiodegraders >> destroyHelper is
+  where
+    stopBiodegraders = getState >>= \ms -> let f i = maybeVoid throwDeath . getBiodegraderAsync i $ ms
+                                           in mapM_ f . filter (`hasObj` ms) $ is
+
+
+destroyHelper :: Inv -> MudStack ()
+destroyHelper is = tweak $ \ms -> foldr helper ms is
   where
     helper i ms = case getType i ms of
-      ArmType   -> ms & destroyEnt & destroyObj & destroyArm   & rest
-      ClothType -> ms & destroyEnt & destroyObj & destroyCloth & rest
-      ConType   -> (foldr helper ms . getInv i $ ms) & destroyEnt
-                                                     & destroyObj
-                                                     & destroyInv
-                                                     & destroyCoins
-                                                     & destroyCloth
-                                                     & destroyCon
-                                                     & rest
-      ObjType   -> ms & destroyEnt & destroyObj              & rest
-      WpnType   -> ms & destroyEnt & destroyObj & destroyWpn & rest
-      _         -> ms
+      ArmType      -> ms & destroyEnt & destroyObj & destroyArm   & rest
+      ClothType    -> ms & destroyEnt & destroyObj & destroyCloth & rest
+      ConType      -> (foldr helper ms . getInv i $ ms) & destroyEnt
+                                                        & destroyObj
+                                                        & destroyInv
+                                                        & destroyCoins
+                                                        & destroyCloth
+                                                        & destroyCon
+                                                        & rest
+      FoodType     -> ms & destroyEnt & destroyObj & destoryFood     & rest
+      ObjType      -> ms & destroyEnt & destroyObj                   & rest
+      VesselType   -> ms & destroyEnt & destroyObj & destroyVessel   & rest
+      WpnType      -> ms & destroyEnt & destroyObj & destroyWpn      & rest
+      WritableType -> ms & destroyEnt & destroyObj & destroyWritable & rest
+      _            -> ms
       where
-        destroyArm   = armTbl  .at i .~ Nothing
-        destroyCloth = clothTbl.at i .~ Nothing
-        destroyCoins = coinsTbl.at i .~ Nothing
-        destroyCon   = conTbl  .at i .~ Nothing
-        destroyEnt   = entTbl  .at i .~ Nothing
-        destroyInv   = invTbl  .at i .~ Nothing
-        destroyObj ms' = let ops = maybe [] (pure . throwDeath) . getBiodegraderAsync i $ ms'
-                         in ms' & objTbl.at i .~ Nothing
-                                & opList <>~ ops
-        destroyType  = typeTbl .at i .~ Nothing
-        destroyWpn   = wpnTbl  .at i .~ Nothing
-        rest ms'     = ms' & destroyType & invTblHelper
-        invTblHelper = invTbl %~ IM.map (i `delete`)
+        destroyArm      = armTbl     .at i .~ Nothing
+        destroyCloth    = clothTbl   .at i .~ Nothing
+        destroyCoins    = coinsTbl   .at i .~ Nothing
+        destroyCon      = conTbl     .at i .~ Nothing
+        destroyEnt      = entTbl     .at i .~ Nothing
+        destoryFood     = foodTbl    .at i .~ Nothing
+        destroyInv      = invTbl     .at i .~ Nothing
+        destroyObj      = objTbl     .at i .~ Nothing
+        destroyType     = typeTbl    .at i .~ Nothing
+        destroyVessel   = vesselTbl  .at i .~ Nothing
+        destroyWpn      = wpnTbl     .at i .~ Nothing
+        destroyWritable = writableTbl.at i .~ Nothing
+        rest ms'        = ms' & destroyType & invTbl %~ IM.map (i `delete`)

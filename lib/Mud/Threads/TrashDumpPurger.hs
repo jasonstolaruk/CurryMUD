@@ -15,7 +15,7 @@ import qualified Mud.Misc.Logging as L (logNotice)
 
 import Control.Concurrent (threadDelay)
 import Control.Exception.Lifted (catch, handle)
-import Control.Lens.Operators ((&), (.~))
+import Control.Lens.Operators ((.~))
 import Control.Monad (forever)
 import Control.Monad.IO.Class (liftIO)
 import Data.Text (Text)
@@ -43,6 +43,7 @@ threadTrashDumpPurger = handle (threadExHandler "trash dump purger") $ do
 
 
 purgeTrashDump :: MudStack ()
-purgeTrashDump = do
+purgeTrashDump = getInv iTrashDump <$> getState >>= \is -> do
     logNotice "purgeTrashDump" "purging the trash dump."
-    tweak $ \ms -> destroy ms (getInv iTrashDump ms) & coinsTbl.ind iTrashDump .~ mempty
+    destroy is
+    tweak $ coinsTbl.ind iTrashDump .~ mempty

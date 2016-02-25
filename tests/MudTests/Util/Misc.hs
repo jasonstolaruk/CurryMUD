@@ -2,7 +2,7 @@ module MudTests.Util.Misc where
 
 import Mud.Util.Misc
 
-import Data.IORef (newIORef, readIORef, writeIORef)
+import Data.IORef (newIORef, readIORef, writeIORef')
 import Test.Tasty.HUnit ((@=?), Assertion)
 
 
@@ -17,7 +17,7 @@ data AOrB = A | B deriving (Eq, Show)
 
 helper :: (IO Bool -> IO () -> IO ()) -> Bool -> AOrB -> Assertion
 helper f b aOrB = newIORef A >>= \ref -> do
-    f (return b) . writeIORef ref $ B
+    f (return b) . writeIORef' ref $ B
     (aOrB @=?) =<< readIORef ref
 
 

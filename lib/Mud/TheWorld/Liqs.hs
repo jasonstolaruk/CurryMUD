@@ -23,7 +23,7 @@ distinctLiqList = [ (iLiqPotHealing,         potHealingDistinctLiq        )
                   , (iLiqWater,              waterDistinctLiq             ) ]
 
 
-iLiqWater :: Id
+iLiqWater :: Id -- TODO: Make a "LiqIds" module?
 iLiqWater = 0
 
 

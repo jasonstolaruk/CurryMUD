@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleContexts, LambdaCase, MonadComprehensions, OverloadedStrings, RankNTypes, ViewPatterns #-}
 
 module Mud.Util.Misc ( atLst1
+                     , atomicWriteIORef'
                      , blowUp
                      , boolToMaybe
                      , concatMapM
@@ -50,6 +51,7 @@ import Control.Lens.Operators ((%~), (&))
 import Control.Monad (guard)
 import Data.Function (on)
 import Data.IntMap.Lazy ((!))
+import Data.IORef (IORef, atomicWriteIORef)
 import Data.List (delete)
 import Data.Monoid ((<>))
 import Data.Text (Text)
@@ -69,6 +71,10 @@ atLst1 :: (Eq a, Num a) => a -> a
 atLst1 x = case signum x of -1 -> 1
                             0  -> 1
                             _  -> x
+
+
+atomicWriteIORef' :: IORef a -> a -> IO ()
+atomicWriteIORef' ior x = atomicWriteIORef ior $! x
 
 
 boolToMaybe :: Bool -> a -> Maybe a

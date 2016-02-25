@@ -26,6 +26,7 @@ module Mud.Data.State.Util.Misc ( addToInv
                                 , getRmActionFun
                                 , getState
                                 , getUnusedId
+                                , hasObj
                                 , isKnownLang
                                 , isLoggedIn
                                 , isNpc
@@ -76,7 +77,7 @@ import Control.Lens.Operators ((%~), (&), (.~), (^.))
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (ask)
 import Data.IntMap.Lazy ((!))
-import Data.IORef (atomicModifyIORef, readIORef)
+import Data.IORef (atomicModifyIORef', readIORef)
 import Data.List ((\\), delete, foldl', nub, sortBy)
 import Data.Maybe (catMaybes, fromJust, fromMaybe)
 import Data.Monoid (Sum(..), (<>))
@@ -301,6 +302,13 @@ getUnusedId = views typeTbl (head . ([0..] \\) . IM.keys)
 -----
 
 
+hasObj :: Id -> MudState -> Bool
+hasObj i ms = getType i ms `elem` [ ArmType, ClothType, ConType, FoodType, ObjType, VesselType, WpnType, WritableType ]
+
+
+-----
+
+
 isKnownLang :: Id -> MudState -> Lang -> Bool
 isKnownLang i ms lang | isAdminId i ms = True
                       | otherwise      = lang `elem` CommonLang : getKnownLangs i ms
@@ -409,7 +417,7 @@ mkStdDesig i ms sc = StdDesig { sDesigEntSing = Just . getSing i $ ms
 
 
 modifyState :: (MudState -> (MudState, a)) -> MudStack a
-modifyState f = ask >>= \md -> liftIO .  atomicModifyIORef (md^.mudStateIORef) $ f
+modifyState f = ask >>= \md -> liftIO .  atomicModifyIORef' (md^.mudStateIORef) $ f
 
 
 -----

@@ -41,6 +41,7 @@ import Control.Monad.Reader (runReaderT)
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import Data.Typeable (Typeable)
+import GHC.Conc (labelThread)
 import qualified Data.IntMap.Lazy as IM (filter, keys)
 
 
@@ -150,9 +151,9 @@ runAsync f = onEnv $ liftIO . async . runReaderT f
 
 
 setThreadType :: ThreadType -> MudStack ()
-setThreadType threadType = tweak . helper =<< liftIO myThreadId
-  where
-    helper ti = threadTbl.at ti ?~ threadType
+setThreadType threadType = do
+    ti <- liftIO $ myThreadId >>= \ti -> labelThread ti (show threadType) >> return ti
+    tweak $ threadTbl.at ti ?~ threadType
 
 
 -----
