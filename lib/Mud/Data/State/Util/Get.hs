@@ -184,15 +184,29 @@ getCurrHostName i = view currHostName . getPla i
 -----
 
 
-getDistinctFood :: Food -> MudState -> DistinctFood
-getDistinctFood (view foodId -> DistinctFoodId i) = view (distinctFoodTbl.ind i)
+getDistinctFood :: Id -> MudState -> DistinctFood
+getDistinctFood i = view (distinctFoodTbl.ind i)
 
 
 -----
 
 
-getDistinctLiq :: Liq -> MudState -> DistinctLiq
-getDistinctLiq (view liqId -> DistinctLiqId i) = view (distinctLiqTbl.ind i)
+getDistinctFoodForFood :: Food -> MudState -> DistinctFood
+getDistinctFoodForFood (view foodId -> DistinctFoodId i) = view (distinctFoodTbl.ind i)
+
+
+-----
+
+
+getDistinctLiq :: Id -> MudState -> DistinctLiq
+getDistinctLiq i = view (distinctLiqTbl.ind i)
+
+
+-----
+
+
+getDistinctLiqForLiq :: Liq -> MudState -> DistinctLiq
+getDistinctLiqForLiq (view liqId -> DistinctLiqId i) = view (distinctLiqTbl.ind i)
 
 
 -----

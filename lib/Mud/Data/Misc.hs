@@ -350,6 +350,11 @@ instance Pretty PtsType where
   pp CurFp = "cur FP"
 
 
+instance Pretty StomachCont where
+  pp (StomachCont (Left  dli) t b) = slashes [ showText dli, showText t, showText b ]
+  pp (StomachCont (Right dfi) t b) = slashes [ showText dfi, showText t, showText b ]
+
+
 instance Pretty Race where
   pp Dwarf     = "dwarf"
   pp Elf       = "elf"

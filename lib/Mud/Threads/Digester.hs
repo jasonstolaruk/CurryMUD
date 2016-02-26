@@ -6,10 +6,12 @@ module Mud.Threads.Digester ( runDigesterAsync
                             , stopNpcDigesters
                             , throwWaitDigester ) where
 
+import Mud.Data.Misc
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Random
+import Mud.Threads.Effect
 import Mud.Threads.Misc
 import Mud.TopLvlDefs.Misc
 import Mud.Util.Misc
@@ -20,9 +22,11 @@ import qualified Mud.Misc.Logging as L (logNotice, logPla)
 import Control.Concurrent (threadDelay)
 import Control.Exception.Lifted (handle)
 import Control.Lens (views)
-import Control.Lens.Operators ((&), (.~), (?~), (^.))
+import Control.Lens.Operators ((%~), (&), (.~), (?~), (^.))
 import Control.Monad ((>=>), forever)
 import Control.Monad.IO.Class (liftIO)
+import Data.Either (partitionEithers)
+import Data.List (delete)
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import Data.Time (diffUTCTime, getCurrentTime)
@@ -78,11 +82,17 @@ threadDigester i = handle (threadExHandler $ "digester " <> showText i) $ do
 
 digest :: Id -> MudStack ()
 digest i = getState >>= \ms -> case getStomach i ms of []  -> unit
-                                                       scs -> helper scs
+                                                       scs -> helper ms scs
   where
-    helper scs = do
+    helper ms scs = do
         sc  <- rndmElem scs
         now <- liftIO getCurrentTime
-        let duration = views cosumpTime (round . (now `diffUTCTime`)) sc
-            f        = logPla "digest" i "digesting." -- TODO
-        duration < digesterDelay ? unit :? f
+        let duration                      = views cosumpTime (round . (now `diffUTCTime`)) sc
+            effectsHelper (EffectList xs) = let (ies, es) = partitionEithers xs
+                                            in mapM_ (procInstaEffect i) ies >> mapM_ (startEffect i) es
+            g a b = views (a.digestEffects) (maybeVoid effectsHelper) . b $ ms
+            f     = logHelper sc >> case sc^.distinctId of
+              Left  (DistinctLiqId  x) -> g liqEdibleEffects  . getDistinctLiq  $ x
+              Right (DistinctFoodId x) -> g foodEdibleEffects . getDistinctFood $ x
+        duration < digesterDelay ? unit :? (f >> tweak (mobTbl.ind i.stomach %~ (sc `delete`)))
+    logHelper sc = logPla "digest" i $ "digesting " <> pp sc <> "."

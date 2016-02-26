@@ -64,7 +64,7 @@ dbTblPurgerDelay = 60 {- mins -} * 60 {- secs -} -- one hr
 
 
 digesterDelay :: Seconds
-digesterDelay = 45
+digesterDelay = 30
 
 
 isDebug :: Bool

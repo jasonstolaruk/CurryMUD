@@ -23,6 +23,7 @@ import Mud.Data.State.Util.Random
 import Mud.Misc.ANSI
 import Mud.Misc.EffectFuns
 import Mud.Misc.Persist
+import Mud.TheWorld.LiqIds
 import Mud.TheWorld.Zones.AdminZoneIds (iLoggedOut, iPidge)
 import Mud.Threads.Effect
 import Mud.Threads.Misc
@@ -49,7 +50,7 @@ import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception (ArithException(..), IOException)
 import Control.Exception.Lifted (throwIO, try)
 import Control.Lens (Optical, both, view, views)
-import Control.Lens.Operators ((%~), (&), (^.))
+import Control.Lens.Operators ((%~), (&), (<>~), (^.))
 import Control.Monad ((>=>), replicateM_, unless)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (asks)
@@ -59,6 +60,7 @@ import Data.List (delete, intercalate, sort)
 import Data.Maybe (fromJust)
 import Data.Monoid ((<>), Sum(..))
 import Data.Text (Text)
+import Data.Time (getCurrentTime)
 import GHC.Conc (threadStatus)
 import Numeric (readInt)
 import Prelude hiding (pi)
@@ -131,11 +133,12 @@ debugCmds =
     , mkDebugCmd "pidge"      debugPidge       "Send a message to Pidge."
     , mkDebugCmd "pmf"        debugPmf         "Trigger a pattern match failure."
     , mkDebugCmd "purge"      debugPurge       "Purge the thread tables."
-    , mkDebugCmd "random"     debugRandom      "Generate and dump a series of random numbers."
+    , mkDebugCmd "random"     debugRandom      "Dump a series of random numbers."
     , mkDebugCmd "regen"      debugRegen       "Display regen amounts and delays for a given mob ID."
     , mkDebugCmd "remput"     debugRemPut      "In quick succession, remove from and put into a sack on the ground."
     , mkDebugCmd "rnt"        debugRnt         "Dump your random names table, or generate a random name for a given PC."
     , mkDebugCmd "rotate"     debugRotate      "Send the signal to rotate your player log."
+    , mkDebugCmd "stomach"    debugStomach     "Put some goodies in your stomach."
     , mkDebugCmd "talk"       debugTalk        "Dump the talk async table."
     , mkDebugCmd "threads"    debugThreads     "Display or search the thread table."
     , mkDebugCmd "throw"      debugThrow       "Throw an exception."
@@ -603,6 +606,26 @@ debugRotate (NoArgs' i mq) = getState >>= \ms -> let lq = getLogQueue i ms in do
     ok mq
     logPlaExec (prefixDebugCmd "rotate") i
 debugRotate p = withoutArgs debugRotate p
+
+
+-----
+
+
+debugStomach :: ActionFun
+debugStomach (NoArgs' i mq) = do
+    ok mq
+    scs <- mkStomachConts <$> liftIO getCurrentTime
+    tweak $ mobTbl.ind i.stomach <>~ scs
+    logPlaExec (prefixDebugCmd "stomach") i
+  where
+    mkStomachConts now = let f di = StomachCont di now False
+                         in map f [ Left . DistinctLiqId $ iLiqWater
+                                  , Left . DistinctLiqId $ iLiqPotHealing
+                                  , Left . DistinctLiqId $ iLiqPotInstantHealing
+                                  , Left . DistinctLiqId $ iLiqPotInstantSt
+                                  , Left . DistinctLiqId $ iLiqPotTinnitus
+                                  , Left . DistinctLiqId $ iLiqPotInstantTinnitus ]
+debugStomach p = withoutArgs debugStomach p
 
 
 -----

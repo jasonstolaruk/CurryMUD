@@ -36,7 +36,8 @@ waterLiq = Liq (DistinctLiqId iLiqWater)
 
 
 waterDistinctLiq :: DistinctLiq
-waterDistinctLiq = DistinctLiq . EdibleEffects Nothing $ Nothing
+waterDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Nothing
+                                             , _consumpEffects = Nothing }
 
 
 -----
@@ -51,7 +52,8 @@ potHealingLiq = Liq (DistinctLiqId iLiqPotHealing)
 
 
 potHealingDistinctLiq :: DistinctLiq
-potHealingDistinctLiq = DistinctLiq . EdibleEffects (Just el) $ Nothing
+potHealingDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just el
+                                                  , _consumpEffects = Nothing }
   where
     el = EffectList . pure . Left $ ie
     ie = InstaEffect { _instaEffectSub = MobInstaEffectPts CurHp
@@ -67,7 +69,8 @@ potInstantHealingLiq = Liq (DistinctLiqId iLiqPotInstantHealing)
 
 
 potInstantHealingDistinctLiq :: DistinctLiq
-potInstantHealingDistinctLiq = DistinctLiq . EdibleEffects Nothing . Just $ ce
+potInstantHealingDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Nothing
+                                                         , _consumpEffects = Just ce }
   where
     ce = ConsumpEffects 8 30 el
     el = EffectList . pure . Left $ ie
@@ -86,7 +89,8 @@ potStLiq = Liq (DistinctLiqId iLiqPotSt)
 
 
 potStDistinctLiq :: DistinctLiq
-potStDistinctLiq = DistinctLiq . EdibleEffects (Just el) $ Nothing
+potStDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just el
+                                             , _consumpEffects = Nothing }
   where
     el = EffectList . pure . Right $ e
     e  = Effect { _effectSub = MobEffectAttrib St
@@ -103,7 +107,8 @@ potInstantStLiq = Liq (DistinctLiqId iLiqPotInstantSt)
 
 
 potInstantStDistinctLiq :: DistinctLiq
-potInstantStDistinctLiq = DistinctLiq . EdibleEffects Nothing . Just $ ce
+potInstantStDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Nothing
+                                                    , _consumpEffects = Just ce }
   where
     ce = ConsumpEffects 8 30 el
     el = EffectList . pure . Right $ e
@@ -124,7 +129,8 @@ potTinnitusLiq = Liq (DistinctLiqId iLiqPotTinnitus)
 
 
 potTinnitusDistinctLiq :: DistinctLiq
-potTinnitusDistinctLiq = DistinctLiq . EdibleEffects (Just el) $ Nothing
+potTinnitusDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just el
+                                                   , _consumpEffects = Nothing }
   where
     el = EffectList . pure . Left $ ie
     ie = InstaEffect { _instaEffectSub = InstaEffectOther tinnitusInstaEffectFunName
@@ -140,7 +146,8 @@ potInstantTinnitusLiq = Liq (DistinctLiqId iLiqPotInstantTinnitus)
 
 
 potInstantTinnitusDistinctLiq :: DistinctLiq
-potInstantTinnitusDistinctLiq = DistinctLiq . EdibleEffects Nothing . Just $ ce
+potInstantTinnitusDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Nothing
+                                                          , _consumpEffects = Just ce }
   where
     ce = ConsumpEffects 8 30 el
     el = EffectList . pure . Right $ e

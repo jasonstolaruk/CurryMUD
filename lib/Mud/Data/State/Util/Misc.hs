@@ -47,6 +47,7 @@ module Mud.Data.State.Util.Misc ( addToInv
                                 , pcNpc
                                 , pluralize
                                 , procHooks
+                                , procInstaEffect
                                 , raceToLang
                                 , removeAdHoc
                                 , runEffectFun
@@ -476,6 +477,13 @@ dropPrefixes arg@(T.unpack -> arg'        )
     isMatch :: (String, String, String) -> Bool
     isMatch (a, b, c) = and [ ()# a, ()!# b, ()!# c ]
     mkRegex c         = "^[0-9]+\\" <> pure c :: String
+
+
+-----
+
+
+procInstaEffect :: Id -> InstaEffect -> MudStack ()
+procInstaEffect _ _ = undefined
 
 
 -----

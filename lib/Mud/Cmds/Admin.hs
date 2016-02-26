@@ -425,7 +425,7 @@ adminCount p@ActionParams { myId, args } = do
     logPlaExecArgs (prefixAdminCmd "count") args myId
 
 
-mkCountTxt :: MudStack [Text]
+mkCountTxt :: MudStack [Text] -- TODO: Add to this cmd.
 mkCountTxt = map (uncurry mappend . second showText) <$> helper
   where
     helper = getState >>= \ms -> do
@@ -580,7 +580,11 @@ examineEnt i ms = let e = getEnt i ms in [ "Name: "           <> e^.sing
                                             in [ f e |?| t | (f, t) <- pairs ]
     descActiveEffects = descEffect getActiveEffects
     descPausedEffects = descEffect getPausedEffects
-    descEffect f      = noneOnNull . commas . map pp . f i $ ms
+    descEffect f      = ppList . f i $ ms
+
+
+ppList :: (Pretty a) => [a] -> Text
+ppList = noneOnNull . commas . map pp
 
 
 examineEqMap :: ExamineHelper
@@ -592,7 +596,7 @@ examineEqMap i ms = map helper . M.toList . getEqMap i $ ms
 examineFood :: ExamineHelper
 examineFood i ms =
     let f  = getFood i ms
-        df = getDistinctFood f ms
+        df = getDistinctFoodForFood f ms
     in [ "Distinct food ID: "     <> f^.foodId.to showText
        , "Food smell: "           <> f^.foodSmellDesc
        , "Food taste: "           <> f^.foodTasteDesc
@@ -637,9 +641,10 @@ examineMob i ms =
        , "MP: "             <> showPts curMp maxMp
        , "PP: "             <> showPts curPp maxPp
        , "FP: "             <> showPts curFp maxFp
+       , "Stomach: "        <> m^.stomach.to ppList
        , "Exp: "            <> m^.exp .to showText
        , "Handedness: "     <> m^.hand.to pp
-       , "Know languages: " <> m^.knownLangs.to (noneOnNull . commas . map pp)
+       , "Know languages: " <> m^.knownLangs.to ppList
        , "Room: "           <> let ri = m^.rmId
                                in getRmName ri ms <> " " <> parensQuote (showText ri) ]
 
@@ -670,8 +675,8 @@ examinePla i ms = let p = getPla i ms
                      , "Player flags: "      <> (commas . dropBlanks . descFlags $ p)
                      , "Columns: "           <> p^.columns     .to showText
                      , "Lines: "             <> p^.pageLines   .to showText
-                     , "Peepers: "           <> p^.peepers     .to (noneOnNull . helper)
-                     , "Peeping: "           <> p^.peeping     .to (noneOnNull . helper)
+                     , "Peepers: "           <> p^.peepers     .to helper
+                     , "Peeping: "           <> p^.peeping     .to helper
                      , "Possessing: "        <> p^.possessing  .to (descMaybeId ms)
                      , "Retained messages: " <> p^.retainedMsgs.to (noneOnNull . slashes)
                      , "Last room: "         <> let f ri = getRmName ri ms <> " " <> parensQuote (showText ri)
@@ -686,7 +691,7 @@ examinePla i ms = let p = getPla i ms
                                                         , (isTunedAdmin,       "tuned admin"        )
                                                         , (isTunedQuestion,    "tuned question"     ) ]
                                             in [ f p |?| t | (f, t) <- pairs ]
-    helper = commas . map (`descSingId` ms)
+    helper = noneOnNull . commas . map (`descSingId` ms)
 
 
 examineRm :: ExamineHelper
@@ -714,11 +719,11 @@ examineVessel i ms = let v = getVessel i ms in
   where
     descCont Nothing       = "none"
     descCont (Just (l, q)) = showText q <> " quaffs of " <> l^.liqName
-    descLiq l = let dl = getDistinctLiq l ms
-                in [ "Distinct liquid ID: "             <> l^.liqId.to showText
-                   , "Liquid smell: "                   <> l^.liqSmellDesc
-                   , "Liquid taste: "                   <> l^.liqTasteDesc
-                   , "Drink description: "              <> l^.drinkDesc ] ++ dl^.liqEdibleEffects.to descEdibleEffects
+    descLiq l = let dl = getDistinctLiqForLiq l ms
+                in [ "Distinct liquid ID: " <> l^.liqId.to showText
+                   , "Liquid smell: "       <> l^.liqSmellDesc
+                   , "Liquid taste: "       <> l^.liqTasteDesc
+                   , "Drink description: "  <> l^.drinkDesc ] ++ dl^.liqEdibleEffects.to descEdibleEffects
 
 
 examineWpn :: ExamineHelper
