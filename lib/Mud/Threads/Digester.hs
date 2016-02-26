@@ -7,7 +7,9 @@ module Mud.Threads.Digester ( runDigesterAsync
                             , throwWaitDigester ) where
 
 import Mud.Data.State.MudData
+import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
+import Mud.Data.State.Util.Random
 import Mud.Threads.Misc
 import Mud.TopLvlDefs.Misc
 import Mud.Util.Misc
@@ -17,11 +19,13 @@ import qualified Mud.Misc.Logging as L (logNotice, logPla)
 
 import Control.Concurrent (threadDelay)
 import Control.Exception.Lifted (handle)
+import Control.Lens (views)
 import Control.Lens.Operators ((&), (.~), (?~), (^.))
 import Control.Monad ((>=>), forever)
 import Control.Monad.IO.Class (liftIO)
 import Data.Monoid ((<>))
 import Data.Text (Text)
+import Data.Time (diffUTCTime, getCurrentTime)
 
 
 default (Int)
@@ -66,11 +70,19 @@ throwWaitDigester i = helper |&| modifyState >=> maybeVoid throwWait
 
 
 threadDigester :: Id -> MudStack ()
-threadDigester i = handle (threadExHandler $ "digester " <> showText i) $ getState >>= \ms -> do
+threadDigester i = handle (threadExHandler $ "digester " <> showText i) $ do
     setThreadType . Digester $ i
     let loop = (liftIO . threadDelay $ digesterDelay * 10 ^ 6) >> digest i
     handle (die (Just i) "digester") $ logPla "threadDigester" i "digester started." >> forever loop
 
 
 digest :: Id -> MudStack ()
-digest i = logPla "digest" i "digesting."
+digest i = getState >>= \ms -> case getStomach i ms of []  -> unit
+                                                       scs -> helper scs
+  where
+    helper scs = do
+        sc  <- rndmElem scs
+        now <- liftIO getCurrentTime
+        let duration = views cosumpTime (round . (now `diffUTCTime`)) sc
+            f        = logPla "digest" i "digesting." -- TODO
+        duration < digesterDelay ? unit :? f

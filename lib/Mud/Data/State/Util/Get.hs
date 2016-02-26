@@ -539,6 +539,13 @@ getSing i = view sing . getEnt i
 -----
 
 
+getStomach :: Id -> MudState -> Stomach
+getStomach i = view stomach . getMob i
+
+
+-----
+
+
 getTeleLinkTbl :: Id -> MudState -> TeleLinkTbl
 getTeleLinkTbl i = view (teleLinkMstrTbl.ind i)
 

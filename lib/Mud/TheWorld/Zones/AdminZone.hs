@@ -1360,13 +1360,13 @@ createAdminZone = do
   -- ==================================================
   -- Vessels:
   let flaskIds   = [ iPotionFlask1 + i | i <- [0..9] ]
-      flaskConts = [ Just (waterLiq, maxBound)
-                   , Nothing
-                   , Nothing
-                   , Nothing
-                   , Nothing
-                   , Nothing
-                   , Nothing
+      flaskConts = [ Just (waterLiq,              maxBound)
+                   , Just (potTinnitusLiq,        maxBound)
+                   , Just (potInstantTinnitusLiq, maxBound)
+                   , Just (potStLiq,              maxBound)
+                   , Just (potInstantStLiq,       maxBound)
+                   , Just (potHealingLiq,         maxBound)
+                   , Just (potInstantHealingLiq,  maxBound)
                    , Nothing
                    , Nothing
                    , Nothing ]
