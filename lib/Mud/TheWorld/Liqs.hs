@@ -11,6 +11,7 @@ module Mud.TheWorld.Liqs ( distinctLiqList
 
 import Mud.Data.State.MudData
 import Mud.Misc.EffectFuns
+import Mud.TheWorld.LiqIds
 
 
 distinctLiqList :: [(Id, DistinctLiq)]
@@ -21,25 +22,6 @@ distinctLiqList = [ (iLiqPotHealing,         potHealingDistinctLiq        )
                   , (iLiqPotSt,              potStDistinctLiq             )
                   , (iLiqPotTinnitus,        potTinnitusDistinctLiq       )
                   , (iLiqWater,              waterDistinctLiq             ) ]
-
-
-iLiqWater :: Id -- TODO: Make a "LiqIds" module?
-iLiqWater = 0
-
-
-iLiqPotHealing, iLiqPotInstantHealing :: Id
-iLiqPotHealing        = 100
-iLiqPotInstantHealing = 101
-
-
-iLiqPotSt, iLiqPotInstantSt :: Id
-iLiqPotSt        = 102
-iLiqPotInstantSt = 103
-
-
-iLiqPotTinnitus, iLiqPotInstantTinnitus :: Id
-iLiqPotTinnitus        = 104
-iLiqPotInstantTinnitus = 105
 
 
 -----

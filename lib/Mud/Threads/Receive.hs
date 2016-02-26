@@ -14,6 +14,7 @@ import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception.Lifted (catch)
 import Control.Monad.IO.Class (liftIO)
+import Data.Monoid ((<>))
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (hGetLine)
@@ -28,7 +29,7 @@ logPla = L.logPla "Mud.Threads.Receive"
 
 
 threadReceive :: Handle -> Id -> MsgQueue -> MudStack ()
-threadReceive h i mq = sequence_ [ setThreadType . Receive $ i, loop `catch` plaThreadExHandler "receive" i ]
+threadReceive h i mq = sequence_ [ setThreadType . Receive $ i, loop `catch` plaThreadExHandler ("receive " <> showText i) i ]
   where
     loop = mIf (liftIO . hIsEOF $ h)
                (sequence_ [ logPla "threadReceive loop" i "connection dropped."

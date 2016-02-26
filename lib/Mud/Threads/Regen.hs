@@ -13,7 +13,7 @@ import Mud.Data.State.Util.Misc
 import Mud.Threads.Misc
 import Mud.Util.Misc
 import Mud.Util.Operators
-import qualified Mud.Misc.Logging as L (logPla, logNotice)
+import qualified Mud.Misc.Logging as L (logNotice, logPla)
 
 import Control.Arrow ((***))
 import Control.Concurrent (threadDelay)
@@ -32,12 +32,12 @@ default (Int)
 -----
 
 
-logPla :: Text -> Id -> Text -> MudStack ()
-logPla = L.logPla "Mud.Threads.Regen"
-
-
 logNotice :: Text -> Text -> MudStack ()
 logNotice = L.logNotice "Mud.Threads.Regen"
+
+
+logPla :: Text -> Id -> Text -> MudStack ()
+logPla = L.logPla "Mud.Threads.Regen"
 
 
 -- ==================================================
@@ -68,12 +68,9 @@ throwWaitRegen i = helper |&| modifyState >=> maybeVoid throwWait
 
 
 threadRegen :: Id -> MudStack ()
-threadRegen i = getState >>= \ms -> onEnv $ \md -> do
+threadRegen i = onEnv $ \md -> do
     setThreadType . RegenParent $ i
-    let a = handle (die (Just i) "regen") $ logPla "threadRegen" i "regen started." >> spawnThreadTree md
-        b = handle dieSilently . spawnThreadTree $ md
-        f = pcNpc i ms
-    a `f` b
+    handle (die (Just i) "regen") $ logPla "threadRegen" i "regen started." >> spawnThreadTree md
   where
     spawnThreadTree md = liftIO . void . concurrentTree . map (`runReaderT` md) $ [ h, m, p, f ]
       where

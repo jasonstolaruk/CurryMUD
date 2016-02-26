@@ -47,7 +47,7 @@ logPla = L.logPla "Mud.Threads.InacTimer"
 
 threadInacTimer :: Id -> MsgQueue -> TimerQueue -> MudStack ()
 threadInacTimer i mq tq = sequence_ [ setThreadType . InacTimer $ i
-                                    , loop 0 `catch` plaThreadExHandler "inactivity timer" i ]
+                                    , loop 0 `catch` threadExHandler ("inactivity timer " <> showText i) ]
   where
     loop secs = do
         liftIO . threadDelay $ 1 * 10 ^ 6

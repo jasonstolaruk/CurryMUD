@@ -643,6 +643,7 @@ descThreads = do
     mkDesc (ti, bracketPad 20 . mkTypeName -> tn) = [ T.concat [ padOrTrunc 16 . showText $ ti, tn, ts ]
                                                     | (showText -> ts) <- liftIO . threadStatus $ ti ]
     mkTypeName (Biodegrader    (showText -> pi)) = padOrTrunc 12 "Biodegrader" <> pi
+    mkTypeName (Digester       (showText -> pi)) = padOrTrunc 12 "Digester"    <> pi
     mkTypeName (EffectListener (showText -> pi)) = padOrTrunc 12 "Eff Listen"  <> pi
     mkTypeName (EffectThread   (showText -> pi)) = padOrTrunc 12 "Eff Thread"  <> pi
     mkTypeName (EffectTimer    (showText -> pi)) = padOrTrunc 12 "Eff Timer"   <> pi

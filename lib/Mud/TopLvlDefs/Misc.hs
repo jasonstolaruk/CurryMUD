@@ -35,6 +35,14 @@ allCoinNames = coinNames ++ aggregateCoinNames
 type Seconds = Int
 
 
+acl, aop, enc, enc's, etc :: Text
+acl   = T.singleton adverbCloseChar
+aop   = T.singleton adverbOpenChar
+enc   = T.singleton emoteNameChar
+enc's = enc <> "'s"
+etc   = T.singleton emoteTargetChar
+
+
 biodegraderDelay :: Seconds
 biodegraderDelay = 5
 
@@ -55,12 +63,8 @@ dbTblPurgerDelay :: Seconds
 dbTblPurgerDelay = 60 {- mins -} * 60 {- secs -} -- one hr
 
 
-acl, aop, enc, enc's, etc :: Text
-acl   = T.singleton adverbCloseChar
-aop   = T.singleton adverbOpenChar
-enc   = T.singleton emoteNameChar
-enc's = enc <> "'s"
-etc   = T.singleton emoteTargetChar
+digesterDelay :: Seconds
+digesterDelay = 45
 
 
 isDebug :: Bool

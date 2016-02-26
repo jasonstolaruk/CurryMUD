@@ -41,6 +41,7 @@ import Mud.Misc.LocPref
 import Mud.Misc.Logging hiding (logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut)
 import Mud.Misc.NameResolution
 import Mud.TheWorld.Zones.AdminZoneIds (iLoggedOut, iWelcome)
+import Mud.Threads.Digester
 import Mud.Threads.Effect
 import Mud.Threads.Regen
 import Mud.TopLvlDefs.Chars
@@ -1803,9 +1804,10 @@ handleEgress :: Id -> MudStack ()
 handleEgress i = liftIO getCurrentTime >>= \now -> do
     informEgress
     helper now |&| modifyState >=> \(s, bs, logMsgs) -> do
-        pauseEffects   i
-        throwWaitRegen i
-        closePlaLog    i
+        pauseEffects      i
+        throwWaitRegen    i
+        throwWaitDigester i
+        closePlaLog       i
         bcast bs
         bcastAdmins $ s <> " has left CurryMUD."
         forM_ logMsgs . uncurry . logPla $ "handleEgress"

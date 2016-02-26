@@ -69,11 +69,12 @@ throwWaitBiodegrader i = helper |&| modifyState >=> maybeVoid throwWait
 threadBiodegrader :: Id -> MudStack ()
 threadBiodegrader i = handle (threadExHandler threadName) $ getSing i <$> getState >>= \s -> do
     setThreadType . Biodegrader $ i
-    logNotice "threadBiodegrader" . T.concat $ [ "biodegrader started for ", s, " ", idTxt, "." ]
+    logNotice "threadBiodegrader" . T.concat $ [ "biodegrader started for ", s, " ", idTxt', "." ]
     loop 0 Nothing `catch` die Nothing threadName
   where
     threadName               = "biodegrader " <> idTxt
-    idTxt                    = parensQuote . showText $ i
+    idTxt                    = showText i
+    idTxt'                   = parensQuote idTxt
     loop secs lastMaybeInvId = getState >>= \ms -> do
         let newMaybeInvId = findInvContaining i ms
         case newMaybeInvId of
@@ -83,7 +84,7 @@ threadBiodegrader i = handle (threadExHandler threadName) $ getSing i <$> getSta
               then delay >> loop (secs + biodegraderDelay) lastMaybeInvId
               else let pcsInRm = filter (`isPC` ms) . getInv invId $ ms
                        helper  = do
-                           logNotice "threadBiodegrader" . T.concat $ [ getSing i ms, " ", idTxt, " has biodegraded." ]
+                           logNotice "threadBiodegrader" . T.concat $ [ getSing i ms, " ", idTxt', " has biodegraded." ]
                            destroyHelper . pure $ i
                    in ()!# pcsInRm ? (delay >> loop secs lastMaybeInvId) :? helper
             | otherwise -> (delay >>) $ case getType invId ms of

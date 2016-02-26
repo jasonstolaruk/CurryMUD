@@ -16,6 +16,7 @@ import Mud.Interp.CentralDispatch
 import Mud.Misc.ANSI
 import Mud.Misc.Persist
 import Mud.Threads.Biodegrader
+import Mud.Threads.Digester
 import Mud.Threads.Effect
 import Mud.Threads.Misc
 import Mud.Threads.NpcServer
@@ -55,7 +56,7 @@ logNotice = L.logNotice "Mud.Threads.Server"
 
 
 threadServer :: Handle -> Id -> MsgQueue -> TimerQueue -> MudStack ()
-threadServer h i mq tq = sequence_ [ setThreadType . Server $ i, loop `catch` plaThreadExHandler "server" i ]
+threadServer h i mq tq = sequence_ [ setThreadType . Server $ i, loop `catch` threadExHandler ("server " <> showText i) ]
   where
     loop = mq |&| liftIO . atomically . readTQueue >=> \case
       AsSelf     msg -> handleFromClient i mq tq True msg  >> loop
@@ -141,8 +142,9 @@ shutDown = do
         stopBiodegraders
         stopRmFuns
         massPauseEffects
-        stopNpcServers
         stopNpcRegens
+        stopNpcDigesters
+        stopNpcServers
         persist
         logNotice "shutDown commitSuicide" "killing the listen thread."
         liftIO . killThread . getListenThreadId =<< getState

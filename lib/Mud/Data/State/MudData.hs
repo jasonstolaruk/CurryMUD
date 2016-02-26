@@ -477,7 +477,7 @@ data Mob = Mob { _sex                    :: Sex
                , _curPp, _maxPp          :: Int
                , _curFp, _maxFp          :: Int
                , _stomach                :: Stomach
-               , _stomachAsync           :: Maybe StomachAsync
+               , _digesterAsync          :: Maybe StomachAsync
                , _exp                    :: Exp
                , _hand                   :: Hand
                , _knownLangs             :: [Lang]
@@ -850,6 +850,7 @@ type TeleLinkTbl = M.Map Sing IsTuned
 
 data ThreadType = Biodegrader    Id
                 | DbTblPurger
+                | Digester       Id
                 | EffectListener Id
                 | EffectThread   Id
                 | EffectTimer    Id

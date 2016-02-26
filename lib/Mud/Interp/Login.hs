@@ -17,6 +17,7 @@ import Mud.Misc.ANSI
 import Mud.Misc.Database
 import Mud.Misc.Logging hiding (logNotice, logPla)
 import Mud.TheWorld.Zones.AdminZoneIds (iCentral, iLoggedOut, iWelcome)
+import Mud.Threads.Digester
 import Mud.Threads.Effect
 import Mud.Threads.Regen
 import Mud.TopLvlDefs.Chars
@@ -264,6 +265,7 @@ handleLogin s params@ActionParams { .. } = do
     look params
     sendDfltPrompt plaMsgQueue myId
     when (getPlaFlag IsAdmin p) stopInacTimer
+    runDigesterAsync     myId
     runRegenAsync        myId
     restartPausedEffects myId
     notifyArrival ms

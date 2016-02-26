@@ -14,7 +14,6 @@ import Mud.Data.State.Util.Random
 import Mud.Threads.Misc
 import Mud.Util.Misc
 import Mud.Util.Operators
-import Mud.Util.Quoting
 import Mud.Util.Text
 import qualified Mud.Misc.Logging as L (logNotice)
 
@@ -85,7 +84,7 @@ threadEffect i (Effect effSub _ secs) q = handle (threadExHandler tn) . onEnv $ 
     racer md (effectTimer ior) . queueListener $ ior
     logHelper "is finishing."
   where
-    tn             = "effect" <> " " <> parensQuote idTxt
+    tn             = "effect " <> idTxt
     idTxt          = showText i
     logHelper rest = logNotice "threadEffect" . T.concat $ [ "effect thread for ID ", idTxt, " ", rest ]
 

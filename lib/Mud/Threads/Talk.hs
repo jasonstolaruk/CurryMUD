@@ -66,7 +66,7 @@ threadTalk h host = helper `finally` cleanUp
         (mq, tq)           <- liftIO $ (,) <$> newTQueueIO <*> newTMQueueIO
         (i, dblQuote -> s) <- adHoc mq host
         setThreadType . Talk $ i
-        handle (plaThreadExHandler "talk" i) . onEnv $ \md -> do
+        handle (threadExHandler $ "talk " <> showText i) . onEnv $ \md -> do
             liftIO configBuffer
             dumpTitle  mq
             sendPrompt mq "By what name are you known?"
@@ -94,24 +94,24 @@ adHoc mq host = do
                        , _plur     = ""
                        , _entDesc  = capitalize $ mkThrPerPro sexy <> " is an ad-hoc player character."
                        , _entFlags = zeroBits }
-            m    = Mob { _sex          = sexy
-                       , _st           = 50
-                       , _dx           = 50
-                       , _ht           = 50
-                       , _ma           = 50
-                       , _ps           = 50
-                       , _maxHp        = 100, _curHp = 100
-                       , _maxMp        = 100, _curMp = 100
-                       , _maxPp        = 100, _curPp = 100
-                       , _maxFp        = 100, _curFp = 100
-                       , _stomach      = []
-                       , _stomachAsync = Nothing
-                       , _exp          = 0
-                       , _hand         = RHand
-                       , _knownLangs   = pure . raceToLang $ r
-                       , _rmId         = iWelcome
-                       , _regenAsync   = Nothing
-                       , _interp       = Just interpName }
+            m    = Mob { _sex           = sexy
+                       , _st            = 50
+                       , _dx            = 50
+                       , _ht            = 50
+                       , _ma            = 50
+                       , _ps            = 50
+                       , _maxHp         = 100, _curHp = 100
+                       , _maxMp         = 100, _curMp = 100
+                       , _maxPp         = 100, _curPp = 100
+                       , _maxFp         = 100, _curFp = 100
+                       , _stomach       = []
+                       , _digesterAsync = Nothing
+                       , _exp           = 0
+                       , _hand          = RHand
+                       , _knownLangs    = pure . raceToLang $ r
+                       , _rmId          = iWelcome
+                       , _regenAsync    = Nothing
+                       , _interp        = Just interpName }
             pc   = PC  { _race       = r
                        , _introduced = []
                        , _linked     = [] }

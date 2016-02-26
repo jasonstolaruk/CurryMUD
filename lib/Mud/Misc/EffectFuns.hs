@@ -12,10 +12,6 @@ import Mud.Data.State.Util.Output
 import Mud.Data.State.Util.Random
 import Mud.Util.Misc
 
---import Data.Monoid ((<>))
---import Data.Text (Text)
---import qualified Data.Text as T
-
 
 effectFuns :: [(FunName, EffectFun)]
 effectFuns = pure (tinnitusEffectFunName, tinnitusEffectFun)
