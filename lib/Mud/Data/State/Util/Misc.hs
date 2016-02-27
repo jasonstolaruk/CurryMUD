@@ -15,6 +15,7 @@ module Mud.Data.State.Util.Misc ( addToInv
                                 , getFun
                                 , getHookFun
                                 , getIdForMobSing
+                                , getInstaEffectFun
                                 , getLogAsyncs
                                 , getLoggedInAdminIds
                                 , getLoggedInPlaIds
@@ -60,6 +61,7 @@ module Mud.Data.State.Util.Misc ( addToInv
 import Mud.Data.Misc
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
+import Mud.Data.State.Util.Random
 import Mud.TheWorld.Zones.AdminZoneIds (iWelcome)
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
@@ -211,6 +213,15 @@ getHookFun n = views (hookFunTbl.at n) (fromMaybe oops)
 
 getIdForMobSing :: Sing -> MudState -> Id
 getIdForMobSing s ms = let [(i, _)] = views entTbl (IM.toList . IM.filter (views sing (== s))) ms in i
+
+
+-----
+
+
+getInstaEffectFun :: FunName -> MudState -> InstaEffectFun
+getInstaEffectFun n = views (instaEffectFunTbl.at n) (fromMaybe oops)
+  where
+    oops = blowUp "getInstaEffectFun" "Function name not found in instantaneous effect function table." . pure $ n
 
 
 -----
@@ -482,8 +493,25 @@ dropPrefixes arg@(T.unpack -> arg'        )
 -----
 
 
-procInstaEffect :: Id -> InstaEffect -> MudStack ()
-procInstaEffect _ _ = undefined
+procInstaEffect :: Id -> InstaEffect -> MudStack () -- TODO: Move to its own module and add logging?
+procInstaEffect i (InstaEffect sub val) = case sub of
+  EntInstaEffectFlags         -> undefined -- TODO
+  (MobInstaEffectPts ptsType) -> maybe unit (effectPts ptsType) val
+  RmInstaEffectFlags          -> undefined -- TODO
+  (InstaEffectOther fn)       -> getState >>= \ms -> getInstaEffectFun fn ms i
+  where
+    effectPts ptsType   = (helper ptsType =<<) . \case DefiniteVal x -> return x
+                                                       RangeVal    r -> rndmR r
+    helper    ptsType x = let (getCur, getMax, setCur) = snd . head . filter ((== ptsType) . fst) $ assocs
+                          in tweak $ \ms -> let curPts = ms^.myMobGet.getCur
+                                                maxPts = ms^.myMobGet.getMax
+                                            in ms & myMobSet.setCur .~ ((curPts + x) `max` maxPts)
+    assocs = [ (CurHp, (curHp, maxHp, curHp))
+             , (CurMp, (curMp, maxMp, curMp))
+             , (CurPp, (curPp, maxPp, curPp))
+             , (CurFp, (curFp, maxFp, curFp)) ]
+    myMobGet = mobTbl.ind i
+    myMobSet = mobTbl.ind i
 
 
 -----

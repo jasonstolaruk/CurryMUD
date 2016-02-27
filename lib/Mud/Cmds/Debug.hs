@@ -618,10 +618,12 @@ debugStomach (NoArgs' i mq) = do
     tweak $ mobTbl.ind i.stomach <>~ scs
     logPlaExec (prefixDebugCmd "stomach") i
   where
+    -- TODO: Make a "consume" function that appends "StomachCont"s to a mob's "Stomach" and handles consumption effects.
     mkStomachConts now = let f di = StomachCont di now False
                          in map f [ Left . DistinctLiqId $ iLiqWater
                                   , Left . DistinctLiqId $ iLiqPotHealing
                                   , Left . DistinctLiqId $ iLiqPotInstantHealing
+                                  , Left . DistinctLiqId $ iLiqPotSt
                                   , Left . DistinctLiqId $ iLiqPotInstantSt
                                   , Left . DistinctLiqId $ iLiqPotTinnitus
                                   , Left . DistinctLiqId $ iLiqPotInstantTinnitus ]

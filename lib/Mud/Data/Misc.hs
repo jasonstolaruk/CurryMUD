@@ -350,7 +350,7 @@ instance Pretty PtsType where
   pp CurFp = "cur FP"
 
 
-instance Pretty StomachCont where
+instance Pretty StomachCont where -- TODO: Improve the time rendering. Convert to local time zone?
   pp (StomachCont (Left  dli) t b) = slashes [ showText dli, showText t, showText b ]
   pp (StomachCont (Right dfi) t b) = slashes [ showText dfi, showText t, showText b ]
 
