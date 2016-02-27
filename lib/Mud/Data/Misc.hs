@@ -74,6 +74,7 @@ import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>))
 import Data.String (fromString)
 import Data.Text (Text)
+import Data.Time (UTCTime, defaultTimeLocale, formatTime)
 import Prelude hiding ((>>), pi)
 import qualified Data.Text as T
 
@@ -350,9 +351,13 @@ instance Pretty PtsType where
   pp CurFp = "cur FP"
 
 
-instance Pretty StomachCont where -- TODO: Improve the time rendering. Convert to local time zone?
-  pp (StomachCont (Left  dli) t b) = slashes [ showText dli, showText t, showText b ]
-  pp (StomachCont (Right dfi) t b) = slashes [ showText dfi, showText t, showText b ]
+instance Pretty StomachCont where
+  pp (StomachCont (Left  dli) t b) = ppStomachContHelper (showText dli) t b
+  pp (StomachCont (Right dfi) t b) = ppStomachContHelper (showText dfi) t b
+
+
+ppStomachContHelper :: Text -> UTCTime -> Bool -> Text
+ppStomachContHelper txt t b = slashes [ txt, T.pack . formatTime defaultTimeLocale "%F %T" $ t, showText b ]
 
 
 instance Pretty Race where

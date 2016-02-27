@@ -31,7 +31,6 @@ import Mud.Misc.Persist
 import Mud.TheWorld.Zones.AdminZoneIds (iLoggedOut, iRoot)
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
-import Mud.Util.List hiding (headTail)
 import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Operators
 import Mud.Util.Padding
@@ -59,7 +58,7 @@ import Data.List ((\\), delete, foldl', intercalate, intersperse, partition, sor
 import Data.Maybe (fromJust, fromMaybe, isJust)
 import Data.Monoid ((<>), Any(..), Sum(..), getSum)
 import Data.Text (Text)
-import Data.Time (TimeZone, UTCTime, defaultTimeLocale, diffUTCTime, formatTime, getCurrentTime, getCurrentTimeZone, getZonedTime, utcToLocalTime)
+import Data.Time (FormatTime, TimeZone, UTCTime, defaultTimeLocale, diffUTCTime, formatTime, getCurrentTime, getCurrentTimeZone, getZonedTime, utcToLocalTime)
 import GHC.Conc (ThreadStatus(..), threadStatus)
 import GHC.Exts (sortWith)
 import Prelude hiding (exp, pi, recip)
@@ -425,11 +424,16 @@ adminCount p@ActionParams { myId, args } = do
     logPlaExecArgs (prefixAdminCmd "count") args myId
 
 
-mkCountTxt :: MudStack [Text] -- TODO: Add to this cmd.
-mkCountTxt = map (uncurry mappend . second showText) <$> helper
+mkCountTxt :: MudStack [Text]
+mkCountTxt = map (uncurry mappend . second (commaEvery3 . showText)) <$> helper
   where
     helper = getState >>= \ms -> do
-        let countType t          = views typeTbl (IM.size . IM.filter (== t)) ms
+        let countType t = views typeTbl (IM.size . IM.filter (== t)) ms
+            countWealth = views coinsTbl (f . mconcat . IM.elems) ms
+              where
+                f (Coins (c, s, g)) = let x = round (c `divide` 100 :: Double)
+                                          y = round (s `divide` 10  :: Double)
+                                      in sum [ x, y, g ]
             countLoggedOutPlas   = views plaTbl  (length . (\\ getLoggedInPlaIds ms) . IM.keys . IM.filter (not . isAdmin)) ms
             countMaleFemale sexy = views plaTbl  (IM.size . IM.filterWithKey f) ms
               where
@@ -441,17 +445,21 @@ mkCountTxt = map (uncurry mappend . second showText) <$> helper
             otherThrIds  = views threadTbl M.keys ms
             threadIds    = noticeThrId : errorThrId : plaLogThrIds ++ otherThrIds
         noOfThreads <- length . filterThreads <$> mapM (liftIO . threadStatus) threadIds
-        return [ ("Objects: ",      countType ObjType     )
+        return [ ("Armor: ",        countType ArmType     )
                , ("Clothing: ",     countType ClothType   )
                , ("Containers: ",   countType ConType     )
-               , ("Weapons: ",      countType WpnType     )
-               , ("Armor: ",        countType ArmType     )
+               , ("Foods: ",        countType FoodType    )
                , ("NPCs: ",         countType NpcType     )
+               , ("Objects: ",      countType ObjType     )
                , ("PCs: ",          countType PCType      )
                , ("Rooms: ",        countType RmType      )
                , ("Vessels: ",      countType VesselType  )
+               , ("Weapons: ",      countType WpnType     )
                , ("Writables: ",    countType WritableType)
                , ("Typed things: ", ms^.typeTbl.to IM.size)
+               , ("Distinct foods: ",   ms^.distinctFoodTbl.to IM.size)
+               , ("Distinct liquids: ", ms^.distinctLiqTbl .to IM.size)
+               , ("Wealth (gp): ",        countWealth)
                , ("Players logged in: ",  length . getLoggedInPlaIds $ ms                  )
                , ("Players logged out: ", countLoggedOutPlas                               )
                , ("Admins logged in: ",   length . getLoggedInAdminIds $ ms                )
@@ -476,9 +484,12 @@ mkCountTxt = map (uncurry mappend . second showText) <$> helper
                , ("Player help topics: ",   noOfPlaHelpTopics  )
                , ("Admin help commands: ",  noOfAdminHelpCmds  )
                , ("Admin help topics: ",    noOfAdminHelpTopics)
-               , ("Functions in the function table: ", ms^.funTbl        .to M.size)
-               , ("Hook functions: ",                  ms^.hookFunTbl    .to M.size)
-               , ("Room action functions: ",           ms^.rmActionFunTbl.to M.size)
+               , ("Room teleport names: ",  ms^.rmTeleNameTbl.to IM.size)
+               , ("Functions in the function table: ", ms^.funTbl           .to M.size)
+               , ("Effect functions: ",                ms^.effectFunTbl     .to M.size)
+               , ("Instantaneous effect functions: ",  ms^.instaEffectFunTbl.to M.size)
+               , ("Hook functions: ",                  ms^.hookFunTbl       .to M.size)
+               , ("Room action functions: ",           ms^.rmActionFunTbl   .to M.size)
                , ("Active threads: ",                  noOfThreads                 ) ]
     countHelps     = liftIO . mapM countFiles $ [ plaHelpCmdsDir, plaHelpTopicsDir, adminHelpCmdsDir, adminHelpTopicsDir ]
     countFiles dir = (length . dropIrrelevantFilenames <$> getDirectoryContents dir) `catch` handler
@@ -1257,8 +1268,8 @@ adminTime (NoArgs i mq cols) = do
     multiWrapSend mq cols [ "At the tone, the time will be...", ct, zt ]
     logPlaExec (prefixAdminCmd "time") i
   where
-    formatThat (T.words . showText -> wordy@(headLast -> (date, zone))) =
-        let time = T.init . T.dropWhileEnd (/= '.') . head . tail $ wordy in T.concat [ zone, ": ", date, " ", time ]
+    formatThat :: (FormatTime a) => a -> Text
+    formatThat = T.pack . formatTime defaultTimeLocale "%Z: %F %T"
 adminTime p = withoutArgs adminTime p
 
 
