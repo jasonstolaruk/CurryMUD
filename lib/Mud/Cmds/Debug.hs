@@ -434,14 +434,16 @@ debugKeys p = withoutArgs debugKeys p
 debugLiq :: ActionFun
 debugLiq p@AdviseNoArgs            = advise p [] adviceDLiqNoArgs
 debugLiq p@(AdviseOneArg _       ) = advise p [] adviceDLiqNoId
-debugLiq   (WithArgs i mq cols as) = parseTwoIntArgs mq cols as sorryParseAmt sorryParseId helper
+debugLiq   (WithArgs i mq cols as) = getState >>= \ms ->
+    parseTwoIntArgs mq cols as sorryParseAmt sorryParseId (helper ms)
   where
-    helper amt di | amt < 1 || di < 0 = wrapSend mq cols sorryWtf
-                  -- TODO: More validation of user input.
-                  | otherwise = do
-                      ok mq
-                      logPlaExecArgs (prefixDebugCmd "liquid") as i
-                      consume i =<< mkStomachConts <$> liftIO getCurrentTime
+    helper ms amt di
+      | amt < 1 || di < 0                            = wrapSend mq cols sorryWtf
+      | di `notElem` views distinctLiqTbl IM.keys ms = wrapSend mq cols . sorryNonexistentId $ di
+      | otherwise = do
+          ok mq
+          logPlaExecArgs (prefixDebugCmd "liquid") as i
+          consume i =<< mkStomachConts <$> liftIO getCurrentTime
       where
         mkStomachConts now = replicate amt . StomachCont (Left . DistinctLiqId $ di) now $ False
 debugLiq p = advise p [] adviceDLiqExcessArgs

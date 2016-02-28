@@ -98,6 +98,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryNoAdmins
                            , sorryNoConHere
                            , sorryNoLinks
+                           , sorryNonexistentId
                            , sorryNoOneHere
                            , sorryNotPossessed
                            , sorryParseAmt
@@ -788,6 +789,13 @@ sorryNoConHere = "You don't see any containers here."
 
 sorryNoOneHere :: Text
 sorryNoOneHere = "You don't see anyone here."
+
+
+-----
+
+
+sorryNonexistentId :: Id -> Text
+sorryNonexistentId i = "ID " <> showText i <> " does not exist."
 
 
 -----
