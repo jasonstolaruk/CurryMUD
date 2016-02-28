@@ -100,6 +100,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryNoLinks
                            , sorryNoOneHere
                            , sorryNotPossessed
+                           , sorryParseAmt
                            , sorryParseArg
                            , sorryParseBase
                            , sorryParseChanId
@@ -819,6 +820,10 @@ sorryPCNameLoggedIn n = "No PC by the name of " <> dblQuote n <> " is currently 
 
 
 -----
+
+
+sorryParseAmt :: Text -> Text
+sorryParseAmt a = dblQuote a <> " is not a valid amount."
 
 
 sorryParseArg :: Text -> Text

@@ -285,7 +285,7 @@ data EdibleEffects = EdibleEffects { _digestEffects  :: Maybe DigestEffects
 type DigestEffects = EffectList
 
 
-newtype EffectList = EffectList [Either InstaEffect Effect]
+newtype EffectList = EffectList { unEffectList :: [Either InstaEffect Effect] }
 
 
 data ConsumpEffects = ConsumpEffects { _consumpAmt      :: Int -- Number of food units or quaffs.
@@ -494,9 +494,9 @@ data Sex = Male
 type Stomach = [StomachCont]
 
 
-data StomachCont = StomachCont { _distinctId :: Either DistinctLiqId DistinctFoodId
-                               , _cosumpTime :: UTCTime
-                               , _countedTowardsConsumpEffect :: Bool } deriving (Eq, Generic, Show)
+data StomachCont = StomachCont { _distinctId             :: Either DistinctLiqId DistinctFoodId
+                               , _consumpTime            :: UTCTime
+                               , _hasCausedConsumpEffect :: Bool } deriving (Eq, Generic, Show)
 
 
 type StomachAsync = Async ()

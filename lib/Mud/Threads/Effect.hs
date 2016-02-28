@@ -7,6 +7,7 @@ module Mud.Threads.Effect ( massPauseEffects
                           , restartPausedEffects
                           , startEffect ) where
 
+import Mud.Data.Misc
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
@@ -15,7 +16,7 @@ import Mud.Threads.Misc
 import Mud.Util.Misc
 import Mud.Util.Operators
 import Mud.Util.Text
-import qualified Mud.Misc.Logging as L (logNotice)
+import qualified Mud.Misc.Logging as L (logNotice, logPla)
 
 import Control.Concurrent (myThreadId, threadDelay)
 import Control.Concurrent.Async (asyncThreadId)
@@ -25,7 +26,7 @@ import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
 import Control.Exception.Lifted (finally, handle)
 import Control.Lens (views)
 import Control.Lens.Operators ((%~), (&), (.~), (<>~), (?~))
-import Control.Monad ((>=>), forM_, unless)
+import Control.Monad ((>=>), forM_, unless, when)
 import Control.Monad.IO.Class (liftIO)
 import Data.IORef (newIORef, readIORef)
 import Data.Monoid ((<>))
@@ -44,6 +45,10 @@ logNotice :: Text -> Text -> MudStack ()
 logNotice = L.logNotice "Mud.Threads.Effect"
 
 
+logPla :: Text -> Id -> Text -> MudStack ()
+logPla = L.logPla "Mud.Threads.Effect"
+
+
 -- ==================================================
 
 
@@ -53,7 +58,8 @@ startEffect i e                                      = startEffectHelper i e
 
 
 startEffectHelper :: Id -> Effect -> MudStack ()
-startEffectHelper i e = do
+startEffectHelper i e = getState >>= \ms -> do
+    when (getType i ms == PCType) . logPla  "startEffectHelper" i $ "starting effect: " <> pp e
     q <- liftIO newTQueueIO
     a <- runAsync . threadEffect i e $ q
     tweak $ activeEffectsTbl.ind i <>~ pure (ActiveEffect e (a, q))

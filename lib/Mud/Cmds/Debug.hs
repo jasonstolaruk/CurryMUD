@@ -23,7 +23,6 @@ import Mud.Data.State.Util.Random
 import Mud.Misc.ANSI
 import Mud.Misc.EffectFuns
 import Mud.Misc.Persist
-import Mud.TheWorld.LiqIds
 import Mud.TheWorld.Zones.AdminZoneIds (iLoggedOut, iPidge)
 import Mud.Threads.Effect
 import Mud.Threads.Misc
@@ -50,7 +49,7 @@ import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception (ArithException(..), IOException)
 import Control.Exception.Lifted (throwIO, try)
 import Control.Lens (Optical, both, view, views)
-import Control.Lens.Operators ((%~), (&), (<>~), (^.))
+import Control.Lens.Operators ((%~), (&), (^.))
 import Control.Monad ((>=>), replicateM_, unless)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (asks)
@@ -107,6 +106,8 @@ logPlaExecArgs = L.logPlaExecArgs "Mud.Cmds.Debug"
 -- ==================================================
 
 
+-- TODO: None of these commands should be able to crash the server (unless that is their purpose).
+-- TODO: Make a "debug" help topic for admins.
 debugCmds :: [Cmd]
 debugCmds =
     [ mkDebugCmd "?"          debugDispCmdList cmdDescDispCmdList
@@ -125,6 +126,8 @@ debugCmds =
                                                \and \"EffectFunTbl\"."
     , mkDebugCmd "id"         debugId          "Search the \"MudState\" tables for a given ID."
     , mkDebugCmd "keys"       debugKeys        "Dump a list of \"MudState\" table keys."
+    , mkDebugCmd "liquid"     debugLiq         "Consume a given amount (in quaffs) of a given liquid (by distinct \
+                                               \liquid ID)."
     , mkDebugCmd "log"        debugLog         "Put the logging service under heavy load."
     , mkDebugCmd "npcserver"  debugNpcServer   "Stop all NPC server threads."
     , mkDebugCmd "number"     debugNumber      "Display the decimal equivalent of a given number in a given base."
@@ -138,7 +141,6 @@ debugCmds =
     , mkDebugCmd "remput"     debugRemPut      "In quick succession, remove from and put into a sack on the ground."
     , mkDebugCmd "rnt"        debugRnt         "Dump your random names table, or generate a random name for a given PC."
     , mkDebugCmd "rotate"     debugRotate      "Send the signal to rotate your player log."
-    , mkDebugCmd "stomach"    debugStomach     "Put some goodies in your stomach."
     , mkDebugCmd "talk"       debugTalk        "Dump the talk async table."
     , mkDebugCmd "threads"    debugThreads     "Display or search the thread table."
     , mkDebugCmd "throw"      debugThrow       "Throw an exception."
@@ -429,6 +431,43 @@ debugKeys p = withoutArgs debugKeys p
 -----
 
 
+debugLiq :: ActionFun -- TODO: More testing (test this command itself...).
+debugLiq p@AdviseNoArgs            = advise p [] adviceDLiqNoArgs
+debugLiq p@(AdviseOneArg _       ) = advise p [] adviceDLiqNoId
+debugLiq   (WithArgs i mq cols as) = parseTwoIntArgs mq cols as sorryParseAmt sorryParseId helper
+  where
+    helper amt di | amt < 1 || di < 0 = wrapSend mq cols sorryWtf
+                  -- TODO: More validation of user input.
+                  | otherwise = do
+                      ok mq
+                      logPlaExecArgs (prefixDebugCmd "liquid") as i
+                      consume i =<< mkStomachConts <$> liftIO getCurrentTime
+      where
+        mkStomachConts now = replicate amt . StomachCont (Left . DistinctLiqId $ di) now $ False
+debugLiq p = advise p [] adviceDLiqExcessArgs
+
+
+parseTwoIntArgs :: MsgQueue
+                -> Cols
+                -> [Text]
+                -> (Text -> Text)
+                -> (Text -> Text)
+                -> (Int -> Int -> MudStack ())
+                -> MudStack ()
+parseTwoIntArgs mq cols [a, b] sorryParseA sorryParseB helper = do
+    parsed <- (,) <$> parse a sorryParseA
+                  <*> parse b sorryParseB
+    unless (uncurry (||) $ parsed & both %~ (()#)) . uncurry helper $ parsed & both %~ (getSum . fromJust)
+  where
+    parse txt sorry = case reads . T.unpack $ txt :: [(Int, String)] of
+      [(x, "")] -> unadulterated . Sum $ x
+      _         -> emptied . wrapSend mq cols . sorry $ txt
+parseTwoIntArgs _ _ as _ _ _ = patternMatchFail "parseTwoIntArgs" as
+
+
+-----
+
+
 debugLog :: ActionFun
 debugLog (NoArgs' i mq) = helper >> ok mq >> logPlaExec (prefixDebugCmd "log") i
   where
@@ -606,28 +645,6 @@ debugRotate (NoArgs' i mq) = getState >>= \ms -> let lq = getLogQueue i ms in do
     ok mq
     logPlaExec (prefixDebugCmd "rotate") i
 debugRotate p = withoutArgs debugRotate p
-
-
------
-
-
-debugStomach :: ActionFun
-debugStomach (NoArgs' i mq) = do
-    ok mq
-    scs <- mkStomachConts <$> liftIO getCurrentTime
-    tweak $ mobTbl.ind i.stomach <>~ scs
-    logPlaExec (prefixDebugCmd "stomach") i
-  where
-    -- TODO: Make a "consume" function that appends "StomachCont"s to a mob's "Stomach" and handles consumption effects.
-    mkStomachConts now = let f di = StomachCont di now False
-                         in map f [ Left . DistinctLiqId $ iLiqWater
-                                  , Left . DistinctLiqId $ iLiqPotHealing
-                                  , Left . DistinctLiqId $ iLiqPotInstantHealing
-                                  , Left . DistinctLiqId $ iLiqPotSt
-                                  , Left . DistinctLiqId $ iLiqPotInstantSt
-                                  , Left . DistinctLiqId $ iLiqPotTinnitus
-                                  , Left . DistinctLiqId $ iLiqPotInstantTinnitus ]
-debugStomach p = withoutArgs debugStomach p
 
 
 -----
@@ -815,20 +832,14 @@ wrapMsg = (<> dfltColor) . T.unwords $ wordy
 
 
 debugWrapIndent :: ActionFun
-debugWrapIndent p@AdviseNoArgs     = advise p [] adviceDWrapIndentNoArgs
-debugWrapIndent p@(AdviseOneArg _) = advise p [] adviceDWrapIndentNoAmt
-debugWrapIndent (WithArgs i mq cols [a, b]) = do
-    parsed <- (,) <$> parse a (wrapSend mq cols . sorryParseLineLen $ a)
-                  <*> parse b (wrapSend mq cols . sorryParseIndent  $ b)
-    unless (uncurry (||) $ parsed & both %~ (()#)) . uncurry helper $ parsed & both %~ (getSum . fromJust)
+debugWrapIndent p@AdviseNoArgs            = advise p [] adviceDWrapIndentNoArgs
+debugWrapIndent p@(AdviseOneArg _       ) = advise p [] adviceDWrapIndentNoAmt
+debugWrapIndent   (WithArgs i mq cols as) = parseTwoIntArgs mq cols as sorryParseLineLen sorryParseIndent helper
   where
-    parse txt sorry = case reads . T.unpack $ txt :: [(Int, String)] of
-      [(x, "")] -> unadulterated . Sum $ x
-      _         -> emptied sorry
     helper lineLen indent | any (< 0) [ lineLen, indent ]              = wrapSend mq cols sorryWtf
                           | not . inRange (minCols, maxCols) $ lineLen = wrapSend mq cols sorryWrapLineLen
                           | indent >= lineLen                          = wrapSend mq cols sorryIndent
                           | otherwise                                  = do
                               send mq . frame lineLen . T.unlines . wrapIndent indent lineLen $ wrapMsg
-                              logPlaExecArgs (prefixDebugCmd "wrapindent") [a, b] i
+                              logPlaExecArgs (prefixDebugCmd "wrapindent") as i
 debugWrapIndent p = advise p [] adviceDWrapIndentExcessArgs

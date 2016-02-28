@@ -48,7 +48,6 @@ module Mud.Data.State.Util.Misc ( addToInv
                                 , pcNpc
                                 , pluralize
                                 , procHooks
-                                , procInstaEffect
                                 , raceToLang
                                 , removeAdHoc
                                 , runEffectFun
@@ -61,7 +60,6 @@ module Mud.Data.State.Util.Misc ( addToInv
 import Mud.Data.Misc
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
-import Mud.Data.State.Util.Random
 import Mud.TheWorld.Zones.AdminZoneIds (iWelcome)
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
@@ -493,30 +491,6 @@ dropPrefixes arg@(T.unpack -> arg'        )
 -----
 
 
-procInstaEffect :: Id -> InstaEffect -> MudStack () -- TODO: Move to its own module and add logging?
-procInstaEffect i (InstaEffect sub val) = case sub of
-  EntInstaEffectFlags         -> undefined -- TODO
-  (MobInstaEffectPts ptsType) -> maybe unit (effectPts ptsType) val
-  RmInstaEffectFlags          -> undefined -- TODO
-  (InstaEffectOther fn)       -> getState >>= \ms -> getInstaEffectFun fn ms i
-  where
-    effectPts ptsType   = (helper ptsType =<<) . \case DefiniteVal x -> return x
-                                                       RangeVal    r -> rndmR r
-    helper    ptsType x = let (getCur, getMax, setCur) = snd . head . filter ((== ptsType) . fst) $ assocs
-                          in tweak $ \ms -> let curPts = ms^.myMobGet.getCur
-                                                maxPts = ms^.myMobGet.getMax
-                                            in ms & myMobSet.setCur .~ ((curPts + x) `max` maxPts)
-    assocs = [ (CurHp, (curHp, maxHp, curHp))
-             , (CurMp, (curMp, maxMp, curMp))
-             , (CurPp, (curPp, maxPp, curPp))
-             , (CurFp, (curFp, maxFp, curFp)) ]
-    myMobGet = mobTbl.ind i
-    myMobSet = mobTbl.ind i
-
-
------
-
-
 raceToLang :: Race -> Lang
 raceToLang Dwarf     = DwarfLang
 raceToLang Elf       = ElfLang
@@ -551,7 +525,7 @@ removeAdHoc i ms = ms & activeEffectsTbl.at  i        .~ Nothing
 -----
 
 
-runEffectFun :: FunName -> Id -> Seconds -> MudStack ()
+runEffectFun :: FunName -> Id -> Seconds -> MudStack () -- TODO: Make other helpers like this?
 runEffectFun n i secs = views (effectFunTbl.at n) (maybe oops (\f -> f i secs)) =<< getState
   where
     oops = blowUp "runEffectFun" "Function name not found in effect function table." . pure $ n

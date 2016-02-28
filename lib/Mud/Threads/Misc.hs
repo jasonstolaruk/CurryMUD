@@ -1,8 +1,10 @@
 {-# LANGUAGE DeriveDataTypeable, LambdaCase, OverloadedStrings, TupleSections #-}
 
 module Mud.Threads.Misc ( concurrentTree
+                        , dbExHandler
                         , die
                         , dieSilently
+                        , fileIOExHandler
                         , findBiodegradableIds
                         , findNpcIds
                         , onNewThread
@@ -14,28 +16,30 @@ module Mud.Threads.Misc ( concurrentTree
                         , stopTimerThread
                         , threadExHandler
                         , throwDeath
+                        , throwToListenThread
                         , throwWait
                         , TimerMsg(..)
                         , TimerQueue ) where
 
 import Mud.Cmds.Msgs.Misc
-import Mud.Cmds.Util.Misc
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
-import Mud.Misc.Logging hiding (logExMsg, logNotice, logPla)
+import Mud.Misc.Logging hiding (logExMsg, logIOEx, logNotice, logPla)
 import Mud.Util.Misc
-import qualified Mud.Misc.Logging as L (logExMsg, logNotice, logPla)
+import Mud.Util.Operators
+import Mud.Util.Quoting
+import qualified Mud.Misc.Logging as L (logExMsg, logIOEx, logNotice, logPla)
 
 import Control.Concurrent (forkIO, myThreadId)
 import Control.Concurrent.Async (Async, async, asyncThreadId, concurrently, race_, wait)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TMQueue (TMQueue, closeTMQueue)
-import Control.Exception (AsyncException(..), Exception, SomeException, fromException)
+import Control.Exception (AsyncException(..), Exception, IOException, SomeException, fromException, toException)
 import Control.Exception.Lifted (throwTo)
 import Control.Lens (at, views)
 import Control.Lens.Operators ((?~))
-import Control.Monad (void)
+import Control.Monad (unless, void)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (runReaderT)
 import Data.Monoid ((<>))
@@ -43,10 +47,15 @@ import Data.Text (Text)
 import Data.Typeable (Typeable)
 import GHC.Conc (labelThread)
 import qualified Data.IntMap.Lazy as IM (filter, keys)
+import System.IO.Error (isAlreadyInUseError, isDoesNotExistError, isPermissionError)
 
 
 logExMsg :: Text -> Text -> SomeException -> MudStack ()
 logExMsg = L.logExMsg "Mud.Threads.Misc"
+
+
+logIOEx :: Text -> IOException -> MudStack ()
+logIOEx = L.logIOEx "Mud.Threads.Misc"
 
 
 logNotice :: Text -> Text -> MudStack ()
@@ -87,6 +96,14 @@ concurrentTree = foldr helper (return [])
 -----
 
 
+dbExHandler :: Text -> SomeException -> MudStack ()
+dbExHandler fn e =
+    logExMsg "dbExHandler" (rethrowExMsg $ "during a database operation in " <> dblQuote fn) e >> throwToListenThread e
+
+
+-----
+
+
 die :: Maybe Id -> Text -> PlsDie -> MudStack ()
 die mi threadName = const . f $ "the " <> threadName <> " thread is dying."
   where
@@ -95,6 +112,16 @@ die mi threadName = const . f $ "the " <> threadName <> " thread is dying."
 
 dieSilently :: PlsDie -> MudStack ()
 dieSilently = const unit
+
+
+-----
+
+
+fileIOExHandler :: Text -> IOException -> MudStack ()
+fileIOExHandler fn e = do
+    logIOEx fn e
+    let rethrow = throwToListenThread . toException $ e
+    unless (any (e |&|) [ isAlreadyInUseError, isDoesNotExistError, isPermissionError ]) rethrow
 
 
 -----
@@ -168,6 +195,13 @@ stopTimerThread = liftIO . atomically . closeTMQueue
 
 throwDeath :: Async () -> MudStack ()
 throwDeath a = throwTo (asyncThreadId a) PlsDie
+
+
+-----
+
+
+throwToListenThread :: SomeException -> MudStack ()
+throwToListenThread e = flip throwTo e . getListenThreadId =<< getState
 
 
 -----

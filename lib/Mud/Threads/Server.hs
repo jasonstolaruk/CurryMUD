@@ -4,7 +4,6 @@ module Mud.Threads.Server (threadServer) where
 
 import Mud.Cmds.Msgs.Misc
 import Mud.Cmds.Pla
-import Mud.Cmds.Util.Misc
 import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MsgQueue

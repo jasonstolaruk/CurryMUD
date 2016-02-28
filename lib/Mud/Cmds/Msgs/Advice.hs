@@ -39,6 +39,9 @@ module Mud.Cmds.Msgs.Advice ( adviceAAnnounceNoArgs
                             , adviceDIdNoArgs
                             , adviceDisconnectNoArgs
                             , adviceDisconnectNoChan
+                            , adviceDLiqExcessArgs
+                            , adviceDLiqNoArgs
+                            , adviceDLiqNoId
                             , adviceDNumberExcessArgs
                             , adviceDNumberNoArgs
                             , adviceDNumberNoBase
@@ -277,6 +280,22 @@ adviceDIdExcessArgs = "Please provide one argument: the ID to search for, as in 
 
 adviceDIdNoArgs :: Text
 adviceDIdNoArgs = adviceDIdExcessArgs
+
+
+adviceDLiqExcessArgs :: Text
+adviceDLiqExcessArgs = "Please provide two arguments: the amount in quaffs and the distinct liquid ID, as in " <>
+                       colorWith quoteColor (prefixDebugCmd "liquid" <> " 8 100")                              <>
+                       "."
+
+
+adviceDLiqNoArgs :: Text
+adviceDLiqNoArgs = adviceDLiqExcessArgs
+
+
+adviceDLiqNoId :: Text
+adviceDLiqNoId = "Please also specify the distinct liquid ID, as in "        <>
+                  colorWith quoteColor (prefixDebugCmd "liquid" <> " 8 100") <>
+                  "."
 
 
 adviceDNumberExcessArgs :: Text

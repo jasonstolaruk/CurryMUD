@@ -19,6 +19,7 @@ import Mud.Misc.Logging hiding (logNotice, logPla)
 import Mud.TheWorld.Zones.AdminZoneIds (iCentral, iLoggedOut, iWelcome)
 import Mud.Threads.Digester
 import Mud.Threads.Effect
+import Mud.Threads.Misc
 import Mud.Threads.Regen
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.FilePaths
@@ -104,9 +105,9 @@ interpName (T.toLower -> cn@(capitalize -> cn')) p@(NoArgs i mq cols)
     illegalChars = [ '!' .. '@' ] ++ [ '[' .. '`' ] ++ [ '{' .. '~' ]
     helper ms    =
         let newPla  = getPla i ms
-            sorted  = IM.foldrWithKey (\pi pla acc -> acc & if isLoggedIn pla
-                                                              then _1 %~ (     getSing pi ms  :)
-                                                              else _2 %~ ((pi, getSing pi ms) :))
+            sorted  = IM.foldrWithKey (\pi pla -> if isLoggedIn pla
+                                                    then _1 %~ (     getSing pi ms  :)
+                                                    else _2 %~ ((pi, getSing pi ms) :))
                                       ([], [])
                                       (ms^.plaTbl)
             matches = filter ((== cn') . snd) . snd $ sorted

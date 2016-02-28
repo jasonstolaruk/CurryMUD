@@ -1,10 +1,10 @@
-{-# LANGUAGE LambdaCase, MultiWayIf, NamedFieldPuns, OverloadedStrings, ParallelListComp, PatternSynonyms, TupleSections, ViewPatterns #-}
+{-# LANGUAGE FlexibleContexts, LambdaCase, MultiWayIf, NamedFieldPuns, OverloadedStrings, ParallelListComp, PatternSynonyms, TupleSections, ViewPatterns #-}
 
 -- This module contains helper functions used by multiple modules under "Mud.Cmds".
 
 module Mud.Cmds.Util.Misc ( asterisk
                           , awardExp
-                          , dbExHandler
+                          , consume
                           , descSingId
                           , dispCmdList
                           , dispMatches
@@ -12,7 +12,6 @@ module Mud.Cmds.Util.Misc ( asterisk
                           , expandEmbeddedIds
                           , expandEmbeddedIdsToSings
                           , fakeClientInput
-                          , fileIOExHandler
                           , formatChanMsg
                           , formatQuestion
                           , getAllChanIdNames
@@ -57,7 +56,6 @@ module Mud.Cmds.Util.Misc ( asterisk
                           , punc
                           , questionChanContext
                           , sendGenericErrorMsg
-                          , throwToListenThread
                           , tunedInOut
                           , tunedInOutColorize
                           , unmsg
@@ -75,6 +73,7 @@ import Mud.Data.State.ActionParams.Misc
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Calc
+import Mud.Data.State.Util.Effect
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
@@ -83,6 +82,7 @@ import Mud.Interp.Pager
 import Mud.Misc.ANSI
 import Mud.Misc.Database
 import Mud.Misc.LocPref
+import Mud.Threads.Misc
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
@@ -94,32 +94,31 @@ import Mud.Util.Padding
 import Mud.Util.Quoting
 import Mud.Util.Text
 import Mud.Util.Wrapping
-import qualified Mud.Misc.Logging as L (logExMsg, logIOEx, logPla)
+import qualified Mud.Misc.Logging as L (logPla)
 import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 
 import Control.Arrow ((***), second)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
-import Control.Exception (IOException, SomeException, toException)
-import Control.Exception.Lifted (catch, throwTo, try)
+import Control.Exception.Lifted (catch, try)
 import Control.Lens (_1, _2, _3, at, both, each, to, view, views)
-import Control.Lens.Operators ((%~), (&), (+~), (?~), (^.))
-import Control.Monad ((>=>), forM, mplus, unless, when)
+import Control.Lens.Operators ((%~), (&), (+~), (.~), (<>~), (?~), (^.))
+import Control.Monad ((>=>), forM, mplus, when)
 import Control.Monad.IO.Class (liftIO)
 import Data.Char (isDigit, isLetter)
 import Data.Either (rights)
 import Data.Function (on)
-import Data.List (delete, intercalate, nub, partition, sortBy, unfoldr)
+import Data.List (delete, groupBy, intercalate, nub, partition, sortBy, unfoldr)
 import Data.Maybe (fromJust)
 import Data.Monoid ((<>), Any(..))
 import Data.Text (Text)
+import Data.Time (diffUTCTime, getCurrentTime)
 import Prelude hiding (exp)
 import qualified Data.IntMap.Lazy as IM (IntMap, empty, filter, foldlWithKey', foldr, fromList, keys, map, mapWithKey)
 import qualified Data.Map.Lazy as M ((!), elems, keys, lookup, toList)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
 import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
-import System.IO.Error (isAlreadyInUseError, isDoesNotExistError, isPermissionError)
 
 
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
@@ -138,14 +137,6 @@ patternMatchFail = U.patternMatchFail "Mud.Cmds.Util.Misc"
 
 
 -----
-
-
-logExMsg :: Text -> Text -> SomeException -> MudStack ()
-logExMsg = L.logExMsg "Mud.Cmds.Util.Misc"
-
-
-logIOEx :: Text -> IOException -> MudStack ()
-logIOEx = L.logIOEx "Mud.Cmds.Util.Misc"
 
 
 logPla :: Text -> Id -> Text -> MudStack ()
@@ -188,9 +179,39 @@ awardExp amt reason i = helper |&| modifyState >=> \(ms, (msgs, logMsgs)) -> do
 -----
 
 
-dbExHandler :: Text -> SomeException -> MudStack ()
-dbExHandler fn e =
-    logExMsg "dbExHandler" (rethrowExMsg $ "during a database operation in " <> dblQuote fn) e >> throwToListenThread e
+consume :: Id -> [StomachCont] -> MudStack ()
+consume i newScs = do
+    logPla "consume" i $ "consuming " <> commas (map pp newScs) <> "."
+    now <- liftIO getCurrentTime
+    procEffectList i =<< modifyState (helper now)
+  where
+    helper now ms =
+        let scs   = getStomach i ms ++ newScs
+            pairs = map (second getConsumpEffects . dup) scs :: [(StomachCont, Maybe ConsumpEffects)]
+            getConsumpEffects sc = case sc^.distinctId of
+              Left  (DistinctLiqId  x) -> f liqEdibleEffects  . getDistinctLiq  $ x
+              Right (DistinctFoodId x) -> f foodEdibleEffects . getDistinctFood $ x
+              where
+                f a b = view (a.consumpEffects) . b $ ms
+            (others, consumpEffectingPairs) = foldr g ([], []) pairs
+              where
+                g (sc, Nothing) = _1 %~ (sc       :)
+                g (sc, Just ce) = _2 %~ ((sc, ce) :)
+            (valids, invalids) = partition isValid consumpEffectingPairs
+            isValid (sc, ce)   = sc^.hasCausedConsumpEffect.to not && isNotExpired (sc, ce)
+              where
+                isNotExpired (view consumpTime -> t, ConsumpEffects _ secs _) = round (now `diffUTCTime` t) <= secs
+            groups     = groupBy ((==) `on` (view distinctId . fst)) valids
+            (scs', el) = foldr h ([], EffectList []) groups
+            h [] acc = acc
+            h grp@((sc, ConsumpEffects amt _ (EffectList thisEl)):_) acc@(_, EffectList accEl)
+              | length grp >= amt = let (x, m) = length grp `divMod` amt
+                                    in acc & _1 <>~ replicate (x * amt) (sc & hasCausedConsumpEffect .~ True) ++
+                                                    replicate m sc
+                                           & _2 .~  EffectList (concat (replicate x thisEl) ++ accEl)
+              | otherwise = acc & _1 %~ (map fst grp ++)
+            others' = others ++ map fst invalids
+        in (ms & mobTbl.ind i.stomach .~ others' ++ scs', el)
 
 
 -----
@@ -279,20 +300,6 @@ expandEmbeddedIdsToSings ms = helper
 
 fakeClientInput :: MsgQueue -> Text -> MudStack ()
 fakeClientInput mq = liftIO . atomically . writeTQueue mq . FromClient . nl
-
-
------
-
-
-fileIOExHandler :: Text -> IOException -> MudStack ()
-fileIOExHandler fn e = do
-    logIOEx fn e
-    let rethrow = throwToListenThread . toException $ e
-    unless (any (e |&|) [ isAlreadyInUseError, isDoesNotExistError, isPermissionError ]) rethrow
-
-
-throwToListenThread :: SomeException -> MudStack ()
-throwToListenThread e = flip throwTo e . getListenThreadId =<< getState
 
 
 -----

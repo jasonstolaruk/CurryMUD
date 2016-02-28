@@ -47,7 +47,7 @@ import Mud.Util.Operators
 import Mud.Util.Quoting
 
 import Control.Lens (_1, _2, lens, Lens')
-import Control.Lens.Operators ((%~), (&))
+import Control.Lens.Operators ((%~))
 import Control.Monad (guard)
 import Data.Function (on)
 import Data.IntMap.Lazy ((!))
@@ -231,8 +231,8 @@ reverseLookup v = fst . head . filter ((== v) . snd) . M.assocs
 sortEithers :: [Either l r] -> ([r], [l])
 sortEithers = foldr helper ([], [])
   where
-    helper (Right a) acc = acc & _1 %~ (a :)
-    helper (Left  b) acc = acc & _2 %~ (b :)
+    helper (Right a) = _1 %~ (a :)
+    helper (Left  b) = _2 %~ (b :)
 
 
 unadulterated :: (Monad m) => (Applicative f) => a -> m (f a)
