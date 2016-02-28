@@ -43,6 +43,7 @@ CurryMUD will have the following features:
 * Weight and encumbrance.
 * Volume and container capacity.
 * Durational effects that can be paused and resumed.
+* Food and liquids. Digestion.
 * Objects can be configured to automatically disappear when left on the ground for some time.
 
 I am still in the initial stage of developing basic commands. There is very little content in the virtual world.

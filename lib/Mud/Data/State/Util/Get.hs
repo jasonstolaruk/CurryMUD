@@ -702,17 +702,6 @@ isNotFirstAdminMsgId = onPla isNotFirstAdminMsg True
 -----
 
 
-isNotFirstLook :: Pla -> Bool
-isNotFirstLook = getPlaFlag IsNotFirstLook
-
-
-isNotFirstLookId :: Id -> MudState -> Bool
-isNotFirstLookId = onPla isNotFirstLook True
-
-
------
-
-
 isNotFirstMobSay :: Pla -> Bool
 isNotFirstMobSay = getPlaFlag IsNotFirstMobSay
 

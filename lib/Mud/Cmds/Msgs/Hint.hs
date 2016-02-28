@@ -62,25 +62,6 @@ hintGet = hintHelper [ "it appears that you want to remove an object from a cont
                      , "." ]
 
 
-hintLook :: Text
-hintLook = hintHelper [ "use the "
-                      , dblQuote "look"
-                      , " command to examine one or more items in your current room. To examine items in your \
-                        \inventory, use the "
-                      , dblQuote "inventory"
-                      , " command "
-                      , parensQuote $ "for example: " <> colorWith quoteColor "i bread"
-                      , ". To examine items in your readied equipment, use the "
-                      , dblQuote "equipment"
-                      , " command "
-                      , parensQuote $ "for example: " <> colorWith quoteColor "eq sword"
-                      , ". "
-                      , colorWith quoteColor "i"
-                      , " and "
-                      , colorWith quoteColor "eq"
-                      , " alone will list the items in your inventory and readied equipment, respectively." ]
-
-
 hintSay :: Text
 hintSay = hintHelper [ "when communicating with non-player characters, you may also try the "
                      , dblQuote "ask"

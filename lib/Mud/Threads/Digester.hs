@@ -28,7 +28,6 @@ import Control.Monad.IO.Class (liftIO)
 import Data.List (delete)
 import Data.Monoid ((<>))
 import Data.Text (Text)
-import Data.Time (diffUTCTime, getCurrentTime)
 
 
 default (Int)
@@ -85,11 +84,9 @@ digest i = getState >>= \ms -> case getStomach i ms of []  -> unit
   where
     helper ms scs = do
         sc  <- rndmElem scs
-        now <- liftIO getCurrentTime
-        let duration = views consumpTime (round . (now `diffUTCTime`)) sc
-            g a b    = views (a.digestEffects) (maybeVoid (procEffectList i)) . b $ ms
-            f        = logHelper sc >> case sc^.distinctId of
+        let f = logHelper sc >> case sc^.distinctId of
               Left  (DistinctLiqId  x) -> g liqEdibleEffects  . getDistinctLiq  $ x
               Right (DistinctFoodId x) -> g foodEdibleEffects . getDistinctFood $ x
-        duration < digesterDelay ? unit :? (f >> tweak (mobTbl.ind i.stomach %~ (sc `delete`)))
+            g a b = views (a.digestEffects) (maybeVoid (procEffectList i)) . b $ ms
+        f >> tweak (mobTbl.ind i.stomach %~ (sc `delete`))
     logHelper sc = logPla "digest" i $ "digesting " <> pp sc <> "."

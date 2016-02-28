@@ -697,7 +697,6 @@ examinePla i ms = let p = getPla i ms
                 | otherwise               = let pairs = [ (isAdmin,            "admin"              )
                                                         , (isIncognito,        "incognito"          )
                                                         , (isNotFirstAdminMsg, "not first admin msg")
-                                                        , (isNotFirstLook,     "not first look"     )
                                                         , (isNotFirstMobSay,   "not first mob say"  )
                                                         , (isTunedAdmin,       "tuned admin"        )
                                                         , (isTunedQuestion,    "tuned question"     ) ]

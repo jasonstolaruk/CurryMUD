@@ -340,7 +340,6 @@ beeBuzzRmFun = mkRndmBcastRmFun iAtrium "iAtrium" beeBuzzRmFunName 25 30 beeBuzz
 adminFlags :: Int
 adminFlags = foldl' setBit zeroBits . map fromEnum $ [ IsAdmin
                                                      , IsNotFirstAdminMsg
-                                                     , IsNotFirstLook
                                                      , IsNotFirstMobSay
                                                      , IsTunedAdmin
                                                      , IsTunedQuestion ]

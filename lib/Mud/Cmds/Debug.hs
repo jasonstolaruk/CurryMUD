@@ -431,7 +431,7 @@ debugKeys p = withoutArgs debugKeys p
 -----
 
 
-debugLiq :: ActionFun -- TODO: More testing (test this command itself...).
+debugLiq :: ActionFun
 debugLiq p@AdviseNoArgs            = advise p [] adviceDLiqNoArgs
 debugLiq p@(AdviseOneArg _       ) = advise p [] adviceDLiqNoId
 debugLiq   (WithArgs i mq cols as) = parseTwoIntArgs mq cols as sorryParseAmt sorryParseId helper

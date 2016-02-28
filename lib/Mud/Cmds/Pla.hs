@@ -1454,7 +1454,7 @@ look (LowerNub i mq cols as) = mkRndmVector >>= \v ->
             sorry                  = T.concat [ inInvs |!| sorryInInv, inEqs |!| sorryInEq ]
             sorryInInv             = wrapUnlinesNl cols . sorryEquipInvLook LookCmd $ InvCmd
             sorryInEq              = wrapUnlinesNl cols . sorryEquipInvLook LookCmd $ EquipCmd
-        in applyFirstLook $ case ((()!#) *** (()!#)) (invCoins, lookupHooks i ms "look") of
+        in case ((()!#) *** (()!#)) (invCoins, lookupHooks i ms "look") of
           (False, False) -> (ms, (wrapUnlinesNl cols sorryLookEmptyRmNoHooks, [], "", Nothing))
           -----
           (True,  False) -> let (toSelf, bs, maybeDesigs) = invCoinsHelper ms inRms invCoins
@@ -1470,9 +1470,6 @@ look (LowerNub i mq cols as) = mkRndmVector >>= \v ->
                                      , hooksBs ++ invCoinsBs
                                      , logMsg
                                      , maybeDesigs ))
-    applyFirstLook (ms, a@(toSelf, _, _, _)) =
-        let (pt, toSelf') = onTrue (isPC i ms) (firstLook i cols) (ms^.plaTbl, toSelf)
-        in (ms & plaTbl .~ pt, a & _1 .~ toSelf')
     -----
     invCoinsHelper ms args invCoins =
         let (eiss, ecs)  = uncurry (resolveRmInvCoins i ms args) invCoins
@@ -1522,12 +1519,6 @@ mkIsPC_StyledName_Count_BothList i ms targetIds =
       boths   =                      [ getEffBothGramNos i ms targetId | targetId <- targetIds ]
       counts  = mkCountList boths
   in nub . zip isPCs . zip3 styleds counts $ boths
-
-
-firstLook :: Id -> Cols -> (PlaTbl, Text) -> (PlaTbl, Text)
-firstLook i cols a@(pt, _)
-  | pt^.ind i.to isNotFirstLook = a
-  | otherwise = a & _1.ind i %~ setPlaFlag IsNotFirstLook True & _2 <>~ wrapUnlinesNl cols hintLook
 
 
 isKnownPCSing :: Sing -> Bool
