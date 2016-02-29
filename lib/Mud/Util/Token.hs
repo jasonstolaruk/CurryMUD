@@ -5,6 +5,7 @@ module Mud.Util.Token (parseTokens) where
 import Mud.Cmds.Msgs.Misc
 import Mud.Misc.ANSI
 import Mud.TopLvlDefs.Chars
+import Mud.TopLvlDefs.Misc
 import Mud.Util.Text
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
@@ -22,7 +23,7 @@ patternMatchFail = U.patternMatchFail "Mud.Util.Token"
 
 
 parseTokens :: Text -> Text
-parseTokens = parseCharTokens . parseMsgTokens . parseStyleTokens
+parseTokens = parseCharTokens . parseMiscTokens . parseStyleTokens
 
 
 -----
@@ -48,6 +49,7 @@ expandCharCode :: Char -> Text
 expandCharCode c | c == charTokenDelimiter = T.singleton charTokenDelimiter
 expandCharCode (toLower -> code)           = T.singleton $ case code of
   'a' -> allChar
+  'b' -> debugCmdChar
   'c' -> adverbCloseChar
   'd' -> adminCmdChar
   'e' -> emoteNameChar
@@ -67,14 +69,15 @@ expandCharCode (toLower -> code)           = T.singleton $ case code of
 -----
 
 
-parseMsgTokens :: Text -> Text
-parseMsgTokens = parser expandMsgCode msgTokenDelimiter
+parseMiscTokens :: Text -> Text
+parseMiscTokens = parser expandMiscCode miscTokenDelimiter
 
 
-expandMsgCode :: Char -> Text
-expandMsgCode c | c == msgTokenDelimiter = T.singleton msgTokenDelimiter
-expandMsgCode (toLower -> code)          = case code of
+expandMiscCode :: Char -> Text
+expandMiscCode c | c == miscTokenDelimiter = T.singleton miscTokenDelimiter
+expandMiscCode (toLower -> code)           = case code of
   'b' -> dfltBootMsg
+  'd' -> yesNo isDebug
   's' -> dfltShutdownMsg
   x   -> patternMatchFail "expandMsgCode" [ T.singleton x ]
 
@@ -91,6 +94,7 @@ expandStyleCode c | c == styleTokenDelimiter = T.singleton styleTokenDelimiter
 expandStyleCode (toLower -> code)            = case code of
   'a' -> abbrevColor
   'd' -> dfltColor
+  'e' -> emphasisColor
   'h' -> headerColor
   'l' -> selectorColor
   'n' -> noUnderlineANSI

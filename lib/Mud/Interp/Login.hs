@@ -216,7 +216,7 @@ checkRndmNames mq = checkNameHelper (Just rndmNamesFile) "checkRndmNames" . prom
 
 
 interpConfirmName :: Sing -> Interp
-interpConfirmName s cn params@(NoArgs' i mq) = case yesNo cn of
+interpConfirmName s cn params@(NoArgs' i mq) = case yesNoHelper cn of
   Just True -> helper |&| modifyState >=> \(ms@(getPla i -> p), oldSing) -> do
       logNotice "interpConfirmName"   . T.concat $ [ dblQuote oldSing
                                                    , " has logged in as "
@@ -250,8 +250,8 @@ notifyQuestion i ms =
     in bcastNl =<< expandEmbeddedIds ms questionChanContext =<< formatQuestion i ms (msg, tunedIds)
 
 
-yesNo :: Text -> Maybe Bool
-yesNo (T.toLower -> a) = guard (()!# a) >> helper
+yesNoHelper :: Text -> Maybe Bool
+yesNoHelper (T.toLower -> a) = guard (()!# a) >> helper
   where
     helper | a `T.isPrefixOf` "yes" = return True
            | a `T.isPrefixOf` "no"  = return False

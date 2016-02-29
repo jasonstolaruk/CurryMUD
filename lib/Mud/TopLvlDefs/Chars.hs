@@ -76,11 +76,11 @@ indentFiller = '\129'
 -- Denotative characters used in text files:
 
 
-charTokenDelimiter, dividerToken, indentTagChar, msgTokenDelimiter, styleTokenDelimiter :: Char
+charTokenDelimiter, dividerToken, indentTagChar, miscTokenDelimiter, styleTokenDelimiter :: Char
 charTokenDelimiter  = '#'
 dividerToken        = '-'
 indentTagChar       = '`'
-msgTokenDelimiter   = '@'
+miscTokenDelimiter  = '@'
 styleTokenDelimiter = '\\'
 
 

@@ -107,7 +107,6 @@ logPlaExecArgs = L.logPlaExecArgs "Mud.Cmds.Debug"
 -- ==================================================
 
 
--- TODO: Make a "debug" help topic for admins.
 debugCmds :: [Cmd]
 debugCmds =
     [ mkDebugCmd "?"          debugDispCmdList cmdDescDispCmdList
@@ -746,7 +745,7 @@ debugTinnitus p = withoutArgs debugTinnitus p
 -----
 
 
-debugToken :: ActionFun -- TODO: Make a token that indicates whether or not debug cmds are enabled?
+debugToken :: ActionFun
 debugToken (NoArgs i mq cols) = do
     multiWrapSend mq cols . T.lines . parseTokens . T.unlines $ tokenTxts
     logPlaExec (prefixDebugCmd "token") i
@@ -779,9 +778,10 @@ debugToken (NoArgs i mq cols) = do
                 , styleTokenDelimiter `T.cons` ("t " <> dfltColorStyleToken <> " <- toNpcColor")
                 , styleTokenDelimiter `T.cons` ("uunderlineANSI"     <> noUnderlineStyleToken  )
                 , styleTokenDelimiter `T.cons` ("zzingColor"         <> dfltColorStyleToken    )
-                , "literal msgTokenDelimiter: " <> (T.pack . replicate 2 $ msgTokenDelimiter)
-                , "dfltBootMsg: "     <> (msgTokenDelimiter `T.cons` "b")
-                , "dfltShutdownMsg: " <> (msgTokenDelimiter `T.cons` "s") ]
+                , "literal miscTokenDelimiter: " <> (T.pack . replicate 2 $ miscTokenDelimiter)
+                , "dfltBootMsg: "     <> (miscTokenDelimiter `T.cons` "b")
+                , "isDebug: "         <> (miscTokenDelimiter `T.cons` "d")
+                , "dfltShutdownMsg: " <> (miscTokenDelimiter `T.cons` "s") ]
     dfltColorStyleToken   = styleTokenDelimiter `T.cons` "d"
     noUnderlineStyleToken = styleTokenDelimiter `T.cons` "n"
 debugToken p = withoutArgs debugToken p

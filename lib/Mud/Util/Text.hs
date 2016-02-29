@@ -32,7 +32,8 @@ module Mud.Util.Text ( aOrAn
                      , theLetterS
                      , theOnLower
                      , theOnLowerCap
-                     , uncapitalize ) where
+                     , uncapitalize
+                     , yesNo ) where
 
 import Mud.TopLvlDefs.Chars
 import Mud.Util.Misc hiding (blowUp)
@@ -306,3 +307,11 @@ theOnLower t | isCapital t = t
 
 theOnLowerCap :: Text -> Text
 theOnLowerCap = capitalize . theOnLower
+
+
+-----
+
+
+yesNo :: Bool -> Text
+yesNo True  = "yes"
+yesNo False = "no"
