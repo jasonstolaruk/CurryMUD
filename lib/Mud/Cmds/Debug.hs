@@ -48,12 +48,13 @@ import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception (ArithException(..), IOException)
 import Control.Exception.Lifted (throwIO, try)
-import Control.Lens (Optical, both, view, views)
+import Control.Lens (Optical, both, to, view, views)
 import Control.Lens.Operators ((%~), (&), (^.))
 import Control.Monad ((>=>), replicateM_, unless)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (asks)
 import Data.Char (ord, digitToInt, isDigit, toLower)
+import Data.Function (on)
 import Data.Ix (inRange)
 import Data.List (delete, intercalate, sort)
 import Data.Maybe (fromJust)
@@ -106,7 +107,6 @@ logPlaExecArgs = L.logPlaExecArgs "Mud.Cmds.Debug"
 -- ==================================================
 
 
--- TODO: None of these commands should be able to crash the server (unless that is their purpose).
 -- TODO: Make a "debug" help topic for admins.
 debugCmds :: [Cmd]
 debugCmds =
@@ -119,7 +119,7 @@ debugCmds =
     , mkDebugCmd "color"      debugColor       "Perform a color test."
     , mkDebugCmd "cores"      debugCores       "Display the number of processor cores."
     , mkDebugCmd "cpu"        debugCPU         "Display the CPU time."
-    , mkDebugCmd "effect"     debugEffect      "Add 10-20 to your HT for 30 seconds."
+    , mkDebugCmd "effect"     debugEffect      "Add 10-20 to your ST for 30 seconds."
     , mkDebugCmd "env"        debugEnv         "Display or search system environment variables."
     , mkDebugCmd "exp"        debugExp         "Award yourself 100,000 exp."
     , mkDebugCmd "fun"        debugFun         "Dump the keys of the \"FunTbl\", \"HookFunTbl\", \"RmActionFunTbl\", \
@@ -168,7 +168,7 @@ mkDebugCmd (prefixDebugCmd -> cn) f cd = Cmd { cmdName           = cn
 
 debugAp :: ActionFun
 debugAp p@(WithArgs i mq cols _) = (wrapSend mq cols . showText $ p) >> logPlaExec (prefixDebugCmd "ap") i
-debugAp p = patternMatchFail "debugAp" [ showText p ]
+debugAp p                        = patternMatchFail "debugAp" [ showText p ]
 
 
 -----
@@ -183,7 +183,7 @@ debugBoot p              = withoutArgs debugBoot p
 
 
 debugBcast :: ActionFun
-debugBcast (NoArgs'' i) = (bcastNl . mkBcast i $ msg) >> logPlaExec (prefixDebugCmd "broadcast") i
+debugBcast (NoArgs'' i) = bcastNl (mkBcast i msg) >> logPlaExec (prefixDebugCmd "broadcast") i
   where
     msg = "[1] abcdefghij\n\
           \[2] abcdefghij abcdefghij\n\
@@ -210,7 +210,7 @@ debugBuffCheck (NoArgs i mq cols) = do
         send mq . nl =<< [ T.unlines . wrapIndent 2 cols $ msg | (mkMsg fn -> msg) <- liftIO . hGetBuffering $ h ]
         liftIO $ hClose h >> removeFile fn
     mkMsg (dblQuote . T.pack -> fn) (dblQuote . showText -> mode) =
-        T.concat [ parensQuote "Default", " buffering mode for temp file ", fn, " is ", mode, "." ]
+        T.concat [ "Default buffering mode for temp file ", fn, " is ", mode, "." ]
 debugBuffCheck p = withoutArgs debugBuffCheck p
 
 
@@ -219,13 +219,14 @@ debugBuffCheck p = withoutArgs debugBuffCheck p
 
 debugCins :: ActionFun
 debugCins p@AdviseNoArgs       = advise p [] adviceDCinsNoArgs
-debugCins (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
-  [(targetId, "")] -> helper targetId
+debugCins (OneArg i mq cols a) = getState >>= \ms -> case reads . T.unpack $ a :: [(Int, String)] of
+  [(targetId, "")] -> helper ms targetId
   _                -> wrapSend mq cols . sorryParseId $ a
   where
-    helper targetId@(showText -> targetIdTxt)
-      | targetId < 0 = wrapSend mq cols sorryWtf
-      | otherwise    = getState >>= \ms -> do
+    helper ms targetId@(showText -> targetIdTxt)
+      | targetId < 0                              = wrapSend mq cols sorryWtf
+      | targetId `notElem` views pcTbl IM.keys ms = wrapSend mq cols . sorryNonexistentId targetId . pure $ "PC"
+      | otherwise                                 = do
           multiWrapSend mq cols . (header :) . pure . showText =<< getAllChanIdNames i ms
           logPlaExecArgs (prefixDebugCmd "cins") (pure a) i
       where
@@ -289,7 +290,7 @@ debugDispCmdList p                  = patternMatchFail "debugDispCmdList" [ show
 debugEffect :: ActionFun
 debugEffect (NoArgs' i mq) = do
     ok mq
-    startEffect i . Effect (MobEffectAttrib Ht) (Just . RangeVal $ (10, 20)) $ 30
+    startEffect i . Effect (MobEffectAttrib St) (Just . RangeVal $ (10, 20)) $ 30
     logPlaExec (prefixDebugCmd "effect") i
 debugEffect p = withoutArgs debugEffect p
 
@@ -329,10 +330,11 @@ debugExp p = withoutArgs debugExp p
 debugFun :: ActionFun
 debugFun (NoArgs i mq cols) = getState >>= \ms -> do
     let helper t lens = t <> ":" : views lens (S.toAscList . M.keysSet) ms
-    pager i mq . intercalateDivider cols $ [ helper "FunTbl"         funTbl
-                                           , helper "HookFunTbl"     hookFunTbl
-                                           , helper "RmActionFunTbl" rmActionFunTbl
-                                           , helper "EffectFunTbl"   effectFunTbl ]
+    pager i mq . concatMap (wrapIndent 2 cols) . intercalateDivider cols $ [ helper "FunTbl"            funTbl
+                                                                           , helper "HookFunTbl"        hookFunTbl
+                                                                           , helper "RmActionFunTbl"    rmActionFunTbl
+                                                                           , helper "EffectFunTbl"      effectFunTbl
+                                                                           , helper "InstaEffectFunTbl" instaEffectFunTbl ]
     logPlaExec (prefixDebugCmd "fun") i
 debugFun p = withoutArgs debugFun p
 
@@ -353,10 +355,12 @@ debugId (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
               mkTxt =
                   [ [ "Tables containing key " <> searchIdTxt <> ":"
                     , commas . map fst . filter ((searchId `elem`) . snd) . mkTblNameKeysList $ ms ]
-                  , [ T.concat [ "Channels with an ", dblQuote "chanId", " of ", searchIdTxt, ": " ]
+                  , [ T.concat [ "Channels with a ", dblQuote "chanId", " of ", searchIdTxt, ": " ]
                     , f . filter ((== searchId) . view chanId . snd) . tblToList chanTbl $ ms ]
                   , [ T.concat [ "Entities with an ", dblQuote "entId", " of ", searchIdTxt, ": " ]
                     , f . filter ((== searchId) . view entId . snd) . tblToList entTbl $ ms ]
+                  , [ T.concat [ "Foods with a ", dblQuote "foodId", " of ", searchIdTxt, ": " ]
+                    , f . filter ((== DistinctFoodId searchId) . view foodId . snd) . tblToList foodTbl $ ms ]
                   , [ T.concat [ "Equipment maps containing ID ", searchIdTxt, ": " ]
                     , f . filter ((searchId `elem`) . M.elems . snd) . tblToList eqTbl $ ms ]
                   , [ T.concat [ "Inventories containing ID ", searchIdTxt, ": " ]
@@ -372,9 +376,12 @@ debugId (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
                   , [ T.concat [ "Players possessing ID ", searchIdTxt, ": " ]
                     , f . filter ((searchId `elem`) . view possessing . snd) $ plaTblList ]
                   , [ T.concat [ "Players with a ", dblQuote "lastRmId", " of ", searchIdTxt, ": " ]
-                    , f . filter ((searchId `elem`) . view lastRmId . snd) $ plaTblList ] ]
-              plaTblList = tblToList plaTbl ms
-          mapM_ (multiWrapSend mq cols) mkTxt
+                    , f . filter ((searchId `elem`) . view lastRmId . snd) $ plaTblList ]
+                  , [ T.concat [ "Vessels containing ", dblQuote "liqId", " ", searchIdTxt, ": " ]
+                    , f . filter vesselHelper . tblToList vesselTbl $ ms ] ]
+              plaTblList   = tblToList plaTbl ms
+              vesselHelper = views vesselCont (maybe False (views liqId (== DistinctLiqId searchId) . fst)) . snd
+          pager i mq . concat . wrapLines cols . intercalate [""] $ mkTxt
           logPlaExecArgs (prefixDebugCmd "id") (pure a) i
 debugId p = advise p [] adviceDIdExcessArgs
 
@@ -390,6 +397,8 @@ mkTblNameKeysList ms = [ ("ActiveEffects", tblKeys activeEffectsTbl ms)
                        , ("Cloth",         tblKeys clothTbl         ms)
                        , ("Coins",         tblKeys coinsTbl         ms)
                        , ("Con",           tblKeys conTbl           ms)
+                       , ("DistinctFood",  tblKeys distinctFoodTbl  ms)
+                       , ("DistinctLiq",   tblKeys distinctLiqTbl   ms)
                        , ("Ent",           tblKeys entTbl           ms)
                        , ("EqMap",         tblKeys eqTbl            ms)
                        , ("Food",          tblKeys foodTbl          ms)
@@ -398,8 +407,8 @@ mkTblNameKeysList ms = [ ("ActiveEffects", tblKeys activeEffectsTbl ms)
                        , ("MsgQueue",      tblKeys msgQueueTbl      ms)
                        , ("Npc",           tblKeys npcTbl           ms)
                        , ("Obj",           tblKeys objTbl           ms)
-                       , ("PC",            tblKeys pcTbl            ms)
                        , ("PausedEffects", tblKeys pausedEffectsTbl ms)
+                       , ("PC",            tblKeys pcTbl            ms)
                        , ("PlaLog",        tblKeys plaLogTbl        ms)
                        , ("Pla",           tblKeys plaTbl           ms)
                        , ("Rm",            tblKeys rmTbl            ms)
@@ -421,7 +430,7 @@ tblKeys lens = views lens IM.keys
 
 debugKeys :: ActionFun
 debugKeys (NoArgs i mq cols) = getState >>= \ms -> do
-    multiWrapSend mq cols . intercalate [""] . map mkKeysTxt . mkTblNameKeysList $ ms
+    pager i mq . concat . wrapLines cols . intercalate [""] . map mkKeysTxt . mkTblNameKeysList $ ms
     logPlaExec (prefixDebugCmd "keys") i
   where
     mkKeysTxt (tblName, ks) = [ tblName <> ": ", showText ks ]
@@ -439,7 +448,7 @@ debugLiq   (WithArgs i mq cols as) = getState >>= \ms ->
   where
     helper ms amt di
       | amt < 1 || di < 0                            = wrapSend mq cols sorryWtf
-      | di `notElem` views distinctLiqTbl IM.keys ms = wrapSend mq cols . sorryNonexistentId $ di
+      | di `notElem` views distinctLiqTbl IM.keys ms = wrapSend mq cols . sorryNonexistentId di . pure $ "distinct liquid"
       | otherwise = do
           ok mq
           logPlaExecArgs (prefixDebugCmd "liquid") as i
@@ -520,7 +529,7 @@ isValidDigit base (toLower -> c) | isDigit c                                    
 
 letterToNum :: Char -> Int
 letterToNum c | isDigit c = digitToInt c
-              | otherwise = ord c - ord 'a' + 10
+              | otherwise = let f = (-) `on` ord in (c `f` 'a') + 10
 
 
 -----
@@ -586,25 +595,27 @@ debugRandom p = withoutArgs debugRandom p
 debugRegen :: ActionFun
 debugRegen p@AdviseNoArgs       = advise p [] adviceDRegenNoArgs
 debugRegen (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
-  [(targetId, "")] -> helper targetId
+  [(targetId, "")] -> helper targetId =<< getState
   _                -> wrapSend mq cols . sorryParseId $ a
   where
-    helper targetId
+    helper targetId ms
       | targetId < 0 = wrapSend mq cols sorryWtf
-      | otherwise    = getState >>= \ms -> do
-          multiWrapSend mq cols . descRegens $ ms
+      | targetId `notElem` uncurry (++) (ms^.npcTbl.to IM.keys, ms^.pcTbl.to IM.keys) =
+          wrapSend mq cols . sorryNonexistentId targetId $ [ "NPC", "PC" ]
+      | otherwise = do
+          multiWrapSend mq cols descRegens
           logPlaExecArgs (prefixDebugCmd "regen") (pure a) i
       where
-        descRegens ms = map (uncurry3 . descRegen $ ms) [ ("hp", calcRegenHpAmt, calcRegenHpDelay)
-                                                        , ("mp", calcRegenMpAmt, calcRegenMpDelay)
-                                                        , ("pp", calcRegenPpAmt, calcRegenPpDelay)
-                                                        , ("fp", calcRegenFpAmt, calcRegenFpDelay) ]
-        descRegen ms t calcAmt calcDelay = T.concat [ t
-                                                    , ": "
-                                                    , showText . calcAmt   targetId $ ms
-                                                    , " / "
-                                                    , showText . calcDelay targetId $ ms
-                                                    , " sec" ]
+        descRegens = map (uncurry3 descRegen) [ ("hp", calcRegenHpAmt, calcRegenHpDelay)
+                                              , ("mp", calcRegenMpAmt, calcRegenMpDelay)
+                                              , ("pp", calcRegenPpAmt, calcRegenPpDelay)
+                                              , ("fp", calcRegenFpAmt, calcRegenFpDelay) ]
+        descRegen t calcAmt calcDelay = T.concat [ t
+                                                 , ": "
+                                                 , showText . calcAmt   targetId $ ms
+                                                 , " / "
+                                                 , showText . calcDelay targetId $ ms
+                                                 , " sec" ]
 debugRegen p = advise p [] adviceDRegenExcessArgs
 
 
@@ -654,11 +665,11 @@ debugRotate p = withoutArgs debugRotate p
 
 debugTalk :: ActionFun
 debugTalk (NoArgs i mq cols) = getState >>= \(views talkAsyncTbl M.elems -> asyncs) -> do
-    send mq =<< [ frame cols . multiWrap cols $ descs | descs <- mapM mkDesc asyncs ]
+    pager i mq =<< [ concatMap (wrapIndent 2 cols) descs | descs <- mapM mkDesc asyncs ]
     logPlaExec (prefixDebugCmd "talk") i
   where
     mkDesc a    = [ T.concat [ "Talk async ", showText . asyncThreadId $ a, ": ", statusTxt, "." ]
-                  | statusTxt <- mkStatusTxt <$> (liftIO . poll $ a) ]
+                  | statusTxt <- mkStatusTxt <$> liftIO (poll a) ]
     mkStatusTxt = \case Nothing         -> "running"
                         Just (Left  e ) -> "exception " <> (parensQuote . showText $ e)
                         Just (Right ()) -> "finished"
@@ -669,8 +680,8 @@ debugTalk p = withoutArgs debugTalk p
 
 
 debugThreads :: ActionFun
-debugThreads (NoArgs' i mq) = do
-    pager i mq =<< descThreads
+debugThreads (NoArgs i mq cols) = do
+    pager i mq . concatMap (wrapIndent 2 cols) =<< descThreads
     logPlaExec (prefixDebugCmd "threads") i
 debugThreads p@ActionParams { myId, args } = do
     dispMatches p 2 =<< descThreads
@@ -686,21 +697,22 @@ descThreads = do
   where
     mkDesc (ti, bracketPad 20 . mkTypeName -> tn) = [ T.concat [ padOrTrunc 16 . showText $ ti, tn, ts ]
                                                     | (showText -> ts) <- liftIO . threadStatus $ ti ]
-    mkTypeName (Biodegrader    (showText -> pi)) = padOrTrunc 12 "Biodegrader" <> pi
-    mkTypeName (Digester       (showText -> pi)) = padOrTrunc 12 "Digester"    <> pi
-    mkTypeName (EffectListener (showText -> pi)) = padOrTrunc 12 "Eff Listen"  <> pi
-    mkTypeName (EffectThread   (showText -> pi)) = padOrTrunc 12 "Eff Thread"  <> pi
-    mkTypeName (EffectTimer    (showText -> pi)) = padOrTrunc 12 "Eff Timer"   <> pi
-    mkTypeName (InacTimer      (showText -> pi)) = padOrTrunc 12 "InacTimer"   <> pi
-    mkTypeName (NpcServer      (showText -> pi)) = padOrTrunc 12 "NpcServer"   <> pi
-    mkTypeName (PlaLog         (showText -> pi)) = padOrTrunc 12 "PlaLog"      <> pi
-    mkTypeName (Receive        (showText -> pi)) = padOrTrunc 12 "Receive"     <> pi
-    mkTypeName (RegenChild     (showText -> pi)) = padOrTrunc 12 "RegenChild"  <> pi
-    mkTypeName (RegenParent    (showText -> pi)) = padOrTrunc 12 "RegenParent" <> pi
-    mkTypeName (RmFun          (showText -> pi)) = padOrTrunc 12 "RmFun"       <> pi
-    mkTypeName (Server         (showText -> pi)) = padOrTrunc 12 "Server"      <> pi
-    mkTypeName (Talk           (showText -> pi)) = padOrTrunc 12 "Talk"        <> pi
+    mkTypeName (Biodegrader    (showText -> pi)) = padOrTrunc padAmt "Biodegrader" <> pi
+    mkTypeName (Digester       (showText -> pi)) = padOrTrunc padAmt "Digester"    <> pi
+    mkTypeName (EffectListener (showText -> pi)) = padOrTrunc padAmt "Eff Listen"  <> pi
+    mkTypeName (EffectThread   (showText -> pi)) = padOrTrunc padAmt "Eff Thread"  <> pi
+    mkTypeName (EffectTimer    (showText -> pi)) = padOrTrunc padAmt "Eff Timer"   <> pi
+    mkTypeName (InacTimer      (showText -> pi)) = padOrTrunc padAmt "InacTimer"   <> pi
+    mkTypeName (NpcServer      (showText -> pi)) = padOrTrunc padAmt "NpcServer"   <> pi
+    mkTypeName (PlaLog         (showText -> pi)) = padOrTrunc padAmt "PlaLog"      <> pi
+    mkTypeName (Receive        (showText -> pi)) = padOrTrunc padAmt "Receive"     <> pi
+    mkTypeName (RegenChild     (showText -> pi)) = padOrTrunc padAmt "RegenChild"  <> pi
+    mkTypeName (RegenParent    (showText -> pi)) = padOrTrunc padAmt "RegenParent" <> pi
+    mkTypeName (RmFun          (showText -> pi)) = padOrTrunc padAmt "RmFun"       <> pi
+    mkTypeName (Server         (showText -> pi)) = padOrTrunc padAmt "Server"      <> pi
+    mkTypeName (Talk           (showText -> pi)) = padOrTrunc padAmt "Talk"        <> pi
     mkTypeName (showText -> tt)                  = tt
+    padAmt                                       = 12
 
 
 -----
@@ -734,7 +746,7 @@ debugTinnitus p = withoutArgs debugTinnitus p
 -----
 
 
-debugToken :: ActionFun
+debugToken :: ActionFun -- TODO: Make a token that indicates whether or not debug cmds are enabled?
 debugToken (NoArgs i mq cols) = do
     multiWrapSend mq cols . T.lines . parseTokens . T.unlines $ tokenTxts
     logPlaExec (prefixDebugCmd "token") i
@@ -791,13 +803,14 @@ debugUnderline p = withoutArgs debugUnderline p
 debugWeight :: ActionFun
 debugWeight p@AdviseNoArgs       = advise p [] adviceDWeightNoArgs
 debugWeight (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
-  [(searchId, "")] -> helper searchId
+  [(searchId, "")] -> helper searchId =<< getState
   _                -> wrapSend mq cols . sorryParseId $ a
   where
-    helper searchId
-      | searchId < 0 = wrapSend mq cols sorryWtf
-      | otherwise    = do
-          send mq . nlnl . showText . calcWeight searchId =<< getState
+    helper searchId ms
+      | searchId < 0                               = wrapSend mq cols sorryWtf
+      | searchId `notElem` views objTbl IM.keys ms = wrapSend mq cols . sorryNonexistentId searchId . pure $ "object"
+      | otherwise                                  = do
+          send mq . nlnl . showText . calcWeight searchId $ ms
           logPlaExecArgs (prefixDebugCmd "weight") (pure a) i
 debugWeight p = advise p [] adviceDWeightExcessArgs
 
@@ -820,7 +833,7 @@ debugWrap p = advise p [] adviceDWrapExcessArgs
 
 
 wrapMsg :: Text
-wrapMsg = (<> dfltColor) . T.unwords $ wordy
+wrapMsg = T.unwords wordy <> dfltColor
   where
     wordy :: [] Text
     wordy = [ T.concat [ u

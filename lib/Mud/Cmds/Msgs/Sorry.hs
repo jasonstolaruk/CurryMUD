@@ -794,8 +794,10 @@ sorryNoOneHere = "You don't see anyone here."
 -----
 
 
-sorryNonexistentId :: Id -> Text
-sorryNonexistentId i = "ID " <> showText i <> " does not exist."
+sorryNonexistentId :: Id -> [Text] -> Text
+sorryNonexistentId i ts = T.concat [ "ID ", showText i, " does not exist in ", case ts of
+  [t] -> "the " <> t <> " table."
+  _   -> "any of the following tables: " <> commas ts <> "." ]
 
 
 -----
