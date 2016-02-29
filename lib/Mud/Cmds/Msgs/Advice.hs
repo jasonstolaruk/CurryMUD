@@ -47,6 +47,7 @@ module Mud.Cmds.Msgs.Advice ( adviceAAnnounceNoArgs
                             , adviceDNumberNoBase
                             , adviceDRegenExcessArgs
                             , adviceDRegenNoArgs
+                            , adviceDrinkNoArgs
                             , adviceDRntExcessArgs
                             , adviceDropNoArgs
                             , adviceDWeightExcessArgs
@@ -424,6 +425,10 @@ adviceDisconnectNoChan :: Text -> Text
 adviceDisconnectNoChan a = "Please also provide the name of a telepathic channel, as in " <>
                            colorWith quoteColor ("disconnect " <> a <> " hunt")           <>
                            "."
+
+
+adviceDrinkNoArgs :: Text
+adviceDrinkNoArgs = undefined -- TODO
 
 
 adviceDropNoArgs :: Text

@@ -207,6 +207,7 @@ priorityAbbrevCmdTuples =
     , ("color",      "col", color,      True, "Perform a color test.")
     , ("connect",    "co",  connect,    True, "Connect one or more people to a telepathic channel.")
     , ("disconnect", "di",  disconnect, True, "Disconnect one or more people from a telepathic channel.")
+    , ("drink",      "dri", drink,      True, cmdDescDrink)
     , ("drop",       "dr",  dropAction, True, cmdDescDrop)
     , ("emote",      "em",  emote,      True, cmdDescEmote)
     , ("exits",      "ex",  exits,      True, cmdDescExits)
@@ -730,6 +731,14 @@ disconnectHelper i (target, as) idNamesTbl ms =
         (cs, cns, s) = mkChanBindings i ms
         sorry        = (ms, ) . (, Nothing) . pure . Left
     in findFullNameForAbbrev target (map T.toLower cns) |&| maybe notFound found
+
+
+-----
+
+
+drink :: ActionFun
+drink p@AdviseNoArgs = advise p ["drink"] adviceDrinkNoArgs
+drink p = patternMatchFail "drink" [ showText p ]
 
 
 -----

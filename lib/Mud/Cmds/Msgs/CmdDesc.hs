@@ -17,6 +17,10 @@ cmdDescDispCmdList :: Text
 cmdDescDispCmdList = "Display or search this command list."
 
 
+cmdDescDrink :: Text
+cmdDescDrink = "Drink a given amount from a container."
+
+
 cmdDescDrop :: Text
 cmdDescDrop = "Drop one or more items."
 
