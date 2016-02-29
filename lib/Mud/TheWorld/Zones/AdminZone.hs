@@ -41,6 +41,7 @@ import Data.List ((\\), delete, foldl')
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import qualified Data.Map.Lazy as M (empty, fromList, singleton)
+import qualified Data.Text as T
 
 
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
@@ -620,7 +621,17 @@ createAdminZone = do
             [ StdLink Northwest iBasement ]
             M.empty [] [] [])
   let conIds    = [ iSack1, iSack2, iSackSml, iSackLrg, iBack1, iBack2, iBackSml, iBackLrg ]
-  let vesselIds = [ iPotionFlask1 .. iPotionFlask1 + 9 ] -- TODO: iWaterskin, iWaterskinLrg, iJarSml, iJar, iJarLrg, iJugSml, iJug, iJugLrg, iBottleSml, iBottle, iBottleLrg
+  let vesselIds = [ iPotionFlask1 .. iPotionFlask1 + 9 ] ++ [ iWaterskin
+                                                            , iWaterskinLrg
+                                                            , iJarSml
+                                                            , iJar
+                                                            , iJarLrg
+                                                            , iJugSml
+                                                            , iJug
+                                                            , iJugLrg
+                                                            , iBottleSml
+                                                            , iBottle
+                                                            , iBottleLrg ]
   putRm iConCloset
         (conIds ++ vesselIds)
         mempty
@@ -1359,16 +1370,7 @@ createAdminZone = do
   -- ==================================================
   -- Vessels:
   let flaskIds   = [ iPotionFlask1 + i | i <- [0..9] ]
-      flaskConts = [ Just (waterLiq,              maxBound)
-                   , Just (potTinnitusLiq,        maxBound)
-                   , Just (potInstantTinnitusLiq, maxBound)
-                   , Just (potStLiq,              maxBound)
-                   , Just (potInstantStLiq,       maxBound)
-                   , Just (potHealingLiq,         maxBound)
-                   , Just (potInstantHealingLiq,  maxBound)
-                   , Nothing
-                   , Nothing
-                   , Nothing ]
+      flaskConts = repeat Nothing
   forM_ (zip flaskIds flaskConts) $ \(i, mc) ->
       putVessel i
                 (Ent i
@@ -1379,6 +1381,103 @@ createAdminZone = do
                      zeroBits)
                 (Obj potionFlaskWeight potionFlaskVol Nothing Nothing zeroBits Nothing)
                 mc
+  let waterskinDesc = "The rugged waterskin, crafted from the bladder of a bovine animal, is an indispensable piece of \
+                      \equipment when it comes to travel and, often, everyday life."
+  putVessel iWaterskin
+            (Ent iWaterskin
+                 (Just "waterskin")
+                 "waterskin" ""
+                 waterskinDesc
+                 zeroBits)
+            (Obj waterskinWeight waterskinVol Nothing Nothing zeroBits Nothing)
+            (Just (waterLiq, maxBound))
+  putVessel iWaterskinLrg
+            (Ent iWaterskinLrg
+                 (Just "waterskin")
+                 "large waterskin" ""
+                 (waterskinDesc <> " This waterskin is particularly large, making it suitable for long journeys.")
+                 zeroBits)
+            (Obj waterskinLrgWeight waterskinLrgVol Nothing Nothing zeroBits Nothing)
+            (Just (waterLiq, maxBound))
+  putVessel iJarSml
+            (Ent iJarSml
+                 (Just "jar")
+                 "small jar" ""
+                 "This versatile, small glass jar comes affixed with an airtight lid."
+                 zeroBits)
+            (Obj jarSmlWeight jarSmlVol Nothing Nothing zeroBits Nothing)
+            (Just (potHealingLiq, maxBound))
+  putVessel iJar
+            (Ent iJar
+                 (Just "jar")
+                 "jar" ""
+                 "This versatile glass jar comes affixed with an airtight lid."
+                 zeroBits)
+            (Obj jarWeight jarVol Nothing Nothing zeroBits Nothing)
+            (Just (potInstantHealingLiq, maxBound))
+  putVessel iJarLrg
+            (Ent iJarLrg
+                 (Just "jar")
+                 "large jar" ""
+                 "This versatile, large glass jar comes affixed with an airtight lid."
+                 zeroBits)
+            (Obj jarLrgWeight jarLrgVol Nothing Nothing zeroBits Nothing)
+            Nothing
+  let jugDesc = "While capable of containing a large amount of liquid, this corked, ceramic jug is rather cumbersome."
+  putVessel iJugSml
+            (Ent iJugSml
+                 (Just "jug")
+                 "small jug" ""
+                 jugDesc
+                 zeroBits)
+            (Obj jugSmlWeight jugSmlVol Nothing Nothing zeroBits Nothing)
+            (Just (potStLiq, maxBound))
+  putVessel iJug
+            (Ent iJug
+                 (Just "jug")
+                 "jug" ""
+                 jugDesc
+                 zeroBits)
+            (Obj jugWeight jugVol Nothing Nothing zeroBits Nothing)
+            (Just (potInstantStLiq, maxBound))
+  putVessel iJugLrg
+            (Ent iJugLrg
+                 (Just "jug")
+                 "large jug" ""
+                 jugDesc
+                 zeroBits)
+            (Obj jugLrgWeight jugLrgVol Nothing Nothing zeroBits Nothing)
+            Nothing
+  let mkBottleDesc a b = T.concat [ "This "
+                                  , a
+                                  , "earthenware bottle is designed to be as portable and practical as possible. A \
+                                    \glaze of "
+                                  , b
+                                  , " hues gives the vessel a glossy finish, and makes it impermeable." ]
+  putVessel iBottleSml
+            (Ent iBottleSml
+                 (Just "bottle")
+                 "small bottle" ""
+                 (mkBottleDesc "small, " "light brown")
+                 zeroBits)
+            (Obj bottleSmlWeight bottleSmlVol Nothing Nothing zeroBits Nothing)
+            (Just (potTinnitusLiq, maxBound))
+  putVessel iBottle
+            (Ent iBottle
+                 (Just "bottle")
+                 "bottle" ""
+                 (mkBottleDesc "" "mixed azure")
+                 zeroBits)
+            (Obj bottleWeight bottleVol Nothing Nothing zeroBits Nothing)
+            (Just (potInstantTinnitusLiq, maxBound))
+  putVessel iBottleLrg
+            (Ent iBottleLrg
+                 (Just "bottle")
+                 "large bottle" ""
+                 (mkBottleDesc "large, " "rusty orange")
+                 zeroBits)
+            (Obj bottleLrgWeight bottleLrgVol Nothing Nothing zeroBits Nothing)
+            Nothing
 
   -- ==================================================
   -- Weapons:

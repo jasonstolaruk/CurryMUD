@@ -525,7 +525,7 @@ removeAdHoc i ms = ms & activeEffectsTbl.at  i        .~ Nothing
 -----
 
 
-runEffectFun :: FunName -> Id -> Seconds -> MudStack () -- TODO: Make other helpers like this?
+runEffectFun :: FunName -> Id -> Seconds -> MudStack ()
 runEffectFun n i secs = views (effectFunTbl.at n) (maybe oops (\f -> f i secs)) =<< getState
   where
     oops = blowUp "runEffectFun" "Function name not found in effect function table." . pure $ n
