@@ -125,7 +125,7 @@ debugCmds =
                                                \and \"EffectFunTbl\"."
     , mkDebugCmd "id"         debugId          "Search the \"MudState\" tables for a given ID."
     , mkDebugCmd "keys"       debugKeys        "Dump a list of \"MudState\" table keys."
-    , mkDebugCmd "liquid"     debugLiq         "Consume a given amount (in quaffs) of a given liquid (by distinct \
+    , mkDebugCmd "liquid"     debugLiq         "Consume a given amount (in mouthfuls) of a given liquid (by distinct \
                                                \liquid ID)."
     , mkDebugCmd "log"        debugLog         "Put the logging service under heavy load."
     , mkDebugCmd "npcserver"  debugNpcServer   "Stop all NPC server threads."
@@ -698,6 +698,9 @@ descThreads = do
                                                     | (showText -> ts) <- liftIO . threadStatus $ ti ]
     mkTypeName (Biodegrader    (showText -> pi)) = padOrTrunc padAmt "Biodegrader" <> pi
     mkTypeName (Digester       (showText -> pi)) = padOrTrunc padAmt "Digester"    <> pi
+    mkTypeName (DrinkingThread (showText -> pi)) = padOrTrunc padAmt "Drinking"    <> pi
+    mkTypeName (EatingThread   (showText -> pi)) = padOrTrunc padAmt "Eating"      <> pi
+    mkTypeName (MovingThread   (showText -> pi)) = padOrTrunc padAmt "Moving"      <> pi
     mkTypeName (EffectListener (showText -> pi)) = padOrTrunc padAmt "Eff Listen"  <> pi
     mkTypeName (EffectThread   (showText -> pi)) = padOrTrunc padAmt "Eff Thread"  <> pi
     mkTypeName (EffectTimer    (showText -> pi)) = padOrTrunc padAmt "Eff Timer"   <> pi

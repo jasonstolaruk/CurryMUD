@@ -83,6 +83,10 @@ knitCapWeight :: Weight
 knitCapWeight = 5
 
 
+mouthfulWeight :: Weight
+mouthfulWeight = 6
+
+
 neckWeight :: Weight
 neckWeight = 5
 
@@ -101,10 +105,6 @@ paperWeight = 1
 
 potionFlaskWeight :: Weight
 potionFlaskWeight = 40
-
-
-quaffWeight :: Weight
-quaffWeight = 6
 
 
 ringWeight :: Weight

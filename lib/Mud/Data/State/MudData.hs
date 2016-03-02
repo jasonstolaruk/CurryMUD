@@ -22,7 +22,7 @@ import Data.Time (UTCTime)
 import GHC.Generics (Generic)
 import Network (HostName)
 import qualified Data.IntMap.Lazy as IM (IntMap)
-import qualified Data.Map.Lazy as M (Map)
+import qualified Data.Map.Lazy as M (Map, empty)
 import qualified Data.Vector.Unboxed as V (Vector)
 import System.Clock (TimeSpec)
 import System.Random (Random, random, randomR)
@@ -288,9 +288,12 @@ type DigestEffects = EffectList
 newtype EffectList = EffectList { unEffectList :: [Either InstaEffect Effect] }
 
 
-data ConsumpEffects = ConsumpEffects { _consumpAmt      :: Int -- Number of food units or quaffs.
+data ConsumpEffects = ConsumpEffects { _consumpAmt      :: Mouthfuls
                                      , _consumpInterval :: Seconds
                                      , _effectList      :: EffectList }
+
+
+type Mouthfuls = Int
 
 
 -- ==================================================
@@ -360,16 +363,13 @@ data Food = Food { _foodId        :: DistinctFoodId
                  , _foodSmellDesc :: Text
                  , _foodTasteDesc :: Text
                  , _eatDesc       :: Text
-                 , _remFoodUnits  :: FoodUnits } deriving (Eq, Generic, Show)
+                 , _remMouthfuls  :: Mouthfuls } deriving (Eq, Generic, Show)
 
 
 newtype DistinctFoodId = DistinctFoodId Id deriving (Eq, Generic, Ord, Show)
 
 
-type FoodUnits = Int
-
-
-data DistinctFood = DistinctFood { _foodUnits         :: FoodUnits
+data DistinctFood = DistinctFood { _mouthfuls         :: Mouthfuls
                                  , _foodEdibleEffects :: EdibleEffects }
 
 
@@ -482,6 +482,7 @@ data Mob = Mob { _sex                    :: Sex
                , _hand                   :: Hand
                , _knownLangs             :: [Lang]
                , _rmId                   :: Id
+               , _actMap                 :: ActMap
                , _regenAsync             :: Maybe RegenAsync
                , _interp                 :: Maybe Interp }
 
@@ -519,6 +520,17 @@ data Lang = CommonLang
           | LagomorphLang
           | NymphLang
           | VulpenoidLang deriving (Bounded, Enum, Eq, Generic, Show)
+
+
+type ActMap = M.Map ActType ActAsync
+
+
+data ActType = Drinking
+             | Eating
+             | Moving deriving (Eq, Ord)
+
+
+type ActAsync = Async ()
 
 
 type RegenAsync = Async ()
@@ -571,6 +583,7 @@ jsonToMob (Object o) = Mob <$> o .: "sex"
                            <*> o .: "hand"
                            <*> o .: "knownLangs"
                            <*> o .: "rmId"
+                           <*> pure M.empty
                            <*> pure Nothing
                            <*> pure Nothing
 jsonToMob _          = empty
@@ -850,12 +863,15 @@ type TeleLinkTbl = M.Map Sing IsTuned
 data ThreadType = Biodegrader    Id
                 | DbTblPurger
                 | Digester       Id
+                | DrinkingThread Id
+                | EatingThread   Id
                 | EffectListener Id
                 | EffectThread   Id
                 | EffectTimer    Id
                 | Error
                 | InacTimer      Id
                 | Listen
+                | MovingThread   Id
                 | Notice
                 | NpcServer      Id
                 | OpListMonitor
@@ -891,14 +907,11 @@ data Type = ArmType
 
 
 -- Has an object (and an entity and paused/active effects).
-data Vessel = Vessel { _maxQuaffs  :: Quaffs -- obj vol / quaff vol
-                     , _vesselCont :: Maybe VesselCont } deriving (Eq, Generic, Show)
+data Vessel = Vessel { _maxMouthfuls :: Mouthfuls -- obj vol / mouthful vol
+                     , _vesselCont   :: Maybe VesselCont } deriving (Eq, Generic, Show)
 
 
-type Quaffs = Int
-
-
-type VesselCont = (Liq, Quaffs)
+type VesselCont = (Liq, Mouthfuls)
 
 
 -- ==================================================

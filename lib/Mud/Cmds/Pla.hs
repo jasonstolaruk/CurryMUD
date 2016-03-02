@@ -41,6 +41,7 @@ import Mud.Misc.LocPref
 import Mud.Misc.Logging hiding (logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut)
 import Mud.Misc.NameResolution
 import Mud.TheWorld.Zones.AdminZoneIds (iLoggedOut, iWelcome)
+import Mud.Threads.Act
 import Mud.Threads.Digester
 import Mud.Threads.Effect
 import Mud.Threads.Misc
@@ -742,11 +743,7 @@ drink :: ActionFun
 drink p@AdviseNoArgs                    = advise p ["drink"] adviceDrinkNoArgs
 drink p@(AdviseOneArg _               ) = advise p ["drink"] adviceDrinkNoVessel
 drink   (Lower i mq cols [amt, target]) = (,) <$> mkRndmVector <*> liftIO getCurrentTime >>= \(v, now) ->
-    helper v now |&| modifyState >=> \(toSelfs, bs, logMsgs, scs) -> do
-        multiWrapSend mq cols toSelfs
-        scs |#| consume i
-        bcastIfNotIncogNl i bs
-        logMsgs |#| logPlaOut "drink" i
+    helper v now |&| modifyState >=> sequence_
   where
     helper v now ms
       | amt `T.isPrefixOf` "all" || amt == T.singleton allChar = next maxBound
@@ -755,7 +752,7 @@ drink   (Lower i mq cols [amt, target]) = (,) <$> mkRndmVector <*> liftIO getCur
                   | otherwise -> next x
         _                     -> sorry . sorryParseMouthfuls $ amt
       where
-        sorry  = (ms, ) . (, [], [], []) . pure
+        sorry  = (ms, ) . pure . wrapSend mq cols
         next x =
             let (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv . pure $ target
                 d                      = mkStdDesig i ms DoCap
@@ -770,14 +767,14 @@ drink   (Lower i mq cols [amt, target]) = (,) <$> mkRndmVector <*> liftIO getCur
                           (s, VesselType) -> maybe (sorry . sorryDrinkEmpty $ s) (g s) . getVesselCont targetId $ ms
                           (s, _         ) -> sorry . sorryDrinkType $ s
                           where
-                            g s (l, q) =
-                                let quaffs                = x `min` q `min` stomAvail
+                            g s (l, m) =
+                                let mouths                = x `min` m `min` stomAvail
                                     (stomAvail, stomSize) = calcStomachAvailSize i ms
-                                    scs = replicate quaffs . StomachCont (l^.liqId.to Left) now $ False
+                                    scs = replicate mouths . StomachCont (l^.liqId.to Left) now $ False
                                     t   = T.concat [ "You drink "
-                                                   , showText quaffs
+                                                   , showText mouths
                                                    , " mouthful"
-                                                   , theLetterS $ quaffs /= 1
+                                                   , theLetterS $ mouths /= 1
                                                    , " of "
                                                    , l^.liqName.to theOnLower
                                                    , " from the "
@@ -785,28 +782,25 @@ drink   (Lower i mq cols [amt, target]) = (,) <$> mkRndmVector <*> liftIO getCur
                                                    , allGoneTxt
                                                    , "." ]
                                     fullDesc
-                                      | x `min` q > stomAvail = "You are so full that you have to stop drinking. You \
+                                      | x `min` m > stomAvail = "You are so full that you have to stop drinking. You \
                                                                 \don't feel so good..."
-                                      | otherwise = mkFullDesc (stomAvail - quaffs) stomSize
+                                      | otherwise = mkFullDesc (stomAvail - mouths) stomSize
                                     bs = pure ( T.concat [ serialize d, " ", txt, " from ", aOrAn s, allGoneTxt, "." ]
                                               , i `delete` desigIds d )
                                       where
-                                        txt | quaffs > 9  = "takes an excessively long pull"
-                                            | quaffs > 5  = "takes a long drink"
-                                            | quaffs == 1 = "takes a swig"
-                                            | otherwise  = "drinks"
+                                        txt = mouths == 1 ? "takes a swig" :? "drinks"
                                     allGone    = remAmt == 0
                                     allGoneTxt = allGone |?| ", emptying it"
-                                    remAmt     = q - quaffs
+                                    remAmt     = m - mouths
                                     newCont    | allGone   = Nothing
                                                | otherwise = Just (l, remAmt)
                                     ms'        = ms & vesselTbl.ind targetId.vesselCont .~ newCont
-                                in if ()# Sum stomAvail
-                                  then sorry sorryFull
-                                  else (ms', ( dropEmpties [ t, l^.drinkDesc, fullDesc ]
-                                             , bs
-                                             , drinkLogMsgHelper quaffs l s
-                                             , scs ))
+                                in if | ()# Sum stomAvail -> sorry sorryFull
+                                      | mouths > 4        -> (ms, pure . startAct i Drinking . drinkAct $ targetId) -- TODO
+                                      | otherwise -> (ms', [ multiWrapSend mq cols . dropEmpties $ [ t, l^.drinkDesc, fullDesc ]
+                                                           , drinkLogMsgHelper mouths l s |#| logPla "drink" i
+                                                           , scs |#| consume i
+                                                           , bcastIfNotIncogNl i bs ])
                         f _ = sorry sorryDrinkExcessTargets
                     in ()!# ecs ? sorry sorryDrinkCoins :? either sorry f (head eiss)
                 -----
@@ -816,11 +810,15 @@ drink   (Lower i mq cols [amt, target]) = (,) <$> mkRndmVector <*> liftIO getCur
                       (False, True ) ->
                           let (inRms', (ms', toSelfs, bs, logMsgs)) = procHooks i ms v "drink" inRms -- TODO: Make a hook and test.
                               sorryMsgs                             = inRms' |!| pure sorryDrinkEmptyRmWithHooks
-                          in (ms', (sorryMsgs ++ toSelfs, bs, logMsgs, []))
+                          in (ms', [ multiWrapSend mq cols $ sorryMsgs ++ toSelfs
+                                   , bcastIfNotIncogNl i bs
+                                   , logMsgs |#| logPlaOut "drink" i ])
                       (True,  True ) ->
-                          let (inRms', (ms', hooksToSelfs, hooksBs, hooksLogMsgs)) = procHooks i ms v "drink" inRms
+                          let (inRms', (ms', toSelfs, bs, logMsgs)) = procHooks i ms v "drink" inRms
                           in if ()# inRms'
-                            then (ms', (hooksToSelfs, hooksBs, hooksLogMsgs, []))
+                            then (ms', [ multiWrapSend mq cols toSelfs
+                                       , bcastIfNotIncogNl i bs
+                                       , logMsgs |#| logPlaOut "drink" i ])
                             else sorry . sorryDrinkRmWithHooks . head $ inRms'
                       a -> patternMatchFail "drink helper next drinkRm" [ showText a ]
             in if
@@ -832,18 +830,18 @@ drink   (Lower i mq cols [amt, target]) = (,) <$> mkRndmVector <*> liftIO getCur
 drink p = advise p ["drink"] adviceDrinkExcessArgs
 
 
-drinkLogMsgHelper :: Quaffs -> Liq -> Sing -> [Text]
-drinkLogMsgHelper q l s = pure . T.concat $ [ "drank "
-                                            , showText q
-                                            , " quaff"
-                                            , theLetterS $ q /= 1
-                                            , " of "
-                                            , l^.liqName.to aOrAnOnLower
-                                            , " "
-                                            , let DistinctLiqId i = l^.liqId in parensQuote . showText $ i
-                                            , " from "
-                                            , aOrAn s
-                                            , "." ]
+drinkLogMsgHelper :: Mouthfuls -> Liq -> Sing -> Text
+drinkLogMsgHelper m l s = T.concat [ "drank "
+                                   , showText m
+                                   , " mouthfuls"
+                                   , theLetterS $ m /= 1
+                                   , " of "
+                                   , l^.liqName.to aOrAnOnLower
+                                   , " "
+                                   , let DistinctLiqId i = l^.liqId in parensQuote . showText $ i
+                                   , " from "
+                                   , aOrAn s
+                                   , "." ]
 
 
 -----
@@ -1526,11 +1524,11 @@ link (LowerNub i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
                             & _1.mobTbl         .ind i       .curPp         -~ 10
                             & _2 <>~ bs
                             & _3 <>~ pure logMsg
-                            & _4 <>~ [ act, awardExp 100 ("linked by " <> targetSing) targetId ]
+                            & _4 <>~ [ action, awardExp 100 ("linked by " <> targetSing) targetId ]
           _  -> let b = (nlnl . sorryLinkType $ targetSing, pure i)
                 in a' & _2 %~ (`appendIfUnique` b)
           where
-            act = rndmDo (calcProbLinkFlinch targetId ms) . mkExpAction "flinch" . mkActionParams targetId ms $ []
+            action = rndmDo (calcProbLinkFlinch targetId ms) . mkExpAction "flinch" . mkActionParams targetId ms $ []
     helperLinkEitherCoins a (Left msgs) = a & _1 <>~ (mkBcast i . T.concat $ [ nlnl msg | msg <- msgs ])
     helperLinkEitherCoins a Right {}    = let b = (nlnl sorryLinkCoin, pure i) in first (`appendIfUnique` b) a
 link p = patternMatchFail "link" [ showText p ]
@@ -1905,7 +1903,7 @@ quit (NoArgs' i mq)                        = logPlaExec "quit" i >> (liftIO . at
 quit ActionParams { plaMsgQueue, plaCols } = wrapSend plaMsgQueue plaCols adviceQuitExcessArgs
 
 
-handleEgress :: Id -> MudStack ()
+handleEgress :: Id -> MudStack () -- TODO: Stop eating/drinking/moving.
 handleEgress i = liftIO getCurrentTime >>= \now -> do
     informEgress
     helper now |&| modifyState >=> \(s, bs, logMsgs) -> do

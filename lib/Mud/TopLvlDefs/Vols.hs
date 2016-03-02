@@ -100,6 +100,10 @@ knitCapVol :: Vol
 knitCapVol = round (7 * 7 * 0.25 * 100 :: Double)
 
 
+mouthfulVol :: Vol
+mouthfulVol = 175 -- 1/8th cup
+
+
 neckVol :: Vol
 neckVol = round (2 * 2 * 0.25 * 100 :: Double)
 
@@ -118,10 +122,6 @@ paperVol = round (8.5 * 0.002 * 11 * 100 :: Double)
 
 potionFlaskVol :: Vol
 potionFlaskVol = 14 * 100 -- 1 cup
-
-
-quaffVol :: Vol
-quaffVol = 175 -- 1/8th cup
 
 
 ringVol :: Vol

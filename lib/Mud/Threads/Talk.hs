@@ -110,6 +110,7 @@ adHoc mq host = do
                        , _hand          = RHand
                        , _knownLangs    = pure . raceToLang $ r
                        , _rmId          = iWelcome
+                       , _actMap        = M.empty
                        , _regenAsync    = Nothing
                        , _interp        = Just interpName }
             pc   = PC  { _race       = r

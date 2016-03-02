@@ -13,7 +13,7 @@ module Mud.Data.State.Util.Calc ( calcBarLen
                                 , calcEncPer
                                 , calcLvlExps
                                 , calcMaxEnc
-                                , calcMaxQuaffs
+                                , calcMaxMouthfuls
                                 , calcMaxRaceLen
                                 , calcProbConnectBlink
                                 , calcProbLinkFlinch
@@ -87,7 +87,7 @@ calcDigesterDelay :: Race -> Seconds
 calcDigesterDelay = let f = (calcDigesterDelay Human |&|) in \case
   Elf       -> f minusFifth
   Halfling  -> f minusFifth
-  Human     -> 30 -- A full human stomach (34 food units or quaffs) will digest completely in 17 mins.
+  Human     -> 30 -- A full human stomach (34 mouthfuls) will digest completely in 17 mins.
   Nymph     -> f minusQuarter
   Vulpenoid -> f plusFifth
   _         -> f id
@@ -150,8 +150,8 @@ calcMaxEnc i ms = round . (100 *) $ calcEffSt i ms ^ 2 `divide` 13
 -----
 
 
-calcMaxQuaffs :: Obj -> Quaffs
-calcMaxQuaffs = views vol (round . (`divide` quaffVol))
+calcMaxMouthfuls :: Obj -> Mouthfuls
+calcMaxMouthfuls = views vol (round . (`divide` mouthfulVol))
 
 
 -----
@@ -243,13 +243,13 @@ calcStomachAvailSize i ms = let avail = size - length (getStomach i ms)
                             in (avail, size)
 
 
-calcStomachSize :: Race -> Int -- Stomach capacty in terms of food units or quaffs.
+calcStomachSize :: Race -> Int -- Stomach capacty in terms of mouthfuls.
 calcStomachSize = let f = (calcStomachSize Human |&|) in \case
   Dwarf     -> f minusQuarter
   Elf       -> f minusFifth
   Felinoid  -> f plusFifth
   Halfling  -> f minusThird
-  Human     -> round $ 60 * 100 `divide` quaffVol -- 34 food units or quaffs.
+  Human     -> round $ 60 * 100 `divide` mouthfulVol -- 34 mouthfuls.
   Lagomorph -> f id
   Nymph     -> f minusFifth
   Vulpenoid -> f plusQuarter
@@ -258,8 +258,8 @@ calcStomachSize = let f = (calcStomachSize Human |&|) in \case
 -----
 
 
-calcVesselPerFull :: Vessel -> Quaffs -> Int
-calcVesselPerFull (view maxQuaffs -> m) q = round . (100 *) $ q `divide` m
+calcVesselPerFull :: Vessel -> Mouthfuls -> Int
+calcVesselPerFull (view maxMouthfuls -> m) x = round . (100 *) $ x `divide` m
 
 
 -----
@@ -294,4 +294,4 @@ calcWeight i ms = case getType i ms of
     calcEqWeight         = helper . M.elems . getEqMap i $ ms
     helper               = sum . map (`calcWeight` ms)
     calcCoinsWeight      = (* coinWeight) . sum . coinsToList . getCoins i $ ms
-    calcVesselContWeight = maybe 0 ((* quaffWeight) . snd) . getVesselCont i $ ms
+    calcVesselContWeight = maybe 0 ((* mouthfulWeight) . snd) . getVesselCont i $ ms

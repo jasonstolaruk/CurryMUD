@@ -331,8 +331,8 @@ getLogQueue i = view (plaLogTbl.ind i.to snd)
 -----
 
 
-getMaxQuaffs :: Id -> MudState -> Quaffs
-getMaxQuaffs i = view maxQuaffs . getVessel i
+getMaxMouthfuls :: Id -> MudState -> Mouthfuls
+getMaxMouthfuls i = view maxMouthfuls . getVessel i
 
 
 -----

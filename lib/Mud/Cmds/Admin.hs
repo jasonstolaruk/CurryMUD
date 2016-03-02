@@ -608,12 +608,12 @@ examineFood :: ExamineHelper
 examineFood i ms =
     let f  = getFood i ms
         df = getDistinctFoodForFood f ms
-    in [ "Distinct food ID: "     <> f^.foodId.to showText
-       , "Food smell: "           <> f^.foodSmellDesc
-       , "Food taste: "           <> f^.foodTasteDesc
-       , "Eat description: "      <> f^.eatDesc
-       , "Remaining food units: " <> f^.remFoodUnits.to showText
-       , "Distinct food units: "  <> df^.foodUnits.to showText ] ++ df^.foodEdibleEffects.to descEdibleEffects
+    in [ "Distinct food ID: "    <> f^.foodId.to showText
+       , "Food smell: "          <> f^.foodSmellDesc
+       , "Food taste: "          <> f^.foodTasteDesc
+       , "Eat description: "     <> f^.eatDesc
+       , "Remaining mouthfuls: " <> f^.remMouthfuls.to showText
+       , "Distinct mouthfuls: "  <> df^.mouthfuls.to showText ] ++ df^.foodEdibleEffects.to descEdibleEffects
 
 
 descEdibleEffects :: EdibleEffects -> [Text]
@@ -724,11 +724,11 @@ xformNls = T.replace "\n" (colorWith nlColor "\\n")
 
 examineVessel :: ExamineHelper
 examineVessel i ms = let v = getVessel i ms in
-    [ "Max quaffs: "      <> v^.maxQuaffs .to showText
+    [ "Max mouthfuls: "   <> v^.maxMouthfuls .to showText
     , "Vessel contents: " <> v^.vesselCont.to descCont ] ++ views vesselCont (maybe [] (descLiq . fst)) v
   where
     descCont Nothing       = "none"
-    descCont (Just (l, q)) = showText q <> " quaffs of " <> l^.liqName.to aOrAnOnLower
+    descCont (Just (l, m)) = showText m <> " mouthfuls of " <> l^.liqName.to aOrAnOnLower
     descLiq l = let dl = getDistinctLiqForLiq l ms
                 in [ "Distinct liquid ID: " <> l^.liqId.to showText
                    , "Liquid smell: "       <> l^.liqSmellDesc
@@ -811,7 +811,7 @@ mkHostReport ms now zone i s = (header ++) $ case getHostMap s ms of
 
 
 adminIncognito :: ActionFun
-adminIncognito (NoArgs i mq cols) = modifyState helper >>= sequence_
+adminIncognito (NoArgs i mq cols) = helper |&| modifyState >=> sequence_
   where
     helper ms = let s              = getSing i ms
                     isIncog        = isIncognitoId i ms
@@ -986,7 +986,7 @@ adminPersist p              = withoutArgs adminPersist p
 
 adminPossess :: ActionFun
 adminPossess p@(NoArgs' i mq) = advise p [ prefixAdminCmd "possess" ] adviceAPossessNoArgs >> sendDfltPrompt mq i
-adminPossess (OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
+adminPossess (OneArgNubbed i mq cols target) = helper |&| modifyState >=> sequence_
   where
     helper ms =
         let SingleTarget { .. } = mkSingleTarget mq cols target "The ID of the NPC you wish to possess"
@@ -1095,7 +1095,7 @@ shutdownHelper i mq maybeMsg = getState >>= \ms ->
 
 adminSudoer :: ActionFun
 adminSudoer p@AdviseNoArgs                  = advise p [ prefixAdminCmd "sudoer" ] adviceASudoerNoArgs
-adminSudoer (OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
+adminSudoer (OneArgNubbed i mq cols target) = helper |&| modifyState >=> sequence_
   where
     helper ms =
       let fn                  = "adminSudoer helper"
@@ -1107,11 +1107,10 @@ adminSudoer (OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
           , targetSing     <- getSing targetId ms
           , ia             <- isAdminId targetId ms
           , (verb, toFrom) <- ia ? ("demoted", "from") :? ("promoted", "to")
-          , handleIncog    <- let act = adminIncognito . mkActionParams targetId ms $ []
-                              in when (isIncognitoId targetId ms) act
-          , handlePeep     <- let peepingIds = getPeeping targetId ms
-                                  act        = adminPeep . mkActionParams targetId ms . map (`getSing` ms) $ peepingIds
-                              in unless (()# peepingIds) act
+          , handleIncog    <- when (isIncognitoId targetId ms) . adminIncognito . mkActionParams targetId ms $ []
+          , handlePeep     <-
+              let peepingIds = getPeeping targetId ms
+              in unless (()# peepingIds) . adminPeep . mkActionParams targetId ms . map (`getSing` ms) $ peepingIds
           , fs <- [ retainedMsg targetId ms . colorWith promoteDemoteColor . T.concat $ [ selfSing
                                                                                         , " has "
                                                                                         , verb
@@ -1138,7 +1137,7 @@ adminSudoer p = advise p [] adviceASudoerExcessArgs
 
 adminSummon :: ActionFun
 adminSummon p@AdviseNoArgs                  = advise p [ prefixAdminCmd "summon" ] adviceASummonNoArgs
-adminSummon (OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
+adminSummon (OneArgNubbed i mq cols target) = helper |&| modifyState >=> sequence_
   where
     helper ms =
         let SingleTarget { .. } = mkSingleTarget mq cols target "The name of the PC you wish to summon"
@@ -1165,7 +1164,7 @@ adminSummon ActionParams { plaMsgQueue, plaCols } = wrapSend plaMsgQueue plaCols
 
 adminTeleId :: ActionFun
 adminTeleId p@AdviseNoArgs                    = advise p [ prefixAdminCmd "teleid" ] adviceATeleIdNoArgs
-adminTeleId p@(OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
+adminTeleId p@(OneArgNubbed i mq cols target) = helper |&| modifyState >=> sequence_
   where
     helper ms =
         let SingleTarget { .. } = mkSingleTarget mq cols target "The ID of the entity or room to which you want to \
@@ -1222,7 +1221,7 @@ teleHelper p@ActionParams { myId } ms originId destId destName mt f =
 
 adminTelePC :: ActionFun
 adminTelePC p@AdviseNoArgs                    = advise p [ prefixAdminCmd "telepc" ] adviceATelePCNoArgs
-adminTelePC p@(OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
+adminTelePC p@(OneArgNubbed i mq cols target) = helper |&| modifyState >=> sequence_
   where
     helper ms =
         let SingleTarget { .. } = mkSingleTarget mq cols target "The name of the PC to which you want to teleport"
@@ -1245,7 +1244,7 @@ adminTeleRm (NoArgs i mq cols) = (multiWrapSend mq cols =<< mkTxt) >> logPlaExec
   where
     mkTxt  = views rmTeleNameTbl ((header :) . styleAbbrevs Don'tQuote . IM.elems) <$> getState
     header = "You may teleport to the following rooms:"
-adminTeleRm p@(OneArgLower i mq cols target) = modifyState helper >>= sequence_
+adminTeleRm p@(OneArgLower i mq cols target) = helper |&| modifyState >=> sequence_
   where
     helper ms =
         let SingleTarget { .. } = mkSingleTarget mq cols target "The name of the room to which you want to teleport"

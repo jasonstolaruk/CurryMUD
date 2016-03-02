@@ -86,6 +86,7 @@ library
                        Mud.TheWorld.Zones.AdminZoneIds
                        Mud.TheWorld.Zones.Tutorial
                        Mud.TheWorld.Zones.TutorialIds
+                       Mud.Threads.Act
                        Mud.Threads.Biodegrader
                        Mud.Threads.DbTblPurger
                        Mud.Threads.Digester

@@ -129,9 +129,9 @@ putVessel i e o c = tweaks [ activeEffectsTbl.ind i .~ []
                            , typeTbl         .ind i .~ VesselType
                            , vesselTbl       .ind i .~ mkVessel ]
   where
-    mkVessel = let maxQs = calcMaxQuaffs o
-                   c'    = second (min maxQs) <$> c
-               in Vessel maxQs c'
+    mkVessel = let mouth = calcMaxMouthfuls o
+                   c'    = second (min mouth) <$> c
+               in Vessel mouth c'
 
 
 -----

@@ -286,8 +286,8 @@ adviceDIdNoArgs = adviceDIdExcessArgs
 
 
 adviceDLiqExcessArgs :: Text
-adviceDLiqExcessArgs = "Please provide two arguments: the amount in quaffs and the distinct liquid ID, as in " <>
-                       colorWith quoteColor (prefixDebugCmd "liquid" <> " 8 100")                              <>
+adviceDLiqExcessArgs = "Please provide two arguments: the amount in mouthfuls and the distinct liquid ID, as in " <>
+                       colorWith quoteColor (prefixDebugCmd "liquid" <> " 8 100")                                 <>
                        "."
 
 

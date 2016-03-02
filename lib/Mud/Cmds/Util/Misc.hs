@@ -815,7 +815,7 @@ withDbExHandler_ fn f = liftIO f `catch` dbExHandler fn
 
 
 withoutArgs :: ActionFun -> ActionParams -> MudStack ()
-withoutArgs act p = ignore p >> act p { args = [] }
+withoutArgs f p = ignore p >> f p { args = [] }
 
 
 ignore :: ActionFun

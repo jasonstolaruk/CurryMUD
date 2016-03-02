@@ -213,6 +213,12 @@ instance Pretty ActiveEffect where
   pp (ActiveEffect e _) = pp e
 
 
+instance Pretty ActType where
+  pp Drinking = "drinking"
+  pp Eating   = "eating"
+  pp Moving   = "moving"
+
+
 instance Pretty AOrThe where
   pp A   = "a"
   pp The = "the"
