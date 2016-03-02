@@ -284,7 +284,7 @@ sorryAlreadyPossessing s = "You are already possessing " <> theOnLower s <> "."
 
 
 sorryAsAdmin :: Text
-sorryAsAdmin = can'tTarget $ "an admin" <> withAs
+sorryAsAdmin = can'tTarget "an admin" <> withAs
 
 
 can'tTarget :: Text -> Text
@@ -300,7 +300,7 @@ withAs = " with the " <> dblQuote (prefixAdminCmd "as") <> " command."
 
 
 sorryAsSelf :: Text
-sorryAsSelf = can'tTarget $ "yourself" <> withAs
+sorryAsSelf = can'tTarget "yourself" <> withAs
 
 
 sorryAsType :: Sing -> Text
@@ -336,7 +336,7 @@ sorryBracketedMsg = can't "open or close your message with brackets."
 
 
 sorryChanIncog :: Text -> Text
-sorryChanIncog t = can't $ "send a message on " <> t <> " channel while incognito."
+sorryChanIncog t = can't "send a message on " <> t <> " channel while incognito."
 
 
 sorryChanMsg :: Text
@@ -465,7 +465,7 @@ sorryDrinkRmWithHooks t = T.concat [ "You don't see "
 
 
 sorryDrinkType :: Sing -> Text
-sorryDrinkType s = can't $ "drink from " <> aOrAn s <> "."
+sorryDrinkType s = can't "drink from " <> aOrAn s <> "."
 
 
 -----
@@ -541,7 +541,7 @@ sorryExpCmdCoins = but "expressive commands cannot be used with coins."
 
 
 sorryExpCmdInInvEq :: InInvEqRm -> Text
-sorryExpCmdInInvEq loc = can'tTarget $ "an item in your " <> loc' <> " with an expressive command."
+sorryExpCmdInInvEq loc = can'tTarget "an item in your " <> loc' <> " with an expressive command."
   where
     loc' = case loc of InEq  -> "readied equipment"
                        InInv -> "inventory"
@@ -591,10 +591,10 @@ sorryGetEnc = "You are too encumbered to carry "
 
 
 sorryGetInEq :: Text
-sorryGetInEq = butCan't $ "get an item in your readied equipment. If you want to move a readied item to your \
-                          \inventory, use the " <>
-                          dblQuote "unready"    <>
-                          " command."
+sorryGetInEq = butCan't "get an item in your readied equipment. If you want to move a readied item to your inventory, \
+                        \use the "         <>
+                        dblQuote "unready" <>
+                        " command."
 
 
 sorryGetInInv :: Text
@@ -607,7 +607,7 @@ sorryGetNothingHere = "You don't see anything to pick up here."
 
 
 sorryGetType :: Text -> Text
-sorryGetType t = can't $ "pick up " <> t <> "."
+sorryGetType t = can't "pick up " <> t <> "."
 
 
 -----
@@ -642,7 +642,7 @@ sorryGiveToInv = can't "give something to an item in your inventory."
 
 
 sorryGiveType :: Sing -> Text
-sorryGiveType s = can't $ "give something to " <> aOrAn s <> "."
+sorryGiveType s = can't "give something to " <> aOrAn s <> "."
 
 
 -----
@@ -667,7 +667,7 @@ sorryHelpName t = "No help is available on " <> dblQuote t <> "."
 
 
 sorryIncog :: Text -> Text
-sorryIncog cn = can't $ "use the " <> dblQuote cn <> " command while incognito."
+sorryIncog cn = can't "use the " <> dblQuote cn <> " command while incognito."
 
 
 -----
@@ -761,7 +761,7 @@ sorryIntroNoOneHere = "You don't see anyone here to introduce yourself to."
 
 
 sorryIntroType :: Sing -> Text
-sorryIntroType s = can't $ "introduce yourself to " <> theOnLower s <> "."
+sorryIntroType s = can't "introduce yourself to " <> theOnLower s <> "."
 
 
 -----
@@ -796,7 +796,7 @@ sorryLinkNoOneHere = "You don't see anyone here to link with."
 
 
 sorryLinkType :: Sing -> Text
-sorryLinkType s = can't $ "establish a telepathic link with " <> theOnLower s <> "."
+sorryLinkType s = can't "establish a telepathic link with " <> theOnLower s <> "."
 
 
 -----
@@ -969,7 +969,7 @@ sorryPeepSelf = can't "peep yourself."
 
 
 sorryPickNotFlower :: Text -> Text
-sorryPickNotFlower t = can't $ "pick " <> aOrAn t <> "."
+sorryPickNotFlower t = can't "pick " <> aOrAn t <> "."
 
 
 sorryPickInEq :: Text
@@ -985,7 +985,7 @@ sorryPickInInv = can't "pick an item in your inventory."
 
 
 sorryPossessType :: Sing -> Text
-sorryPossessType s = can't $ "possess " <> aOrAn s <> "."
+sorryPossessType s = can't "possess " <> aOrAn s <> "."
 
 
 -----
@@ -1019,7 +1019,7 @@ sorryPutInRm = butCan't "put item in your current room into a container. Please 
 
 
 sorryPutInsideSelf :: Sing -> Text
-sorryPutInsideSelf s = can't $ "put the " <> s <> " inside itself."
+sorryPutInsideSelf s = can't "put the " <> s <> " inside itself."
 
 
 sorryPutVol :: Sing -> Text
@@ -1066,7 +1066,7 @@ sorryReadOrigLang lang = "Most unfortunately, as you don't know " <> pp lang <> 
 
 
 sorryReadType :: Sing -> Text
-sorryReadType s = can't $ "read the " <> s <> "."
+sorryReadType s = can't "read the " <> s <> "."
 
 
 sorryReadUnknownLang :: Sing -> Text
@@ -1107,7 +1107,7 @@ sorryReadyAlreadyWieldingTwoWpns = "You're already wielding two weapons."
 
 
 sorryReadyClothFull :: Text -> Text
-sorryReadyClothFull t = can't $ "wear any more " <> t <> "s."
+sorryReadyClothFull t = can't "wear any more " <> t <> "s."
 
 
 sorryReadyClothFullOneSide :: Cloth -> Slot -> Text
@@ -1131,7 +1131,7 @@ sorryReadyRol s rol = can't . T.concat $ [ "wear ", aOrAn s, " on your ", pp rol
 
 
 sorryReadyType :: Sing -> Text
-sorryReadyType s = can't $ "ready " <> aOrAn s <> "."
+sorryReadyType s = can't "ready " <> aOrAn s <> "."
 
 
 sorryReadyWpnHands :: Sing -> Text
@@ -1139,7 +1139,7 @@ sorryReadyWpnHands s = "Both hands are required to wield the " <> s <> "."
 
 
 sorryReadyWpnRol :: Sing -> Text
-sorryReadyWpnRol s = can't $ "wield " <> aOrAn s <> " with your finger!"
+sorryReadyWpnRol s = can't "wield " <> aOrAn s <> " with your finger!"
 
 
 -----
@@ -1196,7 +1196,7 @@ sorrySayNoOneHere = "You don't see anyone here to talk to."
 
 
 sorrySayTargetType :: Sing -> Text
-sorrySayTargetType s = can't $ "talk to " <> aOrAn s <> "."
+sorrySayTargetType s = can't "talk to " <> aOrAn s <> "."
 
 
 -----
@@ -1234,7 +1234,7 @@ sorryShowInRm = can't "show an item in your current room."
 
 
 sorryShowTarget :: Text -> Text
-sorryShowTarget t = can't $ "show something to " <> aOrAn t <> "."
+sorryShowTarget t = can't "show something to " <> aOrAn t <> "."
 
 
 -----
