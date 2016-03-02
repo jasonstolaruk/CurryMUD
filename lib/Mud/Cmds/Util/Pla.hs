@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fno-warn-type-defaults #-}
 {-# LANGUAGE FlexibleContexts, LambdaCase, MultiWayIf, NamedFieldPuns, OverloadedStrings, RankNTypes, RecordWildCards, TupleSections, ViewPatterns #-}
 
 -- This module contains helper functions used by multiple functions in "Mud.Cmds.Pla", as well as helper functions used
@@ -45,6 +46,7 @@ module Mud.Cmds.Util.Pla ( armSubToSlot
                          , mkEntDescs
                          , mkEqDesc
                          , mkExitsSummary
+                         , mkFullDesc
                          , mkInvCoinsDesc
                          , mkLastArgIsTargetBindings
                          , mkLastArgWithNubbedOthers
@@ -109,6 +111,12 @@ import qualified Data.IntMap.Lazy as IM (keys)
 import qualified Data.Map.Lazy as M ((!), notMember, toList)
 import qualified Data.Text as T
 import qualified Data.Vector.Unboxed as V (Vector)
+
+
+default (Int, Double)
+
+
+-----
 
 
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
@@ -956,7 +964,7 @@ mkVesselContDesc cols ms targetId =
         mkContDesc (l, q) = T.concat [ "The "
                                      , s
                                      , " contains "
-                                     , l^.liqName
+                                     , l^.liqName.to aOrAnOnLower
                                      , " "
                                      , parensQuote $ showText (calcVesselPerFull v q) <> "% full"
                                      , "." ] |&| wrapUnlines cols
@@ -1001,6 +1009,22 @@ linkDirToCmdName Down      = "d"
 isNonStdLink :: RmLink -> Bool
 isNonStdLink NonStdLink {} = True
 isNonStdLink _             = False
+
+
+-----
+
+
+mkFullDesc :: Int -> Int -> Text
+mkFullDesc avail size = let x = round $ 100 * (avail `divide` size) in
+  if | avail == 0 -> "You are entirely satiated. You don't feel so good..."
+     | x <= 10    -> "You are extremely full."
+     | x <= 20    -> "You are quite full."
+     | x <= 26    -> "You feel satisfied."
+     | x <= 73    -> ""
+     | x <= 79    -> "You feel a little hungry."
+     | x <= 89    -> "You are quite hungry."
+     | x <= 99    -> "You are extremely hungry."
+     | x == 100   -> "You are famished."
 
 
 -----

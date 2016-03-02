@@ -8,12 +8,12 @@ module Mud.Threads.Digester ( runDigesterAsync
 
 import Mud.Data.Misc
 import Mud.Data.State.MudData
+import Mud.Data.State.Util.Calc
 import Mud.Data.State.Util.Effect
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Random
 import Mud.Threads.Misc
-import Mud.TopLvlDefs.Misc
 import Mud.Util.Misc
 import Mud.Util.Operators
 import Mud.Util.Text
@@ -72,9 +72,11 @@ throwWaitDigester i = helper |&| modifyState >=> maybeVoid throwWait
 
 
 threadDigester :: Id -> MudStack ()
-threadDigester i = handle (threadExHandler $ "digester " <> showText i) $ do
+threadDigester i = handle (threadExHandler $ "digester " <> showText i) $ getState >>= \ms -> do
     setThreadType . Digester $ i
-    let loop = (liftIO . threadDelay $ digesterDelay * 10 ^ 6) >> digest i
+    let delay | isPC i ms = calcDigesterDelay . getRace i $ ms
+              | otherwise = calcDigesterDelay Human
+        loop = (liftIO . threadDelay $ delay * 10 ^ 6) >> digest i
     handle (die (Just i) "digester") $ logPla "threadDigester" i "digester started." >> forever loop
 
 

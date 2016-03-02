@@ -264,7 +264,7 @@ mkGecrWithRol i ms is c n@(T.breakOn (T.singleton slotChar) -> (a, b))
 
 
 -- "DupIdsEmpty" applies when nothing is left after having eliminated duplicate IDs.
-pattern DupIdsEmpty      <- (_,                                                                        Just [])
+pattern DupIdsEmpty      <- (_,                                                                         Just [])
 pattern SorryOne     n   <- (Mult { amount = 1,   nameSearchedFor = (aOrAn -> n), entsRes = Nothing  }, Nothing)
 pattern NoneMult     n   <- (Mult {               nameSearchedFor = n,            entsRes = Nothing  }, Nothing)
 pattern FoundMult    res <- (Mult {                                               entsRes = Just {}  }, Just (Right -> res))

@@ -3,7 +3,6 @@
 -- This module contains state-related functions used by multiple modules.
 
 module Mud.Data.State.Util.Misc ( addToInv
-                                , aOrAnType
                                 , BothGramNos
                                 , dropPrefixes
                                 , dropPrefixesForHooks
@@ -110,15 +109,6 @@ patternMatchFail = U.patternMatchFail "Mud.Data.State.Util.Misc"
 
 addToInv :: MudState -> Inv -> Inv -> Inv
 addToInv ms addThese toThese = sortInv ms $ toThese ++ addThese
-
-
------
-
-
-aOrAnType :: Type -> Text
-aOrAnType t@ClothType = pp t
-aOrAnType t@ArmType   = pp t
-aOrAnType t           = aOrAn . pp $ t
 
 
 -----

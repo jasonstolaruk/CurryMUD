@@ -180,6 +180,7 @@ awardExp amt reason i = helper |&| modifyState >=> \(ms, (msgs, logMsgs)) -> do
 
 
 consume :: Id -> [StomachCont] -> MudStack ()
+consume _ []     = unit
 consume i newScs = do
     logPla "consume" i $ "consuming " <> commas (map pp newScs) <> "."
     now <- liftIO getCurrentTime

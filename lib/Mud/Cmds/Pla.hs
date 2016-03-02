@@ -152,7 +152,6 @@ regularCmds :: [Cmd]
 regularCmds = map (uncurry4 mkRegularCmd) regularCmdTuples
 
 
--- TODO: The "drink" cmd should allow you to specify how much to drink. "drink 5 flask"
 regularCmdTuples :: [(CmdFullName, ActionFun, Bool, CmdDesc)]
 regularCmdTuples =
     [ ("?",          plaDispCmdList,  True,  cmdDescDispCmdList)
@@ -306,6 +305,7 @@ npcPriorityAbbrevCmds = concatMap (uncurry5 mkPriorityAbbrevCmd) npcPriorityAbbr
 npcPriorityAbbrevCmdTuples :: [(CmdFullName, CmdPriorityAbbrevTxt, ActionFun, Bool, CmdDesc)]
 npcPriorityAbbrevCmdTuples =
     [ ("clear",     "c",   clear,      True,  cmdDescClear)
+    , ("drink",     "dri", drink,      True,  cmdDescDrink)
     , ("drop",      "dr",  dropAction, True,  cmdDescDrop)
     , ("emote",     "em",  emote,      True,  cmdDescEmote)
     , ("exits",     "ex",  exits,      True,  cmdDescExits)
@@ -736,9 +736,114 @@ disconnectHelper i (target, as) idNamesTbl ms =
 -----
 
 
+-- TODO: Help.
+-- TODO: More testing.
 drink :: ActionFun
-drink p@AdviseNoArgs = advise p ["drink"] adviceDrinkNoArgs
-drink p = patternMatchFail "drink" [ showText p ]
+drink p@AdviseNoArgs                    = advise p ["drink"] adviceDrinkNoArgs
+drink p@(AdviseOneArg _               ) = advise p ["drink"] adviceDrinkNoVessel
+drink   (Lower i mq cols [amt, target]) = (,) <$> mkRndmVector <*> liftIO getCurrentTime >>= \(v, now) ->
+    helper v now |&| modifyState >=> \(toSelfs, bs, logMsgs, scs) -> do
+        multiWrapSend mq cols toSelfs
+        scs |#| consume i
+        bcastIfNotIncogNl i bs
+        logMsgs |#| logPlaOut "drink" i
+  where
+    helper v now ms
+      | amt `T.isPrefixOf` "all" || amt == T.singleton allChar = next maxBound
+      | otherwise = case reads . T.unpack $ amt :: [(Int, String)] of
+        [(x, "")] | x <= 0    -> sorry sorryDrinkMouthfuls
+                  | otherwise -> next x
+        _                     -> sorry . sorryParseMouthfuls $ amt
+      where
+        sorry  = (ms, ) . (, [], [], []) . pure
+        next x =
+            let (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv . pure $ target
+                d                      = mkStdDesig i ms DoCap
+                ri                     = getRmId i ms
+                myInvCoins             = getInvCoins i ms
+                rmInvCoins             = first (i `delete`) . getNonIncogInvCoins ri $ ms
+                maybeHooks             = lookupHooks i ms "drink"
+                -----
+                drinkInv =
+                    let (eiss, ecs)  = uncurry (resolveMobInvCoins i ms inInvs) myInvCoins
+                        f [targetId] = case (uncurry getSing *** uncurry getType) . dup $ (targetId, ms) of
+                          (s, VesselType) -> maybe (sorry . sorryDrinkEmpty $ s) (g s) . getVesselCont targetId $ ms
+                          (s, _         ) -> sorry . sorryDrinkType $ s
+                          where
+                            g s (l, q) =
+                                let quaffs                = x `min` q `min` stomAvail
+                                    (stomAvail, stomSize) = calcStomachAvailSize i ms
+                                    scs = replicate quaffs . StomachCont (l^.liqId.to Left) now $ False
+                                    t   = T.concat [ "You drink "
+                                                   , showText quaffs
+                                                   , " mouthful"
+                                                   , theLetterS $ quaffs /= 1
+                                                   , " of "
+                                                   , l^.liqName.to theOnLower
+                                                   , " from the "
+                                                   , s
+                                                   , allGoneTxt
+                                                   , "." ]
+                                    fullDesc
+                                      | x `min` q > stomAvail = "You are so full that you have to stop drinking. You \
+                                                                \don't feel so good..."
+                                      | otherwise = mkFullDesc (stomAvail - quaffs) stomSize
+                                    bs = pure ( T.concat [ serialize d, " ", txt, " from ", aOrAn s, allGoneTxt, "." ]
+                                              , i `delete` desigIds d )
+                                      where
+                                        txt | quaffs > 9  = "takes an excessively long pull"
+                                            | quaffs > 5  = "takes a long drink"
+                                            | quaffs == 1 = "takes a swig"
+                                            | otherwise  = "drinks"
+                                    allGone    = remAmt == 0
+                                    allGoneTxt = allGone |?| ", emptying it"
+                                    remAmt     = q - quaffs
+                                    newCont    | allGone   = Nothing
+                                               | otherwise = Just (l, remAmt)
+                                    ms'        = ms & vesselTbl.ind targetId.vesselCont .~ newCont
+                                in if ()# Sum stomAvail
+                                  then sorry sorryFull
+                                  else (ms', ( dropEmpties [ t, l^.drinkDesc, fullDesc ]
+                                             , bs
+                                             , drinkLogMsgHelper quaffs l s
+                                             , scs ))
+                        f _ = sorry sorryDrinkExcessTargets
+                    in ()!# ecs ? sorry sorryDrinkCoins :? either sorry f (head eiss)
+                -----
+                drinkRm =
+                    case ((()!#) *** (()!#)) (rmInvCoins, maybeHooks) of
+                      (True,  False) -> sorry sorryDrinkRmNoHooks
+                      (False, True ) ->
+                          let (inRms', (ms', toSelfs, bs, logMsgs)) = procHooks i ms v "drink" inRms -- TODO: Make a hook and test.
+                              sorryMsgs                             = inRms' |!| pure sorryDrinkEmptyRmWithHooks
+                          in (ms', (sorryMsgs ++ toSelfs, bs, logMsgs, []))
+                      (True,  True ) ->
+                          let (inRms', (ms', hooksToSelfs, hooksBs, hooksLogMsgs)) = procHooks i ms v "drink" inRms
+                          in if ()# inRms'
+                            then (ms', (hooksToSelfs, hooksBs, hooksLogMsgs, []))
+                            else sorry . sorryDrinkRmWithHooks . head $ inRms'
+                      a -> patternMatchFail "drink helper next drinkRm" [ showText a ]
+            in if
+              | ()!# inEqs                        -> sorry sorryDrinkInEq
+              | ()!# inInvs    && ()#  myInvCoins -> sorry dudeYourHandsAreEmpty
+              | ()!# inInvs    && ()!# myInvCoins -> drinkInv
+              | ()# rmInvCoins && ()#  maybeHooks -> sorry sorryDrinkEmptyRmNoHooks
+              | otherwise                         -> drinkRm
+drink p = advise p ["drink"] adviceDrinkExcessArgs
+
+
+drinkLogMsgHelper :: Quaffs -> Liq -> Sing -> [Text]
+drinkLogMsgHelper q l s = pure . T.concat $ [ "drank "
+                                            , showText q
+                                            , " quaff"
+                                            , theLetterS $ q /= 1
+                                            , " of "
+                                            , l^.liqName.to aOrAnOnLower
+                                            , " "
+                                            , let DistinctLiqId i = l^.liqId in parensQuote . showText $ i
+                                            , " from "
+                                            , aOrAn s
+                                            , "." ]
 
 
 -----
@@ -959,22 +1064,21 @@ shuffleGive i ms LastArgIsTargetBindings { .. } =
       then genericSorry ms sorryGiveToCoin
       else case procGecrMisRm . head . zip targetGecrs $ targetMiss of
         Left  msg        -> genericSorry ms msg
-        Right [targetId] | targetType <- getType targetId ms ->
-          if isNpcPC targetId ms
-            then let (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv otherArgs
-                     sorryInEq              = inEqs |!| sorryGiveInEq
-                     sorryInRm              = inRms |!| sorryGiveInRm
-                     (gecrs, miss, rcs) = uncurry (resolveEntCoinNames i ms inInvs) srcInvCoins
-                     eiss               = zipWith (curry procGecrMisMobInv) gecrs miss
-                     ecs                = map procReconciledCoinsMobInv rcs
-                     (ms',  toSelfs,  bs,  logMsgs ) = foldl' (helperGiveEitherInv  i srcDesig targetId)
-                                                              (ms, [], [], [])
-                                                              eiss
-                     (ms'', toSelfs', bs', logMsgs') =        helperGiveEitherCoins i srcDesig targetId
-                                                              (ms', toSelfs, bs, logMsgs)
-                                                              ecs
-                 in (ms'', (dropBlanks $ [ sorryInEq, sorryInRm ] ++ toSelfs', bs', map (parseDesig i ms) logMsgs'))
-            else genericSorry ms . sorryGiveType $ targetType
+        Right [targetId] -> if isNpcPC targetId ms
+          then let (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv otherArgs
+                   sorryInEq              = inEqs |!| sorryGiveInEq
+                   sorryInRm              = inRms |!| sorryGiveInRm
+                   (gecrs, miss, rcs) = uncurry (resolveEntCoinNames i ms inInvs) srcInvCoins
+                   eiss               = zipWith (curry procGecrMisMobInv) gecrs miss
+                   ecs                = map procReconciledCoinsMobInv rcs
+                   (ms',  toSelfs,  bs,  logMsgs ) = foldl' (helperGiveEitherInv  i srcDesig targetId)
+                                                            (ms, [], [], [])
+                                                            eiss
+                   (ms'', toSelfs', bs', logMsgs') =        helperGiveEitherCoins i srcDesig targetId
+                                                            (ms', toSelfs, bs, logMsgs)
+                                                            ecs
+               in (ms'', (dropBlanks $ [ sorryInEq, sorryInRm ] ++ toSelfs', bs', map (parseDesig i ms) logMsgs'))
+        else genericSorry ms . sorryGiveType . getSing targetId $ ms
         Right {} -> genericSorry ms sorryGiveExcessTargets
 
 
@@ -2621,16 +2725,18 @@ mkSlotDesc i ms s = case s of
 
 stats :: ActionFun
 stats (NoArgs i mq cols) = getState >>= \ms ->
-    let mkStats   = [ top
-                    , pp . getHand i $ ms
-                    , "level " <> showText l
-                    , (commaEvery3 . showText $ x  ) <> " experience points"
-                    , (commaEvery3 . showText $ nxt) <> " experience points to next level" ]
-        top       = onTrue (isPC i ms) (<> sexRace) . getSing i $ ms
-        sexRace   = T.concat [ ", the ", sexy, " ", r ]
-        (sexy, r) = (uncapitalize . showText *** uncapitalize . showText) . getSexRace i $ ms
-        (l, x)    = getLvlExp i ms
-        nxt       = subtract x . snd $ calcLvlExps !! l
+    let mkStats   = dropEmpties [ top
+                                , pp . getHand i $ ms
+                                , "level " <> showText l
+                                , (commaEvery3 . showText $ x  ) <> " experience points"
+                                , (commaEvery3 . showText $ nxt) <> " experience points to next level"
+                                , mkFullDesc avail size ]
+        top           = onTrue (isPC i ms) (<> sexRace) . getSing i $ ms
+        sexRace       = T.concat [ ", the ", sexy, " ", r ]
+        (sexy, r)     = (uncapitalize . showText *** uncapitalize . showText) . getSexRace i $ ms
+        (l, x)        = getLvlExp i ms
+        nxt           = subtract x . snd $ calcLvlExps !! l
+        (avail, size) = calcStomachAvailSize i ms
     in multiWrapSend mq cols mkStats >> logPlaExec "stats" i
 stats p = withoutArgs stats p
 

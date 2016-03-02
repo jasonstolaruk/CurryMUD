@@ -63,10 +63,6 @@ dbTblPurgerDelay :: Seconds
 dbTblPurgerDelay = 60 {- mins -} * 60 {- secs -} -- one hr
 
 
-digesterDelay :: Seconds
-digesterDelay = 30
-
-
 isDebug :: Bool
 isDebug = True
 

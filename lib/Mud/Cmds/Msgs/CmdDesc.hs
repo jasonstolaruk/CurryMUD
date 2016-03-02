@@ -18,7 +18,7 @@ cmdDescDispCmdList = "Display or search this command list."
 
 
 cmdDescDrink :: Text
-cmdDescDrink = "Drink a given amount from a container."
+cmdDescDrink = "Drink a given amount from a vessel."
 
 
 cmdDescDrop :: Text

@@ -29,7 +29,7 @@ distinctLiqList = [ (iLiqPotHealing,         potHealingDistinctLiq        )
 
 waterLiq :: Liq
 waterLiq = Liq (DistinctLiqId iLiqWater)
-               "water"
+               "water" -- TODO: "a water"
                "The water is entirely odorless."
                "The water is entirely tasteless."
                "The cool, clear water feels refreshing as it goes down."
@@ -45,7 +45,7 @@ waterDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Nothing
 
 potHealingLiq :: Liq
 potHealingLiq = Liq (DistinctLiqId iLiqPotHealing)
-                    "a milky, off-white liquid"
+                    "milky, off-white liquid"
                     "" -- TODO
                     ""
                     ""
@@ -62,7 +62,7 @@ potHealingDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just el
 
 potInstantHealingLiq :: Liq
 potInstantHealingLiq = Liq (DistinctLiqId iLiqPotInstantHealing)
-                           "a murky, rust-colored liquid"
+                           "murky, rust-colored liquid"
                            "" -- TODO
                            ""
                            ""
@@ -82,7 +82,7 @@ potInstantHealingDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Not
 
 potStLiq :: Liq
 potStLiq = Liq (DistinctLiqId iLiqPotSt)
-               "a thick, muddy liquid"
+               "thick, muddy liquid"
                "" -- TODO
                ""
                ""
@@ -100,7 +100,7 @@ potStDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just el
 
 potInstantStLiq :: Liq
 potInstantStLiq = Liq (DistinctLiqId iLiqPotInstantSt)
-                      "a brown, frothy liquid"
+                      "brown, frothy liquid"
                       "" -- TODO
                       ""
                       ""
@@ -122,7 +122,7 @@ potInstantStDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Nothing
 
 potTinnitusLiq :: Liq
 potTinnitusLiq = Liq (DistinctLiqId iLiqPotTinnitus)
-                     "an olive-green liquid"
+                     "olive-green liquid"
                      "" -- TODO
                      ""
                      ""
@@ -139,7 +139,7 @@ potTinnitusDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just el
 
 potInstantTinnitusLiq :: Liq
 potInstantTinnitusLiq = Liq (DistinctLiqId iLiqPotInstantTinnitus)
-                            "an oily, puce liquid"
+                            "oily, puce liquid"
                             "" -- TODO
                             ""
                             ""

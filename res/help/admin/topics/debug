@@ -1,13 +1,13 @@
 \h DEBUG \d
 
-During the development of CurryMUD, many commands were written with the purpose of testing new functionality, or to aid in tracking down bugs. These "debug" commands may be available for use by administrators, depending on the value of the "isDebug" binding (set in code prior to compilation).
+During the development of CurryMUD, many commands were written with the purpose of testing new functionality, or to aid in tracking down bugs. These "debug" commands may be available for use by administrators, depending on the value of the "isDebug" binding (set in Haskell code prior to compilation).
 
-\eAre debug commands available?\d @d
+Are debug commands available? \e@d\d
 
 If available, you may feel free to try out and play with the debug commands (though many of them have little or no practical use when it comes to CurryMUD administration). But be careful: some debug commands are designed to crash the server or put it in an undesirable state!
 
 Debug commands begin with a #b prefix. \q#b?\d will give you the debug command list.
 
-Sorry, but there is no help available on individual debug commands.
+(Sorry, but there is no help available on individual debug commands.)
 
 \uSEE ALSO\n

@@ -23,6 +23,7 @@ module Mud.Util.Misc ( atLst1
                      , maybeRet
                      , maybeVoid
                      , mIf
+                     , minusFifth
                      , minusQuarter
                      , minusThird
                      , mkDateTimeTxt
@@ -33,6 +34,7 @@ module Mud.Util.Misc ( atLst1
                      , onLeft
                      , onTrue
                      , patternMatchFail
+                     , plusFifth
                      , plusQuarter
                      , plusThird
                      , reverseLookup
@@ -181,6 +183,10 @@ mIf p x y = p >>= \case True  -> x
                         False -> y
 
 
+minusFifth :: Int -> Int
+minusFifth x = round (fromIntegral x * 0.80 :: Double)
+
+
 minusQuarter :: Int -> Int
 minusQuarter x = round (fromIntegral x * 0.75 :: Double)
 
@@ -214,6 +220,10 @@ onLeft _ x         = blowUp "Mud.Util.Misc" "onLeft" "Right" [ T.pack . show $ x
 
 patternMatchFail :: Text -> Text -> [Text] -> a
 patternMatchFail modName funName = blowUp modName funName "pattern match failure"
+
+
+plusFifth :: Int -> Int
+plusFifth x = round (fromIntegral x * 1.20 :: Double)
 
 
 plusQuarter :: Int -> Int

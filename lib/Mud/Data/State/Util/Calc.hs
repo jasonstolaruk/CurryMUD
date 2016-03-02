@@ -1,8 +1,9 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
-{-# LANGUAGE OverloadedStrings, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, OverloadedStrings, ViewPatterns #-}
 
 module Mud.Data.State.Util.Calc ( calcBarLen
                                 , calcConPerFull
+                                , calcDigesterDelay
                                 , calcEffAttrib
                                 , calcEffDx
                                 , calcEffHt
@@ -26,6 +27,8 @@ module Mud.Data.State.Util.Calc ( calcBarLen
                                 , calcRegenMpDelay
                                 , calcRegenPpAmt
                                 , calcRegenPpDelay
+                                , calcStomachAvailSize
+                                , calcStomachSize
                                 , calcVesselPerFull
                                 , calcVol
                                 , calcWeight ) where
@@ -34,6 +37,7 @@ import Mud.Data.Misc
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Coins
 import Mud.Data.State.Util.Get
+import Mud.TopLvlDefs.Misc
 import Mud.TopLvlDefs.Vols
 import Mud.TopLvlDefs.Weights
 import Mud.Util.List
@@ -74,6 +78,19 @@ calcConPerFull :: Id -> MudState -> Int
 calcConPerFull i ms = let total           = foldr helper 0 . getInv i $ ms
                           helper targetId = (calcVol targetId ms +)
                       in round . (100 *) $ total `divide` getCapacity i ms
+
+
+-----
+
+
+calcDigesterDelay :: Race -> Seconds
+calcDigesterDelay = let f = (calcDigesterDelay Human |&|) in \case
+  Elf       -> f minusFifth
+  Halfling  -> f minusFifth
+  Human     -> 30 -- A full human stomach (34 food units or quaffs) will digest completely in 17 mins.
+  Nymph     -> f minusQuarter
+  Vulpenoid -> f plusFifth
+  _         -> f id
 
 
 -----
@@ -214,6 +231,28 @@ calcRegenPpDelay i ms = calcRegenDelay $ (calcEffHt i ms + calcEffPs i ms) `divi
 
 calcRegenFpDelay :: Id -> MudState -> Int
 calcRegenFpDelay i ms = calcRegenDelay $ (calcEffHt i ms + calcEffSt i ms) `divide` 2
+
+
+-----
+
+
+calcStomachAvailSize :: Id -> MudState -> (Int, Int)
+calcStomachAvailSize i ms = let avail = size - length (getStomach i ms)
+                                size  | isPC i ms = calcStomachSize . getRace i $ ms
+                                      | otherwise = calcStomachSize Human
+                            in (avail, size)
+
+
+calcStomachSize :: Race -> Int -- Stomach capacty in terms of food units or quaffs.
+calcStomachSize = let f = (calcStomachSize Human |&|) in \case
+  Dwarf     -> f minusQuarter
+  Elf       -> f minusFifth
+  Felinoid  -> f plusFifth
+  Halfling  -> f minusThird
+  Human     -> round $ 60 * 100 `divide` quaffVol -- 34 food units or quaffs.
+  Lagomorph -> f id
+  Nymph     -> f minusFifth
+  Vulpenoid -> f plusQuarter
 
 
 -----

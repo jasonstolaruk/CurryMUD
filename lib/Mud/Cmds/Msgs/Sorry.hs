@@ -25,6 +25,16 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryConnectChanName
                            , sorryConnectIgnore
                            , sorryDisconnectIgnore
+                           , sorryDrinkCoins
+                           , sorryDrinkEmpty
+                           , sorryDrinkEmptyRmNoHooks
+                           , sorryDrinkEmptyRmWithHooks
+                           , sorryDrinkExcessTargets
+                           , sorryDrinkInEq
+                           , sorryDrinkMouthfuls
+                           , sorryDrinkRmNoHooks
+                           , sorryDrinkRmWithHooks
+                           , sorryDrinkType
                            , sorryDropInEq
                            , sorryDropInRm
                            , sorryEmoteExcessTargets
@@ -42,6 +52,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryExpCmdName
                            , sorryExpCmdRequiresTarget
                            , sorryExpCmdTargetType
+                           , sorryFull
                            , sorryGetEmptyRmNoHooks
                            , sorryGetEmptyRmWithHooks
                            , sorryGetEnc
@@ -109,6 +120,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryParseIndent
                            , sorryParseInOut
                            , sorryParseLineLen
+                           , sorryParseMouthfuls
                            , sorryParseNum
                            , sorryParseSetting
                            , sorryPCName
@@ -199,7 +211,6 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
 import Mud.Cmds.Util.CmdPrefixes
 import Mud.Data.Misc
 import Mud.Data.State.MudData
-import Mud.Data.State.Util.Misc
 import Mud.Misc.ANSI
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
@@ -292,8 +303,8 @@ sorryAsSelf :: Text
 sorryAsSelf = can'tTarget $ "yourself" <> withAs
 
 
-sorryAsType :: Type -> Text
-sorryAsType t = can'tTarget $ aOrAnType t <> withAs
+sorryAsType :: Sing -> Text
+sorryAsType s = can'tTarget $ aOrAn s <> withAs
 
 
 -----
@@ -413,6 +424,53 @@ sorryDisconnectIgnore = sorryIgnoreLocPrefPlur "The names of the people you woul
 -----
 
 
+sorryDrinkCoins :: Text
+sorryDrinkCoins = can't "drink from a coin."
+
+
+sorryDrinkEmpty :: Sing -> Text
+sorryDrinkEmpty s = "The " <> s <> " is empty."
+
+
+sorryDrinkEmptyRmNoHooks :: Text
+sorryDrinkEmptyRmNoHooks = "You don't see anything to drink from here."
+
+
+sorryDrinkEmptyRmWithHooks :: Text
+sorryDrinkEmptyRmWithHooks = "You don't see any vessel to drink from on the ground here."
+
+
+sorryDrinkExcessTargets :: Text
+sorryDrinkExcessTargets = but "you can only drink from one vessel at a time."
+
+
+sorryDrinkInEq :: Text
+sorryDrinkInEq = can't "drink from an item in your readied equipment."
+
+
+sorryDrinkMouthfuls :: Text
+sorryDrinkMouthfuls = "Do you or do you not wish to take a drink?"
+
+
+sorryDrinkRmNoHooks :: Text
+sorryDrinkRmNoHooks = butCan't "drink from a vessel in your current room. Please pick up the vessel first."
+
+
+sorryDrinkRmWithHooks :: Text -> Text
+sorryDrinkRmWithHooks t = T.concat [ "You don't see "
+                                   , aOrAn t
+                                   , " here. "
+                                   , parensQuote "If you'd like to drink from a vessel in your current room, please \
+                                                 \pick up the vessel first." ]
+
+
+sorryDrinkType :: Sing -> Text
+sorryDrinkType s = can't $ "drink from " <> aOrAn s <> "."
+
+
+-----
+
+
 sorryDropInEq :: Text
 sorryDropInEq = butCan't "drop an item in your readied equipment. Please unready the item(s) first."
 
@@ -513,6 +571,13 @@ sorryExpCmdTargetType = but "expressive commands can only target people."
 -----
 
 
+sorryFull :: Text
+sorryFull = "Ugh, you are nauseatingly satiated. You can't imagine consuming any more."
+
+
+-----
+
+
 sorryGetEmptyRmNoHooks :: Text
 sorryGetEmptyRmNoHooks = "You don't see anything to pick up here."
 
@@ -576,8 +641,8 @@ sorryGiveToInv :: Text
 sorryGiveToInv = can't "give something to an item in your inventory."
 
 
-sorryGiveType :: Type -> Text
-sorryGiveType t = can't $ "give something to " <> aOrAnType t <> "."
+sorryGiveType :: Sing -> Text
+sorryGiveType s = can't $ "give something to " <> aOrAn s <> "."
 
 
 -----
@@ -877,6 +942,10 @@ sorryParseLineLen :: Text -> Text
 sorryParseLineLen a = dblQuote a <> " is not a valid line length."
 
 
+sorryParseMouthfuls :: Text -> Text
+sorryParseMouthfuls a = dblQuote a <> " is not a valid number of mouthfuls."
+
+
 sorryParseNum :: Text -> Text -> Text
 sorryParseNum numTxt base = T.concat [ dblQuote numTxt, " is not a valid number in base ", base, "." ]
 
@@ -915,8 +984,8 @@ sorryPickInInv = can't "pick an item in your inventory."
 
 
 
-sorryPossessType :: Type -> Text
-sorryPossessType t = can't $ "possess " <> aOrAnType t <> "."
+sorryPossessType :: Sing -> Text
+sorryPossessType s = can't $ "possess " <> aOrAn s <> "."
 
 
 -----

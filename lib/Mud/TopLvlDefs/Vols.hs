@@ -167,5 +167,5 @@ tunicHeavyVol = plusQuarter shirtVol
 
 
 waterskinVol, waterskinLrgVol :: Vol
-waterskinVol    = 60
-waterskinLrgVol = 120
+waterskinVol    = 60  * 100
+waterskinLrgVol = 120 * 100

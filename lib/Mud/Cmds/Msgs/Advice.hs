@@ -47,7 +47,9 @@ module Mud.Cmds.Msgs.Advice ( adviceAAnnounceNoArgs
                             , adviceDNumberNoBase
                             , adviceDRegenExcessArgs
                             , adviceDRegenNoArgs
+                            , adviceDrinkExcessArgs
                             , adviceDrinkNoArgs
+                            , adviceDrinkNoVessel
                             , adviceDRntExcessArgs
                             , adviceDropNoArgs
                             , adviceDWeightExcessArgs
@@ -427,8 +429,18 @@ adviceDisconnectNoChan a = "Please also provide the name of a telepathic channel
                            "."
 
 
+adviceDrinkExcessArgs :: Text
+adviceDrinkExcessArgs = adviceDrinkNoArgs
+
+
 adviceDrinkNoArgs :: Text
-adviceDrinkNoArgs = undefined -- TODO
+adviceDrinkNoArgs = "Please specify how many mouthfuls to drink followed by the vessel to drink from, as in " <>
+                    colorWith quoteColor "drink 4 waterskin"                                                  <>
+                    "."
+
+
+adviceDrinkNoVessel :: Text
+adviceDrinkNoVessel = adviceDrinkNoArgs
 
 
 adviceDropNoArgs :: Text

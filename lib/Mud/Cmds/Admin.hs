@@ -249,7 +249,7 @@ adminAs (WithTarget i mq cols target rest) = getState >>= \ms ->
                       ioHelper targetId s
                       wrapSend targetMq targetCols asMsg
                       fakeClientInput targetMq rest
-          t -> sorry . sorryAsType $ t
+          _ -> sorry . sorryAsType $ s
         ioHelper targetId s = do
             sendFun . parensQuote $ "Executing as " <> aOrAnOnLower s <> "..."
             logPla "adminAs" i . T.concat $ [ "Executing "
@@ -728,7 +728,7 @@ examineVessel i ms = let v = getVessel i ms in
     , "Vessel contents: " <> v^.vesselCont.to descCont ] ++ views vesselCont (maybe [] (descLiq . fst)) v
   where
     descCont Nothing       = "none"
-    descCont (Just (l, q)) = showText q <> " quaffs of " <> l^.liqName
+    descCont (Just (l, q)) = showText q <> " quaffs of " <> l^.liqName.to aOrAnOnLower
     descLiq l = let dl = getDistinctLiqForLiq l ms
                 in [ "Distinct liquid ID: " <> l^.liqId.to showText
                    , "Liquid smell: "       <> l^.liqSmellDesc
@@ -990,9 +990,9 @@ adminPossess (OneArgNubbed i mq cols target) = modifyState helper >>= sequence_
   where
     helper ms =
         let SingleTarget { .. } = mkSingleTarget mq cols target "The ID of the NPC you wish to possess"
-            possess targetId    = case getType targetId ms of
-              NpcType -> maybe canPossess can'tPossess . getPossessor targetId $ ms
-              t       -> sorry . sorryPossessType $ t
+            possess targetId    = if isNpc targetId ms
+              then maybe canPossess can'tPossess . getPossessor targetId $ ms
+              else sorry . sorryPossessType $ targetSing
               where
                 targetSing      = getSing targetId ms
                 can'tPossess pi = sorry . sorryAlreadyPossessed targetSing . getSing pi $ ms
