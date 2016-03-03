@@ -129,6 +129,7 @@ adminCmds =
     , mkAdminCmd "channel"    adminChan        True  "Display information about one or more telepathic channels."
     , mkAdminCmd "count"      adminCount       True  "Display or search a list of miscellaneous running totals."
     , mkAdminCmd "date"       adminDate        True  "Display the current system date."
+    , mkAdminCmd "eself"      adminExamineSelf True  "Self-examination."
     , mkAdminCmd "examine"    adminExamine     True  "Display the properties of one or more IDs."
     , mkAdminCmd "experience" adminExp         True  "Dump the experience table."
     , mkAdminCmd "host"       adminHost        True  "Display a report of connection statistics for one or more \
@@ -519,6 +520,15 @@ adminDate p = withoutArgs adminDate p
 adminDispCmdList :: ActionFun
 adminDispCmdList p@(LowerNub' i as) = dispCmdList adminCmds p >> logPlaExecArgs (prefixAdminCmd "?") as i
 adminDispCmdList p                  = patternMatchFail "adminDispCmdList" [ showText p ]
+
+
+-----
+
+
+-- TODO: Help.
+adminExamineSelf :: ActionFun
+adminExamineSelf p@(NoArgs'' i) = adminExamine p { args = pure . showText $ i }
+adminExamineSelf p              = withoutArgs adminExamineSelf p
 
 
 -----

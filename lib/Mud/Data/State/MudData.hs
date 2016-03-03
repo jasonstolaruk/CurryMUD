@@ -261,7 +261,7 @@ instance Monoid Coins where
       Coins res
 
 
--- ============================================================
+-- ==================================================
 
 
 -- Has an object (and an entity and paused/active effects) and an inventory and coins.
@@ -729,7 +729,7 @@ jsonToPla (Object o) = Pla <$> o .: "currHostName"
 jsonToPla _          = empty
 
 
--- ======================================================================
+-- ==================================================
 
 
 -- Has effects and an inventory and coins.
@@ -842,7 +842,7 @@ type RmActionFun = ActionFun
 type RndmNamesTbl = M.Map Sing Sing
 
 
--- ======================================================================
+-- ==================================================
 
 
 type TalkAsync = Async ()

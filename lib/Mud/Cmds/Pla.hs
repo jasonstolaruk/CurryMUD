@@ -203,35 +203,35 @@ priorityAbbrevCmds = concatMap (uncurry5 mkPriorityAbbrevCmd) priorityAbbrevCmdT
 
 priorityAbbrevCmdTuples :: [(CmdFullName, CmdPriorityAbbrevTxt, ActionFun, Bool, CmdDesc)]
 priorityAbbrevCmdTuples =
-    [ ("clear",      "cl",  clear,      True, cmdDescClear)
-    , ("color",      "col", color,      True, "Perform a color test.")
-    , ("connect",    "co",  connect,    True, "Connect one or more people to a telepathic channel.")
-    , ("disconnect", "di",  disconnect, True, "Disconnect one or more people from a telepathic channel.")
-    , ("drink",      "dri", drink,      True, cmdDescDrink)
-    , ("drop",       "dr",  dropAction, True, cmdDescDrop)
-    , ("emote",      "em",  emote,      True, cmdDescEmote)
-    , ("exits",      "ex",  exits,      True, cmdDescExits)
-    , ("get",        "g",   getAction,  True, cmdDescGet)
-    , ("give",       "gi",  give,       True, cmdDescGive)
-    , ("help",       "h",   help,       True, "Get help on one or more commands or topics.")
-    , ("intro",      "in",  intro,      True, "Display a list of the people who have introduced themselves to you, or \
-                                              \introduce yourself to one or more people.")
-    , ("inventory",  "i",   inv,        True, cmdDescInv)
-    , ("leave",      "le",  leave,      True, "Sever your connections to one or more telepathic channels.")
-    , ("link",       "li",  link,       True, "Display a list of the people with whom you have established a \
-                                              \telepathic link, or establish a telepathic link with one or more \
-                                              \people.")
-    , ("look",       "l",   look,       True, cmdDescLook)
-    , ("motd",       "m",   motd,       True, "Display the message of the day.")
-    , ("put",        "p",   putAction,  True, cmdDescPut)
-    , ("ready",      "r",   ready,      True, cmdDescReady)
-    , ("say",        "sa",  say,        True, cmdDescSay)
-    , ("show",       "sh",  showAction, True, cmdDescShow)
-    , ("stats",      "st",  stats,      True, cmdDescStats)
-    , ("telepathy",  "t",   tele,       True, "Send a private message to a person with whom you have established a \
-                                              \two-way telepathic link.")
-    , ("unready",    "un",  unready,    True, cmdDescUnready)
-    , ("who",        "wh",  who,        True, "Display or search a list of who is currently awake.") ]
+    [ ("clear",      "cl",  clear,      True,  cmdDescClear)
+    , ("color",      "col", color,      True,  "Perform a color test.")
+    , ("connect",    "co",  connect,    True,  "Connect one or more people to a telepathic channel.")
+    , ("disconnect", "di",  disconnect, True,  "Disconnect one or more people from a telepathic channel.")
+    , ("drink",      "dri", drink,      False, cmdDescDrink)
+    , ("drop",       "dr",  dropAction, True,  cmdDescDrop)
+    , ("emote",      "em",  emote,      True,  cmdDescEmote)
+    , ("exits",      "ex",  exits,      True,  cmdDescExits)
+    , ("get",        "g",   getAction,  True,  cmdDescGet)
+    , ("give",       "gi",  give,       True,  cmdDescGive)
+    , ("help",       "h",   help,       True,  "Get help on one or more commands or topics.")
+    , ("intro",      "in",  intro,      True,  "Display a list of the people who have introduced themselves to you, or \
+                                               \introduce yourself to one or more people.")
+    , ("inventory",  "i",   inv,        True,  cmdDescInv)
+    , ("leave",      "le",  leave,      True,  "Sever your connections to one or more telepathic channels.")
+    , ("link",       "li",  link,       True,  "Display a list of the people with whom you have established a \
+                                               \telepathic link, or establish a telepathic link with one or more \
+                                               \people.")
+    , ("look",       "l",   look,       True,  cmdDescLook)
+    , ("motd",       "m",   motd,       True,  "Display the message of the day.")
+    , ("put",        "p",   putAction,  True,  cmdDescPut)
+    , ("ready",      "r",   ready,      True,  cmdDescReady)
+    , ("say",        "sa",  say,        True,  cmdDescSay)
+    , ("show",       "sh",  showAction, True,  cmdDescShow)
+    , ("stats",      "st",  stats,      True,  cmdDescStats)
+    , ("telepathy",  "t",   tele,       True,  "Send a private message to a person with whom you have established a \
+                                               \two-way telepathic link.")
+    , ("unready",    "un",  unready,    True,  cmdDescUnready)
+    , ("who",        "wh",  who,        True,  "Display or search a list of who is currently awake.") ]
 
 
 mkPriorityAbbrevCmd :: CmdFullName -> CmdPriorityAbbrevTxt -> ActionFun -> Bool -> CmdDesc -> [Cmd]
@@ -738,7 +738,6 @@ disconnectHelper i (target, as) idNamesTbl ms =
 
 
 -- TODO: Help.
--- TODO: More testing.
 drink :: ActionFun
 drink p@AdviseNoArgs                    = advise p ["drink"] adviceDrinkNoArgs
 drink p@(AdviseOneArg _               ) = advise p ["drink"] adviceDrinkNoVessel
@@ -751,7 +750,7 @@ drink   (Lower i mq cols [amt, target]) = mkRndmVector >>= \v -> helper v |&| mo
                   | otherwise -> next x
         _                     -> sorry . sorryParseMouthfuls $ amt
       where
-        sorry  = (ms, ) . pure . wrapSend mq cols
+        sorry  = (ms, ) . (: pure (sendDfltPrompt mq i)) . wrapSend mq cols
         next x =
             let (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv . pure $ target
                 ri                     = getRmId i ms
@@ -800,20 +799,6 @@ drink   (Lower i mq cols [amt, target]) = mkRndmVector >>= \v -> helper v |&| mo
               | ()# rmInvCoins && ()#  maybeHooks -> sorry sorryDrinkEmptyRmNoHooks
               | otherwise                         -> drinkRm
 drink p = advise p ["drink"] adviceDrinkExcessArgs
-
-
---drinkLogMsgHelper :: Mouthfuls -> Liq -> Sing -> Text -- TODO: Move.
---drinkLogMsgHelper m l s = T.concat [ "drank "
---                                   , showText m
---                                   , " mouthfuls"
---                                   , theLetterS $ m /= 1
---                                   , " of "
---                                   , l^.liqName.to aOrAnOnLower
---                                   , " "
---                                   , let DistinctLiqId i = l^.liqId in parensQuote . showText $ i
---                                   , " from "
---                                   , aOrAn s
---                                   , "." ]
 
 
 -----
