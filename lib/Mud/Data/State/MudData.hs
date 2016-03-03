@@ -476,7 +476,7 @@ data Mob = Mob { _sex                    :: Sex
                , _curMp, _maxMp          :: Int
                , _curPp, _maxPp          :: Int
                , _curFp, _maxFp          :: Int
-               , _stomach                :: Stomach
+               , _stomach                :: [StomachCont]
                , _digesterAsync          :: Maybe StomachAsync
                , _exp                    :: Exp
                , _hand                   :: Hand
@@ -490,9 +490,6 @@ data Mob = Mob { _sex                    :: Sex
 data Sex = Male
          | Female
          | NoSex deriving (Eq, Generic, Show)
-
-
-type Stomach = [StomachCont]
 
 
 data StomachCont = StomachCont { _distinctId             :: Either DistinctLiqId DistinctFoodId

@@ -742,10 +742,9 @@ disconnectHelper i (target, as) idNamesTbl ms =
 drink :: ActionFun
 drink p@AdviseNoArgs                    = advise p ["drink"] adviceDrinkNoArgs
 drink p@(AdviseOneArg _               ) = advise p ["drink"] adviceDrinkNoVessel
-drink   (Lower i mq cols [amt, target]) = (,) <$> mkRndmVector <*> liftIO getCurrentTime >>= \(v, now) ->
-    helper v now |&| modifyState >=> sequence_
+drink   (Lower i mq cols [amt, target]) = mkRndmVector >>= \v -> helper v |&| modifyState >=> sequence_ -- TODO: Check if already drinking/eating.
   where
-    helper v now ms
+    helper v ms
       | amt `T.isPrefixOf` "all" || amt == T.singleton allChar = next maxBound
       | otherwise = case reads . T.unpack $ amt :: [(Int, String)] of
         [(x, "")] | x <= 0    -> sorry sorryDrinkMouthfuls
@@ -755,7 +754,6 @@ drink   (Lower i mq cols [amt, target]) = (,) <$> mkRndmVector <*> liftIO getCur
         sorry  = (ms, ) . pure . wrapSend mq cols
         next x =
             let (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv . pure $ target
-                d                      = mkStdDesig i ms DoCap
                 ri                     = getRmId i ms
                 myInvCoins             = getInvCoins i ms
                 rmInvCoins             = first (i `delete`) . getNonIncogInvCoins ri $ ms
@@ -767,40 +765,14 @@ drink   (Lower i mq cols [amt, target]) = (,) <$> mkRndmVector <*> liftIO getCur
                           (s, VesselType) -> maybe (sorry . sorryDrinkEmpty $ s) (g s) . getVesselCont targetId $ ms
                           (s, _         ) -> sorry . sorryDrinkType $ s
                           where
-                            g s (l, m) =
-                                let mouths                = x `min` m `min` stomAvail
-                                    (stomAvail, stomSize) = calcStomachAvailSize i ms
-                                    scs = replicate mouths . StomachCont (l^.liqId.to Left) now $ False
-                                    t   = T.concat [ "You drink "
-                                                   , showText mouths
-                                                   , " mouthful"
-                                                   , theLetterS $ mouths /= 1
-                                                   , " of "
-                                                   , l^.liqName.to theOnLower
-                                                   , " from the "
-                                                   , s
-                                                   , allGoneTxt
-                                                   , "." ]
-                                    fullDesc
-                                      | x `min` m > stomAvail = "You are so full that you have to stop drinking. You \
-                                                                \don't feel so good..."
-                                      | otherwise = mkFullDesc (stomAvail - mouths) stomSize
-                                    bs = pure ( T.concat [ serialize d, " ", txt, " from ", aOrAn s, allGoneTxt, "." ]
-                                              , i `delete` desigIds d )
-                                      where
-                                        txt = mouths == 1 ? "takes a swig" :? "drinks"
-                                    allGone    = remAmt == 0
-                                    allGoneTxt = allGone |?| ", emptying it"
-                                    remAmt     = m - mouths
-                                    newCont    | allGone   = Nothing
-                                               | otherwise = Just (l, remAmt)
-                                    ms'        = ms & vesselTbl.ind targetId.vesselCont .~ newCont
-                                in if | ()# Sum stomAvail -> sorry sorryFull
-                                      | mouths > 4        -> (ms, pure . startAct i Drinking . drinkAct $ targetId) -- TODO
-                                      | otherwise -> (ms', [ multiWrapSend mq cols . dropEmpties $ [ t, l^.drinkDesc, fullDesc ]
-                                                           , drinkLogMsgHelper mouths l s |#| logPla "drink" i
-                                                           , scs |#| consume i
-                                                           , bcastIfNotIncogNl i bs ])
+                            g _ _      | fst (calcStomachAvailSize i ms) <= 0 = sorry sorryFull
+                            g s (l, _) = (ms, pure . startAct i Drinking . drinkAct $ DrinkBundle { drinkId       = i
+                                                                                                  , drinkMq       = mq
+                                                                                                  , drinkCols     = cols
+                                                                                                  , drinkTargetId = targetId
+                                                                                                  , drinkSing     = s
+                                                                                                  , drinkLiq      = l
+                                                                                                  , drinkAmt      = x })
                         f _ = sorry sorryDrinkExcessTargets
                     in ()!# ecs ? sorry sorryDrinkCoins :? either sorry f (head eiss)
                 -----
@@ -830,18 +802,18 @@ drink   (Lower i mq cols [amt, target]) = (,) <$> mkRndmVector <*> liftIO getCur
 drink p = advise p ["drink"] adviceDrinkExcessArgs
 
 
-drinkLogMsgHelper :: Mouthfuls -> Liq -> Sing -> Text
-drinkLogMsgHelper m l s = T.concat [ "drank "
-                                   , showText m
-                                   , " mouthfuls"
-                                   , theLetterS $ m /= 1
-                                   , " of "
-                                   , l^.liqName.to aOrAnOnLower
-                                   , " "
-                                   , let DistinctLiqId i = l^.liqId in parensQuote . showText $ i
-                                   , " from "
-                                   , aOrAn s
-                                   , "." ]
+--drinkLogMsgHelper :: Mouthfuls -> Liq -> Sing -> Text -- TODO: Move.
+--drinkLogMsgHelper m l s = T.concat [ "drank "
+--                                   , showText m
+--                                   , " mouthfuls"
+--                                   , theLetterS $ m /= 1
+--                                   , " of "
+--                                   , l^.liqName.to aOrAnOnLower
+--                                   , " "
+--                                   , let DistinctLiqId i = l^.liqId in parensQuote . showText $ i
+--                                   , " from "
+--                                   , aOrAn s
+--                                   , "." ]
 
 
 -----

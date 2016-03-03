@@ -1016,7 +1016,7 @@ isNonStdLink _             = False
 
 mkFullDesc :: Int -> Int -> Text
 mkFullDesc avail size = let x = round $ 100 * (avail `divide` size) in
-  if | avail == 0 -> "You are entirely satiated. You don't feel so good..."
+  if | avail <= 0 -> "You are profoundly satiated. You don't feel so good..."
      | x <= 10    -> "You are extremely full."
      | x <= 20    -> "You are quite full."
      | x <= 26    -> "You feel satisfied."
@@ -1024,7 +1024,7 @@ mkFullDesc avail size = let x = round $ 100 * (avail `divide` size) in
      | x <= 79    -> "You feel a little hungry."
      | x <= 89    -> "You are quite hungry."
      | x <= 99    -> "You are extremely hungry."
-     | x == 100   -> "You are famished."
+     | x >= 100   -> "You are famished."
 
 
 -----

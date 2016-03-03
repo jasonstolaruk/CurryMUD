@@ -553,7 +553,7 @@ getSing i = view sing . getEnt i
 -----
 
 
-getStomach :: Id -> MudState -> Stomach
+getStomach :: Id -> MudState -> [StomachCont]
 getStomach i = view stomach . getMob i
 
 
