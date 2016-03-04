@@ -228,6 +228,7 @@ priorityAbbrevCmdTuples =
     , ("say",        "sa",  say,        True,  cmdDescSay)
     , ("show",       "sh",  showAction, True,  cmdDescShow)
     , ("stats",      "st",  stats,      True,  cmdDescStats)
+    , ("stop",       "sto", stop,       True,  cmdDescStop)
     , ("telepathy",  "t",   tele,       True,  "Send a private message to a person with whom you have established a \
                                                \two-way telepathic link.")
     , ("unready",    "un",  unready,    True,  cmdDescUnready)
@@ -305,23 +306,24 @@ npcPriorityAbbrevCmds = concatMap (uncurry5 mkPriorityAbbrevCmd) npcPriorityAbbr
 
 npcPriorityAbbrevCmdTuples :: [(CmdFullName, CmdPriorityAbbrevTxt, ActionFun, Bool, CmdDesc)]
 npcPriorityAbbrevCmdTuples =
-    [ ("clear",     "c",   clear,      True,  cmdDescClear)
-    , ("drink",     "dri", drink,      True,  cmdDescDrink)
-    , ("drop",      "dr",  dropAction, True,  cmdDescDrop)
-    , ("emote",     "em",  emote,      True,  cmdDescEmote)
-    , ("exits",     "ex",  exits,      True,  cmdDescExits)
-    , ("get",       "g",   getAction,  True,  cmdDescGet)
-    , ("give",      "gi",  give,       True,  cmdDescGive)
-    , ("inventory", "i",   inv,        True,  cmdDescInv)
-    , ("look",      "l",   look,       True,  cmdDescLook)
-    , ("put",       "p",   putAction,  True,  cmdDescPut)
-    , ("ready",     "r",   ready,      True,  cmdDescReady)
-    , ("say",       "sa",  say,        True,  cmdDescSay)
-    , ("show",      "sh",  showAction, True,  cmdDescShow)
-    , ("stats",     "st",  stats,      True,  cmdDescStats)
-    , ("stop",      "sto", npcStop,    False, "Stop possessing.")
-    , ("unready",   "un",  unready,    True,  cmdDescUnready)
-    , ("whoami",    "wh",  whoAmI,     True,  "Confirm who " <> parensQuote "or what" <> " you are.") ]
+    [ ("clear",     "c",   clear,       True,  cmdDescClear)
+    , ("drink",     "dri", drink,       False, cmdDescDrink)
+    , ("drop",      "dr",  dropAction,  True,  cmdDescDrop)
+    , ("emote",     "em",  emote,       True,  cmdDescEmote)
+    , ("exits",     "ex",  exits,       True,  cmdDescExits)
+    , ("exorcise",  "exo", npcExorcise, False, "Stop being possessed.")
+    , ("get",       "g",   getAction,   True,  cmdDescGet)
+    , ("give",      "gi",  give,        True,  cmdDescGive)
+    , ("inventory", "i",   inv,         True,  cmdDescInv)
+    , ("look",      "l",   look,        True,  cmdDescLook)
+    , ("put",       "p",   putAction,   True,  cmdDescPut)
+    , ("ready",     "r",   ready,       True,  cmdDescReady)
+    , ("say",       "sa",  say,         True,  cmdDescSay)
+    , ("show",      "sh",  showAction,  True,  cmdDescShow)
+    , ("stats",     "st",  stats,       True,  cmdDescStats)
+    , ("stop",      "sto", stop,        True,  cmdDescStop)
+    , ("unready",   "un",  unready,     True,  cmdDescUnready)
+    , ("whoami",    "wh",  whoAmI,      True,  "Confirm who " <> parensQuote "or what" <> " you are.") ]
 
 
 noOfNpcCmds :: Int
@@ -739,9 +741,16 @@ disconnectHelper i (target, as) idNamesTbl ms =
 
 -- TODO: Help.
 drink :: ActionFun
-drink p@AdviseNoArgs                    = advise p ["drink"] adviceDrinkNoArgs
-drink p@(AdviseOneArg _               ) = advise p ["drink"] adviceDrinkNoVessel
-drink   (Lower i mq cols [amt, target]) = mkRndmVector >>= \v -> helper v |&| modifyState >=> sequence_ -- TODO: Check if already drinking/eating.
+drink p@(NoArgs' i mq                   ) = advise p ["drink"] adviceDrinkNoArgs   >> sendDfltPrompt mq i
+drink p@(OneArg  i mq _    _            ) = advise p ["drink"] adviceDrinkNoVessel >> sendDfltPrompt mq i
+drink   (Lower   i mq cols [amt, target]) = getState >>= \ms -> let (isDrink, isEat) = isDrinkingEating i ms in
+    if isDrink
+      then let Just (l, s) = getNowDrinking i ms
+           in wrapSend mq cols . sorryDrinkAlreadyDrinking (l^.liqName) $ s
+      else if isEat
+        then let Just s = getNowEating i ms
+             in wrapSend mq cols (sorryDrinkEating s) >> sendDfltPrompt mq i
+        else mkRndmVector >>= \v -> helper v |&| modifyState >=> sequence_
   where
     helper v ms
       | amt `T.isPrefixOf` "all" || amt == T.singleton allChar = next maxBound
@@ -765,13 +774,14 @@ drink   (Lower i mq cols [amt, target]) = mkRndmVector >>= \v -> helper v |&| mo
                           (s, _         ) -> sorry . sorryDrinkType $ s
                           where
                             g _ _      | fst (calcStomachAvailSize i ms) <= 0 = sorry sorryFull
-                            g s (l, _) = (ms, pure . startAct i Drinking . drinkAct $ DrinkBundle { drinkId       = i
-                                                                                                  , drinkMq       = mq
-                                                                                                  , drinkCols     = cols
-                                                                                                  , drinkTargetId = targetId
-                                                                                                  , drinkSing     = s
-                                                                                                  , drinkLiq      = l
-                                                                                                  , drinkAmt      = x })
+                            g s (l, _) | db <- DrinkBundle { drinkId       = i
+                                                           , drinkMq       = mq
+                                                           , drinkCols     = cols
+                                                           , drinkTargetId = targetId
+                                                           , drinkSing     = s
+                                                           , drinkLiq      = l
+                                                           , drinkAmt      = x }
+                                        = (ms, pure . startAct i Drinking . drinkAct $ db)
                         f _ = sorry sorryDrinkExcessTargets
                     in ()!# ecs ? sorry sorryDrinkCoins :? either sorry f (head eiss)
                 -----
@@ -1688,8 +1698,8 @@ npcAsSelf p = execIfPossessed p "." npcAsSelfHelper
 
 
 npcAsSelfHelper :: ActionFun
-npcAsSelfHelper p@(NoArgs' i mq)     = advise p [] adviceAsSelfNoArgs >> sendDfltPrompt mq i
-npcAsSelfHelper (WithArgs i mq _ as) = do
+npcAsSelfHelper p@(NoArgs'  i mq     ) = advise p [] adviceAsSelfNoArgs >> sendDfltPrompt mq i
+npcAsSelfHelper   (WithArgs i mq _ as) = do
     logPlaExecArgs "." as i
     liftIO . atomically . writeTQueue mq . AsSelf . nl . T.unwords $ as
 npcAsSelfHelper p = patternMatchFail "npcAsSelfHelper" [ showText p ]
@@ -1706,17 +1716,17 @@ npcDispCmdList p                  = patternMatchFail "npcDispCmdList" [ showText
 -----
 
 
-npcStop :: ActionFun
-npcStop p = execIfPossessed p "stop" npcStopHelper
+npcExorcise :: ActionFun
+npcExorcise p = execIfPossessed p "stop" npcExorciseHelper
 
 
-npcStopHelper :: ActionFun
-npcStopHelper (NoArgs i mq cols) = getState >>= \ms -> let pi = fromJust . getPossessor i $ ms in do
+npcExorciseHelper :: ActionFun
+npcExorciseHelper (NoArgs i mq cols) = getState >>= \ms -> let pi = fromJust . getPossessor i $ ms in do
     wrapSend mq cols $ "You stop possessing " <> aOrAnOnLower (getSing    i ms) <> "."
     sendDfltPrompt mq pi
     logPla "stop" i  $ "stopped possessing "  <> aOrAnOnLower (descSingId i ms) <> "."
     tweaks [ plaTbl.ind pi.possessing .~ Nothing, npcTbl.ind i.possessor .~ Nothing ]
-npcStopHelper p = withoutArgs npcStopHelper p
+npcExorciseHelper p = withoutArgs npcExorciseHelper p
 
 
 -----
@@ -2694,6 +2704,18 @@ stats (NoArgs i mq cols) = getState >>= \ms ->
         (avail, size) = calcStomachAvailSize i ms
     in multiWrapSend mq cols mkStats >> logPlaExec "stats" i
 stats p = withoutArgs stats p
+
+
+-----
+
+
+stop :: ActionFun -- TODO
+stop (NoArgs i mq _) = getState >>= \ms ->
+    if isDrinking i ms
+      then stopAct i Drinking >> ok mq
+      else unit
+stop (LowerNub' _ _) = undefined
+stop p = patternMatchFail "stop" [ showText p ]
 
 
 -----

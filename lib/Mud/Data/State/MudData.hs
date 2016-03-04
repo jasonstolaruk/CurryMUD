@@ -483,6 +483,8 @@ data Mob = Mob { _sex                    :: Sex
                , _knownLangs             :: [Lang]
                , _rmId                   :: Id
                , _actMap                 :: ActMap
+               , _nowEating              :: Maybe NowEating
+               , _nowDrinking            :: Maybe NowDrinking
                , _regenAsync             :: Maybe RegenAsync
                , _interp                 :: Maybe Interp }
 
@@ -528,6 +530,12 @@ data ActType = Drinking
 
 
 type ActAsync = Async ()
+
+
+type NowDrinking = (Liq, Sing)
+
+
+type NowEating = Sing
 
 
 type RegenAsync = Async ()
@@ -581,6 +589,8 @@ jsonToMob (Object o) = Mob <$> o .: "sex"
                            <*> o .: "knownLangs"
                            <*> o .: "rmId"
                            <*> pure M.empty
+                           <*> pure Nothing
+                           <*> pure Nothing
                            <*> pure Nothing
                            <*> pure Nothing
 jsonToMob _          = empty

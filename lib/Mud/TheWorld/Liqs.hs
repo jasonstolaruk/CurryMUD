@@ -72,7 +72,7 @@ potInstantHealingDistinctLiq :: DistinctLiq
 potInstantHealingDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Nothing
                                                          , _consumpEffects = Just ce }
   where
-    ce = ConsumpEffects 8 30 el
+    ce = ConsumpEffects 4 30 el
     el = EffectList . pure . Left $ ie
     ie = InstaEffect { _instaEffectSub = MobInstaEffectPts CurHp
                      , _instaEffectVal = Just . RangeVal $ (8, 12) }
@@ -110,7 +110,7 @@ potInstantStDistinctLiq :: DistinctLiq
 potInstantStDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Nothing
                                                     , _consumpEffects = Just ce }
   where
-    ce = ConsumpEffects 8 30 el
+    ce = ConsumpEffects 4 30 el
     el = EffectList . pure . Right $ e
     e  = Effect { _effectSub = MobEffectAttrib St
                 , _effectVal = Just . RangeVal $ (8, 12)
@@ -149,7 +149,7 @@ potInstantTinnitusDistinctLiq :: DistinctLiq
 potInstantTinnitusDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Nothing
                                                           , _consumpEffects = Just ce }
   where
-    ce = ConsumpEffects 8 30 el
+    ce = ConsumpEffects 4 30 el
     el = EffectList . pure . Right $ e
     e  = Effect { _effectSub = EffectOther tinnitusEffectFunName
                 , _effectVal = Nothing

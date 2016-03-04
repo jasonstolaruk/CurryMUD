@@ -25,7 +25,9 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryConnectChanName
                            , sorryConnectIgnore
                            , sorryDisconnectIgnore
+                           , sorryDrinkAlreadyDrinking
                            , sorryDrinkCoins
+                           , sorryDrinkEating
                            , sorryDrinkEmpty
                            , sorryDrinkEmptyRmNoHooks
                            , sorryDrinkEmptyRmWithHooks
@@ -424,8 +426,27 @@ sorryDisconnectIgnore = sorryIgnoreLocPrefPlur "The names of the people you woul
 -----
 
 
+sorryDrinkAlreadyDrinking :: Text -> Sing -> Text
+sorryDrinkAlreadyDrinking t s = T.concat [ "You are already drinking "
+                                         , aOrAnOnLower t
+                                         , " from "
+                                         , aOrAn s
+                                         , ". Please wait until you finish, or type "
+                                         , colorWith quoteColor "stop drinking"
+                                         , " to stop." ]
+
+
 sorryDrinkCoins :: Text
 sorryDrinkCoins = can't "drink from a coin."
+
+
+sorryDrinkEating :: Sing -> Text
+sorryDrinkEating s = T.concat [ "You are presently eating "
+                              , aOrAnOnLower s
+                              , ". Please wait until you finish, or type "
+                              , colorWith quoteColor "stop eating"
+                              , " to stop." ]
+
 
 
 sorryDrinkEmpty :: Sing -> Text

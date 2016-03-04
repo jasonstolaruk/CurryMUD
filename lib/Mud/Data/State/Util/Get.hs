@@ -61,6 +61,13 @@ getActiveEffects i = view (activeEffectsTbl.ind i)
 -----
 
 
+getActMap :: Id -> MudState -> ActMap
+getActMap i = view actMap . getMob i
+
+
+-----
+
+
 getArm :: Id -> MudState -> Arm
 getArm i = view (armTbl.ind i)
 
@@ -389,6 +396,20 @@ getMsgQueue i = view (msgQueueTbl.ind i)
 
 getMsgQueueColumns :: Id -> MudState -> (MsgQueue, Cols)
 getMsgQueueColumns i = (getMsgQueue i *** getColumns i) . dup
+
+
+-----
+
+
+getNowDrinking :: Id -> MudState -> Maybe NowDrinking
+getNowDrinking i = view nowDrinking . getMob i
+
+
+-----
+
+
+getNowEating :: Id -> MudState -> Maybe NowEating
+getNowEating i = view nowEating . getMob i
 
 
 -----

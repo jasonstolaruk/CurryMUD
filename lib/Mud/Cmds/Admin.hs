@@ -525,7 +525,6 @@ adminDispCmdList p                  = patternMatchFail "adminDispCmdList" [ show
 -----
 
 
--- TODO: Help.
 adminExamineSelf :: ActionFun
 adminExamineSelf p@(NoArgs'' i) = adminExamine p { args = pure . showText $ i }
 adminExamineSelf p              = withoutArgs adminExamineSelf p

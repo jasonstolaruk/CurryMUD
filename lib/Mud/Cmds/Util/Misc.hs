@@ -29,9 +29,13 @@ module Mud.Cmds.Util.Misc ( asterisk
                           , isAwake
                           , isBracketed
                           , isDblLinked
+                          , isDrinking
+                          , isDrinkingEating
+                          , isEating
                           , isHeDon't
                           , isHostBanned
                           , isLinked
+                          , isMoving
                           , isPlaBanned
                           , isPunc
                           , locateHelper
@@ -115,7 +119,7 @@ import Data.Text (Text)
 import Data.Time (diffUTCTime, getCurrentTime)
 import Prelude hiding (exp)
 import qualified Data.IntMap.Lazy as IM (IntMap, empty, filter, foldlWithKey', foldr, fromList, keys, map, mapWithKey)
-import qualified Data.Map.Lazy as M ((!), elems, keys, lookup, toList)
+import qualified Data.Map.Lazy as M ((!), elems, keys, lookup, member, toList)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
 import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
@@ -531,6 +535,29 @@ helperIsLinked f ms ids@(i, i') = let s                = getSing i  ms
 
 isDblLinked :: MudState -> (Id, Id) -> Bool
 isDblLinked = helperIsLinked (&&)
+
+
+-----
+
+
+isDrinking :: Id -> MudState -> Bool
+isDrinking = isActing Drinking
+
+
+isActing :: ActType -> Id -> MudState -> Bool
+isActing actType i = M.member actType . getActMap i
+
+
+isEating :: Id -> MudState -> Bool
+isEating = isActing Eating
+
+
+isDrinkingEating :: Id -> MudState -> (Bool, Bool)
+isDrinkingEating i = (uncurry isDrinking *** uncurry isEating) . dup . (,) i
+
+
+isMoving :: Id -> MudState -> Bool
+isMoving = isActing Moving
 
 
 -----

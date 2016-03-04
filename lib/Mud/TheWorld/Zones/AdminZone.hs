@@ -331,7 +331,7 @@ beeBuzzRmFunName = "AdminZone_iAtrium_beeBuzz"
 beeBuzzRmFun :: Fun
 beeBuzzRmFun = mkRndmBcastRmFun iAtrium "iAtrium" beeBuzzRmFunName 25 30 beeBuzzMsg
   where
-    beeBuzzMsg = "A plump bumblebee happily buzzes around the flowerbed."
+    beeBuzzMsg = "A plump bumblebee buzzes happily around the flowerbed."
 
 
 -- ==================================================
@@ -372,7 +372,7 @@ createAdminZone = do
               RHand
               allValues
               iLoggedOut
-              M.empty Nothing Nothing)
+              M.empty Nothing Nothing Nothing Nothing)
          M.empty
          (M.singleton "Curry" True)
          (PC Human ["Curry"] ["Curry"])
@@ -402,7 +402,7 @@ createAdminZone = do
               RHand
               allValues
               iLoggedOut
-              M.empty Nothing Nothing)
+              M.empty Nothing Nothing Nothing Nothing)
          M.empty
          (M.singleton "Root" True)
          (PC Human ["Root"] ["Root"])
@@ -621,7 +621,7 @@ createAdminZone = do
             [ StdLink Northwest iBasement ]
             M.empty [] [] [])
   let conIds    = [ iSack1, iSack2, iSackSml, iSackLrg, iBack1, iBack2, iBackSml, iBackLrg ]
-  let vesselIds = [ iPotionFlask1 .. iPotionFlask1 + 9 ] ++ [ iWaterskin
+  let vesselIds = [ iPotionFlask1 .. iPotionFlask1 + 9 ] ++ [ iWaterskin -- TODO: Make a small potion flask?
                                                             , iWaterskinLrg
                                                             , iJarSml
                                                             , iJar
@@ -1602,7 +1602,7 @@ createAdminZone = do
               NoHand
               []
               iMobCloset
-              M.empty Nothing Nothing)
+              M.empty Nothing Nothing Nothing Nothing)
   putNpc iRockCavy2
          (Ent iRockCavy2
               (Just "rock")
@@ -1623,7 +1623,7 @@ createAdminZone = do
               NoHand
               []
               iMobCloset
-              M.empty Nothing Nothing)
+              M.empty Nothing Nothing Nothing Nothing)
   putNpc iPidge
          (Ent iPidge
               (Just "pidge")
@@ -1648,7 +1648,7 @@ createAdminZone = do
               RHand
               [ HalflingLang ]
               iMobCloset
-              M.empty Nothing Nothing)
+              M.empty Nothing Nothing Nothing Nothing)
   putCloth iPeasant'sShirt
            (Ent iPeasant'sShirt
                 (Just "shirt")
@@ -1701,4 +1701,4 @@ createAdminZone = do
               RHand
               []
               iMobCloset
-              M.empty Nothing Nothing)
+              M.empty Nothing Nothing Nothing Nothing)

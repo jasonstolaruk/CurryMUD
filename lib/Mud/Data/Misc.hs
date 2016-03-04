@@ -15,6 +15,7 @@ module Mud.Data.Misc ( Action(..)
                      , Cols
                      , deserialize
                      , Desig(..)
+                     , DrinkBundle(..)
                      , EmoteWord(..)
                      , EmptyNoneSome(..)
                      , EquipInvLookCmd(..)
@@ -58,6 +59,7 @@ module Mud.Data.Misc ( Action(..)
                      , WhichLog(..) ) where
 
 import Mud.Data.State.ActionParams.ActionParams
+import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
 import Mud.Misc.Database
 import Mud.TopLvlDefs.Chars
@@ -590,6 +592,18 @@ instance Eq Cmd where
 
 instance Ord Cmd where
   compare = compare `on` cmdName
+
+
+-----
+
+
+data DrinkBundle = DrinkBundle { drinkId       :: Id
+                               , drinkMq       :: MsgQueue
+                               , drinkCols     :: Cols
+                               , drinkTargetId :: Id
+                               , drinkSing     :: Sing
+                               , drinkLiq      :: Liq
+                               , drinkAmt      :: Mouthfuls }
 
 
 -----

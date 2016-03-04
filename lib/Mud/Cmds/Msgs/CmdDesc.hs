@@ -125,5 +125,9 @@ cmdDescStats :: Text
 cmdDescStats = "Display your stats."
 
 
+cmdDescStop :: Text
+cmdDescStop = "Stop." -- TODO
+
+
 cmdDescUnready :: Text
 cmdDescUnready = "Unready one or more items."

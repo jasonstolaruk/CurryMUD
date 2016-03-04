@@ -3,12 +3,12 @@
 
 module Mud.Threads.Act ( DrinkBundle(..)
                        , drinkAct
-                       , startAct ) where
+                       , startAct
+                       , stopAct ) where
 
 import Mud.Cmds.Util.Misc
 import Mud.Cmds.Util.Pla
 import Mud.Data.Misc
-import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Calc
 import Mud.Data.State.Util.Get
@@ -25,7 +25,7 @@ import qualified Mud.Misc.Logging as L (logPla)
 
 import Control.Concurrent (threadDelay)
 import Control.Exception.Lifted (catch, finally, handle)
-import Control.Lens (at, to)
+import Control.Lens (at, to, views)
 import Control.Lens.Operators ((&), (.~), (?~), (^.))
 import Control.Monad (when)
 import Control.Monad.IO.Class (liftIO)
@@ -57,6 +57,10 @@ startAct i actType f = getState >>= \ms -> do
     tweak $ mobTbl.ind i.actMap.at actType ?~ a
 
 
+stopAct :: Id -> ActType -> MudStack ()
+stopAct i actType = views (at actType) (maybe unit throwDeath) . getActMap i =<< getState
+
+
 threadAct :: Id -> ActType -> MudStack () -> MudStack ()
 threadAct i actType f = let a = (>> f) . setThreadType $ case actType of Drinking -> DrinkingThread i
                                                                          Eating   -> EatingThread   i
@@ -71,27 +75,22 @@ mkThreadName :: Id -> ActType -> Text
 mkThreadName i actType = quoteWith' (pp actType, showText i) " "
 
 
-data DrinkBundle = DrinkBundle { drinkId       :: Id
-                               , drinkMq       :: MsgQueue
-                               , drinkCols     :: Cols
-                               , drinkTargetId :: Id
-                               , drinkSing     :: Sing
-                               , drinkLiq      :: Liq
-                               , drinkAmt      :: Mouthfuls }
-
-
 drinkAct :: DrinkBundle -> MudStack ()
-drinkAct DrinkBundle { .. } = do
-    send drinkMq . multiWrap drinkCols . dropEmpties $ [ T.concat [ "You begin drinking "
-                                                                  , drinkLiq^.liqName.to theOnLower
-                                                                  , " from the "
-                                                                  , drinkSing
-                                                                  , "..." ]
-                                                       , drinkLiq^.drinkDesc ]
-    d <- flip (mkStdDesig drinkId) DoCap <$> getState
-    bcastIfNotIncogNl drinkId . pure $ ( T.concat [ serialize d, " begins drinking from ", aOrAn drinkSing, "." ]
-                                       , drinkId `delete` desigIds d )
-    loop 0 `catch` die (Just drinkId) (mkThreadName drinkId Drinking)
+drinkAct DrinkBundle { .. } =
+    let a = do
+            send drinkMq . multiWrap drinkCols . dropEmpties $ [ T.concat [ "You begin drinking "
+                                                                          , drinkLiq^.liqName.to theOnLower
+                                                                          , " from the "
+                                                                          , drinkSing
+                                                                          , "..." ]
+                                                               , drinkLiq^.drinkDesc ]
+            d <- flip (mkStdDesig drinkId) DoCap <$> getState
+            bcastIfNotIncogNl drinkId . pure $ ( T.concat [ serialize d, " begins drinking from ", aOrAn drinkSing, "." ]
+                                               , drinkId `delete` desigIds d )
+            tweak $ mobTbl.ind drinkId.nowDrinking ?~ (drinkLiq, drinkSing)
+            loop 0 `catch` die (Just drinkId) (mkThreadName drinkId Drinking)
+        b = tweak $ mobTbl.ind drinkId.nowDrinking .~ Nothing
+    in a `finally` b
   where
     loop x@(succ -> x') = do
         liftIO . threadDelay $ 1 * 10 ^ 6
@@ -128,7 +127,7 @@ drinkAct DrinkBundle { .. } = do
            | x' == drinkAmt -> (>> bcastHelper False) . ioHelper x' $ [ "You finish drinking."
                                                                       , mkFullDesc stomAvail stomSize ]
            | otherwise -> loop x'
-    ioHelper m ts = multiWrapSend drinkMq drinkCols ts >> promptHelper >> logHelper
+    ioHelper m ts = multiWrapSend drinkMq drinkCols (dropEmpties ts) >> promptHelper >> logHelper
       where
         promptHelper = sendDfltPrompt drinkMq drinkId
         logHelper    =
