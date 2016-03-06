@@ -78,7 +78,7 @@ resolveEntCoinNames i ms (map T.toLower -> as) is c = expandGecrs c [ mkGecr i m
 expandGecrs :: Coins -> [GetEntsCoinsRes] -> ([GetEntsCoinsRes], [Maybe Inv], [ReconciledCoins])
 expandGecrs c (extractEnscsFromGecrs -> (gecrs, enscs))
   | mess <- map extractMesFromGecr gecrs
-  , miss <- pruneDupIds . (fmap . fmap . fmap) (view entId) $ mess
+  , miss <- pruneDupIds $ view entId `fmap3` mess
   , rcs  <- reconcileCoins c . distillEnscs $ enscs
   = (gecrs, miss, rcs)
 

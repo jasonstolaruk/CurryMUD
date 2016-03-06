@@ -154,7 +154,7 @@ stdLinkNames = [ "n", "ne", "e", "se", "s", "sw", "w", "nw", "u", "d" ]
 
 
 threadTblPurgerDelay :: Seconds
-threadTblPurgerDelay = 60 {- mins -} * 60 {- secs -} -- one hr
+threadTblPurgerDelay = 10 {- mins -} * 60 {- secs -} -- ten mins
 
 
 trashDumpPurgerDelay :: Seconds

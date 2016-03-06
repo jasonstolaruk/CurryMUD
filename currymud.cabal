@@ -147,6 +147,7 @@ library
                        , aeson
                        , ansi-terminal
                        , async
+                       , bcrypt
                        , bytestring
                        , clock
                        , conduit

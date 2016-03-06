@@ -76,6 +76,7 @@ import System.IO (hClose, hGetBuffering, openTempFile)
 
 
 {-# ANN module ("HLint: ignore Redundant where" :: String) #-}
+{-# ANN module ("HLint: ignore Use camelCase"   :: String) #-}
 
 
 -- ==================================================
@@ -109,7 +110,7 @@ logPlaExecArgs = L.logPlaExecArgs "Mud.Cmds.Debug"
 
 debugCmds :: [Cmd]
 debugCmds =
-    [ mkDebugCmd "?"          debugDispCmdList cmdDescDispCmdList
+    [ mkDebugCmd "?"          debugDispCmdList ("\&" <> cmdDescDispCmdList)
     , mkDebugCmd "ap"         debugAp          "Show \"ActionParams\", including any arguments you provide."
     , mkDebugCmd "boot"       debugBoot        "Boot all players (including yourself)."
     , mkDebugCmd "broadcast"  debugBcast       "Broadcast (to yourself) a multi-line message."
@@ -118,6 +119,8 @@ debugCmds =
     , mkDebugCmd "color"      debugColor       "Perform a color test."
     , mkDebugCmd "cores"      debugCores       "Display the number of processor cores."
     , mkDebugCmd "cpu"        debugCPU         "Display the CPU time."
+    , mkDebugCmd "echowill"   debugEchoWill    "Send IAC WILL ECHO (hide user input)."
+    , mkDebugCmd "echowon't"  debugEchoWon't   "Send IAC WON'T ECHO (show user input)."
     , mkDebugCmd "effect"     debugEffect      "Add 10-20 to your ST for 30 seconds."
     , mkDebugCmd "env"        debugEnv         "Display or search system environment variables."
     , mkDebugCmd "exp"        debugExp         "Award yourself 100,000 exp."
@@ -151,7 +154,7 @@ debugCmds =
     , mkDebugCmd "wrap"       debugWrap        "Test the wrapping of a line containing ANSI escape sequences."
     , mkDebugCmd "wrapindent" debugWrapIndent  "Test the indented wrapping of a line containing ANSI escape \
                                                \sequences." ]
-  where
+  where {- -}
 
 
 mkDebugCmd :: Text -> ActionFun -> CmdDesc -> Cmd
@@ -251,7 +254,6 @@ debugColor (NoArgs' i mq) = (send mq . nl . T.concat $ msg) >> logPlaExec (prefi
     mkColorName = uncurry (<>) . (pad 6 . showText *** padColorName . showText)
 debugColor p = withoutArgs debugColor p
 
-
 -----
 
 
@@ -281,6 +283,28 @@ debugCPU p = withoutArgs debugCPU p
 debugDispCmdList :: ActionFun
 debugDispCmdList p@(LowerNub' i as) = dispCmdList debugCmds p >> logPlaExecArgs (prefixDebugCmd "?") as i
 debugDispCmdList p                  = patternMatchFail "debugDispCmdList" [ showText p ]
+
+
+-----
+
+
+debugEchoWill :: ActionFun
+debugEchoWill (NoArgs' i mq) = do
+    send mq . T.pack $ [ telnetIAC, telnetWILL, telnetECHO ]
+    ok mq
+    logPlaExec (prefixDebugCmd "echowill") i
+debugEchoWill p = withoutArgs debugEchoWill p
+
+
+-----
+
+
+debugEchoWon't :: ActionFun
+debugEchoWon't (NoArgs' i mq) = do
+    send mq . T.pack $ [ telnetIAC, telnetWON'T, telnetECHO ]
+    ok mq
+    logPlaExec (prefixDebugCmd "echowon't") i
+debugEchoWon't p = withoutArgs debugEchoWon't p
 
 
 -----

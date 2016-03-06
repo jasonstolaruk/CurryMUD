@@ -74,7 +74,7 @@ threadListen =
 
 saveUptime :: Int64 -> MudStack ()
 saveUptime up@(T.pack . renderSecs . fromIntegral -> upTxt) =
-    maybe (saveIt >> logIt) checkRecord =<< (fmap . fmap) getSum getRecordUptime
+    maybe (saveIt >> logIt) checkRecord =<< getSum `fmap2` getRecordUptime
   where
     saveIt            = (liftIO . writeFile uptimeFile . show $ up) `catch` logIOEx "saveUptime saveIt"
     logIt             = logHelper "."

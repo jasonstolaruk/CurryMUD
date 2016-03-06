@@ -13,6 +13,8 @@ module Mud.Util.Misc ( atLst1
                      , dup3
                      , eitherRet
                      , emptied
+                     , fmap2
+                     , fmap3
                      , fromEither
                      , fromLeft
                      , fromRight
@@ -122,6 +124,14 @@ eitherRet = flip either return
 
 emptied :: (Monad m, Monoid b) => m a -> m b
 emptied m = m >> return mempty
+
+
+fmap2 :: (Functor f1, Functor f2) => (a -> b) -> f1 (f2 a) -> f1 (f2 b) -- Nice when used infix.
+fmap2 = fmap . fmap
+
+
+fmap3 :: (Functor f1, Functor f2, Functor f3) => (a -> b) -> f1 (f2 (f3 a)) -> f1 (f2 (f3 b))
+fmap3 = fmap2 . fmap
 
 
 fromEither :: Either a a -> a

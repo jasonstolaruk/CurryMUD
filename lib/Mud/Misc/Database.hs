@@ -23,6 +23,7 @@ module Mud.Misc.Database ( AdminChanRec(..)
                          , insertDbTblQuestion
                          , insertDbTblTele
                          , insertDbTblTypo
+                         , insertDbTblUnPwRec
                          , ProfRec(..)
                          , purgeDbTblAdminChan
                          , purgeDbTblAdminMsg
@@ -31,17 +32,22 @@ module Mud.Misc.Database ( AdminChanRec(..)
                          , purgeDbTblTele
                          , QuestionRec(..)
                          , TeleRec(..)
-                         , TypoRec(..)) where
+                         , TypoRec(..)
+                         , UnPwRec(..) ) where
 
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
+import Mud.Util.Misc
 
 import Control.Monad (forM_)
+import Crypto.BCrypt (fastBcryptHashingPolicy, hashPasswordUsingPolicy)
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import Database.SQLite.Simple (FromRow, Only(..), Query(..), ToRow, execute, execute_, field, fromRow, query_, toRow, withConnection)
 import Database.SQLite.Simple.FromRow (RowParser)
+import qualified Data.ByteString.Char8 as B
 import qualified Data.Text as T
+import qualified Data.Text.Encoding as T
 
 
 data AdminChanRec = AdminChanRec { adminChanTimestamp :: Text
@@ -63,7 +69,7 @@ data BugRec       = BugRec       { bugTimestamp       :: Text
                                  , bugName            :: Text
                                  , bugLoc             :: Text
                                  , bugDesc            :: Text
-                                 , bugIsOpen          :: Bool   }
+                                 , bugIsOpen          :: Bool }
 data ChanRec      = ChanRec      { chanTimestamp      :: Text
                                  , chanChanId         :: Int
                                  , chanChanName       :: Text
@@ -83,7 +89,9 @@ data TypoRec      = TypoRec      { typoTimestamp      :: Text
                                  , typoName           :: Text
                                  , typoLoc            :: Text
                                  , typoDesc           :: Text
-                                 , typoIsOpen         :: Bool   }
+                                 , typoIsOpen         :: Bool }
+data UnPwRec      = UnPwRec      { un                 :: Text
+                                 , pw                 :: Text }
 
 
 -----
@@ -129,6 +137,10 @@ instance FromRow TypoRec where
   fromRow = TypoRec <$ (field :: RowParser Int) <*> field <*> field <*> field <*> field <*> field
 
 
+instance FromRow UnPwRec where
+  fromRow = UnPwRec <$ (field :: RowParser Int) <*> field <*> field
+
+
 -----
 
 
@@ -172,11 +184,18 @@ instance ToRow TypoRec where
   toRow (TypoRec a b c d e) = toRow (a, b, c, d, e)
 
 
+instance ToRow UnPwRec where
+  toRow (UnPwRec a b) = toRow (a, b)
+
+
 -----
 
 
 createDbTbls :: IO ()
-createDbTbls = forM_ qs $ \q -> withConnection dbFile (`execute_` q)
+createDbTbls = withConnection dbFile $ \conn -> do
+    forM_ qs $ execute_ conn . Query
+    execute conn (Query "insert or ignore into unpw (id, un, pw) values (1, 'Root',  ?)") . Only =<< mkPW "root"
+    execute conn (Query "insert or ignore into unpw (id, un, pw) values (2, 'Curry', ?)") . Only =<< mkPW "curry"
   where
     qs = [ "create table if not exists admin_chan (id integer primary key, timestamp text, name text, msg text)"
          , "create table if not exists admin_msg  (id integer primary key, timestamp text, fromName text, toName text, msg text)"
@@ -187,7 +206,9 @@ createDbTbls = forM_ qs $ \q -> withConnection dbFile (`execute_` q)
          , "create table if not exists profanity  (id integer primary key, timestamp text, host text, prof text)"
          , "create table if not exists question   (id integer primary key, timestamp text, name text, msg text)"
          , "create table if not exists tele       (id integer primary key, timestamp text, fromName text, toName text, msg text)"
-         , "create table if not exists typo       (id integer primary key, timestamp text, name text, loc text, desc text, is_open integer)" ]
+         , "create table if not exists typo       (id integer primary key, timestamp text, name text, loc text, desc text, is_open integer)"
+         , "create table if not exists unpw       (id integer primary key, un text, pw text)" ]
+    mkPW = maybe "" T.decodeUtf8 `fmap2` (hashPasswordUsingPolicy fastBcryptHashingPolicy . B.pack)
 
 
 -----
@@ -246,6 +267,10 @@ insertDbTblTele = insertDbTblHelper "insert into tele (timestamp, fromName, toNa
 
 insertDbTblTypo :: TypoRec -> IO ()
 insertDbTblTypo = insertDbTblHelper "insert into typo (timestamp, name, loc, desc, is_open) values (?, ?, ?, ?, ?)"
+
+
+insertDbTblUnPwRec :: UnPwRec -> IO ()
+insertDbTblUnPwRec = insertDbTblHelper "insert into unpw (un, pw) values (?, ?)"
 
 
 -----

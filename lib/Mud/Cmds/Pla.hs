@@ -3000,7 +3000,7 @@ getUptime = ((-) `on` sec) <$> (liftIO . getTime $ Monotonic) <*> asks (view sta
 
 
 uptimeHelper :: Int64 -> MudStack Text
-uptimeHelper up = helper <$> (fmap . fmap) getSum getRecordUptime
+uptimeHelper up = helper <$> getSum `fmap2` getRecordUptime
   where
     helper         = maybe mkUptimeTxt (\recUp -> up > recUp ? mkNewRecTxt :? mkRecTxt recUp)
     mkUptimeTxt    = mkTxtHelper "."
