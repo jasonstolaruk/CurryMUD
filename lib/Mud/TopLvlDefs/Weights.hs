@@ -103,8 +103,9 @@ paperWeight :: Weight
 paperWeight = 1
 
 
-potionFlaskWeight :: Weight
-potionFlaskWeight = 40
+potionFlaskWeight, potionFlaskLrgWeight :: Weight
+potionFlaskWeight    = 30
+potionFlaskLrgWeight = potionFlaskWeight * 2
 
 
 ringWeight :: Weight

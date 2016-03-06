@@ -120,8 +120,9 @@ paperVol :: Vol
 paperVol = round (8.5 * 0.002 * 11 * 100 :: Double)
 
 
-potionFlaskVol :: Vol
-potionFlaskVol = 14 * 100 -- 1 cup
+potionFlaskVol, potionFlaskLrgVol :: Vol
+potionFlaskVol    = mouthfulVol    * 4 -- 1/2 cup
+potionFlaskLrgVol = potionFlaskVol * 2
 
 
 ringVol :: Vol

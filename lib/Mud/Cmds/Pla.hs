@@ -1873,7 +1873,7 @@ quit ActionParams { plaMsgQueue, plaCols } = wrapSend plaMsgQueue plaCols advice
 handleEgress :: Id -> MudStack () -- TODO: Stop eating/drinking/moving.
 handleEgress i = liftIO getCurrentTime >>= \now -> do
     informEgress
-    helper now |&| modifyState >=> \(s, bs, logMsgs) -> do
+    helper now |&| modifyState >=> \(s, bs, logMsgs) -> do -- TODO: Exception when client disconnects before logging in.
         pauseEffects      i
         throwWaitRegen    i
         throwWaitDigester i

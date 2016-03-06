@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, TupleSections #-}
 
 module Mud.Misc.Database ( AdminChanRec(..)
                          , AdminMsgRec(..)
@@ -11,6 +11,7 @@ module Mud.Misc.Database ( AdminChanRec(..)
                          , countDbTblRecsChan
                          , countDbTblRecsQuestion
                          , countDbTblRecsTele
+                         , countDbTblRecsUnPw
                          , createDbTbls
                          , getDbTblRecs
                          , insertDbTblAdminChan
@@ -41,7 +42,7 @@ import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
 import Mud.Util.Misc
 
-import Control.Monad (forM_)
+import Control.Monad (forM_, when)
 import Crypto.BCrypt (fastBcryptHashingPolicy, hashPasswordUsingPolicy)
 import Data.Monoid ((<>))
 import Data.Text (Text)
@@ -196,8 +197,9 @@ instance ToRow UnPwRec where
 createDbTbls :: IO ()
 createDbTbls = withConnection dbFile $ \conn -> do
     forM_ qs $ execute_ conn . Query
-    execute conn (Query "insert or ignore into unpw (id, un, pw) values (1, 'Root',  ?)") . Only =<< mkPW "root"
-    execute conn (Query "insert or ignore into unpw (id, un, pw) values (2, 'Curry', ?)") . Only =<< mkPW "curry"
+    [Only x] <- query_ conn . Query $ "select count(*) from unpw" :: IO [Only Int]
+    when (x == 0) $ execute conn (Query "insert into unpw (id, un, pw) values (2, 'Curry', ?)") . Only =<< hashPW "curry"
+    execute conn (Query "insert or ignore into unpw (id, un, pw) values (1, 'Root',  ?)") . Only =<< hashPW "root"
   where
     qs = [ "create table if not exists admin_chan (id integer primary key, timestamp text, name text, msg text)"
          , "create table if not exists admin_msg  (id integer primary key, timestamp text, fromName text, toName text, msg text)"
@@ -210,7 +212,7 @@ createDbTbls = withConnection dbFile $ \conn -> do
          , "create table if not exists tele       (id integer primary key, timestamp text, fromName text, toName text, msg text)"
          , "create table if not exists typo       (id integer primary key, timestamp text, name text, loc text, desc text, is_open integer)"
          , "create table if not exists unpw       (id integer primary key, un text, pw text)" ]
-    mkPW = maybe "" T.decodeUtf8 `fmap2` (hashPasswordUsingPolicy fastBcryptHashingPolicy . B.pack)
+    hashPW = maybe "" T.decodeUtf8 `fmap2` (hashPasswordUsingPolicy fastBcryptHashingPolicy . B.pack)
 
 
 -----
@@ -296,6 +298,10 @@ countDbTblRecsQuestion = countHelper "question"
 
 countDbTblRecsTele :: IO [Only Int]
 countDbTblRecsTele = countHelper "tele"
+
+
+countDbTblRecsUnPw :: IO [Only Int]
+countDbTblRecsUnPw = countHelper "unpw"
 
 
 countHelper :: Text -> IO [Only Int]

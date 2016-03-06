@@ -621,17 +621,18 @@ createAdminZone = do
             [ StdLink Northwest iBasement ]
             M.empty [] [] [])
   let conIds    = [ iSack1, iSack2, iSackSml, iSackLrg, iBack1, iBack2, iBackSml, iBackLrg ]
-  let vesselIds = [ iPotionFlask1 .. iPotionFlask1 + 9 ] ++ [ iWaterskin -- TODO: Make a "potion flask" (4 mouthfuls) and a "large potion flask" (8 mouthfuls)?
-                                                            , iWaterskinLrg
-                                                            , iJarSml
-                                                            , iJar
-                                                            , iJarLrg
-                                                            , iJugSml
-                                                            , iJug
-                                                            , iJugLrg
-                                                            , iBottleSml
-                                                            , iBottle
-                                                            , iBottleLrg ]
+  let vesselIds = [ iPotionFlask1    .. iPotionFlask1    + 9 ] ++
+                  [ iPotionFlaskLrg1 .. iPotionFlaskLrg1 + 9 ] ++ [ iWaterskin
+                                                                  , iWaterskinLrg
+                                                                  , iJarSml
+                                                                  , iJar
+                                                                  , iJarLrg
+                                                                  , iJugSml
+                                                                  , iJug
+                                                                  , iJugLrg
+                                                                  , iBottleSml
+                                                                  , iBottle
+                                                                  , iBottleLrg ]
   putRm iConCloset
         (conIds ++ vesselIds)
         mempty
@@ -1369,8 +1370,9 @@ createAdminZone = do
 
   -- ==================================================
   -- Vessels:
-  let flaskIds   = [ iPotionFlask1 + i | i <- [0..9] ]
-      flaskConts = repeat Nothing
+  let flaskIds    = [ iPotionFlask1    + i | i <- [0..9] ]
+      flaskLrgIds = [ iPotionFlaskLrg1 + i | i <- [0..9] ]
+      flaskConts  = repeat Nothing
   forM_ (zip flaskIds flaskConts) $ \(i, mc) ->
       putVessel i
                 (Ent i
@@ -1380,6 +1382,16 @@ createAdminZone = do
                      \transportation."
                      zeroBits)
                 (Obj potionFlaskWeight potionFlaskVol Nothing Nothing zeroBits Nothing)
+                mc
+  forM_ (zip flaskLrgIds flaskConts) $ \(i, mc) ->
+      putVessel i
+                (Ent i
+                     (Just "flask")
+                     "large potion flask" ""
+                     "This glass flask complete with cork stopper is the ideal vessel for potion storage and \
+                     \transportation."
+                     zeroBits)
+                (Obj potionFlaskLrgWeight potionFlaskLrgVol Nothing Nothing zeroBits Nothing)
                 mc
   let waterskinDesc = "The rugged waterskin, crafted from the bladder of a bovine animal, is an indispensable piece of \
                       \equipment when it comes to travel and, often, everyday life."
