@@ -24,6 +24,7 @@ module Mud.Misc.Database ( AdminChanRec(..)
                          , insertDbTblTele
                          , insertDbTblTypo
                          , insertDbTblUnPwRec
+                         , lookupPW
                          , ProfRec(..)
                          , purgeDbTblAdminChan
                          , purgeDbTblAdminMsg
@@ -35,6 +36,7 @@ module Mud.Misc.Database ( AdminChanRec(..)
                          , TypoRec(..)
                          , UnPwRec(..) ) where
 
+import Mud.Data.State.MudData
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
 import Mud.Util.Misc
@@ -43,7 +45,7 @@ import Control.Monad (forM_)
 import Crypto.BCrypt (fastBcryptHashingPolicy, hashPasswordUsingPolicy)
 import Data.Monoid ((<>))
 import Data.Text (Text)
-import Database.SQLite.Simple (FromRow, Only(..), Query(..), ToRow, execute, execute_, field, fromRow, query_, toRow, withConnection)
+import Database.SQLite.Simple (FromRow, Only(..), Query(..), ToRow, execute, execute_, field, fromRow, query, query_, toRow, withConnection)
 import Database.SQLite.Simple.FromRow (RowParser)
 import qualified Data.ByteString.Char8 as B
 import qualified Data.Text as T
@@ -335,3 +337,15 @@ purgeHelper tblName = withConnection dbFile helper
                                      , tblName
                                      , " limit ?)" ]
     x           = Only noOfDbTblRecsToPurge
+
+
+-----
+
+
+lookupPW :: Sing -> IO (Maybe Text)
+lookupPW s = withConnection dbFile helper
+  where
+    helper conn = f <$> query conn (Query "select pw from unpw where un = ?") (Only s)
+    f :: [Only Text] -> Maybe Text
+    f [] = Nothing
+    f xs = Just . fromOnly . head $ xs

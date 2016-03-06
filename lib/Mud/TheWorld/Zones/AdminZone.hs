@@ -621,7 +621,7 @@ createAdminZone = do
             [ StdLink Northwest iBasement ]
             M.empty [] [] [])
   let conIds    = [ iSack1, iSack2, iSackSml, iSackLrg, iBack1, iBack2, iBackSml, iBackLrg ]
-  let vesselIds = [ iPotionFlask1 .. iPotionFlask1 + 9 ] ++ [ iWaterskin -- TODO: Make a small potion flask?
+  let vesselIds = [ iPotionFlask1 .. iPotionFlask1 + 9 ] ++ [ iWaterskin -- TODO: Make a "potion flask" (4 mouthfuls) and a "large potion flask" (8 mouthfuls)?
                                                             , iWaterskinLrg
                                                             , iJarSml
                                                             , iJar
