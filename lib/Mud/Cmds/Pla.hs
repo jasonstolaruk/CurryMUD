@@ -67,7 +67,7 @@ import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception.Lifted (catch, try)
 import Control.Lens (_1, _2, _3, _4, _5, at, both, each, set, to, view, views)
 import Control.Lens.Operators ((%~), (&), (+~), (-~), (.~), (<>~), (?~), (^.))
-import Control.Monad ((>=>), foldM, forM, forM_, guard, mplus, unless)
+import Control.Monad ((>=>), foldM, forM, forM_, guard, mplus, unless, when)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (asks)
 import Data.Char (isDigit, isLetter)
@@ -1871,9 +1871,15 @@ quit ActionParams { plaMsgQueue, plaCols } = wrapSend plaMsgQueue plaCols advice
 
 
 handleEgress :: Id -> MudStack ()
-handleEgress i = liftIO getCurrentTime >>= \now -> do
-    informEgress
-    helper now |&| modifyState >=> \(s, bs, logMsgs) -> do -- TODO: Exception when client disconnects before logging in.
+handleEgress i = do
+    now <- liftIO getCurrentTime
+    ms  <- getState
+    let ri      = getRmId i ms
+        isAdHoc = ri == iWelcome
+        s       = getSing i ms
+    unless isAdHoc $ let d = serialize . mkStdDesig i ms $ DoCap
+                     in bcastOthersInRm i . nlnl . egressMsg $ d
+    helper now ri isAdHoc s |&| modifyState >=> \(bs, logMsgs) -> do
         stopActs          i
         pauseEffects      i
         throwWaitRegen    i
@@ -1883,17 +1889,12 @@ handleEgress i = liftIO getCurrentTime >>= \now -> do
         bcastAdmins $ s <> " has left CurryMUD."
         forM_ logMsgs . uncurry . logPla $ "handleEgress"
         logNotice "handleEgress" . T.concat $ [ "player ", showText i, " ", parensQuote s, " has left CurryMUD." ]
+        when isAdHoc . tweak $ removeAdHoc i
   where
-    informEgress = getState >>= \ms -> let d = serialize . mkStdDesig i ms $ DoCap in
-        unless (getRmId i ms == iWelcome) . bcastOthersInRm i . nlnl . egressMsg $ d
-    helper now ms =
-        let ri                 = getRmId i ms
-            s                  = getSing i ms
-            (ms', bs, logMsgs) = peepHelper ms s
-            ms''               = if T.takeWhile (not . isDigit) s `elem` map showText (allValues :: [Race])
-                                   then removeAdHoc i ms'
-                                   else updateHostMap (possessHelper (movePC ms' ri)) s now
-        in (ms'', (s, bs, logMsgs))
+    helper now ri isAdHoc s ms =
+        let (ms', bs, logMsgs) = peepHelper ms s
+            ms''               = if isAdHoc then ms' else updateHostMap (possessHelper (movePC ms' ri)) s now
+        in (ms'', (bs, logMsgs))
     peepHelper ms s =
         let (peeperIds, peepingIds) = getPeepersPeeping i ms
             bs                      = [ (nlnl    . T.concat $ [ "You are no longer peeping "
