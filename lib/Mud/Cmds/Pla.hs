@@ -1874,8 +1874,7 @@ handleEgress :: Id -> MudStack ()
 handleEgress i = liftIO getCurrentTime >>= \now -> do
     informEgress
     helper now |&| modifyState >=> \(s, bs, logMsgs) -> do -- TODO: Exception when client disconnects before logging in.
-        -- TODO: Something like "mapM_ (stopAct i) (allValues :: [ActType])", but we ought to wait until finished.
-        -- stopActs          i
+        stopActs          i
         pauseEffects      i
         throwWaitRegen    i
         throwWaitDigester i

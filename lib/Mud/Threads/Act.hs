@@ -4,7 +4,9 @@
 module Mud.Threads.Act ( DrinkBundle(..)
                        , drinkAct
                        , startAct
-                       , stopAct ) where
+                       , stopAct
+                       , stopActs
+                       , stopNpcActs ) where
 
 import Mud.Cmds.Util.Misc
 import Mud.Cmds.Util.Pla
@@ -21,7 +23,7 @@ import Mud.Util.Operators
 import Mud.Util.Quoting
 import Mud.Util.Text
 import Mud.Util.Wrapping
-import qualified Mud.Misc.Logging as L (logPla)
+import qualified Mud.Misc.Logging as L (logNotice, logPla)
 
 import Control.Concurrent (threadDelay)
 import Control.Exception.Lifted (catch, finally, handle)
@@ -33,6 +35,7 @@ import Data.Maybe (isNothing)
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import Data.Time (getCurrentTime)
+import qualified Data.Map.Lazy as M (elems)
 import qualified Data.Text as T
 
 
@@ -40,6 +43,10 @@ default (Int)
 
 
 -----
+
+
+logNotice :: Text -> Text -> MudStack ()
+logNotice = L.logNotice "Mud.Threads.Act"
 
 
 logPla :: Text -> Id -> Text -> MudStack ()
@@ -51,13 +58,21 @@ logPla = L.logPla "Mud.Threads.Act"
 
 startAct :: Id -> ActType -> MudStack () -> MudStack ()
 startAct i actType f = do
-    logPla  "startAct" i $ pp actType <> " act started."
+    logPla "startAct" i $ pp actType <> " act started."
     a <- runAsync . threadAct i actType $ f
     tweak $ mobTbl.ind i.actMap.at actType ?~ a
 
 
 stopAct :: Id -> ActType -> MudStack ()
 stopAct i actType = views (at actType) (maybe unit throwDeath) . getActMap i =<< getState
+
+
+stopActs :: Id -> MudStack ()
+stopActs i = logPla "stopActs" i "stopping all acts." >> (mapM_ throwWait . M.elems . getActMap i =<< getState)
+
+
+stopNpcActs :: MudStack ()
+stopNpcActs = logNotice "stopNpcActs" "stopping NPC acts." >> (mapM_ stopActs =<< getNpcIds <$> getState)
 
 
 threadAct :: Id -> ActType -> MudStack () -> MudStack ()
@@ -73,6 +88,9 @@ threadAct i actType f = let a = (>> f) . setThreadType $ case actType of Attacki
 
 mkThreadName :: Id -> ActType -> Text
 mkThreadName i actType = quoteWith' (pp actType, showText i) " "
+
+
+-- ==================================================
 
 
 drinkAct :: DrinkBundle -> MudStack ()

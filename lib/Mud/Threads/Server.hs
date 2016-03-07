@@ -14,6 +14,7 @@ import Mud.Data.State.Util.Output
 import Mud.Interp.CentralDispatch
 import Mud.Misc.ANSI
 import Mud.Misc.Persist
+import Mud.Threads.Act
 import Mud.Threads.Biodegrader
 import Mud.Threads.Digester
 import Mud.Threads.Effect
@@ -138,6 +139,7 @@ shutDown = do
     commitSuicide = do
         liftIO . mapM_ wait . M.elems . view talkAsyncTbl =<< getState
         logNotice "shutDown commitSuicide" "everyone has been disconnected."
+        stopNpcActs
         stopBiodegraders
         stopRmFuns
         massPauseEffects
