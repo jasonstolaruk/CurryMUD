@@ -524,9 +524,10 @@ data Lang = CommonLang
 type ActMap = M.Map ActType ActAsync
 
 
-data ActType = Drinking
+data ActType = Moving
              | Eating
-             | Moving deriving (Eq, Ord)
+             | Drinking
+             | Attacking deriving (Bounded, Enum, Eq, Ord)
 
 
 type ActAsync = Async ()

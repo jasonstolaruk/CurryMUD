@@ -485,7 +485,7 @@ chan (OneArg i mq cols a@(T.toLower -> a')) = getState >>= \ms ->
             in mapM (updateRndmName i . view _1) nonLinkeds >>= \rndmNames ->
                 let combo       = linkeds ++ zipWith (\rndmName -> _2 .~ rndmName) rndmNames nonLinkeds
                     (ins, outs) = partition (view _3) . sortBy (compare `on` view _2) $ combo
-                    styleds     = styleAbbrevs Don'tQuote . map (view _2) $ ins
+                    styleds     = styleAbbrevs Don'tQuote . select _2 $ ins
                     ins'        = zipWith (\styled -> _2 .~ styled) styleds ins
                     g (_, n, isTuned') = let n' = isRndmName n ? underline n :? n in padName n' <> tunedInOut isTuned'
                     combo'             = ins' ++ outs
@@ -1669,7 +1669,7 @@ newChan (WithArgs i mq cols (nub -> as)) = helper |&| modifyState >=> \(unzip ->
         isNG c       = not $ isLetter c || isDigit c
         illegalNames = [ "admin", "all", "question" ] ++ pcNames
         pcNames      = map (uncapitalize . (`getSing` ms)) $ ms^.pcTbl.to IM.keys
-        myChanNames  = map (view chanName) . getPCChans i $ ms
+        myChanNames  = select chanName . getPCChans i $ ms
     mkNewChanMsg []     = []
     mkNewChanMsg ns@[_] = pure    . mkMsgHelper False $ ns
     mkNewChanMsg ns     = T.lines . mkMsgHelper True  $ ns
@@ -1824,7 +1824,7 @@ question (NoArgs' i mq) = getState >>= \ms ->
                (tunedIns, tunedOuts) =
                  let xs = rndms ++ nubSort (linkeds ++ admins)
                  in partition (views _1 (`isTunedQuestionId` ms)) . sortBy (compare `on` view _2) $ xs
-               styleds = styleAbbrevs Don'tQuote . map (view _2) $ tunedIns
+               styleds = styleAbbrevs Don'tQuote . select _2 $ tunedIns
                combo   = map f $ zipWith (\styled -> _2 .~ styled) styleds tunedIns ++ tunedOuts
                  where
                   f (i', n, ia) | ia           = (i', n <> asterisk)
@@ -1870,10 +1870,12 @@ quit (NoArgs' i mq)                        = logPlaExec "quit" i >> (liftIO . at
 quit ActionParams { plaMsgQueue, plaCols } = wrapSend plaMsgQueue plaCols adviceQuitExcessArgs
 
 
-handleEgress :: Id -> MudStack () -- TODO: Stop eating/drinking/moving.
+handleEgress :: Id -> MudStack ()
 handleEgress i = liftIO getCurrentTime >>= \now -> do
     informEgress
     helper now |&| modifyState >=> \(s, bs, logMsgs) -> do -- TODO: Exception when client disconnects before logging in.
+        -- TODO: Something like "mapM_ (stopAct i) (allValues :: [ActType])", but we ought to wait until finished.
+        -- stopActs          i
         pauseEffects      i
         throwWaitRegen    i
         throwWaitDigester i
@@ -2709,13 +2711,71 @@ stats p = withoutArgs stats p
 -----
 
 
-stop :: ActionFun -- TODO
-stop (NoArgs i mq _) = getState >>= \ms ->
-    if isDrinking i ms
-      then stopAct i Drinking >> ok mq
-      else unit
-stop (LowerNub' _ _) = undefined
-stop p = patternMatchFail "stop" [ showText p ]
+-- TODO: Help.
+stop :: ActionFun
+stop p@(NoArgs i mq cols) = getState >>= \ms ->
+    case filter (view _3) . mkStopTuples p $ ms of
+      [] -> wrapSend mq cols sorryStopNotDoingAnything
+      xs -> let (_, actType, True, f) = head xs
+            in stopLogHelper i (pure actType) >> f
+stop p@(OneArgLower i mq cols a) = getState >>= \ms ->
+    if a `T.isPrefixOf` "all" || a == T.singleton allChar
+      then case filter (view _3) . mkStopTuples p $ ms of
+        [] -> wrapSend mq cols sorryStopNotDoingAnything
+        xs -> stopLogHelper i (select _2 xs) >> mapM_ (view _4) xs
+      else case filter (\(view _1 -> actName) -> a `T.isPrefixOf` actName) . mkStopTuples p $ ms of
+        [] -> wrapSend mq cols . sorryStopActName $ a
+        xs -> let (_, actType, b, f) = head xs
+              in b ? (stopLogHelper i (pure actType) >> f) :? wrapSend mq cols (sorryStopNotDoing actType)
+stop p = advise p ["stop"] adviceStopExcessArgs
+
+
+stopLogHelper :: Id -> [ActType] -> MudStack ()
+stopLogHelper i [actType] = logPla "stop" i $ "stopped " <> pp actType                                  <> "."
+stopLogHelper i actTypes  = logPla "stop" i $ "stopped " <> (T.intercalate " and " . map pp $ actTypes) <> "."
+
+
+mkStopTuples :: ActionParams -> MudState -> [(Text, ActType, Bool, MudStack ())]
+mkStopTuples p@ActionParams { myId } ms = [ ("moving",    Moving,    isMoving    myId ms, stopMoving    p ms)
+                                          , ("eating",    Eating,    isEating    myId ms, stopEating    p ms)
+                                          , ("drinking",  Drinking,  isDrinking  myId ms, stopDrinking  p ms)
+                                          , ("attacking", Attacking, isAttacking myId ms, stopAttacking p ms) ]
+
+
+stopMoving :: ActionParams -> MudState -> MudStack ()
+stopMoving _ _ = undefined -- TODO
+
+
+stopEating :: ActionParams -> MudState -> MudStack ()
+stopEating (WithArgs i mq cols _) ms =
+    let Just s      = getNowEating i ms
+        toSelf      = "You stop eating " <> theOnLower s <> "."
+        d           = mkStdDesig i ms DoCap
+        bcastHelper = bcastIfNotIncogNl i . pure $ ( T.concat [ serialize d
+                                                              , " stops eating "
+                                                              , aOrAn s
+                                                              , "." ]
+                                                   , i `delete` desigIds d )
+    in sequence_ [ stopAct i Eating, wrapSend mq cols toSelf, bcastHelper ]
+stopEating p _ = patternMatchFail "stopEating" [ showText p ]
+
+
+stopDrinking :: ActionParams -> MudState -> MudStack ()
+stopDrinking (WithArgs i mq cols _) ms =
+    let Just (l, s) = getNowDrinking i ms
+        toSelf      = T.concat [ "You stop drinking ", l^.liqName.to theOnLower, " from the ", s, "." ]
+        d           = mkStdDesig i ms DoCap
+        bcastHelper = bcastIfNotIncogNl i . pure $ ( T.concat [ serialize d
+                                                              , " stops drinking from "
+                                                              , aOrAn s
+                                                              , "." ]
+                                                   , i `delete` desigIds d )
+    in sequence_ [ stopAct i Drinking, wrapSend mq cols toSelf, bcastHelper ]
+stopDrinking p _ = patternMatchFail "stopDrinking" [ showText p ]
+
+
+stopAttacking :: ActionParams -> MudState -> MudStack ()
+stopAttacking _ _ = undefined -- TODO
 
 
 -----
@@ -3043,7 +3103,7 @@ mkCharList i ms =
         tunedIns'         = mkSingSexRaceLvls tunedIns
         mkSingSexRaceLvls = sortBy (compare `on` view _1) . map helper
         helper plaId      = let (s, r, l) = mkPrettifiedSexRaceLvl plaId ms in (getSing plaId ms, s, r, l)
-        styleds           = styleAbbrevs Don'tQuote . map (view _1) $ tunedIns'
+        styleds           = styleAbbrevs Don'tQuote . select _1 $ tunedIns'
         -----
         tunedOuts' = mkSingSexRaceLvls (tunedOuts ++ oneWays)
         -----

@@ -182,6 +182,9 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryShowExcessTargets
                            , sorryShowInRm
                            , sorryShowTarget
+                           , sorryStopActName
+                           , sorryStopNotDoing
+                           , sorryStopNotDoingAnything
                            , sorrySudoerDemoteRoot
                            , sorrySudoerDemoteSelf
                            , sorrySummonAdmin
@@ -1256,6 +1259,37 @@ sorryShowInRm = can't "show an item in your current room."
 
 sorryShowTarget :: Text -> Text
 sorryShowTarget t = can't "show something to " <> aOrAn t <> "."
+
+
+-----
+
+
+sorryStopActName :: Text -> Text
+sorryStopActName t = T.concat [ dblQuote t
+                              , " is not the name of an activity that can be stopped. Please type "
+                              , colorWith quoteColor "stop"
+                              , " followed by one of the following: "
+                              , colorWith quoteColor "moving"
+                              , ", "
+                              , colorWith quoteColor "eating"
+                              , ", "
+                              , colorWith quoteColor "drinking"
+                              , ", "
+                              , colorWith quoteColor "attacking"
+                              , ", or "
+                              , colorWith quoteColor "all"
+                              , "." ]
+
+
+sorryStopNotDoing :: ActType -> Text
+sorryStopNotDoing actType = let helper t = T.concat [ "You're not ", pp actType, " ", t, " at the moment." ]
+                            in helper . onTrue (actType == Moving) (const "anywhere") $ "anything"
+
+
+sorryStopNotDoingAnything :: Text
+sorryStopNotDoingAnything = "You're not doing anything that can be stopped "     <>
+                            parensQuote "moving, eating, drinking, or attacking" <>
+                            "."
 
 
 -----

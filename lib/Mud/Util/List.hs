@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, RankNTypes #-}
 
 module Mud.Util.List ( allValues
                      , appendIfUnique
@@ -10,12 +10,14 @@ module Mud.Util.List ( allValues
                      , headLast
                      , headTail
                      , mkCountList
-                     , nubSort ) where
+                     , nubSort
+                     , select ) where
 
 import Mud.Util.Misc
 import Mud.Util.Operators
 
 import Control.Arrow ((***))
+import Control.Lens (Lens', view)
 import Data.List (foldl', group, sort)
 import qualified Data.Set as S (fromList, toList)
 
@@ -66,3 +68,7 @@ mkCountList xs = map (`countOcc` xs) xs
 
 nubSort :: (Ord a) => [a] -> [a]
 nubSort = S.toList . S.fromList
+
+
+select :: Lens' a b -> [a] -> [b]
+select l = map (view l)

@@ -31,6 +31,7 @@ import Mud.Misc.Persist
 import Mud.TheWorld.Zones.AdminZoneIds (iLoggedOut, iRoot)
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
+import Mud.Util.List
 import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Operators
 import Mud.Util.Padding
@@ -182,7 +183,7 @@ adminAdmin (NoArgs i mq cols) = getState >>= \ms ->
                                                                     , let isTuned = isTunedAdmin ap ]
         ([self],   others   )  = partition (\x -> x^._1.to (== i)) triples
         (tunedIns, tunedOuts)  = partition (view _3) others
-        styleds                = styleAbbrevs Don'tQuote . map (view _2) $ tunedIns
+        styleds                = styleAbbrevs Don'tQuote . select _2 $ tunedIns
         others'                = zipWith (\triple styled -> triple & _2 .~ styled) tunedIns styleds ++ tunedOuts
         mkDesc (_, n, isTuned) = padName n <> tunedInOut isTuned
         descs                  = mkDesc self : map mkDesc others'

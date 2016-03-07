@@ -126,7 +126,7 @@ cmdDescStats = "Display your stats."
 
 
 cmdDescStop :: Text
-cmdDescStop = "Stop." -- TODO
+cmdDescStop = "Stop moving, eating, drinking, or attacking."
 
 
 cmdDescUnready :: Text

@@ -27,7 +27,6 @@ import Control.Concurrent (threadDelay)
 import Control.Exception.Lifted (catch, finally, handle)
 import Control.Lens (at, to, views)
 import Control.Lens.Operators ((&), (.~), (?~), (^.))
-import Control.Monad (when)
 import Control.Monad.IO.Class (liftIO)
 import Data.List (delete)
 import Data.Maybe (isNothing)
@@ -51,8 +50,8 @@ logPla = L.logPla "Mud.Threads.Act"
 
 
 startAct :: Id -> ActType -> MudStack () -> MudStack ()
-startAct i actType f = getState >>= \ms -> do
-    when (getType i ms == PCType) . logPla  "startAct" i $ pp actType <> " act started."
+startAct i actType f = do
+    logPla  "startAct" i $ pp actType <> " act started."
     a <- runAsync . threadAct i actType $ f
     tweak $ mobTbl.ind i.actMap.at actType ?~ a
 
@@ -62,9 +61,10 @@ stopAct i actType = views (at actType) (maybe unit throwDeath) . getActMap i =<<
 
 
 threadAct :: Id -> ActType -> MudStack () -> MudStack ()
-threadAct i actType f = let a = (>> f) . setThreadType $ case actType of Drinking -> DrinkingThread i
-                                                                         Eating   -> EatingThread   i
-                                                                         Moving   -> MovingThread   i
+threadAct i actType f = let a = (>> f) . setThreadType $ case actType of Attacking -> undefined -- TODO
+                                                                         Drinking  -> DrinkingThread i
+                                                                         Eating    -> EatingThread   i
+                                                                         Moving    -> MovingThread   i
                             b = do
                                 tweak $ mobTbl.ind i.actMap.at actType .~ Nothing
                                 logPla "threadAct" i $ pp actType <> " act finished."

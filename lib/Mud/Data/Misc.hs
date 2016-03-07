@@ -216,9 +216,10 @@ instance Pretty ActiveEffect where
 
 
 instance Pretty ActType where
-  pp Drinking = "drinking"
-  pp Eating   = "eating"
-  pp Moving   = "moving"
+  pp Attacking = "attacking"
+  pp Drinking  = "drinking"
+  pp Eating    = "eating"
+  pp Moving    = "moving"
 
 
 instance Pretty AOrThe where

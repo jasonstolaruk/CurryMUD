@@ -86,6 +86,7 @@ module Mud.Cmds.Msgs.Advice ( adviceAAnnounceNoArgs
                             , adviceSettingsInvalid
                             , adviceShowNoArgs
                             , adviceShowNoName
+                            , adviceStopExcessArgs
                             , adviceTeleNoArgs
                             , adviceTeleNoMsg
                             , adviceTrashNoArgs
@@ -644,6 +645,22 @@ adviceShowNoName :: Text -> Text
 adviceShowNoName a = "Please also provide the name of a person, as in " <>
                      colorWith quoteColor ("show " <> a <> " taro")     <>
                      "."
+
+
+adviceStopExcessArgs :: Text
+adviceStopExcessArgs = T.concat [ "Please type "
+                                , colorWith quoteColor "stop"
+                                , " followed by one of the following: "
+                                , colorWith quoteColor "moving"
+                                , ", "
+                                , colorWith quoteColor "eating"
+                                , ", "
+                                , colorWith quoteColor "drinking"
+                                , ", "
+                                , colorWith quoteColor "attacking"
+                                , ", or "
+                                , colorWith quoteColor "all"
+                                , "." ]
 
 
 adviceTeleNoArgs :: Text

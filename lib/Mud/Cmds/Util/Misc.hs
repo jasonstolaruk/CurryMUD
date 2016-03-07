@@ -26,6 +26,7 @@ module Mud.Cmds.Util.Misc ( asterisk
                           , hasEnc
                           , hasYou
                           , inOut
+                          , isAttacking
                           , isAwake
                           , isBracketed
                           , isDblLinked
@@ -538,6 +539,10 @@ isDblLinked = helperIsLinked (&&)
 
 
 -----
+
+
+isAttacking :: Id -> MudState -> Bool
+isAttacking = isActing Attacking
 
 
 isDrinking :: Id -> MudState -> Bool

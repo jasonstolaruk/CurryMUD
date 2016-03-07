@@ -21,6 +21,7 @@ import Mud.Data.State.Util.Output
 import Mud.Misc.ANSI
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
+import Mud.Util.List hiding (headTail)
 import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Operators
 import Mud.Util.Quoting
@@ -59,7 +60,7 @@ procChanTarget i cc triples ((T.toLower -> target):rest)
   | otherwise = case findFullNameForAbbrev target . map (views _2 T.toLower) $ triples of
     Nothing -> Left . sorryChanTargetNameFromContext target $ cc
     Just n  -> let targetId    = getIdForMatch n
-                   tunedIds    = map (view _1) triples
+                   tunedIds    = select _1 triples
                    msg         = capitalizeMsg . T.unwords $ rest
                    formatMsg x = parensQuote ("to " <> x) <> " " <> msg
                in Right [ (formatMsg . embedId $ targetId,                 pure i                    )
@@ -123,7 +124,7 @@ procEmote i ms cc triples as             =
             in findFullNameForAbbrev (T.toLower target) (map (views _2 T.toLower) triples) |&| maybe notFound found
     addSuffix   isPoss p = (<> p) . onTrue isPoss (<> "'s")
     mkEmoteWord isPoss   = isPoss ? ForTargetPoss :? ForTarget
-    tunedIds             = map (view _1) triples
+    tunedIds             = select _1 triples
 
 
 -----
@@ -133,7 +134,7 @@ expCmdify :: Id -> MudState -> ChanContext -> [(Id, Text, Text)] -> Text -> Eith
 expCmdify i ms cc triples msg@(T.words -> ws@(headTail . head -> (c, rest)))
   | isHeDon't expCmdChar msg = Left sorryWtf
   | c == expCmdChar          = fmap format . procExpCmd i ms cc triples . parseOutDenotative ws $ rest
-  | otherwise = Right (pure (msg, i : map (view _1) triples), msg)
+  | otherwise = Right (pure (msg, i : select _1 triples), msg)
   where
     format xs = xs & _1 %~ map (_1 %~ angleBracketQuote)
                    & _2 %~ angleBracketQuote
@@ -146,7 +147,7 @@ procExpCmd i ms cc triples (map T.toLower . unmsg -> [cn, target]) =
   where
     found match =
         let ExpCmd _ ct = getExpCmdByName match
-            tunedIds    = map (view _1) triples
+            tunedIds    = select _1 triples
         in case ct of
           NoTarget toSelf toOthers -> if ()# target
             then Right ( (format Nothing toOthers, tunedIds) : mkBcast i toSelf

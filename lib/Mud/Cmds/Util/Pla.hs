@@ -849,7 +849,7 @@ maybeSingleSlot em s = boolToMaybe (isSlotAvail em s) s
 
 mkChanBindings :: Id -> MudState -> ([Chan], [ChanName], Sing)
 mkChanBindings i ms = let cs  = getPCChans i ms
-                          cns = map (view chanName) cs
+                          cns = select chanName cs
                           s   = getSing i ms
                       in (cs, cns, s)
 
