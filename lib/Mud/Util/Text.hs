@@ -35,7 +35,7 @@ module Mud.Util.Text ( aOrAn
                      , uncapitalize
                      , yesNo ) where
 
-import Mud.TopLvlDefs.Chars
+import Mud.TopLvlDefs.Telnet
 import Mud.Util.Misc hiding (blowUp)
 import Mud.Util.Operators
 import qualified Mud.Util.Misc as U (blowUp)

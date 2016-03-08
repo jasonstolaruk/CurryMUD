@@ -3,9 +3,6 @@
 module Mud.TopLvlDefs.Chars where
 
 
-{-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
-
-
 -- ==================================================
 -- Command prefixes:
 
@@ -33,20 +30,6 @@ indexChar       = '.'
 sayToChar       = '>'
 selectorChar    = '-'
 slotChar        = ':'
-
-
--- ==================================================
--- Telnet characters:
-
-
-telnetECHO, telnetGA, telnetIAC, telnetSB, telnetSE, telnetWILL, telnetWON'T :: Char
-telnetECHO  = '\x01' -- 1
-telnetGA    = '\xF9' -- 249
-telnetIAC   = '\xFF' -- 255
-telnetSB    = '\xFA' -- 250
-telnetSE    = '\xF0' -- 240
-telnetWILL  = '\xFB' -- 251
-telnetWON'T = '\xFC' -- 252
 
 
 -- ==================================================

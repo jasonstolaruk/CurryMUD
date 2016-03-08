@@ -24,7 +24,7 @@ module Mud.Misc.Database ( AdminChanRec(..)
                          , insertDbTblQuestion
                          , insertDbTblTele
                          , insertDbTblTypo
-                         , insertDbTblUnPwRec
+                         , insertDbTblUnPw
                          , lookupPW
                          , ProfRec(..)
                          , purgeDbTblAdminChan
@@ -212,7 +212,10 @@ createDbTbls = withConnection dbFile $ \conn -> do
          , "create table if not exists tele       (id integer primary key, timestamp text, fromName text, toName text, msg text)"
          , "create table if not exists typo       (id integer primary key, timestamp text, name text, loc text, desc text, is_open integer)"
          , "create table if not exists unpw       (id integer primary key, un text, pw text)" ]
-    hashPW = maybe "" T.decodeUtf8 `fmap2` (hashPasswordUsingPolicy fastBcryptHashingPolicy . B.pack)
+
+
+hashPW :: String -> IO Text
+hashPW = maybe "" T.decodeUtf8 `fmap2` (hashPasswordUsingPolicy fastBcryptHashingPolicy . B.pack)
 
 
 -----
@@ -273,8 +276,9 @@ insertDbTblTypo :: TypoRec -> IO ()
 insertDbTblTypo = insertDbTblHelper "insert into typo (timestamp, name, loc, desc, is_open) values (?, ?, ?, ?, ?)"
 
 
-insertDbTblUnPwRec :: UnPwRec -> IO ()
-insertDbTblUnPwRec = insertDbTblHelper "insert into unpw (un, pw) values (?, ?)"
+insertDbTblUnPw :: UnPwRec -> IO ()
+insertDbTblUnPw rec@(UnPwRec _ pass) = hashPW (T.unpack pass) >>= \pass' ->
+    insertDbTblHelper "insert into unpw (un, pw) values (?, ?)" rec { pw = pass' }
 
 
 -----

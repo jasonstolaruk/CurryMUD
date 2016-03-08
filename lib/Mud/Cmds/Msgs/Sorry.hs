@@ -77,17 +77,18 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryIgnoreLocPrefPlur
                            , sorryIncog
                            , sorryIndent
-                           , sorryInterpNameBanned
                            , sorryInterpNameDict
                            , sorryInterpNameExcessArgs
                            , sorryInterpNameIllegal
                            , sorryInterpNameLen
-                           , sorryInterpNameLoggedIn
                            , sorryInterpNameProfanityBoot
                            , sorryInterpNameProfanityLogged
                            , sorryInterpNamePropName
                            , sorryInterpNameTaken
                            , sorryInterpPager
+                           , sorryInterpPW
+                           , sorryInterpPWBanned
+                           , sorryInterpPWLoggedIn
                            , sorryIntroAlready
                            , sorryIntroCoin
                            , sorryIntroInEq
@@ -704,10 +705,6 @@ sorryIndent = "The indent amount must be less than the line length."
 -----
 
 
-sorryInterpNameBanned :: Sing -> Text
-sorryInterpNameBanned s = colorWith bootMsgColor $ s <> " has been banned from CurryMUD!"
-
-
 sorryInterpNameDict :: Text
 sorryInterpNameDict = "Your name cannot be an English word. Please choose an original fantasy name."
 
@@ -726,10 +723,6 @@ sorryInterpNameLen = T.concat [ "Your name must be between "
                               , " and "
                               , maxNameLenTxt
                               , " characters long." ]
-
-
-sorryInterpNameLoggedIn :: Sing -> Text
-sorryInterpNameLoggedIn s = s <> " is already logged in."
 
 
 sorryInterpNameProfanityLogged :: Text
@@ -759,6 +752,21 @@ sorryInterpPager = T.concat [ "Enter a blank line or "
                             , " for the previous page, or "
                             , dblQuote "q"
                             , " to stop reading." ]
+
+
+-----
+
+
+sorryInterpPW :: Text
+sorryInterpPW = "Invalid password."
+
+
+sorryInterpPWBanned :: Sing -> Text
+sorryInterpPWBanned s = colorWith bootMsgColor $ s <> " has been banned from CurryMUD!"
+
+
+sorryInterpPWLoggedIn :: Sing -> Text
+sorryInterpPWLoggedIn s = s <> " is already logged in."
 
 
 -----

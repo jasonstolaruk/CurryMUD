@@ -1369,7 +1369,7 @@ leave (WithArgs i mq cols (nub -> as)) = helper |&| modifyState >=> \(ms, chanId
         bcastNl =<< foldM f [] chanIds
         chanNames |#| logPla "leave" i . commas
         ts <- liftIO mkTimestamp
-        forM_ chanRecs $ \cr -> withDbExHandler_ "leave" . insertDbTblChan $ cr { chanTimestamp = ts }
+        withDbExHandler_ "leave" . forM_ chanRecs $ \cr -> insertDbTblChan cr { chanTimestamp = ts }
   where
     helper ms = let (ms', chanIdNameIsDels, sorryMsgs) = foldl' f (ms, [], []) as
                 in (ms', (ms', chanIdNameIsDels, sorryMsgs))

@@ -30,6 +30,7 @@ import Mud.Threads.NpcServer
 import Mud.Threads.ThreadTblPurger
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
+import Mud.TopLvlDefs.Telnet
 import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Operators
 import Mud.Util.Padding

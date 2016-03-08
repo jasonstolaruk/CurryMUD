@@ -17,7 +17,6 @@ import Mud.Threads.Server
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
 import Mud.Util.Misc
-import Mud.Util.Quoting
 import Mud.Util.Text
 import qualified Mud.Misc.Logging as L (logNotice)
 
@@ -63,8 +62,8 @@ threadTalk :: Handle -> HostName -> MudStack ()
 threadTalk h host = helper `finally` cleanUp
   where
     helper = do
-        (mq, tq)           <- liftIO $ (,) <$> newTQueueIO <*> newTMQueueIO
-        (i, dblQuote -> s) <- adHoc mq host
+        (mq, tq) <- liftIO $ (,) <$> newTQueueIO <*> newTMQueueIO
+        (i, s  ) <- adHoc mq host
         setThreadType . Talk $ i
         handle (threadExHandler $ "talk " <> showText i) . onEnv $ \md -> do
             liftIO configBuffer

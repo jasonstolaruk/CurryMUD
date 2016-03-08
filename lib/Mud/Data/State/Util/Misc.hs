@@ -184,7 +184,7 @@ mkUnknownPCEntName i ms = views entName (fromMaybe helper) . getEnt i $ ms
 getFun :: FunName -> MudState -> Fun
 getFun n = views (funTbl.at n) (fromMaybe oops)
   where
-    oops = blowUp "getFun" "Function name not found in function table." . pure $ n
+    oops = blowUp "getFun" "Function name not found in function table" . pure $ n
 
 
 -----
@@ -193,7 +193,7 @@ getFun n = views (funTbl.at n) (fromMaybe oops)
 getHookFun :: HookName -> MudState -> HookFun
 getHookFun n = views (hookFunTbl.at n) (fromMaybe oops)
   where
-    oops = blowUp "getHookFun" "Hook name not found in hook function table." . pure $ n
+    oops = blowUp "getHookFun" "Hook name not found in hook function table" . pure $ n
 
 
 -----
@@ -209,7 +209,7 @@ getIdForMobSing s ms = let [(i, _)] = views entTbl (IM.toList . IM.filter (views
 getInstaEffectFun :: FunName -> MudState -> InstaEffectFun
 getInstaEffectFun n = views (instaEffectFunTbl.at n) (fromMaybe oops)
   where
-    oops = blowUp "getInstaEffectFun" "Function name not found in instantaneous effect function table." . pure $ n
+    oops = blowUp "getInstaEffectFun" "Function name not found in instantaneous effect function table" . pure $ n
 
 
 -----
@@ -278,7 +278,7 @@ getNpcIds = views npcTbl IM.keys
 getRmActionFun :: FunName -> MudState -> RmActionFun
 getRmActionFun n = views (rmActionFunTbl.at n) (fromMaybe oops)
   where
-    oops = blowUp "getRmActionFun" "Function name not found in room action function table." . pure $ n
+    oops = blowUp "getRmActionFun" "Function name not found in room action function table" . pure $ n
 
 
 -----
@@ -518,7 +518,7 @@ removeAdHoc i ms = ms & activeEffectsTbl.at  i        .~ Nothing
 runEffectFun :: FunName -> Id -> Seconds -> MudStack ()
 runEffectFun n i secs = views (effectFunTbl.at n) (maybe oops (\f -> f i secs)) =<< getState
   where
-    oops = blowUp "runEffectFun" "Function name not found in effect function table." . pure $ n
+    oops = blowUp "runEffectFun" "Function name not found in effect function table" . pure $ n
 
 
 -----
