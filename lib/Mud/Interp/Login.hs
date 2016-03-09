@@ -115,106 +115,12 @@ interpName (T.toLower -> cn@(capitalize -> cn')) (NoArgs' i mq)
 interpName _ ActionParams { plaMsgQueue } = promptRetryName plaMsgQueue sorryInterpNameExcessArgs
 
 
-interpPW :: Sing -> Id -> Pla -> Interp
-interpPW targetSing targetId targetPla cn params@(WithArgs i mq cols as) = send mq telnetShowInput >> if
-  | ()# cn || ()!# as -> sorryHelper sorryInterpPW
-  | otherwise         -> getState >>= \ms -> do
-      let oldSing = getSing i ms
-      (withDbExHandler "interpPW" . liftIO . lookupPW $ targetSing) >>= \case
-        Nothing        -> wrapSend mq cols dbErrorMsg -- TODO: Test this.
-        Just (Just pw) -> if uncurry validatePassword ((pw, cn) & both %~ T.encodeUtf8)
-          then if isLoggedIn targetPla
-            then sorry (sorryInterpPWLoggedIn targetSing) . T.concat $ [ oldSing
-                                                                         , " has entered the correct password for "
-                                                                         , targetSing
-                                                                         , "; however, "
-                                                                         , targetSing
-                                                                         , " is already logged in." ]
-            else (withDbExHandler "interpPW" . isPlaBanned $ targetSing) >>= \case
-              Nothing          -> wrapSend mq cols dbErrorMsg -- TODO: Test this.
-              Just (Any True ) -> handleBanned ms oldSing
-              Just (Any False) -> handleNotBanned oldSing
-          else sorry sorryInterpPW . T.concat $ [ oldSing, " has entered an incorrect password for ", targetSing, "." ]
-        Just Nothing -> blowUp "interpPW" "existing PC name not found in password database" . pure $ targetSing
-  where
-    sorry sorryMsg msg = do
-        bcastAdmins msg
-        logNotice "interpPW sorry" msg
-        sorryHelper sorryMsg
-    sorryHelper sorryMsg = do
-        liftIO . threadDelay $ 2 * 10 ^ 6
-        promptRetryName mq sorryMsg
-        setInterp i . Just $ interpName
-    handleBanned ms oldSing = do
-        let host = T.pack . getCurrHostName i $ ms
-            msg  = T.concat [ oldSing
-                            , " has been booted at login upon entering the correct password for "
-                            , targetSing
-                            , " "
-                            , parensQuote "player is banned"
-                            , "." ]
-        sendMsgBoot mq . Just . sorryInterpPWBanned $ targetSing
-        bcastAdmins $ msg <> " Consider also banning host " <> dblQuote host <> "."
-        logNotice "interpPW handleBanned" msg
-    handleNotBanned oldSing =
-        let helper ms = dup . logIn i ms (targetPla^.currHostName) (targetPla^.connectTime) $ targetId
-        in helper |&| modifyState >=> \ms -> do
-            logNotice "interpName" . T.concat $ [ oldSing
-                                                , " has logged in as "
-                                                , targetSing
-                                                , ". Id "
-                                                , showText targetId
-                                                , " has been changed to "
-                                                , showText i
-                                                , "." ]
-            initPlaLog i targetSing
-            logPla "interpPW handleNotBanned" i $ "logged in from " <> T.pack (getCurrHostName i ms) <> "."
-            handleLogin targetSing False params { args = [] }
-interpPW _ _ _ _ p = patternMatchFail "interpPW" [ showText p ]
-
-
 promptRetryName :: MsgQueue -> Text -> MudStack ()
 promptRetryName mq msg =
     (send mq . nlPrefix $ msg |!| nl msg) >> sendPrompt mq "Let's try this again. By what name are you known?"
 
 
-logIn :: Id -> MudState -> HostName -> Maybe UTCTime -> Id -> MudState
-logIn newId ms newHost newTime originId = peepNewId . movePC $ adoptNewId
-  where
-    adoptNewId = ms & activeEffectsTbl.ind newId         .~ getActiveEffects originId ms
-                    & activeEffectsTbl.at  originId      .~ Nothing
-                    & coinsTbl        .ind newId         .~ getCoins         originId ms
-                    & coinsTbl        .at  originId      .~ Nothing
-                    & entTbl          .ind newId         .~ (getEnt          originId ms & entId .~ newId)
-                    & entTbl          .at  originId      .~ Nothing
-                    & eqTbl           .ind newId         .~ getEqMap         originId ms
-                    & eqTbl           .at  originId      .~ Nothing
-                    & invTbl          .ind newId         .~ getInv           originId ms
-                    & invTbl          .at  originId      .~ Nothing
-                    & mobTbl          .ind newId         .~ getMob           originId ms
-                    & mobTbl          .at  originId      .~ Nothing
-                    & pausedEffectsTbl.ind newId         .~ getPausedEffects originId ms
-                    & pausedEffectsTbl.at  originId      .~ Nothing
-                    & pcTbl           .ind newId         .~ getPC            originId ms
-                    & pcTbl           .at  originId      .~ Nothing
-                    & plaTbl          .ind newId         .~ (getPla          originId ms & currHostName .~ newHost
-                                                                                         & connectTime  .~ newTime)
-                    & plaTbl          .ind newId.peepers .~ getPeepers       originId ms
-                    & plaTbl          .at  originId      .~ Nothing
-                    & rndmNamesMstrTbl.ind newId         .~ getRndmNamesTbl  originId ms
-                    & rndmNamesMstrTbl.at  originId      .~ Nothing
-                    & teleLinkMstrTbl .ind newId         .~ getTeleLinkTbl   originId ms
-                    & teleLinkMstrTbl .at  originId      .~ Nothing
-                    & typeTbl         .at  originId      .~ Nothing
-    movePC ms' = let newRmId = fromJust . getLastRmId newId $ ms'
-                 in ms' & invTbl  .ind iWelcome       %~ (newId    `delete`)
-                        & invTbl  .ind iLoggedOut     %~ (originId `delete`)
-                        & invTbl  .ind newRmId        %~ addToInv ms' (pure newId)
-                        & mobTbl  .ind newId.rmId     .~ newRmId
-                        & plaTbl  .ind newId.lastRmId .~ Nothing
-    peepNewId ms'@(getPeepers newId -> peeperIds) =
-        let replaceId = (newId :) . (originId `delete`)
-        in ms' & plaTbl %~ flip (foldr (\peeperId -> ind peeperId.peeping %~ replaceId)) peeperIds
+-----
 
 
 checkProfanitiesDict :: Id -> MsgQueue -> CmdName -> MudStack Any
@@ -266,39 +172,27 @@ checkRndmNames :: MsgQueue -> CmdName -> MudStack Any
 checkRndmNames mq = checkNameHelper (Just rndmNamesFile) "checkRndmNames" . promptRetryName mq $ sorryInterpNameTaken
 
 
+-- ==================================================
+
+
 interpConfirmName :: Sing -> Interp
-interpConfirmName s cn params@(NoArgs' i mq) = case yesNoHelper cn of
-  Just True -> helper |&| modifyState >=> \(ms@(getPla i -> p), oldSing) -> do
-      logNotice "interpConfirmName"   . T.concat $ [ oldSing
-                                                   , " has logged in as "
-                                                   , s
-                                                   , " "
-                                                   , parensQuote "new character"
-                                                   , "." ]
-      initPlaLog i s
-      logPla "interpConfirmName" i $ "new character logged in from " <> views currHostName T.pack p <> "."
-      send mq . nl $ ""
-      handleLogin s True params { args = [] }
-      notifyQuestion i ms
+interpConfirmName s cn (NoArgs' i mq) = case yesNoHelper cn of
+  Just True  -> do
+      sendPrompt mq . T.concat $ [ telnetHideInput, desc, "New password:" ]
+      setInterp i . Just . interpNewPW $ s
   Just False -> promptRetryName  mq "" >> setInterp i (Just interpName)
   Nothing    -> promptRetryYesNo mq
   where
-    helper ms = let ms'  = ms  & entTbl.ind i.sing     .~ s
-                               & invTbl.ind iWelcome   %~ (i `delete`)
-                               & mobTbl.ind i.rmId     .~ iCentral
-                               & mobTbl.ind i.interp   .~ Nothing
-                               & plaTbl.ind i.plaFlags .~ (setBit zeroBits . fromEnum $ IsTunedQuestion)
-                    ms'' = ms' & invTbl.ind iCentral   %~ addToInv ms' (pure i)
-                in (ms'', (ms'', getSing i ms))
+    desc = "Please choose a password for " <> s <> ". Passwords must be 6-20 characters in length and contain:\n\
+           \* 1 or more lowercase characters\n\
+           \* 1 or more uppercase characters\n\
+           \* 1 or more digits\n\
+           \* 1 or more symbols\n" |&| nlPrefix
 interpConfirmName _ _ ActionParams { plaMsgQueue } = promptRetryYesNo plaMsgQueue
 
 
-notifyQuestion :: Id -> MudState -> MudStack ()
-notifyQuestion i ms =
-    let msg      = f "A new character has arrived in CurryMUD."
-        f        = (colorWith arrowColor "<- " <>) . colorWith questionArrivalColor
-        tunedIds = uncurry (++) . getTunedQuestionIds i $ ms
-    in bcastNl =<< expandEmbeddedIds ms questionChanContext =<< formatQuestion i ms (msg, tunedIds)
+promptRetryYesNo :: MsgQueue -> MudStack ()
+promptRetryYesNo mq = sendPrompt mq . T.concat $ [ "Please answer ", dblQuote "yes", " or ", dblQuote "no", "." ]
 
 
 yesNoHelper :: Text -> Maybe Bool
@@ -309,9 +203,169 @@ yesNoHelper (T.toLower -> a) = guard (()!# a) >> helper
            | otherwise              = Nothing
 
 
+-- ==================================================
+
+
+interpNewPW :: Sing -> Interp
+interpNewPW s cn (NoArgs' i mq)
+  | True {- TODO -} = do
+      sendPrompt mq "Verify password:"
+      setInterp i . Just . interpVerifyNewPW s $ cn
+  | otherwise = promptRetryNewPW mq "Invalid password."
+interpNewPW _ _ ActionParams { plaMsgQueue } = promptRetryNewPW_Whitespace plaMsgQueue
+
+
+promptRetryNewPW_Whitespace :: MsgQueue -> MudStack ()
+promptRetryNewPW_Whitespace mq = promptRetryNewPW mq "Passwords may not contain whitespace."
+
+
+promptRetryNewPW :: MsgQueue -> Text -> MudStack ()
+promptRetryNewPW mq msg =
+    (send mq . nlPrefix $ msg |!| nl msg) >> sendPrompt mq "Let's try this again. New password:"
+
+
+-- ==================================================
+
+
+interpVerifyNewPW :: Sing -> Text -> Interp
+interpVerifyNewPW s pass cn params@(NoArgs' i mq)
+  | cn == pass = do
+      withDbExHandler_ "unpw" . insertDbTblUnPw . UnPwRec s $ pass
+      sendPrompt mq telnetShowInput
+      helper |&| modifyState >=> \(ms@(getPla i -> p), oldSing) -> do
+          logNotice "interpConfirmName"   . T.concat $ [ dblQuote oldSing
+                                                       , " has logged in as "
+                                                       , s
+                                                       , " "
+                                                       , parensQuote "new character"
+                                                       , "." ]
+          initPlaLog i s
+          logPla "interpConfirmName" i $ "new character logged in from " <> views currHostName T.pack p <> "."
+          send mq . nl $ ""
+          handleLogin s True params
+          notifyQuestion i ms
+  | otherwise  = promptRetryNewPW mq "Passwords do not match."
+  where
+    helper ms = let ms'  = ms  & entTbl.ind i.sing     .~ s
+                               & invTbl.ind iWelcome   %~ (i `delete`)
+                               & mobTbl.ind i.rmId     .~ iCentral
+                               & mobTbl.ind i.interp   .~ Nothing
+                               & plaTbl.ind i.plaFlags .~ (setBit zeroBits . fromEnum $ IsTunedQuestion)
+                    ms'' = ms' & invTbl.ind iCentral   %~ addToInv ms' (pure i)
+                in (ms'', (ms'', getSing i ms))
+interpVerifyNewPW _ _ _ ActionParams { plaMsgQueue } = promptRetryNewPW_Whitespace plaMsgQueue
+
+
+notifyQuestion :: Id -> MudState -> MudStack ()
+notifyQuestion i ms =
+    let msg      = f "A new character has arrived in CurryMUD."
+        f        = (colorWith arrowColor "<- " <>) . colorWith questionArrivalColor
+        tunedIds = uncurry (++) . getTunedQuestionIds i $ ms
+    in bcastNl =<< expandEmbeddedIds ms questionChanContext =<< formatQuestion i ms (msg, tunedIds)
+
+
+-- ==================================================
+
+
+interpPW :: Sing -> Id -> Pla -> Interp -- Returning player.
+interpPW targetSing targetId targetPla cn params@(WithArgs i mq cols as) = send mq telnetShowInput >> if
+  | ()# cn || ()!# as -> sorryHelper sorryInterpPW
+  | otherwise         -> getState >>= \ms -> do
+      let oldSing = getSing i ms
+      (withDbExHandler "interpPW" . liftIO . lookupPW $ targetSing) >>= \case
+        Nothing        -> wrapSend mq cols dbErrorMsg -- TODO: Test this.
+        Just (Just pw) -> if uncurry validatePassword ((pw, cn) & both %~ T.encodeUtf8)
+          then if isLoggedIn targetPla
+            then sorry (sorryInterpPWLoggedIn targetSing) . T.concat $ [ oldSing
+                                                                       , " has entered the correct password for "
+                                                                       , targetSing
+                                                                       , "; however, "
+                                                                       , targetSing
+                                                                       , " is already logged in." ]
+            else (withDbExHandler "interpPW" . isPlaBanned $ targetSing) >>= \case
+              Nothing          -> wrapSend mq cols dbErrorMsg -- TODO: Test this.
+              Just (Any True ) -> handleBanned ms oldSing
+              Just (Any False) -> handleNotBanned oldSing
+          else sorry sorryInterpPW . T.concat $ [ oldSing, " has entered an incorrect password for ", targetSing, "." ]
+        Just Nothing -> blowUp "interpPW" "existing PC name not found in password database" . pure $ targetSing
+  where
+    sorry sorryMsg msg = do
+        bcastAdmins msg
+        logNotice "interpPW sorry" msg
+        sorryHelper sorryMsg
+    sorryHelper sorryMsg = do
+        liftIO . threadDelay $ 2 * 10 ^ 6
+        promptRetryName mq sorryMsg
+        setInterp i . Just $ interpName
+    handleBanned ms oldSing = do
+        let host = T.pack . getCurrHostName i $ ms
+            msg  = T.concat [ oldSing
+                            , " has been booted at login upon entering the correct password for "
+                            , targetSing
+                            , " "
+                            , parensQuote "player is banned"
+                            , "." ]
+        sendMsgBoot mq . Just . sorryInterpPWBanned $ targetSing
+        bcastAdmins $ msg <> " Consider also banning host " <> dblQuote host <> "."
+        logNotice "interpPW handleBanned" msg
+    handleNotBanned oldSing =
+        let helper ms = dup . logIn i ms (targetPla^.currHostName) (targetPla^.connectTime) $ targetId
+        in helper |&| modifyState >=> \ms -> do
+            logNotice "interpName" . T.concat $ [ oldSing
+                                                , " has logged in as "
+                                                , targetSing
+                                                , ". Id "
+                                                , showText targetId
+                                                , " has been changed to "
+                                                , showText i
+                                                , "." ]
+            initPlaLog i targetSing
+            logPla "interpPW handleNotBanned" i $ "logged in from " <> T.pack (getCurrHostName i ms) <> "."
+            handleLogin targetSing False params { args = [] }
+interpPW _ _ _ _ p = patternMatchFail "interpPW" [ showText p ]
+
+
+logIn :: Id -> MudState -> HostName -> Maybe UTCTime -> Id -> MudState
+logIn newId ms newHost newTime originId = peepNewId . movePC $ adoptNewId
+  where
+    adoptNewId = ms & activeEffectsTbl.ind newId         .~ getActiveEffects originId ms
+                    & activeEffectsTbl.at  originId      .~ Nothing
+                    & coinsTbl        .ind newId         .~ getCoins         originId ms
+                    & coinsTbl        .at  originId      .~ Nothing
+                    & entTbl          .ind newId         .~ (getEnt          originId ms & entId .~ newId)
+                    & entTbl          .at  originId      .~ Nothing
+                    & eqTbl           .ind newId         .~ getEqMap         originId ms
+                    & eqTbl           .at  originId      .~ Nothing
+                    & invTbl          .ind newId         .~ getInv           originId ms
+                    & invTbl          .at  originId      .~ Nothing
+                    & mobTbl          .ind newId         .~ getMob           originId ms
+                    & mobTbl          .at  originId      .~ Nothing
+                    & pausedEffectsTbl.ind newId         .~ getPausedEffects originId ms
+                    & pausedEffectsTbl.at  originId      .~ Nothing
+                    & pcTbl           .ind newId         .~ getPC            originId ms
+                    & pcTbl           .at  originId      .~ Nothing
+                    & plaTbl          .ind newId         .~ (getPla          originId ms & currHostName .~ newHost
+                                                                                         & connectTime  .~ newTime)
+                    & plaTbl          .ind newId.peepers .~ getPeepers       originId ms
+                    & plaTbl          .at  originId      .~ Nothing
+                    & rndmNamesMstrTbl.ind newId         .~ getRndmNamesTbl  originId ms
+                    & rndmNamesMstrTbl.at  originId      .~ Nothing
+                    & teleLinkMstrTbl .ind newId         .~ getTeleLinkTbl   originId ms
+                    & teleLinkMstrTbl .at  originId      .~ Nothing
+                    & typeTbl         .at  originId      .~ Nothing
+    movePC ms' = let newRmId = fromJust . getLastRmId newId $ ms'
+                 in ms' & invTbl  .ind iWelcome       %~ (newId    `delete`)
+                        & invTbl  .ind iLoggedOut     %~ (originId `delete`)
+                        & invTbl  .ind newRmId        %~ addToInv ms' (pure newId)
+                        & mobTbl  .ind newId.rmId     .~ newRmId
+                        & plaTbl  .ind newId.lastRmId .~ Nothing
+    peepNewId ms'@(getPeepers newId -> peeperIds) =
+        let replaceId = (newId :) . (originId `delete`)
+        in ms' & plaTbl %~ flip (foldr (\peeperId -> ind peeperId.peeping %~ replaceId)) peeperIds
+
+
 handleLogin :: Sing -> Bool -> ActionParams -> MudStack ()
 handleLogin s isNew params@ActionParams { .. } = do
-    when isNew . withDbExHandler_ "unpw" . insertDbTblUnPw . UnPwRec s $ s
     greet
     showMotd plaMsgQueue plaCols
     (ms, p) <- showRetainedMsgs
@@ -348,7 +402,3 @@ handleLogin s isNew params@ActionParams { .. } = do
           then " has arrived in CurryMUD."
           else " has logged in."
         bcastOthersInRm  myId . nlnl . notifyArrivalMsg . mkSerializedNonStdDesig myId ms s A $ DoCap
-
-
-promptRetryYesNo :: MsgQueue -> MudStack ()
-promptRetryYesNo mq = sendPrompt mq . T.concat $ [ "Please answer ", dblQuote "yes", " or ", dblQuote "no", "." ]
