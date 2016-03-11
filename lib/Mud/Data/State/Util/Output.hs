@@ -23,7 +23,8 @@ module Mud.Data.State.Util.Output ( bcast
                                   , sendDfltPrompt
                                   , sendMsgBoot
                                   , sendPrompt
-                                  , wrapSend ) where
+                                  , wrapSend
+                                  , wrapSendPrompt ) where
 
 import Mud.Cmds.Msgs.Misc
 import Mud.Data.Misc
@@ -289,6 +290,10 @@ sendMsgBoot mq = liftIO . atomically . writeTQueue mq . MsgBoot . fromMaybe dflt
 
 sendPrompt :: MsgQueue -> Text -> MudStack ()
 sendPrompt mq = liftIO . atomically . writeTQueue mq . Prompt
+
+
+wrapSendPrompt :: MsgQueue -> Cols -> Text -> MudStack ()
+wrapSendPrompt mq cols = sendPrompt mq . wrapUnlinesInit cols
 
 
 -----

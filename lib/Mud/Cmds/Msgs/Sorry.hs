@@ -85,10 +85,15 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryInterpNameProfanityLogged
                            , sorryInterpNamePropName
                            , sorryInterpNameTaken
+                           , sorryInterpNewPwDigit
+                           , sorryInterpNewPwExcessArgs
+                           , sorryInterpNewPwLen
+                           , sorryInterpNewPwLower
+                           , sorryInterpNewPwUpper
                            , sorryInterpPager
                            , sorryInterpPW
-                           , sorryInterpPWBanned
-                           , sorryInterpPWLoggedIn
+                           , sorryInterpPwBanned
+                           , sorryInterpPwLoggedIn
                            , sorryIntroAlready
                            , sorryIntroCoin
                            , sorryIntroInEq
@@ -741,6 +746,29 @@ sorryInterpNameTaken :: Text
 sorryInterpNameTaken = but "that name is already taken."
 
 
+sorryInterpNewPwDigit :: Text
+sorryInterpNewPwDigit = "Passwords must contain at least one digit."
+
+
+sorryInterpNewPwExcessArgs :: Text
+sorryInterpNewPwExcessArgs = "Passwords may not contain whitespace."
+
+
+sorryInterpNewPwLen :: Text
+sorryInterpNewPwLen = T.concat [ "Passwords must be "
+                               , showText minPwLen
+                               , "-"
+                               , showText maxPwLen
+                               , " characters in length." ]
+
+
+sorryInterpNewPwLower :: Text
+sorryInterpNewPwLower = "Passwords must contain at least one lowercase character."
+
+
+sorryInterpNewPwUpper :: Text
+sorryInterpNewPwUpper = "Passwords must contain at least one uppercase character."
+
 -----
 
 
@@ -761,12 +789,12 @@ sorryInterpPW :: Text
 sorryInterpPW = "Invalid password."
 
 
-sorryInterpPWBanned :: Sing -> Text
-sorryInterpPWBanned s = colorWith bootMsgColor $ s <> " has been banned from CurryMUD!"
+sorryInterpPwBanned :: Sing -> Text
+sorryInterpPwBanned s = colorWith bootMsgColor $ s <> " has been banned from CurryMUD!"
 
 
-sorryInterpPWLoggedIn :: Sing -> Text
-sorryInterpPWLoggedIn s = s <> " is already logged in."
+sorryInterpPwLoggedIn :: Sing -> Text
+sorryInterpPwLoggedIn s = s <> " is already logged in."
 
 
 -----

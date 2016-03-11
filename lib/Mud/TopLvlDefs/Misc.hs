@@ -117,6 +117,11 @@ maxPageLines = 150
 minPageLines = 8
 
 
+maxPwLen, minPwLen    :: Int
+maxPwLen = 20
+minPwLen = 6
+
+
 maxLogSize :: FileOffset
 maxLogSize = 100000
 

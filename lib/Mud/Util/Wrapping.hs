@@ -7,12 +7,14 @@ module Mud.Util.Wrapping ( adjustIndent
                          , multiWrapNl
                          , wrap
                          , wrapIndent
-                         , wrapLineWithIndentTag
                          , wrapLines
+                         , wrapLineWithIndentTag
                          , wrapUnlines
+                         , wrapUnlinesInit
                          , wrapUnlinesNl
                          , xformLeading ) where
 
+import Mud.Data.State.ActionParams.ActionParams
 import Mud.Misc.ANSI
 import Mud.TopLvlDefs.Chars
 import Mud.Util.Operators
@@ -34,7 +36,7 @@ patternMatchFail = U.patternMatchFail "Mud.Util.Wrapping"
 -- ==================================================
 
 
-wrap :: Int -> Text -> [Text]
+wrap :: Cols -> Text -> [Text]
 wrap cols t | extracted <- extractANSI t
             , wrapped   <- wrapIt . T.concat . map fst $ extracted = insertANSI extracted wrapped
   where
@@ -54,29 +56,33 @@ breakEnd (T.break isSpace . T.reverse -> (after, before)) = (before, after) & bo
 -----
 
 
-wrapUnlines :: Int -> Text -> Text
+wrapUnlines :: Cols -> Text -> Text
 wrapUnlines cols = T.unlines . wrap cols
 
 
-wrapUnlinesNl :: Int -> Text -> Text
+wrapUnlinesNl :: Cols -> Text -> Text
 wrapUnlinesNl cols = nl . wrapUnlines cols
+
+
+wrapUnlinesInit :: Cols -> Text -> Text
+wrapUnlinesInit cols = T.intercalate "\n" . wrap cols
 
 
 -----
 
 
-multiWrap :: Int -> [Text] -> Text
+multiWrap :: Cols -> [Text] -> Text
 multiWrap cols = T.unlines . concatMap (wrap cols)
 
 
-multiWrapNl :: Int -> [Text] -> Text
+multiWrapNl :: Cols -> [Text] -> Text
 multiWrapNl cols = nl . multiWrap cols
 
 
 -----
 
 
-wrapIndent :: Int -> Int -> Text -> [Text]
+wrapIndent :: Int -> Cols -> Text -> [Text]
 wrapIndent n cols t = let extracted = extractANSI t
                           wrapped   = helper . T.concat . map fst $ extracted
                       in map leadingFillerToSpcs . insertANSI extracted $ wrapped
@@ -105,14 +111,14 @@ xformLeading _ _                  ""                                       = ""
 xformLeading a (T.singleton -> b) (T.span (== a) -> (T.length -> n, rest)) = T.replicate n b <> rest
 
 
-adjustIndent :: Int -> Int -> Int
+adjustIndent :: Int -> Cols -> Int
 adjustIndent n cols = n >= cols ? pred cols :? n
 
 
 -----
 
 
-wrapLines :: Int -> [Text] -> [[Text]]
+wrapLines :: Cols -> [Text] -> [[Text]]
 wrapLines _    []                     = []
 wrapLines cols [t]                    = [ wrapIndent (noOfLeadingSpcs t) cols t ]
 wrapLines cols (a:b:rest) | ()# a     = [""]     : wrapNext
@@ -132,7 +138,7 @@ noOfLeadingSpcs :: Text -> Int
 noOfLeadingSpcs = T.length . T.takeWhile isSpace
 
 
-wrapLineWithIndentTag :: Int -> Text -> [Text]
+wrapLineWithIndentTag :: Cols -> Text -> [Text]
 wrapLineWithIndentTag cols (T.break (not . isDigit) . T.reverse . T.init -> broken) = wrapIndent n cols t
   where
     (numTxt, t) = broken & both %~ T.reverse
