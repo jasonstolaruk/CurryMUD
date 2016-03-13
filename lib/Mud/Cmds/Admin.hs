@@ -288,11 +288,11 @@ adminAnnounce p = patternMatchFail "adminAnnounce" [ showText p ]
 adminBanHost :: ActionFun
 adminBanHost (NoArgs i mq cols) = (withDbExHandler "adminBanHost" . getDbTblRecs $ "ban_host") >>= \case
   Just xs -> dumpDbTblHelper mq cols (xs :: [BanHostRec]) >> logPlaExecArgs (prefixAdminCmd "banhost") [] i
-  Nothing -> wrapSend mq cols dbErrorMsg
+  Nothing -> dbError mq cols
 adminBanHost p@(AdviseOneArg a) = advise p [ prefixAdminCmd "banhost" ] . adviceABanHostNoReason $ a
 adminBanHost (MsgWithTarget i mq cols (uncapitalize -> target) msg) = getState >>= \ms ->
     (withDbExHandler "adminBanHost" . isHostBanned $ target) >>= \case
-      Nothing      -> wrapSend mq cols dbErrorMsg
+      Nothing      -> dbError mq cols
       Just (Any b) -> let newStatus = not b in liftIO mkTimestamp >>= \ts -> do
           let banHost = BanHostRec ts target newStatus msg
           withDbExHandler_ "adminBanHost" . insertDbTblBanHost $ banHost
@@ -322,7 +322,7 @@ notifyBan i mq cols selfSing target newStatus x =
 adminBanPla :: ActionFun
 adminBanPla (NoArgs i mq cols) = (withDbExHandler "adminBanPla" . getDbTblRecs $ "ban_pla") >>= \case
   Just xs -> dumpDbTblHelper mq cols (xs :: [BanPlaRec]) >> logPlaExecArgs (prefixAdminCmd "banpla") [] i
-  Nothing -> wrapSend mq cols dbErrorMsg
+  Nothing -> dbError mq cols
 adminBanPla p@(AdviseOneArg a) = advise p [ prefixAdminCmd "banplayer" ] . adviceABanPlaNoReason $ a
 adminBanPla p@(MsgWithTarget i mq cols target msg) = getState >>= \ms ->
     let fn = "adminBanPla"
@@ -335,7 +335,7 @@ adminBanPla p@(MsgWithTarget i mq cols target msg) = getState >>= \ms ->
                    | banId == i  -> sendFun sorryBanSelf
                    | isAdmin pla -> sendFun sorryBanAdmin
                    | otherwise   -> (withDbExHandler "adminBanPla" . isPlaBanned $ strippedTarget) >>= \case
-                     Nothing      -> wrapSend mq cols dbErrorMsg
+                     Nothing      -> dbError mq cols
                      Just (Any b) -> let newStatus = not b in liftIO mkTimestamp >>= \ts -> do
                          let banPla = BanPlaRec ts strippedTarget newStatus msg
                          withDbExHandler_ "adminBanPla" . insertDbTblBanPla $ banPla
@@ -380,7 +380,7 @@ adminBoot p = patternMatchFail "adminBoot" [ showText p ]
 adminBug :: ActionFun
 adminBug (NoArgs i mq cols) = (withDbExHandler "adminBug" . getDbTblRecs $ "bug") >>= \case
   Just xs -> dumpDbTblHelper mq cols (xs :: [BugRec]) >> logPlaExec (prefixAdminCmd "bug") i
-  Nothing -> wrapSend mq cols dbErrorMsg
+  Nothing -> dbError mq cols
 adminBug p = withoutArgs adminBug p
 
 
@@ -1046,7 +1046,7 @@ adminPrint p = patternMatchFail "adminPrint" [ showText p ]
 adminProfanity :: ActionFun
 adminProfanity (NoArgs i mq cols) = (withDbExHandler "adminProfanity" . getDbTblRecs $ "profanity") >>= \case
   Just xs -> dumpDbTblHelper mq cols (xs :: [ProfRec]) >> logPlaExec (prefixAdminCmd "profanity") i
-  Nothing -> wrapSend mq cols dbErrorMsg
+  Nothing -> dbError mq cols
 adminProfanity p = withoutArgs adminProfanity p
 
 
@@ -1287,7 +1287,7 @@ adminTime p = withoutArgs adminTime p
 adminTypo :: ActionFun
 adminTypo (NoArgs i mq cols) = (withDbExHandler "adminTypo" . getDbTblRecs $ "typo") >>= \case
   Just xs -> dumpDbTblHelper mq cols (xs :: [TypoRec]) >> logPlaExec (prefixAdminCmd "typo") i
-  Nothing -> wrapSend mq cols dbErrorMsg
+  Nothing -> dbError mq cols
 adminTypo p = withoutArgs adminTypo p
 
 

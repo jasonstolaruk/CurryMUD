@@ -121,13 +121,9 @@ listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed 
           _                -> do
               liftIO . T.hPutStr h . nlnl $ bannedMsg
               liftIO . hClose $ h
-              let msg = T.concat [ "Connection from "
-                                 , dblQuote host'
-                                 , " refused "
-                                 , parensQuote "host is banned"
-                                 , "." ]
+              let msg = T.concat [ "Connection from ", dblQuote host', " refused ", parensQuote "host is banned", "." ]
               bcastAdmins msg
-              logNotice fn msg
+              logNotice fn . uncapitalize $ msg
     cleanUp auxAsyncs sock = do
         logNotice "listen cleanUp" "closing the socket."
         liftIO . sClose $ sock

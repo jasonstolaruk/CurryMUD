@@ -289,7 +289,7 @@ interpPW targetSing targetId targetPla cn params@(WithArgs i mq cols as) = send 
   | otherwise         -> getState >>= \ms -> do
       let oldSing = getSing i ms
       (withDbExHandler "interpPW" . liftIO . lookupPW $ targetSing) >>= \case
-        Nothing        -> wrapSend mq cols dbErrorMsg -- TODO: Test this.
+        Nothing        -> dbError mq cols
         Just (Just pw) -> if uncurry validatePassword ((pw, cn) & both %~ T.encodeUtf8)
           then if isLoggedIn targetPla
             then sorry (sorryInterpPwLoggedIn targetSing) . T.concat $ [ oldSing
@@ -299,11 +299,11 @@ interpPW targetSing targetId targetPla cn params@(WithArgs i mq cols as) = send 
                                                                        , targetSing
                                                                        , " is already logged in." ]
             else (withDbExHandler "interpPW" . isPlaBanned $ targetSing) >>= \case
-              Nothing          -> wrapSend mq cols dbErrorMsg -- TODO: Test this.
+              Nothing          -> dbError mq cols
               Just (Any True ) -> handleBanned    ms oldSing
               Just (Any False) -> handleNotBanned ms oldSing
           else sorry sorryInterpPW . T.concat $ [ oldSing, " has entered an incorrect password for ", targetSing, "." ]
-        Just Nothing -> blowUp "interpPW" "existing PC name not found in password database" . pure $ targetSing -- TODO: Test this.
+        Just Nothing -> blowUp "interpPW" "existing PC name not found in password database" . pure $ targetSing
   where
     sorry sorryMsg msg = do
         bcastAdmins msg

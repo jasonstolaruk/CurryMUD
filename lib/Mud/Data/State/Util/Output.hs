@@ -9,6 +9,7 @@ module Mud.Data.State.Util.Output ( bcast
                                   , bcastNl
                                   , bcastOtherAdmins
                                   , bcastOthersInRm
+                                  , dbError
                                   , frame
                                   , massMsg
                                   , massSend
@@ -23,6 +24,7 @@ module Mud.Data.State.Util.Output ( bcast
                                   , sendDfltPrompt
                                   , sendMsgBoot
                                   , sendPrompt
+                                  , sendSilentBoot
                                   , wrapSend
                                   , wrapSendPrompt ) where
 
@@ -137,6 +139,13 @@ bcastOthersInRm i msg = getState >>= \ms ->
     let helper = let ((i `delete`) -> ris) = getMobRmInv i ms
                  in bcast . pure $ (msg, findMobIds ms ris)
     in isPC i ms ? unless (isIncognito . getPla i $ ms) helper :? helper
+
+
+-----
+
+
+dbError :: MsgQueue -> Cols -> MudStack ()
+dbError mq cols = wrapSend mq cols dbErrorMsg >> sendSilentBoot mq
 
 
 -----
@@ -283,6 +292,10 @@ mkDfltPrompt i ms = let (hps, mps, pps, fps) = getPts i ms
 
 sendMsgBoot :: MsgQueue -> Maybe Text -> MudStack ()
 sendMsgBoot mq = liftIO . atomically . writeTQueue mq . MsgBoot . fromMaybe dfltBootMsg
+
+
+sendSilentBoot :: MsgQueue -> MudStack ()
+sendSilentBoot mq = liftIO . atomically . writeTQueue mq $ SilentBoot
 
 
 -----
