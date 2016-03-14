@@ -6,7 +6,7 @@ Are debug commands available? \e@d\d
 
 If available, you may feel free to try out and play with the debug commands (though many of them have little or no practical use when it comes to CurryMUD administration). But be careful: some debug commands are designed to crash the server or put it in an undesirable state!
 
-Debug commands begin with a #b prefix. \q#b?\d will give you the debug command list.
+Debug commands begin with a "#b" prefix. \q#b?\d will give you the debug command list.
 
 (Sorry, but there is no help available on individual debug commands.)
 

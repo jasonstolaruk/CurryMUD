@@ -91,6 +91,7 @@ logPla = L.logPla "Mud.Interp.Login"
 -- ==================================================
 
 
+-- TODO: Prevent other players from choosing the same name.
 interpName :: Interp
 interpName (T.toLower -> cn@(capitalize -> cn')) (NoArgs i mq cols)
   | not . inRange (minNameLen, maxNameLen) . T.length $ cn = promptRetryName mq cols sorryInterpNameLen

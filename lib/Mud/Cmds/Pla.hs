@@ -739,7 +739,6 @@ disconnectHelper i (target, as) idNamesTbl ms =
 -----
 
 
--- TODO: Help.
 drink :: ActionFun
 drink p@(NoArgs' i mq                   ) = advise p ["drink"] adviceDrinkNoArgs   >> sendDfltPrompt mq i
 drink p@(OneArg  i mq _    _            ) = advise p ["drink"] adviceDrinkNoVessel >> sendDfltPrompt mq i
@@ -781,7 +780,7 @@ drink   (Lower   i mq cols [amt, target]) = getState >>= \ms -> let (isDrink, is
                                                            , drinkSing     = s
                                                            , drinkLiq      = l
                                                            , drinkAmt      = x }
-                                        = (ms, pure . startAct i Drinking . drinkAct $ db)
+                                       = (ms, pure . startAct i Drinking . drinkAct $ db)
                         f _ = sorry sorryDrinkExcessTargets
                     in ()!# ecs ? sorry sorryDrinkCoins :? either sorry f (head eiss)
                 -----
