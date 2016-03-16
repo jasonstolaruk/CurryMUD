@@ -1,0 +1,18 @@
+\h STOP \d
+
+\uUSAGE\n
+stop \s[\daction\s]\d
+
+\uDESCRIPTION\n
+Stop moving, eating, drinking, or attacking.
+
+This command may take the following forms:
+\qstop moving\d    (or just \qstop m\d) to stop moving.4`
+\qstop eating\d    (or just \qstop e\d) to stop eating.4`
+\qstop drinking\d  (or just \qstop d\d) to stop drinking.4`
+\qstop attacking\d (or just \qstop a\d) to stop attacking.4`
+\qstop\d with no arguments.4`
+
+When no arguments are provided, you will stop carrying out a single action; the action you stop depends on what you are doing at the time. Namely, if currently moving, you will stop moving; otherwise if currently eating, you will stop eating, and so on (followed with drinking and attacking).
+
+\uSEE ALSO\n

@@ -8,10 +8,11 @@ Drink a given number of mouthfuls from a vessel.
 
 To consume the entire contents of a vessel (in this example, a flask), you may type either \qdrink all flask\d or \qdrink \p#a\q flask\d.
 
-Drinking takes time, depending on the number of mouthfuls one consumes. You will be informed when your character has finished drinking. If you wish to cut short your quaff, type \qstop drinking\d at any time.
+Drinking takes time, depending on the number of mouthfuls one consumes. You will be informed when your character has finished drinking. If you wish to cut short your quaff, type \qstop drinking\d.
 
 \uEXAMPLES\n
 \qdrink 4 waterskin\d to drink 4 mouthfuls of liquid from your waterskin.4`
-\qdrink all waterskin\d (or \qdrink \p#a\q waterskin\d) to drain your waterskin.4`
+\qdrink 4 \p2#i\qwaterskin\d to drink 4 mouthfuls of liquid from your second waterskin.4`
+\qdrink all waterskin\d (or \qdrink \p#a\q waterskin\d) to consume the entire contents of your waterskin.4`
 
 \uSEE ALSO\n
