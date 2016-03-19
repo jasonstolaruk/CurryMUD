@@ -4,7 +4,7 @@
 module Mud.Threads.Regen ( runRegenAsync
                          , startNpcRegens
                          , stopNpcRegens
-                         , throwWaitRegen ) where
+                         , stopRegen ) where
 
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Calc
@@ -17,12 +17,13 @@ import qualified Mud.Misc.Logging as L (logNotice, logPla)
 
 import Control.Arrow ((***))
 import Control.Concurrent (threadDelay)
-import Control.Exception.Lifted (handle)
+import Control.Concurrent.Async (cancel)
+import Control.Concurrent.STM (atomically)
+import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
 import Control.Lens (Getter, Lens', view)
 import Control.Lens.Operators ((&), (.~), (?~), (^.))
-import Control.Monad ((>=>), forever, void, when)
+import Control.Monad ((>=>), forever, when)
 import Control.Monad.IO.Class (liftIO)
-import Control.Monad.Reader (runReaderT)
 import Data.Text (Text)
 
 
@@ -44,42 +45,44 @@ logPla = L.logPla "Mud.Threads.Regen"
 
 
 runRegenAsync :: Id -> MudStack ()
-runRegenAsync i = runAsync (threadRegen i) >>= \a -> tweak $ mobTbl.ind i.regenAsync ?~ a
+runRegenAsync i = liftIO newTQueueIO >>= \tq -> do
+    tweak $ mobTbl.ind i.regenQueue ?~ tq
+    onNewThread . threadRegen i $ tq
 
 
 startNpcRegens :: MudStack ()
 startNpcRegens =
-    logNotice "startNpcRegens" "starting NPC regens." >> (mapM_ runRegenAsync  . findNpcIds =<< getState)
+    logNotice "startNpcRegens" "starting NPC regens." >> (mapM_ runRegenAsync . findNpcIds =<< getState)
 
 
 stopNpcRegens :: MudStack ()
 stopNpcRegens =
-    logNotice "stopNpcRegens"  "stopping NPC regens." >> (mapM_ throwWaitRegen . findNpcIds =<< getState)
+    logNotice "stopNpcRegens"  "stopping NPC regens." >> (mapM_ stopRegen     . findNpcIds =<< getState)
 
 
-throwWaitRegen :: Id -> MudStack ()
-throwWaitRegen i = helper |&| modifyState >=> maybeVoid throwWait
+stopRegen :: Id -> MudStack ()
+stopRegen i = helper |&| modifyState >=> maybeVoid (liftIO . atomically . (`writeTQueue` StopRegen))
   where
-    helper ms = let a = ms^.mobTbl.ind i.regenAsync
-                in (ms & mobTbl.ind i.regenAsync .~ Nothing, a)
+    helper ms = let tq = ms^.mobTbl.ind i.regenQueue
+                in (ms & mobTbl.ind i.regenQueue .~ Nothing, tq)
 
 
 -----
 
 
-threadRegen :: Id -> MudStack ()
-threadRegen i = onEnv $ \md -> do
-    setThreadType . RegenParent $ i
-    handle (die (Just i) "regen") $ logPla "threadRegen" i "regen started." >> spawnThreadTree md
+threadRegen :: Id -> RegenQueue -> MudStack ()
+threadRegen i tq = let regens = [ regen curHp maxHp calcRegenHpAmt calcRegenHpDelay
+                                , regen curMp maxMp calcRegenMpAmt calcRegenMpDelay
+                                , regen curPp maxPp calcRegenPpAmt calcRegenPpDelay
+                                , regen curFp maxFp calcRegenFpAmt calcRegenFpDelay ]
+                   in do
+                       setThreadType . RegenParent $ i
+                       logPla "threadRegen" i "regen started."
+                       asyncs <- mapM runAsync regens
+                       liftIO $ atomically (readTQueue tq) >>= const (mapM_ cancel asyncs)
   where
-    spawnThreadTree md = liftIO . void . concurrentTree . map (`runReaderT` md) $ [ h, m, p, f ]
-      where
-        h = regen curHp maxHp calcRegenHpAmt calcRegenHpDelay
-        m = regen curMp maxMp calcRegenMpAmt calcRegenMpDelay
-        p = regen curPp maxPp calcRegenPpAmt calcRegenPpDelay
-        f = regen curFp maxFp calcRegenFpAmt calcRegenFpDelay
     regen :: Lens' Mob Int -> Getter Mob Int -> (Id -> MudState -> Int) -> (Id -> MudState -> Int) -> MudStack ()
-    regen curLens maxLens calcAmt calcDelay = (setThreadType . RegenChild $ i) >> forever loop
+    regen curLens maxLens calcAmt calcDelay = setThreadType (RegenChild i) >> forever loop
       where
         loop = delay >> getState >>= \ms ->
             let mob    = getMob i ms

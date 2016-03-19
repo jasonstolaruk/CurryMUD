@@ -1881,7 +1881,7 @@ handleEgress i = do
     helper now ri isAdHoc s |&| modifyState >=> \(bs, logMsgs) -> do
         stopActs          i
         pauseEffects      i
-        throwWaitRegen    i
+        stopRegen         i
         throwWaitDigester i
         closePlaLog       i
         bcast bs
@@ -2710,7 +2710,6 @@ stats p = withoutArgs stats p
 -----
 
 
--- TODO: Help.
 stop :: ActionFun
 stop p@(NoArgs i mq cols) = getState >>= \ms ->
     case filter (view _3) . mkStopTuples p $ ms of

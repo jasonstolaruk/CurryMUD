@@ -55,7 +55,6 @@ logNotice = L.logNotice "Mud.Threads.Server"
 -- ==================================================
 
 
--- TODO: Crashing on second disconnect.
 threadServer :: Handle -> Id -> MsgQueue -> TimerQueue -> MudStack ()
 threadServer h i mq tq = sequence_ [ setThreadType . Server $ i, loop `catch` threadExHandler ("server " <> showText i) ]
   where

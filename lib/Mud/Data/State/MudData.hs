@@ -485,7 +485,7 @@ data Mob = Mob { _sex                    :: Sex
                , _actMap                 :: ActMap
                , _nowEating              :: Maybe NowEating
                , _nowDrinking            :: Maybe NowDrinking
-               , _regenAsync             :: Maybe RegenAsync
+               , _regenQueue             :: Maybe RegenQueue
                , _interp                 :: Maybe Interp }
 
 
@@ -539,7 +539,10 @@ type NowDrinking = (Liq, Sing)
 type NowEating = Sing
 
 
-type RegenAsync = Async ()
+type RegenQueue = TQueue RegenCmd
+
+
+data RegenCmd = StopRegen
 
 
 instance FromJSON Mob where parseJSON = jsonToMob

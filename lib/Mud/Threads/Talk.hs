@@ -20,16 +20,13 @@ import Mud.Util.Misc
 import Mud.Util.Text
 import qualified Mud.Misc.Logging as L (logNotice)
 
-import Control.Concurrent (forkIO)
-import Control.Concurrent.Async (asyncThreadId)
+import Control.Concurrent.Async (asyncThreadId, cancel, wait)
 import Control.Concurrent.STM.TMQueue (newTMQueueIO)
 import Control.Concurrent.STM.TQueue (newTQueueIO)
 import Control.Exception.Lifted (finally, handle, try)
 import Control.Lens (at)
 import Control.Lens.Operators ((%~), (&), (.~), (?~))
-import Control.Monad (void)
 import Control.Monad.IO.Class (liftIO)
-import Control.Monad.Reader (runReaderT)
 import Data.Bits (zeroBits)
 import Data.Monoid ((<>))
 import Data.Text (Text)
@@ -65,14 +62,16 @@ threadTalk h host = helper `finally` cleanUp
         (mq, tq) <- liftIO $ (,) <$> newTQueueIO <*> newTMQueueIO
         (i, s  ) <- adHoc mq host
         setThreadType . Talk $ i
-        handle (threadExHandler $ "talk " <> showText i) . onEnv $ \md -> do
+        handle (threadExHandler $ "talk " <> showText i) $ do
             liftIO configBuffer
             dumpTitle  mq
             sendPrompt mq "By what name are you known?"
             bcastAdmins $ "A new player has connected: " <> s <> "."
             logNotice "threadTalk helper" $ "new PC name for incoming player: " <> s <> "."
-            liftIO . void . forkIO . runReaderT (threadInacTimer i mq tq) $ md
-            racer md (threadServer  h i mq tq) . threadReceive h i $ mq
+            onNewThread . threadInacTimer   i   mq $ tq
+            a <- runAsync . threadReceive h i $ mq
+            b <- runAsync . threadServer  h i   mq $ tq
+            liftIO $ wait b >> cancel a
     configBuffer = hSetBuffering h LineBuffering >> hSetNewlineMode h nlMode >> hSetEncoding h latin1
     nlMode       = NewlineMode { inputNL = CRLF, outputNL = CRLF }
     cleanUp      = do
@@ -112,7 +111,7 @@ adHoc mq host = do
                        , _actMap        = M.empty
                        , _nowEating     = Nothing
                        , _nowDrinking   = Nothing
-                       , _regenAsync    = Nothing
+                       , _regenQueue    = Nothing
                        , _interp        = Just interpName }
             pc   = PC  { _race       = r
                        , _introduced = []
