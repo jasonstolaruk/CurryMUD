@@ -738,7 +738,7 @@ examineVessel i ms = let v = getVessel i ms in
     , "Vessel contents: " <> v^.vesselCont.to descCont ] ++ views vesselCont (maybe [] (descLiq . fst)) v
   where
     descCont Nothing       = "none"
-    descCont (Just (l, m)) = showText m <> " mouthfuls of " <> l^.liqName.to aOrAnOnLower
+    descCont (Just (l, m)) = showText m <> " mouthfuls of " <> renderLiqNoun l aOrAn
     descLiq l = let dl = getDistinctLiqForLiq l ms
                 in [ "Distinct liquid ID: " <> l^.liqId.to showText
                    , "Liquid smell: "       <> l^.liqSmellDesc

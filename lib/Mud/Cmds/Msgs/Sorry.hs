@@ -222,6 +222,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
 import Mud.Cmds.Util.CmdPrefixes
 import Mud.Data.Misc
 import Mud.Data.State.MudData
+import Mud.Data.State.Util.Misc
 import Mud.Misc.ANSI
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
@@ -435,9 +436,9 @@ sorryDisconnectIgnore = sorryIgnoreLocPrefPlur "The names of the people you woul
 -----
 
 
-sorryDrinkAlreadyDrinking :: Text -> Sing -> Text
-sorryDrinkAlreadyDrinking t s = T.concat [ "You are already drinking "
-                                         , aOrAnOnLower t
+sorryDrinkAlreadyDrinking :: Liq -> Sing -> Text
+sorryDrinkAlreadyDrinking l s = T.concat [ "You are already drinking "
+                                         , renderLiqNoun l aOrAn
                                          , " from "
                                          , aOrAn s
                                          , ". Please wait until you finish, or type "

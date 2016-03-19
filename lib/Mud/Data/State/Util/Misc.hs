@@ -49,6 +49,8 @@ module Mud.Data.State.Util.Misc ( addToInv
                                 , procHooks
                                 , raceToLang
                                 , removeAdHoc
+                                , renderLiqNoun
+                                , renderNoun
                                 , runEffectFun
                                 , setInterp
                                 , sortInv
@@ -72,7 +74,7 @@ import Control.Arrow ((***), first)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TMVar (putTMVar, takeTMVar)
 import Control.Exception.Lifted (bracket)
-import Control.Lens (_1, _2, at, both, over, view, views)
+import Control.Lens (_1, _2, at, both, over, to, view, views)
 import Control.Lens.Operators ((%~), (&), (.~), (^.))
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (ask)
@@ -510,6 +512,18 @@ removeAdHoc i ms = ms & activeEffectsTbl.at  i        .~ Nothing
                       & rndmNamesMstrTbl.at  i        .~ Nothing
                       & teleLinkMstrTbl .at  i        .~ Nothing
                       & typeTbl         .at  i        .~ Nothing
+
+
+-----
+
+
+renderNoun :: (Text -> Text) -> Noun -> Text
+renderNoun _ (Don'tArticle t) = t
+renderNoun f (DoArticle    t) = f t
+
+
+renderLiqNoun :: Liq -> (Text -> Text) -> Text
+renderLiqNoun l f = l^.liqNoun.to (renderNoun f)
 
 
 -----

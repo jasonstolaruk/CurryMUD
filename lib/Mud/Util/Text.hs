@@ -29,6 +29,7 @@ module Mud.Util.Text ( aOrAn
                      , spaces
                      , stripControl
                      , stripTelnet
+                     , the
                      , theLetterS
                      , theOnLower
                      , theOnLowerCap
@@ -288,6 +289,13 @@ stripTelnet t
                                                                       (_, T.tail -> rest') -> stripTelnet rest'
       | otherwise     = stripTelnet rest
     helper _ = ""
+
+
+-----
+
+
+the :: Text -> Text
+the = ("the " <>)
 
 
 -----

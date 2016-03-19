@@ -29,10 +29,13 @@ import System.Random (Random, random, randomR)
 import System.Random.MWC (GenIO)
 
 
-type MudStack = ReaderT MudData IO
+{-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
 
 
 -- ==================================================
+
+
+type MudStack = ReaderT MudData IO
 
 
 data MudData = MudData { _errorLog      :: Maybe LogService
@@ -423,7 +426,7 @@ type Inv = [Id]
 
 
 data Liq = Liq { _liqId        :: DistinctLiqId
-               , _liqName      :: Text
+               , _liqNoun      :: Noun
                , _liqSmellDesc :: Text
                , _liqTasteDesc :: Text
                , _drinkDesc    :: Text } deriving (Eq, Generic, Show)
@@ -433,6 +436,10 @@ newtype DistinctLiqId = DistinctLiqId Id  deriving (Eq, Generic, Ord, Show)
 
 
 data DistinctLiq = DistinctLiq { _liqEdibleEffects :: EdibleEffects }
+
+
+data Noun = DoArticle    Text
+          | Don'tArticle Text deriving (Eq, Generic, Show)
 
 
 -- ==================================================
@@ -971,6 +978,7 @@ instance FromJSON InstaEffectSub
 instance FromJSON Lang
 instance FromJSON LinkDir
 instance FromJSON Liq            where parseJSON = genericParseJSON dropUnderscore
+instance FromJSON Noun
 instance FromJSON PausedEffect   where parseJSON = genericParseJSON dropUnderscore
 instance FromJSON PC             where parseJSON = genericParseJSON dropUnderscore
 instance FromJSON PtsType
@@ -1007,6 +1015,7 @@ instance ToJSON InstaEffectSub
 instance ToJSON Lang
 instance ToJSON LinkDir
 instance ToJSON Liq              where toJSON    = genericToJSON    dropUnderscore
+instance ToJSON Noun
 instance ToJSON PausedEffect     where toJSON    = genericToJSON    dropUnderscore
 instance ToJSON PC               where toJSON    = genericToJSON    dropUnderscore
 instance ToJSON PtsType

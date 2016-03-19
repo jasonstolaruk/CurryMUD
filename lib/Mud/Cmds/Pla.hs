@@ -745,7 +745,7 @@ drink p@(OneArg  i mq _    _            ) = advise p ["drink"] adviceDrinkNoVess
 drink   (Lower   i mq cols [amt, target]) = getState >>= \ms -> let (isDrink, isEat) = isDrinkingEating i ms in
     if isDrink
       then let Just (l, s) = getNowDrinking i ms
-           in wrapSend mq cols . sorryDrinkAlreadyDrinking (l^.liqName) $ s
+           in wrapSend mq cols . sorryDrinkAlreadyDrinking l $ s
       else if isEat
         then let Just s = getNowEating i ms
              in wrapSend mq cols (sorryDrinkEating s) >> sendDfltPrompt mq i
@@ -2761,7 +2761,7 @@ stopEating p _ = patternMatchFail "stopEating" [ showText p ]
 stopDrinking :: ActionParams -> MudState -> MudStack ()
 stopDrinking (WithArgs i mq cols _) ms =
     let Just (l, s) = getNowDrinking i ms
-        toSelf      = T.concat [ "You stop drinking ", l^.liqName.to theOnLower, " from the ", s, "." ]
+        toSelf      = T.concat [ "You stop drinking ", renderLiqNoun l the, " from the ", s, "." ]
         d           = mkStdDesig i ms DoCap
         bcastHelper = bcastIfNotIncogNl i . pure $ ( T.concat [ serialize d
                                                               , " stops drinking from "

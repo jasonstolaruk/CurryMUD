@@ -964,7 +964,7 @@ mkVesselContDesc cols ms targetId =
         mkContDesc (l, q) = T.concat [ "The "
                                      , s
                                      , " contains "
-                                     , l^.liqName.to aOrAnOnLower
+                                     , renderLiqNoun l aOrAn
                                      , " "
                                      , parensQuote $ showText (calcVesselPerFull v q) <> "% full"
                                      , "." ] |&| wrapUnlines cols

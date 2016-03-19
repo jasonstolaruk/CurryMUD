@@ -97,7 +97,7 @@ drinkAct :: DrinkBundle -> MudStack ()
 drinkAct DrinkBundle { .. } =
     let a = do
             send drinkMq . multiWrap drinkCols . dropEmpties $ [ T.concat [ "You begin drinking "
-                                                                          , drinkLiq^.liqName.to theOnLower
+                                                                          , renderLiqNoun drinkLiq the
                                                                           , " from the "
                                                                           , drinkSing
                                                                           , "..." ]
@@ -154,7 +154,7 @@ drinkAct DrinkBundle { .. } =
                                                         , " mouthfuls"
                                                         , theLetterS $ m /= 1
                                                         , " of "
-                                                        , drinkLiq^.liqName.to aOrAnOnLower
+                                                        , renderLiqNoun drinkLiq aOrAn
                                                         , " "
                                                         , let DistinctLiqId i = drinkLiq^.liqId
                                                           in parensQuote . showText $ i
