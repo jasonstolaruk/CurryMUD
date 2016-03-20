@@ -466,7 +466,7 @@ partitionInvHelper f ms maxAmt acc@(x, _, _) targetId = let x' = x + f targetId 
 
 
 mkCan'tGetInvDescs :: Id -> MudState -> Inv -> [Text]
-mkCan'tGetInvDescs = can'tInvDescsHelper sorryGetEnc
+mkCan'tGetInvDescs = can'tInvDescsHelper sorryGetEnc -- TODO: Handle the case when the target object is exceptionally heavy.
 
 
 can'tInvDescsHelper :: Text -> Id -> MudState -> Inv -> [Text]

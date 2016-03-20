@@ -2,7 +2,7 @@
 
 module MudTests.Util.Text where
 
-import Mud.TopLvlDefs.Chars
+import Mud.TopLvlDefs.Telnet
 import Mud.Util.List
 import Mud.Util.Misc
 import Mud.Util.Operators
