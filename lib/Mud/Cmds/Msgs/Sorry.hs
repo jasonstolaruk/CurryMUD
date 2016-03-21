@@ -62,6 +62,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryGetInInv
                            , sorryGetNothingHere
                            , sorryGetType
+                           , sorryGetWeight
                            , sorryGiveEnc
                            , sorryGiveExcessTargets
                            , sorryGiveInEq
@@ -639,6 +640,10 @@ sorryGetNothingHere = "You don't see anything to pick up here."
 
 sorryGetType :: Text -> Text
 sorryGetType t = can't "pick up " <> t <> "."
+
+
+sorryGetWeight :: Sing -> Text
+sorryGetWeight s = "The " <> s <> " is too heavy for you to pick up."
 
 
 -----

@@ -143,7 +143,7 @@ calcEncPer :: Id -> MudState -> Int
 calcEncPer i ms = round . (100 *) $ calcWeight i ms `divide` calcMaxEnc i ms
 
 
-calcMaxEnc :: Id -> MudState -> Int
+calcMaxEnc :: Id -> MudState -> Weight
 calcMaxEnc i ms = round . (100 *) $ calcEffSt i ms ^ 2 `divide` 13
 
 

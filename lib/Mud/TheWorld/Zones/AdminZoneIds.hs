@@ -275,3 +275,5 @@ iBottleSml = 166 :: Id
 iBottle = 167 :: Id
 
 iBottleLrg = 168 :: Id
+
+iSlab = 169 :: Id

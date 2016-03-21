@@ -61,7 +61,9 @@ stopNpcRegens =
 
 
 stopRegen :: Id -> MudStack ()
-stopRegen i = helper |&| modifyState >=> maybeVoid (liftIO . atomically . (`writeTQueue` StopRegen))
+stopRegen i = do
+    logPla "stopRegen" i "stopping regen."
+    helper |&| modifyState >=> maybeVoid (liftIO . atomically . (`writeTQueue` StopRegen))
   where
     helper ms = let tq = ms^.mobTbl.ind i.regenQueue
                 in (ms & mobTbl.ind i.regenQueue .~ Nothing, tq)

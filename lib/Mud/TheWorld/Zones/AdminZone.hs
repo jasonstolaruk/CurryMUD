@@ -533,7 +533,8 @@ createAdminZone = do
         , i1Lb2
         , i1Lb3
         , i1Lb4
-        , i1Lb5 ]
+        , i1Lb5
+        , iSlab ]
         mempty
         (Rm "Weight closet"
             "This closet holds weights."
@@ -755,7 +756,7 @@ createAdminZone = do
               kewpieDesc
               zeroBits)
          (Obj dollWeight dollVol Nothing Nothing zeroBits Nothing)
-  let weightDesc = "It's a heavy slab of metal."
+  let weightDesc = "It's a hunk of metal cut into a rounded shape."
   putObj i190Lb
          (Ent i190Lb
               (Just "weight")
@@ -868,6 +869,13 @@ createAdminZone = do
               weightDesc
               zeroBits)
          (Obj 100 350 Nothing Nothing zeroBits Nothing)
+  putObj iSlab
+         (Ent iSlab
+              (Just "slab")
+              "large slab of rock" "large slabs of rock"
+              "It's a hunk of grey rock cut into a rectangular block."
+              zeroBits)
+         (Obj 19300 67000 Nothing Nothing zeroBits Nothing)
   forM_ [ iCube1 .. iCube1 + 19 ] $ \i ->
       putObj i
              (Ent i

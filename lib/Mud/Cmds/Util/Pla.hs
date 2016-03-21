@@ -438,13 +438,14 @@ helperGetEitherInv :: Id
 helperGetEitherInv i d fromId a@(ms, _, _, _) = \case
   Left  msg                              -> a & _2 <>~ pure msg
   Right (sortByType -> (npcPCs, others)) ->
-    let (_, cans, can'ts) = foldl' (partitionInvByEnc ms . calcMaxEnc i $ ms) (calcWeight i ms, [], []) others
+    let maxEnc            = calcMaxEnc i ms
+        (_, cans, can'ts) = foldl' (partitionInvByEnc ms maxEnc) (calcWeight i ms, [], []) others
         (toSelfs, bs    ) = mkGetDropInvDescs i ms d Get cans
     in a & _1.invTbl.ind fromId %~  (\\ cans)
          & _1.invTbl.ind i      %~  addToInv ms cans
          & _2                   <>~ concat [ map sorryType npcPCs
                                            , toSelfs
-                                           , mkCan'tGetInvDescs i ms can'ts ]
+                                           , mkCan'tGetInvDescs i ms maxEnc can'ts ]
          & _3                   <>~ bs
          & _4                   <>~ toSelfs
   where
@@ -453,7 +454,7 @@ helperGetEitherInv i d fromId a@(ms, _, _, _) = \case
                                                                     NpcType -> _1
                                                                     _       -> _2
                              in sorted & lens %~ (targetId :)
-    sorryType targetId = sorryGetType . serialize . mkStdDesig targetId ms $ Don'tCap
+    sorryType targetId     = sorryGetType . serialize . mkStdDesig targetId ms $ Don'tCap
 
 
 partitionInvByEnc :: MudState -> Weight -> (Weight, Inv, Inv) -> Id -> (Weight, Inv, Inv)
@@ -465,8 +466,11 @@ partitionInvHelper f ms maxAmt acc@(x, _, _) targetId = let x' = x + f targetId 
     x' <= maxAmt ? (acc & _1 .~ x' & _2 <>~ pure targetId) :? (acc & _3 <>~ pure targetId)
 
 
-mkCan'tGetInvDescs :: Id -> MudState -> Inv -> [Text]
-mkCan'tGetInvDescs = can'tInvDescsHelper sorryGetEnc -- TODO: Handle the case when the target object is exceptionally heavy.
+mkCan'tGetInvDescs :: Id -> MudState -> Weight -> Inv -> [Text]
+mkCan'tGetInvDescs i ms maxEnc = concatMap helper
+  where
+    helper targetId | calcWeight targetId ms > maxEnc = pure . sorryGetWeight . getSing targetId $ ms
+                    | otherwise                       = can'tInvDescsHelper sorryGetEnc i ms . pure $ targetId
 
 
 can'tInvDescsHelper :: Text -> Id -> MudState -> Inv -> [Text]
