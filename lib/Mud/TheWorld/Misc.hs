@@ -232,6 +232,7 @@ mkTrashCoinsDescsSelf = mkCoinsMsgs helper
 -- Other:
 
 
+-- If "prob" is 25 (1 in 4), and "secs" is 60, we can expect the event to occurr once every 4 mins.
 mkRndmBcastRmFun :: Id -> Text -> FunName -> Int -> Seconds -> Text -> Fun
 mkRndmBcastRmFun i idName fn prob secs msg = handle (threadExHandler threadName) $ do
     setThreadType . RmFun $ i
@@ -240,7 +241,6 @@ mkRndmBcastRmFun i idName fn prob secs msg = handle (threadExHandler threadName)
   where
     threadName = T.concat [ "room function ", dblQuote fn, " ", idName, " ", idTxt ]
     idTxt      = parensQuote . showText $ i
-    loop       = getState >>= \ms -> do
-        let is = filter (`isNpcPC` ms) . getInv i $ ms
+    loop       = getState >>= \ms -> let is = filter (`isNpcPC` ms) . getInv i $ ms in do
         unless (()# is) . rndmDo prob . bcastNl . pure $ (msg, is)
         (liftIO . threadDelay $ secs * 10 ^ 6) >> loop

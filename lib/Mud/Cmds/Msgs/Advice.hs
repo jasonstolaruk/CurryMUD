@@ -30,6 +30,7 @@ module Mud.Cmds.Msgs.Advice ( adviceAAnnounceNoArgs
                             , adviceATelePCNoArgs
                             , adviceATeleRmExcessArgs
                             , adviceAWireNoArgs
+                            , adviceBlankAdverb
                             , adviceBugNoArgs
                             , adviceConnectNoArgs
                             , adviceConnectNoChan
@@ -60,10 +61,10 @@ module Mud.Cmds.Msgs.Advice ( adviceAAnnounceNoArgs
                             , adviceDWrapIndentNoArgs
                             , adviceDWrapNoArgs
                             , adviceEmoteNoArgs
-                            , adviceEmptyAdverb
+                            , adviceEmptyNoArgs
                             , adviceEnc
                             , adviceEtc
-                            , adviceEtcEmptyPoss
+                            , adviceEtcBlankPoss
                             , adviceEtcHead
                             , adviceEtcInTwoWay
                             , adviceExpCmdExcessArgs
@@ -388,6 +389,14 @@ adviceAsSelfNoArgs = "Please provide a command to execute, as in " <>
                      "."
 
 
+adviceBlankAdverb :: Text
+adviceBlankAdverb = T.concat [ "Please provide an adverbial phrase between "
+                             , dblQuote aop
+                             , " and "
+                             , dblQuote acl
+                             , adverbExample ]
+
+
 adverbExample :: Text
 adverbExample = ", as in "                                                     <>
                 colorWith quoteColor ("say "                                   <>
@@ -456,12 +465,10 @@ adviceEmoteNoArgs = "Please provide a description of an action, as in "         
                     "."
 
 
-adviceEmptyAdverb :: Text
-adviceEmptyAdverb = T.concat [ "Please provide an adverbial phrase between "
-                             , dblQuote aop
-                             , " and "
-                             , dblQuote acl
-                             , adverbExample ]
+adviceEmptyNoArgs :: Text
+adviceEmptyNoArgs = "Please specify one or more vessels to empty, as in " <>
+                    colorWith quoteColor "empty waterskin"                <>
+                    "."
 
 
 adviceEnc :: Text -> Text
@@ -497,8 +504,8 @@ adviceEtc cn = T.concat [ dblQuote etc
                         , "." ]
 
 
-adviceEtcEmptyPoss :: Text
-adviceEtcEmptyPoss = T.concat [ "You must specify the name of the person you want to target between "
+adviceEtcBlankPoss :: Text
+adviceEtcBlankPoss = T.concat [ "You must specify the name of the person you want to target between "
                               , dblQuote etc
                               , " and "
                               , dblQuote "'s"

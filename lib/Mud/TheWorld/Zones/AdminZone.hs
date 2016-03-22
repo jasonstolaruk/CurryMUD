@@ -316,7 +316,7 @@ beepRmFunName = "AdminZone_iCentral_beep"
 
 
 beepRmFun :: Fun
-beepRmFun = mkRndmBcastRmFun iCentral "iCentral" beepRmFunName 25 30 beepMsg
+beepRmFun = mkRndmBcastRmFun iCentral "iCentral" beepRmFunName 25 45 beepMsg
   where
     beepMsg = "A series of blips and beeps can be heard, originating from one of the control panels."
 
@@ -329,7 +329,7 @@ beeBuzzRmFunName = "AdminZone_iAtrium_beeBuzz"
 
 
 beeBuzzRmFun :: Fun
-beeBuzzRmFun = mkRndmBcastRmFun iAtrium "iAtrium" beeBuzzRmFunName 25 30 beeBuzzMsg
+beeBuzzRmFun = mkRndmBcastRmFun iAtrium "iAtrium" beeBuzzRmFunName 25 60 beeBuzzMsg
   where
     beeBuzzMsg = "A plump bumblebee buzzes happily around the flowerbed."
 

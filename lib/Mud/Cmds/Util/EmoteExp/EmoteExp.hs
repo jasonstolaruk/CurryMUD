@@ -111,7 +111,7 @@ procEmote i ms cc triples as             =
     procTarget word =
         case swap . (both %~ T.reverse) . T.span isPunc . T.reverse $ word of
           ("",   _) -> Left . adviceEtc $ cc'
-          ("'s", _) -> Left adviceEtcEmptyPoss
+          ("'s", _) -> Left adviceEtcBlankPoss
           (w,    p) ->
             let (isPoss, target) = ("'s" `T.isSuffixOf` w ? (True, T.dropEnd 2) :? (False, id)) & _2 %~ (w |&|)
                 notFound         = Left . sorryChanTargetNameFromContext target $ cc
@@ -256,7 +256,7 @@ adminChanProcEmote i ms tunedIds tunedSings as =
     procTarget word =
         case swap . (both %~ T.reverse) . T.span isPunc . T.reverse $ word of
           ("",   _) -> Left . adviceEtc $ cn
-          ("'s", _) -> Left adviceEtcEmptyPoss
+          ("'s", _) -> Left adviceEtcBlankPoss
           (w,    p) ->
             let (isPoss, target) = ("'s" `T.isSuffixOf` w ? (True, T.dropEnd 2) :? (False, id)) & _2 %~ (w |&|)
                 target'          = capitalize . T.toLower $ target

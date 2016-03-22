@@ -1,0 +1,17 @@
+\h EMPTY \d
+
+\uUSAGE\n
+empty vessel \s...\d
+
+\uDESCRIPTION\n
+Empty the liquid contents of one or more vessels.
+The contents will be unrecoverable, so please proceed with caution.
+
+\uEXAMPLES\n
+\qempty flask\d to empty your flask.4`
+\qempty flask waterskin\d to empty your flask and your waterskin.4`
+\qempty \p2#i\qbottle\d to empty your second bottle.4`
+\qempty \p2#m\qbottle\d to empty your first two bottles.4`
+\qempty \p#a\qbottle\d to empty all of your bottles.4`
+
+\uSEE ALSO\n

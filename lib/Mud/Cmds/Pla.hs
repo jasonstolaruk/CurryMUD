@@ -163,6 +163,7 @@ regularCmdTuples =
     , ("channel",    chan,            True,  "Send a message on a telepathic channel " <> plusRelatedMsg)
     , ("d",          go "d",          True,  cmdDescGoDown)
     , ("e",          go "e",          True,  cmdDescGoEast)
+    , ("empty",      emptyAction,     True,  cmdDescEmpty)
     , ("equipment",  equip,           True,  cmdDescEquip)
     , ("expressive", expCmdList,      True,  cmdDescExpCmdList)
     , ("n",          go "n",          True,  cmdDescGoNorth)
@@ -286,6 +287,7 @@ npcRegularCmdTuples =
     , ("bars",       bars,           True,  cmdDescBars)
     , ("d",          go "d",         True,  cmdDescGoDown)
     , ("e",          go "e",         True,  cmdDescGoEast)
+    , ("empty",      emptyAction,    True,  cmdDescEmpty)
     , ("equipment",  equip,          True,  cmdDescEquip)
     , ("expressive", expCmdList,     True,  cmdDescExpCmdList)
     , ("n",          go "n",         True,  cmdDescGoNorth)
@@ -739,13 +741,13 @@ disconnectHelper i (target, as) idNamesTbl ms =
 -----
 
 
-drink :: ActionFun
+drink :: ActionFun -- TODO: Add to the "syntax" help topic.
 drink p@(NoArgs' i mq                   ) = advise p ["drink"] adviceDrinkNoArgs   >> sendDfltPrompt mq i
 drink p@(OneArg  i mq _    _            ) = advise p ["drink"] adviceDrinkNoVessel >> sendDfltPrompt mq i
 drink   (Lower   i mq cols [amt, target]) = getState >>= \ms -> let (isDrink, isEat) = isDrinkingEating i ms in
     if isDrink
       then let Just (l, s) = getNowDrinking i ms
-           in wrapSend mq cols . sorryDrinkAlreadyDrinking l $ s
+           in wrapSend mq cols . sorryDrinkAlready l $ s
       else if isEat
         then let Just s = getNowEating i ms
              in wrapSend mq cols (sorryDrinkEating s) >> sendDfltPrompt mq i
@@ -875,7 +877,7 @@ emote (WithArgs i mq cols as) = getState >>= \ms ->
     procTarget ms word =
         case swap . (both %~ T.reverse) . T.span isPunc . T.reverse $ word of
           ("",   _) -> Left . adviceEtc $ "emote "
-          ("'s", _) -> Left adviceEtcEmptyPoss
+          ("'s", _) -> Left adviceEtcBlankPoss
           (w,    p) ->
             let (isPoss, target) = ("'s" `T.isSuffixOf` w ? (True, T.dropEnd 2) :? (False, id)) & _2 %~ (w |&|)
                 invCoins         = first (i `delete`) . getMobRmNonIncogInvCoins i $ ms
@@ -902,6 +904,45 @@ emote (WithArgs i mq cols as) = getState >>= \ms ->
     mkEmoteWord isPoss   = isPoss ? ForTargetPoss :? ForTarget
     sorry t              = Left . quoteWith' (t, sorryEmoteTargetRmOnly) $ " "
 emote p = patternMatchFail "emote" [ showText p ]
+
+
+-----
+
+
+emptyAction :: ActionFun
+emptyAction p@AdviseNoArgs            = advise p ["empty"] adviceEmptyNoArgs
+emptyAction   (LowerNub i mq cols as) = helper |&| modifyState >=> \(toSelfs, bs, logSings) -> do
+    multiWrapSend mq cols toSelfs
+    bcastIfNotIncogNl i bs
+    logSings |#| logPla "emptyAction" i . (<> ".") . ("emptied " <>) . commas
+  where
+    helper ms =
+        let (inInvs, inEqs, inRms)       = sortArgsInvEqRm InInv as
+            (sorryInEq, sorryInRm)       = (inEqs |!| sorryEmptyInEq, inRms |!| sorryEmptyInRm)
+            invCoins                     = getInvCoins i ms
+            d                            = mkStdDesig  i ms DoCap
+            (eiss, ecs)                  = uncurry (resolveMobInvCoins i ms inInvs) invCoins
+            (ms', toSelfs, bs, logSings) = foldl' (helperEmptyEitherInv d) (ms, [], [], []) eiss
+            toSelfs'                     = dropBlanks $ [ sorryInEq, sorryInRm, ecs |!| sorryEmptyCoins ] ++ toSelfs
+        in if ()!# invCoins
+          then (ms', (toSelfs',                   bs, logSings))
+          else (ms,  (pure dudeYourHandsAreEmpty, [], []      ))
+    helperEmptyEitherInv d a = \case
+      Left  msg -> a & _2 <>~ pure msg
+      Right is  -> foldl' f a is
+      where
+        f a'@(ms, _, _, _) targetId =
+            let s            = getSing targetId ms
+                alreadyEmpty = a' & _2 <>~ pure (sorryEmptyAlready s)
+                emptyIt      = a' & _1 .~  (ms & vesselTbl.ind targetId.vesselCont .~ Nothing)
+                                  & _2 <>~ pure ("You empty the contents of the " <> s <> ".")
+                                  & _3 <>~ pure ( T.concat [ serialize d, " empties the contents of ", aOrAn s, "." ]
+                                                , i `delete` desigIds d )
+                                  & _4 <>~ pure s
+            in case getType targetId ms of
+              VesselType -> maybe alreadyEmpty (const emptyIt) . getVesselCont targetId $ ms
+              _          -> a' & _2 <>~ pure (sorryEmptyType s)
+emptyAction p = patternMatchFail "emptyAction" [ showText p ]
 
 
 -----
@@ -2367,8 +2408,8 @@ say p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
     adviseHelper                = advise p ["say"]
     parseAdverb (T.tail -> msg) = case T.break (== adverbCloseChar) msg of
       (_,   "")            -> Left  adviceAdverbCloseChar
-      ("",  _ )            -> Left  adviceEmptyAdverb
-      (" ", _ )            -> Left  adviceEmptyAdverb
+      ("",  _ )            -> Left  adviceBlankAdverb
+      (" ", _ )            -> Left  adviceBlankAdverb
       (_,   x ) | x == acl -> Left  adviceSayAdverbNoUtterance
       (adverb, right)      -> Right (adverb, T.drop 2 right)
     sayTo maybeAdverb (T.words -> (target:rest@(r:_))) ms =

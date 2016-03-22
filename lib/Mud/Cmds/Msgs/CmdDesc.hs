@@ -29,6 +29,10 @@ cmdDescEmote :: Text
 cmdDescEmote = "Freely describe an action."
 
 
+cmdDescEmpty :: Text
+cmdDescEmpty = "Empty the liquid contents of one or more vessels."
+
+
 cmdDescEquip :: Text
 cmdDescEquip = "Display your readied equipment, or examine one or more items in your readied equipment."
 

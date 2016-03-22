@@ -25,7 +25,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryConnectChanName
                            , sorryConnectIgnore
                            , sorryDisconnectIgnore
-                           , sorryDrinkAlreadyDrinking
+                           , sorryDrinkAlready
                            , sorryDrinkCoins
                            , sorryDrinkEating
                            , sorryDrinkEmpty
@@ -45,6 +45,11 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryEmoteTargetInInv
                            , sorryEmoteTargetRmOnly
                            , sorryEmoteTargetType
+                           , sorryEmptyAlready
+                           , sorryEmptyCoins
+                           , sorryEmptyInEq
+                           , sorryEmptyInRm
+                           , sorryEmptyType
                            , sorryEquipCoins
                            , sorryEquipInvLook
                            , sorryExpCmdCoins
@@ -437,14 +442,14 @@ sorryDisconnectIgnore = sorryIgnoreLocPrefPlur "The names of the people you woul
 -----
 
 
-sorryDrinkAlreadyDrinking :: Liq -> Sing -> Text
-sorryDrinkAlreadyDrinking l s = T.concat [ "You are already drinking "
-                                         , renderLiqNoun l aOrAn
-                                         , " from "
-                                         , aOrAn s
-                                         , ". Please wait until you finish, or type "
-                                         , colorWith quoteColor "stop drinking"
-                                         , " to stop." ]
+sorryDrinkAlready :: Liq -> Sing -> Text
+sorryDrinkAlready l s = T.concat [ "You are already drinking "
+                                 , renderLiqNoun l aOrAn
+                                 , " from "
+                                 , aOrAn s
+                                 , ". Please wait until you finish, or type "
+                                 , colorWith quoteColor "stop drinking"
+                                 , " to stop." ]
 
 
 sorryDrinkCoins :: Text
@@ -537,6 +542,29 @@ sorryEmoteTargetRmOnly = "You can only target a person in your current room."
 
 sorryEmoteTargetType :: Sing -> Text
 sorryEmoteTargetType s = can'tTarget $ aOrAn s <> "."
+
+
+-----
+
+
+sorryEmptyAlready :: Sing -> Text
+sorryEmptyAlready s = "The " <> s <> " is already empty."
+
+
+sorryEmptyCoins :: Text
+sorryEmptyCoins = can't "empty a coin."
+
+
+sorryEmptyInEq :: Text
+sorryEmptyInEq = can't "empty an item in your readied equipment."
+
+
+sorryEmptyInRm :: Text
+sorryEmptyInRm = butCan't "empty a vessel in your current room. Please pick up the vessel(s) first."
+
+
+sorryEmptyType :: Sing -> Text
+sorryEmptyType s = can't "empty " <> aOrAn s <> "."
 
 
 -----
