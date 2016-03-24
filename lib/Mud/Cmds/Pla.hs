@@ -787,10 +787,11 @@ drink   (Lower   i mq cols [amt, target]) = getState >>= \ms -> let (isDrink, is
                     in ()!# ecs ? sorry sorryDrinkCoins :? either sorry f (head eiss)
                 -----
                 drinkRm =
-                    case ((()!#) *** (()!#)) (rmInvCoins, maybeHooks) of
+                    let hookArg = head inRms <> T.singleton hookArgDelimiter <> showText x
+                    in case ((()!#) *** (()!#)) (rmInvCoins, maybeHooks) of
                       (True,  False) -> sorry sorryDrinkRmNoHooks
                       (False, True ) ->
-                          let (inRms', (ms', toSelfs, bs, logMsgs)) = procHooks i ms v "drink" inRms -- TODO: Make a hook and test.
+                          let (inRms', (ms', toSelfs, bs, logMsgs)) = procHooks i ms v "drink" . pure $ hookArg
                               sorryMsgs                             = inRms' |!| pure sorryDrinkEmptyRmWithHooks
                           in (ms', [ multiWrapSend mq cols $ sorryMsgs ++ toSelfs
                                    , bcastIfNotIncogNl i bs

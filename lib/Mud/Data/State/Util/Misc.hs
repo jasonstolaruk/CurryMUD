@@ -442,21 +442,30 @@ pluralize (s, p) x = x == 1 ? s :? p
 -----
 
 
--- Suitable for hooks whose triggers match on any argument.
 procHooks :: Id -> MudState -> V.Vector Int -> CmdName -> Args -> (Args, GenericIntermediateRes)
 procHooks i ms v cn as | initAcc <- (as, (ms, [], [], [])) = case lookupHooks i ms cn of
   Nothing    -> initAcc
-  Just hooks ->
-    let helper acc arg = case filter (\Hook { triggers } -> arg `elem` triggers) hooks of
-                           []        -> acc
-                           (match:_) -> acc ++ pure match
-        as'            = dropPrefixesForHooks hooks as
-    in case foldl' helper [] as' of
-      []      -> initAcc
-      matches ->
-        let xformedArgs = foldr (\Hook { triggers } -> dropSynonyms triggers) as' matches
-            hookHelper a@(_, (ms', _, _, _)) h@(Hook hn _ ) = getHookFun hn ms' i h v a
-        in foldl' hookHelper (first (const xformedArgs) initAcc) . nub $ matches
+  Just hooks -> case as of
+    -- Process hooks that match on a particular argument. These hooks need to see the other argument(s) passed as well,
+    -- not just the argument that matches the hook's trigger.
+    [arg] | delim <- T.singleton hookArgDelimiter
+          , delim `T.isInfixOf` arg
+          , (dropPrefixes -> a, T.tail -> rest) <- T.breakOn delim arg
+          -> case filter (\Hook { triggers } -> a `elem` triggers) hooks of
+               []  -> initAcc
+               [h] -> getHookFun (hookName h) ms i h v (initAcc & _1 .~ pure rest)
+               xs  -> patternMatchFail "procHooks" [ showText xs ]
+    -- Process hooks whose triggers match on any single argument.
+    _ -> let helper acc arg = case filter (\Hook { triggers } -> arg `elem` triggers) hooks of
+               []        -> acc
+               (match:_) -> acc ++ pure match
+             as' = dropPrefixesForHooks hooks as
+         in case foldl' helper [] as' of
+           []      -> initAcc
+           matches ->
+             let xformedArgs = foldr (\Hook { triggers } -> dropSynonyms triggers) as' matches
+                 hookHelper a@(_, (ms', _, _, _)) h = getHookFun (hookName h) ms' i h v a
+             in foldl' hookHelper (first (const xformedArgs) initAcc) . nub $ matches
 
 
 dropPrefixesForHooks :: [Hook] -> Args -> Args

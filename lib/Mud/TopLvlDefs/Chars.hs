@@ -47,8 +47,8 @@ ansiSGRDelimiter = '\x6D' -- 109
 
 
 desigDelimiter, stdDesigDelimiter, nonStdDesigDelimiter :: Char
-desigDelimiter       = '\132'
-nonStdDesigDelimiter = '\131'
+desigDelimiter       = '\128'
+nonStdDesigDelimiter = '\129'
 stdDesigDelimiter    = '\130'
 
 
@@ -57,8 +57,8 @@ stdDesigDelimiter    = '\130'
 
 
 breakMarker, indentFiller :: Char
-breakMarker  = '\129'
-indentFiller = '\128'
+breakMarker  = '\131'
+indentFiller = '\132'
 
 
 -- ==================================================
@@ -81,5 +81,9 @@ fromPersonMarker :: Char
 fromPersonMarker = '\133'
 
 
+hookArgDelimiter :: Char
+hookArgDelimiter = '\134'
+
+
 plaIdDelimiter :: Char
-plaIdDelimiter = '\134'
+plaIdDelimiter = '\135'

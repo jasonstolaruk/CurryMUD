@@ -66,7 +66,8 @@ logNotice = L.logNotice "Mud.TheWorld.Zones.AdminZone"
 
 
 adminZoneHooks :: [(HookName, HookFun)]
-adminZoneHooks = [ (getFlowerHookName,                 getFlowerHookFun                )
+adminZoneHooks = [ (drinkPoolHookName,                 drinkPoolHookFun                )
+                 , (getFlowerHookName,                 getFlowerHookFun                )
                  , (lookCeilingHookName,               lookCeilingHookFun              )
                  , (lookFlowerbedHookName,             lookFlowerbedHookFun            )
                  , (lookWallsHookName,                 lookWallsHookFun                )
@@ -74,6 +75,21 @@ adminZoneHooks = [ (getFlowerHookName,                 getFlowerHookFun         
                  , (readLookPosterHookName,            readLookPosterHookFun           )
                  , (readLookSign_iEmptyHookName,       readLookSign_iEmptyHookFun      )
                  , (readLookSign_iTutEntranceHookName, readLookSign_iTutEntranceHookFun) ]
+
+
+-----
+
+
+drinkPoolHook :: Hook
+drinkPoolHook = Hook drinkPoolHookName . pure $ "pool"
+
+
+drinkPoolHookName :: HookName
+drinkPoolHookName = "AdminZone_iAtrium_drinkPool"
+
+
+drinkPoolHookFun :: HookFun
+drinkPoolHookFun _ Hook { .. } _ a@(_, (_, _, _, _)) = a & _1 .~ [] & _2._2 <>~ pure "Drink pool trigger!"
 
 
 -----
@@ -492,9 +508,10 @@ createAdminZone = do
             Nothing
             zeroBits
             [ StdLink West iHallwayEast ]
-            (M.fromList [ ("get",  [ getFlowerHook     ])
-                        , ("look", [ lookFlowerbedHook ]) ])
-            [ pickRmAction ]
+            (M.fromList [ ("drink", [ drinkPoolHook     ])
+                        , ("get",   [ getFlowerHook     ])
+                        , ("look",  [ lookFlowerbedHook ]) ])
+            [ pickRmAction     ]
             [ beeBuzzRmFunName ]
             [])
   putRm iBasement
