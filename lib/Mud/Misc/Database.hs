@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, TupleSections #-}
+{-# LANGUAGE OverloadedStrings, RecordWildCards, TupleSections #-}
 
 module Mud.Misc.Database ( AdminChanRec(..)
                          , AdminMsgRec(..)
@@ -277,8 +277,11 @@ insertDbTblTypo = insertDbTblHelper "insert into typo (timestamp, name, loc, des
 
 
 insertDbTblUnPw :: UnPwRec -> IO ()
-insertDbTblUnPw rec@(UnPwRec _ pass) = hashPW (T.unpack pass) >>= \pass' ->
-    insertDbTblHelper "insert into unpw (un, pw) values (?, ?)" rec { pw = pass' }
+insertDbTblUnPw rec@UnPwRec { .. } = hashPW (T.unpack pw) >>= withConnection dbFile . helper
+  where
+    helper pw' conn = do
+        execute conn "delete from unpw where un=?" . Only $ un
+        execute conn "insert into unpw (un, pw) values (?, ?)" rec { pw = pw' }
 
 
 -----

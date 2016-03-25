@@ -95,6 +95,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryInterpNewPwExcessArgs
                            , sorryInterpNewPwLen
                            , sorryInterpNewPwLower
+                           , sorryInterpNewPwMatch
                            , sorryInterpNewPwUpper
                            , sorryInterpPager
                            , sorryInterpPW
@@ -798,6 +799,10 @@ sorryInterpNewPwLen = T.concat [ "Passwords must be "
 
 sorryInterpNewPwLower :: Text
 sorryInterpNewPwLower = "Passwords must contain at least one lowercase character."
+
+
+sorryInterpNewPwMatch :: Text
+sorryInterpNewPwMatch = "Passwords do not match."
 
 
 sorryInterpNewPwUpper :: Text

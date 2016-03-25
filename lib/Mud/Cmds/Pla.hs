@@ -50,6 +50,7 @@ import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
 import Mud.TopLvlDefs.Padding
+import Mud.TopLvlDefs.Telnet
 import Mud.Util.List hiding (headTail)
 import Mud.Util.Misc hiding (blowUp, patternMatchFail)
 import Mud.Util.Operators
@@ -70,7 +71,8 @@ import Control.Lens.Operators ((%~), (&), (+~), (-~), (.~), (<>~), (?~), (^.))
 import Control.Monad ((>=>), foldM, forM, forM_, guard, mplus, unless, when)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (asks)
-import Data.Char (isDigit, isLetter)
+import Crypto.BCrypt (validatePassword)
+import Data.Char (isDigit, isLetter, isLower, isUpper)
 import Data.Either (lefts, partitionEithers)
 import Data.Function (on)
 import Data.Int (Int64)
@@ -89,6 +91,7 @@ import qualified Data.IntMap.Lazy as IM (IntMap, (!), keys)
 import qualified Data.Map.Lazy as M ((!), elems, filter, keys, lookup, map, singleton, size, toList)
 import qualified Data.Set as S (filter, toList)
 import qualified Data.Text as T
+import qualified Data.Text.Encoding as T
 import qualified Data.Text.IO as T (readFile)
 import System.Clock (Clock(..), TimeSpec(..), getTime)
 import System.Console.ANSI (ColorIntensity(..), clearScreenCode)
@@ -170,6 +173,7 @@ regularCmdTuples =
     , ("ne",         go "ne",         True,  cmdDescGoNortheast)
     , ("newchannel", newChan,         True,  "Create one or more new telepathic channels.")
     , ("nw",         go "nw",         True,  cmdDescGoNorthwest)
+    , ("password",   password,        False, "Change your password.")
     , ("question",   question,        True,  "Ask/answer newbie questions " <> plusRelatedMsg)
     , ("qui",        quitCan'tAbbrev, True,  "")
     , ("quit",       quit,            False, "Quit playing CurryMUD.")
@@ -1847,6 +1851,65 @@ shufflePut i ms d conName icir as invCoinsWithCon@(invWithCon, _) mobInvCoins f 
                                                                 ecs
                    in (ms'', (dropBlanks $ [ sorryInEq, sorryInRm ] ++ toSelfs', bs', logMsgs'))
         Right {} -> genericSorry ms sorryPutExcessCon
+
+
+-----
+
+
+password :: ActionFun
+password (NoArgs i mq _) = do
+    sendPrompt mq $ telnetHideInput <> "Current password:"
+    setInterp i . Just $ interpCurrPW
+password p = withoutArgs password p
+
+
+interpCurrPW :: Interp
+interpCurrPW cn (WithArgs i mq cols as)
+  | ()# cn || ()!# as = pwSorryHelper i mq cols sorryInterpPW
+  | otherwise         = (getState >>=) $ withDbExHandler "interpCurrPW" . liftIO . lookupPW . getSing i >=> \case
+    Nothing        -> dbError mq cols
+    Just (Just pw) -> if uncurry validatePassword ((pw, cn) & both %~ T.encodeUtf8)
+      then do
+          sendPrompt mq . T.concat $ [nlPrefix . multiWrap cols . pwMsg $ "Please choose a new password."
+                                     , "New password:"]
+          setInterp i . Just $ interpNewPW
+      else pwSorryHelper i mq cols sorryInterpPW
+    Just Nothing -> pwSorryHelper i mq cols sorryInterpPW
+interpCurrPW _ p = patternMatchFail "interpCurrPW" [ showText p ]
+
+
+pwSorryHelper :: Id -> MsgQueue -> Cols -> Text -> MudStack ()
+pwSorryHelper i mq cols msg = do
+    send mq telnetShowInput
+    wrapSend mq cols msg
+    sendDfltPrompt mq i
+    tweak (mobTbl.ind i.interp .~ Nothing)
+
+
+interpNewPW :: Interp
+interpNewPW cn (NoArgs i mq cols)
+  | not . inRange (minNameLen, maxNameLen) . T.length $ cn = pwSorryHelper i mq cols sorryInterpNewPwLen
+  | helper isUpper                                         = pwSorryHelper i mq cols sorryInterpNewPwUpper
+  | helper isLower                                         = pwSorryHelper i mq cols sorryInterpNewPwLower
+  | helper isDigit                                         = pwSorryHelper i mq cols sorryInterpNewPwDigit
+  | otherwise = do
+      sendPrompt mq "Verify password:"
+      setInterp i . Just . interpVerifyNewPW $ cn
+  where
+    helper f = ()# T.filter f cn
+interpNewPW _ ActionParams { .. } = pwSorryHelper myId plaMsgQueue plaCols sorryInterpNewPwExcessArgs
+
+
+interpVerifyNewPW :: Text -> Interp
+interpVerifyNewPW pass cn (NoArgs i mq cols)
+  | cn == pass = getSing i <$> getState >>= \s -> do
+      withDbExHandler_ "unpw" . insertDbTblUnPw . UnPwRec s $ pass
+      send mq . nlnl $ telnetShowInput <> "Password changed."
+      sendDfltPrompt mq i
+      tweak (mobTbl.ind i.interp .~ Nothing)
+      logPla "interpVerifyNewPW" i "password changed."
+  | otherwise = pwSorryHelper i mq cols sorryInterpNewPwMatch
+interpVerifyNewPW _ _ ActionParams { .. } = pwSorryHelper myId plaMsgQueue plaCols sorryInterpNewPwMatch
 
 
 -----

@@ -185,23 +185,12 @@ interpConfirmName s cn (NoArgs i mq cols) = getState >>= \ms@(getSing i -> oldSi
     else let msg = T.concat [ oldSing, " is now known as ", s, "." ] in do
         tweak $ entTbl.ind i.sing .~ s
         bcastAdmins msg >> logNotice "interpConfirmName" msg
-        sendPrompt mq . T.concat $ [ telnetHideInput, nlPrefix . multiWrap cols $ ts, "New password:" ]
+        sendPrompt mq . T.concat $ [ telnetHideInput
+                                   , nlPrefix . multiWrap cols . pwMsg $ "Please choose a password for " <> s <> "."
+                                   , "New password:" ]
         setInterp i . Just . interpNewPW oldSing $ s
   Just False -> promptRetryName  mq cols "" >> setInterp i (Just interpName)
   Nothing    -> promptRetryYesNo mq cols
-  where
-    t  = T.concat [ "Please choose a password for "
-                  , s
-                  , ". Passwords must be "
-                  , showText minPwLen
-                  , "-"
-                  , showText maxPwLen
-                  , " characters in length and contain:" ]
-    ts = [ t
-         , "* 1 or more lowercase characters"
-         , "* 1 or more uppercase characters"
-         , "* 1 or more digits"
-         , "* 0 whitespace characters" ]
 interpConfirmName _ _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNo plaMsgQueue plaCols
 
 
@@ -269,7 +258,7 @@ interpVerifyNewPW oldSing s _ _ ActionParams { .. } = promptRetryNewPwMatch plaM
 
 promptRetryNewPwMatch :: MsgQueue -> Cols -> Id -> Sing -> Sing -> MudStack ()
 promptRetryNewPwMatch mq cols i oldSing s =
-    promptRetryNewPW mq cols "Passwords do not match." >> setInterp i (Just . interpNewPW oldSing $ s)
+    promptRetryNewPW mq cols sorryInterpNewPwMatch >> setInterp i (Just . interpNewPW oldSing $ s)
 
 
 notifyQuestion :: Id -> MudState -> MudStack ()

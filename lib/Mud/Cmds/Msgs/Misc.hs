@@ -3,7 +3,9 @@
 module Mud.Cmds.Msgs.Misc where
 
 import Mud.Data.State.MudData
+import Mud.TopLvlDefs.Misc
 import Mud.Util.Quoting
+import Mud.Util.Text
 
 import Data.Monoid ((<>))
 import Data.Text (Text)
@@ -88,6 +90,19 @@ notifyArrivalMsg n = n <> " slowly materializes out of thin air."
 
 plusRelatedMsg :: Text
 plusRelatedMsg = parensQuote "plus related functionality" <> "."
+
+
+pwMsg :: Text -> [Text]
+pwMsg t = [ T.concat [ t
+                     , " Passwords must be "
+                     , showText minPwLen
+                     , "-"
+                     , showText maxPwLen
+                     , " characters in length and contain:" ]
+          , "* 1 or more lowercase characters"
+          , "* 1 or more uppercase characters"
+          , "* 1 or more digits"
+          , "* 0 whitespace characters" ]
 
 
 rethrowExMsg :: Text -> Text
