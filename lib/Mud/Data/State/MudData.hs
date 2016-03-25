@@ -705,7 +705,7 @@ data Pla = Pla { _currHostName :: HostName
                , _peeping      :: Inv
                , _possessing   :: Maybe Id
                , _retainedMsgs :: [Text]
-               , _lastRmId     :: Maybe Id }
+               , _lastRmId     :: Maybe Id } deriving Eq
 
 
 data PlaFlags = IsAdmin

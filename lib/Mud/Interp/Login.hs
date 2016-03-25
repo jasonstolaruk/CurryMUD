@@ -27,13 +27,13 @@ import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
 import Mud.TopLvlDefs.Telnet
 import Mud.Util.List
-import Mud.Util.Misc hiding (blowUp, patternMatchFail)
+import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Operators
 import Mud.Util.Quoting
 import Mud.Util.Text
 import Mud.Util.Wrapping
 import qualified Mud.Misc.Logging as L (logNotice, logPla)
-import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
+import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Arrow (first)
 import Control.Concurrent (threadDelay)
@@ -69,10 +69,6 @@ default (Int)
 -----
 
 
-blowUp :: Text -> Text -> [Text] -> a
-blowUp = U.blowUp "Mud.Interp.Login"
-
-
 patternMatchFail :: Text -> [Text] -> a
 patternMatchFail = U.patternMatchFail "Mud.Interp.Login"
 
@@ -91,13 +87,12 @@ logPla = L.logPla "Mud.Interp.Login"
 -- ==================================================
 
 
--- TODO: Prevent other players from choosing the same name.
 interpName :: Interp
 interpName (T.toLower -> cn@(capitalize -> cn')) (NoArgs i mq cols)
   | not . inRange (minNameLen, maxNameLen) . T.length $ cn = promptRetryName mq cols sorryInterpNameLen
   | T.any (`elem` illegalChars) cn                         = promptRetryName mq cols sorryInterpNameIllegal
   | otherwise                                              = getState >>= \ms ->
-      case filter ((== cn') . (`getSing` ms) . fst) . views plaTbl IM.toList $ ms of
+      case findExistingPlas cn' ms of
         [] -> mIf (orM . map (getAny <$>) $ [ checkProfanitiesDict i  mq cols cn
                                             , checkIllegalNames    ms mq cols cn
                                             , checkPropNamesDict      mq cols cn
@@ -122,6 +117,10 @@ promptRetryName mq cols msg = let t = "Let's try this again. By what name are yo
                               in (>> wrapSendPrompt mq cols t) $ if ()# msg
                                 then send mq . nl $ ""
                                 else wrapSend mq cols msg
+
+
+findExistingPlas :: Sing -> MudState -> [(Id, Pla)]
+findExistingPlas s ms = filter ((== s) . (`getSing` ms) . fst) . views plaTbl IM.toList $ ms
 
 
 -----
@@ -180,12 +179,14 @@ checkRndmNames mq cols = checkNameHelper (Just rndmNamesFile) "checkRndmNames" .
 
 
 interpConfirmName :: Sing -> Interp
-interpConfirmName s cn (NoArgs i mq cols) = case yesNoHelper cn of
-  Just True  -> getSing i <$> getState >>= \oldSing -> do
-      let msg = T.concat [ oldSing, " is now known as ", s, "." ]
-      bcastAdmins msg >> logNotice "interpConfirmName" msg
-      sendPrompt mq . T.concat $ [ telnetHideInput, nlPrefix . multiWrap cols $ ts, "New password:" ]
-      setInterp i . Just . interpNewPW oldSing $ s
+interpConfirmName s cn (NoArgs i mq cols) = getState >>= \ms@(getSing i -> oldSing) -> case yesNoHelper cn of
+  Just True -> if ()!# findExistingPlas s ms -- Did someone else take the name before the user could answer "yes"?
+    then promptRetryName  mq cols sorryInterpNameTaken >> setInterp i (Just interpName)
+    else let msg = T.concat [ oldSing, " is now known as ", s, "." ] in do
+        tweak $ entTbl.ind i.sing .~ s
+        bcastAdmins msg >> logNotice "interpConfirmName" msg
+        sendPrompt mq . T.concat $ [ telnetHideInput, nlPrefix . multiWrap cols $ ts, "New password:" ]
+        setInterp i . Just . interpNewPW oldSing $ s
   Just False -> promptRetryName  mq cols "" >> setInterp i (Just interpName)
   Nothing    -> promptRetryYesNo mq cols
   where
@@ -257,8 +258,7 @@ interpVerifyNewPW oldSing s pass cn params@(NoArgs i mq cols)
           notifyQuestion i ms
   | otherwise = promptRetryNewPwMatch mq cols i oldSing s
   where
-    helper ms = let ms'  = ms  & entTbl.ind i.sing     .~ s
-                               & invTbl.ind iWelcome   %~ (i `delete`)
+    helper ms = let ms'  = ms  & invTbl.ind iWelcome   %~ (i `delete`)
                                & mobTbl.ind i.rmId     .~ iCentral
                                & mobTbl.ind i.interp   .~ Nothing
                                & plaTbl.ind i.plaFlags .~ (setBit zeroBits . fromEnum $ IsTunedQuestion)
@@ -304,7 +304,7 @@ interpPW targetSing targetId targetPla cn params@(WithArgs i mq cols as) = send 
               Just (Any True ) -> handleBanned    ms oldSing
               Just (Any False) -> handleNotBanned ms oldSing
           else sorry sorryInterpPW . T.concat $ [ oldSing, " has entered an incorrect password for ", targetSing, "." ]
-        Just Nothing -> blowUp "interpPW" "existing PC name not found in password database" . pure $ targetSing
+        Just Nothing -> sorryHelper sorryInterpPW
   where
     sorry sorryMsg msg = do
         bcastAdmins msg
