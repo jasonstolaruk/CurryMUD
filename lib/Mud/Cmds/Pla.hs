@@ -792,15 +792,15 @@ drink   (Lower   i mq cols [amt, target]) = getState >>= \ms -> let (isDrink, is
                       (True,  False) -> sorry sorryDrinkRmNoHooks
                       (False, True ) ->
                           let (inRms', (ms', _, bs, logMsgs)) = procHooks i ms v "drink" . pure $ hookArg
-                              sorryMsgs                       = inRms' |!| [ sorryDrinkEmptyRmWithHooks ]
-                          in (ms', [ sorryMsgs |#| multiWrapSend mq cols
+                              sorryMsgs                       = inRms' |!| pure sorryDrinkEmptyRmWithHooks
+                          in (ms', [ when (()!# sorryMsgs) $ multiWrapSend mq cols sorryMsgs >> sendDfltPrompt mq i
                                    , bcastIfNotIncogNl i bs
                                    , logMsgs |#| logPlaOut "drink" i ])
                       (True,  True ) ->
                           let (inRms', (ms', _, bs, logMsgs)) = procHooks i ms v "drink" . pure $ hookArg
                           in if ()# inRms'
                             then (ms', [ bcastIfNotIncogNl i bs, logMsgs |#| logPlaOut "drink" i ])
-                            else sorry . sorryDrinkRmWithHooks . head $ inRms'
+                            else sorry . sorryDrinkRmWithHooks . head $ inRms
                       a -> patternMatchFail "drink helper next drinkRm" [ showText a ]
             in if
               | ()!# inEqs                        -> sorry sorryDrinkInEq
