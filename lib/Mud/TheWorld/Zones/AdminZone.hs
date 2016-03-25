@@ -14,6 +14,7 @@ import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Calc
+import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.New
 import Mud.Data.State.Util.Put
@@ -23,6 +24,7 @@ import Mud.TheWorld.Liqs
 import Mud.TheWorld.Misc
 import Mud.TheWorld.Zones.AdminZoneIds
 import Mud.TheWorld.Zones.TutorialIds (iTutWelcome)
+import Mud.Threads.Act
 import Mud.TopLvlDefs.Vols
 import Mud.TopLvlDefs.Weights
 import Mud.Util.List
@@ -89,7 +91,17 @@ drinkPoolHookName = "AdminZone_iAtrium_drinkPool"
 
 
 drinkPoolHookFun :: HookFun
-drinkPoolHookFun _ Hook { .. } _ a@(_, (_, _, _, _)) = a & _1 .~ [] & _2._2 <>~ pure "Drink pool trigger!"
+drinkPoolHookFun i _ _ a@(as, (ms, _, _, _))
+  | fst (calcStomachAvailSize i ms) <= 0 = a & _2._2 <>~ pure sorryFull
+  | db <- DrinkBundle { drinkerId       = i
+                      , drinkerMq       = getMsgQueue i ms
+                      , drinkerCols     = getColumns  i ms
+                      , drinkVesselId   = Nothing
+                      , drinkVesselSing = "pool"
+                      , drinkLiq        = waterLiq
+                      , drinkAmt        = read . T.unpack . head $ as }
+  = a & _1           .~  []
+      & _2._1.opList <>~ (pure . startAct i Drinking . drinkAct $ db)
 
 
 -----

@@ -775,13 +775,13 @@ drink   (Lower   i mq cols [amt, target]) = getState >>= \ms -> let (isDrink, is
                           (s, _         ) -> sorry . sorryDrinkType $ s
                           where
                             g _ _      | fst (calcStomachAvailSize i ms) <= 0 = sorry sorryFull
-                            g s (l, _) | db <- DrinkBundle { drinkId       = i
-                                                           , drinkMq       = mq
-                                                           , drinkCols     = cols
-                                                           , drinkTargetId = targetId
-                                                           , drinkSing     = s
-                                                           , drinkLiq      = l
-                                                           , drinkAmt      = x }
+                            g s (l, _) | db <- DrinkBundle { drinkerId       = i
+                                                           , drinkerMq       = mq
+                                                           , drinkerCols     = cols
+                                                           , drinkVesselId   = Just targetId
+                                                           , drinkVesselSing = s
+                                                           , drinkLiq        = l
+                                                           , drinkAmt        = x }
                                        = (ms, pure . startAct i Drinking . drinkAct $ db)
                         f _ = sorry sorryDrinkExcessTargets
                     in ()!# ecs ? sorry sorryDrinkCoins :? either sorry f (head eiss)
@@ -791,17 +791,15 @@ drink   (Lower   i mq cols [amt, target]) = getState >>= \ms -> let (isDrink, is
                     in case ((()!#) *** (()!#)) (rmInvCoins, maybeHooks) of
                       (True,  False) -> sorry sorryDrinkRmNoHooks
                       (False, True ) ->
-                          let (inRms', (ms', toSelfs, bs, logMsgs)) = procHooks i ms v "drink" . pure $ hookArg
-                              sorryMsgs                             = inRms' |!| pure sorryDrinkEmptyRmWithHooks
-                          in (ms', [ multiWrapSend mq cols $ sorryMsgs ++ toSelfs
+                          let (inRms', (ms', _, bs, logMsgs)) = procHooks i ms v "drink" . pure $ hookArg
+                              sorryMsgs                       = inRms' |!| [ sorryDrinkEmptyRmWithHooks ]
+                          in (ms', [ sorryMsgs |#| multiWrapSend mq cols
                                    , bcastIfNotIncogNl i bs
                                    , logMsgs |#| logPlaOut "drink" i ])
                       (True,  True ) ->
-                          let (inRms', (ms', toSelfs, bs, logMsgs)) = procHooks i ms v "drink" inRms
+                          let (inRms', (ms', _, bs, logMsgs)) = procHooks i ms v "drink" . pure $ hookArg
                           in if ()# inRms'
-                            then (ms', [ multiWrapSend mq cols toSelfs
-                                       , bcastIfNotIncogNl i bs
-                                       , logMsgs |#| logPlaOut "drink" i ])
+                            then (ms', [ bcastIfNotIncogNl i bs, logMsgs |#| logPlaOut "drink" i ])
                             else sorry . sorryDrinkRmWithHooks . head $ inRms'
                       a -> patternMatchFail "drink helper next drinkRm" [ showText a ]
             in if

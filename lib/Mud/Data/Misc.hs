@@ -598,13 +598,13 @@ instance Ord Cmd where
 -----
 
 
-data DrinkBundle = DrinkBundle { drinkId       :: Id
-                               , drinkMq       :: MsgQueue
-                               , drinkCols     :: Cols
-                               , drinkTargetId :: Id
-                               , drinkSing     :: Sing
-                               , drinkLiq      :: Liq
-                               , drinkAmt      :: Mouthfuls }
+data DrinkBundle = DrinkBundle { drinkerId       :: Id
+                               , drinkerMq       :: MsgQueue
+                               , drinkerCols     :: Cols
+                               , drinkVesselId   :: Maybe Id -- "Nothing" for hooks.
+                               , drinkVesselSing :: Sing
+                               , drinkLiq        :: Liq
+                               , drinkAmt        :: Mouthfuls }
 
 
 -----

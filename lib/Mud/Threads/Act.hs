@@ -1,8 +1,7 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
-{-# LANGUAGE MultiWayIf, OverloadedStrings, RecordWildCards, ViewPatterns #-}
+{-# LANGUAGE MultiWayIf, OverloadedStrings, RecordWildCards, TupleSections, ViewPatterns #-}
 
-module Mud.Threads.Act ( DrinkBundle(..)
-                       , drinkAct
+module Mud.Threads.Act ( drinkAct
                        , startAct
                        , stopAct
                        , stopActs
@@ -31,7 +30,7 @@ import Control.Lens (at, to, views)
 import Control.Lens.Operators ((&), (.~), (?~), (^.))
 import Control.Monad.IO.Class (liftIO)
 import Data.List (delete)
-import Data.Maybe (isNothing)
+import Data.Maybe (isJust)
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import Data.Time (getCurrentTime)
@@ -96,40 +95,45 @@ mkThreadName i actType = quoteWith' (pp actType, showText i) " "
 drinkAct :: DrinkBundle -> MudStack ()
 drinkAct DrinkBundle { .. } =
     let a = do
-            send drinkMq . multiWrap drinkCols . dropEmpties $ [ T.concat [ "You begin drinking "
-                                                                          , renderLiqNoun drinkLiq the
-                                                                          , " from the "
-                                                                          , drinkSing
-                                                                          , "..." ]
-                                                               , drinkLiq^.drinkDesc ]
-            d <- flip (mkStdDesig drinkId) DoCap <$> getState
-            bcastIfNotIncogNl drinkId . pure $ ( T.concat [ serialize d, " begins drinking from ", aOrAn drinkSing, "." ]
-                                               , drinkId `delete` desigIds d )
-            tweak $ mobTbl.ind drinkId.nowDrinking ?~ (drinkLiq, drinkSing)
-            loop 0 `catch` die (Just drinkId) (mkThreadName drinkId Drinking)
-        b = tweak $ mobTbl.ind drinkId.nowDrinking .~ Nothing
+            send drinkerMq . multiWrap drinkerCols . dropEmpties $ [ T.concat [ "You begin drinking "
+                                                                              , renderLiqNoun drinkLiq the
+                                                                              , " from the "
+                                                                              , drinkVesselSing
+                                                                              , "..." ]
+                                                                   , drinkLiq^.drinkDesc ]
+            d <- flip (mkStdDesig drinkerId) DoCap <$> getState
+            bcastIfNotIncogNl drinkerId . pure $ ( T.concat [ serialize d
+                                                            , " begins drinking from "
+                                                            , renderVesselSing
+                                                            , "." ]
+                                                 , drinkerId `delete` desigIds d )
+            tweak $ mobTbl.ind drinkerId.nowDrinking ?~ (drinkLiq, drinkVesselSing)
+            loop 0 `catch` die (Just drinkerId) (mkThreadName drinkerId Drinking)
+        b = tweak $ mobTbl.ind drinkerId.nowDrinking .~ Nothing
     in a `finally` b
   where
+    renderVesselSing    = drinkVesselSing |&| (isJust drinkVesselId ? aOrAn :? the)
     loop x@(succ -> x') = do
         liftIO . threadDelay $ 1 * 10 ^ 6
         now <- liftIO getCurrentTime
-        consume drinkId . pure . StomachCont (drinkLiq^.liqId.to Left) now $ False
-        (ms, newCont) <- modifyState $ \ms ->
-            let Just (_, m) = getVesselCont drinkTargetId ms
-                newCont     = m == 1 ? Nothing :? Just (drinkLiq, pred m)
-                ms'         = ms & vesselTbl.ind drinkTargetId.vesselCont .~ newCont
-            in (ms', (ms', newCont))
-        let (stomAvail, stomSize) = calcStomachAvailSize drinkId ms
-            d                     = mkStdDesig drinkId ms DoCap
-            bcastHelper b         = bcastIfNotIncogNl drinkId . pure $ ( T.concat [ serialize d
-                                                                                  , " finishes drinking from "
-                                                                                  , aOrAn drinkSing
-                                                                                  , b |?| " after draining it dry"
-                                                                                  , "." ]
-                                                                       , drinkId `delete` desigIds d )
-        if | isNothing newCont -> (>> bcastHelper True) . ioHelper x' $
+        consume drinkerId . pure . StomachCont (drinkLiq^.liqId.to Left) now $ False
+        (ms, newCont) <- case drinkVesselId of
+          Just i  -> modifyState $ \ms -> let Just (_, m) = getVesselCont i ms
+                                              newCont     = m == 1 ? Nothing :? Just (drinkLiq, pred m)
+                                              ms'         = ms & vesselTbl.ind i.vesselCont .~ newCont
+                                          in (ms', (ms', Right newCont))
+          Nothing -> (, Left ()) <$> getState
+        let (stomAvail, stomSize) = calcStomachAvailSize drinkerId ms
+            d                     = mkStdDesig drinkerId ms DoCap
+            bcastHelper b         = bcastIfNotIncogNl drinkerId . pure $ ( T.concat [ serialize d
+                                                                                    , " finishes drinking from "
+                                                                                    , renderVesselSing
+                                                                                    , b |?| " after draining it dry"
+                                                                                    , "." ]
+                                                                         , drinkerId `delete` desigIds d )
+        if | newCont == Right Nothing -> (>> bcastHelper True) . ioHelper x' $
                [ T.concat [ "You drain the "
-                          , drinkSing
+                          , drinkVesselSing
                           , " dry after "
                           , showText x'
                           , " mouthful"
@@ -144,20 +148,20 @@ drinkAct DrinkBundle { .. } =
                , " that you have to stop drinking. You don't feel so good..." ]
            | x' == drinkAmt -> (>> bcastHelper False) . ioHelper x' $ [ "You finish drinking."
                                                                       , mkFullDesc stomAvail stomSize ]
-           | otherwise -> loop x'
-    ioHelper m ts = multiWrapSend drinkMq drinkCols (dropEmpties ts) >> promptHelper >> logHelper
+           | otherwise      -> loop x'
+    ioHelper m ts = multiWrapSend drinkerMq drinkerCols (dropEmpties ts) >> promptHelper >> logHelper
       where
-        promptHelper = sendDfltPrompt drinkMq drinkId
+        promptHelper = sendDfltPrompt drinkerMq drinkerId
         logHelper    =
-            logPla "drinkAct loop" drinkId . T.concat $ [ "drank "
-                                                        , showText m
-                                                        , " mouthfuls"
-                                                        , theLetterS $ m /= 1
-                                                        , " of "
-                                                        , renderLiqNoun drinkLiq aOrAn
-                                                        , " "
-                                                        , let DistinctLiqId i = drinkLiq^.liqId
-                                                          in parensQuote . showText $ i
-                                                        , " from "
-                                                        , aOrAn drinkSing
-                                                        , "." ]
+            logPla "drinkAct loop" drinkerId . T.concat $ [ "drank "
+                                                          , showText m
+                                                          , " mouthfuls"
+                                                          , theLetterS $ m /= 1
+                                                          , " of "
+                                                          , renderLiqNoun drinkLiq aOrAn
+                                                          , " "
+                                                          , let DistinctLiqId i = drinkLiq^.liqId
+                                                            in parensQuote . showText $ i
+                                                          , " from "
+                                                          , renderVesselSing
+                                                          , "." ]
