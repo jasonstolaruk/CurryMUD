@@ -46,7 +46,7 @@ The majority of CurryMUD commands allow you to specify one or more things. While
 
 GET A LIST, OR GET DESCRIPTIONS
 
-The "inventory", "equipment", and "look" commands have been designed to reflect the fact that in the virtual world, entities may exist in one of three places: one's inventory, one's readied equipment, or a room. These three commands have the following in common:
+The "inventory", "equipment", and "look" commands have been designed to reflect the fact that in the virtual world, entities may exist in one of three places: one's inventory, one's readied equipment, or a room ("on the ground"). These three commands have the following in common:
 1) When executed without arguments, they show you a list of things (in the case of the "look" command, you get the description of your current room along with a list of what's in the room).3`
 2) When you specify the names of one or more things in the list, you get the description(s) of those things.3`
 
@@ -67,7 +67,7 @@ The "?", "expressive", and "who" commands have the following in common:
 
 COMMAND_NAME + OBJECT(S) + TARGET
 
-Examples of this pattern:
+Examples of this common pattern:
 \qshow flower hanako\d2`
 \qgive flower hanako\d2`
 \qput tunic box\d2`
@@ -91,6 +91,12 @@ Examples of this pattern:
 \qadmin jason are you available? I need your assistance\d (to send a message to Jason, a CurryMUD administrator)2`
 \qtelepathy hanako where have you been? I've missed you!\d (to telepathically send a message to Hanako)2`
 \qchannel hunt hello!\d (to telepathically send a message on the "hunt" channel)2`
+
+COMMAND_NAME + MOUTHFULS + CONSUMABLE
+
+The "eat" and "drink" commands require that you specify the number of mouthfuls to consume:
+\qeat 2 bread\d (to eat two mouthfuls of your bread)2`
+\qdrink 4 waterskin\d (to drink four mouthfuls from your waterskin)2`
 
 SETTING=VALUE
 

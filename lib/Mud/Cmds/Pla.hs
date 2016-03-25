@@ -741,7 +741,7 @@ disconnectHelper i (target, as) idNamesTbl ms =
 -----
 
 
-drink :: ActionFun -- TODO: Add to the "syntax" help topic.
+drink :: ActionFun
 drink p@(NoArgs' i mq                   ) = advise p ["drink"] adviceDrinkNoArgs   >> sendDfltPrompt mq i
 drink p@(OneArg  i mq _    _            ) = advise p ["drink"] adviceDrinkNoVessel >> sendDfltPrompt mq i
 drink   (Lower   i mq cols [amt, target]) = getState >>= \ms -> let (isDrink, isEat) = isDrinkingEating i ms in
