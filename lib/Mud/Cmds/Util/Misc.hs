@@ -37,7 +37,7 @@ module Mud.Cmds.Util.Misc ( asterisk
                           , isHostBanned
                           , isLinked
                           , isMoving
-                          , isPlaBanned
+                          , isPCBanned
                           , isPunc
                           , locateHelper
                           , loggedInOut
@@ -568,8 +568,8 @@ isMoving = isActing Moving
 -----
 
 
-isPlaBanned :: Sing -> IO Any
-isPlaBanned banSing = isBanned banSing <$> (getDbTblRecs "ban_pla" :: IO [BanPlaRec])
+isPCBanned :: Sing -> IO Any
+isPCBanned banSing = isBanned banSing <$> (getDbTblRecs "ban_pc" :: IO [BanPCRec])
 
 
 -----

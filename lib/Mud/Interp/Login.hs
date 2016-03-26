@@ -288,7 +288,7 @@ interpPW targetSing targetId targetPla cn params@(WithArgs i mq cols as) = send 
                                                                        , "; however, "
                                                                        , targetSing
                                                                        , " is already logged in." ]
-            else (withDbExHandler "interpPW" . isPlaBanned $ targetSing) >>= \case
+            else (withDbExHandler "interpPW" . isPCBanned $ targetSing) >>= \case
               Nothing          -> dbError mq cols
               Just (Any True ) -> handleBanned    ms oldSing
               Just (Any False) -> handleNotBanned ms oldSing

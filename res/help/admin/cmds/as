@@ -8,6 +8,8 @@ Execute a command as someone else (either a PC or an NPC).
 When you target an NPC, you will see the output from your command, followed by the NPC's prompt.
 When you target a PC, you won't see the output of your command (rather, the PC's player will see the output).
 
+For information regarding the ethical use of this command, see "help ethics".
+
 \uEXAMPLES\n
 \q#das 100 get sack\d to make ID 100 execute "get sack".4`
 

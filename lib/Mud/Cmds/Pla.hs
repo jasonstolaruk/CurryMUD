@@ -1872,7 +1872,7 @@ interpCurrPW cn (WithArgs i mq cols as)
       then do
           sendPrompt mq . T.concat $ [nlPrefix . multiWrap cols . pwMsg $ "Please choose a new password."
                                      , "New password:"]
-          setInterp i . Just $ interpNewPW
+          setInterp i . Just . interpNewPW $ pw
       else pwSorryHelper i mq cols sorryInterpPW
     Just Nothing -> pwSorryHelper i mq cols sorryInterpPW
 interpCurrPW _ p = patternMatchFail "interpCurrPW" [ showText p ]
@@ -1886,30 +1886,30 @@ pwSorryHelper i mq cols msg = do
     tweak (mobTbl.ind i.interp .~ Nothing)
 
 
-interpNewPW :: Interp
-interpNewPW cn (NoArgs i mq cols)
+interpNewPW :: Text -> Interp
+interpNewPW oldPW cn (NoArgs i mq cols)
   | not . inRange (minNameLen, maxNameLen) . T.length $ cn = pwSorryHelper i mq cols sorryInterpNewPwLen
   | helper isUpper                                         = pwSorryHelper i mq cols sorryInterpNewPwUpper
   | helper isLower                                         = pwSorryHelper i mq cols sorryInterpNewPwLower
   | helper isDigit                                         = pwSorryHelper i mq cols sorryInterpNewPwDigit
   | otherwise = do
       sendPrompt mq "Verify password:"
-      setInterp i . Just . interpVerifyNewPW $ cn
+      setInterp i . Just . interpVerifyNewPW oldPW $ cn
   where
     helper f = ()# T.filter f cn
-interpNewPW _ ActionParams { .. } = pwSorryHelper myId plaMsgQueue plaCols sorryInterpNewPwExcessArgs
+interpNewPW _ _ ActionParams { .. } = pwSorryHelper myId plaMsgQueue plaCols sorryInterpNewPwExcessArgs
 
 
-interpVerifyNewPW :: Text -> Interp
-interpVerifyNewPW pass cn (NoArgs i mq cols)
+interpVerifyNewPW :: Text -> Text -> Interp
+interpVerifyNewPW oldPW pass cn (NoArgs i mq cols)
   | cn == pass = getSing i <$> getState >>= \s -> do
       withDbExHandler_ "unpw" . insertDbTblUnPw . UnPwRec s $ pass
       send mq . nlnl $ telnetShowInput <> "Password changed."
       sendDfltPrompt mq i
       tweak (mobTbl.ind i.interp .~ Nothing)
-      logPla "interpVerifyNewPW" i "password changed."
+      logPla "interpVerifyNewPW" i $ "password changed " <> parensQuote ("was " <> dblQuote oldPW) <> "."
   | otherwise = pwSorryHelper i mq cols sorryInterpNewPwMatch
-interpVerifyNewPW _ _ ActionParams { .. } = pwSorryHelper myId plaMsgQueue plaCols sorryInterpNewPwMatch
+interpVerifyNewPW _ _ _ p = patternMatchFail "interpVerifyNewPW" [ showText p ]
 
 
 -----

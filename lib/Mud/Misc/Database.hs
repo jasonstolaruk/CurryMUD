@@ -3,7 +3,7 @@
 module Mud.Misc.Database ( AdminChanRec(..)
                          , AdminMsgRec(..)
                          , BanHostRec(..)
-                         , BanPlaRec(..)
+                         , BanPCRec(..)
                          , BugRec(..)
                          , ChanRec(..)
                          , countDbTblRecsAdminChan
@@ -17,7 +17,7 @@ module Mud.Misc.Database ( AdminChanRec(..)
                          , insertDbTblAdminChan
                          , insertDbTblAdminMsg
                          , insertDbTblBanHost
-                         , insertDbTblBanPla
+                         , insertDbTblBanPC
                          , insertDbTblBug
                          , insertDbTblChan
                          , insertDbTblProf
@@ -64,10 +64,10 @@ data BanHostRec   = BanHostRec   { banHostTimestamp   :: Text
                                  , banHostHost        :: Text
                                  , banHostIsBanned    :: Bool
                                  , banHostReason      :: Text }
-data BanPlaRec    = BanPlaRec    { banPlaTimestamp    :: Text
-                                 , banPlaName         :: Text
-                                 , banPlaIsBanned     :: Bool
-                                 , banPlaReason       :: Text }
+data BanPCRec     = BanPCRec     { banPCTimestamp     :: Text
+                                 , banPCName          :: Text
+                                 , banPCIsBanned      :: Bool
+                                 , banPCReason        :: Text }
 data BugRec       = BugRec       { bugTimestamp       :: Text
                                  , bugName            :: Text
                                  , bugLoc             :: Text
@@ -112,8 +112,8 @@ instance FromRow BanHostRec where
   fromRow = BanHostRec <$ (field :: RowParser Int) <*> field <*> field <*> field <*> field
 
 
-instance FromRow BanPlaRec where
-  fromRow = BanPlaRec <$ (field :: RowParser Int) <*> field <*> field <*> field <*> field
+instance FromRow BanPCRec where
+  fromRow = BanPCRec <$ (field :: RowParser Int) <*> field <*> field <*> field <*> field
 
 
 instance FromRow BugRec where
@@ -159,8 +159,8 @@ instance ToRow BanHostRec where
   toRow (BanHostRec a b c d) = toRow (a, b, c, d)
 
 
-instance ToRow BanPlaRec where
-  toRow (BanPlaRec a b c d) = toRow (a, b, c, d)
+instance ToRow BanPCRec where
+  toRow (BanPCRec a b c d) = toRow (a, b, c, d)
 
 
 instance ToRow BugRec where
@@ -204,7 +204,7 @@ createDbTbls = withConnection dbFile $ \conn -> do
     qs = [ "create table if not exists admin_chan (id integer primary key, timestamp text, name text, msg text)"
          , "create table if not exists admin_msg  (id integer primary key, timestamp text, fromName text, toName text, msg text)"
          , "create table if not exists ban_host   (id integer primary key, timestamp text, host text, is_banned integer, reason text)"
-         , "create table if not exists ban_pla    (id integer primary key, timestamp text, name text, is_banned integer, reason text)"
+         , "create table if not exists ban_pc     (id integer primary key, timestamp text, name text, is_banned integer, reason text)"
          , "create table if not exists bug        (id integer primary key, timestamp text, name text, loc text, desc text, is_open integer)"
          , "create table if not exists chan       (id integer primary key, timestamp text, chan_id integer, chan_name text, name text, msg text)"
          , "create table if not exists profanity  (id integer primary key, timestamp text, host text, prof text)"
@@ -248,8 +248,8 @@ insertDbTblBanHost :: BanHostRec -> IO ()
 insertDbTblBanHost = insertDbTblHelper "insert into ban_host (timestamp, host, is_banned, reason) values (?, ?, ?, ?)"
 
 
-insertDbTblBanPla :: BanPlaRec -> IO ()
-insertDbTblBanPla = insertDbTblHelper "insert into ban_pla (timestamp, name, is_banned, reason) values (?, ?, ?, ?)"
+insertDbTblBanPC :: BanPCRec -> IO ()
+insertDbTblBanPC = insertDbTblHelper "insert into ban_pc (timestamp, name, is_banned, reason) values (?, ?, ?, ?)"
 
 
 insertDbTblBug :: BugRec -> IO ()

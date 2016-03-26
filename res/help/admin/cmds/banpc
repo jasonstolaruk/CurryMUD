@@ -1,0 +1,17 @@
+\h #dBANPC \d
+
+\uUSAGE\n
+#dbanpc \s[\dname reason\s]\d
+
+\uDESCRIPTION\n
+Dump the banned PC database, or ban/unban a PC.
+When no arguments are provided, every record in the database is displayed.
+To add a new record to the database (effectively toggling between banned/unbanned status), provide the full name of the PC you wish to ban/unban, followed by a description of the reason.
+If you ban a player who is currently logged in, he/she will be booted immediately.
+
+\uEXAMPLES\n
+\q#dbanpc\d to dump the database.4`
+\q#dbanpc taro for harassment\d to ban Taro.4`
+\q#dbanpc taro the team decided to give him another chance\d to unban Taro.4`
+
+\uSEE ALSO\n

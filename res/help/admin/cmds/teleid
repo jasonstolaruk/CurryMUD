@@ -6,6 +6,8 @@
 \uDESCRIPTION\n
 Teleport to an entity or room by ID.
 
+For information regarding the ethical use of this command, see "help ethics".
+
 \uEXAMPLES\n
 \q#dteleid 100\d to teleport to ID 100.4`
 

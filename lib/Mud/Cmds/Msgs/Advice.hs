@@ -4,7 +4,7 @@ module Mud.Cmds.Msgs.Advice ( adviceAAnnounceNoArgs
                             , adviceAAsNoArgs
                             , adviceAAsNoCmd
                             , adviceABanHostNoReason
-                            , adviceABanPlaNoReason
+                            , adviceABanPCNoReason
                             , adviceABootNoArgs
                             , adviceAdminNoMsg
                             , adviceAdverbCloseChar
@@ -14,6 +14,9 @@ module Mud.Cmds.Msgs.Advice ( adviceAAnnounceNoArgs
                             , adviceAMsgNoArgs
                             , adviceAMsgNoMsg
                             , adviceAMyChansNoArgs
+                            , adviceAPasswordExcessArgs
+                            , adviceAPasswordNoArgs
+                            , adviceAPasswordNoPw
                             , adviceAPeepNoArgs
                             , adviceAPossessExcessArgs
                             , adviceAPossessNoArgs
@@ -161,10 +164,10 @@ adviceABanHostNoReason a = "Please also provide a reason, as in "               
                            "."
 
 
-adviceABanPlaNoReason :: Text -> Text
-adviceABanPlaNoReason a = "Please also provide a reason, as in "                                             <>
-                          colorWith quoteColor (prefixAdminCmd "banplayer " <> a <> " for harassing hanako") <>
-                          "."
+adviceABanPCNoReason :: Text -> Text
+adviceABanPCNoReason a = "Please also provide a reason, as in "                                         <>
+                         colorWith quoteColor (prefixAdminCmd "banpc " <> a <> " for harassing hanako") <>
+                         "."
 
 
 adviceABootNoArgs :: Text
@@ -200,6 +203,26 @@ adviceAMsgNoMsg a =
 
 adviceAMyChansNoArgs :: Text
 adviceAMyChansNoArgs = "Please specify the PC names of one or more players whose channel information you'd like to see."
+
+
+adviceAPasswordExcessArgs :: Text
+adviceAPasswordExcessArgs = "Please provide two arguments: the full PC name of the player whose password you wish to \
+                            \change, followed by a new password, as in "                      <>
+                            colorWith quoteColor (prefixAdminCmd "password" <> " taro Aoeu1") <>
+                            "."
+
+
+adviceAPasswordNoArgs :: Text
+adviceAPasswordNoArgs = "Please specify the full PC name of the player whose password you wish to change, followed by \
+                        \a new password, as in "                                          <>
+                        colorWith quoteColor (prefixAdminCmd "password" <> " taro Aoeu1") <>
+                        "."
+
+
+adviceAPasswordNoPw :: Text -> Text
+adviceAPasswordNoPw a = "Please also provide a new password, as in "                       <>
+                        colorWith quoteColor (prefixAdminCmd "password " <> a <> " Aoeu1") <>
+                        "."
 
 
 adviceAPeepNoArgs :: Text

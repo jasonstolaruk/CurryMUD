@@ -36,11 +36,15 @@ hintAMsg s = hintHelper [ "the above is a message from "
 
 
 hintABan :: Text
-hintABan = specifyFullHelper "PC name of the player you wish to ban"
+hintABan = specifyFullHelper "name of the PC you wish to ban"
 
 
 hintABoot :: Text
 hintABoot = specifyFullHelper "PC name of the player you wish to boot"
+
+
+hintAPassword :: Text
+hintAPassword = specifyFullHelper "PC name of the player whose password you wish to change"
 
 
 hintASudoer :: Text

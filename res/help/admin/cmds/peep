@@ -3,6 +3,8 @@
 \uUSAGE\n
 #dpeep name \s...\d
 
+For information regarding the ethical use of this command, see "help ethics".
+
 \uDESCRIPTION\n
 Start or stop peeping one or more players.
 When you peep a player, you will covertly see all the text that the server sends to and receives from that player.

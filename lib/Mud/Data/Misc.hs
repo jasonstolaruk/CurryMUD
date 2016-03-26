@@ -128,11 +128,11 @@ instance BanRecord BanHostRec where
   recReason    = banHostReason
 
 
-instance BanRecord BanPlaRec where
-  recTimestamp = banPlaTimestamp
-  recTarget    = banPlaName
-  recIsBanned  = banPlaIsBanned
-  recReason    = banPlaReason
+instance BanRecord BanPCRec where
+  recTimestamp = banPCTimestamp
+  recTarget    = banPCName
+  recIsBanned  = banPCIsBanned
+  recReason    = banPCReason
 
 
 -----
@@ -247,11 +247,11 @@ instance Pretty BanHostRec where
                                  , banHostReason ]
 
 
-instance Pretty BanPlaRec where
-  pp BanPlaRec { .. } = slashes [ banPlaTimestamp
-                                , banPlaName
-                                , banPlaIsBanned ? "banned" :? "unbanned"
-                                , banPlaReason ]
+instance Pretty BanPCRec where
+  pp BanPCRec { .. } = slashes [ banPCTimestamp
+                               , banPCName
+                               , banPCIsBanned ? "banned" :? "unbanned"
+                               , banPCReason ]
 
 
 instance Pretty BugRec where

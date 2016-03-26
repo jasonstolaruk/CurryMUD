@@ -3,6 +3,8 @@
 module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryAdminChanTargetName
                            , sorryAdminName
+                           , sorryAdminPasswordAdmin
+                           , sorryAdminPasswordSelf
                            , sorryAlreadyPossessed
                            , sorryAlreadyPossessing
                            , sorryAsAdmin
@@ -283,6 +285,17 @@ sorryAdminChanTargetName = sorryChanTargetName "admin"
 
 sorryAdminName :: Text -> Text
 sorryAdminName n = "There is no administrator by the name of " <> dblQuote n <> "."
+
+
+-----
+
+
+sorryAdminPasswordAdmin :: Text
+sorryAdminPasswordAdmin = can't "change an admin's password."
+
+
+sorryAdminPasswordSelf :: Text
+sorryAdminPasswordSelf = "Please use the " <> dblQuote "password" <> " command to change your own password."
 
 
 -----

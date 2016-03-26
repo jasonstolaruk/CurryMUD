@@ -32,14 +32,14 @@ import Mud.TheWorld.Zones.AdminZoneIds (iLoggedOut, iRoot)
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
 import Mud.Util.List
-import Mud.Util.Misc hiding (patternMatchFail)
+import Mud.Util.Misc hiding (blowUp, patternMatchFail)
 import Mud.Util.Operators
 import Mud.Util.Padding
 import Mud.Util.Quoting
 import Mud.Util.Text
 import Mud.Util.Wrapping
 import qualified Mud.Misc.Logging as L (logIOEx, logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut, massLogPla)
-import qualified Mud.Util.Misc as U (patternMatchFail)
+import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 
 import Control.Arrow ((***), first, second)
 import Control.Concurrent.Async (asyncThreadId)
@@ -53,8 +53,10 @@ import Control.Monad ((>=>), forM_, unless, when)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (asks)
 import Data.Bits (zeroBits)
+import Data.Char (isDigit, isLower, isUpper)
 import Data.Either (rights)
 import Data.Function (on)
+import Data.Ix (inRange)
 import Data.List ((\\), delete, foldl', intercalate, intersperse, partition, sortBy)
 import Data.Maybe (fromJust, fromMaybe, isJust)
 import Data.Monoid ((<>), Any(..), Sum(..), getSum)
@@ -77,6 +79,10 @@ default (Int)
 
 
 -----
+
+
+blowUp :: Text -> Text -> [Text] -> a
+blowUp = U.blowUp "Mud.Cmds.Admin"
 
 
 patternMatchFail :: Text -> [Text] -> a
@@ -117,7 +123,7 @@ massLogPla = L.massLogPla "Mud.Cmds.Admin"
 -- ==================================================
 
 
--- TODO: Consider making a command to change a player's password.
+-- TODO: Make a command to compare a PW with a hashed PW?
 adminCmds :: [Cmd]
 adminCmds =
     [ mkAdminCmd "?"          adminDispCmdList True  cmdDescDispCmdList
@@ -125,7 +131,7 @@ adminCmds =
     , mkAdminCmd "announce"   adminAnnounce    True  "Send a message to all players."
     , mkAdminCmd "as"         adminAs          False "Execute a command as someone else."
     , mkAdminCmd "banhost"    adminBanHost     True  "Dump the banned hostname database, or ban/unban a host."
-    , mkAdminCmd "banplayer"  adminBanPla      True  "Dump the banned player database, or ban/unban a player."
+    , mkAdminCmd "banpc"      adminBanPC       True  "Dump the banned PC database, or ban/unban a PC."
     , mkAdminCmd "boot"       adminBoot        True  "Boot a player, optionally with a custom message."
     , mkAdminCmd "bug"        adminBug         True  "Dump the bug database."
     , mkAdminCmd "channel"    adminChan        True  "Display information about one or more telepathic channels."
@@ -142,6 +148,7 @@ adminCmds =
     , mkAdminCmd "message"    adminMsg         True  "Send a message to a regular player."
     , mkAdminCmd "mychannels" adminMyChans     True  "Display information about telepathic channels for one or more \
                                                      \players."
+    , mkAdminCmd "password"   adminPassword    True  "Change a player's password."
     , mkAdminCmd "peep"       adminPeep        True  "Start or stop peeping one or more players."
     , mkAdminCmd "persist"    adminPersist     True  "Persist the world (save the current world state to disk)."
     , mkAdminCmd "possess"    adminPossess     False "Temporarily take control of an NPC."
@@ -320,31 +327,30 @@ notifyBan i mq cols selfSing target newStatus x =
 -----
 
 
-adminBanPla :: ActionFun
-adminBanPla (NoArgs i mq cols) = (withDbExHandler "adminBanPla" . getDbTblRecs $ "ban_pla") >>= \case
-  Just xs -> dumpDbTblHelper mq cols (xs :: [BanPlaRec]) >> logPlaExecArgs (prefixAdminCmd "banpla") [] i
+adminBanPC :: ActionFun
+adminBanPC (NoArgs i mq cols) = (withDbExHandler "adminBanPC" . getDbTblRecs $ "ban_pc") >>= \case
+  Just xs -> dumpDbTblHelper mq cols (xs :: [BanPCRec]) >> logPlaExecArgs (prefixAdminCmd "banpc") [] i
   Nothing -> dbError mq cols
-adminBanPla p@(AdviseOneArg a) = advise p [ prefixAdminCmd "banplayer" ] . adviceABanPlaNoReason $ a
-adminBanPla p@(MsgWithTarget i mq cols target msg) = getState >>= \ms ->
-    let fn = "adminBanPla"
-        SingleTarget { .. } = mkSingleTarget mq cols target "The PC name of the player you wish to ban"
+adminBanPC p@(AdviseOneArg a) = advise p [ prefixAdminCmd "banpc" ] . adviceABanPCNoReason $ a
+adminBanPC p@(MsgWithTarget i mq cols target msg) = getState >>= \ms ->
+    let fn                  = "adminBanPC"
+        SingleTarget { .. } = mkSingleTarget mq cols target "The name of the PC you wish to ban"
     in case [ pi | pi <- views pcTbl IM.keys ms, getSing pi ms == strippedTarget ] of
-      []      -> sendFun . sorryPCName $ strippedTarget <> " " <> hintABan
+      []      -> sendFun $ sorryPCName strippedTarget <> " " <> hintABan
       [banId] -> let selfSing = getSing i     ms
                      pla      = getPla  banId ms
                  in if
                    | banId == i  -> sendFun sorryBanSelf
                    | isAdmin pla -> sendFun sorryBanAdmin
-                   | otherwise   -> (withDbExHandler "adminBanPla" . isPlaBanned $ strippedTarget) >>= \case
+                   | otherwise   -> (withDbExHandler "adminBanPC" . isPCBanned $ strippedTarget) >>= \case
                      Nothing      -> dbError mq cols
                      Just (Any b) -> let newStatus = not b in liftIO mkTimestamp >>= \ts -> do
-                         let banPla = BanPlaRec ts strippedTarget newStatus msg
-                         withDbExHandler_ "adminBanPla" . insertDbTblBanPla $ banPla
-                         notifyBan i mq cols selfSing strippedTarget newStatus banPla
-                         when (newStatus && isLoggedIn pla)
-                              (adminBoot p { args = strippedTarget : T.words bannedMsg })
+                         let rec = BanPCRec ts strippedTarget newStatus msg
+                         withDbExHandler_ "adminBanPC" . insertDbTblBanPC $ rec
+                         notifyBan i mq cols selfSing strippedTarget newStatus rec
+                         when (newStatus && isLoggedIn pla) . adminBoot $ p { args = strippedTarget : T.words bannedMsg }
       xs      -> patternMatchFail fn [ showText xs ]
-adminBanPla p = patternMatchFail "adminBanPla" [ showText p ]
+adminBanPC p = patternMatchFail "adminBanPC" [ showText p ]
 
 
 -----
@@ -355,7 +361,7 @@ adminBoot p@AdviseNoArgs                       = advise p [ prefixAdminCmd "boot
 adminBoot (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
     let SingleTarget { .. } = mkSingleTarget mq cols target "The PC name of the player you wish to boot"
     in case [ pi | pi <- views pcTbl IM.keys ms, getSing pi ms == strippedTarget ] of
-      []       -> sendFun . sorryPCName $ strippedTarget <> " " <> hintABoot
+      []       -> sendFun $ sorryPCName strippedTarget <> " " <> hintABoot
       [bootId] -> let selfSing = getSing i ms in if
                     | not . isLoggedIn . getPla bootId $ ms -> sendFun . sorryLoggedOut $ strippedTarget
                     | bootId == i -> sendFun sorryBootSelf
@@ -930,6 +936,44 @@ firstAdminMsg i adminSing =
 -----
 
 
+adminPassword :: ActionFun
+adminPassword p@AdviseNoArgs                     = advise p [ prefixAdminCmd "password" ] adviceAPasswordNoArgs
+adminPassword p@(AdviseOneArg a                ) = advise p [ prefixAdminCmd "password" ] . adviceAPasswordNoPw $ a
+adminPassword p@(WithTarget i mq cols target pw)
+  | length (T.words pw) > 1 = advise p [ prefixAdminCmd "password" ] adviceAPasswordExcessArgs
+  | otherwise               = getState >>= \ms ->
+      let SingleTarget { .. } = mkSingleTarget mq cols target "The PC name of the player whose password you wish to change"
+          changePW = (withDbExHandler fn . liftIO . lookupPW $ strippedTarget) >>= \case
+            Nothing           -> dbError mq cols
+            Just (Just oldPW) -> do
+                withDbExHandler_ fn . insertDbTblUnPw . UnPwRec strippedTarget $ pw
+                sendFun $ strippedTarget <> "'s password has been changed."
+                let msg      = T.concat [ getSing i ms, " has changed ", strippedTarget, "'s password" ]
+                    oldPwMsg = " " <> parensQuote ("was " <> dblQuote oldPW) <> "."
+                bcastOtherAdmins i $ msg <> "."
+                logPla fn i . T.concat $ [ "changed ", strippedTarget, "'s password", oldPwMsg ]
+                logNotice fn $ msg <> oldPwMsg
+            Just Nothing -> blowUp fn "password not found in database" . pure $ strippedTarget
+      in if
+        | not . inRange (minNameLen, maxNameLen) . T.length $ pw -> sendFun sorryInterpNewPwLen
+        | helper isUpper                                         -> sendFun sorryInterpNewPwUpper
+        | helper isLower                                         -> sendFun sorryInterpNewPwLower
+        | helper isDigit                                         -> sendFun sorryInterpNewPwDigit
+        | otherwise -> case [ pi | pi <- views pcTbl IM.keys ms, getSing pi ms == strippedTarget ] of
+          []         -> sendFun $ sorryPCName strippedTarget <> " " <> hintAPassword
+          [targetId] -> let targetPla = getPla targetId ms in if | targetId == i     -> sendFun sorryAdminPasswordSelf
+                                                                 | isAdmin targetPla -> sendFun sorryAdminPasswordAdmin
+                                                                 | otherwise         -> changePW
+          xs         -> patternMatchFail "adminPassword" [ showText xs ]
+  where
+    fn       = "adminPassword changePW"
+    helper f = ()# T.filter f pw
+adminPassword p = patternMatchFail "adminPassword" [ showText p ]
+
+
+-----
+
+
 adminMyChans :: ActionFun
 adminMyChans p@AdviseNoArgs          = advise p [ prefixAdminCmd "mychannels" ] adviceAMyChansNoArgs
 adminMyChans (LowerNub i mq cols as) = getState >>= \ms ->
@@ -1112,7 +1156,7 @@ adminSudoer (OneArgNubbed i mq cols target) = helper |&| modifyState >=> sequenc
       let fn                  = "adminSudoer helper"
           SingleTarget { .. } = mkSingleTarget mq cols target "The PC name of the player you wish to promote/demote"
       in case [ pi | pi <- views pcTbl IM.keys ms, getSing pi ms == strippedTarget ] of
-        [] -> (ms, pure . sendFun . sorryPCName $ strippedTarget <> " " <> hintASudoer)
+        [] -> (ms, pure . sendFun $ sorryPCName strippedTarget <> " " <> hintASudoer)
         [targetId]
           | selfSing       <- getSing i ms
           , targetSing     <- getSing targetId ms

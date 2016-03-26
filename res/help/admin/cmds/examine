@@ -7,6 +7,8 @@
 Display the properties of one or more IDs.
 When examining a mob, you'll see that two numbers are given for each of the attributes (ST, DX, etc.): the first number is the base value, and the second number (in parenthesis) is the effective value (the value obtained after applying all effects from spells, etc.).
 
+For information regarding the ethical use of this command, see "help ethics".
+
 \uEXAMPLES\n
 \q#dexamine 0\d to display the properties of ID 0.4`
 \q#dexamine 0 1\d to display the properties of IDs 0 and 1.4`

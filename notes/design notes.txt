@@ -116,13 +116,7 @@ Make it clear that by playing your virtual world, players are consenting to PD a
 "Evilness is not a winning strategy."
 "Yours is just one way of many to play."
 
-Players should be made aware that their privacy cannot be guaranteed. Admins have the ability to go unnoticed and to listen in on conversations, for the express purpose of monitoring player activity and ensuring that the rules are being followed.
-Consider writing an admin help topic that gives rules for admin conduct:
-In most cases, you should ask a player whether or not they mind you teleporting to their location before doing so. The same goes with summoning.
-Always remain calm and polite. Don't allow troublemakers to push your buttons.
-Before booting a player, give them a warning. "If you do this again, you will be booted."
-Log your conversations with players who might accuse you of saying something you didn't.
-Don't log in while intoxicated.
+Players should be made aware that their privacy cannot be guaranteed. Admins have the ability to go unnoticed and monitor player activity with the express purpose of 1) ensuring that players are playing by the rules, and 2) tracking down bugs.
 
 Is multi-playing and allowed? If not, then players need a way to formally retire their character.
 
