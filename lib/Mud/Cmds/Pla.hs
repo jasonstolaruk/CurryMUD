@@ -1871,7 +1871,7 @@ interpCurrPW cn (WithArgs i mq cols as)
     Nothing        -> dbError mq cols
     Just (Just pw) -> if uncurry validatePassword ((pw, cn) & both %~ T.encodeUtf8)
       then do
-          sendPrompt mq . T.concat $ [nlPrefix . multiWrap cols . pwMsg $ "Please choose a new password."
+          sendPrompt mq . T.concat $ [ nlPrefix . multiWrap cols . pwMsg $ "Please choose a new password."
                                      , "New password:"]
           setInterp i . Just . interpNewPW $ pw
       else pwSorryHelper i mq cols sorryInterpPW
@@ -2546,27 +2546,64 @@ security :: ActionFun
 security (NoArgs i mq cols) = getSing i <$> getState >>= \s ->
     (withDbExHandler "security" . getDbTblRecs $ "sec") >>= \case
       Just recs -> case filter ((s ==) . secName) recs of
-        []      -> securityNotSet
-        matches -> securitySet . head $ matches
+        []      -> securityHelper i mq cols
+        matches -> securityChange . last $ matches
       Nothing   -> dbError mq cols
   where
-    securityNotSet = undefined
-    securitySet _ = undefined
+    securityChange _ = undefined -- TODO
 security p = withoutArgs security p
 
 
+securityHelper :: Id -> MsgQueue -> Cols -> MudStack ()
+securityHelper i mq cols = do
+    multiWrapSend mq cols $ securityWarn : "" : securityQs
+    sendPrompt mq "Which will you choose? [1-4]"
+    setInterp i . Just $ interpSecurityNum
+
+
 securityWarn :: Text
-securityWarn = "IMPORTANT: Resetting your password will require the assistance of a CurryMUD administrator. An \
-               \administrator will ask you the question you chose, and will manually verify your answer. Which is to \
-               \say, administrators have access to security Q&A - do NOT provide, in your security Q&A, any \
-               \personal information you do not want an administrator to know!"
+securityWarn = "IMPORTANT: Resetting your password will require the assistance of a CurryMUD administrator. The \
+               \administrator will prompt you to answer your chosen security question, and will manually verify your \
+               \answer. Which is to say, administrators have access to security Q&A: do NOT provide, in your answer, \
+               \any personal information you do not want an administrator to know!"
 
 
 securityQs :: [Text]
-securityQs = [ "1) What was the last name of your first grade teacher?"
-             , "2) What was the name of your elementary/primary school?"
+securityQs = [ "Please choose your security question from the following options:"
+             , "1) What was the name of your elementary/primary school?"
+             , "2) What was the last name of your first grade teacher?"
              , "3) Where were you on New Year's 2000?"
              , "4) Create your own question." ]
+
+
+interpSecurityNum :: Interp
+interpSecurityNum cn (NoArgs i mq cols) = case cn of
+  "1" -> helper "What was the name of your elementary/primary school?"
+  "2" -> helper "What was the last name of your first grade teacher?"
+  "3" -> helper "Where were you on New Year's 2000?"
+  "4" -> undefined -- TODO
+  _   -> retrySecurityNum mq cols
+  where
+    helper q = sendPrompt mq "Answer:" >> (setInterp i . Just . interpSecurityA $ q)
+interpSecurityNum _ ActionParams { .. } = retrySecurityNum plaMsgQueue plaCols
+
+
+retrySecurityNum :: MsgQueue -> Cols -> MudStack ()
+retrySecurityNum mq cols = do
+    multiWrapSend mq cols $ "Invalid choice." : "" : securityQs
+    sendPrompt mq "Which will you choose? [1-4]"
+
+
+interpSecurityA :: Text -> Interp
+interpSecurityA q "" (NoArgs _ mq cols) = do
+    send mq . wrapUnlines cols $ "Please answer the question, " <> dblQuote q
+    sendPrompt mq "Answer:"
+interpSecurityA q cn (WithArgs i mq cols as) = getSing i <$> getState >>= \s -> do
+    withDbExHandler_ "interpSecurityA" . insertDbTblSec . SecRec s q . T.unwords $ cn : as
+    wrapSend mq cols "Thank you! Your security Q&A has been set."
+    sendDfltPrompt mq i
+    tweak (mobTbl.ind i.interp .~ Nothing)
+interpSecurityA _ _ p = patternMatchFail "interpSecurityA" [ showText p ]
 
 
 -----
