@@ -116,7 +116,7 @@ Make it clear that by playing your virtual world, players are consenting to PD a
 "Evilness is not a winning strategy."
 "Yours is just one way of many to play."
 
-Players should be made aware that their privacy cannot be guaranteed. Admins have the ability to go unnoticed and monitor player activity with the express purpose of 1) ensuring that players are playing by the rules, and 2) tracking down bugs.
+Players should be made aware that their privacy cannot be guaranteed. Player activity is always logged, and admins have the ability to monitor player activity, with the express purpose of 1) ensuring that players are playing by the rules, and 2) tracking down bugs.
 
 Is multi-playing and allowed? If not, then players need a way to formally retire their character.
 
@@ -318,6 +318,9 @@ PCs:
 
 For players who want to try out the game and start playing quickly, offer "character kits."
 Character kits need not correspond to traditional classes. Consider defining kits only after you have designed races and skills.
+
+Many aspects of racial identity are based on stereotypes. Dwarves are materialistic, elves are beautiful, etc. These stereotypes can certainly aid you in defining and fleshing out your character's personality. That said, you are not required to conform to the common stereotypes: you are free to play a materialistic elf, for example (indeed, you are encouraged to play complex, multi-dimensional characters with compelling personalities). However, if your character does challenge the established stereotypes, you can expect that others may react to your character with surprise, curiosity, or disapproval. And you cannot realistically expect the way in which you portray in your character to markedly change any preconceived stereotype.
+In the virtual world, humans are regarded as the most diverse race. Just as humans are incredibly diverse in the real world, so they are in CurryMUD, too. If the character concept you have in mind does not mesh well with any of the established stereotypes for the fantasy/humanoid races, then the human race might be a good choice for your character. Still, this doesn't bar you from reactions of surprise, curiosity, or disapproval, particularly if your character concept is highly unusual.
 
 Make it clear that player descriptions must be written from an objective viewpoint. They must be passive.
 

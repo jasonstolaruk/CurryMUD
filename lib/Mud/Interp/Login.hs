@@ -240,9 +240,9 @@ interpVerifyNewPW oldSing s pass cn params@(NoArgs i mq cols)
       withDbExHandler_ "unpw" . insertDbTblUnPw . UnPwRec s $ pass
       send mq telnetShowInput
       helper |&| modifyState >=> \ms@(getPla i -> p) -> do
+          wrapSend mq cols pwWarningMsg
           initPlaLog i s
           logPla "interpVerifyNewPW" i $ "new character logged in from " <> views currHostName T.pack p <> "."
-          send mq . nl $ ""
           handleLogin oldSing s True params
           notifyQuestion i ms
   | otherwise = promptRetryNewPwMatch mq cols i oldSing s

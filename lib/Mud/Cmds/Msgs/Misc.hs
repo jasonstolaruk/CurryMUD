@@ -105,6 +105,10 @@ pwMsg t = [ T.concat [ t
           , "* 0 whitespace characters" ]
 
 
+pwWarningMsg :: Text
+pwWarningMsg = "Please make a note of your password. If you lose your password, you may lose your character!"
+
+
 rethrowExMsg :: Text -> Text
 rethrowExMsg t = "exception caught " <> t <> "; rethrowing to listen thread"
 

@@ -52,6 +52,7 @@ import Control.Lens.Operators ((%~), (&), (.~), (<>~), (^.))
 import Control.Monad ((>=>), forM_, unless, when)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (asks)
+import Crypto.BCrypt (validatePassword)
 import Data.Bits (zeroBits)
 import Data.Char (isDigit, isLower, isUpper)
 import Data.Either (rights)
@@ -68,6 +69,7 @@ import Prelude hiding (exp, pi, recip)
 import qualified Data.IntMap.Lazy as IM (elems, filter, filterWithKey, keys, size, toList)
 import qualified Data.Map.Lazy as M (foldl, foldrWithKey, keys, size, toList)
 import qualified Data.Text as T
+import qualified Data.Text.Encoding as T
 import qualified Data.Text.IO as T (putStrLn)
 import System.Directory (getDirectoryContents)
 import System.Process (readProcess)
@@ -123,7 +125,6 @@ massLogPla = L.massLogPla "Mud.Cmds.Admin"
 -- ==================================================
 
 
--- TODO: Make a command to compare a PW with a hashed PW?
 adminCmds :: [Cmd]
 adminCmds =
     [ mkAdminCmd "?"          adminDispCmdList True  cmdDescDispCmdList
@@ -140,6 +141,7 @@ adminCmds =
     , mkAdminCmd "eself"      adminExamineSelf True  "Self-examination."
     , mkAdminCmd "examine"    adminExamine     True  "Display the properties of one or more IDs."
     , mkAdminCmd "experience" adminExp         True  "Dump the experience table."
+    , mkAdminCmd "hash"       adminHash        True  "Compare a plain-text password with a hashed password."
     , mkAdminCmd "host"       adminHost        True  "Display a report of connection statistics for one or more \
                                                      \players."
     , mkAdminCmd "incognito"  adminIncognito   True  "Toggle your incognito status."
@@ -155,6 +157,7 @@ adminCmds =
     , mkAdminCmd "print"      adminPrint       True  "Print a message to the server console."
     , mkAdminCmd "profanity"  adminProfanity   True  "Dump the profanity database."
     , mkAdminCmd "search"     adminSearch      True  "Search for names and IDs using a regular expression."
+    , mkAdminCmd "security"   adminSecurity    True  "Display security Q&A for one or more players."
     , mkAdminCmd "shutdown"   adminShutdown    False "Shut down CurryMUD, optionally with a custom message."
     , mkAdminCmd "sudoer"     adminSudoer      True  "Toggle a player's admin status."
     , mkAdminCmd "summon"     adminSummon      True  "Teleport a PC to your current room."
@@ -780,6 +783,22 @@ adminExp p = withoutArgs adminExp p
 -----
 
 
+-- TODO: Help.
+-- TODO: Update the ethics help file?
+adminHash :: ActionFun
+adminHash p@AdviseNoArgs                      = advise p [ prefixAdminCmd "hash" ] adviceAHashNoArgs
+adminHash p@(AdviseOneArg a                 ) = advise p [ prefixAdminCmd "hash" ] . adviceAHashNoHash $ a
+adminHash   (WithArgs i mq cols [ pw, hash ]) = do
+    wrapSend mq cols $ if uncurry validatePassword ((hash, pw) & both %~ T.encodeUtf8)
+      then "It's a match!"
+      else "The plain-text password does not match the hashed password."
+    logPlaExec (prefixAdminCmd "hash") i
+adminHash p = advise p [ prefixAdminCmd "hash" ] adviceAHashExcessArgs
+
+
+-----
+
+
 adminHost :: ActionFun
 adminHost p@AdviseNoArgs          = advise p [ prefixAdminCmd "host" ] adviceAHostNoArgs
 adminHost (LowerNub i mq cols as) = do
@@ -789,7 +808,7 @@ adminHost (LowerNub i mq cols as) = do
                             found    = uncurry . mkHostReport ms now $ zone
                         in findFullNameForAbbrev target (mkAdminPlaIdSingList ms) |&| maybe notFound found
     multiWrapSend mq cols . intercalate [""] . map (helper . capitalize . T.toLower) $ as
-    logPlaExec (prefixAdminCmd "host") i
+    logPlaExecArgs (prefixAdminCmd "host") as i
 adminHost p = patternMatchFail "adminHost" [ showText p ]
 
 
@@ -1122,6 +1141,30 @@ adminSearch p = patternMatchFail "adminSearch" [ showText p ]
 
 applyRegex :: Text -> Text -> (Text, Text, Text)
 applyRegex searchTerm target = let f = (=~) `on` T.unpack in target `f` searchTerm |&| each %~ T.pack
+
+
+-----
+
+
+-- TODO: Help.
+adminSecurity :: ActionFun
+adminSecurity p@AdviseNoArgs            = advise p [ prefixAdminCmd "security" ] adviceASecurityNoArgs
+adminSecurity   (LowerNub i mq cols as) = (withDbExHandler "adminSecurity" . getDbTblRecs $ "sec") >>= \case
+  Just recs -> do
+      multiWrapSend mq cols . intercalateDivider cols . concatMap (helper recs . capitalize . T.toLower) $ as
+      logPlaExecArgs (prefixAdminCmd "security") as i
+  Nothing   -> dbError mq cols
+  where
+    helper recs target = case filter ((target `T.isPrefixOf`) . secName) recs of
+      []      -> pure . pure $ "No records found for " <> dblQuote target <> "."
+      matches -> map mkSecReport matches
+adminSecurity p = patternMatchFail "adminHost" [ showText p ]
+
+
+mkSecReport :: SecRec -> [Text]
+mkSecReport SecRec { .. } = [ "Name: "     <> secName
+                            , "Question: " <> secQ
+                            , "Answer: "   <> secA ]
 
 
 -----

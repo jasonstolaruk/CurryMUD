@@ -11,7 +11,6 @@ module Mud.Misc.Database ( AdminChanRec(..)
                          , countDbTblRecsChan
                          , countDbTblRecsQuestion
                          , countDbTblRecsTele
-                         , countDbTblRecsUnPw
                          , createDbTbls
                          , getDbTblRecs
                          , insertDbTblAdminChan
@@ -22,6 +21,7 @@ module Mud.Misc.Database ( AdminChanRec(..)
                          , insertDbTblChan
                          , insertDbTblProf
                          , insertDbTblQuestion
+                         , insertDbTblSec
                          , insertDbTblTele
                          , insertDbTblTypo
                          , insertDbTblUnPw
@@ -33,6 +33,7 @@ module Mud.Misc.Database ( AdminChanRec(..)
                          , purgeDbTblQuestion
                          , purgeDbTblTele
                          , QuestionRec(..)
+                         , SecRec(..)
                          , TeleRec(..)
                          , TypoRec(..)
                          , UnPwRec(..) ) where
@@ -84,6 +85,9 @@ data ProfRec      = ProfRec      { profTimestamp      :: Text
 data QuestionRec  = QuestionRec  { questionTimestamp  :: Text
                                  , questionName       :: Text
                                  , questionMsg        :: Text }
+data SecRec       = SecRec       { secName            :: Text
+                                 , secQ               :: Text
+                                 , secA               :: Text } deriving Eq
 data TeleRec      = TeleRec      { teleTimestamp      :: Text
                                  , teleFromName       :: Text
                                  , teleToName         :: Text
@@ -130,6 +134,10 @@ instance FromRow ProfRec where
 
 instance FromRow QuestionRec where
   fromRow = QuestionRec <$ (field :: RowParser Int) <*> field <*> field <*> field
+
+
+instance FromRow SecRec where
+  fromRow = SecRec <$ (field :: RowParser Int) <*> field <*> field <*> field
 
 
 instance FromRow TeleRec where
@@ -179,6 +187,10 @@ instance ToRow QuestionRec where
   toRow (QuestionRec a b c) = toRow (a, b, c)
 
 
+instance ToRow SecRec where
+  toRow (SecRec a b c) = toRow (a, b, c)
+
+
 instance ToRow TeleRec where
   toRow (TeleRec a b c d) = toRow (a, b, c, d)
 
@@ -209,6 +221,7 @@ createDbTbls = withConnection dbFile $ \conn -> do
          , "create table if not exists chan       (id integer primary key, timestamp text, chan_id integer, chan_name text, name text, msg text)"
          , "create table if not exists profanity  (id integer primary key, timestamp text, host text, prof text)"
          , "create table if not exists question   (id integer primary key, timestamp text, name text, msg text)"
+         , "create table if not exists sec        (id integer primary key, name text, question text, answer text)"
          , "create table if not exists tele       (id integer primary key, timestamp text, fromName text, toName text, msg text)"
          , "create table if not exists typo       (id integer primary key, timestamp text, name text, loc text, desc text, is_open integer)"
          , "create table if not exists unpw       (id integer primary key, un text, pw text)" ]
@@ -268,6 +281,10 @@ insertDbTblQuestion :: QuestionRec -> IO ()
 insertDbTblQuestion = insertDbTblHelper "insert into question (timestamp, name, msg) values (?, ?, ?)"
 
 
+insertDbTblSec :: SecRec -> IO ()
+insertDbTblSec = insertDbTblHelper "insert into sec (name, question, answer) values (?, ?, ?)"
+
+
 insertDbTblTele :: TeleRec -> IO ()
 insertDbTblTele = insertDbTblHelper "insert into tele (timestamp, fromName, toName, msg) values (?, ?, ?, ?)"
 
@@ -305,10 +322,6 @@ countDbTblRecsQuestion = countHelper "question"
 
 countDbTblRecsTele :: IO [Only Int]
 countDbTblRecsTele = countHelper "tele"
-
-
-countDbTblRecsUnPw :: IO [Only Int]
-countDbTblRecsUnPw = countHelper "unpw"
 
 
 countHelper :: Text -> IO [Only Int]

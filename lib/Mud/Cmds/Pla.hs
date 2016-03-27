@@ -181,6 +181,7 @@ regularCmdTuples =
     , ("remove",     remove,          True,  cmdDescRemove)
     , ("s",          go "s",          True,  cmdDescGoSouth)
     , ("se",         go "se",         True,  cmdDescGoSoutheast)
+    , ("security",   security,        True,  "View or set your security Q&A.")
     , ("set",        setAction,       True,  "View or change settings.")
     , ("sw",         go "sw",         True,  cmdDescGoSouthwest)
     , ("take",       getAction,       True,  cmdDescGet)
@@ -1904,7 +1905,8 @@ interpVerifyNewPW :: Text -> Text -> Interp
 interpVerifyNewPW oldPW pass cn (NoArgs i mq cols)
   | cn == pass = getSing i <$> getState >>= \s -> do
       withDbExHandler_ "unpw" . insertDbTblUnPw . UnPwRec s $ pass
-      send mq . nlnl $ telnetShowInput <> "Password changed."
+      send mq telnetShowInput
+      wrapSend mq cols $ "Password changed. " <> pwWarningMsg
       sendDfltPrompt mq i
       tweak (mobTbl.ind i.interp .~ Nothing)
       logPla "interpVerifyNewPW" i $ "password changed " <> parensQuote ("was " <> dblQuote oldPW) <> "."
@@ -2534,6 +2536,37 @@ say p = patternMatchFail "say" [ showText p ]
 firstMobSay :: Id -> PlaTbl -> (PlaTbl, [Text])
 firstMobSay i pt | pt^.ind i.to isNotFirstMobSay = (pt, pure "")
                  | otherwise = (pt & ind i %~ setPlaFlag IsNotFirstMobSay True, [ "", hintSay ])
+
+
+-----
+
+
+-- TODO: Help.
+security :: ActionFun
+security (NoArgs i mq cols) = getSing i <$> getState >>= \s ->
+    (withDbExHandler "security" . getDbTblRecs $ "sec") >>= \case
+      Just recs -> case filter ((s ==) . secName) recs of
+        []      -> securityNotSet
+        matches -> securitySet . head $ matches
+      Nothing   -> dbError mq cols
+  where
+    securityNotSet = undefined
+    securitySet _ = undefined
+security p = withoutArgs security p
+
+
+securityWarn :: Text
+securityWarn = "IMPORTANT: Resetting your password will require the assistance of a CurryMUD administrator. An \
+               \administrator will ask you the question you chose, and will manually verify your answer. Which is to \
+               \say, administrators have access to security Q&A - do NOT provide, in your security Q&A, any \
+               \personal information you do not want an administrator to know!"
+
+
+securityQs :: [Text]
+securityQs = [ "1) What was the last name of your first grade teacher?"
+             , "2) What was the name of your elementary/primary school?"
+             , "3) Where were you on New Year's 2000?"
+             , "4) Create your own question." ]
 
 
 -----

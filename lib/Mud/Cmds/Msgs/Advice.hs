@@ -9,6 +9,9 @@ module Mud.Cmds.Msgs.Advice ( adviceAAnnounceNoArgs
                             , adviceAdminNoMsg
                             , adviceAdverbCloseChar
                             , adviceAExamineNoArgs
+                            , adviceAHashExcessArgs
+                            , adviceAHashNoArgs
+                            , adviceAHashNoHash
                             , adviceAHostNoArgs
                             , adviceALocateNoArgs
                             , adviceAMsgNoArgs
@@ -22,6 +25,7 @@ module Mud.Cmds.Msgs.Advice ( adviceAAnnounceNoArgs
                             , adviceAPossessNoArgs
                             , adviceAPrintNoArgs
                             , adviceASearchNoArgs
+                            , adviceASecurityNoArgs
                             , adviceAsSelfNoArgs
                             , adviceASudoerExcessArgs
                             , adviceASudoerNoArgs
@@ -179,6 +183,22 @@ adviceAExamineNoArgs :: Text
 adviceAExamineNoArgs = "Please provide one or more IDs to examine."
 
 
+adviceAHashExcessArgs :: Text
+adviceAHashExcessArgs = adviceAHashNoArgs
+
+
+adviceAHashNoArgs :: Text
+adviceAHashNoArgs = "Please provide two arguments: a plain-text password, followed by a hashed password, as in "                          <>
+                    colorWith quoteColor (prefixAdminCmd "hash" <> " curry $2y$04$nbLFBcaGtmT.fMzBUC.sC.vj0AqQgTE6R//Nj70DKU/fN5W2K84Sm") <>
+                    "."
+
+
+adviceAHashNoHash :: Text -> Text
+adviceAHashNoHash a = "Please also provide a hashed password, as in "                                                                      <>
+                      colorWith quoteColor (prefixAdminCmd "hash " <> a <> "$2y$04$nbLFBcaGtmT.fMzBUC.sC.vj0AqQgTE6R//Nj70DKU/fN5W2K84Sm") <>
+                      "."
+
+
 adviceAHostNoArgs :: Text
 adviceAHostNoArgs = "Please specify the PC names of one or more players whose host statistics you would like to see."
 
@@ -245,6 +265,10 @@ adviceAPrintNoArgs = "You must provide a message to print to the server console,
 
 adviceASearchNoArgs :: Text
 adviceASearchNoArgs = "Please provide a regular expression to search for."
+
+
+adviceASecurityNoArgs :: Text
+adviceASecurityNoArgs = "Please specify the PC names of one or more players whose security Q&A you would like to see."
 
 
 adviceASudoerExcessArgs :: Text
