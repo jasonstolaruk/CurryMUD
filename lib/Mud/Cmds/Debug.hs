@@ -809,6 +809,7 @@ debugToken (NoArgs i mq cols) = do
                 , "literal miscTokenDelimiter: " <> (T.pack . replicate 2 $ miscTokenDelimiter)
                 , "dfltBootMsg: "     <> (miscTokenDelimiter `T.cons` "b")
                 , "isDebug: "         <> (miscTokenDelimiter `T.cons` "d")
+                , "pwWarningMsg: "    <> (miscTokenDelimiter `T.cons` "p")
                 , "dfltShutdownMsg: " <> (miscTokenDelimiter `T.cons` "s") ]
     dfltColorStyleToken   = styleTokenDelimiter `T.cons` "d"
     noUnderlineStyleToken = styleTokenDelimiter `T.cons` "n"

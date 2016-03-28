@@ -1,0 +1,12 @@
+\h #dSECURITY \d
+
+\uUSAGE\n
+#dsecurity name \s...\d
+
+\uDESCRIPTION\n
+Display security Q&A for one or more players.
+
+When you've been asked by a player to reset their password, this command may be used to prove that the person really is who they claim to be.
+The use of this command is discussed fully in the "resetPassword" help topic.
+
+\uSEE ALSO\n

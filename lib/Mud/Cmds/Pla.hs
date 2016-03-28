@@ -182,7 +182,7 @@ regularCmdTuples =
     , ("remove",     remove,          True,  cmdDescRemove)
     , ("s",          go "s",          True,  cmdDescGoSouth)
     , ("se",         go "se",         True,  cmdDescGoSoutheast)
-    , ("security",   security,        True,  "View or set your security Q&A.")
+    , ("security",   security,        True,  "View or change your security Q&A.")
     , ("set",        setAction,       True,  "View or change settings.")
     , ("sw",         go "sw",         True,  cmdDescGoSouthwest)
     , ("take",       getAction,       True,  cmdDescGet)
@@ -2542,7 +2542,6 @@ firstMobSay i pt | pt^.ind i.to isNotFirstMobSay = (pt, pure "")
 -----
 
 
--- TODO: Help.
 security :: ActionFun
 security (NoArgs i mq cols) = getSing i <$> getState >>= \s ->
     (withDbExHandler "security" . getDbTblRecs $ "sec") >>= \case

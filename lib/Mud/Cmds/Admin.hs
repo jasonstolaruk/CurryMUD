@@ -783,8 +783,6 @@ adminExp p = withoutArgs adminExp p
 -----
 
 
--- TODO: Help.
--- TODO: Update the ethics help file?
 adminHash :: ActionFun
 adminHash p@AdviseNoArgs                      = advise p [ prefixAdminCmd "hash" ] adviceAHashNoArgs
 adminHash p@(AdviseOneArg a                 ) = advise p [ prefixAdminCmd "hash" ] . adviceAHashNoHash $ a
@@ -1146,7 +1144,6 @@ applyRegex searchTerm target = let f = (=~) `on` T.unpack in target `f` searchTe
 -----
 
 
--- TODO: Help.
 adminSecurity :: ActionFun
 adminSecurity p@AdviseNoArgs            = advise p [ prefixAdminCmd "security" ] adviceASecurityNoArgs
 adminSecurity   (LowerNub i mq cols as) = (withDbExHandler "adminSecurity" . getDbTblRecs $ "sec") >>= \case
