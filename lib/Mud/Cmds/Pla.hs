@@ -35,6 +35,7 @@ import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Data.State.Util.Random
+import Mud.Interp.Misc
 import Mud.Misc.ANSI
 import Mud.Misc.Database
 import Mud.Misc.LocPref
@@ -1884,7 +1885,7 @@ pwSorryHelper i mq cols msg = do
     send mq telnetShowInput
     wrapSend mq cols msg
     sendDfltPrompt mq i
-    tweak (mobTbl.ind i.interp .~ Nothing)
+    resetInterp i
 
 
 interpNewPW :: Text -> Interp
@@ -1908,7 +1909,7 @@ interpVerifyNewPW oldPW pass cn (NoArgs i mq cols)
       send mq telnetShowInput
       wrapSend mq cols $ "Password changed. " <> pwWarningMsg
       sendDfltPrompt mq i
-      tweak (mobTbl.ind i.interp .~ Nothing)
+      resetInterp i
       logPla "interpVerifyNewPW" i $ "password changed " <> parensQuote ("was " <> dblQuote oldPW) <> "."
   | otherwise = pwSorryHelper i mq cols sorryInterpNewPwMatch
 interpVerifyNewPW _ _ _ p = patternMatchFail "interpVerifyNewPW" [ showText p ]
@@ -2550,22 +2551,29 @@ security (NoArgs i mq cols) = getSing i <$> getState >>= \s ->
         matches -> securityChange . last $ matches
       Nothing   -> dbError mq cols
   where
-    securityChange _ = undefined -- TODO
+    securityChange SecRec { secQ, secA } = do
+        multiWrapSend mq cols [ "You have set your security Q&A as follows:"
+                              , "Question: " <> secQ
+                              , "Answer: "   <> secA ]
+        wrapSendPrompt mq cols "Would you like to change it? [yes/no]"
+        setInterp i . Just $ interpConfirmSecurityChange
 security p = withoutArgs security p
 
 
 securityHelper :: Id -> MsgQueue -> Cols -> MudStack ()
 securityHelper i mq cols = do
-    multiWrapSend mq cols $ securityWarn : "" : securityQs
-    sendPrompt mq "Which will you choose? [1-4]"
+    multiWrapSend mq cols $ securityWarn ++ pure "" ++ securityQs
+    sendPrompt mq "Which will you choose? [1-5]"
     setInterp i . Just $ interpSecurityNum
 
 
-securityWarn :: Text
-securityWarn = "IMPORTANT: Resetting your password will require the assistance of a CurryMUD administrator. The \
-               \administrator will prompt you to answer your chosen security question, and will manually verify your \
-               \answer. Which is to say, administrators have access to security Q&A: do NOT provide, in your answer, \
-               \any personal information you do not want an administrator to know!"
+securityWarn :: [Text]
+securityWarn = [ "IMPORTANT: Resetting your password will require the assistance of a CurryMUD administrator. The \
+                 \administrator will prompt you to answer your chosen security question, and will manually verify your \
+                 \answer. Which is to say, administrators have access to security Q&A: do NOT provide, in your answer, \
+                 \any personal information you do not want an administrator to know!"
+               , "If you choose to provide your email address (option #4 below), a new password can simply be emailed \
+                 \to you." ]
 
 
 securityQs :: [Text]
@@ -2573,7 +2581,8 @@ securityQs = [ "Please choose your security question from the following options:
              , "1) What was the name of your elementary/primary school?"
              , "2) What was the last name of your first grade teacher?"
              , "3) Where were you on New Year's 2000?"
-             , "4) Create your own question." ]
+             , "4) What is your email address?"
+             , "5) Create your own question." ]
 
 
 interpSecurityNum :: Interp
@@ -2581,7 +2590,8 @@ interpSecurityNum cn (NoArgs i mq cols) = case cn of
   "1" -> helper "What was the name of your elementary/primary school?"
   "2" -> helper "What was the last name of your first grade teacher?"
   "3" -> helper "Where were you on New Year's 2000?"
-  "4" -> undefined -- TODO
+  "4" -> helper "What is your email address?"
+  "5" -> undefined -- TODO
   _   -> retrySecurityNum mq cols
   where
     helper q = sendPrompt mq "Answer:" >> (setInterp i . Just . interpSecurityA $ q)
@@ -2591,7 +2601,7 @@ interpSecurityNum _ ActionParams { .. } = retrySecurityNum plaMsgQueue plaCols
 retrySecurityNum :: MsgQueue -> Cols -> MudStack ()
 retrySecurityNum mq cols = do
     multiWrapSend mq cols $ "Invalid choice." : "" : securityQs
-    sendPrompt mq "Which will you choose? [1-4]"
+    sendPrompt mq "Which will you choose? [1-5]"
 
 
 interpSecurityA :: Text -> Interp
@@ -2602,8 +2612,16 @@ interpSecurityA q cn (WithArgs i mq cols as) = getSing i <$> getState >>= \s -> 
     withDbExHandler_ "interpSecurityA" . insertDbTblSec . SecRec s q . T.unwords $ cn : as
     wrapSend mq cols "Thank you! Your security Q&A has been set."
     sendDfltPrompt mq i
-    tweak (mobTbl.ind i.interp .~ Nothing)
+    resetInterp i
 interpSecurityA _ _ p = patternMatchFail "interpSecurityA" [ showText p ]
+
+
+interpConfirmSecurityChange :: Interp
+interpConfirmSecurityChange cn (NoArgs i mq cols) = case yesNoHelper cn of
+  Just True  -> send mq (nl "") >> securityHelper i mq cols
+  Just False -> send mq (nlnl "Never mind.") >> sendDfltPrompt mq i >> resetInterp i
+  Nothing    -> promptRetryYesNo mq cols
+interpConfirmSecurityChange _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNo plaMsgQueue plaCols
 
 
 -----

@@ -8,7 +8,7 @@ import Mud.Cmds.Pla
 import Mud.Data.Misc
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
-import Mud.Interp.Misc
+import Mud.Interp.Dispatch
 import Mud.TopLvlDefs.Misc
 import Mud.Util.Operators
 

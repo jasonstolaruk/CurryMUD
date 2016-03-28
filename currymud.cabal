@@ -65,6 +65,7 @@ library
                        Mud.Data.State.Util.Put
                        Mud.Data.State.Util.Random
                        Mud.Interp.CentralDispatch
+                       Mud.Interp.Dispatch
                        Mud.Interp.Login
                        Mud.Interp.Misc
                        Mud.Interp.Npc

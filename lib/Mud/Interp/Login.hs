@@ -14,6 +14,7 @@ import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
+import Mud.Interp.Misc
 import Mud.Misc.ANSI
 import Mud.Misc.Database
 import Mud.Misc.Logging hiding (logNotice, logPla)
@@ -42,7 +43,7 @@ import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception.Lifted (try)
 import Control.Lens (at, both, views)
 import Control.Lens.Operators ((%~), (&), (.~), (^.))
-import Control.Monad ((>=>), guard, unless, when)
+import Control.Monad ((>=>), unless, when)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Loops (orM)
 import Crypto.BCrypt (validatePassword)
@@ -192,19 +193,6 @@ interpConfirmName s cn (NoArgs i mq cols) = getState >>= \ms@(getSing i -> oldSi
   Just False -> promptRetryName  mq cols "" >> setInterp i (Just interpName)
   Nothing    -> promptRetryYesNo mq cols
 interpConfirmName _ _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNo plaMsgQueue plaCols
-
-
-promptRetryYesNo :: MsgQueue -> Cols -> MudStack ()
-promptRetryYesNo mq cols =
-    wrapSendPrompt mq cols . T.concat $ [ "Please answer ", dblQuote "yes", " or ", dblQuote "no", "." ]
-
-
-yesNoHelper :: Text -> Maybe Bool
-yesNoHelper (T.toLower -> a) = guard (()!# a) >> helper
-  where
-    helper | a `T.isPrefixOf` "yes" = return True
-           | a `T.isPrefixOf` "no"  = return False
-           | otherwise              = Nothing
 
 
 -- ==================================================
