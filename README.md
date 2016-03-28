@@ -40,6 +40,7 @@ CurryMUD will have the following features:
 * Logging.
 * ANSI color.
 * Systems for reporting bugs and typos.
+* Commands to aid in the process of resetting a forgotten password.
 * Weight and encumbrance.
 * Volume and container capacity.
 * Durational effects that can be paused and resumed.

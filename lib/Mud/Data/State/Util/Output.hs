@@ -9,6 +9,8 @@ module Mud.Data.State.Util.Output ( bcast
                                   , bcastNl
                                   , bcastOtherAdmins
                                   , bcastOthersInRm
+                                  , blankLine
+                                  , blankLines
                                   , dbError
                                   , frame
                                   , massMsg
@@ -139,6 +141,17 @@ bcastOthersInRm i msg = getState >>= \ms ->
     let helper = let ((i `delete`) -> ris) = getMobRmInv i ms
                  in bcast . pure $ (msg, findMobIds ms ris)
     in isPC i ms ? unless (isIncognito . getPla i $ ms) helper :? helper
+
+
+-----
+
+
+blankLine :: MsgQueue -> MudStack ()
+blankLine = (nl "" |&|) . send
+
+
+blankLines :: MsgQueue -> MudStack ()
+blankLines = (nlnl "" |&|) . send
 
 
 -----

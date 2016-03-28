@@ -2591,7 +2591,7 @@ interpSecurityNum cn (NoArgs i mq cols) = case cn of
   "2" -> helper "What was the last name of your first grade teacher?"
   "3" -> helper "Where were you on New Year's 2000?"
   "4" -> helper "What is your email address?"
-  "5" -> undefined -- TODO
+  "5" -> securityCreateQHelper i mq cols
   _   -> retrySecurityNum mq cols
   where
     helper q = sendPrompt mq "Answer:" >> (setInterp i . Just . interpSecurityA $ q)
@@ -2608,20 +2608,51 @@ interpSecurityA :: Text -> Interp
 interpSecurityA q "" (NoArgs _ mq cols) = do
     send mq . wrapUnlines cols $ "Please answer the question, " <> dblQuote q
     sendPrompt mq "Answer:"
-interpSecurityA q cn (WithArgs i mq cols as) = getSing i <$> getState >>= \s -> do
-    withDbExHandler_ "interpSecurityA" . insertDbTblSec . SecRec s q . T.unwords $ cn : as
+interpSecurityA q cn (WithArgs i mq cols as) = securitySetHelper i mq cols q . T.unwords $ cn : as
+interpSecurityA _ _  p                       = patternMatchFail "interpSecurityA" [ showText p ]
+
+
+securitySetHelper :: Id -> MsgQueue -> Cols -> Text -> Text -> MudStack ()
+securitySetHelper i mq cols q a = getSing i <$> getState >>= \s -> do
+    withDbExHandler_ "interpSecurityA" . insertDbTblSec . SecRec s q $ a
     wrapSend mq cols "Thank you! Your security Q&A has been set."
+    logPla "securitySetHelper" i "set security Q&A."
     sendDfltPrompt mq i
     resetInterp i
-interpSecurityA _ _ p = patternMatchFail "interpSecurityA" [ showText p ]
 
 
 interpConfirmSecurityChange :: Interp
 interpConfirmSecurityChange cn (NoArgs i mq cols) = case yesNoHelper cn of
-  Just True  -> send mq (nl "") >> securityHelper i mq cols
-  Just False -> send mq (nlnl "Never mind.") >> sendDfltPrompt mq i >> resetInterp i
-  Nothing    -> promptRetryYesNo mq cols
+  Just True -> blankLine mq >> securityHelper i mq cols
+  _         -> neverMind i mq
 interpConfirmSecurityChange _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNo plaMsgQueue plaCols
+
+
+securityCreateQHelper :: Id -> MsgQueue -> Cols -> MudStack ()
+securityCreateQHelper i mq cols = do
+    send mq . nlPrefix . nl . T.unlines $ info
+    sendPrompt mq "Enter your question:"
+    setInterp i . Just $ interpSecurityCreateQ
+  where
+    info = "OK. Ideally, your security Q&A should be:" : concatMap (wrapIndent 2 cols) rest
+    rest = [ "* Memorable. You don't want to forget your answer."
+           , "* Consistent. Choose a question for which the answer will not change over time."
+           , "* Safe. Your answer should not be easily guessed or researched by your friends and acquaintances who \
+             \play CurryMUD." ]
+
+
+interpSecurityCreateQ :: Interp
+interpSecurityCreateQ "" (NoArgs'  i mq     ) = neverMind i mq
+interpSecurityCreateQ cn (WithArgs i mq _ as) = do
+    sendPrompt mq "Answer:"
+    setInterp i . Just . interpSecurityCreateA $ T.unwords $ cn : as
+interpSecurityCreateQ _ p = patternMatchFail "interpSecurityCreateQ" [ showText p ]
+
+
+interpSecurityCreateA :: Text -> Interp
+interpSecurityCreateA _ "" (NoArgs'  i mq        ) = neverMind i mq
+interpSecurityCreateA q cn (WithArgs i mq cols as) = securitySetHelper i mq cols q . T.unwords $ cn : as
+interpSecurityCreateA _ _  p                       = patternMatchFail "interpSecurityCreateA" [ showText p ]
 
 
 -----

@@ -116,8 +116,8 @@ interpName _ ActionParams { .. } = promptRetryName plaMsgQueue plaCols sorryInte
 promptRetryName :: MsgQueue -> Cols -> Text -> MudStack ()
 promptRetryName mq cols msg = let t = "Let's try this again. By what name are you known?"
                               in (>> wrapSendPrompt mq cols t) $ if ()# msg
-                                then send mq . nl $ ""
-                                else wrapSend mq cols msg
+                                then blankLine mq
+                                else wrapSend  mq cols msg
 
 
 findExistingPlas :: Sing -> MudState -> [(Id, Pla)]
@@ -215,8 +215,8 @@ interpNewPW _ _ _ ActionParams { plaMsgQueue, plaCols } = promptRetryNewPW plaMs
 promptRetryNewPW :: MsgQueue -> Cols -> Text -> MudStack ()
 promptRetryNewPW mq cols msg = let t = "Let's try this again. New password:"
                                in (>> wrapSendPrompt mq cols t) $ if ()# msg
-                                 then send mq . nl $ ""
-                                 else wrapSend mq cols msg
+                                 then blankLine mq
+                                 else wrapSend  mq cols msg
 
 
 -- ==================================================

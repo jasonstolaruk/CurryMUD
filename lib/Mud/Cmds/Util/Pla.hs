@@ -57,7 +57,6 @@ module Mud.Cmds.Util.Pla ( armSubToSlot
                          , notFoundSuggestAsleeps
                          , otherHand
                          , putOnMsgs
-                         , resetInterp
                          , resolveMobInvCoins
                          , resolveRmInvCoins
                          , sorryConHelper
@@ -1122,13 +1121,6 @@ otherHand NoHand = LHand
 
 putOnMsgs :: Id -> Desig -> Sing -> (Text, Broadcast)
 putOnMsgs = mkReadyMsgs "put on" "puts on"
-
-
------
-
-
-resetInterp :: Id -> MudStack ()
-resetInterp i = tweak (mobTbl.ind i.interp .~ Nothing)
 
 
 -----
