@@ -362,11 +362,9 @@ data Slot = HeadS                                   -- armor
 
 
 -- Has an object (and an entity and paused/active effects).
-data Food = Food { _foodId        :: DistinctFoodId
-                 , _foodSmellDesc :: Text
-                 , _foodTasteDesc :: Text
-                 , _eatDesc       :: Text
-                 , _remMouthfuls  :: Mouthfuls } deriving (Eq, Generic, Show)
+data Food = Food { _foodId       :: DistinctFoodId
+                 , _eatDesc      :: Text
+                 , _remMouthfuls :: Mouthfuls } deriving (Eq, Generic, Show)
 
 
 newtype DistinctFoodId = DistinctFoodId Id deriving (Eq, Generic, Ord, Show)

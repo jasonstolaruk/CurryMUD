@@ -629,8 +629,6 @@ examineFood i ms =
     let f  = getFood i ms
         df = getDistinctFoodForFood f ms
     in [ "Distinct food ID: "    <> f^.foodId.to showText
-       , "Food smell: "          <> f^.foodSmellDesc
-       , "Food taste: "          <> f^.foodTasteDesc
        , "Eat description: "     <> f^.eatDesc
        , "Remaining mouthfuls: " <> f^.remMouthfuls.to showText
        , "Distinct mouthfuls: "  <> df^.mouthfuls.to showText ] ++ df^.foodEdibleEffects.to descEdibleEffects
