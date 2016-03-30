@@ -50,6 +50,7 @@ createTutorial = do
             "Hello!\n\
             \There is a trash bin here."
             Nothing
+            Nothing
             zeroBits
             []
             (M.fromList [ ("look", [ lookTrashHook ])

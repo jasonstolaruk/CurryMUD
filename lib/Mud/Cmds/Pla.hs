@@ -184,6 +184,7 @@ regularCmdTuples =
     , ("se",         go "se",         True,  cmdDescGoSoutheast)
     , ("security",   security,        True,  "View or change your security Q&A.")
     , ("set",        setAction,       True,  "View or change settings.")
+    , ("smell",      smell,           True,  cmdDescSmell)
     , ("sw",         go "sw",         True,  cmdDescGoSouthwest)
     , ("take",       getAction,       True,  cmdDescGet)
     , ("tune",       tune,            True,  "Display a list of your telepathic connections, or tune in/out one or \
@@ -303,6 +304,7 @@ npcRegularCmdTuples =
     , ("remove",     remove,         True,  cmdDescRemove)
     , ("s",          go "s",         True,  cmdDescGoSouth)
     , ("se",         go "se",        True,  cmdDescGoSoutheast)
+    , ("smell",      smell,          True,  cmdDescSmell)
     , ("sw",         go "sw",        True,  cmdDescGoSouthwest)
     , ("u",          go "u",         True,  cmdDescGoUp)
     , ("w",          go "w",         True,  cmdDescGoWest) ]
@@ -2716,9 +2718,9 @@ helperSettings i ms a (T.breakOn "=" -> (name, T.tail -> value)) =
 
 
 showAction :: ActionFun
-showAction p@AdviseNoArgs       = advise p ["show"] adviceShowNoArgs
-showAction p@(AdviseOneArg a)   = advise p ["show"] . adviceShowNoName $ a
-showAction (Lower i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
+showAction p@AdviseNoArgs         = advise p ["show"] adviceShowNoArgs
+showAction p@(AdviseOneArg a)     = advise p ["show"] . adviceShowNoName $ a
+showAction   (Lower i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
   then wrapSend mq cols . sorryIncog $ "show"
   else let eqMap      = getEqMap    i ms
            invCoins   = getInvCoins i ms
@@ -2905,6 +2907,20 @@ mkSlotDesc i ms s = case s of
     wornOn = T.concat [ "worn on ", hisHer, " ", pp s ]
     wornAs = "worn as " <> (aOrAn . pp $ s)
     heldIn = "held in " <> hisHer <> pp s
+
+
+-----
+
+
+-- TODO: Help.
+smell :: ActionFun
+smell (NoArgs i mq cols) = getState >>= \ms -> do
+    views rmSmell (wrapSend mq cols . fromMaybe noSmellMsg) . getMobRm i $ ms
+    let d = mkStdDesig i ms DoCap
+    bcastIfNotIncogNl i . pure $ (serialize d <> " smells the air.", i `delete` desigIds d)
+    logPlaExec "smell" i
+smell (WithArgs i mq cols as) = undefined
+smell p = patternMatchFail "smell" [ showText p ]
 
 
 -----

@@ -84,6 +84,10 @@ motdErrorMsg :: Text
 motdErrorMsg = "Unfortunately, the message of the day could not be retrieved."
 
 
+noSmellMsg :: Text
+noSmellMsg = "You don't smell anything special."
+
+
 notifyArrivalMsg :: Text -> Text
 notifyArrivalMsg n = n <> " slowly materializes out of thin air."
 

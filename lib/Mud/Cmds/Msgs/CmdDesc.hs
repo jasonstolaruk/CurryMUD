@@ -125,6 +125,10 @@ cmdDescShow :: Text
 cmdDescShow = "Show one or more items in your inventory and/or readied equipment to another person."
 
 
+cmdDescSmell :: Text
+cmdDescSmell = "Smell the air, or one or more objects."
+
+
 cmdDescStats :: Text
 cmdDescStats = "Display your stats."
 

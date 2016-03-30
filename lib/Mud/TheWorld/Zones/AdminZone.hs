@@ -449,6 +449,7 @@ createAdminZone = do
         (Rm "Logged out room"
             "PCs are placed here when their players log out."
             Nothing
+            Nothing
             zeroBits
             []
             M.empty [] [] [])
@@ -458,6 +459,7 @@ createAdminZone = do
         (Rm "The trash dump"
             "Items deposited in magic trash bins end up here."
             Nothing
+            Nothing
             zeroBits
             []
             M.empty [] [] [])
@@ -466,6 +468,7 @@ createAdminZone = do
         mempty
         (Rm "Welcome room"
             "Ad-hoc PCs created for new connections are placed here."
+            Nothing
             Nothing
             zeroBits
             []
@@ -481,6 +484,7 @@ createAdminZone = do
             \A spiral staircase leads down, while a door opens to a hallway leading east. A trash bin sits adjascent \
             \to the spiral staircase."
             Nothing
+            Nothing
             zeroBits
             [ StdLink Down iBasement, StdLink East iHallwayWest ]
             (M.fromList [ ("look", [ lookTrashHook, readLookPosterHook ])
@@ -495,6 +499,7 @@ createAdminZone = do
         (Rm "Hallway"
             "You are in a wide hallway leading east. A door to the west opens into the central control room."
             Nothing
+            Nothing
             zeroBits
             [ StdLink West iCentral, StdLink East iHallwayEast ]
             M.empty [] [] [])
@@ -503,6 +508,7 @@ createAdminZone = do
         mempty
         (Rm "Hallway"
             "You are in a wide hallway leading west. To your east, the hallway opens up into an atrium."
+            Nothing
             Nothing
             zeroBits
             [ StdLink West iHallwayWest, StdLink East iAtrium ]
@@ -517,6 +523,7 @@ createAdminZone = do
             \support the ceiling. Next to the pool is a raised flowerbed, surrounded by four unembellished stone \
             \benches.\n\
             \An opening in the west wall leads out into a hallway."
+            Nothing
             Nothing
             zeroBits
             [ StdLink West iHallwayEast ]
@@ -533,6 +540,7 @@ createAdminZone = do
             "This dusty, unfinished basement smells of mold.\n\
             \Eight doors are positioned about the round, stucco wall at even intervals. A spiral staircase leads up. \
             \Next to the staircase lies an open manhole."
+            Nothing
             Nothing
             zeroBits
             [ StdLink North     iWeightRm
@@ -568,6 +576,7 @@ createAdminZone = do
         (Rm "Weight closet"
             "This closet holds weights."
             Nothing
+            Nothing
             zeroBits
             [ StdLink    South iBasement
             , NonStdLink "u"  iAttic "% climbs up the ladder and into the hole in the ceiling."
@@ -579,6 +588,7 @@ createAdminZone = do
         (Rm "The attic"
             "Though the confined attic is dusty, its cozy atmosphere creates an oddly welcoming space."
             Nothing
+            Nothing
             zeroBits
             [ NonStdLink "d" iWeightRm "% climbs down the ladder and into the hole in the floor."
                                        "% climbs down the ladder and out of the hole in the ceiling." ]
@@ -589,6 +599,7 @@ createAdminZone = do
         (Rm "Object closet"
             "This closet holds objects."
             Nothing
+            Nothing
             zeroBits
             [ StdLink Southwest iBasement ]
             M.empty [] [] [])
@@ -597,6 +608,7 @@ createAdminZone = do
         mempty
         (Rm "Clothing closet"
             "This closet holds clothing."
+            Nothing
             Nothing
             zeroBits
             [ StdLink West iBasement, StdLink Down iAccessoriesCloset ]
@@ -638,6 +650,7 @@ createAdminZone = do
         (Rm "Accessories closet"
             "This closet holds accessories."
             Nothing
+            Nothing
             zeroBits
             [ StdLink Up iClothCloset ]
             M.empty [] [] [])
@@ -646,6 +659,7 @@ createAdminZone = do
         (Coins (100, 100, 100))
         (Rm "Coin closet"
             "This closet holds coins."
+            Nothing
             Nothing
             zeroBits
             [ StdLink Northwest iBasement ]
@@ -669,6 +683,7 @@ createAdminZone = do
         (Rm "Container closet"
             "This closet holds containers."
             Nothing
+            Nothing
             zeroBits
             [ StdLink North iBasement ]
             M.empty [] [] [])
@@ -677,6 +692,7 @@ createAdminZone = do
         mempty
         (Rm "Weapon closet"
             "This closet holds weapons."
+            Nothing
             Nothing
             zeroBits
             [ StdLink Northeast iBasement ]
@@ -687,6 +703,7 @@ createAdminZone = do
         (Rm "Armor closet"
             "This closet holds armor."
             Nothing
+            Nothing
             zeroBits
             [ StdLink East iBasement ]
             M.empty [] [] [])
@@ -695,6 +712,7 @@ createAdminZone = do
         mempty
         (Rm "Mob closet"
             "This closet holds mobs."
+            Nothing
             Nothing
             zeroBits
             [ StdLink Southeast iBasement ]
@@ -706,6 +724,7 @@ createAdminZone = do
             "You have stumbled into a vast, empty space. You are floating.\n\
             \An open manhole hovers above you. You see a colorful round shape some distance off to the north, while to \
             \the south a door floats innocuously."
+            Nothing
             Nothing
             zeroBits
             [ StdLink North iTutEntrance
@@ -719,6 +738,7 @@ createAdminZone = do
             "Floating before you is a large round portal in which dazzling shapes and colors spin and dance. You feel \
             \a peculiar pulling sensation in your abdomen, as if the portal is attempting to draw you towards itself.\n\
             \A wooden sign is suspended above the portal."
+            Nothing
             Nothing
             zeroBits
             [ StdLink South iVoid
@@ -734,6 +754,7 @@ createAdminZone = do
             "Floating before you is a polished wooden door surrounded by featureless white trimming. Hanging from a \
             \nail affixed to the door is a small sign reading, \"Admin Lounge.\""
             Nothing
+            Nothing
             zeroBits
             [ StdLink North iVoid
             , NonStdLink "lounge" iLounge "% enters the lounge." "% enters the lounge." ]
@@ -744,6 +765,7 @@ createAdminZone = do
         (Rm "The admin lounge"
             "Welcome, admin! Have a seat by the fire and relax for awhile."
             Nothing
+            Nothing
             zeroBits
             [ NonStdLink "out" iLoungeEntrance "% exits the lounge." "% exits the lounge." ]
             M.empty [] [] [])
@@ -753,6 +775,7 @@ createAdminZone = do
         (Rm "The empty room"
             "This small room is strikingly barren. There doesn't even seem to be a door on any of its white walls, \
             \though you can't miss the small wooden sign affixed to the north wall."
+            Nothing
             Nothing
             zeroBits
             []

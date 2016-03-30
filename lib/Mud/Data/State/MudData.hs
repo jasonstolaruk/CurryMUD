@@ -755,6 +755,7 @@ jsonToPla _          = empty
 data Rm = Rm { _rmName      :: Text
              , _rmDesc      :: Text
              , _rmListen    :: Maybe Text
+             , _rmSmell     :: Maybe Text
              , _rmFlags     :: Int
              , _rmLinks     :: [RmLink]
              , _hookMap     :: HookMap
@@ -829,6 +830,7 @@ rmToJSON :: Rm -> Value
 rmToJSON Rm { .. } = object [ "rmName"     .= _rmName
                             , "rmDesc"     .= _rmDesc
                             , "rmListen"   .= _rmListen
+                            , "rmSmell"    .= _rmSmell
                             , "rmFlags"    .= _rmFlags
                             , "rmLinks"    .= _rmLinks
                             , "hookMap"    .= _hookMap
@@ -840,6 +842,7 @@ jsonToRm :: Value -> Parser Rm
 jsonToRm (Object o) = Rm <$> o .: "rmName"
                          <*> o .: "rmDesc"
                          <*> o .: "rmListen"
+                         <*> o .: "rmSmell"
                          <*> o .: "rmFlags"
                          <*> o .: "rmLinks"
                          <*> o .: "hookMap"
