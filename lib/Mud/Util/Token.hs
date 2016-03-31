@@ -80,7 +80,7 @@ expandMiscCode (toLower -> code)           = case code of
   'd' -> yesNo isDebug
   'p' -> pwWarningMsg
   's' -> dfltShutdownMsg
-  x   -> patternMatchFail "expandMsgCode" [ T.singleton x ]
+  x   -> patternMatchFail "expandMiscCode" [ T.singleton x ]
 
 
 -----
