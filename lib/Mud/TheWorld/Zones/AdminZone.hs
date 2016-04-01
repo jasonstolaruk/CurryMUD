@@ -484,7 +484,7 @@ createAdminZone = do
             \A spiral staircase leads down, while a door opens to a hallway leading east. A trash bin sits adjascent \
             \to the spiral staircase."
             Nothing
-            Nothing
+            (Just "You vaguely detect chemical scents of plastic and cleaning solutions.")
             zeroBits
             [ StdLink Down iBasement, StdLink East iHallwayWest ]
             (M.fromList [ ("look", [ lookTrashHook, readLookPosterHook ])
@@ -524,7 +524,8 @@ createAdminZone = do
             \benches.\n\
             \An opening in the west wall leads out into a hallway."
             Nothing
-            Nothing
+            (Just "The scent of fresh air wafting in from the ceiling combines with sweet, grassy smells from the \
+                  \flowerbed.")
             zeroBits
             [ StdLink West iHallwayEast ]
             (M.fromList [ ("drink", [ drinkPoolHook     ])
@@ -717,6 +718,7 @@ createAdminZone = do
             zeroBits
             [ StdLink Southeast iBasement ]
             M.empty [] [] [])
+  let voidSmell = Just "Strangely, the air here is utterly devoid of scent."
   putRm iVoid
         []
         mempty
@@ -725,7 +727,7 @@ createAdminZone = do
             \An open manhole hovers above you. You see a colorful round shape some distance off to the north, while to \
             \the south a door floats innocuously."
             Nothing
-            Nothing
+            voidSmell
             zeroBits
             [ StdLink North iTutEntrance
             , StdLink South iLoungeEntrance
@@ -739,7 +741,7 @@ createAdminZone = do
             \a peculiar pulling sensation in your abdomen, as if the portal is attempting to draw you towards itself.\n\
             \A wooden sign is suspended above the portal."
             Nothing
-            Nothing
+            voidSmell
             zeroBits
             [ StdLink South iVoid
             , NonStdLink "portal" iTutWelcome "% floats into the portal, and promptly disappears."
@@ -754,7 +756,7 @@ createAdminZone = do
             "Floating before you is a polished wooden door surrounded by featureless white trimming. Hanging from a \
             \nail affixed to the door is a small sign reading, \"Admin Lounge.\""
             Nothing
-            Nothing
+            voidSmell
             zeroBits
             [ StdLink North iVoid
             , NonStdLink "lounge" iLounge "% enters the lounge." "% enters the lounge." ]
@@ -776,7 +778,7 @@ createAdminZone = do
             "This small room is strikingly barren. There doesn't even seem to be a door on any of its white walls, \
             \though you can't miss the small wooden sign affixed to the north wall."
             Nothing
-            Nothing
+            (Just "On account of there being no ventilation to speak of, the air here is markedly stale and stuffy.")
             zeroBits
             []
             (M.fromList [ ("look", [ readLookSign_iEmptyHook, lookWallsHook, lookCeilingHook ])
@@ -947,8 +949,8 @@ createAdminZone = do
                    zeroBits)
               (Obj paperWeight paperVol Nothing Nothing zeroBits Nothing)
               (Writable (Just ( "CurryMud - A Multi-User Dungeon by Jason Stolaruk.\n\
-                                \Copyright 2016 Jason Stolaruk and Detroit Labs LLC.\n\
-                                \Version 0.1.0.0 (in development since October 2013).\n\
+                                \Copyright (c) 2013-2016, Jason Stolaruk and Detroit Labs LLC.\n\
+                                \Version 0.1.0.0.\n\
                                 \CurryMUD@gmail.com\n\
                                 \CurryMUD is comprised of an original codebase written entirely in the Haskell \
                                 \programming language."

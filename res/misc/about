@@ -1,6 +1,6 @@
 CurryMud - A Multi-User Dungeon by Jason Stolaruk.
-Copyright 2016 Jason Stolaruk and Detroit Labs LLC.
-This is version "0.1.0.0".
+Copyright (c) 2013-2016, Jason Stolaruk and Detroit Labs LLC.
+This is version "0.1.0.0". CurryMUD has been in development since October 2013.
 Administration may be contacted at "CurryMUD@gmail.com".
 
 CurryMUD is comprised of an original code base written entirely in the Haskell programming language.

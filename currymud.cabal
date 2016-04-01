@@ -6,7 +6,7 @@ license:               BSD3
 license-file:          LICENSE
 author:                Jason Stolaruk
 maintainer:            jasonstolaruk@gmail.com
-copyright:             Copyright (c) 2015, Jason Stolaruk and Detroit Labs LLC
+copyright:             Copyright (c) 2013-2016, Jason Stolaruk and Detroit Labs LLC
 category:              Game
 stability:             alpha
 homepage:              https://github.com/jasonstolaruk/CurryMUD
