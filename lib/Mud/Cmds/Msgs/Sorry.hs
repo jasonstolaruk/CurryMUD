@@ -197,6 +197,8 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryShowExcessTargets
                            , sorryShowInRm
                            , sorryShowTarget
+                           , sorrySmellExcessTargets
+                           , sorrySmellNothingHere
                            , sorrySmellNothingToSmell
                            , sorryStopActName
                            , sorryStopNotDoing
@@ -1351,6 +1353,14 @@ sorryShowTarget t = can't "show something to " <> aOrAn t <> "."
 
 
 -----
+
+
+sorrySmellExcessTargets :: Text
+sorrySmellExcessTargets = but "you can only smell one object at a time."
+
+
+sorrySmellNothingHere :: Text
+sorrySmellNothingHere = "You don't see anything to smell here."
 
 
 sorrySmellNothingToSmell :: Text

@@ -484,7 +484,7 @@ createAdminZone = do
             \A spiral staircase leads down, while a door opens to a hallway leading east. A trash bin sits adjascent \
             \to the spiral staircase."
             Nothing
-            (Just "You vaguely detect chemical scents of plastic and cleaning solutions.")
+            (Just "You vaguely detect the chemical scents of plastic and cleaning solutions.")
             zeroBits
             [ StdLink Down iBasement, StdLink East iHallwayWest ]
             (M.fromList [ ("look", [ lookTrashHook, readLookPosterHook ])
@@ -524,7 +524,7 @@ createAdminZone = do
             \benches.\n\
             \An opening in the west wall leads out into a hallway."
             Nothing
-            (Just "The scent of fresh air wafting in from the ceiling combines with sweet, grassy smells from the \
+            (Just "The scent of fresh air wafting in from the ceiling combines the with sweet, grassy smells of the \
                   \flowerbed.")
             zeroBits
             [ StdLink West iHallwayEast ]
