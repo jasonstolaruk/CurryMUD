@@ -94,6 +94,7 @@ module Mud.Cmds.Msgs.Advice ( adviceAAnnounceNoArgs
                             , adviceSettingsInvalid
                             , adviceShowNoArgs
                             , adviceShowNoName
+                            , adviceSmellExcessArgs
                             , adviceStopExcessArgs
                             , adviceTeleNoArgs
                             , adviceTeleNoMsg
@@ -699,6 +700,10 @@ adviceShowNoName :: Text -> Text
 adviceShowNoName a = "Please also provide the name of a person, as in " <>
                      colorWith quoteColor ("show " <> a <> " taro")     <>
                      "."
+
+
+adviceSmellExcessArgs :: Text
+adviceSmellExcessArgs = "Please either provide no arguments to smell the air, or specify a single object to smell."
 
 
 adviceStopExcessArgs :: Text

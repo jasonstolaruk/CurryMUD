@@ -2731,7 +2731,7 @@ showAction   (Lower i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
          | otherwise                 -> case singleArgInvEqRm InRm . last $ as of
            (InInv, _     ) -> wrapSend mq cols $ sorryShowTarget "item in your inventory"         <> tryThisInstead
            (InEq,  _     ) -> wrapSend mq cols $ sorryShowTarget "item in your readied equipment" <> tryThisInstead
-           (InRm,  target) ->
+           (InRm,  target) -> 
              let argsWithoutTarget                    = init $ case as of [_, _] -> as
                                                                           _      -> (++ pure target) . nub . init $ as
                  (targetGecrs, targetMiss, targetRcs) = uncurry (resolveEntCoinNames i ms . pure $ target) rmInvCoins
@@ -2919,8 +2919,151 @@ smell (NoArgs i mq cols) = getState >>= \ms -> do
     let d = mkStdDesig i ms DoCap
     bcastIfNotIncogNl i . pure $ (serialize d <> " smells the air.", i `delete` desigIds d)
     logPlaExec "smell" i
-smell (WithArgs i mq cols as) = undefined
-smell p = patternMatchFail "smell" [ showText p ]
+smell _ = undefined
+{-
+smell (OneArgLower i mq cols a) =
+    let eqMap      = getEqMap    i ms
+        invCoins   = getInvCoins i ms
+        rmInvCoins = first (i `delete`) . getMobRmNonIncogInvCoins i $ ms
+    in if all ()# eqMap && ()# invCoins && ()# rmInvCoins
+      then wrapSend mq cols sorrySmellNothingToSmell
+      else case singleArgInvEqRm InInv . last $ as of
+        (InEq,  target) | ()# eqMap      -> wrapSend mq cols dudeYou'reNaked
+                        | otherwise      -> smellEq eqMap target
+        (InInv, target) | ()# invCoins   -> wrapSend mq cols dudeYourHandsAreEmpty
+                        | otherwise      -> smellInv invCoins target
+        (InRm,  target) | ()# rmInvCoins -> wrapSend mq cols sorryNoOneHere
+                        | otherwise      -> smellRm rmInvCoins target
+  where
+    smellEq eqMap target =
+    smellInv invCoins target =
+        let (eiss, ecs) = uncurry (resolveMobInvCoins i ms . pure $ target) invCoins
+
+    smellRm rmInvCoins target =
+
+                 (targetGecrs, targetMiss, targetRcs) = uncurry (resolveEntCoinNames i ms . pure $ target) rmInvCoins
+             in if ()# targetMiss && ()!# targetRcs
+               then wrapSend mq cols . sorryShowTarget $ "coin"
+               else case procGecrMisRm . head . zip targetGecrs $ targetMiss of
+                 Left  msg        -> wrapSend mq cols msg
+                 Right [targetId] ->
+                   let d         = mkStdDesig i ms DoCap
+                       theTarget = IdSingTypeDesig { theId    = targetId
+                                                   , theSing  = getSing targetId ms
+                                                   , theType  = getType targetId ms
+                                                   , theDesig = serialize . mkStdDesig targetId ms $ Don'tCap }
+                       (inInvs, inEqs, inRms)         = sortArgsInvEqRm InInv argsWithoutTarget
+                       (invToSelfs, invBs, invLogMsg) = inInvs |!| showInv ms d invCoins inInvs theTarget
+                       (eqToSelfs,  eqBs,  eqLogMsg ) = inEqs  |!| showEq  ms d eqMap    inEqs  theTarget
+                       sorryRmMsg                     = inRms  |!| sorryShowInRm
+                   in if theType theTarget `notElem` [ NpcType, PCType ]
+                     then wrapSend mq cols . sorryShowTarget . theSing $ theTarget
+                     else do
+                         multiWrapSend mq cols . dropBlanks $ sorryRmMsg : [ parseDesig i ms msg
+                                                                           | msg <- invToSelfs ++ eqToSelfs ]
+                         bcastNl $ invBs ++ eqBs
+                         let logMsg = slashes . dropBlanks $ [ invLogMsg |!| parensQuote "inv" <> " " <> invLogMsg
+                                                             , eqLogMsg  |!| parensQuote "eq"  <> " " <> eqLogMsg ]
+                         logMsg |#| logPla "show" i . (T.concat [ "showed to "
+                                                                , theSing theTarget
+                                                                , ": " ] <>)
+                 Right _ -> wrapSend mq cols sorryShowExcessTargets
+  where
+    tryThisInstead = " Try showing something to someone in your current room."
+    showInv ms d invCoins inInvs IdSingTypeDesig { .. }
+      | ()!# invCoins =
+          let (eiss, ecs)                         = uncurry (resolveMobInvCoins i ms inInvs) invCoins
+              showInvHelper                       = foldl' helperEitherInv ([], [], []) eiss
+              helperEitherInv acc (Left  msg    ) = acc & _1 <>~ pure msg
+              helperEitherInv acc (Right itemIds) = acc & _1 <>~ mkToSelfMsgs itemIds
+                                                        & _2 <>~ mkBs
+                                                        & _3 <>~ pure mkLogMsg
+                where
+                  mkBs     = mkToTargetBs itemIds ++ mkToOthersBs itemIds
+                  mkLogMsg = commas . map (`getSing` ms) $ itemIds
+              mkToSelfMsgs itemIds = [ T.concat [ "You show the ", getSing itemId ms, " to ", theDesig, "." ]
+                                     | itemId <- itemIds ]
+              mkToTargetBs itemIds = [ ( T.concat [ serialize d
+                                                  , " shows you "
+                                                  , underline . aOrAn . getSing itemId $ ms
+                                                  , nl ":"
+                                                  , getEntDesc itemId ms ]
+                                       , pure theId )
+                                     | itemId <- itemIds ]
+              mkToOthersBs itemIds = [ ( T.concat [ serialize d
+                                                  , " shows "
+                                                  , aOrAn . getSing itemId $ ms
+                                                  , " to "
+                                                  , theDesig
+                                                  , "." ]
+                                       , desigIds d \\ [ i, theId ] )
+                                     | itemId <- itemIds ]
+              -----
+              (canCoins, can'tCoinMsgs) = distillEcs ecs
+              showCoinsHelper           = ( can'tCoinMsgs     ++ pure mkToSelfCoinsMsg
+                                          , mkToTargetCoinsBs ++ mkToOthersCoinsBs )
+              coinTxt           = mkCoinTxt canCoins
+              mkToSelfCoinsMsg  = coinTxt |!|                 T.concat   [ "You show "
+                                                                         , coinTxt
+                                                                         , " to "
+                                                                         , theDesig
+                                                                         , "." ]
+              mkToTargetCoinsBs = coinTxt |!| mkBcast theId . T.concat $ [ serialize d
+                                                                         , " shows you "
+                                                                         , underline coinTxt
+                                                                         , "." ]
+              mkToOthersCoinsBs = coinTxt |!| [(T.concat [ serialize d
+                                                         , " shows "
+                                                         , aCoinSomeCoins canCoins
+                                                         , " to "
+                                                         , theDesig
+                                                         , "." ], desigIds d \\ [ i, theId ])]
+          in let (toSelfMsgs, bs, logMsgs)  = showInvHelper
+                 (toSelfCoinsMsgs, coinsBs) = showCoinsHelper
+             in (toSelfMsgs ++ toSelfCoinsMsgs, bs ++ coinsBs, slashes . dropEmpties $ [ slashes logMsgs, coinTxt ])
+      | otherwise = (pure dudeYourHandsAreEmpty, [], "")
+    showEq ms d eqMap inEqs IdSingTypeDesig { .. }
+      | ()!# eqMap =
+          let (gecrs, miss, rcs)                  = resolveEntCoinNames i ms inEqs (M.elems eqMap) mempty
+              eiss                                = zipWith (curry procGecrMisMobEq) gecrs miss
+              showEqHelper                        = foldl' helperEitherInv ([], [], []) eiss
+              helperEitherInv acc (Left  msg    ) = acc & _1 <>~ pure msg
+              helperEitherInv acc (Right itemIds) = acc & _1 <>~ mkToSelfMsgs itemIds
+                                                        & _2 <>~ mkBs
+                                                        & _3 <>~ pure mkLogMsg
+                where
+                  mkBs     = mkToTargetBs itemIds ++ mkToOthersBs itemIds
+                  mkLogMsg = commas . map (`getSing` ms) $ itemIds
+              mkToSelfMsgs     itemIds = [ T.concat [ "You show the ", getSing itemId ms, " to ", theDesig, "." ]
+                                         | itemId <- itemIds ]
+              mkToTargetBs     itemIds = [ ( T.concat [ serialize d
+                                                      , " shows you "
+                                                      , underline . aOrAn . getSing itemId $ ms
+                                                      , " "
+                                                      , parensQuote . mkSlotDesc i ms . reverseLookup itemId $ eqMap
+                                                      , nl ":"
+                                                      , getEntDesc itemId ms ]
+                                           , pure theId )
+                                         | itemId <- itemIds ]
+              mkToOthersBs     itemIds = [ ( T.concat [ serialize d
+                                                      , " shows "
+                                                      , aOrAn . getSing itemId $ ms
+                                                      , " "
+                                                      , parensQuote . mkSlotDesc i ms . reverseLookup itemId $ eqMap
+                                                      , " to "
+                                                      , theDesig
+                                                      , "." ]
+                                           , desigIds d \\ [ i, theId ] )
+                                         | itemId <- itemIds ]
+              -----
+              showCoinsInEqHelper = rcs |!| sorryEquipCoins
+          in let (toSelfMsgs, bs, logMsgs) = showEqHelper
+             in (showCoinsInEqHelper : toSelfMsgs, bs, slashes logMsgs)
+      | otherwise = (pure dudeYou'reNaked, [], "")
+showAction p = patternMatchFail "showAction" [ showText p ]
+
+smell p = advise p ["smell"] adviceSmellExcessArgs
+-}
 
 
 -----

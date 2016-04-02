@@ -197,6 +197,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryShowExcessTargets
                            , sorryShowInRm
                            , sorryShowTarget
+                           , sorrySmellNothingToSmell
                            , sorryStopActName
                            , sorryStopNotDoing
                            , sorryStopNotDoingAnything
@@ -1347,6 +1348,13 @@ sorryShowInRm = can't "show an item in your current room."
 
 sorryShowTarget :: Text -> Text
 sorryShowTarget t = can't "show something to " <> aOrAn t <> "."
+
+
+-----
+
+
+sorrySmellNothingToSmell :: Text
+sorrySmellNothingToSmell = "There isn't anything to smell."
 
 
 -----

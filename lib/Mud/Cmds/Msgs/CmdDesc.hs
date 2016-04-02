@@ -126,7 +126,7 @@ cmdDescShow = "Show one or more items in your inventory and/or readied equipment
 
 
 cmdDescSmell :: Text
-cmdDescSmell = "Smell the air, or one or more objects."
+cmdDescSmell = "Smell the air or an object."
 
 
 cmdDescStats :: Text
