@@ -9,17 +9,17 @@ import Mud.Threads.Biodegrader
 import Mud.Util.Misc
 
 import Control.Lens (view)
-import Control.Lens.Operators ((%~), (&), (.~), (<>~))
+import Control.Lens.Operators ((%~), (&), (.~))
+import Control.Monad (when)
 
 
 type InvId = Id
 
 
-newObj :: MudState -> Ent -> Obj -> InvId -> MudState
-newObj ms e@(view entId -> i) o invId = let ms' = ms & entTbl .ind i .~ e
-                                                     & objTbl .ind i .~ o
-                                                     & typeTbl.ind i .~ ObjType
-                                                     & helper
-                                        in ms' & invTbl.ind invId %~ addToInv ms' (pure i)
-  where
-    helper = onTrue (isBiodegradable o) (opList <>~ pure (runBiodegraderAsync i))
+newObj :: Ent -> Obj -> InvId -> MudStack ()
+newObj e@(view entId -> i) o invId = do
+    tweak $ \ms -> ms & entTbl .ind i .~ e
+                      & objTbl .ind i .~ o
+                      & typeTbl.ind i .~ ObjType
+    tweak $ \ms -> ms & invTbl .ind invId %~ addToInv ms (pure i)
+    when (isBiodegradable o) . runBiodegraderAsync $ i

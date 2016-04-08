@@ -96,7 +96,6 @@ library
                        Mud.Threads.Listen
                        Mud.Threads.Misc
                        Mud.Threads.NpcServer
-                       Mud.Threads.OpListMonitor
                        Mud.Threads.Receive
                        Mud.Threads.Regen
                        Mud.Threads.RmFuns

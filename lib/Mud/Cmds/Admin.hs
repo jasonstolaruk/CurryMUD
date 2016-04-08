@@ -1289,7 +1289,7 @@ teleHelper :: ActionParams
            -> Text
            -> Maybe Text
            -> (Id -> [Broadcast] -> [Broadcast])
-           -> (MudState, [MudStack ()])
+           -> (MudState, Funs)
 teleHelper p@ActionParams { myId } ms originId destId destName mt f =
     let g            = maybe id (\t -> ((nlnl t, pure myId) :)) mt
         originDesig  = mkStdDesig myId ms Don'tCap

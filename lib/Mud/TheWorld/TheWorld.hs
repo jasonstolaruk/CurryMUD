@@ -75,7 +75,6 @@ initMudData shouldLog = do
                                  , _msgQueueTbl       = IM.empty
                                  , _npcTbl            = IM.empty
                                  , _objTbl            = IM.empty
-                                 , _opList            = []
                                  , _pausedEffectsTbl  = IM.empty
                                  , _pcTbl             = IM.empty
                                  , _plaLogTbl         = IM.empty

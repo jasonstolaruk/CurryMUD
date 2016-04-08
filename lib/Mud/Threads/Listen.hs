@@ -17,7 +17,6 @@ import Mud.Threads.Digester
 import Mud.Threads.Effect
 import Mud.Threads.Misc
 import Mud.Threads.NpcServer
-import Mud.Threads.OpListMonitor
 import Mud.Threads.Regen
 import Mud.Threads.RmFuns
 import Mud.Threads.Talk
@@ -94,7 +93,6 @@ listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed 
         auxAsyncs <- mapM runAsync [ threadAdminChanTblPurger
                                    , threadAdminMsgTblPurger
                                    , threadChanTblPurger
-                                   , threadOpListMonitor
                                    , threadQuestionChanTblPurger
                                    , threadTeleTblPurger
                                    , threadThreadTblPurger
