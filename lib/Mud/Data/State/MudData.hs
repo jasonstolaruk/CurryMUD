@@ -67,7 +67,6 @@ data MudState = MudState { _activeEffectsTbl  :: ActiveEffectsTbl
                          , _msgQueueTbl       :: MsgQueueTbl
                          , _npcTbl            :: NpcTbl
                          , _objTbl            :: ObjTbl
-                         , _opList            :: [Operation]
                          , _pausedEffectsTbl  :: PausedEffectsTbl
                          , _pcTbl             :: PCTbl
                          , _plaLogTbl         :: PlaLogTbl
@@ -106,7 +105,6 @@ type MobTbl            = IM.IntMap Mob
 type MsgQueueTbl       = IM.IntMap MsgQueue
 type NpcTbl            = IM.IntMap Npc
 type ObjTbl            = IM.IntMap Obj
-type Operation         = MudStack ()
 type PausedEffectsTbl  = IM.IntMap [PausedEffect]
 type PCTbl             = IM.IntMap PC
 type PlaLogTbl         = IM.IntMap LogService
@@ -381,6 +379,9 @@ type FunName = Text
 
 
 type Fun = MudStack ()
+
+
+type Funs = [Fun]
 
 
 -- ==================================================
@@ -800,7 +801,10 @@ data Hook = Hook { hookName :: HookName
 type HookName = Text
 
 
-type HookFun = Id -> Hook -> V.Vector Int -> (Args, GenericIntermediateRes) -> (Args, GenericIntermediateRes)
+type HookFun = Id -> Hook -> V.Vector Int -> HookFunRes -> HookFunRes
+
+
+type HookFunRes = (Args, GenericIntermediateRes, Funs)
 
 
 type Args = [Text]
@@ -810,6 +814,9 @@ type GenericIntermediateRes = (MudState,  [Text], [Broadcast], [Text])
 
 
 type GenericRes             = (MudState, ([Text], [Broadcast], [Text]))
+
+
+type GenericResWithHooks    = (MudState, ([Text], [Broadcast], [Text], Funs))
 
 
 type Broadcast = (Text, Inv)
@@ -893,7 +900,6 @@ data ThreadType = Biodegrader    Id
                 | MovingThread   Id
                 | Notice
                 | NpcServer      Id
-                | OpListMonitor
                 | PlaLog         Id
                 | Receive        Id
                 | RegenChild     Id

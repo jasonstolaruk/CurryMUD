@@ -13,7 +13,9 @@ module Mud.Cmds.Util.Pla ( armSubToSlot
                          , fillerToSpcs
                          , findAvailSlot
                          , genericAction
+                         , genericActionWithHooks
                          , genericSorry
+                         , genericSorryWithHooks
                          , getMatchingChanWithName
                          , getRelativePCName
                          , hasFp
@@ -243,7 +245,7 @@ fillerToSpcs = T.replace (T.singleton indentFiller) " "
 
 
 genericAction :: ActionParams
-              -> (V.Vector Int -> MudState -> GenericRes)
+              -> (V.Vector Int -> MudState -> GenericRes) -- TODO: We shouldn't need the Vector if we don't have hooks...?
               -> Text
               -> MudStack ()
 genericAction ActionParams { .. } helper fn = mkRndmVector >>= \v ->
@@ -254,11 +256,28 @@ genericAction ActionParams { .. } helper fn = mkRndmVector >>= \v ->
         logMsgs |#| logPlaOut fn myId
 
 
+genericActionWithHooks :: ActionParams
+                       -> (V.Vector Int -> MudState -> GenericResWithHooks)
+                       -> Text
+                       -> MudStack ()
+genericActionWithHooks ActionParams { .. } helper fn = mkRndmVector >>= \v ->
+    helper v |&| modifyState >=> \(toSelfs, bs, logMsgs, fs) -> do
+        ms <- getState
+        multiWrapSend plaMsgQueue plaCols [ parseDesig myId ms msg | msg <- toSelfs ]
+        bcastIfNotIncogNl myId bs
+        sequence_ fs
+        logMsgs |#| logPlaOut fn myId
+
+
 -----
 
 
 genericSorry :: MudState -> Text -> GenericRes
 genericSorry ms = (ms, ) . (, [], []) . pure
+
+
+genericSorryWithHooks :: MudState -> Text -> GenericResWithHooks
+genericSorryWithHooks ms = (ms, ) . (, [], [], []) . pure
 
 
 -----

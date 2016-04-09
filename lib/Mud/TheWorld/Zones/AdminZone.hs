@@ -91,7 +91,7 @@ drinkPoolHookName = "AdminZone_iAtrium_drinkPool"
 
 
 drinkPoolHookFun :: HookFun
-drinkPoolHookFun i _ _ a@(as, (ms, _, _, _))
+drinkPoolHookFun i _ _ a@(as, (ms, _, _, _), _)
   | fst (calcStomachAvailSize i ms) <= 0 = a & _2._2 <>~ pure sorryFull
   | db <- DrinkBundle { drinkerId       = i
                       , drinkerMq       = getMsgQueue i ms
@@ -100,8 +100,8 @@ drinkPoolHookFun i _ _ a@(as, (ms, _, _, _))
                       , drinkVesselSing = "pool"
                       , drinkLiq        = waterLiq
                       , drinkAmt        = read . T.unpack . head $ as }
-  = a & _1           .~  []
-      & _2._1.opList <>~ (pure . startAct i Drinking . drinkAct $ db)
+  = a & _1 .~ []
+      & _3 .~ (pure . startAct i Drinking . drinkAct $ db)
 
 
 -----
@@ -116,33 +116,33 @@ getFlowerHookName = "AdminZone_iAtrium_getFlower"
 
 
 getFlowerHookFun :: HookFun
-getFlowerHookFun i Hook { .. } v a@(_, (ms, _, _, _)) = if calcWeight i ms + flowerWeight > calcMaxEnc i ms
+getFlowerHookFun i Hook { .. } v a@(_, (ms, _, _, _), _) = if calcWeight i ms + flowerWeight > calcMaxEnc i ms
   then a & _2._2 .~ pure (sorryGetEnc <> rest)
-  else let selfDesig = mkStdDesig i ms DoCap
-       in a & _1    %~  (\\ triggers)
-            & _2._1 .~  mkFlower i ms v
-            & _2._2 <>~ pure msg
-            & _2._3 <>~ pure (serialize selfDesig <> " picks " <> rest, i `delete` desigIds selfDesig)
-            & _2._4 <>~ pure (bracketQuote hookName <> " picked flower")
+  else a & _1    %~  (\\ triggers)
+         & _2._2 <>~ pure msg
+         & _2._3 <>~ ( let selfDesig = mkStdDesig i ms DoCap
+                       in pure (serialize selfDesig <> " picks " <> rest, i `delete` desigIds selfDesig) )
+         & _2._4 <>~ pure (bracketQuote hookName <> " picked flower")
+         & _3    .~  pure (mkFlower i v)
   where
     msg  = "You pick " <> rest
     rest = "a flower from the flowerbed."
 
 
-mkFlower :: Id -> MudState -> V.Vector Int -> MudState
-mkFlower i ms v = let flowerId = getUnusedId ms
-                      e        = Ent flowerId
-                                     (Just "flower")
-                                     "flower" ""
-                                     rndmDesc
-                                     zeroBits
-                      o        = Obj flowerWeight
-                                     flowerVol
-                                     Nothing -- TODO: Flower smell.
-                                     Nothing -- TODO: Flower taste.
-                                     (setBit zeroBits . fromEnum $ IsBiodegradable)
-                                     Nothing
-                  in newObj ms e o i
+mkFlower :: Id -> V.Vector Int -> MudStack ()
+mkFlower i v = getUnusedId <$> getState >>= \flowerId ->
+    let e = Ent flowerId
+                (Just "flower")
+                "flower" ""
+                rndmDesc
+                zeroBits
+        o = Obj flowerWeight
+                flowerVol
+                Nothing -- TODO: Flower smell.
+                Nothing -- TODO: Flower taste.
+                (setBit zeroBits . fromEnum $ IsBiodegradable)
+                Nothing
+    in newObj e o i
   where
     rndmDesc = rndmIntToElem (V.head v) descs
     descs    = [ "It's a fragrant daffodil sporting a collar of white petals."
@@ -216,12 +216,13 @@ readLookPaperHookName = "AdminZone_iTutEntrance_readLookPaper"
 
 
 readLookPaperHookFun :: HookFun
-readLookPaperHookFun i Hook { .. } (V.head -> r) a@(_, (ms, _, _, _)) =
-    let selfDesig = mkStdDesig i ms DoCap
-    in a &    _1 %~  (\\ triggers)
-         & _2._2 <>~ pure signDesc
-         & _2._3 <>~ pure (serialize selfDesig <> " reads the piece of paper nailed to the sign.", i `delete` desigIds selfDesig)
-         & _2._4 <>~ pure (bracketQuote hookName <> " read paper")
+readLookPaperHookFun i Hook { .. } (V.head -> r) a@(_, (ms, _, _, _), _) =
+    a &    _1 %~  (\\ triggers)
+      & _2._2 <>~ pure signDesc
+      & _2._3 <>~ ( let selfDesig = mkStdDesig i ms DoCap
+                    in pure ( serialize selfDesig <> " reads the piece of paper nailed to the sign."
+                            , i `delete` desigIds selfDesig ) )
+      & _2._4 <>~ pure (bracketQuote hookName <> " read paper")
   where
     signDesc = "Scrawled on the piece of paper is the following message:\n\"Your lucky number is " <> x <> ".\""
     x        = showText . rndmIntToPer $ r
@@ -318,9 +319,9 @@ pick p@(LowerNub' i as) = genericAction p helper "pick"
             sorrys                 = dropEmpties [ inInvs |!| sorryPickInInv, inEqs |!| sorryPickInEq ]
             h@Hook { .. }          = getFlowerHook
             inRms'                 = dropSynonyms triggers . dropPrefixesForHooks (pure h) $ inRms
-            initAcc                = (inRms', (ms, [], [], []))
-            (_, (ms', toSelfs, bs, logMsgs)) | any (`elem` triggers) inRms' = getHookFun hookName ms i h v initAcc
-                                             | otherwise                    = initAcc
+            initAcc                = (inRms', (ms, [], [], []), [])
+            (_, (ms', toSelfs, bs, logMsgs), _) | any (`elem` triggers) inRms' = getHookFun hookName ms i h v initAcc
+                                                | otherwise                    = initAcc
             mkMsgForArg arg | arg `elem` triggers = head toSelfs
                             | otherwise           = sorryPickNotFlower arg
         in (ms', (sorrys ++ map mkMsgForArg inRms', bs, logMsgs))

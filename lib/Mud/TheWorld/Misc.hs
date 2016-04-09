@@ -94,7 +94,7 @@ lookTrashHookFun = mkLookReadHookFun trashDesc "looks at the trash bin." "looked
 mkLookReadHookFun :: Text -> Text -> Text -> HookFun
 mkLookReadHookFun toSelf bcastTxt logMsgTxt = f
   where
-    f i Hook { .. } _ a@(_, (ms, _, _, _)) =
+    f i Hook { .. } _ a@(_, (ms, _, _, _), _) =
         let selfDesig = mkStdDesig i ms DoCap
         in a &    _1 %~  (\\ triggers)
              & _2._2 <>~ pure toSelf
@@ -114,30 +114,30 @@ putTrashHookName = "(common)_putTrash"
 
 
 putTrashHookFun :: HookFun
-putTrashHookFun i _ _ a@(as, (ms, _, _, _)) = a & _2 .~ trashHelper i ms as
+putTrashHookFun i _ _ a@(as, (ms, _, _, _), _) = let (gir, fs) = trashHelper i ms as
+                                                 in a & _2 .~ gir & _3 .~ fs
 
 
-trashHelper :: Id -> MudState -> Args -> GenericIntermediateRes
+trashHelper :: Id -> MudState -> Args -> (GenericIntermediateRes, Funs)
 trashHelper i ms as =
-    let (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv as
-        sorryInEq              = inEqs |!| sorryTrashInEq
-        sorryInRm              = inRms |!| sorryTrashInRm
-        invCoins               = getInvCoins i ms
-        d                      = mkStdDesig  i ms DoCap
-        (eiss, ecs)            = uncurry (resolveMobInvCoins i ms inInvs) invCoins
-        (ms', toSelfs, bs)     = foldl' (helperTrashEitherInv   i d) (ms,  [],      []         ) eiss
-        gir                    =         helperTrashEitherCoins i d  (ms', toSelfs, bs, toSelfs) ecs
-    in (belchHelper gir &) $ if ()# invCoins
-      then _2 .~ pure dudeYourHandsAreEmpty
-      else _2 %~ (dropBlanks [ sorryInEq, sorryInRm ] ++)
+    let (inInvs, inEqs, inRms)  = sortArgsInvEqRm InInv as
+        sorryInEq               = inEqs |!| sorryTrashInEq
+        sorryInRm               = inRms |!| sorryTrashInRm
+        invCoins                = getInvCoins i ms
+        d                       = mkStdDesig  i ms DoCap
+        (eiss, ecs)             = uncurry (resolveMobInvCoins i ms inInvs) invCoins
+        (ms', toSelfs, bs)      = foldl' (helperTrashEitherInv   i d) (ms,  [],      []         ) eiss
+        gir                     =         helperTrashEitherCoins i d  (ms', toSelfs, bs, toSelfs) ecs
+        gir'@(_, _, _, logMsgs) = (gir &) $ if ()# invCoins
+                                    then _2 .~ pure dudeYourHandsAreEmpty
+                                    else _2 %~ (dropBlanks [ sorryInEq, sorryInRm ] ++)
+    in (gir', logMsgs |!| pure f)
   where
-    belchHelper gir@(_, _, _, logMsgs) = onTrue (()!# logMsgs) (_1.opList <>~ pure op) gir
-    op = rndmDo 10 $ let msg = "The lid of the trash bin momentarily opens of its own accord as a loud belch is \
-                               \emitted from inside the container."
-                     in do
-                         secs <- rndmR (1, 4)
-                         liftIO . threadDelay $ secs * 10 ^ 6
-                         getState >>= \ms' -> bcastNl . pure $ (msg, findMobIds ms' . getMobRmInv i $ ms')
+    f = rndmDo 10 $ let msg = "The lid of the trash bin momentarily opens of its own accord as a loud belch is emitted \
+                              \from inside the container."
+                    in rndmR (1, 4) >>= \secs -> do
+                           liftIO . threadDelay $ secs * 10 ^ 6
+                           getState >>= \ms' -> bcastNl . pure $ (msg, findMobIds ms' . getMobRmInv i $ ms')
 
 
 -- ==================================================
@@ -161,12 +161,13 @@ trashRmActionFunName = "(common)_trash"
 
 trash :: RmActionFun
 trash p@AdviseNoArgs          = advise p [] adviceTrashNoArgs
-trash (LowerNub i mq cols as) = helper |&| modifyState >=> \(toSelfs, bs, logMsgs) -> do
+trash (LowerNub i mq cols as) = helper |&| modifyState >=> \((toSelfs, bs, logMsgs), fs) -> do
     multiWrapSend mq cols toSelfs
     bcastIfNotIncogNl i bs
+    sequence_ fs
     logMsgs |#| logPlaOut "trash" i
   where
-    helper ms = let (ms', toSelfs, bs, logMsgs) = trashHelper i ms as in (ms', (toSelfs, bs, logMsgs))
+    helper ms = let ((ms', toSelfs, bs, logMsgs), fs) = trashHelper i ms as in (ms', ((toSelfs, bs, logMsgs), fs))
 trash p = patternMatchFail "trash" [ showText p ]
 
 

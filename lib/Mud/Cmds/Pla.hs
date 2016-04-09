@@ -799,15 +799,18 @@ drink   (Lower   i mq cols [amt, target]) = getState >>= \ms -> let (isDrink, is
                     in case ((()!#) *** (()!#)) (rmInvCoins, maybeHooks) of
                       (True,  False) -> sorry sorryDrinkRmNoHooks
                       (False, True ) ->
-                          let (inRms', (ms', _, bs, logMsgs)) = procHooks i ms v "drink" . pure $ hookArg
-                              sorryMsgs                       = inRms' |!| pure sorryDrinkEmptyRmWithHooks
+                          let (inRms', (ms', _, bs, logMsgs), fs) = procHooks i ms v "drink" . pure $ hookArg
+                              sorryMsgs                           = inRms' |!| pure sorryDrinkEmptyRmWithHooks
                           in (ms', [ when (()!# sorryMsgs) $ multiWrapSend mq cols sorryMsgs >> sendDfltPrompt mq i
                                    , bcastIfNotIncogNl i bs
+                                   , sequence_ fs
                                    , logMsgs |#| logPlaOut "drink" i ])
                       (True,  True ) ->
-                          let (inRms', (ms', _, bs, logMsgs)) = procHooks i ms v "drink" . pure $ hookArg
+                          let (inRms', (ms', _, bs, logMsgs), fs) = procHooks i ms v "drink" . pure $ hookArg
                           in if ()# inRms'
-                            then (ms', [ bcastIfNotIncogNl i bs, logMsgs |#| logPlaOut "drink" i ])
+                            then (ms', [ bcastIfNotIncogNl i bs
+                                       , sequence_ fs
+                                       , logMsgs |#| logPlaOut "drink" i ])
                             else sorry . sorryDrinkRmWithHooks . head $ inRms
                       a -> patternMatchFail "drink helper next drinkRm" [ showText a ]
             in if
@@ -1020,7 +1023,7 @@ mkExpCmdListTxt =
 getAction :: ActionFun
 getAction p@AdviseNoArgs             = advise p ["get"] adviceGetNoArgs
 getAction   (Lower     _ mq cols as) | length as >= 3, (head . tail . reverse $ as) == "from" = wrapSend mq cols hintGet
-getAction p@(LowerNub' i         as) = genericAction p helper "get"
+getAction p@(LowerNub' i         as) = genericActionWithHooks p helper "get"
   where
     helper v ms =
         let (inInvs, inEqs, inRms) = sortArgsInvEqRm InRm as
@@ -1029,20 +1032,22 @@ getAction p@(LowerNub' i         as) = genericAction p helper "get"
             ri                     = getRmId i ms
             invCoins               = first (i `delete`) . getNonIncogInvCoins ri $ ms
         in case ((()!#) *** (()!#)) (invCoins, lookupHooks i ms "get") of
-          (False, False) -> (ms, (pure sorryGetEmptyRmNoHooks, [], []))
+          (False, False) -> (ms, (pure sorryGetEmptyRmNoHooks, [], [], []))
           -----
-          (True,  False) -> invCoinsHelper ms inRms d ri invCoins & _2._1 %~ (sorrys ++)
+          (True,  False) -> let (ms', (toSelfs, bs, logMsgs)) = invCoinsHelper ms inRms d ri invCoins
+                            in (ms', (sorrys ++ toSelfs, bs, logMsgs, []))
           -----
-          (False, True ) -> let (inRms', (ms', toSelfs, bs, logMsgs)) = procHooks i ms v "get" inRms
-                                sorrys'                               = sorrys ++ (inRms' |!| pure sorryGetEmptyRmWithHooks)
-                            in (ms', (sorrys' ++ toSelfs, bs, logMsgs))
+          (False, True ) -> let (inRms', (ms', toSelfs, bs, logMsgs), fs) = procHooks i ms v "get" inRms
+                                sorrys' = sorrys ++ (inRms' |!| pure sorryGetEmptyRmWithHooks)
+                            in (ms', (sorrys' ++ toSelfs, bs, logMsgs, fs))
           -----
           (True,  True ) ->
-            let (inRms', (ms', hooksToSelfs, hooksBs, hooksLogMsgs))   = procHooks i ms v "get" inRms
-                (ms'', (invCoinsToSelfs, invCoinsBs, invCoinsLogMsgs)) = invCoinsHelper ms' inRms' d ri invCoins
+            let (inRms', (ms', hooksToSelfs, hooksBs, hooksLogMsgs), fs) = procHooks i ms v "get" inRms
+                (ms'', (invCoinsToSelfs, invCoinsBs, invCoinsLogMsgs))   = invCoinsHelper ms' inRms' d ri invCoins
             in (ms'', ( concat [ sorrys, hooksToSelfs, invCoinsToSelfs ]
                       , hooksBs      ++ invCoinsBs
-                      , hooksLogMsgs ++ invCoinsLogMsgs ))
+                      , hooksLogMsgs ++ invCoinsLogMsgs
+                      , fs ))
     invCoinsHelper ms args d ri invCoins =
         let (eiss, ecs)                     = uncurry (resolveRmInvCoins i ms args) invCoins
             (ms',  toSelfs,  bs,  logMsgs ) = foldl' (helperGetEitherInv       i d     ri)  (ms,  [],      [], []     ) eiss
@@ -1564,9 +1569,10 @@ look (NoArgs i mq cols) = getState >>= \ms ->
     filler       = T.singleton indentFiller
     formatRmDesc = map (T.replicate rmDescIndentAmt filler <>) . T.lines
 look (LowerNub i mq cols as) = mkRndmVector >>= \v ->
-    helper v |&| modifyState >=> \(toSelf, bs, hookLogMsg, maybeTargetDesigs) -> do
+    helper v |&| modifyState >=> \(toSelf, bs, hookLogMsg, maybeTargetDesigs, fs) -> do
         send mq toSelf
         bcastIfNotIncogNl i bs
+        sequence_ fs
         let mkLogMsgForDesigs targetDesigs | targetSings <- [ fromJust . sDesigEntSing $ targetDesig
                                                             | targetDesig <- targetDesigs ]
                                            = "looked at " <> commas targetSings
@@ -1580,21 +1586,22 @@ look (LowerNub i mq cols as) = mkRndmVector >>= \v ->
             sorryInInv             = wrapUnlinesNl cols . sorryEquipInvLook LookCmd $ InvCmd
             sorryInEq              = wrapUnlinesNl cols . sorryEquipInvLook LookCmd $ EquipCmd
         in case ((()!#) *** (()!#)) (invCoins, lookupHooks i ms "look") of
-          (False, False) -> (ms, (wrapUnlinesNl cols sorryLookEmptyRmNoHooks, [], "", Nothing))
+          (False, False) -> (ms, (wrapUnlinesNl cols sorryLookEmptyRmNoHooks, [], "", Nothing, []))
           -----
           (True,  False) -> let (toSelf, bs, maybeDesigs) = invCoinsHelper ms inRms invCoins
-                            in (ms, (sorry <> toSelf, bs, "", maybeDesigs))
+                            in (ms, (sorry <> toSelf, bs, "", maybeDesigs, []))
           -----
-          (False, True ) -> let (inRms', (ms', toSelf, bs, logMsg)) = hooksHelper ms v inRms
+          (False, True ) -> let (inRms', (ms', toSelf, bs, logMsg), fs) = hooksHelper ms v inRms
                                 sorry' = sorry <> (inRms' |!| wrapUnlinesNl cols sorryLookEmptyRmWithHooks)
-                            in (ms', (sorry' <> toSelf, bs, logMsg, Nothing))
+                            in (ms', (sorry' <> toSelf, bs, logMsg, Nothing, fs))
           -----
-          (True,  True ) -> let (inRms', (ms', hooksToSelf, hooksBs, logMsg)) = hooksHelper ms v inRms
-                                (invCoinsToSelf, invCoinsBs, maybeDesigs)     = invCoinsHelper ms' inRms' invCoins
+          (True,  True ) -> let (inRms', (ms', hooksToSelf, hooksBs, logMsg), fs) = hooksHelper ms v inRms
+                                (invCoinsToSelf, invCoinsBs, maybeDesigs)         = invCoinsHelper ms' inRms' invCoins
                             in (ms', ( sorry <> hooksToSelf <> invCoinsToSelf
                                      , hooksBs ++ invCoinsBs
                                      , logMsg
-                                     , maybeDesigs ))
+                                     , maybeDesigs
+                                     , fs ))
     -----
     invCoinsHelper ms args invCoins =
         let (eiss, ecs)  = uncurry (resolveRmInvCoins i ms args) invCoins
@@ -1790,29 +1797,30 @@ plaDispCmdList p                  = patternMatchFail "plaDispCmdList" [ showText
 putAction :: ActionFun
 putAction p@AdviseNoArgs     = advise p ["put"] advicePutNoArgs
 putAction p@(AdviseOneArg a) = advise p ["put"] . advicePutNoCon $ a
-putAction p@(Lower' i as)    = genericAction p helper "put"
+putAction p@(Lower' i as)    = genericActionWithHooks p helper "put"
   where
     helper v ms =
       let LastArgIsTargetBindings { .. } = mkLastArgIsTargetBindings i ms as
-          shuffler target b is           = shufflePut i ms srcDesig target b otherArgs is srcInvCoins
+          shuffler target b is f = let (ms', (toSelfs, bs, logMsgs)) = shufflePut i ms srcDesig target b otherArgs is srcInvCoins f
+                                   in (ms', (toSelfs, bs, logMsgs, []))
       in case singleArgInvEqRm InInv targetArg of
         (InInv, target) -> shuffler target False srcInvCoins procGecrMisMobInv
-        (InEq,  _     ) -> genericSorry ms . sorryConInEq $ Put
+        (InEq,  _     ) -> genericSorryWithHooks ms . sorryConInEq $ Put
         (InRm,  target) ->
             let invCoinsHelper = shuffler target True rmInvCoins procGecrMisRm
                 f hooks g      = case filter ((dropPrefixes target `elem`) . triggers) hooks of
                                    []      -> g
                                    matches -> hooksHelper otherArgs matches
             in case (()!# rmInvCoins, lookupHooks i ms "put") of
-              (False, Nothing   ) -> genericSorry ms sorryNoConHere
+              (False, Nothing   ) -> genericSorryWithHooks ms sorryNoConHere
               (True,  Nothing   ) -> invCoinsHelper
-              (False, Just hooks) -> f hooks . genericSorry ms . sorryPutEmptyRmWithHooks $ target
+              (False, Just hooks) -> f hooks . genericSorryWithHooks ms . sorryPutEmptyRmWithHooks $ target
               (True,  Just hooks) -> f hooks invCoinsHelper
       where
         hooksHelper args matches =
-            let h@Hook { hookName }              = head matches
-                (_, (ms', toSelfs, bs, logMsgs)) = getHookFun hookName ms i h v (args, (ms, [], [], []))
-            in (ms', (toSelfs, bs, logMsgs))
+            let h@Hook { hookName }                  = head matches
+                (_, (ms', toSelfs, bs, logMsgs), fs) = getHookFun hookName ms i h v (args, (ms, [], [], []), [])
+            in (ms', (toSelfs, bs, logMsgs, fs))
 putAction p = patternMatchFail "putAction" [ showText p ]
 
 
@@ -2073,17 +2081,19 @@ readAction (LowerNub i mq cols as) = (,) <$> getState <*> mkRndmVector >>= \(ms,
                         in ioHelper (invCoinsHelper ms inInvs d invCoins & _1 %~ (sorry <>))
       -----
       (False, True ) -> let sorry = (inInvs |!| wrapUnlinesNl cols dudeYourHandsAreEmpty) <> sorryInEq
-                            (inRms', (_, toSelfs, bs, logMsgs)) = procHooks i ms v "read" inRms
+                            (inRms', (_, toSelfs, bs, logMsgs), fs) = procHooks i ms v "read" inRms
                             sorry' = sorry <> (wrapper . map sorryReadWithHooks $ inRms')
-                        in ioHelper (sorry' <> wrapper toSelfs, bs, logMsgs)
+                        in ioHelper (sorry' <> wrapper toSelfs, bs, logMsgs) >> sequence_ fs
       -----
       (True,  True ) ->
-        let (inRms', (_, hooksToSelfs, hooksBs, hooksLogMsgs)) = procHooks i ms v "read" inRms
+        let (inRms', (_, hooksToSelfs, hooksBs, hooksLogMsgs), fs) = procHooks i ms v "read" inRms
             sorry = sorryInEq <> (wrapper . map sorryReadWithHooks $ inRms')
             (invCoinsToSelf, invCoinsBs, invCoinsLogMsgs) = invCoinsHelper ms inInvs d invCoins
-        in ioHelper ( T.concat [ sorry, wrapper hooksToSelfs, invCoinsToSelf ]
-                    , hooksBs      ++ invCoinsBs
-                    , hooksLogMsgs ++ invCoinsLogMsgs )
+        in do
+            ioHelper ( T.concat [ sorry, wrapper hooksToSelfs, invCoinsToSelf ]
+                                , hooksBs      ++ invCoinsBs
+                                , hooksLogMsgs ++ invCoinsLogMsgs )
+            sequence_ fs
   where
     invCoinsHelper ms args d invCoins =
         let (eiss, ecs) = uncurry (resolveMobInvCoins i ms args) invCoins
@@ -2912,7 +2922,7 @@ mkSlotDesc i ms s = case s of
 -----
 
 
--- TODO: Help.
+-- TODO: Help. Syntax.
 smell :: ActionFun
 smell (NoArgs i mq cols) = getState >>= \ms -> do
     views rmSmell (wrapSend mq cols . fromMaybe noSmellMsg) . getMobRm i $ ms
@@ -2934,7 +2944,7 @@ smell (OneArgLower i mq cols a) = getState >>= \ms ->
         (InRm,  target) | ()# rmInvCoins -> wrapSend mq cols sorrySmellNothingHere -- TODO: Handle hooks.
                         | otherwise      -> smellRm ms d rmInvCoins target
   where
-    smellInv ms d invCoins target =
+    smellInv ms _ invCoins target =
         let (eiss, ecs) = uncurry (resolveMobInvCoins i ms . pure $ target) invCoins
         in if ()!# ecs -- TODO: Handle coin Left.
           then wrapSend mq cols "smell coin"
@@ -2942,7 +2952,7 @@ smell (OneArgLower i mq cols a) = getState >>= \ms ->
             Left  msg        -> wrapSend mq cols msg
             Right [targetId] -> wrapSend mq cols $ "smell inv ID " <> showText targetId
             Right _ -> wrapSend mq cols sorrySmellExcessTargets
-    smellEq ms d eqMap target =
+    smellEq ms _ eqMap target =
         let (gecrs, miss, rcs) = resolveEntCoinNames i ms (pure target) (M.elems eqMap) mempty
         in if ()!# rcs
           then wrapSend mq cols sorryEquipCoins
@@ -2950,7 +2960,7 @@ smell (OneArgLower i mq cols a) = getState >>= \ms ->
             Left msg         -> wrapSend mq cols msg
             Right [targetId] -> wrapSend mq cols $ "smell eq ID " <> showText targetId
             Right _ -> wrapSend mq cols sorrySmellExcessTargets
-    smellRm ms d rmInvCoins target =
+    smellRm ms _ rmInvCoins target =
         let (gecrs, miss, rcs) = uncurry (resolveEntCoinNames i ms . pure $ target) rmInvCoins
         in if ()!# rcs -- TODO: Handle coin Left.
           then wrapSend mq cols "smell coin"

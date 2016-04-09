@@ -70,7 +70,7 @@ import Mud.Util.Operators
 import Mud.Util.Text
 import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 
-import Control.Arrow ((***), first)
+import Control.Arrow ((***))
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TMVar (putTMVar, takeTMVar)
 import Control.Exception.Lifted (bracket)
@@ -442,8 +442,8 @@ pluralize (s, p) x = x == 1 ? s :? p
 -----
 
 
-procHooks :: Id -> MudState -> V.Vector Int -> CmdName -> Args -> (Args, GenericIntermediateRes)
-procHooks i ms v cn as | initAcc <- (as, (ms, [], [], [])) = case lookupHooks i ms cn of
+procHooks :: Id -> MudState -> V.Vector Int -> CmdName -> Args -> HookFunRes
+procHooks i ms v cn as | initAcc <- (as, (ms, [], [], []), []) = case lookupHooks i ms cn of
   Nothing    -> initAcc
   Just hooks -> case as of
     -- Process hooks that match on a particular argument. These hooks need to see the other argument(s) passed as well,
@@ -464,8 +464,8 @@ procHooks i ms v cn as | initAcc <- (as, (ms, [], [], [])) = case lookupHooks i 
            []      -> initAcc
            matches ->
              let xformedArgs = foldr (\Hook { triggers } -> dropSynonyms triggers) as' matches
-                 hookHelper a@(_, (ms', _, _, _)) h = getHookFun (hookName h) ms' i h v a
-             in foldl' hookHelper (first (const xformedArgs) initAcc) . nub $ matches
+                 hookHelper a@(_, (ms', _, _, _), _) h = getHookFun (hookName h) ms' i h v a
+             in foldl' hookHelper (initAcc & _1 .~ xformedArgs) . nub $ matches
 
 
 dropPrefixesForHooks :: [Hook] -> Args -> Args
