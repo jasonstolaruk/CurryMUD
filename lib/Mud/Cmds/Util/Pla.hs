@@ -248,24 +248,25 @@ genericAction :: ActionParams
               -> (MudState -> GenericRes)
               -> Text
               -> MudStack ()
-genericAction ActionParams { .. } helper fn = helper |&| modifyState >=> \(toSelfs, bs, logMsgs) -> do
-        ms <- getState
-        multiWrapSend plaMsgQueue plaCols [ parseDesig myId ms msg | msg <- toSelfs ]
-        bcastIfNotIncogNl myId bs
-        logMsgs |#| logPlaOut fn myId
+genericAction p helper fn = helper |&| modifyState >=> \(toSelfs, bs, logMsgs) ->
+    genericActionHelper p fn toSelfs bs logMsgs
+
+
+genericActionHelper :: ActionParams -> Text -> [Text] -> [Broadcast] -> [Text] -> MudStack ()
+genericActionHelper ActionParams { .. } fn toSelfs bs logMsgs = do
+    ms <- getState
+    multiWrapSend plaMsgQueue plaCols [ parseDesig myId ms msg | msg <- toSelfs ]
+    bcastIfNotIncogNl myId bs
+    logMsgs |#| logPlaOut fn myId
 
 
 genericActionWithHooks :: ActionParams
                        -> (V.Vector Int -> MudState -> GenericResWithHooks)
                        -> Text
                        -> MudStack ()
-genericActionWithHooks ActionParams { .. } helper fn = mkRndmVector >>= \v ->
-    helper v |&| modifyState >=> \(toSelfs, bs, logMsgs, fs) -> do
-        ms <- getState
-        multiWrapSend plaMsgQueue plaCols [ parseDesig myId ms msg | msg <- toSelfs ]
-        bcastIfNotIncogNl myId bs
-        sequence_ fs
-        logMsgs |#| logPlaOut fn myId
+genericActionWithHooks p helper fn = mkRndmVector >>= \v ->
+    helper v |&| modifyState >=> \(toSelfs, bs, logMsgs, fs) -> do { genericActionHelper p fn toSelfs bs logMsgs
+                                                                   ; sequence_ fs }
 
 
 -----

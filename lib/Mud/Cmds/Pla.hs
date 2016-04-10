@@ -2946,8 +2946,11 @@ smell (OneArgLower i mq cols a) = getState >>= \ms ->
   where
     smellInv ms _ invCoins target =
         let (eiss, ecs) = uncurry (resolveMobInvCoins i ms . pure $ target) invCoins
-        in if ()!# ecs -- TODO: Handle coin Left.
-          then wrapSend mq cols "smell coin"
+        in if ()!# ecs
+          then let (_, can'tCoinMsgs) = distillEcs ecs
+               in if ()# can'tCoinMsgs
+                 then wrapSend mq cols "smell coins"
+                 else wrapSend mq cols . head $ can'tCoinMsgs
           else case head eiss of
             Left  msg        -> wrapSend mq cols msg
             Right [targetId] -> wrapSend mq cols $ "smell inv ID " <> showText targetId
@@ -2957,14 +2960,17 @@ smell (OneArgLower i mq cols a) = getState >>= \ms ->
         in if ()!# rcs
           then wrapSend mq cols sorryEquipCoins
           else case procGecrMisMobEq . head . zip gecrs $ miss of
-            Left msg         -> wrapSend mq cols msg
+            Left  msg        -> wrapSend mq cols msg
             Right [targetId] -> wrapSend mq cols $ "smell eq ID " <> showText targetId
             Right _ -> wrapSend mq cols sorrySmellExcessTargets
     smellRm ms _ rmInvCoins target =
-        let (gecrs, miss, rcs) = uncurry (resolveEntCoinNames i ms . pure $ target) rmInvCoins
-        in if ()!# rcs -- TODO: Handle coin Left.
-          then wrapSend mq cols "smell coin"
-          else case procGecrMisRm . head . zip gecrs $ miss of
+        let (eiss, ecs) = uncurry (resolveRmInvCoins i ms . pure $ target) rmInvCoins
+        in if ()!# ecs
+          then let (_, can'tCoinMsgs) = distillEcs ecs
+               in if ()# can'tCoinMsgs
+                 then wrapSend mq cols "smell coins"
+                 else wrapSend mq cols . head $ can'tCoinMsgs
+          else case head eiss of
             Left  msg        -> wrapSend mq cols msg
             Right [targetId] -> wrapSend mq cols $ "smell rm ID " <> showText targetId
             Right _ -> wrapSend mq cols sorrySmellExcessTargets
