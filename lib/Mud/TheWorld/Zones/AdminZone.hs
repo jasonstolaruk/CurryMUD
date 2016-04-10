@@ -312,7 +312,7 @@ pickRmActionFunName = "AdminZone_iAtrium_pick"
 
 pick :: RmActionFun
 pick p@AdviseNoArgs     = advise p [] advicePickNoArgs
-pick p@(LowerNub' i as) = genericAction p helper "pick"
+pick p@(LowerNub' i as) = genericActionWithHooks p helper "pick"
   where
     helper v ms =
         let (inInvs, inEqs, inRms) = sortArgsInvEqRm InRm as
@@ -324,7 +324,7 @@ pick p@(LowerNub' i as) = genericAction p helper "pick"
                                                 | otherwise                    = initAcc
             mkMsgForArg arg | arg `elem` triggers = head toSelfs
                             | otherwise           = sorryPickNotFlower arg
-        in (ms', (sorrys ++ map mkMsgForArg inRms', bs, logMsgs))
+        in (ms', (sorrys ++ map mkMsgForArg inRms', bs, logMsgs, []))
 pick p = patternMatchFail "pick" [ showText p ]
 
 

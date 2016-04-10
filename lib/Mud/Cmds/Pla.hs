@@ -829,7 +829,7 @@ dropAction :: ActionFun
 dropAction p@AdviseNoArgs     = advise p ["drop"] adviceDropNoArgs
 dropAction p@(LowerNub' i as) = genericAction p helper "drop"
   where
-    helper _ ms =
+    helper ms =
         let (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv as
             sorryInEq              = inEqs |!| sorryDropInEq
             sorryInRm              = inRms |!| sorryDropInRm
@@ -1064,7 +1064,7 @@ give p@AdviseNoArgs     = advise p ["give"] adviceGiveNoArgs
 give p@(AdviseOneArg a) = advise p ["give"] . adviceGiveNoName $ a
 give p@(Lower' i as   ) = genericAction p helper "give"
   where
-    helper _ ms =
+    helper ms =
         let b@LastArgIsTargetBindings { targetArg } = mkLastArgIsTargetBindings i ms as
             f                                       = case singleArgInvEqRm InRm targetArg of
               (InInv, _     ) -> genericSorry ms sorryGiveToInv
@@ -2154,7 +2154,7 @@ ready :: ActionFun
 ready p@AdviseNoArgs     = advise p ["ready"] adviceReadyNoArgs
 ready p@(LowerNub' i as) = genericAction p helper "ready"
   where
-    helper _ ms =
+    helper ms =
         let (inInvs, inEqs, inRms)    = sortArgsInvEqRm InInv as
             sorryInEq                 = inEqs |!| sorryReadyInEq
             sorryInRm                 = inRms |!| sorryReadyInRm
@@ -2412,7 +2412,7 @@ remove p@AdviseNoArgs     = advise p ["remove"] adviceRemoveNoArgs
 remove p@(AdviseOneArg a) = advise p ["remove"] . adviceRemoveNoCon $ a
 remove p@(Lower' i as)    = genericAction p helper "remove"
   where
-    helper _ ms =
+    helper ms =
       let LastArgIsTargetBindings { .. } = mkLastArgIsTargetBindings i ms as
       in case singleArgInvEqRm InInv targetArg of
         (InInv, target) -> shuffleRem i ms srcDesig target False otherArgs srcInvCoins procGecrMisMobInv
@@ -3235,7 +3235,7 @@ unready :: ActionFun
 unready p@AdviseNoArgs     = advise p ["unready"] adviceUnreadyNoArgs
 unready p@(LowerNub' i as) = genericAction p helper "unready"
   where
-    helper _ ms =
+    helper ms =
         let (inInvs, inEqs, inRms) = sortArgsInvEqRm InEq as
             sorryInInv             = inInvs |!| sorryUnreadyInInv
             sorryInRm              = inRms  |!| sorryUnreadyInRm

@@ -245,11 +245,10 @@ fillerToSpcs = T.replace (T.singleton indentFiller) " "
 
 
 genericAction :: ActionParams
-              -> (V.Vector Int -> MudState -> GenericRes) -- TODO: We shouldn't need the Vector if we don't have hooks...?
+              -> (MudState -> GenericRes)
               -> Text
               -> MudStack ()
-genericAction ActionParams { .. } helper fn = mkRndmVector >>= \v ->
-    helper v |&| modifyState >=> \(toSelfs, bs, logMsgs) -> do
+genericAction ActionParams { .. } helper fn = helper |&| modifyState >=> \(toSelfs, bs, logMsgs) -> do
         ms <- getState
         multiWrapSend plaMsgQueue plaCols [ parseDesig myId ms msg | msg <- toSelfs ]
         bcastIfNotIncogNl myId bs
