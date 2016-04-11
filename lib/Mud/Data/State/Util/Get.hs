@@ -4,6 +4,7 @@
 
 module Mud.Data.State.Util.Get where
 
+import Mud.Cmds.Msgs.Misc
 import Mud.Data.Misc
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
@@ -11,8 +12,9 @@ import Mud.Util.Misc
 
 import Control.Arrow ((***))
 import Control.Concurrent (ThreadId)
-import Control.Lens (at, to, view)
+import Control.Lens (at, to, view, views)
 import Control.Lens.Operators ((^.))
+import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import Data.Time (UTCTime)
 import Network (HostName)
@@ -431,6 +433,13 @@ getNpcMsgQueue i = view npcMsgQueue . getNpc i
 
 getObj :: Id -> MudState -> Obj
 getObj i = view (objTbl.ind i)
+
+
+-----
+
+
+getObjSmell :: Id -> MudState -> Text
+getObjSmell i = views objSmell (fromMaybe noSmellMsg) . getObj i
 
 
 -----

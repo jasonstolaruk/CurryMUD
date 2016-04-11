@@ -5,6 +5,7 @@ module Mud.Data.State.Util.Coins ( aCoinSomeCoins
                                  , coinsToList
                                  , distillEcs
                                  , mkCoinTxt
+                                 , mkCoinPieceTxt
                                  , negateCoins ) where
 
 import Mud.Data.State.MudData
@@ -62,6 +63,13 @@ mkCoinTxt coins = case mkCoinTxtList of
     combineAmntName (amt, coinName) acc | amt >  1  = T.concat [ showText amt, " ", coinName, "s" ] : acc
                                         | amt == 1  = showText amt <> " " <> coinName : acc
                                         | otherwise = acc
+
+
+mkCoinPieceTxt :: Coins -> (Text, Bool)
+mkCoinPieceTxt = \case (Coins (1, 0, 0)) -> ("copper piece", False)
+                       (Coins (0, 1, 0)) -> ("silver piece", False)
+                       (Coins (0, 0, 1)) -> ("gold piece",   False)
+                       _                 -> ("coins",        True )
 
 
 negateCoins :: Coins -> Coins
