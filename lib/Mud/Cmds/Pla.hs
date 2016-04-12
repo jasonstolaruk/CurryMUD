@@ -2952,37 +2952,37 @@ smell (OneArgLower i mq cols a) = getState >>= \ms ->
   where
     smellInv ms d invCoins target =
         let (eiss, ecs) = uncurry (resolveMobInvCoins i ms . pure $ target) invCoins
-        in if ()!# ecs
-          then let (canCoins, can'tCoinMsgs) = distillEcs ecs
-               in if ()# can'tCoinMsgs
-                 then do { let (t, isPlur) = mkCoinPieceTxt canCoins
-                         ; wrapSend mq cols . T.concat $ [ "The "
-                                                         , t
-                                                         , " "
-                                                         , "smell"
-                                                         , not isPlur |?| "s"
-                                                         , " "
-                                                         , "of metal, with just a hint of grime." ]
-                         ; bcastIfNotIncogNl i . pure $ (T.concat [ serialize d
-                                                                  , " smells "
-                                                                  , aCoinSomeCoins canCoins
-                                                                  , "." ], i `delete` desigIds d)
-                         ; logPla "smell" i $ "smelled " <> aCoinSomeCoins canCoins <> "." }
-                 else wrapSend mq cols . head $ can'tCoinMsgs
-          else case head eiss of
+        in if
+          | ()!# eiss && ()!# ecs -> sorryExcess
+          | ()!# ecs              ->
+              let (canCoins, can'tCoinMsgs) = distillEcs ecs
+              in if ()# can'tCoinMsgs
+                then do { let (coinTxt, isPlur) = mkCoinPieceTxt canCoins
+                        ; wrapSend mq cols . T.concat $ [ "The "
+                                                        , coinTxt
+                                                        , " "
+                                                        , "smell"
+                                                        , not isPlur |?| "s"
+                                                        , " "
+                                                        , "of metal, with just a hint of grime." ]
+                        ; bcastIfNotIncogNl i . pure $ (T.concat [ serialize d
+                                                                 , " smells "
+                                                                 , aCoinSomeCoins canCoins
+                                                                 , "." ], i `delete` desigIds d)
+                        ; logPla "smell" i $ "smelled " <> aCoinSomeCoins canCoins <> "." }
+                else wrapSend mq cols . head $ can'tCoinMsgs
+          | otherwise -> case head eiss of
             Left  msg        -> wrapSend mq cols msg
-            Right [targetId] -> do { let t = case getType targetId ms of
-                                               VesselType -> case getVesselCont targetId ms of
-                                                 Nothing     -> "The " <> getSing targetId ms <> " is empty."
-                                                 Just (l, _) -> l^.liqSmellDesc
-                                               _ -> getObjSmell targetId ms
+            Right [targetId] -> do { let smellDesc = case getType targetId ms of
+                                           VesselType -> case getVesselCont targetId ms of
+                                             Nothing     -> "The " <> getSing targetId ms <> " is empty."
+                                             Just (l, _) -> l^.liqSmellDesc
+                                           _ -> getObjSmell targetId ms
                                          targetSing = getSing targetId ms
-                                   ; wrapSend mq cols t
+                                   ; wrapSend mq cols smellDesc
                                    ; bcastIfNotIncogNl i . pure $ (T.concat [ serialize d
                                                                             , " smells "
-                                                                            , mkPossPro . getSex i $ ms
-                                                                            , " "
-                                                                            , targetSing
+                                                                            , aOrAn targetSing
                                                                             , " "
                                                                             , parensQuote "carried"
                                                                             , "." ], i `delete` desigIds d)
@@ -2991,15 +2991,30 @@ smell (OneArgLower i mq cols a) = getState >>= \ms ->
                                                                    , " "
                                                                    , parensQuote "carried"
                                                                    , "." ] }
-            Right _ -> wrapSend mq cols sorrySmellExcessTargets
-    smellEq ms _ eqMap target =
+            Right _          -> sorryExcess
+    smellEq ms d eqMap target =
         let (gecrs, miss, rcs) = resolveEntCoinNames i ms (pure target) (M.elems eqMap) mempty
+            eis                = procGecrMisMobEq . head . zip gecrs $ miss
         in if ()!# rcs
           then wrapSend mq cols sorryEquipCoins
-          else case procGecrMisMobEq . head . zip gecrs $ miss of
+          else case eis of
             Left  msg        -> wrapSend mq cols msg
-            Right [targetId] -> wrapSend mq cols $ "smell eq ID " <> showText targetId
-            Right _ -> wrapSend mq cols sorrySmellExcessTargets
+            Right [targetId] -> do { let smellDesc  = getObjSmell targetId ms
+                                         slotDesc   = parensQuote . mkSlotDesc i ms . reverseLookup targetId $ eqMap
+                                         targetSing = getSing targetId ms
+                                   ; wrapSend mq cols smellDesc
+                                   ; bcastIfNotIncogNl i . pure $ (T.concat [ serialize d
+                                                                            , " smells "
+                                                                            , aOrAn targetSing
+                                                                            , " "
+                                                                            , slotDesc
+                                                                            , "." ], i `delete` desigIds d)
+                                   ; logPla "smell" i . T.concat $ [ "smelled "
+                                                                   , aOrAn targetSing
+                                                                   , " "
+                                                                   , slotDesc
+                                                                   , "." ] }
+            Right _          -> sorryExcess
     smellRm ms _ rmInvCoins target =
         let (eiss, ecs) = uncurry (resolveRmInvCoins i ms . pure $ target) rmInvCoins
         in if ()!# ecs
@@ -3010,7 +3025,8 @@ smell (OneArgLower i mq cols a) = getState >>= \ms ->
           else case head eiss of
             Left  msg        -> wrapSend mq cols msg
             Right [targetId] -> wrapSend mq cols $ "smell rm ID " <> showText targetId
-            Right _ -> wrapSend mq cols sorrySmellExcessTargets
+            Right _ -> sorryExcess
+    sorryExcess = wrapSend mq cols sorrySmellExcessTargets
 smell p = advise p ["smell"] adviceSmellExcessArgs
 
 
