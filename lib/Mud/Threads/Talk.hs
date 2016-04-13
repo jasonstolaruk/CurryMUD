@@ -91,6 +91,7 @@ adHoc mq host = do
                        , _sing     = s
                        , _plur     = ""
                        , _entDesc  = capitalize $ mkThrPerPro sexy <> " is an ad-hoc player character."
+                       , _entSmell = Nothing
                        , _entFlags = zeroBits }
             m    = Mob { _sex           = sexy
                        , _st            = 50

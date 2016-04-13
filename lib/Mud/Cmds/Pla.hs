@@ -2979,7 +2979,7 @@ smell (OneArgLower i mq cols a) = getState >>= \ms ->
                                       VesselType -> case getVesselCont targetId ms of
                                         Nothing     -> "The " <> getSing targetId ms <> " is empty."
                                         Just (l, _) -> l^.liqSmellDesc
-                                      _ -> getObjSmell targetId ms
+                                      _ -> getEntSmell targetId ms
                                     b          = (T.concat [ serialize d
                                                            , " smells "
                                                            , aOrAn targetSing
@@ -3003,7 +3003,7 @@ smell (OneArgLower i mq cols a) = getState >>= \ms ->
             Left  msg        -> wrapSend mq cols msg
             Right [targetId] -> let targetSing = getSing targetId ms
                                     slotDesc   = parensQuote . mkSlotDesc i ms . reverseLookup targetId $ eqMap
-                                    smellDesc  = getObjSmell targetId ms
+                                    smellDesc  = getEntSmell targetId ms
                                     b          = (T.concat [ serialize d
                                                            , " smells "
                                                            , aOrAn targetSing

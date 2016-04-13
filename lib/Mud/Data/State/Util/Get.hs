@@ -235,6 +235,13 @@ getEntDesc i = view entDesc . getEnt i
 -----
 
 
+getEntSmell :: Id -> MudState -> Text
+getEntSmell i = views entSmell (fromMaybe noSmellMsg) . getEnt i
+
+
+-----
+
+
 getEqMap :: Id -> MudState -> EqMap
 getEqMap i = view (eqTbl.ind i)
 
@@ -433,13 +440,6 @@ getNpcMsgQueue i = view npcMsgQueue . getNpc i
 
 getObj :: Id -> MudState -> Obj
 getObj i = view (objTbl.ind i)
-
-
------
-
-
-getObjSmell :: Id -> MudState -> Text
-getObjSmell i = views objSmell (fromMaybe noSmellMsg) . getObj i
 
 
 -----

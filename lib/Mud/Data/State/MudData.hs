@@ -306,6 +306,7 @@ data Ent = Ent { _entId    :: Id
                , _sing     :: Sing
                , _plur     :: Plur
                , _entDesc  :: Text
+               , _entSmell :: Maybe Text
                , _entFlags :: Int } deriving (Eq, Generic, Show)
 
 
@@ -624,7 +625,6 @@ type NpcServerAsync = Async ()
 -- Has an entity (and paused/active effects).
 data Obj = Obj { _weight           :: Weight
                , _vol              :: Vol
-               , _objSmell         :: Maybe Text
                , _objTaste         :: Maybe Text
                , _objFlags         :: Int
                , _biodegraderAsync :: Maybe BiodegraderAsync }
@@ -646,7 +646,6 @@ instance ToJSON   Obj where toJSON    = objToJSON
 objToJSON :: Obj -> Value
 objToJSON Obj { .. } = object [ "weight"   .= _weight
                               , "vol"      .= _vol
-                              , "objSmell" .= _objSmell
                               , "objTaste" .= _objTaste
                               , "objFlags" .= _objFlags ]
 
@@ -654,7 +653,6 @@ objToJSON Obj { .. } = object [ "weight"   .= _weight
 jsonToObj :: Value -> Parser Obj
 jsonToObj (Object o) = Obj <$> o .: "weight"
                            <*> o .: "vol"
-                           <*> o .: "objSmell"
                            <*> o .: "objTaste"
                            <*> o .: "objFlags"
                            <*> pure Nothing
