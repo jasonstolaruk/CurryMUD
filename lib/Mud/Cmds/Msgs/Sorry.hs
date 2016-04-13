@@ -197,9 +197,12 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryShowExcessTargets
                            , sorryShowInRm
                            , sorryShowTarget
+                           , sorrySmellEmptyRmNoHooks
+                           , sorrySmellEmptyRmWithHooks
                            , sorrySmellExcessTargets
-                           , sorrySmellNothingHere
                            , sorrySmellNothingToSmell
+                           , sorrySmellRmCoins
+                           , sorrySmellRmNoHooks
                            , sorryStopActName
                            , sorryStopNotDoing
                            , sorryStopNotDoingAnything
@@ -239,6 +242,7 @@ import Mud.Misc.ANSI
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
 import Mud.Util.Misc hiding (patternMatchFail)
+import Mud.Util.Operators
 import Mud.Util.Quoting
 import Mud.Util.Text
 import qualified Mud.Util.Misc as U (patternMatchFail)
@@ -1355,16 +1359,32 @@ sorryShowTarget t = can't "show something to " <> aOrAn t <> "."
 -----
 
 
+sorrySmellEmptyRmNoHooks :: Text
+sorrySmellEmptyRmNoHooks = "You don't see anything to smell here."
+
+
+sorrySmellEmptyRmWithHooks :: Text
+sorrySmellEmptyRmWithHooks = "You don't see anything to smell on the ground here."
+
+
 sorrySmellExcessTargets :: Text
-sorrySmellExcessTargets = but "you can only smell one object at a time."
-
-
-sorrySmellNothingHere :: Text
-sorrySmellNothingHere = "You don't see anything to smell here."
+sorrySmellExcessTargets = but "you can only smell one thing at a time."
 
 
 sorrySmellNothingToSmell :: Text
 sorrySmellNothingToSmell = "There isn't anything to smell."
+
+
+sorrySmellRmCoins :: (Text, Bool) -> Text
+sorrySmellRmCoins (coinTxt, isPlur) = T.concat [ "You must pick up the "
+                                               , coinTxt
+                                               , " before you can smell "
+                                               , isPlur ? "them" :? "it"
+                                               , "." ]
+
+
+sorrySmellRmNoHooks :: Sing -> Text
+sorrySmellRmNoHooks s = "You must pick up the " <> s <> " before you can smell it."
 
 
 -----

@@ -3,9 +3,7 @@
 module Mud.TheWorld.Zones.AdminZone ( adminZoneHooks
                                     , adminZoneRmActionFuns
                                     , adminZoneRmFuns
-                                    , createAdminZone
-                                    , getFlowerHook
-                                    , lookFlowerbedHook ) where
+                                    , createAdminZone ) where
 
 import Mud.Cmds.Msgs.Advice
 import Mud.Cmds.Msgs.Sorry
@@ -76,7 +74,8 @@ adminZoneHooks = [ (drinkPoolHookName,                 drinkPoolHookFun         
                  , (readLookPaperHookName,             readLookPaperHookFun            )
                  , (readLookPosterHookName,            readLookPosterHookFun           )
                  , (readLookSign_iEmptyHookName,       readLookSign_iEmptyHookFun      )
-                 , (readLookSign_iTutEntranceHookName, readLookSign_iTutEntranceHookFun) ]
+                 , (readLookSign_iTutEntranceHookName, readLookSign_iTutEntranceHookFun)
+                 , (smellFlowerbedHookName,            smellFlowerbedHookFun           ) ]
 
 
 -----
@@ -163,7 +162,7 @@ lookCeilingHookName = "AdminZone_iEmpty_lookCeiling"
 
 
 lookCeilingHookFun :: HookFun
-lookCeilingHookFun = mkLookReadHookFun ceilingDesc "looks up at the ceiling." "looked ceiling"
+lookCeilingHookFun = mkLookReadHookFun ceilingDesc "looks up at the ceiling." "looked at ceiling"
   where
     ceilingDesc = "The tall ceiling looks identical to the walls: plain and white. Even if there was a means of exit \
                   \up there, you can't imagine how you'd reach it..."
@@ -289,6 +288,24 @@ readLookSign_iTutEntranceHookFun = mkLookReadHookFun signDesc "reads the sign fl
   where
     signDesc = "The sign reads, \"Tutorial this way. No re-entry!\"\n\
                \A small, square piece of paper has been nailed to the bottom-right corner of the sign."
+
+
+-----
+
+
+
+smellFlowerbedHook :: Hook
+smellFlowerbedHook = Hook smellFlowerbedHookName [ "flowerbed", "flower", "flowers" ]
+
+
+smellFlowerbedHookName :: HookName
+smellFlowerbedHookName = "AdminZone_iAtrium_smellFlowerbed"
+
+
+smellFlowerbedHookFun :: HookFun
+smellFlowerbedHookFun = mkLookReadHookFun smellDesc "smells the flowerbed." "smelled flowerbed" -- TODO: Rename "mkLookReadHookFun" to something more generic.
+  where
+    smellDesc = "The flowerbed smells lovely." -- TODO
 
 
 -- ==================================================
@@ -531,9 +548,10 @@ createAdminZone = do
                   \flowerbed.")
             zeroBits
             [ StdLink West iHallwayEast ]
-            (M.fromList [ ("drink", [ drinkPoolHook     ])
-                        , ("get",   [ getFlowerHook     ])
-                        , ("look",  [ lookFlowerbedHook ]) ])
+            (M.fromList [ ("drink", [ drinkPoolHook      ])
+                        , ("get",   [ getFlowerHook      ])
+                        , ("look",  [ lookFlowerbedHook  ])
+                        , ("smell", [ smellFlowerbedHook ]) ])
             [ pickRmAction     ]
             [ beeBuzzRmFunName ]
             [])
