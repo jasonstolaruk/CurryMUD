@@ -2958,19 +2958,19 @@ smell (OneArgLower i mq cols a) = getState >>= \ms ->
               let (canCoins, can'tCoinMsgs) = distillEcs ecs
               in if ()# can'tCoinMsgs
                 then let (coinTxt, isPlur) = mkCoinPieceTxt canCoins
-                         smellDesc         =  T.concat [ "The "
-                                                       , coinTxt
-                                                       , " "
-                                                       , "smell"
-                                                       , not isPlur |?| "s"
-                                                       , " "
-                                                       , "of metal, with just a hint of grime." ]
-                         b                 = (T.concat [ serialize d
-                                                       , " smells "
-                                                       , aCoinSomeCoins canCoins
-                                                       , "." ], i `delete` desigIds d)
+                         smellDesc         = T.concat [ "The "
+                                                      , coinTxt
+                                                      , " "
+                                                      , "smell"
+                                                      , not isPlur |?| "s"
+                                                      , " "
+                                                      , "of metal, with just a hint of grime." ]
+                         bs                = pure (T.concat [ serialize d
+                                                            , " smells "
+                                                            , aCoinSomeCoins canCoins
+                                                            , "." ], i `delete` desigIds d)
                          logMsg            = "smelled " <> aCoinSomeCoins canCoins <> "."
-                     in ioHelper smellDesc b logMsg
+                     in ioHelper smellDesc bs logMsg
                 else wrapSend mq cols . head $ can'tCoinMsgs
           | otherwise -> case head eiss of
             Left  msg        -> wrapSend mq cols msg
@@ -2980,18 +2980,18 @@ smell (OneArgLower i mq cols a) = getState >>= \ms ->
                                         Nothing     -> "The " <> getSing targetId ms <> " is empty."
                                         Just (l, _) -> l^.liqSmellDesc
                                       _ -> getEntSmell targetId ms
-                                    b          = (T.concat [ serialize d
-                                                           , " smells "
-                                                           , aOrAn targetSing
-                                                           , " "
-                                                           , parensQuote "carried"
-                                                           , "." ], i `delete` desigIds d)
+                                    bs         = pure (T.concat [ serialize d
+                                                                , " smells "
+                                                                , aOrAn targetSing
+                                                                , " "
+                                                                , parensQuote "carried"
+                                                                , "." ], i `delete` desigIds d)
                                     logMsg     = T.concat [ "smelled "
                                                           , aOrAn targetSing
                                                           , " "
                                                           , parensQuote "carried"
                                                           , "." ]
-                                in ioHelper smellDesc b logMsg
+                                in ioHelper smellDesc bs logMsg
             Right _          -> sorryExcess
     -----
     smellEq ms d eqMap target =
@@ -3004,21 +3004,21 @@ smell (OneArgLower i mq cols a) = getState >>= \ms ->
             Right [targetId] -> let targetSing = getSing targetId ms
                                     slotDesc   = parensQuote . mkSlotDesc i ms . reverseLookup targetId $ eqMap
                                     smellDesc  = getEntSmell targetId ms
-                                    b          = (T.concat [ serialize d
-                                                           , " smells "
-                                                           , aOrAn targetSing
-                                                           , " "
-                                                           , slotDesc
-                                                           , "." ], i `delete` desigIds d)
-                                    logMsg     =  T.concat [ "smelled "
-                                                           , aOrAn targetSing
-                                                           , " "
-                                                           , slotDesc
-                                                           , "." ]
-                                in ioHelper smellDesc b logMsg
+                                    bs         = pure (T.concat [ serialize d
+                                                                , " smells "
+                                                                , aOrAn targetSing
+                                                                , " "
+                                                                , slotDesc
+                                                                , "." ], i `delete` desigIds d)
+                                    logMsg     = T.concat [ "smelled "
+                                                          , aOrAn targetSing
+                                                          , " "
+                                                          , slotDesc
+                                                          , "." ]
+                                in ioHelper smellDesc bs logMsg
             Right _          -> sorryExcess
     -----
-    smellRm ms _ invCoins target =
+    smellRm ms d invCoins target =
         let (eiss, ecs) = uncurry (resolveRmInvCoins i ms . pure $ target) invCoins
         in if
           | ()!# eiss && ()!# ecs -> sorryExcess
@@ -3033,17 +3033,26 @@ smell (OneArgLower i mq cols a) = getState >>= \ms ->
                                        else wrapSend mq cols . head $ can'tCoinMsgs
           | otherwise             -> case head eiss of
               Left  msg        -> wrapSend mq cols msg
-              Right [targetId] -> let targetSing = getSing targetId ms
+              Right [targetId] -> let targetSing  = getSing targetId ms
+                                      smellDesc   = getEntSmell targetId ms
+                                      targetDesig = serialize . mkStdDesig targetId ms $ Don'tCap
+                                      bs          = [ (T.concat [ serialize d
+                                                                , " smells "
+                                                                , targetDesig
+                                                                , "." ], desigIds d \\ [ i, targetId ])
+                                                    , (serialize d <> " smells you.", pure targetId) ]
+                                      logMsg      = parseDesig i ms $ "smelled " <> targetDesig <> "."
+                                      smellMob    = ioHelper smellDesc bs logMsg
                                   in case getType targetId ms of
-                                       NpcType -> wrapSend mq cols "smell NPC" -- TODO
-                                       PCType  -> wrapSend mq cols "smell PC"  -- TODO
+                                       NpcType -> smellMob
+                                       PCType  -> smellMob
                                        _       -> wrapSend mq cols $ "You must pick up the " <> targetSing <> " before \
                                                                      \you can smell it."
               Right _          -> sorryExcess
     -----
-    ioHelper x y z = do { wrapSend mq cols x
-                        ; bcastIfNotIncogNl i . pure $ y
-                        ; logPla "smell" i z }
+    ioHelper x ys z = do { wrapSend mq cols x
+                         ; bcastIfNotIncogNl i ys
+                         ; logPla "smell" i z }
     -----
     sorryExcess    = wrapSend mq cols sorrySmellExcessTargets
 smell p = advise p ["smell"] adviceSmellExcessArgs
