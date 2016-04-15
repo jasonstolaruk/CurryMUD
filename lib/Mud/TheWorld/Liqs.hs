@@ -46,9 +46,9 @@ waterDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Nothing
 potHealingLiq :: Liq
 potHealingLiq = Liq (DistinctLiqId iLiqPotHealing)
                     (DoArticle "milky, off-white liquid")
+                    ""
                     "" -- TODO
-                    ""
-                    ""
+                    "Owing to its distinctly acrid taste, the potion is somewhat difficult to ingest."
 
 
 potHealingDistinctLiq :: DistinctLiq
@@ -63,8 +63,9 @@ potHealingDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just el
 potInstantHealingLiq :: Liq
 potInstantHealingLiq = Liq (DistinctLiqId iLiqPotInstantHealing)
                            (DoArticle "murky, rust-colored liquid")
+                           "Almost immediately your nostrils burn and your eyes water in reaction to the potion's \
+                           \metallic bouquet."
                            "" -- TODO
-                           ""
                            ""
 
 
@@ -83,8 +84,8 @@ potInstantHealingDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Not
 potStLiq :: Liq
 potStLiq = Liq (DistinctLiqId iLiqPotSt)
                (DoArticle "thick, muddy liquid")
-               "" -- TODO
                ""
+               "" -- TODO
                ""
 
 
@@ -101,8 +102,8 @@ potStDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just el
 potInstantStLiq :: Liq
 potInstantStLiq = Liq (DistinctLiqId iLiqPotInstantSt)
                       (DoArticle "brown, frothy liquid")
-                      "" -- TODO
                       ""
+                      "" -- TODO
                       ""
 
 
@@ -123,8 +124,8 @@ potInstantStDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Nothing
 potTinnitusLiq :: Liq
 potTinnitusLiq = Liq (DistinctLiqId iLiqPotTinnitus)
                      (DoArticle "olive-green liquid")
-                     "" -- TODO
                      ""
+                     "" -- TODO
                      ""
 
 
@@ -140,9 +141,9 @@ potTinnitusDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just el
 potInstantTinnitusLiq :: Liq
 potInstantTinnitusLiq = Liq (DistinctLiqId iLiqPotInstantTinnitus)
                             (DoArticle "oily, puce liquid")
+                            ""
                             "" -- TODO
-                            ""
-                            ""
+                            "The potion coats your mouth and throat with a slippery residue."
 
 
 potInstantTinnitusDistinctLiq :: DistinctLiq

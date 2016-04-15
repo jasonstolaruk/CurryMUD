@@ -343,11 +343,11 @@ pick p@(LowerNub' i as) = genericActionWithHooks p helper "pick"
             h@Hook { .. }          = getFlowerHook
             inRms'                 = dropSynonyms triggers . dropPrefixesForHooks (pure h) $ inRms
             initAcc                = (inRms', (ms, [], [], []), [])
-            (_, (ms', toSelfs, bs, logMsgs), _) | any (`elem` triggers) inRms' = getHookFun hookName ms i h v initAcc
-                                                | otherwise                    = initAcc
+            (_, (ms', toSelfs, bs, logMsgs), fs) | any (`elem` triggers) inRms' = getHookFun hookName ms i h v initAcc
+                                                 | otherwise                    = initAcc
             mkMsgForArg arg | arg `elem` triggers = head toSelfs
                             | otherwise           = sorryPickNotFlower arg
-        in (ms', (sorrys ++ map mkMsgForArg inRms', bs, logMsgs, []))
+        in (ms', (sorrys ++ map mkMsgForArg inRms', bs, logMsgs, fs))
 pick p = patternMatchFail "pick" [ showText p ]
 
 
