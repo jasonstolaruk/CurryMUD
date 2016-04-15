@@ -3022,9 +3022,9 @@ smell (OneArgLower i mq cols a) = getState >>= \ms ->
         in if
           | ()!# eiss && ()!# ecs -> sorryExcess
           | ()!# ecs              -> wrapSend mq cols $ let (canCoins, can'tCoinMsgs) = distillEcs ecs
-                                     in if ()# can'tCoinMsgs
-                                       then sorrySmellRmCoins . mkCoinPieceTxt $ canCoins
-                                       else head can'tCoinMsgs
+                                                        in if ()# can'tCoinMsgs
+                                                          then sorrySmellRmCoins . mkCoinPieceTxt $ canCoins
+                                                          else head can'tCoinMsgs
           | otherwise             -> case ((()!#) *** (()!#)) (invCoins, maybeHooks) of
             (True,  False) -> smellRmHelper . head $ eiss
             (False, True ) ->
