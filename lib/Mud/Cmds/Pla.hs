@@ -3021,28 +3021,12 @@ smell (OneArgLower i mq cols a) = getState >>= \ms ->
         let (eiss, ecs) = uncurry (resolveRmInvCoins i ms . pure $ target) invCoins
         in if
           | ()!# eiss && ()!# ecs -> sorryExcess
-          | ()!# ecs              -> let (canCoins, can'tCoinMsgs) = distillEcs ecs
+          | ()!# ecs              -> wrapSend mq cols $ let (canCoins, can'tCoinMsgs) = distillEcs ecs
                                      in if ()# can'tCoinMsgs
-                                       then wrapSend mq cols . sorrySmellRmCoins . mkCoinPieceTxt $ canCoins
-                                       else wrapSend mq cols . head $ can'tCoinMsgs
+                                       then sorrySmellRmCoins . mkCoinPieceTxt $ canCoins
+                                       else head can'tCoinMsgs
           | otherwise             -> case ((()!#) *** (()!#)) (invCoins, maybeHooks) of
-            (True,  False) -> case head eiss of
-              Left  msg        -> wrapSend mq cols msg
-              Right [targetId] -> let targetSing  = getSing targetId ms
-                                      smellDesc   = getEntSmell targetId ms
-                                      targetDesig = serialize . mkStdDesig targetId ms $ Don'tCap
-                                      bs          = [ (T.concat [ serialize d
-                                                                , " smells "
-                                                                , targetDesig
-                                                                , "." ], desigIds d \\ [ i, targetId ])
-                                                    , (serialize d <> " smells you.", pure targetId) ]
-                                      logMsg      = parseDesig i ms $ "smelled " <> targetDesig <> "."
-                                      smellMob    = ioHelper smellDesc bs logMsg
-                                  in case getType targetId ms of
-                                       NpcType -> smellMob
-                                       PCType  -> smellMob
-                                       _       -> wrapSend mq cols . sorrySmellRmNoHooks $ targetSing
-              Right _          -> sorryExcess
+            (True,  False) -> smellRmHelper . head $ eiss
             (False, True ) ->
                 let helper v ms'
                       | (targets', (ms'', hooksToSelfs, hooksBs, hooksLogMsgs), fs) <- procHooks i ms' v "smell" . pure $ target
@@ -3053,8 +3037,34 @@ smell (OneArgLower i mq cols a) = getState >>= \ms ->
                                , sequence_ fs
                                , hooksLogMsgs |#| logPla "smell" i . (<> ".") . slashes ])
                 in mkRndmVector >>= \v -> helper v |&| modifyState >=> sequence_
-            (True,  True ) -> undefined -- TODO
+            (True,  True ) ->
+                let helper v ms'
+                      | (targets', (ms'', hooksToSelfs, hooksBs, hooksLogMsgs), fs) <- procHooks i ms' v "smell" . pure $ target
+                      = if ()# targets'
+                          then (ms'', [ hooksToSelfs |#| multiWrapSend mq cols
+                                      , bcastIfNotIncogNl i hooksBs
+                                      , sequence_ fs
+                                      , hooksLogMsgs |#| logPla "smell" i . (<> ".") . slashes ])
+                          else (ms', pure . smellRmHelper . head $ eiss)
+                in mkRndmVector >>= \v -> helper v |&| modifyState >=> sequence_
             x -> patternMatchFail "smell smellRm" [ showText x ]
+      where
+        smellRmHelper = \case
+          Left  msg        -> wrapSend mq cols msg
+          Right [targetId] -> let targetSing  = getSing targetId ms
+                                  smellDesc   = getEntSmell targetId ms
+                                  targetDesig = serialize . mkStdDesig targetId ms $ Don'tCap
+                                  bs          = [ (T.concat [ serialize d
+                                                            , " smells "
+                                                            , targetDesig
+                                                            , "." ], desigIds d \\ [ i, targetId ])
+                                                , (serialize d <> " smells you.", pure targetId) ]
+                                  logMsg      = parseDesig i ms $ "smelled " <> targetDesig <> "."
+                                  smellMob    = ioHelper smellDesc bs logMsg
+                              in case getType targetId ms of NpcType -> smellMob
+                                                             PCType  -> smellMob
+                                                             _       -> wrapSend mq cols . sorrySmellRmNoHooks $ targetSing
+          Right _          -> sorryExcess
     -----
     ioHelper x ys z = do { wrapSend mq cols x
                          ; bcastIfNotIncogNl i ys

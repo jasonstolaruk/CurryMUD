@@ -3,7 +3,9 @@
 module Mud.TheWorld.Zones.AdminZone ( adminZoneHooks
                                     , adminZoneRmActionFuns
                                     , adminZoneRmFuns
-                                    , createAdminZone ) where
+                                    , createAdminZone
+                                    , getFlowerHook
+                                    , lookFlowerbedHook ) where
 
 import Mud.Cmds.Msgs.Advice
 import Mud.Cmds.Msgs.Sorry
