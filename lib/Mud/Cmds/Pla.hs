@@ -2928,7 +2928,6 @@ mkSlotDesc i ms s = case s of
 -----
 
 
--- TODO: Syntax.
 smell :: ActionFun
 smell (NoArgs i mq cols) = getState >>= \ms -> do
     views rmSmell (wrapSend mq cols . fromMaybe noSmellMsg) . getMobRm i $ ms

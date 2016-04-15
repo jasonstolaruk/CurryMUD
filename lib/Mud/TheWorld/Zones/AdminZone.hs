@@ -135,8 +135,8 @@ mkFlower i v = getUnusedId <$> getState >>= \flowerId ->
     let e = Ent flowerId
                 (Just "flower")
                 "flower" ""
-                rndmDesc
-                Nothing -- TODO: Flower smell.
+                desc
+                (Just smell)
                 zeroBits
         o = Obj flowerWeight
                 flowerVol
@@ -145,11 +145,15 @@ mkFlower i v = getUnusedId <$> getState >>= \flowerId ->
                 Nothing
     in newObj e o i
   where
-    rndmDesc = rndmIntToElem (V.head v) descs
-    descs    = [ "It's a fragrant daffodil sporting a collar of white petals."
-               , "It's a hardy hibiscus with pink-tinged pedals surrounding a distinctly red center."
-               , "This eye-popping chrysanthemum has a fiery-orange bloom composed of many tiny petals."
-               , "This blue lily has six large, independent petals opening widely from its base." ]
+    (desc, smell) = rndmIntToElem (V.head v) descs
+    descs         = [ ( "It's a fragrant daffodil sporting a collar of white petals."
+                      , "The powerful fragrance of the daffodil is nearly intoxicating." )
+                    , ( "It's a hardy hibiscus with pink-tinged pedals surrounding a distinctly red center."
+                      , "The beautiful hibiscus gives off a mildly sweet fragrance." )
+                    , ( "This eye-popping chrysanthemum has a fiery-orange bloom composed of many tiny petals."
+                      , "Though striking in appearance, the chrysanthemum is not particularly fragrant." )
+                    , ( "This blue lily has six large, independent petals opening widely from its base."
+                      , "Sure to attract a variety of pollinators, the lily is markedly fragrant." ) ]
 
 
 -----
@@ -164,7 +168,7 @@ lookCeilingHookName = "AdminZone_iEmpty_lookCeiling"
 
 
 lookCeilingHookFun :: HookFun
-lookCeilingHookFun = mkLookReadHookFun ceilingDesc "looks up at the ceiling." "looked at ceiling"
+lookCeilingHookFun = mkGenericHookFun ceilingDesc "looks up at the ceiling." "looked at ceiling"
   where
     ceilingDesc = "The tall ceiling looks identical to the walls: plain and white. Even if there was a means of exit \
                   \up there, you can't imagine how you'd reach it..."
@@ -182,7 +186,7 @@ lookFlowerbedHookName = "AdminZone_iAtrium_lookFlowerbed"
 
 
 lookFlowerbedHookFun :: HookFun
-lookFlowerbedHookFun = mkLookReadHookFun flowerbedDesc "looks at the flowerbed." "looked at flowerbed"
+lookFlowerbedHookFun = mkGenericHookFun flowerbedDesc "looks at the flowerbed." "looked at flowerbed"
   where
     flowerbedDesc = "The tasteful flowerbed prominently features daffodils, hibiscuses, chrysanthemums, and lilies, \
                     \all in a pleasing array of colors."
@@ -200,7 +204,7 @@ lookWallsHookName = "AdminZone_iEmpty_lookWalls"
 
 
 lookWallsHookFun :: HookFun
-lookWallsHookFun = mkLookReadHookFun wallsDesc "looks at the walls." "looked at walls"
+lookWallsHookFun = mkGenericHookFun wallsDesc "looks at the walls." "looked at walls"
   where
     wallsDesc = "You are enclosed by four smooth, dense walls, with no means of exit in sight."
 
@@ -241,7 +245,7 @@ readLookPosterHookName = "AdminZone_iCentral_readLookPoster"
 
 
 readLookPosterHookFun :: HookFun
-readLookPosterHookFun = mkLookReadHookFun posterDesc "reads the poster on the wall." "read poster"
+readLookPosterHookFun = mkGenericHookFun posterDesc "reads the poster on the wall." "read poster"
   where
     posterDesc =
         "The poster reads:\n\
@@ -267,7 +271,7 @@ readLookSign_iEmptyHookName = "AdminZone_iEmpty_readLookSign"
 
 
 readLookSign_iEmptyHookFun :: HookFun
-readLookSign_iEmptyHookFun = mkLookReadHookFun signDesc "reads the sign on the wall." "read sign"
+readLookSign_iEmptyHookFun = mkGenericHookFun signDesc "reads the sign on the wall." "read sign"
   where
     signDesc = "The following message has been painted on the sign in a tight, flowing script:\n\
                \\"Welcome to the empty room. You have been summoned here by a CurryMUD administrator. As there are no \
@@ -286,7 +290,7 @@ readLookSign_iTutEntranceHookName = "AdminZone_iTutEntrance_readLookSign"
 
 
 readLookSign_iTutEntranceHookFun :: HookFun
-readLookSign_iTutEntranceHookFun = mkLookReadHookFun signDesc "reads the sign floating above the portal." "read sign"
+readLookSign_iTutEntranceHookFun = mkGenericHookFun signDesc "reads the sign floating above the portal." "read sign"
   where
     signDesc = "The sign reads, \"Tutorial this way. No re-entry!\"\n\
                \A small, square piece of paper has been nailed to the bottom-right corner of the sign."
@@ -305,9 +309,9 @@ smellFlowerbedHookName = "AdminZone_iAtrium_smellFlowerbed"
 
 
 smellFlowerbedHookFun :: HookFun
-smellFlowerbedHookFun = mkLookReadHookFun smellDesc "smells the flowerbed." "smelled flowerbed" -- TODO: Rename "mkLookReadHookFun" to something more generic.
+smellFlowerbedHookFun = mkGenericHookFun smellDesc "smells the flowerbed." "smelled flowerbed"
   where
-    smellDesc = "The flowerbed smells lovely." -- TODO
+    smellDesc = "You are greeted by the gentle, organic scents of florets and soil."
 
 
 -- ==================================================

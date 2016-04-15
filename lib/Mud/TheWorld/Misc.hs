@@ -4,7 +4,7 @@
 module Mud.TheWorld.Misc ( commonHooks
                          , commonRmActionFuns
                          , lookTrashHook
-                         , mkLookReadHookFun
+                         , mkGenericHookFun
                          , mkRndmBcastRmFun
                          , putTrashHook
                          , trashRmAction ) where
@@ -80,7 +80,7 @@ lookTrashHookName = "(common)_lookTrash"
 
 
 lookTrashHookFun :: HookFun
-lookTrashHookFun = mkLookReadHookFun trashDesc "looks at the trash bin." "looked at trash bin"
+lookTrashHookFun = mkGenericHookFun trashDesc "looks at the trash bin." "looked at trash bin"
   where
     -- TODO: "Thank you for keeping xxx clean."
     trashDesc = "The trash bin is an oblong metal container, about 3 feet tall, with a lid connected to the body by \
@@ -91,8 +91,8 @@ lookTrashHookFun = mkLookReadHookFun trashDesc "looks at the trash bin." "looked
                 \bottom of the bin is visible."
 
 
-mkLookReadHookFun :: Text -> Text -> Text -> HookFun
-mkLookReadHookFun toSelf bcastTxt logMsgTxt = f
+mkGenericHookFun :: Text -> Text -> Text -> HookFun
+mkGenericHookFun toSelf bcastTxt logMsgTxt = f
   where
     f i Hook { .. } _ a@(_, (ms, _, _, _), _) =
         let selfDesig = mkStdDesig i ms DoCap

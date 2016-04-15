@@ -40,7 +40,7 @@ NO ARGUMENTS
 Many commands do not accept arguments, and will simply ignore them when provided.
 Examples include "bars", "color", "exits", "motd", "stats", "uptime", and "whoami".
 
-ONE ORE MORE
+ONE OR MORE
 
 The majority of CurryMUD commands allow you to specify one or more things. While \qgive apple taro\d is perfectly fine, \qgive apple orange pear taro\d is also legal.
 
