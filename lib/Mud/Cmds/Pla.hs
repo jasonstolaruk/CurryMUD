@@ -2489,7 +2489,7 @@ say p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
       (" ", _ )            -> Left  adviceBlankAdverb
       (_,   x ) | x == acl -> Left  adviceSayAdverbNoUtterance
       (adverb, right)      -> Right (adverb, T.drop 2 right)
-    sayTo maybeAdverb (T.words -> (target:rest@(r:_))) ms =
+    sayTo maybeAdverb (T.words -> (target:rest@(r:_))) ms = -- TODO: Extra line break w/ say to mob and no hint.
         let d              = mkStdDesig i ms DoCap
             invCoins       = first (i `delete`) . getMobRmNonIncogInvCoins i $ ms
         in if ()!# invCoins
@@ -2928,7 +2928,7 @@ mkSlotDesc i ms s = case s of
 -----
 
 
--- TODO: Help. Syntax.
+-- TODO: Syntax.
 smell :: ActionFun
 smell (NoArgs i mq cols) = getState >>= \ms -> do
     views rmSmell (wrapSend mq cols . fromMaybe noSmellMsg) . getMobRm i $ ms
