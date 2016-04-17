@@ -8,7 +8,6 @@ module Mud.Threads.Act ( drinkAct
                        , stopNpcActs ) where
 
 import Mud.Cmds.Util.Misc
-import Mud.Cmds.Util.Pla
 import Mud.Data.Misc
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Calc
@@ -123,33 +122,30 @@ drinkAct DrinkBundle { .. } =
                                               ms'         = ms & vesselTbl.ind i.vesselCont .~ newCont
                                           in (ms', (ms', Right newCont))
           Nothing -> (, Left ()) <$> getState
-        let (stomAvail, stomSize) = calcStomachAvailSize drinkerId ms
-            d                     = mkStdDesig drinkerId ms DoCap
-            bcastHelper b         = bcastIfNotIncogNl drinkerId . pure $ ( T.concat [ serialize d
-                                                                                    , " finishes drinking from "
-                                                                                    , renderVesselSing
-                                                                                    , b |?| " after draining it dry"
-                                                                                    , "." ]
-                                                                         , drinkerId `delete` desigIds d )
-        if | newCont == Right Nothing -> (>> bcastHelper True) . ioHelper x' $
-               [ T.concat [ "You drain the "
-                          , drinkVesselSing
-                          , " dry after "
-                          , showText x'
-                          , " mouthful"
-                          , theLetterS $ x /= 0
-                          , "." ]
-               , mkFullDesc stomAvail stomSize ]
-           | stomAvail == 0 -> (>> bcastHelper False) . ioHelper x' . pure . T.concat $
-               [ "You are so full after "
-               , showText x'
-               , " mouthful"
-               , theLetterS $ x /= 0
-               , " that you have to stop drinking. You don't feel so good..." ]
-           | x' == drinkAmt -> (>> bcastHelper False) . ioHelper x' $ [ "You finish drinking."
-                                                                      , mkFullDesc stomAvail stomSize ]
+        let (stomAvail, _) = calcStomachAvailSize drinkerId ms
+            d              = mkStdDesig drinkerId ms DoCap
+            bcastHelper b  = bcastIfNotIncogNl drinkerId . pure $ ( T.concat [ serialize d
+                                                                             , " finishes drinking from "
+                                                                             , renderVesselSing
+                                                                             , b |?| " after draining it dry"
+                                                                             , "." ]
+                                                                  , drinkerId `delete` desigIds d )
+        if | newCont == Right Nothing -> (>> bcastHelper True) . ioHelper x' $ T.concat [ "You drain the "
+                                                                                        , drinkVesselSing
+                                                                                        , " dry after "
+                                                                                        , showText x'
+                                                                                        , " mouthful"
+                                                                                        , theLetterS $ x /= 0
+                                                                                        , "." ]
+           | stomAvail == 0 -> (>> bcastHelper False) . ioHelper x' . T.concat $ [ "You are so full after "
+                                                                                 , showText x'
+                                                                                 , " mouthful"
+                                                                                 , theLetterS $ x /= 0
+                                                                                 , " that you have to stop drinking. \
+                                                                                   \You don't feel so good..." ]
+           | x' == drinkAmt -> (>> bcastHelper False) . ioHelper x' $ "You finish drinking."
            | otherwise      -> loop x'
-    ioHelper m ts = multiWrapSend drinkerMq drinkerCols (dropEmpties ts) >> promptHelper >> logHelper
+    ioHelper m t = wrapSend drinkerMq drinkerCols t >> promptHelper >> logHelper
       where
         promptHelper = sendDfltPrompt drinkerMq drinkerId
         logHelper    =
