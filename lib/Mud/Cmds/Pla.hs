@@ -157,6 +157,7 @@ regularCmds :: [Cmd]
 regularCmds = map (uncurry4 mkRegularCmd) regularCmdTuples
 
 
+-- TODO: Consider making a "feeling" command.
 regularCmdTuples :: [(CmdFullName, ActionFun, Bool, CmdDesc)]
 regularCmdTuples =
     [ ("?",          plaDispCmdList,  True,  cmdDescDispCmdList)
@@ -2489,7 +2490,7 @@ say p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
       (" ", _ )            -> Left  adviceBlankAdverb
       (_,   x ) | x == acl -> Left  adviceSayAdverbNoUtterance
       (adverb, right)      -> Right (adverb, T.drop 2 right)
-    sayTo maybeAdverb (T.words -> (target:rest@(r:_))) ms = -- TODO: Extra line break w/ say to mob and no hint.
+    sayTo maybeAdverb (T.words -> (target:rest@(r:_))) ms =
         let d              = mkStdDesig i ms DoCap
             invCoins       = first (i `delete`) . getMobRmNonIncogInvCoins i $ ms
         in if ()!# invCoins
@@ -2547,7 +2548,7 @@ say p = patternMatchFail "say" [ showText p ]
 
 
 firstMobSay :: Id -> PlaTbl -> (PlaTbl, [Text])
-firstMobSay i pt | pt^.ind i.to isNotFirstMobSay = (pt, pure "")
+firstMobSay i pt | pt^.ind i.to isNotFirstMobSay = (pt, [])
                  | otherwise = (pt & ind i %~ setPlaFlag IsNotFirstMobSay True, [ "", hintSay ])
 
 
