@@ -84,7 +84,7 @@ potInstantHealingDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Not
 potStLiq :: Liq
 potStLiq = Liq (DistinctLiqId iLiqPotSt)
                (DoArticle "thick, muddy liquid")
-               "You detect earthy scents of nuts and grasses in the draft's highly nuanced odor."
+               "You detect earthy scents of nuts and grasses in the highly nuanced odors."
                "" -- TODO
                "The lumpy, viscous liquid is difficult to quaff."
 
@@ -126,7 +126,7 @@ potTinnitusLiq = Liq (DistinctLiqId iLiqPotTinnitus)
                      (DoArticle "olive-green liquid")
                      "The tonic smells pleasingly sweet."
                      "" -- TODO
-                     "The thirst-quenching liquid leaves you feeling refreshed."
+                     "The thirst-quenching draft leaves you feeling refreshed."
 
 
 potTinnitusDistinctLiq :: DistinctLiq

@@ -86,7 +86,7 @@ calcConPerFull i ms = let total           = foldr helper 0 . getInv i $ ms
 calcDigesterDelay :: Race -> Seconds
 calcDigesterDelay = let f = (calcDigesterDelay Human |&|) in \case
   Elf       -> f minusFifth
-  Halfling  -> f minusFifth
+  Hobbit    -> f minusFifth
   Human     -> 30 -- A full human stomach (34 mouthfuls) will digest completely in 17 mins.
   Nymph     -> f minusQuarter
   Vulpenoid -> f plusFifth
@@ -248,7 +248,7 @@ calcStomachSize = let f = (calcStomachSize Human |&|) in \case
   Dwarf     -> f minusQuarter
   Elf       -> f minusFifth
   Felinoid  -> f plusFifth
-  Halfling  -> f minusThird
+  Hobbit    -> f minusThird
   Human     -> round $ 60 * 100 `divide` mouthfulVol -- 34 mouthfuls.
   Lagomorph -> f id
   Nymph     -> f minusFifth

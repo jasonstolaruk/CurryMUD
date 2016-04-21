@@ -521,7 +521,7 @@ data Lang = CommonLang
           | DwarfLang
           | ElfLang
           | FelinoidLang
-          | HalflingLang
+          | HobbitLang
           | HumanLang
           | LagomorphLang
           | NymphLang
@@ -677,7 +677,7 @@ data PC = PC { _race       :: Race
 data Race = Dwarf
           | Elf
           | Felinoid
-          | Halfling
+          | Hobbit
           | Human
           | Lagomorph
           | Nymph

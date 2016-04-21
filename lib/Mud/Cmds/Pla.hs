@@ -157,7 +157,8 @@ regularCmds :: [Cmd]
 regularCmds = map (uncurry4 mkRegularCmd) regularCmdTuples
 
 
--- TODO: Consider making a "feeling" command.
+-- TODO: Make a "feeling" command?
+-- TODO: Make a "whisper" command.
 regularCmdTuples :: [(CmdFullName, ActionFun, Bool, CmdDesc)]
 regularCmdTuples =
     [ ("?",          plaDispCmdList,  True,  cmdDescDispCmdList)
@@ -3084,7 +3085,7 @@ stats (NoArgs i mq cols) = getState >>= \ms ->
                                 , "level " <> showText l
                                 , (commaEvery3 . showText $ x  ) <> " experience points"
                                 , (commaEvery3 . showText $ nxt) <> " experience points to next level"
-                                , mkFullDesc avail size ]
+                                , mkFullDesc avail size ] -- TODO: Move to "feeling" command?
         top           = onTrue (isPC i ms) (<> sexRace) . getSing i $ ms
         sexRace       = T.concat [ ", the ", sexy, " ", r ]
         (sexy, r)     = (uncapitalize . showText *** uncapitalize . showText) . getSexRace i $ ms

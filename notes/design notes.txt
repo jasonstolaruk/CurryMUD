@@ -131,8 +131,6 @@ Create a history and backstory for the virtual world.
 
 When a player creates a new character, ask them to describe how they discovered CurryMUD (if it's their first time).
 
-Consider giving players the functionality to create their own ad-hoc channels.
-
 Make ASCII art maps available in game. New players should start with a map, along with a short welcome letter (obtainable in the tutorial). Other maps may be available for purchase.
 
 Give players badges for achievements.
@@ -307,13 +305,6 @@ Charge for PC advancement.
 
 ==========
 
-MOBILES:
-
-Every mobile has a speed, which indicates how fast they can move from room to room. Groups travel at the speed of the slowest member.
-Naturally, encumbrance affects speed.
-
-==========
-
 PCs:
 
 For players who want to try out the game and start playing quickly, offer "character kits."
@@ -386,5 +377,3 @@ Boats?
 Tour duty?
 
 In what cases do PCs remain active after the player's connection drops?
-
-Doors? (When a door is opened, players on the other side would need to be informed.)

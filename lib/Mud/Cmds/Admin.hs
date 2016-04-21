@@ -481,7 +481,7 @@ mkCountTxt = map (uncurry mappend . second (commaEvery3 . showText)) <$> helper
                , ("Dwarves: ",         countRace Dwarf       )
                , ("Elves: ",           countRace Elf         )
                , ("Felinoids: ",       countRace Felinoid    )
-               , ("Halflings: ",       countRace Halfling    )
+               , ("Hobbits: ",         countRace Hobbit      )
                , ("Humans: ",          countRace Human       )
                , ("Lagomorphs: ",      countRace Lagomorph   )
                , ("Nymphs: ",          countRace Nymph       )

@@ -1827,7 +1827,7 @@ createAdminZone = do
          (Ent iPidge
               (Just "pidge")
               "Pidge" ""
-              "Pidge is a female halfling with walnut-colored skin and large, brown eyes. She wears her silver-white \
+              "Pidge is a female hobbit with walnut-colored skin and large, brown eyes. She wears her silver-white \
               \hair in shoulder-length pigtails. Her small, round face is positively adorable."
               Nothing
               zeroBits)
@@ -1846,7 +1846,7 @@ createAdminZone = do
               [] Nothing
               0
               RHand
-              [ HalflingLang ]
+              [ HobbitLang ]
               iMobCloset
               M.empty Nothing Nothing Nothing Nothing)
   putCloth iPeasant'sShirt

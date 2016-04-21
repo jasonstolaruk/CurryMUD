@@ -496,7 +496,7 @@ raceToLang :: Race -> Lang
 raceToLang Dwarf     = DwarfLang
 raceToLang Elf       = ElfLang
 raceToLang Felinoid  = FelinoidLang
-raceToLang Halfling  = HalflingLang
+raceToLang Hobbit    = HobbitLang
 raceToLang Human     = HumanLang
 raceToLang Lagomorph = LagomorphLang
 raceToLang Nymph     = NymphLang
