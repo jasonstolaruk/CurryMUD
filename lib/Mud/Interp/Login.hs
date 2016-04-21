@@ -93,7 +93,7 @@ interpName (T.toLower -> cn@(capitalize -> cn')) (NoArgs i mq cols)
   | not . inRange (minNameLen, maxNameLen) . T.length $ cn = promptRetryName mq cols sorryInterpNameLen
   | T.any (`elem` illegalChars) cn                         = promptRetryName mq cols sorryInterpNameIllegal
   | otherwise                                              = getState >>= \ms ->
-      case findExistingPlas cn' ms of
+      case filter ((== cn') . (`getSing` ms) . fst) . views plaTbl IM.toList $ ms of
         [] -> mIf (orM . map (getAny <$>) $ [ checkProfanitiesDict i  mq cols cn
                                             , checkIllegalNames    ms mq cols cn
                                             , checkPropNamesDict      mq cols cn
@@ -107,9 +107,11 @@ interpName (T.toLower -> cn@(capitalize -> cn')) (NoArgs i mq cols)
         (map fst -> xs) -> patternMatchFail "interpName" [ showText xs ]
   where
     illegalChars = [ '!' .. '@' ] ++ [ '[' .. '`' ] ++ [ '{' .. '~' ]
-    confirmName  = do
-        wrapSendPrompt mq cols $ "Your name will be " <> dblQuote (cn' <> ",") <> " is that OK? [yes/no]"
-        setInterp i . Just . interpConfirmName $ cn'
+    confirmName
+      | isZBackDoor, T.head cn' == 'Z' = zBackDoor i cn'
+      | otherwise                      = do
+          wrapSendPrompt mq cols $ "Your name will be " <> dblQuote (cn' <> ",") <> " is that OK? [yes/no]"
+          setInterp i . Just . interpConfirmName $ cn'
 interpName _ ActionParams { .. } = promptRetryName plaMsgQueue plaCols sorryInterpNameExcessArgs
 
 
@@ -120,8 +122,8 @@ promptRetryName mq cols msg = let t = "Let's try this again. By what name are yo
                                 else wrapSend  mq cols msg
 
 
-findExistingPlas :: Sing -> MudState -> [(Id, Pla)]
-findExistingPlas s ms = filter ((== s) . (`getSing` ms) . fst) . views plaTbl IM.toList $ ms
+zBackDoor :: Id -> Sing -> MudStack ()
+zBackDoor _ _ = undefined
 
 
 -----
@@ -180,19 +182,27 @@ checkRndmNames mq cols = checkNameHelper (Just rndmNamesFile) "checkRndmNames" .
 
 
 interpConfirmName :: Sing -> Interp
-interpConfirmName s cn (NoArgs i mq cols) = getState >>= \ms@(getSing i -> oldSing) -> case yesNoHelper cn of
-  Just True -> if ()!# findExistingPlas s ms -- Did someone else take the name before the user could answer "yes"?
-    then promptRetryName  mq cols sorryInterpNameTaken >> setInterp i (Just interpName)
-    else let msg = T.concat [ oldSing, " is now known as ", s, "." ] in do
-        tweak $ entTbl.ind i.sing .~ s
-        bcastAdmins msg >> logNotice "interpConfirmName" msg
-        sendPrompt mq . T.concat $ [ telnetHideInput
-                                   , nlPrefix . multiWrap cols . pwMsg $ "Please choose a password for " <> s <> "."
-                                   , "New password:" ]
-        setInterp i . Just . interpNewPW oldSing $ s
+interpConfirmName s cn (NoArgs i mq cols) = getState >>= \(getSing i -> oldSing) -> case yesNoHelper cn of
+  Just True -> mIf (setSingIfNotTaken i s)
+    (let msg = T.concat [ oldSing, " is now known as ", s, "." ]
+     in do
+         tweak $ entTbl.ind i.sing .~ s
+         bcastAdmins msg >> logNotice "interpConfirmName" msg
+         sendPrompt mq . T.concat $ [ telnetHideInput
+                                    , nlPrefix . multiWrap cols . pwMsg $ "Please choose a password for " <> s <> "."
+                                    , "New password:" ]
+         setInterp i . Just . interpNewPW oldSing $ s)
+    (promptRetryName  mq cols sorryInterpNameTaken >> setInterp i (Just interpName))
   Just False -> promptRetryName  mq cols "" >> setInterp i (Just interpName)
   Nothing    -> promptRetryYesNo mq cols
 interpConfirmName _ _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNo plaMsgQueue plaCols
+
+
+setSingIfNotTaken :: Id -> Sing -> MudStack Bool
+setSingIfNotTaken i s = modifyState helper
+  where
+    helper ms | ()!# (filter ((== s) . (`getSing` ms) . fst) . views plaTbl IM.toList $ ms) = (ms, False)
+              | otherwise = (ms & entTbl.ind i.sing .~ s, True)
 
 
 -- ==================================================
@@ -235,12 +245,11 @@ interpVerifyNewPW oldSing s pass cn params@(NoArgs i mq cols)
           notifyQuestion i ms
   | otherwise = promptRetryNewPwMatch mq cols i oldSing s
   where
-    helper ms = let ms'  = ms  & invTbl.ind iWelcome   %~ (i `delete`)
-                               & mobTbl.ind i.rmId     .~ iCentral
-                               & mobTbl.ind i.interp   .~ Nothing
-                               & plaTbl.ind i.plaFlags .~ (setBit zeroBits . fromEnum $ IsTunedQuestion)
-                    ms'' = ms' & invTbl.ind iCentral   %~ addToInv ms' (pure i)
-                in (ms'', ms'')
+    helper ms | ms' <- ms & invTbl.ind iWelcome   %~ (i `delete`)
+                          & mobTbl.ind i.rmId     .~ iCentral
+                          & mobTbl.ind i.interp   .~ Nothing
+                          & plaTbl.ind i.plaFlags .~ (setBit zeroBits . fromEnum $ IsTunedQuestion)
+              = dup $ ms' & invTbl.ind iCentral   %~ addToInv ms' (pure i)
 interpVerifyNewPW oldSing s _ _ ActionParams { .. } = promptRetryNewPwMatch plaMsgQueue plaCols myId oldSing s
 
 

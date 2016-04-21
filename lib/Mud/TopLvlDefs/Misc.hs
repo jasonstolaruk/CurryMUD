@@ -71,6 +71,10 @@ isEKGing :: Bool
 isEKGing = False
 
 
+isZBackDoor :: Bool
+isZBackDoor = True
+
+
 likewise :: Bool
 likewise = not otherwise
 
