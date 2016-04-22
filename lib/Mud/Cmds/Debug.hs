@@ -810,7 +810,8 @@ debugToken (NoArgs i mq cols) = do
                 , "dfltBootMsg: "     <> (miscTokenDelimiter `T.cons` "b")
                 , "isDebug: "         <> (miscTokenDelimiter `T.cons` "d")
                 , "pwWarningMsg: "    <> (miscTokenDelimiter `T.cons` "p")
-                , "dfltShutdownMsg: " <> (miscTokenDelimiter `T.cons` "s") ]
+                , "dfltShutdownMsg: " <> (miscTokenDelimiter `T.cons` "s")
+                , "isZBackDoor: "     <> (miscTokenDelimiter `T.cons` "z") ]
     dfltColorStyleToken   = styleTokenDelimiter `T.cons` "d"
     noUnderlineStyleToken = styleTokenDelimiter `T.cons` "n"
 debugToken p = withoutArgs debugToken p

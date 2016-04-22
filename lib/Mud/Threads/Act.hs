@@ -62,7 +62,7 @@ startAct i actType f = do
 
 
 stopAct :: Id -> ActType -> MudStack ()
-stopAct i actType = views (at actType) (maybe unit throwDeath) . getActMap i =<< getState
+stopAct i actType = views (at actType) (maybeVoid throwDeath) . getActMap i =<< getState
 
 
 stopActs :: Id -> MudStack ()

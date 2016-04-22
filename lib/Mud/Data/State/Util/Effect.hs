@@ -37,7 +37,7 @@ procEffectList i (EffectList xs) = let (ies, es) = partitionEithers xs
 procInstaEffect :: Id -> InstaEffect -> MudStack ()
 procInstaEffect i ie@(InstaEffect sub val) = getState >>= \ms -> logHelper ms >> case sub of
   EntInstaEffectFlags         -> undefined -- TODO
-  (MobInstaEffectPts ptsType) -> maybe unit (effectPts ptsType) val
+  (MobInstaEffectPts ptsType) -> maybeVoid (effectPts ptsType) val
   RmInstaEffectFlags          -> undefined -- TODO
   (InstaEffectOther fn)       -> getInstaEffectFun fn ms i
   where
