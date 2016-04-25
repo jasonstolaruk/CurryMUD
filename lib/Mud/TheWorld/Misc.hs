@@ -106,7 +106,7 @@ mkGenericHookFun toSelf bcastTxt logMsgTxt = f
 
 
 putTrashHook :: Hook
-putTrashHook = Hook putTrashHookName  [ "trash", "bin" ]
+putTrashHook = Hook putTrashHookName [ "trash", "bin" ]
 
 
 putTrashHookName :: HookName

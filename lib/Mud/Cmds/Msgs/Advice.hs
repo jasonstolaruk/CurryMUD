@@ -75,6 +75,8 @@ module Mud.Cmds.Msgs.Advice ( adviceAAnnounceNoArgs
                             , adviceEtcHead
                             , adviceEtcInTwoWay
                             , adviceExpCmdExcessArgs
+                            , adviceFillNoArgs
+                            , adviceFillNoSource
                             , adviceGetNoArgs
                             , adviceGiveNoArgs
                             , adviceGiveNoName
@@ -583,6 +585,23 @@ adviceEtcInTwoWay cn cn' = T.concat [ "Sorry, but you can't use "
 
 adviceExpCmdExcessArgs :: Text
 adviceExpCmdExcessArgs = "Sorry, but you can only target one person at a time with expressive commands."
+
+
+adviceFillNoArgs :: Text
+adviceFillNoArgs = adviceFillHelper "Please specify one or more vessels to fill followed by"
+
+
+adviceFillHelper :: Text -> Text
+adviceFillHelper t = T.concat [ t
+                              , " the name of a) another vessel, or b) a source of liquid in your current room, as in "
+                              , colorWith quoteColor "fill waterskin jug"
+                              , " "
+                              , parensQuote "to fill your waterskin with the contents of your jug"
+                              , "." ]
+
+
+adviceFillNoSource :: Text
+adviceFillNoSource = adviceFillHelper "Please also provide"
 
 
 adviceGetNoArgs :: Text

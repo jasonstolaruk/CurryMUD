@@ -1,11 +1,11 @@
 \h Z BACK DOOR \d
 
-The "Z back door" allows you to quickly enter the virtual world as a new "ad hoc" character, entirely bypassing the character creation process, when you log in with a new name beginning with the letter "Z". The character's sex and race will be chosen at random.
+The "Z back door" allows you to quickly enter the virtual world as a new character, entirely bypassing the character creation process. When the back door is enabled and you log in with a new name whose first letter is "Z," you will be assigned an "ad-hoc" character and will arrive in the virtual world immediately. Your character's sex and race will be chosen at random, and your password will be set to "Aoeu1".
 
 This feature can be quite useful when you are testing new functionality, debugging, etc. In such a case, one often wants to enter the virtual world with a new character but doesn't want or need to spend time in character creation.
 
-The back door is available if 1) debug commands are turned on, and 2) the "isZBackDoor" binding (set in Haskell code prior to compilation) is set to "True".
+The back door is enabled if 1) debug commands are turned on, and 2) the "isZBackDoor" binding (set in Haskell code prior to compilation) is set to "True".
 
-Is the Z back door available? \e@z\d
+Is the Z back door enabled? \e@z\d
 
 \uSEE ALSO\n

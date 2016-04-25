@@ -749,8 +749,8 @@ examineVessel i ms = let v = getVessel i ms in
     descCont (Just (l, m)) = showText m <> " mouthfuls of " <> renderLiqNoun l aOrAn
     descLiq l = let dl = getDistinctLiqForLiq l ms
                 in [ "Distinct liquid ID: " <> l^.liqId.to showText
-                   , "Liquid smell: "       <> l^.liqSmellDesc
-                   , "Liquid taste: "       <> l^.liqTasteDesc
+                   , "Liquid smell: "       <> l^.liqSmellDesc.to noneOnNull
+                   , "Liquid taste: "       <> l^.liqTasteDesc.to noneOnNull
                    , "Drink description: "  <> l^.drinkDesc ] ++ dl^.liqEdibleEffects.to descEdibleEffects
 
 

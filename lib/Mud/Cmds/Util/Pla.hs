@@ -61,8 +61,7 @@ module Mud.Cmds.Util.Pla ( armSubToSlot
                          , putOnMsgs
                          , resolveMobInvCoins
                          , resolveRmInvCoins
-                         , sorryConHelper
-                         , withEmptyInvChecks ) where
+                         , sorryConHelper ) where
 
 import Mud.Cmds.Msgs.Dude
 import Mud.Cmds.Msgs.Misc
@@ -101,7 +100,7 @@ import qualified Mud.Util.Misc as U (patternMatchFail)
 import Control.Arrow ((***), first, second)
 import Control.Lens (Getter, _1, _2, _3, _4, _5, at, both, each, to, view, views)
 import Control.Lens.Operators ((%~), (&), (.~), (<>~), (?~), (^.))
-import Control.Monad ((>=>), guard, mplus)
+import Control.Monad ((>=>), guard)
 import Control.Monad.IO.Class (liftIO)
 import Data.Char (isLower)
 import Data.Function (on)
@@ -1076,9 +1075,6 @@ mkLastArgIsTargetBindings i ms as | (lastArg, others) <- mkLastArgWithNubbedOthe
                             , otherArgs   = others }
 
 
------
-
-
 mkLastArgWithNubbedOthers :: Args -> (Text, Args)
 mkLastArgWithNubbedOthers as = let lastArg = last as
                                    otherArgs = init $ case as of
@@ -1173,17 +1169,3 @@ sorryConHelper :: Id -> MudState -> Id -> Sing -> Text
 sorryConHelper i ms conId conSing
   | isNpcPC conId ms = sorryCon . parseDesig i ms . serialize . mkStdDesig conId ms $ Don'tCap
   | otherwise        = sorryCon conSing
-
-
------
-
-
-withEmptyInvChecks :: MudState
-                   -> LastArgIsTargetBindings
-                   -> Text
-                   -> GenericRes
-                   -> GenericRes
-withEmptyInvChecks ms LastArgIsTargetBindings { srcInvCoins, rmInvCoins } sorry f = maybe f (genericSorry ms) res
-  where
-    res = ( ()# srcInvCoins |?| Just dudeYourHandsAreEmpty
-          , ()# rmInvCoins  |?| Just sorry) |&| uncurry mplus

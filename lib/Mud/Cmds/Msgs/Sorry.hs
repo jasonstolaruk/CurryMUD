@@ -61,6 +61,18 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryExpCmdName
                            , sorryExpCmdRequiresTarget
                            , sorryExpCmdTargetType
+                           , sorryFillAlreadyFull
+                           , sorryFillCoins
+                           , sorryFillEmptyRmNoHooks
+                           , sorryFillEmptySource
+                           , sorryFillExcessSources
+                           , sorryFillInEq
+                           , sorryFillInRm
+                           , sorryFillLiqTypes
+                           , sorryFillSourceCoins
+                           , sorryFillSourceEq
+                           , sorryFillSourceType
+                           , sorryFillType
                            , sorryFull
                            , sorryGetEmptyRmNoHooks
                            , sorryGetEmptyRmWithHooks
@@ -647,6 +659,60 @@ sorryExpCmdRequiresTarget cn = "The " <> dblQuote cn <> " expressive command req
 
 sorryExpCmdTargetType :: Text
 sorryExpCmdTargetType = but "expressive commands can only target people."
+
+
+-----
+
+
+sorryFillAlreadyFull :: Sing -> Text
+sorryFillAlreadyFull s = "The " <> s <> " is already full."
+
+
+sorryFillCoins :: Text
+sorryFillCoins = can't "fill a coin."
+
+
+sorryFillEmptyRmNoHooks :: Text
+sorryFillEmptyRmNoHooks = "You don't see a source of liquid here."
+
+
+sorryFillEmptySource :: Sing -> Text
+sorryFillEmptySource s = "The " <> s <> " is empty."
+
+
+sorryFillExcessSources :: Text
+sorryFillExcessSources = but "you can only specify a single liquid source at a time."
+
+
+sorryFillInEq :: Text
+sorryFillInEq = can't "fill an item in your readied equipment."
+
+
+sorryFillInRm :: Text
+sorryFillInRm = butCan't "fill a vessel in your current room. Please pick up the vessel(s) first."
+
+
+sorryFillLiqTypes :: (Sing, Liq) -> (Sing, Liq) -> Text
+sorryFillLiqTypes (as, flip renderLiqNoun aOrAn -> an) (bs, flip renderLiqNoun aOrAn -> bn) =
+    T.concat [ "The ", as, " and the ", bs, " do not contain the same kind of liquid "
+             , parensQuote . T.concat $ [ "the ", as, " contains ", an, " while the ", bs, " contains ", bn ]
+             , "." ]
+
+
+sorryFillSourceCoins :: Text
+sorryFillSourceCoins = butCan't "fill a vessel with coins."
+
+
+sorryFillSourceEq :: Text
+sorryFillSourceEq = can't "fill a vessel with the contents of another vessel in your readied equipment."
+
+
+sorryFillSourceType :: Sing -> Text
+sorryFillSourceType s = "The " <> s <> " is not a vessel or a source of liquid."
+
+
+sorryFillType :: Sing -> Text
+sorryFillType s = "The " <> s <> " is not a vessel that can be filled with liquid."
 
 
 -----

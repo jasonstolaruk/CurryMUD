@@ -81,7 +81,7 @@ import Data.IntMap.Lazy ((!))
 import Data.Ix (inRange)
 import Data.List ((\\), delete, foldl', intercalate, intersperse, nub, nubBy, partition, sort, sortBy, unfoldr)
 import Data.List.Split (chunksOf)
-import Data.Maybe (fromJust, fromMaybe)
+import Data.Maybe (fromJust, fromMaybe, isNothing)
 import Data.Monoid ((<>), All(..), Sum(..))
 import Data.Text (Text)
 import Data.Time (diffUTCTime, getCurrentTime)
@@ -221,6 +221,7 @@ priorityAbbrevCmdTuples =
     , ("drop",       "dr",  dropAction, True,  cmdDescDrop)
     , ("emote",      "em",  emote,      True,  cmdDescEmote)
     , ("exits",      "ex",  exits,      True,  cmdDescExits)
+    , ("fill",       "f",   fill,       True,  cmdDescFill)
     , ("get",        "g",   getAction,  True,  cmdDescGet)
     , ("give",       "gi",  give,       True,  cmdDescGive)
     , ("help",       "h",   help,       True,  "Get help on one or more commands or topics.")
@@ -324,6 +325,7 @@ npcPriorityAbbrevCmdTuples =
     , ("emote",     "em",  emote,       True,  cmdDescEmote)
     , ("exits",     "ex",  exits,       True,  cmdDescExits)
     , ("exorcise",  "exo", npcExorcise, False, "Stop being possessed.")
+    , ("fill",      "f",   fill,        True,  cmdDescFill)
     , ("get",       "g",   getAction,   True,  cmdDescGet)
     , ("give",      "gi",  give,        True,  cmdDescGive)
     , ("inventory", "i",   inv,         True,  cmdDescInv)
@@ -816,11 +818,11 @@ drink   (Lower   i mq cols [amt, target]) = getState >>= \ms -> let (isDrink, is
                             else sorry . sorryDrinkRmWithHooks . head $ inRms
                       a -> patternMatchFail "drink helper next drinkRm" [ showText a ]
             in if
-              | ()!# inEqs                        -> sorry sorryDrinkInEq
-              | ()!# inInvs    && ()#  myInvCoins -> sorry dudeYourHandsAreEmpty
-              | ()!# inInvs    && ()!# myInvCoins -> drinkInv
-              | ()# rmInvCoins && ()#  maybeHooks -> sorry sorryDrinkEmptyRmNoHooks
-              | otherwise                         -> drinkRm
+              | ()!# inEqs                      -> sorry sorryDrinkInEq
+              | ()!# inInvs,    ()#  myInvCoins -> sorry dudeYourHandsAreEmpty
+              | ()!# inInvs,    ()!# myInvCoins -> drinkInv
+              | ()# rmInvCoins, ()#  maybeHooks -> sorry sorryDrinkEmptyRmNoHooks
+              | otherwise                       -> drinkRm
 drink p = advise p ["drink"] adviceDrinkExcessArgs
 
 
@@ -1022,6 +1024,98 @@ mkExpCmdListTxt =
 -----
 
 
+-- TODO: Help. Syntax.
+fill :: RmActionFun
+fill p@AdviseNoArgs     = advise p [] adviceFillNoArgs
+fill p@(AdviseOneArg _) = advise p [] adviceFillNoSource
+fill p@(Lower' i as   ) = genericActionWithHooks p helper "fill"
+  where
+    helper _ ms =
+        let b@LastArgIsTargetBindings { .. } = mkLastArgIsTargetBindings i ms as
+            maybeHooks                       = lookupHooks i ms "fill"
+            sorry                            = genericSorryWithHooks ms
+        in if ()# srcInvCoins
+          then sorry dudeYourHandsAreEmpty
+          else case singleArgInvEqRm InInv targetArg of
+            (InInv, target) ->
+                let (eiss, ecs)  = uncurry (resolveMobInvCoins i ms . pure $ target) srcInvCoins
+                    f [targetId] | getType targetId ms /= VesselType = sorry . sorryFillSourceType . getSing targetId $ ms
+                                 | otherwise                         = fillHelper i ms b targetId
+                    f _          = sorry sorryFillExcessSources
+                in ()!# ecs ? sorry sorryFillSourceCoins :? either sorry f (head eiss)
+            (InEq,  _     ) -> sorry sorryFillSourceEq
+            (InRm,  _     ) | ()# rmInvCoins, ()# maybeHooks -> sorry sorryFillEmptyRmNoHooks
+                            | otherwise                      -> undefined -- TODO: We'll have to check encumbrance.
+fill p = patternMatchFail "fill" [ showText p ]
+
+
+
+fillHelper :: Id -> MudState -> LastArgIsTargetBindings -> Id -> GenericResWithHooks
+fillHelper i ms LastArgIsTargetBindings { .. } targetId =
+    let (inInvs, inEqs, inRms)      = sortArgsInvEqRm InInv otherArgs
+        sorryInEq                   = inEqs |!| sorryFillInEq
+        sorryInRm                   = inRms |!| sorryFillInRm
+        (gecrs, miss, rcs)          = uncurry (resolveEntCoinNames i ms inInvs) srcInvCoins
+        eiss                        = zipWith (curry procGecrMisMobInv) gecrs miss
+        ecs                         = map procReconciledCoinsMobInv rcs
+        sorryCoins                  = ecs |!| sorryFillCoins
+        (ms', toSelfs, bs, logMsgs) = helperFillEitherInv i srcDesig targetId eiss (ms, [], [], [])
+    in (ms', (dropBlanks $ [ sorryInEq, sorryInRm, sorryCoins ] ++ toSelfs, bs, logMsgs, []))
+
+
+helperFillEitherInv :: Id
+                    -> Desig
+                    -> Id
+                    -> [Either Text Inv]
+                    -> GenericIntermediateRes
+                    -> GenericIntermediateRes
+helperFillEitherInv _ _        _        []         a               = a
+helperFillEitherInv i srcDesig targetId (eis:eiss) a@(ms, _, _, _) = case getVesselCont targetId ms of
+  Nothing     -> sorry . sorryFillEmptySource $ targetSing
+  Just (_, _) -> next $ case eis of
+    Left msg -> sorry msg
+    Right is -> helper is a
+  where
+    targetSing = getSing targetId ms
+    next       = helperFillEitherInv i srcDesig targetId eiss
+    sorry msg  = a & _2 <>~ pure msg
+    helper []       a'                = a'
+    helper (vi:vis) a'@(ms', _, _, _)
+      | isNothing . getVesselCont targetId $ ms' = a'
+      | getType vi ms' /= VesselType             = helper vis . sorry' . sorryFillType $ vs
+      | otherwise                                = helper vis $ case getVesselCont vi ms' of
+          Nothing | vmm <  targetMouths ->
+                      a' & _1.vesselTbl.ind targetId.vesselCont .~ Just (targetLiq, targetMouths - vmm)
+                         & _1.vesselTbl.ind vi      .vesselCont .~ Just (targetLiq, vmm)
+                  | vmm == targetMouths ->
+                      a' & _1.vesselTbl.ind targetId.vesselCont .~ Nothing
+                         & _1.vesselTbl.ind vi      .vesselCont .~ Just (targetLiq, vmm)
+                  | otherwise           ->
+                      a' & _1.vesselTbl.ind targetId.vesselCont .~ Nothing
+                         & _1.vesselTbl.ind vi      .vesselCont .~ Just (targetLiq, targetMouths)
+          Just (vl, vm)
+            | vl `f` targetLiq   -> sorry' . sorryFillLiqTypes (targetSing, targetLiq) $ (vs, vl)
+            | vm >= vmm          -> sorry' . sorryFillAlreadyFull $ vs
+            | vAvail <- vmm - vm -> if | vAvail <  targetMouths ->
+                                           a' & _1.vesselTbl.ind targetId.vesselCont .~ Just (targetLiq, targetMouths - vAvail)
+                                              & _1.vesselTbl.ind vi      .vesselCont .~ Just (targetLiq, vmm)
+                                       | vAvail == targetMouths ->
+                                           a' & _1.vesselTbl.ind targetId.vesselCont .~ Nothing
+                                              & _1.vesselTbl.ind vi      .vesselCont .~ Just (targetLiq, vmm)
+                                       | otherwise              ->
+                                           a' & _1.vesselTbl.ind targetId.vesselCont .~ Nothing
+                                              & _1.vesselTbl.ind vi      .vesselCont .~ Just (targetLiq, vm + targetMouths)
+      where
+        sorry' msg = a' & _2 <>~ pure msg
+        vs         = getSing         vi ms'
+        vmm        = getMaxMouthfuls vi ms'
+        f          = (/=) `on` view liqId
+        (targetLiq, targetMouths) = fromJust . getVesselCont targetId $ ms'
+
+
+-----
+
+
 getAction :: ActionFun
 getAction p@AdviseNoArgs             = advise p ["get"] adviceGetNoArgs
 getAction   (Lower     _ mq cols as) | length as >= 3, (head . tail . reverse $ as) == "from" = wrapSend mq cols hintGet
@@ -1072,7 +1166,10 @@ give p@(Lower' i as   ) = genericAction p helper "give"
               (InInv, _     ) -> genericSorry ms sorryGiveToInv
               (InEq,  _     ) -> genericSorry ms sorryGiveToEq
               (InRm,  target) -> shuffleGive i ms b { targetArg = target }
-        in withEmptyInvChecks ms b sorryNoOneHere f
+        in maybe f (genericSorry ms) . emptyInvChecks $ b
+    emptyInvChecks LastArgIsTargetBindings { srcInvCoins, rmInvCoins } =
+        ( ()# srcInvCoins |?| Just dudeYourHandsAreEmpty
+        , ()# rmInvCoins  |?| Just sorryNoOneHere ) |&| uncurry mplus
 give p = patternMatchFail "give" [ showText p ]
 
 
@@ -1097,7 +1194,7 @@ shuffleGive i ms LastArgIsTargetBindings { .. } =
                                                             (ms', toSelfs, bs, logMsgs)
                                                             ecs
                in (ms'', (dropBlanks $ [ sorryInEq, sorryInRm ] ++ toSelfs', bs', map (parseDesig i ms) logMsgs'))
-        else genericSorry ms . sorryGiveType . getSing targetId $ ms
+          else genericSorry ms . sorryGiveType . getSing targetId $ ms
         Right {} -> genericSorry ms sorryGiveExcessTargets
 
 
@@ -2738,9 +2835,9 @@ showAction   (Lower i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
            invCoins   = getInvCoins i ms
            rmInvCoins = first (i `delete`) . getMobRmNonIncogInvCoins i $ ms
        in if
-         | ()# eqMap && ()# invCoins -> wrapSend mq cols dudeYou'reScrewed
-         | ()# rmInvCoins            -> wrapSend mq cols sorryNoOneHere
-         | otherwise                 -> case singleArgInvEqRm InRm . last $ as of
+         | ()# eqMap, ()# invCoins -> wrapSend mq cols dudeYou'reScrewed
+         | ()# rmInvCoins          -> wrapSend mq cols sorryNoOneHere
+         | otherwise               -> case singleArgInvEqRm InRm . last $ as of
            (InInv, _     ) -> wrapSend mq cols $ sorryShowTarget "item in your inventory"         <> tryThisInstead
            (InEq,  _     ) -> wrapSend mq cols $ sorryShowTarget "item in your readied equipment" <> tryThisInstead
            (InRm,  target) ->
@@ -2949,14 +3046,14 @@ smell (OneArgLower i mq cols a) = getState >>= \ms ->
                         | otherwise    -> smellInv ms d invCoins target
         (InEq,  target) | ()# eqMap    -> wrapSend mq cols dudeYou'reNaked
                         | otherwise    -> smellEq ms d eqMap target
-        (InRm,  target) | ()# rmInvCoins && ()# maybeHooks -> wrapSend mq cols sorrySmellEmptyRmNoHooks
-                        | otherwise                        -> smellRm ms d rmInvCoins maybeHooks target
+        (InRm,  target) | ()# rmInvCoins, ()# maybeHooks -> wrapSend mq cols sorrySmellEmptyRmNoHooks
+                        | otherwise                      -> smellRm ms d rmInvCoins maybeHooks target
   where
     smellInv ms d invCoins target =
         let (eiss, ecs) = uncurry (resolveMobInvCoins i ms . pure $ target) invCoins
         in if
-          | ()!# eiss && ()!# ecs -> sorryExcess
-          | ()!# ecs              ->
+          | ()!# eiss, ()!# ecs -> sorryExcess
+          | ()!# ecs            ->
               let (canCoins, can'tCoinMsgs) = distillEcs ecs
               in if ()# can'tCoinMsgs
                 then let (coinTxt, isPlur) = mkCoinPieceTxt canCoins
@@ -3021,12 +3118,12 @@ smell (OneArgLower i mq cols a) = getState >>= \ms ->
     smellRm ms d invCoins maybeHooks target =
         let (eiss, ecs) = uncurry (resolveRmInvCoins i ms . pure $ target) invCoins
         in if
-          | ()!# eiss && ()!# ecs -> sorryExcess
-          | ()!# ecs              -> wrapSend mq cols $ let (canCoins, can'tCoinMsgs) = distillEcs ecs
-                                                        in if ()# can'tCoinMsgs
-                                                          then sorrySmellRmCoins . mkCoinPieceTxt $ canCoins
-                                                          else head can'tCoinMsgs
-          | otherwise             -> case ((()!#) *** (()!#)) (invCoins, maybeHooks) of
+          | ()!# eiss, ()!# ecs -> sorryExcess
+          | ()!# ecs            -> wrapSend mq cols $ let (canCoins, can'tCoinMsgs) = distillEcs ecs
+                                                      in if ()# can'tCoinMsgs
+                                                        then sorrySmellRmCoins . mkCoinPieceTxt $ canCoins
+                                                        else head can'tCoinMsgs
+          | otherwise           -> case ((()!#) *** (()!#)) (invCoins, maybeHooks) of
             (True,  False) -> smellRmHelper . head $ eiss
             (False, True ) ->
                 let helper v ms'

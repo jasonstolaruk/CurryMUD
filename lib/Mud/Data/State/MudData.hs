@@ -753,7 +753,7 @@ jsonToPla _          = empty
 -- Has effects and an inventory and coins.
 data Rm = Rm { _rmName      :: Text
              , _rmDesc      :: Text
-             , _rmListen    :: Maybe Text
+             , _rmListen    :: Maybe Text -- TODO: Do we need this?
              , _rmSmell     :: Maybe Text
              , _rmFlags     :: Int
              , _rmLinks     :: [RmLink]
