@@ -9,6 +9,7 @@ module Mud.Data.State.Util.Misc ( addToInv
                                 , findInvContaining
                                 , findMobIds
                                 , getAdminIds
+                                , getBothGramNos
                                 , getEffBothGramNos
                                 , getEffName
                                 , getFun
@@ -144,6 +145,10 @@ getAdminIdsHelper f = IM.keys . IM.filter (uncurry (&&) . (isAdmin *** f) . dup)
 
 
 type BothGramNos = (Sing, Plur)
+
+
+getBothGramNos :: Id -> MudState -> BothGramNos
+getBothGramNos i = (view sing *** view plur) . dup . getEnt i
 
 
 getEffBothGramNos :: Id -> MudState -> Id -> BothGramNos

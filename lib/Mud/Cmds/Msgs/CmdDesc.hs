@@ -132,7 +132,7 @@ cmdDescShow = "Show one or more items in your inventory and/or readied equipment
 
 
 cmdDescSmell :: Text
-cmdDescSmell = "Smell the air or a thing."
+cmdDescSmell = "Smell a) the air, b) an item in your inventory, or c) a being or fixture in your current room."
 
 
 cmdDescStats :: Text

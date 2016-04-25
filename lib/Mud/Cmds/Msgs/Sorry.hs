@@ -1,4 +1,4 @@
-{-# LANGUAGE LambdaCase, OverloadedStrings, RecordWildCards, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, MultiWayIf, OverloadedStrings, RecordWildCards, ViewPatterns #-}
 
 module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryAdminChanTargetName
@@ -69,6 +69,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryFillInEq
                            , sorryFillInRm
                            , sorryFillLiqTypes
+                           , sorryFillSelf
                            , sorryFillSourceCoins
                            , sorryFillSourceEq
                            , sorryFillSourceType
@@ -692,11 +693,16 @@ sorryFillInRm :: Text
 sorryFillInRm = butCan't "fill a vessel in your current room. Please pick up the vessel(s) first."
 
 
-sorryFillLiqTypes :: (Sing, Liq) -> (Sing, Liq) -> Text
-sorryFillLiqTypes (as, flip renderLiqNoun aOrAn -> an) (bs, flip renderLiqNoun aOrAn -> bn) =
-    T.concat [ "The ", as, " and the ", bs, " do not contain the same kind of liquid "
-             , parensQuote . T.concat $ [ "the ", as, " contains ", an, " while the ", bs, " contains ", bn ]
-             , "." ]
+sorryFillLiqTypes :: BothGramNos -> BothGramNos -> Text
+sorryFillLiqTypes a@(as, _) b@(bs, _) = helper $ if
+  | a == b    -> "The " <> mkPlurFromBoth a
+  | otherwise -> T.concat [ "The ", as, " and the ", bs ]
+  where
+    helper = (<> " do not contain the same kind of liquid.")
+
+
+sorryFillSelf :: Text -> Text
+sorryFillSelf s = can't "fill the " <> s <> " with itself."
 
 
 sorryFillSourceCoins :: Text
@@ -704,7 +710,7 @@ sorryFillSourceCoins = butCan't "fill a vessel with coins."
 
 
 sorryFillSourceEq :: Text
-sorryFillSourceEq = can't "fill a vessel with the contents of another vessel in your readied equipment."
+sorryFillSourceEq = can't "fill a vessel with an item in your readied equipment."
 
 
 sorryFillSourceType :: Sing -> Text

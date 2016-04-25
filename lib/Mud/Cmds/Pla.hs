@@ -1043,9 +1043,9 @@ fill p@(Lower' i as   ) = genericActionWithHooks p helper "fill"
                                  | otherwise                         = fillHelper i ms b targetId
                     f _          = sorry sorryFillExcessSources
                 in ()!# ecs ? sorry sorryFillSourceCoins :? either sorry f (head eiss)
-            (InEq,  _     ) -> sorry sorryFillSourceEq
-            (InRm,  _     ) | ()# rmInvCoins, ()# maybeHooks -> sorry sorryFillEmptyRmNoHooks
-                            | otherwise                      -> undefined -- TODO: We'll have to check encumbrance.
+            (InEq, _     ) -> sorry sorryFillSourceEq
+            (InRm, _     ) | ()# rmInvCoins, ()# maybeHooks -> sorry sorryFillEmptyRmNoHooks
+                           | otherwise                      -> undefined -- TODO: We'll have to check encumbrance.
 fill p = patternMatchFail "fill" [ showText p ]
 
 
@@ -1063,7 +1063,6 @@ fillHelper i ms LastArgIsTargetBindings { .. } targetId =
     in (ms', (dropBlanks $ [ sorryInEq, sorryInRm, sorryCoins ] ++ toSelfs, bs, logMsgs, []))
 
 
--- TODO: Check for filling a container with itself.
 helperFillEitherInv :: Id
                     -> Desig
                     -> Id
@@ -1083,6 +1082,7 @@ helperFillEitherInv i srcDesig targetId (eis:eiss) a@(ms, _, _, _) = case getVes
     helper []       a'                = a'
     helper (vi:vis) a'@(ms', _, _, _)
       | isNothing . getVesselCont targetId $ ms' = a'
+      | vi == targetId                           = helper vis . sorry' . sorryFillSelf $ vs
       | getType vi ms' /= VesselType             = helper vis . sorry' . sorryFillType $ vs
       | otherwise                                = helper vis $ case getVesselCont vi ms' of
           Nothing | vmm <  targetMouths ->
@@ -1095,7 +1095,7 @@ helperFillEitherInv i srcDesig targetId (eis:eiss) a@(ms, _, _, _) = case getVes
                       a' & _1.vesselTbl.ind targetId.vesselCont .~ Nothing
                          & _1.vesselTbl.ind vi      .vesselCont .~ Just (targetLiq, targetMouths)
           Just (vl, vm)
-            | vl `f` targetLiq   -> sorry' . sorryFillLiqTypes (targetSing, targetLiq) $ (vs, vl)
+            | vl `f` targetLiq   -> sorry' . uncurry sorryFillLiqTypes $ (targetId, vi) & both %~ flip getBothGramNos ms'
             | vm >= vmm          -> sorry' . sorryFillAlreadyFull $ vs
             | vAvail <- vmm - vm -> if | vAvail <  targetMouths ->
                                            a' & _1.vesselTbl.ind targetId.vesselCont .~ Just (targetLiq, targetMouths - vAvail)
