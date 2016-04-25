@@ -4,9 +4,9 @@
 #dwhoin \s[\dterm \s...]\d
 
 \uDESCRIPTION\n
-Display a list of all the people that are currently logged in. Optionally, search the list for one or more terms.
+Display a list of all the PCs that are currently logged in. Optionally, search the list for one or more terms.
 * denotes an admin.
-@@ denotes an incognito.
+@@ denotes an incognito admin.
 
 \uEXAMPLES\n
 \q#dwhoin\d to display the full list.4`

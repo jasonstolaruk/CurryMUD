@@ -168,9 +168,9 @@ adminCmds =
     , mkAdminCmd "time"       adminTime        True  "Display the current system time."
     , mkAdminCmd "typo"       adminTypo        True  "Dump the typo database."
     , mkAdminCmd "uptime"     adminUptime      True  "Display the system uptime."
-    , mkAdminCmd "whoin"      adminWhoIn       True  "Display or search a list of all the people that are currently \
+    , mkAdminCmd "whoin"      adminWhoIn       True  "Display or search a list of all the PCs that are currently \
                                                      \logged in."
-    , mkAdminCmd "whoout"     adminWhoOut      True  "Display or search a list of all the people that are currently \
+    , mkAdminCmd "whoout"     adminWhoOut      True  "Display or search a list of all the PCs that are currently \
                                                      \logged out."
     , mkAdminCmd "wiretap"    adminWire        True  "Start or stop tapping one or more telepathic channels." ]
 

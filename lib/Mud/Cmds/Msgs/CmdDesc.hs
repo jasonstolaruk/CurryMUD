@@ -47,7 +47,7 @@ cmdDescExpCmdList = "Display or search a list of available expressive commands a
 
 cmdDescFill :: Text
 cmdDescFill = "Fill one or more vessels with a) the contents of another vessel, or b) a source of liquid in your \
-              \current room." -- TODO: Use a) b) in other cmd descs?
+              \current room."
 
 
 cmdDescGet :: Text
@@ -107,19 +107,20 @@ cmdDescLook = "Display a description of your current room, or examine one or mor
 
 
 cmdDescPut :: Text
-cmdDescPut = "Put one or more items into a container."
+cmdDescPut = "Put one or more items into a) a container in your inventory, or b) a container in your current room."
 
 
 cmdDescRead :: Text
-cmdDescRead = "Read the text that is written on an item in your inventory or a fixture of your current room."
+cmdDescRead = "Read the text that is written on a) an item in your inventory, or b) a fixture of your current room."
 
 
 cmdDescReady :: Text
-cmdDescReady = "Ready one or more items."
+cmdDescReady = "Ready one or more items in your inventory."
 
 
 cmdDescRemove :: Text
-cmdDescRemove = "Remove one or more items from a container."
+cmdDescRemove = "Remove one or more items from a) a container in your inventory, or b) a container in your current \
+                \room."
 
 
 cmdDescSay :: Text
@@ -143,4 +144,4 @@ cmdDescStop = "Stop moving, eating, drinking, or attacking."
 
 
 cmdDescUnready :: Text
-cmdDescUnready = "Unready one or more items."
+cmdDescUnready = "Unready one or more items in your readied equipment."

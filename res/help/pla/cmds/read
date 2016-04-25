@@ -4,9 +4,9 @@
 read thing \s...\d
 
 \uDESCRIPTION\n
-Read the text that is written on an item in your inventory or a fixture of your current room.
+Read the text that is written on a) an item in your inventory, or b) a fixture of your current room.
 
-A room may contain readable fixtures, such as signs, that are depicted in the room's static description. The names of these fixtures must be prefixed with \lr#l\d, and may not be abbreviated.
+A room may contain readable fixtures, such as signs, that are depicted in the room's static description. The names of these fixtures must be prefixed with \lr#l\d and may not be abbreviated.
 
 To read the parchment in your inventory:
 \qread \li#l\qparchment\d4`

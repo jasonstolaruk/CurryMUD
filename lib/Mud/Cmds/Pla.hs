@@ -1063,6 +1063,7 @@ fillHelper i ms LastArgIsTargetBindings { .. } targetId =
     in (ms', (dropBlanks $ [ sorryInEq, sorryInRm, sorryCoins ] ++ toSelfs, bs, logMsgs, []))
 
 
+-- TODO: Check for filling a container with itself.
 helperFillEitherInv :: Id
                     -> Desig
                     -> Id

@@ -43,8 +43,9 @@ CurryMUD will have the following features:
 * Commands to aid in the process of resetting a forgotten password.
 * Weight and encumbrance.
 * Volume and container capacity.
+* Vessels for containing liquids. Vessels may be filled and emptied.
+* Eating foods and drinking liquids. Digestion.
 * Durational effects that can be paused and resumed.
-* Food and liquids. Digestion.
 * Objects can be configured to automatically disappear when left on the ground for some time.
 
 I am still in the initial stage of developing basic commands. There is very little content in the virtual world.

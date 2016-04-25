@@ -58,7 +58,7 @@ When one Player Character (PC) attacks another PC.
 Used to describe a MUD with rules requiring that players stay In-Character (IC).
 
 \uRoom\d
-A singular place/space, of arbitrary dimensions, in the virtual world. Typing \qlook\d will give you a description of your "current room" (that is, the room in which you are presently located); use the movement commands ("n" for north, "s", "e", "w", etc.) to move between rooms.
+A singular place/space of arbitrary dimensions in the virtual world. Typing \qlook\d will give you a description of your "current room" (that is, the room in which you are presently located); use the movement commands ("n" for north, "s", "e", "w", etc.) to move between rooms.
 
 \uRoom Fixture\d
 A permanent feature of a room (such as a sign) with which you can interact via one or more commands ("look", "read", etc.). Room fixtures are depicted in a room's static description.
@@ -73,4 +73,7 @@ A psionic connection between two Player Characters (PCs), linking their minds to
 A telepathic connection between two Player Characters (PCs), where each PC has linked with the other.
 
 \uUndocumented Command\d
-A commands for which there is no help available via the "help" command. You are meant to discover these commands in the course of your gameplay and exploration.
+A command for which there is no help available via the "help" command. You are meant to discover these commands in the course of your gameplay and exploration.
+
+\uVessel\d
+A container for liquids.

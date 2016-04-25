@@ -114,7 +114,7 @@ debugCmds =
     [ mkDebugCmd "?"          debugDispCmdList ("\&" <> cmdDescDispCmdList)
     , mkDebugCmd "ap"         debugAp          "Show \"ActionParams\", including any arguments you provide."
     , mkDebugCmd "boot"       debugBoot        "Boot all players (including yourself)."
-    , mkDebugCmd "broadcast"  debugBcast       "Broadcast (to yourself) a multi-line message."
+    , mkDebugCmd "broadcast"  debugBcast       "Broadcast a multi-line message to yourself."
     , mkDebugCmd "buffer"     debugBuffCheck   "Confirm the default buffering mode for file handles."
     , mkDebugCmd "cins"       debugCins        "Dump all channel ID/names for a given player ID."
     , mkDebugCmd "color"      debugColor       "Perform a color test."

@@ -4,7 +4,7 @@
 put item \s...\d container
 
 \uDESCRIPTION\n
-Put one or more items into a container.
+Put one or more items into a) a container in your inventory, or b) a container in your current room.
 
 To put your ring into the sack in your inventory:
 \qput ring \li#l\qsack\d4`

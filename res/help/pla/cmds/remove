@@ -4,7 +4,7 @@
 remove item \s...\d container
 
 \uDESCRIPTION\n
-Remove one or more items from a container.
+Remove one or more items from a) a container in your inventory, or b) a container in your current room.
 
 To remove the ring from the sack in your inventory:
 \qremove ring \li#l\qsack\d4`
