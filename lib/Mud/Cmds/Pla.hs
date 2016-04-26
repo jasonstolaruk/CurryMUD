@@ -1086,26 +1086,26 @@ helperFillEitherInv i srcDesig targetId (eis:eiss) a@(ms, _, _, _) = case getVes
       | getType vi ms' /= VesselType             = helper vis . sorry' . sorryFillType $ vs
       | otherwise                                = helper vis $ case getVesselCont vi ms' of
           Nothing | vmm <  targetMouths ->
-                      a' & _1.vesselTbl.ind targetId.vesselCont .~ Just (targetLiq, targetMouths - vmm)
-                         & _1.vesselTbl.ind vi      .vesselCont .~ Just (targetLiq, vmm)
+                      a' & _1.vesselTbl.ind targetId.vesselCont ?~ (targetLiq, targetMouths - vmm)
+                         & _1.vesselTbl.ind vi      .vesselCont ?~ (targetLiq, vmm)
                   | vmm == targetMouths ->
                       a' & _1.vesselTbl.ind targetId.vesselCont .~ Nothing
-                         & _1.vesselTbl.ind vi      .vesselCont .~ Just (targetLiq, vmm)
+                         & _1.vesselTbl.ind vi      .vesselCont ?~ (targetLiq, vmm)
                   | otherwise           ->
                       a' & _1.vesselTbl.ind targetId.vesselCont .~ Nothing
-                         & _1.vesselTbl.ind vi      .vesselCont .~ Just (targetLiq, targetMouths)
+                         & _1.vesselTbl.ind vi      .vesselCont ?~ (targetLiq, targetMouths)
           Just (vl, vm)
             | vl `f` targetLiq   -> sorry' . uncurry sorryFillLiqTypes $ (targetId, vi) & both %~ flip getBothGramNos ms'
             | vm >= vmm          -> sorry' . sorryFillAlreadyFull $ vs
             | vAvail <- vmm - vm -> if | vAvail <  targetMouths ->
-                                           a' & _1.vesselTbl.ind targetId.vesselCont .~ Just (targetLiq, targetMouths - vAvail)
-                                              & _1.vesselTbl.ind vi      .vesselCont .~ Just (targetLiq, vmm)
+                                           a' & _1.vesselTbl.ind targetId.vesselCont ?~ (targetLiq, targetMouths - vAvail)
+                                              & _1.vesselTbl.ind vi      .vesselCont ?~ (targetLiq, vmm)
                                        | vAvail == targetMouths ->
                                            a' & _1.vesselTbl.ind targetId.vesselCont .~ Nothing
-                                              & _1.vesselTbl.ind vi      .vesselCont .~ Just (targetLiq, vmm)
+                                              & _1.vesselTbl.ind vi      .vesselCont ?~ (targetLiq, vmm)
                                        | otherwise              ->
                                            a' & _1.vesselTbl.ind targetId.vesselCont .~ Nothing
-                                              & _1.vesselTbl.ind vi      .vesselCont .~ Just (targetLiq, vm + targetMouths)
+                                              & _1.vesselTbl.ind vi      .vesselCont ?~ (targetLiq, vm + targetMouths)
       where
         sorry' msg = a' & _2 <>~ pure msg
         vs         = getSing         vi ms'
@@ -2747,7 +2747,7 @@ securityCreateQHelper i mq cols = do
   where
     info = "OK. Ideally, your security Q&A should be:" : concatMap (wrapIndent 2 cols) rest
     rest = [ "* Memorable. You don't want to forget your answer."
-           , "* Consistent. Choose a question for which the answer will not change over time."
+           , "* Unvarying. Choose a question for which the answer will not change over time."
            , "* Safe. Your answer should not be easily guessed or researched by your friends and acquaintances who \
              \play CurryMUD." ]
 

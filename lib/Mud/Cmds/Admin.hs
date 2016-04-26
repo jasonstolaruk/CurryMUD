@@ -1066,8 +1066,8 @@ adminPossess (OneArgNubbed i mq cols target) = helper |&| modifyState >=> sequen
               where
                 targetSing      = getSing targetId ms
                 can'tPossess pi = sorry . sorryAlreadyPossessed targetSing . getSing pi $ ms
-                canPossess      = ( ms & plaTbl.ind i       .possessing .~ Just targetId
-                                       & npcTbl.ind targetId.possessor  .~ Just i
+                canPossess      = ( ms & plaTbl.ind i       .possessing ?~ targetId
+                                       & npcTbl.ind targetId.possessor  ?~ i
                                   , [ sendFun $ "You are now possessing " <> aOrAnOnLower targetSing <> "."
                                     , sendDfltPrompt mq targetId
                                     , logPla "adminPossess" i $ "started possessing "                 <>
