@@ -1084,34 +1084,56 @@ helperFillEitherInv i srcDesig targetId (eis:eiss) a@(ms, _, _, _) = case getVes
       | isNothing . getVesselCont targetId $ ms' = a'
       | vi == targetId                           = helper vis . sorry' . sorryFillSelf $ vs
       | getType vi ms' /= VesselType             = helper vis . sorry' . sorryFillType $ vs
-      | otherwise                                = helper vis $ case getVesselCont vi ms' of
+      | otherwise                                = helper vis . (_3 <>~ bcastHelper) $ case getVesselCont vi ms' of
           Nothing | vmm <  targetMouths ->
                       a' & _1.vesselTbl.ind targetId.vesselCont ?~ (targetLiq, targetMouths - vmm)
                          & _1.vesselTbl.ind vi      .vesselCont ?~ (targetLiq, vmm)
+                         & _2 <>~ mkFillUpMsg
+                         & _4 <>~ mkFillUpMsg
                   | vmm == targetMouths ->
                       a' & _1.vesselTbl.ind targetId.vesselCont .~ Nothing
                          & _1.vesselTbl.ind vi      .vesselCont ?~ (targetLiq, vmm)
+                         & _2 <>~ mkFillUpEmptyMsg
+                         & _4 <>~ mkFillUpEmptyMsg
                   | otherwise           ->
                       a' & _1.vesselTbl.ind targetId.vesselCont .~ Nothing
                          & _1.vesselTbl.ind vi      .vesselCont ?~ (targetLiq, targetMouths)
+                         & _2 <>~ mkXferEmptyMsg
+                         & _4 <>~ mkXferEmptyMsg
           Just (vl, vm)
             | vl `f` targetLiq   -> sorry' . uncurry sorryFillLiqTypes $ (targetId, vi) & both %~ flip getBothGramNos ms'
             | vm >= vmm          -> sorry' . sorryFillAlreadyFull $ vs
             | vAvail <- vmm - vm -> if | vAvail <  targetMouths ->
                                            a' & _1.vesselTbl.ind targetId.vesselCont ?~ (targetLiq, targetMouths - vAvail)
                                               & _1.vesselTbl.ind vi      .vesselCont ?~ (targetLiq, vmm)
+                                              & _2 <>~ mkFillUpMsg
+                                              & _4 <>~ mkFillUpMsg
                                        | vAvail == targetMouths ->
                                            a' & _1.vesselTbl.ind targetId.vesselCont .~ Nothing
                                               & _1.vesselTbl.ind vi      .vesselCont ?~ (targetLiq, vmm)
+                                              & _2 <>~ mkFillUpEmptyMsg
+                                              & _4 <>~ mkFillUpEmptyMsg
                                        | otherwise              ->
                                            a' & _1.vesselTbl.ind targetId.vesselCont .~ Nothing
                                               & _1.vesselTbl.ind vi      .vesselCont ?~ (targetLiq, vm + targetMouths)
+                                              & _2 <>~ mkXferEmptyMsg
+                                              & _4 <>~ mkXferEmptyMsg
       where
-        sorry' msg = a' & _2 <>~ pure msg
-        vs         = getSing         vi ms'
-        vmm        = getMaxMouthfuls vi ms'
-        f          = (/=) `on` view liqId
+        sorry' msg                = a' & _2 <>~ pure msg
+        vs                        = getSing         vi ms'
+        vmm                       = getMaxMouthfuls vi ms'
+        f                         = (/=) `on` view liqId
         (targetLiq, targetMouths) = fromJust . getVesselCont targetId $ ms'
+        n                         = renderLiqNoun targetLiq id
+        mkFillUpMsg      = pure . T.concat $ [ "You fill up the ", vs, " with ", n, " from the ", targetSing, "." ]
+        mkFillUpEmptyMsg = pure . T.concat $ [ "You fill up the ", vs, " with ", n, " from the ", targetSing, ", emptying it." ]
+        mkXferEmptyMsg   = pure . T.concat $ [ "You transfer ", n, " to the ", vs,  " from the ", targetSing, ", emptying it." ]
+        bcastHelper      = pure (T.concat [ serialize srcDesig
+                                          , " transfers liquid from "
+                                          , aOrAn targetSing
+                                          , " to "
+                                          , aOrAn vs
+                                          , "." ], i `delete` desigIds srcDesig)
 
 
 -----
