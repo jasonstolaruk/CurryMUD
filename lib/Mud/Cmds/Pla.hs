@@ -1029,7 +1029,7 @@ fill p@AdviseNoArgs     = advise p [] adviceFillNoArgs
 fill p@(AdviseOneArg _) = advise p [] adviceFillNoSource
 fill p@(Lower' i as   ) = genericActionWithHooks p helper "fill"
   where
-    helper _ ms =
+    helper v ms =
         let b@LastArgIsTargetBindings { .. } = mkLastArgIsTargetBindings i ms as
             maybeHooks                       = lookupHooks i ms "fill"
             sorry                            = genericSorryWithHooks ms
@@ -1043,8 +1043,22 @@ fill p@(Lower' i as   ) = genericActionWithHooks p helper "fill"
                     f _          = sorry sorryFillExcessSources
                 in ()!# ecs ? sorry sorryFillSourceCoins :? either sorry f (head eiss)
             (InEq, _     ) -> sorry sorryFillSourceEq
-            (InRm, _     ) | ()# rmInvCoins, ()# maybeHooks -> sorry sorryFillEmptyRmNoHooks
-                           | otherwise                      -> undefined -- TODO: We'll have to check encumbrance.
+            (InRm, target)
+              | ()# rmInvCoins, ()# maybeHooks -> sorry sorryFillEmptyRmNoHooks
+              | otherwise                      ->
+                  let hookArg = intersperse (T.singleton hookArgDelimiter) $ target : otherArgs
+                  in case ((()!#) *** (()!#)) (rmInvCoins, maybeHooks) of
+                    (True,  False) -> sorry sorryFillRmNoHooks
+                    (False, True ) ->
+                        let (otherArgs', (ms', toSelfs, bs, logMsgs), fs) = procHooks i ms v "fill" hookArg
+                            sorryMsgs                                     = otherArgs' |!| pure sorryFillEmptyRmWithHooks
+                        in (ms', (dropBlanks $ sorryMsgs ++ toSelfs, bs, logMsgs, fs))
+                    (True,  True ) ->
+                        let (otherArgs', (ms', toSelfs, bs, logMsgs), fs) = procHooks i ms v "fill" hookArg
+                        in if ()# otherArgs'
+                          then (ms', (toSelfs, bs, logMsgs, fs))
+                          else sorry . sorryFillRmWithHooks $ target
+                    a -> patternMatchFail "fill helper" [ showText a ]
 fill p = patternMatchFail "fill" [ showText p ]
 
 

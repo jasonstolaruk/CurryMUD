@@ -65,10 +65,13 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryFillCoins
                            , sorryFillEmptyRmNoHooks
                            , sorryFillEmptySource
+                           , sorryFillEmptyRmWithHooks
                            , sorryFillExcessSources
                            , sorryFillInEq
                            , sorryFillInRm
                            , sorryFillLiqTypes
+                           , sorryFillRmNoHooks
+                           , sorryFillRmWithHooks
                            , sorryFillSelf
                            , sorryFillSourceCoins
                            , sorryFillSourceEq
@@ -508,7 +511,7 @@ sorryDrinkEmptyRmNoHooks = "You don't see anything to drink from here."
 
 
 sorryDrinkEmptyRmWithHooks :: Text
-sorryDrinkEmptyRmWithHooks = "You don't see any vessel to drink from on the ground here."
+sorryDrinkEmptyRmWithHooks = "You don't see any vessels on the ground here."
 
 
 sorryDrinkExcessTargets :: Text
@@ -531,8 +534,8 @@ sorryDrinkRmWithHooks :: Text -> Text
 sorryDrinkRmWithHooks t = T.concat [ "You don't see "
                                    , aOrAn t
                                    , " here. "
-                                   , parensQuote "If you'd like to drink from a vessel in your current room, please \
-                                                 \pick up the vessel first." ]
+                                   , parensQuote "If you'd like to drink from a vessel on the ground, please pick up \
+                                                 \the vessel first." ]
 
 
 sorryDrinkType :: Sing -> Text
@@ -677,6 +680,10 @@ sorryFillEmptyRmNoHooks :: Text
 sorryFillEmptyRmNoHooks = "You don't see a source of liquid here."
 
 
+sorryFillEmptyRmWithHooks :: Text
+sorryFillEmptyRmWithHooks = "You don't see any vessels on the ground here."
+
+
 sorryFillEmptySource :: Sing -> Text
 sorryFillEmptySource s = "The " <> s <> " is empty."
 
@@ -699,6 +706,19 @@ sorryFillLiqTypes a@(as, _) b@(bs, _) = helper $ if
   | otherwise -> T.concat [ "The ", as, " and the ", bs ]
   where
     helper = (<> " do not contain the same kind of liquid.")
+
+
+sorryFillRmNoHooks :: Text
+sorryFillRmNoHooks = butCan't "fill something with the contents of a vessel in your current room. Please pick up the \
+                              \vessel first."
+
+
+sorryFillRmWithHooks :: Text -> Text
+sorryFillRmWithHooks t = T.concat [ "You don't see "
+                                  , aOrAn t
+                                  , " here. "
+                                  , parensQuote "If you'd like to fill something with the contents of a vessel on the \
+                                                \ground, please pick up the vessel first." ]
 
 
 sorryFillSelf :: Text -> Text

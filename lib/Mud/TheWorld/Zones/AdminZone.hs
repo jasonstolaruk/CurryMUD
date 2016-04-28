@@ -69,6 +69,7 @@ logNotice = L.logNotice "Mud.TheWorld.Zones.AdminZone"
 
 adminZoneHooks :: [(HookName, HookFun)]
 adminZoneHooks = [ (drinkPoolHookName,                 drinkPoolHookFun                )
+                 , (fillPoolHookName,                  fillPoolHookFun                 )
                  , (getFlowerHookName,                 getFlowerHookFun                )
                  , (lookCeilingHookName,               lookCeilingHookFun              )
                  , (lookFlowerbedHookName,             lookFlowerbedHookFun            )
@@ -103,6 +104,22 @@ drinkPoolHookFun i _ _ a@(as, (ms, _, _, _), _)
                       , drinkAmt        = read . T.unpack . head $ as }
   = a & _1 .~ []
       & _3 .~ (pure . startAct i Drinking . drinkAct $ db)
+
+
+-----
+
+
+fillPoolHook :: Hook
+fillPoolHook = Hook fillPoolHookName . pure $ "pool"
+
+
+fillPoolHookName :: HookName
+fillPoolHookName = "AdminZone_iAtrium_fillPool"
+
+
+-- TODO: We'll have to check encumbrance.
+fillPoolHookFun :: HookFun
+fillPoolHookFun _ _ _ (_, (_, _, _, _), _) = undefined
 
 
 -----
@@ -555,6 +572,7 @@ createAdminZone = do
             zeroBits
             [ StdLink West iHallwayEast ]
             (M.fromList [ ("drink", [ drinkPoolHook      ])
+                        , ("fill",  [ fillPoolHook       ])
                         , ("get",   [ getFlowerHook      ])
                         , ("look",  [ lookFlowerbedHook  ])
                         , ("smell", [ smellFlowerbedHook ]) ])
