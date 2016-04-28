@@ -1024,7 +1024,6 @@ mkExpCmdListTxt =
 -----
 
 
--- TODO: Help. Syntax.
 fill :: RmActionFun
 fill p@AdviseNoArgs     = advise p [] adviceFillNoArgs
 fill p@(AdviseOneArg _) = advise p [] adviceFillNoSource

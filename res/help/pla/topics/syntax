@@ -72,6 +72,7 @@ Examples of this common pattern:
 \qgive flower hanako\d2`
 \qput tunic box\d2`
 \qremove tunic box\d2`
+\qfill waterskin jug\d (to fill your waterskin with the contents of your jug)2`
 \qconnect taro hunt\d (to connect Taro to the "hunt" channel)2`
 \qdisconnect taro hunt\d2`
 
