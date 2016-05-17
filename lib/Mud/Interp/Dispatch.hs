@@ -2,7 +2,6 @@
 
 module Mud.Interp.Dispatch where
 
-import Mud.Cmds.Msgs.Sorry
 import Mud.Cmds.Pla
 import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
@@ -33,7 +32,7 @@ type FindActionFun = Id -> MudState -> CmdName -> MudStack (Maybe Action)
 dispatch :: FindActionFun -> Interp
 dispatch f cn p@ActionParams { myId, plaMsgQueue } = getState >>= \ms -> maybe notFound found =<< f myId ms cn
   where
-    notFound                = send plaMsgQueue . nlnl $ sorryCmdNotFound
+    notFound                = sendCmdNotFound plaMsgQueue
     found (Action actFun b) = do
         actFun p
         ms <- getState

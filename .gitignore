@@ -1,3 +1,7 @@
+.DS_Store
+.hpc
+.hsenv
+.stack-work/
 *.aux
 *.chi
 *.chs.h
@@ -7,16 +11,8 @@
 *.hp
 *.o
 *.prof
-*sublime*
-.cabal-sandbox/
-.DS_Store
-.hpc
-.hsenv
-.stack-work/
 /db/
 /logs/
 /persist/
 /uptime
-cabal-dev
-cabal.sandbox.config
-dist
+tags

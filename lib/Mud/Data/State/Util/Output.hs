@@ -23,6 +23,7 @@ module Mud.Data.State.Util.Output ( bcast
                                   , parseDesig
                                   , retainedMsg
                                   , send
+                                  , sendCmdNotFound
                                   , sendDfltPrompt
                                   , sendMsgBoot
                                   , sendPrompt
@@ -31,6 +32,7 @@ module Mud.Data.State.Util.Output ( bcast
                                   , wrapSendPrompt ) where
 
 import Mud.Cmds.Msgs.Misc
+import Mud.Cmds.Msgs.Sorry
 import Mud.Data.Misc
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
@@ -273,6 +275,13 @@ retainedMsg _ _ _ = unit
 
 send :: MsgQueue -> Text -> MudStack ()
 send mq = liftIO . atomically . writeTQueue mq . FromServer
+
+
+-----
+
+
+sendCmdNotFound :: MsgQueue -> MudStack ()
+sendCmdNotFound mq = send mq . nlnl $ sorryCmdNotFound
 
 
 -----

@@ -41,7 +41,7 @@ import Mud.Misc.Database
 import Mud.Misc.LocPref
 import Mud.Misc.Logging hiding (logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut)
 import Mud.Misc.NameResolution
-import Mud.TheWorld.Zones.AdminZoneIds (iLoggedOut, iWelcome)
+import Mud.TheWorld.Zones.AdminZoneIds (iLoggedOut, iRoot, iWelcome)
 import Mud.Threads.Act
 import Mud.Threads.Digester
 import Mud.Threads.Effect
@@ -161,42 +161,46 @@ regularCmds = map (uncurry4 mkRegularCmd) regularCmdTuples
 -- TODO: Make a "whisper" command.
 regularCmdTuples :: [(CmdFullName, ActionFun, Bool, CmdDesc)]
 regularCmdTuples =
-    [ ("?",          plaDispCmdList,  True,  cmdDescDispCmdList)
-    , ("about",      about,           True,  "About CurryMUD.")
-    , ("admin",      admin,           True,  "Display a list of administrators, or send a message to an administrator.")
-    , ("bars",       bars,            True,  cmdDescBars)
-    , ("bug",        bug,             True,  "Report a bug.")
-    , ("channel",    chan,            True,  "Send a message on a telepathic channel " <> plusRelatedMsg)
-    , ("d",          go "d",          True,  cmdDescGoDown)
-    , ("e",          go "e",          True,  cmdDescGoEast)
-    , ("empty",      emptyAction,     True,  cmdDescEmpty)
-    , ("equipment",  equip,           True,  cmdDescEquip)
-    , ("expressive", expCmdList,      True,  cmdDescExpCmdList)
-    , ("n",          go "n",          True,  cmdDescGoNorth)
-    , ("ne",         go "ne",         True,  cmdDescGoNortheast)
-    , ("newchannel", newChan,         True,  "Create one or more new telepathic channels.")
-    , ("nw",         go "nw",         True,  cmdDescGoNorthwest)
-    , ("password",   password,        False, "Change your password.")
-    , ("question",   question,        True,  "Ask/answer newbie questions " <> plusRelatedMsg)
-    , ("qui",        quitCan'tAbbrev, True,  "")
-    , ("quit",       quit,            False, "Quit playing CurryMUD.")
-    , ("read",       readAction,      True,  cmdDescRead)
-    , ("remove",     remove,          True,  cmdDescRemove)
-    , ("s",          go "s",          True,  cmdDescGoSouth)
-    , ("se",         go "se",         True,  cmdDescGoSoutheast)
-    , ("security",   security,        True,  "View or change your security Q&A.")
-    , ("set",        setAction,       True,  "View or change settings.")
-    , ("smell",      smell,           True,  cmdDescSmell)
-    , ("sw",         go "sw",         True,  cmdDescGoSouthwest)
-    , ("take",       getAction,       True,  cmdDescGet)
-    , ("tune",       tune,            True,  "Display a list of your telepathic connections, or tune in/out one or \
-                                             \more telepathic connections.")
-    , ("typo",       typo,            True,  "Report a typo.")
-    , ("u",          go "u",          True,  cmdDescGoUp)
-    , ("unlink",     unlink,          True,  "Sever one or more telepathic links.")
-    , ("uptime",     uptime,          True,  "Display how long CurryMUD has been running.")
-    , ("w",          go "w",          True,  cmdDescGoWest)
-    , ("whoami",     whoAmI,          True,  "Confirm your name, sex, and race.") ]
+    [ ("?",          plaDispCmdList,     True,  cmdDescDispCmdList)
+    , ("about",      about,              True,  "About CurryMUD.")
+    , ("admin",      admin,              True,  "Display a list of administrators, or send a message to an administrator.")
+    , ("bars",       bars,               True,  cmdDescBars)
+    , ("bug",        bug,                True,  "Report a bug.")
+    , ("channel",    chan,               True,  "Send a message on a telepathic channel " <> plusRelatedMsg)
+    , ("d",          go "d",             True,  cmdDescGoDown)
+    , ("e",          go "e",             True,  cmdDescGoEast)
+    , ("empty",      emptyAction,        True,  cmdDescEmpty)
+    , ("equipment",  equip,              True,  cmdDescEquip)
+    , ("expressive", expCmdList,         True,  cmdDescExpCmdList)
+    , ("moles",      molestCan'tAbbrev,  True,  "")
+    , ("molest",     alertExec "molest", True,  "")
+    , ("n",          go "n",             True,  cmdDescGoNorth)
+    , ("ne",         go "ne",            True,  cmdDescGoNortheast)
+    , ("newchannel", newChan,            True,  "Create one or more new telepathic channels.")
+    , ("nw",         go "nw",            True,  cmdDescGoNorthwest)
+    , ("password",   password,           False, "Change your password.")
+    , ("question",   question,           True,  "Ask/answer newbie questions " <> plusRelatedMsg)
+    , ("qui",        quitCan'tAbbrev,    True,  "")
+    , ("quit",       quit,               False, "Quit playing CurryMUD.")
+    , ("rap",        rapeCan'tAbbrev,    True,  "")
+    , ("rape",       alertExec "rape",   True,  "")
+    , ("read",       readAction,         True,  cmdDescRead)
+    , ("remove",     remove,             True,  cmdDescRemove)
+    , ("s",          go "s",             True,  cmdDescGoSouth)
+    , ("se",         go "se",            True,  cmdDescGoSoutheast)
+    , ("security",   security,           True,  "View or change your security Q&A.")
+    , ("set",        setAction,          True,  "View or change settings.")
+    , ("smell",      smell,              True,  cmdDescSmell)
+    , ("sw",         go "sw",            True,  cmdDescGoSouthwest)
+    , ("take",       getAction,          True,  cmdDescGet)
+    , ("tune",       tune,               True,  "Display a list of your telepathic connections, or tune in/out one or \
+                                                \more telepathic connections.")
+    , ("typo",       typo,               True,  "Report a typo.")
+    , ("u",          go "u",             True,  cmdDescGoUp)
+    , ("unlink",     unlink,             True,  "Sever one or more telepathic links.")
+    , ("uptime",     uptime,             True,  "Display how long CurryMUD has been running.")
+    , ("w",          go "w",             True,  cmdDescGoWest)
+    , ("whoami",     whoAmI,             True,  "Confirm your name, sex, and race.") ]
 
 
 mkRegularCmd :: CmdFullName -> ActionFun -> Bool -> CmdDesc -> Cmd
@@ -394,7 +398,7 @@ admin (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsgs ->
             filterRoot idSings
               | isAdminId i ms = idSings
               | otherwise      =
-                  let ([((`getPla` ms) -> rootPla, _)], others) = partition ((== "Root") . snd) idSings
+                  let ([((`getPla` ms) -> rootPla, _)], others) = partition ((== iRoot) . fst) idSings
                   in if isLoggedIn rootPla && (not . isIncognito $ rootPla)
                     then idSings
                     else others
@@ -1152,6 +1156,39 @@ helperFillEitherInv i srcDesig targetId (eis:eiss) a@(ms, _, _, _) = case getVes
 -----
 
 
+alertExec :: CmdName -> ActionFun
+alertExec cn (NoArgs'     i mq     ) = alertExecHelper i mq cn "" ""
+alertExec cn (OneArgLower i mq _ a ) = alertExecHelper i mq cn a           . alertExecFindTarget . pure $ a
+alertExec cn (WithArgs    i mq _ as) = alertExecHelper i mq cn (spaces as) . alertExecFindTarget        $ as
+alertExec _  p                       = patternMatchFail "alertExec" [ showText p ]
+
+
+alertExecHelper :: Id -> MsgQueue -> CmdName -> Text -> Sing -> MudStack ()
+alertExecHelper i mq cn args targetSing = do
+    ms <- getState
+    ts <- liftIO mkTimestamp
+    let s        = getSing i ms
+        msg      = T.concat [ s, " attempted to execute ", dblQuote cn, targetingMsg, " ", argsMsg, "." ]
+        adminIds = (iRoot `delete`)  . getAdminIds $ ms
+        rec      = AlertExecRec ts s cn targetSing args
+    sendCmdNotFound mq
+    forM_ adminIds (\adminId -> retainedMsg adminId ms . mkRetainedMsgFromPerson s $ msg)
+    logNotice        "alertExecHelper"   msg
+    logPla           "alertExecHelper" i msg
+    withDbExHandler_ "alertExecHelper" . insertDbTblAlertExec $ rec
+  where
+    targetingMsg = targetSing |!| (spaced targetSing <> targetSing)
+    argsMsg      | ()# args  = "with no arguments"
+                 | otherwise = "with the following arguments: " <> dblQuote args
+
+
+alertExecFindTarget :: Args -> Text
+alertExecFindTarget _ = undefined
+
+
+-----
+
+
 getAction :: ActionFun
 getAction p@AdviseNoArgs             = advise p ["get"] adviceGetNoArgs
 getAction   (Lower     _ mq cols as) | length as >= 3, (head . tail . reverse $ as) == "from" = wrapSend mq cols hintGet
@@ -1804,6 +1841,13 @@ extractMobIdsFromEiss ms = foldl' helper []
 -----
 
 
+molestCan'tAbbrev :: ActionFun
+molestCan'tAbbrev ActionParams { plaMsgQueue } = sendCmdNotFound plaMsgQueue
+
+
+-----
+
+
 motd :: ActionFun
 motd (NoArgs i mq cols) = showMotd mq cols >> logPlaExec "motd" i
 motd p                  = withoutArgs motd p
@@ -2195,6 +2239,13 @@ handleEgress i = do
 quitCan'tAbbrev :: ActionFun
 quitCan'tAbbrev (NoArgs _ mq cols) = wrapSend mq cols sorryQuitCan'tAbbrev
 quitCan'tAbbrev p                  = withoutArgs quitCan'tAbbrev p
+
+
+-----
+
+
+rapeCan'tAbbrev :: ActionFun
+rapeCan'tAbbrev ActionParams { plaMsgQueue } = sendCmdNotFound plaMsgQueue
 
 
 -----

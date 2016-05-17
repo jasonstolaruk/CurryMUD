@@ -2,6 +2,7 @@
 
 module Mud.Misc.Database ( AdminChanRec(..)
                          , AdminMsgRec(..)
+                         , AlertExecRec(..)
                          , BanHostRec(..)
                          , BanPCRec(..)
                          , BugRec(..)
@@ -15,6 +16,7 @@ module Mud.Misc.Database ( AdminChanRec(..)
                          , getDbTblRecs
                          , insertDbTblAdminChan
                          , insertDbTblAdminMsg
+                         , insertDbTblAlertExec
                          , insertDbTblBanHost
                          , insertDbTblBanPC
                          , insertDbTblBug
@@ -54,51 +56,56 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 
 
-data AdminChanRec = AdminChanRec { adminChanTimestamp :: Text
-                                 , adminChanName      :: Text
-                                 , adminChanMsg       :: Text }
-data AdminMsgRec  = AdminMsgRec  { adminMsgTimestamp  :: Text
-                                 , adminMsgFromName   :: Text
-                                 , adminMsgToName     :: Text
-                                 , adminMsgMsg        :: Text }
-data BanHostRec   = BanHostRec   { banHostTimestamp   :: Text
-                                 , banHostHost        :: Text
-                                 , banHostIsBanned    :: Bool
-                                 , banHostReason      :: Text }
-data BanPCRec     = BanPCRec     { banPCTimestamp     :: Text
-                                 , banPCName          :: Text
-                                 , banPCIsBanned      :: Bool
-                                 , banPCReason        :: Text }
-data BugRec       = BugRec       { bugTimestamp       :: Text
-                                 , bugName            :: Text
-                                 , bugLoc             :: Text
-                                 , bugDesc            :: Text
-                                 , bugIsOpen          :: Bool }
-data ChanRec      = ChanRec      { chanTimestamp      :: Text
-                                 , chanChanId         :: Int
-                                 , chanChanName       :: Text
-                                 , chanPCName         :: Text
-                                 , chanMsg            :: Text }
-data ProfRec      = ProfRec      { profTimestamp      :: Text
-                                 , profHost           :: Text
-                                 , profProfanity      :: Text }
-data QuestionRec  = QuestionRec  { questionTimestamp  :: Text
-                                 , questionName       :: Text
-                                 , questionMsg        :: Text }
-data SecRec       = SecRec       { secName            :: Text
-                                 , secQ               :: Text
-                                 , secA               :: Text } deriving Eq
-data TeleRec      = TeleRec      { teleTimestamp      :: Text
-                                 , teleFromName       :: Text
-                                 , teleToName         :: Text
-                                 , teleMsg            :: Text }
-data TypoRec      = TypoRec      { typoTimestamp      :: Text
-                                 , typoName           :: Text
-                                 , typoLoc            :: Text
-                                 , typoDesc           :: Text
-                                 , typoIsOpen         :: Bool }
-data UnPwRec      = UnPwRec      { un                 :: Text
-                                 , pw                 :: Text }
+data AdminChanRec = AdminChanRec  { adminChanTimestamp :: Text
+                                  , adminChanName      :: Text
+                                  , adminChanMsg       :: Text }
+data AdminMsgRec  = AdminMsgRec   { adminMsgTimestamp  :: Text
+                                  , adminMsgFromName   :: Text
+                                  , adminMsgToName     :: Text
+                                  , adminMsgMsg        :: Text }
+data AlertExecRec  = AlertExecRec { alertExecTimestamp :: Text
+                                  , alertExecName      :: Text
+                                  , alertExecCmdName   :: Text
+                                  , alertExecTarget    :: Text
+                                  , alertExecArgs      :: Text }
+data BanHostRec   = BanHostRec    { banHostTimestamp   :: Text
+                                  , banHostHost        :: Text
+                                  , banHostIsBanned    :: Bool
+                                  , banHostReason      :: Text }
+data BanPCRec     = BanPCRec      { banPCTimestamp     :: Text
+                                  , banPCName          :: Text
+                                  , banPCIsBanned      :: Bool
+                                  , banPCReason        :: Text }
+data BugRec       = BugRec        { bugTimestamp       :: Text
+                                  , bugName            :: Text
+                                  , bugLoc             :: Text
+                                  , bugDesc            :: Text
+                                  , bugIsOpen          :: Bool }
+data ChanRec      = ChanRec       { chanTimestamp      :: Text
+                                  , chanChanId         :: Int
+                                  , chanChanName       :: Text
+                                  , chanPCName         :: Text
+                                  , chanMsg            :: Text }
+data ProfRec      = ProfRec       { profTimestamp      :: Text
+                                  , profHost           :: Text
+                                  , profProfanity      :: Text }
+data QuestionRec  = QuestionRec   { questionTimestamp  :: Text
+                                  , questionName       :: Text
+                                  , questionMsg        :: Text }
+data SecRec       = SecRec        { secName            :: Text
+                                  , secQ               :: Text
+                                  , secA               :: Text } deriving Eq
+data TeleRec      = TeleRec       { teleTimestamp      :: Text
+                                  , teleFromName       :: Text
+                                  , teleToName         :: Text
+                                  , teleMsg            :: Text }
+data TypoRec      = TypoRec       { typoTimestamp      :: Text
+                                  , typoName           :: Text
+                                  , typoLoc            :: Text
+                                  , typoDesc           :: Text
+                                  , typoIsOpen         :: Bool }
+data UnPwRec      = UnPwRec       { un                 :: Text
+                                  , pw                 :: Text }
 
 
 -----
@@ -126,6 +133,10 @@ instance FromRow BugRec where
 
 instance FromRow ChanRec where
   fromRow = ChanRec <$ (field :: RowParser Int) <*> field <*> field <*> field <*> field <*> field
+
+
+instance FromRow AlertExecRec where
+  fromRow = AlertExecRec <$ (field :: RowParser Int) <*> field <*> field <*> field <*> field <*> field
 
 
 instance FromRow ProfRec where
@@ -179,6 +190,10 @@ instance ToRow ChanRec where
   toRow (ChanRec a b c d e) = toRow (a, b, c, d, e)
 
 
+instance ToRow AlertExecRec where
+  toRow (AlertExecRec a b c d e) = toRow (a, b, c, d, e)
+
+
 instance ToRow ProfRec where
   toRow (ProfRec a b c) = toRow (a, b, c)
 
@@ -219,6 +234,7 @@ createDbTbls = withConnection dbFile $ \conn -> do
          , "create table if not exists ban_pc     (id integer primary key, timestamp text, name text, is_banned integer, reason text)"
          , "create table if not exists bug        (id integer primary key, timestamp text, name text, loc text, desc text, is_open integer)"
          , "create table if not exists chan       (id integer primary key, timestamp text, chan_id integer, chan_name text, name text, msg text)"
+         , "create table if not exists alert_exec (id integer primary key, timestamp text, name text, cmd_name text, target text, args text)"
          , "create table if not exists profanity  (id integer primary key, timestamp text, host text, prof text)"
          , "create table if not exists question   (id integer primary key, timestamp text, name text, msg text)"
          , "create table if not exists sec        (id integer primary key, name text, question text, answer text)"
@@ -271,6 +287,10 @@ insertDbTblBug = insertDbTblHelper "insert into bug (timestamp, name, loc, desc,
 
 insertDbTblChan :: ChanRec -> IO ()
 insertDbTblChan = insertDbTblHelper "insert into chan (timestamp, chan_id, chan_name, name, msg) values (?, ?, ?, ?, ?)"
+
+
+insertDbTblAlertExec :: AlertExecRec -> IO ()
+insertDbTblAlertExec = insertDbTblHelper "insert into alert_exec (timestamp, name, cmd_name, target, args) values (?, ?, ?, ?, ?)"
 
 
 insertDbTblProf :: ProfRec -> IO ()
