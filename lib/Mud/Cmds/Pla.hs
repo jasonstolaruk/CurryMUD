@@ -1157,33 +1157,41 @@ helperFillEitherInv i srcDesig targetId (eis:eiss) a@(ms, _, _, _) = case getVes
 
 
 alertExec :: CmdName -> ActionFun
-alertExec cn (NoArgs'     i mq     ) = alertExecHelper i mq cn "" ""
-alertExec cn (OneArgLower i mq _ a ) = alertExecHelper i mq cn a           . alertExecFindTarget . pure $ a
-alertExec cn (WithArgs    i mq _ as) = alertExecHelper i mq cn (spaces as) . alertExecFindTarget        $ as
+alertExec cn (NoArgs'     i mq     ) = alertExecHelper i mq cn ""          ""
+alertExec cn (OneArgLower i mq _ a ) = alertExecHelper i mq cn a           a
+alertExec cn (WithArgs    i mq _ as) = alertExecHelper i mq cn (head as) . spaces $ as
 alertExec _  p                       = patternMatchFail "alertExec" [ showText p ]
 
 
-alertExecHelper :: Id -> MsgQueue -> CmdName -> Text -> Sing -> MudStack ()
-alertExecHelper i mq cn args targetSing = do
+alertExecHelper :: Id -> MsgQueue -> CmdName -> Text -> Text -> MudStack ()
+alertExecHelper i mq cn target args = do
     ms <- getState
     ts <- liftIO mkTimestamp
-    let s        = getSing i ms
-        msg      = T.concat [ s, " attempted to execute ", dblQuote cn, targetingMsg, " ", argsMsg, "." ]
-        adminIds = (iRoot `delete`)  . getAdminIds $ ms
-        rec      = AlertExecRec ts s cn targetSing args
+    let s          = getSing i ms
+        targetSing = alertExecFindTargetSing i ms target
+        msg        = T.concat [ s, " attempted to execute ", dblQuote cn, targetingMsg targetSing, " ", argsMsg, "." ]
+        outIds     = (iRoot `delete`) $ getAdminIds ms \\ getLoggedInAdminIds ms
+        rec        = AlertExecRec ts s cn targetSing args
     sendCmdNotFound mq
-    forM_ adminIds (\adminId -> retainedMsg adminId ms . mkRetainedMsgFromPerson s $ msg)
+    bcastAdmins msg
+    forM_ outIds (\adminId -> retainedMsg adminId ms . mkRetainedMsgFromPerson s $ msg)
     logNotice        "alertExecHelper"   msg
     logPla           "alertExecHelper" i msg
     withDbExHandler_ "alertExecHelper" . insertDbTblAlertExec $ rec
   where
-    targetingMsg = targetSing |!| (spaced targetSing <> targetSing)
-    argsMsg      | ()# args  = "with no arguments"
-                 | otherwise = "with the following arguments: " <> dblQuote args
+    targetingMsg targetSing = targetSing |!| (" targeting " <> targetSing)
+    argsMsg | ()# args  = "with no arguments"
+            | otherwise = "with the following arguments: " <> dblQuote args
 
 
-alertExecFindTarget :: Args -> Text
-alertExecFindTarget _ = undefined
+alertExecFindTargetSing :: Id -> MudState -> Text -> Text
+alertExecFindTargetSing _ _  ""     = ""
+alertExecFindTargetSing i ms target =
+    let (_, _, inRms) = sortArgsInvEqRm InRm . pure $ target
+        ri            = getRmId i ms
+        invCoins      = first (i `delete`) . getNonIncogInvCoins ri $ ms
+        (eiss, ecs)   = uncurry (resolveRmInvCoins i ms inRms) invCoins
+    in if ()# invCoins then "" else ()!# ecs ? "" :? either (const "") ((`getSing` ms) . head) (head eiss)
 
 
 -----

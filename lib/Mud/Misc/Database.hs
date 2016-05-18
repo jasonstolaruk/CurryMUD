@@ -56,56 +56,56 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 
 
-data AdminChanRec = AdminChanRec  { adminChanTimestamp :: Text
-                                  , adminChanName      :: Text
-                                  , adminChanMsg       :: Text }
-data AdminMsgRec  = AdminMsgRec   { adminMsgTimestamp  :: Text
-                                  , adminMsgFromName   :: Text
-                                  , adminMsgToName     :: Text
-                                  , adminMsgMsg        :: Text }
-data AlertExecRec  = AlertExecRec { alertExecTimestamp :: Text
-                                  , alertExecName      :: Text
-                                  , alertExecCmdName   :: Text
-                                  , alertExecTarget    :: Text
-                                  , alertExecArgs      :: Text }
-data BanHostRec   = BanHostRec    { banHostTimestamp   :: Text
-                                  , banHostHost        :: Text
-                                  , banHostIsBanned    :: Bool
-                                  , banHostReason      :: Text }
-data BanPCRec     = BanPCRec      { banPCTimestamp     :: Text
-                                  , banPCName          :: Text
-                                  , banPCIsBanned      :: Bool
-                                  , banPCReason        :: Text }
-data BugRec       = BugRec        { bugTimestamp       :: Text
-                                  , bugName            :: Text
-                                  , bugLoc             :: Text
-                                  , bugDesc            :: Text
-                                  , bugIsOpen          :: Bool }
-data ChanRec      = ChanRec       { chanTimestamp      :: Text
-                                  , chanChanId         :: Int
-                                  , chanChanName       :: Text
-                                  , chanPCName         :: Text
-                                  , chanMsg            :: Text }
-data ProfRec      = ProfRec       { profTimestamp      :: Text
-                                  , profHost           :: Text
-                                  , profProfanity      :: Text }
-data QuestionRec  = QuestionRec   { questionTimestamp  :: Text
-                                  , questionName       :: Text
-                                  , questionMsg        :: Text }
-data SecRec       = SecRec        { secName            :: Text
-                                  , secQ               :: Text
-                                  , secA               :: Text } deriving Eq
-data TeleRec      = TeleRec       { teleTimestamp      :: Text
-                                  , teleFromName       :: Text
-                                  , teleToName         :: Text
-                                  , teleMsg            :: Text }
-data TypoRec      = TypoRec       { typoTimestamp      :: Text
-                                  , typoName           :: Text
-                                  , typoLoc            :: Text
-                                  , typoDesc           :: Text
-                                  , typoIsOpen         :: Bool }
-data UnPwRec      = UnPwRec       { un                 :: Text
-                                  , pw                 :: Text }
+data AdminChanRec = AdminChanRec { adminChanTimestamp :: Text
+                                 , adminChanName      :: Text
+                                 , adminChanMsg       :: Text }
+data AdminMsgRec  = AdminMsgRec  { adminMsgTimestamp  :: Text
+                                 , adminMsgFromName   :: Text
+                                 , adminMsgToName     :: Text
+                                 , adminMsgMsg        :: Text }
+data AlertExecRec = AlertExecRec { alertExecTimestamp :: Text
+                                 , alertExecName      :: Text
+                                 , alertExecCmdName   :: Text
+                                 , alertExecTarget    :: Text
+                                 , alertExecArgs      :: Text }
+data BanHostRec   = BanHostRec   { banHostTimestamp   :: Text
+                                 , banHostHost        :: Text
+                                 , banHostIsBanned    :: Bool
+                                 , banHostReason      :: Text }
+data BanPCRec     = BanPCRec     { banPCTimestamp     :: Text
+                                 , banPCName          :: Text
+                                 , banPCIsBanned      :: Bool
+                                 , banPCReason        :: Text }
+data BugRec       = BugRec       { bugTimestamp       :: Text
+                                 , bugName            :: Text
+                                 , bugLoc             :: Text
+                                 , bugDesc            :: Text
+                                 , bugIsOpen          :: Bool }
+data ChanRec      = ChanRec      { chanTimestamp      :: Text
+                                 , chanChanId         :: Int
+                                 , chanChanName       :: Text
+                                 , chanPCName         :: Text
+                                 , chanMsg            :: Text }
+data ProfRec      = ProfRec      { profTimestamp      :: Text
+                                 , profHost           :: Text
+                                 , profProfanity      :: Text }
+data QuestionRec  = QuestionRec  { questionTimestamp  :: Text
+                                 , questionName       :: Text
+                                 , questionMsg        :: Text }
+data SecRec       = SecRec       { secName            :: Text
+                                 , secQ               :: Text
+                                 , secA               :: Text } deriving Eq
+data TeleRec      = TeleRec      { teleTimestamp      :: Text
+                                 , teleFromName       :: Text
+                                 , teleToName         :: Text
+                                 , teleMsg            :: Text }
+data TypoRec      = TypoRec      { typoTimestamp      :: Text
+                                 , typoName           :: Text
+                                 , typoLoc            :: Text
+                                 , typoDesc           :: Text
+                                 , typoIsOpen         :: Bool }
+data UnPwRec      = UnPwRec      { un                 :: Text
+                                 , pw                 :: Text }
 
 
 -----
