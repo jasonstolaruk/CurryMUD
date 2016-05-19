@@ -1072,9 +1072,7 @@ fillHelper i ms LastArgIsTargetBindings { .. } targetId =
     let (inInvs, inEqs, inRms)      = sortArgsInvEqRm InInv otherArgs
         sorryInEq                   = inEqs |!| sorryFillInEq
         sorryInRm                   = inRms |!| sorryFillInRm
-        (gecrs, miss, rcs)          = uncurry (resolveEntCoinNames i ms inInvs) srcInvCoins
-        eiss                        = zipWith (curry procGecrMisMobInv) gecrs miss
-        ecs                         = map procReconciledCoinsMobInv rcs
+        (eiss, ecs)                 = uncurry (resolveMobInvCoins i ms inInvs) srcInvCoins
         sorryCoins                  = ecs |!| sorryFillCoins
         (ms', toSelfs, bs, logMsgs) = helperFillEitherInv i srcDesig targetId eiss (ms, [], [], [])
     in (ms', (dropBlanks $ [ sorryInEq, sorryInRm, sorryCoins ] ++ toSelfs, bs, logMsgs, []))
@@ -1265,9 +1263,7 @@ shuffleGive i ms LastArgIsTargetBindings { .. } =
           then let (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv otherArgs
                    sorryInEq              = inEqs |!| sorryGiveInEq
                    sorryInRm              = inRms |!| sorryGiveInRm
-                   (gecrs, miss, rcs) = uncurry (resolveEntCoinNames i ms inInvs) srcInvCoins
-                   eiss               = zipWith (curry procGecrMisMobInv) gecrs miss
-                   ecs                = map procReconciledCoinsMobInv rcs
+                   (eiss, ecs)            = uncurry (resolveMobInvCoins i ms inInvs) srcInvCoins
                    (ms',  toSelfs,  bs,  logMsgs ) = foldl' (helperGiveEitherInv  i srcDesig targetId)
                                                             (ms, [], [], [])
                                                             eiss
@@ -2038,9 +2034,7 @@ shufflePut i ms d conName icir as invCoinsWithCon@(invWithCon, _) mobInvCoins f 
               else let (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv as
                        sorryInEq              = inEqs |!| sorryPutInEq
                        sorryInRm              = inRms |!| sorryPutInRm
-                       (gecrs, miss, rcs)     = uncurry (resolveEntCoinNames i ms inInvs) mobInvCoins
-                       eiss                   = zipWith (curry procGecrMisMobInv) gecrs miss
-                       ecs                    = map procReconciledCoinsMobInv rcs
+                       (eiss, ecs)            = uncurry (resolveMobInvCoins i ms inInvs) mobInvCoins
                        mnom                   = mkMaybeNthOfM ms icir conId conSing invWithCon
                        (ms',  toSelfs,  bs,  logMsgs ) = foldl' (helperPutEitherInv  i d mnom conId conSing)
                                                                 (ms, [], [], [])
