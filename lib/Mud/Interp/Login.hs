@@ -88,8 +88,8 @@ logPla = L.logPla "Mud.Interp.Login"
 -- ==================================================
 
 
-interpName :: Interp
-interpName (T.toLower -> cn@(capitalize -> cn')) params@(NoArgs i mq cols)
+interpName :: Int -> Interp
+interpName times (T.toLower -> cn@(capitalize -> cn')) params@(NoArgs i mq cols)
   | not . inRange (minNameLen, maxNameLen) . T.length $ cn = promptRetryName mq cols sorryInterpNameLen
   | T.any (`elem` illegalChars) cn                         = promptRetryName mq cols sorryInterpNameIllegal
   | otherwise                                              = getState >>= \ms ->
@@ -103,16 +103,16 @@ interpName (T.toLower -> cn@(capitalize -> cn')) params@(NoArgs i mq cols)
                   confirmName
         [(targetId, targetPla)] -> do
             sendPrompt mq $ telnetHideInput <> "Password:"
-            setInterp i . Just . interpPW cn' targetId $ targetPla
+            setInterp i . Just . interpPW times cn' targetId $ targetPla
         (map fst -> xs) -> patternMatchFail "interpName" [ showText xs ]
   where
     illegalChars = [ '!' .. '@' ] ++ [ '[' .. '`' ] ++ [ '{' .. '~' ]
     confirmName
-      | isDebug, isZBackDoor, T.head cn' == 'Z' = zBackDoor cn' params
+      | isDebug, isZBackDoor, T.head cn' == 'Z' = zBackDoor times cn' params
       | otherwise                               = do
           wrapSendPrompt mq cols $ "Your name will be " <> dblQuote (cn' <> ",") <> " is that OK? [yes/no]"
-          setInterp i . Just . interpConfirmName $ cn'
-interpName _ ActionParams { .. } = promptRetryName plaMsgQueue plaCols sorryInterpNameExcessArgs
+          setInterp i . Just . interpConfirmName times $ cn'
+interpName _ _ ActionParams { .. } = promptRetryName plaMsgQueue plaCols sorryInterpNameExcessArgs
 
 
 promptRetryName :: MsgQueue -> Cols -> Text -> MudStack ()
@@ -122,8 +122,8 @@ promptRetryName mq cols msg = let t = "Let's try this again. By what name are yo
                                 else wrapSend  mq cols msg
 
 
-zBackDoor :: Sing -> ActionParams -> MudStack ()
-zBackDoor s params@ActionParams { .. } = setSingIfNotTaken s params >>= maybeVoid helper
+zBackDoor :: Int -> Sing -> ActionParams -> MudStack ()
+zBackDoor times s params@ActionParams { .. } = setSingIfNotTaken times s params >>= maybeVoid helper
   where
     helper oldSing = do
       wrapSend plaMsgQueue plaCols "You quietly slip through the back door..."
@@ -185,10 +185,10 @@ checkRndmNames mq cols = checkNameHelper (Just rndmNamesFile) "checkRndmNames" .
 -- ==================================================
 
 
-interpConfirmName :: Sing -> Interp
-interpConfirmName s cn params@(NoArgs i mq cols) = case yesNoHelper cn of
-  Just True  -> setSingIfNotTaken s params >>= maybeVoid helper
-  Just False -> promptRetryName  mq cols "" >> setInterp i (Just interpName)
+interpConfirmName :: Int -> Sing -> Interp
+interpConfirmName times s cn params@(NoArgs i mq cols) = case yesNoHelper cn of
+  Just True  -> setSingIfNotTaken times s params >>= maybeVoid helper
+  Just False -> promptRetryName  mq cols "" >> setInterp i (Just . interpName $ times)
   Nothing    -> promptRetryYesNo mq cols
   where
     helper oldSing = do
@@ -196,20 +196,20 @@ interpConfirmName s cn params@(NoArgs i mq cols) = case yesNoHelper cn of
                                    , nlPrefix . multiWrap cols . pwMsg $ "Please choose a password for " <> s <> "."
                                    , "New password:" ]
         setInterp i . Just . interpNewPW oldSing $ s
-interpConfirmName _ _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNo plaMsgQueue plaCols
+interpConfirmName _ _ _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNo plaMsgQueue plaCols
 
 
-setSingIfNotTaken :: Sing -> ActionParams -> MudStack (Maybe Sing)
-setSingIfNotTaken s (NoArgs i mq cols) = getSing i <$> getState >>= \oldSing -> mIf (modifyState helper)
+setSingIfNotTaken :: Int -> Sing -> ActionParams -> MudStack (Maybe Sing)
+setSingIfNotTaken times s (NoArgs i mq cols) = getSing i <$> getState >>= \oldSing -> mIf (modifyState helper)
   (let msg = T.concat [ oldSing, " is now known as ", s, "." ]
    in do { bcastAdmins msg
          ; logNotice "setSingIfNotTaken" msg
          ; return (Just oldSing) })
-  (promptRetryName mq cols sorryInterpNameTaken >> setInterp i (Just interpName) >> return Nothing)
+  (promptRetryName mq cols sorryInterpNameTaken >> setInterp i (Just . interpName $ times) >> return Nothing)
   where
     helper ms | ()!# (filter ((== s) . (`getSing` ms) . fst) . views plaTbl IM.toList $ ms) = (ms, False)
               | otherwise = (ms & entTbl.ind i.sing .~ s, True)
-setSingIfNotTaken _ p = patternMatchFail "setSingIfNotTaken" [ showText p ]
+setSingIfNotTaken _ _ p = patternMatchFail "setSingIfNotTaken" [ showText p ]
 
 
 -- ==================================================
@@ -283,43 +283,50 @@ notifyQuestion i ms =
 
 
 -- Returning player.
-interpPW :: Sing -> Id -> Pla -> Interp
-interpPW targetSing targetId targetPla cn params@(WithArgs i mq cols as) = send mq telnetShowInput >> if
-  | ()# cn || ()!# as -> sorryHelper sorryInterpPW
-  | otherwise         -> getState >>= \ms -> do
-      let oldSing = getSing i ms
-      (withDbExHandler "interpPW" . liftIO . lookupPW $ targetSing) >>= \case
+interpPW :: Int -> Sing -> Id -> Pla -> Interp
+interpPW times targetSing targetId targetPla cn params@(WithArgs i mq cols as) = getState >>= \ms -> do
+    let oldSing = getSing i ms
+    send mq telnetShowInput >> if ()# cn || ()!# as
+      then sorryPW oldSing
+      else (withDbExHandler "interpPW" . liftIO . lookupPW $ targetSing) >>= \case
         Nothing        -> dbError mq cols
         Just (Just pw) -> if uncurry validatePassword ((pw, cn) & both %~ T.encodeUtf8)
           then if isLoggedIn targetPla
-            then sorry (sorryInterpPwLoggedIn targetSing) . T.concat $ [ oldSing
-                                                                       , " has entered the correct password for "
-                                                                       , targetSing
-                                                                       , "; however, "
-                                                                       , targetSing
-                                                                       , " is already logged in." ]
+            then sorry oldSing (sorryInterpPwLoggedIn targetSing) . T.concat $ [ oldSing
+                                                                               , " has entered the correct password for "
+                                                                               , targetSing
+                                                                               , "; however, "
+                                                                               , targetSing
+                                                                               , " is already logged in." ]
             else (withDbExHandler "interpPW" . isPCBanned $ targetSing) >>= \case
               Nothing          -> dbError mq cols
               Just (Any True ) -> handleBanned    ms oldSing
               Just (Any False) -> handleNotBanned ms oldSing
-          else sorry sorryInterpPW . T.concat $ [ oldSing, " has entered an incorrect password for ", targetSing, "." ]
-        Just Nothing -> sorryHelper sorryInterpPW
+          else sorryPW oldSing
+        Just Nothing -> sorryHelper oldSing sorryInterpPW
   where
-    sorry sorryMsg msg = do
+    sorryPW oldSing            = let msg = T.concat [ oldSing, " has entered an incorrect password for ", targetSing, "." ]
+                                 in sorry oldSing sorryInterpPW msg
+    sorry oldSing sorryMsg msg = do
         bcastAdmins msg
         logNotice "interpPW sorry" msg
-        sorryHelper sorryMsg
-    sorryHelper sorryMsg = do
-        liftIO . threadDelay $ 2 * 10 ^ 6
-        promptRetryName mq cols sorryMsg
-        setInterp i . Just $ interpName
+        sorryHelper oldSing sorryMsg
+    sorryHelper oldSing sorryMsg = (liftIO . threadDelay $ 2 * 10 ^ 6) >> if
+      | times == 4 -> do
+          let msg = "Booting " <> oldSing <> " due to excessive incorrect passwords."
+          sendMsgBoot mq . Just $ sorryInterpPwBoot
+          bcastAdmins msg
+          logNotice "interpPW sorryHelper" msg
+      | otherwise -> do
+          promptRetryName mq cols sorryMsg
+          setInterp i . Just . interpName $ succ times
     handleBanned (T.pack . getCurrHostName i -> host) oldSing = do
-        let msg  = T.concat [ oldSing
-                            , " has been booted at login upon entering the correct password for "
-                            , targetSing
-                            , " "
-                            , parensQuote "player is banned"
-                            , "." ]
+        let msg = T.concat [ oldSing
+                           , " has been booted at login upon entering the correct password for "
+                           , targetSing
+                           , " "
+                           , parensQuote "player is banned"
+                           , "." ]
         sendMsgBoot mq . Just . sorryInterpPwBanned $ targetSing
         bcastAdmins $ msg <> " Consider also banning host " <> dblQuote host <> "."
         logNotice "interpPW handleBanned" msg
@@ -337,7 +344,7 @@ interpPW targetSing targetId targetPla cn params@(WithArgs i mq cols as) = send 
                initPlaLog i targetSing
                logPla "interpPW handleNotBanned" i $ "logged in from " <> T.pack (getCurrHostName i ms) <> "."
                handleLogin oldSing targetSing False params { args = [] }
-interpPW _ _ _ _ p = patternMatchFail "interpPW" [ showText p ]
+interpPW _ _ _ _ _ p = patternMatchFail "interpPW" [ showText p ]
 
 
 logIn :: Id -> MudState -> HostName -> Maybe UTCTime -> Id -> MudState

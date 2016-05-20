@@ -113,7 +113,7 @@ adHoc mq host = do
                        , _nowEating     = Nothing
                        , _nowDrinking   = Nothing
                        , _regenQueue    = Nothing
-                       , _interp        = Just interpName }
+                       , _interp        = Just . interpName $ 0 }
             pc   = PC  { _race       = r
                        , _introduced = []
                        , _linked     = [] }

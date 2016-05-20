@@ -118,6 +118,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryInterpPager
                            , sorryInterpPW
                            , sorryInterpPwBanned
+                           , sorryInterpPwBoot
                            , sorryInterpPwLoggedIn
                            , sorryIntroAlready
                            , sorryIntroCoin
@@ -937,7 +938,11 @@ sorryInterpPager = T.concat [ "Enter a blank line or "
 
 
 sorryInterpPW :: Text
-sorryInterpPW = "Invalid password."
+sorryInterpPW = "Incorrect password."
+
+
+sorryInterpPwBoot :: Text
+sorryInterpPwBoot = "You are being booted due to excessive incorrect passwords."
 
 
 sorryInterpPwBanned :: Sing -> Text
