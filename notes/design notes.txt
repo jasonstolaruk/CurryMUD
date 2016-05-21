@@ -120,8 +120,6 @@ Players should be made aware that their privacy cannot be guaranteed. Player act
 
 Is multi-playing and allowed? If not, then players need a way to formally retire their character.
 
-Consider immediately alerting administrators when any in-game communication includes the word "rape."
-
 Allow some degree of player-created content, but only using in-context methods (which is to say that players cannot be "builders"). p.457-8
 
 Create a history and backstory for the virtual world.

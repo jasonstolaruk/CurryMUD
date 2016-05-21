@@ -28,6 +28,10 @@ aggregateCoinNames :: [Text]
 aggregateCoinNames = [ "coin", "coins" ]
 
 
+alertMsgTriggers :: [Text]
+alertMsgTriggers = [ "molest", "rape" ]
+
+
 allCoinNames :: [Text]
 allCoinNames = coinNames ++ aggregateCoinNames
 

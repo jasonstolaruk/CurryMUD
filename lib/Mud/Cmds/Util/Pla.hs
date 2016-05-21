@@ -4,7 +4,8 @@
 -- This module contains helper functions used by multiple functions in "Mud.Cmds.Pla", as well as helper functions used
 -- by both "Mud.Cmds.Pla" and "Mud.Cmds.ExpCmds".
 
-module Mud.Cmds.Util.Pla ( armSubToSlot
+module Mud.Cmds.Util.Pla ( alertMsgHelper
+                         , armSubToSlot
                          , bugTypoLogger
                          , checkMutuallyTuned
                          , clothToSlot
@@ -81,6 +82,7 @@ import Mud.Data.State.Util.Random
 import Mud.Misc.ANSI
 import Mud.Misc.Database
 import Mud.Misc.NameResolution
+import Mud.TheWorld.Zones.AdminZoneIds (iRoot)
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
 import Mud.TopLvlDefs.Padding
@@ -94,13 +96,13 @@ import Mud.Util.Quoting
 import Mud.Util.Text
 import Mud.Util.Wrapping
 import Prelude hiding (pi, recip)
-import qualified Mud.Misc.Logging as L (logPla, logPlaOut)
+import qualified Mud.Misc.Logging as L (logNotice, logPla, logPlaOut)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Arrow ((***), first, second)
 import Control.Lens (Getter, _1, _2, _3, _4, _5, at, both, each, to, view, views)
 import Control.Lens.Operators ((%~), (&), (.~), (<>~), (?~), (^.))
-import Control.Monad ((>=>), guard)
+import Control.Monad ((>=>), forM_, guard)
 import Control.Monad.IO.Class (liftIO)
 import Data.Char (isLower)
 import Data.Function (on)
@@ -133,6 +135,10 @@ patternMatchFail = U.patternMatchFail "Mud.Cmds.Util.Pla"
 -----
 
 
+logNotice :: Text -> Text -> MudStack ()
+logNotice = L.logNotice "Mud.Cmds.Util.Pla"
+
+
 logPla :: Text -> Id -> Text -> MudStack ()
 logPla = L.logPla "Mud.Cmds.Util.Pla"
 
@@ -142,6 +148,35 @@ logPlaOut = L.logPlaOut "Mud.Cmds.Util.Pla"
 
 
 -- ==================================================
+
+
+alertMsgHelper :: Id -> CmdName -> Text -> MudStack ()
+alertMsgHelper i cn txt = getState >>= \ms -> if isAdminId i ms
+  then unit
+  else let matches = filter (`T.isInfixOf` T.toLower txt) alertMsgTriggers
+       in if ()!# matches
+         then liftIO mkTimestamp >>= \ts ->
+             let match = head matches
+                 s      = getSing i ms
+                 msg    = T.concat [ s
+                                   , " issued a message via the "
+                                   , dblQuote cn
+                                   , " command containing the word "
+                                   , dblQuote match
+                                   , ": "
+                                   , txt ]
+                 outIds = (iRoot `delete`) $ getAdminIds ms \\ getLoggedInAdminIds ms
+                 rec    = AlertMsgRec ts s cn match txt
+             in do
+                 bcastAdmins msg
+                 forM_ outIds (\adminId -> retainedMsg adminId ms . mkRetainedMsgFromPerson s $ msg)
+                 logNotice        "alertMsgHelper"   msg
+                 logPla           "alertMsgHelper" i msg
+                 withDbExHandler_ "alertMsgHelper" . insertDbTblAlertMsg $ rec
+         else unit
+
+
+-----
 
 
 armSubToSlot :: ArmSub -> Slot

@@ -2721,9 +2721,11 @@ say p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
     formatMsg               = dblQuote . capitalizeMsg . punctuateMsg
     ioHelper ms triple@(x:xs, _, _) | f                     <- parseDesig i ms
                                     , (toSelfs, bs, logMsg) <- triple & _1 .~ f x : xs
-                                                                      & _3 %~ f = do { multiWrapSend mq cols toSelfs
-                                                                                     ; bcastIfNotIncogNl i bs
-                                                                                     ; logMsg |#| logPlaOut "say" i . pure }
+                                                                      & _3 %~ f
+                                    = do { multiWrapSend mq cols toSelfs
+                                         ; bcastIfNotIncogNl i bs
+                                         ; logMsg |#| logPlaOut "say" i . pure
+                                         ; logMsg |#| alertMsgHelper i "say" }
     ioHelper _  triple              = patternMatchFail "say ioHelper" [ showText triple ]
     simpleSayHelper ms (maybe "" (" " <>) -> adverb) (formatMsg -> msg) =
         return $ let d             = mkStdDesig i ms DoCap

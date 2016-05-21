@@ -3,6 +3,7 @@
 module Mud.Misc.Database ( AdminChanRec(..)
                          , AdminMsgRec(..)
                          , AlertExecRec(..)
+                         , AlertMsgRec(..)
                          , BanHostRec(..)
                          , BanPCRec(..)
                          , BugRec(..)
@@ -17,6 +18,7 @@ module Mud.Misc.Database ( AdminChanRec(..)
                          , insertDbTblAdminChan
                          , insertDbTblAdminMsg
                          , insertDbTblAlertExec
+                         , insertDbTblAlertMsg
                          , insertDbTblBanHost
                          , insertDbTblBanPC
                          , insertDbTblBug
@@ -68,6 +70,11 @@ data AlertExecRec = AlertExecRec { alertExecTimestamp :: Text
                                  , alertExecCmdName   :: Text
                                  , alertExecTarget    :: Text
                                  , alertExecArgs      :: Text }
+data AlertMsgRec  = AlertMsgRec  { alertMsgTimestamp  :: Text
+                                 , alertMsgName       :: Text
+                                 , alertMsgCmdName    :: Text
+                                 , alertMsgTrigger    :: Text
+                                 , alertMsgMsg        :: Text }
 data BanHostRec   = BanHostRec   { banHostTimestamp   :: Text
                                  , banHostHost        :: Text
                                  , banHostIsBanned    :: Bool
@@ -119,6 +126,14 @@ instance FromRow AdminMsgRec where
   fromRow = AdminMsgRec <$ (field :: RowParser Int) <*> field <*> field <*> field <*> field
 
 
+instance FromRow AlertExecRec where
+  fromRow = AlertExecRec <$ (field :: RowParser Int) <*> field <*> field <*> field <*> field <*> field
+
+
+instance FromRow AlertMsgRec where
+  fromRow = AlertMsgRec <$ (field :: RowParser Int) <*> field <*> field <*> field <*> field <*> field
+
+
 instance FromRow BanHostRec where
   fromRow = BanHostRec <$ (field :: RowParser Int) <*> field <*> field <*> field <*> field
 
@@ -133,10 +148,6 @@ instance FromRow BugRec where
 
 instance FromRow ChanRec where
   fromRow = ChanRec <$ (field :: RowParser Int) <*> field <*> field <*> field <*> field <*> field
-
-
-instance FromRow AlertExecRec where
-  fromRow = AlertExecRec <$ (field :: RowParser Int) <*> field <*> field <*> field <*> field <*> field
 
 
 instance FromRow ProfRec where
@@ -174,6 +185,14 @@ instance ToRow AdminMsgRec where
   toRow (AdminMsgRec a b c d) = toRow (a, b, c, d)
 
 
+instance ToRow AlertExecRec where
+  toRow (AlertExecRec a b c d e) = toRow (a, b, c, d, e)
+
+
+instance ToRow AlertMsgRec where
+  toRow (AlertMsgRec a b c d e) = toRow (a, b, c, d, e)
+
+
 instance ToRow BanHostRec where
   toRow (BanHostRec a b c d) = toRow (a, b, c, d)
 
@@ -188,10 +207,6 @@ instance ToRow BugRec where
 
 instance ToRow ChanRec where
   toRow (ChanRec a b c d e) = toRow (a, b, c, d, e)
-
-
-instance ToRow AlertExecRec where
-  toRow (AlertExecRec a b c d e) = toRow (a, b, c, d, e)
 
 
 instance ToRow ProfRec where
@@ -230,11 +245,12 @@ createDbTbls = withConnection dbFile $ \conn -> do
   where
     qs = [ "create table if not exists admin_chan (id integer primary key, timestamp text, name text, msg text)"
          , "create table if not exists admin_msg  (id integer primary key, timestamp text, fromName text, toName text, msg text)"
+         , "create table if not exists alert_exec (id integer primary key, timestamp text, name text, cmd_name text, target text, args text)"
+         , "create table if not exists alert_msg  (id integer primary key, timestamp text, name text, cmd_name text, trigger text, msg text)"
          , "create table if not exists ban_host   (id integer primary key, timestamp text, host text, is_banned integer, reason text)"
          , "create table if not exists ban_pc     (id integer primary key, timestamp text, name text, is_banned integer, reason text)"
          , "create table if not exists bug        (id integer primary key, timestamp text, name text, loc text, desc text, is_open integer)"
          , "create table if not exists chan       (id integer primary key, timestamp text, chan_id integer, chan_name text, name text, msg text)"
-         , "create table if not exists alert_exec (id integer primary key, timestamp text, name text, cmd_name text, target text, args text)"
          , "create table if not exists profanity  (id integer primary key, timestamp text, host text, prof text)"
          , "create table if not exists question   (id integer primary key, timestamp text, name text, msg text)"
          , "create table if not exists sec        (id integer primary key, name text, question text, answer text)"
@@ -273,6 +289,14 @@ insertDbTblAdminMsg :: AdminMsgRec -> IO ()
 insertDbTblAdminMsg = insertDbTblHelper "insert into admin_msg (timestamp, fromName, toName, msg) values (?, ?, ?, ?)"
 
 
+insertDbTblAlertExec :: AlertExecRec -> IO ()
+insertDbTblAlertExec = insertDbTblHelper "insert into alert_exec (timestamp, name, cmd_name, target, args) values (?, ?, ?, ?, ?)"
+
+
+insertDbTblAlertMsg :: AlertMsgRec -> IO ()
+insertDbTblAlertMsg = insertDbTblHelper "insert into alert_msg (timestamp, name, cmd_name, trigger, msg) values (?, ?, ?, ?, ?)"
+
+
 insertDbTblBanHost :: BanHostRec -> IO ()
 insertDbTblBanHost = insertDbTblHelper "insert into ban_host (timestamp, host, is_banned, reason) values (?, ?, ?, ?)"
 
@@ -287,10 +311,6 @@ insertDbTblBug = insertDbTblHelper "insert into bug (timestamp, name, loc, desc,
 
 insertDbTblChan :: ChanRec -> IO ()
 insertDbTblChan = insertDbTblHelper "insert into chan (timestamp, chan_id, chan_name, name, msg) values (?, ?, ?, ?, ?)"
-
-
-insertDbTblAlertExec :: AlertExecRec -> IO ()
-insertDbTblAlertExec = insertDbTblHelper "insert into alert_exec (timestamp, name, cmd_name, target, args) values (?, ?, ?, ?, ?)"
 
 
 insertDbTblProf :: ProfRec -> IO ()
