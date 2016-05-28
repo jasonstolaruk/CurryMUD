@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
-{-# LANGUAGE LambdaCase, MultiWayIf, OverloadedStrings, PatternSynonyms, RebindableSyntax, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, MultiWayIf, OverloadedStrings, PatternSynonyms, RankNTypes, RebindableSyntax, ViewPatterns #-}
 
 module Mud.Misc.NameResolution ( ReconciledCoins
                                , procGecrMisCon
@@ -262,6 +262,16 @@ mkGecrWithRol i ms is c n@(T.breakOn (T.singleton slotChar) -> (a, b))
 -- ==================================================
 -- Processing "GetEntsCoinsRes":
 
+
+pattern DupIdsEmpty  :: forall a b. (a, Maybe [b])
+pattern SorryOne     :: forall a.   Text          -> (GetEntsCoinsRes, Maybe a)
+pattern NoneMult     :: forall a.   Text          -> (GetEntsCoinsRes, Maybe a)
+pattern FoundMult    :: forall a b. Either a b    -> (GetEntsCoinsRes, Maybe b)
+pattern NoneIndexed  :: forall a.   Text          -> (GetEntsCoinsRes, Maybe a)
+pattern SorryIndexed :: forall a.   Index -> Plur -> (GetEntsCoinsRes, Maybe a)
+pattern FoundIndexed :: forall a b. Either a b    -> (GetEntsCoinsRes, Maybe b)
+pattern SorryCoins   :: forall a.                    (GetEntsCoinsRes, Maybe a)
+pattern GenericSorry :: forall a.   Text          -> (GetEntsCoinsRes, Maybe a)
 
 -- "DupIdsEmpty" applies when nothing is left after having eliminated duplicate IDs.
 pattern DupIdsEmpty      <- (_,                                                                         Just [])

@@ -214,6 +214,12 @@ ok mq = send mq . nlnl $ "OK!"
 -----
 
 
+{-
+TODO: Write a new desig parser that:
+You say to the male elf, "Hello!"
+...becomes...
+You say to the male elf[Taro], "Hello!"
+-}
 parseDesig :: Id -> MudState -> Text -> Text
 parseDesig i ms = loop (getIntroduced i ms)
   where

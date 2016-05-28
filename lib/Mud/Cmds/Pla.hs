@@ -2725,7 +2725,7 @@ say p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
                                     = do { multiWrapSend mq cols toSelfs
                                          ; bcastIfNotIncogNl i bs
                                          ; logMsg |#| logPlaOut "say" i . pure
-                                         ; logMsg |#| alertMsgHelper i "say" }
+                                         ; logMsg |#| alertMsgHelper i "say" } -- TODO: Use your new desig parser.
     ioHelper _  triple              = patternMatchFail "say ioHelper" [ showText triple ]
     simpleSayHelper ms (maybe "" (" " <>) -> adverb) (formatMsg -> msg) =
         return $ let d             = mkStdDesig i ms DoCap

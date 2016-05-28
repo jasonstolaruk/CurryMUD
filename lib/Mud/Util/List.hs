@@ -35,7 +35,7 @@ countOcc :: (Eq a) => a -> [a] -> Int
 countOcc needle = foldl' (\acc x -> x == needle ? succ acc :? acc) 0
 
 
-countOccs :: (Eq a, Ord a) => [a] -> [(a, Int)]
+countOccs :: (Ord a) => [a] -> [(a, Int)]
 countOccs = map ((head *** length) . dup) . group . sort
 
 

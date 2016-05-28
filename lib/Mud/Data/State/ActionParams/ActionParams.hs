@@ -66,67 +66,88 @@ instance Show ActionParams where
 -- Patterns matching type "ActionParams":
 
 
+pattern AdviseNoArgs :: ActionParams
 pattern AdviseNoArgs <- NoArgs' _ _
 
 
+pattern AdviseOneArg :: Text -> ActionParams
 pattern AdviseOneArg a <- WithArgs _ _ _ [a]
 
 
+pattern Advising :: MsgQueue -> Cols -> ActionParams
 pattern Advising mq cols <- WithArgs _ mq cols _
 
 
+pattern Ignoring :: MsgQueue -> Cols -> Text -> ActionParams
 pattern Ignoring mq cols as <- WithArgs _ mq cols (dblQuote . T.unwords -> as)
 
 
+pattern Lower :: Id -> MsgQueue -> Cols -> [Text] -> ActionParams
 pattern Lower i mq cols as <- WithArgs i mq cols (map T.toLower -> as)
 
 
+pattern Lower' :: Id -> [Text] -> ActionParams
 pattern Lower' i as <- Lower i _ _ as
 
 
+pattern LowerNub :: Id -> MsgQueue -> Cols -> [Text] -> ActionParams
 pattern LowerNub i mq cols as <- WithArgs i mq cols (nub . map T.toLower -> as)
 
 
+pattern LowerNub' :: Id -> [Text] -> ActionParams
 pattern LowerNub' i as <- LowerNub i _ _ as
 
 
+pattern Msg :: Id -> MsgQueue -> Cols -> Text -> ActionParams
 pattern Msg i mq cols msg <- WithArgs i mq cols (formatMsgArgs -> msg)
 
 
+pattern Msg' :: Id -> MsgQueue -> Text -> ActionParams
 pattern Msg' i mq msg <- Msg i mq _ msg
 
 
+pattern MsgWithTarget :: Id -> MsgQueue -> Cols -> Text -> Text -> ActionParams
 pattern MsgWithTarget i mq cols target msg <- WithArgs i mq cols (formatMsgWithTargetArgs -> (target, msg))
 
 
+pattern NoArgs :: Id -> MsgQueue -> Cols -> ActionParams
 pattern NoArgs i mq cols = WithArgs i mq cols []
 
 
+pattern NoArgs' :: Id -> MsgQueue -> ActionParams
 pattern NoArgs' i mq <- NoArgs i mq _
 
 
+pattern NoArgs'' :: Id -> ActionParams
 pattern NoArgs'' i <- NoArgs' i _
 
 
+pattern OneArg :: Id -> MsgQueue -> Cols -> Text -> ActionParams
 pattern OneArg i mq cols a <- WithArgs i mq cols [a]
 
 
+pattern OneArg' :: Id -> Text -> ActionParams
 pattern OneArg' i a <- OneArg i _ _ a
 
 
+pattern OneArgLower :: Id -> MsgQueue -> Cols -> Text -> ActionParams
 pattern OneArgLower i mq cols a <- OneArg i mq cols (T.toLower -> a)
 
 
+pattern OneArgLower' :: Id -> Text -> ActionParams
 pattern OneArgLower' i a <- OneArgLower i _ _ a
 
 
+pattern OneArgNubbed :: Id -> MsgQueue -> Cols -> Text -> ActionParams
 pattern OneArgNubbed i mq cols a <- WithArgs i mq cols (nub . map T.toLower -> [a])
 
 
+pattern WithArgs :: Id -> MsgQueue -> Cols -> Args -> ActionParams
 pattern WithArgs i mq cols as = ActionParams { myId        = i
                                              , plaMsgQueue = mq
                                              , plaCols     = cols
                                              , args        = as }
 
 
+pattern WithTarget :: Id -> MsgQueue -> Cols -> Text -> Text -> ActionParams
 pattern WithTarget i mq cols target rest <- WithArgs i mq cols (headTail -> (target, T.unwords -> rest))
