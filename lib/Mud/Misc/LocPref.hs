@@ -27,7 +27,7 @@ patternMatchFail = U.patternMatchFail "Mud.Misc.LocPref"
 pattern InvPref      :: Text
 pattern EqPref       :: Text
 pattern RmPref       :: Text
-pattern Rest         :: [Char]
+pattern Rest         :: String
 pattern SelectorChar :: Char
 pattern AtLst1       :: [a]
 
