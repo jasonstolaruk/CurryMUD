@@ -220,7 +220,7 @@ parseDesig = parseDesigHelper (const id)
 
 
 parseExpandDesig :: Id -> MudState -> Text -> Text
-parseExpandDesig = parseDesigHelper (\es -> (<> bracketQuote es))
+parseExpandDesig = parseDesigHelper (\es -> (<> parensQuote es))
 
 
 parseDesigHelper :: (Sing -> Text -> Text) -> Id -> MudState -> Text -> Text

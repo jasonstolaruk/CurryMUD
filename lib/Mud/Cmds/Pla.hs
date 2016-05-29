@@ -885,11 +885,11 @@ emote (WithArgs i mq cols as) = getState >>= \ms ->
         expandEnc isHead = (isHead ? (ser, ser) :? (ser', ser')) |&| uncurry (myName isHead, , )
         myName    isHead = onTrue isHead capitalize . onTrue (isNpc i ms) theOnLower . fromJust . desigEntSing $ d
     in case lefts xformed of
-      []      -> let (parseDesig i ms -> toSelf, toOthers, targetIds, toTargetBs) = happy ms xformed
+      []      -> let (msg@(parseDesig i ms -> toSelf), toOthers, targetIds, toTargetBs) = happy ms xformed
                  in do
                      wrapSend mq cols toSelf
                      bcastIfNotIncogNl i $ (toOthers, desigIds d \\ (i : targetIds)) : toTargetBs
-                     logPlaOut "emote" i . pure $ toSelf
+                     logPlaOut "emote" i . pure . parseExpandDesig i ms $ msg
       advices -> multiWrapSend mq cols . nub $ advices
   where
     procTarget ms word =
@@ -1270,7 +1270,7 @@ shuffleGive i ms LastArgIsTargetBindings { .. } =
                    (ms'', toSelfs', bs', logMsgs') =        helperGiveEitherCoins i srcDesig targetId
                                                             (ms', toSelfs, bs, logMsgs)
                                                             ecs
-               in (ms'', (dropBlanks $ [ sorryInEq, sorryInRm ] ++ toSelfs', bs', map (parseDesig i ms) logMsgs'))
+               in (ms'', (dropBlanks $ [ sorryInEq, sorryInRm ] ++ toSelfs', bs', map (parseExpandDesig i ms) logMsgs'))
           else genericSorry ms . sorryGiveType . getSing targetId $ ms
         Right {} -> genericSorry ms sorryGiveExcessTargets
 
