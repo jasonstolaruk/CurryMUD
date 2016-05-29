@@ -885,11 +885,14 @@ emote (WithArgs i mq cols as) = getState >>= \ms ->
         expandEnc isHead = (isHead ? (ser, ser) :? (ser', ser')) |&| uncurry (myName isHead, , )
         myName    isHead = onTrue isHead capitalize . onTrue (isNpc i ms) theOnLower . fromJust . desigEntSing $ d
     in case lefts xformed of
-      []      -> let (msg@(parseDesig i ms -> toSelf), toOthers, targetIds, toTargetBs) = happy ms xformed
+      []      -> let (msg, toOthers, targetIds, toTargetBs) = happy ms xformed
+                     toSelf = parseDesig       i ms msg
+                     logMsg = parseExpandDesig i ms msg
                  in do
                      wrapSend mq cols toSelf
                      bcastIfNotIncogNl i $ (toOthers, desigIds d \\ (i : targetIds)) : toTargetBs
-                     logPlaOut "emote" i . pure . parseExpandDesig i ms $ msg
+                     logPlaOut "emote" i . pure $ logMsg
+                     alertMsgHelper i "emote" logMsg
       advices -> multiWrapSend mq cols . nub $ advices
   where
     procTarget ms word =
