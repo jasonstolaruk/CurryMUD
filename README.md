@@ -78,9 +78,17 @@ The code is available here on GitHub under the 3-clause BSD license (refer to th
 
 ### How to try it out
 
-If you'd like to try out what I have so far, clone the repo from your home directory (the server expects to find various folders located under `$HOME/CurryMUD`). Having done that, please build and run the project using [stack](http://docs.haskellstack.org/en/stable/README.html) (otherwise, I cannot guarantee that CurryMUD will build on your machine). Please note that I do not plan on explicitly supporting Windows.
+I do not plan on explicitly supporting Windows.
 
-Once you have the server up and running, just telnet to localhost port 9696 to play.
+Please use [stack](http://docs.haskellstack.org/en/stable/README.html) (otherwise, I cannot guarantee that CurryMUD will build on your machine). 
+
+1. Clone the repo from your home directory (the server expects to find various folders under `$HOME/CurryMUD`).
+2. Inside `$HOME/CurryMUD`, run `stack setup` to get GHC 8 on your machine. (The `stack.yaml` file points to the [nightly resolver](https://www.stackage.org/snapshots), which uses GHC 8.)
+3. Run `stack build` to compile.
+4. Execute the generated binary (`curry`).
+5. Telnet to `localhost` port 9696 to play.
+
+CurryMUD presently cannot be loaded into GHCi due to [a GHC bug](https://ghc.haskell.org/trac/ghc/ticket/12007).
 
 ## How to contact me
 
