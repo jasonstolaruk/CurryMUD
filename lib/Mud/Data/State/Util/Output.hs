@@ -21,6 +21,7 @@ module Mud.Data.State.Util.Output ( bcast
                                   , multiWrapSend
                                   , ok
                                   , parseDesig
+                                  , parseExpandDesig
                                   , retainedMsg
                                   , send
                                   , sendCmdNotFound
@@ -50,8 +51,8 @@ import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
-import Control.Lens (views)
-import Control.Lens.Operators ((<>~))
+import Control.Lens (to, views)
+import Control.Lens.Operators ((<>~), (^.))
 import Control.Monad (forM_, unless)
 import Control.Monad.IO.Class (liftIO)
 import Data.List ((\\), delete, elemIndex)
@@ -214,29 +215,33 @@ ok mq = send mq . nlnl $ "OK!"
 -----
 
 
-{-
-TODO: Write a new desig parser that:
-You say to the male elf, "Hello!"
-...becomes...
-You say to the male elf[Taro], "Hello!"
--}
 parseDesig :: Id -> MudState -> Text -> Text
-parseDesig i ms = loop (getIntroduced i ms)
+parseDesig = parseDesigHelper (const id)
+
+
+parseExpandDesig :: Id -> MudState -> Text -> Text
+parseExpandDesig = parseDesigHelper (\es -> (<> bracketQuote es))
+
+
+parseDesigHelper :: (Sing -> Text -> Text) -> Id -> MudState -> Text -> Text
+parseDesigHelper f i ms = loop (getIntroduced i ms)
   where
     loop intros txt
       | T.singleton stdDesigDelimiter `T.isInfixOf` txt
       , (left, pcd, rest) <- extractDesigTxt stdDesigDelimiter txt
       = case pcd of
         d@StdDesig { desigEntSing = Just es, .. } ->
-          left                                            <>
-          (es `elem` intros ? es :? expandEntName i ms d) <>
+          left                                                              <>
+          (if es `elem` intros
+             then es
+             else expandEntName i ms d ^.to (isPC desigId ms ? f es :? id)) <>
           loop intros rest
-        d@StdDesig { desigEntSing = Nothing,  .. } ->
+        d@StdDesig { desigEntSing = Nothing,  .. } -> -- TODO: Here?
           left <> expandEntName i ms d <> loop intros rest
         _ -> patternMatchFail "parseDesig loop" [ showText pcd ]
       | T.singleton nonStdDesigDelimiter `T.isInfixOf` txt
       , (left, NonStdDesig { .. }, rest) <- extractDesigTxt nonStdDesigDelimiter txt
-      = left <> (dEntSing `elem` intros ? dEntSing :? dDesc) <> loop intros rest
+      = left <> (dEntSing `elem` intros ? dEntSing :? dDesc) <> loop intros rest -- TODO: Here?
       | otherwise = txt
     extractDesigTxt (T.singleton -> c) (T.breakOn c -> (left, T.breakOn c . T.tail -> (pcdTxt, T.tail -> rest)))
       | pcd <- deserialize . quoteWith c $ pcdTxt :: Desig

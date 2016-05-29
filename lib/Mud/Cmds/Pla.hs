@@ -2719,13 +2719,12 @@ say p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
                                    , toSelfMsg ))
     sayTo maybeAdverb msg _ = patternMatchFail "say sayTo" [ showText maybeAdverb, msg ]
     formatMsg               = dblQuote . capitalizeMsg . punctuateMsg
-    ioHelper ms triple@(x:xs, _, _) | f                     <- parseDesig i ms
-                                    , (toSelfs, bs, logMsg) <- triple & _1 .~ f x : xs
-                                                                      & _3 %~ f
+    ioHelper ms triple@(x:xs, _, _) | (toSelfs, bs, logMsg) <- triple & _1 .~ parseDesig       i ms x : xs
+                                                                      & _3 %~ parseExpandDesig i ms
                                     = do { multiWrapSend mq cols toSelfs
                                          ; bcastIfNotIncogNl i bs
                                          ; logMsg |#| logPlaOut "say" i . pure
-                                         ; logMsg |#| alertMsgHelper i "say" } -- TODO: Use your new desig parser.
+                                         ; logMsg |#| alertMsgHelper i "say" }
     ioHelper _  triple              = patternMatchFail "say ioHelper" [ showText triple ]
     simpleSayHelper ms (maybe "" (" " <>) -> adverb) (formatMsg -> msg) =
         return $ let d             = mkStdDesig i ms DoCap
