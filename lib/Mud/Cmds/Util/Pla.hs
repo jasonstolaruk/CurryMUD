@@ -291,7 +291,7 @@ genericActionHelper ActionParams { .. } fn toSelfs bs logMsgs = do
     ms <- getState
     multiWrapSend plaMsgQueue plaCols [ parseDesig myId ms msg | msg <- toSelfs ]
     bcastIfNotIncogNl myId bs
-    logMsgs |#| logPlaOut fn myId
+    logMsgs |#| logPlaOut fn myId . map (parseExpandDesig myId ms)
 
 
 genericActionWithHooks :: ActionParams

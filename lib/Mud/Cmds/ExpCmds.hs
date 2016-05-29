@@ -764,16 +764,18 @@ expCmd ecn ect           (OneArgNubbed i mq cols target) = case ect of
               ([ Right (_:_:_)    ], _                   ) -> wrapSend mq cols adviceExpCmdExcessArgs
               ([ Right [targetId] ], _                   ) ->
                 let ioHelper targetDesigTxt =
-                        let (toSelf', toOthers', substitutions) = mkBindings targetDesigTxt
+                        let (toSelf', toOthers', logMsg, substitutions) = mkBindings targetDesigTxt
                             toOthersBcast = (nlnl toOthers', desigIds d \\ [ i, targetId ])
                             toTarget'     = replace substitutions toTarget
                             toTargetBcast = (nlnl toTarget', pure targetId)
                         in do
                             wrapSend mq cols toSelf'
                             bcastIfNotIncog i [ toTargetBcast, toOthersBcast ]
-                            logPlaOut ecn i . pure $ toSelf'
+                            logPlaOut ecn i . pure $ logMsg
                     mkBindings targetTxt =
-                        let toSelf'                     = parseDesig i ms . replace (pure ("@", targetTxt)) $ toSelf
+                        let msg                         = replace (pure ("@", targetTxt)) toSelf
+                            toSelf'                     = parseDesig       i ms msg
+                            logMsg                      = parseExpandDesig i ms msg
                             serialized                  = mkSerializedDesig d toOthers
                             (heShe, hisHer, himHerself) = mkPros . getSex i $ ms
                             toOthers'                   = replace substitutions toOthers
@@ -782,7 +784,7 @@ expCmd ecn ect           (OneArgNubbed i mq cols target) = case ect of
                                                           , ("^", heShe)
                                                           , ("&", hisHer)
                                                           , ("*", himHerself) ]
-                        in (toSelf', toOthers', substitutions)
+                        in (toSelf', toOthers', logMsg, substitutions)
                 in if getType targetId ms `elem` [ PCType, NpcType ]
                   then ioHelper . serialize . mkStdDesig targetId ms $ Don'tCap
                   else wrapSend mq cols sorryExpCmdTargetType
