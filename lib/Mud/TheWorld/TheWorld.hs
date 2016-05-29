@@ -54,6 +54,7 @@ initMudData shouldLog = do
     (logExLock,       perLock         ) <- (,) <$> newTMVarIO Done <*> newTMVarIO Done
     (errorLogService, noticeLogService) <- initLogging shouldLog . Just $ logExLock
     genIO   <- createSystemRandom
+    start   <- getTime Monotonic
     msIORef <- newIORef MudState { _activeEffectsTbl  = IM.empty
                                  , _armTbl            = IM.empty
                                  , _chanTbl           = IM.empty
@@ -90,13 +91,12 @@ initMudData shouldLog = do
                                  , _vesselTbl         = IM.empty
                                  , _wpnTbl            = IM.empty
                                  , _writableTbl       = IM.empty }
-    start   <- getTime Monotonic
     return MudData { _errorLog      = errorLogService
+                   , _noticeLog     = noticeLogService
                    , _gen           = genIO
                    , _locks         = Locks logExLock perLock
-                   , _mudStateIORef = msIORef
-                   , _noticeLog     = noticeLogService
-                   , _startTime     = start }
+                   , _startTime     = start
+                   , _mudStateIORef = msIORef }
 
 
 initWorld :: MudStack Bool

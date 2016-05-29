@@ -541,7 +541,7 @@ chan (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
                          withDbExHandler_ "chan" . insertDbTblChan . ChanRec ts (c^.chanId) cn s $ logMsg
                      sendToWiretappers tappedMsg =
                          let cn' = colorWith wiretapColor . spaced . parensQuote $ cn
-                             is  = c^.wiretappers.to (map (`getIdForMobSing` ms))
+                             is  = c^.chanWiretappers.to (map (`getIdForMobSing` ms))
                              is' = filter (isLoggedIn . (`getPla` ms)) is
                          in bcastNl . pure $ (T.concat [ cn', " ", s, ": ", tappedMsg ], is')
                      cc   = ChanContext "chan" (Just cn) False

@@ -61,6 +61,7 @@ The code is available here on GitHub under the 3-clause BSD license (refer to th
 * Using `aeson` with `conduit` and `sqlite-simple` for persistence.
 * Heavy use of the `lens` library.
 * Heavy use of GHC extensions, including:
+  * `DuplicateRecordFields`
   * `LambdaCase`
   * `MonadComprehensions`
   * `MultiWayIf`

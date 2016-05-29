@@ -1453,10 +1453,10 @@ adminWire (WithArgs i mq cols as) = views chanTbl IM.size <$> getState >>= \case
               else toggle ms ci s & _2 %~ Right
             sorry = (ms, ) . Left
         in (ms', msgs ++ pure msg)
-    toggle ms ci s = let (cn, ss) = ms^.chanTbl.ind ci.to ((view chanName *** view wiretappers) . dup)
+    toggle ms ci s = let (cn, ss) = ms^.chanTbl.ind ci.to ((view chanName *** view chanWiretappers) . dup)
                      in if s `elem` ss
-                       then ( ms & chanTbl.ind ci.wiretappers .~ s `delete` ss
+                       then ( ms & chanTbl.ind ci.chanWiretappers .~ s `delete` ss
                             , "You stop tapping the "  <> dblQuote cn <> " channel." )
-                       else ( ms & chanTbl.ind ci.wiretappers <>~ pure s
+                       else ( ms & chanTbl.ind ci.chanWiretappers <>~ pure s
                             , "You start tapping the " <> dblQuote cn <> " channel." )
 adminWire p = patternMatchFail "adminWire" [ showText p ]

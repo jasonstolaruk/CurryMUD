@@ -39,11 +39,11 @@ type MudStack = ReaderT MudData IO
 
 
 data MudData = MudData { _errorLog      :: Maybe LogService
+                       , _noticeLog     :: Maybe LogService
                        , _gen           :: GenIO
                        , _locks         :: Locks
-                       , _mudStateIORef :: IORef MudState
-                       , _noticeLog     :: Maybe LogService
-                       , _startTime     :: TimeSpec }
+                       , _startTime     :: TimeSpec
+                       , _mudStateIORef :: IORef MudState }
 
 
 data MudState = MudState { _activeEffectsTbl  :: ActiveEffectsTbl
@@ -142,7 +142,7 @@ data ActiveEffect = ActiveEffect { _effect        :: Effect
 -- Effects that have a duration.
 data Effect = Effect { _effectSub :: EffectSub
                      , _effectVal :: Maybe EffectVal
-                     , _dur       :: Seconds } deriving (Eq, Generic, Show)
+                     , _effectDur :: Seconds } deriving (Eq, Generic, Show)
 
 
 data EffectSub = ArmEffectAC
@@ -203,10 +203,10 @@ type AC = Int
 -- ==================================================
 
 
-data Chan = Chan { _chanId      :: Int
-                 , _chanName    :: ChanName
-                 , _chanConnTbl :: ChanConnTbl
-                 , _wiretappers :: [Sing] } deriving (Eq, Generic, Show)
+data Chan = Chan { _chanId          :: Int
+                 , _chanName        :: ChanName
+                 , _chanConnTbl     :: ChanConnTbl
+                 , _chanWiretappers :: [Sing] } deriving (Eq, Generic, Show)
 
 
 type ChanName = Text

@@ -96,7 +96,7 @@ potStDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just el
     el = EffectList . pure . Right $ e
     e  = Effect { _effectSub = MobEffectAttrib St
                 , _effectVal = Just . DefiniteVal $ 2
-                , _dur       = 5 * 60 }
+                , _effectDur = 5 * 60 }
 
 
 potInstantStLiq :: Liq
@@ -115,7 +115,7 @@ potInstantStDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Nothing
     el = EffectList . pure . Right $ e
     e  = Effect { _effectSub = MobEffectAttrib St
                 , _effectVal = Just . RangeVal $ (8, 12)
-                , _dur       = 5 * 60 }
+                , _effectDur = 5 * 60 }
 
 
 -----
@@ -154,4 +154,4 @@ potInstantTinnitusDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = No
     el = EffectList . pure . Right $ e
     e  = Effect { _effectSub = EffectOther tinnitusEffectFunName
                 , _effectVal = Nothing
-                , _dur       = 2 * 60 }
+                , _effectDur = 2 * 60 }

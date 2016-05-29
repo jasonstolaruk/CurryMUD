@@ -108,7 +108,7 @@ pauseEffects i = getState >>= \ms ->
         tmv <- liftIO newEmptyTMVarIO
         liftIO . atomically . writeTQueue q . PauseEffect $ tmv
         secs <- liftIO . atomically . takeTMVar $ tmv
-        return . PausedEffect $ e & dur .~ secs
+        return . PausedEffect $ e & effectDur .~ secs
 
 
 massPauseEffects :: MudStack () -- At server shutdown, after everyone has been disconnected.
