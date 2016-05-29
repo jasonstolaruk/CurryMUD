@@ -227,16 +227,16 @@ parseDesig i ms = loop (getIntroduced i ms)
       | T.singleton stdDesigDelimiter `T.isInfixOf` txt
       , (left, pcd, rest) <- extractDesigTxt stdDesigDelimiter txt
       = case pcd of
-        d@StdDesig { sDesigEntSing = Just es, .. } ->
+        d@StdDesig { desigEntSing = Just es, .. } ->
           left                                            <>
           (es `elem` intros ? es :? expandEntName i ms d) <>
           loop intros rest
-        d@StdDesig { sDesigEntSing = Nothing,  .. } ->
+        d@StdDesig { desigEntSing = Nothing,  .. } ->
           left <> expandEntName i ms d <> loop intros rest
         _ -> patternMatchFail "parseDesig loop" [ showText pcd ]
       | T.singleton nonStdDesigDelimiter `T.isInfixOf` txt
       , (left, NonStdDesig { .. }, rest) <- extractDesigTxt nonStdDesigDelimiter txt
-      = left <> (nsDesigEntSing `elem` intros ? nsDesigEntSing :? nsDesc) <> loop intros rest
+      = left <> (dEntSing `elem` intros ? dEntSing :? dDesc) <> loop intros rest
       | otherwise = txt
     extractDesigTxt (T.singleton -> c) (T.breakOn c -> (left, T.breakOn c . T.tail -> (pcdTxt, T.tail -> rest)))
       | pcd <- deserialize . quoteWith c $ pcdTxt :: Desig
@@ -245,7 +245,7 @@ parseDesig i ms = loop (getIntroduced i ms)
 
 expandEntName :: Id -> MudState -> Desig -> Text
 expandEntName i ms StdDesig { .. } =
-  let f      = mkCapsFun shouldCap
+  let f      = mkCapsFun desigShouldCap
       (h, t) = headTail desigEntName
   in if isPC desigId ms
     then T.concat [ f "the ", xth, expandSex h, " ", t ]

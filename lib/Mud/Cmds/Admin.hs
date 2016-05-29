@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleContexts, LambdaCase, MonadComprehensions, MultiWayIf, NamedFieldPuns, OverloadedStrings, PatternSynonyms, RecordWildCards, TransformListComp, TupleSections, ViewPatterns #-}
+{-# LANGUAGE DuplicateRecordFields, FlexibleContexts, LambdaCase, MonadComprehensions, MultiWayIf, NamedFieldPuns, OverloadedStrings, PatternSynonyms, RecordWildCards, ScopedTypeVariables, TransformListComp, TupleSections, ViewPatterns #-}
 
 module Mud.Cmds.Admin (adminCmds) where
 
@@ -1145,21 +1145,21 @@ applyRegex searchTerm target = let f = (=~) `on` T.unpack in target `f` searchTe
 adminSecurity :: ActionFun
 adminSecurity p@AdviseNoArgs            = advise p [ prefixAdminCmd "security" ] adviceASecurityNoArgs
 adminSecurity   (LowerNub i mq cols as) = (withDbExHandler "adminSecurity" . getDbTblRecs $ "sec") >>= \case
-  Just recs -> do
+  Just (recs :: [SecRec]) -> do
       multiWrapSend mq cols . intercalateDivider cols . concatMap (helper recs . capitalize . T.toLower) $ as
       logPlaExecArgs (prefixAdminCmd "security") as i
   Nothing   -> dbError mq cols
   where
-    helper recs target = case filter ((target `T.isPrefixOf`) . secName) recs of
+    helper recs target = case filter ((target `T.isPrefixOf`) . (dbName :: SecRec -> Text)) recs of
       []      -> pure . pure $ "No records found for " <> dblQuote target <> "."
       matches -> map mkSecReport matches
 adminSecurity p = patternMatchFail "adminHost" [ showText p ]
 
 
 mkSecReport :: SecRec -> [Text]
-mkSecReport SecRec { .. } = [ "Name: "     <> secName
-                            , "Question: " <> secQ
-                            , "Answer: "   <> secA ]
+mkSecReport SecRec { .. } = [ "Name: "     <> dbName
+                            , "Question: " <> dbQ
+                            , "Answer: "   <> dbA ]
 
 
 -----
@@ -1294,7 +1294,7 @@ teleHelper p@ActionParams { myId } ms originId destId destName mt f =
     let g            = maybe id (\t -> ((nlnl t, pure myId) :)) mt
         originDesig  = mkStdDesig myId ms Don'tCap
         originMobIds = myId `delete` desigIds originDesig
-        s            = fromJust . sDesigEntSing $ originDesig
+        s            = fromJust . desigEntSing $ originDesig
         destDesig    = mkSerializedNonStdDesig myId ms s A Don'tCap
         destMobIds   = findMobIds ms $ ms^.invTbl.ind destId
         ms'          = ms & mobTbl.ind myId.rmId .~ destId

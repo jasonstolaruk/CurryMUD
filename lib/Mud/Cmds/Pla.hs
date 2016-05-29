@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
-{-# LANGUAGE FlexibleContexts, LambdaCase, MonadComprehensions, MultiWayIf, NamedFieldPuns, OverloadedStrings, ParallelListComp, PatternSynonyms, RecordWildCards, TransformListComp, TupleSections, TypeFamilies, ViewPatterns #-}
+{-# LANGUAGE DuplicateRecordFields, FlexibleContexts, LambdaCase, MonadComprehensions, MultiWayIf, NamedFieldPuns, OverloadedStrings, ParallelListComp, PatternSynonyms, RecordWildCards, TransformListComp, TupleSections, TypeFamilies, ViewPatterns #-}
 
 module Mud.Cmds.Pla ( getRecordUptime
                     , getUptime
@@ -862,7 +862,7 @@ emote p@ActionParams { args } | any (`elem` yous) . map T.toLower $ args = advis
 emote (WithArgs i mq cols as) = getState >>= \ms ->
     let d                    = mkStdDesig i ms DoCap
         ser                  = serialize d
-        d'                   = d { shouldCap = Don'tCap }
+        d'                   = d { desigShouldCap = Don'tCap }
         ser'                 = serialize d'
         xformed              = xformArgs True as
         xformArgs _      []  = []
@@ -883,7 +883,7 @@ emote (WithArgs i mq cols as) = getState >>= \ms ->
                                                                      & _3   %~ (ser         <>)
           | otherwise              -> mkRightForNonTargets . dup3 $ x
         expandEnc isHead = (isHead ? (ser, ser) :? (ser', ser')) |&| uncurry (myName isHead, , )
-        myName    isHead = onTrue isHead capitalize . onTrue (isNpc i ms) theOnLower . fromJust . sDesigEntSing $ d
+        myName    isHead = onTrue isHead capitalize . onTrue (isNpc i ms) theOnLower . fromJust . desigEntSing $ d
     in case lefts xformed of
       []      -> let (parseDesig i ms -> toSelf, toOthers, targetIds, toTargetBs) = happy ms xformed
                  in do
@@ -1301,7 +1301,7 @@ tryMove i mq cols p dir = helper |&| modifyState >=> \case
           Nothing -> (ms, Left sorry)
           Just (linkTxt, destId, maybeOriginMsg, maybeDestMsg) ->
             let originDesig  = mkStdDesig i ms DoCap
-                s            = fromJust . sDesigEntSing $ originDesig
+                s            = fromJust . desigEntSing $ originDesig
                 originMobIds = i `delete` desigIds originDesig
                 destMobIds   = findMobIds ms $ ms^.invTbl.ind destId
                 ms'          = ms & mobTbl.ind i.rmId   .~ destId
@@ -1505,11 +1505,11 @@ intro (LowerNub i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
                         logMsg      = "Introduced to " <> targetSing <> "."
                         srcMsg      = nlnl msg
                         is          = findMobIds ms ris
-                        srcDesig    = StdDesig { sDesigEntSing = Nothing
-                                               , shouldCap     = DoCap
-                                               , desigEntName  = mkUnknownPCEntName i ms
-                                               , desigId       = i
-                                               , desigIds      = is }
+                        srcDesig    = StdDesig { desigEntSing   = Nothing
+                                               , desigShouldCap = DoCap
+                                               , desigEntName   = mkUnknownPCEntName i ms
+                                               , desigId        = i
+                                               , desigIds       = is }
                         himHerself  = mkReflexPro . getSex i $ ms
                         targetMsg   = nlnl . T.concat $ [ parseDesig targetId ms . serialize $ srcDesig
                                                         , " introduces "
@@ -1517,7 +1517,7 @@ intro (LowerNub i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
                                                         , " to you as "
                                                         , colorWith knownNameColor s
                                                         , "." ]
-                        othersMsg   = nlnl . T.concat $ [ serialize srcDesig { sDesigEntSing = Just s }
+                        othersMsg   = nlnl . T.concat $ [ serialize srcDesig { desigEntSing = Just s }
                                                         , " introduces "
                                                         , himHerself
                                                         , " to "
@@ -1597,7 +1597,7 @@ leave (WithArgs i mq cols (nub -> as)) = helper |&| modifyState >=> \(ms, chanId
         bcastNl =<< foldM f [] chanIds
         chanNames |#| logPla "leave" i . commas
         ts <- liftIO mkTimestamp
-        withDbExHandler_ "leave" . forM_ chanRecs $ \cr -> insertDbTblChan cr { chanTimestamp = ts }
+        withDbExHandler_ "leave" . forM_ chanRecs $ \cr -> insertDbTblChan cr { dbTimestamp = ts }
   where
     helper ms = let (ms', chanIdNameIsDels, sorryMsgs) = foldl' f (ms, [], []) as
                 in (ms', (ms', chanIdNameIsDels, sorryMsgs))
@@ -1749,7 +1749,7 @@ look (LowerNub i mq cols as) = mkRndmVector >>= \v ->
         send mq toSelf
         bcastIfNotIncogNl i bs
         sequence_ fs
-        let mkLogMsgForDesigs targetDesigs | targetSings <- [ fromJust . sDesigEntSing $ targetDesig
+        let mkLogMsgForDesigs targetDesigs | targetSings <- [ fromJust . desigEntSing $ targetDesig
                                                             | targetDesig <- targetDesigs ]
                                            = "looked at " <> commas targetSings
             logMsg = T.intercalate " / " . dropBlanks $ [ maybe "" mkLogMsgForDesigs maybeTargetDesigs, hookLogMsg ]
@@ -1881,7 +1881,7 @@ newChan (WithArgs i mq cols (nub -> as)) = helper |&| modifyState >=> \(unzip ->
         multiWrapSend mq cols msgs
         newChanNames |#| logPla "newChan" i . commas
         ts <- liftIO mkTimestamp
-        forM_ chanRecs $ \cr -> withDbExHandler_ "newChan" . insertDbTblChan $ cr { chanTimestamp = ts }
+        forM_ chanRecs $ \cr -> withDbExHandler_ "newChan" . insertDbTblChan $ (cr { dbTimestamp = ts } :: ChanRec)
   where
     helper ms = let s                              = getSing i ms
                     (ms', newChanNames, sorryMsgs) = foldl' (f s) (ms, [], []) as
@@ -2747,15 +2747,15 @@ firstMobSay i pt | pt^.ind i.to isNotFirstMobSay = (pt, [])
 security :: ActionFun
 security (NoArgs i mq cols) = getSing i <$> getState >>= \s ->
     (withDbExHandler "security" . getDbTblRecs $ "sec") >>= \case
-      Just recs -> case filter ((s ==) . secName) recs of
+      Just recs -> case filter ((s ==) . (dbName :: SecRec -> Text)) recs of
         []      -> securityHelper i mq cols
         matches -> securityChange . last $ matches
       Nothing   -> dbError mq cols
   where
-    securityChange SecRec { secQ, secA } = do
+    securityChange SecRec { dbQ, dbA } = do
         multiWrapSend mq cols [ "You have set your security Q&A as follows:"
-                              , "Question: " <> secQ
-                              , "Answer: "   <> secA ]
+                              , "Question: " <> dbQ
+                              , "Answer: "   <> dbA ]
         wrapSendPrompt mq cols "Would you like to change it? [yes/no]"
         setInterp i . Just $ interpConfirmSecurityChange
 security p = withoutArgs security p

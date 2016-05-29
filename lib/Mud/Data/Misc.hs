@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, ParallelListComp, RebindableSyntax, RecordWildCards, ViewPatterns #-}
+{-# LANGUAGE DuplicateRecordFields, OverloadedStrings, ParallelListComp, RebindableSyntax, RecordWildCards, ViewPatterns #-}
 
 module Mud.Data.Misc ( Action(..)
                      , ActionFun
@@ -122,17 +122,17 @@ class BanRecord a where
 
 
 instance BanRecord BanHostRec where
-  recTimestamp = banHostTimestamp
-  recTarget    = banHostHost
-  recIsBanned  = banHostIsBanned
-  recReason    = banHostReason
+  recTimestamp = dbTimestamp
+  recTarget    = dbHost
+  recIsBanned  = dbIsBanned
+  recReason    = dbReason
 
 
 instance BanRecord BanPCRec where
-  recTimestamp = banPCTimestamp
-  recTarget    = banPCName
-  recIsBanned  = banPCIsBanned
-  recReason    = banPCReason
+  recTimestamp = dbTimestamp
+  recTarget    = dbName
+  recIsBanned  = dbIsBanned
+  recReason    = dbReason
 
 
 -----
@@ -241,25 +241,25 @@ instance Pretty Attrib where
 
 
 instance Pretty BanHostRec where
-  pp BanHostRec { .. } = slashes [ banHostTimestamp
-                                 , banHostHost
-                                 , banHostIsBanned ? "banned" :? "unbanned"
-                                 , banHostReason ]
+  pp BanHostRec { .. } = slashes [ dbTimestamp
+                                 , dbHost
+                                 , dbIsBanned ? "banned" :? "unbanned"
+                                 , dbReason ]
 
 
 instance Pretty BanPCRec where
-  pp BanPCRec { .. } = slashes [ banPCTimestamp
-                               , banPCName
-                               , banPCIsBanned ? "banned" :? "unbanned"
-                               , banPCReason ]
+  pp BanPCRec { .. } = slashes [ dbTimestamp
+                               , dbName
+                               , dbIsBanned ? "banned" :? "unbanned"
+                               , dbReason ]
 
 
 instance Pretty BugRec where
-  pp BugRec { .. } = slashes [ bugTimestamp
-                             , bugName
-                             , bugLoc
-                             , bugDesc
-                             , bugIsOpen ? "open" :? "closed" ]
+  pp BugRec { .. } = slashes [ dbTimestamp
+                             , dbName
+                             , dbLoc
+                             , dbDesc
+                             , dbIsOpen ? "open" :? "closed" ]
 
 
 instance Pretty ChanContext where
@@ -350,7 +350,7 @@ instance Pretty PausedEffect where
 
 
 instance Pretty ProfRec where
-  pp ProfRec { .. } = spaces [ profTimestamp, profHost, profProfanity ]
+  pp ProfRec { .. } = spaces [ dbTimestamp, dbHost, dbProfanity ]
 
 
 instance Pretty PtsType where
@@ -454,11 +454,11 @@ instance Pretty Type where
 
 
 instance Pretty TypoRec where
-  pp TypoRec { .. } = slashes [ typoTimestamp
-                              , typoName
-                              , typoLoc
-                              , typoDesc
-                              , typoIsOpen ? "open" :? "closed" ]
+  pp TypoRec { .. } = slashes [ dbTimestamp
+                              , dbName
+                              , dbLoc
+                              , dbDesc
+                              , dbIsOpen ? "open" :? "closed" ]
 
 
 instance Pretty WhichLog where
@@ -481,28 +481,28 @@ class Serializable a where
 
 instance Serializable Desig where
   serialize StdDesig { .. }
-    | fields <- [ serMaybeText sDesigEntSing, showText shouldCap, desigEntName, showText desigId, showText desigIds ]
+    | fields <- [ serMaybeText desigEntSing, showText desigShouldCap, desigEntName, showText desigId, showText desigIds ]
     = quoteWith sdd . T.intercalate dd $ fields
     where
       serMaybeText Nothing    = ""
       serMaybeText (Just txt) = txt
       (sdd, dd)               = (stdDesigDelimiter, desigDelimiter) & both %~ T.singleton
   serialize NonStdDesig { .. } = quoteWith nsdd $ do
-      nsDesigEntSing
+      dEntSing
       dd
-      nsDesc
+      dDesc
     where
       (>>)       = (<>)
       (nsdd, dd) = (nonStdDesigDelimiter, desigDelimiter) & both %~ T.singleton
   deserialize a@(headTail -> (c, T.init -> t))
     | c == stdDesigDelimiter, [ es, sc, en, i, is ] <- T.splitOn dd t =
-        StdDesig { sDesigEntSing = deserMaybeText es
-                 , shouldCap     = read . T.unpack $ sc
-                 , desigEntName  = en
-                 , desigId       = read . T.unpack $ i
-                 , desigIds      = read . T.unpack $ is }
+        StdDesig { desigEntSing   = deserMaybeText es
+                 , desigShouldCap = read . T.unpack $ sc
+                 , desigEntName   = en
+                 , desigId        = read . T.unpack $ i
+                 , desigIds       = read . T.unpack $ is }
     | c == nonStdDesigDelimiter, [ es, nsd ] <- T.splitOn dd t =
-        NonStdDesig { nsDesigEntSing = es, nsDesc = nsd }
+        NonStdDesig { dEntSing = es, dDesc = nsd }
     | otherwise = patternMatchFail "deserialize" [ showText a ]
     where
       deserMaybeText ""  = Nothing
@@ -703,14 +703,13 @@ type LvlExp = (Lvl, Exp)
 -----
 
 
--- TODO: Hopefully I can clean up the "s~" and "ns~" record names after GHC 8 comes out.
-data Desig = StdDesig    { sDesigEntSing  :: Maybe Text
-                         , shouldCap      :: ShouldCap
+data Desig = StdDesig    { desigEntSing   :: Maybe Text
+                         , desigShouldCap :: ShouldCap
                          , desigEntName   :: Text
                          , desigId        :: Id
                          , desigIds       :: Inv }
-           | NonStdDesig { nsDesigEntSing :: Text
-                         , nsDesc         :: Text } deriving (Eq, Show)
+           | NonStdDesig { dEntSing       :: Text
+                         , dDesc          :: Text } deriving (Eq, Show)
 
 
 data ShouldCap = DoCap | Don'tCap deriving (Eq, Read, Show)

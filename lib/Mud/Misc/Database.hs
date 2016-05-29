@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, RecordWildCards, TupleSections #-}
+{-# LANGUAGE DuplicateRecordFields, OverloadedStrings, RecordWildCards, TupleSections #-}
 
 module Mud.Misc.Database ( AdminChanRec(..)
                          , AdminMsgRec(..)
@@ -58,61 +58,61 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 
 
-data AdminChanRec = AdminChanRec { adminChanTimestamp :: Text
-                                 , adminChanName      :: Text
-                                 , adminChanMsg       :: Text }
-data AdminMsgRec  = AdminMsgRec  { adminMsgTimestamp  :: Text
-                                 , adminMsgFromName   :: Text
-                                 , adminMsgToName     :: Text
-                                 , adminMsgMsg        :: Text }
-data AlertExecRec = AlertExecRec { alertExecTimestamp :: Text
-                                 , alertExecName      :: Text
-                                 , alertExecCmdName   :: Text
-                                 , alertExecTarget    :: Text
-                                 , alertExecArgs      :: Text }
-data AlertMsgRec  = AlertMsgRec  { alertMsgTimestamp  :: Text
-                                 , alertMsgName       :: Text
-                                 , alertMsgCmdName    :: Text
-                                 , alertMsgTrigger    :: Text
-                                 , alertMsgMsg        :: Text }
-data BanHostRec   = BanHostRec   { banHostTimestamp   :: Text
-                                 , banHostHost        :: Text
-                                 , banHostIsBanned    :: Bool
-                                 , banHostReason      :: Text }
-data BanPCRec     = BanPCRec     { banPCTimestamp     :: Text
-                                 , banPCName          :: Text
-                                 , banPCIsBanned      :: Bool
-                                 , banPCReason        :: Text }
-data BugRec       = BugRec       { bugTimestamp       :: Text
-                                 , bugName            :: Text
-                                 , bugLoc             :: Text
-                                 , bugDesc            :: Text
-                                 , bugIsOpen          :: Bool }
-data ChanRec      = ChanRec      { chanTimestamp      :: Text
-                                 , chanChanId         :: Int
-                                 , chanChanName       :: Text
-                                 , chanPCName         :: Text
-                                 , chanMsg            :: Text }
-data ProfRec      = ProfRec      { profTimestamp      :: Text
-                                 , profHost           :: Text
-                                 , profProfanity      :: Text }
-data QuestionRec  = QuestionRec  { questionTimestamp  :: Text
-                                 , questionName       :: Text
-                                 , questionMsg        :: Text }
-data SecRec       = SecRec       { secName            :: Text
-                                 , secQ               :: Text
-                                 , secA               :: Text } deriving Eq
-data TeleRec      = TeleRec      { teleTimestamp      :: Text
-                                 , teleFromName       :: Text
-                                 , teleToName         :: Text
-                                 , teleMsg            :: Text }
-data TypoRec      = TypoRec      { typoTimestamp      :: Text
-                                 , typoName           :: Text
-                                 , typoLoc            :: Text
-                                 , typoDesc           :: Text
-                                 , typoIsOpen         :: Bool }
-data UnPwRec      = UnPwRec      { un                 :: Text
-                                 , pw                 :: Text }
+data AdminChanRec = AdminChanRec { dbTimestamp :: Text
+                                 , dbName      :: Text
+                                 , dbMsg       :: Text }
+data AdminMsgRec  = AdminMsgRec  { dbTimestamp :: Text
+                                 , dbFromName  :: Text
+                                 , dbToName    :: Text
+                                 , dbMsg       :: Text }
+data AlertExecRec = AlertExecRec { dbTimestamp :: Text
+                                 , dbName      :: Text
+                                 , dbCmdName   :: Text
+                                 , dbTarget    :: Text
+                                 , dbArgs      :: Text }
+data AlertMsgRec  = AlertMsgRec  { dbTimestamp :: Text
+                                 , dbName      :: Text
+                                 , dbCmdName   :: Text
+                                 , dbTrigger   :: Text
+                                 , dbMsg       :: Text }
+data BanHostRec   = BanHostRec   { dbTimestamp :: Text
+                                 , dbHost      :: Text
+                                 , dbIsBanned  :: Bool
+                                 , dbReason    :: Text }
+data BanPCRec     = BanPCRec     { dbTimestamp :: Text
+                                 , dbName      :: Text
+                                 , dbIsBanned  :: Bool
+                                 , dbReason    :: Text }
+data BugRec       = BugRec       { dbTimestamp :: Text
+                                 , dbName      :: Text
+                                 , dbLoc       :: Text
+                                 , dbDesc      :: Text
+                                 , dbIsOpen    :: Bool }
+data ChanRec      = ChanRec      { dbTimestamp :: Text
+                                 , dbChanId    :: Int
+                                 , dbChanName  :: Text
+                                 , dbName      :: Text
+                                 , dbMsg       :: Text }
+data ProfRec      = ProfRec      { dbTimestamp :: Text
+                                 , dbHost      :: Text
+                                 , dbProfanity :: Text }
+data QuestionRec  = QuestionRec  { dbTimestamp :: Text
+                                 , dbName      :: Text
+                                 , dbMsg       :: Text }
+data SecRec       = SecRec       { dbName      :: Text
+                                 , dbQ         :: Text
+                                 , dbA         :: Text } deriving Eq
+data TeleRec      = TeleRec      { dbTimestamp :: Text
+                                 , dbFromName  :: Text
+                                 , dbToName    :: Text
+                                 , dbMsg       :: Text }
+data TypoRec      = TypoRec      { dbTimestamp :: Text
+                                 , dbName      :: Text
+                                 , dbLoc       :: Text
+                                 , dbDesc      :: Text
+                                 , dbIsOpen    :: Bool }
+data UnPwRec      = UnPwRec      { dbUn        :: Text
+                                 , dbPw        :: Text }
 
 
 -----
@@ -334,11 +334,11 @@ insertDbTblTypo = insertDbTblHelper "insert into typo (timestamp, name, loc, des
 
 
 insertDbTblUnPw :: UnPwRec -> IO ()
-insertDbTblUnPw rec@UnPwRec { .. } = hashPW (T.unpack pw) >>= withConnection dbFile . helper
+insertDbTblUnPw rec@UnPwRec { .. } = hashPW (T.unpack dbPw) >>= withConnection dbFile . helper
   where
-    helper pw' conn = do
-        execute conn "delete from unpw where un=?" . Only $ un
-        execute conn "insert into unpw (un, pw) values (?, ?)" rec { pw = pw' }
+    helper pw conn = do
+        execute conn "delete from unpw where un=?" . Only $ dbUn
+        execute conn "insert into unpw (un, pw) values (?, ?)" rec { dbPw = pw }
 
 
 -----

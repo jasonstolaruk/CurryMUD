@@ -122,6 +122,7 @@ library
   other-modules:       Paths_currymud
   other-extensions:    DeriveDataTypeable
                        DeriveGeneric
+                       DuplicateRecordFields
                        FlexibleContexts
                        FlexibleInstances
                        GADTs
@@ -138,6 +139,7 @@ library
                        RankNTypes
                        RebindableSyntax
                        RecordWildCards
+                       ScopedTypeVariables
                        TemplateHaskell
                        TransformListComp
                        TupleSections

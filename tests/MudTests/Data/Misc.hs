@@ -27,19 +27,19 @@ d   = T.singleton desigDelimiter
 test_serializeStdDesig :: Assertion
 test_serializeStdDesig = actual @?= expected
   where
-    actual   = serialize StdDesig { sDesigEntSing = Just "Taro"
-                                  , shouldCap     = Don'tCap
-                                  , desigEntName  = "mhuman"
-                                  , desigId       = 50
-                                  , desigIds      = [50..55] }
+    actual   = serialize StdDesig { desigEntSing   = Just "Taro"
+                                  , desigShouldCap = Don'tCap
+                                  , desigEntName   = "mhuman"
+                                  , desigId        = 50
+                                  , desigIds       = [50..55] }
     expected = quoteWith std . T.intercalate d $ [ "Taro", "Don'tCap", "mhuman", "50", "[50,51,52,53,54,55]" ]
 
 
 test_serializeNonStdDesig :: Assertion
 test_serializeNonStdDesig = actual @?= expected
   where
-    actual   = serialize NonStdDesig { nsDesigEntSing = "Taro"
-                                     , nsDesc         = "A male human" }
+    actual   = serialize NonStdDesig { dEntSing = "Taro"
+                                     , dDesc    = "A male human" }
     expected = quoteWith non $ "Taro" <> d <> "A male human"
 
 
