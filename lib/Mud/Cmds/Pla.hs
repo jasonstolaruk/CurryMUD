@@ -2143,6 +2143,7 @@ question (Msg i mq cols msg) = getState >>= \ms -> if
     else let ioHelper (expandEmbeddedIdsToSings ms -> logMsg) bs = do
                  bcastNl =<< expandEmbeddedIds ms questionChanContext bs
                  logPlaOut "question" i . pure $ logMsg
+                 alertMsgHelper i "question" logMsg
                  ts <- liftIO mkTimestamp
                  withDbExHandler_ "question" . insertDbTblQuestion . QuestionRec ts s $ logMsg
              s    = getSing i ms
@@ -3252,7 +3253,7 @@ smell (OneArgLower i mq cols a) = getState >>= \ms ->
                                                             , targetDesig
                                                             , "." ], desigIds d \\ [ i, targetId ])
                                                 , (serialize d <> " smells you.", pure targetId) ]
-                                  logMsg      = parseDesig i ms $ "smelled " <> targetDesig <> "."
+                                  logMsg      = parseExpandDesig i ms $ "smelled " <> targetDesig <> "."
                                   smellMob    = ioHelper smellDesc bs logMsg
                               in case getType targetId ms of NpcType -> smellMob
                                                              PCType  -> smellMob
@@ -3378,6 +3379,7 @@ tele (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
                        ioHelper targetId bs = let bs'@[(toSelf, _), _] = formatBs targetId bs in do
                            bcastNl . consLocPrefBcast i $ bs'
                            logPlaOut "tele" i . pure $ toSelf
+                           alertMsgHelper i "tele" toSelf
                            ts <- liftIO mkTimestamp
                            withDbExHandler_ "tele" . insertDbTblTele . TeleRec ts s targetSing $ toSelf
                        formatBs targetId [toMe, toTarget] = let f n m = bracketQuote n <> " " <> m
