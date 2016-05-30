@@ -536,7 +536,9 @@ chan (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
                      ioHelper (expandEmbeddedIdsToSings ms -> logMsg) bs = do
                          bcastNl =<< expandEmbeddedIds ms cc bs
                          sendToWiretappers logMsg
-                         logPlaOut "chan" i . pure $ parensQuote cn <> " " <> logMsg
+                         let logMsg' = parensQuote cn <> " " <> logMsg
+                         logPlaOut "chan" i . pure $ logMsg'
+                         alertMsgHelper i "chan" logMsg'
                          ts <- liftIO mkTimestamp
                          withDbExHandler_ "chan" . insertDbTblChan . ChanRec ts (c^.chanId) cn s $ logMsg
                      sendToWiretappers tappedMsg =
