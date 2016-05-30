@@ -1754,7 +1754,7 @@ look (LowerNub i mq cols as) = mkRndmVector >>= \v ->
         send mq toSelf
         bcastIfNotIncogNl i bs
         sequence_ fs
-        let mkLogMsgForDesigs targetDesigs | targetSings <- [ fromJust . desigEntSing $ targetDesig
+        let mkLogMsgForDesigs targetDesigs | targetSings <- [ parseExpandDesig i ms targetDesig
                                                             | targetDesig <- targetDesigs ]
                                            = "looked at " <> commas targetSings
             logMsg = T.intercalate " / " . dropBlanks $ [ maybe "" mkLogMsgForDesigs maybeTargetDesigs, hookLogMsg ]
