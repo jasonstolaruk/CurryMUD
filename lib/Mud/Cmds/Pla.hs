@@ -1751,10 +1751,11 @@ look (NoArgs i mq cols) = getState >>= \ms ->
     formatRmDesc = map (T.replicate rmDescIndentAmt filler <>) . T.lines
 look (LowerNub i mq cols as) = mkRndmVector >>= \v ->
     helper v |&| modifyState >=> \(toSelf, bs, hookLogMsg, maybeTargetDesigs, fs) -> do
+        ms <- getState
         send mq toSelf
         bcastIfNotIncogNl i bs
         sequence_ fs
-        let mkLogMsgForDesigs targetDesigs | targetSings <- [ parseExpandDesig i ms targetDesig
+        let mkLogMsgForDesigs targetDesigs | targetSings <- [ parseExpandDesig i ms . serialize $ targetDesig
                                                             | targetDesig <- targetDesigs ]
                                            = "looked at " <> commas targetSings
             logMsg = T.intercalate " / " . dropBlanks $ [ maybe "" mkLogMsgForDesigs maybeTargetDesigs, hookLogMsg ]
