@@ -28,6 +28,7 @@ module Mud.Data.State.Util.Calc ( calcBarLen
                                 , calcRegenPpAmt
                                 , calcRegenPpDelay
                                 , calcStomachAvailSize
+                                , calcStomachPerFull
                                 , calcStomachSize
                                 , calcVesselPerFull
                                 , calcVol
@@ -237,22 +238,29 @@ calcRegenFpDelay i ms = calcRegenDelay $ (calcEffHt i ms + calcEffSt i ms) `divi
 
 
 calcStomachAvailSize :: Id -> MudState -> (Int, Int)
-calcStomachAvailSize i ms = let avail = size - length (getStomach i ms)
-                                size  | isPC i ms = calcStomachSize . getRace i $ ms
-                                      | otherwise = calcStomachSize Human
-                            in (avail, size)
+calcStomachAvailSize i ms | size <- calcStomachSize i ms, avail <- size - length (getStomach i ms)
+                          = (avail, size)
 
 
-calcStomachSize :: Race -> Int -- Stomach capacty in terms of mouthfuls.
-calcStomachSize = let f = (calcStomachSize Human |&|) in \case
-  Dwarf     -> f minusQuarter
-  Elf       -> f minusFifth
-  Felinoid  -> f plusFifth
-  Hobbit    -> f minusThird
-  Human     -> round $ 60 * 100 `divide` mouthfulVol -- 34 mouthfuls.
-  Lagomorph -> f id
-  Nymph     -> f minusFifth
-  Vulpenoid -> f plusQuarter
+calcStomachSize :: Id -> MudState -> Int
+calcStomachSize i ms | isPC i ms = helper . getRace i $ ms
+                     | otherwise = helper Human
+  where
+    helper = let f = (helper Human |&|) in \case
+      Dwarf     -> f minusQuarter
+      Elf       -> f minusFifth
+      Felinoid  -> f plusFifth
+      Hobbit    -> f minusThird
+      Human     -> round $ 60 * 100 `divide` mouthfulVol -- 34 mouthfuls.
+      Lagomorph -> f id
+      Nymph     -> f minusFifth
+      Vulpenoid -> f plusQuarter
+
+
+calcStomachPerFull :: Id -> MudState -> Int
+calcStomachPerFull i ms = let mouths = length . getStomach i $ ms
+                              size   = calcStomachSize i ms
+                          in round . (100 *) $ mouths `divide` size
 
 
 -----

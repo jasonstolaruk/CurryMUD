@@ -676,6 +676,10 @@ examineMob i ms =
        , "PP: "             <> showPts curPp maxPp
        , "FP: "             <> showPts curFp maxFp
        , "Stomach: "        <> m^.stomach.to ppList
+       , "Stomach ratio: "  <> let (mouths, size, perFull) = (length . getStomach i $ ms
+                                                             , calcStomachSize    i   ms
+                                                             , calcStomachPerFull i   ms) & each %~ showText
+                               in T.concat [ mouths, " / ", size, " ", parensQuote $ perFull <> "%" ]
        , "Exp: "            <> m^.exp .to showText
        , "Handedness: "     <> m^.hand.to pp
        , "Know languages: " <> m^.knownLangs.to ppList
