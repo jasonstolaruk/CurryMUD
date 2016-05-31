@@ -64,8 +64,8 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryFillAlreadyFull
                            , sorryFillCoins
                            , sorryFillEmptyRmNoHooks
-                           , sorryFillEmptySource
                            , sorryFillEmptyRmWithHooks
+                           , sorryFillEmptySource
                            , sorryFillExcessSources
                            , sorryFillInEq
                            , sorryFillInRm
@@ -77,6 +77,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryFillSourceEq
                            , sorryFillSourceType
                            , sorryFillType
+                           , sorryFillWaterLiqTypes
                            , sorryFull
                            , sorryGetEmptyRmNoHooks
                            , sorryGetEmptyRmWithHooks
@@ -740,6 +741,10 @@ sorryFillSourceType s = "The " <> s <> " is not a vessel or a source of liquid."
 
 sorryFillType :: Sing -> Text
 sorryFillType s = "The " <> s <> " is not a vessel that can be filled with liquid."
+
+
+sorryFillWaterLiqTypes :: Sing -> Text
+sorryFillWaterLiqTypes s = "The " <> s <> " already contains something other than water."
 
 
 -----

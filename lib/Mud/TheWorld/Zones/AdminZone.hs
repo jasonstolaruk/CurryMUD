@@ -9,6 +9,7 @@ module Mud.TheWorld.Zones.AdminZone ( adminZoneHooks
 
 import Mud.Cmds.Msgs.Advice
 import Mud.Cmds.Msgs.Sorry
+import Mud.Cmds.Util.Misc
 import Mud.Cmds.Util.Pla
 import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
@@ -25,9 +26,11 @@ import Mud.TheWorld.Misc
 import Mud.TheWorld.Zones.AdminZoneIds
 import Mud.TheWorld.Zones.TutorialIds (iTutWelcome)
 import Mud.Threads.Act
+import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Vols
 import Mud.TopLvlDefs.Weights
 import Mud.Util.List
+import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Operators
 import Mud.Util.Quoting
 import Mud.Util.Text
@@ -35,10 +38,11 @@ import qualified Data.Vector.Unboxed as V (Vector, head)
 import qualified Mud.Misc.Logging as L (logNotice)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
-import Control.Lens (_1, _2, _3, _4)
-import Control.Lens.Operators ((%~), (&), (.~), (<>~))
+import Control.Lens (_1, _2, _3, _4, view)
+import Control.Lens.Operators ((%~), (&), (.~), (<>~), (?~))
 import Control.Monad (forM_)
 import Data.Bits (setBit, zeroBits)
+import Data.Function (on)
 import Data.List ((\\), delete, foldl')
 import Data.Monoid ((<>))
 import Data.Text (Text)
@@ -117,9 +121,60 @@ fillPoolHookName :: HookName
 fillPoolHookName = "AdminZone_iAtrium_fillPool"
 
 
--- TODO: We'll have to check encumbrance.
 fillPoolHookFun :: HookFun
-fillPoolHookFun _ _ _ (_, (_, _, _, _), _) = undefined
+fillPoolHookFun i Hook { .. } _ a@(as, (ms, _, _, _), _) =
+    let as'                         = T.splitOn (T.singleton hookArgDelimiter) . head $ as
+        (inInvs, inEqs, inRms)      = sortArgsInvEqRm InInv as'
+        sorryInEq                   = inEqs |!| sorryFillInEq
+        sorryInRm                   = inRms |!| sorryFillInRm
+        (eiss, ecs)                 = uncurry (resolveMobInvCoins i ms inInvs) . getInvCoins i $ ms
+        sorryCoins                  = ecs   |!| sorryFillCoins
+        (ms', toSelfs, bs, logMsgs) = helperFillRmEitherInv i (mkStdDesig i ms DoCap) eiss (ms, [], [], [])
+    in a & _1    .~ []
+         & _2._1 .~ ms'
+         & _2._2 .~ dropBlanks ([ sorryInEq, sorryInRm, sorryCoins ] ++ toSelfs)
+         & _2._3 .~ bs
+         & _2._4 .~ logMsgs
+
+
+helperFillRmEitherInv :: Id
+                      -> Desig
+                      -> [Either Text Inv]
+                      -> GenericIntermediateRes
+                      -> GenericIntermediateRes
+helperFillRmEitherInv _ _        []         a               = a
+helperFillRmEitherInv i srcDesig (eis:eiss) a@(ms, _, _, _) = helperFillRmEitherInv i srcDesig eiss $ case eis of
+    Left msg -> sorry msg
+    Right is -> helper is a
+  where
+    sorry msg  = a & _2 <>~ pure msg
+    helper []       a'                = a'
+    helper (vi:vis) a'@(ms', _, _, _)
+      | getType vi ms' /= VesselType = helper vis . sorry' . sorryFillType $ vs
+      | otherwise                    = helper vis . (_3 <>~ bcastHelper)   $ case getVesselCont vi ms' of
+          -- TODO: We'll have to check encumbrance.
+          Nothing -> a' & _1.vesselTbl.ind vi.vesselCont ?~ (waterLiq, vmm)
+                        & _2 <>~ mkFillUpMsg
+                        & _4 <>~ mkFillUpMsg
+          Just (vl, vm)
+            | vl `f` waterLiq -> sorry' . sorryFillWaterLiqTypes . getSing vi $ ms
+            | vm >= vmm       -> sorry' . sorryFillAlreadyFull $ vs
+            -- TODO: We'll have to check encumbrance.
+            | otherwise {-vAvail <- vmm - vm-} -> a' & _1.vesselTbl.ind vi.vesselCont ?~ (waterLiq, vmm)
+                                           & _2 <>~ mkFillUpMsg
+                                           & _4 <>~ mkFillUpMsg
+      where
+        sorry' msg  = a' & _2 <>~ pure msg
+        vs          = getSing         vi ms'
+        vmm         = getMaxMouthfuls vi ms'
+        f           = (/=) `on` view liqId
+        mkFillUpMsg = pure $ "You fill up the " <> vs <> " with water from the pool."
+        bcastHelper = pure (T.concat [ serialize srcDesig
+                                     , " fills up "
+                                     , mkPossPro . getSex i $ ms
+                                     , " "
+                                     , aOrAn vs
+                                     , " with water from the pool." ], i `delete` desigIds srcDesig)
 
 
 -----

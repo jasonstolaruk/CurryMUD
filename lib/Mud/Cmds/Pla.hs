@@ -1055,15 +1055,15 @@ fill p@(Lower' i as   ) = genericActionWithHooks p helper "fill"
             (InRm, target)
               | ()# rmInvCoins, ()# maybeHooks -> sorry sorryFillEmptyRmNoHooks
               | otherwise                      ->
-                  let hookArg = intersperse (T.singleton hookArgDelimiter) $ target : otherArgs
+                  let hookArg = T.intercalate (T.singleton hookArgDelimiter) $ target : otherArgs
                   in case ((()!#) *** (()!#)) (rmInvCoins, maybeHooks) of
                     (True,  False) -> sorry sorryFillRmNoHooks
                     (False, True ) ->
-                        let (otherArgs', (ms', toSelfs, bs, logMsgs), fs) = procHooks i ms v "fill" hookArg
+                        let (otherArgs', (ms', toSelfs, bs, logMsgs), fs) = procHooks i ms v "fill" . pure $ hookArg
                             sorryMsgs                                     = otherArgs' |!| pure sorryFillEmptyRmWithHooks
                         in (ms', (dropBlanks $ sorryMsgs ++ toSelfs, bs, logMsgs, fs))
                     (True,  True ) ->
-                        let (otherArgs', (ms', toSelfs, bs, logMsgs), fs) = procHooks i ms v "fill" hookArg
+                        let (otherArgs', (ms', toSelfs, bs, logMsgs), fs) = procHooks i ms v "fill" . pure $ hookArg
                         in if ()# otherArgs'
                           then (ms', (toSelfs, bs, logMsgs, fs))
                           else sorry . sorryFillRmWithHooks $ target

@@ -491,7 +491,7 @@ dropPrefixes arg@(T.unpack -> arg'        )
   where
     isMatch :: (String, String, String) -> Bool
     isMatch (a, b, c) = and [ ()# a, ()!# b, ()!# c ]
-    mkRegex c         = "^[0-9]+\\" <> pure c :: String
+    mkRegex c         = "^[0-9]+\\" ++ pure c :: String
 
 
 -----

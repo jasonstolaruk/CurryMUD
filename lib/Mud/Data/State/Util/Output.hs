@@ -236,12 +236,12 @@ parseDesigHelper f i ms = loop (getIntroduced i ms)
              then es
              else expandEntName i ms d ^.to (isPC desigId ms ? f es :? id)) <>
           loop intros rest
-        d@StdDesig { desigEntSing = Nothing,  .. } -> -- TODO: Here?
+        d@StdDesig { desigEntSing = Nothing,  .. } ->
           left <> expandEntName i ms d <> loop intros rest
         _ -> patternMatchFail "parseDesig loop" [ showText pcd ]
       | T.singleton nonStdDesigDelimiter `T.isInfixOf` txt
       , (left, NonStdDesig { .. }, rest) <- extractDesigTxt nonStdDesigDelimiter txt
-      = left <> (dEntSing `elem` intros ? dEntSing :? dDesc) <> loop intros rest -- TODO: Here?
+      = left <> (dEntSing `elem` intros ? dEntSing :? dDesc) <> loop intros rest
       | otherwise = txt
     extractDesigTxt (T.singleton -> c) (T.breakOn c -> (left, T.breakOn c . T.tail -> (pcdTxt, T.tail -> rest)))
       | pcd <- deserialize . quoteWith c $ pcdTxt :: Desig
