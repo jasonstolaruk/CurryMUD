@@ -753,16 +753,20 @@ xformNls = T.replace "\n" (colorWith nlColor "\\n")
 
 examineVessel :: ExamineHelper
 examineVessel i ms = let v = getVessel i ms in
-    [ "Max mouthfuls: "   <> v^.maxMouthfuls .to showText
-    , "Vessel contents: " <> v^.vesselCont.to descCont ] ++ views vesselCont (maybe [] (descLiq . fst)) v
+    [ "Max mouthfuls: "   <> v^.maxMouthfuls.to showText
+    , "Vessel contents: " <> v^.vesselCont  .to (descCont v) ] ++ views vesselCont (maybe [] (descLiq . fst)) v
   where
-    descCont Nothing       = "none"
-    descCont (Just (l, m)) = showText m <> " mouthfuls of " <> renderLiqNoun l aOrAn
-    descLiq l = let dl = getDistinctLiqForLiq l ms
-                in [ "Distinct liquid ID: " <> l^.liqId.to showText
-                   , "Liquid smell: "       <> l^.liqSmellDesc.to noneOnNull
-                   , "Liquid taste: "       <> l^.liqTasteDesc.to noneOnNull
-                   , "Drink description: "  <> l^.drinkDesc ] ++ dl^.liqEdibleEffects.to descEdibleEffects
+    descCont _ Nothing       = "none"
+    descCont v (Just (l, m)) = T.concat [ showText m
+                                        , " mouthfuls of "
+                                        , renderLiqNoun l aOrAn
+                                        , " "
+                                        , parensQuote $ showText (calcVesselPerFull v m) <> "%" ]
+    descLiq l                = let dl = getDistinctLiqForLiq l ms
+                               in [ "Distinct liquid ID: " <> l^.liqId.to showText
+                                  , "Liquid smell: "       <> l^.liqSmellDesc.to noneOnNull
+                                  , "Liquid taste: "       <> l^.liqTasteDesc.to noneOnNull
+                                  , "Drink description: "  <> l^.drinkDesc ] ++ dl^.liqEdibleEffects.to descEdibleEffects
 
 
 examineWpn :: ExamineHelper
