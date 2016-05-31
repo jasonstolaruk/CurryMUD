@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, RecordWildCards, ViewPatterns #-}
+{-# LANGUAGE MultiWayIf, OverloadedStrings, RecordWildCards, ViewPatterns #-}
 
 module Mud.TheWorld.Zones.AdminZone ( adminZoneHooks
                                     , adminZoneRmActionFuns
@@ -129,7 +129,7 @@ fillPoolHookFun i Hook { .. } _ a@(as, (ms, _, _, _), _) =
         sorryInRm                   = inRms |!| sorryFillInRm
         (eiss, ecs)                 = uncurry (resolveMobInvCoins i ms inInvs) . getInvCoins i $ ms
         sorryCoins                  = ecs   |!| sorryFillCoins
-        (ms', toSelfs, bs, logMsgs) = helperFillRmEitherInv i (mkStdDesig i ms DoCap) eiss (ms, [], [], [])
+        (ms', toSelfs, bs, logMsgs) = helperFillWaterRmEitherInv i (mkStdDesig i ms DoCap) eiss (ms, [], [], [])
     in a & _1    .~ []
          & _2._1 .~ ms'
          & _2._2 .~ dropBlanks ([ sorryInEq, sorryInRm, sorryCoins ] ++ toSelfs)
@@ -137,38 +137,66 @@ fillPoolHookFun i Hook { .. } _ a@(as, (ms, _, _, _), _) =
          & _2._4 .~ logMsgs
 
 
-helperFillRmEitherInv :: Id
-                      -> Desig
-                      -> [Either Text Inv]
-                      -> GenericIntermediateRes
-                      -> GenericIntermediateRes
-helperFillRmEitherInv _ _        []         a               = a
-helperFillRmEitherInv i srcDesig (eis:eiss) a@(ms, _, _, _) = helperFillRmEitherInv i srcDesig eiss $ case eis of
+helperFillWaterRmEitherInv :: Id
+                           -> Desig
+                           -> [Either Text Inv]
+                           -> GenericIntermediateRes
+                           -> GenericIntermediateRes
+helperFillWaterRmEitherInv _ _        []         a               = a
+helperFillWaterRmEitherInv i srcDesig (eis:eiss) a@(ms, _, _, _) = next $ case eis of
     Left msg -> sorry msg
     Right is -> helper is a
   where
-    sorry msg  = a & _2 <>~ pure msg
+    next      = helperFillWaterRmEitherInv i srcDesig eiss
+    sorry msg = a & _2 <>~ pure msg
     helper []       a'                = a'
     helper (vi:vis) a'@(ms', _, _, _)
       | getType vi ms' /= VesselType = helper vis . sorry' . sorryFillType $ vs
       | otherwise                    = helper vis . (_3 <>~ bcastHelper)   $ case getVesselCont vi ms' of
-          -- TODO: We'll have to check encumbrance.
-          Nothing -> a' & _1.vesselTbl.ind vi.vesselCont ?~ (waterLiq, vmm)
-                        & _2 <>~ mkFillUpMsg
-                        & _4 <>~ mkFillUpMsg
+          Nothing -> let myWeight = calcWeight i ms'
+                         myMaxEnc = calcMaxEnc i ms'
+                         calcCanCarryMouthfuls | myWeight + (vmm * mouthfulWeight) > myMaxEnc
+                                               , margin <- myMaxEnc - myWeight
+                                               = floor (margin `divide` mouthfulWeight :: Double)
+                                               | otherwise = vmm
+                     in if
+                       | calcCanCarryMouthfuls < 1   -> a' & _2 <>~ pure (sorryGetEnc <> "any more water.")
+                       | vmm > calcCanCarryMouthfuls -> a' & _1.vesselTbl.ind vi.vesselCont ?~ (waterLiq, calcCanCarryMouthfuls)
+                                                           & _2 <>~ mkPartialFillUpMsg
+                                                           & _4 <>~ mkPartialFillUpMsg
+                       | otherwise                   -> a' & _1.vesselTbl.ind vi.vesselCont ?~ (waterLiq, vmm)
+                                                           & _2 <>~ mkFillUpMsg
+                                                           & _4 <>~ mkFillUpMsg
           Just (vl, vm)
-            | vl `f` waterLiq -> sorry' . sorryFillWaterLiqTypes . getSing vi $ ms
+            | vl `f` waterLiq -> sorry' . sorryFillWaterLiqTypes . getSing vi $ ms'
             | vm >= vmm       -> sorry' . sorryFillAlreadyFull $ vs
-            -- TODO: We'll have to check encumbrance.
-            | otherwise {-vAvail <- vmm - vm-} -> a' & _1.vesselTbl.ind vi.vesselCont ?~ (waterLiq, vmm)
-                                           & _2 <>~ mkFillUpMsg
-                                           & _4 <>~ mkFillUpMsg
+            | otherwise ->
+                let myWeight = calcWeight i ms'
+                    myMaxEnc = calcMaxEnc i ms'
+                    vAvail   = vmm - vm
+                    calcCanCarryMouthfuls | myWeight + (vAvail * mouthfulWeight) > myMaxEnc
+                                          , margin <- myMaxEnc - myWeight
+                                          = floor (margin `divide` mouthfulWeight :: Double)
+                                          | otherwise = vAvail
+                in if
+                  | calcCanCarryMouthfuls < 1      -> a' & _2 <>~ pure (sorryGetEnc <> "any more water.")
+                  | vAvail > calcCanCarryMouthfuls -> a' & _1.vesselTbl.ind vi.vesselCont ?~ (waterLiq, vm + calcCanCarryMouthfuls)
+                                                         & _2 <>~ mkPartialFillUpMsg
+                                                         & _4 <>~ mkPartialFillUpMsg
+                  | otherwise                      -> a' & _1.vesselTbl.ind vi.vesselCont ?~ (waterLiq, vmm)
+                                                         & _2 <>~ mkFillUpMsg
+                                                         & _4 <>~ mkFillUpMsg
       where
-        sorry' msg  = a' & _2 <>~ pure msg
-        vs          = getSing         vi ms'
-        vmm         = getMaxMouthfuls vi ms'
-        f           = (/=) `on` view liqId
-        mkFillUpMsg = pure $ "You fill up the " <> vs <> " with water from the pool."
+        sorry' msg         = a' & _2 <>~ pure msg
+        vs                 = getSing         vi ms'
+        vmm                = getMaxMouthfuls vi ms'
+        f                  = (/=) `on` view liqId
+        mkFillUpMsg        = pure $ "You fill up the " <> vs <> " with water from the pool."
+        mkPartialFillUpMsg = pure . T.concat $ [ "You partially fill the "
+                                               , vs
+                                               , " with water from the pool. "
+                                               , sorryGetEnc
+                                               , "any more water." ]
         bcastHelper = pure (T.concat [ serialize srcDesig
                                      , " fills up "
                                      , mkPossPro . getSex i $ ms

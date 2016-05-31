@@ -678,6 +678,7 @@ examineMob i ms =
                                in getRmName ri ms <> " " <> parensQuote (showText ri) ]
 
 
+-- TODO: Give weight vs. encumbrance.
 examineNpc :: ExamineHelper
 examineNpc i ms = [ "Possessor: " <> (descMaybeId ms . getPossessor i $ ms) ]
 
@@ -691,6 +692,7 @@ examineObj i ms = let o = getObj i ms in [ "Weight: " <> o^.weight.to showText
                                          , "Volume: " <> o^.vol   .to showText ]
 
 
+-- TODO: Give weight vs. encumbrance.
 examinePC :: ExamineHelper
 examinePC i ms = let p = getPC i ms in [ "Race: "        <> p^.race      .to pp
                                        , "Known names: " <> p^.introduced.to (noneOnNull . commas)

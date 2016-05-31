@@ -932,6 +932,7 @@ emote p = patternMatchFail "emote" [ showText p ]
 -----
 
 
+-- TODO: "You can't empty a backpack."
 emptyAction :: ActionFun
 emptyAction p@AdviseNoArgs            = advise p ["empty"] adviceEmptyNoArgs
 emptyAction   (LowerNub i mq cols as) = helper |&| modifyState >=> \(toSelfs, bs, logSings) -> do
