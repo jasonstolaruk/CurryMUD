@@ -596,7 +596,12 @@ examineCoins i ms = let (map showText . coinsToList -> cs) = getCoins i ms in [ 
 
 examineCon :: ExamineHelper
 examineCon i ms = let c = getCon i ms in [ "Is clothing: " <> c^.isCloth .to showText
-                                         , "Capacity: "    <> c^.capacity.to showText ]
+                                         , T.concat [ "Volume/capacity: "
+                                                    , showText . calcVol i $ ms
+                                                    , " / "
+                                                    , c^.capacity.to showText
+                                                    , " "
+                                                    , parensQuote $ (<> "%") . showText . calcConPerFull i $ ms ] ]
 
 
 examineEnt :: ExamineHelper
@@ -675,10 +680,15 @@ examineMob i ms =
        , "Handedness: "     <> m^.hand.to pp
        , "Know languages: " <> m^.knownLangs.to ppList
        , "Room: "           <> let ri = m^.rmId
-                               in getRmName ri ms <> " " <> parensQuote (showText ri) ]
+                               in getRmName ri ms <> " " <> parensQuote (showText ri)
+       , encHelper i ms ]
 
 
--- TODO: Give weight vs. encumbrance.
+encHelper :: Id -> MudState -> Text
+encHelper i ms = let (w, maxEnc, encPer) = (calcWeight i ms, calcMaxEnc i ms, calcEncPer i ms) & each %~ showText
+                 in T.concat [ "Weight/max enc: ", w, " / ", maxEnc, " ", parensQuote $ encPer <> "%" ]
+
+
 examineNpc :: ExamineHelper
 examineNpc i ms = [ "Possessor: " <> (descMaybeId ms . getPossessor i $ ms) ]
 
@@ -692,7 +702,6 @@ examineObj i ms = let o = getObj i ms in [ "Weight: " <> o^.weight.to showText
                                          , "Volume: " <> o^.vol   .to showText ]
 
 
--- TODO: Give weight vs. encumbrance.
 examinePC :: ExamineHelper
 examinePC i ms = let p = getPC i ms in [ "Race: "        <> p^.race      .to pp
                                        , "Known names: " <> p^.introduced.to (noneOnNull . commas)
