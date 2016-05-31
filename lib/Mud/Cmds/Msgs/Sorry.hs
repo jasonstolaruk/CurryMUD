@@ -49,6 +49,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryEmoteTargetType
                            , sorryEmptyAlready
                            , sorryEmptyCoins
+                           , sorryEmptyCon
                            , sorryEmptyInEq
                            , sorryEmptyInRm
                            , sorryEmptyType
@@ -592,6 +593,14 @@ sorryEmptyAlready s = "The " <> s <> " is already empty."
 
 sorryEmptyCoins :: Text
 sorryEmptyCoins = can't "empty a coin."
+
+
+sorryEmptyCon :: Text
+sorryEmptyCon = butCan't . T.concat $ [ "empty a container with the "
+                                      , dblQuote "empty"
+                                      , " command. Please use the "
+                                      , dblQuote "remove"
+                                      , " command to remove items from a container." ]
 
 
 sorryEmptyInEq :: Text

@@ -932,7 +932,6 @@ emote p = patternMatchFail "emote" [ showText p ]
 -----
 
 
--- TODO: "You can't empty a backpack."
 emptyAction :: ActionFun
 emptyAction p@AdviseNoArgs            = advise p ["empty"] adviceEmptyNoArgs
 emptyAction   (LowerNub i mq cols as) = helper |&| modifyState >=> \(toSelfs, bs, logSings) -> do
@@ -965,6 +964,7 @@ emptyAction   (LowerNub i mq cols as) = helper |&| modifyState >=> \(toSelfs, bs
                                   & _4 <>~ pure s
             in case getType targetId ms of
               VesselType -> maybe alreadyEmpty (const emptyIt) . getVesselCont targetId $ ms
+              ConType    -> a' & _2 <>~ pure sorryEmptyCon
               _          -> a' & _2 <>~ pure (sorryEmptyType s)
 emptyAction p = patternMatchFail "emptyAction" [ showText p ]
 
