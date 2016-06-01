@@ -316,7 +316,7 @@ Consider giving players the ability to change their character's description at a
 
 Perhaps make the composing of a background story/"character essay" an optional endeavor that awards experience points.
 
-Racial languages. PCs can spend points to (magically?) learn extra languages, though it should be difficult to find NPC "trainers" who teach them.
+PCs can spend points to (magically?) learn extra languages, though it should be difficult to find NPC "trainers" who teach them.
 
 ==========
 

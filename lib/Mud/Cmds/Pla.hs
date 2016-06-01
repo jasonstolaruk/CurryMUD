@@ -6,6 +6,7 @@ module Mud.Cmds.Pla ( getRecordUptime
                     , handleEgress
                     , look
                     , mkNonStdRmLinkCmds
+                    , mkRacialLangCmds
                     , noOfNpcCmds
                     , noOfPlaCmds
                     , npcCmds
@@ -149,8 +150,12 @@ logPlaOut = L.logPlaOut "Mud.Cmds.Pla"
 -- ==================================================
 
 
+mkPlaCmds :: Id -> MudState -> [Cmd]
+mkPlaCmds i = sort . (plaCmds ++) . mkRacialLangCmds i
+
+
 plaCmds :: [Cmd]
-plaCmds = sort $ regularCmds ++ priorityAbbrevCmds ++ expCmds
+plaCmds = regularCmds ++ priorityAbbrevCmds ++ expCmds
 
 
 regularCmds :: [Cmd]
@@ -286,8 +291,12 @@ depending on their content.
 -}
 
 
+mkNpcCmds :: Id -> MudState -> [Cmd]
+mkNpcCmds i = sort . (npcCmds ++) . mkRacialLangCmds i
+
+
 npcCmds :: [Cmd]
-npcCmds = sort $ npcRegularCmds ++ npcPriorityAbbrevCmds ++ expCmds
+npcCmds = npcRegularCmds ++ npcPriorityAbbrevCmds ++ expCmds
 
 
 npcRegularCmds :: [Cmd]
@@ -346,6 +355,23 @@ npcPriorityAbbrevCmdTuples =
 
 noOfNpcCmds :: Int
 noOfNpcCmds = length npcRegularCmdTuples + length npcPriorityAbbrevCmdTuples
+
+
+-----
+
+
+mkRacialLangCmds :: Id -> MudState -> [Cmd]
+mkRacialLangCmds i ms | matches <- map snd . filter ((`elem` getKnownLangs i ms) . fst) $ regCmdTuples
+                      = sort . map (uncurry4 mkRegularCmd) $ matches
+  where
+    regCmdTuples = [ (DwarfLang,     (pp DwarfLang,     undefined {- dwarvish -},     True, "TODO"))
+                   , (ElfLang,       (pp ElfLang,       undefined {- elvish -},       True, "TODO"))
+                   , (FelinoidLang,  (pp FelinoidLang,  undefined {- felinoidean -},  True, "TODO"))
+                   , (HobbitLang,    (pp HobbitLang,    undefined {- hobbitish -},    True, "TODO"))
+                   , (HumanLang,     (pp HumanLang,     undefined {- hominal -},      True, "TODO"))
+                   , (LagomorphLang, (pp LagomorphLang, undefined {- lagomorphean -}, True, "TODO"))
+                   , (NymphLang,     (pp NymphLang,     undefined {- naelyni -},      True, "TODO"))
+                   , (VulpenoidLang, (pp VulpenoidLang, undefined {- vulpenoidean -}, True, "TODO")) ]
 
 
 -----
@@ -1004,15 +1030,15 @@ exits p = withoutArgs exits p
 
 
 expCmdList :: ActionFun
-expCmdList (NoArgs i mq cols) =
-    (pager i mq . concatMap (wrapIndent cmdNamePadding cols) $ mkExpCmdListTxt) >> logPlaExecArgs "expressive" [] i
-expCmdList p@ActionParams { myId, args } =
-    dispMatches p cmdNamePadding mkExpCmdListTxt >> logPlaExecArgs "expressive" args myId
+expCmdList (NoArgs i mq cols) = getState >>= \ms ->
+    (pager i mq . concatMap (wrapIndent cmdNamePadding cols) . mkExpCmdListTxt i $ ms) >> logPlaExecArgs "expressive" [] i
+expCmdList p@ActionParams { myId, args } = getState >>= \ms ->
+    dispMatches p cmdNamePadding (mkExpCmdListTxt myId ms) >> logPlaExecArgs "expressive" args myId
 
 
-mkExpCmdListTxt :: [Text]
-mkExpCmdListTxt =
-    let cmdNames       = [ cmdName cmd | cmd <- plaCmds ]
+mkExpCmdListTxt :: Id -> MudState -> [Text]
+mkExpCmdListTxt i ms =
+    let cmdNames       = [ cmdName cmd | cmd <- mkPlaCmds i ms ]
         styledCmdNames = styleAbbrevs Don'tQuote cmdNames
     in concatMap mkExpCmdTxt [ (styled, head matches) | (cn, styled) <- zip cmdNames styledCmdNames
                                                       , let matches = findMatches cn
@@ -1953,7 +1979,7 @@ npcAsSelfHelper p = patternMatchFail "npcAsSelfHelper" [ showText p ]
 
 
 npcDispCmdList :: ActionFun
-npcDispCmdList p@(LowerNub' i as) = dispCmdList npcCmds p >> logPlaExecArgs "?" as i
+npcDispCmdList p@(LowerNub' i as) = getState >>= \ms -> dispCmdList (mkNpcCmds i ms) p >> logPlaExecArgs "?" as i
 npcDispCmdList p                  = patternMatchFail "npcDispCmdList" [ showText p ]
 
 
@@ -1977,7 +2003,7 @@ npcExorciseHelper p = withoutArgs npcExorciseHelper p
 
 
 plaDispCmdList :: ActionFun
-plaDispCmdList p@(LowerNub' i as) = dispCmdList plaCmds p >> logPlaExecArgs "?" as i
+plaDispCmdList p@(LowerNub' i as) = getState >>= \ms -> dispCmdList (mkPlaCmds i ms) p >> logPlaExecArgs "?" as i
 plaDispCmdList p                  = patternMatchFail "plaDispCmdList" [ showText p ]
 
 

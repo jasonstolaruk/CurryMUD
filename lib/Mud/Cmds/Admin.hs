@@ -427,6 +427,7 @@ adminChanIOHelper i mq reports =
 -----
 
 
+-- TODO: Account for racial lang cmds.
 adminCount :: ActionFun
 adminCount (NoArgs i mq cols) = do
     pager i mq . concatMap (wrapIndent 2 cols) =<< mkCountTxt
