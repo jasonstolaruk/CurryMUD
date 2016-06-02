@@ -24,11 +24,12 @@ CurryMUD will have the following features:
 * Incoming connections are accepted; players are prompted for their character name and password.
 * The names of commands, as well as the names of the targets they act upon, may be abbreviated.
 * Commands have a consistent structure and a unique syntax for indicating target locations and quantities.
-* About 60 player commands and 40 administrator commands.
+* About 75 player commands and 40 administrator commands.
 * Nearly 200 built-in emotes.
 * Unique commands, accessible only when a player is in a particular room, may be created.
 * PCs can introduce themselves to each other.
 * PCs can "link" with each other so as to enable "tells."
+* Racial say.
 * Players can interact with permanent room fixtures that are not listed in a room's inventory.
 * Players can create their own ad-hoc channels.
 * Question channel for OOC newbie Q&A.
