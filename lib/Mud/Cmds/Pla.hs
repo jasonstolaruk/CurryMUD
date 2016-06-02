@@ -363,22 +363,22 @@ noOfNpcCmds = length npcRegularCmdTuples + length npcPriorityAbbrevCmdTuples + l
 
 mkRacialLangCmds :: Id -> MudState -> [Cmd]
 mkRacialLangCmds i ms | tuples  <- map mkRegCmdTuple (allValues :: [Lang])
-                      , matches <- map snd . filter ((`elem` getKnownLangs i ms) . fst) $ tuples
+                      , matches <- map snd . filter (isKnownLang i ms . fst) $ tuples
                       = sort . map (uncurry4 mkRegularCmd) $ matches
   where
-    mkRegCmdTuple l = (l, (pp l, getActionFunForLang l, True, cmdDescSay l))
+    mkRegCmdTuple l = (l, (pp l, actionFunForLang l, True, cmdDescSay l))
 
 
-getActionFunForLang :: Lang -> ActionFun
-getActionFunForLang = \case CommonLang    -> say
-                            DwarfLang     -> dwarvish
-                            ElfLang       -> elvish
-                            FelinoidLang  -> felinoidean
-                            HobbitLang    -> hobbitish
-                            HumanLang     -> hominal
-                            LagomorphLang -> lagomorphean
-                            NymphLang     -> naelyni
-                            VulpenoidLang -> vulpenoidean
+actionFunForLang :: Lang -> ActionFun
+actionFunForLang = \case CommonLang    -> say
+                         DwarfLang     -> dwarvish
+                         ElfLang       -> elvish
+                         FelinoidLang  -> felinoidean
+                         HobbitLang    -> hobbitish
+                         HumanLang     -> hominal
+                         LagomorphLang -> lagomorphean
+                         NymphLang     -> naelyni
+                         VulpenoidLang -> vulpenoidean
 
 
 -----
@@ -2799,18 +2799,24 @@ sayHelper l p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
                       Left  msg             -> Left  msg
                   | otherwise -> Right ("", "", formatMsg . T.unwords $ rest)
         sayToHelper d targetId targetDesig (frontAdv, rearAdv, msg) =
-            let inLang        = mkInLangTxtForLang l
-                toSelfMsg     = T.concat [ "You say ",            frontAdv, "to ", targetDesig, inLang, rearAdv, ", ", msg ]
-                toTargetMsg   = T.concat [ serialize d, " says ", frontAdv, "to you",           inLang, rearAdv, ", ", msg ]
-                toTargetBcast = (nl toTargetMsg, pure targetId)
-                toOthersMsg   = T.concat [ serialize d, " says ", frontAdv, "to ", targetDesig, inLang, rearAdv, ", ", msg ]
-                toOthersBcast = (nl toOthersMsg, desigIds d \\ [ i, targetId ])
-                f             | isNpc i        ms = (, [])
-                              | isNpc targetId ms = firstMobSay i
-                              | otherwise         = (, [])
-                (pt, hints)   = ms^.plaTbl.to f
+            let inLang           = mkInLangTxtForLang l
+                toSelfMsg        = T.concat [ "You say ", frontAdv, "to ", targetDesig, inLang, rearAdv, ", ", msg ]
+                toTargetMsg      | isKnownLang targetId ms l
+                                 = T.concat [ serialize d, " says ", frontAdv, "to you", inLang, rearAdv, ", ", msg ]
+                                 | otherwise
+                                 = T.concat [ serialize d, " says something ", frontAdv, "to you", inLang, rearAdv, "." ]
+                toTargetBcast    = (nl toTargetMsg, pure targetId)
+                mkToOthersMsg i' | isKnownLang i' ms l
+                                 = T.concat [ serialize d, " says ", frontAdv, "to ", targetDesig, inLang, rearAdv, ", ", msg ]
+                                 | otherwise
+                                 = T.concat [ serialize d, " says something ", frontAdv, "to ", targetDesig, inLang, rearAdv, "." ]
+                toOthersBcasts   = [ (nl . mkToOthersMsg $ i', pure i') | i' <- desigIds d \\ [ i, targetId ] ]
+                f                | isNpc i        ms = (, [])
+                                 | isNpc targetId ms = firstMobSay i
+                                 | otherwise         = (, [])
+                (pt, hints)      = ms^.plaTbl.to f
             in (ms & plaTbl .~ pt, ( onTrue (()!# hints) (++ hints) . pure $ toSelfMsg
-                                   , [ toTargetBcast, toOthersBcast ]
+                                   , toTargetBcast : toOthersBcasts
                                    , toSelfMsg ))
     sayTo maybeAdverb msg _ = patternMatchFail "sayHelper sayTo" [ showText maybeAdverb, msg ]
     formatMsg               = dblQuote . capitalizeMsg . punctuateMsg
@@ -2822,12 +2828,13 @@ sayHelper l p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
                                          ; logMsg |#| alertMsgHelper i (mkCmdNameForLang l) }
     ioHelper _  triple              = patternMatchFail "sayHelper ioHelper" [ showText triple ]
     simpleSayHelper ms (maybe "" (" " <>) -> adverb) (formatMsg -> msg) =
-        return $ let d             = mkStdDesig i ms DoCap
-                     inLang        = mkInLangTxtForLang l
-                     toSelfMsg     = T.concat [ "You say", inLang, adverb, ", ", msg ]
-                     toOthersMsg   = T.concat [ serialize d, " says", adverb, inLang, ", ", msg ]
-                     toOthersBcast = (nl toOthersMsg, i `delete` desigIds d)
-                 in (pure toSelfMsg, pure toOthersBcast, toSelfMsg)
+        return $ let d                = mkStdDesig i ms DoCap
+                     inLang           = mkInLangTxtForLang l
+                     toSelfMsg        = T.concat [ "You say", inLang, adverb, ", ", msg ]
+                     mkToOthersMsg i' | isKnownLang i' ms l = T.concat [ serialize d, " says", adverb, inLang, ", ", msg ]
+                                      | otherwise           = T.concat [ serialize d, " says something", adverb, inLang, "." ]
+                     toOthersBcasts   = [ (nl . mkToOthersMsg $ i', pure i') | i' <- i `delete` desigIds d ]
+                 in (pure toSelfMsg, toOthersBcasts, toSelfMsg)
 sayHelper _ p = patternMatchFail "sayHelper" [ showText p ]
 
 
