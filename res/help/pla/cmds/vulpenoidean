@@ -1,0 +1,9 @@
+\h VULPENOIDEAEN \d
+
+\uUSAGE\n
+vulpenoidean \s[\d#oadverb#c\s]\d \s[\d#ttarget\s]\d \s[\d#oadverb#c\s]\d utterance
+
+\uDESCRIPTION\n
+Say something out loud in vulpenoidean.
+This command is identical to the "say" command, with the exception that the utterance will be spoken in vulpenoidean.
+Please see \qhelp say\d for more information.

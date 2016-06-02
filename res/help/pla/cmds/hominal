@@ -1,0 +1,9 @@
+\h HOMINAL \d
+
+\uUSAGE\n
+hominal \s[\d#oadverb#c\s]\d \s[\d#ttarget\s]\d \s[\d#oadverb#c\s]\d utterance
+
+\uDESCRIPTION\n
+Say something out loud in hominal.
+This command is identical to the "say" command, with the exception that the utterance will be spoken in hominal.
+Please see \qhelp say\d for more information.

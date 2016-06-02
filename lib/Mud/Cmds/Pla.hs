@@ -1457,8 +1457,10 @@ help :: ActionFun
 help (NoArgs i mq cols) = (liftIO . T.readFile $ helpDir </> "root") |&| try >=> either handler helper
   where
     handler e          = fileIOExHandler "help" e >> wrapSend mq cols helpRootErrorMsg
-    helper rootHelpTxt = (isAdminId i <$> getState) >>= \ia -> do
-        (sortBy (compare `on` helpName) -> hs) <- liftIO . mkHelpData $ ia
+    helper rootHelpTxt = getState >>= \ms -> do
+        let ia = isAdminId     i ms
+            ls = getKnownLangs i ms
+        (sortBy (compare `on` helpName) -> hs) <- liftIO . mkHelpData ls $ ia
         let zipped                 = zip (styleAbbrevs Don'tQuote [ helpName h | h <- hs ]) hs
             (cmdNames, topicNames) = partition (isCmdHelp . snd) zipped & both %~ (formatHelpNames . mkHelpNames)
             helpTxt                = T.concat [ nl rootHelpTxt
@@ -1472,30 +1474,33 @@ help (NoArgs i mq cols) = (liftIO . T.readFile $ helpDir </> "root") |&| try >=>
     formatHelpNames names = let wordsPerLine = cols `div` helpTopicPadding
                             in T.unlines . map T.concat . chunksOf wordsPerLine $ names
     footnote              = nlPrefix $ asterisk <> " indicates help that is available only to administrators."
-help (LowerNub i mq cols as) = (isAdminId i <$> getState) >>= liftIO . mkHelpData >>= \hs -> do
+help (LowerNub i mq cols as) = getState >>= \ms -> do
+    let ia = isAdminId     i ms
+        ls = getKnownLangs i ms
+    hs <- liftIO . mkHelpData ls $ ia
     (map (parseHelpTxt cols) -> helpTxts, dropBlanks -> hns) <- unzip <$> forM as (getHelpByName cols hs)
     pager i mq . intercalateDivider cols $ helpTxts
     hns |#| logPla "help" i . ("read help on: " <>) . commas
 help p = patternMatchFail "help" [ showText p ]
 
 
-mkHelpData :: Bool -> IO [Help]
-mkHelpData ia = helpDirs |&| mapM getHelpDirectoryContents >=> \[ plaHelpCmdNames
-                                                                , plaHelpTopicNames
-                                                                , adminHelpCmdNames
-                                                                , adminHelpTopicNames ] -> do
+mkHelpData :: [Lang] -> Bool -> IO [Help]
+mkHelpData ls ia = helpDirs |&| mapM getHelpDirectoryContents >=> \[ plaHelpCmdNames
+                                                                   , plaHelpTopicNames
+                                                                   , adminHelpCmdNames
+                                                                   , adminHelpTopicNames ] -> do
     let phcs = [ Help { helpName     = T.pack phcn
                       , helpFilePath = plaHelpCmdsDir     </> phcn
                       , isCmdHelp    = True
-                      , isAdminHelp  = False } | phcn <- plaHelpCmdNames     ]
+                      , isAdminHelp  = False } | phcn <- filterLangCmds plaHelpCmdNames ]
         phts = [ Help { helpName     = T.pack phtn
                       , helpFilePath = plaHelpTopicsDir   </> phtn
                       , isCmdHelp    = False
-                      , isAdminHelp  = False } | phtn <- plaHelpTopicNames   ]
+                      , isAdminHelp  = False } | phtn <- plaHelpTopicNames ]
         ahcs = [ Help { helpName     = T.pack $ adminCmdChar : whcn
                       , helpFilePath = adminHelpCmdsDir   </> whcn
                       , isCmdHelp    = True
-                      , isAdminHelp  = True }  | whcn <- adminHelpCmdNames   ]
+                      , isAdminHelp  = True }  | whcn <- adminHelpCmdNames ]
         ahts = [ Help { helpName     = T.pack whtn
                       , helpFilePath = adminHelpTopicsDir </> whtn
                       , isCmdHelp    = False
@@ -1504,6 +1509,14 @@ mkHelpData ia = helpDirs |&| mapM getHelpDirectoryContents >=> \[ plaHelpCmdName
   where
     helpDirs                     = [ plaHelpCmdsDir, plaHelpTopicsDir, adminHelpCmdsDir, adminHelpTopicsDir ]
     getHelpDirectoryContents dir = dropIrrelevantFilenames . sort <$> getDirectoryContents dir
+    filterLangCmds               = filter helper
+      where
+        helper (T.pack -> cn)
+          | allRacialSays <- map mkCmdNameForLang (allValues :: [Lang])
+          , myRacialSays  <- map mkCmdNameForLang ls
+          , cn `elem` allRacialSays
+          = cn `elem` myRacialSays
+          | otherwise = otherwise
 
 
 parseHelpTxt :: Cols -> Text -> [Text]
