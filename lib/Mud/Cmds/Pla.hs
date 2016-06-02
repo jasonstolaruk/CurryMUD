@@ -53,6 +53,7 @@ import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
 import Mud.TopLvlDefs.Padding
 import Mud.TopLvlDefs.Telnet
+import Mud.Util.Lang
 import Mud.Util.List hiding (headTail)
 import Mud.Util.Misc hiding (blowUp, patternMatchFail)
 import Mud.Util.Operators
@@ -245,7 +246,7 @@ priorityAbbrevCmdTuples =
     , ("motd",       "m",   motd,       True,  "Display the message of the day.")
     , ("put",        "p",   putAction,  True,  cmdDescPut)
     , ("ready",      "r",   ready,      True,  cmdDescReady)
-    , ("say",        "sa",  say,        True,  cmdDescSay)
+    , ("say",        "sa",  say,        True,  cmdDescSay CommonLang)
     , ("show",       "sh",  showAction, True,  cmdDescShow)
     , ("stats",      "st",  stats,      True,  cmdDescStats)
     , ("stop",       "sto", stop,       True,  cmdDescStop)
@@ -274,7 +275,7 @@ mkPriorityAbbrevCmd cfn cpat f b cd = unfoldr helper (T.init cfn) ++ [ Cmd { cmd
 
 
 noOfPlaCmds :: Int
-noOfPlaCmds = length regularCmdTuples + length priorityAbbrevCmdTuples
+noOfPlaCmds = length regularCmdTuples + length priorityAbbrevCmdTuples + length (allValues :: [Race])
 
 
 -----
@@ -345,7 +346,7 @@ npcPriorityAbbrevCmdTuples =
     , ("look",      "l",   look,        True,  cmdDescLook)
     , ("put",       "p",   putAction,   True,  cmdDescPut)
     , ("ready",     "r",   ready,       True,  cmdDescReady)
-    , ("say",       "sa",  say,         True,  cmdDescSay)
+    , ("say",       "sa",  say,         True,  cmdDescSay CommonLang)
     , ("show",      "sh",  showAction,  True,  cmdDescShow)
     , ("stats",     "st",  stats,       True,  cmdDescStats)
     , ("stop",      "sto", stop,        True,  cmdDescStop)
@@ -354,24 +355,30 @@ npcPriorityAbbrevCmdTuples =
 
 
 noOfNpcCmds :: Int
-noOfNpcCmds = length npcRegularCmdTuples + length npcPriorityAbbrevCmdTuples
+noOfNpcCmds = length npcRegularCmdTuples + length npcPriorityAbbrevCmdTuples + length (allValues :: [Race])
 
 
 -----
 
 
 mkRacialLangCmds :: Id -> MudState -> [Cmd]
-mkRacialLangCmds i ms | matches <- map snd . filter ((`elem` getKnownLangs i ms) . fst) $ regCmdTuples
+mkRacialLangCmds i ms | tuples  <- map mkRegCmdTuple (allValues :: [Lang])
+                      , matches <- map snd . filter ((`elem` getKnownLangs i ms) . fst) $ tuples
                       = sort . map (uncurry4 mkRegularCmd) $ matches
   where
-    regCmdTuples = [ (DwarfLang,     (pp DwarfLang,     undefined {- dwarvish -},     True, "TODO"))
-                   , (ElfLang,       (pp ElfLang,       undefined {- elvish -},       True, "TODO"))
-                   , (FelinoidLang,  (pp FelinoidLang,  undefined {- felinoidean -},  True, "TODO"))
-                   , (HobbitLang,    (pp HobbitLang,    undefined {- hobbitish -},    True, "TODO"))
-                   , (HumanLang,     (pp HumanLang,     undefined {- hominal -},      True, "TODO"))
-                   , (LagomorphLang, (pp LagomorphLang, undefined {- lagomorphean -}, True, "TODO"))
-                   , (NymphLang,     (pp NymphLang,     undefined {- naelyni -},      True, "TODO"))
-                   , (VulpenoidLang, (pp VulpenoidLang, undefined {- vulpenoidean -}, True, "TODO")) ]
+    mkRegCmdTuple l = (l, (pp l, getActionFunForLang l, True, cmdDescSay l))
+
+
+getActionFunForLang :: Lang -> ActionFun
+getActionFunForLang = \case CommonLang    -> say
+                            DwarfLang     -> dwarvish
+                            ElfLang       -> elvish
+                            FelinoidLang  -> felinoidean
+                            HobbitLang    -> hobbitish
+                            HumanLang     -> hominal
+                            LagomorphLang -> lagomorphean
+                            NymphLang     -> naelyni
+                            VulpenoidLang -> vulpenoidean
 
 
 -----
@@ -884,6 +891,20 @@ dropAction p = patternMatchFail "dropAction" [ showText p ]
 -----
 
 
+dwarvish :: ActionFun
+dwarvish = sayHelper DwarfLang
+
+
+-----
+
+
+elvish :: ActionFun
+elvish = sayHelper ElfLang
+
+
+-----
+
+
 emote :: ActionFun
 emote p@AdviseNoArgs                                                     = advise p ["emote"] adviceEmoteNoArgs
 emote p@ActionParams { args } | any (`elem` yous) . map T.toLower $ args = advise p ["emote"] adviceYouEmote
@@ -1055,6 +1076,13 @@ mkExpCmdListTxt i ms =
       where
         paddedName         = padCmdName styled
         mkInitialTxt input = colorWith quoteColor input <> spaced (colorWith arrowColor "->")
+
+
+-----
+
+
+felinoidean :: ActionFun
+felinoidean = sayHelper FelinoidLang
 
 
 -----
@@ -1500,6 +1528,20 @@ getHelpByName cols hs name = findFullNameForAbbrev name [ (h, helpName h) | h <-
 -----
 
 
+hobbitish :: ActionFun
+hobbitish = sayHelper HobbitLang
+
+
+-----
+
+
+hominal :: ActionFun
+hominal = sayHelper HumanLang
+
+
+-----
+
+
 intro :: ActionFun
 intro (NoArgs i mq cols) = getState >>= \ms -> let intros = getIntroduced i ms in if ()# intros
   then let introsTxt = "No one has introduced themselves to you yet."
@@ -1598,6 +1640,13 @@ inv (LowerNub i mq cols as) = getState >>= \ms ->
     sorryInEq                           = wrapUnlinesNl cols . sorryEquipInvLook InvCmd $ EquipCmd
     sorryInRm                           = wrapUnlinesNl cols . sorryEquipInvLook InvCmd $ LookCmd
 inv p = patternMatchFail "inv" [ showText p ]
+
+
+-----
+
+
+lagomorphean :: ActionFun
+lagomorphean = sayHelper LagomorphLang
 
 
 -----
@@ -1899,6 +1948,13 @@ showMotd mq cols = send mq =<< helper
     handler e = do
         fileIOExHandler "showMotd" e
         return . wrapUnlinesNl cols $ motdErrorMsg
+
+
+-----
+
+
+naelyni :: ActionFun
+naelyni = sayHelper NymphLang
 
 
 -----
@@ -2689,27 +2745,31 @@ shuffleRem i ms d conName icir as invCoinsWithCon@(invWithCon, _) f =
 
 
 say :: ActionFun
-say p@AdviseNoArgs                    = advise p ["say"] adviceSayNoArgs
-say p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
-  | isIncognitoId i ms         -> wrapSend mq cols . sorryIncog $ "say"
+say = sayHelper CommonLang
+
+
+sayHelper :: Lang -> ActionFun
+sayHelper l p@AdviseNoArgs                    = advise p [ mkCmdNameForLang l ] . adviceSayNoArgs $ l
+sayHelper l p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
+  | isIncognitoId i ms         -> wrapSend mq cols . sorryIncog . mkCmdNameForLang $ l
   | T.head a == adverbOpenChar -> case parseAdverb . T.unwords $ args of
     Left  msg                    -> adviseHelper msg
     Right (adverb, rest@(T.words -> rs@(head -> r)))
       | T.head r == sayToChar, T.length r > 1 -> if length rs > 1
         then sayTo (Just adverb) (T.tail rest) |&| modifyState >=> ioHelper ms
-        else adviseHelper adviceSayToNoUtterance
+        else adviseHelper . adviceSayToNoUtterance $ l
       | otherwise -> ioHelper ms =<< simpleSayHelper ms (Just adverb) rest
   | T.head a == sayToChar, T.length a > 1 -> if length args > 1
     then sayTo Nothing (T.tail . T.unwords $ args) |&| modifyState >=> ioHelper ms
-    else adviseHelper adviceSayToNoUtterance
+    else adviseHelper . adviceSayToNoUtterance $ l
   | otherwise -> ioHelper ms =<< simpleSayHelper ms Nothing (T.unwords args)
   where
-    adviseHelper                = advise p ["say"]
+    adviseHelper                = advise p [ mkCmdNameForLang l ]
     parseAdverb (T.tail -> msg) = case T.break (== adverbCloseChar) msg of
-      (_,   "")            -> Left  adviceAdverbCloseChar
-      ("",  _ )            -> Left  adviceBlankAdverb
-      (" ", _ )            -> Left  adviceBlankAdverb
-      (_,   x ) | x == acl -> Left  adviceSayAdverbNoUtterance
+      (_,   "")            -> Left  . adviceAdverbCloseChar      $ l
+      ("",  _ )            -> Left  . adviceBlankAdverb          $ l
+      (" ", _ )            -> Left  . adviceBlankAdverb          $ l
+      (_,   x ) | x == acl -> Left  . adviceSayAdverbNoUtterance $ l
       (adverb, right)      -> Right (adverb, T.drop 2 right)
     sayTo maybeAdverb (T.words -> (target:rest@(r:_))) ms =
         let d              = mkStdDesig i ms DoCap
@@ -2728,7 +2788,7 @@ say p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
                   in if isNpcPC targetId ms
                     then parseRearAdverb |&| either sorry (sayToHelper d targetId targetDesig)
                     else sorry . sorrySayTargetType . getSing targetId $ ms
-              x -> patternMatchFail "say sayTo" [ showText x ]
+              x -> patternMatchFail "sayHelper sayTo" [ showText x ]
           else sorry sorrySayNoOneHere
       where
         sorry           = (ms, ) . (, [], "") . pure
@@ -2739,10 +2799,11 @@ say p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
                       Left  msg             -> Left  msg
                   | otherwise -> Right ("", "", formatMsg . T.unwords $ rest)
         sayToHelper d targetId targetDesig (frontAdv, rearAdv, msg) =
-            let toSelfMsg     = T.concat [ "You say ",            frontAdv, "to ", targetDesig, rearAdv, ", ", msg ]
-                toTargetMsg   = T.concat [ serialize d, " says ", frontAdv, "to you",           rearAdv, ", ", msg ]
+            let inLang        = mkInLangTxtForLang l
+                toSelfMsg     = T.concat [ "You say ",            frontAdv, "to ", targetDesig, inLang, rearAdv, ", ", msg ]
+                toTargetMsg   = T.concat [ serialize d, " says ", frontAdv, "to you",           inLang, rearAdv, ", ", msg ]
                 toTargetBcast = (nl toTargetMsg, pure targetId)
-                toOthersMsg   = T.concat [ serialize d, " says ", frontAdv, "to ", targetDesig, rearAdv, ", ", msg ]
+                toOthersMsg   = T.concat [ serialize d, " says ", frontAdv, "to ", targetDesig, inLang, rearAdv, ", ", msg ]
                 toOthersBcast = (nl toOthersMsg, desigIds d \\ [ i, targetId ])
                 f             | isNpc i        ms = (, [])
                               | isNpc targetId ms = firstMobSay i
@@ -2751,22 +2812,23 @@ say p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
             in (ms & plaTbl .~ pt, ( onTrue (()!# hints) (++ hints) . pure $ toSelfMsg
                                    , [ toTargetBcast, toOthersBcast ]
                                    , toSelfMsg ))
-    sayTo maybeAdverb msg _ = patternMatchFail "say sayTo" [ showText maybeAdverb, msg ]
+    sayTo maybeAdverb msg _ = patternMatchFail "sayHelper sayTo" [ showText maybeAdverb, msg ]
     formatMsg               = dblQuote . capitalizeMsg . punctuateMsg
     ioHelper ms triple@(x:xs, _, _) | (toSelfs, bs, logMsg) <- triple & _1 .~ parseDesig       i ms x : xs
                                                                       & _3 %~ parseExpandDesig i ms
                                     = do { multiWrapSend mq cols toSelfs
                                          ; bcastIfNotIncogNl i bs
-                                         ; logMsg |#| logPlaOut "say" i . pure
-                                         ; logMsg |#| alertMsgHelper i "say" }
-    ioHelper _  triple              = patternMatchFail "say ioHelper" [ showText triple ]
+                                         ; logMsg |#| logPlaOut (mkCmdNameForLang l) i . pure
+                                         ; logMsg |#| alertMsgHelper i (mkCmdNameForLang l) }
+    ioHelper _  triple              = patternMatchFail "sayHelper ioHelper" [ showText triple ]
     simpleSayHelper ms (maybe "" (" " <>) -> adverb) (formatMsg -> msg) =
         return $ let d             = mkStdDesig i ms DoCap
-                     toSelfMsg     = T.concat [ "You say", adverb, ", ", msg ]
-                     toOthersMsg   = T.concat [ serialize d, " says", adverb, ", ", msg ]
+                     inLang        = mkInLangTxtForLang l
+                     toSelfMsg     = T.concat [ "You say", inLang, adverb, ", ", msg ]
+                     toOthersMsg   = T.concat [ serialize d, " says", adverb, inLang, ", ", msg ]
                      toOthersBcast = (nl toOthersMsg, i `delete` desigIds d)
                  in (pure toSelfMsg, pure toOthersBcast, toSelfMsg)
-say p = patternMatchFail "say" [ showText p ]
+sayHelper _ p = patternMatchFail "sayHelper" [ showText p ]
 
 
 firstMobSay :: Id -> PlaTbl -> (PlaTbl, [Text])
@@ -3685,6 +3747,13 @@ getRecordUptime = mIf (liftIO . doesFileExist $ uptimeFile)
                       (return Nothing)
   where
     readUptime = Just . Sum . read <$> readFile uptimeFile
+
+
+-----
+
+
+vulpenoidean :: ActionFun
+vulpenoidean = sayHelper VulpenoidLang
 
 
 -----

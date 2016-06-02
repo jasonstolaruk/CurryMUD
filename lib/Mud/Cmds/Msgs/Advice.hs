@@ -117,6 +117,7 @@ import Mud.Data.State.Util.Output
 import Mud.Misc.ANSI
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
+import Mud.Util.Lang
 import Mud.Util.Quoting
 import Mud.Util.Text
 import qualified Mud.Util.Misc as U (patternMatchFail)
@@ -429,8 +430,17 @@ adviceAdminNoMsg a = "Please also provide a message to send, as in "            
                      "."
 
 
-adviceAdverbCloseChar :: Text
-adviceAdverbCloseChar = "An adverbial phrase must be terminated with a " <> dblQuote acl <> adverbExample
+adviceAdverbCloseChar :: Lang -> Text
+adviceAdverbCloseChar l = "An adverbial phrase must be terminated with a " <> dblQuote acl <> adverbExample l
+
+
+adverbExample :: Lang -> Text
+adverbExample l = ", as in " <>
+                  colorWith quoteColor (T.concat [ mkCmdNameForLang l
+                                                 , " "
+                                                 , quoteWith' (aop, acl) "enthusiastically"
+                                                 , " nice to meet you, too" ]) <>
+                  "."
 
 
 adviceAsSelfNoArgs :: Text
@@ -439,20 +449,12 @@ adviceAsSelfNoArgs = "Please provide a command to execute, as in " <>
                      "."
 
 
-adviceBlankAdverb :: Text
-adviceBlankAdverb = T.concat [ "Please provide an adverbial phrase between "
-                             , dblQuote aop
-                             , " and "
-                             , dblQuote acl
-                             , adverbExample ]
-
-
-adverbExample :: Text
-adverbExample = ", as in "                                                     <>
-                colorWith quoteColor ("say "                                   <>
-                                      quoteWith' (aop, acl) "enthusiastically" <>
-                                      " nice to meet you, too")                <>
-                "."
+adviceBlankAdverb :: Lang -> Text
+adviceBlankAdverb l = T.concat [ "Please provide an adverbial phrase between "
+                               , dblQuote aop
+                               , " and "
+                               , dblQuote acl
+                               , adverbExample l ]
 
 
 adviceBugNoArgs :: Text
@@ -685,20 +687,29 @@ adviceRemoveNoCon a = "Please also specify the container you want to remove it f
                       "."
 
 
-adviceSayAdverbNoUtterance :: Text
-adviceSayAdverbNoUtterance = "Please also specify what you'd like to say" <> adverbExample
+adviceSayAdverbNoUtterance :: Lang -> Text
+adviceSayAdverbNoUtterance l = "Please also specify what you'd like to say" <>
+                               mkInLangTxtForLang l                         <>
+                               adverbExample l
 
 
-adviceSayNoArgs :: Text
-adviceSayNoArgs = "Please specify what you'd like to say, as in "  <>
-                  colorWith quoteColor "say nice to meet you, too" <>
-                  "."
+adviceSayNoArgs :: Lang -> Text
+adviceSayNoArgs l = T.concat [ "Please specify what you'd like to say"
+                             , mkInLangTxtForLang l
+                             , ", as in "
+                             , colorWith quoteColor $ mkCmdNameForLang l <> " nice to meet you, too"
+                             , "." ]
 
 
-adviceSayToNoUtterance :: Text
-adviceSayToNoUtterance  = "Please also specify what you'd like to say, as in "                                   <>
-                          colorWith quoteColor ("say " <> T.singleton sayToChar <> "taro nice to meet you, too") <>
-                          "."
+adviceSayToNoUtterance :: Lang -> Text
+adviceSayToNoUtterance l = T.concat [ "Please also specify what you'd like to say"
+                                    , mkInLangTxtForLang l
+                                    , ", as in "
+                                    , colorWith quoteColor . T.concat $ [ mkCmdNameForLang l
+                                                                        , " "
+                                                                        , T.singleton sayToChar
+                                                                        , "taro nice to meet you, too" ]
+                                    , "." ]
 
 
 adviceSettingsInvalid :: Text

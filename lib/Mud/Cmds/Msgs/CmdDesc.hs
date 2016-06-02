@@ -2,6 +2,10 @@
 
 module Mud.Cmds.Msgs.CmdDesc where
 
+import Mud.Data.State.MudData
+import Mud.Util.Lang
+
+import Data.Monoid ((<>))
 import Data.Text (Text)
 
 
@@ -123,8 +127,8 @@ cmdDescRemove = "Remove one or more items from a) a container in your inventory,
                 \room."
 
 
-cmdDescSay :: Text
-cmdDescSay = "Say something out loud."
+cmdDescSay :: Lang -> Text
+cmdDescSay l = "Say something out loud" <> mkInLangTxtForLang l <> "."
 
 
 cmdDescShow :: Text

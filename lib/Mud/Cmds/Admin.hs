@@ -427,7 +427,6 @@ adminChanIOHelper i mq reports =
 -----
 
 
--- TODO: Account for racial lang cmds.
 adminCount :: ActionFun
 adminCount (NoArgs i mq cols) = do
     pager i mq . concatMap (wrapIndent 2 cols) =<< mkCountTxt
@@ -503,7 +502,7 @@ mkCountTxt = map (uncurry mappend . second (commaEvery3 . showText)) <$> helper
                , ("Instantaneous effect functions: ",  ms^.instaEffectFunTbl.to M.size)
                , ("Hook functions: ",                  ms^.hookFunTbl       .to M.size)
                , ("Room action functions: ",           ms^.rmActionFunTbl   .to M.size)
-               , ("Active threads: ",                  noOfThreads                 ) ]
+               , ("Active threads: ",                  noOfThreads                    ) ]
     countHelps     = liftIO . mapM countFiles $ [ plaHelpCmdsDir, plaHelpTopicsDir, adminHelpCmdsDir, adminHelpTopicsDir ]
     countFiles dir = (length . dropIrrelevantFilenames <$> getDirectoryContents dir) `catch` handler
       where

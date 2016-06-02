@@ -111,6 +111,7 @@ library
                        Mud.TopLvlDefs.Telnet
                        Mud.TopLvlDefs.Vols
                        Mud.TopLvlDefs.Weights
+                       Mud.Util.Lang
                        Mud.Util.List
                        Mud.Util.Misc
                        Mud.Util.Operators
