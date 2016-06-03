@@ -149,3 +149,7 @@ cmdDescStop = "Stop moving, eating, drinking, or attacking."
 
 cmdDescUnready :: Text
 cmdDescUnready = "Unready one or more items in your readied equipment."
+
+
+cmdDescWhisper :: Text
+cmdDescWhisper = "Whisper something to someone."

@@ -317,8 +317,8 @@ hasObj i ms = getType i ms `elem` [ ArmType, ClothType, ConType, FoodType, ObjTy
 
 
 isKnownLang :: Id -> MudState -> Lang -> Bool
-isKnownLang i ms lang | isAdminId i ms = True
-                      | otherwise      = lang `elem` CommonLang : getKnownLangs i ms
+isKnownLang i ms lang | lang == CommonLang = True
+                      | otherwise          = lang `elem` getKnownLangs i ms
 
 
 -----
