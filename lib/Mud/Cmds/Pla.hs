@@ -2786,8 +2786,8 @@ sayHelper l p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
       (_,   x ) | x == acl -> Left  . adviceSayAdverbNoUtterance $ l
       (adverb, right)      -> Right (adverb, T.drop 2 right)
     sayTo maybeAdverb (T.words -> (target:rest@(r:_))) ms =
-        let d              = mkStdDesig i ms DoCap
-            invCoins       = first (i `delete`) . getMobRmNonIncogInvCoins i $ ms
+        let d        = mkStdDesig i ms DoCap
+            invCoins = first (i `delete`) . getMobRmNonIncogInvCoins i $ ms
         in if ()!# invCoins
           then case singleArgInvEqRm InRm target of
             (InInv, _      ) -> sorry sorrySayInInv
@@ -3807,8 +3807,8 @@ whisper p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
       (_,   x ) | x == acl -> Left  . adviceSayAdverbNoUtterance $ l
       (adverb, right)      -> Right (adverb, T.drop 2 right)
     sayTo maybeAdverb (T.words -> (target:rest@(r:_))) ms =
-        let d              = mkStdDesig i ms DoCap
-            invCoins       = first (i `delete`) . getMobRmNonIncogInvCoins i $ ms
+        let d        = mkStdDesig i ms DoCap
+            invCoins = first (i `delete`) . getMobRmNonIncogInvCoins i $ ms
         in if ()!# invCoins
           then case singleArgInvEqRm InRm target of
             (InInv, _      ) -> sorry sorrySayInInv
