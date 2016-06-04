@@ -152,4 +152,4 @@ cmdDescUnready = "Unready one or more items in your readied equipment."
 
 
 cmdDescWhisper :: Text
-cmdDescWhisper = "Whisper something to someone."
+cmdDescWhisper = "Whisper something to someone in your current room."

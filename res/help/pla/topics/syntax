@@ -92,7 +92,7 @@ Examples of this pattern:
 \qadmin jason are you available? I need your assistance\d (to send a message to Jason, a CurryMUD administrator)2`
 \qtelepathy hanako where have you been? I've missed you!\d (to telepathically send a message to Hanako)2`
 \qchannel hunt hello!\d (to telepathically send a message on the "hunt" channel)2`
-TODO: whisper
+\qwhisper taro i have a secret to tell\d (to whisper to Taro)2`
 
 COMMAND_NAME + MOUTHFULS + CONSUMABLE
 

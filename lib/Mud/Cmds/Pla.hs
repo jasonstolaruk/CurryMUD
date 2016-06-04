@@ -3780,7 +3780,6 @@ vulpenoidean = sayHelper VulpenoidLang
 -----
 
 
--- TODO: Help.
 whisper :: ActionFun
 whisper p@AdviseNoArgs                                      = advise p ["whisper"] adviceWhisperNoArgs
 whisper p@(AdviseOneArg a                                 ) = advise p ["whisper"] . adviceWhisperNoMsg $ a
