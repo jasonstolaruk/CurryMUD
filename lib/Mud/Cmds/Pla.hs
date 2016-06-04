@@ -3782,96 +3782,49 @@ vulpenoidean = sayHelper VulpenoidLang
 
 -- TODO: Help.
 whisper :: ActionFun
-whisper = undefined
-{-
-whisper p@AdviseNoArgs                    = advise p [ mkCmdNameForLang l ] . adviceSayNoArgs $ l
-whisper p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
-  | isIncognitoId i ms         -> wrapSend mq cols . sorryIncog . mkCmdNameForLang $ l
-  | T.head a == adverbOpenChar -> case parseAdverb . T.unwords $ args of
-    Left  msg                    -> adviseHelper msg
-    Right (adverb, rest@(T.words -> rs@(head -> r)))
-      | T.head r == sayToChar, T.length r > 1 -> if length rs > 1
-        then sayTo (Just adverb) (T.tail rest) |&| modifyState >=> ioHelper ms
-        else adviseHelper . adviceSayToNoUtterance $ l
-      | otherwise -> ioHelper ms =<< simpleSayHelper ms (Just adverb) rest
-  | T.head a == sayToChar, T.length a > 1 -> if length args > 1
-    then sayTo Nothing (T.tail . T.unwords $ args) |&| modifyState >=> ioHelper ms
-    else adviseHelper . adviceSayToNoUtterance $ l
-  | otherwise -> ioHelper ms =<< simpleSayHelper ms Nothing (T.unwords args)
+whisper p@AdviseNoArgs                                      = advise p ["whisper"] adviceWhisperNoArgs
+whisper p@(AdviseOneArg a                                 ) = advise p ["whisper"] . adviceWhisperNoMsg $ a
+whisper   (WithArgs i mq cols (target:(T.unwords -> rest))) = getState >>= \ms -> if isIncognitoId i ms
+  then wrapSend mq cols . sorryIncog $ "whisper"
+  else helper |&| modifyState >=> ioHelper ms
   where
-    adviseHelper                = advise p [ mkCmdNameForLang l ]
-    parseAdverb (T.tail -> msg) = case T.break (== adverbCloseChar) msg of
-      (_,   "")            -> Left  . adviceAdverbCloseChar      $ l
-      ("",  _ )            -> Left  . adviceBlankAdverb          $ l
-      (" ", _ )            -> Left  . adviceBlankAdverb          $ l
-      (_,   x ) | x == acl -> Left  . adviceSayAdverbNoUtterance $ l
-      (adverb, right)      -> Right (adverb, T.drop 2 right)
-    sayTo maybeAdverb (T.words -> (target:rest@(r:_))) ms =
+    helper ms =
         let d        = mkStdDesig i ms DoCap
             invCoins = first (i `delete`) . getMobRmNonIncogInvCoins i $ ms
         in if ()!# invCoins
           then case singleArgInvEqRm InRm target of
-            (InInv, _      ) -> sorry sorrySayInInv
-            (InEq,  _      ) -> sorry sorrySayInEq
+            (InInv, _      ) -> sorry sorryWhisperInInv
+            (InEq,  _      ) -> sorry sorryWhisperInEq
             (InRm,  target') -> case uncurry (resolveRmInvCoins i ms . pure $ target') invCoins of
               (_,                    [ Left [msg] ]) -> sorry msg
-              (_,                    Right  _:_    ) -> sorry sorrySayCoins
+              (_,                    Right  _:_    ) -> sorry sorryWhisperCoins
               ([ Left  msg        ], _             ) -> sorry msg
-              ([ Right (_:_:_)    ], _             ) -> sorry sorrySayExcessTargets
+              ([ Right (_:_:_)    ], _             ) -> sorry sorryWhisperExcessTargets
               ([ Right [targetId] ], _             ) ->
                   let targetDesig = serialize . mkStdDesig targetId ms $ Don'tCap
                   in if isNpcPC targetId ms
-                    then parseRearAdverb |&| either sorry (sayToHelper d targetId targetDesig)
-                    else sorry . sorrySayTargetType . getSing targetId $ ms
-              x -> patternMatchFail "whisper sayTo" [ showText x ]
-          else sorry sorrySayNoOneHere
+                    then whispering d targetId targetDesig . formatMsg $ rest
+                    else sorry . sorryWhisperTargetType . getSing targetId $ ms
+              x -> patternMatchFail "whisper helper" [ showText x ]
+          else sorry sorryWhisperNoOneHere
       where
-        sorry           = (ms, ) . (, [], "") . pure
-        parseRearAdverb = case maybeAdverb of
-          Just adverb                          -> Right (adverb <> " ", "", formatMsg . T.unwords $ rest)
-          Nothing | T.head r == adverbOpenChar -> case parseAdverb . T.unwords $ rest of
-                      Right (adverb, rest') -> Right ("", " " <> adverb, formatMsg rest')
-                      Left  msg             -> Left  msg
-                  | otherwise -> Right ("", "", formatMsg . T.unwords $ rest)
-        sayToHelper d targetId targetDesig (frontAdv, rearAdv, msg) =
-            let inLang           = mkInLangTxtForLang l
-                toSelfMsg        = T.concat [ "You say ", frontAdv, "to ", targetDesig, inLang, rearAdv, ", ", msg ]
-                toTargetMsg      | isKnownLang targetId ms l
-                                 = T.concat [ serialize d, " says ", frontAdv, "to you", inLang, rearAdv, ", ", msg ]
-                                 | otherwise
-                                 = T.concat [ serialize d, " says something ", frontAdv, "to you", inLang, rearAdv, "." ]
-                toTargetBcast    = (nl toTargetMsg, pure targetId)
-                mkToOthersMsg i' | isKnownLang i' ms l
-                                 = T.concat [ serialize d, " says ", frontAdv, "to ", targetDesig, inLang, rearAdv, ", ", msg ]
-                                 | otherwise
-                                 = T.concat [ serialize d, " says something ", frontAdv, "to ", targetDesig, inLang, rearAdv, "." ]
-                toOthersBcasts   = [ (nl . mkToOthersMsg $ i', pure i') | i' <- desigIds d \\ [ i, targetId ] ]
-                f                | isNpc i        ms = (, [])
-                                 | isNpc targetId ms = firstMobSay i
-                                 | otherwise         = (, [])
-                (pt, hints)      = ms^.plaTbl.to f
-            in (ms & plaTbl .~ pt, ( onTrue (()!# hints) (++ hints) . pure $ toSelfMsg
-                                   , toTargetBcast : toOthersBcasts
-                                   , toSelfMsg ))
-    sayTo maybeAdverb msg _ = patternMatchFail "whisper sayTo" [ showText maybeAdverb, msg ]
-    formatMsg               = dblQuote . capitalizeMsg . punctuateMsg
+        sorry                                 = (ms, ) . (, [], "") . pure
+        whispering d targetId targetDesig msg =
+            let toSelfMsg     = T.concat [ "You whisper to ", targetDesig, ", ", msg ]
+                toTargetMsg   = serialize d <> " whispers to you, " <> msg
+                toTargetBcast = (nl toTargetMsg, pure targetId)
+                toOthersMsg   = T.concat [ serialize d, " whispers something to ", targetDesig, "." ]
+                toOthersBcast = (nl toOthersMsg, desigIds d \\ [ i, targetId ])
+            in (ms, ( pure toSelfMsg, [ toTargetBcast, toOthersBcast ], toSelfMsg ))
+    formatMsg = dblQuote . capitalizeMsg . punctuateMsg
     ioHelper ms triple@(x:xs, _, _) | (toSelfs, bs, logMsg) <- triple & _1 .~ parseDesig       i ms x : xs
                                                                       & _3 %~ parseExpandDesig i ms
                                     = do { multiWrapSend mq cols toSelfs
                                          ; bcastIfNotIncogNl i bs
-                                         ; logMsg |#| logPlaOut (mkCmdNameForLang l) i . pure
-                                         ; logMsg |#| alertMsgHelper i (mkCmdNameForLang l) }
+                                         ; logMsg |#| logPlaOut "whisper" i . pure
+                                         ; logMsg |#| alertMsgHelper i "whisper" }
     ioHelper _  triple              = patternMatchFail "whisper ioHelper" [ showText triple ]
-    simpleSayHelper ms (maybe "" (" " <>) -> adverb) (formatMsg -> msg) =
-        return $ let d                = mkStdDesig i ms DoCap
-                     inLang           = mkInLangTxtForLang l
-                     toSelfMsg        = T.concat [ "You say", inLang, adverb, ", ", msg ]
-                     mkToOthersMsg i' | isKnownLang i' ms l = T.concat [ serialize d, " says", adverb, inLang, ", ", msg ]
-                                      | otherwise           = T.concat [ serialize d, " says something", adverb, inLang, "." ]
-                     toOthersBcasts   = [ (nl . mkToOthersMsg $ i', pure i') | i' <- i `delete` desigIds d ]
-                 in (pure toSelfMsg, toOthersBcasts, toSelfMsg)
 whisper p = patternMatchFail "whisper" [ showText p ]
--}
 
 
 -----

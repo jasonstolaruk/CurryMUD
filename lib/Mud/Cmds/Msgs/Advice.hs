@@ -105,6 +105,8 @@ module Mud.Cmds.Msgs.Advice ( adviceAAnnounceNoArgs
                             , adviceTypoNoArgs
                             , adviceUnlinkNoArgs
                             , adviceUnreadyNoArgs
+                            , adviceWhisperNoArgs
+                            , adviceWhisperNoMsg
                             , adviceYouEmote
                             , adviceYouEmoteChar
                             , advise ) where
@@ -804,6 +806,18 @@ adviceUnreadyNoArgs :: Text
 adviceUnreadyNoArgs = "Please specify one or more items to unready, as in " <>
                       colorWith quoteColor "unready sword"                  <>
                       "."
+
+
+adviceWhisperNoArgs :: Text
+adviceWhisperNoArgs = "Please provide the name of a person followed by what you'd like to whisper, as in " <>
+                      colorWith quoteColor "whisper taro i have a secret to tell"                          <>
+                      "."
+
+
+adviceWhisperNoMsg :: Text -> Text
+adviceWhisperNoMsg a = "Please also provide what you'd like to whisper, as in "              <>
+                       colorWith quoteColor ("whisper " <> a <>  " i have a secret to tell") <>
+                       "."
 
 
 adviceYouEmote :: Text

@@ -29,12 +29,12 @@ CurryMUD will have the following features:
 * Unique commands, accessible only when a player is in a particular room, may be created.
 * PCs can introduce themselves to each other.
 * PCs can "link" with each other so as to enable "tells."
-* Racial say.
-* Players can interact with permanent room fixtures that are not listed in a room's inventory.
 * Players can create their own ad-hoc channels.
 * Question channel for OOC newbie Q&A.
 * Free-form emotes and built-in emotes may be used in "tells" and channel communications.
+* Racial say. Whisper.
 * Functionality enabling one-on-one communication between players and administrators.
+* Players can interact with permanent room fixtures that are not listed in a room's inventory.
 * NPCs can execute commands, either from within code or via the ":as" administrator command.
 * Help files for all existing non-debug commands. Help topics.
 * The virtual world is automatically persisted at regular intervals and at shutdown.
@@ -62,7 +62,7 @@ The code is available here on GitHub under the 3-clause BSD license (refer to th
 * Using `aeson` with `conduit` and `sqlite-simple` for persistence.
 * Heavy use of the `lens` library.
 * Heavy use of GHC extensions, including:
-  * `DuplicateRecordFields`
+  * `DuplicateRecordFields` (new in GHC 8)
   * `LambdaCase`
   * `MonadComprehensions`
   * `MultiWayIf`
@@ -83,6 +83,7 @@ I do not plan on explicitly supporting Windows.
 
 Please use [stack](http://docs.haskellstack.org/en/stable/README.html) (otherwise, I cannot guarantee that CurryMUD will build on your machine).
 
+0. [Install stack.](http://docs.haskellstack.org/en/stable/install_and_upgrade/)
 1. Clone the repo from your home directory (the server expects to find various folders under `$HOME/CurryMUD`).
 2. Inside `$HOME/CurryMUD`, run `stack setup` to get GHC 8 on your machine. (The `stack.yaml` file points to the [nightly resolver](https://www.stackage.org/snapshots), which uses GHC 8.)
 3. Run `stack build` to compile the `curry` binary and libraries.

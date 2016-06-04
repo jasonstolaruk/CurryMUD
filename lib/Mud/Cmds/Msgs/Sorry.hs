@@ -249,6 +249,12 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryUnreadyCoins
                            , sorryUnreadyInInv
                            , sorryUnreadyInRm
+                           , sorryWhisperCoins
+                           , sorryWhisperExcessTargets
+                           , sorryWhisperInEq
+                           , sorryWhisperInInv
+                           , sorryWhisperNoOneHere
+                           , sorryWhisperTargetType
                            , sorryWireAlready
                            , sorryWrapLineLen
                            , sorryWtf ) where
@@ -1666,6 +1672,33 @@ sorryUnreadyInInv = can't "unready an item in your inventory."
 
 sorryUnreadyInRm :: Text
 sorryUnreadyInRm = can't "unready an item in your current room."
+
+
+-----
+
+
+sorryWhisperCoins :: Text
+sorryWhisperCoins = "You're whispering to coins now?"
+
+
+sorryWhisperExcessTargets :: Text
+sorryWhisperExcessTargets = but "you can only whisper something to one person at a time."
+
+
+sorryWhisperInEq :: Text
+sorryWhisperInEq = can't "whisper to an item in your readied equipment. Try whispering something to someone in your current room."
+
+
+sorryWhisperInInv :: Text
+sorryWhisperInInv = can't "whisper to an item in your inventory. Try whispering something to someone in your current room."
+
+
+sorryWhisperNoOneHere :: Text
+sorryWhisperNoOneHere = "You don't see anyone here to whisper to."
+
+
+sorryWhisperTargetType :: Sing -> Text
+sorryWhisperTargetType s = can't "whisper to " <> aOrAn s <> "."
 
 
 -----
