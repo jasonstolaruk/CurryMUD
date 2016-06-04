@@ -78,7 +78,7 @@ calcBarLen cols = cols < 59 ? (cols - 9) :? 50
 calcConPerFull :: Id -> MudState -> Int
 calcConPerFull i ms = let total           = foldr helper 0 . getInv i $ ms
                           helper targetId = (calcVol targetId ms +)
-                      in round . (100 *) $ total `divide` getCapacity i ms
+                      in total `percent` getCapacity i ms
 
 
 -----
@@ -141,11 +141,11 @@ calcEffSt = calcEffAttrib St
 
 
 calcEncPer :: Id -> MudState -> Int
-calcEncPer i ms = round . (100 *) $ calcWeight i ms `divide` calcMaxEnc i ms
+calcEncPer i ms = calcWeight i ms `percent` calcMaxEnc i ms
 
 
 calcMaxEnc :: Id -> MudState -> Weight
-calcMaxEnc i ms = round . (100 *) $ calcEffSt i ms ^ 2 `divide` 13
+calcMaxEnc i ms = calcEffSt i ms ^ 2 `percent` 13
 
 
 -----
@@ -260,14 +260,14 @@ calcStomachSize i ms | isPC i ms = helper . getRace i $ ms
 calcStomachPerFull :: Id -> MudState -> Int
 calcStomachPerFull i ms = let mouths = length . getStomach i $ ms
                               size   = calcStomachSize i ms
-                          in round . (100 *) $ mouths `divide` size
+                          in mouths `percent` size
 
 
 -----
 
 
 calcVesselPerFull :: Vessel -> Mouthfuls -> Int
-calcVesselPerFull (view maxMouthfuls -> m) x = round . (100 *) $ x `divide` m
+calcVesselPerFull (view maxMouthfuls -> m) x = x `percent` m
 
 
 -----

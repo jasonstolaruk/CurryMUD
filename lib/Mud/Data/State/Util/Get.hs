@@ -263,6 +263,13 @@ getFood i = view (foodTbl.ind i)
 -----
 
 
+getFps :: Id -> MudState -> (Int, Int)
+getFps i ms = let (_, _, _, pair) = getPts i ms in pair
+
+
+-----
+
+
 getHand :: Id -> MudState -> Hand
 getHand i = view hand . getMob i
 
@@ -272,6 +279,13 @@ getHand i = view hand . getMob i
 
 getHostMap :: Sing -> MudState -> Maybe HostMap
 getHostMap s = view (hostTbl.at s)
+
+
+-----
+
+
+getHps :: Id -> MudState -> (Int, Int)
+getHps i ms = let (pair, _, _, _) = getPts i ms in pair
 
 
 -----
@@ -396,6 +410,13 @@ getMobRmInvCoins i ms = let ri = getRmId i ms in getInvCoins ri ms
 -----
 
 
+getMps :: Id -> MudState -> (Int, Int)
+getMps i ms = let (_, pair, _, _) = getPts i ms in pair
+
+
+-----
+
+
 getMsgQueue :: Id -> MudState -> MsgQueue
 getMsgQueue i = view (msgQueueTbl.ind i)
 
@@ -454,6 +475,13 @@ getPausedEffects i = view (pausedEffectsTbl.ind i)
 
 getPC :: Id -> MudState -> PC
 getPC i = view (pcTbl.ind i)
+
+
+-----
+
+
+getPps :: Id -> MudState -> (Int, Int)
+getPps i ms = let (_, _, pair, _) = getPts i ms in pair
 
 
 -----

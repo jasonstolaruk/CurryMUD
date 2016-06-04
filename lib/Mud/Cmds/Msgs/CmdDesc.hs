@@ -49,6 +49,10 @@ cmdDescExpCmdList :: Text
 cmdDescExpCmdList = "Display or search a list of available expressive commands and their results."
 
 
+cmdDescFeeling :: Text
+cmdDescFeeling = "Check how you're feeling."
+
+
 cmdDescFill :: Text
 cmdDescFill = "Fill one or more vessels with a) the contents of another vessel, or b) a source of liquid in your \
               \current room."

@@ -163,7 +163,6 @@ regularCmds :: [Cmd]
 regularCmds = map (uncurry4 mkRegularCmd) regularCmdTuples
 
 
--- TODO: Make a "feeling" command?
 regularCmdTuples :: [(CmdFullName, ActionFun, Bool, CmdDesc)]
 regularCmdTuples =
     [ ("?",          plaDispCmdList,     True,  cmdDescDispCmdList)
@@ -177,6 +176,7 @@ regularCmdTuples =
     , ("empty",      emptyAction,        True,  cmdDescEmpty)
     , ("equipment",  equip,              True,  cmdDescEquip)
     , ("expressive", expCmdList,         True,  cmdDescExpCmdList)
+    , ("feeling",    feeling,            True,  cmdDescFeeling)
     , ("moles",      molestCan'tAbbrev,  True,  "")
     , ("molest",     alertExec "molest", True,  "")
     , ("n",          go "n",             True,  cmdDescGoNorth)
@@ -314,6 +314,7 @@ npcRegularCmdTuples =
     , ("empty",      emptyAction,    True,  cmdDescEmpty)
     , ("equipment",  equip,          True,  cmdDescEquip)
     , ("expressive", expCmdList,     True,  cmdDescExpCmdList)
+    , ("feeling",    feeling,        True,  cmdDescFeeling)
     , ("n",          go "n",         True,  cmdDescGoNorth)
     , ("ne",         go "ne",        True,  cmdDescGoNortheast)
     , ("nw",         go "nw",        True,  cmdDescGoNorthwest)
@@ -1077,6 +1078,21 @@ mkExpCmdListTxt i ms =
       where
         paddedName         = padCmdName styled
         mkInitialTxt input = colorWith quoteColor input <> spaced (colorWith arrowColor "->")
+
+
+-----
+
+
+-- TODO: Help.
+feeling :: ActionFun
+feeling (NoArgs i mq cols) = getState >>= \ms ->
+    let txts = f . dropEmpties $ [ mkHpDesc   i ms
+                                 , mkFullDesc i ms ]
+    in multiWrapSend mq cols txts >> logPlaExec "feeling" i
+  where
+    f [] = pure "You feel fine."
+    f ts = ts
+feeling p = withoutArgs feeling p
 
 
 -----
@@ -3388,14 +3404,12 @@ stats (NoArgs i mq cols) = getState >>= \ms ->
                                 , pp . getHand i $ ms
                                 , "level " <> showText l
                                 , (commaEvery3 . showText $ x  ) <> " experience points"
-                                , (commaEvery3 . showText $ nxt) <> " experience points to next level"
-                                , mkFullDesc avail size ] -- TODO: Move to "feeling" command?
+                                , (commaEvery3 . showText $ nxt) <> " experience points to next level" ]
         top           = onTrue (isPC i ms) (<> sexRace) . getSing i $ ms
         sexRace       = T.concat [ ", the ", sexy, " ", r ]
         (sexy, r)     = (uncapitalize . showText *** uncapitalize . showText) . getSexRace i $ ms
         (l, x)        = getLvlExp i ms
         nxt           = subtract x . snd $ calcLvlExps !! l
-        (avail, size) = calcStomachAvailSize i ms
     in multiWrapSend mq cols mkStats >> logPlaExec "stats" i
 stats p = withoutArgs stats p
 

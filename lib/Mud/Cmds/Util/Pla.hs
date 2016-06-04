@@ -1,4 +1,3 @@
-{-# OPTIONS_GHC -fno-warn-type-defaults #-}
 {-# LANGUAGE FlexibleContexts, LambdaCase, MultiWayIf, NamedFieldPuns, OverloadedStrings, RankNTypes, RecordWildCards, TupleSections, ViewPatterns #-}
 
 -- This module contains helper functions used by multiple functions in "Mud.Cmds.Pla", as well as helper functions used
@@ -50,6 +49,7 @@ module Mud.Cmds.Util.Pla ( alertMsgHelper
                          , mkEqDesc
                          , mkExitsSummary
                          , mkFullDesc
+                         , mkHpDesc
                          , mkInvCoinsDesc
                          , mkLastArgIsTargetBindings
                          , mkLastArgWithNubbedOthers
@@ -114,12 +114,6 @@ import qualified Data.IntMap.Lazy as IM (keys)
 import qualified Data.Map.Lazy as M ((!), notMember, toList)
 import qualified Data.Text as T
 import qualified Data.Vector.Unboxed as V (Vector)
-
-
-default (Int, Double)
-
-
------
 
 
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
@@ -1071,17 +1065,35 @@ isNonStdLink _             = False
 -----
 
 
-mkFullDesc :: Int -> Int -> Text
-mkFullDesc avail size = let x = round $ 100 * (avail `divide` size) in
-  if | avail <= 0 -> "You are profoundly satiated. You don't feel so good..."
-     | x <= 10    -> "You are extremely full."
-     | x <= 20    -> "You are quite full."
-     | x <= 26    -> "You feel satisfied."
-     | x <= 73    -> ""
-     | x <= 79    -> "You feel a little hungry."
-     | x <= 89    -> "You are quite hungry."
-     | x <= 99    -> "You are extremely hungry."
-     | x >= 100   -> "You are famished."
+mkFullDesc :: Id -> MudState -> Text
+mkFullDesc i ms = let x = uncurry percent . calcStomachAvailSize i $ ms
+                  in if | x <= 0   -> "You are profoundly satiated. You don't feel so good..."
+                        | x <= 10  -> "You are extremely full."
+                        | x <= 20  -> "You are quite full."
+                        | x <= 26  -> "You feel satisfied."
+                        | x <= 73  -> ""
+                        | x <= 79  -> "You feel a little hungry."
+                        | x <= 89  -> "You are quite hungry."
+                        | x <= 99  -> "You are extremely hungry."
+                        | x >= 100 -> "You are famished."
+
+
+-----
+
+
+mkHpDesc :: Id -> MudState -> Text
+mkHpDesc i ms = let (c, m) = getHps i ms
+                    x      = c `percent` m
+                in if | x <= -15 -> "You are dead."
+                      | x <= 0   -> "You are unconscious and mortally wounded."
+                      | x <= 14  -> "You are severely wounded."
+                      | x <= 28  -> "You are extremely wounded."
+                      | x <= 42  -> "You are very wounded."
+                      | x <= 56  -> "You are markedly wounded."
+                      | x <= 70  -> "You are somewhat wounded."
+                      | x <= 84  -> "You are moderately wounded."
+                      | x <= 99  -> "You are lightly wounded."
+                      | x >= 100 -> ""
 
 
 -----

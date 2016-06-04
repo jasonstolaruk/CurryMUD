@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fno-warn-type-defaults #-}
 {-# LANGUAGE FlexibleContexts, LambdaCase, MonadComprehensions, OverloadedStrings, RankNTypes, ViewPatterns #-}
 
 module Mud.Util.Misc ( atLst1
@@ -36,6 +37,7 @@ module Mud.Util.Misc ( atLst1
                      , onLeft
                      , onTrue
                      , patternMatchFail
+                     , percent
                      , plusFifth
                      , plusQuarter
                      , plusThird
@@ -65,7 +67,13 @@ import qualified Data.Map.Lazy as M (Map, assocs)
 import qualified Data.Text as T
 
 
-infixl 7 `divide`
+default (Int, Double)
+
+
+-----
+
+
+infixl 7 `divide`, `percent`
 
 
 -- ==================================================
@@ -230,6 +238,10 @@ onLeft _ x         = blowUp "Mud.Util.Misc" "onLeft" "Right" [ T.pack . show $ x
 
 patternMatchFail :: Text -> Text -> [Text] -> a
 patternMatchFail modName funName = blowUp modName funName "pattern match failure"
+
+
+percent :: Int -> Int -> Int
+percent x y = round $ 100 * (x `divide` y)
 
 
 plusFifth :: Int -> Int

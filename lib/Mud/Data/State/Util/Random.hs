@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings, ViewPatterns #-}
 
-module Mud.Data.State.Util.Random ( percent
+module Mud.Data.State.Util.Random ( percentRange
                                   , rndmDo
                                   , rndmDos
                                   , rndmElem
@@ -49,8 +49,8 @@ isSuccess prob = inRange (1, adjust prob) <$> rndmPer
     adjust p = p < 1 ? 1 :? p
 
 
-percent :: Range
-percent = (1, 100)
+percentRange :: Range
+percentRange = (1, 100)
 
 
 rndmDo :: Int -> MudStack () -> MudStack ()
@@ -71,7 +71,7 @@ rndmIntToElem r xs = xs !! rndmIntToRange r (0, length xs - 1)
 
 
 rndmIntToPer :: Int -> Int
-rndmIntToPer = flip rndmIntToRange percent
+rndmIntToPer = flip rndmIntToRange percentRange
 
 
 rndmIntToRange :: Int -> Range -> Int
@@ -92,7 +92,7 @@ rndmIntToRangeHelper m (abs -> r) pair@(x, y)
 
 
 rndmPer :: MudStack Int
-rndmPer = rndmR percent
+rndmPer = rndmR percentRange
 
 
 rndmR :: Range -> MudStack Int
