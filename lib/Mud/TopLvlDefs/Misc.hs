@@ -92,7 +92,7 @@ maxChanNameLen = 12
 
 
 maxCmdLen :: Int
-maxCmdLen = 11
+maxCmdLen = 12
 
 
 maxCols, minCols :: Int
