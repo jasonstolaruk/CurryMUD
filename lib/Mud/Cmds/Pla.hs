@@ -1086,8 +1086,11 @@ mkExpCmdListTxt i ms =
 -- TODO: Help.
 feeling :: ActionFun
 feeling (NoArgs i mq cols) = getState >>= \ms ->
-    let txts = f . dropEmpties $ [ mkHpDesc   i ms
-                                 , mkFullDesc i ms ]
+    let txts = f . dropEmpties $ [ g i ms | g <- [ mkHpDesc
+                                                 , mkMpDesc
+                                                 , mkPpDesc
+                                                 , mkFpDesc
+                                                 , mkFullDesc ] ]
     in multiWrapSend mq cols txts >> logPlaExec "feeling" i
   where
     f [] = pure "You feel fine."

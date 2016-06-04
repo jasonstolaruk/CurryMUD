@@ -48,12 +48,15 @@ module Mud.Cmds.Util.Pla ( alertMsgHelper
                          , mkEntDescs
                          , mkEqDesc
                          , mkExitsSummary
+                         , mkFpDesc
                          , mkFullDesc
                          , mkHpDesc
                          , mkInvCoinsDesc
                          , mkLastArgIsTargetBindings
                          , mkLastArgWithNubbedOthers
                          , mkMaybeNthOfM
+                         , mkMpDesc
+                         , mkPpDesc
                          , mkReadyMsgs
                          , mkRndmVector
                          , moveReadiedItem
@@ -1065,6 +1068,24 @@ isNonStdLink _             = False
 -----
 
 
+-- TODO: Colorize.
+mkFpDesc :: Id -> MudState -> Text
+mkFpDesc i ms = let (c, m) = getFps i ms
+                    x      = c `percent` m
+                in if | x <= 0   -> "You are too exhausted to move."
+                      | x <= 14  -> "You are seriously tired."
+                      | x <= 28  -> "You are extremely tired."
+                      | x <= 42  -> "You are very tired."
+                      | x <= 56  -> "You are markedly tired."
+                      | x <= 70  -> "You are somewhat tired."
+                      | x <= 84  -> "You are moderately tired."
+                      | x <= 99  -> "You are slightly tired."
+                      | x >= 100 -> ""
+
+
+-----
+
+
 mkFullDesc :: Id -> MudState -> Text
 mkFullDesc i ms = let x = uncurry percent . calcStomachAvailSize i $ ms
                   in if | x <= 0   -> "You are profoundly satiated. You don't feel so good..."
@@ -1086,28 +1107,14 @@ mkHpDesc i ms = let (c, m) = getHps i ms
                     x      = c `percent` m
                 in if | x <= -15 -> "You are dead."
                       | x <= 0   -> "You are unconscious and mortally wounded."
-                      | x <= 14  -> "You are severely wounded."
+                      | x <= 14  -> "You are critically wounded."
                       | x <= 28  -> "You are extremely wounded."
-                      | x <= 42  -> "You are very wounded."
+                      | x <= 42  -> "You are badly wounded."
                       | x <= 56  -> "You are markedly wounded."
                       | x <= 70  -> "You are somewhat wounded."
                       | x <= 84  -> "You are moderately wounded."
                       | x <= 99  -> "You are lightly wounded."
                       | x >= 100 -> ""
-
-
------
-
-
-type IsConInRm  = Bool
-type InvWithCon = Inv
-
-
-mkMaybeNthOfM :: MudState -> IsConInRm -> Id -> Sing -> InvWithCon -> Maybe NthOfM
-mkMaybeNthOfM ms icir conId conSing invWithCon = guard icir >> return helper
-  where
-    helper  = (succ . fromJust . elemIndex conId *** length) . dup $ matches
-    matches = filter ((== conSing) . flip getSing ms) invWithCon
 
 
 -----
@@ -1128,6 +1135,54 @@ mkLastArgWithNubbedOthers as = let lastArg = last as
                                      [_, _] -> as
                                      _      -> (++ pure lastArg) . nub . init $ as
                                in (lastArg, otherArgs)
+
+
+-----
+
+
+type IsConInRm  = Bool
+type InvWithCon = Inv
+
+
+mkMaybeNthOfM :: MudState -> IsConInRm -> Id -> Sing -> InvWithCon -> Maybe NthOfM
+mkMaybeNthOfM ms icir conId conSing invWithCon = guard icir >> return helper
+  where
+    helper  = (succ . fromJust . elemIndex conId *** length) . dup $ matches
+    matches = filter ((== conSing) . flip getSing ms) invWithCon
+
+
+-----
+
+
+mkMpDesc :: Id -> MudState -> Text
+mkMpDesc i ms = let (c, m) = getMps i ms
+                    x      = c `percent` m
+                in if | x <= 0   -> "Your mana is entirely depleted."
+                      | x <= 14  -> "Your mana is severely depleted."
+                      | x <= 28  -> "Your mana is extremely depleted."
+                      | x <= 42  -> "Your mana is very depleted."
+                      | x <= 56  -> "Your mana is markedly depleted."
+                      | x <= 70  -> "Your mana is somewhat depleted."
+                      | x <= 84  -> "Your mana is moderately depleted."
+                      | x <= 99  -> "Your mana is slightly depleted."
+                      | x >= 100 -> ""
+
+
+-----
+
+
+mkPpDesc :: Id -> MudState -> Text
+mkPpDesc i ms = let (c, m) = getPps i ms
+                    x      = c `percent` m
+                in if | x <= 0   -> "Your psionic energy is entirely depleted."
+                      | x <= 14  -> "Your psionic energy is severely depleted."
+                      | x <= 28  -> "Your psionic energy is extremely depleted."
+                      | x <= 42  -> "Your psionic energy is very depleted."
+                      | x <= 56  -> "Your psionic energy is markedly depleted."
+                      | x <= 70  -> "Your psionic energy is somewhat depleted."
+                      | x <= 84  -> "Your psionic energy is moderately depleted."
+                      | x <= 99  -> "Your psionic energy is slightly depleted."
+                      | x >= 100 -> ""
 
 
 -----
