@@ -316,7 +316,7 @@ mkDfltPrompt i ms = let (hps, mps, pps, fps) = getPts i ms
                                | per > 33  -> yellow
                                | per > 10  -> red
                                | otherwise -> magenta
-                      per = round $ x `divide` y * 100
+                      per = x `percent` y
                   in colorWith c a <> showText x
 
 

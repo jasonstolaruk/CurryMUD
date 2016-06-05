@@ -45,6 +45,11 @@ module Mud.Cmds.Util.Pla ( alertMsgHelper
                          , mkChanNamesTunings
                          , mkCoinsDesc
                          , mkCoinsSummary
+                         , mkEffStDesc
+                         , mkEffDxDesc
+                         , mkEffHtDesc
+                         , mkEffMaDesc
+                         , mkEffPsDesc
                          , mkEntDescs
                          , mkEqDesc
                          , mkExitsSummary
@@ -92,7 +97,7 @@ import Mud.TopLvlDefs.Padding
 import Mud.TopLvlDefs.Vols
 import Mud.TopLvlDefs.Weights
 import Mud.Util.List
-import Mud.Util.Misc hiding (patternMatchFail)
+import Mud.Util.Misc hiding (blowUp, patternMatchFail)
 import Mud.Util.Operators
 import Mud.Util.Padding
 import Mud.Util.Quoting
@@ -100,7 +105,7 @@ import Mud.Util.Text
 import Mud.Util.Wrapping
 import Prelude hiding (pi, recip)
 import qualified Mud.Misc.Logging as L (logNotice, logPla, logPlaOut)
-import qualified Mud.Util.Misc as U (patternMatchFail)
+import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 
 import Control.Arrow ((***), first, second)
 import Control.Lens (Getter, _1, _2, _3, _4, _5, at, both, each, to, view, views)
@@ -123,6 +128,10 @@ import qualified Data.Vector.Unboxed as V (Vector)
 
 
 -----
+
+
+blowUp :: Text -> Text -> [Text] -> a
+blowUp = U.blowUp "Mud.Cmds.Util.Pla"
 
 
 patternMatchFail :: Text -> [Text] -> a
@@ -934,6 +943,31 @@ mkCoinsDesc cols (Coins (each %~ Sum -> (cop, sil, gol))) =
 -----
 
 
+mkEffStDesc :: Id -> MudState -> Text
+mkEffStDesc _ _ = undefined
+
+
+mkEffDxDesc :: Id -> MudState -> Text
+mkEffDxDesc _ _ = undefined
+
+
+mkEffHtDesc :: Id -> MudState -> Text
+mkEffHtDesc _ _ = undefined
+
+
+mkEffMaDesc :: Id -> MudState -> Text
+mkEffMaDesc _ _ = undefined
+
+
+mkEffPsDesc :: Id -> MudState -> Text
+mkEffPsDesc _ _ = undefined
+
+
+
+
+-----
+
+
 mkEntDescs :: Id -> Cols -> MudState -> Inv -> Text
 mkEntDescs i cols ms eis = T.intercalate "\n" [ mkEntDesc i cols ms (ei, e) | ei <- eis, let e = getEnt ei ms ]
 
@@ -1068,53 +1102,62 @@ isNonStdLink _             = False
 -----
 
 
--- TODO: Colorize.
 mkFpDesc :: Id -> MudState -> Text
 mkFpDesc i ms = let (c, m) = getFps i ms
-                    x      = c `percent` m
-                in if | x <= 0   -> "You are too exhausted to move."
-                      | x <= 14  -> "You are seriously tired."
-                      | x <= 28  -> "You are extremely tired."
-                      | x <= 42  -> "You are very tired."
-                      | x <= 56  -> "You are markedly tired."
-                      | x <= 70  -> "You are somewhat tired."
-                      | x <= 84  -> "You are moderately tired."
-                      | x <= 99  -> "You are slightly tired."
-                      | x >= 100 -> ""
+                in mkDescForPercent9 (c `percent` m) [ colorWith magenta "You are too exhausted to move."
+                                                     , colorWith magenta "You are seriously tired."
+                                                     , colorWith red     "You are extremely tired."
+                                                     , "You are very tired."
+                                                     , "You are markedly tired."
+                                                     , "You are somewhat tired."
+                                                     , "You are moderately tired."
+                                                     , "You are slightly tired."
+                                                     , "" ]
+
+
+mkDescForPercent9 :: Int -> [Text] -> Text
+mkDescForPercent9 x = mkDescForPercent x . zip [ 0, 14, 28, 42, 56, 70, 84, 99, 100 ]
+
+
+mkDescForPercent :: Int -> [(Int, Text)] -> Text
+mkDescForPercent _ []                          = blowUp "mkDescForPercent" "empty list" []
+mkDescForPercent _ [(_, txt)]                  = txt
+mkDescForPercent x ((y, txt):rest) | x <= y    = txt
+                                   | otherwise = mkDescForPercent x rest
+
 
 
 -----
 
 
 mkFullDesc :: Id -> MudState -> Text
-mkFullDesc i ms = let x = uncurry percent . calcStomachAvailSize i $ ms
-                  in if | x <= 0   -> "You are profoundly satiated. You don't feel so good..."
-                        | x <= 10  -> "You are extremely full."
-                        | x <= 20  -> "You are quite full."
-                        | x <= 26  -> "You feel satisfied."
-                        | x <= 73  -> ""
-                        | x <= 79  -> "You feel a little hungry."
-                        | x <= 89  -> "You are quite hungry."
-                        | x <= 99  -> "You are extremely hungry."
-                        | x >= 100 -> "You are famished."
+mkFullDesc i ms = mkDescForPercent9 (calcStomachPerFull i ms) [ colorWith magenta "You are famished."
+                                                              , colorWith red     "You are extremely hungry."
+                                                              ,                   "You are quite hungry."
+                                                              ,                   "You feel a little hungry."
+                                                              ,                   ""
+                                                              ,                   "You feel satisfied."
+                                                              ,                   "You are quite full."
+                                                              , colorWith red     "You are extremely full."
+                                                              , colorWith magenta "You are profoundly satiated. You don't feel so good..." ]
 
 
 -----
 
 
 mkHpDesc :: Id -> MudState -> Text
-mkHpDesc i ms = let (c, m) = getHps i ms
-                    x      = c `percent` m
-                in if | x <= -15 -> "You are dead."
-                      | x <= 0   -> "You are unconscious and mortally wounded."
-                      | x <= 14  -> "You are critically wounded."
-                      | x <= 28  -> "You are extremely wounded."
-                      | x <= 42  -> "You are badly wounded."
-                      | x <= 56  -> "You are markedly wounded."
-                      | x <= 70  -> "You are somewhat wounded."
-                      | x <= 84  -> "You are moderately wounded."
-                      | x <= 99  -> "You are lightly wounded."
-                      | x >= 100 -> ""
+mkHpDesc i ms =
+    let (c, m) = getHps i ms
+    in mkDescForPercent (c `percent` m) [ (-15, colorWith magenta "You are dead."                            )
+                                        , (0,   colorWith magenta "You are unconscious and mortally wounded.")
+                                        , (14,  colorWith magenta "You are critically wounded."              )
+                                        , (28,  colorWith red     "You are extremely wounded."               )
+                                        , (42,                    "You are badly wounded."                   )
+                                        , (56,                    "You are markedly wounded."                )
+                                        , (70,                    "You are somewhat wounded."                )
+                                        , (84,                    "You are moderately wounded."              )
+                                        , (99,                    "You are lightly wounded."                 )
+                                        , (100,                   ""                                         ) ]
 
 
 -----
@@ -1156,16 +1199,15 @@ mkMaybeNthOfM ms icir conId conSing invWithCon = guard icir >> return helper
 
 mkMpDesc :: Id -> MudState -> Text
 mkMpDesc i ms = let (c, m) = getMps i ms
-                    x      = c `percent` m
-                in if | x <= 0   -> "Your mana is entirely depleted."
-                      | x <= 14  -> "Your mana is severely depleted."
-                      | x <= 28  -> "Your mana is extremely depleted."
-                      | x <= 42  -> "Your mana is very depleted."
-                      | x <= 56  -> "Your mana is markedly depleted."
-                      | x <= 70  -> "Your mana is somewhat depleted."
-                      | x <= 84  -> "Your mana is moderately depleted."
-                      | x <= 99  -> "Your mana is slightly depleted."
-                      | x >= 100 -> ""
+                in mkDescForPercent9 (c `percent` m) [ colorWith magenta "Your mana is entirely depleted."
+                                                     , colorWith magenta "Your mana is severely depleted."
+                                                     , colorWith red     "Your mana is extremely depleted."
+                                                     , "Your mana is very depleted."
+                                                     , "Your mana is markedly depleted."
+                                                     , "Your mana is somewhat depleted."
+                                                     , "Your mana is moderately depleted."
+                                                     , "Your mana is slightly depleted."
+                                                     , "" ]
 
 
 -----
@@ -1173,16 +1215,15 @@ mkMpDesc i ms = let (c, m) = getMps i ms
 
 mkPpDesc :: Id -> MudState -> Text
 mkPpDesc i ms = let (c, m) = getPps i ms
-                    x      = c `percent` m
-                in if | x <= 0   -> "Your psionic energy is entirely depleted."
-                      | x <= 14  -> "Your psionic energy is severely depleted."
-                      | x <= 28  -> "Your psionic energy is extremely depleted."
-                      | x <= 42  -> "Your psionic energy is very depleted."
-                      | x <= 56  -> "Your psionic energy is markedly depleted."
-                      | x <= 70  -> "Your psionic energy is somewhat depleted."
-                      | x <= 84  -> "Your psionic energy is moderately depleted."
-                      | x <= 99  -> "Your psionic energy is slightly depleted."
-                      | x >= 100 -> ""
+                in mkDescForPercent9 (c `percent` m) [ colorWith magenta "Your psionic energy is entirely depleted."
+                                                     , colorWith magenta "Your psionic energy is severely depleted."
+                                                     , colorWith red     "Your psionic energy is extremely depleted."
+                                                     , "Your psionic energy is very depleted."
+                                                     , "Your psionic energy is markedly depleted."
+                                                     , "Your psionic energy is somewhat depleted."
+                                                     , "Your psionic energy is moderately depleted."
+                                                     , "Your psionic energy is slightly depleted."
+                                                     , "" ]
 
 
 -----

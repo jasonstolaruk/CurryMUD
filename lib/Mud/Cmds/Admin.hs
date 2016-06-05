@@ -83,6 +83,12 @@ default (Int)
 -----
 
 
+{-# ANN module ("HLint: ignore Use ||" :: String) #-}
+
+
+-----
+
+
 blowUp :: Text -> Text -> [Text] -> a
 blowUp = U.blowUp "Mud.Cmds.Admin"
 
@@ -158,6 +164,7 @@ adminCmds =
     , mkAdminCmd "profanity"  adminProfanity   True  "Dump the profanity database."
     , mkAdminCmd "search"     adminSearch      True  "Search for names and IDs using a regular expression."
     , mkAdminCmd "security"   adminSecurity    True  "Display security Q&A for one or more players."
+    , mkAdminCmd "set"        adminSet         True  "Set one or more values for a given ID."
     , mkAdminCmd "shutdown"   adminShutdown    False "Shut down CurryMUD, optionally with a custom message."
     , mkAdminCmd "sudoer"     adminSudoer      True  "Toggle a player's admin status."
     , mkAdminCmd "summon"     adminSummon      True  "Teleport a PC to your current room."
@@ -1179,6 +1186,70 @@ mkSecReport :: SecRec -> [Text]
 mkSecReport SecRec { .. } = [ "Name: "     <> dbName
                             , "Question: " <> dbQ
                             , "Answer: "   <> dbA ]
+
+
+-----
+
+
+-- TODO: Help.
+adminSet :: ActionFun
+adminSet p@AdviseNoArgs                   = advise p [ prefixAdminCmd "set" ] adviceASetNoArgs
+adminSet p@(AdviseOneArg a              ) = advise p [ prefixAdminCmd "set" ] . adviceASetNoSettings $ a
+adminSet   (WithArgs i _ _ (target:rest)) = helper |&| modifyState >=> \(bs, maybeTargetId, logMsgs) -> do
+    bcastNl bs
+    let prefix             = (parensQuote ("for ID " <> showText targetId <> ": ") <>)
+        logHelper targetId = logMsgs |#| logPla (prefixAdminCmd "set") i . prefix . slashes
+    maybeVoid logHelper maybeTargetId
+  where
+    helper ms = case reads . T.unpack $ target :: [(Int, String)] of
+      [(targetId, "")] | targetId < 0                                -> sorryHelper sorryWtf
+                       | targetId `notElem` (ms^.typeTbl.to IM.keys) -> sorry
+                       | otherwise                                   -> f targetId
+      _                                                              -> sorry
+      where
+        sorry       = sorryHelper . sorryParseId $ target
+        sorryHelper = (ms, ) . (, Nothing, []) . mkBcast i
+        f targetId  = let (ms', msgs, logMsgs) = foldl' (setHelper targetId) (ms, [], []) rest
+                      in (ms', (mkBcast i . T.unlines $ msgs, Just targetId, logMsgs))
+adminSet p = patternMatchFail "adminSet" [ showText p ]
+
+
+setHelper :: Id -> (MudState, [Text], [Text]) -> Text -> (MudState, [Text], [Text])
+setHelper _ a@(_, msgs, _) arg@(T.length . T.filter (== '=') -> noOfEqs)
+  | or [ noOfEqs /= 1, T.head arg == '=', T.last arg == '=' ] =
+      let msg    = sorryParseArg arg
+          f      = any (adviceASetInvalid `T.isInfixOf`) msgs ?  (++ pure msg)
+                                                              :? (++ [ msg <> adviceASetInvalid ])
+      in a & _2 %~ f
+setHelper targetId a@(ms, _, _) (T.breakOn "=" -> (T.toLower -> key, T.tail -> value)) =
+    findFullNameForAbbrev key keyNames |&| maybe notFound found
+  where
+    keyNames    = [ "curhp" -- These need not be in alphabetical order.
+                  , "curmp"
+                  , "curpp"
+                  , "curfp" ]
+    notFound    = appendMsg . sorryAdminSetKey $ key
+    appendMsg m = a & _2 <>~ pure m
+    found       = let t = getType targetId ms
+                  in \case "curhp" -> setCurHelper t "curHp" getHps curHp
+                           "curmp" -> setCurHelper t "curMp" getMps curMp
+                           "curpp" -> setCurHelper t "curPp" getPps curPp
+                           "curfp" -> setCurHelper t "curFp" getFps curFp
+                           x       -> patternMatchFail "setHelper found" [x]
+    setCurHelper t n f l | t `notElem` [ NpcType, PCType ] = sorryType
+                         | otherwise                       = procEither $ \x -> let (_, m) = f targetId ms
+                                                                                    x'     = x `min` m
+                                                                                    msg    = mkMsg n x'
+                                                                                in a & _1.mobTbl.ind targetId.l .~ x'
+                                                                                     & _2 <>~ pure msg
+                                                                                     & _3 <>~ pure msg
+    sorryType    = appendMsg sorryAdminSetType
+    mkMsg k v    = T.concat [ "Set ", dblQuote k, " to ", showText v, "." ]
+    procEither f = parseInt |&| either appendMsg f
+    parseInt     = case (reads . T.unpack $ value :: [(Int, String)]) of [(x, "")] -> Right x
+                                                                         _         -> sorryParse
+      where
+        sorryParse = Left . sorryParseSetting value $ key
 
 
 -----

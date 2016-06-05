@@ -1090,8 +1090,13 @@ feeling (NoArgs i mq cols) = getState >>= \ms ->
                                                  , mkMpDesc
                                                  , mkPpDesc
                                                  , mkFpDesc
+                                                 , mkEffStDesc
+                                                 , mkEffDxDesc
+                                                 , mkEffHtDesc
+                                                 , mkEffMaDesc
+                                                 , mkEffPsDesc
                                                  , mkFullDesc ] ]
-    in multiWrapSend mq cols txts >> logPlaExec "feeling" i
+    in multiWrapSend mq cols txts >> logPlaExec "feeling" i -- TODO: Log the output.
   where
     f [] = pure "You feel fine."
     f ts = ts

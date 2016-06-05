@@ -5,6 +5,8 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryAdminName
                            , sorryAdminPasswordAdmin
                            , sorryAdminPasswordSelf
+                           , sorryAdminSetKey
+                           , sorryAdminSetType
                            , sorryAlreadyPossessed
                            , sorryAlreadyPossessing
                            , sorryAsAdmin
@@ -328,6 +330,17 @@ sorryAdminPasswordAdmin = can't "change an admin's password."
 
 sorryAdminPasswordSelf :: Text
 sorryAdminPasswordSelf = "Please use the " <> dblQuote "password" <> " command to change your own password."
+
+
+-----
+
+
+sorryAdminSetKey :: Text -> Text
+sorryAdminSetKey k = dblQuote k <> " is not a valid key."
+
+
+sorryAdminSetType :: Text
+sorryAdminSetType = "Incorrect type."
 
 
 -----

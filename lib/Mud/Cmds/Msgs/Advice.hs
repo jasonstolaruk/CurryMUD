@@ -26,6 +26,9 @@ module Mud.Cmds.Msgs.Advice ( adviceAAnnounceNoArgs
                             , adviceAPrintNoArgs
                             , adviceASearchNoArgs
                             , adviceASecurityNoArgs
+                            , adviceASetInvalid
+                            , adviceASetNoArgs
+                            , adviceASetNoSettings
                             , adviceAsSelfNoArgs
                             , adviceASudoerExcessArgs
                             , adviceASudoerNoArgs
@@ -275,6 +278,26 @@ adviceASearchNoArgs = "Please provide a regular expression to search for."
 
 adviceASecurityNoArgs :: Text
 adviceASecurityNoArgs = "Please specify the PC names of one or more players whose security Q&A you would like to see."
+
+
+adviceASetInvalid :: Text
+adviceASetInvalid = T.concat [ " Please specify the key you want to change, followed immediately by "
+                             , dblQuote "="
+                             , ", followed immediately by the new value you want to assign, as in "
+                             , colorWith quoteColor (prefixAdminCmd "set" <> " 100 curhp=50")
+                             , "." ]
+
+
+adviceASetNoArgs :: Text
+adviceASetNoArgs = "Please specify a target ID followed by one or more key/value pairs, as in " <>
+                   colorWith quoteColor (prefixAdminCmd "set" <> " 100 curhp=50")               <>
+                   "."
+
+
+adviceASetNoSettings :: Text -> Text
+adviceASetNoSettings a = "Please also specify one or more key/value pairs, as in "             <>
+                         colorWith quoteColor (prefixAdminCmd "set" <> spaced a <> "curhp=50") <>
+                         "."
 
 
 adviceASudoerExcessArgs :: Text

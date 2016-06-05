@@ -83,13 +83,13 @@ I do not plan on explicitly supporting Windows.
 
 Please use [stack](http://docs.haskellstack.org/en/stable/README.html) (otherwise, I cannot guarantee that CurryMUD will build on your machine).
 
-1. [Install stack.](http://docs.haskellstack.org/en/stable/install_and_upgrade/)
-1. Clone the repo from your home directory (the server expects to find various folders under `$HOME/CurryMUD`).
-1. Inside `$HOME/CurryMUD`, run `stack setup` to get GHC 8 on your machine. (The `stack.yaml` file points to the [nightly resolver](https://www.stackage.org/snapshots), which uses GHC 8.)
-1. Run `stack build` to compile the `curry` binary and libraries.
-1. Run `stack install` to copy the `curry` binary to `$HOME/.local/bin`.
-1. Execute the `curry` generated binary.
-1. Telnet to `localhost` port 9696 to play.
+0. [Install stack.](http://docs.haskellstack.org/en/stable/install_and_upgrade/)
+0. Clone the repo from your home directory (the server expects to find various folders under `$HOME/CurryMUD`).
+0. Inside `$HOME/CurryMUD`, run `stack setup` to get GHC 8 on your machine. (The `stack.yaml` file points to the [nightly resolver](https://www.stackage.org/snapshots), which uses GHC 8.)
+0. Run `stack build` to compile the `curry` binary and libraries.
+0. Run `stack install` to copy the `curry` binary to `$HOME/.local/bin`.
+0. Execute the `curry` generated binary.
+0. Telnet to `localhost` port 9696 to play.
 
 CurryMUD presently cannot be loaded into GHCi due to [a GHC bug](https://ghc.haskell.org/trac/ghc/ticket/12007).
 
