@@ -1199,7 +1199,7 @@ adminSet   (WithArgs i _ _ (target:rest)) = helper |&| modifyState >=> \(bs, may
     bcastNl bs
     let logHelper targetId = logMsgs |#| logPla (prefixAdminCmd "set") i . f . slashes
           where
-            f = (parensQuote ("for ID " <> showText targetId <> ": ") <>)
+            f = (parensQuote ("for ID " <> showText targetId) <>) . (" " <>)
     maybeVoid logHelper maybeTargetId
   where
     helper ms = case reads . T.unpack $ target :: [(Int, String)] of
@@ -1225,25 +1225,41 @@ setHelper _ a@(_, msgs, _) arg@(T.length . T.filter (== '=') -> noOfEqs)
 setHelper targetId a@(ms, _, _) (T.breakOn "=" -> (T.toLower -> key, T.tail -> value)) =
     findFullNameForAbbrev key keyNames |&| maybe notFound found
   where
-    keyNames    = [ "curhp" -- These need not be in alphabetical order.
+    keyNames    = [ "st" -- These need not be in alphabetical order.
+                  , "dx"
+                  , "ht"
+                  , "ma"
+                  , "ps"
+                  , "curhp"
                   , "curmp"
                   , "curpp"
                   , "curfp" ]
     notFound    = appendMsg . sorryAdminSetKey $ key
     appendMsg m = a & _2 <>~ pure m
     found       = let t = getType targetId ms
-                  in \case "curhp" -> setCurHelper t "curHp" getHps curHp
+                  in \case "st"    -> setAttribHelper t "ST" st
+                           "dx"    -> setAttribHelper t "DX" dx
+                           "ht"    -> setAttribHelper t "HT" ht
+                           "ma"    -> setAttribHelper t "MA" ma
+                           "ps"    -> setAttribHelper t "PS" ps
+                           "curhp" -> setCurHelper t "curHp" getHps curHp
                            "curmp" -> setCurHelper t "curMp" getMps curMp
                            "curpp" -> setCurHelper t "curPp" getPps curPp
                            "curfp" -> setCurHelper t "curFp" getFps curFp
                            x       -> patternMatchFail "setHelper found" [x]
-    setCurHelper t n f l | t `notElem` [ NpcType, PCType ] = sorryType
-                         | otherwise                       = procEither $ \x -> let (_, m) = f targetId ms
-                                                                                    x'     = x `min` m
-                                                                                    msg    = mkMsg n x'
-                                                                                in a & _1.mobTbl.ind targetId.l .~ x'
-                                                                                     & _2 <>~ pure msg
-                                                                                     & _3 <>~ pure msg
+    setAttribHelper t n l | t `notElem` [ NpcType, PCType ] = sorryType
+                          | otherwise                       = procEither $ \x -> let x'  = 1 `max` x
+                                                                                     msg = mkMsg n x'
+                                                                                 in a & _1.mobTbl.ind targetId.l .~ x'
+                                                                                      & _2 <>~ pure msg
+                                                                                      & _3 <>~ pure msg
+    setCurHelper t n f l  | t `notElem` [ NpcType, PCType ] = sorryType
+                          | otherwise                       = procEither $ \x -> let (_, m) = f targetId ms
+                                                                                     x'     = x `min` m
+                                                                                     msg    = mkMsg n x'
+                                                                                 in a & _1.mobTbl.ind targetId.l .~ x'
+                                                                                      & _2 <>~ pure msg
+                                                                                      & _3 <>~ pure msg
     sorryType    = appendMsg sorryAdminSetType
     mkMsg k v    = T.concat [ "Set ", dblQuote k, " to ", showText v, "." ]
     procEither f = parseInt |&| either appendMsg f
