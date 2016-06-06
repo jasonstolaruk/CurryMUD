@@ -1197,8 +1197,9 @@ adminSet p@AdviseNoArgs                   = advise p [ prefixAdminCmd "set" ] ad
 adminSet p@(AdviseOneArg a              ) = advise p [ prefixAdminCmd "set" ] . adviceASetNoSettings $ a
 adminSet   (WithArgs i _ _ (target:rest)) = helper |&| modifyState >=> \(bs, maybeTargetId, logMsgs) -> do
     bcastNl bs
-    let prefix             = (parensQuote ("for ID " <> showText targetId <> ": ") <>)
-        logHelper targetId = logMsgs |#| logPla (prefixAdminCmd "set") i . prefix . slashes
+    let logHelper targetId = logMsgs |#| logPla (prefixAdminCmd "set") i . f . slashes
+          where
+            f = (parensQuote ("for ID " <> showText targetId <> ": ") <>)
     maybeVoid logHelper maybeTargetId
   where
     helper ms = case reads . T.unpack $ target :: [(Int, String)] of

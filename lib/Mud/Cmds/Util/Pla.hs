@@ -944,25 +944,52 @@ mkCoinsDesc cols (Coins (each %~ Sum -> (cop, sil, gol))) =
 
 
 mkEffStDesc :: Id -> MudState -> Text
-mkEffStDesc _ _ = undefined
+mkEffStDesc = mkEffDesc getBaseSt calcEffSt "weaker" "stronger"
+
+
+mkEffDesc :: (Id -> MudState -> Int) -> (Id -> MudState -> Int) -> Text -> Text -> Id -> MudState -> Text
+mkEffDesc f g lessAdj moreAdj i ms =
+    let x    = f i ms
+        y    = g i ms - x
+        p    = y `percent` x
+        over = let (q, r) = y `quotRem` x
+                   t      = mkDescForPercent (r `percent` x) [ (19,  "00")
+                                                             , (39,  "20")
+                                                             , (59,  "40")
+                                                             , (79,  "60")
+                                                             , (99,  "80") ]
+               in colorWith magenta . T.concat $ [ "You feel ", showText q, t, "% ", moreAdj, " than usual." ]
+    in mkDescForPercent p [ (-84, colorWith magenta $ "You feel immensely "    <> lessAdj <> " than usual.")
+                          , (-70, colorWith red     $ "You feel exceedingly "  <> lessAdj <> " than usual.")
+                          , (-56,                     "You feel quite a bit "  <> lessAdj <> " than usual.")
+                          , (-42,                     "You feel considerably " <> lessAdj <> " than usual.")
+                          , (-28,                     "You feel moderately "   <> lessAdj <> " than usual.")
+                          , (-14,                     "You feel a little "     <> lessAdj <> " than usual.")
+                          , (0,                       ""                                                   )
+                          , (14,                      "You feel a little "     <> moreAdj <> " than usual.")
+                          , (28,                      "You feel moderately "   <> moreAdj <> " than usual.")
+                          , (42,                      "You feel considerably " <> moreAdj <> " than usual.")
+                          , (56,                      "You feel quite a bit "  <> moreAdj <> " than usual.")
+                          , (70,  colorWith red     $ "You feel strikingly "   <> moreAdj <> " than usual.")
+                          , (84,  colorWith magenta $ "You feel exceedingly "  <> moreAdj <> " than usual.")
+                          , (99,  colorWith magenta $ "You feel immensely "    <> moreAdj <> " than usual.")
+                          , (100, over                                                                     ) ]
 
 
 mkEffDxDesc :: Id -> MudState -> Text
-mkEffDxDesc _ _ = undefined
+mkEffDxDesc = mkEffDesc getBaseDx calcEffDx "less agile" "more agile"
 
 
 mkEffHtDesc :: Id -> MudState -> Text
-mkEffHtDesc _ _ = undefined
+mkEffHtDesc = mkEffDesc getBaseHt calcEffHt "less vigorous" "more vigorous"
 
 
 mkEffMaDesc :: Id -> MudState -> Text
-mkEffMaDesc _ _ = undefined
+mkEffMaDesc = mkEffDesc getBaseMa calcEffMa "less proficient in magic" "more proficient in magic"
 
 
 mkEffPsDesc :: Id -> MudState -> Text
-mkEffPsDesc _ _ = undefined
-
-
+mkEffPsDesc = mkEffDesc getBasePs calcEffPs "less proficient in psionics" "more proficient in psionics"
 
 
 -----
@@ -1108,8 +1135,8 @@ mkFpDesc i ms = let (c, m) = getFps i ms
                                                      , colorWith magenta "You are seriously tired."
                                                      , colorWith red     "You are extremely tired."
                                                      , "You are very tired."
-                                                     , "You are markedly tired."
-                                                     , "You are somewhat tired."
+                                                     , "You are quite tired."
+                                                     , "You are considerably tired."
                                                      , "You are moderately tired."
                                                      , "You are slightly tired."
                                                      , "" ]
@@ -1153,8 +1180,8 @@ mkHpDesc i ms =
                                         , (14,  colorWith magenta "You are critically wounded."              )
                                         , (28,  colorWith red     "You are extremely wounded."               )
                                         , (42,                    "You are badly wounded."                   )
-                                        , (56,                    "You are markedly wounded."                )
-                                        , (70,                    "You are somewhat wounded."                )
+                                        , (56,                    "You are quite wounded."                   )
+                                        , (70,                    "You are considerably wounded."            )
                                         , (84,                    "You are moderately wounded."              )
                                         , (99,                    "You are lightly wounded."                 )
                                         , (100,                   ""                                         ) ]
@@ -1203,8 +1230,8 @@ mkMpDesc i ms = let (c, m) = getMps i ms
                                                      , colorWith magenta "Your mana is severely depleted."
                                                      , colorWith red     "Your mana is extremely depleted."
                                                      , "Your mana is very depleted."
-                                                     , "Your mana is markedly depleted."
-                                                     , "Your mana is somewhat depleted."
+                                                     , "Your mana is quite depleted."
+                                                     , "Your mana is considerably depleted."
                                                      , "Your mana is moderately depleted."
                                                      , "Your mana is slightly depleted."
                                                      , "" ]
@@ -1219,8 +1246,8 @@ mkPpDesc i ms = let (c, m) = getPps i ms
                                                      , colorWith magenta "Your psionic energy is severely depleted."
                                                      , colorWith red     "Your psionic energy is extremely depleted."
                                                      , "Your psionic energy is very depleted."
-                                                     , "Your psionic energy is markedly depleted."
-                                                     , "Your psionic energy is somewhat depleted."
+                                                     , "Your psionic energy is quite depleted."
+                                                     , "Your psionic energy is considerably depleted."
                                                      , "Your psionic energy is moderately depleted."
                                                      , "Your psionic energy is slightly depleted."
                                                      , "" ]

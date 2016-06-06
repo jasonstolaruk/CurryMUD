@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
-{-# LANGUAGE LambdaCase, OverloadedStrings, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, MultiWayIf, OverloadedStrings, ViewPatterns #-}
 
 module Mud.Data.State.Util.Calc ( calcBarLen
                                 , calcConPerFull
@@ -104,9 +104,10 @@ calcEffDx = calcEffAttrib Dx
 calcEffAttrib :: Attrib -> Id -> MudState -> Int
 calcEffAttrib attrib i ms =
     let effects = select effect . getActiveEffects i $ ms
-        helper acc (Effect (MobEffectAttrib a) (Just (DefiniteVal x)) _) | a == attrib = acc + x
-        helper acc _                                                     = acc
-    in foldl' helper (getBaseAttrib attrib i ms) effects
+    in 1 `max` foldl' helper (getBaseAttrib attrib i ms) effects
+  where
+    helper acc (Effect (MobEffectAttrib a) (Just (DefiniteVal x)) _) | a == attrib = acc + x
+    helper acc _                                                     = acc
 
 
 -----

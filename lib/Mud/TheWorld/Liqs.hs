@@ -3,8 +3,10 @@
 module Mud.TheWorld.Liqs ( distinctLiqList
                          , potHealingLiq
                          , potInstantHealingLiq
+                         , potInstantNegStLiq
                          , potInstantStLiq
                          , potInstantTinnitusLiq
+                         , potNegStLiq
                          , potStLiq
                          , potTinnitusLiq
                          , waterLiq ) where
@@ -17,8 +19,10 @@ import Mud.TheWorld.LiqIds
 distinctLiqList :: [(Id, DistinctLiq)]
 distinctLiqList = [ (iLiqPotHealing,         potHealingDistinctLiq        )
                   , (iLiqPotInstantHealing,  potInstantHealingDistinctLiq )
+                  , (iLiqPotInstantNegSt,    potInstantNegStDistinctLiq   )
                   , (iLiqPotInstantSt,       potInstantStDistinctLiq      )
                   , (iLiqPotInstantTinnitus, potInstantTinnitusDistinctLiq)
+                  , (iLiqPotNegSt,           potNegStDistinctLiq          )
                   , (iLiqPotSt,              potStDistinctLiq             )
                   , (iLiqPotTinnitus,        potTinnitusDistinctLiq       )
                   , (iLiqWater,              waterDistinctLiq             ) ]
@@ -115,6 +119,43 @@ potInstantStDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Nothing
     el = EffectList . pure . Right $ e
     e  = Effect { _effectSub = MobEffectAttrib St
                 , _effectVal = Just . RangeVal $ (8, 12)
+                , _effectDur = 5 * 60 }
+
+
+potNegStLiq :: Liq
+potNegStLiq = Liq (DistinctLiqId iLiqPotNegSt)
+                  (DoArticle "creamy white liquid")
+                  "The creamy liquid has a faint, sweet odor."
+                  "" -- TODO
+                  "The sweet, creamy liquid is delicious."
+
+
+potNegStDistinctLiq :: DistinctLiq
+potNegStDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just el
+                                                , _consumpEffects = Nothing }
+  where
+    el = EffectList . pure . Right $ e
+    e  = Effect { _effectSub = MobEffectAttrib St
+                , _effectVal = Just . DefiniteVal $ -2
+                , _effectDur = 5 * 60 }
+
+
+potInstantNegStLiq :: Liq
+potInstantNegStLiq = Liq (DistinctLiqId iLiqPotInstantNegSt)
+                         (DoArticle "creamy indigo liquid")
+                         "The creamy liquid has a faint, sweet odor."
+                         "" -- TODO
+                         "The sweet, creamy liquid is delicious."
+
+
+potInstantNegStDistinctLiq :: DistinctLiq
+potInstantNegStDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Nothing
+                                                       , _consumpEffects = Just ce }
+  where
+    ce = ConsumpEffects 4 30 el
+    el = EffectList . pure . Right $ e
+    e  = Effect { _effectSub = MobEffectAttrib St
+                , _effectVal = Just . RangeVal $ (-12, -8)
                 , _effectDur = 5 * 60 }
 
 

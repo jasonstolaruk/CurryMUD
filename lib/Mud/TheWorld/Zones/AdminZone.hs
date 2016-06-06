@@ -1689,7 +1689,7 @@ createAdminZone = do
                  Nothing
                  zeroBits)
             (Obj jarLrgWeight jarLrgVol Nothing zeroBits Nothing)
-            Nothing
+            (Just (potNegStLiq, maxBound))
   let jugDesc = "While capable of containing a large amount of liquid, this corked, ceramic jug is rather cumbersome."
   putVessel iJugSml
             (Ent iJugSml
@@ -1717,7 +1717,7 @@ createAdminZone = do
                  Nothing
                  zeroBits)
             (Obj jugLrgWeight jugLrgVol Nothing zeroBits Nothing)
-            Nothing
+            (Just (potInstantNegStLiq, maxBound))
   let mkBottleDesc a b = T.concat [ "This "
                                   , a
                                   , "earthenware bottle is designed to be as portable and practical as possible. A \
