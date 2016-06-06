@@ -178,7 +178,7 @@ debugAp p                        = patternMatchFail "debugAp" [ showText p ]
 
 
 debugBoot :: ActionFun
-debugBoot (NoArgs' i mq) = ok mq >> (massMsg . MsgBoot $ dfltBootMsg) >> logPlaExec (prefixDebugCmd "boot") i
+debugBoot (NoArgs' i mq) = do { ok mq; massMsg . MsgBoot $ dfltBootMsg; logPlaExec (prefixDebugCmd "boot") i }
 debugBoot p              = withoutArgs debugBoot p
 
 

@@ -640,7 +640,7 @@ helperLinkUnlink ms i mq cols =
                              | otherwise                = acc
         twoWays = map fst . filter ((== 2) . snd) . countOccs $ othersLinkedToMe ++ meLinkedToOthers
     in if all (()#) [ othersLinkedToMe, meLinkedToOthers ]
-      then emptied $ wrapSend mq cols sorryNoLinks >> (logPlaOut "helperLinkUnlink" i . pure $ sorryNoLinks)
+      then emptied $ do { wrapSend mq cols sorryNoLinks; logPlaOut "helperLinkUnlink" i . pure $ sorryNoLinks }
       else unadulterated (meLinkedToOthers, othersLinkedToMe, twoWays)
 
 

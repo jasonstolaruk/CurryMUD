@@ -156,7 +156,7 @@ checkNameHelper (Just file) funName sorry cn = (liftIO . T.readFile $ file) |&| 
 
 
 checkSet :: CmdName -> MudStack () -> S.Set Text -> MudStack Any
-checkSet cn sorry set = let isNG = cn `S.member` set in when isNG sorry >> (return . Any $ isNG)
+checkSet cn sorry set = let isNG = cn `S.member` set in do { when isNG sorry; return . Any $ isNG }
 
 
 checkIllegalNames :: MudState -> MsgQueue -> Cols -> CmdName -> MudStack Any

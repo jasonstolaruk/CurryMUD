@@ -66,11 +66,11 @@ stopAct i actType = views (at actType) (maybeVoid throwDeath) . getActMap i =<< 
 
 
 stopActs :: Id -> MudStack ()
-stopActs i = logPla "stopActs" i "stopping all acts." >> (mapM_ throwWait . M.elems . getActMap i =<< getState)
+stopActs i = do { logPla "stopActs" i "stopping all acts."; mapM_ throwWait . M.elems . getActMap i =<< getState }
 
 
 stopNpcActs :: MudStack ()
-stopNpcActs = logNotice "stopNpcActs" "stopping NPC acts." >> (mapM_ stopActs =<< getNpcIds <$> getState)
+stopNpcActs = do { logNotice "stopNpcActs" "stopping NPC acts."; mapM_ stopActs =<< getNpcIds <$> getState }
 
 
 threadAct :: Id -> ActType -> MudStack () -> MudStack ()

@@ -208,4 +208,4 @@ throwToListenThread e = flip throwTo e . getListenThreadId =<< getState
 
 
 throwWait :: Async () -> MudStack ()
-throwWait a = throwDeath a >> (liftIO . void . wait $ a)
+throwWait a = do { throwDeath a; liftIO . void . wait $ a }

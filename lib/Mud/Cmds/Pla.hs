@@ -1096,7 +1096,8 @@ feeling (NoArgs i mq cols) = getState >>= \ms ->
                                                  , mkEffMaDesc
                                                  , mkEffPsDesc
                                                  , mkFullDesc ] ]
-    in multiWrapSend mq cols txts >> logPlaExec "feeling" i -- TODO: Log the output.
+    in do { multiWrapSend mq cols txts
+          ; logPla "feeling" i . dropANSI . slashes $ txts }
   where
     f [] = pure "You feel fine."
     f ts = ts
@@ -1583,7 +1584,7 @@ hominal = sayHelper HumanLang
 intro :: ActionFun
 intro (NoArgs i mq cols) = getState >>= \ms -> let intros = getIntroduced i ms in if ()# intros
   then let introsTxt = "No one has introduced themselves to you yet."
-       in wrapSend mq cols introsTxt >> (logPlaOut "intro" i . pure $ introsTxt)
+       in do { wrapSend mq cols introsTxt; logPlaOut "intro" i . pure $ introsTxt }
   else let introsTxt = commas intros in do
       multiWrapSend mq cols [ "You know the following names:", introsTxt ]
       logPla "intro" i $ "known names: " <> introsTxt
@@ -2290,7 +2291,7 @@ question p = patternMatchFail "question" [ showText p ]
 
 
 quit :: ActionFun
-quit (NoArgs' i mq)                        = logPlaExec "quit" i >> (liftIO . atomically . writeTQueue mq $ Quit)
+quit (NoArgs' i mq)                        = do { logPlaExec "quit" i; liftIO . atomically . writeTQueue mq $ Quit }
 quit ActionParams { plaMsgQueue, plaCols } = wrapSend plaMsgQueue plaCols adviceQuitExcessArgs
 
 
@@ -2935,7 +2936,7 @@ interpSecurityNum cn (NoArgs i mq cols) = case cn of
   "5" -> securityCreateQHelper i mq cols
   _   -> retrySecurityNum mq cols
   where
-    helper q = sendPrompt mq "Answer:" >> (setInterp i . Just . interpSecurityA $ q)
+    helper q = do { sendPrompt mq "Answer:"; setInterp i . Just . interpSecurityA $ q }
 interpSecurityNum _ ActionParams { .. } = retrySecurityNum plaMsgQueue plaCols
 
 

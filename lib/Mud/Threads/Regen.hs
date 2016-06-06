@@ -52,12 +52,12 @@ runRegenAsync i = liftIO newTQueueIO >>= \tq -> do
 
 startNpcRegens :: MudStack ()
 startNpcRegens =
-    logNotice "startNpcRegens" "starting NPC regens." >> (mapM_ runRegenAsync . findNpcIds =<< getState)
+    do { logNotice "startNpcRegens" "starting NPC regens."; mapM_ runRegenAsync . findNpcIds =<< getState }
 
 
 stopNpcRegens :: MudStack ()
 stopNpcRegens =
-    logNotice "stopNpcRegens"  "stopping NPC regens." >> (mapM_ stopRegen     . findNpcIds =<< getState)
+    do { logNotice "stopNpcRegens"  "stopping NPC regens."; mapM_ stopRegen     . findNpcIds =<< getState }
 
 
 stopRegen :: Id -> MudStack ()
