@@ -3004,11 +3004,11 @@ setAction :: ActionFun
 setAction (NoArgs i mq cols) = getState >>= \ms ->
     let (styleAbbrevs Don'tQuote -> names, values) = unzip . mkSettingPairs i $ ms
     in multiWrapSend mq cols [ padSettingName (n <> ": ") <> v | n <- names | v <- values ] >> logPlaExecArgs "set" [] i
-setAction (Lower' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
-    bcastNl bs >> logMsgs |#| logPlaOut "set" i
+setAction (Lower i mq cols as) = helper |&| modifyState >=> \(msgs, logMsgs) ->
+    multiWrapSend mq cols msgs >> logMsgs |#| logPlaOut "set" i
   where
     helper ms = let (p, msgs, logMsgs) = foldl' (helperSettings i ms) (getPla i ms, [], []) as
-                in (ms & plaTbl.ind i .~ p, (mkBcast i . T.unlines $ msgs, logMsgs))
+                in (ms & plaTbl.ind i .~ p, (msgs, logMsgs))
 setAction p = patternMatchFail "setAction" [ showText p ]
 
 
