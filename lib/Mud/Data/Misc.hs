@@ -23,7 +23,6 @@ module Mud.Data.Misc ( Action(..)
                      , ExpCmdName
                      , ExpCmdType(..)
                      , fromRol
-                     , GenericIntermediateRes
                      , GenericRes
                      , getEntFlag
                      , GetEntsCoinsRes(..)
@@ -48,6 +47,7 @@ module Mud.Data.Misc ( Action(..)
                      , serialize
                      , setEntFlag
                      , setObjFlag
+                     , SetOp(..)
                      , setPlaFlag
                      , setRmFlag
                      , ShouldCap(..)
@@ -358,6 +358,12 @@ instance Pretty PtsType where
   pp CurMp = "cur MP"
   pp CurPp = "cur PP"
   pp CurFp = "cur FP"
+
+
+instance Pretty SetOp where
+  pp Assign    = "="
+  pp AddAssign = "+="
+  pp SubAssign = "-="
 
 
 instance Pretty StomachCont where
@@ -728,6 +734,12 @@ data RightOrLeft = R
                  | L
                  | RI | RM | RR | RP
                  | LI | LM | LR | LP deriving (Read, Show)
+
+
+-----
+
+
+data SetOp = Assign | AddAssign | SubAssign
 
 
 -----

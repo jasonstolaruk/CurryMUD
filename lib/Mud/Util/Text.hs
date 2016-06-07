@@ -5,6 +5,7 @@ module Mud.Util.Text ( aOrAn
                      , capitalize
                      , commaEvery3
                      , commas
+                     , countOcc
                      , divider
                      , dropBlanks
                      , findFullNameForAbbrev
@@ -135,6 +136,18 @@ commaEvery3 = T.reverse . T.intercalate "," . T.chunksOf 3 . T.reverse
 
 commas :: [Text] -> Text
 commas = T.intercalate ", "
+
+
+-----
+
+
+-- TODO: Write tests.
+countOcc :: Text -> Text -> Int
+countOcc needle@(T.length -> l) = helper 0
+  where
+    helper x haystack | not (needle `T.isInfixOf` haystack) = x
+                      | otherwise                           = let (_, T.drop l -> rest) = T.breakOn needle haystack
+                                                              in helper (succ x) rest
 
 
 -----

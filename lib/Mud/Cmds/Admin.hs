@@ -47,7 +47,7 @@ import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception (IOException)
 import Control.Exception.Lifted (catch, try)
-import Control.Lens (_1, _2, _3, at, both, each, to, view, views)
+import Control.Lens (_1, _2, _3, _4, at, both, each, to, view, views)
 import Control.Lens.Operators ((%~), (&), (.~), (<>~), (?~), (^.))
 import Control.Monad ((>=>), forM_, unless, when)
 import Control.Monad.IO.Class (liftIO)
@@ -1195,12 +1195,14 @@ mkSecReport SecRec { .. } = [ "Name: "     <> dbName
 adminSet :: ActionFun
 adminSet p@AdviseNoArgs                   = advise p [ prefixAdminCmd "set" ] adviceASetNoArgs
 adminSet p@(AdviseOneArg a              ) = advise p [ prefixAdminCmd "set" ] . adviceASetNoSettings $ a
-adminSet   (WithArgs i _ _ (target:rest)) = helper |&| modifyState >=> \(bs, maybeTargetId, logMsgs) -> do
-    bcastNl bs
-    let logHelper targetId = logMsgs |#| logPla (prefixAdminCmd "set") i . f . slashes
+adminSet   (WithArgs i _ _ (target:rest)) = helper |&| modifyState >=> \(toSelfBs, mTargetId, toTargetMsgs, logMsgs) -> do
+    bcastNl toSelfBs
+    let ioHelper targetId = getState >>= \ms -> do
+            unless (isIncognitoId i ms) . forM_ (dropBlanks toTargetMsgs) $ retainedMsg targetId ms . colorWith adminSetColor
+            logMsgs |#| logPla (prefixAdminCmd "set") i . f . slashes
           where
             f = (parensQuote ("for ID " <> showText targetId) <>) . (" " <>)
-    maybeVoid logHelper maybeTargetId
+    maybeVoid ioHelper mTargetId
   where
     helper ms = case reads . T.unpack $ target :: [(Int, String)] of
       [(targetId, "")] | targetId < 0                                -> sorryHelper sorryWtf
@@ -1209,64 +1211,110 @@ adminSet   (WithArgs i _ _ (target:rest)) = helper |&| modifyState >=> \(bs, may
       _                                                              -> sorry
       where
         sorry       = sorryHelper . sorryParseId $ target
-        sorryHelper = (ms, ) . (, Nothing, []) . mkBcast i
-        f targetId  = let (ms', msgs, logMsgs) = foldl' (setHelper targetId) (ms, [], []) rest
-                      in (ms', (mkBcast i . T.unlines $ msgs, Just targetId, logMsgs))
+        sorryHelper = (ms, ) . (, Nothing, [], []) . mkBcast i
+        f targetId  = let (ms', toSelfMsgs, toTargetMsgs, logMsgs) = foldl' (setHelper targetId) (ms, [], [], []) rest
+                      in (ms', (mkBcast i . T.unlines $ toSelfMsgs {- TODO: Wrapping? -}, Just targetId, toTargetMsgs, logMsgs))
 adminSet p = patternMatchFail "adminSet" [ showText p ]
 
 
-setHelper :: Id -> (MudState, [Text], [Text]) -> Text -> (MudState, [Text], [Text])
-setHelper _ a@(_, msgs, _) arg@(T.length . T.filter (== '=') -> noOfEqs)
-  | or [ noOfEqs /= 1, T.head arg == '=', T.last arg == '=' ] =
-      let msg    = sorryParseArg arg
-          f      = any (adviceASetInvalid `T.isInfixOf`) msgs ?  (++ pure msg)
-                                                              :? (++ [ msg <> adviceASetInvalid ])
-      in a & _2 %~ f
-setHelper targetId a@(ms, _, _) (T.breakOn "=" -> (T.toLower -> key, T.tail -> value)) =
-    findFullNameForAbbrev key keyNames |&| maybe notFound found
+setHelper :: Id -> (MudState, [Text], [Text], [Text]) -> Text -> (MudState, [Text], [Text], [Text])
+setHelper targetId a@(ms, toSelfMsgs, _, _) arg = if
+  | "+=" `T.isInfixOf` arg -> breakHelper AddAssign
+  | "-=" `T.isInfixOf` arg -> breakHelper SubAssign
+  | "="  `T.isInfixOf` arg -> breakHelper Assign
+  | otherwise              -> sorry
   where
-    keyNames    = [ "st" -- These need not be in alphabetical order.
-                  , "dx"
-                  , "ht"
-                  , "ma"
-                  , "ps"
-                  , "curhp"
-                  , "curmp"
-                  , "curpp"
-                  , "curfp" ]
-    notFound    = appendMsg . sorryAdminSetKey $ key
-    appendMsg m = a & _2 <>~ pure m
-    found       = let t = getType targetId ms
-                  in \case "st"    -> setAttribHelper t "ST" st
-                           "dx"    -> setAttribHelper t "DX" dx
-                           "ht"    -> setAttribHelper t "HT" ht
-                           "ma"    -> setAttribHelper t "MA" ma
-                           "ps"    -> setAttribHelper t "PS" ps
-                           "curhp" -> setCurHelper t "curHp" getHps curHp
-                           "curmp" -> setCurHelper t "curMp" getMps curMp
-                           "curpp" -> setCurHelper t "curPp" getPps curPp
-                           "curfp" -> setCurHelper t "curFp" getFps curFp
-                           x       -> patternMatchFail "setHelper found" [x]
-    setAttribHelper t n l | t `notElem` [ NpcType, PCType ] = sorryType
-                          | otherwise                       = procEither $ \x -> let x'  = 1 `max` x
-                                                                                     msg = mkMsg n x'
-                                                                                 in a & _1.mobTbl.ind targetId.l .~ x'
-                                                                                      & _2 <>~ pure msg
-                                                                                      & _3 <>~ pure msg
-    setCurHelper t n f l  | t `notElem` [ NpcType, PCType ] = sorryType
-                          | otherwise                       = procEither $ \x -> let (_, m) = f targetId ms
-                                                                                     x'     = x `min` m
-                                                                                     msg    = mkMsg n x'
-                                                                                 in a & _1.mobTbl.ind targetId.l .~ x'
-                                                                                      & _2 <>~ pure msg
-                                                                                      & _3 <>~ pure msg
-    sorryType    = appendMsg sorryAdminSetType
-    mkMsg k v    = T.concat [ "Set ", dblQuote k, " to ", showText v, "." ]
-    procEither f = parseInt |&| either appendMsg f
-    parseInt     = case (reads . T.unpack $ value :: [(Int, String)]) of [(x, "")] -> Right x
-                                                                         _         -> sorryParse
+    breakHelper op = case T.breakOn (pp op) arg of ("", _) -> sorry
+                                                   (_, "") -> sorry
+                                                   pair    | l <- T.length . pp $ op
+                                                           -> helper op . second (T.drop l) $ pair
+    sorry = let msg = sorryParseArg arg
+                f   = any (adviceASetInvalid `T.isInfixOf`) toSelfMsgs ?  (++ pure msg)
+                                                                       :? (++ [ msg <> adviceASetInvalid ])
+            in a & _2 %~ f
+    helper op (T.toLower -> key, value) = findFullNameForAbbrev key keyNames |&| maybe notFound found
       where
-        sorryParse = Left . sorryParseSetting value $ key
+        keyNames    = [ "st" -- These need not be in alphabetical order.
+                      , "dx"
+                      , "ht"
+                      , "ma"
+                      , "ps"
+                      , "curhp"
+                      , "curmp"
+                      , "curpp"
+                      , "curfp" ]
+        notFound    = appendMsg . sorryAdminSetKey $ key
+        appendMsg m = a & _2 <>~ pure m
+        found       = let t = getType targetId ms
+                      in \case "st"    -> setAttribHelper t "ST" st st
+                               "dx"    -> setAttribHelper t "DX" dx dx
+                               "ht"    -> setAttribHelper t "HT" ht ht
+                               "ma"    -> setAttribHelper t "MA" ma ma
+                               "ps"    -> setAttribHelper t "PS" ps ps
+                               "curhp" -> setCurHelper    t "HP" getHps curHp
+                               "curmp" -> setCurHelper    t "MP" getMps curMp
+                               "curpp" -> setCurHelper    t "PP" getPps curPp
+                               "curfp" -> setCurHelper    t "FP" getFps curFp
+                               x       -> patternMatchFail "setHelper found" [x]
+        setAttribHelper t k getter setter
+          | t `notElem` [ NpcType, PCType ] = sorryType
+          | otherwise = procEither $ \x ->
+              let attrib               = view (_1.mobTbl.ind targetId.getter) a
+                  addSubAssignHelper f = let attrib' = 1 `max` (attrib `f` x)
+                                             diff    = attrib' - attrib
+                                             toSelf  = mkToSelfMsg k attrib' diff
+                                         in a & _1.mobTbl.ind targetId.setter .~ attrib'
+                                              & _2 <>~ pure toSelf
+                                              & _3 <>~ pure (mkToTargetMsg diff)
+                                              & _4 <>~ pure toSelf
+              in case op of Assign    -> let x'     = 1 `max` x
+                                             diff   = x' - attrib
+                                             toSelf = mkToSelfMsg k x' diff
+                                         in a & _1.mobTbl.ind targetId.setter .~ x'
+                                              & _2 <>~ pure toSelf
+                                              & _3 <>~ pure (mkToTargetMsg diff)
+                                              & _4 <>~ pure toSelf
+                            AddAssign -> addSubAssignHelper (+)
+                            SubAssign -> addSubAssignHelper (-)
+          where
+            mkToTargetMsg diff | diff == 0 = ""
+                               | diff >  0 = T.concat [ "You have gained ", showText diff,       " ", k, "." ]
+                               | otherwise = T.concat [ "You have lost ",   showText (abs diff), " ", k, "." ]
+        setCurHelper t n f l
+          | t `notElem` [ NpcType, PCType ] = sorryType
+          | otherwise = procEither $ \x ->
+              let (c, m)               = f targetId ms
+                  addSubAssignHelper g = let c'     = (c `g` x) `min` m
+                                             diff   = c' - c
+                                             toSelf = mkToSelfMsg n c' diff
+                                         in a & _1.mobTbl.ind targetId.l .~ c'
+                                              & _2 <>~ pure toSelf
+                                              & _3 <>~ pure (mkToTargetMsg diff)
+                                              & _4 <>~ pure toSelf
+              in case op of Assign    -> let x'     = x `min` m
+                                             diff   = x' - c
+                                             toSelf = mkToSelfMsg n x' diff
+                                         in a & _1.mobTbl.ind targetId.l .~ x'
+                                              & _2 <>~ pure toSelf
+                                              & _3 <>~ pure (mkToTargetMsg diff)
+                                              & _4 <>~ pure toSelf
+                            AddAssign -> addSubAssignHelper (+)
+                            SubAssign -> addSubAssignHelper (-)
+          where
+            mkToTargetMsg diff | diff == 0 = ""
+                               | diff >  0 = T.concat [ "You have recovered ", showText diff,       " ", n, "." ]
+                               | otherwise = T.concat [ "You have lost ",      showText (abs diff), " ", n, "." ]
+        sorryType    = appendMsg sorryAdminSetType
+        procEither f = parseInt |&| either appendMsg f
+        parseInt     = case (reads . T.unpack $ value :: [(Int, String)]) of [(x, "")] -> Right x
+                                                                             _         -> sorryParse
+          where
+            sorryParse = Left . sorryParseSetting value $ key
+        mkToSelfMsg k v diff = T.concat [ "Set ", k, " to ", showText v, " ", parensQuote diffTxt, "." ]
+          where
+            diffTxt = if | diff == 0 -> "no change"
+                         | diff >  0 -> "added "      <> showText diff
+                         | otherwise -> "subtracted " <> showText (abs diff)
 
 
 -----
