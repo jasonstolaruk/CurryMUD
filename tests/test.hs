@@ -44,7 +44,7 @@ propertyTests = testGroup "property tests" [ propTests_Mud_Data_State_Util_Misc
 
 
 propTests_Mud_Data_State_Util_Misc :: TestTree
-propTests_Mud_Data_State_Util_Misc = testGroup "property tests Mud.Data.State.Util.Misc"
+propTests_Mud_Data_State_Util_Misc = testGroup "Mud.Data.State.Util.Misc"
     [ QC.testProperty "prop_getUnusedId" prop_getUnusedId ]
 
 
@@ -52,7 +52,7 @@ propTests_Mud_Data_State_Util_Misc = testGroup "property tests Mud.Data.State.Ut
 
 
 propTests_Mud_Data_State_Util_Random :: TestTree
-propTests_Mud_Data_State_Util_Random = testGroup "property tests Mud.Data.State.Util.Random"
+propTests_Mud_Data_State_Util_Random = testGroup "Mud.Data.State.Util.Random"
     [ QC.testProperty "prop_rndmIntToRange_within_range_from_zero"  prop_rndmIntToRange_within_range_from_zero
     , QC.testProperty "prop_rndmIntToRange_within_range_from_other" prop_rndmIntToRange_within_range_from_zero
     , QC.testProperty "prop_rndmIntToRange_distribution"            prop_rndmIntToRange_distribution
@@ -66,7 +66,7 @@ propTests_Mud_Data_State_Util_Random = testGroup "property tests Mud.Data.State.
 
 
 propTests_Mud_TheWorld_TheWorld :: TestTree
-propTests_Mud_TheWorld_TheWorld = testGroup "property tests Mud.TheWorld.TheWorld"
+propTests_Mud_TheWorld_TheWorld = testGroup "Mud.TheWorld.TheWorld"
     [ QC.testProperty "prop_noDupIds" prop_noDupIds ]
 
 
@@ -74,7 +74,7 @@ propTests_Mud_TheWorld_TheWorld = testGroup "property tests Mud.TheWorld.TheWorl
 
 
 propTests_Mud_Util_List :: TestTree
-propTests_Mud_Util_List = testGroup "property tests Mud.Util.List"
+propTests_Mud_Util_List = testGroup "Mud.Util.List"
     [ QC.testProperty "prop_countOcc"    prop_countOcc
     , QC.testProperty "prop_mkCountList" prop_mkCountList ]
 
@@ -83,7 +83,7 @@ propTests_Mud_Util_List = testGroup "property tests Mud.Util.List"
 
 
 propTests_Mud_Util_Padding :: TestTree
-propTests_Mud_Util_Padding = testGroup "property tests Mud.Util.Padding"
+propTests_Mud_Util_Padding = testGroup "Mud.Util.Padding"
     [ QC.testProperty "prop_quoteWithAndPad_length" prop_quoteWithAndPad_length
     , QC.testProperty "prop_quoteWithAndPad_quotes" prop_quoteWithAndPad_quotes
     , QC.testProperty "prop_padOrTrunc_pads"        prop_padOrTrunc_pads
@@ -94,7 +94,7 @@ propTests_Mud_Util_Padding = testGroup "property tests Mud.Util.Padding"
 
 
 propTests_Mud_Util_Text :: TestTree
-propTests_Mud_Util_Text = testGroup "property tests Mud.Util.Text"
+propTests_Mud_Util_Text = testGroup "Mud.Util.Text"
     [ QC.testProperty "prop_aOrAn"                              prop_aOrAn
     , QC.testProperty "prop_findFullNameForAbbrev_findsNothing" prop_findFullNameForAbbrev_findsNothing
     , QC.testProperty "prop_findFullNameForAbbrev_findsMatch"   prop_findFullNameForAbbrev_findsMatch ]
@@ -104,7 +104,7 @@ propTests_Mud_Util_Text = testGroup "property tests Mud.Util.Text"
 
 
 propTests_Mud_Util_Wrapping :: TestTree
-propTests_Mud_Util_Wrapping = testGroup "property tests Mud.Util.Wrapping"
+propTests_Mud_Util_Wrapping = testGroup "Mud.Util.Wrapping"
     [ QC.testProperty "prop_wrap"                  prop_wrap
     , QC.testProperty "prop_wrapIndent_wraps"      prop_wrapIndent_wraps
     , QC.testProperty "prop_wrapIndent_indents"    prop_wrapIndent_indents
@@ -127,7 +127,7 @@ unitTests = testGroup "unit tests" [ unitTests_Mud_Data_Misc
 
 
 unitTests_Mud_Data_Misc :: TestTree
-unitTests_Mud_Data_Misc = testGroup "unit tests Mud.Data.Misc"
+unitTests_Mud_Data_Misc = testGroup "Mud.Data.Misc"
     [ testCase "serializeStdDesig"      test_serializeStdDesig
     , testCase "serializeNonStdDesig"   test_serializeNonStdDesig
     , testCase "deserializeStdDesig"    test_deserializeStdDesig
@@ -138,7 +138,7 @@ unitTests_Mud_Data_Misc = testGroup "unit tests Mud.Data.Misc"
 
 
 unitTests_Mud_Data_State_Util_Misc :: TestTree
-unitTests_Mud_Data_State_Util_Misc = testGroup "unit tests Mud.Data.State.Util.Misc"
+unitTests_Mud_Data_State_Util_Misc = testGroup "Mud.Data.State.Util.Misc"
     [ testCase "dropPrefixesForHook_no_prefixes"  test_dropPrefixesForHooks_no_prefixes
     , testCase "dropPrefixesForHook_no_matches"   test_dropPrefixesForHooks_no_matches
     , testCase "dropPrefixesForHook_with_matches" test_dropPrefixesForHooks_with_matches
@@ -149,7 +149,7 @@ unitTests_Mud_Data_State_Util_Misc = testGroup "unit tests Mud.Data.State.Util.M
 
 
 unitTests_Mud_Util_Misc :: TestTree
-unitTests_Mud_Util_Misc = testGroup "unit tests Mud.Util.Misc"
+unitTests_Mud_Util_Misc = testGroup "Mud.Util.Misc"
     [ testCase "mWhen_IO_True"    test_mWhen_IO_True
     , testCase "mWhen_IO_False"   test_mWhen_IO_False
     , testCase "mUnless_IO_True"  test_mUnless_IO_True
@@ -160,7 +160,7 @@ unitTests_Mud_Util_Misc = testGroup "unit tests Mud.Util.Misc"
 
 
 unitTests_Mud_Util_Text :: TestTree
-unitTests_Mud_Util_Text = testGroup "unit tests Mud.Util.Text"
+unitTests_Mud_Util_Text = testGroup "Mud.Util.Text"
     [ testCase "countOcc_emptyNeedle"           test_countOcc_emptyNeedle
     , testCase "countOcc_emptyHaystack"         test_countOcc_emptyHaystack
     , testCase "countOcc_zero"                  test_countOcc_zero
