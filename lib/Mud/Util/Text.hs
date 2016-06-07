@@ -141,10 +141,11 @@ commas = T.intercalate ", "
 -----
 
 
--- TODO: Write tests.
 countOcc :: Text -> Text -> Int
+countOcc ""                     = const  0
 countOcc needle@(T.length -> l) = helper 0
   where
+    helper 0 ""                                             = 0
     helper x haystack | not (needle `T.isInfixOf` haystack) = x
                       | otherwise                           = let (_, T.drop l -> rest) = T.breakOn needle haystack
                                                               in helper (succ x) rest

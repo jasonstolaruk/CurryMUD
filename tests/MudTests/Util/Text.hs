@@ -3,7 +3,7 @@
 module MudTests.Util.Text where
 
 import Mud.TopLvlDefs.Telnet
-import Mud.Util.List
+import Mud.Util.List hiding (countOcc)
 import Mud.Util.Misc
 import Mud.Util.Operators
 import Mud.Util.Quoting
@@ -48,8 +48,46 @@ prop_findFullNameForAbbrev_findsMatch (NonEmpty (T.pack -> needle)) hay = any ((
 -- ==================================================
 
 
-telnetCodes :: Text
-telnetCodes = T.pack . map chr $ [ 255, 252, 3, 255, 250, 201, 67, 111, 114, 101, 46, 83, 117, 112, 112, 111, 114, 116, 115, 46, 83, 101, 116, 32, 91, 93, 255, 240 ]
+test_countOcc_emptyNeedle :: Assertion
+test_countOcc_emptyNeedle = actual @?= expected
+  where
+    actual   = "" `countOcc` "abc123def123ghi123"
+    expected = 0
+
+
+test_countOcc_emptyHaystack :: Assertion
+test_countOcc_emptyHaystack = actual @?= expected
+  where
+    actual   = "123" `countOcc` ""
+    expected = 0
+
+
+test_countOcc_zero :: Assertion
+test_countOcc_zero = actual @?= expected
+  where
+    actual   = "123" `countOcc` "abcdefghi"
+    expected = 0
+
+
+test_countOcc_one :: Assertion
+test_countOcc_one = actual @?= expected
+  where
+    actual   = "123" `countOcc` "abc123defghi"
+    expected = 1
+
+
+test_countOcc_two :: Assertion
+test_countOcc_two = actual @?= expected
+  where
+    actual   = "123" `countOcc` "123def123ghi"
+    expected = 2
+
+
+test_countOcc_three :: Assertion
+test_countOcc_three = actual @?= expected
+  where
+    actual   = "123" `countOcc` "abc123def123ghi123"
+    expected = 3
 
 
 test_stripControl :: Assertion
@@ -72,6 +110,10 @@ test_stripTelnet_telnetCodes = actual @?= expected
   where
     actual   = stripTelnet telnetCodes
     expected = ""
+
+
+telnetCodes :: Text
+telnetCodes = T.pack . map chr $ [ 255, 252, 3, 255, 250, 201, 67, 111, 114, 101, 46, 83, 117, 112, 112, 111, 114, 116, 115, 46, 83, 101, 116, 32, 91, 93, 255, 240 ]
 
 
 test_stripTelnet_leading :: Assertion

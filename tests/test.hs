@@ -161,7 +161,13 @@ unitTests_Mud_Util_Misc = testGroup "unit tests Mud.Util.Misc"
 
 unitTests_Mud_Util_Text :: TestTree
 unitTests_Mud_Util_Text = testGroup "unit tests Mud.Util.Text"
-    [ testCase "stripControl"                   test_stripControl
+    [ testCase "countOcc_emptyNeedle"           test_countOcc_emptyNeedle
+    , testCase "countOcc_emptyHaystack"         test_countOcc_emptyHaystack
+    , testCase "countOcc_zero"                  test_countOcc_zero
+    , testCase "countOcc_one"                   test_countOcc_one
+    , testCase "countOcc_two"                   test_countOcc_two
+    , testCase "countOcc_three"                 test_countOcc_three
+    , testCase "stripControl"                   test_stripControl
     , testCase "stripTelnet_null"               test_stripTelnet_null
     , testCase "stripTelnet_telnetCodes"        test_stripTelnet_telnetCodes
     , testCase "stripTelnet_leading"            test_stripTelnet_leading
