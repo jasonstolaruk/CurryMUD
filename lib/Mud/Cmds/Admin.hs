@@ -53,6 +53,7 @@ import Control.Monad ((>=>), forM_, unless, when)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (asks)
 import Crypto.BCrypt (validatePassword)
+import Data.Aeson (eitherDecode)
 import Data.Bits (zeroBits)
 import Data.Char (isDigit, isLower, isUpper)
 import Data.Either (rights)
@@ -62,6 +63,7 @@ import Data.List ((\\), delete, foldl', intercalate, intersperse, partition, sor
 import Data.Maybe (fromJust, fromMaybe, isJust)
 import Data.Monoid ((<>), Any(..), Sum(..), getSum)
 import Data.Text (Text)
+import Data.Text.Lazy.Encoding
 import Data.Time (FormatTime, TimeZone, UTCTime, defaultTimeLocale, diffUTCTime, formatTime, getCurrentTime, getCurrentTimeZone, getZonedTime, utcToLocalTime)
 import GHC.Conc (ThreadStatus(..), threadStatus)
 import GHC.Exts (sortWith)
@@ -71,6 +73,7 @@ import qualified Data.Map.Lazy as M (foldl, foldrWithKey, keys, size, toList)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import qualified Data.Text.IO as T (putStrLn)
+import qualified Data.Text.Lazy as LT
 import System.Directory (getDirectoryContents)
 import System.Process (readProcess)
 import System.Time.Utils (renderSecs)
@@ -1238,7 +1241,8 @@ setHelper targetId a@(ms, toSelfMsgs, _, _) arg = if
             in a & _2 %~ f
     helper op (T.toLower -> key, value) = findFullNameForAbbrev key keyNames |&| maybe notFound found
       where
-        keyNames    = [ "st" -- These need not be in alphabetical order.
+        keyNames    = [ "sex" -- These need not be in alphabetical order.
+                      , "st"
                       , "dx"
                       , "ht"
                       , "ma"
@@ -1250,7 +1254,8 @@ setHelper targetId a@(ms, toSelfMsgs, _, _) arg = if
         notFound    = appendMsg . sorryAdminSetKey $ key
         appendMsg m = a & _2 <>~ pure m
         found       = let t = getType targetId ms
-                      in \case "st"    -> setAttribHelper t "ST" st st
+                      in \case "sex"   -> setSexHelper    t
+                               "st"    -> setAttribHelper t "ST" st st
                                "dx"    -> setAttribHelper t "DX" dx dx
                                "ht"    -> setAttribHelper t "HT" ht ht
                                "ma"    -> setAttribHelper t "MA" ma ma
@@ -1260,9 +1265,22 @@ setHelper targetId a@(ms, toSelfMsgs, _, _) arg = if
                                "curpp" -> setCurHelper    t "PP" getPps curPp
                                "curfp" -> setCurHelper    t "FP" getFps curFp
                                x       -> patternMatchFail "setHelper found" [x]
+        setSexHelper t
+          | t `notElem` [ NpcType, PCType ] = sorryType
+          | otherwise = case eitherDecode . encodeUtf8 . LT.fromStrict . dblQuote $ value of
+            Left _     -> appendMsg . sorryAdminSetValue "sex" $ value
+            Right sexy -> case op of
+              Assign -> let toSelf  = T.concat [ "Set sex to ", pp sexy, diffTxt, "." ]
+                            prevSex = getSex targetId ms
+                            diffTxt = sexy == prevSex |?| (" " <> parensQuote "no change")
+                        in a & _1.mobTbl.ind targetId.sex .~ sexy
+                             & _2 <>~ pure toSelf
+                             & _3 <>~ pure (diffTxt |!| ("Your sex has changed to " <> pp sexy <> "."))
+                             & _4 <>~ pure toSelf
+              _      -> sorryOp "sex"
         setAttribHelper t k getter setter
           | t `notElem` [ NpcType, PCType ] = sorryType
-          | otherwise = procEither $ \x ->
+          | otherwise = procEither k $ \x ->
               let attrib               = view (_1.mobTbl.ind targetId.getter) a
                   addSubAssignHelper f = let attrib' = 1 `max` (attrib `f` x)
                                              diff    = attrib' - attrib
@@ -1286,7 +1304,7 @@ setHelper targetId a@(ms, toSelfMsgs, _, _) arg = if
                                | otherwise = T.concat [ "You have lost ",   showText (abs diff), " ", k, "." ]
         setCurHelper t n f l
           | t `notElem` [ NpcType, PCType ] = sorryType
-          | otherwise = procEither $ \x ->
+          | otherwise = procEither n $ \x ->
               let (c, m)               = f targetId ms
                   addSubAssignHelper g = let c'     = (c `g` x) `min` m
                                              diff   = c' - c
@@ -1308,12 +1326,13 @@ setHelper targetId a@(ms, toSelfMsgs, _, _) arg = if
             mkToTargetMsg diff | diff == 0 = ""
                                | diff >  0 = T.concat [ "You have recovered ", showText diff,       " ", n, "." ]
                                | otherwise = T.concat [ "You have lost ",      showText (abs diff), " ", n, "." ]
-        sorryType    = appendMsg sorryAdminSetType
-        procEither f = parseInt |&| either appendMsg f
-        parseInt     = case (reads . T.unpack $ value :: [(Int, String)]) of [(x, "")] -> Right x
-                                                                             _         -> sorryParse
+        sorryType      = appendMsg sorryAdminSetType
+        sorryOp        = appendMsg . sorryAdminSetOp (pp op)
+        procEither k f = parseInt |&| either appendMsg f
           where
-            sorryParse = Left . sorryParseSetting value $ key
+            parseInt   = case (reads . T.unpack $ value :: [(Int, String)]) of [(x, "")] -> Right x
+                                                                               _         -> sorryParse
+            sorryParse = Left . sorryAdminSetValue k $ value
         mkToSelfMsg k v diff = T.concat [ "Set ", k, " to ", showText v, " ", parensQuote diffTxt, "." ]
           where
             diffTxt = if | diff == 0 -> "no change"

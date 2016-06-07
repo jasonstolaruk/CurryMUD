@@ -6,7 +6,9 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryAdminPasswordAdmin
                            , sorryAdminPasswordSelf
                            , sorryAdminSetKey
+                           , sorryAdminSetOp
                            , sorryAdminSetType
+                           , sorryAdminSetValue
                            , sorryAlreadyPossessed
                            , sorryAlreadyPossessing
                            , sorryAsAdmin
@@ -339,8 +341,16 @@ sorryAdminSetKey :: Text -> Text
 sorryAdminSetKey k = dblQuote k <> " is not a valid key."
 
 
+sorryAdminSetOp :: Text -> Text -> Text
+sorryAdminSetOp opTxt k = T.concat [ "The ", dblQuote opTxt, " operator cannot be used with the ", dblQuote k, " key." ]
+
+
 sorryAdminSetType :: Text
 sorryAdminSetType = "Incorrect type."
+
+
+sorryAdminSetValue :: Text -> Text -> Text
+sorryAdminSetValue k v = T.concat [ dblQuote v, " is not a valid value for the ", dblQuote k, " key." ]
 
 
 -----
