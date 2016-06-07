@@ -1193,15 +1193,19 @@ mkSecReport SecRec { .. } = [ "Name: "     <> dbName
 
 -- TODO: Help.
 adminSet :: ActionFun
-adminSet p@AdviseNoArgs                   = advise p [ prefixAdminCmd "set" ] adviceASetNoArgs
-adminSet p@(AdviseOneArg a              ) = advise p [ prefixAdminCmd "set" ] . adviceASetNoSettings $ a
-adminSet   (WithArgs i _ _ (target:rest)) = helper |&| modifyState >=> \(toSelfBs, mTargetId, toTargetMsgs, logMsgs) -> do
-    bcastNl toSelfBs
+adminSet p@AdviseNoArgs                       = advise p [ prefixAdminCmd "set" ] adviceASetNoArgs
+adminSet p@(AdviseOneArg a                  ) = advise p [ prefixAdminCmd "set" ] . adviceASetNoSettings $ a
+adminSet   (WithArgs i mq cols (target:rest)) = helper |&| modifyState >=> \(toSelfMsgs, mTargetId, toTargetMsgs, logMsgs) -> do
+    multiWrapSend mq cols toSelfMsgs
     let ioHelper targetId = getState >>= \ms -> do
-            unless (isIncognitoId i ms) . forM_ (dropBlanks toTargetMsgs) $ retainedMsg targetId ms . colorWith adminSetColor
-            logMsgs |#| logPla (prefixAdminCmd "set") i . f . slashes
+            let f = case getType targetId ms of
+                      PCType  -> retainedMsg targetId ms
+                      NpcType -> bcast . mkBcast targetId
+                      t       -> patternMatchFail "adminSet" [ showText t ]
+            unless (isIncognitoId i ms) . forM_ (dropBlanks toTargetMsgs) $ f . colorWith adminSetColor
+            logMsgs |#| logPla (prefixAdminCmd "set") i . g . slashes
           where
-            f = (parensQuote ("for ID " <> showText targetId) <>) . (" " <>)
+            g = (parensQuote ("for ID " <> showText targetId) <>) . (" " <>)
     maybeVoid ioHelper mTargetId
   where
     helper ms = case reads . T.unpack $ target :: [(Int, String)] of
@@ -1211,9 +1215,9 @@ adminSet   (WithArgs i _ _ (target:rest)) = helper |&| modifyState >=> \(toSelfB
       _                                                              -> sorry
       where
         sorry       = sorryHelper . sorryParseId $ target
-        sorryHelper = (ms, ) . (, Nothing, [], []) . mkBcast i
+        sorryHelper = (ms, ) . (, Nothing, [], []) . pure
         f targetId  = let (ms', toSelfMsgs, toTargetMsgs, logMsgs) = foldl' (setHelper targetId) (ms, [], [], []) rest
-                      in (ms', (mkBcast i . T.unlines $ toSelfMsgs {- TODO: Wrapping? -}, Just targetId, toTargetMsgs, logMsgs))
+                      in (ms', (toSelfMsgs, Just targetId, toTargetMsgs, logMsgs))
 adminSet p = patternMatchFail "adminSet" [ showText p ]
 
 
