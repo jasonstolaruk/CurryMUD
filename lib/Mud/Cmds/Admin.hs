@@ -17,6 +17,7 @@ import Mud.Cmds.Util.EmoteExp.TwoWayEmoteExp
 import Mud.Cmds.Util.Misc
 import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
+import Mud.Data.State.Hierarchy
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Calc
@@ -63,7 +64,6 @@ import Data.List ((\\), delete, foldl', intercalate, intersperse, partition, sor
 import Data.Maybe (fromJust, fromMaybe, isJust)
 import Data.Monoid ((<>), Any(..), Sum(..), getSum)
 import Data.Text (Text)
-import Data.Text.Lazy.Encoding
 import Data.Time (FormatTime, TimeZone, UTCTime, defaultTimeLocale, diffUTCTime, formatTime, getCurrentTime, getCurrentTimeZone, getZonedTime, utcToLocalTime)
 import GHC.Conc (ThreadStatus(..), threadStatus)
 import GHC.Exts (sortWith)
@@ -73,7 +73,6 @@ import qualified Data.Map.Lazy as M (foldl, foldrWithKey, keys, size, toList)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import qualified Data.Text.IO as T (putStrLn)
-import qualified Data.Text.Lazy as LT
 import System.Directory (getDirectoryContents)
 import System.Process (readProcess)
 import System.Time.Utils (renderSecs)
@@ -1243,7 +1242,8 @@ setHelper targetId a@(ms, toSelfMsgs, _, _) arg = if
             in a & _2 %~ f
     helper op (T.toLower -> key, value) = findFullNameForAbbrev key keyNames |&| maybe notFound found
       where
-        keyNames    = [ "sex" -- These need not be in alphabetical order.
+        keyNames    = [ "entdesc" -- These need not be in alphabetical order.
+                      , "sex"
                       , "st"
                       , "dx"
                       , "ht"
@@ -1256,20 +1256,33 @@ setHelper targetId a@(ms, toSelfMsgs, _, _) arg = if
         notFound    = appendMsg . sorryAdminSetKey $ key
         appendMsg m = a & _2 <>~ pure m
         found       = let t = getType targetId ms
-                      in \case "sex"   -> setSexHelper    t
-                               "st"    -> setAttribHelper t "ST" st st
-                               "dx"    -> setAttribHelper t "DX" dx dx
-                               "ht"    -> setAttribHelper t "HT" ht ht
-                               "ma"    -> setAttribHelper t "MA" ma ma
-                               "ps"    -> setAttribHelper t "PS" ps ps
-                               "curhp" -> setCurHelper    t "HP" getHps curHp
-                               "curmp" -> setCurHelper    t "MP" getMps curMp
-                               "curpp" -> setCurHelper    t "PP" getPps curPp
-                               "curfp" -> setCurHelper    t "FP" getFps curFp
-                               x       -> patternMatchFail "setHelper found" [x]
+                      in \case "entdesc" -> setEntDescHelper t
+                               "sex"     -> setSexHelper     t
+                               "st"      -> setAttribHelper  t "ST" st st
+                               "dx"      -> setAttribHelper  t "DX" dx dx
+                               "ht"      -> setAttribHelper  t "HT" ht ht
+                               "ma"      -> setAttribHelper  t "MA" ma ma
+                               "ps"      -> setAttribHelper  t "PS" ps ps
+                               "curhp"   -> setCurHelper     t "HP" getHps curHp
+                               "curmp"   -> setCurHelper     t "MP" getMps curMp
+                               "curpp"   -> setCurHelper     t "PP" getPps curPp
+                               "curfp"   -> setCurHelper     t "FP" getFps curFp
+                               x         -> patternMatchFail "setHelper found" [x]
+        setEntDescHelper t
+          | not . hasEnt $ t = sorryType
+          | otherwise        = case eitherDecode . strictTextToLazyBS $ value of
+            Left _     -> appendMsg . sorryAdminSetValue "entDesc" $ value
+            Right desc -> case op of
+              Assign -> let toSelf   = "Set entity description to: " <> desc
+                            toTarget = isNpcPC targetId ms |?| pure ("Your description has been set to: " <> desc)
+                        in a & _1.entTbl.ind targetId.entDesc .~ desc
+                             & _2 <>~ pure toSelf
+                             & _3 <>~ toTarget
+                             & _4 <>~ pure toSelf
+              _      -> sorryOp "entDesc"
         setSexHelper t
-          | t `notElem` [ NpcType, PCType ] = sorryType
-          | otherwise = case eitherDecode . encodeUtf8 . LT.fromStrict $ value of
+          | not . hasMob $ t = sorryType
+          | otherwise        = case eitherDecode . strictTextToLazyBS $ value of
             Left _     -> appendMsg . sorryAdminSetValue "sex" $ value
             Right sexy -> case op of
               Assign -> let toSelf  = T.concat [ "Set sex to ", pp sexy, diffTxt, "." ]
@@ -1281,8 +1294,8 @@ setHelper targetId a@(ms, toSelfMsgs, _, _) arg = if
                              & _4 <>~ pure toSelf
               _      -> sorryOp "sex"
         setAttribHelper t k getter setter
-          | t `notElem` [ NpcType, PCType ] = sorryType
-          | otherwise = procEither k $ \x ->
+          | not . hasMob $ t = sorryType
+          | otherwise        = procEither k $ \x ->
               let attrib               = view (_1.mobTbl.ind targetId.getter) a
                   addSubAssignHelper f = let attrib' = 1 `max` (attrib `f` x)
                                              diff    = attrib' - attrib
@@ -1305,8 +1318,8 @@ setHelper targetId a@(ms, toSelfMsgs, _, _) arg = if
                                | diff >  0 = T.concat [ "You have gained ", showText diff,       " ", k, "." ]
                                | otherwise = T.concat [ "You have lost ",   showText (abs diff), " ", k, "." ]
         setCurHelper t n f l
-          | t `notElem` [ NpcType, PCType ] = sorryType
-          | otherwise = procEither n $ \x ->
+          | not . hasMob $ t = sorryType
+          | otherwise        = procEither n $ \x ->
               let (c, m)               = f targetId ms
                   addSubAssignHelper g = let c'     = (c `g` x) `min` m
                                              diff   = c' - c

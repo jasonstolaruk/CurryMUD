@@ -27,7 +27,6 @@ module Mud.Data.State.Util.Misc ( addToInv
                                 , getRmActionFun
                                 , getState
                                 , getUnusedId
-                                , hasObj
                                 , isKnownLang
                                 , isLoggedIn
                                 , isNpc
@@ -305,13 +304,6 @@ onEnv = (ask >>=)
 
 getUnusedId :: MudState -> Id
 getUnusedId = views typeTbl (head . ([0..] \\) . IM.keys)
-
-
------
-
-
-hasObj :: Id -> MudState -> Bool
-hasObj i ms = getType i ms `elem` [ ArmType, ClothType, ConType, FoodType, ObjType, VesselType, WpnType, WritableType ]
 
 
 -----

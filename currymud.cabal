@@ -52,6 +52,7 @@ library
                        Mud.Data.Misc
                        Mud.Data.State.ActionParams.ActionParams
                        Mud.Data.State.ActionParams.Misc
+                       Mud.Data.State.Hierarchy
                        Mud.Data.State.MsgQueue
                        Mud.Data.State.MudData
                        Mud.Data.State.Util.Calc

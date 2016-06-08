@@ -30,6 +30,7 @@ module Mud.Util.Text ( aOrAn
                      , slashes
                      , spaces
                      , spcsToFiller
+                     , strictTextToLazyBS
                      , stripControl
                      , stripTelnet
                      , the
@@ -53,7 +54,10 @@ import Data.Ix (inRange)
 import Data.List (intercalate, sortBy)
 import Data.Monoid ((<>))
 import Data.Text (Text)
+import qualified Data.ByteString.Lazy as B
 import qualified Data.Text as T
+import qualified Data.Text.Lazy as LT
+import qualified Data.Text.Lazy.Encoding as LT
 
 
 blowUp :: Text -> Text -> [Text] -> a
@@ -295,6 +299,13 @@ slashes = T.intercalate " / "
 
 spaces :: [Text] -> Text
 spaces = T.intercalate " "
+
+
+-----
+
+
+strictTextToLazyBS :: Text -> B.ByteString
+strictTextToLazyBS = LT.encodeUtf8 . LT.fromStrict
 
 
 -----

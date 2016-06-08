@@ -2,6 +2,7 @@
 
 module Mud.Data.State.Util.Destroy where
 
+import Mud.Data.State.Hierarchy
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
@@ -18,7 +19,7 @@ destroy :: Inv -> MudStack ()
 destroy is = stopBiodegraders >> destroyHelper is
   where
     stopBiodegraders = getState >>= \ms -> let f i = maybeVoid throwDeath . getBiodegraderAsync i $ ms
-                                           in mapM_ f . filter (`hasObj` ms) $ is
+                                           in mapM_ f . filter (`hasObjId` ms) $ is
 
 
 destroyHelper :: Inv -> MudStack ()
