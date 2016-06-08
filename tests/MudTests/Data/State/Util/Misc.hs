@@ -75,3 +75,49 @@ test_dropPrefixesForHooks_abbrev = actual @?= expected
     actual   = dropPrefixesForHooks [ getFlowerHook, lookFlowerbedHook ] args
     expected = [ attachPrefix "" allChar "flowe"
                , "flower" ]
+
+
+test_procQuoteChars_null :: Assertion
+test_procQuoteChars_null = actual @?= expected
+  where
+    actual   = procQuoteChars []
+    expected = Just []
+
+
+test_procQuoteChars_zero :: Assertion
+test_procQuoteChars_zero = actual @?= expected
+  where
+    actual   = procQuoteChars [ "abc", "123", "def", "123", "ghi", "123" ]
+    expected = Just [ "abc", "123", "def", "123", "ghi", "123" ]
+
+
+test_procQuoteChars_one :: Assertion
+test_procQuoteChars_one = actual @?= expected
+  where
+    actual   = procQuoteChars [ "abc", "123", "de" <> q <> "f", "123", "ghi", "123" ]
+    expected = Nothing
+    q        = T.singleton quoteChar
+
+
+test_procQuoteChars_two :: Assertion
+test_procQuoteChars_two = actual @?= expected
+  where
+    actual   = procQuoteChars [ "abc", "123", "de" <> q <> "f", "1" <> q <> "23", "ghi", "123" ]
+    expected = Just [ "abc", "123", "def 123", "ghi", "123" ]
+    q        = T.singleton quoteChar
+
+
+test_procQuoteChars_three :: Assertion
+test_procQuoteChars_three = actual @?= expected
+  where
+    actual   = procQuoteChars [ "abc", "123", "de" <> q <> "f", "1" <> q <> "23", "gh" <> q <> "i", "123" ]
+    expected = Nothing
+    q        = T.singleton quoteChar
+
+
+test_procQuoteChars_four :: Assertion
+test_procQuoteChars_four = actual @?= expected
+  where
+    actual   = procQuoteChars [ "abc", "123", "de" <> q <> "f", "1" <> q <> "23", "gh" <> q <> "i", "1" <> q <> "23" ]
+    expected = Just [ "abc", "123", "def 123", "ghi 123" ]
+    q        = T.singleton quoteChar

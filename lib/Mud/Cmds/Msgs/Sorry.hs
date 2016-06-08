@@ -180,6 +180,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryPutInsideSelf
                            , sorryPutVol
                            , sorryQuitCan'tAbbrev
+                           , sorryQuoteChars
                            , sorryReadCoins
                            , sorryReadInEq
                            , sorryReadLang
@@ -1294,6 +1295,13 @@ sorryQuitCan'tAbbrev = T.concat [ "The "
                                 , " command may not be abbreviated. Type "
                                 , dblQuote "quit"
                                 , " with no arguments to quit CurryMUD." ]
+
+
+-----
+
+
+sorryQuoteChars :: Text
+sorryQuoteChars = "Unbalanced quote character."
 
 
 -----

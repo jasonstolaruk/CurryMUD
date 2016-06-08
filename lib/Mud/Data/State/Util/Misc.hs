@@ -48,6 +48,7 @@ module Mud.Data.State.Util.Misc ( addToInv
                                 , pcNpc
                                 , pluralize
                                 , procHooks
+                                , procQuoteChars
                                 , raceToLang
                                 , removeAdHoc
                                 , renderLiqNoun
@@ -65,7 +66,7 @@ import Mud.Data.State.Util.Get
 import Mud.TheWorld.Zones.AdminZoneIds (iWelcome)
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
-import Mud.Util.List
+import Mud.Util.List hiding (countOcc)
 import Mud.Util.Misc hiding (blowUp, patternMatchFail)
 import Mud.Util.Operators
 import Mud.Util.Text
@@ -492,6 +493,23 @@ dropPrefixes arg@(T.unpack -> arg'        )
     isMatch :: (String, String, String) -> Bool
     isMatch (a, b, c) = and [ ()# a, ()!# b, ()!# c ]
     mkRegex c         = "^[0-9]+\\" ++ pure c :: String
+
+
+-----
+
+
+procQuoteChars :: Args -> Maybe Args
+procQuoteChars []                    = Just []
+procQuoteChars as@(T.unwords -> txt) | not $ q `T.isInfixOf` txt   = Just as
+                                     | countOcc q txt `rem` 2 /= 0 = Nothing
+                                     | otherwise = Just [ fillerToSpcs w | w <- T.words . helper $ txt ]
+  where
+    q         = T.singleton quoteChar
+    helper "" = ""
+    helper t  | q `T.isInfixOf` t = let (left,   T.tail -> rest ) = T.breakOn q t
+                                        (quoted, T.tail -> right) = T.breakOn q rest
+                                    in left <> spcsToFiller quoted <> helper right
+              | otherwise         = t
 
 
 -----

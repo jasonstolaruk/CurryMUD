@@ -91,7 +91,6 @@ import Mud.Misc.ANSI
 import Mud.Misc.Database
 import Mud.Misc.NameResolution
 import Mud.TheWorld.Zones.AdminZoneIds (iRoot)
-import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
 import Mud.TopLvlDefs.Padding
 import Mud.TopLvlDefs.Vols
@@ -272,13 +271,6 @@ execIfPossessed p@(WithArgs i mq cols _) cn f = getState >>= \ms ->
       Nothing -> wrapSend mq cols (sorryNotPossessed s cn)
       Just _  -> f p
 execIfPossessed p cn _ = patternMatchFail "execIfPossessed" [ showText p, cn ]
-
-
------
-
-
-fillerToSpcs :: Text -> Text
-fillerToSpcs = T.replace (T.singleton indentFiller) " "
 
 
 -----

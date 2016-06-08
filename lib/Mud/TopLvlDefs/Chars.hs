@@ -16,7 +16,7 @@ debugCmdChar = '!'
 -- Denotative characters used in commands:
 
 
-adverbCloseChar, adverbOpenChar, allChar, amountChar, chanTargetChar, emoteChar, emoteNameChar, emoteTargetChar, expCmdChar, indexChar, sayToChar, selectorChar, slotChar :: Char
+adverbCloseChar, adverbOpenChar, allChar, amountChar, chanTargetChar, emoteChar, emoteNameChar, emoteTargetChar, expCmdChar, indexChar, quoteChar, sayToChar, selectorChar, slotChar :: Char
 adverbCloseChar = ']'
 adverbOpenChar  = '['
 allChar         = '\''
@@ -27,6 +27,7 @@ emoteNameChar   = '@'
 emoteTargetChar = '>'
 expCmdChar      = '='
 indexChar       = '.'
+quoteChar       = '`'
 sayToChar       = '>'
 selectorChar    = '-'
 slotChar        = ':'

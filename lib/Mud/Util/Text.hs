@@ -8,6 +8,7 @@ module Mud.Util.Text ( aOrAn
                      , countOcc
                      , divider
                      , dropBlanks
+                     , fillerToSpcs
                      , findFullNameForAbbrev
                      , frame
                      , headTail
@@ -28,6 +29,7 @@ module Mud.Util.Text ( aOrAn
                      , showText
                      , slashes
                      , spaces
+                     , spcsToFiller
                      , stripControl
                      , stripTelnet
                      , the
@@ -37,6 +39,7 @@ module Mud.Util.Text ( aOrAn
                      , uncapitalize
                      , yesNo ) where
 
+import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Telnet
 import Mud.Util.Misc hiding (blowUp)
 import Mud.Util.Operators
@@ -168,6 +171,17 @@ dropBlanks :: [Text] -> [Text]
 dropBlanks []      = []
 dropBlanks ("":xs) =     dropBlanks xs
 dropBlanks ( x:xs) = x : dropBlanks xs
+
+
+-----
+
+
+fillerToSpcs :: Text -> Text
+fillerToSpcs = T.replace (T.singleton indentFiller) " "
+
+
+spcsToFiller :: Text -> Text
+spcsToFiller = T.replace " " (T.singleton indentFiller)
 
 
 -----

@@ -142,7 +142,13 @@ unitTests_Mud_Data_State_Util_Misc = testGroup "Mud.Data.State.Util.Misc"
     [ testCase "dropPrefixesForHook_no_prefixes"  test_dropPrefixesForHooks_no_prefixes
     , testCase "dropPrefixesForHook_no_matches"   test_dropPrefixesForHooks_no_matches
     , testCase "dropPrefixesForHook_with_matches" test_dropPrefixesForHooks_with_matches
-    , testCase "dropPrefixesForHook_abbrev"       test_dropPrefixesForHooks_abbrev ]
+    , testCase "dropPrefixesForHook_abbrev"       test_dropPrefixesForHooks_abbrev
+    , testCase "test_procQuoteChars_null"         test_procQuoteChars_null
+    , testCase "test_procQuoteChars_zero"         test_procQuoteChars_zero
+    , testCase "test_procQuoteChars_one"          test_procQuoteChars_one
+    , testCase "test_procQuoteChars_two"          test_procQuoteChars_two
+    , testCase "test_procQuoteChars_three"        test_procQuoteChars_three
+    , testCase "test_procQuoteChars_four"         test_procQuoteChars_four ]
 
 
 -- --------------------------------------------------

@@ -1219,7 +1219,9 @@ adminSet   (WithArgs i mq cols (target:rest)) = helper |&| modifyState >=> \(toS
       where
         sorry       = sorryHelper . sorryParseId $ target
         sorryHelper = (ms, ) . (, Nothing, [], []) . pure
-        f targetId  = let (ms', toSelfMsgs, toTargetMsgs, logMsgs) = foldl' (setHelper targetId) (ms, [], [], []) rest
+        f targetId  = maybe (sorryHelper sorryQuoteChars) g . procQuoteChars $ rest
+          where
+            g rest' = let (ms', toSelfMsgs, toTargetMsgs, logMsgs) = foldl' (setHelper targetId) (ms, [], [], []) rest'
                       in (ms', (toSelfMsgs, Just targetId, toTargetMsgs, logMsgs))
 adminSet p = patternMatchFail "adminSet" [ showText p ]
 
@@ -1267,7 +1269,7 @@ setHelper targetId a@(ms, toSelfMsgs, _, _) arg = if
                                x       -> patternMatchFail "setHelper found" [x]
         setSexHelper t
           | t `notElem` [ NpcType, PCType ] = sorryType
-          | otherwise = case eitherDecode . encodeUtf8 . LT.fromStrict . dblQuote $ value of
+          | otherwise = case eitherDecode . encodeUtf8 . LT.fromStrict $ value of
             Left _     -> appendMsg . sorryAdminSetValue "sex" $ value
             Right sexy -> case op of
               Assign -> let toSelf  = T.concat [ "Set sex to ", pp sexy, diffTxt, "." ]
