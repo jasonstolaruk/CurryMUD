@@ -492,8 +492,8 @@ dropPrefixes arg@(T.unpack -> arg'        )
 
 procQuoteChars :: Args -> Maybe Args
 procQuoteChars []                    = Just []
-procQuoteChars as@(T.unwords -> txt) | not $ q `T.isInfixOf` txt   = Just as
-                                     | countOcc q txt `rem` 2 /= 0 = Nothing
+procQuoteChars as@(T.unwords -> txt) | not $ q `T.isInfixOf` txt = Just as
+                                     | odd . countOcc q $ txt    = Nothing
                                      | otherwise = Just [ fillerToSpcs w | w <- T.words . helper $ txt ]
   where
     q         = T.singleton quoteChar

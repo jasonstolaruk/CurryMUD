@@ -1252,7 +1252,9 @@ setHelper targetId a@(ms, toSelfMsgs, _, _) arg = if
                       , "curhp"
                       , "curmp"
                       , "curpp"
-                      , "curfp" ]
+                      , "curfp"
+                      , "exp"
+                      , "hand" ]
         notFound    = appendMsg . sorryAdminSetKey $ key
         appendMsg m = a & _2 <>~ pure m
         found       = let t = getType targetId ms
@@ -1267,10 +1269,13 @@ setHelper targetId a@(ms, toSelfMsgs, _, _) arg = if
                                "curmp"   -> setCurHelper     t "MP" getMps curMp
                                "curpp"   -> setCurHelper     t "PP" getPps curPp
                                "curfp"   -> setCurHelper     t "FP" getFps curFp
+                               "exp"     -> setExpHelper     t
+                               "hand"    -> setHandHelper    t
                                x         -> patternMatchFail "setHelper found" [x]
+        -----
         setEntDescHelper t
           | not . hasEnt $ t = sorryType
-          | otherwise        = case eitherDecode . strictTextToLazyBS $ value of
+          | otherwise        = case eitherDecode . strictTextToLazyBS . dblQuote $ value of
             Left _     -> appendMsg . sorryAdminSetValue "entDesc" $ value
             Right desc -> case op of
               Assign -> let toSelf   = "Set entity description to: " <> desc
@@ -1280,19 +1285,22 @@ setHelper targetId a@(ms, toSelfMsgs, _, _) arg = if
                              & _3 <>~ toTarget
                              & _4 <>~ pure toSelf
               _      -> sorryOp "entDesc"
+        -----
         setSexHelper t
           | not . hasMob $ t = sorryType
-          | otherwise        = case eitherDecode . strictTextToLazyBS $ value of
+          | otherwise        = case eitherDecode . strictTextToLazyBS . dblQuote $ value of
             Left _     -> appendMsg . sorryAdminSetValue "sex" $ value
             Right sexy -> case op of
               Assign -> let toSelf  = T.concat [ "Set sex to ", pp sexy, diffTxt, "." ]
                             prevSex = getSex targetId ms
-                            diffTxt = sexy == prevSex |?| (" " <> parensQuote "no change")
+                            isDiff  = sexy /= prevSex
+                            diffTxt = not isDiff |?| (" " <> parensQuote "no change")
                         in a & _1.mobTbl.ind targetId.sex .~ sexy
                              & _2 <>~ pure toSelf
-                             & _3 <>~ pure (diffTxt |!| ("Your sex has changed to " <> pp sexy <> "."))
+                             & _3 <>~ pure (isDiff |?| ("Your sex has changed to " <> pp sexy <> "."))
                              & _4 <>~ pure toSelf
               _      -> sorryOp "sex"
+        -----
         setAttribHelper t k getter setter
           | not . hasMob $ t = sorryType
           | otherwise        = procEither k $ \x ->
@@ -1315,8 +1323,9 @@ setHelper targetId a@(ms, toSelfMsgs, _, _) arg = if
                             SubAssign -> addSubAssignHelper (-)
           where
             mkToTargetMsg diff | diff == 0 = ""
-                               | diff >  0 = T.concat [ "You have gained ", showText diff,       " ", k, "." ]
-                               | otherwise = T.concat [ "You have lost ",   showText (abs diff), " ", k, "." ]
+                               | diff >  0 = T.concat [ "You have gained ", showText diff,         " ", k, "." ]
+                               | otherwise = T.concat [ "You have lost ",   showText . abs $ diff, " ", k, "." ]
+        -----
         setCurHelper t n f l
           | not . hasMob $ t = sorryType
           | otherwise        = procEither n $ \x ->
@@ -1339,8 +1348,49 @@ setHelper targetId a@(ms, toSelfMsgs, _, _) arg = if
                             SubAssign -> addSubAssignHelper (-)
           where
             mkToTargetMsg diff | diff == 0 = ""
-                               | diff >  0 = T.concat [ "You have recovered ", showText diff,       " ", n, "." ]
-                               | otherwise = T.concat [ "You have lost ",      showText (abs diff), " ", n, "." ]
+                               | diff >  0 = T.concat [ "You have recovered ", showText diff  ,       " ", n, "." ]
+                               | otherwise = T.concat [ "You have lost ",      showText . abs $ diff, " ", n, "." ]
+        -----
+        setExpHelper t
+          | not . hasMob $ t = sorryType
+          | otherwise        = procEither "exp" $ \x ->
+              let e                    = view (_1.mobTbl.ind targetId.exp) a
+                  addSubAssignHelper f = let e'     = 0 `max` (e `f` x)
+                                             diff   = e' - e
+                                             toSelf = mkToSelfMsg "exp" e' diff
+                                         in a & _1.mobTbl.ind targetId.exp .~ e'
+                                              & _2 <>~ pure toSelf
+                                              & _3 <>~ pure (mkToTargetMsg diff)
+                                              & _4 <>~ pure toSelf
+              in case op of Assign    -> let e'     = 0 `max` e
+                                             diff   = e' - e
+                                             toSelf = mkToSelfMsg "exp" e' diff
+                                         in a & _1.mobTbl.ind targetId.exp .~ e'
+                                              & _2 <>~ pure toSelf
+                                              & _3 <>~ pure (mkToTargetMsg diff)
+                                              & _4 <>~ pure toSelf
+                            AddAssign -> addSubAssignHelper (+)
+                            SubAssign -> addSubAssignHelper (-)
+          where
+            mkToTargetMsg diff | diff == 0 = ""
+                               | diff >  0 = T.concat [ "You have been awarded ", showText diff,         " experience points." ]
+                               | otherwise = T.concat [ "You have lost ",         showText . abs $ diff, " experience points." ]
+        -----
+        setHandHelper t
+          | not . hasMob $ t = sorryType
+          | otherwise        = case eitherDecode . strictTextToLazyBS . dblQuote $ value of
+            Left _        -> appendMsg . sorryAdminSetValue "hand" $ value
+            Right newHand -> case op of
+              Assign -> let toSelf   = T.concat [ "Set hand to ", pp newHand, diffTxt, "." ]
+                            prevHand = getHand targetId ms
+                            isDiff   = newHand /= prevHand
+                            diffTxt  = not isDiff |?| (" " <> parensQuote "no change")
+                        in a & _1.mobTbl.ind targetId.hand .~ newHand
+                             & _2 <>~ pure toSelf
+                             & _3 <>~ pure (isDiff |?| ("Your handedness has changed to " <> pp newHand <> "."))
+                             & _4 <>~ pure toSelf
+              _      -> sorryOp "hand"
+        -----
         sorryType      = appendMsg sorryAdminSetType
         sorryOp        = appendMsg . sorryAdminSetOp (pp op)
         procEither k f = parseInt |&| either appendMsg f
