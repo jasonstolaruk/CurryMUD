@@ -525,7 +525,7 @@ data Lang = CommonLang
           | HumanLang
           | LagomorphLang
           | NymphLang
-          | VulpenoidLang deriving (Bounded, Enum, Eq, Generic, Show)
+          | VulpenoidLang deriving (Bounded, Enum, Eq, Generic, Ord, Show)
 
 
 type ActMap = M.Map ActType ActAsync
