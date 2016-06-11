@@ -1286,9 +1286,9 @@ setHelper targetId a@(ms, toSelfMsgs, _, _) arg = if
                                "exp"        -> setMobExpHelper        t
                                "hand"       -> setMobHandHelper       t
                                "knownlangs" -> setMobKnownLangsHelper t
-                               "race"       -> setPCRaceHelper        t -- TODO: Help.
-                               "introduced" -> setPCSingListHelper    t "introduced" "known names"  introduced introduced -- TODO: Help.
-                               "linked"     -> setPCSingListHelper    t "linked"     "linked names" linked     linked -- TODO: Help.
+                               "race"       -> setPCRaceHelper        t
+                               "introduced" -> setPCSingListHelper    t "introduced" "known names"  introduced introduced
+                               "linked"     -> setPCSingListHelper    t "linked"     "linked names" linked     linked
                                x            -> patternMatchFail "setHelper found" [x]
         -----
         setEntMaybeTextHelper t k n getter setter

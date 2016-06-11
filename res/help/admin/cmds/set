@@ -87,4 +87,18 @@ Examples:4`
 \qknownLangs+=["LagomorphLang"]\d (to add lagomorphean)4`
 \qknownLangs-=["LagomorphLang"]\d (to remove lagomorphean)4`
 
+Key name: race4`
+Property of: PC4`
+Value type: Race - Dwarf | Elf | Felinoid etc.4`
+Example:4`
+\qrace="Hobbit"\d4`
+
+Key names: introduced, linked4`
+Property of: PC4`
+Value type: [Sing] ([Text])4`
+Examples:4`
+\l#q\qintroduced=["Taro", "Hanako"]\l#q\d (to set to Taro and Hanako)4`
+\qintroduced+=["Taro"]\d (to add Taro)4`
+\qintroduced-=["Taro"]\d (to remove Taro)4`
+
 \uSEE ALSO\n
