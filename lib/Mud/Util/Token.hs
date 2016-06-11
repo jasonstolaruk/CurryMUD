@@ -59,6 +59,7 @@ expandCharCode (toLower -> code)           = T.singleton $ case code of
   'm' -> amountChar
   'o' -> adverbOpenChar
   'p' -> expCmdChar
+  'q' -> quoteChar
   'r' -> emoteTargetChar
   's' -> slotChar
   't' -> sayToChar

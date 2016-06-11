@@ -1196,7 +1196,6 @@ mkSecReport SecRec { .. } = [ "Name: "     <> dbName
 -----
 
 
--- TODO: Help.
 adminSet :: ActionFun
 adminSet p@AdviseNoArgs                       = advise p [ prefixAdminCmd "set" ] adviceASetNoArgs
 adminSet p@(AdviseOneArg a                  ) = advise p [ prefixAdminCmd "set" ] . adviceASetNoSettings $ a
@@ -1262,7 +1261,7 @@ setHelper targetId a@(ms, toSelfMsgs, _, _) arg = if
                       , "curfp"
                       , "exp"
                       , "hand"
-                      , "knownlangs"]
+                      , "knownlangs" ]
         notFound    = appendMsg . sorryAdminSetKey $ key
         appendMsg m = a & _2 <>~ pure m
         found       = let t = getType targetId ms
@@ -1272,11 +1271,11 @@ setHelper targetId a@(ms, toSelfMsgs, _, _) arg = if
                                "entdesc"    -> setEntTextHelper       t "entDesc"  "description" entDesc  entDesc
                                "entsmell"   -> setEntMaybeTextHelper  t "entSmell" "smell"       entSmell entSmell
                                "sex"        -> setMobSexHelper        t
-                               "st"         -> setMobAttribHelper     t "ST" st st
-                               "dx"         -> setMobAttribHelper     t "DX" dx dx
-                               "ht"         -> setMobAttribHelper     t "HT" ht ht
-                               "ma"         -> setMobAttribHelper     t "MA" ma ma
-                               "ps"         -> setMobAttribHelper     t "PS" ps ps
+                               "st"         -> setMobAttribHelper     t "st" "ST" st st
+                               "dx"         -> setMobAttribHelper     t "dx" "DX" dx dx
+                               "ht"         -> setMobAttribHelper     t "ht" "HT" ht ht
+                               "ma"         -> setMobAttribHelper     t "ma" "MA" ma ma
+                               "ps"         -> setMobAttribHelper     t "ps" "PS" ps ps
                                "curhp"      -> setMobCurHelper        t "curHp" "HP" getHps curHp
                                "curmp"      -> setMobCurHelper        t "curMp" "MP" getMps curMp
                                "curpp"      -> setMobCurHelper        t "curPp" "PP" getPps curPp
@@ -1331,7 +1330,7 @@ setHelper targetId a@(ms, toSelfMsgs, _, _) arg = if
                              & _4 <>~ (isDiff |?| toSelf)
               _      -> sorryOp "sex"
         -----
-        setMobAttribHelper t k getter setter
+        setMobAttribHelper t k n getter setter
           | not . hasMob $ t = sorryType
           | otherwise        = case eitherDecode value' of
             Left  _ -> appendMsg . sorryAdminSetValue k $ value
@@ -1353,8 +1352,8 @@ setHelper targetId a@(ms, toSelfMsgs, _, _) arg = if
                                      AddAssign -> addSubAssignHelper (+)
                                      SubAssign -> addSubAssignHelper (-)
           where
-            mkToTarget diff | diff > 0  = pure . T.concat $ [ "You have gained ", showText diff,         " ", k, "." ]
-                            | otherwise = pure . T.concat $ [ "You have lost ",   showText . abs $ diff, " ", k, "." ]
+            mkToTarget diff | diff > 0  = pure . T.concat $ [ "You have gained ", showText diff,         " ", n, "." ]
+                            | otherwise = pure . T.concat $ [ "You have lost ",   showText . abs $ diff, " ", n, "." ]
         -----
         setMobCurHelper t k n f setter
           | not . hasMob $ t = sorryType

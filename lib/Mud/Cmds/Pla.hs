@@ -1083,7 +1083,6 @@ mkExpCmdListTxt i ms =
 -----
 
 
--- TODO: Help.
 feeling :: ActionFun
 feeling (NoArgs i mq cols) = getState >>= \ms ->
     let txts = f . dropEmpties $ [ g i ms | g <- [ mkHpDesc

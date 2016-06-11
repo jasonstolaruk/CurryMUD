@@ -1,0 +1,90 @@
+\h #dSET \d
+
+\uUSAGE\n
+#dset ID key\s{\d=\s|\d+=\s|\d-=\s}\dvalue \s...\d
+
+\uDESCRIPTION\n
+Set one or more values for a given ID.
+The values you provide must be in the JSON format.
+Any argument which includes spaces must be quoted with \l#q\d characters.
+Note that you may provide multiple key/value pairs for a single ID, as in:
+\q#dset 100 entName="breeches" \l#q\qentSmell="The breeches smell freshly laundered."\l#q\d4`
+
+\uKEY/VALUE LIST\n
+Key name: entName4`
+Property of: Ent4`
+Value type: Maybe Text4`
+Examples:4`
+\qentName=null\d (to set to Nothing)4`
+\qentName="breeches"\d (to set to Just "breeches")4`
+
+Key name: sing4`
+Property of: Ent4`
+Value type: Sing (Text)4`
+Example:4`
+\l#q\qsing="pair of knee-length yellow breeches"\l#q\d4`
+
+Key name: plur4`
+Property of: Ent4`
+Value type: Text4`
+Example:4`
+\l#q\qplur="pairs of knee-length yellow breeches"\l#q\d4`
+
+Key name: entDesc4`
+Property of: Ent4`
+Value type: Text4`
+Example:4`
+\l#q\qentDesc="These thin, tight-fitting breeches extend just past the knees."\l#q\d4`
+
+Key name: entSmell4`
+Property of: Ent4`
+Value type: Maybe Text4`
+Examples:4`
+\qentSmell=null\d (to set to Nothing)4`
+\l#q\qentSmell="The breeches smell freshly laundered."\l#q\d (to set to Just "The breeches smell freshly laundered.")4`
+
+Key name: sex4`
+Property of: Mob4`
+Value type: Sex - Male | Female | NoSex4`
+Example:4`
+\qsex="Male"\d4`
+
+Key names: st, dx, ht, ma, ps4`
+Property of: Mob4`
+Value type: Int4`
+Examples:4`
+\qst=50\d (to set to 50)4`
+\qst+=10\d (to add 10)4`
+\qst-=10\d (to subtract 10)4`
+
+Key names: curHp, curMp, curPp, curFp4`
+Property of: Mob4`
+Value type: Int4`
+Examples:4`
+\qcurHp=50\d (to set to 50)4`
+\qcurHp+=10\d (to add 10)4`
+\qcurHp-=10\d (to subtract 10)4`
+
+Key name: exp4`
+Property of: Mob4`
+Value type: Int4`
+Examples:4`
+\qexp=1000\d (to set to 1,000)4`
+\qexp+=1000\d (to add 1,000)4`
+\qexp-=1000\d (to subtract 1,000)4`
+
+Key name: hand4`
+Property of: Mob4`
+Value type: Hand - RHand | LHand | NoHand4`
+Example:4`
+\qhand="RHand"\d4`
+
+Key name: knownLangs4`
+Property of: Mob4`
+Value type: [Lang] (Lang - DwarfLang | ElfLang | FelinoidLang etc.)4`
+Examples:4`
+\l#q\qknownLangs=["HobbitLang", "HumanLang"]\l#q\d (to set to hobbitish and hominal)4`
+\qknownLangs+=["LagomorphLang"]\d (to add lagomorphean)4`
+\qknownLangs-=["LagomorphLang"]\d (to remove lagomorphean)4`
+
+\uSEE ALSO\n
