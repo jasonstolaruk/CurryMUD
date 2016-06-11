@@ -140,7 +140,8 @@ cmdDescShow = "Show one or more items in your inventory and/or readied equipment
 
 
 cmdDescSmell :: Text
-cmdDescSmell = "Smell a) the air, b) an item in your inventory, or c) a being or fixture in your current room."
+cmdDescSmell = "Smell a) the air, b) an item in your inventory, c) an item in your readied equipment, or d) a being or \
+               \fixture in your current room."
 
 
 cmdDescStats :: Text
@@ -149,6 +150,10 @@ cmdDescStats = "Display your stats."
 
 cmdDescStop :: Text
 cmdDescStop = "Stop moving, eating, drinking, or attacking."
+
+
+cmdDescTaste :: Text
+cmdDescTaste = "Taste a) an item in your inventory or b) an item in your readied equipment." -- TODO: a) b) ?
 
 
 cmdDescUnready :: Text

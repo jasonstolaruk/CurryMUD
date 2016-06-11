@@ -4,7 +4,7 @@
 smell \s[\dthing\s]\d
 
 \uDESCRIPTION\n
-Smell a) the air, b) an item in your inventory, or c) a being or fixture in your current room.
+Smell a) the air, b) an item in your inventory, c) an item in your readied equipment, or d) a being or fixture in your current room.
 
 When no arguments are provided, you will smell the air in your current room.
 To smell something other than the air, provide a single argument indicating what you'd like to smell. If you indicate a vessel, you will smell the liquid contents of that vessel.
