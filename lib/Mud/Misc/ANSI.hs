@@ -2,6 +2,7 @@
 
 module Mud.Misc.ANSI ( abbrevColor
                      , adminBcastColor
+                     , adminLabelColor
                      , adminSetColor
                      , announceColor
                      , arrowColor
@@ -154,6 +155,10 @@ abbrevColor = cyan
 
 adminBcastColor :: Text
 adminBcastColor = yellow
+
+
+adminLabelColor :: Text
+adminLabelColor = red
 
 
 adminSetColor :: Text

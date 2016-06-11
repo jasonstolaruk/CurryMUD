@@ -1261,7 +1261,10 @@ setHelper targetId a@(ms, toSelfMsgs, _, _) arg = if
                       , "curfp"
                       , "exp"
                       , "hand"
-                      , "knownlangs" ]
+                      , "knownlangs"
+                      , "race"
+                      , "introduced"
+                      , "linked" ]
         notFound    = appendMsg . sorryAdminSetKey $ key
         appendMsg m = a & _2 <>~ pure m
         found       = let t = getType targetId ms
@@ -1283,6 +1286,9 @@ setHelper targetId a@(ms, toSelfMsgs, _, _) arg = if
                                "exp"        -> setMobExpHelper        t
                                "hand"       -> setMobHandHelper       t
                                "knownlangs" -> setMobKnownLangsHelper t
+                               "race"       -> setPCRaceHelper        t -- TODO: Help.
+                               "introduced" -> setPCSingListHelper    t "introduced" "known names"  introduced introduced -- TODO: Help.
+                               "linked"     -> setPCSingListHelper    t "linked"     "linked names" linked     linked -- TODO: Help.
                                x            -> patternMatchFail "setHelper found" [x]
         -----
         setEntMaybeTextHelper t k n getter setter
@@ -1426,9 +1432,7 @@ setHelper targetId a@(ms, toSelfMsgs, _, _) arg = if
             Left  _              -> appendMsg . sorryAdminSetValue "knownLangs" $ value
             Right (nubSort -> x) ->
                 let prev                 = getKnownLangs targetId ms
-                    addSubAssignHelper f = let x'     = nubSort $ prev `f` x
-                                               toSelf = mkToSelf x' isDiff
-                                               isDiff = x' /= prev
+                    addSubAssignHelper f = let (x', toSelf, isDiff) = mkTupleForList prev f x mkToSelf
                                            in a & _1.mobTbl.ind targetId.knownLangs .~ x'
                                                 & _2 <>~ toSelf
                                                 & _3 <>~ (isDiff |?| mkToTarget x')
@@ -1445,6 +1449,45 @@ setHelper targetId a@(ms, toSelfMsgs, _, _) arg = if
             mkToSelf   x isDiff = pure . T.concat $ [ "Set knownLangs to ", ppList x, mkDiffTxt isDiff, "." ]
             mkToTarget x        = pure $ "Your known languages have changed to " <> ppList x <> "."
         -----
+        setPCRaceHelper t
+          | t /= PCType = sorryType
+          | otherwise   = case eitherDecode value' of
+            Left  _ -> appendMsg . sorryAdminSetValue "race" $ value
+            Right x -> case op of
+              Assign -> let toSelf   = pure . T.concat $ [ "Set race to ", pp x, mkDiffTxt isDiff, "." ]
+                            prev     = getRace targetId ms
+                            isDiff   = x /= prev
+                            toTarget = pure $ "Your race has changed to " <> pp x <> "."
+                        in a & _1.pcTbl.ind targetId.race .~ x
+                             & _2 <>~ toSelf
+                             & _3 <>~ (isDiff |?| toTarget)
+                             & _4 <>~ (isDiff |?| toSelf)
+              _      -> sorryOp "race"
+        -----
+        setPCSingListHelper t k n getter setter
+          | t /= PCType = sorryType
+          | otherwise   = case eitherDecode value' of
+            Left  _              -> appendMsg . sorryAdminSetValue k $ value
+            Right (nubSort -> x) ->
+                let prev                 = view getter . getPC targetId $ ms
+                    addSubAssignHelper f = let (x', toSelf, isDiff) = mkTupleForList prev f x mkToSelf
+                                           in a & _1.pcTbl.ind targetId.setter .~ x'
+                                                & _2 <>~ toSelf
+                                                & _3 <>~ (isDiff |?| mkToTarget x')
+                                                & _4 <>~ (isDiff |?| toSelf)
+                in case op of Assign    -> let toSelf = mkToSelf x isDiff
+                                               isDiff = x /= prev
+                                           in a & _1.pcTbl.ind targetId.setter .~ x
+                                                & _2 <>~ toSelf
+                                                & _3 <>~ (isDiff |?| mkToTarget x)
+                                                & _4 <>~ (isDiff |?| toSelf)
+                              AddAssign -> addSubAssignHelper (++)
+                              SubAssign -> addSubAssignHelper (\\)
+          where
+            mkToSelf   x isDiff = pure . T.concat $ [ "Set ", k, " to ", mkValueTxt x, mkDiffTxt isDiff, "." ]
+            mkToTarget x        = pure . T.concat $ [ "Your ", n, " have changed to ", mkValueTxt x, "."     ]
+            mkValueTxt          = noneOnNull . commas
+        -----
         sorryType               = appendMsg sorryAdminSetType
         sorryOp                 = appendMsg . sorryAdminSetOp (pp op)
         value'                  = strictTextToLazyBS value
@@ -1456,6 +1499,11 @@ setHelper targetId a@(ms, toSelfMsgs, _, _) arg = if
             diffTxt = if | diff == 0 -> "no change"
                          | diff >  0 -> "added "      <> showText diff
                          | otherwise -> "subtracted " <> showText (abs diff)
+        mkTupleForList prev f x g = let x'     = nubSort $ prev `f` x
+                                        toSelf = g x' isDiff
+                                        isDiff = x' /= prev
+                                    in (x', toSelf, isDiff)
+
 
 
 -----

@@ -1926,27 +1926,40 @@ look p = patternMatchFail "look" [ showText p ]
 
 mkRmInvCoinsDesc :: Id -> Cols -> MudState -> Id -> Text
 mkRmInvCoinsDesc i cols ms ri =
-    let (ris, c)            = first (i `delete`) . getNonIncogInvCoins ri $ ms
-        (pcNcbs, otherNcbs) = splitPCsOthers . mkIsPC_StyledName_Count_BothList i ms $ ris
-        pcDescs             = T.unlines . concatMap (wrapIndent 2 cols . mkPCDesc   ) $ pcNcbs
-        otherDescs          = T.unlines . concatMap (wrapIndent 2 cols . mkOtherDesc) $ otherNcbs
-    in (pcNcbs |!| pcDescs) <> (otherNcbs |!| otherDescs) <> (c |!| mkCoinsSummary cols c)
+    let (ris, c)                                         = first (i `delete`) . getNonIncogInvCoins ri $ ms
+        (pcTuples,               map snd -> otherTuples) = splitPCsOthers . mkTuples $ ris
+        (map snd -> adminTuples, map snd -> pcTuples'  ) = splitAdminsPCs pcTuples
+        f g        = T.unlines . concatMap (wrapIndent 2 cols . g)
+        adminDescs = f mkAdminDesc adminTuples
+        pcDescs    = f mkPCDesc    pcTuples'
+        otherDescs = f mkOtherDesc otherTuples
+    in (adminTuples |!| adminDescs) <> (pcTuples |!| pcDescs) <> (otherTuples |!| otherDescs) <> (c |!| mkCoinsSummary cols c)
   where
-    splitPCsOthers                       = (both %~ map snd) . span fst
-    mkPCDesc    (en, c, (s, _)) | c == 1 = (<> " " <> en) $ if isKnownPCSing s
-                                             then colorWith knownNameColor s
-                                             else colorWith unknownNameColor . aOrAn $ s
-    mkPCDesc    (en, c, b     ) = colorWith unknownNameColor (showText c <> " " <> mkPlurFromBoth b) <> " " <> en
+    mkTuples :: Inv -> [((Bool, Bool), (Text, Int, BothGramNos))]
+    mkTuples targetIds =
+        let isPC_isAdmins =                      [ (is_pc, is_pc ? is_admin :? False) | targetId <- targetIds
+                                                                                      , let is_pc    = isPC      targetId ms
+                                                                                      , let is_admin = isAdminId targetId ms ]
+            styleds       = styleAbbrevs DoQuote [ getEffName        i ms targetId    | targetId <- targetIds                ]
+            boths         =                      [ getEffBothGramNos i ms targetId    | targetId <- targetIds                ]
+            counts        = mkCountList . zip isPC_isAdmins $ boths
+        in nub . zip isPC_isAdmins . zip3 styleds counts $ boths
+    splitPCsOthers = span (fst . fst)
+    splitAdminsPCs = span (snd . fst)
+    mkAdminDesc    = mkPCAdminDesc True
+    mkPCDesc       = mkPCAdminDesc False
+    mkPCAdminDesc ia (en, c, (s, _)) | c == 1 = (<> adminLabel <> " " <> en) $ if isKnownPCSing s
+                                                                                 then colorWith knownNameColor s
+                                                                                 else colorWith unknownNameColor . aOrAn $ s
+      where
+        adminLabel = ia |?| mkAdminLabel False
+    mkPCAdminDesc ia (en, c, b) = colorWith unknownNameColor (showText c <> " " <> mkPlurFromBoth b) <> adminsLabel <> " " <> en
+      where
+        adminsLabel = ia |?| mkAdminLabel True
+    mkAdminLabel = ((" " <>) . colorWith adminLabelColor . parensQuote) . \case True  -> "admins"
+                                                                                False -> "admin"
     mkOtherDesc (en, c, (s, _)) | c == 1 = aOrAnOnLower s <> " " <> en
     mkOtherDesc (en, c, b     )          = showText c <> spaced (mkPlurFromBoth b) <> en
-
-mkIsPC_StyledName_Count_BothList :: Id -> MudState -> Inv -> [(Bool, (Text, Int, BothGramNos))]
-mkIsPC_StyledName_Count_BothList i ms targetIds =
-  let isPCs   =                      [ getType targetId ms == PCType   | targetId <- targetIds ]
-      styleds = styleAbbrevs DoQuote [ getEffName        i ms targetId | targetId <- targetIds ]
-      boths   =                      [ getEffBothGramNos i ms targetId | targetId <- targetIds ]
-      counts  = mkCountList boths
-  in nub . zip isPCs . zip3 styleds counts $ boths
 
 
 isKnownPCSing :: Sing -> Bool
