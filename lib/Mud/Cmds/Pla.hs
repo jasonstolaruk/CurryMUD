@@ -3519,17 +3519,15 @@ taste   (OneArgLower i mq cols a) = getState >>= \ms ->
           | ()!# ecs            ->
               let (canCoins, can'tCoinMsgs) = distillEcs ecs
               in if ()# can'tCoinMsgs
-                then let (coinTxt, isPlur) = mkCoinPieceTxt canCoins
-                         tasteDesc         = T.concat [ "The "
-                                                      , coinTxt
-                                                      , " taste"
-                                                      , not isPlur |?| "s"
-                                                      , " of metal, with just a hint of grime." ] -- TODO: Change.
-                         bs                = pure (T.concat [ serialize d
-                                                            , " tastes "
-                                                            , aCoinSomeCoins canCoins
-                                                            , "." ], i `delete` desigIds d)
-                         logMsg            = "tasted " <> aCoinSomeCoins canCoins <> "."
+                then let (coinTxt, _) = mkCoinPieceTxt canCoins
+                         tasteDesc    = "You are first struck by an unmistakably metallic taste, followed soon by the salty \
+                                        \taste of sweat and waxy residue left by the hands of the many people who have handled \
+                                        \the " <> coinTxt <> " before you" <> "."
+                         bs           = pure (T.concat [ serialize d
+                                                       , " tastes "
+                                                       , aCoinSomeCoins canCoins
+                                                       , "." ], i `delete` desigIds d)
+                         logMsg       = "tasted " <> aCoinSomeCoins canCoins <> "."
                      in ioHelper tasteDesc bs logMsg
                 else wrapSend mq cols . head $ can'tCoinMsgs
           | otherwise -> case head eiss of
