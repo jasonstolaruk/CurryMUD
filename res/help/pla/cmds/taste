@@ -1,0 +1,26 @@
+\h TASTE \d
+
+\uUSAGE\n
+taste thing
+
+\uDESCRIPTION\n
+Taste a) an item in your inventory, or b) an item in your readied equipment.
+
+Provide a single argument indicating what you'd like to taste. If you indicate a vessel, you will taste the liquid contents of that vessel.
+
+You may only taste one thing at a time.
+
+To taste the bread in your inventory:
+\qtaste \li#l\qbread\d4`
+...or just...
+\qtaste bread\d4`
+
+To taste the ring in your readied equipment:
+\qtaste \le#l\qring\d4`
+
+To taste the liquid contents of the flask in your inventory:
+\qtaste \li#l\qflask\d4`
+...or just...
+\qtaste flask\d4`
+
+\uSEE ALSO\n

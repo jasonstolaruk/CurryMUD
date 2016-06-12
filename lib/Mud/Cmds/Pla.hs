@@ -3497,7 +3497,6 @@ stopAttacking _ _ = undefined -- TODO
 -----
 
 
--- TODO: Help.
 taste :: ActionFun
 taste p@AdviseNoArgs              = advise p ["taste"] adviceTasteNoArgs
 taste   (OneArgLower i mq cols a) = getState >>= \ms ->

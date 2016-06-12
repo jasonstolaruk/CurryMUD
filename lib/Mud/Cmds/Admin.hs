@@ -1733,6 +1733,7 @@ adminUptime p = withoutArgs adminUptime p
 -----
 
 
+-- TODO: Show IDs.
 adminWhoIn :: ActionFun
 adminWhoIn = whoHelper LoggedIn "whoin"
 
