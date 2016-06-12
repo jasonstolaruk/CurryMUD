@@ -198,7 +198,6 @@ regularCmdTuples =
     , ("smell",      smell,              True,  cmdDescSmell)
     , ("sw",         go "sw",            True,  cmdDescGoSouthwest)
     , ("take",       getAction,          True,  cmdDescGet)
-    , ("taste",      taste,              True,  cmdDescTaste)
     , ("tune",       tune,               True,  "Display a list of your telepathic connections, or tune in/out one or \
                                                 \more telepathic connections.")
     , ("typo",       typo,               True,  "Report a typo.")
@@ -250,6 +249,7 @@ priorityAbbrevCmdTuples =
     , ("show",       "sh",  showAction, True,  cmdDescShow)
     , ("stats",      "st",  stats,      True,  cmdDescStats)
     , ("stop",       "sto", stop,       True,  cmdDescStop)
+    , ("taste",      "ta",  taste,      True,  cmdDescTaste)
     , ("telepathy",  "t",   tele,       True,  "Send a private message to a person with whom you have established a \
                                                \two-way telepathic link.")
     , ("unready",    "un",  unready,    True,  cmdDescUnready)
