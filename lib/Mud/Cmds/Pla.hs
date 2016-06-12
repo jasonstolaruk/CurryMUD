@@ -3953,7 +3953,7 @@ who p@ActionParams { myId, args } = getState >>= \ms ->
 
 mkWhoTxt :: Id -> MudState -> [Text]
 mkWhoTxt i ms = let txts = mkCharList i ms
-                in (++ [ mkFooter i ms ]) $ txts |!| mkWhoHeader ++ txts
+                in (++ [ mkFooter i ms ]) $ txts |!| mkWhoHeader False ++ txts
 
 
 mkCharList :: Id -> MudState -> [Text]

@@ -1733,7 +1733,6 @@ adminUptime p = withoutArgs adminUptime p
 -----
 
 
--- TODO: Show IDs.
 adminWhoIn :: ActionFun
 adminWhoIn = whoHelper LoggedIn "whoin"
 
@@ -1753,12 +1752,12 @@ mkCharListTxt inOrOut ms =
         ias              = zip is' . styleAbbrevs Don'tQuote $ ss
         mkCharTxt (i, a) = let (s, r, l) = mkPrettifiedSexRaceLvl i ms
                                name      = mkAnnotatedName i a
-                           in T.concat [ padName name, padSex s, padRace r, l ]
+                           in T.concat [ padName name, padId . showText $ i, padSex s, padRace r, l ]
         nop              = length is
-    in mkWhoHeader ++ map mkCharTxt ias ++ (pure .  T.concat $ [ showText nop
-                                                               , spaced . pluralize ("person", "people") $ nop
-                                                               , pp inOrOut
-                                                               , "." ])
+    in mkWhoHeader True ++ map mkCharTxt ias ++ (pure .  T.concat $ [ showText nop
+                                                                    , spaced . pluralize ("person", "people") $ nop
+                                                                    , pp inOrOut
+                                                                    , "." ])
   where
     predicate           = case inOrOut of LoggedIn  -> isLoggedIn
                                           LoggedOut -> not . isLoggedIn

@@ -49,6 +49,7 @@ waterDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Nothing
 -----
 
 
+-- TODO: Make more potions like this.
 potHpLiq :: Liq
 potHpLiq = Liq (DistinctLiqId iLiqPotHp)
                (DoArticle "milky, off-white liquid")
@@ -87,6 +88,7 @@ potInstantHpDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Nothing
 -----
 
 
+-- TODO: Make more potions like this.
 potStLiq :: Liq
 potStLiq = Liq (DistinctLiqId iLiqPotSt)
                (DoArticle "thick, muddy liquid")

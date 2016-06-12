@@ -115,7 +115,7 @@ import Data.Either (rights)
 import Data.Function (on)
 import Data.List (delete, groupBy, intercalate, nub, partition, sortBy, unfoldr)
 import Data.Maybe (fromJust)
-import Data.Monoid ((<>), Any(..))
+import Data.Monoid ((<>), Any(..), Sum(..))
 import Data.Text (Text)
 import Data.Time (diffUTCTime, getCurrentTime)
 import Prelude hiding (exp)
@@ -727,11 +727,14 @@ mkThrPerPro NoSex  = "it"
 -----
 
 
-mkWhoHeader :: [Text]
-mkWhoHeader = T.concat [ padName "Name"
-                       , padSex  "Sex"
-                       , padRace "Race"
-                       , "Level" ] : [ T.replicate (namePadding + sexPadding + racePadding + lvlPadding) "=" ]
+mkWhoHeader :: Bool -> [Text]
+mkWhoHeader b = T.concat [ padName "Name"
+                         , b |?| padId "Id"
+                         , padSex  "Sex"
+                         , padRace "Race"
+                         , "Level" ] : [ T.replicate (namePadding + getSum x + sexPadding + racePadding + lvlPadding) "=" ]
+  where
+    x = b |?| Sum idPadding
 
 
 -----
