@@ -1,30 +1,61 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Mud.TheWorld.Liqs ( distinctLiqList
+                         , potDxLiq
+                         , potFpLiq
                          , potHpLiq
+                         , potHtLiq
+                         , potInstantDxLiq
+                         , potInstantFpLiq
                          , potInstantHpLiq
+                         , potInstantHtLiq
+                         , potInstantMaLiq
+                         , potInstantMpLiq
                          , potInstantNegStLiq
+                         , potInstantPpLiq
+                         , potInstantPsLiq
                          , potInstantStLiq
                          , potInstantTinnitusLiq
+                         , potMaLiq
+                         , potMpLiq
                          , potNegStLiq
+                         , potPpLiq
+                         , potPsLiq
                          , potStLiq
                          , potTinnitusLiq
                          , waterLiq ) where
 
+import Control.Lens (both)
+import Control.Lens.Operators ((%~), (&))
 import Mud.Data.State.MudData
 import Mud.Misc.EffectFuns
 import Mud.TheWorld.LiqIds
+import Mud.TopLvlDefs.Misc
 
 import Data.Text (Text)
 
 
 distinctLiqList :: [(Id, DistinctLiq)]
-distinctLiqList = [ (iLiqPotHp,              potHpDistinctLiq             )
+distinctLiqList = [ (iLiqPotDx,              potDxDistinctLiq             )
+                  , (iLiqPotFp,              potFpDistinctLiq             )
+                  , (iLiqPotHp,              potHpDistinctLiq             )
+                  , (iLiqPotHt,              potHtDistinctLiq             )
+                  , (iLiqPotInstantDx,       potInstantDxDistinctLiq      )
+                  , (iLiqPotInstantFp,       potInstantFpDistinctLiq      )
                   , (iLiqPotInstantHp,       potInstantHpDistinctLiq      )
+                  , (iLiqPotInstantHt,       potInstantHtDistinctLiq      )
+                  , (iLiqPotInstantMa,       potInstantMaDistinctLiq      )
+                  , (iLiqPotInstantMp,       potInstantMpDistinctLiq      )
                   , (iLiqPotInstantNegSt,    potInstantNegStDistinctLiq   )
+                  , (iLiqPotInstantPp,       potInstantPpDistinctLiq      )
+                  , (iLiqPotInstantPs,       potInstantPsDistinctLiq      )
                   , (iLiqPotInstantSt,       potInstantStDistinctLiq      )
                   , (iLiqPotInstantTinnitus, potInstantTinnitusDistinctLiq)
+                  , (iLiqPotMa,              potMaDistinctLiq             )
+                  , (iLiqPotMp,              potMpDistinctLiq             )
                   , (iLiqPotNegSt,           potNegStDistinctLiq          )
+                  , (iLiqPotPp,              potPpDistinctLiq             )
+                  , (iLiqPotPs,              potPsDistinctLiq             )
                   , (iLiqPotSt,              potStDistinctLiq             )
                   , (iLiqPotTinnitus,        potTinnitusDistinctLiq       )
                   , (iLiqWater,              waterDistinctLiq             ) ]
@@ -49,7 +80,6 @@ waterDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Nothing
 -----
 
 
--- TODO: Make more potions like this.
 potHpLiq :: Liq
 potHpLiq = Liq (DistinctLiqId iLiqPotHp)
                (DoArticle "milky, off-white liquid")
@@ -64,7 +94,11 @@ potHpDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just el
   where
     el = EffectList . pure . Left $ ie
     ie = InstaEffect { _instaEffectSub = MobInstaEffectPts CurHp
-                     , _instaEffectVal = Just . DefiniteVal $ 2 }
+                     , _instaEffectVal = Just . DefiniteVal $ potXpEffectVal }
+
+
+potXpEffectVal :: Int
+potXpEffectVal = 2
 
 
 potInstantHpLiq :: Liq
@@ -80,15 +114,137 @@ potInstantHpDistinctLiq :: DistinctLiq
 potInstantHpDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Nothing
                                                     , _consumpEffects = Just ce }
   where
-    ce = ConsumpEffects 4 30 el
+    ce = mkPotConsumpEffects el
     el = EffectList . pure . Left $ ie
     ie = InstaEffect { _instaEffectSub = MobInstaEffectPts CurHp
-                     , _instaEffectVal = Just . RangeVal $ (8, 12) }
+                     , _instaEffectVal = Just . RangeVal $ potInstantXpEffectRange }
+
+
+mkPotConsumpEffects :: EffectList -> ConsumpEffects
+mkPotConsumpEffects = ConsumpEffects 4 30
+
+
+potInstantXpEffectRange :: Range
+potInstantXpEffectRange = (8, 12)
+
 
 -----
 
 
--- TODO: Make more potions like this.
+potMpLiq :: Liq
+potMpLiq = Liq (DistinctLiqId iLiqPotMp)
+               (DoArticle "")
+               "" -- TODO
+               ""
+               ""
+
+
+potMpDistinctLiq :: DistinctLiq
+potMpDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just el
+                                             , _consumpEffects = Nothing }
+  where
+    el = EffectList . pure . Left $ ie
+    ie = InstaEffect { _instaEffectSub = MobInstaEffectPts CurMp
+                     , _instaEffectVal = Just . DefiniteVal $ potXpEffectVal }
+
+
+potInstantMpLiq :: Liq
+potInstantMpLiq = Liq (DistinctLiqId iLiqPotInstantMp)
+                      (DoArticle "")
+                      "" -- TODO
+                      ""
+                      ""
+
+
+potInstantMpDistinctLiq :: DistinctLiq
+potInstantMpDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Nothing
+                                                    , _consumpEffects = Just ce }
+  where
+    ce = mkPotConsumpEffects el
+    el = EffectList . pure . Left $ ie
+    ie = InstaEffect { _instaEffectSub = MobInstaEffectPts CurMp
+                     , _instaEffectVal = Just . RangeVal $ potInstantXpEffectRange }
+
+
+-----
+
+
+potPpLiq :: Liq
+potPpLiq = Liq (DistinctLiqId iLiqPotPp)
+               (DoArticle "")
+               "" -- TODO
+               ""
+               ""
+
+
+potPpDistinctLiq :: DistinctLiq
+potPpDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just el
+                                             , _consumpEffects = Nothing }
+  where
+    el = EffectList . pure . Left $ ie
+    ie = InstaEffect { _instaEffectSub = MobInstaEffectPts CurPp
+                     , _instaEffectVal = Just . DefiniteVal $ potXpEffectVal }
+
+
+potInstantPpLiq :: Liq
+potInstantPpLiq = Liq (DistinctLiqId iLiqPotInstantPp)
+                      (DoArticle "")
+                      "" -- TODO
+                      ""
+                      ""
+
+
+potInstantPpDistinctLiq :: DistinctLiq
+potInstantPpDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Nothing
+                                                    , _consumpEffects = Just ce }
+  where
+    ce = mkPotConsumpEffects el
+    el = EffectList . pure . Left $ ie
+    ie = InstaEffect { _instaEffectSub = MobInstaEffectPts CurPp
+                     , _instaEffectVal = Just . RangeVal $ potInstantXpEffectRange }
+
+
+-----
+
+
+potFpLiq :: Liq
+potFpLiq = Liq (DistinctLiqId iLiqPotFp)
+               (DoArticle "")
+               "" -- TODO
+               ""
+               ""
+
+
+potFpDistinctLiq :: DistinctLiq
+potFpDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just el
+                                             , _consumpEffects = Nothing }
+  where
+    el = EffectList . pure . Left $ ie
+    ie = InstaEffect { _instaEffectSub = MobInstaEffectPts CurFp
+                     , _instaEffectVal = Just . DefiniteVal $ potXpEffectVal }
+
+
+potInstantFpLiq :: Liq
+potInstantFpLiq = Liq (DistinctLiqId iLiqPotInstantFp)
+                      (DoArticle "")
+                      "" -- TODO
+                      ""
+                      ""
+
+
+potInstantFpDistinctLiq :: DistinctLiq
+potInstantFpDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Nothing
+                                                    , _consumpEffects = Just ce }
+  where
+    ce = mkPotConsumpEffects el
+    el = EffectList . pure . Left $ ie
+    ie = InstaEffect { _instaEffectSub = MobInstaEffectPts CurFp
+                     , _instaEffectVal = Just . RangeVal $ potInstantXpEffectRange }
+
+
+-----
+
+
 potStLiq :: Liq
 potStLiq = Liq (DistinctLiqId iLiqPotSt)
                (DoArticle "thick, muddy liquid")
@@ -103,8 +259,16 @@ potStDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just el
   where
     el = EffectList . pure . Right $ e
     e  = Effect { _effectSub = MobEffectAttrib St
-                , _effectVal = Just . DefiniteVal $ 2
-                , _effectDur = 5 * 60 }
+                , _effectVal = Just . DefiniteVal $ potAttribEffectVal
+                , _effectDur = potAttribEffectDur }
+
+
+potAttribEffectVal :: Int
+potAttribEffectVal = 2
+
+
+potAttribEffectDur :: Seconds
+potAttribEffectDur = 5 * 60
 
 
 potInstantStLiq :: Liq
@@ -119,11 +283,178 @@ potInstantStDistinctLiq :: DistinctLiq
 potInstantStDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Nothing
                                                     , _consumpEffects = Just ce }
   where
-    ce = ConsumpEffects 4 30 el
+    ce = mkPotConsumpEffects el
     el = EffectList . pure . Right $ e
     e  = Effect { _effectSub = MobEffectAttrib St
-                , _effectVal = Just . RangeVal $ (8, 12)
-                , _effectDur = 5 * 60 }
+                , _effectVal = Just . RangeVal $ potInstantAtttribEffectRange
+                , _effectDur = potAttribEffectDur }
+
+
+potInstantAtttribEffectRange :: Range
+potInstantAtttribEffectRange = (8, 12)
+
+
+-----
+
+
+potDxLiq :: Liq
+potDxLiq = Liq (DistinctLiqId iLiqPotDx)
+               (DoArticle "")
+               "" -- TODO
+               ""
+               ""
+
+
+potDxDistinctLiq :: DistinctLiq
+potDxDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just el
+                                             , _consumpEffects = Nothing }
+  where
+    el = EffectList . pure . Right $ e
+    e  = Effect { _effectSub = MobEffectAttrib Dx
+                , _effectVal = Just . DefiniteVal $ potAttribEffectVal
+                , _effectDur = potAttribEffectDur }
+
+
+potInstantDxLiq :: Liq
+potInstantDxLiq = Liq (DistinctLiqId iLiqPotInstantDx)
+                      (DoArticle "")
+                      "" -- TODO
+                      ""
+                      ""
+
+
+potInstantDxDistinctLiq :: DistinctLiq
+potInstantDxDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Nothing
+                                                    , _consumpEffects = Just ce }
+  where
+    ce = mkPotConsumpEffects el
+    el = EffectList . pure . Right $ e
+    e  = Effect { _effectSub = MobEffectAttrib Dx
+                , _effectVal = Just . RangeVal $ potInstantAtttribEffectRange
+                , _effectDur = potAttribEffectDur }
+
+
+-----
+
+
+potHtLiq :: Liq
+potHtLiq = Liq (DistinctLiqId iLiqPotHt)
+               (DoArticle "")
+               "" -- TODO
+               ""
+               ""
+
+
+potHtDistinctLiq :: DistinctLiq
+potHtDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just el
+                                             , _consumpEffects = Nothing }
+  where
+    el = EffectList . pure . Right $ e
+    e  = Effect { _effectSub = MobEffectAttrib Ht
+                , _effectVal = Just . DefiniteVal $ potAttribEffectVal
+                , _effectDur = potAttribEffectDur }
+
+
+potInstantHtLiq :: Liq
+potInstantHtLiq = Liq (DistinctLiqId iLiqPotInstantHt)
+                      (DoArticle "")
+                      "" -- TODO
+                      ""
+                      ""
+
+
+potInstantHtDistinctLiq :: DistinctLiq
+potInstantHtDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Nothing
+                                                    , _consumpEffects = Just ce }
+  where
+    ce = mkPotConsumpEffects el
+    el = EffectList . pure . Right $ e
+    e  = Effect { _effectSub = MobEffectAttrib Ht
+                , _effectVal = Just . RangeVal $ potInstantAtttribEffectRange
+                , _effectDur = potAttribEffectDur }
+
+
+-----
+
+
+potMaLiq :: Liq
+potMaLiq = Liq (DistinctLiqId iLiqPotMa)
+               (DoArticle "")
+               "" -- TODO
+               ""
+               ""
+
+
+potMaDistinctLiq :: DistinctLiq
+potMaDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just el
+                                             , _consumpEffects = Nothing }
+  where
+    el = EffectList . pure . Right $ e
+    e  = Effect { _effectSub = MobEffectAttrib Ma
+                , _effectVal = Just . DefiniteVal $ potAttribEffectVal
+                , _effectDur = potAttribEffectDur }
+
+
+potInstantMaLiq :: Liq
+potInstantMaLiq = Liq (DistinctLiqId iLiqPotInstantMa)
+                      (DoArticle "")
+                      "" -- TODO
+                      ""
+                      ""
+
+
+potInstantMaDistinctLiq :: DistinctLiq
+potInstantMaDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Nothing
+                                                    , _consumpEffects = Just ce }
+  where
+    ce = mkPotConsumpEffects el
+    el = EffectList . pure . Right $ e
+    e  = Effect { _effectSub = MobEffectAttrib Ma
+                , _effectVal = Just . RangeVal $ potInstantAtttribEffectRange
+                , _effectDur = potAttribEffectDur }
+
+
+-----
+
+
+potPsLiq :: Liq
+potPsLiq = Liq (DistinctLiqId iLiqPotPs)
+               (DoArticle "")
+               "" -- TODO
+               ""
+               ""
+
+
+potPsDistinctLiq :: DistinctLiq
+potPsDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just el
+                                             , _consumpEffects = Nothing }
+  where
+    el = EffectList . pure . Right $ e
+    e  = Effect { _effectSub = MobEffectAttrib Ps
+                , _effectVal = Just . DefiniteVal $ potAttribEffectVal
+                , _effectDur = potAttribEffectDur }
+
+
+potInstantPsLiq :: Liq
+potInstantPsLiq = Liq (DistinctLiqId iLiqPotInstantPs)
+                      (DoArticle "")
+                      "" -- TODO
+                      ""
+                      ""
+
+
+potInstantPsDistinctLiq :: DistinctLiq
+potInstantPsDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Nothing
+                                                    , _consumpEffects = Just ce }
+  where
+    ce = mkPotConsumpEffects el
+    el = EffectList . pure . Right $ e
+    e  = Effect { _effectSub = MobEffectAttrib Ps
+                , _effectVal = Just . RangeVal $ potInstantAtttribEffectRange
+                , _effectDur = potAttribEffectDur }
+
+
+-----
 
 
 potNegStLiq :: Liq
@@ -146,8 +477,8 @@ potNegStDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just el
   where
     el = EffectList . pure . Right $ e
     e  = Effect { _effectSub = MobEffectAttrib St
-                , _effectVal = Just . DefiniteVal $ -2
-                , _effectDur = 5 * 60 }
+                , _effectVal = Just . DefiniteVal . negate $ potAttribEffectVal
+                , _effectDur = potAttribEffectDur }
 
 
 potInstantNegStLiq :: Liq
@@ -162,11 +493,11 @@ potInstantNegStDistinctLiq :: DistinctLiq
 potInstantNegStDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Nothing
                                                        , _consumpEffects = Just ce }
   where
-    ce = ConsumpEffects 4 30 el
+    ce = mkPotConsumpEffects el
     el = EffectList . pure . Right $ e
     e  = Effect { _effectSub = MobEffectAttrib St
-                , _effectVal = Just . RangeVal $ (-12, -8)
-                , _effectDur = 5 * 60 }
+                , _effectVal = Just . RangeVal $ (potInstantAtttribEffectRange & both %~ negate)
+                , _effectDur = potAttribEffectDur }
 
 
 -----
@@ -201,7 +532,7 @@ potInstantTinnitusDistinctLiq :: DistinctLiq
 potInstantTinnitusDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Nothing
                                                           , _consumpEffects = Just ce }
   where
-    ce = ConsumpEffects 4 30 el
+    ce = mkPotConsumpEffects el
     el = EffectList . pure . Right $ e
     e  = Effect { _effectSub = EffectOther tinnitusEffectFunName
                 , _effectVal = Nothing

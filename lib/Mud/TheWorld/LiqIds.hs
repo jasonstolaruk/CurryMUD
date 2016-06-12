@@ -10,11 +10,26 @@ iLiqWater = 0 :: Id
 
 iLiqPotHp        = 100 :: Id
 iLiqPotInstantHp = 101 :: Id
+iLiqPotMp        = 102 :: Id
+iLiqPotInstantMp = 103 :: Id
+iLiqPotPp        = 104 :: Id
+iLiqPotInstantPp = 105 :: Id
+iLiqPotFp        = 106 :: Id
+iLiqPotInstantFp = 107 :: Id
 
-iLiqPotSt           = 102 :: Id
-iLiqPotInstantSt    = 103 :: Id
-iLiqPotNegSt        = 104 :: Id
-iLiqPotInstantNegSt = 105 :: Id
+iLiqPotSt           = 108 :: Id
+iLiqPotInstantSt    = 109 :: Id
+iLiqPotDx           = 110 :: Id
+iLiqPotInstantDx    = 111 :: Id
+iLiqPotHt           = 112 :: Id
+iLiqPotInstantHt    = 113 :: Id
+iLiqPotMa           = 114 :: Id
+iLiqPotInstantMa    = 115 :: Id
+iLiqPotPs           = 116 :: Id
+iLiqPotInstantPs    = 117 :: Id
 
-iLiqPotTinnitus        = 106 :: Id
-iLiqPotInstantTinnitus = 107 :: Id
+iLiqPotNegSt        = 118 :: Id
+iLiqPotInstantNegSt = 119 :: Id
+
+iLiqPotTinnitus        = 120 :: Id
+iLiqPotInstantTinnitus = 121 :: Id
