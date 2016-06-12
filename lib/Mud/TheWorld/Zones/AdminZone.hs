@@ -226,20 +226,24 @@ mkFlower i v = getUnusedId <$> getState >>= \flowerId ->
                 zeroBits
         o = Obj flowerWeight
                 flowerVol
-                Nothing -- TODO: Flower taste.
+                (Just taste)
                 (setBit zeroBits . fromEnum $ IsBiodegradable)
                 Nothing
     in newObj e o i
   where
-    (desc, smell) = rndmIntToElem (V.head v) descs
-    descs         = [ ( "It's a fragrant daffodil sporting a collar of white petals."
-                      , "The powerful fragrance of the daffodil is nearly intoxicating." )
-                    , ( "It's a hardy hibiscus with pink-tinged pedals surrounding a distinctly red center."
-                      , "The beautiful hibiscus gives off a mildly sweet fragrance." )
-                    , ( "This eye-popping chrysanthemum has a fiery-orange bloom composed of many tiny petals."
-                      , "Though striking in appearance, the chrysanthemum is not particularly fragrant." )
-                    , ( "This blue lily has six large, independent petals opening widely from its base."
-                      , "Sure to attract a variety of pollinators, the lily is markedly fragrant." ) ]
+    (desc, smell, taste) = rndmIntToElem (V.head v) tuples
+    tuples = [ ( "It's a fragrant daffodil sporting a collar of white petals."
+               , "The powerful fragrance of the daffodil is nearly intoxicating."
+               , "The petals have a pleasant, floral taste. You could garnish a salad with these." )
+             , ( "It's a hardy hibiscus with pink-tinged pedals surrounding a distinctly red center."
+               , "The beautiful hibiscus gives off a mildly sweet fragrance."
+               , "The petals have a somewhat spicy, somewhat sour taste." )
+             , ( "This eye-popping chrysanthemum has a fiery-orange bloom composed of many tiny petals."
+               , "Though striking in appearance, the chrysanthemum is not particularly fragrant."
+               , "The petals taste slighly sour." )
+             , ( "This blue lily has six large, independent petals opening widely from its base."
+               , "Sure to attract a variety of loyal pollinators, the lily is markedly fragrant."
+               , "The petals taste a bit like nutmeg." ) ]
 
 
 -----
