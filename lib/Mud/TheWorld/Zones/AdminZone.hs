@@ -1671,7 +1671,7 @@ createAdminZone = do
                  Nothing
                  zeroBits)
             (Obj jarSmlWeight jarSmlVol Nothing zeroBits Nothing)
-            (Just (potHealingLiq, maxBound))
+            (Just (potHpLiq, maxBound))
   putVessel iJar
             (Ent iJar
                  (Just "jar")
@@ -1680,7 +1680,7 @@ createAdminZone = do
                  Nothing
                  zeroBits)
             (Obj jarWeight jarVol Nothing zeroBits Nothing)
-            (Just (potInstantHealingLiq, maxBound))
+            (Just (potInstantHpLiq, maxBound))
   putVessel iJarLrg
             (Ent iJarLrg
                  (Just "jar")

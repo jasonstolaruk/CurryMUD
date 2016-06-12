@@ -8,8 +8,8 @@ import Mud.Data.State.MudData (Id)
 
 iLiqWater = 0 :: Id
 
-iLiqPotHealing        = 100 :: Id
-iLiqPotInstantHealing = 101 :: Id
+iLiqPotHp        = 100 :: Id
+iLiqPotInstantHp = 101 :: Id
 
 iLiqPotSt           = 102 :: Id
 iLiqPotInstantSt    = 103 :: Id

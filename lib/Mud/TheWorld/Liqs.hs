@@ -1,8 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Mud.TheWorld.Liqs ( distinctLiqList
-                         , potHealingLiq
-                         , potInstantHealingLiq
+                         , potHpLiq
+                         , potInstantHpLiq
                          , potInstantNegStLiq
                          , potInstantStLiq
                          , potInstantTinnitusLiq
@@ -15,10 +15,12 @@ import Mud.Data.State.MudData
 import Mud.Misc.EffectFuns
 import Mud.TheWorld.LiqIds
 
+import Data.Text (Text)
+
 
 distinctLiqList :: [(Id, DistinctLiq)]
-distinctLiqList = [ (iLiqPotHealing,         potHealingDistinctLiq        )
-                  , (iLiqPotInstantHealing,  potInstantHealingDistinctLiq )
+distinctLiqList = [ (iLiqPotHp,              potHpDistinctLiq             )
+                  , (iLiqPotInstantHp,       potInstantHpDistinctLiq      )
                   , (iLiqPotInstantNegSt,    potInstantNegStDistinctLiq   )
                   , (iLiqPotInstantSt,       potInstantStDistinctLiq      )
                   , (iLiqPotInstantTinnitus, potInstantTinnitusDistinctLiq)
@@ -47,35 +49,35 @@ waterDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Nothing
 -----
 
 
-potHealingLiq :: Liq
-potHealingLiq = Liq (DistinctLiqId iLiqPotHealing)
-                    (DoArticle "milky, off-white liquid")
-                    "A bitterly pungent smell bombards you."
-                    "" -- TODO
-                    "Owing to its distinctly acrid taste, the elixir is difficult to ingest."
+potHpLiq :: Liq
+potHpLiq = Liq (DistinctLiqId iLiqPotHp)
+               (DoArticle "milky, off-white liquid")
+               "A bitterly pungent smell bombards you."
+               "You imagine that the rind of some intolerably bitter, inedible fruit might taste like this."
+               "Owing to its distinctly acrid taste, the elixir is difficult to ingest."
 
 
-potHealingDistinctLiq :: DistinctLiq
-potHealingDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just el
-                                                  , _consumpEffects = Nothing }
+potHpDistinctLiq :: DistinctLiq
+potHpDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just el
+                                             , _consumpEffects = Nothing }
   where
     el = EffectList . pure . Left $ ie
     ie = InstaEffect { _instaEffectSub = MobInstaEffectPts CurHp
                      , _instaEffectVal = Just . DefiniteVal $ 2 }
 
 
-potInstantHealingLiq :: Liq
-potInstantHealingLiq = Liq (DistinctLiqId iLiqPotInstantHealing)
-                           (DoArticle "murky, rust-colored liquid")
-                           "Almost immediately your nostrils burn and your eyes water in reaction to the tonic's \
-                           \metallic bouquet."
-                           "" -- TODO
-                           "Ugh! The potion is truly revolting. Concentrating, you will yourself to keep it down."
+potInstantHpLiq :: Liq
+potInstantHpLiq = Liq (DistinctLiqId iLiqPotInstantHp)
+                      (DoArticle "murky, rust-colored liquid")
+                      "Almost immediately your nostrils burn and your eyes water in reaction to the tonic's metallic \
+                      \bouquet."
+                      "The caustic taste nearly causes you to gag."
+                      "Ugh! The potion is truly revolting. Concentrating, you will yourself to keep it down."
 
 
-potInstantHealingDistinctLiq :: DistinctLiq
-potInstantHealingDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Nothing
-                                                         , _consumpEffects = Just ce }
+potInstantHpDistinctLiq :: DistinctLiq
+potInstantHpDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Nothing
+                                                    , _consumpEffects = Just ce }
   where
     ce = ConsumpEffects 4 30 el
     el = EffectList . pure . Left $ ie
@@ -89,7 +91,7 @@ potStLiq :: Liq
 potStLiq = Liq (DistinctLiqId iLiqPotSt)
                (DoArticle "thick, muddy liquid")
                "You detect earthy scents of nuts and grasses in the highly nuanced odors."
-               "" -- TODO
+               "There is a very starchy taste reminiscent of grass clippings. You feel small, soft lumps in the liquid."
                "The lumpy, viscous liquid is difficult to quaff."
 
 
@@ -107,7 +109,7 @@ potInstantStLiq :: Liq
 potInstantStLiq = Liq (DistinctLiqId iLiqPotInstantSt)
                       (DoArticle "brown, frothy liquid")
                       "The liquid's earthy scents are reminiscent of soil and dried leaves."
-                      "" -- TODO
+                      "The taste is on the bitter side. You detect some small, grainy particles dispersed among the liquid."
                       "Though its taste is not particularly pleasing, the concoction goes down easily."
 
 
@@ -125,9 +127,15 @@ potInstantStDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Nothing
 potNegStLiq :: Liq
 potNegStLiq = Liq (DistinctLiqId iLiqPotNegSt)
                   (DoArticle "creamy white liquid")
-                  "The creamy liquid has a faint, sweet odor."
-                  "" -- TODO
-                  "The sweet, creamy liquid is delicious."
+                  potNegStSmell
+                  potNegStTaste
+                  potNegStDrink
+
+
+potNegStSmell, potNegStTaste, potNegStDrink :: Text
+potNegStSmell = "The creamy liquid has a faint, sweet odor."
+potNegStTaste = "The creamy liquid has a consistency reminiscent of coconut juice and a sweet, vaguely fruity taste."
+potNegStDrink = "The sweet, creamy liquid is delicious."
 
 
 potNegStDistinctLiq :: DistinctLiq
@@ -143,9 +151,9 @@ potNegStDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just el
 potInstantNegStLiq :: Liq
 potInstantNegStLiq = Liq (DistinctLiqId iLiqPotInstantNegSt)
                          (DoArticle "creamy indigo liquid")
-                         "The creamy liquid has a faint, sweet odor."
-                         "" -- TODO
-                         "The sweet, creamy liquid is delicious."
+                         potNegStSmell
+                         potNegStTaste
+                         potNegStDrink
 
 
 potInstantNegStDistinctLiq :: DistinctLiq
@@ -166,7 +174,7 @@ potTinnitusLiq :: Liq
 potTinnitusLiq = Liq (DistinctLiqId iLiqPotTinnitus)
                      (DoArticle "olive-green liquid")
                      "The tonic smells pleasingly sweet."
-                     "" -- TODO
+                     "A vague, leafy-green taste is offset by a palatable sweetness that is far from overpowering."
                      "The thirst-quenching draft leaves you feeling refreshed."
 
 
@@ -182,8 +190,8 @@ potTinnitusDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just el
 potInstantTinnitusLiq :: Liq
 potInstantTinnitusLiq = Liq (DistinctLiqId iLiqPotInstantTinnitus)
                             (DoArticle "oily, puce liquid")
-                            "You are greeted by a vaguely spicy, buttery odor."
-                            "" -- TODO
+                            "You are greeted by a spicy, buttery odor."
+                            "The oily liquid greases your tongue. Its rich, spicy taste is not particularly pleasing."
                             "The draft coats your mouth and throat with a slippery residue."
 
 
