@@ -110,6 +110,7 @@ adHoc mq host = do
                        , _knownLangs    = pure . raceToLang $ r
                        , _rmId          = iWelcome
                        , _actMap        = M.empty
+                       , _feelingMap    = M.empty
                        , _nowEating     = Nothing
                        , _nowDrinking   = Nothing
                        , _regenQueue    = Nothing

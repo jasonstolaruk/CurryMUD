@@ -93,6 +93,7 @@ library
                        Mud.Threads.DbTblPurger
                        Mud.Threads.Digester
                        Mud.Threads.Effect
+                       Mud.Threads.FeelingTimer
                        Mud.Threads.InacTimer
                        Mud.Threads.Listen
                        Mud.Threads.Misc

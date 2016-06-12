@@ -490,6 +490,7 @@ data Mob = Mob { _sex                    :: Sex
                , _knownLangs             :: [Lang]
                , _rmId                   :: Id
                , _actMap                 :: ActMap
+               , _feelingMap             :: FeelingMap
                , _nowEating              :: Maybe NowEating
                , _nowDrinking            :: Maybe NowDrinking
                , _regenQueue             :: Maybe RegenQueue
@@ -540,10 +541,23 @@ data ActType = Moving
 type ActAsync = Async ()
 
 
-type NowDrinking = (Liq, Sing)
+type FeelingMap = M.Map FeelingTag Feeling
+
+
+type FeelingTag = Text
+
+
+data Feeling = Feeling { feelingDesc  :: Text
+                       , feelingAsync :: FeelingAsync }
+
+
+type FeelingAsync = Async ()
 
 
 type NowEating = Sing
+
+
+type NowDrinking = (Liq, Sing)
 
 
 type RegenQueue = TQueue RegenCmd
@@ -599,6 +613,7 @@ jsonToMob (Object o) = Mob <$> o .: "sex"
                            <*> o .: "hand"
                            <*> o .: "knownLangs"
                            <*> o .: "rmId"
+                           <*> pure M.empty
                            <*> pure M.empty
                            <*> pure Nothing
                            <*> pure Nothing
@@ -893,6 +908,7 @@ data ThreadType = Biodegrader    Id
                 | EffectThread   Id
                 | EffectTimer    Id
                 | Error
+                | FeelingTimer   Id
                 | InacTimer      Id
                 | Listen
                 | MovingThread   Id
