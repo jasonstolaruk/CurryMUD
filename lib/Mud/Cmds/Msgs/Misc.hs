@@ -88,6 +88,10 @@ noSmellMsg :: Text
 noSmellMsg = "You don't smell anything in particular."
 
 
+noTasteMsg :: Text
+noTasteMsg = "You don't taste anything in particular."
+
+
 notifyArrivalMsg :: Text -> Text
 notifyArrivalMsg n = n <> " slowly materializes out of thin air."
 

@@ -153,7 +153,7 @@ cmdDescStop = "Stop moving, eating, drinking, or attacking."
 
 
 cmdDescTaste :: Text
-cmdDescTaste = "Taste a) an item in your inventory or b) an item in your readied equipment." -- TODO: a) b) ?
+cmdDescTaste = "Taste a) an item in your inventory, or b) an item in your readied equipment."
 
 
 cmdDescUnready :: Text

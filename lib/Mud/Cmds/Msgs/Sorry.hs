@@ -235,6 +235,10 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorrySummonAdmin
                            , sorrySummonAlready
                            , sorrySummonSelf
+                           , sorryTasteExcessTargets
+                           , sorryTasteInRm
+                           , sorryTasteNothingToTaste
+                           , sorryTasteType
                            , sorryTeleAlready
                            , sorryTeleLoggedOutRm
                            , sorryTeleRmName
@@ -1590,6 +1594,25 @@ sorrySummonAlready s = s <> " is already here!"
 
 sorrySummonSelf :: Text
 sorrySummonSelf = can't "summon yourself."
+
+
+-----
+
+
+sorryTasteExcessTargets :: Text
+sorryTasteExcessTargets = but "you can only taste one thing at a time."
+
+
+sorryTasteInRm :: Text
+sorryTasteInRm = butCan't "taste an item in your current room. Please pick up the item first."
+
+
+sorryTasteNothingToTaste :: Text
+sorryTasteNothingToTaste = "There isn't anything to taste."
+
+
+sorryTasteType :: Sing -> Text
+sorryTasteType s = can't "taste " <> aOrAn s <> "."
 
 
 -----

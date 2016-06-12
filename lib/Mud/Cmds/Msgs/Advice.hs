@@ -101,6 +101,8 @@ module Mud.Cmds.Msgs.Advice ( adviceAAnnounceNoArgs
                             , adviceShowNoName
                             , adviceSmellExcessArgs
                             , adviceStopExcessArgs
+                            , adviceTasteExcessArgs
+                            , adviceTasteNoArgs
                             , adviceTeleNoArgs
                             , adviceTeleNoMsg
                             , adviceTrashNoArgs
@@ -758,7 +760,7 @@ adviceShowNoName a = "Please also provide the name of a person, as in " <>
 
 
 adviceSmellExcessArgs :: Text
-adviceSmellExcessArgs = "Please either provide no arguments to smell the air, or specify a single object to smell."
+adviceSmellExcessArgs = "Please either provide no arguments to smell the air, or specify a single item to smell."
 
 
 adviceStopExcessArgs :: Text
@@ -775,6 +777,16 @@ adviceStopExcessArgs = T.concat [ "Please type "
                                 , ", or "
                                 , colorWith quoteColor "all"
                                 , "." ]
+
+
+adviceTasteExcessArgs :: Text
+adviceTasteExcessArgs = "Please specify a single item to taste."
+
+
+adviceTasteNoArgs :: Text
+adviceTasteNoArgs = "Please specify a single item to taste, as in " <>
+                    colorWith quoteColor "taste bread"              <>
+                    "."
 
 
 adviceTeleNoArgs :: Text

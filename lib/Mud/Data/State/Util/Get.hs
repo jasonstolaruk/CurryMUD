@@ -466,6 +466,13 @@ getObj i = view (objTbl.ind i)
 -----
 
 
+getObjTaste :: Id -> MudState -> Text
+getObjTaste i = views objTaste (fromMaybe noTasteMsg) . getObj i
+
+
+-----
+
+
 getPausedEffects :: Id -> MudState -> [PausedEffect]
 getPausedEffects i = view (pausedEffectsTbl.ind i)
 

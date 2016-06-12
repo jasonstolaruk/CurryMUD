@@ -46,6 +46,7 @@ CurryMUD will have the following features:
 * Volume and container capacity.
 * Vessels for containing liquids. Vessels may be filled and emptied.
 * Eating foods and drinking liquids. Digestion.
+* Smell and taste.
 * Durational effects that can be paused and resumed.
 * Objects can be configured to automatically disappear when left on the ground for some time.
 
@@ -88,7 +89,7 @@ Please use [stack](http://docs.haskellstack.org/en/stable/README.html) (otherwis
 0. Inside `$HOME/CurryMUD`, run `stack setup` to get GHC 8 on your machine. (The `stack.yaml` file points to the [nightly resolver](https://www.stackage.org/snapshots), which uses GHC 8.)
 0. Run `stack build` to compile the `curry` binary and libraries.
 0. Run `stack install` to copy the `curry` binary to `$HOME/.local/bin`.
-0. Execute the `curry` generated binary.
+0. Execute the `curry` binary.
 0. Telnet to `localhost` port 9696 to play.
 
 CurryMUD presently cannot be loaded into GHCi due to [a GHC bug](https://ghc.haskell.org/trac/ghc/ticket/12007).
