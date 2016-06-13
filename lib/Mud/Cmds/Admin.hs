@@ -509,6 +509,7 @@ mkCountTxt = map (uncurry mappend . second (commaEvery3 . showText)) <$> helper
                , ("Functions in the function table: ", ms^.funTbl           .to M.size)
                , ("Effect functions: ",                ms^.effectFunTbl     .to M.size)
                , ("Instantaneous effect functions: ",  ms^.instaEffectFunTbl.to M.size)
+               , ("Feeling functions: ",               ms^.feelingFunTbl    .to M.size)
                , ("Hook functions: ",                  ms^.hookFunTbl       .to M.size)
                , ("Room action functions: ",           ms^.rmActionFunTbl   .to M.size)
                , ("Active threads: ",                  noOfThreads                    ) ]
@@ -553,6 +554,7 @@ adminExamineSelf p              = withoutArgs adminExamineSelf p
 -----
 
 
+-- TODO: FeelingMap
 adminExamine :: ActionFun
 adminExamine p@AdviseNoArgs          = advise p [ prefixAdminCmd "examine" ] adviceAExamineNoArgs
 adminExamine (LowerNub i mq cols as) = getState >>= \ms ->
@@ -1196,6 +1198,7 @@ mkSecReport SecRec { .. } = [ "Name: "     <> dbName
 -----
 
 
+-- TODO: Use "commaEvery3".
 adminSet :: ActionFun
 adminSet p@AdviseNoArgs                       = advise p [ prefixAdminCmd "set" ] adviceASetNoArgs
 adminSet p@(AdviseOneArg a                  ) = advise p [ prefixAdminCmd "set" ] . adviceASetNoSettings $ a

@@ -256,6 +256,13 @@ getExp i = view exp . getMob i
 -----
 
 
+getFeelingMap :: Id -> MudState -> FeelingMap
+getFeelingMap i = view feelingMap . getMob i
+
+
+-----
+
+
 getFood :: Id -> MudState -> Food
 getFood i = view (foodTbl.ind i)
 

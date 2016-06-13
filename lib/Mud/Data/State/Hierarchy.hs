@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Mud.Data.State.Hierarchy where
+module Mud.Data.State.Hierarchy where -- TODO: Move this module under Util.
 
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get

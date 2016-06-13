@@ -12,6 +12,7 @@ module Mud.Data.State.Util.Misc ( addToInv
                                 , getBothGramNos
                                 , getEffBothGramNos
                                 , getEffName
+                                , getFeelingFun
                                 , getFun
                                 , getHookFun
                                 , getIdForMobSing
@@ -183,6 +184,15 @@ mkUnknownPCEntName :: Id -> MudState -> Text
 mkUnknownPCEntName i ms = views entName (fromMaybe helper) . getEnt i $ ms
   where
     helper = let (T.head . pp *** pp -> (h, r)) = getSexRace i ms in h `T.cons` r
+
+
+-----
+
+
+getFeelingFun :: FeelingTag -> MudState -> FeelingFun
+getFeelingFun tag = views (feelingFunTbl.at tag) (fromMaybe oops)
+  where
+    oops = blowUp "getFeelingFun" "Feeling tag not found in function table" . pure $ tag
 
 
 -----

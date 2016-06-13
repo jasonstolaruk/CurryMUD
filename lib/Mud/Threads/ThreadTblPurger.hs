@@ -69,6 +69,7 @@ purgeTalkAsyncTbl = getState >>= \(views talkAsyncTbl M.elems -> asyncs) -> do
     purger (asyncThreadId -> ti, _poo   ) tbl = tbl & at ti .~ Nothing
 
 
+-- TODO: Confirm that Feeling threads are purged.
 purgeThreadTbl :: MudStack ()
 purgeThreadTbl = getState >>= \(views threadTbl M.keys -> threadIds) -> do
     zipped <- [ zip threadIds statuses | statuses <- liftIO . mapM threadStatus $ threadIds ]

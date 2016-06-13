@@ -74,6 +74,7 @@ library
                        Mud.Misc.ANSI
                        Mud.Misc.Database
                        Mud.Misc.EffectFuns
+                       Mud.Misc.FeelingFuns
                        Mud.Misc.LocPref
                        Mud.Misc.Logging
                        Mud.Misc.NameResolution

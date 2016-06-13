@@ -17,9 +17,7 @@ module Mud.Threads.Misc ( concurrentTree
                         , threadExHandler
                         , throwDeath
                         , throwToListenThread
-                        , throwWait
-                        , TimerMsg(..)
-                        , TimerQueue ) where
+                        , throwWait ) where
 
 import Mud.Cmds.Msgs.Misc
 import Mud.Data.State.MudData
@@ -34,7 +32,7 @@ import qualified Mud.Misc.Logging as L (logExMsg, logIOEx, logNotice, logPla)
 import Control.Concurrent (forkIO, myThreadId)
 import Control.Concurrent.Async (Async, async, asyncThreadId, concurrently, race_, wait)
 import Control.Concurrent.STM (atomically)
-import Control.Concurrent.STM.TMQueue (TMQueue, closeTMQueue)
+import Control.Concurrent.STM.TMQueue (closeTMQueue)
 import Control.Exception (AsyncException(..), Exception, IOException, SomeException, fromException, toException)
 import Control.Exception.Lifted (throwTo)
 import Control.Lens (at, views)
@@ -73,15 +71,6 @@ data PlsDie = PlsDie deriving (Show, Typeable)
 
 
 instance Exception PlsDie
-
-
------
-
-
-type TimerQueue = TMQueue TimerMsg
-
-
-data TimerMsg = ResetTimer
 
 
 -----
@@ -186,6 +175,7 @@ setThreadType threadType = do
 -----
 
 
+-- TODO: We need functionality to stop feeling timer threads.
 stopTimerThread :: TimerQueue -> MudStack ()
 stopTimerThread = liftIO . atomically . closeTMQueue
 

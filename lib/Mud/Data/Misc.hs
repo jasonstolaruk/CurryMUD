@@ -63,6 +63,7 @@ import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
 import Mud.Misc.Database
 import Mud.TopLvlDefs.Chars
+import Mud.TopLvlDefs.Misc
 import Mud.Util.Operators
 import Mud.Util.Quoting
 import Mud.Util.Text
@@ -284,13 +285,30 @@ instance Pretty Cloth where
 
 
 instance Pretty Effect where
-  pp (Effect effSub effVal secs) =
-      let secsTxt = parensQuote $ commaEvery3 (showText secs) <> " secs"
-      in T.concat [ bracketQuote "durational", " ", pp effSub, " by ", effectValHelper effVal, " ", secsTxt ]
+  pp (Effect effSub effVal secs effFeeling) = T.concat [ bracketQuote "durational"
+                                                       , " "
+                                                       , pp effSub
+                                                       , " by "
+                                                       , effectValHelper effVal
+                                                       , " "
+                                                       , mkSecsTxt secs
+                                                       , effectFeelingHelper effFeeling ]
+
+
+mkSecsTxt :: Seconds -> Text
+mkSecsTxt secs = parensQuote $ commaEvery3 (showText secs) <> " secs"
 
 
 effectValHelper :: Maybe EffectVal -> Text
 effectValHelper = maybe (parensQuote "no value") pp
+
+
+effectFeelingHelper :: Maybe EffectFeeling -> Text
+effectFeelingHelper = maybe "" ((" " <> ) . pp)
+
+
+instance Pretty EffectFeeling where
+  pp (EffectFeeling tag dur) = bracketQuote $ tag <> " " <> mkSecsTxt dur
 
 
 instance Pretty EffectSub where
@@ -314,7 +332,12 @@ instance Pretty Hand where
 
 
 instance Pretty InstaEffect where
-  pp (InstaEffect effSub effVal) = T.concat [ bracketQuote "instantaneous", " ", pp effSub, " by ", effectValHelper effVal ]
+  pp (InstaEffect effSub effVal effFeeling) = T.concat [ bracketQuote "instantaneous"
+                                                       , " "
+                                                       , pp effSub
+                                                       , " by "
+                                                       , effectValHelper effVal
+                                                       , effectFeelingHelper effFeeling ]
 
 
 instance Pretty InstaEffectSub where

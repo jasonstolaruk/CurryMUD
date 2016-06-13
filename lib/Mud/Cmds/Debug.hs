@@ -314,7 +314,7 @@ debugEchoWon't p = withoutArgs debugEchoWon't p
 debugEffect :: ActionFun
 debugEffect (NoArgs' i mq) = do
     ok mq
-    startEffect i . Effect (MobEffectAttrib St) (Just . RangeVal $ (10, 20)) $ 30
+    startEffect i . Effect (MobEffectAttrib St) (Just . RangeVal $ (10, 20)) 30 $ Nothing -- TODO: Feeling.
     logPlaExec (prefixDebugCmd "effect") i
 debugEffect p = withoutArgs debugEffect p
 
@@ -729,6 +729,7 @@ descThreads = do
     mkTypeName (EffectListener (showText -> pi)) = padOrTrunc padAmt "Eff Listen"  <> pi
     mkTypeName (EffectThread   (showText -> pi)) = padOrTrunc padAmt "Eff Thread"  <> pi
     mkTypeName (EffectTimer    (showText -> pi)) = padOrTrunc padAmt "Eff Timer"   <> pi
+    mkTypeName (FeelingTimer   (showText -> pi)) = padOrTrunc padAmt "FeelingTimer" <> pi -- TODO: Fix text.
     mkTypeName (InacTimer      (showText -> pi)) = padOrTrunc padAmt "InacTimer"   <> pi
     mkTypeName (NpcServer      (showText -> pi)) = padOrTrunc padAmt "NpcServer"   <> pi
     mkTypeName (PlaLog         (showText -> pi)) = padOrTrunc padAmt "PlaLog"      <> pi
@@ -765,7 +766,7 @@ debugThrowLog p = withoutArgs debugThrowLog p
 debugTinnitus :: ActionFun
 debugTinnitus (NoArgs' i mq) = do
     ok mq
-    startEffect i . Effect (EffectOther tinnitusEffectFunName) Nothing $ 2 * 60
+    startEffect i . Effect (EffectOther tinnitusEffectFunName) Nothing (2 * 60) $ Nothing -- TODO: Feeling.
     logPlaExec (prefixDebugCmd "tinnitus") i
 debugTinnitus p = withoutArgs debugTinnitus p
 

@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
-{-# LANGUAGE LambdaCase, OverloadedStrings #-}
+{-# LANGUAGE LambdaCase, OverloadedStrings, ViewPatterns #-}
 
 module Mud.Threads.Effect ( massPauseEffects
                           , massRestartPausedEffects
@@ -12,6 +12,7 @@ import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Random
+import Mud.Threads.FeelingTimer
 import Mud.Threads.Misc
 import Mud.Util.Misc
 import Mud.Util.Operators
@@ -24,7 +25,7 @@ import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TMVar (newEmptyTMVarIO, putTMVar, takeTMVar)
 import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
 import Control.Exception.Lifted (finally, handle)
-import Control.Lens (views)
+import Control.Lens (view, views)
 import Control.Lens.Operators ((%~), (&), (.~), (<>~), (?~))
 import Control.Monad ((>=>), forM_, unless, when)
 import Control.Monad.IO.Class (liftIO)
@@ -53,20 +54,21 @@ logPla = L.logPla "Mud.Threads.Effect"
 
 
 startEffect :: Id -> Effect -> MudStack ()
-startEffect i e@(Effect _ (Just (RangeVal range)) _) = rndmR range >>= \x -> startEffectHelper i (e & effectVal ?~ DefiniteVal x)
-startEffect i e                                      = startEffectHelper i e
+startEffect i e@(Effect _ (Just (RangeVal range)) _ _) = rndmR range >>= \x -> startEffectHelper i (e & effectVal ?~ DefiniteVal x)
+startEffect i e                                        = startEffectHelper i e
 
 
 startEffectHelper :: Id -> Effect -> MudStack ()
-startEffectHelper i e = getState >>= \ms -> do
+startEffectHelper i e@(view effectFeeling -> ef) = getState >>= \ms -> do
     when (getType i ms == PCType) . logPla  "startEffectHelper" i $ "starting effect: " <> pp e
     q <- liftIO newTQueueIO
     a <- runAsync . threadEffect i e $ q
+    startFeeling i ef NoVal
     tweak $ activeEffectsTbl.ind i <>~ pure (ActiveEffect e (a, q))
 
 
 threadEffect :: Id -> Effect -> EffectQueue -> MudStack ()
-threadEffect i (Effect effSub _ secs) q = handle (threadExHandler tn) . onEnv $ \md -> do
+threadEffect i (Effect effSub _ secs _) q = handle (threadExHandler tn) . onEnv $ \md -> do
     ti <- liftIO myThreadId
     let effectTimer ior = setThreadType (EffectTimer i) >> loop secs `finally` done
           where

@@ -91,7 +91,7 @@ import Data.Tuple (swap)
 import GHC.Exts (sortWith)
 import Prelude hiding (log, pi)
 import qualified Data.IntMap.Lazy as IM (IntMap, (!), keys)
-import qualified Data.Map.Lazy as M ((!), elems, filter, keys, lookup, map, singleton, size, toList)
+import qualified Data.Map.Lazy as M ((!), elems, filter, foldrWithKey, keys, lookup, map, singleton, size, toList)
 import qualified Data.Set as S (filter, toList)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
@@ -1096,13 +1096,19 @@ feeling (NoArgs i mq cols) = getState >>= \ms ->
                                                  , mkEffHtDesc
                                                  , mkEffMaDesc
                                                  , mkEffPsDesc
-                                                 , mkFullDesc ] ]
+                                                 , mkFullDesc ] ] ++ mkFeelingDescs i ms
     in do { multiWrapSend mq cols txts
           ; logPla "feeling" i . dropANSI . slashes $ txts }
   where
     f [] = pure "You feel fine."
     f ts = ts
 feeling p = withoutArgs feeling p
+
+
+mkFeelingDescs :: Id -> MudState -> [Text]
+mkFeelingDescs i ms = M.foldrWithKey helper [] . getFeelingMap i $ ms
+  where
+    helper tag (Feeling fv _ _) = (getFeelingFun tag ms fv :)
 
 
 -----

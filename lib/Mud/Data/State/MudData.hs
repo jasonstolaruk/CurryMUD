@@ -10,6 +10,7 @@ import Control.Applicative (empty)
 import Control.Arrow ((***), first)
 import Control.Concurrent (ThreadId)
 import Control.Concurrent.Async (Async)
+import Control.Concurrent.STM.TMQueue (TMQueue)
 import Control.Concurrent.STM.TMVar (TMVar)
 import Control.Concurrent.STM.TQueue (TQueue)
 import Control.Lens (makeLenses)
@@ -57,6 +58,7 @@ data MudState = MudState { _activeEffectsTbl  :: ActiveEffectsTbl
                          , _effectFunTbl      :: EffectFunTbl
                          , _entTbl            :: EntTbl
                          , _eqTbl             :: EqTbl
+                         , _feelingFunTbl     :: FeelingFunTbl
                          , _foodTbl           :: FoodTbl
                          , _funTbl            :: FunTbl
                          , _hookFunTbl        :: HookFunTbl
@@ -95,6 +97,7 @@ type DistinctLiqTbl    = IM.IntMap DistinctLiq
 type EffectFunTbl      = M.Map FunName EffectFun
 type EntTbl            = IM.IntMap Ent
 type EqTbl             = IM.IntMap EqMap
+type FeelingFunTbl     = M.Map FeelingTag FeelingFun
 type FoodTbl           = IM.IntMap Food
 type FunTbl            = M.Map FunName Fun
 type HookFunTbl        = M.Map HookName HookFun
@@ -140,9 +143,10 @@ data ActiveEffect = ActiveEffect { _effect        :: Effect
 
 
 -- Effects that have a duration.
-data Effect = Effect { _effectSub :: EffectSub
-                     , _effectVal :: Maybe EffectVal
-                     , _effectDur :: Seconds } deriving (Eq, Generic, Show)
+data Effect = Effect { _effectSub     :: EffectSub
+                     , _effectVal     :: Maybe EffectVal
+                     , _effectDur     :: Seconds
+                     , _effectFeeling :: Maybe EffectFeeling } deriving (Eq, Generic, Show)
 
 
 data EffectSub = ArmEffectAC
@@ -161,6 +165,10 @@ data EffectVal = DefiniteVal Int
 
 
 type Range = (Int, Int)
+
+
+data EffectFeeling = EffectFeeling { efTag  :: FeelingTag
+                                   , efDur  :: Seconds } deriving (Eq, Generic, Show)
 
 
 type EffectService = (EffectAsync, EffectQueue)
@@ -400,8 +408,9 @@ data HostRecord = HostRecord { _noOfLogouts   :: Int
 
 
 -- Effects that are instantaneous.
-data InstaEffect = InstaEffect { _instaEffectSub :: InstaEffectSub
-                               , _instaEffectVal :: Maybe EffectVal } deriving (Eq, Generic, Show)
+data InstaEffect = InstaEffect { _instaEffectSub     :: InstaEffectSub
+                               , _instaEffectVal     :: Maybe EffectVal
+                               , _instaEffectFeeling :: Maybe EffectFeeling } deriving (Eq, Generic, Show)
 
 
 data InstaEffectSub = EntInstaEffectFlags
@@ -547,8 +556,21 @@ type FeelingMap = M.Map FeelingTag Feeling
 type FeelingTag = Text
 
 
-data Feeling = Feeling { feelingDesc  :: Text
-                       , feelingAsync :: FeelingAsync }
+data Feeling = Feeling { feelingVal        :: FeelingVal
+                       , feelingTimerQueue :: TimerQueue
+                       , feelingAsync      :: FeelingAsync } -- TODO: Is the async needed?
+
+
+data FeelingVal = NoVal | IntVal Int
+
+
+type FeelingFun = FeelingVal -> Text
+
+
+type TimerQueue = TMQueue TimerMsg
+
+
+data TimerMsg = ResetTimer
 
 
 type FeelingAsync = Async ()
@@ -987,6 +1009,7 @@ instance FromJSON Con            where parseJSON = genericParseJSON dropUndersco
 instance FromJSON DistinctFoodId where parseJSON = genericParseJSON dropUnderscore
 instance FromJSON DistinctLiqId  where parseJSON = genericParseJSON dropUnderscore
 instance FromJSON Effect         where parseJSON = genericParseJSON dropUnderscore
+instance FromJSON EffectFeeling
 instance FromJSON EffectSub
 instance FromJSON EffectVal
 instance FromJSON Ent            where parseJSON = genericParseJSON dropUnderscore
@@ -1024,6 +1047,7 @@ instance ToJSON Con              where toJSON    = genericToJSON    dropUndersco
 instance ToJSON DistinctFoodId   where toJSON    = genericToJSON    dropUnderscore
 instance ToJSON DistinctLiqId    where toJSON    = genericToJSON    dropUnderscore
 instance ToJSON Effect           where toJSON    = genericToJSON    dropUnderscore
+instance ToJSON EffectFeeling
 instance ToJSON EffectSub
 instance ToJSON EffectVal
 instance ToJSON Ent              where toJSON    = genericToJSON    dropUnderscore

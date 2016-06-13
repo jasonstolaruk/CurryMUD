@@ -9,6 +9,7 @@ import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Misc.EffectFuns
+import Mud.Misc.FeelingFuns
 import Mud.Misc.Logging hiding (logNotice)
 import Mud.TheWorld.Foods
 import Mud.TheWorld.Liqs
@@ -66,6 +67,7 @@ initMudData shouldLog = do
                                  , _effectFunTbl      =  M.empty
                                  , _entTbl            = IM.empty
                                  , _eqTbl             = IM.empty
+                                 , _feelingFunTbl     =  M.empty
                                  , _foodTbl           = IM.empty
                                  , _funTbl            =  M.empty
                                  , _hookFunTbl        =  M.empty
@@ -104,6 +106,7 @@ initWorld = dropIrrelevantFilenames . sort <$> (liftIO . getDirectoryContents $ 
     sequence_ [ initFunTbl
               , initEffectFunTbl
               , initInstaEffectFunTbl
+              , initFeelingFunTbl
               , initHookFunTbl
               , initRmActionFunTbl
               , initDistinctFoodTbl
@@ -127,6 +130,12 @@ initInstaEffectFunTbl :: MudStack ()
 initInstaEffectFunTbl = tweak $ instaEffectFunTbl .~ M.fromList list
   where
     list = instaEffectFuns
+
+
+initFeelingFunTbl :: MudStack ()
+initFeelingFunTbl = tweak $ feelingFunTbl .~ M.fromList list
+  where
+    list = feelingFuns
 
 
 initHookFunTbl :: MudStack ()
