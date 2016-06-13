@@ -4,46 +4,26 @@
 module Mud.Threads.FeelingTimer ( startFeeling
                                 , threadFeelingTimer ) where
 
--- import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
--- import Mud.Data.State.Util.Get
--- import Mud.Data.State.Util.Misc
+import Mud.Data.State.Util.Misc
 import Mud.Threads.Misc
 import Mud.TopLvlDefs.Misc
 import Mud.Util.Misc
 import Mud.Util.Operators
--- import Mud.Util.Quoting
 import Mud.Util.Text
--- import qualified Mud.Misc.Logging as L (logNotice, logPla)
-import Mud.Data.State.Util.Misc
 
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TMQueue (newTMQueueIO, tryReadTMQueue, writeTMQueue)
--- import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception.Lifted (catch)
+import Control.Lens.Operators ((%~), (&), (.~), (^.))
 import Control.Monad ((>=>), join)
 import Control.Monad.IO.Class (liftIO)
 import Data.Monoid ((<>))
--- import Data.Text (Text)
--- import qualified Data.Text as T
--- import System.Time.Utils (renderSecs)
 import qualified Data.Map.Lazy as M (delete, insert, lookup)
-import Control.Lens.Operators ((%~), (&), (.~), (^.))
 
 
 default (Int)
-
-
------
-
-
--- logNotice :: Text -> Text -> MudStack ()
--- logNotice = L.logNotice "Mud.Threads.FeelingTimer"
---
---
--- logPla :: Text -> Id -> Text -> MudStack ()
--- logPla = L.logPla "Mud.Threads.FeelingTimer"
 
 
 -- ==================================================

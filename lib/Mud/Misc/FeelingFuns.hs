@@ -3,11 +3,6 @@
 module Mud.Misc.FeelingFuns (feelingFuns) where
 
 import Mud.Data.State.MudData
--- import Mud.Data.State.Util.Get
--- import Mud.Data.State.Util.Misc
--- import Mud.Data.State.Util.Output
--- import Mud.Data.State.Util.Random
--- import Mud.Util.Misc
 
 
 feelingFuns :: [(FeelingTag, FeelingFun)]
