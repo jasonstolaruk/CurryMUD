@@ -33,6 +33,7 @@ import Mud.Data.State.MudData
 import Mud.Data.State.Util.Calc
 import Mud.Data.State.Util.Coins
 import Mud.Data.State.Util.Get
+import Mud.Data.State.Util.Lang
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Data.State.Util.Random
@@ -53,7 +54,6 @@ import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
 import Mud.TopLvlDefs.Padding
 import Mud.TopLvlDefs.Telnet
-import Mud.Util.Lang
 import Mud.Util.List hiding (headTail)
 import Mud.Util.Misc hiding (blowUp, patternMatchFail)
 import Mud.Util.Operators

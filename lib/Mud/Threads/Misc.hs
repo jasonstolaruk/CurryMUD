@@ -175,7 +175,6 @@ setThreadType threadType = do
 -----
 
 
--- TODO: We need to stop feeling timer threads when appropriate...
 stopTimer :: TimerQueue -> MudStack ()
 stopTimer = liftIO . atomically . closeTMQueue
 

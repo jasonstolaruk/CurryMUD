@@ -52,7 +52,6 @@ library
                        Mud.Data.Misc
                        Mud.Data.State.ActionParams.ActionParams
                        Mud.Data.State.ActionParams.Misc
-                       Mud.Data.State.Hierarchy
                        Mud.Data.State.MsgQueue
                        Mud.Data.State.MudData
                        Mud.Data.State.Util.Calc
@@ -60,6 +59,8 @@ library
                        Mud.Data.State.Util.Destroy
                        Mud.Data.State.Util.Effect
                        Mud.Data.State.Util.Get
+                       Mud.Data.State.Util.Hierarchy
+                       Mud.Data.State.Util.Lang
                        Mud.Data.State.Util.Misc
                        Mud.Data.State.Util.New
                        Mud.Data.State.Util.Output
@@ -114,7 +115,6 @@ library
                        Mud.TopLvlDefs.Telnet
                        Mud.TopLvlDefs.Vols
                        Mud.TopLvlDefs.Weights
-                       Mud.Util.Lang
                        Mud.Util.List
                        Mud.Util.Misc
                        Mud.Util.Operators

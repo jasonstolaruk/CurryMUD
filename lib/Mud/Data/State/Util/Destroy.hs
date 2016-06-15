@@ -2,9 +2,9 @@
 
 module Mud.Data.State.Util.Destroy where
 
-import Mud.Data.State.Hierarchy
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
+import Mud.Data.State.Util.Hierarchy
 import Mud.Data.State.Util.Misc
 import Mud.Threads.Misc
 import Mud.Util.Misc

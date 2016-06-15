@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Mud.Util.Lang where -- TODO: This module should be moved to Mud.Data.State.Util.
+module Mud.Data.State.Util.Lang where
 
 import Mud.Data.Misc
 import Mud.Data.State.MudData
