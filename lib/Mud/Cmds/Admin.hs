@@ -1652,7 +1652,7 @@ teleHelper p@ActionParams { myId } ms originId destId destName mt f =
                                                    , (nlnl . teleDestMsg               $ destDesig,   destMobIds  ) ]
              , look p
              , logPla "telehelper" myId $ "teleported to " <> dblQuote destName <> "."
-             , rndmDos [ (calcProbTeleVomit   myId ms, mkExpAction "vomit"   p)
+             , rndmDos [ (calcProbTeleDizzy   myId ms, mkExpAction "dizzy"   p)
                        , (calcProbTeleShudder myId ms, mkExpAction "shudder" p) ] ])
 
 

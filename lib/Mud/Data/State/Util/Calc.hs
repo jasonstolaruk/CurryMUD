@@ -17,8 +17,8 @@ module Mud.Data.State.Util.Calc ( calcBarLen
                                 , calcMaxRaceLen
                                 , calcProbConnectBlink
                                 , calcProbLinkFlinch
+                                , calcProbTeleDizzy
                                 , calcProbTeleShudder
-                                , calcProbTeleVomit
                                 , calcRegenFpAmt
                                 , calcRegenFpDelay
                                 , calcRegenHpAmt
@@ -181,12 +181,12 @@ calcProbConnectBlink :: Id -> MudState -> Int
 calcProbConnectBlink = calcProbLinkFlinch
 
 
+calcProbTeleDizzy :: Id -> MudState -> Int
+calcProbTeleDizzy i ms = (calcEffHt i ms - 100) ^ 2 `quot` 250
+
+
 calcProbTeleShudder :: Id -> MudState -> Int
 calcProbTeleShudder = calcProbLinkFlinch
-
-
-calcProbTeleVomit :: Id -> MudState -> Int
-calcProbTeleVomit i ms = (calcEffHt i ms - 100) ^ 2 `quot` 250
 
 
 -----

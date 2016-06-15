@@ -322,11 +322,6 @@ expCmdSet = S.fromList
                                       "% holds @'s hand.")
     , ExpCmd "hop"         (NoTarget  "You hop up and down excitedly."
                                       "% hops up and down excitedly.")
-    , ExpCmd "horf"        (Versatile "You horf all over with reckless abandon."
-                                      "% horfs all over with reckless abandon."
-                                      "You horf all over @ with reckless abandon."
-                                      "% horfs all over you with reckless abandon."
-                                      "% horfs all over @ with reckless abandon.")
     , ExpCmd "howllaugh"   (Versatile "You howl with laughter."
                                       "% howls with laughter."
                                       "You howl with laughter at @."
@@ -492,11 +487,6 @@ expCmdSet = S.fromList
                                       "You prance around @."
                                       "% prances around you."
                                       "% prances around @.")
-    , ExpCmd "puke"        (Versatile "You violently puke all over."
-                                      "% violently pukes all over."
-                                      "You violently puke on @."
-                                      "% pukes voilently on you."
-                                      "% pukes voilently on @.")
     , ExpCmd "questioning" (Versatile "You have a questioning expression on your face."
                                       "% has a questioning expression on & face."
                                       "You flash a questioning expression at @."
@@ -657,11 +647,6 @@ expCmdSet = S.fromList
                                       "You are plainly unamused by @'s antics."
                                       "% is plainly unamused by your antics."
                                       "% is plainly unamused by @'s antics.")
-    , ExpCmd "vomit"       (Versatile "You vomit."
-                                      "% vomits."
-                                      "You vomit on @."
-                                      "% vomits on you."
-                                      "% vomits on @.")
     , ExpCmd "watch"       (HasTarget "You watch @ with interest."
                                       "% watches you with interest."
                                       "% watches @ with interest.")
