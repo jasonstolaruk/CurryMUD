@@ -47,6 +47,7 @@ import Mud.TheWorld.Zones.AdminZoneIds (iLoggedOut, iRoot, iWelcome)
 import Mud.Threads.Act
 import Mud.Threads.Digester
 import Mud.Threads.Effect
+import Mud.Threads.FeelingTimer
 import Mud.Threads.Misc
 import Mud.Threads.Regen
 import Mud.TopLvlDefs.Chars
@@ -2315,6 +2316,7 @@ handleEgress i = do
     helper now ri isAdHoc s |&| modifyState >=> \(bs, logMsgs) -> do
         stopActs          i
         pauseEffects      i
+        stopFeelings      i
         stopRegen         i
         throwWaitDigester i
         closePlaLog       i
@@ -2326,7 +2328,7 @@ handleEgress i = do
   where
     helper now ri isAdHoc s ms =
         let (ms', bs, logMsgs) = peepHelper ms s
-            ms''               = if isAdHoc then ms' else updateHostMap (possessHelper (movePC ms' ri)) s now
+            ms''               = isAdHoc ? ms' :? updateHostMap (possessHelper (movePC ms' ri)) s now
         in (ms'', (bs, logMsgs))
     peepHelper ms s =
         let (peeperIds, peepingIds) = getPeepersPeeping i ms

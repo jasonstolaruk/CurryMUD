@@ -2,6 +2,7 @@
 {-# LANGUAGE LambdaCase, OverloadedStrings #-}
 
 module Mud.Threads.FeelingTimer ( startFeeling
+                                , stopFeelings
                                 , threadFeelingTimer ) where
 
 import Mud.Data.Misc
@@ -23,11 +24,11 @@ import Control.Concurrent.STM.TMQueue (newTMQueueIO, tryReadTMQueue, writeTMQueu
 import Control.Exception (AsyncException(..), SomeException, fromException)
 import Control.Exception.Lifted (catch, finally)
 import Control.Lens.Operators ((%~))
-import Control.Monad ((>=>))
+import Control.Monad ((>=>), forM_)
 import Control.Monad.IO.Class (liftIO)
 import Data.Monoid ((<>))
 import Data.Text (Text)
-import qualified Data.Map.Lazy as M (delete, insert, lookup)
+import qualified Data.Map.Lazy as M (delete, insert, lookup, toList)
 import qualified Data.Text as T
 
 
@@ -107,3 +108,10 @@ threadFeelingTimer i tag dur tq =
       _                  -> logExMsg  "threadFeelingTimer" ("exception caught on thread for " <> mkName) e
     mkName    = T.concat [ "feeling timer ", showText i, " ", dblQuote tag ]
     logHelper = logPla "threadFeelingTimer" i
+
+
+-----
+
+
+stopFeelings :: Id -> MudStack ()
+stopFeelings i = getFeelingMap i <$> getState >>= \fm -> forM_ (M.toList fm) $ stopTimer . feelingTimerQueue . snd
