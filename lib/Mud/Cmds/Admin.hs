@@ -146,8 +146,8 @@ adminCmds =
     , mkAdminCmd "channel"    adminChan        True  "Display information about one or more telepathic channels."
     , mkAdminCmd "count"      adminCount       True  "Display or search a list of miscellaneous running totals."
     , mkAdminCmd "date"       adminDate        True  "Display the current system date."
-    , mkAdminCmd "eself"      adminExamineSelf True  "Self-examination."
     , mkAdminCmd "examine"    adminExamine     True  "Display the properties of one or more IDs."
+    , mkAdminCmd "exself"     adminExamineSelf True  "Self-examination."
     , mkAdminCmd "experience" adminExp         True  "Dump the experience table."
     , mkAdminCmd "hash"       adminHash        True  "Compare a plain-text password with a hashed password."
     , mkAdminCmd "host"       adminHost        True  "Display a report of connection statistics for one or more \
@@ -546,15 +546,6 @@ adminDispCmdList p                  = patternMatchFail "adminDispCmdList" [ show
 -----
 
 
-adminExamineSelf :: ActionFun
-adminExamineSelf p@(NoArgs'' i) = adminExamine p { args = pure . showText $ i }
-adminExamineSelf p              = withoutArgs adminExamineSelf p
-
-
------
-
-
--- TODO: FeelingMap
 adminExamine :: ActionFun
 adminExamine p@AdviseNoArgs          = advise p [ prefixAdminCmd "examine" ] adviceAExamineNoArgs
 adminExamine (LowerNub i mq cols as) = getState >>= \ms ->
@@ -699,6 +690,8 @@ examineMob i ms =
        , "Know languages: " <> m^.knownLangs.to ppList
        , "Room: "           <> let ri = m^.rmId
                                in getRmName ri ms <> " " <> parensQuote (showText ri)
+       , "Feeling map: "    <> let f tag feel = (tag <> " " <> pp feel :)
+                               in noneOnNull . commas . views feelingMap (M.foldrWithKey f []) $ m
        , encHelper i ms ]
 
 
@@ -796,6 +789,14 @@ examineWritable :: ExamineHelper
 examineWritable i ms = let w = getWritable i ms in [ "Message: "   <> w^.message.to (maybe none (xformNls . fst))
                                                    , "Language: "  <> w^.message.to (maybe none (pp . snd))
                                                    , "Recipient: " <> w^.recip  .to (fromMaybe none) ]
+
+
+-----
+
+
+adminExamineSelf :: ActionFun
+adminExamineSelf p@(NoArgs'' i) = adminExamine p { args = pure . showText $ i }
+adminExamineSelf p              = withoutArgs adminExamineSelf p
 
 
 -----
@@ -1198,7 +1199,6 @@ mkSecReport SecRec { .. } = [ "Name: "     <> dbName
 -----
 
 
--- TODO: Use "commaEvery3".
 adminSet :: ActionFun
 adminSet p@AdviseNoArgs                       = advise p [ prefixAdminCmd "set" ] adviceASetNoArgs
 adminSet p@(AdviseOneArg a                  ) = advise p [ prefixAdminCmd "set" ] . adviceASetNoSettings $ a
@@ -1361,8 +1361,8 @@ setHelper targetId a@(ms, toSelfMsgs, _, _) arg = if
                                      AddAssign -> addSubAssignHelper (+)
                                      SubAssign -> addSubAssignHelper (-)
           where
-            mkToTarget diff | diff > 0  = pure . T.concat $ [ "You have gained ", showText diff,         " ", n, "." ]
-                            | otherwise = pure . T.concat $ [ "You have lost ",   showText . abs $ diff, " ", n, "." ]
+            mkToTarget diff | diff > 0  = pure . T.concat $ [ "You have gained ", commaTxt diff,         " ", n, "." ]
+                            | otherwise = pure . T.concat $ [ "You have lost ",   commaTxt . abs $ diff, " ", n, "." ]
         -----
         setMobCurHelper t k n f setter
           | not . hasMob $ t = sorryType
@@ -1386,8 +1386,8 @@ setHelper targetId a@(ms, toSelfMsgs, _, _) arg = if
                                      AddAssign -> addSubAssignHelper (+)
                                      SubAssign -> addSubAssignHelper (-)
           where
-            mkToTarget diff | diff > 0  = pure . T.concat $ [ "You have recovered ", showText diff  ,       " ", n, "." ]
-                            | otherwise = pure . T.concat $ [ "You have lost ",      showText . abs $ diff, " ", n, "." ]
+            mkToTarget diff | diff > 0  = pure . T.concat $ [ "You have recovered ", commaTxt diff,         " ", n, "." ]
+                            | otherwise = pure . T.concat $ [ "You have lost ",      commaTxt . abs $ diff, " ", n, "." ]
         -----
         setMobExpHelper t
           | not . hasMob $ t = sorryType
@@ -1411,8 +1411,8 @@ setHelper targetId a@(ms, toSelfMsgs, _, _) arg = if
                                      AddAssign -> addSubAssignHelper (+)
                                      SubAssign -> addSubAssignHelper (-)
           where
-            mkToTarget diff | diff > 0  = pure . T.concat $ [ "You have been awarded ", showText diff,         " experience points." ]
-                            | otherwise = pure . T.concat $ [ "You have lost ",         showText . abs $ diff, " experience points." ]
+            mkToTarget diff | diff > 0  = pure . T.concat $ [ "You have been awarded ", commaTxt diff,         " experience points." ]
+                            | otherwise = pure . T.concat $ [ "You have lost ",         commaTxt . abs $ diff, " experience points." ]
         -----
         setMobHandHelper t
           | not . hasMob $ t = sorryType
@@ -1497,16 +1497,16 @@ setHelper targetId a@(ms, toSelfMsgs, _, _) arg = if
         mkDiffTxt isDiff        = not isDiff |?| (" " <> parensQuote "no change")
         showMaybe Nothing       = "none"
         showMaybe (Just x)      = showText x
-        mkToSelfForInt k v diff = pure . T.concat $ [ "Set ", k, " to ", showText v, " ", parensQuote diffTxt, "." ]
+        commaTxt                = commaEvery3 . showText
+        mkToSelfForInt k v diff = pure . T.concat $ [ "Set ", k, " to ", commaTxt v, " ", parensQuote diffTxt, "." ]
           where
             diffTxt = if | diff == 0 -> "no change"
-                         | diff >  0 -> "added "      <> showText diff
-                         | otherwise -> "subtracted " <> showText (abs diff)
+                         | diff >  0 -> "added "      <> commaTxt diff
+                         | otherwise -> "subtracted " <> commaTxt (abs diff)
         mkTupleForList prev f x g = let x'     = nubSort $ prev `f` x
                                         toSelf = g x' isDiff
                                         isDiff = x' /= prev
                                     in (x', toSelf, isDiff)
-
 
 
 -----

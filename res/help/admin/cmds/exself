@@ -1,13 +1,13 @@
-\h #dESELF \d
+\h #dEXSELF \d
 
 \uUSAGE\n
-#deself
+#dexself
 
 \uDESCRIPTION\n
 Self-examination.
 This command is equivalent to executing "#dexamine" with your ID.
 
 \uEXAMPLES\n
-\q#deself\d to examine yourself.4`
+\q#dexself\d to examine yourself.4`
 
 \uSEE ALSO\n

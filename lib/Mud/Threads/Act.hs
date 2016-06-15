@@ -151,7 +151,7 @@ drinkAct DrinkBundle { .. } =
         logHelper    =
             logPla "drinkAct loop" drinkerId . T.concat $ [ "drank "
                                                           , showText m
-                                                          , " mouthfuls"
+                                                          , " mouthful"
                                                           , theLetterS $ m /= 1
                                                           , " of "
                                                           , renderLiqNoun drinkLiq aOrAn

@@ -314,7 +314,7 @@ debugEchoWon't p = withoutArgs debugEchoWon't p
 debugEffect :: ActionFun
 debugEffect (NoArgs' i mq) = do
     ok mq
-    startEffect i . Effect (MobEffectAttrib St) (Just . RangeVal $ (10, 20)) 30 $ Nothing -- TODO: Feeling.
+    startEffect i . Effect (MobEffectAttrib St) (Just . RangeVal $ (10, 20)) 30 $ Nothing
     logPlaExec (prefixDebugCmd "effect") i
 debugEffect p = withoutArgs debugEffect p
 
@@ -721,26 +721,26 @@ descThreads = do
   where
     mkDesc (ti, bracketPad 20 . mkTypeName -> tn) = [ T.concat [ padOrTrunc 16 . showText $ ti, tn, ts ]
                                                     | (showText -> ts) <- liftIO . threadStatus $ ti ]
-    mkTypeName (Biodegrader    (showText -> pi)) = padOrTrunc padAmt "Biodegrader" <> pi
-    mkTypeName (Digester       (showText -> pi)) = padOrTrunc padAmt "Digester"    <> pi
-    mkTypeName (DrinkingThread (showText -> pi)) = padOrTrunc padAmt "Drinking"    <> pi
-    mkTypeName (EatingThread   (showText -> pi)) = padOrTrunc padAmt "Eating"      <> pi
-    mkTypeName (MovingThread   (showText -> pi)) = padOrTrunc padAmt "Moving"      <> pi
-    mkTypeName (EffectListener (showText -> pi)) = padOrTrunc padAmt "Eff Listen"  <> pi
-    mkTypeName (EffectThread   (showText -> pi)) = padOrTrunc padAmt "Eff Thread"  <> pi
-    mkTypeName (EffectTimer    (showText -> pi)) = padOrTrunc padAmt "Eff Timer"   <> pi
-    mkTypeName (FeelingTimer   (showText -> pi)) = padOrTrunc padAmt "FeelingTimer" <> pi -- TODO: Fix text.
-    mkTypeName (InacTimer      (showText -> pi)) = padOrTrunc padAmt "InacTimer"   <> pi
-    mkTypeName (NpcServer      (showText -> pi)) = padOrTrunc padAmt "NpcServer"   <> pi
-    mkTypeName (PlaLog         (showText -> pi)) = padOrTrunc padAmt "PlaLog"      <> pi
-    mkTypeName (Receive        (showText -> pi)) = padOrTrunc padAmt "Receive"     <> pi
-    mkTypeName (RegenChild     (showText -> pi)) = padOrTrunc padAmt "RegenChild"  <> pi
-    mkTypeName (RegenParent    (showText -> pi)) = padOrTrunc padAmt "RegenParent" <> pi
-    mkTypeName (RmFun          (showText -> pi)) = padOrTrunc padAmt "RmFun"       <> pi
-    mkTypeName (Server         (showText -> pi)) = padOrTrunc padAmt "Server"      <> pi
-    mkTypeName (Talk           (showText -> pi)) = padOrTrunc padAmt "Talk"        <> pi
+    mkTypeName (Biodegrader    (showText -> pi)) = padOrTrunc padAmt "Biodegrader"  <> pi
+    mkTypeName (Digester       (showText -> pi)) = padOrTrunc padAmt "Digester"     <> pi
+    mkTypeName (DrinkingThread (showText -> pi)) = padOrTrunc padAmt "Drinking"     <> pi
+    mkTypeName (EatingThread   (showText -> pi)) = padOrTrunc padAmt "Eating"       <> pi
+    mkTypeName (MovingThread   (showText -> pi)) = padOrTrunc padAmt "Moving"       <> pi
+    mkTypeName (EffectListener (showText -> pi)) = padOrTrunc padAmt "Eff Listen"   <> pi
+    mkTypeName (EffectThread   (showText -> pi)) = padOrTrunc padAmt "Eff Thread"   <> pi
+    mkTypeName (EffectTimer    (showText -> pi)) = padOrTrunc padAmt "Eff Timer"    <> pi
+    mkTypeName (FeelingTimer   (showText -> pi)) = padOrTrunc padAmt "FeelingTimer" <> pi
+    mkTypeName (InacTimer      (showText -> pi)) = padOrTrunc padAmt "InacTimer"    <> pi
+    mkTypeName (NpcServer      (showText -> pi)) = padOrTrunc padAmt "NpcServer"    <> pi
+    mkTypeName (PlaLog         (showText -> pi)) = padOrTrunc padAmt "PlaLog"       <> pi
+    mkTypeName (Receive        (showText -> pi)) = padOrTrunc padAmt "Receive"      <> pi
+    mkTypeName (RegenChild     (showText -> pi)) = padOrTrunc padAmt "RegenChild"   <> pi
+    mkTypeName (RegenParent    (showText -> pi)) = padOrTrunc padAmt "RegenParent"  <> pi
+    mkTypeName (RmFun          (showText -> pi)) = padOrTrunc padAmt "RmFun"        <> pi
+    mkTypeName (Server         (showText -> pi)) = padOrTrunc padAmt "Server"       <> pi
+    mkTypeName (Talk           (showText -> pi)) = padOrTrunc padAmt "Talk"         <> pi
     mkTypeName (showText -> tt)                  = tt
-    padAmt                                       = 12
+    padAmt                                       = 13
 
 
 -----
@@ -766,7 +766,7 @@ debugThrowLog p = withoutArgs debugThrowLog p
 debugTinnitus :: ActionFun
 debugTinnitus (NoArgs' i mq) = do
     ok mq
-    startEffect i . Effect (EffectOther tinnitusEffectFunName) Nothing (2 * 60) $ Nothing -- TODO: Feeling.
+    startEffect i . Effect (EffectOther tinnitusEffectFunName) Nothing (2 * 60) . Just . EffectFeeling "potTinnitus" $ 2 * 60
     logPlaExec (prefixDebugCmd "tinnitus") i
 debugTinnitus p = withoutArgs debugTinnitus p
 

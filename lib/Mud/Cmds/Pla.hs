@@ -1108,7 +1108,7 @@ feeling p = withoutArgs feeling p
 mkFeelingDescs :: Id -> MudState -> [Text]
 mkFeelingDescs i ms = M.foldrWithKey helper [] . getFeelingMap i $ ms
   where
-    helper tag (Feeling fv _ _) = (getFeelingFun tag ms fv :)
+    helper tag (Feeling fv _ _ _) = (getFeelingFun tag ms fv :)
 
 
 -----

@@ -273,7 +273,7 @@ potStDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just el
     e  = Effect { _effectSub     = MobEffectAttrib St
                 , _effectVal     = Just . DefiniteVal $ potAttribEffectVal
                 , _effectDur     = potAttribEffectDur
-                , _effectFeeling = mkPotEffectFeeling "potSt" }
+                , _effectFeeling = Nothing }
 
 
 potAttribEffectVal :: Int
@@ -301,7 +301,7 @@ potInstantStDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Nothing
     e  = Effect { _effectSub     = MobEffectAttrib St
                 , _effectVal     = Just . RangeVal $ potInstantAtttribEffectRange
                 , _effectDur     = potAttribEffectDur
-                , _effectFeeling = mkPotEffectFeeling "potInstantSt" }
+                , _effectFeeling = Nothing }
 
 
 potInstantAtttribEffectRange :: Range
@@ -327,7 +327,7 @@ potDxDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just el
     e  = Effect { _effectSub     = MobEffectAttrib Dx
                 , _effectVal     = Just . DefiniteVal $ potAttribEffectVal
                 , _effectDur     = potAttribEffectDur
-                , _effectFeeling = mkPotEffectFeeling "potDx" }
+                , _effectFeeling = Nothing }
 
 
 potInstantDxLiq :: Liq
@@ -347,7 +347,7 @@ potInstantDxDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Nothing
     e  = Effect { _effectSub     = MobEffectAttrib Dx
                 , _effectVal     = Just . RangeVal $ potInstantAtttribEffectRange
                 , _effectDur     = potAttribEffectDur
-                , _effectFeeling = mkPotEffectFeeling "potInstantDx" }
+                , _effectFeeling = Nothing }
 
 
 -----
@@ -369,7 +369,7 @@ potHtDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just el
     e  = Effect { _effectSub     = MobEffectAttrib Ht
                 , _effectVal     = Just . DefiniteVal $ potAttribEffectVal
                 , _effectDur     = potAttribEffectDur
-                , _effectFeeling = mkPotEffectFeeling "potHt" }
+                , _effectFeeling = Nothing }
 
 
 potInstantHtLiq :: Liq
@@ -389,7 +389,7 @@ potInstantHtDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Nothing
     e  = Effect { _effectSub     = MobEffectAttrib Ht
                 , _effectVal     = Just . RangeVal $ potInstantAtttribEffectRange
                 , _effectDur     = potAttribEffectDur
-                , _effectFeeling = mkPotEffectFeeling "potInstantHt" }
+                , _effectFeeling = Nothing }
 
 
 -----
@@ -411,7 +411,7 @@ potMaDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just el
     e  = Effect { _effectSub     = MobEffectAttrib Ma
                 , _effectVal     = Just . DefiniteVal $ potAttribEffectVal
                 , _effectDur     = potAttribEffectDur
-                , _effectFeeling = mkPotEffectFeeling "potMa" }
+                , _effectFeeling = Nothing }
 
 
 potInstantMaLiq :: Liq
@@ -431,7 +431,7 @@ potInstantMaDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Nothing
     e  = Effect { _effectSub     = MobEffectAttrib Ma
                 , _effectVal     = Just . RangeVal $ potInstantAtttribEffectRange
                 , _effectDur     = potAttribEffectDur
-                , _effectFeeling = mkPotEffectFeeling "potInstantMa" }
+                , _effectFeeling = Nothing }
 
 
 -----
@@ -453,7 +453,7 @@ potPsDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just el
     e  = Effect { _effectSub     = MobEffectAttrib Ps
                 , _effectVal     = Just . DefiniteVal $ potAttribEffectVal
                 , _effectDur     = potAttribEffectDur
-                , _effectFeeling = mkPotEffectFeeling "potPs" }
+                , _effectFeeling = Nothing }
 
 
 potInstantPsLiq :: Liq
@@ -473,7 +473,7 @@ potInstantPsDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Nothing
     e  = Effect { _effectSub     = MobEffectAttrib Ps
                 , _effectVal     = Just . RangeVal $ potInstantAtttribEffectRange
                 , _effectDur     = potAttribEffectDur
-                , _effectFeeling = mkPotEffectFeeling "potInstantPs" }
+                , _effectFeeling = Nothing }
 
 
 -----
@@ -501,7 +501,7 @@ potNegStDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just el
     e  = Effect { _effectSub     = MobEffectAttrib St
                 , _effectVal     = Just . DefiniteVal . negate $ potAttribEffectVal
                 , _effectDur     = potAttribEffectDur
-                , _effectFeeling = mkPotEffectFeeling "potNegSt" }
+                , _effectFeeling = Nothing }
 
 
 potInstantNegStLiq :: Liq
@@ -521,7 +521,7 @@ potInstantNegStDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Nothi
     e  = Effect { _effectSub     = MobEffectAttrib St
                 , _effectVal     = Just . RangeVal $ (potInstantAtttribEffectRange & both %~ negate)
                 , _effectDur     = potAttribEffectDur
-                , _effectFeeling = mkPotEffectFeeling "potInstantNegSt" }
+                , _effectFeeling = Nothing }
 
 
 -----
@@ -542,7 +542,7 @@ potTinnitusDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just el
     el = EffectList . pure . Left $ ie
     ie = InstaEffect { _instaEffectSub     = InstaEffectOther tinnitusInstaEffectFunName
                      , _instaEffectVal     = Nothing
-                     , _instaEffectFeeling = Nothing } -- TODO
+                     , _instaEffectFeeling = Just . EffectFeeling "potTinnitus" $ 30 }
 
 
 potInstantTinnitusLiq :: Liq
@@ -562,4 +562,4 @@ potInstantTinnitusDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = No
     e  = Effect { _effectSub     = EffectOther tinnitusEffectFunName
                 , _effectVal     = Nothing
                 , _effectDur     = 2 * 60
-                , _effectFeeling = Nothing } -- TODO
+                , _effectFeeling = Just . EffectFeeling "potTinnitus" $ 2 * 60 }

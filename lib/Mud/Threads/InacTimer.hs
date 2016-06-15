@@ -19,7 +19,7 @@ import Control.Concurrent (threadDelay)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TMQueue (tryReadTMQueue)
 import Control.Concurrent.STM.TQueue (writeTQueue)
-import Control.Exception.Lifted (catch)
+import Control.Exception.Lifted (catch, finally)
 import Control.Monad ((>=>))
 import Control.Monad.IO.Class (liftIO)
 import Data.Monoid ((<>))
@@ -46,8 +46,9 @@ logPla = L.logPla "Mud.Threads.InacTimer"
 
 
 threadInacTimer :: Id -> MsgQueue -> TimerQueue -> MudStack ()
-threadInacTimer i mq tq = sequence_ [ setThreadType . InacTimer $ i
-                                    , loop 0 `catch` threadExHandler ("inactivity timer " <> showText i) ]
+threadInacTimer i mq tq =
+    sequence_ [ setThreadType . InacTimer $ i
+              , loop 0 `catch` threadExHandler ("inactivity timer " <> showText i) ] `finally` stopTimer tq
   where
     loop secs = do
         liftIO . threadDelay $ 1 * 10 ^ 6

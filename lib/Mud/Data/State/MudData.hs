@@ -557,8 +557,9 @@ type FeelingTag = Text
 
 
 data Feeling = Feeling { feelingVal        :: FeelingVal
+                       , feelingDur        :: Seconds
                        , feelingTimerQueue :: TimerQueue
-                       , feelingAsync      :: FeelingAsync } -- TODO: Is the async needed?
+                       , feelingAsync      :: FeelingAsync }
 
 
 data FeelingVal = NoVal | IntVal Int

@@ -325,6 +325,15 @@ instance Pretty EffectVal where
   pp (RangeVal    (x, y)) = showText x <> "-" <> showText y
 
 
+instance Pretty Feeling where
+  pp (Feeling fv dur _ _) = pp fv <> " " <> mkSecsTxt dur
+
+
+instance Pretty FeelingVal where
+  pp NoVal      = "NoVal"
+  pp (IntVal x) = "IntVal " <> showText x
+
+
 instance Pretty Hand where
   pp RHand  = "right-handed"
   pp LHand  = "left-handed"

@@ -13,7 +13,7 @@ module Mud.Threads.Misc ( concurrentTree
                         , racer
                         , runAsync
                         , setThreadType
-                        , stopTimerThread
+                        , stopTimer
                         , threadExHandler
                         , throwDeath
                         , throwToListenThread
@@ -175,9 +175,9 @@ setThreadType threadType = do
 -----
 
 
--- TODO: We need functionality to stop feeling timer threads.
-stopTimerThread :: TimerQueue -> MudStack ()
-stopTimerThread = liftIO . atomically . closeTMQueue
+-- TODO: We need to stop feeling timer threads when appropriate...
+stopTimer :: TimerQueue -> MudStack ()
+stopTimer = liftIO . atomically . closeTMQueue
 
 
 -----

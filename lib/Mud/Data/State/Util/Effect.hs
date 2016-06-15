@@ -41,7 +41,7 @@ procInstaEffect i ie@(InstaEffect sub val feel) = getState >>= \ms -> do
       EntInstaEffectFlags         -> undefined -- TODO
       (MobInstaEffectPts ptsType) -> maybeVoid (effectPts ptsType) val
       RmInstaEffectFlags          -> undefined -- TODO
-      (InstaEffectOther fn)       -> getInstaEffectFun fn ms i -- TODO: startFeeling
+      (InstaEffectOther fn)       -> getInstaEffectFun fn ms i >> startFeeling i feel NoVal
     logHelper ms
   where
     effectPts ptsType   = (helper ptsType =<<) . \case DefiniteVal x -> return x

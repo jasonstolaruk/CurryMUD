@@ -64,7 +64,7 @@ threadServer h i mq tq = sequence_ [ setThreadType . Server $ i, loop `catch` th
       FromClient msg -> handleFromClient i mq tq False msg >> loop
       FromServer msg -> handleFromServer i h False msg     >> loop
       InacBoot       -> sendInacBootMsg h                  >> sayonara
-      InacStop       -> stopTimerThread tq                 >> loop
+      InacStop       -> stopTimer tq                       >> loop
       MsgBoot msg    -> sendBootMsg h msg                  >> sayonara
       Peeped  msg    -> (liftIO . T.hPutStr h $ msg)       >> loop
       Prompt  p      -> promptHelper i h p                 >> loop
@@ -72,7 +72,7 @@ threadServer h i mq tq = sequence_ [ setThreadType . Server $ i, loop `catch` th
       Shutdown       -> shutDown                           >> loop
       SilentBoot     ->                                       sayonara
       ToNpc msg      -> handleFromServer i h True msg      >> loop
-    sayonara = sequence_ [ stopTimerThread tq, handleEgress i ]
+    sayonara = sequence_ [ stopTimer tq, handleEgress i ]
 
 
 handleFromClient :: Id -> MsgQueue -> TimerQueue -> Bool -> Text -> MudStack ()
