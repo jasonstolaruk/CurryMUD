@@ -88,6 +88,10 @@ noSmellMsg :: Text
 noSmellMsg = "You don't smell anything in particular."
 
 
+noSoundMsg :: Text
+noSoundMsg = "You don't hear anything in particular."
+
+
 noTasteMsg :: Text
 noTasteMsg = "You don't taste anything in particular."
 

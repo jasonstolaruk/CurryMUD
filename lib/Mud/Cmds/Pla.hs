@@ -178,6 +178,7 @@ regularCmdTuples =
     , ("equipment",  equip,              True,  cmdDescEquip)
     , ("expressive", expCmdList,         True,  cmdDescExpCmdList)
     , ("feeling",    feeling,            True,  cmdDescFeeling)
+    , ("listen",     listen,             True,  cmdDescListen)
     , ("moles",      molestCan'tAbbrev,  True,  "")
     , ("molest",     alertExec "molest", True,  "")
     , ("n",          go "n",             True,  cmdDescGoNorth)
@@ -317,6 +318,7 @@ npcRegularCmdTuples =
     , ("equipment",  equip,          True,  cmdDescEquip)
     , ("expressive", expCmdList,     True,  cmdDescExpCmdList)
     , ("feeling",    feeling,        True,  cmdDescFeeling)
+    , ("listen",     listen,         True,  cmdDescListen)
     , ("n",          go "n",         True,  cmdDescGoNorth)
     , ("ne",         go "ne",        True,  cmdDescGoNortheast)
     , ("nw",         go "nw",        True,  cmdDescGoNorthwest)
@@ -356,7 +358,7 @@ npcPriorityAbbrevCmdTuples =
     , ("stop",      "sto", stop,        True,  cmdDescStop)
     , ("unready",   "un",  unready,     True,  cmdDescUnready)
     , ("whisper",   "whi", whisper,     True,  cmdDescWhisper)
-    , ("whoami",    "wh",  whoAmI,      True,  "Confirm who " <> parensQuote "or what" <> " you are.") ]
+    , ("whoami",    "wh",  whoAmI,      True,  "Confirm who " <> parensQuote "and what" <> " you are.") ]
 
 
 noOfNpcCmds :: Int
@@ -1855,6 +1857,17 @@ link (LowerNub i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
     helperLinkEitherCoins a (Left msgs) = a & _1 <>~ (mkBcast i . T.concat $ [ nlnl msg | msg <- msgs ])
     helperLinkEitherCoins a Right {}    = let b = (nlnl sorryLinkCoin, pure i) in first (`appendIfUnique` b) a
 link p = patternMatchFail "link" [ showText p ]
+
+
+-----
+
+
+-- TODO: Help.
+listen :: ActionFun
+listen (NoArgs i mq cols) = getState >>= \ms -> do
+    views rmListen (wrapSend mq cols . fromMaybe noSoundMsg) . getMobRm i $ ms
+    logPlaExec "listen" i
+listen p = withoutArgs listen p
 
 
 -----

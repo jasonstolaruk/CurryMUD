@@ -575,7 +575,7 @@ createAdminZone = do
         (Rm "The trash dump"
             "Items deposited in magic trash bins end up here."
             Nothing
-            Nothing
+            (Just "This place sure does smell like shit.")
             zeroBits
             []
             M.empty [] [] [])
@@ -599,7 +599,7 @@ createAdminZone = do
             \There is a large poster on the wall.\n\
             \A spiral staircase leads down, while a door opens to a hallway leading east. A trash bin sits adjascent \
             \to the spiral staircase."
-            Nothing
+            (Just "The cooling fans spinning inside the control panels give off a soothing whirring sound.")
             (Just "You vaguely detect the chemical scents of plastic and cleaning solutions.")
             zeroBits
             [ StdLink Down iBasement, StdLink East iHallwayWest ]
@@ -639,7 +639,7 @@ createAdminZone = do
             \support the ceiling. Next to the pool is a raised flowerbed, surrounded by four unembellished stone \
             \benches.\n\
             \An opening in the west wall leads out into a hallway."
-            Nothing
+            (Just "You hear the sound of trees blowing in the breeze coming through the openning in the ceiling.")
             (Just "The scent of fresh air wafting in from the ceiling combines the with sweet, grassy smells of the \
                   \flowerbed.")
             zeroBits
@@ -656,11 +656,12 @@ createAdminZone = do
         []
         mempty
         (Rm "The basement"
-            "This dusty, unfinished basement smells of mold.\n\
+            "This dusty, unfinished basement smells of mold. You spot several cobwebs hanging from the ceiling.\n\
             \Eight doors are positioned about the round, stucco wall at even intervals. A spiral staircase leads up. \
             \Next to the staircase lies an open manhole."
             Nothing
-            Nothing
+            (Just "The unmistakable scent of mildew fills your nostrils. They really ought to ventillate this room \
+                  \better.")
             zeroBits
             [ StdLink North     iWeightRm
             , StdLink Northeast iObjCloset
@@ -706,8 +707,8 @@ createAdminZone = do
         mempty
         (Rm "The attic"
             "Though the confined attic is dusty, its cozy atmosphere creates an oddly welcoming space."
-            Nothing
-            Nothing
+            (Just "Is that the soft squeek of a mouse you hear? Maybe you're just hearing things...")
+            (Just "The air here is dusty and a little stale, though not stifling.")
             zeroBits
             [ NonStdLink "d" iWeightRm "% climbs down the ladder and into the hole in the floor."
                                        "% climbs down the ladder and out of the hole in the ceiling." ]
@@ -836,7 +837,8 @@ createAdminZone = do
             zeroBits
             [ StdLink Southeast iBasement ]
             M.empty [] [] [])
-  let voidSmell = Just "Strangely, the air here is utterly devoid of scent."
+  let voidListen = Just "It's eerily silent here."
+      voidSmell  = Just "Strangely, the air here is utterly devoid of scent."
   putRm iVoid
         []
         mempty
@@ -844,7 +846,7 @@ createAdminZone = do
             "You have stumbled into a vast, empty space. You are floating.\n\
             \An open manhole hovers above you. You see a colorful round shape some distance off to the north, while to \
             \the south a door floats innocuously."
-            Nothing
+            voidListen
             voidSmell
             zeroBits
             [ StdLink North iTutEntrance
@@ -858,7 +860,7 @@ createAdminZone = do
             "Floating before you is a large round portal in which dazzling shapes and colors spin and dance. You feel \
             \a peculiar pulling sensation in your abdomen, as if the portal is attempting to draw you towards itself.\n\
             \A wooden sign is suspended above the portal."
-            Nothing
+            voidListen
             voidSmell
             zeroBits
             [ StdLink South iVoid
@@ -873,7 +875,7 @@ createAdminZone = do
         (Rm "The floating door"
             "Floating before you is a polished wooden door surrounded by featureless white trimming. Hanging from a \
             \nail affixed to the door is a small sign reading, \"Admin Lounge.\""
-            Nothing
+            voidListen
             voidSmell
             zeroBits
             [ StdLink North iVoid

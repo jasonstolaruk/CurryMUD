@@ -110,6 +110,10 @@ cmdDescInv :: Text
 cmdDescInv = "Display your inventory, or examine one or more items in your inventory."
 
 
+cmdDescListen :: Text
+cmdDescListen = "Display a description of what you hear in your current room."
+
+
 cmdDescLook :: Text
 cmdDescLook = "Display a description of your current room, or examine one or more things in your current room."
 
