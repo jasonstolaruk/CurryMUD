@@ -27,6 +27,7 @@ module Mud.TheWorld.Liqs ( distinctLiqList
 
 import Control.Lens (both)
 import Control.Lens.Operators ((%~), (&))
+import Mud.Cmds.Msgs.Misc
 import Mud.Data.State.MudData
 import Mud.Misc.EffectFuns
 import Mud.TheWorld.LiqIds
@@ -139,10 +140,10 @@ potInstantXpEffectRange = (8, 12)
 
 potMpLiq :: Liq
 potMpLiq = Liq (DistinctLiqId iLiqPotMp)
-               (DoArticle "")
-               "" -- TODO
-               ""
-               ""
+               (DoArticle "cloudy, semi-transparent liquid")
+               noSmellMsg
+               "Save for a nearly indetectable chalkiness, the liquid is tasteless."
+               "The cloudy liquid goes down like water."
 
 
 potMpDistinctLiq :: DistinctLiq
@@ -157,10 +158,10 @@ potMpDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just el
 
 potInstantMpLiq :: Liq
 potInstantMpLiq = Liq (DistinctLiqId iLiqPotInstantMp)
-                      (DoArticle "")
-                      "" -- TODO
-                      ""
-                      ""
+                      (DoArticle "crimson liquid")
+                      "There is a fruity smell of strawberries or perhaps raspberries."
+                      "The tart taste makes you want to smack your lips."
+                      "The juicy, piquant liquid makes a pleasant beverage."
 
 
 potInstantMpDistinctLiq :: DistinctLiq
@@ -179,10 +180,10 @@ potInstantMpDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Nothing
 
 potPpLiq :: Liq
 potPpLiq = Liq (DistinctLiqId iLiqPotPp)
-               (DoArticle "")
-               "" -- TODO
-               ""
-               ""
+               (DoArticle "shocking pink liquid")
+               noSmellMsg
+               "The thick, powdery concoction tastes sweet and creamy."
+               "Despite its color, the dense liquid reminds you of sweetened cow milk."
 
 
 potPpDistinctLiq :: DistinctLiq
@@ -197,10 +198,10 @@ potPpDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just el
 
 potInstantPpLiq :: Liq
 potInstantPpLiq = Liq (DistinctLiqId iLiqPotInstantPp)
-                      (DoArticle "")
-                      "" -- TODO
-                      ""
-                      ""
+                      (DoArticle "pale yellow liquid")
+                      "There is a yeast-like smell that reminds you of freashly-kneaded dough."
+                      "You don't taste much until you are hit with a grain-like, malty aftertaste."
+                      "The scent of yeast and fermentation fills your nostrils."
 
 
 potInstantPpDistinctLiq :: DistinctLiq
