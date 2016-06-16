@@ -4,17 +4,16 @@ module Mud.Misc.FeelingFuns (feelingFuns) where
 
 import Mud.Data.State.MudData
 
+import Data.Text (Text)
+import Data.Monoid ((<>))
+
 
 feelingFuns :: [(FeelingTag, FeelingFun)]
-feelingFuns = [ ("potHp",              potHpFeelingFun      )
-              , ("potInstantHp",       potHpFeelingFun      )
-              , ("potMp",              potMpFeelingFun      )
-              , ("potInstantMp",       potMpFeelingFun      )
-              , ("potPp",              potPpFeelingFun      )
-              , ("potInstantPp",       potPpFeelingFun      )
-              , ("potFp",              potFpFeelingFun      )
-              , ("potInstantFp",       potFpFeelingFun      )
-              , ("potTinnitus",        potTinnitusFeelingFun) ]
+feelingFuns = [ ("potHp",       potHpFeelingFun      )
+              , ("potMp",       potMpFeelingFun      )
+              , ("potPp",       potPpFeelingFun      )
+              , ("potFp",       potFpFeelingFun      )
+              , ("potTinnitus", potTinnitusFeelingFun) ]
 
 
 -----
@@ -23,8 +22,12 @@ feelingFuns = [ ("potHp",              potHpFeelingFun      )
 potHpFeelingFun :: FeelingFun
 potHpFeelingFun NoVal      = ""
 potHpFeelingFun (IntVal 0) = ""
-potHpFeelingFun (IntVal _) = "You feel your wounds heal as a warm sensation pulsates outward from your stomach and \
-                             \throughout your torso."
+potHpFeelingFun (IntVal _) = mkFeelingMsg "wounds heal"
+
+
+mkFeelingMsg :: Text -> Text
+mkFeelingMsg txt = "You feel your " <> txt <> " as a warm sensation pulsates outward from your stomach and throughout \
+                   \your torso."
 
 
 -----
@@ -33,7 +36,7 @@ potHpFeelingFun (IntVal _) = "You feel your wounds heal as a warm sensation puls
 potMpFeelingFun :: FeelingFun
 potMpFeelingFun NoVal      = ""
 potMpFeelingFun (IntVal 0) = ""
-potMpFeelingFun (IntVal _) = "" -- TODO
+potMpFeelingFun (IntVal _) = mkFeelingMsg "mana return"
 
 
 -----
@@ -42,7 +45,7 @@ potMpFeelingFun (IntVal _) = "" -- TODO
 potPpFeelingFun :: FeelingFun
 potPpFeelingFun NoVal      = ""
 potPpFeelingFun (IntVal 0) = ""
-potPpFeelingFun (IntVal _) = "" -- TODO
+potPpFeelingFun (IntVal _) = mkFeelingMsg "psionic energy return"
 
 
 -----
@@ -51,7 +54,7 @@ potPpFeelingFun (IntVal _) = "" -- TODO
 potFpFeelingFun :: FeelingFun
 potFpFeelingFun NoVal      = ""
 potFpFeelingFun (IntVal 0) = ""
-potFpFeelingFun (IntVal _) = "" -- TODO
+potFpFeelingFun (IntVal _) = mkFeelingMsg "energy return"
 
 
 -----
