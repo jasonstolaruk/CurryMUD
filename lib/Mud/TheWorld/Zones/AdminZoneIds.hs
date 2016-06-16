@@ -250,30 +250,30 @@ iParchment4 = 136 :: Id
 
 iParchment5 = 137 :: Id
 
-iPotionFlask1 = 138 :: Id -- 10
+iPotionFlask1 = 138 :: Id -- 20
 
-iPotionFlaskLrg1 = 148 :: Id -- 10
+iPotionFlaskLrg1 = 158 :: Id -- 20
 
-iWaterskin = 158 :: Id
+iWaterskin = 178 :: Id
 
-iWaterskinLrg = 159 :: Id
+iWaterskinLrg = 179 :: Id
 
-iJarSml = 160 :: Id
+iJarSml = 180 :: Id
 
-iJar = 161 :: Id
+iJar = 181 :: Id
 
-iJarLrg = 162 :: Id
+iJarLrg = 182 :: Id
 
-iJugSml = 163 :: Id
+iJugSml = 183 :: Id
 
-iJug = 164 :: Id
+iJug = 184 :: Id
 
-iJugLrg = 165 :: Id
+iJugLrg = 185 :: Id
 
-iBottleSml = 166 :: Id
+iBottleSml = 186 :: Id
 
-iBottle = 167 :: Id
+iBottle = 187 :: Id
 
-iBottleLrg = 168 :: Id
+iBottleLrg = 188 :: Id
 
-iSlab = 169 :: Id
+iSlab = 189 :: Id

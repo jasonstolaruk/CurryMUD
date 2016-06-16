@@ -183,7 +183,7 @@ potPpLiq = Liq (DistinctLiqId iLiqPotPp)
                (DoArticle "shocking pink liquid")
                noSmellMsg
                "The thick, powdery concoction tastes sweet and creamy."
-               "Despite its color, the dense liquid reminds you of sweetened cow milk."
+               "Despite its pink color and slight grittiness, the dense liquid reminds you of sweetened cow milk."
 
 
 potPpDistinctLiq :: DistinctLiq
@@ -201,7 +201,7 @@ potInstantPpLiq = Liq (DistinctLiqId iLiqPotInstantPp)
                       (DoArticle "pale yellow liquid")
                       "There is a yeast-like smell that reminds you of freashly-kneaded dough."
                       "You don't taste much until you are hit with a grain-like, malty aftertaste."
-                      "The scent of yeast and fermentation fills your nostrils."
+                      "The scents of yeast and fermentation fill your nostrils."
 
 
 potInstantPpDistinctLiq :: DistinctLiq

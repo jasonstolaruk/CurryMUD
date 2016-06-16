@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiWayIf, OverloadedStrings, RecordWildCards, ViewPatterns #-}
+{-# LANGUAGE MultiWayIf, OverloadedStrings, RecordWildCards, TupleSections, ViewPatterns #-}
 
 module Mud.TheWorld.Zones.AdminZone ( adminZoneHooks
                                     , adminZoneRmActionFuns
@@ -1622,9 +1622,17 @@ createAdminZone = do
 
   -- ==================================================
   -- Vessels:
-  let flaskIds    = [ iPotionFlask1    + i | i <- [0..9] ]
-      flaskLrgIds = [ iPotionFlaskLrg1 + i | i <- [0..9] ]
-      flaskConts  = repeat Nothing
+  let flaskIds    = [ iPotionFlask1    + i | i <- [0..19] ]
+      flaskLrgIds = [ iPotionFlaskLrg1 + i | i <- [0..19] ]
+      flaskConts  = (++ repeat Nothing) . map (Just . (, maxBound)) $ [ potHpLiq, potInstantHpLiq
+                                                                      , potMpLiq, potInstantMpLiq
+                                                                      , potPpLiq, potInstantPpLiq
+                                                                      , potFpLiq, potInstantFpLiq
+                                                                      , potStLiq, potInstantStLiq
+                                                                      , potDxLiq, potInstantDxLiq
+                                                                      , potHtLiq, potInstantHtLiq
+                                                                      , potMaLiq, potInstantMaLiq
+                                                                      , potPsLiq, potInstantPsLiq ]
   forM_ (zip flaskIds flaskConts) $ \(i, mc) ->
       putVessel i
                 (Ent i
@@ -1754,7 +1762,7 @@ createAdminZone = do
                  Nothing
                  zeroBits)
             (Obj bottleLrgWeight bottleLrgVol Nothing zeroBits Nothing)
-            Nothing
+            (Just (potInstantTinnitusLiq, maxBound))
 
   -- ==================================================
   -- Weapons:
