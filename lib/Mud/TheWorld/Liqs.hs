@@ -183,7 +183,7 @@ potPpLiq = Liq (DistinctLiqId iLiqPotPp)
                (DoArticle "shocking pink liquid")
                noSmellMsg
                "The thick, powdery concoction tastes sweet and creamy."
-               "Despite its pink color and slight grittiness, the dense liquid reminds you of sweetened cow milk."
+               "Despite its pink color and slight grittiness, the tonic reminds you of sweetened cow milk."
 
 
 potPpDistinctLiq :: DistinctLiq
@@ -238,10 +238,11 @@ potFpDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just el
 
 potInstantFpLiq :: Liq
 potInstantFpLiq = Liq (DistinctLiqId iLiqPotInstantFp)
-                      (DoArticle "")
-                      "" -- TODO
-                      ""
-                      ""
+                      (DoArticle "clear, shimmering liquid")
+                      "You sniff the fumes omitted by the clear liquid. The heavy scent is similar to that of alcohol, \
+                      \but with sharp, vinegar-like overtones."
+                      "You are overwhelmed by a stunning mix of sharp and bitingly bad flavors."
+                      "You fight back the urge to gag."
 
 
 potInstantFpDistinctLiq :: DistinctLiq
