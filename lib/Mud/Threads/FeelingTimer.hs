@@ -23,12 +23,12 @@ import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TMQueue (newTMQueueIO, tryReadTMQueue, writeTMQueue)
 import Control.Exception (AsyncException(..), SomeException, fromException)
 import Control.Exception.Lifted (catch, finally)
-import Control.Lens.Operators ((%~))
-import Control.Monad ((>=>), forM_)
+import Control.Lens.Operators ((%~), (.~))
+import Control.Monad ((>=>), mapM_)
 import Control.Monad.IO.Class (liftIO)
 import Data.Monoid ((<>))
 import Data.Text (Text)
-import qualified Data.Map.Lazy as M (delete, insert, lookup, toList)
+import qualified Data.Map.Lazy as M (delete, empty, insert, lookup, toList)
 import qualified Data.Text as T
 
 
@@ -105,13 +105,16 @@ threadFeelingTimer i tag dur tq =
     exHandler :: SomeException -> MudStack ()
     exHandler e = case fromException e of
       Just ThreadKilled  -> logHelper $ "killed " <> mkName <> "."
-      _                  -> logExMsg  "threadFeelingTimer" ("exception caught on thread for " <> mkName) e
+      _                  -> logExMsg  tn ("exception caught on thread for " <> mkName) e
     mkName    = T.concat [ "feeling timer ", showText i, " ", dblQuote tag ]
-    logHelper = logPla "threadFeelingTimer" i
+    logHelper = logPla tn i
+    tn        = "threadFeelingTimer"
 
 
 -----
 
 
 stopFeelings :: Id -> MudStack ()
-stopFeelings i = getFeelingMap i <$> getState >>= \fm -> forM_ (M.toList fm) $ stopTimer . feelingTimerQueue . snd
+stopFeelings i = do
+    getFeelingMap i <$> getState >>= mapM_ (liftIO . cancel . feelingAsync . snd) . M.toList
+    tweak $ mobTbl.ind i.feelingMap .~ M.empty

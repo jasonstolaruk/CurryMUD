@@ -784,18 +784,18 @@ createAdminZone = do
             [ StdLink Northwest iBasement ]
             M.empty [] [] [])
   let conIds    = [ iSack1, iSack2, iSackSml, iSackLrg, iBack1, iBack2, iBackSml, iBackLrg ]
-  let vesselIds = [ iPotionFlask1    .. iPotionFlask1    + 9 ] ++
-                  [ iPotionFlaskLrg1 .. iPotionFlaskLrg1 + 9 ] ++ [ iWaterskin
-                                                                  , iWaterskinLrg
-                                                                  , iJarSml
-                                                                  , iJar
-                                                                  , iJarLrg
-                                                                  , iJugSml
-                                                                  , iJug
-                                                                  , iJugLrg
-                                                                  , iBottleSml
-                                                                  , iBottle
-                                                                  , iBottleLrg ]
+  let vesselIds = [ iPotionFlask1    .. iPotionFlask1    + 19 ] ++
+                  [ iPotionFlaskLrg1 .. iPotionFlaskLrg1 + 19 ] ++ [ iWaterskin
+                                                                   , iWaterskinLrg
+                                                                   , iJarSml
+                                                                   , iJar
+                                                                   , iJarLrg
+                                                                   , iJugSml
+                                                                   , iJug
+                                                                   , iJugLrg
+                                                                   , iBottleSml
+                                                                   , iBottle
+                                                                   , iBottleLrg ]
   putRm iConCloset
         (conIds ++ vesselIds)
         mempty
