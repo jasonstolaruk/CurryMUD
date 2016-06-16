@@ -220,10 +220,10 @@ potInstantPpDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Nothing
 
 potFpLiq :: Liq
 potFpLiq = Liq (DistinctLiqId iLiqPotFp)
-               (DoArticle "")
-               "" -- TODO
-               ""
-               ""
+               (DoArticle "dark black liquid")
+               "The dark black liquid looks as though it could be coffee, but it smells heavily of licorice."
+               "The dark black liquid tastes bitingly of licorice and salt."
+               "The concoction's briny flavors are far too strong for your tastes."
 
 
 potFpDistinctLiq :: DistinctLiq

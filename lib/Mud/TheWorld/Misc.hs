@@ -82,11 +82,11 @@ lookTrashHookName = "(common)_lookTrash"
 lookTrashHookFun :: HookFun
 lookTrashHookFun = mkGenericHookFun trashDesc "looks at the trash bin." "looked at trash bin"
   where
-    -- TODO: "Thank you for keeping xxx clean."
     trashDesc = "The trash bin is an oblong metal container, about 3 feet tall, with a lid connected to the body by \
                 \hinges. Affixed to the lid is a bronze plate, on which the following has been neatly etched:\n\
-                \\"Magic Trash Bin: you may dispose of unwanted items by \"trash\"ing them here. Items placed in this \
-                \bin are magically expunged, and entirely unrecoverable.\"\n\
+                \\"Magic Trash Bin: you may dispose of unwanted items by 'trash'ing them here. Items placed in this \
+                \bin are magically expunged, and entirely unrecoverable.\n\
+                \Thank you for keeping Dalben clean.\"\n\
                 \Carefully lifting open the lid and peaking inside, you find only an ominous darkness; not even the \
                 \bottom of the bin is visible."
 
