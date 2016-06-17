@@ -208,10 +208,6 @@ Objects have varying degrees of persistence. Corpses decay...
 
 Objects have wear and tear.
 
-Players should be able to empty out containers that have liquid inside of them.
-
-Consider not allowing more than one type of liquid to be put in a container at once.
-
 Consider putting seasonal content into the virtual world. Such content could be suggestive of real-world seasonal themes. (This only works if virtual world time progression coincides with that of the real world.)
 
 ==========

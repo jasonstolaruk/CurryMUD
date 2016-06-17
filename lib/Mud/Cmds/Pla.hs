@@ -193,6 +193,7 @@ regularCmdTuples =
     , ("rape",       alertExec "rape",   True,  "")
     , ("read",       readAction,         True,  cmdDescRead)
     , ("remove",     remove,             True,  cmdDescRemove)
+    , ("roomdesc",   roomDesc,           True,  cmdDescRoomDesc)
     , ("s",          go "s",             True,  cmdDescGoSouth)
     , ("se",         go "se",            True,  cmdDescGoSoutheast)
     , ("security",   security,           True,  "View or change your security Q&A.")
@@ -324,6 +325,7 @@ npcRegularCmdTuples =
     , ("nw",         go "nw",        True,  cmdDescGoNorthwest)
     , ("read",       readAction,     True,  cmdDescRead)
     , ("remove",     remove,         True,  cmdDescRemove)
+    , ("roomdesc",   roomDesc,       True,  cmdDescRoomDesc)
     , ("taste",      taste,          True,  cmdDescTaste)
     , ("s",          go "s",         True,  cmdDescGoSouth)
     , ("se",         go "se",        True,  cmdDescGoSoutheast)
@@ -2800,6 +2802,14 @@ shuffleRem i ms d conName icir as invCoinsWithCon@(invWithCon, _) f =
     stripLocPrefs = onTrue (any hasLocPref as) g (as, [])
     g pair        = pair & _1 %~ map stripLocPref
                          & _2 .~ pure sorryRemIgnore
+
+
+-----
+
+
+-- TODO: Help.
+roomDesc :: ActionFun
+roomDesc _ = undefined
 
 
 -----

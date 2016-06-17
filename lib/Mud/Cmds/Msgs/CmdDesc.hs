@@ -135,6 +135,10 @@ cmdDescRemove = "Remove one or more items from a) a container in your inventory,
                 \room."
 
 
+cmdDescRoomDesc :: Text
+cmdDescRoomDesc = "Specify a temporary description to appear next to your name in the description of your current room."
+
+
 cmdDescSay :: Lang -> Text
 cmdDescSay l = "Say something out loud" <> mkInLangTxtForLang l <> "."
 
