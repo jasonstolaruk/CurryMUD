@@ -315,10 +315,10 @@ potInstantAtttribEffectRange = (8, 12)
 
 potDxLiq :: Liq
 potDxLiq = Liq (DistinctLiqId iLiqPotDx)
-               (DoArticle "")
-               "" -- TODO
-               ""
-               ""
+               (DoArticle "oily, maroon liquid")
+               "A fishy smell bombards you. Ugh!"
+               "The dense, oily liquid leaves a strong fishy taste in your mouth."
+               "The scent of raw fish and the taste of fish oil overwhelm your senses."
 
 
 potDxDistinctLiq :: DistinctLiq

@@ -799,6 +799,7 @@ debugToken (NoArgs i mq cols) = do
                 , styleTokenDelimiter `T.cons` ("aabbrevColor"       <> dfltColorStyleToken    )
                 , styleTokenDelimiter `T.cons` ("ddfltColor"         <> dfltColorStyleToken    )
                 , styleTokenDelimiter `T.cons` ("hheaderColor"       <> dfltColorStyleToken    )
+                , styleTokenDelimiter `T.cons` ("iasteriskColor"     <> dfltColorStyleToken    )
                 , styleTokenDelimiter `T.cons` ("lselectorColor"     <> dfltColorStyleToken    )
                 , styleTokenDelimiter `T.cons` ("nnoUnderlineANSI"   <> dfltColorStyleToken    )
                 , styleTokenDelimiter `T.cons` ("pprefixColor"       <> dfltColorStyleToken    )

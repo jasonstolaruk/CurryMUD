@@ -15,7 +15,7 @@ Within communication over telepathic channels, random names are automatically as
 (hunt) \udog\n: I'm lost! Where did everybody go?
 
 \uADDRESSING A MESSAGE\d
-Use \l#h\d to address your message to a particular person. For example, \qchannel hunt \l#h\qdog i'm still waiting in the clearing\d will produce a message similar to the following (assuming your PC name is Taro):
+Use \l#h\d to address your message to a particular person. For example, \qchannel hunt \l#h\qdog i'm still waiting in the clearing\d will produce a message similar to the following (assuming your name is Taro):
 (hunt) Taro: (to \udog\n) I'm still waiting in the clearing.
 
 \uEMOTES\n

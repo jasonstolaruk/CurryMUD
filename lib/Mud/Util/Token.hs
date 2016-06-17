@@ -99,6 +99,7 @@ expandStyleCode (toLower -> code)            = case code of
   'd' -> dfltColor
   'e' -> emphasisColor
   'h' -> headerColor
+  'i' -> asteriskColor
   'l' -> selectorColor
   'n' -> noUnderlineANSI
   'p' -> prefixColor

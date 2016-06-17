@@ -1,21 +1,27 @@
 \h COMMUNICATION \d
 
-\uChannel\d
-Analogous to a named "chat room" (though there is no shared "space"). Provides the ability for a group of players to message each other in real-time. There is the "question channel" (OOC) along with "telepathic channels" (IC).
+The following is a summary of the various commands concerning communication.
+
+There are two categories of communication commands: Out-Of-Character (OOC) and In-Character (IC).
 
 \uOOC COMMUNICATION\d
-admin
-question
+\qadmin\d - Send a message to an administrator. Note that if the administrator is logged out, your message will be retained (the administrator will see it the next time he/she logs in).4`
 
-set
+\qquestion\d - The "question channel." This channel\i*\d is strictly for the purpose of asking and answering newbie questions related to game play.4`
+    Note: use the "set" command to tune the question channel (here "tune" means to set whether or not you receive messages).
 
 \uIC COMMUNICATION\d
-say
-whisper
-racial say
-telepathy
-channel
+\qsay\d - Say something out loud in common, such that everyone else in your current room will hear you.4`
+    Note that there exist commands to speak in languages other than common. These commands are named for the language in which the utterance is spoken (for example, use the "elvish" command to speak in elvish).
 
-tune
+\qwhisper\d - Whisper something to someone in your current room, such that only the target will hear you.4`
+
+\qtelepathy\d - Send a private message to a person with whom you have established a two-way telepathic link (via the "link" command).4`
+
+\qchannel\d - Telepathic channels\i*\d.4`
+
+Note: use the "tune" command to tune telepathic connections and channels.4`
+
+\i*\d Channels are analogous to named "chat rooms" (though there is no shared "space"). They provide the ability for a group of players to message each other in real-time.
 
 \uSEE ALSO\n

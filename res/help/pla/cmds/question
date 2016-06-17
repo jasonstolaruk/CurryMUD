@@ -14,7 +14,7 @@ Within communication over the question channel, random names are automatically a
 (Question) \udog\n: How do I wield a weapon?
 
 \uADDRESSING A MESSAGE\d
-Use \l#h\d to address your message to a particular person. For example, \qquestion \l#h\qdog use the "ready" command\d will produce a message similar to the following (assuming your PC name is Taro):
+Use \l#h\d to address your message to a particular person. For example, \qquestion \l#h\qdog use the "ready" command\d will produce a message similar to the following (assuming your name is Taro):
 (Question) Taro: (to \udog\n) Use the "ready" command.
 
 \uEMOTES\n

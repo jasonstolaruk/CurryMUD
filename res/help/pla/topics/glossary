@@ -7,7 +7,7 @@ This is an In-Character (IC) term for the state of being logged out.
 This is an In-Character (IC) term for the state of being logged in.
 
 \uChannel\d
-Analogous to a named "chat room" (though there is no shared "space"). Provides the ability for a group of players to message each other in real-time. There is the "question channel" (OOC) along "with telepathic channels" (IC).
+Analogous to a named "chat room" (though there is no shared "space"). Provides the ability for a group of players to message each other in real-time. There is the "question channel" (OOC) along with "telepathic channels" (IC).
 
 \uExpressive Commands\d
 Commands that facilitate the execution of discreet actions In-Character (IC); commands such as "bow", "cry", "kiss", etc. (there are about 200 such commands). Sometimes referred to as "built-in emotes."
@@ -68,6 +68,9 @@ An ad-hoc channel created by a player for In-Character (IC) communication. Using
 
 \uTelepathic Link\d
 A psionic connection between two Player Characters (PCs), linking their minds together. When Taro's player types \qlink hanako\d, Taro creates a one-way link from his mind to Hanako's mind. If Hanako's player reciprocates by typing \qlink taro\d, this will establish a two-way link between them, enabling two-way telepathic communication.
+
+\uTune\d
+To "tune" a telepathic connection or channel is to set whether or not you receive messages from said connection/channel.
 
 \uTwo-Way Link\d
 A telepathic connection between two Player Characters (PCs), where each PC has linked with the other.
