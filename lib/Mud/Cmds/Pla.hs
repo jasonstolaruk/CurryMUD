@@ -1862,7 +1862,6 @@ link p = patternMatchFail "link" [ showText p ]
 -----
 
 
--- TODO: Help.
 listen :: ActionFun
 listen (NoArgs i mq cols) = getState >>= \ms -> do
     views rmListen (wrapSend mq cols . fromMaybe noSoundMsg) . getMobRm i $ ms

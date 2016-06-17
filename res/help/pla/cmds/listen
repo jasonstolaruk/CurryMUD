@@ -1,0 +1,9 @@
+\h LISTEN \d
+
+\uUSAGE\n
+listen
+
+\uDESCRIPTION\n
+Display a description of what you hear in your current room.
+
+\uSEE ALSO\n

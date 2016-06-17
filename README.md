@@ -46,7 +46,7 @@ CurryMUD will have the following features:
 * Volume and container capacity.
 * Vessels for containing liquids. Vessels may be filled and emptied.
 * Eating foods and drinking liquids. Digestion.
-* Smell and taste.
+* Smell and taste. Listen.
 * Durational effects that can be paused and resumed.
 * Objects can be configured to automatically disappear when left on the ground for some time.
 
