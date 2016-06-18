@@ -82,7 +82,7 @@ import Data.Function (on)
 import Data.Int (Int64)
 import Data.IntMap.Lazy ((!))
 import Data.Ix (inRange)
-import Data.List ((\\), delete, foldl', intercalate, intersperse, nub, nubBy, partition, sort, sortBy, unfoldr)
+import Data.List ((\\), delete, foldl', group, intercalate, intersperse, nub, nubBy, partition, sort, sortBy, unfoldr, zip4)
 import Data.List.Split (chunksOf)
 import Data.Maybe (fromJust, fromMaybe, isNothing)
 import Data.Monoid ((<>), All(..), Sum(..))
@@ -1376,6 +1376,7 @@ shuffleGive i ms LastArgIsTargetBindings { .. } =
 -----
 
 
+-- TODO: Clear room desc.
 go :: Text -> ActionFun
 go dir p@ActionParams { args = [] } = goDispatcher p { args = pure dir   }
 go dir p@ActionParams { args      } = goDispatcher p { args = dir : args }
@@ -1947,30 +1948,36 @@ look (LowerNub i mq cols as) = mkRndmVector >>= \v ->
 look p = patternMatchFail "look" [ showText p ]
 
 
+-- TODO: Test w/ NPCs.
+-- TODO: Clean up.
+-- TODO: Admin tag.
 mkRmInvCoinsDesc :: Id -> Cols -> MudState -> Id -> Text
 mkRmInvCoinsDesc i cols ms ri =
     let (ris, c)            = first (i `delete`) . getNonIncogInvCoins ri $ ms
-        (pcNcbs, otherNcbs) = splitPCsOthers . mkIsPC_StyledName_Count_BothList i ms $ ris
+        (pcNcbs, otherNcbs) = splitPCsOthers . mkRmInvCoinsDescTuples i ms $ ris
         pcDescs             = T.unlines . concatMap (wrapIndent 2 cols . mkPCDesc   ) $ pcNcbs
         otherDescs          = T.unlines . concatMap (wrapIndent 2 cols . mkOtherDesc) $ otherNcbs
     in (pcNcbs |!| pcDescs) <> (otherNcbs |!| otherDescs) <> (c |!| mkCoinsSummary cols c)
   where
-    splitPCsOthers                       = (both %~ map snd) . span fst
-    mkPCDesc    (en, c, (s, _)) | c == 1 = (<> " " <> en) $ if isKnownPCSing s
+    splitPCsOthers                          = (both %~ map snd) . span fst
+    mkPCDesc    (en, c, (s, _), d) | c == 1 = (<> " " <> en <> rmDescHepler d) $ if isKnownPCSing s
                                              then colorWith knownNameColor s
                                              else colorWith unknownNameColor . aOrAn $ s
-    mkPCDesc    (en, c, b     ) = colorWith unknownNameColor (showText c <> " " <> mkPlurFromBoth b) <> " " <> en
-    mkOtherDesc (en, c, (s, _)) | c == 1 = aOrAnOnLower s <> " " <> en
-    mkOtherDesc (en, c, b     )          = showText c <> spaced (mkPlurFromBoth b) <> en
+    mkPCDesc    (en, c, b     , d) = colorWith unknownNameColor (showText c <> " " <> mkPlurFromBoth b) <> " " <> en <> rmDescHepler d
+    mkOtherDesc (en, c, (s, _), d) | c == 1 = aOrAnOnLower s <> " " <> en <> rmDescHepler d
+    mkOtherDesc (en, c, b     , d)          = showText c <> spaced (mkPlurFromBoth b) <> en <> rmDescHepler d
+    rmDescHepler "" = ""
+    rmDescHepler d  = " " <> d
 
 
-mkIsPC_StyledName_Count_BothList :: Id -> MudState -> Inv -> [(Bool, (Text, Int, BothGramNos))]
-mkIsPC_StyledName_Count_BothList i ms targetIds =
+mkRmInvCoinsDescTuples :: Id -> MudState -> Inv -> [(Bool, (Text, Int, BothGramNos, Text))]
+mkRmInvCoinsDescTuples i ms targetIds =
   let isPCs   =                      [ getType targetId ms == PCType   | targetId <- targetIds ]
       styleds = styleAbbrevs DoQuote [ getEffName        i ms targetId | targetId <- targetIds ]
       boths   =                      [ getEffBothGramNos i ms targetId | targetId <- targetIds ]
-      counts  = mkCountList boths
-  in nub . zip isPCs . zip3 styleds counts $ boths
+      rmDescs =                      [ mkMobRmDesc targetId ms         | targetId <- targetIds ]
+      groups  = group . zip4 isPCs styleds boths $ rmDescs
+  in [ (ip, (s, c, b, d)) | ((ip, s, b, d), c) <- [ (head g, length g) | g <- groups ] ]
 
 
 isKnownPCSing :: Sing -> Bool
@@ -2808,6 +2815,7 @@ shuffleRem i ms d conName icir as invCoinsWithCon@(invWithCon, _) f =
 
 
 -- TODO: Help.
+-- TODO: Where to put functionality to confirm your room desc?
 roomDesc :: ActionFun
 roomDesc (NoArgs i mq cols) = do
     tweak $ mobTbl.ind i.mobRmDesc .~ Nothing
