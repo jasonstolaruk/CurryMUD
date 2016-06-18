@@ -37,6 +37,7 @@ module Mud.Data.State.Util.Misc ( addToInv
                                 , mkAdminPlaIdSingList
                                 , mkCapsFun
                                 , mkCoinsMsgs
+                                , mkMobRmDesc
                                 , mkNameCountBothList
                                 , mkPlaIdSingList
                                 , mkPlurFromBoth
@@ -63,12 +64,14 @@ module Mud.Data.State.Util.Misc ( addToInv
 import Mud.Data.Misc
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
+import Mud.Data.State.Util.Hierarchy
 import Mud.TheWorld.Zones.AdminZoneIds (iWelcome)
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
 import Mud.Util.List hiding (countOcc)
 import Mud.Util.Misc hiding (blowUp, patternMatchFail)
 import Mud.Util.Operators
+import Mud.Util.Quoting
 import Mud.Util.Text
 import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 
@@ -368,6 +371,15 @@ mkCoinsMsgs f (Coins (cop, sil, gol)) = catMaybes [ c, s, g ]
     c = Sum cop |!| Just . f cop $ "copper piece"
     s = Sum sil |!| Just . f sil $ "silver piece"
     g = Sum gol |!| Just . f gol $ "gold piece"
+
+
+-----
+
+
+mkMobRmDesc :: Id -> MudState -> Text
+mkMobRmDesc i ms | hasMobId i ms = case view mobRmDesc . getMob i $ ms of Nothing   -> ""
+                                                                          Just desc -> parensQuote desc
+                 | otherwise     = ""
 
 
 -----

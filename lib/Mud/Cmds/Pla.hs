@@ -2809,7 +2809,15 @@ shuffleRem i ms d conName icir as invCoinsWithCon@(invWithCon, _) f =
 
 -- TODO: Help.
 roomDesc :: ActionFun
-roomDesc _ = undefined
+roomDesc (NoArgs i mq cols) = do
+    tweak $ mobTbl.ind i.mobRmDesc .~ Nothing
+    wrapSend mq cols "Your room description has been cleared."
+    logPla "roomDesc" i "Room description cleared."
+roomDesc (WithArgs i mq cols (T.unwords -> desc@(dblQuote -> desc'))) = do
+    tweak $ mobTbl.ind i.mobRmDesc ?~ desc
+    wrapSend mq cols $ "Your room description has been set to " <> desc' <> "."
+    logPla "rmDesc" i $ "Room description set to " <> desc' <> "."
+roomDesc p = patternMatchFail "roomDesc" [ showText p ]
 
 
 -----

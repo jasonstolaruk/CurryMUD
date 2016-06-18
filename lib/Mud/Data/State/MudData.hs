@@ -498,8 +498,9 @@ data Mob = Mob { _sex                    :: Sex
                , _hand                   :: Hand
                , _knownLangs             :: [Lang]
                , _rmId                   :: Id
-               , _actMap                 :: ActMap
+               , _mobRmDesc              :: Maybe Text
                , _feelingMap             :: FeelingMap
+               , _actMap                 :: ActMap
                , _nowEating              :: Maybe NowEating
                , _nowDrinking            :: Maybe NowDrinking
                , _regenQueue             :: Maybe RegenQueue
@@ -636,6 +637,7 @@ jsonToMob (Object o) = Mob <$> o .: "sex"
                            <*> o .: "hand"
                            <*> o .: "knownLangs"
                            <*> o .: "rmId"
+                           <*> pure Nothing
                            <*> pure M.empty
                            <*> pure M.empty
                            <*> pure Nothing

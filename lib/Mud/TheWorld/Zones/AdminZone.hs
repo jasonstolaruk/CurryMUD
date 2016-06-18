@@ -515,7 +515,7 @@ createAdminZone = do
               RHand
               allValues
               iLoggedOut
-              M.empty M.empty Nothing Nothing Nothing Nothing)
+              Nothing M.empty M.empty Nothing Nothing Nothing Nothing)
          M.empty
          (M.singleton "Curry" True)
          (PC Human ["Curry"] ["Curry"])
@@ -546,7 +546,7 @@ createAdminZone = do
               RHand
               allValues
               iLoggedOut
-              M.empty M.empty Nothing Nothing Nothing Nothing)
+              Nothing M.empty M.empty Nothing Nothing Nothing Nothing)
          M.empty
          (M.singleton "Root" True)
          (PC Human ["Root"] ["Root"])
@@ -1901,7 +1901,7 @@ createAdminZone = do
               NoHand
               []
               iMobCloset
-              M.empty M.empty Nothing Nothing Nothing Nothing)
+              Nothing M.empty M.empty Nothing Nothing Nothing Nothing)
   putNpc iRockCavy2
          (Ent iRockCavy2
               (Just "rock")
@@ -1923,7 +1923,7 @@ createAdminZone = do
               NoHand
               []
               iMobCloset
-              M.empty M.empty Nothing Nothing Nothing Nothing)
+              Nothing M.empty M.empty Nothing Nothing Nothing Nothing)
   putNpc iPidge
          (Ent iPidge
               (Just "pidge")
@@ -1949,7 +1949,7 @@ createAdminZone = do
               RHand
               [ HobbitLang ]
               iMobCloset
-              M.empty M.empty Nothing Nothing Nothing Nothing)
+              Nothing M.empty M.empty Nothing Nothing Nothing Nothing)
   putCloth iPeasant'sShirt
            (Ent iPeasant'sShirt
                 (Just "shirt")
@@ -2007,4 +2007,4 @@ createAdminZone = do
               RHand
               []
               iMobCloset
-              M.empty M.empty Nothing Nothing Nothing Nothing)
+              Nothing M.empty M.empty Nothing Nothing Nothing Nothing)
