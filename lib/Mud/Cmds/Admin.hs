@@ -1265,7 +1265,7 @@ setHelper targetId a@(ms, toSelfMsgs, _, _) arg = if
                       , "exp"
                       , "hand"
                       , "knownlangs"
-                      -- , "mobRmDesc" TODO
+                      , "mobrmdesc"
                       , "race"
                       , "introduced"
                       , "linked" ]
@@ -1290,6 +1290,7 @@ setHelper targetId a@(ms, toSelfMsgs, _, _) arg = if
                                "exp"        -> setMobExpHelper        t
                                "hand"       -> setMobHandHelper       t
                                "knownlangs" -> setMobKnownLangsHelper t
+                               "mobrmdesc"  -> setMobRmDescHelper     t
                                "race"       -> setPCRaceHelper        t
                                "introduced" -> setPCSingListHelper    t "introduced" "known names"  introduced introduced
                                "linked"     -> setPCSingListHelper    t "linked"     "linked names" linked     linked
@@ -1429,6 +1430,21 @@ setHelper targetId a@(ms, toSelfMsgs, _, _) arg = if
                              & _3 <>~ (isDiff |?| toTarget)
                              & _4 <>~ (isDiff |?| toSelf)
               _      -> sorryOp "hand"
+        -----
+        setMobRmDescHelper t
+          | not . hasMob $ t = sorryType
+          | otherwise        = case eitherDecode value' of
+            Left  _ -> appendMsg . sorryAdminSetValue "mobRmDesc" $ value
+            Right x -> case op of
+              Assign -> let toSelf   = pure . T.concat $ [ "Set mobRmDesc to ", showMaybe x, mkDiffTxt isDiff, "." ]
+                            prev     = view mobRmDesc . getMob targetId $ ms
+                            isDiff   = x /= prev
+                            toTarget = pure . T.concat $ [ "Your room description has changed to ", showMaybe x, "." ]
+                        in a & _1.mobTbl.ind targetId.mobRmDesc .~ x
+                             & _2 <>~ toSelf
+                             & _3 <>~ ((isNpcPC targetId ms && isDiff) |?| toTarget)
+                             & _4 <>~ (isDiff |?| toSelf)
+              _      -> sorryOp "mobRmDesc"
         -----
         setMobKnownLangsHelper t
           | not . hasMob $ t = sorryType
