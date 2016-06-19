@@ -43,7 +43,7 @@ logPlaOut = L.logPlaOut "Mud.Cmds.ExpCmds"
 -- ==================================================
 
 
--- TODO: Certain exp cmds will set (or append to?) mob room desc.
+-- TODO: Certain exp cmds will set mob room desc.
 expCmdSet :: S.Set ExpCmd
 expCmdSet = S.fromList
     [ ExpCmd "admire"      (HasTarget "You admire @."

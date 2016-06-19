@@ -1376,7 +1376,6 @@ shuffleGive i ms LastArgIsTargetBindings { .. } =
 -----
 
 
--- TODO: Clear room desc.
 go :: Text -> ActionFun
 go dir p@ActionParams { args = [] } = goDispatcher p { args = pure dir   }
 go dir p@ActionParams { args      } = goDispatcher p { args = dir : args }
@@ -1403,9 +1402,10 @@ tryMove i mq cols p dir = helper |&| modifyState >=> \case
                 s            = fromJust . desigEntSing $ originDesig
                 originMobIds = i `delete` desigIds originDesig
                 destMobIds   = findMobIds ms $ ms^.invTbl.ind destId
-                ms'          = ms & mobTbl.ind i.rmId   .~ destId
-                                  & invTbl.ind originId %~ (i `delete`)
-                                  & invTbl.ind destId   %~ addToInv ms (pure i)
+                ms'          = ms & mobTbl.ind i.rmId      .~ destId
+                                  & mobTbl.ind i.mobRmDesc .~ Nothing
+                                  & invTbl.ind originId    %~ (i `delete`)
+                                  & invTbl.ind destId      %~ addToInv ms (pure i)
                 msgAtOrigin  = nlnl $ case maybeOriginMsg of
                                  Nothing  -> T.concat [ serialize originDesig, spaced verb, expandLinkName dir, "." ]
                                  Just msg -> T.replace "%" (serialize originDesig) msg
@@ -1960,15 +1960,15 @@ mkRmInvCoinsDesc i cols ms ri =
     mkPCDesc (ia, (en, (s, _), d, c)) | c == 1 = T.concat [ if isKnownPCSing s
                                                               then colorWith knownNameColor s
                                                               else colorWith unknownNameColor . aOrAn $ s
-                                                          , " "
-                                                          , en
+                                                          , rmDescHepler d
                                                           , adminTagHelper ia
-                                                          , rmDescHepler d ]
+                                                          , " "
+                                                          , en ]
     mkPCDesc (ia, (en, b,      d, c))          = T.concat [ colorWith unknownNameColor $ showText c <> " " <> mkPlurFromBoth b
-                                                          , " "
-                                                          , en
+                                                          , rmDescHepler d
                                                           , adminTagHelper ia
-                                                          , rmDescHepler d ]
+                                                          , " "
+                                                          , en ]
     mkOtherDesc (en, (s, _), d, c)    | c == 1 = T.concat [ aOrAnOnLower s, " ", en, rmDescHepler d ]
     mkOtherDesc (en, b,      d, c)             = T.concat [ showText c, spaced . mkPlurFromBoth $ b, en, rmDescHepler d ]
     adminTagHelper False = ""
@@ -2824,8 +2824,6 @@ shuffleRem i ms d conName icir as invCoinsWithCon@(invWithCon, _) f =
 -----
 
 
--- TODO: Help.
--- TODO: Where to put functionality to confirm your room desc?
 roomDesc :: ActionFun
 roomDesc (NoArgs i mq cols) = do
     tweak $ mobTbl.ind i.mobRmDesc .~ Nothing
@@ -3471,12 +3469,15 @@ stats (NoArgs i mq cols) = getState >>= \ms ->
                                 , pp . getHand i $ ms
                                 , "level " <> showText l
                                 , (commaEvery3 . showText $ x  ) <> " experience points"
-                                , (commaEvery3 . showText $ nxt) <> " experience points to next level" ]
-        top           = onTrue (isPC i ms) (<> sexRace) . getSing i $ ms
-        sexRace       = T.concat [ ", the ", sexy, " ", r ]
-        (sexy, r)     = (uncapitalize . showText *** uncapitalize . showText) . getSexRace i $ ms
-        (l, x)        = getLvlExp i ms
-        nxt           = subtract x . snd $ calcLvlExps !! l
+                                , (commaEvery3 . showText $ nxt) <> " experience points to next level"
+                                , mobRmDescHelper ]
+        top             = onTrue (isPC i ms) (<> sexRace) . getSing i $ ms
+        sexRace         = T.concat [ ", the ", sexy, " ", r ]
+        (sexy, r)       = (uncapitalize . showText *** uncapitalize . showText) . getSexRace i $ ms
+        (l, x)          = getLvlExp i ms
+        nxt             = subtract x . snd $ calcLvlExps !! l
+        mobRmDescHelper = let d = views mobRmDesc (fmap dblQuote) . getMob i $ ms
+                          in maybe "" (("You room description is " <>) . (<> ".")) d
     in multiWrapSend mq cols mkStats >> logPlaExec "stats" i
 stats p = withoutArgs stats p
 

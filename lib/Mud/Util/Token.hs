@@ -100,8 +100,10 @@ expandStyleCode (toLower -> code)            = case code of
   'e' -> emphasisColor
   'h' -> headerColor
   'i' -> asteriskColor
+  'k' -> knownNameColor
   'l' -> selectorColor
   'n' -> noUnderlineANSI
+  'o' -> unknownNameColor
   'p' -> prefixColor
   'q' -> quoteColor
   'r' -> arrowColor
