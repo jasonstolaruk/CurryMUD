@@ -613,7 +613,8 @@ mobToJSON Mob { .. } = object [ "sex"        .= _sex
                               , "exp"        .= _exp
                               , "hand"       .= _hand
                               , "knownLangs" .= _knownLangs
-                              , "rmId"       .= _rmId ]
+                              , "rmId"       .= _rmId
+                              , "mobRmDesc"  .= _mobRmDesc ]
 
 
 jsonToMob :: Value -> Parser Mob
@@ -637,7 +638,7 @@ jsonToMob (Object o) = Mob <$> o .: "sex"
                            <*> o .: "hand"
                            <*> o .: "knownLangs"
                            <*> o .: "rmId"
-                           <*> pure Nothing
+                           <*> o .: "mobRmDesc"
                            <*> pure M.empty
                            <*> pure M.empty
                            <*> pure Nothing
