@@ -3,6 +3,7 @@
 module Mud.Misc.ANSI ( abbrevColor
                      , adminBcastColor
                      , adminSetColor
+                     , adminTagColor
                      , announceColor
                      , arrowColor
                      , asteriskColor
@@ -158,6 +159,10 @@ adminBcastColor = yellow
 
 adminSetColor :: Text
 adminSetColor = mkColorANSI (Dull, White) (Dull, Red)
+
+
+adminTagColor :: Text
+adminTagColor = magenta
 
 
 announceColor :: Text

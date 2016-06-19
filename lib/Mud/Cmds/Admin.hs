@@ -1265,6 +1265,7 @@ setHelper targetId a@(ms, toSelfMsgs, _, _) arg = if
                       , "exp"
                       , "hand"
                       , "knownlangs"
+                      -- , "mobRmDesc" TODO
                       , "race"
                       , "introduced"
                       , "linked" ]

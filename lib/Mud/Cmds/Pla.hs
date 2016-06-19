@@ -1948,36 +1948,46 @@ look (LowerNub i mq cols as) = mkRndmVector >>= \v ->
 look p = patternMatchFail "look" [ showText p ]
 
 
--- TODO: Test w/ NPCs.
--- TODO: Clean up.
--- TODO: Admin tag.
 mkRmInvCoinsDesc :: Id -> Cols -> MudState -> Id -> Text
 mkRmInvCoinsDesc i cols ms ri =
-    let (ris, c)            = first (i `delete`) . getNonIncogInvCoins ri $ ms
-        (pcNcbs, otherNcbs) = splitPCsOthers . mkRmInvCoinsDescTuples i ms $ ris
-        pcDescs             = T.unlines . concatMap (wrapIndent 2 cols . mkPCDesc   ) $ pcNcbs
-        otherDescs          = T.unlines . concatMap (wrapIndent 2 cols . mkOtherDesc) $ otherNcbs
-    in (pcNcbs |!| pcDescs) <> (otherNcbs |!| otherDescs) <> (c |!| mkCoinsSummary cols c)
+    let (ris, c)                = first (i `delete`) . getNonIncogInvCoins ri $ ms
+        (pcTuples, otherTuples) = splitPCsOthers . mkRmInvCoinsDescTuples i ms $ ris
+        pcDescs                 = T.unlines . concatMap (wrapIndent 2 cols . mkPCDesc   ) $ pcTuples
+        otherDescs              = T.unlines . concatMap (wrapIndent 2 cols . mkOtherDesc) $ otherTuples
+    in (pcTuples |!| pcDescs) <> (otherTuples |!| otherDescs) <> (c |!| mkCoinsSummary cols c)
   where
-    splitPCsOthers                          = (both %~ map snd) . span fst
-    mkPCDesc    (en, c, (s, _), d) | c == 1 = (<> " " <> en <> rmDescHepler d) $ if isKnownPCSing s
-                                                then colorWith knownNameColor s
-                                                else colorWith unknownNameColor . aOrAn $ s
-    mkPCDesc    (en, c, b     , d) = colorWith unknownNameColor (showText c <> " " <> mkPlurFromBoth b) <> " " <> en <> rmDescHepler d
-    mkOtherDesc (en, c, (s, _), d) | c == 1 = aOrAnOnLower s <> " " <> en <> rmDescHepler d
-    mkOtherDesc (en, c, b     , d)          = showText c <> spaced (mkPlurFromBoth b) <> en <> rmDescHepler d
-    rmDescHepler "" = ""
-    rmDescHepler d  = " " <> d
+    splitPCsOthers = first (map $ \((_, ia), rest) -> (ia, rest)) . second (map snd) . span (fst . fst)
+    mkPCDesc (ia, (en, (s, _), d, c)) | c == 1 = T.concat [ if isKnownPCSing s
+                                                              then colorWith knownNameColor s
+                                                              else colorWith unknownNameColor . aOrAn $ s
+                                                          , " "
+                                                          , en
+                                                          , adminTagHelper ia
+                                                          , rmDescHepler d ]
+    mkPCDesc (ia, (en, b,      d, c))          = T.concat [ colorWith unknownNameColor $ showText c <> " " <> mkPlurFromBoth b
+                                                          , " "
+                                                          , en
+                                                          , adminTagHelper ia
+                                                          , rmDescHepler d ]
+    mkOtherDesc (en, (s, _), d, c)    | c == 1 = T.concat [ aOrAnOnLower s, " ", en, rmDescHepler d ]
+    mkOtherDesc (en, b,      d, c)             = T.concat [ showText c, spaced . mkPlurFromBoth $ b, en, rmDescHepler d ]
+    adminTagHelper False = ""
+    adminTagHelper True  = " " <> colorWith adminTagColor (parensQuote "admin")
+    rmDescHepler   ""    = ""
+    rmDescHepler   d     = " " <> d
 
 
-mkRmInvCoinsDescTuples :: Id -> MudState -> Inv -> [(Bool, (Text, Int, BothGramNos, Text))]
+mkRmInvCoinsDescTuples :: Id -> MudState -> Inv -> [((Bool, Bool), (Text, BothGramNos, Text, Int))]
 mkRmInvCoinsDescTuples i ms targetIds =
-  let isPCs   =                      [ getType targetId ms == PCType   | targetId <- targetIds ]
-      styleds = styleAbbrevs DoQuote [ getEffName        i ms targetId | targetId <- targetIds ]
-      boths   =                      [ getEffBothGramNos i ms targetId | targetId <- targetIds ]
-      rmDescs =                      [ mkMobRmDesc targetId ms         | targetId <- targetIds ]
-      groups  = group . zip4 isPCs styleds boths $ rmDescs
-  in [ (ip, (s, c, b, d)) | ((ip, s, b, d), c) <- [ (head g, length g) | g <- groups ] ]
+  let isPCAdmins =                      [ mkIsPCAdmin targetId            | targetId <- targetIds ]
+      styleds    = styleAbbrevs DoQuote [ getEffName        i ms targetId | targetId <- targetIds ]
+      boths      =                      [ getEffBothGramNos i ms targetId | targetId <- targetIds ]
+      rmDescs    =                      [ mkMobRmDesc targetId ms         | targetId <- targetIds ]
+      groups     = group . zip4 isPCAdmins styleds boths $ rmDescs
+  in [ (ipa, (s, b, d, c)) | ((ipa, s, b, d), c) <- [ (head g, length g) | g <- groups ] ]
+  where
+    mkIsPCAdmin targetId | isPC targetId ms = (True,  isAdminId targetId ms)
+                         | otherwise        = (False, False                )
 
 
 isKnownPCSing :: Sing -> Bool
