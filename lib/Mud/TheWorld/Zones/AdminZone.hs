@@ -828,7 +828,7 @@ createAdminZone = do
             [ StdLink East iBasement ]
             M.empty [] [] [])
   putRm iMobCloset
-        [ iRockCavy1, iRockCavy2, iPidge, iSkeleton ]
+        [ iRockCavy1, iRockCavy2, iPidge, iSkeleton1, iSkeleton2, iSkeleton3 ]
         mempty
         (Rm "Mob closet"
             "This closet holds mobs."
@@ -1986,25 +1986,26 @@ createAdminZone = do
               zeroBits)
          (Obj bootsWeight bootsVol Nothing zeroBits Nothing)
          (Arm Feet 1)
-  putNpc iSkeleton
-         (Ent iSkeleton
-              (Just "skeleton")
-              "undead skeleton" ""
-              "This mindless, bipedal skeleton has been animated and tasked with doing its master's bidding."
-              Nothing
-              zeroBits)
-         []
-         mempty
-         M.empty
-         (Mob NoSex
-              50 50 50 50 50
-              10 10
-              10 10
-              10 10
-              10 10
-              [] Nothing
-              10
-              RHand
-              []
-              iMobCloset
-              Nothing M.empty M.empty Nothing Nothing Nothing Nothing)
+  forM_ [ iSkeleton1, iSkeleton2, iSkeleton3 ] $ \skeletonId ->
+      putNpc skeletonId
+             (Ent skeletonId
+                  (Just "skeleton")
+                  "undead skeleton" ""
+                  "This mindless, bipedal skeleton has been animated and tasked with doing its master's bidding."
+                  Nothing
+                  zeroBits)
+             []
+             mempty
+             M.empty
+             (Mob NoSex
+                  50 50 50 50 50
+                  10 10
+                  10 10
+                  10 10
+                  10 10
+                  [] Nothing
+                  10
+                  RHand
+                  []
+                  iMobCloset
+                  Nothing M.empty M.empty Nothing Nothing Nothing Nothing)

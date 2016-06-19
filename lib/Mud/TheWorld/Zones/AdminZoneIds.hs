@@ -210,70 +210,74 @@ iLoungeEntrance = 97 :: Id
 
 iBasement = 98 :: Id
 
-iSkeleton = 99 :: Id
+iSkeleton1 = 99 :: Id
 
-iRoot = 100 :: Id
+iSkeleton2 = 100 :: Id
 
-iCurry = 101 :: Id
+iSkeleton3 = 101 :: Id
 
-iAttic = 102 :: Id
+iRoot = 102 :: Id
 
-iCube1 = 103 :: Id -- 20
+iCurry = 103 :: Id
 
-iSackSml = 123 :: Id
+iAttic = 104 :: Id
 
-iSackLrg = 124 :: Id
+iCube1 = 105 :: Id -- 20
 
-iBackSml = 125 :: Id
+iSackSml = 125 :: Id
 
-iBackLrg = 126 :: Id
+iSackLrg = 126 :: Id
 
-iEmpty = 127 :: Id
+iBackSml = 127 :: Id
 
-iHallwayWest = 128 :: Id
+iBackLrg = 128 :: Id
 
-iHallwayEast = 129 :: Id
+iEmpty = 129 :: Id
 
-iAtrium = 130 :: Id
+iHallwayWest = 130 :: Id
 
-iTrashDump = 131 :: Id
+iHallwayEast = 131 :: Id
 
-iPaperSml = 132 :: Id
+iAtrium = 132 :: Id
 
-iParchment1 = 133 :: Id
+iTrashDump = 133 :: Id
 
-iParchment2 = 134 :: Id
+iPaperSml = 134 :: Id
 
-iParchment3 = 135 :: Id
+iParchment1 = 135 :: Id
 
-iParchment4 = 136 :: Id
+iParchment2 = 136 :: Id
 
-iParchment5 = 137 :: Id
+iParchment3 = 137 :: Id
 
-iPotionFlask1 = 138 :: Id -- 20
+iParchment4 = 138 :: Id
 
-iPotionFlaskLrg1 = 158 :: Id -- 20
+iParchment5 = 139 :: Id
 
-iWaterskin = 178 :: Id
+iPotionFlask1 = 140 :: Id -- 20
 
-iWaterskinLrg = 179 :: Id
+iPotionFlaskLrg1 = 160 :: Id -- 20
 
-iJarSml = 180 :: Id
+iWaterskin = 180 :: Id
 
-iJar = 181 :: Id
+iWaterskinLrg = 181 :: Id
 
-iJarLrg = 182 :: Id
+iJarSml = 182 :: Id
 
-iJugSml = 183 :: Id
+iJar = 183 :: Id
 
-iJug = 184 :: Id
+iJarLrg = 184 :: Id
 
-iJugLrg = 185 :: Id
+iJugSml = 185 :: Id
 
-iBottleSml = 186 :: Id
+iJug = 186 :: Id
 
-iBottle = 187 :: Id
+iJugLrg = 187 :: Id
 
-iBottleLrg = 188 :: Id
+iBottleSml = 188 :: Id
 
-iSlab = 189 :: Id
+iBottle = 189 :: Id
+
+iBottleLrg = 190 :: Id
+
+iSlab = 191 :: Id

@@ -1961,8 +1961,8 @@ mkRmInvCoinsDesc i cols ms ri =
   where
     splitPCsOthers                          = (both %~ map snd) . span fst
     mkPCDesc    (en, c, (s, _), d) | c == 1 = (<> " " <> en <> rmDescHepler d) $ if isKnownPCSing s
-                                             then colorWith knownNameColor s
-                                             else colorWith unknownNameColor . aOrAn $ s
+                                                then colorWith knownNameColor s
+                                                else colorWith unknownNameColor . aOrAn $ s
     mkPCDesc    (en, c, b     , d) = colorWith unknownNameColor (showText c <> " " <> mkPlurFromBoth b) <> " " <> en <> rmDescHepler d
     mkOtherDesc (en, c, (s, _), d) | c == 1 = aOrAnOnLower s <> " " <> en <> rmDescHepler d
     mkOtherDesc (en, c, b     , d)          = showText c <> spaced (mkPlurFromBoth b) <> en <> rmDescHepler d
