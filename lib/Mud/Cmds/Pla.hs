@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
-{-# LANGUAGE DuplicateRecordFields, FlexibleContexts, LambdaCase, MonadComprehensions, MultiWayIf, NamedFieldPuns, OverloadedStrings, ParallelListComp, PatternSynonyms, RecordWildCards, TransformListComp, TupleSections, TypeFamilies, ViewPatterns #-}
+{-# LANGUAGE DuplicateRecordFields, FlexibleContexts, LambdaCase, MonadComprehensions, MultiWayIf, NamedFieldPuns, OverloadedStrings, ParallelListComp, PatternSynonyms, RecordWildCards, TupleSections, TypeFamilies, ViewPatterns #-}
 
 module Mud.Cmds.Pla ( getRecordUptime
                     , getUptime
@@ -89,7 +89,6 @@ import Data.Monoid ((<>), All(..), Sum(..))
 import Data.Text (Text)
 import Data.Time (diffUTCTime, getCurrentTime)
 import Data.Tuple (swap)
-import GHC.Exts (sortWith)
 import Prelude hiding (log, pi)
 import qualified Data.IntMap.Lazy as IM (IntMap, (!), keys)
 import qualified Data.Map.Lazy as M ((!), elems, filter, foldrWithKey, keys, lookup, map, singleton, size, toList)
@@ -453,10 +452,8 @@ adminList (NoArgs i mq cols) = (multiWrapSend mq cols =<< helper =<< getState) >
   where
     helper ms =
         let p            = getPla i ms
-            singSuffixes = [ (s, suffix) | (ai, s) <- mkAdminIdSingList ms
-                                         , let suffix = " logged " <> mkSuffix ai
-                                         , then sortWith by s ]
-            mkSuffix ai = let { ap = getPla ai ms; isIncog = isIncognito ap } in if isAdmin p && isIncog
+            singSuffixes = sortBy (compare `on` fst) [ (s, " logged " <> mkSuffix ai) | (ai, s) <- mkAdminIdSingList ms ]
+            mkSuffix ai  = let { ap = getPla ai ms; isIncog = isIncognito ap } in if isAdmin p && isIncog
               then (inOut . isLoggedIn $ ap) <> " " <> parensQuote "incognito"
               else inOut (isLoggedIn ap && not isIncog)
             singSuffixes' = onFalse (isAdmin p) (filter f) singSuffixes
@@ -2824,6 +2821,7 @@ shuffleRem i ms d conName icir as invCoinsWithCon@(invWithCon, _) f =
 -----
 
 
+-- TODO: Room desc length.
 roomDesc :: ActionFun
 roomDesc (NoArgs i mq cols) = do
     tweak $ mobTbl.ind i.mobRmDesc .~ Nothing
@@ -3476,8 +3474,7 @@ stats (NoArgs i mq cols) = getState >>= \ms ->
         (sexy, r)       = (uncapitalize . showText *** uncapitalize . showText) . getSexRace i $ ms
         (l, x)          = getLvlExp i ms
         nxt             = subtract x . snd $ calcLvlExps !! l
-        mobRmDescHelper = let d = views mobRmDesc (fmap dblQuote) . getMob i $ ms
-                          in maybe "" (("You room description is " <>) . (<> ".")) d
+        mobRmDescHelper = maybe "" (("You room description is " <>) . (<> ".")) $ dblQuote <$> getMobRmDesc i ms
     in multiWrapSend mq cols mkStats >> logPlaExec "stats" i
 stats p = withoutArgs stats p
 

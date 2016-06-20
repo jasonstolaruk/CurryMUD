@@ -377,8 +377,8 @@ mkCoinsMsgs f (Coins (cop, sil, gol)) = catMaybes [ c, s, g ]
 
 
 mkMobRmDesc :: Id -> MudState -> Text
-mkMobRmDesc i ms | hasMobId i ms = case view mobRmDesc . getMob i $ ms of Nothing   -> ""
-                                                                          Just desc -> parensQuote desc
+mkMobRmDesc i ms | hasMobId i ms = case getMobRmDesc i ms of Nothing   -> ""
+                                                             Just desc -> parensQuote desc
                  | otherwise     = ""
 
 

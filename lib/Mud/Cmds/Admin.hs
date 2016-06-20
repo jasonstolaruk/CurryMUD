@@ -1431,21 +1431,6 @@ setHelper targetId a@(ms, toSelfMsgs, _, _) arg = if
                              & _4 <>~ (isDiff |?| toSelf)
               _      -> sorryOp "hand"
         -----
-        setMobRmDescHelper t
-          | not . hasMob $ t = sorryType
-          | otherwise        = case eitherDecode value' of
-            Left  _ -> appendMsg . sorryAdminSetValue "mobRmDesc" $ value
-            Right x -> case op of
-              Assign -> let toSelf   = pure . T.concat $ [ "Set mobRmDesc to ", showMaybe x, mkDiffTxt isDiff, "." ]
-                            prev     = view mobRmDesc . getMob targetId $ ms
-                            isDiff   = x /= prev
-                            toTarget = pure . T.concat $ [ "Your room description has changed to ", showMaybe x, "." ]
-                        in a & _1.mobTbl.ind targetId.mobRmDesc .~ x
-                             & _2 <>~ toSelf
-                             & _3 <>~ ((isNpcPC targetId ms && isDiff) |?| toTarget)
-                             & _4 <>~ (isDiff |?| toSelf)
-              _      -> sorryOp "mobRmDesc"
-        -----
         setMobKnownLangsHelper t
           | not . hasMob $ t = sorryType
           | otherwise        = case eitherDecode value' of
@@ -1468,6 +1453,21 @@ setHelper targetId a@(ms, toSelfMsgs, _, _) arg = if
           where
             mkToSelf   x isDiff = pure . T.concat $ [ "Set knownLangs to ", ppList x, mkDiffTxt isDiff, "." ]
             mkToTarget x        = pure $ "Your known languages have changed to " <> ppList x <> "."
+        -----
+        setMobRmDescHelper t
+          | not . hasMob $ t = sorryType
+          | otherwise        = case eitherDecode value' of
+            Left  _ -> appendMsg . sorryAdminSetValue "mobRmDesc" $ value
+            Right x -> case op of
+              Assign -> let toSelf   = pure . T.concat $ [ "Set mobRmDesc to ", showMaybe x, mkDiffTxt isDiff, "." ]
+                            prev     = view mobRmDesc . getMob targetId $ ms
+                            isDiff   = x /= prev
+                            toTarget = pure . T.concat $ [ "Your room description has changed to ", showMaybe x, "." ]
+                        in a & _1.mobTbl.ind targetId.mobRmDesc .~ x
+                             & _2 <>~ toSelf
+                             & _3 <>~ ((isNpcPC targetId ms && isDiff) |?| toTarget)
+                             & _4 <>~ (isDiff |?| toSelf)
+              _      -> sorryOp "mobRmDesc"
         -----
         setPCRaceHelper t
           | t /= PCType = sorryType
@@ -1508,7 +1508,7 @@ setHelper targetId a@(ms, toSelfMsgs, _, _) arg = if
             mkToTarget x        = pure . T.concat $ [ "Your ", n, " have changed to ", mkValueTxt x, "."     ]
             mkValueTxt          = noneOnNull . commas
         -----
-        sorryType               = appendMsg sorryAdminSetType
+        sorryType               = appendMsg . sorryAdminSetType $ targetId
         sorryOp                 = appendMsg . sorryAdminSetOp (pp op)
         value'                  = strictTextToLazyBS value
         mkDiffTxt isDiff        = not isDiff |?| (" " <> parensQuote "no change")

@@ -350,8 +350,8 @@ sorryAdminSetOp :: Text -> Text -> Text
 sorryAdminSetOp opTxt k = T.concat [ "The ", dblQuote opTxt, " operator cannot be used with the ", dblQuote k, " key." ]
 
 
-sorryAdminSetType :: Text
-sorryAdminSetType = "Incorrect type."
+sorryAdminSetType :: Id -> Text
+sorryAdminSetType i = "ID " <> showText i <> "is not of the correct type."
 
 
 sorryAdminSetValue :: Text -> Text -> Text
