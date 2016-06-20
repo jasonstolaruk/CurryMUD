@@ -2821,13 +2821,14 @@ shuffleRem i ms d conName icir as invCoinsWithCon@(invWithCon, _) f =
 -----
 
 
--- TODO: Room desc length.
 roomDesc :: ActionFun
 roomDesc (NoArgs i mq cols) = do
     tweak $ mobTbl.ind i.mobRmDesc .~ Nothing
     wrapSend mq cols "Your room description has been cleared."
     logPla "roomDesc" i "Room description cleared."
-roomDesc (WithArgs i mq cols (T.unwords -> desc@(dblQuote -> desc'))) = do
+roomDesc (WithArgs i mq cols (T.unwords -> desc@(dblQuote -> desc'))) = if T.length desc > maxMobRmDescLen
+  then wrapSend mq cols $ "A room description cannot exceed " <> showText maxMobRmDescLen <> " characters in length."
+  else do
     tweak $ mobTbl.ind i.mobRmDesc ?~ desc
     wrapSend mq cols $ "Your room description has been set to " <> desc' <> "."
     logPla "rmDesc" i $ "Room description set to " <> desc' <> "."

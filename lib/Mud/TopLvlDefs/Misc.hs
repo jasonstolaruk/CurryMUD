@@ -112,6 +112,10 @@ maxInacSecs :: Integer
 maxInacSecs = 10 {- mins -} * 60 {- secs -} -- ten mins
 
 
+maxMobRmDescLen :: Int
+maxMobRmDescLen = 80
+
+
 maxNameLen,    minNameLen    :: Int
 maxNameLenTxt, minNameLenTxt :: Text
 maxNameLen    = 12
