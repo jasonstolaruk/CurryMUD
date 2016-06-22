@@ -19,7 +19,7 @@ When no arguments are provided to the "roomdesc" command, your room description 
 
 Certain expressive commands will set or clear your room description for you. Special note is made where this is the case in the expressive command list displayed by the "expressive" command. (Please see \qhelp expressive\d for more information.)
 
-Note that if it is set, both \qstats\d and \qlook self\d will display your room description.
+Note that if it is set, both \qlookself\d and \qstats\d will display your room description.
 
 \uRULES\n
 In order to preserve the integrity of the virtual world along with the enjoyment of all, the rules below must be followed. Violation of these rules is grounds for discipline including banishment from CurryMUD.

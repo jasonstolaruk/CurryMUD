@@ -43,7 +43,7 @@ import Mud.Misc.Database
 import Mud.Misc.LocPref
 import Mud.Misc.Logging hiding (logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut)
 import Mud.Misc.NameResolution
-import Mud.TheWorld.Zones.AdminZoneIds (iLoggedOut, iRoot, iWelcome)
+import Mud.TheWorld.Zones.AdminZoneIds (iLoggedOut, iPidge, iRoot, iWelcome)
 import Mud.Threads.Act
 import Mud.Threads.Digester
 import Mud.Threads.Effect
@@ -179,6 +179,7 @@ regularCmdTuples =
     , ("expressive", expCmdList,         True,  cmdDescExpCmdList)
     , ("feeling",    feeling,            True,  cmdDescFeeling)
     , ("listen",     listen,             True,  cmdDescListen)
+    , ("lookself",   lookSelf,           True,  cmdDescLookSelf)
     , ("moles",      molestCan'tAbbrev,  True,  "")
     , ("molest",     alertExec "molest", True,  "")
     , ("n",          go "n",             True,  cmdDescGoNorth)
@@ -321,6 +322,7 @@ npcRegularCmdTuples =
     , ("expressive", expCmdList,     True,  cmdDescExpCmdList)
     , ("feeling",    feeling,        True,  cmdDescFeeling)
     , ("listen",     listen,         True,  cmdDescListen)
+    , ("lookself",   lookSelf,       True,  cmdDescLookSelf)
     , ("n",          go "n",         True,  cmdDescGoNorth)
     , ("ne",         go "ne",        True,  cmdDescGoNortheast)
     , ("nw",         go "nw",        True,  cmdDescGoNorthwest)
@@ -1899,7 +1901,6 @@ listen p = withoutArgs listen p
 -----
 
 
--- TODO: "look self" and relevant additions to help.
 look :: ActionFun
 look (NoArgs i mq cols) = getState >>= \ms ->
     let ri        = getRmId i  ms
@@ -2026,6 +2027,14 @@ extractMobIdsFromEiss ms = foldl' helper []
   where
     helper acc Left   {}  = acc
     helper acc (Right is) = acc ++ findMobIds ms is
+
+
+-----
+
+
+lookSelf :: ActionFun
+lookSelf (NoArgs i mq cols) = getState >>= \ms -> send mq . nl . mkEntDesc iPidge cols ms $ (i, getEnt i ms)
+lookSelf p                  = withoutArgs lookSelf p
 
 
 -----

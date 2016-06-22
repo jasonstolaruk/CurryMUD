@@ -17,7 +17,7 @@ The male vulpenoid has readied the following equipment:
 \uNOTES\n
 When no arguments are provided to the "chardesc" command, your supplementary character description will be cleared.
 
-Note that if it is set, both \qstats\d and \qlook self\d will display your supplementary character description.
+Note that if it is set, both \qlookself\d and \qstats\d will display your supplementary character description.
 
 \uRULES\n
 In order to preserve the integrity of the virtual world along with the enjoyment of all, the following rules must be observed. Violation of these rules is grounds for discipline including banishment from CurryMUD.

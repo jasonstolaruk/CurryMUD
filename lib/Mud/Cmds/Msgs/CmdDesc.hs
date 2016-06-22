@@ -122,6 +122,10 @@ cmdDescLook :: Text
 cmdDescLook = "Display a description of your current room, or examine one or more things in your current room."
 
 
+cmdDescLookSelf :: Text
+cmdDescLookSelf = "Verify what others see when they " <> dblQuote "look" <> " at your character."
+
+
 cmdDescPut :: Text
 cmdDescPut = "Put one or more items into a) a container in your inventory, or b) a container in your current room."
 

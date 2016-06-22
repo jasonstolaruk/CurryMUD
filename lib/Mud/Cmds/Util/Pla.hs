@@ -51,6 +51,7 @@ module Mud.Cmds.Util.Pla ( adminTagTxt
                          , mkEffHtDesc
                          , mkEffMaDesc
                          , mkEffPsDesc
+                         , mkEntDesc
                          , mkEntDescs
                          , mkEqDesc
                          , mkExitsSummary
