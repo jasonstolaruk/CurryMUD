@@ -1,0 +1,32 @@
+\h CHARDESC \d
+
+\uUSAGE\n
+chardesc \s[\ddescription\s]\d
+
+\uDESCRIPTION\n
+Specify a "supplementary character description" visible when someone looks at you.
+
+For example, let's say you set your supplementary character description to "his hair is disheveled and his eyes are bloodshot". Now when someone else in your current room looks at you, he or she will see the following (assuming you are a male vulpenoid):
+
+You see a male vulpenoid.
+... (Your character's fixed/customary description here.)
+\c[ \dHis hair is disheveled and his eyes are bloodshot. \c]\d
+The male vulpenoid has readied the following equipment:
+...
+
+\uNOTES\n
+When no arguments are provided to the "chardesc" command, your supplementary character description will be cleared.
+
+Note that if it is set, both \qstats\d and \qlook self\d will display your supplementary character description.
+
+\uRULES\n
+In order to preserve the integrity of the virtual world along with the enjoyment of all, the following rules must be observed. Violation of these rules is grounds for discipline including banishment from CurryMUD.
+1) One's supplementary character description is meant to be just that: an auxiliary depiction of transitory, visible characteristics of your character's person. Keep your descriptions realistic and reasonable.3`
+2) Descriptions must be passive and written from an objective viewpoint. "he is sweating profusely" is acceptable, while "you are surprised at how sweaty he is" is not.3`
+3) Descriptions of where your character is or what your character is actively doing in your current room ("sitting at a table by herself") are better expressed via the "roomdesc" command.3`
+
+\uEXAMPLES\n
+\qchardesc her face portrays a persistent downtrodden expression\d to change your supplementary character description.4`
+\qchardesc\d to clear your supplementary character description.4`
+
+\uSEE ALSO\n

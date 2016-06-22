@@ -3,7 +3,8 @@
 -- This module contains helper functions used by multiple functions in "Mud.Cmds.Pla", as well as helper functions used
 -- by both "Mud.Cmds.Pla" and "Mud.Cmds.ExpCmds".
 
-module Mud.Cmds.Util.Pla ( alertMsgHelper
+module Mud.Cmds.Util.Pla ( adminTagTxt
+                         , alertMsgHelper
                          , armSubToSlot
                          , bugTypoLogger
                          , checkMutuallyTuned
@@ -994,14 +995,26 @@ mkEntDescs i cols ms eis = T.intercalate "\n" [ mkEntDesc i cols ms (ei, e) | ei
 mkEntDesc :: Id -> Cols -> MudState -> (Id, Ent) -> Text
 mkEntDesc i cols ms (ei, e) | ed <- views entDesc (wrapUnlines cols) e, s <- getSing ei ms, t <- getType ei ms =
     case t of ConType      ->                 (ed <>) . mkInvCoinsDesc i  cols ms   ei $ s
-              NpcType      ->                 (ed <>) . mkEqDesc       i  cols ms   ei   s $ t
-              PCType       -> (pcHeader <>) . (ed <>) . mkEqDesc       i  cols ms   ei   s $ t
+              NpcType      ->                 (ed <>) . (charDescHelper <>) . mkEqDesc       i  cols ms   ei   s $ t
+              PCType       -> (pcHeader <>) . (ed <>) . (charDescHelper <>) . mkEqDesc       i  cols ms   ei   s $ t
               VesselType   ->                 (ed <>) . mkVesselContDesc  cols ms $ ei
               WritableType ->                 (ed <>) . mkWritableMsgDesc cols ms $ ei
               _            -> ed
   where
     pcHeader = wrapUnlines cols mkPCDescHeader
-    mkPCDescHeader | (pp *** pp -> (s, r)) <- getSexRace ei ms = T.concat [ "You see a ", s, " ", r, "." ]
+    mkPCDescHeader | (pp *** pp -> (s, r)) <- getSexRace ei ms = T.concat [ "You see a "
+                                                                          , s
+                                                                          , " "
+                                                                          , r
+                                                                          , rmDescHelper
+                                                                          , adminTagHelper
+                                                                          , "." ]
+    rmDescHelper        = case mkMobRmDesc ei ms of "" -> ""
+                                                    d  -> " " <> d
+    adminTagHelper      | isAdminId ei ms = " " <> adminTagTxt
+                        | otherwise       = ""
+    charDescHelper      = maybe "" (wrapUnlines cols . coloredBracketQuote) . getCharDesc ei $ ms
+    coloredBracketQuote = quoteWith' (("[ ", " ]") & both %~ colorWith charDescColor)
 
 
 mkInvCoinsDesc :: Id -> Cols -> MudState -> Id -> Sing -> Text
@@ -1085,6 +1098,10 @@ mkWritableMsgDesc cols ms targetId = case getWritable targetId ms of
   (Writable (Just (_, lang)) Nothing ) -> helper . pp $ lang
   where
     helper txt = wrapUnlines cols $ "There is something written on it in " <> txt <> "."
+
+
+adminTagTxt :: Text
+adminTagTxt = colorWith adminTagColor (parensQuote "admin")
 
 
 -----

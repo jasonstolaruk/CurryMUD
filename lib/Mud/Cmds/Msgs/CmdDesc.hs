@@ -14,7 +14,7 @@ cmdDescBars = "Display one or more status bars."
 
 
 cmdDescCharDesc :: Text
-cmdDescCharDesc = "Specify a supplementary description visible when someone looks at you."
+cmdDescCharDesc = "Specify a supplementary character description visible when someone looks at you."
 
 
 cmdDescClear :: Text

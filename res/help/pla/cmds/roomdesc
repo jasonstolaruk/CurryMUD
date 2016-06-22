@@ -6,7 +6,7 @@ roomdesc \s[\ddescription\s]\d
 \uDESCRIPTION\n
 Specify a temporary description to appear next to your name in the description of your current room.
 
-For example, let's say you set your room description to "leaning against the signpost". Now when someone else in your current room executes the "look" command, he or she will see your character listed like so (assuming you are a male vulpenoid):
+For example, let's say you set your "room description" to "leaning against the signpost". Now when someone else in your current room executes the "look" command, he or she will see your character listed like so (assuming you are a male vulpenoid):
 
 \oa male vulpenoid\d (leaning against the signpost) [\am\dvulpenoid]
 
@@ -19,10 +19,13 @@ When no arguments are provided to the "roomdesc" command, your room description 
 
 Certain expressive commands will set or clear your room description for you. Special note is made where this is the case in the expressive command list displayed by the "expressive" command. (Please see \qhelp expressive\d for more information.)
 
-Note that if it is set, the "stats" command will display your room description.
+Note that if it is set, both \qstats\d and \qlook self\d will display your room description.
 
 \uRULES\n
-Do not specify the name of a character in a room description. It is not appropriate, for example, to set your room description to "sitting next to Taro" when you cannot guarantee that passersby will know Taro by name. "sitting next to the lagomorph with pink hair" or something similar is preferable.
+In order to preserve the integrity of the virtual world along with the enjoyment of all, the rules below must be followed. Violation of these rules is grounds for discipline including banishment from CurryMUD.
+1) Your room descriptions should depict where your character is or what your character is actively doing in your current room. Keep your room descriptions concise, simple, and reasonable.3`
+2) Do not specify the name of a character in a room description. It is not appropriate, for example, to set your room description to "sitting next to Taro" when you cannot guarantee that passersby will know Taro by name. "sitting next to the lagomorph with pink hair" or something similar is preferable.3`
+3) Descriptions of transitory characteristics of your character's person ("his windswept hair is truly a mess") are better expressed via the "chardesc" command.3`
 
 \uEXAMPLES\n
 \qroomdesc sitting at a table\d to change your room description to "sitting at a table".4`

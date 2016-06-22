@@ -670,28 +670,30 @@ examineMob i ms =
     let m            = getMob i ms
         showAttrib a = showText (getBaseAttrib a i ms) <> " " <> (parensQuote . showText . calcEffAttrib a i $ ms)
         showPts x y  = m^.x.to showText <> " / " <> m^.y.to showText
-    in [ "Sex: "            <> m^.sex.to pp
-       , "ST: "             <> showAttrib St
-       , "DX: "             <> showAttrib Dx
-       , "HT: "             <> showAttrib Ht
-       , "MA: "             <> showAttrib Ma
-       , "PS: "             <> showAttrib Ps
-       , "HP: "             <> showPts curHp maxHp
-       , "MP: "             <> showPts curMp maxMp
-       , "PP: "             <> showPts curPp maxPp
-       , "FP: "             <> showPts curFp maxFp
-       , "Stomach: "        <> m^.stomach.to ppList
-       , "Stomach ratio: "  <> let (mouths, size, perFull) = (length . getStomach i $ ms
-                                                             , calcStomachSize    i   ms
-                                                             , calcStomachPerFull i   ms) & each %~ showText
-                               in T.concat [ mouths, " / ", size, " ", parensQuote $ perFull <> "%" ]
-       , "Exp: "            <> m^.exp .to showText
-       , "Handedness: "     <> m^.hand.to pp
-       , "Know languages: " <> m^.knownLangs.to ppList
-       , "Room: "           <> let ri = m^.rmId
-                               in getRmName ri ms <> " " <> parensQuote (showText ri)
-       , "Feeling map: "    <> let f tag feel = (tag <> " " <> pp feel :)
-                               in noneOnNull . commas . views feelingMap (M.foldrWithKey f []) $ m
+    in [ "Sex: "              <> m^.sex.to pp
+       , "ST: "               <> showAttrib St
+       , "DX: "               <> showAttrib Dx
+       , "HT: "               <> showAttrib Ht
+       , "MA: "               <> showAttrib Ma
+       , "PS: "               <> showAttrib Ps
+       , "HP: "               <> showPts curHp maxHp
+       , "MP: "               <> showPts curMp maxMp
+       , "PP: "               <> showPts curPp maxPp
+       , "FP: "               <> showPts curFp maxFp
+       , "Stomach: "          <> m^.stomach.to ppList
+       , "Stomach ratio: "    <> let (mouths, size, perFull) = (length . getStomach i $ ms
+                                                               , calcStomachSize    i   ms
+                                                               , calcStomachPerFull i   ms) & each %~ showText
+                                 in T.concat [ mouths, " / ", size, " ", parensQuote $ perFull <> "%" ]
+       , "Exp: "              <> m^.exp .to showText
+       , "Handedness: "       <> m^.hand.to pp
+       , "Know languages: "   <> m^.knownLangs.to ppList
+       , "Room: "             <> let ri = m^.rmId
+                                 in getRmName ri ms <> " " <> parensQuote (showText ri)
+       , "Room description: " <> m^.mobRmDesc.to (fromMaybe none)
+       , "Char description: " <> m^.charDesc .to (fromMaybe none)
+       , "Feeling map: "      <> let f tag feel = (tag <> " " <> pp feel :)
+                                 in noneOnNull . commas . views feelingMap (M.foldrWithKey f []) $ m
        , encHelper i ms ]
 
 

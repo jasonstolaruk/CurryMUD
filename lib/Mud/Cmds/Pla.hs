@@ -609,9 +609,18 @@ chan p = patternMatchFail "chan" [ showText p ]
 -----
 
 
--- TODO: Help.
 charDescAction :: ActionFun
-charDescAction _ = undefined
+charDescAction (NoArgs i mq cols) = do
+    tweak $ mobTbl.ind i.charDesc .~ Nothing
+    wrapSend mq cols "Your supplementary character description has been cleared."
+    logPla "charDescAction" i "Supplementary character description cleared."
+charDescAction (Msg i mq cols desc@(dblQuote -> desc')) = if T.length desc > maxCharDescLen
+  then wrapSend mq cols $ "A supplementary character description cannot exceed " <> showText maxCharDescLen <> " characters in length."
+  else do
+    tweak $ mobTbl.ind i.charDesc ?~ desc
+    wrapSend mq cols $ "Your supplementary character description has been set to " <> desc'
+    logPla "charDescAction" i $ "Supplementary character description set to " <> desc'
+charDescAction p = patternMatchFail "charDescAction" [ showText p ]
 
 
 -----
@@ -1890,6 +1899,7 @@ listen p = withoutArgs listen p
 -----
 
 
+-- TODO: "look self" and relevant additions to help.
 look :: ActionFun
 look (NoArgs i mq cols) = getState >>= \ms ->
     let ri        = getRmId i  ms
@@ -1987,7 +1997,7 @@ mkRmInvCoinsDesc i cols ms ri =
     mkOtherDesc (en, (s, _), d, c)    | c == 1 = T.concat [ aOrAnOnLower s, " ", en, rmDescHepler d ]
     mkOtherDesc (en, b,      d, c)             = T.concat [ showText c, spaced . mkPlurFromBoth $ b, en, rmDescHepler d ]
     adminTagHelper False = ""
-    adminTagHelper True  = " " <> colorWith adminTagColor (parensQuote "admin")
+    adminTagHelper True  = " " <> adminTagTxt
     rmDescHepler   ""    = ""
     rmDescHepler   d     = " " <> d
 
@@ -2849,7 +2859,7 @@ roomDesc (WithArgs i mq cols (T.unwords -> desc@(dblQuote -> desc'))) = if T.len
   else do
     tweak $ mobTbl.ind i.mobRmDesc ?~ desc
     wrapSend mq cols $ "Your room description has been set to " <> desc' <> "."
-    logPla "rmDesc" i $ "Room description set to " <> desc' <> "."
+    logPla "roomDesc" i $ "Room description set to " <> desc' <> "."
 roomDesc p = patternMatchFail "roomDesc" [ showText p ]
 
 
@@ -3480,7 +3490,6 @@ smell p = advise p ["smell"] adviceSmellExcessArgs
 -----
 
 
--- TODO: Display char desc.
 stats :: ActionFun
 stats (NoArgs i mq cols) = getState >>= \ms ->
     let mkStats   = dropEmpties [ top
@@ -3488,13 +3497,15 @@ stats (NoArgs i mq cols) = getState >>= \ms ->
                                 , "level " <> showText l
                                 , (commaEvery3 . showText $ x  ) <> " experience points"
                                 , (commaEvery3 . showText $ nxt) <> " experience points to next level"
-                                , mobRmDescHelper ]
+                                , mobRmDescHelper
+                                , charDescHelper ]
         top             = onTrue (isPC i ms) (<> sexRace) . getSing i $ ms
         sexRace         = T.concat [ ", the ", sexy, " ", r ]
         (sexy, r)       = (uncapitalize . showText *** uncapitalize . showText) . getSexRace i $ ms
         (l, x)          = getLvlExp i ms
         nxt             = subtract x . snd $ calcLvlExps !! l
-        mobRmDescHelper = maybe "" (("You room description is " <>) . (<> ".")) $ dblQuote <$> getMobRmDesc i ms
+        mobRmDescHelper = maybe "" (("Your room description is " <>) . (<> "."))       $ dblQuote <$> getMobRmDesc i ms
+        charDescHelper  = maybe "" ("Your supplementary character description is " <>) $ dblQuote <$> getCharDesc  i ms
     in multiWrapSend mq cols mkStats >> logPlaExec "stats" i
 stats p = withoutArgs stats p
 

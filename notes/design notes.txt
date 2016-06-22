@@ -173,9 +173,6 @@ When a PC dies, all those who have linked with him/her should be notified.
 
 Encourage players to create aliases (using their MUD clients) for emotes unique to their characters. This will give their characters personality and make them more vibrant.
 
-"chardesc" to specify a supplementary description visible when someone looks at you.
-"chardesc his hair is disheveled and his eyes are bloodshot" -> { His hair is disheveled and his eyes are bloodshot. }
-
 "bonus" to give another player a bonus for good RP.
 
 "nickname" to create your own nickname for another PC.

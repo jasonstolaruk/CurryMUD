@@ -797,6 +797,7 @@ debugToken (NoArgs i mq cols) = do
                 , charTokenDelimiter  `T.cons` "x emoteChar"
                 , styleTokenDelimiter `T.cons` styleTokenDelimiter `T.cons` " literal styleTokenDelimiter"
                 , styleTokenDelimiter `T.cons` ("aabbrevColor"       <> dfltColorStyleToken    )
+                , styleTokenDelimiter `T.cons` ("ccharDescColor"     <> dfltColorStyleToken    )
                 , styleTokenDelimiter `T.cons` ("ddfltColor"         <> dfltColorStyleToken    )
                 , styleTokenDelimiter `T.cons` ("hheaderColor"       <> dfltColorStyleToken    )
                 , styleTokenDelimiter `T.cons` ("iasteriskColor"     <> dfltColorStyleToken    )

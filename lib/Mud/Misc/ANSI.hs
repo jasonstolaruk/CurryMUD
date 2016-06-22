@@ -12,6 +12,7 @@ module Mud.Misc.ANSI ( abbrevColor
                      , blinkANSI
                      , blue
                      , bootMsgColor
+                     , charDescColor
                      , colorizeFileTxt
                      , colors
                      , colorWith
@@ -183,6 +184,10 @@ blinkANSI = T.pack . setSGRCode $ [ SetBlinkSpeed SlowBlink ]
 
 bootMsgColor :: Text
 bootMsgColor = red
+
+
+charDescColor :: Text
+charDescColor = cyan
 
 
 dfltColor :: Text

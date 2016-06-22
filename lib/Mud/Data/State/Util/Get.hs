@@ -151,6 +151,13 @@ getChan i = view (chanTbl.ind i)
 -----
 
 
+getCharDesc :: Id -> MudState -> CharDesc
+getCharDesc i = view charDesc . getMob i
+
+
+-----
+
+
 getCloth :: Id -> MudState -> Cloth
 getCloth i = view (clothTbl.ind i)
 

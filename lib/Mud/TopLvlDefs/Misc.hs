@@ -91,6 +91,10 @@ maxChanNameLen :: Int
 maxChanNameLen = 12
 
 
+maxCharDescLen :: Int
+maxCharDescLen = 200
+
+
 maxCmdLen :: Int
 maxCmdLen = 12
 
