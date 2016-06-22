@@ -13,6 +13,10 @@ cmdDescBars :: Text
 cmdDescBars = "Display one or more status bars."
 
 
+cmdDescCharDesc :: Text
+cmdDescCharDesc = "Specify a supplementary description visible when someone looks at you."
+
+
 cmdDescClear :: Text
 cmdDescClear = "Clear the screen."
 

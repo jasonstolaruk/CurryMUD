@@ -171,6 +171,7 @@ regularCmdTuples =
     , ("bars",       bars,               True,  cmdDescBars)
     , ("bug",        bug,                True,  "Report a bug.")
     , ("channel",    chan,               True,  "Send a message on a telepathic channel " <> plusRelatedMsg)
+    , ("chardesc",   charDescAction,     True,  cmdDescCharDesc)
     , ("d",          go "d",             True,  cmdDescGoDown)
     , ("e",          go "e",             True,  cmdDescGoEast)
     , ("empty",      emptyAction,        True,  cmdDescEmpty)
@@ -312,6 +313,7 @@ npcRegularCmdTuples =
     [ (".",          npcAsSelf,      False, "Execute a command as your admin PC.")
     , ("?",          npcDispCmdList, True,  cmdDescDispCmdList)
     , ("bars",       bars,           True,  cmdDescBars)
+    , ("chardesc",   charDescAction, True,  cmdDescCharDesc)
     , ("d",          go "d",         True,  cmdDescGoDown)
     , ("e",          go "e",         True,  cmdDescGoEast)
     , ("empty",      emptyAction,    True,  cmdDescEmpty)
@@ -602,6 +604,14 @@ chan (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
         (cs, cns, s) = mkChanBindings i ms
     in findFullNameForAbbrev (T.toLower target) (map T.toLower cns) |&| maybe notFound found
 chan p = patternMatchFail "chan" [ showText p ]
+
+
+-----
+
+
+-- TODO: Help.
+charDescAction :: ActionFun
+charDescAction _ = undefined
 
 
 -----
@@ -3470,6 +3480,7 @@ smell p = advise p ["smell"] adviceSmellExcessArgs
 -----
 
 
+-- TODO: Display char desc.
 stats :: ActionFun
 stats (NoArgs i mq cols) = getState >>= \ms ->
     let mkStats   = dropEmpties [ top

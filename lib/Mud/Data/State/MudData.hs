@@ -499,6 +499,7 @@ data Mob = Mob { _sex                    :: Sex
                , _knownLangs             :: [Lang]
                , _rmId                   :: Id
                , _mobRmDesc              :: MobRmDesc
+               , _charDesc               :: CharDesc
                , _feelingMap             :: FeelingMap
                , _actMap                 :: ActMap
                , _nowEating              :: Maybe NowEating
@@ -540,6 +541,9 @@ data Lang = CommonLang
 
 
 type MobRmDesc = Maybe Text
+
+
+type CharDesc = Maybe Text
 
 
 type ActMap = M.Map ActType ActAsync
@@ -617,7 +621,8 @@ mobToJSON Mob { .. } = object [ "sex"        .= _sex
                               , "hand"       .= _hand
                               , "knownLangs" .= _knownLangs
                               , "rmId"       .= _rmId
-                              , "mobRmDesc"  .= _mobRmDesc ]
+                              , "mobRmDesc"  .= _mobRmDesc
+                              , "charDesc"   .= _charDesc ]
 
 
 jsonToMob :: Value -> Parser Mob
@@ -642,6 +647,7 @@ jsonToMob (Object o) = Mob <$> o .: "sex"
                            <*> o .: "knownLangs"
                            <*> o .: "rmId"
                            <*> o .: "mobRmDesc"
+                           <*> o .: "charDesc"
                            <*> pure M.empty
                            <*> pure M.empty
                            <*> pure Nothing
