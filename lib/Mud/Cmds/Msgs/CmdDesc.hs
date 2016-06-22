@@ -4,6 +4,7 @@ module Mud.Cmds.Msgs.CmdDesc where
 
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Lang
+import Mud.Util.Quoting
 
 import Data.Monoid ((<>))
 import Data.Text (Text)
