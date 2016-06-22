@@ -524,7 +524,8 @@ createAdminZone = do
               80 24
               [] [] Nothing
               []
-              (Just iLounge))
+              (Just iLounge)
+              Nothing)
   putPla iCurry
          (Ent iCurry
               Nothing
@@ -555,7 +556,8 @@ createAdminZone = do
               80 24
               [] [] Nothing
               []
-              (Just iLounge))
+              (Just iLounge)
+              Nothing)
 
   -- ==================================================
   -- Rooms:

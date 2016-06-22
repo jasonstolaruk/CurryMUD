@@ -169,6 +169,7 @@ regularCmdTuples =
     , ("about",      about,              True,  "About CurryMUD.")
     , ("admin",      admin,              True,  "Display a list of administrators, or send a message to an administrator.")
     , ("bars",       bars,               True,  cmdDescBars)
+    , ("bonus",      bonus,              True,  "Give another player a bonus for outstanding roleplaying.")
     , ("bug",        bug,                True,  "Report a bug.")
     , ("channel",    chan,               True,  "Send a message on a telepathic channel " <> plusRelatedMsg)
     , ("chardesc",   charDescAction,     True,  cmdDescCharDesc)
@@ -513,6 +514,16 @@ mkBar x txt (c, m) = let ratio  = c `divide` m
 mkPtPairs :: Id -> MudState -> [(Text, (Int, Int))]
 mkPtPairs i ms = let (hps, mps, pps, fps) = getPts i ms
                  in [ ("hp", hps), ("mp", mps), ("pp", pps), ("fp", fps) ]
+
+
+-----
+
+
+-- TODO: Help.
+-- TODO: When executed by an admin, don't msg the target if the admin is incog.
+bonus :: ActionFun
+bonus _ = undefined
+-- bonus p@AdviseNoArgs = advise p ["bonus"] adviceBonusNoArgs
 
 
 -----

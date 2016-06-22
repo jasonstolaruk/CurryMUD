@@ -173,8 +173,6 @@ When a PC dies, all those who have linked with him/her should be notified.
 
 Encourage players to create aliases (using their MUD clients) for emotes unique to their characters. This will give their characters personality and make them more vibrant.
 
-"bonus" to give another player a bonus for good RP.
-
 "nickname" to create your own nickname for another PC.
 
 "punch", "kick", and "headbutt" to attack a PC without formally entering combat. These commands may not work with NPCs.

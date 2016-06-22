@@ -752,7 +752,8 @@ data Pla = Pla { _currHostName :: HostName
                , _peeping      :: Inv
                , _possessing   :: Maybe Id
                , _retainedMsgs :: [Text]
-               , _lastRmId     :: Maybe Id } deriving Eq
+               , _lastRmId     :: Maybe Id
+               , _bonusTime    :: Maybe UTCTime } deriving Eq
 
 
 data PlaFlags = IsAdmin
@@ -780,7 +781,8 @@ plaToJSON Pla { .. } = object [ "currHostName" .= _currHostName
                               , "columns"      .= _columns
                               , "pageLines"    .= _pageLines
                               , "retainedMsgs" .= _retainedMsgs
-                              , "lastRmId"     .= _lastRmId ]
+                              , "lastRmId"     .= _lastRmId
+                              , "bonusTime"    .= _bonusTime ]
 
 
 jsonToPla :: Value -> Parser Pla
@@ -794,6 +796,7 @@ jsonToPla (Object o) = Pla <$> o .: "currHostName"
                            <*> pure Nothing
                            <*> o .: "retainedMsgs"
                            <*> o .: "lastRmId"
+                           <*> o .: "bonusTime"
 jsonToPla _          = empty
 
 

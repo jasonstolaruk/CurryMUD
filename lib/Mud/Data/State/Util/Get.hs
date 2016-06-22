@@ -137,6 +137,13 @@ getBiodegraderAsync i = view biodegraderAsync . getObj i
 -----
 
 
+getBonusTime :: Id -> MudState -> Maybe UTCTime
+getBonusTime i = view bonusTime . getPla i
+
+
+-----
+
+
 getCapacity :: Id -> MudState -> Vol
 getCapacity i = view capacity . getCon i
 

@@ -6,10 +6,12 @@ module Mud.Misc.Database ( AdminChanRec(..)
                          , AlertMsgRec(..)
                          , BanHostRec(..)
                          , BanPCRec(..)
+                         , BonusRec(..)
                          , BugRec(..)
                          , ChanRec(..)
                          , countDbTblRecsAdminChan
                          , countDbTblRecsAdminMsg
+                         , countDbTblRecsBonus
                          , countDbTblRecsChan
                          , countDbTblRecsQuestion
                          , countDbTblRecsTele
@@ -21,6 +23,7 @@ module Mud.Misc.Database ( AdminChanRec(..)
                          , insertDbTblAlertMsg
                          , insertDbTblBanHost
                          , insertDbTblBanPC
+                         , insertDbTblBonus
                          , insertDbTblBug
                          , insertDbTblChan
                          , insertDbTblProf
@@ -33,6 +36,7 @@ module Mud.Misc.Database ( AdminChanRec(..)
                          , ProfRec(..)
                          , purgeDbTblAdminChan
                          , purgeDbTblAdminMsg
+                         , purgeDbTblBonus
                          , purgeDbTblChan
                          , purgeDbTblQuestion
                          , purgeDbTblTele
@@ -83,6 +87,10 @@ data BanPCRec     = BanPCRec     { dbTimestamp :: Text
                                  , dbName      :: Text
                                  , dbIsBanned  :: Bool
                                  , dbReason    :: Text }
+data BonusRec     = BonusRec     { dbTimestamp :: Text
+                                 , dbFromName  :: Text
+                                 , dbToName    :: Text
+                                 , dbAmt       :: Int }
 data BugRec       = BugRec       { dbTimestamp :: Text
                                  , dbName      :: Text
                                  , dbLoc       :: Text
@@ -140,6 +148,10 @@ instance FromRow BanHostRec where
 
 instance FromRow BanPCRec where
   fromRow = BanPCRec <$ (field :: RowParser Int) <*> field <*> field <*> field <*> field
+
+
+instance FromRow BonusRec where
+  fromRow = BonusRec <$ (field :: RowParser Int) <*> field <*> field <*> field <*> field
 
 
 instance FromRow BugRec where
@@ -201,6 +213,10 @@ instance ToRow BanPCRec where
   toRow (BanPCRec a b c d) = toRow (a, b, c, d)
 
 
+instance ToRow BonusRec where
+  toRow (BonusRec a b c d) = toRow (a, b, c, d)
+
+
 instance ToRow BugRec where
   toRow (BugRec a b c d e) = toRow (a, b, c, d, e)
 
@@ -249,6 +265,7 @@ createDbTbls = withConnection dbFile $ \conn -> do
          , "create table if not exists alert_msg  (id integer primary key, timestamp text, name text, cmd_name text, trigger text, msg text)"
          , "create table if not exists ban_host   (id integer primary key, timestamp text, host text, is_banned integer, reason text)"
          , "create table if not exists ban_pc     (id integer primary key, timestamp text, name text, is_banned integer, reason text)"
+         , "create table if not exists bonus      (id integer primary key, timestamp text, fromName text, ToName text, amt integer)"
          , "create table if not exists bug        (id integer primary key, timestamp text, name text, loc text, desc text, is_open integer)"
          , "create table if not exists chan       (id integer primary key, timestamp text, chan_id integer, chan_name text, name text, msg text)"
          , "create table if not exists profanity  (id integer primary key, timestamp text, host text, prof text)"
@@ -305,6 +322,10 @@ insertDbTblBanPC :: BanPCRec -> IO ()
 insertDbTblBanPC = insertDbTblHelper "insert into ban_pc (timestamp, name, is_banned, reason) values (?, ?, ?, ?)"
 
 
+insertDbTblBonus :: AdminChanRec -> IO ()
+insertDbTblBonus = insertDbTblHelper "insert into bonus (timestamp, fromName, toName, amt) values (?, ?, ?, ?)"
+
+
 insertDbTblBug :: BugRec -> IO ()
 insertDbTblBug = insertDbTblHelper "insert into bug (timestamp, name, loc, desc, is_open) values (?, ?, ?, ?, ?)"
 
@@ -352,6 +373,10 @@ countDbTblRecsAdminMsg :: IO [Only Int]
 countDbTblRecsAdminMsg = countHelper "admin_msg"
 
 
+countDbTblRecsBonus :: IO [Only Int] -- TODO: Use this.
+countDbTblRecsBonus = countHelper "bonus"
+
+
 countDbTblRecsChan :: IO [Only Int]
 countDbTblRecsChan = countHelper "chan"
 
@@ -379,6 +404,10 @@ purgeDbTblAdminChan = purgeHelper "admin_chan"
 
 purgeDbTblAdminMsg :: IO ()
 purgeDbTblAdminMsg = purgeHelper "admin_msg"
+
+
+purgeDbTblBonus :: IO () -- TODO: Use this.
+purgeDbTblBonus = purgeHelper "bonus"
 
 
 purgeDbTblChan :: IO ()
