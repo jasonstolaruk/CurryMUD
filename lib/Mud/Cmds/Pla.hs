@@ -1071,8 +1071,8 @@ mkExpCmdListTxt i ms =
                                                       , let matches = findMatches cn
                                                       , length matches == 1 ]
   where
-    findMatches cn = S.toList . S.filter (\(ExpCmd ecn _) -> ecn == cn) $ expCmdSet
-    mkExpCmdTxt (styled, ExpCmd ecn ect) = case ect of
+    findMatches cn = S.toList . S.filter (\(ExpCmd ecn _ _) -> ecn == cn) $ expCmdSet
+    mkExpCmdTxt (styled, ExpCmd ecn ect _) = case ect of
       (NoTarget  toSelf _  ) -> [ paddedName <> mkInitialTxt  ecn <> toSelf ]
       (HasTarget toSelf _ _) -> [ paddedName <> mkInitialTxt (ecn <> " hanako") <> T.replace "@" "Hanako" toSelf ]
       (Versatile toSelf _ toSelfWithTarget _ _) -> [ paddedName <> mkInitialTxt ecn <> toSelf

@@ -578,7 +578,7 @@ data ExpCmdType = NoTarget  ToSelf ToOthers
                 | Versatile ToSelf ToOthers ToSelfWithTarget ToTarget ToOthersWithTarget deriving (Eq, Ord, Show)
 
 
-data ExpCmd = ExpCmd ExpCmdName ExpCmdType deriving (Eq, Ord)
+data ExpCmd = ExpCmd ExpCmdName ExpCmdType MobRmDesc deriving (Eq, Ord)
 
 
 -----

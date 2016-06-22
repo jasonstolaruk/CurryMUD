@@ -403,7 +403,7 @@ getMobRmCoins i ms = let ri = getRmId i ms in getCoins ri ms
 -----
 
 
-getMobRmDesc :: Id -> MudState -> Maybe Text
+getMobRmDesc :: Id -> MudState -> MobRmDesc
 getMobRmDesc i = view mobRmDesc . getMob i
 
 

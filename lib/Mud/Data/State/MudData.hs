@@ -498,7 +498,7 @@ data Mob = Mob { _sex                    :: Sex
                , _hand                   :: Hand
                , _knownLangs             :: [Lang]
                , _rmId                   :: Id
-               , _mobRmDesc              :: Maybe Text
+               , _mobRmDesc              :: MobRmDesc
                , _feelingMap             :: FeelingMap
                , _actMap                 :: ActMap
                , _nowEating              :: Maybe NowEating
@@ -537,6 +537,9 @@ data Lang = CommonLang
           | LagomorphLang
           | NymphLang
           | VulpenoidLang deriving (Bounded, Enum, Eq, Generic, Ord, Show)
+
+
+type MobRmDesc = Maybe Text
 
 
 type ActMap = M.Map ActType ActAsync
