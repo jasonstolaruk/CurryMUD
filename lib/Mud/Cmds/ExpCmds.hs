@@ -24,7 +24,7 @@ import qualified Mud.Misc.Logging as L (logPlaOut)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Arrow (first)
-import Control.Lens ((?~))
+import Control.Lens ((.~), (?~))
 import Data.List ((\\), delete)
 import Data.Text (Text)
 import qualified Data.Set as S (Set, filter, foldr, fromList, map, toList)
@@ -272,7 +272,7 @@ expCmdSet = S.fromList
                            Nothing
     , ExpCmd "faint"       (NoTarget  "You faint."
                                       "% faints.")
-                           Nothing
+                           (Just "fainted")
     , ExpCmd "fistpump"    (NoTarget  "You pump your fist in the air triumphantly."
                                       "% pumps & fist in the air triumphantly.")
                            Nothing
@@ -451,7 +451,7 @@ expCmdSet = S.fromList
                                       "You kneel down before @."
                                       "% kneels down before you."
                                       "% kneels down before @.")
-                           Nothing
+                           (Just "kneeling down")
     , ExpCmd "laugh"       (Versatile "You laugh."
                                       "% laughs."
                                       "You laugh at @."
@@ -469,7 +469,7 @@ expCmdSet = S.fromList
                                       "You lay down next to @."
                                       "% lays down next to you."
                                       "% lays down next to @.")
-                           Nothing
+                           (Just "laying down")
     , ExpCmd "leap"        (NoTarget  "You leap into the air."
                                       "% leaps into the air.")
                            Nothing
@@ -592,7 +592,7 @@ expCmdSet = S.fromList
     , ExpCmd "ponder"      (NoTarget  "You ponder the situation."
                                       "% ponders the situation.")
                            Nothing
-    , ExpCmd "pout"        (Versatile "You strike a pose."
+    , ExpCmd "pose"        (Versatile "You strike a pose."
                                       "% strikes a pose."
                                       "You strike a pose before @."
                                       "% strikes a pose before you."
@@ -704,7 +704,7 @@ expCmdSet = S.fromList
                                       "You sit down next to @."
                                       "% sits down next to you."
                                       "% sit down next to @.")
-                           Nothing
+                           (Just "sitting down")
     , ExpCmd "sleepy"      (NoTarget  "You look sleepy."
                                       "% looks sleepy.")
                            Nothing
@@ -765,6 +765,9 @@ expCmdSet = S.fromList
     , ExpCmd "sob"         (NoTarget  "You sob."
                                       "% sobs.")
                            Nothing
+    , ExpCmd "stand"       (NoTarget  "You stand up."
+                                      "% stands up.")
+                           (Just "")
     , ExpCmd "stare"       (HasTarget "You stare at @."
                                       "% stares at you."
                                       "% stares at @.")
@@ -905,8 +908,8 @@ getExpCmdByName cn = head . S.toList . S.filter (\(ExpCmd cn' _ _) -> cn' == cn)
 
 
 expCmd :: ExpCmd -> ActionFun
-expCmd (ExpCmd ecn (HasTarget {}) _   ) p@NoArgs {}        = advise p [] . sorryExpCmdRequiresTarget $ ecn
-expCmd (ExpCmd ecn ect            desc) (NoArgs i mq cols) = case ect of
+expCmd (ExpCmd ecn HasTarget {} _   ) p@NoArgs {}        = advise p [] . sorryExpCmdRequiresTarget $ ecn
+expCmd (ExpCmd ecn ect          desc) (NoArgs i mq cols) = case ect of
   (NoTarget  toSelf toOthers      ) -> helper toSelf toOthers
   (Versatile toSelf toOthers _ _ _) -> helper toSelf toOthers
   _                                 -> patternMatchFail "expCmd" [ ecn, showText ect ]
@@ -922,8 +925,8 @@ expCmd (ExpCmd ecn ect            desc) (NoArgs i mq cols) = case ect of
             wrapSend mq cols toSelf
             bcastIfNotIncog i toOthersBcast
             logPlaOut ecn i . pure $ toSelf
-expCmd (ExpCmd ecn (NoTarget {}) _   ) p@(WithArgs     _ _  _    (_:_) ) = advise p [] . sorryExpCmdIllegalTarget $ ecn
-expCmd (ExpCmd ecn ect           desc)   (OneArgNubbed i mq cols target) = case ect of
+expCmd (ExpCmd ecn NoTarget {} _   ) p@(WithArgs     _ _  _    (_:_) ) = advise p [] . sorryExpCmdIllegalTarget $ ecn
+expCmd (ExpCmd ecn ect         desc)   (OneArgNubbed i mq cols target) = case ect of
   (HasTarget     toSelf toTarget toOthers) -> helper toSelf toTarget toOthers
   (Versatile _ _ toSelf toTarget toOthers) -> helper toSelf toTarget toOthers
   _                                        -> patternMatchFail "expCmd" [ ecn, showText ect ]
@@ -977,6 +980,7 @@ mkSerializedDesig d toOthers = serialize (T.head toOthers == '%' ? d :? d { desi
 
 mobRmDescHelper :: Id -> MobRmDesc -> MudStack ()
 mobRmDescHelper _ Nothing    = unit
+mobRmDescHelper i (Just "" ) = tweak $ mobTbl.ind i.mobRmDesc .~ Nothing
 mobRmDescHelper i (Just txt) = tweak $ mobTbl.ind i.mobRmDesc ?~ txt
 
 

@@ -1072,16 +1072,24 @@ mkExpCmdListTxt i ms =
                                                       , length matches == 1 ]
   where
     findMatches cn = S.toList . S.filter (\(ExpCmd ecn _ _) -> ecn == cn) $ expCmdSet
-    mkExpCmdTxt (styled, ExpCmd ecn ect _) = case ect of
-      (NoTarget  toSelf _  ) -> [ paddedName <> mkInitialTxt  ecn <> toSelf ]
-      (HasTarget toSelf _ _) -> [ paddedName <> mkInitialTxt (ecn <> " hanako") <> T.replace "@" "Hanako" toSelf ]
+    mkExpCmdTxt (styled, ExpCmd ecn ect mrd) = dropEmpties $ case ect of
+      (NoTarget  toSelf _  ) -> [ paddedName <> mkInitialTxt  ecn <> toSelf
+                                , mobRmDescHelper ]
+      (HasTarget toSelf _ _) -> [ paddedName <> mkInitialTxt (ecn <> " hanako") <> T.replace "@" "Hanako" toSelf
+                                , mobRmDescHelper ]
       (Versatile toSelf _ toSelfWithTarget _ _) -> [ paddedName <> mkInitialTxt ecn <> toSelf
-                                                   , T.replicate cmdNamePadding (T.singleton indentFiller) <>
-                                                     mkInitialTxt (ecn <> " hanako")                       <>
-                                                     T.replace "@" "Hanako" toSelfWithTarget ]
+                                                   , indent                          <>
+                                                     mkInitialTxt (ecn <> " hanako") <>
+                                                     T.replace "@" "Hanako" toSelfWithTarget
+                                                   , mobRmDescHelper ]
       where
         paddedName         = padCmdName styled
         mkInitialTxt input = colorWith quoteColor input <> spaced (colorWith arrowColor "->")
+        indent             = T.replicate cmdNamePadding (T.singleton indentFiller)
+        mobRmDescHelper    = let ecn' = colorWith quoteColor ecn in case mrd of
+          Nothing    -> ""
+          (Just "" ) -> (indent <>) . parensQuote $ ecn' <> " clears room description."
+          (Just txt) -> (indent <>) . parensQuote $ T.concat [ ecn', " sets room description to ", dblQuote txt, "." ]
 
 
 -----

@@ -14,13 +14,15 @@ If the person "look"ing knows your character's name (let's say it's Taro), he/sh
 
 \kTaro\d (leaning against the signpost) [\at\daro]
 
--
-
+\uNOTES\n
 When no arguments are provided to the "roomdesc" command, your room description will be cleared. (Your room description is automatically cleared when you move to a new room.)
 
-Certain expressive commands will set or clear your room description for you.
+Certain expressive commands will set or clear your room description for you. Special note is made where this is the case in the expressive command list displayed by the "expressive" command. (Please see \qhelp expressive\d for more information.)
 
 Note that if it is set, the "stats" command will display your room description.
+
+\uRULES\n
+Do not specify the name of a character in a room description. It is not appropriate, for example, to set your room description to "sitting next to Taro" when you cannot guarantee that passersby will know Taro by name. "sitting next to the lagomorph with pink hair" or something similar is preferable.
 
 \uEXAMPLES\n
 \qroomdesc sitting at a table\d to change your room description to "sitting at a table".4`
