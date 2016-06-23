@@ -734,7 +734,8 @@ examinePla i ms = let p = getPla i ms
                      , "Possessing: "        <> p^.possessing  .to (descMaybeId ms)
                      , "Retained messages: " <> p^.retainedMsgs.to (noneOnNull . slashes)
                      , "Last room: "         <> let f ri = getRmName ri ms <> " " <> parensQuote (showText ri)
-                                                in p^.lastRmId.to (maybe none f) ]
+                                                in p^.lastRmId.to (maybe none f)
+                     , "Bonus time: "        <> p^.bonusTime.to (maybe none showText) ]
   where
     descFlags p | p^.plaFlags == zeroBits = none
                 | otherwise               = let pairs = [ (isAdmin,            "admin"              )

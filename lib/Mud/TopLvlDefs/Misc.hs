@@ -55,6 +55,10 @@ biodegradationDuration :: Seconds
 biodegradationDuration = 5 {- mins -} * 60 {- secs -} -- five mins
 
 
+bonusDelay :: Seconds
+bonusDelay = 24 {- hours -} * 60 {- mins -} * 60 {- secs -} -- twenty-four hours
+
+
 coinNames :: [Text]
 coinNames = [ "cp", "sp", "gp" ]
 

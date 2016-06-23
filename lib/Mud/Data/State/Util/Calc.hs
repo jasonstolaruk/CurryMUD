@@ -2,6 +2,7 @@
 {-# LANGUAGE LambdaCase, MultiWayIf, OverloadedStrings, ViewPatterns #-}
 
 module Mud.Data.State.Util.Calc ( calcBarLen
+                                , calcBonus
                                 , calcConPerFull
                                 , calcDigesterDelay
                                 , calcEffAttrib
@@ -11,6 +12,8 @@ module Mud.Data.State.Util.Calc ( calcBarLen
                                 , calcEffPs
                                 , calcEffSt
                                 , calcEncPer
+                                , calcLvl
+                                , calcLvlExp
                                 , calcLvlExps
                                 , calcMaxEnc
                                 , calcMaxMouthfuls
@@ -42,11 +45,12 @@ import Mud.TopLvlDefs.Misc
 import Mud.TopLvlDefs.Vols
 import Mud.TopLvlDefs.Weights
 import Mud.Util.List
-import Mud.Util.Misc hiding (blowUp)
+import Mud.Util.Misc hiding (blowUp, patternMatchFail)
 import Mud.Util.Operators
 import Mud.Util.Text
-import qualified Mud.Util.Misc as U (blowUp)
+import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 
+import Control.Arrow ((***))
 import Control.Lens (view, views)
 import Data.List (foldl')
 import Data.Text (Text)
@@ -65,11 +69,25 @@ blowUp :: Text -> Text -> [Text] -> a
 blowUp = U.blowUp "Mud.Data.State.Util.Calc"
 
 
+patternMatchFail :: Text -> [Text] -> a
+patternMatchFail = U.patternMatchFail "Mud.Data.State.Util.Calc"
+
+
 -- ==================================================
 
 
 calcBarLen :: Cols -> Int
 calcBarLen cols = cols < 59 ? (cols - 9) :? 50
+
+
+-----
+
+
+calcBonus :: Id -> MudState -> Exp
+calcBonus i ms = let l                 = calcLvl i ms
+                     ((_, a):(_, b):_) = drop l $ (0, 0) : calcLvlExps
+                     diff              = b - a
+                 in round $ diff `divide` 25
 
 
 -----
@@ -164,6 +182,21 @@ calcMaxRaceLen = maximum . map (T.length . showText) $ (allValues :: [Race])
 
 
 -----
+
+
+calcLvl :: Id -> MudState -> Lvl
+calcLvl i ms = let myExp                            = getExp i ms
+                   helper ((l, x):rest) | myExp < x = pred l
+                                        | otherwise = helper rest
+                   helper xs                        = patternMatchFail "calcLvl" [ showText xs ]
+               in helper calcLvlExps
+
+
+-----
+
+
+calcLvlExp :: Id -> MudState -> LvlExp
+calcLvlExp i = (calcLvl i *** getExp i) . dup
 
 
 calcLvlExps :: [LvlExp]

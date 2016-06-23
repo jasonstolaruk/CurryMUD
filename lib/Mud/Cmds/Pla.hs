@@ -525,6 +525,12 @@ bonus :: ActionFun
 bonus _ = undefined
 -- bonus p@AdviseNoArgs = advise p ["bonus"] adviceBonusNoArgs
 
+-- now <- liftIO getCurrentTime
+-- let duration = round $ now `diffUTCTime` bTime
+-- if duration < bonusDelay
+--   then
+--   else
+
 
 -----
 
@@ -3522,7 +3528,7 @@ stats (NoArgs i mq cols) = getState >>= \ms ->
         top             = onTrue (isPC i ms) (<> sexRace) . getSing i $ ms
         sexRace         = T.concat [ ", the ", sexy, " ", r ]
         (sexy, r)       = (uncapitalize . showText *** uncapitalize . showText) . getSexRace i $ ms
-        (l, x)          = getLvlExp i ms
+        (l, x)          = calcLvlExp i ms
         nxt             = subtract x . snd $ calcLvlExps !! l
         mobRmDescHelper = maybe "" (("Your room description is " <>) . (<> "."))       $ dblQuote <$> getMobRmDesc i ms
         charDescHelper  = maybe "" ("Your supplementary character description is " <>) $ dblQuote <$> getCharDesc  i ms

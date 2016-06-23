@@ -17,8 +17,6 @@ module Mud.Cmds.Util.Misc ( asterisk
                           , getAllChanIdNames
                           , getChanIdNames
                           , getChanStyleds
-                          , getLvl
-                          , getLvlExp
                           , getPCChans
                           , getQuestionStyleds
                           , getTunedQuestionIds
@@ -171,9 +169,9 @@ awardExp amt reason i = helper |&| modifyState >=> \(ms, (msgs, logMsgs)) -> do
     when b . logPla "awardExp" i $ logMsg
   where
     helper ms =
-        let oldLvl = getLvl i ms
+        let oldLvl = calcLvl i ms
             ms'    = ms & mobTbl.ind i.exp +~ amt
-            newLvl = getLvl i ms'
+            newLvl = calcLvl i ms'
             f 0    = Nothing
             f seed = Just ((lvlMsg, mkLogMsg), pred seed)
               where
@@ -375,21 +373,6 @@ getChanStyleds i c ms = let (linkeds, nonLinkedIds) = getChanLinkeds_nonLinkedId
 -----
 
 
-getLvl :: Id -> MudState -> Lvl
-getLvl i ms = let myExp                            = getExp i ms
-                  helper ((l, x):rest) | myExp < x = pred l
-                                       | otherwise = helper rest
-                  helper xs                        = patternMatchFail "getLvl" [ showText xs ]
-              in helper calcLvlExps
-
-
-getLvlExp :: Id -> MudState -> LvlExp
-getLvlExp i = (getLvl i *** getExp i) . dup
-
-
------
-
-
 getPCChans :: Id -> MudState -> [Chan]
 getPCChans i ms = views chanTbl (IM.foldr helper []) ms
   where
@@ -421,7 +404,7 @@ getQuestionStyleds i ms =
 
 
 getSexRaceLvl :: Id -> MudState -> (Sex, Race, Lvl)
-getSexRaceLvl i ms | (s, r) <- getSexRace i ms = (s, r, getLvl i ms)
+getSexRaceLvl i ms | (s, r) <- getSexRace i ms = (s, r, calcLvl i ms)
 
 
 -----
