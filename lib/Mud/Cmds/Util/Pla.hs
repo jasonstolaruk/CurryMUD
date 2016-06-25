@@ -205,10 +205,10 @@ bugTypoLogger (Msg' i mq msg) wl = getState >>= \ms ->
         ri    = getRmId i  ms
         mkLoc = parensQuote (showText ri) <> " " <> getRm ri ms ^.rmName
     in liftIO mkTimestamp >>= \ts -> do
-        sequence_ $ case wl of BugLog  -> let b = BugRec ts s mkLoc msg True
+        sequence_ $ case wl of BugLog  -> let b = BugRec ts s mkLoc msg
                                           in [ withDbExHandler_ "bugTypoLogger" . insertDbTblBug $ b
                                              , bcastOtherAdmins i $ s <> " has logged a bug: "  <> pp b ]
-                               TypoLog -> let t = TypoRec ts s mkLoc msg True
+                               TypoLog -> let t = TypoRec ts s mkLoc msg
                                           in [ withDbExHandler_ "bugTypoLogger" . insertDbTblTypo $ t
                                              , bcastOtherAdmins i $ s <> " has logged a typo: " <> pp t ]
         send mq . nlnl $ "Thank you."

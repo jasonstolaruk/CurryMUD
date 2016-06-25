@@ -94,8 +94,7 @@ data BonusRec     = BonusRec     { dbTimestamp :: Text
 data BugRec       = BugRec       { dbTimestamp :: Text
                                  , dbName      :: Text
                                  , dbLoc       :: Text
-                                 , dbDesc      :: Text
-                                 , dbIsOpen    :: Bool } -- TODO: Get rid of IsOpen fields?
+                                 , dbDesc      :: Text }
 data ChanRec      = ChanRec      { dbTimestamp :: Text
                                  , dbChanId    :: Int
                                  , dbChanName  :: Text
@@ -117,8 +116,7 @@ data TeleRec      = TeleRec      { dbTimestamp :: Text
 data TypoRec      = TypoRec      { dbTimestamp :: Text
                                  , dbName      :: Text
                                  , dbLoc       :: Text
-                                 , dbDesc      :: Text
-                                 , dbIsOpen    :: Bool }
+                                 , dbDesc      :: Text }
 data UnPwRec      = UnPwRec      { dbUn        :: Text
                                  , dbPw        :: Text }
 
@@ -155,7 +153,7 @@ instance FromRow BonusRec where
 
 
 instance FromRow BugRec where
-  fromRow = BugRec <$ (field :: RowParser Int) <*> field <*> field <*> field <*> field <*> field
+  fromRow = BugRec <$ (field :: RowParser Int) <*> field <*> field <*> field <*> field
 
 
 instance FromRow ChanRec where
@@ -179,7 +177,7 @@ instance FromRow TeleRec where
 
 
 instance FromRow TypoRec where
-  fromRow = TypoRec <$ (field :: RowParser Int) <*> field <*> field <*> field <*> field <*> field
+  fromRow = TypoRec <$ (field :: RowParser Int) <*> field <*> field <*> field <*> field
 
 
 instance FromRow UnPwRec where
@@ -218,7 +216,7 @@ instance ToRow BonusRec where
 
 
 instance ToRow BugRec where
-  toRow (BugRec a b c d e) = toRow (a, b, c, d, e)
+  toRow (BugRec a b c d) = toRow (a, b, c, d)
 
 
 instance ToRow ChanRec where
@@ -242,7 +240,7 @@ instance ToRow TeleRec where
 
 
 instance ToRow TypoRec where
-  toRow (TypoRec a b c d e) = toRow (a, b, c, d, e)
+  toRow (TypoRec a b c d) = toRow (a, b, c, d)
 
 
 instance ToRow UnPwRec where
@@ -266,13 +264,13 @@ createDbTbls = withConnection dbFile $ \conn -> do
          , "create table if not exists ban_host   (id integer primary key, timestamp text, host text, is_banned integer, reason text)"
          , "create table if not exists ban_pc     (id integer primary key, timestamp text, name text, is_banned integer, reason text)"
          , "create table if not exists bonus      (id integer primary key, timestamp text, fromName text, ToName text, amt integer)"
-         , "create table if not exists bug        (id integer primary key, timestamp text, name text, loc text, desc text, is_open integer)"
+         , "create table if not exists bug        (id integer primary key, timestamp text, name text, loc text, desc text)"
          , "create table if not exists chan       (id integer primary key, timestamp text, chan_id integer, chan_name text, name text, msg text)"
          , "create table if not exists profanity  (id integer primary key, timestamp text, host text, prof text)"
          , "create table if not exists question   (id integer primary key, timestamp text, name text, msg text)"
          , "create table if not exists sec        (id integer primary key, name text, question text, answer text)"
          , "create table if not exists tele       (id integer primary key, timestamp text, fromName text, toName text, msg text)"
-         , "create table if not exists typo       (id integer primary key, timestamp text, name text, loc text, desc text, is_open integer)"
+         , "create table if not exists typo       (id integer primary key, timestamp text, name text, loc text, desc text)"
          , "create table if not exists unpw       (id integer primary key, un text, pw text)" ]
 
 
@@ -327,7 +325,7 @@ insertDbTblBonus = insertDbTblHelper "insert into bonus (timestamp, fromName, to
 
 
 insertDbTblBug :: BugRec -> IO ()
-insertDbTblBug = insertDbTblHelper "insert into bug (timestamp, name, loc, desc, is_open) values (?, ?, ?, ?, ?)"
+insertDbTblBug = insertDbTblHelper "insert into bug (timestamp, name, loc, desc) values (?, ?, ?, ?)"
 
 
 insertDbTblChan :: ChanRec -> IO ()
@@ -351,7 +349,7 @@ insertDbTblTele = insertDbTblHelper "insert into tele (timestamp, fromName, toNa
 
 
 insertDbTblTypo :: TypoRec -> IO ()
-insertDbTblTypo = insertDbTblHelper "insert into typo (timestamp, name, loc, desc, is_open) values (?, ?, ?, ?, ?)"
+insertDbTblTypo = insertDbTblHelper "insert into typo (timestamp, name, loc, desc) values (?, ?, ?, ?)"
 
 
 insertDbTblUnPw :: UnPwRec -> IO ()

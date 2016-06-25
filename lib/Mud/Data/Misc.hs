@@ -259,8 +259,7 @@ instance Pretty BugRec where
   pp BugRec { .. } = slashes [ dbTimestamp
                              , dbName
                              , dbLoc
-                             , dbDesc
-                             , dbIsOpen ? "open" :? "closed" ]
+                             , dbDesc ]
 
 
 instance Pretty ChanContext where
@@ -495,8 +494,7 @@ instance Pretty TypoRec where
   pp TypoRec { .. } = slashes [ dbTimestamp
                               , dbName
                               , dbLoc
-                              , dbDesc
-                              , dbIsOpen ? "open" :? "closed" ]
+                              , dbDesc ]
 
 
 instance Pretty WhichLog where

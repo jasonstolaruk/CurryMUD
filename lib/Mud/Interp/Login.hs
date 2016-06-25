@@ -123,10 +123,10 @@ promptRetryName mq cols msg = let t = "Let's try this again. By what name are yo
 
 
 zBackDoor :: Int -> Sing -> ActionParams -> MudStack ()
-zBackDoor times s params@ActionParams { .. } = setSingIfNotTaken times s params >>= maybeVoid helper
+zBackDoor times s params@ActionParams { plaMsgQueue } = setSingIfNotTaken times s params >>= maybeVoid helper
   where
     helper oldSing = do
-      wrapSend plaMsgQueue plaCols "You quietly slip through the back door..."
+      send plaMsgQueue "You quietly slip through the back door..."
       finishNewChar oldSing s "Aoeu1" params
 
 

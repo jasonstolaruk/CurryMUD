@@ -423,7 +423,7 @@ sorryBonusCount s = "You have already given the maximum number of 5 bonuses to "
 
 
 sorryBonusIgnore :: Text
-sorryBonusIgnore = sorryIgnoreLocPrefPlur "The name of the character whose player you would like to give a bonus to" -- TODO: Plur expected...
+sorryBonusIgnore = sorryIgnoreLocPref "The name of the character whose player you would like to give a bonus to"
 
 
 sorryBonusLvl :: Text
