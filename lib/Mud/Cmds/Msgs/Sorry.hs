@@ -16,6 +16,9 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryAsType
                            , sorryBanAdmin
                            , sorryBanSelf
+                           , sorryBonusIgnore
+                           , sorryBonusLvl
+                           , sorryBonusName
                            , sorryBootSelf
                            , sorryBracketedMsg
                            , sorryChanIncog
@@ -408,6 +411,21 @@ sorryBanAdmin = can't "ban an admin."
 
 sorryBanSelf :: Text
 sorryBanSelf = can't "ban yourself."
+
+
+-----
+
+
+sorryBonusIgnore :: Text
+sorryBonusIgnore = sorryIgnoreLocPrefPlur "The name of the character whose player you would like to give a bonus to" -- TODO: Plur expected...
+
+
+sorryBonusLvl :: Text
+sorryBonusLvl = "You must be at least level 3 to give a bonus."
+
+
+sorryBonusName :: Text -> Text
+sorryBonusName n = "You don't know anyone by the name of " <> dblQuote n <> "."
 
 
 -----

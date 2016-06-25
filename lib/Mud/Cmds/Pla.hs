@@ -520,16 +520,43 @@ mkPtPairs i ms = let (hps, mps, pps, fps) = getPts i ms
 
 
 -- TODO: Help.
--- TODO: When executed by an admin, don't msg the target if the admin is incog.
 bonus :: ActionFun
-bonus _ = undefined
--- bonus p@AdviseNoArgs = advise p ["bonus"] adviceBonusNoArgs
-
--- now <- liftIO getCurrentTime
--- let duration = round $ now `diffUTCTime` bTime
--- if duration < bonusDelay
---   then
---   else
+bonus p@AdviseNoArgs            = advise p ["bonus"] adviceBonusNoArgs
+bonus (OneArgLower i mq cols a) = getState >>= \ms ->
+    let (f, guessWhat) | hasLocPref a = (stripLocPref, sorryBonusIgnore)
+                       | otherwise    = (id,           ""              )
+        a'                            = capitalize . T.toLower . f $ a
+        s                             = getSing i ms
+        intros                        = getIntroduced i ms
+        bonusHelper                   = case filter (a' `T.isPrefixOf`) intros of
+          []           -> wrapSend mq cols . sorryBonusName $ a'
+          [targetSing] ->
+              let targetId = getIdForMobSing targetSing ms
+                  x        = calcBonus targetId ms
+                  bs       = pure ("You give a bonus to " <> targetSing <> ".", pure i)
+              in do { bcastNl . onTrue (()!# guessWhat) ((guessWhat, pure i) :) $ bs
+                    ; retainedMsg targetId ms . colorWith bonusColor . mkToTarget $ targetId
+                    ; awardExp x ("bonus from " <> s) targetId
+                    ; logPla "bonus bonusHelper" i . T.concat $ [ "gave a bonus of "
+                                                                , commaEvery3 . showText $ x
+                                                                , " exp to "
+                                                                , targetSing
+                                                                , "." ]
+                    ; ts <- liftIO mkTimestamp
+                    ; withDbExHandler_ "bonus bonusHelper" . insertDbTblBonus . BonusRec ts s targetSing $ x }
+          xs -> patternMatchFail "bonus bonusHelper" [ showText xs ]
+        mkToTarget targetId | s `elem` getIntroduced targetId ms = g s
+                            | otherwise                          = g "Someone"
+          where
+            g = (<> " has given you a bonus for outstanding roleplaying.")
+    in if calcLvl i ms <= 2
+      then wrapSend mq cols sorryBonusLvl
+      else liftIO getCurrentTime >>= \now -> case getBonusTime i ms of
+        Nothing -> bonusHelper
+        Just bt -> if round (now `diffUTCTime` bt) < bonusDelay
+          then wrapSend mq cols "It's too early since you last gave a bonus."
+          else bonusHelper
+bonus p = advise p ["bonus"] adviceBonusExcessArgs
 
 
 -----
@@ -632,13 +659,13 @@ charDescAction :: ActionFun
 charDescAction (NoArgs i mq cols) = do
     tweak $ mobTbl.ind i.charDesc .~ Nothing
     wrapSend mq cols "Your supplementary character description has been cleared."
-    logPla "charDescAction" i "Supplementary character description cleared."
+    logPla "charDescAction" i "supplementary character description cleared."
 charDescAction (Msg i mq cols desc@(dblQuote -> desc')) = if T.length desc > maxCharDescLen
   then wrapSend mq cols $ "A supplementary character description cannot exceed " <> showText maxCharDescLen <> " characters in length."
   else do
     tweak $ mobTbl.ind i.charDesc ?~ desc
     wrapSend mq cols $ "Your supplementary character description has been set to " <> desc'
-    logPla "charDescAction" i $ "Supplementary character description set to " <> desc'
+    logPla "charDescAction" i $ "supplementary character description set to " <> desc'
 charDescAction p = patternMatchFail "charDescAction" [ showText p ]
 
 
@@ -2879,13 +2906,13 @@ roomDesc :: ActionFun
 roomDesc (NoArgs i mq cols) = do
     tweak $ mobTbl.ind i.mobRmDesc .~ Nothing
     wrapSend mq cols "Your room description has been cleared."
-    logPla "roomDesc" i "Room description cleared."
+    logPla "roomDesc" i "room description cleared."
 roomDesc (WithArgs i mq cols (T.unwords -> desc@(dblQuote -> desc'))) = if T.length desc > maxMobRmDescLen
   then wrapSend mq cols $ "A room description cannot exceed " <> showText maxMobRmDescLen <> " characters in length."
   else do
     tweak $ mobTbl.ind i.mobRmDesc ?~ desc
     wrapSend mq cols $ "Your room description has been set to " <> desc' <> "."
-    logPla "roomDesc" i $ "Room description set to " <> desc' <> "."
+    logPla "roomDesc" i $ "room description set to " <> desc' <> "."
 roomDesc p = patternMatchFail "roomDesc" [ showText p ]
 
 

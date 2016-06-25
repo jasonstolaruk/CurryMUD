@@ -148,8 +148,8 @@ adminCmds =
     , mkAdminCmd "count"      adminCount       True  "Display or search a list of miscellaneous running totals."
     , mkAdminCmd "date"       adminDate        True  "Display the current system date."
     , mkAdminCmd "examine"    adminExamine     True  "Display the properties of one or more IDs."
-    , mkAdminCmd "exself"     adminExamineSelf True  "Self-examination."
     , mkAdminCmd "experience" adminExp         True  "Dump the experience table."
+    , mkAdminCmd "exself"     adminExamineSelf True  "Self-examination."
     , mkAdminCmd "hash"       adminHash        True  "Compare a plain-text password with a hashed password."
     , mkAdminCmd "host"       adminHost        True  "Display a report of connection statistics for one or more \
                                                      \players."

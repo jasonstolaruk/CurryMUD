@@ -41,6 +41,8 @@ module Mud.Cmds.Msgs.Advice ( adviceAAnnounceNoArgs
                             , adviceATeleRmExcessArgs
                             , adviceAWireNoArgs
                             , adviceBlankAdverb
+                            , adviceBonusExcessArgs
+                            , adviceBonusNoArgs
                             , adviceBugNoArgs
                             , adviceConnectNoArgs
                             , adviceConnectNoChan
@@ -482,6 +484,16 @@ adviceBlankAdverb l = T.concat [ "Please provide an adverbial phrase between "
                                , " and "
                                , dblQuote acl
                                , adverbExample l ]
+
+
+adviceBonusExcessArgs :: Text
+adviceBonusExcessArgs = "You can only give a bonus to one player at a time."
+
+
+adviceBonusNoArgs :: Text
+adviceBonusNoArgs = "Please provide the name of the character whose player you would like to give a bonus to, as in " <>
+                    colorWith quoteColor "bonus hanako"                                                               <>
+                    "."
 
 
 adviceBugNoArgs :: Text

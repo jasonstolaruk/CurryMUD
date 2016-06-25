@@ -322,7 +322,7 @@ insertDbTblBanPC :: BanPCRec -> IO ()
 insertDbTblBanPC = insertDbTblHelper "insert into ban_pc (timestamp, name, is_banned, reason) values (?, ?, ?, ?)"
 
 
-insertDbTblBonus :: AdminChanRec -> IO ()
+insertDbTblBonus :: BonusRec -> IO ()
 insertDbTblBonus = insertDbTblHelper "insert into bonus (timestamp, fromName, toName, amt) values (?, ?, ?, ?)"
 
 
