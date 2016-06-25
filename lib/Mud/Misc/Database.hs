@@ -95,7 +95,7 @@ data BugRec       = BugRec       { dbTimestamp :: Text
                                  , dbName      :: Text
                                  , dbLoc       :: Text
                                  , dbDesc      :: Text
-                                 , dbIsOpen    :: Bool }
+                                 , dbIsOpen    :: Bool } -- TODO: Get rid of IsOpen fields?
 data ChanRec      = ChanRec      { dbTimestamp :: Text
                                  , dbChanId    :: Int
                                  , dbChanName  :: Text

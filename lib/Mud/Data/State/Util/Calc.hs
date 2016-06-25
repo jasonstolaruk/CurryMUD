@@ -87,7 +87,7 @@ calcBonus :: Id -> MudState -> Exp
 calcBonus i ms = let l                 = calcLvl i ms
                      ((_, a):(_, b):_) = drop l $ (0, 0) : calcLvlExps
                      diff              = b - a
-                 in round (diff `divide` 20) `max` 5000
+                 in (round (diff `divide` 20) `max` 100) `min` 5000
 
 
 -----

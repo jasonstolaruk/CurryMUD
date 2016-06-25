@@ -528,23 +528,34 @@ bonus (OneArgLower i mq cols a) = getState >>= \ms ->
         a'                            = capitalize . T.toLower . f $ a
         s                             = getSing i ms
         intros                        = getIntroduced i ms
-        bonusHelper                   = case filter (a' `T.isPrefixOf`) intros of
+        bonusHelper now               = case filter (a' `T.isPrefixOf`) intros of
           []           -> wrapSend mq cols . sorryBonusName $ a'
           [targetSing] ->
               let targetId = getIdForMobSing targetSing ms
                   x        = calcBonus targetId ms
                   bs       = pure ("You give a bonus to " <> targetSing <> ".", pure i)
-              in do { bcastNl . onTrue (()!# guessWhat) ((guessWhat, pure i) :) $ bs
-                    ; retainedMsg targetId ms . colorWith bonusColor . mkToTarget $ targetId
-                    ; awardExp x ("bonus from " <> s) targetId
-                    ; logPla "bonus bonusHelper" i . T.concat $ [ "gave a bonus of "
-                                                                , commaEvery3 . showText $ x
-                                                                , " exp to "
-                                                                , targetSing
-                                                                , "." ]
-                    ; ts <- liftIO mkTimestamp
-                    ; withDbExHandler_ "bonus bonusHelper" . insertDbTblBonus . BonusRec ts s targetSing $ x }
+              in (fmap . fmap) getAll (canBonus targetSing) >>= \case
+                Just True  -> do { bcastNl . onTrue (()!# guessWhat) ((guessWhat, pure i) :) $ bs
+                                 ; retainedMsg targetId ms . colorWith bonusColor . mkToTarget $ targetId
+                                 ; awardExp x ("bonus from " <> s) targetId
+                                 ; tweak $ plaTbl.ind i.bonusTime ?~ now
+                                 ; logPla "bonus bonusHelper" i . T.concat $ [ "gave a bonus of "
+                                                                             , commaEvery3 . showText $ x
+                                                                             , " exp to "
+                                                                             , targetSing
+                                                                             , "." ]
+                                 ; ts <- liftIO mkTimestamp
+                                 ; withDbExHandler_ "bonus bonusHelper" . insertDbTblBonus . BonusRec ts s targetSing $ x }
+                Just False -> wrapSend mq cols . sorryBonusCount $ targetSing
+                Nothing    -> unit
           xs -> patternMatchFail "bonus bonusHelper" [ showText xs ]
+        canBonus targetSing = (withDbExHandler "bonus canBonus" . getDbTblRecs $ "bonus") >>= \case
+          Just xs | c <- length . filter (\(BonusRec _ fn tn _) -> fn == s && tn == targetSing) $ xs
+                  , c >= 5
+                  -> unadulterated . All $ False
+                  | otherwise
+                  -> unadulterated . All $ otherwise
+          Nothing -> emptied . dbError mq $ cols
         mkToTarget targetId | s `elem` getIntroduced targetId ms = g s
                             | otherwise                          = g "Someone"
           where
@@ -552,10 +563,10 @@ bonus (OneArgLower i mq cols a) = getState >>= \ms ->
     in if calcLvl i ms <= 2
       then wrapSend mq cols sorryBonusLvl
       else liftIO getCurrentTime >>= \now -> case getBonusTime i ms of
-        Nothing -> bonusHelper
+        Nothing -> bonusHelper now
         Just bt -> if round (now `diffUTCTime` bt) < bonusDelay
-          then wrapSend mq cols "It's too early since you last gave a bonus."
-          else bonusHelper
+          then wrapSend mq cols sorryBonusTime
+          else bonusHelper now
 bonus p = advise p ["bonus"] adviceBonusExcessArgs
 
 

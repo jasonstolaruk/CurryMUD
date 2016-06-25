@@ -666,6 +666,7 @@ examineInv i ms = let is  = getInv i ms
                   in [ "Contents: " <> noneOnNull txt ]
 
 
+-- TODO: Display lvl.
 examineMob :: ExamineHelper
 examineMob i ms =
     let m            = getMob i ms
@@ -1203,6 +1204,7 @@ mkSecReport SecRec { .. } = [ "Name: "     <> dbName
 -----
 
 
+-- TODO: Help needs to be updated.
 adminSet :: ActionFun
 adminSet p@AdviseNoArgs                       = advise p [ prefixAdminCmd "set" ] adviceASetNoArgs
 adminSet p@(AdviseOneArg a                  ) = advise p [ prefixAdminCmd "set" ] . adviceASetNoSettings $ a
@@ -1395,7 +1397,7 @@ setHelper targetId a@(ms, toSelfMsgs, _, _) arg = if
             mkToTarget diff | diff > 0  = pure . T.concat $ [ "You have recovered ", commaTxt diff,         " ", n, "." ]
                             | otherwise = pure . T.concat $ [ "You have lost ",      commaTxt . abs $ diff, " ", n, "." ]
         -----
-        setMobExpHelper t
+        setMobExpHelper t -- Note that the conventional way to award exp to a PC is via the "awardExp" function.
           | not . hasMob $ t = sorryType
           | otherwise        = case eitherDecode value' of
             Left  _ -> appendMsg . sorryAdminSetValue "exp" $ value
@@ -1417,8 +1419,8 @@ setHelper targetId a@(ms, toSelfMsgs, _, _) arg = if
                                      AddAssign -> addSubAssignHelper (+)
                                      SubAssign -> addSubAssignHelper (-)
           where
-            mkToTarget diff | diff > 0  = pure . T.concat $ [ "You have been awarded ", commaTxt diff,         " experience points." ]
-                            | otherwise = pure . T.concat $ [ "You have lost ",         commaTxt . abs $ diff, " experience points." ]
+            mkToTarget diff | diff > 0  = pure . T.concat $ [ "You have gained ", commaTxt diff,         " experience points." ]
+                            | otherwise = pure . T.concat $ [ "You have lost ",   commaTxt . abs $ diff, " experience points." ]
         -----
         setMobHandHelper t
           | not . hasMob $ t = sorryType
