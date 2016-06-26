@@ -200,7 +200,7 @@ calcLvlExp i = (calcLvl i *** getExp i) . dup
 
 
 calcLvlExps :: [LvlExp]
-calcLvlExps = [ (lvl, 1250 * lvl ^ 2) | lvl <- [1..] ]
+calcLvlExps = [ (l, 1250 * l ^ 2) | l <- [1..] ]
 
 
 -----

@@ -106,6 +106,7 @@ adHoc mq host = do
                        , _stomach       = []
                        , _digesterAsync = Nothing
                        , _exp           = 0
+                       , _lvl           = 0
                        , _hand          = RHand
                        , _knownLangs    = pure . raceToLang $ r
                        , _rmId          = iWelcome

@@ -511,7 +511,7 @@ createAdminZone = do
               100 100
               100 100
               [] Nothing
-              0
+              0 0
               RHand
               allValues
               iLoggedOut
@@ -543,7 +543,7 @@ createAdminZone = do
               100 100
               100 100
               [] Nothing
-              0
+              0 0
               RHand
               allValues
               iLoggedOut
@@ -1899,7 +1899,7 @@ createAdminZone = do
               10 10
               10 10
               [] Nothing
-              10
+              10 0
               NoHand
               []
               iMobCloset
@@ -1921,7 +1921,7 @@ createAdminZone = do
               10 10
               10 10
               [] Nothing
-              10
+              10 0
               NoHand
               []
               iMobCloset
@@ -1947,7 +1947,7 @@ createAdminZone = do
               100 100
               100 100
               [] Nothing
-              0
+              0 0
               RHand
               [ HobbitLang ]
               iMobCloset
@@ -2006,7 +2006,7 @@ createAdminZone = do
                   10 10
                   10 10
                   [] Nothing
-                  10
+                  10 0
                   RHand
                   []
                   iMobCloset

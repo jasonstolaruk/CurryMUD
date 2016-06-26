@@ -495,6 +495,7 @@ data Mob = Mob { _sex                    :: Sex
                , _stomach                :: [StomachCont]
                , _digesterAsync          :: Maybe StomachAsync
                , _exp                    :: Exp
+               , _lvl                    :: Int
                , _hand                   :: Hand
                , _knownLangs             :: [Lang]
                , _rmId                   :: Id
@@ -618,6 +619,7 @@ mobToJSON Mob { .. } = object [ "sex"        .= _sex
                               , "maxFp"      .= _maxFp
                               , "stomach"    .= _stomach
                               , "exp"        .= _exp
+                              , "lvl"        .= _lvl
                               , "hand"       .= _hand
                               , "knownLangs" .= _knownLangs
                               , "rmId"       .= _rmId
@@ -643,6 +645,7 @@ jsonToMob (Object o) = Mob <$> o .: "sex"
                            <*> o .: "stomach"
                            <*> pure Nothing
                            <*> o .: "exp"
+                           <*> o .: "lvl"
                            <*> o .: "hand"
                            <*> o .: "knownLangs"
                            <*> o .: "rmId"

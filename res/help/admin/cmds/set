@@ -12,7 +12,7 @@ Note that you may provide multiple key/value pairs for a single ID, as in:
 
 \uPURPOSE\n
 You may use this command to tweak virtual world content. It can come in quite handy while debugging.
-This command should rarely be used to reward or punish players. Be discriminating and sensible. See \qhelp rewards\d for more information.
+You may use this command to reward players for reporting typos and bugs. See \qhelp rewards\d for more information.
 
 \uKEY/VALUE LIST\n
 Key name: entName4`
