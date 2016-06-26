@@ -1,6 +1,6 @@
 \h ETHICS \d
 
-Admins must adhere to the following rules and guidelines for ethical behavior:
+Admins must adhere to the following rules and guidelines for ethical behavior.
 
 When dealing with players, you must strive to always be objective, fair, and impartial.
 
@@ -31,7 +31,7 @@ Only under unforeseen, extraordinary circumstances should the "#das" command eve
 
 When incognito, you should only ever exit incognito mode while in the Admin Zone.
 
-A player who is breaking the rules should be given a warning before other steps are taken. Explicitly warn them that if they break the rules again, they will booted. Then, if the behavior continues, stick to you word and boot them using "#dboot".
+A player who is breaking the rules should be given a warning before other steps are taken. Explicitly warn them that if they break the rules again, they will be booted. Then, if the behavior continues, stick to you word and boot them using "#dboot".
 If the player logs back in, warn them that next time, they will be banned. If the offending behavior continues still, ban the player's PC using "#dbanpc", or simply change their password using "#dpassword".
 If it's apparent that the same player has logged in as another character, and they STILL haven't learned their lesson, ban their host using "#dbanhost" (the "#dhost" command can be used to determine a player's host).
 

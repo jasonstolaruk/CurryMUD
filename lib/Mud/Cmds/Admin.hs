@@ -1418,8 +1418,8 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
                                      AddAssign -> addSubAssignHelper (+)
                                      SubAssign -> addSubAssignHelper (-)
           where
-            mkToTarget diff | diff > 0  = pure . T.concat $ [ "You have gained ", commaTxt diff,         " experience points." ]
-                            | otherwise = pure . T.concat $ [ "You have lost ",   commaTxt . abs $ diff, " experience points." ]
+            mkToTarget diff | diff > 0  = pure . T.concat $ [ "You have been awarded ", commaTxt diff,         " experience points." ]
+                            | otherwise = pure . T.concat $ [ "You have lost ",         commaTxt . abs $ diff, " experience points." ]
         -----
         setMobHandHelper t
           | not . hasMob $ t = sorryType
