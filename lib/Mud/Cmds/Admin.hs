@@ -48,7 +48,7 @@ import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception (IOException)
 import Control.Exception.Lifted (catch, try)
-import Control.Lens (_1, _2, _3, _4, at, both, each, to, view, views)
+import Control.Lens (_1, _2, _3, _4, _5, at, both, each, to, view, views)
 import Control.Lens.Operators ((%~), (&), (.~), (<>~), (?~), (^.))
 import Control.Monad ((>=>), forM_, unless, when)
 import Control.Monad.IO.Class (liftIO)
@@ -1206,7 +1206,7 @@ mkSecReport SecRec { .. } = [ "Name: "     <> dbName
 adminSet :: ActionFun
 adminSet p@AdviseNoArgs                       = advise p [ prefixAdminCmd "set" ] adviceASetNoArgs
 adminSet p@(AdviseOneArg a                  ) = advise p [ prefixAdminCmd "set" ] . adviceASetNoSettings $ a
-adminSet   (WithArgs i mq cols (target:rest)) = helper |&| modifyState >=> \(toSelfMsgs, mTargetId, toTargetMsgs, logMsgs) -> do
+adminSet   (WithArgs i mq cols (target:rest)) = helper |&| modifyState >=> \(toSelfMsgs, mTargetId, toTargetMsgs, logMsgs, fs) -> do
     multiWrapSend mq cols toSelfMsgs
     let ioHelper targetId = getState >>= \ms -> do
             let f = case getType targetId ms of
@@ -1214,6 +1214,7 @@ adminSet   (WithArgs i mq cols (target:rest)) = helper |&| modifyState >=> \(toS
                       NpcType -> bcast . mkBcast targetId
                       t       -> patternMatchFail "adminSet" [ showText t ]
             unless (isIncognitoId i ms || targetId == i) . forM_ (dropBlanks toTargetMsgs) $ f . colorWith adminSetColor
+            sequence_ fs
             logMsgs |#| logPla (prefixAdminCmd "set") i . g . slashes
           where
             g = (parensQuote ("for ID " <> showText targetId) <>) . (" " <>)
@@ -1226,16 +1227,16 @@ adminSet   (WithArgs i mq cols (target:rest)) = helper |&| modifyState >=> \(toS
       _                                                              -> sorry
       where
         sorry       = sorryHelper . sorryParseId $ target
-        sorryHelper = (ms, ) . (, Nothing, [], []) . pure
+        sorryHelper = (ms, ) . (, Nothing, [], [], []) . pure
         f targetId  = maybe (sorryHelper sorryQuoteChars) g . procQuoteChars $ rest
           where
-            g rest' = let (ms', toSelfMsgs, toTargetMsgs, logMsgs) = foldl' (setHelper targetId) (ms, [], [], []) rest'
-                      in (ms', (toSelfMsgs, Just targetId, toTargetMsgs, logMsgs))
+            g rest' = let (ms', toSelfMsgs, toTargetMsgs, logMsgs, fs) = foldl' (setHelper targetId) (ms, [], [], [], []) rest'
+                      in (ms', (toSelfMsgs, Just targetId, toTargetMsgs, logMsgs, fs))
 adminSet p = patternMatchFail "adminSet" [ showText p ]
 
 
-setHelper :: Id -> (MudState, [Text], [Text], [Text]) -> Text -> (MudState, [Text], [Text], [Text])
-setHelper targetId a@(ms, toSelfMsgs, _, _) arg = if
+setHelper :: Id -> (MudState, [Text], [Text], [Text], Funs) -> Text -> (MudState, [Text], [Text], [Text], Funs)
+setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
   | "+=" `T.isInfixOf` arg -> breakHelper AddAssign
   | "-=" `T.isInfixOf` arg -> breakHelper SubAssign
   | "="  `T.isInfixOf` arg -> breakHelper Assign
@@ -1397,25 +1398,23 @@ setHelper targetId a@(ms, toSelfMsgs, _, _) arg = if
             mkToTarget diff | diff > 0  = pure . T.concat $ [ "You have recovered ", commaTxt diff,         " ", n, "." ]
                             | otherwise = pure . T.concat $ [ "You have lost ",      commaTxt . abs $ diff, " ", n, "." ]
         -----
-        setMobExpHelper t -- Note that the conventional way to award exp to a PC is via the "awardExp" function.
+        setMobExpHelper t
           | not . hasMob $ t = sorryType
           | otherwise        = case eitherDecode value' of
             Left  _ -> appendMsg . sorryAdminSetValue "exp" $ value
             Right x -> let prev                 = getExp targetId ms
-                           addSubAssignHelper f = let x'     = 0 `max` (prev `f` x)
-                                                      diff   = x' - prev
+                           addSubAssignHelper g = f $ 0 `max` (prev `g` x)
+                           f x'                 = let diff   = x' - prev
                                                       toSelf = mkToSelfForInt "exp" x' diff
-                                                  in a & _1.mobTbl.ind targetId.exp .~ x'
-                                                       & _2 <>~ toSelf
-                                                       & _3 <>~ (Sum diff |!| mkToTarget diff)
-                                                       & _4 <>~ (Sum diff |!| toSelf)
-                       in case op of Assign    -> let x'     = 0 `max` x
-                                                      diff   = x' - prev
-                                                      toSelf = mkToSelfForInt "exp" x' diff
-                                                  in a & _1.mobTbl.ind targetId.exp .~ x'
-                                                       & _2 <>~ toSelf
-                                                       & _3 <>~ (Sum diff |!| mkToTarget diff)
-                                                       & _4 <>~ (Sum diff |!| toSelf)
+                                                      a' | isPC targetId ms
+                                                         , diff > 0
+                                                         = a & _5 <>~ pure (awardExp diff (prefixAdminCmd "set") targetId)
+                                                         | otherwise
+                                                         = a & _1.mobTbl.ind targetId.exp .~ x'
+                                                  in a' & _2 <>~ toSelf
+                                                        & _3 <>~ (Sum diff |!| mkToTarget diff)
+                                                        & _4 <>~ (Sum diff |!| toSelf)
+                       in case op of Assign    -> f $ 0 `max` x
                                      AddAssign -> addSubAssignHelper (+)
                                      SubAssign -> addSubAssignHelper (-)
           where

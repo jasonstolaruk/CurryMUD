@@ -10,6 +10,10 @@ Any argument which includes spaces must be quoted with \l#q\d characters.
 Note that you may provide multiple key/value pairs for a single ID, as in:
 \q#dset 100 entName="breeches" \l#q\qentSmell="The breeches smell freshly laundered."\l#q\d4`
 
+\uPURPOSE\n
+You may use this command to tweak virtual world content. It can come in quite handy while debugging.
+This command should rarely be used to reward or punish players. Be discriminating and sensible. See \qhelp rewards\d for more information.
+
 \uKEY/VALUE LIST\n
 Key name: entName4`
 Property of: Ent4`
