@@ -1203,7 +1203,6 @@ mkSecReport SecRec { .. } = [ "Name: "     <> dbName
 -----
 
 
--- TODO: Help needs to be updated.
 adminSet :: ActionFun
 adminSet p@AdviseNoArgs                       = advise p [ prefixAdminCmd "set" ] adviceASetNoArgs
 adminSet p@(AdviseOneArg a                  ) = advise p [ prefixAdminCmd "set" ] . adviceASetNoSettings $ a
@@ -1271,6 +1270,7 @@ setHelper targetId a@(ms, toSelfMsgs, _, _) arg = if
                       , "hand"
                       , "knownlangs"
                       , "mobrmdesc"
+                      , "chardesc"
                       , "race"
                       , "introduced"
                       , "linked" ]
@@ -1296,6 +1296,7 @@ setHelper targetId a@(ms, toSelfMsgs, _, _) arg = if
                                "hand"       -> setMobHandHelper       t
                                "knownlangs" -> setMobKnownLangsHelper t
                                "mobrmdesc"  -> setMobRmDescHelper     t
+                               "chardesc"   -> setMobCharDescHelper   t
                                "race"       -> setPCRaceHelper        t
                                "introduced" -> setPCSingListHelper    t "introduced" "known names"  introduced introduced
                                "linked"     -> setPCSingListHelper    t "linked"     "linked names" linked     linked
@@ -1465,14 +1466,29 @@ setHelper targetId a@(ms, toSelfMsgs, _, _) arg = if
             Left  _ -> appendMsg . sorryAdminSetValue "mobRmDesc" $ value
             Right x -> case op of
               Assign -> let toSelf   = pure . T.concat $ [ "Set mobRmDesc to ", showMaybe x, mkDiffTxt isDiff, "." ]
-                            prev     = view mobRmDesc . getMob targetId $ ms
+                            prev     = getMobRmDesc targetId ms
                             isDiff   = x /= prev
                             toTarget = pure . T.concat $ [ "Your room description has changed to ", showMaybe x, "." ]
                         in a & _1.mobTbl.ind targetId.mobRmDesc .~ x
                              & _2 <>~ toSelf
-                             & _3 <>~ ((isNpcPC targetId ms && isDiff) |?| toTarget)
+                             & _3 <>~ (isDiff |?| toTarget)
                              & _4 <>~ (isDiff |?| toSelf)
               _      -> sorryOp "mobRmDesc"
+        -----
+        setMobCharDescHelper t
+          | not . hasMob $ t = sorryType
+          | otherwise        = case eitherDecode value' of
+            Left  _ -> appendMsg . sorryAdminSetValue "charDesc" $ value
+            Right x -> case op of
+              Assign -> let toSelf   = pure . T.concat $ [ "Set charDesc to ", showMaybe x, mkDiffTxt isDiff, "." ]
+                            prev     = getCharDesc targetId ms
+                            isDiff   = x /= prev
+                            toTarget = pure . T.concat $ [ "Your supplementary character description has changed to ", showMaybe x, "." ]
+                        in a & _1.mobTbl.ind targetId.charDesc .~ x
+                             & _2 <>~ toSelf
+                             & _3 <>~ (isDiff |?| toTarget)
+                             & _4 <>~ (isDiff |?| toSelf)
+              _      -> sorryOp "charDesc"
         -----
         setPCRaceHelper t
           | t /= PCType = sorryType

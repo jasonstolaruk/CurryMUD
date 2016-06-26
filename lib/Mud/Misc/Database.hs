@@ -11,7 +11,6 @@ module Mud.Misc.Database ( AdminChanRec(..)
                          , ChanRec(..)
                          , countDbTblRecsAdminChan
                          , countDbTblRecsAdminMsg
-                         , countDbTblRecsBonus
                          , countDbTblRecsChan
                          , countDbTblRecsQuestion
                          , countDbTblRecsTele
@@ -36,7 +35,6 @@ module Mud.Misc.Database ( AdminChanRec(..)
                          , ProfRec(..)
                          , purgeDbTblAdminChan
                          , purgeDbTblAdminMsg
-                         , purgeDbTblBonus
                          , purgeDbTblChan
                          , purgeDbTblQuestion
                          , purgeDbTblTele
@@ -371,10 +369,6 @@ countDbTblRecsAdminMsg :: IO [Only Int]
 countDbTblRecsAdminMsg = countHelper "admin_msg"
 
 
-countDbTblRecsBonus :: IO [Only Int] -- TODO: Use this.
-countDbTblRecsBonus = countHelper "bonus"
-
-
 countDbTblRecsChan :: IO [Only Int]
 countDbTblRecsChan = countHelper "chan"
 
@@ -402,10 +396,6 @@ purgeDbTblAdminChan = purgeHelper "admin_chan"
 
 purgeDbTblAdminMsg :: IO ()
 purgeDbTblAdminMsg = purgeHelper "admin_msg"
-
-
-purgeDbTblBonus :: IO () -- TODO: Use this.
-purgeDbTblBonus = purgeHelper "bonus"
 
 
 purgeDbTblChan :: IO ()

@@ -20,7 +20,7 @@ Examples:4`
 
 Key name: sing4`
 Property of: Ent4`
-Value type: Sing (Text)4`
+Value type: Sing = Text4`
 Example:4`
 \l#q\qsing="pair of knee-length yellow breeches"\l#q\d4`
 
@@ -81,11 +81,25 @@ Example:4`
 
 Key name: knownLangs4`
 Property of: Mob4`
-Value type: [Lang] (Lang - DwarfLang | ElfLang | FelinoidLang etc.)4`
+Value type: [Lang] ... Lang - DwarfLang | ElfLang | FelinoidLang etc.4`
 Examples:4`
 \l#q\qknownLangs=["HobbitLang", "HumanLang"]\l#q\d (to set to hobbitish and hominal)4`
 \qknownLangs+=["LagomorphLang"]\d (to add lagomorphean)4`
 \qknownLangs-=["LagomorphLang"]\d (to remove lagomorphean)4`
+
+Key name: mobRmDesc4`
+Property of: Mob4`
+Value type: MobRmDesc = Maybe Text4`
+Examples:4`
+\qmobRmDesc=null\d (to set to Nothing)4`
+\l#q\qmobRmDesc="sitting at a table by herself"\l#q\d (to set to Just "sitting at a table by herself")4`
+
+Key name: charDesc4`
+Property of: Mob4`
+Value type: CharDesc = Maybe Text4`
+Examples:4`
+\qcharDesc=null\d (to set to Nothing)4`
+\l#q\qcharDesc="His windswept hair is truly a mess."\l#q\d (to set to Just "His windswept hair is truly a mess.")4`
 
 Key name: race4`
 Property of: PC4`
@@ -95,7 +109,7 @@ Example:4`
 
 Key names: introduced, linked4`
 Property of: PC4`
-Value type: [Sing] ([Text])4`
+Value type: [Sing] = [Text]4`
 Examples:4`
 \l#q\qintroduced=["Taro", "Hanako"]\l#q\d (to set to Taro and Hanako)4`
 \qintroduced+=["Taro"]\d (to add Taro)4`
