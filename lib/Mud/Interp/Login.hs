@@ -123,10 +123,10 @@ promptRetryName mq cols msg = let t = "Let's try this again. By what name are yo
 
 
 zBackDoor :: Int -> Sing -> ActionParams -> MudStack ()
-zBackDoor times s params@ActionParams { plaMsgQueue } = setSingIfNotTaken times s params >>= maybeVoid helper
+zBackDoor times s params@ActionParams { .. } = setSingIfNotTaken times s params >>= maybeVoid helper
   where
     helper oldSing = do
-      send plaMsgQueue "You quietly slip through the back door..."
+      wrapSend plaMsgQueue plaCols "You quietly slip through the back door..."
       finishNewChar oldSing s "Aoeu1" params
 
 
@@ -399,9 +399,9 @@ handleLogin oldSing s isNew params@ActionParams { .. } = do
     restartPausedEffects myId
     notifyArrival ms
   where
-    greet = wrapSend plaMsgQueue plaCols . nlPrefix $ if | s == "Root" -> colorWith zingColor sudoMsg
-                                                         | isNew       -> "Welcome to CurryMUD, " <> s <> "!"
-                                                         | otherwise   -> "Welcome back, " <> s <> "!"
+    greet = wrapSend plaMsgQueue plaCols $ if | s == "Root" -> colorWith zingColor sudoMsg
+                                              | isNew       -> "Welcome to CurryMUD, " <> s <> "!"
+                                              | otherwise   -> "Welcome back, " <> s <> "!"
     showRetainedMsgs = helper |&| modifyState >=> \(ms, msgs, p) -> do
         unless (()# msgs) $ do
             let (fromPpl, others) = first (map T.tail) . partition ((== fromPersonMarker) . T.head) $ msgs
