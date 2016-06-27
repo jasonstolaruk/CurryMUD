@@ -518,7 +518,7 @@ createAdminZone = do
               Nothing Nothing M.empty M.empty Nothing Nothing Nothing Nothing)
          M.empty
          (M.singleton "Curry" True)
-         (PC Human ["Curry"] ["Curry"])
+         (PC Human ["Curry"] ["Curry"] 0)
          (Pla "" Nothing
               (setBit adminFlags . fromEnum $ IsIncognito)
               80 24
@@ -550,7 +550,7 @@ createAdminZone = do
               Nothing Nothing M.empty M.empty Nothing Nothing Nothing Nothing)
          M.empty
          (M.singleton "Root" True)
-         (PC Human ["Root"] ["Root"])
+         (PC Human ["Root"] ["Root"] 0)
          (Pla "" Nothing
               adminFlags
               80 24

@@ -539,7 +539,7 @@ bonus (OneArgLower i mq cols a) = getState >>= \ms ->
                                  ; awardExp x ("bonus from " <> s) targetId
                                  ; tweak $ plaTbl.ind i.bonusTime ?~ now
                                  ; logPla "bonus bonusHelper" i . T.concat $ [ "gave a bonus of "
-                                                                             , commaEvery3 . showText $ x
+                                                                             , commaShow x
                                                                              , " exp to "
                                                                              , targetSing
                                                                              , "." ]
@@ -3558,8 +3558,9 @@ stats (NoArgs i mq cols) = getState >>= \ms ->
     let mkStats   = dropEmpties [ top
                                 , pp . getHand i $ ms
                                 , "level " <> showText l
-                                , (commaEvery3 . showText $ x  ) <> " experience points"
-                                , (commaEvery3 . showText $ nxt) <> " experience points to next level"
+                                , commaShow x   <> " experience points"
+                                , commaShow nxt <> " experience points to next level"
+                                , skillPtsHelper
                                 , mobRmDescHelper
                                 , charDescHelper ]
         top             = onTrue (isPC i ms) (<> sexRace) . getSing i $ ms
@@ -3567,6 +3568,7 @@ stats (NoArgs i mq cols) = getState >>= \ms ->
         (sexy, r)       = (uncapitalize . showText *** uncapitalize . showText) . getSexRace i $ ms
         (l, x)          = getLvlExp i ms
         nxt             = subtract x . snd $ calcLvlExps !! l
+        skillPtsHelper  = let pts = getSkillPts i ms in (pts > 0) |?| (commaShow pts <> " unspent skill points")
         mobRmDescHelper = maybe "" (("Your room description is " <>) . (<> "."))       $ dblQuote <$> getMobRmDesc i ms
         charDescHelper  = maybe "" ("Your supplementary character description is " <>) $ dblQuote <$> getCharDesc  i ms
     in multiWrapSend mq cols mkStats >> logPlaExec "stats" i

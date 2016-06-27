@@ -120,7 +120,8 @@ adHoc mq host = do
                        , _interp        = Just . interpName $ 0 }
             pc   = PC  { _race       = r
                        , _introduced = []
-                       , _linked     = [] }
+                       , _linked     = []
+                       , _skillPts   = 0 }
             pla  = Pla { _currHostName = host
                        , _connectTime  = Just ct
                        , _plaFlags     = zeroBits

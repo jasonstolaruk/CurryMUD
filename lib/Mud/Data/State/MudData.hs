@@ -730,7 +730,8 @@ newtype PausedEffect = PausedEffect Effect deriving (Eq, Generic, Show)
 -- Has a mob (and an entity and paused/active effects and an inventory and coins and equipment).
 data PC = PC { _race       :: Race
              , _introduced :: [Sing]
-             , _linked     :: [Sing] } deriving (Eq, Generic, Show)
+             , _linked     :: [Sing]
+             , _skillPts   :: SkillPts } deriving (Eq, Generic, Show)
 
 
 data Race = Dwarf
@@ -746,6 +747,9 @@ data Race = Dwarf
 instance Random Race where
   randomR (fromEnum *** fromEnum -> intPair) = first toEnum . randomR intPair
   random                                     = randomR (minBound, maxBound)
+
+
+type SkillPts = Int
 
 
 -- ==================================================

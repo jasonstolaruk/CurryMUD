@@ -667,6 +667,13 @@ getSing i = view sing . getEnt i
 -----
 
 
+getSkillPts :: Id -> MudState -> SkillPts
+getSkillPts i = view skillPts . getPC i
+
+
+-----
+
+
 getStomach :: Id -> MudState -> [StomachCont]
 getStomach i = view stomach . getMob i
 

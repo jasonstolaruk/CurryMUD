@@ -446,7 +446,7 @@ adminCount p@ActionParams { myId, args } = do
 
 
 mkCountTxt :: MudStack [Text]
-mkCountTxt = map (uncurry mappend . second (commaEvery3 . showText)) <$> helper
+mkCountTxt = map (uncurry mappend . second commaShow) <$> helper
   where
     helper = getState >>= \ms -> do
         let countType t = views typeTbl (IM.size . IM.filter (== t)) ms
@@ -593,7 +593,7 @@ examineCloth i ms = let c = getCloth i ms in [ "Type: " <> pp c ]
 
 
 examineCoins :: ExamineHelper
-examineCoins i ms = let (map (commaEvery3 . showText) . coinsToList -> cs) = getCoins i ms in [ "Coins: " <> commas cs ]
+examineCoins i ms = let (map commaShow . coinsToList -> cs) = getCoins i ms in [ "Coins: " <> commas cs ]
 
 
 examineCon :: ExamineHelper
@@ -685,7 +685,7 @@ examineMob i ms =
                                                                , calcStomachSize    i   ms
                                                                , calcStomachPerFull i   ms) & each %~ showText
                                  in T.concat [ mouths, " / ", size, " ", parensQuote $ perFull <> "%" ]
-       , "Exp: "              <> m^.exp .to (commaEvery3 . showText)
+       , "Exp: "              <> m^.exp .to commaShow
        , "Level: "            <> m^.lvl .to showText
        , "Handedness: "       <> m^.hand.to pp
        , "Know languages: "   <> m^.knownLangs.to ppList
@@ -712,8 +712,8 @@ descMaybeId ms = maybe none (`descSingId` ms)
 
 
 examineObj :: ExamineHelper
-examineObj i ms = let o = getObj i ms in [ "Weight: " <> o^.weight.to (commaEvery3 . showText)
-                                         , "Volume: " <> o^.vol   .to (commaEvery3 . showText) ]
+examineObj i ms = let o = getObj i ms in [ "Weight: " <> o^.weight.to commaShow
+                                         , "Volume: " <> o^.vol   .to commaShow ]
 
 
 examinePC :: ExamineHelper
@@ -812,7 +812,7 @@ adminExp (NoArgs' i mq) = pager i mq mkReport >> logPlaExec (prefixAdminCmd "exp
     mkReport = header ++ pure zero ++ (take 25 . map helper $ calcLvlExps)
     header   = [ "Level  Experience", T.replicate 17 "=" ]
     zero     = uncurry (<>) . first (pad 7) . dup $ "0"
-    helper   = uncurry (<>) . (pad 7 . showText *** commaEvery3 . showText)
+    helper   = uncurry (<>) . (pad 7 . showText *** commaShow)
 adminExp p = withoutArgs adminExp p
 
 
@@ -1274,7 +1274,8 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
                       , "chardesc"
                       , "race"
                       , "introduced"
-                      , "linked" ]
+                      , "linked"
+                      , "skillpts" ]
         notFound    = appendMsg . sorryAdminSetKey $ key
         appendMsg m = a & _2 <>~ pure m
         found       = let t = getType targetId ms
@@ -1301,6 +1302,7 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
                                "race"       -> setPCRaceHelper        t
                                "introduced" -> setPCSingListHelper    t "introduced" "known names"  introduced introduced
                                "linked"     -> setPCSingListHelper    t "linked"     "linked names" linked     linked
+                               "skillpts"   -> setPCSkillPtsHelper    t
                                x            -> patternMatchFail "setHelper found" [x]
         -----
         setEntMaybeTextHelper t k n getter setter
@@ -1370,8 +1372,8 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
                                      AddAssign -> addSubAssignHelper (+)
                                      SubAssign -> addSubAssignHelper (-)
           where
-            mkToTarget diff | diff > 0  = pure . T.concat $ [ "You have gained ", commaTxt diff,         " ", n, "." ]
-                            | otherwise = pure . T.concat $ [ "You have lost ",   commaTxt . abs $ diff, " ", n, "." ]
+            mkToTarget diff | diff > 0  = pure . T.concat $ [ "You have gained ", commaShow diff,         " ", n, "." ]
+                            | otherwise = pure . T.concat $ [ "You have lost ",   commaShow . abs $ diff, " ", n, "." ]
         -----
         setMobCurHelper t k n f setter
           | not . hasMob $ t = sorryType
@@ -1395,8 +1397,8 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
                                      AddAssign -> addSubAssignHelper (+)
                                      SubAssign -> addSubAssignHelper (-)
           where
-            mkToTarget diff | diff > 0  = pure . T.concat $ [ "You have recovered ", commaTxt diff,         " ", n, "." ]
-                            | otherwise = pure . T.concat $ [ "You have lost ",      commaTxt . abs $ diff, " ", n, "." ]
+            mkToTarget diff | diff > 0  = pure . T.concat $ [ "You have recovered ", commaShow diff,         " ", n, "." ]
+                            | otherwise = pure . T.concat $ [ "You have lost ",      commaShow . abs $ diff, " ", n, "." ]
         -----
         setMobExpHelper t
           | not . hasMob $ t = sorryType
@@ -1418,8 +1420,8 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
                                      AddAssign -> addSubAssignHelper (+)
                                      SubAssign -> addSubAssignHelper (-)
           where
-            mkToTarget diff | diff > 0  = pure . T.concat $ [ "You have been awarded ", commaTxt diff,         " experience points." ]
-                            | otherwise = pure . T.concat $ [ "You have lost ",         commaTxt . abs $ diff, " experience points." ]
+            mkToTarget diff | diff > 0  = pure . T.concat $ [ "You have been awarded ", commaShow diff,         " experience points." ]
+                            | otherwise = pure . T.concat $ [ "You have lost ",         commaShow . abs $ diff, " experience points." ]
         -----
         setMobHandHelper t
           | not . hasMob $ t = sorryType
@@ -1528,18 +1530,36 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
             mkToTarget x        = pure . T.concat $ [ "Your ", n, " have changed to ", mkValueTxt x, "."     ]
             mkValueTxt          = noneOnNull . commas
         -----
+        setPCSkillPtsHelper t
+          | t /= PCType = sorryType
+          | otherwise   = case eitherDecode value' of
+            Left  _ -> appendMsg . sorryAdminSetValue "skillPts" $ value
+            Right x -> let prev                 = getSkillPts targetId ms
+                           addSubAssignHelper g = f $ 0 `max` (prev `g` x)
+                           f x'                 = let diff   = x' - prev
+                                                      toSelf = mkToSelfForInt "skillPts" x' diff
+                                                  in a & _1.pcTbl.ind targetId.skillPts .~ x'
+                                                       & _2 <>~ toSelf
+                                                       & _3 <>~ (Sum diff |!| mkToTarget diff)
+                                                       & _4 <>~ (Sum diff |!| toSelf)
+                       in case op of Assign    -> f $ 0 `max` x
+                                     AddAssign -> addSubAssignHelper (+)
+                                     SubAssign -> addSubAssignHelper (-)
+          where
+            mkToTarget diff | diff > 0  = pure . T.concat $ [ "You have been awarded ", commaShow diff,         " skill points." ]
+                            | otherwise = pure . T.concat $ [ "You have lost ",         commaShow . abs $ diff, " skill points." ]
+        -----
         sorryType               = appendMsg . sorryAdminSetType $ targetId
         sorryOp                 = appendMsg . sorryAdminSetOp (pp op)
         value'                  = strictTextToLazyBS value
         mkDiffTxt isDiff        = not isDiff |?| (" " <> parensQuote "no change")
         showMaybe Nothing       = "none"
         showMaybe (Just x)      = showText x
-        commaTxt                = commaEvery3 . showText
-        mkToSelfForInt k v diff = pure . T.concat $ [ "Set ", k, " to ", commaTxt v, " ", parensQuote diffTxt, "." ]
+        mkToSelfForInt k v diff = pure . T.concat $ [ "Set ", k, " to ", commaShow v, " ", parensQuote diffTxt, "." ]
           where
             diffTxt = if | diff == 0 -> "no change"
-                         | diff >  0 -> "added "      <> commaTxt diff
-                         | otherwise -> "subtracted " <> commaTxt (abs diff)
+                         | diff >  0 -> "added "      <> commaShow diff
+                         | otherwise -> "subtracted " <> commaShow (abs diff)
         mkTupleForList prev f x g = let x'     = nubSort $ prev `f` x
                                         toSelf = g x' isDiff
                                         isDiff = x' /= prev

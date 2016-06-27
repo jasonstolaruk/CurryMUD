@@ -5,6 +5,7 @@ module Mud.Util.Text ( aOrAn
                      , capitalize
                      , commaEvery3
                      , commas
+                     , commaShow
                      , countOcc
                      , divider
                      , dropBlanks
@@ -136,6 +137,10 @@ capsHelper f (headTail -> (T.singleton . f -> h, t)) = h <> t
 
 commaEvery3 :: Text -> Text
 commaEvery3 = T.reverse . T.intercalate "," . T.chunksOf 3 . T.reverse
+
+
+commaShow :: (Show a) => a -> Text
+commaShow = commaEvery3 . showText
 
 
 -----

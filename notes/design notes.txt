@@ -118,7 +118,7 @@ Make it clear that by playing your virtual world, players are consenting to PD a
 
 Players should be made aware that their privacy cannot be guaranteed. Player activity is always logged, and admins have the ability to monitor player activity, with the express purpose of 1) ensuring that players are playing by the rules, and 2) tracking down bugs.
 
-Is multi-playing and allowed? If not, then players need a way to formally retire their character.
+Is multi-playing allowed? If not, then players need a way to formally retire their character.
 
 Allow some degree of player-created content, but only using in-context methods (which is to say that players cannot be "builders"). p.457-8
 
