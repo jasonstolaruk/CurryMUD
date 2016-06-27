@@ -717,9 +717,10 @@ examineObj i ms = let o = getObj i ms in [ "Weight: " <> o^.weight.to commaShow
 
 
 examinePC :: ExamineHelper
-examinePC i ms = let p = getPC i ms in [ "Race: "        <> p^.race      .to pp
-                                       , "Known names: " <> p^.introduced.to (noneOnNull . commas)
-                                       , "Links: "       <> p^.linked    .to (noneOnNull . commas) ]
+examinePC i ms = let p = getPC i ms in [ "Race: "         <> p^.race      .to pp
+                                       , "Known names: "  <> p^.introduced.to (noneOnNull . commas)
+                                       , "Links: "        <> p^.linked    .to (noneOnNull . commas)
+                                       , "Skill points: " <> p^.skillPts  .to commaShow ]
 
 
 examinePla :: ExamineHelper
