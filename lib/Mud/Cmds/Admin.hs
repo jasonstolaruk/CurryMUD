@@ -593,7 +593,7 @@ examineCloth i ms = let c = getCloth i ms in [ "Type: " <> pp c ]
 
 
 examineCoins :: ExamineHelper
-examineCoins i ms = let (map showText . coinsToList -> cs) = getCoins i ms in [ "Coins: " <> commas cs ]
+examineCoins i ms = let (map (commaEvery3 . showText) . coinsToList -> cs) = getCoins i ms in [ "Coins: " <> commas cs ]
 
 
 examineCon :: ExamineHelper
@@ -665,7 +665,6 @@ examineInv i ms = let is  = getInv i ms
                   in [ "Contents: " <> noneOnNull txt ]
 
 
--- TODO: Display lvl.
 examineMob :: ExamineHelper
 examineMob i ms =
     let m            = getMob i ms
@@ -686,7 +685,8 @@ examineMob i ms =
                                                                , calcStomachSize    i   ms
                                                                , calcStomachPerFull i   ms) & each %~ showText
                                  in T.concat [ mouths, " / ", size, " ", parensQuote $ perFull <> "%" ]
-       , "Exp: "              <> m^.exp .to showText
+       , "Exp: "              <> m^.exp .to (commaEvery3 . showText)
+       , "Level: "            <> m^.lvl .to showText
        , "Handedness: "       <> m^.hand.to pp
        , "Know languages: "   <> m^.knownLangs.to ppList
        , "Room: "             <> let ri = m^.rmId
@@ -712,8 +712,8 @@ descMaybeId ms = maybe none (`descSingId` ms)
 
 
 examineObj :: ExamineHelper
-examineObj i ms = let o = getObj i ms in [ "Weight: " <> o^.weight.to showText
-                                         , "Volume: " <> o^.vol   .to showText ]
+examineObj i ms = let o = getObj i ms in [ "Weight: " <> o^.weight.to (commaEvery3 . showText)
+                                         , "Volume: " <> o^.vol   .to (commaEvery3 . showText) ]
 
 
 examinePC :: ExamineHelper
