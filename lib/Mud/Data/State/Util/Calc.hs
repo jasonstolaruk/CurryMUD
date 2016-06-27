@@ -14,6 +14,10 @@ module Mud.Data.State.Util.Calc ( calcBarLen
                                 , calcEncPer
                                 , calcLvl
                                 , calcLvlExps
+                                , calcLvlUpFp
+                                , calcLvlUpHp
+                                , calcLvlUpMp
+                                , calcLvlUpPp
                                 , calcMaxEnc
                                 , calcMaxMouthfuls
                                 , calcMaxRaceLen
@@ -195,6 +199,25 @@ calcLvl i ms = let myExp                            = getExp i ms
 
 calcLvlExps :: [LvlExp]
 calcLvlExps = [ (l, 1250 * l ^ 2) | l <- [1..] ]
+
+
+-----
+
+
+calcLvlUpHp :: Id -> MudState -> Int -> Int -- TODO
+calcLvlUpHp _ _ _ {-i ms x-} = undefined
+
+
+calcLvlUpMp :: Id -> MudState -> Int -> Int
+calcLvlUpMp _ _ _ {-i ms x-} = undefined
+
+
+calcLvlUpFp :: Id -> MudState -> Int -> Int
+calcLvlUpFp _ _ _ {-i ms x-} = undefined
+
+
+calcLvlUpPp :: Id -> MudState -> Int -> Int
+calcLvlUpPp _ _ _ {-i ms x-} = undefined
 
 
 -----

@@ -122,7 +122,7 @@ import qualified Data.IntMap.Lazy as IM (IntMap, empty, filter, foldlWithKey', f
 import qualified Data.Map.Lazy as M ((!), elems, keys, lookup, member, toList)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
-import qualified Data.Vector.Unboxed as V (Vector, head, tail)
+import qualified Data.Vector.Unboxed as V (Vector, splitAt, toList)
 import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
 
 
@@ -189,8 +189,13 @@ levelUp i = helper
   where
     helper ms v oldLvl newLvl
       | oldLvl >= newLvl = ms
-      | otherwise        = let ms' = ms & mobTbl.ind i.maxHp +~ rndmIntToRange (V.head v) (1, 50) -- TODO
-                           in helper ms' (V.tail v) (succ oldLvl) newLvl
+      | otherwise        = let (V.toList -> [ a, b, c, d ], v') = V.splitAt 4 v
+                               myMob = mobTbl.ind i
+                               ms'   = ms & myMob.maxHp +~ calcLvlUpHp i ms a
+                                          & myMob.maxMp +~ calcLvlUpMp i ms b
+                                          & myMob.maxPp +~ calcLvlUpPp i ms c
+                                          & myMob.maxFp +~ calcLvlUpFp i ms d
+                           in helper ms' v' (succ oldLvl) newLvl
 
 
 -----
