@@ -51,6 +51,7 @@ module Mud.Cmds.Util.Misc ( asterisk
                           , mkReflexPro
                           , mkRetainedMsgFromPerson
                           , mkRightForNonTargets
+                          , mkRndmVector
                           , mkSingleTarget
                           , mkThrPerPro
                           , mkWhoHeader
@@ -121,6 +122,7 @@ import qualified Data.IntMap.Lazy as IM (IntMap, empty, filter, foldlWithKey', f
 import qualified Data.Map.Lazy as M ((!), elems, keys, lookup, member, toList)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
+import qualified Data.Vector.Unboxed as V (Vector, head, tail)
 import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
 
 
@@ -157,7 +159,7 @@ asterisk = colorWith asteriskColor "*"
 
 
 awardExp :: Exp -> Text -> Id -> MudStack ()
-awardExp amt reason i = helper |&| modifyState >=> \(ms, (msgs, logMsgs)) -> do
+awardExp amt reason i = mkRndmVector >>= \v -> helper v |&| modifyState >=> \(ms, (msgs, logMsgs)) -> do
     mapM_ (retainedMsg i ms) msgs
     let logMsg = T.concat [ "awarded "
                           , showText amt
@@ -168,16 +170,27 @@ awardExp amt reason i = helper |&| modifyState >=> \(ms, (msgs, logMsgs)) -> do
         b = isNpc i ms ? True :? isLoggedIn (getPla i ms)
     when b . logPla "awardExp" i $ logMsg
   where
-    helper ms =
+    helper v ms =
         let oldLvl = getLvl i ms
             ms'    = ms & mobTbl.ind i.exp +~ amt
             newLvl = calcLvl i ms'
             diff   = newLvl - oldLvl
+            ms''   | diff <= 0 = ms'
+                   | otherwise = levelUp i ms' v oldLvl newLvl & mobTbl.ind i.lvl .~ newLvl
             f 0    = Nothing
             f seed = Just ((lvlMsg, mkLogMsg), pred seed)
               where
                 mkLogMsg = ("gained a level " <>) . parensQuote $ "now level " <> showText (newLvl - seed + 1)
-        in (ms', (ms', if diff <= 0 then dupIdentity else unzip . unfoldr f $ diff))
+        in (ms'', (ms'', if diff <= 0 then dupIdentity else unzip . unfoldr f $ diff))
+
+
+levelUp :: Id -> MudState -> V.Vector Int -> Lvl -> Lvl -> MudState
+levelUp i = helper
+  where
+    helper ms v oldLvl newLvl
+      | oldLvl >= newLvl = ms
+      | otherwise        = let ms' = ms & mobTbl.ind i.maxHp +~ rndmIntToRange (V.head v) (1, 50) -- TODO
+                           in helper ms' (V.tail v) (succ oldLvl) newLvl
 
 
 -----
@@ -673,6 +686,13 @@ mkRetainedMsgFromPerson s msg = fromPersonMarker `T.cons` (quoteWith "__" s <> "
 
 mkRightForNonTargets :: (Text, Text, Text) -> Either Text (Text, [EmoteWord], Text)
 mkRightForNonTargets = Right . (_2 %~ (pure . ForNonTargets))
+
+
+-----
+
+
+mkRndmVector :: MudStack (V.Vector Int)
+mkRndmVector = rndmVector rndmVectorLen
 
 
 -----

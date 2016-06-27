@@ -65,7 +65,6 @@ module Mud.Cmds.Util.Pla ( adminTagTxt
                          , mkMpDesc
                          , mkPpDesc
                          , mkReadyMsgs
-                         , mkRndmVector
                          , moveReadiedItem
                          , notFoundSuggestAsleeps
                          , otherHand
@@ -88,7 +87,6 @@ import Mud.Data.State.Util.Coins
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
-import Mud.Data.State.Util.Random
 import Mud.Misc.ANSI
 import Mud.Misc.Database
 import Mud.Misc.NameResolution
@@ -1261,13 +1259,6 @@ mkPpDesc i ms = let (c, m) = getPps i ms
                                                      , "Your psionic energy is moderately depleted."
                                                      , "Your psionic energy is slightly depleted."
                                                      , "" ]
-
-
------
-
-
-mkRndmVector :: MudStack (V.Vector Int)
-mkRndmVector = rndmVector rndmVectorLen
 
 
 -----

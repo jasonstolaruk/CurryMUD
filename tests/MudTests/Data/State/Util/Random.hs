@@ -2,7 +2,7 @@
 
 module MudTests.Data.State.Util.Random where
 
-import Mud.Cmds.Util.Pla
+import Mud.Cmds.Util.Misc
 import Mud.Data.State.Util.Random
 import MudTests.TestUtil
 
