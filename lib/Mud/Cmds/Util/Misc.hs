@@ -169,14 +169,15 @@ awardExp amt reason i = helper |&| modifyState >=> \(ms, (msgs, logMsgs)) -> do
     when b . logPla "awardExp" i $ logMsg
   where
     helper ms =
-        let oldLvl = calcLvl i ms
+        let oldLvl = getLvl i ms
             ms'    = ms & mobTbl.ind i.exp +~ amt
             newLvl = calcLvl i ms'
+            diff   = newLvl - oldLvl
             f 0    = Nothing
             f seed = Just ((lvlMsg, mkLogMsg), pred seed)
               where
                 mkLogMsg = ("gained a level " <>) . parensQuote $ "now level " <> showText (newLvl - seed + 1)
-        in (ms', (ms', unzip . unfoldr f $ newLvl - oldLvl))
+        in (ms', (ms', if diff <= 0 then dupIdentity else unzip . unfoldr f $ diff))
 
 
 -----
@@ -398,13 +399,6 @@ getQuestionStyleds i ms =
               where
                 a = (x, y, styled)
         in return . zipWith helper combo $ styleds
-
-
------
-
-
-getSexRaceLvl :: Id -> MudState -> (Sex, Race, Lvl)
-getSexRaceLvl i ms | (s, r) <- getSexRace i ms = (s, r, calcLvl i ms)
 
 
 -----

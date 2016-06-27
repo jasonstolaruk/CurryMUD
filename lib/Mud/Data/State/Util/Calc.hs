@@ -13,7 +13,6 @@ module Mud.Data.State.Util.Calc ( calcBarLen
                                 , calcEffSt
                                 , calcEncPer
                                 , calcLvl
-                                , calcLvlExp
                                 , calcLvlExps
                                 , calcMaxEnc
                                 , calcMaxMouthfuls
@@ -50,7 +49,6 @@ import Mud.Util.Operators
 import Mud.Util.Text
 import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 
-import Control.Arrow ((***))
 import Control.Lens (view, views)
 import Data.List (foldl')
 import Data.Text (Text)
@@ -84,7 +82,7 @@ calcBarLen cols = cols < 59 ? (cols - 9) :? 50
 
 
 calcBonus :: Id -> MudState -> Exp
-calcBonus i ms = let l                 = calcLvl i ms
+calcBonus i ms = let l                 = getLvl i ms
                      ((_, a):(_, b):_) = drop l $ (0, 0) : calcLvlExps
                      diff              = b - a
                  in (round (diff `divide` 20) `max` 100) `min` 5000
@@ -193,10 +191,6 @@ calcLvl i ms = let myExp                            = getExp i ms
 
 
 -----
-
-
-calcLvlExp :: Id -> MudState -> LvlExp
-calcLvlExp i = (calcLvl i *** getExp i) . dup
 
 
 calcLvlExps :: [LvlExp]

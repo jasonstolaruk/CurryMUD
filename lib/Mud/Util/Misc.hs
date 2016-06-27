@@ -12,6 +12,7 @@ module Mud.Util.Misc ( atLst1
                      , dropThr
                      , dup
                      , dup3
+                     , dupIdentity
                      , eitherRet
                      , emptied
                      , fmap2
@@ -124,6 +125,10 @@ dup x = (x, x)
 
 dup3 :: a -> (a, a, a)
 dup3 x = (x, x, x)
+
+
+dupIdentity :: (Monoid a) => (a, a) -- In the sense that "mempty" is the identity of "mappend".
+dupIdentity = (mempty, mempty)
 
 
 eitherRet :: (Monad m) => (a -> m b) -> Either a b -> m b

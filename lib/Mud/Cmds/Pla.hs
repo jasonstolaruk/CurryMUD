@@ -559,7 +559,7 @@ bonus (OneArgLower i mq cols a) = getState >>= \ms ->
                             | otherwise                          = g "Someone"
           where
             g = (<> " has given you bonus experience points for outstanding roleplaying.")
-    in if calcLvl i ms <= 2
+    in if getLvl i ms <= 2
       then wrapSend mq cols sorryBonusLvl
       else liftIO getCurrentTime >>= \now -> case getBonusTime i ms of
         Nothing -> bonusHelper now
@@ -1856,7 +1856,7 @@ link (NoArgs i mq cols) = do
             oneWayToMeMsgs   = [ "One-way links to your mind:",   mkSingsList False oneWaysToMe   ]
             mkSingsList doStyle ss = let (awakes, asleeps) = sortAwakesAsleeps ss
                                      in commas $ onTrue doStyle (styleAbbrevs Don'tQuote) awakes ++ asleeps
-            sortAwakesAsleeps      = foldr sorter ([], [])
+            sortAwakesAsleeps      = foldr sorter dupIdentity
             sorter linkSing acc    =
                 let linkId   = head . filter ((== linkSing) . flip getSing ms) $ ms^.pcTbl.to IM.keys
                     linkPla  = getPla linkId ms
@@ -3565,7 +3565,7 @@ stats (NoArgs i mq cols) = getState >>= \ms ->
         top             = onTrue (isPC i ms) (<> sexRace) . getSing i $ ms
         sexRace         = T.concat [ ", the ", sexy, " ", r ]
         (sexy, r)       = (uncapitalize . showText *** uncapitalize . showText) . getSexRace i $ ms
-        (l, x)          = calcLvlExp i ms
+        (l, x)          = getLvlExp i ms
         nxt             = subtract x . snd $ calcLvlExps !! l
         mobRmDescHelper = maybe "" (("Your room description is " <>) . (<> "."))       $ dblQuote <$> getMobRmDesc i ms
         charDescHelper  = maybe "" ("Your supplementary character description is " <>) $ dblQuote <$> getCharDesc  i ms
@@ -3770,7 +3770,7 @@ tele p = patternMatchFail "tele" [ showText p ]
 
 
 getDblLinkedSings :: Id -> MudState -> ([Sing], [Sing])
-getDblLinkedSings i ms = foldr helper ([], []) . getLinked i $ ms
+getDblLinkedSings i ms = foldr helper dupIdentity . getLinked i $ ms
   where
     helper s pair = let lens = isAwake (getIdForMobSing s ms) ms ? _1 :? _2
                     in pair & lens %~ (s :)

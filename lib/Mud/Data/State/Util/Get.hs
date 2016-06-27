@@ -382,6 +382,20 @@ getLogQueue i = view (plaLogTbl.ind i.to snd)
 -----
 
 
+getLvl :: Id -> MudState -> Lvl
+getLvl i = view lvl . getMob i
+
+
+-----
+
+
+getLvlExp :: Id -> MudState -> (Lvl, Exp)
+getLvlExp i = (getExp i *** getLvl i) . dup
+
+
+-----
+
+
 getMaxMouthfuls :: Id -> MudState -> Mouthfuls
 getMaxMouthfuls i = view maxMouthfuls . getVessel i
 
@@ -634,6 +648,13 @@ getSex i = view sex . getMob i
 
 getSexRace :: Id -> MudState -> (Sex, Race)
 getSexRace i = (getSex i *** getRace i) . dup
+
+
+-----
+
+
+getSexRaceLvl :: Id -> MudState -> (Sex, Race, Lvl)
+getSexRaceLvl i ms | (s, r) <- getSexRace i ms = (s, r, getLvl i ms)
 
 
 -----

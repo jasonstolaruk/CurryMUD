@@ -495,7 +495,7 @@ data Mob = Mob { _sex                    :: Sex
                , _stomach                :: [StomachCont]
                , _digesterAsync          :: Maybe StomachAsync
                , _exp                    :: Exp
-               , _lvl                    :: Int
+               , _lvl                    :: Lvl
                , _hand                   :: Hand
                , _knownLangs             :: [Lang]
                , _rmId                   :: Id
@@ -523,6 +523,12 @@ type StomachAsync = Async ()
 
 
 type Exp = Int
+
+
+type Lvl = Int
+
+
+type LvlExp = (Lvl, Exp)
 
 
 data Hand = RHand

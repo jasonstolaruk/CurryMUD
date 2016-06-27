@@ -37,8 +37,6 @@ module Mud.Data.Misc ( Action(..)
                      , InInvEqRm(..)
                      , LastArgIsTargetBindings(..)
                      , LoggedInOrOut(..)
-                     , Lvl
-                     , LvlExp
                      , pp
                      , Pretty
                      , PutOrRem(..)
@@ -725,15 +723,6 @@ data LastArgIsTargetBindings = LastArgIsTargetBindings { srcDesig    :: Desig
 
 
 data LoggedInOrOut = LoggedIn | LoggedOut deriving Eq
-
-
------
-
-
-type Lvl = Int
-
-
-type LvlExp = (Lvl, Exp)
 
 
 -----
