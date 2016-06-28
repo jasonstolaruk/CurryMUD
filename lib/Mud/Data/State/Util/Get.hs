@@ -390,7 +390,7 @@ getLvl i = view lvl . getMob i
 
 
 getLvlExp :: Id -> MudState -> (Lvl, Exp)
-getLvlExp i = (getExp i *** getLvl i) . dup
+getLvlExp i = (getLvl i *** getExp i) . dup
 
 
 -----

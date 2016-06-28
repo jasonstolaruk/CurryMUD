@@ -159,10 +159,10 @@ asterisk = colorWith asteriskColor "*"
 
 
 awardExp :: Exp -> Text -> Id -> MudStack ()
-awardExp amt reason i = mkRndmVector >>= \v -> helper v |&| modifyState >=> \(ms, (msgs, logMsgs)) -> do
+awardExp amt reason i = rndmVector 50 >>= \v -> helper v |&| modifyState >=> \(ms, (msgs, logMsgs)) -> do
     mapM_ (retainedMsg i ms) msgs
     let logMsg = T.concat [ "awarded "
-                          , showText amt
+                          , commaShow amt
                           , " exp "
                           , parensQuote reason
                           , "."
@@ -184,7 +184,7 @@ awardExp amt reason i = mkRndmVector >>= \v -> helper v |&| modifyState >=> \(ms
         in (ms'', (ms'', if diff <= 0 then dupIdentity else unzip . unfoldr f $ diff))
 
 
-levelUp :: Id -> MudState -> V.Vector Int -> Lvl -> Lvl -> MudState -- TODO: "!exp" is crashing the server.
+levelUp :: Id -> MudState -> V.Vector Int -> Lvl -> Lvl -> MudState
 levelUp i = helper
   where
     helper ms v oldLvl newLvl

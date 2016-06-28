@@ -124,7 +124,7 @@ debugCmds =
     , mkDebugCmd "echowon't"  debugEchoWon't   "Send IAC WON'T ECHO (show user input)."
     , mkDebugCmd "effect"     debugEffect      "Add 10-20 to your ST for 30 seconds."
     , mkDebugCmd "env"        debugEnv         "Display or search system environment variables."
-    , mkDebugCmd "exp"        debugExp         "Award yourself 100,000 exp."
+    , mkDebugCmd "exp"        debugExp         "Award yourself 5,000 exp."
     , mkDebugCmd "fun"        debugFun         "Dump the keys of the \"FunTbl\", \"HookFunTbl\", \"RmActionFunTbl\", \
                                                \and \"EffectFunTbl\"."
     , mkDebugCmd "id"         debugId          "Search the \"MudState\" tables for a given ID."
@@ -344,7 +344,7 @@ debugExp :: ActionFun
 debugExp (NoArgs' i mq) = let cn = prefixDebugCmd "exp" in do
     ok mq
     logPlaExec cn i
-    awardExp 100000 ("executed " <> dblQuote cn) i
+    awardExp 5000 ("executed " <> dblQuote cn) i
 debugExp p = withoutArgs debugExp p
 
 

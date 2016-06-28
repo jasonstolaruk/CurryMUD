@@ -269,7 +269,7 @@ calcLvlUpFp i ms x = let a = calcModifierHt i ms
 
 
 calcLvlUpSkillPts :: Id -> MudState -> Int -> Int
-calcLvlUpSkillPts i ms x = rndmIntToRange x (40, 49) + y
+calcLvlUpSkillPts i ms x = rndmIntToRange x (45, 54) + y
   where
     y = case getRace i ms of Human -> 5
                              _     -> 0
