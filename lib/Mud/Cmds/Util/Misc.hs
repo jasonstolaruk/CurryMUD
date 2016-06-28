@@ -184,17 +184,18 @@ awardExp amt reason i = mkRndmVector >>= \v -> helper v |&| modifyState >=> \(ms
         in (ms'', (ms'', if diff <= 0 then dupIdentity else unzip . unfoldr f $ diff))
 
 
-levelUp :: Id -> MudState -> V.Vector Int -> Lvl -> Lvl -> MudState
+levelUp :: Id -> MudState -> V.Vector Int -> Lvl -> Lvl -> MudState -- TODO: "!exp" is crashing the server.
 levelUp i = helper
   where
     helper ms v oldLvl newLvl
       | oldLvl >= newLvl = ms
-      | otherwise        = let (V.toList -> [ a, b, c, d ], v') = V.splitAt 4 v
+      | otherwise        = let (V.toList -> [ a, b, c, d, e ], v') = V.splitAt 5 v
                                myMob = mobTbl.ind i
-                               ms'   = ms & myMob.maxHp +~ calcLvlUpHp i ms a
-                                          & myMob.maxMp +~ calcLvlUpMp i ms b
-                                          & myMob.maxPp +~ calcLvlUpPp i ms c
-                                          & myMob.maxFp +~ calcLvlUpFp i ms d
+                               ms'   = ms & myMob.maxHp          +~ calcLvlUpHp       i ms a
+                                          & myMob.maxMp          +~ calcLvlUpMp       i ms b
+                                          & myMob.maxPp          +~ calcLvlUpPp       i ms c
+                                          & myMob.maxFp          +~ calcLvlUpFp       i ms d
+                                          & pcTbl.ind i.skillPts +~ calcLvlUpSkillPts i ms e
                            in helper ms' v' (succ oldLvl) newLvl
 
 

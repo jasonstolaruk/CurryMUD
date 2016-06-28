@@ -18,6 +18,7 @@ module Mud.Data.State.Util.Calc ( calcBarLen
                                 , calcLvlUpHp
                                 , calcLvlUpMp
                                 , calcLvlUpPp
+                                , calcLvlUpSkillPts
                                 , calcMaxEnc
                                 , calcMaxMouthfuls
                                 , calcMaxRaceLen
@@ -93,7 +94,7 @@ calcBarLen cols = cols < 59 ? (cols - 9) :? 50
 -----
 
 
-calcBonus :: Id -> MudState -> Exp
+calcBonus :: Id -> MudState -> Exp -- Used by the "bonus" command.
 calcBonus i ms = let l                 = getLvl i ms
                      ((_, a):(_, b):_) = drop l $ (0, 0) : calcLvlExps
                      diff              = b - a
@@ -194,7 +195,7 @@ calcMaxRaceLen = maximum . map (T.length . showText) $ (allValues :: [Race])
 -----
 
 
-calcLvl :: Id -> MudState -> Lvl -- Calculate effective level.
+calcLvl :: Id -> MudState -> Lvl -- Effective level.
 calcLvl i ms = let myExp                            = getExp i ms
                    helper ((l, x):rest) | myExp < x = pred l
                                         | otherwise = helper rest
@@ -267,72 +268,89 @@ calcLvlUpFp i ms x = let a = calcModifierHt i ms
                              Vulpenoid -> (2, 10)
 
 
+calcLvlUpSkillPts :: Id -> MudState -> Int -> Int
+calcLvlUpSkillPts i ms x = rndmIntToRange x (40, 49) + y
+  where
+    y = case getRace i ms of Human -> 5
+                             _     -> 0
+
+
 -----
 
 
 calcModifierSt :: Id -> MudState -> Int
-calcModifierSt i ms = calcModifierForAttrib st i ms + racial
-  where
-    racial = case getRace i ms of Dwarf     -> 1
-                                  Elf       -> -1
-                                  Felinoid  -> 0
-                                  Hobbit    -> -2
-                                  Human     -> 0
-                                  Lagomorph -> 0
-                                  Nymph     -> -1
-                                  Vulpenoid -> 2
+calcModifierSt i ms = calcModifierForAttrib st i ms + racialStModifier (getRace i ms)
+
+
+racialStModifier :: Race -> Int
+racialStModifier = \case Dwarf     -> 1
+                         Elf       -> -1
+                         Felinoid  -> 0
+                         Hobbit    -> -2
+                         Human     -> 0
+                         Lagomorph -> 0
+                         Nymph     -> -1
+                         Vulpenoid -> 2
 
 
 calcModifierDx :: Id -> MudState -> Int
-calcModifierDx i ms = calcModifierForAttrib dx i ms + racial
-  where
-    racial = case getRace i ms of Dwarf     -> 0
-                                  Elf       -> 1
-                                  Felinoid  -> 2
-                                  Hobbit    -> 2
-                                  Human     -> 0
-                                  Lagomorph -> 0
-                                  Nymph     -> 0
-                                  Vulpenoid -> 0
+calcModifierDx i ms = calcModifierForAttrib dx i ms + racialDxModifier (getRace i ms)
+
+
+racialDxModifier :: Race -> Int
+racialDxModifier = \case Dwarf     -> 0
+                         Elf       -> 1
+                         Felinoid  -> 2
+                         Hobbit    -> 2
+                         Human     -> 0
+                         Lagomorph -> 0
+                         Nymph     -> 0
+                         Vulpenoid -> 0
 
 
 calcModifierHt :: Id -> MudState -> Int
-calcModifierHt i ms = calcModifierForAttrib ht i ms + racial
-  where
-    racial = case getRace i ms of Dwarf     -> 1
-                                  Elf       -> -1
-                                  Felinoid  -> 0
-                                  Hobbit    -> -2
-                                  Human     -> 0
-                                  Lagomorph -> -1
-                                  Nymph     -> 0
-                                  Vulpenoid -> 2
+calcModifierHt i ms = calcModifierForAttrib ht i ms + racialHtModifier (getRace i ms)
+
+
+racialHtModifier :: Race -> Int
+racialHtModifier = \case Dwarf     -> 1
+                         Elf       -> -1
+                         Felinoid  -> 0
+                         Hobbit    -> -1
+                         Human     -> 0
+                         Lagomorph -> -1
+                         Nymph     -> 0
+                         Vulpenoid -> 2
 
 
 calcModifierMa :: Id -> MudState -> Int
-calcModifierMa i ms = calcModifierForAttrib ma i ms + racial
-  where
-    racial = case getRace i ms of Dwarf     -> -1
-                                  Elf       -> 1
-                                  Felinoid  -> -1
-                                  Hobbit    -> 2
-                                  Human     -> 0
-                                  Lagomorph -> -2
-                                  Nymph     -> 3
-                                  Vulpenoid -> -2
+calcModifierMa i ms = calcModifierForAttrib ma i ms + racialMaModifier (getRace i ms)
+
+
+racialMaModifier :: Race -> Int
+racialMaModifier = \case Dwarf     -> -1
+                         Elf       -> 1
+                         Felinoid  -> -1
+                         Hobbit    -> 2
+                         Human     -> 0
+                         Lagomorph -> -2
+                         Nymph     -> 3
+                         Vulpenoid -> -2
 
 
 calcModifierPs :: Id -> MudState -> Int
-calcModifierPs i ms = calcModifierForAttrib ps i ms + racial
-  where
-    racial = case getRace i ms of Dwarf     -> -1
-                                  Elf       -> 0
-                                  Felinoid  -> -1
-                                  Hobbit    -> 0
-                                  Human     -> 0
-                                  Lagomorph -> 3
-                                  Nymph     -> -2
-                                  Vulpenoid -> -2
+calcModifierPs i ms = calcModifierForAttrib ps i ms + racialPsModifier (getRace i ms)
+
+
+racialPsModifier :: Race -> Int
+racialPsModifier = \case Dwarf     -> -1
+                         Elf       -> 0
+                         Felinoid  -> -1
+                         Hobbit    -> -1
+                         Human     -> 0
+                         Lagomorph -> 3
+                         Nymph     -> -2
+                         Vulpenoid -> -2
 
 
 calcModifierForAttrib :: Getter Mob Int -> Int -> MudState -> Int
