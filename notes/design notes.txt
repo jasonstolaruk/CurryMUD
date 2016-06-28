@@ -42,7 +42,7 @@ Attributes are fixed. They represent innate ability.
 
 Character generation can employ a "pick point" system similar to that of Hero's Quest. p.373-4
 
-Have one pool of points go towards attributes, and an entirely separate pool of points go towards initial skills.
+Have a pool of points go towards attributes. And an entirely separate pool of points go towards initial skills?
 
 "Warning: don't have skills or attributes that affect how quickly characters learn skills. If you do, players will max them out at the first opportunity." p.367
 

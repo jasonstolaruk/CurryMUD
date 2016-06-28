@@ -24,6 +24,11 @@ module Mud.Data.State.Util.Calc ( calcBarLen
                                 , calcMaxMouthfuls
                                 , calcMaxRaceLen
                                 , calcModifierDx
+                                , calcModifierEffDx
+                                , calcModifierEffHt
+                                , calcModifierEffMa
+                                , calcModifierEffPs
+                                , calcModifierEffSt
                                 , calcModifierHt
                                 , calcModifierMa
                                 , calcModifierPs
@@ -63,7 +68,6 @@ import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 
 import Control.Lens (view, views)
 import Control.Lens.Getter (Getter)
-import Control.Lens.Operators ((^.))
 import Data.List (foldl')
 import Data.Text (Text)
 import Prelude hiding (getContents)
@@ -286,6 +290,14 @@ calcModifierSt :: Id -> MudState -> Int
 calcModifierSt i ms = calcModifierForAttrib st i ms + racialStModifier (getRace i ms)
 
 
+calcModifierForAttrib :: Getter Mob Int -> Int -> MudState -> Int
+calcModifierForAttrib l i ms = views (mobTbl.ind i.l) calcModifierForEffAttrib ms
+
+
+calcModifierForEffAttrib :: Int -> Int
+calcModifierForEffAttrib x = round $ (x - 50) `divide` 10
+
+
 racialStModifier :: Race -> Int
 racialStModifier = \case Dwarf     -> 1
                          Elf       -> -1
@@ -295,6 +307,13 @@ racialStModifier = \case Dwarf     -> 1
                          Lagomorph -> 0
                          Nymph     -> -1
                          Vulpenoid -> 2
+
+
+calcModifierEffSt :: Id -> MudState -> Int
+calcModifierEffSt i = calcModifierForEffAttrib . calcEffSt i
+
+
+-----
 
 
 calcModifierDx :: Id -> MudState -> Int
@@ -312,6 +331,13 @@ racialDxModifier = \case Dwarf     -> 0
                          Vulpenoid -> 0
 
 
+calcModifierEffDx :: Id -> MudState -> Int
+calcModifierEffDx i = calcModifierForEffAttrib . calcEffDx i
+
+
+-----
+
+
 calcModifierHt :: Id -> MudState -> Int
 calcModifierHt i ms = calcModifierForAttrib ht i ms + racialHtModifier (getRace i ms)
 
@@ -325,6 +351,15 @@ racialHtModifier = \case Dwarf     -> 1
                          Lagomorph -> -1
                          Nymph     -> 0
                          Vulpenoid -> 2
+
+
+
+
+calcModifierEffHt :: Id -> MudState -> Int
+calcModifierEffHt i = calcModifierForEffAttrib . calcEffHt i
+
+
+-----
 
 
 calcModifierMa :: Id -> MudState -> Int
@@ -342,6 +377,13 @@ racialMaModifier = \case Dwarf     -> -1
                          Vulpenoid -> -2
 
 
+calcModifierEffMa :: Id -> MudState -> Int
+calcModifierEffMa i = calcModifierForEffAttrib . calcEffMa i
+
+
+-----
+
+
 calcModifierPs :: Id -> MudState -> Int
 calcModifierPs i ms = calcModifierForAttrib ps i ms + racialPsModifier (getRace i ms)
 
@@ -357,9 +399,8 @@ racialPsModifier = \case Dwarf     -> -1
                          Vulpenoid -> -2
 
 
-calcModifierForAttrib :: Getter Mob Int -> Int -> MudState -> Int
-calcModifierForAttrib l i ms = let x = ms^.mobTbl.ind i.l
-                               in round $ (x - 50) `divide` 10
+calcModifierEffPs :: Id -> MudState -> Int
+calcModifierEffPs i = calcModifierForEffAttrib . calcEffPs i
 
 
 -----
