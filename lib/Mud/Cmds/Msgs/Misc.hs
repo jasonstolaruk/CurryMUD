@@ -76,8 +76,8 @@ loadWorldErrorMsg :: Text
 loadWorldErrorMsg = "There was an error loading the world. Check the error log for details."
 
 
-lvlMsg :: Text
-lvlMsg = "Congratulations! You gained a level."
+lvlUpMsg :: Text
+lvlUpMsg = "Congratulations! You gained a level."
 
 
 motdErrorMsg :: Text

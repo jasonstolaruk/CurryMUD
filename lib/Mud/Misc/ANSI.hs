@@ -35,6 +35,7 @@ module Mud.Misc.ANSI ( abbrevColor
                      , intensities
                      , knownNameColor
                      , loggedInColor
+                     , lvlUpColor
                      , magenta
                      , mkBgColorANSI
                      , mkColorANSI
@@ -160,7 +161,7 @@ adminBcastColor = yellow
 
 
 adminSetColor :: Text
-adminSetColor = mkColorANSI (Dull, White) (Dull, Red)
+adminSetColor = magenta
 
 
 adminTagColor :: Text
@@ -241,6 +242,10 @@ knownNameColor = green
 
 loggedInColor :: Text
 loggedInColor = yellow
+
+
+lvlUpColor :: Text
+lvlUpColor = mkColorANSI (Dull, White) (Dull, Red)
 
 
 motdColor :: Text

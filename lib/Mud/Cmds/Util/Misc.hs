@@ -159,16 +159,17 @@ asterisk = colorWith asteriskColor "*"
 
 
 awardExp :: Exp -> Text -> Id -> MudStack ()
-awardExp amt reason i = rndmVector 50 >>= \v -> helper v |&| modifyState >=> \(ms, (msgs, logMsgs)) -> do
-    mapM_ (retainedMsg i ms) msgs
-    let logMsg = T.concat [ "awarded "
-                          , commaShow amt
-                          , " exp "
-                          , parensQuote reason
-                          , "."
-                          , logMsgs |!| " " <> (capitalize . (<> ".") . slashes $ logMsgs) ]
-        b = isNpc i ms ? True :? isLoggedIn (getPla i ms)
-    when b . logPla "awardExp" i $ logMsg
+awardExp amt reason i = getLvlExp i <$> getState >>= \(l, x) -> let diff = calcLvlForExp (x + amt) - l in
+    rndmVector (diff * noOfLvlUpRndmInts) >>= \v -> helper v |&| modifyState >=> \(ms, (msgs, logMsgs)) -> do
+        mapM_ (retainedMsg i ms) msgs
+        let logMsg = T.concat [ "awarded "
+                              , commaShow amt
+                              , " exp "
+                              , parensQuote reason
+                              , "."
+                              , logMsgs |!| " " <> (capitalize . (<> ".") . slashes $ logMsgs) ]
+            b = isNpc i ms ? True :? isLoggedIn (getPla i ms)
+        when b . logPla "awardExp" i $ logMsg
   where
     helper v ms =
         let oldLvl = getLvl i ms
@@ -176,20 +177,24 @@ awardExp amt reason i = rndmVector 50 >>= \v -> helper v |&| modifyState >=> \(m
             newLvl = calcLvl i ms'
             diff   = newLvl - oldLvl
             ms''   | diff <= 0 = ms'
-                   | otherwise = levelUp i ms' v oldLvl newLvl & mobTbl.ind i.lvl .~ newLvl
+                   | otherwise = lvlUp i ms' v oldLvl newLvl & mobTbl.ind i.lvl .~ newLvl
             f 0    = Nothing
-            f seed = Just ((lvlMsg, mkLogMsg), pred seed)
+            f seed = Just ((colorWith lvlUpColor lvlUpMsg, mkLogMsg), pred seed)
               where
                 mkLogMsg = ("gained a level " <>) . parensQuote $ "now level " <> showText (newLvl - seed + 1)
         in (ms'', (ms'', if diff <= 0 then dupIdentity else unzip . unfoldr f $ diff))
 
 
-levelUp :: Id -> MudState -> V.Vector Int -> Lvl -> Lvl -> MudState
-levelUp i = helper
+noOfLvlUpRndmInts :: Int
+noOfLvlUpRndmInts = 5
+
+
+lvlUp :: Id -> MudState -> V.Vector Int -> Lvl -> Lvl -> MudState
+lvlUp i = helper
   where
     helper ms v oldLvl newLvl
       | oldLvl >= newLvl = ms
-      | otherwise        = let (V.toList -> [ a, b, c, d, e ], v') = V.splitAt 5 v
+      | otherwise        = let (V.toList -> [ a, b, c, d, e ], v') = V.splitAt noOfLvlUpRndmInts v
                                myMob = mobTbl.ind i
                                ms'   = ms & myMob.maxHp          +~ calcLvlUpHp       i ms a
                                           & myMob.maxMp          +~ calcLvlUpMp       i ms b

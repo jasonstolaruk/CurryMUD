@@ -14,6 +14,7 @@ module Mud.Data.State.Util.Calc ( calcBarLen
                                 , calcEncPer
                                 , calcLvl
                                 , calcLvlExps
+                                , calcLvlForExp
                                 , calcLvlUpFp
                                 , calcLvlUpHp
                                 , calcLvlUpMp
@@ -196,11 +197,14 @@ calcMaxRaceLen = maximum . map (T.length . showText) $ (allValues :: [Race])
 
 
 calcLvl :: Id -> MudState -> Lvl -- Effective level.
-calcLvl i ms = let myExp                            = getExp i ms
-                   helper ((l, x):rest) | myExp < x = pred l
-                                        | otherwise = helper rest
-                   helper xs                        = patternMatchFail "calcLvl" [ showText xs ]
-               in helper calcLvlExps
+calcLvl i = calcLvlForExp . getExp i
+
+
+calcLvlForExp :: Exp -> Lvl
+calcLvlForExp amt = let helper ((l, x):rest) | amt < x   = pred l
+                                             | otherwise = helper rest
+                        helper xs                        = patternMatchFail "calcLvl" [ showText xs ]
+                    in helper calcLvlExps
 
 
 -----
@@ -269,7 +273,7 @@ calcLvlUpFp i ms x = let a = calcModifierHt i ms
 
 
 calcLvlUpSkillPts :: Id -> MudState -> Int -> Int
-calcLvlUpSkillPts i ms x = rndmIntToRange x (45, 54) + y
+calcLvlUpSkillPts i ms x = rndmIntToRange x (20, 30) + y
   where
     y = case getRace i ms of Human -> 5
                              _     -> 0
