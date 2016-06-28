@@ -310,14 +310,8 @@ mkDfltPrompt i ms = let (hps, mps, pps, fps) = getPts i ms
                                                , f "p" pps
                                                , f "f" fps ]
   where
-    indentColor = isNpc i ms ? toNpcColor :? promptIndentColor
-    f a (x, y)  = let c   = if | x == y    -> green
-                               | per > 67  -> cyan
-                               | per > 33  -> yellow
-                               | per > 10  -> red
-                               | otherwise -> magenta
-                      per = x `percent` y
-                  in colorWith c a <> showText x
+    indentColor     = isNpc i ms ? toNpcColor :? promptIndentColor
+    f a pair@(x, _) = commaShow x <> colorWith (mkColorTxtForXps pair) a
 
 
 -----

@@ -291,7 +291,7 @@ calcModifierSt i ms = calcModifierForAttrib st i ms + racialStModifier (getRace 
 
 
 calcModifierForAttrib :: Getter Mob Int -> Int -> MudState -> Int
-calcModifierForAttrib l i ms = views (mobTbl.ind i.l) calcModifierForEffAttrib ms
+calcModifierForAttrib l i = views (mobTbl.ind i.l) calcModifierForEffAttrib
 
 
 calcModifierForEffAttrib :: Int -> Int

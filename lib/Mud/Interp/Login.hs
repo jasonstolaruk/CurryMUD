@@ -268,6 +268,7 @@ finishNewChar oldSing s pass params@(NoArgs'' i) = do
                           & mobTbl.ind i.interp   .~ Nothing
                           & plaTbl.ind i.plaFlags .~ (setBit zeroBits . fromEnum $ IsTunedQuestion)
               = dup $ ms' & invTbl.ind iCentral   %~ addToInv ms' (pure i)
+                          & newChar i
 finishNewChar _ _ _ p = patternMatchFail "finishNewChar" [ showText p ]
 
 
@@ -277,6 +278,10 @@ notifyQuestion i ms =
         f        = (colorWith arrowColor "<- " <>) . colorWith questionArrivalColor
         tunedIds = uncurry (++) . getTunedQuestionIds i $ ms
     in bcastNl =<< expandEmbeddedIds ms questionChanContext =<< formatQuestion i ms (msg, tunedIds)
+
+
+newChar :: Id -> MudState -> MudState
+newChar _ = id -- TODO
 
 
 -- ==================================================

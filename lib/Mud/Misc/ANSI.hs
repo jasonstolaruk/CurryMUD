@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, TupleSections, ViewPatterns #-}
+{-# LANGUAGE MultiWayIf, OverloadedStrings, TupleSections, ViewPatterns #-}
 
 module Mud.Misc.ANSI ( abbrevColor
                      , adminBcastColor
@@ -39,6 +39,7 @@ module Mud.Misc.ANSI ( abbrevColor
                      , magenta
                      , mkBgColorANSI
                      , mkColorANSI
+                     , mkColorTxtForXps
                      , mkFgColorANSI
                      , motdColor
                      , newRecordColor
@@ -74,6 +75,7 @@ module Mud.Misc.ANSI ( abbrevColor
                      , zingColor ) where
 
 import Mud.TopLvlDefs.Chars
+import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Operators
 import Mud.Util.Quoting
 import Mud.Util.Text
@@ -119,6 +121,16 @@ mkBgColorANSI bg = T.pack . setSGRCode $ [ uncurry (SetColor Background) bg ]
 
 mkColorANSI :: (ColorIntensity, Color) -> (ColorIntensity, Color) -> Text
 mkColorANSI fg bg = T.pack . setSGRCode $ [ uncurry (SetColor Foreground) fg, uncurry (SetColor Background) bg ]
+
+
+mkColorTxtForXps :: (Int, Int) -> Text
+mkColorTxtForXps (x, y) = if | x == y    -> green
+                             | per > 67  -> cyan
+                             | per > 33  -> yellow
+                             | per > 10  -> red
+                             | otherwise -> magenta
+  where
+    per = x `percent` y
 
 
 colorWith :: Text -> Text -> Text

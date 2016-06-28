@@ -3556,18 +3556,23 @@ smell p = advise p ["smell"] adviceSmellExcessArgs
 stats :: ActionFun
 stats (NoArgs i mq cols) = getState >>= \ms ->
     let mkStats   = dropEmpties [ top
+                                , xpsHelper
                                 , pp . getHand i $ ms
                                 , "level " <> showText l
-                                , commaShow x   <> " experience points"
-                                , commaShow nxt <> " experience points to next level"
+                                , commaShow expr <> " experience points"
+                                , commaShow nxt  <> " experience points to next level"
                                 , skillPtsHelper
                                 , mobRmDescHelper
                                 , charDescHelper ]
         top             = onTrue (isPC i ms) (<> sexRace) . getSing i $ ms
         sexRace         = T.concat [ ", the ", sexy, " ", r ]
         (sexy, r)       = (uncapitalize . showText *** uncapitalize . showText) . getSexRace i $ ms
-        (l, x)          = getLvlExp i ms
-        nxt             = subtract x . snd $ calcLvlExps !! l
+        xpsHelper       | (hps, mps, pps, fps) <- getPts i ms
+                        = spaces [ f "h" hps, f "m" mps, f "p" pps, f "f" fps ]
+          where
+            f a pair@(commaShow -> x, commaShow -> y) = T.concat [ colorWith (mkColorTxtForXps pair) x, "/", y, a, "p" ]
+        (l, expr)       = getLvlExp i ms
+        nxt             = subtract expr . snd $ calcLvlExps !! l
         skillPtsHelper  = let pts = getSkillPts i ms in (pts > 0) |?| (commaShow pts <> " unspent skill points")
         mobRmDescHelper = maybe "" (("Your room description is " <>) . (<> "."))       $ dblQuote <$> getMobRmDesc i ms
         charDescHelper  = maybe "" ("Your supplementary character description is " <>) $ dblQuote <$> getCharDesc  i ms

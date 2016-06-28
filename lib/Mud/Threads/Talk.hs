@@ -99,10 +99,10 @@ adHoc mq host = do
                        , _ht            = 50
                        , _ma            = 50
                        , _ps            = 50
-                       , _maxHp         = 100, _curHp = 100
-                       , _maxMp         = 100, _curMp = 100
-                       , _maxPp         = 100, _curPp = 100
-                       , _maxFp         = 100, _curFp = 100
+                       , _maxHp         = 50, _curHp = 50
+                       , _maxMp         = 50, _curMp = 50
+                       , _maxPp         = 50, _curPp = 50
+                       , _maxFp         = 50, _curFp = 50
                        , _stomach       = []
                        , _digesterAsync = Nothing
                        , _exp           = 0
