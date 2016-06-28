@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
-{-# LANGUAGE LambdaCase, MultiWayIf, OverloadedStrings, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, MultiWayIf, OverloadedStrings, RankNTypes, ViewPatterns #-}
 
 module Mud.Data.State.Util.Calc ( calcBarLen
                                 , calcBonus
@@ -21,6 +21,11 @@ module Mud.Data.State.Util.Calc ( calcBarLen
                                 , calcMaxEnc
                                 , calcMaxMouthfuls
                                 , calcMaxRaceLen
+                                , calcModifierDx
+                                , calcModifierHt
+                                , calcModifierMa
+                                , calcModifierPs
+                                , calcModifierSt
                                 , calcProbConnectBlink
                                 , calcProbLinkFlinch
                                 , calcProbTeleDizzy
@@ -44,6 +49,7 @@ import Mud.Data.Misc
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Coins
 import Mud.Data.State.Util.Get
+import Mud.Data.State.Util.Random
 import Mud.TopLvlDefs.Misc
 import Mud.TopLvlDefs.Vols
 import Mud.TopLvlDefs.Weights
@@ -54,6 +60,8 @@ import Mud.Util.Text
 import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 
 import Control.Lens (view, views)
+import Control.Lens.Getter (Getter)
+import Control.Lens.Operators ((^.))
 import Data.List (foldl')
 import Data.Text (Text)
 import Prelude hiding (getContents)
@@ -186,7 +194,7 @@ calcMaxRaceLen = maximum . map (T.length . showText) $ (allValues :: [Race])
 -----
 
 
-calcLvl :: Id -> MudState -> Lvl
+calcLvl :: Id -> MudState -> Lvl -- Calculate effective level.
 calcLvl i ms = let myExp                            = getExp i ms
                    helper ((l, x):rest) | myExp < x = pred l
                                         | otherwise = helper rest
@@ -204,20 +212,132 @@ calcLvlExps = [ (l, 1250 * l ^ 2) | l <- [1..] ]
 -----
 
 
-calcLvlUpHp :: Id -> MudState -> Int -> Int -- TODO
-calcLvlUpHp _ _ _ {-i ms x-} = undefined
+calcLvlUpHp :: Id -> MudState -> Int -> Int
+calcLvlUpHp i ms x = (rndmIntToRange x r + calcModifierHt i ms) `max` 1
+  where
+    r = case getRace i ms of Dwarf     -> (3, 12)
+                             Elf       -> (1, 7)
+                             Felinoid  -> (1, 8)
+                             Hobbit    -> (1, 7)
+                             Human     -> (1, 8)
+                             Lagomorph -> (1, 7)
+                             Nymph     -> (1, 8)
+                             Vulpenoid -> (2, 10)
 
 
 calcLvlUpMp :: Id -> MudState -> Int -> Int
-calcLvlUpMp _ _ _ {-i ms x-} = undefined
-
-
-calcLvlUpFp :: Id -> MudState -> Int -> Int
-calcLvlUpFp _ _ _ {-i ms x-} = undefined
+calcLvlUpMp i ms x = (rndmIntToRange x r + calcModifierMa i ms) `max` 0
+  where
+    r = case getRace i ms of Dwarf     -> (1, 7)
+                             Elf       -> (2, 10)
+                             Felinoid  -> (1, 7)
+                             Hobbit    -> (2, 10)
+                             Human     -> (1, 8)
+                             Lagomorph -> (1, 7)
+                             Nymph     -> (3, 12)
+                             Vulpenoid -> (1, 7)
 
 
 calcLvlUpPp :: Id -> MudState -> Int -> Int
-calcLvlUpPp _ _ _ {-i ms x-} = undefined
+calcLvlUpPp i ms x = (rndmIntToRange x r + calcModifierPs i ms) `max` 0
+  where
+    r = case getRace i ms of Dwarf     -> (1, 7)
+                             Elf       -> (1, 8)
+                             Felinoid  -> (1, 7)
+                             Hobbit    -> (1, 8)
+                             Human     -> (1, 8)
+                             Lagomorph -> (3, 12)
+                             Nymph     -> (1, 7)
+                             Vulpenoid -> (1, 7)
+
+
+calcLvlUpFp :: Id -> MudState -> Int -> Int
+calcLvlUpFp i ms x = let a = calcModifierHt i ms
+                         b = calcModifierSt i ms
+                         y = round $ (a + b) `divide` 2
+                     in (rndmIntToRange x r + y) `max` 1
+  where
+    r = case getRace i ms of Dwarf     -> (1, 8)
+                             Elf       -> (1, 8)
+                             Felinoid  -> (3, 12)
+                             Hobbit    -> (1, 8)
+                             Human     -> (1, 8)
+                             Lagomorph -> (1, 8)
+                             Nymph     -> (1, 7)
+                             Vulpenoid -> (2, 10)
+
+
+-----
+
+
+calcModifierSt :: Id -> MudState -> Int
+calcModifierSt i ms = calcModifierForAttrib st i ms + racial
+  where
+    racial = case getRace i ms of Dwarf     -> 1
+                                  Elf       -> -1
+                                  Felinoid  -> 0
+                                  Hobbit    -> -2
+                                  Human     -> 0
+                                  Lagomorph -> 0
+                                  Nymph     -> -1
+                                  Vulpenoid -> 2
+
+
+calcModifierDx :: Id -> MudState -> Int
+calcModifierDx i ms = calcModifierForAttrib dx i ms + racial
+  where
+    racial = case getRace i ms of Dwarf     -> 0
+                                  Elf       -> 1
+                                  Felinoid  -> 2
+                                  Hobbit    -> 2
+                                  Human     -> 0
+                                  Lagomorph -> 0
+                                  Nymph     -> 0
+                                  Vulpenoid -> 0
+
+
+calcModifierHt :: Id -> MudState -> Int
+calcModifierHt i ms = calcModifierForAttrib ht i ms + racial
+  where
+    racial = case getRace i ms of Dwarf     -> 1
+                                  Elf       -> -1
+                                  Felinoid  -> 0
+                                  Hobbit    -> -2
+                                  Human     -> 0
+                                  Lagomorph -> -1
+                                  Nymph     -> 0
+                                  Vulpenoid -> 2
+
+
+calcModifierMa :: Id -> MudState -> Int
+calcModifierMa i ms = calcModifierForAttrib ma i ms + racial
+  where
+    racial = case getRace i ms of Dwarf     -> -1
+                                  Elf       -> 1
+                                  Felinoid  -> -1
+                                  Hobbit    -> 2
+                                  Human     -> 0
+                                  Lagomorph -> -2
+                                  Nymph     -> 3
+                                  Vulpenoid -> -2
+
+
+calcModifierPs :: Id -> MudState -> Int
+calcModifierPs i ms = calcModifierForAttrib ps i ms + racial
+  where
+    racial = case getRace i ms of Dwarf     -> -1
+                                  Elf       -> 0
+                                  Felinoid  -> -1
+                                  Hobbit    -> 0
+                                  Human     -> 0
+                                  Lagomorph -> 3
+                                  Nymph     -> -2
+                                  Vulpenoid -> -2
+
+
+calcModifierForAttrib :: Getter Mob Int -> Int -> MudState -> Int
+calcModifierForAttrib l i ms = let x = ms^.mobTbl.ind i.l
+                               in round $ (x - 50) `divide` 10
 
 
 -----
