@@ -11,6 +11,7 @@ import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
+import Mud.Data.State.Util.Calc
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
@@ -62,9 +63,10 @@ import qualified Data.Set as S (Set, empty, fromList, insert, member)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import qualified Data.Text.IO as T (readFile)
+import qualified Data.Vector.Unboxed as V (Vector, length, toList)
 
 
-default (Int)
+default (Int, Double)
 
 
 -----
@@ -257,18 +259,18 @@ promptRetryNewPwMatch oldSing s (ActionParams i mq cols _) =
 finishNewChar :: Sing -> Sing -> Text -> ActionParams -> MudStack ()
 finishNewChar oldSing s pass params@(NoArgs'' i) = do
     withDbExHandler_ "unpw" . insertDbTblUnPw . UnPwRec s $ pass
-    helper |&| modifyState >=> \ms@(getPla i -> p) -> do
+    mkRndmVector >>= \v -> helper v |&| modifyState >=> \ms@(getPla i -> p) -> do
         initPlaLog i s
         logPla "interpVerifyNewPW" i $ "new character logged in from " <> views currHostName T.pack p <> "."
         handleLogin oldSing s True params
         notifyQuestion i ms
   where
-    helper ms | ms' <- ms & invTbl.ind iWelcome   %~ (i `delete`)
-                          & mobTbl.ind i.rmId     .~ iCentral
-                          & mobTbl.ind i.interp   .~ Nothing
-                          & plaTbl.ind i.plaFlags .~ (setBit zeroBits . fromEnum $ IsTunedQuestion)
-              = dup $ ms' & invTbl.ind iCentral   %~ addToInv ms' (pure i)
-                          & newChar i
+    helper v ms | ms' <- ms & invTbl.ind iWelcome   %~ (i `delete`)
+                            & mobTbl.ind i.rmId     .~ iCentral
+                            & mobTbl.ind i.interp   .~ Nothing
+                            & plaTbl.ind i.plaFlags .~ (setBit zeroBits . fromEnum $ IsTunedQuestion)
+                = dup $ ms' & invTbl.ind iCentral   %~ addToInv ms' (pure i)
+                            & newChar i v
 finishNewChar _ _ _ p = patternMatchFail "finishNewChar" [ showText p ]
 
 
@@ -280,8 +282,8 @@ notifyQuestion i ms =
     in bcastNl =<< expandEmbeddedIds ms questionChanContext =<< formatQuestion i ms (msg, tunedIds)
 
 
-newChar :: Id -> MudState -> MudState
-newChar i = newXps i . modifyAttribsForRace i
+newChar :: Id -> V.Vector Int -> MudState -> MudState
+newChar i v = newXps i v . modifyAttribsForRace i
 
 
 modifyAttribsForRace :: Id -> MudState -> MudState
@@ -324,8 +326,25 @@ modifyAttribsForRace i ms = let myMob = mobTbl.ind i in case getRace i ms of
                   & myMob.ps -~ 4
 
 
-newXps :: Id -> MudState -> MudState -- TODO
-newXps _ ms = ms
+newXps :: Id -> V.Vector Int -> MudState -> MudState
+newXps i (V.toList -> (a:b:c:d:_)) ms = let x      | getRace i ms == Human = 20
+                                                   | otherwise             = 15
+                                            myMob  = mobTbl.ind i
+                                            initHp = x + calcModifierHt i ms + calcLvlUpHp i ms a
+                                            initMp = x + calcModifierMa i ms + calcLvlUpMp i ms b
+                                            initPp = x + calcModifierPs i ms + calcLvlUpPp i ms c
+                                            initFp = x + y                   + calcLvlUpFp i ms d
+                                              where
+                                                y = round $ (calcModifierHt i ms + calcModifierSt i ms) `divide` 2
+                                        in ms & myMob.curHp .~ initHp
+                                              & myMob.maxHp .~ initHp
+                                              & myMob.curMp .~ initMp
+                                              & myMob.maxMp .~ initMp
+                                              & myMob.curPp .~ initPp
+                                              & myMob.maxPp .~ initPp
+                                              & myMob.curFp .~ initFp
+                                              & myMob.maxFp .~ initFp
+newXps _ v _ = patternMatchFail "newXps" [ showText . V.length $ v ]
 
 
 -- ==================================================

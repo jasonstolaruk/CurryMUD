@@ -3564,7 +3564,7 @@ stats (NoArgs i mq cols) = getState >>= \ms ->
                                 , skillPtsHelper
                                 , mobRmDescHelper
                                 , charDescHelper ]
-        top             = onTrue (isPC i ms) (<> sexRace) . getSing i $ ms
+        top             = underline . onTrue (isPC i ms) (<> sexRace) . getSing i $ ms
         sexRace         = T.concat [ ", the ", sexy, " ", r ]
         (sexy, r)       = (uncapitalize . showText *** uncapitalize . showText) . getSexRace i $ ms
         xpsHelper       | (hps, mps, pps, fps) <- getPts i ms
