@@ -42,7 +42,7 @@ import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception.Lifted (try)
 import Control.Lens (at, both, views)
-import Control.Lens.Operators ((%~), (&), (.~), (^.))
+import Control.Lens.Operators ((%~), (&), (+~), (-~), (.~), (^.))
 import Control.Monad ((>=>), unless, when)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Loops (orM)
@@ -281,7 +281,51 @@ notifyQuestion i ms =
 
 
 newChar :: Id -> MudState -> MudState
-newChar _ = id -- TODO
+newChar i = newXps i . modifyAttribsForRace i
+
+
+modifyAttribsForRace :: Id -> MudState -> MudState
+modifyAttribsForRace i ms = let myMob = mobTbl.ind i in case getRace i ms of
+  Dwarf     -> ms & myMob.st +~ 2
+                  & myMob.ht +~ 2
+                  & myMob.ma -~ 2
+                  & myMob.ps -~ 2
+  -----
+  Elf       -> ms & myMob.st -~ 2
+                  & myMob.dx +~ 2
+                  & myMob.ht -~ 2
+                  & myMob.ma +~ 2
+  -----
+  Felinoid  -> ms & myMob.dx +~ 4
+                  & myMob.ma -~ 2
+                  & myMob.ps -~ 2
+  -----
+  Hobbit    -> ms & myMob.st -~ 4
+                  & myMob.dx +~ 4
+                  & myMob.ht -~ 2
+                  & myMob.ma +~ 4
+                  & myMob.ps -~ 2
+  -----
+  Human     -> ms
+  -----
+  Lagomorph -> ms & myMob.st -~ 1
+                  & myMob.ht -~ 2
+                  & myMob.ma -~ 4
+                  & myMob.ps +~ 5
+  -----
+  Nymph     -> ms & myMob.st -~ 2
+                  & myMob.dx -~ 1
+                  & myMob.ma +~ 5
+                  & myMob.ps -~ 4
+  -----
+  Vulpenoid -> ms & myMob.st +~ 4
+                  & myMob.ht +~ 4
+                  & myMob.ma -~ 4
+                  & myMob.ps -~ 4
+
+
+newXps :: Id -> MudState -> MudState -- TODO
+newXps _ ms = ms
 
 
 -- ==================================================

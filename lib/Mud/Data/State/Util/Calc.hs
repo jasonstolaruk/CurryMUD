@@ -353,8 +353,6 @@ racialHtModifier = \case Dwarf     -> 1
                          Vulpenoid -> 2
 
 
-
-
 calcModifierEffHt :: Id -> MudState -> Int
 calcModifierEffHt i = calcModifierForEffAttrib . calcEffHt i
 
