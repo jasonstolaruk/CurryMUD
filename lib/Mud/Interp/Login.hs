@@ -260,10 +260,11 @@ promptRetryNewPwMatch _ _ p = patternMatchFail "promptRetryNewPwMatch" [ showTex
 
 
 interpDiscover :: Sing -> Sing -> Text -> Interp
-interpDiscover oldSing s pass cn params@(WithArgs i mq _ as) = do
-    when (()!# cn) $ do { send mq . nlnl $ "Thank you."
-                        ; withDbExHandler_ "interpDiscover" . insertDbTblDiscover =<< mkDiscoverRec }
-    finishNewChar oldSing s pass params { args = [] }
+interpDiscover oldSing s pass cn params@(WithArgs i mq _ as) =
+    (>> finishNewChar oldSing s pass params { args = [] }) $ if ()!# cn
+      then do { send mq . nlnl $ "Thank you."
+              ; withDbExHandler_ "interpDiscover" . insertDbTblDiscover =<< mkDiscoverRec }
+      else blankLine mq
   where
     mkDiscoverRec = (,) <$> liftIO mkTimestamp <*> (T.pack . getCurrHostName i <$> getState) >>= \(ts, host) ->
         return . DiscoverRec ts host . formatMsgArgs $ cn : as
