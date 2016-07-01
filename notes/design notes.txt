@@ -126,8 +126,6 @@ Create a history and backstory for the virtual world.
 
 (Returning) players should be able to opt out of all tutorials.
 
-When a player creates a new character, ask them to describe how they discovered CurryMUD (if it's their first time).
-
 Make ASCII art maps available in game. New players should start with a map, along with a short welcome letter (obtainable in the tutorial). Other maps may be available for purchase.
 
 Give players badges for achievements.

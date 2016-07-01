@@ -9,6 +9,7 @@ import Mud.Cmds.Pla
 import Mud.Cmds.Util.Misc
 import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
+import Mud.Data.State.ActionParams.Misc
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Calc
@@ -242,18 +243,31 @@ promptRetryNewPW mq cols msg = let t = "Let's try this again. New password:"
 
 
 interpVerifyNewPW :: Sing -> Sing -> Text -> Interp
-interpVerifyNewPW oldSing s pass cn params@(NoArgs _ mq cols)
+interpVerifyNewPW oldSing s pass cn params@(NoArgs i mq cols)
   | cn == pass = do
       send mq telnetShowInput
       wrapSend mq cols pwWarningMsg
-      finishNewChar oldSing s pass params
+      wrapSendPrompt mq cols "If you are a new player, could you please tell us how you found CurryMUD?"
+      setInterp i . Just . interpDiscover oldSing s $ pass
   | otherwise = promptRetryNewPwMatch oldSing s params
 interpVerifyNewPW oldSing s _ _ params = promptRetryNewPwMatch oldSing s params
 
 
 promptRetryNewPwMatch :: Sing -> Sing -> ActionParams -> MudStack ()
-promptRetryNewPwMatch oldSing s (ActionParams i mq cols _) =
+promptRetryNewPwMatch oldSing s (WithArgs i mq cols _) =
     promptRetryNewPW mq cols sorryInterpNewPwMatch >> setInterp i (Just . interpNewPW oldSing $ s)
+promptRetryNewPwMatch _ _ p = patternMatchFail "promptRetryNewPwMatch" [ showText p ]
+
+
+interpDiscover :: Sing -> Sing -> Text -> Interp
+interpDiscover oldSing s pass cn params@(WithArgs i mq _ as) = do
+    when (()!# cn) $ do { send mq . nlnl $ "Thank you."
+                        ; withDbExHandler_ "interpDiscover" . insertDbTblDiscover =<< mkDiscoverRec }
+    finishNewChar oldSing s pass params { args = [] }
+  where
+    mkDiscoverRec = (,) <$> liftIO mkTimestamp <*> (T.pack . getCurrHostName i <$> getState) >>= \(ts, host) ->
+        return . DiscoverRec ts host . formatMsgArgs $ cn : as
+interpDiscover _ _ _ _ p = patternMatchFail "interpDiscover" [ showText p ]
 
 
 finishNewChar :: Sing -> Sing -> Text -> ActionParams -> MudStack ()
@@ -327,8 +341,8 @@ modifyAttribsForRace i ms = let myMob = mobTbl.ind i in case getRace i ms of
 
 
 newXps :: Id -> V.Vector Int -> MudState -> MudState
-newXps i (V.toList -> (a:b:c:d:_)) ms = let x      | getRace i ms == Human = 20
-                                                   | otherwise             = 15
+newXps i (V.toList -> (a:b:c:d:_)) ms = let x | getRace i ms == Human = 20
+                                              | otherwise             = 15
                                             myMob  = mobTbl.ind i
                                             initHp = x + calcModifierHt i ms + calcLvlUpHp i ms a
                                             initMp = x + calcModifierMa i ms + calcLvlUpMp i ms b

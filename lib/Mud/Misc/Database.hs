@@ -344,7 +344,7 @@ insertDbTblChan :: ChanRec -> IO ()
 insertDbTblChan = insertDbTblHelper "insert into chan (timestamp, chan_id, chan_name, name, msg) values (?, ?, ?, ?, ?)"
 
 
-insertDbTblDiscover :: ProfRec -> IO ()
+insertDbTblDiscover :: DiscoverRec -> IO ()
 insertDbTblDiscover = insertDbTblHelper "insert into discover (timestamp, host, msg) values (?, ?, ?)"
 
 
