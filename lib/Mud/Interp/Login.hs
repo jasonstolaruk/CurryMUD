@@ -336,14 +336,10 @@ newXps i (V.toList -> (a:b:c:d:_)) ms = let x      | getRace i ms == Human = 20
                                             initFp = x + y                   + calcLvlUpFp i ms d
                                               where
                                                 y = round $ (calcModifierHt i ms + calcModifierSt i ms) `divide` 2
-                                        in ms & myMob.curHp .~ initHp
-                                              & myMob.maxHp .~ initHp
-                                              & myMob.curMp .~ initMp
-                                              & myMob.maxMp .~ initMp
-                                              & myMob.curPp .~ initPp
-                                              & myMob.maxPp .~ initPp
-                                              & myMob.curFp .~ initFp
-                                              & myMob.maxFp .~ initFp
+                                        in ms & myMob.curHp .~ initHp & myMob.maxHp .~ initHp
+                                              & myMob.curMp .~ initMp & myMob.maxMp .~ initMp
+                                              & myMob.curPp .~ initPp & myMob.maxPp .~ initPp
+                                              & myMob.curFp .~ initFp & myMob.maxFp .~ initFp
 newXps _ v _ = patternMatchFail "newXps" [ showText . V.length $ v ]
 
 

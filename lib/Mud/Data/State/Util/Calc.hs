@@ -424,7 +424,7 @@ calcProbTeleShudder = calcProbLinkFlinch
 
 
 calcRegenAmt :: Double -> Int
-calcRegenAmt x = round $ x / 10
+calcRegenAmt x = round $ x / 13
 
 
 calcRegenHpAmt :: Id -> MudState -> Int

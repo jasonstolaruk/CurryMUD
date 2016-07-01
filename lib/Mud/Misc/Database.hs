@@ -15,6 +15,7 @@ module Mud.Misc.Database ( AdminChanRec(..)
                          , countDbTblRecsQuestion
                          , countDbTblRecsTele
                          , createDbTbls
+                         , DiscoverRec(..)
                          , getDbTblRecs
                          , insertDbTblAdminChan
                          , insertDbTblAdminMsg
@@ -25,6 +26,7 @@ module Mud.Misc.Database ( AdminChanRec(..)
                          , insertDbTblBonus
                          , insertDbTblBug
                          , insertDbTblChan
+                         , insertDbTblDiscover
                          , insertDbTblProf
                          , insertDbTblQuestion
                          , insertDbTblSec
@@ -98,6 +100,9 @@ data ChanRec      = ChanRec      { dbTimestamp :: Text
                                  , dbChanName  :: Text
                                  , dbName      :: Text
                                  , dbMsg       :: Text }
+data DiscoverRec  = DiscoverRec  { dbTimestamp :: Text
+                                 , dbHost      :: Text
+                                 , dbMsg       :: Text }
 data ProfRec      = ProfRec      { dbTimestamp :: Text
                                  , dbHost      :: Text
                                  , dbProfanity :: Text }
@@ -156,6 +161,10 @@ instance FromRow BugRec where
 
 instance FromRow ChanRec where
   fromRow = ChanRec <$ (field :: RowParser Int) <*> field <*> field <*> field <*> field <*> field
+
+
+instance FromRow DiscoverRec where
+  fromRow = DiscoverRec <$ (field :: RowParser Int) <*> field <*> field <*> field
 
 
 instance FromRow ProfRec where
@@ -221,6 +230,10 @@ instance ToRow ChanRec where
   toRow (ChanRec a b c d e) = toRow (a, b, c, d, e)
 
 
+instance ToRow DiscoverRec where
+  toRow (DiscoverRec a b c) = toRow (a, b, c)
+
+
 instance ToRow ProfRec where
   toRow (ProfRec a b c) = toRow (a, b, c)
 
@@ -264,6 +277,7 @@ createDbTbls = withConnection dbFile $ \conn -> do
          , "create table if not exists bonus      (id integer primary key, timestamp text, fromName text, ToName text, amt integer)"
          , "create table if not exists bug        (id integer primary key, timestamp text, name text, loc text, desc text)"
          , "create table if not exists chan       (id integer primary key, timestamp text, chan_id integer, chan_name text, name text, msg text)"
+         , "create table if not exists discover   (id integer primary key, timestamp text, host text, msg text)"
          , "create table if not exists profanity  (id integer primary key, timestamp text, host text, prof text)"
          , "create table if not exists question   (id integer primary key, timestamp text, name text, msg text)"
          , "create table if not exists sec        (id integer primary key, name text, question text, answer text)"
@@ -328,6 +342,10 @@ insertDbTblBug = insertDbTblHelper "insert into bug (timestamp, name, loc, desc)
 
 insertDbTblChan :: ChanRec -> IO ()
 insertDbTblChan = insertDbTblHelper "insert into chan (timestamp, chan_id, chan_name, name, msg) values (?, ?, ?, ?, ?)"
+
+
+insertDbTblDiscover :: ProfRec -> IO ()
+insertDbTblDiscover = insertDbTblHelper "insert into discover (timestamp, host, msg) values (?, ?, ?)"
 
 
 insertDbTblProf :: ProfRec -> IO ()
