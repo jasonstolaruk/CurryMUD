@@ -235,7 +235,7 @@ calcLvlUpHp i ms x = (rndmIntToRange x r + calcModifierHt i ms) `max` 1
 
 
 calcLvlUpMp :: Id -> MudState -> Int -> Int
-calcLvlUpMp i ms x = (rndmIntToRange x r + calcModifierMa i ms) `max` 0
+calcLvlUpMp i ms x = (rndmIntToRange x r + calcModifierMa i ms) `max` 1
   where
     r = case getRace i ms of Dwarf     -> (1, 7)
                              Elf       -> (2, 10)
@@ -248,7 +248,7 @@ calcLvlUpMp i ms x = (rndmIntToRange x r + calcModifierMa i ms) `max` 0
 
 
 calcLvlUpPp :: Id -> MudState -> Int -> Int
-calcLvlUpPp i ms x = (rndmIntToRange x r + calcModifierPs i ms) `max` 0
+calcLvlUpPp i ms x = (rndmIntToRange x r + calcModifierPs i ms) `max` 1
   where
     r = case getRace i ms of Dwarf     -> (1, 7)
                              Elf       -> (1, 8)
@@ -432,15 +432,22 @@ calcRegenHpAmt i = calcRegenAmt . fromIntegral . calcEffHt i
 
 
 calcRegenMpAmt :: Id -> MudState -> Int
-calcRegenMpAmt i ms = calcRegenAmt $ (calcEffHt i ms + calcEffMa i ms) `divide` 2
+calcRegenMpAmt i = calcRegenAmt . weightedAvgHt calcEffMa i
+
+
+weightedAvgHt :: (Id -> MudState -> Int) -> Id -> MudState -> Double
+weightedAvgHt f i ms = a + b
+  where
+    a = fromIntegral (calcEffHt i ms) * 0.25
+    b = fromIntegral (f         i ms) * 0.75
 
 
 calcRegenPpAmt :: Id -> MudState -> Int
-calcRegenPpAmt i ms = calcRegenAmt $ (calcEffHt i ms + calcEffPs i ms) `divide` 2
+calcRegenPpAmt i = calcRegenAmt . weightedAvgHt calcEffPs i
 
 
 calcRegenFpAmt :: Id -> MudState -> Int
-calcRegenFpAmt i ms = calcRegenAmt $ (calcEffHt i ms + calcEffSt i ms) `divide` 2
+calcRegenFpAmt i = calcRegenAmt . weightedAvgHt calcEffSt i
 
 
 -----
@@ -455,15 +462,15 @@ calcRegenHpDelay i = calcRegenDelay . fromIntegral . calcEffHt i
 
 
 calcRegenMpDelay :: Id -> MudState -> Int
-calcRegenMpDelay i ms = calcRegenDelay $ (calcEffHt i ms + calcEffMa i ms) `divide` 2
+calcRegenMpDelay i = calcRegenDelay . weightedAvgHt calcEffMa i
 
 
 calcRegenPpDelay :: Id -> MudState -> Int
-calcRegenPpDelay i ms = calcRegenDelay $ (calcEffHt i ms + calcEffPs i ms) `divide` 2
+calcRegenPpDelay i = calcRegenDelay . weightedAvgHt calcEffPs i
 
 
 calcRegenFpDelay :: Id -> MudState -> Int
-calcRegenFpDelay i ms = calcRegenDelay $ (calcEffHt i ms + calcEffSt i ms) `divide` 2
+calcRegenFpDelay i = calcRegenDelay . weightedAvgHt calcEffSt i
 
 
 -----
