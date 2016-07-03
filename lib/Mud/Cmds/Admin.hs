@@ -1356,14 +1356,14 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
           | otherwise        = case eitherDecode value' of
             Left  _ -> appendMsg . sorryAdminSetValue k $ value
             Right x -> let prev                 = view getter . getMob targetId $ ms
-                           addSubAssignHelper f = let x'     = 1 `max` (prev `f` x)
+                           addSubAssignHelper f = let x'     = max1 $ prev `f` x
                                                       diff   = x' - prev
                                                       toSelf = mkToSelfForInt k x' diff
                                                   in a & _1.mobTbl.ind targetId.setter .~ x'
                                                        & _2 <>~ toSelf
                                                        & _3 <>~ (Sum diff |!| mkToTarget diff)
                                                        & _4 <>~ (Sum diff |!| toSelf)
-                       in case op of Assign    -> let x'     = 1 `max` x
+                       in case op of Assign    -> let x'     = max1 x
                                                       diff   = x' - prev
                                                       toSelf = mkToSelfForInt k x' diff
                                                   in a & _1.mobTbl.ind targetId.setter .~ x'

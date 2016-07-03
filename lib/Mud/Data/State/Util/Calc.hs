@@ -138,10 +138,10 @@ calcEffDx = calcEffAttrib Dx
 calcEffAttrib :: Attrib -> Id -> MudState -> Int
 calcEffAttrib attrib i ms =
     let effects = select effect . getActiveEffects i $ ms
-    in 1 `max` foldl' helper (getBaseAttrib attrib i ms) effects
+    in max1 . foldl' helper (getBaseAttrib attrib i ms) $ effects
   where
     helper acc (Effect (MobEffectAttrib a) (Just (DefiniteVal x)) _ _) | a == attrib = acc + x
-    helper acc _                                                       = acc
+    helper acc _                                                                     = acc
 
 
 -----
@@ -222,7 +222,7 @@ calcLvlExps = [ (l, 1250 * l ^ 2) | l <- [1..] ]
 
 
 calcLvlUpHp :: Id -> MudState -> Int -> Int
-calcLvlUpHp i ms x = (rndmIntToRange x r + calcModifierHt i ms) `max` 1
+calcLvlUpHp i ms x = max1 (rndmIntToRange x r + calcModifierHt i ms)
   where
     r = case getRace i ms of Dwarf     -> (3, 12)
                              Elf       -> (1, 7)
@@ -235,7 +235,7 @@ calcLvlUpHp i ms x = (rndmIntToRange x r + calcModifierHt i ms) `max` 1
 
 
 calcLvlUpMp :: Id -> MudState -> Int -> Int
-calcLvlUpMp i ms x = (rndmIntToRange x r + calcModifierMa i ms) `max` 1
+calcLvlUpMp i ms x = max1 (rndmIntToRange x r + calcModifierMa i ms)
   where
     r = case getRace i ms of Dwarf     -> (1, 7)
                              Elf       -> (2, 10)
@@ -248,7 +248,7 @@ calcLvlUpMp i ms x = (rndmIntToRange x r + calcModifierMa i ms) `max` 1
 
 
 calcLvlUpPp :: Id -> MudState -> Int -> Int
-calcLvlUpPp i ms x = (rndmIntToRange x r + calcModifierPs i ms) `max` 1
+calcLvlUpPp i ms x = max1 (rndmIntToRange x r + calcModifierPs i ms)
   where
     r = case getRace i ms of Dwarf     -> (1, 7)
                              Elf       -> (1, 8)
@@ -264,7 +264,7 @@ calcLvlUpFp :: Id -> MudState -> Int -> Int
 calcLvlUpFp i ms x = let a = calcModifierHt i ms
                          b = calcModifierSt i ms
                          y = round $ (a + b) `divide` 2
-                     in (rndmIntToRange x r + y) `max` 1
+                     in max1 (rndmIntToRange x r + y)
   where
     r = case getRace i ms of Dwarf     -> (1, 8)
                              Elf       -> (1, 8)
@@ -424,7 +424,7 @@ calcProbTeleShudder = calcProbLinkFlinch
 
 
 calcRegenAmt :: Double -> Int
-calcRegenAmt x = round $ x / 13
+calcRegenAmt x = max1 . round $ x / 13
 
 
 calcRegenHpAmt :: Id -> MudState -> Int

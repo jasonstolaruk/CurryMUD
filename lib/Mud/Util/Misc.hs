@@ -24,6 +24,7 @@ module Mud.Util.Misc ( atLst1
                      , ind
                      , isVowel
                      , listToMaybe
+                     , max1
                      , maybeRet
                      , maybeVoid
                      , mIf
@@ -191,6 +192,10 @@ listToMaybe :: (Show a) => [a] -> Maybe a
 listToMaybe []  = Nothing
 listToMaybe [a] = Just a
 listToMaybe xs  = patternMatchFail "Mud.Util.Misc" "listToMaybe" [ T.pack . show $ xs ]
+
+
+max1 :: Int -> Int
+max1 = (`max` 1)
 
 
 maybeRet :: (Monad m) => m a -> Maybe a -> m a
