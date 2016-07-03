@@ -276,7 +276,7 @@ finishNewChar oldSing s pass params@(NoArgs'' i) = do
     withDbExHandler_ "unpw" . insertDbTblUnPw . UnPwRec s $ pass
     mkRndmVector >>= \v -> helper v |&| modifyState >=> \ms@(getPla i -> p) -> do
         initPlaLog i s
-        logPla "interpVerifyNewPW" i $ "new character logged in from " <> views currHostName T.pack p <> "."
+        logPla "finishNewChar" i $ "new character logged in from " <> views currHostName T.pack p <> "."
         handleLogin oldSing s True params
         notifyQuestion i ms
   where

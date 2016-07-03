@@ -200,7 +200,6 @@ regularCmdTuples =
     , ("se",         go "se",            True,  cmdDescGoSoutheast)
     , ("security",   security,           True,  "View or change your security Q&A.")
     , ("set",        setAction,          True,  "View or change settings.")
-    , ("smell",      smell,              True,  cmdDescSmell)
     , ("sw",         go "sw",            True,  cmdDescGoSouthwest)
     , ("take",       getAction,          True,  cmdDescGet)
     , ("tune",       tune,               True,  "Display a list of your telepathic connections, or tune in/out one or \
@@ -252,6 +251,7 @@ priorityAbbrevCmdTuples =
     , ("ready",      "r",   ready,      True,  cmdDescReady)
     , ("say",        "sa",  say,        True,  cmdDescSay CommonLang)
     , ("show",       "sh",  showAction, True,  cmdDescShow)
+    , ("smell",      "sm",  smell,      True,  cmdDescSmell)
     , ("stats",      "st",  stats,      True,  cmdDescStats)
     , ("stop",       "sto", stop,       True,  cmdDescStop)
     , ("taste",      "ta",  taste,      True,  cmdDescTaste)
@@ -333,7 +333,6 @@ npcRegularCmdTuples =
     , ("taste",      taste,          True,  cmdDescTaste)
     , ("s",          go "s",         True,  cmdDescGoSouth)
     , ("se",         go "se",        True,  cmdDescGoSoutheast)
-    , ("smell",      smell,          True,  cmdDescSmell)
     , ("sw",         go "sw",        True,  cmdDescGoSouthwest)
     , ("u",          go "u",         True,  cmdDescGoUp)
     , ("w",          go "w",         True,  cmdDescGoWest) ]
@@ -360,6 +359,7 @@ npcPriorityAbbrevCmdTuples =
     , ("ready",     "r",   ready,       True,  cmdDescReady)
     , ("say",       "sa",  say,         True,  cmdDescSay CommonLang)
     , ("show",      "sh",  showAction,  True,  cmdDescShow)
+    , ("smell",     "sm",  smell,       True,  cmdDescSmell)
     , ("stats",     "st",  stats,       True,  cmdDescStats)
     , ("stop",      "sto", stop,        True,  cmdDescStop)
     , ("unready",   "un",  unready,     True,  cmdDescUnready)
