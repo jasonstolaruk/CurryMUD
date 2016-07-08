@@ -6,9 +6,9 @@ module Mud.Util.List ( allValues
                      , countOccs
                      , dropEmpties
                      , dropSynonyms
-                     , fstList
                      , headLast
                      , headTail
+                     , listToTuple
                      , mkCountList
                      , nubSort
                      , select ) where
@@ -17,7 +17,9 @@ import Mud.Util.Misc
 import Mud.Util.Operators
 
 import Control.Arrow ((***))
-import Control.Lens (Lens', view)
+import Control.Lens (Lens', each, partsOf, view)
+import Control.Lens.Each (Each)
+import Control.Lens.Operators ((&), (.~))
 import Data.List (foldl', group, sort)
 import qualified Data.Set as S (fromList, toList)
 
@@ -49,17 +51,16 @@ dropSynonyms synonyms (x:xs) | x `elem` synonyms = x : filter (`notElem` synonym
                              | otherwise         = x : dropSynonyms synonyms xs
 
 
-fstList :: (a -> a) -> [a] -> [a]
-fstList _ []     = []
-fstList f (x:xs) = f x : xs
-
-
 headLast :: [a] -> (a, a)
 headLast = (,) <$> head <*> last
 
 
 headTail :: [a] -> (a, [a])
 headTail = (,) <$> head <*> tail
+
+
+listToTuple :: Each s t a a => [a] -> t
+listToTuple xs = undefined & partsOf each .~ xs
 
 
 mkCountList :: (Eq a) => [a] -> [Int]

@@ -259,6 +259,16 @@ promptRetryNewPwMatch oldSing s (WithArgs i mq cols _) =
 promptRetryNewPwMatch _ _ p = patternMatchFail "promptRetryNewPwMatch" [ showText p ]
 
 
+-- ==================================================
+
+
+-- showAttribs :: Id -> MsgQueue -> MudStack ()
+-- showAttribs _ _ = undefined
+
+
+-- ==================================================
+
+
 interpDiscover :: Sing -> Sing -> Text -> Interp
 interpDiscover oldSing s pass cn params@(WithArgs i mq _ as) =
     (>> finishNewChar oldSing s pass params { args = [] }) $ if ()!# cn
@@ -269,6 +279,9 @@ interpDiscover oldSing s pass cn params@(WithArgs i mq _ as) =
     mkDiscoverRec = (,) <$> liftIO mkTimestamp <*> (T.pack . getCurrHostName i <$> getState) >>= \(ts, host) ->
         return . DiscoverRec ts host . formatMsgArgs $ cn : as
 interpDiscover _ _ _ _ p = patternMatchFail "interpDiscover" [ showText p ]
+
+
+-- ==================================================
 
 
 finishNewChar :: Sing -> Sing -> Text -> ActionParams -> MudStack ()

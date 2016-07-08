@@ -8,6 +8,7 @@ import Mud.Cmds.Msgs.Misc
 import Mud.Data.Misc
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
+import Mud.Util.List
 import Mud.Util.Misc
 
 import Control.Arrow ((***))
@@ -90,6 +91,14 @@ getBaseAttrib = \case St -> getBaseSt
                       Ht -> getBaseHt
                       Ma -> getBaseMa
                       Ps -> getBasePs
+
+
+getBaseAttribs :: Id -> MudState -> (Int, Int, Int, Int, Int)
+getBaseAttribs i ms = listToTuple [ getBaseAttrib a i ms | a <- allValues :: [Attrib] ]
+
+
+getBaseAttribTuples :: Id -> MudState -> [(Attrib, Int)]
+getBaseAttribTuples i ms = [ (a, getBaseAttrib a i ms) | a <- allValues :: [Attrib] ]
 
 
 -----
@@ -537,12 +546,8 @@ getPps i ms = let (_, _, pair, _) = getPts i ms in pair
 
 
 getPts :: Id -> MudState -> ((Int, Int), (Int, Int), (Int, Int), (Int, Int))
-getPts i ms = let m   = getMob i ms
-                  hps = (m^.curHp, m^.maxHp)
-                  mps = (m^.curMp, m^.maxMp)
-                  pps = (m^.curPp, m^.maxPp)
-                  fps = (m^.curFp, m^.maxFp)
-              in (hps, mps, pps, fps)
+getPts i ms = let m = getMob i ms
+              in listToTuple [ (m^.curHp, m^.maxHp), (m^.curMp, m^.maxMp), (m^.curPp, m^.maxPp), (m^.curFp, m^.maxFp) ]
 
 
 -----

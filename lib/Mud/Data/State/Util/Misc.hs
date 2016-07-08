@@ -597,7 +597,7 @@ sortInv ms is = let (foldr helper dupIdentity -> (pcs, others)) = [ (i, getType 
   where
     helper (i, t) acc                  = let consTo lens = acc & lens %~ (i :)
                                          in t == PCType ? consTo _1 :? consTo _2
-    sortOthers                         = map (view _1) . sortBy nameThenSing . zipped
+    sortOthers                         = select _1 . sortBy nameThenSing . zipped
     nameThenSing (_, n, s) (_, n', s') = (n `compare` n') <> (s `compare` s')
     zipped others                      = [ (i, views entName fromJust e, e^.sing) | i <- others
                                                                                   , let e = getEnt i ms ]

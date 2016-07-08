@@ -157,7 +157,7 @@ data EffectSub = ArmEffectAC
                | EffectOther FunName deriving (Eq, Generic, Show)
 
 
-data Attrib = St | Dx | Ht | Ma | Ps deriving (Eq, Generic, Show)
+data Attrib = St | Dx | Ht | Ma | Ps deriving (Bounded, Enum, Eq, Generic, Show)
 
 
 data EffectVal = DefiniteVal Int
