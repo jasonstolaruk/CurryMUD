@@ -281,6 +281,12 @@ instance Pretty Cloth where
   pp Trousers = "trousers"
 
 
+instance Pretty DiscoverRec where
+  pp DiscoverRec { .. } = slashes [ dbTimestamp
+                                  , dbHost
+                                  , dbMsg ]
+
+
 instance Pretty Effect where
   pp (Effect effSub effVal secs effFeeling) = T.concat [ bracketQuote "durational"
                                                        , " "

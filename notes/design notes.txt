@@ -40,10 +40,6 @@ Experience points and levels. Leveling awards you skill points, which can be spe
 
 Attributes are fixed. They represent innate ability.
 
-Character generation can employ a "pick point" system similar to that of Hero's Quest. p.373-4
-
-Have a pool of points go towards attributes. And an entirely separate pool of points go towards initial skills?
-
 "Warning: don't have skills or attributes that affect how quickly characters learn skills. If you do, players will max them out at the first opportunity." p.367
 
 If a character's crafting skill increases on the basis of use, then players are likely to create many items solely so that their crafting skill will rise, leading to a severe over-production of goods. p.565

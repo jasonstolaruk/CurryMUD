@@ -60,7 +60,7 @@ import Data.Char (isDigit, isLower, isUpper)
 import Data.Either (rights)
 import Data.Function (on)
 import Data.Ix (inRange)
-import Data.List ((\\), delete, foldl', intercalate, intersperse, partition, sortBy)
+import Data.List ((\\), delete, foldl', intercalate, intersperse, nub, partition, sortBy)
 import Data.Maybe (fromJust, fromMaybe, isJust)
 import Data.Monoid ((<>), Any(..), Sum(..), getSum)
 import Data.Text (Text)
@@ -68,8 +68,8 @@ import Data.Time (FormatTime, TimeZone, UTCTime, defaultTimeLocale, diffUTCTime,
 import GHC.Conc (ThreadStatus(..), threadStatus)
 import GHC.Exts (sortWith)
 import Prelude hiding (exp, pi, recip)
-import qualified Data.IntMap.Lazy as IM (elems, filter, filterWithKey, keys, size, toList)
-import qualified Data.Map.Lazy as M (foldl, foldrWithKey, keys, size, toList)
+import qualified Data.IntMap.Lazy as IM (elems, filter, filterWithKey, keys, lookup, size, toList)
+import qualified Data.Map.Lazy as M (elems, foldl, foldrWithKey, keys, size, toList)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import qualified Data.Text.IO as T (putStrLn)
@@ -146,6 +146,7 @@ adminCmds =
     , mkAdminCmd "channel"    adminChan        True  "Display information about one or more telepathic channels."
     , mkAdminCmd "count"      adminCount       True  "Display or search a list of miscellaneous running totals."
     , mkAdminCmd "date"       adminDate        True  "Display the current system date."
+    , mkAdminCmd "discover"   adminDiscover    True  "Dump the discover database."
     , mkAdminCmd "examine"    adminExamine     True  "Display the properties of one or more IDs."
     , mkAdminCmd "experience" adminExp         True  "Dump the experience table."
     , mkAdminCmd "exself"     adminExamineSelf True  "Self-examination."
@@ -477,16 +478,18 @@ mkCountTxt = map (uncurry mappend . second commaShow) <$> helper
                , ("Vessels: ",      countType VesselType  )
                , ("Weapons: ",      countType WpnType     )
                , ("Writables: ",    countType WritableType)
-               , ("Typed things: ", ms^.typeTbl.to IM.size)
+               , ("Typed things: ",     ms^.typeTbl        .to IM.size)
                , ("Distinct foods: ",   ms^.distinctFoodTbl.to IM.size)
                , ("Distinct liquids: ", ms^.distinctLiqTbl .to IM.size)
-               , ("Wealth (gp): ",        countWealth)
-               , ("Players logged in: ",  length . getLoggedInPlaIds $ ms                  )
-               , ("Players logged out: ", countLoggedOutPlas                               )
-               , ("Admins logged in: ",   length . getLoggedInAdminIds $ ms                )
-               , ("Admins logged out: ",  length $ getAdminIds ms \\ getLoggedInAdminIds ms)
-               , ("Male players: ",    countMaleFemale Male  )
-               , ("Female players: ",  countMaleFemale Female)
+               , ("Wealth (gp): ",         countWealth)
+               , ("Players logged in: ",   length . getLoggedInPlaIds $ ms                  )
+               , ("Players logged out: ",  countLoggedOutPlas                               )
+               , ("Admins logged in: ",    length . getLoggedInAdminIds $ ms                )
+               , ("Admins logged out: ",   length $ getAdminIds ms \\ getLoggedInAdminIds ms)
+               , ("Unique hosts: ",        views hostTbl (length . nub . M.elems) ms        )
+               , ("Pick pts table size: ", views pickPtsTbl IM.size ms                      )
+               , ("Male PCs: ",        countMaleFemale Male  )
+               , ("Female PCs: ",      countMaleFemale Female)
                , ("Dwarves: ",         countRace Dwarf       )
                , ("Elves: ",           countRace Elf         )
                , ("Felinoids: ",       countRace Felinoid    )
@@ -501,10 +504,10 @@ mkCountTxt = map (uncurry mappend . second commaShow) <$> helper
                , ("Exp commands: ",    length expCmds        )
                , ("Admin commands: ",  length adminCmds      )
                , ("Debug commands: ",  length debugCmds      )
-               , ("Player help commands: ", noOfPlaHelpCmds    )
-               , ("Player help topics: ",   noOfPlaHelpTopics  )
-               , ("Admin help commands: ",  noOfAdminHelpCmds  )
-               , ("Admin help topics: ",    noOfAdminHelpTopics)
+               , ("Player help commands: ", noOfPlaHelpCmds             )
+               , ("Player help topics: ",   noOfPlaHelpTopics           )
+               , ("Admin help commands: ",  noOfAdminHelpCmds           )
+               , ("Admin help topics: ",    noOfAdminHelpTopics         )
                , ("Room teleport names: ",  ms^.rmTeleNameTbl.to IM.size)
                , ("Functions in the function table: ", ms^.funTbl           .to M.size)
                , ("Effect functions: ",                ms^.effectFunTbl     .to M.size)
@@ -518,11 +521,9 @@ mkCountTxt = map (uncurry mappend . second commaShow) <$> helper
       where
         handler :: IOException -> IO Int
         handler _ = return 0
-    filterThreads = filter f
-      where
-        f = \case ThreadRunning   -> True
-                  ThreadBlocked _ -> True
-                  _               -> False
+    filterThreads = filter $ \case ThreadRunning   -> True
+                                   ThreadBlocked _ -> True
+                                   _               -> False
 
 
 -----
@@ -533,6 +534,16 @@ adminDate (NoArgs' i mq) = do
     send mq . nlnl . T.pack . formatTime defaultTimeLocale "%A %B %d" =<< liftIO getZonedTime
     logPlaExec (prefixAdminCmd "date") i
 adminDate p = withoutArgs adminDate p
+
+
+-----
+
+
+adminDiscover :: ActionFun
+adminDiscover (NoArgs i mq cols) = (withDbExHandler "adminDiscover" . getDbTblRecs $ "discover") >>= \case
+  Just xs -> dumpDbTblHelper mq cols (xs :: [DiscoverRec]) >> logPlaExec (prefixAdminCmd "discover") i
+  Nothing -> dbError mq cols
+adminDiscover p = withoutArgs adminDiscover p
 
 
 -----
@@ -570,7 +581,7 @@ examineHelper ms targetId = let t = getType targetId ms in helper t $ case t of
   FoodType     -> [ examineEnt, examineObj,   examineFood ]
   NpcType      -> [ examineEnt, examineInv,   examineCoins, examineEqMap, examineMob, examineNpc ]
   ObjType      -> [ examineEnt, examineObj ]
-  PCType       -> [ examineEnt, examineInv,   examineCoins, examineEqMap, examineMob, examinePC, examinePla ]
+  PCType       -> [ examineEnt, examineInv,   examineCoins, examineEqMap, examineMob, examinePC, examinePla, examinePickPts ]
   RmType       -> [ examineInv, examineCoins, examineRm       ]
   VesselType   -> [ examineEnt, examineObj,   examineVessel   ]
   WpnType      -> [ examineEnt, examineObj,   examineWpn      ]
@@ -721,6 +732,10 @@ examinePC i ms = let p = getPC i ms in [ "Race: "         <> p^.race      .to pp
                                        , "Known names: "  <> p^.introduced.to (noneOnNull . commas)
                                        , "Links: "        <> p^.linked    .to (noneOnNull . commas)
                                        , "Skill points: " <> p^.skillPts  .to commaShow ]
+
+
+examinePickPts :: ExamineHelper
+examinePickPts i = pure . ("Pick pts: " <>) . views pickPtsTbl (maybe none commaShow . IM.lookup i)
 
 
 examinePla :: ExamineHelper

@@ -271,13 +271,14 @@ promptPickPts i mq = showAttribs i mq >> sendPrompt mq "> "
 showAttribs :: Id -> MsgQueue -> MudStack ()
 showAttribs i mq = getState >>= \ms -> multiSend mq . footer ms . map helper . getBaseAttribTuples i $ ms
   where
-    helper = \case
-      (St, x) -> nlPrefix $ colorWith abbrevColor "S" <> "trength  " <> showText x
-      (Dx, x) ->            colorWith abbrevColor "D" <> "exterity " <> showText x
-      (Ht, x) ->            colorWith abbrevColor "H" <> "ealth    " <> showText x
-      (Ma, x) ->            colorWith abbrevColor "M" <> "agic     " <> showText x
-      (Ps, x) ->            colorWith abbrevColor "P" <> "sionics  " <> showText x
-    footer ms = (++ rest)
+    helper = f . \case
+      (St, x) -> ('S', "trength ", x)
+      (Dx, x) -> ('D', "exterity", x)
+      (Ht, x) -> ('H', "ealth   ", x)
+      (Ma, x) -> ('M', "agic    ", x)
+      (Ps, x) -> ('P', "sionics ", x)
+    f (c, txt, x) = T.concat [ colorWith abbrevColor . T.singleton $ c, txt, " ", showText x ]
+    footer ms     = (++ rest)
       where
         rest = pure . nl $ showText (getPickPts i ms) <> " points remaining."
 
