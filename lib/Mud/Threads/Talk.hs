@@ -94,11 +94,11 @@ adHoc mq host = do
                        , _entSmell = Nothing
                        , _entFlags = zeroBits }
             m    = Mob { _sex           = sexy
-                       , _st            = 20
-                       , _dx            = 20
-                       , _ht            = 20
-                       , _ma            = 20
-                       , _ps            = 20
+                       , _st            = 10
+                       , _dx            = 10
+                       , _ht            = 10
+                       , _ma            = 10
+                       , _ps            = 10
                        , _maxHp         = 50, _curHp = 50
                        , _maxMp         = 50, _curMp = 50
                        , _maxPp         = 50, _curPp = 50

@@ -71,6 +71,7 @@ data MudState = MudState { _activeEffectsTbl  :: ActiveEffectsTbl
                          , _objTbl            :: ObjTbl
                          , _pausedEffectsTbl  :: PausedEffectsTbl
                          , _pcTbl             :: PCTbl
+                         , _pickPtsTbl        :: PickPtsTbl
                          , _plaLogTbl         :: PlaLogTbl
                          , _plaTbl            :: PlaTbl
                          , _rmActionFunTbl    :: RmActionFunTbl
@@ -110,6 +111,7 @@ type NpcTbl            = IM.IntMap Npc
 type ObjTbl            = IM.IntMap Obj
 type PausedEffectsTbl  = IM.IntMap [PausedEffect]
 type PCTbl             = IM.IntMap PC
+type PickPtsTbl        = IM.IntMap Int
 type PlaLogTbl         = IM.IntMap LogService
 type PlaTbl            = IM.IntMap Pla
 type RmActionFunTbl    = M.Map FunName RmActionFun

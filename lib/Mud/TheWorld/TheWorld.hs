@@ -80,6 +80,7 @@ initMudData shouldLog = do
                                  , _objTbl            = IM.empty
                                  , _pausedEffectsTbl  = IM.empty
                                  , _pcTbl             = IM.empty
+                                 , _pickPtsTbl        = IM.empty
                                  , _plaLogTbl         = IM.empty
                                  , _plaTbl            = IM.empty
                                  , _rmActionFunTbl    =  M.empty

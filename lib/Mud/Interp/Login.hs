@@ -246,11 +246,40 @@ interpVerifyNewPW :: Sing -> Sing -> Text -> Interp
 interpVerifyNewPW oldSing s pass cn params@(NoArgs i mq cols)
   | cn == pass = do
       send mq telnetShowInput
-      wrapSend mq cols pwWarningMsg
-      wrapSendPrompt mq cols "If you are a new player, could you please tell us how you found CurryMUD?"
-      setInterp i . Just . interpDiscover oldSing s $ pass
+      multiWrapSend mq cols $ nl pwWarningMsg : pickPtsIntroTxt
+      tweak $ pickPtsTbl.ind i .~ initPickPts
+      promptPickPts i mq
+      setInterp i . Just . interpPickPts oldSing s $ pass
   | otherwise = promptRetryNewPwMatch oldSing s params
 interpVerifyNewPW oldSing s _ _ params = promptRetryNewPwMatch oldSing s params
+
+
+pickPtsIntroTxt :: [Text]
+pickPtsIntroTxt = T.lines $ "Characters have 5 attributes, each measuring one's inate talent in a given area.\n\
+\10 (the minimum value) represents a staggering lack of talent, while 100 (the maximum value) represents near-supernatural talent. 50 represents an average degree of talent.\n\
+\You have a pool of " <> showText initPickPts <> " points to assign to your attributes as you wish.\n\
+\To add points to an attribute, type the first letter of the attribute name, immediately followed by + and the number of points to add. For example, to add 10 to your Strength, type " <> colorWith quoteColor "s+10" <> ".\n\
+\To subtract points, use - instead of +, as in " <> colorWith quoteColor "s-10" <> ".\n\
+\You can specify multiple addition/subtraction operations on a single line. Simply separate operations with a space, like so: " <> colorWith quoteColor "s-10 d+10 h+5" <> ".\n\
+\When you are finished assigning points, type " <> colorWith quoteColor "q" <> " to quit and move on."
+
+
+promptPickPts :: Id -> MsgQueue -> MudStack ()
+promptPickPts i mq = showAttribs i mq >> sendPrompt mq "> "
+
+
+showAttribs :: Id -> MsgQueue -> MudStack ()
+showAttribs i mq = getState >>= \ms -> multiSend mq . footer ms . map helper . getBaseAttribTuples i $ ms
+  where
+    helper = \case
+      (St, x) -> nlPrefix $ colorWith abbrevColor "S" <> "trength  " <> showText x
+      (Dx, x) ->            colorWith abbrevColor "D" <> "exterity " <> showText x
+      (Ht, x) ->            colorWith abbrevColor "H" <> "ealth    " <> showText x
+      (Ma, x) ->            colorWith abbrevColor "M" <> "agic     " <> showText x
+      (Ps, x) ->            colorWith abbrevColor "P" <> "sionics  " <> showText x
+    footer ms = (++ rest)
+      where
+        rest = pure . nl $ showText (getPickPts i ms) <> " points remaining."
 
 
 promptRetryNewPwMatch :: Sing -> Sing -> ActionParams -> MudStack ()
@@ -262,8 +291,12 @@ promptRetryNewPwMatch _ _ p = patternMatchFail "promptRetryNewPwMatch" [ showTex
 -- ==================================================
 
 
--- showAttribs :: Id -> MsgQueue -> MudStack ()
--- showAttribs _ _ = undefined
+interpPickPts :: Sing -> Sing -> Text -> Interp
+interpPickPts _       _ _    _ (NoArgs' i mq       ) = promptPickPts i mq
+interpPickPts oldSing s pass _ (Lower   i mq cols _) = do
+    wrapSendPrompt mq cols "If you are a new player, could you please tell us how you found CurryMUD?"
+    setInterp i . Just . interpDiscover oldSing s $ pass
+interpPickPts _ _ _ _ p = patternMatchFail "interpPickPts" [ showText p ]
 
 
 -- ==================================================
@@ -293,11 +326,12 @@ finishNewChar oldSing s pass params@(NoArgs'' i) = do
         handleLogin oldSing s True params
         notifyQuestion i ms
   where
-    helper v ms | ms' <- ms & invTbl.ind iWelcome   %~ (i `delete`)
-                            & mobTbl.ind i.rmId     .~ iCentral
-                            & mobTbl.ind i.interp   .~ Nothing
-                            & plaTbl.ind i.plaFlags .~ (setBit zeroBits . fromEnum $ IsTunedQuestion)
-                = dup $ ms' & invTbl.ind iCentral   %~ addToInv ms' (pure i)
+    helper v ms | ms' <- ms & pickPtsTbl.at  i          .~ Nothing
+                            & invTbl    .ind iWelcome   %~ (i `delete`)
+                            & mobTbl    .ind i.rmId     .~ iCentral
+                            & mobTbl    .ind i.interp   .~ Nothing
+                            & plaTbl    .ind i.plaFlags .~ (setBit zeroBits . fromEnum $ IsTunedQuestion)
+                = dup $ ms' & invTbl.ind iCentral %~ addToInv ms' (pure i)
                             & newChar i v
 finishNewChar _ _ _ p = patternMatchFail "finishNewChar" [ showText p ]
 

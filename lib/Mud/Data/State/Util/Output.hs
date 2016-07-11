@@ -18,6 +18,7 @@ module Mud.Data.State.Util.Output ( bcast
                                   , mkBcast
                                   , mkDfltPrompt
                                   , mkNTBcast
+                                  , multiSend
                                   , multiWrapSend
                                   , ok
                                   , parseDesig
@@ -196,6 +197,13 @@ mkBcast i = pure . (, pure i)
 
 mkNTBcast :: Id -> Text -> [ClassifiedBcast]
 mkNTBcast i = pure . NonTargetBcast . (, pure i)
+
+
+-----
+
+
+multiSend :: MsgQueue -> [Text] -> MudStack ()
+multiSend mq = send mq . T.unlines
 
 
 -----

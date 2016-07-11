@@ -94,11 +94,11 @@ getBaseAttrib = \case St -> getBaseSt
 
 
 getBaseAttribs :: Id -> MudState -> (Int, Int, Int, Int, Int)
-getBaseAttribs i ms = listToTuple [ getBaseAttrib a i ms | a <- allValues :: [Attrib] ]
+getBaseAttribs i ms = listToTuple [ getBaseAttrib a i ms | a <- allValues ]
 
 
 getBaseAttribTuples :: Id -> MudState -> [(Attrib, Int)]
-getBaseAttribTuples i ms = [ (a, getBaseAttrib a i ms) | a <- allValues :: [Attrib] ]
+getBaseAttribTuples i ms = [ (a, getBaseAttrib a i ms) | a <- allValues ]
 
 
 -----
@@ -533,6 +533,13 @@ getPausedEffects i = view (pausedEffectsTbl.ind i)
 
 getPC :: Id -> MudState -> PC
 getPC i = view (pcTbl.ind i)
+
+
+-----
+
+
+getPickPts :: Id -> MudState -> Int
+getPickPts i = view (pickPtsTbl.ind i)
 
 
 -----
