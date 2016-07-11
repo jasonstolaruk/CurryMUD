@@ -37,6 +37,7 @@ module Mud.Data.Misc ( Action(..)
                      , InInvEqRm(..)
                      , LastArgIsTargetBindings(..)
                      , LoggedInOrOut(..)
+                     , NewCharBundle(..)
                      , pp
                      , Pretty
                      , PutOrRem(..)
@@ -638,6 +639,21 @@ instance Ord Cmd where
 -----
 
 
+data Desig = StdDesig    { desigEntSing   :: Maybe Text
+                         , desigShouldCap :: ShouldCap
+                         , desigEntName   :: Text
+                         , desigId        :: Id
+                         , desigIds       :: Inv }
+           | NonStdDesig { dEntSing       :: Text
+                         , dDesc          :: Text } deriving (Eq, Show)
+
+
+data ShouldCap = DoCap | Don'tCap deriving (Eq, Read, Show)
+
+
+-----
+
+
 data DrinkBundle = DrinkBundle { drinkerId       :: Id
                                , drinkerMq       :: MsgQueue
                                , drinkerCols     :: Cols
@@ -734,16 +750,9 @@ data LoggedInOrOut = LoggedIn | LoggedOut deriving Eq
 -----
 
 
-data Desig = StdDesig    { desigEntSing   :: Maybe Text
-                         , desigShouldCap :: ShouldCap
-                         , desigEntName   :: Text
-                         , desigId        :: Id
-                         , desigIds       :: Inv }
-           | NonStdDesig { dEntSing       :: Text
-                         , dDesc          :: Text } deriving (Eq, Show)
-
-
-data ShouldCap = DoCap | Don'tCap deriving (Eq, Read, Show)
+data NewCharBundle = NewCharBundle { ncbOldSing :: Sing
+                                   , ncbSing    :: Sing
+                                   , ncbPW      :: Text }
 
 
 -----

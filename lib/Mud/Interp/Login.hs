@@ -130,7 +130,7 @@ zBackDoor times s params@ActionParams { .. } = setSingIfNotTaken times s params 
   where
     helper oldSing = do
       wrapSend plaMsgQueue plaCols "You quietly slip through the back door..."
-      finishNewChar oldSing s "Aoeu1" params
+      finishNewChar (NewCharBundle oldSing s "Aoeu1") params
 
 
 -----
@@ -198,7 +198,7 @@ interpConfirmName times s cn params@(NoArgs i mq cols) = case yesNoHelper cn of
         sendPrompt mq . T.concat $ [ telnetHideInput
                                    , nlPrefix . multiWrap cols . pwMsg $ "Please choose a password for " <> s <> "."
                                    , "New password:" ]
-        setInterp i . Just . interpNewPW oldSing $ s
+        setInterp i . Just . interpNewPW . NewCharBundle oldSing s $ ""
 interpConfirmName _ _ _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNo plaMsgQueue plaCols
 
 
@@ -218,18 +218,18 @@ setSingIfNotTaken _ _ p = patternMatchFail "setSingIfNotTaken" [ showText p ]
 -- ==================================================
 
 
-interpNewPW :: Sing -> Sing -> Interp
-interpNewPW oldSing s cn (NoArgs i mq cols)
+interpNewPW :: NewCharBundle -> Interp
+interpNewPW ncb cn (NoArgs i mq cols)
   | not . inRange (minNameLen, maxNameLen) . T.length $ cn = promptRetryNewPW mq cols sorryInterpNewPwLen
   | helper isUpper                                         = promptRetryNewPW mq cols sorryInterpNewPwUpper
   | helper isLower                                         = promptRetryNewPW mq cols sorryInterpNewPwLower
   | helper isDigit                                         = promptRetryNewPW mq cols sorryInterpNewPwDigit
   | otherwise = do
       sendPrompt mq "Verify password:"
-      setInterp i . Just . interpVerifyNewPW oldSing s $ cn
+      setInterp i . Just . interpVerifyNewPW $ ncb { ncbPW = cn }
   where
     helper f = ()# T.filter f cn
-interpNewPW _ _ _ ActionParams { plaMsgQueue, plaCols } = promptRetryNewPW plaMsgQueue plaCols sorryInterpNewPwExcessArgs
+interpNewPW _ _ ActionParams { plaMsgQueue, plaCols } = promptRetryNewPW plaMsgQueue plaCols sorryInterpNewPwExcessArgs
 
 
 promptRetryNewPW :: MsgQueue -> Cols -> Text -> MudStack ()
@@ -242,16 +242,16 @@ promptRetryNewPW mq cols msg = let t = "Let's try this again. New password:"
 -- ==================================================
 
 
-interpVerifyNewPW :: Sing -> Sing -> Text -> Interp
-interpVerifyNewPW oldSing s pass cn params@(NoArgs i mq cols)
+interpVerifyNewPW :: NewCharBundle -> Interp
+interpVerifyNewPW ncb@(NewCharBundle _ _ pass) cn params@(NoArgs i mq cols)
   | cn == pass = do
       send mq telnetShowInput
       multiWrapSend mq cols $ nl pwWarningMsg : pickPtsIntroTxt
       tweak $ pickPtsTbl.ind i .~ initPickPts
       promptPickPts i mq
-      setInterp i . Just . interpPickPts oldSing s $ pass
-  | otherwise = promptRetryNewPwMatch oldSing s params
-interpVerifyNewPW oldSing s _ _ params = promptRetryNewPwMatch oldSing s params
+      setInterp i . Just . interpPickPts $ ncb
+  | otherwise = promptRetryNewPwMatch ncb params
+interpVerifyNewPW ncb _ params = promptRetryNewPwMatch ncb params
 
 
 pickPtsIntroTxt :: [Text]
@@ -283,47 +283,48 @@ showAttribs i mq = getState >>= \ms -> multiSend mq . footer ms . map helper . g
         rest = pure . nl $ showText (getPickPts i ms) <> " points remaining."
 
 
-promptRetryNewPwMatch :: Sing -> Sing -> ActionParams -> MudStack ()
-promptRetryNewPwMatch oldSing s (WithArgs i mq cols _) =
-    promptRetryNewPW mq cols sorryInterpNewPwMatch >> setInterp i (Just . interpNewPW oldSing $ s)
-promptRetryNewPwMatch _ _ p = patternMatchFail "promptRetryNewPwMatch" [ showText p ]
+promptRetryNewPwMatch :: NewCharBundle -> ActionParams -> MudStack ()
+promptRetryNewPwMatch ncb (WithArgs i mq cols _) =
+    promptRetryNewPW mq cols sorryInterpNewPwMatch >> setInterp i (Just . interpNewPW $ ncb)
+promptRetryNewPwMatch _ p = patternMatchFail "promptRetryNewPwMatch" [ showText p ]
 
 
 -- ==================================================
 
 
-interpPickPts :: Sing -> Sing -> Text -> Interp
-interpPickPts oldSing s pass _ (Lower i mq cols _) = do
+interpPickPts :: NewCharBundle -> Interp
+interpPickPts _   "" (NoArgs' i mq       ) = promptPickPts i mq
+interpPickPts ncb _  (Lower   i mq cols _) = do
     wrapSendPrompt mq cols "If you are a new player, could you please tell us how you found CurryMUD?"
-    setInterp i . Just . interpDiscover oldSing s $ pass
-interpPickPts _ _ _ _ p = patternMatchFail "interpPickPts" [ showText p ]
+    setInterp i . Just . interpDiscover $ ncb
+interpPickPts _ _ p = patternMatchFail "interpPickPts" [ showText p ]
 
 
 -- ==================================================
 
 
-interpDiscover :: Sing -> Sing -> Text -> Interp
-interpDiscover oldSing s pass cn params@(WithArgs i mq _ as) =
-    (>> finishNewChar oldSing s pass params { args = [] }) $ if ()!# cn
+interpDiscover :: NewCharBundle -> Interp
+interpDiscover ncb cn params@(WithArgs i mq _ as) =
+    (>> finishNewChar ncb params { args = [] }) $ if ()!# cn
       then do { send mq . nlnl $ "Thank you."
               ; withDbExHandler_ "interpDiscover" . insertDbTblDiscover =<< mkDiscoverRec }
       else blankLine mq
   where
     mkDiscoverRec = (,) <$> liftIO mkTimestamp <*> (T.pack . getCurrHostName i <$> getState) >>= \(ts, host) ->
         return . DiscoverRec ts host . formatMsgArgs $ cn : as
-interpDiscover _ _ _ _ p = patternMatchFail "interpDiscover" [ showText p ]
+interpDiscover _ _ p = patternMatchFail "interpDiscover" [ showText p ]
 
 
 -- ==================================================
 
 
-finishNewChar :: Sing -> Sing -> Text -> ActionParams -> MudStack ()
-finishNewChar oldSing s pass params@(NoArgs'' i) = do
+finishNewChar :: NewCharBundle -> ActionParams -> MudStack ()
+finishNewChar ncb@(NewCharBundle _ s pass) params@(NoArgs'' i) = do
     withDbExHandler_ "unpw" . insertDbTblUnPw . UnPwRec s $ pass
     mkRndmVector >>= \v -> helper v |&| modifyState >=> \ms@(getPla i -> p) -> do
         initPlaLog i s
         logPla "finishNewChar" i $ "new character logged in from " <> views currHostName T.pack p <> "."
-        handleLogin oldSing s True params
+        handleLogin ncb True params
         notifyQuestion i ms
   where
     helper v ms | ms' <- ms & pickPtsTbl.at  i          .~ Nothing
@@ -333,7 +334,7 @@ finishNewChar oldSing s pass params@(NoArgs'' i) = do
                             & plaTbl    .ind i.plaFlags .~ (setBit zeroBits . fromEnum $ IsTunedQuestion)
                 = dup $ ms' & invTbl.ind iCentral %~ addToInv ms' (pure i)
                             & newChar i v
-finishNewChar _ _ _ p = patternMatchFail "finishNewChar" [ showText p ]
+finishNewChar _ p = patternMatchFail "finishNewChar" [ showText p ]
 
 
 notifyQuestion :: Id -> MudState -> MudStack ()
@@ -469,7 +470,7 @@ interpPW times targetSing targetId targetPla cn params@(WithArgs i mq cols as) =
                                                                  , "." ]
                initPlaLog i targetSing
                logPla "interpPW handleNotBanned" i $ "logged in from " <> T.pack (getCurrHostName i ms) <> "."
-               handleLogin oldSing targetSing False params { args = [] }
+               handleLogin (NewCharBundle oldSing targetSing "") False params { args = [] }
 interpPW _ _ _ _ _ p = patternMatchFail "interpPW" [ showText p ]
 
 
@@ -512,8 +513,8 @@ logIn newId ms newHost newTime originId = peepNewId . movePC $ adoptNewId
         in ms' & plaTbl %~ flip (foldr (\peeperId -> ind peeperId.peeping %~ replaceId)) peeperIds
 
 
-handleLogin :: Sing -> Sing -> Bool -> ActionParams -> MudStack ()
-handleLogin oldSing s isNew params@ActionParams { .. } = do
+handleLogin :: NewCharBundle -> Bool -> ActionParams -> MudStack ()
+handleLogin (NewCharBundle oldSing s _) isNew params@ActionParams { .. } = do
     greet
     showMotd plaMsgQueue plaCols
     (ms, p) <- showRetainedMsgs
