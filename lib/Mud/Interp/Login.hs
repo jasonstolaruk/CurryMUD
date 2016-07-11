@@ -293,8 +293,7 @@ promptRetryNewPwMatch _ _ p = patternMatchFail "promptRetryNewPwMatch" [ showTex
 
 
 interpPickPts :: Sing -> Sing -> Text -> Interp
-interpPickPts _       _ _    _ (NoArgs' i mq       ) = promptPickPts i mq
-interpPickPts oldSing s pass _ (Lower   i mq cols _) = do
+interpPickPts oldSing s pass _ (Lower i mq cols _) = do
     wrapSendPrompt mq cols "If you are a new player, could you please tell us how you found CurryMUD?"
     setInterp i . Just . interpDiscover oldSing s $ pass
 interpPickPts _ _ _ _ p = patternMatchFail "interpPickPts" [ showText p ]
