@@ -22,6 +22,7 @@ CurryMUD will have the following features:
 ## What I have so far
 
 * Incoming connections are accepted; players are prompted for their character name and password.
+* When creating a new character, players are prompted to assign points to their attributes.
 * The names of commands, as well as the names of the targets they act upon, may be abbreviated.
 * Commands have a consistent structure and a unique syntax for indicating target locations and quantities.
 * About 80 player commands and 45 administrator commands.

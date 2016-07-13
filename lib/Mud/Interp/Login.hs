@@ -302,7 +302,7 @@ interpPickPts ncb cn (Lower   i mq cols as) = getState >>= \ms -> let pts = getP
         wrapSendPrompt mq cols "If you are a new player, could you please tell us how you found CurryMUD?"
         setInterp i . Just . interpDiscover $ ncb
     else wrapSend mq cols sorryInterpPickPtsQuit >> sendPrompt mq ">"
-  | otherwise -> helper |&| modifyState >=> \msgs -> multiWrapSend mq cols msgs
+  | otherwise -> helper |&| modifyState >=> \msgs -> multiWrapSend mq cols msgs >> promptPickPts i mq
   where
     helper ms = foldl' assignPts (ms, []) $ cn : as
     assignPts a@(ms, msgs) arg
@@ -323,7 +323,6 @@ interpPickPts ncb cn (Lower   i mq cols as) = getState >>= \ms -> let pts = getP
                                              | otherwise -> undefined
                                          _  -> patternMatchFail "interpPickPts assignPts" [ T.singleton op ]
                              _              -> sorry
-
       where
         sorry       = sorryHelper $ "I don't understand " <> dblQuote arg <> "."
         sorryHelper = (ms, ) . (msgs <>) . pure
