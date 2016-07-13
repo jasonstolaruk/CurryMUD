@@ -261,7 +261,7 @@ pickPtsIntroTxt = T.lines $ "Next we'll assign points to your attributes.\n\
 \You have a pool of " <> showText initPickPts <> " points to assign to your attributes as you wish.\n\
 \To add points to an attribute, type the first letter of the attribute name, immediately followed by + and the number of points to add. For example, to add 10 to your Strength, type " <> colorWith quoteColor "s+10" <> ".\n\
 \To subtract points, use - instead of +, as in " <> colorWith quoteColor "s-10" <> ".\n\
-\You can specify multiple addition/subtraction operations on a single line. Simply separate operations with a space, like so: " <> colorWith quoteColor "s-10 d+10 h+5" <> ".\n\
+\You can specify multiple additions/subtractions on a single line. Simply separate them with a spaces, like so: " <> colorWith quoteColor "s-10 d+10 h+5" <> ".\n\
 \When you are finished assigning points, type " <> colorWith quoteColor "q" <> " to quit and move on."
 
 
@@ -294,8 +294,8 @@ promptRetryNewPwMatch _ p = patternMatchFail "promptRetryNewPwMatch" [ showText 
 
 
 interpPickPts :: NewCharBundle -> Interp
-interpPickPts _   "" (NoArgs' i mq        ) = promptPickPts i mq
-interpPickPts ncb cn (Lower   i mq cols as) = getState >>= \ms ->
+interpPickPts _   "" (NoArgs' i mq       ) = promptPickPts i mq
+interpPickPts ncb cn (Lower   i mq cols _) = getState >>= \ms ->
     let pts = getPickPts i ms
     in if cn `T.isPrefixOf` "quit"
       then if pts == 0

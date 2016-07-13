@@ -163,7 +163,6 @@ regularCmds :: [Cmd]
 regularCmds = map (uncurry4 mkRegularCmd) regularCmdTuples
 
 
--- TODO: There are 5 pla cmds without help?
 regularCmdTuples :: [(CmdFullName, ActionFun, Bool, CmdDesc)]
 regularCmdTuples =
     [ ("?",          plaDispCmdList,     True,  cmdDescDispCmdList)
