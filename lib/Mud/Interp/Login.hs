@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
-{-# LANGUAGE LambdaCase, MonadComprehensions, MultiWayIf, NamedFieldPuns, OverloadedStrings, PatternSynonyms, RecordWildCards, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, MonadComprehensions, MultiWayIf, NamedFieldPuns, OverloadedStrings, PatternSynonyms, RecordWildCards, TupleSections, ViewPatterns #-}
 
 module Mud.Interp.Login (interpName) where
 
@@ -29,7 +29,7 @@ import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
 import Mud.TopLvlDefs.Telnet
-import Mud.Util.List
+import Mud.Util.List hiding (headTail)
 import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Operators
 import Mud.Util.Quoting
@@ -43,7 +43,7 @@ import Control.Concurrent (threadDelay)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception.Lifted (try)
-import Control.Lens (at, both, views)
+import Control.Lens (ASetter, at, both, views)
 import Control.Lens.Operators ((%~), (&), (+~), (-~), (.~), (^.))
 import Control.Monad ((>=>), unless, when)
 import Control.Monad.IO.Class (liftIO)
@@ -52,7 +52,7 @@ import Crypto.BCrypt (validatePassword)
 import Data.Bits (setBit, zeroBits)
 import Data.Char (isDigit, isLower, isUpper)
 import Data.Ix (inRange)
-import Data.List (delete, intersperse, partition)
+import Data.List (delete, foldl', intersperse, partition)
 import Data.Maybe (fromJust)
 import Data.Monoid ((<>), Any(..))
 import Data.Text (Text)
@@ -266,7 +266,7 @@ pickPtsIntroTxt = T.lines $ "Next we'll assign points to your attributes.\n\
 
 
 promptPickPts :: Id -> MsgQueue -> MudStack ()
-promptPickPts i mq = showAttribs i mq >> sendPrompt mq "> "
+promptPickPts i mq = showAttribs i mq >> sendPrompt mq ">"
 
 
 showAttribs :: Id -> MsgQueue -> MudStack ()
@@ -294,21 +294,49 @@ promptRetryNewPwMatch _ p = patternMatchFail "promptRetryNewPwMatch" [ showText 
 
 
 interpPickPts :: NewCharBundle -> Interp
-interpPickPts _   "" (NoArgs' i mq       ) = promptPickPts i mq
-interpPickPts ncb cn (Lower   i mq cols _) = getState >>= \ms ->
-    let pts = getPickPts i ms
-    in if cn `T.isPrefixOf` "quit"
-      then if pts == 0
-        then do
-            blankLine mq
-            wrapSendPrompt mq cols "If you are a new player, could you please tell us how you found CurryMUD?"
-            setInterp i . Just . interpDiscover $ ncb
-        else wrapSend mq cols sorryInterpPickPtsQuit >> sendPrompt mq "> "
-      else do -- TODO: Assign pts.
-          blankLine mq
-          wrapSendPrompt mq cols "If you are a new player, could you please tell us how you found CurryMUD?"
-          setInterp i . Just . interpDiscover $ ncb
+interpPickPts _   "" (NoArgs' i mq        ) = promptPickPts i mq
+interpPickPts ncb cn (Lower   i mq cols as) = getState >>= \ms -> let pts = getPickPts i ms in if
+  | cn `T.isPrefixOf` "quit" -> if pts == 0
+    then do
+        blankLine mq
+        wrapSendPrompt mq cols "If you are a new player, could you please tell us how you found CurryMUD?"
+        setInterp i . Just . interpDiscover $ ncb
+    else wrapSend mq cols sorryInterpPickPtsQuit >> sendPrompt mq ">"
+  | otherwise -> helper |&| modifyState >=> \msgs -> multiWrapSend mq cols msgs
+  where
+    helper ms = foldl' assignPts (ms, []) $ cn : as
+    assignPts a@(ms, msgs) arg
+      | T.length arg < 3                                    = sorry
+      | op <- T.head . T.tail $ arg, op /= '+' && op /= '-' = sorry
+      | otherwise = let (c,  rest) = headTail arg
+                        (op, amt ) = headTail rest
+                    in if c `notElem` ("sdhmp" :: String)
+                      then sorry
+                      else let (attribTxt, x, _) = procAttribChar i ms c
+                           in case reads . T.unpack $ amt :: [(Int, String)] of
+                             [(y, "")] | y < 0     -> sorryHelper sorryWtf
+                                       | y == 0    -> a
+                                       | otherwise -> case op of
+                                         '+' | x == 100  -> sorryHelper . sorryInterpPickPtsMax $ attribTxt
+                                             | otherwise -> undefined
+                                         '-' | x == 10   -> sorryHelper . sorryInterpPickPtsMin $ attribTxt
+                                             | otherwise -> undefined
+                                         _  -> patternMatchFail "interpPickPts assignPts" [ T.singleton op ]
+                             _              -> sorry
+
+      where
+        sorry       = sorryHelper $ "I don't understand " <> dblQuote arg <> "."
+        sorryHelper = (ms, ) . (msgs <>) . pure
 interpPickPts _ _ p = patternMatchFail "interpPickPts" [ showText p ]
+
+
+procAttribChar :: Id -> MudState -> Char -> (Text, Int, ASetter Mob Mob Int Int)
+procAttribChar i ms = \case 's' -> ("Strength",  getBaseSt i ms, st)
+                            'd' -> ("Dexterity", getBaseDx i ms, dx)
+                            'h' -> ("Health",    getBaseHt i ms, ht)
+                            'm' -> ("Magic",     getBaseMa i ms, ma)
+                            'p' -> ("Psionics",  getBasePs i ms, ps)
+                            c   -> patternMatchFail "procAttribChar" [ T.singleton c ]
 
 
 -- ==================================================
