@@ -222,6 +222,22 @@ instance Pretty ActType where
   pp Moving    = "moving"
 
 
+instance Pretty AlertExecRec where
+  pp AlertExecRec { .. } = slashes [ dbTimestamp
+                                   , dbName
+                                   , dbCmdName
+                                   , dbTarget
+                                   , dbArgs ]
+
+
+instance Pretty AlertMsgRec where
+  pp AlertMsgRec { .. } = slashes [ dbTimestamp
+                                  , dbName
+                                  , dbCmdName
+                                  , dbTrigger
+                                  , dbMsg ]
+
+
 instance Pretty AOrThe where
   pp A   = "a"
   pp The = "the"

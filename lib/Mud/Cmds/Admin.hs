@@ -65,6 +65,7 @@ import Data.Maybe (fromJust, fromMaybe, isJust)
 import Data.Monoid ((<>), Any(..), Sum(..), getSum)
 import Data.Text (Text)
 import Data.Time (FormatTime, TimeZone, UTCTime, defaultTimeLocale, diffUTCTime, formatTime, getCurrentTime, getCurrentTimeZone, getZonedTime, utcToLocalTime)
+import Database.SQLite.Simple (FromRow)
 import GHC.Conc (ThreadStatus(..), threadStatus)
 import GHC.Exts (sortWith)
 import Prelude hiding (exp, pi, recip)
@@ -137,6 +138,8 @@ adminCmds :: [Cmd]
 adminCmds =
     [ mkAdminCmd "?"          adminDispCmdList True  cmdDescDispCmdList
     , mkAdminCmd "admin"      adminAdmin       True  ("Send a message on the admin channel " <> plusRelatedMsg)
+    , mkAdminCmd "alertexec"  adminAlertExec   True  "Dump the alert exec database."
+    , mkAdminCmd "alertmsg"   adminAlertMsg    True  "Dump the alert msg database."
     , mkAdminCmd "announce"   adminAnnounce    True  "Send a message to all players."
     , mkAdminCmd "as"         adminAs          False "Execute a command as someone else."
     , mkAdminCmd "banhost"    adminBanHost     True  "Dump the banned hostname database, or ban/unban a host."
@@ -251,6 +254,51 @@ adminAdmin p = patternMatchFail "adminAdmin" [ showText p ]
 -----
 
 
+adminAlertExec :: ActionFun
+adminAlertExec p@ActionParams { plaMsgQueue, plaCols } = dumpCmdHelper "alert_exec" f "alertexec" p
+  where
+    f :: [AlertExecRec] -> MudStack ()
+    f = dumpDbTblHelper plaMsgQueue plaCols
+
+
+dumpCmdHelper :: (FromRow a) => Text -> ([a] -> MudStack ()) -> CmdName -> ActionFun
+dumpCmdHelper tblName f cn (NoArgs i mq cols) = (withDbExHandler "dumpCmdHelper" . getDbTblRecs $ tblName) >>= \case
+  Just xs -> f xs >> logPlaExec (prefixAdminCmd cn) i
+  Nothing -> dbError mq cols
+dumpCmdHelper tblName f cn p = withoutArgs (dumpCmdHelper tblName f cn) p
+
+
+dumpDbTblHelper :: (Pretty a) => MsgQueue -> Cols -> [a] -> MudStack ()
+dumpDbTblHelper mq cols [] = wrapSend mq cols dbEmptyMsg
+dumpDbTblHelper mq cols xs = multiWrapSend mq cols . map pp $ xs
+
+
+-----
+
+
+adminAlertMsg :: ActionFun
+adminAlertMsg p@ActionParams { plaMsgQueue, plaCols } = dumpCmdHelper "alert_msg" f "alertmsg" p
+  where
+    f :: [AlertMsgRec] -> MudStack ()
+    f = dumpDbTblHelper plaMsgQueue plaCols
+
+
+-----
+
+
+adminAnnounce :: ActionFun
+adminAnnounce p@AdviseNoArgs  = advise p [ prefixAdminCmd "announce" ] adviceAAnnounceNoArgs
+adminAnnounce (Msg' i mq msg) = getState >>= \ms -> let s = getSing i ms in do
+    ok mq
+    massSend . colorWith announceColor $ msg
+    logPla    "adminAnnounce" i $       "announced "  <> dblQuote msg
+    logNotice "adminAnnounce"   $ s <> " announced, " <> dblQuote msg
+adminAnnounce p = patternMatchFail "adminAnnounce" [ showText p ]
+
+
+-----
+
+
 adminAs :: ActionFun
 adminAs p@(NoArgs' i mq    ) = advise p [ prefixAdminCmd "as" ] adviceAAsNoArgs    >> sendDfltPrompt mq i
 adminAs p@(OneArg  i mq _ a) = advise p [ prefixAdminCmd "as" ] (adviceAAsNoCmd a) >> sendDfltPrompt mq i
@@ -293,19 +341,6 @@ adminAs p = patternMatchFail "adminAs" [ showText p ]
 -----
 
 
-adminAnnounce :: ActionFun
-adminAnnounce p@AdviseNoArgs  = advise p [ prefixAdminCmd "announce" ] adviceAAnnounceNoArgs
-adminAnnounce (Msg' i mq msg) = getState >>= \ms -> let s = getSing i ms in do
-    ok mq
-    massSend . colorWith announceColor $ msg
-    logPla    "adminAnnounce" i $       "announced "  <> dblQuote msg
-    logNotice "adminAnnounce"   $ s <> " announced, " <> dblQuote msg
-adminAnnounce p = patternMatchFail "adminAnnounce" [ showText p ]
-
-
------
-
-
 adminBanHost :: ActionFun
 adminBanHost (NoArgs i mq cols) = (withDbExHandler "adminBanHost" . getDbTblRecs $ "ban_host") >>= \case
   Just xs -> dumpDbTblHelper mq cols (xs :: [BanHostRec]) >> logPlaExecArgs (prefixAdminCmd "banhost") [] i
@@ -319,11 +354,6 @@ adminBanHost (MsgWithTarget i mq cols (uncapitalize -> target) msg) = getState >
           withDbExHandler_ "adminBanHost" . insertDbTblBanHost $ banHost
           notifyBan i mq cols (getSing i ms) target newStatus banHost
 adminBanHost p = patternMatchFail "adminBanHost" [ showText p ]
-
-
-dumpDbTblHelper :: (Pretty a) => MsgQueue -> Cols -> [a] -> MudStack ()
-dumpDbTblHelper mq cols [] = wrapSend mq cols dbEmptyMsg
-dumpDbTblHelper mq cols xs = multiWrapSend mq cols . map pp $ xs
 
 
 notifyBan :: (Pretty a) => Id -> MsgQueue -> Cols -> Sing -> Text -> Bool -> a -> MudStack ()
@@ -398,10 +428,10 @@ adminBoot p = patternMatchFail "adminBoot" [ showText p ]
 
 
 adminBug :: ActionFun
-adminBug (NoArgs i mq cols) = (withDbExHandler "adminBug" . getDbTblRecs $ "bug") >>= \case
-  Just xs -> dumpDbTblHelper mq cols (xs :: [BugRec]) >> logPlaExec (prefixAdminCmd "bug") i
-  Nothing -> dbError mq cols
-adminBug p = withoutArgs adminBug p
+adminBug p@ActionParams { plaMsgQueue, plaCols } = dumpCmdHelper "bug" f "bug" p
+  where
+    f :: [BugRec] -> MudStack ()
+    f = dumpDbTblHelper plaMsgQueue plaCols
 
 
 -----
@@ -540,10 +570,10 @@ adminDate p = withoutArgs adminDate p
 
 
 adminDiscover :: ActionFun
-adminDiscover (NoArgs i mq cols) = (withDbExHandler "adminDiscover" . getDbTblRecs $ "discover") >>= \case
-  Just xs -> dumpDbTblHelper mq cols (xs :: [DiscoverRec]) >> logPlaExec (prefixAdminCmd "discover") i
-  Nothing -> dbError mq cols
-adminDiscover p = withoutArgs adminDiscover p
+adminDiscover p@ActionParams { plaMsgQueue, plaCols } = dumpCmdHelper "discover" f "discover" p
+  where
+    f :: [DiscoverRec] -> MudStack ()
+    f = dumpDbTblHelper plaMsgQueue plaCols
 
 
 -----
@@ -1158,10 +1188,10 @@ adminPrint p = patternMatchFail "adminPrint" [ showText p ]
 
 
 adminProfanity :: ActionFun
-adminProfanity (NoArgs i mq cols) = (withDbExHandler "adminProfanity" . getDbTblRecs $ "profanity") >>= \case
-  Just xs -> dumpDbTblHelper mq cols (xs :: [ProfRec]) >> logPlaExec (prefixAdminCmd "profanity") i
-  Nothing -> dbError mq cols
-adminProfanity p = withoutArgs adminProfanity p
+adminProfanity p@ActionParams { plaMsgQueue, plaCols } = dumpCmdHelper "profanity" f "profanity" p
+  where
+    f :: [ProfRec] -> MudStack ()
+    f = dumpDbTblHelper plaMsgQueue plaCols
 
 
 -----
@@ -1788,10 +1818,10 @@ adminTime p = withoutArgs adminTime p
 
 
 adminTypo :: ActionFun
-adminTypo (NoArgs i mq cols) = (withDbExHandler "adminTypo" . getDbTblRecs $ "typo") >>= \case
-  Just xs -> dumpDbTblHelper mq cols (xs :: [TypoRec]) >> logPlaExec (prefixAdminCmd "typo") i
-  Nothing -> dbError mq cols
-adminTypo p = withoutArgs adminTypo p
+adminTypo p@ActionParams { plaMsgQueue, plaCols } = dumpCmdHelper "typo" f "typo" p
+  where
+    f :: [TypoRec] -> MudStack ()
+    f = dumpDbTblHelper plaMsgQueue plaCols
 
 
 -----
