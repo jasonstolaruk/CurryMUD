@@ -255,7 +255,8 @@ interpVerifyNewPW ncb _ params = promptRetryNewPwMatch ncb params
 
 
 pickPtsIntroTxt :: [Text]
-pickPtsIntroTxt = T.lines $ "Characters have 5 attributes, each measuring one's inate talent in a given area.\n\
+pickPtsIntroTxt = T.lines $ "Next we'll assign points to your attributes.\n\
+\Characters have 5 attributes, each measuring one's inate talent in a given area.\n\
 \10 (the minimum value) represents a staggering lack of talent, while 100 (the maximum value) represents near-supernatural talent. 50 represents an average degree of talent.\n\
 \You have a pool of " <> showText initPickPts <> " points to assign to your attributes as you wish.\n\
 \To add points to an attribute, type the first letter of the attribute name, immediately followed by + and the number of points to add. For example, to add 10 to your Strength, type " <> colorWith quoteColor "s+10" <> ".\n\
@@ -293,10 +294,20 @@ promptRetryNewPwMatch _ p = patternMatchFail "promptRetryNewPwMatch" [ showText 
 
 
 interpPickPts :: NewCharBundle -> Interp
-interpPickPts _   "" (NoArgs' i mq       ) = promptPickPts i mq
-interpPickPts ncb _  (Lower   i mq cols _) = do
-    wrapSendPrompt mq cols "If you are a new player, could you please tell us how you found CurryMUD?"
-    setInterp i . Just . interpDiscover $ ncb
+interpPickPts _   "" (NoArgs' i mq        ) = promptPickPts i mq
+interpPickPts ncb cn (Lower   i mq cols as) = getState >>= \ms ->
+    let pts = getPickPts i ms
+    in if cn `T.isPrefixOf` "quit"
+      then if pts == 0
+        then do
+            blankLine mq
+            wrapSendPrompt mq cols "If you are a new player, could you please tell us how you found CurryMUD?"
+            setInterp i . Just . interpDiscover $ ncb
+        else wrapSend mq cols sorryInterpPickPtsQuit >> sendPrompt mq "> "
+      else do -- TODO: Assign pts.
+          blankLine mq
+          wrapSendPrompt mq cols "If you are a new player, could you please tell us how you found CurryMUD?"
+          setInterp i . Just . interpDiscover $ ncb
 interpPickPts _ _ p = patternMatchFail "interpPickPts" [ showText p ]
 
 

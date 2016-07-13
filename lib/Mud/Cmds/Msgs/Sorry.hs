@@ -127,6 +127,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryInterpNewPwMatch
                            , sorryInterpNewPwUpper
                            , sorryInterpPager
+                           , sorryInterpPickPtsQuit
                            , sorryInterpPW
                            , sorryInterpPwBanned
                            , sorryInterpPwBoot
@@ -313,6 +314,13 @@ sorryIgnoreLocPref msg = parensQuote $ msg <> " need not be given a location pre
 sorryIgnoreLocPrefPlur :: Text -> Text
 sorryIgnoreLocPrefPlur msg = parensQuote $ msg <> " need not be given location prefixes. The location prefixes you \
                                                   \provided will be ignored."
+
+
+-----
+
+
+sorryInterpPickPtsQuit :: Text
+sorryInterpPickPtsQuit = "You still have points remaining. Please assign all your available points before moving on."
 
 
 -----

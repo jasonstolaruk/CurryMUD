@@ -486,7 +486,7 @@ mkCountTxt = map (uncurry mappend . second commaShow) <$> helper
                , ("Players logged out: ",  countLoggedOutPlas                               )
                , ("Admins logged in: ",    length . getLoggedInAdminIds $ ms                )
                , ("Admins logged out: ",   length $ getAdminIds ms \\ getLoggedInAdminIds ms)
-               , ("Unique hosts: ",        views hostTbl (length . nub . M.elems) ms        )
+               , ("Unique hosts: ",        views hostTbl (length . nub . M.elems) ms        ) -- TODO
                , ("Pick pts table size: ", views pickPtsTbl IM.size ms                      )
                , ("Male PCs: ",        countMaleFemale Male  )
                , ("Female PCs: ",      countMaleFemale Female)
