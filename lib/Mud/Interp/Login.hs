@@ -305,24 +305,34 @@ interpPickPts ncb cn (Lower   i mq cols as) = getState >>= \ms -> let pts = getP
   | otherwise -> helper |&| modifyState >=> \msgs -> multiWrapSend mq cols msgs >> promptPickPts i mq
   where
     helper ms = foldl' assignPts (ms, []) $ cn : as
-    assignPts a@(ms, msgs) arg
-      | T.length arg < 3                                    = sorry
-      | op <- T.head . T.tail $ arg, op /= '+' && op /= '-' = sorry
-      | otherwise = let (c,  rest) = headTail arg
-                        (op, amt ) = headTail rest
-                    in if c `notElem` ("sdhmp" :: String)
-                      then sorry
-                      else let (attribTxt, x, _) = procAttribChar i ms c
-                           in case reads . T.unpack $ amt :: [(Int, String)] of
-                             [(y, "")] | y < 0     -> sorryHelper sorryWtf
-                                       | y == 0    -> a
-                                       | otherwise -> case op of
-                                         '+' | x == 100  -> sorryHelper . sorryInterpPickPtsMax $ attribTxt
-                                             | otherwise -> undefined
-                                         '-' | x == 10   -> sorryHelper . sorryInterpPickPtsMin $ attribTxt
-                                             | otherwise -> undefined
-                                         _  -> patternMatchFail "interpPickPts assignPts" [ T.singleton op ]
-                             _              -> sorry
+    assignPts a@(ms, msgs) arg = let pts = getPickPts i ms in if
+      | T.length arg < 3                                    -> sorry
+      | op <- T.head . T.tail $ arg, op /= '+' && op /= '-' -> sorry
+      | otherwise ->
+          let (c,  rest) = headTail arg
+              (op, amt ) = headTail rest
+          in if c `notElem` ("sdhmp" :: String)
+            then sorry
+            else let (attribTxt, x, setter) = procAttribChar i ms c
+                 in case reads . T.unpack $ amt :: [(Int, String)] of
+                   [(y, "")] | y < 0     -> sorryHelper sorryWtf
+                             | y == 0    -> a
+                             | otherwise -> case op of
+                               '+' | pts == 0 -> sorryHelper sorryInterpPickPtsPts
+                                   | x == 100 -> sorryHelper . sorryInterpPickPtsMax $ attribTxt
+                                   | x' <- (x + (y `min` pts)) `min` 100
+                                   , y' <- x' - x
+                                   -> ( ms & mobTbl    .ind i.setter +~ y'
+                                           & pickPtsTbl.ind i        -~ y'
+                                      , msgs <> (pure . T.concat $ [ "Added ", showText y', " points to ", attribTxt, "." ]) )
+                               '-' | x == 10 -> sorryHelper . sorryInterpPickPtsMin $ attribTxt
+                                   | x' <- (x - y) `max` 10
+                                   , y' <- x - x'
+                                   -> ( ms & mobTbl    .ind i.setter -~ y'
+                                           & pickPtsTbl.ind i        +~ y'
+                                      , msgs <> (pure . T.concat $ [ "Subtracted ", showText y', " points from ", attribTxt, "." ]) )
+                               _  -> patternMatchFail "interpPickPts assignPts" [ T.singleton op ]
+                   _ -> sorry
       where
         sorry       = sorryHelper $ "I don't understand " <> dblQuote arg <> "."
         sorryHelper = (ms, ) . (msgs <>) . pure

@@ -129,6 +129,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryInterpPager
                            , sorryInterpPickPtsMax
                            , sorryInterpPickPtsMin
+                           , sorryInterpPickPtsPts
                            , sorryInterpPickPtsQuit
                            , sorryInterpPW
                            , sorryInterpPwBanned
@@ -322,11 +323,23 @@ sorryIgnoreLocPrefPlur msg = parensQuote $ msg <> " need not be given location p
 
 
 sorryInterpPickPtsMax :: Text -> Text
-sorryInterpPickPtsMax t = "You can't add to your " <> t <> ", as it is set to the maximum value of 100."
+sorryInterpPickPtsMax t = T.concat [ "You can't add any more to "
+                                   , t
+                                   , " "
+                                   , parensQuote "it's set to the maximum value of 100"
+                                   , "." ]
 
 
 sorryInterpPickPtsMin :: Text -> Text
-sorryInterpPickPtsMin t = "You can't subtract from your " <> t <> ", as it is set to the minimum value of 10."
+sorryInterpPickPtsMin t = T.concat [ "You can't subtract any more from "
+                                   , t
+                                   , " "
+                                   , parensQuote "it's set to the minimum value of 10"
+                                   , "." ]
+
+
+sorryInterpPickPtsPts :: Text
+sorryInterpPickPtsPts = "You don't have any points left."
 
 
 sorryInterpPickPtsQuit :: Text
