@@ -309,8 +309,7 @@ interpPickPts ncb cn (Lower   i mq cols as) = getState >>= \ms -> let pts = getP
       | T.length arg < 3                                    -> sorry
       | op <- T.head . T.tail $ arg, op /= '+' && op /= '-' -> sorry
       | otherwise ->
-          let (c,  rest) = headTail arg
-              (op, amt ) = headTail rest
+          let { (c, rest) = headTail arg; (op, amt) = headTail rest }
           in if c `notElem` ("sdhmp" :: String)
             then sorry
             else let (attribTxt, x, setter) = procAttribChar i ms c
@@ -324,14 +323,22 @@ interpPickPts ncb cn (Lower   i mq cols as) = getState >>= \ms -> let pts = getP
                                    , y' <- x' - x
                                    -> ( ms & mobTbl    .ind i.setter +~ y'
                                            & pickPtsTbl.ind i        -~ y'
-                                      , msgs <> (pure . T.concat $ [ "Added ", showText y', " points to ", attribTxt, "." ]) )
+                                      , msgs <> (pure . T.concat $ [ "Added "
+                                                                   , showText y'
+                                                                   , " points to "
+                                                                   , attribTxt
+                                                                   , "." ]) )
                                '-' | x == 10 -> sorryHelper . sorryInterpPickPtsMin $ attribTxt
                                    | x' <- (x - y) `max` 10
                                    , y' <- x - x'
                                    -> ( ms & mobTbl    .ind i.setter -~ y'
                                            & pickPtsTbl.ind i        +~ y'
-                                      , msgs <> (pure . T.concat $ [ "Subtracted ", showText y', " points from ", attribTxt, "." ]) )
-                               _  -> patternMatchFail "interpPickPts assignPts" [ T.singleton op ]
+                                      , msgs <> (pure . T.concat $ [ "Subtracted "
+                                                                   , showText y'
+                                                                   , " points from "
+                                                                   , attribTxt
+                                                                   , "." ]) )
+                               _   -> patternMatchFail "interpPickPts assignPts" [ T.singleton op ]
                    _ -> sorry
       where
         sorry       = sorryHelper $ "I don't understand " <> dblQuote arg <> "."
