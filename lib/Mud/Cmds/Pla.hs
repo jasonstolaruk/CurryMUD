@@ -3553,6 +3553,7 @@ smell p = advise p ["smell"] adviceSmellExcessArgs
 -----
 
 
+-- TODO: Known langs.
 stats :: ActionFun
 stats (NoArgs i mq cols) = getState >>= \ms ->
     let mkStats   = dropEmpties [ top

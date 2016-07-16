@@ -22,7 +22,7 @@ CurryMUD will have the following features:
 ## What I have so far
 
 * Incoming connections are accepted; players are prompted for their character name and password.
-* When creating a new character, players are prompted to assign points to their attributes.
+* Character creation: choosing race, assigning points to attributes.
 * The names of commands, as well as the names of the targets they act upon, may be abbreviated.
 * Commands have a consistent structure and a unique syntax for indicating target locations and quantities.
 * About 80 player commands and 45 administrator commands.
@@ -76,7 +76,7 @@ The code is available here on GitHub under the 3-clause BSD license (refer to th
   * `RecordWildCards`
   * `TupleSections`
   * `ViewPatterns`
-* About 80 modules, excluding tests.
+* About 90 modules, excluding tests.
 * About 60 unit and property tests exist (I'm using the [tasty testing framework](https://hackage.haskell.org/package/tasty)).
 
 ### How to try it out

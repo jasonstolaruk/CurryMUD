@@ -50,7 +50,7 @@ import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Loops (orM)
 import Crypto.BCrypt (validatePassword)
 import Data.Bits (setBit, zeroBits)
-import Data.Char (isDigit, isLower, isUpper)
+import Data.Char (isDigit, isLower, isUpper, toLower)
 import Data.Ix (inRange)
 import Data.List (delete, foldl', intersperse, partition)
 import Data.Maybe (fromJust)
@@ -65,6 +65,7 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import qualified Data.Text.IO as T (readFile)
 import qualified Data.Vector.Unboxed as V (Vector, length, toList)
+import System.FilePath ((</>))
 
 
 default (Int, Double)
@@ -282,7 +283,8 @@ promptRetryNewPwMatch _ p = patternMatchFail "promptRetryNewPwMatch" [ showText 
 
 
 interpRace :: NewCharBundle -> Interp
-interpRace ncb cn (NoArgs i mq cols) = case cn of
+interpRace _   ""                (NoArgs _ mq cols) = multiWrapSend mq cols raceTxt >> promptRace mq cols
+interpRace ncb (T.toLower -> cn) (NoArgs i mq cols) = case cn of
   "1" -> helper Dwarf
   "2" -> helper Elf
   "3" -> helper Felinoid
@@ -291,9 +293,10 @@ interpRace ncb cn (NoArgs i mq cols) = case cn of
   "6" -> helper Lagomorph
   "7" -> helper Nymph
   "8" -> helper Vulpenoid
-  _   -> case [ t | (showText -> t) <- allValues :: [Race], cn `T.isInfixOf` T.toLower t ] of
-    [_] -> undefined -- TODO
-    _   -> sorryRace mq cols cn
+  _   -> case [ t | (headTail . showText -> (uncurry T.cons . first toLower -> t)) <- allValues :: [Race]
+                  , cn `T.isPrefixOf` t ] of
+    [raceName] -> readRaceHelp raceName >>= multiWrapSend mq cols . T.lines >> promptRace mq cols
+    _          -> sorryRace mq cols cn
   where
     helper r = do
         tweaks [ pcTbl     .ind i.race       .~ r
@@ -302,6 +305,11 @@ interpRace ncb cn (NoArgs i mq cols) = case cn of
         multiWrapSend mq cols pickPtsIntroTxt
         promptPickPts i mq
         setInterp i . Just . interpPickPts $ ncb
+    readRaceHelp raceName = (liftIO . T.readFile $ raceDir </> T.unpack raceName) |&| try >=> eitherRet handler
+      where
+        handler e = do
+            fileIOExHandler "interpRace readRaceHelp" e
+            return . helpFileErrorMsg . dblQuote $ raceName
 interpRace _ cn ActionParams { .. } = sorryRace plaMsgQueue plaCols . T.unwords $ cn : args
 
 
