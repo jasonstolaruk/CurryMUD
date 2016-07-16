@@ -26,9 +26,10 @@ persistDir = mudDir </> "persist"
 resDir     = mudDir </> "res"
 
 
-helpDir, miscDir, titleDir :: FilePath
+helpDir, miscDir, raceDir, titleDir :: FilePath
 helpDir  = resDir </> "help"
 miscDir  = resDir </> "misc"
+raceDir  = resDir </> "race"
 titleDir = resDir </> "titles"
 
 

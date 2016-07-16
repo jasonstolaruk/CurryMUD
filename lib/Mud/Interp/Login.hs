@@ -248,14 +248,14 @@ interpVerifyNewPW ncb@(NewCharBundle _ _ pass) cn params@(NoArgs i mq cols)
       send mq telnetShowInput
       wrapSend mq cols pwWarningMsg
       multiWrapSend mq cols $ "Next we'll choose your race." : raceTxt
-      promptRace params
+      promptRace mq cols
       setInterp i . Just . interpRace $ ncb
   | otherwise = promptRetryNewPwMatch ncb params
 interpVerifyNewPW ncb _ params = promptRetryNewPwMatch ncb params
 
 
-promptRace :: ActionParams -> MudStack ()
-promptRace ActionParams { .. } = wrapSendPrompt plaMsgQueue plaCols txt >> anglePrompt plaMsgQueue
+promptRace :: MsgQueue -> Cols -> MudStack ()
+promptRace mq cols = wrapSendPrompt mq cols txt >> anglePrompt mq
   where
     txt = "Enter a number to make your selection, or enter the first letter" <> parensQuote "s" <> " of the name of a \
           \race to learn more."
@@ -282,14 +282,31 @@ promptRetryNewPwMatch _ p = patternMatchFail "promptRetryNewPwMatch" [ showText 
 
 
 interpRace :: NewCharBundle -> Interp
-interpRace ncb _ (NoArgs i mq cols) = do
-    tweak $ pickPtsTbl.ind i .~ initPickPts
-    multiWrapSend mq cols pickPtsIntroTxt
-    promptPickPts i mq
-    setInterp i . Just . interpPickPts $ ncb
-interpRace _ cn p@ActionParams { .. } = do
-    wrapSend plaMsgQueue plaCols . sorryWut . T.unwords $ cn : args
-    promptRace p
+interpRace ncb cn (NoArgs i mq cols) = case cn of
+  "1" -> helper Dwarf
+  "2" -> helper Elf
+  "3" -> helper Felinoid
+  "4" -> helper Hobbit
+  "5" -> helper Human
+  "6" -> helper Lagomorph
+  "7" -> helper Nymph
+  "8" -> helper Vulpenoid
+  _   -> case [ t | (showText -> t) <- allValues :: [Race], cn `T.isInfixOf` T.toLower t ] of
+    [_] -> undefined -- TODO
+    _   -> sorryRace mq cols cn
+  where
+    helper r = do
+        tweaks [ pcTbl     .ind i.race       .~ r
+               , mobTbl    .ind i.knownLangs .~ pure (raceToLang r)
+               , pickPtsTbl.ind i            .~ initPickPts ]
+        multiWrapSend mq cols pickPtsIntroTxt
+        promptPickPts i mq
+        setInterp i . Just . interpPickPts $ ncb
+interpRace _ cn ActionParams { .. } = sorryRace plaMsgQueue plaCols . T.unwords $ cn : args
+
+
+sorryRace :: MsgQueue -> Cols -> Text -> MudStack ()
+sorryRace mq cols t = wrapSend mq cols (sorryWut t) >> promptRace mq cols
 
 
 pickPtsIntroTxt :: [Text]
