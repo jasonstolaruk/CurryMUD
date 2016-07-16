@@ -1,7 +1,8 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
 {-# LANGUAGE LambdaCase, MultiWayIf, OverloadedStrings, RecordWildCards, TupleSections, ViewPatterns #-}
 
-module Mud.Data.State.Util.Output ( bcast
+module Mud.Data.State.Util.Output ( anglePrompt
+                                  , bcast
                                   , bcastAdmins
                                   , bcastAdminsExcept
                                   , bcastIfNotIncog
@@ -70,6 +71,13 @@ patternMatchFail = U.patternMatchFail "Mud.Data.State.Util.Output"
 
 
 -- ============================================================
+
+
+anglePrompt :: MsgQueue -> MudStack ()
+anglePrompt = flip sendPrompt ">"
+
+
+-----
 
 
 bcast :: [Broadcast] -> MudStack ()

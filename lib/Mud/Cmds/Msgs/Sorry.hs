@@ -275,7 +275,8 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryWhisperTargetType
                            , sorryWireAlready
                            , sorryWrapLineLen
-                           , sorryWtf ) where
+                           , sorryWtf
+                           , sorryWut ) where
 
 import Mud.Cmds.Util.CmdPrefixes
 import Mud.Data.Misc
@@ -1837,3 +1838,10 @@ sorryWrapLineLen = T.concat [ "The line length must be between "
 
 sorryWtf :: Text
 sorryWtf = colorWith wtfColor "He don't."
+
+
+-----
+
+
+sorryWut :: Text -> Text
+sorryWut t = "I don't understand " <> dblQuote t <> "."

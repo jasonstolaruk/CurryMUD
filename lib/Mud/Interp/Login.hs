@@ -246,17 +246,55 @@ interpVerifyNewPW :: NewCharBundle -> Interp
 interpVerifyNewPW ncb@(NewCharBundle _ _ pass) cn params@(NoArgs i mq cols)
   | cn == pass = do
       send mq telnetShowInput
-      multiWrapSend mq cols $ nl pwWarningMsg : pickPtsIntroTxt
-      tweak $ pickPtsTbl.ind i .~ initPickPts
-      promptPickPts i mq
-      setInterp i . Just . interpPickPts $ ncb
+      wrapSend mq cols pwWarningMsg
+      multiWrapSend mq cols $ "Next we'll choose your race." : raceTxt
+      promptRace params
+      setInterp i . Just . interpRace $ ncb
   | otherwise = promptRetryNewPwMatch ncb params
 interpVerifyNewPW ncb _ params = promptRetryNewPwMatch ncb params
 
 
+promptRace :: ActionParams -> MudStack ()
+promptRace ActionParams { .. } = wrapSendPrompt plaMsgQueue plaCols txt >> anglePrompt plaMsgQueue
+  where
+    txt = "Enter a number to make your selection, or enter the first letter" <> parensQuote "s" <> " of the name of a \
+          \race to learn more."
+
+
+raceTxt :: [Text]
+raceTxt = [ "1) " <> colorWith abbrevColor "D"  <> "warf"
+          , "2) " <> colorWith abbrevColor "E"  <> "lf"
+          , "3) " <> colorWith abbrevColor "F"  <> "elinoid"
+          , "4) " <> colorWith abbrevColor "Ho" <> "bbit"
+          , "5) " <> colorWith abbrevColor "Hu" <> "man"
+          , "6) " <> colorWith abbrevColor "L"  <> "agomorph"
+          , "7) " <> colorWith abbrevColor "N"  <> "ymph"
+          , "8) " <> colorWith abbrevColor "V"  <> "ulpenoid" ]
+
+
+promptRetryNewPwMatch :: NewCharBundle -> ActionParams -> MudStack ()
+promptRetryNewPwMatch ncb (WithArgs i mq cols _) =
+    promptRetryNewPW mq cols sorryInterpNewPwMatch >> setInterp i (Just . interpNewPW $ ncb)
+promptRetryNewPwMatch _ p = patternMatchFail "promptRetryNewPwMatch" [ showText p ]
+
+
+-- ==================================================
+
+
+interpRace :: NewCharBundle -> Interp
+interpRace ncb _ (NoArgs i mq cols) = do
+    tweak $ pickPtsTbl.ind i .~ initPickPts
+    multiWrapSend mq cols pickPtsIntroTxt
+    promptPickPts i mq
+    setInterp i . Just . interpPickPts $ ncb
+interpRace _ cn p@ActionParams { .. } = do
+    wrapSend plaMsgQueue plaCols . sorryWut . T.unwords $ cn : args
+    promptRace p
+
+
 pickPtsIntroTxt :: [Text]
 pickPtsIntroTxt = T.lines $ "Next we'll assign points to your attributes.\n\
-\Characters have 5 attributes, each measuring one's inate talent in a given area.\n\
+\Characters have 5 attributes, each measuring inate talent in a given area.\n\
 \10 (the minimum value) represents a staggering lack of talent, while 100 (the maximum value) represents near-supernatural talent. 50 represents an average degree of talent.\n\
 \You have a pool of " <> showText initPickPts <> " points to assign to your attributes as you wish.\n\
 \To add points to an attribute, type the first letter of the attribute name, immediately followed by + and the number of points to add. For example, to add 10 to your Strength, type " <> colorWith quoteColor "s+10" <> ".\n\
@@ -266,7 +304,7 @@ pickPtsIntroTxt = T.lines $ "Next we'll assign points to your attributes.\n\
 
 
 promptPickPts :: Id -> MsgQueue -> MudStack ()
-promptPickPts i mq = showAttribs i mq >> sendPrompt mq ">"
+promptPickPts i mq = showAttribs i mq >> anglePrompt mq
 
 
 showAttribs :: Id -> MsgQueue -> MudStack ()
@@ -284,12 +322,6 @@ showAttribs i mq = getState >>= \ms -> multiSend mq . footer ms . map helper . g
         rest = pure . nl $ showText (getPickPts i ms) <> " points remaining."
 
 
-promptRetryNewPwMatch :: NewCharBundle -> ActionParams -> MudStack ()
-promptRetryNewPwMatch ncb (WithArgs i mq cols _) =
-    promptRetryNewPW mq cols sorryInterpNewPwMatch >> setInterp i (Just . interpNewPW $ ncb)
-promptRetryNewPwMatch _ p = patternMatchFail "promptRetryNewPwMatch" [ showText p ]
-
-
 -- ==================================================
 
 
@@ -301,7 +333,7 @@ interpPickPts ncb cn (Lower   i mq cols as) = getState >>= \ms -> let pts = getP
         blankLine mq
         wrapSendPrompt mq cols "If you are a new player, could you please tell us how you found CurryMUD?"
         setInterp i . Just . interpDiscover $ ncb
-    else wrapSend mq cols sorryInterpPickPtsQuit >> sendPrompt mq ">"
+    else wrapSend mq cols sorryInterpPickPtsQuit >> anglePrompt mq
   | otherwise -> helper |&| modifyState >=> \msgs -> multiWrapSend mq cols msgs >> promptPickPts i mq
   where
     helper ms = foldl' assignPts (ms, []) $ cn : as
@@ -325,7 +357,9 @@ interpPickPts ncb cn (Lower   i mq cols as) = getState >>= \ms -> let pts = getP
                                            & pickPtsTbl.ind i        -~ y'
                                       , msgs <> (pure . T.concat $ [ "Added "
                                                                    , showText y'
-                                                                   , " points to "
+                                                                   , " point"
+                                                                   , pts > 1 |?| "s"
+                                                                   , " to "
                                                                    , attribTxt
                                                                    , "." ]) )
                                '-' | x == 10 -> sorryHelper . sorryInterpPickPtsMin $ attribTxt
@@ -335,13 +369,15 @@ interpPickPts ncb cn (Lower   i mq cols as) = getState >>= \ms -> let pts = getP
                                            & pickPtsTbl.ind i        +~ y'
                                       , msgs <> (pure . T.concat $ [ "Subtracted "
                                                                    , showText y'
-                                                                   , " points from "
+                                                                   , " point"
+                                                                   , pts > 1 |?| "s"
+                                                                   , " from "
                                                                    , attribTxt
                                                                    , "." ]) )
                                _   -> patternMatchFail "interpPickPts assignPts" [ T.singleton op ]
                    _ -> sorry
       where
-        sorry       = sorryHelper $ "I don't understand " <> dblQuote arg <> "."
+        sorry       = sorryHelper . sorryWut $ arg
         sorryHelper = (ms, ) . (msgs <>) . pure
 interpPickPts _ _ p = patternMatchFail "interpPickPts" [ showText p ]
 
