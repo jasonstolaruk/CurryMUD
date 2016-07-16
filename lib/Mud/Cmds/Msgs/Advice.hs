@@ -136,8 +136,8 @@ import Data.Text (Text)
 import qualified Data.Text as T
 
 
-patternMatchFail :: Text -> [Text] -> a
-patternMatchFail = U.patternMatchFail "Mud.Cmds.Util.Advice"
+patternMatchFail :: Text -> Text -> a
+patternMatchFail = U.patternMatchFail "Mud.Cmds.Msgs.Advice"
 
 
 -- ==================================================

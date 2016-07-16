@@ -18,7 +18,7 @@ import qualified Data.Text as T
 
 
 patternMatchFail :: Text -> [Text] -> a
-patternMatchFail = U.patternMatchFail "Mud.Cmds.Util.Abbrevs"
+patternMatchFail = U.patternMatchFail "Mud.Cmds.Util.Abbrev"
 
 
 -- ==================================================

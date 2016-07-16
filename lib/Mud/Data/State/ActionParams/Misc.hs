@@ -15,7 +15,7 @@ import qualified Data.Text as T
 
 
 patternMatchFail :: Text -> [Text] -> a
-patternMatchFail = U.patternMatchFail "Mud.Data.State.ActionParams.Util"
+patternMatchFail = U.patternMatchFail "Mud.Data.State.ActionParams.Misc"
 
 
 -- ==================================================

@@ -83,7 +83,7 @@ import System.IO (hClose, hGetBuffering, openTempFile)
 -- ==================================================
 
 
-patternMatchFail :: Text -> [Text] -> a
+patternMatchFail :: Text -> Text -> a
 patternMatchFail = U.patternMatchFail "Mud.Cmds.Debug"
 
 

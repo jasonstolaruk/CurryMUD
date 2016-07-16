@@ -100,9 +100,7 @@ concatMapM f = fmap concat . mapM f
 
 
 blowUp :: Text -> Text -> Text -> Text -> a
-blowUp modName funName msg t = error . T.unpack . T.concat $ [ modName, " ", funName, ": ", msg ] ++ xs
-  where
-    xs = t |!| [ "; ", backQuote t ]
+blowUp modName funName msg t = error . T.unpack . T.concat $ [ modName, " ", funName, ": ", msg ] ++ (t |!| [ "; ", t ])
 
 
 divide :: (Integral a, Fractional b) => a -> a -> b
@@ -192,7 +190,7 @@ isVowel = (`elem` ("aeiou" :: String))
 listToMaybe :: (Show a) => [a] -> Maybe a
 listToMaybe []  = Nothing
 listToMaybe [a] = Just a
-listToMaybe xs  = patternMatchFail "Mud.Util.Misc" "listToMaybe" [ T.pack . show $ xs ]
+listToMaybe xs  = patternMatchFail "Mud.Util.Misc" "listToMaybe" . T.pack . show $ xs
 
 
 max1 :: Int -> Int
@@ -247,8 +245,8 @@ onLeft f (Left  a) = Left . f $ a
 onLeft _ x         = blowUp "Mud.Util.Misc" "onLeft" "Right" . T.pack . show $ x
 
 
-patternMatchFail :: Text -> Text -> [Text] -> a
-patternMatchFail modName funName = blowUp modName funName "pattern match failure" . head
+patternMatchFail :: Text -> Text -> Text -> a
+patternMatchFail modName funName = blowUp modName funName "pattern match failure"
 
 
 percent :: Int -> Int -> Int

@@ -96,7 +96,7 @@ blowUp :: Text -> Text -> Text -> a
 blowUp = U.blowUp "Mud.Cmds.Admin"
 
 
-patternMatchFail :: Text -> [Text] -> a
+patternMatchFail :: Text -> Text -> a
 patternMatchFail = U.patternMatchFail "Mud.Cmds.Admin"
 
 
