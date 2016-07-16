@@ -99,9 +99,10 @@ concatMapM  :: (Monad m, Traversable t) => (a -> m [b]) -> t a -> m [b]
 concatMapM f = fmap concat . mapM f
 
 
-blowUp :: Text -> Text -> Text -> [Text] -> a
-blowUp modName funName msg (T.intercalate ", " . map backQuote -> vals) =
-    error . T.unpack . T.concat $ [ modName, " ", funName, ": ", msg, "; values: ", vals ]
+blowUp :: Text -> Text -> Text -> Text -> a
+blowUp modName funName msg t = error . T.unpack . T.concat $ [ modName, " ", funName, ": ", msg ] ++ xs
+  where
+    xs = t |!| [ "; ", backQuote t ]
 
 
 divide :: (Integral a, Fractional b) => a -> a -> b
@@ -155,12 +156,12 @@ fromEither (Left  a) = a
 
 fromLeft :: (Show a, Show b) => Either a b -> a
 fromLeft (Left x) = x
-fromLeft x        = blowUp "Mud.Util.Misc" "fromLeft" "Right" [ T.pack . show $ x ]
+fromLeft x        = blowUp "Mud.Util.Misc" "fromLeft" "Right" . T.pack . show $ x
 
 
 fromRight :: (Show a, Show b) => Either a b -> b
 fromRight (Right x) = x
-fromRight x         = blowUp "Mud.Util.Misc" "fromRight" "Left" [ T.pack . show $ x ]
+fromRight x         = blowUp "Mud.Util.Misc" "fromRight" "Left" . T.pack . show $ x
 
 
 onFalse :: Bool -> (a -> a) -> a -> a
@@ -243,11 +244,11 @@ mkTimestamp = [ bracketQuote $ date <> " " <> time | (date, time) <- mkDateTimeT
 
 onLeft :: (Show a, Show b) => (a -> c) -> Either a b -> Either c b
 onLeft f (Left  a) = Left . f $ a
-onLeft _ x         = blowUp "Mud.Util.Misc" "onLeft" "Right" [ T.pack . show $ x ]
+onLeft _ x         = blowUp "Mud.Util.Misc" "onLeft" "Right" . T.pack . show $ x
 
 
 patternMatchFail :: Text -> Text -> [Text] -> a
-patternMatchFail modName funName = blowUp modName funName "pattern match failure"
+patternMatchFail modName funName = blowUp modName funName "pattern match failure" . head
 
 
 percent :: Int -> Int -> Int

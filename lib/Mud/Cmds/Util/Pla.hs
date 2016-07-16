@@ -129,7 +129,7 @@ import qualified Data.Vector.Unboxed as V (Vector)
 -----
 
 
-blowUp :: Text -> Text -> [Text] -> a
+blowUp :: Text -> Text -> Text -> a
 blowUp = U.blowUp "Mud.Cmds.Util.Pla"
 
 
@@ -1155,7 +1155,7 @@ mkDescForPercent9 x = mkDescForPercent x . zip [ 0, 14, 28, 42, 56, 70, 84, 99, 
 
 
 mkDescForPercent :: Int -> [(Int, Text)] -> Text
-mkDescForPercent _ []                          = blowUp "mkDescForPercent" "empty list" []
+mkDescForPercent _ []                          = blowUp "mkDescForPercent" "empty list" ""
 mkDescForPercent _ [(_, txt)]                  = txt
 mkDescForPercent x ((y, txt):rest) | x <= y    = txt
                                    | otherwise = mkDescForPercent x rest

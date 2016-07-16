@@ -92,7 +92,7 @@ default (Int)
 -----
 
 
-blowUp :: Text -> Text -> [Text] -> a
+blowUp :: Text -> Text -> Text -> a
 blowUp = U.blowUp "Mud.Cmds.Admin"
 
 
@@ -1052,7 +1052,7 @@ adminPassword p@(WithTarget i mq cols target pw)
                 bcastOtherAdmins i $ msg <> "."
                 logPla fn i . T.concat $ [ "changed ", strippedTarget, "'s password", oldPwMsg ]
                 logNotice fn $ msg <> oldPwMsg
-            Just Nothing -> blowUp fn "password not found in database" . pure $ strippedTarget
+            Just Nothing -> blowUp fn "password not found in database" strippedTarget
       in if
         | not . inRange (minNameLen, maxNameLen) . T.length $ pw -> sendFun sorryInterpNewPwLen
         | helper isUpper                                         -> sendFun sorryInterpNewPwUpper
@@ -1065,7 +1065,7 @@ adminPassword p@(WithTarget i mq cols target pw)
                                                                  | otherwise         -> changePW
           xs         -> patternMatchFail "adminPassword" [ showText xs ]
   where
-    fn       = "adminPassword changePW"
+    fn       = "adminPassword"
     helper f = ()# T.filter f pw
 adminPassword p = patternMatchFail "adminPassword" [ showText p ]
 

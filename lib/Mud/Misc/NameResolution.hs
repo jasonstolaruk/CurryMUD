@@ -56,7 +56,7 @@ a >> b = a % stext % b
 -----
 
 
-blowUp :: Text -> Text -> [Text] -> a
+blowUp :: Text -> Text -> Text -> a
 blowUp = U.blowUp "Mud.Misc.NameResolution"
 
 
@@ -167,7 +167,7 @@ mkGecr i ms searchIs searchCoins searchName@(headTail -> (h, t))
   = numText /= "0" ? parse rest numInt :? Sorry searchName
   | otherwise = mkGecrMult i ms 1 searchName searchIs searchCoins
   where
-    oops = blowUp "mkGecr" "unable to convert Text to Int" . pure
+    oops = blowUp "mkGecr" "unable to convert Text to Int"
     parse rest numInt
       | T.length rest < 2               = Sorry searchName
       | (delim, rest') <- headTail rest =

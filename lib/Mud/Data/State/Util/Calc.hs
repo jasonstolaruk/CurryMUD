@@ -81,7 +81,7 @@ default (Int, Double)
 -----
 
 
-blowUp :: Text -> Text -> [Text] -> a
+blowUp :: Text -> Text -> Text -> a
 blowUp = U.blowUp "Mud.Data.State.Util.Calc"
 
 
@@ -532,7 +532,7 @@ calcWeight i ms = case getType i ms of
   ConType    -> sum [ getWeight i ms, calcInvWeight, calcCoinsWeight ]
   NpcType    -> npcPC
   PCType     -> npcPC
-  RmType     -> blowUp "calcWeight" "cannot calculate the weight of a room" [ showText i ]
+  RmType     -> blowUp "calcWeight" "cannot calculate the weight of a room" . showText $ i
   VesselType -> getWeight i ms + calcVesselContWeight
   _          -> getWeight i ms
   where

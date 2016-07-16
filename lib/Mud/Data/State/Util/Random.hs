@@ -29,7 +29,7 @@ import qualified Data.Vector.Unboxed as V (Vector)
 import System.Random.MWC (GenIO, uniformR, uniformVector)
 
 
-blowUp :: Text -> Text -> [Text] -> a
+blowUp :: Text -> Text -> Text -> a
 blowUp = U.blowUp "Mud.Data.State.Util.Random"
 
 
@@ -88,7 +88,7 @@ rndmIntToRangeHelper m (abs -> r) pair@(x, y)
                                   | otherwise        = helper (succ step) $ z + stepAmt
                 in x + helper 0 0
   where
-    oops = blowUp "rndmIntToRangeHelper" "bad range" . pure . showText $ pair
+    oops = blowUp "rndmIntToRangeHelper" "bad range" . showText $ pair
 
 
 rndmPer :: MudStack Int

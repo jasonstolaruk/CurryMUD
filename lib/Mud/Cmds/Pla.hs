@@ -117,7 +117,7 @@ default (Int, Double)
 -----
 
 
-blowUp :: Text -> Text -> [Text] -> a
+blowUp :: Text -> Text -> Text -> a
 blowUp = U.blowUp "Mud.Cmds.Pla"
 
 
@@ -3840,7 +3840,7 @@ helperTune s a@(linkTbl, chans, _, _) arg@(T.breakOn "=" -> (name, T.tail -> val
         foundHelper
           | n `elem` linkNames = foundLink
           | n `elem` chanNames = foundChan
-          | otherwise          = blowUp "helperTune found foundHelper" "connection name not found" . pure $ n
+          | otherwise          = blowUp "helperTune found foundHelper" "connection name not found" n
           where
             foundLink = let n' = capitalize n in appendMsg n' & _1.at n' ?~ val
             foundChan =

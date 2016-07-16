@@ -133,7 +133,7 @@ import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
 -----
 
 
-blowUp :: Text -> Text -> [Text] -> a
+blowUp :: Text -> Text -> Text -> a
 blowUp = U.blowUp "Mud.Cmds.Util.Misc"
 
 
@@ -584,7 +584,7 @@ locateHelper ms txts i = case getType i ms of
     searchInvs = views invTbl (fmap (mkDescId "in"         ) . listToMaybe . IM.keys . IM.filter ( i `elem`)           ) ms
     searchEqs  = views eqTbl  (fmap (mkDescId "equipped by") . listToMaybe . IM.keys . IM.filter ((i `elem`) . M.elems)) ms
     mkDescId txt targetId = ((txts ++) . pure $ txt <> " " <> mkNameTypeIdDesc targetId ms, targetId)
-    oops                  = blowUp "locateHelper" "ID is in limbo" [ showText i ]
+    oops                  = blowUp "locateHelper" "ID is in limbo" . showText $ i
 
 
 -----

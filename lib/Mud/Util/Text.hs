@@ -61,7 +61,7 @@ import qualified Data.Text.Lazy as LT
 import qualified Data.Text.Lazy.Encoding as LT
 
 
-blowUp :: Text -> Text -> [Text] -> a
+blowUp :: Text -> Text -> Text -> a
 blowUp = U.blowUp "Mud.Util.Text"
 
 
@@ -268,7 +268,7 @@ noneOnNull a = isNull a ? none :? a
 readNum :: Text -> Int
 readNum txt = case reads . T.unpack $ txt :: [(Int, String)] of
   [(x, "")] -> x
-  _         -> blowUp "readNum" "parse failed" . pure $ txt
+  _         -> blowUp "readNum" "parse failed" txt
 
 
 -----
