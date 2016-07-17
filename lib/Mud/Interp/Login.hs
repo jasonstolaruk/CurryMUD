@@ -114,7 +114,13 @@ interpName times (T.toLower -> cn@(capitalize -> cn')) params@(NoArgs i mq cols)
     confirmName
       | isDebug, isZBackDoor, T.head cn' == 'Z' = zBackDoor times cn' params
       | otherwise                               = do
-          wrapSendPrompt mq cols $ "Your name will be " <> dblQuote (cn' <> ",") <> " is that OK? [yes/no]"
+          wrapSendPrompt mq cols . T.concat $ [ "Your name will be "
+                                              , dblQuote $ cn' <> ","
+                                              , " is that OK? ["
+                                              , colorWith abbrevColor "y"
+                                              , "es/"
+                                              , colorWith abbrevColor "n"
+                                              , "o]" ]
           setInterp i . Just . interpConfirmName times $ cn'
 interpName _ _ ActionParams { .. } = promptRetryName plaMsgQueue plaCols sorryInterpNameExcessArgs
 
@@ -247,12 +253,54 @@ interpVerifyNewPW :: NewCharBundle -> Interp
 interpVerifyNewPW ncb@(NewCharBundle _ _ pass) cn params@(NoArgs i mq cols)
   | cn == pass = do
       send mq telnetShowInput
-      wrapSend mq cols pwWarningMsg
+      wrapSend  mq cols pwWarningMsg
+      promptSex mq cols
+      setInterp i . Just . interpSex $ ncb
+  | otherwise = promptRetryNewPwMatch ncb params
+interpVerifyNewPW ncb _ params = promptRetryNewPwMatch ncb params
+
+
+promptSex :: MsgQueue -> Cols -> MudStack ()
+promptSex mq cols = wrapSendPrompt mq cols . T.concat $ [ "Are you male or female? ["
+                                                        , colorWith abbrevColor "m"
+                                                        , "ale/"
+                                                        , colorWith abbrevColor "f"
+                                                        , "emale]" ]
+
+
+promptRetryNewPwMatch :: NewCharBundle -> ActionParams -> MudStack ()
+promptRetryNewPwMatch ncb (WithArgs i mq cols _) =
+    promptRetryNewPW mq cols sorryInterpNewPwMatch >> setInterp i (Just . interpNewPW $ ncb)
+promptRetryNewPwMatch _ p = patternMatchFail "promptRetryNewPwMatch" . showText $ p
+
+
+-- ==================================================
+
+
+interpSex :: NewCharBundle -> Interp
+interpSex _   ""                ActionParams { .. } = promptRetryMaleFemale plaMsgQueue plaCols
+interpSex ncb (T.toLower -> cn) (NoArgs i mq cols)
+  | cn `T.isPrefixOf` "male"   = helper Male
+  | cn `T.isPrefixOf` "female" = helper Female
+  | otherwise                  = promptRetryMaleFemale mq cols
+  where
+    helper s = do
+      tweak $ mobTbl.ind i.sex .~ s
       multiWrapSend mq cols $ "Next we'll choose your race." : raceTxt
       promptRace mq cols
       setInterp i . Just . interpRace $ ncb
-  | otherwise = promptRetryNewPwMatch ncb params
-interpVerifyNewPW ncb _ params = promptRetryNewPwMatch ncb params
+interpSex _ _ ActionParams { .. } = promptRetryMaleFemale plaMsgQueue plaCols
+
+
+raceTxt :: [Text]
+raceTxt = [ "1) " <> colorWith abbrevColor "D"  <> "warf"
+          , "2) " <> colorWith abbrevColor "E"  <> "lf"
+          , "3) " <> colorWith abbrevColor "F"  <> "elinoid"
+          , "4) " <> colorWith abbrevColor "H"  <> "obbit"
+          , "5) " <> colorWith abbrevColor "Hu" <> "man"
+          , "6) " <> colorWith abbrevColor "L"  <> "agomorph"
+          , "7) " <> colorWith abbrevColor "N"  <> "ymph"
+          , "8) " <> colorWith abbrevColor "V"  <> "ulpenoid" ]
 
 
 promptRace :: MsgQueue -> Cols -> MudStack ()
@@ -262,21 +310,9 @@ promptRace mq cols = wrapSendPrompt mq cols txt >> anglePrompt mq
           \race to learn more."
 
 
-raceTxt :: [Text]
-raceTxt = [ "1) " <> colorWith abbrevColor "D"  <> "warf"
-          , "2) " <> colorWith abbrevColor "E"  <> "lf"
-          , "3) " <> colorWith abbrevColor "F"  <> "elinoid"
-          , "4) " <> colorWith abbrevColor "Ho" <> "bbit"
-          , "5) " <> colorWith abbrevColor "Hu" <> "man"
-          , "6) " <> colorWith abbrevColor "L"  <> "agomorph"
-          , "7) " <> colorWith abbrevColor "N"  <> "ymph"
-          , "8) " <> colorWith abbrevColor "V"  <> "ulpenoid" ]
-
-
-promptRetryNewPwMatch :: NewCharBundle -> ActionParams -> MudStack ()
-promptRetryNewPwMatch ncb (WithArgs i mq cols _) =
-    promptRetryNewPW mq cols sorryInterpNewPwMatch >> setInterp i (Just . interpNewPW $ ncb)
-promptRetryNewPwMatch _ p = patternMatchFail "promptRetryNewPwMatch" . showText $ p
+promptRetryMaleFemale :: MsgQueue -> Cols -> MudStack ()
+promptRetryMaleFemale mq cols =
+    wrapSendPrompt mq cols . T.concat $ [ "Please answer ", dblQuote "male", " or ", dblQuote "female", "." ]
 
 
 -- ==================================================
