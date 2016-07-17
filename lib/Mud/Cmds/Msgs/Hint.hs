@@ -17,7 +17,7 @@ hintHelper t = quoteWith' (hintANSI, noHintANSI) "Hint:" <> " " <> T.concat t
 
 
 specifyFullHelper :: Text -> Text
-specifyFullHelper t = parensQuote $ "Note that you must specify the full " <> t <> "."
+specifyFullHelper t = parensQuote . prd $ "Note that you must specify the full " <> t
 
 
 -----

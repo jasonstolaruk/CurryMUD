@@ -44,7 +44,7 @@ main = withSocketsDo . mIf (not <$> doesDirectoryExist mudDir) stop $ go
 {- TODO: Re-enable EKG.
     startEKG = do -- "curry +RTS -T"
         void . forkServer "localhost" $ 8000
-        T.putStrLn $ "EKG server started " <> parensQuote "http://localhost:8000" <> "."
+        T.putStrLn . prd $ "EKG server started " <> parensQuote "http://localhost:8000"
 -}
 
 

@@ -21,7 +21,7 @@ bannedMsg = "You have been banned from CurryMUD!"
 
 
 blankWritableMsg :: Sing -> Text
-blankWritableMsg s = "There isn't anything written on the " <> s <> "."
+blankWritableMsg s = prd $ "There isn't anything written on the " <> s
 
 
 dbEmptyMsg :: Text
@@ -101,7 +101,7 @@ notifyArrivalMsg n = n <> " slowly materializes out of thin air."
 
 
 plusRelatedMsg :: Text
-plusRelatedMsg = parensQuote "plus related functionality" <> "."
+plusRelatedMsg = prd . parensQuote $ "plus related functionality"
 
 
 pwMsg :: Text -> [Text]

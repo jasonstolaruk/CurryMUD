@@ -508,7 +508,7 @@ debugLog (NoArgs' i mq) = helper >> ok mq >> logPlaExec (prefixDebugCmd "log") i
   where
     helper       = replicateM_ 100 . onNewThread $ heavyLogging
     heavyLogging = replicateM_ 100 . logNotice "debugLog heavyLogging" =<< mkMsg
-    mkMsg        = [ "Logging from " <> ti <> "." | (showText -> ti) <- liftIO myThreadId ]
+    mkMsg        = [ prd $ "Logging from " <> ti | (showText -> ti) <- liftIO myThreadId ]
 debugLog p = withoutArgs debugLog p
 
 

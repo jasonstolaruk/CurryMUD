@@ -167,7 +167,7 @@ awardExp amt reason i = getLvlExp i <$> getState >>= \(l, x) -> let diff = calcL
                               , " exp "
                               , parensQuote reason
                               , "."
-                              , logMsgs |!| " " <> (capitalize . (<> ".") . slashes $ logMsgs) ]
+                              , logMsgs |!| " " <> (capitalize . prd . slashes $ logMsgs) ]
             b = isNpc i ms ? True :? isLoggedIn (getPla i ms)
         when b . logPla "awardExp" i $ logMsg
   where
@@ -210,7 +210,7 @@ lvlUp i = helper
 consume :: Id -> [StomachCont] -> MudStack ()
 consume _ []     = unit
 consume i newScs = do
-    logPla "consume" i $ "consuming " <> commas (map pp newScs) <> "."
+    logPla "consume" i . prd $ "consuming " <> commas (map pp newScs)
     now <- liftIO getCurrentTime
     procEffectList i =<< modifyState (helper now)
   where
@@ -469,7 +469,7 @@ happy ms xformed =
 
 hasEnc :: Args -> Bool
 hasEnc [] = False
-hasEnc as = any (`elem` [ enc, enc's ]) as || last as == enc <> "."
+hasEnc as = any (`elem` [ enc, enc's ]) as || last as == prd enc
 
 
 -----
@@ -490,7 +490,7 @@ isAwake = onPla (uncurry (&&) . (isLoggedIn *** not . isIncognito) . dup) True
 
 
 isHeDon't :: Char -> Text -> Bool
-isHeDon't c msg = msg == T.singleton c <> "."
+isHeDon't c = (== prd (T.singleton c))
 
 
 -----

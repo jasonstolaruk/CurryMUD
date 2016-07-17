@@ -104,7 +104,7 @@ threadFeelingTimer i tag dur tq =
           Nothing                    -> unit
     exHandler :: SomeException -> MudStack ()
     exHandler e = case fromException e of
-      Just ThreadKilled  -> logHelper $ "killed " <> mkName <> "."
+      Just ThreadKilled  -> logHelper . prd $ "killed " <> mkName
       _                  -> logExMsg  tn ("exception caught on thread for " <> mkName) e
     mkName    = T.concat [ "feeling timer ", showText i, " ", dblQuote tag ]
     logHelper = logPla tn i

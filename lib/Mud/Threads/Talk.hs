@@ -66,8 +66,8 @@ threadTalk h host = helper `finally` cleanUp
             liftIO configBuffer
             dumpTitle  mq
             sendPrompt mq "By what name are you known?"
-            bcastAdmins $ "A new player has connected: " <> s <> "."
-            logNotice "threadTalk helper" $ "new PC name for incoming player: " <> s <> "."
+            bcastAdmins . prd $ "A new player has connected: " <> s
+            logNotice "threadTalk helper" . prd $ "new PC name for incoming player: " <> s
             onNewThread . threadInacTimer   i   mq $ tq
             a <- runAsync . threadReceive h i $ mq
             b <- runAsync . threadServer  h i   mq $ tq
@@ -75,7 +75,7 @@ threadTalk h host = helper `finally` cleanUp
     configBuffer = hSetBuffering h LineBuffering >> hSetNewlineMode h nlMode >> hSetEncoding h latin1
     nlMode       = NewlineMode { inputNL = CRLF, outputNL = CRLF }
     cleanUp      = do
-        logNotice "threadTalk cleanUp" $ "closing the handle for " <> T.pack host <> "."
+        logNotice "threadTalk cleanUp" . prd $ "closing the handle for " <> T.pack host
         liftIO . hClose $ h
 
 

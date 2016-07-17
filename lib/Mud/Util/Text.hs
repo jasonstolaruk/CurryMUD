@@ -25,6 +25,7 @@ module Mud.Util.Text ( aOrAn
                      , none
                      , noneOnNull
                      , notInfixOf
+                     , prd
                      , readNum
                      , replace
                      , showText
@@ -260,6 +261,13 @@ nlnlPrefix = nlPrefix . nlPrefix
 
 noneOnNull :: (Nullable a) => a -> a
 noneOnNull a = isNull a ? none :? a
+
+
+-----
+
+
+prd :: Text -> Text
+prd = (<> ".")
 
 
 -----

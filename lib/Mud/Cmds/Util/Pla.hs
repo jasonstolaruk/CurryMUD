@@ -389,7 +389,7 @@ mkGetDropInvDescs i ms d god (mkNameCountBothList i ms -> ncbs) = unzip . map he
         (  T.concat [ "You ",           mkGodVerb god SndPer, rest ]
         , (T.concat [ serialize d, " ", mkGodVerb god ThrPer, rest ], otherIds) )
       where
-        rest = spaced (showText c) <> mkPlurFromBoth b <> "."
+        rest = prd $ spaced (showText c) <> mkPlurFromBoth b
     otherIds = i `delete` desigIds d
 
 
@@ -474,7 +474,7 @@ mkCan'tGetCoinsDesc = mkCoinsMsgs (can'tCoinsDescHelper sorryGetEnc)
 
 
 can'tCoinsDescHelper :: Text -> Int -> Text -> Text
-can'tCoinsDescHelper t a cn = t <> (a == 1 ? ("the " <> cn <> ".") :? T.concat [ showText a, " ", cn, "s." ])
+can'tCoinsDescHelper t a cn = t <> (a == 1 ? prd ("the " <> cn) :? T.concat [ showText a, " ", cn, "s." ])
 
 
 -----
@@ -527,7 +527,7 @@ mkCan'tGetInvDescs i ms maxEnc = concatMap helper
 can'tInvDescsHelper :: Text -> Id -> MudState -> Inv -> [Text]
 can'tInvDescsHelper t i ms = map helper . mkNameCountBothList i ms
   where
-    helper (_, c, b@(s, _)) = t <> (c == 1 ?  ("the " <> s <> ".")
+    helper (_, c, b@(s, _)) = t <> (c == 1 ?  prd ("the " <> s)
                                            :? T.concat [ showText c, " ", mkPlurFromBoth b, "." ])
 
 
@@ -675,7 +675,7 @@ mkPutRemCoinsDescOthers i d por mnom conSing c = c |!| pure ( T.concat [ seriali
                                                                        , aCoinSomeCoins c
                                                                        , " "
                                                                        , mkPorPrep por ThrPer mnom conSing
-                                                                       , onTheGround mnom <> "." ]
+                                                                       , prd . onTheGround $ mnom ]
                                                            , i `delete` desigIds d )
 
 
@@ -685,7 +685,7 @@ mkPutRemCoinsDescsSelf por mnom conSing = mkCoinsMsgs helper
     helper a cn | a == 1 = T.concat [ partA, aOrAn cn,   " ",           partB ]
     helper a cn          = T.concat [ partA, showText a, " ", cn, "s ", partB ]
     partA                = "You " <> mkPorVerb por SndPer <> " "
-    partB                = mkPorPrep por SndPer mnom conSing <> onTheGround mnom <> "."
+    partB                = prd $ mkPorPrep por SndPer mnom conSing <> onTheGround mnom
 
 
 mkPorVerb :: PutOrRem -> Verb -> Text
@@ -781,7 +781,7 @@ mkPutRemInvDescs i ms d por mnom conSing = unzip . map helper . mkNameCountBothL
                     , spaced . mkPlurFromBoth $ b
                     , mkPorPrep por ThrPer mnom conSing
                     , rest ], otherIds) )
-    rest     = onTheGround mnom <> "."
+    rest     = prd . onTheGround $ mnom
     otherIds = i `delete` desigIds d
 
 
@@ -1096,7 +1096,7 @@ mkWritableMsgDesc cols ms targetId = case getWritable targetId ms of
   (Writable (Just _        ) (Just _)) -> helper "a language you don't recognize"
   (Writable (Just (_, lang)) Nothing ) -> helper . pp $ lang
   where
-    helper txt = wrapUnlines cols $ "There is something written on it in " <> txt <> "."
+    helper txt = wrapUnlines cols . prd $ "There is something written on it in " <> txt
 
 
 adminTagTxt :: Text

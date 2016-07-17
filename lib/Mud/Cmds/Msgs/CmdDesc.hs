@@ -5,6 +5,7 @@ module Mud.Cmds.Msgs.CmdDesc where
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Lang
 import Mud.Util.Quoting
+import Mud.Util.Text
 
 import Data.Monoid ((<>))
 import Data.Text (Text)
@@ -149,7 +150,7 @@ cmdDescRoomDesc = "Specify a temporary description to appear next to your name i
 
 
 cmdDescSay :: Lang -> Text
-cmdDescSay l = "Say something out loud" <> mkInLangTxtForLang l <> "."
+cmdDescSay l = prd $ "Say something out loud" <> mkInLangTxtForLang l
 
 
 cmdDescShow :: Text

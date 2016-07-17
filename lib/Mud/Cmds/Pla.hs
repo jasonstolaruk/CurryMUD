@@ -532,7 +532,7 @@ bonus (OneArgLower i mq cols a) = getState >>= \ms ->
           [targetSing] ->
               let targetId = getIdForMobSing targetSing ms
                   x        = calcBonus targetId ms
-                  bs       = pure ("You give a bonus to " <> targetSing <> ".", pure i)
+                  bs       = pure (prd $ "You give a bonus to " <> targetSing, pure i)
               in (fmap . fmap) getAll (canBonus targetSing) >>= \case
                 Just True  -> do { bcastNl . onTrue (()!# guessWhat) ((guessWhat, pure i) :) $ bs
                                  ; retainedMsg targetId ms . colorWith bonusColor . mkToTarget $ targetId
@@ -928,13 +928,13 @@ drink   (Lower   i mq cols [amt, target]) = getState >>= \ms -> let (isDrink, is
                           in (ms', [ when (()!# sorryMsgs) $ multiWrapSend mq cols sorryMsgs >> sendDfltPrompt mq i
                                    , bcastIfNotIncogNl i bs
                                    , sequence_ fs
-                                   , logMsgs |#| logPla "drink" i . (<> ".") . slashes ])
+                                   , logMsgs |#| logPla "drink" i . prd . slashes ])
                       (True,  True ) ->
                           let (inRms', (ms', _, bs, logMsgs), fs) = procHooks i ms v "drink" . pure $ hookArg
                           in if ()# inRms'
                             then (ms', [ bcastIfNotIncogNl i bs
                                        , sequence_ fs
-                                       , logMsgs |#| logPla "drink" i . (<> ".") . slashes ])
+                                       , logMsgs |#| logPla "drink" i . prd . slashes ])
                             else sorry . sorryDrinkRmWithHooks . head $ inRms
                       a -> patternMatchFail "drink helper next drinkRm" . showText $ a
             in if
@@ -1065,7 +1065,7 @@ emptyAction p@AdviseNoArgs            = advise p ["empty"] adviceEmptyNoArgs
 emptyAction   (LowerNub i mq cols as) = helper |&| modifyState >=> \(toSelfs, bs, logSings) -> do
     multiWrapSend mq cols toSelfs
     bcastIfNotIncogNl i bs
-    logSings |#| logPla "emptyAction" i . (<> ".") . ("emptied " <>) . commas
+    logSings |#| logPla "emptyAction" i . prd . ("emptied " <>) . commas
   where
     helper ms =
         let (inInvs, inEqs, inRms)       = sortArgsInvEqRm InInv as
@@ -1086,7 +1086,7 @@ emptyAction   (LowerNub i mq cols as) = helper |&| modifyState >=> \(toSelfs, bs
             let s            = getSing targetId ms
                 alreadyEmpty = a' & _2 <>~ pure (sorryEmptyAlready s)
                 emptyIt      = a' & _1 .~  (ms & vesselTbl.ind targetId.vesselCont .~ Nothing)
-                                  & _2 <>~ pure ("You empty the contents of the " <> s <> ".")
+                                  & _2 <>~ pure (prd $ "You empty the contents of the " <> s)
                                   & _3 <>~ pure ( T.concat [ serialize d, " empties the contents of ", aOrAn s, "." ]
                                                 , i `delete` desigIds d )
                                   & _4 <>~ pure s
@@ -1707,8 +1707,8 @@ intro (LowerNub i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
         tryIntro a'@(pt, _, _, _) targetId = let targetSing = getSing targetId ms in case getType targetId ms of
           PCType -> let s           = getSing i ms
                         targetDesig = serialize . mkStdDesig targetId ms $ Don'tCap
-                        msg         = "You introduce yourself to " <> targetDesig <> "."
-                        logMsg      = "Introduced to " <> targetSing <> "."
+                        msg         = prd $ "You introduce yourself to " <> targetDesig
+                        logMsg      = prd $ "Introduced to " <> targetSing
                         srcMsg      = nlnl msg
                         is          = findMobIds ms ris
                         srcDesig    = StdDesig { desigEntSing   = Nothing
@@ -1977,7 +1977,7 @@ look (LowerNub i mq cols as) = mkRndmVector >>= \v ->
                                                             | targetDesig <- targetDesigs ]
                                            = "looked at " <> commas targetSings
             logMsg = T.intercalate " / " . dropBlanks $ [ maybe "" mkLogMsgForDesigs maybeTargetDesigs, hookLogMsg ]
-        logMsg |#| logPla "look" i . (<> ".")
+        logMsg |#| logPla "look" i . prd
   where
     helper v ms =
         let invCoins               = first (i `delete`) . getMobRmNonIncogInvCoins i $ ms
@@ -2215,9 +2215,9 @@ npcExorcise p = execIfPossessed p "stop" npcExorciseHelper
 
 npcExorciseHelper :: ActionFun
 npcExorciseHelper (NoArgs i mq cols) = getState >>= \ms -> let pi = fromJust . getPossessor i $ ms in do
-    wrapSend mq cols $ "You stop possessing " <> aOrAnOnLower (getSing    i ms) <> "."
+    wrapSend mq cols . prd $ "You stop possessing " <> aOrAnOnLower (getSing    i ms)
     sendDfltPrompt mq pi
-    logPla "stop" i  $ "stopped possessing "  <> aOrAnOnLower (descSingId i ms) <> "."
+    logPla "stop" i  . prd $ "stopped possessing "  <> aOrAnOnLower (descSingId i ms)
     tweaks [ plaTbl.ind pi.possessing .~ Nothing, npcTbl.ind i.possessor .~ Nothing ]
 npcExorciseHelper p = withoutArgs npcExorciseHelper p
 
@@ -2357,7 +2357,7 @@ interpVerifyNewPW oldPW pass cn (NoArgs i mq cols)
       wrapSend mq cols $ "Password changed. " <> pwWarningMsg
       sendDfltPrompt mq i
       resetInterp i
-      logPla "interpVerifyNewPW" i $ "password changed " <> parensQuote ("was " <> dblQuote oldPW) <> "."
+      logPla "interpVerifyNewPW" i . prd $ "password changed " <> parensQuote ("was " <> dblQuote oldPW)
   | otherwise = pwSorryHelper i mq cols sorryInterpNewPwMatch
 interpVerifyNewPW _ _ _ p = patternMatchFail "interpVerifyNewPW" . showText $ p
 
@@ -2553,7 +2553,7 @@ readAction (LowerNub i mq cols as) = (,) <$> getState <*> mkRndmVector >>= \(ms,
     ioHelper (toSelf, bs, logMsgs) = do
         send mq toSelf
         bcastIfNotIncogNl i bs
-        logMsgs |#| logPla "read" i . (<> ".") . slashes
+        logMsgs |#| logPla "read" i . prd . slashes
     wrapper = T.unlines . map (multiWrap cols . T.lines)
 readAction p = patternMatchFail "readAction" . showText $ p
 
@@ -2590,7 +2590,7 @@ readHelper i cols ms d = foldl' helper
                    \squirming and melting into new forms. In a matter of seconds, the text transforms into "
                  , nl $ if b
                      then "the following message, written in " <> pp lang <> ":"
-                     else "a message written in "              <> pp lang <> "." ]
+                     else prd $ "a message written in " <> pp lang ]
 
 
 -----
@@ -2921,8 +2921,8 @@ roomDesc (WithArgs i mq cols (T.unwords -> desc@(dblQuote -> desc'))) = if T.len
   then wrapSend mq cols $ "A room description cannot exceed " <> showText maxMobRmDescLen <> " characters in length."
   else do
     tweak $ mobTbl.ind i.mobRmDesc ?~ desc
-    wrapSend mq cols $ "Your room description has been set to " <> desc' <> "."
-    logPla "roomDesc" i $ "room description set to " <> desc' <> "."
+    wrapSend mq cols . prd $ "Your room description has been set to " <> desc'
+    logPla "roomDesc" i . prd $ "room description set to " <> desc'
 roomDesc p = patternMatchFail "roomDesc" . showText $ p
 
 
@@ -3444,7 +3444,7 @@ smell (OneArgLower i mq cols a) = getState >>= \ms ->
                                                             , " smells "
                                                             , aCoinSomeCoins canCoins
                                                             , "." ], i `delete` desigIds d)
-                         logMsg            = "smelled " <> aCoinSomeCoins canCoins <> "."
+                         logMsg            = prd $ "smelled " <> aCoinSomeCoins canCoins
                      in ioHelper smellDesc bs logMsg
                 else wrapSend mq cols . head $ can'tCoinMsgs
           | otherwise -> case head eiss of
@@ -3511,7 +3511,7 @@ smell (OneArgLower i mq cols a) = getState >>= \ms ->
                                , hooksToSelfs |#| multiWrapSend mq cols
                                , bcastIfNotIncogNl i hooksBs
                                , sequence_ fs
-                               , hooksLogMsgs |#| logPla "smell" i . (<> ".") . slashes ])
+                               , hooksLogMsgs |#| logPla "smell" i . prd . slashes ])
                 in mkRndmVector >>= \v -> helper v |&| modifyState >=> sequence_
             (True,  True ) ->
                 let helper v ms'
@@ -3520,7 +3520,7 @@ smell (OneArgLower i mq cols a) = getState >>= \ms ->
                           then (ms'', [ hooksToSelfs |#| multiWrapSend mq cols
                                       , bcastIfNotIncogNl i hooksBs
                                       , sequence_ fs
-                                      , hooksLogMsgs |#| logPla "smell" i . (<> ".") . slashes ])
+                                      , hooksLogMsgs |#| logPla "smell" i . prd . slashes ])
                           else (ms', pure . smellRmHelper . head $ eiss)
                 in mkRndmVector >>= \v -> helper v |&| modifyState >=> sequence_
             x -> patternMatchFail "smell smellRm" . showText $ x
@@ -3535,7 +3535,7 @@ smell (OneArgLower i mq cols a) = getState >>= \ms ->
                                                             , targetDesig
                                                             , "." ], desigIds d \\ [ i, targetId ])
                                                 , (serialize d <> " smells you.", pure targetId) ]
-                                  logMsg      = parseExpandDesig i ms $ "smelled " <> targetDesig <> "."
+                                  logMsg      = parseExpandDesig i ms . prd $ "smelled " <> targetDesig
                                   smellMob    = ioHelper smellDesc bs logMsg
                               in case getType targetId ms of NpcType -> smellMob
                                                              PCType  -> smellMob
@@ -3553,15 +3553,14 @@ smell p = advise p ["smell"] adviceSmellExcessArgs
 -----
 
 
--- TODO: Known langs.
 stats :: ActionFun
 stats (NoArgs i mq cols) = getState >>= \ms ->
     let mkStats   = dropEmpties [ top
                                 , xpsHelper
-                                , pp . getHand i $ ms
-                                , "level " <> showText l
-                                , commaShow expr <> " experience points"
-                                , commaShow nxt  <> " experience points to next level"
+                                , prd . capitalize . pp . getHand i $ ms
+                                , prd $ "Level " <> showText l
+                                , commaShow expr <> " experience points."
+                                , commaShow nxt  <> " experience points to next level."
                                 , skillPtsHelper
                                 , mobRmDescHelper
                                 , charDescHelper ]
@@ -3575,7 +3574,7 @@ stats (NoArgs i mq cols) = getState >>= \ms ->
         (l, expr)       = getLvlExp i ms
         nxt             = subtract expr . snd $ calcLvlExps !! l
         skillPtsHelper  = let pts = getSkillPts i ms in (pts > 0) |?| (commaShow pts <> " unspent skill points")
-        mobRmDescHelper = maybe "" (("Your room description is " <>) . (<> "."))       $ dblQuote <$> getMobRmDesc i ms
+        mobRmDescHelper = maybe "" (prd . ("Your room description is " <>))            $ dblQuote <$> getMobRmDesc i ms
         charDescHelper  = maybe "" ("Your supplementary character description is " <>) $ dblQuote <$> getCharDesc  i ms
     in multiWrapSend mq cols mkStats >> logPlaExec "stats" i
 stats p = withoutArgs stats p
@@ -3603,8 +3602,8 @@ stop p = advise p ["stop"] adviceStopExcessArgs
 
 
 stopLogHelper :: Id -> [ActType] -> MudStack ()
-stopLogHelper i [actType] = logPla "stop" i $ "stopped " <> pp actType                                  <> "."
-stopLogHelper i actTypes  = logPla "stop" i $ "stopped " <> (T.intercalate " and " . map pp $ actTypes) <> "."
+stopLogHelper i [actType] = logPla "stop" i . prd $ "stopped " <> pp actType
+stopLogHelper i actTypes  = logPla "stop" i . prd $ "stopped " <> (T.intercalate " and " . map pp $ actTypes)
 
 
 mkStopTuples :: ActionParams -> MudState -> [(Text, ActType, Bool, MudStack ())]
@@ -3621,7 +3620,7 @@ stopMoving _ _ = undefined -- TODO
 stopEating :: ActionParams -> MudState -> MudStack ()
 stopEating (WithArgs i mq cols _) ms =
     let Just s      = getNowEating i ms
-        toSelf      = "You stop eating " <> theOnLower s <> "."
+        toSelf      = prd $ "You stop eating " <> theOnLower s
         d           = mkStdDesig i ms DoCap
         bcastHelper = bcastIfNotIncogNl i . pure $ ( T.concat [ serialize d
                                                               , " stops eating "
@@ -3676,14 +3675,14 @@ taste   (OneArgLower i mq cols a) = getState >>= \ms ->
               let (canCoins, can'tCoinMsgs) = distillEcs ecs
               in if ()# can'tCoinMsgs
                 then let (coinTxt, _) = mkCoinPieceTxt canCoins
-                         tasteDesc    = "You are first struck by an unmistakably metallic taste, followed soon by the salty \
-                                        \taste of sweat and waxy residue left by the hands of the many people who have handled \
-                                        \the " <> coinTxt <> " before you" <> "."
+                         tasteDesc    = prd $ "You are first struck by an unmistakably metallic taste, followed soon \
+                                              \by the salty taste of sweat and waxy residue left by the hands of the \
+                                              \many people who have handled the " <> coinTxt <> " before you"
                          bs           = pure (T.concat [ serialize d
                                                        , " tastes "
                                                        , aCoinSomeCoins canCoins
                                                        , "." ], i `delete` desigIds d)
-                         logMsg       = "tasted " <> aCoinSomeCoins canCoins <> "."
+                         logMsg       = prd $ "tasted " <> aCoinSomeCoins canCoins
                      in ioHelper tasteDesc bs logMsg
                 else wrapSend mq cols . head $ can'tCoinMsgs
           | otherwise -> case head eiss of
@@ -4028,7 +4027,7 @@ uptimeHelper up = helper <$> getSum `fmap2` getRecordUptime
     helper         = maybe mkUptimeTxt (\recUp -> up > recUp ? mkNewRecTxt :? mkRecTxt recUp)
     mkUptimeTxt    = mkTxtHelper "."
     mkNewRecTxt    = mkTxtHelper $ " - " <> colorWith newRecordColor "it's a new record!"
-    mkRecTxt recUp = mkTxtHelper $ " " <> parensQuote ("record uptime: " <> renderIt recUp) <> "."
+    mkRecTxt recUp = mkTxtHelper . prd $ " " <> parensQuote ("record uptime: " <> renderIt recUp)
     mkTxtHelper    = ("Up " <>) . (renderIt up <>)
     renderIt       = T.pack . renderSecs . fromIntegral
 

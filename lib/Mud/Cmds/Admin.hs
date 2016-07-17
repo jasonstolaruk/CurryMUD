@@ -409,7 +409,7 @@ adminBoot (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
                     | not . isLoggedIn . getPla bootId $ ms -> sendFun . sorryLoggedOut $ strippedTarget
                     | bootId == i -> sendFun sorryBootSelf
                     | bootMq <- getMsgQueue bootId ms, f <- ()# msg ? dfltMsg :? customMsg -> do
-                        sendFun $ "You have booted " <> strippedTarget <> "."
+                        sendFun . prd $ "You have booted " <> strippedTarget
                         sendMsgBoot bootMq =<< f bootId strippedTarget selfSing
                         bcastAdminsExcept [ i, bootId ] . T.concat $ [ selfSing, " booted ", strippedTarget, "." ]
       xs       -> patternMatchFail "adminBoot" . showText $ xs
@@ -894,7 +894,7 @@ adminHost p = patternMatchFail "adminHost" . showText $ p
 
 mkHostReport :: MudState -> UTCTime -> TimeZone -> Id -> Sing -> [Text]
 mkHostReport ms now zone i s = (header ++) $ case getHostMap s ms of
-  Nothing      -> [ "There are no host records for " <> s <> "." ]
+  Nothing      -> pure . prd $ "There are no host records for " <> s
   Just hostMap | duration' <- ili |?| duration
                , total     <- M.foldl (\acc -> views secsConnected (+ acc)) 0 hostMap + getSum duration'
                , totalDesc <- "Grand total time connected: " <> renderIt total
@@ -947,7 +947,7 @@ adminIncognito p = withoutArgs adminIncognito p
 adminIp :: ActionFun
 adminIp (NoArgs i mq cols) = do
     ifList <- liftIO mkInterfaceList
-    multiWrapSend mq cols [ "Interfaces: " <> ifList <> ".", "Listening on port " <> showText port <> "." ]
+    multiWrapSend mq cols [ prd $ "Interfaces: " <> ifList, prd $ "Listening on port " <> showText port ]
     logPlaExec (prefixAdminCmd "ip") i
 adminIp p = withoutArgs adminIp p
 
@@ -1048,8 +1048,8 @@ adminPassword p@(WithTarget i mq cols target pw)
                 withDbExHandler_ fn . insertDbTblUnPw . UnPwRec strippedTarget $ pw
                 sendFun $ strippedTarget <> "'s password has been changed."
                 let msg      = T.concat [ getSing i ms, " has changed ", strippedTarget, "'s password" ]
-                    oldPwMsg = " " <> parensQuote ("was " <> dblQuote oldPW) <> "."
-                bcastOtherAdmins i $ msg <> "."
+                    oldPwMsg = prd $ " " <> parensQuote ("was " <> dblQuote oldPW)
+                bcastOtherAdmins i . prd $ msg
                 logPla fn i . T.concat $ [ "changed ", strippedTarget, "'s password", oldPwMsg ]
                 logNotice fn $ msg <> oldPwMsg
             Just Nothing -> blowUp fn "password not found in database" strippedTarget
@@ -1098,7 +1098,7 @@ adminPeep p@AdviseNoArgs = advise p [ prefixAdminCmd "peep" ] adviceAPeepNoArgs
 adminPeep (LowerNub i mq cols as) = do
     (msgs, unzip -> (logMsgsSelf, logMsgsOthers)) <- modifyState helper
     multiWrapSend mq cols msgs
-    logPla "adminPeep" i . (<> ".") . slashes $ logMsgsSelf
+    logPla "adminPeep" i . prd . slashes $ logMsgsSelf
     forM_ logMsgsOthers . uncurry . logPla $ "adminPeep"
   where
     helper ms =
@@ -1113,12 +1113,12 @@ adminPeep (LowerNub i mq cols as) = do
                         | otherwise       ->
                           let pt'     = pt & ind i     .peeping %~ (peepId :)
                                            & ind peepId.peepers %~ (i      :)
-                              msg     = "You are now peeping " <> peepSing <> "."
+                              msg     = prd $ "You are now peeping " <> peepSing
                               logMsgs = [("started peeping " <> peepSing, (peepId, s <> " started peeping."))]
                           in a & _1 .~ pt' & _2 %~ (msg :) & _3 <>~ logMsgs
                       else let pt'     = pt & ind i     .peeping %~ (peepId `delete`)
                                             & ind peepId.peepers %~ (i      `delete`)
-                               msg     = "You are no longer peeping " <> peepSing <> "."
+                               msg     = prd $ "You are no longer peeping " <> peepSing
                                logMsgs = [("stopped peeping " <> peepSing, (peepId, s <> " stopped peeping."))]
                            in a & _1 .~ pt' & _2 %~ (msg :) & _3 <>~ logMsgs
                 in findFullNameForAbbrev target apiss |&| maybe notFound found
@@ -1152,7 +1152,7 @@ adminPossess (OneArgNubbed i mq cols target) = helper |&| modifyState >=> sequen
                 can'tPossess pi = sorry . sorryAlreadyPossessed targetSing . getSing pi $ ms
                 canPossess      = ( ms & plaTbl.ind i       .possessing ?~ targetId
                                        & npcTbl.ind targetId.possessor  ?~ i
-                                  , [ sendFun $ "You are now possessing " <> aOrAnOnLower targetSing <> "."
+                                  , [ sendFun . prd $ "You are now possessing " <> aOrAnOnLower targetSing
                                     , sendDfltPrompt mq targetId
                                     , logPla "adminPossess" i $ "started possessing "                 <>
                                                                 aOrAnOnLower (descSingId targetId ms) <>
@@ -1235,7 +1235,7 @@ adminSecurity   (LowerNub i mq cols as) = (withDbExHandler "adminSecurity" . get
   Nothing   -> dbError mq cols
   where
     helper recs target = case filter ((target `T.isPrefixOf`) . (dbName :: SecRec -> Text)) recs of
-      []      -> pure . pure $ "No records found for " <> dblQuote target <> "."
+      []      -> pure . pure . prd $ "No records found for " <> dblQuote target
       matches -> map mkSecReport matches
 adminSecurity p = patternMatchFail "adminSecurity" . showText $ p
 
@@ -1389,7 +1389,7 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
               Assign -> let toSelf   = pure . T.concat $ [ "Set sex to ", pp x, mkDiffTxt isDiff, "." ]
                             prev     = getSex targetId ms
                             isDiff   = x /= prev
-                            toTarget = pure $ "Your sex has changed to " <> pp x <> "."
+                            toTarget = pure . prd $ "Your sex has changed to " <> pp x
                         in a & _1.mobTbl.ind targetId.sex .~ x
                              & _2 <>~ toSelf
                              & _3 <>~ (isDiff |?| toTarget)
@@ -1477,7 +1477,7 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
               Assign -> let toSelf   = pure . T.concat $ [ "Set hand to ", pp x, mkDiffTxt isDiff, "." ]
                             prev     = getHand targetId ms
                             isDiff   = x /= prev
-                            toTarget = pure $ "Your handedness has changed to " <> pp x <> "."
+                            toTarget = pure . prd $ "Your handedness has changed to " <> pp x
                         in a & _1.mobTbl.ind targetId.hand .~ x
                              & _2 <>~ toSelf
                              & _3 <>~ (isDiff |?| toTarget)
@@ -1505,7 +1505,7 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
                               SubAssign -> addSubAssignHelper (\\)
           where
             mkToSelf   x isDiff = pure . T.concat $ [ "Set knownLangs to ", ppList x, mkDiffTxt isDiff, "." ]
-            mkToTarget x        = pure $ "Your known languages have changed to " <> ppList x <> "."
+            mkToTarget x        = pure . prd $ "Your known languages have changed to " <> ppList x
         -----
         setMobRmDescHelper t
           | not . hasMob $ t = sorryType
@@ -1545,7 +1545,7 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
               Assign -> let toSelf   = pure . T.concat $ [ "Set race to ", pp x, mkDiffTxt isDiff, "." ]
                             prev     = getRace targetId ms
                             isDiff   = x /= prev
-                            toTarget = pure $ "Your race has changed to " <> pp x <> "."
+                            toTarget = pure . prd $ "Your race has changed to " <> pp x
                         in a & _1.pcTbl.ind targetId.race .~ x
                              & _2 <>~ toSelf
                              & _3 <>~ (isDiff |?| toTarget)
@@ -1624,7 +1624,7 @@ adminShutdown p                  = patternMatchFail "adminShutdown" . showText $
 shutdownHelper :: Id -> MsgQueue -> Maybe Text -> MudStack ()
 shutdownHelper i mq maybeMsg = getState >>= \ms ->
     let s    = getSing i ms
-        rest = maybeMsg |&| maybe (" " <> parensQuote "no message given" <> ".") (("; message: " <>) . dblQuote)
+        rest = maybeMsg |&| maybe (prd $ " " <> parensQuote "no message given") (("; message: " <>) . dblQuote)
     in do
         massSend . colorWith shutdownMsgColor . fromMaybe dfltShutdownMsg $ maybeMsg
         logPla     "shutdownHelper" i $ "initiating shutdown" <> rest
@@ -1754,7 +1754,7 @@ teleHelper p@ActionParams { myId } ms originId destId destName mt f =
                                                    , (nlnl . teleOriginMsg . serialize $ originDesig, originMobIds)
                                                    , (nlnl . teleDestMsg               $ destDesig,   destMobIds  ) ]
              , look p
-             , logPla "telehelper" myId $ "teleported to " <> dblQuote destName <> "."
+             , logPla "telehelper" myId . prd $ "teleported to " <> dblQuote destName
              , rndmDos [ (calcProbTeleDizzy   myId ms, mkExpAction "dizzy"   p)
                        , (calcProbTeleShudder myId ms, mkExpAction "shudder" p) ] ])
 

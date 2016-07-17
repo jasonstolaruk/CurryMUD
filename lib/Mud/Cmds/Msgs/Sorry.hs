@@ -362,7 +362,7 @@ sorryAdminChanTargetName = sorryChanTargetName "admin"
 
 
 sorryAdminName :: Text -> Text
-sorryAdminName n = "There is no administrator by the name of " <> dblQuote n <> "."
+sorryAdminName n = prd $ "There is no administrator by the name of " <> dblQuote n
 
 
 -----
@@ -406,7 +406,7 @@ sorryAlreadyPossessed a b = but . T.concat $ [ theOnLower a, " is already posses
 
 
 sorryAlreadyPossessing :: Sing -> Text
-sorryAlreadyPossessing s = "You are already possessing " <> theOnLower s <> "."
+sorryAlreadyPossessing s = prd $ "You are already possessing " <> theOnLower s
 
 
 -----
@@ -451,7 +451,7 @@ sorryBanSelf = can't "ban yourself."
 
 
 sorryBonusCount :: Sing -> Text
-sorryBonusCount s = "You have already given the maximum number of 5 bonuses to " <> s <> "."
+sorryBonusCount s = prd $ "You have already given the maximum number of 5 bonuses to " <> s
 
 
 sorryBonusIgnore :: Text
@@ -463,7 +463,7 @@ sorryBonusLvl = "You must be at least level 3 to give a bonus."
 
 
 sorryBonusName :: Text -> Text
-sorryBonusName n = "You don't know anyone by the name of " <> dblQuote n <> "."
+sorryBonusName n = prd $ "You don't know anyone by the name of " <> dblQuote n
 
 
 sorryBonusTime :: Text
@@ -496,7 +496,7 @@ sorryChanMsg = "You must also provide a message to send."
 
 
 sorryChanName :: ChanName -> Text
-sorryChanName cn = "You are not connected to a channel named " <> dblQuote cn <> "."
+sorryChanName cn = prd $ "You are not connected to a channel named " <> dblQuote cn
 
 
 sorryChanNoOneListening :: Text -> Text
@@ -636,7 +636,7 @@ sorryDrinkRmWithHooks t = T.concat [ "You don't see "
 
 
 sorryDrinkType :: Sing -> Text
-sorryDrinkType s = can't "drink from " <> aOrAn s <> "."
+sorryDrinkType s = prd $ can't "drink from " <> aOrAn s
 
 
 -----
@@ -675,7 +675,7 @@ sorryEmoteTargetRmOnly = "You can only target a person in your current room."
 
 
 sorryEmoteTargetType :: Sing -> Text
-sorryEmoteTargetType s = can'tTarget $ aOrAn s <> "."
+sorryEmoteTargetType s = prd . can'tTarget $ aOrAn s
 
 
 -----
@@ -706,7 +706,7 @@ sorryEmptyInRm = butCan't "empty a vessel in your current room. Please pick up t
 
 
 sorryEmptyType :: Sing -> Text
-sorryEmptyType s = can't "empty " <> aOrAn s <> "."
+sorryEmptyType s = prd $ can't "empty " <> aOrAn s
 
 
 -----
@@ -755,7 +755,7 @@ sorryExpCmdLen = "An expressive command sequence may not be more than 2 words lo
 
 
 sorryExpCmdName :: Text -> Text
-sorryExpCmdName cn = "There is no expressive command by the name of " <> dblQuote cn <> "."
+sorryExpCmdName cn = prd $ "There is no expressive command by the name of " <> dblQuote cn
 
 
 sorryExpCmdIllegalTarget :: ExpCmdName -> Text
@@ -889,7 +889,7 @@ sorryGetNothingHere = "You don't see anything to pick up here."
 
 
 sorryGetType :: Text -> Text
-sorryGetType t = can't "pick up " <> t <> "."
+sorryGetType t = prd $ can't "pick up " <> t
 
 
 sorryGetWeight :: Sing -> Text
@@ -928,7 +928,7 @@ sorryGiveToInv = can't "give something to an item in your inventory."
 
 
 sorryGiveType :: Sing -> Text
-sorryGiveType s = can't "give something to " <> aOrAn s <> "."
+sorryGiveType s = prd $ can't "give something to " <> aOrAn s
 
 
 -----
@@ -946,7 +946,7 @@ sorryGoParseDir t = dblQuote t <> " is not a valid exit."
 
 
 sorryHelpName :: Text -> Text
-sorryHelpName t = "No help is available on " <> dblQuote t <> "."
+sorryHelpName t = prd $ "No help is available on " <> dblQuote t
 
 
 -----
@@ -1065,7 +1065,7 @@ sorryInterpPwLoggedIn s = s <> " is already logged in."
 
 
 sorryIntroAlready :: Text -> Text
-sorryIntroAlready n = "You've already introduced yourself to " <> n <> "."
+sorryIntroAlready n = prd $ "You've already introduced yourself to " <> n
 
 
 sorryIntroCoin :: Text
@@ -1085,7 +1085,7 @@ sorryIntroNoOneHere = "You don't see anyone here to introduce yourself to."
 
 
 sorryIntroType :: Sing -> Text
-sorryIntroType s = can't "introduce yourself to " <> theOnLower s <> "."
+sorryIntroType s = prd $ can't "introduce yourself to " <> theOnLower s
 
 
 -----
@@ -1108,7 +1108,7 @@ sorryLinkInInv = can't "establish a telepathic link with an item in your invento
 
 
 sorryLinkIntroSelf :: Sing -> Text
-sorryLinkIntroSelf s = "You must first introduce yourself to " <> s <> "."
+sorryLinkIntroSelf s = prd $ "You must first introduce yourself to " <> s
 
 
 sorryLinkIntroTarget :: Text -> Text
@@ -1120,7 +1120,7 @@ sorryLinkNoOneHere = "You don't see anyone here to link with."
 
 
 sorryLinkType :: Sing -> Text
-sorryLinkType s = can't "establish a telepathic link with " <> theOnLower s <> "."
+sorryLinkType s = prd $ can't "establish a telepathic link with " <> theOnLower s
 
 
 -----
@@ -1152,7 +1152,7 @@ sorryMsgIncog = can't "send a message to a player who is logged in while you are
 
 
 sorryNewChanExisting :: ChanName -> Text
-sorryNewChanExisting cn = "You are already connected to a channel named " <> dblQuote cn <> "."
+sorryNewChanExisting cn = prd $ "You are already connected to a channel named " <> dblQuote cn
 
 
 sorryNewChanName :: Text -> Text -> Text
@@ -1186,7 +1186,7 @@ sorryNoOneHere = "You don't see anyone here."
 sorryNonexistentId :: Id -> [Text] -> Text
 sorryNonexistentId i ts = T.concat [ "ID ", showText i, " does not exist in ", case ts of
   [t] -> "the " <> t <> " table."
-  _   -> "any of the following tables: " <> commas ts <> "." ]
+  _   -> prd $ "any of the following tables: " <> commas ts ]
 
 
 -----
@@ -1211,7 +1211,7 @@ sorryNoLinks = "You haven't established a telepathic link with anyone."
 
 
 sorryPCName :: Text -> Text
-sorryPCName n = "There is no PC by the name of " <> dblQuote n <> "."
+sorryPCName n = prd $ "There is no PC by the name of " <> dblQuote n
 
 
 sorryPCNameLoggedIn :: Text -> Text
@@ -1293,7 +1293,7 @@ sorryPeepSelf = can't "peep yourself."
 
 
 sorryPickNotFlower :: Text -> Text
-sorryPickNotFlower t = can't "pick " <> aOrAn t <> "."
+sorryPickNotFlower t = prd $ can't "pick " <> aOrAn t
 
 
 sorryPickInEq :: Text
@@ -1309,14 +1309,14 @@ sorryPickInInv = can't "pick an item in your inventory."
 
 
 sorryPossessType :: Sing -> Text
-sorryPossessType s = can't "possess " <> aOrAn s <> "."
+sorryPossessType s = prd $ can't "possess " <> aOrAn s
 
 
 -----
 
 
 sorryPp :: Text -> Text
-sorryPp t = "You don't have enough psionic energy to " <> t <> "."
+sorryPp t = prd $ "You don't have enough psionic energy to " <> t
 
 
 -----
@@ -1397,7 +1397,7 @@ sorryReadOrigLang lang = "Most unfortunately, as you don't know " <> pp lang <> 
 
 
 sorryReadType :: Sing -> Text
-sorryReadType s = can't "read the " <> s <> "."
+sorryReadType s = prd $ can't "read the " <> s
 
 
 sorryReadUnknownLang :: Sing -> Text
@@ -1414,7 +1414,7 @@ sorryReadWithHooks t = dblQuote t                                               
 
 
 sorryReadyAlreadyWearing :: Text -> Text
-sorryReadyAlreadyWearing t = "You're already wearing " <> aOrAn t <> "."
+sorryReadyAlreadyWearing t = prd $ "You're already wearing " <> aOrAn t
 
 
 sorryReadyAlreadyWearingRing :: Slot -> Sing -> Text
@@ -1462,11 +1462,11 @@ sorryReadyRol s rol = can't . T.concat $ [ "wear ", aOrAn s, " on your ", pp rol
 
 
 sorryReadyType :: Sing -> Text
-sorryReadyType s = can't "ready " <> aOrAn s <> "."
+sorryReadyType s = prd $ can't "ready " <> aOrAn s
 
 
 sorryReadyWpnHands :: Sing -> Text
-sorryReadyWpnHands s = "Both hands are required to wield the " <> s <> "."
+sorryReadyWpnHands s = prd $ "Both hands are required to wield the " <> s
 
 
 sorryReadyWpnRol :: Sing -> Text
@@ -1477,7 +1477,7 @@ sorryReadyWpnRol s = can't "wield " <> aOrAn s <> " with your finger!"
 
 
 sorryRegPlaName :: Text -> Text
-sorryRegPlaName n = "There is no regular player by the name of " <> dblQuote n <> "."
+sorryRegPlaName n = prd $ "There is no regular player by the name of " <> dblQuote n
 
 
 -----
@@ -1527,7 +1527,7 @@ sorrySayNoOneHere = "You don't see anyone here to talk to."
 
 
 sorrySayTargetType :: Sing -> Text
-sorrySayTargetType s = can't "talk to " <> aOrAn s <> "."
+sorrySayTargetType s = prd $ can't "talk to " <> aOrAn s
 
 
 -----
@@ -1565,7 +1565,7 @@ sorryShowInRm = can't "show an item in your current room."
 
 
 sorryShowTarget :: Text -> Text
-sorryShowTarget t = can't "show something to " <> aOrAn t <> "."
+sorryShowTarget t = prd $ can't "show something to " <> aOrAn t
 
 
 -----
@@ -1672,7 +1672,7 @@ sorryTasteNothingToTaste = "There isn't anything to taste."
 
 
 sorryTasteType :: Sing -> Text
-sorryTasteType s = can't "taste " <> aOrAn s <> "."
+sorryTasteType s = prd $ can't "taste " <> aOrAn s
 
 
 -----
@@ -1712,7 +1712,7 @@ sorryTrashInRm = butCan't "dispose of an item in your current room. Please pick 
 
 
 sorryTuneName :: Text -> Text
-sorryTuneName n = "You don't have a connection by the name of " <> dblQuote n <> "."
+sorryTuneName n = prd $ "You don't have a connection by the name of " <> dblQuote n
 
 
 -----
@@ -1735,7 +1735,7 @@ sorryTunedOutOOCChan = sorryTunedOutChan "set" Don'tQuote
 
 
 sorryTunedOutPCSelf :: Sing -> Text
-sorryTunedOutPCSelf s = "You have tuned out " <> s <> "."
+sorryTunedOutPCSelf s = prd $ "You have tuned out " <> s
 
 
 sorryTunedOutPCTarget :: Sing -> Text
@@ -1746,7 +1746,7 @@ sorryTunedOutPCTarget s = s <> " has tuned you out."
 
 
 sorryTwoWayLink :: Text -> Text
-sorryTwoWayLink t = "You haven't established a two-way telepathic link with anyone named " <> dblQuote t <> "."
+sorryTwoWayLink t = prd $ "You haven't established a two-way telepathic link with anyone named " <> dblQuote t
 
 
 sorryTwoWayTargetName :: ExpCmdName -> Sing -> Text
@@ -1770,7 +1770,7 @@ sorryUnlinkIgnore = sorryIgnoreLocPrefPlur "The names of the people with whom yo
 
 
 sorryUnlinkName :: Text -> Text
-sorryUnlinkName t = "You don't have a link with " <> dblQuote t <> "."
+sorryUnlinkName t = prd $ "You don't have a link with " <> dblQuote t
 
 
 -----
@@ -1812,7 +1812,7 @@ sorryWhisperNoOneHere = "You don't see anyone here to whisper to."
 
 
 sorryWhisperTargetType :: Sing -> Text
-sorryWhisperTargetType s = can't "whisper to " <> aOrAn s <> "."
+sorryWhisperTargetType s = prd $ can't "whisper to " <> aOrAn s
 
 
 -----
@@ -1844,4 +1844,4 @@ sorryWtf = colorWith wtfColor "He don't."
 
 
 sorryWut :: Text -> Text
-sorryWut t = "I don't understand " <> dblQuote t <> "."
+sorryWut t = prd $ "I don't understand " <> dblQuote t

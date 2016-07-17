@@ -10,7 +10,6 @@ import Mud.Util.Text
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Data.Char (isLetter)
-import Data.Monoid ((<>))
 import Data.Text (Text)
 import qualified Data.Text as T
 
@@ -46,7 +45,7 @@ punctuateMsg = \case "" -> ""
                      x@(T.uncons -> Just (c, "")) | isPunc c  -> x
                                                   | otherwise -> c `T.cons` "."
                      x@(T.last   -> c)            | isPunc c  -> x
-                                                  | otherwise -> x <> "."
+                                                  | otherwise -> prd x
   where
     isPunc = (`elem` (".?!" :: String))
 

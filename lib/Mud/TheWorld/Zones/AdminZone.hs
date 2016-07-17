@@ -1523,7 +1523,7 @@ createAdminZone = do
 
   -- ==================================================
   -- Containers:
-  let mkClothSackDesc x = "It's a typical cloth sack, perfect for holding your treasure. It's " <> x <> "."
+  let mkClothSackDesc x = prd $ "It's a typical cloth sack, perfect for holding your treasure. It's " <> x
   putCon iSack1
          (Ent iSack1
               (Just "sack")

@@ -101,7 +101,7 @@ pauseEffects :: Id -> MudStack () -- When a player logs out.
 pauseEffects i = getState >>= \ms ->
     let aes = getActiveEffects i ms
     in unless (null aes) $ do
-        logNotice "pauseEffects" $ "pausing effects for ID " <> showText i <> "."
+        logNotice "pauseEffects" . prd $ "pausing effects for ID " <> showText i
         pes <- mapM helper aes
         tweaks [ activeEffectsTbl.ind i .~  []
                , pausedEffectsTbl.ind i <>~ pes ]

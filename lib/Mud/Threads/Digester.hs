@@ -91,4 +91,4 @@ digest i = getState >>= \ms -> case getStomach i ms of []  -> unit
               Right (DistinctFoodId x) -> g foodEdibleEffects . getDistinctFood $ x
             g a b = views (a.digestEffects) (maybeVoid (procEffectList i)) . b $ ms
         f >> tweak (mobTbl.ind i.stomach %~ (sc `delete`))
-    logHelper sc = logPla "digest" i $ "digesting " <> pp sc <> "."
+    logHelper sc = logPla "digest" i . prd $ "digesting " <> pp sc

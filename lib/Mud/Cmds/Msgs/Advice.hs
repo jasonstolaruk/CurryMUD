@@ -150,7 +150,7 @@ advise (Advising mq cols) [h] msg = multiWrapSend mq cols [ msg, "For more infor
                                                                  colorWith quoteColor ("help " <> h) <>
                                                                  "." ]
 advise (Advising mq cols) (dblQuote . T.intercalate (dblQuote ", ") -> helpTopics) msg =
-    multiWrapSend mq cols [ msg, "For more information, see the following help articles: " <> helpTopics <> "." ]
+    multiWrapSend mq cols [ msg, prd $ "For more information, see the following help articles: " <> helpTopics ]
 advise p _ _ = patternMatchFail "advise" . showText $ p
 
 

@@ -200,7 +200,7 @@ interpConfirmName times s cn params@(NoArgs i mq cols) = case yesNoHelper cn of
   where
     helper oldSing = do
         sendPrompt mq . T.concat $ [ telnetHideInput
-                                   , nlPrefix . multiWrap cols . pwMsg $ "Please choose a password for " <> s <> "."
+                                   , nlPrefix . multiWrap cols . pwMsg . prd $ "Please choose a password for " <> s
                                    , "New password:" ]
         setInterp i . Just . interpNewPW . NewCharBundle oldSing s $ ""
 interpConfirmName _ _ _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNo plaMsgQueue plaCols
@@ -271,29 +271,29 @@ promptRetryNewPwMatch _ p = patternMatchFail "promptRetryNewPwMatch" . showText 
 
 
 interpSex :: NewCharBundle -> Interp
-interpSex _   ""                ActionParams { .. } = promptRetryMaleFemale plaMsgQueue plaCols
+interpSex _   ""                ActionParams { .. } = promptRetrySex plaMsgQueue plaCols
 interpSex ncb (T.toLower -> cn) (NoArgs i mq cols)
   | cn `T.isPrefixOf` "male"   = helper Male
   | cn `T.isPrefixOf` "female" = helper Female
-  | otherwise                  = promptRetryMaleFemale mq cols
+  | otherwise                  = promptRetrySex mq cols
   where
     helper s = do
       tweak $ mobTbl.ind i.sex .~ s
       multiWrapSend mq cols $ "Next we'll choose your race." : raceTxt
       promptRace mq cols
       setInterp i . Just . interpRace $ ncb
-interpSex _ _ ActionParams { .. } = promptRetryMaleFemale plaMsgQueue plaCols
+interpSex _ _ ActionParams { .. } = promptRetrySex plaMsgQueue plaCols
 
 
 raceTxt :: [Text]
-raceTxt = [ "1) " <> colorWith abbrevColor "D"  <> "warf"
-          , "2) " <> colorWith abbrevColor "E"  <> "lf"
-          , "3) " <> colorWith abbrevColor "F"  <> "elinoid"
-          , "4) " <> colorWith abbrevColor "H"  <> "obbit"
-          , "5) " <> colorWith abbrevColor "Hu" <> "man"
-          , "6) " <> colorWith abbrevColor "L"  <> "agomorph"
-          , "7) " <> colorWith abbrevColor "N"  <> "ymph"
-          , "8) " <> colorWith abbrevColor "V"  <> "ulpenoid" ]
+raceTxt | f <- colorWith abbrevColor = [ "1) " <> f "D"  <> "warf"
+                                       , "2) " <> f "E"  <> "lf"
+                                       , "3) " <> f "F"  <> "elinoid"
+                                       , "4) " <> f "H"  <> "obbit"
+                                       , "5) " <> f "Hu" <> "man"
+                                       , "6) " <> f "L"  <> "agomorph"
+                                       , "7) " <> f "N"  <> "ymph"
+                                       , "8) " <> f "V"  <> "ulpenoid" ]
 
 
 promptRace :: MsgQueue -> Cols -> MudStack ()
@@ -303,8 +303,8 @@ promptRace mq cols = wrapSendPrompt mq cols txt >> anglePrompt mq
           \race to learn more."
 
 
-promptRetryMaleFemale :: MsgQueue -> Cols -> MudStack ()
-promptRetryMaleFemale mq cols =
+promptRetrySex :: MsgQueue -> Cols -> MudStack ()
+promptRetrySex mq cols =
     wrapSendPrompt mq cols . T.concat $ [ "Please answer ", dblQuote "male", " or ", dblQuote "female", "." ]
 
 
@@ -468,7 +468,7 @@ finishNewChar ncb@(NewCharBundle _ s pass) params@(NoArgs'' i) = do
     withDbExHandler_ "unpw" . insertDbTblUnPw . UnPwRec s $ pass
     mkRndmVector >>= \v -> helper v |&| modifyState >=> \ms@(getPla i -> p) -> do
         initPlaLog i s
-        logPla "finishNewChar" i $ "new character logged in from " <> views currHostName T.pack p <> "."
+        logPla "finishNewChar" i . prd $ "new character logged in from " <> views currHostName T.pack p
         handleLogin ncb True params
         notifyQuestion i ms
   where
@@ -600,7 +600,7 @@ interpPW times targetSing targetId targetPla cn params@(WithArgs i mq cols as) =
                            , parensQuote "player is banned"
                            , "." ]
         sendMsgBoot mq . Just . sorryInterpPwBanned $ targetSing
-        bcastAdmins $ msg <> " Consider also banning host " <> dblQuote host <> "."
+        bcastAdmins . prd $ msg <> " Consider also banning host " <> dblQuote host
         logNotice "interpPW handleBanned" msg
     handleNotBanned ((i `getPla`) -> newPla) oldSing =
         let helper ms = dup . logIn i ms (newPla^.currHostName) (newPla^.connectTime) $ targetId
@@ -614,7 +614,7 @@ interpPW times targetSing targetId targetPla cn params@(WithArgs i mq cols as) =
                                                                  , showText i
                                                                  , "." ]
                initPlaLog i targetSing
-               logPla "interpPW handleNotBanned" i $ "logged in from " <> T.pack (getCurrHostName i ms) <> "."
+               logPla "interpPW handleNotBanned" i . prd $ "logged in from " <> T.pack (getCurrHostName i ms)
                handleLogin (NewCharBundle oldSing targetSing "") False params { args = [] }
 interpPW _ _ _ _ _ p = patternMatchFail "interpPW" . showText $ p
 
