@@ -57,8 +57,7 @@ I am still in the initial stage of developing basic commands. There is very litt
 
 The code is available here on GitHub under the 3-clause BSD license (refer to the [LICENSE file](https://github.com/jasonstolaruk/CurryMUD/blob/master/LICENSE)). Please note that **I am not accepting PRs at this time**.
 
-### Notable features
-
+* About 40,000 lines of code/text.
 * A `ReaderT` monad transformer stack with the world state inside a single `IORef`.
 * `STM`-based concurrency.
 * Using `aeson` with `conduit` and `sqlite-simple` for persistence.
