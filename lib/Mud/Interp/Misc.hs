@@ -1,6 +1,8 @@
 {-# LANGUAGE OverloadedStrings, ViewPatterns #-}
 
-module Mud.Interp.Misc ( neverMind
+module Mud.Interp.Misc ( mkChoiceTxt
+                       , mkYesNoChoiceTxt
+                       , neverMind
                        , promptRetryYesNo
                        , resetInterp
                        , yesNoHelper ) where
@@ -10,6 +12,7 @@ import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
+import Mud.Misc.ANSI
 import Mud.Util.Misc
 import Mud.Util.Operators
 import Mud.Util.Quoting
@@ -18,7 +21,23 @@ import qualified Data.Text as T
 
 import Control.Lens.Operators ((.~))
 import Control.Monad (guard)
+import Data.Monoid ((<>))
 import Data.Text (Text)
+
+
+mkChoiceTxt :: [Text] -> Text
+mkChoiceTxt = T.intercalate "/" . colorize
+  where
+    colorize []                                               = []
+    colorize ((T.uncons -> Just (T.singleton -> x, rest)):xs) = (colorWith abbrevColor x <> rest) : colorize xs
+    colorize (_:xs)                                           = colorize xs
+
+
+mkYesNoChoiceTxt :: Text
+mkYesNoChoiceTxt = mkChoiceTxt [ "yes", "no" ]
+
+
+-----
 
 
 neverMind :: Id -> MsgQueue -> MudStack ()

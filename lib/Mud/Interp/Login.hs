@@ -116,11 +116,8 @@ interpName times (T.toLower -> cn@(capitalize -> cn')) params@(NoArgs i mq cols)
       | otherwise                               = do
           wrapSendPrompt mq cols . T.concat $ [ "Your name will be "
                                               , dblQuote $ cn' <> ","
-                                              , " is that OK? ["
-                                              , colorWith abbrevColor "y"
-                                              , "es/"
-                                              , colorWith abbrevColor "n"
-                                              , "o]" ]
+                                              , " is that OK? "
+                                              , mkYesNoChoiceTxt ]
           setInterp i . Just . interpConfirmName times $ cn'
 interpName _ _ ActionParams { .. } = promptRetryName plaMsgQueue plaCols sorryInterpNameExcessArgs
 
@@ -261,11 +258,7 @@ interpVerifyNewPW ncb _ params = promptRetryNewPwMatch ncb params
 
 
 promptSex :: MsgQueue -> Cols -> MudStack ()
-promptSex mq cols = wrapSendPrompt mq cols . T.concat $ [ "Are you male or female? ["
-                                                        , colorWith abbrevColor "m"
-                                                        , "ale/"
-                                                        , colorWith abbrevColor "f"
-                                                        , "emale]" ]
+promptSex mq cols = wrapSendPrompt mq cols $ "Are you male or female? " <> mkChoiceTxt [ "male", "female" ]
 
 
 promptRetryNewPwMatch :: NewCharBundle -> ActionParams -> MudStack ()
