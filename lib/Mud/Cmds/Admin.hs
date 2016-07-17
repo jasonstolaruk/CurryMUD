@@ -1321,7 +1321,7 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
                       , "race"
                       , "introduced"
                       , "linked"
-                      , "skillpts" ]
+                      , "skillpts" ] :: [Text]
         notFound    = appendMsg . sorryAdminSetKey $ key
         appendMsg m = a & _2 <>~ pure m
         found       = let t = getType targetId ms
@@ -1349,7 +1349,7 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
                                "introduced" -> setPCSingListHelper    t "introduced" "known names"  introduced introduced
                                "linked"     -> setPCSingListHelper    t "linked"     "linked names" linked     linked
                                "skillpts"   -> setPCSkillPtsHelper    t
-                               x            -> patternMatchFail "setHelper helper found" x
+                               x            -> patternMatchFail "setHelper helper found" (x :: Text)
         -----
         setEntMaybeTextHelper t k n getter setter
           | not . hasEnt $ t = sorryType
