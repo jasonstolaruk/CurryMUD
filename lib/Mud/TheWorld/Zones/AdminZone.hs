@@ -55,7 +55,7 @@ import qualified Data.Text as T
 -----
 
 
-patternMatchFail :: Text -> [Text] -> a
+patternMatchFail :: PatternMatchFail a
 patternMatchFail = U.patternMatchFail "Mud.TheWorld.Zones.AdminZone"
 
 
@@ -438,7 +438,7 @@ pick p@(LowerNub' i as) = genericActionWithHooks p helper "pick"
             mkMsgForArg arg | arg `elem` triggers = head toSelfs
                             | otherwise           = sorryPickNotFlower arg
         in (ms', (sorrys ++ map mkMsgForArg inRms', bs, logMsgs, fs))
-pick p = patternMatchFail "pick" [ showText p ]
+pick p = patternMatchFail "pick" . showText $ p
 
 
 -- ==================================================

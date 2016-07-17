@@ -69,7 +69,6 @@ import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 import Control.Lens (view, views)
 import Control.Lens.Getter (Getter)
 import Data.List (foldl')
-import Data.Text (Text)
 import Prelude hiding (getContents)
 import qualified Data.Map.Lazy as M (elems)
 import qualified Data.Text as T
@@ -81,11 +80,11 @@ default (Int, Double)
 -----
 
 
-blowUp :: Text -> Text -> Text -> a
+blowUp :: BlowUp a
 blowUp = U.blowUp "Mud.Data.State.Util.Calc"
 
 
-patternMatchFail :: Text -> [Text] -> a
+patternMatchFail :: PatternMatchFail a
 patternMatchFail = U.patternMatchFail "Mud.Data.State.Util.Calc"
 
 
@@ -207,7 +206,7 @@ calcLvl i = calcLvlForExp . getExp i
 calcLvlForExp :: Exp -> Lvl
 calcLvlForExp amt = let helper ((l, x):rest) | amt < x   = pred l
                                              | otherwise = helper rest
-                        helper xs                        = patternMatchFail "calcLvl" [ showText xs ]
+                        helper xs                        = patternMatchFail "calcLvlForExp" . showText $ xs
                     in helper calcLvlExps
 
 

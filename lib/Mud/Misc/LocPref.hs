@@ -7,6 +7,7 @@ module Mud.Misc.LocPref ( hasLocPref
 
 import Mud.Data.Misc
 import Mud.TopLvlDefs.Chars
+import Mud.Util.Misc (PatternMatchFail)
 import Mud.Util.Operators
 import Mud.Util.Text
 import qualified Mud.Util.Misc as U (patternMatchFail)
@@ -17,7 +18,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 
 
-patternMatchFail :: Text -> [Text] -> a
+patternMatchFail :: PatternMatchFail a
 patternMatchFail = U.patternMatchFail "Mud.Misc.LocPref"
 
 
@@ -57,7 +58,7 @@ singleArgInvEqRm dflt arg = case sortArgsInvEqRm dflt . pure $ arg of
   ([a], [],  [] ) -> (InInv, a)
   ([],  [a], [] ) -> (InEq,  a)
   ([],  [],  [a]) -> (InRm,  a)
-  x               -> patternMatchFail "singleArgInvEqRm" [ showText x ]
+  x               -> patternMatchFail "singleArgInvEqRm" . showText $ x
 
 
 -----

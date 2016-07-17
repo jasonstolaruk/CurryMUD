@@ -129,11 +129,11 @@ import qualified Data.Vector.Unboxed as V (Vector)
 -----
 
 
-blowUp :: Text -> Text -> Text -> a
+blowUp :: BlowUp a
 blowUp = U.blowUp "Mud.Cmds.Util.Pla"
 
 
-patternMatchFail :: Text -> [Text] -> a
+patternMatchFail :: PatternMatchFail a
 patternMatchFail = U.patternMatchFail "Mud.Cmds.Util.Pla"
 
 
@@ -211,7 +211,7 @@ bugTypoLogger (Msg' i mq msg) wl = getState >>= \ms ->
                                              , bcastOtherAdmins i $ s <> " has logged a typo: " <> pp t ]
         send mq . nlnl $ "Thank you."
         logPla "bugTypoLogger" i . T.concat $ [ "logged a ", showText wl, ": ", msg ]
-bugTypoLogger p wl = patternMatchFail "bugTypoLogger" [ showText p, showText wl ]
+bugTypoLogger p _ = patternMatchFail "bugTypoLogger" . showText $ p
 
 
 -----
@@ -270,7 +270,7 @@ execIfPossessed p@(WithArgs i mq cols _) cn f = getState >>= \ms ->
     let s = getSing i ms in case getPossessor i ms of
       Nothing -> wrapSend mq cols (sorryNotPossessed s cn)
       Just _  -> f p
-execIfPossessed p cn _ = patternMatchFail "execIfPossessed" [ showText p, cn ]
+execIfPossessed p _ _ = patternMatchFail "execIfPossessed" . showText $ p
 
 
 -----
@@ -454,7 +454,7 @@ mkCanCan'tCoins :: Coins -> Int -> (Coins, Coins)
 mkCanCan'tCoins (Coins (c, 0, 0)) n = (Coins (n, 0, 0), Coins (c - n, 0,     0    ))
 mkCanCan'tCoins (Coins (0, s, 0)) n = (Coins (0, n, 0), Coins (0,     s - n, 0    ))
 mkCanCan'tCoins (Coins (0, 0, g)) n = (Coins (0, 0, n), Coins (0,     0,     g - n))
-mkCanCan'tCoins c                 n = patternMatchFail "mkCanCan'tCoins" [ showText c, showText n ]
+mkCanCan'tCoins c                 _ = patternMatchFail "mkCanCan'tCoins" . showText $ c
 
 
 mkGetDropCoinsDescOthers :: Id -> Desig -> GetOrDrop -> Coins -> [Broadcast]

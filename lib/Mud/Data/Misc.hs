@@ -63,6 +63,7 @@ import Mud.Data.State.MudData
 import Mud.Misc.Database
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
+import Mud.Util.Misc (PatternMatchFail)
 import Mud.Util.Operators
 import Mud.Util.Quoting
 import Mud.Util.Text
@@ -87,7 +88,7 @@ import qualified Data.Text as T
 -----
 
 
-patternMatchFail :: Text -> [Text] -> a
+patternMatchFail :: PatternMatchFail a
 patternMatchFail = U.patternMatchFail "Mud.Data.Misc"
 
 
@@ -108,7 +109,7 @@ instance FromRol Slot where
   fromRol LM = RingLMS
   fromRol LR = RingLRS
   fromRol LP = RingLPS
-  fromRol s  = patternMatchFail "fromRol" [ showText s ]
+  fromRol s  = patternMatchFail "fromRol" . showText $ s
 
 
 -----
@@ -560,7 +561,7 @@ instance Serializable Desig where
                  , desigIds       = read . T.unpack $ is }
     | c == nonStdDesigDelimiter, [ es, nsd ] <- T.splitOn dd t =
         NonStdDesig { dEntSing = es, dDesc = nsd }
-    | otherwise = patternMatchFail "deserialize" [ showText a ]
+    | otherwise = patternMatchFail "deserialize" . showText $ a
     where
       deserMaybeText ""  = Nothing
       deserMaybeText txt = Just txt

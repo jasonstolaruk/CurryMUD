@@ -31,7 +31,7 @@ import qualified Data.Set as S (Set, filter, foldr, fromList, map, toList)
 import qualified Data.Text as T
 
 
-patternMatchFail :: Text -> Text -> a
+patternMatchFail :: PatternMatchFail a
 patternMatchFail = U.patternMatchFail "Mud.Cmds.ExpCmds"
 
 
@@ -912,7 +912,7 @@ expCmd (ExpCmd ecn HasTarget {} _   ) p@NoArgs {}        = advise p [] . sorryEx
 expCmd (ExpCmd ecn ect          desc) (NoArgs i mq cols) = case ect of
   (NoTarget  toSelf toOthers      ) -> helper toSelf toOthers
   (Versatile toSelf toOthers _ _ _) -> helper toSelf toOthers
-  _                                 -> patternMatchFail "expCmd" [ ecn, showText ect ]
+  _                                 -> patternMatchFail "expCmd" . showText $ ect
   where
     helper toSelf toOthers = getState >>= \ms ->
         let d                           = mkStdDesig i ms DoCap
@@ -929,7 +929,7 @@ expCmd (ExpCmd ecn NoTarget {} _   ) p@(WithArgs     _ _  _    (_:_) ) = advise 
 expCmd (ExpCmd ecn ect         desc)   (OneArgNubbed i mq cols target) = case ect of
   (HasTarget     toSelf toTarget toOthers) -> helper toSelf toTarget toOthers
   (Versatile _ _ toSelf toTarget toOthers) -> helper toSelf toTarget toOthers
-  _                                        -> patternMatchFail "expCmd" [ ecn, showText ect ]
+  _                                        -> patternMatchFail "expCmd" . showText $ ect
   where
     helper toSelf toTarget toOthers = getState >>= \ms -> case singleArgInvEqRm InRm target of
       (InRm, target') ->
@@ -968,7 +968,7 @@ expCmd (ExpCmd ecn ect         desc)   (OneArgNubbed i mq cols target) = case ec
                 in if getType targetId ms `elem` [ PCType, NpcType ]
                   then ioHelper . serialize . mkStdDesig targetId ms $ Don'tCap
                   else wrapSend mq cols sorryExpCmdTargetType
-              x -> patternMatchFail "expCmd helper" [ showText x ]
+              x -> patternMatchFail "expCmd helper" . showText $ x
             else wrapSend mq cols sorryNoOneHere
       (x, _) -> wrapSend mq cols . sorryExpCmdInInvEq $ x
 expCmd _ p = advise p [] adviceExpCmdExcessArgs

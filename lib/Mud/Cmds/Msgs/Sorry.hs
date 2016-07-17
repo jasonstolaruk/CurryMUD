@@ -303,7 +303,7 @@ import qualified Data.Text as T
 -----
 
 
-patternMatchFail :: Text -> [Text] -> a
+patternMatchFail :: PatternMatchFail a
 patternMatchFail = U.patternMatchFail "Mud.Cmds.Msgs.Sorry"
 
 
@@ -747,7 +747,7 @@ sorryExpCmdInInvEq loc = can'tTarget "an item in your " <> loc' <> " with an exp
   where
     loc' = case loc of InEq  -> "readied equipment"
                        InInv -> "inventory"
-                       _     -> patternMatchFail "sorryExpCmdInInvEq loc'" [ showText loc ]
+                       _     -> patternMatchFail "sorryExpCmdInInvEq loc'" . showText $ loc
 
 
 sorryExpCmdLen :: Text

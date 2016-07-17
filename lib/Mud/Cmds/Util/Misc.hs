@@ -133,11 +133,11 @@ import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
 -----
 
 
-blowUp :: Text -> Text -> Text -> a
+blowUp :: BlowUp a
 blowUp = U.blowUp "Mud.Cmds.Util.Misc"
 
 
-patternMatchFail :: Text -> [Text] -> a
+patternMatchFail :: PatternMatchFail a
 patternMatchFail = U.patternMatchFail "Mud.Cmds.Util.Misc"
 
 
@@ -284,7 +284,7 @@ dispMatches (LowerNub i mq cols needles) indent haystack = let (dropEmpties -> m
   where
     grep needle = let haystack' = [ (hay, hay') | hay <- haystack, let hay' = T.toLower . dropANSI $ hay ]
                   in [ fst match | match <- haystack', needle `T.isInfixOf` snd match ]
-dispMatches p indent haystack = patternMatchFail "dispMatches" [ showText p, showText indent, showText haystack ]
+dispMatches p _ _ = patternMatchFail "dispMatches" . showText $ p
 
 
 -----
@@ -437,30 +437,31 @@ getTunedQuestionIds i ms = let pair = (getLoggedInPlaIds ms, getNonIncogLoggedIn
 
 
 happy :: MudState -> [Either Text (Text, [EmoteWord], Text)] -> (Text, Text, [Id], [Broadcast])
-happy ms xformed = let (toSelf, toTargets, toOthers) = unzip3 . rights $ xformed
-                       targetIds = nub . foldr extractIds [] $ toTargets
-                       extractIds [ForNonTargets _           ] acc = acc
-                       extractIds (ForTarget     _ targetId:_) acc = targetId : acc
-                       extractIds (ForTargetPoss _ targetId:_) acc = targetId : acc
-                       extractIds xs                           _   = patternMatchFail "happy extractIds" [ showText xs ]
-                       msgMap  = foldr (\targetId -> at targetId ?~ []) IM.empty targetIds
-                       msgMap' = foldr consWord msgMap toTargets
-                       consWord [ ForNonTargets word                           ] = IM.map (word :)
-                       consWord [ ForTarget     p targetId, ForNonTargets word ] = selectiveCons p targetId False word
-                       consWord [ ForTargetPoss p targetId, ForNonTargets word ] = selectiveCons p targetId True  word
-                       consWord xs = const . patternMatchFail "happy consWord" $ [ showText xs ]
-                       selectiveCons p targetId isPoss word = IM.mapWithKey helper
-                         where
-                           helper k v = let targetSing = onTrue isPoss (<> "'s") . getSing k $ ms
-                                        in (: v) $ if k == targetId
-                                          then colorWith emoteTargetColor targetSing <> p
-                                          else word
-                       toTargetBs = IM.foldlWithKey' helper [] msgMap'
-                         where
-                           helper acc k = (: acc) . (formatMsg *** pure) . (, k)
-                       formatMsg = bracketQuote . punctuateMsg . T.unwords
-                       _ = ()
-                   in (formatMsg toSelf, formatMsg toOthers, targetIds, toTargetBs)
+happy ms xformed =
+    let (toSelf, toTargets, toOthers)               = unzip3 . rights $ xformed
+        targetIds                                   = nub . foldr extractIds [] $ toTargets
+        extractIds [ForNonTargets _           ] acc = acc
+        extractIds (ForTarget     _ targetId:_) acc = targetId : acc
+        extractIds (ForTargetPoss _ targetId:_) acc = targetId : acc
+        extractIds xs                           _   = patternMatchFail "happy extractIds" . showText $ xs
+        msgMap  = foldr (\targetId -> at targetId ?~ []) IM.empty targetIds
+        msgMap' = foldr consWord msgMap toTargets
+        consWord [ ForNonTargets word                           ] = IM.map (word :)
+        consWord [ ForTarget     p targetId, ForNonTargets word ] = selectiveCons p targetId False word
+        consWord [ ForTargetPoss p targetId, ForNonTargets word ] = selectiveCons p targetId True  word
+        consWord xs                                               = const . patternMatchFail "happy consWord" . showText $ xs
+        selectiveCons p targetId isPoss word = IM.mapWithKey helper
+          where
+            helper k v = let targetSing = onTrue isPoss (<> "'s") . getSing k $ ms
+                         in (: v) $ if k == targetId
+                           then colorWith emoteTargetColor targetSing <> p
+                           else word
+        toTargetBs = IM.foldlWithKey' helper [] msgMap'
+          where
+            helper acc k = (: acc) . (formatMsg *** pure) . (, k)
+        formatMsg = bracketQuote . punctuateMsg . T.unwords
+        _ = ()
+    in (formatMsg toSelf, formatMsg toOthers, targetIds, toTargetBs)
 
 
 -----
@@ -811,7 +812,7 @@ tunedInOutColorize False = tunedInOutHelper id                       False
 unmsg :: [Text] -> [Text]
 unmsg [cn        ] = [ T.init cn, ""            ]
 unmsg [cn, target] = [ cn,        T.init target ]
-unmsg xs           = patternMatchFail "unmsg" xs
+unmsg xs           = patternMatchFail "unmsg" . showText $ xs
 
 
 -----
@@ -863,4 +864,4 @@ withoutArgs f p = ignore p >> f p { args = [] }
 
 ignore :: ActionFun
 ignore (Ignoring mq cols as) = send mq . wrapUnlines cols . parensQuote $ "Ignoring " <> as <> "..."
-ignore p                     = patternMatchFail "ignore" [ showText p ]
+ignore p                     = patternMatchFail "ignore" . showText $ p

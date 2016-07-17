@@ -24,11 +24,11 @@ import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
-import Mud.Util.Misc hiding (patternMatchFail)
+import Mud.Util.Misc hiding (blowUp)
 import Mud.Util.Operators
 import Mud.Util.Quoting
 import Mud.Util.Text
-import qualified Mud.Util.Misc as U (patternMatchFail)
+import qualified Mud.Util.Misc as U (blowUp)
 
 import Control.Arrow ((***))
 import Control.Concurrent (threadDelay)
@@ -67,8 +67,8 @@ default (Int)
 -----
 
 
-patternMatchFail :: Text -> [Text] -> a
-patternMatchFail = U.patternMatchFail "Mud.Misc.Logging"
+blowUp :: BlowUp a
+blowUp = U.blowUp "Mud.Misc.Logging"
 
 
 -- ==================================================
@@ -83,7 +83,7 @@ initLogging DoLog    (Just logExLock) = do
     (ea, na) <- (,) <$> spawnLogger errorLogFile  ERROR  "currymud.error"  errorM  eq logExLock
                     <*> spawnLogger noticeLogFile NOTICE "currymud.notice" noticeM nq logExLock
     return (Just (ea, eq), Just (na, nq))
-initLogging DoLog Nothing = patternMatchFail "initLogging" [ showText DoLog, "Nothing" ]
+initLogging DoLog Nothing = blowUp "initLogging" "missing lock" ""
 
 
 type LogName    = Text

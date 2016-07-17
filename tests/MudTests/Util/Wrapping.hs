@@ -17,7 +17,7 @@ import qualified Data.Text as T
 import Test.Tasty.QuickCheck ((==>), Property, choose, forAll)
 
 
-patternMatchFail :: Text -> [Text] -> a
+patternMatchFail :: PatternMatchFail a
 patternMatchFail = U.patternMatchFail "MudTests.Util.Wrapping"
 
 
@@ -49,7 +49,7 @@ resIsIndented :: Int -> [Text] -> Bool
 resIsIndented n (t:wrapped) = ()!# t && all lineIsIndented wrapped
   where
     lineIsIndented (T.splitAt n -> (indent, rest)) = T.all isSpace indent && ()!# rest
-resIsIndented n ls = patternMatchFail "resIsIndented" [ showText n, showText ls ]
+resIsIndented _ xs = patternMatchFail "resIsIndented" . showText $ xs
 
 
 prop_xformLeading :: Char -> Char -> Property

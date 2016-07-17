@@ -74,7 +74,7 @@ default (Int, Double)
 -----
 
 
-patternMatchFail :: Text -> [Text] -> a
+patternMatchFail :: PatternMatchFail a
 patternMatchFail = U.patternMatchFail "Mud.Interp.Login"
 
 
@@ -108,7 +108,7 @@ interpName times (T.toLower -> cn@(capitalize -> cn')) params@(NoArgs i mq cols)
         [(targetId, targetPla)] -> do
             sendPrompt mq $ telnetHideInput <> "Password:"
             setInterp i . Just . interpPW times cn' targetId $ targetPla
-        (map fst -> xs) -> patternMatchFail "interpName" [ showText xs ]
+        xs -> patternMatchFail "interpName" . showText . map fst $ xs
   where
     illegalChars = [ '!' .. '@' ] ++ [ '[' .. '`' ] ++ [ '{' .. '~' ]
     confirmName
@@ -213,7 +213,7 @@ setSingIfNotTaken times s (NoArgs i mq cols) = getSing i <$> getState >>= \oldSi
   where
     helper ms | ()!# (filter ((== s) . (`getSing` ms) . fst) . views plaTbl IM.toList $ ms) = (ms, False)
               | otherwise = (ms & entTbl.ind i.sing .~ s, True)
-setSingIfNotTaken _ _ p = patternMatchFail "setSingIfNotTaken" [ showText p ]
+setSingIfNotTaken _ _ p = patternMatchFail "setSingIfNotTaken" . showText $ p
 
 
 -- ==================================================
@@ -276,7 +276,7 @@ raceTxt = [ "1) " <> colorWith abbrevColor "D"  <> "warf"
 promptRetryNewPwMatch :: NewCharBundle -> ActionParams -> MudStack ()
 promptRetryNewPwMatch ncb (WithArgs i mq cols _) =
     promptRetryNewPW mq cols sorryInterpNewPwMatch >> setInterp i (Just . interpNewPW $ ncb)
-promptRetryNewPwMatch _ p = patternMatchFail "promptRetryNewPwMatch" [ showText p ]
+promptRetryNewPwMatch _ p = patternMatchFail "promptRetryNewPwMatch" . showText $ p
 
 
 -- ==================================================
@@ -399,12 +399,12 @@ interpPickPts ncb cn (Lower   i mq cols as) = getState >>= \ms -> let pts = getP
                                                                    , " from "
                                                                    , attribTxt
                                                                    , "." ]) )
-                               _   -> patternMatchFail "interpPickPts assignPts" [ T.singleton op ]
+                               _   -> patternMatchFail "interpPickPts assignPts" . T.singleton $ op
                    _ -> sorry
       where
         sorry       = sorryHelper . sorryWut $ arg
         sorryHelper = (ms, ) . (msgs <>) . pure
-interpPickPts _ _ p = patternMatchFail "interpPickPts" [ showText p ]
+interpPickPts _ _ p = patternMatchFail "interpPickPts" . showText $ p
 
 
 procAttribChar :: Id -> MudState -> Char -> (Text, Int, ASetter Mob Mob Int Int)
@@ -413,7 +413,7 @@ procAttribChar i ms = \case 's' -> ("Strength",  getBaseSt i ms, st)
                             'h' -> ("Health",    getBaseHt i ms, ht)
                             'm' -> ("Magic",     getBaseMa i ms, ma)
                             'p' -> ("Psionics",  getBasePs i ms, ps)
-                            c   -> patternMatchFail "procAttribChar" [ T.singleton c ]
+                            c   -> patternMatchFail "procAttribChar" . T.singleton $ c
 
 
 -- ==================================================
@@ -428,7 +428,7 @@ interpDiscover ncb cn params@(WithArgs i mq _ as) =
   where
     mkDiscoverRec = (,) <$> liftIO mkTimestamp <*> (T.pack . getCurrHostName i <$> getState) >>= \(ts, host) ->
         return . DiscoverRec ts host . formatMsgArgs $ cn : as
-interpDiscover _ _ p = patternMatchFail "interpDiscover" [ showText p ]
+interpDiscover _ _ p = patternMatchFail "interpDiscover" . showText $ p
 
 
 -- ==================================================
@@ -450,7 +450,7 @@ finishNewChar ncb@(NewCharBundle _ s pass) params@(NoArgs'' i) = do
                             & plaTbl    .ind i.plaFlags .~ (setBit zeroBits . fromEnum $ IsTunedQuestion)
                 = dup $ ms' & invTbl.ind iCentral %~ addToInv ms' (pure i)
                             & newChar i v
-finishNewChar _ p = patternMatchFail "finishNewChar" [ showText p ]
+finishNewChar _ p = patternMatchFail "finishNewChar" . showText $ p
 
 
 notifyQuestion :: Id -> MudState -> MudStack ()
@@ -519,7 +519,7 @@ newXps i (V.toList -> (a:b:c:d:_)) ms = let x | getRace i ms == Human = 20
                                               & myMob.curMp .~ initMp & myMob.maxMp .~ initMp
                                               & myMob.curPp .~ initPp & myMob.maxPp .~ initPp
                                               & myMob.curFp .~ initFp & myMob.maxFp .~ initFp
-newXps _ v _ = patternMatchFail "newXps" [ showText . V.length $ v ]
+newXps _ v _ = patternMatchFail "newXps" . showText . V.length $ v
 
 
 -- ==================================================
@@ -587,7 +587,7 @@ interpPW times targetSing targetId targetPla cn params@(WithArgs i mq cols as) =
                initPlaLog i targetSing
                logPla "interpPW handleNotBanned" i $ "logged in from " <> T.pack (getCurrHostName i ms) <> "."
                handleLogin (NewCharBundle oldSing targetSing "") False params { args = [] }
-interpPW _ _ _ _ _ p = patternMatchFail "interpPW" [ showText p ]
+interpPW _ _ _ _ _ p = patternMatchFail "interpPW" . showText $ p
 
 
 logIn :: Id -> MudState -> HostName -> Maybe UTCTime -> Id -> MudState

@@ -103,11 +103,11 @@ import Text.Regex.Posix ((=~))
 -----
 
 
-blowUp :: Text -> Text -> Text -> a
+blowUp :: BlowUp a
 blowUp = U.blowUp "Mud.Data.State.Util.Misc"
 
 
-patternMatchFail :: Text -> [Text] -> a
+patternMatchFail :: PatternMatchFail a
 patternMatchFail = U.patternMatchFail "Mud.Data.State.Util.Misc"
 
 
@@ -449,7 +449,7 @@ pcNpc :: Id -> MudState -> MudStack () -> MudStack () -> MudStack ()
 pcNpc i ms a b = case getType i ms of
   PCType  -> a
   NpcType -> b
-  t       -> patternMatchFail "pcNpc" [ showText t ]
+  t       -> patternMatchFail "pcNpc" . showText $ t
 
 
 -----
@@ -474,7 +474,7 @@ procHooks i ms v cn as | initAcc <- (as, (ms, [], [], []), []) = case lookupHook
           -> case filter (\Hook { triggers } -> a `elem` triggers) hooks of
                []  -> initAcc
                [h] -> getHookFun (hookName h) ms i h v (initAcc & _1 .~ pure rest)
-               xs  -> patternMatchFail "procHooks" [ showText xs ]
+               xs  -> patternMatchFail "procHooks" . showText $ xs
     -- Process hooks whose triggers match on any single argument.
     _ -> let helper acc arg = case filter (\Hook { triggers } -> arg `elem` triggers) hooks of
                []        -> acc

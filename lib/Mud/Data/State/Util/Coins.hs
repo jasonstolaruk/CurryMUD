@@ -10,6 +10,7 @@ module Mud.Data.State.Util.Coins ( aCoinSomeCoins
 
 import Mud.Data.State.MudData
 import Mud.TopLvlDefs.Misc
+import Mud.Util.Misc (PatternMatchFail)
 import Mud.Util.Text
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
@@ -21,7 +22,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 
 
-patternMatchFail :: Text -> [Text] -> a
+patternMatchFail :: PatternMatchFail a
 patternMatchFail = U.patternMatchFail "Mud.Data.State.Util.Coins"
 
 
@@ -37,7 +38,7 @@ aCoinSomeCoins = \case (Coins (1, 0, 0)) -> "a copper piece"
 
 coinsFromList :: [Int] -> Coins
 coinsFromList [ cop, sil, gol ] = Coins (cop, sil, gol)
-coinsFromList xs                = patternMatchFail "coinsFromList" [ showText xs ]
+coinsFromList xs                = patternMatchFail "coinsFromList" . showText $ xs
 
 
 coinsToList :: Coins -> [Int]
@@ -57,7 +58,7 @@ mkCoinTxt coins = case mkCoinTxtList of
   [ x, y    ] -> x <> " and " <> y
   [ x       ] -> x
   [         ] -> ""
-  xs          -> patternMatchFail "mkCoinTxt" [ showText xs ]
+  xs          -> patternMatchFail "mkCoinTxt" . showText $ xs
   where
     mkCoinTxtList = dropBlanks . foldr combineAmntName [] . zip (coinsToList coins) $ coinFullNames
     combineAmntName (amt, coinName) acc | amt >  1  = T.concat [ showText amt, " ", coinName, "s" ] : acc

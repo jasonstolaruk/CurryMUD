@@ -83,7 +83,7 @@ import System.IO (hClose, hGetBuffering, openTempFile)
 -- ==================================================
 
 
-patternMatchFail :: Text -> Text -> a
+patternMatchFail :: PatternMatchFail a
 patternMatchFail = U.patternMatchFail "Mud.Cmds.Debug"
 
 
@@ -171,7 +171,7 @@ mkDebugCmd (prefixDebugCmd -> cn) f cd = Cmd { cmdName           = cn
 
 debugAp :: ActionFun
 debugAp p@(WithArgs i mq cols _) = (wrapSend mq cols . showText $ p) >> logPlaExec (prefixDebugCmd "ap") i
-debugAp p                        = patternMatchFail "debugAp" [ showText p ]
+debugAp p                        = patternMatchFail "debugAp" . showText $ p
 
 
 -----
@@ -283,7 +283,7 @@ debugCPU p = withoutArgs debugCPU p
 
 debugDispCmdList :: ActionFun
 debugDispCmdList p@(LowerNub' i as) = dispCmdList debugCmds p >> logPlaExecArgs (prefixDebugCmd "?") as i
-debugDispCmdList p                  = patternMatchFail "debugDispCmdList" [ showText p ]
+debugDispCmdList p                  = patternMatchFail "debugDispCmdList" . showText $ p
 
 
 -----
@@ -497,7 +497,7 @@ parseTwoIntArgs mq cols [a, b] sorryParseA sorryParseB helper = do
     parse txt sorry = case reads . T.unpack $ txt :: [(Int, String)] of
       [(x, "")] -> unadulterated . Sum $ x
       _         -> emptied . wrapSend mq cols . sorry $ txt
-parseTwoIntArgs _ _ as _ _ _ = patternMatchFail "parseTwoIntArgs" as
+parseTwoIntArgs _ _ as _ _ _ = patternMatchFail "parseTwoIntArgs" . showText $ as
 
 
 -----
@@ -591,7 +591,7 @@ debugPidge p = withoutArgs debugPidge p
 debugPmf :: ActionFun
 debugPmf (NoArgs'' i) = do
     logPlaExec (prefixDebugCmd "pmf") i
-    patternMatchFail "debugPmf" [ "text", showText [ "list" :: Text, "of", "text" ], showText [ 0 .. 9 ] ]
+    patternMatchFail "debugPmf" . showText $ (0, 'a', "abcdef")
 debugPmf p = withoutArgs debugPmf p
 
 

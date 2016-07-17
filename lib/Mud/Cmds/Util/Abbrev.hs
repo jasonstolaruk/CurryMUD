@@ -17,7 +17,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 
 
-patternMatchFail :: Text -> [Text] -> a
+patternMatchFail :: PatternMatchFail a
 patternMatchFail = U.patternMatchFail "Mud.Cmds.Util.Abbrev"
 
 
@@ -54,4 +54,4 @@ calcAbbrev :: Text -> Text -> Text
 calcAbbrev (T.uncons -> Just (x, _ )) ""                                  = T.singleton x
 calcAbbrev (T.uncons -> Just (x, xs)) (T.uncons -> Just (y, ys)) | x == y = T.singleton x <> calcAbbrev xs ys
                                                                  | x /= y = T.singleton x
-calcAbbrev x                          y                                   = patternMatchFail "calcAbbrev" [ x, y ]
+calcAbbrev x                          y                                   = patternMatchFail "calcAbbrev" . showText $ (x, y)

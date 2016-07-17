@@ -24,12 +24,11 @@ import Control.Monad (replicateM)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (ask)
 import Data.Ix (inRange)
-import Data.Text (Text)
 import qualified Data.Vector.Unboxed as V (Vector)
 import System.Random.MWC (GenIO, uniformR, uniformVector)
 
 
-blowUp :: Text -> Text -> Text -> a
+blowUp :: BlowUp a
 blowUp = U.blowUp "Mud.Data.State.Util.Random"
 
 

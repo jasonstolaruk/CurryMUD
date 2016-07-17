@@ -117,11 +117,11 @@ default (Int, Double)
 -----
 
 
-blowUp :: Text -> Text -> Text -> a
+blowUp :: BlowUp a
 blowUp = U.blowUp "Mud.Cmds.Pla"
 
 
-patternMatchFail :: Text -> [Text] -> a
+patternMatchFail :: PatternMatchFail a
 patternMatchFail = U.patternMatchFail "Mud.Cmds.Pla"
 
 
@@ -440,7 +440,7 @@ admin (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsgs ->
                 formatted = parensQuote ("to " <> adminSing) <> spaced (quoteWith "__" s) <> toSelf
                 sentLogMsg     = (i,       T.concat [ "sent message to ", adminSing, ": ", toSelf  ])
                 receivedLogMsg = (adminId, T.concat [ "received message from ", s,   ": ", toAdmin ])
-            ioHelper _ xs = patternMatchFail "admin helper ioHelper" [ showText xs ]
+            ioHelper _ xs = patternMatchFail "admin helper ioHelper" . showText $ xs
             filterRoot idSings
               | isAdminId i ms = idSings
               | otherwise      =
@@ -449,7 +449,7 @@ admin (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsgs ->
                     then idSings
                     else others
         in (findFullNameForAbbrev strippedTarget . filterRoot . mkAdminIdSingList $ ms) |&| maybe notFound found
-admin p = patternMatchFail "admin" [ showText p ]
+admin p = patternMatchFail "admin" . showText $ p
 
 
 adminList :: ActionFun
@@ -469,7 +469,7 @@ adminList (NoArgs i mq cols) = (multiWrapSend mq cols =<< helper =<< getState) >
                         | (_, suffix) <- singSuffixes'
                         | abbrev      <- styleAbbrevs Don'tQuote . map fst $ singSuffixes' ]
         in ()!# combineds ? return combineds :? unadulterated sorryNoAdmins
-adminList p = patternMatchFail "adminList" [ showText p ]
+adminList p = patternMatchFail "adminList" . showText $ p
 
 
 -----
@@ -487,7 +487,7 @@ bars (LowerNub i mq cols as) = getState >>= \ms ->
         f a acc = (: acc) $ case filter ((a `T.isPrefixOf`) . fst) . mkPtPairs i $ ms of
           []      -> Left . sorryParseArg $ a
           [match] -> Right . uncurry (mkBar . calcBarLen $ cols) $ match
-          xs      -> patternMatchFail "bars f" [ showText xs ]
+          xs      -> patternMatchFail "bars f" . showText $ xs
     in multiWrapSend mq cols mkBars >> logPlaExecArgs "bars" as i
   where
     hint = T.concat [ "Please specify any of the following: "
@@ -495,7 +495,7 @@ bars (LowerNub i mq cols as) = getState >>= \ms ->
                     , ", or "
                     , dblQuote "fp"
                     , "." ]
-bars p = patternMatchFail "bars" [ showText p ]
+bars p = patternMatchFail "bars" . showText $ p
 
 
 mkBar :: Int -> Text -> (Int, Int) -> Text
@@ -547,7 +547,7 @@ bonus (OneArgLower i mq cols a) = getState >>= \ms ->
                                  ; withDbExHandler_ "bonus bonusHelper" . insertDbTblBonus . BonusRec ts s targetSing $ x }
                 Just False -> wrapSend mq cols . sorryBonusCount $ targetSing
                 Nothing    -> unit
-          xs -> patternMatchFail "bonus bonusHelper" [ showText xs ]
+          xs -> patternMatchFail "bonus bonusHelper" . showText $ xs
         canBonus targetSing = (withDbExHandler "bonus canBonus" . getDbTblRecs $ "bonus") >>= \case
           Just xs | c <- length . filter (\(BonusRec _ fn tn _) -> fn == s && tn == targetSing) $ xs
                   , c >= 5
@@ -659,7 +659,7 @@ chan (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
                        Right (bs, logMsg) -> ioHelper logMsg =<< g bs
         (cs, cns, s) = mkChanBindings i ms
     in findFullNameForAbbrev (T.toLower target) (map T.toLower cns) |&| maybe notFound found
-chan p = patternMatchFail "chan" [ showText p ]
+chan p = patternMatchFail "chan" . showText $ p
 
 
 -----
@@ -676,7 +676,7 @@ charDescAction (Msg i mq cols desc@(dblQuote -> desc')) = if T.length desc > max
     tweak $ mobTbl.ind i.charDesc ?~ desc
     wrapSend mq cols $ "Your supplementary character description has been set to " <> desc'
     logPla "charDescAction" i $ "supplementary character description set to " <> desc'
-charDescAction p = patternMatchFail "charDescAction" [ showText p ]
+charDescAction p = patternMatchFail "charDescAction" . showText $ p
 
 
 -----
@@ -734,7 +734,7 @@ connect (Lower i mq cols as) = getState >>= \ms -> let getIds = map (`getIdForMo
               bcastNl $ toTargets : toOthers ++ (()!# targetSings |?| mkBcast i toSelf) ++ sorryBs
               connectBlink targetIds ms
               logPla "connect" i $ "connected to " <> dblQuote cn <> ": " <> commas targetSings
-        xs -> patternMatchFail "connect" [ showText xs ]
+        xs -> patternMatchFail "connect" . showText $ xs
   where
     mkToOthers ms otherIds targetIds cn = do
         namesForMe      <- mapM (getRelativePCName ms . (, i)) otherIds
@@ -745,7 +745,7 @@ connect (Lower i mq cols as) = getState >>= \ms -> let getIds = map (`getIdForMo
         return . concat . zipWith3 f otherIds namesForMe $ namesForTargets
     connectBlink targetIds ms = forM_ targetIds $ \targetId ->
         rndmDo (calcProbConnectBlink targetId ms) . mkExpAction "blink" . mkActionParams targetId ms $ []
-connect p = patternMatchFail "connect" [ showText p ]
+connect p = patternMatchFail "connect" . showText $ p
 
 
 connectHelper :: Id -> (Text, Args) -> MudState -> (MudState, ([Either Text Sing], Maybe Id))
@@ -822,7 +822,7 @@ disconnect (Lower i mq cols as) = getState >>= \ms -> let getIds = map (`getIdFo
                                                                               , dblQuote cn
                                                                               , ": "
                                                                               , commas targetSings ])
-            xs -> patternMatchFail "disconnect" [ showText xs ]
+            xs -> patternMatchFail "disconnect" . showText $ xs
   where
     format n = isRndmName n ? underline n :? n
     mkToOthers ms otherIds targetIds cn = do
@@ -832,7 +832,7 @@ disconnect (Lower i mq cols as) = getState >>= \ms -> let getIds = map (`getIdFo
               where
                 g n = (T.concat [ me, " has disconnected ", n, " from the ", dblQuote cn, " channel." ], pure i')
         return . concat . zipWith3 f otherIds namesForMe $ namesForTargets
-disconnect p = patternMatchFail "disconnect" [ showText p ]
+disconnect p = patternMatchFail "disconnect" . showText $ p
 
 
 disconnectHelper :: Id
@@ -858,7 +858,7 @@ disconnectHelper i (target, as) idNamesTbl ms =
                                                 & _1.mobTbl.ind i.curPp -~ 3
                                                 & _2 <>~ (pure . Right $ (targetId, targetSing, targetName))
                                          , b )
-                     xs -> patternMatchFail "disconnectHelper found" [ showText xs ]
+                     xs -> patternMatchFail "disconnectHelper found" . showText $ xs
                      where
                        hint = onFalse b ((<> hintDisconnect) . (<> " "))
                    ci               = c^.chanId
@@ -936,7 +936,7 @@ drink   (Lower   i mq cols [amt, target]) = getState >>= \ms -> let (isDrink, is
                                        , sequence_ fs
                                        , logMsgs |#| logPla "drink" i . (<> ".") . slashes ])
                             else sorry . sorryDrinkRmWithHooks . head $ inRms
-                      a -> patternMatchFail "drink helper next drinkRm" [ showText a ]
+                      a -> patternMatchFail "drink helper next drinkRm" . showText $ a
             in if
               | ()!# inEqs                      -> sorry sorryDrinkInEq
               | ()!# inInvs,    ()#  myInvCoins -> sorry dudeYourHandsAreEmpty
@@ -966,7 +966,7 @@ dropAction p@(LowerNub' i as) = genericAction p helper "drop"
         in if ()!# invCoins
           then (ms'', (dropBlanks $ [ sorryInEq, sorryInRm ] ++ toSelfs', bs', logMsgs'))
           else (ms,   (pure dudeYourHandsAreEmpty,                        [],  []      ))
-dropAction p = patternMatchFail "dropAction" [ showText p ]
+dropAction p = patternMatchFail "dropAction" . showText $ p
 
 
 -----
@@ -1049,12 +1049,12 @@ emote (WithArgs i mq cols as) = getState >>= \ms ->
                              in Right ( targetDesig
                                       , [ mkEmoteWord isPoss p targetId, ForNonTargets targetDesig ]
                                       , targetDesig )
-                  x -> patternMatchFail "emote procTarget" [ showText x ]
+                  x -> patternMatchFail "emote procTarget" . showText $ x
               else Left sorryNoOneHere
     addSuffix   isPoss p = (<> p) . onTrue isPoss (<> "'s")
     mkEmoteWord isPoss   = isPoss ? ForTargetPoss :? ForTarget
     sorry t              = Left . quoteWith' (t, sorryEmoteTargetRmOnly) $ " "
-emote p = patternMatchFail "emote" [ showText p ]
+emote p = patternMatchFail "emote" . showText $ p
 
 
 -----
@@ -1094,7 +1094,7 @@ emptyAction   (LowerNub i mq cols as) = helper |&| modifyState >=> \(toSelfs, bs
               VesselType -> maybe alreadyEmpty (const emptyIt) . getVesselCont targetId $ ms
               ConType    -> a' & _2 <>~ pure sorryEmptyCon
               _          -> a' & _2 <>~ pure (sorryEmptyType s)
-emptyAction p = patternMatchFail "emptyAction" [ showText p ]
+emptyAction p = patternMatchFail "emptyAction" . showText $ p
 
 
 -----
@@ -1116,7 +1116,7 @@ equip (LowerNub i mq cols as) = getState >>= \ms ->
   where
     sorryInInv = wrapUnlinesNl cols . sorryEquipInvLook EquipCmd $ InvCmd
     sorryInRm  = wrapUnlinesNl cols . sorryEquipInvLook EquipCmd $ LookCmd
-equip p = patternMatchFail "equip" [ showText p ]
+equip p = patternMatchFail "equip" . showText $ p
 
 
 -----
@@ -1240,8 +1240,8 @@ fill p@(Lower' i as   ) = genericActionWithHooks p helper "fill"
                         in if ()# otherArgs'
                           then (ms', (toSelfs, bs, logMsgs, fs))
                           else sorry . sorryFillRmWithHooks $ target
-                    a -> patternMatchFail "fill helper" [ showText a ]
-fill p = patternMatchFail "fill" [ showText p ]
+                    a -> patternMatchFail "fill helper" . showText $ a
+fill p = patternMatchFail "fill" . showText $ p
 
 
 
@@ -1336,7 +1336,7 @@ alertExec :: CmdName -> ActionFun
 alertExec cn (NoArgs'     i mq     ) = alertExecHelper i mq cn ""          ""
 alertExec cn (OneArgLower i mq _ a ) = alertExecHelper i mq cn a           a
 alertExec cn (WithArgs    i mq _ as) = alertExecHelper i mq cn (head as) . spaces $ as
-alertExec _  p                       = patternMatchFail "alertExec" [ showText p ]
+alertExec _  p                       = patternMatchFail "alertExec" . showText $ p
 
 
 alertExecHelper :: Id -> MsgQueue -> CmdName -> Text -> Text -> MudStack ()
@@ -1406,7 +1406,7 @@ getAction p@(LowerNub' i         as) = genericActionWithHooks p helper "get"
             (ms',  toSelfs,  bs,  logMsgs ) = foldl' (helperGetEitherInv       i d     ri)  (ms,  [],      [], []     ) eiss
             (ms'', toSelfs', bs', logMsgs') =         helperGetDropEitherCoins i d Get ri i (ms', toSelfs, bs, logMsgs) ecs
         in (ms'', (toSelfs', bs', logMsgs'))
-getAction p = patternMatchFail "getAction" [ showText p ]
+getAction p = patternMatchFail "getAction" . showText $ p
 
 
 -----
@@ -1427,7 +1427,7 @@ give p@(Lower' i as   ) = genericAction p helper "give"
     emptyInvChecks LastArgIsTargetBindings { srcInvCoins, rmInvCoins } =
         ( ()# srcInvCoins |?| Just dudeYourHandsAreEmpty
         , ()# rmInvCoins  |?| Just sorryNoOneHere ) |&| uncurry mplus
-give p = patternMatchFail "give" [ showText p ]
+give p = patternMatchFail "give" . showText $ p
 
 
 shuffleGive :: Id -> MudState -> LastArgIsTargetBindings -> GenericRes
@@ -1464,7 +1464,7 @@ go dir p@ActionParams { args      } = goDispatcher p { args = dir : args }
 goDispatcher :: ActionFun
 goDispatcher ActionParams { args = [] } = unit
 goDispatcher p@(Lower i mq cols as)     = mapM_ (tryMove i mq cols p { args = [] }) as
-goDispatcher p                          = patternMatchFail "goDispatcher" [ showText p ]
+goDispatcher p                          = patternMatchFail "goDispatcher" . showText $ p
 
 
 tryMove :: Id -> MsgQueue -> Cols -> ActionParams -> Text -> MudStack ()
@@ -1537,7 +1537,7 @@ expandLinkName "w"  = "west"
 expandLinkName "nw" = "northwest"
 expandLinkName "u"  = "up"
 expandLinkName "d"  = "down"
-expandLinkName x    = patternMatchFail "expandLinkName" [x]
+expandLinkName x    = patternMatchFail "expandLinkName" x
 
 
 expandOppLinkName :: Text -> Text
@@ -1551,7 +1551,7 @@ expandOppLinkName "w"  = "the east"
 expandOppLinkName "nw" = "the southeast"
 expandOppLinkName "u"  = "below"
 expandOppLinkName "d"  = "above"
-expandOppLinkName x    = patternMatchFail "expandOppLinkName" [x]
+expandOppLinkName x    = patternMatchFail "expandOppLinkName" x
 
 
 -- The following 3 functions are here because they reference "go" (which references "look")...
@@ -1600,7 +1600,7 @@ help (LowerNub i mq cols as) = getState >>= \ms -> do
     (map (parseHelpTxt cols) -> helpTxts, dropBlanks -> hns) <- unzip <$> forM as (getHelpByName cols hs)
     pager i mq . intercalateDivider cols $ helpTxts
     hns |#| logPla "help" i . ("read help on: " <>) . commas
-help p = patternMatchFail "help" [ showText p ]
+help p = patternMatchFail "help" . showText $ p
 
 
 mkHelpData :: [Lang] -> Bool -> IO [Help]
@@ -1747,7 +1747,7 @@ intro (LowerNub i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
         in first (`appendIfUnique` cb) a
     fromClassifiedBcast (TargetBcast    b) = b
     fromClassifiedBcast (NonTargetBcast b) = b
-intro p = patternMatchFail "intro" [ showText p ]
+intro p = patternMatchFail "intro" . showText $ p
 
 
 -----
@@ -1771,7 +1771,7 @@ inv (LowerNub i mq cols as) = getState >>= \ms ->
     helperEitherCoins  acc (Right c   ) = nl $ acc <> mkCoinsDesc cols c
     sorryInEq                           = wrapUnlinesNl cols . sorryEquipInvLook InvCmd $ EquipCmd
     sorryInRm                           = wrapUnlinesNl cols . sorryEquipInvLook InvCmd $ LookCmd
-inv p = patternMatchFail "inv" [ showText p ]
+inv p = patternMatchFail "inv" . showText $ p
 
 
 -----
@@ -1835,7 +1835,7 @@ leave (WithArgs i mq cols (nub -> as)) = helper |&| modifyState >=> \(ms, chanId
                  , " to the "
                  , isPlur ? "following channels:\n" <> commas ns :? head ns <> " channel"
                  , "." ]
-leave p = patternMatchFail "leave" [ showText p ]
+leave p = patternMatchFail "leave" . showText $ p
 
 
 -----
@@ -1939,7 +1939,7 @@ link (LowerNub i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
             action = rndmDo (calcProbLinkFlinch targetId ms) . mkExpAction "flinch" . mkActionParams targetId ms $ []
     helperLinkEitherCoins a (Left msgs) = a & _1 <>~ (mkBcast i . T.concat $ [ nlnl msg | msg <- msgs ])
     helperLinkEitherCoins a Right {}    = let b = (nlnl sorryLinkCoin, pure i) in first (`appendIfUnique` b) a
-link p = patternMatchFail "link" [ showText p ]
+link p = patternMatchFail "link" . showText $ p
 
 
 -----
@@ -2025,7 +2025,7 @@ look (LowerNub i mq cols as) = mkRndmVector >>= \v ->
     -----
     hooksHelper ms v args = procHooks i ms v "look" args & _2._2 %~ (T.unlines . map (multiWrap cols . T.lines))
                                                          & _2._4 %~ slashes
-look p = patternMatchFail "look" [ showText p ]
+look p = patternMatchFail "look" . showText $ p
 
 
 mkRmInvCoinsDesc :: Id -> Cols -> MudState -> Id -> Text
@@ -2180,7 +2180,7 @@ newChan (WithArgs i mq cols (nub -> as)) = helper |&| modifyState >=> \(unzip ->
                  , "name"
                  , isPlur ? "s:\n" <> commas ns :? " " <> head ns
                  , "." ]
-newChan p = patternMatchFail "newChan" [ showText p ]
+newChan p = patternMatchFail "newChan" . showText $ p
 
 
 -----
@@ -2195,7 +2195,7 @@ npcAsSelfHelper p@(NoArgs'  i mq     ) = advise p [] adviceAsSelfNoArgs >> sendD
 npcAsSelfHelper   (WithArgs i mq _ as) = do
     logPlaExecArgs "." as i
     liftIO . atomically . writeTQueue mq . AsSelf . nl . T.unwords $ as
-npcAsSelfHelper p = patternMatchFail "npcAsSelfHelper" [ showText p ]
+npcAsSelfHelper p = patternMatchFail "npcAsSelfHelper" . showText $ p
 
 
 -----
@@ -2203,7 +2203,7 @@ npcAsSelfHelper p = patternMatchFail "npcAsSelfHelper" [ showText p ]
 
 npcDispCmdList :: ActionFun
 npcDispCmdList p@(LowerNub' i as) = getState >>= \ms -> dispCmdList (mkNpcCmds i ms) p >> logPlaExecArgs "?" as i
-npcDispCmdList p                  = patternMatchFail "npcDispCmdList" [ showText p ]
+npcDispCmdList p                  = patternMatchFail "npcDispCmdList" . showText $ p
 
 
 -----
@@ -2227,7 +2227,7 @@ npcExorciseHelper p = withoutArgs npcExorciseHelper p
 
 plaDispCmdList :: ActionFun
 plaDispCmdList p@(LowerNub' i as) = getState >>= \ms -> dispCmdList (mkPlaCmds i ms) p >> logPlaExecArgs "?" as i
-plaDispCmdList p                  = patternMatchFail "plaDispCmdList" [ showText p ]
+plaDispCmdList p                  = patternMatchFail "plaDispCmdList" . showText $ p
 
 
 -----
@@ -2260,7 +2260,7 @@ putAction p@(Lower' i as)    = genericActionWithHooks p helper "put"
             let h@Hook { hookName }                  = head matches
                 (_, (ms', toSelfs, bs, logMsgs), fs) = getHookFun hookName ms i h v (args, (ms, [], [], []), [])
             in (ms', (toSelfs, bs, logMsgs, fs))
-putAction p = patternMatchFail "putAction" [ showText p ]
+putAction p = patternMatchFail "putAction" . showText $ p
 
 
 type CoinsWithCon = Coins
@@ -2324,7 +2324,7 @@ interpCurrPW cn (WithArgs i mq cols as)
           setInterp i . Just . interpNewPW $ pw
       else pwSorryHelper i mq cols sorryInterpPW
     Just Nothing -> pwSorryHelper i mq cols sorryInterpPW
-interpCurrPW _ p = patternMatchFail "interpCurrPW" [ showText p ]
+interpCurrPW _ p = patternMatchFail "interpCurrPW" . showText $ p
 
 
 pwSorryHelper :: Id -> MsgQueue -> Cols -> Text -> MudStack ()
@@ -2359,7 +2359,7 @@ interpVerifyNewPW oldPW pass cn (NoArgs i mq cols)
       resetInterp i
       logPla "interpVerifyNewPW" i $ "password changed " <> parensQuote ("was " <> dblQuote oldPW) <> "."
   | otherwise = pwSorryHelper i mq cols sorryInterpNewPwMatch
-interpVerifyNewPW _ _ _ p = patternMatchFail "interpVerifyNewPW" [ showText p ]
+interpVerifyNewPW _ _ _ p = patternMatchFail "interpVerifyNewPW" . showText $ p
 
 
 -----
@@ -2412,7 +2412,7 @@ question (Msg i mq cols msg) = getState >>= \ms -> if
               Right (Left  ()) -> case expCmdify i ms questionChanContext triples msg of
                 Left  errorMsg     -> ws errorMsg
                 Right (bs, logMsg) -> ioHelper logMsg =<< g bs
-question p = patternMatchFail "question" [ showText p ]
+question p = patternMatchFail "question" . showText $ p
 
 
 -----
@@ -2555,7 +2555,7 @@ readAction (LowerNub i mq cols as) = (,) <$> getState <*> mkRndmVector >>= \(ms,
         bcastIfNotIncogNl i bs
         logMsgs |#| logPla "read" i . (<> ".") . slashes
     wrapper = T.unlines . map (multiWrap cols . T.lines)
-readAction p = patternMatchFail "readAction" [ showText p ]
+readAction p = patternMatchFail "readAction" . showText $ p
 
 
 readHelper :: Id -> Cols -> MudState -> Desig -> (Text, [Broadcast], [Text]) -> Inv -> (Text, [Broadcast], [Text])
@@ -2616,7 +2616,7 @@ ready p@(LowerNub' i as) = genericAction p helper "ready"
                                                  , bs
                                                  , logMsgs ))
           else genericSorry ms dudeYourHandsAreEmpty
-ready p = patternMatchFail "ready" [ showText p ]
+ready p = patternMatchFail "ready" . showText $ p
 
 
 helperReady :: Id
@@ -2742,16 +2742,16 @@ getDesigClothSlot ms clothSing cloth em rol
     Bracelet -> findSlotFromList rBraceletSlots lBraceletSlots |&| maybe (Left sorryBracelet) Right
     Ring     -> M.lookup slotFromRol em |&| maybe (Right slotFromRol)
                                                   (Left . sorryReadyAlreadyWearingRing slotFromRol . (`getSing` ms))
-    _        -> patternMatchFail "getDesigClothSlot" [ showText cloth ]
+    _        -> patternMatchFail "getDesigClothSlot" . showText $ cloth
   where
     findSlotFromList rs ls = findAvailSlot em $ case rol of
       R -> rs
       L -> ls
-      _ -> patternMatchFail "getDesigClothSlot findSlotFromList" [ showText rol ]
+      _ -> patternMatchFail "getDesigClothSlot findSlotFromList" . showText $ rol
     getSlotFromList  rs ls = head $ case rol of
       R -> rs
       L -> ls
-      _ -> patternMatchFail "getDesigClothSlot getSlotFromList"  [ showText rol ]
+      _ -> patternMatchFail "getDesigClothSlot getSlotFromList"  . showText $ rol
     sorryRol         = Left . sorryReadyRol clothSing $ rol
     sorryEarring     = sorryReadyClothFullOneSide cloth . getSlotFromList rEarringSlots  $ lEarringSlots
     sorryBracelet    = sorryReadyClothFullOneSide cloth . getSlotFromList rBraceletSlots $ lBraceletSlots
@@ -2815,7 +2815,7 @@ getDesigWpnSlot ms wpnSing em rol
   where
     desigSlot = case rol of R -> RHandS
                             L -> LHandS
-                            _ -> patternMatchFail "getDesigWpnSlot desigSlot" [ showText rol ]
+                            _ -> patternMatchFail "getDesigWpnSlot desigSlot" . showText $ rol
     sorry i   = sorryReadyAlreadyWielding (getSing i ms) desigSlot
 
 
@@ -2866,7 +2866,7 @@ remove p@(Lower' i as)    = genericAction p helper "remove"
         (InRm,  target) -> if ()# rmInvCoins
           then genericSorry ms sorryNoConHere
           else shuffleRem i ms srcDesig target True otherArgs rmInvCoins procGecrMisRm
-remove p = patternMatchFail "remove" [ showText p ]
+remove p = patternMatchFail "remove" . showText $ p
 
 
 shuffleRem :: Id
@@ -2923,7 +2923,7 @@ roomDesc (WithArgs i mq cols (T.unwords -> desc@(dblQuote -> desc'))) = if T.len
     tweak $ mobTbl.ind i.mobRmDesc ?~ desc
     wrapSend mq cols $ "Your room description has been set to " <> desc' <> "."
     logPla "roomDesc" i $ "room description set to " <> desc' <> "."
-roomDesc p = patternMatchFail "roomDesc" [ showText p ]
+roomDesc p = patternMatchFail "roomDesc" . showText $ p
 
 
 -----
@@ -2973,7 +2973,7 @@ sayHelper l p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
                   in if isNpcPC targetId ms
                     then parseRearAdverb |&| either sorry (sayToHelper d targetId targetDesig)
                     else sorry . sorrySayTargetType . getSing targetId $ ms
-              x -> patternMatchFail "sayHelper sayTo" [ showText x ]
+              x -> patternMatchFail "sayHelper sayTo" . showText $ x
           else sorry sorrySayNoOneHere
       where
         sorry           = (ms, ) . (, [], "") . pure
@@ -3003,15 +3003,15 @@ sayHelper l p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
             in (ms & plaTbl .~ pt, ( onTrue (()!# hints) (++ hints) . pure $ toSelfMsg
                                    , toTargetBcast : toOthersBcasts
                                    , toSelfMsg ))
-    sayTo maybeAdverb msg _ = patternMatchFail "sayHelper sayTo" [ showText maybeAdverb, msg ]
-    formatMsg               = dblQuote . capitalizeMsg . punctuateMsg
+    sayTo _ msg _ = patternMatchFail "sayHelper sayTo" msg
+    formatMsg     = dblQuote . capitalizeMsg . punctuateMsg
     ioHelper ms triple@(x:xs, _, _) | (toSelfs, bs, logMsg) <- triple & _1 .~ parseDesig       i ms x : xs
                                                                       & _3 %~ parseExpandDesig i ms
                                     = do { multiWrapSend mq cols toSelfs
                                          ; bcastIfNotIncogNl i bs
                                          ; logMsg |#| logPlaOut (mkCmdNameForLang l) i . pure
                                          ; logMsg |#| alertMsgHelper i (mkCmdNameForLang l) }
-    ioHelper _  triple              = patternMatchFail "sayHelper ioHelper" [ showText triple ]
+    ioHelper _  triple              = patternMatchFail "sayHelper ioHelper" . showText $ triple
     simpleSayHelper ms (maybe "" (" " <>) -> adverb) (formatMsg -> msg) =
         return $ let d                = mkStdDesig i ms DoCap
                      inLang           = mkInLangTxtForLang l
@@ -3020,7 +3020,7 @@ sayHelper l p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
                                       | otherwise           = T.concat [ serialize d, " says something", adverb, inLang, "." ]
                      toOthersBcasts   = [ (nl . mkToOthersMsg $ i', pure i') | i' <- i `delete` desigIds d ]
                  in (pure toSelfMsg, toOthersBcasts, toSelfMsg)
-sayHelper _ p = patternMatchFail "sayHelper" [ showText p ]
+sayHelper _ p = patternMatchFail "sayHelper" . showText $ p
 
 
 firstMobSay :: Id -> PlaTbl -> (PlaTbl, [Text])
@@ -3097,7 +3097,7 @@ interpSecurityA q "" (NoArgs _ mq cols) = do
     send mq . wrapUnlines cols $ "Please answer the question, " <> dblQuote q
     sendPrompt mq "Answer:"
 interpSecurityA q cn (WithArgs i mq cols as) = securitySetHelper i mq cols q . T.unwords $ cn : as
-interpSecurityA _ _  p                       = patternMatchFail "interpSecurityA" [ showText p ]
+interpSecurityA _ _  p                       = patternMatchFail "interpSecurityA" . showText $ p
 
 
 securitySetHelper :: Id -> MsgQueue -> Cols -> Text -> Text -> MudStack ()
@@ -3134,13 +3134,13 @@ interpSecurityCreateQ "" (NoArgs'  i mq     ) = neverMind i mq
 interpSecurityCreateQ cn (WithArgs i mq _ as) = do
     sendPrompt mq "Answer:"
     setInterp i . Just . interpSecurityCreateA $ T.unwords $ cn : as
-interpSecurityCreateQ _ p = patternMatchFail "interpSecurityCreateQ" [ showText p ]
+interpSecurityCreateQ _ p = patternMatchFail "interpSecurityCreateQ" . showText $ p
 
 
 interpSecurityCreateA :: Text -> Interp
 interpSecurityCreateA _ "" (NoArgs'  i mq        ) = neverMind i mq
 interpSecurityCreateA q cn (WithArgs i mq cols as) = securitySetHelper i mq cols q . T.unwords $ cn : as
-interpSecurityCreateA _ _  p                       = patternMatchFail "interpSecurityCreateA" [ showText p ]
+interpSecurityCreateA _ _  p                       = patternMatchFail "interpSecurityCreateA" . showText $ p
 
 
 -----
@@ -3155,7 +3155,7 @@ setAction (Lower i mq cols as) = helper |&| modifyState >=> \(msgs, logMsgs) ->
   where
     helper ms = let (p, msgs, logMsgs) = foldl' (helperSettings i ms) (getPla i ms, [], []) as
                 in (ms & plaTbl.ind i .~ p, (msgs, logMsgs))
-setAction p = patternMatchFail "setAction" [ showText p ]
+setAction p = patternMatchFail "setAction" . showText $ p
 
 
 mkSettingPairs :: Id -> MudState -> [(Text, Text)]
@@ -3184,7 +3184,7 @@ helperSettings i ms a (T.breakOn "=" -> (name, T.tail -> value)) =
                         "columns"  -> procEither . alterNumeric minCols      maxCols      "columns" $ columns
                         "lines"    -> procEither . alterNumeric minPageLines maxPageLines "lines"   $ pageLines
                         "question" -> alterTuning "question" IsTunedQuestion
-                        t          -> patternMatchFail "helperSettings found" [t]
+                        t          -> patternMatchFail "helperSettings found" t
       where
         procEither f = parseInt |&| either appendMsg f
         parseInt     = case (reads . T.unpack $ value :: [(Int, String)]) of [(x, "")] -> Right x
@@ -3198,7 +3198,7 @@ helperSettings i ms a (T.breakOn "=" -> (name, T.tail -> value)) =
       [(_, newBool)] -> let msg   = T.concat [ "Tuned ", inOut newBool, " the ", n, " channel." ]
                         in appendMsg msg & _1 %~ setPlaFlag flag newBool & _3 <>~ pure msg
       [] -> appendMsg . sorryParseInOut value $ n
-      xs -> patternMatchFail "helperSettings alterTuning" [ showText xs ]
+      xs -> patternMatchFail "helperSettings alterTuning" . showText $ xs
 
 
 -----
@@ -3346,7 +3346,7 @@ showAction   (Lower i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
           in let (toSelfMsgs, bs, logMsgs) = showEqHelper
              in (showCoinsInEqHelper : toSelfMsgs, bs, slashes logMsgs)
       | otherwise = (pure dudeYou'reNaked, [], "")
-showAction p = patternMatchFail "showAction" [ showText p ]
+showAction p = patternMatchFail "showAction" . showText $ p
 
 
 mkSlotDesc :: Id -> MudState -> Slot -> Text
@@ -3523,7 +3523,7 @@ smell (OneArgLower i mq cols a) = getState >>= \ms ->
                                       , hooksLogMsgs |#| logPla "smell" i . (<> ".") . slashes ])
                           else (ms', pure . smellRmHelper . head $ eiss)
                 in mkRndmVector >>= \v -> helper v |&| modifyState >=> sequence_
-            x -> patternMatchFail "smell smellRm" [ showText x ]
+            x -> patternMatchFail "smell smellRm" . showText $ x
       where
         smellRmHelper = \case
           Left  msg        -> wrapSend mq cols msg
@@ -3629,7 +3629,7 @@ stopEating (WithArgs i mq cols _) ms =
                                                               , "." ]
                                                    , i `delete` desigIds d )
     in sequence_ [ stopAct i Eating, wrapSend mq cols toSelf, bcastHelper ]
-stopEating p _ = patternMatchFail "stopEating" [ showText p ]
+stopEating p _ = patternMatchFail "stopEating" . showText $ p
 
 
 stopDrinking :: ActionParams -> MudState -> MudStack ()
@@ -3643,7 +3643,7 @@ stopDrinking (WithArgs i mq cols _) ms =
                                                               , "." ]
                                                    , i `delete` desigIds d )
     in sequence_ [ stopAct i Drinking, wrapSend mq cols toSelf, bcastHelper ]
-stopDrinking p _ = patternMatchFail "stopDrinking" [ showText p ]
+stopDrinking p _ = patternMatchFail "stopDrinking" . showText $ p
 
 
 stopAttacking :: ActionParams -> MudState -> MudStack ()
@@ -3767,14 +3767,14 @@ tele (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
                        formatBs targetId [toMe, toTarget] = let f n m = bracketQuote n <> " " <> m
                                                             in [ toMe     & _1 %~ f s
                                                                , toTarget & _1 %~ f (mkStyled targetId) ]
-                       formatBs _        bs               = patternMatchFail "tele found formatBs" [ showText bs ]
+                       formatBs _        bs               = patternMatchFail "tele found formatBs" . showText $ bs
                        mkStyled targetId = let (target'sAwakes, _) = getDblLinkedSings targetId ms
                                                styleds             = styleAbbrevs Don'tQuote target'sAwakes
                                            in head . filter ((== s) . dropANSI) $ styleds
                    in either sendFun helper . checkMutuallyTuned i ms $ targetSing
                (awakes, asleeps) = getDblLinkedSings i ms
            in findFullNameForAbbrev strippedTarget awakes |&| maybe notFound found
-tele p = patternMatchFail "tele" [ showText p ]
+tele p = patternMatchFail "tele" . showText $ p
 
 
 getDblLinkedSings :: Id -> MudState -> ([Sing], [Sing])
@@ -3815,7 +3815,7 @@ tune (Lower' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
                 in ( ms & teleLinkMstrTbl.ind i .~ linkTbl'
                         & chanTbl %~ flip (foldr (\c -> ind (c^.chanId) .~ c)) chans'
                    , (mkBcast i . T.unlines $ msgs, logMsgs) )
-tune p = patternMatchFail "tune" [ showText p ]
+tune p = patternMatchFail "tune" . showText $ p
 
 
 helperTune :: Sing -> (TeleLinkTbl, [Chan], [Text], [Text]) -> Text -> (TeleLinkTbl, [Chan], [Text], [Text])
@@ -3905,7 +3905,7 @@ unlink (LowerNub i mq cols as) =
             in helper |&| modifyState >=> \(bs, logMsgs) -> do
                 bcast . onTrue (()!# guessWhat) ((guessWhat, pure i) :) $ bs
                 logMsgs |#| logPla "unlink" i . slashes
-unlink p = patternMatchFail "unlink" [ showText p ]
+unlink p = patternMatchFail "unlink" . showText $ p
 
 
 -----
@@ -3930,7 +3930,7 @@ unready p@(LowerNub' i as) = genericAction p helper "unready"
                                                  , bs
                                                  , logMsgs ))
           else genericSorry ms dudeYou'reNaked
-unready p = patternMatchFail "unready" [ showText p ]
+unready p = patternMatchFail "unready" . showText $ p
 
 
 helperUnready :: Id
@@ -3990,7 +3990,7 @@ mkUnreadyDescs i ms d targetIds = unzip [ helper icb | icb <- mkIdCountBothList 
         Feet   -> mkVerbTakeOff person
         Shield -> mkVerbUnready person
         _      -> mkVerbDoff    person
-      t -> patternMatchFail "mkUnreadyDescs mkVerb" [ showText t ]
+      t -> patternMatchFail "mkUnreadyDescs mkVerb" . showText $ t
     mkVerbRemove  = \case SndPer -> "remove"
                           ThrPer -> "removes"
     mkVerbTakeOff = \case SndPer -> "take off"
@@ -4058,25 +4058,24 @@ whisper   (WithArgs i mq cols (target:(T.unwords -> rest))) = getState >>= \ms -
   then wrapSend mq cols . sorryIncog $ "whisper"
   else helper |&| modifyState >=> ioHelper ms
   where
-    helper ms =
-        let d        = mkStdDesig i ms DoCap
-            invCoins = first (i `delete`) . getMobRmNonIncogInvCoins i $ ms
-        in if ()!# invCoins
-          then case singleArgInvEqRm InRm target of
-            (InInv, _      ) -> sorry sorryWhisperInInv
-            (InEq,  _      ) -> sorry sorryWhisperInEq
-            (InRm,  target') -> case uncurry (resolveRmInvCoins i ms . pure $ target') invCoins of
-              (_,                    [ Left [msg] ]) -> sorry msg
-              (_,                    Right  _:_    ) -> sorry sorryWhisperCoins
-              ([ Left  msg        ], _             ) -> sorry msg
-              ([ Right (_:_:_)    ], _             ) -> sorry sorryWhisperExcessTargets
-              ([ Right [targetId] ], _             ) ->
-                  let targetDesig = serialize . mkStdDesig targetId ms $ Don'tCap
-                  in if isNpcPC targetId ms
-                    then whispering d targetId targetDesig . formatMsg $ rest
-                    else sorry . sorryWhisperTargetType . getSing targetId $ ms
-              x -> patternMatchFail "whisper helper" [ showText x ]
-          else sorry sorryWhisperNoOneHere
+    helper ms = let d        = mkStdDesig i ms DoCap
+                    invCoins = first (i `delete`) . getMobRmNonIncogInvCoins i $ ms
+                in if ()!# invCoins
+                  then case singleArgInvEqRm InRm target of
+                    (InInv, _      ) -> sorry sorryWhisperInInv
+                    (InEq,  _      ) -> sorry sorryWhisperInEq
+                    (InRm,  target') -> case uncurry (resolveRmInvCoins i ms . pure $ target') invCoins of
+                      (_,                    [ Left [msg] ]) -> sorry msg
+                      (_,                    Right  _:_    ) -> sorry sorryWhisperCoins
+                      ([ Left  msg        ], _             ) -> sorry msg
+                      ([ Right (_:_:_)    ], _             ) -> sorry sorryWhisperExcessTargets
+                      ([ Right [targetId] ], _             ) ->
+                          let targetDesig = serialize . mkStdDesig targetId ms $ Don'tCap
+                          in if isNpcPC targetId ms
+                            then whispering d targetId targetDesig . formatMsg $ rest
+                            else sorry . sorryWhisperTargetType . getSing targetId $ ms
+                      x -> patternMatchFail "whisper helper" . showText $ x
+                  else sorry sorryWhisperNoOneHere
       where
         sorry                                 = (ms, ) . (, [], "") . pure
         whispering d targetId targetDesig msg =
@@ -4093,8 +4092,8 @@ whisper   (WithArgs i mq cols (target:(T.unwords -> rest))) = getState >>= \ms -
                                          ; bcastIfNotIncogNl i bs
                                          ; logMsg |#| logPlaOut "whisper" i . pure
                                          ; logMsg |#| alertMsgHelper i "whisper" }
-    ioHelper _  triple              = patternMatchFail "whisper ioHelper" [ showText triple ]
-whisper p = patternMatchFail "whisper" [ showText p ]
+    ioHelper _  triple              = patternMatchFail "whisper ioHelper" . showText $ triple
+whisper p = patternMatchFail "whisper" . showText $ p
 
 
 -----

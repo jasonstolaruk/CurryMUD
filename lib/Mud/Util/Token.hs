@@ -6,6 +6,7 @@ import Mud.Cmds.Msgs.Misc
 import Mud.Misc.ANSI
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
+import Mud.Util.Misc (PatternMatchFail)
 import Mud.Util.Text
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
@@ -15,7 +16,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 
 
-patternMatchFail :: Text -> [Text] -> a
+patternMatchFail :: PatternMatchFail a
 patternMatchFail = U.patternMatchFail "Mud.Util.Token"
 
 
@@ -64,7 +65,7 @@ expandCharCode (toLower -> code)           = T.singleton $ case code of
   's' -> slotChar
   't' -> sayToChar
   'x' -> emoteChar
-  x   -> patternMatchFail "expandCharCode" [ T.singleton x ]
+  x   -> patternMatchFail "expandCharCode" . T.singleton $ x
 
 
 -----
@@ -82,7 +83,7 @@ expandMiscCode (toLower -> code)           = case code of
   'p' -> pwWarningMsg
   's' -> dfltShutdownMsg
   'z' -> yesNo $ isDebug && isZBackDoor
-  x   -> patternMatchFail "expandMiscCode" [ T.singleton x ]
+  x   -> patternMatchFail "expandMiscCode" . T.singleton $ x
 
 
 -----
@@ -112,4 +113,4 @@ expandStyleCode (toLower -> code)            = case code of
   't' -> toNpcColor
   'u' -> underlineANSI
   'z' -> zingColor
-  x   -> patternMatchFail "expandStyleCode" [ T.singleton x ]
+  x   -> patternMatchFail "expandStyleCode" . T.singleton $ x

@@ -44,7 +44,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 
 
-patternMatchFail :: Text -> [Text] -> a
+patternMatchFail :: PatternMatchFail a
 patternMatchFail = U.patternMatchFail "Mud.TheWorld.Misc"
 
 
@@ -168,7 +168,7 @@ trash (LowerNub i mq cols as) = helper |&| modifyState >=> \((toSelfs, bs, logMs
     logMsgs |#| logPlaOut "trash" i
   where
     helper ms = let ((ms', toSelfs, bs, logMsgs), fs) = trashHelper i ms as in (ms', ((toSelfs, bs, logMsgs), fs))
-trash p = patternMatchFail "trash" [ showText p ]
+trash p = patternMatchFail "trash" . showText $ p
 
 
 helperTrashEitherInv :: Id

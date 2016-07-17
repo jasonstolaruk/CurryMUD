@@ -4,15 +4,16 @@ module Mud.Cmds.Util.EmoteExp.TwoWayEmoteExp ( emotifyTwoWay
                                              , expCmdifyTwoWay ) where
 
 import Mud.Cmds.ExpCmds
-import Mud.Cmds.Util.Misc
 import Mud.Cmds.Msgs.Advice
 import Mud.Cmds.Msgs.Sorry
+import Mud.Cmds.Util.Misc
 import Mud.Data.Misc
 import Mud.Data.State.ActionParams.Misc
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
+import Mud.Util.Misc (PatternMatchFail)
 import Mud.Util.Operators
 import Mud.Util.Quoting
 import Mud.Util.Text
@@ -27,7 +28,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 
 
-patternMatchFail :: Text -> [Text] -> a
+patternMatchFail :: PatternMatchFail a
 patternMatchFail = U.patternMatchFail "Mud.Cmds.Util.EmoteExp.TwoWayEmoteExp"
 
 
@@ -79,7 +80,7 @@ expCmdifyTwoWay i ms targetId targetSing msg@(T.words -> ws@(headTail . head -> 
 
 
 procExpCmdTwoWay :: Id -> MudState -> Id -> Sing -> Args -> Either Text [Broadcast]
-procExpCmdTwoWay _ _  _        _          (_:_:_:_) = Left sorryExpCmdLen
+procExpCmdTwoWay _ _  _        _          (_:_:_:_)                               = Left sorryExpCmdLen
 procExpCmdTwoWay i ms targetId targetSing (map T.toLower . unmsg -> [cn, target]) =
     findFullNameForAbbrev cn expCmdNames |&| maybe notFound found
   where
@@ -107,4 +108,4 @@ procExpCmdTwoWay i ms targetId targetSing (map T.toLower . unmsg -> [cn, target]
                            in replace (substitutions ++ maybe [] (const . pure $ ("@", targetSing)) maybeTargetId)
     s                    = getSing i ms
     (heShe, hisHer, himHerself) = mkPros . getSex i $ ms
-procExpCmdTwoWay _ _ _ _ as = patternMatchFail "procExpCmdTwoWay" as
+procExpCmdTwoWay _ _ _ _ as = patternMatchFail "procExpCmdTwoWay" . showText $ as

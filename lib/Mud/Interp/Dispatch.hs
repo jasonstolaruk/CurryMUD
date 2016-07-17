@@ -9,6 +9,7 @@ import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
+import Mud.Util.Misc (PatternMatchFail)
 import Mud.Util.Text hiding (none)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
@@ -16,10 +17,9 @@ import Control.Lens (view)
 import Control.Monad (when)
 import Data.List (sort)
 import Data.Maybe (isNothing)
-import Data.Text (Text)
 
 
-patternMatchFail :: Text -> [Text] -> a
+patternMatchFail :: PatternMatchFail a
 patternMatchFail = U.patternMatchFail "Mud.Interp.Dispatch"
 
 
@@ -50,4 +50,4 @@ findActionHelper i ms cn cmds =
     in return $ case [ ra | ra <- ras, cn == rmActionCmdName ra ] of
       []   -> cmdAction . fst <$> findFullNameForAbbrev cn [ (cmd, cmdName cmd) | cmd <- cmds' ]
       [ra] -> Just . Action (getRmActionFun (rmActionFunName ra) ms) $ True
-      xs   -> patternMatchFail "findActionHelper" [ showText xs ]
+      xs   -> patternMatchFail "findActionHelper" . showText $ xs

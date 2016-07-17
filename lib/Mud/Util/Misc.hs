@@ -1,7 +1,9 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
-{-# LANGUAGE FlexibleContexts, LambdaCase, MonadComprehensions, OverloadedStrings, RankNTypes, ViewPatterns #-}
+{-# LANGUAGE FlexibleContexts, LambdaCase, MonadComprehensions, OverloadedStrings, RankNTypes #-}
 
-module Mud.Util.Misc ( atLst1
+module Mud.Util.Misc ( BlowUp
+                     , PatternMatchFail
+                     , atLst1
                      , atomicWriteIORef'
                      , blowUp
                      , boolToMaybe
@@ -99,7 +101,10 @@ concatMapM  :: (Monad m, Traversable t) => (a -> m [b]) -> t a -> m [b]
 concatMapM f = fmap concat . mapM f
 
 
-blowUp :: Text -> Text -> Text -> Text -> a
+type BlowUp a = Text -> Text -> Text -> a
+
+
+blowUp :: Text -> BlowUp a
 blowUp modName funName msg t = error . T.unpack . T.concat $ [ modName, " ", funName, ": ", msg ] ++ (t |!| [ "; ", t ])
 
 
@@ -245,7 +250,10 @@ onLeft f (Left  a) = Left . f $ a
 onLeft _ x         = blowUp "Mud.Util.Misc" "onLeft" "Right" . T.pack . show $ x
 
 
-patternMatchFail :: Text -> Text -> Text -> a
+type PatternMatchFail a = Text -> Text -> a
+
+
+patternMatchFail :: Text -> PatternMatchFail a
 patternMatchFail modName funName = blowUp modName funName "pattern match failure"
 
 

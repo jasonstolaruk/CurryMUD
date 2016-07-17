@@ -17,6 +17,7 @@ module Mud.Util.Wrapping ( adjustIndent
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Misc.ANSI
 import Mud.TopLvlDefs.Chars
+import Mud.Util.Misc (PatternMatchFail)
 import Mud.Util.Operators
 import Mud.Util.Text
 import qualified Mud.Util.Misc as U (patternMatchFail)
@@ -29,7 +30,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 
 
-patternMatchFail :: Text -> [Text] -> a
+patternMatchFail :: PatternMatchFail a
 patternMatchFail = U.patternMatchFail "Mud.Util.Wrapping"
 
 
@@ -141,14 +142,14 @@ noOfLeadingSpcs = T.length . T.takeWhile isSpace
 wrapLineWithIndentTag :: Cols -> Text -> [Text]
 wrapLineWithIndentTag cols (T.break (not . isDigit) . T.reverse . T.init -> broken) = wrapIndent n cols t
   where
-    (numTxt, t) = broken & both %~ T.reverse
-    readsRes    = reads . T.unpack $ numTxt :: [(Int, String)]
+    (numTxt, t)                 = broken & both %~ T.reverse
+    readsRes                    = reads . T.unpack $ numTxt :: [(Int, String)]
     extractInt []               = 0
     extractInt [(x, _)] | x > 0 = x
-    extractInt xs               = patternMatchFail "wrapLineWithIndentTag extractInt" [ showText xs ]
-    indent          = extractInt readsRes
-    n | indent == 0 = calcIndent . dropANSI $ t
-      | otherwise   = adjustIndent indent cols
+    extractInt xs               = patternMatchFail "wrapLineWithIndentTag extractInt" . showText $ xs
+    indent                      = extractInt readsRes
+    n | indent == 0             = calcIndent . dropANSI $ t
+      | otherwise               = adjustIndent indent cols
 
 
 calcIndent :: Text -> Int

@@ -66,7 +66,7 @@ import qualified Data.IntMap.Lazy as IM (elems, toList)
 import qualified Data.Text as T
 
 
-patternMatchFail :: Text -> [Text] -> a
+patternMatchFail :: PatternMatchFail a
 patternMatchFail = U.patternMatchFail "Mud.Data.State.Util.Output"
 
 
@@ -84,12 +84,12 @@ bcast :: [Broadcast] -> MudStack ()
 bcast [] = unit
 bcast bs = getState >>= \ms -> liftIO . atomically . forM_ bs . sendBcastSTM $ ms
   where
-    sendBcastSTM ms (msg, is) = mapM_ helper is
+    sendBcastSTM ms (msg, is) = mapM_ helper is -- TODO: "STM"
       where
         helper targetId = case getType targetId ms of
           PCType  -> writeIt FromServer targetId
           NpcType -> maybeVoid (writeIt ToNpc) . getPossessor targetId $ ms
-          t       -> patternMatchFail "bcast sendBcastSTM helper" [ showText t ]
+          t       -> patternMatchFail "bcast sendBcastSTM helper" . showText $ t
         writeIt f i = let (mq, cols) = getMsgQueueColumns i ms
                       in writeTQueue mq . f . T.unlines . concatMap (wrap cols) . T.lines . parseDesig i ms $ msg
 
@@ -242,23 +242,22 @@ parseExpandDesig = parseDesigHelper (\es -> (<> parensQuote es))
 parseDesigHelper :: (Sing -> Text -> Text) -> Id -> MudState -> Text -> Text
 parseDesigHelper f i ms = loop (getIntroduced i ms)
   where
-    loop intros txt
-      | T.singleton stdDesigDelimiter `T.isInfixOf` txt
-      , (left, pcd, rest) <- extractDesigTxt stdDesigDelimiter txt
-      = case pcd of
-        d@StdDesig { desigEntSing = Just es, .. } ->
-          left                                                              <>
-          (if es `elem` intros
-             then es
-             else expandEntName i ms d ^.to (isPC desigId ms ? f es :? id)) <>
-          loop intros rest
-        d@StdDesig { desigEntSing = Nothing,  .. } ->
-          left <> expandEntName i ms d <> loop intros rest
-        _ -> patternMatchFail "parseDesig loop" [ showText pcd ]
-      | T.singleton nonStdDesigDelimiter `T.isInfixOf` txt
-      , (left, NonStdDesig { .. }, rest) <- extractDesigTxt nonStdDesigDelimiter txt
-      = left <> (dEntSing `elem` intros ? dEntSing :? dDesc) <> loop intros rest
-      | otherwise = txt
+    loop intros txt | T.singleton stdDesigDelimiter `T.isInfixOf` txt
+                    , (left, pcd, rest) <- extractDesigTxt stdDesigDelimiter txt
+                    = case pcd of
+                      d@StdDesig { desigEntSing = Just es, .. } ->
+                        left                                                              <>
+                        (if es `elem` intros
+                           then es
+                           else expandEntName i ms d ^.to (isPC desigId ms ? f es :? id)) <>
+                        loop intros rest
+                      d@StdDesig { desigEntSing = Nothing,  .. } ->
+                        left <> expandEntName i ms d <> loop intros rest
+                      _ -> patternMatchFail "parseDesigHelper loop" . showText $ pcd
+                    | T.singleton nonStdDesigDelimiter `T.isInfixOf` txt
+                    , (left, NonStdDesig { .. }, rest) <- extractDesigTxt nonStdDesigDelimiter txt
+                    = left <> (dEntSing `elem` intros ? dEntSing :? dDesc) <> loop intros rest
+                    | otherwise = txt
     extractDesigTxt (T.singleton -> c) (T.breakOn c -> (left, T.breakOn c . T.tail -> (pcdTxt, T.tail -> rest)))
       | pcd <- deserialize . quoteWith c $ pcdTxt :: Desig
       = (left, pcd, rest)
@@ -276,10 +275,10 @@ expandEntName i ms StdDesig { .. } =
               idsInRm = filter ((`notElem` intros) . (`getSing` ms)) $ i `delete` desigIds
               matches = foldr (\pi acc -> onTrue (mkUnknownPCEntName pi ms == desigEntName) (pi :) acc) [] idsInRm
           in length matches > 1 |?| (<> " ") . mkOrdinal . succ . fromJust . elemIndex desigId $ matches
-    expandSex 'm'                = "male"
-    expandSex 'f'                = "female"
-    expandSex (T.singleton -> x) = patternMatchFail "expandEntName expandSex" [x]
-expandEntName _ _ d = patternMatchFail "expandEntName" [ showText d ]
+    expandSex 'm' = "male"
+    expandSex 'f' = "female"
+    expandSex x   = patternMatchFail "expandEntName expandSex" . T.singleton $ x
+expandEntName _ _ d = patternMatchFail "expandEntName" . showText $ d
 
 
 -----

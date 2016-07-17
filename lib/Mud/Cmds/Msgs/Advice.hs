@@ -127,6 +127,7 @@ import Mud.Data.State.Util.Output
 import Mud.Misc.ANSI
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
+import Mud.Util.Misc (PatternMatchFail)
 import Mud.Util.Quoting
 import Mud.Util.Text
 import qualified Mud.Util.Misc as U (patternMatchFail)
@@ -136,7 +137,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 
 
-patternMatchFail :: Text -> Text -> a
+patternMatchFail :: PatternMatchFail a
 patternMatchFail = U.patternMatchFail "Mud.Cmds.Msgs.Advice"
 
 
@@ -150,7 +151,7 @@ advise (Advising mq cols) [h] msg = multiWrapSend mq cols [ msg, "For more infor
                                                                  "." ]
 advise (Advising mq cols) (dblQuote . T.intercalate (dblQuote ", ") -> helpTopics) msg =
     multiWrapSend mq cols [ msg, "For more information, see the following help articles: " <> helpTopics <> "." ]
-advise p hs msg = patternMatchFail "advise" [ showText p, showText hs, msg ]
+advise p _ _ = patternMatchFail "advise" . showText $ p
 
 
 -----
