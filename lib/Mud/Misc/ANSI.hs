@@ -87,7 +87,7 @@ import qualified Data.Text as T
 import System.Console.ANSI (BlinkSpeed(..), Color(..), ColorIntensity(..), ConsoleLayer(..), SGR(..), Underlining(..), setSGRCode)
 
 
-patternMatchFail :: PatternMatchFail a
+patternMatchFail :: (Show a) => PatternMatchFail a b
 patternMatchFail = U.patternMatchFail "Mud.Misc.ANSI"
 
 

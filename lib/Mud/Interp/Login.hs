@@ -74,7 +74,7 @@ default (Int, Double)
 -----
 
 
-patternMatchFail :: PatternMatchFail a
+patternMatchFail :: (Show a) => PatternMatchFail a b
 patternMatchFail = U.patternMatchFail "Mud.Interp.Login"
 
 

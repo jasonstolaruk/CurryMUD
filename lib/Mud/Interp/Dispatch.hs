@@ -19,7 +19,7 @@ import Data.List (sort)
 import Data.Maybe (isNothing)
 
 
-patternMatchFail :: PatternMatchFail a
+patternMatchFail :: (Show a) => PatternMatchFail a b
 patternMatchFail = U.patternMatchFail "Mud.Interp.Dispatch"
 
 

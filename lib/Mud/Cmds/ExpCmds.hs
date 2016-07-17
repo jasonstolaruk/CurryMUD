@@ -31,7 +31,7 @@ import qualified Data.Set as S (Set, filter, foldr, fromList, map, toList)
 import qualified Data.Text as T
 
 
-patternMatchFail :: PatternMatchFail a
+patternMatchFail :: (Show a) => PatternMatchFail a b
 patternMatchFail = U.patternMatchFail "Mud.Cmds.ExpCmds"
 
 

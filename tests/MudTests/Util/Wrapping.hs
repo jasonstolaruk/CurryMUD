@@ -17,7 +17,7 @@ import qualified Data.Text as T
 import Test.Tasty.QuickCheck ((==>), Property, choose, forAll)
 
 
-patternMatchFail :: PatternMatchFail a
+patternMatchFail :: (Show a) => PatternMatchFail a b
 patternMatchFail = U.patternMatchFail "MudTests.Util.Wrapping"
 
 

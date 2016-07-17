@@ -60,7 +60,7 @@ blowUp :: BlowUp a
 blowUp = U.blowUp "Mud.Misc.NameResolution"
 
 
-patternMatchFail :: PatternMatchFail a
+patternMatchFail :: (Show a) => PatternMatchFail a b
 patternMatchFail = U.patternMatchFail "Mud.Misc.NameResolution"
 
 

@@ -195,7 +195,7 @@ isVowel = (`elem` ("aeiou" :: String))
 listToMaybe :: (Show a) => [a] -> Maybe a
 listToMaybe []  = Nothing
 listToMaybe [a] = Just a
-listToMaybe xs  = patternMatchFail "Mud.Util.Misc" "listToMaybe" . T.pack . show $ xs
+listToMaybe xs  = patternMatchFail "Mud.Util.Misc" "listToMaybe" xs
 
 
 max1 :: Int -> Int
@@ -250,11 +250,11 @@ onLeft f (Left  a) = Left . f $ a
 onLeft _ x         = blowUp "Mud.Util.Misc" "onLeft" "Right" . T.pack . show $ x
 
 
-type PatternMatchFail a = Text -> Text -> a
+type PatternMatchFail a b = Text -> a -> b
 
 
-patternMatchFail :: Text -> PatternMatchFail a
-patternMatchFail modName funName = blowUp modName funName "pattern match failure"
+patternMatchFail :: (Show a) => Text -> PatternMatchFail a b
+patternMatchFail modName funName = blowUp modName funName "pattern match failure" . T.pack . show
 
 
 percent :: Int -> Int -> Int

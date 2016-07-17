@@ -39,7 +39,7 @@ import Data.Tuple (swap)
 import qualified Data.Text as T
 
 
-patternMatchFail :: PatternMatchFail a
+patternMatchFail :: (Show a) => PatternMatchFail a b
 patternMatchFail = U.patternMatchFail "Mud.Cmds.Util.EmoteExp.EmoteExp"
 
 

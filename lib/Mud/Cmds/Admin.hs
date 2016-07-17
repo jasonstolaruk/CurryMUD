@@ -96,7 +96,7 @@ blowUp :: BlowUp a
 blowUp = U.blowUp "Mud.Cmds.Admin"
 
 
-patternMatchFail :: PatternMatchFail a
+patternMatchFail :: (Show a) => PatternMatchFail a b
 patternMatchFail = U.patternMatchFail "Mud.Cmds.Admin"
 
 

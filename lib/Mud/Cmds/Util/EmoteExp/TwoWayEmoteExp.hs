@@ -28,7 +28,7 @@ import Data.Text (Text)
 import qualified Data.Text as T
 
 
-patternMatchFail :: PatternMatchFail a
+patternMatchFail :: (Show a) => PatternMatchFail a b
 patternMatchFail = U.patternMatchFail "Mud.Cmds.Util.EmoteExp.TwoWayEmoteExp"
 
 

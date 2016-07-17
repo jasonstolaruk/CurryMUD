@@ -107,7 +107,7 @@ blowUp :: BlowUp a
 blowUp = U.blowUp "Mud.Data.State.Util.Misc"
 
 
-patternMatchFail :: PatternMatchFail a
+patternMatchFail :: (Show a) => PatternMatchFail a b
 patternMatchFail = U.patternMatchFail "Mud.Data.State.Util.Misc"
 
 
