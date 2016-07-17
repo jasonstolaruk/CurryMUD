@@ -3558,6 +3558,7 @@ stats (NoArgs i mq cols) = getState >>= \ms ->
     let mkStats   = dropEmpties [ top
                                 , xpsHelper
                                 , prd . capitalize . pp . getHand i $ ms
+                                , prd $ "Known languages: " <> commas [ pp lang | lang <- sort . getKnownLangs i $ ms ]
                                 , prd $ "Level " <> showText l
                                 , commaShow expr <> " experience points."
                                 , commaShow nxt  <> " experience points to next level."
