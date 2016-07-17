@@ -93,10 +93,9 @@ handleFromClient i mq tq isAsSelf (T.strip . stripControl . stripTelnet -> msg) 
 
 
 forwardToPeepers :: Id -> Inv -> ToOrFromThePeeped -> Text -> MudStack ()
-forwardToPeepers i peeperIds toOrFrom msg = liftIO . atomically . helperSTM =<< getState
+forwardToPeepers i peeperIds toOrFrom msg = liftIO . atomically . helper =<< getState
   where
-    helperSTM ms = forM_ [ getMsgQueue peeperId ms | peeperId <- peeperIds ]
-                         (`writeTQueue` (mkPeepedMsg . getSing i $ ms))
+    helper ms     = forM_ [ getMsgQueue peeperId ms | peeperId <- peeperIds ] (`writeTQueue` (mkPeepedMsg . getSing i $ ms))
     mkPeepedMsg s = Peeped $ case toOrFrom of
       ToThePeeped   ->      T.concat $ toPeepedColor   : rest
       FromThePeeped -> nl . T.concat $ fromPeepedColor : rest

@@ -82,14 +82,14 @@ anglePrompt = flip sendPrompt ">"
 
 bcast :: [Broadcast] -> MudStack ()
 bcast [] = unit
-bcast bs = getState >>= \ms -> liftIO . atomically . forM_ bs . sendBcastSTM $ ms
+bcast bs = getState >>= \ms -> liftIO . atomically . forM_ bs . sendBcast $ ms
   where
-    sendBcastSTM ms (msg, is) = mapM_ helper is -- TODO: "STM"
+    sendBcast ms (msg, is) = mapM_ helper is
       where
         helper targetId = case getType targetId ms of
           PCType  -> writeIt FromServer targetId
           NpcType -> maybeVoid (writeIt ToNpc) . getPossessor targetId $ ms
-          t       -> patternMatchFail "bcast sendBcastSTM helper" . showText $ t
+          t       -> patternMatchFail "bcast sendBcast helper" . showText $ t
         writeIt f i = let (mq, cols) = getMsgQueueColumns i ms
                       in writeTQueue mq . f . T.unlines . concatMap (wrap cols) . T.lines . parseDesig i ms $ msg
 
@@ -177,18 +177,18 @@ dbError mq cols = wrapSend mq cols dbErrorMsg >> sendSilentBoot mq
 
 
 massMsg :: Msg -> MudStack ()
-massMsg msg = liftIO . atomically . helperSTM =<< getState
+massMsg msg = liftIO . atomically . helper =<< getState
   where
-    helperSTM (views msgQueueTbl IM.elems -> mqs) = forM_ mqs $ flip writeTQueue msg
+    helper (views msgQueueTbl IM.elems -> mqs) = forM_ mqs $ flip writeTQueue msg
 
 
 -----
 
 
 massSend :: Text -> MudStack ()
-massSend msg = liftIO . atomically . helperSTM =<< getState
+massSend msg = liftIO . atomically . helper =<< getState
   where
-    helperSTM ms@(views msgQueueTbl IM.toList -> kvs) = forM_ kvs $ \(i, mq) ->
+    helper ms@(views msgQueueTbl IM.toList -> kvs) = forM_ kvs $ \(i, mq) ->
         let cols = getColumns i ms
         in writeTQueue mq . FromServer . frame cols . wrapUnlines cols $ msg
 

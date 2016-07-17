@@ -238,7 +238,7 @@ logPlaOut modName cn i (slashes -> msgs) = logPla modName cn i $ parensQuote "ou
 
 
 massLogPla :: Text -> Text -> Text -> MudStack ()
-massLogPla modName (dblQuote -> funName) msg = liftIO . atomically . helperSTM =<< getState
+massLogPla modName (dblQuote -> funName) msg = liftIO . atomically . helper =<< getState
   where
-    helperSTM (views plaLogTbl (map snd . IM.elems) -> qs) =
+    helper (views plaLogTbl (map snd . IM.elems) -> qs) =
         forM_ qs (`writeTQueue` (LogMsg . T.concat $ [ modName, " ", funName, ": ", msg ]))
