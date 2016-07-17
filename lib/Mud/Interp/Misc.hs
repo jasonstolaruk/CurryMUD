@@ -26,7 +26,7 @@ import Data.Text (Text)
 
 
 mkChoiceTxt :: [Text] -> Text
-mkChoiceTxt = T.intercalate "/" . colorize
+mkChoiceTxt = bracketQuote . T.intercalate "/" . colorize
   where
     colorize []                                               = []
     colorize ((T.uncons -> Just (T.singleton -> x, rest)):xs) = (colorWith abbrevColor x <> rest) : colorize xs
