@@ -47,12 +47,12 @@ enc's = enc <> "'s"
 etc   = T.singleton emoteTargetChar
 
 
-biodegraderDelay :: Seconds
-biodegraderDelay = 5
+biodegDelay :: Seconds
+biodegDelay = 5
 
 
-biodegradationDuration :: Seconds
-biodegradationDuration = 5 {- mins -} * 60 {- secs -} -- five mins
+biodegDuration :: Seconds
+biodegDuration = 5 {- mins -} * 60 {- secs -} -- five mins
 
 
 bonusDelay :: Seconds

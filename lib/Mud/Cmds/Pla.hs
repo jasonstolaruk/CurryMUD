@@ -2218,7 +2218,7 @@ npcExorciseHelper (NoArgs i mq cols) = getState >>= \ms -> let pi = fromJust . g
     wrapSend mq cols . prd $ "You stop possessing " <> aOrAnOnLower (getSing    i ms)
     sendDfltPrompt mq pi
     logPla "stop" i  . prd $ "stopped possessing "  <> aOrAnOnLower (descSingId i ms)
-    tweaks [ plaTbl.ind pi.possessing .~ Nothing, npcTbl.ind i.possessor .~ Nothing ]
+    tweaks [ plaTbl.ind pi.possessing .~ Nothing, npcTbl.ind i.npcPossessor .~ Nothing ]
 npcExorciseHelper p = withoutArgs npcExorciseHelper p
 
 
@@ -2484,7 +2484,7 @@ handleEgress i = do
         host           = getCurrHostName i ms
         duration       = round $ now `diffUTCTime` conTime
         conTime        = fromJust . getConnectTime i $ ms
-    possessHelper ms = let f = maybe id (\npcId -> npcTbl.ind npcId.possessor .~ Nothing) . getPossessing i $ ms
+    possessHelper ms = let f = maybe id (\npcId -> npcTbl.ind npcId.npcPossessor .~ Nothing) . getPossessing i $ ms
                        in ms & plaTbl.ind i.possessing .~ Nothing & f
     movePC ms ri     = ms & invTbl     .ind ri         %~ (i `delete`)
                           & invTbl     .ind iLoggedOut %~ (i :)

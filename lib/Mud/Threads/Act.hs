@@ -99,7 +99,7 @@ drinkAct DrinkBundle { .. } =
                                                                               , " from the "
                                                                               , drinkVesselSing
                                                                               , "..." ]
-                                                                   , drinkLiq^.drinkDesc ]
+                                                                   , drinkLiq^.liqDrinkDesc ]
             d <- flip (mkStdDesig drinkerId) DoCap <$> getState
             bcastIfNotIncogNl drinkerId . pure $ ( T.concat [ serialize d
                                                             , " begins drinking from "

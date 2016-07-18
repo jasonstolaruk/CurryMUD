@@ -338,7 +338,7 @@ isLoggedIn = views lastRmId ((()#) . (Sum <$>))
 
 
 lookupHooks :: Id -> MudState -> CmdName -> Maybe [Hook]
-lookupHooks i ms cn = views hookMap (M.lookup cn) . getMobRm i $ ms
+lookupHooks i ms cn = views rmHookMap (M.lookup cn) . getMobRm i $ ms
 
 
 -----

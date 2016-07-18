@@ -22,4 +22,4 @@ newObj e@(view entId -> i) o invId = do
                       & objTbl .ind i .~ o
                       & typeTbl.ind i .~ ObjType
     tweak $ \ms -> ms & invTbl .ind invId %~ addToInv ms (pure i)
-    when (isBiodegradable o) . runBiodegraderAsync $ i
+    when (isBiodegradable o) . runBiodegAsync $ i

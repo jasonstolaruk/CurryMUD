@@ -186,7 +186,7 @@ calcMaxEnc i ms = calcEffSt i ms ^ 2 `percent` 13
 
 
 calcMaxMouthfuls :: Obj -> Mouthfuls
-calcMaxMouthfuls = views vol (round . (`divide` mouthfulVol))
+calcMaxMouthfuls = views objVol (round . (`divide` mouthfulVol))
 
 
 -----
@@ -505,7 +505,7 @@ calcStomachPerFull i ms = let mouths = length . getStomach i $ ms
 
 
 calcVesselPerFull :: Vessel -> Mouthfuls -> Int
-calcVesselPerFull (view maxMouthfuls -> m) x = x `percent` m
+calcVesselPerFull (view vesselMaxMouthfuls -> m) x = x `percent` m
 
 
 -----
@@ -515,8 +515,8 @@ calcVol :: Id -> MudState -> Vol
 calcVol i ms = calcHelper i
   where
     calcHelper i' = case getType i' ms of
-      ConType -> sum [ onTrue (i' /= i) (+ getVol i' ms) 0, calcInvVol, calcCoinsVol ]
-      _       -> getVol i' ms
+      ConType -> sum [ onTrue (i' /= i) (+ getObjVol i' ms) 0, calcInvVol, calcCoinsVol ]
+      _       -> getObjVol i' ms
       where
         calcInvVol   = helper . getInv i' $ ms
         helper       = sum . map calcHelper
@@ -528,12 +528,12 @@ calcVol i ms = calcHelper i
 
 calcWeight :: Id -> MudState -> Weight
 calcWeight i ms = case getType i ms of
-  ConType    -> sum [ getWeight i ms, calcInvWeight, calcCoinsWeight ]
+  ConType    -> sum [ getObjWeight i ms, calcInvWeight, calcCoinsWeight ]
   NpcType    -> npcPC
   PCType     -> npcPC
   RmType     -> blowUp "calcWeight" "cannot calculate the weight of a room" . showText $ i
-  VesselType -> getWeight i ms + calcVesselContWeight
-  _          -> getWeight i ms
+  VesselType -> getObjWeight i ms + calcVesselContWeight
+  _          -> getObjWeight i ms
   where
     npcPC                = sum [ calcInvWeight, calcCoinsWeight, calcEqWeight ]
     calcInvWeight        = helper .           getInv   i $ ms

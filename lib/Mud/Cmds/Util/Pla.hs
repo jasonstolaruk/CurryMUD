@@ -102,7 +102,7 @@ import Mud.Util.Padding
 import Mud.Util.Quoting
 import Mud.Util.Text
 import Mud.Util.Wrapping
-import Prelude hiding (pi, recip)
+import Prelude hiding (pi)
 import qualified Mud.Misc.Logging as L (logNotice, logPla, logPlaOut)
 import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 

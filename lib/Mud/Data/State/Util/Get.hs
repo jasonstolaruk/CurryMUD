@@ -19,7 +19,7 @@ import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import Data.Time (UTCTime)
 import Network (HostName)
-import Prelude hiding (exp, recip)
+import Prelude hiding (exp)
 
 
 -- ============================================================
@@ -134,13 +134,6 @@ getBasePs i = view ps . getMob i
 
 getBaseSt :: Id -> MudState -> Int
 getBaseSt i = view st . getMob i
-
-
------
-
-
-getBiodegraderAsync :: Id -> MudState -> Maybe BiodegraderAsync
-getBiodegraderAsync i = view biodegraderAsync . getObj i
 
 
 -----
@@ -406,14 +399,7 @@ getLvlExp i = (getLvl i *** getExp i) . dup
 
 
 getMaxMouthfuls :: Id -> MudState -> Mouthfuls
-getMaxMouthfuls i = view maxMouthfuls . getVessel i
-
-
------
-
-
-getMessage :: Id -> MudState -> Maybe (Text, Lang)
-getMessage i = view message . getWritable i
+getMaxMouthfuls i = view vesselMaxMouthfuls . getVessel i
 
 
 -----
@@ -517,8 +503,29 @@ getObj i = view (objTbl.ind i)
 -----
 
 
+getObjBiodegAsync :: Id -> MudState -> Maybe BiodegAsync
+getObjBiodegAsync i = view objBiodegAsync . getObj i
+
+
+-----
+
+
 getObjTaste :: Id -> MudState -> Text
 getObjTaste i = views objTaste (fromMaybe noTasteMsg) . getObj i
+
+
+-----
+
+
+getObjVol :: Id -> MudState -> Vol
+getObjVol i = view objVol . getObj i
+
+
+-----
+
+
+getObjWeight :: Id -> MudState -> Weight
+getObjWeight i = view objWeight . getObj i
 
 
 -----
@@ -603,7 +610,7 @@ getPossessing i = view possessing . getPla i
 
 
 getPossessor :: Id -> MudState -> Maybe Id
-getPossessor i = view possessor . getNpc i
+getPossessor i = view npcPossessor . getNpc i
 
 
 -----
@@ -611,13 +618,6 @@ getPossessor i = view possessor . getNpc i
 
 getRace :: Id -> MudState -> Race
 getRace i = view race . getPC i
-
-
------
-
-
-getRecip :: Id -> MudState -> Maybe Sing
-getRecip i = view recip . getWritable i
 
 
 -----
@@ -721,20 +721,6 @@ getVesselCont i = view vesselCont . getVessel i
 -----
 
 
-getVol :: Id -> MudState -> Vol
-getVol i = view vol . getObj i
-
-
------
-
-
-getWeight :: Id -> MudState -> Weight
-getWeight i = view weight . getObj i
-
-
------
-
-
 getWpn :: Id -> MudState -> Wpn
 getWpn i = view (wpnTbl.ind i)
 
@@ -744,6 +730,20 @@ getWpn i = view (wpnTbl.ind i)
 
 getWpnSub :: Id -> MudState -> WpnSub
 getWpnSub i = view wpnSub . getWpn i
+
+
+-----
+
+
+getWritMessage :: Id -> MudState -> Maybe (Text, Lang)
+getWritMessage i = view writMessage . getWritable i
+
+
+-----
+
+
+getWritRecip :: Id -> MudState -> Maybe Sing
+getWritRecip i = view writRecip . getWritable i
 
 
 -----

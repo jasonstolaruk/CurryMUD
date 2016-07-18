@@ -440,7 +440,7 @@ data Liq = Liq { _liqId        :: DistinctLiqId
                , _liqNoun      :: Noun
                , _liqSmellDesc :: Text
                , _liqTasteDesc :: Text
-               , _drinkDesc    :: Text } deriving (Eq, Generic, Show)
+               , _liqDrinkDesc :: Text } deriving (Eq, Generic, Show)
 
 
 newtype DistinctLiqId = DistinctLiqId Id  deriving (Eq, Generic, Ord, Show)
@@ -674,7 +674,7 @@ jsonToMob _          = empty
 -- Has a mob (and an entity and paused/active effects and an inventory and coins and equipment).
 data Npc = Npc { _npcMsgQueue    :: NpcMsgQueue
                , _npcServerAsync :: NpcServerAsync
-               , _possessor      :: Maybe Id }
+               , _npcPossessor   :: Maybe Id }
 
 
 type NpcServerAsync = Async ()
@@ -684,11 +684,11 @@ type NpcServerAsync = Async ()
 
 
 -- Has an entity (and paused/active effects).
-data Obj = Obj { _weight           :: Weight
-               , _vol              :: Vol
-               , _objTaste         :: Maybe Text
-               , _objFlags         :: Int
-               , _biodegraderAsync :: Maybe BiodegraderAsync }
+data Obj = Obj { _objWeight      :: Weight
+               , _objVol         :: Vol
+               , _objTaste       :: Maybe Text
+               , _objFlags       :: Int
+               , _objBiodegAsync :: Maybe BiodegAsync }
 
 
 type Weight = Int
@@ -697,7 +697,7 @@ type Weight = Int
 data ObjFlags = IsBiodegradable deriving Enum
 
 
-type BiodegraderAsync = Async ()
+type BiodegAsync = Async ()
 
 
 instance FromJSON Obj where parseJSON = jsonToObj
@@ -705,15 +705,15 @@ instance ToJSON   Obj where toJSON    = objToJSON
 
 
 objToJSON :: Obj -> Value
-objToJSON Obj { .. } = object [ "weight"   .= _weight
-                              , "vol"      .= _vol
-                              , "objTaste" .= _objTaste
-                              , "objFlags" .= _objFlags ]
+objToJSON Obj { .. } = object [ "objWeight" .= _objWeight
+                              , "objVol"    .= _objVol
+                              , "objTaste"  .= _objTaste
+                              , "objFlags"  .= _objFlags ]
 
 
 jsonToObj :: Value -> Parser Obj
-jsonToObj (Object o) = Obj <$> o .: "weight"
-                           <*> o .: "vol"
+jsonToObj (Object o) = Obj <$> o .: "objWeight"
+                           <*> o .: "objVol"
                            <*> o .: "objTaste"
                            <*> o .: "objFlags"
                            <*> pure Nothing
@@ -825,7 +825,7 @@ data Rm = Rm { _rmName      :: Text
              , _rmSmell     :: Maybe Text
              , _rmFlags     :: Int
              , _rmLinks     :: [RmLink]
-             , _hookMap     :: HookMap
+             , _rmHookMap   :: HookMap
              , _rmActions   :: [RmAction]
              , _rmFunNames  :: [FunName]
              , _rmFunAsyncs :: [RmFunAsync] } deriving (Eq, Generic)
@@ -906,7 +906,7 @@ rmToJSON Rm { .. } = object [ "rmName"     .= _rmName
                             , "rmSmell"    .= _rmSmell
                             , "rmFlags"    .= _rmFlags
                             , "rmLinks"    .= _rmLinks
-                            , "hookMap"    .= _hookMap
+                            , "rmHookMap"  .= _rmHookMap
                             , "rmActions"  .= _rmActions
                             , "rmFunNames" .= _rmFunNames ]
 
@@ -918,7 +918,7 @@ jsonToRm (Object o) = Rm <$> o .: "rmName"
                          <*> o .: "rmSmell"
                          <*> o .: "rmFlags"
                          <*> o .: "rmLinks"
-                         <*> o .: "hookMap"
+                         <*> o .: "rmHookMap"
                          <*> o .: "rmActions"
                          <*> o .: "rmFunNames"
                          <*> pure []
@@ -999,8 +999,8 @@ data Type = ArmType
 
 
 -- Has an object (and an entity and paused/active effects).
-data Vessel = Vessel { _maxMouthfuls :: Mouthfuls -- obj vol / mouthful vol
-                     , _vesselCont   :: Maybe VesselCont } deriving (Eq, Generic, Show)
+data Vessel = Vessel { _vesselMaxMouthfuls :: Mouthfuls -- obj vol / mouthful vol
+                     , _vesselCont         :: Maybe VesselCont } deriving (Eq, Generic, Show)
 
 
 type VesselCont = (Liq, Mouthfuls)
@@ -1010,9 +1010,9 @@ type VesselCont = (Liq, Mouthfuls)
 
 
 -- Has an object (and an entity and paused/active effects).
-data Wpn = Wpn { _wpnSub :: WpnSub
-               , _minDmg :: Int
-               , _maxDmg :: Int } deriving (Eq, Generic, Show)
+data Wpn = Wpn { _wpnSub    :: WpnSub
+               , _wpnMinDmg :: Int
+               , _wpnMaxDmg :: Int } deriving (Eq, Generic, Show)
 
 
 data WpnSub = OneHanded
@@ -1023,8 +1023,8 @@ data WpnSub = OneHanded
 
 
 -- Has an object (and an entity and paused/active effects).
-data Writable = Writable { _message :: Maybe (Text, Lang)
-                         , _recip   :: Maybe Sing {- for magically scribed msgs -} } deriving (Eq, Generic, Show)
+data Writable = Writable { _writMessage :: Maybe (Text, Lang)
+                         , _writRecip   :: Maybe Sing {- for magically scribed msgs -} } deriving (Eq, Generic, Show)
 
 
 -- ==================================================

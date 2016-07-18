@@ -392,7 +392,7 @@ debugId (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
                   , [ T.concat [ "Mobiles with a ", dblQuote "rmId", " of ", searchIdTxt, ": " ]
                     , f . filter ((== searchId) . view rmId . snd) . tblToList mobTbl $ ms ]
                   , [ T.concat [ "NPCs being possessed by ID ", searchIdTxt, ": " ]
-                    , f . filter ((searchId `elem`) . view possessor . snd) . tblToList npcTbl $ ms ]
+                    , f . filter ((searchId `elem`) . view npcPossessor . snd) . tblToList npcTbl $ ms ]
                   , [ T.concat [ "Players being peeped by ID ", searchIdTxt, ": " ]
                     , f . filter ((searchId `elem`) . view peepers . snd) $ plaTblList ]
                   , [ T.concat [ "Players peeping ID ", searchIdTxt, ": " ]

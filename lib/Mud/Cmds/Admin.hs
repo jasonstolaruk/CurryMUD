@@ -68,7 +68,7 @@ import Data.Time (FormatTime, TimeZone, UTCTime, defaultTimeLocale, diffUTCTime,
 import Database.SQLite.Simple (FromRow)
 import GHC.Conc (ThreadStatus(..), threadStatus)
 import GHC.Exts (sortWith)
-import Prelude hiding (exp, pi, recip)
+import Prelude hiding (exp, pi)
 import qualified Data.IntMap.Lazy as IM (elems, filter, filterWithKey, keys, lookup, size, toList)
 import qualified Data.Map.Lazy as M (elems, foldl, foldrWithKey, keys, size, toList)
 import qualified Data.Text as T
@@ -753,8 +753,8 @@ descMaybeId ms = maybe none (`descSingId` ms)
 
 
 examineObj :: ExamineHelper
-examineObj i ms = let o = getObj i ms in [ "Weight: " <> o^.weight.to commaShow
-                                         , "Volume: " <> o^.vol   .to commaShow ]
+examineObj i ms = let o = getObj i ms in [ "Weight: " <> o^.objWeight.to commaShow
+                                         , "Volume: " <> o^.objVol   .to commaShow ]
 
 
 examinePC :: ExamineHelper
@@ -814,8 +814,8 @@ xformNls = T.replace "\n" (colorWith nlColor "\\n")
 
 examineVessel :: ExamineHelper
 examineVessel i ms = let v = getVessel i ms in
-    [ "Max mouthfuls: "   <> v^.maxMouthfuls.to showText
-    , "Vessel contents: " <> v^.vesselCont  .to (descCont v) ] ++ views vesselCont (maybe [] (descLiq . fst)) v
+    [ "Max mouthfuls: "   <> v^.vesselMaxMouthfuls.to showText
+    , "Vessel contents: " <> v^.vesselCont        .to (descCont v) ] ++ views vesselCont (maybe [] (descLiq . fst)) v
   where
     descCont _ Nothing       = "none"
     descCont v (Just (l, m)) = T.concat [ showText m
@@ -827,18 +827,18 @@ examineVessel i ms = let v = getVessel i ms in
                                in [ "Distinct liquid ID: " <> l^.liqId.to showText
                                   , "Liquid smell: "       <> l^.liqSmellDesc.to noneOnNull
                                   , "Liquid taste: "       <> l^.liqTasteDesc.to noneOnNull
-                                  , "Drink description: "  <> l^.drinkDesc ] ++ dl^.liqEdibleEffects.to descEdibleEffects
+                                  , "Drink description: "  <> l^.liqDrinkDesc ] ++ dl^.liqEdibleEffects.to descEdibleEffects
 
 
 examineWpn :: ExamineHelper
 examineWpn i ms = let w = getWpn i ms in [ "Type: "   <> w^.wpnSub.to pp
-                                         , "Damage: " <> w^.minDmg.to showText <> " / " <> w^.maxDmg.to showText ]
+                                         , "Damage: " <> w^.wpnMinDmg.to showText <> " / " <> w^.wpnMaxDmg.to showText ]
 
 
 examineWritable :: ExamineHelper
-examineWritable i ms = let w = getWritable i ms in [ "Message: "   <> w^.message.to (maybe none (xformNls . fst))
-                                                   , "Language: "  <> w^.message.to (maybe none (pp . snd))
-                                                   , "Recipient: " <> w^.recip  .to (fromMaybe none) ]
+examineWritable i ms = let w = getWritable i ms in [ "Message: "   <> w^.writMessage.to (maybe none (xformNls . fst))
+                                                   , "Language: "  <> w^.writMessage.to (maybe none (pp . snd))
+                                                   , "Recipient: " <> w^.writRecip  .to (fromMaybe none) ]
 
 
 -----
@@ -1150,8 +1150,8 @@ adminPossess (OneArgNubbed i mq cols target) = helper |&| modifyState >=> sequen
               where
                 targetSing      = getSing targetId ms
                 can'tPossess pi = sorry . sorryAlreadyPossessed targetSing . getSing pi $ ms
-                canPossess      = ( ms & plaTbl.ind i       .possessing ?~ targetId
-                                       & npcTbl.ind targetId.possessor  ?~ i
+                canPossess      = ( ms & plaTbl.ind i       .possessing   ?~ targetId
+                                       & npcTbl.ind targetId.npcPossessor ?~ i
                                   , [ sendFun . prd $ "You are now possessing " <> aOrAnOnLower targetSing
                                     , sendDfltPrompt mq targetId
                                     , logPla "adminPossess" i $ "started possessing "                 <>
