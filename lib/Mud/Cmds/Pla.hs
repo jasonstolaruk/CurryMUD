@@ -2641,7 +2641,7 @@ readyDispatcher i ms d mrol a targetId = let targetSing = getSing targetId ms in
   where
     helper = case getType targetId ms of
       ClothType -> Just readyCloth
-      ConType   -> boolToMaybe (getIsCloth targetId ms) readyCloth
+      ConType   -> boolToMaybe (getConIsCloth targetId ms) readyCloth
       WpnType   -> Just readyWpn
       ArmType   -> Just readyArm
       _         -> Nothing

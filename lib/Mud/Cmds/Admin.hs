@@ -638,11 +638,11 @@ examineCoins i ms = let (map commaShow . coinsToList -> cs) = getCoins i ms in [
 
 
 examineCon :: ExamineHelper
-examineCon i ms = let c = getCon i ms in [ "Is clothing: " <> c^.isCloth .to showText
+examineCon i ms = let c = getCon i ms in [ "Is clothing: " <> c^.conIsCloth.to showText
                                          , T.concat [ "Volume/capacity: "
                                                     , showText . calcVol i $ ms
                                                     , " / "
-                                                    , c^.capacity.to showText
+                                                    , c^.conCapacity.to showText
                                                     , " "
                                                     , parensQuote $ (<> "%") . showText . calcConPerFull i $ ms ] ]
 
@@ -680,17 +680,17 @@ examineFood i ms =
     let f  = getFood i ms
         df = getDistinctFoodForFood f ms
     in [ "Distinct food ID: "    <> f^.foodId.to showText
-       , "Eat description: "     <> f^.eatDesc
-       , "Remaining mouthfuls: " <> f^.remMouthfuls.to showText
-       , "Distinct mouthfuls: "  <> df^.mouthfuls.to showText ] ++ df^.foodEdibleEffects.to descEdibleEffects
+       , "Eat description: "     <> f^.foodEatDesc
+       , "Remaining mouthfuls: " <> f^.foodRemMouthfuls.to showText
+       , "Distinct mouthfuls: "  <> df^.foodMouthfuls  .to showText ] ++ df^.foodEdibleEffects.to descEdibleEffects
 
 
 descEdibleEffects :: EdibleEffects -> [Text]
 descEdibleEffects (EdibleEffects d c) =
-    [ "Digest effect list: "           <> maybe none descEffectList                         d
-    , "Consumption effects amount: "   <> maybe none (views consumpAmt      showText      ) c
-    , "Consumption effects interval: " <> maybe none (views consumpInterval showText      ) c
-    , "Consumption effect list: "      <> maybe none (views effectList      descEffectList) c ]
+    [ "Digest effect list: "           <> maybe none descEffectList                           d
+    , "Consumption effects amount: "   <> maybe none (views consumpAmt        showText      ) c
+    , "Consumption effects interval: " <> maybe none (views consumpInterval   showText      ) c
+    , "Consumption effect list: "      <> maybe none (views consumpEffectList descEffectList) c ]
 
 
 descEffectList :: EffectList -> Text

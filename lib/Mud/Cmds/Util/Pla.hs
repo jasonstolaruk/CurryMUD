@@ -666,7 +666,7 @@ helperPutEitherCoins i d mnom toId toSing (ms, toSelfs, bs, logMsgs) ecs =
 
 
 partitionCoinsByVol :: Id -> MudState -> Coins -> (Coins, Coins)
-partitionCoinsByVol = partitionCoinsHelper getCapacity calcVol coinVol
+partitionCoinsByVol = partitionCoinsHelper getConCapacity calcVol coinVol
 
 
 mkPutRemCoinsDescOthers :: Id -> Desig -> PutOrRem -> Maybe NthOfM -> Sing -> Coins -> [Broadcast]
@@ -735,7 +735,7 @@ helperPutEitherInv i d mnom toId toSing a@(ms, origToSelfs, _, _) = \case
   Right is  ->
     let (is', toSelfs) = onTrue (toId `elem` is) f (is, origToSelfs)
         f              = filter (/= toId) *** (<> (pure . sorryPutInsideSelf $ toSing))
-        (_, cans,  can'ts) = foldl' (partitionInvByVol ms . getCapacity toId $ ms) (calcVol toId ms, [], []) is'
+        (_, cans,  can'ts) = foldl' (partitionInvByVol ms . getConCapacity toId $ ms) (calcVol toId ms, [], []) is'
         (toSelfs', bs    ) = mkPutRemInvDescs i ms d Put mnom toSing cans
     in a & _1.invTbl.ind i    %~  (\\ cans)
          & _1.invTbl.ind toId %~  addToInv ms cans

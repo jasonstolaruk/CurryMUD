@@ -276,8 +276,8 @@ instance Monoid Coins where
 
 
 -- Has an object (and an entity and paused/active effects) and an inventory and coins.
-data Con = Con { _isCloth  :: Bool
-               , _capacity :: Vol } deriving (Eq, Generic, Show)
+data Con = Con { _conIsCloth  :: Bool
+               , _conCapacity :: Vol } deriving (Eq, Generic, Show)
 
 
 type Vol = Int
@@ -299,9 +299,9 @@ type DigestEffects = EffectList
 newtype EffectList = EffectList { unEffectList :: [Either InstaEffect Effect] }
 
 
-data ConsumpEffects = ConsumpEffects { _consumpAmt      :: Mouthfuls
-                                     , _consumpInterval :: Seconds
-                                     , _effectList      :: EffectList }
+data ConsumpEffects = ConsumpEffects { _consumpAmt        :: Mouthfuls
+                                     , _consumpInterval   :: Seconds
+                                     , _consumpEffectList :: EffectList }
 
 
 type Mouthfuls = Int
@@ -371,15 +371,15 @@ data Slot = HeadS                                   -- armor
 
 
 -- Has an object (and an entity and paused/active effects).
-data Food = Food { _foodId       :: DistinctFoodId
-                 , _eatDesc      :: Text
-                 , _remMouthfuls :: Mouthfuls } deriving (Eq, Generic, Show)
+data Food = Food { _foodId           :: DistinctFoodId
+                 , _foodEatDesc      :: Text
+                 , _foodRemMouthfuls :: Mouthfuls } deriving (Eq, Generic, Show)
 
 
 newtype DistinctFoodId = DistinctFoodId Id deriving (Eq, Generic, Ord, Show)
 
 
-data DistinctFood = DistinctFood { _mouthfuls         :: Mouthfuls
+data DistinctFood = DistinctFood { _foodMouthfuls     :: Mouthfuls
                                  , _foodEdibleEffects :: EdibleEffects }
 
 

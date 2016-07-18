@@ -146,13 +146,6 @@ getBonusTime i = view bonusTime . getPla i
 -----
 
 
-getCapacity :: Id -> MudState -> Vol
-getCapacity i = view capacity . getCon i
-
-
------
-
-
 getChan :: Id -> MudState -> Chan
 getChan i = view (chanTbl.ind i)
 
@@ -190,6 +183,20 @@ getColumns = onPla (view columns) 80
 
 getCon :: Id -> MudState -> Con
 getCon i = view (conTbl.ind i)
+
+
+-----
+
+
+getConCapacity :: Id -> MudState -> Vol
+getConCapacity i = view conCapacity . getCon i
+
+
+-----
+
+
+getConIsCloth :: Id -> MudState -> Bool
+getConIsCloth i = view conIsCloth . getCon i
 
 
 -----
@@ -337,13 +344,6 @@ getInv i = view (invTbl.ind i)
 
 getInvCoins :: Id -> MudState -> (Inv, Coins)
 getInvCoins i = (getInv i *** getCoins i) . dup
-
-
------
-
-
-getIsCloth :: Id -> MudState -> Bool
-getIsCloth i = view isCloth . getCon i
 
 
 -----

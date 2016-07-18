@@ -111,7 +111,7 @@ calcBonus i ms = let l                 = getLvl i ms
 calcConPerFull :: Id -> MudState -> Int
 calcConPerFull i ms = let total           = foldr helper 0 . getInv i $ ms
                           helper targetId = (calcVol targetId ms +)
-                      in total `percent` getCapacity i ms
+                      in total `percent` getConCapacity i ms
 
 
 -----
