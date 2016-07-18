@@ -1,7 +1,6 @@
 GOALS:
 
 Create a safe environment where people have freedom to engage in identity exploration.
-Should the goal of identity exploration be made explicitly clear to players?
 
 Make it easy to create a new character, easy to experiment, and easy to restart after having made mistakes.
 
@@ -33,12 +32,6 @@ Do not encourage xenophobia or prejudice (it could undermine community).
 ==========
 
 SKILLS:
-
-Classless/skill based.
-
-Experience points and levels. Leveling awards you skill points, which can be spent to advance individual skills.
-
-Attributes are fixed. They represent innate ability.
 
 "Warning: don't have skills or attributes that affect how quickly characters learn skills. If you do, players will max them out at the first opportunity." p.367
 
@@ -146,8 +139,6 @@ Make cigars and pipes.
 
 PCs may have pets. Make pet shops where pets are sold.
 
-Have musical instruments. PCs can sing and dance along with the music.
-
 Consider having cursed items that cannot be dropped, given to others, or unequipped.
 Make a cursed doll.
 
@@ -157,8 +148,6 @@ To sacrifice something (typically a corpse), a PC must have in their possession 
 
 Corpses that are not sacrificed may become undead.
 
-Avoid teleportation mechanisms, as they tend to have a devastating effect on virtual world economy.
-
 ==========
 
 COMMANDS:
@@ -166,8 +155,6 @@ COMMANDS:
 When a PC dies, all those who have linked with him/her should be notified.
 
 Encourage players to create aliases (using their MUD clients) for emotes unique to their characters. This will give their characters personality and make them more vibrant.
-
-"nickname" to create your own nickname for another PC.
 
 "punch", "kick", and "headbutt" to attack a PC without formally entering combat. These commands may not work with NPCs.
 
@@ -213,8 +200,6 @@ Have at least one area where PCs can fight each other essentially to the death, 
 
 Have special rooms where OOC communication is allowed.
 
-The degree to which movement tires a character should be room specific (probably room *link* specific). In this way, terrain can have an effect on the cost of movement. In addition, the physical distance between two rooms may be arbitrary; however, the distance between rooms should be kept relatively consistent so as to keep players from getting unnecessarily lost.
-
 Believable settlements have access to food and water, nearby building materials, a nonthreatening climate/geology/geography, and a population. Often, settlements are centers of trade and commerce.
 
 Rooms may be either "outside" or "inside".
@@ -243,8 +228,6 @@ Make a forest where players can forage for mushrooms.
 Make underground settlements, perhaps with secret/hidden entrances.
 
 Make settlements built above ground, in trees.
-
-Make an area with hostile cannibals (they might not be human).
 
 ==========
 
@@ -340,11 +323,6 @@ QUESTIONS:
 
 How can the game be tailored to the visually impaired?
 This question is best answered by the actual community of visually impaired players.
-
-To what extent are the actions of PCs allowed to influence the content of the virtual world?
-To what extent is the storyline fixed?
-
-Partition PCs geographically? Racial settlements?
 
 Can PCs higher henchmen NPCs to fight with them, heal them, and carry their items?
 
