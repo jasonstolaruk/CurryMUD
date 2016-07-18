@@ -2247,7 +2247,7 @@ putAction p@(Lower' i as)    = genericActionWithHooks p helper "put"
         (InEq,  _     ) -> genericSorryWithHooks ms . sorryConInEq $ Put
         (InRm,  target) ->
             let invCoinsHelper = shuffler target True rmInvCoins procGecrMisRm
-                f hooks g      = case filter ((dropPrefixes target `elem`) . triggers) hooks of
+                f hooks g      = case filter ((dropPrefixes target `elem`) . hookTriggers) hooks of
                                    []      -> g
                                    matches -> hooksHelper otherArgs matches
             in case (()!# rmInvCoins, lookupHooks i ms "put") of

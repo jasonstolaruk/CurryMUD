@@ -205,7 +205,7 @@ getFlowerHookName = "AdminZone_iAtrium_getFlower"
 getFlowerHookFun :: HookFun
 getFlowerHookFun i Hook { .. } v a@(_, (ms, _, _, _), _) = if calcWeight i ms + flowerWeight > calcMaxEnc i ms
   then a & _2._2 .~ pure (sorryGetEnc <> rest)
-  else a & _1    %~  (\\ triggers)
+  else a & _1    %~  (\\ hookTriggers)
          & _2._2 <>~ pure msg
          & _2._3 <>~ ( let selfDesig = mkStdDesig i ms DoCap
                        in pure (serialize selfDesig <> " picks " <> rest, i `delete` desigIds selfDesig) )
@@ -312,7 +312,7 @@ readLookPaperHookName = "AdminZone_iTutEntrance_readLookPaper"
 
 readLookPaperHookFun :: HookFun
 readLookPaperHookFun i Hook { .. } (V.head -> r) a@(_, (ms, _, _, _), _) =
-    a &    _1 %~  (\\ triggers)
+    a &    _1 %~  (\\ hookTriggers)
       & _2._2 <>~ pure signDesc
       & _2._3 <>~ ( let selfDesig = mkStdDesig i ms DoCap
                     in pure ( serialize selfDesig <> " reads the piece of paper nailed to the sign."
@@ -431,12 +431,12 @@ pick p@(LowerNub' i as) = genericActionWithHooks p helper "pick"
         let (inInvs, inEqs, inRms) = sortArgsInvEqRm InRm as
             sorrys                 = dropEmpties [ inInvs |!| sorryPickInInv, inEqs |!| sorryPickInEq ]
             h@Hook { .. }          = getFlowerHook
-            inRms'                 = dropSynonyms triggers . dropPrefixesForHooks (pure h) $ inRms
+            inRms'                 = dropSynonyms hookTriggers . dropPrefixesForHooks (pure h) $ inRms
             initAcc                = (inRms', (ms, [], [], []), [])
-            (_, (ms', toSelfs, bs, logMsgs), fs) | any (`elem` triggers) inRms' = getHookFun hookName ms i h v initAcc
-                                                 | otherwise                    = initAcc
-            mkMsgForArg arg | arg `elem` triggers = head toSelfs
-                            | otherwise           = sorryPickNotFlower arg
+            (_, (ms', toSelfs, bs, logMsgs), fs) | any (`elem` hookTriggers) inRms' = getHookFun hookName ms i h v initAcc
+                                                 | otherwise                        = initAcc
+            mkMsgForArg arg | arg `elem` hookTriggers = head toSelfs
+                            | otherwise               = sorryPickNotFlower arg
         in (ms', (sorrys ++ map mkMsgForArg inRms', bs, logMsgs, fs))
 pick p = patternMatchFail "pick" . showText $ p
 

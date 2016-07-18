@@ -130,8 +130,8 @@ type WritableTbl       = IM.IntMap Writable
 -- ==================================================
 
 
-data Action = Action { actionFun    :: ActionFun
-                     , shouldPrompt :: Bool }
+data Action = Action { actionFun          :: ActionFun
+                     , actionShouldPrompt :: Bool }
 
 
 type ActionFun = ActionParams -> MudStack ()
@@ -860,8 +860,8 @@ type LinkName = Text
 type HookMap = M.Map CmdName [Hook]
 
 
-data Hook = Hook { hookName :: HookName
-                 , triggers :: [Text] } deriving (Eq, Generic, Show)
+data Hook = Hook { hookName     :: HookName
+                 , hookTriggers :: [Text] } deriving (Eq, Generic, Show)
 
 
 type HookName = Text

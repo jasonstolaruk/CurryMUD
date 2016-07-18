@@ -471,19 +471,19 @@ procHooks i ms v cn as | initAcc <- (as, (ms, [], [], []), []) = case lookupHook
     [arg] | delim <- T.singleton hookArgDelimiter
           , delim `T.isInfixOf` arg
           , (dropPrefixes -> a, T.tail -> rest) <- T.breakOn delim arg
-          -> case filter (\Hook { triggers } -> a `elem` triggers) hooks of
+          -> case filter (\Hook { hookTriggers } -> a `elem` hookTriggers) hooks of
                []  -> initAcc
                [h] -> getHookFun (hookName h) ms i h v (initAcc & _1 .~ pure rest)
                xs  -> patternMatchFail "procHooks" . showText $ xs
     -- Process hooks whose triggers match on any single argument.
-    _ -> let helper acc arg = case filter (\Hook { triggers } -> arg `elem` triggers) hooks of
+    _ -> let helper acc arg = case filter (\Hook { hookTriggers } -> arg `elem` hookTriggers) hooks of
                []        -> acc
                (match:_) -> acc ++ pure match
              as' = dropPrefixesForHooks hooks as
          in case foldl' helper [] as' of
            []      -> initAcc
            matches ->
-             let xformedArgs = foldr (\Hook { triggers } -> dropSynonyms triggers) as' matches
+             let xformedArgs = foldr (\Hook { hookTriggers } -> dropSynonyms hookTriggers) as' matches
                  hookHelper a@(_, (ms', _, _, _), _) h = getHookFun (hookName h) ms' i h v a
              in foldl' hookHelper (initAcc & _1 .~ xformedArgs) . nub $ matches
 
@@ -494,7 +494,7 @@ dropPrefixesForHooks hs = let helper _     []     = []
                                                   | otherwise                             = a  : rest
                                 where
                                   rest = helper trigs as
-                          in helper (concatMap triggers hs)
+                          in helper (concatMap hookTriggers hs)
 
 
 dropPrefixes :: Text -> Text
