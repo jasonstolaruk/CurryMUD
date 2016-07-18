@@ -1514,15 +1514,15 @@ findExit (view rmLinks -> rls) ln =
       [] -> Nothing
       xs -> Just . head $ xs
   where
-    isValid      StdLink    { .. } = ln == linkDirToCmdName _linkDir
-    isValid      NonStdLink { .. } = ln `T.isPrefixOf` _linkName
-    showLink     StdLink    { .. } = showText _linkDir
-    showLink     NonStdLink { .. } = _linkName
-    getDestId    StdLink    { .. } = _stdDestId
-    getDestId    NonStdLink { .. } = _nonStdDestId
-    getOriginMsg NonStdLink { .. } = Just _originMsg
+    isValid      StdLink    { .. } = ln == linkDirToCmdName _slDir
+    isValid      NonStdLink { .. } = ln `T.isPrefixOf` _nslName
+    showLink     StdLink    { .. } = showText _slDir
+    showLink     NonStdLink { .. } = _nslName
+    getDestId    StdLink    { .. } = _slDestId
+    getDestId    NonStdLink { .. } = _nslDestId
+    getOriginMsg NonStdLink { .. } = Just _nslOriginMsg
     getOriginMsg _                 = Nothing
-    getDestMsg   NonStdLink { .. } = Just _destMsg
+    getDestMsg   NonStdLink { .. } = Just _nslDestMsg
     getDestMsg   _                 = Nothing
 
 
@@ -1565,8 +1565,8 @@ mkCmdForRmLink (T.toLower . mkCmdNameForRmLink -> cn) =
 
 
 mkCmdNameForRmLink :: RmLink -> Text
-mkCmdNameForRmLink rl = T.toLower $ case rl of StdLink    { .. } -> linkDirToCmdName _linkDir
-                                               NonStdLink { .. } -> _linkName
+mkCmdNameForRmLink rl = T.toLower $ case rl of StdLink    { .. } -> linkDirToCmdName _slDir
+                                               NonStdLink { .. } -> _nslName
 
 
  -----

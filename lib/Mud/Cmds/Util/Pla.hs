@@ -1108,8 +1108,8 @@ adminTagTxt = colorWith adminTagColor (parensQuote "admin")
 
 mkExitsSummary :: Cols -> Rm -> Text
 mkExitsSummary cols (view rmLinks -> rls) =
-    let stdNames    = [ rl^.linkDir .to (colorWith exitsColor . linkDirToCmdName) | rl <- rls, not . isNonStdLink $ rl ]
-        customNames = [ rl^.linkName.to (colorWith exitsColor                   ) | rl <- rls,       isNonStdLink   rl ]
+    let stdNames    = [ rl^.slDir  .to (colorWith exitsColor . linkDirToCmdName) | rl <- rls, not . isNonStdLink $ rl ]
+        customNames = [ rl^.nslName.to (colorWith exitsColor                   ) | rl <- rls,       isNonStdLink   rl ]
     in T.unlines . wrapIndent 2 cols . ("Obvious exits: " <>) . summarize stdNames $ customNames
   where
     summarize []  []  = "None!"

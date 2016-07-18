@@ -834,12 +834,12 @@ data Rm = Rm { _rmName      :: Text
 data RmFlags = RmFlagsTODO deriving Enum
 
 
-data RmLink = StdLink    { _linkDir      :: LinkDir
-                         , _stdDestId    :: Id }
-            | NonStdLink { _linkName     :: LinkName
-                         , _nonStdDestId :: Id
-                         , _originMsg    :: Text
-                         , _destMsg      :: Text } deriving (Eq, Generic)
+data RmLink = StdLink    { _slDir        :: LinkDir
+                         , _slDestId     :: Id }
+            | NonStdLink { _nslName      :: LinkName
+                         , _nslDestId    :: Id
+                         , _nslOriginMsg :: Text
+                         , _nslDestMsg   :: Text } deriving (Eq, Generic)
 
 
 data LinkDir = North
