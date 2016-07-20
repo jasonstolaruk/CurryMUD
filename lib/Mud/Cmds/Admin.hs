@@ -802,10 +802,15 @@ examineRm i ms = let r = getRm i ms in [ "Name: "        <> r^.rmName
   where
     descFlags r | r^.rmFlags == zeroBits = none
                 | otherwise              = none -- TODO: Room flags.
-    helper = \case (StdLink    dir destId    ) -> f (pp dir) destId
-                   (NonStdLink dir destId _ _) -> f dir      destId
+    helper = \case (StdLink    dir destId linkMove    ) -> f (pp dir) destId linkMove
+                   (NonStdLink dir destId linkMove _ _) -> f dir      destId linkMove
       where
-        f dir destId = T.concat [ dir, " to ", getRmName destId ms, " ", parensQuote (showText destId) ]
+        f dir destId linkMove = spaces [ dir
+                                       , "to"
+                                       , getRmName destId ms
+                                       , parensQuote (showText destId)
+                                       , linkMove^.moveCost.to showText
+                                       , linkMove^.moveTime.to commaShow ]
 
 
 xformNls :: Text -> Text

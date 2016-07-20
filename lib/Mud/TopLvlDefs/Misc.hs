@@ -24,6 +24,12 @@ default (Int)
 -- ==================================================
 
 
+type Seconds = Int -- 10^6 microseconds (the unit used by "threadDelay").
+
+
+type Milliseconds = Int -- 10^-3 or 1/1000 or 0.001 seconds.
+
+
 aggregateCoinNames :: [Text]
 aggregateCoinNames = [ "coin", "coins" ]
 
@@ -34,9 +40,6 @@ alertMsgTriggers = [ "molest", "rape" ]
 
 allCoinNames :: [Text]
 allCoinNames = coinNames ++ aggregateCoinNames
-
-
-type Seconds = Int
 
 
 acl, aop, enc, enc's, etc :: Text
