@@ -785,7 +785,7 @@ createAdminZone = do
             [ StdLink Northwest iBasement dfltLinkMove ]
             M.empty [] [] [])
   let conIds    = [ iSack1, iSack2, iSackSml, iSackLrg, iBack1, iBack2, iBackSml, iBackLrg ]
-  let vesselIds = [ iPotionFlask1    .. iPotionFlask1    + 19 ] ++
+      vesselIds = [ iPotionFlask1    .. iPotionFlask1    + 19 ] ++
                   [ iPotionFlaskLrg1 .. iPotionFlaskLrg1 + 19 ] ++ [ iWaterskin
                                                                    , iWaterskinLrg
                                                                    , iJarSml
@@ -915,9 +915,9 @@ createAdminZone = do
 
   -- ==================================================
   -- Objects:
-  forM_ [ iKewpie1, iKewpie2 ] $ \kewpieId ->
-      putObj kewpieId
-             (Ent kewpieId
+  forM_ [ iKewpie1, iKewpie2 ] $ \i ->
+      putObj i
+             (Ent i
                   (Just "doll")
                   "kewpie doll" ""
                   "The kewpie doll is disgustingly cute."
@@ -940,15 +940,15 @@ createAdminZone = do
                      , (i1Lb3,  "1",   100,   350  )
                      , (i1Lb4,  "1",   100,   350  )
                      , (i1Lb5,  "1",   100,   350  ) ]
-  forM_ weightTuples $ \(weightId, lbTxt, weightWeight, weightVol) ->
-      putObj weightId
-             (Ent weightId
+  forM_ weightTuples $ \(i, t, w, v) ->
+      putObj i
+             (Ent i
                   (Just "weight")
-                  (lbTxt <> " lb weight") ""
+                  (t <> " lb weight") ""
                   "It's a hunk of metal cut into a rounded shape."
                   Nothing
                   zeroBits)
-             (Obj weightWeight weightVol Nothing zeroBits Nothing)
+             (Obj w v Nothing zeroBits Nothing)
   putObj iSlab
          (Ent iSlab
               (Just "slab")
@@ -989,7 +989,7 @@ createAdminZone = do
                                    (Ent i
                                         (Just "parchment")
                                         "piece of parchment" "pieces of parchment"
-                                        "It's an everyday piece of parchment, made from processed animal skin."
+                                        "It's an everyday piece of parchment made from processed animal skin."
                                         Nothing
                                         zeroBits)
                                    (Obj paperWeight paperVol Nothing zeroBits Nothing)
@@ -1001,8 +1001,8 @@ createAdminZone = do
   putParchment iParchment4 (Writable (Just ("An asteroid crashed and nothing burned. It made me wonder.", CommonLang))
                                      (Just "Root"))
   putParchment iParchment5 (Writable (Just ("Toss away stuff you don't need in the end, but keep what's important and \
-                                            \know who's your friend.", ElfLang))
-                                           (Just "Root"))
+                                            \know who's your friend.", DwarfLang))
+                                     (Just "Root"))
 
   -- ==================================================
   -- Clothing:
@@ -1014,22 +1014,22 @@ createAdminZone = do
                   , (iEar6, "crimson"  )
                   , (iEar7, "sea green")
                   , (iEar8, "onyx"     ) ]
-  forM_ earTuples $ \(earId, earTxt) ->
-      putCloth earId
-               (Ent earId
+  forM_ earTuples $ \(i, t) ->
+      putCloth i
+               (Ent i
                     (Just "earring")
-                    (earTxt <> " earring") ""
+                    (t <> " earring") ""
                     "It's a small, but tasteful, nondescript hoop."
                     Nothing
                     zeroBits)
                (Obj earWeight earVol Nothing zeroBits Nothing)
                Earring
-  forM_ [ iNoseRing1, iNoseRing2, iNoseRing3 ] $ \noseRingId ->
-      putCloth noseRingId
-               (Ent noseRingId
+  forM_ [ iNoseRing1, iNoseRing2, iNoseRing3 ] $ \i ->
+      putCloth i
+               (Ent i
                     (Just "nose")
                     "nose ring" ""
-                    "It's a plain copper stud, intended to be worn on the nose."
+                    "It's a plain copper stud intended to be worn on the nose."
                     Nothing
                     zeroBits)
                (Obj noseWeight noseVol Nothing zeroBits Nothing)
@@ -1038,184 +1038,66 @@ createAdminZone = do
                    , (iNeck2, "silver"  )
                    , (iNeck3, "gold"    )
                    , (iNeck4, "platinum") ]
-  forM_ neckTuples $ \(neckId, neckTxt) ->
-      putCloth neckId
-               (Ent neckId
+  forM_ neckTuples $ \(i, t) ->
+      putCloth i
+               (Ent i
                     (Just "necklace")
-                    (neckTxt <> " necklace") ""
-                    ("It's a simple " <> neckTxt <> " chain.")
+                    (t <> " necklace") ""
+                    ("It's a simple " <> t <> " chain.")
                     Nothing
                     zeroBits)
                (Obj neckWeight neckVol Nothing zeroBits Nothing)
                Necklace
-  -- TODO: Continue refactoring from here.
-  let charmBraceletDesc = "The bracelet is adorned with a variety of quaint charms in the shape of musical \
-                          \instruments, fashioned out of pewter."
-  putCloth iBracelet1
-           (Ent iBracelet1
-                (Just "bracelet")
-                "charm bracelet" ""
-                charmBraceletDesc
-                Nothing
-                zeroBits)
-           (Obj 10 braceletVol Nothing zeroBits Nothing)
-           Bracelet
-  let bangleBraceletDesc = "The bangle bracelet is made of smooth polished wood, stained an earthy shade of brown, and \
+  let charmBraceletDesc  = "The bracelet is adorned with a variety of quaint charms in the shape of musical \
+                           \instruments, fashioned out of pewter."
+      bangleBraceletDesc = "The bangle bracelet is made of smooth polished wood, stained an earthy shade of brown, and \
                            \about half an inch wide."
-  putCloth iBracelet2
-           (Ent iBracelet2
-                (Just "bracelet")
-                "wooden bangle bracelet" ""
-                bangleBraceletDesc
-                Nothing
-                zeroBits)
-           (Obj 1 braceletVol Nothing zeroBits Nothing)
-           Bracelet
-  let beadedBraceletDesc = "This classic bracelet consist of small, spherical wooden beads, alternating black and \
+      beadedBraceletDesc = "This classic bracelet consist of small, spherical wooden beads, alternating black and \
                            \white in color."
-  putCloth iBracelet3
-           (Ent iBracelet3
-                (Just "bracelet")
-                "beaded bracelet" ""
-                beadedBraceletDesc
-                Nothing
-                zeroBits)
-           (Obj 2 braceletVol Nothing zeroBits Nothing)
-           Bracelet
-  let pearlBraceletDesc = "Lustrous white pearls are strung together to make an eye-catching, fashionable accessory."
-  putCloth iBracelet4
-           (Ent iBracelet4
-                (Just "bracelet")
-                "pearl bracelet" ""
-                pearlBraceletDesc
-                Nothing
-                zeroBits)
-           (Obj 4 braceletVol Nothing zeroBits Nothing)
-           Bracelet
-  putCloth iBracelet5
-           (Ent iBracelet5
-                (Just "bracelet")
-                "charm bracelet" ""
-                charmBraceletDesc
-                Nothing
-                zeroBits)
-           (Obj 10 braceletVol Nothing zeroBits Nothing)
-           Bracelet
-  putCloth iBracelet6
-           (Ent iBracelet6
-                (Just "bracelet")
-                "wooden bangle bracelet" ""
-                bangleBraceletDesc
-                Nothing
-                zeroBits)
-           (Obj 1 braceletVol Nothing zeroBits Nothing)
-           Bracelet
-  putCloth iBracelet7
-           (Ent iBracelet7
-                (Just "bracelet")
-                "beaded bracelet" ""
-                beadedBraceletDesc
-                Nothing
-                zeroBits)
-           (Obj 2 braceletVol Nothing zeroBits Nothing)
-           Bracelet
-  putCloth iBracelet8
-           (Ent iBracelet8
-                (Just "bracelet")
-                "pearl bracelet" ""
-                pearlBraceletDesc
-                Nothing
-                zeroBits)
-           (Obj 4 braceletVol Nothing zeroBits Nothing)
-           Bracelet
-  let mkRingDesc x = "It's a simple copper band prominently featuring a beautiful " <> x <> " stone."
-  putCloth iRing1
-           (Ent iRing1
-                (Just "ring")
-                "garnet ring" ""
-                (mkRingDesc "garnet")
-                Nothing
-                zeroBits)
-           (Obj ringWeight ringVol Nothing zeroBits Nothing)
-           Ring
-  putCloth iRing2
-           (Ent iRing2
-                (Just "ring")
-                "amethyst ring" ""
-                (mkRingDesc "amethyst")
-                Nothing
-                zeroBits)
-           (Obj ringWeight ringVol Nothing zeroBits Nothing)
-           Ring
-  putCloth iRing3
-           (Ent iRing3
-                (Just "ring")
-                "aquamarine ring" ""
-                (mkRingDesc "aquamarine")
-                Nothing
-                zeroBits)
-           (Obj ringWeight ringVol Nothing zeroBits Nothing)
-           Ring
-  putCloth iRing4
-           (Ent iRing4
-                (Just "ring")
-                "diamond ring" ""
-                (mkRingDesc "diamond")
-                Nothing
-                zeroBits)
-           (Obj ringWeight ringVol Nothing zeroBits Nothing)
-           Ring
-  putCloth iRing5
-           (Ent iRing5
-                (Just "ring")
-                "garnet ring" ""
-                (mkRingDesc "garnet")
-                Nothing
-                zeroBits)
-           (Obj ringWeight ringVol Nothing zeroBits Nothing)
-           Ring
-  putCloth iRing6
-           (Ent iRing6
-                (Just "ring")
-                "amethyst ring" ""
-                (mkRingDesc "amethyst")
-                Nothing
-                zeroBits)
-           (Obj ringWeight ringVol Nothing zeroBits Nothing)
-           Ring
-  putCloth iRing7
-           (Ent iRing7
-                (Just "ring")
-                "aquamarine ring" ""
-                (mkRingDesc "aquamarine")
-                Nothing
-                zeroBits)
-           (Obj ringWeight ringVol Nothing zeroBits Nothing)
-           Ring
-  putCloth iRing8
-           (Ent iRing8
-                (Just "ring")
-                "diamond ring" ""
-                (mkRingDesc "diamond")
-                Nothing
-                zeroBits)
-           (Obj ringWeight ringVol Nothing zeroBits Nothing)
-           Ring
-  putCloth iRing9
-           (Ent iRing9
-                (Just "ring")
-                "emerald ring" ""
-                (mkRingDesc "emerald")
-                Nothing
-                zeroBits)
-           (Obj ringWeight ringVol Nothing zeroBits Nothing)
-           Ring
+      pearlBraceletDesc = "Lustrous white pearls are strung together to make an eye-catching, fashionable accessory."
+      braceletTuples    = [ (iBracelet1, "charm",         charmBraceletDesc,  10)
+                          , (iBracelet2, "wooden bangle", bangleBraceletDesc, 1 )
+                          , (iBracelet3, "beaded",        beadedBraceletDesc, 2 )
+                          , (iBracelet4, "pearl",         pearlBraceletDesc,  4 )
+                          , (iBracelet5, "charm",         charmBraceletDesc,  10)
+                          , (iBracelet6, "wooden bangle", bangleBraceletDesc, 1 )
+                          , (iBracelet7, "beaded",        beadedBraceletDesc, 2 )
+                          , (iBracelet8, "pearl",         pearlBraceletDesc,  4 ) ]
+  forM_ braceletTuples $ \(i, t, d, w) ->
+      putCloth i
+               (Ent i
+                    (Just "bracelet")
+                    (t <> " bracelet") ""
+                    d
+                    Nothing
+                    zeroBits)
+               (Obj w braceletVol Nothing zeroBits Nothing)
+               Bracelet
+  let ringTuples = [ (iRing1, "garnet"    )
+                   , (iRing2, "amethyst"  )
+                   , (iRing3, "aquamarine")
+                   , (iRing4, "diamond"   )
+                   , (iRing5, "garnet"    )
+                   , (iRing6, "amethyst"  )
+                   , (iRing7, "aquamarine")
+                   , (iRing8, "diamond"   )
+                   , (iRing9, "emerald"   ) ]
+  forM_ ringTuples $ \(i, t) ->
+      putCloth i
+               (Ent i
+                    (Just "ring")
+                    (t <> " ring") ""
+                    ("It's a simple copper band prominently featuring a beautiful " <> t <> " stone.")
+                    Nothing
+                    zeroBits)
+               (Obj ringWeight ringVol Nothing zeroBits Nothing)
+               Ring
   putCloth iChemise
            (Ent iChemise
                 (Just "chemise")
                 "fine white chemise" ""
                 "This voluminous frock, worn on the upper body, is fashioned out of thin, smooth linen. It hangs just \
-                \below the waist, while its loose-cut, wide sleeves are elbow length."
+                \below the waist while its loose-cut, wide sleeves are elbow length."
                 Nothing
                 zeroBits)
            (Obj shirtWeight shirtVol Nothing zeroBits Nothing)
@@ -1245,7 +1127,7 @@ createAdminZone = do
                 "sleeveless blue tabard" ""
                 "This sleeveless overgarment is open at both sides and extends down to the thigh. Dyed a deep shade of \
                 \blue, a contrasting bright orange trim adds a distinct accent along the hems. There is a short collar \
-                \around the neck, complete with a small decorative yellow bowtie."
+                \around the neck complete with a small decorative yellow bowtie."
                 Nothing
                 zeroBits)
            (Obj tabardWeight tabardVol Nothing zeroBits Nothing)
@@ -1271,20 +1153,20 @@ createAdminZone = do
                 zeroBits)
            (Obj coatWeight coatVol Nothing zeroBits Nothing)
            Coat
-  forM_ [ iBreeches1, iBreeches2 ] $ \breechesId ->
-      putCloth breechesId
-               (Ent breechesId
+  forM_ [ iBreeches1, iBreeches2 ] $ \i ->
+      putCloth i
+               (Ent i
                     (Just "breeches")
                     "pair of knee-length yellow breeches" "pairs of knee-length yellow breeches"
                     "These thin, tight-fitting breeches extend just past the knees, where short drawstrings allow them \
-                    \to be neatly secured."
+                    \to be neatly secured to the legs."
                     Nothing
                     zeroBits)
                (Obj trousersWeight trousersVol Nothing zeroBits Nothing)
                Trousers
-  forM_ [ iTrousers1, iTrousers2 ] $ \trousersId ->
-      putCloth trousersId
-               (Ent trousersId
+  forM_ [ iTrousers1, iTrousers2 ] $ \i ->
+      putCloth i
+               (Ent i
                     (Just "trousers")
                     "pair of baggy beige trousers" "pairs of baggy beige trousers"
                     "These wool trousers are loose-fitting so as to grant uninhibited movement. A rugged hemp \
@@ -1296,95 +1178,43 @@ createAdminZone = do
 
   -- ==================================================
   -- Containers:
-  let mkClothSackDesc x = prd $ "It's a typical cloth sack, perfect for holding your treasure. It's " <> x
-  putCon iSack1
-         (Ent iSack1
-              (Just "sack")
-              "cloth sack" ""
-              (mkClothSackDesc "red")
-              Nothing
-              zeroBits)
-         (Obj sackWeight sackVol Nothing zeroBits Nothing)
-         []
-         mempty
-         Nothing
-         (Con False sackCap)
-  putCon iSack2
-         (Ent iSack2
-              (Just "sack")
-              "cloth sack" ""
-              (mkClothSackDesc "blue")
-              Nothing
-              zeroBits)
-         (Obj sackWeight sackVol Nothing zeroBits Nothing)
-         []
-         mempty
-         Nothing
-         (Con False sackCap)
-  let mkWovenSackDesc x = "The durable sack is made from a coarse, woven fabric, dyed " <> x <> " so as to give it \
+  let mkClothSackDesc t = prd $ "It's a typical cloth sack, perfect for holding your treasure. It's " <> t
+      mkWovenSackDesc t = "The durable sack is made from a coarse, woven fabric, dyed " <> t <> " so as to give it \
                           \some flair."
-  putCon iSackSml
-         (Ent iSackSml
-              (Just "sack")
-              "small sack" ""
-              (mkWovenSackDesc "light blue")
-              Nothing
-              zeroBits)
-         (Obj sackSmlWeight sackSmlVol Nothing zeroBits Nothing)
-         []
-         mempty
-         Nothing
-         (Con False sackSmlCap)
-  putCon iSackLrg
-         (Ent iSackLrg
-              (Just "sack")
-              "large sack" ""
-              (mkWovenSackDesc "red")
-              Nothing
-              zeroBits)
-         (Obj sackLrgWeight sackLrgVol Nothing zeroBits Nothing)
-         []
-         mempty
-         Nothing
-         (Con False sackLrgCap)
-  let backDesc = "The sturdy backpack is made of leather."
-  forM_ [ iBack1, iBack2 ] $ \backId ->
-      putCon backId
-             (Ent backId
-                  (Just "back")
-                  "backpack" ""
-                  backDesc
+      sackTuples        = [ (iSack1,   "cloth", mkClothSackDesc "red",        sackWeight,    sackVol,    sackCap   )
+                          , (iSack2,   "cloth", mkClothSackDesc "blue",       sackWeight,    sackVol,    sackCap   )
+                          , (iSackSml, "small", mkWovenSackDesc "light red",  sackSmlWeight, sackSmlVol, sackSmlCap)
+                          , (iSackLrg, "large", mkWovenSackDesc "light blue", sackLrgWeight, sackLrgVol, sackLrgCap) ]
+  forM_ sackTuples $ \(i, t, d, w, v, c) ->
+      putCon i
+             (Ent i
+                  (Just "sack")
+                  (t <> " sack") ""
+                  d
                   Nothing
                   zeroBits)
-             (Obj backWeight backVol Nothing zeroBits Nothing)
+             (Obj w v Nothing zeroBits Nothing)
+             []
+             mempty
+             Nothing
+             (Con False c)
+  let backTuples = [ (iBack1,   "",       backWeight,    backVol,    backCap   )
+                   , (iBack2,   "",       backWeight,    backVol,    backCap   )
+                   , (iBackSml, "small ", backSmlWeight, backSmlVol, backSmlCap)
+                   , (iBackLrg, "large ", backLrgWeight, backLrgVol, backLrgCap) ]
+  forM_ backTuples $ \(i, t, w, v, c) ->
+      putCon i
+             (Ent i
+                  (Just "back")
+                  (t <> "backpack") ""
+                  "The sturdy backpack is made of leather."
+                  Nothing
+                  zeroBits)
+             (Obj w v Nothing zeroBits Nothing)
              []
              mempty
              (Just Backpack)
-             (Con True backCap)
-  putCon iBackSml
-         (Ent iBackSml
-              (Just "back")
-              "small backpack" ""
-              backDesc
-              Nothing
-              zeroBits)
-         (Obj backSmlWeight backSmlVol Nothing zeroBits Nothing)
-         []
-         mempty
-         (Just Backpack)
-         (Con True backSmlCap)
-  putCon iBackLrg
-         (Ent iBackLrg
-              (Just "back")
-              "large backpack" ""
-              backDesc
-              Nothing
-              zeroBits)
-         (Obj backLrgWeight backLrgVol Nothing zeroBits Nothing)
-         []
-         mempty
-         (Just Backpack)
-         (Con True backLrgCap)
+             (Con True c)
 
   -- ==================================================
   -- Vessels:
