@@ -2712,7 +2712,7 @@ getAvailClothSlot i ms cloth em | sexy <- getSex i ms, h <- getHand i ms =
         NoHand -> noSexHand
       NoSex  -> noSexHand
     noSexHand =   [ RingRIS, RingRMS, RingRRS, RingRPS, RingLIS, RingLMS, RingLRS, RingLPS ]
-    sorry | cloth `elem` [Earring..Ring]                       = sorryReadyClothFull      . pp $ cloth
+    sorry | cloth `elem` [Earring .. Ring]                     = sorryReadyClothFull      . pp $ cloth
           | cloth `elem` [ Skirt, Dress, Backpack, Cloak ]     = sorryReadyAlreadyWearing . pp $ cloth
           | ci <- em M.! clothToSlot cloth, s <- getSing ci ms = sorryReadyAlreadyWearing        s
 
@@ -2727,16 +2727,16 @@ rEarringSlots, lEarringSlots, noseRingSlots, necklaceSlots, rBraceletSlots, lBra
 rEarringSlots  = [ EarringR1S, EarringR2S ]
 lEarringSlots  = [ EarringL1S, EarringL2S ]
 noseRingSlots  = [ NoseRing1S, NoseRing2S ]
-necklaceSlots  = [Necklace1S ..Necklace2S ]
-rBraceletSlots = [BraceletR1S..BraceletR3S]
-lBraceletSlots = [BraceletL1S..BraceletL3S]
+necklaceSlots  = [Necklace1S  .. Necklace2S ]
+rBraceletSlots = [BraceletR1S .. BraceletR3S]
+lBraceletSlots = [BraceletL1S .. BraceletL3S]
 
 
 getDesigClothSlot :: MudState -> Sing -> Cloth -> EqMap -> RightOrLeft -> Either Text Slot
 getDesigClothSlot ms clothSing cloth em rol
-  | cloth `elem` [ NoseRing, Necklace ] ++ [Shirt..Cloak] = sorryRol
-  | isRingRol rol, cloth /= Ring                          = sorryRol
-  | cloth == Ring, not . isRingRol $ rol                  = Left ringHelp
+  | cloth `elem` [ NoseRing, Necklace ] ++ [Shirt .. Cloak] = sorryRol
+  | isRingRol rol, cloth /= Ring                            = sorryRol
+  | cloth == Ring, not . isRingRol $ rol                    = Left ringHelp
   | otherwise = case cloth of
     Earring  -> findSlotFromList rEarringSlots  lEarringSlots  |&| maybe (Left sorryEarring ) Right
     Bracelet -> findSlotFromList rBraceletSlots lBraceletSlots |&| maybe (Left sorryBracelet) Right
