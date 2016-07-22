@@ -1251,7 +1251,7 @@ createAdminZone = do
                      zeroBits)
                 (Obj potionFlaskLrgWeight potionFlaskLrgVol Nothing zeroBits Nothing)
                 mc
-  let waterskinDesc = "The rugged waterskin, crafted from the bladder of a bovine animal, is an indispensable piece of \
+  let waterskinDesc = "The handy waterskin, crafted from the bladder of a bovine animal, is an indispensable piece of \
                       \equipment when it comes to travel and, often, everyday life."
   putVessel iWaterskin
             (Ent iWaterskin
@@ -1298,73 +1298,45 @@ createAdminZone = do
                  zeroBits)
             (Obj jarLrgWeight jarLrgVol Nothing zeroBits Nothing)
             (Just (potNegStLiq, maxBound))
-  let jugDesc = "While capable of containing a large amount of liquid, this corked, ceramic jug is rather cumbersome."
-  putVessel iJugSml
-            (Ent iJugSml
-                 (Just "jug")
-                 "small jug" ""
-                 jugDesc
-                 Nothing
-                 zeroBits)
-            (Obj jugSmlWeight jugSmlVol Nothing zeroBits Nothing)
-            (Just (potStLiq, maxBound))
-  putVessel iJug
-            (Ent iJug
-                 (Just "jug")
-                 "jug" ""
-                 jugDesc
-                 Nothing
-                 zeroBits)
-            (Obj jugWeight jugVol Nothing zeroBits Nothing)
-            (Just (potInstantStLiq, maxBound))
-  putVessel iJugLrg
-            (Ent iJugLrg
-                 (Just "jug")
-                 "large jug" ""
-                 jugDesc
-                 Nothing
-                 zeroBits)
-            (Obj jugLrgWeight jugLrgVol Nothing zeroBits Nothing)
-            (Just (potInstantNegStLiq, maxBound))
+  let jugTuples = [ (iJugSml, "small ", jugSmlWeight, jugSmlVol, potStLiq          )
+                  , (iJug,     "",      jugWeight,    jugVol,    potInstantStLiq   )
+                  , (iJugLrg, "large ", jugLrgWeight, jugLrgVol, potInstantNegStLiq) ]
+  forM_ jugTuples $ \(i, t, w, v, l) ->
+      putVessel i
+                (Ent i
+                     (Just "jug")
+                     (t <> " jug") ""
+                     "While capable of containing a large amount of liquid, this corked, ceramic jug is rather \
+                     \cumbersome."
+                     Nothing
+                     zeroBits)
+                (Obj w v Nothing zeroBits Nothing)
+                (Just (l, maxBound))
   let mkBottleDesc a b = T.concat [ "This "
                                   , a
                                   , "earthenware bottle is designed to be as portable and practical as possible. A \
                                     \glaze of "
                                   , b
-                                  , " hues gives the vessel a glossy finish, and makes it impermeable." ]
-  putVessel iBottleSml
-            (Ent iBottleSml
-                 (Just "bottle")
-                 "small bottle" ""
-                 (mkBottleDesc "small, " "light brown")
-                 Nothing
-                 zeroBits)
-            (Obj bottleSmlWeight bottleSmlVol Nothing zeroBits Nothing)
-            (Just (potTinnitusLiq, maxBound))
-  putVessel iBottle
-            (Ent iBottle
-                 (Just "bottle")
-                 "bottle" ""
-                 (mkBottleDesc "" "mixed azure")
-                 Nothing
-                 zeroBits)
-            (Obj bottleWeight bottleVol Nothing zeroBits Nothing)
-            (Just (potInstantTinnitusLiq, maxBound))
-  putVessel iBottleLrg
-            (Ent iBottleLrg
-                 (Just "bottle")
-                 "large bottle" ""
-                 (mkBottleDesc "large, " "rusty orange")
-                 Nothing
-                 zeroBits)
-            (Obj bottleLrgWeight bottleLrgVol Nothing zeroBits Nothing)
-            (Just (potInstantTinnitusLiq, maxBound))
+                                  , " hues gives the vessel a glossy finish and makes it impermeable." ]
+      bottelTuples = [ (iBottleSml, "small ", ("small, ", "light brown"),  bottleSmlWeight, bottleSmlVol, potTinnitusLiq       )
+                     , (iBottle,    "",       ("",        "mixed azure"),  bottleWeight,    bottleVol,    potInstantTinnitusLiq)
+                     , (iBottleLrg, "large ", ("large, ", "rusty orange"), bottleLrgWeight, bottleLrgVol, potInstantTinnitusLiq) ]
+  forM_ bottelTuples $ \(i, t, d, w, v, l) ->
+      putVessel i
+                (Ent i
+                     (Just "bottle")
+                     (t <> "bottle") ""
+                     (uncurry mkBottleDesc d)
+                     Nothing
+                     zeroBits)
+                (Obj w v Nothing zeroBits Nothing)
+                (Just (l, maxBound))
 
   -- ==================================================
   -- Weapons:
-  forM_ [ iSword1, iSword2 ] $ \swordId ->
-      putWpn swordId
-             (Ent swordId
+  forM_ [ iSword1, iSword2 ] $ \i ->
+      putWpn i
+             (Ent i
                   (Just "sword")
                   "short sword" ""
                    "It's a sword; short but still sharp!"
@@ -1376,7 +1348,7 @@ createAdminZone = do
          (Ent iLongSword
               (Just "sword")
               "two-handed long sword" ""
-              "With the right technique, this bulky sword could do a great deal of damage."
+              "With the right technique, this bulky sword can do a great deal of damage."
               Nothing
               zeroBits)
          (Obj swordLongWeight swordLongVol Nothing zeroBits Nothing)
@@ -1390,9 +1362,9 @@ createAdminZone = do
               zeroBits)
          (Obj clubWeight clubVol Nothing zeroBits Nothing)
          (Wpn OneHanded 1 10)
-  forM_ [ iKnife1, iKnife2 ] $ \knifeId ->
-      putWpn knifeId
-             (Ent knifeId
+  forM_ [ iKnife1, iKnife2 ] $ \i ->
+      putWpn i
+             (Ent i
                   (Just "knife")
                   "utility knife" "utility knives"
                   "This small knife could be useful in a pinch."
@@ -1421,14 +1393,13 @@ createAdminZone = do
               zeroBits)
          (Obj helmLeatherWeight helmLeatherVol Nothing zeroBits Nothing)
          (Arm Head 1)
-  let sandalsDesc = "These humble leather sandals offer little in the way of fashion; they will, however, adequately \
-                    \protect the soles of your feet."
-  forM_ [ iSandals1, iSandals2 ] $ \sandalsId ->
-      putArm sandalsId
-             (Ent sandalsId
+  forM_ [ iSandals1, iSandals2 ] $ \i ->
+      putArm i
+             (Ent i
                   (Just "sandals")
                   "pair of leather sandals" "pairs of leather sandals"
-                  sandalsDesc
+                  "These humble leather sandals offer little in the way of fashion; they will, however, adequately \
+                  \protect the soles of your feet."
                   Nothing
                   zeroBits)
              (Obj sandalsWeight sandalsVol Nothing zeroBits Nothing)
@@ -1445,15 +1416,13 @@ createAdminZone = do
 
   -- ==================================================
   -- Mobs:
-  let rockCavyDesc = "It looks like a slightly oversized guinea pig with soft, grey fur. You imagine that the rock \
-                     \cavy would prefer dry, rocky areas (with low, scrubby vegetation), close to stony mountains and \
-                     \hills."
-  forM_ [ iRockCavy1, iRockCavy2 ] $ \rockCavyId ->
-      putNpc rockCavyId
-             (Ent rockCavyId
+  forM_ [ iRockCavy1, iRockCavy2 ] $ \i ->
+      putNpc i
+             (Ent i
                   (Just "rock")
                   "rock cavy" "rock cavies"
-                  rockCavyDesc
+                  "It looks like a slightly oversized guinea pig with soft, grey fur. You imagine that the rock cavy \
+                  \would prefer dry, rocky areas (with low, scrubby vegetation), close to stony mountains and hills."
                   Nothing
                   zeroBits)
              []
@@ -1531,9 +1500,9 @@ createAdminZone = do
               zeroBits)
          (Obj bootsWeight bootsVol Nothing zeroBits Nothing)
          (Arm Feet 1)
-  forM_ [ iSkeleton1, iSkeleton2, iSkeleton3 ] $ \skeletonId ->
-      putNpc skeletonId
-             (Ent skeletonId
+  forM_ [ iSkeleton1, iSkeleton2, iSkeleton3 ] $ \i ->
+      putNpc i
+             (Ent i
                   (Just "skeleton")
                   "undead skeleton" ""
                   "This mindless, bipedal skeleton has been animated and tasked with doing its master's bidding."
