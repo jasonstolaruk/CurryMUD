@@ -510,12 +510,11 @@ createAdminZone = do
               100 100
               100 100
               100 100
-              [] Nothing
               0 0
               RHand
               allValues
               iLoggedOut
-              Nothing Nothing M.empty M.empty Nothing Nothing Nothing Nothing)
+              Nothing Nothing [] Nothing M.empty M.empty Nothing Nothing Nothing Nothing)
          M.empty
          (M.singleton "Curry" True)
          (PC Human ["Curry"] ["Curry"] 0)
@@ -542,12 +541,11 @@ createAdminZone = do
               100 100
               100 100
               100 100
-              [] Nothing
               0 0
               RHand
               allValues
               iLoggedOut
-              Nothing Nothing M.empty M.empty Nothing Nothing Nothing Nothing)
+              Nothing Nothing [] Nothing M.empty M.empty Nothing Nothing Nothing Nothing)
          M.empty
          (M.singleton "Root" True)
          (PC Human ["Root"] ["Root"] 0)
@@ -887,9 +885,9 @@ createAdminZone = do
         []
         mempty
         (Rm "The admin lounge"
-            "Welcome, admin! Have a seat by the fire and relax for awhile."
+            "Welcome, admin! This is your private space where you can relax and take it easy."
             Nothing
-            Nothing
+            (Just "There is a lingering scent of pipe tobacco in the air.")
             zeroBits
             [ NonStdLink "out" iLoungeEntrance dfltLinkMove "% exits the lounge." "% exits the lounge." ]
             M.empty [] [] [])
@@ -917,152 +915,40 @@ createAdminZone = do
 
   -- ==================================================
   -- Objects:
-  let kewpieDesc = "The kewpie doll is disgustingly cute."
-  putObj iKewpie1
-         (Ent iKewpie1
-              (Just "doll")
-              "kewpie doll" ""
-              kewpieDesc
-              Nothing
-              zeroBits)
-         (Obj dollWeight dollVol Nothing zeroBits Nothing)
-  putObj iKewpie2
-         (Ent iKewpie2
-              (Just "doll")
-              "kewpie doll" ""
-              kewpieDesc
-              Nothing
-              zeroBits)
-         (Obj dollWeight dollVol Nothing zeroBits Nothing)
-  let weightDesc = "It's a hunk of metal cut into a rounded shape."
-  putObj i190Lb
-         (Ent i190Lb
-              (Just "weight")
-              "190 lb weight" ""
-              weightDesc
-              Nothing
-              zeroBits)
-         (Obj 19000 66995 Nothing zeroBits Nothing)
-  putObj i100Lb
-         (Ent i100Lb
-              (Just "weight")
-              "100 lb weight" ""
-              weightDesc
-              Nothing
-              zeroBits)
-         (Obj 10000 35260 Nothing zeroBits Nothing)
-  putObj i75Lb
-         (Ent i75Lb
-              (Just "weight")
-              "75 lb weight" ""
-              weightDesc
-              Nothing
-              zeroBits)
-         (Obj 7500 26445 Nothing zeroBits Nothing)
-  putObj i50Lb1
-         (Ent i50Lb1
-              (Just "weight")
-              "50 lb weight" ""
-              weightDesc
-              Nothing
-              zeroBits)
-         (Obj 5000 17630 Nothing zeroBits Nothing)
-  putObj i50Lb2
-         (Ent i50Lb2
-              (Just "weight")
-              "50 lb weight" ""
-              weightDesc
-              Nothing
-              zeroBits)
-         (Obj 5000 17630 Nothing zeroBits Nothing)
-  putObj i25Lb1
-         (Ent i25Lb1
-              (Just "weight")
-              "25 lb weight" ""
-              weightDesc
-              Nothing
-              zeroBits)
-         (Obj 2500 8815 Nothing zeroBits Nothing)
-  putObj i25Lb2
-         (Ent i25Lb2
-              (Just "weight")
-              "25 lb weight" ""
-              weightDesc
-              Nothing
-              zeroBits)
-         (Obj 2500 8815 Nothing zeroBits Nothing)
-  putObj i10Lb1
-         (Ent i10Lb1
-              (Just "weight")
-              "10 lb weight" ""
-              weightDesc
-              Nothing
-              zeroBits)
-         (Obj 1000 3525 Nothing zeroBits Nothing)
-  putObj i10Lb2
-         (Ent i10Lb2
-              (Just "weight")
-              "10 lb weight" ""
-              weightDesc
-              Nothing
-              zeroBits)
-         (Obj 1000 3525 Nothing zeroBits Nothing)
-  putObj i5Lb1
-         (Ent i5Lb1
-              (Just "weight")
-              "5 lb weight" ""
-              weightDesc
-              Nothing
-              zeroBits)
-         (Obj 500 1760 Nothing zeroBits Nothing)
-  putObj i5Lb2
-         (Ent i5Lb2
-              (Just "weight")
-              "5 lb weight" ""
-              weightDesc
-              Nothing
-              zeroBits)
-         (Obj 500 1760 Nothing zeroBits Nothing)
-  putObj i1Lb1
-         (Ent i1Lb1
-              (Just "weight")
-              "1 lb weight" ""
-              weightDesc
-              Nothing
-              zeroBits)
-         (Obj 100 350 Nothing zeroBits Nothing)
-  putObj i1Lb2
-         (Ent i1Lb2
-              (Just "weight")
-              "1 lb weight" ""
-              weightDesc
-              Nothing
-              zeroBits)
-         (Obj 100 350 Nothing zeroBits Nothing)
-  putObj i1Lb3
-         (Ent i1Lb3
-              (Just "weight")
-              "1 lb weight" ""
-              weightDesc
-              Nothing
-              zeroBits)
-         (Obj 100 350 Nothing zeroBits Nothing)
-  putObj i1Lb4
-         (Ent i1Lb4
-              (Just "weight")
-              "1 lb weight" ""
-              weightDesc
-              Nothing
-              zeroBits)
-         (Obj 100 350 Nothing zeroBits Nothing)
-  putObj i1Lb5
-         (Ent i1Lb5
-              (Just "weight")
-              "1 lb weight" ""
-              weightDesc
-              Nothing
-              zeroBits)
-         (Obj 100 350 Nothing zeroBits Nothing)
+  forM_ [ iKewpie1, iKewpie2 ] $ \kewpieId ->
+      putObj kewpieId
+             (Ent kewpieId
+                  (Just "doll")
+                  "kewpie doll" ""
+                  "The kewpie doll is disgustingly cute."
+                  Nothing
+                  zeroBits)
+             (Obj dollWeight dollVol Nothing zeroBits Nothing)
+  let weightTuples = [ (i190Lb, "190", 19000, 66995)
+                     , (i100Lb, "100", 10000, 35260)
+                     , (i75Lb,  "75",  7500,  26445)
+                     , (i50Lb1, "50",  5000,  17630)
+                     , (i50Lb2, "50",  5000,  17630)
+                     , (i25Lb1, "25",  2500,  8815 )
+                     , (i25Lb2, "25",  2500,  8815 )
+                     , (i10Lb1, "10",  1000,  3525 )
+                     , (i10Lb2, "10",  1000,  3525 )
+                     , (i5Lb1,  "5",   500,   1760 )
+                     , (i5Lb2,  "5",   500,   1760 )
+                     , (i1Lb1,  "1",   100,   350  )
+                     , (i1Lb2,  "1",   100,   350  )
+                     , (i1Lb3,  "1",   100,   350  )
+                     , (i1Lb4,  "1",   100,   350  )
+                     , (i1Lb5,  "1",   100,   350  ) ]
+  forM_ weightTuples $ \(weightId, lbTxt, weightWeight, weightVol) ->
+      putObj weightId
+             (Ent weightId
+                  (Just "weight")
+                  (lbTxt <> " lb weight") ""
+                  "It's a hunk of metal cut into a rounded shape."
+                  Nothing
+                  zeroBits)
+             (Obj weightWeight weightVol Nothing zeroBits Nothing)
   putObj iSlab
          (Ent iSlab
               (Just "slab")
@@ -1113,151 +999,56 @@ createAdminZone = do
   putParchment iParchment3 (Writable (Just ("Whatever you do, take care of your shoes.", DwarfLang))
                                      Nothing)
   putParchment iParchment4 (Writable (Just ("An asteroid crashed and nothing burned. It made me wonder.", CommonLang))
-                                     (Just "Zaa"))
+                                     (Just "Root"))
   putParchment iParchment5 (Writable (Just ("Toss away stuff you don't need in the end, but keep what's important and \
                                             \know who's your friend.", ElfLang))
-                                           (Just "Zaa"))
+                                           (Just "Root"))
 
   -- ==================================================
   -- Clothing:
-  let earringDesc = "It's a small, but tasteful, nondescript hoop."
-  putCloth iEar1
-           (Ent iEar1
-                (Just "earring")
-                "azure earring" ""
-                earringDesc
-                Nothing
-                zeroBits)
-           (Obj earWeight earVol Nothing zeroBits Nothing)
-           Earring
-  putCloth iEar2
-           (Ent iEar2
-                (Just "earring")
-                "crimson earring" ""
-                earringDesc
-                Nothing
-                zeroBits)
-           (Obj earWeight earVol Nothing zeroBits Nothing)
-           Earring
-  putCloth iEar3
-           (Ent iEar3
-                (Just "earring")
-                "sea green earring" ""
-                earringDesc
-                Nothing
-                zeroBits)
-           (Obj earWeight earVol Nothing zeroBits Nothing)
-           Earring
-  putCloth iEar4
-           (Ent iEar4
-                (Just "earring")
-                "onyx earring" ""
-                earringDesc
-                Nothing
-                zeroBits)
-           (Obj earWeight earVol Nothing zeroBits Nothing)
-           Earring
-  putCloth iEar5
-           (Ent iEar5
-                (Just "earring")
-                "azure earring" ""
-                earringDesc
-                Nothing
-                zeroBits)
-           (Obj earWeight earVol Nothing zeroBits Nothing)
-           Earring
-  putCloth iEar6
-           (Ent iEar6
-                (Just "earring")
-                "crimson earring" ""
-                earringDesc
-                Nothing
-                zeroBits)
-           (Obj earWeight earVol Nothing zeroBits Nothing)
-           Earring
-  putCloth iEar7
-           (Ent iEar7
-                (Just "earring")
-                "sea green earring" ""
-                earringDesc
-                Nothing
-                zeroBits)
-           (Obj earWeight earVol Nothing zeroBits Nothing)
-           Earring
-  putCloth iEar8
-           (Ent iEar8
-                (Just "earring")
-                "onyx earring" ""
-                earringDesc
-                Nothing
-                zeroBits)
-           (Obj earWeight earVol Nothing zeroBits Nothing)
-           Earring
-  let noseRingDesc = "It's a plain copper stud, intended to be worn on the nose."
-  putCloth iNoseRing1
-           (Ent iNoseRing1
-                (Just "nose")
-                "nose ring" ""
-                noseRingDesc
-                Nothing
-                zeroBits)
-           (Obj noseWeight noseVol Nothing zeroBits Nothing)
-           NoseRing
-  putCloth iNoseRing2
-           (Ent iNoseRing2
-                (Just "nose")
-                "nose ring" ""
-                noseRingDesc
-                Nothing
-                zeroBits)
-           (Obj noseWeight noseVol Nothing zeroBits Nothing)
-           NoseRing
-  putCloth iNoseRing3
-           (Ent iNoseRing3
-                (Just "nose")
-                "nose ring" ""
-                noseRingDesc
-                Nothing
-                zeroBits)
-           (Obj noseWeight noseVol Nothing zeroBits Nothing)
-           NoseRing
-  let mkNecklaceDesc x = "It's a simple " <> x <> " chain."
-  putCloth iNeck1
-           (Ent iNeck1
-                (Just "necklace")
-                "bronze necklace" ""
-                (mkNecklaceDesc "bronze")
-                Nothing
-                zeroBits)
-           (Obj neckWeight neckVol Nothing zeroBits Nothing)
-           Necklace
-  putCloth iNeck2
-           (Ent iNeck2
-                (Just "necklace")
-                "silver necklace" ""
-                (mkNecklaceDesc "silver")
-                Nothing
-                zeroBits)
-           (Obj neckWeight neckVol Nothing zeroBits Nothing)
-           Necklace
-  putCloth iNeck3
-           (Ent iNeck3
-                (Just "necklace")
-                "gold necklace" ""
-                (mkNecklaceDesc "gold")
-                Nothing
-                zeroBits)
-           (Obj neckWeight neckVol Nothing zeroBits Nothing)
-           Necklace
-  putCloth iNeck4
-           (Ent iNeck4
-                (Just "necklace")
-                "platinum necklace" ""
-                (mkNecklaceDesc "platinum")
-                Nothing
-                zeroBits)
-           (Obj neckWeight neckVol Nothing zeroBits Nothing)
-           Necklace
+  let earTuples = [ (iEar1, "azure"    )
+                  , (iEar2, "crimson"  )
+                  , (iEar3, "sea green")
+                  , (iEar4, "onyx"     )
+                  , (iEar5, "azure"    )
+                  , (iEar6, "crimson"  )
+                  , (iEar7, "sea green")
+                  , (iEar8, "onyx"     ) ]
+  forM_ earTuples $ \(earId, earTxt) ->
+      putCloth earId
+               (Ent earId
+                    (Just "earring")
+                    (earTxt <> " earring") ""
+                    "It's a small, but tasteful, nondescript hoop."
+                    Nothing
+                    zeroBits)
+               (Obj earWeight earVol Nothing zeroBits Nothing)
+               Earring
+  forM_ [ iNoseRing1, iNoseRing2, iNoseRing3 ] $ \noseRingId ->
+      putCloth noseRingId
+               (Ent noseRingId
+                    (Just "nose")
+                    "nose ring" ""
+                    "It's a plain copper stud, intended to be worn on the nose."
+                    Nothing
+                    zeroBits)
+               (Obj noseWeight noseVol Nothing zeroBits Nothing)
+               NoseRing
+  let neckTuples = [ (iNeck1, "bronze"  )
+                   , (iNeck2, "silver"  )
+                   , (iNeck3, "gold"    )
+                   , (iNeck4, "platinum") ]
+  forM_ neckTuples $ \(neckId, neckTxt) ->
+      putCloth neckId
+               (Ent neckId
+                    (Just "necklace")
+                    (neckTxt <> " necklace") ""
+                    ("It's a simple " <> neckTxt <> " chain.")
+                    Nothing
+                    zeroBits)
+               (Obj neckWeight neckVol Nothing zeroBits Nothing)
+               Necklace
+  -- TODO: Continue refactoring from here.
   let charmBraceletDesc = "The bracelet is adorned with a variety of quaint charms in the shape of musical \
                           \instruments, fashioned out of pewter."
   putCloth iBracelet1
@@ -1480,46 +1271,28 @@ createAdminZone = do
                 zeroBits)
            (Obj coatWeight coatVol Nothing zeroBits Nothing)
            Coat
-  let breechesDesc = "These thin, tight-fitting breeches extend just past the knees, where short drawstrings allow \
-                     \them to be neatly secured."
-  putCloth iBreeches1
-           (Ent iBreeches1
-                (Just "breeches")
-                "pair of knee-length yellow breeches" "pairs of knee-length yellow breeches"
-                breechesDesc
-                Nothing
-                zeroBits)
-           (Obj trousersWeight trousersVol Nothing zeroBits Nothing)
-           Trousers
-  putCloth iBreeches2
-           (Ent iBreeches2
-                (Just "breeches")
-                "pair of knee-length yellow breeches" "pairs of knee-length yellow breeches"
-                breechesDesc
-                Nothing
-                zeroBits)
-           (Obj trousersWeight trousersVol Nothing zeroBits Nothing)
-           Trousers
-  let trousersDesc = "These wool trousers are loose-fitting so as to grant uninhibited movement. A rugged hemp \
-                     \drawstring allows them to be snugly tightened at the waist."
-  putCloth iTrousers1
-           (Ent iTrousers1
-                (Just "trousers")
-                "pair of baggy beige trousers" "pairs of baggy beige trousers"
-                trousersDesc
-                Nothing
-                zeroBits)
-           (Obj trousersBaggyWeight trousersBaggyVol Nothing zeroBits Nothing)
-           Trousers
-  putCloth iTrousers2
-           (Ent iTrousers2
-                (Just "trousers")
-                "pair of baggy beige trousers" "pairs of baggy beige trousers"
-                trousersDesc
-                Nothing
-                zeroBits)
-           (Obj trousersBaggyWeight trousersBaggyVol Nothing zeroBits Nothing)
-           Trousers
+  forM_ [ iBreeches1, iBreeches2 ] $ \breechesId ->
+      putCloth breechesId
+               (Ent breechesId
+                    (Just "breeches")
+                    "pair of knee-length yellow breeches" "pairs of knee-length yellow breeches"
+                    "These thin, tight-fitting breeches extend just past the knees, where short drawstrings allow them \
+                    \to be neatly secured."
+                    Nothing
+                    zeroBits)
+               (Obj trousersWeight trousersVol Nothing zeroBits Nothing)
+               Trousers
+  forM_ [ iTrousers1, iTrousers2 ] $ \trousersId ->
+      putCloth trousersId
+               (Ent trousersId
+                    (Just "trousers")
+                    "pair of baggy beige trousers" "pairs of baggy beige trousers"
+                    "These wool trousers are loose-fitting so as to grant uninhibited movement. A rugged hemp \
+                    \drawstring allows them to be snugly tightened at the waist."
+                    Nothing
+                    zeroBits)
+               (Obj trousersBaggyWeight trousersBaggyVol Nothing zeroBits Nothing)
+               Trousers
 
   -- ==================================================
   -- Containers:
@@ -1575,30 +1348,19 @@ createAdminZone = do
          Nothing
          (Con False sackLrgCap)
   let backDesc = "The sturdy backpack is made of leather."
-  putCon iBack1
-         (Ent iBack1
-              (Just "back")
-              "backpack" ""
-              backDesc
-              Nothing
-              zeroBits)
-         (Obj backWeight backVol Nothing zeroBits Nothing)
-         []
-         mempty
-         (Just Backpack)
-         (Con True backCap)
-  putCon iBack2
-         (Ent iBack2
-              (Just "back")
-              "backpack" ""
-              backDesc
-              Nothing
-              zeroBits)
-         (Obj backWeight backVol Nothing zeroBits Nothing)
-         []
-         mempty
-         (Just Backpack)
-         (Con True backCap)
+  forM_ [ iBack1, iBack2 ] $ \backId ->
+      putCon backId
+             (Ent backId
+                  (Just "back")
+                  "backpack" ""
+                  backDesc
+                  Nothing
+                  zeroBits)
+             (Obj backWeight backVol Nothing zeroBits Nothing)
+             []
+             mempty
+             (Just Backpack)
+             (Con True backCap)
   putCon iBackSml
          (Ent iBackSml
               (Just "back")
@@ -1770,25 +1532,16 @@ createAdminZone = do
 
   -- ==================================================
   -- Weapons:
-  let swordDesc = "It's a sword; short but still sharp!"
-  putWpn iSword1
-         (Ent iSword1
-              (Just "sword")
-              "short sword" ""
-              swordDesc
-              Nothing
-              zeroBits)
-         (Obj swordWeight swordVol Nothing zeroBits Nothing)
-         (Wpn OneHanded 1 10)
-  putWpn iSword2
-         (Ent iSword2
-              (Just "sword")
-              "short sword" ""
-              swordDesc
-              Nothing
-              zeroBits)
-         (Obj swordWeight swordVol Nothing zeroBits Nothing)
-         (Wpn OneHanded 1 10)
+  forM_ [ iSword1, iSword2 ] $ \swordId ->
+      putWpn swordId
+             (Ent swordId
+                  (Just "sword")
+                  "short sword" ""
+                   "It's a sword; short but still sharp!"
+                  Nothing
+                  zeroBits)
+             (Obj swordWeight swordVol Nothing zeroBits Nothing)
+             (Wpn OneHanded 1 10)
   putWpn iLongSword
          (Ent iLongSword
               (Just "sword")
@@ -1807,25 +1560,16 @@ createAdminZone = do
               zeroBits)
          (Obj clubWeight clubVol Nothing zeroBits Nothing)
          (Wpn OneHanded 1 10)
-  let knifeDesc = "This small knife could be useful in a pinch."
-  putWpn iKnife1
-         (Ent iKnife1
-              (Just "knife")
-              "utility knife" "utility knives"
-              knifeDesc
-              Nothing
-              zeroBits)
-         (Obj knifeWeight knifeVol Nothing zeroBits Nothing)
-         (Wpn OneHanded 1 10)
-  putWpn iKnife2
-         (Ent iKnife2
-              (Just "knife")
-              "utility knife" "utility knives"
-              knifeDesc
-              Nothing
-              zeroBits)
-         (Obj knifeWeight knifeVol Nothing zeroBits Nothing)
-         (Wpn OneHanded 1 10)
+  forM_ [ iKnife1, iKnife2 ] $ \knifeId ->
+      putWpn knifeId
+             (Ent knifeId
+                  (Just "knife")
+                  "utility knife" "utility knives"
+                  "This small knife could be useful in a pinch."
+                  Nothing
+                  zeroBits)
+             (Obj knifeWeight knifeVol Nothing zeroBits Nothing)
+             (Wpn OneHanded 1 10)
 
   -- ==================================================
   -- Armor:
@@ -1849,24 +1593,16 @@ createAdminZone = do
          (Arm Head 1)
   let sandalsDesc = "These humble leather sandals offer little in the way of fashion; they will, however, adequately \
                     \protect the soles of your feet."
-  putArm iSandals1
-         (Ent iSandals1
-              (Just "sandals")
-              "pair of leather sandals" "pairs of leather sandals"
-              sandalsDesc
-              Nothing
-              zeroBits)
-         (Obj sandalsWeight sandalsVol Nothing zeroBits Nothing)
-         (Arm Feet 1)
-  putArm iSandals2
-         (Ent iSandals2
-              (Just "sandals")
-              "pair of leather sandals" "pairs of leather sandals"
-              sandalsDesc
-              Nothing
-              zeroBits)
-         (Obj sandalsWeight sandalsVol Nothing zeroBits Nothing)
-         (Arm Feet 1)
+  forM_ [ iSandals1, iSandals2 ] $ \sandalsId ->
+      putArm sandalsId
+             (Ent sandalsId
+                  (Just "sandals")
+                  "pair of leather sandals" "pairs of leather sandals"
+                  sandalsDesc
+                  Nothing
+                  zeroBits)
+             (Obj sandalsWeight sandalsVol Nothing zeroBits Nothing)
+             (Arm Feet 1)
   putArm iBoots
          (Ent iBoots
               (Just "boots")
@@ -1882,50 +1618,28 @@ createAdminZone = do
   let rockCavyDesc = "It looks like a slightly oversized guinea pig with soft, grey fur. You imagine that the rock \
                      \cavy would prefer dry, rocky areas (with low, scrubby vegetation), close to stony mountains and \
                      \hills."
-  putNpc iRockCavy1
-         (Ent iRockCavy1
-              (Just "rock")
-              "rock cavy" "rock cavies"
-              rockCavyDesc
-              Nothing
-              zeroBits)
-         []
-         mempty
-         M.empty
-         (Mob Male
-              50 50 50 50 50
-              10 10
-              10 10
-              10 10
-              10 10
-              [] Nothing
-              10 0
-              NoHand
-              []
-              iMobCloset
-              Nothing Nothing M.empty M.empty Nothing Nothing Nothing Nothing)
-  putNpc iRockCavy2
-         (Ent iRockCavy2
-              (Just "rock")
-              "rock cavy" "rock cavies"
-              rockCavyDesc
-              Nothing
-              zeroBits)
-         []
-         mempty
-         M.empty
-         (Mob Male
-              50 50 50 50 50
-              10 10
-              10 10
-              10 10
-              10 10
-              [] Nothing
-              10 0
-              NoHand
-              []
-              iMobCloset
-              Nothing Nothing M.empty M.empty Nothing Nothing Nothing Nothing)
+  forM_ [ iRockCavy1, iRockCavy2 ] $ \rockCavyId ->
+      putNpc rockCavyId
+             (Ent rockCavyId
+                  (Just "rock")
+                  "rock cavy" "rock cavies"
+                  rockCavyDesc
+                  Nothing
+                  zeroBits)
+             []
+             mempty
+             M.empty
+             (Mob Male
+                  50 50 50 50 50
+                  10 10
+                  10 10
+                  10 10
+                  10 10
+                  10 0
+                  NoHand
+                  []
+                  iMobCloset
+                  Nothing Nothing [] Nothing M.empty M.empty Nothing Nothing Nothing Nothing)
   putNpc iPidge
          (Ent iPidge
               (Just "pidge")
@@ -1946,12 +1660,11 @@ createAdminZone = do
               100 100
               100 100
               100 100
-              [] Nothing
               0 0
               RHand
               [ HobbitLang ]
               iMobCloset
-              Nothing Nothing M.empty M.empty Nothing Nothing Nothing Nothing)
+              Nothing Nothing [] Nothing M.empty M.empty Nothing Nothing Nothing Nothing)
   putCloth iPeasant'sShirt
            (Ent iPeasant'sShirt
                 (Just "shirt")
@@ -2005,9 +1718,8 @@ createAdminZone = do
                   10 10
                   10 10
                   10 10
-                  [] Nothing
                   10 0
                   RHand
                   []
                   iMobCloset
-                  Nothing Nothing M.empty M.empty Nothing Nothing Nothing Nothing)
+                  Nothing Nothing [] Nothing M.empty M.empty Nothing Nothing Nothing Nothing)

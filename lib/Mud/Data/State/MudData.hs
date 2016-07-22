@@ -494,8 +494,6 @@ data Mob = Mob { _sex                    :: Sex
                , _curMp, _maxMp          :: Int
                , _curPp, _maxPp          :: Int
                , _curFp, _maxFp          :: Int
-               , _stomach                :: [StomachCont]
-               , _digesterAsync          :: Maybe StomachAsync
                , _exp                    :: Exp
                , _lvl                    :: Lvl
                , _hand                   :: Hand
@@ -503,6 +501,8 @@ data Mob = Mob { _sex                    :: Sex
                , _rmId                   :: Id
                , _mobRmDesc              :: MobRmDesc
                , _charDesc               :: CharDesc
+               , _stomach                :: [StomachCont]
+               , _digesterAsync          :: Maybe StomachAsync
                , _feelingMap             :: FeelingMap
                , _actMap                 :: ActMap
                , _nowEating              :: Maybe NowEating
@@ -625,14 +625,14 @@ mobToJSON Mob { .. } = object [ "sex"        .= _sex
                               , "maxPp"      .= _maxPp
                               , "curFp"      .= _curFp
                               , "maxFp"      .= _maxFp
-                              , "stomach"    .= _stomach
                               , "exp"        .= _exp
                               , "lvl"        .= _lvl
                               , "hand"       .= _hand
                               , "knownLangs" .= _knownLangs
                               , "rmId"       .= _rmId
                               , "mobRmDesc"  .= _mobRmDesc
-                              , "charDesc"   .= _charDesc ]
+                              , "charDesc"   .= _charDesc
+                              , "stomach"    .= _stomach ]
 
 
 jsonToMob :: Value -> Parser Mob
@@ -650,8 +650,6 @@ jsonToMob (Object o) = Mob <$> o .: "sex"
                            <*> o .: "maxPp"
                            <*> o .: "curFp"
                            <*> o .: "maxFp"
-                           <*> o .: "stomach"
-                           <*> pure Nothing
                            <*> o .: "exp"
                            <*> o .: "lvl"
                            <*> o .: "hand"
@@ -659,6 +657,8 @@ jsonToMob (Object o) = Mob <$> o .: "sex"
                            <*> o .: "rmId"
                            <*> o .: "mobRmDesc"
                            <*> o .: "charDesc"
+                           <*> o .: "stomach"
+                           <*> pure Nothing
                            <*> pure M.empty
                            <*> pure M.empty
                            <*> pure Nothing

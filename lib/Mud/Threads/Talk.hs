@@ -103,8 +103,6 @@ adHoc mq host = do
                        , _maxMp         = 50, _curMp = 50
                        , _maxPp         = 50, _curPp = 50
                        , _maxFp         = 50, _curFp = 50
-                       , _stomach       = []
-                       , _digesterAsync = Nothing
                        , _exp           = 0
                        , _lvl           = 0
                        , _hand          = RHand
@@ -112,6 +110,8 @@ adHoc mq host = do
                        , _rmId          = iWelcome
                        , _mobRmDesc     = Nothing
                        , _charDesc      = Nothing
+                       , _stomach       = []
+                       , _digesterAsync = Nothing
                        , _feelingMap    = M.empty
                        , _actMap        = M.empty
                        , _nowEating     = Nothing
