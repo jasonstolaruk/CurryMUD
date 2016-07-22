@@ -1037,11 +1037,11 @@ emote (WithArgs i mq cols as) = getState >>= \ms ->
                 (InInv, _      ) -> sorry sorryEmoteTargetInInv
                 (InEq,  _      ) -> sorry sorryEmoteTargetInEq
                 (InRm,  target') -> case uncurry (resolveRmInvCoins i ms . pure $ target') invCoins of
-                  (_,                    [ Left [msg] ]) -> Left msg
-                  (_,                    Right  _:_    ) -> sorry sorryEmoteTargetCoins
-                  ([ Left  msg        ], _             ) -> Left msg
-                  ([ Right (_:_:_)    ], _             ) -> Left sorryEmoteExcessTargets
-                  ([ Right [targetId] ], _             ) ->
+                  (_,                    [Left [msg]]) -> Left msg
+                  (_,                    Right _:_   ) -> sorry sorryEmoteTargetCoins
+                  ([Left  msg       ], _             ) -> Left msg
+                  ([Right (_:_:_)   ], _             ) -> Left sorryEmoteExcessTargets
+                  ([Right [targetId]], _             ) ->
                       let targetSing = getSing targetId ms
                       in if not . isNpcPC targetId $ ms
                         then Left . sorryEmoteTargetType $ targetSing
@@ -2712,7 +2712,7 @@ getAvailClothSlot i ms cloth em | sexy <- getSex i ms, h <- getHand i ms =
         NoHand -> noSexHand
       NoSex  -> noSexHand
     noSexHand =   [ RingRIS, RingRMS, RingRRS, RingRPS, RingLIS, RingLMS, RingLRS, RingLPS ]
-    sorry | cloth `elem` [ Earring .. Ring ]                   = sorryReadyClothFull      . pp $ cloth
+    sorry | cloth `elem` [Earring..Ring]                       = sorryReadyClothFull      . pp $ cloth
           | cloth `elem` [ Skirt, Dress, Backpack, Cloak ]     = sorryReadyAlreadyWearing . pp $ cloth
           | ci <- em M.! clothToSlot cloth, s <- getSing ci ms = sorryReadyAlreadyWearing        s
 
@@ -2724,19 +2724,19 @@ otherSex NoSex  = Female
 
 
 rEarringSlots, lEarringSlots, noseRingSlots, necklaceSlots, rBraceletSlots, lBraceletSlots :: [Slot]
-rEarringSlots  = [ EarringR1S,    EarringR2S  ]
-lEarringSlots  = [ EarringL1S,    EarringL2S  ]
-noseRingSlots  = [ NoseRing1S,    NoseRing2S  ]
-necklaceSlots  = [ Necklace1S  .. Necklace2S  ]
-rBraceletSlots = [ BraceletR1S .. BraceletR3S ]
-lBraceletSlots = [ BraceletL1S .. BraceletL3S ]
+rEarringSlots  = [ EarringR1S, EarringR2S ]
+lEarringSlots  = [ EarringL1S, EarringL2S ]
+noseRingSlots  = [ NoseRing1S, NoseRing2S ]
+necklaceSlots  = [Necklace1S ..Necklace2S ]
+rBraceletSlots = [BraceletR1S..BraceletR3S]
+lBraceletSlots = [BraceletL1S..BraceletL3S]
 
 
 getDesigClothSlot :: MudState -> Sing -> Cloth -> EqMap -> RightOrLeft -> Either Text Slot
 getDesigClothSlot ms clothSing cloth em rol
-  | cloth `elem` [ NoseRing, Necklace ] ++ [ Shirt .. Cloak ] = sorryRol
-  | isRingRol rol, cloth /= Ring                              = sorryRol
-  | cloth == Ring, not . isRingRol $ rol                      = Left ringHelp
+  | cloth `elem` [ NoseRing, Necklace ] ++ [Shirt..Cloak] = sorryRol
+  | isRingRol rol, cloth /= Ring                          = sorryRol
+  | cloth == Ring, not . isRingRol $ rol                  = Left ringHelp
   | otherwise = case cloth of
     Earring  -> findSlotFromList rEarringSlots  lEarringSlots  |&| maybe (Left sorryEarring ) Right
     Bracelet -> findSlotFromList rBraceletSlots lBraceletSlots |&| maybe (Left sorryBracelet) Right
@@ -2964,11 +2964,11 @@ sayHelper l p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
             (InInv, _      ) -> sorry sorrySayInInv
             (InEq,  _      ) -> sorry sorrySayInEq
             (InRm,  target') -> case uncurry (resolveRmInvCoins i ms . pure $ target') invCoins of
-              (_,                    [ Left [msg] ]) -> sorry msg
-              (_,                    Right  _:_    ) -> sorry sorrySayCoins
-              ([ Left  msg        ], _             ) -> sorry msg
-              ([ Right (_:_:_)    ], _             ) -> sorry sorrySayExcessTargets
-              ([ Right [targetId] ], _             ) ->
+              (_,                    [Left [msg]]) -> sorry msg
+              (_,                    Right _:_   ) -> sorry sorrySayCoins
+              ([Left  msg       ], _             ) -> sorry msg
+              ([Right (_:_:_)   ], _             ) -> sorry sorrySayExcessTargets
+              ([Right [targetId]], _             ) ->
                   let targetDesig = serialize . mkStdDesig targetId ms $ Don'tCap
                   in if isNpcPC targetId ms
                     then parseRearAdverb |&| either sorry (sayToHelper d targetId targetDesig)
@@ -4065,11 +4065,11 @@ whisper   (WithArgs i mq cols (target:(T.unwords -> rest))) = getState >>= \ms -
                     (InInv, _      ) -> sorry sorryWhisperInInv
                     (InEq,  _      ) -> sorry sorryWhisperInEq
                     (InRm,  target') -> case uncurry (resolveRmInvCoins i ms . pure $ target') invCoins of
-                      (_,                    [ Left [msg] ]) -> sorry msg
-                      (_,                    Right  _:_    ) -> sorry sorryWhisperCoins
-                      ([ Left  msg        ], _             ) -> sorry msg
-                      ([ Right (_:_:_)    ], _             ) -> sorry sorryWhisperExcessTargets
-                      ([ Right [targetId] ], _             ) ->
+                      (_,                    [Left [msg]]) -> sorry msg
+                      (_,                    Right _:_   ) -> sorry sorryWhisperCoins
+                      ([Left  msg       ], _             ) -> sorry msg
+                      ([Right (_:_:_)   ], _             ) -> sorry sorryWhisperExcessTargets
+                      ([Right [targetId]], _             ) ->
                           let targetDesig = serialize . mkStdDesig targetId ms $ Don'tCap
                           in if isNpcPC targetId ms
                             then whispering d targetId targetDesig . formatMsg $ rest

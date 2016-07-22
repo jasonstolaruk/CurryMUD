@@ -25,7 +25,7 @@ import qualified Data.Set as S (fromList, toList)
 
 
 allValues :: (Enum a, Bounded a) => [a]
-allValues = [ minBound .. ]
+allValues = [minBound..]
 
 
 appendIfUnique :: (Eq a) => [a] -> a -> [a]

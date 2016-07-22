@@ -108,7 +108,7 @@ Use infinite lists when sensible:
 head . (\\) [0..]
 
 Derive "Enum" to use ".." in lists containing the type in question.
-myLst = [MyTypeA .. MyTypeC]
+myLst = [MyTypeA..MyTypeC]
 
 Avoid manually instantiating "Show" as a means to pretty-print your type. Instead, consider rolling your own pretty-print typeclass.
 
@@ -366,7 +366,7 @@ Map over "t a" (the "Foldable") with the "(a -> m)" function, producing monoid v
 Use "foldMap" to convert a foldable structure into a list:
 λ> myTree
 Node 0 (Node 1 (Node 3 Empty Empty) (Node 4 Empty Empty)) (Node 2 (Node 5 Empty Empty) (Node 6 Empty Empty))
-λ> F.foldMap (\x -> [x]) myTree 
+λ> F.foldMap (\x -> [x]) myTree
 [3,1,4,0,5,2,6]
 
 "foldM" is the monadic version of "foldl" (LYAH p.351):

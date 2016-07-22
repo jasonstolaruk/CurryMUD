@@ -121,7 +121,7 @@ adjustIndent n cols = n >= cols ? pred cols :? n
 
 wrapLines :: Cols -> [Text] -> [[Text]]
 wrapLines _    []                     = []
-wrapLines cols [t]                    = [ wrapIndent (noOfLeadingSpcs t) cols t ]
+wrapLines cols [t]                    = pure . wrapIndent (noOfLeadingSpcs t) cols $ t
 wrapLines cols (a:b:rest) | ()# a     = [""]     : wrapNext
                           | otherwise = helper a : wrapNext
   where

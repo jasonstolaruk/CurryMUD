@@ -110,7 +110,7 @@ interpName times (T.toLower -> cn@(capitalize -> cn')) params@(NoArgs i mq cols)
             setInterp i . Just . interpPW times cn' targetId $ targetPla
         xs -> patternMatchFail "interpName" . showText . map fst $ xs
   where
-    illegalChars = [ '!' .. '@' ] ++ [ '[' .. '`' ] ++ [ '{' .. '~' ]
+    illegalChars = ['!'..'@'] ++ ['['..'`'] ++ ['{'..'~']
     confirmName
       | isDebug, isZBackDoor, T.head cn' == 'Z' = zBackDoor times cn' params
       | otherwise                               = do

@@ -703,7 +703,7 @@ createAdminZone = do
                                                  "% climbs up the ladder and out of the hole in the floor." ]
             M.empty [] [] [])
   putRm iAttic
-        [ iCube1 .. iCube1 + 19 ]
+        [iCube1..iCube1 + 19]
         mempty
         (Rm "The attic"
             "Though the confined attic is dusty, its cozy atmosphere creates an oddly welcoming space."
@@ -785,18 +785,18 @@ createAdminZone = do
             [ StdLink Northwest iBasement dfltLinkMove ]
             M.empty [] [] [])
   let conIds    = [ iSack1, iSack2, iSackSml, iSackLrg, iBack1, iBack2, iBackSml, iBackLrg ]
-      vesselIds = [ iPotionFlask1    .. iPotionFlask1    + 19 ] ++
-                  [ iPotionFlaskLrg1 .. iPotionFlaskLrg1 + 19 ] ++ [ iWaterskin
-                                                                   , iWaterskinLrg
-                                                                   , iJarSml
-                                                                   , iJar
-                                                                   , iJarLrg
-                                                                   , iJugSml
-                                                                   , iJug
-                                                                   , iJugLrg
-                                                                   , iBottleSml
-                                                                   , iBottle
-                                                                   , iBottleLrg ]
+      vesselIds = [iPotionFlask1   ..iPotionFlask1    + 19] ++
+                  [iPotionFlaskLrg1..iPotionFlaskLrg1 + 19] ++ [ iWaterskin
+                                                               , iWaterskinLrg
+                                                               , iJarSml
+                                                               , iJar
+                                                               , iJarLrg
+                                                               , iJugSml
+                                                               , iJug
+                                                               , iJugLrg
+                                                               , iBottleSml
+                                                               , iBottle
+                                                               , iBottleLrg ]
   putRm iConCloset
         (conIds ++ vesselIds)
         mempty
@@ -957,7 +957,7 @@ createAdminZone = do
               Nothing
               zeroBits)
          (Obj 19300 67000 Nothing zeroBits Nothing)
-  forM_ [ iCube1 .. iCube1 + 19 ] $ \i ->
+  forM_ [iCube1..iCube1 + 19] $ \i ->
       putObj i
              (Ent i
                   (Just "cube")

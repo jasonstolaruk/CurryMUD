@@ -937,11 +937,11 @@ expCmd (ExpCmd ecn ect         desc)   (OneArgNubbed i mq cols target) = case ec
               (first (i `delete`) -> invCoins) = getMobRmInvCoins i ms
           in if ()!# invCoins
             then case uncurry (resolveRmInvCoins i ms . pure $ target') invCoins of
-              (_,                    [ Left  [sorryMsg] ]) -> wrapSend mq cols sorryMsg
-              (_,                    Right _:_           ) -> wrapSend mq cols sorryExpCmdCoins
-              ([ Left sorryMsg    ], _                   ) -> wrapSend mq cols sorryMsg
-              ([ Right (_:_:_)    ], _                   ) -> wrapSend mq cols adviceExpCmdExcessArgs
-              ([ Right [targetId] ], _                   ) ->
+              (_,                    [Left [sorryMsg]]) -> wrapSend mq cols sorryMsg
+              (_,                    Right _:_        ) -> wrapSend mq cols sorryExpCmdCoins
+              ([Left sorryMsg   ], _                  ) -> wrapSend mq cols sorryMsg
+              ([Right (_:_:_)   ], _                  ) -> wrapSend mq cols adviceExpCmdExcessArgs
+              ([Right [targetId]], _                  ) ->
                 let ioHelper targetDesigTxt =
                         let (toSelf', toOthers', logMsg, substitutions) = mkBindings targetDesigTxt
                             toOthersBcast = (nlnl toOthers', desigIds d \\ [ i, targetId ])

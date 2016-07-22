@@ -100,11 +100,11 @@ ansiCSI = T.pack [ ansiEsc, ansiBracket ]
 
 
 resetANSI :: Text
-resetANSI = T.pack . setSGRCode $ [Reset]
+resetANSI = T.pack . setSGRCode . pure $ Reset
 
 
 colors :: [Color]
-colors = [ Black .. White ]
+colors = [Black..White]
 
 
 intensities :: [ColorIntensity]
