@@ -418,7 +418,7 @@ getMaxMouthfuls i = view vesselMaxMouthfuls . getVessel i
 -----
 
 
-getMemberOf :: Id -> MudState -> Inv
+getMemberOf :: Id -> MudState -> Maybe Id
 getMemberOf i = view memberOf . getParty i
 
 
