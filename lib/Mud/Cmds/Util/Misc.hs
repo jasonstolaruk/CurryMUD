@@ -5,6 +5,7 @@
 module Mud.Cmds.Util.Misc ( asterisk
                           , awardExp
                           , consume
+                          , descMaybeId
                           , descSingId
                           , dispCmdList
                           , dispMatches
@@ -244,6 +245,10 @@ consume i newScs = do
 
 
 -----
+
+
+descMaybeId :: MudState -> Maybe Id -> Text
+descMaybeId ms = maybe none (`descSingId` ms)
 
 
 descSingId :: Id -> MudState -> Text

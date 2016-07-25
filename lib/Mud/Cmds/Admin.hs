@@ -706,12 +706,12 @@ examineInv i ms = let is  = getInv i ms
                   in [ "Contents: " <> noneOnNull txt ]
 
 
--- TODO: "Party".
 examineMob :: ExamineHelper
 examineMob i ms =
-    let m            = getMob i ms
-        showAttrib a = showText (getBaseAttrib a i ms) <> " " <> (parensQuote . showText . calcEffAttrib a i $ ms)
-        showPts x y  = m^.x.to showText <> " / " <> m^.y.to showText
+    let m                  = getMob i ms
+        showAttrib a       = showText (getBaseAttrib a i ms) <> " " <> (parensQuote . showText . calcEffAttrib a i $ ms)
+        showPts x y        = m^.x.to showText <> " / " <> m^.y.to showText
+        descSingIdHelper f = noneOnNull . commas . map (`descSingId` ms) . f i $ ms
     in [ "Sex: "              <> m^.sex.to pp
        , "ST: "               <> showAttrib St
        , "DX: "               <> showAttrib Dx
@@ -722,11 +722,6 @@ examineMob i ms =
        , "MP: "               <> showPts curMp maxMp
        , "PP: "               <> showPts curPp maxPp
        , "FP: "               <> showPts curFp maxFp
-       , "Stomach: "          <> m^.stomach.to ppList
-       , "Stomach ratio: "    <> let (mouths, size, perFull) = (length . getStomach i $ ms
-                                                               , calcStomachSize    i   ms
-                                                               , calcStomachPerFull i   ms) & each %~ showText
-                                 in T.concat [ mouths, " / ", size, " ", parensQuote $ perFull <> "%" ]
        , "Exp: "              <> m^.exp .to commaShow
        , "Level: "            <> m^.lvl .to showText
        , "Handedness: "       <> m^.hand.to pp
@@ -735,6 +730,15 @@ examineMob i ms =
                                  in getRmName ri ms <> " " <> parensQuote (showText ri)
        , "Room description: " <> m^.mobRmDesc.to (fromMaybe none)
        , "Char description: " <> m^.charDesc .to (fromMaybe none)
+       , "Following: "        <> descMaybeId ms (getFollowing i ms) -- TODO: How do these look?
+       , "Following me: "     <> descSingIdHelper getFollowingMe
+       , "My group: "         <> descSingIdHelper getMyGroup
+       , "Member of: "        <> descMaybeId ms (getMemberOf i ms)
+       , "Stomach: "          <> m^.stomach.to ppList
+       , "Stomach ratio: "    <> let (mouths, size, perFull) = (length . getStomach i $ ms
+                                                               , calcStomachSize    i   ms
+                                                               , calcStomachPerFull i   ms) & each %~ showText
+                                 in T.concat [ mouths, " / ", size, " ", parensQuote $ perFull <> "%" ]
        , "Feeling map: "      <> let f tag feel = (tag <> " " <> pp feel :)
                                  in noneOnNull . commas . views feelingMap (M.foldrWithKey f []) $ m
        , encHelper i ms ]
@@ -747,10 +751,6 @@ encHelper i ms = let (w, maxEnc, encPer) = (calcWeight i ms, calcMaxEnc i ms, ca
 
 examineNpc :: ExamineHelper
 examineNpc i ms = [ "Possessor: " <> (descMaybeId ms . getPossessor i $ ms) ]
-
-
-descMaybeId :: MudState -> Maybe Id -> Text
-descMaybeId ms = maybe none (`descSingId` ms)
 
 
 examineObj :: ExamineHelper
