@@ -559,7 +559,7 @@ type CharDesc = Maybe Text
 data Party = Party { _following   :: Maybe Id
                    , _followingMe :: [Id]
                    , _myGroup     :: [Id]
-                   , _memberOf    :: Maybe Id }
+                   , _memberOf    :: Maybe Id } deriving (Generic)
 
 
 type ActMap = M.Map ActType ActAsync
@@ -639,6 +639,7 @@ mobToJSON Mob { .. } = object [ "sex"        .= _sex
                               , "rmId"       .= _rmId
                               , "mobRmDesc"  .= _mobRmDesc
                               , "charDesc"   .= _charDesc
+                              , "party"      .= _party
                               , "stomach"    .= _stomach ]
 
 
@@ -664,7 +665,7 @@ jsonToMob (Object o) = Mob <$> o .: "sex"
                            <*> o .: "rmId"
                            <*> o .: "mobRmDesc"
                            <*> o .: "charDesc"
-                           <*> pure dfltParty
+                           <*> o .: "party"
                            <*> o .: "stomach"
                            <*> pure Nothing
                            <*> pure M.empty
@@ -1073,6 +1074,7 @@ instance FromJSON LinkDir
 instance FromJSON LinkMove       where parseJSON = genericParseJSON dropUnderscore
 instance FromJSON Liq            where parseJSON = genericParseJSON dropUnderscore
 instance FromJSON Noun
+instance FromJSON Party          where parseJSON = genericParseJSON dropUnderscore
 instance FromJSON PausedEffect   where parseJSON = genericParseJSON dropUnderscore
 instance FromJSON PC             where parseJSON = genericParseJSON dropUnderscore
 instance FromJSON PtsType
@@ -1112,6 +1114,7 @@ instance ToJSON LinkDir
 instance ToJSON LinkMove         where toJSON    = genericToJSON    dropUnderscore
 instance ToJSON Liq              where toJSON    = genericToJSON    dropUnderscore
 instance ToJSON Noun
+instance ToJSON Party            where toJSON    = genericToJSON    dropUnderscore
 instance ToJSON PausedEffect     where toJSON    = genericToJSON    dropUnderscore
 instance ToJSON PC               where toJSON    = genericToJSON    dropUnderscore
 instance ToJSON PtsType

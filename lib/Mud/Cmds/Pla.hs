@@ -2447,7 +2447,7 @@ handleEgress i = do
   where
     helper now ri isAdHoc s ms =
         let (ms', bs, logMsgs) = peepHelper ms s
-            ms''               = isAdHoc ? ms' :? updateHostMap (possessHelper (movePC ms' ri)) s now
+            ms''               = isAdHoc ? ms' :? updateHostMap (possessHelper . partyHelper . movePC ms' $ ri) s now
         in (ms'', (bs, logMsgs))
     peepHelper ms s =
         let (peeperIds, peepingIds) = getPeepersPeeping i ms
@@ -2484,13 +2484,14 @@ handleEgress i = do
         host           = getCurrHostName i ms
         duration       = round $ now `diffUTCTime` conTime
         conTime        = fromJust . getConnectTime i $ ms
-    possessHelper ms = let f = maybe id (\npcId -> npcTbl.ind npcId.npcPossessor .~ Nothing) . getPossessing i $ ms
-                       in ms & plaTbl.ind i.possessing .~ Nothing & f
     movePC ms ri     = ms & invTbl     .ind ri         %~ (i `delete`)
                           & invTbl     .ind iLoggedOut %~ (i :)
                           & msgQueueTbl.at  i          .~ Nothing
                           & mobTbl     .ind i.rmId     .~ iLoggedOut
                           & plaTbl     .ind i.lastRmId ?~ ri
+    partyHelper      = id -- TODO
+    possessHelper ms = let f = maybe id (\npcId -> npcTbl.ind npcId.npcPossessor .~ Nothing) . getPossessing i $ ms
+                       in ms & plaTbl.ind i.possessing .~ Nothing & f
 
 
 -----
