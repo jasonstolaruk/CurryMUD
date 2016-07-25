@@ -4,6 +4,7 @@ module Mud.Data.State.Util.Make where
 
 import Mud.Data.State.MudData
 
+import Data.Text (Text)
 import qualified Data.Map.Lazy as M (empty)
 
 
@@ -56,3 +57,41 @@ mkMob MobTemplate { .. } = Mob { _sex           = mtSex
                                , _nowDrinking   = Nothing
                                , _regenQueue    = Nothing
                                , _interp        = Nothing }
+
+
+-----
+
+
+data ObjTemplate = ObjTemplate { otWeight :: Weight
+                               , otVol    :: Vol
+                               , otTaste  :: Maybe Text
+                               , otFlags  :: Int }
+
+
+mkObj :: ObjTemplate -> Obj
+mkObj ObjTemplate { .. } = Obj { _objWeight      = otWeight
+                               , _objVol         = otVol
+                               , _objTaste       = otTaste
+                               , _objFlags       = otFlags
+                               , _objBiodegAsync = Nothing }
+
+
+-----
+
+
+data PlaTemplate = PlaTemplate { ptPlaFlags :: Int
+                               , ptLastRmId :: Id }
+
+
+mkPla :: PlaTemplate -> Pla
+mkPla PlaTemplate { .. } = Pla { _currHostName = ""
+                               , _connectTime  = Nothing
+                               , _plaFlags     = ptPlaFlags
+                               , _columns      = 80
+                               , _pageLines    = 24
+                               , _peepers      = []
+                               , _peeping      = []
+                               , _possessing   = Nothing
+                               , _retainedMsgs = []
+                               , _lastRmId     = Just ptLastRmId
+                               , _bonusTime    = Nothing }

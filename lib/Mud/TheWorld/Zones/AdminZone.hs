@@ -516,13 +516,7 @@ createAdminZone = do
          M.empty
          (M.singleton "Curry" True)
          (PC Human ["Curry"] ["Curry"] 0)
-         (Pla "" Nothing
-              (setBit adminFlags . fromEnum $ IsIncognito)
-              80 24
-              [] [] Nothing
-              []
-              (Just iLounge)
-              Nothing)
+         (mkPla . PlaTemplate (setBit adminFlags . fromEnum $ IsIncognito) $ iLounge)
   putPla iCurry
          (Ent iCurry
               Nothing
@@ -544,13 +538,7 @@ createAdminZone = do
          M.empty
          (M.singleton "Root" True)
          (PC Human ["Root"] ["Root"] 0)
-         (Pla "" Nothing
-              adminFlags
-              80 24
-              [] [] Nothing
-              []
-              (Just iLounge)
-              Nothing)
+         (mkPla . PlaTemplate adminFlags $ iLounge)
 
   -- ==================================================
   -- Rooms:
@@ -918,7 +906,7 @@ createAdminZone = do
                   "The kewpie doll is disgustingly cute."
                   Nothing
                   zeroBits)
-             (Obj dollWeight dollVol Nothing zeroBits Nothing)
+             (mkObj . ObjTemplate dollWeight dollVol Nothing $ zeroBits)
   let weightTuples = [ (i190Lb, "190", 19000, 66995)
                      , (i100Lb, "100", 10000, 35260)
                      , (i75Lb,  "75",  7500,  26445)
@@ -943,7 +931,7 @@ createAdminZone = do
                   "It's a hunk of metal cut into a rounded shape."
                   Nothing
                   zeroBits)
-             (Obj w v Nothing zeroBits Nothing)
+             (mkObj . ObjTemplate w v Nothing $ zeroBits)
   putObj iSlab
          (Ent iSlab
               (Just "slab")
@@ -951,7 +939,7 @@ createAdminZone = do
               "It's a hunk of grey rock cut into a rectangular block."
               Nothing
               zeroBits)
-         (Obj 19300 67000 Nothing zeroBits Nothing)
+         (mkObj . ObjTemplate 19300 67000 Nothing $ zeroBits)
   forM_ [iCube1..iCube1 + 19] $ \i ->
       putObj i
              (Ent i
@@ -960,7 +948,7 @@ createAdminZone = do
                   "The solid, white cube measures 6\" x 6\" x 6\"."
                   Nothing
                   zeroBits)
-             (Obj cubeWeight cubeVol Nothing zeroBits Nothing)
+             (mkObj . ObjTemplate cubeWeight cubeVol Nothing $ zeroBits)
 
   -- ==================================================
   -- Writables:
@@ -971,7 +959,7 @@ createAdminZone = do
                    "It's a rectangular piece of plain white paper."
                    Nothing
                    zeroBits)
-              (Obj paperWeight paperVol Nothing zeroBits Nothing)
+              (mkObj . ObjTemplate paperWeight paperVol Nothing $ zeroBits)
               (Writable (Just ( "CurryMud - A Multi-User Dungeon by Jason Stolaruk.\n\
                                 \Copyright (c) 2013-2016, Jason Stolaruk and Detroit Labs LLC.\n\
                                 \Version 0.1.0.0.\n\
@@ -987,7 +975,7 @@ createAdminZone = do
                                         "It's an everyday piece of parchment made from processed animal skin."
                                         Nothing
                                         zeroBits)
-                                   (Obj paperWeight paperVol Nothing zeroBits Nothing)
+                                   (mkObj . ObjTemplate paperWeight paperVol Nothing $ zeroBits)
   putParchment iParchment1 (Writable Nothing Nothing)
   putParchment iParchment2 (Writable (Just ("You've lost it! You'll never get out of this maze...", CommonLang))
                                      Nothing)
@@ -1017,7 +1005,7 @@ createAdminZone = do
                     "It's a small, but tasteful, nondescript hoop."
                     Nothing
                     zeroBits)
-               (Obj earWeight earVol Nothing zeroBits Nothing)
+               (mkObj . ObjTemplate earWeight earVol Nothing $ zeroBits)
                Earring
   forM_ [ iNoseRing1, iNoseRing2, iNoseRing3 ] $ \i ->
       putCloth i
@@ -1027,7 +1015,7 @@ createAdminZone = do
                     "It's a plain copper stud intended to be worn on the nose."
                     Nothing
                     zeroBits)
-               (Obj noseWeight noseVol Nothing zeroBits Nothing)
+               (mkObj . ObjTemplate noseWeight noseVol Nothing $ zeroBits)
                NoseRing
   let neckTuples = [ (iNeck1, "bronze"  )
                    , (iNeck2, "silver"  )
@@ -1041,7 +1029,7 @@ createAdminZone = do
                     ("It's a simple " <> t <> " chain.")
                     Nothing
                     zeroBits)
-               (Obj neckWeight neckVol Nothing zeroBits Nothing)
+               (mkObj . ObjTemplate neckWeight neckVol Nothing $ zeroBits)
                Necklace
   let charmBraceletDesc  = "The bracelet is adorned with a variety of quaint charms in the shape of musical \
                            \instruments, fashioned out of pewter."
@@ -1066,7 +1054,7 @@ createAdminZone = do
                     d
                     Nothing
                     zeroBits)
-               (Obj w braceletVol Nothing zeroBits Nothing)
+               (mkObj . ObjTemplate w braceletVol Nothing $ zeroBits)
                Bracelet
   let ringTuples = [ (iRing1, "garnet"    )
                    , (iRing2, "amethyst"  )
@@ -1085,7 +1073,7 @@ createAdminZone = do
                     ("It's a simple copper band prominently featuring a beautiful " <> t <> " stone.")
                     Nothing
                     zeroBits)
-               (Obj ringWeight ringVol Nothing zeroBits Nothing)
+               (mkObj . ObjTemplate ringWeight ringVol Nothing $ zeroBits)
                Ring
   putCloth iChemise
            (Ent iChemise
@@ -1095,7 +1083,7 @@ createAdminZone = do
                 \below the waist while its loose-cut, wide sleeves are elbow length."
                 Nothing
                 zeroBits)
-           (Obj shirtWeight shirtVol Nothing zeroBits Nothing)
+           (mkObj . ObjTemplate shirtWeight shirtVol Nothing $ zeroBits)
            Shirt
   putCloth iTunic
            (Ent iTunic
@@ -1105,7 +1093,7 @@ createAdminZone = do
                 \sleeves, and waist adds an eye-catching touch."
                 Nothing
                 zeroBits)
-           (Obj tunicHeavyWeight tunicHeavyVol Nothing zeroBits Nothing)
+           (mkObj . ObjTemplate tunicHeavyWeight tunicHeavyVol Nothing $ zeroBits)
            Shirt
   putCloth iApron
            (Ent iApron
@@ -1114,7 +1102,7 @@ createAdminZone = do
                 "This sturdy padded utility apron provides adequate protection while its wearer labors and toils."
                 Nothing
                 zeroBits)
-           (Obj apronHeavyWeight apronHeavyVol Nothing zeroBits Nothing)
+           (mkObj . ObjTemplate apronHeavyWeight apronHeavyVol Nothing $ zeroBits)
            Smock
   putCloth iTabard
            (Ent iTabard
@@ -1125,7 +1113,7 @@ createAdminZone = do
                 \around the neck complete with a small decorative yellow bowtie."
                 Nothing
                 zeroBits)
-           (Obj tabardWeight tabardVol Nothing zeroBits Nothing)
+           (mkObj . ObjTemplate tabardWeight tabardVol Nothing $ zeroBits)
            Smock
   putCloth iGreyCoat
            (Ent iGreyCoat
@@ -1135,7 +1123,7 @@ createAdminZone = do
                 \the knees, and features a tall collar followed by ten large silver buttons along its length."
                 Nothing
                 zeroBits)
-           (Obj coatHeavyWeight coatHeavyVol Nothing zeroBits Nothing)
+           (mkObj . ObjTemplate coatHeavyWeight coatHeavyVol Nothing $ zeroBits)
            Coat
   putCloth iFrockCoat
            (Ent iFrockCoat
@@ -1146,7 +1134,7 @@ createAdminZone = do
                 \particularly figure-flattering garment."
                 Nothing
                 zeroBits)
-           (Obj coatWeight coatVol Nothing zeroBits Nothing)
+           (mkObj . ObjTemplate coatWeight coatVol Nothing $ zeroBits)
            Coat
   forM_ [ iBreeches1, iBreeches2 ] $ \i ->
       putCloth i
@@ -1157,7 +1145,7 @@ createAdminZone = do
                     \to be neatly secured to the legs."
                     Nothing
                     zeroBits)
-               (Obj trousersWeight trousersVol Nothing zeroBits Nothing)
+               (mkObj . ObjTemplate trousersWeight trousersVol Nothing $ zeroBits)
                Trousers
   forM_ [ iTrousers1, iTrousers2 ] $ \i ->
       putCloth i
@@ -1168,7 +1156,7 @@ createAdminZone = do
                     \drawstring allows them to be snugly tightened at the waist."
                     Nothing
                     zeroBits)
-               (Obj trousersBaggyWeight trousersBaggyVol Nothing zeroBits Nothing)
+               (mkObj . ObjTemplate trousersBaggyWeight trousersBaggyVol Nothing $ zeroBits)
                Trousers
 
   -- ==================================================
@@ -1188,7 +1176,7 @@ createAdminZone = do
                   d
                   Nothing
                   zeroBits)
-             (Obj w v Nothing zeroBits Nothing)
+             (mkObj . ObjTemplate w v Nothing $ zeroBits)
              []
              mempty
              Nothing
@@ -1205,7 +1193,7 @@ createAdminZone = do
                   "The sturdy backpack is made of leather."
                   Nothing
                   zeroBits)
-             (Obj w v Nothing zeroBits Nothing)
+             (mkObj . ObjTemplate w v Nothing $ zeroBits)
              []
              mempty
              (Just Backpack)
@@ -1233,7 +1221,7 @@ createAdminZone = do
                      \transportation."
                      Nothing
                      zeroBits)
-                (Obj potionFlaskWeight potionFlaskVol Nothing zeroBits Nothing)
+                (mkObj . ObjTemplate potionFlaskWeight potionFlaskVol Nothing $ zeroBits)
                 mc
   forM_ (zip flaskLrgIds flaskConts) $ \(i, mc) ->
       putVessel i
@@ -1244,7 +1232,7 @@ createAdminZone = do
                      \transportation."
                      Nothing
                      zeroBits)
-                (Obj potionFlaskLrgWeight potionFlaskLrgVol Nothing zeroBits Nothing)
+                (mkObj . ObjTemplate potionFlaskLrgWeight potionFlaskLrgVol Nothing $ zeroBits)
                 mc
   let waterskinDesc = "The handy waterskin, crafted from the bladder of a bovine animal, is an indispensable piece of \
                       \equipment when it comes to travel and, often, everyday life."
@@ -1255,7 +1243,7 @@ createAdminZone = do
                  waterskinDesc
                  Nothing
                  zeroBits)
-            (Obj waterskinWeight waterskinVol Nothing zeroBits Nothing)
+            (mkObj . ObjTemplate waterskinWeight waterskinVol Nothing $ zeroBits)
             (Just (waterLiq, maxBound))
   putVessel iWaterskinLrg
             (Ent iWaterskinLrg
@@ -1264,7 +1252,7 @@ createAdminZone = do
                  (waterskinDesc <> " This waterskin is particularly large, making it suitable for long journeys.")
                  Nothing
                  zeroBits)
-            (Obj waterskinLrgWeight waterskinLrgVol Nothing zeroBits Nothing)
+            (mkObj . ObjTemplate waterskinLrgWeight waterskinLrgVol Nothing $ zeroBits)
             (Just (waterLiq, maxBound))
   putVessel iJarSml
             (Ent iJarSml
@@ -1273,7 +1261,7 @@ createAdminZone = do
                  "This versatile, small glass jar comes affixed with an airtight lid."
                  Nothing
                  zeroBits)
-            (Obj jarSmlWeight jarSmlVol Nothing zeroBits Nothing)
+            (mkObj . ObjTemplate jarSmlWeight jarSmlVol Nothing $ zeroBits)
             (Just (potHpLiq, maxBound))
   putVessel iJar
             (Ent iJar
@@ -1282,7 +1270,7 @@ createAdminZone = do
                  "This versatile glass jar comes affixed with an airtight lid."
                  Nothing
                  zeroBits)
-            (Obj jarWeight jarVol Nothing zeroBits Nothing)
+            (mkObj . ObjTemplate jarWeight jarVol Nothing $ zeroBits)
             (Just (potInstantHpLiq, maxBound))
   putVessel iJarLrg
             (Ent iJarLrg
@@ -1291,7 +1279,7 @@ createAdminZone = do
                  "This versatile, large glass jar comes affixed with an airtight lid."
                  Nothing
                  zeroBits)
-            (Obj jarLrgWeight jarLrgVol Nothing zeroBits Nothing)
+            (mkObj . ObjTemplate jarLrgWeight jarLrgVol Nothing $ zeroBits)
             (Just (potNegStLiq, maxBound))
   let jugTuples = [ (iJugSml, "small ", jugSmlWeight, jugSmlVol, potStLiq          )
                   , (iJug,     "",      jugWeight,    jugVol,    potInstantStLiq   )
@@ -1305,7 +1293,7 @@ createAdminZone = do
                      \cumbersome."
                      Nothing
                      zeroBits)
-                (Obj w v Nothing zeroBits Nothing)
+                (mkObj . ObjTemplate w v Nothing $ zeroBits)
                 (Just (l, maxBound))
   let mkBottleDesc a b = T.concat [ "This "
                                   , a
@@ -1324,7 +1312,7 @@ createAdminZone = do
                      (uncurry mkBottleDesc d)
                      Nothing
                      zeroBits)
-                (Obj w v Nothing zeroBits Nothing)
+                (mkObj . ObjTemplate w v Nothing $ zeroBits)
                 (Just (l, maxBound))
 
   -- ==================================================
@@ -1337,7 +1325,7 @@ createAdminZone = do
                    "It's a sword; short but still sharp!"
                   Nothing
                   zeroBits)
-             (Obj swordWeight swordVol Nothing zeroBits Nothing)
+             (mkObj . ObjTemplate swordWeight swordVol Nothing $ zeroBits)
              (Wpn OneHanded 1 10)
   putWpn iLongSword
          (Ent iLongSword
@@ -1346,7 +1334,7 @@ createAdminZone = do
               "With the right technique, this bulky sword can do a great deal of damage."
               Nothing
               zeroBits)
-         (Obj swordLongWeight swordLongVol Nothing zeroBits Nothing)
+         (mkObj . ObjTemplate swordLongWeight swordLongVol Nothing $ zeroBits)
          (Wpn TwoHanded 1 10)
   putWpn iClub
          (Ent iClub
@@ -1355,7 +1343,7 @@ createAdminZone = do
               "It's a crude wooden club, the type a neanderthal might use to great effect."
               Nothing
               zeroBits)
-         (Obj clubWeight clubVol Nothing zeroBits Nothing)
+         (mkObj . ObjTemplate clubWeight clubVol Nothing $ zeroBits)
          (Wpn OneHanded 1 10)
   forM_ [ iKnife1, iKnife2 ] $ \i ->
       putWpn i
@@ -1365,7 +1353,7 @@ createAdminZone = do
                   "This small knife could be useful in a pinch."
                   Nothing
                   zeroBits)
-             (Obj knifeWeight knifeVol Nothing zeroBits Nothing)
+             (mkObj . ObjTemplate knifeWeight knifeVol Nothing $ zeroBits)
              (Wpn OneHanded 1 10)
 
   -- ==================================================
@@ -1377,7 +1365,7 @@ createAdminZone = do
               "It's a simple knit cap, designed to keep your head warm in cold weather."
               Nothing
               zeroBits)
-         (Obj knitCapWeight knitCapVol Nothing zeroBits Nothing)
+         (mkObj . ObjTemplate knitCapWeight knitCapVol Nothing $ zeroBits)
          (Arm Head 1)
   putArm iHelm
          (Ent iHelm
@@ -1386,7 +1374,7 @@ createAdminZone = do
               "The functional leather helmet provides a comfortable fit."
               Nothing
               zeroBits)
-         (Obj helmLeatherWeight helmLeatherVol Nothing zeroBits Nothing)
+         (mkObj . ObjTemplate helmLeatherWeight helmLeatherVol Nothing $ zeroBits)
          (Arm Head 1)
   forM_ [ iSandals1, iSandals2 ] $ \i ->
       putArm i
@@ -1397,7 +1385,7 @@ createAdminZone = do
                   \protect the soles of your feet."
                   Nothing
                   zeroBits)
-             (Obj sandalsWeight sandalsVol Nothing zeroBits Nothing)
+             (mkObj . ObjTemplate sandalsWeight sandalsVol Nothing $ zeroBits)
              (Arm Feet 1)
   putArm iBoots
          (Ent iBoots
@@ -1406,7 +1394,7 @@ createAdminZone = do
               "These rugged, sturdy boots make excellent footwear for traveling across a variety of terrain."
               Nothing
               zeroBits)
-         (Obj bootsWeight bootsVol Nothing zeroBits Nothing)
+         (mkObj . ObjTemplate bootsWeight bootsVol Nothing $ zeroBits)
          (Arm Feet 1)
 
   -- ==================================================
@@ -1461,7 +1449,7 @@ createAdminZone = do
                 \over fashion."
                 Nothing
                 zeroBits)
-           (Obj shirtWeight shirtVol Nothing zeroBits Nothing)
+           (mkObj . ObjTemplate shirtWeight shirtVol Nothing $ zeroBits)
            Shirt
   putCloth iOveralls
            (Ent iOveralls
@@ -1470,7 +1458,7 @@ createAdminZone = do
                 "These durable overalls are adorned with a multitude of little pockets."
                 Nothing
                 zeroBits)
-           (Obj overallsWeight overallsVol Nothing zeroBits Nothing)
+           (mkObj . ObjTemplate overallsWeight overallsVol Nothing $ zeroBits)
            Trousers
   putCloth iLeatherApron
            (Ent iLeatherApron
@@ -1479,7 +1467,7 @@ createAdminZone = do
                 "This heavy apron, though bulky, is a must for those who undertake dirty and dangerous chores."
                 Nothing
                 zeroBits)
-           (Obj apronHeavyWeight apronHeavyVol Nothing zeroBits Nothing)
+           (mkObj . ObjTemplate apronHeavyWeight apronHeavyVol Nothing $ zeroBits)
            Smock
   putArm iTraveler'sBoots
          (Ent iTraveler'sBoots (Just "boots")
@@ -1487,7 +1475,7 @@ createAdminZone = do
               "These well-crafted, thigh-high boots are rugged and durable."
               Nothing
               zeroBits)
-         (Obj bootsWeight bootsVol Nothing zeroBits Nothing)
+         (mkObj . ObjTemplate bootsWeight bootsVol Nothing $ zeroBits)
          (Arm Feet 1)
   forM_ [ iSkeleton1, iSkeleton2, iSkeleton3 ] $ \i ->
       putNpc i
