@@ -2076,7 +2076,7 @@ isKnownPCSing s = case T.words s of [ "male",   _ ] -> False
                                     _               -> True
 
 
-extractMobIdsFromEiss :: MudState -> [Either Text Inv] -> [Id]
+extractMobIdsFromEiss :: MudState -> [Either Text Inv] -> Inv
 extractMobIdsFromEiss ms = foldl' helper []
   where
     helper acc Left   {}  = acc

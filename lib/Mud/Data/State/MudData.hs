@@ -557,8 +557,8 @@ type CharDesc = Maybe Text
 
 
 data Party = Party { _following   :: Maybe Id
-                   , _followingMe :: [Id]
-                   , _myGroup     :: [Id]
+                   , _followingMe :: Inv
+                   , _myGroup     :: Inv
                    , _memberOf    :: Maybe Id } deriving (Generic)
 
 

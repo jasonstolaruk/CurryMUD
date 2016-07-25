@@ -370,7 +370,7 @@ getChanIdNames i c ms = let (linkeds, nonLinkedIds) = getChanLinkeds_nonLinkedId
     sortBy (compare `on` snd) . (linkeds ++) . zip nonLinkedIds <$> mapM (updateRndmName i) nonLinkedIds
 
 
-getChanLinkeds_nonLinkedIds :: Id -> Chan -> MudState -> ([(Id, Sing)], [Id])
+getChanLinkeds_nonLinkedIds :: Id -> Chan -> MudState -> ([(Id, Sing)], Inv)
 getChanLinkeds_nonLinkedIds i c ms =
     let s                     = getSing i ms
         others                = views chanConnTbl (filter h . map g . filter f . M.toList) c
@@ -436,7 +436,7 @@ getTunedQuestionIds i ms = let pair = (getLoggedInPlaIds ms, getNonIncogLoggedIn
 -----
 
 
-happy :: MudState -> [Either Text (Text, [EmoteWord], Text)] -> (Text, Text, [Id], [Broadcast])
+happy :: MudState -> [Either Text (Text, [EmoteWord], Text)] -> (Text, Text, Inv, [Broadcast])
 happy ms xformed =
     let (toSelf, toTargets, toOthers)               = unzip3 . rights $ xformed
         targetIds                                   = nub . foldr extractIds [] $ toTargets

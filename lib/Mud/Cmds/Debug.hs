@@ -445,7 +445,7 @@ mkTblNameKeysList ms = [ ("ActiveEffects", tblKeys activeEffectsTbl ms)
                        , ("Writable",      tblKeys writableTbl      ms) ]
 
 
-tblKeys :: Optical (->) (->) (Const [Id]) MudState MudState (IM.IntMap a) (IM.IntMap a) -> MudState -> [Id]
+tblKeys :: Optical (->) (->) (Const Inv) MudState MudState (IM.IntMap a) (IM.IntMap a) -> MudState -> Inv
 tblKeys lens = views lens IM.keys
 
 

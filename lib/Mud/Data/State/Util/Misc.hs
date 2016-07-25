@@ -129,7 +129,7 @@ findInvContaining i ms = let matches = views invTbl (IM.keys . IM.filter (i `ele
 -----
 
 
-findMobIds :: MudState -> [Id] -> [Id]
+findMobIds :: MudState -> Inv -> Inv
 findMobIds ms haystack = [ i | i <- haystack
                              , uncurry (||) . ((PCType |&|) *** (NpcType |&|)) . over both (==) . dup . getType i $ ms ]
 

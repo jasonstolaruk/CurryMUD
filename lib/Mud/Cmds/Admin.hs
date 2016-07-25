@@ -706,6 +706,7 @@ examineInv i ms = let is  = getInv i ms
                   in [ "Contents: " <> noneOnNull txt ]
 
 
+-- TODO: "Party".
 examineMob :: ExamineHelper
 examineMob i ms =
     let m            = getMob i ms
@@ -1286,6 +1287,7 @@ adminSet   (WithArgs i mq cols (target:rest)) = helper |&| modifyState >=> \(toS
 adminSet p = patternMatchFail "adminSet" . showText $ p
 
 
+-- TODO: "Party"?
 setHelper :: Id -> (MudState, [Text], [Text], [Text], Funs) -> Text -> (MudState, [Text], [Text], [Text], Funs)
 setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
   | "+=" `T.isInfixOf` arg -> breakHelper AddAssign

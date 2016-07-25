@@ -286,6 +286,19 @@ getFeelingMap i = view feelingMap . getMob i
 -----
 
 
+getFollowing :: Id -> MudState -> Maybe Id
+getFollowing i = view following . getParty i
+
+
+-----
+
+
+getFollowingMe :: Id -> MudState -> Inv
+getFollowingMe i = view followingMe . getParty i
+
+
+-----
+
 getFood :: Id -> MudState -> Food
 getFood i = view (foodTbl.ind i)
 
@@ -405,6 +418,13 @@ getMaxMouthfuls i = view vesselMaxMouthfuls . getVessel i
 -----
 
 
+getMemberOf :: Id -> MudState -> Inv
+getMemberOf i = view memberOf . getParty i
+
+
+-----
+
+
 getMob :: Id -> MudState -> Mob
 getMob i = view (mobTbl.ind i)
 
@@ -463,6 +483,13 @@ getMsgQueue i = view (msgQueueTbl.ind i)
 
 getMsgQueueColumns :: Id -> MudState -> (MsgQueue, Cols)
 getMsgQueueColumns i = (getMsgQueue i *** getColumns i) . dup
+
+
+-----
+
+
+getMyGroup :: Id -> MudState -> Inv
+getMyGroup i = view myGroup . getParty i
 
 
 -----
@@ -540,6 +567,13 @@ getPausedEffects i = view (pausedEffectsTbl.ind i)
 
 getPC :: Id -> MudState -> PC
 getPC i = view (pcTbl.ind i)
+
+
+-----
+
+
+getParty :: Id -> MudState -> Party
+getParty i = view party . getMob i
 
 
 -----
