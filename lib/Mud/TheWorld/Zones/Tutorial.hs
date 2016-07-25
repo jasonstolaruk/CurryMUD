@@ -5,6 +5,7 @@ module Mud.TheWorld.Zones.Tutorial ( createTutorial
                                    , tutorialRmActionFuns ) where
 
 import Mud.Data.State.MudData
+import Mud.Data.State.Util.Make
 import Mud.Data.State.Util.Put
 import Mud.TheWorld.Misc
 import Mud.TheWorld.Zones.TutorialIds
@@ -46,7 +47,7 @@ createTutorial = do
   putRm iTutWelcome
         []
         mempty
-        (Rm "Welcome to the tutorial"
+        (mkRm (RmTemplate "Welcome to the tutorial"
             "Hello!\n\
             \There is a trash bin here."
             Nothing
@@ -56,6 +57,6 @@ createTutorial = do
             (M.fromList [ ("look", [ lookTrashHook ])
                         , ("put",  [ putTrashHook  ]) ])
             [ trashRmAction ]
-            [] [])
+            []))
 
   putRmTeleName iTutWelcome "tutorial"

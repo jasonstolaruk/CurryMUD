@@ -545,37 +545,37 @@ createAdminZone = do
   putRm iLoggedOut
         [ iRoot ]
         mempty
-        (Rm "Logged out room"
+        (mkRm (RmTemplate "Logged out room"
             "PCs are placed here when their players log out."
             Nothing
             Nothing
             zeroBits
             []
-            M.empty [] [] [])
+            M.empty [] []))
   putRm iTrashDump
         []
         mempty
-        (Rm "The trash dump"
+        (mkRm (RmTemplate "The trash dump"
             "Items deposited in magic trash bins end up here."
             Nothing
             (Just "This place sure does smell like shit.")
             zeroBits
             []
-            M.empty [] [] [])
+            M.empty [] []))
   putRm iWelcome
         []
         mempty
-        (Rm "Welcome room"
+        (mkRm (RmTemplate "Welcome room"
             "Ad-hoc PCs created for new connections are placed here."
             Nothing
             Nothing
             zeroBits
             []
-            M.empty [] [] [])
+            M.empty [] []))
   putRm iCentral
         []
         mempty
-        (Rm "Central control room"
+        (mkRm (RmTemplate "Central control room"
             "Welcome to the heart of the machine! Sprawled about this dome-shaped, white room is a cluster of \
             \electronic displays and control panels, used by the admins to monitor and supervise the daily operations \
             \of CurryMUD.\n\
@@ -590,32 +590,31 @@ createAdminZone = do
                         , ("put",  [ putTrashHook                      ])
                         , ("read", [ readLookPosterHook                ]) ])
             [ trashRmAction ]
-            [ beepRmFunName ]
-            [])
+            [ beepRmFunName ]))
   putRm iHallwayWest
         []
         mempty
-        (Rm "Hallway"
+        (mkRm (RmTemplate "Hallway"
             "You are in a wide hallway leading east. A door to the west opens into the central control room."
             Nothing
             Nothing
             zeroBits
             [ StdLink West iCentral dfltLinkMove, StdLink East iHallwayEast dfltLinkMove ]
-            M.empty [] [] [])
+            M.empty [] []))
   putRm iHallwayEast
         []
         mempty
-        (Rm "Hallway"
+        (mkRm (RmTemplate "Hallway"
             "You are in a wide hallway leading west. To your east, the hallway opens up into an atrium."
             Nothing
             Nothing
             zeroBits
             [ StdLink West iHallwayWest dfltLinkMove, StdLink East iAtrium dfltLinkMove ]
-            M.empty [] [] [])
+            M.empty [] []))
   putRm iAtrium
         []
         mempty
-        (Rm "The atrium"
+        (mkRm (RmTemplate "The atrium"
             "The large, airy atrium is sparsely furnished so as to accentuate its open feel. The focal point of the \
             \atrium is a shallow pool positioned directly under a large opening in the ceiling, allowing the pool to \
             \freely collect rainwater. At each corner of the square pool, a marble column purposefully rises up to \
@@ -633,12 +632,11 @@ createAdminZone = do
                         , ("look",  [ lookFlowerbedHook  ])
                         , ("smell", [ smellFlowerbedHook ]) ])
             [ pickRmAction     ]
-            [ beeBuzzRmFunName ]
-            [])
+            [ beeBuzzRmFunName ]))
   putRm iBasement
         []
         mempty
-        (Rm "The basement"
+        (mkRm (RmTemplate "The basement"
             "This dusty, unfinished basement smells of mold. You spot several cobwebs hanging from the ceiling.\n\
             \Eight doors are positioned about the round, stucco wall at even intervals. A spiral staircase leads up. \
             \Next to the staircase lies an open manhole."
@@ -656,7 +654,7 @@ createAdminZone = do
             , StdLink Northwest iMobCloset   dfltLinkMove
             , StdLink Up        iCentral     dfltLinkMove
             , NonStdLink "manhole" iVoid dfltLinkMove "% climbs into the manhole." "% climbs out of the manhole." ]
-            M.empty [] [] [])
+            M.empty [] []))
   putRm iWeightRm
         [ i190Lb
         , i100Lb
@@ -676,7 +674,7 @@ createAdminZone = do
         , i1Lb5
         , iSlab ]
         mempty
-        (Rm "Weight closet"
+        (mkRm (RmTemplate "Weight closet"
             "This closet holds weights."
             Nothing
             Nothing
@@ -684,38 +682,38 @@ createAdminZone = do
             [ StdLink South iBasement dfltLinkMove
             , NonStdLink "u" iAttic dfltLinkMove "% climbs up the ladder and into the hole in the ceiling."
                                                  "% climbs up the ladder and out of the hole in the floor." ]
-            M.empty [] [] [])
+            M.empty [] []))
   putRm iAttic
         [iCube1..iCube1 + 19]
         mempty
-        (Rm "The attic"
+        (mkRm (RmTemplate "The attic"
             "Though the confined attic is dusty, its cozy atmosphere creates an oddly welcoming space."
             (Just "Is that the soft squeek of a mouse you hear? Maybe you're just hearing things...")
             (Just "The air here is dusty and a little stale, though not stifling.")
             zeroBits
             [ NonStdLink "d" iWeightRm dfltLinkMove "% climbs down the ladder and into the hole in the floor."
                                                     "% climbs down the ladder and out of the hole in the ceiling." ]
-            M.empty [] [] [])
+            M.empty [] []))
   putRm iObjCloset
         [ iKewpie1, iKewpie2, iPaperSml, iParchment1, iParchment2, iParchment3, iParchment4, iParchment5 ]
         mempty
-        (Rm "Object closet"
+        (mkRm (RmTemplate "Object closet"
             "This closet holds objects."
             Nothing
             Nothing
             zeroBits
             [ StdLink Southwest iBasement dfltLinkMove ]
-            M.empty [] [] [])
+            M.empty [] []))
   putRm iClothCloset
         [ iChemise, iTunic, iApron, iTabard, iGreyCoat, iFrockCoat, iBreeches1, iBreeches2, iTrousers1, iTrousers2 ]
         mempty
-        (Rm "Clothing closet"
+        (mkRm (RmTemplate "Clothing closet"
             "This closet holds clothing."
             Nothing
             Nothing
             zeroBits
             [ StdLink West iBasement dfltLinkMove, StdLink Down iAccessoriesCloset dfltLinkMove ]
-            M.empty [] [] [])
+            M.empty [] []))
   putRm iAccessoriesCloset
         [ iEar1
         , iEar2
@@ -750,23 +748,23 @@ createAdminZone = do
         , iRing8
         , iRing9 ]
         mempty
-        (Rm "Accessories closet"
+        (mkRm (RmTemplate "Accessories closet"
             "This closet holds accessories."
             Nothing
             Nothing
             zeroBits
             [ StdLink Up iClothCloset dfltLinkMove ]
-            M.empty [] [] [])
+            M.empty [] []))
   putRm iCoinsCloset
         []
         (Coins (100, 100, 100))
-        (Rm "Coin closet"
+        (mkRm (RmTemplate "Coin closet"
             "This closet holds coins."
             Nothing
             Nothing
             zeroBits
             [ StdLink Northwest iBasement dfltLinkMove ]
-            M.empty [] [] [])
+            M.empty [] []))
   let conIds    = [ iSack1, iSack2, iSackSml, iSackLrg, iBack1, iBack2, iBackSml, iBackLrg ]
       vesselIds = [iPotionFlask1   ..iPotionFlask1    + 19] ++
                   [iPotionFlaskLrg1..iPotionFlaskLrg1 + 19] ++ [ iWaterskin
@@ -783,49 +781,49 @@ createAdminZone = do
   putRm iConCloset
         (conIds ++ vesselIds)
         mempty
-        (Rm "Container closet"
+        (mkRm (RmTemplate "Container closet"
             "This closet holds containers."
             Nothing
             Nothing
             zeroBits
             [ StdLink North iBasement dfltLinkMove ]
-            M.empty [] [] [])
+            M.empty [] []))
   putRm iWpnCloset
         [ iSword1, iSword2, iLongSword, iClub, iKnife1, iKnife2 ]
         mempty
-        (Rm "Weapon closet"
+        (mkRm (RmTemplate "Weapon closet"
             "This closet holds weapons."
             Nothing
             Nothing
             zeroBits
             [ StdLink Northeast iBasement dfltLinkMove ]
-            M.empty [] [] [])
+            M.empty [] []))
   putRm iArmCloset
         [ iCap, iHelm, iSandals1, iSandals2, iBoots ]
         mempty
-        (Rm "Armor closet"
+        (mkRm (RmTemplate "Armor closet"
             "This closet holds armor."
             Nothing
             Nothing
             zeroBits
             [ StdLink East iBasement dfltLinkMove ]
-            M.empty [] [] [])
+            M.empty [] []))
   putRm iMobCloset
         [ iRockCavy1, iRockCavy2, iPidge, iSkeleton1, iSkeleton2, iSkeleton3 ]
         mempty
-        (Rm "Mob closet"
+        (mkRm (RmTemplate "Mob closet"
             "This closet holds mobs."
             Nothing
             Nothing
             zeroBits
             [ StdLink Southeast iBasement dfltLinkMove ]
-            M.empty [] [] [])
+            M.empty [] []))
   let voidListen = Just "It's eerily silent here."
       voidSmell  = Just "Strangely, the air here is utterly devoid of scent."
   putRm iVoid
         []
         mempty
-        (Rm "The void"
+        (mkRm (RmTemplate "The void"
             "You have stumbled into a vast, empty space. You are floating.\n\
             \An open manhole hovers above you. You see a colorful round shape some distance off to the north, while to \
             \the south a door floats innocuously."
@@ -835,11 +833,11 @@ createAdminZone = do
             [ StdLink North iTutEntrance    dfltLinkMove
             , StdLink South iLoungeEntrance dfltLinkMove
             , NonStdLink "manhole" iBasement dfltLinkMove "% climbs into the manhole." "% climbs out of the manhole." ]
-            M.empty [] [] [])
+            M.empty [] []))
   putRm iTutEntrance
         []
         mempty
-        (Rm "The portal"
+        (mkRm (RmTemplate "The portal"
             "Floating before you is a large round portal in which dazzling shapes and colors spin and dance. You feel \
             \a peculiar pulling sensation in your abdomen, as if the portal is attempting to draw you towards itself.\n\
             \A wooden sign is suspended above the portal."
@@ -851,11 +849,11 @@ createAdminZone = do
                                                            "% arrives in the tutorial." ]
             (M.fromList [ ("look", [ readLookSign_iTutEntranceHook, readLookPaperHook ])
                         , ("read", [ readLookSign_iTutEntranceHook, readLookPaperHook ]) ])
-            [] [] [])
+            [] []))
   putRm iLoungeEntrance
         []
         mempty
-        (Rm "The floating door"
+        (mkRm (RmTemplate "The floating door"
             "Floating before you is a polished wooden door surrounded by featureless white trimming. Hanging from a \
             \nail affixed to the door is a small sign reading, \"Admin Lounge.\""
             voidListen
@@ -863,21 +861,21 @@ createAdminZone = do
             zeroBits
             [ StdLink North iVoid dfltLinkMove
             , NonStdLink "lounge" iLounge dfltLinkMove "% enters the lounge." "% enters the lounge." ]
-            M.empty [] [] [])
+            M.empty [] []))
   putRm iLounge
         []
         mempty
-        (Rm "The admin lounge"
+        (mkRm (RmTemplate "The admin lounge"
             "Welcome, admin! This is your private space where you can relax and take it easy."
             Nothing
             (Just "There is a lingering scent of pipe tobacco in the air.")
             zeroBits
             [ NonStdLink "out" iLoungeEntrance dfltLinkMove "% exits the lounge." "% exits the lounge." ]
-            M.empty [] [] [])
+            M.empty [] []))
   putRm iEmpty
         []
         mempty
-        (Rm "The empty room"
+        (mkRm (RmTemplate "The empty room"
             "This small room is strikingly barren. There doesn't even seem to be a door on any of its white walls, \
             \though you can't miss the small wooden sign affixed to the north wall."
             Nothing
@@ -886,7 +884,7 @@ createAdminZone = do
             []
             (M.fromList [ ("look", [ readLookSign_iEmptyHook, lookWallsHook, lookCeilingHook ])
                         , ("read", [ readLookSign_iEmptyHook                                 ]) ])
-            [] [] [])
+            [] []))
 
   -- ==================================================
   -- Room teleport names:

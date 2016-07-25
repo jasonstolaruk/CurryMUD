@@ -95,3 +95,30 @@ mkPla PlaTemplate { .. } = Pla { _currHostName = ""
                                , _retainedMsgs = []
                                , _lastRmId     = Just ptLastRmId
                                , _bonusTime    = Nothing }
+
+
+-----
+
+
+data RmTemplate = RmTemplate { rtName      :: Text
+                             , rtDesc      :: Text
+                             , rtListen    :: Maybe Text
+                             , rtSmell     :: Maybe Text
+                             , rtFlags     :: Int
+                             , rtLinks     :: [RmLink]
+                             , rtHookMap   :: HookMap
+                             , rtActions   :: [RmAction]
+                             , rtFunNames  :: [FunName] }
+
+
+mkRm :: RmTemplate -> Rm
+mkRm RmTemplate { .. } = Rm { _rmName      = rtName
+                            , _rmDesc      = rtDesc
+                            , _rmListen    = rtListen
+                            , _rmSmell     = rtSmell
+                            , _rmFlags     = rtFlags
+                            , _rmLinks     = rtLinks
+                            , _rmHookMap   = rtHookMap
+                            , _rmActions   = rtActions
+                            , _rmFunNames  = rtFunNames
+                            , _rmFunAsyncs = [] } 
