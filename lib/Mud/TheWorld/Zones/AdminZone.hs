@@ -15,6 +15,7 @@ import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Calc
 import Mud.Data.State.Util.Get
+import Mud.Data.State.Util.Make
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.New
 import Mud.Data.State.Util.Put
@@ -504,17 +505,14 @@ createAdminZone = do
          []
          mempty
          M.empty
-         (Mob Male
-              50 50 50 50 50
-              100 100
-              100 100
-              100 100
-              100 100
-              0 0
-              RHand
-              allValues
-              iLoggedOut
-              Nothing Nothing [] Nothing M.empty M.empty Nothing Nothing Nothing Nothing)
+         (mkMob (MobTemplate Male
+                             50 50 50 50 50
+                             100 100 100 100
+                             0 0
+                             RHand
+                             allValues
+                             iLoggedOut
+                             dfltParty))
          M.empty
          (M.singleton "Curry" True)
          (PC Human ["Curry"] ["Curry"] 0)
@@ -535,17 +533,14 @@ createAdminZone = do
          []
          mempty
          M.empty
-         (Mob Male
-              50 50 50 50 50
-              100 100
-              100 100
-              100 100
-              100 100
-              0 0
-              RHand
-              allValues
-              iLoggedOut
-              Nothing Nothing [] Nothing M.empty M.empty Nothing Nothing Nothing Nothing)
+         (mkMob (MobTemplate Male
+                             50 50 50 50 50
+                             100 100 100 100
+                             0 0
+                             RHand
+                             allValues
+                             iLoggedOut
+                             dfltParty))
          M.empty
          (M.singleton "Root" True)
          (PC Human ["Root"] ["Root"] 0)
@@ -1428,17 +1423,14 @@ createAdminZone = do
              []
              mempty
              M.empty
-             (Mob Male
-                  50 50 50 50 50
-                  10 10
-                  10 10
-                  10 10
-                  10 10
-                  10 0
-                  NoHand
-                  []
-                  iMobCloset
-                  Nothing Nothing [] Nothing M.empty M.empty Nothing Nothing Nothing Nothing)
+             (mkMob (MobTemplate Male
+                    50 50 50 50 50
+                    10 10 10 10
+                    10 0
+                    NoHand
+                    []
+                    iMobCloset
+                    dfltParty))
   putNpc iPidge
          (Ent iPidge
               (Just "pidge")
@@ -1453,17 +1445,14 @@ createAdminZone = do
                      , (SmockS,    iLeatherApron   )
                      , (TrousersS, iOveralls       )
                      , (FeetS,     iTraveler'sBoots) ])
-         (Mob Female
-              50 50 50 50 50
-              100 100
-              100 100
-              100 100
-              100 100
-              0 0
-              RHand
-              [ HobbitLang ]
-              iMobCloset
-              Nothing Nothing [] Nothing M.empty M.empty Nothing Nothing Nothing Nothing)
+         (mkMob (MobTemplate Female
+                             50 50 50 50 50
+                             100 100 100 100
+                             0 0
+                             RHand
+                             [ HobbitLang ]
+                             iMobCloset
+                             dfltParty))
   putCloth iPeasant'sShirt
            (Ent iPeasant'sShirt
                 (Just "shirt")
@@ -1511,14 +1500,11 @@ createAdminZone = do
              []
              mempty
              M.empty
-             (Mob NoSex
-                  50 50 50 50 50
-                  10 10
-                  10 10
-                  10 10
-                  10 10
-                  10 0
-                  RHand
-                  []
-                  iMobCloset
-                  Nothing Nothing [] Nothing M.empty M.empty Nothing Nothing Nothing Nothing)
+             (mkMob (MobTemplate NoSex
+                    50 50 50 50 50
+                    10 10 10 10
+                    10 0
+                    RHand
+                    []
+                    iMobCloset
+                    dfltParty))

@@ -501,6 +501,7 @@ data Mob = Mob { _sex                    :: Sex
                , _rmId                   :: Id
                , _mobRmDesc              :: MobRmDesc
                , _charDesc               :: CharDesc
+               , _party                  :: Party
                , _stomach                :: [StomachCont]
                , _digesterAsync          :: Maybe StomachAsync
                , _feelingMap             :: FeelingMap
@@ -553,6 +554,12 @@ type MobRmDesc = Maybe Text
 
 
 type CharDesc = Maybe Text
+
+
+data Party = Party { _following   :: Maybe Id
+                   , _followingMe :: [Id]
+                   , _myGroup     :: [Id]
+                   , _memberOf    :: Maybe Id }
 
 
 type ActMap = M.Map ActType ActAsync
@@ -657,6 +664,7 @@ jsonToMob (Object o) = Mob <$> o .: "sex"
                            <*> o .: "rmId"
                            <*> o .: "mobRmDesc"
                            <*> o .: "charDesc"
+                           <*> pure dfltParty
                            <*> o .: "stomach"
                            <*> pure Nothing
                            <*> pure M.empty
@@ -666,6 +674,10 @@ jsonToMob (Object o) = Mob <$> o .: "sex"
                            <*> pure Nothing
                            <*> pure Nothing
 jsonToMob _          = empty
+
+
+dfltParty :: Party
+dfltParty = Party Nothing [] [] Nothing
 
 
 -- ==================================================
@@ -1144,6 +1156,7 @@ makeLenses ''MudData
 makeLenses ''MudState
 makeLenses ''Npc
 makeLenses ''Obj
+makeLenses ''Party
 makeLenses ''PausedEffect
 makeLenses ''PC
 makeLenses ''Pla

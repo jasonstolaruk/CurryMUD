@@ -110,6 +110,7 @@ adHoc mq host = do
                        , _rmId          = iWelcome
                        , _mobRmDesc     = Nothing
                        , _charDesc      = Nothing
+                       , _party         = dfltParty
                        , _stomach       = []
                        , _digesterAsync = Nothing
                        , _feelingMap    = M.empty

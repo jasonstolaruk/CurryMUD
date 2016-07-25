@@ -61,6 +61,7 @@ library
                        Mud.Data.State.Util.Get
                        Mud.Data.State.Util.Hierarchy
                        Mud.Data.State.Util.Lang
+                       Mud.Data.State.Util.Make
                        Mud.Data.State.Util.Misc
                        Mud.Data.State.Util.New
                        Mud.Data.State.Util.Output
