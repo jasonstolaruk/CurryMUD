@@ -1325,6 +1325,7 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
                       , "mobrmdesc"
                       , "chardesc"
                       , "following"
+                      , "memberof"
                       , "race"
                       , "introduced"
                       , "linked"
@@ -1353,6 +1354,7 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
                                "mobrmdesc"  -> setMobRmDescHelper     t
                                "chardesc"   -> setMobCharDescHelper   t
                                "following"  -> setMobFollowingHelper  t
+                               "memberof"   -> setMobMemberOfHelper   t
                                "race"       -> setPCRaceHelper        t
                                "introduced" -> setPCSingListHelper    t "introduced" "known names"  introduced introduced
                                "linked"     -> setPCSingListHelper    t "linked"     "linked names" linked     linked
@@ -1555,6 +1557,23 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
                             isDiff   = x /= prev
                             toTarget = pure . T.concat $ [ "You are now following ", maybe none (`getSing` ms) x, "." ]
                         in a & _1.mobTbl.ind targetId.party.following .~ x
+                             & _2 <>~ toSelf
+                             & _3 <>~ (isDiff |?| toTarget)
+                             & _4 <>~ (isDiff |?| toSelf)
+              _      -> sorryOp "following"
+        -----
+        setMobMemberOfHelper t
+          | not . hasMob $ t = sorryType
+          | otherwise        = case eitherDecode value' of
+            Left  _ -> appendMsg . sorryAdminSetValue "memberOf" $ value
+            Right x -> case op of
+              Assign -> let toSelf   = pure . T.concat $ [ "Set memberOf to ", descMaybeSingId x ms, mkDiffTxt isDiff, "." ]
+                            prev     = getMemberOf targetId ms
+                            isDiff   = x /= prev
+                            toTarget = pure $ case x of
+                                         Nothing -> "Your group membership has been set to none."
+                                         Just i' -> "You are now a member of " <> getSing i' ms <> "'s group."
+                        in a & _1.mobTbl.ind targetId.party.memberOf .~ x
                              & _2 <>~ toSelf
                              & _3 <>~ (isDiff |?| toTarget)
                              & _4 <>~ (isDiff |?| toSelf)
