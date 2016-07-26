@@ -1325,6 +1325,8 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
                       , "mobrmdesc"
                       , "chardesc"
                       , "following"
+                      , "followingme"
+                      , "mygroup"
                       , "memberof"
                       , "race"
                       , "introduced"
@@ -1333,33 +1335,35 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
         notFound    = appendMsg . sorryAdminSetKey $ key
         appendMsg m = a & _2 <>~ pure m
         found       = let t = getType targetId ms
-                      in \case "entname"    -> setEntMaybeTextHelper  t "entName"  "name"        entName  entName
-                               "sing"       -> setEntTextHelper       t "sing"     "singular"    sing     sing
-                               "plur"       -> setEntTextHelper       t "plur"     "plural"      plur     plur
-                               "entdesc"    -> setEntTextHelper       t "entDesc"  "description" entDesc  entDesc
-                               "entsmell"   -> setEntMaybeTextHelper  t "entSmell" "smell"       entSmell entSmell
-                               "sex"        -> setMobSexHelper        t
-                               "st"         -> setMobAttribHelper     t "st" "ST" st st
-                               "dx"         -> setMobAttribHelper     t "dx" "DX" dx dx
-                               "ht"         -> setMobAttribHelper     t "ht" "HT" ht ht
-                               "ma"         -> setMobAttribHelper     t "ma" "MA" ma ma
-                               "ps"         -> setMobAttribHelper     t "ps" "PS" ps ps
-                               "curhp"      -> setMobCurHelper        t "curHp" "HP" getHps curHp
-                               "curmp"      -> setMobCurHelper        t "curMp" "MP" getMps curMp
-                               "curpp"      -> setMobCurHelper        t "curPp" "PP" getPps curPp
-                               "curfp"      -> setMobCurHelper        t "curFp" "FP" getFps curFp
-                               "exp"        -> setMobExpHelper        t
-                               "hand"       -> setMobHandHelper       t
-                               "knownlangs" -> setMobKnownLangsHelper t
-                               "mobrmdesc"  -> setMobRmDescHelper     t
-                               "chardesc"   -> setMobCharDescHelper   t
-                               "following"  -> setMobFollowingHelper  t
-                               "memberof"   -> setMobMemberOfHelper   t
-                               "race"       -> setPCRaceHelper        t
-                               "introduced" -> setPCSingListHelper    t "introduced" "known names"  introduced introduced
-                               "linked"     -> setPCSingListHelper    t "linked"     "linked names" linked     linked
-                               "skillpts"   -> setPCSkillPtsHelper    t
-                               x            -> patternMatchFail "setHelper helper found" (x :: Text)
+                      in \case "entname"     -> setEntMaybeTextHelper   t "entName"  "name"        entName  entName
+                               "sing"        -> setEntTextHelper        t "sing"     "singular"    sing     sing
+                               "plur"        -> setEntTextHelper        t "plur"     "plural"      plur     plur
+                               "entdesc"     -> setEntTextHelper        t "entDesc"  "description" entDesc  entDesc
+                               "entsmell"    -> setEntMaybeTextHelper   t "entSmell" "smell"       entSmell entSmell
+                               "sex"         -> setMobSexHelper         t
+                               "st"          -> setMobAttribHelper      t "st" "ST" st st
+                               "dx"          -> setMobAttribHelper      t "dx" "DX" dx dx
+                               "ht"          -> setMobAttribHelper      t "ht" "HT" ht ht
+                               "ma"          -> setMobAttribHelper      t "ma" "MA" ma ma
+                               "ps"          -> setMobAttribHelper      t "ps" "PS" ps ps
+                               "curhp"       -> setMobCurHelper         t "curHp" "HP" getHps curHp
+                               "curmp"       -> setMobCurHelper         t "curMp" "MP" getMps curMp
+                               "curpp"       -> setMobCurHelper         t "curPp" "PP" getPps curPp
+                               "curfp"       -> setMobCurHelper         t "curFp" "FP" getFps curFp
+                               "exp"         -> setMobExpHelper         t
+                               "hand"        -> setMobHandHelper        t
+                               "knownlangs"  -> setMobKnownLangsHelper  t
+                               "mobrmdesc"   -> setMobRmDescHelper      t
+                               "chardesc"    -> setMobCharDescHelper    t
+                               "following"   -> setMobFollowingHelper   t
+                               "followingme" -> setMobFollowingMeHelper t
+                               "mygroup"     -> setMobMyGroupHelper     t
+                               "memberof"    -> setMobMemberOfHelper    t
+                               "race"        -> setPCRaceHelper         t
+                               "introduced"  -> setPCSingListHelper     t "introduced" "known names"  introduced introduced
+                               "linked"      -> setPCSingListHelper     t "linked"     "linked names" linked     linked
+                               "skillpts"    -> setPCSkillPtsHelper     t
+                               x             -> patternMatchFail "setHelper helper found" (x :: Text)
         -----
         setEntMaybeTextHelper t k n getter setter
           | not . hasEnt $ t = sorryType
@@ -1561,6 +1565,10 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
                              & _3 <>~ (isDiff |?| toTarget)
                              & _4 <>~ (isDiff |?| toSelf)
               _      -> sorryOp "following"
+        -----
+        setMobFollowingMeHelper _ = undefined -- TODO
+        -----
+        setMobMyGroupHelper _ = undefined -- TODO
         -----
         setMobMemberOfHelper t
           | not . hasMob $ t = sorryType
