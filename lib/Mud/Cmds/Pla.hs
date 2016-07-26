@@ -2447,7 +2447,8 @@ handleEgress i = do
   where
     helper now ri isAdHoc s ms =
         let (ms', bs, logMsgs) = peepHelper ms s
-            ms''               = isAdHoc ? ms' :? updateHostMap (possessHelper . partyHelper . movePC ms' $ ri) s now
+            p                  = getParty i ms
+            ms''               = isAdHoc ? ms' :? updateHostMap (possessHelper . partyHelper p . movePC ms' $ ri) s now
         in (ms'', (bs, logMsgs))
     peepHelper ms s =
         let (peeperIds, peepingIds) = getPeepersPeeping i ms
@@ -2489,7 +2490,20 @@ handleEgress i = do
                           & msgQueueTbl.at  i          .~ Nothing
                           & mobTbl     .ind i.rmId     .~ iLoggedOut
                           & plaTbl     .ind i.lastRmId ?~ ri
-    partyHelper      = id -- TODO
+    partyHelper p = memberOfHelper . myGroupHelper . followingMeHelper . followingHelper
+      where
+        followingHelper ms' = views following (maybe ms' f) p
+          where
+            f followingId = ms' & mobTbl.ind i          .party.following   .~ Nothing
+                                & mobTbl.ind followingId.party.followingMe %~ delete i
+        followingMeHelper ms' = (mobTbl.ind i.party.followingMe .~ []) . foldr f ms' $ p^.followingMe
+          where
+            f followingMeId = mobTbl.ind followingMeId.party.following .~ Nothing
+        myGroupHelper      = mobTbl.ind i.party.myGroup .~ []
+        memberOfHelper ms' = views memberOf (maybe ms' f) p
+          where
+            f memberOfId = ms' & mobTbl.ind i         .party.memberOf .~ Nothing
+                               & mobTbl.ind memberOfId.party.myGroup  %~ delete i
     possessHelper ms = let f = maybe id (\npcId -> npcTbl.ind npcId.npcPossessor .~ Nothing) . getPossessing i $ ms
                        in ms & plaTbl.ind i.possessing .~ Nothing & f
 
