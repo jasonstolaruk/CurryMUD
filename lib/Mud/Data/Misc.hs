@@ -448,7 +448,7 @@ instance Pretty RightOrLeft where
 instance Pretty Sex where
   pp Male   = "male"
   pp Female = "female"
-  pp NoSex  = "none"
+  pp NoSex  = none
 
 
 instance Pretty Slot where

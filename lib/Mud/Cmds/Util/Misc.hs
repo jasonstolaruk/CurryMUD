@@ -6,6 +6,7 @@ module Mud.Cmds.Util.Misc ( asterisk
                           , awardExp
                           , consume
                           , descMaybeId
+                          , descMaybeSingId
                           , descSingId
                           , dispCmdList
                           , dispMatches
@@ -247,12 +248,17 @@ consume i newScs = do
 -----
 
 
+descSingId :: Id -> MudState -> Text
+descSingId i ms = quoteWith' (getSing i ms, parensQuote . showText $ i) " "
+
+
 descMaybeId :: MudState -> Maybe Id -> Text
 descMaybeId ms = maybe none (`descSingId` ms)
 
 
-descSingId :: Id -> MudState -> Text
-descSingId i ms = quoteWith' (getSing i ms, parensQuote . showText $ i) " "
+descMaybeSingId :: Maybe Id -> MudState -> Text
+descMaybeSingId Nothing  _  = none
+descMaybeSingId (Just x) ms = descSingId x ms
 
 
 -----

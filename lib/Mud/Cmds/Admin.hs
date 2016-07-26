@@ -823,7 +823,7 @@ examineVessel i ms = let v = getVessel i ms in
     [ "Max mouthfuls: "   <> v^.vesselMaxMouthfuls.to showText
     , "Vessel contents: " <> v^.vesselCont        .to (descCont v) ] ++ views vesselCont (maybe [] (descLiq . fst)) v
   where
-    descCont _ Nothing       = "none"
+    descCont _ Nothing       = none
     descCont v (Just (l, m)) = T.concat [ showText m
                                         , " mouthfuls of "
                                         , renderLiqNoun l aOrAn
@@ -1287,7 +1287,6 @@ adminSet   (WithArgs i mq cols (target:rest)) = helper |&| modifyState >=> \(toS
 adminSet p = patternMatchFail "adminSet" . showText $ p
 
 
--- TODO: "Party"?
 setHelper :: Id -> (MudState, [Text], [Text], [Text], Funs) -> Text -> (MudState, [Text], [Text], [Text], Funs)
 setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
   | "+=" `T.isInfixOf` arg -> breakHelper AddAssign
@@ -1325,6 +1324,7 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
                       , "knownlangs"
                       , "mobrmdesc"
                       , "chardesc"
+                      , "following"
                       , "race"
                       , "introduced"
                       , "linked"
@@ -1352,6 +1352,7 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
                                "knownlangs" -> setMobKnownLangsHelper t
                                "mobrmdesc"  -> setMobRmDescHelper     t
                                "chardesc"   -> setMobCharDescHelper   t
+                               "following"  -> setMobFollowingHelper  t
                                "race"       -> setPCRaceHelper        t
                                "introduced" -> setPCSingListHelper    t "introduced" "known names"  introduced introduced
                                "linked"     -> setPCSingListHelper    t "linked"     "linked names" linked     linked
@@ -1544,6 +1545,21 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
                              & _4 <>~ (isDiff |?| toSelf)
               _      -> sorryOp "charDesc"
         -----
+        setMobFollowingHelper t
+          | not . hasMob $ t = sorryType
+          | otherwise        = case eitherDecode value' of
+            Left  _ -> appendMsg . sorryAdminSetValue "following" $ value
+            Right x -> case op of
+              Assign -> let toSelf   = pure . T.concat $ [ "Set following to ", descMaybeSingId x ms, mkDiffTxt isDiff, "." ]
+                            prev     = getFollowing targetId ms
+                            isDiff   = x /= prev
+                            toTarget = pure . T.concat $ [ "You are now following ", maybe none (`getSing` ms) x, "." ]
+                        in a & _1.mobTbl.ind targetId.party.following .~ x
+                             & _2 <>~ toSelf
+                             & _3 <>~ (isDiff |?| toTarget)
+                             & _4 <>~ (isDiff |?| toSelf)
+              _      -> sorryOp "following"
+        -----
         setPCRaceHelper t
           | t /= PCType = sorryType
           | otherwise   = case eitherDecode value' of
@@ -1602,12 +1618,12 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
             mkToTarget diff | diff > 0  = pure . T.concat $ [ "You have been awarded ", commaShow diff,         " skill points." ]
                             | otherwise = pure . T.concat $ [ "You have lost ",         commaShow . abs $ diff, " skill points." ]
         -----
-        sorryType               = appendMsg . sorryAdminSetType $ targetId
-        sorryOp                 = appendMsg . sorryAdminSetOp (pp op)
-        value'                  = strictTextToLazyBS value
-        mkDiffTxt isDiff        = not isDiff |?| (" " <> parensQuote "no change")
-        showMaybe Nothing       = "none"
-        showMaybe (Just x)      = showText x
+        sorryType                = appendMsg . sorryAdminSetType $ targetId
+        sorryOp                  = appendMsg . sorryAdminSetOp (pp op)
+        value'                   = strictTextToLazyBS value
+        mkDiffTxt isDiff         = not isDiff |?| (" " <> parensQuote "no change")
+        showMaybe Nothing        = none
+        showMaybe (Just x)       = showText x
         mkToSelfForInt k v diff = pure . T.concat $ [ "Set ", k, " to ", commaShow v, " ", parensQuote diffTxt, "." ]
           where
             diffTxt = if | diff == 0 -> "no change"
