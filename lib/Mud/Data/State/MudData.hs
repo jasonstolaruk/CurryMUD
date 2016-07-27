@@ -556,10 +556,10 @@ type MobRmDesc = Maybe Text
 type CharDesc = Maybe Text
 
 
-data Party = Party { _following   :: Maybe Id
-                   , _followingMe :: Inv
-                   , _myGroup     :: Inv
-                   , _memberOf    :: Maybe Id } deriving (Generic)
+data Party = Party { _following :: Maybe Id
+                   , _followers :: Inv
+                   , _myGroup   :: Inv
+                   , _memberOf  :: Maybe Id } deriving (Generic)
 
 
 type ActMap = M.Map ActType ActAsync

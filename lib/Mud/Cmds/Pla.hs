@@ -2490,15 +2490,15 @@ handleEgress i = do
                           & msgQueueTbl.at  i          .~ Nothing
                           & mobTbl     .ind i.rmId     .~ iLoggedOut
                           & plaTbl     .ind i.lastRmId ?~ ri
-    partyHelper p = memberOfHelper . myGroupHelper . followingMeHelper . followingHelper
+    partyHelper p = memberOfHelper . myGroupHelper . followersHelper . followingHelper
       where
         followingHelper ms' = views following (maybe ms' f) p
           where
-            f followingId = ms' & mobTbl.ind i          .party.following   .~ Nothing
-                                & mobTbl.ind followingId.party.followingMe %~ delete i
-        followingMeHelper ms' = (mobTbl.ind i.party.followingMe .~ []) . foldr f ms' $ p^.followingMe
+            f followingId = ms' & mobTbl.ind i          .party.following .~ Nothing
+                                & mobTbl.ind followingId.party.followers %~ delete i
+        followersHelper ms' = (mobTbl.ind i.party.followers .~ []) . foldr f ms' $ p^.followers
           where
-            f followingMeId = mobTbl.ind followingMeId.party.following .~ Nothing
+            f followerId = mobTbl.ind followerId.party.following .~ Nothing
         myGroupHelper      = mobTbl.ind i.party.myGroup .~ []
         memberOfHelper ms' = views memberOf (maybe ms' f) p
           where

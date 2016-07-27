@@ -293,8 +293,8 @@ getFollowing i = view following . getParty i
 -----
 
 
-getFollowingMe :: Id -> MudState -> Inv
-getFollowingMe i = view followingMe . getParty i
+getFollowers :: Id -> MudState -> Inv
+getFollowers i = view followers . getParty i
 
 
 -----

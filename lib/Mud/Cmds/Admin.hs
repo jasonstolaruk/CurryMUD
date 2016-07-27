@@ -730,8 +730,8 @@ examineMob i ms =
                                  in getRmName ri ms <> " " <> parensQuote (showText ri)
        , "Room description: " <> m^.mobRmDesc.to (fromMaybe none)
        , "Char description: " <> m^.charDesc .to (fromMaybe none)
-       , "Following: "        <> descMaybeId ms (getFollowing i ms) -- TODO: How do these look?
-       , "Following me: "     <> descSingIdHelper getFollowingMe
+       , "Following: "        <> descMaybeId ms (getFollowing i ms)
+       , "Followers: "        <> descSingIdHelper getFollowers
        , "My group: "         <> descSingIdHelper getMyGroup
        , "Member of: "        <> descMaybeId ms (getMemberOf i ms)
        , "Stomach: "          <> m^.stomach.to ppList
@@ -1203,6 +1203,7 @@ adminProfanity p@ActionParams { plaMsgQueue, plaCols } = dumpCmdHelper "profanit
 -----
 
 
+-- TODO: This needs updating.
 adminSearch :: ActionFun
 adminSearch p@AdviseNoArgs                        = advise p [ prefixAdminCmd "id" ] adviceASearchNoArgs
 adminSearch (WithArgs i mq cols (T.unwords -> a)) = getState >>= \ms -> do
@@ -1325,7 +1326,7 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
                       , "mobrmdesc"
                       , "chardesc"
                       , "following"
-                      , "followingme"
+                      , "followers"
                       , "mygroup"
                       , "memberof"
                       , "race"
@@ -1334,36 +1335,36 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
                       , "skillpts" ] :: [Text]
         notFound    = appendMsg . sorryAdminSetKey $ key
         appendMsg m = a & _2 <>~ pure m
-        found       = let t = getType targetId ms
-                      in \case "entname"     -> setEntMaybeTextHelper   t "entName"  "name"        entName  entName
-                               "sing"        -> setEntTextHelper        t "sing"     "singular"    sing     sing
-                               "plur"        -> setEntTextHelper        t "plur"     "plural"      plur     plur
-                               "entdesc"     -> setEntTextHelper        t "entDesc"  "description" entDesc  entDesc
-                               "entsmell"    -> setEntMaybeTextHelper   t "entSmell" "smell"       entSmell entSmell
-                               "sex"         -> setMobSexHelper         t
-                               "st"          -> setMobAttribHelper      t "st" "ST" st st
-                               "dx"          -> setMobAttribHelper      t "dx" "DX" dx dx
-                               "ht"          -> setMobAttribHelper      t "ht" "HT" ht ht
-                               "ma"          -> setMobAttribHelper      t "ma" "MA" ma ma
-                               "ps"          -> setMobAttribHelper      t "ps" "PS" ps ps
-                               "curhp"       -> setMobCurHelper         t "curHp" "HP" getHps curHp
-                               "curmp"       -> setMobCurHelper         t "curMp" "MP" getMps curMp
-                               "curpp"       -> setMobCurHelper         t "curPp" "PP" getPps curPp
-                               "curfp"       -> setMobCurHelper         t "curFp" "FP" getFps curFp
-                               "exp"         -> setMobExpHelper         t
-                               "hand"        -> setMobHandHelper        t
-                               "knownlangs"  -> setMobKnownLangsHelper  t
-                               "mobrmdesc"   -> setMobRmDescHelper      t
-                               "chardesc"    -> setMobCharDescHelper    t
-                               "following"   -> setMobFollowingHelper   t
-                               "followingme" -> setMobFollowingMeHelper t
-                               "mygroup"     -> setMobMyGroupHelper     t
-                               "memberof"    -> setMobMemberOfHelper    t
-                               "race"        -> setPCRaceHelper         t
-                               "introduced"  -> setPCSingListHelper     t "introduced" "known names"  introduced introduced
-                               "linked"      -> setPCSingListHelper     t "linked"     "linked names" linked     linked
-                               "skillpts"    -> setPCSkillPtsHelper     t
-                               x             -> patternMatchFail "setHelper helper found" (x :: Text)
+        found       = let t = getType targetId ms in \case
+          "entname"    -> setEntMaybeTextHelper   t "entName"  "name"        entName  entName
+          "sing"       -> setEntTextHelper        t "sing"     "singular"    sing     sing
+          "plur"       -> setEntTextHelper        t "plur"     "plural"      plur     plur
+          "entdesc"    -> setEntTextHelper        t "entDesc"  "description" entDesc  entDesc
+          "entsmell"   -> setEntMaybeTextHelper   t "entSmell" "smell"       entSmell entSmell
+          "sex"        -> setMobSexHelper         t
+          "st"         -> setMobAttribHelper      t "st" "ST" st st
+          "dx"         -> setMobAttribHelper      t "dx" "DX" dx dx
+          "ht"         -> setMobAttribHelper      t "ht" "HT" ht ht
+          "ma"         -> setMobAttribHelper      t "ma" "MA" ma ma
+          "ps"         -> setMobAttribHelper      t "ps" "PS" ps ps
+          "curhp"      -> setMobCurHelper         t "curHp" "HP" getHps curHp
+          "curmp"      -> setMobCurHelper         t "curMp" "MP" getMps curMp
+          "curpp"      -> setMobCurHelper         t "curPp" "PP" getPps curPp
+          "curfp"      -> setMobCurHelper         t "curFp" "FP" getFps curFp
+          "exp"        -> setMobExpHelper         t
+          "hand"       -> setMobHandHelper        t
+          "knownlangs" -> setMobKnownLangsHelper  t
+          "mobrmdesc"  -> setMobRmDescHelper      t
+          "chardesc"   -> setMobCharDescHelper    t
+          "following"  -> setMobFollowingHelper   t
+          "followers"  -> setMobInvHelper         t "followers" "followers have" (party.followers) (party.followers)
+          "mygroup"    -> setMobInvHelper         t "myGroup"   "group has"      (party.myGroup  ) (party.myGroup  )
+          "memberof"   -> setMobMemberOfHelper    t
+          "race"       -> setPCRaceHelper         t
+          "introduced" -> setPCSingListHelper     t "introduced" "known names"  introduced introduced
+          "linked"     -> setPCSingListHelper     t "linked"     "linked names" linked     linked
+          "skillpts"   -> setPCSkillPtsHelper     t
+          x            -> patternMatchFail "setHelper helper found" (x :: Text)
         -----
         setEntMaybeTextHelper t k n getter setter
           | not . hasEnt $ t = sorryType
@@ -1480,8 +1481,8 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
                                      AddAssign -> addSubAssignHelper (+)
                                      SubAssign -> addSubAssignHelper (-)
           where
-            mkToTarget diff | diff > 0  = pure . T.concat $ [ "You have been awarded ", commaShow diff,         " experience points." ]
-                            | otherwise = pure . T.concat $ [ "You have lost ",         commaShow . abs $ diff, " experience points." ]
+            mkToTarget diff | diff > 0  = pure . T.concat $ [ "You have been awarded ", commaShow diff, " experience points." ]
+                            | otherwise = pure . T.concat $ [ "You have lost ", commaShow . abs $ diff, " experience points." ]
         -----
         setMobHandHelper t
           | not . hasMob $ t = sorryType
@@ -1544,7 +1545,9 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
               Assign -> let toSelf   = pure . T.concat $ [ "Set charDesc to ", showMaybe x, mkDiffTxt isDiff, "." ]
                             prev     = getCharDesc targetId ms
                             isDiff   = x /= prev
-                            toTarget = pure . T.concat $ [ "Your supplementary character description has changed to ", showMaybe x, "." ]
+                            toTarget = pure . T.concat $ [ "Your supplementary character description has changed to "
+                                                         , showMaybe x
+                                                         , "." ]
                         in a & _1.mobTbl.ind targetId.charDesc .~ x
                              & _2 <>~ toSelf
                              & _3 <>~ (isDiff |?| toTarget)
@@ -1566,9 +1569,34 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
                              & _4 <>~ (isDiff |?| toSelf)
               _      -> sorryOp "following"
         -----
-        setMobFollowingMeHelper _ = undefined -- TODO
-        -----
-        setMobMyGroupHelper _ = undefined -- TODO
+        setMobInvHelper t k n getter setter
+          | not . hasMob $ t = sorryType
+          | otherwise        = case eitherDecode value' of
+            Left  _              -> appendMsg . sorryAdminSetValue k $ value
+            Right (nubSort -> x) ->
+                let prev                 = view getter . getMob targetId $ ms
+                    addSubAssignHelper f = let (x', toSelf, isDiff) = mkTupleForList prev f x mkToSelf
+                                           in a & _1.mobTbl.ind targetId.setter .~ x'
+                                                & _2 <>~ toSelf
+                                                & _3 <>~ (isDiff |?| mkToTarget x')
+                                                & _4 <>~ (isDiff |?| toSelf)
+                in case op of Assign    -> let toSelf = mkToSelf x isDiff
+                                               isDiff = x /= prev
+                                           in a & _1.mobTbl.ind targetId.setter .~ x
+                                                & _2 <>~ toSelf
+                                                & _3 <>~ (isDiff |?| mkToTarget x)
+                                                & _4 <>~ (isDiff |?| toSelf)
+                              AddAssign -> addSubAssignHelper (++)
+                              SubAssign -> addSubAssignHelper (\\)
+          where
+            mkToSelf   x isDiff = pure . T.concat $ [ "Set "
+                                                    , k
+                                                    , " to "
+                                                    , mkValueTxt (`descSingId` ms) x
+                                                    , mkDiffTxt isDiff
+                                                    , "." ]
+            mkToTarget x        = pure . T.concat $ [ "Your ", n, " changed to ", mkValueTxt (`getSing` ms) x, "." ]
+            mkValueTxt f        = noneOnNull . commas . map f
         -----
         setMobMemberOfHelper t
           | not . hasMob $ t = sorryType
@@ -1642,8 +1670,8 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
                                      AddAssign -> addSubAssignHelper (+)
                                      SubAssign -> addSubAssignHelper (-)
           where
-            mkToTarget diff | diff > 0  = pure . T.concat $ [ "You have been awarded ", commaShow diff,         " skill points." ]
-                            | otherwise = pure . T.concat $ [ "You have lost ",         commaShow . abs $ diff, " skill points." ]
+            mkToTarget diff | diff > 0  = pure . T.concat $ [ "You have been awarded ", commaShow diff, " skill points." ]
+                            | otherwise = pure . T.concat $ [ "You have lost ", commaShow . abs $ diff, " skill points." ]
         -----
         sorryType                = appendMsg . sorryAdminSetType $ targetId
         sorryOp                  = appendMsg . sorryAdminSetOp (pp op)
