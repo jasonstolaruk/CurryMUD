@@ -288,15 +288,15 @@ unadulterated :: (Monad m) => (Applicative f) => a -> m (f a)
 unadulterated = return . pure
 
 
-uncurry3 :: (a -> b -> c -> d) -> (a, b, c) -> d
+uncurry3 :: (a -> b -> c -> d) -> (,,) a b c -> d
 uncurry3 f (a, b, c) = f a b c
 
 
-uncurry4 :: (a -> b -> c -> d -> e) -> (a, b, c, d) -> e
+uncurry4 :: (a -> b -> c -> d -> e) -> (,,,) a b c d -> e
 uncurry4 f (a, b, c, d) = f a b c d
 
 
-uncurry5 :: (a -> b -> c -> d -> e -> f) -> (a, b, c, d, e) -> f
+uncurry5 :: (a -> b -> c -> d -> e -> f) -> (,,,,) a b c d e -> f
 uncurry5 f (a, b, c, d, e) = f a b c d e
 
 

@@ -164,7 +164,10 @@ NUMBERS
 (quot x y)*y + (rem x y) == x
 (div  x y)*y + (mod x y) == x
 
-"Always use `div` for integral division unless you know what you’re doing. However, if the remainder of a division is the value you need, `rem` is usually the function you want." (HP p. 115)
+"Always use `div` for integral division unless you know what you’re doing. However, if the remainder of a division is the value you need, `rem` is usually the function you want." (HP p.115)
+
+"You almost never want a Float unless you’re doing graphics programming such as with OpenGL." (HP p.188)
+
 
 NEWTYPE
 ==================================================

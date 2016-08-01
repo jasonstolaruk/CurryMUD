@@ -51,11 +51,11 @@ dropSynonyms synonyms (x:xs) | x `elem` synonyms = x : filter (`notElem` synonym
                              | otherwise         = x : dropSynonyms synonyms xs
 
 
-headLast :: [a] -> (a, a)
+headLast :: [a] -> (,) a a
 headLast = (,) <$> head <*> last
 
 
-headTail :: [a] -> (a, [a])
+headTail :: [a] -> (,) a ([] a)
 headTail = (,) <$> head <*> tail
 
 
