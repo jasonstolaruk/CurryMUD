@@ -1,8 +1,9 @@
 Haskell coding guide
 by Jason Stolaruk (jasonstolaruk@gmail.com)
-Note that page numbers labeled "LYAH" and "RWH" refer to the Japanese translations of LYAH and RWH.
+Note that page numbers labeled "LYAH" and "RWH" refer to the Japanese translations of Learn You A Haskell and Real World Haskell.
 "PaCP" refers to the original English version of Parallel and Concurrent Programming in Haskell.
 "BH" refers to the 2014 edition of Beginning Haskell: A Project-Based Approach.
+"HP" refers to Haskell Programming From First Principles.
 
 
 STYLE
@@ -149,6 +150,21 @@ Prefer explicit import lists over importing everything, unless your import list 
 
 Import "Data.Functor" if you only need to use "(<$>)" and not "(<*>)"; import "Control.Applicative" if you also need to use "(<*>)".
 
+
+NUMBERS
+==================================================
+
+"Integral" includes "Int" and "Integer".
+"Fractional" includes "Float", "Double", "Rational" (a ratio of two integers), and "Scientific" (scientific notation).
+
+"div"  - integral division   - divide "Integral"s, round down
+"quot" - integral division   - divide "Integral"s, round towards zero
+"(/)"  - fractional division - divide "Fractional"s
+
+(quot x y)*y + (rem x y) == x
+(div  x y)*y + (mod x y) == x
+
+"Always use `div` for integral division unless you know what you’re doing. However, if the remainder of a division is the value you need, `rem` is usually the function you want." (HP p. 115)
 
 NEWTYPE
 ==================================================

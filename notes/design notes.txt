@@ -148,6 +148,8 @@ To sacrifice something (typically a corpse), a PC must have in their possession 
 
 Corpses that are not sacrificed may become undead.
 
+Make a "newbie donation pit" (possibly in a temple).
+
 ==========
 
 COMMANDS:
