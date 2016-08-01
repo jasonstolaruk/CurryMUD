@@ -108,6 +108,9 @@ blowUp :: Text -> BlowUp a
 blowUp modName funName msg t = error . T.unpack . T.concat $ [ modName, " ", funName, ": ", msg ] ++ (t |!| [ "; ", t ])
 
 
+-- div  - integral division   - divide `Integral`s, round down
+-- quot - integral division   - divide `Integral`s, round towards zero
+-- (/)  - fractional division - divide `Fractional`s
 divide :: (Integral a, Fractional b) => a -> a -> b
 divide = (/) `on` fromIntegral
 

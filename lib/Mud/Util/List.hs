@@ -71,5 +71,5 @@ nubSort :: (Ord a) => [a] -> [a]
 nubSort = S.toList . S.fromList
 
 
-select :: Lens' a b -> [a] -> [b]
+select :: Lens' a b -> [] a -> [] b
 select l = map (view l)
