@@ -128,7 +128,7 @@ bcastIfNotIncogNl i = bcastIfNotIncog i . appendNlBs
 
 
 appendNlBs :: [Broadcast] -> [Broadcast]
-appendNlBs bs = bs ++ [("\n", nubSort . concatMap snd $ bs)]
+appendNlBs bs = bs ++ [(theNl, nubSort . concatMap snd $ bs)]
 
 
 -----

@@ -1833,7 +1833,7 @@ leave (WithArgs i mq cols (nub -> as)) = helper |&| modifyState >=> \(ms, chanId
                  , "you sever your telepathic connection"
                  , theLetterS isPlur
                  , " to the "
-                 , isPlur ? "following channels:\n" <> commas ns :? head ns <> " channel"
+                 , isPlur ? nl "following channels:" <> commas ns :? head ns <> " channel"
                  , "." ]
 leave p = patternMatchFail "leave" . showText $ p
 
@@ -2178,7 +2178,7 @@ newChan (WithArgs i mq cols (nub -> as)) = helper |&| modifyState >=> \(unzip ->
                  , " you assign the "
                  , isPlur |?| "following "
                  , "name"
-                 , isPlur ? "s:\n" <> commas ns :? " " <> head ns
+                 , isPlur ? nl "s:" <> commas ns :? " " <> head ns
                  , "." ]
 newChan p = patternMatchFail "newChan" . showText $ p
 
@@ -2588,7 +2588,7 @@ readHelper i cols ms d = foldl' helper
                 Nothing          -> acc & _1 <>~ wrapUnlinesNl cols (blankWritableMsg s)
                 Just (txt, lang) -> case r of
                   Nothing -> if isKnownLang i ms lang
-                    then readIt txt . T.concat $ [ "The following is written on the ", s, " in ", pp lang, ":\n" ]
+                    then readIt txt . T.concat $ [ "The following is written on the ", s, " in ", pp lang, nl ":" ]
                     else acc & _1 <>~ wrapUnlinesNl cols (sorryReadLang s lang)
                   Just recipSing
                     | isPC    i ms

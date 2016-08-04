@@ -37,6 +37,7 @@ module Mud.Util.Text ( aOrAn
                      , stripTelnet
                      , the
                      , theLetterS
+                     , theNl
                      , theOnLower
                      , theOnLowerCap
                      , uncapitalize
@@ -241,7 +242,11 @@ mkOrdinal (showText -> n) = n <> case T.last n of '1' -> "st"
 
 
 nl :: Text -> Text
-nl = (<> "\n")
+nl = (<> theNl)
+
+
+theNl :: Text
+theNl = T.singleton '\n'
 
 
 nlnl :: Text -> Text
@@ -249,7 +254,7 @@ nlnl = nl . nl
 
 
 nlPrefix :: Text -> Text
-nlPrefix = ("\n" <>)
+nlPrefix = (theNl <>)
 
 
 nlnlPrefix :: Text -> Text

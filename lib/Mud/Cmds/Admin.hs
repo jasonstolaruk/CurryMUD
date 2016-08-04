@@ -815,7 +815,7 @@ examineRm i ms = let r = getRm i ms in [ "Name: "        <> r^.rmName
 
 
 xformNls :: Text -> Text
-xformNls = T.replace "\n" (colorWith nlColor "\\n")
+xformNls = T.replace theNl (colorWith nlColor "\\n")
 
 
 examineVessel :: ExamineHelper

@@ -65,10 +65,10 @@ logNotice = L.logNotice "Mud.Threads.Listen"
 
 
 threadListen :: MudStack ()
-threadListen =
-    (logNotice "threadListen" "server started." >> listen) `finally` (getUptime >>= saveUptime >> closeLogs >> bye)
+threadListen = a `finally` b
   where
-    bye = liftIO . T.putStrLn $ "Goodbye!\n"
+    a = logNotice "threadListen" "server started." >> listen
+    b = getUptime >>= saveUptime >> closeLogs >> (liftIO . T.putStrLn . nl $ "Goodbye!")
 
 
 saveUptime :: Int64 -> MudStack ()

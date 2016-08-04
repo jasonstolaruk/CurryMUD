@@ -66,7 +66,7 @@ wrapUnlinesNl cols = nl . wrapUnlines cols
 
 
 wrapUnlinesInit :: Cols -> Text -> Text
-wrapUnlinesInit cols = T.intercalate "\n" . wrap cols
+wrapUnlinesInit cols = T.intercalate theNl . wrap cols
 
 
 -----

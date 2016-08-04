@@ -988,7 +988,7 @@ mkEffPsDesc = mkEffDesc getBasePs calcEffPs "less proficient in psionics" "more 
 
 
 mkEntDescs :: Id -> Cols -> MudState -> Inv -> Text
-mkEntDescs i cols ms eis = T.intercalate "\n" [ mkEntDesc i cols ms (ei, e) | ei <- eis, let e = getEnt ei ms ]
+mkEntDescs i cols ms eis = T.intercalate theNl [ mkEntDesc i cols ms (ei, e) | ei <- eis, let e = getEnt ei ms ]
 
 
 mkEntDesc :: Id -> Cols -> MudState -> (Id, Ent) -> Text
