@@ -366,7 +366,7 @@ debugFun p = withoutArgs debugFun p
 -----
 
 
--- TODO: Does this need updating?
+-- TODO: Rm links.
 debugId :: ActionFun
 debugId p@AdviseNoArgs       = advise p [] adviceDIdNoArgs
 debugId (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
@@ -392,20 +392,33 @@ debugId (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
                     , f . filter ((searchId `elem`) . snd) . tblToList invTbl $ ms ]
                   , [ T.concat [ "Mobiles with a ", dblQuote "rmId", " of ", searchIdTxt, ": " ]
                     , f . filter ((== searchId) . view rmId . snd) . tblToList mobTbl $ ms ]
-                  , [ T.concat [ "NPCs being possessed by ID ", searchIdTxt, ": " ]
+                  , [ T.concat [ "Mobiles following ID ", searchIdTxt, ": " ]
+                    , f . filter ((== Just searchId) . view (party.following) . snd) . tblToList mobTbl $ ms ]
+                  , [ T.concat [ "Mobiles followed by ID ", searchIdTxt, ": " ]
+                    , f . filter ((searchId `elem`) . view (party.followers) . snd) . tblToList mobTbl $ ms ]
+                  , [ T.concat [ "Mobiles whose group includes ID ", searchIdTxt, ": " ]
+                    , f . filter ((searchId `elem`) . view (party.myGroup) . snd) . tblToList mobTbl $ ms ]
+                  , [ T.concat [ "Mobiles who are a member of ID ", searchIdTxt, "'s group: " ]
+                    , f . filter ((== Just searchId) . view (party.memberOf) . snd) . tblToList mobTbl $ ms ]
+                  , [ T.concat [ "Mobiles whose stomach contains ", dblQuote "DistinctFoodId", " ", searchIdTxt, ": " ]
+                    , let g = filter (views distinctId (== Right (DistinctFoodId searchId)))
+                      in f . filter ((()!#) . g . view stomach . snd) . tblToList mobTbl $ ms ]
+                  , [ T.concat [ "Mobiles whose stomach contains ", dblQuote "DistinctLiqId", " ", searchIdTxt, ": " ]
+                    , let g = filter (views distinctId (== Left (DistinctLiqId searchId)))
+                      in f . filter ((()!#) . g . view stomach . snd) . tblToList mobTbl $ ms ]
+                  , [ T.concat [ "NPCs possessed by ID ", searchIdTxt, ": " ]
                     , f . filter ((searchId `elem`) . view npcPossessor . snd) . tblToList npcTbl $ ms ]
-                  , [ T.concat [ "Players being peeped by ID ", searchIdTxt, ": " ]
-                    , f . filter ((searchId `elem`) . view peepers . snd) $ plaTblList ]
+                  , [ T.concat [ "Players peeped by ID ", searchIdTxt, ": " ]
+                    , f . filter ((searchId `elem`) . view peepers . snd) . tblToList plaTbl $ ms ]
                   , [ T.concat [ "Players peeping ID ", searchIdTxt, ": " ]
-                    , f . filter ((searchId `elem`) . view peeping . snd) $ plaTblList ]
+                    , f . filter ((searchId `elem`) . view peeping . snd) . tblToList plaTbl $ ms ]
                   , [ T.concat [ "Players possessing ID ", searchIdTxt, ": " ]
-                    , f . filter ((searchId `elem`) . view possessing . snd) $ plaTblList ]
+                    , f . filter ((searchId `elem`) . view possessing . snd) . tblToList plaTbl $ ms ]
                   , [ T.concat [ "Players with a ", dblQuote "lastRmId", " of ", searchIdTxt, ": " ]
-                    , f . filter ((searchId `elem`) . view lastRmId . snd) $ plaTblList ]
+                    , f . filter ((searchId `elem`) . view lastRmId . snd) . tblToList plaTbl $ ms ]
                   , [ T.concat [ "Vessels containing ", dblQuote "liqId", " ", searchIdTxt, ": " ]
-                    , f . filter vesselHelper . tblToList vesselTbl $ ms ] ]
-              plaTblList   = tblToList plaTbl ms
-              vesselHelper = views vesselCont (maybe False (views liqId (== DistinctLiqId searchId) . fst)) . snd
+                    , let g = (views vesselCont (maybe False (views liqId (== DistinctLiqId searchId) . fst)) . snd)
+                      in f . filter g . tblToList vesselTbl $ ms ] ]
           pager i mq . concat . wrapLines cols . intercalate [""] $ mkTxt
           logPlaExecArgs (prefixDebugCmd "id") (pure a) i
 debugId p = advise p [] adviceDIdExcessArgs
@@ -434,6 +447,7 @@ mkTblNameKeysList ms = [ ("ActiveEffects", tblKeys activeEffectsTbl ms)
                        , ("Obj",           tblKeys objTbl           ms)
                        , ("PausedEffects", tblKeys pausedEffectsTbl ms)
                        , ("PC",            tblKeys pcTbl            ms)
+                       , ("PickPts",       tblKeys pickPtsTbl       ms)
                        , ("PlaLog",        tblKeys plaLogTbl        ms)
                        , ("Pla",           tblKeys plaTbl           ms)
                        , ("Rm",            tblKeys rmTbl            ms)

@@ -1203,7 +1203,6 @@ adminProfanity p@ActionParams { plaMsgQueue, plaCols } = dumpCmdHelper "profanit
 -----
 
 
--- TODO: This needs updating.
 adminSearch :: ActionFun
 adminSearch p@AdviseNoArgs                        = advise p [ prefixAdminCmd "id" ] adviceASearchNoArgs
 adminSearch (WithArgs i mq cols (T.unwords -> a)) = getState >>= \ms -> do
@@ -1256,6 +1255,7 @@ mkSecReport SecRec { .. } = [ "Name: "     <> dbName
 -----
 
 
+-- TODO: Update the help file.
 adminSet :: ActionFun
 adminSet p@AdviseNoArgs                       = advise p [ prefixAdminCmd "set" ] adviceASetNoArgs
 adminSet p@(AdviseOneArg a                  ) = advise p [ prefixAdminCmd "set" ] . adviceASetNoSettings $ a
