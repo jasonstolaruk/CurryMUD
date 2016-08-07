@@ -12,3 +12,4 @@ You must specify the full name of each person you wish to disconnect.
 \qdisconnect taro hanako hunt\d to disconnect both Taro and Hanako from "hunt".4`
 
 \uSEE ALSO\n
+channel, connect, telepathy, tune
