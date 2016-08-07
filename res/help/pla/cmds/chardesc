@@ -9,7 +9,7 @@ Specify a "supplementary character description" visible when someone looks at yo
 For example, let's say you set your supplementary character description to "his hair is disheveled and his eyes are bloodshot". Now when someone else in your current room looks at you, he or she will see the following (assuming you are a male vulpenoid):
 
 You see a male vulpenoid.
-... (Your character's fixed/customary description here.)
+... (Your character's customary description here.)
 \c[ \dHis hair is disheveled and his eyes are bloodshot. \c]\d
 The male vulpenoid has readied the following equipment:
 ...
@@ -30,3 +30,4 @@ In order to preserve the integrity of the virtual world along with the enjoyment
 \qchardesc\d to clear your supplementary character description.4`
 
 \uSEE ALSO\n
+emote, expressive, look, lookself, roomdesc, stats
