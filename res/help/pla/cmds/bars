@@ -5,7 +5,7 @@ bars \s[\dhp mp pp fp\s]\d
 
 \uDESCRIPTION\n
 Display one or more status bars.
-When no arguments are provided, you'll see 4 status bars corresponding to hp, mp, pp, and fp.
+When no arguments are provided, you'll see 4 status bars corresponding to HP, MP, PP, and FP.
 To indicate which status bars you would like to see, you may provide any combination of the following arguments:
 "hp", "mp", "pp", and "fp"
 
@@ -15,3 +15,4 @@ To indicate which status bars you would like to see, you may provide any combina
 \qbars hp mp\d to see status bars representing your hit points and magic points.4`
 
 \uSEE ALSO\n
+feeling, stats
