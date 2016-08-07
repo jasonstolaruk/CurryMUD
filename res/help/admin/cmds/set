@@ -105,6 +105,28 @@ Examples:4`
 \qcharDesc=null\d (to set to Nothing)4`
 \l#q\qcharDesc="His windswept hair is truly a mess."\l#q\d (to set to Just "His windswept hair is truly a mess.")4`
 
+Key name: following4`
+Property of: Mob4`
+Value type: Maybe Id4`
+Examples:4`
+\qfollowing=null\d (to set to Nothing)4`
+\qfollowing=100\d4`
+
+Key names: followers, myGroup4`
+Property of: Mob4`
+Value type: Inv = [Id]4`
+Examples:4`
+\l#q\qfollowers=[100, 101]\l#q\d (to set to 100 and 101)4`
+\qfollowers+=[100]\d (to add 100)4`
+\qfollowers-=[100]\d (to remove 100)4`
+
+Key name: memberOf4`
+Property of: Mob4`
+Value type: Maybe Id4`
+Examples:4`
+\qmyGroup=null\d (to set to Nothing)4`
+\qmyGroup=100\d4`
+
 Key name: race4`
 Property of: PC4`
 Value type: Race - Dwarf | Elf | Felinoid etc.4`
