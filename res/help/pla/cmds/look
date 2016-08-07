@@ -19,4 +19,4 @@ Display a description of your current room, or examine one or more things in you
 \qlook \p#a\qcoin\d to examine all of the coins in the room.4`
 
 \uSEE ALSO\n
-chardesc, lookself, roomdesc, roomFixtures
+abbreviation, chardesc, equipment, inventory, lookself, prefixes, roomdesc, roomFixtures
