@@ -11,3 +11,4 @@ Move east, optionally followed by more movement.
 \qe u n\d to move east, then up, then north.4`
 
 \uSEE ALSO\n
+d, exits, n, ne, nw, s, se, stop, sw, u, w

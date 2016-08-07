@@ -11,3 +11,4 @@ Move down, optionally followed by more movement.
 \qd n e\d to move down, then north, then east.4`
 
 \uSEE ALSO\n
+e, exits, n, ne, nw, s, se, stop, sw, u, w

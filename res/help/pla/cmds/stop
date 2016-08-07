@@ -16,3 +16,4 @@ This command may take the following forms:
 When no arguments are provided, you will stop carrying out a single action; the action you stop depends on what you are doing at the time. Namely, if currently moving, you will stop moving; otherwise if currently eating, you will stop eating, and so on (followed with drinking and attacking).
 
 \uSEE ALSO\n
+d, e, exits, n, ne, nw, s, se, sw, u, w
