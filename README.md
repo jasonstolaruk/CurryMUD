@@ -80,7 +80,7 @@ The code is available here on GitHub under the 3-clause BSD license (refer to th
 
 ### How to try it out
 
-I do not plan on explicitly supporting Windows.
+Windows is not supported.
 
 Please use [stack](http://docs.haskellstack.org/en/stable/README.html) (otherwise, I cannot guarantee that CurryMUD will build on your machine).
 

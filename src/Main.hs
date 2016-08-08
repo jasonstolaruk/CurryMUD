@@ -23,7 +23,6 @@ import Mud.Util.Text
 -- import Control.Monad (void, when)
 import Control.Monad.Reader (runReaderT)
 import Data.Monoid ((<>))
-import Network (withSocketsDo)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (putStrLn)
 import System.Directory (createDirectoryIfMissing, doesDirectoryExist, setCurrentDirectory)
@@ -32,7 +31,7 @@ import System.Environment (getEnv, getProgName)
 
 
 main :: IO ()
-main = withSocketsDo . mIf (not <$> doesDirectoryExist mudDir) stop $ go
+main = mIf (not <$> doesDirectoryExist mudDir) stop $ go
   where
     stop = T.putStrLn $ "The " <> showText mudDir <> " directory does not exist; aborting."
     go   = do
