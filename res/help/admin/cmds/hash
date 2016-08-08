@@ -7,7 +7,7 @@
 Compare a plain-text password with a hashed password.
 
 When you've been asked by a player to reset their password, this command may be used to prove that the person really is who they claim to be.
-The use of this command is discussed fully in the "resetPassword" help topic.
+The use of this command is discussed fully in the "resetpassword" help topic.
 
 \uEXAMPLES\n
 \q#dhash curry $2y$04$nbLFBcaGtmT.fMzBUC.sC.vj0AqQgTE6R//Nj70DKU/fN5W2K84Sm\d
