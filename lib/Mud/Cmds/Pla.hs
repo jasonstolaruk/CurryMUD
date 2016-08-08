@@ -1582,12 +1582,14 @@ help (NoArgs i mq cols) = (liftIO . T.readFile $ helpDir </> "root") |&| try >=>
         (sortBy (compare `on` helpName) -> hs) <- liftIO . mkHelpData ls $ ia
         let zipped                 = zip (styleAbbrevs Don'tQuote [ helpName h | h <- hs ]) hs
             (cmdNames, topicNames) = partition (isCmdHelp . snd) zipped & both %~ (formatHelpNames . mkHelpNames)
-            helpTxt                = T.concat [ nl rootHelpTxt
-                                              , nl "Help is available on the following commands:"
-                                              , nl cmdNames
-                                              , nl "Help is available on the following topics:"
-                                              , topicNames
-                                              , ia |?| footnote ]
+            helpTxt = T.concat [ nl rootHelpTxt
+                               , nl "Help is available on the following commands: (Note that commands, when executed, \
+                                    \may be abbreviated differently than what is indicated below. See the \"?\" \
+                                    \command list to confirm how commands may be abbreviated when executed.)"
+                               , nl cmdNames
+                               , nl "Help is available on the following topics:"
+                               , topicNames
+                               , ia |?| footnote ]
         (pager i mq . parseHelpTxt cols $ helpTxt) >> logPla "help" i "read root help file."
     mkHelpNames zipped    = [ padHelpTopic . (styled <>) $ isAdminHelp h |?| asterisk | (styled, h) <- zipped ]
     formatHelpNames names = let wordsPerLine = cols `div` helpTopicPadding
