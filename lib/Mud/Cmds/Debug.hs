@@ -400,10 +400,10 @@ debugId (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
                   , [ T.concat [ "Mobiles who are a member of ID ", searchIdTxt, "'s group:" ]
                     , f . filter ((== Just searchId) . view (party.memberOf) . snd) . tblToList mobTbl $ ms ]
                   , [ T.concat [ "Mobiles whose stomach contains ", dblQuote "DistinctFoodId", " ", searchIdTxt, ":" ]
-                    , let g = filter (views distinctId (== Right (DistinctFoodId searchId)))
+                    , let g = filter $ views distinctId (== (Right . DistinctFoodId $ searchId))
                       in f . filter ((()!#) . g . view stomach . snd) . tblToList mobTbl $ ms ]
                   , [ T.concat [ "Mobiles whose stomach contains ", dblQuote "DistinctLiqId", " ", searchIdTxt, ":" ]
-                    , let g = filter (views distinctId (== Left (DistinctLiqId searchId)))
+                    , let g = filter $ views distinctId (== (Left . DistinctLiqId $ searchId))
                       in f . filter ((()!#) . g . view stomach . snd) . tblToList mobTbl $ ms ]
                   , [ T.concat [ "NPCs possessed by ID ", searchIdTxt, ":" ]
                     , f . filter ((searchId `elem`) . view npcPossessor . snd) . tblToList npcTbl $ ms ]
@@ -424,7 +424,7 @@ debugId (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
                           g (NonStdLink _ di _ _ _) = di == searchId
                       in f . filter ((()!#) . filter g . view rmLinks . snd) . tblToList rmTbl $ ms ]
                   , [ T.concat [ "Vessels containing ", dblQuote "liqId", " ", searchIdTxt, ":" ]
-                    , let g = (views vesselCont (maybe False (views liqId (== DistinctLiqId searchId) . fst)) . snd)
+                    , let g = views vesselCont (maybe False (views liqId (== DistinctLiqId searchId) . fst)) . snd
                       in f . filter g . tblToList vesselTbl $ ms ] ]
           pager i mq . concat . wrapLines cols . intercalate [""] $ mkTxt
           logPlaExecArgs (prefixDebugCmd "id") (pure a) i
