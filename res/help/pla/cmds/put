@@ -26,4 +26,4 @@ To put your ring into the sack in the room:
 \qput \p#a\qcoin \lr#l\qsack\d to put all of your coins into the sack in the room.4`
 
 \uSEE ALSO\n
-abbreviation, empty, fill, prefixes, remove
+abbreviation, empty, fill, inventory, prefixes, remove

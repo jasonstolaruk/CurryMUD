@@ -31,7 +31,7 @@ import System.Environment (getEnv, getProgName)
 
 
 main :: IO ()
-main = mIf (not <$> doesDirectoryExist mudDir) stop $ go
+main = mIf (not <$> doesDirectoryExist mudDir) stop go
   where
     stop = T.putStrLn $ "The " <> showText mudDir <> " directory does not exist; aborting."
     go   = do

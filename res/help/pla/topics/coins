@@ -1,0 +1,11 @@
+TODO
+
+\uCOINS\d
+There are "cp" (copper pieces), "sp" (silver pieces), and "gp" (gold pieces).2`
+10 cp = 1   sp
+10 sp = 1   gp
+1  gp = 100 cp
+
+\qget \p10#m\qgp\d to pick up 10 gold pieces.2`
+\qget \p#a\qgp\d to pick up all the gold pieces.2`
+\qget \p#a\qcoin\d to pick up all the coins.2`

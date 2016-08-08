@@ -10,3 +10,6 @@ Get help on one or more commands or topics.
 \qhelp intro\d to get help on the "intro" command.4`
 \qhelp abbreviation\d to get help on the topic of "abbreviation".4`
 \qhelp intro abbreviation\d to get help on the "intro" command and the topic of "abbreviation".4`
+
+\uHELP LIST\n
+Help is available on the following commands and topics. \aThis color\d indicates the maximum possible abbreviation of a command/topic name. Note that commands, when executed, may be abbreviated differently - see the "?" command list to confirm the maximum possible abbreviation of a command when executed.

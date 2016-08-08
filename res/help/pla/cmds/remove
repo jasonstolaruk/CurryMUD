@@ -26,4 +26,4 @@ To remove the ring from the sack in the room:
 \qremove \p#a\qcoin \lr#l\qsack\d to remove all of the coins from the sack in the room.4`
 
 \uSEE ALSO\n
-abbreviation, empty, fill, prefixes, put
+abbreviation, empty, fill, inventory, prefixes, put
