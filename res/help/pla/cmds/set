@@ -20,4 +20,4 @@ question Whether you have tuned the question channel in or out (tune the channel
 \qset question=out\d to tune out the question channel.4`
 
 \uSEE ALSO\n
-password, question, security, tune
+communication, password, question, security, tune
