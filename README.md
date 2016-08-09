@@ -8,7 +8,7 @@ CurryMUD is essentially the hobby project and brainchild of a single developer (
 
 My aim is to create a single unique, playable MUD named "CurryMUD." I am writing this MUD entirely in Haskell, from scratch.
 
-Creating a framework which others can leverage to develop their own MUDs is _not_ an explicit goal of mine, nor is this a collaborative effort. Having said that, the code is available here on GitHub, so other parties _are_ free to examine the code and develop their own forks (in accordance with [the 3-clause BSD license](https://github.com/jasonstolaruk/CurryMUD/blob/master/LICENSE)).
+Creating a framework which others can leverage to develop their own MUDs is _not_ an explicit goal of mine, nor is this a collaborative effort (I am not accepting PRs). Having said that, the code is available here on GitHub, so other parties _are_ free to examine the code and develop their own forks (in accordance with [the 3-clause BSD license](https://github.com/jasonstolaruk/CurryMUD/blob/master/LICENSE)).
 
 CurryMUD will have the following features:
 
@@ -83,9 +83,9 @@ The code is available here on GitHub under the 3-clause BSD license (refer to th
 
 ### How to try it out
 
-Windows is not supported.
+Linux and Mac OS X are supported. Sorry, but Windows is _not_ supported.
 
-Please use [stack](http://docs.haskellstack.org/en/stable/README.html) (otherwise, I cannot guarantee that CurryMUD will build on your machine).
+Please build with [stack](http://docs.haskellstack.org/en/stable/README.html) (otherwise, I cannot guarantee that CurryMUD will build on your machine).
 
 0. [Install stack.](http://docs.haskellstack.org/en/stable/install_and_upgrade/)
 0. Clone the repo from your home directory (the server expects to find various folders under `$HOME/CurryMUD`).
