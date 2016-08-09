@@ -26,4 +26,4 @@ To show the ring in your readied equipment to Hanako:
 \qshow \p#a\qcoin hanako\d to show all of your coins to Hanako.4`
 
 \uSEE ALSO\n
-equipment, inventory
+abbreviation, coins, equipment, give, inventory, prefixes

@@ -18,4 +18,4 @@ Drop one or more items; move item(s) from your inventory to your current room.
 \qdrop \p#a\qcoin\d to drop all of your coins.4`
 
 \uSEE ALSO\n
-abbreviation, get, inventory, look, prefixes, take
+abbreviation, coins, get, inventory, look, prefixes, take

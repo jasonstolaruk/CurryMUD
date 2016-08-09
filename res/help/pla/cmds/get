@@ -18,4 +18,4 @@ Pick up one or more items in your current room; move item(s) from your current r
 \qget \p#a\qcoin\d to pick up all of the coins in the room.4`
 
 \uSEE ALSO\n
-abbreviation, drop, inventory, prefixes, take
+abbreviation, coins, drop, inventory, prefixes, take
