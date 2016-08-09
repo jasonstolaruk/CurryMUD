@@ -1,11 +1,25 @@
-TODO
+\h COINS \d
 
-\uCOINS\d
-There are "cp" (copper pieces), "sp" (silver pieces), and "gp" (gold pieces).2`
-10 cp = 1   sp
-10 sp = 1   gp
-1  gp = 100 cp
+Coins are the currency of CurryMUD. There are "cp" (copper pieces), "sp" (silver pieces), and "gp" (gold pieces).
 
-\qget \p10#m\qgp\d to pick up 10 gold pieces.2`
-\qget \p#a\qgp\d to pick up all the gold pieces.2`
-\qget \p#a\qcoin\d to pick up all the coins.2`
+The following chart illustrates the value of each coin type:
+
+     | cp   | sp   | gp
+-------------------------
+1 cp | 1    | 1/10 | 1/100
+1 sp | 10   | 1    | 1/10
+1 gp | 100  | 10   | 1
+
+These identifiers may be used to target coins in commands:
+"cp", "sp", "gp", "coins"
+"coins" may be abbreviated to "coin". The other identifiers may not be abbreviated.
+
+The following examples illustrate how to use the coin identifiers with the "get" command:
+\qget cp\d to pick up a single copper piece.2`
+\qget \p10#m\qcp\d to pick up 10 copper pieces.2`
+\qget \p#a\qcp\d to pick up all the copper pieces.2`
+\qget \p50#m\qcoins\d to pick up the first 50 coins, beginning with the coins of least value.2`
+\qget \p#a\qcoins\d to pick up all the coins.2`
+
+\uSEE ALSO\n
+abbreviation, cheatsheet, get, newbie, prefixes, take, veteranmudder
