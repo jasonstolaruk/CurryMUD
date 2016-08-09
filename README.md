@@ -6,9 +6,12 @@ CurryMUD is essentially the hobby project and brainchild of a single developer (
 
 ## My goals
 
-I hope to create a new MUD from the ground up, _written entirely in the Haskell programming language_.
+My aim is to create a single unique, playable MUD named "CurryMUD." I am writing this MUD entirely in Haskell, from scratch.
+
+Creating a framework which others can leverage to develop their own MUDs is _not_ an explicit goal of mine, nor is this a collaborative effort. Having said that, the code is available here on GitHub, so other parties _are_ free to examine the code and develop their own forks (in accordance with [the 3-clause BSD license](https://github.com/jasonstolaruk/CurryMUD/blob/master/LICENSE)).
 
 CurryMUD will have the following features:
+
 * Players will be offered an immersive virtual world environment.
 * Content will be created, and development will proceed, with the aim of supporting a small community of players.
 * Role-playing will be strictly enforced.
@@ -55,7 +58,7 @@ I am still in the initial stage of developing basic commands. There is very litt
 
 ## About the code
 
-The code is available here on GitHub under the 3-clause BSD license (refer to the [LICENSE file](https://github.com/jasonstolaruk/CurryMUD/blob/master/LICENSE)). Please note that **I am not accepting PRs at this time**.
+The code is available here on GitHub under the 3-clause BSD license (refer to the [LICENSE file](https://github.com/jasonstolaruk/CurryMUD/blob/master/LICENSE)). Please note that **I am not accepting PRs**.
 
 * About 40,000 lines of code/text.
 * About 90 modules, excluding tests.
