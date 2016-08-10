@@ -12,5 +12,3 @@ For information regarding the ethical use of this command, see "help ethics".
 \uEXAMPLES\n
 \q#dwiretap 0\d to start tapping channel 0. (Type \q#dwiretap 0\d again to stop.)4`
 \q#dwiretap 0 1\d to start/stop tapping channels 0 and 1.4`
-
-\uSEE ALSO\n

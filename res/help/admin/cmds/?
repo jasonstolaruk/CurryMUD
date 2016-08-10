@@ -10,5 +10,3 @@ Display a list of available admin commands and their descriptions. Optionally, s
 \q#d?\d to display the full command list.4`
 \q#d? up\d to display entries containing "up".4`
 \q#d? up down\d to display entries containing "up", followed by entries containing "down".4`
-
-\uSEE ALSO\n

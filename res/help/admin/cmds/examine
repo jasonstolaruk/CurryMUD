@@ -12,5 +12,3 @@ For information regarding the ethical use of this command, see "help ethics".
 \uEXAMPLES\n
 \q#dexamine 0\d to display the properties of ID 0.4`
 \q#dexamine 0 1\d to display the properties of IDs 0 and 1.4`
-
-\uSEE ALSO\n

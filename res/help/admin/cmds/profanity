@@ -5,5 +5,3 @@
 
 \uDESCRIPTION\n
 Dump the profanity database. (When a player attempts to create a character with an obscene name, a record of the attempt is written to the profanity database.)
-
-\uSEE ALSO\n

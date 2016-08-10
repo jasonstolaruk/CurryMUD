@@ -11,5 +11,3 @@ Display a list of all the PCs that are currently logged in. Optionally, search t
 \uEXAMPLES\n
 \q#dwhoin\d to display the full list.4`
 \q#dwhoin male\d to display a list of all the male characters who are logged in.4`
-
-\uSEE ALSO\n

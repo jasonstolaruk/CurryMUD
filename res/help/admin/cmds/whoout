@@ -11,5 +11,3 @@ Display a list of all the PCs that are currently logged out. Optionally, search 
 \uEXAMPLES\n
 \q#dwhoout\d to display the full list.4`
 \q#dwhoout male\d to display a list of all the male characters who are logged out.4`
-
-\uSEE ALSO\n

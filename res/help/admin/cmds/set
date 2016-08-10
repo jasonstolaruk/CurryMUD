@@ -140,5 +140,3 @@ Examples:4`
 \l#q\qintroduced=["Taro", "Hanako"]\l#q\d (to set to Taro and Hanako)4`
 \qintroduced+=["Taro"]\d (to add Taro)4`
 \qintroduced-=["Taro"]\d (to remove Taro)4`
-
-\uSEE ALSO\n
