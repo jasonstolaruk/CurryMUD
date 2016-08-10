@@ -334,10 +334,10 @@ potDxDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just el
 
 potInstantDxLiq :: Liq
 potInstantDxLiq = Liq (DistinctLiqId iLiqPotInstantDx)
-                      (DoArticle "")
-                      "" -- TODO
-                      ""
-                      ""
+                      (DoArticle "heavy, translucent liquid")
+                      "There is a discinctly acidic scent of lemon or perhaps lime."
+                      "The liquid, though colorless, is rather thick, and has a notably acidic aftertaste."
+                      "The dense tonic is oddly tart. Your eyes water slightly."
 
 
 potInstantDxDistinctLiq :: DistinctLiq
