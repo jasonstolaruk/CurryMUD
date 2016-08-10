@@ -7,4 +7,4 @@ Typically, undocumented commands may only be used in certain rooms. One example 
 Keep in mind that the names of undocumented commands may not be abbreviated. \qtrash doll\d is legal, while \qtras doll\d, or any other abbreviated form, is not.
 
 \uSEE ALSO\n
-?, cheatsheet, expressive, newbie, veteranmudder
+?, abbreviation, cheatsheet, expressive, newbie, roomfixtures, syntax, veteranmudder

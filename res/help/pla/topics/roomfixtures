@@ -9,4 +9,4 @@ Keep in mind that the names of room fixtures may not be abbreviated. \qlook sign
 In addition, you may need to prefix the name of a room fixture with \lr#l\d to indicate that you are targeting an object in your current room. For example, by default the "drink" command will look in your inventory for the vessel you specify; therefore, to drink from the fountain in your current room, you must specify \lr#l\qfountain\d, as in \qdrink 4 \lr#l\qfountain\d.
 
 \uSEE ALSO\n
-prefixes, undocumented
+abbreviation, prefixes, undocumented
