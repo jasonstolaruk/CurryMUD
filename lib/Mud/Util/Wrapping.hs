@@ -120,19 +120,23 @@ adjustIndent n cols = n >= cols ? pred cols :? n
 
 
 wrapLines :: Cols -> [Text] -> [[Text]]
-wrapLines _    []                     = []
-wrapLines cols [t]                    = pure . wrapIndent (noOfLeadingSpcs t) cols $ t
-wrapLines cols (a:b:rest) | ()# a     = [""]     : wrapNext
-                          | otherwise = helper a : wrapNext
+wrapLines _    []                          = []
+wrapLines cols [t]        | hasIndentTag t = pure . wrapLineWithIndentTag cols $ t
+                          | otherwise      = pure . wrapIndent (noOfLeadingSpcs t) cols $ t
+wrapLines cols (a:b:rest) | ()# a          = [""]     : wrapNext
+                          | otherwise      = helper a : wrapNext
   where
-    wrapNext         = wrapLines cols $ b : rest
+    wrapNext           = wrapLines cols $ b : rest
     helper
-      | hasIndentTag = wrapLineWithIndentTag cols
-      | nolsa > 0    = wrapIndent nolsa cols
-      | nolsb > 0    = wrapIndent nolsb cols
-      | otherwise    = wrap cols
-    hasIndentTag     = T.last a == indentTagChar
-    (nolsa, nolsb)   = (a, b) & both %~ noOfLeadingSpcs
+      | hasIndentTag a = wrapLineWithIndentTag cols
+      | nolsa > 0      = wrapIndent nolsa cols
+      | nolsb > 0      = wrapIndent nolsb cols
+      | otherwise      = wrap cols
+    (nolsa, nolsb)     = (a, b) & both %~ noOfLeadingSpcs
+
+
+hasIndentTag :: Text -> Bool
+hasIndentTag t = T.last t == indentTagChar
 
 
 noOfLeadingSpcs :: Text -> Int
