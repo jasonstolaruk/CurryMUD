@@ -20,14 +20,14 @@ import Mud.Util.Operators
 import Mud.Util.Quoting
 import Mud.Util.Text
 
--- import Control.Monad (void, when)
+import Control.Monad (void, when)
 import Control.Monad.Reader (runReaderT)
 import Data.Monoid ((<>))
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (putStrLn)
 import System.Directory (createDirectoryIfMissing, doesDirectoryExist, setCurrentDirectory)
 import System.Environment (getEnv, getProgName)
--- import System.Remote.Monitoring (forkServer)
+import System.Remote.Monitoring (forkServer)
 
 
 main :: IO ()
@@ -35,16 +35,14 @@ main = mIf (not <$> doesDirectoryExist mudDir) stop go
   where
     stop = T.putStrLn $ "The " <> showText mudDir <> " directory does not exist; aborting."
     go   = do
-        -- when (isDebug && isEKGing) startEKG
+        when (isDebug && isEKGing) startEKG
         setCurrentDirectory mudDir
         mapM_ (createDirectoryIfMissing False) [ dbDir, logDir, persistDir ]
         welcome
         runReaderT threadListen =<< initMudData DoLog
-{- TODO: Re-enable EKG.
-    startEKG = do -- "curry +RTS -T"
+    startEKG = do -- "curry +RTS -T" to enable GC statistics collection in the run-time system.
         void . forkServer "localhost" $ 8000
         T.putStrLn . prd $ "EKG server started " <> parensQuote "http://localhost:8000"
--}
 
 
 welcome :: IO ()

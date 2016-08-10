@@ -23,7 +23,7 @@ executable             curry
   build-depends:         base >=4.8 && <5.0
                        , currymud
                        , directory
-                       -- , ekg
+                       , ekg
                        , mtl
                        , network
                        , text
