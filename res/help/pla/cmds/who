@@ -16,4 +16,4 @@ Note: use the "admin" command to get a list of CurryMUD administrators, indicati
 \qwho male\d to display a list of all the male characters who are awake.4`
 
 \uSEE ALSO\n
-link, unlink, whoami
+admin, link, unlink, whoami
