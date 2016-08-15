@@ -86,5 +86,9 @@ hookArgDelimiter :: Char
 hookArgDelimiter = '\134'
 
 
+multiLineEndChar :: Char
+multiLineEndChar = '.'
+
+
 plaIdDelimiter :: Char
 plaIdDelimiter = '\135'

@@ -792,7 +792,7 @@ data PlaFlags = IsAdmin
               | IsTunedQuestion deriving Enum
 
 
-type Interp  = CmdName -> ActionParams -> MudStack ()
+type Interp = CmdName -> ActionParams -> MudStack ()
 
 
 type CmdName = Text
