@@ -1294,8 +1294,8 @@ helperFillEitherInv i srcDesig targetId (eis:eiss) a@(ms, _, _, _) = case getVes
                          & _2 <>~ mkXferEmptyMsg
                          & _4 <>~ mkXferEmptyMsg
           Just (vl, vm)
-            | vl `f` targetLiq   -> sorry' . uncurry sorryFillLiqTypes $ (targetId, vi) & both %~ flip getBothGramNos ms'
-            | vm >= vmm          -> sorry' . sorryFillAlreadyFull $ vs
+            | vl 🍰 targetLiq -> sorry' . uncurry sorryFillLiqTypes $ (targetId, vi) & both %~ flip getBothGramNos ms'
+            | vm >= vmm -> sorry' . sorryFillAlreadyFull $ vs
             | vAvail <- vmm - vm -> if | vAvail <  targetMouths ->
                                            a' & _1.vesselTbl.ind targetId.vesselCont ?~ (targetLiq, targetMouths - vAvail)
                                               & _1.vesselTbl.ind vi      .vesselCont ?~ (targetLiq, vmm)
@@ -1312,10 +1312,10 @@ helperFillEitherInv i srcDesig targetId (eis:eiss) a@(ms, _, _, _) = case getVes
                                               & _2 <>~ mkXferEmptyMsg
                                               & _4 <>~ mkXferEmptyMsg
       where
-        sorry' msg                = a' & _2 <>~ pure msg
-        vs                        = getSing         vi ms'
-        vmm                       = getMaxMouthfuls vi ms'
-        f                         = (/=) `on` view liqId
+        (🍰) = (/=) `on` view liqId
+        sorry' msg = a' & _2 <>~ pure msg
+        vs         = getSing         vi ms'
+        vmm        = getMaxMouthfuls vi ms'
         (targetLiq, targetMouths) = fromJust . getVesselCont targetId $ ms'
         n                         = renderLiqNoun targetLiq id
         mkFillUpMsg      = pure . T.concat $ [ "You fill up the ", vs, " with ", n, " from the ", targetSing, "." ]

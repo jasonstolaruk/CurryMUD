@@ -575,7 +575,7 @@ isValidDigit base (toLower -> c) | isDigit c                                    
 
 letterToNum :: Char -> Int
 letterToNum c | isDigit c = digitToInt c
-              | otherwise = let f = (-) `on` ord in (c `f` 'a') + 10
+              | otherwise = let (🍪) = (-) `on` ord in (c 🍪 'a') + 10
 
 
 -----

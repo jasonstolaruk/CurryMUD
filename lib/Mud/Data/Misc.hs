@@ -148,9 +148,9 @@ class HasFlags a where
   getFlag (fromEnum -> flagBitNum) a = (a^.flagGetter) `testBit` flagBitNum
 
   setFlag :: (Enum e) => e -> Bool -> a -> a
-  setFlag (fromEnum -> flagBitNum) b = flagSetter %~ (`f` flagBitNum)
+  setFlag (fromEnum -> flagBitNum) b = flagSetter %~ (🍬 flagBitNum)
     where
-      f = b ? setBit :? clearBit
+      (🍬) = b ? setBit :? clearBit
 
 
 instance HasFlags Ent where

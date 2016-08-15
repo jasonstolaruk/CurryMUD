@@ -67,16 +67,16 @@ singleArgInvEqRm dflt arg = case sortArgsInvEqRm dflt . pure $ arg of
 sortArgsInvEqRm :: InInvEqRm -> Args -> (Args, Args, Args)
 sortArgsInvEqRm dflt = foldr f mempty
   where
-    f arg acc = case arg of InvPref -> getLens InInv `g` dropPref arg
-                            EqPref  -> getLens InEq  `g` dropPref arg
-                            RmPref  -> getLens InRm  `g` dropPref arg
-                            xs      -> getLens dflt  `g` xs
+    f arg acc = case arg of InvPref -> getLens InInv 🍮 dropPref arg
+                            EqPref  -> getLens InEq  🍮 dropPref arg
+                            RmPref  -> getLens InRm  🍮 dropPref arg
+                            xs      -> getLens dflt  🍮 xs
       where
         getLens = \case InInv -> _1
                         InEq  -> _2
                         InRm  -> _3
-        lens `g` rest = acc & lens %~ (rest :)
-        dropPref      = T.tail . T.tail
+        lens 🍮 rest = acc & lens %~ (rest :)
+        dropPref = T.tail . T.tail
 
 
 -----

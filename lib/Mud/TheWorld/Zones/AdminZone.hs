@@ -157,19 +157,19 @@ helperFillWaterRmEitherInv i srcDesig (eis:eiss) a = next $ case eis of
                         -> if | cans < 1   -> a' & _2 <>~ sorryEnc
                               | vmm > cans -> partialMsgHelper (a' & _1.vesselTbl.ind vi.vesselCont ?~ (waterLiq, cans))
                               | otherwise  -> fillUp
-          Just (vl, vm) | vl `f` waterLiq -> sorry' . sorryFillWaterLiqTypes . getSing vi $ ms'
-                        | vm >= vmm       -> sorry' . sorryFillAlreadyFull $ vs
+          Just (vl, vm) | vl 🍧 waterLiq -> sorry' . sorryFillWaterLiqTypes . getSing vi $ ms'
+                        | vm >= vmm -> sorry' . sorryFillAlreadyFull $ vs
                         | vAvail <- vmm - vm
                         , cans   <- calcCanCarryMouthfuls vAvail
                         -> if | cans < 1      -> a' & _2 <>~ sorryEnc
                               | vAvail > cans -> partialMsgHelper (a' & _1.vesselTbl.ind vi.vesselCont ?~ (waterLiq, vm + cans))
                               | otherwise     -> fillUp
       where
+        (🍧) = (/=) `on` view liqId
         sorry' msg = a' & _2 <>~ pure msg
         sorryEnc   = pure $ sorryGetEnc <> "any more water."
         vs         = getSing         vi ms'
         vmm        = getMaxMouthfuls vi ms'
-        f          = (/=) `on` view liqId
         calcCanCarryMouthfuls amt = let myWeight = calcWeight i ms'
                                         myMaxEnc = calcMaxEnc i ms'
                                         g        | myWeight + (amt * mouthfulWeight) > myMaxEnc

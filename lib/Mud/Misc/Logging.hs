@@ -168,8 +168,8 @@ doIfLogging :: Id -> (LogQueue -> MudStack ()) -> MudStack ()
 doIfLogging i f = getState >>= \ms ->
     let a = maybeVoid (f . snd) . IM.lookup i . view plaLogTbl $ ms
         b = maybeVoid (`doIfLogging` f) . getPossessor i $ ms
-        g = pcNpc i ms
-    in a `g` b
+        (🍡) = pcNpc i ms
+    in a 🍡 b
 
 
 closeLogs :: MudStack ()

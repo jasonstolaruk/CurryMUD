@@ -1226,7 +1226,7 @@ adminSearch p = patternMatchFail "adminSearch" . showText $ p
 
 
 applyRegex :: Text -> Text -> (Text, Text, Text)
-applyRegex searchTerm target = let f = (=~) `on` T.unpack in target `f` searchTerm |&| each %~ T.pack
+applyRegex searchTerm target = let (🍩) = (=~) `on` T.unpack in target 🍩 searchTerm |&| each %~ T.pack
 
 
 -----
