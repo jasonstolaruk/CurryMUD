@@ -534,6 +534,15 @@ modifyAttribsForRace i ms = let myMob = mobTbl.ind i in case getRace i ms of
                   & myMob.ps -~ 4
 
 
+{-
+Is it possible for a new character to have an initial max PP so low that he/she can't perform fundamental psionic tasks
+such as linking?
+The lowest amount of PP that a new character can start with is 10:
+15 + -4 (modifier for 10 PS) + -2 (lowest racial PS modifier) + 1 (minimum level up PP) = 10
+Linking costs 10 PP. Unlinking costs 5 PP.
+Creating a new channel costs 5 PP. Connecting/disconnecting costs 3 PP.
+ギリギリセーフ。
+-}
 newXps :: Id -> V.Vector Int -> MudState -> MudState
 newXps i (V.toList -> (a:b:c:d:_)) ms = let x | getRace i ms == Human = 20
                                               | otherwise             = 15

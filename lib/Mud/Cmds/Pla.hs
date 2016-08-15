@@ -2151,12 +2151,12 @@ newChan (WithArgs i mq cols (nub -> as)) = helper |&| modifyState >=> \(unzip ->
           | a' `elem` illegalNames = sorryNewChanName a "this name is reserved or already in use" `sorry` triple
           | a' `elem` map T.toLower myChanNames
           , match <- head . filter ((== a') . T.toLower) $ myChanNames = sorryNewChanExisting match `sorry` triple
-          | not . hasPp i ms' $ 3 = sorryPp ("create a new channel named " <> dblQuote a) `sorry` triple
+          | not . hasPp i ms' $ 5 = sorryPp ("create a new channel named " <> dblQuote a) `sorry` triple
           | otherwise = let ci = views chanTbl (head . ([0..] \\) . IM.keys) $ triple^._1
                             c  = Chan ci a (M.singleton s True) []
                             cr = ChanRec "" ci a s . asteriskQuote $ "New channel created."
                         in triple & _1.chanTbl.at ci ?~ c
-                                  & _1.mobTbl.ind i.curPp -~ 3
+                                  & _1.mobTbl.ind i.curPp -~ 5
                                   & _2 <>~ pure (a, cr)
         sorry msg    = _3 <>~ pure msg
         isNG c       = not $ isLetter c || isDigit c
@@ -3902,7 +3902,7 @@ unlink (LowerNub i mq cols as) =
                   where
                     sorry msg     = a & _2 <>~ (mkBcast i . nlnl $ msg)
                     procArgHelper
-                      | not . hasPp i ms' $ 3 = sorry . sorryPp $ "sever your link with " <> targetSing
+                      | not . hasPp i ms' $ 5 = sorry . sorryPp $ "sever your link with " <> targetSing
                       | targetId <- getIdForMobSing targetSing ms'
                       , s        <- getSing i ms
                       , srcMsg   <- T.concat [ focusingInnateMsg, "you sever your link with ", targetSing, "." ]
@@ -3913,7 +3913,7 @@ unlink (LowerNub i mq cols as) =
                                         & teleLinkMstrTbl.ind targetId.at s          .~ Nothing
                                         & pcTbl .ind i       .linked %~ (targetSing `delete`)
                                         & pcTbl .ind targetId.linked %~ (s          `delete`)
-                                        & mobTbl.ind i       .curPp  -~ 3
+                                        & mobTbl.ind i       .curPp  -~ 5
                       = a & _1 .~  ms''
                           & _2 <>~ (nlnl srcMsg, pure i) : targetBs
                           & _3 <>~ pure targetSing
