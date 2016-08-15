@@ -1467,6 +1467,7 @@ goDispatcher p@(Lower i mq cols as)     = mapM_ (tryMove i mq cols p { args = []
 goDispatcher p                          = patternMatchFail "goDispatcher" . showText $ p
 
 
+-- TODO: Movement costs FP.
 tryMove :: Id -> MsgQueue -> Cols -> ActionParams -> Text -> MudStack ()
 tryMove i mq cols p dir = helper |&| modifyState >=> \case
   Left  msg          -> wrapSend mq cols msg

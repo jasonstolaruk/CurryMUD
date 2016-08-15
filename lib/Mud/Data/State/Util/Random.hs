@@ -52,7 +52,7 @@ percentRange :: Range
 percentRange = (1, 100)
 
 
-rndmDo :: Int -> MudStack () -> MudStack ()
+rndmDo :: Int -> Fun -> MudStack ()
 rndmDo prob = mWhen (isSuccess prob)
 
 

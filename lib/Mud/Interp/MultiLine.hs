@@ -7,5 +7,5 @@ import Mud.Data.State.MudData
 -- import qualified Data.Text as T
 
 
-multiLineInterp :: Interp
-multiLineInterp = undefined
+multiLineInterp :: Fun -> Interp
+multiLineInterp _ = undefined

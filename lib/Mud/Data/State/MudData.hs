@@ -386,13 +386,13 @@ data DistinctFood = DistinctFood { _foodMouthfuls     :: Mouthfuls
 -- ==================================================
 
 
-type FunName = Text
-
-
 type Fun = MudStack ()
 
 
 type Funs = [Fun]
+
+
+type FunName = Text
 
 
 -- ==================================================

@@ -152,7 +152,7 @@ threadExHandler threadName e = do
 -----
 
 
-racer :: MudData -> MudStack () -> MudStack () -> MudStack ()
+racer :: MudData -> Fun -> Fun -> MudStack ()
 racer md a b = liftIO . race_ (runReaderT a md) . runReaderT b $ md
 
 

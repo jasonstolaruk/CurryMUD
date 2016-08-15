@@ -445,7 +445,7 @@ modifyState f = ask >>= \md -> liftIO .  atomicModifyIORef' (md^.mudStateIORef) 
 -----
 
 
-pcNpc :: Id -> MudState -> MudStack () -> MudStack () -> MudStack ()
+pcNpc :: Id -> MudState -> Fun -> Fun -> MudStack ()
 pcNpc i ms a b = case getType i ms of
   PCType  -> a
   NpcType -> b

@@ -155,14 +155,14 @@ checkProfanitiesDict i mq cols cn = checkNameHelper (Just profanitiesFile) "chec
         bcastAdmins (capitalize msg) >> logNotice "checkProfanitiesDict sorry" msg
 
 
-checkNameHelper :: Maybe FilePath -> Text -> MudStack () -> CmdName -> MudStack Any
+checkNameHelper :: Maybe FilePath -> Text -> Fun -> CmdName -> MudStack Any
 checkNameHelper Nothing     _       _     _  = return mempty
 checkNameHelper (Just file) funName sorry cn = (liftIO . T.readFile $ file) |&| try >=> either
     (emptied . fileIOExHandler funName)
     (checkSet cn sorry . S.fromList . T.lines . T.toLower)
 
 
-checkSet :: CmdName -> MudStack () -> S.Set Text -> MudStack Any
+checkSet :: CmdName -> Fun -> S.Set Text -> MudStack Any
 checkSet cn sorry set = let isNG = cn `S.member` set in do { when isNG sorry; return . Any $ isNG }
 
 

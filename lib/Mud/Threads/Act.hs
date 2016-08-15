@@ -54,7 +54,7 @@ logPla = L.logPla "Mud.Threads.Act"
 -- ==================================================
 
 
-startAct :: Id -> ActType -> MudStack () -> MudStack ()
+startAct :: Id -> ActType -> Fun -> MudStack ()
 startAct i actType f = do
     logPla "startAct" i $ pp actType <> " act started."
     a <- runAsync . threadAct i actType $ f
@@ -73,7 +73,7 @@ stopNpcActs :: MudStack ()
 stopNpcActs = do { logNotice "stopNpcActs" "stopping NPC acts."; mapM_ stopActs =<< getNpcIds <$> getState }
 
 
-threadAct :: Id -> ActType -> MudStack () -> MudStack ()
+threadAct :: Id -> ActType -> Fun -> MudStack ()
 threadAct i actType f = let a = (>> f) . setThreadType $ case actType of Attacking -> undefined -- TODO
                                                                          Drinking  -> DrinkingThread i
                                                                          Eating    -> EatingThread   i
