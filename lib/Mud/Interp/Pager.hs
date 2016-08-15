@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
-{-# LANGUAGE NamedFieldPuns, OverloadedStrings, PatternSynonyms, ViewPatterns #-}
+{-# LANGUAGE NamedFieldPuns, OverloadedStrings, ViewPatterns #-}
 
 module Mud.Interp.Pager ( interpPager
                         , sendPagerPrompt ) where

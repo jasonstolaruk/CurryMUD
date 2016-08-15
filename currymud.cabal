@@ -71,6 +71,7 @@ library
                        Mud.Interp.Dispatch
                        Mud.Interp.Login
                        Mud.Interp.Misc
+                       Mud.Interp.MultiLine
                        Mud.Interp.Npc
                        Mud.Interp.Pager
                        Mud.Misc.ANSI

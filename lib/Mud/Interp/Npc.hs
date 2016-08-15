@@ -1,4 +1,4 @@
-{-# LANGUAGE MonadComprehensions, NamedFieldPuns, OverloadedStrings, PatternSynonyms, ViewPatterns #-}
+{-# LANGUAGE OverloadedStrings, ViewPatterns #-}
 
 module Mud.Interp.Npc (npcInterp) where
 

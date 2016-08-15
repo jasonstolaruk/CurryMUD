@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiWayIf, NamedFieldPuns, OverloadedStrings, TupleSections #-}
+{-# LANGUAGE NamedFieldPuns, OverloadedStrings #-}
 
 module Mud.Interp.Dispatch where
 
