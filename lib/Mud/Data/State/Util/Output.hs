@@ -30,6 +30,7 @@ module Mud.Data.State.Util.Output ( anglePrompt
                                   , sendDfltPrompt
                                   , sendMsgBoot
                                   , sendPrompt
+                                  , sendPromptNoNl
                                   , sendSilentBoot
                                   , wrapSend
                                   , wrapSendPrompt ) where
@@ -343,8 +344,12 @@ sendSilentBoot mq = liftIO . atomically . writeTQueue mq $ SilentBoot
 -----
 
 
-sendPrompt :: MsgQueue -> Text -> MudStack ()
+sendPrompt :: MsgQueue -> Text -> MudStack () -- TODO: "liftIO . atomically . writeTQueue mq"
 sendPrompt mq = liftIO . atomically . writeTQueue mq . Prompt
+
+
+sendPromptNoNl :: MsgQueue -> Text -> MudStack ()
+sendPromptNoNl mq = liftIO . atomically . writeTQueue mq . PromptNoNl
 
 
 wrapSendPrompt :: MsgQueue -> Cols -> Text -> MudStack ()

@@ -22,6 +22,7 @@ telnetWILL  = '\xFB' -- 251
 telnetWON'T = '\xFC' -- 252
 
 
-telnetHideInput, telnetShowInput :: Text
+telnetGoAhead, telnetHideInput, telnetShowInput :: Text
+telnetGoAhead   = T.pack [ telnetIAC, telnetGA                ]
 telnetHideInput = T.pack [ telnetIAC, telnetWILL,  telnetECHO ]
 telnetShowInput = T.pack [ telnetIAC, telnetWON'T, telnetECHO ]

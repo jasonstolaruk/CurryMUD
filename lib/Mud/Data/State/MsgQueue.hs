@@ -21,6 +21,7 @@ data Msg = AsSelf     Text
          | MsgBoot    Text
          | Peeped     Text
          | Prompt     Text
+         | PromptNoNl Text
          | Quit
          | Shutdown
          | SilentBoot

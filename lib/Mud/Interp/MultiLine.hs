@@ -33,8 +33,8 @@ interpMutliLine _ _ _ p = patternMatchFail "interpMutliLine" . showText $ p
 
 
 nextLine :: ([Text] -> MudStack ()) -> Id -> MsgQueue -> [Text] -> MudStack ()
-nextLine f i mq ts = let next = setInterp i . Just . interpMutliLine f $ ts in anglePrompt mq >> next
+nextLine f i mq ts = let next = setInterp i . Just . interpMutliLine f $ ts in promptMultiLine mq >> next
 
 
 promptMultiLine :: MsgQueue -> MudStack ()
-promptMultiLine = anglePrompt
+promptMultiLine = flip sendPromptNoNl "> "

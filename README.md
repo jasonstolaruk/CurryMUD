@@ -61,7 +61,7 @@ I am still in the initial stage of developing basic commands. There is very litt
 The code is available here on GitHub under the 3-clause BSD license (refer to the [LICENSE file](https://github.com/jasonstolaruk/CurryMUD/blob/master/LICENSE)). Please note that **I am not accepting PRs**.
 
 * About 40,000 lines of code/text.
-* About 90 modules, excluding tests.
+* About 95 modules, excluding tests.
 * About 60 unit and property tests exist (I'm using the [tasty testing framework](https://hackage.haskell.org/package/tasty)).
 * A `ReaderT` monad transformer stack with the world state inside a single `IORef`.
 * `STM`-based concurrency.
