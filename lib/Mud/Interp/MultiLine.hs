@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Mud.Interp.MultiLine ( multiLineInterp
+module Mud.Interp.MultiLine ( interpMutliLine
                             , promptMultiLine ) where
 
 import Mud.Data.State.ActionParams.ActionParams
@@ -24,17 +24,16 @@ patternMatchFail = U.patternMatchFail "Mud.Interp.MultiLine"
 -- ==================================================
 
 
-multiLineInterp :: ([Text] -> MudStack ()) -> [Text] -> Interp
-multiLineInterp f ts "" (NoArgs'  i mq     )                                      = nextLine f i mq $ "" : ts
-multiLineInterp f ts cn (NoArgs'' _        ) | cn == T.singleton multiLineEndChar = f ts
-multiLineInterp f ts cn (WithArgs i mq _ as)                                      = nextLine f i mq $ t  : ts
+interpMutliLine :: ([Text] -> MudStack ()) -> [Text] -> Interp
+interpMutliLine f ts cn (NoArgs'' _        ) | cn == T.singleton multiLineEndChar = f ts
+interpMutliLine f ts cn (WithArgs i mq _ as)                                      = nextLine f i mq $ ts ++ pure t
   where
     t = T.unwords $ cn : as
-multiLineInterp _ _ _ p = patternMatchFail "multiLineInterp" . showText $ p
+interpMutliLine _ _ _ p = patternMatchFail "interpMutliLine" . showText $ p
 
 
 nextLine :: ([Text] -> MudStack ()) -> Id -> MsgQueue -> [Text] -> MudStack ()
-nextLine f i mq ts = let next = setInterp i . Just . multiLineInterp f $ ts in anglePrompt mq >> next
+nextLine f i mq ts = let next = setInterp i . Just . interpMutliLine f $ ts in anglePrompt mq >> next
 
 
 promptMultiLine :: MsgQueue -> MudStack ()

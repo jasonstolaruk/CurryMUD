@@ -20,6 +20,8 @@ import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Data.State.Util.Random
+import Mud.Interp.Misc
+import Mud.Interp.MultiLine
 import Mud.Misc.ANSI
 import Mud.Misc.EffectFuns
 import Mud.Misc.Persist
@@ -132,6 +134,7 @@ debugCmds =
     , mkDebugCmd "liquid"     debugLiq         "Consume a given amount (in mouthfuls) of a given liquid (by distinct \
                                                \liquid ID)."
     , mkDebugCmd "log"        debugLog         "Put the logging service under heavy load."
+    , mkDebugCmd "multiline"  debugMultiLine   "Test multi line input."
     , mkDebugCmd "npcserver"  debugNpcServer   "Stop all NPC server threads."
     , mkDebugCmd "number"     debugNumber      "Display the decimal equivalent of a given number in a given base."
     , mkDebugCmd "out"        debugOut         "Dump the inventory of the logged out room."
@@ -532,6 +535,19 @@ debugLog (NoArgs' i mq) = helper >> ok mq >> logPlaExec (prefixDebugCmd "log") i
     heavyLogging = replicateM_ 100 . logNotice "debugLog heavyLogging" =<< mkMsg
     mkMsg        = [ prd $ "Logging from " <> ti | (showText -> ti) <- liftIO myThreadId ]
 debugLog p = withoutArgs debugLog p
+
+
+-----
+
+
+debugMultiLine :: ActionFun
+debugMultiLine (NoArgs i mq cols) = promptMultiLine mq >> (setInterp i . Just . interpMutliLine f $ [])
+  where
+    f ts = do
+        multiWrapSend mq cols $ "You entered:" : ts
+        sendDfltPrompt mq i
+        resetInterp i
+debugMultiLine p = withoutArgs debugMultiLine p
 
 
 -----
