@@ -33,7 +33,8 @@ module Mud.Data.State.Util.Output ( anglePrompt
                                   , sendPromptNoNl
                                   , sendSilentBoot
                                   , wrapSend
-                                  , wrapSendPrompt ) where
+                                  , wrapSendPrompt
+                                  , writeMsg ) where
 
 import Mud.Cmds.Msgs.Misc
 import Mud.Cmds.Msgs.Sorry
@@ -301,7 +302,7 @@ retainedMsg _ _ _ = unit
 
 
 send :: MsgQueue -> Text -> MudStack ()
-send mq = liftIO . atomically . writeTQueue mq . FromServer
+send mq = writeMsg mq . FromServer
 
 
 -----
@@ -334,22 +335,22 @@ mkDfltPrompt i ms = let (hps, mps, pps, fps) = getPts i ms
 
 
 sendMsgBoot :: MsgQueue -> Maybe Text -> MudStack ()
-sendMsgBoot mq = liftIO . atomically . writeTQueue mq . MsgBoot . fromMaybe dfltBootMsg
+sendMsgBoot mq = writeMsg mq . MsgBoot . fromMaybe dfltBootMsg
 
 
 sendSilentBoot :: MsgQueue -> MudStack ()
-sendSilentBoot mq = liftIO . atomically . writeTQueue mq $ SilentBoot
+sendSilentBoot mq = writeMsg mq SilentBoot
 
 
 -----
 
 
-sendPrompt :: MsgQueue -> Text -> MudStack () -- TODO: "liftIO . atomically . writeTQueue mq"
-sendPrompt mq = liftIO . atomically . writeTQueue mq . Prompt
+sendPrompt :: MsgQueue -> Text -> MudStack ()
+sendPrompt mq = writeMsg mq . Prompt
 
 
 sendPromptNoNl :: MsgQueue -> Text -> MudStack ()
-sendPromptNoNl mq = liftIO . atomically . writeTQueue mq . PromptNoNl
+sendPromptNoNl mq = writeMsg mq . PromptNoNl
 
 
 wrapSendPrompt :: MsgQueue -> Cols -> Text -> MudStack ()
@@ -361,3 +362,10 @@ wrapSendPrompt mq cols = sendPrompt mq . wrapUnlinesInit cols
 
 wrapSend :: MsgQueue -> Cols -> Text -> MudStack ()
 wrapSend mq cols = send mq . wrapUnlinesNl cols
+
+
+-----
+
+
+writeMsg :: MsgQueue -> Msg -> MudStack ()
+writeMsg mq = liftIO . atomically . writeTQueue mq

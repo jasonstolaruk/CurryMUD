@@ -14,7 +14,8 @@ module Mud.Misc.Logging ( closeLogs
                         , logPlaExec
                         , logPlaExecArgs
                         , logPlaOut
-                        , massLogPla ) where
+                        , massLogPla
+                        , writeLog ) where
 
 import Mud.Data.Misc
 import Mud.Data.State.MsgQueue
@@ -137,11 +138,7 @@ loggingThreadExHandler logExLock n e = guard (fromException e /= Just ThreadKill
 
 
 logRotationFlagger :: LogQueue -> IO ()
-logRotationFlagger q = forever loop
-  where
-    loop = do
-        threadDelay $ logRotationDelay * 10 ^ 6
-        atomically . writeTQueue q $ RotateLog
+logRotationFlagger q = forever $ threadDelay (logRotationDelay * 10 ^ 6) >> atomically (writeTQueue q RotateLog)
 
 
 initPlaLog :: Id -> Sing -> MudStack ()
@@ -157,7 +154,7 @@ initPlaLog i n@(T.unpack -> n') = do
 
 
 stopLog :: LogQueue -> MudStack ()
-stopLog = liftIO . atomically . flip writeTQueue StopLog
+stopLog = flip writeLog StopLog
 
 
 closePlaLog :: Id -> MudStack ()
@@ -189,7 +186,7 @@ closeLogs = asks mkBindings >>= \((ea, eq), (na, nq)) -> do
 
 
 registerMsg :: Text -> LogQueue -> MudStack ()
-registerMsg msg = liftIO . atomically . flip writeTQueue (LogMsg msg)
+registerMsg msg = flip writeLog (LogMsg msg)
 
 
 logNotice :: Text -> Text -> Text -> MudStack ()
@@ -238,7 +235,11 @@ logPlaOut modName cn i (slashes -> msgs) = logPla modName cn i $ parensQuote "ou
 
 
 massLogPla :: Text -> Text -> Text -> MudStack ()
-massLogPla modName (dblQuote -> funName) msg = liftIO . atomically . helper =<< getState
+massLogPla modName (dblQuote -> funName) msg = helper =<< getState
   where
     helper (views plaLogTbl (map snd . IM.elems) -> qs) =
-        forM_ qs (`writeTQueue` (LogMsg . T.concat $ [ modName, " ", funName, ": ", msg ]))
+        forM_ qs (`writeLog` (LogMsg . T.concat $ [ modName, " ", funName, ": ", msg ]))
+
+
+writeLog :: LogQueue -> LogCmd -> MudStack ()
+writeLog lq = liftIO . atomically . writeTQueue lq

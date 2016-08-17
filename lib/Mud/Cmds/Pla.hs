@@ -67,8 +67,6 @@ import qualified Mud.Misc.Logging as L (logNotice, logPla, logPlaExec, logPlaExe
 import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 
 import Control.Arrow ((***), first, second)
-import Control.Concurrent.STM (atomically)
-import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception.Lifted (catch, try)
 import Control.Lens (_1, _2, _3, _4, _5, at, both, each, set, to, view, views)
 import Control.Lens.Operators ((%~), (&), (+~), (-~), (.~), (<>~), (?~), (^.))
@@ -2195,7 +2193,7 @@ npcAsSelfHelper :: ActionFun
 npcAsSelfHelper p@(NoArgs'  i mq     ) = advise p [] adviceAsSelfNoArgs >> sendDfltPrompt mq i
 npcAsSelfHelper   (WithArgs i mq _ as) = do
     logPlaExecArgs "." as i
-    liftIO . atomically . writeTQueue mq . AsSelf . nl . T.unwords $ as
+    writeMsg mq . AsSelf . nl . T.unwords $ as
 npcAsSelfHelper p = patternMatchFail "npcAsSelfHelper" . showText $ p
 
 
@@ -2420,7 +2418,7 @@ question p = patternMatchFail "question" . showText $ p
 
 
 quit :: ActionFun
-quit (NoArgs' i mq)                        = do { logPlaExec "quit" i; liftIO . atomically . writeTQueue mq $ Quit }
+quit (NoArgs' i mq)                        = do { logPlaExec "quit" i; writeMsg mq Quit }
 quit ActionParams { plaMsgQueue, plaCols } = wrapSend plaMsgQueue plaCols adviceQuitExcessArgs
 
 

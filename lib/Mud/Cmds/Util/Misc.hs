@@ -104,8 +104,6 @@ import qualified Mud.Misc.Logging as L (logPla)
 import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 
 import Control.Arrow ((***), second)
-import Control.Concurrent.STM (atomically)
-import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception.Lifted (catch, try)
 import Control.Lens (_1, _2, _3, at, both, each, to, view, views)
 import Control.Lens.Operators ((%~), (&), (+~), (.~), (<>~), (?~), (^.))
@@ -339,7 +337,7 @@ expandEmbeddedIdsToSings ms = helper
 
 
 fakeClientInput :: MsgQueue -> Text -> MudStack ()
-fakeClientInput mq = liftIO . atomically . writeTQueue mq . FromClient . nl
+fakeClientInput mq = writeMsg mq . FromClient . nl
 
 
 -----

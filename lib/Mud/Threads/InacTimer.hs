@@ -7,6 +7,7 @@ import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
+import Mud.Data.State.Util.Output
 import Mud.Threads.Misc
 import Mud.TopLvlDefs.Misc
 import Mud.Util.Misc
@@ -18,7 +19,6 @@ import qualified Mud.Misc.Logging as L (logNotice, logPla)
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TMQueue (tryReadTMQueue)
-import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception.Lifted (catch, finally)
 import Control.Monad ((>=>))
 import Control.Monad.IO.Class (liftIO)
@@ -61,4 +61,4 @@ threadInacTimer i mq tq =
         logPla "threadInacTimer inacBoot" i . prd $ "booted due to inactivity " <> secs
         let noticeMsg = T.concat [ "booting player ", showText i, " ", parensQuote s, " due to inactivity." ]
         logNotice "threadInacTimer inacBoot" noticeMsg
-        liftIO . atomically . writeTQueue mq $ InacBoot
+        writeMsg mq InacBoot

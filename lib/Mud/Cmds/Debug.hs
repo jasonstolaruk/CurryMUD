@@ -24,6 +24,7 @@ import Mud.Interp.Misc
 import Mud.Interp.MultiLine
 import Mud.Misc.ANSI
 import Mud.Misc.EffectFuns
+import Mud.Misc.Logging (writeLog)
 import Mud.Misc.Persist
 import Mud.TheWorld.Zones.AdminZoneIds (iLoggedOut, iPidge)
 import Mud.Threads.Effect
@@ -47,8 +48,6 @@ import Control.Applicative (Const)
 import Control.Arrow ((***))
 import Control.Concurrent (getNumCapabilities, myThreadId)
 import Control.Concurrent.Async (asyncThreadId, poll)
-import Control.Concurrent.STM (atomically)
-import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception (ArithException(..), IOException)
 import Control.Exception.Lifted (throwIO, try)
 import Control.Lens (Optical, both, to, view, views)
@@ -544,7 +543,7 @@ debugMultiLine :: ActionFun
 debugMultiLine (NoArgs i mq cols) = promptMultiLine mq >> (setInterp i . Just . interpMutliLine f $ [])
   where
     f ts = do
-        multiWrapSend mq cols $ "You entered:" : ts
+        multiWrapSend mq cols $ nl "You entered:" : ts
         sendDfltPrompt mq i
         resetInterp i
 debugMultiLine p = withoutArgs debugMultiLine p
@@ -716,7 +715,7 @@ debugRnt p = advise p [] adviceDRntExcessArgs
 
 debugRotate :: ActionFun
 debugRotate (NoArgs' i mq) = getState >>= \ms -> let lq = getLogQueue i ms in do
-    liftIO . atomically . writeTQueue lq $ RotateLog
+    writeLog lq RotateLog
     ok mq
     logPlaExec (prefixDebugCmd "rotate") i
 debugRotate p = withoutArgs debugRotate p
@@ -794,7 +793,7 @@ debugThrow p            = withoutArgs debugThrow p
 
 debugThrowLog :: ActionFun
 debugThrowLog (NoArgs' i mq) = getState >>= \ms -> let lq = getLogQueue i ms in
-    (liftIO . atomically . writeTQueue lq $ Throw) >> ok mq >> logPlaExec (prefixDebugCmd "throwlog") i
+    writeLog lq Throw >> ok mq >> logPlaExec (prefixDebugCmd "throwlog") i
 debugThrowLog p = withoutArgs debugThrowLog p
 
 

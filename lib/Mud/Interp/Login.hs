@@ -40,8 +40,6 @@ import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Arrow (first)
 import Control.Concurrent (threadDelay)
-import Control.Concurrent.STM (atomically)
-import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception.Lifted (try)
 import Control.Lens (ASetter, at, both, views)
 import Control.Lens.Operators ((%~), (&), (+~), (-~), (.~), (^.))
@@ -698,7 +696,7 @@ handleLogin (NewCharBundle oldSing s _) isNew params@ActionParams { .. } = do
                     ms' = ms & plaTbl.ind myId .~ p'
                 in (ms', (ms', p^.retainedMsgs, p'))
     stopInacTimer = do
-        liftIO . atomically . writeTQueue plaMsgQueue $ InacStop
+        writeMsg plaMsgQueue InacStop
         logPla "handleLogin stopInacTimer" myId "stopping the inactivity timer."
     notifyArrival ms = do
         bcastOtherAdmins myId $ if isNew

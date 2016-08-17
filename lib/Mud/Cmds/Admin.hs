@@ -953,7 +953,7 @@ adminIncognito p = withoutArgs adminIncognito p
 adminIp :: ActionFun
 adminIp (NoArgs i mq cols) = do
     ifList <- liftIO mkInterfaceList
-    multiWrapSend mq cols [ prd $ "Interfaces: " <> ifList, prd $ "Listening on port " <> showText port ]
+    multiWrapSend mq cols [ "Interfaces: " <> ifList, prd $ "Listening on port " <> showText port ]
     logPlaExec (prefixAdminCmd "ip") i
 adminIp p = withoutArgs adminIp p
 
@@ -1707,7 +1707,7 @@ shutdownHelper i mq maybeMsg = getState >>= \ms ->
         logPla     "shutdownHelper" i $ "initiating shutdown" <> rest
         massLogPla "shutdownHelper"   $ "closing connection due to server shutdown initiated by " <> s <> rest
         logNotice  "shutdownHelper"   $ "server shutdown initiated by "                           <> s <> rest
-        liftIO . atomically . writeTQueue mq $ Shutdown
+        writeMsg mq Shutdown
 
 
 -----
