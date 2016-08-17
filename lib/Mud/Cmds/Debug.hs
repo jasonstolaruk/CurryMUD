@@ -540,7 +540,9 @@ debugLog p = withoutArgs debugLog p
 
 
 debugMultiLine :: ActionFun
-debugMultiLine (NoArgs i mq cols) = promptMultiLine mq >> (setInterp i . Just . interpMutliLine f $ [])
+debugMultiLine (NoArgs i mq cols) = do
+    wrapSendPrompt mq cols "Beginning multi-line input..."
+    setInterp i . Just . interpMutliLine f $ []
   where
     f ts = do
         multiWrapSend mq cols $ nlPrefix "You entered:" : ts
