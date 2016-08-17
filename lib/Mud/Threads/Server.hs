@@ -50,6 +50,12 @@ import qualified Data.Text.IO as T (hPutStr, hPutStrLn, readFile)
 import System.IO (Handle, hFlush)
 
 
+{-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
+
+
+-----
+
+
 logNotice :: Text -> Text -> MudStack ()
 logNotice = L.logNotice "Mud.Threads.Server"
 
@@ -57,24 +63,30 @@ logNotice = L.logNotice "Mud.Threads.Server"
 -- ==================================================
 
 
+data ShouldFlush = DoFlush | Don'tFlush
+
+
+data ToWhom = Plaに | Npcに
+
+
 threadServer :: Handle -> Id -> MsgQueue -> TimerQueue -> MudStack ()
 threadServer h i mq tq = sequence_ [ setThreadType . Server $ i, loop `catch` threadExHandler ("server " <> showText i) ]
   where
     loop = mq |&| liftIO . atomically . readTQueue >=> \case
-      AsSelf     msg -> handleFromClient i mq tq True msg    >> loop
-      Dropped        ->                                         sayonara
-      FromClient msg -> handleFromClient i mq tq False msg   >> loop
-      FromServer msg -> handleFromServer i h False False msg >> loop
-      InacBoot       -> sendInacBootMsg h                    >> sayonara
-      InacStop       -> stopTimer tq                         >> loop
-      MsgBoot msg    -> sendBootMsg h msg                    >> sayonara
-      Peeped  msg    -> (liftIO . T.hPutStr h $ msg)         >> loop
-      Prompt     p   -> promptHelper i h True  p             >> loop
-      PromptNoNl p   -> promptHelper i h False p             >> loop
-      Quit           -> cowbye h                             >> sayonara
-      Shutdown       -> shutDown                             >> loop
-      SilentBoot     ->                                         sayonara
-      ToNpc msg      -> handleFromServer i h True False msg >> loop
+      AsSelf     msg -> handleFromClient i mq tq True msg         >> loop
+      Dropped        ->                                              sayonara
+      FromClient msg -> handleFromClient i mq tq False msg        >> loop
+      FromServer msg -> handleFromServer i h Plaに Don'tFlush msg >> loop
+      InacBoot       -> sendInacBootMsg h                         >> sayonara
+      InacStop       -> stopTimer tq                              >> loop
+      MsgBoot msg    -> sendBootMsg h msg                         >> sayonara
+      Peeped  msg    -> (liftIO . T.hPutStr h $ msg)              >> loop
+      Prompt     p   -> promptHelper i h Don'tFlush p             >> loop
+      PromptNoNl p   -> promptHelper i h DoFlush    p             >> loop
+      Quit           -> cowbye h                                  >> sayonara
+      Shutdown       -> shutDown                                  >> loop
+      SilentBoot     ->                                              sayonara
+      ToNpc msg      -> handleFromServer i h Npcに Don'tFlush msg >> loop
     sayonara = sequence_ [ stopTimer tq, handleEgress i ]
 
 
@@ -106,16 +118,15 @@ forwardToPeepers i peeperIds toOrFrom msg = liftIO . atomically . helper =<< get
         rest = [ spaced . bracketQuote $ s, dfltColor, " ", msg ]
 
 
--- TODO: Make a data type?
-handleFromServer :: Id -> Handle -> Bool -> Bool -> Text -> MudStack ()
-handleFromServer i h isToNpc doFlush msg = getState >>= \ms -> if isToNpc
-  then helper . prefix $ msg
-  else forwardToPeepers i (getPeepers i ms) ToThePeeped msg >> helper msg
-  where
-    helper t      = liftIO $ T.hPutStr h t >> f
-    f | doFlush   = hFlush h
-      | otherwise = unit
-    prefix        = (colorWith toNpcColor " " <>) . (" " <>)
+handleFromServer :: Id -> Handle -> ToWhom -> ShouldFlush -> Text -> MudStack ()
+handleFromServer _ h Npcに sf msg = fromServerHelper h sf $ colorWith toNpcColor " " <> " " <> msg
+handleFromServer i h Plaに sf msg = getState >>= \ms ->
+    forwardToPeepers i (getPeepers i ms) ToThePeeped msg >> fromServerHelper h sf msg
+
+
+fromServerHelper :: Handle -> ShouldFlush -> Text -> MudStack ()
+fromServerHelper h sf t = liftIO $ T.hPutStr h t >> case sf of DoFlush    -> hFlush h
+                                                               Don'tFlush -> unit
 
 
 sendInacBootMsg :: Handle -> MudStack ()
@@ -126,11 +137,11 @@ sendBootMsg :: Handle -> Text -> MudStack ()
 sendBootMsg h = liftIO . T.hPutStrLn h . nl . colorWith bootMsgColor
 
 
-promptHelper :: Id -> Handle -> Bool -> Text -> MudStack ()
-promptHelper i h b = handleFromServer i h False doFlush . f
+promptHelper :: Id -> Handle -> ShouldFlush -> Text -> MudStack ()
+promptHelper i h sf = handleFromServer i h Plaに sf . f
   where
-    (doFlush, f) | b         = (False, nl                )
-                 | otherwise = (True,  (<> telnetGoAhead))
+    f = case sf of DoFlush    -> (<> telnetGoAhead)
+                   Don'tFlush -> nl
 
 
 cowbye :: Handle -> MudStack ()

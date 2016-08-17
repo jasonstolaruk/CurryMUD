@@ -543,7 +543,7 @@ debugMultiLine :: ActionFun
 debugMultiLine (NoArgs i mq cols) = promptMultiLine mq >> (setInterp i . Just . interpMutliLine f $ [])
   where
     f ts = do
-        multiWrapSend mq cols $ nl "You entered:" : ts
+        multiWrapSend mq cols $ nlPrefix "You entered:" : ts
         sendDfltPrompt mq i
         resetInterp i
 debugMultiLine p = withoutArgs debugMultiLine p
