@@ -363,7 +363,7 @@ wrapSend :: MsgQueue -> Cols -> Text -> MudStack ()
 wrapSend = wrapSendHepler wrapUnlinesNl
 
 
-wrapSend1Nl :: MsgQueue -> Cols -> Text -> MudStack () -- TODO: Any other places this should be used?
+wrapSend1Nl :: MsgQueue -> Cols -> Text -> MudStack ()
 wrapSend1Nl = wrapSendHepler wrapUnlines
 
 

@@ -3118,7 +3118,7 @@ retrySecurityNum mq cols = do
 
 interpSecurityA :: Text -> Interp
 interpSecurityA q "" (NoArgs _ mq cols) = do
-    send mq . wrapUnlines cols $ "Please answer the question, " <> dblQuote q
+    wrapSend1Nl mq cols $ "Please answer the question, " <> dblQuote q
     promptAnswer mq
 interpSecurityA q cn (WithArgs i mq cols as) = securitySetHelper i mq cols q . T.unwords $ cn : as
 interpSecurityA _ _  p                       = patternMatchFail "interpSecurityA" . showText $ p

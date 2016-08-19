@@ -14,7 +14,6 @@ import Mud.Misc.ANSI
 import Mud.Util.Misc
 import Mud.Util.Quoting
 import Mud.Util.Text
-import Mud.Util.Wrapping
 
 import Control.Arrow (second)
 import Control.Lens (both)
@@ -67,4 +66,4 @@ sendPagerPrompt mq pageLen txtLen =
 
 
 promptRetry :: MsgQueue -> Cols -> MudStack ()
-promptRetry mq cols = send mq . wrapUnlines cols $ sorryInterpPager
+promptRetry mq cols = wrapSend1Nl mq cols sorryInterpPager
