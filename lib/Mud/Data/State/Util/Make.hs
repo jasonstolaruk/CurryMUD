@@ -47,7 +47,7 @@ mkMob MobTemplate { .. } = Mob { _sex           = mtSex
                                , _knownLangs    = mtKnownLangs
                                , _rmId          = mtRmId
                                , _mobRmDesc     = Nothing
-                               , _charDesc      = Nothing
+                               , _tempDesc      = Nothing
                                , _party         = mtParty
                                , _stomach       = []
                                , _digesterAsync = Nothing
@@ -121,4 +121,4 @@ mkRm RmTemplate { .. } = Rm { _rmName      = rtName
                             , _rmHookMap   = rtHookMap
                             , _rmActions   = rtActions
                             , _rmFunNames  = rtFunNames
-                            , _rmFunAsyncs = [] } 
+                            , _rmFunAsyncs = [] }

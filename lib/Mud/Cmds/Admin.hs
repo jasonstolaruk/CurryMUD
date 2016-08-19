@@ -729,7 +729,7 @@ examineMob i ms =
        , "Room: "             <> let ri = m^.rmId
                                  in getRmName ri ms <> " " <> parensQuote (showText ri)
        , "Room description: " <> m^.mobRmDesc.to (fromMaybe none)
-       , "Char description: " <> m^.charDesc .to (fromMaybe none)
+       , "Temp description: " <> m^.tempDesc .to (fromMaybe none)
        , "Following: "        <> descMaybeId ms (getFollowing i ms)
        , "Followers: "        <> descSingIdHelper getFollowers
        , "My group: "         <> descSingIdHelper getMyGroup
@@ -1323,7 +1323,7 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
                       , "hand"
                       , "knownlangs"
                       , "mobrmdesc"
-                      , "chardesc"
+                      , "tempdesc"
                       , "following"
                       , "followers"
                       , "mygroup"
@@ -1354,7 +1354,7 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
           "hand"       -> setMobHandHelper        t
           "knownlangs" -> setMobKnownLangsHelper  t
           "mobrmdesc"  -> setMobRmDescHelper      t
-          "chardesc"   -> setMobCharDescHelper    t
+          "tempdesc"   -> setMobTempDescHelper    t
           "following"  -> setMobFollowingHelper   t
           "followers"  -> setMobInvHelper         t "followers" "followers have" (party.followers) (party.followers)
           "mygroup"    -> setMobInvHelper         t "myGroup"   "group has"      (party.myGroup  ) (party.myGroup  )
@@ -1536,22 +1536,22 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
                              & _4 <>~ (isDiff |?| toSelf)
               _      -> sorryOp "mobRmDesc"
         -----
-        setMobCharDescHelper t
+        setMobTempDescHelper t
           | not . hasMob $ t = sorryType
           | otherwise        = case eitherDecode value' of
-            Left  _ -> appendMsg . sorryAdminSetValue "charDesc" $ value
+            Left  _ -> appendMsg . sorryAdminSetValue "tempDesc" $ value
             Right x -> case op of
-              Assign -> let toSelf   = pure . T.concat $ [ "Set charDesc to ", showMaybe x, mkDiffTxt isDiff, "." ]
-                            prev     = getCharDesc targetId ms
+              Assign -> let toSelf   = pure . T.concat $ [ "Set tempDesc to ", showMaybe x, mkDiffTxt isDiff, "." ]
+                            prev     = getTempDesc targetId ms
                             isDiff   = x /= prev
-                            toTarget = pure . T.concat $ [ "Your supplementary character description has changed to "
+                            toTarget = pure . T.concat $ [ "Your temporary character description has changed to "
                                                          , showMaybe x
                                                          , "." ]
-                        in a & _1.mobTbl.ind targetId.charDesc .~ x
+                        in a & _1.mobTbl.ind targetId.tempDesc .~ x
                              & _2 <>~ toSelf
                              & _3 <>~ (isDiff |?| toTarget)
                              & _4 <>~ (isDiff |?| toSelf)
-              _      -> sorryOp "charDesc"
+              _      -> sorryOp "tempDesc"
         -----
         setMobFollowingHelper t
           | not . hasMob $ t = sorryType

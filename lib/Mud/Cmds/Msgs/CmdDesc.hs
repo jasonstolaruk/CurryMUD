@@ -15,10 +15,6 @@ cmdDescBars :: Text
 cmdDescBars = "Display one or more status bars."
 
 
-cmdDescCharDesc :: Text
-cmdDescCharDesc = "Specify a supplementary character description visible when someone looks at you."
-
-
 cmdDescClear :: Text
 cmdDescClear = "Clear the screen."
 
@@ -172,6 +168,10 @@ cmdDescStop = "Stop moving, eating, drinking, or attacking."
 
 cmdDescTaste :: Text
 cmdDescTaste = "Taste a) an item in your inventory, or b) an item in your readied equipment."
+
+
+cmdDescTempDesc :: Text
+cmdDescTempDesc = "Specify a temporary character description visible when someone looks at you."
 
 
 cmdDescUnready :: Text

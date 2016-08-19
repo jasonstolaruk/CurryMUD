@@ -500,7 +500,7 @@ data Mob = Mob { _sex                    :: Sex
                , _knownLangs             :: [Lang]
                , _rmId                   :: Id
                , _mobRmDesc              :: MobRmDesc
-               , _charDesc               :: CharDesc
+               , _tempDesc               :: TempDesc
                , _party                  :: Party
                , _stomach                :: [StomachCont]
                , _digesterAsync          :: Maybe StomachAsync
@@ -553,7 +553,7 @@ data Lang = CommonLang
 type MobRmDesc = Maybe Text
 
 
-type CharDesc = Maybe Text
+type TempDesc = Maybe Text
 
 
 data Party = Party { _following :: Maybe Id
@@ -638,7 +638,7 @@ mobToJSON Mob { .. } = object [ "sex"        .= _sex
                               , "knownLangs" .= _knownLangs
                               , "rmId"       .= _rmId
                               , "mobRmDesc"  .= _mobRmDesc
-                              , "charDesc"   .= _charDesc
+                              , "tempDesc"   .= _tempDesc
                               , "party"      .= _party
                               , "stomach"    .= _stomach ]
 
@@ -664,7 +664,7 @@ jsonToMob (Object o) = Mob <$> o .: "sex"
                            <*> o .: "knownLangs"
                            <*> o .: "rmId"
                            <*> o .: "mobRmDesc"
-                           <*> o .: "charDesc"
+                           <*> o .: "tempDesc"
                            <*> o .: "party"
                            <*> o .: "stomach"
                            <*> pure Nothing

@@ -13,7 +13,6 @@ module Mud.Misc.ANSI ( abbrevColor
                      , blue
                      , bonusColor
                      , bootMsgColor
-                     , charDescColor
                      , colorizeFileTxt
                      , colors
                      , colorWith
@@ -61,6 +60,7 @@ module Mud.Misc.ANSI ( abbrevColor
                      , selectorColor
                      , shutdownMsgColor
                      , syntaxSymbolColor
+                     , tempDescColor
                      , toNpcColor
                      , toPeepedColor
                      , tunedInColor
@@ -204,10 +204,6 @@ bootMsgColor :: Text
 bootMsgColor = red
 
 
-charDescColor :: Text
-charDescColor = cyan
-
-
 dfltColor :: Text
 dfltColor = resetANSI
 
@@ -330,6 +326,10 @@ shutdownMsgColor = red
 
 syntaxSymbolColor :: Text
 syntaxSymbolColor = yellow
+
+
+tempDescColor :: Text
+tempDescColor = cyan
 
 
 toNpcColor :: Text

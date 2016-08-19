@@ -836,12 +836,12 @@ debugToken (NoArgs i mq cols) = do
                 , charTokenDelimiter  `T.cons` "x emoteChar"
                 , styleTokenDelimiter `T.cons` styleTokenDelimiter `T.cons` " literal styleTokenDelimiter"
                 , styleTokenDelimiter `T.cons` ("aabbrevColor"       <> dfltColorStyleToken    )
-                , styleTokenDelimiter `T.cons` ("ccharDescColor"     <> dfltColorStyleToken    )
                 , styleTokenDelimiter `T.cons` ("ddfltColor"         <> dfltColorStyleToken    )
                 , styleTokenDelimiter `T.cons` ("hheaderColor"       <> dfltColorStyleToken    )
                 , styleTokenDelimiter `T.cons` ("iasteriskColor"     <> dfltColorStyleToken    )
                 , styleTokenDelimiter `T.cons` ("kknownNameColor"    <> dfltColorStyleToken    )
                 , styleTokenDelimiter `T.cons` ("lselectorColor"     <> dfltColorStyleToken    )
+                , styleTokenDelimiter `T.cons` ("mtempDescColor"     <> dfltColorStyleToken    )
                 , styleTokenDelimiter `T.cons` ("nnoUnderlineANSI"   <> dfltColorStyleToken    )
                 , styleTokenDelimiter `T.cons` ("ounknownNameColor"  <> dfltColorStyleToken    )
                 , styleTokenDelimiter `T.cons` ("pprefixColor"       <> dfltColorStyleToken    )

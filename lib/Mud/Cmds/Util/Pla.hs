@@ -994,8 +994,8 @@ mkEntDescs i cols ms eis = T.intercalate theNl [ mkEntDesc i cols ms (ei, e) | e
 mkEntDesc :: Id -> Cols -> MudState -> (Id, Ent) -> Text
 mkEntDesc i cols ms (ei, e) | ed <- views entDesc (wrapUnlines cols) e, s <- getSing ei ms, t <- getType ei ms =
     case t of ConType      ->                 (ed <>) . mkInvCoinsDesc i  cols ms   ei $ s
-              NpcType      ->                 (ed <>) . (charDescHelper <>) . mkEqDesc       i  cols ms   ei   s $ t
-              PCType       -> (pcHeader <>) . (ed <>) . (charDescHelper <>) . mkEqDesc       i  cols ms   ei   s $ t
+              NpcType      ->                 (ed <>) . (tempDescHelper <>) . mkEqDesc       i  cols ms   ei   s $ t
+              PCType       -> (pcHeader <>) . (ed <>) . (tempDescHelper <>) . mkEqDesc       i  cols ms   ei   s $ t
               VesselType   ->                 (ed <>) . mkVesselContDesc  cols ms $ ei
               WritableType ->                 (ed <>) . mkWritableMsgDesc cols ms $ ei
               _            -> ed
@@ -1012,8 +1012,8 @@ mkEntDesc i cols ms (ei, e) | ed <- views entDesc (wrapUnlines cols) e, s <- get
                                                     d  -> " " <> d
     adminTagHelper      | isAdminId ei ms = " " <> adminTagTxt
                         | otherwise       = ""
-    charDescHelper      = maybe "" (wrapUnlines cols . coloredBracketQuote) . getCharDesc ei $ ms
-    coloredBracketQuote = quoteWith' (("[ ", " ]") & both %~ colorWith charDescColor)
+    tempDescHelper      = maybe "" (wrapUnlines cols . coloredBracketQuote) . getTempDesc ei $ ms
+    coloredBracketQuote = quoteWith' (("[ ", " ]") & both %~ colorWith tempDescColor)
 
 
 mkInvCoinsDesc :: Id -> Cols -> MudState -> Id -> Sing -> Text

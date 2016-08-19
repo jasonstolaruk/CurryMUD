@@ -14,4 +14,4 @@ Note that certain expressive commands will set or clear your room description fo
 \qexpressive laugh look\d to display entries containing "laugh", followed by entries containing "look".4`
 
 \uSEE ALSO\n
-?, chardesc, cheatsheet, emote, newbie, roomdesc, undocumented, veteranmudder
+?, cheatsheet, emote, newbie, roomdesc, tempdesc, undocumented, veteranmudder

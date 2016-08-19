@@ -98,12 +98,12 @@ Examples:4`
 \qmobRmDesc=null\d (to set to Nothing)4`
 \l#q\qmobRmDesc="sitting at a table by herself"\l#q\d (to set to Just "sitting at a table by herself")4`
 
-Key name: charDesc4`
+Key name: tempDesc4`
 Property of: Mob4`
-Value type: CharDesc = Maybe Text4`
+Value type: TempDesc = Maybe Text4`
 Examples:4`
-\qcharDesc=null\d (to set to Nothing)4`
-\l#q\qcharDesc="His windswept hair is truly a mess."\l#q\d (to set to Just "His windswept hair is truly a mess.")4`
+\qtempDesc=null\d (to set to Nothing)4`
+\l#q\qtempDesc="His windswept hair is truly a mess."\l#q\d (to set to Just "His windswept hair is truly a mess.")4`
 
 Key name: following4`
 Property of: Mob4`

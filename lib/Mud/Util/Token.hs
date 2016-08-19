@@ -97,13 +97,13 @@ expandStyleCode :: Char -> Text
 expandStyleCode c | c == styleTokenDelimiter = T.singleton styleTokenDelimiter
 expandStyleCode (toLower -> code)            = case code of
   'a' -> abbrevColor
-  'c' -> charDescColor
   'd' -> dfltColor
   'e' -> emphasisColor
   'h' -> headerColor
   'i' -> asteriskColor
   'k' -> knownNameColor
   'l' -> selectorColor
+  'm' -> tempDescColor -- TODO: Changed from 'c' to 'm'.
   'n' -> noUnderlineANSI
   'o' -> unknownNameColor
   'p' -> prefixColor

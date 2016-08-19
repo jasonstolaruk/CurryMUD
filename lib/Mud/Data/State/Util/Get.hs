@@ -153,13 +153,6 @@ getChan i = view (chanTbl.ind i)
 -----
 
 
-getCharDesc :: Id -> MudState -> CharDesc
-getCharDesc i = view charDesc . getMob i
-
-
------
-
-
 getCloth :: Id -> MudState -> Cloth
 getCloth i = view (clothTbl.ind i)
 
@@ -729,6 +722,13 @@ getStomach i = view stomach . getMob i
 
 getTeleLinkTbl :: Id -> MudState -> TeleLinkTbl
 getTeleLinkTbl i = view (teleLinkMstrTbl.ind i)
+
+
+-----
+
+
+getTempDesc :: Id -> MudState -> TempDesc
+getTempDesc i = view tempDesc . getMob i
 
 
 -----

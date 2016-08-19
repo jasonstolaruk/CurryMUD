@@ -25,11 +25,11 @@ Note that if it is set, both \qlookself\d and \qstats\d will display your room d
 In order to preserve the integrity of the virtual world along with the enjoyment of all, the rules below must be followed. Violation of these rules is grounds for discipline including banishment from CurryMUD.
 1) Your room descriptions should depict where your character is or what your character is actively doing in your current room. Keep your room descriptions concise, simple, and reasonable.3`
 2) Do not specify the name of a character in a room description. It is not appropriate, for example, to set your room description to "sitting next to Taro" when you cannot guarantee that passersby will know Taro by name. "sitting next to the lagomorph with pink hair" or something similar is preferable.3`
-3) Descriptions of transitory characteristics of your character's person ("his windswept hair is truly a mess") are better expressed via the "chardesc" command.3`
+3) Descriptions of transitory characteristics of your character's person ("his windswept hair is truly a mess") are better expressed via the "tempdesc" command.3`
 
 \uEXAMPLES\n
 \qroomdesc sitting at a table\d to change your room description to "sitting at a table".4`
 \qroomdesc\d to clear your room description.4`
 
 \uSEE ALSO\n
-chardesc, emote, expressive, look, lookself, stats
+emote, expressive, look, lookself, stats, tempdesc
