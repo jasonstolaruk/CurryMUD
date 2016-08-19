@@ -2349,6 +2349,7 @@ interpNewPW oldPW cn (NoArgs i mq cols)
 interpNewPW _ _ ActionParams { .. } = pwSorryHelper myId plaMsgQueue plaCols sorryInterpNewPwExcessArgs
 
 
+-- TODO: "provide a security Q&A once inside the game."
 interpVerifyNewPW :: Text -> Text -> Interp
 interpVerifyNewPW oldPW pass cn (NoArgs i mq cols)
   | cn == pass = getSing i <$> getState >>= \s -> do
@@ -3118,7 +3119,7 @@ retrySecurityNum mq cols = do
 
 interpSecurityA :: Text -> Interp
 interpSecurityA q "" (NoArgs _ mq cols) = do
-    wrapSend1Nl mq cols $ "Please answer the question, " <> dblQuote q
+    wrapSend mq cols $ "Please answer the question, " <> dblQuote q
     promptAnswer mq
 interpSecurityA q cn (WithArgs i mq cols as) = securitySetHelper i mq cols q . T.unwords $ cn : as
 interpSecurityA _ _  p                       = patternMatchFail "interpSecurityA" . showText $ p
