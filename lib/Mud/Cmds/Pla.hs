@@ -2318,9 +2318,8 @@ interpCurrPW cn (WithArgs i mq cols as)
     Nothing        -> dbError mq cols
     Just (Just pw) -> if uncurry validatePassword ((pw, cn) & both %~ T.encodeUtf8)
       then do
-          -- TODO: Refactor.
-          sendPrompt mq . T.concat $ [ nlnlPrefix . multiWrap cols . pwMsg $ "Please choose a new password."
-                                     , "New password: " ]
+          send mq . nlnlPrefix . multiWrap cols . pwMsg $ "Please choose a new password."
+          sendPrompt mq "New password: "
           setInterp i . Just . interpNewPW $ pw
       else pwSorryHelper i mq cols sorryInterpPW
     Just Nothing -> pwSorryHelper i mq cols sorryInterpPW
