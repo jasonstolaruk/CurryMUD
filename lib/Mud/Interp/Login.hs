@@ -249,7 +249,7 @@ interpVerifyNewPW ncb@(NewCharBundle _ _ pass) cn params@(NoArgs i mq cols)
   | cn == pass = do
       send mq telnetShowInput
       blankLine mq
-      wrapSend mq cols pwWarningMsg
+      wrapSend mq cols pwWarningLoginMsg
       promptSex mq cols
       setInterp i . Just . interpSex $ ncb
   | otherwise = promptRetryNewPwMatch ncb params

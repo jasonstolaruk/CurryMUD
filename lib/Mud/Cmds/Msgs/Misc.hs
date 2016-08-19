@@ -118,10 +118,17 @@ pwMsg t = [ T.concat [ t
 
 
 pwWarningMsg :: Text
-pwWarningMsg = "Please make a note of your new password. If you lose your password, you may lose your character! " <>
-               parensQuote ( "To safeguard against this unfortunate situation, use the " <>
-                             dblQuote "security"                                         <>
-                             " command to provide a security Q&A once inside the game." )
+pwWarningMsg = pwWarningTxt <> ".)"
+
+
+pwWarningLoginMsg :: Text
+pwWarningLoginMsg = pwWarningTxt <> " once inside the game.)"
+
+
+pwWarningTxt :: Text
+pwWarningTxt = "Please make a note of your new password. If you lose your password, you may lose your character! \
+               \(To safeguard against this unfortunate situation, use the " <> dblQuote "security" <> " command to \
+               \provide a security Q&A"
 
 
 rethrowExMsg :: Text -> Text

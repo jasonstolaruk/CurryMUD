@@ -2349,7 +2349,6 @@ interpNewPW oldPW cn (NoArgs i mq cols)
 interpNewPW _ _ ActionParams { .. } = pwSorryHelper myId plaMsgQueue plaCols sorryInterpNewPwExcessArgs
 
 
--- TODO: "provide a security Q&A once inside the game."
 interpVerifyNewPW :: Text -> Text -> Interp
 interpVerifyNewPW oldPW pass cn (NoArgs i mq cols)
   | cn == pass = getSing i <$> getState >>= \s -> do
