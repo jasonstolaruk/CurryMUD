@@ -341,12 +341,12 @@ readLookPosterHookFun = mkGenericHookFun posterDesc "reads the poster on the wal
     posterDesc =
         "The poster reads:\n\
         \WELCOME TO THE ADMIN ZONE - What is this place?\n\
-        \Greetings, admin! (You're an admin, aren't you? If not, what are you doing here?) ...Anyway, let me tell you \
+        \Greetings, admin! (You're an admin, aren't you? If not, what are you doing here?) Anyway, let me tell you \
         \about this area. The Admin Zone was written incrementally during the early stages of CurryMUD development. \
-        \Whenever I came up with new core functionality, I'd need a way to test it; often that meant tacking on a room \
+        \Whenever I came up with new core functionality, I'd need a way to test it. Often that meant tacking on a room \
         \to this zone - the only zone that existed at the time. There was never any unifying theme for the Admin Zone, \
-        \just the notion that players would likely never step foot in it (hence the name). As such, it kind of has a \
-        \makeshift funhouse vibe; in the very least, it's a restricted area where admins can hang out.\n\
+        \just the notion that players would likely never step foot in it (hence the name). As such, it kind of has the \
+        \vibe of a makeshift funhouse; in the very least, it's a restricted area where admins can hang out.\n\
         \-Jason"
 
 
@@ -837,7 +837,7 @@ createAdminZone = do
   putRm iTutEntrance
         []
         mempty
-        (mkRm (RmTemplate "The portal"
+        (mkRm (RmTemplate "The portal" -- TODO: "look sign", "read sign"
             "Floating before you is a large round portal in which dazzling shapes and colors spin and dance. You feel \
             \a peculiar pulling sensation in your abdomen, as if the portal is attempting to draw you towards itself.\n\
             \A wooden sign is suspended above the portal."
