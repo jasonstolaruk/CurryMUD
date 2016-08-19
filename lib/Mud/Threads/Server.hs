@@ -81,8 +81,8 @@ threadServer h i mq tq = sequence_ [ setThreadType . Server $ i, loop `catch` th
       InacStop       -> stopTimer tq                              >> loop
       MsgBoot msg    -> sendBootMsg h msg                         >> sayonara
       Peeped  msg    -> (liftIO . T.hPutStr h $ msg)              >> loop
-      Prompt     p   -> promptHelper i h Don'tFlush p             >> loop
-      PromptNoNl p   -> promptHelper i h DoFlush    p             >> loop
+      Prompt   p     -> promptHelper i h DoFlush    p             >> loop
+      PromptNl p     -> promptHelper i h Don'tFlush p             >> loop
       Quit           -> cowbye h                                  >> sayonara
       Shutdown       -> shutDown                                  >> loop
       SilentBoot     ->                                              sayonara

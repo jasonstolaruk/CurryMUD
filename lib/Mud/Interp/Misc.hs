@@ -26,7 +26,7 @@ import Data.Text (Text)
 
 
 mkChoiceTxt :: [Text] -> Text
-mkChoiceTxt = bracketQuote . T.intercalate "/" . colorize
+mkChoiceTxt = (<> " ") . bracketQuote . T.intercalate "/" . colorize
   where
     colorize []                                               = []
     colorize ((T.uncons -> Just (T.singleton -> x, rest)):xs) = (colorWith abbrevColor x <> rest) : colorize xs
@@ -49,7 +49,7 @@ neverMind i mq = send mq (nlnl "Never mind.") >> sendDfltPrompt mq i >> resetInt
 
 promptRetryYesNo :: MsgQueue -> Cols -> MudStack ()
 promptRetryYesNo mq cols =
-    wrapSendPrompt mq cols . T.concat $ [ "Please answer ", dblQuote "yes", " or ", dblQuote "no", "." ]
+    wrapSendPrompt mq cols . T.concat $ [ "Please answer ", dblQuote "yes", " or ", dblQuote "no", ". " ]
 
 
 -----

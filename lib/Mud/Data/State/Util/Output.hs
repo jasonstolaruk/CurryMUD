@@ -30,10 +30,12 @@ module Mud.Data.State.Util.Output ( anglePrompt
                                   , sendDfltPrompt
                                   , sendMsgBoot
                                   , sendPrompt
-                                  , sendPromptNoNl
+                                  , sendPromptNl
                                   , sendSilentBoot
                                   , wrapSend
+                                  , wrapSend1Nl
                                   , wrapSendPrompt
+                                  , wrapSendPromptNl
                                   , writeMsg ) where
 
 import Mud.Cmds.Msgs.Misc
@@ -76,7 +78,7 @@ patternMatchFail = U.patternMatchFail "Mud.Data.State.Util.Output"
 
 
 anglePrompt :: MsgQueue -> MudStack ()
-anglePrompt = flip sendPrompt ">"
+anglePrompt = flip sendPrompt "> "
 
 
 -----
@@ -319,13 +321,14 @@ sendDfltPrompt :: MsgQueue -> Id -> MudStack ()
 sendDfltPrompt mq i = sendPrompt mq . mkDfltPrompt i =<< getState
 
 
+-- TODO: Allow players to set which pts are displayed in their prompt.
 mkDfltPrompt :: Id -> MudState -> Text
 mkDfltPrompt i ms = let (hps, mps, pps, fps) = getPts i ms
                         marker               = colorWith indentColor " "
                     in marker <> " " <> spaces [ f "h" hps
                                                , f "m" mps
                                                , f "p" pps
-                                               , f "f" fps ]
+                                               , f "f" fps ] <> "> "
   where
     indentColor     = isNpc i ms ? toNpcColor :? promptIndentColor
     f a pair@(x, _) = commaShow x <> colorWith (mkColorTxtForXps pair) a
@@ -349,19 +352,38 @@ sendPrompt :: MsgQueue -> Text -> MudStack ()
 sendPrompt mq = writeMsg mq . Prompt
 
 
-sendPromptNoNl :: MsgQueue -> Text -> MudStack ()
-sendPromptNoNl mq = writeMsg mq . PromptNoNl
-
-
-wrapSendPrompt :: MsgQueue -> Cols -> Text -> MudStack ()
-wrapSendPrompt mq cols = sendPrompt mq . wrapUnlinesInit cols
+sendPromptNl :: MsgQueue -> Text -> MudStack ()
+sendPromptNl mq = writeMsg mq . PromptNl
 
 
 -----
 
 
 wrapSend :: MsgQueue -> Cols -> Text -> MudStack ()
-wrapSend mq cols = send mq . wrapUnlinesNl cols
+wrapSend = wrapSendHepler wrapUnlinesNl
+
+
+wrapSend1Nl :: MsgQueue -> Cols -> Text -> MudStack () -- TODO: Any other places this should be used?
+wrapSend1Nl = wrapSendHepler wrapUnlines
+
+
+wrapSendHepler :: (Cols -> Text -> Text) -> MsgQueue -> Cols -> Text -> MudStack ()
+wrapSendHepler f mq cols = send mq . f cols
+
+
+-----
+
+
+wrapSendPrompt :: MsgQueue -> Cols -> Text -> MudStack ()
+wrapSendPrompt = wrapSendPromptHelper sendPrompt
+
+
+wrapSendPromptNl :: MsgQueue -> Cols -> Text -> MudStack ()
+wrapSendPromptNl = wrapSendPromptHelper sendPromptNl
+
+
+wrapSendPromptHelper :: (MsgQueue -> Text -> MudStack ()) -> MsgQueue -> Cols -> Text -> MudStack ()
+wrapSendPromptHelper f mq cols = f mq . wrapUnlinesInit cols
 
 
 -----

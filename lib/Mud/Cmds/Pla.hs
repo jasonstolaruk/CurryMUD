@@ -2306,7 +2306,7 @@ shufflePut i ms d conName icir as invCoinsWithCon@(invWithCon, _) mobInvCoins f 
 
 password :: ActionFun
 password (NoArgs i mq _) = do
-    sendPrompt mq $ telnetHideInput <> "Current password:"
+    sendPrompt mq $ telnetHideInput <> "Current password: "
     setInterp i . Just $ interpCurrPW
 password p = withoutArgs password p
 
@@ -2318,8 +2318,9 @@ interpCurrPW cn (WithArgs i mq cols as)
     Nothing        -> dbError mq cols
     Just (Just pw) -> if uncurry validatePassword ((pw, cn) & both %~ T.encodeUtf8)
       then do
-          sendPrompt mq . T.concat $ [ nlPrefix . multiWrap cols . pwMsg $ "Please choose a new password."
-                                     , "New password:"]
+          -- TODO: Refactor.
+          sendPrompt mq . T.concat $ [ nlnlPrefix . multiWrap cols . pwMsg $ "Please choose a new password."
+                                     , "New password: " ]
           setInterp i . Just . interpNewPW $ pw
       else pwSorryHelper i mq cols sorryInterpPW
     Just Nothing -> pwSorryHelper i mq cols sorryInterpPW
@@ -2329,6 +2330,7 @@ interpCurrPW _ p = patternMatchFail "interpCurrPW" . showText $ p
 pwSorryHelper :: Id -> MsgQueue -> Cols -> Text -> MudStack ()
 pwSorryHelper i mq cols msg = do
     send mq telnetShowInput
+    blankLine mq
     wrapSend mq cols msg
     sendDfltPrompt mq i
     resetInterp i
@@ -2336,12 +2338,12 @@ pwSorryHelper i mq cols msg = do
 
 interpNewPW :: Text -> Interp
 interpNewPW oldPW cn (NoArgs i mq cols)
-  | not . inRange (minNameLen, maxNameLen) . T.length $ cn = pwSorryHelper i mq cols sorryInterpNewPwLen
-  | helper isUpper                                         = pwSorryHelper i mq cols sorryInterpNewPwUpper
-  | helper isLower                                         = pwSorryHelper i mq cols sorryInterpNewPwLower
-  | helper isDigit                                         = pwSorryHelper i mq cols sorryInterpNewPwDigit
+  | not . inRange (minPwLen, maxPwLen) . T.length $ cn = pwSorryHelper i mq cols sorryInterpNewPwLen
+  | helper isUpper                                     = pwSorryHelper i mq cols sorryInterpNewPwUpper
+  | helper isLower                                     = pwSorryHelper i mq cols sorryInterpNewPwLower
+  | helper isDigit                                     = pwSorryHelper i mq cols sorryInterpNewPwDigit
   | otherwise = do
-      sendPrompt mq "Verify password:"
+      sendPrompt mq . nlPrefix $ "Verify password: "
       setInterp i . Just . interpVerifyNewPW oldPW $ cn
   where
     helper f = ()# T.filter f cn
@@ -2353,6 +2355,7 @@ interpVerifyNewPW oldPW pass cn (NoArgs i mq cols)
   | cn == pass = getSing i <$> getState >>= \s -> do
       withDbExHandler_ "unpw" . insertDbTblUnPw . UnPwRec s $ pass
       send mq telnetShowInput
+      blankLines mq
       wrapSend mq cols $ "Password changed. " <> pwWarningMsg
       sendDfltPrompt mq i
       resetInterp i
@@ -3057,7 +3060,7 @@ security (NoArgs i mq cols) = getSing i <$> getState >>= \s ->
         multiWrapSend mq cols [ "You have set your security Q&A as follows:"
                               , "Question: " <> dbQ
                               , "Answer: "   <> dbA ]
-        wrapSendPrompt mq cols "Would you like to change it? [yes/no]"
+        wrapSendPrompt mq cols $ "Would you like to change it? " <> mkYesNoChoiceTxt
         setInterp i . Just $ interpConfirmSecurityChange
 security p = withoutArgs security p
 
@@ -3065,7 +3068,7 @@ security p = withoutArgs security p
 securityHelper :: Id -> MsgQueue -> Cols -> MudStack ()
 securityHelper i mq cols = do
     multiWrapSend mq cols $ securityWarn ++ pure "" ++ securityQs
-    sendPrompt mq "Which will you choose? [1-5]"
+    promptSecurity mq
     setInterp i . Just $ interpSecurityNum
 
 
@@ -3087,6 +3090,10 @@ securityQs = [ "Please choose your security question from the following options:
              , "5) Create your own question." ]
 
 
+promptSecurity :: MsgQueue -> MudStack ()
+promptSecurity = flip sendPrompt "Which will you choose? [1-5] "
+
+
 interpSecurityNum :: Interp
 interpSecurityNum cn (NoArgs i mq cols) = case cn of
   "1" -> helper "What was the name of your elementary/primary school?"
@@ -3096,20 +3103,24 @@ interpSecurityNum cn (NoArgs i mq cols) = case cn of
   "5" -> securityCreateQHelper i mq cols
   _   -> retrySecurityNum mq cols
   where
-    helper q = do { sendPrompt mq "Answer:"; setInterp i . Just . interpSecurityA $ q }
+    helper q = do { promptAnswer mq; setInterp i . Just . interpSecurityA $ q }
 interpSecurityNum _ ActionParams { .. } = retrySecurityNum plaMsgQueue plaCols
+
+
+promptAnswer :: MsgQueue -> MudStack ()
+promptAnswer = flip sendPrompt "Answer: "
 
 
 retrySecurityNum :: MsgQueue -> Cols -> MudStack ()
 retrySecurityNum mq cols = do
     multiWrapSend mq cols $ "Invalid choice." : "" : securityQs
-    sendPrompt mq "Which will you choose? [1-5]"
+    promptSecurity mq
 
 
 interpSecurityA :: Text -> Interp
 interpSecurityA q "" (NoArgs _ mq cols) = do
     send mq . wrapUnlines cols $ "Please answer the question, " <> dblQuote q
-    sendPrompt mq "Answer:"
+    promptAnswer mq
 interpSecurityA q cn (WithArgs i mq cols as) = securitySetHelper i mq cols q . T.unwords $ cn : as
 interpSecurityA _ _  p                       = patternMatchFail "interpSecurityA" . showText $ p
 
@@ -3133,7 +3144,7 @@ interpConfirmSecurityChange _ ActionParams { plaMsgQueue, plaCols } = promptRetr
 securityCreateQHelper :: Id -> MsgQueue -> Cols -> MudStack ()
 securityCreateQHelper i mq cols = do
     send mq . nlPrefix . nl . T.unlines $ info
-    sendPrompt mq "Enter your question:"
+    sendPrompt mq "Enter your question: "
     setInterp i . Just $ interpSecurityCreateQ
   where
     info = "OK. Ideally, your security Q&A should be:" : concatMap (wrapIndent 2 cols) rest
@@ -3146,7 +3157,7 @@ securityCreateQHelper i mq cols = do
 interpSecurityCreateQ :: Interp
 interpSecurityCreateQ "" (NoArgs'  i mq     ) = neverMind i mq
 interpSecurityCreateQ cn (WithArgs i mq _ as) = do
-    sendPrompt mq "Answer:"
+    promptAnswer mq
     setInterp i . Just . interpSecurityCreateA $ T.unwords $ cn : as
 interpSecurityCreateQ _ p = patternMatchFail "interpSecurityCreateQ" . showText $ p
 

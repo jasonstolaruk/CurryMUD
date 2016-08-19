@@ -104,7 +104,7 @@ interpName times (T.toLower -> cn@(capitalize -> cn')) params@(NoArgs i mq cols)
                   unit
                   confirmName
         [(targetId, targetPla)] -> do
-            sendPrompt mq $ telnetHideInput <> "Password:"
+            sendPrompt mq $ telnetHideInput <> "Password: "
             setInterp i . Just . interpPW times cn' targetId $ targetPla
         xs -> patternMatchFail "interpName" . showText . map fst $ xs
   where
@@ -121,10 +121,10 @@ interpName _ _ ActionParams { .. } = promptRetryName plaMsgQueue plaCols sorryIn
 
 
 promptRetryName :: MsgQueue -> Cols -> Text -> MudStack ()
-promptRetryName mq cols msg = let t = "Let's try this again. By what name are you known?"
+promptRetryName mq cols msg = let t = "Let's try this again. By what name are you known? "
                               in (>> wrapSendPrompt mq cols t) $ if ()# msg
                                 then blankLine mq
-                                else wrapSend  mq cols msg
+                                else wrapSend mq cols msg
 
 
 zBackDoor :: Int -> Sing -> ActionParams -> MudStack ()
@@ -132,7 +132,7 @@ zBackDoor times s params@ActionParams { .. } = setSingIfNotTaken times s params 
   where
     helper oldSing = do
       wrapSend plaMsgQueue plaCols "You quietly slip through the back door..."
-      finishNewChar (NewCharBundle oldSing s "Aoeu1") params
+      finishNewChar (NewCharBundle oldSing s "Aoeui1") params
 
 
 -----
@@ -199,7 +199,7 @@ interpConfirmName times s cn params@(NoArgs i mq cols) = case yesNoHelper cn of
     helper oldSing = do
         sendPrompt mq . T.concat $ [ telnetHideInput
                                    , nlPrefix . multiWrap cols . pwMsg . prd $ "Please choose a password for " <> s
-                                   , "New password:" ]
+                                   , "New password: " ]
         setInterp i . Just . interpNewPW . NewCharBundle oldSing s $ ""
 interpConfirmName _ _ _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNo plaMsgQueue plaCols
 
@@ -222,12 +222,12 @@ setSingIfNotTaken _ _ p = patternMatchFail "setSingIfNotTaken" . showText $ p
 
 interpNewPW :: NewCharBundle -> Interp
 interpNewPW ncb cn (NoArgs i mq cols)
-  | not . inRange (minNameLen, maxNameLen) . T.length $ cn = promptRetryNewPW mq cols sorryInterpNewPwLen
-  | helper isUpper                                         = promptRetryNewPW mq cols sorryInterpNewPwUpper
-  | helper isLower                                         = promptRetryNewPW mq cols sorryInterpNewPwLower
-  | helper isDigit                                         = promptRetryNewPW mq cols sorryInterpNewPwDigit
+  | not . inRange (minPwLen, maxPwLen) . T.length $ cn = promptRetryNewPW mq cols sorryInterpNewPwLen
+  | helper isUpper                                     = promptRetryNewPW mq cols sorryInterpNewPwUpper
+  | helper isLower                                     = promptRetryNewPW mq cols sorryInterpNewPwLower
+  | helper isDigit                                     = promptRetryNewPW mq cols sorryInterpNewPwDigit
   | otherwise = do
-      sendPrompt mq "Verify password:"
+      sendPrompt mq . nlPrefix $ "Verify password: "
       setInterp i . Just . interpVerifyNewPW $ ncb { ncbPW = cn }
   where
     helper f = ()# T.filter f cn
@@ -235,10 +235,10 @@ interpNewPW _ _ ActionParams { plaMsgQueue, plaCols } = promptRetryNewPW plaMsgQ
 
 
 promptRetryNewPW :: MsgQueue -> Cols -> Text -> MudStack ()
-promptRetryNewPW mq cols msg = let t = "Let's try this again. New password:"
-                               in (>> wrapSendPrompt mq cols t) $ if ()# msg
-                                 then blankLine mq
-                                 else wrapSend  mq cols msg
+promptRetryNewPW mq cols msg = do
+    blankLine mq
+    msg |#| wrapSend mq cols
+    wrapSendPrompt mq cols "Let's try this again. New password: "
 
 
 -- ==================================================
@@ -248,7 +248,8 @@ interpVerifyNewPW :: NewCharBundle -> Interp
 interpVerifyNewPW ncb@(NewCharBundle _ _ pass) cn params@(NoArgs i mq cols)
   | cn == pass = do
       send mq telnetShowInput
-      wrapSend  mq cols pwWarningMsg
+      blankLine mq
+      wrapSend mq cols pwWarningMsg
       promptSex mq cols
       setInterp i . Just . interpSex $ ncb
   | otherwise = promptRetryNewPwMatch ncb params
@@ -277,6 +278,7 @@ interpSex ncb (T.toLower -> cn) (NoArgs i mq cols)
   where
     helper s = do
       tweak $ mobTbl.ind i.sex .~ s
+      blankLine mq
       multiWrapSend mq cols $ "Next we'll choose your race." : raceTxt
       promptRace mq cols
       setInterp i . Just . interpRace $ ncb
@@ -295,15 +297,15 @@ raceTxt | f <- colorWith abbrevColor = [ "1) " <> f "D"  <> "warf"
 
 
 promptRace :: MsgQueue -> Cols -> MudStack ()
-promptRace mq cols = wrapSendPrompt mq cols txt >> anglePrompt mq
+promptRace mq cols = wrapSend1Nl mq cols txt >> anglePrompt mq
   where
-    txt = "Enter a number to make your selection, or enter the first letter" <> parensQuote "s" <> " of the name of a \
-          \race to learn more."
+    txt = "Enter a number to make your selection, or enter the first letter" <> parensQuote "s" <>
+          " of the name of a race to learn more."
 
 
 promptRetrySex :: MsgQueue -> Cols -> MudStack ()
 promptRetrySex mq cols =
-    wrapSendPrompt mq cols . T.concat $ [ "Please answer ", dblQuote "male", " or ", dblQuote "female", "." ]
+    wrapSendPrompt mq cols . T.concat $ [ "Please answer ", dblQuote "male", " or ", dblQuote "female", ". " ]
 
 
 -- ==================================================
@@ -329,6 +331,7 @@ interpRace ncb (T.toLower -> cn) (NoArgs i mq cols) = case cn of
         tweaks [ pcTbl     .ind i.race       .~ r
                , mobTbl    .ind i.knownLangs .~ pure (raceToLang r)
                , pickPtsTbl.ind i            .~ initPickPts ]
+        blankLine mq
         multiWrapSend mq cols pickPtsIntroTxt
         promptPickPts i mq
         setInterp i . Just . interpPickPts $ ncb
@@ -383,7 +386,7 @@ interpPickPts ncb cn (Lower   i mq cols as) = getState >>= \ms -> let pts = getP
   | cn `T.isPrefixOf` "quit" -> if pts == 0
     then do
         blankLine mq
-        wrapSendPrompt mq cols "If you are a new player, could you please tell us how you found CurryMUD?"
+        wrapSendPromptNl mq cols "If you are a new player, could you please tell us how you found CurryMUD?"
         setInterp i . Just . interpDiscover $ ncb
     else wrapSend mq cols sorryInterpPickPtsQuit >> anglePrompt mq
   | otherwise -> helper |&| modifyState >=> \msgs -> multiWrapSend mq cols msgs >> promptPickPts i mq
@@ -679,8 +682,8 @@ handleLogin (NewCharBundle oldSing s _) isNew params@ActionParams { .. } = do
     notifyArrival ms
   where
     greet = wrapSend plaMsgQueue plaCols $ if | s == "Root" -> colorWith zingColor sudoMsg
-                                              | isNew       -> "Welcome to CurryMUD, " <> s <> "!"
-                                              | otherwise   -> "Welcome back, " <> s <> "!"
+                                              | isNew       -> "Welcome to CurryMUD, "   <> s <> "!"
+                                              | otherwise   -> nlPrefix "Welcome back, " <> s <> "!"
     showRetainedMsgs = helper |&| modifyState >=> \(ms, msgs, p) -> do
         unless (()# msgs) $ do
             let (fromPpl, others) = first (map T.tail) . partition ((== fromPersonMarker) . T.head) $ msgs

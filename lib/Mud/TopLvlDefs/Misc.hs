@@ -144,7 +144,7 @@ maxPageLines = 150
 minPageLines = 8
 
 
-maxPwLen, minPwLen    :: Int
+maxPwLen, minPwLen :: Int
 maxPwLen = 20
 minPwLen = 6
 

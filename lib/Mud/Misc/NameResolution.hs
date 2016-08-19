@@ -326,7 +326,7 @@ procGecrMisReady gecrMis                                = procGecrMisMobInv gecr
 
 sorryBadSlot :: Text -> Text
 sorryBadSlot n
-  | T.singleton slotChar `T.isInfixOf` n = sformat m (mkSlotTxt "r") (mkSlotTxt "l") (nlPrefix ringHelp)
+  | T.singleton slotChar `T.isInfixOf` n = sformat m (mkSlotTxt "r") (mkSlotTxt "l") . nlPrefix $ ringHelp
   | otherwise                            = sformat (do { "You don't have "; "." }) . aOrAn $ n
   where
     m = do { "Please specify "; " or "; "."; "" }

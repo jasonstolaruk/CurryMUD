@@ -241,21 +241,21 @@ adviceAMyChansNoArgs = "Please specify the PC names of one or more players whose
 
 adviceAPasswordExcessArgs :: Text
 adviceAPasswordExcessArgs = "Please provide two arguments: the full PC name of the player whose password you wish to \
-                            \change, followed by a new password, as in "                      <>
-                            colorWith quoteColor (prefixAdminCmd "password" <> " taro Aoeu1") <>
+                            \change, followed by a new password, as in "                       <>
+                            colorWith quoteColor (prefixAdminCmd "password" <> " taro Aoeui1") <>
                             "."
 
 
 adviceAPasswordNoArgs :: Text
 adviceAPasswordNoArgs = "Please specify the full PC name of the player whose password you wish to change, followed by \
-                        \a new password, as in "                                          <>
-                        colorWith quoteColor (prefixAdminCmd "password" <> " taro Aoeu1") <>
+                        \a new password, as in "                                           <>
+                        colorWith quoteColor (prefixAdminCmd "password" <> " taro Aoeui1") <>
                         "."
 
 
 adviceAPasswordNoPw :: Text -> Text
-adviceAPasswordNoPw a = "Please also provide a new password, as in "                       <>
-                        colorWith quoteColor (prefixAdminCmd "password " <> a <> " Aoeu1") <>
+adviceAPasswordNoPw a = "Please also provide a new password, as in "                        <>
+                        colorWith quoteColor (prefixAdminCmd "password " <> a <> " Aoeui1") <>
                         "."
 
 

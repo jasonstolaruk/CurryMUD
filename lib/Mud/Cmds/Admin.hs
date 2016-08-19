@@ -1060,10 +1060,10 @@ adminPassword p@(WithTarget i mq cols target pw)
                 logNotice fn $ msg <> oldPwMsg
             Just Nothing -> blowUp fn "password not found in database" strippedTarget
       in if
-        | not . inRange (minNameLen, maxNameLen) . T.length $ pw -> sendFun sorryInterpNewPwLen
-        | helper isUpper                                         -> sendFun sorryInterpNewPwUpper
-        | helper isLower                                         -> sendFun sorryInterpNewPwLower
-        | helper isDigit                                         -> sendFun sorryInterpNewPwDigit
+        | not . inRange (minPwLen, maxPwLen) . T.length $ pw -> sendFun sorryInterpNewPwLen
+        | helper isUpper                                     -> sendFun sorryInterpNewPwUpper
+        | helper isLower                                     -> sendFun sorryInterpNewPwLower
+        | helper isDigit                                     -> sendFun sorryInterpNewPwDigit
         | otherwise -> case [ pi | pi <- views pcTbl IM.keys ms, getSing pi ms == strippedTarget ] of
           []         -> sendFun $ sorryPCName strippedTarget <> " " <> hintAPassword
           [targetId] -> let targetPla = getPla targetId ms in if | targetId == i     -> sendFun sorryAdminPasswordSelf
