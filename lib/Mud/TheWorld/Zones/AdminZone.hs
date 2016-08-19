@@ -580,7 +580,7 @@ createAdminZone = do
             \electronic displays and control panels, used by the admins to monitor and supervise the daily operations \
             \of CurryMUD.\n\
             \There is a large poster on the wall.\n\
-            \A spiral staircase leads down, while a door opens to a hallway leading east. A trash bin sits adjascent \
+            \A spiral staircase leads down, while a door opens to a hallway leading east. A trash bin sits adjacent \
             \to the spiral staircase."
             (Just "The cooling fans spinning inside the control panels give off a soothing whirring sound.")
             (Just "You vaguely detect the chemical scents of plastic and cleaning solutions.")
