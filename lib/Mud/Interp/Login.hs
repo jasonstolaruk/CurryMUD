@@ -374,7 +374,7 @@ showAttribs i mq = getState >>= \ms -> multiSend mq . footer ms . map helper . g
     f (c, txt, x) = T.concat [ colorWith abbrevColor . T.singleton $ c, txt, " ", showText x ]
     footer ms     = (++ rest)
       where
-        rest = pure . nl $ showText (getPickPts i ms) <> " points remaining."
+        rest = pure . nlPrefix $ showText (getPickPts i ms) <> " points remaining."
 
 
 -- ==================================================
