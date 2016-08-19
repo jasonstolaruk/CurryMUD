@@ -103,7 +103,7 @@ expandStyleCode (toLower -> code)            = case code of
   'i' -> asteriskColor
   'k' -> knownNameColor
   'l' -> selectorColor
-  'm' -> tempDescColor -- TODO: Changed from 'c' to 'm'.
+  'm' -> tempDescColor
   'n' -> noUnderlineANSI
   'o' -> unknownNameColor
   'p' -> prefixColor
