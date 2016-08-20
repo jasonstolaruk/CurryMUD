@@ -72,17 +72,18 @@ logNotice = L.logNotice "Mud.TheWorld.Zones.AdminZone"
 
 
 adminZoneHooks :: [(HookName, HookFun)]
-adminZoneHooks = [ (drinkPoolHookName,                 drinkPoolHookFun                )
-                 , (fillPoolHookName,                  fillPoolHookFun                 )
-                 , (getFlowerHookName,                 getFlowerHookFun                )
-                 , (lookCeilingHookName,               lookCeilingHookFun              )
-                 , (lookFlowerbedHookName,             lookFlowerbedHookFun            )
-                 , (lookWallsHookName,                 lookWallsHookFun                )
-                 , (readLookPaperHookName,             readLookPaperHookFun            )
-                 , (readLookPosterHookName,            readLookPosterHookFun           )
-                 , (readLookSign_iEmptyHookName,       readLookSign_iEmptyHookFun      )
-                 , (readLookSign_iTutEntranceHookName, readLookSign_iTutEntranceHookFun)
-                 , (smellFlowerbedHookName,            smellFlowerbedHookFun           ) ]
+adminZoneHooks = [ (drinkPoolHookName,                    drinkPoolHookFun                   )
+                 , (fillPoolHookName,                     fillPoolHookFun                    )
+                 , (getFlowerHookName,                    getFlowerHookFun                   )
+                 , (lookCeilingHookName,                  lookCeilingHookFun                 )
+                 , (lookFlowerbedHookName,                lookFlowerbedHookFun               )
+                 , (lookWallsHookName,                    lookWallsHookFun                   )
+                 , (readLookPaperHookName,                readLookPaperHookFun               )
+                 , (readLookPosterHookName,               readLookPosterHookFun              )
+                 , (readLookSign_iEmptyHookName,          readLookSign_iEmptyHookFun         )
+                 , (readLookSign_iLoungeEntranceHookName, readLookSign_iLoungeEntranceHookFun)
+                 , (readLookSign_iTutEntranceHookName,    readLookSign_iTutEntranceHookFun   )
+                 , (smellFlowerbedHookName,               smellFlowerbedHookFun              ) ]
 
 
 -----
@@ -371,6 +372,24 @@ readLookSign_iEmptyHookFun = mkGenericHookFun signDesc "reads the sign on the wa
 
 
 -----
+
+
+readLookSign_iLoungeEntranceHook :: Hook
+readLookSign_iLoungeEntranceHook = Hook readLookSign_iLoungeEntranceHookName ["sign"]
+
+
+readLookSign_iLoungeEntranceHookName :: HookName
+readLookSign_iLoungeEntranceHookName = "AdminZone_iLoungeEntrance_readLookSign"
+
+
+readLookSign_iLoungeEntranceHookFun :: HookFun
+readLookSign_iLoungeEntranceHookFun = mkGenericHookFun signDesc "reads the sign affixed to the door." "read sign"
+  where
+    signDesc = "The small sign reads, \"Admin Lounge.\""
+
+
+-----
+
 
 readLookSign_iTutEntranceHook :: Hook
 readLookSign_iTutEntranceHook = Hook readLookSign_iTutEntranceHookName ["sign"]
@@ -837,7 +856,7 @@ createAdminZone = do
   putRm iTutEntrance
         []
         mempty
-        (mkRm (RmTemplate "The portal" -- TODO: "look sign", "read sign"
+        (mkRm (RmTemplate "The portal"
             "Floating before you is a large round portal in which dazzling shapes and colors spin and dance. You feel \
             \a peculiar pulling sensation in your abdomen, as if the portal is attempting to draw you towards itself.\n\
             \A wooden sign is suspended above the portal."
@@ -845,7 +864,7 @@ createAdminZone = do
             voidSmell
             zeroBits
             [ StdLink South iVoid dfltLinkMove
-            , NonStdLink "portal" iTutWelcome dfltLinkMove "% floats into the portal, and promptly disappears."
+            , NonStdLink "portal" iTutWelcome dfltLinkMove "% floats into the portal and promptly disappears."
                                                            "% arrives in the tutorial." ]
             (M.fromList [ ("look", [ readLookSign_iTutEntranceHook, readLookPaperHook ])
                         , ("read", [ readLookSign_iTutEntranceHook, readLookPaperHook ]) ])
@@ -861,7 +880,9 @@ createAdminZone = do
             zeroBits
             [ StdLink North iVoid dfltLinkMove
             , NonStdLink "lounge" iLounge dfltLinkMove "% enters the lounge." "% enters the lounge." ]
-            M.empty [] []))
+            (M.fromList [ ("look", [ readLookSign_iLoungeEntranceHook ])
+                        , ("read", [ readLookSign_iLoungeEntranceHook ]) ])
+            [] []))
   putRm iLounge
         []
         mempty
