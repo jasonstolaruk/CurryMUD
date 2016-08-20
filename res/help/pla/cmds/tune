@@ -21,4 +21,4 @@ Note: use the "set" command to tune the question channel (the "tune" command is 
 \qtune all=out taro=in\d to tune everyone out except Taro.4`
 
 \uSEE ALSO\n
-channel, communication, connect, disconnect, glossary, leave, link, question, set, telepathy, unlink
+acronyms, channel, communication, connect, disconnect, glossary, leave, link, question, set, telepathy, unlink

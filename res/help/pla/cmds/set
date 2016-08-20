@@ -11,6 +11,10 @@ To change one or more settings, provide arguments in the form of "setting=value"
 The following settings are available:
 columns  The horizontal width of your screen. Impacts line wrapping. (Default value: 80.)9`
 lines    The vertical length of your screen. Impacts paging when reading help files, etc. (Default value: 24.)9`
+hp       Whether or not to display Hit Points (HP) in your prompt. (Possible values: "on"/"off". Default value: "on".)9`
+mp       Whether or not to display Magic Points (MP) in your prompt. (Possible values: "on"/"off". Default value: "on".)9`
+pp       Whether or not to display Psionic Points (PP) in your prompt. (Possible values: "on"/"off". Default value: "on".)9`
+fp       Whether or not to display Fatigue Points (FP) in your prompt. (Possible values: "on"/"off". Default value: "on".)9`
 question Whether you have tuned the question channel in or out (tune the channel out to ignore it). (Possible values: "in"/"out" or "on"/"off". Default value: "in".)9`
 
 \uEXAMPLES\n
@@ -20,4 +24,4 @@ question Whether you have tuned the question channel in or out (tune the channel
 \qset question=out\d to tune out the question channel.4`
 
 \uSEE ALSO\n
-communication, password, question, security, tune
+abbreviation, acronyms, communication, password, question, security, tune
