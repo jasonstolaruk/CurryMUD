@@ -32,6 +32,10 @@ dbErrorMsg :: Text
 dbErrorMsg = "There was an error while reading the database."
 
 
+descMsg :: Text
+descMsg = "Desc. msg."
+
+
 dfltBootMsg :: Text
 dfltBootMsg = "You have been booted from CurryMUD. Goodbye!"
 

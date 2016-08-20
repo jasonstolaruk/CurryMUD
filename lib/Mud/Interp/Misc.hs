@@ -3,6 +3,7 @@
 module Mud.Interp.Misc ( mkChoiceTxt
                        , mkYesNoChoiceTxt
                        , neverMind
+                       , promptChangeIt
                        , promptRetryYesNo
                        , resetInterp
                        , yesNoHelper ) where
@@ -42,6 +43,13 @@ mkYesNoChoiceTxt = mkChoiceTxt [ "yes", "no" ]
 
 neverMind :: Id -> MsgQueue -> MudStack ()
 neverMind i mq = send mq (nlnl "Never mind.") >> sendDfltPrompt mq i >> resetInterp i
+
+
+-----
+
+
+promptChangeIt :: MsgQueue -> Cols -> MudStack ()
+promptChangeIt mq cols = wrapSendPrompt mq cols $ "Would you like to change it? " <> mkYesNoChoiceTxt
 
 
 -----

@@ -19,6 +19,7 @@ import Mud.Cmds.Msgs.CmdDesc
 import Mud.Cmds.Msgs.Dude
 import Mud.Cmds.Msgs.Hint
 import Mud.Cmds.Msgs.Misc
+import Mud.Interp.MultiLine
 import Mud.Cmds.Msgs.Sorry
 import Mud.Cmds.Util.Abbrev
 import Mud.Cmds.Util.EmoteExp.EmoteExp
@@ -775,8 +776,28 @@ connectHelper i (target, as) ms =
 
 -- TODO: Help.
 description :: ActionFun
-description (NoArgs _ _ _) = undefined
+description (NoArgs i mq cols) = getEntDesc i <$> getState >>= \desc -> do
+    wrapSend1Nl    mq cols "Your description is:"
+    wrapSend       mq cols desc
+    promptChangeIt mq cols
+    setInterp i . Just $ interpConfirmDescChange
 description p = withoutArgs description p
+
+
+interpConfirmDescChange :: Interp
+interpConfirmDescChange cn (NoArgs i mq cols) = case yesNoHelper cn of
+  Just True -> blankLine mq >> descHelper i mq cols
+  _         -> neverMind i mq
+interpConfirmDescChange _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNo plaMsgQueue plaCols
+
+
+descHelper :: Id -> MsgQueue -> Cols -> MudStack ()
+descHelper i mq cols = wrapSend1Nl mq cols descMsg >> (setInterp i . Just . interpMutliLine f $ [])
+  where
+    f _ = do
+        ok mq
+        sendDfltPrompt mq i
+        resetInterp i
 
 
 -----
@@ -3055,7 +3076,7 @@ security (NoArgs i mq cols) = getSing i <$> getState >>= \s ->
         multiWrapSend mq cols [ "You have set your security Q&A as follows:"
                               , "Question: " <> dbQ
                               , "Answer: "   <> dbA ]
-        wrapSendPrompt mq cols $ "Would you like to change it? " <> mkYesNoChoiceTxt
+        promptChangeIt mq cols
         setInterp i . Just $ interpConfirmSecurityChange
 security p = withoutArgs security p
 
