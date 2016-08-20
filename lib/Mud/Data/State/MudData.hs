@@ -789,7 +789,11 @@ data PlaFlags = IsAdmin
               | IsNotFirstAdminMsg
               | IsNotFirstMobSay
               | IsTunedAdmin
-              | IsTunedQuestion deriving Enum
+              | IsTunedQuestion
+              | IsShowingHp
+              | IsShowingMp
+              | IsShowingPp
+              | IsShowingFp deriving Enum
 
 
 type Interp = CmdName -> ActionParams -> MudStack ()

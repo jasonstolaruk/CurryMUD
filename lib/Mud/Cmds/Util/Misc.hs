@@ -57,6 +57,7 @@ module Mud.Cmds.Util.Misc ( asterisk
                           , mkSingleTarget
                           , mkThrPerPro
                           , mkWhoHeader
+                          , onOff
                           , pager
                           , parseOutDenotative
                           , punc
@@ -753,6 +754,14 @@ mkWhoHeader b = T.concat [ padName "Name"
                          , "Level" ] : [ T.replicate (namePadding + getSum x + sexPadding + racePadding + lvlPadding) "=" ]
   where
     x = b |?| Sum idPadding
+
+
+-----
+
+
+onOff :: Bool -> Text
+onOff True  = "on"
+onOff False = "off"
 
 
 -----

@@ -880,6 +880,50 @@ isNotFirstModSayId = onPla isNotFirstMobSay True
 -----
 
 
+isShowingHp :: Pla -> Bool
+isShowingHp = getPlaFlag IsShowingHp
+
+
+isShowingHpId :: Id -> MudState -> Bool
+isShowingHpId = plaFlagHelper IsShowingHp
+
+
+-----
+
+
+isShowingMp :: Pla -> Bool
+isShowingMp = getPlaFlag IsShowingMp
+
+
+isShowingMpId :: Id -> MudState -> Bool
+isShowingMpId = plaFlagHelper IsShowingMp
+
+
+-----
+
+
+isShowingPp :: Pla -> Bool
+isShowingPp = getPlaFlag IsShowingPp
+
+
+isShowingPpId :: Id -> MudState -> Bool
+isShowingPpId = plaFlagHelper IsShowingPp
+
+
+-----
+
+
+isShowingFp :: Pla -> Bool
+isShowingFp = getPlaFlag IsShowingFp
+
+
+isShowingFpId :: Id -> MudState -> Bool
+isShowingFpId = plaFlagHelper IsShowingFp
+
+
+-----
+
+
 isTunedAdmin :: Pla -> Bool
 isTunedAdmin = getPlaFlag IsTunedAdmin
 

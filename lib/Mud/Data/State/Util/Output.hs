@@ -57,8 +57,8 @@ import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
-import Control.Lens (to, views)
-import Control.Lens.Operators ((<>~), (^.))
+import Control.Lens (each, to, views)
+import Control.Lens.Operators ((%~), (&), (<>~), (^.))
 import Control.Monad (forM_, unless)
 import Control.Monad.IO.Class (liftIO)
 import Data.List ((\\), delete, elemIndex)
@@ -321,14 +321,15 @@ sendDfltPrompt :: MsgQueue -> Id -> MudStack ()
 sendDfltPrompt mq i = sendPrompt mq . mkDfltPrompt i =<< getState
 
 
--- TODO: Allow players to set which pts are displayed in their prompt.
 mkDfltPrompt :: Id -> MudState -> Text
-mkDfltPrompt i ms = let (hps, mps, pps, fps) = getPts i ms
-                        marker               = colorWith indentColor " "
-                    in marker <> " " <> spaces [ f "h" hps
-                                               , f "m" mps
-                                               , f "p" pps
-                                               , f "f" fps ] <> "> "
+mkDfltPrompt i ms = let (hps, mps, pps, fps)     = getPts i ms
+                        p                        = getPla i ms
+                        (isHp, isMp, isPp, isFp) = (isShowingHp, isShowingMp, isShowingPp, isShowingFp) & each %~ (p |&|)
+                        marker                   = colorWith indentColor " "
+                    in marker <> " " <> (spaces . dropBlanks $ [ isHp |?| f "h" hps
+                                                               , isMp |?| f "m" mps
+                                                               , isPp |?| f "p" pps
+                                                               , isFp |?| f "f" fps ]) <> "> "
   where
     indentColor     = isNpc i ms ? toNpcColor :? promptIndentColor
     f a pair@(x, _) = commaShow x <> colorWith (mkColorTxtForXps pair) a

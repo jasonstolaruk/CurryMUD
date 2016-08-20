@@ -46,11 +46,11 @@ module Mud.Cmds.Util.Pla ( adminTagTxt
                          , mkChanNamesTunings
                          , mkCoinsDesc
                          , mkCoinsSummary
-                         , mkEffStDesc
                          , mkEffDxDesc
                          , mkEffHtDesc
                          , mkEffMaDesc
                          , mkEffPsDesc
+                         , mkEffStDesc
                          , mkEntDesc
                          , mkEntDescs
                          , mkEqDesc
@@ -67,6 +67,7 @@ module Mud.Cmds.Util.Pla ( adminTagTxt
                          , mkReadyMsgs
                          , moveReadiedItem
                          , notFoundSuggestAsleeps
+                         , onOffs
                          , otherHand
                          , putOnMsgs
                          , resolveMobInvCoins
@@ -1291,6 +1292,16 @@ notFoundSuggestAsleeps a@(capitalize . T.toLower -> a') asleepSings ms =
                       , ()# guess ? asleepTarget :? heShe
                       , " is sleeping at the moment..." ]
       Nothing -> sorryTwoWayLink a
+
+
+-----
+
+
+onOffs :: [(Text, Bool)]
+onOffs = [ ("o",   likewise )
+         , ("of",  likewise )
+         , ("off", likewise )
+         , ("on",  otherwise) ]
 
 
 -----

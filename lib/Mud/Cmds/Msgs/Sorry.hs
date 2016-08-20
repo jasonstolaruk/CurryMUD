@@ -171,6 +171,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryParseLineLen
                            , sorryParseMouthfuls
                            , sorryParseNum
+                           , sorryParseOnOff
                            , sorryParseSetting
                            , sorryPCName
                            , sorryPCNameLoggedIn
@@ -1272,6 +1273,17 @@ sorryParseMouthfuls a = dblQuote a <> " is not a valid number of mouthfuls."
 
 sorryParseNum :: Text -> Text -> Text
 sorryParseNum numTxt base = T.concat [ dblQuote numTxt, " is not a valid number in base ", base, "." ]
+
+
+sorryParseOnOff :: Text -> Text -> Text
+sorryParseOnOff value n = T.concat [ dblQuote value
+                                   , " is not a valid value for the "
+                                   , dblQuote n
+                                   , " setting. Please specify "
+                                   , dblQuote "on"
+                                   , " or "
+                                   , dblQuote "off"
+                                   , "." ]
 
 
 sorryParseSetting :: Text -> Text -> Text

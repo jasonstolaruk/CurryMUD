@@ -47,7 +47,6 @@ import Control.Monad ((>=>), unless, when)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Loops (orM)
 import Crypto.BCrypt (validatePassword)
-import Data.Bits (setBit, zeroBits)
 import Data.Char (isDigit, isLower, isUpper, toLower)
 import Data.Ix (inRange)
 import Data.List (delete, foldl', intersperse, partition)
@@ -477,7 +476,6 @@ finishNewChar ncb@(NewCharBundle _ s pass) params@(NoArgs'' i) = do
                             & invTbl    .ind iWelcome   %~ (i `delete`)
                             & mobTbl    .ind i.rmId     .~ iCentral
                             & mobTbl    .ind i.interp   .~ Nothing
-                            & plaTbl    .ind i.plaFlags .~ (setBit zeroBits . fromEnum $ IsTunedQuestion)
                 = dup $ ms' & invTbl.ind iCentral %~ addToInv ms' (pure i)
                             & newChar i v
 finishNewChar _ p = patternMatchFail "finishNewChar" . showText $ p

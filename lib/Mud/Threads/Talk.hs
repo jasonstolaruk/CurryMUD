@@ -27,7 +27,7 @@ import Control.Exception.Lifted (finally, handle, try)
 import Control.Lens (at)
 import Control.Lens.Operators ((%~), (&), (.~), (?~))
 import Control.Monad.IO.Class (liftIO)
-import Data.Bits (zeroBits)
+import Data.Bits (setBit, zeroBits)
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import Data.Time (getCurrentTime)
@@ -125,7 +125,7 @@ adHoc mq host = do
                        , _skillPts   = 0 }
             pla  = Pla { _currHostName = host
                        , _connectTime  = Just ct
-                       , _plaFlags     = zeroBits
+                       , _plaFlags     = initPlaFlags
                        , _columns      = 80
                        , _pageLines    = 24
                        , _peepers      = []
@@ -156,6 +156,14 @@ randomSex = ([ Male, Female ] !!) . fromEnum <$> (randomIO :: IO Bool)
 
 randomRace :: IO Race
 randomRace = randomIO
+
+
+initPlaFlags :: Int
+initPlaFlags = foldl setBit zeroBits . map fromEnum $ [ IsTunedQuestion
+                                                      , IsShowingHp
+                                                      , IsShowingMp
+                                                      , IsShowingPp
+                                                      , IsShowingFp ]
 
 
 dumpTitle :: MsgQueue -> MudStack ()

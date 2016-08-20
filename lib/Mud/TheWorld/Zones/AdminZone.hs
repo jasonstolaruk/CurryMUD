@@ -43,7 +43,7 @@ import Control.Lens.Operators ((%~), (&), (.~), (<>~), (?~))
 import Control.Monad (forM_)
 import Data.Bits (setBit, zeroBits)
 import Data.Function (on)
-import Data.List ((\\), delete, foldl')
+import Data.List ((\\), delete)
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import qualified Data.Map.Lazy as M (empty, fromList, singleton)
@@ -501,11 +501,11 @@ beeBuzzRmFun = mkRndmBcastRmFun iAtrium "iAtrium" beeBuzzRmFunName 25 60 beeBuzz
 
 
 adminFlags :: Int
-adminFlags = foldl' setBit zeroBits . map fromEnum $ [ IsAdmin
-                                                     , IsNotFirstAdminMsg
-                                                     , IsNotFirstMobSay
-                                                     , IsTunedAdmin
-                                                     , IsTunedQuestion ]
+adminFlags = foldl setBit zeroBits . map fromEnum $ [ IsAdmin
+                                                    , IsNotFirstAdminMsg
+                                                    , IsNotFirstMobSay
+                                                    , IsTunedAdmin
+                                                    , IsTunedQuestion ]
 
 
 createAdminZone :: MudStack ()

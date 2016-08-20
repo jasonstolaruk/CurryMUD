@@ -3189,7 +3189,11 @@ mkSettingPairs i ms = let p = getPla i ms
   where
     pairs p   = [ ("columns",  showText . getColumns   i  $ ms)
                 , ("lines",    showText . getPageLines i  $ ms)
-                , ("question", inOut    . isTunedQuestion $ p ) ]
+                , ("question", inOut    . isTunedQuestion $ p )
+                , ("hp",       onOff    . isShowingHp     $ p )
+                , ("mp",       onOff    . isShowingMp     $ p )
+                , ("pp",       onOff    . isShowingPp     $ p )
+                , ("fp",       onOff    . isShowingFp     $ p ) ]
     adminPair = ("admin", ) . inOut . isTunedAdmin
 
 
@@ -3209,6 +3213,10 @@ helperSettings i ms a (T.breakOn "=" -> (name, T.tail -> value)) =
                         "columns"  -> procEither . alterNumeric minCols      maxCols      "columns" $ columns
                         "lines"    -> procEither . alterNumeric minPageLines maxPageLines "lines"   $ pageLines
                         "question" -> alterTuning "question" IsTunedQuestion
+                        "hp"       -> alterPts "hp" IsShowingHp
+                        "mp"       -> alterPts "mp" IsShowingMp
+                        "pp"       -> alterPts "pp" IsShowingPp
+                        "fp"       -> alterPts "fp" IsShowingFp
                         t          -> patternMatchFail "helperSettings found" t
       where
         procEither f = parseInt |&| either appendMsg f
@@ -3220,10 +3228,15 @@ helperSettings i ms a (T.breakOn "=" -> (name, T.tail -> value)) =
       | otherwise = let msg = T.concat [ "Set ", settingName, " to ", showText x, "." ]
                     in appendMsg msg & _1.lens .~ x & _3 <>~ pure msg
     alterTuning n flag = case filter ((== value) . fst) inOutOnOffs of
-      [(_, newBool)] -> let msg   = T.concat [ "Tuned ", inOut newBool, " the ", n, " channel." ]
+      [(_, newBool)] -> let msg = T.concat [ "Tuned ", inOut newBool, " the ", n, " channel." ]
                         in appendMsg msg & _1 %~ setPlaFlag flag newBool & _3 <>~ pure msg
       [] -> appendMsg . sorryParseInOut value $ n
       xs -> patternMatchFail "helperSettings alterTuning" . showText $ xs
+    alterPts n flag = case filter ((== value) . fst) onOffs of
+      [(_, newBool)] -> let msg = T.concat [ "Turned ", onOff newBool, " ", T.toUpper n, " in prompt." ]
+                        in appendMsg msg & _1 %~ setPlaFlag flag newBool & _3 <>~ pure msg
+      [] -> appendMsg . sorryParseOnOff value $ n
+      xs -> patternMatchFail "helperSettings alterPts" . showText $ xs
 
 
 -----
