@@ -19,7 +19,6 @@ executable             curry
   ghc-options:         -Wall -Werror -threaded -rtsopts -with-rtsopts=-N
   -- ghc-options:         -Wall -Werror -threaded -rtsopts -with-rtsopts=-N -O2 -funfolding-use-threshold=16 -optc-O3
   main-is:             Main.hs
-  other-extensions:    OverloadedStrings
   build-depends:         base >=4.8 && <5.0
                        , currymud
                        , directory
@@ -126,32 +125,6 @@ library
                        Mud.Util.Token
                        Mud.Util.Wrapping
   other-modules:       Paths_currymud
-  other-extensions:    DeriveDataTypeable
-                       DeriveGeneric
-                       DuplicateRecordFields
-                       FlexibleContexts
-                       FlexibleInstances
-                       GADTs
-                       GeneralizedNewtypeDeriving
-                       LambdaCase
-                       MonadComprehensions
-                       MultiParamTypeClasses
-                       MultiWayIf
-                       NamedFieldPuns
-                       OverloadedStrings
-                       ParallelListComp
-                       PatternSynonyms
-                       QuasiQuotes
-                       RankNTypes
-                       RebindableSyntax
-                       RecordWildCards
-                       ScopedTypeVariables
-                       TemplateHaskell
-                       TransformListComp
-                       TupleSections
-                       TypeFamilies
-                       UndecidableInstances
-                       ViewPatterns
   build-depends:         base >=4.8 && <5.0
                        , aeson
                        , ansi-terminal
@@ -207,9 +180,6 @@ test-suite             test
                        MudTests.Util.Padding
                        MudTests.Util.Text
                        MudTests.Util.Wrapping
-  other-extensions:    OverloadedStrings
-                       TupleSections
-                       ViewPatterns
   build-depends:         base >=4.8 && <5.0
                        , containers
                        , currymud

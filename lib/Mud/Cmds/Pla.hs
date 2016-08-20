@@ -1325,8 +1325,8 @@ helperFillEitherInv i srcDesig targetId (eis:eiss) a@(ms, _, _, _) = case getVes
 
 
 alertExec :: CmdName -> ActionFun
-alertExec cn (NoArgs'     i mq     ) = alertExecHelper i mq cn ""          ""
-alertExec cn (OneArgLower i mq _ a ) = alertExecHelper i mq cn a           a
+alertExec cn (NoArgs'     i mq     ) = alertExecHelper i mq cn "" ""
+alertExec cn (OneArgLower i mq _ a ) = alertExecHelper i mq cn a  a
 alertExec cn (WithArgs    i mq _ as) = alertExecHelper i mq cn (head as) . spaces $ as
 alertExec _  p                       = patternMatchFail "alertExec" . showText $ p
 
@@ -1343,13 +1343,14 @@ alertExecHelper i mq cn target args = do
     sendCmdNotFound mq
     bcastAdmins msg
     forM_ outIds (\adminId -> retainedMsg adminId ms . mkRetainedMsgFromPerson s $ msg)
-    logNotice        "alertExecHelper"   msg
-    logPla           "alertExecHelper" i msg
-    withDbExHandler_ "alertExecHelper" . insertDbTblAlertExec $ rec
+    logNotice        fn   msg
+    logPla           fn i msg
+    withDbExHandler_ fn . insertDbTblAlertExec $ rec
   where
+    fn                      = "alertExecHelper"
     targetingMsg targetSing = targetSing |!| (" targeting " <> targetSing)
-    argsMsg | ()# args  = "with no arguments"
-            | otherwise = "with the following arguments: " <> dblQuote args
+    argsMsg | ()# args      = "with no arguments"
+            | otherwise     = "with the following arguments: " <> dblQuote args
 
 
 alertExecFindTargetSing :: Id -> MudState -> Text -> Text

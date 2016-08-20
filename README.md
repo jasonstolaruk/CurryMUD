@@ -71,7 +71,6 @@ The code is available here on GitHub under the 3-clause BSD license (refer to th
   * `MonadComprehensions`
   * `MultiWayIf`
   * `NamedFieldPuns`
-  * `OverloadedStrings`
   * `ParallelListComp`
   * `PatternSynonyms`
   * `RebindableSyntax`
