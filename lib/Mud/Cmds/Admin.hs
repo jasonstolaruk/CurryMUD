@@ -1304,7 +1304,7 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
             in a & _2 %~ f
     helper op (T.toLower -> key, value) = findFullNameForAbbrev key keyNames |&| maybe notFound found
       where
-        keyNames    = [ "entname" -- These need not be in alphabetical order.
+        keyNames    = [ "entname"
                       , "sing"
                       , "plur"
                       , "entdesc"
@@ -1380,7 +1380,7 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
                              & _4 <>~ (isDiff |?| toSelf)
               _      -> sorryOp k
         -----
-        setEntTextHelper t k n getter setter
+        setEntTextHelper t k n getter setter -- TODO: Handle newlines?
           | not . hasEnt $ t = sorryType
           | otherwise        = case eitherDecode value' of
             Left  _ -> appendMsg . sorryAdminSetValue k $ value

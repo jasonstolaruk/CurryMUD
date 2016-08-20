@@ -24,35 +24,33 @@ CurryMUD will have the following features:
 
 ## What I have so far
 
-* Incoming connections are accepted; players are prompted for their character name and password.
-* Character creation.
-* The names of commands, as well as the names of the targets they act upon, may be abbreviated.
-* Commands have a consistent structure and a unique syntax for indicating target locations and quantities.
-* About 80 player commands and 45 administrator commands.
+* About 85 player commands and 45 administrator commands.
 * Nearly 200 built-in emotes.
-* Unique commands, accessible only when a player is in a particular room, may be created.
-* PCs can introduce themselves to each other.
-* PCs can "link" with each other so as to enable "tells."
-* Players can create their own ad-hoc channels.
-* Question channel for OOC newbie Q&A.
-* Free-form emotes and built-in emotes may be used in "tells" and channel communications.
-* Racial say. Whisper.
-* Functionality enabling one-on-one communication between players and administrators.
-* Players can interact with permanent room fixtures that are not listed in a room's inventory.
-* NPCs can execute commands, either from within code or via the ":as" administrator command.
 * Help files for all existing non-debug commands. Help topics.
-* The virtual world is automatically persisted at regular intervals and at shutdown.
+* Commands have a consistent structure and a unique syntax for indicating target locations and quantities.
+* Unique commands, accessible only when a player is in a particular room, may be created.
+* The names of commands, as well as the names of the targets they act upon, may be abbreviated.
 * Logging.
 * ANSI color.
+* Character creation.
+* The virtual world is automatically persisted at regular intervals and at shutdown.
 * Systems for reporting bugs and typos.
 * Commands to aid in the process of resetting a forgotten password.
+* NPCs can execute commands, either from within code or via the ":as" administrator command.
+* PCs can introduce themselves to each other.
+* PCs can "link" with each other so as to enable "tells."
+* Question channel for OOC newbie Q&A.
+* Players can create their own ad-hoc channels.
+* Free-form emotes and built-in emotes may be used in "tells" and channel communications.
+* Functionality enabling one-on-one communication between players and administrators.
 * Weight and encumbrance.
 * Volume and container capacity.
 * Vessels for containing liquids. Vessels may be filled and emptied.
-* Eating foods and drinking liquids. Digestion.
-* Smell and taste. Listen.
-* Durational effects that can be paused and resumed.
+* Players can interact with permanent room fixtures that are not listed in a room's inventory.
 * Objects can be configured to automatically disappear when left on the ground for some time.
+* Smell and taste. Listen.
+* Eating foods and drinking liquids. Digestion.
+* Durational effects that can be paused and resumed.
 
 I am still in the initial stage of developing basic commands. There is very little content in the virtual world.
 
@@ -65,7 +63,7 @@ The code is available here on GitHub under the 3-clause BSD license (refer to th
 * About 60 unit and property tests exist (I'm using the [tasty testing framework](https://hackage.haskell.org/package/tasty)).
 * A `ReaderT` monad transformer stack with the world state inside a single `IORef`.
 * `STM`-based concurrency.
-* Using `aeson` with `conduit` and `sqlite-simple` for persistence.
+* Using `aeson` (with `conduit`) and `sqlite-simple` for persistence.
 * Heavy use of the `lens` library.
 * Heavy use of GHC extensions, including:
   * `DuplicateRecordFields` (new in GHC 8)
