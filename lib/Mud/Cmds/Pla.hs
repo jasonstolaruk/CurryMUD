@@ -223,41 +223,42 @@ priorityAbbrevCmds = concatMap (uncurry5 mkPriorityAbbrevCmd) priorityAbbrevCmdT
 
 priorityAbbrevCmdTuples :: [(CmdFullName, CmdPriorityAbbrevTxt, ActionFun, Bool, CmdDesc)]
 priorityAbbrevCmdTuples =
-    [ ("clear",      "cl",  clear,          True,  cmdDescClear)
-    , ("color",      "col", color,          True,  "Perform a color test.")
-    , ("connect",    "co",  connect,        True,  "Connect one or more people to a telepathic channel.")
-    , ("disconnect", "di",  disconnect,     True,  "Disconnect one or more people from a telepathic channel.")
-    , ("drink",      "dri", drink,          False, cmdDescDrink)
-    , ("drop",       "dr",  dropAction,     True,  cmdDescDrop)
-    , ("emote",      "em",  emote,          True,  cmdDescEmote)
-    , ("exits",      "ex",  exits,          True,  cmdDescExits)
-    , ("fill",       "f",   fill,           True,  cmdDescFill)
-    , ("get",        "g",   getAction,      True,  cmdDescGet)
-    , ("give",       "gi",  give,           True,  cmdDescGive)
-    , ("help",       "h",   help,           True,  "Get help on one or more commands or topics.")
-    , ("intro",      "in",  intro,          True,  "Display a list of the people who have introduced themselves to \
-                                                   \you, or introduce yourself to one or more people.")
-    , ("inventory",  "i",   inv,            True,  cmdDescInv)
-    , ("leave",      "le",  leave,          True,  "Sever your connections to one or more telepathic channels.")
-    , ("link",       "li",  link,           True,  "Display a list of the people with whom you have established a \
-                                                   \telepathic link, or establish a telepathic link with one or more \
-                                                   \people.")
-    , ("look",       "l",   look,           True,  cmdDescLook)
-    , ("motd",       "m",   motd,           True,  "Display the message of the day.")
-    , ("put",        "p",   putAction,      True,  cmdDescPut)
-    , ("ready",      "r",   ready,          True,  cmdDescReady)
-    , ("say",        "sa",  say,            True,  cmdDescSay CommonLang)
-    , ("show",       "sh",  showAction,     True,  cmdDescShow)
-    , ("smell",      "sm",  smell,          True,  cmdDescSmell)
-    , ("stats",      "st",  stats,          True,  cmdDescStats)
-    , ("stop",       "sto", stop,           True,  cmdDescStop)
-    , ("taste",      "ta",  taste,          True,  cmdDescTaste)
-    , ("telepathy",  "t",   tele,           True,  "Send a private message to a person with whom you have established \
-                                                   \a two-way telepathic link.")
-    , ("tempdesc",   "te",  tempDescAction, True,  cmdDescTempDesc)
-    , ("unready",    "un",  unready,        True,  cmdDescUnready)
-    , ("whisper",    "whi", whisper,        True,  cmdDescWhisper)
-    , ("who",        "wh",  who,            True,  "Display or search a list of who is currently awake.") ]
+    [ ("clear",       "cl",  clear,          True,  cmdDescClear)
+    , ("color",       "col", color,          True,  "Perform a color test.")
+    , ("connect",     "co",  connect,        True,  "Connect one or more people to a telepathic channel.")
+    , ("description", "de",  description,    False, cmdDescDescription)
+    , ("disconnect",  "di",  disconnect,     True,  "Disconnect one or more people from a telepathic channel.")
+    , ("drink",       "dri", drink,          False, cmdDescDrink)
+    , ("drop",        "dr",  dropAction,     True,  cmdDescDrop)
+    , ("emote",       "em",  emote,          True,  cmdDescEmote)
+    , ("exits",       "ex",  exits,          True,  cmdDescExits)
+    , ("fill",        "f",   fill,           True,  cmdDescFill)
+    , ("get",         "g",   getAction,      True,  cmdDescGet)
+    , ("give",        "gi",  give,           True,  cmdDescGive)
+    , ("help",        "h",   help,           True,  "Get help on one or more commands or topics.")
+    , ("intro",       "in",  intro,          True,  "Display a list of the people who have introduced themselves to \
+                                                    \you, or introduce yourself to one or more people.")
+    , ("inventory",   "i",   inv,            True,  cmdDescInv)
+    , ("leave",       "le",  leave,          True,  "Sever your connections to one or more telepathic channels.")
+    , ("link",        "li",  link,           True,  "Display a list of the people with whom you have established a \
+                                                    \telepathic link, or establish a telepathic link with one or more \
+                                                    \people.")
+    , ("look",        "l",   look,           True,  cmdDescLook)
+    , ("motd",        "m",   motd,           True,  "Display the message of the day.")
+    , ("put",         "p",   putAction,      True,  cmdDescPut)
+    , ("ready",       "r",   ready,          True,  cmdDescReady)
+    , ("say",         "sa",  say,            True,  cmdDescSay CommonLang)
+    , ("show",        "sh",  showAction,     True,  cmdDescShow)
+    , ("smell",       "sm",  smell,          True,  cmdDescSmell)
+    , ("stats",       "st",  stats,          True,  cmdDescStats)
+    , ("stop",        "sto", stop,           True,  cmdDescStop)
+    , ("taste",       "ta",  taste,          True,  cmdDescTaste)
+    , ("telepathy",   "t",   tele,           True,  "Send a private message to a person with whom you have established \
+                                                    \a two-way telepathic link.")
+    , ("tempdesc",    "te",  tempDescAction, True,  cmdDescTempDesc)
+    , ("unready",     "un",  unready,        True,  cmdDescUnready)
+    , ("whisper",     "whi", whisper,        True,  cmdDescWhisper)
+    , ("who",         "wh",  who,            True,  "Display or search a list of who is currently awake.") ]
 
 
 mkPriorityAbbrevCmd :: CmdFullName -> CmdPriorityAbbrevTxt -> ActionFun -> Bool -> CmdDesc -> [Cmd]
@@ -341,28 +342,29 @@ npcPriorityAbbrevCmds = concatMap (uncurry5 mkPriorityAbbrevCmd) npcPriorityAbbr
 
 npcPriorityAbbrevCmdTuples :: [(CmdFullName, CmdPriorityAbbrevTxt, ActionFun, Bool, CmdDesc)]
 npcPriorityAbbrevCmdTuples =
-    [ ("clear",     "c",   clear,          True,  cmdDescClear)
-    , ("drink",     "dri", drink,          False, cmdDescDrink)
-    , ("drop",      "dr",  dropAction,     True,  cmdDescDrop)
-    , ("emote",     "em",  emote,          True,  cmdDescEmote)
-    , ("exits",     "ex",  exits,          True,  cmdDescExits)
-    , ("exorcise",  "exo", npcExorcise,    False, "Stop being possessed.")
-    , ("fill",      "f",   fill,           True,  cmdDescFill)
-    , ("get",       "g",   getAction,      True,  cmdDescGet)
-    , ("give",      "gi",  give,           True,  cmdDescGive)
-    , ("inventory", "i",   inv,            True,  cmdDescInv)
-    , ("look",      "l",   look,           True,  cmdDescLook)
-    , ("put",       "p",   putAction,      True,  cmdDescPut)
-    , ("ready",     "r",   ready,          True,  cmdDescReady)
-    , ("say",       "sa",  say,            True,  cmdDescSay CommonLang)
-    , ("show",      "sh",  showAction,     True,  cmdDescShow)
-    , ("smell",     "sm",  smell,          True,  cmdDescSmell)
-    , ("stats",     "st",  stats,          True,  cmdDescStats)
-    , ("stop",      "sto", stop,           True,  cmdDescStop)
-    , ("tempdesc",  "te",  tempDescAction, True,  cmdDescTempDesc)
-    , ("unready",   "un",  unready,        True,  cmdDescUnready)
-    , ("whisper",   "whi", whisper,        True,  cmdDescWhisper)
-    , ("whoami",    "wh",  whoAmI,         True,  "Confirm who " <> parensQuote "and what" <> " you are.") ]
+    [ ("clear",       "c",   clear,          True,  cmdDescClear)
+    , ("description", "de",  description,    False, cmdDescDescription)
+    , ("drink",       "dri", drink,          False, cmdDescDrink)
+    , ("drop",        "dr",  dropAction,     True,  cmdDescDrop)
+    , ("emote",       "em",  emote,          True,  cmdDescEmote)
+    , ("exits",       "ex",  exits,          True,  cmdDescExits)
+    , ("exorcise",    "exo", npcExorcise,    False, "Stop being possessed.")
+    , ("fill",        "f",   fill,           True,  cmdDescFill)
+    , ("get",         "g",   getAction,      True,  cmdDescGet)
+    , ("give",        "gi",  give,           True,  cmdDescGive)
+    , ("inventory",   "i",   inv,            True,  cmdDescInv)
+    , ("look",        "l",   look,           True,  cmdDescLook)
+    , ("put",         "p",   putAction,      True,  cmdDescPut)
+    , ("ready",       "r",   ready,          True,  cmdDescReady)
+    , ("say",         "sa",  say,            True,  cmdDescSay CommonLang)
+    , ("show",        "sh",  showAction,     True,  cmdDescShow)
+    , ("smell",       "sm",  smell,          True,  cmdDescSmell)
+    , ("stats",       "st",  stats,          True,  cmdDescStats)
+    , ("stop",        "sto", stop,           True,  cmdDescStop)
+    , ("tempdesc",    "te",  tempDescAction, True,  cmdDescTempDesc)
+    , ("unready",     "un",  unready,        True,  cmdDescUnready)
+    , ("whisper",     "whi", whisper,        True,  cmdDescWhisper)
+    , ("whoami",      "wh",  whoAmI,         True,  "Confirm who " <> parensQuote "and what" <> " you are.") ]
 
 
 noOfNpcCmds :: Int
@@ -663,24 +665,6 @@ chan p = patternMatchFail "chan" . showText $ p
 -----
 
 
-tempDescAction :: ActionFun
-tempDescAction (NoArgs i mq cols) = do
-    tweak $ mobTbl.ind i.tempDesc .~ Nothing
-    wrapSend mq cols "Your temporary character description has been cleared."
-    logPla "tempDescAction" i "temporary character description cleared."
-tempDescAction (Msg i mq cols desc@(dblQuote -> desc')) = if T.length desc > maxTempDescLen
-  then wrapSend mq cols $ "A temporary character description cannot exceed " <> showText maxTempDescLen <> " characters in \
-                          \length."
-  else do
-    tweak $ mobTbl.ind i.tempDesc ?~ desc
-    wrapSend mq cols $ "Your temporary character description has been set to " <> desc'
-    logPla "tempDescAction" i $ "temporary character description set to " <> desc'
-tempDescAction p = patternMatchFail "tempDescAction" . showText $ p
-
-
------
-
-
 clear :: ActionFun
 clear (NoArgs' i mq) = (send mq . T.pack $ clearScreenCode) >> logPlaExec "clear" i
 clear p              = withoutArgs clear p
@@ -784,6 +768,15 @@ connectHelper i (target, as) ms =
         (cs, cns, s) = mkChanBindings i ms
         sorry        = (ms, ) . (, Nothing) . pure . Left
     in findFullNameForAbbrev target (map T.toLower cns) |&| maybe notFound found
+
+
+-----
+
+
+-- TODO: Help.
+description :: ActionFun
+description (NoArgs _ _ _) = undefined
+description p = withoutArgs description p
 
 
 -----
@@ -3820,6 +3813,24 @@ getDblLinkedSings i ms = foldr helper dupIdentity . getLinked i $ ms
   where
     helper s pair = let lens = isAwake (getIdForMobSing s ms) ms ? _1 :? _2
                     in pair & lens %~ (s :)
+
+
+-----
+
+
+tempDescAction :: ActionFun
+tempDescAction (NoArgs i mq cols) = do
+    tweak $ mobTbl.ind i.tempDesc .~ Nothing
+    wrapSend mq cols "Your temporary character description has been cleared."
+    logPla "tempDescAction" i "temporary character description cleared."
+tempDescAction (Msg i mq cols desc@(dblQuote -> desc')) = if T.length desc > maxTempDescLen
+  then wrapSend mq cols $ "A temporary character description cannot exceed " <> showText maxTempDescLen <> " characters in \
+                          \length."
+  else do
+    tweak $ mobTbl.ind i.tempDesc ?~ desc
+    wrapSend mq cols $ "Your temporary character description has been set to " <> desc'
+    logPla "tempDescAction" i $ "temporary character description set to " <> desc'
+tempDescAction p = patternMatchFail "tempDescAction" . showText $ p
 
 
 -----

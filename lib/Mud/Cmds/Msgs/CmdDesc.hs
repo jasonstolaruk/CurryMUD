@@ -19,6 +19,10 @@ cmdDescClear :: Text
 cmdDescClear = "Clear the screen."
 
 
+cmdDescDescription :: Text
+cmdDescDescription = "Change your character description."
+
+
 cmdDescDispCmdList :: Text
 cmdDescDispCmdList = "Display or search this command list."
 
