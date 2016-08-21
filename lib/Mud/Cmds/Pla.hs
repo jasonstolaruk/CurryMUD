@@ -1157,7 +1157,8 @@ exits p = withoutArgs exits p
 
 expCmdList :: ActionFun
 expCmdList (NoArgs i mq cols) = getState >>= \ms ->
-    sequence_ [ pager i mq . concatMap (wrapIndent cmdNamePadding cols) . mkExpCmdListTxt i $ ms, logPlaExecArgs "expressive" [] i ]
+    sequence_ [ pager i mq . concatMap (wrapIndent cmdNamePadding cols) . mkExpCmdListTxt i $ ms
+              , logPlaExecArgs "expressive" [] i ]
 expCmdList p@ActionParams { myId, args } = getState >>= \ms ->
     dispMatches p cmdNamePadding (mkExpCmdListTxt myId ms) >> logPlaExecArgs "expressive" args myId
 
@@ -2071,7 +2072,8 @@ mkRmInvCoinsDesc i cols ms ri =
                                                           , adminTagHelper ia
                                                           , " "
                                                           , en ]
-    mkPCDesc (ia, (en, b,      d, c))          = T.concat [ colorWith unknownNameColor $ showText c <> " " <> mkPlurFromBoth b
+    mkPCDesc (ia, (en, b,      d, c))          = T.concat [ let t = showText c <> " " <> mkPlurFromBoth b
+                                                            in colorWith unknownNameColor t
                                                           , rmDescHepler d
                                                           , adminTagHelper ia
                                                           , " "
@@ -2174,7 +2176,8 @@ newChan (WithArgs i mq cols (nub -> as)) = helper |&| modifyState >=> \(unzip ->
           | T.length a > maxChanNameLen =
               let msg = "a channel name may not be more than " <> showText maxChanNameLen <> " characters long"
               in sorryNewChanName a msg `sorry` triple
-          | T.any isNG a = sorryNewChanName a "a channel name may only contain alphabetic letters and digits" `sorry` triple
+          | T.any isNG a = let x = sorryNewChanName a "a channel name may only contain alphabetic letters and digits"
+                           in x `sorry` triple
           | a' `elem` illegalNames = sorryNewChanName a "this name is reserved or already in use" `sorry` triple
           | a' `elem` map T.toLower myChanNames
           , match <- head . filter ((== a') . T.toLower) $ myChanNames = sorryNewChanExisting match `sorry` triple
@@ -3036,9 +3039,24 @@ sayHelper l p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
                                  = T.concat [ serialize d, " says something ", frontAdv, "to you", inLang, rearAdv, "." ]
                 toTargetBcast    = (nl toTargetMsg, pure targetId)
                 mkToOthersMsg i' | isKnownLang i' ms l
-                                 = T.concat [ serialize d, " says ", frontAdv, "to ", targetDesig, inLang, rearAdv, ", ", msg ]
+                                 = T.concat [ serialize d
+                                            , " says "
+                                            , frontAdv
+                                            , "to "
+                                            , targetDesig
+                                            , inLang
+                                            , rearAdv
+                                            , ", "
+                                            , msg ]
                                  | otherwise
-                                 = T.concat [ serialize d, " says something ", frontAdv, "to ", targetDesig, inLang, rearAdv, "." ]
+                                 = T.concat [ serialize d
+                                            , " says something "
+                                            , frontAdv
+                                            , "to "
+                                            , targetDesig
+                                            , inLang
+                                            , rearAdv
+                                            , "." ]
                 toOthersBcasts   = [ (nl . mkToOthersMsg $ i', pure i') | i' <- desigIds d \\ [ i, targetId ] ]
                 f                | isNpc i        ms = (, [])
                                  | isNpc targetId ms = firstMobSay i
@@ -3061,7 +3079,11 @@ sayHelper l p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
                      inLang           = mkInLangTxtForLang l
                      toSelfMsg        = T.concat [ "You say", inLang, adverb, ", ", msg ]
                      mkToOthersMsg i' | isKnownLang i' ms l = T.concat [ serialize d, " says", adverb, inLang, ", ", msg ]
-                                      | otherwise           = T.concat [ serialize d, " says something", adverb, inLang, "." ]
+                                      | otherwise           = T.concat [ serialize d
+                                                                       , " says something"
+                                                                       , adverb
+                                                                       , inLang
+                                                                       , "." ]
                      toOthersBcasts   = [ (nl . mkToOthersMsg $ i', pure i') | i' <- i `delete` desigIds d ]
                  in (pure toSelfMsg, toOthersBcasts, toSelfMsg)
 sayHelper _ p = patternMatchFail "sayHelper" . showText $ p
@@ -3570,7 +3592,8 @@ smell (OneArgLower i mq cols a) = getState >>= \ms ->
             (True,  False) -> smellRmHelper . head $ eiss
             (False, True ) ->
                 let helper v ms'
-                      | (targets', (ms'', hooksToSelfs, hooksBs, hooksLogMsgs), fs) <- procHooks i ms' v "smell" . pure $ target
+                      | tuple <- procHooks i ms' v "smell" . pure $ target
+                      , (targets', (ms'', hooksToSelfs, hooksBs, hooksLogMsgs), fs) <- tuple
                       , sorryMsgs <- targets' |!| pure sorrySmellEmptyRmWithHooks
                       = (ms'', [ sorryMsgs    |#| multiWrapSend mq cols
                                , hooksToSelfs |#| multiWrapSend mq cols
@@ -3580,7 +3603,8 @@ smell (OneArgLower i mq cols a) = getState >>= \ms ->
                 in mkRndmVector >>= \v -> helper v |&| modifyState >=> sequence_
             (True,  True ) ->
                 let helper v ms'
-                      | (targets', (ms'', hooksToSelfs, hooksBs, hooksLogMsgs), fs) <- procHooks i ms' v "smell" . pure $ target
+                      | tuple <- procHooks i ms' v "smell" . pure $ target
+                      , (targets', (ms'', hooksToSelfs, hooksBs, hooksLogMsgs), fs) <- tuple
                       = if ()# targets'
                           then (ms'', [ hooksToSelfs |#| multiWrapSend mq cols
                                       , bcastIfNotIncogNl i hooksBs
@@ -3602,9 +3626,10 @@ smell (OneArgLower i mq cols a) = getState >>= \ms ->
                                                 , (serialize d <> " smells you.", pure targetId) ]
                                   logMsg      = parseExpandDesig i ms . prd $ "smelled " <> targetDesig
                                   smellMob    = ioHelper smellDesc bs logMsg
-                              in case getType targetId ms of NpcType -> smellMob
-                                                             PCType  -> smellMob
-                                                             _       -> wrapSend mq cols . sorrySmellRmNoHooks $ targetSing
+                              in case getType targetId ms of
+                                NpcType -> smellMob
+                                PCType  -> smellMob
+                                _       -> wrapSend mq cols . sorrySmellRmNoHooks $ targetSing
           Right _          -> sorryExcess
     -----
     ioHelper x ys z = do { wrapSend mq cols x
@@ -3858,8 +3883,8 @@ tempDescAction (NoArgs i mq cols) = do
     wrapSend mq cols "Your temporary character description has been cleared."
     logPla "tempDescAction" i "temporary character description cleared."
 tempDescAction (Msg i mq cols desc@(dblQuote -> desc')) = if T.length desc > maxTempDescLen
-  then wrapSend mq cols $ "A temporary character description cannot exceed " <> showText maxTempDescLen <> " characters in \
-                          \length."
+  then wrapSend mq cols $ "A temporary character description cannot exceed " <> showText maxTempDescLen <> " \
+                          \characters in length."
   else do
     tweak $ mobTbl.ind i.tempDesc ?~ desc
     wrapSend mq cols $ "Your temporary character description has been set to " <> desc'
