@@ -34,7 +34,6 @@ import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Operators
 import Mud.Util.Quoting
 import Mud.Util.Text
-import Mud.Util.Wrapping
 import qualified Mud.Misc.Logging as L (logNotice, logPla)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
