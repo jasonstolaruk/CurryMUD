@@ -794,7 +794,8 @@ interpConfirmDescChange _ ActionParams { plaMsgQueue, plaCols } = promptRetryYes
 descHelper :: Id -> MsgQueue -> Cols -> MudStack ()
 descHelper i mq cols = wrapSend1Nl mq cols descMsg >> (setInterp i . Just . interpMutliLine f $ [])
   where
-    f _ = do
+    f [] = undefined
+    f _  = do
         ok mq
         sendDfltPrompt mq i
         resetInterp i
@@ -2168,7 +2169,7 @@ newChan (WithArgs i mq cols (nub -> as)) = helper |&| modifyState >=> \(unzip ->
           | a' `elem` map T.toLower myChanNames
           , match <- head . filter ((== a') . T.toLower) $ myChanNames = sorryNewChanExisting match `sorry` triple
           | not . hasPp i ms' $ 5 = sorryPp ("create a new channel named " <> dblQuote a) `sorry` triple
-          | otherwise = let ci = views chanTbl (head . ([0..] \\) . IM.keys) $ triple^._1
+          | otherwise = let ci = views chanTbl (head . (enumFrom 0 \\) . IM.keys) $ triple^._1
                             c  = Chan ci a (M.singleton s True) []
                             cr = ChanRec "" ci a s . asteriskQuote $ "New channel created."
                         in triple & _1.chanTbl.at ci ?~ c
@@ -2745,7 +2746,7 @@ getAvailClothSlot i ms cloth em | sexy <- getSex i ms, h <- getHand i ms =
         NoHand -> noSexHand
       NoSex  -> noSexHand
     noSexHand =   [ RingRIS, RingRMS, RingRRS, RingRPS, RingLIS, RingLMS, RingLRS, RingLPS ]
-    sorry | cloth `elem` [Earring .. Ring]                     = sorryReadyClothFull      . pp $ cloth
+    sorry | cloth `elem` enumFromTo Earring Ring               = sorryReadyClothFull      . pp $ cloth
           | cloth `elem` [ Skirt, Dress, Backpack, Cloak ]     = sorryReadyAlreadyWearing . pp $ cloth
           | ci <- em M.! clothToSlot cloth, s <- getSing ci ms = sorryReadyAlreadyWearing        s
 
@@ -2760,16 +2761,16 @@ rEarringSlots, lEarringSlots, noseRingSlots, necklaceSlots, rBraceletSlots, lBra
 rEarringSlots  = [ EarringR1S, EarringR2S ]
 lEarringSlots  = [ EarringL1S, EarringL2S ]
 noseRingSlots  = [ NoseRing1S, NoseRing2S ]
-necklaceSlots  = [Necklace1S  .. Necklace2S ]
-rBraceletSlots = [BraceletR1S .. BraceletR3S]
-lBraceletSlots = [BraceletL1S .. BraceletL3S]
+necklaceSlots  = Necklace1S  `enumFromTo` Necklace2S
+rBraceletSlots = BraceletR1S `enumFromTo` BraceletR3S
+lBraceletSlots = BraceletL1S `enumFromTo` BraceletL3S
 
 
 getDesigClothSlot :: MudState -> Sing -> Cloth -> EqMap -> RightOrLeft -> Either Text Slot
 getDesigClothSlot ms clothSing cloth em rol
-  | cloth `elem` [ NoseRing, Necklace ] ++ [Shirt .. Cloak] = sorryRol
-  | isRingRol rol, cloth /= Ring                            = sorryRol
-  | cloth == Ring, not . isRingRol $ rol                    = Left ringHelp
+  | cloth `elem` [ NoseRing, Necklace ] ++ enumFromTo Shirt Cloak = sorryRol
+  | isRingRol rol, cloth /= Ring                                  = sorryRol
+  | cloth == Ring, not . isRingRol $ rol                          = Left ringHelp
   | otherwise = case cloth of
     Earring  -> findSlotFromList rEarringSlots  lEarringSlots  |&| maybe (Left sorryEarring ) Right
     Bracelet -> findSlotFromList rBraceletSlots lBraceletSlots |&| maybe (Left sorryBracelet) Right

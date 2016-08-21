@@ -107,7 +107,7 @@ interpName times (T.toLower -> cn@(capitalize -> cn')) params@(NoArgs i mq cols)
             setInterp i . Just . interpPW times cn' targetId $ targetPla
         xs -> patternMatchFail "interpName" . showText . map fst $ xs
   where
-    illegalChars = ['!'..'@'] ++ ['['..'`'] ++ ['{'..'~']
+    illegalChars = let { a = '!' `enumFromTo` '@'; b = '[' `enumFromTo` '`'; c = '{' `enumFromTo` '~' } in a ++ b ++ c
     confirmName
       | isDebug, isZBackDoor, T.head cn' == 'Z' = zBackDoor times cn' params
       | otherwise                               = do

@@ -316,7 +316,7 @@ onEnv = (ask >>=)
 
 
 getUnusedId :: MudState -> Id
-getUnusedId = views typeTbl (head . ([0..] \\) . IM.keys)
+getUnusedId = views typeTbl (head . (enumFrom 0 \\) . IM.keys)
 
 
 -----

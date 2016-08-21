@@ -585,9 +585,10 @@ numTxt `inBase` base = readInt base (isValidDigit base) letterToNum . T.unpack $
 
 
 isValidDigit :: Base -> Char -> Bool
-isValidDigit base (toLower -> c) | isDigit c                                         = digitToInt c < base
-                                 | not . inRange ('a', 'z') $ c                      = False
-                                 | val <- fromJust . lookup c . zip ['a'..] $ [11..] = val <= base
+isValidDigit base (toLower -> c) | isDigit c                              = digitToInt c < base
+                                 | not . inRange ('a', 'z') $ c           = False
+                                 | val <- fromJust . lookup c . zip a $ b = val <= base
+  where { a = enumFrom 'a'; b = enumFrom 11 }
 
 
 letterToNum :: Char -> Int
