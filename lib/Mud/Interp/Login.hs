@@ -196,9 +196,10 @@ interpConfirmName times s cn params@(NoArgs i mq cols) = case yesNoHelper cn of
   Nothing    -> promptRetryYesNo mq cols
   where
     helper oldSing = do
-        sendPrompt mq . T.concat $ [ telnetHideInput
-                                   , nlPrefix . multiWrap cols . pwMsg . prd $ "Please choose a password for " <> s
-                                   , "New password: " ]
+        send             mq telnetHideInput
+        blankLine        mq
+        multiWrapSend1Nl mq cols . pwMsg . prd $ "Please choose a password for " <> s
+        sendPrompt       mq "New password: "
         setInterp i . Just . interpNewPW . NewCharBundle oldSing s $ ""
 interpConfirmName _ _ _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNo plaMsgQueue plaCols
 

@@ -21,6 +21,7 @@ module Mud.Data.State.Util.Output ( anglePrompt
                                   , mkNTBcast
                                   , multiSend
                                   , multiWrapSend
+                                  , multiWrapSend1Nl
                                   , ok
                                   , parseDesig
                                   , parseExpandDesig
@@ -222,7 +223,15 @@ multiSend mq = send mq . T.unlines
 
 
 multiWrapSend :: MsgQueue -> Cols -> [Text] -> MudStack ()
-multiWrapSend mq cols = send mq . multiWrapNl cols
+multiWrapSend = multiWrapSendHepler multiWrapNl
+
+
+multiWrapSend1Nl :: MsgQueue -> Cols -> [Text] -> MudStack ()
+multiWrapSend1Nl = multiWrapSendHepler multiWrap
+
+
+multiWrapSendHepler :: (Cols -> [Text] -> Text) -> MsgQueue -> Cols -> [Text] -> MudStack ()
+multiWrapSendHepler f mq cols = send mq . f cols
 
 
 -----

@@ -20,7 +20,6 @@ import Mud.Util.Misc
 import Mud.Util.Operators
 import Mud.Util.Quoting
 import Mud.Util.Text
-import Mud.Util.Wrapping
 import qualified Mud.Misc.Logging as L (logNotice, logPla)
 
 import Control.Concurrent (threadDelay)
@@ -94,7 +93,7 @@ mkThreadName i actType = quoteWith' (pp actType, showText i) " "
 drinkAct :: DrinkBundle -> MudStack ()
 drinkAct DrinkBundle { .. } =
     let a = do
-            send drinkerMq . multiWrap drinkerCols . dropEmpties $ [ T.concat [ "You begin drinking "
+            multiWrapSend1Nl drinkerMq drinkerCols . dropEmpties $ [ T.concat [ "You begin drinking "
                                                                               , renderLiqNoun drinkLiq the
                                                                               , " from the "
                                                                               , drinkVesselSing

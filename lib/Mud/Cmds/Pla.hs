@@ -792,7 +792,7 @@ interpConfirmDescChange _ ActionParams { plaMsgQueue, plaCols } = promptRetryYes
 
 
 descHelper :: Id -> MsgQueue -> Cols -> MudStack ()
-descHelper i mq cols = sequence_ [ send mq . multiWrap cols $ descMsgs, setInterp i . Just . interpMutliLine f $ [] ]
+descHelper i mq cols = sequence_ [ multiWrapSend1Nl mq cols descMsgs, setInterp i . Just . interpMutliLine f $ [] ]
   where
     f desc = case spaces . dropBlanks $ desc of
       ""    -> neverMind i mq
@@ -2349,8 +2349,9 @@ interpCurrPW cn (WithArgs i mq cols as)
     Nothing        -> dbError mq cols
     Just (Just pw) -> if uncurry validatePassword ((pw, cn) & both %~ T.encodeUtf8)
       then do
-          send mq . nlnlPrefix . multiWrap cols . pwMsg $ "Please choose a new password."
-          sendPrompt mq "New password: "
+          blankLines       mq
+          multiWrapSend1Nl mq cols . pwMsg $ "Please choose a new password."
+          sendPrompt       mq "New password: "
           setInterp i . Just . interpNewPW $ pw
       else pwSorryHelper i mq cols sorryInterpPW
     Just Nothing -> pwSorryHelper i mq cols sorryInterpPW
