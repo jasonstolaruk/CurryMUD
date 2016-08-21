@@ -794,11 +794,21 @@ interpConfirmDescChange _ ActionParams { plaMsgQueue, plaCols } = promptRetryYes
 descHelper :: Id -> MsgQueue -> Cols -> MudStack ()
 descHelper i mq cols = wrapSend1Nl mq cols descMsg >> (setInterp i . Just . interpMutliLine f $ [])
   where
-    f [] = undefined
-    f _  = do
-        ok mq
-        sendDfltPrompt mq i
-        resetInterp i
+    f desc = case spaces . dropBlanks $ desc of
+      ""    -> neverMind i mq
+      desc' -> do
+        blankLine      mq
+        wrapSend1Nl    mq cols "You entered:"
+        wrapSend       mq cols desc'
+        wrapSendPrompt mq cols $ "Keep this description? " <> mkYesNoChoiceTxt
+        setInterp i . Just . interpConfirmDesc $ desc'
+
+
+interpConfirmDesc :: Text -> Interp
+interpConfirmDesc desc cn (NoArgs' i mq) = case yesNoHelper cn of
+  Just True -> ok mq >> tweak (entTbl.ind i.entDesc .~ desc) >> sendDfltPrompt mq i >> resetInterp i
+  _         -> neverMind i mq
+interpConfirmDesc _ _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNo plaMsgQueue plaCols
 
 
 -----
