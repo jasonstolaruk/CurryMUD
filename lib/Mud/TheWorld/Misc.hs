@@ -249,4 +249,5 @@ mkRndmBcastRmFun i idName fn prob secs msg = handle (threadExHandler threadName)
     idTxt      = parensQuote . showText $ i
     loop       = getState >>= \ms -> let is = filter (`isNpcPC` ms) . getInv i $ ms in do
         unless (()# is) . rndmDo prob . bcastNl . pure $ (msg, is)
-        (liftIO . threadDelay $ secs * 10 ^ 6) >> loop
+        liftIO . threadDelay $ secs * 10 ^ 6
+        loop

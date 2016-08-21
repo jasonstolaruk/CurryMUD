@@ -460,8 +460,8 @@ informNoChans mq cols = wrapSend mq cols "No channels exist!"
 
 
 adminChanIOHelper :: Id -> MsgQueue -> [[Text]] -> MudStack ()
-adminChanIOHelper i mq reports =
-    (pager i mq . intercalate [""] $ reports) >> logPlaExec (prefixAdminCmd "channel") i
+adminChanIOHelper i mq reports = sequence_ [ pager i mq . intercalate [""] $ reports
+                                           , logPlaExec (prefixAdminCmd "channel") i ]
 
 
 -----

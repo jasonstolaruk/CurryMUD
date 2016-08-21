@@ -44,11 +44,11 @@ interpPager pageLen txtLen (left, right) (T.toLower -> cn) (NoArgs i mq cols) = 
                   "f" -> next
                   "n" -> next
                   "p" -> prev
-                  "q" -> (sendPrompt mq . nlPrefix . mkDfltPrompt i $ ms) >> setInterp i Nothing
+                  "q" -> sequence_ [ sendPrompt mq . nlPrefix . mkDfltPrompt i $ ms, setInterp i Nothing ]
                   "u" -> prev
                   _   -> promptRetry mq cols
   where
-    prev | length left == pageLen - 2 = (send mq . T.unlines $ left) >> sendPagerPrompt mq (pageLen - 2) txtLen
+    prev | length left == pageLen - 2 = sequence_ [ send mq . T.unlines $ left, sendPagerPrompt mq (pageLen - 2) txtLen ]
          | (reverse -> currPage, left') <- splitAt (pageLen - 2) . reverse $ left
          , (prevPage, left'')           <- splitAt (pageLen - 2) left' & both %~ reverse = do
              send mq . T.unlines $ prevPage

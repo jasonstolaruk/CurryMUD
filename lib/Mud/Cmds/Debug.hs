@@ -172,7 +172,7 @@ mkDebugCmd (prefixDebugCmd -> cn) f cd = Cmd { cmdName           = cn
 
 
 debugAp :: ActionFun
-debugAp p@(WithArgs i mq cols _) = (wrapSend mq cols . showText $ p) >> logPlaExec (prefixDebugCmd "ap") i
+debugAp p@(WithArgs i mq cols _) = sequence_ [ wrapSend mq cols . showText $ p, logPlaExec (prefixDebugCmd "ap") i ]
 debugAp p                        = patternMatchFail "debugAp" . showText $ p
 
 
@@ -247,7 +247,7 @@ debugCins p = advise p [] adviceDCinsExcessArgs
 
 
 debugColor :: ActionFun
-debugColor (NoArgs' i mq) = (send mq . nl . T.concat $ msg) >> logPlaExec (prefixDebugCmd "color") i
+debugColor (NoArgs' i mq) = sequence_ [ send mq . nl . T.concat $ msg, logPlaExec (prefixDebugCmd "color") i ]
   where
     msg :: [] Text
     msg = [ nl $ (pad 15 . showText $ ansi) <> mkColorDesc fg bg <> (colorWith ansi . spaced $ "CurryMUD")

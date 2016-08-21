@@ -143,11 +143,11 @@ distillEnscs enscs | Empty `elem` enscs               = pure Empty
                    | someOfs <- filter isSomeOf enscs
                    , noneOfs <- filter isNoneOf enscs = distill SomeOf someOfs ++ distill NoneOf noneOfs
   where
-    isSomeOf (SomeOf _) = True
-    isSomeOf _          = False
-    isNoneOf (NoneOf _) = True
-    isNoneOf _          = False
-    distill  f enscs'   = guard (()!# enscs') Prelude.>> (pure . f . foldr ((<>) . fromEnsCoins) mempty $ enscs')
+    isSomeOf     (SomeOf _) = True
+    isSomeOf     _          = False
+    isNoneOf     (NoneOf _) = True
+    isNoneOf     _          = False
+    distill      f enscs'   = guard (()!# enscs') Prelude.>> (pure . f . foldr ((<>) . fromEnsCoins) mempty $ enscs')
     fromEnsCoins (SomeOf c) = c
     fromEnsCoins (NoneOf c) = c
     fromEnsCoins ensc       = patternMatchFail "distillEnscs fromEnsCoins" . showText $ ensc

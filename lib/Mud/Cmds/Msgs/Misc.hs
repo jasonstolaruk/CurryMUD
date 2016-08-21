@@ -32,8 +32,10 @@ dbErrorMsg :: Text
 dbErrorMsg = "There was an error while reading the database."
 
 
-descMsg :: Text
-descMsg = "Desc. msg."
+descMsgs :: [Text]
+descMsgs = [ "Desc. msg."
+           , "Desc. msg."
+           , "Desc. msg." ]
 
 
 dfltBootMsg :: Text

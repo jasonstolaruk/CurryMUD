@@ -667,7 +667,7 @@ chan p = patternMatchFail "chan" . showText $ p
 
 
 clear :: ActionFun
-clear (NoArgs' i mq) = (send mq . T.pack $ clearScreenCode) >> logPlaExec "clear" i
+clear (NoArgs' i mq) = sequence_ [ send mq . T.pack $ clearScreenCode, logPlaExec "clear" i ]
 clear p              = withoutArgs clear p
 
 
@@ -675,7 +675,7 @@ clear p              = withoutArgs clear p
 
 
 color :: ActionFun
-color (NoArgs' i mq) = (send mq . nl . T.concat $ msg) >> logPlaExec "color" i
+color (NoArgs' i mq) = sequence_ [ send mq . nl . T.concat $ msg, logPlaExec "color" i ]
   where
     msg = [ nl . T.concat $ [ mkColorDesc fg bg, colorWith ansi . spaced $  "CurryMUD" ]
           | fgc <- colors, bgc <- colors, fgc /= bgc
@@ -792,7 +792,7 @@ interpConfirmDescChange _ ActionParams { plaMsgQueue, plaCols } = promptRetryYes
 
 
 descHelper :: Id -> MsgQueue -> Cols -> MudStack ()
-descHelper i mq cols = wrapSend1Nl mq cols descMsg >> (setInterp i . Just . interpMutliLine f $ [])
+descHelper i mq cols = sequence_ [ send mq . multiWrap cols $ descMsgs, setInterp i . Just . interpMutliLine f $ [] ]
   where
     f desc = case spaces . dropBlanks $ desc of
       ""    -> neverMind i mq
@@ -1147,8 +1147,8 @@ equip p = patternMatchFail "equip" . showText $ p
 
 
 exits :: ActionFun
-exits (NoArgs i mq cols) = getState >>= \ms ->
-    (send mq . nl . mkExitsSummary cols . getMobRm i $ ms) >> logPlaExec "exits" i
+exits (NoArgs i mq cols) = getState >>= \ms -> sequence_ [ send mq . nl . mkExitsSummary cols . getMobRm i $ ms
+                                                         , logPlaExec "exits" i ]
 exits p = withoutArgs exits p
 
 
@@ -1157,7 +1157,7 @@ exits p = withoutArgs exits p
 
 expCmdList :: ActionFun
 expCmdList (NoArgs i mq cols) = getState >>= \ms ->
-    (pager i mq . concatMap (wrapIndent cmdNamePadding cols) . mkExpCmdListTxt i $ ms) >> logPlaExecArgs "expressive" [] i
+    sequence_ [ pager i mq . concatMap (wrapIndent cmdNamePadding cols) . mkExpCmdListTxt i $ ms, logPlaExecArgs "expressive" [] i ]
 expCmdList p@ActionParams { myId, args } = getState >>= \ms ->
     dispMatches p cmdNamePadding (mkExpCmdListTxt myId ms) >> logPlaExecArgs "expressive" args myId
 
@@ -1615,7 +1615,7 @@ help (NoArgs i mq cols) = (liftIO . T.readFile $ helpDir </> "root") |&| try >=>
                                               , nl "TOPICS:"
                                               , topicNames
                                               , ia |?| footnote ]
-        (pager i mq . parseHelpTxt cols $ helpTxt) >> logPla "help" i "read root help file."
+        sequence_ [ pager i mq . parseHelpTxt cols $ helpTxt, logPla "help" i "read root help file." ]
     mkHelpNames zipped    = [ padHelpTopic . (styled <>) $ isAdminHelp h |?| asterisk | (styled, h) <- zipped ]
     formatHelpNames names = let wordsPerLine = cols `div` helpTopicPadding
                             in T.unlines . map T.concat . chunksOf wordsPerLine $ names
@@ -4184,9 +4184,9 @@ whisper p = patternMatchFail "whisper" . showText $ p
 
 who :: ActionFun
 who (NoArgs i mq cols) = getState >>= \ms ->
-    (pager i mq . concatMap (wrapIndent namePadding cols) . mkWhoTxt i $ ms) >> logPlaExecArgs "who" [] i
+    sequence_ [ pager i mq . concatMap (wrapIndent namePadding cols) . mkWhoTxt i $ ms, logPlaExecArgs "who" [] i ]
 who p@ActionParams { myId, args } = getState >>= \ms ->
-    (dispMatches p namePadding . mkWhoTxt myId $ ms) >> logPlaExecArgs "who" args myId
+    sequence_ [ dispMatches p namePadding . mkWhoTxt myId $ ms, logPlaExecArgs "who" args myId ]
 
 
 mkWhoTxt :: Id -> MudState -> [Text]
