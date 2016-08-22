@@ -346,9 +346,9 @@ mkEnvListTxt = map (mkAssocTxt . (both %~ T.pack))
 
 debugExp :: ActionFun
 debugExp (NoArgs' i mq) = let cn = prefixDebugCmd "exp" in do
+    awardExp 5000 ("executed " <> dblQuote cn) i
     ok mq
     logPlaExec cn i
-    awardExp 5000 ("executed " <> dblQuote cn) i
 debugExp p = withoutArgs debugExp p
 
 
@@ -545,6 +545,7 @@ debugMultiLine :: ActionFun
 debugMultiLine (NoArgs i mq cols) = do
     wrapSend1Nl mq cols "Beginning multi-line input..."
     setInterp i . Just . interpMutliLine f $ []
+    logPlaExec (prefixDebugCmd "multiline") i
   where
     f ts = do
         multiWrapSend mq cols $ nlPrefix "You entered:" : ts
@@ -612,7 +613,7 @@ debugOut p = withoutArgs debugOut p
 
 
 debugPause :: ActionFun
-debugPause (NoArgs' i mq) = pause i mq Nothing
+debugPause (NoArgs' i mq) = pause i mq Nothing >> logPlaExec (prefixDebugCmd "pause") i
 debugPause p              = withoutArgs debugPause p
 
 
