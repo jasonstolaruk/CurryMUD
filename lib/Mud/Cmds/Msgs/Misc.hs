@@ -32,10 +32,8 @@ dbErrorMsg :: Text
 dbErrorMsg = "There was an error while reading the database."
 
 
-descMsgs :: [Text]
-descMsgs = [ "Desc. msg."
-           , "Desc. msg."
-           , "Desc. msg." ]
+descRulesFileErrorMsg :: Text
+descRulesFileErrorMsg = "Unfortunately, the description rules file could not be read."
 
 
 dfltBootMsg :: Text

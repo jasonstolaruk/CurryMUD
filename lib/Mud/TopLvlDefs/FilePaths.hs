@@ -29,7 +29,7 @@ resDir     = mudDir </> "res"
 helpDir, miscDir, raceDir, titleDir :: FilePath
 helpDir  = resDir </> "help"
 miscDir  = resDir </> "misc"
-raceDir  = resDir </> "race"
+raceDir  = resDir </> "races"
 titleDir = resDir </> "titles"
 
 
@@ -102,9 +102,10 @@ dbFile = dbDir </> "CurryMud" <.> "sqlite3"
 -- Misc. files:
 
 
-aboutFile, cowbyeFile, motdFile, rndmNamesFile, uptimeFile :: FilePath
+aboutFile, cowbyeFile, descRulesFile, motdFile, rndmNamesFile, uptimeFile :: FilePath
 aboutFile     = miscDir </> "about"
 cowbyeFile    = miscDir </> "cowbye"
+descRulesFile = miscDir </> "descRules"
 motdFile      = miscDir </> "motd"
 rndmNamesFile = miscDir </> "randomnames"
 uptimeFile    = mudDir  </> "uptime"

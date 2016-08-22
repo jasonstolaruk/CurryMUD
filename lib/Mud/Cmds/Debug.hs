@@ -22,6 +22,7 @@ import Mud.Data.State.Util.Output
 import Mud.Data.State.Util.Random
 import Mud.Interp.Misc
 import Mud.Interp.MultiLine
+import Mud.Interp.Pause
 import Mud.Misc.ANSI
 import Mud.Misc.EffectFuns
 import Mud.Misc.Logging (writeLog)
@@ -137,6 +138,7 @@ debugCmds =
     , mkDebugCmd "npcserver"  debugNpcServer   "Stop all NPC server threads."
     , mkDebugCmd "number"     debugNumber      "Display the decimal equivalent of a given number in a given base."
     , mkDebugCmd "out"        debugOut         "Dump the inventory of the logged out room."
+    , mkDebugCmd "pause"      debugPause       "Test the pause interp."
     , mkDebugCmd "persist"    debugPersist     "Attempt to persist the world multiple times in quick succession."
     , mkDebugCmd "pidge"      debugPidge       "Send a message to Pidge."
     , mkDebugCmd "pmf"        debugPmf         "Trigger a pattern match failure."
@@ -609,6 +611,14 @@ debugOut p = withoutArgs debugOut p
 -----
 
 
+debugPause :: ActionFun
+debugPause (NoArgs' i mq) = pause i mq Nothing
+debugPause p              = withoutArgs debugPause p
+
+
+-----
+
+
 debugPersist :: ActionFun
 debugPersist (NoArgs' i mq) = replicateM_ 10 (persist >> ok mq) >> logPlaExec (prefixDebugCmd "persist") i
 debugPersist p              = withoutArgs debugPersist p
@@ -834,6 +844,7 @@ debugToken (NoArgs i mq cols) = do
                 , charTokenDelimiter  `T.cons` "r emoteTargetChar"
                 , charTokenDelimiter  `T.cons` "s slotChar"
                 , charTokenDelimiter  `T.cons` "t sayToChar"
+                , charTokenDelimiter  `T.cons` "u multiLineEndChar"
                 , charTokenDelimiter  `T.cons` "x emoteChar"
                 , styleTokenDelimiter `T.cons` styleTokenDelimiter `T.cons` " literal styleTokenDelimiter"
                 , styleTokenDelimiter `T.cons` ("aabbrevColor"       <> dfltColorStyleToken    )

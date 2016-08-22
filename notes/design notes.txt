@@ -276,10 +276,6 @@ Character kits need not correspond to traditional classes. Consider defining kit
 Many aspects of racial identity are based on stereotypes. Dwarves are materialistic, elves are beautiful, etc. These stereotypes can certainly aid you in defining and fleshing out your character's personality. That said, you are not required to conform to the common stereotypes: you are free to play a materialistic elf, for example (indeed, you are encouraged to play complex, multi-dimensional characters with compelling personalities). However, if your character does challenge the established stereotypes, you can expect that others may react to your character with surprise, curiosity, or disapproval. And you cannot realistically expect the way in which you portray in your character to markedly change any preconceived stereotype.
 In the virtual world, humans are regarded as the most diverse race. Just as humans are incredibly diverse in the real world, so they are in CurryMUD, too. If the character concept you have in mind does not mesh well with any of the established stereotypes for the fantasy/humanoid races, then the human race might be a good choice for your character. Still, this doesn't bar you from reactions of surprise, curiosity, or disapproval, particularly if your character concept is highly unusual.
 
-Make it clear that player descriptions must be written from an objective viewpoint. They must be passive.
-
-Consider giving players the ability to change their character's description at any time.
-
 Perhaps make the composing of a background story/"character essay" an optional endeavor that awards experience points.
 
 PCs can spend points to (magically?) learn extra languages, though it should be difficult to find NPC "trainers" who teach them.

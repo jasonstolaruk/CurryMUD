@@ -19,8 +19,8 @@ import Mud.Cmds.Msgs.CmdDesc
 import Mud.Cmds.Msgs.Dude
 import Mud.Cmds.Msgs.Hint
 import Mud.Cmds.Msgs.Misc
-import Mud.Interp.MultiLine
 import Mud.Cmds.Msgs.Sorry
+import Mud.Interp.MultiLine
 import Mud.Cmds.Util.Abbrev
 import Mud.Cmds.Util.EmoteExp.EmoteExp
 import Mud.Cmds.Util.EmoteExp.TwoWayEmoteExp
@@ -39,6 +39,7 @@ import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Data.State.Util.Random
 import Mud.Interp.Misc
+import Mud.Interp.Pause
 import Mud.Misc.ANSI
 import Mud.Misc.Database
 import Mud.Misc.LocPref
@@ -775,6 +776,7 @@ connectHelper i (target, as) ms =
 
 
 -- TODO: Help.
+-- TODO: Logging.
 description :: ActionFun
 description (NoArgs i mq cols) = getEntDesc i <$> getState >>= \desc -> do
     wrapSend1Nl    mq cols "Your description is:"
@@ -786,14 +788,35 @@ description p = withoutArgs description p
 
 interpConfirmDescChange :: Interp
 interpConfirmDescChange cn (NoArgs i mq cols) = case yesNoHelper cn of
-  Just True -> blankLine mq >> descHelper i mq cols
-  _         -> neverMind i mq
+  Just True -> do
+      blankLine mq
+      showDescRules mq cols
+      pause i mq . Just . descHelper i mq $ cols
+  _ -> neverMind i mq
 interpConfirmDescChange _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNo plaMsgQueue plaCols
 
 
-descHelper :: Id -> MsgQueue -> Cols -> MudStack ()
-descHelper i mq cols = sequence_ [ multiWrapSend1Nl mq cols descMsgs, setInterp i . Just . interpMutliLine f $ [] ]
+showDescRules :: MsgQueue -> Cols -> MudStack ()
+showDescRules mq cols = send mq =<< helper
   where
+    helper        = liftIO readDescRules |&| try >=> eitherRet handler
+    readDescRules = [ T.unlines . concat . wrapLines cols . T.lines $ cont | cont <- T.readFile descRulesFile ]
+    handler e     = do
+        fileIOExHandler "showDescRules" e
+        return . wrapUnlinesNl cols $ descRulesFileErrorMsg
+
+
+descHelper :: Id -> MsgQueue -> Cols -> MudStack ()
+descHelper i mq cols = sequence_ [ multiWrapSend mq cols ts, setInterp i . Just . interpMutliLine f $ [] ]
+  where
+    ts     = [ "Enter your new description below. You may enter multiple lines of text " <>
+               prd (parensQuote "however, multiple lines will be joined into one line which, when displayed, will be \
+                                \wrapped according to one's columns setting")
+             , "You are encouraged to compose your description in an external text editor such as Atom or SublimeText, \
+               \with spell checking enabled. Copy your completed description from there and paste it into your MUD \
+               \client."
+             , "When you are finished, enter a " <> t <> " on a new line." ]
+    t      = dblQuote . T.singleton $ multiLineEndChar
     f desc = case spaces . dropBlanks $ desc of
       ""    -> neverMind i mq
       desc' -> do

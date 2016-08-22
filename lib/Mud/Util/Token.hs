@@ -64,6 +64,7 @@ expandCharCode (toLower -> code)           = T.singleton $ case code of
   'r' -> emoteTargetChar
   's' -> slotChar
   't' -> sayToChar
+  'u' -> multiLineEndChar
   'x' -> emoteChar
   x   -> patternMatchFail "expandCharCode" . T.singleton $ x
 

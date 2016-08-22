@@ -73,6 +73,7 @@ library
                        Mud.Interp.MultiLine
                        Mud.Interp.Npc
                        Mud.Interp.Pager
+                       Mud.Interp.Pause
                        Mud.Misc.ANSI
                        Mud.Misc.Database
                        Mud.Misc.EffectFuns
