@@ -775,8 +775,6 @@ connectHelper i (target, as) ms =
 -----
 
 
--- TODO: Help.
--- TODO: Logging.
 description :: ActionFun
 description (NoArgs i mq cols) = getEntDesc i <$> getState >>= \desc -> do
     wrapSend1Nl    mq cols "Your description is:"
@@ -829,7 +827,12 @@ descHelper i mq cols = sequence_ [ multiWrapSend mq cols ts, setInterp i . Just 
 
 interpConfirmDesc :: Text -> Interp
 interpConfirmDesc desc cn (NoArgs' i mq) = case yesNoHelper cn of
-  Just True -> ok mq >> tweak (entTbl.ind i.entDesc .~ desc) >> sendDfltPrompt mq i >> resetInterp i
+  Just True -> do
+      ok mq
+      tweak $ entTbl.ind i.entDesc .~ desc
+      sendDfltPrompt mq i
+      resetInterp i
+      logPla "description" i . prd $ "changed description to " <> dblQuote desc
   _         -> neverMind i mq
 interpConfirmDesc _ _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNo plaMsgQueue plaCols
 
