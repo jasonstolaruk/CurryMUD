@@ -81,6 +81,7 @@ expandMiscCode c | c == miscTokenDelimiter = T.singleton miscTokenDelimiter
 expandMiscCode (toLower -> code)           = case code of
   'b' -> dfltBootMsg
   'd' -> yesNo isDebug
+  'e' -> descRulesMsg
   'p' -> pwWarningMsg
   's' -> dfltShutdownMsg
   'z' -> yesNo $ isDebug && isZBackDoor

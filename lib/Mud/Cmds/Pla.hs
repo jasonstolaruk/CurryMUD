@@ -788,34 +788,23 @@ interpConfirmDescChange :: Interp
 interpConfirmDescChange cn (NoArgs i mq cols) = case yesNoHelper cn of
   Just True -> do
       blankLine mq
-      showDescRules mq cols
+      send mq . T.unlines . concat . wrapLines cols . T.lines $ descRulesMsg
       pause i mq . Just . descHelper i mq $ cols
   _ -> neverMind i mq
 interpConfirmDescChange _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNo plaMsgQueue plaCols
 
 
-showDescRules :: MsgQueue -> Cols -> MudStack ()
-showDescRules mq cols = send mq =<< helper
-  where
-    helper        = liftIO readDescRules |&| try >=> eitherRet handler
-    readDescRules = [ T.unlines . concat . wrapLines cols . T.lines $ cont | cont <- T.readFile descRulesFile ]
-    handler e     = do
-        fileIOExHandler "showDescRules" e
-        return . wrapUnlinesNl cols $ descRulesFileErrorMsg
-
-
 descHelper :: Id -> MsgQueue -> Cols -> MudStack ()
 descHelper i mq cols = sequence_ [ multiWrapSend mq cols ts, setInterp i . Just . interpMutliLine f $ [] ]
   where
-    ts     = [ "Enter your new description below. You may enter multiple lines of text " <>
-               prd (parensQuote "however, multiple lines will be joined into one line which, when displayed, will be \
-                                \wrapped according to one's columns setting")
-             , "You are encouraged to compose your description in an external text editor such as Atom or SublimeText, \
-               \with spell checking enabled. Copy your completed description from there and paste it into your MUD \
-               \client."
-             , "When you are finished, enter a " <> t <> " on a new line." ]
-    t      = dblQuote . T.singleton $ multiLineEndChar
-    f desc = case spaces . dropBlanks $ desc of
+    ts = [ "Enter your new description below. You may enter multiple lines of text " <>
+           prd (parensQuote "however, multiple lines will be joined into one line which, when displayed, will be \
+                            \wrapped according to one's columns setting")
+         , "You are encouraged to compose your description in an external text editor such as Atom or SublimeText, \
+           \with spell checking enabled. Copy your completed description from there and paste it into your MUD client."
+         , "When you are finished, enter a " <> endChar <> " on a new line." ]
+    endChar = dblQuote . T.singleton $ multiLineEndChar
+    f desc  = case spaces . dropBlanks $ desc of
       ""    -> neverMind i mq
       desc' -> do
         blankLine      mq

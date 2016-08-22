@@ -4,8 +4,11 @@
 description
 
 \uDESCRIPTION\n
+Change your character's description.
+You will be shown your current description and asked whether or not you would like to change it.
 
 \uRULES\n
+@e
 
 \uSEE ALSO\n
 lookself, roomdesc, tempdesc
