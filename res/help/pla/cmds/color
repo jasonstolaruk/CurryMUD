@@ -7,3 +7,6 @@ color
 Perform a color test.
 
 Most MUD clients allow the user to configure exactly how colors are displayed. As such, this color test can aid you in confirming how your MUD client displays various color combinations and styles. You may find it beneficial to adjust your client settings so as to make text readily visible.
+
+\uSEE ALSO\n
+client

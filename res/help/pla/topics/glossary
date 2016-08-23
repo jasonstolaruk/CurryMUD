@@ -9,8 +9,11 @@ This is an In-Character (IC) term for the state of being logged in.
 \uChannel\d
 Analogous to a named "chat room" (though there is no shared "space"). Provides the ability for a group of players to message each other in real-time. There is the "question channel" (OOC) along with "telepathic channels" (IC).
 
+\uClient\d
+See "MUD Client."
+
 \uExpressive Commands\d
-Commands that facilitate the execution of discreet actions In-Character (IC); commands such as "bow", "cry", "kiss", etc. (there are about 200 such commands). Sometimes referred to as "built-in emotes."
+Commands that facilitate the execution of discreet actions In-Character (IC); commands such as "bow", "cry", "kiss", etc. There are about 200 such commands. Sometimes referred to as "built-in emotes."
 
 \uFixture\d
 See "Room Fixture."
@@ -26,6 +29,9 @@ See "Telepathic Link."
 
 \uMobile\d
 A Non-Player Character (NPC). Sometimes abbreviated to "mob."
+
+\uMUD Client\d
+Software used to connect to a MUD server and play a MUD.
 
 \uMulti-Playing\d
 When a single player simultaneously plays with multiple characters.
@@ -69,6 +75,9 @@ An ad-hoc channel created by a player for In-Character (IC) communication. Using
 \uTelepathic Link\d
 A psionic connection between two Player Characters (PCs), linking their minds together. When Taro's player types \qlink hanako\d, Taro creates a one-way link from his mind to Hanako's mind. If Hanako's player reciprocates by typing \qlink taro\d, this will establish a two-way link between them, enabling two-way telepathic communication.
 
+\uText Editor\d
+Software used for editing plain text files.
+
 \uTune\d
 To "tune" a telepathic connection or channel is to set whether or not you receive messages from said connection/channel.
 
@@ -82,4 +91,4 @@ A command for which there is no help available via the "help" command. You are m
 A container for liquids.
 
 \uSEE ALSO\n
-acronyms, channel, expressive, link, roomfixtures, stats, telepathy, tune, undocumented, unlink
+acronyms, channel, client, expressive, link, roomfixtures, stats, telepathy, texteditor, tune, undocumented, unlink

@@ -6,3 +6,6 @@ clear
 \uDESCRIPTION\n
 Clear your screen.
 Note that your client software may not support screen clearing (most do not), in which case this command will have no effect. (TinTin++ is one client known to support screen clearing.)
+
+\uSEE ALSO\n
+client

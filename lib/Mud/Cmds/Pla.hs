@@ -1632,7 +1632,6 @@ mkCmdNameForRmLink rl = T.toLower $ case rl of StdLink    { .. } -> linkDirToCmd
  -----
 
 
--- TODO: Add help topics: "client", "texteditor".
 help :: ActionFun
 help (NoArgs i mq cols) = (liftIO . T.readFile $ helpDir </> "root") |&| try >=> either handler helper
   where
