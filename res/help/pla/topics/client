@@ -1,5 +1,16 @@
 \h CLIENT \d
 
+A "MUD client" is a type of software used to connect to a MUD server and play a MUD.
+
+While there are a variety of MUD clients available, we recommend Mudlet and TinTin++ (CurryMUD has been tested extensively with both). These clients run on a variety of operating systems, are feature-rich, and free.
+
+Mudlet is a GUI application; TinTin++, on the other hand, is a console application. For this reason, TinTin++ is better suited for "power users" who know their way around the command line/shell.
+
+Mudlet
+http://www.mudlet.org
+
+TinTin++
+http://tintin.sourceforge.net/index.php
 
 \uSEE ALSO\n
 clear, color, password, set, texteditor

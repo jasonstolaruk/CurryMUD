@@ -1,5 +1,18 @@
 \h TEXT EDITOR \d
 
+A "text editor" is a type of software used to edit plain text files.
+
+Occasionally, CurryMUD will prompt you to enter an extended, possibly multi-line, passage of text (when entering your character's description, for example). In such cases, you are encouraged to compose your text in an external text editor. When you've finished, simply copy the text and paste it into your MUD client.
+
+A text editor will provide you with an array of editing functionality not available in your MUD client. In particular, composing multiple lines of text will certainly be easier in a text editor. Most text editors can check your spelling, too.
+
+There is a wide variety of text editors available. Atom and SublimeText are both excellent, user-friendly editors that run on a variety of operating systems. Atom is free, while SublimeText requires the purchase of a license for continued use.
+
+Atom
+https://atom.io
+
+SublimeText
+https://www.sublimetext.com
 
 \uSEE ALSO\n
 client, description
