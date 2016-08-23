@@ -32,24 +32,6 @@ dbErrorMsg :: Text
 dbErrorMsg = "There was an error while reading the database."
 
 
-descRulesMsg :: Text
-descRulesMsg =
-    "In order to preserve the integrity of the virtual world along with the enjoyment of all, the following rules must \
-    \be observed. Violation of these rules is grounds for discipline including banishment from CurryMUD.\n\
-    \1) Descriptions must be realistic and reasonable. A felinoid with an unusual fur color is acceptable, while a \
-    \six-foot dwarf is not.3`\n\
-    \2) Descriptions must be passive and written from an objective viewpoint. \"He is exceptionally thin\" is \
-    \acceptable, while \"You can't believe how thin he is\" is not.3`\n\
-    \3) Descriptions may only contain observable information. \"People tend to ask her about her adventures\" and \
-    \\"He is a true visionary among elves\" are both illegal. Likewise, you may not include your character's name in \
-    \your description.3`\n\
-    \4) Keep your description short. The longer your description, the less likely people are to actually read it!3`\n\
-    \5) You may not make radical changes to your description without a plausible in-game explanation. This means that \
-    \it is normally illegal to make sudden, striking changes to enduring physical characteristics (height, eye color, \
-    \etc.). If you would like to make such a change and feel there could be a plausible in-game explanation, get \
-    \permission from an administrator first.3`"
-
-
 dfltBootMsg :: Text
 dfltBootMsg = "You have been booted from CurryMUD. Goodbye!"
 

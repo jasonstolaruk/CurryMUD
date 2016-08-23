@@ -17,6 +17,8 @@ import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Interp.Misc
+import Mud.Interp.MultiLine
+import Mud.Interp.Pause
 import Mud.Misc.ANSI
 import Mud.Misc.Database
 import Mud.Misc.Logging hiding (logNotice, logPla)
@@ -34,6 +36,7 @@ import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Operators
 import Mud.Util.Quoting
 import Mud.Util.Text
+import Mud.Util.Wrapping
 import qualified Mud.Misc.Logging as L (logNotice, logPla)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
@@ -88,6 +91,7 @@ logPla = L.logPla "Mud.Interp.Login"
 -- ==================================================
 
 
+-- TODO: "Your name" -> "Your character's name"
 interpName :: Int -> Interp
 interpName times (T.toLower -> cn@(capitalize -> cn')) params@(NoArgs i mq cols)
   | not . inRange (minNameLen, maxNameLen) . T.length $ cn = promptRetryName mq cols sorryInterpNameLen
@@ -385,8 +389,10 @@ interpPickPts ncb cn (Lower   i mq cols as) = getState >>= \ms -> let pts = getP
   | cn `T.isPrefixOf` "quit" -> if pts == 0
     then do
         blankLine mq
-        wrapSendPromptNl mq cols "If you are a new player, could you please tell us how you found CurryMUD?"
-        setInterp i . Just . interpDiscover $ ncb
+        wrapSend1Nl mq cols "Next you'll write a description of your character. Your description must adhere to the \
+                            \following rules:"
+        send mq . T.unlines . concat . wrapLines cols $ descRules
+        pause i mq . Just . descHelper ncb i mq $ cols
     else wrapSend mq cols sorryInterpPickPtsQuit >> anglePrompt mq
   | otherwise -> helper |&| modifyState >=> \msgs -> multiWrapSend mq cols msgs >> promptPickPts i mq
   where
@@ -433,6 +439,16 @@ interpPickPts ncb cn (Lower   i mq cols as) = getState >>= \ms -> let pts = getP
       where
         sorry       = sorryHelper . sorryWut $ arg
         sorryHelper = (ms, ) . (msgs <>) . pure
+    descRules =
+        [ "1) Descriptions must be realistic and reasonable. A felinoid with an unusual fur color is acceptable, while \
+          \a six-foot dwarf is not.3`"
+        , "2) Descriptions must be passive and written from an objective viewpoint. \"He is exceptionally thin\" is \
+          \acceptable, while \"You can't believe how thin he is\" is not.3`"
+        , "3) Descriptions may only contain observable information. \"People tend to ask her about her adventures\" \
+          \and \"He is a true visionary among elves\" are both illegal. Likewise, you may not include your character's \
+          \name in your description.3`"
+        , "4) Keep your description short. The longer your description, the less likely people are to actually read \
+          \it!3`" ]
 interpPickPts _ _ p = patternMatchFail "interpPickPts" . showText $ p
 
 
@@ -443,6 +459,56 @@ procAttribChar i ms = \case 's' -> ("Strength",  getBaseSt i ms, st)
                             'm' -> ("Magic",     getBaseMa i ms, ma)
                             'p' -> ("Psionics",  getBasePs i ms, ps)
                             c   -> patternMatchFail "procAttribChar" . T.singleton $ c
+
+
+-- ==================================================
+
+
+descHelper :: NewCharBundle -> Id -> MsgQueue -> Cols -> MudStack ()
+descHelper ncb i mq cols = multiWrapSend mq cols ts >> setDescInterpHelper ncb i mq cols
+  where
+    ts = [ "Enter your description below. You may enter multiple lines of text " <>
+           prd (parensQuote "however, multiple lines will be joined into a single line which, when displayed, will be \
+                            \wrapped according to one's columns setting")
+         , "You are encouraged to compose your description in an external text editor such as Atom or SublimeText, \
+           \with spell checking enabled. Copy your completed description from there and paste it into your MUD client."
+         , "When you are finished, enter a " <> endCharTxt <> " on a new line." ]
+
+
+setDescInterpHelper :: NewCharBundle -> Id -> MsgQueue -> Cols -> MudStack ()
+setDescInterpHelper ncb i mq cols = setInterp i . Just . interpMutliLine (descEntered ncb i mq cols) $ []
+
+
+endCharTxt :: Text
+endCharTxt = dblQuote . T.singleton $ multiLineEndChar
+
+
+descEntered :: NewCharBundle -> Id -> MsgQueue -> Cols -> [Text] -> MudStack ()
+descEntered ncb i mq cols desc = case spaces . dropBlanks . map T.strip $ desc of
+  ""    -> wrapSend mq cols "Your description may not be blank." >> promptRetryDesc ncb i mq cols
+  desc' -> do
+    blankLine      mq
+    wrapSend1Nl    mq cols "You entered:"
+    wrapSend       mq cols desc'
+    wrapSendPrompt mq cols $ "Keep this description? " <> mkYesNoChoiceTxt
+    setInterp i . Just . interpConfirmDesc ncb $ desc'
+
+
+promptRetryDesc :: NewCharBundle -> Id -> MsgQueue -> Cols -> MudStack ()
+promptRetryDesc ncb i mq cols = do
+    wrapSend mq cols $ "Enter your description below. When you are finished, enter a " <> endCharTxt <> " on a new line."
+    setDescInterpHelper ncb i mq cols
+
+
+interpConfirmDesc :: NewCharBundle -> Text -> Interp
+interpConfirmDesc ncb desc cn (NoArgs i mq cols) = case yesNoHelper cn of
+  Just True -> do
+      tweak $ entTbl.ind i.entDesc .~ desc
+      blankLine mq
+      wrapSendPromptNl mq cols "If you are a new player, could you please tell us how you discovered CurryMUD?"
+      setInterp i . Just . interpDiscover $ ncb
+  _  -> blankLine mq >> promptRetryDesc ncb i mq cols
+interpConfirmDesc _ _ _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNo plaMsgQueue plaCols
 
 
 -- ==================================================
