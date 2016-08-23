@@ -65,7 +65,7 @@ threadTalk h host = helper `finally` cleanUp
         handle (threadExHandler $ "talk " <> showText i) $ do
             liftIO configBuffer
             dumpTitle  mq
-            sendPrompt mq "By what name are you known? "
+            sendPrompt mq "What is your character's name? "
             bcastAdmins . prd $ "A new player has connected: " <> s
             logNotice "threadTalk helper" . prd $ "new PC name for incoming player: " <> s
             onNewThread . threadInacTimer   i   mq $ tq

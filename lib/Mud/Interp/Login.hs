@@ -91,7 +91,6 @@ logPla = L.logPla "Mud.Interp.Login"
 -- ==================================================
 
 
--- TODO: "Your name" -> "Your character's name"
 interpName :: Int -> Interp
 interpName times (T.toLower -> cn@(capitalize -> cn')) params@(NoArgs i mq cols)
   | not . inRange (minNameLen, maxNameLen) . T.length $ cn = promptRetryName mq cols sorryInterpNameLen
@@ -114,16 +113,16 @@ interpName times (T.toLower -> cn@(capitalize -> cn')) params@(NoArgs i mq cols)
     confirmName
       | isDebug, isZBackDoor, T.head cn' == 'Z' = zBackDoor times cn' params
       | otherwise                               = do
-          wrapSendPrompt mq cols . T.concat $ [ "Your name will be "
-                                              , dblQuote $ cn' <> ","
-                                              , " is that OK? "
+          wrapSendPrompt mq cols . T.concat $ [ "We'll create a new character named "
+                                              , dblQuote . prd $ cn'
+                                              , spaced "OK?"
                                               , mkYesNoChoiceTxt ]
           setInterp i . Just . interpConfirmName times $ cn'
 interpName _ _ ActionParams { .. } = promptRetryName plaMsgQueue plaCols sorryInterpNameExcessArgs
 
 
 promptRetryName :: MsgQueue -> Cols -> Text -> MudStack ()
-promptRetryName mq cols msg = let t = "Let's try this again. By what name are you known? "
+promptRetryName mq cols msg = let t = "Let's try this again. What is your character's name? "
                               in (>> wrapSendPrompt mq cols t) $ if ()# msg
                                 then blankLine mq
                                 else wrapSend mq cols msg
@@ -250,17 +249,18 @@ promptRetryNewPW mq cols msg = do
 interpVerifyNewPW :: NewCharBundle -> Interp
 interpVerifyNewPW ncb@(NewCharBundle _ _ pass) cn params@(NoArgs i mq cols)
   | cn == pass = do
-      send mq telnetShowInput
+      send      mq telnetShowInput
       blankLine mq
-      wrapSend mq cols pwWarningLoginMsg
-      promptSex mq cols
+      wrapSend  mq cols pwWarningLoginMsg
+      promptSex ncb mq cols
       setInterp i . Just . interpSex $ ncb
   | otherwise = promptRetryNewPwMatch ncb params
 interpVerifyNewPW ncb _ params = promptRetryNewPwMatch ncb params
 
 
-promptSex :: MsgQueue -> Cols -> MudStack ()
-promptSex mq cols = wrapSendPrompt mq cols $ "Are you male or female? " <> mkChoiceTxt [ "male", "female" ]
+promptSex :: NewCharBundle -> MsgQueue -> Cols -> MudStack ()
+promptSex (NewCharBundle _ s _) mq cols =
+    wrapSendPrompt mq cols . T.concat $ [ "Is ", s, " male or female? ", mkChoiceTxt [ "male", "female" ] ]
 
 
 promptRetryNewPwMatch :: NewCharBundle -> ActionParams -> MudStack ()
@@ -273,17 +273,17 @@ promptRetryNewPwMatch _ p = patternMatchFail "promptRetryNewPwMatch" . showText 
 
 
 interpSex :: NewCharBundle -> Interp
-interpSex _   ""                ActionParams { .. } = promptRetrySex plaMsgQueue plaCols
-interpSex ncb (T.toLower -> cn) (NoArgs i mq cols)
+interpSex _                         ""                ActionParams { .. } = promptRetrySex plaMsgQueue plaCols
+interpSex ncb@(NewCharBundle _ s _) (T.toLower -> cn) (NoArgs i mq cols)
   | cn `T.isPrefixOf` "male"   = helper Male
   | cn `T.isPrefixOf` "female" = helper Female
   | otherwise                  = promptRetrySex mq cols
   where
-    helper s = do
-      tweak $ mobTbl.ind i.sex .~ s
-      blankLine mq
-      multiWrapSend mq cols $ "Next we'll choose your race." : raceTxt
-      promptRace mq cols
+    helper sexy = do
+      tweak $ mobTbl.ind i.sex .~ sexy
+      blankLine     mq
+      multiWrapSend mq cols $ "Next we'll choose " <> s <> "'s race." : raceTxt
+      promptRace    mq cols
       setInterp i . Just . interpRace $ ncb
 interpSex _ _ ActionParams { .. } = promptRetrySex plaMsgQueue plaCols
 
@@ -315,8 +315,10 @@ promptRetrySex mq cols =
 
 
 interpRace :: NewCharBundle -> Interp
-interpRace _   ""                (NoArgs _ mq cols) = multiWrapSend mq cols raceTxt >> promptRace mq cols
-interpRace ncb (T.toLower -> cn) (NoArgs i mq cols) = case cn of
+interpRace _ "" (NoArgs _ mq cols) = do
+    multiWrapSend mq cols raceTxt
+    promptRace mq cols
+interpRace ncb@(NewCharBundle _ s _) (T.toLower -> cn) (NoArgs i mq cols) = case cn of
   "1" -> helper Dwarf
   "2" -> helper Elf
   "3" -> helper Felinoid
@@ -335,7 +337,7 @@ interpRace ncb (T.toLower -> cn) (NoArgs i mq cols) = case cn of
                , mobTbl    .ind i.knownLangs .~ pure (raceToLang r)
                , pickPtsTbl.ind i            .~ initPickPts ]
         blankLine mq
-        multiWrapSend mq cols pickPtsIntroTxt
+        multiWrapSend mq cols . pickPtsIntroTxt $ s
         promptPickPts i mq
         setInterp i . Just . interpPickPts $ ncb
     readRaceHelp raceName = (liftIO . T.readFile $ raceDir </> T.unpack raceName) |&| try >=> eitherRet handler
@@ -350,8 +352,8 @@ sorryRace :: MsgQueue -> Cols -> Text -> MudStack ()
 sorryRace mq cols t = wrapSend mq cols (sorryWut t) >> promptRace mq cols
 
 
-pickPtsIntroTxt :: [Text]
-pickPtsIntroTxt = T.lines $ "Next we'll assign points to your attributes.\n\
+pickPtsIntroTxt :: Sing -> [Text] -- TODO
+pickPtsIntroTxt s = T.lines $ "Next we'll assign points to " <> s <> "'s attributes.\n\
 \Characters have 5 attributes, each measuring inate talent in a given area.\n\
 \10 (the minimum value) represents a staggering lack of talent, while 100 (the maximum value) represents near-supernatural talent. 50 represents an average degree of talent.\n\
 \You have a pool of " <> showText initPickPts <> " points to assign to your attributes as you wish.\n\
@@ -384,13 +386,16 @@ showAttribs i mq = getState >>= \ms -> multiSend mq . footer ms . map helper . g
 
 
 interpPickPts :: NewCharBundle -> Interp
-interpPickPts _   "" (NoArgs' i mq        ) = promptPickPts i mq
-interpPickPts ncb cn (Lower   i mq cols as) = getState >>= \ms -> let pts = getPickPts i ms in if
+interpPickPts _                         "" (NoArgs' i mq        ) = promptPickPts i mq
+interpPickPts ncb@(NewCharBundle _ s _) cn (Lower   i mq cols as) = getState >>= \ms -> let pts = getPickPts i ms in if
   | cn `T.isPrefixOf` "quit" -> if pts == 0
     then do
         blankLine mq
-        wrapSend1Nl mq cols "Next you'll write a description of your character. Your description must adhere to the \
-                            \following rules:"
+        wrapSend1Nl mq cols . T.concat $ [ "Next you'll write a description of "
+                                         , s
+                                         , ", which others will see when they look at "
+                                         , mkHimHer . getSex i $ ms
+                                         , ". Your description must adhere to the following rules:" ]
         send mq . T.unlines . concat . wrapLines cols $ descRules
         pause i mq . Just . descHelper ncb i mq $ cols
     else wrapSend mq cols sorryInterpPickPtsQuit >> anglePrompt mq

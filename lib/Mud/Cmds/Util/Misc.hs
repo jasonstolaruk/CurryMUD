@@ -45,6 +45,7 @@ module Mud.Cmds.Util.Misc ( asterisk
                           , mkActionParams
                           , mkChanReport
                           , mkCmdListText
+                          , mkHimHer
                           , mkInterfaceList
                           , mkNameTypeIdDesc
                           , mkPossPro
@@ -617,6 +618,15 @@ inOut False = "out"
 loggedInOutColorize :: Bool -> Text
 loggedInOutColorize True  = loggedInOutHelper (colorWith loggedInColor) True
 loggedInOutColorize False = loggedInOutHelper id                        False
+
+
+-----
+
+
+mkHimHer :: Sex -> Text
+mkHimHer Male   = "him"
+mkHimHer Female = "her"
+mkHimHer NoSex  = "it"
 
 
 -----

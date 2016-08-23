@@ -1285,8 +1285,8 @@ notFoundSuggestAsleeps :: Text -> [Sing] -> MudState -> Text
 notFoundSuggestAsleeps a@(capitalize . T.toLower -> a') asleepSings ms =
     case findFullNameForAbbrev a' asleepSings of
       Just asleepTarget ->
-          let (heShe, _, _) = mkPros . getSex (getIdForMobSing asleepTarget ms) $ ms
-              guess         = a' /= asleepTarget |?| ("Perhaps you mean " <> asleepTarget <> "? ")
+          let heShe = mkThrPerPro . getSex (getIdForMobSing asleepTarget ms) $ ms
+              guess = a' /= asleepTarget |?| ("Perhaps you mean " <> asleepTarget <> "? ")
           in T.concat [ guess
                       , "Unfortunately, "
                       , ()# guess ? asleepTarget :? heShe
