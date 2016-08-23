@@ -1380,7 +1380,7 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
                              & _4 <>~ (isDiff |?| toSelf)
               _      -> sorryOp k
         -----
-        setEntTextHelper t k n getter setter -- TODO: Handle newlines?
+        setEntTextHelper t k n getter setter
           | not . hasEnt $ t = sorryType
           | otherwise        = case eitherDecode value' of
             Left  _ -> appendMsg . sorryAdminSetValue k $ value
