@@ -399,7 +399,7 @@ interpPickPts ncb@(NewCharBundle _ s _) cn (Lower   i mq cols as) = getState >>=
                                          , ", which others will see when they look at "
                                          , mkHimHer . getSex i $ ms
                                          , ". Your description must adhere to the following rules:" ]
-        send mq . T.unlines . concat . wrapLines cols $ descRules
+        send mq . T.unlines . concat . wrapLines cols . T.lines $ descRulesMsg
         pause i mq . Just . descHelper ncb i mq $ cols
     else wrapSend mq cols sorryInterpPickPtsQuit >> anglePrompt mq
   | otherwise -> helper |&| modifyState >=> \msgs -> multiWrapSend mq cols msgs >> promptPickPts i mq
@@ -447,16 +447,6 @@ interpPickPts ncb@(NewCharBundle _ s _) cn (Lower   i mq cols as) = getState >>=
       where
         sorry       = sorryHelper . sorryWut $ arg
         sorryHelper = (ms, ) . (msgs <>) . pure
-    descRules =
-        [ "1) Descriptions must be realistic and reasonable. A felinoid with an unusual fur color is acceptable, while \
-          \a six-foot dwarf is not.3`"
-        , "2) Descriptions must be passive and written from an objective viewpoint. \"He is exceptionally thin\" is \
-          \acceptable, while \"You can't believe how thin he is\" is not.3`"
-        , "3) Descriptions may only contain observable information. \"People tend to ask her about her adventures\" \
-          \and \"He is a true visionary among elves\" are both illegal. Likewise, you may not include your character's \
-          \name in your description.3`"
-        , "4) Keep your description short. The longer your description, the less likely people are to actually read \
-          \it!3`" ]
 interpPickPts _ _ p = patternMatchFail "interpPickPts" . showText $ p
 
 
@@ -473,22 +463,11 @@ procAttribChar i ms = \case 's' -> ("Strength",  getBaseSt i ms, st)
 
 
 descHelper :: NewCharBundle -> Id -> MsgQueue -> Cols -> MudStack ()
-descHelper ncb i mq cols = multiWrapSend mq cols ts >> setDescInterpHelper ncb i mq cols
-  where
-    ts = [ "Enter your description below. You may enter multiple lines of text " <>
-           prd (parensQuote "however, multiple lines will be joined into a single line which, when displayed, will be \
-                            \wrapped according to one's columns setting")
-         , "You are encouraged to compose your description in an external text editor such as Atom or SublimeText, \
-           \with spell checking enabled. Copy your completed description from there and paste it into your MUD client."
-         , "When you are finished, enter a " <> endCharTxt <> " on a new line." ]
+descHelper ncb i mq cols = multiWrapSend mq cols enterDescMsgs >> setDescInterpHelper ncb i mq cols
 
 
 setDescInterpHelper :: NewCharBundle -> Id -> MsgQueue -> Cols -> MudStack ()
 setDescInterpHelper ncb i mq cols = setInterp i . Just . interpMutliLine (descEntered ncb i mq cols) $ []
-
-
-endCharTxt :: Text
-endCharTxt = dblQuote . T.singleton $ multiLineEndChar
 
 
 descEntered :: NewCharBundle -> Id -> MsgQueue -> Cols -> [Text] -> MudStack ()
@@ -503,7 +482,7 @@ descEntered ncb i mq cols desc = case spaces . dropBlanks . map T.strip $ desc o
 
 
 promptRetryDesc :: NewCharBundle -> Id -> MsgQueue -> Cols -> MudStack ()
-promptRetryDesc ncb i mq cols = do
+promptRetryDesc ncb i mq cols = let endCharTxt = dblQuote . T.singleton $ multiLineEndChar in do
     wrapSend mq cols $ "Enter your description below. When you are finished, enter a " <> endCharTxt <> " on a new line."
     setDescInterpHelper ncb i mq cols
 

@@ -3,6 +3,7 @@
 module Mud.Cmds.Msgs.Misc where
 
 import Mud.Data.State.MudData
+import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
 import Mud.Util.Quoting
 import Mud.Util.Text
@@ -32,6 +33,26 @@ dbErrorMsg :: Text
 dbErrorMsg = "There was an error while reading the database."
 
 
+descRulesMsg :: Text
+descRulesMsg =
+    "1) Descriptions must be realistic and reasonable. A felinoid with an unusual fur color is acceptable, while a \
+    \six-foot dwarf is not.3`\n\
+    \2) Descriptions must be passive and written from an objective viewpoint. \"He is exceptionally thin\" is \
+    \acceptable, while \"You can't believe how thin he is\" is not.3`\n\
+    \3) Descriptions may only contain observable information. \"People tend to ask her about her adventures\" and \"He \
+    \is a true visionary among elves\" are both illegal. Likewise, you may not include your character's name in your \
+    \name in your description.3`\n\
+    \4) Keep your description short. The longer your description, the less likely people are to actually read it!3`"
+
+
+descRule5 :: Text
+descRule5 =
+    "5) You may not make radical changes to your description without a plausible in-game explanation. This means that \
+    \it is normally illegal to make sudden, striking changes to enduring physical characteristics (height, eye color, \
+    \etc.). If you would like to make such a change and feel there could be a plausible in-game explanation, get \
+    \permission from an administrator first.3`"
+
+
 dfltBootMsg :: Text
 dfltBootMsg = "You have been booted from CurryMUD. Goodbye!"
 
@@ -46,6 +67,18 @@ effortsBlockedMsg = "Your efforts are blocked; "
 
 egressMsg :: Text -> Text
 egressMsg n = n <> " slowly dissolves into nothingness."
+
+
+enterDescMsgs :: [Text]
+enterDescMsgs =
+    [ "Enter your new description below. You may write multiple lines of text; however, multiple lines will be joined \
+      \into a single line which, when displayed, will be wrapped according to one's columns setting."
+    , "You are encouraged to compose your description in an external text editor "
+    , parensQuote "such as TextEdit on Mac, and gedit or kate on Linux systems"
+    , ", with spell checking enabled. Copy your completed description from there and paste it into your MUD client."
+    , "When you are finished, enter a " <> endCharTxt <> " on a new line." ]
+  where
+    endCharTxt = dblQuote . T.singleton $ multiLineEndChar
 
 
 focusingInnateMsg :: Text
@@ -133,6 +166,12 @@ pwWarningTxt = "Please make a note of your new password. If you lose your passwo
 
 rethrowExMsg :: Text -> Text
 rethrowExMsg t = "exception caught " <> t <> "; rethrowing to listen thread"
+
+
+rulesIntroMsg :: Text
+rulesIntroMsg = "In order to preserve the integrity of the virtual world along with the enjoyment of all, the \
+                \following rules must be observed. Violation of these rules is grounds for discipline including \
+                \banishment from CurryMUD."
 
 
 sudoMsg :: Text

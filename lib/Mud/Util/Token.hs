@@ -80,8 +80,11 @@ expandMiscCode :: Char -> Text
 expandMiscCode c | c == miscTokenDelimiter = T.singleton miscTokenDelimiter
 expandMiscCode (toLower -> code)           = case code of
   'b' -> dfltBootMsg
+  'c' -> descRule5
   'd' -> yesNo isDebug
+  'e' -> descRulesMsg
   'p' -> pwWarningMsg
+  'r' -> rulesIntroMsg
   's' -> dfltShutdownMsg
   'z' -> yesNo $ isDebug && isZBackDoor
   x   -> patternMatchFail "expandMiscCode" . T.singleton $ x

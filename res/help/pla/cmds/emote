@@ -10,6 +10,12 @@ By default, your character's name (or a corresponding noun such as "The female h
 
 Your action may target one or more people in your current room. To specify a target, use \l#r\d, as in \l#r\qmnymph\d. \l#r\qmnymph\l's\d will create a possessive noun.
 
+\uRULES\n
+@r
+1) Your emotes must not implicate the actions of others. "Hanako laughs at Taro, who falls when she trips him" is illegal, as Taro didn't consent to falling down.3`
+2) Your emotes may describe interactions with static objects in your room, within reason. "The chair creaks as Hanako sits down" is acceptable, while "Hanako sets the chair on fire" is not, for reasons that should be obvious.3`
+3) Your emotes must describe observable actions or states. Emotes such as "Hanako is afraid she lost her ring" violate this rule. (Instead, perhaps emote, "Hanako looks concerned as she fidgets with her bracelet," then say, "I'm afraid I lost my ring...")3`
+
 \uEXAMPLES\n
 (The following examples assume that your name is Hanako.)
 \qemote laughs with relief as tears roll down her face\d \r->\d [Hanako laughs with relief as tears roll down her face.]4`
@@ -18,12 +24,6 @@ Your action may target one or more people in your current room. To specify a tar
 \qemote slowly turns her head to look directly at \l#r\qtaro\d \r->\d [Hanako slowly turns her head to look directly at Taro.]4`
 \qemote places her hand firmly on \l#r\qtaro\l's\q shoulder\d \r->\d [Hanako places her hand firmly on Taro's shoulder.]4`
 \qemote ignoring \l#r\qmnymph\q, \l#e\q takes \l#r\qtaro\l's\q hand and gestures eastward\d \r->\d [Ignoring the male nymph, Hanako takes Taro's hand and gestures eastward.]4`
-
-\uRULES\n
-In order to preserve the integrity of the virtual world along with the enjoyment of all, the following rules must be observed. Violation of these rules is grounds for discipline including banishment from CurryMUD.
-1) Your emotes must not implicate the actions of others. "Hanako laughs at Taro, who falls when she trips him" is illegal, as Taro didn't consent to falling down.3`
-2) Your emotes may describe interactions with static objects in your room, within reason. "The chair creaks as Hanako sits down" is acceptable, while "Hanako sets the chair on fire" is not, for reasons that should be obvious.3`
-3) Your emotes must describe observable actions or states. Emotes such as "Hanako is afraid she lost her ring" violate this rule. (Instead, perhaps emote, "Hanako looks concerned as she fidgets with her bracelet," then say, "I'm afraid I lost my ring...")3`
 
 \uSEE ALSO\n
 abbreviation, expressive, prefixes, roomdesc, tempdesc

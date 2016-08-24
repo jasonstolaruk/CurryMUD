@@ -788,41 +788,18 @@ interpConfirmDescChange :: Interp
 interpConfirmDescChange cn (NoArgs i mq cols) = case yesNoHelper cn of
   Just True -> do
       blankLine mq
-      send mq . T.unlines . concat . wrapLines cols $ descRules
+      send mq . T.unlines . concat . wrapLines cols . T.lines $ descRules
       pause i mq . Just . descHelper i mq $ cols
   _ -> neverMind i mq
   where
-    descRules =
-        [ "In order to preserve the integrity of the virtual world along with the enjoyment of all, the following \
-          \rules must be observed. Violation of these rules is grounds for discipline including banishment from \
-          \CurryMUD."
-        , "1) Descriptions must be realistic and reasonable. A felinoid with an unusual fur color is acceptable, while \
-          \a six-foot dwarf is not.3`"
-        , "2) Descriptions must be passive and written from an objective viewpoint. \"He is exceptionally thin\" is \
-          \acceptable, while \"You can't believe how thin he is\" is not.3`"
-        , "3) Descriptions may only contain observable information. \"People tend to ask her about her adventures\" \
-          \and \"He is a true visionary among elves\" are both illegal. Likewise, you may not include your character's \
-          \name in your description.3`"
-        , "4) Keep your description short. The longer your description, the less likely people are to actually read \
-          \it!3`"
-        , "5) You may not make radical changes to your description without a plausible in-game explanation. This \
-          \means that it is normally illegal to make sudden, striking changes to enduring physical characteristics \
-          \(height, eye color, etc.). If you would like to make such a change and feel there could be a plausible \
-          \in-game explanation, get permission from an administrator first.3`" ]
+    descRules = T.concat [ rulesIntroMsg, theNl, descRulesMsg, theNl, descRule5 ]
 interpConfirmDescChange _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNo plaMsgQueue plaCols
 
 
 descHelper :: Id -> MsgQueue -> Cols -> MudStack ()
-descHelper i mq cols = sequence_ [ multiWrapSend mq cols ts, setInterp i . Just . interpMutliLine f $ [] ]
+descHelper i mq cols = sequence_ [ multiWrapSend mq cols enterDescMsgs, setInterp i . Just . interpMutliLine f $ [] ]
   where
-    ts = [ "Enter your new description below. You may enter multiple lines of text " <>
-           prd (parensQuote "however, multiple lines will be joined into a single line which, when displayed, will be \
-                            \wrapped according to one's columns setting")
-         , "You are encouraged to compose your description in an external text editor such as Atom or SublimeText, \
-           \with spell checking enabled. Copy your completed description from there and paste it into your MUD client."
-         , "When you are finished, enter a " <> endCharTxt <> " on a new line." ]
-    endCharTxt = dblQuote . T.singleton $ multiLineEndChar
-    f desc     = case spaces . dropBlanks . map T.strip $ desc of
+    f desc = case spaces . dropBlanks . map T.strip $ desc of
       ""    -> neverMind i mq
       desc' -> do
         blankLine      mq

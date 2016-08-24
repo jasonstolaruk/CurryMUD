@@ -866,8 +866,11 @@ debugToken (NoArgs i mq cols) = do
                 , styleTokenDelimiter `T.cons` ("zzingColor"         <> dfltColorStyleToken    )
                 , "literal miscTokenDelimiter: " <> (T.pack . replicate 2 $ miscTokenDelimiter)
                 , "dfltBootMsg: "     <> (miscTokenDelimiter `T.cons` "b")
+                , "descRule5: "       <> (miscTokenDelimiter `T.cons` "c")
                 , "isDebug: "         <> (miscTokenDelimiter `T.cons` "d")
+                , "descRulesMsg: "    <> "elided"
                 , "pwWarningMsg: "    <> (miscTokenDelimiter `T.cons` "p")
+                , "rulesIntroMsg: "   <> (miscTokenDelimiter `T.cons` "r")
                 , "dfltShutdownMsg: " <> (miscTokenDelimiter `T.cons` "s")
                 , "isZBackDoor: "     <> (miscTokenDelimiter `T.cons` "z") ]
     dfltColorStyleToken   = styleTokenDelimiter `T.cons` "d"
