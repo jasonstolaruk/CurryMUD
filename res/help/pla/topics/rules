@@ -1,3 +1,5 @@
+\h RULES \d
+
 Spell out a code of player conduct. It should be clear to players how they are expected to behave.
 "...players have a prevailing attitude that anything the virtual world lets them do, they're allowed to do." p.548
 Age, harassment (with special attention to sexual orientation), RP (IC) vs. OOC, PD, PvP, multi-playing, bug abuse, loss of items.
@@ -16,5 +18,7 @@ harassment
 multiplaying
 pk
 
-topics:
-email
+Cmds w/ RULES:
+
+\uSEE ALSO\n
+about, admin, bug, motd, typo
