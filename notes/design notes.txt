@@ -97,16 +97,6 @@ Implementing PD means accepting the fact that many potential players will stay a
 
 MISC:
 
-Spell out a code of player conduct. It should be clear to players how they are expected to behave.
-"...players have a prevailing attitude that anything the virtual world lets them do, they're allowed to do." p.548
-Age, harassment (with special attention to sexual orientation), RP (IC) vs. OOC, PD, PvP, multi-playing, bug abuse, loss of items.
-IC communication must always be appropriate for the context of the virtual world. References to reality are not allowed.
-Make it clear that by playing your virtual world, players are consenting to PD and PvP.
-"Evilness is not a winning strategy."
-"Yours is just one way of many to play."
-
-Players should be made aware that their privacy cannot be guaranteed. Player activity is always logged, and admins have the ability to monitor player activity, with the express purpose of 1) ensuring that players are playing by the rules, and 2) tracking down bugs.
-
 Is multi-playing allowed? If not, then players need a way to formally retire their character.
 
 Allow some degree of player-created content, but only using in-context methods (which is to say that players cannot be "builders"). p.457-8
@@ -124,9 +114,6 @@ Have an in-game newspaper. There should be a way for players to read old newspap
 Have an in-game calendar.
 
 Have in-game mail and BBS. Have a special BBS dedicated to OOC topics.
-
-Recommend that players use an external text editor with spell checking for composing multi-line input.
-The MUD could itself check spelling...
 
 Make a library or similar area where players may read, for example, the history and backstory of the virtual world.
 A museum-like facility could fill this role. There could be a statue for each race and god, along with a description on a placard. Refer to the Pantheon in "City Sites."
@@ -272,9 +259,6 @@ PCs:
 
 For players who want to try out the game and start playing quickly, offer "character kits."
 Character kits need not correspond to traditional classes. Consider defining kits only after you have designed races and skills.
-
-Many aspects of racial identity are based on stereotypes. Dwarves are materialistic, elves are beautiful, etc. These stereotypes can certainly aid you in defining and fleshing out your character's personality. That said, you are not required to conform to the common stereotypes: you are free to play a materialistic elf, for example (indeed, you are encouraged to play complex, multi-dimensional characters with compelling personalities). However, if your character does challenge the established stereotypes, you can expect that others may react to your character with surprise, curiosity, or disapproval. And you cannot realistically expect the way in which you portray in your character to markedly change any preconceived stereotype.
-In the virtual world, humans are regarded as the most diverse race. Just as humans are incredibly diverse in the real world, so they are in CurryMUD, too. If the character concept you have in mind does not mesh well with any of the established stereotypes for the fantasy/humanoid races, then the human race might be a good choice for your character. Still, this doesn't bar you from reactions of surprise, curiosity, or disapproval, particularly if your character concept is highly unusual.
 
 Perhaps make the composing of a background story/"character essay" an optional endeavor that awards experience points.
 
