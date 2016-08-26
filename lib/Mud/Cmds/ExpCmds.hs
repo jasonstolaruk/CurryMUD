@@ -145,17 +145,17 @@ expCmdSet = S.fromList
                                        "% eagerly cheers for you."
                                        "% eagerly cheers for @.")
                             Nothing
-    , ExpCmd "chuckle"      (Versatile "You chuckle."
-                                       "% chuckles."
-                                       "You chuckle at @."
-                                       "% chuckles at you."
-                                       "% chuckles at @.")
-                            Nothing
     , ExpCmd "chortle"      (Versatile "You chortle gleefully."
                                        "% chortles gleefully."
                                        "You chortle gleefully at @."
                                        "% chortles gleefully at you."
                                        "% chortles gleefully at @.")
+                            Nothing
+    , ExpCmd "chuckle"      (Versatile "You chuckle."
+                                       "% chuckles."
+                                       "You chuckle at @."
+                                       "% chuckles at you."
+                                       "% chuckles at @.")
                             Nothing
     , ExpCmd "clap"         (Versatile "You clap."
                                        "% claps."
@@ -450,6 +450,12 @@ expCmdSet = S.fromList
     , ExpCmd "innocent"     (NoTarget  "You try to look innocent."
                                        "% tries to look innocent.")
                             Nothing
+    , ExpCmd "inquisitive"  (Versatile "You have an inquisitive expression on your face."
+                                       "% has an inquisitive expression on & face."
+                                       "You flash an inquisitive expression at @."
+                                       "% flashes an inquisitive expression at you."
+                                       "% flashes an inquisitive expression at @.")
+                            Nothing
     , ExpCmd "jig"          (Versatile "You dance a lively jig."
                                        "% dances a lively jig."
                                        "You dance a lively jig with @."
@@ -461,12 +467,6 @@ expCmdSet = S.fromList
                             Nothing
     , ExpCmd "jump"         (NoTarget  "You jump up and down excitedly."
                                        "% jumps up and down excitedly.")
-                            Nothing
-    , ExpCmd "inquisitive"  (Versatile "You have an inquisitive expression on your face."
-                                       "% has an inquisitive expression on & face."
-                                       "You flash an inquisitive expression at @."
-                                       "% flashes an inquisitive expression at you."
-                                       "% flashes an inquisitive expression at @.")
                             Nothing
     , ExpCmd "kiss"         (HasTarget "You kiss @."
                                        "% kisses you."
@@ -718,6 +718,9 @@ expCmdSet = S.fromList
     , ExpCmd "shiver"       (NoTarget  "You shiver."
                                        "% shivers.")
                             Nothing
+    , ExpCmd "shriek"       (NoTarget  "You let out a shriek."
+                                       "% lets out a shriek.")
+                            Nothing
     , ExpCmd "shrieklaugh"  (Versatile "You shriek with laughter."
                                        "% shrieks with laughter."
                                        "You shriek with laughter at @."
@@ -867,10 +870,6 @@ expCmdSet = S.fromList
                             Nothing
     , ExpCmd "sweat"        (NoTarget  "You break out in a sweat."
                                        "% breaks out in a sweat.")
-                            Nothing
-    , ExpCmd "tap"          (HasTarget "You tap @ on the shoulder."
-                                       "% taps you on the shoulder."
-                                       "% taps @ on the shoulder.")
                             Nothing
     , ExpCmd "tap"          (HasTarget "You tap @ on the shoulder."
                                        "% taps you on the shoulder."
