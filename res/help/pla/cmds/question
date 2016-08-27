@@ -4,10 +4,11 @@
 question \s[\dmessage\s]\d
 
 \uDESCRIPTION\n
-Send a message on the question channel.
+Send a message on the question channel (a "channel" is somewhat analogous to a chat room or party line).
 When no arguments are provided, you'll get a list of all the people who are currently logged in, indicating whether they have tuned the channel in or out. * denotes an administrator.
 
-A "channel" is analogous to a named chat room (though there is no shared "space"). The "question channel" is strictly for the purpose of asking and answering newbie questions related to game play. Discussions on the question channel are Out-Of-Character (OOC); In-Character (IC) knowledge that can and should be discovered in game may not be disclosed. (Note that telepathic channels, on the other hand, are strictly IC.) Appropriate topics of discussion are how to use a command, how to configure client software, how to contact an administrator, etc. "Which weapon does more damage, x or y?" is an example of an inappropriate question.
+\uRULES\n
+The "question channel" is strictly for the purpose of asking and answering newbie questions related to game play. Discussions on the question channel are Out-Of-Character (OOC); In-Character (IC) knowledge that can and should be discovered in game may not be disclosed. (Note that telepathic channels, on the other hand, are strictly IC.) Appropriate topics of discussion are how to use a command, how to configure client software, how to contact an administrator, etc. "Which weapon does more damage, x or y?" is an example of an inappropriate question.
 
 \uRANDOM NAMES\n
 Within communication over the question channel, random names are automatically assigned to people with whom you have not established a telepathic link. Random names always start with a lowercase character and appear underlined. For example, a message from a person whose name you do not know may appear like so (here, "dog" is a randomly assigned name):

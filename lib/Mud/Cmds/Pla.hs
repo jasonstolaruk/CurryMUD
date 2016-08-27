@@ -169,7 +169,7 @@ regularCmdTuples =
     , ("about",      about,              True,  "About CurryMUD.")
     , ("admin",      admin,              True,  "Display a list of administrators, or send a message to an administrator.")
     , ("bars",       bars,               True,  cmdDescBars)
-    , ("bonus",      bonus,              True,  "Give another player bonus experience points for outstanding roleplaying.")
+    , ("bonus",      bonus,              True,  "Give another player bonus experience points for outstanding role-playing.")
     , ("bug",        bug,                True,  "Report a bug.")
     , ("channel",    chan,               True,  "Send a message on a telepathic channel " <> plusRelatedMsg)
     , ("d",          go "d",             True,  cmdDescGoDown)
@@ -560,7 +560,7 @@ bonus (OneArgLower i mq cols a) = getState >>= \ms ->
         mkToTarget targetId | s `elem` getIntroduced targetId ms = g s
                             | otherwise                          = g "Someone"
           where
-            g = (<> " has given you bonus experience points for outstanding roleplaying.")
+            g = (<> " has given you bonus experience points for outstanding role-playing.")
     in if getLvl i ms <= 2
       then wrapSend mq cols sorryBonusLvl
       else liftIO getCurrentTime >>= \now -> case getBonusTime i ms of

@@ -7,7 +7,7 @@ This is an In-Character (IC) term for the state of being logged out.
 This is an In-Character (IC) term for the state of being logged in.
 
 \uChannel\d
-Analogous to a named "chat room" (though there is no shared "space"). Provides the ability for a group of players to message each other in real-time. There is the "question channel" (OOC) along with "telepathic channels" (IC).
+Analogous to a chat room or party line. Provides the ability for a group of players to message each other in real-time. There is the "question channel" (OOC) along with "telepathic channels" (IC).
 
 \uClient\d
 See "MUD Client."
@@ -34,7 +34,7 @@ A Non-Player Character (NPC). Sometimes abbreviated to "mob."
 Software used to connect to a MUD server and play a MUD.
 
 \uMulti-Playing\d
-When a single player simultaneously plays with multiple characters.
+When a single player simultaneously logs in with multiple characters.
 
 \uMulti-User Dungeon\d
 This generally refers to a (usually text-based) virtual world in its totality.
@@ -49,7 +49,7 @@ A character normally controlled by the server (the CurryMUD administrators may o
 Something said or done as a player, outside the context of role-playing. Or, outside the context of the virtual world.
 
 \uPermadeath\d
-When a Player Character (PC) dies, it is truly dead; a deceased PC cannot return to the virtual world in any way, shape, or form.
+A portmanteau of "permanent" and "death." When a Player Character (PC) dies, he/she is truly dead; a deceased PC cannot return to the virtual world in any way, shape, or form.
 
 \uPlayer Character\d
 A character controlled by a human player.
@@ -58,7 +58,7 @@ A character controlled by a human player.
 When one Player Character (PC) kills another PC.
 
 \uPlayer vs. Player\d
-When one Player Character (PC) attacks another PC.
+Denotes combat between Player Characters (PCs). Often used to describe a MUD in which this is allowed.
 
 \uRole-Play Intensive\d
 Used to describe a MUD with rules requiring that players stay In-Character (IC).
@@ -91,4 +91,4 @@ A command for which there is no help available via the "help" command. You are m
 A container for liquids.
 
 \uSEE ALSO\n
-acronyms, channel, client, expressive, link, roomfixtures, stats, telepathy, texteditor, tune, undocumented, unlink
+acronyms, channel, client, expressive, link, permadeath, roomfixtures, rules, stats, telepathy, texteditor, tune, undocumented, unlink

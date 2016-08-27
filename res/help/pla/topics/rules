@@ -1,24 +1,47 @@
 \h RULES \d
 
-Spell out a code of player conduct. It should be clear to players how they are expected to behave.
-"...players have a prevailing attitude that anything the virtual world lets them do, they're allowed to do." p.548
-Age, harassment (with special attention to sexual orientation), RP (IC) vs. OOC, PD, PvP, multi-playing, bug abuse, loss of items.
-IC communication must always be appropriate for the context of the virtual world. References to reality are not allowed.
-Make it clear that by playing your virtual world, players are consenting to PD and PvP.
-"Evilness is not a winning strategy."
-"Yours is just one way of many to play."
+You must conduct yourself in accordance with the following rules. It is not the case that you are allowed to do whatever the virtual world lets you do: please understand this important point.
+@v
 
-Players should be made aware that their privacy cannot be guaranteed. Player activity is always logged, and admins have the ability to monitor player activity, with the express purpose of 1) ensuring that players are playing by the rules, and 2) tracking down bugs.
+AGE:
+CurryMUD a complex game that requires serious, consistent role-play and adult sensibilities. For these reasons you must be at least 18 years old to play.
 
-age
-RP
-cheating
-death / retire
-harassment
-multiplaying
-pk
+ROLE-PLAY:
+CurryMUD is a Role-Play Intensive (RPI) MUD. You are required to devise a unique personality for your character and to stay In Character (IC) at all times. Communication must always be appropriate for the fantasy context of the virtual world; references to the present day/real world are not allowed.
+There are a few exceptions to this rule. The "question channel" (for asking and answering newbie questions related to game play) is Out-Of-Character (OOC). Certain areas within the virtual world are also clearly designated as OOC: you are allowed to communicate with other players as a player (as yourself) within such areas.
 
-Cmds w/ RULES:
+ILLEGAL ROLE-PLAY:
+You are not allowed to role-play a character who is insane, sadistic, or sociopathic.
+
+RESPECT:
+You must conduct yourself in a manner that is empathetic towards your fellow players. Be respectful and sensible. Don't be rude or condescending.
+
+HARASSMENT:
+Harassment and bullying will not be tolerated. The role-play of rape is absolutely illegal.
+
+SEXUAL ORIENTATION/IDENTITY:
+Players are absolutely free to role-play characters who are homosexual, bisexual, pansexual, gender nonconforming, etc. If this makes you uncomfortable, then please do not play CurryMUD. Intolerant attitudes are unacceptable.
+
+PERMADEATH:
+"Permadeath" is a portmanteau of "permanent" and "death." It means that when a character dies, he/she is truly dead; a deceased character cannot return to the virtual world in any way, shape, or form. By playing CurryMUD, you consent to the fact that when your character dies, he/she is unrecoverable.
+
+PLAYER-VS-PLAYER:
+TODO
+
+MULTI-PLAYING:
+"Multi-playing" is when a single player simultaneously logs in with multiple characters. This is not allowed.
+It is likewise illegal to transfer items and wealth between characters through indirect means (for example, dropping items in a certain location, logging in as a different character, and picking up those items).
+You are discouraged from actively maintaining multiple characters at a time. It can be quite difficult to juggle the different scopes of knowledge - and to maintain the disparate levels of objectivity - inherent in multiple characters.
+If you find yourself wanting to play a new character, consider formally retiring your current character via the "retire" command.
+
+BUGS:
+The abuse of bugs constitutes cheating and is not allowed. If you find a bug, report it via the "bug" command, or contact an administrator directly via the "admin" command.
+
+PRIVACY:
+Please be aware that player activity is automatically logged by the system. Furthermore, administrators have the ability to actively monitor player activity with the express purpose of 1) ensuring that players are playing by the rules, and 2) tracking down bugs. Administrators promise to maintain player privacy as much as possible.
+
+Cmds w/ RULES: TODO
+bonus, description, emote, question, roomdesc, tempdesc
 
 \uSEE ALSO\n
-about, admin, bug, motd, typo
+about, acronyms, admin, bug, glossary, motd, permadeath, retire

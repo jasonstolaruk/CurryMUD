@@ -74,8 +74,8 @@ enterDescMsgs =
     [ "Enter your new description below. You may write multiple lines of text; however, multiple lines will be joined \
       \into a single line which, when displayed, will be wrapped according to one's columns setting."
     , "You are encouraged to compose your description in an external text editor "
-    , parensQuote "such as TextEdit on Mac, and gedit or kate on Linux systems"
-    , ", with spell checking enabled. Copy your completed description from there and paste it into your MUD client."
+    , parensQuote "such as TextEdit on Mac, and gedit or kate on Linux systems" <>
+      ", with spell checking enabled. Copy your completed description from there and paste it into your MUD client."
     , "When you are finished, enter a " <> endCharTxt <> " on a new line." ]
   where
     endCharTxt = dblQuote . T.singleton $ multiLineEndChar
