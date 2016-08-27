@@ -45,7 +45,7 @@ PP      Psionic Points`
         A number representing a character's capacity to use psionic abilities. The use of psionics costs pp; pp are recovered naturally as one rests. A character's pp may never drop below 0, as 0 represents the total depletion of one's psionic energy.
 
 PvP     Player vs. Player`
-        When one Player Character (PC) attacks another PC.
+        Denotes combat between Player Characters (PCs). Often used to describe a MUD in which this is allowed.
 
 RP      Role-Playing`
 
@@ -53,4 +53,4 @@ RPI     Role-Play Intensive`
         Used to describe a MUD with requirements that players stay In-Character (IC).
 
 \uSEE ALSO\n
-coins, glossary, stats
+coins, glossary, permadeath, rules, stats

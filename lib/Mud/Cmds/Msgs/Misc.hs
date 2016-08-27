@@ -201,7 +201,7 @@ rulesMsg =
     \Harassment and bullying will not be tolerated. The role-play of rape is absolutely illegal.\n\
     \\n\
     \SEXUAL ORIENTATION/IDENTITY:\n\
-    \Players are free to role-play characters who are homosexual, bisexual, pansexual, gender nonconforming, etc. If this makes you uncomfortable then please do not play CurryMUD. Intolerant attitudes are unacceptable.\n\
+    \Players are free to role-play characters who are homosexual, bisexual, pansexual, gender nonconforming, etc. Intolerant attitudes are unacceptable.\n\
     \\n\
     \PERMADEATH:\n\
     \This means that when a character dies, he/she is truly dead; a deceased character cannot return to the virtual world in any way, shape, or form. By playing CurryMUD, you consent to the fact that when your character dies, he/she is unrecoverable.\n\
@@ -216,7 +216,7 @@ rulesMsg =
     \If you find yourself wanting to play a new character, consider formally retiring your current character via the \"retire\" command.\n\
     \\n\
     \BUGS:\n\
-    \The abuse of bugs constitutes cheating and is not allowed. If you find a bug, you must promptly report it via the \"bug\" command or inform an administrator directly via the \"admin\" command.\n\
+    \The abuse of bugs constitutes cheating and is not allowed. If you find a bug, you must promptly report it via the \"bug\" command, or inform an administrator directly via the \"admin\" command.\n\
     \\n\
     \PRIVACY:\n\
     \Please be aware that player activity is automatically logged by the system. Furthermore, administrators have the ability to actively monitor player activity with the express purpose of 1) ensuring that players are playing by the rules, and 2) tracking down bugs. Administrators promise to maintain player privacy as much as possible."
