@@ -6,7 +6,7 @@
 \uDESCRIPTION\n
 Display a list of all the PCs that are currently logged in. Optionally, search the list for one or more terms.
 * denotes an admin.
-@@ denotes an incognito admin.
+#k denotes an incognito admin.
 
 \uEXAMPLES\n
 \q#dwhoin\d to display the full list.4`

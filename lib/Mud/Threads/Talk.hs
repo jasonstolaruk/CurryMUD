@@ -8,6 +8,7 @@ import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
+import Mud.Cmds.Msgs.Misc
 import Mud.Interp.Login
 import Mud.TheWorld.Zones.AdminZoneIds (iWelcome)
 import Mud.Threads.InacTimer
@@ -65,6 +66,7 @@ threadTalk h host = helper `finally` cleanUp
         handle (threadExHandler $ "talk " <> showText i) $ do
             liftIO configBuffer
             dumpTitle  mq
+            send       mq . nlnl $ helloRulesMsg
             sendPrompt mq "What is your character's name? "
             bcastAdmins . prd $ "A new player has connected: " <> s
             logNotice "threadTalk helper" . prd $ "new PC name for incoming player: " <> s

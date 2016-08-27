@@ -47,6 +47,7 @@ module Mud.Util.Misc ( BlowUp
                      , plusThird
                      , reverseLookup
                      , sortEithers
+                     , twice
                      , unadulterated
                      , uncurry3
                      , uncurry4
@@ -282,6 +283,10 @@ sortEithers = foldr helper ([], [])
   where
     helper (Right a) = _1 %~ (a :)
     helper (Left  b) = _2 %~ (b :)
+
+
+twice :: (a -> a) -> a -> a
+twice f = f . f
 
 
 unadulterated :: (Monad m) => (Applicative f) => a -> m (f a)

@@ -6,7 +6,7 @@ import Mud.Cmds.Msgs.Misc
 import Mud.Misc.ANSI
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
-import Mud.Util.Misc (PatternMatchFail)
+import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Text
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
@@ -24,7 +24,7 @@ patternMatchFail = U.patternMatchFail "Mud.Util.Token"
 
 
 parseTokens :: Text -> Text
-parseTokens = parseCharTokens . parseMiscTokens . parseStyleTokens
+parseTokens = parseCharTokens . parseStyleTokens . parseMiscTokens
 
 
 -----
@@ -56,6 +56,7 @@ expandCharCode (toLower -> code)           = T.singleton $ case code of
   'e' -> emoteNameChar
   'h' -> chanTargetChar
   'i' -> indexChar
+  'k' -> miscTokenDelimiter
   'l' -> selectorChar
   'm' -> amountChar
   'o' -> adverbOpenChar
@@ -73,12 +74,11 @@ expandCharCode (toLower -> code)           = T.singleton $ case code of
 
 
 parseMiscTokens :: Text -> Text
-parseMiscTokens = parser expandMiscCode miscTokenDelimiter
+parseMiscTokens = twice (parser expandMiscCode miscTokenDelimiter)
 
 
 expandMiscCode :: Char -> Text
-expandMiscCode c | c == miscTokenDelimiter = T.singleton miscTokenDelimiter
-expandMiscCode (toLower -> code)           = case code of
+expandMiscCode (toLower -> code) = case code of
   'b' -> dfltBootMsg
   'c' -> descRule5
   'd' -> yesNo isDebug
@@ -86,6 +86,7 @@ expandMiscCode (toLower -> code)           = case code of
   'p' -> pwWarningMsg
   'r' -> rulesIntroMsg
   's' -> dfltShutdownMsg
+  'u' -> rulesMsg
   'v' -> violationMsg
   'z' -> yesNo $ isDebug && isZBackDoor
   x   -> patternMatchFail "expandMiscCode" . T.singleton $ x

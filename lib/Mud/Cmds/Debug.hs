@@ -148,6 +148,7 @@ debugCmds =
     , mkDebugCmd "remput"     debugRemPut      "In quick succession, remove from and put into a sack on the ground."
     , mkDebugCmd "rnt"        debugRnt         "Dump your random names table, or generate a random name for a given PC."
     , mkDebugCmd "rotate"     debugRotate      "Send the signal to rotate your player log."
+    , mkDebugCmd "rules"      debugRules       "Dump the rules message."
     , mkDebugCmd "talk"       debugTalk        "Dump the talk async table."
     , mkDebugCmd "threads"    debugThreads     "Display or search the thread table."
     , mkDebugCmd "throw"      debugThrow       "Throw an exception."
@@ -738,6 +739,16 @@ debugRotate p = withoutArgs debugRotate p
 -----
 
 
+debugRules :: ActionFun
+debugRules (NoArgs i mq cols) = do
+    pager i mq . concat . wrapLines cols . T.lines . parseTokens $ rulesMsg
+    logPlaExec (prefixDebugCmd "rules") i
+debugRules p = withoutArgs debugRandom p
+
+
+-----
+
+
 debugTalk :: ActionFun
 debugTalk (NoArgs i mq cols) = getState >>= \(views talkAsyncTbl M.elems -> asyncs) -> do
     pager i mq =<< [ concatMap (wrapIndent 2 cols) descs | descs <- mapM mkDesc asyncs ]
@@ -837,6 +848,7 @@ debugToken (NoArgs i mq cols) = do
                 , charTokenDelimiter  `T.cons` "e emoteNameChar"
                 , charTokenDelimiter  `T.cons` "h chanTargetChar"
                 , charTokenDelimiter  `T.cons` "i indexChar"
+                , charTokenDelimiter  `T.cons` "k miscTokenDelimiter"
                 , charTokenDelimiter  `T.cons` "l selectorChar"
                 , charTokenDelimiter  `T.cons` "m amountChar"
                 , charTokenDelimiter  `T.cons` "o adverbOpenChar"
@@ -864,7 +876,6 @@ debugToken (NoArgs i mq cols) = do
                 , styleTokenDelimiter `T.cons` ("t " <> dfltColorStyleToken <> " <- toNpcColor")
                 , styleTokenDelimiter `T.cons` ("uunderlineANSI"     <> noUnderlineStyleToken  )
                 , styleTokenDelimiter `T.cons` ("zzingColor"         <> dfltColorStyleToken    )
-                , "literal miscTokenDelimiter: " <> (T.pack . replicate 2 $ miscTokenDelimiter)
                 , "dfltBootMsg: "     <> (miscTokenDelimiter `T.cons` "b")
                 , "descRule5: "       <> (miscTokenDelimiter `T.cons` "c")
                 , "isDebug: "         <> (miscTokenDelimiter `T.cons` "d")
@@ -872,6 +883,7 @@ debugToken (NoArgs i mq cols) = do
                 , "pwWarningMsg: "    <> (miscTokenDelimiter `T.cons` "p")
                 , "rulesIntroMsg: "   <> (miscTokenDelimiter `T.cons` "r")
                 , "dfltShutdownMsg: " <> (miscTokenDelimiter `T.cons` "s")
+                , "rulesMsg: "        <> "elided"
                 , "violationMsg: "    <> (miscTokenDelimiter `T.cons` "v")
                 , "isZBackDoor: "     <> (miscTokenDelimiter `T.cons` "z") ]
     dfltColorStyleToken   = styleTokenDelimiter `T.cons` "d"

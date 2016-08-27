@@ -89,8 +89,8 @@ genericErrorMsg :: Text
 genericErrorMsg = "Unfortunately, an error occured while executing your command."
 
 
-helloRulesMsg :: Text -- TODO: Use this.
-helloRulesMsg = "Logging in to this game expresses a commitment to follow all the rules."
+helloRulesMsg :: Text
+helloRulesMsg = "*** By logging in you are expressing a commitment to follow the rules. ***"
 
 
 helpRootErrorMsg :: Text
@@ -175,6 +175,51 @@ rethrowExMsg t = "exception caught " <> t <> "; rethrowing to listen thread"
 rulesIntroMsg :: Text
 rulesIntroMsg = "In order to preserve the integrity of the virtual world along with the enjoyment of all, the \
                 \following rules must be observed."
+
+
+rulesMsg :: Text
+rulesMsg =
+    "\\h RULES \\d\n\
+    \\n\
+    \You must conduct yourself in accordance with the following rules. It is not the case that you are allowed to do whatever the virtual world lets you do: please understand this important point.\n\
+    \" <> T.singleton miscTokenDelimiter <> "v\n\
+    \\n\
+    \AGE:\n\
+    \CurryMUD a complex game that requires serious, consistent role-play and adult sensibilities. For these reasons you must be at least 18 years old to play.\n\
+    \\n\
+    \ROLE-PLAY:\n\
+    \CurryMUD is a Role-Play Intensive (RPI) MUD. You are required to devise a unique personality for your character and to stay In Character (IC) at all times. IC communication must always be appropriate for the fantasy context of the virtual world; references to the present day/reality are not allowed.\n\
+    \There are a few exceptions to this rule. The \"question channel\" (for asking and answering newbie questions related to game play) is Out-Of-Character (OOC). Certain areas within the virtual world are also clearly designated as OOC: you are allowed to communicate with other players as a player (as yourself) within such areas.\n\
+    \\n\
+    \ILLEGAL ROLE-PLAY:\n\
+    \You are not allowed to role-play a character who is insane, sadistic, or sociopathic.\n\
+    \\n\
+    \RESPECT:\n\
+    \You must conduct yourself in a manner that is empathetic towards your fellow players. Be respectful and sensible; don't be rude or condescending.\n\
+    \\n\
+    \HARASSMENT:\n\
+    \Harassment and bullying will not be tolerated. The role-play of rape is absolutely illegal.\n\
+    \\n\
+    \SEXUAL ORIENTATION/IDENTITY:\n\
+    \Players are free to role-play characters who are homosexual, bisexual, pansexual, gender nonconforming, etc. If this makes you uncomfortable then please do not play CurryMUD. Intolerant attitudes are unacceptable.\n\
+    \\n\
+    \PERMADEATH:\n\
+    \This means that when a character dies, he/she is truly dead; a deceased character cannot return to the virtual world in any way, shape, or form. By playing CurryMUD, you consent to the fact that when your character dies, he/she is unrecoverable.\n\
+    \\n\
+    \PLAYER-VS-PLAYER:\n\
+    \TODO\n\
+    \\n\
+    \MULTI-PLAYING:\n\
+    \\"Multi-playing\" is when a single player simultaneously logs in multiple times, as multiple characters. This is not allowed.\n\
+    \It is likewise illegal to transfer items and wealth between characters through indirect means (for example, dropping items in a certain location, logging in as a different character, and picking up those items).\n\
+    \You are discouraged from actively maintaining multiple characters at a time. It can be quite difficult to juggle the different scopes of knowledge - and to maintain the disparate levels of objectivity - inherent in multiple characters.\n\
+    \If you find yourself wanting to play a new character, consider formally retiring your current character via the \"retire\" command.\n\
+    \\n\
+    \BUGS:\n\
+    \The abuse of bugs constitutes cheating and is not allowed. If you find a bug, you must promptly report it via the \"bug\" command or inform an administrator directly via the \"admin\" command.\n\
+    \\n\
+    \PRIVACY:\n\
+    \Please be aware that player activity is automatically logged by the system. Furthermore, administrators have the ability to actively monitor player activity with the express purpose of 1) ensuring that players are playing by the rules, and 2) tracking down bugs. Administrators promise to maintain player privacy as much as possible."
 
 
 sudoMsg :: Text
