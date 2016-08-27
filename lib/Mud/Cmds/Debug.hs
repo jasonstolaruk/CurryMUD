@@ -872,6 +872,7 @@ debugToken (NoArgs i mq cols) = do
                 , "pwWarningMsg: "    <> (miscTokenDelimiter `T.cons` "p")
                 , "rulesIntroMsg: "   <> (miscTokenDelimiter `T.cons` "r")
                 , "dfltShutdownMsg: " <> (miscTokenDelimiter `T.cons` "s")
+                , "violationMsg: "    <> (miscTokenDelimiter `T.cons` "v")
                 , "isZBackDoor: "     <> (miscTokenDelimiter `T.cons` "z") ]
     dfltColorStyleToken   = styleTokenDelimiter `T.cons` "d"
     noUnderlineStyleToken = styleTokenDelimiter `T.cons` "n"

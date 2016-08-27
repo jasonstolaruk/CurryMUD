@@ -34,7 +34,7 @@ A Non-Player Character (NPC). Sometimes abbreviated to "mob."
 Software used to connect to a MUD server and play a MUD.
 
 \uMulti-Playing\d
-When a single player simultaneously logs in with multiple characters.
+When a single player simultaneously logs in multiple times, as multiple characters.
 
 \uMulti-User Dungeon\d
 This generally refers to a (usually text-based) virtual world in its totality.
@@ -49,7 +49,7 @@ A character normally controlled by the server (the CurryMUD administrators may o
 Something said or done as a player, outside the context of role-playing. Or, outside the context of the virtual world.
 
 \uPermadeath\d
-A portmanteau of "permanent" and "death." When a Player Character (PC) dies, he/she is truly dead; a deceased PC cannot return to the virtual world in any way, shape, or form.
+When a Player Character (PC) dies, he/she is truly dead; a deceased PC cannot return to the virtual world in any way, shape, or form.
 
 \uPlayer Character\d
 A character controlled by a human player.

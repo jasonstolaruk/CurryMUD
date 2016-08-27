@@ -163,6 +163,7 @@ regularCmds :: [Cmd]
 regularCmds = map (uncurry4 mkRegularCmd) regularCmdTuples
 
 
+-- TODO: "retire"
 regularCmdTuples :: [(CmdFullName, ActionFun, Bool, CmdDesc)]
 regularCmdTuples =
     [ ("?",          plaDispCmdList,     True,  cmdDescDispCmdList)
@@ -792,7 +793,7 @@ interpConfirmDescChange cn (NoArgs i mq cols) = case yesNoHelper cn of
       pause i mq . Just . descHelper i mq $ cols
   _ -> neverMind i mq
   where
-    descRules = T.concat [ rulesIntroMsg, theNl, descRulesMsg, theNl, descRule5 ]
+    descRules = T.concat [ rulesIntroMsg, " ", violationMsg, theNl, descRulesMsg, theNl, descRule5 ]
 interpConfirmDescChange _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNo plaMsgQueue plaCols
 
 

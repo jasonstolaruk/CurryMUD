@@ -86,6 +86,7 @@ expandMiscCode (toLower -> code)           = case code of
   'p' -> pwWarningMsg
   'r' -> rulesIntroMsg
   's' -> dfltShutdownMsg
+  'v' -> violationMsg
   'z' -> yesNo $ isDebug && isZBackDoor
   x   -> patternMatchFail "expandMiscCode" . T.singleton $ x
 

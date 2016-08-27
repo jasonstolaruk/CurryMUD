@@ -89,6 +89,10 @@ genericErrorMsg :: Text
 genericErrorMsg = "Unfortunately, an error occured while executing your command."
 
 
+helloRulesMsg :: Text -- TODO: Use this.
+helloRulesMsg = "Logging in to this game expresses a commitment to follow all the rules."
+
+
 helpRootErrorMsg :: Text
 helpRootErrorMsg = helpFileErrorMsg "root"
 
@@ -170,8 +174,7 @@ rethrowExMsg t = "exception caught " <> t <> "; rethrowing to listen thread"
 
 rulesIntroMsg :: Text
 rulesIntroMsg = "In order to preserve the integrity of the virtual world along with the enjoyment of all, the \
-                \following rules must be observed. Violation of these rules is grounds for discipline including \
-                \banishment from CurryMUD."
+                \following rules must be observed."
 
 
 sudoMsg :: Text
@@ -197,3 +200,6 @@ unlinkMsg t s = T.concat [ "You suddenly feel a slight tingle "
                          , "; you sense that your telepathic link with "
                          , s
                          , " has been severed." ]
+
+violationMsg :: Text
+violationMsg = "Violation of these rules is grounds for discipline including banishment from CurryMUD."

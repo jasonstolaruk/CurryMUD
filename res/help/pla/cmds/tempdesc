@@ -20,7 +20,7 @@ When no arguments are provided to the "tempdesc" command, your temporary charact
 Note that if it is set, both \qlookself\d and \qstats\d will display your temporary character description.
 
 \uRULES\n
-@r
+@r @v
 1) One's temporary character description is meant to be just that: an supplementary depiction of transitory, visible characteristics of your character's person. Keep your descriptions realistic and reasonable.3`
 2) Descriptions must be passive and written from an objective viewpoint. "he is sweating profusely" is acceptable, while "you are surprised at how sweaty he is" is not.3`
 3) Descriptions of where your character is or what your character is actively doing in your current room ("sitting at a table by herself") are better expressed via the "roomdesc" command.3`
