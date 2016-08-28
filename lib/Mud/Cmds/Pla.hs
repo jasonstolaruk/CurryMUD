@@ -1679,7 +1679,7 @@ mkHelpData ls ia = helpDirs |&| mapM getHelpDirectoryContents >=> \[ plaHelpCmdN
 
 
 parseHelpTxt :: Cols -> Text -> [Text]
-parseHelpTxt cols = map xformLeadingSpaceChars . map expandDividers . parseWrapHelper cols
+parseHelpTxt cols txt = [ xformLeadingSpaceChars . expandDividers $ t | t <- parseWrapHelper cols txt ]
   where
     expandDividers l | l == T.singleton dividerToken = T.replicate cols "-"
                      | otherwise                     = l
