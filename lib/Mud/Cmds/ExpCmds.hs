@@ -45,7 +45,6 @@ logPlaOut = L.logPlaOut "Mud.Cmds.ExpCmds"
 -- ==================================================
 
 
--- TODO: Vomitting and loss of stomach contents.
 expCmdSet :: S.Set ExpCmd
 expCmdSet = S.fromList
     [ ExpCmd "admire"       (HasTarget "You admire @."
@@ -75,6 +74,12 @@ expCmdSet = S.fromList
                                        "You avert your eyes from @."
                                        "% averts & eyes from you."
                                        "% averts & eyes from @.")
+                            Nothing
+    , ExpCmd "barf"         (Versatile "You barf loudly."
+                                       "% barfs loudly."
+                                       "You loudly barf all over @."
+                                       "% loudly barfs all over you."
+                                       "% loudly barfs all over @.")
                             Nothing
     , ExpCmd "bawl"         (NoTarget  "You bawl like a baby."
                                        "% bawls like a baby.")
@@ -435,6 +440,12 @@ expCmdSet = S.fromList
     , ExpCmd "hop"          (NoTarget  "You hop up and down excitedly."
                                        "% hops up and down excitedly.")
                             Nothing
+    , ExpCmd "horf"         (Versatile "You horf with reckless abandon."
+                                       "% horfs with reckless abandon."
+                                       "You horf all over @ with reckless abandon."
+                                       "% horfs all over you with reckless abandon."
+                                       "% horfs all over @ with reckless abandon.")
+                            Nothing
     , ExpCmd "howllaugh"    (Versatile "You howl with laughter."
                                        "% howls with laughter."
                                        "You howl with laughter at @."
@@ -648,6 +659,12 @@ expCmdSet = S.fromList
                                        "You prance around @."
                                        "% prances around you."
                                        "% prances around @.")
+                            Nothing
+    , ExpCmd "puke"         (Versatile "You puke violently."
+                                       "% pukes violently."
+                                       "You puke violently on @."
+                                       "% pukes violently on you."
+                                       "% pukes violently on @.")
                             Nothing
     , ExpCmd "purr"         (NoTarget  "You purr."
                                        "% purrs.")
@@ -932,6 +949,12 @@ expCmdSet = S.fromList
                                        "You are plainly unamused by @'s antics."
                                        "% is plainly unamused by your antics."
                                        "% is plainly unamused by @'s antics.")
+                            Nothing
+    , ExpCmd "vomit"        (Versatile "You vomit."
+                                       "% vomits."
+                                       "You vomit on @."
+                                       "% vomits on you."
+                                       "% vomits on @.")
                             Nothing
     , ExpCmd "watch"        (HasTarget "You watch @ with interest."
                                        "% watches you with interest."
