@@ -741,7 +741,7 @@ debugRotate p = withoutArgs debugRotate p
 
 debugRules :: ActionFun
 debugRules (NoArgs i mq cols) = do
-    pager i mq . concat . wrapLines cols . T.lines . parseTokens $ rulesMsg
+    pager i mq . map xformLeadingSpaceChars . concat . wrapLines cols . T.lines . parseTokens $ rulesMsg
     logPlaExec (prefixDebugCmd "rules") i
 debugRules p = withoutArgs debugRandom p
 
@@ -851,6 +851,7 @@ debugToken (NoArgs i mq cols) = do
                 , charTokenDelimiter  `T.cons` "k miscTokenDelimiter"
                 , charTokenDelimiter  `T.cons` "l selectorChar"
                 , charTokenDelimiter  `T.cons` "m amountChar"
+                , charTokenDelimiter  `T.cons` "n leadingSpaceChar"
                 , charTokenDelimiter  `T.cons` "o adverbOpenChar"
                 , charTokenDelimiter  `T.cons` "p expCmdChar"
                 , charTokenDelimiter  `T.cons` "q quoteChar"

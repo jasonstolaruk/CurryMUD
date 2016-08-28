@@ -180,46 +180,47 @@ rulesIntroMsg = "In order to preserve the integrity of the virtual world along w
 rulesMsg :: Text
 rulesMsg =
     "\\h RULES \\d\n\
+    \\n" <>
+    spcs <> "You must conduct yourself in accordance with the following rules. It is not the case that you are allowed to do whatever the virtual world lets you do: please understand this important point.\n" <>
+    spcs <> T.singleton miscTokenDelimiter <> "v\n\
     \\n\
-    \You must conduct yourself in accordance with the following rules. It is not the case that you are allowed to do whatever the virtual world lets you do: please understand this important point.\n\
-    \" <> T.singleton miscTokenDelimiter <> "v\n\
+    \\\uAGE\\d\n" <>
+    spcs <> "CurryMUD a complex game that requires serious, consistent role-play and adult sensibilities. For these reasons you must be at least 18 years old to play.\n\
     \\n\
-    \AGE:\n\
-    \CurryMUD a complex game that requires serious, consistent role-play and adult sensibilities. For these reasons you must be at least 18 years old to play.\n\
+    \\\uROLE-PLAY\\d\n" <>
+    spcs <> "CurryMUD is a Role-Play Intensive (RPI) MUD. You are required to devise a unique personality for your character and to stay In Character (IC) at all times. IC communication must always be appropriate for the fantasy context of the virtual world; references to the present day/reality are not allowed.\n" <>
+    spcs <> "There are a few exceptions to this rule. The \"question channel\" (for asking and answering newbie questions related to game play) is Out-Of-Character (OOC). Certain areas within the virtual world are also clearly designated as OOC: you are allowed to communicate with other players as a player (as yourself) within such areas.\n\
     \\n\
-    \ROLE-PLAY:\n\
-    \CurryMUD is a Role-Play Intensive (RPI) MUD. You are required to devise a unique personality for your character and to stay In Character (IC) at all times. IC communication must always be appropriate for the fantasy context of the virtual world; references to the present day/reality are not allowed.\n\
-    \There are a few exceptions to this rule. The \"question channel\" (for asking and answering newbie questions related to game play) is Out-Of-Character (OOC). Certain areas within the virtual world are also clearly designated as OOC: you are allowed to communicate with other players as a player (as yourself) within such areas.\n\
+    \\\uILLEGAL ROLE-PLAY\\d\n" <>
+    spcs <> "You are not allowed to role-play a character who is insane, sadistic, or sociopathic.\n\
     \\n\
-    \ILLEGAL ROLE-PLAY:\n\
-    \You are not allowed to role-play a character who is insane, sadistic, or sociopathic.\n\
+    \\\uRESPECT\\d\n" <>
+    spcs <> "You must conduct yourself in a manner that is empathetic towards your fellow players. Be respectful and sensible; don't be rude or condescending.\n\
     \\n\
-    \RESPECT:\n\
-    \You must conduct yourself in a manner that is empathetic towards your fellow players. Be respectful and sensible; don't be rude or condescending.\n\
+    \\\uHARASSMENT\\d\n" <>
+    spcs <> "Harassment and bullying will not be tolerated. The role-play of rape is absolutely illegal.\n\
     \\n\
-    \HARASSMENT:\n\
-    \Harassment and bullying will not be tolerated. The role-play of rape is absolutely illegal.\n\
+    \\\uSEXUAL ORIENTATION/IDENTITY\\d\n" <>
+    spcs <> "Players are free to role-play characters who are homosexual, bisexual, pansexual, gender nonconforming, etc. Intolerant attitudes are unacceptable.\n\
     \\n\
-    \SEXUAL ORIENTATION/IDENTITY:\n\
-    \Players are free to role-play characters who are homosexual, bisexual, pansexual, gender nonconforming, etc. Intolerant attitudes are unacceptable.\n\
+    \\\uPERMADEATH\\d\n" <>
+    spcs <> "This means that when a character dies, he/she is truly dead; a deceased character cannot return to the virtual world in any way, shape, or form. By playing CurryMUD, you consent to the fact that when your character dies, he/she is unrecoverable.\n\
     \\n\
-    \PERMADEATH:\n\
-    \This means that when a character dies, he/she is truly dead; a deceased character cannot return to the virtual world in any way, shape, or form. By playing CurryMUD, you consent to the fact that when your character dies, he/she is unrecoverable.\n\
-    \\n\
-    \PLAYER-VS-PLAYER:\n\
+    \\\uPLAYER-VS-PLAYER\\d\n\
     \TODO\n\
     \\n\
-    \MULTI-PLAYING:\n\
-    \\"Multi-playing\" is when a single player simultaneously logs in multiple times, as multiple characters. This is not allowed.\n\
-    \It is likewise illegal to transfer items and wealth between characters through indirect means (for example, dropping items in a certain location, logging in as a different character, and picking up those items).\n\
-    \You are discouraged from actively maintaining multiple characters at a time. It can be quite difficult to juggle the different scopes of knowledge - and to maintain the disparate levels of objectivity - inherent in multiple characters.\n\
-    \If you find yourself wanting to play a new character, consider formally retiring your current character via the \"retire\" command.\n\
+    \\\uMULTI-PLAYING\\d\n" <>
+    spcs <> "\"Multi-playing\" is when a single player simultaneously logs in multiple times, as multiple characters. This is not allowed.\n" <>
+    spcs <> "It is likewise illegal to transfer items and wealth between characters through indirect means (for example, dropping items in a certain location, logging in as a different character, and picking up those items).\n" <>
+    spcs <> "You are discouraged from actively maintaining multiple characters at a time. It can be quite difficult to juggle the different scopes of knowledge - and to maintain the disparate levels of objectivity - inherent in multiple characters. If you find yourself wanting to play a new character, consider formally retiring your current character via the \"retire\" command.\n\
     \\n\
-    \BUGS:\n\
-    \The abuse of bugs constitutes cheating and is not allowed. If you find a bug, you must promptly report it via the \"bug\" command, or inform an administrator directly via the \"admin\" command.\n\
+    \\\uBUGS\\d\n" <>
+    spcs <> "The abuse of bugs constitutes cheating and is not allowed. If you find a bug, you must promptly report it via the \"bug\" command, or inform an administrator directly via the \"admin\" command.\n\
     \\n\
-    \PRIVACY:\n\
-    \Please be aware that player activity is automatically logged by the system. Furthermore, administrators have the ability to actively monitor player activity with the express purpose of 1) ensuring that players are playing by the rules, and 2) tracking down bugs. Administrators promise to maintain player privacy as much as possible."
+    \\\uPRIVACY\\d\n" <>
+    spcs <> "Please be aware that player activity is automatically logged by the system. Furthermore, administrators have the ability to actively monitor player activity with the express purpose of 1) ensuring that players are playing by the rules, and 2) tracking down bugs. Administrators promise to maintain player privacy as much as possible."
+  where
+    spcs = T.replicate 2 . T.pack $ charTokenDelimiter : "n"
 
 
 sudoMsg :: Text
@@ -247,4 +248,4 @@ unlinkMsg t s = T.concat [ "You suddenly feel a slight tingle "
                          , " has been severed." ]
 
 violationMsg :: Text
-violationMsg = "Violation of these rules is grounds for discipline including banishment from CurryMUD."
+violationMsg = "Violation of these rules is grounds for discipline up to and including banishment from CurryMUD."

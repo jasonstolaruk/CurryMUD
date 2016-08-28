@@ -1,7 +1,7 @@
 @u
 
-OTHER RULES:
-The following commands have their own particular rules that govern their usage. For more information, type "help cmd", where "cmd" is the name of one of the following commands.
+\uOTHER RULES:\d
+#n#nThe following commands have their own particular rules that govern their usage. For more information, type "help cmd", where "cmd" is the name of one of the following commands.
 bonus, description, emote, question, roomdesc, tempdesc
 
 \uSEE ALSO\n

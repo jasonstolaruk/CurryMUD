@@ -16,21 +16,22 @@ debugCmdChar = '!'
 -- Denotative characters used in commands:
 
 
-adverbCloseChar, adverbOpenChar, allChar, amountChar, chanTargetChar, emoteChar, emoteNameChar, emoteTargetChar, expCmdChar, indexChar, quoteChar, sayToChar, selectorChar, slotChar :: Char
-adverbCloseChar = ']'
-adverbOpenChar  = '['
-allChar         = '\''
-amountChar      = '/'
-chanTargetChar  = '>'
-emoteChar       = ';'
-emoteNameChar   = '@'
-emoteTargetChar = '>'
-expCmdChar      = '='
-indexChar       = '.'
-quoteChar       = '`'
-sayToChar       = '>'
-selectorChar    = '-'
-slotChar        = ':'
+adverbCloseChar, adverbOpenChar, allChar, amountChar, chanTargetChar, emoteChar, emoteNameChar, emoteTargetChar, expCmdChar, indexChar, multiLineEndChar, quoteChar, sayToChar, selectorChar, slotChar :: Char
+adverbCloseChar  = ']'
+adverbOpenChar   = '['
+allChar          = '\''
+amountChar       = '/'
+chanTargetChar   = '>'
+emoteChar        = ';'
+emoteNameChar    = '@'
+emoteTargetChar  = '>'
+expCmdChar       = '='
+indexChar        = '.'
+multiLineEndChar = '.'
+quoteChar        = '`'
+sayToChar        = '>'
+selectorChar     = '-'
+slotChar         = ':'
 
 
 -- ==================================================
@@ -57,9 +58,10 @@ stdDesigDelimiter    = '\130'
 -- Characters concerning word wrapping:
 
 
-breakMarker, indentFiller :: Char
-breakMarker  = '\131'
-indentFiller = '\132'
+breakMarker, indentFiller, leadingSpaceChar :: Char
+breakMarker      = '\131'
+indentFiller     = '\132'
+leadingSpaceChar = '\133'
 
 
 -- ==================================================
@@ -79,16 +81,12 @@ styleTokenDelimiter = '\\'
 
 
 fromPersonMarker :: Char
-fromPersonMarker = '\133'
+fromPersonMarker = '\134'
 
 
 hookArgDelimiter :: Char
-hookArgDelimiter = '\134'
-
-
-multiLineEndChar :: Char
-multiLineEndChar = '.'
+hookArgDelimiter = '\135'
 
 
 plaIdDelimiter :: Char
-plaIdDelimiter = '\135'
+plaIdDelimiter = '\136'

@@ -59,6 +59,7 @@ expandCharCode (toLower -> code)           = T.singleton $ case code of
   'k' -> miscTokenDelimiter
   'l' -> selectorChar
   'm' -> amountChar
+  'n' -> leadingSpaceChar
   'o' -> adverbOpenChar
   'p' -> expCmdChar
   'q' -> quoteChar

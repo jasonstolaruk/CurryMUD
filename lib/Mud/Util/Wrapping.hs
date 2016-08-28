@@ -12,7 +12,8 @@ module Mud.Util.Wrapping ( adjustIndent
                          , wrapUnlines
                          , wrapUnlinesInit
                          , wrapUnlinesNl
-                         , xformLeading ) where
+                         , xformLeading
+                         , xformLeadingSpaceChars ) where
 
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Misc.ANSI
@@ -160,3 +161,10 @@ calcIndent :: Text -> Int
 calcIndent (T.break isSpace -> (T.length -> lenOfFirstWord, rest))
   | ()# rest  = 0
   | otherwise = lenOfFirstWord + noOfLeadingSpcs rest
+
+
+-----
+
+
+xformLeadingSpaceChars :: Text -> Text
+xformLeadingSpaceChars = xformLeading leadingSpaceChar ' '
