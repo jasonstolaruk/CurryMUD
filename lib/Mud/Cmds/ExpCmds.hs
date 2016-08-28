@@ -45,6 +45,7 @@ logPlaOut = L.logPlaOut "Mud.Cmds.ExpCmds"
 -- ==================================================
 
 
+-- TODO: Vomitting and loss of stomach contents.
 expCmdSet :: S.Set ExpCmd
 expCmdSet = S.fromList
     [ ExpCmd "admire"       (HasTarget "You admire @."

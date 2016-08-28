@@ -791,7 +791,8 @@ interpConfirmDescChange cn (NoArgs i mq cols) = case yesNoHelper cn of
       blankLine mq
       send mq . T.unlines . concat . wrapLines cols . T.lines $ descRules
       pause i mq . Just . descHelper i mq $ cols
-  _ -> neverMind i mq
+  Just False -> neverMind i mq
+  Nothing    -> promptRetryYesNo mq cols
   where
     descRules = T.concat [ rulesIntroMsg, " ", violationMsg, theNl, descRulesMsg, theNl, descRule5 ]
 interpConfirmDescChange _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNo plaMsgQueue plaCols
@@ -811,14 +812,15 @@ descHelper i mq cols = sequence_ [ multiWrapSend mq cols enterDescMsgs, setInter
 
 
 interpConfirmDesc :: Text -> Interp
-interpConfirmDesc desc cn (NoArgs' i mq) = case yesNoHelper cn of
+interpConfirmDesc desc cn (NoArgs i mq cols) = case yesNoHelper cn of
   Just True -> do
       ok mq
       tweak $ entTbl.ind i.entDesc .~ desc
       sendDfltPrompt mq i
       resetInterp i
       logPla "description" i . prd $ "changed description to " <> dblQuote desc
-  _ -> neverMind i mq
+  Just False -> neverMind i mq
+  Nothing    -> promptRetryYesNo mq cols
 interpConfirmDesc _ _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNo plaMsgQueue plaCols
 
 
@@ -3196,8 +3198,9 @@ securitySetHelper i mq cols q a = getSing i <$> getState >>= \s -> do
 
 interpConfirmSecurityChange :: Interp
 interpConfirmSecurityChange cn (NoArgs i mq cols) = case yesNoHelper cn of
-  Just True -> blankLine mq >> securityHelper i mq cols
-  _         -> neverMind i mq
+  Just True  -> blankLine mq >> securityHelper i mq cols
+  Just False -> neverMind i mq
+  Nothing    -> promptRetryYesNo mq cols
 interpConfirmSecurityChange _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNo plaMsgQueue plaCols
 
 

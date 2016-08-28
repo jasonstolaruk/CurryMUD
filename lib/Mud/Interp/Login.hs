@@ -228,7 +228,8 @@ interpConfirmAge ncb@(NewCharBundle _ s _) cn (NoArgs i mq cols) = case yesNoHel
       multiWrapSend1Nl mq cols . pwMsg . prd $ "Please choose a password for " <> s
       sendPrompt       mq "New password: "
       setInterp i . Just . interpNewPW $ ncb
-  _  -> blankLine mq >> wrapSend mq cols "You must be at least 18 to play CurryMUD." >> undefined -- TODO
+  Just False -> blankLine mq >> wrapSend mq cols "You must be at least 18 to play CurryMUD." >> writeMsg mq Dropped
+  Nothing    -> promptRetryYesNo mq cols
 interpConfirmAge _ _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNo plaMsgQueue plaCols
 
 
@@ -507,7 +508,8 @@ interpConfirmDesc ncb desc cn (NoArgs i mq cols) = case yesNoHelper cn of
       blankLine mq
       wrapSendPromptNl mq cols "If you are a new player, could you please tell us how you discovered CurryMUD?"
       setInterp i . Just . interpDiscover $ ncb
-  _  -> blankLine mq >> promptRetryDesc ncb i mq cols
+  Just False -> blankLine mq >> promptRetryDesc ncb i mq cols
+  Nothing    -> promptRetryYesNo mq cols
 interpConfirmDesc _ _ _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNo plaMsgQueue plaCols
 
 
