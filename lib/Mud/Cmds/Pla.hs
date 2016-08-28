@@ -64,7 +64,6 @@ import Mud.Util.Operators
 import Mud.Util.Padding
 import Mud.Util.Quoting
 import Mud.Util.Text
-import Mud.Util.Token
 import Mud.Util.Wrapping
 import qualified Mud.Misc.Logging as L (logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut)
 import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
@@ -1680,7 +1679,7 @@ mkHelpData ls ia = helpDirs |&| mapM getHelpDirectoryContents >=> \[ plaHelpCmdN
 
 
 parseHelpTxt :: Cols -> Text -> [Text]
-parseHelpTxt cols = map xformLeadingSpaceChars . concat . wrapLines cols . map expandDividers . T.lines . parseTokens
+parseHelpTxt cols = map xformLeadingSpaceChars . map expandDividers . parseWrapHelper cols
   where
     expandDividers l | l == T.singleton dividerToken = T.replicate cols "-"
                      | otherwise                     = l

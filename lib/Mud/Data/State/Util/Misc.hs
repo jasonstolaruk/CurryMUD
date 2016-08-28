@@ -103,7 +103,7 @@ patternMatchFail = U.patternMatchFail "Mud.Data.State.Util.Misc"
 -- ==================================================
 
 
-addToInv :: MudState -> Inv -> Inv -> Inv -- TODO: Use this more?
+addToInv :: MudState -> Inv -> Inv -> Inv
 addToInv ms addThese toThese = sortInv ms $ toThese ++ addThese
 
 
