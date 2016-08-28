@@ -64,8 +64,6 @@ A virtual world with PD is more exciting/thrilling.
 "If fleeing is not unlikely to succeed and the player base is too small to support gang warfare, an unmoderated world can thrive, and with the vibrancy that's hard to match elsewhere." p.418
 
 "Virtual worlds are about identity; if you can't lose something, you don't value it; therefore, you can never value your identity in a non-PD world as much as you can in a PD world." p.433
-"The most compelling reason for having PD is that it makes a virtual world meaningful in its own terms." p.432
-"Meaningfulness is the fuel that powers the engine of identity development." p.433
 
 Without PD, there really is no such thing as acts of heroism and courage. The existence of PD allows players to truly put their characters on the line, as well as their nascent identities.
 "Acts are only heroic when there is significant, perceived chance of real loss and no easier alternative." p.432
@@ -86,12 +84,12 @@ The actual risk of PD should be generally lower than players estimated to be. It
 
 When a PC dies at the hands of a mobile, the mobile should loot the corpse of all valuable items. p.429
 
-Consider allowing players to appeal to have their character resurrected when they were unable to flee due to lag, bugs, or they were unjustly killed by another PC.
-Would it be possible for the server to accurately track client latency during combat?
-
 "If you let PKing become your virtual world's elder game, prepare for the worst." p.425
 
 Implementing PD means accepting the fact that many potential players will stay away, and others will leave when their character dies. PD has a serious image problem.
+
+Consider allowing players to appeal to have their character resurrected when they were unable to flee due to lag, bugs, or they were unjustly killed by another PC.
+Would it be possible for the server to accurately track client latency during combat?
 
 ==========
 

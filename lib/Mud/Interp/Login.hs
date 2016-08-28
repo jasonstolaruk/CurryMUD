@@ -117,7 +117,7 @@ interpName times (T.toLower -> cn@(capitalize -> cn')) params@(NoArgs i mq cols)
                                               , dblQuote . prd $ cn'
                                               , spaced "OK?"
                                               , mkYesNoChoiceTxt ]
-          setInterp i . Just . interpConfirmName times $ cn'
+          setInterp i . Just . interpConfirmNewChar times $ cn'
 interpName _ _ ActionParams { .. } = promptRetryName plaMsgQueue plaCols sorryInterpNameExcessArgs
 
 
@@ -191,19 +191,17 @@ checkRndmNames mq cols = checkNameHelper (Just rndmNamesFile) "checkRndmNames" .
 -- ==================================================
 
 
-interpConfirmName :: Int -> Sing -> Interp
-interpConfirmName times s cn params@(NoArgs i mq cols) = case yesNoHelper cn of
+interpConfirmNewChar :: Int -> Sing -> Interp
+interpConfirmNewChar times s cn params@(NoArgs i mq cols) = case yesNoHelper cn of
   Just True  -> setSingIfNotTaken times s params >>= maybeVoid helper
   Just False -> promptRetryName  mq cols "" >> setInterp i (Just . interpName $ times)
   Nothing    -> promptRetryYesNo mq cols
   where
     helper oldSing = do
-        send             mq telnetHideInput
-        blankLine        mq
-        multiWrapSend1Nl mq cols . pwMsg . prd $ "Please choose a password for " <> s
-        sendPrompt       mq "New password: "
-        setInterp i . Just . interpNewPW . NewCharBundle oldSing s $ ""
-interpConfirmName _ _ _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNo plaMsgQueue plaCols
+      blankLine  mq
+      sendPrompt mq $ "Are you at least 18 years of age? " <> mkYesNoChoiceTxt
+      setInterp i . Just . interpConfirmAge . NewCharBundle oldSing s $ ""
+interpConfirmNewChar _ _ _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNo plaMsgQueue plaCols
 
 
 setSingIfNotTaken :: Int -> Sing -> ActionParams -> MudStack (Maybe Sing)
@@ -217,6 +215,21 @@ setSingIfNotTaken times s (NoArgs i mq cols) = getSing i <$> getState >>= \oldSi
     helper ms | ()!# (filter ((== s) . (`getSing` ms) . fst) . views plaTbl IM.toList $ ms) = (ms, False)
               | otherwise = (ms & entTbl.ind i.sing .~ s, True)
 setSingIfNotTaken _ _ p = patternMatchFail "setSingIfNotTaken" . showText $ p
+
+
+-- ==================================================
+
+
+interpConfirmAge :: NewCharBundle -> Interp
+interpConfirmAge ncb@(NewCharBundle _ s _) cn (NoArgs i mq cols) = case yesNoHelper cn of
+  Just True -> do
+      send             mq telnetHideInput
+      blankLine        mq
+      multiWrapSend1Nl mq cols . pwMsg . prd $ "Please choose a password for " <> s
+      sendPrompt       mq "New password: "
+      setInterp i . Just . interpNewPW $ ncb
+  _  -> blankLine mq >> wrapSend mq cols "You must be at least 18 to play CurryMUD." >> undefined -- TODO
+interpConfirmAge _ _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNo plaMsgQueue plaCols
 
 
 -- ==================================================
