@@ -36,6 +36,7 @@ import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Operators
 import Mud.Util.Quoting
 import Mud.Util.Text
+import Mud.Util.Token
 import Mud.Util.Wrapping
 import qualified Mud.Misc.Logging as L (logNotice, logPla)
 import qualified Mud.Util.Misc as U (patternMatchFail)
@@ -221,16 +222,49 @@ setSingIfNotTaken _ _ p = patternMatchFail "setSingIfNotTaken" . showText $ p
 
 
 interpConfirmAge :: NewCharBundle -> Interp
-interpConfirmAge ncb@(NewCharBundle _ s _) cn (NoArgs i mq cols) = case yesNoHelper cn of
+interpConfirmAge ncb cn (NoArgs i mq cols) = case yesNoHelper cn of
+  Just True -> do
+    sendPrompt mq $ "Have you read the rules? " <> mkYesNoChoiceTxt
+    setInterp i . Just . interpConfirmReadRules $ ncb
+  Just False -> wrapSend mq cols "You must be at least 18 years old to play CurryMUD." >> writeMsg mq Dropped
+  Nothing    -> promptRetryYesNo mq cols
+interpConfirmAge _ _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNo plaMsgQueue plaCols
+
+
+-- ==================================================
+
+
+interpConfirmReadRules :: NewCharBundle -> Interp
+interpConfirmReadRules ncb cn (NoArgs i mq cols) = case yesNoHelper cn of
+  Just True  -> next
+  Just False -> do
+      let txt = T.unlines . map xformLeadingSpaceChars . concat . wrapLines cols . T.lines . parseTokens $ rulesMsg
+      send mq . nlPrefix . nl $ txt
+      next
+  Nothing -> promptRetryYesNo mq cols
+  where
+    next = do
+        sendPrompt mq $ "Do you agree to follow the rules? " <> mkYesNoChoiceTxt
+        setInterp i . Just . interpConfirmFollowRules $ ncb
+interpConfirmReadRules _ _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNo plaMsgQueue plaCols
+
+
+-- ==================================================
+
+
+interpConfirmFollowRules :: NewCharBundle -> Interp
+interpConfirmFollowRules ncb@(NewCharBundle _ s _) cn (NoArgs i mq cols) = case yesNoHelper cn of
   Just True -> do
       send             mq telnetHideInput
       blankLine        mq
       multiWrapSend1Nl mq cols . pwMsg . prd $ "Please choose a password for " <> s
       sendPrompt       mq "New password: "
       setInterp i . Just . interpNewPW $ ncb
-  Just False -> blankLine mq >> wrapSend mq cols "You must be at least 18 to play CurryMUD." >> writeMsg mq Dropped
-  Nothing    -> promptRetryYesNo mq cols
-interpConfirmAge _ _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNo plaMsgQueue plaCols
+  Just False -> do
+      wrapSend mq cols "You can't play CurryMUD if you don't agree to follow the rules."
+      writeMsg mq Dropped
+  Nothing -> promptRetryYesNo mq cols
+interpConfirmFollowRules _ _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNo plaMsgQueue plaCols
 
 
 -- ==================================================
