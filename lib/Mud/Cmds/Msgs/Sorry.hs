@@ -282,8 +282,8 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
 import Mud.Cmds.Util.CmdPrefixes
 import Mud.Data.Misc
 import Mud.Data.State.MudData
-import Mud.Data.State.Util.Misc
 import Mud.Misc.ANSI
+import Mud.Misc.Misc
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
 import Mud.Util.Misc hiding (patternMatchFail)

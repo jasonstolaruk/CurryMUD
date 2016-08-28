@@ -20,6 +20,7 @@ import Mud.Cmds.Msgs.Dude
 import Mud.Cmds.Msgs.Hint
 import Mud.Cmds.Msgs.Misc
 import Mud.Cmds.Msgs.Sorry
+import Mud.Misc.Misc
 import Mud.Interp.MultiLine
 import Mud.Cmds.Util.Abbrev
 import Mud.Cmds.Util.EmoteExp.EmoteExp

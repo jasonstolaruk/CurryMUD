@@ -3,7 +3,6 @@
 -- This module contains state-related functions used by multiple modules.
 
 module Mud.Data.State.Util.Misc ( addToInv
-                                , BothGramNos
                                 , dropPrefixes
                                 , dropPrefixesForHooks
                                 , findInvContaining
@@ -35,36 +34,29 @@ module Mud.Data.State.Util.Misc ( addToInv
                                 , lookupHooks
                                 , mkAdminIdSingList
                                 , mkAdminPlaIdSingList
-                                , mkCapsFun
-                                , mkCoinsMsgs
                                 , mkMobRmDesc
                                 , mkNameCountBothList
                                 , mkPlaIdSingList
-                                , mkPlurFromBoth
                                 , mkSerializedNonStdDesig
                                 , mkStdDesig
                                 , mkUnknownPCEntName
                                 , modifyState
                                 , onEnv
                                 , pcNpc
-                                , pluralize
                                 , procHooks
                                 , procQuoteChars
-                                , raceToLang
                                 , removeAdHoc
-                                , renderLiqNoun
-                                , renderNoun
                                 , runEffectFun
                                 , setInterp
                                 , sortInv
                                 , tweak
-                                , tweaks
-                                , withLock ) where
+                                , tweaks ) where
 
 import Mud.Data.Misc
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Hierarchy
+import Mud.Misc.Misc
 import Mud.TheWorld.Zones.AdminZoneIds (iWelcome)
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
@@ -76,17 +68,14 @@ import Mud.Util.Text
 import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 
 import Control.Arrow ((***))
-import Control.Concurrent.STM (atomically)
-import Control.Concurrent.STM.TMVar (putTMVar, takeTMVar)
-import Control.Exception.Lifted (bracket)
-import Control.Lens (_1, _2, at, both, over, to, view, views)
+import Control.Lens (_1, _2, at, both, over, view, views)
 import Control.Lens.Operators ((%~), (&), (.~), (^.))
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (ask)
 import Data.IntMap.Lazy ((!))
 import Data.IORef (atomicModifyIORef', readIORef)
 import Data.List ((\\), delete, foldl', nub, sortBy)
-import Data.Maybe (catMaybes, fromJust, fromMaybe)
+import Data.Maybe (fromJust, fromMaybe)
 import Data.Monoid (Sum(..), (<>))
 import Data.Text (Text)
 import GHC.Exts (sortWith)
@@ -114,7 +103,7 @@ patternMatchFail = U.patternMatchFail "Mud.Data.State.Util.Misc"
 -- ==================================================
 
 
-addToInv :: MudState -> Inv -> Inv -> Inv
+addToInv :: MudState -> Inv -> Inv -> Inv -- TODO: Use this more?
 addToInv ms addThese toThese = sortInv ms $ toThese ++ addThese
 
 
@@ -146,9 +135,6 @@ getAdminIdsHelper f = IM.keys . IM.filter (uncurry (&&) . (isAdmin *** f) . dup)
 
 
 -----
-
-
-type BothGramNos = (Sing, Plur)
 
 
 getBothGramNos :: Id -> MudState -> BothGramNos
@@ -365,17 +351,6 @@ mkAdminPlaIdSingList = mkIdSingListHelper (const True)
 -----
 
 
-mkCoinsMsgs :: (Int -> Text -> Text) -> Coins -> [Text]
-mkCoinsMsgs f (Coins (cop, sil, gol)) = catMaybes [ c, s, g ]
-  where
-    c = Sum cop |!| Just . f cop $ "copper piece"
-    s = Sum sil |!| Just . f sil $ "silver piece"
-    g = Sum gol |!| Just . f gol $ "gold piece"
-
-
------
-
-
 mkMobRmDesc :: Id -> MudState -> Text
 mkMobRmDesc i ms | hasMobId i ms = case getMobRmDesc i ms of Nothing   -> ""
                                                              Just desc -> parensQuote desc
@@ -402,14 +377,6 @@ mkPlaIdSingList = mkIdSingListHelper not
 -----
 
 
-mkPlurFromBoth :: BothGramNos -> Plur
-mkPlurFromBoth (s, "") = s <> "s"
-mkPlurFromBoth (_, p ) = p
-
-
------
-
-
 mkSerializedNonStdDesig :: Id -> MudState -> Sing -> AOrThe -> ShouldCap -> Text
 mkSerializedNonStdDesig i ms s aot (mkCapsFun -> f) =
     serialize NonStdDesig { dEntSing = s, dDesc = helper }
@@ -417,11 +384,6 @@ mkSerializedNonStdDesig i ms s aot (mkCapsFun -> f) =
     helper | isPC i ms = g $ let (pp *** pp -> (sexy, r)) = getSexRace i ms in sexy <> " " <> r
            | otherwise = onFalse (isCapital s) g s
     g = f . (pp aot <>) . (" " <>)
-
-
-mkCapsFun :: ShouldCap -> Text -> Text
-mkCapsFun = \case DoCap    -> capitalize
-                  Don'tCap -> id
 
 
 -----
@@ -450,13 +412,6 @@ pcNpc i ms a b = case getType i ms of
   PCType  -> a
   NpcType -> b
   t       -> patternMatchFail "pcNpc" . showText $ t
-
-
------
-
-
-pluralize :: BothGramNos -> Int -> Text
-pluralize (s, p) x = x == 1 ? s :? p
 
 
 -----
@@ -529,20 +484,6 @@ procQuoteChars as@(T.unwords -> txt) | not $ q `T.isInfixOf` txt = Just as
 -----
 
 
-raceToLang :: Race -> Lang
-raceToLang Dwarf     = DwarfLang
-raceToLang Elf       = ElfLang
-raceToLang Felinoid  = FelinoidLang
-raceToLang Hobbit    = HobbitLang
-raceToLang Human     = HumanLang
-raceToLang Lagomorph = LagomorphLang
-raceToLang Nymph     = NymphLang
-raceToLang Vulpenoid = VulpenoidLang
-
-
------
-
-
 removeAdHoc :: Id -> MudState -> MudState
 removeAdHoc i ms = ms & activeEffectsTbl.at  i        .~ Nothing
                       & coinsTbl        .at  i        .~ Nothing
@@ -558,18 +499,6 @@ removeAdHoc i ms = ms & activeEffectsTbl.at  i        .~ Nothing
                       & rndmNamesMstrTbl.at  i        .~ Nothing
                       & teleLinkMstrTbl .at  i        .~ Nothing
                       & typeTbl         .at  i        .~ Nothing
-
-
------
-
-
-renderNoun :: (Text -> Text) -> Noun -> Text
-renderNoun _ (Don'tArticle t) = t
-renderNoun f (DoArticle    t) = f t
-
-
-renderLiqNoun :: Liq -> (Text -> Text) -> Text
-renderLiqNoun l f = l^.liqNoun.to (renderNoun f)
 
 
 -----
@@ -612,12 +541,3 @@ tweak f = modifyState $ (, ()) . f
 
 tweaks :: [MudState -> MudState] -> MudStack ()
 tweaks fs = tweak $ \ms -> foldl' (&) ms fs
-
-
------
-
-
-withLock :: Lock -> IO () -> IO ()
-withLock l f = bracket (atomically . takeTMVar $ l)
-                       (\Done -> atomically . putTMVar l $ Done)
-                       (\Done -> f)

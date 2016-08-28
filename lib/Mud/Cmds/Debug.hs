@@ -26,6 +26,7 @@ import Mud.Interp.Pause
 import Mud.Misc.ANSI
 import Mud.Misc.EffectFuns
 import Mud.Misc.Logging (writeLog)
+import Mud.Misc.Misc
 import Mud.Misc.Persist
 import Mud.TheWorld.Zones.AdminZoneIds (iLoggedOut, iPidge)
 import Mud.Threads.Effect
@@ -741,7 +742,7 @@ debugRotate p = withoutArgs debugRotate p
 
 debugRules :: ActionFun
 debugRules (NoArgs i mq cols) = do
-    pager i mq . map xformLeadingSpaceChars . concat . wrapLines cols . T.lines . parseTokens $ rulesMsg
+    pager i mq . procRulesMsg $ cols
     logPlaExec (prefixDebugCmd "rules") i
 debugRules p = withoutArgs debugRandom p
 

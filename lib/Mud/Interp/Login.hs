@@ -22,6 +22,7 @@ import Mud.Interp.Pause
 import Mud.Misc.ANSI
 import Mud.Misc.Database
 import Mud.Misc.Logging hiding (logNotice, logPla)
+import Mud.Misc.Misc
 import Mud.TheWorld.Zones.AdminZoneIds (iCentral, iLoggedOut, iWelcome)
 import Mud.Threads.Digester
 import Mud.Threads.Effect
@@ -36,7 +37,6 @@ import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Operators
 import Mud.Util.Quoting
 import Mud.Util.Text
-import Mud.Util.Token
 import Mud.Util.Wrapping
 import qualified Mud.Misc.Logging as L (logNotice, logPla)
 import qualified Mud.Util.Misc as U (patternMatchFail)
@@ -238,13 +238,12 @@ interpConfirmReadRules :: NewCharBundle -> Interp
 interpConfirmReadRules ncb cn (NoArgs i mq cols) = case yesNoHelper cn of
   Just True  -> next
   Just False -> do
-      let txt = T.unlines . map xformLeadingSpaceChars . concat . wrapLines cols . T.lines . parseTokens $ rulesMsg
-      send mq . nlPrefix . nl $ txt
+      send mq . nlPrefix . nl . T.unlines . procRulesMsg $ cols
       next
   Nothing -> promptRetryYesNo mq cols
   where
     next = do
-        sendPrompt mq $ "Do you agree to follow the rules? " <> mkYesNoChoiceTxt
+        sendPrompt mq $ "Do you understand and agree to follow the rules? " <> mkYesNoChoiceTxt
         setInterp i . Just . interpConfirmFollowRules $ ncb
 interpConfirmReadRules _ _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNo plaMsgQueue plaCols
 

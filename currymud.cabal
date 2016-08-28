@@ -80,6 +80,7 @@ library
                        Mud.Misc.FeelingFuns
                        Mud.Misc.LocPref
                        Mud.Misc.Logging
+                       Mud.Misc.Misc
                        Mud.Misc.NameResolution
                        Mud.Misc.Persist
                        Mud.TheWorld.FoodIds
