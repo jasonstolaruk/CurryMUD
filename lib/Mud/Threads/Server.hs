@@ -92,7 +92,7 @@ threadServer h i mq tq = sequence_ [ setThreadType . Server $ i, loop `catch` th
 
 
 handleBlankLine :: Handle -> MudStack ()
-handleBlankLine = liftIO $ T.hPutStr h telnetGoAhead >> hFlush h
+handleBlankLine h = liftIO $ T.hPutStr h telnetGoAhead >> hFlush h
 
 
 handleFromClient :: Id -> MsgQueue -> TimerQueue -> Bool -> Text -> MudStack ()
