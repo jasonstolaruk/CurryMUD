@@ -804,10 +804,10 @@ descHelper i mq cols = sequence_ [ multiWrapSend mq cols enterDescMsgs, setInter
     f desc = case spaces . dropBlanks . map T.strip $ desc of
       ""    -> neverMind i mq
       desc' -> do
-        blankLine      mq
-        wrapSend1Nl    mq cols "You entered:"
-        wrapSend       mq cols desc'
-        wrapSendPrompt mq cols $ "Keep this description? " <> mkYesNoChoiceTxt
+        blankLine        mq
+        wrapSend1Nl      mq cols "You entered:"
+        wrapSend         mq cols desc'
+        wrapSendPromptNl mq cols $ "Keep this description? " <> mkYesNoChoiceTxt
         setInterp i . Just . interpConfirmDesc $ desc'
 
 
@@ -3153,7 +3153,7 @@ securityQs = [ "Please choose your security question from the following options:
 
 
 promptSecurity :: MsgQueue -> MudStack ()
-promptSecurity = flip sendPrompt "Which will you choose? [1-5] "
+promptSecurity = flip sendPromptNl "Which will you choose? [1-5]"
 
 
 interpSecurityNum :: Interp
@@ -3170,7 +3170,7 @@ interpSecurityNum _ ActionParams { .. } = retrySecurityNum plaMsgQueue plaCols
 
 
 promptAnswer :: MsgQueue -> MudStack ()
-promptAnswer = flip sendPrompt "Answer: "
+promptAnswer = flip sendPromptNl "Answer:"
 
 
 retrySecurityNum :: MsgQueue -> Cols -> MudStack ()
@@ -3207,7 +3207,7 @@ interpConfirmSecurityChange _ ActionParams { plaMsgQueue, plaCols } = promptRetr
 securityCreateQHelper :: Id -> MsgQueue -> Cols -> MudStack ()
 securityCreateQHelper i mq cols = do
     send mq . nlPrefix . nl . T.unlines $ info
-    sendPrompt mq "Enter your question: "
+    sendPromptNl mq "Enter your question:"
     setInterp i . Just $ interpSecurityCreateQ
   where
     info = "OK. Ideally, your security Q&A should be:" : concatMap (wrapIndent 2 cols) rest
