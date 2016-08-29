@@ -27,6 +27,7 @@ import Control.Arrow (first)
 import Control.Lens ((.~), (?~))
 import Data.List ((\\), delete)
 import Data.Maybe (fromMaybe)
+import Data.Monoid ((<>))
 import Data.Text (Text)
 import qualified Data.Set as S (Set, filter, foldr, fromList, map, toList)
 import qualified Data.Text as T
@@ -1129,8 +1130,9 @@ mkExpAction name = expCmd . head . S.toList . S.filter helper $ expCmdSet
 
 
 vomit :: ExpCmdFun
-vomit i mq cols ecn (toSelf, bs, desc, logMsg) = do -- TODO
-    wrapSend mq cols toSelf
-    bcastIfNotIncog i bs
-    mobRmDescHelper i desc
-    logPlaOut ecn i . pure $ logMsg
+vomit i mq cols ecn (toSelf, bs, desc, logMsg) = getState >>= \ms -> case getStomach i ms of
+  [] -> let txt = "You dry heave."
+            d   = mkStdDesig i ms DoCap
+            bs' = pure (nlnl $ serialize d <> " dry heaves.", i `delete` desigIds d)
+        in expCmdHelper i mq cols ecn (txt, bs', Nothing, txt)
+  _ -> expCmdHelper i mq cols ecn (toSelf, bs, desc, logMsg) -- TODO
