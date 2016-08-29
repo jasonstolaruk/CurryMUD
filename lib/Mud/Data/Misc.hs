@@ -20,6 +20,7 @@ module Mud.Data.Misc ( Action(..)
                      , EmptyNoneSome(..)
                      , EquipInvLookCmd(..)
                      , ExpCmd(..)
+                     , ExpCmdFun
                      , ExpCmdName
                      , ExpCmdType(..)
                      , fromRol
@@ -598,7 +599,21 @@ data ExpCmdType = NoTarget  ToSelf ToOthers
                 | Versatile ToSelf ToOthers ToSelfWithTarget ToTarget ToOthersWithTarget deriving (Eq, Ord, Show)
 
 
-data ExpCmd = ExpCmd ExpCmdName ExpCmdType MobRmDesc deriving (Eq, Ord)
+type ExpCmdFun = Id -> MsgQueue -> Cols -> ExpCmdName -> (Text, [Broadcast], MobRmDesc, Text) -> MudStack ()
+
+
+data ExpCmd = ExpCmd { expCmdName :: ExpCmdName
+                     , expCmdType :: ExpCmdType
+                     , expCmdFun  :: Maybe ExpCmdFun
+                     , expDesc    :: MobRmDesc }
+
+
+instance Eq ExpCmd where
+  (==) = (==) `on` expCmdName
+
+
+instance Ord ExpCmd where
+  compare = compare `on` expCmdName
 
 
 -----

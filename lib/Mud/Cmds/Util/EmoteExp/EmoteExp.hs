@@ -134,7 +134,7 @@ expCmdify :: Id -> MudState -> ChanContext -> [(Id, Text, Text)] -> Text -> Eith
 expCmdify i ms cc triples msg@(T.words -> ws@(headTail . head -> (c, rest)))
   | isHeDon't expCmdChar msg = Left sorryWtf
   | c == expCmdChar          = fmap format . procExpCmd i ms cc triples . parseOutDenotative ws $ rest
-  | otherwise = Right (pure (msg, i : select _1 triples), msg)
+  | otherwise                = Right (pure (msg, i : select _1 triples), msg)
   where
     format xs = xs & _1 %~ map (_1 %~ angleBracketQuote)
                    & _2 %~ angleBracketQuote
@@ -146,8 +146,8 @@ procExpCmd i ms cc triples (map T.toLower . unmsg -> [cn, target]) =
     findFullNameForAbbrev cn expCmdNames |&| maybe notFound found
   where
     found match =
-        let ExpCmd _ ct _ = getExpCmdByName match
-            tunedIds      = select _1 triples
+        let ExpCmd _ ct _ _ = getExpCmdByName match
+            tunedIds        = select _1 triples
         in case ct of
           NoTarget toSelf toOthers -> if ()# target
             then Right ( (format Nothing toOthers, tunedIds) : mkBcast i toSelf
@@ -291,7 +291,7 @@ adminChanProcExpCmd i ms tunedIds tunedSings (map T.toLower . unmsg -> [cn, targ
     findFullNameForAbbrev cn expCmdNames |&| maybe notFound found
   where
     found match =
-        let ExpCmd _ ct _ = getExpCmdByName match
+        let ExpCmd _ ct _ _ = getExpCmdByName match
         in case ct of
           NoTarget toSelf toOthers -> if ()# target
             then Right ( (format Nothing toOthers, i `delete` tunedIds) : mkBcast i toSelf

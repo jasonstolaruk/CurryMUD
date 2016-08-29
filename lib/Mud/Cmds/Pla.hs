@@ -1184,8 +1184,8 @@ mkExpCmdListTxt i ms =
                                                       , let matches = findMatches cn
                                                       , length matches == 1 ]
   where
-    findMatches cn = S.toList . S.filter (\(ExpCmd ecn _ _) -> ecn == cn) $ expCmdSet
-    mkExpCmdTxt (styled, ExpCmd ecn ect mrd) = dropEmpties $ case ect of
+    findMatches cn = S.toList . S.filter (\(ExpCmd ecn _ _ _) -> ecn == cn) $ expCmdSet
+    mkExpCmdTxt (styled, ExpCmd ecn ect _ mrd) = dropEmpties $ case ect of
       (NoTarget  toSelf _  ) -> [ paddedName <> mkInitialTxt  ecn <> toSelf
                                 , mobRmDescHelper ]
       (HasTarget toSelf _ _) -> [ paddedName <> mkInitialTxt (ecn <> " hanako") <> T.replace "@" "Hanako" toSelf

@@ -84,7 +84,7 @@ procExpCmdTwoWay _ _  _        _          (_:_:_:_)                             
 procExpCmdTwoWay i ms targetId targetSing (map T.toLower . unmsg -> [cn, target]) =
     findFullNameForAbbrev cn expCmdNames |&| maybe notFound found
   where
-    found match = let ExpCmd _ ct _ = getExpCmdByName match in map (_1 %~ angleBracketQuote) <$> case ct of
+    found match = let ExpCmd _ ct _ _ = getExpCmdByName match in map (_1 %~ angleBracketQuote) <$> case ct of
       NoTarget toSelf toOthers -> if ()# target
         then Right [ (toSelf,                  pure i       )
                    , (format Nothing toOthers, pure targetId) ]
