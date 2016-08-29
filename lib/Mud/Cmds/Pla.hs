@@ -792,10 +792,10 @@ interpConfirmDescChange cn (NoArgs i mq cols) = case yesNoHelper cn of
       send mq . T.unlines . concat . wrapLines cols . T.lines $ descRules
       pause i mq . Just . descHelper i mq $ cols
   Just False -> neverMind i mq
-  Nothing    -> promptRetryYesNo mq cols
+  Nothing    -> promptRetryYesNoNl mq cols
   where
     descRules = T.concat [ rulesIntroMsg, " ", violationMsg, theNl, descRulesMsg, theNl, descRule5 ]
-interpConfirmDescChange _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNo plaMsgQueue plaCols
+interpConfirmDescChange _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNoNl plaMsgQueue plaCols
 
 
 descHelper :: Id -> MsgQueue -> Cols -> MudStack ()
@@ -820,8 +820,8 @@ interpConfirmDesc desc cn (NoArgs i mq cols) = case yesNoHelper cn of
       resetInterp i
       logPla "description" i . prd $ "changed description to " <> dblQuote desc
   Just False -> neverMind i mq
-  Nothing    -> promptRetryYesNo mq cols
-interpConfirmDesc _ _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNo plaMsgQueue plaCols
+  Nothing    -> promptRetryYesNoNl mq cols
+interpConfirmDesc _ _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNoNl plaMsgQueue plaCols
 
 
 -----
@@ -3200,8 +3200,8 @@ interpConfirmSecurityChange :: Interp
 interpConfirmSecurityChange cn (NoArgs i mq cols) = case yesNoHelper cn of
   Just True  -> blankLine mq >> securityHelper i mq cols
   Just False -> neverMind i mq
-  Nothing    -> promptRetryYesNo mq cols
-interpConfirmSecurityChange _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNo plaMsgQueue plaCols
+  Nothing    -> promptRetryYesNoNl mq cols
+interpConfirmSecurityChange _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNoNl plaMsgQueue plaCols
 
 
 securityCreateQHelper :: Id -> MsgQueue -> Cols -> MudStack ()

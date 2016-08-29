@@ -328,7 +328,7 @@ sendCmdNotFound mq = send mq . nlnl $ sorryCmdNotFound
 
 
 sendDfltPrompt :: MsgQueue -> Id -> MudStack ()
-sendDfltPrompt mq i = sendPrompt mq . mkDfltPrompt i =<< getState
+sendDfltPrompt mq i = sendPromptNl mq . mkDfltPrompt i =<< getState
 
 
 mkDfltPrompt :: Id -> MudState -> Text

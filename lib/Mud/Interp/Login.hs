@@ -226,7 +226,7 @@ interpConfirmAge ncb cn (NoArgs i mq cols) = case yesNoHelper cn of
   Just True -> do
     sendPrompt mq $ "Have you read the rules? " <> mkYesNoChoiceTxt
     setInterp i . Just . interpConfirmReadRules $ ncb
-  Just False -> wrapSend mq cols "You must be at least 18 years old to play CurryMUD." >> writeMsg mq Dropped
+  Just False -> wrapSend         mq cols "You must be at least 18 years old to play CurryMUD." >> writeMsg mq Dropped
   Nothing    -> promptRetryYesNo mq cols
 interpConfirmAge _ _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNo plaMsgQueue plaCols
 
