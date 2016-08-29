@@ -162,8 +162,7 @@ randomRace = randomIO
 
 
 initPlaFlags :: Int
-initPlaFlags = foldl setBit zeroBits . map fromEnum $ [ IsTunedQuestion
-                                                      , IsShowingHp
+initPlaFlags = foldl setBit zeroBits . map fromEnum $ [ IsShowingHp
                                                       , IsShowingMp
                                                       , IsShowingPp
                                                       , IsShowingFp ]

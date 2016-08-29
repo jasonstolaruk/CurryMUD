@@ -106,7 +106,7 @@ interpName times (T.toLower -> cn@(capitalize -> cn')) params@(NoArgs i mq cols)
                   unit
                   confirmName
         [(targetId, targetPla)] -> do
-            sendPrompt mq $ telnetHideInput <> "Password: "
+            sendPrompt mq $ telnetHideInput <> "Password: " -- TODO: Vertical spacing?
             setInterp i . Just . interpPW times cn' targetId $ targetPla
         xs -> patternMatchFail "interpName" . showText . map fst $ xs
   where
@@ -577,6 +577,7 @@ finishNewChar ncb@(NewCharBundle _ s pass) params@(NoArgs'' i) = do
                             & invTbl    .ind iWelcome   %~ (i `delete`)
                             & mobTbl    .ind i.rmId     .~ iCentral
                             & mobTbl    .ind i.interp   .~ Nothing
+                            & plaTbl    .ind i          %~ setPlaFlag IsTunedQuestion True
                 = dup $ ms' & invTbl.ind iCentral %~ addToInv ms' (pure i)
                             & newChar i v
 finishNewChar _ p = patternMatchFail "finishNewChar" . showText $ p
