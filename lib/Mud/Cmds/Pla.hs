@@ -2361,7 +2361,7 @@ interpCurrPW cn (WithArgs i mq cols as)
     Nothing        -> dbError mq cols
     Just (Just pw) -> if uncurry validatePassword ((pw, cn) & both %~ T.encodeUtf8)
       then do
-          blankLines       mq
+          blankLine        mq
           multiWrapSend1Nl mq cols . pwMsg $ "Please choose a new password."
           sendPrompt       mq "New password: "
           setInterp i . Just . interpNewPW $ pw
@@ -2386,7 +2386,7 @@ interpNewPW oldPW cn (NoArgs i mq cols)
   | helper isLower                                     = pwSorryHelper i mq cols sorryInterpNewPwLower
   | helper isDigit                                     = pwSorryHelper i mq cols sorryInterpNewPwDigit
   | otherwise = do
-      sendPrompt mq . nlPrefix $ "Verify password: "
+      sendPrompt mq "Verify password: "
       setInterp i . Just . interpVerifyNewPW oldPW $ cn
   where
     helper f = ()# T.filter f cn
@@ -2398,8 +2398,8 @@ interpVerifyNewPW oldPW pass cn (NoArgs i mq cols)
   | cn == pass = getSing i <$> getState >>= \s -> do
       withDbExHandler_ "unpw" . insertDbTblUnPw . UnPwRec s $ pass
       send mq telnetShowInput
-      blankLines mq
-      wrapSend mq cols $ "Password changed. " <> pwWarningMsg
+      blankLine mq
+      wrapSend  mq cols $ "Password changed. " <> pwWarningMsg
       sendDfltPrompt mq i
       resetInterp i
       logPla "interpVerifyNewPW" i . prd $ "password changed " <> parensQuote ("was " <> dblQuote oldPW)

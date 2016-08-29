@@ -11,7 +11,6 @@ module Mud.Data.State.Util.Output ( anglePrompt
                                   , bcastOtherAdmins
                                   , bcastOthersInRm
                                   , blankLine
-                                  , blankLines
                                   , dbError
                                   , frame
                                   , massMsg
@@ -165,11 +164,7 @@ bcastOthersInRm i msg = getState >>= \ms ->
 
 
 blankLine :: MsgQueue -> MudStack ()
-blankLine = (nl "" |&|) . send
-
-
-blankLines :: MsgQueue -> MudStack ()
-blankLines = (nlnl "" |&|) . send
+blankLine = flip writeMsg BlankLine
 
 
 -----

@@ -13,6 +13,7 @@ type MsgQueue = TQueue Msg
 
 
 data Msg = AsSelf     Text
+         | BlankLine
          | Dropped
          | FromClient Text
          | FromServer Text

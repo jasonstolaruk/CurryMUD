@@ -74,6 +74,7 @@ threadServer h i mq tq = sequence_ [ setThreadType . Server $ i, loop `catch` th
   where
     loop = mq |&| liftIO . atomically . readTQueue >=> \case
       AsSelf     msg -> handleFromClient i mq tq True msg         >> loop
+      BlankLine      -> handleBlankLine h                         >> loop
       Dropped        ->                                              sayonara
       FromClient msg -> handleFromClient i mq tq False msg        >> loop
       FromServer msg -> handleFromServer i h Plaに Don'tFlush msg >> loop
@@ -88,6 +89,10 @@ threadServer h i mq tq = sequence_ [ setThreadType . Server $ i, loop `catch` th
       SilentBoot     ->                                              sayonara
       ToNpc msg      -> handleFromServer i h Npcに Don'tFlush msg >> loop
     sayonara = sequence_ [ stopTimer tq, handleEgress i ]
+
+
+handleBlankLine :: Handle -> MudStack ()
+handleBlankLine = liftIO $ T.hPutStr h telnetGoAhead >> hFlush h
 
 
 handleFromClient :: Id -> MsgQueue -> TimerQueue -> Bool -> Text -> MudStack ()

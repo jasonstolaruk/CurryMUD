@@ -106,7 +106,7 @@ interpName times (T.toLower -> cn@(capitalize -> cn')) params@(NoArgs i mq cols)
                   unit
                   confirmName
         [(targetId, targetPla)] -> do
-            sendPrompt mq $ telnetHideInput <> "Password: " -- TODO: Vertical spacing?
+            sendPrompt mq $ telnetHideInput <> "Password: "
             setInterp i . Just . interpPW times cn' targetId $ targetPla
         xs -> patternMatchFail "interpName" . showText . map fst $ xs
   where
@@ -276,7 +276,7 @@ interpNewPW ncb cn (NoArgs i mq cols)
   | helper isLower                                     = promptRetryNewPW mq cols sorryInterpNewPwLower
   | helper isDigit                                     = promptRetryNewPW mq cols sorryInterpNewPwDigit
   | otherwise = do
-      sendPrompt mq . nlPrefix $ "Verify password: "
+      sendPrompt mq "Verify password: "
       setInterp i . Just . interpVerifyNewPW $ ncb { ncbPW = cn }
   where
     helper f = ()# T.filter f cn
