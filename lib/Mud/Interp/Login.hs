@@ -108,7 +108,7 @@ interpName times (T.toLower -> cn@(capitalize -> cn')) params@(NoArgs i mq cols)
                   unit
                   confirmName
         [(targetId, targetPla)] -> do
-            sendPrompt mq $ telnetHideInput <> "Password: "
+            sendPrompt mq $ telnetHideInput <> cn' <> " is an existing character. Password: "
             setInterp i . Just . interpPW times cn' targetId $ targetPla
         xs -> patternMatchFail "interpName" . showText . map fst $ xs
   where

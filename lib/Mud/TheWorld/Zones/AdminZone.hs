@@ -298,7 +298,7 @@ lookWallsHookName = "AdminZone_iEmpty_lookWalls"
 lookWallsHookFun :: HookFun
 lookWallsHookFun = mkGenericHookFun wallsDesc "looks at the walls." "looked at walls"
   where
-    wallsDesc = "You are enclosed by four smooth, dense walls, with no means of exit in sight."
+    wallsDesc = "You are enclosed by four stark, while walls, with no means of exit in sight."
 
 
 -----
@@ -366,9 +366,9 @@ readLookSign_iEmptyHookFun :: HookFun
 readLookSign_iEmptyHookFun = mkGenericHookFun signDesc "reads the sign on the wall." "read sign"
   where
     signDesc = "The following message has been painted on the sign in a tight, flowing script:\n\
-               \\"Welcome to the empty room. You have been summoned here by a CurryMUD administrator. As there are no \
-               \exits, you will need the assistance of an administrator when the time comes for you to leave. We hope \
-               \you enjoy your stay!\""
+               \\"Welcome to the Empty Room. You have been summoned here by a CurryMUD administrator who wishes to \
+               \speak with you in private. As there are no exits, you will need the assistance of an administrator \
+               \when the time comes for you to leave. We hope you enjoy your stay!\""
 
 
 -----
@@ -897,8 +897,8 @@ createAdminZone = do
         []
         mempty
         (mkRm (RmTemplate "The empty room"
-            "This small room is strikingly barren. There doesn't even seem to be a door on any of its white walls, \
-            \though you can't miss the small wooden sign affixed to the north wall."
+            "This small, square room is strikingly barren. There doesn't appear to be a door or any means of exit. \
+            \Notably, there is a small wooden sign affixed to the north wall."
             Nothing
             (Just "On account of there being no ventilation to speak of, the air here is markedly stale and stuffy.")
             zeroBits
