@@ -4,7 +4,7 @@ module Mud.Misc.Misc ( BothGramNos
                      , mkCapsFun
                      , mkCoinsMsgs
                      , mkPlurFromBoth
-                     , parseWrapHelper
+                     , parseWrap
                      , pluralize
                      , procRulesMsg
                      , raceToLang
@@ -61,8 +61,8 @@ mkPlurFromBoth (_, p ) = p
 -----
 
 
-parseWrapHelper :: Cols -> Text -> [Text]
-parseWrapHelper cols = concat . wrapLines cols . T.lines . parseTokens
+parseWrap :: Cols -> Text -> [Text]
+parseWrap cols = concat . wrapLines cols . T.lines . parseTokens
 
 
 -----
@@ -76,7 +76,7 @@ pluralize (s, p) x = x == 1 ? s :? p
 
 
 procRulesMsg :: Cols -> [Text]
-procRulesMsg cols = map xformLeadingSpaceChars . parseWrapHelper cols $ rulesMsg
+procRulesMsg cols = map xformLeadingSpaceChars . parseWrap cols $ rulesMsg
 
 
 -----

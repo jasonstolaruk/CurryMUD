@@ -19,6 +19,7 @@ import Mud.Threads.Server
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
 import Mud.Util.Misc
+import Mud.Util.Quoting
 import Mud.Util.Text
 import qualified Mud.Misc.Logging as L (logNotice)
 
@@ -67,7 +68,8 @@ threadTalk h host = helper `finally` cleanUp
         handle (threadExHandler $ "talk " <> showText i) $ do
             liftIO configBuffer
             dumpTitle  mq
-            send       mq . nlnl $ helloRulesMsg
+            send       mq . nlnl     $ helloRulesMsg
+            send       mq . nl . prd $ "If you are new to CurryMUD, please enter " <> dblQuote "new"
             sendPrompt mq "What is your character's name? "
             bcastAdmins . prd $ "A new player has connected: " <> s
             logNotice "threadTalk helper" . prd $ "new PC name for incoming player: " <> s

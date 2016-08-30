@@ -121,6 +121,18 @@ motdErrorMsg :: Text
 motdErrorMsg = "Unfortunately, the message of the day could not be retrieved."
 
 
+newPlaMsg :: Text
+newPlaMsg =
+    "Welcome, and thank you for trying CurryMUD!\n\
+    \Before you can enter the game, you must first create a character: your new identity in the fantasy virtual world. The first step is to invent a name for your character.\n\
+    \You must choose an original fantasy name. The following are unallowed:\n\
+    \* Real-world English proper names. (Please also try to avoid proper names from Japanese and other languages.)2`\n\
+    \* Well-known names from popular books, movies, and games.2`\n\
+    \* Established names in mythology and folklore.2`\n\
+    \* Words from the English dictionary.2`\n\
+    \If you have trouble coming up with a name, consider using one of the many fantasy name generators available on the web."
+
+
 noSmellMsg :: Text
 noSmellMsg = "You don't smell anything in particular."
 

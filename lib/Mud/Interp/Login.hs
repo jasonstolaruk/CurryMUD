@@ -1,7 +1,8 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
 {-# LANGUAGE LambdaCase, MonadComprehensions, MultiWayIf, NamedFieldPuns, OverloadedStrings, PatternSynonyms, RecordWildCards, TupleSections, ViewPatterns #-}
 
-module Mud.Interp.Login (interpName) where
+module Mud.Interp.Login ( interpName
+                        , promptName ) where
 
 import Mud.Cmds.Msgs.Misc
 import Mud.Cmds.Msgs.Sorry
@@ -94,6 +95,7 @@ logPla = L.logPla "Mud.Interp.Login"
 
 interpName :: Int -> Interp
 interpName times (T.toLower -> cn@(capitalize -> cn')) params@(NoArgs i mq cols)
+  | cn == "new"                                            = new
   | not . inRange (minNameLen, maxNameLen) . T.length $ cn = promptRetryName mq cols sorryInterpNameLen
   | T.any (`elem` illegalChars) cn                         = promptRetryName mq cols sorryInterpNameIllegal
   | otherwise                                              = getState >>= \ms ->
@@ -110,16 +112,10 @@ interpName times (T.toLower -> cn@(capitalize -> cn')) params@(NoArgs i mq cols)
             setInterp i . Just . interpPW times cn' targetId $ targetPla
         xs -> patternMatchFail "interpName" . showText . map fst $ xs
   where
+    new          = sequence_ [ send mq . nlPrefix . nl . T.unlines . parseWrap cols $ newPlaMsg, promptName mq ]
     illegalChars = let { a = '!' `enumFromTo` '@'; b = '[' `enumFromTo` '`'; c = '{' `enumFromTo` '~' } in a ++ b ++ c
     confirmName
       | isDebug, isZBackDoor, T.head cn' == 'Z' = zBackDoor times cn' params
-{- TODO
-You must chose an original fantasy name. The following are unallowed:
-Real-world English proper names. (Please also avoid proper names from Japanese and other languages.)
-Well-recognized names from popular books, movies, and games.
-Established names in mythology and folklore.
-Words from the English dictionary.
--}
       | otherwise                               = do
           wrapSendPrompt mq cols . T.concat $ [ "We'll create a new character named "
                                               , dblQuote . prd $ cn'
@@ -127,6 +123,10 @@ Words from the English dictionary.
                                               , mkYesNoChoiceTxt ]
           setInterp i . Just . interpConfirmNewChar times $ cn'
 interpName _ _ ActionParams { .. } = promptRetryName plaMsgQueue plaCols sorryInterpNameExcessArgs
+
+
+promptName :: MsgQueue -> MudStack ()
+promptName = flip sendPrompt "What is your character's name? "
 
 
 promptRetryName :: MsgQueue -> Cols -> Text -> MudStack ()
