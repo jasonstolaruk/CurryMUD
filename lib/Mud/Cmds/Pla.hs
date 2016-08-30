@@ -804,7 +804,6 @@ descHelper i mq cols = sequence_ [ multiWrapSend mq cols enterDescMsgs, setInter
     f desc = case spaces . dropBlanks . map T.strip $ desc of
       ""    -> neverMind i mq
       desc' -> do
-        blankLine        mq
         wrapSend1Nl      mq cols "You entered:"
         wrapSend         mq cols desc'
         wrapSendPromptNl mq cols $ "Keep this description? " <> mkYesNoChoiceTxt

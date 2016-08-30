@@ -15,11 +15,10 @@ http://tintin.sourceforge.net/index.php
 \uCLIENT CONFIGURATION\n
 
 Mudlet users:
-Under "Main display" in Preferences, please uncheck "Fix unnecessary linebreaks on GA servers."
-Under "Input line" in Preferences, consider checking "Auto clear the input line after you sent text."
+Please allow CurryMUD to handle line wrapping for you: using the "set" command, set "columns" to your desired line length. To ensure that Mudlet won't perform line wrapping, set your line length to a higher value in the Mudlet preferences ("Wrap lines at" under "Main display").
 
 TinTin++ users:
-Please execute the "##split" command to create a separate input and output area: CurryMUD works best with a client that has a dedicated field for input.
+Please execute the "##split" command to create a separate input and output area: CurryMUD works best with a client that has a dedicated field for input. To account for the presence of the input area, you may need to increase CurryMUD's "lines" setting by 2 (via the "set" command) or vertically expand your terminal window.
 
 \uSEE ALSO\n
 clear, color, password, set, texteditor

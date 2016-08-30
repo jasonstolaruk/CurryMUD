@@ -113,6 +113,13 @@ interpName times (T.toLower -> cn@(capitalize -> cn')) params@(NoArgs i mq cols)
     illegalChars = let { a = '!' `enumFromTo` '@'; b = '[' `enumFromTo` '`'; c = '{' `enumFromTo` '~' } in a ++ b ++ c
     confirmName
       | isDebug, isZBackDoor, T.head cn' == 'Z' = zBackDoor times cn' params
+{- TODO
+You must chose an original fantasy name. The following are unallowed:
+Real-world English proper names. (Please also avoid proper names from Japanese and other languages.)
+Well-recognized names from popular books, movies, and games.
+Established names in mythology and folklore.
+Words from the English dictionary.
+-}
       | otherwise                               = do
           wrapSendPrompt mq cols . T.concat $ [ "We'll create a new character named "
                                               , dblQuote . prd $ cn'
