@@ -285,7 +285,7 @@ safeCoerce x = x
 
 
 safePerformIO :: IO a -> IO a
-safePerformIO = (>>= return)
+safePerformIO = (return =<<)
 
 
 sortEithers :: [Either l r] -> ([r], [l])

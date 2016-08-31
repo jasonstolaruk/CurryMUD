@@ -506,7 +506,7 @@ debugLiq   (WithArgs i mq cols as) = getState >>= \ms ->
       | otherwise = do
           ok mq
           logPlaExecArgs (prefixDebugCmd "liquid") as i
-          consume i =<< mkStomachConts <$> liftIO (safePerformIO getCurrentTime)
+          consume i =<< mkStomachConts <$> liftIO getCurrentTime
       where
         mkStomachConts now = replicate amt . StomachCont (Left . DistinctLiqId $ di) now $ False
 debugLiq p = advise p [] adviceDLiqExcessArgs
@@ -538,7 +538,7 @@ debugLog (NoArgs' i mq) = helper >> ok mq >> logPlaExec (prefixDebugCmd "log") i
   where
     helper       = replicateM_ 100 . onNewThread $ heavyLogging
     heavyLogging = replicateM_ 100 . logNotice "debugLog heavyLogging" =<< mkMsg
-    mkMsg        = [ prd $ "Logging from " <> ti | (showText -> ti) <- liftIO . safePerformIO $ myThreadId ]
+    mkMsg        = [ prd $ "Logging from " <> ti | (showText -> ti) <- liftIO myThreadId ]
 debugLog p = withoutArgs debugLog p
 
 
@@ -909,8 +909,7 @@ debugUnderline p = withoutArgs debugUnderline p
 -----
 
 
-class Myモルモット a where {}
-instance Myモルモット Bool where {}
+class Myモルモット a where {}; instance Myモルモット Bool where {}
 data Penny = forall a. Myモルモット a => Pennyちゃん a
 
 
