@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
-{-# LANGUAGE LambdaCase, MonadComprehensions, NamedFieldPuns, OverloadedStrings, PatternSynonyms, TupleSections, ViewPatterns #-}
+{-# LANGUAGE ExistentialQuantification, LambdaCase, MonadComprehensions, NamedFieldPuns, OverloadedStrings, PatternSynonyms, TupleSections, ViewPatterns #-}
 
 module Mud.Cmds.Debug ( debugCmds
                       , purgeThreadTbls
@@ -77,6 +77,7 @@ import System.CPUTime (getCPUTime)
 import System.Directory (getTemporaryDirectory, removeFile)
 import System.Environment (getEnvironment)
 import System.IO (hClose, hGetBuffering, openTempFile)
+import Unsafe.Coerce (unsafeCoerce)
 
 
 {-# ANN module ("HLint: ignore Redundant where" :: String) #-}
@@ -114,53 +115,54 @@ logPlaExecArgs = L.logPlaExecArgs "Mud.Cmds.Debug"
 
 debugCmds :: [Cmd]
 debugCmds =
-    [ mkDebugCmd "?"          debugDispCmdList ("\&" <> cmdDescDispCmdList)
-    , mkDebugCmd "ap"         debugAp          "Show \"ActionParams\", including any arguments you provide."
-    , mkDebugCmd "boot"       debugBoot        "Boot all players (including yourself)."
-    , mkDebugCmd "broadcast"  debugBcast       "Broadcast a multi-line message to yourself."
-    , mkDebugCmd "buffer"     debugBuffCheck   "Confirm the default buffering mode for file handles."
-    , mkDebugCmd "cins"       debugCins        "Dump all channel ID/names for a given player ID."
-    , mkDebugCmd "color"      debugColor       "Perform a color test."
-    , mkDebugCmd "cores"      debugCores       "Display the number of processor cores."
-    , mkDebugCmd "cpu"        debugCPU         "Display the CPU time."
-    , mkDebugCmd "echowill"   debugEchoWill    "Send IAC WILL ECHO (hide user input)."
-    , mkDebugCmd "echowon't"  debugEchoWon't   "Send IAC WON'T ECHO (show user input)."
-    , mkDebugCmd "effect"     debugEffect      "Add 10-20 to your ST for 30 seconds."
-    , mkDebugCmd "env"        debugEnv         "Display or search system environment variables."
-    , mkDebugCmd "exp"        debugExp         "Award yourself 5,000 exp."
-    , mkDebugCmd "fun"        debugFun         "Dump the keys of the \"FunTbl\", \"HookFunTbl\", \"RmActionFunTbl\", \
-                                               \and \"EffectFunTbl\"."
-    , mkDebugCmd "id"         debugId          "Search the \"MudState\" tables for a given ID."
-    , mkDebugCmd "keys"       debugKeys        "Dump a list of \"MudState\" table keys."
-    , mkDebugCmd "liquid"     debugLiq         "Consume a given amount (in mouthfuls) of a given liquid (by distinct \
-                                               \liquid ID)."
-    , mkDebugCmd "log"        debugLog         "Put the logging service under heavy load."
-    , mkDebugCmd "multiline"  debugMultiLine   "Test multi line input."
-    , mkDebugCmd "npcserver"  debugNpcServer   "Stop all NPC server threads."
-    , mkDebugCmd "number"     debugNumber      "Display the decimal equivalent of a given number in a given base."
-    , mkDebugCmd "out"        debugOut         "Dump the inventory of the logged out room."
-    , mkDebugCmd "pause"      debugPause       "Test the pause interp."
-    , mkDebugCmd "persist"    debugPersist     "Attempt to persist the world multiple times in quick succession."
-    , mkDebugCmd "pidge"      debugPidge       "Send a message to Pidge."
-    , mkDebugCmd "pmf"        debugPmf         "Trigger a pattern match failure."
-    , mkDebugCmd "purge"      debugPurge       "Purge the thread tables."
-    , mkDebugCmd "random"     debugRandom      "Dump a series of random numbers."
-    , mkDebugCmd "regen"      debugRegen       "Display regen amounts and delays for a given mob ID."
-    , mkDebugCmd "remput"     debugRemPut      "In quick succession, remove from and put into a sack on the ground."
-    , mkDebugCmd "rnt"        debugRnt         "Dump your random names table, or generate a random name for a given PC."
-    , mkDebugCmd "rotate"     debugRotate      "Send the signal to rotate your player log."
-    , mkDebugCmd "rules"      debugRules       "Dump the rules message."
-    , mkDebugCmd "talk"       debugTalk        "Dump the talk async table."
-    , mkDebugCmd "threads"    debugThreads     "Display or search the thread table."
-    , mkDebugCmd "throw"      debugThrow       "Throw an exception."
-    , mkDebugCmd "throwlog"   debugThrowLog    "Throw an exception on your player log thread."
-    , mkDebugCmd "tinnitus"   debugTinnitus    "Ringing in the ears."
-    , mkDebugCmd "token"      debugToken       "Test token parsing."
-    , mkDebugCmd "underline"  debugUnderline   "Test underlining."
-    , mkDebugCmd "weight"     debugWeight      "Calculate weight for a given ID."
-    , mkDebugCmd "wrap"       debugWrap        "Test the wrapping of a line containing ANSI escape sequences."
-    , mkDebugCmd "wrapindent" debugWrapIndent  "Test the indented wrapping of a line containing ANSI escape \
-                                               \sequences." ]
+    [ mkDebugCmd "?"           debugDispCmdList ("\&" <> cmdDescDispCmdList)
+    , mkDebugCmd "ap"          debugAp          "Show \"ActionParams\", including any arguments you provide."
+    , mkDebugCmd "boot"        debugBoot        "Boot all players (including yourself)."
+    , mkDebugCmd "broadcast"   debugBcast       "Broadcast a multi-line message to yourself."
+    , mkDebugCmd "buffer"      debugBuffCheck   "Confirm the default buffering mode for file handles."
+    , mkDebugCmd "cins"        debugCins        "Dump all channel ID/names for a given player ID."
+    , mkDebugCmd "coercepenny" debugCoercePenny "Coerce Penny."
+    , mkDebugCmd "color"       debugColor       "Perform a color test."
+    , mkDebugCmd "cores"       debugCores       "Display the number of processor cores."
+    , mkDebugCmd "cpu"         debugCPU         "Display the CPU time."
+    , mkDebugCmd "echowill"    debugEchoWill    "Send IAC WILL ECHO (hide user input)."
+    , mkDebugCmd "echowon't"   debugEchoWon't   "Send IAC WON'T ECHO (show user input)."
+    , mkDebugCmd "effect"      debugEffect      "Add 10-20 to your ST for 30 seconds."
+    , mkDebugCmd "env"         debugEnv         "Display or search system environment variables."
+    , mkDebugCmd "exp"         debugExp         "Award yourself 5,000 exp."
+    , mkDebugCmd "fun"         debugFun         "Dump the keys of the \"FunTbl\", \"HookFunTbl\", \"RmActionFunTbl\", \
+                                                \and \"EffectFunTbl\"."
+    , mkDebugCmd "id"          debugId          "Search the \"MudState\" tables for a given ID."
+    , mkDebugCmd "keys"        debugKeys        "Dump a list of \"MudState\" table keys."
+    , mkDebugCmd "liquid"      debugLiq         "Consume a given amount (in mouthfuls) of a given liquid (by distinct \
+                                                \liquid ID)."
+    , mkDebugCmd "log"         debugLog         "Put the logging service under heavy load."
+    , mkDebugCmd "multiline"   debugMultiLine   "Test multi line input."
+    , mkDebugCmd "npcserver"   debugNpcServer   "Stop all NPC server threads."
+    , mkDebugCmd "number"      debugNumber      "Display the decimal equivalent of a given number in a given base."
+    , mkDebugCmd "out"         debugOut         "Dump the inventory of the logged out room."
+    , mkDebugCmd "pause"       debugPause       "Test the pause interp."
+    , mkDebugCmd "persist"     debugPersist     "Attempt to persist the world multiple times in quick succession."
+    , mkDebugCmd "pidge"       debugPidge       "Send a message to Pidge."
+    , mkDebugCmd "pmf"         debugPmf         "Trigger a pattern match failure."
+    , mkDebugCmd "purge"       debugPurge       "Purge the thread tables."
+    , mkDebugCmd "random"      debugRandom      "Dump a series of random numbers."
+    , mkDebugCmd "regen"       debugRegen       "Display regen amounts and delays for a given mob ID."
+    , mkDebugCmd "remput"      debugRemPut      "In quick succession, remove from and put into a sack on the ground."
+    , mkDebugCmd "rnt"         debugRnt         "Dump your random names table, or generate a random name for a given PC."
+    , mkDebugCmd "rotate"      debugRotate      "Send the signal to rotate your player log."
+    , mkDebugCmd "rules"       debugRules       "Dump the rules message."
+    , mkDebugCmd "talk"        debugTalk        "Dump the talk async table."
+    , mkDebugCmd "threads"     debugThreads     "Display or search the thread table."
+    , mkDebugCmd "throw"       debugThrow       "Throw an exception."
+    , mkDebugCmd "throwlog"    debugThrowLog    "Throw an exception on your player log thread."
+    , mkDebugCmd "tinnitus"    debugTinnitus    "Ringing in the ears."
+    , mkDebugCmd "token"       debugToken       "Test token parsing."
+    , mkDebugCmd "underline"   debugUnderline   "Test underlining."
+    , mkDebugCmd "weight"      debugWeight      "Calculate weight for a given ID."
+    , mkDebugCmd "wrap"        debugWrap        "Test the wrapping of a line containing ANSI escape sequences."
+    , mkDebugCmd "wrapindent"  debugWrapIndent  "Test the indented wrapping of a line containing ANSI escape \
+                                                \sequences." ]
   where {- -}
 
 
@@ -267,7 +269,7 @@ debugColor p = withoutArgs debugColor p
 debugCores :: ActionFun
 debugCores (NoArgs i mq cols) = do
     wrapSend mq cols =<< [ T.concat [ showText cores, " processor core", theLetterS (cores > 1), "." ]
-                         | cores <- liftIO getNumCapabilities ]
+                         | cores <- liftIO . safePerformIO $ getNumCapabilities ]
     logPlaExec (prefixDebugCmd "cores") i
 debugCores p = withoutArgs debugCores p
 
@@ -277,7 +279,7 @@ debugCores p = withoutArgs debugCores p
 
 debugCPU :: ActionFun
 debugCPU (NoArgs i mq cols) = do
-    wrapSend mq cols =<< [ "CPU time: " <> time | time <- liftIO cpuTime ]
+    wrapSend mq cols =<< [ "CPU time: " <> time | time <- liftIO . safePerformIO $ cpuTime ]
     logPlaExec (prefixDebugCmd "cpu") i
   where
     cpuTime = showText . (`divide` 10 ^ 12) <$> getCPUTime
@@ -330,10 +332,10 @@ debugEffect p = withoutArgs debugEffect p
 
 debugEnv :: ActionFun
 debugEnv (NoArgs i mq cols) = do
-    pager i mq =<< [ concatMap (wrapIndent 2 cols) . mkEnvListTxt $ env | env <- liftIO getEnvironment ]
+    pager i mq =<< [ concatMap (wrapIndent 2 cols) . mkEnvListTxt $ env | env <- liftIO . safePerformIO $ getEnvironment ]
     logPlaExecArgs (prefixDebugCmd "env") [] i
 debugEnv p@ActionParams { myId, args } = do
-    dispMatches p 2 =<< [ mkEnvListTxt env | env <- liftIO getEnvironment ]
+    dispMatches p 2 =<< [ mkEnvListTxt env | env <- liftIO . safePerformIO $ getEnvironment ]
     logPlaExecArgs (prefixDebugCmd "env") args myId
 
 
@@ -504,7 +506,7 @@ debugLiq   (WithArgs i mq cols as) = getState >>= \ms ->
       | otherwise = do
           ok mq
           logPlaExecArgs (prefixDebugCmd "liquid") as i
-          consume i =<< mkStomachConts <$> liftIO getCurrentTime
+          consume i =<< mkStomachConts <$> liftIO (safePerformIO getCurrentTime)
       where
         mkStomachConts now = replicate amt . StomachCont (Left . DistinctLiqId $ di) now $ False
 debugLiq p = advise p [] adviceDLiqExcessArgs
@@ -536,7 +538,7 @@ debugLog (NoArgs' i mq) = helper >> ok mq >> logPlaExec (prefixDebugCmd "log") i
   where
     helper       = replicateM_ 100 . onNewThread $ heavyLogging
     heavyLogging = replicateM_ 100 . logNotice "debugLog heavyLogging" =<< mkMsg
-    mkMsg        = [ prd $ "Logging from " <> ti | (showText -> ti) <- liftIO myThreadId ]
+    mkMsg        = [ prd $ "Logging from " <> ti | (showText -> ti) <- liftIO . safePerformIO $ myThreadId ]
 debugLog p = withoutArgs debugLog p
 
 
@@ -573,8 +575,7 @@ type Base = Int
 debugNumber :: ActionFun
 debugNumber p@AdviseNoArgs     = advise p [] adviceDNumberNoArgs
 debugNumber p@(AdviseOneArg _) = advise p [] adviceDNumberNoBase
-debugNumber (WithArgs i mq cols [ numTxt, baseTxt ]) =
-    case reads . T.unpack $ baseTxt :: [(Base, String)] of
+debugNumber   (WithArgs i mq cols [ numTxt, baseTxt ]) = case reads . T.unpack $ baseTxt :: [(Base, String)] of
       [(base, "")] | not . inRange (2, 36) $ base -> wrapSend mq cols . sorryParseBase $ baseTxt
                    | otherwise -> case numTxt `inBase` base of
                      [(res, "")] -> do
@@ -742,8 +743,10 @@ debugRotate p = withoutArgs debugRotate p
 
 debugRules :: ActionFun
 debugRules (NoArgs i mq cols) = do
-    pager i mq . procRulesMsg $ cols
-    logPlaExec (prefixDebugCmd "rules") i
+    pager i' mq . procRulesMsg $ cols
+    logPlaExec (prefixDebugCmd "rules") i'
+  where
+    i' = safeCoerce (i :: Id) :: Int
 debugRules p = withoutArgs debugRandom p
 
 
@@ -780,7 +783,7 @@ descThreads = do
     (uncurry (:) . ((, Notice) *** pure . (, Error)) -> logAsyncKvs) <- asks $ (both %~ asyncThreadId) . getLogAsyncs
     (plt, M.assocs -> threadTblKvs) <- (view plaLogTbl *** view threadTbl) . dup <$> getState
     let plaLogTblKvs = [ (asyncThreadId . fst $ v, PlaLog k) | (k, v) <- IM.assocs plt ]
-    mapM mkDesc . sort $ logAsyncKvs ++ threadTblKvs ++ plaLogTblKvs
+    mapM mkDesc . sort . concat $ [ logAsyncKvs, threadTblKvs, plaLogTblKvs ]
   where
     mkDesc (ti, bracketPad 20 . mkTypeName -> tn) = [ T.concat [ padOrTrunc 16 . showText $ ti, tn, ts ]
                                                     | (showText -> ts) <- liftIO . threadStatus $ ti ]
@@ -901,6 +904,25 @@ debugUnderline (NoArgs i mq cols) = do
     wrapSend mq cols $ showText underlineANSI <> underline " This text is underlined. " <> showText noUnderlineANSI
     logPlaExec (prefixDebugCmd "underline") i
 debugUnderline p = withoutArgs debugUnderline p
+
+
+-----
+
+
+class Myモルモット a where {}
+instance Myモルモット Bool where {}
+data Penny = forall a. Myモルモット a => Pennyちゃん a
+
+
+debugCoercePenny :: ActionFun
+debugCoercePenny (NoArgs' i mq) = let penny        = Pennyちゃん True
+                                      coercedPenny = coercePenny penny
+                                  in do { send mq . nlnl $ "Coerced Penny: " <> showText coercedPenny
+                                        ; logPlaExec (prefixDebugCmd "coercepenny") i }
+  where
+    coercePenny :: Penny -> Bool
+    coercePenny (Pennyちゃん a) = unsafeCoerce a
+debugCoercePenny p = withoutArgs debugUnderline p
 
 
 -----

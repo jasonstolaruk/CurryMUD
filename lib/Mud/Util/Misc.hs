@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
-{-# LANGUAGE FlexibleContexts, LambdaCase, MonadComprehensions, OverloadedStrings, RankNTypes #-}
+{-# LANGUAGE FlexibleContexts, LambdaCase, MonadComprehensions, OverloadedStrings, RankNTypes, TypeFamilies #-}
 
 module Mud.Util.Misc ( BlowUp
                      , PatternMatchFail
@@ -46,6 +46,8 @@ module Mud.Util.Misc ( BlowUp
                      , plusQuarter
                      , plusThird
                      , reverseLookup
+                     , safeCoerce
+                     , safePerformIO
                      , sortEithers
                      , twice
                      , unadulterated
@@ -199,7 +201,7 @@ listToMaybe [a] = Just a
 listToMaybe xs  = patternMatchFail "Mud.Util.Misc" "listToMaybe" xs
 
 
-max1 :: Int -> Int
+max1 :: (Num a, Ord a) => a -> a
 max1 = (`max` 1)
 
 
@@ -278,6 +280,14 @@ reverseLookup :: (Eq v) => v -> M.Map k v -> k
 reverseLookup v = fst . head . filter ((== v) . snd) . M.assocs
 
 
+safeCoerce :: a ~ b => a -> b
+safeCoerce x = x
+
+
+safePerformIO :: IO a -> IO a
+safePerformIO = (>>= return)
+
+
 sortEithers :: [Either l r] -> ([r], [l])
 sortEithers = foldr helper ([], [])
   where
@@ -289,7 +299,7 @@ twice :: (a -> a) -> a -> a
 twice f = f . f
 
 
-unadulterated :: (Monad m) => (Applicative f) => a -> m (f a)
+unadulterated :: (Monad m, Applicative f) => a -> m (f a)
 unadulterated = return . pure
 
 
