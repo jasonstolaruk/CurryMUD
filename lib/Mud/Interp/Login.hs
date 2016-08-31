@@ -139,7 +139,8 @@ promptRetryName mq cols msg = let t = "Let's try this again. What is your charac
 zBackDoor :: Int -> Sing -> ActionParams -> MudStack ()
 zBackDoor times s params@ActionParams { .. } = setSingIfNotTaken times s params >>= maybeVoid helper
   where
-    helper oldSing = do
+    helper oldSing = let l = mobTbl.ind myId in do
+      tweaks [ l.st .~ 50, l.dx .~ 50, l.ht .~ 50, l.ma .~ 50, l.ps .~ 50 ]
       wrapSend plaMsgQueue plaCols "You quietly slip through the back door..."
       finishNewChar (NewCharBundle oldSing s "Aoeui1") params
 

@@ -81,12 +81,6 @@ import System.Time.Utils (renderSecs)
 import Text.Regex.Posix ((=~))
 
 
-default (Int)
-
-
------
-
-
 {-# ANN module ("HLint: ignore Use ||" :: String) #-}
 
 

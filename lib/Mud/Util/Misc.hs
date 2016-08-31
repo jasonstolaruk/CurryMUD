@@ -1,14 +1,14 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
 {-# LANGUAGE FlexibleContexts, LambdaCase, MonadComprehensions, OverloadedStrings, RankNTypes, TypeFamilies #-}
 
-module Mud.Util.Misc ( BlowUp
-                     , PatternMatchFail
-                     , atLst1
+module Mud.Util.Misc ( atLst1
                      , atomicWriteIORef'
                      , blowUp
+                     , BlowUp
                      , boolToMaybe
                      , concatMapM
                      , divide
+                     , divRound
                      , dropFst
                      , dropIrrelevantFilenames
                      , dropThr
@@ -41,6 +41,7 @@ module Mud.Util.Misc ( BlowUp
                      , onLeft
                      , onTrue
                      , patternMatchFail
+                     , PatternMatchFail
                      , percent
                      , plusFifth
                      , plusQuarter
@@ -113,6 +114,11 @@ blowUp modName funName msg t = error . T.unpack . T.concat $ [ modName, " ", fun
 
 divide :: (Integral a, Fractional b) => a -> a -> b
 divide = (/) `on` fromIntegral
+
+
+-- TODO: Add comments. Efficiency?
+divRound :: (Integral a) => a -> a -> a
+x `divRound` y = (x + y `div` 2) `div` y
 
 
 dropFst :: (a, b, c) -> (b, c)

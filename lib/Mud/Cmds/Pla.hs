@@ -169,7 +169,6 @@ regularCmdTuples =
     [ ("?",          plaDispCmdList,     True,  cmdDescDispCmdList)
     , ("about",      about,              True,  "About CurryMUD.")
     , ("admin",      admin,              True,  "Display a list of administrators, or send a message to an administrator.")
-    , ("bars",       bars,               True,  cmdDescBars)
     , ("bonus",      bonus,              True,  "Give another player bonus experience points for outstanding role-playing.")
     , ("bug",        bug,                True,  "Report a bug.")
     , ("channel",    chan,               True,  "Send a message on a telepathic channel " <> plusRelatedMsg)
@@ -226,7 +225,8 @@ priorityAbbrevCmds = concatMap (uncurry5 mkPriorityAbbrevCmd) priorityAbbrevCmdT
 
 priorityAbbrevCmdTuples :: [(CmdFullName, CmdPriorityAbbrevTxt, ActionFun, Bool, CmdDesc)]
 priorityAbbrevCmdTuples =
-    [ ("clear",       "cl",  clear,          True,  cmdDescClear)
+    [ ("bars",        "b",   bars,           True,  cmdDescBars)
+    , ("clear",       "cl",  clear,          True,  cmdDescClear)
     , ("color",       "col", color,          True,  "Perform a color test.")
     , ("connect",     "co",  connect,        True,  "Connect one or more people to a telepathic channel.")
     , ("description", "de",  description,    False, cmdDescDescription)
@@ -316,7 +316,6 @@ npcRegularCmdTuples :: [(CmdFullName, ActionFun, Bool, CmdDesc)]
 npcRegularCmdTuples =
     [ (".",          npcAsSelf,      False, "Execute a command as your admin PC.")
     , ("?",          npcDispCmdList, True,  cmdDescDispCmdList)
-    , ("bars",       bars,           True,  cmdDescBars)
     , ("d",          go "d",         True,  cmdDescGoDown)
     , ("e",          go "e",         True,  cmdDescGoEast)
     , ("empty",      emptyAction,    True,  cmdDescEmpty)
@@ -345,7 +344,8 @@ npcPriorityAbbrevCmds = concatMap (uncurry5 mkPriorityAbbrevCmd) npcPriorityAbbr
 
 npcPriorityAbbrevCmdTuples :: [(CmdFullName, CmdPriorityAbbrevTxt, ActionFun, Bool, CmdDesc)]
 npcPriorityAbbrevCmdTuples =
-    [ ("clear",       "c",   clear,          True,  cmdDescClear)
+    [ ("bars",        "b",   bars,           True,  cmdDescBars)
+    , ("clear",       "c",   clear,          True,  cmdDescClear)
     , ("description", "de",  description,    False, cmdDescDescription)
     , ("drink",       "dri", drink,          False, cmdDescDrink)
     , ("drop",        "dr",  dropAction,     True,  cmdDescDrop)

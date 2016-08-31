@@ -23,7 +23,7 @@ destroy is = stopBiodegraders >> destroyHelper is
 
 
 destroyHelper :: Inv -> MudStack ()
-destroyHelper is = tweak $ \ms -> foldr helper ms is
+destroyHelper is = tweak $ flip (foldr helper) is
   where
     helper i ms = case getType i ms of
       ArmType      -> ms & destroyEnt & destroyObj & destroyArm   & rest

@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fno-warn-type-defaults #-}
 {-# LANGUAGE NamedFieldPuns, OverloadedStrings, PatternSynonyms, ViewPatterns #-}
 
 module Mud.Cmds.ExpCmds ( expCmdSet
@@ -13,24 +14,30 @@ import Mud.Cmds.Util.Pla
 import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MudData
+import Mud.Data.State.Util.Calc
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
+import Mud.Data.State.Util.Random
 import Mud.Misc.LocPref
 import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Operators
+import Mud.Util.Quoting
 import Mud.Util.Text
 import qualified Mud.Misc.Logging as L (logPlaOut)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
-import Control.Arrow (first)
-import Control.Lens ((.~), (?~))
+import Control.Arrow (first, second)
+import Control.Lens (_3, _4, view)
+import Control.Lens.Operators ((&), (.~), (<>~), (?~))
+import Control.Monad ((>=>))
 import Data.List ((\\), delete)
 import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import qualified Data.Set as S (Set, filter, foldr, fromList, map, toList)
 import qualified Data.Text as T
+import qualified Data.Vector.Unboxed as V ((!), head)
 
 
 patternMatchFail :: (Show a) => PatternMatchFail a b
@@ -1130,9 +1137,26 @@ mkExpAction name = expCmd . head . S.toList . S.filter helper $ expCmdSet
 
 
 vomit :: ExpCmdFun
-vomit i mq cols ecn (toSelf, bs, desc, logMsg) = getState >>= \ms -> case getStomach i ms of
-  [] -> let txt = "You dry heave."
-            d   = mkStdDesig i ms DoCap
-            bs' = pure (nlnl $ serialize d <> " dry heaves.", i `delete` desigIds d)
-        in expCmdHelper i mq cols ecn (txt, bs', Nothing, txt)
-  _ -> expCmdHelper i mq cols ecn (toSelf, bs, desc, logMsg) -- TODO
+vomit i mq cols ecn a = getState >>= \ms -> case getStomach i ms of
+  []   -> let txt = "You dry heave."
+              d   = mkStdDesig i ms DoCap
+              bs' = pure (nlnl $ serialize d <> " dry heaves.", i `delete` desigIds d)
+          in expCmdHelper i mq cols ecn (txt, bs', view _3 a, txt)
+  stom -> let size = round $ calcStomachSize Human `divide` 4
+          in rndmVector (size + 4) >>= \v -> helper v stom size |&| modifyState >=> sequence_
+  where
+    helper v stom size ms =
+        let vomitAmt  = size + rndmIntToRange (V.head v) (0, 6) - 3
+            stomAmt   = length stom
+            remainder = stomAmt - vomitAmt
+            actualAmt = remainder >= 0 ? vomitAmt :? stomAmt
+            isEmptied = remainder <= 0
+            amtTxt    = (" " <>) . parensQuote . T.concat $ [ "Vomited ", showText actualAmt, " mouthfuls", rest, "." ]
+            rest      = isEmptied |?| "; stomach emptied"
+            a'        = a & _4 <>~ amtTxt
+            fs        = pure . expCmdHelper i mq cols ecn $ a'
+            stom'     = not isEmptied |?| newStomHelper v actualAmt stom
+        in (ms & mobTbl.ind i.stomach .~ stom', fs :: Funs)
+    newStomHelper _ 0 stom = stom
+    newStomHelper v x stom = newStomHelper v (pred x) $ let y = rndmIntToRange (v V.! x) (0, length stom - 1)
+                                                        in uncurry (++) . second tail . splitAt y $ stom

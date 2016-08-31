@@ -242,7 +242,7 @@ Note also the following interesting properties:
 Just [1,2]
 λ> sequence [Just 1, Nothing]
 Nothing
-This makes sense given the type signature: "sequence :: Monad m => [m a] -> m [a]".
+This makes sense given the type signature: "sequence :: (Monad m) => [m a] -> m [a]".
 
 Don't forget that you have a choice between "mapM" and "forM". (RWH p.221)
 

@@ -59,7 +59,7 @@ headTail :: [a] -> (,) a ([] a)
 headTail = (,) <$> head <*> tail
 
 
-listToTuple :: Each s t a a => [a] -> t
+listToTuple :: (Each s t a a) => [a] -> t
 listToTuple xs = undefined & partsOf each .~ xs
 
 
