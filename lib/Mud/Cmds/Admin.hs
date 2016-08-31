@@ -736,9 +736,9 @@ examineMob i ms =
        , "My group: "         <> descSingIdHelper getMyGroup
        , "Member of: "        <> descMaybeId ms (getMemberOf i ms)
        , "Stomach: "          <> m^.stomach.to ppList
-       , "Stomach ratio: "    <> let (mouths, size, perFull) = (length . getStomach i $ ms
-                                                               , calcStomachSize    i   ms
-                                                               , calcStomachPerFull i   ms) & each %~ showText
+       , "Stomach ratio: "    <> let (mouths, size, perFull) = ( length . getStomach i $ ms
+                                                               , calcStomachSize . getRace i $ ms
+                                                               , calcStomachPerFull i ms ) & each %~ showText
                                  in T.concat [ mouths, " / ", size, " ", parensQuote $ perFull <> "%" ]
        , "Feeling map: "      <> let f tag feel = (tag <> " " <> pp feel :)
                                  in noneOnNull . commas . views feelingMap (M.foldrWithKey f []) $ m

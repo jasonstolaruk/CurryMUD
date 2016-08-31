@@ -475,14 +475,13 @@ calcRegenFpDelay i = calcRegenDelay . weightedAvgHt calcEffSt i
 -----
 
 
-calcStomachAvailSize :: Id -> MudState -> (Int, Int)
-calcStomachAvailSize i ms | size <- calcStomachSize i ms, avail <- size - length (getStomach i ms)
+calcStomachAvailSize :: Id -> MudState -> (Mouthfuls, Mouthfuls)
+calcStomachAvailSize i ms | size <- calcStomachSize . getRace i $ ms, avail <- size - length (getStomach i ms)
                           = (avail, size)
 
 
-calcStomachSize :: Id -> MudState -> Int
-calcStomachSize i ms | isPC i ms = helper . getRace i $ ms
-                     | otherwise = helper Human
+calcStomachSize :: Race -> Mouthfuls
+calcStomachSize = helper
   where
     helper = let f = (helper Human |&|) in \case
       Dwarf     -> f minusQuarter
@@ -497,7 +496,7 @@ calcStomachSize i ms | isPC i ms = helper . getRace i $ ms
 
 calcStomachPerFull :: Id -> MudState -> Int
 calcStomachPerFull i ms = let mouths = length . getStomach i $ ms
-                              size   = calcStomachSize i ms
+                              size   = calcStomachSize . getRace i $ ms
                           in mouths `percent` size
 
 
