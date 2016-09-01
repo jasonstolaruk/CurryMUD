@@ -129,7 +129,7 @@ handleFromServer i h Plaに msg = getState >>= \ms ->
 
 
 fromServerHelper :: Handle -> Text -> MudStack ()
-fromServerHelper h t = liftIO . T.hPutStr h $ t
+fromServerHelper h = liftIO . T.hPutStr h
 
 
 sendInacBootMsg :: Handle -> MudStack ()
