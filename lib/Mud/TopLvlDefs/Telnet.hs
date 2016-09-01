@@ -12,8 +12,9 @@ import qualified Data.Text as T
 -- ==================================================
 
 
-telnetECHO, telnetGA, telnetIAC, telnetSB, telnetSE, telnetWILL, telnetWON'T :: Char
+telnetECHO, telnetEOR, telnetGA, telnetIAC, telnetSB, telnetSE, telnetWILL, telnetWON'T :: Char
 telnetECHO  = '\x01' -- 1
+telnetEOR   = '\xEF' -- 239
 telnetGA    = '\xF9' -- 249
 telnetIAC   = '\xFF' -- 255
 telnetSB    = '\xFA' -- 250
@@ -22,7 +23,8 @@ telnetWILL  = '\xFB' -- 251
 telnetWON'T = '\xFC' -- 252
 
 
-telnetGoAhead, telnetHideInput, telnetShowInput :: Text
-telnetGoAhead   = T.pack [ telnetIAC, telnetGA                ]
-telnetHideInput = T.pack [ telnetIAC, telnetWILL,  telnetECHO ]
-telnetShowInput = T.pack [ telnetIAC, telnetWON'T, telnetECHO ]
+telnetEndOfRecord, telnetGoAhead, telnetHideInput, telnetShowInput :: Text
+telnetEndOfRecord = T.pack [ telnetIAC, telnetEOR               ]
+telnetGoAhead     = T.pack [ telnetIAC, telnetGA                ]
+telnetHideInput   = T.pack [ telnetIAC, telnetWILL,  telnetECHO ]
+telnetShowInput   = T.pack [ telnetIAC, telnetWON'T, telnetECHO ]

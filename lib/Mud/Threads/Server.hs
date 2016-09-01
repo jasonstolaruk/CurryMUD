@@ -129,7 +129,7 @@ handleFromServer i h Plaに msg = getState >>= \ms ->
 
 
 fromServerHelper :: Handle -> Text -> MudStack ()
-fromServerHelper h t = liftIO $ T.hPutStr h t >> hFlush h
+fromServerHelper h t = liftIO . T.hPutStr h $ t
 
 
 sendInacBootMsg :: Handle -> MudStack ()
@@ -141,7 +141,7 @@ sendBootMsg h = liftIO . T.hPutStrLn h . nl . colorWith bootMsgColor
 
 
 promptHelper :: Id -> Handle -> ShouldNl -> Text -> MudStack ()
-promptHelper i h snl = handleFromServer i h Plaに . (<> telnetGoAhead) . f
+promptHelper i h snl t = sequence_ [ handleFromServer i h Plaに . (<> telnetGoAhead) . f $ t, liftIO . hFlush $ h ]
   where
     f = case snl of DoNl    -> nl -- TODO: Mudlet...
                     Don'tNl -> id

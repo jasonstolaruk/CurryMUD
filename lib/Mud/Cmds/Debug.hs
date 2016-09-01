@@ -113,6 +113,7 @@ logPlaExecArgs = L.logPlaExecArgs "Mud.Cmds.Debug"
 -- ==================================================
 
 
+-- TODO: hShow
 debugCmds :: [Cmd]
 debugCmds =
     [ mkDebugCmd "?"           debugDispCmdList ("\&" <> cmdDescDispCmdList)
