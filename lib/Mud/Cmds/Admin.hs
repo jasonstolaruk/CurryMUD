@@ -478,8 +478,8 @@ mkCountTxt = map (uncurry mappend . second commaShow) <$> helper
         let countType t = views typeTbl (IM.size . IM.filter (== t)) ms
             countWealth = views coinsTbl (f . mconcat . IM.elems) ms
               where
-                f (Coins (c, s, g)) = let x = round (c `divide` 100 :: Double)
-                                          y = round (s `divide` 10  :: Double)
+                f (Coins (c, s, g)) = let x = c `divideRound` 100
+                                          y = s `divideRound` 10
                                       in sum [ x, y, g ]
             countLoggedOutPlas   = views plaTbl  (length . (\\ getLoggedInPlaIds ms) . IM.keys . IM.filter (not . isAdmin)) ms
             countMaleFemale sexy = views plaTbl  (IM.size . IM.filterWithKey f) ms

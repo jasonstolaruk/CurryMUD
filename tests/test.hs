@@ -128,10 +128,10 @@ unitTests = testGroup "unit tests" [ unitTests_Mud_Data_Misc
 
 unitTests_Mud_Data_Misc :: TestTree
 unitTests_Mud_Data_Misc = testGroup "Mud.Data.Misc"
-    [ testCase "serializeStdDesig"      test_serializeStdDesig
-    , testCase "serializeNonStdDesig"   test_serializeNonStdDesig
-    , testCase "deserializeStdDesig"    test_deserializeStdDesig
-    , testCase "deserializeNonStdDesig" test_deserializeNonStdDesig ]
+    [ testCase "test_serializeStdDesig"      test_serializeStdDesig
+    , testCase "test_serializeNonStdDesig"   test_serializeNonStdDesig
+    , testCase "test_deserializeStdDesig"    test_deserializeStdDesig
+    , testCase "test_deserializeNonStdDesig" test_deserializeNonStdDesig ]
 
 
 -- --------------------------------------------------
@@ -139,10 +139,10 @@ unitTests_Mud_Data_Misc = testGroup "Mud.Data.Misc"
 
 unitTests_Mud_Data_State_Util_Misc :: TestTree
 unitTests_Mud_Data_State_Util_Misc = testGroup "Mud.Data.State.Util.Misc"
-    [ testCase "dropPrefixesForHook_no_prefixes"  test_dropPrefixesForHooks_no_prefixes
-    , testCase "dropPrefixesForHook_no_matches"   test_dropPrefixesForHooks_no_matches
-    , testCase "dropPrefixesForHook_with_matches" test_dropPrefixesForHooks_with_matches
-    , testCase "dropPrefixesForHook_abbrev"       test_dropPrefixesForHooks_abbrev
+    [ testCase "test_dropPrefixesForHook_no_prefixes"  test_dropPrefixesForHooks_no_prefixes
+    , testCase "test_dropPrefixesForHook_no_matches"   test_dropPrefixesForHooks_no_matches
+    , testCase "test_dropPrefixesForHook_with_matches" test_dropPrefixesForHooks_with_matches
+    , testCase "test_dropPrefixesForHook_abbrev"       test_dropPrefixesForHooks_abbrev
     , testCase "test_procQuoteChars_null"         test_procQuoteChars_null
     , testCase "test_procQuoteChars_zero"         test_procQuoteChars_zero
     , testCase "test_procQuoteChars_one"          test_procQuoteChars_one
@@ -156,10 +156,11 @@ unitTests_Mud_Data_State_Util_Misc = testGroup "Mud.Data.State.Util.Misc"
 
 unitTests_Mud_Util_Misc :: TestTree
 unitTests_Mud_Util_Misc = testGroup "Mud.Util.Misc"
-    [ testCase "mWhen_IO_True"    test_mWhen_IO_True
-    , testCase "mWhen_IO_False"   test_mWhen_IO_False
-    , testCase "mUnless_IO_True"  test_mUnless_IO_True
-    , testCase "mUnless_IO_False" test_mUnless_IO_False ]
+    [ testCase "test_division_compare_results" test_division_compare_results
+    , testCase "test_mWhen_IO_True"            test_mWhen_IO_True
+    , testCase "test_mWhen_IO_False"           test_mWhen_IO_False
+    , testCase "test_mUnless_IO_True"          test_mUnless_IO_True
+    , testCase "test_mUnless_IO_False"         test_mUnless_IO_False ]
 
 
 -- --------------------------------------------------
@@ -167,22 +168,22 @@ unitTests_Mud_Util_Misc = testGroup "Mud.Util.Misc"
 
 unitTests_Mud_Util_Text :: TestTree
 unitTests_Mud_Util_Text = testGroup "Mud.Util.Text"
-    [ testCase "countOcc_emptyNeedle"           test_countOcc_emptyNeedle
-    , testCase "countOcc_emptyHaystack"         test_countOcc_emptyHaystack
-    , testCase "countOcc_zero"                  test_countOcc_zero
-    , testCase "countOcc_one"                   test_countOcc_one
-    , testCase "countOcc_two"                   test_countOcc_two
-    , testCase "countOcc_three"                 test_countOcc_three
-    , testCase "stripControl"                   test_stripControl
-    , testCase "stripTelnet_null"               test_stripTelnet_null
-    , testCase "stripTelnet_telnetCodes"        test_stripTelnet_telnetCodes
-    , testCase "stripTelnet_leading"            test_stripTelnet_leading
-    , testCase "stripTelnet_trailing"           test_stripTelnet_trailing
-    , testCase "stripTelnet_leadingAndTrailing" test_stripTelnet_leadingAndTrailing
-    , testCase "stripTelnet_intercalated"       test_stripTelnet_intercalated
-    , testCase "stripTelnet_malformed1"         test_stripTelnet_malformed1
-    , testCase "stripTelnet_malformed2"         test_stripTelnet_malformed2
-    , testCase "stripTelnet_malformed3"         test_stripTelnet_malformed3
-    , testCase "stripTelnet_malformed4"         test_stripTelnet_malformed4
-    , testCase "stripTelnet_malformed5"         test_stripTelnet_malformed5
-    , testCase "stripTelnet_malformed6"         test_stripTelnet_malformed6 ]
+    [ testCase "test_countOcc_emptyNeedle"           test_countOcc_emptyNeedle
+    , testCase "test_countOcc_emptyHaystack"         test_countOcc_emptyHaystack
+    , testCase "test_countOcc_zero"                  test_countOcc_zero
+    , testCase "test_countOcc_one"                   test_countOcc_one
+    , testCase "test_countOcc_two"                   test_countOcc_two
+    , testCase "test_countOcc_three"                 test_countOcc_three
+    , testCase "test_stripControl"                   test_stripControl
+    , testCase "test_stripTelnet_null"               test_stripTelnet_null
+    , testCase "test_stripTelnet_telnetCodes"        test_stripTelnet_telnetCodes
+    , testCase "test_stripTelnet_leading"            test_stripTelnet_leading
+    , testCase "test_stripTelnet_trailing"           test_stripTelnet_trailing
+    , testCase "test_stripTelnet_leadingAndTrailing" test_stripTelnet_leadingAndTrailing
+    , testCase "test_stripTelnet_intercalated"       test_stripTelnet_intercalated
+    , testCase "test_stripTelnet_malformed1"         test_stripTelnet_malformed1
+    , testCase "test_stripTelnet_malformed2"         test_stripTelnet_malformed2
+    , testCase "test_stripTelnet_malformed3"         test_stripTelnet_malformed3
+    , testCase "test_stripTelnet_malformed4"         test_stripTelnet_malformed4
+    , testCase "test_stripTelnet_malformed5"         test_stripTelnet_malformed5
+    , testCase "test_stripTelnet_malformed6"         test_stripTelnet_malformed6 ]

@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fno-warn-type-defaults #-}
 module MudTests.Util.Misc where
 
 import Mud.Util.Misc
@@ -10,6 +11,18 @@ import Test.Tasty.HUnit ((@=?), Assertion)
 
 
 -- ==================================================
+
+
+test_division_compare_results :: Assertion
+test_division_compare_results = a && b @=? True
+  where
+    x = 5 `divideRound` 2
+    y = 5 `intDivide`   2
+    a = x == 2 && y == 3
+    b = round 2.5 == 2 && round 2.6 == 3
+
+
+-----
 
 
 data AOrB = A | B deriving (Eq, Show)

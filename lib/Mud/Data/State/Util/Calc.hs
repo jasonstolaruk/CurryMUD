@@ -102,7 +102,7 @@ calcBonus :: Id -> MudState -> Exp -- Used by the "bonus" command.
 calcBonus i ms = let l                 = getLvl i ms
                      ((_, a):(_, b):_) = drop l $ (0, 0) : calcLvlExps
                      diff              = b - a
-                 in (round (diff `divide` 20) `max` 100) `min` 5000
+                 in ((diff `divideRound` 20) `max` 100) `min` 5000
 
 
 -----
@@ -186,7 +186,7 @@ calcMaxEnc i ms = calcEffSt i ms ^ 2 `percent` 13
 
 
 calcMaxMouthfuls :: Obj -> Mouthfuls
-calcMaxMouthfuls = views objVol (round . (`divide` mouthfulVol))
+calcMaxMouthfuls = views objVol (`divideRound` mouthfulVol)
 
 
 -----
@@ -262,7 +262,7 @@ calcLvlUpPp i ms x = max1 (rndmIntToRange x r + calcModifierPs i ms)
 calcLvlUpFp :: Id -> MudState -> Int -> Int
 calcLvlUpFp i ms x = let a = calcModifierHt i ms
                          b = calcModifierSt i ms
-                         y = round $ (a + b) `divide` 2
+                         y = (a + b) `divideRound` 2
                      in max1 (rndmIntToRange x r + y)
   where
     r = case getRace i ms of Dwarf     -> (1, 8)
@@ -294,7 +294,7 @@ calcModifierForAttrib l i = views (mobTbl.ind i.l) calcModifierForEffAttrib
 
 
 calcModifierForEffAttrib :: Int -> Int
-calcModifierForEffAttrib x = round $ (x - 50) `divide` 10
+calcModifierForEffAttrib x = (x - 50) `divideRound` 10
 
 
 racialStModifier :: Race -> Int
@@ -488,7 +488,7 @@ calcStomachSize = helper
       Elf       -> f minusFifth
       Felinoid  -> f plusFifth
       Hobbit    -> f minusThird
-      Human     -> round $ 60 * 100 `divide` mouthfulVol -- 34 mouthfuls.
+      Human     -> 60 * 100 `divideRound` mouthfulVol -- 34 mouthfuls.
       Lagomorph -> f id
       Nymph     -> f minusFifth
       Vulpenoid -> f plusQuarter

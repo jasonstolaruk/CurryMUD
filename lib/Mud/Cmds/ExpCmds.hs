@@ -1142,7 +1142,7 @@ vomit i mq cols ecn a = getState >>= \ms -> case getStomach i ms of
               d   = mkStdDesig i ms DoCap
               bs' = pure (nlnl $ serialize d <> " dry heaves.", i `delete` desigIds d)
           in expCmdHelper i mq cols ecn (txt, bs', view _3 a, txt)
-  stom -> let size = round $ calcStomachSize Human `divide` 4
+  stom -> let size = calcStomachSize Human `divideRound` 4
           in rndmVector (size + 4) >>= \v -> helper v stom size |&| modifyState >=> sequence_
   where
     helper v stom size ms =

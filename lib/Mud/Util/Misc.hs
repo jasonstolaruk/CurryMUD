@@ -8,7 +8,7 @@ module Mud.Util.Misc ( atLst1
                      , boolToMaybe
                      , concatMapM
                      , divide
-                     , divRound
+                     , divideRound
                      , dropFst
                      , dropIrrelevantFilenames
                      , dropThr
@@ -24,6 +24,7 @@ module Mud.Util.Misc ( atLst1
                      , fromRight
                      , ifThenElse
                      , ind
+                     , intDivide
                      , isVowel
                      , listToMaybe
                      , max1
@@ -81,7 +82,7 @@ default (Int, Double)
 -----
 
 
-infixl 7 `divide`, `percent`
+infixl 7 `divide`, `divideRound`, `intDivide`, `percent`
 
 
 -- ==================================================
@@ -116,9 +117,8 @@ divide :: (Integral a, Fractional b) => a -> a -> b
 divide = (/) `on` fromIntegral
 
 
--- TODO: Add comments. Efficiency?
-divRound :: (Integral a) => a -> a -> a
-x `divRound` y = (x + y `div` 2) `div` y
+divideRound :: (Integral a) => a -> a -> a
+x `divideRound` y = round $ x `divide` y
 
 
 dropFst :: (a, b, c) -> (b, c)
@@ -197,6 +197,16 @@ ind :: Int -> Lens' (IM.IntMap a) a
 ind k = lens (! k) (flip (IM.insert k))
 
 
+{-
+"intDivide" is integer division, similar in effect to "divideRound".
+"intDivide" and "divideRound" do produce different results in some cases due to the behavior of "round". See
+"test_division_compare_results".
+Profiling showed that "divideRound" is more efficient than "intDivide".
+-}
+intDivide :: (Integral a) => a -> a -> a
+x `intDivide` y = (x + y `div` 2) `div` y
+
+
 isVowel :: Char -> Bool
 isVowel = (`elem` ("aeiou" :: String))
 
@@ -267,7 +277,7 @@ patternMatchFail modName funName = blowUp modName funName "pattern match failure
 
 
 percent :: Int -> Int -> Int
-percent x y = round $ 100 * (x `divide` y)
+percent x y = 100 * x `divideRound` y
 
 
 plusFifth :: Int -> Int
