@@ -149,7 +149,7 @@ promptHelper i h snl t = sequence_ [ handleFromServer i h Plaに . (<> telnetGoA
 
 
 handleShowHandle :: Id -> Handle -> MudStack ()
-handleShowHandle i h = getMsgQueueColumns i <$> getState >>= \pair -> do
+handleShowHandle i h = getMsgQueueColumns i <$> getState >>= \pair ->
     uncurry wrapSend1Nl pair . T.pack =<< liftIO (hShow h)
 
 
