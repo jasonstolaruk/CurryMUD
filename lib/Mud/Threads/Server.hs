@@ -46,7 +46,7 @@ import Data.Text (Text)
 import qualified Data.Map.Lazy as M (elems)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (hPutStr, hPutStrLn, readFile)
-import System.IO (Handle, hFlush)
+import System.IO (Handle, hFlush, hShow)
 
 
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
@@ -84,6 +84,7 @@ threadServer h i mq tq = sequence_ [ setThreadType . Server $ i, loop `catch` th
       Prompt   p     -> promptHelper i h Don'tNl p         >> loop
       PromptNl p     -> promptHelper i h DoNl    p         >> loop
       Quit           -> cowbye h                           >> sayonara
+      ShowHandle     -> handleShowHandle i h               >> loop
       Shutdown       -> shutDown                           >> loop
       SilentBoot     ->                                    sayonara
       ToNpc msg      -> handleFromServer i h Npcに msg     >> loop
@@ -129,7 +130,7 @@ handleFromServer i h Plaに msg = getState >>= \ms ->
 
 
 fromServerHelper :: Handle -> Text -> MudStack ()
-fromServerHelper h = liftIO . T.hPutStr h
+fromServerHelper h t = liftIO $ T.hPutStr h t >> hFlush h
 
 
 sendInacBootMsg :: Handle -> MudStack ()
@@ -145,6 +146,11 @@ promptHelper i h snl t = sequence_ [ handleFromServer i h Plaに . (<> telnetGoA
   where
     f = case snl of DoNl    -> nl -- TODO: Mudlet...
                     Don'tNl -> id
+
+
+handleShowHandle :: Id -> Handle -> MudStack ()
+handleShowHandle i h = getMsgQueueColumns i <$> getState >>= \pair -> do
+    uncurry wrapSend1Nl pair . T.pack =<< liftIO (hShow h)
 
 
 cowbye :: Handle -> MudStack ()

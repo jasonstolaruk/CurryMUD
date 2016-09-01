@@ -24,6 +24,7 @@ data Msg = AsSelf     Text
          | Prompt     Text
          | PromptNl   Text
          | Quit
+         | ShowHandle
          | Shutdown
          | SilentBoot
          | ToNpc      Text

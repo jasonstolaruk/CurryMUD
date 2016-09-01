@@ -113,7 +113,6 @@ logPlaExecArgs = L.logPlaExecArgs "Mud.Cmds.Debug"
 -- ==================================================
 
 
--- TODO: hShow
 debugCmds :: [Cmd]
 debugCmds =
     [ mkDebugCmd "?"           debugDispCmdList ("\&" <> cmdDescDispCmdList)
@@ -133,6 +132,7 @@ debugCmds =
     , mkDebugCmd "exp"         debugExp         "Award yourself 5,000 exp."
     , mkDebugCmd "fun"         debugFun         "Dump the keys of the \"FunTbl\", \"HookFunTbl\", \"RmActionFunTbl\", \
                                                 \and \"EffectFunTbl\"."
+    , mkDebugCmd "handle"      debugHandle      "Display information about the handle for your network connection."
     , mkDebugCmd "id"          debugId          "Search the \"MudState\" tables for a given ID."
     , mkDebugCmd "keys"        debugKeys        "Dump a list of \"MudState\" table keys."
     , mkDebugCmd "liquid"      debugLiq         "Consume a given amount (in mouthfuls) of a given liquid (by distinct \
@@ -370,6 +370,14 @@ debugFun (NoArgs i mq cols) = getState >>= \ms -> do
                                                                            , helper "InstaEffectFunTbl" instaEffectFunTbl ]
     logPlaExec (prefixDebugCmd "fun") i
 debugFun p = withoutArgs debugFun p
+
+
+-----
+
+
+debugHandle :: ActionFun
+debugHandle (NoArgs' i mq) = writeMsg mq ShowHandle >> logPlaExec (prefixDebugCmd "handle") i
+debugHandle p              = withoutArgs debugHandle p
 
 
 -----
