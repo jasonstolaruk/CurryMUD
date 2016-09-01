@@ -334,7 +334,7 @@ mkDfltPrompt i ms = let (hps, mps, pps, fps)     = getPts i ms
                     in marker <> " " <> (spaces . dropBlanks $ [ isHp |?| f "h" hps
                                                                , isMp |?| f "m" mps
                                                                , isPp |?| f "p" pps
-                                                               , isFp |?| f "f" fps ]) <> "> "
+                                                               , isFp |?| f "f" fps ]) <> ">"
   where
     indentColor     = isNpc i ms ? toNpcColor :? promptIndentColor
     f a pair@(x, _) = commaShow x <> colorWith (mkColorTxtForXps pair) a
