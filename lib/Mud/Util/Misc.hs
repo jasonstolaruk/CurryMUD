@@ -51,6 +51,7 @@ module Mud.Util.Misc ( atLst1
                      , safeCoerce
                      , safePerformIO
                      , sortEithers
+                     , strictId
                      , twice
                      , unadulterated
                      , uncurry3
@@ -63,7 +64,7 @@ import Mud.Util.Quoting
 
 import Control.Lens (_1, _2, lens, Lens')
 import Control.Lens.Operators ((%~))
-import Control.Monad (guard)
+import Control.Monad (guard, join)
 import Data.Function (on)
 import Data.IntMap.Lazy ((!))
 import Data.IORef (IORef, atomicWriteIORef)
@@ -309,6 +310,10 @@ sortEithers = foldr helper ([], [])
   where
     helper (Right a) = _1 %~ (a :)
     helper (Left  b) = _2 %~ (b :)
+
+
+strictId :: a -> a
+strictId = join seq
 
 
 twice :: (a -> a) -> a -> a

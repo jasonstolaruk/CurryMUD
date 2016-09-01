@@ -1813,7 +1813,7 @@ teleHelper :: ActionParams
            -> (Id -> [Broadcast] -> [Broadcast])
            -> (MudState, Funs)
 teleHelper p@ActionParams { myId } ms originId destId destName mt f =
-    let g            = maybe id (\t -> ((nlnl t, pure myId) :)) mt
+    let g            = maybe strictId (\t -> ((nlnl t, pure myId) :)) mt
         originDesig  = mkStdDesig myId ms Don'tCap
         originMobIds = myId `delete` desigIds originDesig
         s            = fromJust . desigEntSing $ originDesig
