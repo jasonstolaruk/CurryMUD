@@ -74,7 +74,7 @@ import qualified Data.Map.Lazy as M (elems)
 import qualified Data.Text as T
 
 
-default (Int, Double)
+default (Int)
 
 
 -----
