@@ -20,6 +20,7 @@ import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Data.State.Util.Random
 import Mud.Misc.LocPref
+import Mud.Util.List
 import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Operators
 import Mud.Util.Quoting
@@ -1142,21 +1143,21 @@ vomit i mq cols ecn a = getState >>= \ms -> case getStomach i ms of
               d   = mkStdDesig i ms DoCap
               bs' = pure (nlnl $ serialize d <> " dry heaves.", i `delete` desigIds d)
           in expCmdHelper i mq cols ecn (txt, bs', view _3 a, txt)
-  stom -> let size = calcStomachSize Human `divideRound` 4
-          in rndmVector (size + 4) >>= \v -> helper v stom size |&| modifyState >=> sequence_
+  cont -> let baseSize = calcStomachSize Human `divideRound` 4
+          in rndmVector (baseSize + 4) >>= \v -> helper v cont baseSize |&| modifyState >=> sequence_
   where
-    helper v stom size ms =
-        let vomitAmt  = size + rndmIntToRange (V.head v) (0, 6) - 3
-            stomAmt   = length stom
-            remainder = stomAmt - vomitAmt
-            actualAmt = remainder >= 0 ? vomitAmt :? stomAmt
+    helper v cont baseSize ms =
+        let vomitAmt  = baseSize + rndmIntToRange (V.head v) (0, 6) - 3
+            contAmt   = length cont
+            remainder = contAmt - vomitAmt
+            actualAmt = remainder >= 0 ? vomitAmt :? contAmt
             isEmptied = remainder <= 0
             amtTxt    = (" " <>) . parensQuote . T.concat $ [ "Vomited ", showText actualAmt, " mouthfuls", rest, "." ]
             rest      = isEmptied |?| "; stomach emptied"
             a'        = a & _4 <>~ amtTxt
             fs        = pure . expCmdHelper i mq cols ecn $ a'
-            stom'     = not isEmptied |?| newStomHelper v actualAmt stom
-        in (ms & mobTbl.ind i.stomach .~ stom', fs :: Funs)
-    newStomHelper _ 0 stom = stom
-    newStomHelper v x stom = newStomHelper v (pred x) $ let y = rndmIntToRange (v V.! x) (0, length stom - 1)
-                                                        in uncurry (++) . second tail . splitAt y $ stom
+            cont'     = not isEmptied |?| newContHelper v actualAmt cont
+        in (ms & mobTbl.ind i.stomach .~ cont', fs :: Funs)
+    newContHelper _ 0 cont = cont
+    newContHelper v x cont = newContHelper v (pred x) $ let y = rndmIntToRange (v V.! x) (0, length cont - 1)
+                                                        in dropElem y cont

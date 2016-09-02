@@ -4,8 +4,8 @@ module Mud.Util.List ( allValues
                      , appendIfUnique
                      , countOcc
                      , countOccs
+                     , dropElem
                      , dropEmpties
-                     , dropSynonyms
                      , headLast
                      , headTail
                      , listToTuple
@@ -16,7 +16,7 @@ module Mud.Util.List ( allValues
 import Mud.Util.Misc
 import Mud.Util.Operators
 
-import Control.Arrow ((***))
+import Control.Arrow ((***), second)
 import Control.Lens (Lens', each, partsOf, view)
 import Control.Lens.Each (Each)
 import Control.Lens.Operators ((&), (.~))
@@ -41,14 +41,12 @@ countOccs :: (Ord a) => [a] -> [(a, Int)]
 countOccs = map ((head *** length) . dup) . group . sort
 
 
+dropElem :: Int -> [a] -> [a]
+dropElem x = uncurry (++) . second tail . splitAt x
+
+
 dropEmpties :: (Eq a, Monoid a) => [a] -> [a]
 dropEmpties = filter (()!#)
-
-
-dropSynonyms :: (Eq a) => [a] -> [a] -> [a]
-dropSynonyms _        []                         = []
-dropSynonyms synonyms (x:xs) | x `elem` synonyms = x : filter (`notElem` synonyms) xs
-                             | otherwise         = x : dropSynonyms synonyms xs
 
 
 headLast :: [a] -> (,) a a

@@ -1,6 +1,7 @@
 {-# LANGUAGE LambdaCase, OverloadedStrings #-}
 
 module Mud.Misc.Misc ( BothGramNos
+                     , dropSynonyms
                      , mkCapsFun
                      , mkCoinsMsgs
                      , mkPlurFromBoth
@@ -29,6 +30,15 @@ import Data.Maybe (catMaybes)
 import Data.Monoid (Sum(..), (<>))
 import Data.Text (Text)
 import qualified Data.Text as T
+
+
+dropSynonyms :: [Text] -> [Text] -> [Text]
+dropSynonyms _        []                         = []
+dropSynonyms synonyms (x:xs) | x `elem` synonyms = x : filter (`notElem` synonyms) xs
+                             | otherwise         = x : dropSynonyms synonyms xs
+
+
+-----
 
 
 mkCapsFun :: ShouldCap -> Text -> Text
