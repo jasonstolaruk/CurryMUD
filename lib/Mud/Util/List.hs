@@ -42,7 +42,7 @@ countOccs = map ((head *** length) . dup) . group . sort
 
 
 dropElem :: Int -> [a] -> [a]
-dropElem x = uncurry (++) . second tail . splitAt x
+dropElem i = uncurry (++) . second tail . splitAt i
 
 
 dropEmpties :: (Eq a, Monoid a) => [a] -> [a]

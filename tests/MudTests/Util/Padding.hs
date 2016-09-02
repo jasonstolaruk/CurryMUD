@@ -23,18 +23,17 @@ prop_quoteWithAndPad_length t = forAll (choose (3, 50)) $ \len ->
 prop_quoteWithAndPad_quotes :: Char -> Char -> Text -> Property
 prop_quoteWithAndPad_quotes left right t = (not . isSpace $ left) &&
                                            (not . isSpace $ right) ==>
-  forAll (choose (3, 50)) $ \len ->
-      let quotes    = (left, right) & both %~ T.singleton
-          res       = quoteWithAndPad quotes len t
-          grabRight = T.head . T.dropWhile isSpace . T.reverse
-      in T.head res == left && grabRight res == right
+    forAll (choose (3, 50)) $ \len -> let quotes    = (left, right) & both %~ T.singleton
+                                          res       = quoteWithAndPad quotes len t
+                                          grabRight = T.head . T.dropWhile isSpace . T.reverse
+                                      in T.head res == left && grabRight res == right
 
 
 prop_padOrTrunc_pads :: NonNegative Int -> Text -> Property
 prop_padOrTrunc_pads (NonNegative x) t = T.length t <= x ==>
-  (T.length . padOrTrunc x $ t) == x
+    (T.length . padOrTrunc x $ t) == x
 
 
 prop_padOrTrunc_truncates :: NonNegative Int -> Text -> Property
 prop_padOrTrunc_truncates (NonNegative x) t = T.length t > x ==>
-  (T.length . padOrTrunc x $ t) == x
+    (T.length . padOrTrunc x $ t) == x

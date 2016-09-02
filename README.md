@@ -60,7 +60,7 @@ The code is available here on GitHub under the 3-clause BSD license (refer to th
 
 * About 40,000 lines of code/text.
 * About 95 modules, excluding tests.
-* About 60 unit and property tests exist (I'm using the [tasty testing framework](https://hackage.haskell.org/package/tasty)).
+* About 65 unit and property tests exist (I'm using the [tasty testing framework](https://hackage.haskell.org/package/tasty)).
 * A `ReaderT` monad transformer stack with the world state inside a single `IORef`.
 * `STM`-based concurrency.
 * Using `aeson` (with `conduit`) and `sqlite-simple` for persistence.
