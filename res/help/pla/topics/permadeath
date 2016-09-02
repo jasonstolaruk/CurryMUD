@@ -1,6 +1,20 @@
 \h PERMADEATH \d
 
-TODO
+In CurryMUD, when a Player Character (PC) dies, he/she is truly dead; a deceased PC cannot return to the virtual world in any way, shape, or form. This is known as "permadeath" (PD).
+
+PD suffers from a serious image problem. Quite understandably, there are many players who are intimidated by the very idea that their character could expire and become no more. However, PD does bring its own compelling advantages to a virtual world: please consider the following points.
+
+* PD is realistic; it makes a virtual world more immersive.2`
+* If a PC can in some capacity continue its existence following death, then it clearly hasn't died. Without PD, all PCs are effectively immortal.2`
+* When Non-Player Characters (NPCs) / mobiles are killed, they seize to exist. There is no fiction that can satisfactorily explain why the same does not apply to Player Characters (PCs).2`
+* A virtual world with PD is more exciting and thrilling. There is more risk.2`
+* Consequently, there is more reward as well. Without PD, one's sense of achievement is diluted: in practical terms, given enough time and common sense anyone can advance their character and plod on to success. Without PD, inevitably the experience of the virtual world slowly becomes increasingly vacuous.2`
+* Without PD, there really can be no such thing as acts of heroism and courage. The existence of PD allows players to truly put their characters on the line. If everyone is a hero, no one really is...2`
+* Without PD, the newbies who arrive at a virtual world which has been ongoing for some time may feel that they can never catch up to those players at the top. The horizon advances at the speed you approach it.2`
+
+We understand that many potential players will avoid CurryMUD altogether due to PD. Others will leave in frustration when their character dies. Even so, we feel that the advantages of PD outweigh these downsides.
+
+(Special thanks to Richard Bartle, who proposed the benefits of PD offered above in his excellent book, "Designing Virtual Worlds.")
 
 \uSEE ALSO\n
-retire, rules
+acronyms, retire, rules

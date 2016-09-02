@@ -55,27 +55,11 @@ Skill learning is an ideal candidate for an activity that players can opt to hav
 
 PD:
 
-It is more realistic. Therefore, a virtual world with PD is more immersive.
-When mobiles are killed, they seize to exist. There is no fiction that can satisfactorily explain why the same does not apply to PCs.
-
-If a character can continue its existence after death, then it clearly hasn't died. Without PD, all PCs are effectively immortal.
-
-A virtual world with PD is more exciting/thrilling.
 "If fleeing is not unlikely to succeed and the player base is too small to support gang warfare, an unmoderated world can thrive, and with the vibrancy that's hard to match elsewhere." p.418
 
 "Virtual worlds are about identity; if you can't lose something, you don't value it; therefore, you can never value your identity in a non-PD world as much as you can in a PD world." p.433
 
-Without PD, there really is no such thing as acts of heroism and courage. The existence of PD allows players to truly put their characters on the line, as well as their nascent identities.
-"Acts are only heroic when there is significant, perceived chance of real loss and no easier alternative." p.432
-"If everyone is a hero, no one is." p.434
-
-Without PD, one's sense of achievement is diluted. In practical terms, given enough time and common sense, anyone can plod to success and make it to "the end."
-
-Without PD, inevitably the experience of the virtual world slowly becomes increasingly vacuous.
-
 Without PD, the people who are first to positions of power get to keep them.
-
-Without PD, the newbies who arrive at a virtual world which has been ongoing for some time may feel that they can never catch up to those players at the top. If new content is continuously added targeting the top players, then the feelings of these newbies are certainly justified. "The horizon advances at the speed of you approach it." p.427
 
 Without PD, players who stick to the same character will essentially only be able to consume the same content once (or at least from only one angle).
 
@@ -85,8 +69,6 @@ The actual risk of PD should be generally lower than players estimated to be. It
 When a PC dies at the hands of a mobile, the mobile should loot the corpse of all valuable items. p.429
 
 "If you let PKing become your virtual world's elder game, prepare for the worst." p.425
-
-Implementing PD means accepting the fact that many potential players will stay away, and others will leave when their character dies. PD has a serious image problem.
 
 Consider allowing players to appeal to have their character resurrected when they were unable to flee due to lag, bugs, or they were unjustly killed by another PC.
 Would it be possible for the server to accurately track client latency during combat?
