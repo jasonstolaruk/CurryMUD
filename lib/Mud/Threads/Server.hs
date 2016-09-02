@@ -144,7 +144,7 @@ sendBootMsg h = liftIO . T.hPutStrLn h . nl . colorWith bootMsgColor
 promptHelper :: Id -> Handle -> ShouldNl -> Text -> MudStack ()
 promptHelper i h snl t = sequence_ [ handleFromServer i h Plaに . (<> telnetGoAhead) . f $ t, liftIO . hFlush $ h ]
   where
-    f = case snl of DoNl    -> nl -- TODO: Mudlet...
+    f = case snl of DoNl    -> nl
                     Don'tNl -> id
 
 
