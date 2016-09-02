@@ -216,7 +216,7 @@ rulesMsg =
     spcs <> "Players are free to role-play characters who are homosexual, bisexual, pansexual, gender nonconforming, etc. Intolerant attitudes are unacceptable.\n\
     \\n\
     \\\uPERMADEATH\\d\n" <>
-    spcs <> "This means that when a character dies, he/she is truly dead; a deceased character cannot return to the virtual world in any way, shape, or form. By playing CurryMUD, you consent to the fact that when your character dies, he/she is unrecoverable.\n\
+    spcs <> "When a Player Character (PC) dies, he/she is truly dead; a deceased character cannot return to the virtual world in any way, shape, or form. This is known as \"permadeath.\" By playing CurryMUD, you consent to the fact that when your character dies, he/she becomes unrecoverable.\n\
     \\n\
     \\\uPLAYER-VS-PLAYER\\d\n\
     \TODO\n\
