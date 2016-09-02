@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings, ViewPatterns #-}
 
-module Mud.Data.State.Util.Random ( percentRange
+module Mud.Data.State.Util.Random ( dropRndmElems
+                                  , percentRange
                                   , rndmDo
                                   , rndmDos
                                   , rndmElem
@@ -14,6 +15,7 @@ module Mud.Data.State.Util.Random ( percentRange
                                   , rndmVector ) where
 
 import Mud.Data.State.MudData
+import Mud.Util.List
 import Mud.Util.Misc hiding (blowUp)
 import Mud.Util.Operators
 import Mud.Util.Text
@@ -24,7 +26,7 @@ import Control.Monad (replicateM)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (ask)
 import Data.Ix (inRange)
-import qualified Data.Vector.Unboxed as V (Vector)
+import qualified Data.Vector.Unboxed as V (Vector, (!))
 import System.Random.MWC (GenIO, uniformR, uniformVector)
 
 
@@ -36,6 +38,14 @@ blowUp = U.blowUp "Mud.Data.State.Util.Random"
 
 
 type Count = Int
+
+
+dropRndmElems :: (V.Vector Int) -> Count -> [a] -> [a]
+dropRndmElems v c = helper c
+  where
+    helper 0 xs = xs
+    helper i xs = helper (pred i) $ let a = rndmIntToRange (v V.! i) (0, length xs - 1)
+                                    in dropElem a xs
 
 
 getGen :: MudStack GenIO

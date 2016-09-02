@@ -20,7 +20,6 @@ import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Data.State.Util.Random
 import Mud.Misc.LocPref
-import Mud.Util.List
 import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Operators
 import Mud.Util.Quoting
@@ -38,7 +37,7 @@ import Data.Monoid ((<>))
 import Data.Text (Text)
 import qualified Data.Set as S (Set, filter, foldr, fromList, map, toList)
 import qualified Data.Text as T
-import qualified Data.Vector.Unboxed as V ((!), head)
+import qualified Data.Vector.Unboxed as V (head)
 
 
 patternMatchFail :: (Show a) => PatternMatchFail a b
@@ -1156,8 +1155,5 @@ vomit i mq cols ecn a = getState >>= \ms -> case getStomach i ms of
             rest      = isEmptied |?| "; stomach emptied"
             a'        = a & _4 <>~ amtTxt
             fs        = pure . expCmdHelper i mq cols ecn $ a'
-            cont'     = not isEmptied |?| newContHelper v actualAmt cont
+            cont'     = not isEmptied |?| dropRndmElems v actualAmt cont
         in (ms & mobTbl.ind i.stomach .~ cont', fs :: Funs)
-    newContHelper _ 0 cont = cont
-    newContHelper v x cont = newContHelper v (pred x) $ let y = rndmIntToRange (v V.! x) (0, length cont - 1)
-                                                        in dropElem y cont
