@@ -41,8 +41,8 @@ blowUp = U.blowUp "Mud.Data.State.Util.Random"
 type Count = Int
 
 
-dropRndmElems :: (V.Vector Int) -> Count -> [a] -> [a]
-dropRndmElems v c = helper c
+dropRndmElems :: V.Vector Int -> Count -> [a] -> [a]
+dropRndmElems v = helper
   where
     helper 0 xs = xs
     helper i xs = helper (pred i) $ let a = rndmIntToRange (v V.! i) (0, length xs - 1)
