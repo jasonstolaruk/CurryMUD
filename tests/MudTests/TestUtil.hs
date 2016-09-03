@@ -25,17 +25,17 @@ genAsciiAlphaNum :: Gen Char
 genAsciiAlphaNum = chr <$> choose (32, 126)
 
 
+genCols :: Gen Int
+genCols = choose (minCols, maxCols)
+
+
 genTextOfLen :: Int -> Gen Text
 genTextOfLen n = T.pack <$> replicateM n genAsciiAlphaNum
 
 
-genTextOfRandLen :: (Int, Int) -> Gen Text
-genTextOfRandLen (nMin, nMax) = genTextOfLen =<< choose (nMin, nMax)
+genTextOfRndmLen :: (Int, Int) -> Gen Text
+genTextOfRndmLen (nMin, nMax) = genTextOfLen =<< choose (nMin, nMax)
 
 
 genTextLongerThan :: Int -> Gen Text
-genTextLongerThan x = genTextOfLen . (x +) =<< choose (1, 50)
-
-
-genCols :: Gen Int
-genCols = choose (minCols, maxCols)
+genTextLongerThan n = genTextOfLen . (n +) =<< choose (1, 50)

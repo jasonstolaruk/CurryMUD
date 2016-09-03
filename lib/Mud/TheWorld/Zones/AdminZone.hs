@@ -1328,7 +1328,7 @@ createAdminZone = do
       putVessel i
                 (Ent i
                      (Just "bottle")
-                     (t <> " bottle") ""
+                     (t <> " bottle") "" -- TODO: "You begin drinking the oily, puce liquid from the  bottle...""
                      (uncurry mkBottleDesc d)
                      Nothing
                      zeroBits)

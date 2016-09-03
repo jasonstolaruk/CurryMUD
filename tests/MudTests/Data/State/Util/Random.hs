@@ -12,6 +12,14 @@ import Test.QuickCheck.Monadic (assert, monadicIO)
 import Test.Tasty.QuickCheck (Property, choose, forAll)
 
 
+prop_dropRndmElems :: Property
+prop_dropRndmElems = forAll (choose (1, 1000)) $ \c ->
+    monadicIO $ do
+        (v, xs) <- inWorld $ (,) <$> rndmVector (succ c) <*> rndmInts c
+        let xs' = dropRndmElems v c xs
+        assert $ length xs' == length xs - c
+
+
 prop_rndmIntToRange_within_range_from_zero :: Property
 prop_rndmIntToRange_within_range_from_zero = forAll (choose percentRange) $ \((0, ) -> range) ->
     monadicIO $ do

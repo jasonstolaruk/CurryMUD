@@ -5,6 +5,7 @@ module Mud.Data.State.Util.Random ( dropRndmElems
                                   , rndmDo
                                   , rndmDos
                                   , rndmElem
+                                  , rndmInts
                                   , rndmIntToElem
                                   , rndmIntToPer
                                   , rndmIntToRange
@@ -26,7 +27,7 @@ import Control.Monad (replicateM)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (ask)
 import Data.Ix (inRange)
-import qualified Data.Vector.Unboxed as V (Vector, (!))
+import qualified Data.Vector.Unboxed as V (Vector, (!), toList)
 import System.Random.MWC (GenIO, uniformR, uniformVector)
 
 
@@ -75,6 +76,10 @@ rndmElem :: [a] -> MudStack a
 rndmElem xs = (xs !!) <$> rndmR (0, length xs - 1)
 
 
+rndmInts :: Int -> MudStack [Int]
+rndmInts c = V.toList <$> rndmVector c
+
+
 rndmIntToElem :: Int -> [a] -> a
 rndmIntToElem r xs = xs !! rndmIntToRange r (0, length xs - 1)
 
@@ -89,8 +94,9 @@ rndmIntToRange = rndmIntToRangeHelper maxBound
 
 rndmIntToRangeHelper :: Int -> Int -> Range -> Int
 rndmIntToRangeHelper m (abs -> r) pair@(x, y)
-  | x <  0    = oops
-  | y <= x    = oops
+  | x < 0     = oops
+  | y < x     = oops
+  | x == y    = x
   | otherwise = let steps   = y - x + 1
                     stepAmt = m `div` steps
                     helper step z | r <= z + stepAmt = step

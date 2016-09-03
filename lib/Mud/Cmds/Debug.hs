@@ -147,7 +147,7 @@ debugCmds =
     , mkDebugCmd "pidge"       debugPidge       "Send a message to Pidge."
     , mkDebugCmd "pmf"         debugPmf         "Trigger a pattern match failure."
     , mkDebugCmd "purge"       debugPurge       "Purge the thread tables."
-    , mkDebugCmd "random"      debugRandom      "Dump a series of random numbers."
+    , mkDebugCmd "random"      debugRandom      "Dump random numbers generated with \"rndmRs\" and \"rndmInts\"."
     , mkDebugCmd "regen"       debugRegen       "Display regen amounts and delays for a given mob ID."
     , mkDebugCmd "remput"      debugRemPut      "In quick succession, remove from and put into a sack on the ground."
     , mkDebugCmd "rnt"         debugRnt         "Dump your random names table, or generate a random name for a given PC."
@@ -671,7 +671,8 @@ debugPurge p              = withoutArgs debugPurge p
 
 debugRandom :: ActionFun
 debugRandom (NoArgs i mq cols) = do
-    wrapSend mq cols . showText =<< rndmRs 10 (0, 99)
+    wrapSend mq cols . showText =<< rndmRs   10 (0, 99)
+    wrapSend mq cols . showText =<< rndmInts 10
     logPlaExec (prefixDebugCmd "random") i
 debugRandom p = withoutArgs debugRandom p
 

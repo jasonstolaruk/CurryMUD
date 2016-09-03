@@ -53,7 +53,8 @@ propTests_Mud_Data_State_Util_Misc = testGroup "Mud.Data.State.Util.Misc"
 
 propTests_Mud_Data_State_Util_Random :: TestTree
 propTests_Mud_Data_State_Util_Random = testGroup "Mud.Data.State.Util.Random"
-    [ QC.testProperty "prop_rndmIntToRange_within_range_from_zero"  prop_rndmIntToRange_within_range_from_zero
+    [ QC.testProperty "prop_dropRndmElems"                          prop_dropRndmElems
+    , QC.testProperty "prop_rndmIntToRange_within_range_from_zero"  prop_rndmIntToRange_within_range_from_zero
     , QC.testProperty "prop_rndmIntToRange_within_range_from_other" prop_rndmIntToRange_within_range_from_zero
     , QC.testProperty "prop_rndmIntToRange_distribution"            prop_rndmIntToRange_distribution
     , QC.testProperty "prop_rndmIntToRangeHelper_low_max"           prop_rndmIntToRangeHelper_low_max
