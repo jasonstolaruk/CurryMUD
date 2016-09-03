@@ -1201,8 +1201,8 @@ createAdminZone = do
              mempty
              Nothing
              (Con False c)
-  let backTuples = [ (iBack1,   "",       backWeight,    backVol,    backCap  )
-                   , (iBack2,   "",       backWeight,    backVol,    backCap  )
+  let backTuples = [ (iBack1,   "",       backWeight,    backVol,    backCap   )
+                   , (iBack2,   "",       backWeight,    backVol,    backCap   )
                    , (iBackSml, "small ", backSmlWeight, backSmlVol, backSmlCap)
                    , (iBackLrg, "large ", backLrgWeight, backLrgVol, backLrgCap) ]
   forM_ backTuples $ \(i, t, w, v, c) ->
