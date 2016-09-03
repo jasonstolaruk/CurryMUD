@@ -253,6 +253,24 @@ debugCins p = advise p [] adviceDCinsExcessArgs
 -----
 
 
+class Myモルモット a where {}; instance Myモルモット Bool where {}
+data Penny = forall a. Myモルモット a => Pennyちゃん a
+
+
+debugCoercePenny :: ActionFun
+debugCoercePenny (NoArgs' i mq) = let penny        = Pennyちゃん True
+                                      coercedPenny = coercePenny penny
+                                  in do { send mq . nlnl $ "Coerced Penny: " <> showText coercedPenny
+                                        ; logPlaExec (prefixDebugCmd "coercepenny") i }
+  where
+    coercePenny :: Penny -> Bool
+    coercePenny (Pennyちゃん a) = unsafeCoerce a
+debugCoercePenny p = withoutArgs debugUnderline p
+
+
+-----
+
+
 debugColor :: ActionFun
 debugColor (NoArgs' i mq) = sequence_ [ send mq . nl . T.concat $ msg, logPlaExec (prefixDebugCmd "color") i ]
   where
@@ -914,24 +932,6 @@ debugUnderline (NoArgs i mq cols) = do
     wrapSend mq cols $ showText underlineANSI <> underline " This text is underlined. " <> showText noUnderlineANSI
     logPlaExec (prefixDebugCmd "underline") i
 debugUnderline p = withoutArgs debugUnderline p
-
-
------
-
-
-class Myモルモット a where {}; instance Myモルモット Bool where {}
-data Penny = forall a. Myモルモット a => Pennyちゃん a
-
-
-debugCoercePenny :: ActionFun
-debugCoercePenny (NoArgs' i mq) = let penny        = Pennyちゃん True
-                                      coercedPenny = coercePenny penny
-                                  in do { send mq . nlnl $ "Coerced Penny: " <> showText coercedPenny
-                                        ; logPlaExec (prefixDebugCmd "coercepenny") i }
-  where
-    coercePenny :: Penny -> Bool
-    coercePenny (Pennyちゃん a) = unsafeCoerce a
-debugCoercePenny p = withoutArgs debugUnderline p
 
 
 -----
