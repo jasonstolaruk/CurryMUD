@@ -30,12 +30,10 @@ module Mud.Data.State.Util.Output ( anglePrompt
                                   , sendDfltPrompt
                                   , sendMsgBoot
                                   , sendPrompt
-                                  , sendPromptNl
                                   , sendSilentBoot
                                   , wrapSend
                                   , wrapSend1Nl
                                   , wrapSendPrompt
-                                  , wrapSendPromptNl
                                   , writeMsg ) where
 
 import Mud.Cmds.Msgs.Misc
@@ -79,7 +77,7 @@ patternMatchFail = U.patternMatchFail "Mud.Data.State.Util.Output"
 
 
 anglePrompt :: MsgQueue -> MudStack ()
-anglePrompt = flip sendPrompt "> "
+anglePrompt = flip sendPrompt ">"
 
 
 -----
@@ -323,7 +321,7 @@ sendCmdNotFound mq = send mq . nlnl $ sorryCmdNotFound
 
 
 sendDfltPrompt :: MsgQueue -> Id -> MudStack ()
-sendDfltPrompt mq i = sendPromptNl mq . mkDfltPrompt i =<< getState
+sendDfltPrompt mq i = sendPrompt mq . mkDfltPrompt i =<< getState
 
 
 mkDfltPrompt :: Id -> MudState -> Text
@@ -358,10 +356,6 @@ sendPrompt :: MsgQueue -> Text -> MudStack ()
 sendPrompt mq = writeMsg mq . Prompt
 
 
-sendPromptNl :: MsgQueue -> Text -> MudStack ()
-sendPromptNl mq = writeMsg mq . PromptNl
-
-
 -----
 
 
@@ -381,15 +375,7 @@ wrapSendHepler f mq cols = send mq . f cols
 
 
 wrapSendPrompt :: MsgQueue -> Cols -> Text -> MudStack ()
-wrapSendPrompt = wrapSendPromptHelper sendPrompt
-
-
-wrapSendPromptNl :: MsgQueue -> Cols -> Text -> MudStack ()
-wrapSendPromptNl = wrapSendPromptHelper sendPromptNl
-
-
-wrapSendPromptHelper :: (MsgQueue -> Text -> MudStack ()) -> MsgQueue -> Cols -> Text -> MudStack ()
-wrapSendPromptHelper f mq cols = f mq . wrapUnlinesInit cols
+wrapSendPrompt mq cols = sendPrompt mq . wrapUnlinesInit cols
 
 
 -----

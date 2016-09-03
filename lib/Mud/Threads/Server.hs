@@ -23,7 +23,6 @@ import Mud.Threads.NpcServer
 import Mud.Threads.Regen
 import Mud.Threads.RmFuns
 import Mud.TopLvlDefs.FilePaths
-import Mud.TopLvlDefs.Telnet
 import Mud.Util.List
 import Mud.Util.Operators
 import Mud.Util.Quoting
@@ -65,9 +64,6 @@ logNotice = L.logNotice "Mud.Threads.Server"
 data ToWhom = Plaに | Npcに
 
 
-data ShouldNl = DoNl | Don'tNl
-
-
 threadServer :: Handle -> Id -> MsgQueue -> TimerQueue -> MudStack ()
 threadServer h i mq tq = sequence_ [ setThreadType . Server $ i, loop `catch` threadExHandler ("server " <> showText i) ]
   where
@@ -81,8 +77,7 @@ threadServer h i mq tq = sequence_ [ setThreadType . Server $ i, loop `catch` th
       InacStop       -> stopTimer tq                       >> loop
       MsgBoot msg    -> sendBootMsg h msg                  >> sayonara
       Peeped  msg    -> (liftIO . T.hPutStr h $ msg)       >> loop
-      Prompt   p     -> promptHelper i h Don'tNl p         >> loop
-      PromptNl p     -> promptHelper i h DoNl    p         >> loop
+      Prompt   p     -> promptHelper i h p                 >> loop
       Quit           -> cowbye h                           >> sayonara
       ShowHandle     -> handleShowHandle i h               >> loop
       Shutdown       -> shutDown                           >> loop
@@ -92,7 +87,7 @@ threadServer h i mq tq = sequence_ [ setThreadType . Server $ i, loop `catch` th
 
 
 handleBlankLine :: Handle -> MudStack ()
-handleBlankLine h = liftIO $ T.hPutStr h telnetGoAhead >> hFlush h
+handleBlankLine h = liftIO $ T.hPutStr h theNl >> hFlush h
 
 
 handleFromClient :: Id -> MsgQueue -> TimerQueue -> Bool -> Text -> MudStack ()
@@ -141,11 +136,8 @@ sendBootMsg :: Handle -> Text -> MudStack ()
 sendBootMsg h = liftIO . T.hPutStrLn h . nl . colorWith bootMsgColor
 
 
-promptHelper :: Id -> Handle -> ShouldNl -> Text -> MudStack ()
-promptHelper i h snl t = sequence_ [ handleFromServer i h Plaに . (<> telnetGoAhead) . f $ t, liftIO . hFlush $ h ]
-  where
-    f = case snl of DoNl    -> nl
-                    Don'tNl -> id
+promptHelper :: Id -> Handle -> Text -> MudStack ()
+promptHelper i h t = sequence_ [ handleFromServer i h Plaに . nl $ t, liftIO . hFlush $ h ]
 
 
 handleShowHandle :: Id -> Handle -> MudStack ()

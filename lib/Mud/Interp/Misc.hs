@@ -5,7 +5,6 @@ module Mud.Interp.Misc ( mkChoiceTxt
                        , neverMind
                        , promptChangeIt
                        , promptRetryYesNo
-                       , promptRetryYesNoNl
                        , resetInterp
                        , yesNoHelper ) where
 
@@ -28,7 +27,7 @@ import Data.Text (Text)
 
 
 mkChoiceTxt :: [Text] -> Text
-mkChoiceTxt = (<> " ") . bracketQuote . T.intercalate "/" . colorize
+mkChoiceTxt = bracketQuote . T.intercalate "/" . colorize
   where
     colorize []                                               = []
     colorize ((T.uncons -> Just (T.singleton -> x, rest)):xs) = (colorWith abbrevColor x <> rest) : colorize xs
@@ -50,22 +49,14 @@ neverMind i mq = send mq (nlnl "Never mind.") >> sendDfltPrompt mq i >> resetInt
 
 
 promptChangeIt :: MsgQueue -> Cols -> MudStack ()
-promptChangeIt mq cols = wrapSendPromptNl mq cols $ "Would you like to change it? " <> mkYesNoChoiceTxt
+promptChangeIt mq cols = wrapSendPrompt mq cols $ "Would you like to change it? " <> mkYesNoChoiceTxt
 
 
 -----
 
 
 promptRetryYesNo :: MsgQueue -> Cols -> MudStack ()
-promptRetryYesNo = promptRetryYesNoHelper wrapSendPrompt
-
-
-promptRetryYesNoNl :: MsgQueue -> Cols -> MudStack ()
-promptRetryYesNoNl = promptRetryYesNoHelper wrapSendPromptNl
-
-
-promptRetryYesNoHelper :: (MsgQueue -> Cols -> Text -> MudStack ()) -> MsgQueue -> Cols -> MudStack ()
-promptRetryYesNoHelper f mq cols = f mq cols . T.concat $ [ "Please answer ", dblQuote "yes", " or ", dblQuote "no", ". " ]
+promptRetryYesNo mq cols = wrapSendPrompt mq cols . T.concat $ [ "Please answer ", dblQuote "yes", " or ", dblQuote "no", "." ]
 
 
 -----

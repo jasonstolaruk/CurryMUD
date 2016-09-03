@@ -70,7 +70,7 @@ threadTalk h host = helper `finally` cleanUp
             dumpTitle  mq
             send       mq . nlnl     $ helloRulesMsg
             send       mq . nl . prd $ "If you are new to CurryMUD, please enter " <> dblQuote "new"
-            sendPrompt mq "What is your character's name? "
+            sendPrompt mq "What is your character's name?"
             bcastAdmins . prd $ "A new player has connected: " <> s
             logNotice "threadTalk helper" . prd $ "new PC name for incoming player: " <> s
             onNewThread . threadInacTimer   i   mq $ tq

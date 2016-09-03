@@ -108,7 +108,7 @@ interpName times (T.toLower -> cn@(capitalize -> cn')) params@(NoArgs i mq cols)
                   unit
                   confirmName
         [(targetId, targetPla)] -> do
-            sendPrompt mq $ telnetHideInput <> cn' <> " is an existing character. Password: "
+            sendPrompt mq $ telnetHideInput <> cn' <> " is an existing character. Password:"
             setInterp i . Just . interpPW times cn' targetId $ targetPla
         xs -> patternMatchFail "interpName" . showText . map fst $ xs
   where
@@ -126,11 +126,11 @@ interpName _ _ ActionParams { .. } = promptRetryName plaMsgQueue plaCols sorryIn
 
 
 promptName :: MsgQueue -> MudStack ()
-promptName = flip sendPrompt "What is your character's name? "
+promptName = flip sendPrompt "What is your character's name?"
 
 
 promptRetryName :: MsgQueue -> Cols -> Text -> MudStack ()
-promptRetryName mq cols msg = let t = "Let's try this again. What is your character's name? "
+promptRetryName mq cols msg = let t = "Let's try this again. What is your character's name?"
                               in (>> wrapSendPrompt mq cols t) $ if ()# msg
                                 then blankLine mq
                                 else wrapSend mq cols msg
@@ -265,7 +265,7 @@ interpConfirmFollowRules ncb@(NewCharBundle _ s _) cn (NoArgs i mq cols) = case 
       send             mq telnetHideInput
       blankLine        mq
       multiWrapSend1Nl mq cols . pwMsg . prd $ "Please choose a password for " <> s
-      sendPrompt       mq "New password: "
+      sendPrompt       mq "New password:"
       setInterp i . Just . interpNewPW $ ncb
   Just False -> do
       wrapSend mq cols "You can't play CurryMUD if you don't agree to follow the rules."
@@ -284,7 +284,7 @@ interpNewPW ncb cn (NoArgs i mq cols)
   | helper isLower                                     = promptRetryNewPW mq cols sorryInterpNewPwLower
   | helper isDigit                                     = promptRetryNewPW mq cols sorryInterpNewPwDigit
   | otherwise = do
-      sendPrompt mq "Verify password: "
+      sendPrompt mq "Verify password:"
       setInterp i . Just . interpVerifyNewPW $ ncb { ncbPW = cn }
   where
     helper f = ()# T.filter f cn
@@ -295,7 +295,7 @@ promptRetryNewPW :: MsgQueue -> Cols -> Text -> MudStack ()
 promptRetryNewPW mq cols msg = do
     blankLine mq
     msg |#| wrapSend mq cols
-    wrapSendPrompt mq cols "Let's try this again. New password: "
+    wrapSendPrompt mq cols "Let's try this again. New password:"
 
 
 -- ==================================================
@@ -363,7 +363,7 @@ promptRace mq cols = wrapSend1Nl mq cols txt >> anglePrompt mq
 
 promptRetrySex :: MsgQueue -> Cols -> MudStack ()
 promptRetrySex mq cols =
-    wrapSendPrompt mq cols . T.concat $ [ "Please answer ", dblQuote "male", " or ", dblQuote "female", ". " ]
+    wrapSendPrompt mq cols . T.concat $ [ "Please answer ", dblQuote "male", " or ", dblQuote "female", "." ]
 
 
 -- ==================================================
@@ -547,7 +547,7 @@ interpConfirmDesc ncb desc cn (NoArgs i mq cols) = case yesNoHelper cn of
   Just True -> do
       tweak $ entTbl.ind i.entDesc .~ desc
       blankLine mq
-      wrapSendPromptNl mq cols "If you are a new player, could you please tell us how you discovered CurryMUD?"
+      wrapSendPrompt mq cols "If you are a new player, could you please tell us how you discovered CurryMUD?"
       setInterp i . Just . interpDiscover $ ncb
   Just False -> blankLine mq >> promptRetryDesc ncb i mq cols
   Nothing    -> promptRetryYesNo mq cols

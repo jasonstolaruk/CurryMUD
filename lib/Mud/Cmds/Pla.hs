@@ -792,10 +792,10 @@ interpConfirmDescChange cn (NoArgs i mq cols) = case yesNoHelper cn of
       send mq . T.unlines . concat . wrapLines cols . T.lines $ descRules
       pause i mq . Just . descHelper i mq $ cols
   Just False -> neverMind i mq
-  Nothing    -> promptRetryYesNoNl mq cols
+  Nothing    -> promptRetryYesNo mq cols
   where
     descRules = T.concat [ rulesIntroMsg, " ", violationMsg, theNl, descRulesMsg, theNl, descRule5 ]
-interpConfirmDescChange _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNoNl plaMsgQueue plaCols
+interpConfirmDescChange _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNo plaMsgQueue plaCols
 
 
 descHelper :: Id -> MsgQueue -> Cols -> MudStack ()
@@ -804,9 +804,9 @@ descHelper i mq cols = sequence_ [ multiWrapSend mq cols enterDescMsgs, setInter
     f desc = case spaces . dropBlanks . map T.strip $ desc of
       ""    -> neverMind i mq
       desc' -> do
-        wrapSend1Nl      mq cols "You entered:"
-        wrapSend         mq cols desc'
-        wrapSendPromptNl mq cols $ "Keep this description? " <> mkYesNoChoiceTxt
+        wrapSend1Nl    mq cols "You entered:"
+        wrapSend       mq cols desc'
+        wrapSendPrompt mq cols $ "Keep this description? " <> mkYesNoChoiceTxt
         setInterp i . Just . interpConfirmDesc $ desc'
 
 
@@ -819,8 +819,8 @@ interpConfirmDesc desc cn (NoArgs i mq cols) = case yesNoHelper cn of
       resetInterp i
       logPla "description" i . prd $ "changed description to " <> dblQuote desc
   Just False -> neverMind i mq
-  Nothing    -> promptRetryYesNoNl mq cols
-interpConfirmDesc _ _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNoNl plaMsgQueue plaCols
+  Nothing    -> promptRetryYesNo mq cols
+interpConfirmDesc _ _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNo plaMsgQueue plaCols
 
 
 -----
@@ -2348,7 +2348,7 @@ shufflePut i ms d conName icir as invCoinsWithCon@(invWithCon, _) mobInvCoins f 
 
 password :: ActionFun
 password (NoArgs i mq _) = do
-    sendPrompt mq $ telnetHideInput <> "Current password: "
+    sendPrompt mq $ telnetHideInput <> "Current password:"
     setInterp i . Just $ interpCurrPW
 password p = withoutArgs password p
 
@@ -2362,7 +2362,7 @@ interpCurrPW cn (WithArgs i mq cols as)
       then do
           blankLine        mq
           multiWrapSend1Nl mq cols . pwMsg $ "Please choose a new password."
-          sendPrompt       mq "New password: "
+          sendPrompt       mq "New password:"
           setInterp i . Just . interpNewPW $ pw
       else pwSorryHelper i mq cols sorryInterpPW
     Just Nothing -> pwSorryHelper i mq cols sorryInterpPW
@@ -2385,7 +2385,7 @@ interpNewPW oldPW cn (NoArgs i mq cols)
   | helper isLower                                     = pwSorryHelper i mq cols sorryInterpNewPwLower
   | helper isDigit                                     = pwSorryHelper i mq cols sorryInterpNewPwDigit
   | otherwise = do
-      sendPrompt mq "Verify password: "
+      sendPrompt mq "Verify password:"
       setInterp i . Just . interpVerifyNewPW oldPW $ cn
   where
     helper f = ()# T.filter f cn
@@ -3152,7 +3152,7 @@ securityQs = [ "Please choose your security question from the following options:
 
 
 promptSecurity :: MsgQueue -> MudStack ()
-promptSecurity = flip sendPromptNl "Which will you choose? [1-5]"
+promptSecurity = flip sendPrompt "Which will you choose? [1-5]"
 
 
 interpSecurityNum :: Interp
@@ -3169,7 +3169,7 @@ interpSecurityNum _ ActionParams { .. } = retrySecurityNum plaMsgQueue plaCols
 
 
 promptAnswer :: MsgQueue -> MudStack ()
-promptAnswer = flip sendPromptNl "Answer:"
+promptAnswer = flip sendPrompt "Answer:"
 
 
 retrySecurityNum :: MsgQueue -> Cols -> MudStack ()
@@ -3199,14 +3199,14 @@ interpConfirmSecurityChange :: Interp
 interpConfirmSecurityChange cn (NoArgs i mq cols) = case yesNoHelper cn of
   Just True  -> blankLine mq >> securityHelper i mq cols
   Just False -> neverMind i mq
-  Nothing    -> promptRetryYesNoNl mq cols
-interpConfirmSecurityChange _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNoNl plaMsgQueue plaCols
+  Nothing    -> promptRetryYesNo mq cols
+interpConfirmSecurityChange _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNo plaMsgQueue plaCols
 
 
 securityCreateQHelper :: Id -> MsgQueue -> Cols -> MudStack ()
 securityCreateQHelper i mq cols = do
     send mq . nlPrefix . nl . T.unlines $ info
-    sendPromptNl mq "Enter your question:"
+    sendPrompt mq "Enter your question:"
     setInterp i . Just $ interpSecurityCreateQ
   where
     info = "OK. Ideally, your security Q&A should be:" : concatMap (wrapIndent 2 cols) rest

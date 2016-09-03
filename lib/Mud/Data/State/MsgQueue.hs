@@ -22,7 +22,6 @@ data Msg = AsSelf     Text
          | MsgBoot    Text
          | Peeped     Text
          | Prompt     Text
-         | PromptNl   Text
          | Quit
          | ShowHandle
          | Shutdown

@@ -20,7 +20,7 @@ import Data.Maybe (fromMaybe)
 pause :: Id -> MsgQueue -> Maybe Fun -> MudStack ()
 pause i mq mf = sequence_ [ promptPause, setInterp i . Just . interpPause $ mf ]
   where
-    promptPause = sendPromptNl mq . colorWith pagerPromptColor . spaced . bracketQuote . spaced $ txt
+    promptPause = sendPrompt mq . colorWith pagerPromptColor . spaced . bracketQuote . spaced $ txt
     txt         = "Enter a blank line to continue..."
 
 
