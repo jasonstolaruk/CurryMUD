@@ -1201,15 +1201,15 @@ createAdminZone = do
              mempty
              Nothing
              (Con False c)
-  let backTuples = [ (iBack1,   "",       backWeight,    backVol,    backCap  )
-                   , (iBack2,   "",       backWeight,    backVol,    backCap  )
-                   , (iBackSml, "small", backSmlWeight, backSmlVol, backSmlCap)
-                   , (iBackLrg, "large", backLrgWeight, backLrgVol, backLrgCap) ]
+  let backTuples = [ (iBack1,   "",        backWeight,    backVol,    backCap  )
+                   , (iBack2,   "",        backWeight,    backVol,    backCap  )
+                   , (iBackSml, "small ", backSmlWeight, backSmlVol, backSmlCap)
+                   , (iBackLrg, "large ", backLrgWeight, backLrgVol, backLrgCap) ]
   forM_ backTuples $ \(i, t, w, v, c) ->
       putCon i
              (Ent i
                   (Just "back")
-                  (t <> " backpack") ""
+                  (t <> "backpack") ""
                   "The sturdy backpack is made of leather."
                   Nothing
                   zeroBits)
@@ -1301,14 +1301,14 @@ createAdminZone = do
                  zeroBits)
             (mkObj . ObjTemplate jarLrgWeight jarLrgVol Nothing $ zeroBits)
             (Just (potNegStLiq, maxBound))
-  let jugTuples = [ (iJugSml, "small", jugSmlWeight, jugSmlVol, potStLiq          )
-                  , (iJug,     "",     jugWeight,    jugVol,    potInstantStLiq   )
-                  , (iJugLrg, "large", jugLrgWeight, jugLrgVol, potInstantNegStLiq) ]
+  let jugTuples = [ (iJugSml, "small ", jugSmlWeight, jugSmlVol, potStLiq          )
+                  , (iJug,     "",      jugWeight,    jugVol,    potInstantStLiq   )
+                  , (iJugLrg, "large ", jugLrgWeight, jugLrgVol, potInstantNegStLiq) ]
   forM_ jugTuples $ \(i, t, w, v, l) ->
       putVessel i
                 (Ent i
                      (Just "jug")
-                     (t <> " jug") ""
+                     (t <> "jug") ""
                      "While capable of containing a large amount of liquid, this corked, ceramic jug is rather \
                      \cumbersome."
                      Nothing
@@ -1321,14 +1321,14 @@ createAdminZone = do
                                     \glaze of "
                                   , b
                                   , " hues gives the vessel a glossy finish and makes it impermeable." ]
-      bottelTuples = [ (iBottleSml, "small", ("small, ", "light brown"),  bottleSmlWeight, bottleSmlVol, potTinnitusLiq       )
-                     , (iBottle,    "",      ("",        "mixed azure"),  bottleWeight,    bottleVol,    potInstantTinnitusLiq)
-                     , (iBottleLrg, "large", ("large, ", "rusty orange"), bottleLrgWeight, bottleLrgVol, potInstantTinnitusLiq) ]
+      bottelTuples = [ (iBottleSml, "small ", ("small, ", "light brown"),  bottleSmlWeight, bottleSmlVol, potTinnitusLiq       )
+                     , (iBottle,    "",       ("",        "mixed azure"),  bottleWeight,    bottleVol,    potInstantTinnitusLiq)
+                     , (iBottleLrg, "large ", ("large, ", "rusty orange"), bottleLrgWeight, bottleLrgVol, potInstantTinnitusLiq) ]
   forM_ bottelTuples $ \(i, t, d, w, v, l) ->
       putVessel i
                 (Ent i
                      (Just "bottle")
-                     (t <> " bottle") "" -- TODO: "You begin drinking the oily, puce liquid from the  bottle...""
+                     (t <> "bottle") ""
                      (uncurry mkBottleDesc d)
                      Nothing
                      zeroBits)
