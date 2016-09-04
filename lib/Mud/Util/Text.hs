@@ -15,6 +15,7 @@ module Mud.Util.Text ( aOrAn
                      , headTail
                      , intercalateDivider
                      , isCapital
+                     , isTelnetTtypeResponse
                      , mkDateTimeTxt
                      , mkOrdinal
                      , mkTimestamp
@@ -223,6 +224,13 @@ headTail = (T.head *** T.tail) . dup
 
 intercalateDivider :: Cols -> [[Text]] -> [Text]
 intercalateDivider cols = intercalate [ "", divider cols, "" ]
+
+
+-----
+
+
+isTelnetTtypeResponse :: Text -> Bool
+isTelnetTtypeResponse = (telnetTtypeResponseL `T.isInfixOf`)
 
 
 -----

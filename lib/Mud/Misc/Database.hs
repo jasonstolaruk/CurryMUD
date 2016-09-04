@@ -31,6 +31,7 @@ module Mud.Misc.Database ( AdminChanRec(..)
                          , insertDbTblQuestion
                          , insertDbTblSec
                          , insertDbTblTele
+                         , insertDbTblTType
                          , insertDbTblTypo
                          , insertDbTblUnPw
                          , lookupPW
@@ -43,6 +44,7 @@ module Mud.Misc.Database ( AdminChanRec(..)
                          , QuestionRec(..)
                          , SecRec(..)
                          , TeleRec(..)
+                         , TTypeRec(..)
                          , TypoRec(..)
                          , UnPwRec(..) ) where
 
@@ -116,6 +118,9 @@ data TeleRec      = TeleRec      { dbTimestamp :: Text
                                  , dbFromName  :: Text
                                  , dbToName    :: Text
                                  , dbMsg       :: Text }
+data TTypeRec     = TTypeRec     { dbTimestamp :: Text
+                                 , dbHost      :: Text
+                                 , dbTType     :: Text }
 data TypoRec      = TypoRec      { dbTimestamp :: Text
                                  , dbName      :: Text
                                  , dbLoc       :: Text
@@ -181,6 +186,10 @@ instance FromRow SecRec where
 
 instance FromRow TeleRec where
   fromRow = TeleRec <$ (field :: RowParser Int) <*> field <*> field <*> field <*> field
+
+
+instance FromRow TTypeRec where
+  fromRow = TTypeRec <$ (field :: RowParser Int) <*> field <*> field <*> field
 
 
 instance FromRow TypoRec where
@@ -250,6 +259,10 @@ instance ToRow TeleRec where
   toRow (TeleRec a b c d) = toRow (a, b, c, d)
 
 
+instance ToRow TTypeRec where
+  toRow (TTypeRec a b c) = toRow (a, b, c)
+
+
 instance ToRow TypoRec where
   toRow (TypoRec a b c d) = toRow (a, b, c, d)
 
@@ -282,6 +295,7 @@ createDbTbls = withConnection dbFile $ \conn -> do
          , "create table if not exists question   (id integer primary key, timestamp text, name text, msg text)"
          , "create table if not exists sec        (id integer primary key, name text, question text, answer text)"
          , "create table if not exists tele       (id integer primary key, timestamp text, fromName text, toName text, msg text)"
+         , "create table if not exists ttype      (id integer primary key, timestamp text, host text, ttype text)"
          , "create table if not exists typo       (id integer primary key, timestamp text, name text, loc text, desc text)"
          , "create table if not exists unpw       (id integer primary key, un text, pw text)" ]
 
@@ -362,6 +376,10 @@ insertDbTblSec = insertDbTblHelper "insert into sec (name, question, answer) val
 
 insertDbTblTele :: TeleRec -> IO ()
 insertDbTblTele = insertDbTblHelper "insert into tele (timestamp, fromName, toName, msg) values (?, ?, ?, ?)"
+
+
+insertDbTblTType :: TTypeRec -> IO ()
+insertDbTblTType = insertDbTblHelper "insert into ttype (timestamp, host, ttype) values (?, ?, ?)"
 
 
 insertDbTblTypo :: TypoRec -> IO ()

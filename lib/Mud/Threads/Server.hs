@@ -4,17 +4,20 @@ module Mud.Threads.Server (threadServer) where
 
 import Mud.Cmds.Msgs.Misc
 import Mud.Cmds.Pla
+import Mud.Cmds.Util.Misc
 import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
+import Mud.Misc.Database
 import Mud.Data.State.Util.Output
 import Mud.Interp.CentralDispatch
 import Mud.Misc.ANSI
 import Mud.Misc.Persist
 import Mud.Threads.Act
+import Mud.TopLvlDefs.Telnet
 import Mud.Threads.Biodegrader
 import Mud.Threads.Digester
 import Mud.Threads.Effect
@@ -91,20 +94,33 @@ handleBlankLine h = liftIO $ T.hPutStr h theNl >> hFlush h
 
 
 handleFromClient :: Id -> MsgQueue -> TimerQueue -> Bool -> Text -> MudStack ()
-handleFromClient i mq tq isAsSelf (T.strip . stripControl . stripTelnet -> msg) = getState >>= \ms ->
-    let p                  = getPla i ms
-        poss               = p^.possessing
-        thruCentral        = msg |#| interpret i p centralDispatch . headTail . T.words
-        helper dflt        = maybe dflt thruOther . getInterp i $ ms
-        thruOther f        = interpret (fromMaybe i poss) p f (()# msg ? ("", []) :? (headTail . T.words $ msg))
-        forwardToNpc npcId = let npcMq = getNpcMsgQueue npcId ms
-                             in liftIO . atomically . writeTQueue npcMq . ExternCmd mq (p^.columns) $ msg
-    in isAsSelf ? thruCentral :? maybe (helper thruCentral) forwardToNpc poss
+handleFromClient i mq tq isAsSelf msg | isTelnetTtypeResponse msg = go =<< tTypeHelper
+                                      | otherwise                 = go msg
   where
-    interpret asId p f (cn, as) = do
-        forwardToPeepers i (p^.peepers) FromThePeeped msg
-        liftIO . atomically . writeTMQueue tq $ ResetTimer
-        f cn . WithArgs asId mq (p^.columns) $ as
+    tTypeHelper :: MudStack Text
+    tTypeHelper =
+        let (l,     T.drop (T.length telnetTtypeResponseL) -> r ) = T.breakOn telnetTtypeResponseL msg
+            (ttype, T.drop (T.length telnetTtypeResponseR) -> r') = T.breakOn telnetTtypeResponseR r
+        in getState >>= \ms -> do
+          ts <- liftIO mkTimestamp
+          let h = T.pack . getCurrHostName i $ ms
+          withDbExHandler_ "handleFromClient" . insertDbTblTType . TTypeRec ts h $ ttype
+          return $ l <> r'
+    go :: Text -> MudStack ()
+    go (T.strip . stripControl . stripTelnet -> msg') = getState >>= \ms ->
+        let p                  = getPla i ms
+            poss               = p^.possessing
+            thruCentral        = msg' |#| interpret i p centralDispatch . headTail . T.words
+            helper dflt        = maybe dflt thruOther . getInterp i $ ms
+            thruOther f        = interpret (fromMaybe i poss) p f (()# msg' ? ("", []) :? (headTail . T.words $ msg'))
+            forwardToNpc npcId = let npcMq = getNpcMsgQueue npcId ms
+                                 in liftIO . atomically . writeTQueue npcMq . ExternCmd mq (p^.columns) $ msg'
+        in isAsSelf ? thruCentral :? maybe (helper thruCentral) forwardToNpc poss
+      where
+        interpret asId p f (cn, as) = do
+            forwardToPeepers i (p^.peepers) FromThePeeped msg'
+            liftIO . atomically . writeTMQueue tq $ ResetTimer
+            f cn . WithArgs asId mq (p^.columns) $ as
 
 
 forwardToPeepers :: Id -> Inv -> ToOrFromThePeeped -> Text -> MudStack ()

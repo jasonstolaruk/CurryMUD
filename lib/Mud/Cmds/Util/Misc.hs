@@ -875,6 +875,7 @@ updateRndmName i targetId = do
 -----
 
 
+-- TODO: Consider moving.
 withDbExHandler :: (Monoid a) => Text -> IO a -> MudStack (Maybe a)
 withDbExHandler fn f = liftIO (Just <$> f) `catch` (emptied . dbExHandler fn)
 

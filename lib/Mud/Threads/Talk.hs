@@ -18,6 +18,7 @@ import Mud.Threads.Receive
 import Mud.Threads.Server
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
+import Mud.TopLvlDefs.Telnet
 import Mud.Util.Misc
 import Mud.Util.Quoting
 import Mud.Util.Text
@@ -40,7 +41,7 @@ import qualified Data.Map.Lazy as M (empty)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
 import System.FilePath ((</>))
-import System.IO (BufferMode(..), Handle, Newline(..), NewlineMode(..), hClose, hSetBuffering, hSetEncoding, hSetNewlineMode, latin1)
+import System.IO (BufferMode(..), Handle, Newline(..), NewlineMode(..), hClose, hFlush, hSetBuffering, hSetEncoding, hSetNewlineMode, latin1)
 import System.Random (randomIO, randomRIO)
 
 
@@ -67,16 +68,20 @@ threadTalk h host = helper `finally` cleanUp
         setThreadType . Talk $ i
         handle (threadExHandler $ "talk " <> showText i) $ do
             liftIO configBuffer
-            dumpTitle  mq
-            send       mq . nlnl     $ helloRulesMsg
-            send       mq . nl . prd $ "If you are new to CurryMUD, please enter " <> dblQuote "new"
-            sendPrompt mq "What is your character's name?"
+            ttypeHelper mq
+            dumpTitle   mq
+            send        mq . nlnl     $ helloRulesMsg
+            send        mq . nl . prd $ "If you are new to CurryMUD, please enter " <> dblQuote "new"
+            sendPrompt  mq "What is your character's name?"
             bcastAdmins . prd $ "A new player has connected: " <> s
             logNotice "threadTalk helper" . prd $ "new PC name for incoming player: " <> s
             onNewThread . threadInacTimer   i   mq $ tq
             a <- runAsync . threadReceive h i $ mq
             b <- runAsync . threadServer  h i   mq $ tq
             liftIO $ wait b >> cancel a
+    ttypeHelper mq = do
+      send mq telnetWillTtype    >> liftIO (hFlush h)
+      send mq telnetTtypeRequest >> liftIO (hFlush h)
     configBuffer = hSetBuffering h LineBuffering >> hSetNewlineMode h nlMode >> hSetEncoding h latin1
     nlMode       = NewlineMode { inputNL = CRLF, outputNL = CRLF }
     cleanUp      = do
