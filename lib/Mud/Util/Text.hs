@@ -15,7 +15,7 @@ module Mud.Util.Text ( aOrAn
                      , headTail
                      , intercalateDivider
                      , isCapital
-                     , isTelnetTtypeResponse
+                     , isTelnetTTypeResponse
                      , mkDateTimeTxt
                      , mkOrdinal
                      , mkTimestamp
@@ -26,6 +26,7 @@ module Mud.Util.Text ( aOrAn
                      , none
                      , noneOnNull
                      , notInfixOf
+                     , parseTelnetTTypeResponse
                      , prd
                      , readNum
                      , replace
@@ -50,7 +51,7 @@ import Mud.Util.Misc hiding (blowUp)
 import Mud.Util.Operators
 import qualified Mud.Util.Misc as U (blowUp)
 
-import Control.Arrow ((***))
+import Control.Arrow ((***), second)
 import Control.Monad (guard)
 import Data.Char (isUpper, toLower, toUpper)
 import Data.Function (on)
@@ -229,8 +230,8 @@ intercalateDivider cols = intercalate [ "", divider cols, "" ]
 -----
 
 
-isTelnetTtypeResponse :: Text -> Bool
-isTelnetTtypeResponse = (telnetTtypeResponseL `T.isInfixOf`)
+isTelnetTTypeResponse :: Text -> Bool
+isTelnetTTypeResponse = (telnetTTypeResponseL `T.isInfixOf`)
 
 
 -----
@@ -305,6 +306,16 @@ replace = foldr ((.) . uncurry T.replace) id
 notInfixOf :: Text -> Text -> Bool
 notInfixOf needle = not . T.isInfixOf needle
 
+
+-----
+
+
+-- Assumes "telnetTTypeResponseL" is infix of msg.
+parseTelnetTTypeResponse :: Text -> (Text, Text)
+parseTelnetTTypeResponse msg | (l, T.drop (T.length telnetTTypeResponseL) -> r) <- T.breakOn telnetTTypeResponseL msg
+                             = second (l |&|) $ case T.breakOn telnetTTypeResponseR r of
+                                 (ttype, "") -> (ttype, id)
+                                 (ttype, r') -> (ttype, (<> T.drop (T.length telnetTTypeResponseR) r'))
 
 -----
 

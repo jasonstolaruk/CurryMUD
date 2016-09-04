@@ -45,6 +45,36 @@ prop_findFullNameForAbbrev_findsMatch (NonEmpty (T.pack -> needle)) hay = any ((
     in findFullNameForAbbrev needle hay' == Just match
 
 
+prop_parseTelnetTTypeResponse :: NonEmptyList Char -> Bool
+prop_parseTelnetTTypeResponse (NonEmpty (T.pack -> ttype)) =
+    parseTelnetTTypeResponse (telnetTTypeResponseL <> ttype <> telnetTTypeResponseR) == (ttype, "")
+
+
+prop_parseTelnetTTypeResponse_withL :: NonEmptyList Char -> NonEmptyList Char -> Bool
+prop_parseTelnetTTypeResponse_withL (NonEmpty (T.pack -> l)) (NonEmpty (T.pack -> ttype)) =
+    parseTelnetTTypeResponse (T.concat [ l
+                                       , telnetTTypeResponseL
+                                       , ttype
+                                       , telnetTTypeResponseR ]) == (ttype, l)
+
+
+prop_parseTelnetTTypeResponse_withR :: NonEmptyList Char -> NonEmptyList Char -> Bool
+prop_parseTelnetTTypeResponse_withR (NonEmpty (T.pack -> ttype)) (NonEmpty (T.pack -> r)) =
+    parseTelnetTTypeResponse (T.concat [ telnetTTypeResponseL
+                                       , ttype
+                                       , telnetTTypeResponseR
+                                       , r ]) == (ttype, r)
+
+
+prop_parseTelnetTTypeResponse_withLAndR :: NonEmptyList Char -> NonEmptyList Char -> NonEmptyList Char -> Bool
+prop_parseTelnetTTypeResponse_withLAndR (NonEmpty (T.pack -> l)) (NonEmpty (T.pack -> ttype)) (NonEmpty (T.pack -> r)) =
+    parseTelnetTTypeResponse (T.concat [ l
+                                       , telnetTTypeResponseL
+                                       , ttype
+                                       , telnetTTypeResponseR
+                                       , r ]) == (ttype, l <> r)
+
+
 -- ==================================================
 
 

@@ -26,12 +26,12 @@ telnetWILL  = '\xFB' -- 251
 telnetWON'T = '\xFC' -- 252
 
 
-telnetEndOfRecord, telnetGoAhead, telnetHideInput, telnetShowInput, telnetTtypeRequest, telnetTtypeResponseL, telnetTtypeResponseR, telnetWillTtype :: Text
+telnetEndOfRecord, telnetGoAhead, telnetHideInput, telnetShowInput, telnetTTypeRequest, telnetTTypeResponseL, telnetTTypeResponseR, telnetWillTType :: Text
 telnetEndOfRecord    = T.pack [ telnetIAC, telnetEOR                ]
 telnetGoAhead        = T.pack [ telnetIAC, telnetGA                 ]
 telnetHideInput      = T.pack [ telnetIAC, telnetWILL,  telnetECHO  ]
 telnetShowInput      = T.pack [ telnetIAC, telnetWON'T, telnetECHO  ]
-telnetTtypeRequest   = T.pack [ telnetIAC, telnetSB, telnetTTYPE, telnetSEND, telnetIAC, telnetSE ]
-telnetTtypeResponseL = T.pack [ telnetIAC, telnetSB, telnetTTYPE, telnetIS ]
-telnetTtypeResponseR = T.pack [ telnetIAC, telnetSE ]
-telnetWillTtype      = T.pack [ telnetIAC, telnetWILL,  telnetTTYPE ]
+telnetTTypeRequest   = T.pack [ telnetIAC, telnetSB, telnetTTYPE, telnetSEND, telnetIAC, telnetSE ]
+telnetTTypeResponseL = T.pack [ telnetIAC, telnetSB, telnetTTYPE, telnetIS ]
+telnetTTypeResponseR = T.pack [ telnetIAC, telnetSE ]
+telnetWillTType      = T.pack [ telnetIAC, telnetWILL,  telnetTTYPE ]

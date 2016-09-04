@@ -17,7 +17,6 @@ import Mud.Interp.CentralDispatch
 import Mud.Misc.ANSI
 import Mud.Misc.Persist
 import Mud.Threads.Act
-import Mud.TopLvlDefs.Telnet
 import Mud.Threads.Biodegrader
 import Mud.Threads.Digester
 import Mud.Threads.Effect
@@ -94,18 +93,16 @@ handleBlankLine h = liftIO $ T.hPutStr h theNl >> hFlush h
 
 
 handleFromClient :: Id -> MsgQueue -> TimerQueue -> Bool -> Text -> MudStack ()
-handleFromClient i mq tq isAsSelf msg | isTelnetTtypeResponse msg = go =<< tTypeHelper
+handleFromClient i mq tq isAsSelf msg | isTelnetTTypeResponse msg = go =<< tTypeHelper
                                       | otherwise                 = go msg
   where
     tTypeHelper :: MudStack Text
-    tTypeHelper =
-        let (l,     T.drop (T.length telnetTtypeResponseL) -> r ) = T.breakOn telnetTtypeResponseL msg
-            (ttype, T.drop (T.length telnetTtypeResponseR) -> r') = T.breakOn telnetTtypeResponseR r
-        in getState >>= \ms -> do
-          ts <- liftIO mkTimestamp
-          let h = T.pack . getCurrHostName i $ ms
-          withDbExHandler_ "handleFromClient" . insertDbTblTType . TTypeRec ts h $ ttype
-          return $ l <> r'
+    tTypeHelper = let (ttype, msg') = parseTelnetTTypeResponse msg
+                  in (,) <$> getState <*> liftIO mkTimestamp >>= \(ms, ts) -> do
+                      let h = T.pack . getCurrHostName i $ ms
+                      withDbExHandler_ "handleFromClient" . insertDbTblTType . TTypeRec ts h $ ttype
+                      return msg'
+
     go :: Text -> MudStack ()
     go (T.strip . stripControl . stripTelnet -> msg') = getState >>= \ms ->
         let p                  = getPla i ms

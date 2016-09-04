@@ -99,7 +99,11 @@ propTests_Mud_Util_Text :: TestTree
 propTests_Mud_Util_Text = testGroup "Mud.Util.Text"
     [ QC.testProperty "prop_aOrAn"                              prop_aOrAn
     , QC.testProperty "prop_findFullNameForAbbrev_findsNothing" prop_findFullNameForAbbrev_findsNothing
-    , QC.testProperty "prop_findFullNameForAbbrev_findsMatch"   prop_findFullNameForAbbrev_findsMatch ]
+    , QC.testProperty "prop_findFullNameForAbbrev_findsMatch"   prop_findFullNameForAbbrev_findsMatch
+    , QC.testProperty "prop_parseTelnetTTypeResponse"           prop_parseTelnetTTypeResponse
+    , QC.testProperty "prop_parseTelnetTTypeResponse_withL"     prop_parseTelnetTTypeResponse_withL
+    , QC.testProperty "prop_parseTelnetTTypeResponse_withR"     prop_parseTelnetTTypeResponse_withR
+    , QC.testProperty "prop_parseTelnetTTypeResponse_withLAndR" prop_parseTelnetTTypeResponse_withLAndR ]
 
 
 -- --------------------------------------------------
