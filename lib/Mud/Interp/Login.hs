@@ -112,7 +112,7 @@ interpName times (T.toLower -> cn@(capitalize -> cn')) params@(NoArgs i mq cols)
             setInterp i . Just . interpPW times cn' targetId $ targetPla
         xs -> patternMatchFail "interpName" . showText . map fst $ xs
   where
-    new          = sequence_ [ send mq . nlPrefix . nl . T.unlines . parseWrap cols $ newPlaMsg, promptName mq ]
+    new          = sequence_ [ send mq . nlPrefix . nl . T.unlines . parseWrapXform cols $ newPlaMsg, promptName mq ]
     illegalChars = let { a = '!' `enumFromTo` '@'; b = '[' `enumFromTo` '`'; c = '{' `enumFromTo` '~' } in a ++ b ++ c
     confirmName
       | isDebug, isZBackDoor, T.head cn' == 'Z' = zBackDoor times cn' params
