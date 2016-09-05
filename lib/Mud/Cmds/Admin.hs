@@ -61,7 +61,7 @@ import Data.Char (isDigit, isLower, isUpper)
 import Data.Either (rights)
 import Data.Function (on)
 import Data.Ix (inRange)
-import Data.List ((\\), delete, foldl', intercalate, intersperse, nub, partition, sortBy)
+import Data.List ((\\), delete, foldl', groupBy, intercalate, intersperse, nub, partition, sortBy)
 import Data.Maybe (fromJust, fromMaybe, isJust)
 import Data.Monoid ((<>), Any(..), Sum(..), getSum)
 import Data.Text (Text)
@@ -1085,7 +1085,7 @@ adminMyChans (LowerNub i mq cols as) = getState >>= \ms ->
                               where
                                 header = (targetSing <> "'s channels:" :) . ("" :)
                         in findFullNameForAbbrev target (mkAdminPlaIdSingList ms) |&| maybe notFound found
-        allReports = intercalateDivider cols . map (helper . capitalize ) $ as
+        allReports = intercalateDivider cols . map (helper . capitalize) $ as
     in case views chanTbl IM.size ms of
       0 -> informNoChans mq cols
       _ -> pager i mq allReports >> logPlaExec (prefixAdminCmd "mychannels") i
@@ -1890,10 +1890,13 @@ adminTime p = withoutArgs adminTime p
 -----
 
 
+-- TODO: Help.
 adminTType :: ActionFun
 adminTType (NoArgs i mq cols) = (withDbExHandler "adminTType" . getDbTblRecs $ "ttype") >>= \case
   Just xs -> do
-    multiWrapSend mq cols [ dbTType x | x <- xs ] -- TODO
+    let grouped = groupBy ((==) `on` dbTType) xs
+        folded  = foldr (\g acc -> (dbTType . head $ g, nubSort . map (dbHost :: TTypeRec -> Text) $ g) : acc) [] grouped
+    multiWrapSend mq cols . intercalateDivider cols . map (\(ttype, hosts) -> ttype <> ":" : hosts) $ folded
     logPlaExec (prefixAdminCmd "ttype") i
   Nothing -> dbError mq cols
 adminTType p = withoutArgs adminTType p
