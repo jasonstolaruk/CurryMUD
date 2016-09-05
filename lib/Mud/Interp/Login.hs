@@ -246,7 +246,7 @@ interpConfirmReadRules :: NewCharBundle -> Interp
 interpConfirmReadRules ncb cn (NoArgs i mq cols) = case yesNoHelper cn of
   Just True  -> next
   Just False -> do
-      send mq . nlPrefix . nl . T.unlines . parseWrapXform cols $ rulesMsg
+      send mq . nlPrefix . nl . T.unlines . parseWrapXform cols $ rulesMsg -- TODO: Figure out a way to use the pager.
       next
   Nothing -> promptRetryYesNo mq cols
   where
@@ -293,7 +293,6 @@ interpNewPW _ _ ActionParams { plaMsgQueue, plaCols } = promptRetryNewPW plaMsgQ
 
 promptRetryNewPW :: MsgQueue -> Cols -> Text -> MudStack ()
 promptRetryNewPW mq cols msg = do
-    blankLine mq
     msg |#| wrapSend mq cols
     wrapSendPrompt mq cols "Let's try this again. New password:"
 
@@ -305,7 +304,6 @@ interpVerifyNewPW :: NewCharBundle -> Interp
 interpVerifyNewPW ncb@(NewCharBundle _ _ pass) cn params@(NoArgs i mq cols)
   | cn == pass = do
       send      mq telnetShowInput
-      blankLine mq
       wrapSend  mq cols pwWarningLoginMsg
       promptSex ncb mq cols
       setInterp i . Just . interpSex $ ncb
@@ -412,9 +410,8 @@ mkPickPtsIntroTxt s = T.unlines . map (lSpcs <>) $ ts
   where
     ts = [ "Next we'll assign points to " <> s <> "'s attributes."
          , "Characters have 5 attributes, each measuring inate talent in a given area. 10 (the minimum value) represents a staggering lack of talent, while 100 (the maximum value) represents near-supernatural talent. 50 represents an average degree of talent."
-         , "You have a pool of " <> showText initPickPts <> " points to assign to your attributes as you wish."
-         , "To add points to an attribute, type the first letter of the attribute name, immediately followed by + and the number of points to add. For example, to add 10 to your Strength, type " <> colorWith quoteColor "s+10" <> ". To subtract points, use - instead of +, as in " <> colorWith quoteColor "s-10" <> "."
-         , "You can specify multiple additions/subtractions on a single line. Simply separate them with a spaces, like so: " <> colorWith quoteColor "s-10 d+10 h+5" <> "."
+         , "You have a pool of " <> showText initPickPts <> " points to assign to your attributes as you wish. To add points to an attribute, type the first letter of the attribute name, immediately followed by + and the number of points to add. For example, to add 10 to your Strength, type " <> colorWith quoteColor "s+10" <> ". To subtract points, use - instead of +, as in " <> prd (colorWith quoteColor "s-10")
+         , "You can specify multiple additions/subtractions on a single line. Simply separate them with a spaces, like so: " <> prd (colorWith quoteColor "s-10 d+10 h+5")
          , "When you are finished assigning points, type " <> colorWith quoteColor "q" <> " to quit and move on." ]
 
 
@@ -446,11 +443,12 @@ interpPickPts ncb@(NewCharBundle _ s _) cn (Lower   i mq cols as) = getState >>=
   | cn `T.isPrefixOf` "quit" -> if pts == 0
     then do
         blankLine mq
-        wrapSend1Nl mq cols . T.concat $ [ "Next you'll write a description of "
-                                         , s
-                                         , ", which others will see when they look at "
-                                         , mkHimHer . getSex i $ ms
-                                         , ". Your description must adhere to the following rules:" ]
+        let msgs = [ lSpcs <> "Next you'll write a description of "
+                   , s
+                   , ", which others will see when they look at "
+                   , mkHimHer . getSex i $ ms
+                   , ". Your description must adhere to the following rules:" ]
+        send mq . T.unlines . parseWrapXform cols . T.concat $ msgs
         send mq . T.unlines . concat . wrapLines cols . T.lines $ descRulesMsg
         pause i mq . Just . descHelper ncb i mq $ cols
     else wrapSend mq cols sorryInterpPickPtsQuit >> anglePrompt mq
@@ -515,7 +513,8 @@ procAttribChar i ms = \case 's' -> ("Strength",  getBaseSt i ms, st)
 
 
 descHelper :: NewCharBundle -> Id -> MsgQueue -> Cols -> MudStack ()
-descHelper ncb i mq cols = multiWrapSend mq cols enterDescMsgs >> setDescInterpHelper ncb i mq cols
+descHelper ncb i mq cols = sequence_ [ send mq . nl . T.unlines . parseWrapXform cols $ enterDescMsg
+                                     , setDescInterpHelper ncb i mq cols ]
 
 
 setDescInterpHelper :: NewCharBundle -> Id -> MsgQueue -> Cols -> MudStack ()

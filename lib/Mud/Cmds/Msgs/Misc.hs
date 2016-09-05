@@ -76,15 +76,15 @@ egressMsg :: Text -> Text
 egressMsg n = n <> " slowly dissolves into nothingness."
 
 
-enterDescMsgs :: [Text]
-enterDescMsgs =
-    [ "Enter your new description below. You may write multiple lines of text; however, multiple lines will be joined \
-      \into a single line which, when displayed, will be wrapped according to one's columns setting."
-    , "You are encouraged to compose your description in an external text editor "
-    , parensQuote "such as TextEdit on Mac, and gedit or kate on Linux systems" <>
-      ", with spell checking enabled. Copy your completed description from there and paste it into your MUD client."
-    , "When you are finished, enter a " <> endCharTxt <> " on a new line." ]
+enterDescMsg :: Text
+enterDescMsg = T.unlines . map (lSpcs <>) $ ts
   where
+    ts = [ "Enter your new description below. You may write multiple lines of text; however, multiple lines will be \
+           \joined into a single line which, when displayed, will be wrapped according to one's columns setting."
+         , "You are encouraged to compose your description in an external text editor " <> parensQuote "such as \
+           \TextEdit on Mac, and gedit or kate on Linux systems" <> ", with spell checking enabled. Copy your \
+           \completed description from there and paste it into your MUD client."
+         , "When you are finished, enter a " <> endCharTxt <> " on a new line." ]
     endCharTxt = dblQuote . T.singleton $ multiLineEndChar
 
 
@@ -181,7 +181,7 @@ pwWarningLoginMsg :: Text
 pwWarningLoginMsg = pwWarningTxt <> " once inside the game.)"
 
 
-pwWarningTxt :: Text
+pwWarningTxt :: Text -- Do not indent with leading spaces.
 pwWarningTxt = "Please make a note of your new password. If you lose your password, you may lose your character! \
                \(To safeguard against this unfortunate situation, use the " <> dblQuote "security" <> " command to \
                \provide a security Q&A"

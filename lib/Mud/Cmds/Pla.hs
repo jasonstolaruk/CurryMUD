@@ -789,17 +789,18 @@ interpConfirmDescChange :: Interp
 interpConfirmDescChange cn (NoArgs i mq cols) = case yesNoHelper cn of
   Just True -> do
       blankLine mq
-      send mq . T.unlines . concat . wrapLines cols . T.lines $ descRules
+      send mq . T.unlines . parseWrapXform cols $ descRules
       pause i mq . Just . descHelper i mq $ cols
   Just False -> neverMind i mq
   Nothing    -> promptRetryYesNo mq cols
   where
-    descRules = T.concat [ rulesIntroMsg, " ", violationMsg, theNl, descRulesMsg, theNl, descRule5 ]
+    descRules = T.concat [ lSpcs, rulesIntroMsg, " ", violationMsg, theNl, descRulesMsg, theNl, descRule5 ]
 interpConfirmDescChange _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNo plaMsgQueue plaCols
 
 
 descHelper :: Id -> MsgQueue -> Cols -> MudStack ()
-descHelper i mq cols = sequence_ [ multiWrapSend mq cols enterDescMsgs, setInterp i . Just . interpMutliLine f $ [] ]
+descHelper i mq cols = sequence_ [ send mq . nl . T.unlines . parseWrapXform cols $ enterDescMsg
+                                 , setInterp i . Just . interpMutliLine f $ [] ]
   where
     f desc = case spaces . dropBlanks . map T.strip $ desc of
       ""    -> neverMind i mq
