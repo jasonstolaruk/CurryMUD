@@ -6,14 +6,13 @@ module Mud.Misc.Misc ( BothGramNos
                      , mkCoinsMsgs
                      , mkPlurFromBoth
                      , parseWrap
+                     , parseWrapXform
                      , pluralize
-                     , procRulesMsg
                      , raceToLang
                      , renderLiqNoun
                      , renderNoun
                      , withLock ) where
 
-import Mud.Cmds.Msgs.Misc
 import Mud.Data.Misc
 import Mud.Data.State.MudData
 import Mud.Util.Operators
@@ -75,18 +74,15 @@ parseWrap :: Cols -> Text -> [Text]
 parseWrap cols = concat . wrapLines cols . T.lines . parseTokens
 
 
+parseWrapXform :: Cols -> Text -> [Text]
+parseWrapXform cols = map xformLeadingSpaceChars . parseWrap cols
+
+
 -----
 
 
 pluralize :: BothGramNos -> Int -> Text
 pluralize (s, p) x = x == 1 ? s :? p
-
-
------
-
-
-procRulesMsg :: Cols -> [Text]
-procRulesMsg cols = map xformLeadingSpaceChars . parseWrap cols $ rulesMsg
 
 
 -----

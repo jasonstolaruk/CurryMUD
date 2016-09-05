@@ -174,6 +174,7 @@ adminCmds =
     , mkAdminCmd "telerm"     adminTeleRm      True  "Display a list of named rooms to which you may teleport, or \
                                                      \teleport to a room by name."
     , mkAdminCmd "time"       adminTime        True  "Display the current system time."
+    , mkAdminCmd "ttype"      adminTType       True  "Display a report of terminal type statistics." -- TODO: Is there a better desc?
     , mkAdminCmd "typo"       adminTypo        True  "Dump the typo database."
     , mkAdminCmd "uptime"     adminUptime      True  "Display the system uptime."
     , mkAdminCmd "whoin"      adminWhoIn       True  "Display or search a list of all the PCs that are currently \
@@ -1884,6 +1885,18 @@ adminTime (NoArgs i mq cols) = do
     formatThat :: (FormatTime a) => a -> Text
     formatThat = T.pack . formatTime defaultTimeLocale "%Z: %F %T"
 adminTime p = withoutArgs adminTime p
+
+
+-----
+
+
+adminTType :: ActionFun
+adminTType (NoArgs i mq cols) = (withDbExHandler "adminTType" . getDbTblRecs $ "ttype") >>= \case
+  Just xs -> do
+    multiWrapSend mq cols [ dbTType x | x <- xs ] -- TODO
+    logPlaExec (prefixAdminCmd "ttype") i
+  Nothing -> dbError mq cols
+adminTType p = withoutArgs adminTType p
 
 
 -----

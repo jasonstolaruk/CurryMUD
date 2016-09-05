@@ -771,7 +771,7 @@ debugRotate p = withoutArgs debugRotate p
 
 debugRules :: ActionFun
 debugRules (NoArgs i mq cols) = do
-    pager i' mq . procRulesMsg $ cols
+    pager i' mq . parseWrapXform cols $ rulesMsg
     logPlaExec (prefixDebugCmd "rules") i'
   where
     i' = safeCoerce (i :: Id) :: Int

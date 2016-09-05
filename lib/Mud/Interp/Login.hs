@@ -246,7 +246,7 @@ interpConfirmReadRules :: NewCharBundle -> Interp
 interpConfirmReadRules ncb cn (NoArgs i mq cols) = case yesNoHelper cn of
   Just True  -> next
   Just False -> do
-      send mq . nlPrefix . nl . T.unlines . procRulesMsg $ cols
+      send mq . nlPrefix . nl . T.unlines . parseWrapXform cols $ rulesMsg
       next
   Nothing -> promptRetryYesNo mq cols
   where
@@ -392,7 +392,7 @@ interpRace ncb@(NewCharBundle _ s _) (T.toLower -> cn) (NoArgs i mq cols) = case
                , mobTbl    .ind i.knownLangs .~ pure (raceToLang r)
                , pickPtsTbl.ind i            .~ initPickPts ]
         blankLine mq
-        multiWrapSend mq cols . pickPtsIntroTxt $ s
+        send mq . nl . T.unlines . parseWrapXform cols . mkPickPtsIntroTxt $ s
         promptPickPts i mq
         setInterp i . Just . interpPickPts $ ncb
     readRaceHelp raceName = (liftIO . T.readFile $ raceDir </> T.unpack raceName) |&| try >=> eitherRet handler
@@ -407,18 +407,15 @@ sorryRace :: MsgQueue -> Cols -> Text -> MudStack ()
 sorryRace mq cols t = wrapSend mq cols (sorryWut t) >> promptRace mq cols
 
 
-pickPtsIntroTxt :: Sing -> [Text]
-pickPtsIntroTxt s = T.lines $ "Next we'll assign points to " <> s <> "'s attributes.\n\
-    \Characters have 5 attributes, each measuring inate talent in a given area.\n\
-    \10 (the minimum value) represents a staggering lack of talent, while 100 (the maximum value) represents \
-    \near-supernatural talent. 50 represents an average degree of talent.\n\
-    \You have a pool of " <> showText initPickPts <> " points to assign to your attributes as you wish.\n\
-    \To add points to an attribute, type the first letter of the attribute name, immediately followed by + and the \
-    \number of points to add. For example, to add 10 to your Strength, type " <> colorWith quoteColor "s+10" <> ".\n\
-    \To subtract points, use - instead of +, as in " <> colorWith quoteColor "s-10" <> ".\n\
-    \You can specify multiple additions/subtractions on a single line. Simply separate them with a spaces, like so: " <>
-    colorWith quoteColor "s-10 d+10 h+5" <> ".\n\
-    \When you are finished assigning points, type " <> colorWith quoteColor "q" <> " to quit and move on."
+mkPickPtsIntroTxt :: Sing -> Text
+mkPickPtsIntroTxt s = T.unlines . map (lSpcs <>) $ ts
+  where
+    ts = [ "Next we'll assign points to " <> s <> "'s attributes."
+         , "Characters have 5 attributes, each measuring inate talent in a given area. 10 (the minimum value) represents a staggering lack of talent, while 100 (the maximum value) represents near-supernatural talent. 50 represents an average degree of talent."
+         , "You have a pool of " <> showText initPickPts <> " points to assign to your attributes as you wish."
+         , "To add points to an attribute, type the first letter of the attribute name, immediately followed by + and the number of points to add. For example, to add 10 to your Strength, type " <> colorWith quoteColor "s+10" <> ". To subtract points, use - instead of +, as in " <> colorWith quoteColor "s-10" <> "."
+         , "You can specify multiple additions/subtractions on a single line. Simply separate them with a spaces, like so: " <> colorWith quoteColor "s-10 d+10 h+5" <> "."
+         , "When you are finished assigning points, type " <> colorWith quoteColor "q" <> " to quit and move on." ]
 
 
 promptPickPts :: Id -> MsgQueue -> MudStack ()
