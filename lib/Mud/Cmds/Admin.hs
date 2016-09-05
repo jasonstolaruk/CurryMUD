@@ -1890,7 +1890,6 @@ adminTime p = withoutArgs adminTime p
 -----
 
 
--- TODO: Help.
 adminTType :: ActionFun
 adminTType (NoArgs i mq cols) = (withDbExHandler "adminTType" . getDbTblRecs $ "ttype") >>= \case
   Just xs ->
