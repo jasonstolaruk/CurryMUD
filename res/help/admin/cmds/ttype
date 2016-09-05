@@ -1,0 +1,7 @@
+\h #dTTYPE \d
+
+\uUSAGE\n
+#dttype
+
+\uDESCRIPTION\n
+Display a report of hosts by terminal type.

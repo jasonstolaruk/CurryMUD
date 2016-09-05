@@ -174,7 +174,7 @@ adminCmds =
     , mkAdminCmd "telerm"     adminTeleRm      True  "Display a list of named rooms to which you may teleport, or \
                                                      \teleport to a room by name."
     , mkAdminCmd "time"       adminTime        True  "Display the current system time."
-    , mkAdminCmd "ttype"      adminTType       True  "Display a report of terminal type statistics." -- TODO: Is there a better desc?
+    , mkAdminCmd "ttype"      adminTType       True  "Display a report of hosts by terminal type."
     , mkAdminCmd "typo"       adminTypo        True  "Dump the typo database."
     , mkAdminCmd "uptime"     adminUptime      True  "Display the system uptime."
     , mkAdminCmd "whoin"      adminWhoIn       True  "Display or search a list of all the PCs that are currently \
@@ -1893,11 +1893,20 @@ adminTime p = withoutArgs adminTime p
 -- TODO: Help.
 adminTType :: ActionFun
 adminTType (NoArgs i mq cols) = (withDbExHandler "adminTType" . getDbTblRecs $ "ttype") >>= \case
-  Just xs -> do
+  Just xs ->
     let grouped = groupBy ((==) `on` dbTType) xs
-        folded  = foldr (\g acc -> (dbTType . head $ g, nubSort . map (dbHost :: TTypeRec -> Text) $ g) : acc) [] grouped
-    multiWrapSend mq cols . intercalateDivider cols . map (\(ttype, hosts) -> ttype <> ":" : hosts) $ folded
-    logPlaExec (prefixAdminCmd "ttype") i
+        folded  = foldr (\g -> ((dbTType . head $ g, nubSort . map (dbHost :: TTypeRec -> Text) $ g) :)) [] grouped
+        txtss   = [ uncurry (:) . first (<> t) $ pair | pair@(_, hosts) <- folded
+                                                      , let l = length hosts
+                                                      , let t = T.concat [ ": "
+                                                                         , showText l
+                                                                         , " host"
+                                                                         , pluralize ("", "s") l ] ]
+    in (>> logPlaExec (prefixAdminCmd "ttype") i) $ case intercalateDivider cols txtss of
+          [] -> wrapSend      mq cols dbEmptyMsg
+          ts -> multiWrapSend mq cols ts
+
+
   Nothing -> dbError mq cols
 adminTType p = withoutArgs adminTType p
 
