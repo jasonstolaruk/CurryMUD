@@ -2,6 +2,7 @@
 
 module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryAdminChanTargetName
+                           , sorryAdminKillSelf
                            , sorryAdminName
                            , sorryAdminPasswordAdmin
                            , sorryAdminPasswordSelf
@@ -357,6 +358,13 @@ sorryAdminChanSelf = "You talk to yourself."
 
 sorryAdminChanTargetName :: Text -> Text
 sorryAdminChanTargetName = sorryChanTargetName "admin"
+
+
+-----
+
+
+sorryAdminKillSelf :: Text -- TODO: Use this.
+sorryAdminKillSelf = can't "kill yourself."
 
 
 -----

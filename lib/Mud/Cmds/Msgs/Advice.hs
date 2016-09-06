@@ -13,6 +13,7 @@ module Mud.Cmds.Msgs.Advice ( adviceAAnnounceNoArgs
                             , adviceAHashNoArgs
                             , adviceAHashNoHash
                             , adviceAHostNoArgs
+                            , adviceAKillNoArgs
                             , adviceALocateNoArgs
                             , adviceAMsgNoArgs
                             , adviceAMsgNoMsg
@@ -215,6 +216,10 @@ adviceAHashNoHash a = "Please also provide a hashed password, as in "           
 
 adviceAHostNoArgs :: Text
 adviceAHostNoArgs = "Please specify the PC names of one or more players whose host statistics you would like to see."
+
+
+adviceAKillNoArgs :: Text
+adviceAKillNoArgs = "Please provide one or more IDs to kill."
 
 
 adviceALocateNoArgs :: Text

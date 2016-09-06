@@ -153,6 +153,7 @@ adminCmds =
                                                      \players."
     , mkAdminCmd "incognito"  adminIncognito   True  "Toggle your incognito status."
     , mkAdminCmd "ip"         adminIp          True  "Display the server's IP addresses and listening port."
+    , mkAdminCmd "kill"       adminKill        True  "Kill one or more mobiles by ID."
     , mkAdminCmd "locate"     adminLocate      True  "Locate one or more IDs."
     , mkAdminCmd "message"    adminMsg         True  "Send a message to a regular player."
     , mkAdminCmd "mychannels" adminMyChans     True  "Display information about telepathic channels for one or more \
@@ -952,6 +953,28 @@ adminIp (NoArgs i mq cols) = do
     multiWrapSend mq cols [ "Interfaces: " <> ifList, prd $ "Listening on port " <> showText port ]
     logPlaExec (prefixAdminCmd "ip") i
 adminIp p = withoutArgs adminIp p
+
+
+-----
+
+
+-- TODO: Help. Ethics.
+adminKill :: ActionFun
+adminKill p@AdviseNoArgs          = advise p [ prefixAdminCmd "kill" ] adviceAKillNoArgs
+adminKill (LowerNub _ mq cols as) = helper |&| modifyState >=> sequence_
+  where
+    helper ms = let (ms', fs) = foldl' helperKill (ms, []) as
+                in (ms', fs)
+    helperKill (ms, fs) a =
+        let (ms', fs') = case reads . T.unpack $ a :: [(Int, String)] of
+                           [(targetId, "")] | targetId < 0                                -> f sorryWtf
+                                            | targetId `notElem` (ms^.typeTbl.to IM.keys) -> sorry
+                                            | otherwise                                   -> undefined
+                           _                                                              -> sorry
+            f          = (ms, ) . pure . wrapSend mq cols
+            sorry      = f . sorryParseId $ a
+        in (ms', fs ++ fs')
+adminKill p = patternMatchFail "adminKill" . showText $ p
 
 
 -----
