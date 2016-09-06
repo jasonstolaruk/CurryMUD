@@ -63,6 +63,14 @@ logNotice = L.logNotice "Mud.Threads.Server"
 -- ==================================================
 
 
+{-
+CurryMUD doesn't send GA or EOR. Furthermore, prompts always end with a newline character.
+This prompting and handle-flushing scheme (implemented below) produces an experience that looks the same on both Mudlet
+and TinTin+++. Other options were tried (such as one-line prompts with GA), but this approach produces the most
+consistency.
+-}
+
+
 data ToWhom = Plaに | Npcに
 
 
