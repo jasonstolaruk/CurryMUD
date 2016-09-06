@@ -246,8 +246,8 @@ interpConfirmReadRules :: NewCharBundle -> Interp
 interpConfirmReadRules ncb cn (NoArgs i mq cols) = case yesNoHelper cn of
   Just True  -> next
   Just False -> do
-      send mq . nlPrefix . nl . T.unlines . parseWrapXform cols $ rulesMsg -- TODO: Figure out a way to use the pager.
-      next
+      blankLine mq
+      pager i mq (Just next) . parseWrapXform cols $ rulesMsg
   Nothing -> promptRetryYesNo mq cols
   where
     next = do

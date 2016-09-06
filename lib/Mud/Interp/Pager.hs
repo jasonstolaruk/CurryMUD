@@ -34,8 +34,7 @@ interpPager mf pageLen txtLen (left, right) (T.toLower -> cn) (NoArgs i mq cols)
     let next = if length right + 3 <= pageLen
                  then do
                      send mq . nl . T.unlines $ right
-                     sendDfltPrompt mq i
-                     setInterp i Nothing
+                     fromMaybe (sendDfltPrompt mq i >> setInterp i Nothing) mf
                  else let (page, right') = splitAt (pageLen - 2) right in do
                      send mq . T.unlines $ page
                      sendPagerPrompt mq (length left + pageLen - 2) txtLen

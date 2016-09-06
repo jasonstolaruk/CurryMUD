@@ -48,7 +48,7 @@ descRulesMsg =
     \acceptable, while \"You can't believe how thin he is\" is not.3`\n\
     \3) Descriptions may only contain observable information. \"People tend to ask her about her adventures\" and \"He \
     \is a true visionary among elves\" are both illegal. Likewise, you may not include your character's name in your \
-    \name in your description.3`\n\
+    \description.3`\n\
     \4) Keep your description short. The longer your description, the less likely people are to actually read it!3`"
 
 
