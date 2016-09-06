@@ -456,7 +456,7 @@ informNoChans mq cols = wrapSend mq cols "No channels exist!"
 
 
 adminChanIOHelper :: Id -> MsgQueue -> [[Text]] -> MudStack ()
-adminChanIOHelper i mq reports = sequence_ [ pager i mq . intercalate [""] $ reports
+adminChanIOHelper i mq reports = sequence_ [ pager i mq Nothing . intercalate [""] $ reports
                                            , logPlaExec (prefixAdminCmd "channel") i ]
 
 
@@ -465,7 +465,7 @@ adminChanIOHelper i mq reports = sequence_ [ pager i mq . intercalate [""] $ rep
 
 adminCount :: ActionFun
 adminCount (NoArgs i mq cols) = do
-    pager i mq . concatMap (wrapIndent 2 cols) =<< mkCountTxt
+    pager i mq Nothing . concatMap (wrapIndent 2 cols) =<< mkCountTxt
     logPlaExecArgs (prefixAdminCmd "count") [] i
 adminCount p@ActionParams { myId, args } = do
     dispMatches p 2 =<< mkCountTxt
@@ -594,7 +594,7 @@ adminExamine (LowerNub i mq cols as) = getState >>= \ms ->
           where
             sorry = pure . sorryParseId $ a
     in do
-        pager i mq . concatMap (wrapIndent 2 cols) . intercalateDivider cols . map helper $ as
+        pager i mq Nothing . concatMap (wrapIndent 2 cols) . intercalateDivider cols . map helper $ as
         logPlaExecArgs (prefixAdminCmd "examine") as i
 adminExamine p = patternMatchFail "adminExamine" . showText $ p
 
@@ -855,7 +855,7 @@ adminExamineSelf p              = withoutArgs adminExamineSelf p
 
 
 adminExp :: ActionFun
-adminExp (NoArgs' i mq) = pager i mq mkReport >> logPlaExec (prefixAdminCmd "experience") i
+adminExp (NoArgs' i mq) = pager i mq Nothing mkReport >> logPlaExec (prefixAdminCmd "experience") i
   where
     mkReport = header ++ pure zero ++ (take 25 . map helper $ calcLvlExps)
     header   = [ "Level  Experience", T.replicate 17 "=" ]
@@ -1088,7 +1088,7 @@ adminMyChans (LowerNub i mq cols as) = getState >>= \ms ->
         allReports = intercalateDivider cols . map (helper . capitalize) $ as
     in case views chanTbl IM.size ms of
       0 -> informNoChans mq cols
-      _ -> pager i mq allReports >> logPlaExec (prefixAdminCmd "mychannels") i
+      _ -> pager i mq Nothing allReports >> logPlaExec (prefixAdminCmd "mychannels") i
 adminMyChans p = patternMatchFail "adminMyChans" . showText $ p
 
 
@@ -1941,7 +1941,7 @@ adminWhoIn = whoHelper LoggedIn "whoin"
 
 whoHelper :: LoggedInOrOut -> Text -> ActionFun
 whoHelper inOrOut cn (NoArgs i mq cols) = do
-    pager i mq =<< [ concatMap (wrapIndent 20 cols) charListTxt | charListTxt <- mkCharListTxt inOrOut <$> getState ]
+    pager i mq Nothing =<< [ concatMap (wrapIndent 20 cols) charListTxt | charListTxt <- mkCharListTxt inOrOut <$> getState ]
     logPlaExecArgs (prefixAdminCmd cn) [] i
 whoHelper inOrOut cn p@ActionParams { myId, args } =
     (dispMatches p 20 =<< mkCharListTxt inOrOut <$> getState) >> logPlaExecArgs (prefixAdminCmd cn) args myId

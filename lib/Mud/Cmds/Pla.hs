@@ -1170,7 +1170,7 @@ exits p = withoutArgs exits p
 
 expCmdList :: ActionFun
 expCmdList (NoArgs i mq cols) = getState >>= \ms ->
-    sequence_ [ pager i mq . concatMap (wrapIndent cmdNamePadding cols) . mkExpCmdListTxt i $ ms
+    sequence_ [ pager i mq Nothing . concatMap (wrapIndent cmdNamePadding cols) . mkExpCmdListTxt i $ ms
               , logPlaExecArgs "expressive" [] i ]
 expCmdList p@ActionParams { myId, args } = getState >>= \ms ->
     dispMatches p cmdNamePadding (mkExpCmdListTxt myId ms) >> logPlaExecArgs "expressive" args myId
@@ -1628,7 +1628,7 @@ help (NoArgs i mq cols) = (liftIO . T.readFile $ helpDir </> "root") |&| try >=>
                                               , nl "TOPICS:"
                                               , topicNames
                                               , ia |?| footnote ]
-        sequence_ [ pager i mq . parseHelpTxt cols $ helpTxt, logPla "help" i "read root help file." ]
+        sequence_ [ pager i mq Nothing . parseHelpTxt cols $ helpTxt, logPla "help" i "read root help file." ]
     mkHelpNames zipped    = [ padHelpTopic . (styled <>) $ isAdminHelp h |?| asterisk | (styled, h) <- zipped ]
     formatHelpNames names = let wordsPerLine = cols `div` helpTopicPadding
                             in T.unlines . map T.concat . chunksOf wordsPerLine $ names
@@ -1638,7 +1638,7 @@ help (LowerNub i mq cols as) = getState >>= \ms -> do
         ls = getKnownLangs i ms
     hs <- liftIO . mkHelpData ls $ ia
     (map (parseHelpTxt cols) -> helpTxts, dropBlanks -> hns) <- unzip <$> forM as (getHelpByName cols hs)
-    pager i mq . intercalateDivider cols $ helpTxts
+    pager i mq Nothing . intercalateDivider cols $ helpTxts
     hns |#| logPla "help" i . ("read help on: " <>) . commas
 help p = patternMatchFail "help" . showText $ p
 
@@ -2430,7 +2430,7 @@ question (NoArgs' i mq) = getState >>= \ms ->
                mkDesc (i', n) = pad (succ namePadding) n <> (tunedInOut . isTunedQuestionId i' $ ms)
                descs          = mkDesc (i, getSing i ms <> (isAdminId i ms |?| asterisk)) : map mkDesc combo
                descs'         = "Question channel:" : descs
-           in pager i mq descs' >> logPlaExecArgs "question" [] i
+           in pager i mq Nothing descs' >> logPlaExecArgs "question" [] i
 question (Msg i mq cols msg) = getState >>= \ms -> if
   | not . isTunedQuestionId i $ ms -> wrapSend mq cols . sorryTunedOutOOCChan $ "question"
   | isIncognitoId i ms             -> wrapSend mq cols . sorryChanIncog $ "the question"
@@ -4223,7 +4223,7 @@ whisper p = patternMatchFail "whisper" . showText $ p
 
 who :: ActionFun
 who (NoArgs i mq cols) = getState >>= \ms ->
-    sequence_ [ pager i mq . concatMap (wrapIndent namePadding cols) . mkWhoTxt i $ ms, logPlaExecArgs "who" [] i ]
+    sequence_ [ pager i mq Nothing . concatMap (wrapIndent namePadding cols) . mkWhoTxt i $ ms, logPlaExecArgs "who" [] i ]
 who p@ActionParams { myId, args } = getState >>= \ms ->
     sequence_ [ dispMatches p namePadding . mkWhoTxt myId $ ms, logPlaExecArgs "who" args myId ]
 

@@ -351,7 +351,8 @@ debugEffect p = withoutArgs debugEffect p
 
 debugEnv :: ActionFun
 debugEnv (NoArgs i mq cols) = do
-    pager i mq =<< [ concatMap (wrapIndent 2 cols) . mkEnvListTxt $ env | env <- liftIO . safePerformIO $ getEnvironment ]
+    pager i mq Nothing =<< [ concatMap (wrapIndent 2 cols) . mkEnvListTxt $ env
+                           | env <- liftIO . safePerformIO $ getEnvironment ]
     logPlaExecArgs (prefixDebugCmd "env") [] i
 debugEnv p@ActionParams { myId, args } = do
     dispMatches p 2 =<< [ mkEnvListTxt env | env <- liftIO . safePerformIO $ getEnvironment ]
@@ -381,11 +382,12 @@ debugExp p = withoutArgs debugExp p
 debugFun :: ActionFun
 debugFun (NoArgs i mq cols) = getState >>= \ms -> do
     let helper t lens = t <> ":" : views lens (S.toAscList . M.keysSet) ms
-    pager i mq . concatMap (wrapIndent 2 cols) . intercalateDivider cols $ [ helper "FunTbl"            funTbl
-                                                                           , helper "HookFunTbl"        hookFunTbl
-                                                                           , helper "RmActionFunTbl"    rmActionFunTbl
-                                                                           , helper "EffectFunTbl"      effectFunTbl
-                                                                           , helper "InstaEffectFunTbl" instaEffectFunTbl ]
+        tss           = [ helper "FunTbl"            funTbl
+                        , helper "HookFunTbl"        hookFunTbl
+                        , helper "RmActionFunTbl"    rmActionFunTbl
+                        , helper "EffectFunTbl"      effectFunTbl
+                        , helper "InstaEffectFunTbl" instaEffectFunTbl ]
+    pager i mq Nothing . concatMap (wrapIndent 2 cols) . intercalateDivider cols $ tss
     logPlaExec (prefixDebugCmd "fun") i
 debugFun p = withoutArgs debugFun p
 
@@ -461,7 +463,7 @@ debugId (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
                   , [ T.concat [ "Vessels containing ", dblQuote "liqId", " ", searchIdTxt, ":" ]
                     , let g = views vesselCont (maybe False (views liqId (== DistinctLiqId searchId) . fst)) . snd
                       in f . filter g . tblToList vesselTbl $ ms ] ]
-          pager i mq . concat . wrapLines cols . intercalate [""] $ mkTxt
+          pager i mq Nothing . concat . wrapLines cols . intercalate [""] $ mkTxt
           logPlaExecArgs (prefixDebugCmd "id") (pure a) i
 debugId p = advise p [] adviceDIdExcessArgs
 
@@ -511,7 +513,7 @@ tblKeys lens = views lens IM.keys
 
 debugKeys :: ActionFun
 debugKeys (NoArgs i mq cols) = getState >>= \ms -> do
-    pager i mq . concat . wrapLines cols . intercalate [""] . map mkKeysTxt . mkTblNameKeysList $ ms
+    pager i mq Nothing . concat . wrapLines cols . intercalate [""] . map mkKeysTxt . mkTblNameKeysList $ ms
     logPlaExec (prefixDebugCmd "keys") i
   where
     mkKeysTxt (tblName, ks) = [ tblName <> ": ", showText ks ]
@@ -771,7 +773,7 @@ debugRotate p = withoutArgs debugRotate p
 
 debugRules :: ActionFun
 debugRules (NoArgs i mq cols) = do
-    pager i' mq . parseWrapXform cols $ rulesMsg
+    pager i' mq Nothing . parseWrapXform cols $ rulesMsg
     logPlaExec (prefixDebugCmd "rules") i'
   where
     i' = safeCoerce (i :: Id) :: Int
@@ -783,7 +785,7 @@ debugRules p = withoutArgs debugRandom p
 
 debugTalk :: ActionFun
 debugTalk (NoArgs i mq cols) = getState >>= \(views talkAsyncTbl M.elems -> asyncs) -> do
-    pager i mq =<< [ concatMap (wrapIndent 2 cols) descs | descs <- mapM mkDesc asyncs ]
+    pager i mq Nothing =<< [ concatMap (wrapIndent 2 cols) descs | descs <- mapM mkDesc asyncs ]
     logPlaExec (prefixDebugCmd "talk") i
   where
     mkDesc a    = [ T.concat [ "Talk async ", showText . asyncThreadId $ a, ": ", statusTxt, "." ]
@@ -799,7 +801,7 @@ debugTalk p = withoutArgs debugTalk p
 
 debugThreads :: ActionFun
 debugThreads (NoArgs i mq cols) = do
-    pager i mq . concatMap (wrapIndent 2 cols) =<< descThreads
+    pager i mq Nothing . concatMap (wrapIndent 2 cols) =<< descThreads
     logPlaExec (prefixDebugCmd "threads") i
 debugThreads p@ActionParams { myId, args } = do
     dispMatches p 2 =<< descThreads

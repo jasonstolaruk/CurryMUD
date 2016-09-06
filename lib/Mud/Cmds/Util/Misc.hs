@@ -265,7 +265,7 @@ descMaybeSingId (Just x) ms = descSingId x ms
 
 
 dispCmdList :: [Cmd] -> ActionFun
-dispCmdList cmds (NoArgs i mq cols) = pager i mq . concatMap (wrapIndent cmdNamePadding cols) . mkCmdListText $ cmds
+dispCmdList cmds (NoArgs i mq cols) = pager i mq Nothing . concatMap (wrapIndent cmdNamePadding cols) . mkCmdListText $ cmds
 dispCmdList cmds p                  = dispMatches p cmdNamePadding . mkCmdListText $ cmds
 
 
@@ -291,7 +291,7 @@ dispMatches :: ActionParams -> Int -> [Text] -> MudStack ()
 dispMatches (LowerNub i mq cols needles) indent haystack = let (dropEmpties -> matches) = map grep needles in
     if ()# matches
       then wrapSend mq cols sorrySearch
-      else pager i mq . concatMap (wrapIndent indent cols) . intercalate [""] $ matches
+      else pager i mq Nothing . concatMap (wrapIndent indent cols) . intercalate [""] $ matches
   where
     grep needle = let haystack' = [ (hay, hay') | hay <- haystack, let hay' = T.toLower . dropANSI $ hay ]
                   in [ fst match | match <- haystack', needle `T.isInfixOf` snd match ]
@@ -777,13 +777,13 @@ onOff False = "off"
 -----
 
 
-pager :: Id -> MsgQueue -> [Text] -> MudStack ()
-pager i mq txt@(length -> txtLen) = getState >>= \ms -> let pl = getPageLines i ms in if txtLen + 3 <= pl
+pager :: Id -> MsgQueue -> Maybe Fun -> [Text] -> MudStack ()
+pager i mq mf txt@(length -> txtLen) = getState >>= \ms -> let pl = getPageLines i ms in if txtLen + 3 <= pl
   then send mq . nl . T.unlines $ txt
   else let (page, rest) = splitAt (pl - 2) txt in do
       send mq . T.unlines $ page
       sendPagerPrompt mq (pl - 2) txtLen
-      setInterp i . Just $ interpPager pl txtLen (page, rest)
+      setInterp i . Just . interpPager mf pl txtLen $ (page, rest)
 
 
 -----
