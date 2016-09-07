@@ -26,6 +26,7 @@ module Mud.Cmds.Util.Misc ( asterisk
                           , hasEnc
                           , hasYou
                           , inOut
+                          , isAlive
                           , isAttacking
                           , isAwake
                           , isBracketed
@@ -90,6 +91,7 @@ import Mud.Interp.Pager
 import Mud.Misc.ANSI
 import Mud.Misc.Database
 import Mud.Misc.LocPref
+import Mud.TheWorld.Zones.AdminZoneIds
 import Mud.Threads.Misc
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.FilePaths
@@ -493,15 +495,42 @@ hasYou = any (`elem` yous) . map (T.dropAround (not . isLetter) . T.toLower)
 -----
 
 
-isAwake :: Id -> MudState -> Bool
-isAwake = onPla (uncurry (&&) . (isLoggedIn *** not . isIncognito) . dup) True
+isAlive :: Id -> MudState -> Bool
+isAlive i ms = i `notElem` getInv iNecropolis ms
 
 
 -----
 
 
-isHeDon't :: Char -> Text -> Bool
-isHeDon't c = (== prd (T.singleton c))
+isAttacking :: Id -> MudState -> Bool
+isAttacking = isActing Attacking
+
+
+isDrinking :: Id -> MudState -> Bool
+isDrinking = isActing Drinking
+
+
+isActing :: ActType -> Id -> MudState -> Bool
+isActing actType i = M.member actType . getActMap i
+
+
+isEating :: Id -> MudState -> Bool
+isEating = isActing Eating
+
+
+isDrinkingEating :: Id -> MudState -> (Bool, Bool)
+isDrinkingEating i = (uncurry isDrinking *** uncurry isEating) . dup . (,) i
+
+
+isMoving :: Id -> MudState -> Bool
+isMoving = isActing Moving
+
+
+-----
+
+
+isAwake :: Id -> MudState -> Bool
+isAwake = onPla (uncurry (&&) . (isLoggedIn *** not . isIncognito) . dup) True
 
 
 -----
@@ -511,6 +540,13 @@ isBracketed :: [Text] -> Bool
 isBracketed ws = or [ (T.head . head $ ws) `elem` ("[<" :: String)
                     , "]." `T.isSuffixOf` last ws
                     , ">." `T.isSuffixOf` last ws ]
+
+
+-----
+
+
+isHeDon't :: Char -> Text -> Bool
+isHeDon't c = (== prd (T.singleton c))
 
 
 -----
@@ -549,33 +585,6 @@ helperIsLinked f ms ids@(i, i') = let s                = getSing i  ms
 
 isDblLinked :: MudState -> (Id, Id) -> Bool
 isDblLinked = helperIsLinked (&&)
-
-
------
-
-
-isAttacking :: Id -> MudState -> Bool
-isAttacking = isActing Attacking
-
-
-isDrinking :: Id -> MudState -> Bool
-isDrinking = isActing Drinking
-
-
-isActing :: ActType -> Id -> MudState -> Bool
-isActing actType i = M.member actType . getActMap i
-
-
-isEating :: Id -> MudState -> Bool
-isEating = isActing Eating
-
-
-isDrinkingEating :: Id -> MudState -> (Bool, Bool)
-isDrinkingEating i = (uncurry isDrinking *** uncurry isEating) . dup . (,) i
-
-
-isMoving :: Id -> MudState -> Bool
-isMoving = isActing Moving
 
 
 -----

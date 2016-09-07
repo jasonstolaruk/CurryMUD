@@ -966,13 +966,16 @@ adminKill (LowerNub _ mq cols as) = helper |&| modifyState >=> sequence_
     helper ms = let (ms', fs) = foldl' helperKill (ms, []) as
                 in (ms', fs)
     helperKill (ms, fs) a =
-        let (ms', fs') = case reads . T.unpack $ a :: [(Int, String)] of
-                           [(targetId, "")] | targetId < 0                                -> f sorryWtf
-                                            | targetId `notElem` (ms^.typeTbl.to IM.keys) -> sorry
-                                            | otherwise                                   -> undefined
-                           _                                                              -> sorry
-            f          = (ms, ) . pure . wrapSend mq cols
-            sorry      = f . sorryParseId $ a
+        let (ms', fs')  = case reads . T.unpack $ a :: [(Int, String)] of
+                            [(targetId, "")] | targetId < 0                                -> f sorryWtf
+                                             | targetId `notElem` (ms^.typeTbl.to IM.keys) -> sorry
+                                             | otherwise                                   -> go targetId
+                            _                                                              -> sorry
+            f           = (ms, ) . pure . wrapSend mq cols
+            sorry       = f . sorryParseId $ a
+            go targetId = let t = getType targetId ms in if t `elem` [ NpcType, PCType ]
+              then undefined
+              else undefined
         in (ms', fs ++ fs')
 adminKill p = patternMatchFail "adminKill" . showText $ p
 
