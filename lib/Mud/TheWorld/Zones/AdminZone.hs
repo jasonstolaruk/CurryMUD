@@ -575,7 +575,7 @@ createAdminZone = do
   putRm iNecropolis
         []
         mempty
-        (mkRm (RmTemplate "The necropolis"
+        (mkRm (RmTemplate "Necropolis"
             "PCs are placed here when they die."
             Nothing
             Nothing
@@ -595,7 +595,7 @@ createAdminZone = do
   putRm iTrashDump
         []
         mempty
-        (mkRm (RmTemplate "The trash dump"
+        (mkRm (RmTemplate "Trash dump"
             "Items deposited in magic trash bins end up here."
             Nothing
             (Just "This place sure does smell like shit.")
@@ -644,7 +644,7 @@ createAdminZone = do
   putRm iAtrium
         []
         mempty
-        (mkRm (RmTemplate "The atrium" -- TODO: "The" in room names?
+        (mkRm (RmTemplate "Atrium"
             "The large, airy atrium is sparsely furnished so as to accentuate its open feel. The focal point of the \
             \atrium is a shallow pool positioned directly under a large opening in the ceiling, allowing the pool to \
             \freely collect rainwater. At each corner of the square pool, a marble column purposefully rises up to \
@@ -666,7 +666,7 @@ createAdminZone = do
   putRm iBasement
         []
         mempty
-        (mkRm (RmTemplate "The basement"
+        (mkRm (RmTemplate "Basement"
             "This dusty, unfinished basement smells of mold. You spot several cobwebs hanging from the ceiling.\n\
             \Eight doors are positioned about the round, stucco wall at even intervals. A spiral staircase leads up. \
             \Next to the staircase lies an open manhole."
@@ -716,7 +716,7 @@ createAdminZone = do
   putRm iAttic
         [iCube1..iCube1 + 19]
         mempty
-        (mkRm (RmTemplate "The attic"
+        (mkRm (RmTemplate "Attic"
             "Though the confined attic is dusty, its cozy atmosphere creates an oddly welcoming space."
             (Just "Is that the soft squeek of a mouse you hear? Maybe you're just hearing things...")
             (Just "The air here is dusty and a little stale, though not stifling.")
@@ -867,7 +867,7 @@ createAdminZone = do
   putRm iTutEntrance
         []
         mempty
-        (mkRm (RmTemplate "The portal"
+        (mkRm (RmTemplate "Portal"
             "Floating before you is a large round portal in which dazzling shapes and colors spin and dance. You feel \
             \a peculiar pulling sensation in your abdomen, as if the portal is attempting to draw you towards itself.\n\
             \A wooden sign is suspended above the portal."
@@ -883,7 +883,7 @@ createAdminZone = do
   putRm iLoungeEntrance
         []
         mempty
-        (mkRm (RmTemplate "The floating door"
+        (mkRm (RmTemplate "Floating door"
             "Floating before you is a polished wooden door surrounded by featureless white trimming. Hanging from a \
             \nail affixed to the door is a small sign reading, \"Admin Lounge.\""
             voidListen
@@ -897,7 +897,7 @@ createAdminZone = do
   putRm iLounge
         []
         mempty
-        (mkRm (RmTemplate "The admin lounge"
+        (mkRm (RmTemplate "Admin lounge"
             "Welcome, admin! This is your private space where you can relax and take it easy."
             Nothing
             (Just "There is a lingering scent of pipe tobacco in the air.")
