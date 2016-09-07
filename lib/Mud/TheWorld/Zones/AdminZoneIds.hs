@@ -276,6 +276,8 @@ iBottleLrg = 187 :: Id
 
 iSlab = 188 :: Id
 
+iNecropolis = 189 :: Id -- TODO: Move?
+
 -----
 
 iRoot = 200 :: Id

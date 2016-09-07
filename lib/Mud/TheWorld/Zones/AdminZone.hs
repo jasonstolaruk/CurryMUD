@@ -572,13 +572,13 @@ createAdminZone = do
             zeroBits
             []
             M.empty [] []))
-  putRm iTrashDump
+  putRm iNecropolis
         []
         mempty
-        (mkRm (RmTemplate "The trash dump"
-            "Items deposited in magic trash bins end up here."
+        (mkRm (RmTemplate "The necropolis"
+            "PCs are placed here when they die."
             Nothing
-            (Just "This place sure does smell like shit.")
+            Nothing
             zeroBits
             []
             M.empty [] []))
@@ -589,6 +589,16 @@ createAdminZone = do
             "Ad-hoc PCs created for new connections are placed here."
             Nothing
             Nothing
+            zeroBits
+            []
+            M.empty [] []))
+  putRm iTrashDump
+        []
+        mempty
+        (mkRm (RmTemplate "The trash dump"
+            "Items deposited in magic trash bins end up here."
+            Nothing
+            (Just "This place sure does smell like shit.")
             zeroBits
             []
             M.empty [] []))
@@ -634,7 +644,7 @@ createAdminZone = do
   putRm iAtrium
         []
         mempty
-        (mkRm (RmTemplate "The atrium"
+        (mkRm (RmTemplate "The atrium" -- TODO: "The" in room names?
             "The large, airy atrium is sparsely furnished so as to accentuate its open feel. The focal point of the \
             \atrium is a shallow pool positioned directly under a large opening in the ceiling, allowing the pool to \
             \freely collect rainwater. At each corner of the square pool, a marble column purposefully rises up to \
@@ -910,6 +920,7 @@ createAdminZone = do
 
   -- ==================================================
   -- Room teleport names:
+
   putRmTeleName iAtrium    "atrium"
   putRmTeleName iCentral   "central"
   putRmTeleName iTrashDump "dump"
