@@ -602,6 +602,19 @@ createAdminZone = do
             zeroBits
             []
             M.empty [] []))
+  putRm iEmpty
+        []
+        mempty
+        (mkRm (RmTemplate "The empty room"
+            "This small, square room is strikingly barren. There doesn't appear to be a door or any means of exit. \
+            \Notably, there is a small wooden sign affixed to the north wall."
+            Nothing
+            (Just "On account of there being no ventilation to speak of, the air here is markedly stale and stuffy.")
+            zeroBits
+            []
+            (M.fromList [ ("look", [ readLookSign_iEmptyHook, lookWallsHook, lookCeilingHook ])
+                        , ("read", [ readLookSign_iEmptyHook                                 ]) ])
+            [] []))
   putRm iCentral
         []
         mempty
@@ -839,7 +852,7 @@ createAdminZone = do
             [ StdLink East iBasement dfltLinkMove ]
             M.empty [] []))
   putRm iMobCloset
-        [ iRockCavy1, iRockCavy2, iPidge, iSkeleton1, iSkeleton2, iSkeleton3 ]
+        [ iPidge, iRockCavy1, iRockCavy2, iSkeleton1, iSkeleton2, iSkeleton3 ]
         mempty
         (mkRm (RmTemplate "Mob closet"
             "This closet holds mobs."
@@ -904,19 +917,6 @@ createAdminZone = do
             zeroBits
             [ NonStdLink "out" iLoungeEntrance dfltLinkMove "% exits the lounge." "% exits the lounge." ]
             M.empty [] []))
-  putRm iEmpty
-        []
-        mempty
-        (mkRm (RmTemplate "The empty room"
-            "This small, square room is strikingly barren. There doesn't appear to be a door or any means of exit. \
-            \Notably, there is a small wooden sign affixed to the north wall."
-            Nothing
-            (Just "On account of there being no ventilation to speak of, the air here is markedly stale and stuffy.")
-            zeroBits
-            []
-            (M.fromList [ ("look", [ readLookSign_iEmptyHook, lookWallsHook, lookCeilingHook ])
-                        , ("read", [ readLookSign_iEmptyHook                                 ]) ])
-            [] []))
 
   -- ==================================================
   -- Room teleport names:
