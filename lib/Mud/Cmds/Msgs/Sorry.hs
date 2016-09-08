@@ -3,6 +3,7 @@
 module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryAdminChanTargetName
                            , sorryAdminKillSelf
+                           , sorryAdminKillType
                            , sorryAdminName
                            , sorryAdminPasswordAdmin
                            , sorryAdminPasswordSelf
@@ -363,8 +364,12 @@ sorryAdminChanTargetName = sorryChanTargetName "admin"
 -----
 
 
-sorryAdminKillSelf :: Text -- TODO: Use this.
+sorryAdminKillSelf :: Text
 sorryAdminKillSelf = can't "kill yourself."
+
+
+sorryAdminKillType :: Id -> Text
+sorryAdminKillType i = "ID " <> showText i <> "is not a mobile."
 
 
 -----

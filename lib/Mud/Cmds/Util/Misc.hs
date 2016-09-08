@@ -22,6 +22,7 @@ module Mud.Cmds.Util.Misc ( asterisk
                           , getPCChans
                           , getQuestionStyleds
                           , getTunedQuestionIds
+                          , handleDeath
                           , happy
                           , hasEnc
                           , hasYou
@@ -444,6 +445,13 @@ getQuestionStyleds i ms =
 getTunedQuestionIds :: Id -> MudState -> (Inv, Inv)
 getTunedQuestionIds i ms = let pair = (getLoggedInPlaIds ms, getNonIncogLoggedInAdminIds ms)
                            in pair & both %~ filter (`isTunedQuestionId` ms) . (i `delete`)
+
+
+-----
+
+
+handleDeath :: Id -> MudStack ()
+handleDeath _ = undefined
 
 
 -----

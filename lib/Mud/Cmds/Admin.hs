@@ -961,22 +961,25 @@ adminIp p = withoutArgs adminIp p
 -- TODO: Help. Ethics.
 adminKill :: ActionFun
 adminKill p@AdviseNoArgs          = advise p [ prefixAdminCmd "kill" ] adviceAKillNoArgs
-adminKill (LowerNub _ mq cols as) = helper |&| modifyState >=> sequence_
+adminKill (LowerNub i mq cols as) = getState >>= \ms ->
+    let (is, fs) = foldl' (helper ms) ([], []) as
+        logMsg   = "killing " <> commas [ getSing targetId ms <> " " <> parensQuote (showText targetId)
+                                        | targetId <- is ]
+    in (logMsg |#| logPla (prefixAdminCmd "kill") i) >> sequence_ fs
   where
-    helper ms = let (ms', fs) = foldl' helperKill (ms, []) as
-                in (ms', fs)
-    helperKill (ms, fs) a =
-        let (ms', fs')  = case reads . T.unpack $ a :: [(Int, String)] of
-                            [(targetId, "")] | targetId < 0                                -> f sorryWtf
+    helper ms (is, fs) a =
+        let (is', fs')  = case reads . T.unpack $ a :: [(Int, String)] of
+                            [(targetId, "")] | targetId < 0                                -> h sorryWtf
                                              | targetId `notElem` (ms^.typeTbl.to IM.keys) -> sorry
                                              | otherwise                                   -> go targetId
                             _                                                              -> sorry
-            f           = (ms, ) . pure . wrapSend mq cols
-            sorry       = f . sorryParseId $ a
-            go targetId = let t = getType targetId ms in if t `elem` [ NpcType, PCType ]
-              then undefined
-              else undefined
-        in (ms', fs ++ fs')
+            h           = ([], ) . pure . wrapSend mq cols
+            sorry       = h . sorryParseId $ a
+            go targetId = let t = getType targetId ms
+                          in if | targetId == i                -> h sorryAdminKillSelf
+                                | t `elem` [ NpcType, PCType ] -> (pure targetId, pure . handleDeath $ targetId)
+                                | otherwise                    -> h . sorryAdminKillType $ targetId
+        in (is ++ is', fs ++ fs')
 adminKill p = patternMatchFail "adminKill" . showText $ p
 
 
