@@ -963,8 +963,8 @@ adminKill :: ActionFun
 adminKill p@AdviseNoArgs          = advise p [ prefixAdminCmd "kill" ] adviceAKillNoArgs
 adminKill (LowerNub i mq cols as) = getState >>= \ms ->
     let (is, fs) = foldl' (helper ms) ((,) mempty mempty) as
-        logMsg   = "killing " <> commas [ getSing targetId ms <> " " <> parensQuote (showText targetId)
-                                        | targetId <- is ]
+        logMsg   = prd $ "killing " <> commas [ getSing targetId ms <> " " <> parensQuote (showText targetId)
+                                              | targetId <- is ]
     in do
         unless (()# is) . logPla (prefixAdminCmd "kill") i $ logMsg
         sequence_ fs

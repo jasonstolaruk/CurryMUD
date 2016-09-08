@@ -450,6 +450,10 @@ getTunedQuestionIds i ms = let pair = (getLoggedInPlaIds ms, getNonIncogLoggedIn
 -----
 
 
+{-
+When a PC dies:
+
+-}
 handleDeath :: Id -> MudStack ()
 handleDeath _ = unit
 
