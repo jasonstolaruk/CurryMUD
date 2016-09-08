@@ -959,6 +959,7 @@ adminIp p = withoutArgs adminIp p
 
 
 -- TODO: Help. Ethics.
+-- TODO: Messaging describing the death.
 adminKill :: ActionFun
 adminKill p@AdviseNoArgs          = advise p [ prefixAdminCmd "kill" ] adviceAKillNoArgs
 adminKill (LowerNub i mq cols as) = getState >>= \ms ->

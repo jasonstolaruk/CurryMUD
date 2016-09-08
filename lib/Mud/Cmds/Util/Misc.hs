@@ -451,8 +451,13 @@ getTunedQuestionIds i ms = let pair = (getLoggedInPlaIds ms, getNonIncogLoggedIn
 
 
 {-
-When a PC dies:
-
+When Taro dies:
+Those who are linked with Taro are notified via retained message.
+Taro's PC becomes a disembodied spirit.
+Taro's corpse is created.
+Items are transferred from spirit to corpse.
+After some time, Taro's spirit passes into the beyond.
+Taro's PC is sent to the Necropolis.
 -}
 handleDeath :: Id -> MudStack ()
 handleDeath _ = unit
