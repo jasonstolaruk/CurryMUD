@@ -451,7 +451,7 @@ getTunedQuestionIds i ms = let pair = (getLoggedInPlaIds ms, getNonIncogLoggedIn
 
 
 handleDeath :: Id -> MudStack ()
-handleDeath _ = undefined
+handleDeath _ = unit
 
 
 -----
