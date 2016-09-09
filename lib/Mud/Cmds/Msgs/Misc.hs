@@ -20,6 +20,10 @@ lSpcs = T.replicate 2 . T.pack $ charTokenDelimiter : "n"
 -----
 
 
+adminKillMsg :: Text -> Text
+adminKillMsg t = "There is a blinding yellow light and a deafening crack as " <> t <> " instantly struck dead!"
+
+
 asMsg :: Text
 asMsg = "You suddenly feel as though someone else is in control..."
 

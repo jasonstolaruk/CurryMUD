@@ -982,10 +982,11 @@ adminKill (LowerNub i mq cols as) = getState >>= \ms ->
                         | otherwise                                      = h . sorryAdminKillType $ targetId
               where
                 mkFuns =
-                    let d = mkStdDesig targetId ms Don'tCap
-                        toSelf = ("There is a blinding yellow light and a deafening pop as you are instantly struck dead!", pure targetId)
-                        toOthers = ("There is a blinding yellow light and a deafening pop as " <> serialize d <> " is instantly struck dead!", targetId `delete` desigIds d)
-                    in [ bcastIfNotIncog targetId (toSelf : pure toOthers), handleDeath targetId ]
+                    let d        = mkStdDesig targetId ms Don'tCap
+                        toSelf   = mkBs (adminKillMsg "you are", pure targetId               )
+                        toOthers = mkBs (serialize d <> " is",   targetId `delete` desigIds d)
+                        mkBs     = pure . first (colorWith adminKillColor)
+                    in [ bcast $ toSelf ++ toOthers, handleDeath targetId ]
         in (is ++ is', fs ++ fs')
 adminKill p = patternMatchFail "adminKill" . showText $ p
 
