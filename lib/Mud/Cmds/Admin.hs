@@ -51,7 +51,7 @@ import Control.Exception (IOException)
 import Control.Exception.Lifted (catch, try)
 import Control.Lens (_1, _2, _3, _4, _5, at, both, each, to, view, views)
 import Control.Lens.Operators ((%~), (&), (.~), (<>~), (?~), (^.))
-import Control.Monad ((>=>), forM_, unless, when)
+import Control.Monad ((>=>), forM, forM_, unless, when)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (asks)
 import Crypto.BCrypt (validatePassword)
@@ -61,12 +61,12 @@ import Data.Char (isDigit, isLower, isUpper)
 import Data.Either (rights)
 import Data.Function (on)
 import Data.Ix (inRange)
-import Data.List ((\\), delete, foldl', groupBy, intercalate, intersperse, nub, partition, sortBy)
+import Data.List ((\\), delete, foldl', group, groupBy, intercalate, intersperse, nub, partition, sort, sortBy)
 import Data.Maybe (fromJust, fromMaybe, isJust)
 import Data.Monoid ((<>), Any(..), Sum(..), getSum)
 import Data.Text (Text)
 import Data.Time (FormatTime, TimeZone, UTCTime, defaultTimeLocale, diffUTCTime, formatTime, getCurrentTime, getCurrentTimeZone, getZonedTime, utcToLocalTime)
-import Database.SQLite.Simple (FromRow)
+import Database.SQLite.Simple (FromRow, fromOnly)
 import GHC.Conc (ThreadStatus(..), threadStatus)
 import GHC.Exts (sortWith)
 import Prelude hiding (exp, pi)
@@ -154,6 +154,8 @@ adminCmds =
     , mkAdminCmd "incognito"  adminIncognito   True  "Toggle your incognito status."
     , mkAdminCmd "ip"         adminIp          True  "Display the server's IP addresses and listening port."
     , mkAdminCmd "kill"       adminKill        True  "Kill one or more mobiles by ID."
+    , mkAdminCmd "link"       adminLink        True  "Dump two-way links, descending from most active, for one or more \
+                                                     \PCs."
     , mkAdminCmd "locate"     adminLocate      True  "Locate one or more IDs."
     , mkAdminCmd "message"    adminMsg         True  "Send a message to a regular player."
     , mkAdminCmd "mychannels" adminMyChans     True  "Display information about telepathic channels for one or more \
@@ -989,6 +991,29 @@ adminKill (LowerNub i mq cols as) = getState >>= \ms ->
                     in [ bcast $ toSelf ++ toOthers, handleDeath targetId ]
         in (is ++ is', fs ++ fs')
 adminKill p = patternMatchFail "adminKill" . showText $ p
+
+
+-----
+
+
+-- TODO: Help.
+adminLink :: ActionFun
+adminLink p@AdviseNoArgs          = advise p [ prefixAdminCmd "link" ] adviceALinkNoArgs
+adminLink (LowerNub i mq cols as) = getState >>= \ms -> do
+    let helper target =
+            let notFound              = unadulterated . sorryPCName $ target
+                found (_, targetSing) = (\case
+                  [] -> header none
+                  ss -> header . mkReport $ ss) <$> (liftIO . lookupTeleNames $ targetSing)
+                  where
+                    header = (targetSing <> "'s two-way links:" :)
+                    mkReport     ss | pairs <- sortBy (flip compare `on` fst) . mkCountSings $ ss
+                                    = map (\(c, s) -> s <> " " <> parensQuote (showText c)) pairs
+                    mkCountSings ss = [ (length g, s) | g@(s:_) <- group . sort . map fromOnly $ ss ]
+            in findFullNameForAbbrev target (mkAdminPlaIdSingList ms) |&| maybe notFound found
+    pager i mq Nothing . intercalateDivider cols =<< forM as (helper . capitalize . T.toLower)
+    logPlaExecArgs (prefixAdminCmd "link") as i
+adminLink p = patternMatchFail "adminLink" . showText $ p
 
 
 -----

@@ -35,6 +35,7 @@ module Mud.Misc.Database ( AdminChanRec(..)
                          , insertDbTblTypo
                          , insertDbTblUnPw
                          , lookupPW
+                         , lookupTeleNames
                          , ProfRec(..)
                          , purgeDbTblAdminChan
                          , purgeDbTblAdminMsg
@@ -468,3 +469,14 @@ lookupPW s = withConnection dbFile helper
     f :: [Only Text] -> Maybe Text
     f [] = Nothing
     f xs = Just . fromOnly . head $ xs
+
+
+lookupTeleNames :: Sing -> IO [Only Text]
+lookupTeleNames s = withConnection dbFile helper
+  where
+    helper conn = query conn (Query t) . dup4 $ s
+    t           = "select case\
+                  \  when fromName != ? then fromName\
+                  \  when toName != ? then toName\
+                  \  end as name \
+                  \from (select fromName, toName from tele where fromName = ? or toName = ?)"

@@ -14,6 +14,7 @@ module Mud.Util.Misc ( atLst1
                      , dropThr
                      , dup
                      , dup3
+                     , dup4
                      , dupIdentity
                      , eitherRet
                      , emptied
@@ -140,6 +141,10 @@ dup x = (x, x)
 
 dup3 :: a -> (a, a, a)
 dup3 x = (x, x, x)
+
+
+dup4 :: a -> (a, a, a, a)
+dup4 x = (x, x, x, x)
 
 
 dupIdentity :: (Monoid a) => (a, a) -- In the sense that "mempty" is the identity of "mappend".

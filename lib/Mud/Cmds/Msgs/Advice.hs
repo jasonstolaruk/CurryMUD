@@ -14,6 +14,7 @@ module Mud.Cmds.Msgs.Advice ( adviceAAnnounceNoArgs
                             , adviceAHashNoHash
                             , adviceAHostNoArgs
                             , adviceAKillNoArgs
+                            , adviceALinkNoArgs
                             , adviceALocateNoArgs
                             , adviceAMsgNoArgs
                             , adviceAMsgNoMsg
@@ -203,13 +204,13 @@ adviceAHashExcessArgs = adviceAHashNoArgs
 
 
 adviceAHashNoArgs :: Text
-adviceAHashNoArgs = "Please provide two arguments: a plain-text password, followed by a hashed password, as in "                          <>
+adviceAHashNoArgs = "Please provide two arguments: a plain-text password, followed by a hashed password, as in " <>
                     colorWith quoteColor (prefixAdminCmd "hash" <> " curry $2y$04$nbLFBcaGtmT.fMzBUC.sC.vj0AqQgTE6R//Nj70DKU/fN5W2K84Sm") <>
                     "."
 
 
 adviceAHashNoHash :: Text -> Text
-adviceAHashNoHash a = "Please also provide a hashed password, as in "                                                                      <>
+adviceAHashNoHash a = "Please also provide a hashed password, as in " <>
                       colorWith quoteColor (prefixAdminCmd "hash " <> a <> "$2y$04$nbLFBcaGtmT.fMzBUC.sC.vj0AqQgTE6R//Nj70DKU/fN5W2K84Sm") <>
                       "."
 
@@ -220,6 +221,10 @@ adviceAHostNoArgs = "Please specify the PC names of one or more players whose ho
 
 adviceAKillNoArgs :: Text
 adviceAKillNoArgs = "Please provide one or more IDs to kill."
+
+
+adviceALinkNoArgs :: Text
+adviceALinkNoArgs = "Please specify the names of one or more PCs whose two-way links you would like to see."
 
 
 adviceALocateNoArgs :: Text
