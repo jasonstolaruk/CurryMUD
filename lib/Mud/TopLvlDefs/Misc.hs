@@ -150,11 +150,11 @@ minPwLen = 6
 
 
 maxLogSize :: FileOffset
-maxLogSize = 100000
+maxLogSize = 1000000
 
 
 noOfDbTblRecsToPurge :: Int
-noOfDbTblRecsToPurge = 1000
+noOfDbTblRecsToPurge = 100000 -- 1/10th of "maxLogSize".
 
 
 noOfLogFiles :: Int
