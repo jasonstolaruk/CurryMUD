@@ -452,12 +452,16 @@ getTunedQuestionIds i ms = let pair = (getLoggedInPlaIds ms, getNonIncogLoggedIn
 
 {-
 When Taro dies:
-Those who are linked with Taro are notified via retained message.
 Taro's PC becomes a disembodied spirit.
-Taro's corpse is created.
-Items are transferred from spirit to corpse.
-After some time, Taro's spirit passes into the beyond.
-Taro's PC is sent to the Necropolis.
+Taro's corpse is created. Items are transferred from spirit to corpse.
+Those who are linked with Taro are notified of his death (via retained message?).
+Taro's PC is sent to the Necropolis when Taro's spirit passes into the beyond.
+
+A player has a certain amount of time as a spirit, depending on level.
+A spirit retains a certain number of two-way links, depending on PP. A spirit can continue to communicate telepathically over those links.
+How retained links are chosen:
+Taro has exchanged the most telepathic messages with PCs A, B, C, D, and E. A, B, and C are presently awake, while D and E are not.
+Taro dies. It is determined that he can retain 5 of his two-way links. A, B, and C are chosen first, then X and Y. Although Taro didn't exchange as many messages with X and Y, they are presently awake, and so are chosen over D and E.
 -}
 handleDeath :: Id -> MudStack ()
 handleDeath _ = unit

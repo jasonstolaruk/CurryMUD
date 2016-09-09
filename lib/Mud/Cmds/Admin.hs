@@ -547,7 +547,7 @@ mkCountTxt = map (uncurry mappend . second commaShow) <$> helper
     countFiles dir = (length . dropIrrelevantFilenames <$> getDirectoryContents dir) `catch` handler
       where
         handler :: IOException -> IO Int
-        handler _ = return 0
+        handler = const . return $ 0
     filterThreads = filter $ \case ThreadRunning   -> True
                                    ThreadBlocked _ -> True
                                    _               -> False
@@ -959,7 +959,6 @@ adminIp p = withoutArgs adminIp p
 
 
 -- TODO: Help. Ethics.
--- TODO: Messaging describing the death.
 adminKill :: ActionFun
 adminKill p@AdviseNoArgs          = advise p [ prefixAdminCmd "kill" ] adviceAKillNoArgs
 adminKill (LowerNub i mq cols as) = getState >>= \ms ->
@@ -979,8 +978,14 @@ adminKill (LowerNub i mq cols as) = getState >>= \ms ->
             h           = (,) mempty . pure . wrapSend mq cols
             sorry       = h . sorryParseId $ a
             go targetId | targetId == i                                  = h sorryAdminKillSelf
-                        | getType targetId ms `elem` [ NpcType, PCType ] = (pure targetId, pure . handleDeath $ targetId)
+                        | getType targetId ms `elem` [ NpcType, PCType ] = (pure targetId, mkFuns)
                         | otherwise                                      = h . sorryAdminKillType $ targetId
+              where
+                mkFuns =
+                    let d = mkStdDesig targetId ms Don'tCap
+                        toSelf = ("There is a blinding yellow light and a deafening pop as you are instantly struck dead!", pure targetId)
+                        toOthers = ("There is a blinding yellow light and a deafening pop as " <> serialize d <> " is instantly struck dead!", targetId `delete` desigIds d)
+                    in [ bcastIfNotIncog targetId (toSelf : pure toOthers), handleDeath targetId ]
         in (is ++ is', fs ++ fs')
 adminKill p = patternMatchFail "adminKill" . showText $ p
 

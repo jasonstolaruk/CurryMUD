@@ -61,4 +61,4 @@ potFpFeelingFun (IntVal _) = mkFeelingMsg "energy return"
 
 
 potTinnitusFeelingFun :: FeelingFun
-potTinnitusFeelingFun _ = "Your ears are ringing."
+potTinnitusFeelingFun = const "Your ears are ringing."
