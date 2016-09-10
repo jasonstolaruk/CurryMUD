@@ -460,10 +460,7 @@ Taro's PC is sent to the Necropolis when Taro's spirit passes into the beyond.
 About spirits:
 A player has a certain amount of time as a spirit, depending on level.
 A spirit can move freely about with no FP cost.
-A spirit retains a certain number of two-way links, depending on PS. A spirit can continue to communicate telepathically over those links.
-How retained links are chosen:
-Taro has exchanged the most telepathic messages with PCs A, B, C, D, and E. A, B, and C are presently awake, while D and E are not.
-Taro dies. It is determined that he can retain 5 of his two-way links. A, B, and C are chosen first, then X and Y. Although Taro didn't exchange as many messages with X and Y, they are presently awake, and so are chosen over D and E.
+A spirit retains a certain number of two-way links, depending on PS. A spirit can continue to communicate telepathically over those links. Those links with the greatest volume of messages are retained.
 -}
 handleDeath :: Id -> MudStack ()
 handleDeath i = tweak $ plaTbl.ind i %~ setPlaFlag IsSpirit True

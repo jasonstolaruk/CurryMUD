@@ -154,8 +154,8 @@ adminCmds =
     , mkAdminCmd "incognito"  adminIncognito   True  "Toggle your incognito status."
     , mkAdminCmd "ip"         adminIp          True  "Display the server's IP addresses and listening port."
     , mkAdminCmd "kill"       adminKill        True  "Kill one or more mobiles by ID."
-    , mkAdminCmd "link"       adminLink        True  "Dump two-way links, descending from most active, for one or more \
-                                                     \PCs."
+    , mkAdminCmd "link"       adminLink        True  "Dump two-way links, sorted by volume of messages in descending \
+                                                     \order, for one or more PCs."
     , mkAdminCmd "locate"     adminLocate      True  "Locate one or more IDs."
     , mkAdminCmd "message"    adminMsg         True  "Send a message to a regular player."
     , mkAdminCmd "mychannels" adminMyChans     True  "Display information about telepathic channels for one or more \

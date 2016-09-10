@@ -220,7 +220,7 @@ getFlowerHookFun i Hook { .. } v a@(_, (ms, _, _, _), _) = if calcWeight i ms + 
 
 
 mkFlower :: Id -> V.Vector Int -> MudStack ()
-mkFlower i v = getUnusedId <$> getState >>= \flowerId ->
+mkFlower i v = getUnusedId <$> getState >>= \flowerId -> -- TODO: modifyState instead.
     let e = Ent flowerId
                 (Just "flower")
                 "flower" ""
@@ -232,7 +232,7 @@ mkFlower i v = getUnusedId <$> getState >>= \flowerId ->
                 (Just taste)
                 (setBit zeroBits . fromEnum $ IsBiodegradable)
                 Nothing
-    in newObj e o i
+    in newObj e o i -- TODO: This function will have to be deleted.
   where
     (desc, smell, taste) = rndmIntToElem (V.head v) tuples
     tuples = [ ( "It's a fragrant daffodil sporting a collar of white petals."
