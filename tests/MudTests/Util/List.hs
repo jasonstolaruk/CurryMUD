@@ -27,6 +27,6 @@ prop_dropElem (NonNegative i) xs = i < length xs &&
 prop_mkCountList :: [Int] -> Bool
 prop_mkCountList xs = mkCountList xs == mkCountList' xs
   where
-    mkCountList' xs'@(group . sort -> grouped) | ((<$> grouped) -> elemCountList) <- (,) <$> head <*> length =
+    mkCountList' xs'@(sortGroup -> grouped) | ((<$> grouped) -> elemCountList) <- (,) <$> head <*> length =
       let getCountForElem x = snd (head . filter ((== x) . fst) $ elemCountList)
       in map getCountForElem xs'

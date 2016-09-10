@@ -61,7 +61,7 @@ import Data.Char (isDigit, isLower, isUpper)
 import Data.Either (rights)
 import Data.Function (on)
 import Data.Ix (inRange)
-import Data.List ((\\), delete, foldl', group, groupBy, intercalate, intersperse, nub, partition, sort, sortBy)
+import Data.List ((\\), delete, foldl', groupBy, intercalate, intersperse, nub, partition, sortBy)
 import Data.Maybe (fromJust, fromMaybe, isJust)
 import Data.Monoid ((<>), Any(..), Sum(..), getSum)
 import Data.Text (Text)
@@ -1009,7 +1009,7 @@ adminLink (LowerNub i mq cols as) = getState >>= \ms -> do
                     header = (targetSing <> "'s two-way links:" :)
                     mkReport     ss | pairs <- sortBy (flip compare `on` fst) . mkCountSings $ ss
                                     = map (\(c, s) -> s <> " " <> parensQuote (showText c)) pairs
-                    mkCountSings ss = [ (length g, s) | g@(s:_) <- group . sort . map fromOnly $ ss ]
+                    mkCountSings ss = [ (length g, s) | g@(s:_) <- sortGroup . map fromOnly $ ss ]
             in findFullNameForAbbrev target (mkAdminPlaIdSingList ms) |&| maybe notFound found
     pager i mq Nothing . intercalateDivider cols =<< forM as (helper . capitalize . T.toLower)
     logPlaExecArgs (prefixAdminCmd "link") as i

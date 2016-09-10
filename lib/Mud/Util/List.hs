@@ -11,7 +11,8 @@ module Mud.Util.List ( allValues
                      , listToTuple
                      , mkCountList
                      , nubSort
-                     , select ) where
+                     , select
+                     , sortGroup ) where
 
 import Mud.Util.Misc
 import Mud.Util.Operators
@@ -38,7 +39,7 @@ countOcc needle = foldl' (\acc x -> x == needle ? succ acc :? acc) 0
 
 
 countOccs :: (Ord a) => [a] -> [(a, Int)]
-countOccs = map ((head *** length) . dup) . group . sort
+countOccs = map ((head *** length) . dup) . sortGroup
 
 
 dropElem :: Int -> [a] -> [a]
@@ -71,3 +72,9 @@ nubSort = S.toList . S.fromList
 
 select :: Lens' a b -> [] a -> [] b
 select l = map (view l)
+
+
+-- Avoid hlint difficulties when importing "group" with TransformListComp turned on.
+-- See https://github.com/ndmitchell/hlint/issues/248
+sortGroup :: (Ord a) => [a] -> [[a]]
+sortGroup = group . sort
