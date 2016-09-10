@@ -466,7 +466,7 @@ Taro has exchanged the most telepathic messages with PCs A, B, C, D, and E. A, B
 Taro dies. It is determined that he can retain 5 of his two-way links. A, B, and C are chosen first, then X and Y. Although Taro didn't exchange as many messages with X and Y, they are presently awake, and so are chosen over D and E.
 -}
 handleDeath :: Id -> MudStack ()
-handleDeath _ = unit
+handleDeath i = tweak $ plaTbl.ind i %~ setPlaFlag IsSpirit True
 
 
 -----

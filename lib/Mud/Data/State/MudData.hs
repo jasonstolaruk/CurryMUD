@@ -277,10 +277,14 @@ instance Monoid Coins where
 
 -- Has an object (and an entity and paused/active effects) and an inventory and coins.
 data Con = Con { _conIsCloth  :: Bool
-               , _conCapacity :: Vol } deriving (Eq, Generic, Show)
+               , _conCapacity :: Vol
+               , _conFlags    :: Int } deriving (Eq, Generic, Show)
 
 
 type Vol = Int
+
+
+data ConFlags = IsCorpse deriving Enum
 
 
 type ConName = Text

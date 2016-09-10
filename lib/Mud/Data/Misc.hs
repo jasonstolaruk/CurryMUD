@@ -25,6 +25,7 @@ module Mud.Data.Misc ( Action(..)
                      , ExpCmdType(..)
                      , fromRol
                      , GenericRes
+                     , getConFlag
                      , getEntFlag
                      , GetEntsCoinsRes(..)
                      , getObjFlag
@@ -45,6 +46,7 @@ module Mud.Data.Misc ( Action(..)
                      , RightOrLeft(..)
                      , Serializable
                      , serialize
+                     , setConFlag
                      , setEntFlag
                      , setObjFlag
                      , SetOp(..)
@@ -165,6 +167,19 @@ getEntFlag = getFlag
 
 setEntFlag :: EntFlags -> Bool -> Ent -> Ent
 setEntFlag = setFlag
+
+
+instance HasFlags Con where
+  flagGetter = conFlags
+  flagSetter = conFlags
+
+
+getConFlag :: ConFlags -> Con -> Bool
+getConFlag = getFlag
+
+
+setConFlag :: ConFlags -> Bool -> Con -> Con
+setConFlag = setFlag
 
 
 instance HasFlags Obj where

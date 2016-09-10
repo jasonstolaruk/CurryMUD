@@ -1211,7 +1211,7 @@ createAdminZone = do
              []
              mempty
              Nothing
-             (Con False c)
+             (Con False c zeroBits)
   let backTuples = [ (iBack1,   "",       backWeight,    backVol,    backCap   )
                    , (iBack2,   "",       backWeight,    backVol,    backCap   )
                    , (iBackSml, "small ", backSmlWeight, backSmlVol, backSmlCap)
@@ -1228,7 +1228,7 @@ createAdminZone = do
              []
              mempty
              (Just Backpack)
-             (Con True c)
+             (Con True c zeroBits)
 
   -- ==================================================
   -- Vessels:
