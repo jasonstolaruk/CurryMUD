@@ -786,6 +786,7 @@ data Pla = Pla { _currHostName :: HostName
 
 data PlaFlags = IsAdmin
               | IsIncognito
+              | IsSpirit
               | IsNotFirstAdminMsg
               | IsNotFirstMobSay
               | IsTunedAdmin

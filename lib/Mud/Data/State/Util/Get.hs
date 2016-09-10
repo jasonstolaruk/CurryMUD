@@ -924,6 +924,17 @@ isShowingFpId = plaFlagHelper IsShowingFp
 -----
 
 
+isSpirit :: Pla -> Bool
+isSpirit = getPlaFlag IsSpirit
+
+
+isSpiritId :: Id -> MudState -> Bool
+isSpiritId = onPla isSpirit False
+
+
+-----
+
+
 isTunedAdmin :: Pla -> Bool
 isTunedAdmin = getPlaFlag IsTunedAdmin
 
