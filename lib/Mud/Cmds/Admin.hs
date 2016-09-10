@@ -1006,7 +1006,7 @@ adminLink (LowerNub i mq cols as) = getState >>= \ms -> do
                   [] -> header none
                   ss -> header . mkReport $ ss) <$> (liftIO . lookupTeleNames $ targetSing)
                   where
-                    header = (targetSing <> "'s two-way links:" :)
+                    header          = (targetSing <> "'s two-way links:" :)
                     mkReport     ss | pairs <- sortBy (flip compare `on` fst) . mkCountSings $ ss
                                     = map (\(c, s) -> s <> " " <> parensQuote (showText c)) pairs
                     mkCountSings ss = [ (length g, s) | g@(s:_) <- sortGroup . map fromOnly $ ss ]
