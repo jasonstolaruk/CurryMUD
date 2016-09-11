@@ -74,7 +74,5 @@ select :: Lens' a b -> [] a -> [] b
 select l = map (view l)
 
 
--- Avoid hlint difficulties when importing "group" with TransformListComp turned on.
--- See https://github.com/ndmitchell/hlint/issues/248
 sortGroup :: (Ord a) => [a] -> [[a]]
 sortGroup = group . sort

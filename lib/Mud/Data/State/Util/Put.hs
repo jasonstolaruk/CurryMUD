@@ -13,6 +13,9 @@ import Control.Lens.Operators ((.~))
 import Data.Text (Text)
 
 
+-- These functions are meant to be used in zone-defining code run at server startup.
+
+
 putArm :: Id -> Ent -> Obj -> Arm -> MudStack ()
 putArm i e o a = tweaks [ activeEffectsTbl.ind i .~ []
                         , armTbl          .ind i .~ a
@@ -20,13 +23,6 @@ putArm i e o a = tweaks [ activeEffectsTbl.ind i .~ []
                         , objTbl          .ind i .~ o
                         , pausedEffectsTbl.ind i .~ []
                         , typeTbl         .ind i .~ ArmType ]
-
-
------
-
-
-putChan :: Id -> Chan -> MudStack ()
-putChan i c = tweak $ chanTbl.ind i .~ c
 
 
 -----
