@@ -455,16 +455,27 @@ When Taro dies:
 Taro's PC becomes a disembodied spirit.
 Taro's corpse is created. Items are transferred from spirit to corpse.
 Those who are linked with Taro are notified of his death (via retained message?).
-Taro's PC is sent to the Necropolis when Taro's spirit passes into the beyond.
+Taro's spirit is sent to the Necropolis when it passes into the beyond.
 
 About spirits:
 A player has a certain amount of time as a spirit, depending on level.
 A spirit can move freely about with no FP cost.
-A spirit retains a certain number of two-way links, depending on PS. A spirit may continue to communicate telepathically over those links, with no cost to PP.
-Those links with the greatest volume of messages are retained. If the spirit's top links are all asleep, the spirit gets to retain a bonus link with a PC who is presently awake.
+A spirit retains a certain number of two-way links, depending on PS. A spirit may continue to communicate telepathically over its retained links, with no cost to PP.
+Those links with the greatest volume of messages are retained. If the deceased PC's top links are all asleep, its spirit gets to retain a bonus link with a PC who is presently awake.
 -}
 handleDeath :: Id -> MudStack ()
-handleDeath i = tweak $ plaTbl.ind i %~ setPlaFlag IsSpirit True
+handleDeath i = tweaks [ spiritize i, mkCorpse i ]
+
+
+spiritize :: Id -> MudState -> MudState
+spiritize i ms = (ms &) $ case getType i ms of
+  NpcType -> id
+  PCType  -> plaTbl.ind i %~ setPlaFlag IsSpirit True
+  t       -> patternMatchFail "spiritize" . showText $ t
+
+
+mkCorpse :: Id -> MudState -> MudState
+mkCorpse = const id
 
 
 -----
