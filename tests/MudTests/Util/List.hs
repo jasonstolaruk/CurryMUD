@@ -4,7 +4,7 @@ module MudTests.Util.List where
 
 import Mud.Util.List
 
-import Data.List (elemIndices, group, sort)
+import Data.List (elemIndices)
 import Test.QuickCheck.Modifiers (NonNegative(..))
 import Test.Tasty.QuickCheck ((==>), Property)
 
