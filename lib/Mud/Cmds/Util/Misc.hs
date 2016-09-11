@@ -460,7 +460,8 @@ Taro's PC is sent to the Necropolis when Taro's spirit passes into the beyond.
 About spirits:
 A player has a certain amount of time as a spirit, depending on level.
 A spirit can move freely about with no FP cost.
-A spirit retains a certain number of two-way links, depending on PS. A spirit can continue to communicate telepathically over those links. Those links with the greatest volume of messages are retained.
+A spirit retains a certain number of two-way links, depending on PS. A spirit may continue to communicate telepathically over those links, with no cost to PP.
+Those links with the greatest volume of messages are retained. If the spirit's top links are all asleep, the spirit gets to retain a bonus link with a PC who is presently awake.
 -}
 handleDeath :: Id -> MudStack ()
 handleDeath i = tweak $ plaTbl.ind i %~ setPlaFlag IsSpirit True
