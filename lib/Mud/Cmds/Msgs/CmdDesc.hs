@@ -11,12 +11,32 @@ import Data.Monoid ((<>))
 import Data.Text (Text)
 
 
+cmdDescAbout :: Text
+cmdDescAbout = "About CurryMUD."
+
+
+cmdDescAdmin :: Text
+cmdDescAdmin = "Display a list of administrators, or send a message to an administrator."
+
+
 cmdDescBars :: Text
 cmdDescBars = "Display one or more status bars."
 
 
+cmdDescBonus :: Text
+cmdDescBonus = "Give another player bonus experience points for outstanding role-playing."
+
+
+cmdDescBug :: Text
+cmdDescBug = "Report a bug."
+
+
 cmdDescClear :: Text
 cmdDescClear = "Clear the screen."
+
+
+cmdDescColor :: Text
+cmdDescColor = "Perform a color test."
 
 
 cmdDescDescription :: Text
@@ -112,8 +132,17 @@ cmdDescGoWest :: Text
 cmdDescGoWest = "Go west."
 
 
+cmdDescHelp :: Text
+cmdDescHelp = "Get help on one or more commands or topics."
+
+
 cmdDescInv :: Text
 cmdDescInv = "Display your inventory, or examine one or more items in your inventory."
+
+
+cmdDescLink :: Text
+cmdDescLink = "Display a list of the people with whom you have established a telepathic link, or establish a \
+              \telepathic link with one or more people."
 
 
 cmdDescListen :: Text
@@ -128,8 +157,16 @@ cmdDescLookSelf :: Text
 cmdDescLookSelf = "Verify what others see when they " <> dblQuote "look" <> " at your character."
 
 
+cmdDescMotd :: Text
+cmdDescMotd = "Display the message of the day."
+
+
 cmdDescPut :: Text
 cmdDescPut = "Put one or more items into a) a container in your inventory, or b) a container in your current room."
+
+
+cmdDescQuit :: Text
+cmdDescQuit = "Quit playing CurryMUD."
 
 
 cmdDescRead :: Text
@@ -153,6 +190,10 @@ cmdDescSay :: Lang -> Text
 cmdDescSay l = prd $ "Say something out loud" <> mkInLangTxtForLang l
 
 
+cmdDescSet :: Text
+cmdDescSet = "View or change settings."
+
+
 cmdDescShow :: Text
 cmdDescShow = "Show one or more items in your inventory and/or readied equipment to another person."
 
@@ -174,13 +215,41 @@ cmdDescTaste :: Text
 cmdDescTaste = "Taste a) an item in your inventory, or b) an item in your readied equipment."
 
 
+cmdDescTelepathy :: Text
+cmdDescTelepathy = "Send a private message to a person with whom you have established a two-way telepathic link."
+
+
 cmdDescTempDesc :: Text
 cmdDescTempDesc = "Specify a temporary character description visible when someone looks at you."
+
+
+cmdDescTune :: Text
+cmdDescTune = "Display a list of your telepathic connections, or tune in/out one or more telepathic connections."
+
+
+cmdDescTypo :: Text
+cmdDescTypo = "Report a typo."
+
+
+cmdDescUnlink :: Text
+cmdDescUnlink = "Sever one or more telepathic links."
 
 
 cmdDescUnready :: Text
 cmdDescUnready = "Unready one or more items in your readied equipment."
 
 
+cmdDescUptime :: Text
+cmdDescUptime ="Display how long CurryMUD has been running."
+
+
 cmdDescWhisper :: Text
 cmdDescWhisper = "Whisper something to someone in your current room."
+
+
+cmdDescWho :: Text
+cmdDescWho = "Display or search a list of who is currently awake."
+
+
+cmdDescWhoAmI :: Text
+cmdDescWhoAmI = "Confirm your name, sex, and race."

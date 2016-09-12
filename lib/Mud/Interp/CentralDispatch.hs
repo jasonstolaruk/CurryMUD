@@ -20,7 +20,7 @@ centralDispatch = dispatch findAction
 
 findAction :: FindActionFun
 findAction i ms (T.toLower -> cn) = findActionHelper i ms cn $ let p = getPla i ms in if isSpirit p
-  then [] -- TODO
+  then spiritCmds
   else let ia = isAdmin p
        in concat [ plaCmds
                  , ia            |?| adminCmds

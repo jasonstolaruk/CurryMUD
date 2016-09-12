@@ -11,7 +11,8 @@ module Mud.Cmds.Pla ( getRecordUptime
                     , noOfPlaCmds
                     , npcCmds
                     , plaCmds
-                    , showMotd ) where
+                    , showMotd
+                    , spiritCmds ) where
 
 import Mud.Cmds.ExpCmds
 import Mud.Cmds.Msgs.Advice
@@ -167,10 +168,10 @@ regularCmds = map (uncurry4 mkRegularCmd) regularCmdTuples
 regularCmdTuples :: [(CmdFullName, ActionFun, Bool, CmdDesc)]
 regularCmdTuples =
     [ ("?",          plaDispCmdList,     True,  cmdDescDispCmdList)
-    , ("about",      about,              True,  "About CurryMUD.")
-    , ("admin",      admin,              True,  "Display a list of administrators, or send a message to an administrator.")
-    , ("bonus",      bonus,              True,  "Give another player bonus experience points for outstanding role-playing.")
-    , ("bug",        bug,                True,  "Report a bug.")
+    , ("about",      about,              True,  cmdDescAbout)
+    , ("admin",      admin,              True,  cmdDescAdmin)
+    , ("bonus",      bonus,              True,  cmdDescBonus)
+    , ("bug",        bug,                True,  cmdDescBug)
     , ("channel",    chan,               True,  "Send a message on a telepathic channel " <> plusRelatedMsg)
     , ("d",          go "d",             True,  cmdDescGoDown)
     , ("e",          go "e",             True,  cmdDescGoEast)
@@ -189,7 +190,7 @@ regularCmdTuples =
     , ("password",   password,           False, "Change your password.")
     , ("question",   question,           True,  "Ask/answer newbie questions " <> plusRelatedMsg)
     , ("qui",        quitCan'tAbbrev,    True,  "")
-    , ("quit",       quit,               False, "Quit playing CurryMUD.")
+    , ("quit",       quit,               False, cmdDescQuit)
     , ("rap",        rapeCan'tAbbrev,    True,  "")
     , ("rape",       alertExec "rape",   True,  "")
     , ("read",       readAction,         True,  cmdDescRead)
@@ -198,17 +199,16 @@ regularCmdTuples =
     , ("s",          go "s",             True,  cmdDescGoSouth)
     , ("se",         go "se",            True,  cmdDescGoSoutheast)
     , ("security",   security,           True,  "View or change your security Q&A.")
-    , ("set",        setAction,          True,  "View or change settings.")
+    , ("set",        setAction,          True,  cmdDescSet)
     , ("sw",         go "sw",            True,  cmdDescGoSouthwest)
     , ("take",       getAction,          True,  cmdDescGet)
-    , ("tune",       tune,               True,  "Display a list of your telepathic connections, or tune in/out one or \
-                                                \more telepathic connections.")
-    , ("typo",       typo,               True,  "Report a typo.")
+    , ("tune",       tune,               True,  cmdDescTune)
+    , ("typo",       typo,               True,  cmdDescTypo)
     , ("u",          go "u",             True,  cmdDescGoUp)
-    , ("unlink",     unlink,             True,  "Sever one or more telepathic links.")
-    , ("uptime",     uptime,             True,  "Display how long CurryMUD has been running.")
+    , ("unlink",     unlink,             True,  cmdDescUnlink)
+    , ("uptime",     uptime,             True,  cmdDescUptime)
     , ("w",          go "w",             True,  cmdDescGoWest)
-    , ("whoami",     whoAmI,             True,  "Confirm your name, sex, and race.") ]
+    , ("whoami",     whoAmI,             True,  cmdDescWhoAmI) ]
 
 
 mkRegularCmd :: CmdFullName -> ActionFun -> Bool -> CmdDesc -> Cmd
@@ -227,7 +227,7 @@ priorityAbbrevCmdTuples :: [(CmdFullName, CmdPriorityAbbrevTxt, ActionFun, Bool,
 priorityAbbrevCmdTuples =
     [ ("bars",        "b",   bars,           True,  cmdDescBars)
     , ("clear",       "cl",  clear,          True,  cmdDescClear)
-    , ("color",       "col", color,          True,  "Perform a color test.")
+    , ("color",       "col", color,          True,  cmdDescColor)
     , ("connect",     "co",  connect,        True,  "Connect one or more people to a telepathic channel.")
     , ("description", "de",  description,    False, cmdDescDescription)
     , ("disconnect",  "di",  disconnect,     True,  "Disconnect one or more people from a telepathic channel.")
@@ -238,16 +238,14 @@ priorityAbbrevCmdTuples =
     , ("fill",        "f",   fill,           True,  cmdDescFill)
     , ("get",         "g",   getAction,      True,  cmdDescGet)
     , ("give",        "gi",  give,           True,  cmdDescGive)
-    , ("help",        "h",   help,           True,  "Get help on one or more commands or topics.")
+    , ("help",        "h",   help,           True,  cmdDescHelp)
     , ("intro",       "in",  intro,          True,  "Display a list of the people who have introduced themselves to \
                                                     \you, or introduce yourself to one or more people.")
     , ("inventory",   "i",   inv,            True,  cmdDescInv)
     , ("leave",       "le",  leave,          True,  "Sever your connections to one or more telepathic channels.")
-    , ("link",        "li",  link,           True,  "Display a list of the people with whom you have established a \
-                                                    \telepathic link, or establish a telepathic link with one or more \
-                                                    \people.")
+    , ("link",        "li",  link,           True,  cmdDescLink)
     , ("look",        "l",   look,           True,  cmdDescLook)
-    , ("motd",        "m",   motd,           True,  "Display the message of the day.")
+    , ("motd",        "m",   motd,           True,  cmdDescMotd)
     , ("put",         "p",   putAction,      True,  cmdDescPut)
     , ("ready",       "r",   ready,          True,  cmdDescReady)
     , ("say",         "sa",  say,            True,  cmdDescSay CommonLang)
@@ -256,12 +254,11 @@ priorityAbbrevCmdTuples =
     , ("stats",       "st",  stats,          True,  cmdDescStats)
     , ("stop",        "sto", stop,           True,  cmdDescStop)
     , ("taste",       "ta",  taste,          True,  cmdDescTaste)
-    , ("telepathy",   "t",   tele,           True,  "Send a private message to a person with whom you have established \
-                                                    \a two-way telepathic link.")
+    , ("telepathy",   "t",   tele,           True,  cmdDescTelepathy)
     , ("tempdesc",    "te",  tempDescAction, True,  cmdDescTempDesc)
     , ("unready",     "un",  unready,        True,  cmdDescUnready)
     , ("whisper",     "whi", whisper,        True,  cmdDescWhisper)
-    , ("who",         "wh",  who,            True,  "Display or search a list of who is currently awake.") ]
+    , ("who",         "wh",  who,            True,  cmdDescWho) ]
 
 
 mkPriorityAbbrevCmd :: CmdFullName -> CmdPriorityAbbrevTxt -> ActionFun -> Bool -> CmdDesc -> [Cmd]
@@ -284,6 +281,54 @@ mkPriorityAbbrevCmd cfn cpat f b cd = unfoldr helper (T.init cfn) ++ [ Cmd { cmd
 
 noOfPlaCmds :: Int
 noOfPlaCmds = length regularCmdTuples + length priorityAbbrevCmdTuples + length langsNoCommon
+
+
+-----
+
+
+spiritCmds :: [Cmd]
+spiritCmds = sort . map (uncurry4 mkRegularCmd) $ spiritCmdTuples
+
+
+spiritCmdTuples :: [(CmdFullName, ActionFun, Bool, CmdDesc)]
+spiritCmdTuples =
+    [ ("?",          plaDispCmdList,  True,  cmdDescDispCmdList)
+    , ("about",      about,           True,  cmdDescAbout)
+    , ("admin",      admin,           True,  cmdDescAdmin)
+    , ("bars",       bars,            True,  cmdDescBars)
+    , ("bonus",      bonus,           True,  cmdDescBonus)
+    , ("bug",        bug,             True,  cmdDescBug)
+    , ("clear",      clear,           True,  cmdDescClear)
+    , ("color",      color,           True,  cmdDescColor)
+    , ("d",          go "d",          True,  cmdDescGoDown)
+    , ("e",          go "e",          True,  cmdDescGoEast)
+    , ("exits",      exits,           True,  cmdDescExits)
+    , ("feeling",    feeling,         True,  cmdDescFeeling)
+    , ("help",       help,            True,  cmdDescHelp)
+    , ("link",       link,            True,  cmdDescLink)
+    , ("look",       look,            True,  cmdDescLook)
+    , ("lookself",   lookSelf,        True,  cmdDescLookSelf)
+    , ("motd",       motd,            True,  cmdDescMotd)
+    , ("n",          go "n",          True,  cmdDescGoNorth)
+    , ("ne",         go "ne",         True,  cmdDescGoNortheast)
+    , ("nw",         go "nw",         True,  cmdDescGoNorthwest)
+    , ("qui",        quitCan'tAbbrev, True,  "")
+    , ("quit",       quit,            False, cmdDescQuit)
+    , ("s",          go "s",          True,  cmdDescGoSouth)
+    , ("se",         go "se",         True,  cmdDescGoSoutheast)
+    , ("set",        setAction,       True,  cmdDescSet)
+    , ("stats",      stats,           True,  cmdDescStats)
+    , ("stop",       stop,            True,  cmdDescStop)
+    , ("telepathy",  tele,            True,  cmdDescTelepathy)
+    , ("tune",       tune,            True,  cmdDescTune)
+    , ("typo",       typo,            True,  cmdDescTypo)
+    , ("sw",         go "sw",         True,  cmdDescGoSouthwest)
+    , ("u",          go "u",          True,  cmdDescGoUp)
+    , ("unlink",     unlink,          True,  cmdDescUnlink)
+    , ("uptime",     uptime,          True,  cmdDescUptime)
+    , ("w",          go "w",          True,  cmdDescGoWest)
+    , ("who",        who,             True,  cmdDescWho)
+    , ("whoami",     whoAmI,          True,  cmdDescWhoAmI) ]
 
 
 -----
