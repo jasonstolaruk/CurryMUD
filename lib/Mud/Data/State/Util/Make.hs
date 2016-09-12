@@ -1,11 +1,51 @@
-{-# LANGUAGE OverloadedStrings, RecordWildCards #-}
+{-# LANGUAGE OverloadedStrings, RecordWildCards, ViewPatterns #-}
 
 module Mud.Data.State.Util.Make where
 
 import Mud.Data.State.MudData
+import Mud.Data.State.Util.Get
+import Mud.Data.State.Util.Misc
+import Mud.Threads.Biodegrader
+import Mud.Util.Misc
 
+import Control.Arrow (second)
+import Control.Lens.Operators ((%~), (&), (.~))
+import Control.Monad (when)
 import Data.Text (Text)
 import qualified Data.Map.Lazy as M (empty)
+
+
+type InvId = Id
+
+
+-----
+
+
+data EntTemplate = EntTemplate { etName  :: Maybe Text
+                               , etSing  :: Sing
+                               , etPlur  :: Plur
+                               , etDesc  :: Text
+                               , etSmell :: Maybe Text
+                               , etFlags :: Int }
+
+
+mkEnt :: Id -> EntTemplate -> Ent
+mkEnt i EntTemplate { .. } = Ent { _entId    = i
+                                 , _entName  = etName
+                                 , _sing     = etSing
+                                 , _plur     = etPlur
+                                 , _entDesc  = etDesc
+                                 , _entSmell = etSmell
+                                 , _entFlags = etFlags }
+
+
+createEnt :: MudState -> EntTemplate -> (Id, MudState)
+createEnt ms et = let i = getUnusedId ms in (i, ms & activeEffectsTbl.ind i .~ []
+                                                   & entTbl          .ind i .~ mkEnt i et
+                                                   & pausedEffectsTbl.ind i .~ [])
+
+
+-----
 
 
 data MobTemplate = MobTemplate { mtSex        :: Sex
@@ -74,6 +114,18 @@ mkObj ObjTemplate { .. } = Obj { _objWeight      = otWeight
                                , _objTaste       = otTaste
                                , _objFlags       = otFlags
                                , _objBiodegAsync = Nothing }
+
+
+createObj :: MudState -> EntTemplate -> ObjTemplate -> (Id, MudState)
+createObj ms et ot = let pair@(i, _) = createEnt ms et
+                     in second (objTbl.ind i .~ mkObj ot) pair
+
+
+newObj :: MudState -> EntTemplate -> ObjTemplate -> InvId -> (Id, MudState, Funs)
+newObj ms et ot invId = let (i, typeTbl.ind i .~ ObjType -> ms') = createObj ms et ot
+                        in ( i
+                           , ms' & invTbl.ind invId %~ addToInv ms (pure i)
+                           , pure . when (isBiodegradable . mkObj $ ot) . runBiodegAsync $ i )
 
 
 -----

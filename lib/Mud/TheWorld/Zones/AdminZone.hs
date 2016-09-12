@@ -26,7 +26,6 @@ import Mud.TheWorld.Misc
 import Mud.TheWorld.Zones.AdminZoneIds
 import Mud.TheWorld.Zones.TutorialIds (iTutWelcome)
 import Mud.Threads.Act
-import Mud.Threads.Biodegrader
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Vols
 import Mud.TopLvlDefs.Weights
@@ -220,26 +219,19 @@ getFlowerHookFun i Hook { .. } v a@(_, (ms, _, _, _), _) = if calcWeight i ms + 
 
 
 mkFlower :: Id -> V.Vector Int -> MudStack ()
-mkFlower i v = helper |&| modifyState >=> runBiodegAsync -- TODO: Corpse creation code will be similar to this...
+mkFlower i v = helper |&| modifyState >=> sequence_ -- TODO: Corpse creation code will be similar to this...
   where
-    helper ms = let flowerId = getUnusedId ms
-                    e        = Ent flowerId
-                                   (Just "flower")
-                                   "flower" ""
-                                   desc
-                                   (Just smell)
-                                   zeroBits
-                    o        = Obj flowerWeight
-                                   flowerVol
-                                   (Just taste)
-                                   (setBit zeroBits . fromEnum $ IsBiodegradable)
-                                   Nothing
-                    ms'      = ms & activeEffectsTbl.ind flowerId .~ []
-                                  & entTbl          .ind flowerId .~ e
-                                  & objTbl          .ind flowerId .~ o
-                                  & pausedEffectsTbl.ind flowerId .~ []
-                                  & typeTbl         .ind flowerId .~ ObjType
-                in (ms' & invTbl.ind i %~ addToInv ms (pure flowerId), flowerId)
+    helper ms = let et           = EntTemplate (Just "flower")
+                                               "flower" ""
+                                               desc
+                                               (Just smell)
+                                               zeroBits
+                    ot           = ObjTemplate flowerWeight
+                                               flowerVol
+                                               (Just taste)
+                                               (setBit zeroBits . fromEnum $ IsBiodegradable)
+                    (_, ms', fs) = newObj ms et ot i
+                in (ms', fs)
     (desc, smell, taste) = rndmIntToElem (V.head v) tuples
     tuples = [ ( "It's a fragrant daffodil sporting a collar of white petals."
                , "The powerful fragrance of the daffodil is nearly intoxicating."
