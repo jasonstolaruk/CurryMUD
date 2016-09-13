@@ -202,6 +202,27 @@ getConnectTime i = view connectTime . getPla i
 -----
 
 
+getCorpseCapacity :: Id -> MudState -> Vol
+getCorpseCapacity i = view corpseCapacity . getMob i
+
+
+-----
+
+
+getCorpseVol :: Id -> MudState -> Vol
+getCorpseVol i = view corpseVol . getMob i
+
+
+-----
+
+
+getCorpseWeight :: Id -> MudState -> Weight
+getCorpseWeight i = view corpseWeight . getMob i
+
+
+-----
+
+
 getCurrHostName :: Id -> MudState -> HostName
 getCurrHostName i = view currHostName . getPla i
 

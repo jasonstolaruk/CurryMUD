@@ -85,6 +85,7 @@ import Mud.Data.State.MudData
 import Mud.Data.State.Util.Calc
 import Mud.Data.State.Util.Effect
 import Mud.Data.State.Util.Get
+import Mud.Data.State.Util.Make
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Data.State.Util.Random
@@ -114,6 +115,7 @@ import Control.Lens (_1, _2, _3, at, both, each, to, view, views)
 import Control.Lens.Operators ((%~), (&), (+~), (.~), (<>~), (?~), (^.))
 import Control.Monad ((>=>), forM, mplus, when)
 import Control.Monad.IO.Class (liftIO)
+import Data.Bits (setBit, zeroBits)
 import Data.Char (isDigit, isLetter)
 import Data.Either (rights)
 import Data.Function (on)
@@ -124,7 +126,7 @@ import Data.Text (Text)
 import Data.Time (diffUTCTime, getCurrentTime)
 import Prelude hiding (exp)
 import qualified Data.IntMap.Lazy as IM (IntMap, empty, filter, foldlWithKey', foldr, fromList, keys, map, mapWithKey)
-import qualified Data.Map.Lazy as M ((!), elems, keys, lookup, member, toList)
+import qualified Data.Map.Lazy as M ((!), elems, empty, keys, lookup, member, toList)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
 import qualified Data.Vector.Unboxed as V (Vector, splitAt, toList)
@@ -464,7 +466,11 @@ A spirit retains a certain number of two-way links, depending on PS. A spirit ma
 Those links with the greatest volume of messages are retained. If the deceased PC's top links are all asleep, its spirit gets to retain a bonus link with a PC who is presently awake.
 -}
 handleDeath :: Id -> MudStack ()
-handleDeath i = tweaks [ spiritize i, mkCorpse i ]
+handleDeath i = helper |&| modifyState >=> sequence_
+  where
+    helper ms = let ms'        = spiritize i ms
+                    (ms'', fs) = mkCorpse i ms'
+                in (ms'', fs)
 
 
 spiritize :: Id -> MudState -> MudState
@@ -474,8 +480,28 @@ spiritize i ms = (ms &) $ case getType i ms of
   t       -> patternMatchFail "spiritize" . showText $ t
 
 
-mkCorpse :: Id -> MudState -> MudState
-mkCorpse = const id
+mkCorpse :: Id -> MudState -> (MudState, Funs)
+mkCorpse i ms = let et = EntTemplate (Just "corpse")
+                                     mkSing mkPlur
+                                     mkDesc
+                                     Nothing -- TODO: Smell.
+                                     zeroBits
+                    ot = ObjTemplate (getCorpseWeight i ms)
+                                     (getCorpseVol    i ms)
+                                     Nothing -- TODO: Taste.
+                                     zeroBits
+                    ct = ConTemplate undefined -- TODO: Capacity.
+                                     (setBit zeroBits . fromEnum $ IsCorpse)
+                    is = M.elems (getEqMap i ms) ++ getInv i ms
+                    c  = getCoins i ms
+                    (_, ms', fs) = newCon ms et ot ct (is, c) . getRmId i $ ms
+                in ( ms' & eqTbl .ind i .~ M.empty
+                         & invTbl.ind i .~ []
+                   , fs )
+      where
+        mkSing = undefined
+        mkPlur = undefined
+        mkDesc = undefined
 
 
 -----

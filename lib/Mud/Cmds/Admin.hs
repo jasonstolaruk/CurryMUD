@@ -643,7 +643,12 @@ examineCon i ms = let c = getCon i ms in [ "Is clothing: " <> c^.conIsCloth.to s
                                                     , " / "
                                                     , c^.conCapacity.to showText
                                                     , " "
-                                                    , parensQuote $ (<> "%") . showText . calcConPerFull i $ ms ] ]
+                                                    , parensQuote $ (<> "%") . showText . calcConPerFull i $ ms ]
+                                         , "Container flags: " <> (commas . dropBlanks . descFlags $ c) ]
+  where
+    descFlags c | c^.conFlags == zeroBits = none
+                | otherwise               = let pairs = [(isCorpse, "corpse")]
+                                            in [ f c |?| t | (f, t) <- pairs ]
 
 
 examineEnt :: ExamineHelper
@@ -786,10 +791,15 @@ examinePla i ms = let p = getPla i ms
     descFlags p | p^.plaFlags == zeroBits = none
                 | otherwise               = let pairs = [ (isAdmin,            "admin"              )
                                                         , (isIncognito,        "incognito"          )
+                                                        , (isSpirit,           "spirit"             )
                                                         , (isNotFirstAdminMsg, "not first admin msg")
                                                         , (isNotFirstMobSay,   "not first mob say"  )
                                                         , (isTunedAdmin,       "tuned admin"        )
-                                                        , (isTunedQuestion,    "tuned question"     ) ]
+                                                        , (isTunedQuestion,    "tuned question"     )
+                                                        , (isShowingHp,        "showing HP"         )
+                                                        , (isShowingMp,        "showing MP"         )
+                                                        , (isShowingPp,        "showing PP"         )
+                                                        , (isShowingFp,        "showing FP"         ) ]
                                             in [ f p |?| t | (f, t) <- pairs ]
     helper = noneOnNull . commas . map (`descSingId` ms)
 

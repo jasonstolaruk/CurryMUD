@@ -219,7 +219,7 @@ getFlowerHookFun i Hook { .. } v a@(_, (ms, _, _, _), _) = if calcWeight i ms + 
 
 
 mkFlower :: Id -> V.Vector Int -> MudStack ()
-mkFlower i v = helper |&| modifyState >=> sequence_ -- TODO: Corpse creation code will be similar to this...
+mkFlower i v = helper |&| modifyState >=> sequence_
   where
     helper ms = let et           = EntTemplate (Just "flower")
                                                "flower" ""
@@ -530,6 +530,7 @@ createAdminZone = do
                              RHand
                              allValues
                              iLoggedOut
+                             (calcCorpseWeight Human) (calcCorpseVol Human) (calcCorpseCapacity Human)
                              dfltParty))
          M.empty
          (M.singleton "Curry" True)
@@ -552,6 +553,7 @@ createAdminZone = do
                              RHand
                              allValues
                              iLoggedOut
+                             (calcCorpseWeight Human) (calcCorpseVol Human) (calcCorpseCapacity Human)
                              dfltParty))
          M.empty
          (M.singleton "Root" True)
@@ -1447,6 +1449,7 @@ createAdminZone = do
                     NoHand
                     []
                     iMobCloset
+                    0 0 0 -- TODO
                     dfltParty))
   putNpc iPidge
          (Ent iPidge
@@ -1469,6 +1472,7 @@ createAdminZone = do
                              RHand
                              [ HobbitLang ]
                              iMobCloset
+                             (calcCorpseWeight Hobbit) (calcCorpseVol Hobbit) (calcCorpseCapacity Hobbit)
                              dfltParty))
   putCloth iPeasant'sShirt
            (Ent iPeasant'sShirt
@@ -1524,4 +1528,5 @@ createAdminZone = do
                     RHand
                     []
                     iMobCloset
+                    0 0 0 -- TODO
                     dfltParty))

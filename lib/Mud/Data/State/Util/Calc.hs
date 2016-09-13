@@ -4,6 +4,9 @@
 module Mud.Data.State.Util.Calc ( calcBarLen
                                 , calcBonus
                                 , calcConPerFull
+                                , calcCorpseCapacity
+                                , calcCorpseVol
+                                , calcCorpseWeight
                                 , calcDigesterDelay
                                 , calcEffAttrib
                                 , calcEffDx
@@ -112,6 +115,35 @@ calcConPerFull :: Id -> MudState -> Int
 calcConPerFull i ms = let total           = foldr helper 0 . getInv i $ ms
                           helper targetId = (calcVol targetId ms +)
                       in total `percent` getConCapacity i ms
+
+
+-----
+
+
+calcCorpseCapacity :: Race -> Vol
+calcCorpseCapacity = \case _ -> undefined -- TODO
+
+
+-----
+
+
+calcCorpseVol :: Race -> Vol
+calcCorpseVol = \case _ -> undefined -- TODO
+
+
+-----
+
+
+calcCorpseWeight :: Race -> Weight
+calcCorpseWeight = let f = (calcDigesterDelay Human |&|) in \case
+  Dwarf     -> f undefined
+  Elf       -> f minusFifth
+  Felinoid  -> f plusFifth
+  Hobbit    -> f undefined
+  Human     -> 16000 -- 160 lbs.
+  Lagomorph -> f id
+  Nymph     -> f minusQuarter
+  Vulpenoid -> f plusQuarter
 
 
 -----

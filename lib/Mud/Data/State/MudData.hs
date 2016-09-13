@@ -281,7 +281,7 @@ data Con = Con { _conIsCloth  :: Bool
                , _conFlags    :: Int } deriving (Eq, Generic, Show)
 
 
-type Vol = Int
+type Vol = Int -- 100 "Vol" = 1 cubic in
 
 
 data ConFlags = IsCorpse deriving Enum
@@ -505,6 +505,9 @@ data Mob = Mob { _sex                    :: Sex
                , _rmId                   :: Id
                , _mobRmDesc              :: MobRmDesc
                , _tempDesc               :: TempDesc
+               , _corpseWeight           :: Weight
+               , _corpseVol              :: Vol
+               , _corpseCapacity         :: Vol
                , _party                  :: Party
                , _stomach                :: [StomachCont]
                , _digesterAsync          :: Maybe StomachAsync
@@ -622,29 +625,32 @@ instance ToJSON   Mob where toJSON    = mobToJSON
 
 
 mobToJSON :: Mob -> Value
-mobToJSON Mob { .. } = object [ "sex"        .= _sex
-                              , "st"         .= _st
-                              , "dx"         .= _dx
-                              , "ht"         .= _ht
-                              , "ma"         .= _ma
-                              , "ps"         .= _ps
-                              , "curHp"      .= _curHp
-                              , "maxHp"      .= _maxHp
-                              , "curMp"      .= _curMp
-                              , "maxMp"      .= _maxMp
-                              , "curPp"      .= _curPp
-                              , "maxPp"      .= _maxPp
-                              , "curFp"      .= _curFp
-                              , "maxFp"      .= _maxFp
-                              , "exp"        .= _exp
-                              , "lvl"        .= _lvl
-                              , "hand"       .= _hand
-                              , "knownLangs" .= _knownLangs
-                              , "rmId"       .= _rmId
-                              , "mobRmDesc"  .= _mobRmDesc
-                              , "tempDesc"   .= _tempDesc
-                              , "party"      .= _party
-                              , "stomach"    .= _stomach ]
+mobToJSON Mob { .. } = object [ "sex"            .= _sex
+                              , "st"             .= _st
+                              , "dx"             .= _dx
+                              , "ht"             .= _ht
+                              , "ma"             .= _ma
+                              , "ps"             .= _ps
+                              , "curHp"          .= _curHp
+                              , "maxHp"          .= _maxHp
+                              , "curMp"          .= _curMp
+                              , "maxMp"          .= _maxMp
+                              , "curPp"          .= _curPp
+                              , "maxPp"          .= _maxPp
+                              , "curFp"          .= _curFp
+                              , "maxFp"          .= _maxFp
+                              , "exp"            .= _exp
+                              , "lvl"            .= _lvl
+                              , "hand"           .= _hand
+                              , "knownLangs"     .= _knownLangs
+                              , "rmId"           .= _rmId
+                              , "mobRmDesc"      .= _mobRmDesc
+                              , "tempDesc"       .= _tempDesc
+                              , "corpseWeight"   .= _corpseWeight
+                              , "corpseVol"      .= _corpseVol
+                              , "corpseCapacity" .= _corpseCapacity
+                              , "party"          .= _party
+                              , "stomach"        .= _stomach ]
 
 
 jsonToMob :: Value -> Parser Mob
@@ -669,6 +675,9 @@ jsonToMob (Object o) = Mob <$> o .: "sex"
                            <*> o .: "rmId"
                            <*> o .: "mobRmDesc"
                            <*> o .: "tempDesc"
+                           <*> o .: "corpseWeight"
+                           <*> o .: "corpseVol"
+                           <*> o .: "corpseCapacity"
                            <*> o .: "party"
                            <*> o .: "stomach"
                            <*> pure Nothing
@@ -708,7 +717,7 @@ data Obj = Obj { _objWeight      :: Weight
                , _objBiodegAsync :: Maybe BiodegAsync }
 
 
-type Weight = Int
+type Weight = Int -- 100 "Weight" = 1 lb
 
 
 data ObjFlags = IsBiodegradable deriving Enum

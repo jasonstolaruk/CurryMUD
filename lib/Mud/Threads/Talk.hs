@@ -7,6 +7,7 @@ import Mud.Cmds.Msgs.Misc
 import Mud.Cmds.Util.Misc
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
+import Mud.Data.State.Util.Calc
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Interp.Login
@@ -103,32 +104,35 @@ adHoc mq host = do
                        , _entDesc  = capitalize $ mkThrPerPro sexy <> " is an ad-hoc player character."
                        , _entSmell = Nothing
                        , _entFlags = zeroBits }
-            m    = Mob { _sex           = sexy
-                       , _st            = 10
-                       , _dx            = 10
-                       , _ht            = 10
-                       , _ma            = 10
-                       , _ps            = 10
-                       , _maxHp         = 50, _curHp = 50
-                       , _maxMp         = 50, _curMp = 50
-                       , _maxPp         = 50, _curPp = 50
-                       , _maxFp         = 50, _curFp = 50
-                       , _exp           = 0
-                       , _lvl           = 0
-                       , _hand          = RHand
-                       , _knownLangs    = pure . raceToLang $ r
-                       , _rmId          = iWelcome
-                       , _mobRmDesc     = Nothing
-                       , _tempDesc      = Nothing
-                       , _party         = dfltParty
-                       , _stomach       = []
-                       , _digesterAsync = Nothing
-                       , _feelingMap    = M.empty
-                       , _actMap        = M.empty
-                       , _nowEating     = Nothing
-                       , _nowDrinking   = Nothing
-                       , _regenQueue    = Nothing
-                       , _interp        = Just . interpName $ 0 }
+            m    = Mob { _sex            = sexy
+                       , _st             = 10
+                       , _dx             = 10
+                       , _ht             = 10
+                       , _ma             = 10
+                       , _ps             = 10
+                       , _maxHp          = 50, _curHp = 50
+                       , _maxMp          = 50, _curMp = 50
+                       , _maxPp          = 50, _curPp = 50
+                       , _maxFp          = 50, _curFp = 50
+                       , _exp            = 0
+                       , _lvl            = 0
+                       , _hand           = RHand
+                       , _knownLangs     = pure . raceToLang $ r
+                       , _rmId           = iWelcome
+                       , _mobRmDesc      = Nothing
+                       , _tempDesc       = Nothing
+                       , _corpseWeight   = calcCorpseWeight   r
+                       , _corpseVol      = calcCorpseVol      r
+                       , _corpseCapacity = calcCorpseCapacity r
+                       , _party          = dfltParty
+                       , _stomach        = []
+                       , _digesterAsync  = Nothing
+                       , _feelingMap     = M.empty
+                       , _actMap         = M.empty
+                       , _nowEating      = Nothing
+                       , _nowDrinking    = Nothing
+                       , _regenQueue     = Nothing
+                       , _interp         = Just . interpName $ 0 }
             pc   = PC  { _race       = r
                        , _introduced = []
                        , _linked     = []

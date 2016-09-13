@@ -72,55 +72,61 @@ newCon ms et ot ct (is, c) invId = let (i, typeTbl.ind i .~ ConType -> ms', fs) 
 -----
 
 
-data MobTemplate = MobTemplate { mtSex        :: Sex
-                               , mtSt         :: Int
-                               , mtDx         :: Int
-                               , mtHt         :: Int
-                               , mtMa         :: Int
-                               , mtPs         :: Int
-                               , mtMaxHp      :: Int
-                               , mtMaxMp      :: Int
-                               , mtMaxPp      :: Int
-                               , mtMaxFp      :: Int
-                               , mtExp        :: Exp
-                               , mtLvl        :: Lvl
-                               , mtHand       :: Hand
-                               , mtKnownLangs :: [Lang]
-                               , mtRmId       :: Id
-                               , mtParty      :: Party }
+data MobTemplate = MobTemplate { mtSex            :: Sex
+                               , mtSt             :: Int
+                               , mtDx             :: Int
+                               , mtHt             :: Int
+                               , mtMa             :: Int
+                               , mtPs             :: Int
+                               , mtMaxHp          :: Int
+                               , mtMaxMp          :: Int
+                               , mtMaxPp          :: Int
+                               , mtMaxFp          :: Int
+                               , mtExp            :: Exp
+                               , mtLvl            :: Lvl
+                               , mtHand           :: Hand
+                               , mtKnownLangs     :: [Lang]
+                               , mtRmId           :: Id
+                               , mtCorpseWeight   :: Weight
+                               , mtCorpseVol      :: Vol
+                               , mtCorpseCapacity :: Vol
+                               , mtParty          :: Party }
 
 
 mkMob :: MobTemplate -> Mob
-mkMob MobTemplate { .. } = Mob { _sex           = mtSex
-                               , _st            = mtSt
-                               , _dx            = mtDx
-                               , _ht            = mtHt
-                               , _ma            = mtMa
-                               , _ps            = mtPs
-                               , _curHp         = mtMaxHp
-                               , _maxHp         = mtMaxHp
-                               , _curMp         = mtMaxMp
-                               , _maxMp         = mtMaxMp
-                               , _curPp         = mtMaxPp
-                               , _maxPp         = mtMaxPp
-                               , _curFp         = mtMaxFp
-                               , _maxFp         = mtMaxFp
-                               , _exp           = mtExp
-                               , _lvl           = mtLvl
-                               , _hand          = mtHand
-                               , _knownLangs    = mtKnownLangs
-                               , _rmId          = mtRmId
-                               , _mobRmDesc     = Nothing
-                               , _tempDesc      = Nothing
-                               , _party         = mtParty
-                               , _stomach       = []
-                               , _digesterAsync = Nothing
-                               , _feelingMap    = M.empty
-                               , _actMap        = M.empty
-                               , _nowEating     = Nothing
-                               , _nowDrinking   = Nothing
-                               , _regenQueue    = Nothing
-                               , _interp        = Nothing }
+mkMob MobTemplate { .. } = Mob { _sex            = mtSex
+                               , _st             = mtSt
+                               , _dx             = mtDx
+                               , _ht             = mtHt
+                               , _ma             = mtMa
+                               , _ps             = mtPs
+                               , _curHp          = mtMaxHp
+                               , _maxHp          = mtMaxHp
+                               , _curMp          = mtMaxMp
+                               , _maxMp          = mtMaxMp
+                               , _curPp          = mtMaxPp
+                               , _maxPp          = mtMaxPp
+                               , _curFp          = mtMaxFp
+                               , _maxFp          = mtMaxFp
+                               , _exp            = mtExp
+                               , _lvl            = mtLvl
+                               , _hand           = mtHand
+                               , _knownLangs     = mtKnownLangs
+                               , _rmId           = mtRmId
+                               , _mobRmDesc      = Nothing
+                               , _tempDesc       = Nothing
+                               , _corpseWeight   = mtCorpseWeight
+                               , _corpseVol      = mtCorpseVol
+                               , _corpseCapacity = mtCorpseCapacity
+                               , _party          = mtParty
+                               , _stomach        = []
+                               , _digesterAsync  = Nothing
+                               , _feelingMap     = M.empty
+                               , _actMap         = M.empty
+                               , _nowEating      = Nothing
+                               , _nowDrinking    = Nothing
+                               , _regenQueue     = Nothing
+                               , _interp         = Nothing }
 
 
 -----
