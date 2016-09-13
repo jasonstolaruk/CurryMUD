@@ -8,7 +8,6 @@ import Mud.Data.State.Util.Misc
 import Mud.Threads.Biodegrader
 import Mud.Util.Misc
 
-import Control.Arrow (second)
 import Control.Lens.Operators ((%~), (&), (.~))
 import Control.Monad (when)
 import Data.Text (Text)
@@ -43,6 +42,31 @@ createEnt :: MudState -> EntTemplate -> (Id, MudState)
 createEnt ms et = let i = getUnusedId ms in (i, ms & activeEffectsTbl.ind i .~ []
                                                    & entTbl          .ind i .~ mkEnt i et
                                                    & pausedEffectsTbl.ind i .~ [])
+
+
+-----
+
+
+data ConTemplate = ConTemplate { ctCapacity :: Vol
+                               , ctFlags    :: Int }
+
+
+mkCon :: ConTemplate -> Con
+mkCon ConTemplate { .. } = Con { _conIsCloth  = False
+                               , _conCapacity = ctCapacity
+                               , _conFlags    = ctFlags }
+
+
+createCon :: MudState -> EntTemplate -> ObjTemplate -> ConTemplate -> (Inv, Coins) -> (Id, MudState, Funs)
+createCon ms et ot ct (is, c) = let (i, ms', fs) = createObj ms et ot
+                                    ms''         = ms' & coinsTbl.ind i .~ c
+                                                       & conTbl  .ind i .~ mkCon ct
+                                in (i, ms'' & invTbl.ind i %~ addToInv ms'' is, fs)
+
+
+newCon :: MudState -> EntTemplate -> ObjTemplate -> ConTemplate -> (Inv, Coins) -> InvId -> (Id, MudState, Funs)
+newCon ms et ot ct (is, c) invId = let (i, typeTbl.ind i .~ ConType -> ms', fs) = createCon ms et ot ct (is, c)
+                                   in (i, ms' & invTbl.ind invId %~ addToInv ms' (pure i), fs)
 
 
 -----
@@ -116,16 +140,15 @@ mkObj ObjTemplate { .. } = Obj { _objWeight      = otWeight
                                , _objBiodegAsync = Nothing }
 
 
-createObj :: MudState -> EntTemplate -> ObjTemplate -> (Id, MudState)
-createObj ms et ot = let pair@(i, _) = createEnt ms et
-                     in second (objTbl.ind i .~ mkObj ot) pair
+createObj :: MudState -> EntTemplate -> ObjTemplate -> (Id, MudState, Funs)
+createObj ms et ot = let (i, ms') = createEnt ms et
+                         o        = mkObj ot
+                     in (i, ms' & objTbl.ind i .~ o, pure . when (isBiodegradable o) . runBiodegAsync $ i)
 
 
 newObj :: MudState -> EntTemplate -> ObjTemplate -> InvId -> (Id, MudState, Funs)
-newObj ms et ot invId = let (i, typeTbl.ind i .~ ObjType -> ms') = createObj ms et ot
-                        in ( i
-                           , ms' & invTbl.ind invId %~ addToInv ms (pure i)
-                           , pure . when (isBiodegradable . mkObj $ ot) . runBiodegAsync $ i )
+newObj ms et ot invId = let (i, typeTbl.ind i .~ ObjType -> ms', fs) = createObj ms et ot
+                        in (i, ms' & invTbl.ind invId %~ addToInv ms' (pure i), fs)
 
 
 -----
