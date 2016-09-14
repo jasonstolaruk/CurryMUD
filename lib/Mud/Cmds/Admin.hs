@@ -1323,6 +1323,7 @@ mkSecReport SecRec { .. } = [ "Name: "     <> dbName
 -----
 
 
+-- TODO: New fieds have been added to Mob.
 adminSet :: ActionFun
 adminSet p@AdviseNoArgs                       = advise p [ prefixAdminCmd "set" ] adviceASetNoArgs
 adminSet p@(AdviseOneArg a                  ) = advise p [ prefixAdminCmd "set" ] . adviceASetNoSettings $ a

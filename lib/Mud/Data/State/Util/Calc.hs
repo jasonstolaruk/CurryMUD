@@ -3,6 +3,7 @@
 
 module Mud.Data.State.Util.Calc ( calcBarLen
                                 , calcBonus
+                                , calcCarriedVol
                                 , calcConPerFull
                                 , calcCorpseCapacity
                                 , calcCorpseVol
@@ -59,6 +60,7 @@ import Mud.Data.Misc
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Coins
 import Mud.Data.State.Util.Get
+import Mud.Data.State.Util.Hierarchy
 import Mud.Data.State.Util.Random
 import Mud.TopLvlDefs.Misc
 import Mud.TopLvlDefs.Vols
@@ -111,6 +113,13 @@ calcBonus i ms = let l                 = getLvl i ms
 -----
 
 
+calcCarriedVol :: Id -> MudState -> Vol -- TODO: Test using "!volume".
+calcCarriedVol i ms = uncurry (+) (calcVol i ms, sum . map (`calcVol` ms) . M.elems . getEqMap i $ ms)
+
+
+-----
+
+
 calcConPerFull :: Id -> MudState -> Int
 calcConPerFull i ms = let total           = foldr helper 0 . getInv i $ ms
                           helper targetId = (calcVol targetId ms +)
@@ -128,19 +137,29 @@ calcCorpseCapacity = \case _ -> undefined -- TODO
 
 
 calcCorpseVol :: Race -> Vol
-calcCorpseVol = \case _ -> undefined -- TODO
+calcCorpseVol = let f = (calcCorpseVol Human |&|) in \case
+  Dwarf     -> f (\x -> round $ fromIntegral x * (calcCorpseWeight Dwarf  `divide` humanWeight :: Double))
+  Elf       -> f minusFifth
+  Felinoid  -> f plusFifth
+  Hobbit    -> f (\x -> round $ fromIntegral x * (calcCorpseWeight Hobbit `divide` humanWeight :: Double))
+  Human     -> 452000 -- 4,520 cubic in -- TODO: Does this seem reasonable?
+  Lagomorph -> f id
+  Nymph     -> f minusQuarter
+  Vulpenoid -> f plusQuarter
+  where
+    humanWeight = calcCorpseWeight Human
 
 
 -----
 
 
 calcCorpseWeight :: Race -> Weight
-calcCorpseWeight = let f = (calcDigesterDelay Human |&|) in \case
-  Dwarf     -> f undefined
+calcCorpseWeight = let f = (calcCorpseWeight Human |&|) in \case
+  Dwarf     -> 15000 -- 150 lbs, 4'6"
   Elf       -> f minusFifth
   Felinoid  -> f plusFifth
-  Hobbit    -> f undefined
-  Human     -> 16000 -- 160 lbs.
+  Hobbit    -> 11250 -- 112.5 lbs, 3'6"
+  Human     -> 16000 -- 160 lbs
   Lagomorph -> f id
   Nymph     -> f minusQuarter
   Vulpenoid -> f plusQuarter
@@ -542,15 +561,15 @@ calcVesselPerFull (view vesselMaxMouthfuls -> m) x = x `percent` m
 -----
 
 
+-- This function may be used with mobs, though it doesn't calculate equipment volume. See "calcCarriedVol".
 calcVol :: Id -> MudState -> Vol
 calcVol i ms = calcHelper i
   where
-    calcHelper i' = case getType i' ms of
-      ConType -> sum [ onTrue (i' /= i) (+ getObjVol i' ms) 0, calcInvVol, calcCoinsVol ]
-      _       -> getObjVol i' ms
+    calcHelper i' = if getType i' ms == ConType || hasMobId i' ms
+      then sum [ onTrue (i' /= i) (+ getObjVol i' ms) 0, calcInvVol, calcCoinsVol ]
+      else getObjVol i' ms
       where
-        calcInvVol   = helper . getInv i' $ ms
-        helper       = sum . map calcHelper
+        calcInvVol   = sum . map calcHelper . getInv i' $ ms
         calcCoinsVol = (* coinVol) . sum . coinsToList . getCoins i' $ ms
 
 

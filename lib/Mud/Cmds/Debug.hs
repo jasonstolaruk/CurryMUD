@@ -160,6 +160,7 @@ debugCmds =
     , mkDebugCmd "tinnitus"    debugTinnitus    "Ringing in the ears."
     , mkDebugCmd "token"       debugToken       "Test token parsing."
     , mkDebugCmd "underline"   debugUnderline   "Test underlining."
+    , mkDebugCmd "volume"      debugVolume      "Calculate carried volume for a given mob ID."
     , mkDebugCmd "weight"      debugWeight      "Calculate weight for a given ID."
     , mkDebugCmd "wrap"        debugWrap        "Test the wrapping of a line containing ANSI escape sequences."
     , mkDebugCmd "wrapindent"  debugWrapIndent  "Test the indented wrapping of a line containing ANSI escape \
@@ -934,6 +935,24 @@ debugUnderline (NoArgs i mq cols) = do
     wrapSend mq cols $ showText underlineANSI <> underline " This text is underlined. " <> showText noUnderlineANSI
     logPlaExec (prefixDebugCmd "underline") i
 debugUnderline p = withoutArgs debugUnderline p
+
+
+-----
+
+
+debugVolume :: ActionFun
+debugVolume p@AdviseNoArgs       = advise p [] adviceDVolumeNoArgs
+debugVolume (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
+  [(searchId, "")] -> helper searchId =<< getState
+  _                -> wrapSend mq cols . sorryParseId $ a
+  where
+    helper searchId ms
+      | searchId < 0                               = wrapSend mq cols sorryWtf
+      | searchId `notElem` views mobTbl IM.keys ms = wrapSend mq cols . sorryNonexistentId searchId . pure $ "mobile"
+      | otherwise                                  = do
+          send mq . nlnl . showText . calcCarriedVol searchId $ ms
+          logPlaExecArgs (prefixDebugCmd "volume") (pure a) i
+debugVolume p = advise p [] adviceDVolumeExcessArgs
 
 
 -----

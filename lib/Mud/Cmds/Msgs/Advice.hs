@@ -67,6 +67,8 @@ module Mud.Cmds.Msgs.Advice ( adviceAAnnounceNoArgs
                             , adviceDrinkNoVessel
                             , adviceDRntExcessArgs
                             , adviceDropNoArgs
+                            , adviceDVolumeExcessArgs
+                            , adviceDVolumeNoArgs
                             , adviceDWeightExcessArgs
                             , adviceDWeightNoArgs
                             , adviceDWrapExcessArgs
@@ -422,6 +424,17 @@ adviceDRegenNoArgs = adviceDRegenExcessArgs
 
 adviceDRntExcessArgs :: Text
 adviceDRntExcessArgs = "Sorry, but you can only generate a random name for one PC at a time."
+
+
+adviceDVolumeExcessArgs :: Text
+adviceDVolumeExcessArgs =
+    "Please provide one argument: the ID for which you would like to calculate carried volume, as in " <>
+    colorWith quoteColor (prefixDebugCmd "volume" <> " 100")                                           <>
+    "."
+
+
+adviceDVolumeNoArgs :: Text
+adviceDVolumeNoArgs = adviceDVolumeExcessArgs
 
 
 adviceDWeightExcessArgs :: Text
