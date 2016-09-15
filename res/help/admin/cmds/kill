@@ -1,0 +1,13 @@
+\h #dKILL \d
+
+\uUSAGE\n
+#dkill ID \s...\d
+
+\uDESCRIPTION\n
+Instantly kill one or more mobiles by ID.
+
+For information regarding the ethical use of this command, see "help ethics".
+
+\uEXAMPLES\n
+\q#dkill 0\d to kill ID 0.4`
+\q#dkill 0 1\d to kill IDs 0 and 1.4`

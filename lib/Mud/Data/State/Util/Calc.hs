@@ -113,7 +113,7 @@ calcBonus i ms = let l                 = getLvl i ms
 -----
 
 
-calcCarriedVol :: Id -> MudState -> Vol -- TODO: Test using "!volume".
+calcCarriedVol :: Id -> MudState -> Vol
 calcCarriedVol i ms = uncurry (+) (calcVol i ms, sum . map (`calcVol` ms) . M.elems . getEqMap i $ ms)
 
 

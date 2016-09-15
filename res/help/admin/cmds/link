@@ -1,0 +1,12 @@
+\h #dLINK \d
+
+\uUSAGE\n
+#dlink name \s...\d
+
+\uDESCRIPTION\n
+Dump two-way links for one or more PCs, sorted by volume of messages in descending order.
+Linked PC names are displayed followed by the number of messages exchanged.
+
+\uEXAMPLES\n
+\q#dlink taro\d to display two-way links for Taro.4`
+\q#dlink taro hanako\d to display two-way links for Taro and Hanako.4`

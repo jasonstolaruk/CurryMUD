@@ -490,7 +490,7 @@ mkCorpse i ms = let et = EntTemplate (Just "corpse")
                                      (getCorpseVol    i ms)
                                      Nothing -- TODO: Taste.
                                      zeroBits
-                    ct = ConTemplate undefined -- TODO: Capacity.
+                    ct = ConTemplate (getCorpseCapacity i ms `max` calcCarriedVol i ms)
                                      (setBit zeroBits . fromEnum $ IsCorpse)
                     is = M.elems (getEqMap i ms) ++ getInv i ms
                     c  = getCoins i ms

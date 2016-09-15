@@ -153,9 +153,9 @@ adminCmds =
                                                      \players."
     , mkAdminCmd "incognito"  adminIncognito   True  "Toggle your incognito status."
     , mkAdminCmd "ip"         adminIp          True  "Display the server's IP addresses and listening port."
-    , mkAdminCmd "kill"       adminKill        True  "Kill one or more mobiles by ID."
-    , mkAdminCmd "link"       adminLink        True  "Dump two-way links, sorted by volume of messages in descending \
-                                                     \order, for one or more PCs."
+    , mkAdminCmd "kill"       adminKill        True  "Instantly kill one or more mobiles by ID."
+    , mkAdminCmd "link"       adminLink        True  "Dump two-way links for one or more PCs, sorted by volume of messages in \
+                                                     \descending order."
     , mkAdminCmd "locate"     adminLocate      True  "Locate one or more IDs."
     , mkAdminCmd "message"    adminMsg         True  "Send a message to a regular player."
     , mkAdminCmd "mychannels" adminMyChans     True  "Display information about telepathic channels for one or more \
@@ -970,7 +970,6 @@ adminIp p = withoutArgs adminIp p
 -----
 
 
--- TODO: Help. Ethics.
 adminKill :: ActionFun
 adminKill p@AdviseNoArgs          = advise p [ prefixAdminCmd "kill" ] adviceAKillNoArgs
 adminKill (LowerNub i mq cols as) = getState >>= \ms ->
@@ -1006,7 +1005,6 @@ adminKill p = patternMatchFail "adminKill" . showText $ p
 -----
 
 
--- TODO: Help.
 adminLink :: ActionFun
 adminLink p@AdviseNoArgs          = advise p [ prefixAdminCmd "link" ] adviceALinkNoArgs
 adminLink (LowerNub i mq cols as) = getState >>= \ms -> do
@@ -1021,7 +1019,7 @@ adminLink (LowerNub i mq cols as) = getState >>= \ms -> do
                                     = map (\(c, s) -> s <> " " <> parensQuote (showText c)) pairs
                     mkCountSings ss = [ (length g, s) | g@(s:_) <- sortGroup . map fromOnly $ ss ]
             in findFullNameForAbbrev target (mkAdminPlaIdSingList ms) |&| maybe notFound found
-    pager i mq Nothing . intercalateDivider cols =<< forM as (helper . capitalize . T.toLower)
+    pager i mq Nothing . noneOnNull . intercalateDivider cols =<< forM as (helper . capitalize . T.toLower)
     logPlaExecArgs (prefixAdminCmd "link") as i
 adminLink p = patternMatchFail "adminLink" . showText $ p
 

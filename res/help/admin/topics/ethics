@@ -27,7 +27,9 @@ In most cases, you should obtain a player's consent before targeting him/her wit
 #dtelepc
 The same goes for "#dtelerm": obtain the consent of any players who are currently in the destination room before you teleport there.
 
-Only under unforeseen, extraordinary circumstances should the "#das" command ever be used to target a PC.
+Only under unforeseen, extraordinary circumstances should the following commands ever be used to target a PC:
+#das
+#dkill
 
 When incognito, you should only ever exit incognito mode while in the Admin Zone.
 
