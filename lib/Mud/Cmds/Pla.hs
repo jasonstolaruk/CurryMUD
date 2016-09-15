@@ -1657,7 +1657,7 @@ mkCmdNameForRmLink rl = T.toLower $ case rl of StdLink    { .. } -> linkDirToCmd
  -----
 
 
-help :: ActionFun
+help :: ActionFun -- TODO: Account for spirits.
 help (NoArgs i mq cols) = (liftIO . T.readFile $ helpDir </> "root") |&| try >=> either handler helper
   where
     handler e          = fileIOExHandler "help" e >> wrapSend mq cols helpRootErrorMsg
@@ -2312,7 +2312,7 @@ npcExorciseHelper p = withoutArgs npcExorciseHelper p
 -----
 
 
-plaDispCmdList :: ActionFun
+plaDispCmdList :: ActionFun -- TODO: Account for spirits.
 plaDispCmdList p@(LowerNub' i as) = getState >>= \ms -> dispCmdList (mkPlaCmds i ms) p >> logPlaExecArgs "?" as i
 plaDispCmdList p                  = patternMatchFail "plaDispCmdList" . showText $ p
 

@@ -131,16 +131,22 @@ calcConPerFull i ms = let total           = foldr helper 0 . getInv i $ ms
 
 calcCorpseCapacity :: Race -> Vol
 calcCorpseCapacity = let f = (calcCorpseCapacity Human |&|) in \case
-  Dwarf     -> f (\x -> round $ fromIntegral x * (calcCorpseWeight Dwarf  `divide` humanWeight :: Double))
+  Dwarf     -> f (\x -> round $ fromIntegral x * dwarfToHumanWeightRatio)
   Elf       -> f minusFifth
   Felinoid  -> f plusFifth
-  Hobbit    -> f (\x -> round $ fromIntegral x * (calcCorpseWeight Hobbit `divide` humanWeight :: Double))
+  Hobbit    -> f (\x -> round $ fromIntegral x * hobbitToHumanWeightRatio)
   Human     -> 300000
   Lagomorph -> f id
   Nymph     -> f minusQuarter
   Vulpenoid -> f plusQuarter
-  where
-    humanWeight = calcCorpseWeight Human
+
+
+dwarfToHumanWeightRatio :: Double
+dwarfToHumanWeightRatio = calcCorpseWeight Dwarf `divide` calcCorpseWeight Human
+
+
+hobbitToHumanWeightRatio :: Double
+hobbitToHumanWeightRatio = calcCorpseWeight Hobbit `divide` calcCorpseWeight Human
 
 
 -----
@@ -148,16 +154,14 @@ calcCorpseCapacity = let f = (calcCorpseCapacity Human |&|) in \case
 
 calcCorpseVol :: Race -> Vol
 calcCorpseVol = let f = (calcCorpseVol Human |&|) in \case
-  Dwarf     -> f (\x -> round $ fromIntegral x * (calcCorpseWeight Dwarf  `divide` humanWeight :: Double))
+  Dwarf     -> f (\x -> round $ fromIntegral x * dwarfToHumanWeightRatio)
   Elf       -> f minusFifth
   Felinoid  -> f plusFifth
-  Hobbit    -> f (\x -> round $ fromIntegral x * (calcCorpseWeight Hobbit `divide` humanWeight :: Double))
+  Hobbit    -> f (\x -> round $ fromIntegral x * hobbitToHumanWeightRatio)
   Human     -> 452000 -- 4,520 cubic in -- TODO: Does this seem reasonable?
   Lagomorph -> f id
   Nymph     -> f minusQuarter
   Vulpenoid -> f plusQuarter
-  where
-    humanWeight = calcCorpseWeight Human
 
 
 -----

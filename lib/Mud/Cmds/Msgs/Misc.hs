@@ -208,10 +208,10 @@ rulesMsg =
     lSpcs <> T.singleton miscTokenDelimiter <> "v\n\
     \\n\
     \\\uAGE\\d\n" <>
-    lSpcs <> "CurryMUD a complex game that requires serious, consistent role-play and adult sensibilities. For these reasons you must be at least 18 years old to play.\n\
+    lSpcs <> "CurryMUD is a complex game that requires serious, consistent role-play and adult sensibilities. For these reasons you must be at least 18 years old to play.\n\
     \\n\
     \\\uROLE-PLAY\\d\n" <>
-    lSpcs <> "CurryMUD is a Role-Play Intensive (RPI) MUD. You are required to devise a unique personality for your character and to stay In Character (IC) at all times. IC communication must always be appropriate for the fantasy context of the virtual world; references to the present day/reality are not allowed.\n" <>
+    lSpcs <> "CurryMUD is a Role-Play Intensive (RPI) MUD. You are required to devise a unique personality for your character and to stay In Character (IC) at all times. IC communication must always stay within the fantasy context of the virtual world; references to the present day/reality are not allowed.\n" <>
     lSpcs <> "There are a few exceptions to this rule. The \"question channel\" (for asking and answering newbie questions related to game play) is Out-Of-Character (OOC). Certain areas within the virtual world are also clearly designated as OOC: you are allowed to communicate with other players as a player (as yourself) within such areas.\n\
     \\n\
     \\\uILLEGAL ROLE-PLAY\\d\n" <>
@@ -221,7 +221,7 @@ rulesMsg =
     lSpcs <> "You must conduct yourself in a manner that is empathetic towards your fellow players. Be respectful and sensible; don't be rude or condescending.\n\
     \\n\
     \\\uHARASSMENT\\d\n" <>
-    lSpcs <> "Harassment and bullying will not be tolerated. The role-play of rape is absolutely illegal.\n\
+    lSpcs <> "Harassment and bullying is not be tolerated. The role-play of rape is absolutely illegal.\n\
     \\n\
     \\\uSEXUAL ORIENTATION/IDENTITY\\d\n" <>
     lSpcs <> "Players are free to role-play characters who are homosexual, bisexual, pansexual, gender nonconforming, etc. Intolerant attitudes are unacceptable.\n\
