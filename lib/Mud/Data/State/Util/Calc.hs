@@ -60,7 +60,6 @@ import Mud.Data.Misc
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Coins
 import Mud.Data.State.Util.Get
-import Mud.Data.State.Util.Hierarchy
 import Mud.Data.State.Util.Random
 import Mud.TopLvlDefs.Misc
 import Mud.TopLvlDefs.Vols
@@ -114,7 +113,11 @@ calcBonus i ms = let l                 = getLvl i ms
 
 
 calcCarriedVol :: Id -> MudState -> Vol
-calcCarriedVol i ms = uncurry (+) (calcVol i ms, sum . map (`calcVol` ms) . M.elems . getEqMap i $ ms)
+calcCarriedVol i ms = sum [ calcInvVol i ms, calcCoinsVol i ms, calcEqVol i ms ]
+
+
+calcEqVol :: Id -> MudState -> Vol
+calcEqVol i ms = sum . map (`calcVol` ms) . M.elems . getEqMap i $ ms
 
 
 -----
@@ -135,7 +138,7 @@ calcCorpseCapacity = let f = (calcCorpseCapacity Human |&|) in \case
   Elf       -> f minusFifth
   Felinoid  -> f plusFifth
   Hobbit    -> f (\x -> round $ fromIntegral x * hobbitToHumanWeightRatio)
-  Human     -> 300000
+  Human     -> 265000
   Lagomorph -> f id
   Nymph     -> f minusQuarter
   Vulpenoid -> f plusQuarter
@@ -575,16 +578,16 @@ calcVesselPerFull (view vesselMaxMouthfuls -> m) x = x `percent` m
 -----
 
 
--- This function may be used with mobs, though it doesn't calculate equipment volume. See "calcCarriedVol".
 calcVol :: Id -> MudState -> Vol
-calcVol i ms = calcHelper i
-  where
-    calcHelper i' = if getType i' ms == ConType || hasMobId i' ms
-      then sum [ onTrue (i' /= i) (+ getObjVol i' ms) 0, calcInvVol, calcCoinsVol ]
-      else getObjVol i' ms
-      where
-        calcInvVol   = sum . map calcHelper . getInv i' $ ms
-        calcCoinsVol = (* coinVol) . sum . coinsToList . getCoins i' $ ms
+calcVol i ms = getObjVol i ms + (getType i ms == ConType ? calcInvVol i ms + calcCoinsVol i ms :? 0)
+
+
+calcInvVol :: Id -> MudState -> Vol
+calcInvVol i ms = sum . map (`calcVol` ms) . getInv i $ ms
+
+
+calcCoinsVol :: Id -> MudState -> Vol
+calcCoinsVol i = (* coinVol) . sum . coinsToList . getCoins i
 
 
 -----
