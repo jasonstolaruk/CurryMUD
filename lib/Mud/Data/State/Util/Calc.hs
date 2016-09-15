@@ -130,7 +130,17 @@ calcConPerFull i ms = let total           = foldr helper 0 . getInv i $ ms
 
 
 calcCorpseCapacity :: Race -> Vol
-calcCorpseCapacity = \case _ -> undefined -- TODO
+calcCorpseCapacity = let f = (calcCorpseCapacity Human |&|) in \case
+  Dwarf     -> f (\x -> round $ fromIntegral x * (calcCorpseWeight Dwarf  `divide` humanWeight :: Double))
+  Elf       -> f minusFifth
+  Felinoid  -> f plusFifth
+  Hobbit    -> f (\x -> round $ fromIntegral x * (calcCorpseWeight Hobbit `divide` humanWeight :: Double))
+  Human     -> 300000
+  Lagomorph -> f id
+  Nymph     -> f minusQuarter
+  Vulpenoid -> f plusQuarter
+  where
+    humanWeight = calcCorpseWeight Human
 
 
 -----

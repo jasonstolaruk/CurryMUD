@@ -800,7 +800,7 @@ createAdminZone = do
             M.empty [] []))
   putRm iCoinsCloset
         []
-        (Coins (100, 100, 100))
+        (Coins (1000, 1000, 1000))
         (mkRm (RmTemplate "Coin closet"
             "This closet holds coins."
             Nothing
