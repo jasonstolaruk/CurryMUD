@@ -468,13 +468,9 @@ Those links with the greatest volume of messages are retained. If the deceased P
 handleDeath :: Id -> MudStack ()
 handleDeath i = helper |&| modifyState >=> sequence_
   where
-    helper ms = let ms'        = spiritize i ms
-                    (ms'', fs) = mkCorpse i ms'
-                in (ms'', fs)
-
-
-spiritize :: Id -> MudState -> MudState
-spiritize i ms = (ms &) $ if isPC i ms then plaTbl.ind i %~ setPlaFlag IsSpirit True else id
+    helper ms = let (ms',  fs ) = mkCorpse  i ms
+                    (ms'', fs') = spiritize i ms'
+                in (ms'', logPla "handleDeath" i "handling death." : fs ++ fs')
 
 
 mkCorpse :: Id -> MudState -> (MudState, Funs)
@@ -494,13 +490,20 @@ mkCorpse i ms = let et = EntTemplate (Just "corpse")
                     (_, ms', fs) = newCon ms et ot ct (is, c) . getRmId i $ ms
                 in ( ms' & eqTbl .ind i .~ M.empty
                          & invTbl.ind i .~ []
-                   , fs )
+                   , logPla "mkCorpse" i "corpse created." : fs )
       where
         (s, p) = (("corpse of " <>) *** ("corpses of " <>)) $ if isPC i ms
           then second (<> "s") . dup . mkSerializedNonStdDesig i ms s' A $ Don'tCap
           else first aOrAnOnLower pair
           where
             pair@(s', _) = getBothGramNos i ms
+
+
+spiritize :: Id -> MudState -> (MudState, Funs)
+spiritize i ms = if isPC i ms
+  then (ms & plaTbl.ind i %~ setPlaFlag IsSpirit True, pure . logPla "spiritize" i $ "spirit created.")
+  else (ms, [])
+
 
 -----
 
