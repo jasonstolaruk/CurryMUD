@@ -106,7 +106,7 @@ import Mud.Util.Padding
 import Mud.Util.Quoting
 import Mud.Util.Text
 import Mud.Util.Wrapping
-import qualified Mud.Misc.Logging as L (logPla)
+import qualified Mud.Misc.Logging as L (logNotice, logPla)
 import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 
 import Control.Arrow ((***), first, second)
@@ -149,6 +149,10 @@ patternMatchFail = U.patternMatchFail "Mud.Cmds.Util.Misc"
 
 
 -----
+
+
+logNotice :: Text -> Text -> MudStack ()
+logNotice = L.logNotice "Mud.Cmds.Util.Misc"
 
 
 logPla :: Text -> Id -> Text -> MudStack ()
@@ -499,10 +503,10 @@ mkCorpse i ms = let et = EntTemplate (Just "corpse")
             pair@(s', _) = getBothGramNos i ms
 
 
-spiritize :: Id -> MudState -> (MudState, Funs)
+spiritize :: Id -> MudState -> (MudState, Funs) -- TODO: Delete NPCs.
 spiritize i ms = if isPC i ms
   then (ms & plaTbl.ind i %~ setPlaFlag IsSpirit True, pure . logPla "spiritize" i $ "spirit created.")
-  else (ms, [])
+  else (ms, pure . logNotice "spiritize" . T.concat $ [ getSing i ms, " ", parensQuote (showText i), " has died." ])
 
 
 -----
