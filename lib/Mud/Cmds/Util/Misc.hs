@@ -109,7 +109,7 @@ import Mud.Util.Wrapping
 import qualified Mud.Misc.Logging as L (logPla)
 import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 
-import Control.Arrow ((***), second)
+import Control.Arrow ((***), first, second)
 import Control.Exception.Lifted (catch, try)
 import Control.Lens (_1, _2, _3, at, both, each, to, view, views)
 import Control.Lens.Operators ((%~), (&), (+~), (.~), (<>~), (?~), (^.))
@@ -474,16 +474,13 @@ handleDeath i = helper |&| modifyState >=> sequence_
 
 
 spiritize :: Id -> MudState -> MudState
-spiritize i ms = (ms &) $ case getType i ms of
-  NpcType -> id
-  PCType  -> plaTbl.ind i %~ setPlaFlag IsSpirit True
-  t       -> patternMatchFail "spiritize" . showText $ t
+spiritize i ms = (ms &) $ if isPC i ms then plaTbl.ind i %~ setPlaFlag IsSpirit True else id
 
 
 mkCorpse :: Id -> MudState -> (MudState, Funs)
 mkCorpse i ms = let et = EntTemplate (Just "corpse")
-                                     mkSing mkPlur
-                                     mkDesc
+                                     s p
+                                     (getEntDesc i ms)
                                      Nothing -- TODO: Smell.
                                      zeroBits
                     ot = ObjTemplate (getCorpseWeight i ms)
@@ -499,10 +496,11 @@ mkCorpse i ms = let et = EntTemplate (Just "corpse")
                          & invTbl.ind i .~ []
                    , fs )
       where
-        mkSing = undefined
-        mkPlur = undefined
-        mkDesc = undefined
-
+        (s, p) = (("corpse of " <>) *** ("corpses of " <>)) $ if isPC i ms
+          then second (<> "s") . dup . mkSerializedNonStdDesig i ms s' A $ Don'tCap
+          else first aOrAnOnLower pair
+          where
+            pair@(s', _) = getBothGramNos i ms
 
 -----
 

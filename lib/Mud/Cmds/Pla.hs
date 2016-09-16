@@ -290,7 +290,7 @@ spiritCmds :: [Cmd]
 spiritCmds = sort . map (uncurry4 mkRegularCmd) $ spiritCmdTuples
 
 
-spiritCmdTuples :: [(CmdFullName, ActionFun, Bool, CmdDesc)]
+spiritCmdTuples :: [(CmdFullName, ActionFun, Bool, CmdDesc)] -- TODO: Needs priority abbrev cmds.
 spiritCmdTuples =
     [ ("?",          plaDispCmdList,  True,  cmdDescDispCmdList)
     , ("about",      about,           True,  cmdDescAbout)
@@ -319,10 +319,10 @@ spiritCmdTuples =
     , ("set",        setAction,       True,  cmdDescSet)
     , ("stats",      stats,           True,  cmdDescStats)
     , ("stop",       stop,            True,  cmdDescStop)
+    , ("sw",         go "sw",         True,  cmdDescGoSouthwest)
     , ("telepathy",  tele,            True,  cmdDescTelepathy)
     , ("tune",       tune,            True,  cmdDescTune)
     , ("typo",       typo,            True,  cmdDescTypo)
-    , ("sw",         go "sw",         True,  cmdDescGoSouthwest)
     , ("u",          go "u",          True,  cmdDescGoUp)
     , ("unlink",     unlink,          True,  cmdDescUnlink)
     , ("uptime",     uptime,          True,  cmdDescUptime)
@@ -359,8 +359,8 @@ npcRegularCmds = map (uncurry4 mkRegularCmd) npcRegularCmdTuples
 
 npcRegularCmdTuples :: [(CmdFullName, ActionFun, Bool, CmdDesc)]
 npcRegularCmdTuples =
-    [ (".",          npcAsSelf,      False, "Execute a command as your admin PC.")
-    , ("?",          npcDispCmdList, True,  cmdDescDispCmdList)
+    [ ("?",          npcDispCmdList, True,  cmdDescDispCmdList)
+    , (".",          npcAsSelf,      False, "Execute a command as your admin PC.")
     , ("d",          go "d",         True,  cmdDescGoDown)
     , ("e",          go "e",         True,  cmdDescGoEast)
     , ("empty",      emptyAction,    True,  cmdDescEmpty)
@@ -375,10 +375,10 @@ npcRegularCmdTuples =
     , ("read",       readAction,     True,  cmdDescRead)
     , ("remove",     remove,         True,  cmdDescRemove)
     , ("roomdesc",   roomDesc,       True,  cmdDescRoomDesc)
-    , ("taste",      taste,          True,  cmdDescTaste)
     , ("s",          go "s",         True,  cmdDescGoSouth)
     , ("se",         go "se",        True,  cmdDescGoSoutheast)
     , ("sw",         go "sw",        True,  cmdDescGoSouthwest)
+    , ("taste",      taste,          True,  cmdDescTaste)
     , ("u",          go "u",         True,  cmdDescGoUp)
     , ("w",          go "w",         True,  cmdDescGoWest) ]
 

@@ -994,8 +994,8 @@ adminKill (LowerNub i mq cols as) = getState >>= \ms ->
               where
                 mkFuns =
                     let d        = mkStdDesig targetId ms Don'tCap
-                        toSelf   = mkBs (adminKillMsg "you are", pure targetId               )
-                        toOthers = mkBs (serialize d <> " is",   targetId `delete` desigIds d)
+                        toSelf   = mkBs (nl $ adminKillMsg "you are",              pure targetId               )
+                        toOthers = mkBs (nl . adminKillMsg $ serialize d <> " is", targetId `delete` desigIds d)
                         mkBs     = pure . first (colorWith adminKillColor)
                     in [ bcast $ toSelf ++ toOthers, handleDeath targetId ]
         in (is ++ is', fs ++ fs')
