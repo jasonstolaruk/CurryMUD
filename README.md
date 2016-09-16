@@ -2,7 +2,7 @@
 
 A textual Multi-User Dungeon ("MUD") server in Haskell. (If you are unfamiliar with the term "MUD," please refer to [this Wikipedia article](http://en.wikipedia.org/wiki/MUD).)
 
-CurryMUD is essentially the hobby project and brainchild of a single developer (me). It's been in active development for over 2 years, but is still very much a work in progress.
+CurryMUD is essentially the hobby project and brainchild of a single developer (me). It's been in active development for over 3 years, but is still very much a work in progress.
 
 ## My goals
 
@@ -59,7 +59,7 @@ I am still in the initial stage of developing basic commands. There is very litt
 The code is available here on GitHub under the 3-clause BSD license (refer to the [LICENSE file](https://github.com/jasonstolaruk/CurryMUD/blob/master/LICENSE)). Please note that **I am not accepting PRs**.
 
 * About 40,000 lines of code/text.
-* About 95 modules, excluding tests.
+* About 100 modules, excluding tests.
 * About 70 unit and property tests exist (I'm using the [tasty testing framework](https://hackage.haskell.org/package/tasty)).
 * A `ReaderT` monad transformer stack with the world state inside a single `IORef`.
 * `STM`-based concurrency.
