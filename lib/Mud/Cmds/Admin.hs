@@ -529,6 +529,7 @@ mkCountTxt = map (uncurry mappend . second commaShow) <$> helper
                , ("Vulpenoids: ",      countRace Vulpenoid   )
                , ("Channels: ",        ms^.chanTbl.to IM.size)
                , ("Player commands: ", noOfPlaCmds           )
+               , ("Spirit commands: ", noOfSpiritCmds        )
                , ("NPC commands: ",    noOfNpcCmds           )
                , ("Exp commands: ",    length expCmds        )
                , ("Admin commands: ",  length adminCmds      )

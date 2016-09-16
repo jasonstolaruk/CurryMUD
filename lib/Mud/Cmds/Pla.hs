@@ -9,6 +9,7 @@ module Mud.Cmds.Pla ( getRecordUptime
                     , mkRacialLangCmds
                     , noOfNpcCmds
                     , noOfPlaCmds
+                    , noOfSpiritCmds
                     , npcCmds
                     , plaCmds
                     , showMotd
@@ -287,48 +288,64 @@ noOfPlaCmds = length regularCmdTuples + length priorityAbbrevCmdTuples + length 
 
 
 spiritCmds :: [Cmd]
-spiritCmds = sort . map (uncurry4 mkRegularCmd) $ spiritCmdTuples
+spiritCmds = spiritRegularCmds ++ spiritPriorityAbbrevCmds
 
 
-spiritCmdTuples :: [(CmdFullName, ActionFun, Bool, CmdDesc)] -- TODO: Needs priority abbrev cmds.
-spiritCmdTuples =
-    [ ("?",          plaDispCmdList,  True,  cmdDescDispCmdList)
-    , ("about",      about,           True,  cmdDescAbout)
-    , ("admin",      admin,           True,  cmdDescAdmin)
-    , ("bars",       bars,            True,  cmdDescBars)
-    , ("bonus",      bonus,           True,  cmdDescBonus)
-    , ("bug",        bug,             True,  cmdDescBug)
-    , ("clear",      clear,           True,  cmdDescClear)
-    , ("color",      color,           True,  cmdDescColor)
-    , ("d",          go "d",          True,  cmdDescGoDown)
-    , ("e",          go "e",          True,  cmdDescGoEast)
-    , ("exits",      exits,           True,  cmdDescExits)
-    , ("feeling",    feeling,         True,  cmdDescFeeling)
-    , ("help",       help,            True,  cmdDescHelp)
-    , ("link",       link,            True,  cmdDescLink)
-    , ("look",       look,            True,  cmdDescLook)
-    , ("lookself",   lookSelf,        True,  cmdDescLookSelf)
-    , ("motd",       motd,            True,  cmdDescMotd)
-    , ("n",          go "n",          True,  cmdDescGoNorth)
-    , ("ne",         go "ne",         True,  cmdDescGoNortheast)
-    , ("nw",         go "nw",         True,  cmdDescGoNorthwest)
-    , ("qui",        quitCan'tAbbrev, True,  "")
-    , ("quit",       quit,            False, cmdDescQuit)
-    , ("s",          go "s",          True,  cmdDescGoSouth)
-    , ("se",         go "se",         True,  cmdDescGoSoutheast)
-    , ("set",        setAction,       True,  cmdDescSet)
-    , ("stats",      stats,           True,  cmdDescStats)
-    , ("stop",       stop,            True,  cmdDescStop)
-    , ("sw",         go "sw",         True,  cmdDescGoSouthwest)
-    , ("telepathy",  tele,            True,  cmdDescTelepathy)
-    , ("tune",       tune,            True,  cmdDescTune)
-    , ("typo",       typo,            True,  cmdDescTypo)
-    , ("u",          go "u",          True,  cmdDescGoUp)
-    , ("unlink",     unlink,          True,  cmdDescUnlink)
-    , ("uptime",     uptime,          True,  cmdDescUptime)
-    , ("w",          go "w",          True,  cmdDescGoWest)
-    , ("who",        who,             True,  cmdDescWho)
-    , ("whoami",     whoAmI,          True,  cmdDescWhoAmI) ]
+spiritRegularCmds :: [Cmd]
+spiritRegularCmds = sort . map (uncurry4 mkRegularCmd) $ spiritRegularCmdTuples
+
+
+spiritRegularCmdTuples :: [(CmdFullName, ActionFun, Bool, CmdDesc)]
+spiritRegularCmdTuples =
+    [ ("?",          spiritDispCmdList, True,  cmdDescDispCmdList)
+    , ("about",      about,             True,  cmdDescAbout)
+    , ("admin",      admin,             True,  cmdDescAdmin)
+    , ("bonus",      bonus,             True,  cmdDescBonus)
+    , ("bug",        bug,               True,  cmdDescBug)
+    , ("d",          go "d",            True,  cmdDescGoDown)
+    , ("e",          go "e",            True,  cmdDescGoEast)
+    , ("feeling",    feeling,           True,  cmdDescFeeling)
+    , ("lookself",   lookSelf,          True,  cmdDescLookSelf)
+    , ("n",          go "n",            True,  cmdDescGoNorth)
+    , ("ne",         go "ne",           True,  cmdDescGoNortheast)
+    , ("nw",         go "nw",           True,  cmdDescGoNorthwest)
+    , ("qui",        quitCan'tAbbrev,   True,  "")
+    , ("quit",       quit,              False, cmdDescQuit)
+    , ("s",          go "s",            True,  cmdDescGoSouth)
+    , ("se",         go "se",           True,  cmdDescGoSoutheast)
+    , ("set",        setAction,         True,  cmdDescSet)
+    , ("sw",         go "sw",           True,  cmdDescGoSouthwest)
+    , ("tune",       tune,              True,  cmdDescTune)
+    , ("typo",       typo,              True,  cmdDescTypo)
+    , ("u",          go "u",            True,  cmdDescGoUp)
+    , ("unlink",     unlink,            True,  cmdDescUnlink)
+    , ("uptime",     uptime,            True,  cmdDescUptime)
+    , ("w",          go "w",            True,  cmdDescGoWest)
+    , ("whoami",     whoAmI,            True,  cmdDescWhoAmI) ]
+
+
+spiritPriorityAbbrevCmds :: [Cmd]
+spiritPriorityAbbrevCmds = concatMap (uncurry5 mkPriorityAbbrevCmd) spiritPriorityAbbrevCmdTuples
+
+
+spiritPriorityAbbrevCmdTuples :: [(CmdFullName, CmdPriorityAbbrevTxt, ActionFun, Bool, CmdDesc)]
+spiritPriorityAbbrevCmdTuples =
+    [ ("bars",        "b",   bars,           True,  cmdDescBars)
+    , ("clear",       "cl",  clear,          True,  cmdDescClear)
+    , ("color",       "col", color,          True,  cmdDescColor)
+    , ("exits",       "ex",  exits,          True,  cmdDescExits)
+    , ("help",        "h",   help,           True,  cmdDescHelp)
+    , ("link",        "li",  link,           True,  cmdDescLink)
+    , ("look",        "l",   look,           True,  cmdDescLook)
+    , ("motd",        "m",   motd,           True,  cmdDescMotd)
+    , ("stats",       "st",  stats,          True,  cmdDescStats)
+    , ("stop",        "sto", stop,           True,  cmdDescStop)
+    , ("telepathy",   "t",   tele,           True,  cmdDescTelepathy)
+    , ("who",         "wh",  who,            True,  cmdDescWho) ]
+
+
+noOfSpiritCmds :: Int
+noOfSpiritCmds = length spiritRegularCmdTuples + length spiritPriorityAbbrevCmdTuples
 
 
 -----
@@ -2312,7 +2329,7 @@ npcExorciseHelper p = withoutArgs npcExorciseHelper p
 -----
 
 
-plaDispCmdList :: ActionFun -- TODO: Account for spirits.
+plaDispCmdList :: ActionFun
 plaDispCmdList p@(LowerNub' i as) = getState >>= \ms -> dispCmdList (mkPlaCmds i ms) p >> logPlaExecArgs "?" as i
 plaDispCmdList p                  = patternMatchFail "plaDispCmdList" . showText $ p
 
@@ -3697,6 +3714,14 @@ smell (OneArgLower i mq cols a) = getState >>= \ms ->
     -----
     sorryExcess     = wrapSend mq cols sorrySmellExcessTargets
 smell p = advise p ["smell"] adviceSmellExcessArgs
+
+
+-----
+
+
+spiritDispCmdList :: ActionFun
+spiritDispCmdList p@(LowerNub' i as) = dispCmdList spiritCmds p >> logPlaExecArgs "?" as i
+spiritDispCmdList p                  = patternMatchFail "spiritDispCmdList" . showText $ p
 
 
 -----
