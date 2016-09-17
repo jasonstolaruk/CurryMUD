@@ -137,7 +137,8 @@ wrapLines cols (a:b:rest) | ()# a          = [""]     : wrapNext
 
 
 hasIndentTag :: Text -> Bool
-hasIndentTag t = T.last t == indentTagChar
+hasIndentTag "" = False
+hasIndentTag t  = T.last t == indentTagChar
 
 
 noOfLeadingSpcs :: Text -> Int

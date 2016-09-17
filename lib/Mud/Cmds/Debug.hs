@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
-{-# LANGUAGE ExistentialQuantification, LambdaCase, MonadComprehensions, NamedFieldPuns, OverloadedStrings, PatternSynonyms, TupleSections, ViewPatterns #-}
+{-# LANGUAGE ExistentialQuantification, KindSignatures, LambdaCase, MonadComprehensions, NamedFieldPuns, OverloadedStrings, PatternSynonyms, TupleSections, ViewPatterns #-}
 
 module Mud.Cmds.Debug ( debugCmds
                       , purgeThreadTbls
@@ -57,9 +57,10 @@ import Control.Exception (ArithException(..), IOException)
 import Control.Exception.Lifted (throwIO, try)
 import Control.Lens (Optical, both, to, view, views)
 import Control.Lens.Operators ((%~), (&), (^.))
+import Control.Lens.Type (LensLike')
 import Control.Monad ((>=>), replicateM_, unless)
 import Control.Monad.IO.Class (liftIO)
-import Control.Monad.Reader (asks)
+import Control.Monad.Reader (MonadReader, asks)
 import Data.Bits (zeroBits)
 import Data.Char (ord, digitToInt, isDigit, toLower)
 import Data.Function (on)
@@ -409,7 +410,7 @@ debugHandle p              = withoutArgs debugHandle p
 -----
 
 
-debugId :: ActionFun -- TODO: Why does "!id 184" bomb?
+debugId :: ActionFun
 debugId p@AdviseNoArgs       = advise p [] adviceDIdNoArgs
 debugId (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
   [(searchId, "")] -> helper searchId
@@ -423,7 +424,7 @@ debugId (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
                   [ [ "Tables containing key " <> searchIdTxt <> ":"
                     , commas . map fst . filter ((searchId `elem`) . snd) . mkTblNameKeysList $ ms ]
                   , [ T.concat [ "Channels with a ", dblQuote "chanId", " of ", searchIdTxt, ":" ]
-                    , f . filter ((== searchId) . view chanId . snd) . tblToList chanTbl $ ms ]
+                    , f . filter ((== searchId) . view chanId . snd) . tblToList chanTbl $ ms ] -- TODO: Use "views".
                   , [ T.concat [ "Entities with an ", dblQuote "entId", " of ", searchIdTxt, ":" ]
                     , f . filter ((== searchId) . view entId . snd) . tblToList entTbl $ ms ]
                   , [ T.concat [ "Foods with a ", dblQuote "foodId", " of ", searchIdTxt, ":" ]
@@ -474,7 +475,13 @@ debugId (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
 debugId p = advise p [] adviceDIdExcessArgs
 
 
-tblToList :: Optical (->) (->) (Const [(Id, a)]) MudState MudState (IM.IntMap a) (IM.IntMap a) -> MudState -> [(Id, a)]
+tblToList :: forall s (m :: * -> *) a. -- TODO: Indentation?
+             MonadReader s m =>
+             LensLike'
+               (Const [(Int, a)])
+               s
+               (IM.IntMap a)
+             -> m [(Int, a)]
 tblToList lens = views lens IM.toList
 
 

@@ -512,7 +512,7 @@ spiritize i ms = if isPC i ms
   then (ms & plaTbl.ind i %~ setPlaFlag IsSpirit True, pure . logPla "spiritize" i $ "spirit created.")
   else deleteNpc
   where
-    deleteNpc =
+    deleteNpc = -- TODO: NPCs may be possessed.
         let ri = getRmId i ms
         in ( ms & activeEffectsTbl.at  i  .~ Nothing
                 & coinsTbl        .at  i  .~ Nothing
