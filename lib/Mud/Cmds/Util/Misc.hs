@@ -23,7 +23,7 @@ module Mud.Cmds.Util.Misc ( asterisk
                           , getQuestionStyleds
                           , getTunedQuestionIds
                           , handleDeath
-                          , happy
+                          , happyTimes
                           , hasEnc
                           , hasYou
                           , inOut
@@ -474,9 +474,12 @@ A spirit retains a certain number of two-way links, depending on PS. A spirit ma
 Those links with the greatest volume of messages are retained. If the deceased PC's top links are all asleep, the spirit gets to retain a bonus link with a PC who is presently awake.
 -}
 handleDeath :: Id -> MudStack ()
-handleDeath i = modifyStateSeq $ \ms -> let (ms',  fs ) = mkCorpse  i ms
-                                            (ms'', fs') = spiritize i ms'
-                                        in (ms'', logPla "handleDeath" i "handling death." : fs ++ fs')
+handleDeath i = do
+    -- TODO: Stop threads.
+    modifyStateSeq $ \ms ->
+      let (ms',  fs ) = mkCorpse  i ms
+          (ms'', fs') = spiritize i ms'
+      in (ms'', (when (isPC i ms) . logPla "handleDeath" i $ "handling death.") : fs ++ fs')
 
 
 mkCorpse :: Id -> MudState -> (MudState, Funs)
@@ -497,36 +500,49 @@ mkCorpse i ms = let et = EntTemplate (Just "corpse")
                 in ( ms' & coinsTbl.ind i .~ mempty
                          & eqTbl   .ind i .~ M.empty
                          & invTbl  .ind i .~ []
-                   , logPla "mkCorpse" i "corpse created." : fs )
+                   , (when (isPC i ms) . logPla "mkCorpse" i $ "corpse created.") : fs )
       where
         (s, p) = ("corpse of " <>) *** ("corpses of " <>) $ if isPC i ms
           then second (<> "s") . dup . mkSerializedNonStdDesig i ms (getSing i ms) A $ Don'tCap
-          else first aOrAnOnLower $ let bgns = getBothGramNos i ms in bgns & _2 .~ (mkPlurFromBoth bgns)
+          else first aOrAnOnLower $ let bgns = getBothGramNos i ms in bgns & _2 .~ mkPlurFromBoth bgns
 
 
-spiritize :: Id -> MudState -> (MudState, Funs) -- TODO: Delete NPCs.
+spiritize :: Id -> MudState -> (MudState, Funs) -- TODO: Needs work.
 spiritize i ms = if isPC i ms
   then (ms & plaTbl.ind i %~ setPlaFlag IsSpirit True, pure . logPla "spiritize" i $ "spirit created.")
-  else (ms, pure . logNotice "spiritize" . T.concat $ [ getSing i ms, " ", parensQuote (showText i), " has died." ])
+  else deleteNpc
+  where
+    deleteNpc =
+        let ri = getRmId i ms
+        in ( ms & activeEffectsTbl.at  i  .~ Nothing
+                & coinsTbl        .at  i  .~ Nothing
+                & entTbl          .at  i  .~ Nothing
+                & eqTbl           .at  i  .~ Nothing
+                & invTbl          .at  i  .~ Nothing
+                & mobTbl          .at  i  .~ Nothing
+                & pausedEffectsTbl.at  i  .~ Nothing
+                & typeTbl         .at  i  .~ Nothing
+                & invTbl          .ind ri %~ (i `delete`)
+           , pure . logNotice "spiritize" . T.concat $ [ getSing i ms, " ", parensQuote (showText i), " has died." ] )
 
 
 -----
 
 
-happy :: MudState -> [Either Text (Text, [EmoteWord], Text)] -> (Text, Text, Inv, [Broadcast])
-happy ms xformed =
+happyTimes :: MudState -> [Either Text (Text, [EmoteWord], Text)] -> (Text, Text, Inv, [Broadcast])
+happyTimes ms xformed =
     let (toSelf, toTargets, toOthers)               = unzip3 . rights $ xformed
         targetIds                                   = nub . foldr extractIds [] $ toTargets
         extractIds [ForNonTargets _           ] acc = acc
         extractIds (ForTarget     _ targetId:_) acc = targetId : acc
         extractIds (ForTargetPoss _ targetId:_) acc = targetId : acc
-        extractIds xs                           _   = patternMatchFail "happy extractIds" . showText $ xs
+        extractIds xs                           _   = patternMatchFail "happyTimes extractIds" . showText $ xs
         msgMap  = foldr (\targetId -> at targetId ?~ []) IM.empty targetIds
         msgMap' = foldr consWord msgMap toTargets
         consWord [ ForNonTargets word                           ] = IM.map (word :)
         consWord [ ForTarget     p targetId, ForNonTargets word ] = selectiveCons p targetId False word
         consWord [ ForTargetPoss p targetId, ForNonTargets word ] = selectiveCons p targetId True  word
-        consWord xs                                               = const . patternMatchFail "happy consWord" . showText $ xs
+        consWord xs = const . patternMatchFail "happyTimes consWord" . showText $ xs
         selectiveCons p targetId isPoss word = IM.mapWithKey helper
           where
             helper k v = let targetSing = onTrue isPoss (<> "'s") . getSing k $ ms

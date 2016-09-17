@@ -103,7 +103,7 @@ procEmote i ms cc triples as             =
           | isHead              -> mkRightForNonTargets (me & each <>~ (" " <> x))
           | otherwise           -> mkRightForNonTargets . dup3 $ x
     in case lefts xformed of
-      []      -> let (toSelf, toOthers, targetIds, toTargetBs) = happy ms xformed
+      []      -> let (toSelf, toOthers, targetIds, toTargetBs) = happyTimes ms xformed
                  in Right $ (toSelf, pure i) : (toOthers, tunedIds \\ targetIds) : toTargetBs
       advices -> Left . intersperse "" . nub $ advices
   where
@@ -248,7 +248,7 @@ adminChanProcEmote i ms tunedIds tunedSings as =
           | isHead              -> mkRightForNonTargets . dup3 $ s <> " " <> x
           | otherwise           -> mkRightForNonTargets . dup3 $ x
     in case lefts xformed of
-      [] -> let (toSelf, toOthers, targetIds, toTargetBs) = happy ms xformed
+      [] -> let (toSelf, toOthers, targetIds, toTargetBs) = happyTimes ms xformed
             in Right $ (toSelf, pure i) : (toOthers, tunedIds \\ (i : targetIds)) : toTargetBs
       advices -> Left . intersperse "" . nub $ advices
   where

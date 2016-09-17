@@ -409,7 +409,7 @@ debugHandle p              = withoutArgs debugHandle p
 -----
 
 
-debugId :: ActionFun
+debugId :: ActionFun -- TODO: Why does "!id 184" bomb?
 debugId p@AdviseNoArgs       = advise p [] adviceDIdNoArgs
 debugId (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
   [(searchId, "")] -> helper searchId
