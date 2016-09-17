@@ -12,11 +12,14 @@ import Mud.Cmds.Msgs.Sorry
 import Mud.Cmds.Util.CmdPrefixes
 import Mud.Cmds.Util.Misc
 import Mud.Data.Misc
+import Mud.TopLvlDefs.Weights
+import Mud.TopLvlDefs.Vols
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Calc
 import Mud.Data.State.Util.Get
+import Mud.Data.State.Util.Make
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Data.State.Util.Random
@@ -57,6 +60,7 @@ import Control.Lens.Operators ((%~), (&), (^.))
 import Control.Monad ((>=>), replicateM_, unless)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (asks)
+import Data.Bits (zeroBits)
 import Data.Char (ord, digitToInt, isDigit, toLower)
 import Data.Function (on)
 import Data.Ix (inRange)
@@ -134,6 +138,7 @@ debugCmds =
                                                 \and \"EffectFunTbl\"."
     , mkDebugCmd "handle"      debugHandle      "Display information about the handle for your network connection."
     , mkDebugCmd "id"          debugId          "Search the \"MudState\" tables for a given ID."
+    , mkDebugCmd "kewpie"      debugKewpie      "Create a kewpie doll."
     , mkDebugCmd "keys"        debugKeys        "Dump a list of \"MudState\" table keys."
     , mkDebugCmd "liquid"      debugLiq         "Consume a given amount (in mouthfuls) of a given liquid (by distinct \
                                                 \liquid ID)."
@@ -507,6 +512,26 @@ mkTblNameKeysList ms = [ ("ActiveEffects", tblKeys activeEffectsTbl ms)
 
 tblKeys :: Optical (->) (->) (Const Inv) MudState MudState (IM.IntMap a) (IM.IntMap a) -> MudState -> Inv
 tblKeys lens = views lens IM.keys
+
+
+-----
+
+
+debugKewpie :: ActionFun
+debugKewpie (NoArgs' i mq) = do
+    modifyStateSeq $ \ms -> let et = EntTemplate (Just "doll")
+                                                 "kewpie doll" ""
+                                                 "The kewpie doll is disgustingly cute."
+                                                 Nothing
+                                                 zeroBits
+                                ot = ObjTemplate dollWeight
+                                                 dollVol
+                                                 Nothing
+                                                 zeroBits
+                            in dropFst . newObj ms et ot . getRmId i $ ms
+    ok mq
+    logPlaExec (prefixDebugCmd "kewpie") i
+debugKewpie p = withoutArgs debugKewpie p
 
 
 -----

@@ -40,7 +40,7 @@ import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Lens (_1, _2, _3, _4, view)
 import Control.Lens.Operators ((%~), (&), (.~), (<>~), (?~))
-import Control.Monad ((>=>), forM_)
+import Control.Monad (forM_)
 import Data.Bits (setBit, zeroBits)
 import Data.Function (on)
 import Data.List ((\\), delete)
@@ -219,19 +219,18 @@ getFlowerHookFun i Hook { .. } v a@(_, (ms, _, _, _), _) = if calcWeight i ms + 
 
 
 mkFlower :: Id -> V.Vector Int -> MudStack ()
-mkFlower i v = helper |&| modifyState >=> sequence_
+mkFlower i v = modifyStateSeq $ \ms -> let et = EntTemplate (Just "flower")
+                                                            "flower" ""
+                                                            desc
+                                                            (Just smell)
+                                                            zeroBits
+                                           ot = ObjTemplate flowerWeight
+                                                            flowerVol
+                                                            (Just taste)
+                                                            (setBit zeroBits . fromEnum $ IsBiodegradable)
+                                           (_, ms', fs) = newObj ms et ot i
+                                       in (ms', fs)
   where
-    helper ms = let et           = EntTemplate (Just "flower")
-                                               "flower" ""
-                                               desc
-                                               (Just smell)
-                                               zeroBits
-                    ot           = ObjTemplate flowerWeight
-                                               flowerVol
-                                               (Just taste)
-                                               (setBit zeroBits . fromEnum $ IsBiodegradable)
-                    (_, ms', fs) = newObj ms et ot i
-                in (ms', fs)
     (desc, smell, taste) = rndmIntToElem (V.head v) tuples
     tuples = [ ( "It's a fragrant daffodil sporting a collar of white petals."
                , "The powerful fragrance of the daffodil is nearly intoxicating."

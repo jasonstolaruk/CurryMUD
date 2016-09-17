@@ -8,6 +8,7 @@ import Mud.Data.State.Util.Misc
 import Mud.Threads.Biodegrader
 import Mud.Util.Misc
 
+import Control.Lens (at)
 import Control.Lens.Operators ((%~), (&), (.~))
 import Control.Monad (when)
 import Data.Text (Text)
@@ -59,9 +60,10 @@ mkCon ConTemplate { .. } = Con { _conIsCloth  = False
 
 createCon :: MudState -> EntTemplate -> ObjTemplate -> ConTemplate -> (Inv, Coins) -> (Id, MudState, Funs)
 createCon ms et ot ct (is, c) = let (i, ms', fs) = createObj ms et ot
-                                    ms''         = ms' & coinsTbl.ind i .~ c
+                                    ms''         = ms' & clothTbl.at  i .~ Nothing
+                                                       & coinsTbl.ind i .~ c
                                                        & conTbl  .ind i .~ mkCon ct
-                                in (i, ms'' & invTbl.ind i %~ addToInv ms'' is, fs)
+                                in (i, ms'' & invTbl.ind i .~ sortInv ms'' is, fs)
 
 
 newCon :: MudState -> EntTemplate -> ObjTemplate -> ConTemplate -> (Inv, Coins) -> InvId -> (Id, MudState, Funs)

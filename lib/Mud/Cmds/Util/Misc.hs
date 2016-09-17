@@ -470,11 +470,9 @@ A spirit retains a certain number of two-way links, depending on PS. A spirit ma
 Those links with the greatest volume of messages are retained. If the deceased PC's top links are all asleep, its spirit gets to retain a bonus link with a PC who is presently awake.
 -}
 handleDeath :: Id -> MudStack ()
-handleDeath i = helper |&| modifyState >=> sequence_
-  where
-    helper ms = let (ms',  fs ) = mkCorpse  i ms
-                    (ms'', fs') = spiritize i ms'
-                in (ms'', logPla "handleDeath" i "handling death." : fs ++ fs')
+handleDeath i = modifyStateSeq $ \ms -> let (ms',  fs ) = mkCorpse  i ms
+                                            (ms'', fs') = spiritize i ms'
+                                        in (ms'', logPla "handleDeath" i "handling death." : fs ++ fs')
 
 
 mkCorpse :: Id -> MudState -> (MudState, Funs)
@@ -492,15 +490,16 @@ mkCorpse i ms = let et = EntTemplate (Just "corpse")
                     is = M.elems (getEqMap i ms) ++ getInv i ms
                     c  = getCoins i ms
                     (_, ms', fs) = newCon ms et ot ct (is, c) . getRmId i $ ms
-                in ( ms' & eqTbl .ind i .~ M.empty
-                         & invTbl.ind i .~ []
+                in ( ms' & coinsTbl.ind i .~ mempty
+                         & eqTbl   .ind i .~ M.empty
+                         & invTbl  .ind i .~ []
                    , logPla "mkCorpse" i "corpse created." : fs )
       where
-        (s, p) = (("corpse of " <>) *** ("corpses of " <>)) $ if isPC i ms
+        (s, p) = ("corpse of " <>) *** ("corpses of " <>) $ if isPC i ms
           then second (<> "s") . dup . mkSerializedNonStdDesig i ms s' A $ Don'tCap
           else first aOrAnOnLower pair
           where
-            pair@(s', _) = getBothGramNos i ms
+            pair@(s', _) = getBothGramNos i ms -- TODO
 
 
 spiritize :: Id -> MudState -> (MudState, Funs) -- TODO: Delete NPCs.

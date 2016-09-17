@@ -41,6 +41,7 @@ module Mud.Data.State.Util.Misc ( addToInv
                                 , mkStdDesig
                                 , mkUnknownPCEntName
                                 , modifyState
+                                , modifyStateSeq
                                 , onEnv
                                 , pcNpc
                                 , procHooks
@@ -70,6 +71,7 @@ import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 import Control.Arrow ((***))
 import Control.Lens (_1, _2, at, both, over, view, views)
 import Control.Lens.Operators ((%~), (&), (.~), (^.))
+import Control.Monad ((>=>))
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (ask)
 import Data.IntMap.Lazy ((!))
@@ -402,6 +404,10 @@ mkStdDesig i ms sc = StdDesig { desigEntSing   = Just . getSing i $ ms
 
 modifyState :: (MudState -> (MudState, a)) -> MudStack a
 modifyState f = ask >>= \md -> liftIO .  atomicModifyIORef' (md^.mudStateIORef) $ f
+
+
+modifyStateSeq :: (MudState -> (MudState, Funs)) -> MudStack ()
+modifyStateSeq = modifyState >=> sequence_
 
 
 -----
