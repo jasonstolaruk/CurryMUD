@@ -458,16 +458,19 @@ getTunedQuestionIds i ms = let pair = (getLoggedInPlaIds ms, getNonIncogLoggedIn
 
 {-
 When Taro dies:
-Taro's PC becomes a disembodied spirit.
-Taro's corpse is created. Items are transferred from spirit to corpse.
+Taro's corpse is created. Inventory, equipment, and coins are transferred from PC to corpse.
+Taro's PC becomes a disembodied spirit (see below).
 Those who are linked with Taro are notified of his death (via retained message?).
-Taro's spirit is sent to the Necropolis when it passes into the beyond.
+When the allotted time is up, Taro's spirit passes into the beyond and is sent to the Necropolis.
+Taro's player is shown Taro's stats.
+Taro's player is returned to the login screen.
 
 About spirits:
 A player has a certain amount of time as a spirit, depending on level.
 A spirit can move freely about with no FP cost.
+A spirit may be granted the ability to give out a certain number of exp bonuses (using the "bonus" command), depending on level.
 A spirit retains a certain number of two-way links, depending on PS. A spirit may continue to communicate telepathically over its retained links, with no cost to PP.
-Those links with the greatest volume of messages are retained. If the deceased PC's top links are all asleep, its spirit gets to retain a bonus link with a PC who is presently awake.
+Those links with the greatest volume of messages are retained. If the deceased PC's top links are all asleep, the spirit gets to retain a bonus link with a PC who is presently awake.
 -}
 handleDeath :: Id -> MudStack ()
 handleDeath i = modifyStateSeq $ \ms -> let (ms',  fs ) = mkCorpse  i ms

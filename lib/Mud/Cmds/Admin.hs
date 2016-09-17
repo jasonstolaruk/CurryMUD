@@ -979,12 +979,8 @@ adminKill (LowerNub i mq cols as) = getState >>= \ms ->
         cn       = prefixAdminCmd "kill"
         s        = getSing i ms
     in do
-        unless (()# is) $ do { logPla cn i logMsg
-                             ; forM_ is . flip (logPla cn) . T.concat $ [ "killed by " -- TODO: How does this look?
-                                                                        , s
-                                                                        , " using "
-                                                                        , dblQuote cn
-                                                                        , "." ] }
+        unless (()# is) . sequence_ $ [ logPla cn i logMsg
+                                      , forM_ is . flip (logPla cn) . prd $ "killed by " <> s ]
         ok mq
         sequence_ fs
   where
