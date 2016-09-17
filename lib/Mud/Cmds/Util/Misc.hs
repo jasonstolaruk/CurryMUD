@@ -93,6 +93,7 @@ import Mud.Interp.Pager
 import Mud.Misc.ANSI
 import Mud.Misc.Database
 import Mud.Misc.LocPref
+import Mud.Misc.Misc
 import Mud.TheWorld.Zones.AdminZoneIds
 import Mud.Threads.Misc
 import Mud.TopLvlDefs.Chars
@@ -499,10 +500,8 @@ mkCorpse i ms = let et = EntTemplate (Just "corpse")
                    , logPla "mkCorpse" i "corpse created." : fs )
       where
         (s, p) = ("corpse of " <>) *** ("corpses of " <>) $ if isPC i ms
-          then second (<> "s") . dup . mkSerializedNonStdDesig i ms s' A $ Don'tCap
-          else first aOrAnOnLower pair
-          where
-            pair@(s', _) | bgns <- getEffBothGramNos i ms = bgns & _2 .~ mkPlurFromBoth bgns
+          then second (<> "s") . dup . mkSerializedNonStdDesig i ms (getSing i ms) A $ Don'tCap
+          else first aOrAnOnLower $ let bgns = getBothGramNos i ms in bgns & _2 .~ (mkPlurFromBoth bgns)
 
 
 spiritize :: Id -> MudState -> (MudState, Funs) -- TODO: Delete NPCs.
