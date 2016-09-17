@@ -502,7 +502,7 @@ mkCorpse i ms = let et = EntTemplate (Just "corpse")
           then second (<> "s") . dup . mkSerializedNonStdDesig i ms s' A $ Don'tCap
           else first aOrAnOnLower pair
           where
-            pair@(s', _) = getBothGramNos i ms -- TODO
+            pair@(s', _) | bgns <- getEffBothGramNos i ms = bgns & _2 .~ mkPlurFromBoth bgns
 
 
 spiritize :: Id -> MudState -> (MudState, Funs) -- TODO: Delete NPCs.
