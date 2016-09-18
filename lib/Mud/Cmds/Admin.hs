@@ -732,10 +732,12 @@ examineMob i ms =
        , "Level: "            <> m^.lvl .to showText
        , "Handedness: "       <> m^.hand.to pp
        , "Know languages: "   <> m^.knownLangs.to ppList
-       , "Room: "             <> let ri = m^.rmId
-                                 in getRmName ri ms <> " " <> parensQuote (showText ri)
+       , "Room: "             <> let ri = m^.rmId in getRmName ri ms <> " " <> parensQuote (showText ri)
        , "Room description: " <> m^.mobRmDesc.to (fromMaybe none)
        , "Temp description: " <> m^.tempDesc .to (fromMaybe none)
+       , "Corpse weight: "    <> m^.corpseWeight  .to commaShow
+       , "Corpse volume: "    <> m^.corpseVol     .to commaShow
+       , "Corpse capacity:"   <> m^.corpseCapacity.to commaShow
        , "Following: "        <> descMaybeId ms (getFollowing i ms)
        , "Followers: "        <> descSingIdHelper getFollowers
        , "My group: "         <> descSingIdHelper getMyGroup
