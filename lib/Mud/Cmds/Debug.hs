@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
-{-# LANGUAGE ExistentialQuantification, KindSignatures, LambdaCase, MonadComprehensions, NamedFieldPuns, OverloadedStrings, PatternSynonyms, TupleSections, ViewPatterns #-}
+{-# LANGUAGE ExistentialQuantification, LambdaCase, MonadComprehensions, NamedFieldPuns, OverloadedStrings, PatternSynonyms, TupleSections, ViewPatterns #-}
 
 module Mud.Cmds.Debug ( debugCmds
                       , purgeThreadTbls
@@ -60,7 +60,7 @@ import Control.Lens.Operators ((%~), (&), (^.))
 import Control.Lens.Type (LensLike')
 import Control.Monad ((>=>), replicateM_, unless)
 import Control.Monad.IO.Class (liftIO)
-import Control.Monad.Reader (MonadReader, asks)
+import Control.Monad.Reader (asks)
 import Data.Bits (zeroBits)
 import Data.Char (ord, digitToInt, isDigit, toLower)
 import Data.Function (on)
@@ -475,14 +475,8 @@ debugId (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
 debugId p = advise p [] adviceDIdExcessArgs
 
 
-tblToList :: forall s (m :: * -> *) a. -- TODO: Indentation?
-             MonadReader s m =>
-             LensLike'
-               (Const [(Int, a)])
-               s
-               (IM.IntMap a)
-          -> m [(Int, a)]
-tblToList lens = views lens IM.toList
+tblToList :: forall a. LensLike' (Const [(Int, a)]) MudState (IM.IntMap a) -> MudState -> [(Int, a)]
+tblToList lens ms = views lens IM.toList (ms :: MudState)
 
 
 mkTblNameKeysList :: MudState -> [(Text, Inv)]
