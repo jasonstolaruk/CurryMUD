@@ -99,7 +99,7 @@ mkCorpse i ms = let et = EntTemplate (Just "corpse")
           else first aOrAnOnLower $ let bgns = getBothGramNos i ms in bgns & _2 .~ mkPlurFromBoth bgns
 
 
-spiritize :: Id -> MudState -> (MudState, Funs) -- TODO: Needs work.
+spiritize :: Id -> MudState -> (MudState, Funs)
 spiritize i ms = if isPC i ms
   then (ms & plaTbl.ind i %~ setPlaFlag IsSpirit True, pure . logPla "spiritize" i $ "spirit created.")
   else deleteNpc
@@ -112,6 +112,7 @@ spiritize i ms = if isPC i ms
                 & eqTbl           .at  i  .~ Nothing
                 & invTbl          .at  i  .~ Nothing
                 & mobTbl          .at  i  .~ Nothing
+                & npcTbl          .at  i  .~ Nothing
                 & pausedEffectsTbl.at  i  .~ Nothing
                 & typeTbl         .at  i  .~ Nothing
                 & invTbl          .ind ri %~ (i `delete`)
