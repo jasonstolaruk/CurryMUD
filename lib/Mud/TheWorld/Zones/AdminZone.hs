@@ -1448,7 +1448,7 @@ createAdminZone = do
                     NoHand
                     []
                     iMobCloset
-                    0 0 0 -- TODO
+                    rockCavyCorpseWeight rockCavyCorpseVol rockCavyCorpseCap
                     dfltParty))
   putNpc iPidge
          (Ent iPidge
@@ -1509,6 +1509,7 @@ createAdminZone = do
               zeroBits)
          (mkObj . ObjTemplate bootsWeight bootsVol Nothing $ zeroBits)
          (Arm Feet 1)
+  let skeletonCorpseWeight = round $ fromIntegral (calcCorpseWeight Human) * (0.15 :: Double)
   forM_ [ iSkeleton1, iSkeleton2, iSkeleton3 ] $ \i ->
       putNpc i
              (Ent i
@@ -1527,5 +1528,5 @@ createAdminZone = do
                     RHand
                     []
                     iMobCloset
-                    0 0 0 -- TODO
+                    skeletonCorpseWeight (calcCorpseVol Human) (calcCorpseCapacity Human)
                     dfltParty))

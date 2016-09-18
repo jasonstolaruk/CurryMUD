@@ -112,6 +112,10 @@ ringWeight :: Weight
 ringWeight = 2
 
 
+rockCavyCorpseWeight :: Weight
+rockCavyCorpseWeight = 220
+
+
 sackSmlWeight, sackWeight, sackLrgWeight :: Weight
 sackSmlWeight = minusQuarter sackWeight
 sackWeight    = 40

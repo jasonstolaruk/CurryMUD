@@ -129,6 +129,14 @@ ringVol :: Vol
 ringVol = round (0.75 * 0.25 * 0.75 * 100 :: Double)
 
 
+rockCavyCorpseCap :: Vol
+rockCavyCorpseCap = 0
+
+
+rockCavyCorpseVol :: Vol
+rockCavyCorpseVol = 12 * 4 * 4 * 100
+
+
 sackSmlCap, sackCap, sackLrgCap :: Vol
 sackSmlCap = backSmlCap
 sackCap    = backCap

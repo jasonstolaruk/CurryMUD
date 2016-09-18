@@ -424,7 +424,7 @@ debugId (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
                   [ [ "Tables containing key " <> searchIdTxt <> ":"
                     , commas . map fst . filter ((searchId `elem`) . snd) . mkTblNameKeysList $ ms ]
                   , [ T.concat [ "Channels with a ", dblQuote "chanId", " of ", searchIdTxt, ":" ]
-                    , f . filter (views chanId (== searchId) . snd) . tblToList chanTbl $ ms ] -- TODO: Use "views".
+                    , f . filter (views chanId (== searchId) . snd) . tblToList chanTbl $ ms ]
                   , [ T.concat [ "Entities with an ", dblQuote "entId", " of ", searchIdTxt, ":" ]
                     , f . filter (views entId (== searchId) . snd) . tblToList entTbl $ ms ]
                   , [ T.concat [ "Foods with a ", dblQuote "foodId", " of ", searchIdTxt, ":" ]
