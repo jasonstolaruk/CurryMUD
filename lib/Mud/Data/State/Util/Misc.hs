@@ -183,7 +183,7 @@ mkUnknownPCEntName i ms = views entName (fromMaybe helper) . getEnt i $ ms
 getFeelingFun :: FeelingTag -> MudState -> FeelingFun
 getFeelingFun tag = views (feelingFunTbl.at tag) (fromMaybe oops)
   where
-    oops = blowUp "getFeelingFun" "Feeling tag not found in function table" tag
+    oops = blowUp "getFeelingFun" "feeling tag not found in function table" tag
 
 
 -----
@@ -192,7 +192,7 @@ getFeelingFun tag = views (feelingFunTbl.at tag) (fromMaybe oops)
 getFun :: FunName -> MudState -> Fun
 getFun n = views (funTbl.at n) (fromMaybe oops)
   where
-    oops = blowUp "getFun" "Function name not found in function table" n
+    oops = blowUp "getFun" "function name not found in function table" n
 
 
 -----
@@ -201,7 +201,7 @@ getFun n = views (funTbl.at n) (fromMaybe oops)
 getHookFun :: HookName -> MudState -> HookFun
 getHookFun n = views (hookFunTbl.at n) (fromMaybe oops)
   where
-    oops = blowUp "getHookFun" "Hook name not found in hook function table" n
+    oops = blowUp "getHookFun" "hook name not found in hook function table" n
 
 
 -----
@@ -217,7 +217,7 @@ getIdForMobSing s ms = let [(i, _)] = views entTbl (IM.toList . IM.filter (views
 getInstaEffectFun :: FunName -> MudState -> InstaEffectFun
 getInstaEffectFun n = views (instaEffectFunTbl.at n) (fromMaybe oops)
   where
-    oops = blowUp "getInstaEffectFun" "Function name not found in instantaneous effect function table" n
+    oops = blowUp "getInstaEffectFun" "function name not found in instantaneous effect function table" n
 
 
 -----
@@ -286,7 +286,7 @@ getNpcIds = views npcTbl IM.keys
 getRmActionFun :: FunName -> MudState -> RmActionFun
 getRmActionFun n = views (rmActionFunTbl.at n) (fromMaybe oops)
   where
-    oops = blowUp "getRmActionFun" "Function name not found in room action function table" n
+    oops = blowUp "getRmActionFun" "function name not found in room action function table" n
 
 
 -----
@@ -513,7 +513,7 @@ removeAdHoc i ms = ms & activeEffectsTbl.at  i        .~ Nothing
 runEffectFun :: FunName -> Id -> Seconds -> MudStack ()
 runEffectFun n i secs = views (effectFunTbl.at n) (maybe oops (\f -> f i secs)) =<< getState
   where
-    oops = blowUp "runEffectFun" "Function name not found in effect function table" n
+    oops = blowUp "runEffectFun" "function name not found in effect function table" n
 
 
 -----

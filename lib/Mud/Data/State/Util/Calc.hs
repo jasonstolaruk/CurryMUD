@@ -52,6 +52,8 @@ module Mud.Data.State.Util.Calc ( calcBarLen
                                 , calcStomachAvailSize
                                 , calcStomachPerFull
                                 , calcStomachSize
+                                , calcStomachSizeForMobSize
+                                , calcStomachSizeForRace
                                 , calcVesselPerFull
                                 , calcVol
                                 , calcWeight ) where
@@ -544,12 +546,21 @@ calcRegenFpDelay i = calcRegenDelay . weightedAvgHt calcEffSt i
 
 
 calcStomachAvailSize :: Id -> MudState -> (Mouthfuls, Mouthfuls)
-calcStomachAvailSize i ms | size <- calcStomachSize . getRace i $ ms, avail <- size - length (getStomach i ms)
+calcStomachAvailSize i ms | size <- calcStomachSize i ms, avail <- size - length (getStomach i ms)
                           = (avail, size)
 
 
-calcStomachSize :: Race -> Mouthfuls -- TODO: For NPCs, use "mobSize".
-calcStomachSize = helper
+calcStomachSize :: Id -> MudState -> Mouthfuls
+calcStomachSize i ms = if isPC i ms
+  then calcStomachSizeForRace . getRace i $ ms
+  else calcStomachSizeForMobSize . mobSizeHelper . getMobSize i $ ms
+  where
+    mobSizeHelper (Just x) = x
+    mobSizeHelper x        = blowUp "calcStomachSize mobSizeHelper" "NPC mob size of Nothing" . showText $ x
+
+
+calcStomachSizeForRace :: Race -> Mouthfuls
+calcStomachSizeForRace = helper
   where
     helper = let f = (helper Human |&|) in \case
       Dwarf     -> f minusQuarter
@@ -562,9 +573,20 @@ calcStomachSize = helper
       Vulpenoid -> f plusQuarter
 
 
+calcStomachSizeForMobSize :: MobSize -> Mouthfuls
+calcStomachSizeForMobSize = \case SmlMinus -> 5
+                                  SmlPlus  -> 20
+                                  MedMinus -> x
+                                  MedPlus  -> round $ fromIntegral x * (1.33 :: Double)
+                                  LrgMinus -> round $ fromIntegral x * (1.66 :: Double)
+                                  LrgPlus  -> x * 2
+  where
+    x = calcStomachSizeForRace Human
+
+
 calcStomachPerFull :: Id -> MudState -> Int
 calcStomachPerFull i ms = let mouths = length . getStomach i $ ms
-                              size   = calcStomachSize . getRace i $ ms
+                              size   = calcStomachSize i ms
                           in mouths `percent` size
 
 
