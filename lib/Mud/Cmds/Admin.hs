@@ -588,7 +588,7 @@ adminDispCmdList p                  = patternMatchFail "adminDispCmdList" . show
 -----
 
 
-adminExamine :: ActionFun
+adminExamine :: ActionFun -- TODO: ":examine 177" (Pidge) bombs.
 adminExamine p@AdviseNoArgs          = advise p [ prefixAdminCmd "examine" ] adviceAExamineNoArgs
 adminExamine (LowerNub i mq cols as) = getState >>= \ms ->
     let helper a = case reads . T.unpack $ a :: [(Int, String)] of
@@ -1326,7 +1326,6 @@ mkSecReport SecRec { .. } = [ "Name: "     <> dbName
 -----
 
 
--- TODO: New fieds have been added to Mob.
 adminSet :: ActionFun
 adminSet p@AdviseNoArgs                       = advise p [ prefixAdminCmd "set" ] adviceASetNoArgs
 adminSet p@(AdviseOneArg a                  ) = advise p [ prefixAdminCmd "set" ] . adviceASetNoSettings $ a
@@ -1396,6 +1395,9 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
                       , "knownlangs"
                       , "mobrmdesc"
                       , "tempdesc"
+                      , "corpseweight"
+                      , "corpsevol"
+                      , "corpsecapacity"
                       , "following"
                       , "followers"
                       , "mygroup"
@@ -1407,35 +1409,38 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
         notFound    = appendMsg . sorryAdminSetKey $ key
         appendMsg m = a & _2 <>~ pure m
         found       = let t = getType targetId ms in \case
-          "entname"    -> setEntMaybeTextHelper   t "entName"  "name"        entName  entName
-          "sing"       -> setEntTextHelper        t "sing"     "singular"    sing     sing
-          "plur"       -> setEntTextHelper        t "plur"     "plural"      plur     plur
-          "entdesc"    -> setEntTextHelper        t "entDesc"  "description" entDesc  entDesc
-          "entsmell"   -> setEntMaybeTextHelper   t "entSmell" "smell"       entSmell entSmell
-          "sex"        -> setMobSexHelper         t
-          "st"         -> setMobAttribHelper      t "st" "ST" st st
-          "dx"         -> setMobAttribHelper      t "dx" "DX" dx dx
-          "ht"         -> setMobAttribHelper      t "ht" "HT" ht ht
-          "ma"         -> setMobAttribHelper      t "ma" "MA" ma ma
-          "ps"         -> setMobAttribHelper      t "ps" "PS" ps ps
-          "curhp"      -> setMobCurHelper         t "curHp" "HP" getHps curHp
-          "curmp"      -> setMobCurHelper         t "curMp" "MP" getMps curMp
-          "curpp"      -> setMobCurHelper         t "curPp" "PP" getPps curPp
-          "curfp"      -> setMobCurHelper         t "curFp" "FP" getFps curFp
-          "exp"        -> setMobExpHelper         t
-          "hand"       -> setMobHandHelper        t
-          "knownlangs" -> setMobKnownLangsHelper  t
-          "mobrmdesc"  -> setMobRmDescHelper      t
-          "tempdesc"   -> setMobTempDescHelper    t
-          "following"  -> setMobFollowingHelper   t
-          "followers"  -> setMobInvHelper         t "followers" "followers have" (party.followers) (party.followers)
-          "mygroup"    -> setMobInvHelper         t "myGroup"   "group has"      (party.myGroup  ) (party.myGroup  )
-          "memberof"   -> setMobMemberOfHelper    t
-          "race"       -> setPCRaceHelper         t
-          "introduced" -> setPCSingListHelper     t "introduced" "known names"  introduced introduced
-          "linked"     -> setPCSingListHelper     t "linked"     "linked names" linked     linked
-          "skillpts"   -> setPCSkillPtsHelper     t
-          x            -> patternMatchFail "setHelper helper found" (x :: Text)
+          "entname"        -> setEntMaybeTextHelper  t "entName"  "name"        entName  entName
+          "sing"           -> setEntTextHelper       t "sing"     "singular"    sing     sing
+          "plur"           -> setEntTextHelper       t "plur"     "plural"      plur     plur
+          "entdesc"        -> setEntTextHelper       t "entDesc"  "description" entDesc  entDesc
+          "entsmell"       -> setEntMaybeTextHelper  t "entSmell" "smell"       entSmell entSmell
+          "sex"            -> setMobSexHelper        t
+          "st"             -> setMobAttribHelper     t "st" "ST" st st
+          "dx"             -> setMobAttribHelper     t "dx" "DX" dx dx
+          "ht"             -> setMobAttribHelper     t "ht" "HT" ht ht
+          "ma"             -> setMobAttribHelper     t "ma" "MA" ma ma
+          "ps"             -> setMobAttribHelper     t "ps" "PS" ps ps
+          "curhp"          -> setMobCurHelper        t "curHp" "HP" getHps curHp
+          "curmp"          -> setMobCurHelper        t "curMp" "MP" getMps curMp
+          "curpp"          -> setMobCurHelper        t "curPp" "PP" getPps curPp
+          "curfp"          -> setMobCurHelper        t "curFp" "FP" getFps curFp
+          "exp"            -> setMobExpHelper        t
+          "hand"           -> setMobHandHelper       t
+          "knownlangs"     -> setMobKnownLangsHelper t
+          "mobrmdesc"      -> setMobRmDescHelper     t
+          "tempdesc"       -> setMobTempDescHelper   t
+          "corpseweight"   -> setMobCorpseHelper     t "corpseWeight"   "corpse weight"   corpseWeight   corpseWeight
+          "corpsevol"      -> setMobCorpseHelper     t "corpseVol"      "corpse volume"   corpseVol      corpseVol
+          "corpsecapacity" -> setMobCorpseHelper     t "corpseCapacity" "corpse capacity" corpseCapacity corpseCapacity
+          "following"      -> setMobFollowingHelper  t
+          "followers"      -> setMobInvHelper        t "followers" "followers have" (party.followers) (party.followers)
+          "mygroup"        -> setMobInvHelper        t "myGroup"   "group has"      (party.myGroup  ) (party.myGroup  )
+          "memberof"       -> setMobMemberOfHelper   t
+          "race"           -> setPCRaceHelper        t
+          "introduced"     -> setPCSingListHelper    t "introduced" "known names"  introduced introduced
+          "linked"         -> setPCSingListHelper    t "linked"     "linked names" linked     linked
+          "skillpts"       -> setPCSkillPtsHelper    t
+          x                -> patternMatchFail "setHelper helper found" (x :: Text)
         -----
         setEntMaybeTextHelper t k n getter setter
           | not . hasEnt $ t = sorryType
@@ -1537,7 +1542,7 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
           | otherwise        = case eitherDecode value' of
             Left  _ -> appendMsg . sorryAdminSetValue "exp" $ value
             Right x -> let prev                 = getExp targetId ms
-                           addSubAssignHelper g = f $ 0 `max` (prev `g` x)
+                           addSubAssignHelper g = f $ max0 (prev `g` x)
                            f x'                 = let diff   = x' - prev
                                                       toSelf = mkToSelfForInt "exp" x' diff
                                                       a' | isPC targetId ms
@@ -1548,7 +1553,7 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
                                                   in a' & _2 <>~ toSelf
                                                         & _3 <>~ (Sum diff |!| mkToTarget diff)
                                                         & _4 <>~ (Sum diff |!| toSelf)
-                       in case op of Assign    -> f $ 0 `max` x
+                       in case op of Assign    -> f . max0 $ x
                                      AddAssign -> addSubAssignHelper (+)
                                      SubAssign -> addSubAssignHelper (-)
           where
@@ -1624,6 +1629,31 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
                              & _3 <>~ (isDiff |?| toTarget)
                              & _4 <>~ (isDiff |?| toSelf)
               _      -> sorryOp "tempDesc"
+        -----
+        setMobCorpseHelper t k n getter setter
+          | not . hasMob $ t = sorryType
+          | otherwise        = case eitherDecode value' of
+            Left  _ -> appendMsg . sorryAdminSetValue k $ value
+            Right x -> let prev                 = view getter . getMob targetId $ ms
+                           addSubAssignHelper f = let x'     = max0 $ prev `f` x
+                                                      diff   = x' - prev
+                                                      toSelf = mkToSelfForInt k x' diff
+                                                  in a & _1.mobTbl.ind targetId.setter .~ x'
+                                                       & _2 <>~ toSelf
+                                                       & _3 <>~ (Sum diff |!| mkToTarget diff)
+                                                       & _4 <>~ (Sum diff |!| toSelf)
+                       in case op of Assign    -> let x'     = max0 x
+                                                      diff   = x' - prev
+                                                      toSelf = mkToSelfForInt k x' diff
+                                                  in a & _1.mobTbl.ind targetId.setter .~ x'
+                                                       & _2 <>~ toSelf
+                                                       & _3 <>~ (Sum diff |!| mkToTarget diff)
+                                                       & _4 <>~ (Sum diff |!| toSelf)
+                                     AddAssign -> addSubAssignHelper (+)
+                                     SubAssign -> addSubAssignHelper (-)
+          where
+            mkToTarget diff | diff > 0  = pure . T.concat $ [ "You have gained ", commaShow diff,         " ", n, "." ]
+                            | otherwise = pure . T.concat $ [ "You have lost ",   commaShow . abs $ diff, " ", n, "." ]
         -----
         setMobFollowingHelper t
           | not . hasMob $ t = sorryType
@@ -1730,14 +1760,14 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
           | otherwise   = case eitherDecode value' of
             Left  _ -> appendMsg . sorryAdminSetValue "skillPts" $ value
             Right x -> let prev                 = getSkillPts targetId ms
-                           addSubAssignHelper g = f $ 0 `max` (prev `g` x)
+                           addSubAssignHelper g = f . max0 $ prev `g` x
                            f x'                 = let diff   = x' - prev
                                                       toSelf = mkToSelfForInt "skillPts" x' diff
                                                   in a & _1.pcTbl.ind targetId.skillPts .~ x'
                                                        & _2 <>~ toSelf
                                                        & _3 <>~ (Sum diff |!| mkToTarget diff)
                                                        & _4 <>~ (Sum diff |!| toSelf)
-                       in case op of Assign    -> f $ 0 `max` x
+                       in case op of Assign    -> f . max0 $ x
                                      AddAssign -> addSubAssignHelper (+)
                                      SubAssign -> addSubAssignHelper (-)
           where

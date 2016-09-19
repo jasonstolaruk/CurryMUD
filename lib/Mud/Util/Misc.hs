@@ -28,6 +28,7 @@ module Mud.Util.Misc ( atLst1
                      , intDivide
                      , isVowel
                      , listToMaybe
+                     , max0
                      , max1
                      , maybeRet
                      , maybeVoid
@@ -221,6 +222,10 @@ listToMaybe :: (Show a) => [a] -> Maybe a
 listToMaybe []  = Nothing
 listToMaybe [a] = Just a
 listToMaybe xs  = patternMatchFail "Mud.Util.Misc" "listToMaybe" xs
+
+
+max0 :: (Num a, Ord a) => a -> a
+max0 = (`max` 0)
 
 
 max1 :: (Num a, Ord a) => a -> a
