@@ -529,6 +529,7 @@ createAdminZone = do
                              RHand
                              allValues
                              iLoggedOut
+                             Nothing
                              (calcCorpseWeight Human) (calcCorpseVol Human) (calcCorpseCapacity Human)
                              dfltParty))
          M.empty
@@ -552,6 +553,7 @@ createAdminZone = do
                              RHand
                              allValues
                              iLoggedOut
+                             Nothing
                              (calcCorpseWeight Human) (calcCorpseVol Human) (calcCorpseCapacity Human)
                              dfltParty))
          M.empty
@@ -1448,6 +1450,7 @@ createAdminZone = do
                     NoHand
                     []
                     iMobCloset
+                    (Just SmlMinus)
                     rockCavyCorpseWeight rockCavyCorpseVol rockCavyCorpseCap
                     dfltParty))
   putNpc iPidge
@@ -1471,6 +1474,7 @@ createAdminZone = do
                              RHand
                              [ HobbitLang ]
                              iMobCloset
+                             (Just MedMinus)
                              (calcCorpseWeight Hobbit) (calcCorpseVol Hobbit) (calcCorpseCapacity Hobbit)
                              dfltParty))
   putCloth iPeasant'sShirt
@@ -1528,5 +1532,6 @@ createAdminZone = do
                     RHand
                     []
                     iMobCloset
+                    (Just MedMinus)
                     skeletonCorpseWeight (calcCorpseVol Human) (calcCorpseCapacity Human)
                     dfltParty))

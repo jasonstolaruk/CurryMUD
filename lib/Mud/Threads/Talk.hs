@@ -121,6 +121,7 @@ adHoc mq host = do
                        , _rmId           = iWelcome
                        , _mobRmDesc      = Nothing
                        , _tempDesc       = Nothing
+                       , _mobSize        = Nothing
                        , _corpseWeight   = calcCorpseWeight   r
                        , _corpseVol      = calcCorpseVol      r
                        , _corpseCapacity = calcCorpseCapacity r

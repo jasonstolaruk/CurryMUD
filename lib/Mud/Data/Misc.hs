@@ -414,6 +414,15 @@ instance Pretty LoggedInOrOut where
   pp LoggedOut = "logged out"
 
 
+instance Pretty MobSize where
+  pp SmlMinus = "Sml -"
+  pp SmlPlus  = "Sml +"
+  pp MedMinus = "Med -"
+  pp MedPlus  = "Med +"
+  pp LrgMinus = "Lrg -"
+  pp LrgPlus  = "Lrg +"
+
+
 instance Pretty PausedEffect where
   pp (PausedEffect e) = pp e
 

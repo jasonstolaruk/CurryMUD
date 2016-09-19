@@ -548,7 +548,7 @@ calcStomachAvailSize i ms | size <- calcStomachSize . getRace i $ ms, avail <- s
                           = (avail, size)
 
 
-calcStomachSize :: Race -> Mouthfuls
+calcStomachSize :: Race -> Mouthfuls -- TODO: For NPCs, use "mobSize".
 calcStomachSize = helper
   where
     helper = let f = (helper Human |&|) in \case

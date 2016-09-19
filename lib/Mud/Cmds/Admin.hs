@@ -588,7 +588,7 @@ adminDispCmdList p                  = patternMatchFail "adminDispCmdList" . show
 -----
 
 
-adminExamine :: ActionFun -- TODO: ":examine 177" (Pidge) bombs.
+adminExamine :: ActionFun
 adminExamine p@AdviseNoArgs          = advise p [ prefixAdminCmd "examine" ] adviceAExamineNoArgs
 adminExamine (LowerNub i mq cols as) = getState >>= \ms ->
     let helper a = case reads . T.unpack $ a :: [(Int, String)] of
@@ -735,6 +735,7 @@ examineMob i ms =
        , "Room: "             <> let ri = m^.rmId in getRmName ri ms <> " " <> parensQuote (showText ri)
        , "Room description: " <> m^.mobRmDesc.to (fromMaybe none)
        , "Temp description: " <> m^.tempDesc .to (fromMaybe none)
+       , "Size: "             <> m^.mobSize       .to ppMaybe
        , "Corpse weight: "    <> m^.corpseWeight  .to commaShow
        , "Corpse volume: "    <> m^.corpseVol     .to commaShow
        , "Corpse capacity:"   <> m^.corpseCapacity.to commaShow
@@ -744,7 +745,7 @@ examineMob i ms =
        , "Member of: "        <> descMaybeId ms (getMemberOf i ms)
        , "Stomach: "          <> m^.stomach.to ppList
        , "Stomach ratio: "    <> let (mouths, size, perFull) = ( length . getStomach i $ ms
-                                                               , calcStomachSize . getRace i $ ms
+                                                               , calcStomachSize . getRace i $ ms -- TODO: NPCs don't have race.
                                                                , calcStomachPerFull i ms ) & each %~ showText
                                  in T.concat [ mouths, " / ", size, " ", parensQuote $ perFull <> "%" ]
        , "Feeling map: "      <> let f tag feel = (tag <> " " <> pp feel :)
@@ -1326,6 +1327,7 @@ mkSecReport SecRec { .. } = [ "Name: "     <> dbName
 -----
 
 
+-- TODO: Revise help.
 adminSet :: ActionFun
 adminSet p@AdviseNoArgs                       = advise p [ prefixAdminCmd "set" ] adviceASetNoArgs
 adminSet p@(AdviseOneArg a                  ) = advise p [ prefixAdminCmd "set" ] . adviceASetNoSettings $ a
@@ -1395,6 +1397,7 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
                       , "knownlangs"
                       , "mobrmdesc"
                       , "tempdesc"
+                      , "mobsize"
                       , "corpseweight"
                       , "corpsevol"
                       , "corpsecapacity"
@@ -1429,6 +1432,7 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
           "knownlangs"     -> setMobKnownLangsHelper t
           "mobrmdesc"      -> setMobRmDescHelper     t
           "tempdesc"       -> setMobTempDescHelper   t
+          "mobsize"        -> setMobSizeHelper       t
           "corpseweight"   -> setMobCorpseHelper     t "corpseWeight"   "corpse weight"   corpseWeight   corpseWeight
           "corpsevol"      -> setMobCorpseHelper     t "corpseVol"      "corpse volume"   corpseVol      corpseVol
           "corpsecapacity" -> setMobCorpseHelper     t "corpseCapacity" "corpse capacity" corpseCapacity corpseCapacity
@@ -1630,6 +1634,21 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
                              & _4 <>~ (isDiff |?| toSelf)
               _      -> sorryOp "tempDesc"
         -----
+        setMobSizeHelper t -- TODO: Test.
+          | not . hasMob $ t = sorryType
+          | otherwise        = case eitherDecode value' of
+            Left  _ -> appendMsg . sorryAdminSetValue "mobSize" $ value
+            Right x -> case op of
+              Assign -> let toSelf   = pure . T.concat $ [ "Set mobSize to ", ppMaybe x, mkDiffTxt isDiff, "." ]
+                            prev     = getMobSize targetId ms
+                            isDiff   = x /= prev
+                            toTarget = pure . prd $ "Your size has changed to " <> ppMaybe x
+                        in a & _1.mobTbl.ind targetId.mobSize .~ x
+                             & _2 <>~ toSelf
+                             & _3 <>~ (isDiff |?| toTarget)
+                             & _4 <>~ (isDiff |?| toSelf)
+              _      -> sorryOp "mobSize"
+        -----
         setMobCorpseHelper t k n getter setter
           | not . hasMob $ t = sorryType
           | otherwise        = case eitherDecode value' of
@@ -1774,12 +1793,12 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
             mkToTarget diff | diff > 0  = pure . T.concat $ [ "You have been awarded ", commaShow diff, " skill points." ]
                             | otherwise = pure . T.concat $ [ "You have lost ", commaShow . abs $ diff, " skill points." ]
         -----
-        sorryType                = appendMsg . sorryAdminSetType $ targetId
-        sorryOp                  = appendMsg . sorryAdminSetOp (pp op)
-        value'                   = strictTextToLazyBS value
-        mkDiffTxt isDiff         = not isDiff |?| (" " <> parensQuote "no change")
-        showMaybe Nothing        = none
-        showMaybe (Just x)       = showText x
+        sorryType               = appendMsg . sorryAdminSetType $ targetId
+        sorryOp                 = appendMsg . sorryAdminSetOp (pp op)
+        value'                  = strictTextToLazyBS value
+        mkDiffTxt isDiff        = not isDiff |?| (" " <> parensQuote "no change")
+        showMaybe Nothing       = none
+        showMaybe (Just x)      = showText x
         mkToSelfForInt k v diff = pure . T.concat $ [ "Set ", k, " to ", commaShow v, " ", parensQuote diffTxt, "." ]
           where
             diffTxt = if | diff == 0 -> "no change"

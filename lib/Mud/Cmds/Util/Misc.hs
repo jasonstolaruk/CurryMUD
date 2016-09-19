@@ -62,6 +62,7 @@ module Mud.Cmds.Util.Misc ( asterisk
                           , onOff
                           , pager
                           , parseOutDenotative
+                          , ppMaybe
                           , punc
                           , questionChanContext
                           , sendGenericErrorMsg
@@ -800,6 +801,13 @@ pager i mq mf txt@(length -> txtLen) = getState >>= \ms -> let pl = getPageLines
 
 parseOutDenotative :: [Text] -> Text -> [Text]
 parseOutDenotative ws rest = onTrue (()!# rest) (rest :) . tail $ ws
+
+
+-----
+
+
+ppMaybe :: (Pretty a) => Maybe a -> Text
+ppMaybe = maybe none pp
 
 
 -----

@@ -505,6 +505,7 @@ data Mob = Mob { _sex                    :: Sex
                , _rmId                   :: Id
                , _mobRmDesc              :: MobRmDesc
                , _tempDesc               :: TempDesc
+               , _mobSize                :: Maybe MobSize -- Used to calculate NPC stomach size.
                , _corpseWeight           :: Weight
                , _corpseVol              :: Vol
                , _corpseCapacity         :: Vol
@@ -561,6 +562,14 @@ type MobRmDesc = Maybe Text
 
 
 type TempDesc = Maybe Text
+
+
+data MobSize = SmlMinus -- A rodent.
+             | SmlPlus
+             | MedMinus -- A humanoid.
+             | MedPlus
+             | LrgMinus
+             | LrgPlus deriving (Eq, Generic, Show)
 
 
 data Party = Party { _following :: Maybe Id
@@ -646,6 +655,7 @@ mobToJSON Mob { .. } = object [ "sex"            .= _sex
                               , "rmId"           .= _rmId
                               , "mobRmDesc"      .= _mobRmDesc
                               , "tempDesc"       .= _tempDesc
+                              , "mobSize"        .= _mobSize
                               , "corpseWeight"   .= _corpseWeight
                               , "corpseVol"      .= _corpseVol
                               , "corpseCapacity" .= _corpseCapacity
@@ -675,6 +685,7 @@ jsonToMob (Object o) = Mob <$> o .: "sex"
                            <*> o .: "rmId"
                            <*> o .: "mobRmDesc"
                            <*> o .: "tempDesc"
+                           <*> o .: "mobSize"
                            <*> o .: "corpseWeight"
                            <*> o .: "corpseVol"
                            <*> o .: "corpseCapacity"
@@ -1091,6 +1102,7 @@ instance FromJSON Lang
 instance FromJSON LinkDir
 instance FromJSON LinkMove       where parseJSON = genericParseJSON dropUnderscore
 instance FromJSON Liq            where parseJSON = genericParseJSON dropUnderscore
+instance FromJSON MobSize        where parseJSON = genericParseJSON dropUnderscore
 instance FromJSON Noun
 instance FromJSON Party          where parseJSON = genericParseJSON dropUnderscore
 instance FromJSON PausedEffect   where parseJSON = genericParseJSON dropUnderscore
@@ -1131,6 +1143,7 @@ instance ToJSON Lang
 instance ToJSON LinkDir
 instance ToJSON LinkMove         where toJSON    = genericToJSON    dropUnderscore
 instance ToJSON Liq              where toJSON    = genericToJSON    dropUnderscore
+instance ToJSON MobSize          where toJSON    = genericToJSON    dropUnderscore
 instance ToJSON Noun
 instance ToJSON Party            where toJSON    = genericToJSON    dropUnderscore
 instance ToJSON PausedEffect     where toJSON    = genericToJSON    dropUnderscore

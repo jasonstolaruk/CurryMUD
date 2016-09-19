@@ -481,6 +481,13 @@ getMobRmInvCoins i ms = let ri = getRmId i ms in getInvCoins ri ms
 -----
 
 
+getMobSize :: Id -> MudState -> Maybe MobSize
+getMobSize i = view mobSize . getMob i
+
+
+-----
+
+
 getMps :: Id -> MudState -> (Int, Int)
 getMps i ms = let (_, pair, _, _) = getPts i ms in pair
 
