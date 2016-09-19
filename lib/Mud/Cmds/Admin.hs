@@ -1218,7 +1218,7 @@ adminPersist p              = withoutArgs adminPersist p
 -----
 
 
-adminPossess :: ActionFun -- TODO: When possessing Pidge: "IntMap.!: key 177 is not an element of the map".
+adminPossess :: ActionFun
 adminPossess p@(NoArgs' i mq) = advise p [ prefixAdminCmd "possess" ] adviceAPossessNoArgs >> sendDfltPrompt mq i
 adminPossess (OneArgNubbed i mq cols target) = modifyStateSeq $ \ms ->
     let SingleTarget { .. } = mkSingleTarget mq cols target "The ID of the NPC you wish to possess"

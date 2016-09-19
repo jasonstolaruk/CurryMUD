@@ -68,13 +68,12 @@ import Control.Lens (_1, _2, lens, Lens')
 import Control.Lens.Operators ((%~))
 import Control.Monad (guard, join)
 import Data.Function (on)
-import Data.IntMap.Lazy ((!))
 import Data.IORef (IORef, atomicWriteIORef)
 import Data.List (delete)
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import Data.Time (getZonedTime)
-import qualified Data.IntMap.Lazy as IM (IntMap, insert)
+import qualified Data.IntMap.Lazy as IM (IntMap, (!), insert)
 import qualified Data.Map.Lazy as M (Map, assocs)
 import qualified Data.Text as T
 
@@ -201,7 +200,7 @@ ifThenElse False _ y = y
 
 
 ind :: Int -> Lens' (IM.IntMap a) a
-ind k = lens (! k) (flip (IM.insert k))
+ind k = lens (IM.! k) (flip (IM.insert k))
 
 
 {-

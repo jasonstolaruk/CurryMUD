@@ -82,7 +82,6 @@ import Data.Char (isDigit, isLetter, isLower, isUpper)
 import Data.Either (lefts, partitionEithers)
 import Data.Function (on)
 import Data.Int (Int64)
-import Data.IntMap.Lazy ((!))
 import Data.Ix (inRange)
 import Data.List ((\\), delete, foldl', group, intercalate, intersperse, nub, nubBy, partition, sort, sortBy, unfoldr, zip4)
 import Data.List.Split (chunksOf)
@@ -2781,7 +2780,7 @@ readyCloth :: Id
            -> Id
            -> Sing
            -> (EqTbl, InvTbl, [Text], [Broadcast], [Text])
-readyCloth i ms d mrol a@(et, _, _, _, _) clothId clothSing | em <- et ! i, cloth <- getCloth clothId ms =
+readyCloth i ms d mrol a@(et, _, _, _, _) clothId clothSing | em <- et IM.! i, cloth <- getCloth clothId ms =
   case mrol |&| maybe (getAvailClothSlot i ms cloth em) (getDesigClothSlot ms clothSing cloth em) of
       Left  msg  -> a & _3 <>~ pure msg
       Right slot -> moveReadiedItem i a slot clothId . mkReadyClothMsgs slot $ cloth
@@ -2891,7 +2890,7 @@ readyWpn :: Id
          -> Id
          -> Sing
          -> (EqTbl, InvTbl, [Text], [Broadcast], [Text])
-readyWpn i ms d mrol a@(et, _, _, _, _) wpnId wpnSing | em <- et ! i, wpn <- getWpn wpnId ms, sub <- wpn^.wpnSub =
+readyWpn i ms d mrol a@(et, _, _, _, _) wpnId wpnSing | em <- et IM.! i, wpn <- getWpn wpnId ms, sub <- wpn^.wpnSub =
     if not . isSlotAvail em $ BothHandsS
       then sorry sorryReadyAlreadyWieldingTwoHanded
       else case mrol |&| maybe (getAvailWpnSlot ms i em) (getDesigWpnSlot ms wpnSing em) of
@@ -2952,7 +2951,7 @@ readyArm :: Id
          -> Id
          -> Sing
          -> (EqTbl, InvTbl, [Text], [Broadcast], [Text])
-readyArm i ms d mrol a@(et, _, _, _, _) armId armSing | em <- et ! i, sub <- getArmSub armId ms =
+readyArm i ms d mrol a@(et, _, _, _, _) armId armSing | em <- et IM.! i, sub <- getArmSub armId ms =
     case mrol |&| maybe (getAvailArmSlot ms sub em) sorry of
       Left  msg  -> a & _3 <>~ pure msg
       Right slot -> moveReadiedItem i a slot armId . mkReadyArmMsgs $ sub

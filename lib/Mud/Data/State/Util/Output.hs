@@ -325,9 +325,12 @@ sendDfltPrompt mq i = sendPrompt mq . mkDfltPrompt i =<< getState
 
 
 mkDfltPrompt :: Id -> MudState -> Text
-mkDfltPrompt i ms = let (hps, mps, pps, fps)     = getPts i ms
-                        p                        = getPla i ms
-                        (isHp, isMp, isPp, isFp) = (isShowingHp, isShowingMp, isShowingPp, isShowingFp) & each %~ (p |&|)
+mkDfltPrompt i ms = let (hps,  mps,  pps,  fps ) = getPts i ms
+                        (isHp, isMp, isPp, isFp) | isPC i ms = ( isShowingHp
+                                                               , isShowingMp
+                                                               , isShowingPp
+                                                               , isShowingFp ) & each %~ (getPla i ms |&|)
+                                                 | otherwise = dup4 True
                         marker                   = colorWith indentColor " "
                     in marker <> " " <> (spaces . dropBlanks $ [ isHp |?| f "h" hps
                                                                , isMp |?| f "m" mps

@@ -74,14 +74,13 @@ import Control.Lens.Operators ((%~), (&), (.~), (^.))
 import Control.Monad ((>=>))
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (ask)
-import Data.IntMap.Lazy ((!))
 import Data.IORef (atomicModifyIORef', readIORef)
 import Data.List ((\\), delete, foldl', nub, sortBy)
 import Data.Maybe (fromJust, fromMaybe)
 import Data.Monoid (Sum(..), (<>))
 import Data.Text (Text)
 import GHC.Exts (sortWith)
-import qualified Data.IntMap.Lazy as IM (filter, keys, toList)
+import qualified Data.IntMap.Lazy as IM ((!), filter, keys, toList)
 import qualified Data.Map.Lazy as M (lookup)
 import qualified Data.Text as T
 import qualified Data.Vector.Unboxed as V (Vector)
@@ -338,7 +337,7 @@ mkAdminIdSingList = mkIdSingListHelper id
 
 mkIdSingListHelper :: (Bool -> Bool) -> MudState -> [(Id, Sing)]
 mkIdSingListHelper f ms@(view plaTbl -> pt) = [ (i, s) | i <- IM.keys pt
-                                                       , f . isAdmin $ pt ! i
+                                                       , f . isAdmin $ pt IM.! i
                                                        , let s = getSing i ms
                                                        , then sortWith by s ]
 
