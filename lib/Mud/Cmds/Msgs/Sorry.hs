@@ -402,11 +402,11 @@ sorryAdminSetOp opTxt k = T.concat [ "The ", dblQuote opTxt, " operator cannot b
 
 
 sorryAdminSetType :: Id -> Text
-sorryAdminSetType i = "ID " <> showText i <> "is not of the correct type."
+sorryAdminSetType i = "ID " <> showText i <> " is not of the correct type."
 
 
 sorryAdminSetValue :: Text -> Text -> Text
-sorryAdminSetValue k v = T.concat [ dblQuote v, " is not a valid value for the ", dblQuote k, " key." ]
+sorryAdminSetValue k v = T.concat [ v, " is not a valid value for the ", dblQuote k, " key." ]
 
 
 -----

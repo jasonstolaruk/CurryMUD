@@ -415,12 +415,12 @@ instance Pretty LoggedInOrOut where
 
 
 instance Pretty MobSize where
-  pp SmlMinus = "Sml -"
-  pp SmlPlus  = "Sml +"
-  pp MedMinus = "Med -"
-  pp MedPlus  = "Med +"
-  pp LrgMinus = "Lrg -"
-  pp LrgPlus  = "Lrg +"
+  pp SmlMinus = "Sml Minus"
+  pp SmlPlus  = "Sml Plus"
+  pp MedMinus = "Med Minus"
+  pp MedPlus  = "Med Plus"
+  pp LrgMinus = "Lrg Minus"
+  pp LrgPlus  = "Lrg Plus"
 
 
 instance Pretty PausedEffect where

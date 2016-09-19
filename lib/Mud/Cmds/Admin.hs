@@ -1327,7 +1327,6 @@ mkSecReport SecRec { .. } = [ "Name: "     <> dbName
 -----
 
 
--- TODO: Revise help.
 adminSet :: ActionFun
 adminSet p@AdviseNoArgs                       = advise p [ prefixAdminCmd "set" ] adviceASetNoArgs
 adminSet p@(AdviseOneArg a                  ) = advise p [ prefixAdminCmd "set" ] . adviceASetNoSettings $ a
@@ -1634,7 +1633,7 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
                              & _4 <>~ (isDiff |?| toSelf)
               _      -> sorryOp "tempDesc"
         -----
-        setMobSizeHelper t -- TODO: Test.
+        setMobSizeHelper t
           | not . hasMob $ t = sorryType
           | otherwise        = case eitherDecode value' of
             Left  _ -> appendMsg . sorryAdminSetValue "mobSize" $ value
