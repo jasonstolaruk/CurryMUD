@@ -738,7 +738,7 @@ examineMob i ms =
        , "Size: "             <> m^.mobSize       .to ppMaybe
        , "Corpse weight: "    <> m^.corpseWeight  .to commaShow
        , "Corpse volume: "    <> m^.corpseVol     .to commaShow
-       , "Corpse capacity:"   <> m^.corpseCapacity.to commaShow
+       , "Corpse capacity: "  <> m^.corpseCapacity.to commaShow
        , "Following: "        <> descMaybeId ms (getFollowing i ms)
        , "Followers: "        <> descSingIdHelper getFollowers
        , "My group: "         <> descSingIdHelper getMyGroup
@@ -1218,7 +1218,7 @@ adminPersist p              = withoutArgs adminPersist p
 -----
 
 
-adminPossess :: ActionFun
+adminPossess :: ActionFun -- TODO: When possessing Pidge: "IntMap.!: key 177 is not an element of the map".
 adminPossess p@(NoArgs' i mq) = advise p [ prefixAdminCmd "possess" ] adviceAPossessNoArgs >> sendDfltPrompt mq i
 adminPossess (OneArgNubbed i mq cols target) = modifyStateSeq $ \ms ->
     let SingleTarget { .. } = mkSingleTarget mq cols target "The ID of the NPC you wish to possess"
