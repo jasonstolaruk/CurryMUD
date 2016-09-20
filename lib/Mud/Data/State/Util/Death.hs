@@ -65,6 +65,7 @@ Those links with the greatest volume of messages are retained. If the deceased P
 handleDeath :: Id -> MudStack ()
 handleDeath i = do
     getState >>= \ms -> when (isNpc i ms) possessHelper
+    tweak . leaveParty $ i
     stopActs          i
     pauseEffects      i
     stopFeelings      i
@@ -72,7 +73,7 @@ handleDeath i = do
     throwWaitDigester i
     modifyStateSeq $ \ms -> let (ms',  fs ) = mkCorpse  i ms
                                 (ms'', fs') = spiritize i ms'
-                            in (ms'', logPla "handleDeath" i "handling death." : fs ++ fs')
+                            in (ms'', logPlaHelper i ms "handleDeath" "handling death." : fs ++ fs')
   where
     possessHelper = modifyStateSeq $ \ms -> case getPossessor i ms of
       Nothing -> (ms, [])
@@ -83,6 +84,10 @@ handleDeath i = do
                    in [ wrapSend mq cols . prd $ "You stop possessing " <> aOrAnOnLower (getSing i ms)
                       , sendDfltPrompt mq pi
                       , logPla "handleDeath" pi . prd $ "stopped possessing " <> t ] )
+
+
+logPlaHelper :: Id -> MudState -> Text -> Text -> MudStack ()
+logPlaHelper i ms funName = when (isPC i ms) . logPla funName i
 
 
 mkCorpse :: Id -> MudState -> (MudState, Funs)
@@ -103,7 +108,7 @@ mkCorpse i ms = let et = EntTemplate (Just "corpse")
                 in ( ms' & coinsTbl.ind i .~ mempty
                          & eqTbl   .ind i .~ M.empty
                          & invTbl  .ind i .~ []
-                   , logPla "mkCorpse" i "corpse created." : fs )
+                   , logPlaHelper i ms "mkCorpse" "corpse created." : fs )
       where
         (s, p) = ("corpse of " <>) *** ("corpses of " <>) $ if isPC i ms
           then second (<> "s") . dup . mkSerializedNonStdDesig i ms (getSing i ms) A $ Don'tCap

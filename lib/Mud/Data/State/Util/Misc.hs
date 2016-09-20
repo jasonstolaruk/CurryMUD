@@ -31,6 +31,7 @@ module Mud.Data.State.Util.Misc ( addToInv
                                 , isLoggedIn
                                 , isNpc
                                 , isPC
+                                , leaveParty
                                 , lookupHooks
                                 , mkAdminIdSingList
                                 , mkAdminPlaIdSingList
@@ -319,6 +320,27 @@ isKnownLang i ms lang | lang == CommonLang = True
 
 isLoggedIn :: Pla -> Bool
 isLoggedIn = views lastRmId ((()#) . (Sum <$>))
+
+
+-----
+
+
+leaveParty :: Id -> MudState -> MudState
+leaveParty i ms = let helper p = memberOfHelper . myGroupHelper . followersHelper . followingHelper $ ms
+                        where
+                          followingHelper ms' = views following (maybe ms' f) p
+                            where
+                              f followingId = ms' & mobTbl.ind i          .party.following .~ Nothing
+                                                  & mobTbl.ind followingId.party.followers %~ delete i
+                          followersHelper ms' = (mobTbl.ind i.party.followers .~ []) . foldr f ms' $ p^.followers
+                            where
+                              f followerId = mobTbl.ind followerId.party.following .~ Nothing
+                          myGroupHelper      = mobTbl.ind i.party.myGroup .~ []
+                          memberOfHelper ms' = views memberOf (maybe ms' f) p
+                            where
+                              f memberOfId = ms' & mobTbl.ind i         .party.memberOf .~ Nothing
+                                                 & mobTbl.ind memberOfId.party.myGroup  %~ delete i
+                  in helper . getParty i $ ms
 
 
 -----
