@@ -2,13 +2,14 @@
 
 module Mud.Data.State.Util.Death (handleDeath) where
 
+import Mud.Cmds.Util.Misc
 import Mud.Data.Misc
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Calc
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Make
 import Mud.Data.State.Util.Misc
-import Mud.Misc.Logging hiding (logNotice, logPla)
+import Mud.Data.State.Util.Output
 import Mud.Misc.Misc
 import Mud.Threads.Act
 import Mud.Threads.Digester
@@ -28,8 +29,8 @@ import Data.Bits (setBit, zeroBits)
 import Data.List (delete)
 import Data.Monoid ((<>))
 import Data.Text (Text)
+import Prelude hiding (pi)
 import qualified Data.Map.Lazy as M (elems, empty)
-import qualified Data.Text as T
 
 
 logNotice :: Text -> Text -> MudStack ()
@@ -63,15 +64,25 @@ Those links with the greatest volume of messages are retained. If the deceased P
 
 handleDeath :: Id -> MudStack ()
 handleDeath i = do
+    getState >>= \ms -> when (isNpc i ms) possessHelper
     stopActs          i
     pauseEffects      i
     stopFeelings      i
     stopRegen         i
     throwWaitDigester i
-    closePlaLog       i
     modifyStateSeq $ \ms -> let (ms',  fs ) = mkCorpse  i ms
                                 (ms'', fs') = spiritize i ms'
-                            in (ms'', (when (isPC i ms) . logPla "handleDeath" i $ "handling death.") : fs ++ fs')
+                            in (ms'', logPla "handleDeath" i "handling death." : fs ++ fs')
+  where
+    possessHelper = modifyStateSeq $ \ms -> case getPossessor i ms of
+      Nothing -> (ms, [])
+      Just pi -> ( ms & plaTbl.ind pi.possessing   .~ Nothing
+                      & npcTbl.ind i .npcPossessor .~ Nothing
+                 , let (mq, cols) = getMsgQueueColumns pi ms
+                       t          = aOrAnOnLower (descSingId i ms) <> " " <> parensQuote "NPC has died"
+                   in [ wrapSend mq cols . prd $ "You stop possessing " <> aOrAnOnLower (getSing i ms)
+                      , sendDfltPrompt mq pi
+                      , logPla "handleDeath" pi . prd $ "stopped possessing " <> t ] )
 
 
 mkCorpse :: Id -> MudState -> (MudState, Funs)
@@ -92,7 +103,7 @@ mkCorpse i ms = let et = EntTemplate (Just "corpse")
                 in ( ms' & coinsTbl.ind i .~ mempty
                          & eqTbl   .ind i .~ M.empty
                          & invTbl  .ind i .~ []
-                   , (when (isPC i ms) . logPla "mkCorpse" i $ "corpse created.") : fs )
+                   , logPla "mkCorpse" i "corpse created." : fs )
       where
         (s, p) = ("corpse of " <>) *** ("corpses of " <>) $ if isPC i ms
           then second (<> "s") . dup . mkSerializedNonStdDesig i ms (getSing i ms) A $ Don'tCap
@@ -104,16 +115,15 @@ spiritize i ms = if isPC i ms
   then (ms & plaTbl.ind i %~ setPlaFlag IsSpirit True, pure . logPla "spiritize" i $ "spirit created.")
   else deleteNpc
   where
-    deleteNpc = -- TODO: NPCs may be possessed.
-        let ri = getRmId i ms
-        in ( ms & activeEffectsTbl.at  i  .~ Nothing
-                & coinsTbl        .at  i  .~ Nothing
-                & entTbl          .at  i  .~ Nothing
-                & eqTbl           .at  i  .~ Nothing
-                & invTbl          .at  i  .~ Nothing
-                & mobTbl          .at  i  .~ Nothing
-                & npcTbl          .at  i  .~ Nothing
-                & pausedEffectsTbl.at  i  .~ Nothing
-                & typeTbl         .at  i  .~ Nothing
-                & invTbl          .ind ri %~ (i `delete`)
-           , pure . logNotice "spiritize" . T.concat $ [ getSing i ms, " ", parensQuote (showText i), " has died." ] )
+    deleteNpc = let ri = getRmId i ms
+                in ( ms & activeEffectsTbl.at  i  .~ Nothing
+                        & coinsTbl        .at  i  .~ Nothing
+                        & entTbl          .at  i  .~ Nothing
+                        & eqTbl           .at  i  .~ Nothing
+                        & invTbl          .at  i  .~ Nothing
+                        & invTbl          .ind ri %~ (i `delete`)
+                        & mobTbl          .at  i  .~ Nothing
+                        & npcTbl          .at  i  .~ Nothing
+                        & pausedEffectsTbl.at  i  .~ Nothing
+                        & typeTbl         .at  i  .~ Nothing
+                   , pure . logNotice "spiritize" $ descSingId i ms <> " has died." )

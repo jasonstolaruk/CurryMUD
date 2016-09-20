@@ -2318,9 +2318,9 @@ npcExorcise p = execIfPossessed p "stop" npcExorciseHelper
 
 npcExorciseHelper :: ActionFun
 npcExorciseHelper (NoArgs i mq cols) = getState >>= \ms -> let pi = fromJust . getPossessor i $ ms in do
-    wrapSend mq cols . prd $ "You stop possessing " <> aOrAnOnLower (getSing    i ms)
+    wrapSend mq cols . prd $ "You stop possessing " <> aOrAnOnLower (getSing i ms)
     sendDfltPrompt mq pi
-    logPla "stop" i  . prd $ "stopped possessing "  <> aOrAnOnLower (descSingId i ms)
+    logPla "npcExorciseHelper" i . prd $ "stopped possessing " <> aOrAnOnLower (descSingId i ms)
     tweaks [ plaTbl.ind pi.possessing .~ Nothing, npcTbl.ind i.npcPossessor .~ Nothing ]
 npcExorciseHelper p = withoutArgs npcExorciseHelper p
 
