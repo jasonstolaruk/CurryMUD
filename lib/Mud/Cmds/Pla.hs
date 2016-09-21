@@ -1673,14 +1673,13 @@ mkCmdNameForRmLink rl = T.toLower $ case rl of StdLink    { .. } -> linkDirToCmd
  -----
 
 
-help :: ActionFun -- TODO: Account for spirits.
+help :: ActionFun
 help (NoArgs i mq cols) = (liftIO . T.readFile $ helpDir </> "root") |&| try >=> either handler helper
   where
     handler e          = fileIOExHandler "help" e >> wrapSend mq cols helpRootErrorMsg
     helper rootHelpTxt = getState >>= \ms -> do
-        let ia = isAdminId     i ms
-            ls = getKnownLangs i ms
-        (sortBy (compare `on` helpName) -> hs) <- liftIO . mkHelpData ls $ ia
+        let (is, ia, ls) = mkHelpTriple i ms
+        (sortBy (compare `on` helpName) -> hs) <- liftIO . mkHelpData ls is $ ia
         let zipped                 = zip (styleAbbrevs Don'tQuote [ helpName h | h <- hs ]) hs
             (cmdNames, topicNames) = partition (isCmdHelp . snd) zipped & both %~ (formatHelpNames . mkHelpNames)
             helpTxt                = T.concat [ nl rootHelpTxt
@@ -1695,20 +1694,23 @@ help (NoArgs i mq cols) = (liftIO . T.readFile $ helpDir </> "root") |&| try >=>
                             in T.unlines . map T.concat . chunksOf wordsPerLine $ names
     footnote              = nlPrefix $ asterisk <> " indicates help that is available only to administrators."
 help (LowerNub i mq cols as) = getState >>= \ms -> do
-    let ia = isAdminId     i ms
-        ls = getKnownLangs i ms
-    hs <- liftIO . mkHelpData ls $ ia
+    let (is, ia, ls) = mkHelpTriple i ms
+    hs <- liftIO . mkHelpData ls is $ ia
     (map (parseHelpTxt cols) -> helpTxts, dropBlanks -> hns) <- unzip <$> forM as (getHelpByName cols hs)
     pager i mq Nothing . intercalateDivider cols $ helpTxts
     hns |#| logPla "help" i . ("read help on: " <>) . commas
 help p = patternMatchFail "help" . showText $ p
 
 
-mkHelpData :: [Lang] -> Bool -> IO [Help]
-mkHelpData ls ia = helpDirs |&| mapM getHelpDirectoryContents >=> \[ plaHelpCmdNames
-                                                                   , plaHelpTopicNames
-                                                                   , adminHelpCmdNames
-                                                                   , adminHelpTopicNames ] -> do
+mkHelpTriple :: Id -> MudState -> (Bool, Bool, [Lang])
+mkHelpTriple i ms = (isSpiritId i ms, isAdminId i ms, getKnownLangs i ms)
+
+
+mkHelpData :: [Lang] -> Bool -> Bool -> IO [Help]
+mkHelpData ls is ia = helpDirs |&| mapM getHelpDirectoryContents >=> \[ plaHelpCmdNames
+                                                                      , plaHelpTopicNames
+                                                                      , adminHelpCmdNames
+                                                                      , adminHelpTopicNames ] -> do
     let phcs = [ Help { helpName     = T.pack phcn
                       , helpFilePath = plaHelpCmdsDir     </> phcn
                       , isCmdHelp    = True
@@ -1717,6 +1719,10 @@ mkHelpData ls ia = helpDirs |&| mapM getHelpDirectoryContents >=> \[ plaHelpCmdN
                       , helpFilePath = plaHelpTopicsDir   </> phtn
                       , isCmdHelp    = False
                       , isAdminHelp  = False } | phtn <- plaHelpTopicNames ]
+        shcs = [ Help { helpName     = T.pack shcn
+                      , helpFilePath = plaHelpCmdsDir     </> shcn
+                      , isCmdHelp    = True
+                      , isAdminHelp  = False } | shcn <- filterSpiritCmds plaHelpCmdNames ]
         ahcs = [ Help { helpName     = T.pack $ adminCmdChar : whcn
                       , helpFilePath = adminHelpCmdsDir   </> whcn
                       , isCmdHelp    = True
@@ -1725,7 +1731,7 @@ mkHelpData ls ia = helpDirs |&| mapM getHelpDirectoryContents >=> \[ plaHelpCmdN
                       , helpFilePath = adminHelpTopicsDir </> whtn
                       , isCmdHelp    = False
                       , isAdminHelp  = True }  | whtn <- adminHelpTopicNames ]
-    return $ phcs ++ phts ++ (guard ia >> ahcs ++ ahts)
+    return $ (is ? shcs :? phcs) ++ phts ++ (guard ia >> ahcs ++ ahts)
   where
     helpDirs                     = [ plaHelpCmdsDir, plaHelpTopicsDir, adminHelpCmdsDir, adminHelpTopicsDir ]
     getHelpDirectoryContents dir = dropIrrelevantFilenames . sort <$> getDirectoryContents dir
@@ -1737,6 +1743,7 @@ mkHelpData ls ia = helpDirs |&| mapM getHelpDirectoryContents >=> \[ plaHelpCmdN
           , cn `elem` allRacialSays
           = cn `elem` myRacialSays
           | otherwise = otherwise
+    filterSpiritCmds cns = [ cn | cn <- cns, let scns = map cmdName spiritCmds, T.pack cn `elem` scns ]
 
 
 parseHelpTxt :: Cols -> Text -> [Text]
