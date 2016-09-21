@@ -117,9 +117,15 @@ mkCorpse i ms = let et = EntTemplate (Just "corpse")
 
 spiritize :: Id -> MudState -> (MudState, Funs)
 spiritize i ms = if isPC i ms
-  then (ms & plaTbl.ind i %~ setPlaFlag IsSpirit True, pure . logPla "spiritize" i $ "spirit created.")
+  then ( ms & plaTbl.ind i %~ setPlaFlag IsSpirit True
+            & mobTbl.ind i %~ setCurXps
+       , pure . logPla "spiritize" i $ "spirit created." )
   else deleteNpc
   where
+    setCurXps m = m & curHp .~ 1
+                    & curMp .~ 1
+                    & curPp .~ 1
+                    & curFp .~ 1
     deleteNpc = let ri = getRmId i ms
                 in ( ms & activeEffectsTbl.at  i  .~ Nothing
                         & coinsTbl        .at  i  .~ Nothing
