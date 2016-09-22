@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE LambdaCase, OverloadedStrings, ViewPatterns #-}
 
 module Mud.Data.State.Util.Death (handleDeath) where
 
@@ -20,15 +20,18 @@ import Mud.Util.Misc
 import Mud.Util.Quoting
 import Mud.Util.Text
 import qualified Mud.Misc.Logging as L (logNotice, logPla)
+import Mud.Misc.Database
 
 import Control.Arrow ((***), first, second)
 import Control.Lens (_2, at)
 import Control.Lens.Operators ((%~), (&), (.~))
 import Control.Monad (when)
+import Control.Monad.IO.Class (liftIO)
 import Data.Bits (setBit, zeroBits)
 import Data.List (delete)
 import Data.Monoid ((<>))
 import Data.Text (Text)
+import Database.SQLite.Simple (fromOnly)
 import Prelude hiding (pi)
 import qualified Data.Map.Lazy as M (elems, empty)
 
@@ -71,9 +74,8 @@ handleDeath i = do
     stopFeelings      i
     stopRegen         i
     throwWaitDigester i
-    modifyStateSeq $ \ms -> let (ms',  fs ) = mkCorpse  i ms
-                                (ms'', fs') = spiritize i ms'
-                            in (ms'', logPlaHelper i ms "handleDeath" "handling death." : fs ++ fs')
+    modifyStateSeq $ \ms -> second (logPlaHelper i ms "handleDeath" "handling death." :) . mkCorpse i $ ms
+    spiritize         i
   where
     possessHelper = modifyStateSeq $ \ms -> case getPossessor i ms of
       Nothing -> (ms, [])
@@ -115,26 +117,27 @@ mkCorpse i ms = let et = EntTemplate (Just "corpse")
           else first aOrAnOnLower $ let bgns = getBothGramNos i ms in bgns & _2 .~ mkPlurFromBoth bgns
 
 
-spiritize :: Id -> MudState -> (MudState, Funs)
-spiritize i ms = if isPC i ms
-  then ( ms & plaTbl.ind i %~ setPlaFlag IsSpirit True
-            & mobTbl.ind i %~ setCurXps
-       , pure . logPla "spiritize" i $ "spirit created." )
-  else deleteNpc
+spiritize :: Id -> MudStack ()
+spiritize i = getState >>= \ms -> if isPC i ms
+  then (withDbExHandler "spiritize" . liftIO . lookupTeleNames . getSing i $ ms) >>= \case
+    Nothing                  -> uncurry dbError . getMsgQueueColumns i $ ms
+    Just (map fromOnly -> _) -> do { tweaks [ plaTbl.ind i %~ setPlaFlag IsSpirit True
+                                            , mobTbl.ind i %~ setCurXps ]
+                                   ; logPla "spiritize" i "spirit created." }
+  else deleteNpc ms
   where
     setCurXps m = m & curHp .~ 1
                     & curMp .~ 1
                     & curPp .~ 1
                     & curFp .~ 1
-    deleteNpc = let ri = getRmId i ms
-                in ( ms & activeEffectsTbl.at  i  .~ Nothing
-                        & coinsTbl        .at  i  .~ Nothing
-                        & entTbl          .at  i  .~ Nothing
-                        & eqTbl           .at  i  .~ Nothing
-                        & invTbl          .at  i  .~ Nothing
-                        & invTbl          .ind ri %~ (i `delete`)
-                        & mobTbl          .at  i  .~ Nothing
-                        & npcTbl          .at  i  .~ Nothing
-                        & pausedEffectsTbl.at  i  .~ Nothing
-                        & typeTbl         .at  i  .~ Nothing
-                   , pure . logNotice "spiritize" $ descSingId i ms <> " has died." )
+    deleteNpc ms = let ri = getRmId i ms in do { tweaks [ activeEffectsTbl.at  i  .~ Nothing
+                                                        , coinsTbl        .at  i  .~ Nothing
+                                                        , entTbl          .at  i  .~ Nothing
+                                                        , eqTbl           .at  i  .~ Nothing
+                                                        , invTbl          .at  i  .~ Nothing
+                                                        , invTbl          .ind ri %~ (i `delete`)
+                                                        , mobTbl          .at  i  .~ Nothing
+                                                        , npcTbl          .at  i  .~ Nothing
+                                                        , pausedEffectsTbl.at  i  .~ Nothing
+                                                        , typeTbl         .at  i  .~ Nothing ]
+                                               ; logNotice "spiritize" $ descSingId i ms <> " has died." }
