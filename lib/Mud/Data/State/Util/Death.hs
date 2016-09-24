@@ -149,8 +149,9 @@ spiritize i = getState >>= \ms -> let mySing = getSing i ms in if isPC i ms
         in do { tweaks [ plaTbl.ind i %~ setPlaFlag IsSpirit True
                        , pcTbl        %~ pcTblHelper mySing retaineds'
                        , mobTbl.ind i %~ setCurXps ]
-              ; forM_ asleepIds $ \i' -> let msg = thrice prd $ "You notice that your link with " <> mySing <> " is missing"
-                                         in retainedMsg i' ms msg
+              ; forM_ asleepIds $ \i' ->
+                    let msg = thrice prd $ "You notice that your telepathic link with " <> mySing <> " is missing"
+                    in retainedMsg i' ms msg
               ; bcast bs
               ; sequence_ (fs :: Funs)
               ; logPla "spiritize" i "spirit created." }
@@ -175,13 +176,13 @@ spiritize i = getState >>= \ms -> let mySing = getSing i ms in if isPC i ms
                 f i' p    = and [ views linked (mySing `elem`) p
                                 , i' `notElem` map (view _1) retaineds
                                 , isAwake i' ms ]
-            in ("Your link with " <> mySing <> " fizzles away!", targetIds)
+            in ("Your telepathic link with " <> mySing <> " fizzles away!", targetIds)
         -- TODO: When a spirit passes into the beyond, a retained msg should be sent to those link retainers who are asleep.
         toLinkRetainersHelper
           | targetIds <- [ i' | (i', _, ia) <- retaineds, ia ]
           , f         <- \i' -> rndmDo (calcProbSpiritizeShiver i' ms) . mkExpAction "shiver" . mkActionParams i' ms $ []
           , fs        <- pure . mapM_ f $ targetIds
-          = (("There is a sudden surge of energy over your link with " <> mySing <> "!", targetIds), fs)
+          = (("There is a sudden surge of energy over your telepathic link with " <> mySing <> "!", targetIds), fs)
     deleteNpc ms = let ri = getRmId i ms in do { tweaks [ activeEffectsTbl.at  i  .~ Nothing
                                                         , coinsTbl        .at  i  .~ Nothing
                                                         , entTbl          .at  i  .~ Nothing
