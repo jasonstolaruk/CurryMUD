@@ -9,7 +9,9 @@ import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Interp.Misc
 import Mud.Misc.ANSI
+import Mud.Util.Misc
 import Mud.Util.Quoting
+import Mud.Util.Text
 
 import Data.Maybe (fromMaybe)
 
@@ -21,7 +23,7 @@ pause :: Id -> MsgQueue -> Maybe Fun -> MudStack ()
 pause i mq mf = sequence_ [ promptPause, setInterp i . Just . interpPause $ mf ]
   where
     promptPause = sendPrompt mq . colorWith pagerPromptColor . spaced . bracketQuote . spaced $ txt
-    txt         = "Enter a blank line to continue..."
+    txt         = thrice prd "Enter a blank line to continue"
 
 
 interpPause :: Maybe Fun -> Interp

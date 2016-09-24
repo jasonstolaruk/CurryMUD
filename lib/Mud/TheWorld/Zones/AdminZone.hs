@@ -260,8 +260,8 @@ lookCeilingHookName = "AdminZone_iEmpty_lookCeiling"
 lookCeilingHookFun :: HookFun
 lookCeilingHookFun = mkGenericHookFun ceilingDesc "looks up at the ceiling." "looked at ceiling"
   where
-    ceilingDesc = "The tall ceiling looks identical to the walls: plain and white. Even if there was a means of exit \
-                  \up there, you can't imagine how you'd reach it..."
+    ceilingDesc = thrice prd "The tall ceiling looks identical to the walls: plain and white. Even if there was a \
+                             \means of exit up there, you can't imagine how you'd reach it"
 
 
 -----
@@ -732,7 +732,7 @@ createAdminZone = do
         mempty
         (mkRm (RmTemplate "Attic"
             "Though the confined attic is dusty, its cozy atmosphere creates an oddly welcoming space."
-            (Just "Is that the soft squeek of a mouse you hear? Maybe you're just hearing things...")
+            (Just . thrice prd $ "Is that the soft squeek of a mouse you hear? Maybe you're just hearing things")
             (Just "The air here is dusty and a little stale, though not stifling.")
             zeroBits
             [ NonStdLink "d" iWeightRm dfltLinkMove "% climbs down the ladder and into the hole in the floor."
@@ -1009,7 +1009,7 @@ createAdminZone = do
                                         zeroBits)
                                    (mkObj . ObjTemplate paperWeight paperVol Nothing $ zeroBits)
   putParchment iParchment1 (Writable Nothing Nothing)
-  putParchment iParchment2 (Writable (Just ("You've lost it! You'll never get out of this maze...", CommonLang))
+  putParchment iParchment2 (Writable (Just (thrice prd "You've lost it! You'll never get out of this maze", CommonLang))
                                      Nothing)
   putParchment iParchment3 (Writable (Just ("Whatever you do, take care of your shoes.", DwarfLang))
                                      Nothing)

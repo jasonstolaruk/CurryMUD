@@ -141,7 +141,7 @@ zBackDoor times s params@ActionParams { .. } = setSingIfNotTaken times s params 
   where
     helper oldSing = let l = mobTbl.ind myId in do
       tweaks [ l.st .~ 50, l.dx .~ 50, l.ht .~ 50, l.ma .~ 50, l.ps .~ 50 ]
-      wrapSend plaMsgQueue plaCols "You quietly slip through the back door..."
+      wrapSend plaMsgQueue plaCols . thrice prd $ "You quietly slip through the back door"
       finishNewChar (NewCharBundle oldSing s "Aoeui1") params
 
 

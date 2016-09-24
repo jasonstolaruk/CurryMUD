@@ -603,7 +603,7 @@ debugLog p = withoutArgs debugLog p
 
 debugMultiLine :: ActionFun
 debugMultiLine (NoArgs i mq cols) = do
-    wrapSend1Nl mq cols "Beginning multi-line input..."
+    wrapSend1Nl mq cols . thrice prd $ "Beginning multi-line input"
     setInterp i . Just . interpMutliLine f $ []
     logPlaExec (prefixDebugCmd "multiline") i
   where

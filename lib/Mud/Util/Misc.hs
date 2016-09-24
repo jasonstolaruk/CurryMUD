@@ -54,6 +54,7 @@ module Mud.Util.Misc ( atLst1
                      , safePerformIO
                      , sortEithers
                      , strictId
+                     , thrice
                      , twice
                      , unadulterated
                      , uncurry3
@@ -323,6 +324,10 @@ sortEithers = foldr helper ([], [])
 
 strictId :: a -> a
 strictId = join seq
+
+
+thrice :: (a -> a) -> a -> a
+thrice f = f . twice f
 
 
 twice :: (a -> a) -> a -> a

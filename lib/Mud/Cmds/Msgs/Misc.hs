@@ -5,6 +5,7 @@ module Mud.Cmds.Msgs.Misc where
 import Mud.Data.State.MudData
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
+import Mud.Util.Misc
 import Mud.Util.Quoting
 import Mud.Util.Text
 
@@ -25,7 +26,7 @@ adminKillMsg t = "There is a blinding yellow light and a deafening crack as " <>
 
 
 asMsg :: Text
-asMsg = "You suddenly feel as though someone else is in control..."
+asMsg = thrice prd "You suddenly feel as though someone else is in control"
 
 
 bannedMsg :: Text
@@ -245,7 +246,7 @@ rulesMsg =
 
 
 sudoMsg :: Text
-sudoMsg = "HELLO, ROOT! We trust you have received the usual lecture from the local System Administrator..."
+sudoMsg = thrice prd "HELLO, ROOT! We trust you have received the usual lecture from the local System Administrator"
 
 
 teleDescMsg :: Text

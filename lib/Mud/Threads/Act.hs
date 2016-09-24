@@ -94,11 +94,10 @@ mkThreadName i actType = quoteWith' (pp actType, showText i) " "
 drinkAct :: DrinkBundle -> MudStack ()
 drinkAct DrinkBundle { .. } =
     let a = do
-            multiWrapSend1Nl drinkerMq drinkerCols . dropEmpties $ [ T.concat [ "You begin drinking "
-                                                                              , renderLiqNoun drinkLiq the
-                                                                              , " from the "
-                                                                              , drinkVesselSing
-                                                                              , "..." ]
+            multiWrapSend1Nl drinkerMq drinkerCols . dropEmpties $ [ thrice prd . T.concat $ [ "You begin drinking "
+                                                                                             , renderLiqNoun drinkLiq the
+                                                                                             , " from the "
+                                                                                             , drinkVesselSing ]
                                                                    , drinkLiq^.liqDrinkDesc ]
             d <- flip (mkStdDesig drinkerId) DoCap <$> getState
             bcastIfNotIncogNl drinkerId . pure $ ( T.concat [ serialize d
@@ -141,8 +140,8 @@ drinkAct DrinkBundle { .. } =
                                                                                  , showText x'
                                                                                  , " mouthful"
                                                                                  , theLetterS $ x /= 0
-                                                                                 , " that you have to stop drinking. \
-                                                                                   \You don't feel so good..." ]
+                                                                                 , thrice prd " that you have to stop \
+                                                                                   \drinking. You don't feel so good" ]
            | x' == drinkAmt -> (>> bcastHelper False) . ioHelper x' $ "You finish drinking."
            | otherwise      -> loop x'
     ioHelper m t = wrapSend drinkerMq drinkerCols t >> promptHelper >> logHelper

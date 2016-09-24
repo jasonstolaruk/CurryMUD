@@ -908,5 +908,5 @@ withoutArgs f p = ignore p >> f p { args = [] }
 
 
 ignore :: ActionFun
-ignore (Ignoring mq cols as) = wrapSend1Nl mq cols . parensQuote $ "Ignoring " <> as <> "..."
+ignore (Ignoring mq cols as) = wrapSend1Nl mq cols . parensQuote . thrice prd $ "Ignoring " <> as
 ignore p                     = patternMatchFail "ignore" . showText $ p

@@ -322,7 +322,7 @@ adminAs (WithTarget i mq cols target rest) = getState >>= \ms ->
                       fakeClientInput targetMq rest
           _ -> sorry . sorryAsType $ s
         ioHelper targetId s = do
-            sendFun . parensQuote $ "Executing as " <> aOrAnOnLower s <> "..."
+            sendFun . parensQuote . thrice prd $ "Executing as " <> aOrAnOnLower s
             logPla "adminAs" i . T.concat $ [ "Executing "
                                             , dblQuote rest
                                             , " as "
@@ -1906,7 +1906,7 @@ adminTeleId p@(OneArgNubbed i mq cols target) = modifyStateSeq $ \ms ->
         teleport targetId  =
             let (destId, desc) = locateHelper ms [] targetId
                 destName       = mkNameTypeIdDesc targetId ms <> (()!# desc |?| (", " <> desc))
-                notice         = "Teleporting to " <> destName <> "..."
+                notice         = thrice prd $ "Teleporting to " <> destName
                 originId       = getRmId i ms
                 sorry          = (ms, ) . pure . multiSendFun . (notice :) . pure
             in if | destId == originId   -> sorry sorryTeleAlready
@@ -1993,7 +1993,7 @@ adminTeleRm p = advise p [] adviceATeleRmExcessArgs
 adminTime :: ActionFun
 adminTime (NoArgs i mq cols) = do
     (ct, zt) <- liftIO $ (,) <$> formatThat `fmap` getCurrentTime <*> formatThat `fmap` getZonedTime
-    multiWrapSend mq cols [ "At the tone, the time will be...", ct, zt ]
+    multiWrapSend mq cols [ thrice prd "At the tone, the time will be", ct, zt ]
     logPlaExec (prefixAdminCmd "time") i
   where
     formatThat :: (FormatTime a) => a -> Text

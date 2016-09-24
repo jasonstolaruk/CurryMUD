@@ -28,7 +28,7 @@ import qualified Mud.Misc.Logging as L (logNotice, logPla)
 import Control.Arrow ((***), first, second)
 import Control.Lens (_1, _2, _3, at, view, views)
 import Control.Lens.Operators ((%~), (&), (.~))
-import Control.Monad (when)
+import Control.Monad (forM_, when)
 import Control.Monad.IO.Class (liftIO)
 import Data.Bits (setBit, zeroBits)
 import Data.Function (on)
@@ -130,7 +130,6 @@ mkCorpse i ms = let et = EntTemplate (Just "corpse")
                                                                                  in bgns & _2 .~ mkPlurFromBoth bgns
 
 
--- TODO: Retained msg: "You notice that your link with x is missing..."
 spiritize :: Id -> MudStack ()
 spiritize i = getState >>= \ms -> let mySing = getSing i ms in if isPC i ms
   then (withDbExHandler "spiritize" . liftIO . lookupTeleNames $ mySing) >>= \case
@@ -142,10 +141,16 @@ spiritize i = getState >>= \ms -> let mySing = getSing i ms in if isPC i ms
             retaineds' = (retaineds |&|) $ case filter (view _3) retaineds of
               [] -> let bonus = take 1 . filter (view _3) . drop n $ triples in (++ bonus)
               _  -> id
-            (bs, fs) = mkBcasts ms mySing retaineds'
+            asleepIds = let f i' p = and [ views linked (mySing `elem`) p
+                                         , i' `notElem` map (view _1) retaineds'
+                                         , not (isAwake i' ms) ]
+                        in views pcTbl (IM.keys . IM.filterWithKey f . IM.delete i) ms
+            (bs, fs)  = mkBcasts ms mySing retaineds'
         in do { tweaks [ plaTbl.ind i %~ setPlaFlag IsSpirit True
                        , pcTbl        %~ pcTblHelper mySing retaineds'
                        , mobTbl.ind i %~ setCurXps ]
+              ; forM_ asleepIds $ \i' -> let msg = thrice prd $ "You notice that your link with " <> mySing <> " is missing"
+                                         in retainedMsg i' ms msg
               ; bcast bs
               ; sequence_ (fs :: Funs)
               ; logPla "spiritize" i "spirit created." }
@@ -167,9 +172,9 @@ spiritize i = getState >>= \ms -> let mySing = getSing i ms in if isPC i ms
       where
         toLinkLosers =
             let targetIds = views pcTbl (IM.keys . IM.filterWithKey f . IM.delete i) ms
-                f i' p = and [ views linked (mySing `elem`) p
-                             , i' `notElem` map (view _1) retaineds
-                             , isAwake i' ms ]
+                f i' p    = and [ views linked (mySing `elem`) p
+                                , i' `notElem` map (view _1) retaineds
+                                , isAwake i' ms ]
             in ("Your link with " <> mySing <> " fizzles away!", targetIds)
         -- TODO: When a spirit passes into the beyond, a retained msg should be sent to those link retainers who are asleep.
         toLinkRetainersHelper

@@ -1168,15 +1168,16 @@ mkDescForPercent x ((y, txt):rest) | x <= y    = txt
 
 
 mkFullDesc :: Id -> MudState -> Text
-mkFullDesc i ms = mkDescForPercent9 (calcStomachPerFull i ms) [ colorWith magenta "You are famished."
-                                                              , colorWith red     "You are extremely hungry."
-                                                              ,                   "You are quite hungry."
-                                                              ,                   "You feel a little hungry."
-                                                              ,                   ""
-                                                              ,                   "You feel satisfied."
-                                                              ,                   "You are quite full."
-                                                              , colorWith red     "You are extremely full."
-                                                              , colorWith magenta "You are profoundly satiated. You don't feel so good..." ]
+mkFullDesc i ms = mkDescForPercent9 (calcStomachPerFull i ms)
+    [ colorWith magenta                "You are famished."
+    , colorWith red                    "You are extremely hungry."
+    ,                                  "You are quite hungry."
+    ,                                  "You feel a little hungry."
+    ,                                  ""
+    ,                                  "You feel satisfied."
+    ,                                  "You are quite full."
+    , colorWith red                    "You are extremely full."
+    , colorWith magenta . thrice prd $ "You are profoundly satiated. You don't feel so good" ]
 
 
 -----
@@ -1291,7 +1292,7 @@ notFoundSuggestAsleeps a@(capitalize . T.toLower -> a') asleepSings ms =
           in T.concat [ guess
                       , "Unfortunately, "
                       , ()# guess ? asleepTarget :? heShe
-                      , " is sleeping at the moment..." ]
+                      , thrice prd " is sleeping at the moment" ]
       Nothing -> sorryTwoWayLink a
 
 
