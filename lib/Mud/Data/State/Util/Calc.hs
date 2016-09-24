@@ -39,8 +39,9 @@ module Mud.Data.State.Util.Calc ( calcBarLen
                                 , calcModifierSt
                                 , calcProbConnectBlink
                                 , calcProbLinkFlinch
-                                , calcProbTeleDizzy
-                                , calcProbTeleShudder
+                                , calcProbSpiritizeShiver
+                                , calcProbTeleportDizzy
+                                , calcProbTeleportShudder
                                 , calcRegenFpAmt
                                 , calcRegenFpDelay
                                 , calcRegenHpAmt
@@ -49,6 +50,7 @@ module Mud.Data.State.Util.Calc ( calcBarLen
                                 , calcRegenMpDelay
                                 , calcRegenPpAmt
                                 , calcRegenPpDelay
+                                , calcRetainedLinks
                                 , calcStomachAvailSize
                                 , calcStomachPerFull
                                 , calcStomachSize
@@ -72,15 +74,16 @@ import Mud.Util.Operators
 import Mud.Util.Text
 import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 
-import Control.Lens (view, views)
+import Control.Lens (both, view, views)
 import Control.Lens.Getter (Getter)
+import Control.Lens.Operators ((%~), (&))
 import Data.List (foldl')
 import Prelude hiding (getContents)
 import qualified Data.Map.Lazy as M (elems)
 import qualified Data.Text as T
 
 
-default (Int)
+default (Int, Double)
 
 
 -----
@@ -473,20 +476,29 @@ calcModifierEffPs i = calcModifierForEffAttrib . calcEffPs i
 -----
 
 
-calcProbLinkFlinch :: Id -> MudState -> Int
-calcProbLinkFlinch i ms = (calcEffHt i ms - 100) ^ 2 `quot` 125
-
-
 calcProbConnectBlink :: Id -> MudState -> Int
-calcProbConnectBlink = calcProbLinkFlinch
+calcProbConnectBlink i ms = (avgHelper calcEffHt calcEffPs i ms - 100) ^ 2 `quot` 125
 
 
-calcProbTeleDizzy :: Id -> MudState -> Int
-calcProbTeleDizzy i ms = (calcEffHt i ms - 100) ^ 2 `quot` 250
+avgHelper :: (Id -> MudState -> Int) -> (Id -> MudState -> Int) -> Id -> MudState -> Int
+avgHelper f g i ms = let pair = (uncurry f, uncurry g) & both %~ (fromIntegral . ((i, ms) |&|))
+                     in uncurry (+) pair `divideRound` 2
 
 
-calcProbTeleShudder :: Id -> MudState -> Int
-calcProbTeleShudder = calcProbLinkFlinch
+calcProbLinkFlinch :: Id -> MudState -> Int
+calcProbLinkFlinch = calcProbConnectBlink
+
+
+calcProbSpiritizeShiver :: Id -> MudState -> Int
+calcProbSpiritizeShiver = calcProbConnectBlink
+
+
+calcProbTeleportDizzy :: Id -> MudState -> Int
+calcProbTeleportDizzy i ms = (calcEffHt i ms - 100) ^ 2 `quot` 250
+
+
+calcProbTeleportShudder :: Id -> MudState -> Int
+calcProbTeleportShudder i ms = (calcEffHt i ms - 100) ^ 2 `quot` 125
 
 
 -----
@@ -540,6 +552,13 @@ calcRegenPpDelay i = calcRegenDelay . weightedAvgHt calcEffPs i
 
 calcRegenFpDelay :: Id -> MudState -> Int
 calcRegenFpDelay i = calcRegenDelay . weightedAvgHt calcEffSt i
+
+
+-----
+
+
+calcRetainedLinks :: Id -> MudState -> Int
+calcRetainedLinks i ms = ceiling $ getBasePs i ms `divide` 10
 
 
 -----

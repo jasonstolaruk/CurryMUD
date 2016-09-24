@@ -1,7 +1,8 @@
-{-# LANGUAGE LambdaCase, OverloadedStrings, ViewPatterns #-}
+{-# LANGUAGE FlexibleContexts, LambdaCase, OverloadedStrings, ViewPatterns #-}
 
 module Mud.Data.State.Util.Death (handleDeath) where
 
+import Mud.Cmds.ExpCmds
 import Mud.Cmds.Util.Misc
 import Mud.Data.Misc
 import Mud.Data.State.MudData
@@ -10,30 +11,40 @@ import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Make
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
+import Mud.Data.State.Util.Random
+import Mud.Misc.Database
 import Mud.Misc.Misc
 import Mud.Threads.Act
 import Mud.Threads.Digester
 import Mud.Threads.Effect
 import Mud.Threads.FeelingTimer
 import Mud.Threads.Regen
+import Mud.Util.List
 import Mud.Util.Misc
-import Mud.Util.Quoting
+import Mud.Util.Operators
 import Mud.Util.Text
 import qualified Mud.Misc.Logging as L (logNotice, logPla)
-import Mud.Misc.Database
 
 import Control.Arrow ((***), first, second)
-import Control.Lens (_2, at)
+import Control.Lens (_1, _2, _3, at, view, views)
 import Control.Lens.Operators ((%~), (&), (.~))
 import Control.Monad (when)
 import Control.Monad.IO.Class (liftIO)
 import Data.Bits (setBit, zeroBits)
-import Data.List (delete)
+import Data.Function (on)
+import Data.List (delete, sortBy)
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import Database.SQLite.Simple (fromOnly)
 import Prelude hiding (pi)
+import qualified Data.IntMap.Lazy as IM (delete, filterWithKey, keys, mapWithKey)
 import qualified Data.Map.Lazy as M (elems, empty)
+
+
+{-# ANN module ("HLint: ignore Use &&" :: String) #-}
+
+
+-----
 
 
 logNotice :: Text -> Text -> MudStack ()
@@ -82,7 +93,7 @@ handleDeath i = do
       Just pi -> ( ms & plaTbl.ind pi.possessing   .~ Nothing
                       & npcTbl.ind i .npcPossessor .~ Nothing
                  , let (mq, cols) = getMsgQueueColumns pi ms
-                       t          = aOrAnOnLower (descSingId i ms) <> " " <> parensQuote "NPC has died"
+                       t          = aOrAnOnLower (descSingId i ms) <> "; NPC has died"
                    in [ wrapSend mq cols . prd $ "You stop possessing " <> aOrAnOnLower (getSing i ms)
                       , sendDfltPrompt mq pi
                       , logPla "handleDeath" pi . prd $ "stopped possessing " <> t ] )
@@ -112,24 +123,60 @@ mkCorpse i ms = let et = EntTemplate (Just "corpse")
                          & invTbl  .ind i .~ []
                    , logPlaHelper i ms "mkCorpse" "corpse created." : fs )
       where
-        (s, p) = ("corpse of " <>) *** ("corpses of " <>) $ if isPC i ms
-          then second (<> "s") . dup . mkSerializedNonStdDesig i ms (getSing i ms) A $ Don'tCap
-          else first aOrAnOnLower $ let bgns = getBothGramNos i ms in bgns & _2 .~ mkPlurFromBoth bgns
+        (s, p) = if isPC i ms
+          then ( ("corpse of " <>) . mkSerializedNonStdDesig i ms (getSing i ms) A $ Don'tCap
+               , "" )
+          else (("corpse of " <>) *** ("corpses of " <>)) . first aOrAnOnLower $ let bgns = getBothGramNos i ms
+                                                                                 in bgns & _2 .~ mkPlurFromBoth bgns
 
 
+-- TODO: Retained msg: "You notice that your link with x is missing..."
 spiritize :: Id -> MudStack ()
-spiritize i = getState >>= \ms -> if isPC i ms
-  then (withDbExHandler "spiritize" . liftIO . lookupTeleNames . getSing i $ ms) >>= \case
-    Nothing                  -> uncurry dbError . getMsgQueueColumns i $ ms
-    Just (map fromOnly -> _) -> do { tweaks [ plaTbl.ind i %~ setPlaFlag IsSpirit True
-                                            , mobTbl.ind i %~ setCurXps ]
-                                   ; logPla "spiritize" i "spirit created." }
+spiritize i = getState >>= \ms -> let mySing = getSing i ms in if isPC i ms
+  then (withDbExHandler "spiritize" . liftIO . lookupTeleNames $ mySing) >>= \case
+    Nothing                    -> uncurry dbError . getMsgQueueColumns i $ ms
+    Just (procOnlySings -> ss) ->
+        let triples    = [ (i', s, ia) | s <- ss, let i' = getIdForMobSing s ms, let ia = isAwake i' ms ]
+            n          = calcRetainedLinks i ms
+            retaineds  = take n triples
+            retaineds' = (retaineds |&|) $ case filter (view _3) retaineds of
+              [] -> let bonus = take 1 . filter (view _3) . drop n $ triples in (++ bonus)
+              _  -> id
+            (bs, fs) = mkBcasts ms mySing retaineds'
+        in do { tweaks [ plaTbl.ind i %~ setPlaFlag IsSpirit True
+                       , pcTbl        %~ pcTblHelper mySing retaineds'
+                       , mobTbl.ind i %~ setCurXps ]
+              ; bcast bs
+              ; sequence_ (fs :: Funs)
+              ; logPla "spiritize" i "spirit created." }
   else deleteNpc ms
   where
+    procOnlySings xs = map snd . sortBy (flip compare `on` fst) $ [ (length g, s)
+                                                                  | g@(s:_) <- sortGroup . map fromOnly $ xs ]
+    pcTblHelper mySing retaineds@(map (view _1) -> retainerIds) = IM.mapWithKey helper
+      where
+        helper pcId | pcId == i               = linked .~ map (view _2) retaineds
+                    | pcId `elem` retainerIds = id
+                    | otherwise               = linked %~ (mySing `delete`) -- TODO: "introduced" will have to be modified as well, at some point.
     setCurXps m = m & curHp .~ 1
                     & curMp .~ 1
                     & curPp .~ 1
                     & curFp .~ 1
+    mkBcasts ms mySing retaineds = let (toLinkRetainers, fs) = toLinkRetainersHelper
+                                   in ([ toLinkLosers, toLinkRetainers ], fs)
+      where
+        toLinkLosers =
+            let targetIds = views pcTbl (IM.keys . IM.filterWithKey f . IM.delete i) ms
+                f i' p = and [ views linked (mySing `elem`) p
+                             , i' `notElem` map (view _1) retaineds
+                             , isAwake i' ms ]
+            in ("Your link with " <> mySing <> " fizzles away!", targetIds)
+        -- TODO: When a spirit passes into the beyond, a retained msg should be sent to those link retainers who are asleep.
+        toLinkRetainersHelper
+          | targetIds <- [ i' | (i', _, ia) <- retaineds, ia ]
+          , f         <- \i' -> rndmDo (calcProbSpiritizeShiver i' ms) . mkExpAction "shiver" . mkActionParams i' ms $ []
+          , fs        <- pure . mapM_ f $ targetIds
+          = (("There is a sudden surge of energy over your link with " <> mySing <> "!", targetIds), fs)
     deleteNpc ms = let ri = getRmId i ms in do { tweaks [ activeEffectsTbl.at  i  .~ Nothing
                                                         , coinsTbl        .at  i  .~ Nothing
                                                         , entTbl          .at  i  .~ Nothing
