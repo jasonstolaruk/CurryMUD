@@ -3,6 +3,7 @@
 module Mud.Data.State.Util.Death (handleDeath) where
 
 import Mud.Cmds.ExpCmds
+import Mud.Cmds.Msgs.Misc
 import Mud.Cmds.Util.Misc
 import Mud.Data.Misc
 import Mud.Data.State.MudData
@@ -62,7 +63,6 @@ logPla = L.logPla "Mud.Data.State.Util.Death"
 When Taro dies:
 Taro's corpse is created. Inventory, equipment, and coins are transferred from PC to corpse.
 Taro's PC becomes a disembodied spirit (see below).
-Those who are linked with Taro are notified of his death (via retained message?).
 When the allotted time is up, Taro's spirit passes into the beyond and is sent to the Necropolis.
 Taro's player is shown Taro's stats.
 Taro's player is returned to the login screen.
@@ -70,7 +70,7 @@ Taro's player is returned to the login screen.
 About spirits:
 A player has a certain amount of time as a spirit, depending on level.
 A spirit can move freely about with no FP cost.
-A spirit may be granted the ability to give out a certain number of exp bonuses (using the "bonus" command), depending on level.
+A spirit may be granted the ability to give out a certain number of extra exp bonuses (using the "bonus" command), depending on level.
 A spirit retains a certain number of two-way links, depending on PS. A spirit may continue to communicate telepathically over its retained links, with no cost to PP.
 Those links with the greatest volume of messages are retained. If the deceased PC's top links are all asleep, the spirit gets to retain a bonus link with a PC who is presently awake.
 -}
@@ -149,9 +149,7 @@ spiritize i = getState >>= \ms -> let mySing = getSing i ms in if isPC i ms
         in do { tweaks [ plaTbl.ind i %~ setPlaFlag IsSpirit True
                        , pcTbl        %~ pcTblHelper mySing retaineds'
                        , mobTbl.ind i %~ setCurXps ]
-              ; forM_ asleepIds $ \i' ->
-                    let msg = thrice prd $ "You notice that your telepathic link with " <> mySing <> " is missing"
-                    in retainedMsg i' ms msg
+              ; forM_ asleepIds $ \i' ->　retainedMsg i' ms . linkMissingMsg $ mySing
               ; bcast bs
               ; sequence_ (fs :: Funs)
               ; logPla "spiritize" i "spirit created." }
@@ -163,7 +161,7 @@ spiritize i = getState >>= \ms -> let mySing = getSing i ms in if isPC i ms
       where
         helper pcId | pcId == i               = linked .~ map (view _2) retaineds
                     | pcId `elem` retainerIds = id
-                    | otherwise               = linked %~ (mySing `delete`) -- TODO: "introduced" will have to be modified as well, at some point.
+                    | otherwise               = linked %~ (mySing `delete`)
     setCurXps m = m & curHp .~ 1
                     & curMp .~ 1
                     & curPp .~ 1
@@ -176,13 +174,13 @@ spiritize i = getState >>= \ms -> let mySing = getSing i ms in if isPC i ms
                 f i' p    = and [ views linked (mySing `elem`) p
                                 , i' `notElem` map (view _1) retaineds
                                 , isAwake i' ms ]
-            in ("Your telepathic link with " <> mySing <> " fizzles away!", targetIds)
+            in (linkLostMsg mySing, targetIds)
         -- TODO: When a spirit passes into the beyond, a retained msg should be sent to those link retainers who are asleep.
         toLinkRetainersHelper
           | targetIds <- [ i' | (i', _, ia) <- retaineds, ia ]
           , f         <- \i' -> rndmDo (calcProbSpiritizeShiver i' ms) . mkExpAction "shiver" . mkActionParams i' ms $ []
           , fs        <- pure . mapM_ f $ targetIds
-          = (("There is a sudden surge of energy over your telepathic link with " <> mySing <> "!", targetIds), fs)
+          = ((linkRetainedMsg mySing, targetIds), fs)
     deleteNpc ms = let ri = getRmId i ms in do { tweaks [ activeEffectsTbl.at  i  .~ Nothing
                                                         , coinsTbl        .at  i  .~ Nothing
                                                         , entTbl          .at  i  .~ Nothing

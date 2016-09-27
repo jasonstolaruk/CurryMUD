@@ -117,6 +117,18 @@ inacBootMsg :: Text
 inacBootMsg = "You are being disconnected from CurryMUD due to inactivity."
 
 
+linkLostMsg :: Sing -> Text
+linkLostMsg s = "Your telepathic link with " <> s <> " fizzles away!"
+
+
+linkMissingMsg :: Sing -> Text
+linkMissingMsg s = thrice prd $ "You notice that your telepathic link with " <> s <> " is missing"
+
+
+linkRetainedMsg :: Sing -> Text
+linkRetainedMsg s = "There is a sudden surge of energy over your telepathic link with " <> s <> "!"
+
+
 loadTblErrorMsg :: FilePath -> Text -> Text
 loadTblErrorMsg fp msg = T.concat [ "error parsing ", dblQuote . T.pack $ fp, ": ", msg, "." ]
 
