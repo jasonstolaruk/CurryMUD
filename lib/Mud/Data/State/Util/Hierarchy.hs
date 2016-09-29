@@ -1,9 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Mud.Data.State.Util.Hierarchy where -- TODO: Corpses.
+module Mud.Data.State.Util.Hierarchy where
 
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
+
+
+conTypes :: [Type]
+conTypes = [ ConType, CorpseType ]
 
 
 entTypes :: [Type]
@@ -11,11 +15,11 @@ entTypes = objTypes ++ mobTypes
 
 
 objTypes :: [Type]
-objTypes = [ ArmType, ClothType, ConType, FoodType, ObjType, VesselType, WpnType, WritableType ]
+objTypes = [ ArmType, ClothType, FoodType, ObjType, VesselType, WpnType, WritableType ] ++ conTypes
 
 
 invCoinsTypes :: [Type]
-invCoinsTypes = [ ConType, RmType ] ++ mobTypes
+invCoinsTypes = RmType : conTypes ++ mobTypes
 
 
 mobTypes :: [Type]
@@ -23,6 +27,10 @@ mobTypes = [ NpcType, PCType ]
 
 
 -----
+
+
+hasCon :: Type -> Bool
+hasCon = (`elem` conTypes)
 
 
 hasEnt :: Type -> Bool
@@ -44,12 +52,16 @@ hasMob = (`elem` mobTypes)
 -----
 
 
-hasEntId :: Id -> MudState -> Bool
-hasEntId = hasHelper entTypes
+hasConId :: Id -> MudState -> Bool
+hasConId = hasHelper conTypes
 
 
 hasHelper :: [Type] -> Id -> MudState -> Bool
 hasHelper ts i ms = getType i ms `elem` ts
+
+
+hasEntId :: Id -> MudState -> Bool
+hasEntId = hasHelper entTypes
 
 
 hasObjId :: Id -> MudState -> Bool

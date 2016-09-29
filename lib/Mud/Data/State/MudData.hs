@@ -195,7 +195,7 @@ type EffectFun = Id -> Seconds -> MudStack ()
 -- ==================================================
 
 
--- Has an object (and an entity and paused/active effects).
+-- Has an object.
 data Arm = Arm { _armSub   :: ArmSub
                , _armClass :: AC } deriving (Eq, Generic, Show)
 
@@ -233,7 +233,7 @@ type IsTuned = Bool
 -- ==================================================
 
 
--- Has an object (and an entity and paused/active effects).
+-- Has an object.
 data Cloth = Earring
            | NoseRing
            | Necklace
@@ -277,7 +277,7 @@ instance Monoid Coins where
 -- ==================================================
 
 
--- Has an object (and an entity and paused/active effects) and an inventory and coins.
+-- Has an object and an inventory and coins.
 data Con = Con { _conIsCloth  :: Bool
                , _conCapacity :: Vol
                , _conFlags    :: Int } deriving (Eq, Generic, Show)
@@ -292,7 +292,7 @@ type ConName = Text
 -- ==================================================
 
 
--- Has a container (and an entity and paused/active effects and an object and a container and inventory and coins).
+-- Has a container.
 data Corpse = PCCorpse  { _corpseSing :: Sing
                         , _corpseSex  :: Sex
                         , _corpseRace :: Race }
@@ -383,7 +383,7 @@ data Slot = HeadS                                   -- armor
 -- ==================================================
 
 
--- Has an object (and an entity and paused/active effects).
+-- Has an object.
 data Food = Food { _foodId           :: DistinctFoodId
                  , _foodEatDesc      :: Text
                  , _foodRemMouthfuls :: Mouthfuls } deriving (Eq, Generic, Show)
@@ -500,7 +500,7 @@ data LogCmd = LogMsg Text
 -- ==================================================
 
 
--- Has an entity (and paused/active effects) and an inventory and coins and equipment.
+-- Has an entity and an inventory and coins and equipment.
 data Mob = Mob { _sex                    :: Sex
                , _st, _dx, _ht, _ma, _ps :: Int
                , _curHp, _maxHp          :: Int
@@ -717,7 +717,7 @@ dfltParty = Party Nothing [] [] Nothing
 -- ==================================================
 
 
--- Has a mob (and an entity and paused/active effects and an inventory and coins and equipment).
+-- Has a mob.
 data Npc = Npc { _npcMsgQueue    :: NpcMsgQueue
                , _npcServerAsync :: NpcServerAsync
                , _npcPossessor   :: Maybe Id }
@@ -729,7 +729,7 @@ type NpcServerAsync = Async ()
 -- ==================================================
 
 
--- Has an entity (and paused/active effects).
+-- Has an entity.
 data Obj = Obj { _objWeight      :: Weight
                , _objVol         :: Vol
                , _objTaste       :: Maybe Text
@@ -775,7 +775,7 @@ newtype PausedEffect = PausedEffect Effect deriving (Eq, Generic, Show)
 -- ==================================================
 
 
--- Has a mob (and an entity and paused/active effects and an inventory and coins and equipment).
+-- Has a mob.
 data PC = PC { _race       :: Race
              , _introduced :: [Sing]
              , _linked     :: [Sing]
@@ -803,7 +803,7 @@ type SkillPts = Int
 -- ==================================================
 
 
--- Has a PC (and a mob and an entity and paused/active effects and an inventory and coins and equipment) and a random names table and a telepathic link table.
+-- Has a PC.
 data Pla = Pla { _currHostName :: HostName
                , _connectTime  :: Maybe UTCTime
                , _plaFlags     :: Int
@@ -1056,7 +1056,7 @@ data Type = ArmType
 -- ==================================================
 
 
--- Has an object (and an entity and paused/active effects).
+-- Has an object.
 data Vessel = Vessel { _vesselMaxMouthfuls :: Mouthfuls -- obj vol / mouthful vol
                      , _vesselCont         :: Maybe VesselCont } deriving (Eq, Generic, Show)
 
@@ -1067,7 +1067,7 @@ type VesselCont = (Liq, Mouthfuls)
 -- ==================================================
 
 
--- Has an object (and an entity and paused/active effects).
+-- Has an object.
 data Wpn = Wpn { _wpnSub    :: WpnSub
                , _wpnMinDmg :: Int
                , _wpnMaxDmg :: Int } deriving (Eq, Generic, Show)
@@ -1080,7 +1080,7 @@ data WpnSub = OneHanded
 -- ==================================================
 
 
--- Has an object (and an entity and paused/active effects).
+-- Has an object.
 data Writable = Writable { _writMessage :: Maybe (Text, Lang)
                          , _writRecip   :: Maybe Sing {- for magically scribed msgs -} } deriving (Eq, Generic, Show)
 
