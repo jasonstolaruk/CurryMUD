@@ -31,7 +31,7 @@ import Control.Lens (_1, _2, _3, at, view, views)
 import Control.Lens.Operators ((%~), (&), (.~))
 import Control.Monad (forM_, when)
 import Control.Monad.IO.Class (liftIO)
-import Data.Bits (setBit, zeroBits)
+import Data.Bits (zeroBits)
 import Data.Function (on)
 import Data.List (delete, sortBy)
 import Data.Monoid ((<>))
@@ -114,7 +114,7 @@ mkCorpse i ms = let et = EntTemplate (Just "corpse")
                                      Nothing -- TODO: Taste.
                                      zeroBits
                     ct = ConTemplate (getCorpseCapacity i ms `max` calcCarriedVol i ms)
-                                     (setBit zeroBits . fromEnum $ IsCorpse)
+                                     zeroBits
                     is = M.elems (getEqMap i ms) ++ getInv i ms
                     c  = getCoins i ms
                     (_, ms', fs) = newCon ms et ot ct (is, c) . getRmId i $ ms
@@ -124,8 +124,7 @@ mkCorpse i ms = let et = EntTemplate (Just "corpse")
                    , logPlaHelper i ms "mkCorpse" "corpse created." : fs )
       where
         (s, p) = if isPC i ms
-          then ( ("corpse of " <>) . mkSerializedNonStdDesig i ms (getSing i ms) A $ Don'tCap
-               , "" )
+          then (("corpse of " <>) . mkSerializedNonStdDesig i ms (getSing i ms) A $ Don'tCap, "")
           else (("corpse of " <>) *** ("corpses of " <>)) . first aOrAnOnLower $ let bgns = getBothGramNos i ms
                                                                                  in bgns & _2 .~ mkPlurFromBoth bgns
 

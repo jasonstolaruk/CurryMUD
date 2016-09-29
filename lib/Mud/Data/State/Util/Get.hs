@@ -835,25 +835,6 @@ isInvisId = entFlagHelper IsInvis
 
 
 -- ==================================================
--- Container flag getters:
-
-
-conFlagHelper :: ConFlags -> Id -> MudState -> Bool
-conFlagHelper flag i = getConFlag flag . getCon i
-
-
------
-
-
-isCorpse :: Con -> Bool
-isCorpse = getConFlag IsCorpse
-
-
-isCorpseId :: Id -> MudState -> Bool
-isCorpseId = conFlagHelper IsCorpse
-
-
--- ==================================================
 -- Object flag getters:
 
 

@@ -53,6 +53,7 @@ data MudState = MudState { _activeEffectsTbl  :: ActiveEffectsTbl
                          , _clothTbl          :: ClothTbl
                          , _coinsTbl          :: CoinsTbl
                          , _conTbl            :: ConTbl
+                         , _corpseTbl         :: CorpseTbl
                          , _distinctFoodTbl   :: DistinctFoodTbl
                          , _distinctLiqTbl    :: DistinctLiqTbl
                          , _effectFunTbl      :: EffectFunTbl
@@ -93,6 +94,7 @@ type ChanTbl           = IM.IntMap Chan
 type ClothTbl          = IM.IntMap Cloth
 type CoinsTbl          = IM.IntMap Coins
 type ConTbl            = IM.IntMap Con
+type CorpseTbl         = IM.IntMap Corpse
 type DistinctFoodTbl   = IM.IntMap DistinctFood
 type DistinctLiqTbl    = IM.IntMap DistinctLiq
 type EffectFunTbl      = M.Map FunName EffectFun
@@ -284,10 +286,17 @@ data Con = Con { _conIsCloth  :: Bool
 type Vol = Int -- 100 "Vol" = 1 cubic in
 
 
-data ConFlags = IsCorpse deriving Enum
-
-
 type ConName = Text
+
+
+-- ==================================================
+
+
+-- Has a container (and an entity and paused/active effects and an object and a container and inventory and coins).
+data Corpse = PCCorpse  { _corpseSing :: Sing
+                        , _corpseSex  :: Sex
+                        , _corpseRace :: Race }
+            | NpcCorpse deriving (Eq, Generic, Show)
 
 
 -- ==================================================
@@ -1033,6 +1042,7 @@ data ThreadType = Biodegrader    Id
 data Type = ArmType
           | ClothType
           | ConType
+          | CorpseType
           | FoodType
           | NpcType
           | ObjType
@@ -1085,6 +1095,7 @@ instance FromJSON Chan           where parseJSON = genericParseJSON dropUndersco
 instance FromJSON Cloth
 instance FromJSON Coins
 instance FromJSON Con            where parseJSON = genericParseJSON dropUnderscore
+instance FromJSON Corpse         where parseJSON = genericParseJSON dropUnderscore
 instance FromJSON DistinctFoodId where parseJSON = genericParseJSON dropUnderscore
 instance FromJSON DistinctLiqId  where parseJSON = genericParseJSON dropUnderscore
 instance FromJSON Effect         where parseJSON = genericParseJSON dropUnderscore
@@ -1126,6 +1137,7 @@ instance ToJSON Chan             where toJSON    = genericToJSON    dropUndersco
 instance ToJSON Cloth
 instance ToJSON Coins
 instance ToJSON Con              where toJSON    = genericToJSON    dropUnderscore
+instance ToJSON Corpse           where toJSON    = genericToJSON    dropUnderscore
 instance ToJSON DistinctFoodId   where toJSON    = genericToJSON    dropUnderscore
 instance ToJSON DistinctLiqId    where toJSON    = genericToJSON    dropUnderscore
 instance ToJSON Effect           where toJSON    = genericToJSON    dropUnderscore
@@ -1174,6 +1186,7 @@ makeLenses ''Arm
 makeLenses ''Chan
 makeLenses ''Con
 makeLenses ''ConsumpEffects
+makeLenses ''Corpse
 makeLenses ''DistinctFood
 makeLenses ''DistinctLiq
 makeLenses ''EdibleEffects

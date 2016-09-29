@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Mud.Data.State.Util.Hierarchy where
+module Mud.Data.State.Util.Hierarchy where -- TODO: Corpses.
 
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get

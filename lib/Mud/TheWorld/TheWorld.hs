@@ -62,6 +62,7 @@ initMudData shouldLog = do
                                  , _clothTbl          = IM.empty
                                  , _coinsTbl          = IM.empty
                                  , _conTbl            = IM.empty
+                                 , _corpseTbl         = IM.empty
                                  , _distinctFoodTbl   = IM.empty
                                  , _distinctLiqTbl    = IM.empty
                                  , _effectFunTbl      =  M.empty
@@ -175,6 +176,7 @@ loadWorld dir@((persistDir </>) -> path) = do
                                                  , loadTbl clothTblFile         clothTbl
                                                  , loadTbl coinsTblFile         coinsTbl
                                                  , loadTbl conTblFile           conTbl
+                                                 , loadTbl corpseTblFile        corpseTbl
                                                  , loadTbl entTblFile           entTbl
                                                  , loadTbl foodTblFile          foodTbl
                                                  , loadTbl hostTblFile          hostTbl

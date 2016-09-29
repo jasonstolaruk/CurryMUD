@@ -67,6 +67,7 @@ persistHelper l ms = withLock l $ do
                                              , write (ms^.clothTbl        ) $ path </> clothTblFile
                                              , write (ms^.coinsTbl        ) $ path </> coinsTblFile
                                              , write (ms^.conTbl          ) $ path </> conTblFile
+                                             , write (ms^.corpseTbl       ) $ path </> corpseTblFile
                                              , write (ms^.entTbl          ) $ path </> entTblFile
                                              , write (eqTblHelper ms      ) $ path </> eqTblFile
                                              , write (ms^.foodTbl         ) $ path </> foodTblFile

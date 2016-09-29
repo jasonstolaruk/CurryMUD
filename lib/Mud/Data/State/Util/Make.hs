@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings, RecordWildCards, ViewPatterns #-}
 
-module Mud.Data.State.Util.Make where
+module Mud.Data.State.Util.Make where -- TODO: Corpses.
 
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get

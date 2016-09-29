@@ -136,11 +136,11 @@ debugCmds =
     , mkDebugCmd "env"         debugEnv         "Display or search system environment variables."
     , mkDebugCmd "exp"         debugExp         "Award yourself 5,000 exp."
     , mkDebugCmd "fun"         debugFun         "Dump the keys of the \"FunTbl\", \"HookFunTbl\", \"RmActionFunTbl\", \
-                                                \and \"EffectFunTbl\"."
+                                                \and \"EffectFunTbl\"." -- TODO: InstaEffectFunTbl, FeelingFunTbl?
     , mkDebugCmd "handle"      debugHandle      "Display information about the handle for your network connection."
-    , mkDebugCmd "id"          debugId          "Search the \"MudState\" tables for a given ID."
+    , mkDebugCmd "id"          debugId          "Search the \"MudState\" tables for a given ID." -- TODO: Corpses.
     , mkDebugCmd "kewpie"      debugKewpie      "Create a kewpie doll."
-    , mkDebugCmd "keys"        debugKeys        "Dump a list of \"MudState\" table keys."
+    , mkDebugCmd "keys"        debugKeys        "Dump a list of \"MudState\" table keys." -- TODO: Corpses.
     , mkDebugCmd "liquid"      debugLiq         "Consume a given amount (in mouthfuls) of a given liquid (by distinct \
                                                 \liquid ID)."
     , mkDebugCmd "log"         debugLog         "Put the logging service under heavy load."
@@ -158,7 +158,7 @@ debugCmds =
     , mkDebugCmd "remput"      debugRemPut      "In quick succession, remove from and put into a sack on the ground."
     , mkDebugCmd "rnt"         debugRnt         "Dump your random names table, or generate a random name for a given PC."
     , mkDebugCmd "rotate"      debugRotate      "Send the signal to rotate your player log."
-    , mkDebugCmd "rules"       debugRules       "Dump the rules message."
+    , mkDebugCmd "rules"       debugRules       "Display the rules message."
     , mkDebugCmd "talk"        debugTalk        "Dump the talk async table."
     , mkDebugCmd "threads"     debugThreads     "Display or search the thread table."
     , mkDebugCmd "throw"       debugThrow       "Throw an exception."
