@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings, RecordWildCards, ViewPatterns #-}
 
-module Mud.Data.State.Util.Make where -- TODO: Corpses.
+module Mud.Data.State.Util.Make where
 
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
@@ -69,6 +69,28 @@ createCon ms et ot ct (is, c) = let (i, ms', fs) = createObj ms et ot
 newCon :: MudState -> EntTemplate -> ObjTemplate -> ConTemplate -> (Inv, Coins) -> InvId -> (Id, MudState, Funs)
 newCon ms et ot ct (is, c) invId = let (i, typeTbl.ind i .~ ConType -> ms', fs) = createCon ms et ot ct (is, c)
                                    in (i, ms' & invTbl.ind invId %~ addToInv ms' (pure i), fs)
+
+
+-----
+
+
+createCorpse :: MudState -> EntTemplate -> ObjTemplate -> ConTemplate -> (Inv, Coins) -> Corpse -> (Id, MudState, Funs)
+createCorpse ms et ot ct ic corpse = let (i, ms', fs) = createCon ms et ot ct ic
+                                         ms''         = ms' & corpseTbl.ind i .~ corpse
+                                     in (i, ms'', fs)
+
+
+newCorpse :: MudState
+          -> EntTemplate
+          -> ObjTemplate
+          -> ConTemplate
+          -> (Inv, Coins)
+          -> Corpse
+          -> InvId
+          -> (Id, MudState, Funs)
+newCorpse ms et ot ct ic corpse invId =
+    let (i, typeTbl.ind i .~ CorpseType -> ms', fs) = createCorpse ms et ot ct ic corpse
+    in (i, ms' & invTbl.ind invId %~ addToInv ms' (pure i), fs)
 
 
 -----
