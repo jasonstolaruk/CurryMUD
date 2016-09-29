@@ -323,7 +323,7 @@ type Mouthfuls = Int
 -- ==================================================
 
 
--- Has paused/active effects.
+-- Has effects.
 data Ent = Ent { _entId    :: Id
                , _entName  :: Maybe Text
                , _sing     :: Sing
@@ -803,7 +803,7 @@ type SkillPts = Int
 -- ==================================================
 
 
--- Has a PC.
+-- Has a PC and random names and telepathic links.
 data Pla = Pla { _currHostName :: HostName
                , _connectTime  :: Maybe UTCTime
                , _plaFlags     :: Int
