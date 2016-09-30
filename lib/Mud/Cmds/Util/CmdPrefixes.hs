@@ -18,4 +18,4 @@ prefixDebugCmd = prefixCmd debugCmdChar
 
 
 prefixCmd :: Char -> CmdName -> Text
-prefixCmd prefix cn = T.cons prefix cn
+prefixCmd = T.cons

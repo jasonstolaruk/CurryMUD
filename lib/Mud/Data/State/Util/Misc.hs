@@ -176,7 +176,7 @@ getEffName i ms targetId = let targetEnt = getEnt targetId ms
 mkUnknownPCEntName :: Id -> MudState -> Text
 mkUnknownPCEntName i ms = views entName (fromMaybe helper) . getEnt i $ ms
   where
-    helper = uncurry T.cons . first T.head . mkPrettySexRace i $ ms -- TODO: More uses of "T.cons"?
+    helper = uncurry T.cons . first T.head . mkPrettySexRace i $ ms
 
 
 -----

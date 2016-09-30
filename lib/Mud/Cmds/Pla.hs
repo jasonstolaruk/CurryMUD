@@ -1972,7 +1972,7 @@ link (NoArgs i mq cols) = do
                       where
                         x' = case view (at linkSing) . getTeleLinkTbl i $ ms of
                           Nothing  -> x
-                          Just val -> val ? x :? (x |<>| parensQuote "tuned out")
+                          Just val -> val ? x :? x |<>| parensQuote "tuned out"
                 in (linkSing |&|) $ if and [ isLoggedIn linkPla, not . isIncognito $ linkPla ]
                   then f _1
                   else f _2
@@ -2152,8 +2152,7 @@ mkRmInvCoinsDesc i cols ms ri =
                                                           , adminTagHelper ia
                                                           , " "
                                                           , en ]
-    mkPCDesc (ia, (en, b,      d, c))          = T.concat [ let t = showText c |<>| mkPlurFromBoth b
-                                                            in colorWith unknownNameColor t
+    mkPCDesc (ia, (en, b,      d, c))          = T.concat [ colorWith unknownNameColor $ showText c |<>| mkPlurFromBoth b
                                                           , rmDescHepler d
                                                           , adminTagHelper ia
                                                           , " "
