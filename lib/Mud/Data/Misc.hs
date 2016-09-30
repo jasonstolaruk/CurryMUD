@@ -280,7 +280,7 @@ instance Pretty BugRec where
 
 
 instance Pretty ChanContext where
-  pp ChanContext { .. } = someCmdName <> maybe "" (" " <>) someChanName
+  pp ChanContext { .. } = someCmdName <> maybe "" spcL someChanName
 
 
 instance Pretty Cloth where
@@ -326,11 +326,11 @@ effectValHelper = maybe (parensQuote "no value") pp
 
 
 effectFeelingHelper :: Maybe EffectFeeling -> Text
-effectFeelingHelper = maybe "" ((" " <> ) . pp)
+effectFeelingHelper = maybe "" (spcL . pp)
 
 
 instance Pretty EffectFeeling where
-  pp (EffectFeeling tag dur) = bracketQuote $ tag <> " " <> mkSecsTxt dur
+  pp (EffectFeeling tag dur) = bracketQuote $ tag |<>| mkSecsTxt dur
 
 
 instance Pretty EffectSub where
@@ -344,11 +344,11 @@ instance Pretty EffectSub where
 
 instance Pretty EffectVal where
   pp (DefiniteVal x     ) = showText x
-  pp (RangeVal    (x, y)) = showText x <> "-" <> showText y
+  pp (RangeVal    (x, y)) = showText x <> T.cons '-' (showText y)
 
 
 instance Pretty Feeling where
-  pp (Feeling fv dur _ _) = pp fv <> " " <> mkSecsTxt dur
+  pp (Feeling fv dur _ _) = pp fv |<>| mkSecsTxt dur
 
 
 instance Pretty FeelingVal where

@@ -100,8 +100,9 @@ mkGenericHookFun toSelf bcastTxt logMsgTxt = f
         let selfDesig = mkStdDesig i ms DoCap
         in a &    _1 %~  (\\ hookTriggers)
              & _2._2 <>~ pure toSelf
-             & _2._3 <>~ pure (serialize selfDesig <> " " <> bcastTxt, i `delete` desigIds selfDesig)
-             & _2._4 <>~ pure (bracketQuote hookName <> " " <> parseExpandDesig i ms logMsgTxt)
+             & _2._3 <>~ pure ( serialize selfDesig |<>| bcastTxt
+                              , i `delete` desigIds selfDesig )
+             & _2._4 <>~ pure (bracketQuote hookName |<>| parseExpandDesig i ms logMsgTxt)
 
 
 -----

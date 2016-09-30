@@ -104,27 +104,28 @@ logPlaHelper i ms funName = when (isPC i ms) . logPla funName i
 
 
 mkCorpse :: Id -> MudState -> (MudState, Funs)
-mkCorpse i ms = let et = EntTemplate (Just "corpse")
-                                     s p
-                                     (getEntDesc i ms)
-                                     Nothing -- TODO: Smell.
-                                     zeroBits
-                    ot = ObjTemplate (getCorpseWeight i ms)
-                                     (getCorpseVol    i ms)
-                                     Nothing -- TODO: Taste.
-                                     zeroBits
-                    ct = ConTemplate (getCorpseCapacity i ms `max` calcCarriedVol i ms)
-                                     zeroBits
-                    is = M.elems (getEqMap i ms) ++ getInv i ms
-                    c  = getCoins i ms
-                    (_, ms', fs) = newCon ms et ot ct (is, c) . getRmId i $ ms
+mkCorpse i ms = let et     = EntTemplate (Just "corpse")
+                                         s p
+                                         (getEntDesc i ms)
+                                         Nothing -- TODO: Smell.
+                                         zeroBits
+                    ot     = ObjTemplate (getCorpseWeight i ms)
+                                         (getCorpseVol    i ms)
+                                         Nothing -- TODO: Taste.
+                                         zeroBits
+                    ct     = ConTemplate (getCorpseCapacity i ms `max` calcCarriedVol i ms)
+                                         zeroBits
+                    ic     = (M.elems (getEqMap i ms) ++ getInv i ms, getCoins i ms)
+                    corpse | isPC i ms = PCCorpse (getSing i ms) (getSex i ms) (getRace i ms)
+                           | otherwise = NpcCorpse
+                    (_, ms', fs) = newCorpse ms et ot ct ic corpse . getRmId i $ ms
                 in ( ms' & coinsTbl.ind i .~ mempty
                          & eqTbl   .ind i .~ M.empty
                          & invTbl  .ind i .~ []
                    , logPlaHelper i ms "mkCorpse" "corpse created." : fs )
       where
         (s, p) = if isPC i ms
-          then (("corpse of " <>) . mkSerializedNonStdDesig i ms (getSing i ms) A $ Don'tCap, "")
+          then ("corpse of a ", "") -- TODO
           else (("corpse of " <>) *** ("corpses of " <>)) . first aOrAnOnLower $ let bgns = getBothGramNos i ms
                                                                                  in bgns & _2 .~ mkPlurFromBoth bgns
 

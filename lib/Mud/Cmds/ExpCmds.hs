@@ -1151,7 +1151,7 @@ vomit i mq cols ecn a = getState >>= \ms -> case getStomach i ms of
             remainder = contAmt - vomitAmt
             actualAmt = remainder >= 0 ? vomitAmt :? contAmt
             isEmptied = remainder <= 0
-            amtTxt    = (" " <>) . parensQuote . T.concat $ [ "Vomited ", showText actualAmt, " mouthfuls", rest, "." ]
+            amtTxt    = spcL . parensQuote . T.concat $ [ "Vomited ", showText actualAmt, " mouthfuls", rest, "." ]
             rest      = isEmptied |?| "; stomach emptied"
             a'        = a & _4 <>~ amtTxt
             fs        = pure . expCmdHelper i mq cols ecn $ a'

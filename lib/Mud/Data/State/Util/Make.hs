@@ -67,8 +67,8 @@ createCon ms et ot ct (is, c) = let (i, ms', fs) = createObj ms et ot
 
 
 newCon :: MudState -> EntTemplate -> ObjTemplate -> ConTemplate -> (Inv, Coins) -> InvId -> (Id, MudState, Funs)
-newCon ms et ot ct (is, c) invId = let (i, typeTbl.ind i .~ ConType -> ms', fs) = createCon ms et ot ct (is, c)
-                                   in (i, ms' & invTbl.ind invId %~ addToInv ms' (pure i), fs)
+newCon ms et ot ct ic invId = let (i, typeTbl.ind i .~ ConType -> ms', fs) = createCon ms et ot ct ic
+                              in (i, ms' & invTbl.ind invId %~ addToInv ms' (pure i), fs)
 
 
 -----

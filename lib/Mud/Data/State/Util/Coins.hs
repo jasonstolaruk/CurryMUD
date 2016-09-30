@@ -11,6 +11,7 @@ module Mud.Data.State.Util.Coins ( aCoinSomeCoins
 import Mud.Data.State.MudData
 import Mud.TopLvlDefs.Misc
 import Mud.Util.Misc (PatternMatchFail)
+import Mud.Util.Operators
 import Mud.Util.Text
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
@@ -62,7 +63,7 @@ mkCoinTxt coins = case mkCoinTxtList of
   where
     mkCoinTxtList = dropBlanks . foldr combineAmntName [] . zip (coinsToList coins) $ coinFullNames
     combineAmntName (amt, coinName) acc | amt >  1  = T.concat [ showText amt, " ", coinName, "s" ] : acc
-                                        | amt == 1  = showText amt <> " " <> coinName : acc
+                                        | amt == 1  = showText amt |<>| coinName : acc
                                         | otherwise = acc
 
 

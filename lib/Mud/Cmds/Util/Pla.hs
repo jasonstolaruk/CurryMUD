@@ -203,7 +203,7 @@ bugTypoLogger :: ActionParams -> WhichLog -> MudStack ()
 bugTypoLogger (Msg' i mq msg) wl = getState >>= \ms ->
     let s     = getSing i  ms
         ri    = getRmId i  ms
-        mkLoc = parensQuote (showText ri) <> " " <> getRm ri ms ^.rmName
+        mkLoc = parensQuote (showText ri) |<>| view rmName (getRm ri ms)
     in liftIO mkTimestamp >>= \ts -> do
         sequence_ $ case wl of BugLog  -> let b = BugRec ts s mkLoc msg
                                           in [ withDbExHandler_ "bugTypoLogger" . insertDbTblBug $ b
@@ -686,7 +686,7 @@ mkPutRemCoinsDescsSelf por mnom conSing = mkCoinsMsgs helper
   where
     helper a cn | a == 1 = T.concat [ partA, aOrAn cn,   " ",           partB ]
     helper a cn          = T.concat [ partA, showText a, " ", cn, "s ", partB ]
-    partA                = "You " <> mkPorVerb por SndPer <> " "
+    partA                = spcR $ "You " <> mkPorVerb por SndPer
     partB                = prd $ mkPorPrep por SndPer mnom conSing <> onTheGround mnom
 
 
@@ -710,7 +710,7 @@ mkPorPrep Rem ThrPer (Just (n, m)) = ("from the " <>) . (descNthOfM n m <>)
 
 descNthOfM :: Int -> Int -> Text
 descNthOfM 1 1 = ""
-descNthOfM n _ = mkOrdinal n <> " "
+descNthOfM n _ = spcR . mkOrdinal $ n
 
 
 onTheGround :: Maybe NthOfM -> Text
@@ -1003,16 +1003,16 @@ mkEntDesc i cols ms (ei, e) | ed <- views entDesc (wrapUnlines cols) e, s <- get
               _            -> ed
   where
     pcHeader = wrapUnlines cols mkPCDescHeader
-    mkPCDescHeader | (pp *** pp -> (s, r)) <- getSexRace ei ms = T.concat [ "You see a "
-                                                                          , s
-                                                                          , " "
-                                                                          , r
-                                                                          , rmDescHelper
-                                                                          , adminTagHelper
-                                                                          , "." ]
+    mkPCDescHeader | (s, r) <- mkPrettySexRace ei ms = T.concat [ "You see a "
+                                                                , s
+                                                                , " "
+                                                                , r
+                                                                , rmDescHelper
+                                                                , adminTagHelper
+                                                                , "." ]
     rmDescHelper        = case mkMobRmDesc ei ms of "" -> ""
-                                                    d  -> " " <> d
-    adminTagHelper      | isAdminId ei ms = " " <> adminTagTxt
+                                                    d  -> spcL d
+    adminTagHelper      | isAdminId ei ms = spcL adminTagTxt
                         | otherwise       = ""
     tempDescHelper      = maybe "" (wrapUnlines cols . coloredBracketQuote) . getTempDesc ei $ ms
     coloredBracketQuote = quoteWith' (("[ ", " ]") & both %~ colorWith tempDescColor)
@@ -1050,7 +1050,7 @@ mkCoinsSummary :: Cols -> Coins -> Text
 mkCoinsSummary cols = helper . zipWith mkNameAmt coinNames . coinsToList
   where
     helper         = T.unlines . wrapIndent 2 cols . commas . dropEmpties
-    mkNameAmt cn a = Sum a |!| showText a <> " " <> bracketQuote (colorWith abbrevColor cn)
+    mkNameAmt cn a = Sum a |!| showText a |<>| bracketQuote (colorWith abbrevColor cn)
 
 
 mkEqDesc :: Id -> Cols -> MudState -> Id -> Sing -> Type -> Text

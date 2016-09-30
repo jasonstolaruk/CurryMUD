@@ -4,6 +4,7 @@ module Mud.Cmds.Msgs.Hint where
 
 import Mud.Data.State.MudData
 import Mud.Misc.ANSI
+import Mud.Util.Operators
 import Mud.Util.Quoting
 import Mud.Util.Text
 
@@ -13,7 +14,7 @@ import qualified Data.Text as T
 
 
 hintHelper :: [Text] -> Text
-hintHelper t = quoteWith' (hintANSI, noHintANSI) "Hint:" <> " " <> T.concat t
+hintHelper t = quoteWith' (hintANSI, noHintANSI) "Hint:" |<>| T.concat t
 
 
 specifyFullHelper :: Text -> Text

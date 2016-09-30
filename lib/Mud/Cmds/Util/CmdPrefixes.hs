@@ -1,11 +1,10 @@
-{-# LANGUAGE OverloadedStrings, ViewPatterns #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Mud.Cmds.Util.CmdPrefixes where
 
 import Mud.Data.State.MudData
 import Mud.TopLvlDefs.Chars
 
-import Data.Monoid ((<>))
 import Data.Text (Text)
 import qualified Data.Text as T
 
@@ -19,4 +18,4 @@ prefixDebugCmd = prefixCmd debugCmdChar
 
 
 prefixCmd :: Char -> CmdName -> Text
-prefixCmd (T.singleton -> prefix) cn = prefix <> cn
+prefixCmd prefix cn = T.cons prefix cn

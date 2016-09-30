@@ -52,6 +52,6 @@ mkAbbrevs = helper "" . nubSort
 
 calcAbbrev :: Text -> Text -> Text
 calcAbbrev (T.uncons -> Just (x, _ )) ""                                  = T.singleton x
-calcAbbrev (T.uncons -> Just (x, xs)) (T.uncons -> Just (y, ys)) | x == y = T.singleton x <> calcAbbrev xs ys
+calcAbbrev (T.uncons -> Just (x, xs)) (T.uncons -> Just (y, ys)) | x == y = T.cons      x (calcAbbrev xs ys)
                                                                  | x /= y = T.singleton x
 calcAbbrev x                          y                                   = patternMatchFail "calcAbbrev" . showText $ (x, y)

@@ -59,14 +59,14 @@ procTwoWayEmote cn i ms targetId as =
           | enc `T.isInfixOf` x -> Left . adviceEnc $ cn'
           | etc `T.isInfixOf` x -> Left . adviceEtcInTwoWay cn $ cn'
           | isHead, hasEnc as   -> Right . capitalizeMsg $ x
-          | isHead              -> Right $ s <> " " <> x
+          | isHead              -> Right $ s |<>| x
           | otherwise           -> Right x
     in case lefts xformed of
       []      -> let msg = bracketQuote . T.unwords . rights $ xformed
                  in Right [ (msg, pure i), (msg, pure targetId) ]
       advices -> Left . intersperse "" . nub $ advices
   where
-    cn' = cn <> " " <> T.singleton emoteChar
+    cn' = cn |<>| T.singleton emoteChar
 
 
 -----

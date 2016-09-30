@@ -71,7 +71,6 @@ import Control.Monad (guard, join)
 import Data.Function (on)
 import Data.IORef (IORef, atomicWriteIORef)
 import Data.List (delete)
-import Data.Monoid ((<>))
 import Data.Text (Text)
 import Data.Time (getZonedTime)
 import qualified Data.IntMap.Lazy as IM (IntMap, (!), insert)
@@ -272,7 +271,7 @@ mkDateTimeTxt = helper <$> (T.words . T.pack . show) `fmap` getZonedTime
 
 
 mkTimestamp :: IO Text
-mkTimestamp = [ bracketQuote $ date <> " " <> time | (date, time) <- mkDateTimeTxt ]
+mkTimestamp = [ bracketQuote . uncurry (|<>|) $ pair | pair <- mkDateTimeTxt ]
 
 
 onLeft :: (Show a, Show b) => (a -> c) -> Either a b -> Either c b

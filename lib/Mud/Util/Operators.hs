@@ -1,16 +1,19 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Mud.Util.Operators ( (!#)
-                          , (#)
                           , (?)
+                          , (#)
                           , (|!|)
-                          , (|#|)
-                          , (|&|)
                           , (|?|)
+                          , (|&|)
+                          , (|#|)
+                          , (|<>|)
                           , Cond(..) ) where
 
 import Control.Monad (unless)
 import Data.Function ((&))
+import Data.Monoid ((<>))
+import Data.Text (Text)
 
 
 infixl 0 ?
@@ -18,6 +21,8 @@ infixl 0 |&|
 infixl 1 :?, |!|, |?|
 infixl 8 |#|
 infixl 9 !#, #
+
+infixr 6 |<>|
 
 
 -- ==================================================
@@ -71,6 +76,13 @@ False ? (_ :? y) = y
 (|#|) = unlessMempty
   where
     x `unlessMempty` f = unless (()# x) . f $ x
+
+
+-----
+
+
+(|<>|) :: Text -> Text -> Text
+a |<>| b = a <> " " <> b
 
 
 -----

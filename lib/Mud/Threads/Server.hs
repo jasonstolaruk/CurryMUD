@@ -140,7 +140,7 @@ forwardToPeepers i peeperIds toOrFrom msg = liftIO . atomically . helper =<< get
 
 
 handleFromServer :: Id -> Handle -> ToWhom -> Text -> MudStack ()
-handleFromServer _ h Npcに msg = fromServerHelper h $ colorWith toNpcColor " " <> " " <> msg
+handleFromServer _ h Npcに msg = fromServerHelper h $ colorWith toNpcColor " " |<>| msg
 handleFromServer i h Plaに msg = getState >>= \ms ->
     forwardToPeepers i (getPeepers i ms) ToThePeeped msg >> fromServerHelper h msg
 

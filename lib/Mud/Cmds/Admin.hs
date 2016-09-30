@@ -379,7 +379,7 @@ adminBanPC p@(MsgWithTarget i mq cols target msg) = getState >>= \ms ->
     let fn                  = "adminBanPC"
         SingleTarget { .. } = mkSingleTarget mq cols target "The name of the PC you wish to ban"
     in case [ pi | pi <- views pcTbl IM.keys ms, getSing pi ms == strippedTarget ] of
-      []      -> sendFun $ sorryPCName strippedTarget <> " " <> hintABan
+      []      -> sendFun $ sorryPCName strippedTarget |<>| hintABan
       [banId] -> let selfSing = getSing i     ms
                      pla      = getPla  banId ms
                  in if
@@ -404,7 +404,7 @@ adminBoot p@AdviseNoArgs                       = advise p [ prefixAdminCmd "boot
 adminBoot (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
     let SingleTarget { .. } = mkSingleTarget mq cols target "The PC name of the player you wish to boot"
     in case [ pi | pi <- views pcTbl IM.keys ms, getSing pi ms == strippedTarget ] of
-      []       -> sendFun $ sorryPCName strippedTarget <> " " <> hintABoot
+      []       -> sendFun $ sorryPCName strippedTarget |<>| hintABoot
       [bootId] -> let selfSing = getSing i ms in if
                     | not . isLoggedIn . getPla bootId $ ms -> sendFun . sorryLoggedOut $ strippedTarget
                     | bootId == i -> sendFun sorryBootSelf
@@ -674,7 +674,7 @@ ppList = noneOnNull . commas . map pp
 examineEqMap :: ExamineHelper
 examineEqMap i ms = map helper . M.toList . getEqMap i $ ms
   where
-    helper (slot, i') = bracketQuote (pp slot) <> " " <> descSingId i' ms
+    helper (slot, i') = bracketQuote (pp slot) |<>| descSingId i' ms
 
 
 examineFood :: ExamineHelper
@@ -711,7 +711,7 @@ examineInv i ms = let is  = getInv i ms
 examineMob :: ExamineHelper
 examineMob i ms =
     let m                  = getMob i ms
-        showAttrib a       = showText (getBaseAttrib a i ms) <> " " <> (parensQuote . showText . calcEffAttrib a i $ ms)
+        showAttrib a       = showText (getBaseAttrib a i ms) |<>| (parensQuote . showText . calcEffAttrib a i $ ms)
         showPts x y        = m^.x.to showText <> " / " <> m^.y.to showText
         descSingIdHelper f = noneOnNull . commas . map (`descSingId` ms) . f i $ ms
     in [ "Sex: "              <> m^.sex.to pp
@@ -728,7 +728,7 @@ examineMob i ms =
        , "Level: "            <> m^.lvl .to showText
        , "Handedness: "       <> m^.hand.to pp
        , "Know languages: "   <> m^.knownLangs.to ppList
-       , "Room: "             <> let ri = m^.rmId in getRmName ri ms <> " " <> parensQuote (showText ri)
+       , "Room: "             <> let ri = m^.rmId in getRmName ri ms |<>| parensQuote (showText ri)
        , "Room description: " <> m^.mobRmDesc.to (fromMaybe none)
        , "Temp description: " <> m^.tempDesc .to (fromMaybe none)
        , "Size: "             <> m^.mobSize       .to ppMaybe
@@ -744,7 +744,7 @@ examineMob i ms =
                                                                , calcStomachSize i ms
                                                                , calcStomachPerFull i ms ) & each %~ showText
                                  in T.concat [ mouths, " / ", size, " ", parensQuote $ perFull <> "%" ]
-       , "Feeling map: "      <> let f tag feel = (tag <> " " <> pp feel :)
+       , "Feeling map: "      <> let f tag feel = (tag |<>| pp feel :)
                                  in noneOnNull . commas . views feelingMap (M.foldrWithKey f []) $ m
        , encHelper i ms ]
 
@@ -785,7 +785,7 @@ examinePla i ms = let p = getPla i ms
                      , "Peeping: "           <> p^.peeping     .to helper
                      , "Possessing: "        <> p^.possessing  .to (descMaybeId ms)
                      , "Retained messages: " <> p^.retainedMsgs.to (noneOnNull . slashes)
-                     , "Last room: "         <> let f ri = getRmName ri ms <> " " <> parensQuote (showText ri)
+                     , "Last room: "         <> let f ri = getRmName ri ms |<>| parensQuote (showText ri)
                                                 in p^.lastRmId.to (maybe none f)
                      , "Bonus time: "        <> p^.bonusTime.to (maybe none showText) ]
   where
@@ -974,7 +974,7 @@ adminKill :: ActionFun
 adminKill p@AdviseNoArgs          = advise p [ prefixAdminCmd "kill" ] adviceAKillNoArgs
 adminKill (LowerNub i mq cols as) = getState >>= \ms ->
     let (is, fs) = foldl' (helper ms) ((,) mempty mempty) as
-        logMsg   = prd $ "killing " <> commas [ getSing targetId ms <> " " <> parensQuote (showText targetId)
+        logMsg   = prd $ "killing " <> commas [ getSing targetId ms |<>| parensQuote (showText targetId)
                                               | targetId <- is ]
         cn       = prefixAdminCmd "kill"
         s        = getSing i ms
@@ -1020,7 +1020,7 @@ adminLink (LowerNub i mq cols as) = getState >>= \ms -> do
                   where
                     header          = (targetSing <> "'s two-way links:" :)
                     mkReport     ss | pairs <- sortBy (flip compare `on` fst) . mkCountSings $ ss
-                                    = map (\(c, s) -> s <> " " <> parensQuote (showText c)) pairs
+                                    = map (uncurry (flip (|<>|)) . first (parensQuote . showText)) pairs
                     mkCountSings ss = [ (length g, s) | g@(s:_) <- sortGroup . map fromOnly $ ss ]
             in findFullNameForAbbrev target (mkAdminPlaIdSingList ms) |&| maybe notFound found
     pager i mq Nothing . noneOnNull . intercalateDivider cols =<< forM as (helper . capitalize . T.toLower)
@@ -1078,7 +1078,7 @@ adminMsg (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsgs
                       f _                    = True
                       me                     = head . filter g . styleAbbrevs Don'tQuote $ adminSings
                       g                      = (== s) . dropANSI
-                      toTarget'              = quoteWith "__" me <> " " <> toTarget
+                      toTarget'              = quoteWith "__" me |<>| toTarget
                   in do
                       sendFun formatted
                       (multiWrapSend targetMq targetCols =<<) $ if isNotFirstAdminMsg targetPla
@@ -1124,7 +1124,7 @@ adminPassword p@(WithTarget i mq cols target pw)
                 withDbExHandler_ fn . insertDbTblUnPw . UnPwRec strippedTarget $ pw
                 sendFun $ strippedTarget <> "'s password has been changed."
                 let msg      = T.concat [ getSing i ms, " has changed ", strippedTarget, "'s password" ]
-                    oldPwMsg = prd $ " " <> parensQuote ("was " <> dblQuote oldPW)
+                    oldPwMsg = prd . spcL $ parensQuote ("was " <> dblQuote oldPW)
                 bcastOtherAdmins i . prd $ msg
                 logPla fn i . T.concat $ [ "changed ", strippedTarget, "'s password", oldPwMsg ]
                 logNotice fn $ msg <> oldPwMsg
@@ -1135,7 +1135,7 @@ adminPassword p@(WithTarget i mq cols target pw)
         | helper isLower                                     -> sendFun sorryInterpNewPwLower
         | helper isDigit                                     -> sendFun sorryInterpNewPwDigit
         | otherwise -> case [ pi | pi <- views pcTbl IM.keys ms, getSing pi ms == strippedTarget ] of
-          []         -> sendFun $ sorryPCName strippedTarget <> " " <> hintAPassword
+          []         -> sendFun $ sorryPCName strippedTarget |<>| hintAPassword
           [targetId] -> let targetPla = getPla targetId ms in if | targetId == i     -> sendFun sorryAdminPasswordSelf
                                                                  | isAdmin targetPla -> sendFun sorryAdminPasswordAdmin
                                                                  | otherwise         -> changePW
@@ -1251,7 +1251,7 @@ adminPossess ActionParams { myId, plaMsgQueue, plaCols } = do
 adminPrint :: ActionFun
 adminPrint p@AdviseNoArgs  = advise p [ prefixAdminCmd "print" ] adviceAPrintNoArgs
 adminPrint (Msg' i mq msg) = getState >>= \ms -> let s = getSing i ms in do
-    liftIO . T.putStrLn $ bracketQuote s <> " " <> colorWith printConsoleColor msg
+    liftIO . T.putStrLn $ bracketQuote s |<>| colorWith printConsoleColor msg
     ok mq
     logPla    "adminPrint" i $       "printed "  <> dblQuote msg
     logNotice "adminPrint"   $ s <> " printed, " <> dblQuote msg
@@ -1286,7 +1286,7 @@ adminSearch (WithArgs i mq cols (T.unwords -> a)) = getState >>= \ms -> do
     getMatches = filter (views _2 (()!#) . snd) . map (second (applyRegex a))
     descMatch ms b (i', (x, y, z)) = T.concat [ padId . showText $ i'
                                               , " "
-                                              , b |?| (parensQuote . pp . getType i' $ ms) <> " "
+                                              , b |?| spcR . parensQuote . pp . getType i' $ ms
                                               , x
                                               , colorWith regexMatchColor y
                                               , z ]
@@ -1337,7 +1337,7 @@ adminSet   (WithArgs i mq cols (target:rest)) = helper |&| modifyState >=> \(toS
             sequence_ fs
             logMsgs |#| logPla (prefixAdminCmd "set") i . g . slashes
           where
-            g = (parensQuote ("for ID " <> showText targetId) <>) . (" " <>)
+            g = (parensQuote ("for ID " <> showText targetId) <>) . spcL
     maybeVoid ioHelper mTargetId
   where
     helper ms = case reads . T.unpack $ target :: [(Int, String)] of
@@ -1791,7 +1791,7 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
         sorryType               = appendMsg . sorryAdminSetType $ targetId
         sorryOp                 = appendMsg . sorryAdminSetOp (pp op)
         value'                  = strictTextToLazyBS value
-        mkDiffTxt isDiff        = not isDiff |?| (" " <> parensQuote "no change")
+        mkDiffTxt isDiff        = not isDiff |?| spcL . parensQuote $ "no change"
         showMaybe Nothing       = none
         showMaybe (Just x)      = showText x
         mkToSelfForInt k v diff = pure . T.concat $ [ "Set ", k, " to ", commaShow v, " ", parensQuote diffTxt, "." ]
@@ -1817,7 +1817,7 @@ adminShutdown p                  = patternMatchFail "adminShutdown" . showText $
 shutdownHelper :: Id -> MsgQueue -> Maybe Text -> MudStack ()
 shutdownHelper i mq maybeMsg = getState >>= \ms ->
     let s    = getSing i ms
-        rest = maybeMsg |&| maybe (prd $ " " <> parensQuote "no message given") (("; message: " <>) . dblQuote)
+        rest = maybeMsg |&| maybe (prd . spcL . parensQuote $ "no message given") (("; message: " <>) . dblQuote)
     in do
         massSend . colorWith shutdownMsgColor . fromMaybe dfltShutdownMsg $ maybeMsg
         logPla     "shutdownHelper" i $ "initiating shutdown" <> rest
@@ -1835,7 +1835,7 @@ adminSudoer (OneArgNubbed i mq cols target) = modifyStateSeq $ \ms ->
     let fn                  = "adminSudoer helper"
         SingleTarget { .. } = mkSingleTarget mq cols target "The PC name of the player you wish to promote/demote"
     in case [ pi | pi <- views pcTbl IM.keys ms, getSing pi ms == strippedTarget ] of
-      [] -> (ms, pure . sendFun $ sorryPCName strippedTarget <> " " <> hintASudoer)
+      [] -> (ms, pure . sendFun $ sorryPCName strippedTarget |<>| hintASudoer)
       [targetId]
         | selfSing       <- getSing i ms
         , targetSing     <- getSing targetId ms
@@ -1876,7 +1876,7 @@ adminSummon (OneArgNubbed i mq cols target) = modifyStateSeq $ \ms ->
         idSings             = [ idSing | idSing@(api, _) <- mkAdminPlaIdSingList ms, isLoggedIn . getPla api $ ms ]
         destId              = getRmId i ms
         rn                  = getRmName destId ms
-        destName            = rn <> " " <> parensQuote ("summoned by " <> s)
+        destName            = rn |<>| parensQuote ("summoned by " <> s)
         s                   = getSing i ms
         sorry               = (ms, ) . pure . sendFun
         found (targetId@((`getRmId` ms) -> originId), targetSing)
@@ -2062,7 +2062,7 @@ mkCharListTxt inOrOut ms =
     let is               = IM.keys . IM.filter predicate $ ms^.plaTbl
         (is', ss)        = unzip [ (i, s) | i <- is, let s = getSing i ms, then sortWith by s ]
         ias              = zip is' . styleAbbrevs Don'tQuote $ ss
-        mkCharTxt (i, a) = let (s, r, l) = mkPrettifiedSexRaceLvl i ms
+        mkCharTxt (i, a) = let (s, r, l) = mkPrettySexRaceLvl i ms
                                name      = mkAnnotatedName i a
                            in T.concat [ padName name, padId . showText $ i, padSex s, padRace r, l ]
         nop              = length is

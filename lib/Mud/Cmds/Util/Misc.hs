@@ -50,7 +50,6 @@ module Mud.Cmds.Util.Misc ( asterisk
                           , mkInterfaceList
                           , mkNameTypeIdDesc
                           , mkPossPro
-                          , mkPrettifiedSexRaceLvl
                           , mkPros
                           , mkReflexPro
                           , mkRetainedMsgFromPerson
@@ -172,7 +171,7 @@ awardExp amt reason i = getLvlExp i <$> getState >>= \(l, x) -> let diff = calcL
                               , " exp "
                               , parensQuote reason
                               , "."
-                              , logMsgs |!| " " <> (capitalize . prd . slashes $ logMsgs) ]
+                              , logMsgs |!| (spcL . capitalize . prd . slashes $ logMsgs) ]
             b = isNpc i ms ? True :? isLoggedIn (getPla i ms)
         when b . logPla "awardExp" i $ logMsg
   where
@@ -605,7 +604,7 @@ locateHelper ms txts i = case getType i ms of
   where
     searchInvs = views invTbl (fmap (mkDescId "in"         ) . listToMaybe . IM.keys . IM.filter ( i `elem`)           ) ms
     searchEqs  = views eqTbl  (fmap (mkDescId "equipped by") . listToMaybe . IM.keys . IM.filter ((i `elem`) . M.elems)) ms
-    mkDescId txt targetId = ((txts ++) . pure $ txt <> " " <> mkNameTypeIdDesc targetId ms, targetId)
+    mkDescId txt targetId = ((txts ++) . pure $ txt |<>| mkNameTypeIdDesc targetId ms, targetId)
     oops                  = blowUp "locateHelper" "ID is in limbo" . showText $ i
 
 
@@ -676,7 +675,7 @@ mkChanReport i ms (Chan ci cn cct tappers) =
     let desc    = commas . map descPla . f $ [ (s, t, l) | (s, t) <- M.toList cct
                                                          , let p = getPla (getIdForMobSing s ms) ms
                                                          , let l = isLoggedIn p && (not . isIncognito $ p) ]
-        tapping = getSing i ms `elem` tappers |?| (" " <> parensQuote "wiretapped")
+        tapping = getSing i ms `elem` tappers |?| spcL . parensQuote $ "wiretapped"
     in [ T.concat [ bracketQuote . showText $ ci, " ", dblQuote cn, tapping, ":" ], desc ]
   where
     descPla (s, t, l) = T.concat [ underline s, ": ", tunedInOutColorize t, " / ", loggedInOutColorize l ]
@@ -690,14 +689,6 @@ mkPossPro :: Sex -> Text
 mkPossPro Male   = "his"
 mkPossPro Female = "her"
 mkPossPro NoSex  = "its"
-
-
------
-
-
-mkPrettifiedSexRaceLvl :: Id -> MudState -> (Text, Text, Text)
-mkPrettifiedSexRaceLvl i ms = let (s, r, l) = getSexRaceLvl i ms
-                              in (pp s, pp r, showText l)
 
 
 -----
@@ -720,7 +711,7 @@ mkReflexPro NoSex  = "itself"
 
 
 mkRetainedMsgFromPerson :: Sing -> Text -> Text
-mkRetainedMsgFromPerson s msg = fromPersonMarker `T.cons` (quoteWith "__" s <> " " <> msg)
+mkRetainedMsgFromPerson s msg = fromPersonMarker `T.cons` (quoteWith "__" s |<>| msg)
 
 
 -----

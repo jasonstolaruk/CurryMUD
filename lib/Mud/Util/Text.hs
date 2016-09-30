@@ -33,6 +33,8 @@ module Mud.Util.Text ( aOrAn
                      , showText
                      , slashes
                      , spaces
+                     , spcL
+                     , spcR
                      , spcsToFiller
                      , strictTextToLazyBS
                      , stripControl
@@ -336,6 +338,17 @@ slashes = T.intercalate " / "
 
 spaces :: [Text] -> Text
 spaces = T.intercalate " "
+
+
+-----
+
+
+spcL :: Text -> Text
+spcL = (" " <>)
+
+
+spcR :: Text -> Text
+spcR = (<> " ")
 
 
 -----

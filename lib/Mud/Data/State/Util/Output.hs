@@ -281,7 +281,7 @@ expandEntName i ms StdDesig { .. } =
     xth = let intros  = getIntroduced i ms
               idsInRm = filter ((`notElem` intros) . (`getSing` ms)) $ i `delete` desigIds
               matches = foldr (\pi acc -> onTrue (mkUnknownPCEntName pi ms == desigEntName) (pi :) acc) [] idsInRm
-          in length matches > 1 |?| (<> " ") . mkOrdinal . succ . fromJust . elemIndex desigId $ matches
+          in length matches > 1 |?| spcR . mkOrdinal . succ . fromJust . elemIndex desigId $ matches
     expandSex 'm' = "male"
     expandSex 'f' = "female"
     expandSex x   = patternMatchFail "expandEntName expandSex" . T.singleton $ x
@@ -332,10 +332,11 @@ mkDfltPrompt i ms = let (hps,  mps,  pps,  fps ) = getPts i ms
                                                                , isShowingFp ) & each %~ (getPla i ms |&|)
                                                  | otherwise = dup4 True
                         marker                   = colorWith indentColor " "
-                    in marker <> " " <> (spaces . dropBlanks $ [ isHp |?| f "h" hps
-                                                               , isMp |?| f "m" mps
-                                                               , isPp |?| f "p" pps
-                                                               , isFp |?| f "f" fps ]) <> ">"
+                        txt                      = spaces . dropBlanks $ [ isHp |?| f "h" hps
+                                                                         , isMp |?| f "m" mps
+                                                                         , isPp |?| f "p" pps
+                                                                         , isFp |?| f "f" fps ]
+                    in marker |<>| txt <> ">"
   where
     indentColor     = isNpc i ms ? toNpcColor :? promptIndentColor
     f a pair@(x, _) = commaShow x <> colorWith (mkColorTxtForXps pair) a

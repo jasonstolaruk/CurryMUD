@@ -232,7 +232,7 @@ logPlaExecArgs modName cn as i = logPla modName cn i . prd $ "executed " <> help
 
 
 logPlaOut :: Text -> CmdName -> Id -> [Text] -> MudStack ()
-logPlaOut modName cn i (slashes -> msgs) = logPla modName cn i $ parensQuote "output" <> " " <> msgs
+logPlaOut modName cn i (slashes -> msgs) = logPla modName cn i $ parensQuote "output" |<>| msgs
 
 
 massLogPla :: Text -> Text -> Text -> MudStack ()

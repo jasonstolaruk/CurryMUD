@@ -492,7 +492,7 @@ admin (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsgs ->
                 Right bs       -> ioHelper pair bs
             ioHelper (adminId, adminSing) [ fst -> toSelf, fst -> toAdmin ] = do
                 if getAll . mconcat $ [ All . isLoggedIn $ adminPla
-                                      , (not . isAdminId i $ ms) |?| (All . not . isIncognito $ adminPla) ]
+                                      , (not . isAdminId i $ ms) |?| All . not . isIncognito $ adminPla ]
                   then sendFun formatted
                   else multiSendFun [ formatted, parensQuote "Message retained." ]
                 retainedMsg adminId ms . mkRetainedMsgFromPerson s $ toAdmin
@@ -523,7 +523,7 @@ adminList (NoArgs i mq cols) = (multiWrapSend mq cols =<< helper =<< getState) >
         let p            = getPla i ms
             singSuffixes = sortBy (compare `on` fst) [ (s, " logged " <> mkSuffix ai) | (ai, s) <- mkAdminIdSingList ms ]
             mkSuffix ai  = let { ap = getPla ai ms; isIncog = isIncognito ap } in if isAdmin p && isIncog
-              then (inOut . isLoggedIn $ ap) <> " " <> parensQuote "incognito"
+              then (inOut . isLoggedIn $ ap) |<>| parensQuote "incognito"
               else inOut (isLoggedIn ap && not isIncog)
             singSuffixes' = onFalse (isAdmin p) (filter f) singSuffixes
               where
@@ -545,9 +545,9 @@ bars (NoArgs i mq cols) = getState >>= \ms ->
     in multiWrapSend mq cols mkBars >> logPlaExecArgs "bars" [] i
 bars (LowerNub i mq cols as) = getState >>= \ms ->
     let mkBars  = case second nub . partitionEithers . foldr f [] $ as of
-                    (x:xs, []     ) -> (x <> " " <> hint) : xs
+                    (x:xs, []     ) -> x |<>| hint : xs
                     ([],   barTxts) -> barTxts
-                    (x:xs, barTxts) -> barTxts ++ [""] ++ ((x <> " " <> hint) : xs)
+                    (x:xs, barTxts) -> barTxts ++ [""] ++ (x |<>| hint : xs)
         f a acc = (: acc) $ case filter ((a `T.isPrefixOf`) . fst) . mkPtPairs i $ ms of
           []      -> Left . sorryParseArg $ a
           [match] -> Right . uncurry (mkBar . calcBarLen $ cols) $ match
@@ -672,7 +672,7 @@ chan (OneArg i mq cols a@(T.toLower -> a')) = getState >>= \ms ->
                   then do
                       let onlyYou           = pure "You are the only person connected."
                           msgs              = ()!# combo' ? map g combo' :? onlyYou
-                          affixChanName txt = parensQuote cn <> " " <> txt
+                          affixChanName txt = parensQuote cn |<>| txt
                       multiWrapSend mq cols $ "Channel " <> dblQuote cn <> ":" : msgs
                       logPla "chan" i . affixChanName . commas $ [ getSing i' ms <> " is " <> tunedInOut isTuned'
                                                                  | (i', _, isTuned') <- combo' ]
@@ -697,7 +697,7 @@ chan (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
                      ioHelper (expandEmbeddedIdsToSings ms -> logMsg) bs = do
                          bcastNl =<< expandEmbeddedIds ms cc bs
                          sendToWiretappers logMsg
-                         let logMsg' = parensQuote cn <> " " <> logMsg
+                         let logMsg' = parensQuote cn |<>| logMsg
                          logPlaOut "chan" i . pure $ logMsg'
                          alertMsgHelper i "chan" logMsg'
                          ts <- liftIO mkTimestamp
@@ -958,7 +958,7 @@ disconnectHelper i (target, as) idNamesTbl ms =
                                          , b )
                      xs -> patternMatchFail "disconnectHelper found" . showText $ xs
                      where
-                       hint = onFalse b ((<> hintDisconnect) . (<> " "))
+                       hint = onFalse b ((<> hintDisconnect) . spcR)
                    ci               = c^.chanId
                    ((ms'', res), _) = foldl' procTarget ((ms, []), False) as'
                in (ms'', (onTrue (()!# guessWhat) (Left guessWhat :) res, Just ci))
@@ -1017,7 +1017,7 @@ drink   (Lower   i mq cols [amt, target]) = getState >>= \ms -> let (isDrink, is
                     in ()!# ecs ? sorry sorryDrinkCoins :? either sorry f (head eiss)
                 -----
                 drinkRm =
-                    let hookArg = head inRms <> T.singleton hookArgDelimiter <> showText x
+                    let hookArg = head inRms <> T.cons hookArgDelimiter (showText x)
                     in case ((()!#) *** (()!#)) (rmInvCoins, maybeHooks) of
                       (True,  False) -> sorry sorryDrinkRmNoHooks
                       (False, True ) ->
@@ -1099,17 +1099,17 @@ emote (WithArgs i mq cols as) = getState >>= \ms ->
                              , all isPunc . T.unpack $ t
                              = pure . mkRightForNonTargets $ expandEnc isHead & each <>~ t
         xformArgs isHead (x:xs) = (: xformArgs False xs) $ if
-          | x == enc               -> mkRightForNonTargets . expandEnc $ isHead
-          | x == enc's             -> mkRightForNonTargets $ expandEnc isHead & each <>~ "'s"
-          | enc `T.isInfixOf` x    -> Left . adviceEnc $ "emote "
-          | x == etc               -> Left . adviceEtc $ "emote "
-          | T.take 1 x == etc      -> isHead ? Left adviceEtcHead :? (procTarget ms . T.tail $ x)
-          | etc `T.isInfixOf` x    -> Left . adviceEtc $ "emote "
-          | isHead, hasEnc as      -> mkRightForNonTargets $ dup3 x  & each %~ capitalizeMsg
-          | isHead, x' <- " " <> x -> mkRightForNonTargets $ dup3 x' & _1   %~ (myName True <>)
-                                                                     & _2   %~ (ser         <>)
-                                                                     & _3   %~ (ser         <>)
-          | otherwise              -> mkRightForNonTargets . dup3 $ x
+          | x == enc             -> mkRightForNonTargets . expandEnc $ isHead
+          | x == enc's           -> mkRightForNonTargets $ expandEnc isHead & each <>~ "'s"
+          | enc `T.isInfixOf` x  -> Left . adviceEnc $ "emote "
+          | x == etc             -> Left . adviceEtc $ "emote "
+          | T.take 1 x == etc    -> isHead ? Left adviceEtcHead :? (procTarget ms . T.tail $ x)
+          | etc `T.isInfixOf` x  -> Left . adviceEtc $ "emote "
+          | isHead, hasEnc as    -> mkRightForNonTargets $ dup3 x  & each %~ capitalizeMsg
+          | isHead, x' <- spcL x -> mkRightForNonTargets $ dup3 x' & _1   %~ (myName True <>)
+                                                                   & _2   %~ (ser         <>)
+                                                                   & _3   %~ (ser         <>)
+          | otherwise            -> mkRightForNonTargets . dup3 $ x
         expandEnc isHead = (isHead ? (ser, ser) :? (ser', ser')) |&| uncurry (myName isHead, , )
         myName    isHead = onTrue isHead capitalize . onTrue (isNpc i ms) theOnLower . fromJust . desigEntSing $ d
     in case lefts xformed of
@@ -1606,7 +1606,7 @@ tryMove i mq cols p dir = helper |&| modifyState >=> \case
          | dir == "d"              = "heads"
          | dir `elem` stdLinkNames = "leaves"
          | otherwise               = "enters"
-    showRm (showText -> ri) (views rmName parensQuote -> rn) = ri <> " " <> rn
+    showRm ri = uncurry (|<>|) . (showText *** views rmName parensQuote) . (ri, )
 
 
 findExit :: Rm -> LinkName -> Maybe (Text, Id, Maybe Text, Maybe Text)
@@ -1972,7 +1972,7 @@ link (NoArgs i mq cols) = do
                       where
                         x' = case view (at linkSing) . getTeleLinkTbl i $ ms of
                           Nothing  -> x
-                          Just val -> val ? x :? (x <> " " <> parensQuote "tuned out")
+                          Just val -> val ? x :? (x |<>| parensQuote "tuned out")
                 in (linkSing |&|) $ if and [ isLoggedIn linkPla, not . isIncognito $ linkPla ]
                   then f _1
                   else f _2
@@ -2152,7 +2152,7 @@ mkRmInvCoinsDesc i cols ms ri =
                                                           , adminTagHelper ia
                                                           , " "
                                                           , en ]
-    mkPCDesc (ia, (en, b,      d, c))          = T.concat [ let t = showText c <> " " <> mkPlurFromBoth b
+    mkPCDesc (ia, (en, b,      d, c))          = T.concat [ let t = showText c |<>| mkPlurFromBoth b
                                                             in colorWith unknownNameColor t
                                                           , rmDescHepler d
                                                           , adminTagHelper ia
@@ -2161,9 +2161,9 @@ mkRmInvCoinsDesc i cols ms ri =
     mkOtherDesc (en, (s, _), d, c)    | c == 1 = T.concat [ aOrAnOnLower s, " ", en, rmDescHepler d ]
     mkOtherDesc (en, b,      d, c)             = T.concat [ showText c, spaced . mkPlurFromBoth $ b, en, rmDescHepler d ]
     adminTagHelper False = ""
-    adminTagHelper True  = " " <> adminTagTxt
+    adminTagHelper True  = spcL adminTagTxt
     rmDescHepler   ""    = ""
-    rmDescHepler   d     = " " <> d
+    rmDescHepler   d     = spcL d
 
 
 mkRmInvCoinsDescTuples :: Id -> MudState -> Inv -> [((Bool, Bool), (Text, BothGramNos, Text, Int))]
@@ -2288,7 +2288,7 @@ newChan (WithArgs i mq cols (nub -> as)) = helper |&| modifyState >=> \(unzip ->
                  , " you assign the "
                  , isPlur |?| "following "
                  , "name"
-                 , isPlur ? nl "s:" <> commas ns :? " " <> head ns
+                 , isPlur ? nl "s:" <> commas ns :? spcL (head ns)
                  , "." ]
 newChan p = patternMatchFail "newChan" . showText $ p
 
@@ -2679,7 +2679,7 @@ readHelper i cols ms d = foldl' helper
             readIt txt header = acc & _1 <>~ (multiWrapNl cols . T.lines $ header <> txt)
                                     & _2 <>~ pure ( T.concat [ serialize d, " reads ", aOrAn s, "." ]
                                                   , i `delete` desigIds d )
-                                    & _3 <>~ pure (s <> " " <> parensQuote (showText targetId))
+                                    & _3 <>~ pure (s |<>| parensQuote (showText targetId))
         in case getType targetId ms of
           WritableType ->
               let (Writable msg r) = getWritable targetId ms in case msg of
@@ -3091,9 +3091,9 @@ sayHelper l p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
       where
         sorry           = (ms, ) . (, [], "") . pure
         parseRearAdverb = case maybeAdverb of
-          Just adverb                          -> Right (adverb <> " ", "", formatMsg . T.unwords $ rest)
+          Just adverb                          -> Right (spcR adverb, "", formatMsg . T.unwords $ rest)
           Nothing | T.head r == adverbOpenChar -> case parseAdverb . T.unwords $ rest of
-                      Right (adverb, rest') -> Right ("", " " <> adverb, formatMsg rest')
+                      Right (adverb, rest') -> Right ("", spcL adverb, formatMsg rest')
                       Left  msg             -> Left  msg
                   | otherwise -> Right ("", "", formatMsg . T.unwords $ rest)
         sayToHelper d targetId targetDesig (frontAdv, rearAdv, msg) =
@@ -3140,7 +3140,7 @@ sayHelper l p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
                                          ; logMsg |#| logPlaOut (mkCmdNameForLang l) i . pure
                                          ; logMsg |#| alertMsgHelper i (mkCmdNameForLang l) }
     ioHelper _  triple              = patternMatchFail "sayHelper ioHelper" . showText $ triple
-    simpleSayHelper ms (maybe "" (" " <>) -> adverb) (formatMsg -> msg) =
+    simpleSayHelper ms (maybe "" spcL -> adverb) (formatMsg -> msg) =
         return $ let d                = mkStdDesig i ms DoCap
                      inLang           = mkInLangTxtForLang l
                      toSelfMsg        = T.concat [ "You say", inLang, adverb, ", ", msg ]
@@ -3396,8 +3396,8 @@ showAction   (Lower i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
                          multiWrapSend mq cols . dropBlanks $ sorryRmMsg : [ parseDesig i ms msg
                                                                            | msg <- invToSelfs ++ eqToSelfs ]
                          bcastNl $ invBs ++ eqBs
-                         let logMsg = slashes . dropBlanks $ [ invLogMsg |!| parensQuote "inv" <> " " <> invLogMsg
-                                                             , eqLogMsg  |!| parensQuote "eq"  <> " " <> eqLogMsg ]
+                         let logMsg = slashes . dropBlanks $ [ invLogMsg |!| parensQuote "inv" |<>| invLogMsg
+                                                             , eqLogMsg  |!| parensQuote "eq"  |<>| eqLogMsg ]
                          logMsg |#| logPla "show" i . (T.concat [ "showed to "
                                                                 , theSing theTarget
                                                                 , ": " ] <>)
@@ -3732,7 +3732,7 @@ stats (NoArgs i mq cols) = getState >>= \ms ->
                                 , tempDescHelper ]
         top             = underline . onTrue (isPC i ms) (<> sexRace) . getSing i $ ms
         sexRace         = T.concat [ ", the ", sexy, " ", r ]
-        (sexy, r)       = (uncapitalize . showText *** uncapitalize . showText) . getSexRace i $ ms
+        (sexy, r)       = mkPrettySexRace i ms
         xpsHelper       | (hps, mps, pps, fps) <- getPts i ms
                         = spaces [ f "h" hps, f "m" mps, f "p" pps, f "f" fps ]
           where
@@ -3929,7 +3929,7 @@ tele (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
                            alertMsgHelper i "tele" toSelf
                            ts <- liftIO mkTimestamp
                            withDbExHandler_ "tele" . insertDbTblTele . TeleRec ts s targetSing $ toSelf
-                       formatBs targetId [toMe, toTarget] = let f n m = bracketQuote n <> " " <> m
+                       formatBs targetId [toMe, toTarget] = let f n m = bracketQuote n |<>| m
                                                             in [ toMe     & _1 %~ f s
                                                                , toTarget & _1 %~ f (mkStyled targetId) ]
                        formatBs _        bs               = patternMatchFail "tele found formatBs" . showText $ bs
@@ -3981,7 +3981,7 @@ tune (NoArgs i mq cols) = getState >>= \ms ->
         helper title names tunings = let txts = mkConnTxts
                                      in [ title, ()!# txts ? commas txts :? none ]
           where
-            mkConnTxts = [ n <> "=" <> inOut t | n <- names | t <- tunings ]
+            mkConnTxts = [ n <> T.cons '=' (inOut t) | n <- names | t <- tunings ]
     in do
         let msgs = [ helper "Two-way telepathic links:" styleds linkTunings
                    , pure ""
@@ -4066,7 +4066,7 @@ unlink (LowerNub i mq cols as) =
                              in (ms'', (bs, logMsgs))
                 procArg a@(ms', _, _) targetSing = if
                   | targetSing `elem` twoWays ++ meLinkedToOthers ++ othersLinkedToMe -> procArgHelper
-                  | otherwise -> sorry $ sorryUnlinkName targetSing <> " " <> hintUnlink
+                  | otherwise -> sorry $ sorryUnlinkName targetSing |<>| hintUnlink
                   where
                     sorry msg     = a & _2 <>~ (mkBcast i . nlnl $ msg)
                     procArgHelper
@@ -4211,7 +4211,7 @@ uptimeHelper up = helper <$> getSum `fmap2` getRecordUptime
     helper         = maybe mkUptimeTxt (\recUp -> up > recUp ? mkNewRecTxt :? mkRecTxt recUp)
     mkUptimeTxt    = mkTxtHelper "."
     mkNewRecTxt    = mkTxtHelper $ " - " <> colorWith newRecordColor "it's a new record!"
-    mkRecTxt recUp = mkTxtHelper . prd $ " " <> parensQuote ("record uptime: " <> renderIt recUp)
+    mkRecTxt recUp = mkTxtHelper . prd . spcL . parensQuote $ ("record uptime: " <> renderIt recUp)
     mkTxtHelper    = ("Up " <>) . (renderIt up <>)
     renderIt       = T.pack . renderSecs . fromIntegral
 
@@ -4303,12 +4303,12 @@ mkCharList i ms =
         -----
         tunedIns'         = mkSingSexRaceLvls tunedIns
         mkSingSexRaceLvls = sortBy (compare `on` view _1) . map helper
-        helper plaId      = let (s, r, l) = mkPrettifiedSexRaceLvl plaId ms in (getSing plaId ms, s, r, l)
+        helper plaId      = let (s, r, l) = mkPrettySexRaceLvl plaId ms in (getSing plaId ms, s, r, l)
         styleds           = styleAbbrevs Don'tQuote . select _1 $ tunedIns'
         -----
         tunedOuts' = mkSingSexRaceLvls (tunedOuts ++ oneWays)
         -----
-        others' = sortBy raceLvlSex . map (`mkPrettifiedSexRaceLvl` ms) $ others
+        others' = sortBy raceLvlSex . map (`mkPrettySexRaceLvl` ms) $ others
           where
             raceLvlSex (s, r, l) (s', r', l') = (r `compare` r') <> (l `compare` l') <> (s `compare` s')
         -----
@@ -4336,10 +4336,10 @@ mkFooter i ms = let plaIds@(length -> x) = getLoggedInPlaIds ms
                             , pluralize ("person", "people") x
                             , " awake"
                             , plaIds == pure i |?| ": you"
-                            , y /= 0 |?| (" " <> (parensQuote . T.concat $ [ "excluding "
-                                                                          , showText y
-                                                                          , " administrator"
-                                                                          , pluralize ("", "s") y ]))
+                            , y /= 0 |?| spcL . parensQuote . T.concat $ [ "excluding "
+                                                                         , showText y
+                                                                         , " administrator"
+                                                                         , pluralize ("", "s") y ]
                             , "." ]
   where
     maruBatsus = map (uncurry (&&) . (isLoggedIn *** not . isIncognito) . dup . (`getPla` ms)) ais
@@ -4356,9 +4356,9 @@ whoAmI (NoArgs i mq cols) = (wrapSend mq cols =<< helper =<< getState) >> logPla
       then let sexy = getSex i ms
            in T.concat [ "You are "
                        , aOrAnOnLower s
-                       , sexy /= NoSex |?| (" " <> parensQuote (pp sexy))
+                       , sexy /= NoSex |?| spcL . parensQuote . pp $ sexy
                        , "." ]
-      else let (sexy, r) = (uncapitalize . showText *** uncapitalize . showText) . getSexRace i $ ms
+      else let (sexy, r) = mkPrettySexRace i ms
            in T.concat [ "You are "
                        , colorWith knownNameColor s
                        , " "

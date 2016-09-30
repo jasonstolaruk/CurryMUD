@@ -132,6 +132,7 @@ import Mud.Misc.ANSI
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
 import Mud.Util.Misc (PatternMatchFail)
+import Mud.Util.Operators
 import Mud.Util.Quoting
 import Mud.Util.Text
 import qualified Mud.Util.Misc as U (patternMatchFail)
@@ -163,8 +164,8 @@ advise p _ _ = patternMatchFail "advise" . showText $ p
 
 adviceAAnnounceNoArgs :: Text
 adviceAAnnounceNoArgs = let msg = "CurryMUD will be shutting down for maintenance in 30 minutes" in
-    "You must provide a message to send, as in "                   <>
-    colorWith quoteColor (prefixAdminCmd "announce" <> " " <> msg) <>
+    "You must provide a message to send, as in "              <>
+    colorWith quoteColor (prefixAdminCmd "announce" |<>| msg) <>
     "."
 
 

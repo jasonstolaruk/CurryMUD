@@ -334,7 +334,7 @@ sorryBadSlot n
 
 
 mkSlotTxt :: Text -> Text
-mkSlotTxt = colorWith quoteColor . dblQuote . (T.singleton slotChar <>)
+mkSlotTxt = colorWith quoteColor . dblQuote . T.cons slotChar
 
 
 ringHelp :: Text

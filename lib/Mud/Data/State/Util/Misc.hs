@@ -38,6 +38,8 @@ module Mud.Data.State.Util.Misc ( addToInv
                                 , mkMobRmDesc
                                 , mkNameCountBothList
                                 , mkPlaIdSingList
+                                , mkPrettySexRace
+                                , mkPrettySexRaceLvl
                                 , mkSerializedNonStdDesig
                                 , mkStdDesig
                                 , mkUnknownPCEntName
@@ -69,7 +71,7 @@ import Mud.Util.Quoting
 import Mud.Util.Text
 import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 
-import Control.Arrow ((***))
+import Control.Arrow ((***), first)
 import Control.Lens (_1, _2, at, both, over, view, views)
 import Control.Lens.Operators ((%~), (&), (.~), (^.))
 import Control.Monad ((>=>))
@@ -148,10 +150,10 @@ getEffBothGramNos i ms targetId =
     let targetEnt  = getEnt targetId ms
         targetSing = targetEnt^.sing
     in case targetEnt^.entName of
-      Nothing -> let (pp *** pp -> (targetSexy, targetRace)) = getSexRace targetId ms
+      Nothing -> let (targetSexy, targetRace) = mkPrettySexRace targetId ms
                  in if targetSing `elem` getIntroduced i ms
                    then (targetSing, "")
-                   else (targetRace, plurRace targetRace) & both %~ ((targetSexy <>) . (" " <>))
+                   else (targetRace, plurRace targetRace) & both %~ ((targetSexy <>) . spcL)
       Just {} -> (targetSing, targetEnt^.plur)
   where
     plurRace "dwarf" = "dwarves"
@@ -174,7 +176,7 @@ getEffName i ms targetId = let targetEnt = getEnt targetId ms
 mkUnknownPCEntName :: Id -> MudState -> Text
 mkUnknownPCEntName i ms = views entName (fromMaybe helper) . getEnt i $ ms
   where
-    helper = let (T.head . pp *** pp -> (h, r)) = getSexRace i ms in h `T.cons` r
+    helper = uncurry T.cons . first T.head . mkPrettySexRace i $ ms -- TODO: More uses of "T.cons"?
 
 
 -----
@@ -400,13 +402,26 @@ mkPlaIdSingList = mkIdSingListHelper not
 -----
 
 
+mkPrettySexRace :: Id -> MudState -> (Text, Text)
+mkPrettySexRace i = (pp *** pp) . getSexRace i
+
+
+mkPrettySexRaceLvl :: Id -> MudState -> (Text, Text, Text)
+mkPrettySexRaceLvl i ms = let (s, r) = mkPrettySexRace i ms
+                              l      = getLvl          i ms
+                          in (s, r, showText l)
+
+
+-----
+
+
 mkSerializedNonStdDesig :: Id -> MudState -> Sing -> AOrThe -> ShouldCap -> Text
 mkSerializedNonStdDesig i ms s aot (mkCapsFun -> f) =
     serialize NonStdDesig { dEntSing = s, dDesc = helper }
   where
-    helper | isPC i ms = g $ let (pp *** pp -> (sexy, r)) = getSexRace i ms in sexy <> " " <> r
+    helper | isPC i ms = g . uncurry (|<>|) . mkPrettySexRace i $ ms
            | otherwise = onFalse (isCapital s) g s
-    g = f . (pp aot <>) . (" " <>)
+    g = f . (pp aot <>) . spcL
 
 
 -----

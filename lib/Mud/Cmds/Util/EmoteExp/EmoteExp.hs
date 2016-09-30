@@ -62,7 +62,7 @@ procChanTarget i cc triples ((T.toLower -> target):rest)
     Just n  -> let targetId    = getIdForMatch n
                    tunedIds    = select _1 triples
                    msg         = capitalizeMsg . T.unwords $ rest
-                   formatMsg x = parensQuote ("to " <> x) <> " " <> msg
+                   formatMsg x = parensQuote ("to " <> x) |<>| msg
                in Right [ (formatMsg . embedId $ targetId,                 pure i                    )
                         , (formatMsg . embedId $ targetId,                 targetId `delete` tunedIds)
                         , (formatMsg . colorWith emoteTargetColor $ "you", pure targetId             ) ]
@@ -100,14 +100,14 @@ procEmote i ms cc triples as             =
           | T.take 1 x == etc   -> isHead ? Left adviceEtcHead :? (procTarget . T.tail $ x)
           | etc `T.isInfixOf` x -> Left . adviceEtc $ cc'
           | isHead, hasEnc as   -> mkRightForNonTargets . dup3 . capitalizeMsg $ x
-          | isHead              -> mkRightForNonTargets (me & each <>~ (" " <> x))
+          | isHead              -> mkRightForNonTargets (me & each <>~ spcL x)
           | otherwise           -> mkRightForNonTargets . dup3 $ x
     in case lefts xformed of
       []      -> let (toSelf, toOthers, targetIds, toTargetBs) = happyTimes ms xformed
                  in Right $ (toSelf, pure i) : (toOthers, tunedIds \\ targetIds) : toTargetBs
       advices -> Left . intersperse "" . nub $ advices
   where
-    cc'             = pp cc <> " " <> T.singleton emoteChar
+    cc'             = pp cc |<>| T.singleton emoteChar
     procTarget word =
         case swap . (both %~ T.reverse) . T.span isPunc . T.reverse $ word of
           ("",   _) -> Left . adviceEtc $ cc'
@@ -209,7 +209,7 @@ adminChanProcChanTarget tunedIds tunedSings ((capitalize . T.toLower -> target):
     found targetSing =
         let targetId    = fst . head . filter ((== targetSing) . snd) . zip tunedIds $ tunedSings
             msg         = capitalizeMsg . T.unwords $ rest
-            formatMsg x = parensQuote ("to " <> x) <> " " <> msg
+            formatMsg x = parensQuote ("to " <> x) |<>| msg
         in Right [ (formatMsg targetSing,                           targetId `delete` tunedIds)
                  , (formatMsg . colorWith emoteTargetColor $ "you", pure targetId             ) ]
 adminChanProcChanTarget _ _ as = patternMatchFail "adminChanProcChanTarget" . showText $ as
@@ -245,14 +245,14 @@ adminChanProcEmote i ms tunedIds tunedSings as =
           | T.take 1 x == etc   -> isHead ? Left adviceEtcHead :? (procTarget . T.tail $ x)
           | etc `T.isInfixOf` x -> Left . adviceEtc $ cn
           | isHead, hasEnc as   -> mkRightForNonTargets . dup3 . capitalizeMsg $ x
-          | isHead              -> mkRightForNonTargets . dup3 $ s <> " " <> x
+          | isHead              -> mkRightForNonTargets . dup3 $ s |<>| x
           | otherwise           -> mkRightForNonTargets . dup3 $ x
     in case lefts xformed of
       [] -> let (toSelf, toOthers, targetIds, toTargetBs) = happyTimes ms xformed
             in Right $ (toSelf, pure i) : (toOthers, tunedIds \\ (i : targetIds)) : toTargetBs
       advices -> Left . intersperse "" . nub $ advices
   where
-    cn              = prefixAdminCmd "admin" <> " " <> T.singleton emoteChar
+    cn              = prefixAdminCmd "admin" |<>| T.singleton emoteChar
     procTarget word =
         case swap . (both %~ T.reverse) . T.span isPunc . T.reverse $ word of
           ("",   _) -> Left . adviceEtc $ cn

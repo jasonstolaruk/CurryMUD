@@ -218,7 +218,7 @@ rulesMsg =
     "\\h RULES \\d\n\
     \\n" <>
     lSpcs <> "You must conduct yourself in accordance with the following rules. It is not the case that you are allowed to do whatever the virtual world lets you do: please understand this important point.\n" <>
-    lSpcs <> T.singleton miscTokenDelimiter <> "v\n\
+    lSpcs <> T.cons miscTokenDelimiter "v\n\
     \\n\
     \\\uAGE\\d\n" <>
     lSpcs <> "CurryMUD is a complex game that requires serious, consistent role-play and adult sensibilities. For these reasons you must be at least 18 years old to play.\n\
