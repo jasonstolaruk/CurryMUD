@@ -153,7 +153,7 @@ getEffBothGramNos i ms targetId =
     in case targetEnt^.entName of
       Nothing -> let (pp -> targetSexy, targetRace) = getSexRace targetId ms
                  in if targetSing `elem` getIntroduced i ms
-                   then (targetSing, "")
+                   then (targetSing,    ""                 )
                    else (pp targetRace, plurRace targetRace) & both %~ ((targetSexy <>) . spcL)
       Just {} -> (targetSing, targetEnt^.plur)
 

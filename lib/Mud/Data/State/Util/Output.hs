@@ -36,6 +36,7 @@ module Mud.Data.State.Util.Output ( anglePrompt
                                   , wrapSendPrompt
                                   , writeMsg ) where
 
+import Mud.Cmds.Msgs.Hint
 import Mud.Cmds.Msgs.Misc
 import Mud.Cmds.Msgs.Sorry
 import Mud.Data.Misc
@@ -54,10 +55,11 @@ import Mud.Util.Text
 import Mud.Util.Wrapping
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
+import Control.Arrow ((***))
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Lens (each, to, views)
-import Control.Lens.Operators ((%~), (&), (<>~), (^.))
+import Control.Lens.Operators ((%~), (&), (.~), (<>~), (^.))
 import Control.Monad (forM_, unless)
 import Control.Monad.IO.Class (liftIO)
 import Data.List ((\\), delete, elemIndex)
@@ -313,8 +315,20 @@ send mq = writeMsg mq . FromServer
 -----
 
 
-sendCmdNotFound :: MsgQueue -> MudStack ()
-sendCmdNotFound mq = send mq . nlnl $ sorryCmdNotFound
+sendCmdNotFound :: Id -> MsgQueue -> Cols -> MudStack ()
+sendCmdNotFound i mq cols = isSpiritId i <$> getState >>= \case
+  True  -> modifyStateSeq $ \ms ->
+      let helperA pt = ms & plaTbl .~ pt
+          helperB    = pure . multiWrapSend mq cols
+      in (helperA *** helperB) . views plaTbl (firstSpiritCmdNotFound i) $ ms
+  False -> send mq . nlnl $ sorryCmdNotFound
+
+
+firstSpiritCmdNotFound :: Id -> PlaTbl -> (PlaTbl, [Text])
+firstSpiritCmdNotFound i pt
+  | pt^.ind i.to isNotFirstSpiritCmdNotFound = (pt, [])
+  | otherwise                                = ( pt & ind i %~ setPlaFlag IsNotFirstSpiritCmdNotFound True
+                                               , [ "", hintSpiritCmdNotFound ] )
 
 
 -----

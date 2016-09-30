@@ -1432,14 +1432,14 @@ helperFillEitherInv i srcDesig targetId (eis:eiss) a@(ms, _, _, _) = case getVes
 
 
 alertExec :: CmdName -> ActionFun
-alertExec cn (NoArgs'     i mq     ) = alertExecHelper i mq cn "" ""
-alertExec cn (OneArgLower i mq _ a ) = alertExecHelper i mq cn a  a
-alertExec cn (WithArgs    i mq _ as) = alertExecHelper i mq cn (head as) . spaces $ as
-alertExec _  p                       = patternMatchFail "alertExec" . showText $ p
+alertExec cn (NoArgs      i mq cols   ) = alertExecHelper i mq cols cn "" ""
+alertExec cn (OneArgLower i mq cols a ) = alertExecHelper i mq cols cn a  a
+alertExec cn (WithArgs    i mq cols as) = alertExecHelper i mq cols cn (head as) . spaces $ as
+alertExec _  p                          = patternMatchFail "alertExec" . showText $ p
 
 
-alertExecHelper :: Id -> MsgQueue -> CmdName -> Text -> Text -> MudStack ()
-alertExecHelper i mq cn target args = do
+alertExecHelper :: Id -> MsgQueue -> Cols -> CmdName -> Text -> Text -> MudStack ()
+alertExecHelper i mq cols cn target args = do
     ms <- getState
     ts <- liftIO mkTimestamp
     let s          = getSing i ms
@@ -1447,7 +1447,7 @@ alertExecHelper i mq cn target args = do
         msg        = T.concat [ s, " attempted to execute ", dblQuote cn, targetingMsg targetSing, " ", argsMsg, "." ]
         outIds     = (iRoot `delete`) $ getAdminIds ms \\ getLoggedInAdminIds ms
         rec        = AlertExecRec ts s cn targetSing args
-    sendCmdNotFound mq
+    sendCmdNotFound i mq cols
     bcastAdmins msg
     forM_ outIds (\adminId -> retainedMsg adminId ms . mkRetainedMsgFromPerson s $ msg)
     logNotice        fn   msg
@@ -2203,7 +2203,7 @@ lookSelf p                  = withoutArgs lookSelf p
 
 
 molestCan'tAbbrev :: ActionFun
-molestCan'tAbbrev ActionParams { plaMsgQueue } = sendCmdNotFound plaMsgQueue
+molestCan'tAbbrev ActionParams { .. } = sendCmdNotFound myId plaMsgQueue plaCols
 
 
 -----
@@ -2617,7 +2617,7 @@ quitCan'tAbbrev p                  = withoutArgs quitCan'tAbbrev p
 
 
 rapeCan'tAbbrev :: ActionFun
-rapeCan'tAbbrev ActionParams { plaMsgQueue } = sendCmdNotFound plaMsgQueue
+rapeCan'tAbbrev ActionParams { .. } = sendCmdNotFound myId plaMsgQueue plaCols
 
 
 -----

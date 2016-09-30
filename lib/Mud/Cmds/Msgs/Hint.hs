@@ -75,5 +75,12 @@ hintSay = hintHelper [ "when communicating with non-player characters, you may a
                      , "." ]
 
 
+hintSpiritCmdNotFound :: Text
+hintSpiritCmdNotFound = hintHelper [ "you have died and become a disembodied spirit. As a spirit, the commands that \
+                                     \you may use are limited. Type "
+                                   , dblQuote "?"
+                                   , " to see a list of the commands available to you." ]
+
+
 hintUnlink :: Text
 hintUnlink = specifyFullHelper "name of the person with whom you would like to unlink"

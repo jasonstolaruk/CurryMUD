@@ -1,4 +1,4 @@
-{-# LANGUAGE NamedFieldPuns, OverloadedStrings #-}
+{-# LANGUAGE NamedFieldPuns, OverloadedStrings, RecordWildCards #-}
 
 module Mud.Interp.Dispatch where
 
@@ -30,9 +30,9 @@ type FindActionFun = Id -> MudState -> CmdName -> MudStack (Maybe Action)
 
 
 dispatch :: FindActionFun -> Interp
-dispatch f cn p@ActionParams { myId, plaMsgQueue } = getState >>= \ms -> maybe notFound found =<< f myId ms cn
+dispatch f cn p@ActionParams { .. } = getState >>= \ms -> maybe notFound found =<< f myId ms cn
   where
-    notFound                = sendCmdNotFound plaMsgQueue
+    notFound                = sendCmdNotFound myId plaMsgQueue plaCols
     found (Action actFun b) = do
         actFun p
         ms <- getState

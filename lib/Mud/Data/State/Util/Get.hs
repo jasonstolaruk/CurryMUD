@@ -908,6 +908,17 @@ isNotFirstModSayId = onPla isNotFirstMobSay True
 -----
 
 
+isNotFirstSpiritCmdNotFound :: Pla -> Bool
+isNotFirstSpiritCmdNotFound = getPlaFlag IsNotFirstSpiritCmdNotFound
+
+
+isNotFirstSpiritCmdNotFoundId :: Id -> MudState -> Bool
+isNotFirstSpiritCmdNotFoundId = onPla isNotFirstSpiritCmdNotFound True
+
+
+-----
+
+
 isShowingHp :: Pla -> Bool
 isShowingHp = getPlaFlag IsShowingHp
 

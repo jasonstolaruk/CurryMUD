@@ -822,6 +822,7 @@ data PlaFlags = IsAdmin
               | IsSpirit
               | IsNotFirstAdminMsg
               | IsNotFirstMobSay
+              | IsNotFirstSpiritCmdNotFound
               | IsTunedAdmin
               | IsTunedQuestion
               | IsShowingHp
