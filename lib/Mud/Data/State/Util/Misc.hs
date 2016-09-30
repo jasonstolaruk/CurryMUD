@@ -47,6 +47,7 @@ module Mud.Data.State.Util.Misc ( addToInv
                                 , modifyStateSeq
                                 , onEnv
                                 , pcNpc
+                                , plurRace
                                 , procHooks
                                 , procQuoteChars
                                 , removeAdHoc
@@ -150,15 +151,17 @@ getEffBothGramNos i ms targetId =
     let targetEnt  = getEnt targetId ms
         targetSing = targetEnt^.sing
     in case targetEnt^.entName of
-      Nothing -> let (targetSexy, targetRace) = mkPrettySexRace targetId ms
+      Nothing -> let (pp -> targetSexy, targetRace) = getSexRace targetId ms
                  in if targetSing `elem` getIntroduced i ms
                    then (targetSing, "")
-                   else (targetRace, plurRace targetRace) & both %~ ((targetSexy <>) . spcL)
+                   else (pp targetRace, plurRace targetRace) & both %~ ((targetSexy <>) . spcL)
       Just {} -> (targetSing, targetEnt^.plur)
-  where
-    plurRace "dwarf" = "dwarves"
-    plurRace "elf"   = "elves"
-    plurRace r       = r <> "s"
+
+
+plurRace :: Race -> Text
+plurRace Dwarf = "dwarves"
+plurRace Elf   = "elves"
+plurRace r     = pp r <> "s"
 
 
 -----

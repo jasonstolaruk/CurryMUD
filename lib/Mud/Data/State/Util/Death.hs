@@ -125,7 +125,10 @@ mkCorpse i ms = let et     = EntTemplate (Just "corpse")
                    , logPlaHelper i ms "mkCorpse" "corpse created." : fs )
       where
         (s, p) = if isPC i ms
-          then ("corpse of a ", "") -- TODO
+          then let pair @(_,    r) = getSexRace i ms
+                   pair'@(sexy, _) = (pp *** pp) pair
+               in ( "corpse of a " <> uncurry (|<>|) pair'
+                  , "corpses of "  <> sexy |<>| plurRace r )
           else (("corpse of " <>) *** ("corpses of " <>)) . first aOrAnOnLower $ let bgns = getBothGramNos i ms
                                                                                  in bgns & _2 .~ mkPlurFromBoth bgns
 
