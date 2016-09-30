@@ -319,9 +319,11 @@ sendCmdNotFound :: Id -> MsgQueue -> Cols -> MudStack ()
 sendCmdNotFound i mq cols = isSpiritId i <$> getState >>= \case
   True  -> modifyStateSeq $ \ms ->
       let helperA pt = ms & plaTbl .~ pt
-          helperB    = pure . multiWrapSend mq cols
+          helperB    = pure . multiWrapSend mq cols . (nlnl sorryMsg :)
       in (helperA *** helperB) . views plaTbl (firstSpiritCmdNotFound i) $ ms
-  False -> send mq . nlnl $ sorryCmdNotFound
+  False -> send mq sorryMsg
+  where
+    sorryMsg = nlnl sorryCmdNotFound
 
 
 firstSpiritCmdNotFound :: Id -> PlaTbl -> (PlaTbl, [Text])
