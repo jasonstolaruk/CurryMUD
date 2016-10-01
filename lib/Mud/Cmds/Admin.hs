@@ -143,7 +143,7 @@ adminCmds =
     , mkAdminCmd "boot"       adminBoot        True  "Boot a player, optionally with a custom message."
     , mkAdminCmd "bug"        adminBug         True  "Dump the bug database."
     , mkAdminCmd "channel"    adminChan        True  "Display information about one or more telepathic channels."
-    , mkAdminCmd "count"      adminCount       True  "Display or search a list of miscellaneous running totals." -- TODO: Corpses.
+    , mkAdminCmd "count"      adminCount       True  "Display or search a list of miscellaneous running totals."
     , mkAdminCmd "date"       adminDate        True  "Display the current system date."
     , mkAdminCmd "discover"   adminDiscover    True  "Dump the discover database."
     , mkAdminCmd "examine"    adminExamine     True  "Display the properties of one or more IDs."
@@ -157,7 +157,7 @@ adminCmds =
     , mkAdminCmd "kill"       adminKill        True  "Instantly kill one or more mobiles by ID."
     , mkAdminCmd "link"       adminLink        True  "Dump two-way links for one or more PCs, sorted by volume of \
                                                      \messages in descending order."
-    , mkAdminCmd "locate"     adminLocate      True  "Locate one or more IDs." -- TODO: Corpses?
+    , mkAdminCmd "locate"     adminLocate      True  "Locate one or more IDs."
     , mkAdminCmd "message"    adminMsg         True  "Send a message to a regular player."
     , mkAdminCmd "mychannels" adminMyChans     True  "Display information about telepathic channels for one or more \
                                                      \players."
@@ -500,6 +500,7 @@ mkCountTxt = map (uncurry mappend . second commaShow) <$> helper
         return [ ("Armor: ",        countType ArmType     )
                , ("Clothing: ",     countType ClothType   )
                , ("Containers: ",   countType ConType     )
+               , ("Corpses: ",      countType CorpseType  )
                , ("Foods: ",        countType FoodType    )
                , ("NPCs: ",         countType NpcType     )
                , ("Objects: ",      countType ObjType     )
@@ -609,7 +610,7 @@ examineHelper ms targetId = let t = getType targetId ms in helper t $ case t of
   ArmType      -> [ examineEnt, examineObj,   examineArm   ]
   ClothType    -> [ examineEnt, examineObj,   examineCloth ]
   ConType      -> [ examineEnt, examineObj,   examineInv,   examineCoins, examineCon ]
-  CorpseType   -> undefined -- TODO: Corpses.
+  CorpseType   -> [ examineEnt, examineObj,   examineInv,   examineCoins, examineCon, examineCorpse ]
   FoodType     -> [ examineEnt, examineObj,   examineFood ]
   NpcType      -> [ examineEnt, examineInv,   examineCoins, examineEqMap, examineMob, examineNpc ]
   ObjType      -> [ examineEnt, examineObj ]
@@ -647,6 +648,13 @@ examineCon i ms = let c = getCon i ms in [ "Is clothing: " <> c^.conIsCloth.to s
                                                     , c^.conCapacity.to showText
                                                     , " "
                                                     , parensQuote $ (<> "%") . showText . calcConPerFull i $ ms ] ]
+
+
+examineCorpse :: ExamineHelper
+examineCorpse i ms = case getCorpse i ms of PCCorpse cSing cSex cRace -> [ "Corpse sing: " <>    cSing
+                                                                         , "Corpse sex: "  <> pp cSex
+                                                                         , "Corpse race: " <> pp cRace ]
+                                            NpcCorpse                 -> []
 
 
 examineEnt :: ExamineHelper
@@ -1031,7 +1039,7 @@ adminLink p = patternMatchFail "adminLink" . showText $ p
 -----
 
 
-adminLocate :: ActionFun
+adminLocate :: ActionFun -- TODO: Try locating an object in a corpse.
 adminLocate p@AdviseNoArgs          = advise p [ prefixAdminCmd "locate" ] adviceALocateNoArgs
 adminLocate (LowerNub i mq cols as) = getState >>= \ms ->
     let helper a = case reads . T.unpack $ a :: [(Int, String)] of

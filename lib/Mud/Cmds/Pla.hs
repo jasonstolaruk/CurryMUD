@@ -2157,8 +2157,10 @@ mkRmInvCoinsDesc i cols ms ri =
                                                           , adminTagHelper ia
                                                           , " "
                                                           , en ]
-    mkOtherDesc (en, (s, _), d, c)    | c == 1 = T.concat [ aOrAnOnLower s, " ", en, rmDescHepler d ]
-    mkOtherDesc (en, b,      d, c)             = T.concat [ showText c, spaced . mkPlurFromBoth $ b, en, rmDescHepler d ]
+    mkOtherDesc (en, (s, _), _, c) | c == 1 = (|<>| en) . (s |&|) $ if s == "your corpse" || "corpse of" `T.isPrefixOf` s
+      then id
+      else aOrAnOnLower
+    mkOtherDesc (en, b,      _, c) = T.concat [ showText c, spaced . mkPlurFromBoth $ b, en ]
     adminTagHelper False = ""
     adminTagHelper True  = spcL adminTagTxt
     rmDescHepler   ""    = ""
