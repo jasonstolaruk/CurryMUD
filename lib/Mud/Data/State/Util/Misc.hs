@@ -150,12 +150,19 @@ getEffBothGramNos :: Id -> MudState -> Id -> BothGramNos
 getEffBothGramNos i ms targetId =
     let targetEnt  = getEnt targetId ms
         targetSing = targetEnt^.sing
+        pair       = (targetSing, targetEnt^.plur)
+        intros     = getIntroduced i ms
     in case targetEnt^.entName of
       Nothing -> let (pp -> targetSexy, targetRace) = getSexRace targetId ms
-                 in if targetSing `elem` getIntroduced i ms
+                 in if targetSing `elem` intros
                    then (targetSing,    ""                 )
                    else (pp targetRace, plurRace targetRace) & both %~ ((targetSexy <>) . spcL)
-      Just {} -> (targetSing, targetEnt^.plur)
+      Just {} | getType targetId ms == CorpseType -> case getCorpse targetId ms of
+                NpcCorpse                            -> pair
+                (PCCorpse cs _ _) | cs == getSing i ms -> ("your corpse",      "")
+                                  | cs `elem` intros   -> ("corpse of " <> cs, "")
+                                  | otherwise          -> pair
+              | otherwise -> pair
 
 
 plurRace :: Race -> Text

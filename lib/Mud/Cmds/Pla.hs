@@ -2174,8 +2174,8 @@ mkRmInvCoinsDescTuples i ms targetIds =
       groups     = group . zip4 isPCAdmins styleds boths $ rmDescs
   in [ (ipa, (s, b, d, c)) | ((ipa, s, b, d), c) <- [ (head g, length g) | g <- groups ] ]
   where
-    mkIsPCAdmin targetId | isPC targetId ms = (True,  isAdminId targetId ms)
-                         | otherwise        = (False, False                )
+    mkIsPCAdmin targetId | isPC targetId ms = (True, isAdminId targetId ms)
+                         | otherwise        = dup False
 
 
 isKnownPCSing :: Sing -> Bool

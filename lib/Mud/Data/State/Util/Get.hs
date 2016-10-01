@@ -202,6 +202,13 @@ getConnectTime i = view connectTime . getPla i
 -----
 
 
+getCorpse :: Id -> MudState -> Corpse
+getCorpse i = view (corpseTbl.ind i)
+
+
+-----
+
+
 getCorpseCapacity :: Id -> MudState -> Vol
 getCorpseCapacity i = view corpseCapacity . getMob i
 
