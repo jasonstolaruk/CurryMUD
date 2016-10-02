@@ -735,7 +735,7 @@ debugRegen (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] o
   where
     helper targetId ms
       | targetId < 0 = wrapSend mq cols sorryWtf
-      | targetId `notElem` uncurry (++) (ms^.npcTbl.to IM.keys, ms^.pcTbl.to IM.keys) =
+      | targetId `notElem` uncurry (++) ((both %~ (views npcTbl IM.keys)) . dup $ ms) =
           wrapSend mq cols . sorryNonexistentId targetId $ [ "NPC", "PC" ]
       | otherwise = do
           multiWrapSend mq cols descRegens

@@ -44,7 +44,7 @@ import Mud.Util.Wrapping
 import qualified Mud.Misc.Logging as L (logIOEx, logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut, massLogPla)
 import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 
-import Control.Arrow ((***), first, second)
+import Control.Arrow ((***), (&&&), first, second)
 import Control.Concurrent.Async (asyncThreadId)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
@@ -1207,7 +1207,7 @@ adminPeep (LowerNub i mq cols as) = do
                            in a & _1 .~ pt' & _2 %~ (msg :) & _3 <>~ logMsgs
                 in findFullNameForAbbrev target apiss |&| maybe notFound found
             res = foldr (peep . capitalize) (ms^.plaTbl, [], []) as
-        in (ms & plaTbl .~ res^._1, (res^._2, res^._3))
+        in (ms & plaTbl .~ res^._1, (view _2 &&& view _3) res)
 adminPeep p = patternMatchFail "adminPeep" . showText $ p
 
 
@@ -2012,7 +2012,7 @@ adminTType :: ActionFun
 adminTType (NoArgs i mq cols) = (withDbExHandler "adminTType" . getDbTblRecs $ "ttype") >>= \case
   Just xs ->
     let grouped = groupBy ((==) `on` dbTType) xs
-        folded  = foldr (\g -> ((dbTType . head $ g, nubSort . map (dbHost :: TTypeRec -> Text) $ g) :)) [] grouped
+        folded  = foldr (\g -> (((dbTType . head) &&& (nubSort . map (dbHost :: TTypeRec -> Text))) g :)) [] grouped
         txtss   = [ uncurry (:) . first (<> t) $ pair | pair@(_, hosts) <- folded
                                                       , let l = length hosts
                                                       , let t = T.concat [ ": "
@@ -2105,7 +2105,7 @@ adminWire (WithArgs i mq cols as) = views chanTbl IM.size <$> getState >>= \case
            multiWrapSend mq cols msgs >> logMsgs |#| logPlaOut (prefixAdminCmd "wiretap") i
   where
     helper ms = let (ms', msgs) = foldl' helperWire (ms, []) as
-                in (ms', (map fromEither msgs, rights msgs))
+                in (ms', (map fromEither &&& rights) msgs)
     helperWire (ms, msgs) a =
         let (ms', msg) = case reads . T.unpack $ a :: [(Int, String)] of
                            [(ci, "")] | ci < 0                                -> sorry sorryWtf
