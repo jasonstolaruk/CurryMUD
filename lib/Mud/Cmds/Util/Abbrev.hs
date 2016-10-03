@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, ViewPatterns #-}
+{-# LANGUAGE OverloadedStrings, TupleSections, ViewPatterns #-}
 
 module Mud.Cmds.Util.Abbrev (styleAbbrevs) where
 
@@ -10,7 +10,7 @@ import Mud.Util.Quoting
 import Mud.Util.Text
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
-import Control.Arrow (first)
+import Control.Arrow ((&&&), first)
 import Data.Maybe (fromJust)
 import Data.Monoid ((<>))
 import Data.Text (Text)
@@ -45,9 +45,9 @@ mkAbbrevs = helper "" . nubSort
   where
     helper :: PrevWordInList -> [FullWord] -> [(FullWord, (Abbrev, Rest))]
     helper _    []     = []
-    helper ""   (x:xs) = (x, first T.singleton . headTail $ x) : helper x xs
+    helper ""   (x:xs) = (id &&& first T.singleton . headTail) x : helper x xs
     helper prev (x:xs) = let abbrev = calcAbbrev x prev
-                         in (x, (abbrev, fromJust $ abbrev `T.stripPrefix` x)) : helper x xs
+                         in (id &&& (abbrev, ) . fromJust . (abbrev `T.stripPrefix`)) x : helper x xs
 
 
 calcAbbrev :: Text -> Text -> Text
