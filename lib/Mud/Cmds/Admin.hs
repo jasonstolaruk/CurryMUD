@@ -205,8 +205,8 @@ adminAdmin (NoArgs i mq cols) = getState >>= \ms ->
                                                                     , let as      = getSing ai ms
                                                                     , let ap      = getPla  ai ms
                                                                     , let isTuned = isTunedAdmin ap ]
-        ([self],   others   )  = partition (\x -> x^._1.to (== i)) triples
-        (tunedIns, tunedOuts)  = partition (view _3) others
+        ([self],   others   )  = partition (views _1 (== i)) triples
+        (tunedIns, tunedOuts)  = partition (view _3)         others
         styleds                = styleAbbrevs Don'tQuote . select _2 $ tunedIns
         others'                = zipWith (\triple styled -> triple & _2 .~ styled) tunedIns styleds ++ tunedOuts
         mkDesc (_, n, isTuned) = padName n <> tunedInOut isTuned
@@ -225,17 +225,17 @@ adminAdmin (Msg i mq cols msg) = getState >>= \ms ->
                 then (formatChanMsg "Admin" s txt, pure i) : mkBsWithStyled (i `delete` is)
                 else mkBsWithStyled is
                 where
-                  mkBsWithStyled is' = [ (formatChanMsg "Admin" (getStyled i') txt, pure i') | i' <- is' ]
+                  mkBsWithStyled is' = [ (flip (formatChanMsg "Admin") txt . getStyled &&& pure) i' | i' <- is' ]
               f bs = ioHelper s (concatMap format bs)
               ws   = wrapSend      mq cols
               mws  = multiWrapSend mq cols
           in case adminChanTargetify tunedIds tunedSings msg of
             Left errorMsg    -> ws errorMsg
             Right (Right bs) -> f bs . mkLogMsg $ bs
-            Right (Left ())  -> case adminChanEmotify i ms tunedIds tunedSings msg of
+            Right (Left  ()) -> case adminChanEmotify i ms tunedIds tunedSings msg of
               Left  errorMsgs  -> mws errorMsgs
               Right (Right bs) -> f bs . mkLogMsg $ bs
-              Right (Left ())  -> case adminChanExpCmdify i ms tunedIds tunedSings msg of
+              Right (Left  ()) -> case adminChanExpCmdify i ms tunedIds tunedSings msg of
                 Left  errorMsg     -> ws errorMsg
                 Right (bs, logMsg) -> f bs logMsg
       else wrapSend mq cols . sorryTunedOutOOCChan $ "admin"
@@ -262,7 +262,7 @@ adminAlertExec p@ActionParams { plaMsgQueue, plaCols } = dumpCmdHelper "alert_ex
 
 
 dumpCmdHelper :: (FromRow a) => Text -> ([a] -> MudStack ()) -> CmdName -> ActionFun
-dumpCmdHelper tblName f cn (NoArgs i mq cols) = (withDbExHandler "dumpCmdHelper" . getDbTblRecs $ tblName) >>= \case
+dumpCmdHelper tblName f cn (NoArgs i mq cols) = withDbExHandler "dumpCmdHelper" (getDbTblRecs tblName) >>= \case
   Just xs -> f xs >> logPlaExec (prefixAdminCmd cn) i
   Nothing -> dbError mq cols
 dumpCmdHelper tblName f cn p = withoutArgs (dumpCmdHelper tblName f cn) p
@@ -331,10 +331,10 @@ adminAs (WithTarget i mq cols target rest) = getState >>= \ms ->
         sorry txt  = sendFun txt >> sendDfltPrompt mq i
         sorryParse = sorry . sorryParseId $ strippedTarget'
     in case reads . T.unpack $ strippedTarget :: [(Int, String)] of
-      [(targetId, "")] | targetId < 0                                -> sorry sorryWtf
-                       | targetId `notElem` (ms^.typeTbl.to IM.keys) -> sorryParse
-                       | otherwise                                   -> as targetId
-      _                                                              -> sorryParse
+      [(targetId, "")] | targetId < 0                                      -> sorry sorryWtf
+                       | views typeTbl ((targetId `notElem`) . IM.keys) ms -> sorryParse
+                       | otherwise                                         -> as targetId
+      _ -> sorryParse
 adminAs p = patternMatchFail "adminAs" . showText $ p
 
 
@@ -347,7 +347,7 @@ adminBanHost (NoArgs i mq cols) = (withDbExHandler "adminBanHost" . getDbTblRecs
   Nothing -> dbError mq cols
 adminBanHost p@(AdviseOneArg a) = advise p [ prefixAdminCmd "banhost" ] . adviceABanHostNoReason $ a
 adminBanHost (MsgWithTarget i mq cols (uncapitalize -> target) msg) = getState >>= \ms ->
-    (withDbExHandler "adminBanHost" . isHostBanned $ target) >>= \case
+    withDbExHandler "adminBanHost" (isHostBanned target) >>= \case
       Nothing      -> dbError mq cols
       Just (Any b) -> let newStatus = not b in liftIO mkTimestamp >>= \ts -> do
           let banHost = BanHostRec ts target newStatus msg
@@ -371,7 +371,7 @@ notifyBan i mq cols selfSing target newStatus x =
 
 
 adminBanPC :: ActionFun
-adminBanPC (NoArgs i mq cols) = (withDbExHandler "adminBanPC" . getDbTblRecs $ "ban_pc") >>= \case
+adminBanPC (NoArgs i mq cols) = withDbExHandler "adminBanPC" (getDbTblRecs "ban_pc") >>= \case
   Just xs -> dumpDbTblHelper mq cols (xs :: [BanPCRec]) >> logPlaExecArgs (prefixAdminCmd "banpc") [] i
   Nothing -> dbError mq cols
 adminBanPC p@(AdviseOneArg a) = advise p [ prefixAdminCmd "banpc" ] . adviceABanPCNoReason $ a
@@ -385,7 +385,7 @@ adminBanPC p@(MsgWithTarget i mq cols target msg) = getState >>= \ms ->
                  in if
                    | banId == i  -> sendFun sorryBanSelf
                    | isAdmin pla -> sendFun sorryBanAdmin
-                   | otherwise   -> (withDbExHandler "adminBanPC" . isPCBanned $ strippedTarget) >>= \case
+                   | otherwise   -> withDbExHandler "adminBanPC" (isPCBanned strippedTarget) >>= \case
                      Nothing      -> dbError mq cols
                      Just (Any b) -> let newStatus = not b in liftIO mkTimestamp >>= \ts -> do
                          let rec = BanPCRec ts strippedTarget newStatus msg
@@ -443,10 +443,10 @@ adminChan (NoArgs i mq cols) = getState >>= \ms -> case views chanTbl (map (mkCh
   reports -> adminChanIOHelper i mq reports
 adminChan (LowerNub i mq cols as) = getState >>= \ms ->
     let helper a = case reads . T.unpack $ a :: [(Int, String)] of
-          [(ci, "")] | ci < 0                                -> pure sorryWtf
-                     | ci `notElem` (ms^.chanTbl.to IM.keys) -> sorry
-                     | otherwise                             -> mkChanReport i ms . getChan ci $ ms
-          _                                                  -> sorry
+          [(ci, "")] | ci < 0                                      -> pure sorryWtf
+                     | views chanTbl ((ci `notElem`) . IM.keys) ms -> sorry
+                     | otherwise                                   -> mkChanReport i ms . getChan ci $ ms
+          _                                                        -> sorry
           where
             sorry = pure . sorryParseChanId $ a
         reports = map helper as
@@ -480,8 +480,8 @@ mkCountTxt :: MudStack [Text]
 mkCountTxt = map (uncurry mappend . second commaShow) <$> helper
   where
     helper = getState >>= \ms -> do
-        let countType t = views typeTbl (IM.size . IM.filter (== t)) ms
-            countWealth = views coinsTbl (f . mconcat . IM.elems) ms
+        let countType t = views typeTbl  (IM.size . IM.filter (== t)) ms
+            countWealth = views coinsTbl (f . mconcat . IM.elems    ) ms
               where
                 f (Coins (c, s, g)) = let x = c `divideRound` 100
                                           y = s `divideRound` 10
@@ -593,10 +593,10 @@ adminExamine :: ActionFun
 adminExamine p@AdviseNoArgs          = advise p [ prefixAdminCmd "examine" ] adviceAExamineNoArgs
 adminExamine (LowerNub i mq cols as) = getState >>= \ms ->
     let helper a = case reads . T.unpack $ a :: [(Int, String)] of
-          [(targetId, "")] | targetId < 0                                -> pure sorryWtf
-                           | targetId `notElem` (ms^.typeTbl.to IM.keys) -> sorry
-                           | otherwise                                   -> examineHelper ms targetId
-          _                                                              -> sorry
+          [(targetId, "")] | targetId < 0                                      -> pure sorryWtf
+                           | views typeTbl ((targetId `notElem`) . IM.keys) ms -> sorry
+                           | otherwise                                         -> examineHelper ms targetId
+          _                                                                    -> sorry
           where
             sorry = pure . sorryParseId $ a
     in do
@@ -621,7 +621,7 @@ examineHelper ms targetId = let t = getType targetId ms in helper t $ case t of
   WritableType -> [ examineEnt, examineObj,   examineWritable ]
   where
     helper t fs = let header = T.concat [ showText targetId, " ", parensQuote . pp $ t ]
-                  in header : "" : concatMap (\f -> f targetId ms) fs
+                  in header : "" : concatMap (((targetId, ms) |&|) . uncurry) fs
 
 
 type ExamineHelper = Id -> MudState -> [Text]
@@ -827,7 +827,7 @@ examineRm i ms = let r = getRm i ms in [ "Name: "        <> r^.rmName
         f dir destId linkMove = spaces [ dir
                                        , "to"
                                        , getRmName destId ms
-                                       , parensQuote (showText destId)
+                                       , parensQuote . showText $ destId
                                        , linkMove^.moveCost.to showText
                                        , linkMove^.moveTime.to commaShow ]
 
@@ -879,7 +879,7 @@ adminExamineSelf p              = withoutArgs adminExamineSelf p
 adminExp :: ActionFun
 adminExp (NoArgs' i mq) = pager i mq Nothing mkReport >> logPlaExec (prefixAdminCmd "experience") i
   where
-    mkReport = header ++ pure zero ++ (take 25 . map helper $ calcLvlExps)
+    mkReport = header ++ pure zero ++ take 25 (map helper calcLvlExps)
     header   = [ "Level  Experience", T.replicate 17 "=" ]
     zero     = uncurry (<>) . first (pad 7) . dup $ "0"
     helper   = uncurry (<>) . (pad 7 . showText *** commaShow)
@@ -994,10 +994,10 @@ adminKill (LowerNub i mq cols as) = getState >>= \ms ->
   where
     helper ms (is, fs) a =
         let (is', fs')  = case reads . T.unpack $ a :: [(Int, String)] of
-                            [(targetId, "")] | targetId < 0                                -> h sorryWtf
-                                             | targetId `notElem` (ms^.typeTbl.to IM.keys) -> sorry
-                                             | otherwise                                   -> go targetId
-                            _                                                              -> sorry
+                            [(targetId, "")] | targetId < 0                                      -> h sorryWtf
+                                             | views typeTbl ((targetId `notElem`) . IM.keys) ms -> sorry
+                                             | otherwise                                         -> go targetId
+                            _ -> sorry
             h           = (,) mempty . pure . wrapSend mq cols
             sorry       = h . sorryParseId $ a
             go targetId | targetId == i                                  = h sorryAdminKillSelf
@@ -1024,12 +1024,12 @@ adminLink (LowerNub i mq cols as) = getState >>= \ms -> do
             let notFound              = unadulterated . sorryPCName $ target
                 found (_, targetSing) = (\case
                   [] -> header none
-                  ss -> header . mkReport $ ss) <$> (liftIO . lookupTeleNames $ targetSing)
+                  ss -> header . mkReport $ ss) <$> liftIO (lookupTeleNames targetSing)
                   where
                     header          = (targetSing <> "'s two-way links:" :)
                     mkReport     ss | pairs <- sortBy (flip compare `on` fst) . mkCountSings $ ss
                                     = map (uncurry (flip (|<>|)) . first (parensQuote . showText)) pairs
-                    mkCountSings ss = [ (length g, s) | g@(s:_) <- sortGroup . map fromOnly $ ss ]
+                    mkCountSings ss = [ (length &&& head) g | g <- sortGroup . map fromOnly $ ss ]
             in findFullNameForAbbrev target (mkAdminPlaIdSingList ms) |&| maybe notFound found
     pager i mq Nothing . noneOnNull . intercalateDivider cols =<< forM as (helper . capitalize . T.toLower)
     logPlaExecArgs (prefixAdminCmd "link") as i
@@ -1043,10 +1043,10 @@ adminLocate :: ActionFun -- TODO: Try locating an object in a corpse.
 adminLocate p@AdviseNoArgs          = advise p [ prefixAdminCmd "locate" ] adviceALocateNoArgs
 adminLocate (LowerNub i mq cols as) = getState >>= \ms ->
     let helper a = case reads . T.unpack $ a :: [(Int, String)] of
-          [(targetId, "")] | targetId < 0                                -> sorryWtf
-                           | targetId `notElem` (ms^.typeTbl.to IM.keys) -> sorryParseId a
-                           | otherwise                                   -> locate targetId
-          _                                                              -> sorryParseId a
+          [(targetId, "")] | targetId < 0                                      -> sorryWtf
+                           | views typeTbl ((targetId `notElem`) . IM.keys) ms -> sorryParseId a
+                           | otherwise                                         -> locate targetId
+          _ -> sorryParseId a
           where
             locate targetId = let (_, desc) = locateHelper ms [] targetId
                               in mkNameTypeIdDesc targetId ms <> (()!# desc |?| (", " <> desc))
@@ -1107,7 +1107,7 @@ adminMsg (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsgs
                 sentLogMsg     = (i,        T.concat [ "sent message to ", targetSing, ": ", toSelf   ])
                 receivedLogMsg = (targetId, T.concat [ "received message from ", s,    ": ", toTarget ])
             ioHelper _ xs = patternMatchFail "adminMsg helper ioHelper" . showText $ xs
-        in (findFullNameForAbbrev strippedTarget . mkPlaIdSingList $ ms) |&| maybe notFound found
+        in findFullNameForAbbrev strippedTarget (mkPlaIdSingList ms) |&| maybe notFound found
 adminMsg p = patternMatchFail "adminMsg" . showText $ p
 
 
@@ -1242,9 +1242,9 @@ adminPossess (OneArgNubbed i mq cols target) = modifyStateSeq $ \ms ->
         sorry txt = (ms, [ sendFun txt, sendDfltPrompt mq i ])
     in case reads . T.unpack $ strippedTarget :: [(Int, String)] of
       [(targetId, "")]
-        | targetId < 0                                -> sorry sorryWtf
-        | targetId `notElem` (ms^.typeTbl.to IM.keys) -> sorry . sorryParseId $ strippedTarget'
-        | otherwise                                   -> case getPossessing i ms of
+        | targetId < 0                                      -> sorry sorryWtf
+        | views typeTbl ((targetId `notElem`) . IM.keys) ms -> sorry . sorryParseId $ strippedTarget'
+        | otherwise                                         -> case getPossessing i ms of
           Nothing -> possess targetId
           Just pi -> sorry . sorryAlreadyPossessing . getSing pi $ ms
       _ -> sorry . sorryParseId $ strippedTarget'
@@ -1310,7 +1310,7 @@ applyRegex searchTerm target = let (🍩) = (=~) `on` T.unpack in target 🍩 se
 
 adminSecurity :: ActionFun
 adminSecurity p@AdviseNoArgs            = advise p [ prefixAdminCmd "security" ] adviceASecurityNoArgs
-adminSecurity   (LowerNub i mq cols as) = (withDbExHandler "adminSecurity" . getDbTblRecs $ "sec") >>= \case
+adminSecurity   (LowerNub i mq cols as) = withDbExHandler "adminSecurity" (getDbTblRecs "sec") >>= \case
   Just (recs :: [SecRec]) -> do
       multiWrapSend mq cols . intercalateDivider cols . concatMap (helper recs . capitalize . T.toLower) $ as
       logPlaExecArgs (prefixAdminCmd "security") as i
@@ -1349,10 +1349,10 @@ adminSet   (WithArgs i mq cols (target:rest)) = helper |&| modifyState >=> \(toS
     maybeVoid ioHelper mTargetId
   where
     helper ms = case reads . T.unpack $ target :: [(Int, String)] of
-      [(targetId, "")] | targetId < 0                                -> sorryHelper sorryWtf
-                       | targetId `notElem` (ms^.typeTbl.to IM.keys) -> sorry
-                       | otherwise                                   -> f targetId
-      _                                                              -> sorry
+      [(targetId, "")] | targetId < 0                                      -> sorryHelper sorryWtf
+                       | views typeTbl ((targetId `notElem`) . IM.keys) ms -> sorry
+                       | otherwise                                         -> f targetId
+      _ -> sorry
       where
         sorry       = sorryHelper . sorryParseId $ target
         sorryHelper = (ms, ) . (, Nothing, [], [], []) . pure
@@ -1920,10 +1920,10 @@ adminTeleId p@(OneArgNubbed i mq cols target) = modifyStateSeq $ \ms ->
         sorryParse = (ms, ) . pure . sendFun
     in case reads . T.unpack $ strippedTarget :: [(Int, String)] of
       [(targetId, "")]
-        | targetId < 0                                -> sorryParse sorryWtf
-        | targetId `notElem` (ms^.typeTbl.to IM.keys) -> sorryParse . sorryParseId $ strippedTarget'
-        | otherwise                                   -> teleport targetId
-      _                                               -> sorryParse . sorryParseId $ strippedTarget'
+        | targetId < 0                                      -> sorryParse sorryWtf
+        | views typeTbl ((targetId `notElem`) . IM.keys) ms -> sorryParse . sorryParseId $ strippedTarget'
+        | otherwise                                         -> teleport targetId
+      _ -> sorryParse . sorryParseId $ strippedTarget'
 adminTeleId ActionParams { plaMsgQueue, plaCols } = wrapSend plaMsgQueue plaCols adviceATeleIdExcessArgs
 
 
@@ -1936,7 +1936,7 @@ teleHelper :: ActionParams
            -> (Id -> [Broadcast] -> [Broadcast])
            -> (MudState, Funs)
 teleHelper p@ActionParams { myId } ms originId destId destName mt f =
-    let g            = maybe strictId (\t -> ((nlnl t, pure myId) :)) mt
+    let g            = maybe strictId ((:) . (, pure myId) . nlnl) mt
         originDesig  = mkStdDesig myId ms Don'tCap
         originMobIds = myId `delete` desigIds originDesig
         s            = fromJust . desigEntSing $ originDesig
@@ -2108,10 +2108,10 @@ adminWire (WithArgs i mq cols as) = views chanTbl IM.size <$> getState >>= \case
                 in (ms', (map fromEither &&& rights) msgs)
     helperWire (ms, msgs) a =
         let (ms', msg) = case reads . T.unpack $ a :: [(Int, String)] of
-                           [(ci, "")] | ci < 0                                -> sorry sorryWtf
-                                      | ci `notElem` (ms^.chanTbl.to IM.keys) -> sorry . sorryParseChanId $ a
-                                      | otherwise                             -> checkAlreadyConn ci
-                           _                                                  -> sorry . sorryParseChanId $ a
+                           [(ci, "")] | ci < 0                                      -> sorry sorryWtf
+                                      | views chanTbl ((ci `notElem`) . IM.keys) ms -> sorry . sorryParseChanId $ a
+                                      | otherwise                                   -> checkAlreadyConn ci
+                           _ -> sorry . sorryParseChanId $ a
             checkAlreadyConn ci | s <- getSing i  ms, c <- getChan ci ms = if views (chanConnTbl.at s) isJust c
               then sorry . sorryWireAlready $ c^.chanName
               else toggle ms ci s & _2 %~ Right

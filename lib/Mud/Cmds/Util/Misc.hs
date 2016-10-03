@@ -107,7 +107,7 @@ import Mud.Util.Wrapping
 import qualified Mud.Misc.Logging as L (logPla)
 import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 
-import Control.Arrow ((***), second)
+import Control.Arrow ((***), (&&&), second)
 import Control.Exception.Lifted (catch, try)
 import Control.Lens (_1, _2, _3, at, both, each, to, view, views)
 import Control.Lens.Operators ((%~), (&), (+~), (.~), (<>~), (?~), (^.))
@@ -230,8 +230,8 @@ consume i newScs = do
               where
                 g (sc, Nothing) = _1 %~ (sc       :)
                 g (sc, Just ce) = _2 %~ ((sc, ce) :)
-            (valids, invalids) = partition isValid consumpEffectingPairs
-            isValid (sc, ce)   = sc^.hasCausedConsumpEffect.to not && isNotExpired (sc, ce)
+            (valids, invalids)   = partition isValid consumpEffectingPairs
+            isValid pair@(sc, _) = sc^.hasCausedConsumpEffect.to not && isNotExpired pair
               where
                 isNotExpired (view consumpTime -> t, ConsumpEffects _ secs _) = round (now `diffUTCTime` t) <= secs
             groups     = groupBy ((==) `on` (view distinctId . fst)) valids
@@ -251,7 +251,7 @@ consume i newScs = do
 
 
 descSingId :: Id -> MudState -> Text
-descSingId i ms = quoteWith' (getSing i ms, parensQuote . showText $ i) " "
+descSingId i ms = quoteWith' (i |&| ((`getSing` ms) &&& parensQuote . showText)) " "
 
 
 descMaybeId :: MudState -> Maybe Id -> Text
@@ -273,7 +273,7 @@ dispCmdList cmds p                  = dispMatches p cmdNamePadding . mkCmdListTe
 
 mkCmdListText :: [Cmd] -> [Text]
 mkCmdListText cmds = let zipped = zip (styleCmdAbbrevs cmds) [ cmdDesc cmd | cmd <- cmds ]
-                     in [ padCmdName n <> d | (n, d) <- zipped, ()!# d ]
+                     in [ padCmdName . uncurry (<>) $ pair | pair@(_, d) <- zipped, ()!# d ]
 
 
 styleCmdAbbrevs :: [Cmd] -> [Text]
@@ -283,7 +283,7 @@ styleCmdAbbrevs cmds = let cmdNames       = [ cmdName           cmd | cmd <- cmd
                        in [ checkProrityAbbrev a | a <- zip3 cmdNames cmdPAs styledCmdNames ]
   where
     checkProrityAbbrev (_,  Nothing,  scn) = scn
-    checkProrityAbbrev (cn, Just cpa, _  ) = colorWith abbrevColor cpa <> (fromJust . T.stripPrefix cpa $ cn)
+    checkProrityAbbrev (cn, Just cpa, _  ) = colorWith abbrevColor cpa <> fromJust (T.stripPrefix cpa cn)
 
 
 -----
@@ -360,7 +360,8 @@ formatChanMsg cn n msg = T.concat [ parensQuote cn
 
 formatQuestion :: Id  -> MudState -> Broadcast -> MudStack [Broadcast]
 formatQuestion i ms (txt, is)
-  | i `elem` is = ((formatChanMsg "Question" (getSing i ms) txt, pure i) :) <$> mkBsWithStyled (i `delete` is)
+  | i `elem` is = let pair = i |&| (flip (formatChanMsg "Question") txt . (`getSing` ms) &&& pure)
+                  in (pair :) <$> mkBsWithStyled (i `delete` is)
   | otherwise   = mkBsWithStyled is
   where
     mkBsWithStyled is' = mapM getStyled is' >>= \styleds ->
@@ -388,7 +389,7 @@ getChanLinkeds_nonLinkedIds i c ms =
     let s                     = getSing i ms
         others                = views chanConnTbl (filter h . map g . filter f . M.toList) c
         f (s', isTuned)       = s' /= s && isTuned
-        g (s', _      )       = (getIdForMobSing s' ms, s')
+        g (s', _      )       = ((`getIdForMobSing` ms) &&& id) s'
         h                     = (`isAwake` ms) . fst
         (linkeds, nonLinkeds) = partition (isLinked ms . (i, ) . fst) others
         nonLinkedIds          = map fst nonLinkeds
@@ -442,8 +443,8 @@ getQuestionStyleds i ms =
 
 
 getTunedQuestionIds :: Id -> MudState -> (Inv, Inv)
-getTunedQuestionIds i ms = let pair = (getLoggedInPlaIds ms, getNonIncogLoggedInAdminIds ms)
-                           in pair & both %~ filter (`isTunedQuestionId` ms) . (i `delete`)
+getTunedQuestionIds i ms =
+    (getLoggedInPlaIds &&& getNonIncogLoggedInAdminIds) ms & both %~ filter (`isTunedQuestionId` ms) . (i `delete`)
 
 
 -----
@@ -537,7 +538,7 @@ isAwake = onPla (uncurry (&&) . (isLoggedIn *** not . isIncognito) . dup) True
 
 
 isBracketed :: [Text] -> Bool
-isBracketed ws = or [ (T.head . head $ ws) `elem` ("[<" :: String)
+isBracketed ws = or [ T.head (head ws) `elem` ("[<" :: String)
                     , "]." `T.isSuffixOf` last ws
                     , ">." `T.isSuffixOf` last ws ]
 
@@ -674,7 +675,7 @@ mkChanReport :: Id -> MudState -> Chan -> [Text]
 mkChanReport i ms (Chan ci cn cct tappers) =
     let desc    = commas . map descPla . f $ [ (s, t, l) | (s, t) <- M.toList cct
                                                          , let p = getPla (getIdForMobSing s ms) ms
-                                                         , let l = isLoggedIn p && (not . isIncognito $ p) ]
+                                                         , let l = isLoggedIn p && not (isIncognito p) ]
         tapping = getSing i ms `elem` tappers |?| spcL . parensQuote $ "wiretapped"
     in [ T.concat [ bracketQuote . showText $ ci, " ", dblQuote cn, tapping, ":" ], desc ]
   where
@@ -741,7 +742,7 @@ mkSingleTarget mq cols target (sorryIgnoreLocPref -> sorryMsg) =
                  , consLocPrefBcast = hlp ? f                                             :? const id }
   where
     hlp = hasLocPref . uncapitalize $ target
-    t   = hlp ? (T.tail . T.tail $ target) :? target
+    t   = hlp ? T.tail (T.tail target) :? target
     f i = ((sorryMsg, pure i) :)
 
 
@@ -781,10 +782,10 @@ onOff False = "off"
 pager :: Id -> MsgQueue -> Maybe Fun -> [Text] -> MudStack ()
 pager i mq mf txt@(length -> txtLen) = getState >>= \ms -> let pl = getPageLines i ms in if txtLen + 3 <= pl
   then send mq . nl . T.unlines $ txt
-  else let (page, rest) = splitAt (pl - 2) txt in do
+  else let pair@(page, _) = splitAt (pl - 2) txt in do
       send mq . T.unlines $ page
       sendPagerPrompt mq (pl - 2) txtLen
-      setInterp i . Just . interpPager mf pl txtLen $ (page, rest)
+      setInterp i . Just . interpPager mf pl txtLen $ pair
 
 
 -----
@@ -870,14 +871,13 @@ updateRndmName i targetId = do
                     in maybe notFound found . M.lookup targetSing $ rnt
     modifyState helper
   where
-    readRndmNames = (liftIO . T.readFile $ rndmNamesFile) |&| try >=> eitherRet
-      (emptied . fileIOExHandler "updateRndmName")
+    readRndmNames = liftIO (T.readFile rndmNamesFile) |&| try >=> eitherRet (emptied . fileIOExHandler "updateRndmName")
     mkUniqueName rndmName existing
       | rndmName `notElem` existing = rndmName
       | otherwise = case sortBy (flip compare) . filter (rndmName `T.isPrefixOf`) $ existing of
         [_]             -> rndmName <> "2"
         (head -> match) -> let (name, readNum -> num) = T.break isDigit match
-                           in name <> (showText . succ $ num)
+                           in name <> showText (succ num)
 
 
 -----

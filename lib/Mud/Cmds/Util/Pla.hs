@@ -108,7 +108,7 @@ import Prelude hiding (pi)
 import qualified Mud.Misc.Logging as L (logNotice, logPla, logPlaOut)
 import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 
-import Control.Arrow ((***), first, second)
+import Control.Arrow ((***), (&&&), first, second)
 import Control.Lens (Getter, _1, _2, _3, _4, _5, at, both, each, to, view, views)
 import Control.Lens.Operators ((%~), (&), (.~), (<>~), (?~), (^.))
 import Control.Monad ((>=>), forM_, guard)
@@ -629,7 +629,7 @@ helperLinkUnlink :: MudState -> Id -> MsgQueue -> Cols -> MudStack (Maybe ([Text
 helperLinkUnlink ms i mq cols =
     let s                = getSing   i ms
         othersLinkedToMe = getLinked i ms
-        meLinkedToOthers = foldr buildSingList [] $ i `delete` (ms^.pcTbl.to IM.keys)
+        meLinkedToOthers = foldr buildSingList [] $ i `delete` views pcTbl IM.keys ms
         buildSingList pi acc | s `elem` getLinked pi ms = getSing pi ms : acc
                              | otherwise                = acc
         twoWays = map fst . filter ((== 2) . snd) . countOccs $ othersLinkedToMe ++ meLinkedToOthers
@@ -736,7 +736,7 @@ helperPutEitherInv i d mnom toId toSing a@(ms, origToSelfs, _, _) = \case
   Left  msg -> a & _2 <>~ pure msg
   Right is  ->
     let (is', toSelfs) = onTrue (toId `elem` is) f (is, origToSelfs)
-        f              = filter (/= toId) *** (<> (pure . sorryPutInsideSelf $ toSing))
+        f              = filter (/= toId) *** (<> pure (sorryPutInsideSelf toSing))
         (_, cans,  can'ts) = foldl' (partitionInvByVol ms . getConCapacity toId $ ms) (calcVol toId ms, [], []) is'
         (toSelfs', bs    ) = mkPutRemInvDescs i ms d Put mnom toSing cans
     in a & _1.invTbl.ind i    %~  (\\ cans)
@@ -907,8 +907,7 @@ maybeSingleSlot em s = boolToMaybe (isSlotAvail em s) s
 mkChanBindings :: Id -> MudState -> ([Chan], [ChanName], Sing)
 mkChanBindings i ms = let cs  = getPCChans i ms
                           cns = select chanName cs
-                          s   = getSing i ms
-                      in (cs, cns, s)
+                      in (cs, cns, getSing i ms)
 
 
 -----
@@ -1058,8 +1057,8 @@ mkEqDesc i cols ms descId descSing descType = let descs = descId == i ? mkDescsS
     ()# descs ? noDescs :? ((header <>) . T.unlines . concatMap (wrapIndent 15 cols) $ descs)
   where
     mkDescsSelf =
-        let (slotNames,  es ) = unzip [ (pp slot, getEnt ei ms)          | (slot, ei) <- M.toList . getEqMap i $ ms ]
-            (sings,      ens) = unzip [ (e^.sing, fromJust $ e^.entName) | e          <- es                         ]
+        let (slotNames,  es ) = unzip [ (pp slot, getEnt ei ms)                  | (slot, ei) <- M.toList . getEqMap i $ ms ]
+            (sings,      ens) = unzip [ (view sing &&& views entName fromJust) e | e          <- es                         ]
         in map helper . zip3 slotNames sings . styleAbbrevs DoQuote $ ens
       where
         helper (T.breakOn " finger" -> (slotName, _), s, styled) = T.concat [ parensPad 15 slotName, s, " ", styled ]
