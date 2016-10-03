@@ -492,7 +492,7 @@ admin (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsgs ->
                 Right bs       -> ioHelper pair bs
             ioHelper (adminId, adminSing) [ fst -> toSelf, fst -> toAdmin ] = do
                 if getAll . mconcat $ [ All . isLoggedIn $ adminPla
-                                      , (not . isAdminId i $ ms) |?| All . not . isIncognito $ adminPla ]
+                                      , not (isAdminId i ms) |?| All . not . isIncognito $ adminPla ]
                   then sendFun formatted
                   else multiSendFun [ formatted, parensQuote "Message retained." ]
                 retainedMsg adminId ms . mkRetainedMsgFromPerson s $ toAdmin
@@ -509,7 +509,7 @@ admin (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsgs ->
               | isAdminId i ms = idSings
               | otherwise      =
                   let ([((`getPla` ms) -> rootPla, _)], others) = partition ((== iRoot) . fst) idSings
-                  in if isLoggedIn rootPla && (not . isIncognito $ rootPla)
+                  in if isLoggedIn rootPla && not (isIncognito rootPla)
                     then idSings
                     else others
         in (findFullNameForAbbrev strippedTarget . filterRoot . mkAdminIdSingList $ ms) |&| maybe notFound found
@@ -521,10 +521,11 @@ adminList (NoArgs i mq cols) = (multiWrapSend mq cols =<< helper =<< getState) >
   where
     helper ms =
         let p            = getPla i ms
-            singSuffixes = sortBy (compare `on` fst) [ (s, " logged " <> mkSuffix ai) | (ai, s) <- mkAdminIdSingList ms ]
+            singSuffixes = sortBy (compare `on` fst) [ second ((" logged " <>) . mkSuffix) pair
+                                                     | (swap -> pair) <- mkAdminIdSingList ms ]
             mkSuffix ai  = let { ap = getPla ai ms; isIncog = isIncognito ap } in if isAdmin p && isIncog
-              then (inOut . isLoggedIn $ ap) |<>| parensQuote "incognito"
-              else inOut (isLoggedIn ap && not isIncog)
+              then inOut (isLoggedIn ap) |<>| parensQuote "incognito"
+              else inOut $ isLoggedIn ap && not isIncog
             singSuffixes' = onFalse (isAdmin p) (filter f) singSuffixes
               where
                 f (a, b) | a == "Root" = b == " logged in"
@@ -597,7 +598,7 @@ bonus (OneArgLower i mq cols a) = getState >>= \ms ->
               let targetId = getIdForMobSing targetSing ms
                   x        = calcBonus targetId ms
                   bs       = pure (prd $ "You give a bonus to " <> targetSing, pure i)
-              in (fmap . fmap) getAll (canBonus targetSing) >>= \case
+              in fmap2 getAll (canBonus targetSing) >>= \case
                 Just True  -> do { bcastNl . onTrue (()!# guessWhat) ((guessWhat, pure i) :) $ bs
                                  ; retainedMsg targetId ms . colorWith bonusColor . mkToTarget $ targetId
                                  ; awardExp x ("bonus from " <> s) targetId
@@ -683,9 +684,9 @@ chan (OneArg i mq cols a@(T.toLower -> a')) = getState >>= \ms ->
 chan (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
     let notFound    = wrapSend mq cols . sorryChanName $ target
         found match = let (cn, c) = getMatchingChanWithName match cns cs in if
-          | views chanConnTbl (not . (M.! s)) c    -> wrapSend mq cols . sorryTunedOutICChan $ cn
-          | isIncognitoId i ms -> wrapSend mq cols . sorryChanIncog $ "a telepathic"
-          | otherwise          -> getChanStyleds i c ms >>= \triples -> if ()# triples
+          | views chanConnTbl (not . (M.! s)) c -> wrapSend mq cols . sorryTunedOutICChan $ cn
+          | isIncognitoId i ms                  -> wrapSend mq cols . sorryChanIncog $ "a telepathic"
+          | otherwise                           -> getChanStyleds i c ms >>= \triples -> if ()# triples
             then wrapSend mq cols . sorryChanNoOneListening . dblQuote $ cn
             else let getStyled targetId = view _3 . head . filter (views _1 (== i)) <$> getChanStyleds targetId c ms
                      format (txt, is)   = if i `elem` is
@@ -814,9 +815,9 @@ connectHelper i (target, as) ms =
                                                                        in sorryProcTarget msg
                                              | otherwise = pair & _1.chanTbl.ind ci.chanConnTbl.at targetSing ?~ True
                                                                 & _1.mobTbl.ind i.curPp -~ 3
-                                                                & _2 <>~ (pure . Right $ targetSing)
+                                                                & _2 <>~ pure (Right targetSing)
                                  in either sorryProcTarget checkChanName . checkMutuallyTuned i ms' $ targetSing
-                           sorryProcTarget msg = pair & _2 <>~ (pure . Left $ msg)
+                           sorryProcTarget msg = pair & _2 <>~ pure (Left msg)
                            blocked             = sorryProcTarget . (effortsBlockedMsg <>)
                        in findFullNameForAbbrev a targetSings |&| maybe notFoundSing foundSing
                    ci                         = c^.chanId
@@ -950,11 +951,11 @@ disconnectHelper i (target, as) idNamesTbl ms =
                        | not . hasPp i ms' $ 3 ->
                            let targetName' = isRndmName targetName ? underline targetName :? targetName
                                msg         = sorryPp $ "disconnect " <> targetName'
-                           in (pair & _2 <>~ (pure . Left $ msg), b)
+                           in (pair & _2 <>~ pure (Left msg), b)
                        | otherwise -> let targetSing = getSing targetId ms'
                                       in ( pair & _1.chanTbl.ind ci.chanConnTbl.at targetSing .~ Nothing
                                                 & _1.mobTbl.ind i.curPp -~ 3
-                                                & _2 <>~ (pure . Right $ (targetId, targetSing, targetName))
+                                                & _2 <>~ pure (Right (targetId, targetSing, targetName))
                                          , b )
                      xs -> patternMatchFail "disconnectHelper found" . showText $ xs
                      where

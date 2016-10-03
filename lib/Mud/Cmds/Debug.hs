@@ -50,13 +50,13 @@ import qualified Mud.Misc.Logging as L (logAndDispIOEx, logNotice, logPlaExec, l
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Applicative (Const)
-import Control.Arrow ((***))
+import Control.Arrow ((***), first)
 import Control.Concurrent (getNumCapabilities, myThreadId)
 import Control.Concurrent.Async (asyncThreadId, poll)
 import Control.Exception (ArithException(..), IOException)
 import Control.Exception.Lifted (throwIO, try)
 import Control.Lens (Optical, both, view, views)
-import Control.Lens.Operators ((%~), (&), (^.))
+import Control.Lens.Operators ((%~), (&))
 import Control.Lens.Type (LensLike')
 import Control.Monad ((>=>), replicateM_, unless)
 import Control.Monad.IO.Class (liftIO)
@@ -226,7 +226,7 @@ debugBuffCheck (NoArgs i mq cols) = do
     logPlaExec (prefixDebugCmd "buffer") i
   where
     helper = liftIO (flip openTempFile "temp" =<< getTemporaryDirectory) >>= \(fn, h) -> do
-        send mq . nl =<< [ T.unlines . wrapIndent 2 cols $ msg | (mkMsg fn -> msg) <- liftIO . hGetBuffering $ h ]
+        send mq . nl =<< [ T.unlines . wrapIndent 2 cols $ msg | msg <- mkMsg fn <$> liftIO (hGetBuffering h) ]
         liftIO $ hClose h >> removeFile fn
     mkMsg (dblQuote . T.pack -> fn) (dblQuote . showText -> mode) =
         T.concat [ "Default buffering mode for temp file ", fn, " is ", mode, "." ]
@@ -243,9 +243,9 @@ debugCins (OneArg i mq cols a) = getState >>= \ms -> case reads . T.unpack $ a :
   _                -> wrapSend mq cols . sorryParseId $ a
   where
     helper ms targetId@(showText -> targetIdTxt)
-      | targetId < 0                              = wrapSend mq cols sorryWtf
-      | targetId `notElem` views pcTbl IM.keys ms = wrapSend mq cols . sorryNonexistentId targetId . pure $ "PC"
-      | otherwise                                 = do
+      | targetId < 0                                    = wrapSend mq cols sorryWtf
+      | views pcTbl ((targetId `notElem`) . IM.keys) ms = wrapSend mq cols . sorryNonexistentId targetId . pure $ "PC"
+      | otherwise                                       = do
           multiWrapSend mq cols . (header :) . pure . showText =<< getAllChanIdNames i ms
           logPlaExecArgs (prefixDebugCmd "cins") (pure a) i
       where
@@ -282,7 +282,7 @@ debugColor :: ActionFun
 debugColor (NoArgs' i mq) = sequence_ [ send mq . nl . T.concat $ msg, logPlaExec (prefixDebugCmd "color") i ]
   where
     msg :: [] Text
-    msg = [ nl $ (pad 15 . showText $ ansi) <> mkColorDesc fg bg <> (colorWith ansi . spaced $ "CurryMUD")
+    msg = [ nl $ pad 15 (showText ansi) <> mkColorDesc fg bg <> colorWith ansi (spaced "CurryMUD")
           | fgi <- intensities, fgc <- colors, bgi <- intensities, bgc <- colors
           , let fg = (fgi, fgc), let bg = (bgi, bgc), let ansi = mkColorANSI fg bg ]
     mkColorDesc (mkColorName -> fg) (mkColorName -> bg) = fg <> "on " <> bg
@@ -369,7 +369,7 @@ debugEnv p@ActionParams { myId, args } = do
 mkEnvListTxt :: [(String, String)] -> [Text]
 mkEnvListTxt = map (mkAssocTxt . (both %~ T.pack))
   where
-    mkAssocTxt (a, b) = colorWith envVarColor (a <> ": ") <> b
+    mkAssocTxt = colorWith envVarColor . uncurry (<>) . first (<> ": ")
 
 
 -----
@@ -576,8 +576,7 @@ parseTwoIntArgs :: MsgQueue
                 -> (Int -> Int -> MudStack ())
                 -> MudStack ()
 parseTwoIntArgs mq cols [a, b] sorryParseA sorryParseB helper = do
-    parsed <- (,) <$> parse a sorryParseA
-                  <*> parse b sorryParseB
+    parsed <- (,) <$> parse a sorryParseA <*> parse b sorryParseB
     unless (uncurry (||) $ parsed & both %~ (()#)) . uncurry helper $ parsed & both %~ (getSum . fromJust)
   where
     parse txt sorry = case reads . T.unpack $ txt :: [(Int, String)] of
@@ -594,7 +593,7 @@ debugLog (NoArgs' i mq) = helper >> ok mq >> logPlaExec (prefixDebugCmd "log") i
   where
     helper       = replicateM_ 100 . onNewThread $ heavyLogging
     heavyLogging = replicateM_ 100 . logNotice "debugLog heavyLogging" =<< mkMsg
-    mkMsg        = [ prd $ "Logging from " <> ti | (showText -> ti) <- liftIO myThreadId ]
+    mkMsg        = [ prd $ "Logging from " <> ti | ti <- showText <$> liftIO myThreadId ]
 debugLog p = withoutArgs debugLog p
 
 
@@ -762,7 +761,7 @@ debugRemPut (NoArgs' i mq) = do
     mapM_ (fakeClientInput mq) . take 10 . cycle . map (<> rest) $ [ "remove", "put" ]
     logPlaExec (prefixDebugCmd "remput") i
   where
-    rest = (spaced . T.singleton $ allChar) <> ('r' `T.cons` selectorChar `T.cons` "sack")
+    rest = spaced (T.singleton allChar) <> ('r' `T.cons` selectorChar `T.cons` "sack")
 debugRemPut p = withoutArgs debugRemPut p
 
 
@@ -779,7 +778,7 @@ debugRnt (OneArgNubbed i mq cols (capitalize -> a)) = getState >>= \ms ->
             rndmName <- updateRndmName i . getIdForMobSing match $ ms
             wrapSend mq cols . T.concat $ [ dblQuote rndmName, " has been randomly generated for ", match, "." ]
             logPlaExec (prefixDebugCmd "rnt") i
-        pcSings = [ ms^.entTbl.ind pcId.sing | pcId <- views pcTbl IM.keys ms ]
+        pcSings = [ getSing pcId ms | pcId <- views pcTbl IM.keys ms ]
     in findFullNameForAbbrev a pcSings |&| maybe notFound found
 debugRnt p = advise p [] adviceDRntExcessArgs
 
@@ -818,7 +817,7 @@ debugTalk (NoArgs i mq cols) = getState >>= \(views talkAsyncTbl M.elems -> asyn
     mkDesc a    = [ T.concat [ "Talk async ", showText . asyncThreadId $ a, ": ", statusTxt, "." ]
                   | statusTxt <- mkStatusTxt <$> liftIO (poll a) ]
     mkStatusTxt = \case Nothing         -> "running"
-                        Just (Left  e ) -> "exception " <> (parensQuote . showText $ e)
+                        Just (Left  e ) -> "exception " <> parensQuote (showText e)
                         Just (Right ()) -> "finished"
 debugTalk p = withoutArgs debugTalk p
 
