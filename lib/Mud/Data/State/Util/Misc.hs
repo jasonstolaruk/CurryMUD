@@ -159,9 +159,8 @@ getEffBothGramNos i ms targetId =
                    else (pp targetRace, plurRace targetRace) & both %~ ((targetSexy <>) . spcL)
       Just {} | getType targetId ms == CorpseType -> case getCorpse targetId ms of
                 NpcCorpse                            -> pair
-                (PCCorpse cs _ _) | cs == getSing i ms -> ("your corpse",      "")
-                                  | cs `elem` intros   -> ("corpse of " <> cs, "")
-                                  | otherwise          -> pair
+                (PCCorpse cs _ _) | cs == getSing i ms || cs `elem` intros -> ("corpse of " <> cs, "")
+                                  | otherwise                              -> pair
               | otherwise -> pair
 
 

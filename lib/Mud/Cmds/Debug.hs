@@ -55,7 +55,7 @@ import Control.Concurrent (getNumCapabilities, myThreadId)
 import Control.Concurrent.Async (asyncThreadId, poll)
 import Control.Exception (ArithException(..), IOException)
 import Control.Exception.Lifted (throwIO, try)
-import Control.Lens (Optical, both, to, view, views)
+import Control.Lens (Optical, both, view, views)
 import Control.Lens.Operators ((%~), (&), (^.))
 import Control.Lens.Type (LensLike')
 import Control.Monad ((>=>), replicateM_, unless)
@@ -735,7 +735,7 @@ debugRegen (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] o
   where
     helper targetId ms
       | targetId < 0 = wrapSend mq cols sorryWtf
-      | targetId `notElem` uncurry (++) ((both %~ (views npcTbl IM.keys)) . dup $ ms) =
+      | targetId `notElem` uncurry (++) ((both %~ views npcTbl IM.keys) . dup $ ms) =
           wrapSend mq cols . sorryNonexistentId targetId $ [ "NPC", "PC" ]
       | otherwise = do
           multiWrapSend mq cols descRegens
