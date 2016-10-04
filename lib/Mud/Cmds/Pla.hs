@@ -2145,9 +2145,9 @@ mkRmInvCoinsDesc i cols ms ri =
     in (pcTuples |!| pcDescs) <> (otherTuples |!| otherDescs) <> (c |!| mkCoinsSummary cols c)
   where
     splitPCsOthers = first (map $ \((_, ia), rest) -> (ia, rest)) . second (map snd) . span (fst . fst)
-    mkPCDesc (ia, (en, (s, _), d, c)) | c == 1 = T.concat [ if isKnownPCSing s
-                                                              then colorWith knownNameColor s
-                                                              else colorWith unknownNameColor . aOrAn $ s
+    mkPCDesc (ia, (en, (s, _), d, c)) | c == 1 = T.concat [ (s |&|) $ if isKnownPCSing s
+                                                              then colorWith knownNameColor
+                                                              else colorWith unknownNameColor . aOrAn
                                                           , rmDescHepler d
                                                           , adminTagHelper ia
                                                           , " "
@@ -2158,7 +2158,7 @@ mkRmInvCoinsDesc i cols ms ri =
                                                           , " "
                                                           , en ]
     mkOtherDesc (en, (s, _), _, c) | c == 1 = aOrAnOnLower s |<>| en
-    mkOtherDesc (en, b,      _, c) = T.concat [ showText c, spaced . mkPlurFromBoth $ b, en ]
+    mkOtherDesc (en, b,      _, c)          = T.concat [ showText c, spaced . mkPlurFromBoth $ b, en ]
     adminTagHelper False = ""
     adminTagHelper True  = spcL adminTagTxt
     rmDescHepler   ""    = ""
@@ -2172,7 +2172,7 @@ mkRmInvCoinsDescTuples i ms targetIds =
       boths      =                      [ getEffBothGramNos i ms targetId | targetId <- targetIds ]
       rmDescs    =                      [ mkMobRmDesc targetId ms         | targetId <- targetIds ]
       groups     = group . zip4 isPCAdmins styleds boths $ rmDescs
-  in [ (ipa, (s, b, d, c)) | ((ipa, s, b, d), c) <- [ (head g, length g) | g <- groups ] ]
+  in [ (ipa, (s, b, d, c)) | ((ipa, s, b, d), c) <- [ (head &&& length) g | g <- groups ] ]
   where
     mkIsPCAdmin targetId | isPC targetId ms = (True, isAdminId targetId ms)
                          | otherwise        = dup False
@@ -2195,7 +2195,7 @@ extractMobIdsFromEiss ms = foldl' helper []
 
 
 lookSelf :: ActionFun
-lookSelf (NoArgs i mq cols) = getState >>= \ms -> send mq . nl . mkEntDesc iPidge cols ms $ (i, getEnt i ms)
+lookSelf (NoArgs i mq cols) = getState >>= \ms -> send mq . nl . mkEntDesc iPidge cols ms . (id &&& (`getEnt` ms)) $ i
 lookSelf p                  = withoutArgs lookSelf p
 
 
@@ -2264,13 +2264,13 @@ newChan (WithArgs i mq cols (nub -> as)) = helper |&| modifyState >=> \(unzip ->
           | otherwise = let ci = views chanTbl (head . (enumFrom 0 \\) . IM.keys) $ triple^._1
                             c  = Chan ci a (M.singleton s True) []
                             cr = ChanRec "" ci a s . asteriskQuote $ "New channel created."
-                        in triple & _1.chanTbl.at ci ?~ c
+                        in triple & _1.chanTbl.at ci      ?~ c
                                   & _1.mobTbl.ind i.curPp -~ 5
                                   & _2 <>~ pure (a, cr)
         sorry msg    = _3 <>~ pure msg
         isNG c       = not $ isLetter c || isDigit c
         illegalNames = [ "admin", "all", "question" ] ++ pcNames
-        pcNames      = map (uncapitalize . (`getSing` ms)) $ ms^.pcTbl.to IM.keys
+        pcNames      = views pcTbl (map (uncapitalize . (`getSing` ms)) . IM.keys) ms
         myChanNames  = select chanName . getPCChans i $ ms
     mkNewChanMsg []     = []
     mkNewChanMsg ns@[_] = pure    . mkMsgHelper False $ ns
