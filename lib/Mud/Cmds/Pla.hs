@@ -2494,7 +2494,7 @@ question (NoArgs' i mq) = getState >>= \ms ->
                   f (i', n, ia) | ia           = (i', n <> asterisk)
                                 | isRndmName n = (i', underline n  )
                                 | otherwise    = (i', n            )
-               mkDesc (i', n) = pad (succ namePadding) n <> (tunedInOut . isTunedQuestionId i' $ ms)
+               mkDesc (i', n) = pad (succ namePadding) n <> tunedInOut (isTunedQuestionId i' ms)
                descs          = mkDesc (i, getSing i ms <> (isAdminId i ms |?| asterisk)) : map mkDesc combo
                descs'         = "Question channel:" : descs
            in pager i mq Nothing descs' >> logPlaExecArgs "question" [] i
@@ -2640,12 +2640,12 @@ readAction (LowerNub i mq cols as) = (,) <$> getState <*> mkRndmVector >>= \(ms,
       -----
       (False, True ) -> let sorry = (inInvs |!| wrapUnlinesNl cols dudeYourHandsAreEmpty) <> sorryInEq
                             (inRms', (_, toSelfs, bs, logMsgs), fs) = procHooks i ms v "read" inRms
-                            sorry' = sorry <> (wrapper . map sorryReadWithHooks $ inRms')
+                            sorry' = sorry <> wrapper (map sorryReadWithHooks inRms')
                         in ioHelper (sorry' <> wrapper toSelfs, bs, logMsgs) >> sequence_ fs
       -----
       (True,  True ) ->
         let (inRms', (_, hooksToSelfs, hooksBs, hooksLogMsgs), fs) = procHooks i ms v "read" inRms
-            sorry = sorryInEq <> (wrapper . map sorryReadWithHooks $ inRms')
+            sorry = sorryInEq <> wrapper (map sorryReadWithHooks inRms')
             (invCoinsToSelf, invCoinsBs, invCoinsLogMsgs) = invCoinsHelper ms inInvs d invCoins
         in do
             ioHelper ( T.concat [ sorry, wrapper hooksToSelfs, invCoinsToSelf ]
@@ -2757,7 +2757,7 @@ readyDispatcher i ms d mrol a targetId = let targetSing = getSing targetId ms in
       WpnType   -> Just readyWpn
       ArmType   -> Just readyArm
       _         -> Nothing
-    sorry targetSing = a & _3 <>~ (pure . sorryReadyType $ targetSing)
+    sorry targetSing = a & _3 <>~ pure (sorryReadyType targetSing)
 
 
 -- Readying clothing:
@@ -2948,18 +2948,18 @@ readyArm i ms d mrol a@(et, _, _, _, _) armId armSing | em <- et IM.! i, sub <- 
       Right slot -> moveReadiedItem i a slot armId . mkReadyArmMsgs $ sub
   where
     sorry          = Left . sorryReadyRol armSing
-    mkReadyArmMsgs = \case
-      Head   -> putOnMsgs                     i d armSing
-      Hands  -> putOnMsgs                     i d armSing
-      Feet   -> putOnMsgs                     i d armSing
-      Shield -> mkReadyMsgs "ready" "readies" i d armSing
-      _      -> donMsgs                       i d armSing
+    mkReadyArmMsgs = ((i, d, armSing) |&|) . uncurry3 . \case
+      Head   -> putOnMsgs
+      Hands  -> putOnMsgs
+      Feet   -> putOnMsgs
+      Shield -> mkReadyMsgs "ready" "readies"
+      _      -> donMsgs
 
 
 getAvailArmSlot :: MudState -> ArmSub -> EqMap -> Either Text Slot
 getAvailArmSlot ms (armSubToSlot -> slot) em = maybeSingleSlot em slot |&| maybe (Left sorry) Right
   where
-    sorry | i <- em M.! slot, s <- getSing i ms = sorryReadyAlreadyWearing s
+    sorry | i <- em M.! slot = sorryReadyAlreadyWearing . getSing i $ ms
 
 
 -----
@@ -3156,7 +3156,7 @@ sayHelper _ p = patternMatchFail "sayHelper" . showText $ p
 
 firstMobSay :: Id -> PlaTbl -> (PlaTbl, [Text])
 firstMobSay i pt | pt^.ind i.to isNotFirstMobSay = (pt, [])
-                 | otherwise = (pt & ind i %~ setPlaFlag IsNotFirstMobSay True, [ "", hintSay ])
+                 | otherwise                     = (pt & ind i %~ setPlaFlag IsNotFirstMobSay True, [ "", hintSay ])
 
 
 -----
@@ -3164,7 +3164,7 @@ firstMobSay i pt | pt^.ind i.to isNotFirstMobSay = (pt, [])
 
 security :: ActionFun
 security (NoArgs i mq cols) = getSing i <$> getState >>= \s ->
-    (withDbExHandler "security" . getDbTblRecs $ "sec") >>= \case
+    withDbExHandler "security" (getDbTblRecs "sec") >>= \case
       Just recs -> case filter ((s ==) . (dbName :: SecRec -> Text)) recs of
         []      -> securityHelper i mq cols
         matches -> securityChange . last $ matches
@@ -3551,7 +3551,7 @@ mkSlotDesc i ms s = case s of
   where
     hisHer = mkPossPro . getSex i $ ms
     wornOn = T.concat [ "worn on ", hisHer, " ", pp s ]
-    wornAs = "worn as " <> (aOrAn . pp $ s)
+    wornAs = "worn as " <> aOrAn (pp s)
     heldIn = "held in " <> hisHer <> pp s
 
 
@@ -3562,7 +3562,7 @@ smell :: ActionFun
 smell (NoArgs i mq cols) = getState >>= \ms -> do
     views rmSmell (wrapSend mq cols . fromMaybe noSmellMsg) . getMobRm i $ ms
     let d = mkStdDesig i ms DoCap
-    bcastIfNotIncogNl i . pure $ (serialize d <> " smells the air.", i `delete` desigIds d)
+    bcastIfNotIncogNl i . pure . ((<> " smells the air.") . serialize &&& (i `delete`) . desigIds) $ d
     logPlaExec "smell" i
 smell (OneArgLower i mq cols a) = getState >>= \ms ->
     let invCoins   = getInvCoins i ms
@@ -3735,10 +3735,10 @@ stats (NoArgs i mq cols) = getState >>= \ms ->
         xpsHelper       | (hps, mps, pps, fps) <- getPts i ms
                         = spaces [ f "h" hps, f "m" mps, f "p" pps, f "f" fps ]
           where
-            f a pair@(commaShow -> x, commaShow -> y) = T.concat [ colorWith (mkColorTxtForXps pair) x, "/", y, a, "p" ]
+            f a pair@(both %~ commaShow -> (x, y)) = T.concat [ colorWith (mkColorTxtForXps pair) x, "/", y, a, "p" ]
         (l, expr)       = getLvlExp i ms
         nxt             = subtract expr . snd $ calcLvlExps !! l
-        skillPtsHelper  = let pts = getSkillPts i ms in (pts > 0) |?| (commaShow pts <> " unspent skill points")
+        skillPtsHelper  = let pts = getSkillPts i ms in pts > 0 |?| (commaShow pts <> " unspent skill points")
         mobRmDescHelper = maybe "" (prd . ("Your room description is " <>))        $ dblQuote <$> getMobRmDesc i ms
         tempDescHelper  = maybe "" ("Your temporary character description is " <>) $ dblQuote <$> getTempDesc  i ms
     in multiWrapSend mq cols mkStats >> logPlaExec "stats" i
