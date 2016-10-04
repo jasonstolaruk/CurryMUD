@@ -70,7 +70,7 @@ import Mud.Util.Wrapping
 import qualified Mud.Misc.Logging as L (logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut)
 import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 
-import Control.Arrow ((***), first, second)
+import Control.Arrow ((***), (&&&), first, second)
 import Control.Exception.Lifted (catch, try)
 import Control.Lens (_1, _2, _3, _4, _5, at, both, each, set, to, view, views)
 import Control.Lens.Operators ((%~), (&), (+~), (-~), (.~), (<>~), (?~), (^.))
@@ -540,6 +540,48 @@ adminList p = patternMatchFail "adminList" . showText $ p
 -----
 
 
+alertExec :: CmdName -> ActionFun
+alertExec cn (NoArgs      i mq cols   ) = alertExecHelper i mq cols cn "" ""
+alertExec cn (OneArgLower i mq cols a ) = alertExecHelper i mq cols cn a  a
+alertExec cn (WithArgs    i mq cols as) = alertExecHelper i mq cols cn (head as) . spaces $ as
+alertExec _  p                          = patternMatchFail "alertExec" . showText $ p
+
+
+alertExecHelper :: Id -> MsgQueue -> Cols -> CmdName -> Text -> Text -> MudStack ()
+alertExecHelper i mq cols cn target args = do
+    ms <- getState
+    ts <- liftIO mkTimestamp
+    let s          = getSing i ms
+        targetSing = alertExecFindTargetSing i ms target
+        msg        = T.concat [ s, " attempted to execute ", dblQuote cn, targetingMsg targetSing, " ", argsMsg, "." ]
+        outIds     = (iRoot `delete`) $ getAdminIds ms \\ getLoggedInAdminIds ms
+        rec        = AlertExecRec ts s cn targetSing args
+    sendCmdNotFound i mq cols
+    bcastAdmins msg
+    forM_ outIds (\adminId -> retainedMsg adminId ms . mkRetainedMsgFromPerson s $ msg)
+    logNotice        fn   msg
+    logPla           fn i msg
+    withDbExHandler_ fn . insertDbTblAlertExec $ rec
+  where
+    fn                      = "alertExecHelper"
+    targetingMsg targetSing = targetSing |!| (" targeting " <> targetSing)
+    argsMsg | ()# args      = "with no arguments"
+            | otherwise     = "with the following arguments: " <> dblQuote args
+
+
+alertExecFindTargetSing :: Id -> MudState -> Text -> Text
+alertExecFindTargetSing _ _  ""     = ""
+alertExecFindTargetSing i ms target =
+    let (_, _, inRms) = sortArgsInvEqRm InRm . pure $ target
+        ri            = getRmId i ms
+        invCoins      = first (i `delete`) . getNonIncogInvCoins ri $ ms
+        (eiss, ecs)   = uncurry (resolveRmInvCoins i ms inRms) invCoins
+    in if ()# invCoins then "" else ()!# ecs ? "" :? either (const "") ((`getSing` ms) . head) (head eiss)
+
+
+-----
+
+
 bars :: ActionFun
 bars (NoArgs i mq cols) = getState >>= \ms ->
     let mkBars = map (uncurry . mkBar . calcBarLen $ cols) . mkPtPairs i $ ms
@@ -977,8 +1019,8 @@ drink p@(NoArgs' i mq                   ) = advise p ["drink"] adviceDrinkNoArgs
 drink p@(OneArg  i mq _    _            ) = advise p ["drink"] adviceDrinkNoVessel >> sendDfltPrompt mq i
 drink   (Lower   i mq cols [amt, target]) = getState >>= \ms -> let (isDrink, isEat) = isDrinkingEating i ms in
     if isDrink
-      then let Just (l, s) = getNowDrinking i ms
-           in wrapSend mq cols . sorryDrinkAlready l $ s
+      then let Just pair = getNowDrinking i ms
+           in wrapSend mq cols . uncurry sorryDrinkAlready $ pair
       else if isEat
         then let Just s = getNowEating i ms
              in wrapSend mq cols (sorryDrinkEating s) >> sendDfltPrompt mq i
@@ -1104,14 +1146,14 @@ emote (WithArgs i mq cols as) = getState >>= \ms ->
           | x == enc's           -> mkRightForNonTargets $ expandEnc isHead & each <>~ "'s"
           | enc `T.isInfixOf` x  -> Left . adviceEnc $ "emote "
           | x == etc             -> Left . adviceEtc $ "emote "
-          | T.take 1 x == etc    -> isHead ? Left adviceEtcHead :? (procTarget ms . T.tail $ x)
+          | T.take 1 x == etc    -> isHead ? Left adviceEtcHead :? procTarget ms (T.tail x)
           | etc `T.isInfixOf` x  -> Left . adviceEtc $ "emote "
           | isHead, hasEnc as    -> mkRightForNonTargets $ dup3 x  & each %~ capitalizeMsg
           | isHead, x' <- spcL x -> mkRightForNonTargets $ dup3 x' & _1   %~ (myName True <>)
                                                                    & _2   %~ (ser         <>)
                                                                    & _3   %~ (ser         <>)
           | otherwise            -> mkRightForNonTargets . dup3 $ x
-        expandEnc isHead = (isHead ? (ser, ser) :? (ser', ser')) |&| uncurry (myName isHead, , )
+        expandEnc isHead = (isHead ? dup ser :? dup ser') |&| uncurry (myName isHead, , )
         myName    isHead = onTrue isHead capitalize . onTrue (isNpc i ms) theOnLower . fromJust . desigEntSing $ d
     in case lefts xformed of
       []      -> let (msg, toOthers, targetIds, toTargetBs) = happyTimes ms xformed
@@ -1432,48 +1474,6 @@ helperFillEitherInv i srcDesig targetId (eis:eiss) a@(ms, _, _, _) = case getVes
 -----
 
 
-alertExec :: CmdName -> ActionFun
-alertExec cn (NoArgs      i mq cols   ) = alertExecHelper i mq cols cn "" ""
-alertExec cn (OneArgLower i mq cols a ) = alertExecHelper i mq cols cn a  a
-alertExec cn (WithArgs    i mq cols as) = alertExecHelper i mq cols cn (head as) . spaces $ as
-alertExec _  p                          = patternMatchFail "alertExec" . showText $ p
-
-
-alertExecHelper :: Id -> MsgQueue -> Cols -> CmdName -> Text -> Text -> MudStack ()
-alertExecHelper i mq cols cn target args = do
-    ms <- getState
-    ts <- liftIO mkTimestamp
-    let s          = getSing i ms
-        targetSing = alertExecFindTargetSing i ms target
-        msg        = T.concat [ s, " attempted to execute ", dblQuote cn, targetingMsg targetSing, " ", argsMsg, "." ]
-        outIds     = (iRoot `delete`) $ getAdminIds ms \\ getLoggedInAdminIds ms
-        rec        = AlertExecRec ts s cn targetSing args
-    sendCmdNotFound i mq cols
-    bcastAdmins msg
-    forM_ outIds (\adminId -> retainedMsg adminId ms . mkRetainedMsgFromPerson s $ msg)
-    logNotice        fn   msg
-    logPla           fn i msg
-    withDbExHandler_ fn . insertDbTblAlertExec $ rec
-  where
-    fn                      = "alertExecHelper"
-    targetingMsg targetSing = targetSing |!| (" targeting " <> targetSing)
-    argsMsg | ()# args      = "with no arguments"
-            | otherwise     = "with the following arguments: " <> dblQuote args
-
-
-alertExecFindTargetSing :: Id -> MudState -> Text -> Text
-alertExecFindTargetSing _ _  ""     = ""
-alertExecFindTargetSing i ms target =
-    let (_, _, inRms) = sortArgsInvEqRm InRm . pure $ target
-        ri            = getRmId i ms
-        invCoins      = first (i `delete`) . getNonIncogInvCoins ri $ ms
-        (eiss, ecs)   = uncurry (resolveRmInvCoins i ms inRms) invCoins
-    in if ()# invCoins then "" else ()!# ecs ? "" :? either (const "") ((`getSing` ms) . head) (head eiss)
-
-
------
-
-
 getAction :: ActionFun
 getAction p@AdviseNoArgs             = advise p ["get"] adviceGetNoArgs
 getAction   (Lower     _ mq cols as) | length as >= 3, (head . tail . reverse $ as) == "from" = wrapSend mq cols hintGet
@@ -1680,7 +1680,7 @@ help (NoArgs i mq cols) = (liftIO . T.readFile $ helpDir </> "root") |&| try >=>
     handler e          = fileIOExHandler "help" e >> wrapSend mq cols helpRootErrorMsg
     helper rootHelpTxt = getState >>= \ms -> do
         let (is, ia, ls) = mkHelpTriple i ms
-        (sortBy (compare `on` helpName) -> hs) <- liftIO . mkHelpData ls is $ ia
+        hs <- sortBy (compare `on` helpName) <$> liftIO (mkHelpData ls is ia)
         let zipped                 = zip (styleAbbrevs Don'tQuote [ helpName h | h <- hs ]) hs
             (cmdNames, topicNames) = partition (isCmdHelp . snd) zipped & both %~ (formatHelpNames . mkHelpNames)
             helpTxt                = T.concat [ nl rootHelpTxt
@@ -1755,11 +1755,11 @@ parseHelpTxt cols txt = [ xformLeadingSpaceChars . expandDividers $ t | t <- par
 
 
 getHelpByName :: Cols -> [Help] -> HelpName -> MudStack (Text, Text)
-getHelpByName cols hs name = findFullNameForAbbrev name [ (h, helpName h) | h <- hs ] |&| maybe sorry found
+getHelpByName cols hs name = findFullNameForAbbrev name [ (id &&& helpName) h | h <- hs ] |&| maybe sorry found
   where
     sorry                                      = return (sorryHelpName name, "")
     found (helpFilePath -> hf, dblQuote -> hn) = (,) <$> readHelpFile hf hn <*> return hn
-    readHelpFile hf hn                         = (liftIO . T.readFile $ hf) |&| try >=> eitherRet handler
+    readHelpFile hf hn                         = liftIO (T.readFile hf) |&| try >=> eitherRet handler
       where
         handler e = do
             fileIOExHandler "getHelpByName readHelpFile" e
@@ -1805,7 +1805,7 @@ intro (LowerNub i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
             (eiss, ecs) = uncurry (resolveRmInvCoins i ms inRms) invCoins'
             ris         = fst invCoins
             (pt, cbs,  logMsgs, intro'dIds) = foldl' (helperIntroEitherInv ms ris) (ms^.pcTbl, [], [], []) eiss
-            (    cbs', logMsgs'           ) = foldl' helperIntroEitherCoins        (cbs, logMsgs)          ecs
+            (    cbs', logMsgs'           ) = foldl' helperIntroEitherCoins        (cbs, logMsgs         ) ecs
         in if ()!# invCoins'
           then (ms & pcTbl .~ pt, (sorryInInv ++ sorryInEq ++ cbs', logMsgs', intro'dIds))
           else (ms,               (mkNTB sorryIntroNoOneHere,       [],       []        ))
@@ -1850,10 +1850,9 @@ intro (LowerNub i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
                               & _4 %~  (targetId :)
           _      -> let b = head . mkNTB . sorryIntroType $ targetSing
                     in a' & _2 %~ (`appendIfUnique` b)
-    helperIntroEitherCoins a (Left msgs) = a & _1 <>~ (mkNTBcast i . T.concat $ [ nlnl msg | msg <- msgs ])
-    helperIntroEitherCoins a Right {}    =
-        let cb = head . mkNTB $ sorryIntroCoin
-        in first (`appendIfUnique` cb) a
+    helperIntroEitherCoins a (Left msgs)   = a & _1 <>~ (mkNTBcast i . T.concat $ [ nlnl msg | msg <- msgs ])
+    helperIntroEitherCoins a Right {}      = let cb = head . mkNTB $ sorryIntroCoin
+                                             in first (`appendIfUnique` cb) a
     fromClassifiedBcast (TargetBcast    b) = b
     fromClassifiedBcast (NonTargetBcast b) = b
 intro p = patternMatchFail "intro" . showText $ p
@@ -1942,7 +1941,7 @@ leave (WithArgs i mq cols (nub -> as)) = helper |&| modifyState >=> \(ms, chanId
                  , "you sever your telepathic connection"
                  , theLetterS isPlur
                  , " to the "
-                 , isPlur ? nl "following channels:" <> commas ns :? head ns <> " channel"
+                 , isPlur ? (nl "following channels:" <> commas ns) :? (head ns <> " channel")
                  , "." ]
 leave p = patternMatchFail "leave" . showText $ p
 
@@ -1967,7 +1966,7 @@ link (NoArgs i mq cols) = do
                                      in commas $ onTrue doStyle (styleAbbrevs Don'tQuote) awakes ++ asleeps
             sortAwakesAsleeps      = foldr sorter dupIdentity
             sorter linkSing acc    =
-                let linkId   = head . filter ((== linkSing) . flip getSing ms) $ ms^.pcTbl.to IM.keys
+                let linkId   = head . filter ((== linkSing) . (`getSing` ms)) $ ms^.pcTbl.to IM.keys
                     linkPla  = getPla linkId ms
                     f lens x = acc & lens %~ (x' :)
                       where
@@ -2025,7 +2024,7 @@ link (LowerNub i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
                                               , " mind to yours."
                                               , twoWayMsg ]
                 bs            = [ (srcMsg, pure i), (targetMsg, pure targetId) ]
-                msgHelper txt = a' & _2 <>~ (mkBcast i . nlnl $ txt)
+                msgHelper txt = a' & _2 <>~ mkBcast i (nlnl txt)
             in if
               | targetSing `notElem` srcIntros    -> msgHelper . sorryLinkIntroTarget       $ targetDesig
               | s          `notElem` targetIntros -> msgHelper . sorryLinkIntroSelf         $ targetSing
