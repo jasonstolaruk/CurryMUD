@@ -1924,7 +1924,7 @@ leave (WithArgs i mq cols (nub -> as)) = helper |&| modifyState >=> \(ms, chanId
                 in (ms', (ms', chanIdNameIsDels, sorryMsgs))
       where
         f triple a@(T.toLower -> a') =
-            let notFound     = triple & _3 <>~ (pure . sorryChanName $ a)
+            let notFound     = triple & _3 <>~ pure (sorryChanName a)
                 found match  = let (cn, c) = getMatchingChanWithName match cns cs
                                    ci      = c^.chanId
                                    isDel   = views chanConnTbl ((== 1) . M.size) c
@@ -3759,7 +3759,7 @@ stop p@(OneArgLower i mq cols a) = getState >>= \ms ->
       then case filter (view _3) . mkStopTuples p $ ms of
         [] -> wrapSend mq cols sorryStopNotDoingAnything
         xs -> stopLogHelper i (select _2 xs) >> mapM_ (view _4) xs
-      else case filter (\(view _1 -> actName) -> a `T.isPrefixOf` actName) . mkStopTuples p $ ms of
+      else case filter (views _1 (a `T.isPrefixOf`)) . mkStopTuples p $ ms of
         [] -> wrapSend mq cols . sorryStopActName $ a
         xs -> let (_, actType, b, f) = head xs
               in b ? (stopLogHelper i (pure actType) >> f) :? wrapSend mq cols (sorryStopNotDoing actType)
@@ -3768,7 +3768,7 @@ stop p = advise p ["stop"] adviceStopExcessArgs
 
 stopLogHelper :: Id -> [ActType] -> MudStack ()
 stopLogHelper i [actType] = logPla "stop" i . prd $ "stopped " <> pp actType
-stopLogHelper i actTypes  = logPla "stop" i . prd $ "stopped " <> (T.intercalate " and " . map pp $ actTypes)
+stopLogHelper i actTypes  = logPla "stop" i . prd $ "stopped " <> T.intercalate " and " (map pp actTypes)
 
 
 mkStopTuples :: ActionParams -> MudState -> [(Text, ActType, Bool, MudStack ())]
@@ -3911,7 +3911,7 @@ tele :: ActionFun
 tele p@AdviseNoArgs     = advise p ["telepathy"] adviceTeleNoArgs
 tele p@(AdviseOneArg a) = advise p ["telepathy"] . adviceTeleNoMsg $ a
 tele (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
-    let (s, p) = (getSing i ms, getPla i ms) in if isIncognito p
+    let (s, p) = (uncurry getSing &&& uncurry getPla) (i, ms) in if isIncognito p
       then wrapSend mq cols . sorryIncog $ "telepathy"
       else let SingleTarget { .. } = mkSingleTarget mq cols target "The name of the person you wish to message"
                notFound            = sendFun . notFoundSuggestAsleeps target asleeps $ ms
@@ -4010,7 +4010,7 @@ helperTune s a@(linkTbl, chans, _, _) arg@(T.breakOn "=" -> (name, T.tail -> val
   where
     linkNames   = map uncapitalize . M.keys $ linkTbl
     chanNames   = map (views chanName T.toLower) chans
-    notFound    = a & _3 <>~ (pure . sorryTuneName $ name)
+    notFound    = a & _3 <>~ pure (sorryTuneName name)
     found val n = if n == "all"
                     then appendMsg "all telepathic connections" & _1 %~ M.map (const val)
                                                                 & _2 %~ map (chanConnTbl.at s ?~ val)
@@ -4075,7 +4075,7 @@ unlink (LowerNub i mq cols as) =
                       , srcMsg   <- T.concat [ focusingInnateMsg, "you sever your link with ", targetSing, "." ]
                       , targetBs <- let bs       = mkBcast targetId . nlnl . colorize . unlinkMsg tingleLoc $ s
                                         colorize = colorWith unlinkColor
-                                    in (isLoggedIn . getPla targetId $ ms') |?| bs
+                                    in isLoggedIn (getPla targetId ms') |?| bs
                       , ms''     <- ms' & teleLinkMstrTbl.ind i       .at targetSing .~ Nothing
                                         & teleLinkMstrTbl.ind targetId.at s          .~ Nothing
                                         & pcTbl .ind i       .linked %~ (targetSing `delete`)
@@ -4201,7 +4201,7 @@ uptime p = withoutArgs uptime p
 
 
 getUptime :: MudStack Int64
-getUptime = ((-) `on` sec) <$> (liftIO . getTime $ Monotonic) <*> asks (view startTime)
+getUptime = ((-) `on` sec) <$> liftIO (getTime Monotonic) <*> asks (view startTime)
 
 
 uptimeHelper :: Int64 -> MudStack Text
@@ -4266,7 +4266,7 @@ whisper   (WithArgs i mq cols (target:(T.unwords -> rest))) = getState >>= \ms -
                 toTargetBcast = (nl toTargetMsg, pure targetId)
                 toOthersMsg   = T.concat [ serialize d, " whispers something to ", targetDesig, "." ]
                 toOthersBcast = (nl toOthersMsg, desigIds d \\ [ i, targetId ])
-            in (ms, ( pure toSelfMsg, [ toTargetBcast, toOthersBcast ], toSelfMsg ))
+            in (ms, (pure toSelfMsg, [ toTargetBcast, toOthersBcast ], toSelfMsg))
     formatMsg = dblQuote . capitalizeMsg . punctuateMsg
     ioHelper ms triple@(x:xs, _, _) | (toSelfs, bs, logMsg) <- triple & _1 .~ parseDesig       i ms x : xs
                                                                       & _3 %~ parseExpandDesig i ms
