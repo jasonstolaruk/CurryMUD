@@ -563,15 +563,22 @@ instance Serializable Desig where
     where
       (>>)       = (<>)
       (nsdd, dd) = (nonStdDesigDelimiter, desigDelimiter) & both %~ T.singleton
+  serialize (CorpseDesig i) = quoteWith cdd . showText $ i
+    where
+      cdd = T.singleton corpseDesigDelimiter
   deserialize a@(headTail -> (c, T.init -> t))
-    | c == stdDesigDelimiter, [ es, sc, en, i, is ] <- T.splitOn dd t =
-        StdDesig { desigEntSing   = deserMaybeText es
-                 , desigShouldCap = read . T.unpack $ sc
-                 , desigEntName   = en
-                 , desigId        = read . T.unpack $ i
-                 , desigIds       = read . T.unpack $ is }
-    | c == nonStdDesigDelimiter, [ es, nsd ] <- T.splitOn dd t =
-        NonStdDesig { dEntSing = es, dDesc = nsd }
+    | c == stdDesigDelimiter
+    , [ es, sc, en, i, is ] <- T.splitOn dd t
+    = StdDesig { desigEntSing   = deserMaybeText es
+               , desigShouldCap = read . T.unpack $ sc
+               , desigEntName   = en
+               , desigId        = read . T.unpack $ i
+               , desigIds       = read . T.unpack $ is }
+    | c == nonStdDesigDelimiter
+    , [ es, nsd ] <- T.splitOn dd t
+    = NonStdDesig { dEntSing = es, dDesc = nsd }
+    | c == corpseDesigDelimiter
+    = CorpseDesig . read . T.unpack $ t
     | otherwise = patternMatchFail "deserialize" . showText $ a
     where
       deserMaybeText ""  = Nothing
@@ -687,7 +694,8 @@ data Desig = StdDesig    { desigEntSing   :: Maybe Text
                          , desigId        :: Id
                          , desigIds       :: Inv }
            | NonStdDesig { dEntSing       :: Text
-                         , dDesc          :: Text } deriving (Eq, Show)
+                         , dDesc          :: Text }
+           | CorpseDesig Id deriving (Eq, Show)
 
 
 data ShouldCap = DoCap | Don'tCap deriving (Eq, Read, Show)

@@ -36,6 +36,7 @@ module Mud.Data.State.Util.Misc ( addToInv
                                 , mkAdminIdSingList
                                 , mkAdminPlaIdSingList
                                 , mkMobRmDesc
+                                , mkName_MaybeCorpseId_Count_BothList
                                 , mkNameCountBothList
                                 , mkPlaIdSingList
                                 , mkPrettySexRace
@@ -79,7 +80,7 @@ import Control.Monad ((>=>))
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (ask)
 import Data.IORef (atomicModifyIORef', readIORef)
-import Data.List ((\\), delete, foldl', nub, sortBy)
+import Data.List ((\\), delete, foldl', nub, nubBy, sortBy, zip4)
 import Data.Maybe (fromJust, fromMaybe)
 import Data.Monoid (Sum(..), (<>))
 import Data.Text (Text)
@@ -92,6 +93,7 @@ import Text.Regex.Posix ((=~))
 
 
 {-# ANN module ("HLint: ignore Use &&" :: String) #-}
+{-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
 
 
 -----
@@ -158,7 +160,7 @@ getEffBothGramNos i ms targetId =
                    then (targetSing,    ""                 )
                    else (pp targetRace, plurRace targetRace) & both %~ ((targetSexy <>) . spcL)
       Just {} | getType targetId ms == CorpseType -> case getCorpse targetId ms of
-                NpcCorpse                            -> pair
+                NpcCorpse                                                  -> pair
                 (PCCorpse cs _ _) | cs == getSing i ms || cs `elem` intros -> ("corpse of " <> cs, "")
                                   | otherwise                              -> pair
               | otherwise -> pair
@@ -399,6 +401,21 @@ mkNameCountBothList i ms targetIds = let ens   = [ getEffName        i ms target
                                          cs    = mkCountList ebgns
                                          ebgns = [ getEffBothGramNos i ms targetId | targetId <- targetIds ]
                                      in nub . zip3 ens cs $ ebgns
+
+
+mkName_MaybeCorpseId_Count_BothList :: Id -> MudState -> Inv -> [(Text, Maybe Id, Int, BothGramNos)]
+mkName_MaybeCorpseId_Count_BothList i ms targetIds =
+    let ens   = [ getEffName i ms targetId        | targetId <- targetIds ]
+        mcis  = [ mkMaybeCorpseId targetId        | targetId <- targetIds ]
+        cs    = mkCountList ebgns
+        ebgns = [ getEffBothGramNos i ms targetId | targetId <- targetIds ]
+    in nubBy f . zip4 ens mcis cs $ ebgns
+  where
+    mkMaybeCorpseId targetId | getType targetId ms == CorpseType = case getCorpse targetId ms of
+                               PCCorpse {} -> Just targetId
+                               NpcCorpse   -> Nothing
+                             | otherwise = Nothing
+    (a, _, c, d) `f` (a', _, c', d') = (a, c, d) == (a', c', d')
 
 
 -----

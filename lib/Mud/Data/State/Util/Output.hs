@@ -55,7 +55,7 @@ import Mud.Util.Text
 import Mud.Util.Wrapping
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
-import Control.Arrow ((***))
+import Control.Arrow ((***), (&&&))
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Lens (each, to, views)
@@ -252,8 +252,8 @@ parseDesigHelper :: (Sing -> Text -> Text) -> Id -> MudState -> Text -> Text
 parseDesigHelper f i ms = loop (getIntroduced i ms)
   where
     loop intros txt | T.singleton stdDesigDelimiter `T.isInfixOf` txt
-                    , (left, pcd, rest) <- extractDesigTxt stdDesigDelimiter txt
-                    = case pcd of
+                    , (left, desig, rest) <- extractDesig stdDesigDelimiter txt
+                    = case desig of
                       d@StdDesig { desigEntSing = Just es, .. } ->
                         left                                                              <>
                         (if es `elem` intros
@@ -262,14 +262,24 @@ parseDesigHelper f i ms = loop (getIntroduced i ms)
                         loop intros rest
                       d@StdDesig { desigEntSing = Nothing,  .. } ->
                         left <> expandEntName i ms d <> loop intros rest
-                      _ -> patternMatchFail "parseDesigHelper loop" . showText $ pcd
+                      _ -> patternMatchFail "parseDesigHelper loop" . showText $ desig
                     | T.singleton nonStdDesigDelimiter `T.isInfixOf` txt
-                    , (left, NonStdDesig { .. }, rest) <- extractDesigTxt nonStdDesigDelimiter txt
+                    , (left, NonStdDesig { .. }, rest) <- extractDesig nonStdDesigDelimiter txt
                     = left <> (dEntSing `elem` intros ? dEntSing :? dDesc) <> loop intros rest
+                    | T.singleton corpseDesigDelimiter `T.isInfixOf` txt
+                    , (left, d@(CorpseDesig _), rest) <- extractDesig corpseDesigDelimiter txt
+                    = left <> parseCorpseDesig d <> loop intros rest
                     | otherwise = txt
-    extractDesigTxt (T.singleton -> c) (T.breakOn c -> (left, T.breakOn c . T.tail -> (pcdTxt, T.tail -> rest)))
-      | pcd <- deserialize . quoteWith c $ pcdTxt :: Desig
-      = (left, pcd, rest)
+      where
+        parseCorpseDesig (CorpseDesig ci) =
+            let c          = getCorpse ci ms
+                cs         = c^.corpseSing
+                sexRaceTxt = uncurry (|<>|) . (views corpseSex pp &&& views corpseRace pp) $ c
+            in  cs `elem` (getSing i ms : intros) ? ("corpse of " <> cs) :? ("corpse of a " <> sexRaceTxt)
+        parseCorpseDesig d = patternMatchFail "parseDesigHelper loop parseCorpseDesig" . showText $ d
+    extractDesig (T.singleton -> c) (T.breakOn c -> (left, T.breakOn c . T.tail -> (desigTxt, T.tail -> rest)))
+      | desig <- deserialize . quoteWith c $ desigTxt :: Desig
+      = (left, desig, rest)
 
 
 expandEntName :: Id -> MudState -> Desig -> Text

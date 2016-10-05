@@ -978,6 +978,7 @@ adminIp p = withoutArgs adminIp p
 -----
 
 
+-- TODO: ":k 184 185"
 adminKill :: ActionFun
 adminKill p@AdviseNoArgs          = advise p [ prefixAdminCmd "kill" ] adviceAKillNoArgs
 adminKill (LowerNub i mq cols as) = getState >>= \ms ->

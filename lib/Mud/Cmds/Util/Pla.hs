@@ -382,12 +382,12 @@ helperDropEitherInv i d fromId toId a@(ms, _, _, _) = \case
 
 
 mkGetDropInvDescs :: Id -> MudState -> Desig -> GetOrDrop -> Inv -> ([Text], [Broadcast])
-mkGetDropInvDescs i ms d god (mkNameCountBothList i ms -> ncbs) = unzip . map helper $ ncbs
+mkGetDropInvDescs i ms d god (mkName_MaybeCorpseId_Count_BothList i ms -> tuple) = unzip . map helper $ tuple
   where
-    helper (_, c, (s, _)) | c == 1 =
-        (  T.concat [ "You ",               mkGodVerb god SndPer, " the ", s, "." ]
-        , (T.concat [ serialize d, spaced . mkGodVerb god $ ThrPer, aOrAn s,  "." ], otherIds) )
-    helper (_, c, b) =
+    helper (_, mci, c, (s, _)) | c == 1 =
+        (  T.concat [ "You ",               mkGodVerb god SndPer, " the ", s,                   "." ]
+        , (T.concat [ serialize d, spaced . mkGodVerb god $ ThrPer, renderMaybeCorpseId mci s,  "." ], otherIds) )
+    helper (_, _, c, b) =
         (  T.concat [ "You ",           mkGodVerb god SndPer, rest ]
         , (T.concat [ serialize d, " ", mkGodVerb god ThrPer, rest ], otherIds) )
       where
@@ -400,6 +400,12 @@ mkGodVerb Get  SndPer = "pick up"
 mkGodVerb Get  ThrPer = "picks up"
 mkGodVerb Drop SndPer = "drop"
 mkGodVerb Drop ThrPer = "drops"
+
+
+-- TODO: Move?
+renderMaybeCorpseId :: Maybe Id -> Sing -> Text
+renderMaybeCorpseId (Just i) _ = ("the " <> ) . serialize . CorpseDesig $ i
+renderMaybeCorpseId Nothing  s = aOrAn s
 
 
 -----

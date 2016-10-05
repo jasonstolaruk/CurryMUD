@@ -48,10 +48,11 @@ ansiSGRDelimiter = '\x6D' -- 109
 -- Characters used in the serialization of "PCDesig":
 
 
-desigDelimiter, stdDesigDelimiter, nonStdDesigDelimiter :: Char
-desigDelimiter       = '\128'
-nonStdDesigDelimiter = '\129'
-stdDesigDelimiter    = '\130'
+corpseDesigDelimiter, desigDelimiter, stdDesigDelimiter, nonStdDesigDelimiter :: Char
+corpseDesigDelimiter = '\128'
+desigDelimiter       = '\129'
+nonStdDesigDelimiter = '\130'
+stdDesigDelimiter    = '\131'
 
 
 -- ==================================================
@@ -59,9 +60,9 @@ stdDesigDelimiter    = '\130'
 
 
 breakMarker, indentFiller, leadingSpaceChar :: Char
-breakMarker      = '\131'
-indentFiller     = '\132'
-leadingSpaceChar = '\133'
+breakMarker      = '\132'
+indentFiller     = '\133'
+leadingSpaceChar = '\134'
 
 
 -- ==================================================
@@ -81,12 +82,12 @@ styleTokenDelimiter = '\\'
 
 
 fromPersonMarker :: Char
-fromPersonMarker = '\134'
+fromPersonMarker = '\135'
 
 
 hookArgDelimiter :: Char
-hookArgDelimiter = '\135'
+hookArgDelimiter = '\136'
 
 
 plaIdDelimiter :: Char
-plaIdDelimiter = '\136'
+plaIdDelimiter = '\137'
