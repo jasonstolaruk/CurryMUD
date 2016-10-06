@@ -643,7 +643,7 @@ examineCoins i ms = let (map commaShow . coinsToList -> cs) = getCoins i ms in [
 examineCon :: ExamineHelper
 examineCon i ms = let c = getCon i ms in [ "Is clothing: " <> c^.conIsCloth.to showText
                                          , T.concat [ "Volume/capacity: "
-                                                    , showText . calcVol i $ ms
+                                                    , showText . calcConVolOfCont i $ ms
                                                     , " / "
                                                     , c^.conCapacity.to showText
                                                     , " "

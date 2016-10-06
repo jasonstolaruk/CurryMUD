@@ -1,10 +1,11 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
-{-# LANGUAGE LambdaCase, MultiWayIf, OverloadedStrings, RankNTypes, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, MultiWayIf, OverloadedStrings, RankNTypes, TupleSections, ViewPatterns #-}
 
 module Mud.Data.State.Util.Calc ( calcBarLen
                                 , calcBonus
                                 , calcCarriedVol
                                 , calcConPerFull
+                                , calcConVolOfCont
                                 , calcCorpseCapacity
                                 , calcCorpseVol
                                 , calcCorpseWeight
@@ -74,6 +75,7 @@ import Mud.Util.Operators
 import Mud.Util.Text
 import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 
+import Control.Arrow ((&&&))
 import Control.Lens (both, view, views)
 import Control.Lens.Getter (Getter)
 import Control.Lens.Operators ((%~), (&))
@@ -129,9 +131,13 @@ calcEqVol i ms = sum . map (`calcVol` ms) . M.elems . getEqMap i $ ms
 
 
 calcConPerFull :: Id -> MudState -> Int
-calcConPerFull i ms = let total           = foldr helper 0 . getInv i $ ms
-                          helper targetId = (calcVol targetId ms +)
-                      in total `percent` getConCapacity i ms
+calcConPerFull i = uncurry percent . (uncurry calcConVolOfCont &&& uncurry getConCapacity) . (i, )
+
+
+calcConVolOfCont :: Id -> MudState -> Int
+calcConVolOfCont i ms = foldr helper 0 . getInv i $ ms
+  where
+    helper targetId = (calcVol targetId ms +)
 
 
 -----
