@@ -22,8 +22,6 @@ import Mud.Cmds.Msgs.Dude
 import Mud.Cmds.Msgs.Hint
 import Mud.Cmds.Msgs.Misc
 import Mud.Cmds.Msgs.Sorry
-import Mud.Misc.Misc
-import Mud.Interp.MultiLine
 import Mud.Cmds.Util.Abbrev
 import Mud.Cmds.Util.EmoteExp.EmoteExp
 import Mud.Cmds.Util.EmoteExp.TwoWayEmoteExp
@@ -37,16 +35,19 @@ import Mud.Data.State.MudData
 import Mud.Data.State.Util.Calc
 import Mud.Data.State.Util.Coins
 import Mud.Data.State.Util.Get
+import Mud.Data.State.Util.Hierarchy
 import Mud.Data.State.Util.Lang
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Data.State.Util.Random
 import Mud.Interp.Misc
+import Mud.Interp.MultiLine
 import Mud.Interp.Pause
 import Mud.Misc.ANSI
 import Mud.Misc.Database
 import Mud.Misc.LocPref
 import Mud.Misc.Logging hiding (logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut)
+import Mud.Misc.Misc
 import Mud.Misc.NameResolution
 import Mud.TheWorld.Zones.AdminZoneIds (iLoggedOut, iPidge, iRoot, iWelcome)
 import Mud.Threads.Act
@@ -2394,7 +2395,7 @@ shufflePut i ms d conName icir as invCoinsWithCon@(invWithCon, _) mobInvCoins f 
       else case f . head . zip conGecrs $ conMiss of
         Left  msg     -> genericSorry ms msg
         Right [conId] | (conSing, conType) <- (uncurry getSing *** uncurry getType) . dup $ (conId, ms) ->
-            if conType /= ConType
+            if not . hasCon $ conType
               then genericSorry ms . sorryConHelper i ms conId $ conSing
               else let (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv as
                        sorryInEq              = inEqs |!| sorryPutInEq
@@ -2997,7 +2998,7 @@ shuffleRem i ms d conName icir as invCoinsWithCon@(invWithCon, _) f =
       else case f . head . zip conGecrs $ conMiss of
         Left  msg     -> genericSorry ms msg
         Right [conId] | (conSing, conType) <- (uncurry getSing *** uncurry getType) . dup $ (conId, ms) ->
-            if conType /= ConType
+            if not . hasCon $ conType
               then genericSorry ms . sorryConHelper i ms conId $ conSing
               else let (as', guessWhat)   = stripLocPrefs
                        invCoinsInCon      = getInvCoins conId ms
