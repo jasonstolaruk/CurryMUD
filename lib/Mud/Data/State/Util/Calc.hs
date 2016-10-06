@@ -135,7 +135,7 @@ calcConPerFull i = uncurry percent . (uncurry calcConVolOfCont &&& uncurry getCo
 
 
 calcConVolOfCont :: Id -> MudState -> Int
-calcConVolOfCont i ms = foldr helper 0 . getInv i $ ms
+calcConVolOfCont i ms = foldr helper 0 . getInv i $ ms -- TODO: Does examine container vol look better?
   where
     helper targetId = (calcVol targetId ms +)
 

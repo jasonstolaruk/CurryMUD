@@ -133,7 +133,7 @@ bcastIfNotIncogNl i = bcastIfNotIncog i . appendNlBs
 
 
 appendNlBs :: [Broadcast] -> [Broadcast]
-appendNlBs bs = bs ++ [(theNl, nubSort . concatMap snd $ bs)]
+appendNlBs bs = bs ++ pure (theNl, nubSort . concatMap snd $ bs)
 
 
 -----
