@@ -331,15 +331,15 @@ adminAs (WithTarget i mq cols target rest) = getState >>= \ms ->
         sorry txt  = sendFun txt >> sendDfltPrompt mq i
         sorryParse = sorry . sorryParseId $ strippedTarget'
     in case reads . T.unpack $ strippedTarget :: [(Int, String)] of
-      [(targetId, "")] | targetId < 0        -> sorry sorryWtf
-                       | hasType targetId ms -> sorryParse
-                       | otherwise           -> as targetId
+      [(targetId, "")] | targetId < 0                -> sorry sorryWtf
+                       | not . hasType targetId $ ms -> sorryParse
+                       | otherwise                   -> as targetId
       _ -> sorryParse
 adminAs p = patternMatchFail "adminAs" . showText $ p
 
 
 hasType :: Id -> MudState -> Bool
-hasType i = views typeTbl ((i `notElem`) . IM.keys)
+hasType i = views typeTbl ((i `elem`) . IM.keys)
 
 
 -----
@@ -597,10 +597,10 @@ adminExamine :: ActionFun
 adminExamine p@AdviseNoArgs          = advise p [ prefixAdminCmd "examine" ] adviceAExamineNoArgs
 adminExamine (LowerNub i mq cols as) = getState >>= \ms ->
     let helper a = case reads . T.unpack $ a :: [(Int, String)] of
-          [(targetId, "")] | targetId < 0        -> pure sorryWtf
-                           | hasType targetId ms -> sorry
-                           | otherwise           -> examineHelper ms targetId
-          _                                      -> sorry
+          [(targetId, "")] | targetId < 0                -> pure sorryWtf
+                           | not . hasType targetId $ ms -> sorry
+                           | otherwise                   -> examineHelper ms targetId
+          _                                              -> sorry
           where
             sorry = pure . sorryParseId $ a
     in do
@@ -982,39 +982,37 @@ adminIp p = withoutArgs adminIp p
 -----
 
 
--- TODO: Refactor for sequencing.
 adminKill :: ActionFun
 adminKill p@AdviseNoArgs          = advise p [ prefixAdminCmd "kill" ] adviceAKillNoArgs
-adminKill (LowerNub i mq cols as) = getState >>= \ms ->
-    let (is, fs) = foldl' (helper ms) ((,) mempty mempty) as
-        logMsg   = prd $ "killing " <> commas [ getSing targetId ms |<>| parensQuote (showText targetId)
-                                              | targetId <- is ]
-        cn       = prefixAdminCmd "kill"
-    in do
-        unless (()# is) . sequence_ $ [ logPla cn i logMsg
-                                      , forM_ is . flip (logPla cn) . prd $ "killed by " <> getSing i ms ]
-        ok mq
-        sequence_ fs
+adminKill (LowerNub i mq cols as) = getState >>= \ms -> do
+    let (is, toSelfs) = helper ms
+    multiWrapSend mq cols toSelfs
+    bcast . mkBs ms $ is
+    is |#| logPla (prefixAdminCmd "kill") i . prd . ("killing " <>) . commas . map (`descSingId` ms)
+    mapM_ handleDeath is
   where
-    helper ms (is, fs) a =
-        let (is', fs')  = case reads . T.unpack $ a :: [(Int, String)] of
-                            [(targetId, "")] | targetId < 0        -> f sorryWtf
-                                             | hasType targetId ms -> sorry
-                                             | otherwise           -> go targetId
-                            _                                      -> sorry
-            f           = (,) mempty . pure . wrapSend mq cols
-            sorry       = f . sorryParseId $ a
-            go targetId | targetId == i                                  = f sorryAdminKillSelf
-                        | getType targetId ms `elem` [ NpcType, PCType ] = (pure targetId, mkFuns)
-                        | otherwise                                      = f . sorryAdminKillType $ targetId
-              where
-                mkFuns =
-                    let d        = mkStdDesig targetId ms Don'tCap
-                        toSelf   = mkBs (nl $ adminKillMsg "you are",              pure targetId               )
-                        toOthers = mkBs (nl . adminKillMsg $ serialize d <> " is", targetId `delete` desigIds d)
-                        mkBs     = pure . first (colorWith adminKillColor)
-                    in [ bcast $ toSelf ++ toOthers, handleDeath targetId ]
-        in (is ++ is', fs ++ fs')
+    helper ms = foldl' f ((,) mempty mempty) as
+      where
+        f pair a = case reads . T.unpack $ a :: [(Int, String)] of
+          [(targetId, "")] | targetId < 0                -> sorryHelper sorryWtf
+                           | not . hasType targetId $ ms -> sorry
+                           | otherwise                   -> go targetId
+          _                                              -> sorry
+          where
+            sorryHelper msg = pair & _2 <>~ pure msg
+            sorry           = sorryHelper . sorryParseId $ a
+            go targetId | targetId == i = sorryHelper sorryAdminKillSelf
+                        | getType targetId ms `elem` [ NpcType, PCType ] =
+                            pair & _1 <>~ pure targetId
+                                 & _2 <>~ pure (prd $ "You kill " <> aOrAnOnLower (descSingId targetId ms))
+                        | otherwise = sorryHelper . sorryAdminKillType $ targetId
+    mkBs ms = concatMap f
+      where
+        f targetId = let d        = mkStdDesig targetId ms Don'tCap
+                         toTarget = g (nl $ adminKillMsg "you are",              pure targetId               )
+                         toOthers = g (nl . adminKillMsg $ serialize d <> " is", targetId `delete` desigIds d)
+                     in [ toTarget, toOthers ]
+        g          = first (colorWith adminKillColor)
 adminKill p = patternMatchFail "adminKill" . showText $ p
 
 
@@ -1047,10 +1045,10 @@ adminLocate :: ActionFun -- TODO: Try locating an object in a corpse.
 adminLocate p@AdviseNoArgs          = advise p [ prefixAdminCmd "locate" ] adviceALocateNoArgs
 adminLocate (LowerNub i mq cols as) = getState >>= \ms ->
     let helper a = case reads . T.unpack $ a :: [(Int, String)] of
-          [(targetId, "")] | targetId < 0        -> sorryWtf
-                           | hasType targetId ms -> sorryParseId a
-                           | otherwise           -> locate targetId
-          _                                      -> sorryParseId a
+          [(targetId, "")] | targetId < 0                -> sorryWtf
+                           | not . hasType targetId $ ms -> sorryParseId a
+                           | otherwise                   -> locate targetId
+          _                                              -> sorryParseId a
           where
             locate targetId = let (_, desc) = locateHelper ms [] targetId
                               in mkNameTypeIdDesc targetId ms <> (()!# desc |?| (", " <> desc))
@@ -1246,9 +1244,9 @@ adminPossess (OneArgNubbed i mq cols target) = modifyStateSeq $ \ms ->
         sorry txt = (ms, [ sendFun txt, sendDfltPrompt mq i ])
     in case reads . T.unpack $ strippedTarget :: [(Int, String)] of
       [(targetId, "")]
-        | targetId < 0        -> sorry sorryWtf
-        | hasType targetId ms -> sorry . sorryParseId $ strippedTarget'
-        | otherwise           -> case getPossessing i ms of
+        | targetId < 0                -> sorry sorryWtf
+        | not . hasType targetId $ ms -> sorry . sorryParseId $ strippedTarget'
+        | otherwise                   -> case getPossessing i ms of
           Nothing -> possess targetId
           Just pi -> sorry . sorryAlreadyPossessing . getSing pi $ ms
       _ -> sorry . sorryParseId $ strippedTarget'
@@ -1353,9 +1351,9 @@ adminSet   (WithArgs i mq cols (target:rest)) = helper |&| modifyState >=> \(toS
     maybeVoid ioHelper mTargetId
   where
     helper ms = case reads . T.unpack $ target :: [(Int, String)] of
-      [(targetId, "")] | targetId < 0        -> sorryHelper sorryWtf
-                       | hasType targetId ms -> sorry
-                       | otherwise           -> f targetId
+      [(targetId, "")] | targetId < 0                -> sorryHelper sorryWtf
+                       | not . hasType targetId $ ms -> sorry
+                       | otherwise                   -> f targetId
       _ -> sorry
       where
         sorry       = sorryHelper . sorryParseId $ target
@@ -1924,10 +1922,10 @@ adminTeleId p@(OneArgNubbed i mq cols target) = modifyStateSeq $ \ms ->
         sorryParse = (ms, ) . pure . sendFun
     in case reads . T.unpack $ strippedTarget :: [(Int, String)] of
       [(targetId, "")]
-        | targetId < 0        -> sorryParse sorryWtf
-        | hasType targetId ms -> sorryParse . sorryParseId $ strippedTarget'
-        | otherwise           -> teleport targetId
-      _                       -> sorryParse . sorryParseId $ strippedTarget'
+        | targetId < 0                -> sorryParse sorryWtf
+        | not . hasType targetId $ ms -> sorryParse . sorryParseId $ strippedTarget'
+        | otherwise                   -> teleport targetId
+      _                               -> sorryParse . sorryParseId $ strippedTarget'
 adminTeleId ActionParams { plaMsgQueue, plaCols } = wrapSend plaMsgQueue plaCols adviceATeleIdExcessArgs
 
 

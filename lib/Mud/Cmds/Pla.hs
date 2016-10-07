@@ -2555,7 +2555,7 @@ handleEgress i = do
         bcast bs
         bcastAdmins $ s <> " has left CurryMUD."
         forM_ logMsgs . uncurry . logPla $ "handleEgress"
-        logNotice "handleEgress" . T.concat $ [ s, " ", parensQuote . showText $ s, " has left CurryMUD." ]
+        logNotice "handleEgress" . T.concat $ [ descSingId i ms, " has left CurryMUD." ]
         when isAdHoc . tweak $ removeAdHoc i
   where
     helper now ri isAdHoc s ms =
