@@ -35,6 +35,7 @@ module Mud.Data.State.Util.Misc ( addToInv
                                 , lookupHooks
                                 , mkAdminIdSingList
                                 , mkAdminPlaIdSingList
+                                , mkMaybeCorpseId
                                 , mkMobRmDesc
                                 , mkName_MaybeCorpseId_Count_BothList
                                 , mkNameCountBothList
@@ -406,16 +407,18 @@ mkNameCountBothList i ms targetIds = let ens   = [ getEffName        i ms target
 mkName_MaybeCorpseId_Count_BothList :: Id -> MudState -> Inv -> [(Text, Maybe Id, Int, BothGramNos)]
 mkName_MaybeCorpseId_Count_BothList i ms targetIds =
     let ens   = [ getEffName i ms targetId        | targetId <- targetIds ]
-        mcis  = [ mkMaybeCorpseId targetId        | targetId <- targetIds ]
+        mcis  = [ mkMaybeCorpseId targetId ms     | targetId <- targetIds ]
         cs    = mkCountList ebgns
         ebgns = [ getEffBothGramNos i ms targetId | targetId <- targetIds ]
     in nubBy f . zip4 ens mcis cs $ ebgns
   where
-    mkMaybeCorpseId targetId | getType targetId ms == CorpseType = case getCorpse targetId ms of
-                               PCCorpse {} -> Just targetId
-                               NpcCorpse   -> Nothing
-                             | otherwise = Nothing
     (a, _, c, d) `f` (a', _, c', d') = (a, c, d) == (a', c', d')
+
+
+mkMaybeCorpseId :: Id -> MudState -> Maybe Id
+mkMaybeCorpseId i ms | getType i ms == CorpseType = case getCorpse i ms of PCCorpse {} -> Just i
+                                                                           NpcCorpse   -> Nothing
+                     | otherwise                  = Nothing
 
 
 -----
