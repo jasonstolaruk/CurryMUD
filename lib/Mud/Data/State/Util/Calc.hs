@@ -65,6 +65,7 @@ import Mud.Data.Misc
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Coins
 import Mud.Data.State.Util.Get
+import Mud.Data.State.Util.Hierarchy
 import Mud.Data.State.Util.Random
 import Mud.TopLvlDefs.Misc
 import Mud.TopLvlDefs.Vols
@@ -135,9 +136,7 @@ calcConPerFull i = uncurry percent . (uncurry calcConVolOfCont &&& uncurry getCo
 
 
 calcConVolOfCont :: Id -> MudState -> Int
-calcConVolOfCont i ms = foldr helper 0 . getInv i $ ms -- TODO: Does examine container vol look better?
-  where
-    helper targetId = (calcVol targetId ms +)
+calcConVolOfCont i ms = sum . map (`calcVol` ms) . getInv i $ ms
 
 
 -----
@@ -626,7 +625,9 @@ calcVesselPerFull (view vesselMaxMouthfuls -> m) x = x `percent` m
 
 
 calcVol :: Id -> MudState -> Vol
-calcVol i ms = getObjVol i ms + (getType i ms == ConType ? calcInvVol i ms + calcCoinsVol i ms :? 0)
+calcVol i ms = getObjVol i ms + (hasConId i ms ? x :? 0)
+  where
+    x = uncurry (+) . (uncurry calcInvVol &&& uncurry calcCoinsVol) $ (i, ms)
 
 
 calcInvVol :: Id -> MudState -> Vol
