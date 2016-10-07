@@ -1235,6 +1235,7 @@ emptyAction   (LowerNub i mq cols as) = helper |&| modifyState >=> \(toSelfs, bs
             in case getType targetId ms of
               VesselType -> maybe alreadyEmpty (const emptyIt) . getVesselCont targetId $ ms
               ConType    -> a' & _2 <>~ pure sorryEmptyCon
+              CorpseType -> a' & _2 <>~ pure sorryEmptyCorpse
               _          -> a' & _2 <>~ pure (sorryEmptyType s)
 emptyAction p = patternMatchFail "emptyAction" . showText $ p
 
@@ -2350,8 +2351,9 @@ putAction p@(Lower' i as)    = genericActionWithHooks p helper "put"
   where
     helper v ms =
       let LastArgIsTargetBindings { .. } = mkLastArgIsTargetBindings i ms as
-          shuffler target b is f = let (ms', (toSelfs, bs, logMsgs)) = shufflePut i ms srcDesig target b otherArgs is srcInvCoins f
-                                   in (ms', (toSelfs, bs, logMsgs, []))
+          shuffler target b is f         =
+              let (ms', (toSelfs, bs, logMsgs)) = shufflePut i ms srcDesig target b otherArgs is srcInvCoins f
+              in (ms', (toSelfs, bs, logMsgs, []))
       in case singleArgInvEqRm InInv targetArg of
         (InInv, target) -> shuffler target False srcInvCoins procGecrMisMobInv
         (InEq,  _     ) -> genericSorryWithHooks ms . sorryConInEq $ Put

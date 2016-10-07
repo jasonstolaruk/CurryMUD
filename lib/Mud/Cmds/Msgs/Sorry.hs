@@ -61,6 +61,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryEmptyAlready
                            , sorryEmptyCoins
                            , sorryEmptyCon
+                           , sorryEmptyCorpse
                            , sorryEmptyInEq
                            , sorryEmptyInRm
                            , sorryEmptyType
@@ -704,11 +705,23 @@ sorryEmptyCoins = can't "empty a coin."
 
 
 sorryEmptyCon :: Text
-sorryEmptyCon = butCan't . T.concat $ [ "empty a container with the "
-                                      , dblQuote "empty"
-                                      , " command. Please use the "
-                                      , dblQuote "remove"
-                                      , " command to remove items from a container." ]
+sorryEmptyCon = sorryEmptyHelper "container"
+
+
+sorryEmptyHelper :: Text -> Text
+sorryEmptyHelper t = butCan't . T.concat $ [ "empty a "
+                                           , t
+                                           , " with the "
+                                           , dblQuote "empty"
+                                           , " command. Please use the "
+                                           , dblQuote "remove"
+                                           , " command to remove items from a "
+                                           , t
+                                           , "." ]
+
+
+sorryEmptyCorpse :: Text
+sorryEmptyCorpse = sorryEmptyHelper "corpse"
 
 
 sorryEmptyInEq :: Text
