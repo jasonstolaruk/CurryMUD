@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Mud.Data.State.Util.Put where -- TODO: Corpses.
+module Mud.Data.State.Util.Put where
 
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Calc

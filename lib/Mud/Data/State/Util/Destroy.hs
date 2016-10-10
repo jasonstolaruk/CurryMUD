@@ -28,13 +28,21 @@ destroyHelper is = tweak $ flip (foldr helper) is
     helper i ms = case getType i ms of
       ArmType      -> ms & destroyEnt & destroyObj & destroyArm   & rest
       ClothType    -> ms & destroyEnt & destroyObj & destroyCloth & rest
-      ConType      -> (foldr helper ms . getInv i $ ms) & destroyEnt
-                                                        & destroyObj
-                                                        & destroyInv
-                                                        & destroyCoins
-                                                        & destroyCloth
-                                                        & destroyCon
-                                                        & rest
+      ConType      -> destroyCont & destroyEnt
+                                  & destroyObj
+                                  & destroyInv
+                                  & destroyCoins
+                                  & destroyCloth
+                                  & destroyCon
+                                  & rest
+      CorpseType   -> destroyCont & destroyEnt
+                                  & destroyObj
+                                  & destroyInv
+                                  & destroyCoins
+                                  & destroyCloth
+                                  & destroyCon
+                                  & destroyCorpse
+                                  & rest
       FoodType     -> ms & destroyEnt & destroyObj & destoryFood     & rest
       ObjType      -> ms & destroyEnt & destroyObj                   & rest
       VesselType   -> ms & destroyEnt & destroyObj & destroyVessel   & rest
@@ -46,6 +54,7 @@ destroyHelper is = tweak $ flip (foldr helper) is
         destroyCloth    = clothTbl   .at i .~ Nothing
         destroyCoins    = coinsTbl   .at i .~ Nothing
         destroyCon      = conTbl     .at i .~ Nothing
+        destroyCorpse   = corpseTbl  .at i .~ Nothing
         destroyEnt      = entTbl     .at i .~ Nothing
         destoryFood     = foodTbl    .at i .~ Nothing
         destroyInv      = invTbl     .at i .~ Nothing
@@ -54,4 +63,5 @@ destroyHelper is = tweak $ flip (foldr helper) is
         destroyVessel   = vesselTbl  .at i .~ Nothing
         destroyWpn      = wpnTbl     .at i .~ Nothing
         destroyWritable = writableTbl.at i .~ Nothing
+        destroyCont     = foldr helper ms . getInv i $ ms
         rest ms'        = ms' & destroyType & invTbl %~ IM.map (i `delete`)

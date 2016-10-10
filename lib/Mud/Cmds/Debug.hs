@@ -138,9 +138,9 @@ debugCmds =
     , mkDebugCmd "fun"         debugFun         "Dump the keys of the \"FunTbl\", \"HookFunTbl\", \"RmActionFunTbl\", \
                                                 \and \"EffectFunTbl\"." -- TODO: InstaEffectFunTbl, FeelingFunTbl?
     , mkDebugCmd "handle"      debugHandle      "Display information about the handle for your network connection."
-    , mkDebugCmd "id"          debugId          "Search the \"MudState\" tables for a given ID." -- TODO: Corpses.
+    , mkDebugCmd "id"          debugId          "Search the \"MudState\" tables for a given ID."
     , mkDebugCmd "kewpie"      debugKewpie      "Create a kewpie doll."
-    , mkDebugCmd "keys"        debugKeys        "Dump a list of \"MudState\" table keys." -- TODO: Corpses.
+    , mkDebugCmd "keys"        debugKeys        "Dump a list of \"MudState\" table keys."
     , mkDebugCmd "liquid"      debugLiq         "Consume a given amount (in mouthfuls) of a given liquid (by distinct \
                                                 \liquid ID)."
     , mkDebugCmd "log"         debugLog         "Put the logging service under heavy load."
@@ -486,6 +486,7 @@ mkTblNameKeysList ms = [ ("ActiveEffects", tblKeys activeEffectsTbl ms)
                        , ("Cloth",         tblKeys clothTbl         ms)
                        , ("Coins",         tblKeys coinsTbl         ms)
                        , ("Con",           tblKeys conTbl           ms)
+                       , ("Corpse",        tblKeys corpseTbl        ms)
                        , ("DistinctFood",  tblKeys distinctFoodTbl  ms)
                        , ("DistinctLiq",   tblKeys distinctLiqTbl   ms)
                        , ("Ent",           tblKeys entTbl           ms)
