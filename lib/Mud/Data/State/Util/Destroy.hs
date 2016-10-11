@@ -22,7 +22,7 @@ destroy is = stopBiodegraders >> destroyHelper is
                                            in mapM_ f . filter (`hasObjId` ms) $ is
 
 
-destroyHelper :: Inv -> MudStack () -- TODO: Corpses.
+destroyHelper :: Inv -> MudStack ()
 destroyHelper is = tweak $ flip (foldr helper) is
   where
     helper i ms = case getType i ms of
