@@ -5,7 +5,6 @@ module Mud.Data.State.Util.Calc ( calcBarLen
                                 , calcBonus
                                 , calcCarriedVol
                                 , calcConPerFull
-                                , calcConVolOfCont
                                 , calcCorpseCapacity
                                 , calcCorpseVol
                                 , calcCorpseWeight
@@ -17,6 +16,7 @@ module Mud.Data.State.Util.Calc ( calcBarLen
                                 , calcEffPs
                                 , calcEffSt
                                 , calcEncPer
+                                , calcInvCoinsVol
                                 , calcLvl
                                 , calcLvlExps
                                 , calcLvlForExp
@@ -132,11 +132,7 @@ calcEqVol i ms = sum . map (`calcVol` ms) . M.elems . getEqMap i $ ms
 
 
 calcConPerFull :: Id -> MudState -> Int
-calcConPerFull i = uncurry percent . (uncurry calcConVolOfCont &&& uncurry getConCapacity) . (i, )
-
-
-calcConVolOfCont :: Id -> MudState -> Int
-calcConVolOfCont i ms = sum . map (`calcVol` ms) . getInv i $ ms
+calcConPerFull i = uncurry percent . (uncurry calcInvCoinsVol &&& uncurry getConCapacity) . (i, )
 
 
 -----
@@ -625,9 +621,11 @@ calcVesselPerFull (view vesselMaxMouthfuls -> m) x = x `percent` m
 
 
 calcVol :: Id -> MudState -> Vol
-calcVol i ms = getObjVol i ms + (hasConId i ms ? x :? 0)
-  where
-    x = uncurry (+) . (uncurry calcInvVol &&& uncurry calcCoinsVol) $ (i, ms)
+calcVol i ms = getObjVol i ms + (hasConId i ms ? calcInvCoinsVol i ms :? 0)
+
+
+calcInvCoinsVol :: Id -> MudState -> Vol
+calcInvCoinsVol i = uncurry (+) . (uncurry calcInvVol &&& uncurry calcCoinsVol) . (i, )
 
 
 calcInvVol :: Id -> MudState -> Vol
