@@ -2027,22 +2027,21 @@ link (LowerNub i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
                                               , twoWayMsg ]
                 bs            = [ (srcMsg, pure i), (targetMsg, pure targetId) ]
                 msgHelper txt = a' & _2 <>~ mkBcast i (nlnl txt)
-            in if
-              | targetSing `notElem` srcIntros    -> msgHelper . sorryLinkIntroTarget       $ targetDesig
-              | s          `notElem` targetIntros -> msgHelper . sorryLinkIntroSelf         $ targetSing
-              | s             `elem` targetLinks  -> msgHelper . sorryLinkAlready oneTwoWay $ targetDesig
-              | not . hasPp i ms $ 10             -> msgHelper . sorryPp $ "link with " <> targetDesig
-              | otherwise                         ->
-                  let g a'' | isTwoWay  = a''
-                            | otherwise = a'' & _1.rndmNamesMstrTbl.ind i       .at targetSing .~ Nothing
-                                              & _1.rndmNamesMstrTbl.ind targetId.at s          .~ Nothing
-                  in g $ a' & _1.pcTbl.ind targetId.linked %~ (sort . (s :))
-                            & _1.teleLinkMstrTbl.ind i       .at targetSing ?~ True
-                            & _1.teleLinkMstrTbl.ind targetId.at s          ?~ True
-                            & _1.mobTbl         .ind i       .curPp         -~ 10
-                            & _2 <>~ bs
-                            & _3 <>~ pure logMsg
-                            & _4 <>~ [ action, awardExp 100 ("linked by " <> targetSing) targetId ]
+            in if | targetSing `notElem` srcIntros    -> msgHelper . sorryLinkIntroTarget       $ targetDesig
+                  | s          `notElem` targetIntros -> msgHelper . sorryLinkIntroSelf         $ targetSing
+                  | s             `elem` targetLinks  -> msgHelper . sorryLinkAlready oneTwoWay $ targetDesig
+                  | not . hasPp i ms $ 10             -> msgHelper . sorryPp $ "link with " <> targetDesig
+                  | otherwise                         ->
+                      let g a'' | isTwoWay  = a''
+                                | otherwise = a'' & _1.rndmNamesMstrTbl.ind i       .at targetSing .~ Nothing
+                                                  & _1.rndmNamesMstrTbl.ind targetId.at s          .~ Nothing
+                      in g $ a' & _1.pcTbl.ind targetId.linked %~ (sort . (s :))
+                                & _1.teleLinkMstrTbl.ind i       .at targetSing ?~ True
+                                & _1.teleLinkMstrTbl.ind targetId.at s          ?~ True
+                                & _1.mobTbl         .ind i       .curPp         -~ 10
+                                & _2 <>~ bs
+                                & _3 <>~ pure logMsg
+                                & _4 <>~ [ action, awardExp 100 ("linked by " <> targetSing) targetId ]
           _  -> let b = (nlnl . sorryLinkType $ targetSing, pure i)
                 in a' & _2 %~ (`appendIfUnique` b)
           where
