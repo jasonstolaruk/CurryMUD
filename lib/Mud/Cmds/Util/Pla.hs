@@ -443,16 +443,15 @@ partitionCoinsHelper :: (Id -> MudState -> Int)
                      -> MudState
                      -> Coins
                      -> (Coins, Coins)
-partitionCoinsHelper calcMax calcCurr factor i ms coins =
-    let maxAmt    = calcMax  i ms
-        currAmt   = calcCurr i ms
-        noOfCoins = sum . coinsToList $ coins
-        coinsAmt  = noOfCoins * factor
-    in if currAmt + coinsAmt <= maxAmt
-      then (coins, mempty)
-      else let availAmt     = maxAmt - currAmt
-               canNoOfCoins = availAmt `quot` factor
-           in mkCanCan'tCoins coins canNoOfCoins
+partitionCoinsHelper calcMax calcCurr factor i ms coins = let maxAmt    = calcMax  i ms
+                                                              currAmt   = calcCurr i ms
+                                                              noOfCoins = sum . coinsToList $ coins
+                                                              coinsAmt  = noOfCoins * factor
+                                                          in if currAmt + coinsAmt <= maxAmt
+                                                            then (coins, mempty)
+                                                            else let availAmt     = maxAmt - currAmt
+                                                                     canNoOfCoins = availAmt `quot` factor
+                                                                 in mkCanCan'tCoins coins canNoOfCoins
 
 
 mkCanCan'tCoins :: Coins -> Int -> (Coins, Coins)
@@ -495,7 +494,9 @@ helperGetEitherInv i d fromId a@(ms, _, _, _) = \case
   Left  msg                              -> a & _2 <>~ pure msg
   Right (sortByType -> (npcPCs, others)) ->
     let maxEnc            = calcMaxEnc i ms
-        (_, cans, can'ts) = foldl' (partitionInvByEnc ms maxEnc) (calcWeight i ms, [], []) others
+        (_, cans, can'ts) = foldl' (partitionInvByEnc ms maxEnc)
+                                   (calcWeight i ms, [], [])
+                                   others
         (toSelfs, bs    ) = mkGetDropInvDescs i ms d Get cans
     in a & _1.invTbl.ind fromId %~  (\\ cans)
          & _1.invTbl.ind i      %~  addToInv ms cans

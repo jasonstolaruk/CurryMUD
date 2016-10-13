@@ -649,9 +649,9 @@ examineCon i ms = let c = getCon i ms in [ "Is clothing: " <> c^.conIsCloth.to s
                                          , T.concat [ "Volume/capacity: "
                                                     , showText . calcInvCoinsVol i $ ms
                                                     , " / "
-                                                    , c^.conCapacity.to showText
+                                                    , c^.conCapacity.to commaShow
                                                     , " "
-                                                    , parensQuote $ (<> "%") . showText . calcConPerFull i $ ms ] ]
+                                                    , parensQuote $ (<> "%") . commaShow . calcConPerFull i $ ms ] ]
 
 
 examineCorpse :: ExamineHelper
