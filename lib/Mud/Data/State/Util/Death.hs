@@ -85,7 +85,7 @@ handleDeath i = do
     stopFeelings      i
     stopRegen         i
     throwWaitDigester i
-    modifyStateSeq $ \ms -> second (logPlaHelper i ms "handleDeath" "handling death." :) . mkCorpse i $ ms
+    modifyStateSeq (\ms -> second (logPlaHelper i ms "handleDeath" "handling death." :) . mkCorpse i $ ms)
     spiritize         i
   where
     possessHelper = modifyStateSeq $ \ms -> case getPossessor i ms of
