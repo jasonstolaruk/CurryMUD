@@ -167,7 +167,7 @@ calcCorpseVol = let f = (calcCorpseVol Human |&|) in \case
   Elf       -> f minusFifth
   Felinoid  -> f plusFifth
   Hobbit    -> f (\x -> round $ fromIntegral x * hobbitToHumanWeightRatio)
-  Human     -> 452000 -- 4,520 cubic in -- TODO: Does this seem reasonable?
+  Human     -> 452000 -- 4,520 cubic in
   Lagomorph -> f id
   Nymph     -> f minusQuarter
   Vulpenoid -> f plusQuarter
