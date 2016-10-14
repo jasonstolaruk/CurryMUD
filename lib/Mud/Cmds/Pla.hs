@@ -1315,22 +1315,24 @@ mkExpCmdListTxt i ms =
 
 
 feeling :: ActionFun
-feeling (NoArgs i mq cols) = getState >>= \ms ->
-    let txts = f . dropEmpties $ [ g i ms | g <- [ mkHpDesc
-                                                 , mkMpDesc
-                                                 , mkPpDesc
-                                                 , mkFpDesc
-                                                 , mkEffStDesc
-                                                 , mkEffDxDesc
-                                                 , mkEffHtDesc
-                                                 , mkEffMaDesc
-                                                 , mkEffPsDesc
-                                                 , mkFullDesc ] ] ++ mkFeelingDescs i ms
-    in do { multiWrapSend mq cols txts
-          ; logPla "feeling" i . dropANSI . slashes $ txts }
+feeling (NoArgs i mq cols) = spiritHelper i a b
   where
+    a ms = let txts = f . dropEmpties $ [ g i ms | g <- [ mkHpDesc
+                                                        , mkMpDesc
+                                                        , mkPpDesc
+                                                        , mkFpDesc
+                                                        , mkEffStDesc
+                                                        , mkEffDxDesc
+                                                        , mkEffHtDesc
+                                                        , mkEffMaDesc
+                                                        , mkEffPsDesc
+                                                        , mkFullDesc ] ] ++ mkFeelingDescs i ms
+           in multiWrapSend mq cols txts >> logPla "feeling" i (dropANSI . slashes $ txts)
     f [] = pure "You feel fine."
     f ts = ts
+    b    = const . wrapSend mq cols $ msg
+    msg  = "You can still feel emotions, and your sense of self remains intact. At the same time, you are entirely \
+           \detached from your body. The whole experience is quite surreal."
 feeling p = withoutArgs feeling p
 
 
@@ -2196,8 +2198,11 @@ extractMobIdsFromEiss ms = foldl' helper []
 
 
 lookSelf :: ActionFun
-lookSelf (NoArgs i mq cols) = getState >>= \ms -> send mq . nl . mkEntDesc iPidge cols ms . (id &&& (`getEnt` ms)) $ i
-lookSelf p                  = withoutArgs lookSelf p
+lookSelf (NoArgs i mq cols) = spiritHelper i a b
+  where
+    a ms = send mq . nl . mkEntDesc iPidge cols ms . (id &&& (`getEnt` ms)) $ i
+    b _  = undefined
+lookSelf p = withoutArgs lookSelf p
 
 
 -----
