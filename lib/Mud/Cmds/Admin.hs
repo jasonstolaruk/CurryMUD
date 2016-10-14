@@ -1041,7 +1041,7 @@ adminLink p = patternMatchFail "adminLink" . showText $ p
 -----
 
 
-adminLocate :: ActionFun -- TODO: Try locating an object in a corpse.
+adminLocate :: ActionFun
 adminLocate p@AdviseNoArgs          = advise p [ prefixAdminCmd "locate" ] adviceALocateNoArgs
 adminLocate (LowerNub i mq cols as) = getState >>= \ms ->
     let helper a = case reads . T.unpack $ a :: [(Int, String)] of
