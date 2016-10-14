@@ -2201,7 +2201,7 @@ lookSelf :: ActionFun
 lookSelf (NoArgs i mq cols) = spiritHelper i a b
   where
     a ms = send mq . nl . mkEntDesc iPidge cols ms . (id &&& (`getEnt` ms)) $ i
-    b _  = undefined
+    b    = const . wrapSend mq cols $ "You are an invisible spirit, detached from your body and floating."
 lookSelf p = withoutArgs lookSelf p
 
 
