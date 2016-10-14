@@ -107,7 +107,7 @@ import Mud.Util.Wrapping
 import qualified Mud.Misc.Logging as L (logPla)
 import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 
-import Control.Arrow ((***), (&&&), second)
+import Control.Arrow ((***), (&&&), first, second)
 import Control.Exception.Lifted (catch, try)
 import Control.Lens (_1, _2, _3, at, both, each, to, view, views)
 import Control.Lens.Operators ((%~), (&), (+~), (.~), (<>~), (?~), (^.))
@@ -273,7 +273,7 @@ dispCmdList cmds p                  = dispMatches p cmdNamePadding . mkCmdListTe
 
 mkCmdListText :: [Cmd] -> [Text]
 mkCmdListText cmds = let zipped = zip (styleCmdAbbrevs cmds) [ cmdDesc cmd | cmd <- cmds ]
-                     in [ padCmdName . uncurry (<>) $ pair | pair@(_, d) <- zipped, ()!# d ]
+                     in [ uncurry (<>) . first padCmdName $ pair | pair@(_, d) <- zipped, ()!# d ]
 
 
 styleCmdAbbrevs :: [Cmd] -> [Text]
