@@ -885,7 +885,7 @@ adminExp (NoArgs' i mq) = pager i mq Nothing mkReport >> logPlaExec (prefixAdmin
   where
     mkReport = header ++ pure zero ++ take 25 (map helper calcLvlExps)
     header   = [ "Level  Experience", T.replicate 17 "=" ]
-    zero     = uncurry (<>) . first (pad 7) . dup $ "0"
+    zero     = uncurry (<>) . dupFirst (pad 7) $ "0"
     helper   = uncurry (<>) . (pad 7 . showText *** commaShow)
 adminExp p = withoutArgs adminExp p
 
@@ -1209,7 +1209,7 @@ adminPeep (LowerNub i mq cols as) = do
                            in a & _1 .~ pt' & _2 %~ (msg :) & _3 <>~ logMsgs
                 in findFullNameForAbbrev target apiss |&| maybe notFound found
             res = foldr (peep . capitalize) (ms^.plaTbl, [], []) as
-        in (ms & plaTbl .~ res^._1, (view _2 &&& view _3) res)
+        in (ms & plaTbl .~ res^._1, (_2 `fanView` _3) res)
 adminPeep p = patternMatchFail "adminPeep" . showText $ p
 
 

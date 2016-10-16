@@ -165,7 +165,7 @@ spiritize i = getState >>= \ms -> let mySing = getSing i ms in if isPC i ms
         helper pcId | pcId == i               = linked .~ map (view _2) retaineds
                     | pcId `elem` retainerIds = id
                     | otherwise               = linked %~ (mySing `delete`)
-    setCurXps m = m & curHp .~ 1
+    setCurXps m = m & curHp .~ 1 -- TODO: Consider setting Xps to max val.
                     & curMp .~ 1
                     & curPp .~ 1
                     & curFp .~ 1

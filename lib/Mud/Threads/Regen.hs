@@ -15,12 +15,11 @@ import Mud.Util.Misc
 import Mud.Util.Operators
 import qualified Mud.Misc.Logging as L (logNotice, logPla)
 
-import Control.Arrow ((***))
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (cancel)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
-import Control.Lens (Getter, Lens', view)
+import Control.Lens (Getter, Lens')
 import Control.Lens.Operators ((&), (.~), (?~), (^.))
 import Control.Monad ((>=>), forever, when)
 import Control.Monad.IO.Class (liftIO)
@@ -88,7 +87,7 @@ threadRegen i tq = let regens = [ regen curHp maxHp calcRegenHpAmt calcRegenHpDe
       where
         loop = delay >> getState >>= \ms ->
             let mob    = getMob i ms
-                (c, m) = (view curLens *** view maxLens) . dup $ mob
+                (c, m) = (curLens `fanView` maxLens) mob
                 amt    = calcAmt i ms
                 total  = c + amt
                 c'     = (total > m) ? m :? total

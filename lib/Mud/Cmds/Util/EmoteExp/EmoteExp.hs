@@ -135,7 +135,7 @@ expCmdify :: Id -> MudState -> ChanContext -> [(Id, Text, Text)] -> Text -> Eith
 expCmdify i ms cc triples msg@(T.words -> ws@(headTail . head -> (c, rest)))
   | isHeDon't expCmdChar msg = Left sorryWtf
   | c == expCmdChar          = fmap format . procExpCmd i ms cc triples . parseOutDenotative ws $ rest
-  | otherwise                = Right . (pure . (, i : select _1 triples) &&& id) $ msg
+  | otherwise                = Right . dupFirst (pure . (, i : select _1 triples)) $ msg
   where
     format xs = xs & _1 %~ map (_1 %~ angleBracketQuote)
                    & _2 %~ angleBracketQuote
@@ -151,7 +151,7 @@ procExpCmd i ms cc triples (map T.toLower . unmsg -> [cn, target]) =
             tunedIds        = select _1 triples
         in case ct of
           NoTarget toSelf toOthers -> if ()# target
-            then Right . (((format Nothing toOthers, tunedIds) :) . mkBcast i &&& id) $ toSelf
+            then Right . dupFirst (((format Nothing toOthers, tunedIds) :) . mkBcast i) $ toSelf
             else Left . sorryExpCmdIllegalTarget $ match
           HasTarget toSelf toTarget toOthers -> if ()# target
             then Left . sorryExpCmdRequiresTarget $ match
@@ -160,15 +160,15 @@ procExpCmd i ms cc triples (map T.toLower . unmsg -> [cn, target]) =
               Just n  -> let targetId = getIdForMatch n
                              f        = ((colorizeYous . format Nothing $ toTarget, pure targetId             ) :)
                              g        = ((format (Just targetId) toOthers,          targetId `delete` tunedIds) :)
-                         in Right . (f . g . mkBcast i &&& id) . format (Just targetId) $ toSelf
+                         in Right . dupFirst (f . g . mkBcast i) . format (Just targetId) $ toSelf
           Versatile toSelf toOthers toSelfWithTarget toTarget toOthersWithTarget -> if ()# target
-            then Right . (((format Nothing toOthers, tunedIds) :) . mkBcast i &&& id) $ toSelf
+            then Right . dupFirst (((format Nothing toOthers, tunedIds) :) . mkBcast i) $ toSelf
             else case findTarget of
               Nothing -> Left . sorryChanTargetNameFromContext target $ cc
               Just n  -> let targetId          = getIdForMatch n
                              f                 = ((colorizeYous . format Nothing $ toTarget,  pure targetId             ) :)
                              g                 = ((format (Just targetId) toOthersWithTarget, targetId `delete` tunedIds) :)
-                         in Right . (f . g . mkBcast i &&& id) . format (Just targetId) $ toSelfWithTarget
+                         in Right . dupFirst (f . g . mkBcast i) . format (Just targetId) $ toSelfWithTarget
     notFound             = Left . sorryExpCmdName $ cn
     findTarget           = findFullNameForAbbrev target . map (views _2 T.toLower) $ triples
     getIdForMatch match  = view _1 . head . filter (views _2 ((== match) . T.toLower)) $ triples
@@ -274,7 +274,7 @@ adminChanExpCmdify i ms tunedIds tunedSings msg@(T.words -> ws@(headTail . head 
   | isHeDon't expCmdChar msg = Left sorryWtf
   | c == expCmdChar          =
       fmap format . adminChanProcExpCmd i ms tunedIds tunedSings . parseOutDenotative ws $ rest
-  | otherwise = Right . (pure . (, tunedIds) &&& id) $ msg
+  | otherwise = Right . dupFirst (pure . (, tunedIds)) $ msg
   where
     format xs = xs & _1 %~ map (_1 %~ angleBracketQuote)
                    & _2 %~ angleBracketQuote
@@ -289,7 +289,7 @@ adminChanProcExpCmd i ms tunedIds tunedSings (map T.toLower . unmsg -> [cn, targ
         let ExpCmd _ ct _ _ = getExpCmdByName match
         in case ct of
           NoTarget toSelf toOthers -> if ()# target
-            then Right . (((format Nothing toOthers, i `delete` tunedIds) :) . mkBcast i &&& id) $ toSelf
+            then Right . dupFirst (((format Nothing toOthers, i `delete` tunedIds) :) . mkBcast i) $ toSelf
             else Left . sorryExpCmdIllegalTarget $ match
           HasTarget toSelf toTarget toOthers -> if ()# target
             then Left . sorryExpCmdRequiresTarget $ match
@@ -299,16 +299,16 @@ adminChanProcExpCmd i ms tunedIds tunedSings (map T.toLower . unmsg -> [cn, targ
                              toSelf'  = format (Just n) toSelf
                              f        = ((colorizeYous . format Nothing $ toTarget, pure targetId              ) :)
                              g        = ((format (Just n) toOthers,                 tunedIds \\ [ i, targetId ]) :)
-                         in Right . (f . g . mkBcast i &&& id) $ toSelf'
+                         in Right . dupFirst (f . g . mkBcast i) $ toSelf'
           Versatile toSelf toOthers toSelfWithTarget toTarget toOthersWithTarget -> if ()# target
-            then Right . (((format Nothing toOthers, i `delete` tunedIds) :) . mkBcast i &&& id) $ toSelf
+            then Right . dupFirst (((format Nothing toOthers, i `delete` tunedIds) :) . mkBcast i) $ toSelf
             else case findTarget of
               Nothing -> Left . sorryAdminChanTargetName $ target
               Just n  -> let targetId          = getIdForMobSing n ms
                              toSelfWithTarget' = format (Just n) toSelfWithTarget
                              f                 = ((colorizeYous . format Nothing $ toTarget, pure targetId              ) :)
                              g                 = ((format (Just n) toOthersWithTarget,       tunedIds \\ [ i, targetId ]) :)
-                         in Right . (f . g . mkBcast i &&& id) $ toSelfWithTarget'
+                         in Right . dupFirst (f . g . mkBcast i) $ toSelfWithTarget'
     notFound   = Left . sorryExpCmdName $ cn
     findTarget = findFullNameForAbbrev (capitalize target) $ getSing i ms `delete` tunedSings
     format maybeTargetSing =

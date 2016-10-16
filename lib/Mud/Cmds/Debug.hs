@@ -55,7 +55,7 @@ import Control.Concurrent (getNumCapabilities, myThreadId)
 import Control.Concurrent.Async (asyncThreadId, poll)
 import Control.Exception (ArithException(..), IOException)
 import Control.Exception.Lifted (throwIO, try)
-import Control.Lens (Optical, both, view, views)
+import Control.Lens (Optical, both, views)
 import Control.Lens.Operators ((%~), (&))
 import Control.Lens.Type (LensLike')
 import Control.Monad ((>=>), replicateM_, unless)
@@ -261,7 +261,7 @@ debugCins p = advise p [] adviceDCinsExcessArgs
 
 
 class Myモルモット a where {}; instance Myモルモット Bool where {}
-data Penny = forall a. Myモルモット a => Pennyちゃん a
+data Penny = forall a. (Myモルモット a) => Pennyちゃん a
 
 
 debugCoercePenny :: ActionFun
@@ -475,7 +475,7 @@ debugId (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
 debugId p = advise p [] adviceDIdExcessArgs
 
 
-tblToList :: forall a. LensLike' (Const [(Int, a)]) MudState (IM.IntMap a) -> MudState -> [(Int, a)]
+tblToList :: LensLike' (Const [(Int, a)]) MudState (IM.IntMap a) -> MudState -> [(Int, a)]
 tblToList lens ms = views lens IM.toList (ms :: MudState)
 
 
@@ -838,7 +838,7 @@ debugThreads p@ActionParams { myId, args } = do
 descThreads :: MudStack [Text]
 descThreads = do
     (uncurry (:) . ((, Notice) *** pure . (, Error)) -> logAsyncKvs) <- asks $ (both %~ asyncThreadId) . getLogAsyncs
-    (plt, M.assocs -> threadTblKvs) <- (view plaLogTbl *** view threadTbl) . dup <$> getState
+    (plt, M.assocs -> threadTblKvs) <- plaLogTbl `fanView` threadTbl <$> getState
     let plaLogTblKvs = [ (asyncThreadId . fst $ v, PlaLog k) | (k, v) <- IM.assocs plt ]
     mapM mkDesc . sort . concat $ [ logAsyncKvs, threadTblKvs, plaLogTblKvs ]
   where

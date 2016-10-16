@@ -76,7 +76,6 @@ import Mud.Util.Operators
 import Mud.Util.Text
 import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 
-import Control.Arrow ((&&&))
 import Control.Lens (both, view, views)
 import Control.Lens.Getter (Getter)
 import Control.Lens.Operators ((%~), (&))
@@ -132,7 +131,7 @@ calcEqVol i ms = sum . map (`calcVol` ms) . M.elems . getEqMap i $ ms
 
 
 calcConPerFull :: Id -> MudState -> Int
-calcConPerFull i = uncurry percent . (uncurry calcInvCoinsVol &&& uncurry getConCapacity) . (i, )
+calcConPerFull i = uncurry percent . (calcInvCoinsVol `fanUncurry` getConCapacity) . (i, )
 
 
 -----
@@ -625,7 +624,7 @@ calcVol i ms = getObjVol i ms + (hasConId i ms ? calcInvCoinsVol i ms :? 0)
 
 
 calcInvCoinsVol :: Id -> MudState -> Vol
-calcInvCoinsVol i = uncurry (+) . (uncurry calcInvVol &&& uncurry calcCoinsVol) . (i, )
+calcInvCoinsVol i = uncurry (+) . (calcInvVol `fanUncurry` calcCoinsVol) . (i, )
 
 
 calcInvVol :: Id -> MudState -> Vol

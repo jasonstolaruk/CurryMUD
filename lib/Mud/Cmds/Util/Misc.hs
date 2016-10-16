@@ -107,7 +107,7 @@ import Mud.Util.Wrapping
 import qualified Mud.Misc.Logging as L (logPla)
 import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 
-import Control.Arrow ((***), (&&&), first, second)
+import Control.Arrow ((***), (&&&), first)
 import Control.Exception.Lifted (catch, try)
 import Control.Lens (_1, _2, _3, at, both, each, to, view, views)
 import Control.Lens.Operators ((%~), (&), (+~), (.~), (<>~), (?~), (^.))
@@ -220,7 +220,7 @@ consume i newScs = do
   where
     helper now ms =
         let scs   = getStomach i ms ++ newScs
-            pairs = map (second getConsumpEffects . dup) scs :: [(StomachCont, Maybe ConsumpEffects)]
+            pairs = map (dupSecond getConsumpEffects) scs :: [(StomachCont, Maybe ConsumpEffects)]
             getConsumpEffects sc = case sc^.distinctId of
               Left  (DistinctLiqId  x) -> f liqEdibleEffects  . getDistinctLiq  $ x
               Right (DistinctFoodId x) -> f foodEdibleEffects . getDistinctFood $ x
@@ -427,7 +427,7 @@ getQuestionStyleds i ms =
         (linkedIds, otherIds) = partition (isLinked ms . (i, )) plaIds
     in mapM (updateRndmName i) otherIds >>= \rndmNames ->
         let rndms   = zip otherIds rndmNames
-            f       = map (second (`getSing` ms) . dup)
+            f       = map (dupSecond (`getSing` ms))
             linkeds = f linkedIds
             admins  = f adminIds
             combo   = sortBy (compare `on` snd) $ rndms ++ nubSort (linkeds ++ admins)
@@ -520,7 +520,7 @@ isEating = isActing Eating
 
 
 isDrinkingEating :: Id -> MudState -> (Bool, Bool)
-isDrinkingEating i = (uncurry isDrinking *** uncurry isEating) . dup . (,) i
+isDrinkingEating i = (isDrinking `fanUncurry` isEating) . (i, )
 
 
 isMoving :: Id -> MudState -> Bool

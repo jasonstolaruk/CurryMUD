@@ -1044,7 +1044,7 @@ drink   (Lower   i mq cols [amt, target]) = getState >>= \ms -> let (isDrink, is
                 -----
                 drinkInv =
                     let (eiss, ecs)  = uncurry (resolveMobInvCoins i ms inInvs) myInvCoins
-                        f [targetId] = case (uncurry getSing *** uncurry getType) . dup $ (targetId, ms) of
+                        f [targetId] = case (getSing `fanUncurry` getType) (targetId, ms) of
                           (s, VesselType) -> maybe (sorry . sorryDrinkEmpty $ s) (g s) . getVesselCont targetId $ ms
                           (s, _         ) -> sorry . sorryDrinkType $ s
                           where
@@ -2200,7 +2200,7 @@ extractMobIdsFromEiss ms = foldl' helper []
 lookSelf :: ActionFun
 lookSelf (NoArgs i mq cols) = spiritHelper i a b
   where
-    a ms = send mq . nl . mkEntDesc iPidge cols ms . (id &&& (`getEnt` ms)) $ i
+    a ms = send mq . nl . mkEntDesc iPidge cols ms . dupSecond (`getEnt` ms) $ i
     b    = const . wrapSend mq cols $ "You are an invisible spirit, detached from your body and floating."
 lookSelf p = withoutArgs lookSelf p
 
@@ -2400,7 +2400,7 @@ shufflePut i ms d conName icir as invCoinsWithCon@(invWithCon, _) mobInvCoins f 
       then genericSorry ms sorryPutInCoin
       else case f . head . zip conGecrs $ conMiss of
         Left  msg     -> genericSorry ms msg
-        Right [conId] | (conSing, conType) <- (uncurry getSing *** uncurry getType) . dup $ (conId, ms) ->
+        Right [conId] | (conSing, conType) <- (getSing `fanUncurry` getType) (conId, ms) ->
             if not . hasCon $ conType
               then genericSorry ms . sorryConHelper i ms conId $ conSing
               else let (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv as
@@ -3003,7 +3003,7 @@ shuffleRem i ms d conName icir as invCoinsWithCon@(invWithCon, _) f =
       then genericSorry ms sorryRemCoin
       else case f . head . zip conGecrs $ conMiss of
         Left  msg     -> genericSorry ms msg
-        Right [conId] | (conSing, conType) <- (uncurry getSing *** uncurry getType) . dup $ (conId, ms) ->
+        Right [conId] | (conSing, conType) <- (getSing `fanUncurry` getType) (conId, ms) ->
             if not . hasCon $ conType
               then genericSorry ms . sorryConHelper i ms conId $ conSing
               else let (as', guessWhat)   = stripLocPrefs
@@ -3918,7 +3918,7 @@ tele :: ActionFun
 tele p@AdviseNoArgs     = advise p ["telepathy"] adviceTeleNoArgs
 tele p@(AdviseOneArg a) = advise p ["telepathy"] . adviceTeleNoMsg $ a
 tele (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
-    let (s, p) = (uncurry getSing &&& uncurry getPla) (i, ms) in if isIncognito p
+    let (s, p) = (getSing `fanUncurry` getPla) (i, ms) in if isIncognito p
       then wrapSend mq cols . sorryIncog $ "telepathy"
       else let SingleTarget { .. } = mkSingleTarget mq cols target "The name of the person you wish to message"
                notFound            = sendFun . notFoundSuggestAsleeps target asleeps $ ms
@@ -3978,7 +3978,7 @@ tempDescAction p = patternMatchFail "tempDescAction" . showText $ p
 
 tune :: ActionFun
 tune (NoArgs i mq cols) = getState >>= \ms ->
-    let linkPairs   = map (first (`getIdForMobSing` ms) . dup) . getLinked i $ ms
+    let linkPairs   = map (dupFirst (`getIdForMobSing` ms)) . getLinked i $ ms
         linkSings   = sort . map snd . filter (isDblLinked ms . (i, ) . fst) $ linkPairs
         styleds     = styleAbbrevs Don'tQuote linkSings
         linkTunings = foldr (\s -> (linkTbl M.! s :)) [] linkSings
@@ -4074,9 +4074,9 @@ unlink (LowerNub i mq cols as) =
                   | targetSing `elem` twoWays ++ meLinkedToOthers ++ othersLinkedToMe -> procArgHelper
                   | otherwise -> sorry $ sorryUnlinkName targetSing |<>| hintUnlink
                   where
-                    sorry msg     = a & _2 <>~ (mkBcast i . nlnl $ msg)
+                    sorry msg = a & _2 <>~ (mkBcast i . nlnl $ msg)
                     procArgHelper
-                      | not . hasPp i ms' $ 5 = sorry . sorryPp $ "sever your link with " <> targetSing
+                      | not (hasPp i ms' 5 || isSpiritId i ms')  = sorry . sorryPp $ "sever your link with " <> targetSing
                       | targetId <- getIdForMobSing targetSing ms'
                       , s        <- getSing i ms
                       , srcMsg   <- T.concat [ focusingInnateMsg, "you sever your link with ", targetSing, "." ]
@@ -4348,7 +4348,7 @@ mkFooter i ms = let plaIds@(length -> x) = getLoggedInPlaIds ms
                                                                          , pluralize ("", "s") y ]
                             , "." ]
   where
-    maruBatsus = map (uncurry (&&) . (isLoggedIn *** not . isIncognito) . dup . (`getPla` ms)) ais
+    maruBatsus = map (uncurry (&&) . (isLoggedIn &&& not . isIncognito) . (`getPla` ms)) ais
     ais        = getLoggedInAdminIds ms
 
 

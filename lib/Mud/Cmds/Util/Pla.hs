@@ -1046,7 +1046,7 @@ mkEntDesc i cols ms (ei, e) | ed <- views entDesc (wrapUnlines cols) e, s <- get
 
 mkInvCoinsDesc :: Id -> Cols -> MudState -> Id -> Sing -> Text
 mkInvCoinsDesc i cols ms targetId targetSing =
-    let pair@(targetInv, targetCoins) = (uncurry getInv &&& uncurry getCoins) (targetId, ms)
+    let pair@(targetInv, targetCoins) = (getInv `fanUncurry` getCoins) (targetId, ms)
     in case ((()#) *** (()#)) pair of
       (True,  True ) -> wrapUnlines cols (targetId == i ? dudeYourHandsAreEmpty :? "The " <> targetSing <> " is empty.")
       (False, True ) -> header <> mkEntsInInvDesc i cols ms targetInv                                    <> footer
@@ -1255,7 +1255,7 @@ type InvWithCon = Inv
 mkMaybeNthOfM :: MudState -> IsConInRm -> Id -> Sing -> InvWithCon -> Maybe NthOfM
 mkMaybeNthOfM ms icir conId conSing invWithCon = guard icir >> return helper
   where
-    helper  = (succ . fromJust . elemIndex conId *** length) . dup $ matches
+    helper  = succ . fromJust . elemIndex conId &&& length $ matches
     matches = filter ((== conSing) . flip getSing ms) invWithCon
 
 

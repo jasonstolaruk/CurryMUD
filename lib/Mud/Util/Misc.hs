@@ -15,9 +15,13 @@ module Mud.Util.Misc ( atLst1
                      , dup
                      , dup3
                      , dup4
+                     , dupFirst
                      , dupIdentity
+                     , dupSecond
                      , eitherRet
                      , emptied
+                     , fanUncurry
+                     , fanView
                      , fmap2
                      , fmap3
                      , fromEither
@@ -65,9 +69,12 @@ module Mud.Util.Misc ( atLst1
 import Mud.Util.Operators
 import Mud.Util.Quoting
 
-import Control.Lens (_1, _2, lens, Lens')
+import Control.Arrow ((&&&), Arrow, first, second)
+import Control.Lens (_1, _2, Lens', lens, view)
+import Control.Lens.Getter (Getting)
 import Control.Lens.Operators ((%~))
 import Control.Monad (guard, join)
+import Control.Monad.Reader.Class (MonadReader)
 import Data.Function (on)
 import Data.IORef (IORef, atomicWriteIORef)
 import Data.List (delete)
@@ -147,8 +154,16 @@ dup4 :: a -> (a, a, a, a)
 dup4 x = (x, x, x, x)
 
 
+dupFirst :: (a -> b) -> a -> (b, a)
+dupFirst f = first f . dup
+
+
 dupIdentity :: (Monoid a) => (a, a) -- In the sense that "mempty" is the identity of "mappend".
 dupIdentity = (mempty, mempty)
+
+
+dupSecond :: (a -> b) -> a -> (a, b)
+dupSecond f = second f . dup
 
 
 eitherRet :: (Monad m) => (a -> m b) -> Either a b -> m b
@@ -157,6 +172,15 @@ eitherRet = flip either return
 
 emptied :: (Monad m, Monoid b) => m a -> m b
 emptied m = m >> return mempty
+
+
+-- "(&&&)" is the "fanout" operator.
+fanUncurry :: (a -> b -> c) -> (a -> b -> c') -> (a, b) -> (c, c')
+f `fanUncurry` g = uncurry f &&& uncurry g
+
+
+fanView :: (MonadReader s (a b), Arrow a) => Getting c s c -> Getting c' s c' -> a b (c, c')
+a `fanView` b = view a &&& view b
 
 
 fmap2 :: (Functor f1, Functor f2) => (a -> b) -> f1 (f2 a) -> f1 (f2 b) -- Nice when used infix.

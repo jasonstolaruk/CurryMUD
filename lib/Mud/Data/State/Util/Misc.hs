@@ -74,8 +74,8 @@ import Mud.Util.Quoting
 import Mud.Util.Text
 import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 
-import Control.Arrow ((***), first)
-import Control.Lens (_1, _2, at, both, over, view, views)
+import Control.Arrow ((***), (&&&), first)
+import Control.Lens (_1, _2, at, both, view, views)
 import Control.Lens.Operators ((%~), (&), (.~), (^.))
 import Control.Monad ((>=>))
 import Control.Monad.IO.Class (liftIO)
@@ -127,8 +127,7 @@ findInvContaining i ms = let matches = views invTbl (IM.keys . IM.filter (i `ele
 
 
 findMobIds :: MudState -> Inv -> Inv
-findMobIds ms haystack = [ i | i <- haystack
-                             , uncurry (||) . ((PCType |&|) *** (NpcType |&|)) . over both (==) . dup . getType i $ ms ]
+findMobIds ms haystack = [ i | i <- haystack, uncurry (||) . ((PCType ==) &&& (NpcType ==)) . getType i $ ms ]
 
 
 -----
@@ -139,14 +138,14 @@ getAdminIds = getAdminIdsHelper (const True)
 
 
 getAdminIdsHelper :: (Pla -> Bool) -> MudState -> Inv
-getAdminIdsHelper f = IM.keys . IM.filter (uncurry (&&) . (isAdmin *** f) . dup) . view plaTbl
+getAdminIdsHelper f = views plaTbl (IM.keys . IM.filter (uncurry (&&) . (isAdmin &&& f)))
 
 
 -----
 
 
 getBothGramNos :: Id -> MudState -> BothGramNos
-getBothGramNos i = (view sing *** view plur) . dup . getEnt i
+getBothGramNos i = (sing `fanView` plur) . getEnt i
 
 
 getEffBothGramNos :: Id -> MudState -> Id -> BothGramNos

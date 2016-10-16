@@ -15,13 +15,13 @@ prop_countOcc needle hay = countOcc needle hay == matches
     matches = length . elemIndices needle $ hay
 
 
-prop_dropElem :: NonNegative Int -> [Int] -> Property
-prop_dropElem (NonNegative i) xs = i < length xs &&
+prop_dropElemAt :: NonNegative Int -> [Int] -> Property
+prop_dropElemAt (NonNegative i) xs = i < length xs &&
                                    countOcc x xs == 1 ==>
     length res == length xs - 1 && x `notElem` res
   where
     x   = xs !! i
-    res = dropElem i xs
+    res = dropElemAt i xs
 
 
 prop_mkCountList :: [Int] -> Bool

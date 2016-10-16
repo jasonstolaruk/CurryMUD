@@ -76,7 +76,7 @@ propTests_Mud_TheWorld_TheWorld = testGroup "Mud.TheWorld.TheWorld"
 
 propTests_Mud_Util_List :: TestTree
 propTests_Mud_Util_List = testGroup "Mud.Util.List"
-    [ QC.testProperty "prop_dropElem"    prop_dropElem
+    [ QC.testProperty "prop_dropElemAt"  prop_dropElemAt
     , QC.testProperty "prop_countOcc"    prop_countOcc
     , QC.testProperty "prop_mkCountList" prop_mkCountList ]
 

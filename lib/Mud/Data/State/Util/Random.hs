@@ -45,8 +45,8 @@ dropRndmElems :: V.Vector Int -> Count -> [a] -> [a]
 dropRndmElems v = helper
   where
     helper 0 xs = xs
-    helper i xs = helper (pred i) $ let a = rndmIntToRange (v V.! i) (0, length xs - 1)
-                                    in dropElem a xs
+    helper n xs = helper (pred n) $ let i = rndmIntToRange (v V.! n) (0, length xs - 1)
+                                    in dropElemAt i xs
 
 
 getGen :: MudStack GenIO

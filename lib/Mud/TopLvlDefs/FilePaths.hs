@@ -4,7 +4,7 @@ module Mud.TopLvlDefs.FilePaths where
 
 import System.Directory (getHomeDirectory)
 import System.FilePath ((<.>), (</>), pathSeparator)
-import System.IO.Unsafe (unsafePerformIO)
+import System.IO.Unsafe (unsafePerformIO) -- TODO: Stop this nonsense.
 
 
 drive :: Char

@@ -4,7 +4,7 @@ module Mud.Util.List ( allValues
                      , appendIfUnique
                      , countOcc
                      , countOccs
-                     , dropElem
+                     , dropElemAt
                      , dropEmpties
                      , headLast
                      , headTail
@@ -42,8 +42,8 @@ countOccs :: (Ord a) => [a] -> [(a, Int)]
 countOccs = map ((head *** length) . dup) . sortGroup
 
 
-dropElem :: Int -> [a] -> [a]
-dropElem i = uncurry (++) . second tail . splitAt i
+dropElemAt :: Int -> [a] -> [a]
+dropElemAt i = uncurry (++) . second tail . splitAt i
 
 
 dropEmpties :: (Eq a, Monoid a) => [a] -> [a]
