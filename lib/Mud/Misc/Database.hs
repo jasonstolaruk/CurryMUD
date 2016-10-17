@@ -58,7 +58,7 @@ import Control.Monad (forM_, when)
 import Crypto.BCrypt (fastBcryptHashingPolicy, hashPasswordUsingPolicy)
 import Data.Monoid ((<>))
 import Data.Text (Text)
-import Database.SQLite.Simple (FromRow, Only(..), Query(..), ToRow, execute, execute_, field, fromRow, query, query_, toRow, withConnection)
+import Database.SQLite.Simple (Connection, FromRow, Only(..), Query(..), ToRow, execute, execute_, field, fromRow, query, query_, toRow, withConnection)
 import Database.SQLite.Simple.FromRow (RowParser)
 import qualified Data.ByteString.Char8 as B
 import qualified Data.Text as T
@@ -275,27 +275,39 @@ instance ToRow UnPwRec where
 -----
 
 
+onDbFile :: (Connection -> IO a) -> IO a
+onDbFile f = flip withConnection f =<< mkMudFilePath dbFile
+
+
 createDbTbls :: IO ()
-createDbTbls = withConnection dbFile $ \conn -> do
+createDbTbls = onDbFile $ \conn -> do
     forM_ qs $ execute_ conn . Query
     [Only x] <- query_ conn . Query $ "select count(*) from unpw" :: IO [Only Int]
     when (x == 0) $ execute conn (Query "insert into unpw (id, un, pw) values (2, 'Curry', ?)") . Only =<< hashPW "curry"
     execute conn (Query "insert or ignore into unpw (id, un, pw) values (1, 'Root',  ?)") . Only =<< hashPW "root"
   where
     qs = [ "create table if not exists admin_chan (id integer primary key, timestamp text, name text, msg text)"
-         , "create table if not exists admin_msg  (id integer primary key, timestamp text, fromName text, toName text, msg text)"
-         , "create table if not exists alert_exec (id integer primary key, timestamp text, name text, cmd_name text, target text, args text)"
-         , "create table if not exists alert_msg  (id integer primary key, timestamp text, name text, cmd_name text, trigger text, msg text)"
-         , "create table if not exists ban_host   (id integer primary key, timestamp text, host text, is_banned integer, reason text)"
-         , "create table if not exists ban_pc     (id integer primary key, timestamp text, name text, is_banned integer, reason text)"
-         , "create table if not exists bonus      (id integer primary key, timestamp text, fromName text, ToName text, amt integer)"
+         , "create table if not exists admin_msg  (id integer primary key, timestamp text, fromName text, toName text, \
+           \msg text)"
+         , "create table if not exists alert_exec (id integer primary key, timestamp text, name text, cmd_name text, \
+           \target text, args text)"
+         , "create table if not exists alert_msg  (id integer primary key, timestamp text, name text, cmd_name text, \
+           \trigger text, msg text)"
+         , "create table if not exists ban_host   (id integer primary key, timestamp text, host text, is_banned \
+           \integer, reason text)"
+         , "create table if not exists ban_pc     (id integer primary key, timestamp text, name text, is_banned \
+           \integer, reason text)"
+         , "create table if not exists bonus      (id integer primary key, timestamp text, fromName text, ToName text, \
+           \amt integer)"
          , "create table if not exists bug        (id integer primary key, timestamp text, name text, loc text, desc text)"
-         , "create table if not exists chan       (id integer primary key, timestamp text, chan_id integer, chan_name text, name text, msg text)"
+         , "create table if not exists chan       (id integer primary key, timestamp text, chan_id integer, chan_name \
+           \text, name text, msg text)"
          , "create table if not exists discover   (id integer primary key, timestamp text, host text, msg text)"
          , "create table if not exists profanity  (id integer primary key, timestamp text, host text, prof text)"
          , "create table if not exists question   (id integer primary key, timestamp text, name text, msg text)"
          , "create table if not exists sec        (id integer primary key, name text, question text, answer text)"
-         , "create table if not exists tele       (id integer primary key, timestamp text, fromName text, toName text, msg text)"
+         , "create table if not exists tele       (id integer primary key, timestamp text, fromName text, toName text, \
+           \msg text)"
          , "create table if not exists ttype      (id integer primary key, timestamp text, host text, ttype text)"
          , "create table if not exists typo       (id integer primary key, timestamp text, name text, loc text, desc text)"
          , "create table if not exists unpw       (id integer primary key, un text, pw text)" ]
@@ -309,18 +321,14 @@ hashPW = maybe "" T.decodeUtf8 `fmap2` (hashPasswordUsingPolicy fastBcryptHashin
 
 
 getDbTblRecs :: (FromRow a) => Text -> IO [a]
-getDbTblRecs tblName = withConnection dbFile helper
-  where
-    helper conn = query_ conn . Query $ "select * from " <> tblName
+getDbTblRecs tblName = onDbFile (\conn -> query_ conn . Query $ "select * from " <> tblName)
 
 
 -----
 
 
 insertDbTblHelper :: (ToRow a) => Query -> a -> IO ()
-insertDbTblHelper q x = withConnection dbFile helper
-  where
-    helper conn = execute conn q x
+insertDbTblHelper q x = onDbFile $ \conn -> execute conn q x
 
 
 insertDbTblAdminChan :: AdminChanRec -> IO ()
@@ -332,11 +340,13 @@ insertDbTblAdminMsg = insertDbTblHelper "insert into admin_msg (timestamp, fromN
 
 
 insertDbTblAlertExec :: AlertExecRec -> IO ()
-insertDbTblAlertExec = insertDbTblHelper "insert into alert_exec (timestamp, name, cmd_name, target, args) values (?, ?, ?, ?, ?)"
+insertDbTblAlertExec = insertDbTblHelper "insert into alert_exec (timestamp, name, cmd_name, target, args) values \
+                                         \(?, ?, ?, ?, ?)"
 
 
 insertDbTblAlertMsg :: AlertMsgRec -> IO ()
-insertDbTblAlertMsg = insertDbTblHelper "insert into alert_msg (timestamp, name, cmd_name, trigger, msg) values (?, ?, ?, ?, ?)"
+insertDbTblAlertMsg = insertDbTblHelper "insert into alert_msg (timestamp, name, cmd_name, trigger, msg) values \
+                                        \(?, ?, ?, ?, ?)"
 
 
 insertDbTblBanHost :: BanHostRec -> IO ()
@@ -388,11 +398,9 @@ insertDbTblTypo = insertDbTblHelper "insert into typo (timestamp, name, loc, des
 
 
 insertDbTblUnPw :: UnPwRec -> IO ()
-insertDbTblUnPw rec@UnPwRec { .. } = hashPW (T.unpack dbPw) >>= withConnection dbFile . helper
-  where
-    helper pw conn = do
-        execute conn "delete from unpw where un=?" . Only $ dbUn
-        execute conn "insert into unpw (un, pw) values (?, ?)" rec { dbPw = pw }
+insertDbTblUnPw rec@UnPwRec { .. } = hashPW (T.unpack dbPw) >>= \pw -> onDbFile $ \conn -> do
+    execute conn "delete from unpw where un=?" . Only $ dbUn
+    execute conn "insert into unpw (un, pw) values (?, ?)" rec { dbPw = pw }
 
 
 -----
@@ -419,9 +427,7 @@ countDbTblRecsTele = countHelper "tele"
 
 
 countHelper :: Text -> IO [Only Int]
-countHelper tblName = withConnection dbFile helper
-  where
-    helper conn = query_ conn . Query $ "select count(*) from " <> tblName
+countHelper tblName = onDbFile $ \conn -> query_ conn . Query $ "select count(*) from " <> tblName
 
 
 -----
@@ -448,35 +454,32 @@ purgeDbTblTele = purgeHelper "tele"
 
 
 purgeHelper :: Text -> IO ()
-purgeHelper tblName = withConnection dbFile helper
+purgeHelper tblName = onDbFile $ \conn -> execute conn q x
   where
-    helper conn = execute conn q x
-    q           = Query . T.concat $ [ "delete from "
-                                     , tblName
-                                     , " where id in (select id from "
-                                     , tblName
-                                     , " limit ?)" ]
-    x           = Only noOfDbTblRecsToPurge
+    q = Query . T.concat $ [ "delete from "
+                           , tblName
+                           , " where id in (select id from "
+                           , tblName
+                           , " limit ?)" ]
+    x = Only noOfDbTblRecsToPurge
 
 
 -----
 
 
 lookupPW :: Sing -> IO (Maybe Text)
-lookupPW s = withConnection dbFile helper
+lookupPW s = onDbFile $ \conn -> f <$> query conn (Query "select pw from unpw where un = ?") (Only s)
   where
-    helper conn = f <$> query conn (Query "select pw from unpw where un = ?") (Only s)
     f :: [Only Text] -> Maybe Text
     f [] = Nothing
     f xs = Just . fromOnly . head $ xs
 
 
 lookupTeleNames :: Sing -> IO [Only Text]
-lookupTeleNames s = withConnection dbFile helper
+lookupTeleNames s = onDbFile $ \conn -> query conn (Query t) (dup4 s)
   where
-    helper conn = query conn (Query t) . dup4 $ s
-    t           = "select case\
-                  \  when fromName != ? then fromName\
-                  \  when toName != ? then toName\
-                  \  end as name \
-                  \from (select fromName, toName from tele where fromName = ? or toName = ?)"
+    t = "select case\
+        \  when fromName != ? then fromName\
+        \  when toName != ? then toName\
+        \  end as name \
+        \from (select fromName, toName from tele where fromName = ? or toName = ?)"
