@@ -120,6 +120,10 @@ rndmNamesFileFun = under miscDirFun "randomnames"
 uptimeFileFun    = under mudDirFun  "uptime"
 
 
+profanitiesFileFun :: FilePathFun
+profanitiesFileFun = under miscDirFun "profanities"
+
+
 -- ==================================================
 -- Dictionaries:
 
@@ -138,7 +142,3 @@ wordsFile = Just $ drive : "usr" </> "share" </> "dict" </> "words"
 -- not available on your system.
 propNamesFile :: Maybe FilePath
 propNamesFile = Just $ drive : "usr" </> "share" </> "dict" </> "propernames"
-
-
-profanitiesFileFun :: FilePathFun
-profanitiesFileFun = under miscDirFun "profanities"
