@@ -135,8 +135,7 @@ debugCmds =
     , mkDebugCmd "effect"      debugEffect      "Add 10-20 to your ST for 30 seconds."
     , mkDebugCmd "env"         debugEnv         "Display or search system environment variables."
     , mkDebugCmd "exp"         debugExp         "Award yourself 5,000 exp."
-    , mkDebugCmd "fun"         debugFun         "Dump the keys of the \"FunTbl\", \"HookFunTbl\", \"RmActionFunTbl\", \
-                                                \and \"EffectFunTbl\"." -- TODO: InstaEffectFunTbl, FeelingFunTbl?
+    , mkDebugCmd "fun"         debugFun         "Dump the keys of the function tables."
     , mkDebugCmd "handle"      debugHandle      "Display information about the handle for your network connection."
     , mkDebugCmd "id"          debugId          "Search the \"MudState\" tables for a given ID."
     , mkDebugCmd "kewpie"      debugKewpie      "Create a kewpie doll."
@@ -390,11 +389,12 @@ debugExp p = withoutArgs debugExp p
 debugFun :: ActionFun
 debugFun (NoArgs i mq cols) = getState >>= \ms -> do
     let helper t lens = t <> ":" : views lens (S.toAscList . M.keysSet) ms
-        tss           = [ helper "FunTbl"            funTbl
+        tss           = [ helper "EffectFunTbl"      effectFunTbl
+                        , helper "FeelingFunTbl"     feelingFunTbl
+                        , helper "FunTbl"            funTbl
                         , helper "HookFunTbl"        hookFunTbl
-                        , helper "RmActionFunTbl"    rmActionFunTbl
-                        , helper "EffectFunTbl"      effectFunTbl
-                        , helper "InstaEffectFunTbl" instaEffectFunTbl ]
+                        , helper "InstaEffectFunTbl" instaEffectFunTbl
+                        , helper "RmActionFunTbl"    rmActionFunTbl ]
     pager i mq Nothing . concatMap (wrapIndent 2 cols) . intercalateDivider cols $ tss
     logPlaExec (prefixDebugCmd "fun") i
 debugFun p = withoutArgs debugFun p

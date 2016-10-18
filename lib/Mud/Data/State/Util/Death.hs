@@ -28,7 +28,7 @@ import qualified Mud.Misc.Logging as L (logNotice, logPla)
 
 import Control.Arrow ((***), first, second)
 import Control.Lens (_1, _2, _3, at, view, views)
-import Control.Lens.Operators ((%~), (&), (.~))
+import Control.Lens.Operators ((%~), (&), (.~), (^.))
 import Control.Monad (forM_, when)
 import Control.Monad.IO.Class (liftIO)
 import Data.Bits (zeroBits)
@@ -70,7 +70,6 @@ Taro's player is returned to the login screen.
 About spirits:
 A player has a certain amount of time as a spirit, depending on level.
 A spirit can move freely about with no FP cost.
-A spirit may be granted the ability to give out a certain number of extra exp bonuses (using the "bonus" command), depending on level.
 A spirit retains a certain number of two-way links, depending on PS. A spirit may continue to communicate telepathically over its retained links, with no cost to PP.
 Those links with the greatest volume of messages are retained. If the deceased PC's top links are all asleep, the spirit gets to retain a bonus link with a PC who is presently awake.
 -}
@@ -166,10 +165,10 @@ spiritize i = getState >>= \ms -> let mySing = getSing i ms in if isPC i ms
         helper pcId | pcId == i               = linked .~ map (view _2) retaineds
                     | pcId `elem` retainerIds = id
                     | otherwise               = linked %~ (mySing `delete`)
-    setCurXps m = m & curHp .~ 1 -- TODO: Consider setting Xps to max val.
-                    & curMp .~ 1
-                    & curPp .~ 1
-                    & curFp .~ 1
+    setCurXps m = m & curHp .~ (m^.maxHp)
+                    & curMp .~ (m^.maxMp)
+                    & curPp .~ (m^.maxPp)
+                    & curFp .~ (m^.maxFp)
     mkBcasts ms mySing retaineds = let (toLinkRetainers, fs) = toLinkRetainersHelper
                                    in ([ toLinkLosers, toLinkRetainers ], fs)
       where
