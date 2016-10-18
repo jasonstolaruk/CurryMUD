@@ -169,7 +169,7 @@ handleShowHandle i h = getMsgQueueColumns i <$> getState >>= \pair ->
 cowbye :: Handle -> MudStack ()
 cowbye h = liftIO takeADump `catch` fileIOExHandler "cowbye"
   where
-    takeADump = T.hPutStrLn h =<< T.readFile cowbyeFile
+    takeADump = T.hPutStrLn h =<< T.readFile =<< mkMudFilePath cowbyeFileFun
 
 
 shutDown :: MudStack ()

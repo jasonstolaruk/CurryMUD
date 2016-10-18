@@ -250,7 +250,7 @@ getLoggedInAdminIds = getAdminIdsHelper isLoggedIn
 
 
 getLoggedInPlaIds :: MudState ->  Inv
-getLoggedInPlaIds = views plaTbl (IM.keys . IM.filter (uncurry (&&) . (isLoggedIn *** not . isAdmin) . dup))
+getLoggedInPlaIds = views plaTbl (IM.keys . IM.filter (uncurry (&&) . (isLoggedIn &&& not . isAdmin)))
 
 
 -----

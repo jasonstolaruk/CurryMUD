@@ -53,7 +53,7 @@ import Mud.Util.Misc hiding (blowUp)
 import Mud.Util.Operators
 import qualified Mud.Util.Misc as U (blowUp)
 
-import Control.Arrow ((***), second)
+import Control.Arrow ((&&&), second)
 import Control.Monad (guard)
 import Data.Char (isUpper, toLower, toUpper)
 import Data.Function (on)
@@ -219,7 +219,7 @@ frame cols | d <- nl . divider $ cols = nl . (<> d) . (d <>)
 
 
 headTail :: Text -> (Char, Text)
-headTail = (T.head *** T.tail) . dup
+headTail = T.head &&& T.tail
 
 
 -----

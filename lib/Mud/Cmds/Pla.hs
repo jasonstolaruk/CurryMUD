@@ -467,7 +467,7 @@ about (NoArgs i mq cols) = do
     helper |&| try >=> eitherRet ((sendGenericErrorMsg mq cols >>) . fileIOExHandler "about")
     logPlaExec "about" i
   where
-    helper = multiWrapSend mq cols =<< [ T.lines cont | cont <- liftIO . T.readFile $ aboutFile ]
+    helper = multiWrapSend mq cols =<< liftIO [ T.lines cont | file <- mkMudFilePath aboutFileFun, cont <- T.readFile file ]
 about p = withoutArgs about p
 
 
@@ -1679,7 +1679,7 @@ mkCmdNameForRmLink rl = T.toLower $ case rl of StdLink    { .. } -> linkDirToCmd
 
 
 help :: ActionFun
-help (NoArgs i mq cols) = (liftIO . T.readFile $ helpDir </> "root") |&| try >=> either handler helper
+help (NoArgs i mq cols) = liftIO (T.readFile =<< mkMudFilePath rootHeplFileFun) |&| try >=> either handler helper
   where
     handler e          = fileIOExHandler "help" e >> wrapSend mq cols helpRootErrorMsg
     helper rootHelpTxt = getState >>= \ms -> do
@@ -1712,35 +1712,39 @@ mkHelpTriple i ms = (isSpiritId i ms, isAdminId i ms, getKnownLangs i ms)
 
 
 mkHelpData :: [Lang] -> Bool -> Bool -> IO [Help]
-mkHelpData ls is ia = helpDirs |&| mapM getHelpDirectoryContents >=> \[ plaHelpCmdNames
-                                                                      , plaHelpTopicNames
-                                                                      , adminHelpCmdNames
-                                                                      , adminHelpTopicNames ] -> do
-    let phcs = [ Help { helpName     = T.pack phcn
-                      , helpFilePath = plaHelpCmdsDir     </> phcn
+mkHelpData ls is ia = do
+    let f dir = [ (dir', dropIrrelevantFiles . sort $ cont) | dir' <- mkMudFilePath dir
+                                                            , cont <- getDirectoryContents dir' ]
+    [  (plaHelpCmdsDir,     plaHelpCmdNames    )
+     , (plaHelpTopicsDir,   plaHelpTopicNames  )
+     , (adminHelpCmdsDir,   adminHelpCmdNames  )
+     , (adminHelpTopicsDir, adminHelpTopicNames) ] <- mapM f [ plaHelpCmdsDirFun
+                                                             , plaHelpTopicsDirFun
+                                                             , adminHelpCmdsDirFun
+                                                             , adminHelpTopicsDirFun ]
+    let phcs = [ Help { helpName     = T.pack x
+                      , helpFilePath = plaHelpCmdsDir </> x
                       , isCmdHelp    = True
-                      , isAdminHelp  = False } | phcn <- filterLangCmds plaHelpCmdNames ]
-        phts = [ Help { helpName     = T.pack phtn
-                      , helpFilePath = plaHelpTopicsDir   </> phtn
+                      , isAdminHelp  = False } | x <- filterLangCmds plaHelpCmdNames ]
+        phts = [ Help { helpName     = T.pack x
+                      , helpFilePath = plaHelpTopicsDir </> x
                       , isCmdHelp    = False
-                      , isAdminHelp  = False } | phtn <- plaHelpTopicNames ]
-        shcs = [ Help { helpName     = T.pack shcn
-                      , helpFilePath = plaHelpCmdsDir     </> shcn
+                      , isAdminHelp  = False } | x <- plaHelpTopicNames ]
+        shcs = [ Help { helpName     = T.pack x
+                      , helpFilePath = plaHelpCmdsDir </> x
                       , isCmdHelp    = True
-                      , isAdminHelp  = False } | shcn <- filterSpiritCmds plaHelpCmdNames ]
-        ahcs = [ Help { helpName     = T.pack $ adminCmdChar : whcn
-                      , helpFilePath = adminHelpCmdsDir   </> whcn
+                      , isAdminHelp  = False } | x <- filterSpiritCmds plaHelpCmdNames ]
+        ahcs = [ Help { helpName     = T.pack $ adminCmdChar : x
+                      , helpFilePath = adminHelpCmdsDir </> x
                       , isCmdHelp    = True
-                      , isAdminHelp  = True }  | whcn <- adminHelpCmdNames ]
-        ahts = [ Help { helpName     = T.pack whtn
-                      , helpFilePath = adminHelpTopicsDir </> whtn
+                      , isAdminHelp  = True } | x <- adminHelpCmdNames ]
+        ahts = [ Help { helpName     = T.pack x
+                      , helpFilePath = adminHelpTopicsDir </> x
                       , isCmdHelp    = False
-                      , isAdminHelp  = True }  | whtn <- adminHelpTopicNames ]
+                      , isAdminHelp  = True } | x <- adminHelpTopicNames ]
     return $ (is ? shcs :? phcs) ++ phts ++ (guard ia >> ahcs ++ ahts)
   where
-    helpDirs                     = [ plaHelpCmdsDir, plaHelpTopicsDir, adminHelpCmdsDir, adminHelpTopicsDir ]
-    getHelpDirectoryContents dir = dropIrrelevantFilenames . sort <$> getDirectoryContents dir
-    filterLangCmds               = filter helper
+    filterLangCmds = filter helper
       where
         helper (T.pack -> cn)
           | allRacialSays <- map mkCmdNameForLang langsNoCommon
@@ -2007,7 +2011,7 @@ link (LowerNub i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
           PCType ->
             let (srcIntros, targetIntros) = f getIntroduced
                 (srcLinks,  targetLinks ) = f getLinked
-                f g                       = ((i |&|) *** (targetId |&|)) (dup $ uncurry g . (, ms))
+                f g                       = ((i |&|) &&& (targetId |&|)) (uncurry g . (, ms))
                 s                         = getSing i ms
                 targetDesig               = serialize . mkStdDesig targetId ms $ Don'tCap
                 srcMsg    = nlnl . T.concat $ [ focusingInnateMsg
@@ -2225,10 +2229,9 @@ showMotd mq cols = send mq =<< helper
   where
     helper    = liftIO readMotd |&| try >=> eitherRet handler
     readMotd  = [ frame cols . multiWrap cols . T.lines . colorizeFileTxt motdColor $ cont
-                | cont <- T.readFile motdFile ]
-    handler e = do
-        fileIOExHandler "showMotd" e
-        return . wrapUnlinesNl cols $ motdErrorMsg
+                | file <- mkMudFilePath motdFileFun
+                , cont <- T.readFile file ]
+    handler e = fileIOExHandler "showMotd" e >> return (wrapUnlinesNl cols motdErrorMsg)
 
 
 -----
@@ -4223,11 +4226,11 @@ uptimeHelper up = helper <$> getSum `fmap2` getRecordUptime
 
 
 getRecordUptime :: MudStack (Maybe (Sum Int64))
-getRecordUptime = mIf (liftIO . doesFileExist $ uptimeFile)
-                      (liftIO readUptime `catch` (emptied . fileIOExHandler "getRecordUptime"))
-                      (return Nothing)
-  where
-    readUptime = Just . Sum . read <$> readFile uptimeFile
+getRecordUptime = liftIO (mkMudFilePath uptimeFileFun) >>= \file ->
+    let readUptime = Just . Sum . read <$> readFile file
+    in mIf (liftIO . doesFileExist $ file)
+           (liftIO readUptime `catch` (emptied . fileIOExHandler "getRecordUptime"))
+           (return Nothing)
 
 
 -----

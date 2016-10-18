@@ -22,49 +22,50 @@ under f fp hd = f hd </> fp
 -- Directories:
 
 
-mudDir :: FilePathFun
-mudDir = (</> "CurryMUD")
+mudDirFun :: FilePathFun
+mudDirFun = (</> "CurryMUD")
 
 
-dbDir, logDir, persistDir, resDir :: FilePathFun
-dbDir      = under mudDir "db"
-logDir     = under mudDir "logs"
-persistDir = under mudDir "persist"
-resDir     = under mudDir "res"
+dbDirFun, logDirFun, persistDirFun, resDirFun :: FilePathFun
+dbDirFun      = under mudDirFun "db"
+logDirFun     = under mudDirFun "logs"
+persistDirFun = under mudDirFun "persist"
+resDirFun     = under mudDirFun "res"
 
 
-helpDir, miscDir, raceDir, titleDir :: FilePathFun
-helpDir  = under resDir "help"
-miscDir  = under resDir "misc"
-raceDir  = under resDir "races"
-titleDir = under resDir "titles"
+helpDirFun, miscDirFun, raceDirFun, titleDirFun :: FilePathFun
+helpDirFun  = under resDirFun "help"
+miscDirFun  = under resDirFun "misc"
+raceDirFun  = under resDirFun "races"
+titleDirFun = under resDirFun "titles"
 
 
-adminHelpDir, plaHelpDir :: FilePathFun
-adminHelpDir = under helpDir "admin"
-plaHelpDir   = under helpDir "pla"
+adminHelpDirFun, plaHelpDirFun, rootHeplFileFun :: FilePathFun
+adminHelpDirFun = under helpDirFun "admin"
+plaHelpDirFun   = under helpDirFun "pla"
+rootHeplFileFun = under helpDirFun "root"
 
 
-plaHelpCmdsDir, plaHelpTopicsDir :: FilePathFun
-plaHelpCmdsDir   = under plaHelpDir "cmds"
-plaHelpTopicsDir = under plaHelpDir "topics"
+plaHelpCmdsDirFun, plaHelpTopicsDirFun :: FilePathFun
+plaHelpCmdsDirFun   = under plaHelpDirFun "cmds"
+plaHelpTopicsDirFun = under plaHelpDirFun "topics"
 
 
-adminHelpCmdsDir, adminHelpTopicsDir :: FilePathFun
-adminHelpCmdsDir   = under adminHelpDir "cmds"
-adminHelpTopicsDir = under adminHelpDir "topics"
+adminHelpCmdsDirFun, adminHelpTopicsDirFun :: FilePathFun
+adminHelpCmdsDirFun   = under adminHelpDirFun "cmds"
+adminHelpTopicsDirFun = under adminHelpDirFun "topics"
 
 
 -- ==================================================
 -- Log files:
 
 
-bugLogFile, errorLogFile, loggingExLogFile, noticeLogFile, typoLogFile :: FilePathFun
-bugLogFile       = under logDir $ "bug"                      <.> "log"
-errorLogFile     = under logDir $ "error"                    <.> "log"
-loggingExLogFile = under logDir $ "logging thread exception" <.> "log"
-noticeLogFile    = under logDir $ "notice"                   <.> "log"
-typoLogFile      = under logDir $ "typo"                     <.> "log"
+bugLogFileFun, errorLogFileFun, loggingExLogFileFun, noticeLogFileFun, typoLogFileFun :: FilePathFun
+bugLogFileFun       = under logDirFun $ "bug"                      <.> "log"
+errorLogFileFun     = under logDirFun $ "error"                    <.> "log"
+loggingExLogFileFun = under logDirFun $ "logging thread exception" <.> "log"
+noticeLogFileFun    = under logDirFun $ "notice"                   <.> "log"
+typoLogFileFun      = under logDirFun $ "typo"                     <.> "log"
 
 
 -- ==================================================
@@ -102,29 +103,30 @@ writableTblFile      = "writableTbl"      <.> "json"
 -- The database file:
 
 
-dbFile :: FilePathFun
-dbFile = under dbDir $ "CurryMud" <.> "sqlite3"
+dbFileFun :: FilePathFun
+dbFileFun = under dbDirFun $ "CurryMud" <.> "sqlite3"
 
 
 -- ==================================================
 -- Misc. files:
 
 
-aboutFile, cowbyeFile, descRulesFile, motdFile, rndmNamesFile, uptimeFile :: FilePathFun
-aboutFile     = under miscDir "about"
-cowbyeFile    = under miscDir "cowbye"
-descRulesFile = under miscDir "descRules"
-motdFile      = under miscDir "motd"
-rndmNamesFile = under miscDir "randomnames"
-uptimeFile    = under mudDir  "uptime"
+aboutFileFun, cowbyeFileFun, descRulesFileFun, motdFileFun, rndmNamesFileFun, uptimeFileFun :: FilePathFun
+aboutFileFun     = under miscDirFun "about"
+cowbyeFileFun    = under miscDirFun "cowbye"
+descRulesFileFun = under miscDirFun "descRules"
+motdFileFun      = under miscDirFun "motd"
+rndmNamesFileFun = under miscDirFun "randomnames"
+uptimeFileFun    = under mudDirFun  "uptime"
 
 
 -- ==================================================
 -- Dictionaries:
 
 
-propNamesFile :: HomeDir -> Maybe FilePath
-propNamesFile = Just . under miscDir "propernames"
+-- TODO: Add a note to the README.
+propNamesFileFun :: Maybe FilePathFun
+propNamesFileFun = Just $ under miscDirFun "propernames"
 
 
 wordsFile :: Maybe FilePath
@@ -133,5 +135,5 @@ wordsFile = Just $ drive : "usr" </> "share" </> "dict" </> "words"
     drive = pathSeparator
 
 
-profanitiesFile :: FilePathFun
-profanitiesFile = under miscDir "profanities"
+profanitiesFileFun :: FilePathFun
+profanitiesFileFun = under miscDirFun "profanities"

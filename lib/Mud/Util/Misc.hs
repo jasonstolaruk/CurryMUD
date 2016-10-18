@@ -10,7 +10,7 @@ module Mud.Util.Misc ( atLst1
                      , divide
                      , divideRound
                      , dropFst
-                     , dropIrrelevantFilenames
+                     , dropIrrelevantFiles
                      , dropThr
                      , dup
                      , dup3
@@ -134,8 +134,8 @@ dropFst :: (a, b, c) -> (b, c)
 dropFst (_, x, y) = (x, y)
 
 
-dropIrrelevantFilenames :: [FilePath] -> [FilePath]
-dropIrrelevantFilenames = foldr ((.) . delete) id [ ".", "..", ".DS_Store" ]
+dropIrrelevantFiles :: [FilePath] -> [FilePath]
+dropIrrelevantFiles = foldr ((.) . delete) id [ ".", "..", ".DS_Store" ]
 
 
 dropThr :: (a, b, c) -> (a, b)
@@ -204,18 +204,6 @@ fromLeft x        = blowUp "Mud.Util.Misc" "fromLeft" "Right" . T.pack . show $ 
 fromRight :: (Show a, Show b) => Either a b -> b
 fromRight (Right x) = x
 fromRight x         = blowUp "Mud.Util.Misc" "fromRight" "Left" . T.pack . show $ x
-
-
-onFalse :: Bool -> (a -> a) -> a -> a
-onFalse = onHelper id
-
-
-onHelper :: (Bool -> Bool) -> Bool -> (a -> a) -> a -> a
-onHelper g b f = g b ? id :? f
-
-
-onTrue :: Bool -> (a -> a) -> a -> a
-onTrue = onHelper not
 
 
 ifThenElse :: Bool -> a -> a -> a
@@ -296,6 +284,18 @@ mkDateTimeTxt = helper <$> (T.words . T.pack . show) `fmap` getZonedTime
 
 mkTimestamp :: IO Text
 mkTimestamp = [ bracketQuote . uncurry (|<>|) $ pair | pair <- mkDateTimeTxt ]
+
+
+onFalse :: Bool -> (a -> a) -> a -> a
+onFalse = onHelper id
+
+
+onHelper :: (Bool -> Bool) -> Bool -> (a -> a) -> a -> a
+onHelper g b f = g b ? id :? f
+
+
+onTrue :: Bool -> (a -> a) -> a -> a
+onTrue = onHelper not
 
 
 onLeft :: (Show a, Show b) => (a -> c) -> Either a b -> Either c b

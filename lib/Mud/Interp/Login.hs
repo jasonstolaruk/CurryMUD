@@ -149,7 +149,8 @@ zBackDoor times s params@ActionParams { .. } = setSingIfNotTaken times s params 
 
 
 checkProfanitiesDict :: Id -> MsgQueue -> Cols -> CmdName -> MudStack Any
-checkProfanitiesDict i mq cols cn = checkNameHelper (Just profanitiesFile) "checkProfanitiesDict" sorry cn
+checkProfanitiesDict i mq cols cn =
+    checkNameHelper "checkProfanitiesDict" sorry cn =<< liftIO (mkMudFilePath profanitiesFileFun)
   where
     sorry = getState >>= \ms -> do
         wrapSend mq cols . colorWith bootMsgColor $ sorryInterpNameProfanityLogged
@@ -163,9 +164,8 @@ checkProfanitiesDict i mq cols cn = checkNameHelper (Just profanitiesFile) "chec
         bcastAdmins (capitalize msg) >> logNotice "checkProfanitiesDict sorry" msg
 
 
-checkNameHelper :: Maybe FilePath -> Text -> Fun -> CmdName -> MudStack Any
-checkNameHelper Nothing     _       _     _  = return mempty
-checkNameHelper (Just file) funName sorry cn = (liftIO . T.readFile $ file) |&| try >=> either
+checkNameHelper :: Text -> Fun -> CmdName -> FilePath -> MudStack Any
+checkNameHelper funName sorry cn file = liftIO (T.readFile file) |&| try >=> either
     (emptied . fileIOExHandler funName)
     (checkSet cn sorry . S.fromList . T.lines . T.toLower)
 
@@ -185,16 +185,21 @@ checkIllegalNames ms mq cols cn =
 
 
 checkPropNamesDict :: MsgQueue -> Cols -> CmdName -> MudStack Any
-checkPropNamesDict mq cols =
-    checkNameHelper propNamesFile "checkPropNamesDict" . promptRetryName mq cols $ sorryInterpNamePropName
+checkPropNamesDict mq cols cn = maybe (return mempty) helper propNamesFileFun
+  where
+    helper f = let g = promptRetryName mq cols sorryInterpNamePropName
+               in checkNameHelper "checkPropNamesDict" g cn =<< liftIO (mkMudFilePath f)
 
 
 checkWordsDict :: MsgQueue -> Cols -> CmdName -> MudStack Any
-checkWordsDict mq cols = checkNameHelper wordsFile "checkWordsDict" . promptRetryName mq cols $ sorryInterpNameDict
+checkWordsDict mq cols cn = maybe (return mempty) helper wordsFile
+  where
+    helper = checkNameHelper "checkWordsDict" (promptRetryName mq cols sorryInterpNameDict) cn
 
 
 checkRndmNames :: MsgQueue -> Cols -> CmdName -> MudStack Any
-checkRndmNames mq cols = checkNameHelper (Just rndmNamesFile) "checkRndmNames" . promptRetryName mq cols $ sorryInterpNameTaken
+checkRndmNames mq cols cn =
+    checkNameHelper "checkRndmNames" (promptRetryName mq cols sorryInterpNameTaken) cn =<< liftIO (mkMudFilePath rndmNamesFileFun)
 
 
 -- ==================================================
@@ -394,7 +399,8 @@ interpRace ncb@(NewCharBundle _ s _) (T.toLower -> cn) (NoArgs i mq cols) = case
         send mq . nl . T.unlines . parseWrapXform cols . mkPickPtsIntroTxt $ s
         promptPickPts i mq
         setInterp i . Just . interpPickPts $ ncb
-    readRaceHelp raceName = (liftIO . T.readFile $ raceDir </> T.unpack raceName) |&| try >=> eitherRet handler
+    readRaceHelp raceName = let f = (</> T.unpack raceName) <$> mkMudFilePath raceDirFun
+                            in liftIO (T.readFile =<< f) |&| try >=> eitherRet handler
       where
         handler e = do
             fileIOExHandler "interpRace readRaceHelp" e

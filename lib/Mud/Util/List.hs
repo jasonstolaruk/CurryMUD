@@ -14,10 +14,9 @@ module Mud.Util.List ( allValues
                      , select
                      , sortGroup ) where
 
-import Mud.Util.Misc
 import Mud.Util.Operators
 
-import Control.Arrow ((***), second)
+import Control.Arrow ((&&&), second)
 import Control.Lens (Lens', each, partsOf, view)
 import Control.Lens.Each (Each)
 import Control.Lens.Operators ((&), (.~))
@@ -39,7 +38,7 @@ countOcc needle = foldl' (\acc x -> x == needle ? succ acc :? acc) 0
 
 
 countOccs :: (Ord a) => [a] -> [(a, Int)]
-countOccs = map ((head *** length) . dup) . sortGroup
+countOccs = map (head &&& length) . sortGroup
 
 
 dropElemAt :: Int -> [a] -> [a]

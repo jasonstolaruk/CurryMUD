@@ -104,7 +104,7 @@ initMudData shouldLog = do
 
 
 initWorld :: MudStack Bool
-initWorld = dropIrrelevantFilenames . sort <$> (liftIO . getDirectoryContents $ persistDir) >>= \cont -> do
+initWorld = dropIrrelevantFiles . sort <$> liftIO (getDirectoryContents =<< mkMudFilePath persistDirFun) >>= \cont -> do
     sequence_ [ initFunTbl
               , initEffectFunTbl
               , initInstaEffectFunTbl
@@ -113,7 +113,7 @@ initWorld = dropIrrelevantFilenames . sort <$> (liftIO . getDirectoryContents $ 
               , initRmActionFunTbl
               , initDistinctFoodTbl
               , initDistinctLiqTbl ]
-    ()# cont ? (createWorld >> return True) :? (loadWorld . last $ cont)
+    ()# cont ? (createWorld >> return True) :? loadWorld (last cont)
 
 
 initFunTbl :: MudStack ()
@@ -168,7 +168,7 @@ createWorld = do
 
 
 loadWorld :: FilePath -> MudStack Bool
-loadWorld dir@((persistDir </>) -> path) = do
+loadWorld dir = (</> dir) <$> liftIO (mkMudFilePath persistDirFun) >>= \path -> do
     logNotice "loadWorld" $ "loading the world from the " <> showText dir <> " directory."
     loadEqTblRes <- loadEqTbl path
     ((loadEqTblRes :) -> res) <- mapM (path |&|) [ loadTbl armTblFile           armTbl

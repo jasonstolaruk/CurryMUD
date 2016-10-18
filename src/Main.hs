@@ -20,7 +20,7 @@ import Mud.Util.Operators
 import Mud.Util.Quoting
 import Mud.Util.Text
 
-import Control.Monad (void, when)
+import Control.Monad ((<=<), forM_, void, when)
 import Control.Monad.Reader (runReaderT)
 import Data.Monoid ((<>))
 import qualified Data.Text as T
@@ -31,24 +31,22 @@ import System.Remote.Monitoring (forkServer)
 
 
 main :: IO ()
-main = mIf (not <$> doesDirectoryExist mudDir) stop go
-  where
-    stop = T.putStrLn $ "The " <> showText mudDir <> " directory does not exist; aborting."
-    go   = do
-        when (isDebug && isEKGing) startEKG
-        setCurrentDirectory mudDir
-        mapM_ (createDirectoryIfMissing False) [ dbDir, logDir, persistDir ]
-        welcome
-        runReaderT threadListen =<< initMudData DoLog
-    startEKG = do -- "curry +RTS -T" to enable GC statistics collection in the run-time system.
-        void . forkServer "localhost" $ 8000
-        T.putStrLn . prd $ "EKG server started " <> parensQuote "http://localhost:8000"
+main = mkMudFilePath mudDirFun >>= \dir ->
+    let stop = T.putStrLn $ "The " <> dblQuote (T.pack dir) <> " directory does not exist; aborting."
+        go   = do
+            when (isDebug && isEKGing) startEKG
+            setCurrentDirectory dir
+            forM_ [ dbDirFun, logDirFun, persistDirFun ] $ createDirectoryIfMissing False <=< mkMudFilePath
+            welcome
+            runReaderT threadListen =<< initMudData DoLog
+        startEKG = do -- "curry +RTS -T" to enable GC statistics collection in the run-time system.
+            void . forkServer "localhost" $ 8000
+            T.putStrLn . prd $ "EKG server started " <> parensQuote "http://localhost:8000"
+    in mIf (not <$> doesDirectoryExist dir) stop go
 
 
 welcome :: IO ()
-welcome = do
-    un <- getEnv "USER"
-    mn <- what'sMyName
+welcome = (,) <$> getEnv "USER" <*> what'sMyName >>= \(un, mn) ->
     T.putStrLn . T.concat $ [ "Hello, ", T.pack un, "! Welcome to ", dblQuote mn, " ver ", ver, "." ]
   where
     what'sMyName = getProgName >>= \n -> return (n == "<interactive>" ? "Y U NO COMPILE ME?" :? T.pack n)

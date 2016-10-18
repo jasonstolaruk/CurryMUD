@@ -276,7 +276,7 @@ instance ToRow UnPwRec where
 
 
 onDbFile :: (Connection -> IO a) -> IO a
-onDbFile f = flip withConnection f =<< mkMudFilePath dbFile
+onDbFile f = flip withConnection f =<< mkMudFilePath dbFileFun
 
 
 createDbTbls :: IO ()

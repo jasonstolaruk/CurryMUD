@@ -75,7 +75,8 @@ saveUptime :: Int64 -> MudStack ()
 saveUptime up@(T.pack . renderSecs . fromIntegral -> upTxt) =
     maybe (saveIt >> logIt) checkRecord =<< getSum `fmap2` getRecordUptime
   where
-    saveIt            = (liftIO . writeFile uptimeFile . show $ up) `catch` logIOEx "saveUptime saveIt"
+    saveIt            = liftIO saveHelper `catch` logIOEx "saveUptime saveIt"
+    saveHelper        = flip writeFile (show up) =<< mkMudFilePath uptimeFileFun
     logIt             = logHelper "."
     checkRecord recUp = case up `compare` recUp of GT -> saveIt >> logRec
                                                    _  -> logIt

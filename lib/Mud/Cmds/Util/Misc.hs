@@ -531,7 +531,7 @@ isMoving = isActing Moving
 
 
 isAwake :: Id -> MudState -> Bool
-isAwake = onPla (uncurry (&&) . (isLoggedIn *** not . isIncognito) . dup) True
+isAwake = onPla (uncurry (&&) . (isLoggedIn &&& not . isIncognito)) True
 
 
 -----
@@ -871,7 +871,8 @@ updateRndmName i targetId = do
                     in maybe notFound found . M.lookup targetSing $ rnt
     modifyState helper
   where
-    readRndmNames = liftIO (T.readFile rndmNamesFile) |&| try >=> eitherRet (emptied . fileIOExHandler "updateRndmName")
+    readRndmNames = let f = emptied . fileIOExHandler "updateRndmName"
+                    in liftIO (T.readFile =<< mkMudFilePath rndmNamesFileFun) |&| try >=> eitherRet f
     mkUniqueName rndmName existing
       | rndmName `notElem` existing = rndmName
       | otherwise = case sortBy (flip compare) . filter (rndmName `T.isPrefixOf`) $ existing of

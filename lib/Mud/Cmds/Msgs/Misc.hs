@@ -102,7 +102,7 @@ genericErrorMsg = "Unfortunately, an error occured while executing your command.
 
 
 helloRulesMsg :: Text
-helloRulesMsg = "*** By logging in you are expressing a commitment to follow the rules. ***"
+helloRulesMsg = asteriskQuote "By logging in you are expressing a commitment to follow the rules."
 
 
 helpRootErrorMsg :: Text

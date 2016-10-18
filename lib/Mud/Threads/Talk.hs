@@ -184,4 +184,4 @@ dumpTitle :: MsgQueue -> MudStack ()
 dumpTitle mq = liftIO mkFilename >>= try . takeADump >>= eitherRet (fileIOExHandler "dumpTitle")
   where
     mkFilename   = ("title" ++) . show <$> randomRIO (1, noOfTitles)
-    takeADump fn = send mq . nlPrefix . nl =<< (liftIO . T.readFile $ titleDir </> fn)
+    takeADump fn = send mq . nlPrefix . nl =<< liftIO (T.readFile =<< (</> fn) <$> mkMudFilePath titleDirFun)

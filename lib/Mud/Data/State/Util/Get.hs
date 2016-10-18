@@ -11,7 +11,7 @@ import Mud.Data.State.MudData
 import Mud.Util.List
 import Mud.Util.Misc
 
-import Control.Arrow ((***))
+import Control.Arrow ((***), (&&&))
 import Control.Concurrent (ThreadId)
 import Control.Lens (at, to, view, views)
 import Control.Lens.Operators ((^.))
@@ -721,7 +721,7 @@ getSex i = view sex . getMob i
 
 
 getSexRace :: Id -> MudState -> (Sex, Race)
-getSexRace i = (getSex i *** getRace i) . dup
+getSexRace i = getSex i &&& getRace i
 
 
 -----

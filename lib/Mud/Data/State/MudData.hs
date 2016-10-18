@@ -7,13 +7,14 @@ import Mud.Data.State.MsgQueue
 import Mud.TopLvlDefs.Misc
 
 import Control.Applicative (empty)
-import Control.Arrow ((***), first)
+import Control.Arrow (first)
 import Control.Concurrent (ThreadId)
 import Control.Concurrent.Async (Async)
 import Control.Concurrent.STM.TMQueue (TMQueue)
 import Control.Concurrent.STM.TMVar (TMVar)
 import Control.Concurrent.STM.TQueue (TQueue)
-import Control.Lens (makeLenses)
+import Control.Lens (both, makeLenses)
+import Control.Lens.Operators ((%~), (&))
 import Control.Monad.Reader (ReaderT)
 import Data.Aeson ((.:), (.=), FromJSON(..), ToJSON(..), Value(..), genericParseJSON, genericToJSON, object)
 import Data.Aeson.Types (Options, Parser, defaultOptions, fieldLabelModifier)
@@ -793,8 +794,8 @@ data Race = Dwarf
 
 
 instance Random Race where
-  randomR (fromEnum *** fromEnum -> intPair) = first toEnum . randomR intPair
-  random                                     = randomR (minBound, maxBound)
+  randomR pair = first toEnum . randomR (pair & both %~ fromEnum)
+  random       = randomR (minBound, maxBound)
 
 
 type SkillPts = Int

@@ -283,7 +283,8 @@ debugColor (NoArgs' i mq) = sequence_ [ send mq . nl . T.concat $ msg, logPlaExe
   where
     msg :: [] Text
     msg = [ nl $ pad 15 (showText ansi) <> mkColorDesc fg bg <> colorWith ansi (spaced "CurryMUD")
-          | fgi <- intensities, fgc <- colors, bgi <- intensities, bgc <- colors
+          | fgi <- intensities, fgc <- colors
+          , bgi <- intensities, bgc <- colors
           , let fg = (fgi, fgc), let bg = (bgi, bgc), let ansi = mkColorANSI fg bg ]
     mkColorDesc (mkColorName -> fg) (mkColorName -> bg) = fg <> "on " <> bg
     mkColorName = uncurry (<>) . (pad 6 . showText *** padColorName . showText)

@@ -52,7 +52,7 @@ import Control.Exception (IOException)
 import Control.Exception.Lifted (catch, try)
 import Control.Lens (_1, _2, _3, _4, _5, at, both, each, to, view, views)
 import Control.Lens.Operators ((%~), (&), (.~), (<>~), (?~), (^.))
-import Control.Monad ((>=>), forM, forM_, unless, when)
+import Control.Monad ((<=<), (>=>), forM, forM_, unless, when)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (asks)
 import Crypto.BCrypt (validatePassword)
@@ -552,8 +552,11 @@ mkCountTxt = map (uncurry mappend . second commaShow) <$> helper
                , ("Hook functions: ",                  ms^.hookFunTbl       .to M.size)
                , ("Room action functions: ",           ms^.rmActionFunTbl   .to M.size)
                , ("Active threads: ",                  noOfThreads                    ) ]
-    countHelps     = liftIO . mapM countFiles $ [ plaHelpCmdsDir, plaHelpTopicsDir, adminHelpCmdsDir, adminHelpTopicsDir ]
-    countFiles dir = (length . dropIrrelevantFilenames <$> getDirectoryContents dir) `catch` handler
+    countHelps     = liftIO . mapM (countFiles <=< mkMudFilePath) $ [ plaHelpCmdsDirFun
+                                                                    , plaHelpTopicsDirFun
+                                                                    , adminHelpCmdsDirFun
+                                                                    , adminHelpTopicsDirFun ]
+    countFiles dir = (length . dropIrrelevantFiles <$> getDirectoryContents dir) `catch` handler
       where
         handler :: IOException -> IO Int
         handler = const . return $ 0
@@ -2119,7 +2122,7 @@ adminWire (WithArgs i mq cols as) = views chanTbl IM.size <$> getState >>= \case
               else toggle ms ci s & _2 %~ Right
             sorry = (ms, ) . Left
         in (ms', msgs ++ pure msg)
-    toggle ms ci s = let (cn, ss) = ms^.chanTbl.ind ci.to ((view chanName *** view chanWiretappers) . dup)
+    toggle ms ci s = let (cn, ss) = ms^.chanTbl.ind ci.to (chanName `fanView` chanWiretappers)
                      in if s `elem` ss
                        then ( ms & chanTbl.ind ci.chanWiretappers .~ s `delete` ss
                             , "You stop tapping the "  <> dblQuote cn <> " channel." )

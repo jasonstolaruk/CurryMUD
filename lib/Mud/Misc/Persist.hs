@@ -58,10 +58,11 @@ persist = do
 
 persistHelper :: Lock -> MudState -> IO ()
 persistHelper l ms = withLock l $ do
-    path <- getNonExistingPath =<< (persistDir </>) . T.unpack . T.replace ":" "-" <$> mkTimestamp
+    dir  <- mkMudFilePath persistDirFun
+    path <- getNonExistingPath =<< (dir </>) . T.unpack . T.replace ":" "-" <$> mkTimestamp
     createDirectory path
-    cont <- dropIrrelevantFilenames . sort <$> getDirectoryContents persistDir
-    when (length cont > noOfPersistedWorlds) . removeDirectoryRecursive . (persistDir </>) . head $ cont
+    cont <- dropIrrelevantFiles . sort <$> getDirectoryContents dir
+    when (length cont > noOfPersistedWorlds) . removeDirectoryRecursive . (dir </>) . head $ cont
     flip withAsync wait $ mapM_ runResourceT [ write (ms^.armTbl          ) $ path </> armTblFile
                                              , write (ms^.chanTbl         ) $ path </> chanTblFile
                                              , write (ms^.clothTbl        ) $ path </> clothTblFile

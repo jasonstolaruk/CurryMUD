@@ -39,8 +39,8 @@ import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
 import Control.Exception (ArithException(..), AsyncException(..), IOException, SomeException, fromException)
 import Control.Exception.Lifted (catch, handle, throwIO)
-import Control.Lens (both, over, view, views)
-import Control.Lens.Operators ((.~))
+import Control.Lens (both, view, views)
+import Control.Lens.Operators ((%~), (&), (.~))
 import Control.Monad ((>=>), forM_, forever, guard, when)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (asks)
@@ -81,10 +81,13 @@ initLogging :: ShouldLog -> Maybe Lock -> IO (Maybe LogService, Maybe LogService
 initLogging Don'tLog _                = return (Nothing, Nothing)
 initLogging DoLog    (Just logExLock) = do
     updateGlobalLogger rootLoggerName removeHandler
-    (eq, nq) <- (,) <$> newTQueueIO <*> newTQueueIO
-    (ea, na) <- (,) <$> spawnLogger errorLogFile  ERROR  "currymud.error"  errorM  eq logExLock
-                    <*> spawnLogger noticeLogFile NOTICE "currymud.notice" noticeM nq logExLock
-    return (Just (ea, eq), Just (na, nq))
+    (errorFile, noticeFile) <- (,) <$> mkMudFilePath errorLogFileFun
+                                   <*> mkMudFilePath noticeLogFileFun
+    (eq,  nq) <- (,) <$> newTQueueIO
+                     <*> newTQueueIO
+    (ea,  na) <- (,) <$> spawnLogger errorFile  ERROR  "currymud.error"  errorM  eq logExLock
+                     <*> spawnLogger noticeFile NOTICE "currymud.notice" noticeM nq logExLock
+    return ((,) (ea, eq) (na, nq) & both %~ Just)
 initLogging DoLog Nothing = blowUp "initLogging" "missing lock" ""
 
 
@@ -115,9 +118,10 @@ spawnLogger fn p (T.unpack -> ln) f q logExLock =
             atomically . writeTQueue q . LogMsg $ "Mud.Logging spawnLogger rotateLog rotateIt: log rotated."
             close gh
             renameFile fn . replaceExtension fn . concat $ [ date, "_", time, ".log" ]
-            cont <- dropIrrelevantFilenames . sort <$> getDirectoryContents logDir
+            dir  <- mkMudFilePath logDirFun
+            cont <- dropIrrelevantFiles . sort <$> getDirectoryContents dir
             let matches = filter ((== takeBaseName fn) . takeWhile (/= '.')) cont
-            when (length matches >= noOfLogFiles) . removeFile . (logDir </>) . head $ matches
+            when (length matches >= noOfLogFiles) . removeFile . (dir </>) . head $ matches
             loop =<< initLog
 
 
@@ -129,7 +133,9 @@ loggingThreadExHandler logExLock n e = guard (fromException e /= Just ThreadKill
                        , parensQuote $ "inside " <> dblQuote n
                        , ". "
                        , dblQuote . showText $ e ]
-    in handle (handler msg) . withLock logExLock . T.appendFile loggingExLogFile . nl $ msg
+    in do
+      file <- mkMudFilePath loggingExLogFileFun
+      handle (handler msg) . withLock logExLock . T.appendFile file . nl $ msg
   where
     handler msg ex | isAlreadyInUseError ex = showIt
                    | isPermissionError   ex = showIt
@@ -144,9 +150,10 @@ logRotationFlagger q = forever $ threadDelay (logRotationDelay * 10 ^ 6) >> atom
 
 initPlaLog :: Id -> Sing -> MudStack ()
 initPlaLog i n@(T.unpack -> n') = do
+    dir       <- liftIO . mkMudFilePath $ logDirFun
     logExLock <- onEnv $ views (locks.loggingExLock) return
     q         <- liftIO newTQueueIO
-    a         <- liftIO . spawnLogger (logDir </> n' <.> "log") INFO ("currymud." <> n) infoM q $ logExLock
+    a         <- liftIO . spawnLogger (dir </> n' <.> "log") INFO ("currymud." <> n) infoM q $ logExLock
     tweak $ plaLogTbl.ind i .~ (a, q)
 
 
@@ -179,7 +186,7 @@ closeLogs = asks mkBindings >>= \((ea, eq), (na, nq)) -> do
         mapM_ wait $ ea : na : as
         removeAllHandlers
   where
-    mkBindings = over both fromJust . (view errorLog *** view noticeLog) . dup
+    mkBindings = (fromJust *** fromJust) . (errorLog `fanView` noticeLog)
 
 
 -- ==================================================
