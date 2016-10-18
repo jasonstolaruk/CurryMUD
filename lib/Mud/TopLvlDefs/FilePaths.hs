@@ -124,15 +124,20 @@ uptimeFileFun    = under mudDirFun  "uptime"
 -- Dictionaries:
 
 
--- TODO: Add a note to the README.
-propNamesFileFun :: Maybe FilePathFun
-propNamesFileFun = Just $ under miscDirFun "propernames"
+drive :: Char
+drive = pathSeparator
 
 
+-- "words" - a standard file on all Unix and Unix-like operating systems - is simply a newline-delimited list of
+-- dictionary words. Change the path if necessary, or set to "Nothing" if the words file is unavailable.
 wordsFile :: Maybe FilePath
 wordsFile = Just $ drive : "usr" </> "share" </> "dict" </> "words"
-  where
-    drive = pathSeparator
+
+
+-- In addition to the words file, Mac OS X ships with a dictionary of proper names. Set to "Nothing" if this file is
+-- not available on your system.
+propNamesFile :: Maybe FilePath
+propNamesFile = Just $ drive : "usr" </> "share" </> "dict" </> "propernames"
 
 
 profanitiesFileFun :: FilePathFun

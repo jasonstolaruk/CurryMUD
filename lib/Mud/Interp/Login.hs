@@ -185,10 +185,9 @@ checkIllegalNames ms mq cols cn =
 
 
 checkPropNamesDict :: MsgQueue -> Cols -> CmdName -> MudStack Any
-checkPropNamesDict mq cols cn = maybe (return mempty) helper propNamesFileFun
+checkPropNamesDict mq cols cn = maybe (return mempty) helper propNamesFile
   where
-    helper f = let g = promptRetryName mq cols sorryInterpNamePropName
-               in checkNameHelper "checkPropNamesDict" g cn =<< liftIO (mkMudFilePath f)
+    helper = checkNameHelper "checkPropNamesDict" (promptRetryName mq cols sorryInterpNamePropName) cn
 
 
 checkWordsDict :: MsgQueue -> Cols -> CmdName -> MudStack Any

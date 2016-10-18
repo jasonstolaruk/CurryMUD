@@ -994,7 +994,7 @@ sorryIndent = "The indent amount must be less than the line length."
 
 
 sorryInterpNameDict :: Text
-sorryInterpNameDict = "Your name cannot be an English word. Please choose an original fantasy name."
+sorryInterpNameDict = "Your name cannot be an English word or proper name. Please choose an original fantasy name."
 
 
 sorryInterpNameExcessArgs :: Text
