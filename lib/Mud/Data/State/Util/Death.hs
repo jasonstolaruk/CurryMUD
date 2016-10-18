@@ -133,6 +133,7 @@ mkCorpse i ms = let et     = EntTemplate (Just "corpse")
                                                                                  in bgns & _2 .~ mkPlurFromBoth bgns
 
 
+-- TODO: Messaging about detaching from body.
 spiritize :: Id -> MudStack ()
 spiritize i = getState >>= \ms -> let mySing = getSing i ms in if isPC i ms
   then (withDbExHandler "spiritize" . liftIO . lookupTeleNames $ mySing) >>= \case
