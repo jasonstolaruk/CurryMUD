@@ -1452,7 +1452,7 @@ helperFillEitherInv i srcDesig targetId (eis:eiss) a@(ms, _, _, _) = case getVes
                                               & _1.vesselTbl.ind vi      .vesselCont ?~ (targetLiq, vmm)
                                               & _2 <>~ mkFillUpEmptyMsg
                                               & _4 <>~ mkFillUpEmptyMsg
-                                       | otherwise              ->
+                                       | otherwise ->
                                            a' & _1.vesselTbl.ind targetId.vesselCont .~ Nothing
                                               & _1.vesselTbl.ind vi      .vesselCont ?~ (targetLiq, vm + targetMouths)
                                               & _2 <>~ mkXferEmptyMsg
@@ -4057,11 +4057,11 @@ typo p              = bugTypoLogger p TypoLog
 
 
 unlink :: ActionFun
-unlink p@AdviseNoArgs          = advise p ["unlink"] adviceUnlinkNoArgs
-unlink (LowerNub i mq cols as) =
+unlink p@AdviseNoArgs            = advise p ["unlink"] adviceUnlinkNoArgs
+unlink   (LowerNub i mq cols as) =
     let (f, guessWhat) | any hasLocPref as = (stripLocPref, sorryUnlinkIgnore)
                        | otherwise         = (id,           ""               )
-        as'      = map (capitalize . T.toLower . f) as
+        as'                                = map (capitalize . T.toLower . f) as
     in do
         tingleLoc <- rndmElem [ "behind your eyes"
                               , "deep in your lower back"
@@ -4077,25 +4077,27 @@ unlink (LowerNub i mq cols as) =
                   | targetSing `elem` twoWays ++ meLinkedToOthers ++ othersLinkedToMe -> procArgHelper
                   | otherwise -> sorry $ sorryUnlinkName targetSing |<>| hintUnlink
                   where
-                    sorry msg = a & _2 <>~ (mkBcast i . nlnl $ msg)
+                    sorry msg = a & _2 <>~ mkBcast i (nlnl msg)
                     procArgHelper
-                      | not (hasPp i ms' 5 || isSpiritId i ms')  = sorry . sorryPp $ "sever your link with " <> targetSing
-                      | targetId <- getIdForMobSing targetSing ms'
-                      , s        <- getSing i ms
-                      , srcMsg   <- T.concat [ focusingInnateMsg, "you sever your link with ", targetSing, "." ]
-                      , targetBs <- let bs       = mkBcast targetId . nlnl . colorize . unlinkMsg tingleLoc $ s
-                                        colorize = colorWith unlinkColor
-                                    in isLoggedIn (getPla targetId ms') |?| bs
-                      , ms''     <- ms' & teleLinkMstrTbl.ind i       .at targetSing .~ Nothing
-                                        & teleLinkMstrTbl.ind targetId.at s          .~ Nothing
-                                        & pcTbl .ind i       .linked %~ (targetSing `delete`)
-                                        & pcTbl .ind targetId.linked %~ (s          `delete`)
-                                        & mobTbl.ind i       .curPp  -~ 5
-                      = a & _1 .~  ms''
-                          & _2 <>~ (nlnl srcMsg, pure i) : targetBs
-                          & _3 <>~ pure targetSing
+                      | targetId       <- getIdForMobSing targetSing ms'
+                      , (p, targetPla) <- ((i |&|) *** (targetId |&|)) . (both %~ flip getPla) . dup $ ms'
+                      = if not $ hasPp i ms' 5 || isSpirit targetPla
+                          then sorry . sorryPp $ "sever your link with " <> targetSing
+                          else let srcMsg   = T.concat [ focusingInnateMsg, "you sever your link with ", targetSing, "." ]
+                                   s        = getSing i ms'
+                                   targetBs | colorize <- colorWith unlinkColor
+                                            , bs       <- mkBcast targetId . nlnl . colorize . unlinkMsg tingleLoc $ s
+                                            = isLoggedIn targetPla |?| bs
+                                   ms''     = ms' & teleLinkMstrTbl.ind i       .at targetSing .~ Nothing
+                                                  & teleLinkMstrTbl.ind targetId.at s          .~ Nothing
+                                                  & pcTbl .ind i       .linked %~ (targetSing `delete`)
+                                                  & pcTbl .ind targetId.linked %~ (s          `delete`)
+                                                  & mobTbl.ind i       .curPp  -~ onTrue (isSpirit p) (const 0) 5
+                               in a & _1 .~  ms''
+                                    & _2 <>~ (nlnl srcMsg, pure i) : targetBs
+                                    & _3 <>~ pure targetSing
             in helper |&| modifyState >=> \(bs, logMsgs) -> do
-                bcast . onTrue (()!# guessWhat) ((guessWhat, pure i) :) $ bs
+                bcast . onFalse (()# guessWhat) ((guessWhat, pure i) :) $ bs
                 logMsgs |#| logPla "unlink" i . slashes
 unlink p = patternMatchFail "unlink" . showText $ p
 
