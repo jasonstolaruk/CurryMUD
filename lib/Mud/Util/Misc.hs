@@ -11,12 +11,12 @@ module Mud.Util.Misc ( atLst1
                      , divideRound
                      , dropFst
                      , dropIrrelevantFiles
+                     , dropSnd
                      , dropThr
                      , dup
                      , dup3
                      , dup4
                      , dupFirst
-                     , dupIdentity
                      , dupSecond
                      , eitherRet
                      , emptied
@@ -36,12 +36,14 @@ module Mud.Util.Misc ( atLst1
                      , max1
                      , maybeRet
                      , maybeVoid
+                     , mempties
                      , mIf
                      , minusFifth
                      , minusQuarter
                      , minusThird
                      , mkDateTimeTxt
                      , mkTimestamp
+                     , mMempty
                      , mUnless
                      , mWhen
                      , onFalse
@@ -104,7 +106,7 @@ atLst1 x = case signum x of -1 -> 1
 
 
 atomicWriteIORef' :: IORef a -> a -> IO ()
-atomicWriteIORef' ior x = atomicWriteIORef ior $! x
+atomicWriteIORef' ior = (atomicWriteIORef ior $!)
 
 
 boolToMaybe :: Bool -> a -> Maybe a
@@ -134,12 +136,16 @@ dropFst :: (a, b, c) -> (b, c)
 dropFst (_, x, y) = (x, y)
 
 
-dropIrrelevantFiles :: [FilePath] -> [FilePath]
-dropIrrelevantFiles = foldr ((.) . delete) id [ ".", "..", ".DS_Store" ]
+dropSnd :: (a, b, c) -> (a, c)
+dropSnd (x, _, z) = (x, z)
 
 
 dropThr :: (a, b, c) -> (a, b)
-dropThr (a, b, _) = (a, b)
+dropThr (x, y, _) = (x, y)
+
+
+dropIrrelevantFiles :: [FilePath] -> [FilePath]
+dropIrrelevantFiles = foldr ((.) . delete) id [ ".", "..", ".DS_Store" ]
 
 
 dup :: a -> (a, a)
@@ -158,10 +164,6 @@ dupFirst :: (a -> b) -> a -> (b, a)
 dupFirst f = first f . dup
 
 
-dupIdentity :: (Monoid a) => (a, a) -- In the sense that "mempty" is the identity of "mappend".
-dupIdentity = (mempty, mempty)
-
-
 dupSecond :: (a -> b) -> a -> (a, b)
 dupSecond f = second f . dup
 
@@ -171,7 +173,7 @@ eitherRet = flip either return
 
 
 emptied :: (Monad m, Monoid b) => m a -> m b
-emptied m = m >> return mempty
+emptied m = m >> mMempty
 
 
 -- "(&&&)" is the "fanout" operator.
@@ -235,6 +237,22 @@ listToMaybe [a] = Just a
 listToMaybe xs  = patternMatchFail "Mud.Util.Misc" "listToMaybe" xs
 
 
+mIf :: (Monad m) => m Bool -> m a -> m a -> m a
+mIf p x y = p >>= \case { True -> x; False -> y }
+
+
+mMempty :: (Monad a, Monoid b) => a b
+mMempty = return mempty
+
+
+mUnless :: (Monad m) => m Bool -> m () -> m ()
+mUnless p = mIf p unit
+
+
+mWhen :: (Monad m) => m Bool -> m () -> m ()
+mWhen p x = mIf p x unit
+
+
 max0 :: (Num a, Ord a) => a -> a
 max0 = (`max` 0)
 
@@ -251,9 +269,8 @@ maybeVoid :: (Monad m) => (a -> m ()) -> Maybe a -> m ()
 maybeVoid = maybe unit
 
 
-mIf :: (Monad m) => m Bool -> m a -> m a -> m a
-mIf p x y = p >>= \case True  -> x
-                        False -> y
+mempties :: (Monoid a, Monoid b) => (a, b)
+mempties = (mempty, mempty)
 
 
 minusFifth :: Int -> Int
@@ -266,14 +283,6 @@ minusQuarter x = round (fromIntegral x * 0.75 :: Double)
 
 minusThird :: Int -> Int
 minusThird x = round (fromIntegral x * 0.66 :: Double)
-
-
-mUnless :: (Monad m) => m Bool -> m () -> m ()
-mUnless p = mIf p unit
-
-
-mWhen :: (Monad m) => m Bool -> m () -> m ()
-mWhen p x = mIf p x unit
 
 
 mkDateTimeTxt :: IO (Text, Text)
@@ -339,7 +348,7 @@ safePerformIO = (return =<<)
 
 
 sortEithers :: [Either l r] -> ([r], [l])
-sortEithers = foldr helper ([], [])
+sortEithers = foldr helper mempties
   where
     helper (Right a) = _1 %~ (a :)
     helper (Left  b) = _2 %~ (b :)
@@ -349,12 +358,12 @@ strictId :: a -> a
 strictId = join seq
 
 
-thrice :: (a -> a) -> a -> a
-thrice f = f . twice f
-
-
 twice :: (a -> a) -> a -> a
 twice f = f . f
+
+
+thrice :: (a -> a) -> a -> a
+thrice f = f . twice f
 
 
 unadulterated :: (Monad m, Applicative f) => a -> m (f a)

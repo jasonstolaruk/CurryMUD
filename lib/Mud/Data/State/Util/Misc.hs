@@ -591,7 +591,7 @@ setInterp i mi = tweak $ mobTbl.ind i.interp .~ mi
 
 
 sortInv :: MudState -> Inv -> Inv
-sortInv ms is = let (foldr helper dupIdentity -> (pcs, others)) = [ (i, getType i ms) | i <- is ]
+sortInv ms is = let (foldr helper mempties -> (pcs, others)) = [ (i, getType i ms) | i <- is ]
                 in (pcs ++) . sortOthers $ others
   where
     helper (i, t) acc                  = let consTo lens = acc & lens %~ (i :)

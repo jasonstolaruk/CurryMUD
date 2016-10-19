@@ -85,7 +85,7 @@ expandGecrs c (extractEnscsFromGecrs -> (gecrs, enscs))
 
 
 extractEnscsFromGecrs :: [GetEntsCoinsRes] -> ([GetEntsCoinsRes], [EmptyNoneSome Coins])
-extractEnscsFromGecrs = first reverse . foldl' helper ([], [])
+extractEnscsFromGecrs = first reverse . foldl' helper mempties
   where
     helper (gecrs, enscs) gecr | isSorryGecr gecr                               = (gecr : gecrs,        enscs)
     helper (gecrs, enscs) gecr@Mult { entsRes = Just {}, coinsRes = Just ensc } = (gecr : gecrs, ensc : enscs)
@@ -215,7 +215,7 @@ mkGecrMultForEnts :: Id -> MudState -> Amount -> Text -> Inv -> GetEntsCoinsRes
 mkGecrMultForEnts i ms a n is = let effNames = [ getEffName i ms targetId | targetId <- is ] in
     uncurry (Mult a n) (findFullNameForAbbrev n effNames |&| maybe notFound (found effNames))
   where
-    notFound                          = (Nothing, Nothing)
+    notFound                          = mempties
     found (zip is -> zipped) fullName = (Just . takeMatchingEnts zipped $ fullName, Nothing)
     takeMatchingEnts zipped  fullName = take a [ getEnt targetId ms | (targetId, effName) <- zipped
                                                                     , effName == fullName ]

@@ -58,7 +58,7 @@ targetify i cc triples msg@(T.words -> ws@(headTail . head -> (c, rest)))
 procChanTarget :: Id -> ChanContext -> [(Id, Text, Text)] -> Args -> Either Text [Broadcast]
 procChanTarget i cc triples ((T.toLower -> target):rest)
   | ()# rest  = Left sorryChanMsg
-  | otherwise = case findFullNameForAbbrev target . map (views _2 T.toLower) $ triples of
+  | otherwise = case findFullNameForAbbrev target . selects _2 T.toLower $ triples of
     Nothing -> Left . sorryChanTargetNameFromContext target $ cc
     Just n  -> let targetId    = getIdForMatch n
                    tunedIds    = select _1 triples
@@ -122,7 +122,7 @@ procEmote i ms cc triples as             =
                     in Right ( txt
                              , [ mkEmoteWord isPoss p targetId, ForNonTargets txt ]
                              , txt )
-            in findFullNameForAbbrev (T.toLower target) (map (views _2 T.toLower) triples) |&| maybe notFound found
+            in findFullNameForAbbrev (T.toLower target) (selects _2 T.toLower triples) |&| maybe notFound found
     addSuffix   isPoss p = (<> p) . onTrue isPoss (<> "'s")
     mkEmoteWord isPoss   = isPoss ? ForTargetPoss :? ForTarget
     tunedIds             = select _1 triples
@@ -170,7 +170,7 @@ procExpCmd i ms cc triples (map T.toLower . unmsg -> [cn, target]) =
                              g                 = ((format (Just targetId) toOthersWithTarget, targetId `delete` tunedIds) :)
                          in Right . dupFirst (f . g . mkBcast i) . format (Just targetId) $ toSelfWithTarget
     notFound             = Left . sorryExpCmdName $ cn
-    findTarget           = findFullNameForAbbrev target . map (views _2 T.toLower) $ triples
+    findTarget           = findFullNameForAbbrev target . selects _2 T.toLower $ triples
     getIdForMatch match  = view _1 . head . filter (views _2 ((== match) . T.toLower)) $ triples
     format maybeTargetId =
         let substitutions = [ ("%", embedId i), ("^", heShe), ("&", hisHer), ("*", himHerself) ]

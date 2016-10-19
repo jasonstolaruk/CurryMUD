@@ -507,7 +507,7 @@ helperGetEitherInv i d fromId a@(ms, _, _, _) = \case
          & _3                   <>~ bs
          & _4                   <>~ toSelfs
   where
-    sortByType             = foldr helper dupIdentity
+    sortByType             = foldr helper mempties
     helper targetId sorted = let lens = case getType targetId ms of PCType  -> _1
                                                                     NpcType -> _1
                                                                     _       -> _2

@@ -868,7 +868,7 @@ connectHelper i (target, as) ms =
                    dblLinkedsPair             = partition (`isAwake` ms) dblLinkeds
                    (targetSings, asleepSings) = dblLinkedsPair & both %~ map (`getSing` ms)
                    hasChanOfSameName targetId | targetCs  <- getPCChans targetId ms
-                                              , targetCns <- map (views chanName T.toLower) targetCs
+                                              , targetCns <- selects chanName T.toLower targetCs
                                               = T.toLower cn `elem` targetCns
                    (ms'', res)                = foldl' procTarget (ms, []) as'
                in (ms'', (onTrue (()!# guessWhat) (Left guessWhat :) res, Just ci))
@@ -1972,7 +1972,7 @@ link (NoArgs i mq cols) = do
             oneWayToMeMsgs   = [ "One-way links to your mind:",   mkSingsList False oneWaysToMe   ]
             mkSingsList doStyle ss = let (awakes, asleeps) = sortAwakesAsleeps ss
                                      in commas $ onTrue doStyle (styleAbbrevs Don'tQuote) awakes ++ asleeps
-            sortAwakesAsleeps      = foldr sorter dupIdentity
+            sortAwakesAsleeps      = foldr sorter mempties
             sorter linkSing acc    =
                 let linkId   = head . filter ((== linkSing) . (`getSing` ms)) $ ms^.pcTbl.to IM.keys
                     linkPla  = getPla linkId ms
@@ -3952,7 +3952,7 @@ tele p = patternMatchFail "tele" . showText $ p
 
 
 getDblLinkedSings :: Id -> MudState -> ([Sing], [Sing])
-getDblLinkedSings i ms = foldr helper dupIdentity . getLinked i $ ms
+getDblLinkedSings i ms = foldr helper mempties . getLinked i $ ms
   where
     helper s pair = let lens = isAwake (getIdForMobSing s ms) ms ? _1 :? _2
                     in pair & lens %~ (s :)
@@ -4019,7 +4019,7 @@ helperTune s a@(linkTbl, chans, _, _) arg@(T.breakOn "=" -> (name, T.tail -> val
               in findFullNameForAbbrev name connNames |&| maybe notFound (found val)
   where
     linkNames   = map uncapitalize . M.keys $ linkTbl
-    chanNames   = map (views chanName T.toLower) chans
+    chanNames   = selects chanName T.toLower chans
     notFound    = a & _3 <>~ pure (sorryTuneName name)
     found val n = if n == "all"
                     then appendMsg "all telepathic connections" & _1 %~ M.map (const val)
@@ -4232,7 +4232,7 @@ getRecordUptime = liftIO (mkMudFilePath uptimeFileFun) >>= \file ->
     let readUptime = Just . Sum . read <$> readFile file
     in mIf (liftIO . doesFileExist $ file)
            (liftIO readUptime `catch` (emptied . fileIOExHandler "getRecordUptime"))
-           (return Nothing)
+           mMempty
 
 
 -----

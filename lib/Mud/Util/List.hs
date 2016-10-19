@@ -12,14 +12,16 @@ module Mud.Util.List ( allValues
                      , mkCountList
                      , nubSort
                      , select
+                     , selects
                      , sortGroup ) where
 
 import Mud.Util.Operators
 
 import Control.Arrow ((&&&), second)
-import Control.Lens (Lens', each, partsOf, view)
+import Control.Lens (Lens', LensLike', each, partsOf, view, views)
 import Control.Lens.Each (Each)
 import Control.Lens.Operators ((&), (.~))
+import Data.Functor.Const (Const)
 import Data.List (foldl', group, sort)
 import qualified Data.Set as S (fromList, toList)
 
@@ -71,6 +73,10 @@ nubSort = S.toList . S.fromList
 
 select :: Lens' a b -> [] a -> [] b
 select l = map (view l)
+
+
+selects :: LensLike' (Const b) s a -> (a -> b) -> [s] -> [b]
+selects l f = map (views l f)
 
 
 sortGroup :: (Ord a) => [a] -> [[a]]

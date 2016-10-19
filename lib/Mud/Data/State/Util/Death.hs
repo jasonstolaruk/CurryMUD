@@ -145,7 +145,7 @@ spiritize i = getState >>= \ms -> let mySing = getSing i ms in if isPC i ms
               [] -> let bonus = take 1 . filter (view _3) . drop n $ triples in (++ bonus)
               _  -> id
             asleepIds = let f i' p = and [ views linked (mySing `elem`) p
-                                         , i' `notElem` map (view _1) retaineds'
+                                         , i' `notElem` select _1 retaineds'
                                          , not (isAwake i' ms) ]
                         in views pcTbl (IM.keys . IM.filterWithKey f . IM.delete i) ms
             (bs, fs)  = mkBcasts ms mySing retaineds'
@@ -160,9 +160,9 @@ spiritize i = getState >>= \ms -> let mySing = getSing i ms in if isPC i ms
   where
     procOnlySings xs = map snd . sortBy (flip compare `on` fst) $ [ (length g, s)
                                                                   | g@(s:_) <- sortGroup . map fromOnly $ xs ]
-    pcTblHelper mySing retaineds@(map (view _1) -> retainerIds) = IM.mapWithKey helper
+    pcTblHelper mySing retaineds@(select _1 -> retainerIds) = IM.mapWithKey helper
       where
-        helper pcId | pcId == i               = linked .~ map (view _2) retaineds
+        helper pcId | pcId == i               = linked .~ select _2 retaineds
                     | pcId `elem` retainerIds = id
                     | otherwise               = linked %~ (mySing `delete`)
     setCurXps m = m & curHp .~ (m^.maxHp)
@@ -175,7 +175,7 @@ spiritize i = getState >>= \ms -> let mySing = getSing i ms in if isPC i ms
         toLinkLosers =
             let targetIds = views pcTbl (IM.keys . IM.filterWithKey f . IM.delete i) ms
                 f i' p    = and [ views linked (mySing `elem`) p
-                                , i' `notElem` map (view _1) retaineds
+                                , i' `notElem` select _1 retaineds
                                 , isAwake i' ms ]
             in (linkLostMsg mySing, targetIds)
         -- TODO: When a spirit passes into the beyond, a retained msg should be sent to those link retainers who are asleep.

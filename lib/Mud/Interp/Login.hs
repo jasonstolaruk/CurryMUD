@@ -185,13 +185,13 @@ checkIllegalNames ms mq cols cn =
 
 
 checkPropNamesDict :: MsgQueue -> Cols -> CmdName -> MudStack Any
-checkPropNamesDict mq cols cn = maybe (return mempty) helper propNamesFile
+checkPropNamesDict mq cols cn = maybe mMempty helper propNamesFile
   where
     helper = checkNameHelper "checkPropNamesDict" (promptRetryName mq cols sorryInterpNamePropName) cn
 
 
 checkWordsDict :: MsgQueue -> Cols -> CmdName -> MudStack Any
-checkWordsDict mq cols cn = maybe (return mempty) helper wordsFile
+checkWordsDict mq cols cn = maybe mMempty helper wordsFile
   where
     helper = checkNameHelper "checkWordsDict" (promptRetryName mq cols sorryInterpNameDict) cn
 
@@ -223,7 +223,7 @@ setSingIfNotTaken times s (NoArgs i mq cols) = getSing i <$> getState >>= \oldSi
    in do { bcastAdmins msg
          ; logNotice "setSingIfNotTaken" msg
          ; return (Just oldSing) })
-  (promptRetryName mq cols sorryInterpNameTaken >> setInterp i (Just . interpName $ times) >> return Nothing)
+  (emptied $ promptRetryName mq cols sorryInterpNameTaken >> (setInterp i . Just . interpName $ times))
   where
     helper ms | ()!# (filter ((== s) . (`getSing` ms) . fst) . views plaTbl IM.toList $ ms) = (ms, False)
               | otherwise = (ms & entTbl.ind i.sing .~ s, True)

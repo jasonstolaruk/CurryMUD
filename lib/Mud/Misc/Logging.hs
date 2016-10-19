@@ -78,7 +78,7 @@ blowUp = U.blowUp "Mud.Misc.Logging"
 
 
 initLogging :: ShouldLog -> Maybe Lock -> IO (Maybe LogService, Maybe LogService)
-initLogging Don'tLog _                = return (Nothing, Nothing)
+initLogging Don'tLog _                = return mempties
 initLogging DoLog    (Just logExLock) = do
     updateGlobalLogger rootLoggerName removeHandler
     (errorFile, noticeFile) <- (,) <$> mkMudFilePath errorLogFileFun

@@ -77,7 +77,7 @@ instance Exception PlsDie
 
 
 concurrentTree :: [IO a] -> IO [a]
-concurrentTree = foldr helper (return [])
+concurrentTree = foldr helper mMempty
   where
     helper ioa ioas = uncurry (:) <$> concurrently ioa ioas
 

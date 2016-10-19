@@ -51,6 +51,7 @@ import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Telnet
 import Mud.Util.Misc hiding (blowUp)
 import Mud.Util.Operators
+import Mud.Util.Quoting
 import qualified Mud.Util.Misc as U (blowUp)
 
 import Control.Arrow ((&&&), second)
@@ -205,14 +206,14 @@ spcsToFiller = T.replace " " (T.singleton indentFiller)
 findFullNameForAbbrev :: (Eq a, HasText a) => Text -> [a] -> Maybe a
 findFullNameForAbbrev needle hay =
     let res = sortBy (compare `on` extractText) . filter ((needle `T.isPrefixOf`) . extractText) $ hay
-    in do { guard (()!# res); return . head $ res }
+    in do { guard $ ()!# res; return . head $ res }
 
 
 -----
 
 
 frame :: Cols -> Text -> Text
-frame cols | d <- nl . divider $ cols = nl . (<> d) . (d <>)
+frame cols | d <- nl . divider $ cols = nl . quoteWith d
 
 
 -----
