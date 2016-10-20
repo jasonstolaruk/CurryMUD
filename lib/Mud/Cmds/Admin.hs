@@ -2061,6 +2061,7 @@ adminUptime p = withoutArgs adminUptime p
 -----
 
 
+-- TODO: Spirits?
 adminWhoIn :: ActionFun
 adminWhoIn = whoHelper LoggedIn "whoin"
 

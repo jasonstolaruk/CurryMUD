@@ -4320,7 +4320,7 @@ mkCharList i ms =
         -----
         tunedOuts' = mkSingSexRaceLvls (tunedOuts ++ oneWays)
         -----
-        others' = sortBy raceLvlSex . map (`mkPrettySexRaceLvl` ms) $ others
+        others' = sortBy raceLvlSex . map (`mkPrettySexRaceLvl` ms) $ [ i' | i' <- others, not . isSpiritId i' $ ms ]
           where
             raceLvlSex (s, r, l) (s', r', l') = (r `compare` r') <> (l `compare` l') <> (s `compare` s')
         -----
@@ -4341,8 +4341,9 @@ isTunedIn ms (i, i') | s <- getSing i' ms = fromMaybe False (view (at s) . getTe
 
 
 mkFooter :: Id -> MudState -> Text
-mkFooter i ms = let plaIds@(length -> x) = getLoggedInPlaIds ms
-                    y                    = length . filter (== True) $ maruBatsus
+mkFooter i ms = let plaIds@(length -> x) = [ i' | i' <- getLoggedInPlaIds ms
+                                           , onTrue (i /= i' && isSpiritId i' ms) (const . isLinked ms $ (i, i')) True ]
+                    y                    = length . filter id $ maruBatsus
                 in T.concat [ showText x
                             , " "
                             , pluralize ("person", "people") x
@@ -4354,8 +4355,7 @@ mkFooter i ms = let plaIds@(length -> x) = getLoggedInPlaIds ms
                                                                          , pluralize ("", "s") y ]
                             , "." ]
   where
-    maruBatsus = map (uncurry (&&) . (isLoggedIn &&& not . isIncognito) . (`getPla` ms)) ais
-    ais        = getLoggedInAdminIds ms
+    maruBatsus = map (uncurry (&&) . (isLoggedIn &&& not . isIncognito) . (`getPla` ms)) . getLoggedInAdminIds $ ms
 
 
 -----
