@@ -475,9 +475,9 @@ about p = withoutArgs about p
 
 
 admin :: ActionFun
-admin p@(NoArgs''     _) = adminList p
-admin p@(AdviseOneArg a) = advise p ["admin"] . adviceAdminNoMsg $ a
-admin (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsgs ->
+admin p@(NoArgs''     _                    ) = adminList p
+admin p@(AdviseOneArg a                    ) = advise p ["admin"] . adviceAdminNoMsg $ a
+admin   (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsgs ->
     logMsgs |#| let f = uncurry . logPla $ "admin" in mapM_ f
   where
     helper ms =
@@ -628,8 +628,8 @@ mkPtPairs i ms = let (hps, mps, pps, fps) = getPts i ms
 
 
 bonus :: ActionFun
-bonus p@AdviseNoArgs            = advise p ["bonus"] adviceBonusNoArgs
-bonus (OneArgLower i mq cols a) = getState >>= \ms ->
+bonus p@AdviseNoArgs              = advise p ["bonus"] adviceBonusNoArgs
+bonus   (OneArgLower i mq cols a) = getState >>= \ms ->
     let (f, guessWhat) | hasLocPref a = (stripLocPref, sorryBonusIgnore)
                        | otherwise    = (id,           ""              )
         a'                            = capitalize . T.toLower . f $ a
@@ -642,7 +642,7 @@ bonus (OneArgLower i mq cols a) = getState >>= \ms ->
                   x        = calcBonus targetId ms
                   bs       = pure (prd $ "You give a bonus to " <> targetSing, pure i)
               in fmap2 getAll (canBonus targetSing) >>= \case
-                Just True  -> do { bcastNl . onTrue (()!# guessWhat) ((guessWhat, pure i) :) $ bs
+                Just True  -> do { bcastNl . onFalse (()# guessWhat) ((guessWhat, pure i) :) $ bs
                                  ; retainedMsg targetId ms . colorWith bonusColor . mkToTarget $ targetId
                                  ; awardExp x ("bonus from " <> s) targetId
                                  ; tweak $ plaTbl.ind i.bonusTime ?~ now
@@ -798,9 +798,9 @@ color p = withoutArgs color p
 
 
 connect :: ActionFun
-connect p@AdviseNoArgs       = advise p ["connect"] adviceConnectNoArgs
-connect p@(AdviseOneArg a)   = advise p ["connect"] . adviceConnectNoChan $ a
-connect (Lower i mq cols as) = getState >>= \ms -> let getIds = map (`getIdForMobSing` ms) in
+connect p@AdviseNoArgs         = advise p ["connect"] adviceConnectNoArgs
+connect p@(AdviseOneArg a    ) = advise p ["connect"] . adviceConnectNoChan $ a
+connect   (Lower i mq cols as) = getState >>= \ms -> let getIds = map (`getIdForMobSing` ms) in
     if isIncognitoId i ms
       then wrapSend mq cols . sorryIncog $ "connect"
       else connectHelper i (mkLastArgWithNubbedOthers as) |&| modifyState >=> \case
@@ -871,7 +871,7 @@ connectHelper i (target, as) ms =
                                               , targetCns <- selects chanName T.toLower targetCs
                                               = T.toLower cn `elem` targetCns
                    (ms'', res)                = foldl' procTarget (ms, []) as'
-               in (ms'', (onTrue (()!# guessWhat) (Left guessWhat :) res, Just ci))
+               in (ms'', (onFalse (()# guessWhat) (Left guessWhat :) res, Just ci))
           else sorry . sorryTunedOutICChan $ cn
         (cs, cns, s) = mkChanBindings i ms
         sorry        = (ms, ) . (, Nothing) . pure . Left
@@ -933,9 +933,9 @@ interpConfirmDesc _ _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNo p
 
 
 disconnect :: ActionFun
-disconnect p@AdviseNoArgs       = advise p ["disconnect"] adviceDisconnectNoArgs
-disconnect p@(AdviseOneArg a)   = advise p ["disconnect"] . adviceDisconnectNoChan $ a
-disconnect (Lower i mq cols as) = getState >>= \ms -> let getIds = map (`getIdForMobSing` ms) in
+disconnect p@AdviseNoArgs         = advise p ["disconnect"] adviceDisconnectNoArgs
+disconnect p@(AdviseOneArg a    ) = advise p ["disconnect"] . adviceDisconnectNoChan $ a
+disconnect   (Lower i mq cols as) = getState >>= \ms -> let getIds = map (`getIdForMobSing` ms) in
     if isIncognitoId i ms
       then wrapSend mq cols . sorryIncog $ "disconnect"
       else getAllChanIdNames i ms >>= \idNamesTbl ->
@@ -1005,7 +1005,7 @@ disconnectHelper i (target, as) idNamesTbl ms =
                        hint = onFalse b ((<> hintDisconnect) . spcR)
                    ci               = c^.chanId
                    ((ms'', res), _) = foldl' procTarget ((ms, []), False) as'
-               in (ms'', (onTrue (()!# guessWhat) (Left guessWhat :) res, Just ci))
+               in (ms'', (onFalse (()# guessWhat) (Left guessWhat :) res, Just ci))
           else sorry . sorryTunedOutICChan $ cn
         (cs, cns, s) = mkChanBindings i ms
         sorry        = (ms, ) . (, Nothing) . pure . Left
@@ -1129,9 +1129,9 @@ elvish = sayHelper ElfLang
 
 
 emote :: ActionFun
-emote p@AdviseNoArgs                                                     = advise p ["emote"] adviceEmoteNoArgs
-emote p@ActionParams { args } | any (`elem` yous) . map T.toLower $ args = advise p ["emote"] adviceYouEmote
-emote (WithArgs i mq cols as) = getState >>= \ms ->
+emote p@AdviseNoArgs                                                       = advise p ["emote"] adviceEmoteNoArgs
+emote p@ActionParams { args }   | any (`elem` yous) . map T.toLower $ args = advise p ["emote"] adviceYouEmote
+emote   (WithArgs i mq cols as) = getState >>= \ms ->
     let d                    = mkStdDesig i ms DoCap
         ser                  = serialize d
         d'                   = d { desigShouldCap = Don'tCap }
@@ -1567,9 +1567,9 @@ go dir p@ActionParams { args      } = goDispatcher p { args = dir : args }
 
 
 goDispatcher :: ActionFun
-goDispatcher ActionParams { args = [] } = unit
-goDispatcher p@(Lower i mq cols as)     = mapM_ (tryMove i mq cols p { args = [] }) as
-goDispatcher p                          = patternMatchFail "goDispatcher" . showText $ p
+goDispatcher   ActionParams { args = [] } = unit
+goDispatcher p@(Lower i mq cols as)       = mapM_ (tryMove i mq cols p { args = [] }) as
+goDispatcher p                            = patternMatchFail "goDispatcher" . showText $ p
 
 
 -- TODO: Movement costs FP.
@@ -1901,8 +1901,8 @@ lagomorphean = sayHelper LagomorphLang
 
 
 leave :: ActionFun
-leave p@AdviseNoArgs                   = advise p ["leave"] adviceLeaveNoArgs
-leave (WithArgs i mq cols (nub -> as)) = helper |&| modifyState >=> \(ms, chanIdNameIsDels, sorryMsgs) ->
+leave p@AdviseNoArgs                     = advise p ["leave"] adviceLeaveNoArgs
+leave   (WithArgs i mq cols (nub -> as)) = helper |&| modifyState >=> \(ms, chanIdNameIsDels, sorryMsgs) ->
     let s                              = getSing i ms
         (chanIds, chanNames, chanRecs) = foldl' unzipper ([], [], []) chanIdNameIsDels
         unzipper acc (ci, cn, isDel)
@@ -2245,8 +2245,8 @@ naelyni = sayHelper NymphLang
 
 
 newChan :: ActionFun
-newChan p@AdviseNoArgs                   = advise p ["newchannel"] adviceNewChanNoArgs
-newChan (WithArgs i mq cols (nub -> as)) = helper |&| modifyState >=> \(unzip -> (newChanNames, chanRecs), sorryMsgs) ->
+newChan p@AdviseNoArgs                     = advise p ["newchannel"] adviceNewChanNoArgs
+newChan   (WithArgs i mq cols (nub -> as)) = helper |&| modifyState >=> \(unzip -> (newChanNames, chanRecs), sorryMsgs) ->
     let (sorryMsgs', otherMsgs) = (intersperse "" sorryMsgs, mkNewChanMsg newChanNames)
         msgs | ()# otherMsgs    = sorryMsgs'
              | otherwise        = otherMsgs ++ (sorryMsgs' |!| "" : sorryMsgs')
@@ -2354,7 +2354,7 @@ plaDispCmdList p                  = patternMatchFail "plaDispCmdList" . showText
 putAction :: ActionFun
 putAction p@AdviseNoArgs     = advise p ["put"] advicePutNoArgs
 putAction p@(AdviseOneArg a) = advise p ["put"] . advicePutNoCon $ a
-putAction p@(Lower' i as)    = genericActionWithHooks p helper "put"
+putAction p@(Lower' i as   ) = genericActionWithHooks p helper "put"
   where
     helper v ms =
       let LastArgIsTargetBindings { .. } = mkLastArgIsTargetBindings i ms as
@@ -2540,6 +2540,7 @@ question p = patternMatchFail "question" . showText $ p
 -----
 
 
+-- TODO: When a spirit quits.
 quit :: ActionFun
 quit (NoArgs' i mq)                        = do { logPlaExec "quit" i; writeMsg mq Quit }
 quit ActionParams { plaMsgQueue, plaCols } = wrapSend plaMsgQueue plaCols adviceQuitExcessArgs
@@ -2634,8 +2635,8 @@ rapeCan'tAbbrev ActionParams { .. } = sendCmdNotFound myId plaMsgQueue plaCols
 
 
 readAction :: ActionFun
-readAction p@AdviseNoArgs          = advise p ["read"] adviceReadNoArgs
-readAction (LowerNub i mq cols as) = (,) <$> getState <*> mkRndmVector >>= \(ms, v) ->
+readAction p@AdviseNoArgs            = advise p ["read"] adviceReadNoArgs
+readAction   (LowerNub i mq cols as) = (,) <$> getState <*> mkRndmVector >>= \(ms, v) ->
     let (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv as
         sorryInEq              = inEqs |!| wrapUnlinesNl cols sorryReadInEq
         sorryInRm              = inRms |!| wrapUnlinesNl cols sorryReadNoHooks
@@ -2978,7 +2979,7 @@ getAvailArmSlot ms (armSubToSlot -> slot) em = maybeSingleSlot em slot |&| maybe
 remove :: ActionFun
 remove p@AdviseNoArgs     = advise p ["remove"] adviceRemoveNoArgs
 remove p@(AdviseOneArg a) = advise p ["remove"] . adviceRemoveNoCon $ a
-remove p@(Lower' i as)    = genericAction p helper "remove"
+remove p@(Lower' i as   ) = genericAction p helper "remove"
   where
     helper ms =
       let LastArgIsTargetBindings { .. } = mkLastArgIsTargetBindings i ms as
@@ -3137,7 +3138,7 @@ sayHelper l p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
                                  | isNpc targetId ms = firstMobSay i
                                  | otherwise         = (, [])
                 (pt, hints)      = ms^.plaTbl.to f
-            in (ms & plaTbl .~ pt, ( onTrue (()!# hints) (++ hints) . pure $ toSelfMsg
+            in (ms & plaTbl .~ pt, ( onFalse (()# hints) (++ hints) . pure $ toSelfMsg
                                    , toTargetBcast : toOthersBcasts
                                    , toSelfMsg ))
     sayTo _ msg _ = patternMatchFail "sayHelper sayTo" msg
@@ -3369,7 +3370,7 @@ helperSettings i ms a (T.breakOn "=" -> (name, T.tail -> value)) =
 
 showAction :: ActionFun
 showAction p@AdviseNoArgs         = advise p ["show"] adviceShowNoArgs
-showAction p@(AdviseOneArg a)     = advise p ["show"] . adviceShowNoName $ a
+showAction p@(AdviseOneArg a    ) = advise p ["show"] . adviceShowNoName $ a
 showAction   (Lower i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
   then wrapSend mq cols . sorryIncog $ "show"
   else let eqMap      = getEqMap    i ms
@@ -3918,9 +3919,9 @@ taste p = advise p ["taste"] adviceTasteExcessArgs
 
 
 tele :: ActionFun
-tele p@AdviseNoArgs     = advise p ["telepathy"] adviceTeleNoArgs
-tele p@(AdviseOneArg a) = advise p ["telepathy"] . adviceTeleNoMsg $ a
-tele (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
+tele p@AdviseNoArgs                         = advise p ["telepathy"] adviceTeleNoArgs
+tele p@(AdviseOneArg a                    ) = advise p ["telepathy"] . adviceTeleNoMsg $ a
+tele   (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
     let (s, p) = (getSing `fanUncurry` getPla) (i, ms) in if isIncognito p
       then wrapSend mq cols . sorryIncog $ "telepathy"
       else let SingleTarget { .. } = mkSingleTarget mq cols target "The name of the person you wish to message"

@@ -287,8 +287,8 @@ adminAlertMsg p@ActionParams { plaMsgQueue, plaCols } = dumpCmdHelper "alert_msg
 
 
 adminAnnounce :: ActionFun
-adminAnnounce p@AdviseNoArgs  = advise p [ prefixAdminCmd "announce" ] adviceAAnnounceNoArgs
-adminAnnounce (Msg' i mq msg) = getState >>= \ms -> let s = getSing i ms in do
+adminAnnounce p@AdviseNoArgs    = advise p [ prefixAdminCmd "announce" ] adviceAAnnounceNoArgs
+adminAnnounce   (Msg' i mq msg) = getState >>= \ms -> let s = getSing i ms in do
     ok mq
     massSend . colorWith announceColor $ msg
     logPla    "adminAnnounce" i $       "announced "  <> dblQuote msg
@@ -302,7 +302,7 @@ adminAnnounce p = patternMatchFail "adminAnnounce" . showText $ p
 adminAs :: ActionFun
 adminAs p@(NoArgs' i mq    ) = advise p [ prefixAdminCmd "as" ] adviceAAsNoArgs    >> sendDfltPrompt mq i
 adminAs p@(OneArg  i mq _ a) = advise p [ prefixAdminCmd "as" ] (adviceAAsNoCmd a) >> sendDfltPrompt mq i
-adminAs (WithTarget i mq cols target rest) = getState >>= \ms ->
+adminAs   (WithTarget i mq cols target rest) = getState >>= \ms ->
     let SingleTarget { .. } = mkSingleTarget mq cols target "The target ID"
         as targetId         = let s = getSing targetId ms in case getType targetId ms of
           NpcType -> let npcMq        = getNpcMsgQueue targetId ms
@@ -350,7 +350,7 @@ adminBanHost (NoArgs i mq cols) = (withDbExHandler "adminBanHost" . getDbTblRecs
   Just xs -> dumpDbTblHelper mq cols (xs :: [BanHostRec]) >> logPlaExecArgs (prefixAdminCmd "banhost") [] i
   Nothing -> dbError mq cols
 adminBanHost p@(AdviseOneArg a) = advise p [ prefixAdminCmd "banhost" ] . adviceABanHostNoReason $ a
-adminBanHost (MsgWithTarget i mq cols (uncapitalize -> target) msg) = getState >>= \ms ->
+adminBanHost   (MsgWithTarget i mq cols (uncapitalize -> target) msg) = getState >>= \ms ->
     withDbExHandler "adminBanHost" (isHostBanned target) >>= \case
       Nothing      -> dbError mq cols
       Just (Any b) -> let newStatus = not b in liftIO mkTimestamp >>= \ts -> do
@@ -378,7 +378,7 @@ adminBanPC :: ActionFun
 adminBanPC (NoArgs i mq cols) = withDbExHandler "adminBanPC" (getDbTblRecs "ban_pc") >>= \case
   Just xs -> dumpDbTblHelper mq cols (xs :: [BanPCRec]) >> logPlaExecArgs (prefixAdminCmd "banpc") [] i
   Nothing -> dbError mq cols
-adminBanPC p@(AdviseOneArg a) = advise p [ prefixAdminCmd "banpc" ] . adviceABanPCNoReason $ a
+adminBanPC p@(AdviseOneArg a                    ) = advise p [ prefixAdminCmd "banpc" ] . adviceABanPCNoReason $ a
 adminBanPC p@(MsgWithTarget i mq cols target msg) = getState >>= \ms ->
     let fn                  = "adminBanPC"
         SingleTarget { .. } = mkSingleTarget mq cols target "The name of the PC you wish to ban"
@@ -404,8 +404,8 @@ adminBanPC p = patternMatchFail "adminBanPC" . showText $ p
 
 
 adminBoot :: ActionFun
-adminBoot p@AdviseNoArgs                       = advise p [ prefixAdminCmd "boot" ] adviceABootNoArgs
-adminBoot (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
+adminBoot p@AdviseNoArgs                         = advise p [ prefixAdminCmd "boot" ] adviceABootNoArgs
+adminBoot   (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
     let SingleTarget { .. } = mkSingleTarget mq cols target "The PC name of the player you wish to boot"
     in case [ pi | pi <- views pcTbl IM.keys ms, getSing pi ms == strippedTarget ] of
       []       -> sendFun $ sorryPCName strippedTarget |<>| hintABoot
@@ -597,8 +597,8 @@ adminDispCmdList p                  = patternMatchFail "adminDispCmdList" . show
 
 
 adminExamine :: ActionFun
-adminExamine p@AdviseNoArgs          = advise p [ prefixAdminCmd "examine" ] adviceAExamineNoArgs
-adminExamine (LowerNub i mq cols as) = getState >>= \ms ->
+adminExamine p@AdviseNoArgs            = advise p [ prefixAdminCmd "examine" ] adviceAExamineNoArgs
+adminExamine   (LowerNub i mq cols as) = getState >>= \ms ->
     let helper a = case reads . T.unpack $ a :: [(Int, String)] of
           [(targetId, "")] | targetId < 0                -> pure sorryWtf
                            | not . hasType targetId $ ms -> sorry
@@ -911,8 +911,8 @@ adminHash p = advise p [ prefixAdminCmd "hash" ] adviceAHashExcessArgs
 
 
 adminHost :: ActionFun
-adminHost p@AdviseNoArgs          = advise p [ prefixAdminCmd "host" ] adviceAHostNoArgs
-adminHost (LowerNub i mq cols as) = do
+adminHost p@AdviseNoArgs            = advise p [ prefixAdminCmd "host" ] adviceAHostNoArgs
+adminHost   (LowerNub i mq cols as) = do
     ms          <- getState
     (now, zone) <- (,) <$> liftIO getCurrentTime <*> liftIO getCurrentTimeZone
     let helper target = let notFound = pure . sorryPCName $ target
@@ -985,9 +985,10 @@ adminIp p = withoutArgs adminIp p
 -----
 
 
+-- TODO: Killing a PC that is asleep?
 adminKill :: ActionFun
-adminKill p@AdviseNoArgs          = advise p [ prefixAdminCmd "kill" ] adviceAKillNoArgs
-adminKill (LowerNub i mq cols as) = getState >>= \ms -> do
+adminKill p@AdviseNoArgs            = advise p [ prefixAdminCmd "kill" ] adviceAKillNoArgs
+adminKill   (LowerNub i mq cols as) = getState >>= \ms -> do
     let (is, toSelfs) = helper ms
     multiWrapSend mq cols toSelfs
     bcast . mkBs ms $ is
@@ -1023,8 +1024,8 @@ adminKill p = patternMatchFail "adminKill" . showText $ p
 
 
 adminLink :: ActionFun
-adminLink p@AdviseNoArgs          = advise p [ prefixAdminCmd "link" ] adviceALinkNoArgs
-adminLink (LowerNub i mq cols as) = getState >>= \ms -> do
+adminLink p@AdviseNoArgs            = advise p [ prefixAdminCmd "link" ] adviceALinkNoArgs
+adminLink   (LowerNub i mq cols as) = getState >>= \ms -> do
     let helper target =
             let notFound              = unadulterated . sorryPCName $ target
                 found (_, targetSing) = (\case
@@ -1045,8 +1046,8 @@ adminLink p = patternMatchFail "adminLink" . showText $ p
 
 
 adminLocate :: ActionFun
-adminLocate p@AdviseNoArgs          = advise p [ prefixAdminCmd "locate" ] adviceALocateNoArgs
-adminLocate (LowerNub i mq cols as) = getState >>= \ms ->
+adminLocate p@AdviseNoArgs            = advise p [ prefixAdminCmd "locate" ] adviceALocateNoArgs
+adminLocate   (LowerNub i mq cols as) = getState >>= \ms ->
     let helper a = case reads . T.unpack $ a :: [(Int, String)] of
           [(targetId, "")] | targetId < 0                -> sorryWtf
                            | not . hasType targetId $ ms -> sorryParseId a
@@ -1065,9 +1066,9 @@ adminLocate p = patternMatchFail "adminLocate" . showText $ p
 
 
 adminMsg :: ActionFun
-adminMsg p@AdviseNoArgs     = advise p [ prefixAdminCmd "message" ] adviceAMsgNoArgs
-adminMsg p@(AdviseOneArg a) = advise p [ prefixAdminCmd "message" ] . adviceAMsgNoMsg $ a
-adminMsg (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsgs ->
+adminMsg p@AdviseNoArgs                         = advise p [ prefixAdminCmd "message" ] adviceAMsgNoArgs
+adminMsg p@(AdviseOneArg a                    ) = advise p [ prefixAdminCmd "message" ] . adviceAMsgNoMsg $ a
+adminMsg   (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsgs ->
     logMsgs |#| let f = uncurry . logPla $ "adminMsg" in mapM_ f
   where
     helper ms =
@@ -1163,8 +1164,8 @@ adminPassword p = patternMatchFail "adminPassword" . showText $ p
 
 
 adminMyChans :: ActionFun
-adminMyChans p@AdviseNoArgs          = advise p [ prefixAdminCmd "mychannels" ] adviceAMyChansNoArgs
-adminMyChans (LowerNub i mq cols as) = getState >>= \ms ->
+adminMyChans p@AdviseNoArgs            = advise p [ prefixAdminCmd "mychannels" ] adviceAMyChansNoArgs
+adminMyChans   (LowerNub i mq cols as) = getState >>= \ms ->
     let helper target = let notFound                     = pure . sorryPCName $ target
                             found (targetId, targetSing) = case getPCChans targetId ms of
                               [] -> header none
@@ -1183,8 +1184,8 @@ adminMyChans p = patternMatchFail "adminMyChans" . showText $ p
 
 
 adminPeep :: ActionFun
-adminPeep p@AdviseNoArgs = advise p [ prefixAdminCmd "peep" ] adviceAPeepNoArgs
-adminPeep (LowerNub i mq cols as) = do
+adminPeep p@AdviseNoArgs            = advise p [ prefixAdminCmd "peep" ] adviceAPeepNoArgs
+adminPeep   (LowerNub i mq cols as) = do
     (msgs, unzip -> (logMsgsSelf, logMsgsOthers)) <- modifyState helper
     multiWrapSend mq cols msgs
     logPla "adminPeep" i . prd . slashes $ logMsgsSelf
@@ -1229,7 +1230,7 @@ adminPersist p              = withoutArgs adminPersist p
 
 adminPossess :: ActionFun
 adminPossess p@(NoArgs' i mq) = advise p [ prefixAdminCmd "possess" ] adviceAPossessNoArgs >> sendDfltPrompt mq i
-adminPossess (OneArgNubbed i mq cols target) = modifyStateSeq $ \ms ->
+adminPossess   (OneArgNubbed i mq cols target) = modifyStateSeq $ \ms ->
     let SingleTarget { .. } = mkSingleTarget mq cols target "The ID of the NPC you wish to possess"
         possess targetId    = if isNpc targetId ms
           then maybe canPossess can'tPossess . getPossessor targetId $ ms
@@ -1262,8 +1263,8 @@ adminPossess ActionParams { myId, plaMsgQueue, plaCols } = do
 
 
 adminPrint :: ActionFun
-adminPrint p@AdviseNoArgs  = advise p [ prefixAdminCmd "print" ] adviceAPrintNoArgs
-adminPrint (Msg' i mq msg) = getState >>= \ms -> let s = getSing i ms in do
+adminPrint p@AdviseNoArgs    = advise p [ prefixAdminCmd "print" ] adviceAPrintNoArgs
+adminPrint   (Msg' i mq msg) = getState >>= \ms -> let s = getSing i ms in do
     liftIO . T.putStrLn $ bracketQuote s |<>| colorWith printConsoleColor msg
     ok mq
     logPla    "adminPrint" i $       "printed "  <> dblQuote msg
@@ -1285,8 +1286,8 @@ adminProfanity p@ActionParams { plaMsgQueue, plaCols } = dumpCmdHelper "profanit
 
 
 adminSearch :: ActionFun
-adminSearch p@AdviseNoArgs                        = advise p [ prefixAdminCmd "id" ] adviceASearchNoArgs
-adminSearch (WithArgs i mq cols (T.unwords -> a)) = getState >>= \ms -> do
+adminSearch p@AdviseNoArgs                          = advise p [ prefixAdminCmd "id" ] adviceASearchNoArgs
+adminSearch   (WithArgs i mq cols (T.unwords -> a)) = getState >>= \ms -> do
     multiWrapSend mq cols $ descMatchingSings ms ++ [""] ++ descMatchingRmNames ms
     logPlaExecArgs (prefixAdminCmd "search") (pure a) i
   where
@@ -1843,8 +1844,8 @@ shutdownHelper i mq maybeMsg = getState >>= \ms ->
 
 
 adminSudoer :: ActionFun
-adminSudoer p@AdviseNoArgs                  = advise p [ prefixAdminCmd "sudoer" ] adviceASudoerNoArgs
-adminSudoer (OneArgNubbed i mq cols target) = modifyStateSeq $ \ms ->
+adminSudoer p@AdviseNoArgs                    = advise p [ prefixAdminCmd "sudoer" ] adviceASudoerNoArgs
+adminSudoer   (OneArgNubbed i mq cols target) = modifyStateSeq $ \ms ->
     let fn                  = "adminSudoer helper"
         SingleTarget { .. } = mkSingleTarget mq cols target "The PC name of the player you wish to promote/demote"
     in case [ pi | pi <- views pcTbl IM.keys ms, getSing pi ms == strippedTarget ] of
@@ -1883,8 +1884,8 @@ adminSudoer p = advise p [] adviceASudoerExcessArgs
 
 
 adminSummon :: ActionFun
-adminSummon p@AdviseNoArgs                  = advise p [ prefixAdminCmd "summon" ] adviceASummonNoArgs
-adminSummon (OneArgNubbed i mq cols target) = modifyStateSeq $ \ms ->
+adminSummon p@AdviseNoArgs                    = advise p [ prefixAdminCmd "summon" ] adviceASummonNoArgs
+adminSummon   (OneArgNubbed i mq cols target) = modifyStateSeq $ \ms ->
     let SingleTarget { .. } = mkSingleTarget mq cols target "The name of the PC you wish to summon"
         idSings             = [ idSing | idSing@(api, _) <- mkAdminPlaIdSingList ms, isLoggedIn . getPla api $ ms ]
         destId              = getRmId i ms
@@ -2103,8 +2104,8 @@ adminWhoOut = whoHelper LoggedOut "whoout"
 
 
 adminWire :: ActionFun
-adminWire p@AdviseNoArgs          = advise p [ prefixAdminCmd "wiretap" ] adviceAWireNoArgs
-adminWire (WithArgs i mq cols as) = views chanTbl IM.size <$> getState >>= \case
+adminWire p@AdviseNoArgs            = advise p [ prefixAdminCmd "wiretap" ] adviceAWireNoArgs
+adminWire   (WithArgs i mq cols as) = views chanTbl IM.size <$> getState >>= \case
   0 -> informNoChans mq cols
   _ -> helper |&| modifyState >=> \(msgs, logMsgs) ->
            multiWrapSend mq cols msgs >> logMsgs |#| logPlaOut (prefixAdminCmd "wiretap") i

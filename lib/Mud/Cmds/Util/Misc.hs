@@ -792,7 +792,7 @@ pager i mq mf txt@(length -> txtLen) = getState >>= \ms -> let pl = getPageLines
 
 
 parseOutDenotative :: [Text] -> Text -> [Text]
-parseOutDenotative ws rest = onTrue (()!# rest) (rest :) . tail $ ws
+parseOutDenotative ws rest = onFalse (()# rest) (rest :) . tail $ ws
 
 
 -----

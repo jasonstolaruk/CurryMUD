@@ -236,8 +236,8 @@ debugBuffCheck p = withoutArgs debugBuffCheck p
 
 
 debugCins :: ActionFun
-debugCins p@AdviseNoArgs       = advise p [] adviceDCinsNoArgs
-debugCins (OneArg i mq cols a) = getState >>= \ms -> case reads . T.unpack $ a :: [(Int, String)] of
+debugCins p@AdviseNoArgs         = advise p [] adviceDCinsNoArgs
+debugCins   (OneArg i mq cols a) = getState >>= \ms -> case reads . T.unpack $ a :: [(Int, String)] of
   [(targetId, "")] -> helper ms targetId
   _                -> wrapSend mq cols . sorryParseId $ a
   where
@@ -412,8 +412,8 @@ debugHandle p              = withoutArgs debugHandle p
 
 
 debugId :: ActionFun
-debugId p@AdviseNoArgs       = advise p [] adviceDIdNoArgs
-debugId (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
+debugId p@AdviseNoArgs         = advise p [] adviceDIdNoArgs
+debugId   (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
   [(searchId, "")] -> helper searchId
   _                -> wrapSend mq cols . sorryParseId $ a
   where
@@ -630,8 +630,8 @@ type Base = Int
 
 
 debugNumber :: ActionFun
-debugNumber p@AdviseNoArgs     = advise p [] adviceDNumberNoArgs
-debugNumber p@(AdviseOneArg _) = advise p [] adviceDNumberNoBase
+debugNumber p@AdviseNoArgs                             = advise p [] adviceDNumberNoArgs
+debugNumber p@(AdviseOneArg _                        ) = advise p [] adviceDNumberNoBase
 debugNumber   (WithArgs i mq cols [ numTxt, baseTxt ]) = case reads . T.unpack $ baseTxt :: [(Base, String)] of
       [(base, "")] | not . inRange (2, 36) $ base -> wrapSend mq cols . sorryParseBase $ baseTxt
                    | otherwise -> case numTxt `inBase` base of
@@ -729,8 +729,8 @@ debugRandom p = withoutArgs debugRandom p
 
 
 debugRegen :: ActionFun
-debugRegen p@AdviseNoArgs       = advise p [] adviceDRegenNoArgs
-debugRegen (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
+debugRegen p@AdviseNoArgs         = advise p [] adviceDRegenNoArgs
+debugRegen   (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
   [(targetId, "")] -> helper targetId =<< getState
   _                -> wrapSend mq cols . sorryParseId $ a
   where
@@ -968,8 +968,8 @@ debugUnderline p = withoutArgs debugUnderline p
 
 
 debugVolume :: ActionFun
-debugVolume p@AdviseNoArgs       = advise p [] adviceDVolumeNoArgs
-debugVolume (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
+debugVolume p@AdviseNoArgs         = advise p [] adviceDVolumeNoArgs
+debugVolume   (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
   [(searchId, "")] -> helper searchId =<< getState
   _                -> wrapSend mq cols . sorryParseId $ a
   where
@@ -986,8 +986,8 @@ debugVolume p = advise p [] adviceDVolumeExcessArgs
 
 
 debugWeight :: ActionFun
-debugWeight p@AdviseNoArgs       = advise p [] adviceDWeightNoArgs
-debugWeight (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
+debugWeight p@AdviseNoArgs         = advise p [] adviceDWeightNoArgs
+debugWeight   (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
   [(searchId, "")] -> helper searchId =<< getState
   _                -> wrapSend mq cols . sorryParseId $ a
   where
@@ -1004,8 +1004,8 @@ debugWeight p = advise p [] adviceDWeightExcessArgs
 
 
 debugWrap :: ActionFun
-debugWrap p@AdviseNoArgs       = advise p [] adviceDWrapNoArgs
-debugWrap (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
+debugWrap p@AdviseNoArgs         = advise p [] adviceDWrapNoArgs
+debugWrap   (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
   [(lineLen, "")] -> helper lineLen
   _               -> wrapSend mq cols . sorryParseLineLen $ a
   where
