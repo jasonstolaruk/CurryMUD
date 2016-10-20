@@ -2,6 +2,7 @@
 
 module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryAdminChanTargetName
+                           , sorryAdminKillAsleep
                            , sorryAdminKillSelf
                            , sorryAdminKillType
                            , sorryAdminName
@@ -363,6 +364,10 @@ sorryAdminChanTargetName = sorryChanTargetName "admin"
 
 
 -----
+
+
+sorryAdminKillAsleep :: Text -> Text
+sorryAdminKillAsleep t = t <> " is presently asleep and cannot cannot be killed."
 
 
 sorryAdminKillSelf :: Text

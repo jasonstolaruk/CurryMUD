@@ -985,7 +985,6 @@ adminIp p = withoutArgs adminIp p
 -----
 
 
--- TODO: Killing a PC that is asleep?
 adminKill :: ActionFun
 adminKill p@AdviseNoArgs            = advise p [ prefixAdminCmd "kill" ] adviceAKillNoArgs
 adminKill   (LowerNub i mq cols as) = getState >>= \ms -> do
@@ -1005,11 +1004,14 @@ adminKill   (LowerNub i mq cols as) = getState >>= \ms -> do
           where
             sorryHelper msg = pair & _2 <>~ pure msg
             sorry           = sorryHelper . sorryParseId $ a
-            go targetId | targetId == i = sorryHelper sorryAdminKillSelf
-                        | getType targetId ms `elem` [ NpcType, PCType ] =
-                            pair & _1 <>~ pure targetId
-                                 & _2 <>~ pure (prd $ "You kill " <> aOrAnOnLower (descSingId targetId ms))
-                        | otherwise = sorryHelper . sorryAdminKillType $ targetId
+            go targetId     | targetId == i     = sorryHelper sorryAdminKillSelf
+                            | isNpc targetId ms = kill targetId
+                            | isPC  targetId ms = if isAwake targetId ms
+                              then kill targetId
+                              else sorryHelper . sorryAdminKillAsleep . descSingId targetId $ ms
+                            | otherwise = sorryHelper . sorryAdminKillType $ targetId
+            kill targetId   = pair & _1 <>~ pure targetId
+                                   & _2 <>~ pure (prd $ "You kill " <> aOrAnOnLower (descSingId targetId ms))
     mkBs ms = concatMap f
       where
         f targetId = let d        = mkStdDesig targetId ms Don'tCap
