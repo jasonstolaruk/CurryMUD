@@ -2,9 +2,6 @@
 
 module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryAdminChanTargetName
-                           , sorryAdminKillAsleep
-                           , sorryAdminKillSelf
-                           , sorryAdminKillType
                            , sorryAdminName
                            , sorryAdminPasswordAdmin
                            , sorryAdminPasswordSelf
@@ -14,6 +11,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryAdminSetValue
                            , sorryAlreadyPossessed
                            , sorryAlreadyPossessing
+                           , sorryAsAdHoc
                            , sorryAsAdmin
                            , sorryAsSelf
                            , sorryAsType
@@ -145,6 +143,12 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryIntroInInv
                            , sorryIntroNoOneHere
                            , sorryIntroType
+                           , sorryKillAdHoc
+                           , sorryKillAdmin
+                           , sorryKillAsleep
+                           , sorryKillSelf
+                           , sorryKillSpirit
+                           , sorryKillType
                            , sorryLinkAlready
                            , sorryLinkCoin
                            , sorryLinkInEq
@@ -366,21 +370,6 @@ sorryAdminChanTargetName = sorryChanTargetName "admin"
 -----
 
 
-sorryAdminKillAsleep :: Text -> Text
-sorryAdminKillAsleep t = t <> " is presently asleep and cannot cannot be killed."
-
-
-sorryAdminKillSelf :: Text
-sorryAdminKillSelf = can't "kill yourself."
-
-
-sorryAdminKillType :: Id -> Text
-sorryAdminKillType i = "ID " <> showText i <> "is not a mobile."
-
-
------
-
-
 sorryAdminName :: Text -> Text
 sorryAdminName n = prd $ "There is no administrator by the name of " <> dblQuote n
 
@@ -430,6 +419,10 @@ sorryAlreadyPossessing s = prd $ "You are already possessing " <> theOnLower s
 
 
 -----
+
+
+sorryAsAdHoc :: Text
+sorryAsAdHoc = can'tTarget "an ad-hoc PC" <> withAs
 
 
 sorryAsAdmin :: Text
@@ -1118,6 +1111,37 @@ sorryIntroNoOneHere = "You don't see anyone here to introduce yourself to."
 
 sorryIntroType :: Sing -> Text
 sorryIntroType s = prd $ can't "introduce yourself to " <> theOnLower s
+
+
+-----
+
+
+sorryKillAdHoc :: Text -> Text
+sorryKillAdHoc t = t <> " is an ad-hoc PC " <> can'tKill
+
+
+can'tKill :: Text
+can'tKill = "and cannot cannot be killed."
+
+
+sorryKillAdmin :: Text -> Text
+sorryKillAdmin t = t <> " is an admin " <> can'tKill
+
+
+sorryKillAsleep :: Text -> Text
+sorryKillAsleep t = t <> " is presently asleep " <> can'tKill
+
+
+sorryKillSelf :: Text
+sorryKillSelf = can't "kill yourself."
+
+
+sorryKillSpirit :: Text -> Text
+sorryKillSpirit t = prd $ t <> " has already died " <> parensQuote "and is presently a spirit"
+
+
+sorryKillType :: Id -> Text
+sorryKillType i = "ID " <> showText i <> " is not a mobile."
 
 
 -----

@@ -316,6 +316,7 @@ adminAs   (WithTarget i mq cols target rest) = getState >>= \ms ->
           PCType  | targetId == i                                            -> sorry sorryAsSelf
                   | isAdmin          . getPla targetId $ ms                  -> sorry sorryAsAdmin
                   | not . isLoggedIn . getPla targetId $ ms                  -> sorry . sorryLoggedOut $ s
+                  | isAdHoc targetId ms                                      -> sorry . sorryAsAdHoc   $ s
                   | (targetMq, targetCols) <- getMsgQueueColumns targetId ms -> do
                       ioHelper targetId s
                       wrapSend targetMq targetCols asMsg
@@ -994,7 +995,7 @@ adminKill   (LowerNub i mq cols as) = getState >>= \ms -> do
     is |#| logPla (prefixAdminCmd "kill") i . prd . ("killing " <>) . commas . map (`descSingId` ms)
     mapM_ handleDeath is
   where
-    helper ms = foldl' f ((,) mempty mempty) as
+    helper ms = foldl' f mempties as
       where
         f pair a = case reads . T.unpack $ a :: [(Int, String)] of
           [(targetId, "")] | targetId < 0                -> sorryHelper sorryWtf
@@ -1005,13 +1006,18 @@ adminKill   (LowerNub i mq cols as) = getState >>= \ms -> do
             sorryHelper msg = pair & _2 <>~ pure msg
             sorry           = sorryHelper . sorryParseId $ a
             go targetId     | targetId == i     = sorryHelper sorryAdminKillSelf
-                            | isNpc targetId ms = kill targetId
-                            | isPC  targetId ms = if isAwake targetId ms
-                              then kill targetId
-                              else sorryHelper . sorryAdminKillAsleep . descSingId targetId $ ms
+                            | isNpc targetId ms = kill
+                            | isPC  targetId ms =
+                                if | isAdminId  targetId ms      -> sorryHelper . sorryKillAdmin  $ singId
+                                   | not . isAwake targetId $ ms -> sorryHelper . sorryKillAsleep $ singId
+                                   | isSpiritId targetId ms      -> sorryHelper . sorryKillSpirit $ singId
+                                   | isAdHoc    targetId ms      -> sorryHelper . sorryKillAdHoc  $ singId
+                                   | otherwise                   -> kill
                             | otherwise = sorryHelper . sorryAdminKillType $ targetId
-            kill targetId   = pair & _1 <>~ pure targetId
-                                   & _2 <>~ pure (prd $ "You kill " <> aOrAnOnLower (descSingId targetId ms))
+              where
+                kill   = pair & _1 <>~ pure targetId
+                              & _2 <>~ pure (prd $ "You kill " <> aOrAnOnLower singId)
+                singId = descSingId targetId ms
     mkBs ms = concatMap f
       where
         f targetId = let d        = mkStdDesig targetId ms Don'tCap

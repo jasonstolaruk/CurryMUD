@@ -26,6 +26,7 @@ module Mud.Cmds.Util.Misc ( asterisk
                           , hasEnc
                           , hasYou
                           , inOut
+                          , isAdHoc
                           , isAlive
                           , isAttacking
                           , isAwake
@@ -91,7 +92,7 @@ import Mud.Interp.Pager
 import Mud.Misc.ANSI
 import Mud.Misc.Database
 import Mud.Misc.LocPref
-import Mud.TheWorld.Zones.AdminZoneIds
+import Mud.TheWorld.Zones.AdminZoneIds (iNecropolis, iWelcome)
 import Mud.Threads.Misc
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.FilePaths
@@ -496,8 +497,15 @@ hasYou = any (`elem` yous) . map (T.dropAround (not . isLetter) . T.toLower)
 -----
 
 
+isAdHoc :: Id -> MudState -> Bool
+isAdHoc i = (== iWelcome) . getRmId i
+
+
+-----
+
+
 isAlive :: Id -> MudState -> Bool
-isAlive i ms = i `notElem` getInv iNecropolis ms
+isAlive i = (i `notElem`) . getInv iNecropolis
 
 
 -----
@@ -530,6 +538,7 @@ isMoving = isActing Moving
 -----
 
 
+-- TODO: Compare to "isLoggedIn". Are you using both functions correctly?
 isAwake :: Id -> MudState -> Bool
 isAwake = onPla (uncurry (&&) . (isLoggedIn &&& not . isIncognito)) True
 
