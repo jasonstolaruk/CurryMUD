@@ -846,7 +846,7 @@ xformNls = T.replace theNl (colorWith nlColor "\\n")
 examineVessel :: ExamineHelper
 examineVessel i ms = let v = getVessel i ms in
     [ "Max mouthfuls: "   <> v^.vesselMaxMouthfuls.to showText
-    , "Vessel contents: " <> v^.vesselCont        .to (descCont v) ] ++ views vesselCont (maybe [] (descLiq . fst)) v
+    , "Vessel contents: " <> v^.vesselCont        .to (descCont v) ] ++ views vesselCont (maybeEmp (descLiq . fst)) v
   where
     descCont _ Nothing       = none
     descCont v (Just (l, m)) = T.concat [ showText m

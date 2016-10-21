@@ -2091,7 +2091,7 @@ look (LowerNub i mq cols as) = mkRndmVector >>= \v ->
         let mkLogMsgForDesigs targetDesigs | targetSings <- [ parseExpandDesig i ms . serialize $ targetDesig
                                                             | targetDesig <- targetDesigs ]
                                            = "looked at " <> commas targetSings
-            logMsg = T.intercalate " / " . dropBlanks $ [ maybe "" mkLogMsgForDesigs maybeTargetDesigs, hookLogMsg ]
+            logMsg = T.intercalate " / " . dropBlanks $ [ maybeEmp mkLogMsgForDesigs maybeTargetDesigs, hookLogMsg ]
         logMsg |#| logPla "look" i . prd
   where
     helper v ms =
@@ -3150,7 +3150,7 @@ sayHelper l p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
                                          ; logMsg |#| logPlaOut (mkCmdNameForLang l) i . pure
                                          ; logMsg |#| alertMsgHelper i (mkCmdNameForLang l) }
     ioHelper _  triple              = patternMatchFail "sayHelper ioHelper" . showText $ triple
-    simpleSayHelper ms (maybe "" spcL -> adverb) (formatMsg -> msg) =
+    simpleSayHelper ms (maybeEmp spcL -> adverb) (formatMsg -> msg) =
         return $ let d                = mkStdDesig i ms DoCap
                      inLang           = mkInLangTxtForLang l
                      toSelfMsg        = T.concat [ "You say", inLang, adverb, ", ", msg ]
@@ -3750,8 +3750,8 @@ stats (NoArgs i mq cols) = getState >>= \ms ->
         (l, expr)       = getLvlExp i ms
         nxt             = subtract expr . snd $ calcLvlExps !! l
         skillPtsHelper  = let pts = getSkillPts i ms in pts > 0 |?| (commaShow pts <> " unspent skill points")
-        mobRmDescHelper = maybe "" (prd . ("Your room description is " <>))        $ dblQuote <$> getMobRmDesc i ms
-        tempDescHelper  = maybe "" ("Your temporary character description is " <>) $ dblQuote <$> getTempDesc  i ms
+        mobRmDescHelper = maybeEmp (prd . ("Your room description is " <>))        $ dblQuote <$> getMobRmDesc i ms
+        tempDescHelper  = maybeEmp ("Your temporary character description is " <>) $ dblQuote <$> getTempDesc  i ms
     in multiWrapSend mq cols mkStats >> logPlaExec "stats" i
 stats p = withoutArgs stats p
 

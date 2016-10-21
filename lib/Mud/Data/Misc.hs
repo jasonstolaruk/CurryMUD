@@ -64,7 +64,7 @@ import Mud.Data.State.MudData
 import Mud.Misc.Database
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
-import Mud.Util.Misc (PatternMatchFail)
+import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Operators
 import Mud.Util.Quoting
 import Mud.Util.Text
@@ -74,7 +74,6 @@ import Control.Lens (Getting, Setting, both)
 import Control.Lens.Operators ((%~), (&), (^.))
 import Data.Bits (clearBit, setBit, testBit)
 import Data.Function (on)
-import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>))
 import Data.String (fromString)
 import Data.Text (Text)
@@ -280,7 +279,7 @@ instance Pretty BugRec where
 
 
 instance Pretty ChanContext where
-  pp ChanContext { .. } = someCmdName <> maybe "" spcL someChanName
+  pp ChanContext { .. } = someCmdName <> maybeEmp spcL someChanName
 
 
 instance Pretty Cloth where
@@ -326,7 +325,7 @@ effectValHelper = maybe (parensQuote "no value") pp
 
 
 effectFeelingHelper :: Maybe EffectFeeling -> Text
-effectFeelingHelper = maybe "" (spcL . pp)
+effectFeelingHelper = maybeEmp (spcL . pp)
 
 
 instance Pretty EffectFeeling where
@@ -677,8 +676,8 @@ data Cmd = Cmd { cmdName           :: CmdName
 
 instance Eq Cmd where
   (==) (Cmd cn1 cpa1 cfn1 _ cd1)
-       (Cmd cn2 cpa2 cfn2 _ cd2) = and [ c1 == c2 | c1 <- [ cn1, fromMaybe "" cpa1, cfn1, cd1 ]
-                                                  | c2 <- [ cn2, fromMaybe "" cpa2, cfn2, cd2 ] ]
+       (Cmd cn2 cpa2 cfn2 _ cd2) = and [ c1 == c2 | c1 <- [ cn1, fromMaybeEmp cpa1, cfn1, cd1 ]
+                                                  | c2 <- [ cn2, fromMaybeEmp cpa2, cfn2, cd2 ] ]
 
 
 instance Ord Cmd where

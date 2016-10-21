@@ -215,7 +215,7 @@ mkGecrMultForEnts :: Id -> MudState -> Amount -> Text -> Inv -> GetEntsCoinsRes
 mkGecrMultForEnts i ms a n is = let effNames = [ getEffName i ms targetId | targetId <- is ] in
     uncurry (Mult a n) (findFullNameForAbbrev n effNames |&| maybe notFound (found effNames))
   where
-    notFound                          = mempties
+    notFound                          = (Nothing, Nothing)
     found (zip is -> zipped) fullName = (Just . takeMatchingEnts zipped $ fullName, Nothing)
     takeMatchingEnts zipped  fullName = take a [ getEnt targetId ms | (targetId, effName) <- zipped
                                                                     , effName == fullName ]

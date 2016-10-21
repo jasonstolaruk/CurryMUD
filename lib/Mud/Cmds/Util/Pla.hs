@@ -1040,7 +1040,7 @@ mkEntDesc i cols ms (ei, e) | ed <- views entDesc (wrapUnlines cols) e, s <- get
                                                     d  -> spcL d
     adminTagHelper      | isAdminId ei ms = spcL adminTagTxt
                         | otherwise       = ""
-    tempDescHelper      = maybe "" (wrapUnlines cols . coloredBracketQuote) . getTempDesc ei $ ms
+    tempDescHelper      = maybeEmp (wrapUnlines cols . coloredBracketQuote) . getTempDesc ei $ ms
     coloredBracketQuote = quoteWith' (("[ ", " ]") & both %~ colorWith tempDescColor)
 
 

@@ -404,7 +404,6 @@ obj ^. name . to T.toUpper
 
 Consider using "to" with "(^.)" when sensible:
 obj^.name.to T.toUpper
-maybeString^.to fromJust.packed
 
 Prefer "folded" over using "map" with a lens:
 myStrings^..folded.packed

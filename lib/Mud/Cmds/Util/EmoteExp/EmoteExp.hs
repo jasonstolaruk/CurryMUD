@@ -174,7 +174,7 @@ procExpCmd i ms cc triples (map T.toLower . unmsg -> [cn, target]) =
     getIdForMatch match  = view _1 . head . filter (views _2 ((== match) . T.toLower)) $ triples
     format maybeTargetId =
         let substitutions = [ ("%", embedId i), ("^", heShe), ("&", hisHer), ("*", himHerself) ]
-        in replace (substitutions ++ maybe [] (pure . ("@", ) . embedId) maybeTargetId)
+        in replace (substitutions ++ maybeEmp (pure . ("@", ) . embedId) maybeTargetId)
     (heShe, hisHer, himHerself) = mkPros . getSex i $ ms
     colorizeYous                = T.unwords . map helper . T.words
       where
@@ -313,7 +313,7 @@ adminChanProcExpCmd i ms tunedIds tunedSings (map T.toLower . unmsg -> [cn, targ
     findTarget = findFullNameForAbbrev (capitalize target) $ getSing i ms `delete` tunedSings
     format maybeTargetSing =
         let substitutions = [ ("%", s), ("^", heShe), ("&", hisHer), ("*", himHerself) ]
-        in replace (substitutions ++ maybe [] (pure . ("@", )) maybeTargetSing)
+        in replace (substitutions ++ maybeEmp (pure . ("@", )) maybeTargetSing)
     s                           = getSing i ms
     (heShe, hisHer, himHerself) = mkPros . getSex i $ ms
     colorizeYous                = T.unwords . map helper . T.words

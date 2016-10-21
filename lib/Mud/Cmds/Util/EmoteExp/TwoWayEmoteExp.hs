@@ -13,7 +13,7 @@ import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
-import Mud.Util.Misc (PatternMatchFail)
+import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Operators
 import Mud.Util.Quoting
 import Mud.Util.Text
@@ -105,7 +105,7 @@ procExpCmdTwoWay i ms targetId targetSing (map T.toLower . unmsg -> [cn, target]
         | otherwise -> Left . sorryTwoWayTargetName match $ targetSing
     notFound             = Left . sorryExpCmdName $ cn
     format maybeTargetId = let substitutions = [ ("%", s), ("^", heShe), ("&", hisHer), ("*", himHerself) ]
-                           in replace (substitutions ++ maybe [] (const . pure $ ("@", targetSing)) maybeTargetId)
+                           in replace (substitutions ++ maybeEmp (const . pure $ ("@", targetSing)) maybeTargetId)
     s                    = getSing i ms
     (heShe, hisHer, himHerself) = mkPros . getSex i $ ms
 procExpCmdTwoWay _ _ _ _ as = patternMatchFail "procExpCmdTwoWay" . showText $ as

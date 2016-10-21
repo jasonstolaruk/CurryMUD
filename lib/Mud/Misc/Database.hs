@@ -314,7 +314,7 @@ createDbTbls = onDbFile $ \conn -> do
 
 
 hashPW :: String -> IO Text
-hashPW = maybe "" T.decodeUtf8 `fmap2` (hashPasswordUsingPolicy fastBcryptHashingPolicy . B.pack)
+hashPW = maybeEmp T.decodeUtf8 `fmap2` (hashPasswordUsingPolicy fastBcryptHashingPolicy . B.pack)
 
 
 -----

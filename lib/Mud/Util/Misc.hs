@@ -26,6 +26,7 @@ module Mud.Util.Misc ( atLst1
                      , fmap3
                      , fromEither
                      , fromLeft
+                     , fromMaybeEmp
                      , fromRight
                      , ifThenElse
                      , ind
@@ -34,6 +35,7 @@ module Mud.Util.Misc ( atLst1
                      , listToMaybe
                      , max0
                      , max1
+                     , maybeEmp
                      , maybeRet
                      , maybeVoid
                      , mempties
@@ -208,6 +210,10 @@ fromRight (Right x) = x
 fromRight x         = blowUp "Mud.Util.Misc" "fromRight" "Left" . T.pack . show $ x
 
 
+fromMaybeEmp :: (Monoid a) => Maybe a -> a
+fromMaybeEmp = maybeEmp id
+
+
 ifThenElse :: Bool -> a -> a -> a
 ifThenElse True  x _ = x
 ifThenElse False _ y = y
@@ -259,6 +265,10 @@ max0 = (`max` 0)
 
 max1 :: (Num a, Ord a) => a -> a
 max1 = (`max` 1)
+
+
+maybeEmp :: (Monoid b) => (a -> b) -> Maybe a -> b
+maybeEmp = maybe mempty
 
 
 maybeRet :: (Monad m) => m a -> Maybe a -> m a

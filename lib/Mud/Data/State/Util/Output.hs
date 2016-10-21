@@ -63,7 +63,7 @@ import Control.Lens.Operators ((%~), (&), (.~), (<>~), (^.))
 import Control.Monad (forM_, unless)
 import Control.Monad.IO.Class (liftIO)
 import Data.List ((\\), delete, elemIndex)
-import Data.Maybe (fromJust, fromMaybe)
+import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import Prelude hiding (pi)
@@ -283,17 +283,17 @@ parseDesigHelper f i ms = loop (getIntroduced i ms)
 
 
 expandEntName :: Id -> MudState -> Desig -> Text
-expandEntName i ms StdDesig { .. } =
-  let f      = mkCapsFun desigShouldCap
-      (h, t) = headTail desigEntName
-  in if isPC desigId ms
-    then T.concat [ f "the ", xth, expandSex h, " ", t ]
-    else let s = getSing desigId ms in onFalse (isCapital s) (f . ("the " <>)) s
+expandEntName i ms StdDesig { .. } = let f      = mkCapsFun desigShouldCap
+                                         (h, t) = headTail desigEntName
+                                         s      = getSing desigId ms
+                                     in if isPC desigId ms
+                                       then T.concat [ f "the ", xth, expandSex h, " ", t ]
+                                       else onFalse (isCapital s) (f . ("the " <>)) s
   where
     xth = let intros  = getIntroduced i ms
               idsInRm = filter ((`notElem` intros) . (`getSing` ms)) $ i `delete` desigIds
-              matches = foldr (\pi acc -> onTrue (mkUnknownPCEntName pi ms == desigEntName) (pi :) acc) [] idsInRm
-          in length matches > 1 |?| spcR . mkOrdinal . succ . fromJust . elemIndex desigId $ matches
+              matches = foldr (\pi -> onTrue (mkUnknownPCEntName pi ms == desigEntName) (pi :)) [] idsInRm
+          in maybeEmp (spcR . mkOrdinal . succ) . elemIndex desigId $ matches
     expandSex 'm' = "male"
     expandSex 'f' = "female"
     expandSex x   = patternMatchFail "expandEntName expandSex" . T.singleton $ x
