@@ -1104,7 +1104,7 @@ adminMsg   (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMs
                       toTarget'              = quoteWith "__" me |<>| toTarget
                   in do
                       sendFun formatted
-                      (multiWrapSend targetMq targetCols =<<) $ if isNotFirstAdminMsg targetPla
+                      (multiWrapSend targetMq targetCols =<<) $ if not (isAdHoc targetId ms) && isNotFirstAdminMsg targetPla
                         then unadulterated toTarget'
                         else [ toTarget' : hints | hints <- firstAdminMsg targetId s ]
                       dbHelper
@@ -1126,7 +1126,6 @@ adminMsg   (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMs
 adminMsg p = patternMatchFail "adminMsg" . showText $ p
 
 
--- TODO: Not for ad-hocs.
 firstAdminMsg :: Id -> Sing -> MudStack [Text]
 firstAdminMsg i adminSing =
     modifyState $ (, [ "", hintAMsg adminSing ]) . (plaTbl.ind i %~ setPlaFlag IsNotFirstAdminMsg True)
