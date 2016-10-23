@@ -31,7 +31,7 @@ import Mud.Misc.ANSI
 import Mud.Misc.Database
 import Mud.Misc.Misc
 import Mud.Misc.Persist
-import Mud.TheWorld.Zones.AdminZoneIds (iLoggedOut, iRoot)
+import Mud.TheWorld.Zones.AdminZoneIds (iLoggedOut, iRoot, iWelcome)
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
 import Mud.Util.List
@@ -83,6 +83,7 @@ import Text.Regex.Posix ((=~))
 
 
 {-# ANN module ("HLint: ignore Use ||" :: String) #-}
+-- TODO: isSpitit
 
 
 -----
@@ -313,10 +314,10 @@ adminAs   (WithTarget i mq cols target rest) = getState >>= \ms ->
                            then sorryAlreadyPossessing s
                            else sorryAlreadyPossessed  s . getSing pi $ ms
                      in maybe notPossessed isPossessed . getPossessor targetId $ ms
-          PCType  | targetId == i                                            -> sorry sorryAsSelf
-                  | isAdmin          . getPla targetId $ ms                  -> sorry sorryAsAdmin
-                  | not . isLoggedIn . getPla targetId $ ms                  -> sorry . sorryLoggedOut $ s
-                  | isAdHoc targetId ms                                      -> sorry . sorryAsAdHoc   $ s
+          PCType  | targetId == i                           -> sorry sorryAsSelf
+                  | isAdminId targetId ms                   -> sorry sorryAsAdmin
+                  | not . isLoggedIn . getPla targetId $ ms -> sorry . sorryLoggedOut $ s
+                  | isAdHoc targetId ms                     -> sorry sorryAsAdHoc
                   | (targetMq, targetCols) <- getMsgQueueColumns targetId ms -> do
                       ioHelper targetId s
                       wrapSend targetMq targetCols asMsg
@@ -388,9 +389,10 @@ adminBanPC p@(MsgWithTarget i mq cols target msg) = getState >>= \ms ->
       [banId] -> let selfSing = getSing i     ms
                      pla      = getPla  banId ms
                  in if
-                   | banId == i  -> sendFun sorryBanSelf
-                   | isAdmin pla -> sendFun sorryBanAdmin
-                   | otherwise   -> withDbExHandler "adminBanPC" (isPCBanned strippedTarget) >>= \case
+                   | banId == i       -> sendFun sorryBanSelf
+                   | isAdmin pla      -> sendFun sorryBanAdmin
+                   | isAdHoc banId ms -> sendFun sorryBanAdHoc
+                   | otherwise        -> withDbExHandler "adminBanPC" (isPCBanned strippedTarget) >>= \case
                      Nothing      -> dbError mq cols
                      Just (Any b) -> let newStatus = not b in liftIO mkTimestamp >>= \ts -> do
                          let rec = BanPCRec ts strippedTarget newStatus msg
@@ -1005,7 +1007,7 @@ adminKill   (LowerNub i mq cols as) = getState >>= \ms -> do
           where
             sorryHelper msg = pair & _2 <>~ pure msg
             sorry           = sorryHelper . sorryParseId $ a
-            go targetId     | targetId == i     = sorryHelper sorryAdminKillSelf
+            go targetId     | targetId == i     = sorryHelper sorryKillSelf
                             | isNpc targetId ms = kill
                             | isPC  targetId ms =
                                 if | isAdminId  targetId ms      -> sorryHelper . sorryKillAdmin  $ singId
@@ -1013,7 +1015,7 @@ adminKill   (LowerNub i mq cols as) = getState >>= \ms -> do
                                    | isSpiritId targetId ms      -> sorryHelper . sorryKillSpirit $ singId
                                    | isAdHoc    targetId ms      -> sorryHelper . sorryKillAdHoc  $ singId
                                    | otherwise                   -> kill
-                            | otherwise = sorryHelper . sorryAdminKillType $ targetId
+                            | otherwise = sorryHelper . sorryKillType $ targetId
               where
                 kill   = pair & _1 <>~ pure targetId
                               & _2 <>~ pure (prd $ "You kill " <> aOrAnOnLower singId)
@@ -1125,6 +1127,7 @@ adminMsg   (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMs
 adminMsg p = patternMatchFail "adminMsg" . showText $ p
 
 
+-- TODO: Not for ad-hocs.
 firstAdminMsg :: Id -> Sing -> MudStack [Text]
 firstAdminMsg i adminSing =
     modifyState $ (, [ "", hintAMsg adminSing ]) . (plaTbl.ind i %~ setPlaFlag IsNotFirstAdminMsg True)
@@ -1140,7 +1143,7 @@ adminPassword p@(WithTarget i mq cols target pw)
   | length (T.words pw) > 1 = advise p [ prefixAdminCmd "password" ] adviceAPasswordExcessArgs
   | otherwise               = getState >>= \ms ->
       let SingleTarget { .. } = mkSingleTarget mq cols target "The PC name of the player whose password you wish to change"
-          changePW = (withDbExHandler fn . liftIO . lookupPW $ strippedTarget) >>= \case
+          changePW            = (withDbExHandler fn . liftIO . lookupPW $ strippedTarget) >>= \case
             Nothing           -> dbError mq cols
             Just (Just oldPW) -> do
                 withDbExHandler_ fn . insertDbTblUnPw . UnPwRec strippedTarget $ pw
@@ -1854,8 +1857,9 @@ shutdownHelper i mq maybeMsg = getState >>= \ms ->
 adminSudoer :: ActionFun
 adminSudoer p@AdviseNoArgs                    = advise p [ prefixAdminCmd "sudoer" ] adviceASudoerNoArgs
 adminSudoer   (OneArgNubbed i mq cols target) = modifyStateSeq $ \ms ->
-    let fn                  = "adminSudoer helper"
+    let fn                  = "adminSudoer"
         SingleTarget { .. } = mkSingleTarget mq cols target "The PC name of the player you wish to promote/demote"
+        sorry               = (ms, ) . pure . sendFun
     in case [ pi | pi <- views pcTbl IM.keys ms, getSing pi ms == strippedTarget ] of
       [] -> (ms, pure . sendFun $ sorryPCName strippedTarget |<>| hintASudoer)
       [targetId]
@@ -1880,11 +1884,13 @@ adminSudoer   (OneArgNubbed i mq cols target) = modifyStateSeq $ \ms ->
                 , logPla    fn targetId             . T.concat $ [ verb, " by ",                 selfSing,   "." ]
                 , handleIncog
                 , handlePeep ]
-        -> if | targetId   == i      -> (ms, pure . sendFun $ sorrySudoerDemoteSelf)
-              | targetSing == "Root" -> (ms, pure . sendFun $ sorrySudoerDemoteRoot)
-              | otherwise            -> (ms & plaTbl.ind targetId %~ setPlaFlag IsAdmin      (not ia)
-                                            & plaTbl.ind targetId %~ setPlaFlag IsTunedAdmin (not ia), fs)
-      xs -> patternMatchFail "adminSudoer helper" . showText $ xs
+        -> if | targetId   == i        -> sorry sorrySudoerDemoteSelf
+              | targetSing == "Root"   -> sorry sorrySudoerDemoteRoot
+              | isAdHoc    targetId ms -> sorry sorrySudoerAdHoc
+              | isSpiritId targetId ms -> sorry . sorrySudoerSpirit $ targetSing
+              | otherwise              -> (ms & plaTbl.ind targetId %~ setPlaFlag IsAdmin      (not ia)
+                                              & plaTbl.ind targetId %~ setPlaFlag IsTunedAdmin (not ia), fs)
+      xs -> patternMatchFail fn . showText $ xs
 adminSudoer p = advise p [] adviceASudoerExcessArgs
 
 
@@ -1904,9 +1910,10 @@ adminSummon   (OneArgNubbed i mq cols target) = modifyStateSeq $ \ms ->
         found (targetId@((`getRmId` ms) -> originId), targetSing)
           | targetSing == s       = sorry sorrySummonSelf
           | isAdminId targetId ms = sorry sorrySummonAdmin
+          | isAdHoc   targetId ms = sorry sorrySummonAdHoc
           | destId == originId    = sorry . sorrySummonAlready $ targetSing
           | p   <- mkActionParams targetId ms []
-          , res <- teleHelper p ms originId destId destName Nothing consLocPrefBcast
+          , res <- teleHelper p ms originId destId destName Nothing consLocPrefBcast sorry
           = res & _2 <>~ pure (logPla "adminSummon" i . T.concat $ [ "summoned ", targetSing, " to ", dblQuote rn, "." ])
         notFound = sorry . sorryPCNameLoggedIn $ strippedTarget
     in findFullNameForAbbrev strippedTarget idSings |&| maybe notFound found
@@ -1927,10 +1934,7 @@ adminTeleId p@(OneArgNubbed i mq cols target) = modifyStateSeq $ \ms ->
                 notice         = thrice prd $ "Teleporting to " <> destName
                 originId       = getRmId i ms
                 sorry          = (ms, ) . pure . multiSendFun . (notice :) . pure
-            in if | destId == originId   -> sorry sorryTeleAlready
-                  | destId == iLoggedOut -> sorry sorryTeleLoggedOutRm
-                  | otherwise            ->
-                      teleHelper p { args = [] } ms originId destId destName (Just notice) consLocPrefBcast
+            in teleHelper p { args = [] } ms originId destId destName (Just notice) consLocPrefBcast sorry
         sorryParse = (ms, ) . pure . sendFun
     in case reads . T.unpack $ strippedTarget :: [(Int, String)] of
       [(targetId, "")]
@@ -1948,8 +1952,9 @@ teleHelper :: ActionParams
            -> Text
            -> Maybe Text
            -> (Id -> [Broadcast] -> [Broadcast])
+           -> (Text -> (MudState, Funs))
            -> (MudState, Funs)
-teleHelper p@ActionParams { myId } ms originId destId destName mt f =
+teleHelper p@ActionParams { myId } ms originId destId destName mt f sorry =
     let g            = maybe strictId ((:) . (, pure myId) . nlnl) mt
         originDesig  = mkStdDesig myId ms Don'tCap
         originMobIds = myId `delete` desigIds originDesig
@@ -1959,13 +1964,18 @@ teleHelper p@ActionParams { myId } ms originId destId destName mt f =
         ms'          = ms & mobTbl.ind myId.rmId .~ destId
                           & invTbl.ind originId  %~ (myId `delete`)
                           & invTbl.ind destId    %~ addToInv ms (pure myId)
-    in (ms', [ bcastIfNotIncog myId . f myId . g $ [ (nlnl   teleDescMsg,                             pure myId   )
-                                                   , (nlnl . teleOriginMsg . serialize $ originDesig, originMobIds)
-                                                   , (nlnl . teleDestMsg               $ destDesig,   destMobIds  ) ]
-             , look p
-             , logPla "telehelper" myId . prd $ "teleported to " <> dblQuote destName
-             , rndmDos [ (calcProbTeleportDizzy   myId ms, mkExpAction "dizzy"   p)
-                       , (calcProbTeleportShudder myId ms, mkExpAction "shudder" p) ] ])
+        bs           = map (first nlnl) [ (teleDescMsg,                             pure myId   )
+                                        , (teleOriginMsg . serialize $ originDesig, originMobIds)
+                                        , (teleDestMsg destDesig,                   destMobIds  ) ]
+    in if | destId == originId   -> sorry sorryTeleAlready
+          | destId == iWelcome   -> sorry sorryTeleWelcomeRm
+          | destId == iLoggedOut -> sorry sorryTeleLoggedOutRm
+          | otherwise            ->
+              (ms', [ bcastIfNotIncog myId . f myId . g $ bs
+                    , look p
+                    , logPla "telehelper" myId . prd $ "teleported to " <> dblQuote destName
+                    , rndmDos [ (calcProbTeleportDizzy   myId ms, mkExpAction "dizzy"   p)
+                              , (calcProbTeleportShudder myId ms, mkExpAction "shudder" p) ] ])
 
 
 -----
@@ -1975,13 +1985,13 @@ adminTelePC :: ActionFun
 adminTelePC p@AdviseNoArgs                    = advise p [ prefixAdminCmd "telepc" ] adviceATelePCNoArgs
 adminTelePC p@(OneArgNubbed i mq cols target) = modifyStateSeq $ \ms ->
     let SingleTarget { .. } = mkSingleTarget mq cols target "The name of the PC to which you want to teleport"
+        sorry               = (ms, ) . pure . sendFun
         idSings             = [ idSing | idSing@(api, _) <- mkAdminPlaIdSingList ms, isLoggedIn . getPla api $ ms ]
         originId            = getRmId i ms
         found (flip getRmId ms -> destId, targetSing)
-          | targetSing == getSing i ms = (ms, pure .  sendFun $ sorryTeleSelf)
-          | destId     == originId     = (ms, pure .  sendFun $ sorryTeleAlready)
-          | otherwise = teleHelper p { args = [] } ms originId destId targetSing Nothing consLocPrefBcast
-        notFound = (ms, pure . sendFun . sorryPCNameLoggedIn $ strippedTarget)
+          | targetSing == getSing i ms = sorry sorryTeleSelf
+          | otherwise = teleHelper p { args = [] } ms originId destId targetSing Nothing consLocPrefBcast sorry
+        notFound = sorry . sorryPCNameLoggedIn $ strippedTarget
     in findFullNameForAbbrev strippedTarget idSings |&| maybe notFound found
 adminTelePC ActionParams { plaMsgQueue, plaCols } = wrapSend plaMsgQueue plaCols adviceATelePCExcessArgs
 
@@ -1995,12 +2005,12 @@ adminTeleRm (NoArgs i mq cols) = (multiWrapSend mq cols =<< mkTxt) >> logPlaExec
     mkTxt  = views rmTeleNameTbl ((header :) . styleAbbrevs Don'tQuote . IM.elems) <$> getState
     header = "You may teleport to the following rooms:"
 adminTeleRm p@(OneArgLower i mq cols target) = modifyStateSeq $ \ms ->
-    let SingleTarget { .. } = mkSingleTarget mq cols target "The name of the room to which you want to teleport"
-        originId            = getRmId i ms
-        found (destId, rmTeleName)
-          | destId == originId = (ms, pure . sendFun $ sorryTeleAlready)
-          | otherwise          = teleHelper p { args = [] } ms originId destId rmTeleName Nothing consLocPrefBcast
-        notFound               = (ms, pure . sendFun . sorryTeleRmName $ strippedTarget')
+    let SingleTarget { .. }        = mkSingleTarget mq cols target "The name of the room to which you want to teleport"
+        sorry                      = (ms, ) . pure . sendFun
+        originId                   = getRmId i ms
+        found (destId, rmTeleName) =
+            teleHelper p { args = [] } ms originId destId rmTeleName Nothing consLocPrefBcast sorry
+        notFound = sorry . sorryTeleRmName $ strippedTarget'
     in (findFullNameForAbbrev strippedTarget' . views rmTeleNameTbl IM.toList $ ms) |&| maybe notFound found
 adminTeleRm p = advise p [] adviceATeleRmExcessArgs
 

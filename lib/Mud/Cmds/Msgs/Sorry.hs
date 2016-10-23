@@ -15,6 +15,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryAsAdmin
                            , sorryAsSelf
                            , sorryAsType
+                           , sorryBanAdHoc
                            , sorryBanAdmin
                            , sorryBanSelf
                            , sorryBonusCount
@@ -248,8 +249,11 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryStopActName
                            , sorryStopNotDoing
                            , sorryStopNotDoingAnything
+                           , sorrySudoerAdHoc
                            , sorrySudoerDemoteRoot
                            , sorrySudoerDemoteSelf
+                           , sorrySudoerSpirit
+                           , sorrySummonAdHoc
                            , sorrySummonAdmin
                            , sorrySummonAlready
                            , sorrySummonSelf
@@ -261,6 +265,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryTeleLoggedOutRm
                            , sorryTeleRmName
                            , sorryTeleSelf
+                           , sorryTeleWelcomeRm
                            , sorryTrashInEq
                            , sorryTrashInRm
                            , sorryTunedOutChan
@@ -450,6 +455,10 @@ sorryAsType s = can'tTarget $ aOrAn s <> withAs
 
 
 -----
+
+
+sorryBanAdHoc :: Text
+sorryBanAdHoc = can't "ban an ad-hoc PC."
 
 
 sorryBanAdmin :: Text
@@ -1700,6 +1709,10 @@ sorryStopNotDoingAnything = "You're not doing anything that can be stopped "    
 -----
 
 
+sorrySudoerAdHoc :: Text
+sorrySudoerAdHoc = can't "promote to admin an ad-hoc PC."
+
+
 sorrySudoerDemoteRoot :: Text
 sorrySudoerDemoteRoot = can't "demote Root."
 
@@ -1708,11 +1721,19 @@ sorrySudoerDemoteSelf :: Text
 sorrySudoerDemoteSelf = can't "demote yourself."
 
 
+sorrySudoerSpirit :: Text -> Text
+sorrySudoerSpirit t = t <> " is a spirit and cannot be promoted."
+
+
 -----
 
 
+sorrySummonAdHoc :: Text
+sorrySummonAdHoc = can't "summon an ad-hoc PC."
+
+
 sorrySummonAdmin :: Text
-sorrySummonAdmin = butCan't "summon an admin."
+sorrySummonAdmin = can't "summon an admin."
 
 
 sorrySummonAlready :: Sing -> Text
@@ -1762,6 +1783,10 @@ sorryTeleRmName n = T.concat [ dblQuote n
 
 sorryTeleSelf :: Text
 sorryTeleSelf = can't "teleport to yourself."
+
+
+sorryTeleWelcomeRm :: Text
+sorryTeleWelcomeRm = can't "teleport to the welcome room."
 
 
 -----
