@@ -83,7 +83,6 @@ import Text.Regex.Posix ((=~))
 
 
 {-# ANN module ("HLint: ignore Use ||" :: String) #-}
--- TODO: isSpitit
 
 
 -----
@@ -1926,15 +1925,13 @@ adminSummon ActionParams { plaMsgQueue, plaCols } = wrapSend plaMsgQueue plaCols
 adminTeleId :: ActionFun
 adminTeleId p@AdviseNoArgs                    = advise p [ prefixAdminCmd "teleid" ] adviceATeleIdNoArgs
 adminTeleId p@(OneArgNubbed i mq cols target) = modifyStateSeq $ \ms ->
-    let SingleTarget { .. } = mkSingleTarget mq cols target "The ID of the entity or room to which you want to \
-                                                            \teleport"
-        teleport targetId  =
-            let (destId, desc) = locateHelper ms [] targetId
-                destName       = mkNameTypeIdDesc targetId ms <> (()!# desc |?| (", " <> desc))
-                notice         = thrice prd $ "Teleporting to " <> destName
-                originId       = getRmId i ms
-                sorry          = (ms, ) . pure . multiSendFun . (notice :) . pure
-            in teleHelper p { args = [] } ms originId destId destName (Just notice) consLocPrefBcast sorry
+    let SingleTarget { .. } = mkSingleTarget mq cols target "The ID of the entity or room to which you want to teleport"
+        teleport targetId  = let originId       = getRmId i ms
+                                 (destId, desc) = locateHelper ms [] targetId
+                                 destName       = mkNameTypeIdDesc targetId ms <> (()!# desc |?| (", " <> desc))
+                                 msg            = thrice prd $ "Teleporting to " <> destName
+                                 sorry          = (ms, ) . pure . multiSendFun . (msg :) . pure
+                             in teleHelper p { args = [] } ms originId destId destName (Just msg) consLocPrefBcast sorry
         sorryParse = (ms, ) . pure . sendFun
     in case reads . T.unpack $ strippedTarget :: [(Int, String)] of
       [(targetId, "")]
@@ -1970,12 +1967,11 @@ teleHelper p@ActionParams { myId } ms originId destId destName mt f sorry =
     in if | destId == originId   -> sorry sorryTeleAlready
           | destId == iWelcome   -> sorry sorryTeleWelcomeRm
           | destId == iLoggedOut -> sorry sorryTeleLoggedOutRm
-          | otherwise            ->
-              (ms', [ bcastIfNotIncog myId . f myId . g $ bs
-                    , look p
-                    , logPla "telehelper" myId . prd $ "teleported to " <> dblQuote destName
-                    , rndmDos [ (calcProbTeleportDizzy   myId ms, mkExpAction "dizzy"   p)
-                              , (calcProbTeleportShudder myId ms, mkExpAction "shudder" p) ] ])
+          | otherwise            -> (ms', [ bcastIfNotIncog myId . f myId . g $ bs
+                                          , look p
+                                          , logPla "telehelper" myId . prd $ "teleported to " <> dblQuote destName
+                                          , rndmDos [ (calcProbTeleportDizzy   myId ms, mkExpAction "dizzy"   p)
+                                                    , (calcProbTeleportShudder myId ms, mkExpAction "shudder" p) ] ])
 
 
 -----
