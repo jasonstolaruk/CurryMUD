@@ -2072,7 +2072,6 @@ adminUptime p = withoutArgs adminUptime p
 -----
 
 
--- TODO: Spirits?
 adminWhoIn :: ActionFun
 adminWhoIn = whoHelper LoggedIn "whoin"
 
@@ -2101,10 +2100,11 @@ mkCharListTxt inOrOut ms =
   where
     predicate           = case inOrOut of LoggedIn  -> isLoggedIn
                                           LoggedOut -> not . isLoggedIn
-    mkAnnotatedName i a = let p     = getPla i ms
-                              admin = isAdmin p     |?| asterisk
-                              incog = isIncognito p |?| colorWith asteriskColor "@"
-                          in a <> admin <> incog
+    mkAnnotatedName i a = let p      = getPla i ms
+                              admin  = isAdmin     p |?| asterisk
+                              incog  = isIncognito p |?| colorWith asteriskColor "@"
+                              spirit = isSpirit    p |?| colorWith asteriskColor "$"
+                          in T.concat [ a, admin, incog, spirit ]
 
 
 -----

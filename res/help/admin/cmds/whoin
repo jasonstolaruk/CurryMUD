@@ -7,6 +7,7 @@
 Display a list of all the PCs that are currently logged in. Optionally, search the list for one or more terms.
 * denotes an admin.
 #k denotes an incognito admin.
+$ denotes a spirit.
 
 \uEXAMPLES\n
 \q#dwhoin\d to display the full list.4`
