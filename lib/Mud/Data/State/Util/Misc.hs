@@ -27,6 +27,7 @@ module Mud.Data.State.Util.Misc ( addToInv
                                 , getRmActionFun
                                 , getState
                                 , getUnusedId
+                                , isAwake
                                 , isKnownLang
                                 , isLoggedIn
                                 , isNpc
@@ -323,16 +324,20 @@ getUnusedId = views typeTbl (head . (enumFrom 0 \\) . IM.keys)
 -----
 
 
-isKnownLang :: Id -> MudState -> Lang -> Bool
-isKnownLang i ms lang | lang == CommonLang = True
-                      | otherwise          = lang `elem` getKnownLangs i ms
+isAwake :: Id -> MudState -> Bool
+isAwake = onPla (uncurry (&&) . (isLoggedIn &&& not . isIncognito)) True
+
+
+isLoggedIn :: Pla -> Bool
+isLoggedIn = views lastRmId ((()#) . (Sum <$>))
 
 
 -----
 
 
-isLoggedIn :: Pla -> Bool
-isLoggedIn = views lastRmId ((()#) . (Sum <$>))
+isKnownLang :: Id -> MudState -> Lang -> Bool
+isKnownLang i ms lang | lang == CommonLang = True
+                      | otherwise          = lang `elem` getKnownLangs i ms
 
 
 -----

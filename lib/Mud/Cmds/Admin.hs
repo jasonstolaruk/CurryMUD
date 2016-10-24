@@ -411,16 +411,18 @@ adminBoot   (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
     let SingleTarget { .. } = mkSingleTarget mq cols target "The PC name of the player you wish to boot"
     in case [ pi | pi <- views pcTbl IM.keys ms, getSing pi ms == strippedTarget ] of
       []       -> sendFun $ sorryPCName strippedTarget |<>| hintABoot
-      [bootId] -> let selfSing = getSing i ms in if
-                    | not . isLoggedIn . getPla bootId $ ms -> sendFun . sorryLoggedOut $ strippedTarget
-                    | bootId == i -> sendFun sorryBootSelf
-                    | bootMq <- getMsgQueue bootId ms, f <- ()# msg ? dfltMsg :? customMsg -> do
-                        sendFun . prd $ "You have booted " <> strippedTarget
-                        sendMsgBoot bootMq =<< f bootId strippedTarget selfSing
-                        bcastAdminsExcept [ i, bootId ] . T.concat $ [ selfSing, " booted ", strippedTarget, "." ]
+      [bootId] -> let selfSing = getSing i ms
+                      bootPla  = getPla bootId ms
+                  in if | not . isLoggedIn $ bootPla -> sendFun . sorryLoggedOut $ strippedTarget
+                        | isAdmin bootPla            -> sendFun . sorryBootAdmin $ strippedTarget
+                        | bootId == i                -> sendFun sorryBootSelf
+                        | bootMq <- getMsgQueue bootId ms, f <- ()# msg ? dfltMsg :? customMsg -> do
+                            sendFun . prd $ "You have booted " <> strippedTarget
+                            sendMsgBoot bootMq =<< f bootId strippedTarget selfSing
+                            bcastAdminsExcept [ i, bootId ] . T.concat $ [ selfSing, " booted ", strippedTarget, "." ]
       xs       -> patternMatchFail "adminBoot" . showText $ xs
   where
-    dfltMsg   bootId target' s = emptied $ do
+    dfltMsg bootId target' s = emptied $ do
         logPla "adminBoot dfltMsg"   i      $ T.concat [ "booted ", target', " ", parensQuote "no message given", "." ]
         logPla "adminBoot dfltMsg"   bootId $ T.concat [ "booted by ", s,    " ", parensQuote "no message given", "." ]
     customMsg bootId target' s = do
@@ -1091,13 +1093,11 @@ adminMsg   (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMs
                 Left  errorMsg -> emptied . sendFun $ errorMsg
                 Right bs       -> ioHelper pair bs
             ioHelper (targetId, targetSing) [ fst -> toSelf, fst -> toTarget ] = if
-              | isLoggedIn targetPla, isIncognitoId i ms ->
-                emptied . sendFun $ sorryMsgIncog
-              | isLoggedIn targetPla ->
+              | isLoggedIn targetPla, isIncognitoId i ms -> emptied . sendFun $ sorryMsgIncog
+              | isLoggedIn targetPla                     ->
                   let (targetMq, targetCols) = getMsgQueueColumns targetId ms
                       adminSings             = map snd . filter f . mkAdminIdSingList $ ms
-                      f (_, "Root")          = let rootPla = getPla iRoot ms
-                                               in isLoggedIn rootPla && (not . isIncognito $ rootPla)
+                      f (_, "Root")          = isAwake iRoot ms
                       f _                    = True
                       me                     = head . filter g . styleAbbrevs Don'tQuote $ adminSings
                       g                      = (== s) . dropANSI
@@ -1206,15 +1206,14 @@ adminPeep   (LowerNub i mq cols as) = do
             peep target a@(pt, _, _) =
                 let notFound = a & _2 %~ (sorryPCNameLoggedIn target :)
                     found (peepId@(flip getPla ms -> peepPla), peepSing) = if peepId `notElem` pt^.ind i.peeping
-                      then if
-                        | peepId == i     -> a & _2 %~ (sorryPeepSelf  :)
-                        | isAdmin peepPla -> a & _2 %~ (sorryPeepAdmin :)
-                        | otherwise       ->
-                          let pt'     = pt & ind i     .peeping %~ (peepId :)
-                                           & ind peepId.peepers %~ (i      :)
-                              msg     = prd $ "You are now peeping " <> peepSing
-                              logMsgs = [("started peeping " <> peepSing, (peepId, s <> " started peeping."))]
-                          in a & _1 .~ pt' & _2 %~ (msg :) & _3 <>~ logMsgs
+                      then if | peepId == i     -> a & _2 %~ (sorryPeepSelf  :)
+                              | isAdmin peepPla -> a & _2 %~ (sorryPeepAdmin :)
+                              | otherwise       ->
+                                let pt'     = pt & ind i     .peeping %~ (peepId :)
+                                                 & ind peepId.peepers %~ (i      :)
+                                    msg     = prd $ "You are now peeping " <> peepSing
+                                    logMsgs = [("started peeping " <> peepSing, (peepId, s <> " started peeping."))]
+                                in a & _1 .~ pt' & _2 %~ (msg :) & _3 <>~ logMsgs
                       else let pt'     = pt & ind i     .peeping %~ (peepId `delete`)
                                             & ind peepId.peepers %~ (i      `delete`)
                                msg     = prd $ "You are no longer peeping " <> peepSing

@@ -505,14 +505,9 @@ admin   (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsgs 
                 formatted = parensQuote ("to " <> adminSing) <> spaced (quoteWith "__" s) <> toSelf
                 sentLogMsg     = (i,       T.concat [ "sent message to ", adminSing, ": ", toSelf  ])
                 receivedLogMsg = (adminId, T.concat [ "received message from ", s,   ": ", toAdmin ])
-            ioHelper _ xs = patternMatchFail "admin helper ioHelper" . showText $ xs
-            filterRoot idSings
-              | isAdminId i ms = idSings
-              | otherwise      =
-                  let ([((`getPla` ms) -> rootPla, _)], others) = partition ((== iRoot) . fst) idSings
-                  in if isLoggedIn rootPla && not (isIncognito rootPla)
-                    then idSings
-                    else others
+            ioHelper _ xs      = patternMatchFail "admin helper ioHelper" . showText $ xs
+            filterRoot idSings | isAdminId i ms = idSings
+                               | otherwise      = isAwake iRoot ms ? idSings :? filter ((/= iRoot) . fst) idSings
         in (findFullNameForAbbrev strippedTarget . filterRoot . mkAdminIdSingList $ ms) |&| maybe notFound found
 admin p = patternMatchFail "admin" . showText $ p
 
@@ -524,9 +519,9 @@ adminList (NoArgs i mq cols) = (multiWrapSend mq cols =<< helper =<< getState) >
         let p            = getPla i ms
             singSuffixes = sortBy (compare `on` fst) [ second ((" logged " <>) . mkSuffix) pair
                                                      | (swap -> pair) <- mkAdminIdSingList ms ]
-            mkSuffix ai  = let { ap = getPla ai ms; isIncog = isIncognito ap } in if isAdmin p && isIncog
-              then inOut (isLoggedIn ap) |<>| parensQuote "incognito"
-              else inOut $ isLoggedIn ap && not isIncog
+            mkSuffix ai  = if isAdmin p && isIncognitoId ai ms
+              then inOut (isLoggedIn . getPla ai $ ms) |<>| parensQuote "incognito"
+              else inOut . isAwake ai $ ms
             singSuffixes' = onFalse (isAdmin p) (filter f) singSuffixes
               where
                 f (a, b) | a == "Root" = b == " logged in"
@@ -1975,15 +1970,12 @@ link (NoArgs i mq cols) = do
             sortAwakesAsleeps      = foldr sorter mempties
             sorter linkSing acc    =
                 let linkId   = head . filter ((== linkSing) . (`getSing` ms)) $ ms^.pcTbl.to IM.keys
-                    linkPla  = getPla linkId ms
                     f lens x = acc & lens %~ (x' :)
                       where
                         x' = case view (at linkSing) . getTeleLinkTbl i $ ms of
                           Nothing  -> x
                           Just val -> val ? x :? x |<>| parensQuote "tuned out"
-                in (linkSing |&|) $ if and [ isLoggedIn linkPla, not . isIncognito $ linkPla ]
-                  then f _1
-                  else f _2
+                in linkSing |&| (isAwake linkId ms ? f _1 :? f _2)
         in do
            multiWrapSend mq cols msgs
            logPla "link" i . slashes . dropBlanks $ [ twoWays       |!| "Two-way: "         <> commas twoWays
@@ -4077,15 +4069,15 @@ unlink   (LowerNub i mq cols as) =
                   where
                     sorry msg = a & _2 <>~ mkBcast i (nlnl msg)
                     procArgHelper
-                      | targetId       <- getIdForMobSing targetSing ms'
-                      , (p, targetPla) <- ((i |&|) *** (targetId |&|)) . (both %~ flip getPla) . dup $ ms'
-                      = if not $ hasPp i ms' 5 || isSpirit targetPla
+                      | targetId <- getIdForMobSing targetSing ms'
+                      , p        <- getPla i ms'
+                      = if not $ hasPp i ms' 5 || isSpiritId targetId ms'
                           then sorry . sorryPp $ "sever your link with " <> targetSing
                           else let srcMsg   = T.concat [ focusingInnateMsg, "you sever your link with ", targetSing, "." ]
                                    s        = getSing i ms'
                                    targetBs | colorize <- colorWith unlinkColor
                                             , bs       <- mkBcast targetId . nlnl . colorize . unlinkMsg tingleLoc $ s
-                                            = isLoggedIn targetPla |?| bs
+                                            = isAwake targetId ms' |?| bs
                                    ms''     = ms' & teleLinkMstrTbl.ind i       .at targetSing .~ Nothing
                                                   & teleLinkMstrTbl.ind targetId.at s          .~ Nothing
                                                   & pcTbl .ind i       .linked %~ (targetSing `delete`)
@@ -4340,7 +4332,7 @@ isTunedIn ms (i, i') | s <- getSing i' ms = fromMaybe False (view (at s) . getTe
 mkFooter :: Id -> MudState -> Text
 mkFooter i ms = let plaIds@(length -> x) = [ i' | i' <- getLoggedInPlaIds ms
                                            , onTrue (i /= i' && isSpiritId i' ms) (const . isLinked ms $ (i, i')) True ]
-                    y                    = length . filter id $ maruBatsus
+                    y                    = length [ ai | ai <- getLoggedInAdminIds ms, isIncognitoId ai ms ]
                 in T.concat [ showText x
                             , " "
                             , pluralize ("person", "people") x
@@ -4351,8 +4343,6 @@ mkFooter i ms = let plaIds@(length -> x) = [ i' | i' <- getLoggedInPlaIds ms
                                                                          , " administrator"
                                                                          , pluralize ("", "s") y ]
                             , "." ]
-  where
-    maruBatsus = map (uncurry (&&) . (isLoggedIn &&& not . isIncognito) . (`getPla` ms)) . getLoggedInAdminIds $ ms
 
 
 -----

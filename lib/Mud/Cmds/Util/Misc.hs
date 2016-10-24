@@ -29,7 +29,6 @@ module Mud.Cmds.Util.Misc ( asterisk
                           , isAdHoc
                           , isAlive
                           , isAttacking
-                          , isAwake
                           , isBracketed
                           , isDblLinked
                           , isDrinking
@@ -173,8 +172,7 @@ awardExp amt reason i = getLvlExp i <$> getState >>= \(l, x) -> let diff = calcL
                               , parensQuote reason
                               , "."
                               , logMsgs |!| (spcL . capitalize . prd . slashes $ logMsgs) ]
-            b = isNpc i ms ? True :? isLoggedIn (getPla i ms)
-        when b . logPla "awardExp" i $ logMsg
+        when (isNpc i ms || isLoggedIn (getPla i ms)) . logPla "awardExp" i $ logMsg
   where
     helper v ms =
         let oldLvl = getLvl i ms
@@ -538,14 +536,6 @@ isMoving = isActing Moving
 -----
 
 
--- TODO: Compare to "isLoggedIn". Are you using both functions correctly?
-isAwake :: Id -> MudState -> Bool
-isAwake = onPla (uncurry (&&) . (isLoggedIn &&& not . isIncognito)) True
-
-
------
-
-
 isBracketed :: [Text] -> Bool
 isBracketed ws = or [ T.head (head ws) `elem` ("[<" :: String)
                     , "]." `T.isSuffixOf` last ws
@@ -683,8 +673,7 @@ mkActionParams i ms as = ActionParams { myId        = i
 mkChanReport :: Id -> MudState -> Chan -> [Text]
 mkChanReport i ms (Chan ci cn cct tappers) =
     let desc    = commas . map descPla . f $ [ (s, t, l) | (s, t) <- M.toList cct
-                                                         , let p = getPla (getIdForMobSing s ms) ms
-                                                         , let l = isLoggedIn p && not (isIncognito p) ]
+                                                         , let l = isAwake (getIdForMobSing s ms) ms ]
         tapping = getSing i ms `elem` tappers |?| spcL . parensQuote $ "wiretapped"
     in [ T.concat [ bracketQuote . showText $ ci, " ", dblQuote cn, tapping, ":" ], desc ]
   where

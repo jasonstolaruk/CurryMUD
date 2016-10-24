@@ -23,6 +23,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryBonusLvl
                            , sorryBonusName
                            , sorryBonusTime
+                           , sorryBootAdmin
                            , sorryBootSelf
                            , sorryBracketedMsg
                            , sorryChanIncog
@@ -493,6 +494,10 @@ sorryBonusTime = "It's too early since you last gave a bonus."
 
 
 -----
+
+
+sorryBootAdmin :: Text -> Text
+sorryBootAdmin t = t <> " is an admin and cannot be booted."
 
 
 sorryBootSelf :: Text
