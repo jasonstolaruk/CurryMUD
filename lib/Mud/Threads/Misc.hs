@@ -130,8 +130,8 @@ findNpcIds = views typeTbl (IM.keys . IM.filter (== NpcType))
 -----
 
 
-onNewThread :: MudStack () -> MudStack ()
-onNewThread a = onEnv $ liftIO . void . forkIO . runReaderT a
+onNewThread :: Fun -> MudStack ()
+onNewThread f = onEnv $ liftIO . void . forkIO . runReaderT f
 
 
 -----
@@ -159,7 +159,7 @@ racer md a b = liftIO . race_ (runReaderT a md) . runReaderT b $ md
 -----
 
 
-runAsync :: MudStack () -> MudStack (Async ())
+runAsync :: Fun -> MudStack (Async ())
 runAsync f = onEnv $ liftIO . async . runReaderT f
 
 

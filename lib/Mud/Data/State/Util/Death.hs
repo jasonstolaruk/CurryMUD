@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -fno-warn-type-defaults #-}
 {-# LANGUAGE FlexibleContexts, LambdaCase, OverloadedStrings, ViewPatterns #-}
 
 module Mud.Data.State.Util.Death (handleDeath) where
@@ -13,12 +14,14 @@ import Mud.Data.State.Util.Make
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Data.State.Util.Random
+import Mud.Misc.ANSI
 import Mud.Misc.Database
 import Mud.Misc.Misc
 import Mud.Threads.Act
 import Mud.Threads.Digester
 import Mud.Threads.Effect
 import Mud.Threads.FeelingTimer
+import Mud.Threads.Misc
 import Mud.Threads.Regen
 import Mud.Util.List
 import Mud.Util.Misc
@@ -27,6 +30,7 @@ import Mud.Util.Text
 import qualified Mud.Misc.Logging as L (logNotice, logPla)
 
 import Control.Arrow ((***), first, second)
+import Control.Concurrent (threadDelay)
 import Control.Lens (_1, _2, _3, at, view, views)
 import Control.Lens.Operators ((%~), (&), (.~), (^.))
 import Control.Monad (forM_, when)
@@ -40,6 +44,9 @@ import Database.SQLite.Simple (fromOnly)
 import Prelude hiding (pi)
 import qualified Data.IntMap.Lazy as IM (delete, filterWithKey, keys, mapWithKey)
 import qualified Data.Map.Lazy as M (elems, empty)
+
+
+default (Int)
 
 
 {-# ANN module ("HLint: ignore Use &&" :: String) #-}
@@ -132,7 +139,6 @@ mkCorpse i ms = let et     = EntTemplate (Just "corpse")
                                                                                  in bgns & _2 .~ mkPlurFromBoth bgns
 
 
--- TODO: Messaging about detaching from body.
 spiritize :: Id -> MudStack ()
 spiritize i = getState >>= \ms -> let mySing = getSing i ms in if isPC i ms
   then (withDbExHandler "spiritize" . liftIO . lookupTeleNames $ mySing) >>= \case
@@ -155,6 +161,7 @@ spiritize i = getState >>= \ms -> let mySing = getSing i ms in if isPC i ms
               ; forM_ asleepIds $ \i' ->　retainedMsg i' ms . linkMissingMsg $ mySing
               ; bcast bs
               ; sequence_ (fs :: Funs)
+              ; detachMsg
               ; logPla "spiritize" i "spirit created." }
   else deleteNpc ms
   where
@@ -195,3 +202,6 @@ spiritize i = getState >>= \ms -> let mySing = getSing i ms in if isPC i ms
                                                         , pausedEffectsTbl.at  i  .~ Nothing
                                                         , typeTbl         .at  i  .~ Nothing ]
                                                ; logNotice "spiritize" $ descSingId i ms <> " has died." }
+    detachMsg = onNewThread $ getMsgQueueColumns i <$> getState >>= \(mq, cols) -> do
+        liftIO . threadDelay $ 2 * 10 ^ 6
+        wrapSend mq cols . colorWith spiritDetachColor $ spiritDetachMsg
