@@ -4361,6 +4361,8 @@ whoAmI (NoArgs i mq cols) = (wrapSend mq cols =<< helper =<< getState) >> logPla
            in T.concat [ "You are "
                        , colorWith knownNameColor s
                        , " "
-                       , parensQuote . T.concat $ [ "a ", sexy, " ", r ]
+                       , parensQuote $ if isSpiritId i ms
+                         then "a disembodied spirit"
+                         else T.concat [ "a ", sexy, " ", r ]
                        , "." ]
 whoAmI p = withoutArgs whoAmI p

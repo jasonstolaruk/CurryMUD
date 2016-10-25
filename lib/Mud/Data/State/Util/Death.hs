@@ -84,7 +84,7 @@ Those links with the greatest volume of messages are retained. If the deceased P
 
 handleDeath :: Id -> MudStack ()
 handleDeath i = do
-    getState >>= \ms -> when (isNpc i ms) possessHelper
+    mWhen (isNpc i <$> getState) possessHelper
     tweak . leaveParty $ i
     stopActs          i
     pauseEffects      i
