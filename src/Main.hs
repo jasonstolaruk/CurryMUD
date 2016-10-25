@@ -16,7 +16,6 @@ import Mud.Threads.Listen
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
 import Mud.Util.Misc
-import Mud.Util.Operators
 import Mud.Util.Quoting
 import Mud.Util.Text
 
@@ -47,6 +46,8 @@ main = mkMudFilePath mudDirFun >>= \dir ->
 
 welcome :: IO ()
 welcome = (,) <$> getEnv "USER" <*> what'sMyName >>= \(un, mn) ->
-    T.putStrLn . T.concat $ [ "Hello, ", T.pack un, "! Welcome to ", dblQuote mn, " ver ", ver, "." ]
+    T.putStrLn . T.concat $ [ "Hello, ", T.pack un, "! Welcome to ", mn, " ver ", ver, "." ]
   where
-    what'sMyName = getProgName >>= \n -> return (n == "<interactive>" ? "Y U NO COMPILE ME?" :? T.pack n)
+    what'sMyName = mIf ((== "<interactive>") <$> getProgName)
+      (return . dblQuote $ "Y U NO COMPILE ME?")
+      (return "CurryMUD")
