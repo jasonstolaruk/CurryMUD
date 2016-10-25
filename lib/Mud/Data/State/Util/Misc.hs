@@ -267,10 +267,10 @@ getMobRmNonIncogInvCoins i ms = let ri = getRmId i ms in getNonIncogInvCoins ri 
 getNonIncogInv :: Id -> MudState -> Inv
 getNonIncogInv i ms = filter notIncog . getInv i $ ms
   where
-    notIncog targetId | getType    targetId ms /= PCType  = otherwise
-                      | isSpiritId targetId ms            = likewise
-                      | not . isIncognitoId targetId $ ms = otherwise
-                      | otherwise                         = likewise
+    notIncog targetId | getType            targetId ms /= PCType  = otherwise
+                      | isSpiritId         targetId ms            = likewise
+                      | not (isIncognitoId targetId ms)           = otherwise
+                      | otherwise                                 = likewise
 
 
 -----

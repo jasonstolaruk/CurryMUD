@@ -1572,10 +1572,7 @@ tryMove i mq cols p dir = helper |&| modifyState >=> \case
   Left  msg          -> wrapSend mq cols msg
   Right (bs, logMsg) -> look p >> bcastIfNotIncog i bs >> logPla "tryMove" i logMsg
   where
-    helper ms =
-        let originId = getRmId i ms
-            originRm = getRm originId ms
-        in case findExit originRm dir of
+    helper ms = let { originId = getRmId i ms; originRm = getRm originId ms } in case findExit originRm dir of
           Nothing -> (ms, Left sorry)
           Just (linkTxt, destId, maybeOriginMsg, maybeDestMsg) ->
             let originDesig  = mkStdDesig i ms DoCap
@@ -1599,12 +1596,12 @@ tryMove i mq cols p dir = helper |&| modifyState >=> \case
                                         , " to room "
                                         , showRm destId . getRm destId $ ms
                                         , "." ]
-            in (ms', Right ([ (msgAtOrigin, originMobIds), (msgAtDest, destMobIds) ], logMsg))
-    sorry = dir `elem` stdLinkNames ? sorryGoExit :? sorryGoParseDir dir
-    verb | dir == "u"              = "goes"
-         | dir == "d"              = "heads"
-         | dir `elem` stdLinkNames = "leaves"
-         | otherwise               = "enters"
+            in (ms', Right (not (isSpiritId i ms) |?| [ (msgAtOrigin, originMobIds), (msgAtDest, destMobIds) ], logMsg))
+    sorry     = dir `elem` stdLinkNames ? sorryGoExit :? sorryGoParseDir dir
+    verb      | dir == "u"              = "goes"
+              | dir == "d"              = "heads"
+              | dir `elem` stdLinkNames = "leaves"
+              | otherwise               = "enters"
     showRm ri = uncurry (|<>|) . (showText *** views rmName parensQuote) . (ri, )
 
 
@@ -1654,7 +1651,7 @@ expandOppLinkName "d"  = "above"
 expandOppLinkName x    = patternMatchFail "expandOppLinkName" x
 
 
--- The following 3 functions are here because they reference "go" (which references "look")...
+-- The following 3 functions are in this module because they reference "go" (which references "look")...
 mkNonStdRmLinkCmds :: Rm -> [Cmd]
 mkNonStdRmLinkCmds (view rmLinks -> rls) = [ mkCmdForRmLink rl | rl <- rls, isNonStdLink rl ]
 
