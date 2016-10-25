@@ -709,8 +709,7 @@ chan (OneArg i mq cols a@(T.toLower -> a')) = getState >>= \ms ->
                     combo'             = ins' ++ outs
                 in if isTuned
                   then do
-                      let onlyYou           = pure "You are the only person connected."
-                          msgs              = ()!# combo' ? map g combo' :? onlyYou
+                      let msgs              = ()!# combo' ? map g combo' :? pure "You are the only person connected."
                           affixChanName txt = parensQuote cn |<>| txt
                       multiWrapSend mq cols $ "Channel " <> dblQuote cn <> ":" : msgs
                       logPla "chan" i . affixChanName . commas $ [ getSing i' ms <> " is " <> tunedInOut isTuned'
