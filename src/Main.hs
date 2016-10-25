@@ -45,8 +45,8 @@ main = mkMudFilePath mudDirFun >>= \dir ->
 
 
 welcome :: IO ()
-welcome = (,) <$> getEnv "USER" <*> what'sMyName >>= \(un, mn) ->
-    T.putStrLn . T.concat $ [ "Hello, ", T.pack un, "! Welcome to ", mn, " ver ", ver, "." ]
+welcome = (,) <$> getEnv "USER" <*> what'sMyName >>= \(userName, progName) ->
+    T.putStrLn . T.concat $ [ "Hello, ", T.pack userName, "! Welcome to ", progName, " ver ", ver, "." ]
   where
     what'sMyName = mIf ((== "<interactive>") <$> getProgName)
       (return . dblQuote $ "Y U NO COMPILE ME?")
