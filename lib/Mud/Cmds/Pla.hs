@@ -1979,9 +1979,10 @@ link (NoArgs i mq cols) = do
            logPla "link" i . slashes . dropBlanks $ [ twoWays       |!| "Two-way: "         <> commas twoWays
                                                     , oneWaysFromMe |!| "One-way from me: " <> commas oneWaysFromMe
                                                     , oneWaysToMe   |!| "One-way to me: "   <> commas oneWaysToMe ]
-link (LowerNub i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
-  then wrapSend mq cols . sorryIncog $ "link"
-  else helper |&| modifyState >=> \(bs, logMsgs, fs) ->
+link (LowerNub i mq cols as) = getState >>= \ms -> if
+  | isIncognitoId i ms -> wrapSend mq cols . sorryIncog $ "link"
+  | isSpiritId    i ms -> wrapSend mq cols   sorryLinkSpirit
+  | otherwise          -> helper |&| modifyState >=> \(bs, logMsgs, fs) ->
       bcast bs >> sequence_ fs >> logMsgs |#| logPla "link" i . slashes
   where
     helper ms = let (inInvs, inEqs, inRms)  = sortArgsInvEqRm InRm as

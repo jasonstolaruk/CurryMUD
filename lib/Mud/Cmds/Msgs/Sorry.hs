@@ -158,6 +158,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryLinkIntroSelf
                            , sorryLinkIntroTarget
                            , sorryLinkNoOneHere
+                           , sorryLinkSpirit
                            , sorryLinkType
                            , sorryLoggedOut
                            , sorryLookEmptyRmNoHooks
@@ -1187,6 +1188,10 @@ sorryLinkIntroTarget n = "You don't know the " <> n <> "'s name."
 
 sorryLinkNoOneHere :: Text
 sorryLinkNoOneHere = "You don't see anyone here to link with."
+
+
+sorryLinkSpirit :: Text
+sorryLinkSpirit = "It seems that as a spirit you don't have the capacity to create a new link."
 
 
 sorryLinkType :: Sing -> Text
