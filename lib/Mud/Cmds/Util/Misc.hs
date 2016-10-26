@@ -113,6 +113,7 @@ import Control.Lens (_1, _2, _3, at, both, each, to, view, views)
 import Control.Lens.Operators ((%~), (&), (+~), (.~), (<>~), (?~), (^.))
 import Control.Monad ((>=>), forM, mplus, when)
 import Control.Monad.IO.Class (liftIO)
+import Data.Bool (bool)
 import Data.Char (isDigit, isLetter)
 import Data.Either (rights)
 import Data.Function (on)
@@ -185,7 +186,7 @@ awardExp amt reason i = getLvlExp i <$> getState >>= \(l, x) -> let diff = calcL
             f seed = Just ((colorWith lvlUpColor lvlUpMsg, mkLogMsg), pred seed)
               where
                 mkLogMsg = ("gained a level " <>) . parensQuote $ "now level " <> showText (newLvl - seed + 1)
-        in (ms'', (ms'', if diff <= 0 then mempties else unzip . unfoldr f $ diff))
+        in (ms'', (ms'', bool mempties (unzip . unfoldr f $ diff) $ diff <= 0))
 
 
 noOfLvlUpRndmInts :: Int

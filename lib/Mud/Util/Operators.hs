@@ -11,6 +11,7 @@ module Mud.Util.Operators ( (!#)
                           , Cond(..) ) where
 
 import Control.Monad (unless)
+import Data.Bool (bool)
 import Data.Function ((&))
 import Data.Monoid ((<>))
 import Data.Text (Text)
@@ -57,7 +58,7 @@ False ? (_ :? y) = y
 (|!|) :: (Eq a, Monoid a, Monoid b) => a -> b -> b
 (|!|) = memptyOnMempty
   where
-    a `memptyOnMempty` b = ()# a ? mempty :? b
+    m `memptyOnMempty` a = bool mempty a $ ()# m
 
 
 -----
@@ -66,7 +67,7 @@ False ? (_ :? y) = y
 (|?|) :: (Monoid a) => Bool -> a -> a
 (|?|) = memptyOnFalse
   where
-    a `memptyOnFalse` b = a ? b :? mempty
+    b `memptyOnFalse` a = bool a mempty b
 
 
 -----

@@ -572,7 +572,9 @@ alertExecFindTargetSing i ms target =
         ri            = getRmId i ms
         invCoins      = first (i `delete`) . getNonIncogInvCoins ri $ ms
         (eiss, ecs)   = uncurry (resolveRmInvCoins i ms inRms) invCoins
-    in if ()# invCoins then "" else ()!# ecs ? "" :? either (const "") ((`getSing` ms) . head) (head eiss)
+        a             = boolEmp b $ ()!# ecs
+        b             = either (const "") ((`getSing` ms) . head) . head $ eiss
+    in boolEmp a $ ()# invCoins
 
 
 -----

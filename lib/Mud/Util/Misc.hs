@@ -1,10 +1,11 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
-{-# LANGUAGE FlexibleContexts, LambdaCase, MonadComprehensions, OverloadedStrings, RankNTypes, TypeFamilies #-}
+{-# LANGUAGE FlexibleContexts, MonadComprehensions, OverloadedStrings, RankNTypes, TypeFamilies #-}
 
 module Mud.Util.Misc ( atLst1
                      , atomicWriteIORef'
                      , blowUp
                      , BlowUp
+                     , boolEmp
                      , boolToMaybe
                      , concatMapM
                      , divide
@@ -79,6 +80,7 @@ import Control.Lens.Getter (Getting)
 import Control.Lens.Operators ((%~))
 import Control.Monad (guard, join)
 import Control.Monad.Reader.Class (MonadReader)
+import Data.Bool (bool)
 import Data.Function (on)
 import Data.IORef (IORef, atomicWriteIORef)
 import Data.List (delete)
@@ -109,6 +111,10 @@ atLst1 x = case signum x of -1 -> 1
 
 atomicWriteIORef' :: IORef a -> a -> IO ()
 atomicWriteIORef' ior = (atomicWriteIORef ior $!)
+
+
+boolEmp :: (Monoid a) => a -> Bool -> a
+boolEmp = bool mempty
 
 
 boolToMaybe :: Bool -> a -> Maybe a
@@ -244,7 +250,7 @@ listToMaybe xs  = patternMatchFail "Mud.Util.Misc" "listToMaybe" xs
 
 
 mIf :: (Monad m) => m Bool -> m a -> m a -> m a
-mIf p x y = p >>= \case { True -> x; False -> y }
+mIf p x y = bool x y =<< p
 
 
 mMempty :: (Monad a, Monoid b) => a b
@@ -310,7 +316,7 @@ onFalse = onHelper id
 
 
 onHelper :: (Bool -> Bool) -> Bool -> (a -> a) -> a -> a
-onHelper g b f = g b ? id :? f
+onHelper g b f = bool id f . g $ b
 
 
 onTrue :: Bool -> (a -> a) -> a -> a

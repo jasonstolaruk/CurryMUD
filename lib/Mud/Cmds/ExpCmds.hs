@@ -31,6 +31,7 @@ import Control.Arrow ((&&&), first)
 import Control.Lens (_3, _4, view)
 import Control.Lens.Operators ((&), (.~), (<>~), (?~))
 import Control.Monad ((>=>))
+import Data.Bool (bool)
 import Data.List ((\\), delete)
 import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>))
@@ -1107,7 +1108,7 @@ expCmd _ p = advise p [] adviceExpCmdExcessArgs
 
 
 mkSerializedDesig :: Desig -> Text -> Text
-mkSerializedDesig d toOthers = serialize (T.head toOthers == '%' ? d :? d { desigShouldCap = Don'tCap })
+mkSerializedDesig d toOthers = serialize . bool d d { desigShouldCap = Don'tCap } $ T.head toOthers == '%'
 
 
 expCmdHelper :: ExpCmdFun

@@ -73,6 +73,7 @@ import qualified Mud.Util.Misc as U (patternMatchFail)
 import Control.Lens (Getting, Setting, both)
 import Control.Lens.Operators ((%~), (&), (^.))
 import Data.Bits (clearBit, setBit, testBit)
+import Data.Bool (bool)
 import Data.Function (on)
 import Data.Monoid ((<>))
 import Data.String (fromString)
@@ -150,7 +151,7 @@ class HasFlags a where
   setFlag :: (Enum e) => e -> Bool -> a -> a
   setFlag (fromEnum -> flagBitNum) b = flagSetter %~ (🍬 flagBitNum)
     where
-      (🍬) = b ? setBit :? clearBit
+      (🍬) = bool setBit clearBit b
 
 
 instance HasFlags Ent where
@@ -260,14 +261,14 @@ instance Pretty Attrib where
 instance Pretty BanHostRec where
   pp BanHostRec { .. } = slashes [ dbTimestamp
                                  , dbHost
-                                 , dbIsBanned ? "banned" :? "unbanned"
+                                 , bool "banned" "unbanned" dbIsBanned
                                  , dbReason ]
 
 
 instance Pretty BanPCRec where
   pp BanPCRec { .. } = slashes [ dbTimestamp
                                , dbName
-                               , dbIsBanned ? "banned" :? "unbanned"
+                               , bool "banned" "unbanned" dbIsBanned
                                , dbReason ]
 
 

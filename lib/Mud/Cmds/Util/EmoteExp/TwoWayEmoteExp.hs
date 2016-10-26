@@ -21,6 +21,7 @@ import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Lens (_1)
 import Control.Lens.Operators ((%~))
+import Data.Bool (bool)
 import Data.Either (lefts, rights)
 import Data.List (intersperse, nub)
 import Data.Monoid ((<>))
@@ -93,9 +94,7 @@ procExpCmdTwoWay i ms targetId targetSing (map T.toLower . unmsg -> [cn, target]
           let good  = Right [ (format (Just targetId) toSelf,   pure i       )
                             , (format Nothing         toTarget, pure targetId) ]
               sorry = Left . sorryTwoWayTargetName match $ targetSing
-          in ()# target ?  good
-                        :? (target `T.isPrefixOf` uncapitalize targetSing ?  good
-                                                                          :? sorry)
+          in bool good (bool good sorry $ target `T.isPrefixOf` uncapitalize targetSing) $ ()# target
       Versatile toSelf toOthers toSelfWithTarget toTarget _
         | ()# target -> Right [ (toSelf,                  pure i       )
                               , (format Nothing toOthers, pure targetId) ]
