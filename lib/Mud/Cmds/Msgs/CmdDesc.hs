@@ -228,7 +228,7 @@ cmdDescTune = "Display a list of your telepathic connections, or tune in/out one
 
 
 cmdDescTypo :: Text
-cmdDescTypo = "Report a typo."
+cmdDescTypo = "Report a typo or grammatical error."
 
 
 cmdDescUnlink :: Text
