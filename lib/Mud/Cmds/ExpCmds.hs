@@ -1108,7 +1108,7 @@ expCmd _ p = advise p [] adviceExpCmdExcessArgs
 
 
 mkSerializedDesig :: Desig -> Text -> Text
-mkSerializedDesig d toOthers = serialize . bool d d { desigShouldCap = Don'tCap } $ T.head toOthers == '%'
+mkSerializedDesig d toOthers = serialize . bool d { desigShouldCap = Don'tCap } d $ T.head toOthers == '%'
 
 
 expCmdHelper :: ExpCmdFun

@@ -151,7 +151,7 @@ class HasFlags a where
   setFlag :: (Enum e) => e -> Bool -> a -> a
   setFlag (fromEnum -> flagBitNum) b = flagSetter %~ (🍬 flagBitNum)
     where
-      (🍬) = bool setBit clearBit b
+      (🍬) = bool clearBit setBit b
 
 
 instance HasFlags Ent where
@@ -261,14 +261,14 @@ instance Pretty Attrib where
 instance Pretty BanHostRec where
   pp BanHostRec { .. } = slashes [ dbTimestamp
                                  , dbHost
-                                 , bool "banned" "unbanned" dbIsBanned
+                                 , bool "unbanned" "banned" dbIsBanned
                                  , dbReason ]
 
 
 instance Pretty BanPCRec where
   pp BanPCRec { .. } = slashes [ dbTimestamp
                                , dbName
-                               , bool "banned" "unbanned" dbIsBanned
+                               , bool "unbanned" "banned" dbIsBanned
                                , dbReason ]
 
 

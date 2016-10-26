@@ -186,7 +186,7 @@ awardExp amt reason i = getLvlExp i <$> getState >>= \(l, x) -> let diff = calcL
             f seed = Just ((colorWith lvlUpColor lvlUpMsg, mkLogMsg), pred seed)
               where
                 mkLogMsg = ("gained a level " <>) . parensQuote $ "now level " <> showText (newLvl - seed + 1)
-        in (ms'', (ms'', bool mempties (unzip . unfoldr f $ diff) $ diff <= 0))
+        in (ms'', (ms'', bool (unzip . unfoldr f $ diff) mempties $ diff <= 0))
 
 
 noOfLvlUpRndmInts :: Int

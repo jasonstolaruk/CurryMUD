@@ -114,7 +114,7 @@ atomicWriteIORef' ior = (atomicWriteIORef ior $!)
 
 
 boolEmp :: (Monoid a) => a -> Bool -> a
-boolEmp = bool mempty
+boolEmp x = bool x mempty
 
 
 boolToMaybe :: Bool -> a -> Maybe a
@@ -250,7 +250,7 @@ listToMaybe xs  = patternMatchFail "Mud.Util.Misc" "listToMaybe" xs
 
 
 mIf :: (Monad m) => m Bool -> m a -> m a -> m a
-mIf p x y = bool x y =<< p
+mIf p x = (p >>=) . flip bool x
 
 
 mMempty :: (Monad a, Monoid b) => a b
@@ -316,7 +316,7 @@ onFalse = onHelper id
 
 
 onHelper :: (Bool -> Bool) -> Bool -> (a -> a) -> a -> a
-onHelper g b f = bool id f . g $ b
+onHelper g b f = bool f id . g $ b
 
 
 onTrue :: Bool -> (a -> a) -> a -> a

@@ -58,7 +58,7 @@ False ? (_ :? y) = y
 (|!|) :: (Eq a, Monoid a, Monoid b) => a -> b -> b
 (|!|) = memptyOnMempty
   where
-    m `memptyOnMempty` a = bool mempty a $ ()# m
+    m `memptyOnMempty` a = bool a mempty $ ()# m
 
 
 -----
@@ -67,7 +67,7 @@ False ? (_ :? y) = y
 (|?|) :: (Monoid a) => Bool -> a -> a
 (|?|) = memptyOnFalse
   where
-    b `memptyOnFalse` a = bool a mempty b
+    memptyOnFalse = flip (bool mempty)
 
 
 -----

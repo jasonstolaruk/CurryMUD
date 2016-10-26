@@ -480,7 +480,7 @@ mkCan'tGetCoinsDesc = mkCoinsMsgs (can'tCoinsDescHelper sorryGetEnc)
 
 
 can'tCoinsDescHelper :: Text -> Int -> Text -> Text
-can'tCoinsDescHelper t a cn = t <> bool (prd $ "the " <> cn) (T.concat [ showText a, " ", cn, "s." ]) (a == 1)
+can'tCoinsDescHelper t a cn = t <> bool (T.concat [ showText a, " ", cn, "s." ]) (prd $ "the " <> cn) (a == 1)
 
 
 -----
@@ -525,7 +525,7 @@ partitionInvHelper f ms maxAmt acc@(x, _, _) targetId = let x' = x + f targetId 
                                                             a  = acc & _1 .~ x'
                                                                      & _2 <>~ pure targetId
                                                             b  = acc & _3 <>~ pure targetId
-                                                        in bool a b $ x' <= maxAmt
+                                                        in bool b a $ x' <= maxAmt
 
 
 mkCan'tGetInvDescs :: Id -> MudState -> Weight -> Inv -> [Text]
@@ -538,7 +538,7 @@ mkCan'tGetInvDescs i ms maxEnc = concatMap helper
 can'tInvDescsHelper :: Text -> Id -> MudState -> Inv -> [Text]
 can'tInvDescsHelper t i ms = map helper . mkNameCountBothList i ms
   where
-    helper (_, c, b@(s, _)) = t <> bool (prd $ "the " <> s) (T.concat [ showText c, " ", mkPlurFromBoth b, "." ]) (c == 1)
+    helper (_, c, b@(s, _)) = t <> bool (T.concat [ showText c, " ", mkPlurFromBoth b, "." ]) (prd $ "the " <> s) (c == 1)
 
 
 -----
@@ -793,7 +793,7 @@ mkPutRemInvDescs i ms d por mnom mci conSing = unzip . map helper . mkNameCountB
                     , mkPorPrep por ThrPer mnom mci conSing
                     , rest ], otherIds) )
       where
-        withArticle = bool ("the " <> s) (aOrAn s) $ por == Put
+        withArticle = bool (aOrAn s) ("the " <> s) $ por == Put
     helper (_, c, b) =
         (  T.concat [ "You "
                     , mkPorVerb por SndPer
@@ -1048,7 +1048,7 @@ mkInvCoinsDesc :: Id -> Cols -> MudState -> Id -> Sing -> Text
 mkInvCoinsDesc i cols ms targetId targetSing =
     let pair@(targetInv, targetCoins) = (getInv `fanUncurry` getCoins) (targetId, ms)
     in case ((()#) *** (()#)) pair of
-      (True,  True ) -> wrapUnlines cols . bool dudeYourHandsAreEmpty ("The " <> targetSing <> " is empty.") $ targetId == i
+      (True,  True ) -> wrapUnlines cols . bool ("The " <> targetSing <> " is empty.") dudeYourHandsAreEmpty $ targetId == i
       (False, True ) -> header <> mkEntsInInvDesc i cols ms targetInv                                    <> footer
       (True,  False) -> header                                        <> mkCoinsSummary cols targetCoins <> footer
       (False, False) -> header <> mkEntsInInvDesc i cols ms targetInv <> mkCoinsSummary cols targetCoins <> footer
@@ -1081,7 +1081,7 @@ mkCoinsSummary cols = helper . zipWith mkNameAmt coinNames . coinsToList
 
 
 mkEqDesc :: Id -> Cols -> MudState -> Id -> Sing -> Type -> Text
-mkEqDesc i cols ms descId descSing descType = let descs = bool mkDescsSelf mkDescsOther $ descId == i in
+mkEqDesc i cols ms descId descSing descType = let descs = bool mkDescsOther mkDescsSelf $ descId == i in
     ()# descs ? noDescs :? ((header <>) . T.unlines . concatMap (wrapIndent 15 cols) $ descs)
   where
     mkDescsSelf =
@@ -1318,7 +1318,7 @@ notFoundSuggestAsleeps a@(capitalize . T.toLower -> a') asleepSings ms =
               guess = a' /= asleepTarget |?| ("Perhaps you mean " <> asleepTarget <> "? ")
           in T.concat [ guess
                       , "Unfortunately, "
-                      , bool asleepTarget heShe $ ()# guess
+                      , bool heShe asleepTarget $ ()# guess
                       , thrice prd " is sleeping at the moment" ]
       Nothing -> sorryTwoWayLink a
 
@@ -1386,4 +1386,4 @@ sorryConHelper i ms conId conSing
 
 
 spiritHelper :: Id -> (MudState -> MudStack ()) -> (MudState -> MudStack ()) -> MudStack ()
-spiritHelper i a b = getState >>= \ms -> ms |&| bool b a (isSpiritId i ms)
+spiritHelper i a b = getState >>= \ms -> ms |&| bool a b (isSpiritId i ms)

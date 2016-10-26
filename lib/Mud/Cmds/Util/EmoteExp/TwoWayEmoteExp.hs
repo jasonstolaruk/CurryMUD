@@ -94,7 +94,7 @@ procExpCmdTwoWay i ms targetId targetSing (map T.toLower . unmsg -> [cn, target]
           let good  = Right [ (format (Just targetId) toSelf,   pure i       )
                             , (format Nothing         toTarget, pure targetId) ]
               sorry = Left . sorryTwoWayTargetName match $ targetSing
-          in bool good (bool good sorry $ target `T.isPrefixOf` uncapitalize targetSing) $ ()# target
+          in bool (bool sorry good $ target `T.isPrefixOf` uncapitalize targetSing) good $ ()# target
       Versatile toSelf toOthers toSelfWithTarget toTarget _
         | ()# target -> Right [ (toSelf,                  pure i       )
                               , (format Nothing toOthers, pure targetId) ]

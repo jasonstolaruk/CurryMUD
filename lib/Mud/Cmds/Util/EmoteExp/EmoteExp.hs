@@ -99,7 +99,7 @@ procEmote i ms cc triples as             =
           | x == enc's          -> mkRightForNonTargets (me & each <>~ "'s")
           | enc `T.isInfixOf` x -> Left . adviceEnc $ cc'
           | x == etc            -> Left . adviceEtc $ cc'
-          | T.take 1 x == etc   -> bool (Left adviceEtcHead) (procTarget . T.tail $ x) isHead
+          | T.take 1 x == etc   -> bool (procTarget . T.tail $ x) (Left adviceEtcHead) isHead
           | etc `T.isInfixOf` x -> Left . adviceEtc $ cc'
           | isHead, hasEnc as   -> mkRightForNonTargets . dup3 . capitalizeMsg $ x
           | isHead              -> mkRightForNonTargets (me & each <>~ spcL x)
@@ -115,7 +115,7 @@ procEmote i ms cc triples as             =
           ("",   _) -> Left . adviceEtc $ cc'
           ("'s", _) -> Left adviceEtcBlankPoss
           (w,    p) ->
-            let (isPoss, target) = bool (True, T.dropEnd 2) (False, id) ("'s" `T.isSuffixOf` w) & _2 %~ (w |&|)
+            let (isPoss, target) = bool (False, id) (True, T.dropEnd 2) ("'s" `T.isSuffixOf` w) & _2 %~ (w |&|)
                 notFound         = Left . sorryChanTargetNameFromContext target $ cc
                 found match      =
                     let targetId = view _1 . head . filter (views _2 ((== match) . T.toLower)) $ triples
@@ -125,7 +125,7 @@ procEmote i ms cc triples as             =
                              , txt )
             in findFullNameForAbbrev (T.toLower target) (selects _2 T.toLower triples) |&| maybe notFound found
     addSuffix   isPoss p = (<> p) . onTrue isPoss (<> "'s")
-    mkEmoteWord          = bool ForTargetPoss ForTarget
+    mkEmoteWord          = bool ForTarget ForTargetPoss
     tunedIds             = select _1 triples
 
 
@@ -181,7 +181,7 @@ procExpCmd i ms cc triples (map T.toLower . unmsg -> [cn, target]) =
       where
         helper w = let (a, b) = T.break isLetter w
                        (c, d) = T.span  isLetter b
-                   in bool (a <> colorWith emoteTargetColor c <> d) w $ T.toLower c `elem` yous
+                   in bool w (a <> colorWith emoteTargetColor c <> d) $ T.toLower c `elem` yous
 procExpCmd _ _ _ _ as = patternMatchFail "procExpCmd" . showText $ as
 
 
@@ -199,7 +199,7 @@ adminChanTargetify tunedIds tunedSings msg@(T.words -> ws@(headTail . head -> (c
 
 adminChanProcChanTarget :: Inv -> [Sing] -> Args -> Either Text [Broadcast]
 adminChanProcChanTarget tunedIds tunedSings ((capitalize . T.toLower -> target):rest) =
-    bool (Left sorryChanMsg) (findFullNameForAbbrev target tunedSings |&| maybe notFound found) $ ()# rest
+    bool (findFullNameForAbbrev target tunedSings |&| maybe notFound found) (Left sorryChanMsg) $ ()# rest
   where
     notFound         = Left . sorryAdminChanTargetName $ target
     found targetSing =
@@ -238,7 +238,7 @@ adminChanProcEmote i ms tunedIds tunedSings as =
           | x == enc's          -> mkRightForNonTargets . dup3 $ s <> "'s"
           | enc `T.isInfixOf` x -> Left . adviceEnc $ cn
           | x == etc            -> Left . adviceEtc $ cn
-          | T.take 1 x == etc   -> bool (Left adviceEtcHead) (procTarget . T.tail $ x) isHead
+          | T.take 1 x == etc   -> bool (procTarget . T.tail $ x) (Left adviceEtcHead) isHead
           | etc `T.isInfixOf` x -> Left . adviceEtc $ cn
           | isHead, hasEnc as   -> mkRightForNonTargets . dup3 . capitalizeMsg $ x
           | isHead              -> mkRightForNonTargets . dup3 $ s |<>| x
@@ -254,7 +254,7 @@ adminChanProcEmote i ms tunedIds tunedSings as =
           ("",   _) -> Left . adviceEtc $ cn
           ("'s", _) -> Left adviceEtcBlankPoss
           (w,    p) ->
-            let (isPoss, target) = bool (True, T.dropEnd 2) (False, id) ("'s" `T.isSuffixOf` w) & _2 %~ (w |&|)
+            let (isPoss, target) = bool (False, id) (True, T.dropEnd 2) ("'s" `T.isSuffixOf` w) & _2 %~ (w |&|)
                 target'          = capitalize . T.toLower $ target
                 notFound         = Left . sorryAdminChanTargetName $ target
                 found targetSing@(addSuffix isPoss p -> targetSing') =
@@ -264,7 +264,7 @@ adminChanProcEmote i ms tunedIds tunedSings as =
                              , targetSing' )
             in findFullNameForAbbrev target' (getSing i ms `delete` tunedSings) |&| maybe notFound found
     addSuffix   isPoss p = (<> p) . onTrue isPoss (<> "'s")
-    mkEmoteWord          = bool ForTargetPoss ForTarget
+    mkEmoteWord          = bool ForTarget ForTargetPoss
 
 
 -----
@@ -321,5 +321,5 @@ adminChanProcExpCmd i ms tunedIds tunedSings (map T.toLower . unmsg -> [cn, targ
       where
         helper w = let (a, b) = T.break isLetter w
                        (c, d) = T.span  isLetter b
-                   in bool (a <> colorWith emoteTargetColor c <> d) w $ T.toLower c `elem` yous
+                   in bool w (a <> colorWith emoteTargetColor c <> d) $ T.toLower c `elem` yous
 adminChanProcExpCmd _ _ _ _ as = patternMatchFail "adminChanProcExpCmd" . showText $ as
