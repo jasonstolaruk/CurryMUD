@@ -11,7 +11,7 @@ import Mud.Data.State.MudData
 import Mud.Util.List
 import Mud.Util.Misc
 
-import Control.Arrow ((***), (&&&))
+import Control.Arrow ((&&&))
 import Control.Concurrent (ThreadId)
 import Control.Lens (at, to, view, views)
 import Control.Lens.Operators ((^.))
@@ -377,7 +377,7 @@ getInv i = view (invTbl.ind i)
 
 
 getInvCoins :: Id -> MudState -> (Inv, Coins)
-getInvCoins i = (getInv i *** getCoins i) . dup
+getInvCoins i = getInv i &&& getCoins i
 
 
 -----
@@ -426,7 +426,7 @@ getLvl i = view lvl . getMob i
 
 
 getLvlExp :: Id -> MudState -> (Lvl, Exp)
-getLvlExp i = (getLvl i *** getExp i) . dup
+getLvlExp i = getLvl i &&& getExp i
 
 
 -----
@@ -510,7 +510,7 @@ getMsgQueue i = view (msgQueueTbl.ind i)
 
 
 getMsgQueueColumns :: Id -> MudState -> (MsgQueue, Cols)
-getMsgQueueColumns i = (getMsgQueue i *** getColumns i) . dup
+getMsgQueueColumns i = getMsgQueue i &&& getColumns i
 
 
 -----
@@ -651,7 +651,7 @@ getPeeping = onPla (view peeping) []
 
 
 getPeepersPeeping :: Id -> MudState -> (Inv, Inv)
-getPeepersPeeping i = (getPeepers i *** getPeeping i) . dup
+getPeepersPeeping i = getPeepers i &&& getPeeping i
 
 
 -----

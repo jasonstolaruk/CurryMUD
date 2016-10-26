@@ -570,7 +570,7 @@ alertExecFindTargetSing _ _  ""     = ""
 alertExecFindTargetSing i ms target =
     let (_, _, inRms) = sortArgsInvEqRm InRm . pure $ target
         ri            = getRmId i ms
-        invCoins      = first (i `delete`) . getNonIncogInvCoins ri $ ms
+        invCoins      = first (i `delete`) . getVisibleInvCoins ri $ ms
         (eiss, ecs)   = uncurry (resolveRmInvCoins i ms inRms) invCoins
         a             = boolEmp b $ ()!# ecs
         b             = either (const "") ((`getSing` ms) . head) . head $ eiss
@@ -1035,7 +1035,7 @@ drink   (Lower   i mq cols [amt, target]) = getState >>= \ms -> let (isDrink, is
             let (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv . pure $ target
                 ri                     = getRmId i ms
                 myInvCoins             = getInvCoins i ms
-                rmInvCoins             = first (i `delete`) . getNonIncogInvCoins ri $ ms
+                rmInvCoins             = first (i `delete`) . getVisibleInvCoins ri $ ms
                 maybeHooks             = lookupHooks i ms "drink"
                 -----
                 drinkInv =
@@ -1169,7 +1169,7 @@ emote   (WithArgs i mq cols as) = getState >>= \ms ->
           ("'s", _) -> Left adviceEtcBlankPoss
           (w,    p) ->
             let (isPoss, target) = ("'s" `T.isSuffixOf` w ? (True, T.dropEnd 2) :? (False, id)) & _2 %~ (w |&|)
-                invCoins         = first (i `delete`) . getMobRmNonIncogInvCoins i $ ms
+                invCoins         = first (i `delete`) . getMobRmVisibleInvCoins i $ ms
             in if ()!# invCoins
               then case singleArgInvEqRm InRm target of
                 (InInv, _      ) -> sorry sorryEmoteTargetInInv
@@ -1484,7 +1484,7 @@ getAction p@(LowerNub' i         as) = genericActionWithHooks p helper "get"
             sorrys                 = dropEmpties [ inInvs |!| sorryGetInInv, inEqs |!| sorryGetInEq ]
             d                      = mkStdDesig i ms DoCap
             ri                     = getRmId i ms
-            invCoins               = first (i `delete`) . getNonIncogInvCoins ri $ ms
+            invCoins               = first (i `delete`) . getVisibleInvCoins ri $ ms
         in case ((()!#) *** (()!#)) (invCoins, lookupHooks i ms "get") of
           (False, False) -> (ms, (pure sorryGetEmptyRmNoHooks, [], [], []))
           -----
@@ -1802,7 +1802,7 @@ intro (LowerNub i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
         let (inInvs, inEqs, inRms) = sortArgsInvEqRm InRm as
             sorryInInv = inInvs |!| mkNTB sorryIntroInInv
             sorryInEq  = inEqs  |!| mkNTB sorryIntroInEq
-            invCoins@(first (i `delete`) -> invCoins') = getMobRmNonIncogInvCoins i ms
+            invCoins@(first (i `delete`) -> invCoins') = getMobRmVisibleInvCoins i ms
             (eiss, ecs) = uncurry (resolveRmInvCoins i ms inRms) invCoins'
             ris         = fst invCoins
             (pt, cbs,  logMsgs, intro'dIds) = foldl' (helperIntroEitherInv ms ris) (ms^.pcTbl, [], [], []) eiss
@@ -1987,7 +1987,7 @@ link (LowerNub i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
     helper ms = let (inInvs, inEqs, inRms)  = sortArgsInvEqRm InRm as
                     sorryInInv              = inInvs |!| (mkBcast i . nlnl $ sorryLinkInInv)
                     sorryInEq               = inEqs  |!| (mkBcast i . nlnl $ sorryLinkInEq )
-                    invCoins                = first (i `delete`) . getMobRmNonIncogInvCoins i $ ms
+                    invCoins                = first (i `delete`) . getMobRmVisibleInvCoins i $ ms
                     (eiss, ecs)             = uncurry (resolveRmInvCoins i ms inRms) invCoins
                     (ms', bs,  logMsgs, fs) = foldl' helperLinkEitherInv (ms, [], [], []) eiss
                     (     bs', logMsgs'   ) = foldl' helperLinkEitherCoins (bs, logMsgs) ecs
@@ -2085,7 +2085,7 @@ look (LowerNub i mq cols as) = mkRndmVector >>= \v ->
         logMsg |#| logPla "look" i . prd
   where
     helper v ms =
-        let invCoins               = first (i `delete`) . getMobRmNonIncogInvCoins i $ ms
+        let invCoins               = first (i `delete`) . getMobRmVisibleInvCoins i $ ms
             (inInvs, inEqs, inRms) = sortArgsInvEqRm InRm as
             sorry                  = T.concat [ inInvs |!| sorryInInv, inEqs |!| sorryInEq ]
             sorryInInv             = wrapUnlinesNl cols . sorryEquipInvLook LookCmd $ InvCmd
@@ -2135,7 +2135,7 @@ look p = patternMatchFail "look" . showText $ p
 
 mkRmInvCoinsDesc :: Id -> Cols -> MudState -> Id -> Text
 mkRmInvCoinsDesc i cols ms ri =
-    let (ris, c)                = first (i `delete`) . getNonIncogInvCoins ri $ ms
+    let (ris, c)                = first (i `delete`) . getVisibleInvCoins ri $ ms
         (pcTuples, otherTuples) = splitPCsOthers . mkRmInvCoinsDescTuples i ms $ ris
         pcDescs                 = T.unlines . concatMap (wrapIndent 2 cols . mkPCDesc   ) $ pcTuples
         otherDescs              = T.unlines . concatMap (wrapIndent 2 cols . mkOtherDesc) $ otherTuples
@@ -3068,7 +3068,7 @@ sayHelper l p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
       (adverb, right)      -> Right (adverb, T.drop 2 right)
     sayTo maybeAdverb (T.words -> (target:rest@(r:_))) ms =
         let d        = mkStdDesig i ms DoCap
-            invCoins = first (i `delete`) . getMobRmNonIncogInvCoins i $ ms
+            invCoins = first (i `delete`) . getMobRmVisibleInvCoins i $ ms
         in if ()!# invCoins
           then case singleArgInvEqRm InRm target of
             (InInv, _      ) -> sorry sorrySayInInv
@@ -3362,7 +3362,7 @@ showAction   (Lower i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
   then wrapSend mq cols . sorryIncog $ "show"
   else let eqMap      = getEqMap    i ms
            invCoins   = getInvCoins i ms
-           rmInvCoins = first (i `delete`) . getMobRmNonIncogInvCoins i $ ms
+           rmInvCoins = first (i `delete`) . getMobRmVisibleInvCoins i $ ms
        in if
          | ()# eqMap, ()# invCoins -> wrapSend mq cols dudeYou'reScrewed
          | ()# rmInvCoins          -> wrapSend mq cols sorryNoOneHere
@@ -3565,7 +3565,7 @@ smell (NoArgs i mq cols) = getState >>= \ms -> do
 smell (OneArgLower i mq cols a) = getState >>= \ms ->
     let invCoins   = getInvCoins i ms
         eqMap      = getEqMap    i ms
-        rmInvCoins = first (i `delete`) . getMobRmNonIncogInvCoins i $ ms
+        rmInvCoins = first (i `delete`) . getMobRmVisibleInvCoins i $ ms
         maybeHooks = lookupHooks i ms "smell"
         d          = mkStdDesig  i ms DoCap
     in if ()# invCoins && ()# eqMap && ()# rmInvCoins && ()# maybeHooks
@@ -4241,7 +4241,7 @@ whisper   (WithArgs i mq cols (target:(T.unwords -> rest))) = getState >>= \ms -
   else helper |&| modifyState >=> ioHelper ms
   where
     helper ms = let d        = mkStdDesig i ms DoCap
-                    invCoins = first (i `delete`) . getMobRmNonIncogInvCoins i $ ms
+                    invCoins = first (i `delete`) . getMobRmVisibleInvCoins i $ ms
                 in if ()!# invCoins
                   then case singleArgInvEqRm InRm target of
                     (InInv, _      ) -> sorry sorryWhisperInInv

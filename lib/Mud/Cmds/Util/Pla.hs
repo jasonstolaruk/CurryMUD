@@ -942,7 +942,7 @@ mkChanBindings i ms = let cs  = getPCChans i ms
 mkChanNamesTunings :: Id -> MudState -> ([Text], [Bool])
 mkChanNamesTunings i ms = unzip . sortBy (compare `on` fst) . map helper . getPCChans i $ ms
   where
-    helper = (view chanName *** views chanConnTbl (M.! getSing i ms)) . dup
+    helper = view chanName &&& views chanConnTbl (M.! getSing i ms)
 
 
 -----
@@ -1232,7 +1232,7 @@ mkLastArgIsTargetBindings :: Id -> MudState -> Args -> LastArgIsTargetBindings
 mkLastArgIsTargetBindings i ms as | (lastArg, others) <- mkLastArgWithNubbedOthers as =
     LastArgIsTargetBindings { srcDesig    = mkStdDesig  i ms DoCap
                             , srcInvCoins = getInvCoins i ms
-                            , rmInvCoins  = first (i `delete`) . getMobRmNonIncogInvCoins i $ ms
+                            , rmInvCoins  = first (i `delete`) . getMobRmVisibleInvCoins i $ ms
                             , targetArg   = lastArg
                             , otherArgs   = others }
 

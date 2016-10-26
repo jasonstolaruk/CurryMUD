@@ -19,14 +19,14 @@ module Mud.Data.State.Util.Misc ( addToInv
                                 , getLogAsyncs
                                 , getLoggedInAdminIds
                                 , getLoggedInPlaIds
-                                , getMobRmNonIncogInvCoins
-                                , getNonIncogInv
-                                , getNonIncogInvCoins
+                                , getMobRmVisibleInvCoins
                                 , getNonIncogLoggedInAdminIds
                                 , getNpcIds
                                 , getRmActionFun
                                 , getState
                                 , getUnusedId
+                                , getVisibleInv
+                                , getVisibleInvCoins
                                 , isAwake
                                 , isKnownLang
                                 , isLoggedIn
@@ -238,7 +238,7 @@ getInstaEffectFun n = views (instaEffectFunTbl.at n) (fromMaybe oops)
 
 
 getLogAsyncs :: MudData -> (LogAsync, LogAsync)
-getLogAsyncs = (getAsync noticeLog *** getAsync errorLog) . dup
+getLogAsyncs = getAsync noticeLog &&& getAsync errorLog
   where
     getAsync = flip views (fst . fromJust)
 
@@ -257,27 +257,27 @@ getLoggedInPlaIds = views plaTbl (IM.keys . IM.filter (uncurry (&&) . (isLoggedI
 -----
 
 
-getMobRmNonIncogInvCoins :: Id -> MudState -> (Inv, Coins)
-getMobRmNonIncogInvCoins i ms = let ri = getRmId i ms in getNonIncogInvCoins ri ms
+getMobRmVisibleInvCoins :: Id -> MudState -> (Inv, Coins)
+getMobRmVisibleInvCoins i ms = let ri = getRmId i ms in getVisibleInvCoins ri ms
 
 
 -----
 
 
-getNonIncogInv :: Id -> MudState -> Inv
-getNonIncogInv i ms = filter notIncog . getInv i $ ms
+getVisibleInv :: Id -> MudState -> Inv
+getVisibleInv i ms = filter isVisible . getInv i $ ms
   where
-    notIncog targetId | getType            targetId ms /= PCType  = otherwise
-                      | isSpiritId         targetId ms            = likewise
-                      | not (isIncognitoId targetId ms)           = otherwise
-                      | otherwise                                 = likewise
+    isVisible targetId | not . isPC targetId $ ms          = otherwise
+                       | isSpiritId targetId ms            = likewise
+                       | not . isIncognitoId targetId $ ms = otherwise
+                       | otherwise                         = likewise
 
 
 -----
 
 
-getNonIncogInvCoins :: Id -> MudState -> (Inv, Coins)
-getNonIncogInvCoins i = (getNonIncogInv i *** getCoins i) . dup
+getVisibleInvCoins :: Id -> MudState -> (Inv, Coins)
+getVisibleInvCoins i = getVisibleInv i &&& getCoins i
 
 
 -----
