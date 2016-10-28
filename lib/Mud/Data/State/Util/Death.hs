@@ -36,6 +36,7 @@ import Control.Lens.Operators ((%~), (&), (.~), (^.))
 import Control.Monad (forM_, when)
 import Control.Monad.IO.Class (liftIO)
 import Data.Bits (zeroBits)
+import Data.Bool (bool)
 import Data.Function (on)
 import Data.List (delete, sortBy)
 import Data.Monoid ((<>))
@@ -85,7 +86,10 @@ Those links with the greatest volume of messages are retained. If the deceased P
 handleDeath :: Id -> MudStack ()
 handleDeath i = do
     mWhen (isNpc i <$> getState) possessHelper
-    tweak . leaveParty $ i
+    tweaks [ leaveParty i
+           , mobTbl.ind i.mobRmDesc .~ Nothing
+           , mobTbl.ind i.tempDesc  .~ Nothing
+           , mobTbl.ind i.stomach   .~ [] ]
     stopActs          i
     pauseEffects      i
     stopFeelings      i
@@ -122,8 +126,7 @@ mkCorpse i ms = let et     = EntTemplate (Just "corpse")
                     ct     = ConTemplate (getCorpseCapacity i ms `max` calcCarriedVol i ms)
                                          zeroBits
                     ic     = (M.elems (getEqMap i ms) ++ getInv i ms, getCoins i ms)
-                    corpse | isPC i ms = PCCorpse (getSing i ms) (getSex i ms) (getRace i ms)
-                           | otherwise = NpcCorpse
+                    corpse = bool NpcCorpse (PCCorpse (getSing i ms) (getSex i ms) . getRace i $ ms) . isPC i $ ms
                     (_, ms', fs) = newCorpse ms et ot ct ic corpse . getRmId i $ ms
                 in ( ms' & coinsTbl.ind i .~ mempty
                          & eqTbl   .ind i .~ M.empty

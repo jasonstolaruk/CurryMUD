@@ -3728,11 +3728,12 @@ stats (NoArgs i mq cols) = getState >>= \ms ->
                                 , skillPtsHelper
                                 , mobRmDescHelper
                                 , tempDescHelper ]
-        top             = underline . onTrue (isPC i ms) (<> sexRace) . getSing i $ ms
-        sexRace         = T.concat [ ", the ", sexy, " ", r ]
-        (sexy, r)       = mkPrettySexRace i ms
-        xpsHelper       | (hps, mps, pps, fps) <- getPts i ms
-                        = spaces [ f "h" hps, f "m" mps, f "p" pps, f "f" fps ]
+        top       = underline . onTrue (isPC i ms) ((<> sexRace) . (spiritTxt <>)) . getSing i $ ms
+        spiritTxt = isSpiritId i ms |?| "The disembodied spirit of "
+        sexRace   = T.concat [ ", the ", sexy, " ", r ]
+        (sexy, r) = mkPrettySexRace i ms
+        xpsHelper | (hps, mps, pps, fps) <- getPts i ms
+                  = spaces [ f "h" hps, f "m" mps, f "p" pps, f "f" fps ]
           where
             f a pair@(both %~ commaShow -> (x, y)) = T.concat [ colorWith (mkColorTxtForXps pair) x, "/", y, a, "p" ]
         (l, expr)       = getLvlExp i ms
@@ -3747,7 +3748,7 @@ stats p = withoutArgs stats p
 -----
 
 
-stop :: ActionFun
+stop :: ActionFun -- TODO: Spirits will only ever need to stop moving.
 stop p@(NoArgs i mq cols) = getState >>= \ms ->
     case filter (view _3) . mkStopTuples p $ ms of
       [] -> wrapSend mq cols sorryStopNotDoingAnything
