@@ -3748,7 +3748,7 @@ stats p = withoutArgs stats p
 -----
 
 
-stop :: ActionFun -- TODO: Spirits will only ever need to stop moving.
+stop :: ActionFun
 stop p@(NoArgs i mq cols) = getState >>= \ms ->
     case filter (view _3) . mkStopTuples p $ ms of
       [] -> wrapSend mq cols sorryStopNotDoingAnything
@@ -3779,7 +3779,7 @@ mkStopTuples p@ActionParams { myId } ms = [ ("moving",    Moving,    isMoving   
 
 
 stopMoving :: ActionParams -> MudState -> MudStack ()
-stopMoving _ _ = undefined -- TODO
+stopMoving _ _ = undefined -- TODO: Stop moving. Note that player could be a spirit.
 
 
 stopEating :: ActionParams -> MudState -> MudStack ()
