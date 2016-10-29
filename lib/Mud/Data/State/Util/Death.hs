@@ -29,7 +29,7 @@ import Mud.Util.Operators
 import Mud.Util.Text
 import qualified Mud.Misc.Logging as L (logNotice, logPla)
 
-import Control.Arrow ((***), first, second)
+import Control.Arrow ((***), (&&&), first, second)
 import Control.Concurrent (threadDelay)
 import Control.Lens (_1, _2, _3, at, view, views)
 import Control.Lens.Operators ((%~), (&), (.~), (^.))
@@ -143,29 +143,32 @@ mkCorpse i ms = let et     = EntTemplate (Just "corpse")
 
 
 spiritize :: Id -> MudStack ()
-spiritize i = getState >>= \ms -> let mySing = getSing i ms in if isPC i ms
-  then (withDbExHandler "spiritize" . liftIO . lookupTeleNames $ mySing) >>= \case
-    Nothing                    -> uncurry dbError . getMsgQueueColumns i $ ms
-    Just (procOnlySings -> ss) ->
-        let triples    = [ (i', s, ia) | s <- ss, let i' = getIdForMobSing s ms, let ia = isAwake i' ms ]
-            n          = calcRetainedLinks i ms
-            retaineds  = take n triples
-            retaineds' = (retaineds |&|) $ case filter (view _3) retaineds of
-              [] -> let bonus = take 1 . filter (view _3) . drop n $ triples in (++ bonus)
-              _  -> id
-            asleepIds = let f i' p = and [ views linked (mySing `elem`) p
-                                         , i' `notElem` select _1 retaineds'
-                                         , not (isAwake i' ms) ]
-                        in views pcTbl (IM.keys . IM.filterWithKey f . IM.delete i) ms
-            (bs, fs)  = mkBcasts ms mySing retaineds'
-        in do { tweaks [ plaTbl.ind i %~ setPlaFlag IsSpirit True
-                       , pcTbl        %~ pcTblHelper mySing retaineds'
-                       , mobTbl.ind i %~ setCurXps ]
-              ; forM_ asleepIds $ \i' ->　retainedMsg i' ms . linkMissingMsg $ mySing
-              ; bcast bs
-              ; sequence_ (fs :: Funs)
-              ; detachMsg
-              ; logPla "spiritize" i "spirit created." }
+spiritize i = getState >>= \ms -> if isPC i ms
+  then let (mySing, secs) = (uncurry getSing &&& uncurry calcSpiritTime) (i, ms)
+       in if secs == 0
+         then unit -- TODO
+         else (withDbExHandler "spiritize" . liftIO . lookupTeleNames $ mySing) >>= \case
+           Nothing                    -> uncurry dbError . getMsgQueueColumns i $ ms
+           Just (procOnlySings -> ss) ->
+               let triples    = [ (i', s, ia) | s <- ss, let i' = getIdForMobSing s ms, let ia = isAwake i' ms ]
+                   n          = calcRetainedLinks i ms
+                   retaineds  = take n triples
+                   retaineds' = (retaineds |&|) $ case filter (view _3) retaineds of
+                     [] -> let bonus = take 1 . filter (view _3) . drop n $ triples in (++ bonus)
+                     _  -> id
+                   asleepIds = let f i' p = and [ views linked (mySing `elem`) p
+                                                , i' `notElem` select _1 retaineds'
+                                                , not (isAwake i' ms) ]
+                               in views pcTbl (IM.keys . IM.filterWithKey f . IM.delete i) ms
+                   (bs, fs)  = mkBcasts ms mySing retaineds'
+               in do { tweaks [ plaTbl.ind i %~ setPlaFlag IsSpirit True
+                              , pcTbl        %~ pcTblHelper mySing retaineds'
+                              , mobTbl.ind i %~ setCurXps ]
+                     ; forM_ asleepIds $ \i' ->　retainedMsg i' ms . linkMissingMsg $ mySing
+                     ; bcast bs
+                     ; sequence_ (fs :: Funs)
+                     ; detachMsg
+                     ; logPla "spiritize" i "spirit created." }
   else deleteNpc ms
   where
     procOnlySings xs = map snd . sortBy (flip compare `on` fst) $ [ (length g, s)
@@ -194,6 +197,9 @@ spiritize i = getState >>= \ms -> let mySing = getSing i ms in if isPC i ms
           , f         <- \i' -> rndmDo (calcProbSpiritizeShiver i' ms) . mkExpAction "shiver" . mkActionParams i' ms $ []
           , fs        <- pure . mapM_ f $ targetIds
           = ((linkRetainedMsg mySing, targetIds), fs)
+    detachMsg = onNewThread $ getMsgQueueColumns i <$> getState >>= \(mq, cols) -> do
+        liftIO . threadDelay $ 2 * 10 ^ 6
+        wrapSend mq cols . colorWith spiritDetachColor $ spiritDetachMsg
     deleteNpc ms = let ri = getRmId i ms in do { tweaks [ activeEffectsTbl.at  i  .~ Nothing
                                                         , coinsTbl        .at  i  .~ Nothing
                                                         , entTbl          .at  i  .~ Nothing
@@ -205,6 +211,3 @@ spiritize i = getState >>= \ms -> let mySing = getSing i ms in if isPC i ms
                                                         , pausedEffectsTbl.at  i  .~ Nothing
                                                         , typeTbl         .at  i  .~ Nothing ]
                                                ; logNotice "spiritize" $ descSingId i ms <> " has died." }
-    detachMsg = onNewThread $ getMsgQueueColumns i <$> getState >>= \(mq, cols) -> do
-        liftIO . threadDelay $ 2 * 10 ^ 6
-        wrapSend mq cols . colorWith spiritDetachColor $ spiritDetachMsg

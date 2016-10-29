@@ -89,9 +89,8 @@ startFeeling i (Just (EffectFeeling tag newDur)) newV = getState >>= \ms ->
 
 
 threadFeelingTimer :: Id -> FeelingTag -> Seconds -> TimerQueue -> MudStack ()
-threadFeelingTimer i tag dur tq =
-    sequence_ [ setThreadType . FeelingTimer $ i
-              , loop 0 `catch` exHandler ] `finally` stopTimer tq
+threadFeelingTimer i tag dur tq = sequence_ [ setThreadType . FeelingTimer $ i
+                                            , loop 0 `catch` exHandler ] `finally` stopTimer tq
   where
     loop secs = do
         liftIO . threadDelay $ 1 * 10 ^ 6
@@ -115,6 +114,5 @@ threadFeelingTimer i tag dur tq =
 
 
 stopFeelings :: Id -> MudStack ()
-stopFeelings i = do
-    getFeelingMap i <$> getState >>= mapM_ (liftIO . cancel . feelingAsync . snd) . M.toList
-    tweak $ mobTbl.ind i.feelingMap .~ M.empty
+stopFeelings i = sequence_ [ getFeelingMap i <$> getState >>= mapM_ (liftIO . cancel . feelingAsync . snd) . M.toList
+                           , tweak $ mobTbl.ind i.feelingMap .~ M.empty ]

@@ -1032,6 +1032,7 @@ data ThreadType = Biodegrader    Id
                 | RegenParent    Id
                 | RmFun          Id
                 | Server         Id
+                | SpiritTimer    Id
                 | Talk           Id
                 | ThreadTblPurger
                 | TrashDumpPurger

@@ -52,6 +52,7 @@ module Mud.Data.State.Util.Calc ( calcBarLen
                                 , calcRegenPpAmt
                                 , calcRegenPpDelay
                                 , calcRetainedLinks
+                                , calcSpiritTime
                                 , calcStomachAvailSize
                                 , calcStomachPerFull
                                 , calcStomachSize
@@ -564,6 +565,14 @@ calcRetainedLinks i ms = ceiling $ getBasePs i ms `divide` 10
 -----
 
 
+calcSpiritTime :: Id -> MudState -> Seconds
+calcSpiritTime i ms = case getLvl i ms of 1 -> 1 * 60
+                                          x -> round $ (x `divide` 2) * 60
+
+
+-----
+
+
 calcStomachAvailSize :: Id -> MudState -> (Mouthfuls, Mouthfuls)
 calcStomachAvailSize i ms | size <- calcStomachSize i ms, avail <- size - length (getStomach i ms)
                           = (avail, size)
@@ -613,7 +622,7 @@ calcStomachPerFull i ms = let mouths = length . getStomach i $ ms
 
 
 calcVesselPerFull :: Vessel -> Mouthfuls -> Int
-calcVesselPerFull (view vesselMaxMouthfuls -> m) x = x `percent` m
+calcVesselPerFull (view vesselMaxMouthfuls -> m) = (`percent` m)
 
 
 -----
