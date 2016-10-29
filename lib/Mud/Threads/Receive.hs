@@ -13,7 +13,6 @@ import qualified Mud.Misc.Logging as L (logPla)
 
 import Control.Exception.Lifted (catch)
 import Control.Monad.IO.Class (liftIO)
-import Data.Monoid ((<>))
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (hGetLine)

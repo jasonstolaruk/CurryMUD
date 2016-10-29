@@ -70,7 +70,7 @@ stopWaitNpcServer i = helper |&| modifyState >=> \npc -> do
 threadNpcServer :: Id -> NpcMsgQueue -> MudStack ()
 threadNpcServer i npcMq = do
     setThreadType . NpcServer $ i
-    loop `catch` threadExHandler (Just i) ("NPC server")
+    loop `catch` threadExHandler (Just i) "NPC server"
   where
     loop = npcMq |&| liftIO . atomically . readTQueue >=> \case
       ExternCmd mq cols msg -> handleExternCmd i mq cols msg >> loop
