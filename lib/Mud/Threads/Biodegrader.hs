@@ -76,7 +76,7 @@ threadBiodegrader i = handle (threadExHandler (Just i) "biodegrader") $ descSing
         case newMaybeInvId of
           Nothing -> delay >> loop 0 Nothing
           Just invId
-            | newMaybeInvId == lastMaybeInvId -> if secs < biodegDuration
+            | newMaybeInvId == lastMaybeInvId -> if secs < biodegSecs
               then delay >> loop (secs + biodegDelay) lastMaybeInvId
               else let pcsInRm = filter (`isPC` ms) . getInv invId $ ms
                        helper  = sequence_ [ logNotice "threadBiodegrader" $ descSingId i ms <> " has biodegraded."

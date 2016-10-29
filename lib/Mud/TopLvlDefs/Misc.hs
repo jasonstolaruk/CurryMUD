@@ -54,8 +54,8 @@ biodegDelay :: Seconds
 biodegDelay = 5
 
 
-biodegDuration :: Seconds
-biodegDuration = 5 {- mins -} * 60 {- secs -} -- five mins
+biodegSecs :: Seconds
+biodegSecs = 5 {- mins -} * 60 {- secs -} -- five mins
 
 
 bonusDelay :: Seconds
@@ -100,6 +100,10 @@ logRotationDelay = 60 {- mins -} * 60 {- secs -} -- one hr
 
 maxChanNameLen :: Int
 maxChanNameLen = 12
+
+
+maxSpiritSecs :: Seconds
+maxSpiritSecs = 5 {- mins -} * 60 {- secs -} -- five mins
 
 
 maxTempDescLen :: Int
