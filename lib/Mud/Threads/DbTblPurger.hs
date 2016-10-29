@@ -41,7 +41,7 @@ logNotice = L.logNotice "Mud.Threads.DbTblPurger"
 
 
 dbTblPurger :: Text -> IO [Only Int] -> IO () -> MudStack ()
-dbTblPurger tblName countFun purgeFun = handle (threadExHandler threadName) $ do
+dbTblPurger tblName countFun purgeFun = handle (threadExHandler Nothing threadName) $ do
     setThreadType DbTblPurger
     logNotice "dbTblPurger" $ "database table purger started for the " <> dblQuote tblName <> " table."
     let loop = (liftIO . threadDelay $ dbTblPurgerDelay * 10 ^ 6) >> helper

@@ -30,7 +30,7 @@ logNotice = L.logNotice "Mud.Threads.WorldPersister"
 
 
 threadWorldPersister :: MudStack ()
-threadWorldPersister = handle (threadExHandler "world persister") $ do
+threadWorldPersister = handle (threadExHandler Nothing "world persister") $ do
     setThreadType WorldPersister
     logNotice "threadWorldPersister" "world persister started."
     let loop = (liftIO . threadDelay $ worldPersisterDelay * 10 ^ 6) >> persist

@@ -5,9 +5,6 @@
 module Mud.Cmds.Util.Misc ( asterisk
                           , awardExp
                           , consume
-                          , descMaybeId
-                          , descMaybeSingId
-                          , descSingId
                           , dispCmdList
                           , dispMatches
                           , embedId
@@ -245,22 +242,6 @@ consume i newScs = do
               | otherwise = acc & _1 %~ (map fst grp ++)
             others' = others ++ map fst invalids
         in (ms & mobTbl.ind i.stomach .~ others' ++ scs', el)
-
-
------
-
-
-descSingId :: Id -> MudState -> Text
-descSingId i ms = quoteWith' (i |&| ((`getSing` ms) &&& parensQuote . showText)) " "
-
-
-descMaybeId :: MudState -> Maybe Id -> Text
-descMaybeId ms = maybe none (`descSingId` ms)
-
-
-descMaybeSingId :: Maybe Id -> MudState -> Text
-descMaybeSingId Nothing  _  = none
-descMaybeSingId (Just x) ms = descSingId x ms
 
 
 -----

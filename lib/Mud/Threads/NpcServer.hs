@@ -16,7 +16,6 @@ import Mud.Threads.Misc
 import Mud.Util.List
 import Mud.Util.Misc
 import Mud.Util.Operators
-import Mud.Util.Text hiding (headTail)
 import qualified Mud.Misc.Logging as L (logNotice)
 
 import Control.Concurrent.Async (wait)
@@ -27,7 +26,6 @@ import Control.Lens (at, to)
 import Control.Lens.Operators ((&), (.~), (^.))
 import Control.Monad ((>=>), unless)
 import Control.Monad.IO.Class (liftIO)
-import Data.Monoid ((<>))
 import Data.Text (Text)
 import Prelude hiding (pi)
 import qualified Data.Text as T
@@ -72,7 +70,7 @@ stopWaitNpcServer i = helper |&| modifyState >=> \npc -> do
 threadNpcServer :: Id -> NpcMsgQueue -> MudStack ()
 threadNpcServer i npcMq = do
     setThreadType . NpcServer $ i
-    loop `catch` threadExHandler ("NPC server " <> showText i)
+    loop `catch` threadExHandler (Just i) ("NPC server")
   where
     loop = npcMq |&| liftIO . atomically . readTQueue >=> \case
       ExternCmd mq cols msg -> handleExternCmd i mq cols msg >> loop

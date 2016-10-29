@@ -42,7 +42,6 @@ import Control.Lens.Operators ((^.))
 import Control.Monad ((>=>), forM_)
 import Control.Monad.IO.Class (liftIO)
 import Data.Maybe (fromMaybe)
-import Data.Monoid ((<>))
 import Data.Text (Text)
 import qualified Data.Map.Lazy as M (elems)
 import qualified Data.Text as T
@@ -75,7 +74,8 @@ data ToWhom = Plaに | Npcに
 
 
 threadServer :: Handle -> Id -> MsgQueue -> TimerQueue -> MudStack ()
-threadServer h i mq tq = sequence_ [ setThreadType . Server $ i, loop `catch` threadExHandler ("server " <> showText i) ]
+threadServer h i mq tq = sequence_ [ setThreadType . Server $ i
+                                   , loop `catch` threadExHandler (Just i) "server" ]
   where
     loop = mq |&| liftIO . atomically . readTQueue >=> \case
       AsSelf     msg -> handleFromClient i mq tq True msg  >> loop

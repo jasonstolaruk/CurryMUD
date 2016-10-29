@@ -3,6 +3,9 @@
 -- This module contains state-related functions used by multiple modules.
 
 module Mud.Data.State.Util.Misc ( addToInv
+                                , descMaybeId
+                                , descMaybeSingId
+                                , descSingId
                                 , dropPrefixes
                                 , dropPrefixesForHooks
                                 , findInvContaining
@@ -114,6 +117,22 @@ patternMatchFail = U.patternMatchFail "Mud.Data.State.Util.Misc"
 
 addToInv :: MudState -> Inv -> Inv -> Inv
 addToInv ms addThese toThese = sortInv ms $ toThese ++ addThese
+
+
+-----
+
+
+descSingId :: Id -> MudState -> Text
+descSingId i ms = quoteWith' (i |&| ((`getSing` ms) &&& parensQuote . showText)) " "
+
+
+descMaybeId :: MudState -> Maybe Id -> Text
+descMaybeId ms = maybe none (`descSingId` ms)
+
+
+descMaybeSingId :: Maybe Id -> MudState -> Text
+descMaybeSingId Nothing  _  = none
+descMaybeSingId (Just x) ms = descSingId x ms
 
 
 -----

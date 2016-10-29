@@ -54,8 +54,9 @@ logPla = L.logPla "Mud.Threads.Effect"
 
 
 startEffect :: Id -> Effect -> MudStack ()
-startEffect i e@(Effect _ (Just (RangeVal range)) _ _) = rndmR range >>= \x -> startEffectHelper i (e & effectVal ?~ DefiniteVal x)
-startEffect i e                                        = startEffectHelper i e
+startEffect i e@(Effect _ (Just (RangeVal range)) _ _) = rndmR range >>= \x ->
+    startEffectHelper i $ e & effectVal ?~ DefiniteVal x
+startEffect i e = startEffectHelper i e
 
 
 startEffectHelper :: Id -> Effect -> MudStack ()
@@ -68,7 +69,7 @@ startEffectHelper i e@(view effectFeeling -> ef) = getState >>= \ms -> do
 
 
 threadEffect :: Id -> Effect -> EffectQueue -> MudStack ()
-threadEffect i (Effect effSub _ secs _) q = handle (threadExHandler tn) . onEnv $ \md -> do
+threadEffect i (Effect effSub _ secs _) q = handle (threadExHandler (Just i) "effect") . onEnv $ \md -> do
     ti <- liftIO myThreadId
     let effectTimer ior = setThreadType (EffectTimer i) >> loop secs `finally` done
           where
@@ -92,9 +93,7 @@ threadEffect i (Effect effSub _ secs _) q = handle (threadExHandler tn) . onEnv 
     racer md (effectTimer ior) . queueListener $ ior
     logHelper "is finishing."
   where
-    tn             = "effect " <> idTxt
-    idTxt          = showText i
-    logHelper rest = logNotice "threadEffect" . T.concat $ [ "effect thread for ID ", idTxt, " ", rest ]
+    logHelper rest = logNotice "threadEffect" . T.concat $ [ "effect thread for ID ", showText i, " ", rest ]
 
 
 pauseEffects :: Id -> MudStack () -- When a player logs out.
@@ -114,9 +113,8 @@ pauseEffects i = getState >>= \ms ->
 
 
 massPauseEffects :: MudStack () -- At server shutdown, after everyone has been disconnected.
-massPauseEffects = do
-    logNotice "massPauseEffects" "mass pausing effects."
-    mapM_ pauseEffects . views activeEffectsTbl IM.keys =<< getState
+massPauseEffects = sequence_ [ logNotice "massPauseEffects" "mass pausing effects."
+                             , mapM_ pauseEffects . views activeEffectsTbl IM.keys =<< getState ]
 
 
 restartPausedEffects :: Id -> MudStack () -- When a player logs in.
@@ -126,9 +124,8 @@ restartPausedEffects i = do
 
 
 restartPausedHelper :: Id -> [PausedEffect] -> MudStack ()
-restartPausedHelper i pes = do
-    forM_ pes $ \(PausedEffect e) -> startEffect i e
-    tweak $ pausedEffectsTbl.ind i .~ []
+restartPausedHelper i pes = sequence_ [ forM_ pes $ \(PausedEffect e) -> startEffect i e
+                                      , tweak $ pausedEffectsTbl.ind i .~ [] ]
 
 
 massRestartPausedEffects :: MudStack () -- At server startup.

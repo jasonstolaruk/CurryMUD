@@ -67,7 +67,7 @@ threadTalk h host = helper `finally` cleanUp
         (mq, tq) <- liftIO $ (,) <$> newTQueueIO <*> newTMQueueIO
         (i, s  ) <- adHoc mq host
         setThreadType . Talk $ i
-        handle (threadExHandler $ "talk " <> showText i) $ do
+        handle (threadExHandler (Just i) "talk") $ do
             liftIO configBuffer
             ttypeHelper mq
             dumpTitle   mq

@@ -72,7 +72,7 @@ throwWaitDigester i = helper |&| modifyState >=> maybeVoid throwWait
 
 
 threadDigester :: Id -> MudStack ()
-threadDigester i = handle (threadExHandler $ "digester " <> showText i) $ getState >>= \ms -> do
+threadDigester i = handle (threadExHandler (Just i) "digester") $ getState >>= \ms -> do
     setThreadType . Digester $ i
     let delay | isPC i ms = calcDigesterDelay . getRace i $ ms
               | otherwise = calcDigesterDelay Human
@@ -84,11 +84,10 @@ digest :: Id -> MudStack ()
 digest i = getState >>= \ms -> case getStomach i ms of []  -> unit
                                                        scs -> helper ms scs
   where
-    helper ms scs = do
-        sc  <- rndmElem scs
-        let f = logHelper sc >> case sc^.distinctId of
-              Left  (DistinctLiqId  x) -> g liqEdibleEffects  . getDistinctLiq  $ x
-              Right (DistinctFoodId x) -> g foodEdibleEffects . getDistinctFood $ x
-            g a b = views (a.digestEffects) (maybeVoid (procEffectList i)) . b $ ms
-        f >> tweak (mobTbl.ind i.stomach %~ (sc `delete`))
-    logHelper sc = logPla "digest" i . prd $ "digesting " <> pp sc
+    helper ms scs = rndmElem scs >>= \sc ->
+        sequence_ [ logPla "digest" i . prd $ "digesting " <> pp sc
+                  , case sc^.distinctId of Left  (DistinctLiqId  x) -> f liqEdibleEffects  . getDistinctLiq  $ x
+                                           Right (DistinctFoodId x) -> f foodEdibleEffects . getDistinctFood $ x
+                  , tweak $ mobTbl.ind i.stomach %~ (sc `delete`) ]
+      where
+        f a b = views (a.digestEffects) (maybeVoid (procEffectList i)) . b $ ms

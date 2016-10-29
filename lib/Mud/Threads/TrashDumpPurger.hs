@@ -35,7 +35,7 @@ logNotice = L.logNotice "Mud.Threads.TrashDumpPurger"
 
 
 threadTrashDumpPurger :: MudStack ()
-threadTrashDumpPurger = handle (threadExHandler "trash dump purger") $ do
+threadTrashDumpPurger = handle (threadExHandler Nothing "trash dump purger") $ do
     setThreadType TrashDumpPurger
     logNotice "threadTrashDumpPurger" "trash dump purger started."
     let loop = (liftIO . threadDelay $ trashDumpPurgerDelay * 10 ^ 6) >> purgeTrashDump

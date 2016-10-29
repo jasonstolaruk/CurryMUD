@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable, LambdaCase, OverloadedStrings, TupleSections #-}
+{-# LANGUAGE DeriveDataTypeable, LambdaCase, MonadComprehensions, OverloadedStrings, TupleSections #-}
 
 module Mud.Threads.Misc ( concurrentTree
                         , dbExHandler
@@ -137,16 +137,19 @@ onNewThread f = onEnv $ liftIO . void . forkIO . runReaderT f
 -----
 
 
-plaThreadExHandler :: Text -> Id -> SomeException -> MudStack ()
-plaThreadExHandler threadName i e
+plaThreadExHandler :: Id -> Text -> SomeException -> MudStack ()
+plaThreadExHandler i threadName e
   | Just ThreadKilled <- fromException e = closePlaLog i
-  | otherwise                            = threadExHandler threadName e
+  | otherwise                            = threadExHandler (Just i) threadName e
 
 
-threadExHandler :: Text -> SomeException -> MudStack ()
-threadExHandler threadName e = do
-    logExMsg "threadExHandler" (rethrowExMsg $ "on " <> threadName <> " thread") e
+threadExHandler :: Maybe Id -> Text -> SomeException -> MudStack ()
+threadExHandler mi threadName e = f >>= \threadName' -> do
+    logExMsg "threadExHandler" (rethrowExMsg $ "on " <> threadName' <> " thread") e
     throwToListenThread e
+  where
+    f = case mi of Nothing -> return threadName
+                   Just i  -> [ threadName <> " " <> txt | txt <- descSingId i <$> getState ]
 
 
 -----

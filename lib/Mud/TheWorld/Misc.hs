@@ -242,13 +242,12 @@ dfltLinkMove = LinkMove 1 0
 
 -- If "prob" is 25 (1 in 4), and "secs" is 60, we can expect the event to occurr once every 4 mins.
 mkRndmBcastRmFun :: Id -> Text -> FunName -> Int -> Seconds -> Text -> Fun
-mkRndmBcastRmFun i idName fn prob secs msg = handle (threadExHandler threadName) $ do
+mkRndmBcastRmFun i idName fn prob secs msg = handle (threadExHandler (Just i) threadName) $ do
     setThreadType . RmFun $ i
-    logNotice fn . T.concat $ [ "room function started for ", idName, " ", idTxt, "." ]
+    logNotice fn . T.concat $ [ "room function started for ", idName, " ", parensQuote . showText $ i, "." ]
     loop `catch` die Nothing threadName
   where
-    threadName = T.concat [ "room function ", dblQuote fn, " ", idName, " ", idTxt ]
-    idTxt      = parensQuote . showText $ i
+    threadName = T.concat [ "room function ", dblQuote fn, " ", idName ]
     loop       = getState >>= \ms -> let is = filter (`isNpcPC` ms) . getInv i $ ms in do
         unless (()# is) . rndmDo prob . bcastNl . pure $ (msg, is)
         liftIO . threadDelay $ secs * 10 ^ 6

@@ -81,11 +81,7 @@ threadAct i actType f = let a = (>> f) . setThreadType $ case actType of Attacki
                             b = do
                                 tweak $ mobTbl.ind i.actMap.at actType .~ Nothing
                                 logPla "threadAct" i $ pp actType <> " act finished."
-                        in handle (threadExHandler . mkThreadName i $ actType) $ a `finally` b
-
-
-mkThreadName :: Id -> ActType -> Text
-mkThreadName i actType = quoteWith' (pp actType, showText i) " "
+                        in handle (threadExHandler (Just i) . pp $ actType) $ a `finally` b
 
 
 -- ==================================================
@@ -106,7 +102,7 @@ drinkAct DrinkBundle { .. } =
                                                             , "." ]
                                                  , drinkerId `delete` desigIds d )
             tweak $ mobTbl.ind drinkerId.nowDrinking ?~ (drinkLiq, drinkVesselSing)
-            loop 0 `catch` die (Just drinkerId) (mkThreadName drinkerId Drinking)
+            loop 0 `catch` die (Just drinkerId) (pp Drinking)
         b = tweak $ mobTbl.ind drinkerId.nowDrinking .~ Nothing
     in a `finally` b
   where

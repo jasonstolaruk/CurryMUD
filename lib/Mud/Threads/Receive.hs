@@ -28,7 +28,7 @@ logPla = L.logPla "Mud.Threads.Receive"
 
 
 threadReceive :: Handle -> Id -> MsgQueue -> MudStack ()
-threadReceive h i mq = sequence_ [ setThreadType . Receive $ i, loop `catch` plaThreadExHandler ("receive " <> showText i) i ]
+threadReceive h i mq = sequence_ [ setThreadType . Receive $ i, loop `catch` plaThreadExHandler i "receive" ]
   where
     loop = mIf (liftIO . hIsEOF $ h)
                (sequence_ [ logPla "threadReceive loop" i "connection dropped.", writeMsg mq Dropped ])

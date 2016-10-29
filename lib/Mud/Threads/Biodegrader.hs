@@ -13,7 +13,6 @@ import Mud.Threads.Misc
 import Mud.TopLvlDefs.Misc
 import Mud.Util.Misc
 import Mud.Util.Operators
-import Mud.Util.Quoting
 import Mud.Util.Text
 import qualified Mud.Misc.Logging as L (logNotice)
 
@@ -22,9 +21,9 @@ import Control.Exception.Lifted (catch, handle)
 import Control.Lens.Operators ((&), (.~), (?~), (^.))
 import Control.Monad ((>=>))
 import Control.Monad.IO.Class (liftIO)
+import Data.Bool (bool)
 import Data.Monoid ((<>))
 import Data.Text (Text)
-import qualified Data.Text as T
 
 
 default (Int)
@@ -67,14 +66,11 @@ throwWaitBiodegrader i = helper |&| modifyState >=> maybeVoid throwWait
 
 
 threadBiodegrader :: Id -> MudStack ()
-threadBiodegrader i = handle (threadExHandler threadName) $ getSing i <$> getState >>= \s -> do
+threadBiodegrader i = handle (threadExHandler (Just i) "biodegrader") $ descSingId i <$> getState >>= \singId -> do
     setThreadType . Biodegrader $ i
-    logNotice "threadBiodegrader" . T.concat $ [ "biodegrader started for ", s, " ", idTxt', "." ]
-    loop 0 Nothing `catch` die Nothing threadName
+    logNotice "threadBiodegrader"  . prd $ "biodegrader started for " <> singId
+    loop 0 Nothing `catch` die Nothing "biodegrader"
   where
-    threadName               = "biodegrader " <> idTxt
-    idTxt                    = showText i
-    idTxt'                   = parensQuote idTxt
     loop secs lastMaybeInvId = getState >>= \ms -> do
         let newMaybeInvId = findInvContaining i ms
         case newMaybeInvId of
@@ -83,10 +79,9 @@ threadBiodegrader i = handle (threadExHandler threadName) $ getSing i <$> getSta
             | newMaybeInvId == lastMaybeInvId -> if secs < biodegDuration
               then delay >> loop (secs + biodegDelay) lastMaybeInvId
               else let pcsInRm = filter (`isPC` ms) . getInv invId $ ms
-                       helper  = do
-                           logNotice "threadBiodegrader" . T.concat $ [ getSing i ms, " ", idTxt', " has biodegraded." ]
-                           destroyHelper . pure $ i
-                   in ()!# pcsInRm ? (delay >> loop secs lastMaybeInvId) :? helper
+                       helper  = sequence_ [ logNotice "threadBiodegrader" $ descSingId i ms <> " has biodegraded."
+                                           , destroyHelper . pure $ i ]
+                   in bool helper (delay >> loop secs lastMaybeInvId) $ ()!# pcsInRm
             | otherwise -> (delay >>) $ case getType invId ms of
               RmType -> loop biodegDelay newMaybeInvId
               _      -> loop 0 Nothing

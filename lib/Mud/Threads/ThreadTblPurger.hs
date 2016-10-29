@@ -38,7 +38,7 @@ logNotice = L.logNotice "Mud.Threads.ThreadTblPurger"
 
 
 threadThreadTblPurger :: MudStack ()
-threadThreadTblPurger = handle (threadExHandler "thread table purger") $ do
+threadThreadTblPurger = handle (threadExHandler Nothing "thread table purger") $ do
     setThreadType ThreadTblPurger
     logNotice "threadThreadTblPurger" "thread table purger started."
     let loop = (liftIO . threadDelay $ threadTblPurgerDelay * 10 ^ 6) >> purgeThreadTbls
