@@ -107,7 +107,7 @@ library
                        Mud.Threads.Regen
                        Mud.Threads.RmFuns
                        Mud.Threads.Server
-                      --  Mud.Threads.SpiritTimer
+                       Mud.Threads.SpiritTimer
                        Mud.Threads.Talk
                        Mud.Threads.ThreadTblPurger
                        Mud.Threads.TrashDumpPurger
