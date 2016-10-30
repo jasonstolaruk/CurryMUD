@@ -92,20 +92,20 @@ threadFeelingTimer :: Id -> FeelingTag -> Seconds -> TimerQueue -> MudStack ()
 threadFeelingTimer i tag dur tq = sequence_ [ setThreadType . FeelingTimer $ i
                                             , loop 0 `catch` exHandler ] `finally` stopTimer tq
   where
-    loop secs = do
+    loop secs = getState >>= \ms -> do
         liftIO . threadDelay $ 1 * 10 ^ 6
         tq |&| liftIO . atomically . tryReadTMQueue >=> \case
           Just Nothing | secs >= dur -> do { tweak $ mobTbl.ind i.feelingMap %~ (tag `M.delete`)
-                                           ; logHelper $ mkName <> " has expired." }
+                                           ; logHelper $ mkName ms <> " has expired." }
                        | otherwise   -> loop . succ $ secs
-          Just (Just ResetTimer)     -> do { logHelper $ mkName <> " is resetting."
+          Just (Just ResetTimer)     -> do { logHelper $ mkName ms <> " is resetting."
                                            ; loop 0 }
           Nothing                    -> unit
     exHandler :: SomeException -> MudStack ()
-    exHandler e = case fromException e of
-      Just ThreadKilled  -> logHelper . prd $ "killed " <> mkName
-      _                  -> logExMsg  tn ("exception caught on thread for " <> mkName) e
-    mkName    = T.concat [ "feeling timer ", showText i, " ", dblQuote tag ]
+    exHandler e = getState >>= \ms -> case fromException e of
+      Just ThreadKilled  -> logHelper . prd $ "killed " <> mkName ms
+      _                  -> logExMsg tn ("exception caught on thread for " <> mkName ms) e
+    mkName ms = T.concat [ "feeling timer ", descSingId i ms, " ", dblQuote tag ]
     logHelper = logPla tn i
     tn        = "threadFeelingTimer"
 
