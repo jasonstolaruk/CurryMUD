@@ -1,7 +1,8 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Mud.Threads.SpiritTimer (runSpiritAsync) where
+module Mud.Threads.SpiritTimer ( runSpiritAsync
+                               , throwWaitSpirit ) where
 
 -- import Mud.Data.Misc
 import Mud.Data.State.MudData
@@ -10,7 +11,7 @@ import Mud.Data.State.Util.Misc
 import Mud.Threads.Misc
 -- import Mud.TopLvlDefs.Misc
 import Mud.Util.Misc
--- import Mud.Util.Operators
+import Mud.Util.Operators
 -- import Mud.Util.Quoting
 -- import Mud.Util.Text
 -- import qualified Mud.Misc.Logging as L (logExMsg, logPla)
@@ -18,8 +19,8 @@ import Mud.Util.Misc
 -- import Control.Concurrent (threadDelay)
 -- import Control.Exception (AsyncException(..), SomeException, fromException)
 -- import Control.Exception.Lifted (catch, finally)
-import Control.Lens.Operators ({-(%~), (.~),-} (?~))
--- import Control.Monad ((>=>), mapM_)
+import Control.Lens.Operators ((&), (.~), (?~), (^.))
+import Control.Monad ((>=>))
 -- import Control.Monad.IO.Class (liftIO)
 -- import Data.Monoid ((<>))
 -- import Data.Text (Text)
@@ -48,6 +49,13 @@ logPla = L.logPla "Mud.Threads.SpiritTimer"
 
 runSpiritAsync :: Id -> MudStack ()
 runSpiritAsync i = runAsync (threadSpirit i) >>= \a -> tweak $ plaTbl.ind i.spiritAsync ?~ a
+
+
+throwWaitSpirit :: Id -> MudStack ()
+throwWaitSpirit i = helper |&| modifyState >=> maybeVoid throwWait
+  where
+    helper ms = let a = ms^.plaTbl.ind i.spiritAsync
+                in (ms & plaTbl.ind i.spiritAsync .~ Nothing, a)
 
 
 -----
