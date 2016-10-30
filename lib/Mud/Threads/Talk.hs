@@ -148,7 +148,8 @@ adHoc mq host = do
                        , _possessing   = Nothing
                        , _retainedMsgs = []
                        , _lastRmId     = Nothing
-                       , _bonusTime    = Nothing }
+                       , _bonusTime    = Nothing
+                       , _spiritAsync  = Nothing }
             ms'  = ms  & activeEffectsTbl.ind i .~ []
                        & coinsTbl        .ind i .~ mempty
                        & entTbl          .ind i .~ e

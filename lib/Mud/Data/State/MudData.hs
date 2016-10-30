@@ -815,7 +815,8 @@ data Pla = Pla { _currHostName :: HostName
                , _possessing   :: Maybe Id
                , _retainedMsgs :: [Text]
                , _lastRmId     :: Maybe Id
-               , _bonusTime    :: Maybe UTCTime } deriving Eq
+               , _bonusTime    :: Maybe UTCTime
+               , _spiritAsync  :: Maybe SpiritAsync } deriving Eq
 
 
 data PlaFlags = IsAdmin
@@ -830,6 +831,9 @@ data PlaFlags = IsAdmin
               | IsShowingMp
               | IsShowingPp
               | IsShowingFp deriving Enum
+
+
+type SpiritAsync = Async ()
 
 
 type Interp = CmdName -> ActionParams -> MudStack ()
@@ -865,6 +869,7 @@ jsonToPla (Object o) = Pla <$> o .: "currHostName"
                            <*> o .: "retainedMsgs"
                            <*> o .: "lastRmId"
                            <*> o .: "bonusTime"
+                           <*> pure Nothing
 jsonToPla _          = empty
 
 

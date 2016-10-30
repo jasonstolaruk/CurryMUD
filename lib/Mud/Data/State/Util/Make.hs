@@ -201,7 +201,8 @@ mkPla PlaTemplate { .. } = Pla { _currHostName = ""
                                , _possessing   = Nothing
                                , _retainedMsgs = []
                                , _lastRmId     = Just ptLastRmId
-                               , _bonusTime    = Nothing }
+                               , _bonusTime    = Nothing
+                               , _spiritAsync  = Nothing }
 
 
 -----
