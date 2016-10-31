@@ -70,7 +70,7 @@ threadSpiritTimer i secs = handle (threadExHandler (Just i) "spirit timer") $ do
 spiritTimer :: Id -> MsgQueue -> Cols -> Seconds -> MudStack ()
 spiritTimer i mq cols 0 = do
     logPla "spiritTimer" i "spirit timer expired."
-    wrapSend mq cols . colorWith spiritMsgColor $ "You pass into the beyond."
+    wrapSend mq cols . colorWith spiritMsgColor $ "You pass into the beyond." -- TODO
 spiritTimer i mq cols secs | secs == 75 = helper "You feel the uncanny pull of the beyond. Your time in this dimension \
                                                  \is coming to an end."
                            | secs == 45 = helper . thrice prd $ "You feel the uncanny pull of the beyond. You have \
