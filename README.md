@@ -13,7 +13,7 @@ Creating a framework which others can leverage to develop their own MUDs is _not
 CurryMUD will have the following features:
 
 * Players will be offered an immersive virtual world environment.
-* Content will be created, and development will proceed, with the aim of supporting a small community of players.
+* Content will be created - and development will proceed - with the aim of supporting a small community of players.
 * Role-playing will be strictly enforced.
 * Classless/skill-based.
 * Permadeath. (When player characters die, they really die.)
@@ -51,6 +51,7 @@ CurryMUD will have the following features:
 * Smell and taste. Listen.
 * Eating foods and drinking liquids. Digestion.
 * Durational effects that can be paused and resumed.
+* Upon death, PCs may have a limited amount of time to exist in the virtual world as a spirit.
 
 I am still in the initial stage of developing basic commands. There is very little content in the virtual world.
 
