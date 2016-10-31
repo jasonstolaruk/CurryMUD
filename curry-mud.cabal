@@ -1,4 +1,4 @@
-name:                  currymud
+name:                  curry-mud
 version:               0.1.0.0
 synopsis:              A Multi-User Dungeon server.
 description:           A text-based multiplayer real-time virtual world implemented over the Telnet protocol.
@@ -20,7 +20,7 @@ executable             curry
   -- ghc-options:         -Wall -Werror -threaded -rtsopts -with-rtsopts=-N -O2 -funfolding-use-threshold=16 -optc-O3
   main-is:             Main.hs
   build-depends:         base >=4.8 && <5.0
-                       , currymud
+                       , curry-mud
                        , directory
                        , ekg
                        , mtl
@@ -185,7 +185,7 @@ test-suite             test
                        MudTests.Util.Wrapping
   build-depends:         base >=4.8 && <5.0
                        , containers
-                       , currymud
+                       , curry-mud
                        , lens
                        , mtl
                        , QuickCheck

@@ -89,7 +89,7 @@ Please build with [stack](http://docs.haskellstack.org/en/stable/README.html) (o
 
 0. [Install stack.](http://docs.haskellstack.org/en/stable/install_and_upgrade/)
 0. Clone the repo from your home directory (the server expects to find various folders under `$HOME/CurryMUD`).
-0. Inside `$HOME/CurryMUD`, run `stack setup` to get GHC 8 on your machine. (The `stack.yaml` file points to [LTS Haskell 7.5](https://www.stackage.org/lts-7.5), which uses GHC 8.0.1.)
+0. Inside `$HOME/CurryMUD`, run `stack setup` to get GHC 8 on your machine. (The `stack.yaml` file points to [LTS Haskell 7.6](https://www.stackage.org/lts-7.6), which uses GHC 8.0.1.)
 0. Run `stack build` to compile the `curry` binary and libraries.
 0. Run `stack install` to copy the `curry` binary to `$HOME/.local/bin`.
 0. Execute the `curry` binary.
