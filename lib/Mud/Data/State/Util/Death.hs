@@ -201,7 +201,7 @@ spiritize i = getState >>= \ms -> if isPC i ms
           = ((linkRetainedMsg mySing, targetIds), fs)
     detachMsg = onNewThread $ getMsgQueueColumns i <$> getState >>= \(mq, cols) -> do
         liftIO . threadDelay $ 2 * 10 ^ 6
-        wrapSend mq cols . colorWith spiritDetachColor $ spiritDetachMsg
+        wrapSend mq cols . colorWith spiritMsgColor $ spiritDetachMsg
     deleteNpc ms = let ri = getRmId i ms in do { tweaks [ activeEffectsTbl.at  i  .~ Nothing
                                                         , coinsTbl        .at  i  .~ Nothing
                                                         , entTbl          .at  i  .~ Nothing

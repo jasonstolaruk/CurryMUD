@@ -60,7 +60,7 @@ module Mud.Misc.ANSI ( abbrevColor
                      , resetANSI
                      , selectorColor
                      , shutdownMsgColor
-                     , spiritDetachColor
+                     , spiritMsgColor
                      , syntaxSymbolColor
                      , tempDescColor
                      , toNpcColor
@@ -330,8 +330,8 @@ shutdownMsgColor :: Text
 shutdownMsgColor = red
 
 
-spiritDetachColor :: Text
-spiritDetachColor = red
+spiritMsgColor :: Text
+spiritMsgColor = red
 
 
 syntaxSymbolColor :: Text

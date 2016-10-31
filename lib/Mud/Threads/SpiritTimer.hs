@@ -4,19 +4,27 @@
 module Mud.Threads.SpiritTimer ( runSpiritTimerAsync
                                , throwWaitSpiritTimer ) where
 
+import Mud.Data.State.ActionParams.ActionParams
+import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
+import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
+import Mud.Data.State.Util.Output
+import Mud.Misc.ANSI
 import Mud.Threads.Misc
 import Mud.TopLvlDefs.Misc
 import Mud.Util.Misc
 import Mud.Util.Operators
-import qualified Mud.Misc.Logging as L (logPla)
+import Mud.Util.Quoting
+import Mud.Util.Text
+import qualified Mud.Misc.Logging as L (logPla, logPlaOut)
 
 import Control.Concurrent (threadDelay)
 import Control.Exception.Lifted (handle)
 import Control.Lens.Operators ((&), (.~), (?~), (^.))
 import Control.Monad ((>=>))
 import Control.Monad.IO.Class (liftIO)
+import Data.Monoid ((<>))
 import Data.Text (Text)
 
 
@@ -28,6 +36,10 @@ default (Int)
 
 logPla :: Text -> Id -> Text -> MudStack ()
 logPla = L.logPla "Mud.Threads.SpiritTimer"
+
+
+logPlaOut :: Text -> Id -> [Text] -> MudStack ()
+logPlaOut = L.logPlaOut "Mud.Threads.SpiritTimer"
 
 
 -- ==================================================
@@ -49,14 +61,21 @@ throwWaitSpiritTimer i = helper |&| modifyState >=> maybeVoid throwWait
 
 threadSpiritTimer :: Id -> Seconds -> MudStack ()
 threadSpiritTimer i secs = handle (threadExHandler (Just i) "spirit timer") $ do
+    (mq, cols) <- getMsgQueueColumns i <$> getState
     setThreadType . SpiritTimer $ i
-    logPla "threadSpiritTimer" i "spirit timer started."
-    handle (die (Just i) "spirit timer") . spiritTimer i $ secs
+    logPla "threadSpiritTimer" i . prd $ "spirit timer started " <> parensQuote (showText secs <> " seconds")
+    handle (die (Just i) "spirit timer") . spiritTimer i mq cols $ secs
 
 
-spiritTimer :: Id -> Seconds -> MudStack ()
-spiritTimer i 0    = logPla "spiritTimer" i "spirit timer expired."
-spiritTimer i secs | False = unit
-                   | otherwise = next
+spiritTimer :: Id -> MsgQueue -> Cols -> Seconds -> MudStack ()
+spiritTimer i _  _    0                 = logPla "spiritTimer" i "spirit timer expired."
+spiritTimer i mq cols secs | secs == 61 = helper ""
+                           | secs == 30 = helper ""
+                           | secs == 15 = helper ""
+                           | otherwise  = next
   where
-    next = (liftIO . threadDelay $ 1 * 10 ^ 6) >> spiritTimer i (pred secs)
+    helper msg = do
+        wrapSend mq cols . colorWith spiritMsgColor $ msg
+        logPlaOut "spiritTimer" i . pure $ msg
+        next
+    next = (liftIO . threadDelay $ 1 * 10 ^ 6) >> spiritTimer i mq cols (pred secs)

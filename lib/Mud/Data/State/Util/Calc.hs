@@ -566,7 +566,7 @@ calcRetainedLinks i ms = ceiling $ getBasePs i ms `divide` 10
 
 
 calcSpiritTime :: Id -> MudState -> Seconds
-calcSpiritTime i ms = (maxSpiritSecs `max`) $ case getLvl i ms of 1 -> 1 * 60
+calcSpiritTime i ms = (maxSpiritSecs `min`) $ case getLvl i ms of 1 -> 1 * 60
                                                                   x -> round $ (x `divide` 2) * 60
 
 
