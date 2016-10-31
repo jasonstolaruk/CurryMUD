@@ -23,6 +23,7 @@ import Mud.Threads.Effect
 import Mud.Threads.FeelingTimer
 import Mud.Threads.Misc
 import Mud.Threads.Regen
+import Mud.Threads.SpiritTimer
 import Mud.Util.List
 import Mud.Util.Misc
 import Mud.Util.Operators
@@ -168,6 +169,7 @@ spiritize i = getState >>= \ms -> if isPC i ms
                      ; bcast bs
                      ; sequence_ (fs :: Funs)
                      ; detachMsg
+                     ; runSpiritTimerAsync i secs
                      ; logPla "spiritize" i "spirit created." }
   else deleteNpc ms
   where
