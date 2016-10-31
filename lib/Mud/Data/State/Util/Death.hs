@@ -168,8 +168,7 @@ spiritize i = getState >>= \ms -> if isPC i ms
                      ; forM_ asleepIds $ \i' ->　retainedMsg i' ms . linkMissingMsg $ mySing
                      ; bcast bs
                      ; sequence_ (fs :: Funs)
-                     ; detachMsg
-                     ; runSpiritTimerAsync i secs
+                     ; detach secs
                      ; logPla "spiritize" i "spirit created." }
   else deleteNpc ms
   where
@@ -199,9 +198,10 @@ spiritize i = getState >>= \ms -> if isPC i ms
           , f         <- \i' -> rndmDo (calcProbSpiritizeShiver i' ms) . mkExpAction "shiver" . mkActionParams i' ms $ []
           , fs        <- pure . mapM_ f $ targetIds
           = ((linkRetainedMsg mySing, targetIds), fs)
-    detachMsg = onNewThread $ getMsgQueueColumns i <$> getState >>= \(mq, cols) -> do
+    detach secs = onNewThread $ getMsgQueueColumns i <$> getState >>= \(mq, cols) -> do
         liftIO . threadDelay $ 2 * 10 ^ 6
         wrapSend mq cols . colorWith spiritMsgColor $ spiritDetachMsg
+        runSpiritTimerAsync i secs
     deleteNpc ms = let ri = getRmId i ms in do { tweaks [ activeEffectsTbl.at  i  .~ Nothing
                                                         , coinsTbl        .at  i  .~ Nothing
                                                         , entTbl          .at  i  .~ Nothing
