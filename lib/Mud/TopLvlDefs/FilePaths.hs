@@ -104,7 +104,7 @@ writableTblFile      = "writableTbl"      <.> "json"
 
 
 dbFileFun :: FilePathFun
-dbFileFun = under dbDirFun $ "CurryMud" <.> "sqlite3"
+dbFileFun = under dbDirFun $ "CurryMUD" <.> "sqlite3"
 
 
 -- ==================================================

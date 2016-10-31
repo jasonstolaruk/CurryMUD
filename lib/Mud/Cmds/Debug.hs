@@ -143,7 +143,7 @@ debugCmds =
     , mkDebugCmd "liquid"      debugLiq         "Consume a given amount (in mouthfuls) of a given liquid (by distinct \
                                                 \liquid ID)."
     , mkDebugCmd "log"         debugLog         "Put the logging service under heavy load."
-    , mkDebugCmd "multiline"   debugMultiLine   "Test multi line input."
+    , mkDebugCmd "multiline"   debugMultiLine   "Test multi-line input."
     , mkDebugCmd "npcserver"   debugNpcServer   "Stop all NPC server threads."
     , mkDebugCmd "number"      debugNumber      "Display the decimal equivalent of a given number in a given base."
     , mkDebugCmd "out"         debugOut         "Dump the inventory of the logged out room."

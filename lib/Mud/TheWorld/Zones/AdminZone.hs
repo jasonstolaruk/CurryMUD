@@ -992,7 +992,7 @@ createAdminZone = do
                    Nothing
                    zeroBits)
               (mkObj . ObjTemplate paperWeight paperVol Nothing $ zeroBits)
-              (Writable (Just ( "CurryMud - A Multi-User Dungeon by Jason Stolaruk.\n\
+              (Writable (Just ( "CurryMUD - A Multi-User Dungeon by Jason Stolaruk.\n\
                                 \Copyright (c) 2013-2016, Jason Stolaruk and Detroit Labs LLC.\n\
                                 \Version 0.1.0.0.\n\
                                 \CurryMUD@gmail.com\n\
