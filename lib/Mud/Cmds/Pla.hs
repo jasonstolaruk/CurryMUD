@@ -3728,7 +3728,7 @@ stats (NoArgs i mq cols) = getState >>= \ms ->
                                 , skillPtsHelper
                                 , mobRmDescHelper
                                 , tempDescHelper ]
-        top       = underline . onTrue (isPC i ms) ((<> sexRace) . (spiritTxt <>)) . getSing i $ ms
+        top       = underline . onTrue (isPC i ms) (quoteWith' (spiritTxt, sexRace)) . getSing i $ ms
         spiritTxt = isSpiritId i ms |?| "The disembodied spirit of "
         sexRace   = T.concat [ ", the ", sexy, " ", r ]
         (sexy, r) = mkPrettySexRace i ms
