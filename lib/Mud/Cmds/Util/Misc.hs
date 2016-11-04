@@ -554,15 +554,14 @@ isLinked = helperIsLinked (||)
 
 
 helperIsLinked :: (Bool -> Bool -> Bool) -> MudState -> (Id, Id) -> Bool
-helperIsLinked f ms ids@(i, i') = let s                = getSing i  ms
-                                      s'               = getSing i' ms
-                                      targetLinkedToMe = s' `elem` getLinked i  ms
-                                      meLinkedToTarget = s  `elem` getLinked i' ms
-                                  in noNpcs && (targetLinkedToMe `f` meLinkedToTarget)
+helperIsLinked f ms (i, i') = let s                = getSing i  ms
+                                  s'               = getSing i' ms
+                                  targetLinkedToMe = s' `elem` getLinked i  ms
+                                  meLinkedToTarget = s  `elem` getLinked i' ms
+                              in noNpcs && (targetLinkedToMe `f` meLinkedToTarget)
   where
-    noNpcs | uncurry (||) . ((🍭) *** (🍭)) $ ids = False
-           | otherwise = otherwise
-    (🍭) = (`isNpc` ms)
+    noNpcs | ((||) <$> isNpc i <*> isNpc i') ms = False
+           | otherwise                          = otherwise
 
 
 isDblLinked :: MudState -> (Id, Id) -> Bool

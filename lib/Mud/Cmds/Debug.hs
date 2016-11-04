@@ -50,7 +50,7 @@ import qualified Mud.Misc.Logging as L (logAndDispIOEx, logNotice, logPlaExec, l
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Applicative (Const)
-import Control.Arrow ((***), first)
+import Control.Arrow (first)
 import Control.Concurrent (getNumCapabilities, myThreadId)
 import Control.Concurrent.Async (asyncThreadId, poll)
 import Control.Exception (ArithException(..), IOException)
@@ -286,7 +286,7 @@ debugColor (NoArgs' i mq) = sequence_ [ send mq . nl . T.concat $ msg, logPlaExe
           , bgi <- intensities, bgc <- colors
           , let fg = (fgi, fgc), let bg = (bgi, bgc), let ansi = mkColorANSI fg bg ]
     mkColorDesc (mkColorName -> fg) (mkColorName -> bg) = fg <> "on " <> bg
-    mkColorName = uncurry (<>) . (pad 6 . showText *** padColorName . showText)
+    mkColorName = (<>) <$> pad 6 . showText <*> padColorName . showText
 debugColor p = withoutArgs debugColor p
 
 -----
@@ -838,7 +838,7 @@ debugThreads p@ActionParams { myId, args } = do
 
 descThreads :: MudStack [Text]
 descThreads = do
-    (uncurry (:) . ((, Notice) *** pure . (, Error)) -> logAsyncKvs) <- asks $ (both %~ asyncThreadId) . getLogAsyncs
+    ((:) <$> (, Notice) . fst <*> pure . (, Error) . snd -> logAsyncKvs) <- asks $ (both %~ asyncThreadId) . getLogAsyncs
     (plt, M.assocs -> threadTblKvs) <- plaLogTbl `fanView` threadTbl <$> getState
     let plaLogTblKvs = [ (asyncThreadId . fst $ v, PlaLog k) | (k, v) <- IM.assocs plt ]
     mapM mkDesc . sort . concat $ [ logAsyncKvs, threadTblKvs, plaLogTblKvs ]

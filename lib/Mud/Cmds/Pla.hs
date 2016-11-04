@@ -1605,7 +1605,7 @@ tryMove i mq cols p dir = helper |&| modifyState >=> \case
               | dir == "d"              = "heads"
               | dir `elem` stdLinkNames = "leaves"
               | otherwise               = "enters"
-    showRm ri = uncurry (|<>|) . (showText *** views rmName parensQuote) . (ri, )
+    showRm ri = ((|<>|) <$> showText . fst <*> views rmName parensQuote . snd) . (ri, )
 
 
 findExit :: Rm -> LinkName -> Maybe (Text, Id, Maybe Text, Maybe Text)
