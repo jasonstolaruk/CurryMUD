@@ -55,7 +55,7 @@ import Mud.Util.Text
 import Mud.Util.Wrapping
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
-import Control.Arrow ((***), (&&&))
+import Control.Arrow ((***))
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Lens (each, to, views)
@@ -274,7 +274,7 @@ parseDesigHelper f i ms = loop (getIntroduced i ms)
         parseCorpseDesig (CorpseDesig ci) =
             let c          = getCorpse ci ms
                 cs         = c^.corpseSing
-                sexRaceTxt = uncurry (|<>|) . (views corpseSex pp &&& views corpseRace pp) $ c
+                sexRaceTxt = (|<>|) <$> views corpseSex pp <*> views corpseRace pp $ c
             in  cs `elem` (getSing i ms : intros) ? ("corpse of " <> cs) :? ("corpse of a " <> sexRaceTxt)
         parseCorpseDesig d = patternMatchFail "parseDesigHelper loop parseCorpseDesig" . showText $ d
     extractDesig (T.singleton -> c) (T.breakOn c -> (left, T.breakOn c . T.tail -> (desigTxt, T.tail -> rest)))

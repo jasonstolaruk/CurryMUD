@@ -147,7 +147,7 @@ findInvContaining i ms = let matches = views invTbl (IM.keys . IM.filter (i `ele
 
 
 findMobIds :: MudState -> Inv -> Inv
-findMobIds ms haystack = [ i | i <- haystack, uncurry (||) . ((PCType ==) &&& (NpcType ==)) . getType i $ ms ]
+findMobIds ms haystack = [ i | i <- haystack, (||) <$> (PCType ==) <*> (NpcType ==) $ getType i ms ]
 
 
 -----
@@ -158,7 +158,7 @@ getAdminIds = getAdminIdsHelper (const True)
 
 
 getAdminIdsHelper :: (Pla -> Bool) -> MudState -> Inv
-getAdminIdsHelper f = views plaTbl (IM.keys . IM.filter (uncurry (&&) . (isAdmin &&& f)))
+getAdminIdsHelper f = views plaTbl (IM.keys . IM.filter ((&&) <$> isAdmin <*> f))
 
 
 -----
@@ -270,7 +270,7 @@ getLoggedInAdminIds = getAdminIdsHelper isLoggedIn
 
 
 getLoggedInPlaIds :: MudState ->  Inv
-getLoggedInPlaIds = views plaTbl (IM.keys . IM.filter (uncurry (&&) . (isLoggedIn &&& not . isAdmin)))
+getLoggedInPlaIds = views plaTbl (IM.keys . IM.filter ((&&) <$> isLoggedIn <*> not . isAdmin))
 
 
 -----
@@ -345,7 +345,7 @@ getUnusedId = views typeTbl (head . (enumFrom 0 \\) . IM.keys)
 
 
 isAwake :: Id -> MudState -> Bool
-isAwake = onPla (uncurry (&&) . (isLoggedIn &&& not . isIncognito)) True
+isAwake = onPla ((&&) <$> isLoggedIn <*> not . isIncognito) True
 
 
 isLoggedIn :: Pla -> Bool
