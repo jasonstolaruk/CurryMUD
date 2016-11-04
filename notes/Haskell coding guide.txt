@@ -1,8 +1,8 @@
 Haskell coding guide
 by Jason Stolaruk (jasonstolaruk@gmail.com)
-Note that page numbers labeled "LYAH" and "RWH" refer to the Japanese translations of Learn You A Haskell and Real World Haskell.
-"PaCP" refers to the original English version of Parallel and Concurrent Programming in Haskell.
-"BH" refers to the 2014 edition of Beginning Haskell: A Project-Based Approach.
+"LYAH" and "RWH" refer to the Japanese translations of Learn You A Haskell and Real World Haskell.
+"PaCP" refers to Parallel and Concurrent Programming in Haskell.
+"BH" refers to Beginning Haskell: A Project-Based Approach.
 "HP" refers to Haskell Programming From First Principles.
 
 
@@ -28,11 +28,7 @@ f = x
 
 Consider using a hanging lambda to split a line of code that is particularly long.
 
-Indent 4 spaces following a hanging lambda:
-m >>= \x ->
-    return . succ $ x
-
-Bind to a hanging lambda instead of writing a "do" block when in doing so you are able to write just two lines of code:
+Indent 4 spaces following a hanging lambda. Bind to a hanging lambda instead of writing a "do" block when in doing so you are able to write just two lines of code:
 m >>= \x ->
     return . succ $ x
 
@@ -48,7 +44,7 @@ x : (f y)
 
 When appropriate, use "\" to split text across multiple lines. (RWH p.315)
 
-Prefer "(<>)" over "mappend".
+Prefer "(<>)" over "mappend". Prefer "(++)" over "(<>)" when appending lists.
 
 When you would otherwise be stringing more than 2 "(++)" or "(<>)" operations together, use "concat" instead.
 
@@ -71,8 +67,8 @@ case x of
     | otherwise -> y
 
 Consider using a guard to handle an edge case when pattern matching on function parameters:
-x `f` _ | x < 0 = z
-x `f` y         = a
+x `f` _ | x < 0 = ...
+x `f` y         = ...
 
 Use "flip" when it allows you to avoid writing a lambda:
 flip delete
@@ -85,8 +81,6 @@ Use "on" where applicable (in binary functions for sorting, etc.):
 sortBy (compare `on` fst)
 groupBy ((==) `on` clientName)
 
-Use record update syntax with your record data types.
-
 Prefer "maybe" over unwrapping a "Maybe" via pattern matching.
 Similarly, prefer "either" over pattern matching.
 
@@ -94,12 +88,12 @@ Use "when", "unless", and "guard" for conditional evaluation in a monad.
 when   :: Bool -> m () -> m () -- Evaluate the second parameter when "True".
 unless :: Bool -> m () -> m () -- Evaluate the second parameter when "False".
 guard  :: (MonadPlus m) => Bool -> m ()
-"guard" will short-circuit chained expressions (by returning "mzero") when "False": (RWH p.375)
+"guard" will short-circuit chained expressions (by returning "mzero") on "False": (RWH p.375)
+λ> mzero :: Maybe Char
+Nothing
 λ> guard (1 < 2) >> Just 'a'
 Just 'a'
 λ> guard (1 == 2) >> Just 'a'
-Nothing
-λ> mzero :: Maybe Char
 Nothing
 
 Use "void" instead of ">> return ()".
@@ -109,7 +103,7 @@ Use infinite lists when sensible:
 head . (\\) [0..]
 
 Derive "Enum" to use ".." in lists containing the type in question.
-myLst = [MyTypeA..MyTypeC]
+myLst = [ MyTypeA .. MyTypeC ]
 
 Avoid manually instantiating "Show" as a means to pretty-print your type. Instead, consider rolling your own pretty-print typeclass.
 
@@ -141,14 +135,12 @@ The version numbers you assign to your packages should follow the official Packa
 Your main module should be named "Main" as opposed to "Foo.Main"; you may, however, put your main ".hs" file in the "Foo" directory.
 
 Your modules should only export the functions that other modules need to use.
-The "Main" module may need only export "main".
+Your "Main" module may need only export "main".
 
-However, in the case that you are developing a library, your library itself may contain multiple modules that export ALL their functions. Then, the single primary module of your library can import all your other modules, and export only those functions that are meant to be part of the library's public API. Your ".cabal" file can specify that only the primary module is exposed.
+However, in the case that you are developing a library, your library itself may contain multiple modules that export ALL of their functions. The primary module of your library can import all the other modules, and export only those functions that are meant to be part of the library's public API. Your ".cabal" file can specify that only the primary module is exposed.
 See "http://lambda.jstolarek.com/2012/10/code-testing-in-haskell/".
 
-Prefer explicit import lists over importing everything, unless your import list becomes unreasonably long, or you are importing a module whose functions are familiar to all Haskell programmers.
-
-Import "Data.Functor" if you only need to use "(<$>)" and not "(<*>)"; import "Control.Applicative" if you also need to use "(<*>)".
+Prefer explicit import lists over importing everything, unless your import list becomes unreasonably long or you are importing a module whose functions are familiar to most Haskell programmers.
 
 
 NUMBERS
@@ -161,8 +153,8 @@ NUMBERS
 "quot" - integral division   - divide "Integral"s, round towards zero
 "(/)"  - fractional division - divide "Fractional"s
 
-(quot x y)*y + (rem x y) == x
-(div  x y)*y + (mod x y) == x
+(x `quot` y) * y + (x `rem` y) == x
+(x `div`  y) * y + (x `mod` y) == x
 
 "Always use `div` for integral division unless you know what you’re doing. However, if the remainder of a division is the value you need, `rem` is usually the function you want." (HP p.115)
 
@@ -188,7 +180,7 @@ hex = Just myList <> Just (L ['0'..'9']) <> Nothing
 FUNCTORS, APPLICATIVE FUNCTORS, AND MONADS
 ==================================================
 
-A functor is a container type (kind "* -> *") that you can map over (transform).
+A functor is a "container" type (kind "* -> *") that you can map over (transform).
 Applicative functors allow you to take a normal function and apply it to a number of values, each inside applicative functor containers.
 Monads allow you to take a value in a monad container and apply to it a function that expects a normal value (and returns a monadic value). (This is precisely what "(>>=)" does.)
 
@@ -211,7 +203,7 @@ When writing monadic code, consider what can be written outside the monad and li
 
 Use "(>>)" and "(>>=)" instead of "do" when your functions can be neatly chained.
 
-Use "(=<<)" instead of "(>>=)" alongside a "pipe" of composed functions: (RWH p.357)
+Consider using "(=<<)" instead of "(>>=)" alongside a "pipe" of composed functions: (RWH p.357)
 output . parse =<< (liftIO . readProcess "/usr/bin/uptime" [] $ "")
 
 Prefer...
@@ -258,8 +250,7 @@ Compare the above to the following:
 Just 5
 
 Use the "Either" monad for calculations that need to fail with an auxiliary value (for example, a message explaining the error). (LYAH p.340)
-"Right" is for success, "Left" is for failure.
-"return" uses the "Right" constructor.
+"Right" is for success, "Left" is for failure. "return" uses the "Right" constructor.
 Binding a "Left" value to a function essentially does nothing; the value in the "Left" is preserved:
 λ> succ <$> Left 10
 Left 10
@@ -271,7 +262,7 @@ do { x <- [1,2]; y <- [3,4]; return (x,y) }
 (,) <$> [1,2] <*> [3,4]
 [(x,y) | x <- [1,2], y <- [3,4]]
 
-Use the "Writer" monad for logging, or to handle auxiliary values produced by or concerning your main computations.
+Use the "Writer" monad for logging, or to handle auxiliary values produced by, or concerning, your main computations.
 Note that the auxiliary value in question must be a monoid; consider using a monoid with an efficient implementation of "mappend". (RWH p.391)
 multWithLog :: Int -> Int -> Writer [String] Int -- ("String" does NOT have an efficient "mappend", but...)
 multWithLog x y = tell [show x ++ " * " ++ show y ++ " = " ++ show res] >> return res
@@ -281,13 +272,20 @@ multWithLog x y = tell [show x ++ " * " ++ show y ++ " = " ++ show res] >> retur
 (15,["5 * 3 = 15"])
 
 Use the "Reader" monad to pass a read-only value to a handful of functions behind the scenes.
-LYAH provides examples along these lines:
+
+The function functor instance for "(->) r" is just function composition. This is the functor for "r -> a", written as "(->) r" (kind "* -> *").
+instance Functor ((->) r) where
+  f `fmap` g = \x -> f . g $ x
+  -- Or just "fmap = (.)"!
+
 λ> (fmap (*2) (+1)) 10 == (10+1) * 2
 True
 λ> let f = (+) <$> (*2) <*> (+1) in f 10 == (10*2) + (10+1) -- 31
 True
 λ> let tryMe = do { a <- (*2); b <- (+1); return (a+b) } in tryMe 10
 31
+λ> liftA2 (&&) even (> 4) 10
+True
 
 
 MONAD TRANSFORMERS (BH p.180-5)
@@ -370,19 +368,55 @@ Just 0
 True
 
 
-FOLDS (see also PERFORMANCE)
+"foldr" VS. "foldl"  (HP chapter 10)
+==================================================
+
+"foldr" is the fold that you'll most often want to use with lists.
+As a rule of thumb, use "foldr" on lists that might be infinite, or when building up a data structure. Use "foldl'" on finite lists, and when the fold comes down to a single value.
+
+foldr :: (a -> b -> b) -> b -> [a] -> b
+foldr f acc []     = acc
+foldr f acc (x:xs) = f x (foldr f acc xs)
+
+foldl :: (b -> a -> b) -> b -> [a] -> b
+foldl f acc []     = acc
+foldl f acc (x:xs) = foldl f (f acc x) xs
+
+The first stage of folding is the traversal of (the recursing over) the spine. All folds traverse the spine in the same direction: from outermost (the head) to innermost (the tail); this is necessitated by the way lists are defined. Notably, "foldr" may not traverse the entire spine, but "foldl" always will.
+
+The association of the folding function informs the direction that the folding proceeds following the traversal of the spine.
+
+"foldr" associates to the right (the parentheses nest on the right side):
+foldr (+) 0 [1, 2, 3] == 1 + (2 + (3 + 0))
+
+"foldl" associates to the left:
+foldl (+) 0 [1, 2, 3] == ((0 + 1) + 2) + 3
+
+In the case of "foldr", if the folding function doesn't evaluate it's second argument, it will stop forcing the spine.
+
+myAny :: (a -> Bool) -> [a] -> Bool
+myAny f = foldr (\x acc -> f x || acc) False
+
+myAny even [1..] == True
+
+There is no guarantee that "foldr" will finish evaluating an infinite list; it often depends on the input data and the fold function used.
+
+In most cases, you should prefer "foldl'" over "foldl". "foldl'" forces the values in the list cons cells as it traverses the spine, yielding better performance when folding long lists.
+
+
+MORE ON FOLDING
 ==================================================
 
 Use "unfoldr" to build up a list from a seed. (BH p.74)
 unfoldr :: (b -> Maybe (a, b)) -> b -> [a]
 
-The "Foldable" typeclass ("import qualified Data.Foldable as F") is useful when you want to fold over structures other than lists. Simply by implementating "foldMap", you get all the other "Foldable" fold functions for free. (LYAH p.277)
+The "Foldable" typeclass ("import qualified Data.Foldable as F") is useful when you want to fold over structures other than lists. Simply by implementing "foldMap", you get all the other "Foldable" fold functions for free. (LYAH p.277)
 
-"foldMap" (from the "Foldable" typeclass) is useful when you want to reduce a foldable structure to a single monoid value: (LYAH p.278)
+"foldMap" is useful when you want to reduce a foldable structure to a single monoid value: (LYAH p.278)
 foldMap :: (Monoid m, Foldable t) => (a -> m) -> t a -> m
-Map over "t a" (the "Foldable") with the "(a -> m)" function, producing monoid values. Then, use "mappend" to reduce the monoid values to a single (monoid) value.
+Map over "t a" (where "t" is a "Foldable") with the "(a -> m)" function, producing monoid values. Then, use "mappend" to reduce the monoid values to a single monoid value.
 
-Use "foldMap" to convert a foldable structure into a list:
+"foldMap" can be used to convert a foldable structure into a list:
 λ> myTree
 Node 0 (Node 1 (Node 3 Empty Empty) (Node 4 Empty Empty)) (Node 2 (Node 5 Empty Empty) (Node 6 Empty Empty))
 λ> F.foldMap (\x -> [x]) myTree
@@ -391,7 +425,7 @@ Node 0 (Node 1 (Node 3 Empty Empty) (Node 4 Empty Empty)) (Node 2 (Node 5 Empty 
 "foldM" is the monadic version of "foldl" (LYAH p.351):
 foldl :: (a -> b -> a) -> a -> [b] -> a -- "a" is the type of the accumulator/result.
 foldM :: (Monad m) => (a -> b -> m a) -> a -> [b] -> m a
-"foldM" thus differs from "foldl" in that the function applied to each element of the list is monadic (specifically, it returns a value in a monad), and, naturally, the final results of the fold are likewise in a monad.
+"foldM" thus differs from "foldl" in that the function applied to each element of the list is monadic (it returns a value in a monad), and, naturally, the final results of the fold are likewise in a monad.
 
 
 LENSES
@@ -408,9 +442,6 @@ obj^.name.to T.toUpper
 Prefer "folded" over using "map" with a lens:
 myStrings^..folded.packed
 [a..b]^..folded.to T.length
-
-Use "(<$>)" to lift your lenses:
-(view myLens) <$> myMonadicFun
 
 
 TUPLES
@@ -438,7 +469,7 @@ Prefer "Map" over association lists.
 
 Use "IntMap" instead of "Map" when your keys are of type "Int".
 
-"HashMap" is a good choice when your keys are not of type "Int" (and are hashable), as hash maps perform better than vanilla maps. (BH p.88)
+"HashMap" is a good choice when your keys are not of type "Int" and are hashable, as hash maps perform better than vanilla maps. (BH p.88)
 
 Use "M.empty" instead of "M.fromList []" (where "M" is "Data.Map")
 
@@ -454,9 +485,7 @@ Keep in mind that "length" must traverse the entirety of its argument. In some c
 
 To avoid space leaks, prefer "foldr" and "foldl'" over "foldl". (RWH p.113)
 
-As a rule of thumb, use "foldr" on lists that might be infinite, or when building up a data structure. Use "foldl'" on finite lists, and when the fold comes down to a single value.
-
-In most cases, it's a good idea to prefer "Double" over "Float".
+In the vast majority of cases, prefer "Double" over "Float".
 
 Prefer types that have simple raw machine representations over more complex types that must be stored on the heap (for example, prefer "Int" over "Integer").
 
@@ -477,7 +506,7 @@ In your own data types, use strictness annotations/bang patterns ("!") on atomic
 
 Apply "-funbox-strict-fields" when using strictness annotations/bang patterns ("!") on constructor fields. Consider specifying this option in the "ghc-options" field of your ".cabal" file.
 
-When creating a recursively defined type, make the spines lazy and the leaves strict.
+When creating a recursively defined type, keep the spines lazy and make the leaves strict.
 
 When deciding on whether to use a lazy or strict data type (for example, "Data.Map.Lazy" vs. "Data.Map.Strict"), base your decision on profiling.
 
@@ -487,7 +516,7 @@ ERROR HANDLING
 
 Use "error" for "impossible" situations due to programmer error. ("error" throws an exception and halts the program.) (PaCP p.147)
 
-In pure code, use "Maybe", or "Either" with a custom data type (representing the different possible error types, with auxiliary info) as the "Left" type.
+In pure code, use "Maybe", or "Either" with a custom data type (representing the different possible error types, with auxiliary info) as the "Left" type. Don't throw exceptions in pure code.
 
 When in the "IO" monad, use "throwIO" and "catch" ("catch" is normally used infix). Prefer "throwIO" over "throw", as the former guarantees ordering with respect to other "IO" operations, whereas the latter does not. (PaCP p.149-50)
 
@@ -547,11 +576,11 @@ When taking two or more "MVar"s, always take them in the same order. Otherwise, 
 CONCURRENT PROGRAMMING: STM
 ==================================================
 
-Functions in the STM monad should be given names appended with "STM".
+Functions in the STM monad have "STM" appended to their names.
 
 Consider using "TMVar" as an alternative to "MVar". (PaCP p.178)
 
-Be aware that the left biased nature of "orElse" can have implications for fairness in some situations. (PaCP p.182)
+Be aware that the left-biased nature of "orElse" can have implications for fairness in some situations. (PaCP p.182)
 
 "STM" is an instance of "MonadPlus":
 mzero = retry

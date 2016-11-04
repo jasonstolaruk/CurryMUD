@@ -42,6 +42,7 @@ import Mud.Util.Wrapping
 import qualified Mud.Misc.Logging as L (logNotice, logPla)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
+import Control.Applicative (liftA2)
 import Control.Arrow (first)
 import Control.Concurrent (threadDelay)
 import Control.Exception.Lifted (try)
@@ -462,8 +463,8 @@ interpPickPts ncb@(NewCharBundle _ s _) cn (Lower   i mq cols as) = getState >>=
   where
     helper ms = foldl' assignPts (ms, []) $ cn : as
     assignPts a@(ms, msgs) arg = let pts = getPickPts i ms in if
-      | T.length arg < 3                                    -> sorry
-      | op <- T.head . T.tail $ arg, op /= '+' && op /= '-' -> sorry
+      | T.length arg < 3                                               -> sorry
+      | op <- T.head . T.tail $ arg, liftA2 (&&) (/= '+') (/= '-') op  -> sorry
       | otherwise ->
           let { (c, rest) = headTail arg; (op, amt) = headTail rest }
           in if c `notElem` ("sdhmp" :: String)

@@ -4,6 +4,7 @@ module MudTests.Util.List where
 
 import Mud.Util.List
 
+import Control.Applicative (liftA2)
 import Data.List (elemIndices)
 import Test.QuickCheck.Modifiers (NonNegative(..))
 import Test.Tasty.QuickCheck ((==>), Property)
@@ -18,7 +19,7 @@ prop_countOcc needle hay = countOcc needle hay == matches
 prop_dropElemAt :: NonNegative Int -> [Int] -> Property
 prop_dropElemAt (NonNegative i) xs = i < length xs &&
                                    countOcc x xs == 1 ==>
-    length res == length xs - 1 && x `notElem` res
+    liftA2 (&&) ((== length xs - 1) . length) (x `notElem`) res
   where
     x   = xs !! i
     res = dropElemAt i xs

@@ -44,7 +44,7 @@ import Mud.Util.Wrapping
 import qualified Mud.Misc.Logging as L (logIOEx, logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut, massLogPla)
 import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 
-import Control.Arrow ((***), (&&&), first, second)
+import Control.Arrow ((&&&), first, second)
 import Control.Concurrent.Async (asyncThreadId)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
@@ -893,7 +893,7 @@ adminExp (NoArgs' i mq) = pager i mq Nothing mkReport >> logPlaExec (prefixAdmin
     mkReport = header ++ pure zero ++ take 25 (map helper calcLvlExps)
     header   = [ "Level  Experience", T.replicate 17 "=" ]
     zero     = uncurry (<>) . dupFirst (pad 7) $ "0"
-    helper   = uncurry (<>) . (pad 7 . showText *** commaShow)
+    helper   = (<>) <$> pad 7 . showText <*> commaShow
 adminExp p = withoutArgs adminExp p
 
 

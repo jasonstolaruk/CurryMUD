@@ -9,6 +9,7 @@ import Mud.Util.Operators
 import Mud.Util.Quoting
 import Mud.Util.Text
 
+import Control.Applicative (liftA2)
 import Data.Char (chr, isSpace)
 import Data.Monoid ((<>))
 import Data.Text (Text)
@@ -31,14 +32,16 @@ prop_aOrAn t = (()!# T.strip t) ==>
 
 
 prop_findFullNameForAbbrev_findsNothing :: NonEmptyList Char -> [Text] -> Property
-prop_findFullNameForAbbrev_findsNothing (NonEmpty (T.pack -> needle)) hay = any (()!#) hay &&
-                                                                            all (not . (needle `T.isInfixOf`)) hay ==>
+prop_findFullNameForAbbrev_findsNothing (NonEmpty (T.pack -> needle)) hay = condition needle hay ==>
     (()#) . findFullNameForAbbrev needle $ hay
 
 
+condition :: Text -> [Text] -> Bool
+condition needle = liftA2 (&&) (any (()!#)) (all (not . (needle `T.isInfixOf`)))
+
+
 prop_findFullNameForAbbrev_findsMatch :: NonEmptyList Char -> [Text] -> Property
-prop_findFullNameForAbbrev_findsMatch (NonEmpty (T.pack -> needle)) hay = any (()!#) hay &&
-                                                                          all (not . (needle `T.isInfixOf`)) hay ==>
+prop_findFullNameForAbbrev_findsMatch (NonEmpty (T.pack -> needle)) hay = condition needle hay ==>
     let nonEmpty = head . dropEmpties $ hay
         match    = needle <> nonEmpty
         hay'     = match : hay

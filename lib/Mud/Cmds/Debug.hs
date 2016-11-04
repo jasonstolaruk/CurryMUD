@@ -636,7 +636,7 @@ debugNumber   (WithArgs i mq cols [ numTxt, baseTxt ]) = case reads . T.unpack $
       [(base, "")] | not . inRange (2, 36) $ base -> wrapSend mq cols . sorryParseBase $ baseTxt
                    | otherwise -> case numTxt `inBase` base of
                      [(res, "")] -> do
-                         send mq . nlnl . showText $ res
+                         send mq $ fmap nlnl showText res
                          logPlaExecArgs (prefixDebugCmd "number") [ numTxt, baseTxt ] i
                      _ -> wrapSend mq cols . sorryParseNum numTxt . showText $ base
       _ -> wrapSend mq cols . sorryParseBase $ baseTxt
@@ -736,7 +736,7 @@ debugRegen   (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)]
   where
     helper targetId ms
       | targetId < 0 = wrapSend mq cols sorryWtf
-      | targetId `notElem` uncurry (++) ((both %~ views npcTbl IM.keys) . dup $ ms) =
+      | targetId `notElem` ((++) <$> views npcTbl IM.keys <*> views pcTbl IM.keys) ms =
           wrapSend mq cols . sorryNonexistentId targetId $ [ "NPC", "PC" ]
       | otherwise = do
           multiWrapSend mq cols descRegens

@@ -71,6 +71,7 @@ import Mud.Util.Wrapping
 import qualified Mud.Misc.Logging as L (logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut)
 import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 
+import Control.Applicative (liftA2)
 import Control.Arrow ((***), (&&&), first, second)
 import Control.Exception.Lifted (catch, try)
 import Control.Lens (_1, _2, _3, _4, _5, at, both, each, set, to, view, views)
@@ -3569,7 +3570,7 @@ smell (OneArgLower i mq cols a) = getState >>= \ms ->
         rmInvCoins = first (i `delete`) . getMobRmVisibleInvCoins i $ ms
         maybeHooks = lookupHooks i ms "smell"
         d          = mkStdDesig  i ms DoCap
-    in if ()# invCoins && ()# eqMap && ()# rmInvCoins && ()# maybeHooks
+    in if and [ ()# invCoins, ()# eqMap, ()# rmInvCoins, ()# maybeHooks ]
       then wrapSend mq cols sorrySmellNothingToSmell
       else case singleArgInvEqRm InInv a of
         (InInv, target) | ()# invCoins -> wrapSend mq cols dudeYourHandsAreEmpty
@@ -4331,7 +4332,8 @@ isTunedIn ms (i, i') | s <- getSing i' ms = fromMaybe False (view (at s) . getTe
 
 mkFooter :: Id -> MudState -> Text
 mkFooter i ms = let plaIds@(length -> x) = [ i' | i' <- getLoggedInPlaIds ms
-                                           , onTrue (i /= i' && isSpiritId i' ms) (const . isLinked ms $ (i, i')) True ]
+                                           , let b = liftA2 (&&) (i /=) (`isSpiritId` ms) i'
+                                             in onTrue b (const . isLinked ms $ (i, i')) True ]
                     y                    = length [ ai | ai <- getLoggedInAdminIds ms, isIncognitoId ai ms ]
                 in T.concat [ showText x
                             , " "

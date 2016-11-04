@@ -4,6 +4,8 @@ module MudTests.Util.Padding where
 
 import Mud.Util.Padding
 
+import Control.Applicative (liftA2)
+import Control.Arrow ((***))
 import Control.Lens (both)
 import Control.Lens.Operators ((%~), (&))
 import Data.Char (isSpace)
@@ -21,12 +23,12 @@ prop_quoteWithAndPad_length t = forAll (choose (3, 50)) $ \len ->
 
 
 prop_quoteWithAndPad_quotes :: Char -> Char -> Text -> Property
-prop_quoteWithAndPad_quotes left right t = (not . isSpace $ left) &&
-                                           (not . isSpace $ right) ==>
+prop_quoteWithAndPad_quotes left right t = let f = not . isSpace
+                                           in (uncurry (&&) . (f *** f) $ (left, right)) ==>
     forAll (choose (3, 50)) $ \len -> let quotes    = (left, right) & both %~ T.singleton
                                           res       = quoteWithAndPad quotes len t
                                           grabRight = T.head . T.dropWhile isSpace . T.reverse
-                                      in T.head res == left && grabRight res == right
+                                      in liftA2 (&&) ((== left) . T.head) ((== right) . grabRight) res
 
 
 prop_padOrTrunc_pads :: NonNegative Int -> Text -> Property
