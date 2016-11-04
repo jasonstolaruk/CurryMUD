@@ -560,8 +560,8 @@ helperIsLinked f ms (i, i') = let s                = getSing i  ms
                                   meLinkedToTarget = s  `elem` getLinked i' ms
                               in noNpcs && (targetLinkedToMe `f` meLinkedToTarget)
   where
-    noNpcs | ((||) <$> isNpc i <*> isNpc i') ms = False
-           | otherwise                          = otherwise
+    noNpcs | (||) <$> isNpc i <*> isNpc i' $  ms = False
+           | otherwise                           = otherwise
 
 
 isDblLinked :: MudState -> (Id, Id) -> Bool
