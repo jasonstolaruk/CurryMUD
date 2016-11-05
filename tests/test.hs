@@ -180,6 +180,7 @@ unitTests_Mud_Util_Text = testGroup "Mud.Util.Text"
     , testCase "test_countOcc_one"                   test_countOcc_one
     , testCase "test_countOcc_two"                   test_countOcc_two
     , testCase "test_countOcc_three"                 test_countOcc_three
+    , testCase "test_parseTelnet"                    test_parseTelnet
     , testCase "test_stripControl"                   test_stripControl
     , testCase "test_stripTelnet_null"               test_stripTelnet_null
     , testCase "test_stripTelnet_telnetCodes"        test_stripTelnet_telnetCodes

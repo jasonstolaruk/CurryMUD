@@ -125,26 +125,11 @@ test_countOcc_three = actual @?= expected
     expected = 3
 
 
-test_stripControl :: Assertion
-test_stripControl = actual @?= expected
+test_parseTelnet :: Assertion
+test_parseTelnet = actual @?= expected
   where
-    actual       = stripControl . quoteWith controlCodes $ "test"
-    expected     = "test"
-    controlCodes = T.pack $ [ '\0' .. '\31' ] ++ [ '\127' .. (maxBound :: Char) ]
-
-
-test_stripTelnet_null :: Assertion
-test_stripTelnet_null = actual @?= expected
-  where
-    actual   = stripTelnet ""
-    expected = ""
-
-
-test_stripTelnet_telnetCodes :: Assertion
-test_stripTelnet_telnetCodes = actual @?= expected
-  where
-    actual   = stripTelnet telnetCodes
-    expected = ""
+    actual   = parseTelnet telnetCodes
+    expected = Just [ "IAC", "252", "3", "IAC", "SB", "201", "67", "111", "114", "101", "46", "83", "117", "112", "112", "111", "114", "116", "115", "46", "83", "101", "116", "32", "91", "93", "IAC", "SE" ]
 
 
 telnetCodes :: Text
@@ -176,6 +161,28 @@ telnetCodes = T.pack . map chr $ [ 255 -- IAC
                                  , 93  -- ]
                                  , 255 -- IAC
                                  , 240 {- SE -} ]
+
+
+test_stripControl :: Assertion
+test_stripControl = actual @?= expected
+  where
+    actual       = stripControl . quoteWith controlCodes $ "test"
+    expected     = "test"
+    controlCodes = T.pack $ [ '\0' .. '\31' ] ++ [ '\127' .. (maxBound :: Char) ]
+
+
+test_stripTelnet_null :: Assertion
+test_stripTelnet_null = actual @?= expected
+  where
+    actual   = stripTelnet ""
+    expected = ""
+
+
+test_stripTelnet_telnetCodes :: Assertion
+test_stripTelnet_telnetCodes = actual @?= expected
+  where
+    actual   = stripTelnet telnetCodes
+    expected = ""
 
 
 test_stripTelnet_leading :: Assertion
