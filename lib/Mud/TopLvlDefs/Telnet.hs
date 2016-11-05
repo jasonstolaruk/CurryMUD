@@ -16,10 +16,10 @@ telnetECHO, telnetEOR, telnetGA, telnetIAC, telnetIS, telnetSB, telnetSE, telnet
 telnetECHO  = '\x01' -- 1
 telnetEOR   = '\xEF' -- 239
 telnetGA    = '\xF9' -- 249
-telnetIAC   = '\xFF' -- 255
+telnetIAC   = '\xFF' -- 255 Interpret as command
 telnetIS    = '\x0'  -- 0
-telnetSB    = '\xFA' -- 250
-telnetSE    = '\xF0' -- 240
+telnetSB    = '\xFA' -- 250 Begin subnegotiation
+telnetSE    = '\xF0' -- 240 End subnegotiation
 telnetSEND  = '\x1'  -- 1
 telnetTTYPE = '\x18' -- 24
 telnetWILL  = '\xFB' -- 251

@@ -17,6 +17,14 @@ modification, are permitted provided that the following conditions are met:
       contributors may be used to endorse or promote products derived
       from this software without specific prior written permission.
 
+If you fork the CurryMUD source code and derive your own MUD:
+
+    * You may not continue to use the CurryMUD name. You must devise
+      an original name for your derived MUD.
+
+    * You must make it clear that your MUD is a fork of/is derived
+      from CurryMUD.
+
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR

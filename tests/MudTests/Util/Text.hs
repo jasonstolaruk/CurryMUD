@@ -148,7 +148,34 @@ test_stripTelnet_telnetCodes = actual @?= expected
 
 
 telnetCodes :: Text
-telnetCodes = T.pack . map chr $ [ 255, 252, 3, 255, 250, 201, 67, 111, 114, 101, 46, 83, 117, 112, 112, 111, 114, 116, 115, 46, 83, 101, 116, 32, 91, 93, 255, 240 ]
+telnetCodes = T.pack . map chr $ [ 255 -- IAC
+                                 , 252 -- WON'T
+                                 , 3   -- suppress go ahead
+                                 , 255 -- IAC
+                                 , 250 -- SB
+                                 , 201 -- GMCP
+                                 , 67  -- C
+                                 , 111 -- o
+                                 , 114 -- r
+                                 , 101 -- e
+                                 , 46  -- .
+                                 , 83  -- S
+                                 , 117 -- u
+                                 , 112 -- p
+                                 , 112 -- p
+                                 , 111 -- o
+                                 , 114 -- r
+                                 , 116 -- t
+                                 , 115 -- s
+                                 , 46  -- .
+                                 , 83  -- S
+                                 , 101 -- e
+                                 , 116 -- t
+                                 , 32  -- (space)
+                                 , 91  -- [
+                                 , 93  -- ]
+                                 , 255 -- IAC
+                                 , 240 {- SE -} ]
 
 
 test_stripTelnet_leading :: Assertion

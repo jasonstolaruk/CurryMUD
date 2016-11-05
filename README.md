@@ -8,7 +8,7 @@ CurryMUD is essentially the hobby project and brainchild of a single developer (
 
 My aim is to create a single unique, playable MUD named "CurryMUD." I am writing this MUD entirely in Haskell, from scratch.
 
-Creating a framework which others can leverage to develop their own MUDs is _not_ an explicit goal of mine, nor is this a collaborative effort (I am not accepting PRs). Having said that, the code is available here on GitHub, so other parties _are_ free to examine the code and develop their own forks (in accordance with [the 3-clause BSD license](https://github.com/jasonstolaruk/CurryMUD/blob/master/LICENSE)).
+Creating a framework which others can leverage to develop their own MUDs is _not_ an explicit goal of mine, nor is this a collaborative effort (I am not accepting PRs). Having said that, the code is available here on GitHub, so other parties _are_ free to examine the code and develop their own forks. [Please refer to the license](https://github.com/jasonstolaruk/CurryMUD/blob/master/LICENSE), which is a 3-clause BSD license with additional unique clauses regarding the creation of derivative MUDs.
 
 CurryMUD will have the following features:
 
@@ -57,7 +57,7 @@ I am still in the initial stage of developing basic commands. There is very litt
 
 ## About the code
 
-The code is available here on GitHub under the 3-clause BSD license (refer to the [LICENSE file](https://github.com/jasonstolaruk/CurryMUD/blob/master/LICENSE)). Please note that **I am not accepting PRs**.
+The code is available here on GitHub under an augmented form of the 3-clause BSD license (refer to the [LICENSE file](https://github.com/jasonstolaruk/CurryMUD/blob/master/LICENSE)). Please note that **I am not accepting PRs**.
 
 * About 40,000 lines of code/text.
 * About 100 modules, excluding tests.
