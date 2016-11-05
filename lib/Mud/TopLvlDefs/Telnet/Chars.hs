@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Mud.TopLvlDefs.Telnet where
+module Mud.TopLvlDefs.Telnet.Chars where
 
 import Data.Text (Text)
 import qualified Data.Text as T

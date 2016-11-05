@@ -2,7 +2,7 @@
 
 module MudTests.Util.Text where
 
-import Mud.TopLvlDefs.Telnet
+import Mud.TopLvlDefs.Telnet.Chars
 import Mud.Util.List hiding (countOcc)
 import Mud.Util.Misc
 import Mud.Util.Operators

@@ -19,7 +19,7 @@ import Mud.Threads.Receive
 import Mud.Threads.Server
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
-import Mud.TopLvlDefs.Telnet
+import Mud.TopLvlDefs.Telnet.Chars
 import Mud.Util.Misc
 import Mud.Util.Quoting
 import Mud.Util.Text

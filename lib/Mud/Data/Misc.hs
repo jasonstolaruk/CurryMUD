@@ -54,6 +54,7 @@ module Mud.Data.Misc ( Action(..)
                      , ShouldLog(..)
                      , ShouldQuote(..)
                      , SingleTarget(..)
+                     , TelnetCode(..)
                      , ToOrFromThePeeped(..)
                      , Verb(..)
                      , WhichLog(..) ) where
@@ -508,6 +509,21 @@ instance Pretty Slot where
   pp BothHandsS  = "both hands"
 
 
+instance Pretty TelnetCode where
+  pp TelnetECHO  = "ECHO"
+  pp TelnetEOR   = "EOR"
+  pp TelnetGA    = "GA"
+  pp TelnetGMCP  = "GMCP"
+  pp TelnetIAC   = "IAC"
+  pp TelnetIS    = "IS"
+  pp TelnetSB    = "SB"
+  pp TelnetSE    = "SE"
+  pp TelnetSEND  = "SEND"
+  pp TelnetTTYPE = "TTYPE"
+  pp TelnetWILL  = "WILL"
+  pp TelnetWON'T = "WON'T"
+
+
 instance Pretty Type where
   pp ArmType      = "armor"
   pp ClothType    = "clothing"
@@ -847,6 +863,23 @@ data SingleTarget = SingleTarget { strippedTarget   :: Text
                                  , multiSendFun     :: [Text] -> MudStack ()
                                  , consLocPrefMsg   :: [Text] -> [Text]
                                  , consLocPrefBcast :: Id -> [Broadcast] -> [Broadcast] }
+
+
+-----
+
+
+data TelnetCode = TelnetECHO  -- 1
+                | TelnetEOR   -- 239
+                | TelnetGA    -- 249
+                | TelnetGMCP  -- 201
+                | TelnetIAC   -- 255 Interpret as command
+                | TelnetIS    -- 0
+                | TelnetSB    -- 250 Begin subnegotiation
+                | TelnetSE    -- 240 End subnegotiation
+                | TelnetSEND  -- 1
+                | TelnetTTYPE -- 24
+                | TelnetWILL  -- 251
+                | TelnetWON'T -- 252
 
 
 -----

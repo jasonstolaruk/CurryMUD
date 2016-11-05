@@ -60,7 +60,7 @@ import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
 import Mud.TopLvlDefs.Padding
-import Mud.TopLvlDefs.Telnet
+import Mud.TopLvlDefs.Telnet.Chars
 import Mud.Util.List hiding (headTail)
 import Mud.Util.Misc hiding (blowUp, patternMatchFail)
 import Mud.Util.Operators

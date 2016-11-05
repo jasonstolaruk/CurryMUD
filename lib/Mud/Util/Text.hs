@@ -15,7 +15,6 @@ module Mud.Util.Text ( aOrAn
                      , headTail
                      , intercalateDivider
                      , isCapital
-                     , isTelnetTTypeResponse
                      , mkDateTimeTxt
                      , mkOrdinal
                      , mkTimestamp
@@ -26,8 +25,6 @@ module Mud.Util.Text ( aOrAn
                      , none
                      , noneOnNull
                      , notInfixOf
-                     , parseTelnet
-                     , parseTelnetTTypeResponse
                      , prd
                      , readNum
                      , replace
@@ -39,7 +36,6 @@ module Mud.Util.Text ( aOrAn
                      , spcsToFiller
                      , strictTextToLazyBS
                      , stripControl
-                     , stripTelnet
                      , the
                      , theLetterS
                      , theNl
@@ -49,15 +45,14 @@ module Mud.Util.Text ( aOrAn
                      , yesNo ) where
 
 import Mud.TopLvlDefs.Chars
-import Mud.TopLvlDefs.Telnet
 import Mud.Util.Misc hiding (blowUp)
 import Mud.Util.Operators
 import Mud.Util.Quoting
 import qualified Mud.Util.Misc as U (blowUp)
 
-import Control.Arrow ((&&&), second)
+import Control.Arrow ((&&&))
 import Control.Monad (guard)
-import Data.Char (isUpper, ord, toLower, toUpper)
+import Data.Char (isUpper, toLower, toUpper)
 import Data.Function (on)
 import Data.Ix (inRange)
 import Data.List (intercalate, sortBy)
@@ -234,13 +229,6 @@ intercalateDivider cols = intercalate [ "", divider cols, "" ]
 -----
 
 
-isTelnetTTypeResponse :: Text -> Bool
-isTelnetTTypeResponse = (telnetTTypeResponseL `T.isInfixOf`)
-
-
------
-
-
 mkOrdinal :: Int -> Text
 mkOrdinal 11              = "11th"
 mkOrdinal 12              = "12th"
@@ -287,37 +275,6 @@ noneOnNull a = isNull a ? none :? a
 notInfixOf :: Text -> Text -> Bool
 notInfixOf needle = not . T.isInfixOf needle
 
-
------
-
-
-parseTelnet :: Text -> Maybe [Text]
-parseTelnet x = case helper x of [] -> Nothing
-                                 xs -> Just xs
-  where
-    helper :: Text -> [Text]
-    helper "" = []
-    helper t  | telnetIAC_SB `T.isInfixOf` t =
-                  let (left, T.drop 2 -> right) = T.breakOn telnetIAC_SB t
-                  in (helper left ++) . ([ "IAC", "SB" ] ++) $ case T.breakOn telnetIAC_SE right of
-                    (_,   ""              ) -> mkAsciiNoTxts right -- There is no IAC SE.
-                    (sub, T.drop 2 -> rest) -> mkAsciiNoTxts sub ++ [ "IAC", "SE" ] ++ helper rest
-              | otherwise = case T.breakOn (T.singleton telnetIAC) t of
-                (_, "") -> [] -- There is no IAC.
-                (_, t') -> let (codes, rest) = T.splitAt 3 t'
-                           in "IAC" : mkAsciiNoTxts (T.drop 1 codes) ++ helper rest
-    mkAsciiNoTxts txt = [ showText . ord $ c | c <- T.unpack txt ]
-
-
------
-
-
--- Assumes "telnetTTypeResponseL" is infix of msg.
-parseTelnetTTypeResponse :: Text -> (Text, Text)
-parseTelnetTTypeResponse msg | (l, T.drop (T.length telnetTTypeResponseL) -> r) <- T.breakOn telnetTTypeResponseL msg
-                             = second (l |&|) $ case T.breakOn telnetTTypeResponseR r of
-                                 (ttype, "") -> (ttype, id)
-                                 (ttype, r') -> (ttype, (<> T.drop (T.length telnetTTypeResponseR) r'))
 
 -----
 
@@ -386,23 +343,6 @@ strictTextToLazyBS = LT.encodeUtf8 . LT.fromStrict
 
 stripControl :: Text -> Text
 stripControl = T.filter (inRange ('\32', '\126'))
-
-
------
-
-
-stripTelnet :: Text -> Text
-stripTelnet t
-  | T.singleton telnetIAC `T.isInfixOf` t, (left, right) <- T.breakOn (T.singleton telnetIAC) t = left <> helper right
-  | otherwise = t
-  where
-    -- IAC should be followed by 2 bytes.
-    -- The exception is IAC SB, in which case a subnegotiation sequence continues until IAC SE.
-    helper (T.uncons -> Just (_, T.uncons -> Just (x, T.uncons -> Just (_, rest))))
-      | x == telnetSB = case T.breakOn (T.singleton telnetSE) rest of (_, "")              -> ""
-                                                                      (_, T.tail -> rest') -> stripTelnet rest'
-      | otherwise     = stripTelnet rest
-    helper _ = ""
 
 
 -----

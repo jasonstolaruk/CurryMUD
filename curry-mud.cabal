@@ -116,7 +116,8 @@ library
                        Mud.TopLvlDefs.FilePaths
                        Mud.TopLvlDefs.Misc
                        Mud.TopLvlDefs.Padding
-                       Mud.TopLvlDefs.Telnet
+                       Mud.TopLvlDefs.Telnet.Chars
+                       Mud.TopLvlDefs.Telnet.CodeMap
                        Mud.TopLvlDefs.Vols
                        Mud.TopLvlDefs.Weights
                        Mud.Util.List
@@ -124,6 +125,7 @@ library
                        Mud.Util.Operators
                        Mud.Util.Padding
                        Mud.Util.Quoting
+                       Mud.Util.Telnet
                        Mud.Util.Text
                        Mud.Util.Token
                        Mud.Util.Wrapping
