@@ -5,6 +5,7 @@ import MudTests.TheWorld.TheWorld
 import MudTests.Util.List
 import MudTests.Util.Misc
 import MudTests.Util.Padding
+import MudTests.Util.Telnet
 import MudTests.Util.Text
 import MudTests.Util.Wrapping
 
@@ -99,11 +100,7 @@ propTests_Mud_Util_Text :: TestTree
 propTests_Mud_Util_Text = testGroup "Mud.Util.Text"
     [ QC.testProperty "prop_aOrAn"                              prop_aOrAn
     , QC.testProperty "prop_findFullNameForAbbrev_findsNothing" prop_findFullNameForAbbrev_findsNothing
-    , QC.testProperty "prop_findFullNameForAbbrev_findsMatch"   prop_findFullNameForAbbrev_findsMatch
-    , QC.testProperty "prop_parseTelnetTTypeResponse"           prop_parseTelnetTTypeResponse
-    , QC.testProperty "prop_parseTelnetTTypeResponse_withL"     prop_parseTelnetTTypeResponse_withL
-    , QC.testProperty "prop_parseTelnetTTypeResponse_withR"     prop_parseTelnetTTypeResponse_withR
-    , QC.testProperty "prop_parseTelnetTTypeResponse_withLAndR" prop_parseTelnetTTypeResponse_withLAndR ]
+    , QC.testProperty "prop_findFullNameForAbbrev_findsMatch"   prop_findFullNameForAbbrev_findsMatch ]
 
 
 -- --------------------------------------------------
@@ -126,6 +123,7 @@ unitTests :: TestTree
 unitTests = testGroup "unit tests" [ unitTests_Mud_Data_Misc
                                    , unitTests_Mud_Data_State_Util_Misc
                                    , unitTests_Mud_Util_Misc
+                                   , unitTests_Mud_Util_Telnet
                                    , unitTests_Mud_Util_Text ]
 
 
@@ -172,25 +170,37 @@ unitTests_Mud_Util_Misc = testGroup "Mud.Util.Misc"
 -- --------------------------------------------------
 
 
+unitTests_Mud_Util_Telnet :: TestTree
+unitTests_Mud_Util_Telnet = testGroup "Mud.Util.Telnet"
+    [ testCase "test_parseTelnet_null"               test_parseTelnet_null
+    , testCase "test_parseTelnet_noTelnet"           test_parseTelnet_noTelnet
+    , testCase "test_parseTelnet_telnetText"         test_parseTelnet_telnetText
+    , testCase "test_parseTelnet_leading"            test_parseTelnet_leading
+    , testCase "test_parseTelnet_trailing"           test_parseTelnet_trailing
+    , testCase "test_parseTelnet_leadingAndTrailing" test_parseTelnet_leadingAndTrailing
+    , testCase "test_parseTelnet_intercalated"       test_parseTelnet_intercalated
+    , testCase "test_parseTelnet_escapedIAC"         test_parseTelnet_escapedIAC
+    , testCase "test_parseTelnet_malformed1"         test_parseTelnet_malformed1
+    , testCase "test_parseTelnet_malformed2"         test_parseTelnet_malformed2
+    , testCase "test_parseTelnet_malformed3"         test_parseTelnet_malformed3
+    , testCase "test_parseTelnet_malformed4"         test_parseTelnet_malformed4
+    , testCase "test_parseTelnet_malformed5"         test_parseTelnet_malformed5
+    , testCase "test_parseTelnet_malformed6"         test_parseTelnet_malformed6
+    , testCase "test_parseTelnet_malformed7"         test_parseTelnet_malformed7
+    , testCase "test_parseTelnet_malformed8"         test_parseTelnet_malformed8
+    , testCase "test_parseTelnet_malformed9"         test_parseTelnet_malformed9
+    , testCase "test_parseTelnet_malformed10"        test_parseTelnet_malformed10 ]
+
+
+-- --------------------------------------------------
+
+
 unitTests_Mud_Util_Text :: TestTree
 unitTests_Mud_Util_Text = testGroup "Mud.Util.Text"
-    [ testCase "test_countOcc_emptyNeedle"           test_countOcc_emptyNeedle
-    , testCase "test_countOcc_emptyHaystack"         test_countOcc_emptyHaystack
-    , testCase "test_countOcc_zero"                  test_countOcc_zero
-    , testCase "test_countOcc_one"                   test_countOcc_one
-    , testCase "test_countOcc_two"                   test_countOcc_two
-    , testCase "test_countOcc_three"                 test_countOcc_three
-    , testCase "test_parseTelnet"                    test_parseTelnet
-    , testCase "test_stripControl"                   test_stripControl
-    , testCase "test_stripTelnet_null"               test_stripTelnet_null
-    , testCase "test_stripTelnet_telnetCodes"        test_stripTelnet_telnetCodes
-    , testCase "test_stripTelnet_leading"            test_stripTelnet_leading
-    , testCase "test_stripTelnet_trailing"           test_stripTelnet_trailing
-    , testCase "test_stripTelnet_leadingAndTrailing" test_stripTelnet_leadingAndTrailing
-    , testCase "test_stripTelnet_intercalated"       test_stripTelnet_intercalated
-    , testCase "test_stripTelnet_malformed1"         test_stripTelnet_malformed1
-    , testCase "test_stripTelnet_malformed2"         test_stripTelnet_malformed2
-    , testCase "test_stripTelnet_malformed3"         test_stripTelnet_malformed3
-    , testCase "test_stripTelnet_malformed4"         test_stripTelnet_malformed4
-    , testCase "test_stripTelnet_malformed5"         test_stripTelnet_malformed5
-    , testCase "test_stripTelnet_malformed6"         test_stripTelnet_malformed6 ]
+    [ testCase "test_countOcc_emptyNeedle"   test_countOcc_emptyNeedle
+    , testCase "test_countOcc_emptyHaystack" test_countOcc_emptyHaystack
+    , testCase "test_countOcc_zero"          test_countOcc_zero
+    , testCase "test_countOcc_one"           test_countOcc_one
+    , testCase "test_countOcc_two"           test_countOcc_two
+    , testCase "test_countOcc_three"         test_countOcc_three
+    , testCase "test_stripControl"           test_stripControl ]

@@ -14,15 +14,19 @@ telnetCodeMap :: IM.IntMap TelnetCode
 telnetCodeMap = IM.fromList mkList
   where
     mkList = [ first ord pair | pair <- pairs ]
-    pairs  = [ (telnetECHO,  TelnetECHO )
-             , (telnetEOR,   TelnetEOR  )
-             , (telnetGA,    TelnetGA   )
-             , (telnetGMCP,  TelnetGMCP )
-             , (telnetIAC,   TelnetIAC  )
-             , (telnetIS,    TelnetIS   )
-             , (telnetSB,    TelnetSB   )
-             , (telnetSE,    TelnetSE   )
-             , (telnetSEND,  TelnetSEND )
-             , (telnetTTYPE, TelnetTTYPE)
-             , (telnetWILL,  TelnetWILL )
-             , (telnetWON'T, TelnetWON'T) ]
+    pairs  = [ (telnetAYT,         TelnetAYT         )
+             , (telnetDO,          TelnetDO          )
+             , (telnetDON'T,       TelnetDON'T       )
+             , (telnetECHO,        TelnetECHO_OR_SEND)
+             , (telnetEOR,         TelnetEOR         )
+             , (telnetGA,          TelnetGA          )
+             , (telnetGMCP,        TelnetGMCP        )
+             , (telnetIAC,         TelnetIAC         )
+             , (telnetIS,          TelnetIS          )
+             , (telnetNOP,         TelnetNOP         )
+             , (telnetSB,          TelnetSB          )
+             , (telnetSE,          TelnetSE          )
+             , (telnetSUPPRESS_GA, TelnetSUPPRESS_GA )
+             , (telnetTTYPE,       TelnetTTYPE       )
+             , (telnetWILL,        TelnetWILL        )
+             , (telnetWON'T,       TelnetWON'T       ) ]

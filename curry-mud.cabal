@@ -183,6 +183,7 @@ test-suite             test
                        MudTests.Util.List
                        MudTests.Util.Misc
                        MudTests.Util.Padding
+                       MudTests.Util.Telnet
                        MudTests.Util.Text
                        MudTests.Util.Wrapping
   build-depends:         base >=4.8 && <5.0

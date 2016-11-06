@@ -2,64 +2,76 @@
 
 module Mud.Util.Telnet where
 
+import Mud.Data.Misc
 import Mud.TopLvlDefs.Telnet.Chars
+import Mud.TopLvlDefs.Telnet.CodeMap
+import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Operators
 import Mud.Util.Text
+import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Arrow (second)
 import Data.Char (ord)
 import Data.Monoid ((<>))
 import Data.Text (Text)
+import qualified Data.IntMap.Lazy as IM (lookup)
 import qualified Data.Text as T
 
 
-isTelnetTTypeResponse :: Text -> Bool
+patternMatchFail :: (Show a) => PatternMatchFail a b
+patternMatchFail = U.patternMatchFail "Mud.Util.Telnet"
+
+
+-- ==================================================
+
+
+isTelnetTTypeResponse :: Text -> Bool -- TODO: Delete.
 isTelnetTTypeResponse = (telnetTTypeResponseL `T.isInfixOf`)
 
 
 -----
 
 
-parseTelnet :: Text -> Maybe [Text]
-parseTelnet msg = case helper msg of [] -> Nothing
-                                     xs -> Just xs
+parseTelnet :: Text -> (Text, [TelnetData])
+parseTelnet = f ("", [])
   where
-    helper :: Text -> [Text]
-    helper "" = []
-    helper t  | telnetIAC_SB `T.isInfixOf` t =
-                  let (left, T.drop 2 -> right) = T.breakOn telnetIAC_SB t
-                  in (helper left ++) . ([ "IAC", "SB" ] ++) $ case T.breakOn telnetIAC_SE right of
-                    (_,   ""              ) -> mkAsciiNoTxts right -- There is no IAC SE.
-                    (sub, T.drop 2 -> rest) -> mkAsciiNoTxts sub ++ [ "IAC", "SE" ] ++ helper rest
-              | otherwise = case T.breakOn (T.singleton telnetIAC) t of
-                (_, "") -> [] -- There is no IAC.
-                (_, t') -> let (codes, rest) = T.splitAt 3 t'
-                           in "IAC" : mkAsciiNoTxts (T.drop 1 codes) ++ helper rest
-    mkAsciiNoTxts txt = [ showText . ord $ c | c <- T.unpack txt ]
+    f pair      "" = pair
+    f (msg, td) t  | p@(_, right) <- T.breakOn (T.singleton telnetIAC) t, ()!# right = helper p
+                   | otherwise = (msg <> t, td) -- There is no IAC.
+      where
+        -- IAC should be followed by 2 bytes.
+        -- The exceptions are IAC IAC (which is an escaped 255), and IAC SB (in which case a subnegotiation sequence
+        -- continues until IAC SE).
+        helper (left, T.uncons -> Just (_ {- IAC -}, T.uncons -> Just (x, rest))) | x == telnetIAC =
+            f (msg <> left, td ++ replicate 2 (TCode TelnetIAC)) rest
+        helper (left, T.uncons -> Just (_ {- IAC -}, T.uncons -> Just (x, T.uncons -> Just (y, rest))))
+          | x == telnetSB = case T.breakOn (T.singleton telnetSE) rest of
+            -- There is no SE.
+            (malformed, ""             ) -> let telnets = [ TCode TelnetIAC, TCode TelnetSB ] ++ mkTelnetDatas others
+                                                others  = y : T.unpack malformed
+                                            in (msg <> left, td ++ telnets)
+            (codes,     T.tail -> rest') -> let telnets = [ TCode TelnetIAC, TCode TelnetSB ] ++ mkTelnetDatas others
+                                                others  = y : T.unpack codes ++ pure telnetSE
+                                            in f (msg <> left, td ++ telnets) rest'
+          | otherwise = f (msg <> left, td ++ pure (TCode TelnetIAC) ++ mkTelnetDatas [ x, y ]) rest
+        -- Malformed. There is a single IAC and nothing else, or an IAC followed by just one byte.
+        helper (left, right) | right == T.singleton telnetIAC = (msg <> left, td ++ pure (TCode TelnetIAC))
+                             | T.length right == 2 = let telnets = TCode TelnetIAC : mkTelnetDatas others
+                                                         others  = T.unpack . T.drop 1 $ right
+                                                     in (msg <> left, td ++ telnets)
+        helper pair = patternMatchFail "parseTelnet" . showText $ pair
+    mkTelnetDatas = map g
+      where
+        g c = case ord c `IM.lookup` telnetCodeMap of Nothing -> TOther c
+                                                      Just tc -> TCode tc
 
 
 -----
 
 
 -- Assumes "telnetTTypeResponseL" is infix of msg.
-parseTelnetTTypeResponse :: Text -> (Text, Text)
+parseTelnetTTypeResponse :: Text -> (Text, Text) -- TODO: Delete.
 parseTelnetTTypeResponse msg | (l, T.drop (T.length telnetTTypeResponseL) -> r) <- T.breakOn telnetTTypeResponseL msg
                              = second (l |&|) $ case T.breakOn telnetTTypeResponseR r of
                                  (ttype, "") -> (ttype, id)
                                  (ttype, r') -> (ttype, (<> T.drop (T.length telnetTTypeResponseR) r'))
-
------
-
-
-stripTelnet :: Text -> Text
-stripTelnet t
-  | T.singleton telnetIAC `T.isInfixOf` t, (left, right) <- T.breakOn (T.singleton telnetIAC) t = left <> helper right
-  | otherwise = t
-  where
-    -- IAC should be followed by 2 bytes.
-    -- The exception is IAC SB, in which case a subnegotiation sequence continues until IAC SE.
-    helper (T.uncons -> Just (_, T.uncons -> Just (x, T.uncons -> Just (_, rest))))
-      | x == telnetSB = case T.breakOn (T.singleton telnetSE) rest of (_, "")              -> ""
-                                                                      (_, T.tail -> rest') -> stripTelnet rest'
-      | otherwise     = stripTelnet rest
-    helper _ = ""

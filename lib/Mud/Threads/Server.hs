@@ -113,7 +113,7 @@ handleFromClient i mq tq isAsSelf msg | isTelnetTTypeResponse msg = go =<< tType
                       return msg'
 
     go :: Text -> MudStack ()
-    go (T.strip . stripControl . stripTelnet -> msg') = getState >>= \ms ->
+    go (parseTelnet -> (T.strip . stripControl -> msg', _ {- TODO -})) = getState >>= \ms ->
         let p                  = getPla i ms
             poss               = p^.possessing
             thruCentral        = msg' |#| interpret i p centralDispatch . headTail . T.words
