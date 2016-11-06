@@ -129,7 +129,7 @@ library
                        Mud.Util.Text
                        Mud.Util.Token
                        Mud.Util.Wrapping
-  other-modules:       Paths_currymud
+  other-modules:       Paths_curry_mud
   build-depends:         base >=4.8 && <5.0
                        , aeson
                        , ansi-terminal

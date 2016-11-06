@@ -3,7 +3,7 @@
 module Mud.TopLvlDefs.Misc where
 
 import Mud.TopLvlDefs.Chars
-import Paths_currymud
+import Paths_curry_mud
 
 import Data.Monoid ((<>))
 import Data.Text (Text)
