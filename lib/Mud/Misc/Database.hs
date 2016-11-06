@@ -31,6 +31,7 @@ module Mud.Misc.Database ( AdminChanRec(..)
                          , insertDbTblQuestion
                          , insertDbTblSec
                          , insertDbTblTele
+                         , insertDbTblTelnetChars
                          , insertDbTblTType
                          , insertDbTblTypo
                          , insertDbTblUnPw
@@ -45,6 +46,7 @@ module Mud.Misc.Database ( AdminChanRec(..)
                          , QuestionRec(..)
                          , SecRec(..)
                          , TeleRec(..)
+                         , TelnetCharsRec(..)
                          , TTypeRec(..)
                          , TypoRec(..)
                          , UnPwRec(..) ) where
@@ -65,69 +67,70 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 
 
-data AdminChanRec = AdminChanRec { dbTimestamp :: Text
-                                 , dbName      :: Text
-                                 , dbMsg       :: Text }
-data AdminMsgRec  = AdminMsgRec  { dbTimestamp :: Text
-                                 , dbFromName  :: Text
-                                 , dbToName    :: Text
-                                 , dbMsg       :: Text }
-data AlertExecRec = AlertExecRec { dbTimestamp :: Text
-                                 , dbName      :: Text
-                                 , dbCmdName   :: Text
-                                 , dbTarget    :: Text
-                                 , dbArgs      :: Text }
-data AlertMsgRec  = AlertMsgRec  { dbTimestamp :: Text
-                                 , dbName      :: Text
-                                 , dbCmdName   :: Text
-                                 , dbTrigger   :: Text
-                                 , dbMsg       :: Text }
-data BanHostRec   = BanHostRec   { dbTimestamp :: Text
-                                 , dbHost      :: Text
-                                 , dbIsBanned  :: Bool
-                                 , dbReason    :: Text }
-data BanPCRec     = BanPCRec     { dbTimestamp :: Text
-                                 , dbName      :: Text
-                                 , dbIsBanned  :: Bool
-                                 , dbReason    :: Text }
-data BonusRec     = BonusRec     { dbTimestamp :: Text
-                                 , dbFromName  :: Text
-                                 , dbToName    :: Text
-                                 , dbAmt       :: Int }
-data BugRec       = BugRec       { dbTimestamp :: Text
-                                 , dbName      :: Text
-                                 , dbLoc       :: Text
-                                 , dbDesc      :: Text }
-data ChanRec      = ChanRec      { dbTimestamp :: Text
-                                 , dbChanId    :: Int
-                                 , dbChanName  :: Text
-                                 , dbName      :: Text
-                                 , dbMsg       :: Text }
-data DiscoverRec  = DiscoverRec  { dbTimestamp :: Text
-                                 , dbHost      :: Text
-                                 , dbMsg       :: Text }
-data ProfRec      = ProfRec      { dbTimestamp :: Text
-                                 , dbHost      :: Text
-                                 , dbProfanity :: Text }
-data QuestionRec  = QuestionRec  { dbTimestamp :: Text
-                                 , dbName      :: Text
-                                 , dbMsg       :: Text }
-data SecRec       = SecRec       { dbName      :: Text
-                                 , dbQ         :: Text
-                                 , dbA         :: Text } deriving Eq
-data TeleRec      = TeleRec      { dbTimestamp :: Text
-                                 , dbFromName  :: Text
-                                 , dbToName    :: Text
-                                 , dbMsg       :: Text }
-data TTypeRec     = TTypeRec     { dbTimestamp :: Text
-                                 , dbHost      :: Text
-                                 , dbTType     :: Text }
-data TypoRec      = TypoRec      { dbTimestamp :: Text
-                                 , dbName      :: Text
-                                 , dbLoc       :: Text
-                                 , dbDesc      :: Text }
-data UnPwRec      = UnPwRec      { dbUn        :: Text
-                                 , dbPw        :: Text }
+data AdminChanRec   = AdminChanRec   { dbTimestamp   :: Text
+                                     , dbName        :: Text
+                                     , dbMsg         :: Text }
+data AdminMsgRec    = AdminMsgRec    { dbTimestamp   :: Text
+                                     , dbFromName    :: Text
+                                     , dbToName      :: Text
+                                     , dbMsg         :: Text }
+data AlertExecRec   = AlertExecRec   { dbTimestamp   :: Text
+                                     , dbName        :: Text
+                                     , dbCmdName     :: Text
+                                     , dbTarget      :: Text
+                                     , dbArgs        :: Text }
+data AlertMsgRec    = AlertMsgRec    { dbTimestamp   :: Text
+                                     , dbName        :: Text
+                                     , dbCmdName     :: Text
+                                     , dbTrigger     :: Text
+                                     , dbMsg         :: Text }
+data BanHostRec     = BanHostRec     { dbTimestamp   :: Text
+                                     , dbHost        :: Text
+                                     , dbIsBanned    :: Bool
+                                     , dbReason      :: Text }
+data BanPCRec       = BanPCRec       { dbTimestamp   :: Text
+                                     , dbName        :: Text
+                                     , dbIsBanned    :: Bool
+                                     , dbReason      :: Text }
+data BonusRec       = BonusRec       { dbTimestamp   :: Text
+                                     , dbFromName    :: Text
+                                     , dbToName      :: Text
+                                     , dbAmt         :: Int }
+data BugRec         = BugRec         { dbTimestamp   :: Text
+                                     , dbName        :: Text
+                                     , dbLoc         :: Text
+                                     , dbDesc        :: Text }
+data ChanRec        = ChanRec        { dbTimestamp   :: Text
+                                     , dbChanId      :: Int
+                                     , dbChanName    :: Text
+                                     , dbName        :: Text
+                                     , dbMsg         :: Text }
+data DiscoverRec    = DiscoverRec    { dbTimestamp   :: Text
+                                     , dbHost        :: Text
+                                     , dbMsg         :: Text }
+data ProfRec        = ProfRec        { dbTimestamp   :: Text
+                                     , dbHost        :: Text
+                                     , dbProfanity   :: Text }
+data QuestionRec    = QuestionRec    { dbTimestamp   :: Text
+                                     , dbName        :: Text
+                                     , dbMsg         :: Text }
+data SecRec         = SecRec         { dbName        :: Text
+                                     , dbQ           :: Text
+                                     , dbA           :: Text } deriving Eq
+data TeleRec        = TeleRec        { dbTimestamp   :: Text
+                                     , dbFromName    :: Text
+                                     , dbToName      :: Text
+                                     , dbMsg         :: Text }
+data TelnetCharsRec = TelnetCharsRec { dbTelnetChars :: Text }
+data TTypeRec       = TTypeRec       { dbTimestamp   :: Text
+                                     , dbHost        :: Text
+                                     , dbTType       :: Text }
+data TypoRec        = TypoRec        { dbTimestamp   :: Text
+                                     , dbName        :: Text
+                                     , dbLoc         :: Text
+                                     , dbDesc        :: Text }
+data UnPwRec        = UnPwRec        { dbUn          :: Text
+                                     , dbPw          :: Text }
 
 
 -----
@@ -187,6 +190,10 @@ instance FromRow SecRec where
 
 instance FromRow TeleRec where
   fromRow = TeleRec <$ (field :: RowParser Int) <*> field <*> field <*> field <*> field
+
+
+instance FromRow TelnetCharsRec where
+  fromRow = TelnetCharsRec <$ (field :: RowParser Int) <*> field
 
 
 instance FromRow TTypeRec where
@@ -260,6 +267,10 @@ instance ToRow TeleRec where
   toRow (TeleRec a b c d) = toRow (a, b, c, d)
 
 
+instance ToRow TelnetCharsRec where
+  toRow (TelnetCharsRec a) = toRow . Only $ a
+
+
 instance ToRow TTypeRec where
   toRow (TTypeRec a b c) = toRow (a, b, c)
 
@@ -286,31 +297,32 @@ createDbTbls = onDbFile $ \conn -> do
     when (x == 0) $ execute conn (Query "insert into unpw (id, un, pw) values (2, 'Curry', ?)") . Only =<< hashPW "curry"
     execute conn (Query "insert or ignore into unpw (id, un, pw) values (1, 'Root',  ?)") . Only =<< hashPW "root"
   where
-    qs = [ "create table if not exists admin_chan (id integer primary key, timestamp text, name text, msg text)"
-         , "create table if not exists admin_msg  (id integer primary key, timestamp text, fromName text, toName text, \
+    qs = [ "create table if not exists admin_chan   (id integer primary key, timestamp text, name text, msg text)"
+         , "create table if not exists admin_msg    (id integer primary key, timestamp text, from_name text, to_name text, \
            \msg text)"
-         , "create table if not exists alert_exec (id integer primary key, timestamp text, name text, cmd_name text, \
+         , "create table if not exists alert_exec   (id integer primary key, timestamp text, name text, cmd_name text, \
            \target text, args text)"
-         , "create table if not exists alert_msg  (id integer primary key, timestamp text, name text, cmd_name text, \
+         , "create table if not exists alert_msg    (id integer primary key, timestamp text, name text, cmd_name text, \
            \trigger text, msg text)"
-         , "create table if not exists ban_host   (id integer primary key, timestamp text, host text, is_banned \
+         , "create table if not exists ban_host     (id integer primary key, timestamp text, host text, is_banned \
            \integer, reason text)"
-         , "create table if not exists ban_pc     (id integer primary key, timestamp text, name text, is_banned \
+         , "create table if not exists ban_pc       (id integer primary key, timestamp text, name text, is_banned \
            \integer, reason text)"
-         , "create table if not exists bonus      (id integer primary key, timestamp text, fromName text, ToName text, \
+         , "create table if not exists bonus        (id integer primary key, timestamp text, from_name text, to_name text, \
            \amt integer)"
-         , "create table if not exists bug        (id integer primary key, timestamp text, name text, loc text, desc text)"
-         , "create table if not exists chan       (id integer primary key, timestamp text, chan_id integer, chan_name \
+         , "create table if not exists bug          (id integer primary key, timestamp text, name text, loc text, desc text)"
+         , "create table if not exists chan         (id integer primary key, timestamp text, chan_id integer, chan_name \
            \text, name text, msg text)"
-         , "create table if not exists discover   (id integer primary key, timestamp text, host text, msg text)"
-         , "create table if not exists profanity  (id integer primary key, timestamp text, host text, prof text)"
-         , "create table if not exists question   (id integer primary key, timestamp text, name text, msg text)"
-         , "create table if not exists sec        (id integer primary key, name text, question text, answer text)"
-         , "create table if not exists tele       (id integer primary key, timestamp text, fromName text, toName text, \
+         , "create table if not exists discover     (id integer primary key, timestamp text, host text, msg text)"
+         , "create table if not exists profanity    (id integer primary key, timestamp text, host text, prof text)"
+         , "create table if not exists question     (id integer primary key, timestamp text, name text, msg text)"
+         , "create table if not exists sec          (id integer primary key, name text, question text, answer text)"
+         , "create table if not exists tele         (id integer primary key, timestamp text, from_name text, to_name text, \
            \msg text)"
-         , "create table if not exists ttype      (id integer primary key, timestamp text, host text, ttype text)"
-         , "create table if not exists typo       (id integer primary key, timestamp text, name text, loc text, desc text)"
-         , "create table if not exists unpw       (id integer primary key, un text, pw text)" ]
+         , "create table if not exists telnet_chars (id integer primary key, telnet_chars text)"
+         , "create table if not exists ttype        (id integer primary key, timestamp text, host text, ttype text)"
+         , "create table if not exists typo         (id integer primary key, timestamp text, name text, loc text, desc text)"
+         , "create table if not exists unpw         (id integer primary key, un text, pw text)" ]
 
 
 hashPW :: String -> IO Text
@@ -387,6 +399,10 @@ insertDbTblSec = insertDbTblHelper "insert into sec (name, question, answer) val
 
 insertDbTblTele :: TeleRec -> IO ()
 insertDbTblTele = insertDbTblHelper "insert into tele (timestamp, fromName, toName, msg) values (?, ?, ?, ?)"
+
+
+insertDbTblTelnetChars :: TelnetCharsRec -> IO ()
+insertDbTblTelnetChars = insertDbTblHelper "insert into telnet_chars (telnet_chars) values (?)"
 
 
 insertDbTblTType :: TTypeRec -> IO ()

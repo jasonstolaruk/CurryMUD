@@ -76,6 +76,7 @@ import Control.Lens (Getting, Setting, both)
 import Control.Lens.Operators ((%~), (&), (^.))
 import Data.Bits (clearBit, setBit, testBit)
 import Data.Bool (bool)
+import Data.Char (ord)
 import Data.Function (on)
 import Data.Monoid ((<>))
 import Data.String (fromString)
@@ -510,23 +511,32 @@ instance Pretty Slot where
   pp BothHandsS  = "both hands"
 
 
+instance Pretty TelnetData where
+  pp (TCode  tc) = pp tc
+  pp (TOther c ) | ((&&) <$> (<= 126) <*> (>= 32)) x = showText c <> " " <> x'
+                 | otherwise                         = x'
+    where
+      x  = ord c
+      x' = showText x
+
+
 instance Pretty TelnetCode where
-  pp TelnetAYT          = "AYT"
-  pp TelnetDO           = "DO"
-  pp TelnetDON'T        = "DON'T"
-  pp TelnetECHO_OR_SEND = "ECHO or SEND"
-  pp TelnetEOR          = "EOR"
-  pp TelnetGA           = "GA"
-  pp TelnetGMCP         = "GMCP"
-  pp TelnetIAC          = "IAC"
-  pp TelnetIS           = "IS"
-  pp TelnetNOP          = "NOP"
-  pp TelnetSB           = "SB"
-  pp TelnetSE           = "SE"
-  pp TelnetSUPPRESS_GA  = "SUPPRESS GA"
-  pp TelnetTTYPE        = "TTYPE"
-  pp TelnetWILL         = "WILL"
-  pp TelnetWON'T        = "WON'T"
+  pp TelnetAYT         = "AYT"
+  pp TelnetDO          = "DO"
+  pp TelnetDON'T       = "DON'T"
+  pp TelnetECHO        = "ECHO"
+  pp TelnetEOR         = "EOR"
+  pp TelnetGA          = "GA"
+  pp TelnetGMCP        = "GMCP"
+  pp TelnetIAC         = "IAC"
+  pp TelnetIS          = "IS"
+  pp TelnetNOP         = "NOP"
+  pp TelnetSB          = "SB"
+  pp TelnetSE          = "SE"
+  pp TelnetSUPPRESS_GA = "SUPPRESS GA"
+  pp TelnetTTYPE       = "TTYPE"
+  pp TelnetWILL        = "WILL"
+  pp TelnetWON'T       = "WON'T"
 
 
 instance Pretty Type where
@@ -873,22 +883,22 @@ data SingleTarget = SingleTarget { strippedTarget   :: Text
 -----
 
 
-data TelnetCode = TelnetAYT          -- 246
-                | TelnetDO           -- 253
-                | TelnetDON'T        -- 254
-                | TelnetECHO_OR_SEND -- 1
-                | TelnetEOR          -- 239
-                | TelnetGA           -- 249
-                | TelnetGMCP         -- 201
-                | TelnetIAC          -- 255 Interpret as command
-                | TelnetIS           -- 0
-                | TelnetNOP          -- 241
-                | TelnetSB           -- 250 Begin subnegotiation
-                | TelnetSE           -- 240 End subnegotiation
-                | TelnetSUPPRESS_GA  -- 3
-                | TelnetTTYPE        -- 24
-                | TelnetWILL         -- 251
-                | TelnetWON'T        {- 252 -} deriving (Eq, Show)
+data TelnetCode = TelnetAYT         -- 246
+                | TelnetDO          -- 253
+                | TelnetDON'T       -- 254
+                | TelnetECHO        -- 1
+                | TelnetEOR         -- 239
+                | TelnetGA          -- 249
+                | TelnetGMCP        -- 201
+                | TelnetIAC         -- 255 Interpret as command
+                | TelnetIS          -- 0
+                | TelnetNOP         -- 241
+                | TelnetSB          -- 250 Begin subnegotiation
+                | TelnetSE          -- 240 End subnegotiation
+                | TelnetSUPPRESS_GA -- 3
+                | TelnetTTYPE       -- 24
+                | TelnetWILL        -- 251
+                | TelnetWON'T       {- 252 -} deriving (Eq, Show)
 
 
 data TelnetData = TCode  TelnetCode

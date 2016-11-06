@@ -4,7 +4,6 @@ module Mud.Threads.Server (threadServer) where
 
 import Mud.Cmds.Msgs.Misc
 import Mud.Cmds.Pla
-import Mud.Cmds.Util.Misc
 import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MsgQueue
@@ -14,7 +13,6 @@ import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Interp.CentralDispatch
 import Mud.Misc.ANSI
-import Mud.Misc.Database
 import Mud.Misc.Persist
 import Mud.Threads.Act
 import Mud.Threads.Biodegrader
@@ -28,7 +26,6 @@ import Mud.TopLvlDefs.FilePaths
 import Mud.Util.List
 import Mud.Util.Operators
 import Mud.Util.Quoting
-import Mud.Util.Telnet
 import Mud.Util.Text hiding (headTail)
 import qualified Mud.Misc.Logging as L (logNotice)
 
@@ -102,18 +99,9 @@ handleBlankLine h = liftIO $ T.hPutStr h theNl >> hFlush h
 
 
 handleFromClient :: Id -> MsgQueue -> TimerQueue -> Bool -> Text -> MudStack ()
-handleFromClient i mq tq isAsSelf msg | isTelnetTTypeResponse msg = go =<< tTypeHelper
-                                      | otherwise                 = go msg
+handleFromClient i mq tq isAsSelf = go
   where
-    tTypeHelper :: MudStack Text
-    tTypeHelper = let (ttype, msg') = parseTelnetTTypeResponse msg
-                  in (,) <$> getState <*> liftIO mkTimestamp >>= \(ms, ts) -> do
-                      let h = T.pack . getCurrHostName i $ ms
-                      withDbExHandler_ "handleFromClient" . insertDbTblTType . TTypeRec ts h $ ttype
-                      return msg'
-
-    go :: Text -> MudStack ()
-    go (parseTelnet -> (T.strip . stripControl -> msg', _ {- TODO -})) = getState >>= \ms ->
+    go (T.strip . stripControl -> msg') = getState >>= \ms ->
         let p                  = getPla i ms
             poss               = p^.possessing
             thruCentral        = msg' |#| interpret i p centralDispatch . headTail . T.words

@@ -10,7 +10,6 @@ import Mud.Util.Operators
 import Mud.Util.Text
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
-import Control.Arrow (second)
 import Data.Char (ord)
 import Data.Monoid ((<>))
 import Data.Text (Text)
@@ -23,13 +22,6 @@ patternMatchFail = U.patternMatchFail "Mud.Util.Telnet"
 
 
 -- ==================================================
-
-
-isTelnetTTypeResponse :: Text -> Bool -- TODO: Delete.
-isTelnetTTypeResponse = (telnetTTypeResponseL `T.isInfixOf`)
-
-
------
 
 
 parseTelnet :: Text -> (Text, [TelnetData])
@@ -64,14 +56,3 @@ parseTelnet = f ("", [])
       where
         g c = case ord c `IM.lookup` telnetCodeMap of Nothing -> TOther c
                                                       Just tc -> TCode tc
-
-
------
-
-
--- Assumes "telnetTTypeResponseL" is infix of msg.
-parseTelnetTTypeResponse :: Text -> (Text, Text) -- TODO: Delete.
-parseTelnetTTypeResponse msg | (l, T.drop (T.length telnetTTypeResponseL) -> r) <- T.breakOn telnetTTypeResponseL msg
-                             = second (l |&|) $ case T.breakOn telnetTTypeResponseR r of
-                                 (ttype, "") -> (ttype, id)
-                                 (ttype, r') -> (ttype, (<> T.drop (T.length telnetTTypeResponseR) r'))
