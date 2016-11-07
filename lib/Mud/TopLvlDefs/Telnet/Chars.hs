@@ -32,12 +32,15 @@ telnetWILL        = '\xFB' -- 251
 telnetWON'T       = '\xFC' -- 252
 
 
-telnetEndOfRecord, telnetGoAhead, telnetHideInput, telnetIAC_SB, telnetIAC_SE, telnetShowInput, telnetTTypeRequest, telnetWillTType :: Text
+telnetEndOfRecord, telnetGoAhead, telnetIAC_SB, telnetIAC_SE, telnetShowInput, telnetHideInput, telnetWillTType, telnetTTypeRequest, telnetWillGMCP, telnetWon'tGMCP, telnetDon'tGMCP :: Text
 telnetEndOfRecord    = T.pack [ telnetIAC, telnetEOR                ]
 telnetGoAhead        = T.pack [ telnetIAC, telnetGA                 ]
-telnetHideInput      = T.pack [ telnetIAC, telnetWILL,  telnetECHO  ]
 telnetIAC_SB         = T.pack [ telnetIAC, telnetSB                 ]
 telnetIAC_SE         = T.pack [ telnetIAC, telnetSE                 ]
 telnetShowInput      = T.pack [ telnetIAC, telnetWON'T, telnetECHO  ]
-telnetTTypeRequest   = T.pack [ telnetIAC, telnetSB,    telnetTTYPE, telnetSEND, telnetIAC, telnetSE ]
+telnetHideInput      = T.pack [ telnetIAC, telnetWILL,  telnetECHO  ]
 telnetWillTType      = T.pack [ telnetIAC, telnetWILL,  telnetTTYPE                                  ]
+telnetTTypeRequest   = T.pack [ telnetIAC, telnetSB,    telnetTTYPE, telnetSEND, telnetIAC, telnetSE ]
+telnetWillGMCP       = T.pack [ telnetIAC, telnetWILL,  telnetGMCP                                   ]
+telnetWon'tGMCP      = T.pack [ telnetIAC, telnetWON'T, telnetGMCP                                   ]
+telnetDon'tGMCP      = T.pack [ telnetIAC, telnetWON'T, telnetGMCP                                   ]

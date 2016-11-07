@@ -81,8 +81,8 @@ threadTalk h host = helper `finally` cleanUp
             b <- runAsync . threadServer  h i   mq $ tq
             liftIO $ wait b >> cancel a
     ttypeHelper mq = do
-      send mq telnetWillTType    >> liftIO (hFlush h)
-      send mq telnetTTypeRequest >> liftIO (hFlush h)
+      mapM_ (send mq) [ telnetWillTType, telnetTTypeRequest, telnetWillGMCP ]
+      liftIO . hFlush $ h
     configBuffer = hSetBuffering h LineBuffering >> hSetNewlineMode h nlMode >> hSetEncoding h latin1
     nlMode       = NewlineMode { inputNL = CRLF, outputNL = CRLF }
     cleanUp      = do

@@ -12,6 +12,7 @@ import Mud.Data.State.Util.Output
 import Mud.Misc.Database
 import Mud.Threads.Misc
 import Mud.TopLvlDefs.Chars
+import Mud.TopLvlDefs.Telnet.Chars
 import Mud.Util.List
 import Mud.Util.Misc
 import Mud.Util.Telnet
@@ -19,11 +20,13 @@ import Mud.Util.Text
 import qualified Mud.Misc.Logging as L (logPla)
 
 import Control.Exception.Lifted (catch)
+import Control.Monad (when)
 import Control.Monad.IO.Class (liftIO)
+import Data.List (isInfixOf)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (hGetLine)
-import System.IO (Handle, hIsEOF)
+import System.IO (Handle, hFlush, hIsEOF)
 
 
 logPla :: Text -> Id -> Text -> MudStack ()
@@ -41,7 +44,7 @@ threadReceive h i mq = sequence_ [ setThreadType . Receive $ i, loop `catch` pla
                go
     go = do
         (parseTelnet -> (msg, telnetDatas)) <- liftIO . T.hGetLine $ h
-        interpTelnet i telnetDatas
+        interpTelnet h i mq telnetDatas
         writeMsg mq . FromClient . remDelimiters $ msg
         loop
       where
@@ -51,21 +54,23 @@ threadReceive h i mq = sequence_ [ setThreadType . Receive $ i, loop `catch` pla
         delimiters    = T.pack [ stdDesigDelimiter, nonStdDesigDelimiter, desigDelimiter ]
 
 
--- TODO: Can also get client info via GMCP...
-interpTelnet :: Id -> [TelnetData] -> MudStack ()
-interpTelnet _ []  = unit
-interpTelnet i tds = do
-    ts <- liftIO mkTimestamp
-    h  <- T.pack . getCurrHostName i <$> getState
-    withDbExHandler_ "interpTelnet" . insertDbTblTelnetChars . TelnetCharsRec ts h . commas . map pp $ tds
-    case findDelimitedSubList (left, right) tds of
-      Nothing -> unit
-      Just [] -> unit
-      Just xs -> case T.concat . map fromTelnetData $ xs of
-        ""  -> unit
-        txt -> withDbExHandler_ "interpTelnet" . insertDbTblTType . TTypeRec ts h $ txt
+interpTelnet :: Handle -> Id -> MsgQueue -> [TelnetData] -> MudStack ()
+interpTelnet _ _ _  []  = unit
+interpTelnet h i mq tds = do
+    (ts, host) <- (,) <$> liftIO mkTimestamp <*> (T.pack . getCurrHostName i) `fmap` getState
+    withDbExHandler_ "interpTelnet" . insertDbTblTelnetChars . TelnetCharsRec ts host . commas . map pp $ tds
+    let logTType pair = case findDelimitedSubList pair tds of
+          Nothing -> unit
+          Just [] -> unit
+          Just xs -> case T.concat . map fromTelnetData $ xs of
+            ""  -> unit
+            txt -> withDbExHandler_ "interpTelnet" . insertDbTblTType . TTypeRec ts host . T.strip $ txt
+    logTType (ttypeLeft, right)
+    logTType (gmcpLeft,  right)
+    when (gmcpLeft `isInfixOf` tds) $ send mq telnetWon'tGMCP >> liftIO (hFlush h)
   where
-    left                      = map TCode [ TelnetIAC, TelnetSB, TelnetTTYPE, TelnetIS ]
-    right                     = map TCode [ TelnetIAC, TelnetSE                        ]
     fromTelnetData (TCode  _) = ""
     fromTelnetData (TOther c) = T.singleton c
+    ttypeLeft = map TCode [ TelnetIAC, TelnetSB, TelnetTTYPE, TelnetIS ]
+    gmcpLeft  = map TCode [ TelnetIAC, TelnetSB, TelnetGMCP            ] ++ map TOther "Core.Hello"
+    right     = map TCode [ TelnetIAC, TelnetSE                        ]
