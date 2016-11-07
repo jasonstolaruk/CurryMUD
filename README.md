@@ -57,7 +57,7 @@ I am still in the initial stage of developing basic commands. There is very litt
 
 ## About the code
 
-The code is available here on GitHub under an augmented form of the 3-clause BSD license (refer to the [LICENSE file](https://github.com/jasonstolaruk/CurryMUD/blob/master/LICENSE)). Please note that **I am not accepting PRs**.
+The code is available here on GitHub under [this license](https://github.com/jasonstolaruk/CurryMUD/blob/master/LICENSE) (a 3-clause BSD license with additional unique clauses regarding the creation of derivative MUDs.) Please note that **I am not accepting PRs**.
 
 * About 40,000 lines of code/text.
 * About 100 modules, excluding tests.
