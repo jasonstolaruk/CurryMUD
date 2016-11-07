@@ -122,6 +122,7 @@ debugCmds :: [Cmd]
 debugCmds =
     [ mkDebugCmd "?"           debugDispCmdList ("\&" <> cmdDescDispCmdList)
     , mkDebugCmd "ap"          debugAp          "Show \"ActionParams\", including any arguments you provide."
+    , mkDebugCmd "ayt"         debugAYT         "Send IAC AYT."
     , mkDebugCmd "boot"        debugBoot        "Boot all players (including yourself)."
     , mkDebugCmd "broadcast"   debugBcast       "Broadcast a multi-line message to yourself."
     , mkDebugCmd "buffer"      debugBuffCheck   "Confirm the default buffering mode for file handles."
@@ -136,6 +137,9 @@ debugCmds =
     , mkDebugCmd "env"         debugEnv         "Display or search system environment variables."
     , mkDebugCmd "exp"         debugExp         "Award yourself 5,000 exp."
     , mkDebugCmd "fun"         debugFun         "Dump the keys of the function tables."
+    , mkDebugCmd "gmcpdo"      debugGmcpDo      "Send IAC DO GMCP."
+    , mkDebugCmd "gmcpwill"    debugGmcpWill    "Send IAC WILL GMCP."
+    , mkDebugCmd "gmcpvitals"  debugGmcpVitals  "Send GMCP Vitals."
     , mkDebugCmd "handle"      debugHandle      "Display information about the handle for your network connection."
     , mkDebugCmd "id"          debugId          "Search the \"MudState\" tables for a given ID."
     , mkDebugCmd "kewpie"      debugKewpie      "Create a kewpie doll."
@@ -144,6 +148,7 @@ debugCmds =
                                                 \liquid ID)."
     , mkDebugCmd "log"         debugLog         "Put the logging service under heavy load."
     , mkDebugCmd "multiline"   debugMultiLine   "Test multi-line input."
+    , mkDebugCmd "nop"         debugNOP         "Send IAC NOP."
     , mkDebugCmd "npcserver"   debugNpcServer   "Stop all NPC server threads."
     , mkDebugCmd "number"      debugNumber      "Display the decimal equivalent of a given number in a given base."
     , mkDebugCmd "out"         debugOut         "Dump the inventory of the logged out room."
@@ -187,6 +192,17 @@ mkDebugCmd (prefixDebugCmd -> cn) f cd = Cmd { cmdName           = cn
 debugAp :: ActionFun
 debugAp p@(WithArgs i mq cols _) = sequence_ [ wrapSend mq cols . showText $ p, logPlaExec (prefixDebugCmd "ap") i ]
 debugAp p                        = patternMatchFail "debugAp" . showText $ p
+
+
+-----
+
+
+debugAYT :: ActionFun
+debugAYT (NoArgs' i mq) = do
+    send mq . T.pack $ [ telnetIAC, telnetAYT ]
+    ok mq
+    logPlaExec (prefixDebugCmd "ayt") i
+debugAYT p = withoutArgs debugAYT p
 
 
 -----
@@ -403,6 +419,41 @@ debugFun p = withoutArgs debugFun p
 -----
 
 
+debugGmcpDo :: ActionFun
+debugGmcpDo (NoArgs' i mq) = do
+    send mq . T.pack $ [ telnetIAC, telnetDO, telnetGMCP ]
+    ok mq
+    logPlaExec (prefixDebugCmd "gmcpdo") i
+debugGmcpDo p = withoutArgs debugGmcpDo p
+
+
+-----
+
+
+debugGmcpWill :: ActionFun
+debugGmcpWill (NoArgs' i mq) = do
+    send mq . T.pack $ [ telnetIAC, telnetWILL, telnetGMCP ]
+    ok mq
+    logPlaExec (prefixDebugCmd "gmcpwill") i
+debugGmcpWill p = withoutArgs debugGmcpWill p
+
+
+-----
+
+
+debugGmcpVitals :: ActionFun
+debugGmcpVitals (NoArgs' i mq) = do
+    send mq . T.pack . concat $ [ [ telnetIAC, telnetSB ]
+                                , "Char.Vitals { \"hp\": \"10\", \"mp\": \"20\" }"
+                                , [ telnetIAC, telnetSE ] ]
+    ok mq
+    logPlaExec (prefixDebugCmd "gmcpvitals") i
+debugGmcpVitals p = withoutArgs debugGmcpVitals p
+
+
+-----
+
+
 debugHandle :: ActionFun
 debugHandle (NoArgs' i mq) = writeMsg mq ShowHandle >> logPlaExec (prefixDebugCmd "handle") i
 debugHandle p              = withoutArgs debugHandle p
@@ -613,6 +664,17 @@ debugMultiLine (NoArgs i mq cols) = do
         sendDfltPrompt mq i
         resetInterp i
 debugMultiLine p = withoutArgs debugMultiLine p
+
+
+-----
+
+
+debugNOP :: ActionFun
+debugNOP (NoArgs' i mq) = do
+    send mq . T.pack $ [ telnetIAC, telnetNOP ]
+    ok mq
+    logPlaExec (prefixDebugCmd "nop") i
+debugNOP p = withoutArgs debugNOP p
 
 
 -----
