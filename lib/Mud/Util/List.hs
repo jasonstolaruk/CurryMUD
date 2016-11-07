@@ -6,6 +6,7 @@ module Mud.Util.List ( allValues
                      , countOccs
                      , dropElemAt
                      , dropEmpties
+                     , findDelimitedSubList
                      , headLast
                      , headTail
                      , listToTuple
@@ -22,7 +23,8 @@ import Control.Lens (Lens', LensLike', each, partsOf, view, views)
 import Control.Lens.Each (Each)
 import Control.Lens.Operators ((&), (.~))
 import Data.Functor.Const (Const)
-import Data.List (foldl', group, sort)
+import Data.List (foldl', group, isPrefixOf, sort)
+import Data.List.Utils (breakList)
 import qualified Data.Set as S (fromList, toList)
 
 
@@ -49,6 +51,14 @@ dropElemAt i = uncurry (++) . second tail . splitAt i
 
 dropEmpties :: (Eq a, Monoid a) => [a] -> [a]
 dropEmpties = filter (()!#)
+
+
+findDelimitedSubList :: (Eq a) => ([a], [a]) -> [a] -> Maybe [a]
+findDelimitedSubList _             [] = Nothing
+findDelimitedSubList (left, right) xs = case breakList (left `isPrefixOf`) xs of
+    (_, [] ) -> Nothing
+    (_, xs') -> case breakList (right `isPrefixOf`) . drop (length left) $ xs' of (_,    []) -> Nothing
+                                                                                  (xs'', _ ) -> Just xs''
 
 
 headLast :: [a] -> (,) a a

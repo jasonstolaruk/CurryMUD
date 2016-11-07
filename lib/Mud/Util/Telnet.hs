@@ -31,22 +31,23 @@ parseTelnet = f ("", [])
     f (msg, td) t  | p@(_, right) <- T.breakOn (T.singleton telnetIAC) t, ()!# right = helper p
                    | otherwise = (msg <> t, td) -- There is no IAC.
       where
-        -- IAC should be followed by 2 bytes.
-        -- The exceptions are IAC IAC (which is an escaped 255), and IAC SB (in which case a subnegotiation sequence
-        -- continues until IAC SE).
-        helper (left, T.uncons -> Just (_ {- IAC -}, T.uncons -> Just (x, rest))) | x == telnetIAC =
-            f (msg <> left, td ++ replicate 2 (TCode TelnetIAC)) rest
+        helper (left, T.uncons -> Just (_ {- IAC -}, T.uncons -> Just (x, rest)))
+          | x == telnetIAC = -- IAC IAC: an escaped 255.
+              f (msg <> left, td ++ replicate 2 (TCode TelnetIAC)) rest
         helper (left, T.uncons -> Just (_ {- IAC -}, T.uncons -> Just (x, T.uncons -> Just (y, rest))))
-          | x == telnetSB = case T.breakOn (T.singleton telnetSE) rest of
-            -- There is no SE.
-            (malformed, ""             ) -> let telnets = [ TCode TelnetIAC, TCode TelnetSB ] ++ mkTelnetDatas others
-                                                others  = y : T.unpack malformed
-                                            in (msg <> left, td ++ telnets)
-            (codes,     T.tail -> rest') -> let telnets = [ TCode TelnetIAC, TCode TelnetSB ] ++ mkTelnetDatas others
-                                                others  = y : T.unpack codes ++ pure telnetSE
-                                            in f (msg <> left, td ++ telnets) rest'
-          | otherwise = f (msg <> left, td ++ pure (TCode TelnetIAC) ++ mkTelnetDatas [ x, y ]) rest
-        -- Malformed. There is a single IAC and nothing else, or an IAC followed by just one byte.
+          | x == telnetSB = -- IAC SB: a subnegotiation sequence should continue until IAC SE.
+              case T.breakOn (T.singleton telnetSE) rest of
+                (malformed, "") -> -- There is no SE.
+                  let telnets = [ TCode TelnetIAC, TCode TelnetSB ] ++ mkTelnetDatas others
+                      others  = y : T.unpack malformed
+                  in (msg <> left, td ++ telnets)
+                (codes, T.tail -> rest') ->
+                  let telnets = [ TCode TelnetIAC, TCode TelnetSB ] ++ mkTelnetDatas others
+                      others  = y : T.unpack codes ++ pure telnetSE
+                  in f (msg <> left, td ++ telnets) rest'
+          | otherwise = -- Assume that both of the 2 bytes following IAC are part of the telnet command.
+              f (msg <> left, td ++ pure (TCode TelnetIAC) ++ mkTelnetDatas [ x, y ]) rest
+        -- There is a single IAC and nothing else, or an IAC followed by just one byte:
         helper (left, right) | right == T.singleton telnetIAC = (msg <> left, td ++ pure (TCode TelnetIAC))
                              | T.length right == 2 = let telnets = TCode TelnetIAC : mkTelnetDatas others
                                                          others  = T.unpack . T.drop 1 $ right

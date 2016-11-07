@@ -121,7 +121,8 @@ data TeleRec        = TeleRec        { dbTimestamp   :: Text
                                      , dbFromName    :: Text
                                      , dbToName      :: Text
                                      , dbMsg         :: Text }
-data TelnetCharsRec = TelnetCharsRec { dbTelnetChars :: Text }
+data TelnetCharsRec = TelnetCharsRec { dbHost        :: Text
+                                     , dbTelnetChars :: Text }
 data TTypeRec       = TTypeRec       { dbTimestamp   :: Text
                                      , dbHost        :: Text
                                      , dbTType       :: Text }
@@ -193,7 +194,7 @@ instance FromRow TeleRec where
 
 
 instance FromRow TelnetCharsRec where
-  fromRow = TelnetCharsRec <$ (field :: RowParser Int) <*> field
+  fromRow = TelnetCharsRec <$ (field :: RowParser Int) <*> field <*> field
 
 
 instance FromRow TTypeRec where
@@ -268,7 +269,7 @@ instance ToRow TeleRec where
 
 
 instance ToRow TelnetCharsRec where
-  toRow (TelnetCharsRec a) = toRow . Only $ a
+  toRow (TelnetCharsRec a b) = toRow (a, b)
 
 
 instance ToRow TTypeRec where
@@ -319,7 +320,7 @@ createDbTbls = onDbFile $ \conn -> do
          , "create table if not exists sec          (id integer primary key, name text, question text, answer text)"
          , "create table if not exists tele         (id integer primary key, timestamp text, from_name text, to_name text, \
            \msg text)"
-         , "create table if not exists telnet_chars (id integer primary key, telnet_chars text)"
+         , "create table if not exists telnet_chars (id integer primary key, host text, telnet_chars text)"
          , "create table if not exists ttype        (id integer primary key, timestamp text, host text, ttype text)"
          , "create table if not exists typo         (id integer primary key, timestamp text, name text, loc text, desc text)"
          , "create table if not exists unpw         (id integer primary key, un text, pw text)" ]
@@ -402,7 +403,7 @@ insertDbTblTele = insertDbTblHelper "insert into tele (timestamp, fromName, toNa
 
 
 insertDbTblTelnetChars :: TelnetCharsRec -> IO ()
-insertDbTblTelnetChars = insertDbTblHelper "insert into telnet_chars (telnet_chars) values (?)"
+insertDbTblTelnetChars = insertDbTblHelper "insert into telnet_chars (host, telnet_chars) values (?, ?)"
 
 
 insertDbTblTType :: TTypeRec -> IO ()

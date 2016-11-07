@@ -6,10 +6,13 @@ import Mud.Cmds.Util.Misc
 import Mud.Data.Misc
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
+import Mud.Data.State.Util.Get
+import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Misc.Database
 import Mud.Threads.Misc
 import Mud.TopLvlDefs.Chars
+import Mud.Util.List
 import Mud.Util.Misc
 import Mud.Util.Telnet
 import Mud.Util.Text
@@ -38,7 +41,7 @@ threadReceive h i mq = sequence_ [ setThreadType . Receive $ i, loop `catch` pla
                go
     go = do
         (parseTelnet -> (msg, telnetDatas)) <- liftIO . T.hGetLine $ h
-        interpTelnet telnetDatas
+        interpTelnet i telnetDatas
         writeMsg mq . FromClient . remDelimiters $ msg
         loop
       where
@@ -48,24 +51,20 @@ threadReceive h i mq = sequence_ [ setThreadType . Receive $ i, loop `catch` pla
         delimiters    = T.pack [ stdDesigDelimiter, nonStdDesigDelimiter, desigDelimiter ]
 
 
-interpTelnet :: [TelnetData] -> MudStack ()
-interpTelnet []  = unit
-interpTelnet tds = logThem
--- telnetTTypeResponseL = T.pack [ telnetIAC, telnetSB, telnetTTYPE, telnetIS ] -- TODO: Delete.
--- telnetTTypeResponseR = T.pack [ telnetIAC, telnetSE                        ] -- TODO: Delete.
-
--- Assumes "telnetTTypeResponseL" is infix of msg.
--- parseTelnetTTypeResponse :: Text -> (Text, Text) -- TODO: Delete.
--- parseTelnetTTypeResponse msg | (l, T.drop (T.length telnetTTypeResponseL) -> r) <- T.breakOn telnetTTypeResponseL msg
---                              = second (l |&|) $ case T.breakOn telnetTTypeResponseR r of
---                                  (ttype, "") -> (ttype, id)
---                                  (ttype, r') -> (ttype, (<> T.drop (T.length telnetTTypeResponseR) r'))
-
+interpTelnet :: Id -> [TelnetData] -> MudStack ()
+interpTelnet _ []  = unit
+interpTelnet i tds = getState >>= \ms -> do
+    let h = T.pack . getCurrHostName i $ ms
+    withDbExHandler_ "interpTelnet" . insertDbTblTelnetChars . TelnetCharsRec h . commas . map pp $ tds
+    case findDelimitedSubList (left, right) tds of
+      Nothing -> unit
+      Just [] -> unit
+      Just xs -> case T.concat . map fromTelnetData $ xs of
+        ""  -> unit
+        txt -> liftIO mkTimestamp >>= \ts ->
+            withDbExHandler_ "interpTelnet" . insertDbTblTType . TTypeRec ts h $ txt
   where
-    logThem = withDbExHandler_ "interpTelnet" . insertDbTblTelnetChars . TelnetCharsRec . commas . map pp $ tds
-    -- tTypeHelper :: MudStack Text
-    -- tTypeHelper = let (ttype, msg') = parseTelnetTTypeResponse msg
-    --               in (,) <$> getState <*> liftIO mkTimestamp >>= \(ms, ts) -> do
-    --                   let h = T.pack . getCurrHostName i $ ms
-    --                   withDbExHandler_ "handleFromClient" . insertDbTblTType . TTypeRec ts h $ ttype
-    --                   return msg'
+    left                      = map TCode [ TelnetIAC, TelnetSB, TelnetTTYPE, TelnetIS ]
+    right                     = map TCode [ TelnetIAC, TelnetSE                        ]
+    fromTelnetData (TCode  _) = ""
+    fromTelnetData (TOther c) = T.singleton c

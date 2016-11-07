@@ -883,6 +883,7 @@ data SingleTarget = SingleTarget { strippedTarget   :: Text
 -----
 
 
+-- There is no "TelnetSEND" because both SEND and ECHO are 1.
 data TelnetCode = TelnetAYT         -- 246
                 | TelnetDO          -- 253
                 | TelnetDON'T       -- 254
