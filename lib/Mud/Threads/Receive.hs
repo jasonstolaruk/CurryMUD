@@ -51,18 +51,19 @@ threadReceive h i mq = sequence_ [ setThreadType . Receive $ i, loop `catch` pla
         delimiters    = T.pack [ stdDesigDelimiter, nonStdDesigDelimiter, desigDelimiter ]
 
 
+-- TODO: Can also get client info via GMCP...
 interpTelnet :: Id -> [TelnetData] -> MudStack ()
 interpTelnet _ []  = unit
-interpTelnet i tds = getState >>= \ms -> do
-    let h = T.pack . getCurrHostName i $ ms
-    withDbExHandler_ "interpTelnet" . insertDbTblTelnetChars . TelnetCharsRec h . commas . map pp $ tds
+interpTelnet i tds = do
+    ts <- liftIO mkTimestamp
+    h  <- T.pack . getCurrHostName i <$> getState
+    withDbExHandler_ "interpTelnet" . insertDbTblTelnetChars . TelnetCharsRec ts h . commas . map pp $ tds
     case findDelimitedSubList (left, right) tds of
       Nothing -> unit
       Just [] -> unit
       Just xs -> case T.concat . map fromTelnetData $ xs of
         ""  -> unit
-        txt -> liftIO mkTimestamp >>= \ts ->
-            withDbExHandler_ "interpTelnet" . insertDbTblTType . TTypeRec ts h $ txt
+        txt -> withDbExHandler_ "interpTelnet" . insertDbTblTType . TTypeRec ts h $ txt
   where
     left                      = map TCode [ TelnetIAC, TelnetSB, TelnetTTYPE, TelnetIS ]
     right                     = map TCode [ TelnetIAC, TelnetSE                        ]
