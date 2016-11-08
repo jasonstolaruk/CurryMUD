@@ -12,7 +12,6 @@ import Mud.Data.State.Util.Output
 import Mud.Misc.Database
 import Mud.Threads.Misc
 import Mud.TopLvlDefs.Chars
-import Mud.TopLvlDefs.Telnet.Chars
 import Mud.Util.List
 import Mud.Util.Misc
 import Mud.Util.Telnet
@@ -20,13 +19,11 @@ import Mud.Util.Text
 import qualified Mud.Misc.Logging as L (logPla)
 
 import Control.Exception.Lifted (catch)
-import Control.Monad (when)
 import Control.Monad.IO.Class (liftIO)
-import Data.List (isInfixOf)
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (hGetLine)
-import System.IO (Handle, hFlush, hIsEOF)
+import System.IO (Handle, hIsEOF)
 
 
 logPla :: Text -> Id -> Text -> MudStack ()
@@ -44,7 +41,7 @@ threadReceive h i mq = sequence_ [ setThreadType . Receive $ i, loop `catch` pla
                go
     go = do
         (parseTelnet -> (msg, telnetDatas)) <- liftIO . T.hGetLine $ h
-        interpTelnet h i mq telnetDatas
+        interpTelnet i telnetDatas
         writeMsg mq . FromClient . remDelimiters $ msg
         loop
       where
@@ -54,9 +51,9 @@ threadReceive h i mq = sequence_ [ setThreadType . Receive $ i, loop `catch` pla
         delimiters    = T.pack [ stdDesigDelimiter, nonStdDesigDelimiter, desigDelimiter ]
 
 
-interpTelnet :: Handle -> Id -> MsgQueue -> [TelnetData] -> MudStack ()
-interpTelnet _ _ _  []  = unit
-interpTelnet h i mq tds = do
+interpTelnet :: Id -> [TelnetData] -> MudStack ()
+interpTelnet _ []  = unit
+interpTelnet i tds = do
     (ts, host) <- (,) <$> liftIO mkTimestamp <*> (T.pack . getCurrHostName i) `fmap` getState
     withDbExHandler_ "interpTelnet" . insertDbTblTelnetChars . TelnetCharsRec ts host . commas . map pp $ tds
     let logTType pair = case findDelimitedSubList pair tds of
@@ -67,7 +64,6 @@ interpTelnet h i mq tds = do
             txt -> withDbExHandler_ "interpTelnet" . insertDbTblTType . TTypeRec ts host . T.strip $ txt
     logTType (ttypeLeft, right)
     logTType (gmcpLeft,  right)
-    when (gmcpLeft `isInfixOf` tds) $ send mq telnetWon'tGMCP >> liftIO (hFlush h)
   where
     fromTelnetData (TCode  _) = ""
     fromTelnetData (TOther c) = T.singleton c

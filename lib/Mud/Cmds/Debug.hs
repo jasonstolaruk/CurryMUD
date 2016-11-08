@@ -444,7 +444,7 @@ debugGmcpWill p = withoutArgs debugGmcpWill p
 debugGmcpVitals :: ActionFun
 debugGmcpVitals (NoArgs' i mq) = do
     send mq . T.pack . concat $ [ [ telnetIAC, telnetSB ]
-                                , "Char.Vitals { \"hp\": \"10\", \"mp\": \"20\" }"
+                                , "Char.Vitals { \"hp\": \"10\", \"maxhp\": \"20\" }"
                                 , [ telnetIAC, telnetSE ] ]
     ok mq
     logPlaExec (prefixDebugCmd "gmcpvitals") i
