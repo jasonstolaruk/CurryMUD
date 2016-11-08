@@ -76,7 +76,7 @@ threadTalk h host = helper `finally` cleanUp
             sendPrompt   mq "What is your character's name?"
             bcastAdmins . prd $ "A new player has connected: " <> s
             logNotice "threadTalk helper" . prd $ "new PC name for incoming player: " <> s
-            onNewThread . threadInacTimer   i   mq $ tq
+            onNewThread   . threadInacTimer i   mq $ tq
             a <- runAsync . threadReceive h i $ mq
             b <- runAsync . threadServer  h i   mq $ tq
             liftIO $ wait b >> cancel a

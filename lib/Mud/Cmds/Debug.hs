@@ -442,10 +442,15 @@ debugGmcpWill p = withoutArgs debugGmcpWill p
 
 
 debugGmcpVitals :: ActionFun
-debugGmcpVitals (NoArgs' i mq) = do
-    send mq . T.pack . concat $ [ [ telnetIAC, telnetSB ]
-                                , "Char.Vitals { \"hp\": \"10\", \"maxhp\": \"20\" }"
-                                , [ telnetIAC, telnetSE ] ]
+debugGmcpVitals (NoArgs' i mq) = getState >>= \ms -> do
+    let ((hpCurr, hpMax), (mpCurr, mpMax), (ppCurr, ppMax), (fpCurr, fpMax)) = getPts i ms
+        xss = [ [ telnetIAC, telnetSB, telnetGMCP ]
+              , "Char.Vitals { \"hp\": \"" ++ show hpCurr ++ "\", \"maxhp\": \"" ++ show hpMax ++ "\",\
+                             \ \"mp\": \"" ++ show mpCurr ++ "\", \"maxmp\": \"" ++ show mpMax ++ "\",\
+                             \ \"pp\": \"" ++ show ppCurr ++ "\", \"maxpp\": \"" ++ show ppMax ++ "\",\
+                             \ \"fp\": \"" ++ show fpCurr ++ "\", \"maxfp\": \"" ++ show fpMax ++ "\" }"
+              , [ telnetIAC, telnetSE ] ]
+    send mq . T.pack . concat $ xss
     ok mq
     logPlaExec (prefixDebugCmd "gmcpvitals") i
 debugGmcpVitals p = withoutArgs debugGmcpVitals p
