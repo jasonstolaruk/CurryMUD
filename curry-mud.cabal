@@ -59,6 +59,7 @@ library
                        Mud.Data.State.Util.Destroy
                        Mud.Data.State.Util.Effect
                        Mud.Data.State.Util.Get
+                       Mud.Data.State.Util.GMCP
                        Mud.Data.State.Util.Hierarchy
                        Mud.Data.State.Util.Lang
                        Mud.Data.State.Util.Make

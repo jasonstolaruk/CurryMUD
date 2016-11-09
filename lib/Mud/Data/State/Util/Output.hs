@@ -28,6 +28,7 @@ module Mud.Data.State.Util.Output ( anglePrompt
                                   , send
                                   , sendCmdNotFound
                                   , sendDfltPrompt
+                                  , sendGmcpVitals
                                   , sendMsgBoot
                                   , sendPrompt
                                   , sendSilentBoot
@@ -43,10 +44,12 @@ import Mud.Data.Misc
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
+import Mud.Data.State.Util.GMCP
 import Mud.Data.State.Util.Misc
 import Mud.Misc.ANSI
 import Mud.Misc.Misc
 import Mud.TopLvlDefs.Chars
+import Mud.TopLvlDefs.Telnet.Chars
 import Mud.Util.List (nubSort)
 import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Operators
@@ -180,7 +183,7 @@ dbError mq cols = wrapSend mq cols dbErrorMsg >> sendSilentBoot mq
 massMsg :: Msg -> MudStack ()
 massMsg msg = liftIO . atomically . helper =<< getState
   where
-    helper (views msgQueueTbl IM.elems -> mqs) = forM_ mqs $ flip writeTQueue msg
+    helper (views msgQueueTbl IM.elems -> mqs) = forM_ mqs . flip writeTQueue $ msg
 
 
 -----
@@ -348,7 +351,9 @@ firstSpiritCmdNotFound i pt
 
 
 sendDfltPrompt :: MsgQueue -> Id -> MudStack ()
-sendDfltPrompt mq i = sendPrompt mq . mkDfltPrompt i =<< getState
+sendDfltPrompt mq i = do
+    sendPrompt mq . mkDfltPrompt i =<< getState
+    sendGmcpVitals i mq
 
 
 mkDfltPrompt :: Id -> MudState -> Text
@@ -358,15 +363,26 @@ mkDfltPrompt i ms = let (hps,  mps,  pps,  fps ) = getPts i ms
                                                                , isShowingPp
                                                                , isShowingFp ) & each %~ (getPla i ms |&|)
                                                  | otherwise = dup4 True
-                        marker                   = colorWith indentColor " "
-                        txt                      = spaces . dropBlanks $ [ isHp |?| f "h" hps
-                                                                         , isMp |?| f "m" mps
-                                                                         , isPp |?| f "p" pps
-                                                                         , isFp |?| f "f" fps ]
+                        marker = colorWith indentColor " "
+                        txt    = spaces . dropBlanks $ [ isHp |?| f "h" hps
+                                                       , isMp |?| f "m" mps
+                                                       , isPp |?| f "p" pps
+                                                       , isFp |?| f "f" fps ]
                     in marker |<>| txt <> ">"
   where
     indentColor     = isNpc i ms ? toNpcColor :? promptIndentColor
     f a pair@(x, _) = commaShow x <> colorWith (mkColorTxtForXps pair) a
+
+
+-----
+
+
+sendGmcp :: MsgQueue -> Text -> MudStack ()
+sendGmcp mq = send mq . quoteWith' (telnetGmcpLeft, telnetGmcpRight)
+
+
+sendGmcpVitals :: Id -> MsgQueue -> MudStack ()
+sendGmcpVitals i mq = sendGmcp mq . gmcpVitals i =<< getState
 
 
 -----

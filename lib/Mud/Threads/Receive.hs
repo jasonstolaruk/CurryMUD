@@ -16,14 +16,21 @@ import Mud.Util.List
 import Mud.Util.Misc
 import Mud.Util.Telnet
 import Mud.Util.Text
-import qualified Mud.Misc.Logging as L (logPla)
+import qualified Mud.Misc.Logging as L (logNotice, logPla)
 
 import Control.Exception.Lifted (catch)
+import Control.Lens.Operators ((%~))
 import Control.Monad.IO.Class (liftIO)
+import Data.List (isInfixOf)
+import Data.Monoid ((<>))
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (hGetLine)
 import System.IO (Handle, hIsEOF)
+
+
+logNotice :: Text -> Text -> MudStack ()
+logNotice = L.logNotice "Mud.Threads.Receive"
 
 
 logPla :: Text -> Id -> Text -> MudStack ()
@@ -54,19 +61,34 @@ threadReceive h i mq = sequence_ [ setThreadType . Receive $ i, loop `catch` pla
 interpTelnet :: Id -> [TelnetData] -> MudStack ()
 interpTelnet _ []  = unit
 interpTelnet i tds = do
-    (ts, host) <- (,) <$> liftIO mkTimestamp <*> (T.pack . getCurrHostName i) `fmap` getState
+    p@(ts, host) <- (,) <$> liftIO mkTimestamp <*> (T.pack . getCurrHostName i) `fmap` getState
     withDbExHandler_ "interpTelnet" . insertDbTblTelnetChars . TelnetCharsRec ts host . commas . map pp $ tds
-    let logTType pair = case findDelimitedSubList pair tds of
-          Nothing -> unit
-          Just [] -> unit
-          Just xs -> case T.concat . map fromTelnetData $ xs of
-            ""  -> unit
-            txt -> withDbExHandler_ "interpTelnet" . insertDbTblTType . TTypeRec ts host . T.strip $ txt
-    logTType (ttypeLeft, right)
-    logTType (gmcpLeft,  right)
+    ttypeHelper p
+    gmcpHelper
   where
-    fromTelnetData (TCode  _) = ""
-    fromTelnetData (TOther c) = T.singleton c
-    ttypeLeft = map TCode [ TelnetIAC, TelnetSB, TelnetTTYPE, TelnetIS ]
-    gmcpLeft  = map TCode [ TelnetIAC, TelnetSB, TelnetGMCP            ] ++ map TOther "Core.Hello"
-    right     = map TCode [ TelnetIAC, TelnetSE                        ]
+    right                  = map TCode [ TelnetIAC, TelnetSE ]
+    ttypeHelper (ts, host) = logTType (ttypeLeft, right) >> logTType (gmcpLeft, right)
+      where
+        logTType pair = case findDelimitedSubList pair tds of
+            Nothing -> unit
+            Just [] -> unit
+            Just xs -> case T.concat . map fromTelnetData $ xs of
+              ""  -> unit
+              txt -> withDbExHandler_ "interpTelnet" . insertDbTblTType . TTypeRec ts host . T.strip $ txt
+        ttypeLeft = map TCode [ TelnetIAC, TelnetSB, TelnetTTYPE, TelnetIS ]
+        gmcpLeft  = map TCode [ TelnetIAC, TelnetSB, TelnetGMCP            ] ++ map TOther "Core.Hello"
+        fromTelnetData (TCode  _) = ""
+        fromTelnetData (TOther c) = T.singleton c
+    gmcpHelper | ((||) <$> (gmcpWill  `isInfixOf`) <*> (gmcpDo    `isInfixOf`)) tds = setFlag True
+               | ((||) <$> (gmcpWon't `isInfixOf`) <*> (gmcpDon't `isInfixOf`)) tds = setFlag False
+               | otherwise = unit
+      where
+        setFlag b = getSing i <$> getState >>= \s -> do
+            tweak $ plaTbl.ind i %~ setPlaFlag IsGmcp b
+            let msg = prd $ s <> " set GMCP " <> onOff b
+            logNotice "interpTelnet gmcpHelper setFlag" msg
+        gmcpWill  = mkCodes TelnetWILL
+        gmcpWon't = mkCodes TelnetWON'T
+        gmcpDo    = mkCodes TelnetDO
+        gmcpDon't = mkCodes TelnetDON'T
+        mkCodes x = map TCode [ TelnetIAC, x, TelnetGMCP ]

@@ -820,17 +820,18 @@ data Pla = Pla { _currHostName :: HostName
 
 
 data PlaFlags = IsAdmin
+              | IsGmcp
               | IsIncognito
-              | IsSpirit
               | IsNotFirstAdminMsg
               | IsNotFirstMobSay
               | IsNotFirstSpiritCmdNotFound
-              | IsTunedAdmin
-              | IsTunedQuestion
+              | IsShowingFp
               | IsShowingHp
               | IsShowingMp
               | IsShowingPp
-              | IsShowingFp deriving Enum
+              | IsSpirit
+              | IsTunedAdmin
+              | IsTunedQuestion deriving Enum
 
 
 type SpiritAsync = Async ()

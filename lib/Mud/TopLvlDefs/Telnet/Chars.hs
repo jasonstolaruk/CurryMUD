@@ -32,13 +32,30 @@ telnetWILL        = '\xFB' -- 251
 telnetWON'T       = '\xFC' -- 252
 
 
-telnetEndOfRecord, telnetGoAhead, telnetIAC_SB, telnetIAC_SE, telnetShowInput, telnetHideInput, telnetWillTType, telnetTTypeRequest, telnetWillGMCP :: Text
-telnetEndOfRecord    = T.pack [ telnetIAC, telnetEOR                ]
-telnetGoAhead        = T.pack [ telnetIAC, telnetGA                 ]
-telnetIAC_SB         = T.pack [ telnetIAC, telnetSB                 ]
-telnetIAC_SE         = T.pack [ telnetIAC, telnetSE                 ]
-telnetShowInput      = T.pack [ telnetIAC, telnetWON'T, telnetECHO  ]
-telnetHideInput      = T.pack [ telnetIAC, telnetWILL,  telnetECHO  ]
-telnetWillTType      = T.pack [ telnetIAC, telnetWILL,  telnetTTYPE                                  ]
-telnetTTypeRequest   = T.pack [ telnetIAC, telnetSB,    telnetTTYPE, telnetSEND, telnetIAC, telnetSE ]
-telnetWillGMCP       = T.pack [ telnetIAC, telnetWILL,  telnetGMCP                                   ]
+telnetIAC_SB, telnetIAC_SE :: Text
+telnetIAC_SB = T.pack [ telnetIAC, telnetSB ]
+telnetIAC_SE = T.pack [ telnetIAC, telnetSE ]
+
+
+telnetGoAhead, telnetEndOfRecord :: Text
+telnetGoAhead     = T.pack [ telnetIAC, telnetGA  ]
+telnetEndOfRecord = T.pack [ telnetIAC, telnetEOR ]
+
+
+telnetShowInput, telnetHideInput :: Text
+telnetShowInput = T.pack [ telnetIAC, telnetWON'T, telnetECHO ]
+telnetHideInput = T.pack [ telnetIAC, telnetWILL,  telnetECHO ]
+
+
+telnetWillTType, telnetTTypeRequest :: Text
+telnetWillTType    = T.pack [ telnetIAC, telnetWILL, telnetTTYPE                                  ]
+telnetTTypeRequest = T.pack [ telnetIAC, telnetSB,   telnetTTYPE, telnetSEND, telnetIAC, telnetSE ]
+
+
+telnetWillGMCP, telnetWon'tGMCP, telnetDoGMCP, telnetDon'tGMCP, telnetGmcpLeft, telnetGmcpRight :: Text
+telnetWillGMCP  = T.pack [ telnetIAC, telnetWILL,  telnetGMCP ]
+telnetWon'tGMCP = T.pack [ telnetIAC, telnetWON'T, telnetGMCP ]
+telnetDoGMCP    = T.pack [ telnetIAC, telnetDO,    telnetGMCP ]
+telnetDon'tGMCP = T.pack [ telnetIAC, telnetDON'T, telnetGMCP ]
+telnetGmcpLeft  = telnetIAC_SB `T.snoc` telnetGMCP
+telnetGmcpRight = telnetIAC_SE

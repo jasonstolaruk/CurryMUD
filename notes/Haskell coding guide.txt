@@ -378,11 +378,17 @@ foldr :: (a -> b -> b) -> b -> [a] -> b
 foldr f acc []     = acc
 foldr f acc (x:xs) = f x (foldr f acc xs)
 
+foldr (^) 1 [2,3,4]
+2 ^ (3 ^ (4 ^ 1))
+
 foldl :: (b -> a -> b) -> b -> [a] -> b
 foldl f acc []     = acc
 foldl f acc (x:xs) = foldl f (f acc x) xs
 
-The first stage of folding is the traversal of (the recursing over) the spine. All folds traverse the spine in the same direction: from outermost (the head) to innermost (the tail); this is necessitated by the way lists are defined. Notably, "foldr" may not traverse the entire spine, but "foldl" always will.
+foldl (^) 1 [2,3,4]
+(((1 ^ 2) ^ 3) ^ 4)
+
+The first stage of folding is the traversal of (the recursing over) the spine. All folds traverse the spine in the same direction: from outermost (the head) to innermost; this is necessitated by the way lists are defined. Notably, "foldr" may not traverse the entire spine, but "foldl" always will.
 
 The association of the folding function informs the direction that the folding proceeds following the traversal of the spine.
 

@@ -584,12 +584,12 @@ finishNewChar ncb@(NewCharBundle _ s pass) params@(NoArgs'' i) = do
         handleLogin ncb True params
         notifyQuestion i ms
   where
-    helper v ms | ms' <- ms & pickPtsTbl.at  i          .~ Nothing
-                            & invTbl    .ind iWelcome   %~ (i `delete`)
-                            & mobTbl    .ind i.rmId     .~ iCentral
-                            & mobTbl    .ind i.interp   .~ Nothing
-                            & plaTbl    .ind i          %~ setPlaFlag IsTunedQuestion True
-                = dup $ ms' & invTbl.ind iCentral %~ addToInv ms' (pure i)
+    helper v ms | ms' <- ms & pickPtsTbl.at  i        .~ Nothing
+                            & invTbl    .ind iWelcome %~ (i `delete`)
+                            & mobTbl    .ind i.rmId   .~ iCentral
+                            & mobTbl    .ind i.interp .~ Nothing
+                            & plaTbl    .ind i        %~ setPlaFlag IsTunedQuestion True
+                = dup $ ms' & invTbl    .ind iCentral %~ addToInv ms' (pure i)
                             & newChar i v
 finishNewChar _ p = patternMatchFail "finishNewChar" . showText $ p
 
@@ -764,7 +764,8 @@ logIn newId ms newHost newTime originId = peepNewId . movePC $ adoptNewId
                     & pcTbl           .ind newId         .~ getPC            originId ms
                     & pcTbl           .at  originId      .~ Nothing
                     & plaTbl          .ind newId         .~ (getPla          originId ms & currHostName .~ newHost
-                                                                                         & connectTime  .~ newTime)
+                                                                                         & connectTime  .~ newTime
+                                                                                         & setPlaFlag IsGmcp gmcp)
                     & plaTbl          .ind newId.peepers .~ getPeepers       originId ms
                     & plaTbl          .at  originId      .~ Nothing
                     & rndmNamesMstrTbl.ind newId         .~ getRndmNamesTbl  originId ms
@@ -772,6 +773,8 @@ logIn newId ms newHost newTime originId = peepNewId . movePC $ adoptNewId
                     & teleLinkMstrTbl .ind newId         .~ getTeleLinkTbl   originId ms
                     & teleLinkMstrTbl .at  originId      .~ Nothing
                     & typeTbl         .at  originId      .~ Nothing
+      where
+        gmcp = isGmcpId newId ms
     movePC ms' = let newRmId = fromJust . getLastRmId newId $ ms'
                  in ms' & invTbl.ind iWelcome       %~ (newId    `delete`)
                         & invTbl.ind iLoggedOut     %~ (originId `delete`)

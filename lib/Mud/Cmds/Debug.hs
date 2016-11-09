@@ -12,13 +12,12 @@ import Mud.Cmds.Msgs.Sorry
 import Mud.Cmds.Util.CmdPrefixes
 import Mud.Cmds.Util.Misc
 import Mud.Data.Misc
-import Mud.TopLvlDefs.Weights
-import Mud.TopLvlDefs.Vols
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Calc
 import Mud.Data.State.Util.Get
+import Mud.Data.State.Util.GMCP
 import Mud.Data.State.Util.Make
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
@@ -39,6 +38,8 @@ import Mud.Threads.ThreadTblPurger
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
 import Mud.TopLvlDefs.Telnet.Chars
+import Mud.TopLvlDefs.Vols
+import Mud.TopLvlDefs.Weights
 import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Operators
 import Mud.Util.Padding
@@ -442,16 +443,9 @@ debugGmcpWill p = withoutArgs debugGmcpWill p
 
 
 debugGmcpVitals :: ActionFun
-debugGmcpVitals (NoArgs' i mq) = getState >>= \ms -> do
-    let ((hpCurr, hpMax), (mpCurr, mpMax), (ppCurr, ppMax), (fpCurr, fpMax)) = getPts i ms
-        xss = [ [ telnetIAC, telnetSB, telnetGMCP ]
-              , "Char.Vitals { \"hp\": \"" ++ show hpCurr ++ "\", \"maxhp\": \"" ++ show hpMax ++ "\",\
-                             \ \"mp\": \"" ++ show mpCurr ++ "\", \"maxmp\": \"" ++ show mpMax ++ "\",\
-                             \ \"pp\": \"" ++ show ppCurr ++ "\", \"maxpp\": \"" ++ show ppMax ++ "\",\
-                             \ \"fp\": \"" ++ show fpCurr ++ "\", \"maxfp\": \"" ++ show fpMax ++ "\" }"
-              , [ telnetIAC, telnetSE ] ]
-    send mq . T.pack . concat $ xss
-    ok mq
+debugGmcpVitals (NoArgs i mq cols) = do
+    wrapSend mq cols . gmcpVitals i =<< getState
+    sendGmcpVitals i mq
     logPlaExec (prefixDebugCmd "gmcpvitals") i
 debugGmcpVitals p = withoutArgs debugGmcpVitals p
 

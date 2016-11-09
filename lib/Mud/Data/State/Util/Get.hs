@@ -882,6 +882,17 @@ isAdminId = onPla isAdmin False
 -----
 
 
+isGmcp :: Pla -> Bool
+isGmcp = getPlaFlag IsGmcp
+
+
+isGmcpId :: Id -> MudState -> Bool
+isGmcpId = onPla isGmcp False
+
+
+-----
+
+
 isIncognito :: Pla -> Bool
 isIncognito = getPlaFlag IsIncognito
 

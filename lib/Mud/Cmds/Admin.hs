@@ -777,7 +777,7 @@ examineNpc :: ExamineHelper
 examineNpc i ms = [ "Possessor: " <> (descMaybeId ms . getPossessor i $ ms) ]
 
 
-examineObj :: ExamineHelper
+examineObj :: ExamineHelper -- TODO: Obj flags.
 examineObj i ms = let o = getObj i ms in [ "Weight: " <> o^.objWeight.to commaShow
                                          , "Volume: " <> o^.objVol   .to commaShow ]
 
@@ -809,18 +809,20 @@ examinePla i ms = let p = getPla i ms
                      , "Bonus time: "        <> p^.bonusTime.to (maybe none showText) ]
   where
     descFlags p | p^.plaFlags == zeroBits = none
-                | otherwise               = let pairs = [ (isAdmin,            "admin"              )
-                                                        , (isIncognito,        "incognito"          )
-                                                        , (isSpirit,           "spirit"             )
-                                                        , (isNotFirstAdminMsg, "not first admin msg")
-                                                        , (isNotFirstMobSay,   "not first mob say"  )
-                                                        , (isTunedAdmin,       "tuned admin"        )
-                                                        , (isTunedQuestion,    "tuned question"     )
-                                                        , (isShowingHp,        "showing HP"         )
-                                                        , (isShowingMp,        "showing MP"         )
-                                                        , (isShowingPp,        "showing PP"         )
-                                                        , (isShowingFp,        "showing FP"         ) ]
-                                            in [ f p |?| t | (f, t) <- pairs ]
+                | otherwise = let pairs = [ (isAdmin,                     "admin"                         )
+                                          , (isGmcp,                      "gmcp"                          )
+                                          , (isIncognito,                 "incognito"                     )
+                                          , (isNotFirstAdminMsg,          "not first admin msg"           )
+                                          , (isNotFirstMobSay,            "not first mob say"             )
+                                          , (isNotFirstSpiritCmdNotFound, "not first spirit cmd not found")
+                                          , (isShowingFp,                 "showing FP"                    )
+                                          , (isShowingHp,                 "showing HP"                    )
+                                          , (isShowingMp,                 "showing MP"                    )
+                                          , (isShowingPp,                 "showing PP"                    )
+                                          , (isSpirit,                    "spirit"                        )
+                                          , (isTunedAdmin,                "tuned admin"                   )
+                                          , (isTunedQuestion,             "tuned question"                ) ]
+                              in [ f p |?| t | (f, t) <- pairs ]
     helper = noneOnNull . commas . map (`descSingId` ms)
 
 
