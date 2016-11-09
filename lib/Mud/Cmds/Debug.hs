@@ -139,8 +139,9 @@ debugCmds =
     , mkDebugCmd "exp"         debugExp         "Award yourself 5,000 exp."
     , mkDebugCmd "fun"         debugFun         "Dump the keys of the function tables."
     , mkDebugCmd "gmcpdo"      debugGmcpDo      "Send IAC DO GMCP."
-    , mkDebugCmd "gmcpwill"    debugGmcpWill    "Send IAC WILL GMCP."
+    , mkDebugCmd "gmcproom"    debugGmcpRoom    "Send GMCP Room Info."
     , mkDebugCmd "gmcpvitals"  debugGmcpVitals  "Send GMCP Vitals."
+    , mkDebugCmd "gmcpwill"    debugGmcpWill    "Send IAC WILL GMCP."
     , mkDebugCmd "handle"      debugHandle      "Display information about the handle for your network connection."
     , mkDebugCmd "id"          debugId          "Search the \"MudState\" tables for a given ID."
     , mkDebugCmd "kewpie"      debugKewpie      "Create a kewpie doll."
@@ -431,12 +432,12 @@ debugGmcpDo p = withoutArgs debugGmcpDo p
 -----
 
 
-debugGmcpWill :: ActionFun
-debugGmcpWill (NoArgs' i mq) = do
-    send mq . T.pack $ [ telnetIAC, telnetWILL, telnetGMCP ]
-    ok mq
-    logPlaExec (prefixDebugCmd "gmcpwill") i
-debugGmcpWill p = withoutArgs debugGmcpWill p
+debugGmcpRoom :: ActionFun
+debugGmcpRoom (NoArgs i mq cols) = do
+    wrapSend mq cols . gmcpRoomInfo i =<< getState
+    -- sendGmcpRoomInfo i mq
+    logPlaExec (prefixDebugCmd "gmcproom") i
+debugGmcpRoom p = withoutArgs debugGmcpRoom p
 
 
 -----
@@ -448,6 +449,17 @@ debugGmcpVitals (NoArgs i mq cols) = do
     sendGmcpVitals i mq
     logPlaExec (prefixDebugCmd "gmcpvitals") i
 debugGmcpVitals p = withoutArgs debugGmcpVitals p
+
+
+-----
+
+
+debugGmcpWill :: ActionFun
+debugGmcpWill (NoArgs' i mq) = do
+    send mq . T.pack $ [ telnetIAC, telnetWILL, telnetGMCP ]
+    ok mq
+    logPlaExec (prefixDebugCmd "gmcpwill") i
+debugGmcpWill p = withoutArgs debugGmcpWill p
 
 
 -----

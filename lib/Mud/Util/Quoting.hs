@@ -14,12 +14,11 @@ quoteWith' :: (Text, Text) -> Text -> Text
 quoteWith' (a, b) t = T.concat [ a, t, b ]
 
 
-singleQuote :: Text -> Text
-singleQuote = quoteWith "'"
+unquote :: Text -> Text
+unquote = T.init . T.tail
 
 
-dblQuote :: Text -> Text
-dblQuote = quoteWith "\""
+-----
 
 
 angleBracketQuote :: Text -> Text
@@ -38,8 +37,20 @@ bracketQuote :: Text -> Text
 bracketQuote = quoteWith' ("[", "]")
 
 
+curlyQuote :: Text -> Text
+curlyQuote = quoteWith' ("{", "}")
+
+
+dblQuote :: Text -> Text
+dblQuote = quoteWith "\""
+
+
 parensQuote :: Text -> Text
 parensQuote = quoteWith' ("(", ")")
+
+
+singleQuote :: Text -> Text
+singleQuote = quoteWith "'"
 
 
 {-
@@ -50,7 +61,3 @@ Code matching either of these regex may be refactored so as to utilize the "spac
 -}
 spaced :: Text -> Text
 spaced = quoteWith " "
-
-
-unquote :: Text -> Text
-unquote = T.init . T.tail

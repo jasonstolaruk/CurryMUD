@@ -14,6 +14,11 @@ import Data.Text (Text)
 import qualified Data.Text as T
 
 
+colon, comma :: Text
+colon = ": "
+comma = ", "
+
+
 gmcpVitals :: Id -> MudState -> Text
 gmcpVitals i ms = T.concat [ "Char.Vitals { "
                            , dblQuote "hp"    <> colon
@@ -38,5 +43,21 @@ gmcpVitals i ms = T.concat [ "Char.Vitals { "
   where
     ((hpCurr, hpMax), (mpCurr, mpMax), (ppCurr, ppMax), (fpCurr, fpMax)) = f
     f = getPts i ms & each %~ (both %~ (dblQuote . showText))
-    colon = ": "
-    comma = ", "
+
+
+gmcpRoomInfo :: Id -> MudState -> Text
+gmcpRoomInfo _ _  = T.concat [ "Room.Info { "
+                             , dblQuote "num"       <> colon
+                             , "1234"               <> comma
+                             , dblQuote "room name" <> colon
+                             , dblQuote name        <> comma
+                             , dblQuote "room area" <> colon
+                             , dblQuote area        <> comma
+                             , dblQuote "exits"     <> colon
+                             , exits <> " }" ]
+  where
+    name  = "name"
+    area  = "area"
+    exits = quoteWith' ("{ ", " }") t
+      where
+        t = "\"n\": 1234, \"se\": 5678"
