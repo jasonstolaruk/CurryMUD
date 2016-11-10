@@ -476,8 +476,8 @@ about p = withoutArgs about p
 
 
 admin :: ActionFun
-admin p@(NoArgs''     _                    ) = adminList p
-admin p@(AdviseOneArg a                    ) = advise p ["admin"] . adviceAdminNoMsg $ a
+admin p@(NoArgs'' _                        ) = adminList p
+admin p@AdviseOneArg                         = advise p ["admin"] adviceAdminNoMsg
 admin   (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsgs ->
     logMsgs |#| let f = uncurry . logPla $ "admin" in mapM_ f
   where
@@ -796,7 +796,7 @@ color p = withoutArgs color p
 
 connect :: ActionFun
 connect p@AdviseNoArgs         = advise p ["connect"] adviceConnectNoArgs
-connect p@(AdviseOneArg a    ) = advise p ["connect"] . adviceConnectNoChan $ a
+connect p@AdviseOneArg         = advise p ["connect"] adviceConnectNoChan
 connect   (Lower i mq cols as) = getState >>= \ms -> let getIds = map (`getIdForMobSing` ms) in
     if isIncognitoId i ms
       then wrapSend mq cols . sorryIncog $ "connect"
@@ -931,7 +931,7 @@ interpConfirmDesc _ _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNo p
 
 disconnect :: ActionFun
 disconnect p@AdviseNoArgs         = advise p ["disconnect"] adviceDisconnectNoArgs
-disconnect p@(AdviseOneArg a    ) = advise p ["disconnect"] . adviceDisconnectNoChan $ a
+disconnect p@AdviseOneArg         = advise p ["disconnect"] adviceDisconnectNoChan
 disconnect   (Lower i mq cols as) = getState >>= \ms -> let getIds = map (`getIdForMobSing` ms) in
     if isIncognitoId i ms
       then wrapSend mq cols . sorryIncog $ "disconnect"
@@ -1350,9 +1350,9 @@ felinoidean = sayHelper FelinoidLang
 
 
 fill :: RmActionFun
-fill p@AdviseNoArgs     = advise p [] adviceFillNoArgs
-fill p@(AdviseOneArg _) = advise p [] adviceFillNoSource
-fill p@(Lower' i as   ) = genericActionWithHooks p helper "fill"
+fill p@AdviseNoArgs  = advise p [] adviceFillNoArgs
+fill p@AdviseOneArg  = advise p [] adviceFillNoSource
+fill p@(Lower' i as) = genericActionWithHooks p helper "fill"
   where
     helper v ms =
         let b@LastArgIsTargetBindings { .. } = mkLastArgIsTargetBindings i ms as
@@ -1515,9 +1515,9 @@ getAction p = patternMatchFail "getAction" . showText $ p
 
 
 give :: ActionFun
-give p@AdviseNoArgs     = advise p ["give"] adviceGiveNoArgs
-give p@(AdviseOneArg a) = advise p ["give"] . adviceGiveNoName $ a
-give p@(Lower' i as   ) = genericAction p helper "give"
+give p@AdviseNoArgs  = advise p ["give"] adviceGiveNoArgs
+give p@AdviseOneArg  = advise p ["give"] adviceGiveNoName
+give p@(Lower' i as) = genericAction p helper "give"
   where
     helper ms =
         let b@LastArgIsTargetBindings { targetArg } = mkLastArgIsTargetBindings i ms as
@@ -2344,9 +2344,9 @@ plaDispCmdList p                  = patternMatchFail "plaDispCmdList" . showText
 
 
 putAction :: ActionFun
-putAction p@AdviseNoArgs     = advise p ["put"] advicePutNoArgs
-putAction p@(AdviseOneArg a) = advise p ["put"] . advicePutNoCon $ a
-putAction p@(Lower' i as   ) = genericActionWithHooks p helper "put"
+putAction p@AdviseNoArgs  = advise p ["put"] advicePutNoArgs
+putAction p@AdviseOneArg  = advise p ["put"] advicePutNoCon
+putAction p@(Lower' i as) = genericActionWithHooks p helper "put"
   where
     helper v ms =
       let LastArgIsTargetBindings { .. } = mkLastArgIsTargetBindings i ms as
@@ -2966,9 +2966,9 @@ getAvailArmSlot ms (armSubToSlot -> slot) em = maybeSingleSlot em slot |&| maybe
 
 
 remove :: ActionFun
-remove p@AdviseNoArgs     = advise p ["remove"] adviceRemoveNoArgs
-remove p@(AdviseOneArg a) = advise p ["remove"] . adviceRemoveNoCon $ a
-remove p@(Lower' i as   ) = genericAction p helper "remove"
+remove p@AdviseNoArgs  = advise p ["remove"] adviceRemoveNoArgs
+remove p@AdviseOneArg  = advise p ["remove"] adviceRemoveNoCon
+remove p@(Lower' i as) = genericAction p helper "remove"
   where
     helper ms =
       let LastArgIsTargetBindings { .. } = mkLastArgIsTargetBindings i ms as
@@ -3359,7 +3359,7 @@ helperSettings i ms a (T.breakOn "=" -> (name, T.tail -> value)) =
 
 showAction :: ActionFun
 showAction p@AdviseNoArgs         = advise p ["show"] adviceShowNoArgs
-showAction p@(AdviseOneArg a    ) = advise p ["show"] . adviceShowNoName $ a
+showAction p@AdviseOneArg         = advise p ["show"] adviceShowNoName
 showAction   (Lower i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
   then wrapSend mq cols . sorryIncog $ "show"
   else let eqMap      = getEqMap    i ms
@@ -3910,7 +3910,7 @@ taste p = advise p ["taste"] adviceTasteExcessArgs
 
 tele :: ActionFun
 tele p@AdviseNoArgs                         = advise p ["telepathy"] adviceTeleNoArgs
-tele p@(AdviseOneArg a                    ) = advise p ["telepathy"] . adviceTeleNoMsg $ a
+tele p@AdviseOneArg                         = advise p ["telepathy"] adviceTeleNoMsg
 tele   (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
     let (s, p) = (getSing `fanUncurry` getPla) (i, ms) in if isIncognito p
       then wrapSend mq cols . sorryIncog $ "telepathy"
@@ -4238,7 +4238,7 @@ vulpenoidean = sayHelper VulpenoidLang
 
 whisper :: ActionFun
 whisper p@AdviseNoArgs                                      = advise p ["whisper"] adviceWhisperNoArgs
-whisper p@(AdviseOneArg a                                 ) = advise p ["whisper"] . adviceWhisperNoMsg $ a
+whisper p@AdviseOneArg                                      = advise p ["whisper"] adviceWhisperNoMsg
 whisper   (WithArgs i mq cols (target:(T.unwords -> rest))) = getState >>= \ms -> if isIncognitoId i ms
   then wrapSend mq cols . sorryIncog $ "whisper"
   else helper |&| modifyState >=> ioHelper ms

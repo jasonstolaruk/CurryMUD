@@ -300,8 +300,8 @@ adminAnnounce p = patternMatchFail "adminAnnounce" . showText $ p
 
 
 adminAs :: ActionFun
-adminAs p@(NoArgs' i mq    ) = advise p [ prefixAdminCmd "as" ] adviceAAsNoArgs    >> sendDfltPrompt mq i
-adminAs p@(OneArg  i mq _ a) = advise p [ prefixAdminCmd "as" ] (adviceAAsNoCmd a) >> sendDfltPrompt mq i
+adminAs p@(NoArgs' i mq    ) = advise p [ prefixAdminCmd "as" ] adviceAAsNoArgs >> sendDfltPrompt mq i
+adminAs p@(OneArg  i mq _ _) = advise p [ prefixAdminCmd "as" ] adviceAAsNoCmd  >> sendDfltPrompt mq i
 adminAs   (WithTarget i mq cols target rest) = getState >>= \ms ->
     let SingleTarget { .. } = mkSingleTarget mq cols target "The target ID"
         as targetId         = let s = getSing targetId ms in case getType targetId ms of
@@ -350,7 +350,7 @@ adminBanHost :: ActionFun
 adminBanHost (NoArgs i mq cols) = (withDbExHandler "adminBanHost" . getDbTblRecs $ "ban_host") >>= \case
   Just xs -> dumpDbTblHelper mq cols (xs :: [BanHostRec]) >> logPlaExecArgs (prefixAdminCmd "banhost") [] i
   Nothing -> dbError mq cols
-adminBanHost p@(AdviseOneArg a) = advise p [ prefixAdminCmd "banhost" ] . adviceABanHostNoReason $ a
+adminBanHost p@AdviseOneArg = advise p [ prefixAdminCmd "banhost" ] adviceABanHostNoReason
 adminBanHost   (MsgWithTarget i mq cols (uncapitalize -> target) msg) = getState >>= \ms ->
     withDbExHandler "adminBanHost" (isHostBanned target) >>= \case
       Nothing      -> dbError mq cols
@@ -379,7 +379,7 @@ adminBanPC :: ActionFun
 adminBanPC (NoArgs i mq cols) = withDbExHandler "adminBanPC" (getDbTblRecs "ban_pc") >>= \case
   Just xs -> dumpDbTblHelper mq cols (xs :: [BanPCRec]) >> logPlaExecArgs (prefixAdminCmd "banpc") [] i
   Nothing -> dbError mq cols
-adminBanPC p@(AdviseOneArg a                    ) = advise p [ prefixAdminCmd "banpc" ] . adviceABanPCNoReason $ a
+adminBanPC p@AdviseOneArg                         = advise p [ prefixAdminCmd "banpc" ] adviceABanPCNoReason
 adminBanPC p@(MsgWithTarget i mq cols target msg) = getState >>= \ms ->
     let fn                  = "adminBanPC"
         SingleTarget { .. } = mkSingleTarget mq cols target "The name of the PC you wish to ban"
@@ -904,7 +904,7 @@ adminExp p = withoutArgs adminExp p
 
 adminHash :: ActionFun
 adminHash p@AdviseNoArgs                      = advise p [ prefixAdminCmd "hash" ] adviceAHashNoArgs
-adminHash p@(AdviseOneArg a                 ) = advise p [ prefixAdminCmd "hash" ] . adviceAHashNoHash $ a
+adminHash p@AdviseOneArg                      = advise p [ prefixAdminCmd "hash" ] adviceAHashNoHash
 adminHash   (WithArgs i mq cols [ pw, hash ]) = do
     wrapSend mq cols $ if uncurry validatePassword ((hash, pw) & both %~ T.encodeUtf8)
       then "It's a match!"
@@ -1080,7 +1080,7 @@ adminLocate p = patternMatchFail "adminLocate" . showText $ p
 
 adminMsg :: ActionFun
 adminMsg p@AdviseNoArgs                         = advise p [ prefixAdminCmd "message" ] adviceAMsgNoArgs
-adminMsg p@(AdviseOneArg a                    ) = advise p [ prefixAdminCmd "message" ] . adviceAMsgNoMsg $ a
+adminMsg p@AdviseOneArg                         = advise p [ prefixAdminCmd "message" ] adviceAMsgNoMsg
 adminMsg   (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsgs ->
     logMsgs |#| let f = uncurry . logPla $ "adminMsg" in mapM_ f
   where
@@ -1137,8 +1137,8 @@ firstAdminMsg i adminSing =
 
 
 adminPassword :: ActionFun
-adminPassword p@AdviseNoArgs                     = advise p [ prefixAdminCmd "password" ] adviceAPasswordNoArgs
-adminPassword p@(AdviseOneArg a                ) = advise p [ prefixAdminCmd "password" ] . adviceAPasswordNoPw $ a
+adminPassword p@AdviseNoArgs = advise p [ prefixAdminCmd "password" ] adviceAPasswordNoArgs
+adminPassword p@AdviseOneArg = advise p [ prefixAdminCmd "password" ] adviceAPasswordNoPw
 adminPassword p@(WithTarget i mq cols target pw)
   | length (T.words pw) > 1 = advise p [ prefixAdminCmd "password" ] adviceAPasswordExcessArgs
   | otherwise               = getState >>= \ms ->
@@ -1348,21 +1348,22 @@ mkSecReport SecRec { .. } = [ "Name: "     <> dbName
 
 
 adminSet :: ActionFun
-adminSet p@AdviseNoArgs                       = advise p [ prefixAdminCmd "set" ] adviceASetNoArgs
-adminSet p@(AdviseOneArg a                  ) = advise p [ prefixAdminCmd "set" ] . adviceASetNoSettings $ a
-adminSet   (WithArgs i mq cols (target:rest)) = helper |&| modifyState >=> \(toSelfMsgs, mTargetId, toTargetMsgs, logMsgs, fs) -> do
-    multiWrapSend mq cols toSelfMsgs
-    let ioHelper targetId = getState >>= \ms -> do
-            let f = case getType targetId ms of
-                      PCType  -> retainedMsg targetId ms
-                      NpcType -> bcast . mkBcast targetId
-                      t       -> patternMatchFail "adminSet f" . showText $ t
-            unless (isIncognitoId i ms || targetId == i) . forM_ (dropBlanks toTargetMsgs) $ f . colorWith adminSetColor
-            sequence_ fs
-            logMsgs |#| logPla (prefixAdminCmd "set") i . g . slashes
-          where
-            g = (parensQuote ("for ID " <> showText targetId) <>) . spcL
-    maybeVoid ioHelper mTargetId
+adminSet p@AdviseNoArgs = advise p [ prefixAdminCmd "set" ] adviceASetNoArgs
+adminSet p@AdviseOneArg = advise p [ prefixAdminCmd "set" ] adviceASetNoSettings
+adminSet   (WithArgs i mq cols (target:rest)) =
+    helper |&| modifyState >=> \(toSelfMsgs, mTargetId, toTargetMsgs, logMsgs, fs) -> do
+        multiWrapSend mq cols toSelfMsgs
+        let ioHelper targetId = getState >>= \ms -> do
+                let f = case getType targetId ms of
+                          PCType  -> retainedMsg targetId ms
+                          NpcType -> bcast . mkBcast targetId
+                          t       -> patternMatchFail "adminSet f" . showText $ t
+                unless (isIncognitoId i ms || targetId == i) . forM_ (dropBlanks toTargetMsgs) $ f . colorWith adminSetColor
+                sequence_ fs
+                logMsgs |#| logPla (prefixAdminCmd "set") i . g . slashes
+              where
+                g = (parensQuote ("for ID " <> showText targetId) <>) . spcL
+        maybeVoid ioHelper mTargetId
   where
     helper ms = case reads . T.unpack $ target :: [(Int, String)] of
       [(targetId, "")] | targetId < 0                -> sorryHelper sorryWtf

@@ -70,8 +70,8 @@ pattern AdviseNoArgs :: ActionParams
 pattern AdviseNoArgs <- NoArgs' _ _
 
 
-pattern AdviseOneArg :: Text -> ActionParams
-pattern AdviseOneArg a <- WithArgs _ _ _ [a]
+pattern AdviseOneArg :: ActionParams
+pattern AdviseOneArg <- WithArgs _ _ _ [_]
 
 
 pattern Advising :: MsgQueue -> Cols -> ActionParams

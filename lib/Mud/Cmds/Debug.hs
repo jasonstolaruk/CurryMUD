@@ -435,7 +435,7 @@ debugGmcpDo p = withoutArgs debugGmcpDo p
 debugGmcpRoom :: ActionFun
 debugGmcpRoom (NoArgs i mq cols) = do
     wrapSend mq cols . gmcpRoomInfo i =<< getState
-    -- sendGmcpRoomInfo i mq
+    -- TODO: sendGmcpRoomInfo i mq
     logPlaExec (prefixDebugCmd "gmcproom") i
 debugGmcpRoom p = withoutArgs debugGmcpRoom p
 
@@ -616,7 +616,7 @@ debugKeys p = withoutArgs debugKeys p
 
 debugLiq :: ActionFun
 debugLiq p@AdviseNoArgs            = advise p [] adviceDLiqNoArgs
-debugLiq p@(AdviseOneArg _       ) = advise p [] adviceDLiqNoId
+debugLiq p@AdviseOneArg            = advise p [] adviceDLiqNoId
 debugLiq   (WithArgs i mq cols as) = getState >>= \ms ->
     parseTwoIntArgs mq cols as sorryParseAmt sorryParseId (helper ms)
   where
@@ -704,7 +704,7 @@ type Base = Int
 
 debugNumber :: ActionFun
 debugNumber p@AdviseNoArgs                             = advise p [] adviceDNumberNoArgs
-debugNumber p@(AdviseOneArg _                        ) = advise p [] adviceDNumberNoBase
+debugNumber p@AdviseOneArg                             = advise p [] adviceDNumberNoBase
 debugNumber   (WithArgs i mq cols [ numTxt, baseTxt ]) = case reads . T.unpack $ baseTxt :: [(Base, String)] of
       [(base, "")] | not . inRange (2, 36) $ base -> wrapSend mq cols . sorryParseBase $ baseTxt
                    | otherwise -> case numTxt `inBase` base of
@@ -1106,7 +1106,7 @@ wrapMsg = T.unwords wordy <> dfltColor
 
 debugWrapIndent :: ActionFun
 debugWrapIndent p@AdviseNoArgs            = advise p [] adviceDWrapIndentNoArgs
-debugWrapIndent p@(AdviseOneArg _       ) = advise p [] adviceDWrapIndentNoAmt
+debugWrapIndent p@AdviseOneArg            = advise p [] adviceDWrapIndentNoAmt
 debugWrapIndent   (WithArgs i mq cols as) = parseTwoIntArgs mq cols as sorryParseLineLen sorryParseIndent helper
   where
     helper lineLen indent | any (< 0) [ lineLen, indent ]              = wrapSend mq cols sorryWtf
