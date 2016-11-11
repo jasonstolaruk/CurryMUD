@@ -1573,7 +1573,11 @@ goDispatcher p                            = patternMatchFail "goDispatcher" . sh
 tryMove :: Id -> MsgQueue -> Cols -> ActionParams -> Text -> MudStack ()
 tryMove i mq cols p dir = helper |&| modifyState >=> \case
   Left  msg          -> wrapSend mq cols msg
-  Right (bs, logMsg) -> look p >> bcastIfNotIncog i bs >> logPla "tryMove" i logMsg
+  Right (bs, logMsg) -> do
+      sendGmcpRmInfo i =<< getState
+      look p
+      bcastIfNotIncog i bs
+      logPla "tryMove" i logMsg
   where
     helper ms = let { originId = getRmId i ms; originRm = getRm originId ms } in case findExit originRm dir of
           Nothing -> (ms, Left sorry)
