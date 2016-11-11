@@ -61,7 +61,7 @@ gmcpRoomInfo i ms = "Room.Info " <> curlyQuote (spaced rest)
     ri    = getRmId i  ms
     rm    = getRm   ri ms
     name  = rm^.rmName
-    area  = getZoneNameForRmId i
+    area  = getZoneNameForRmId ri
     exits = curlyQuote . spaced . views rmLinks (commas . map mkExitTxt) $ rm
       where
         mkExitTxt (StdLink    dir destId _    ) = f (linkDirToCmdName dir) destId
