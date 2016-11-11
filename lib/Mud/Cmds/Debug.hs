@@ -139,7 +139,7 @@ debugCmds =
     , mkDebugCmd "exp"         debugExp         "Award yourself 5,000 exp."
     , mkDebugCmd "fun"         debugFun         "Dump the keys of the function tables."
     , mkDebugCmd "gmcpdo"      debugGmcpDo      "Send IAC DO GMCP."
-    , mkDebugCmd "gmcproom"    debugGmcpRoom    "Send GMCP Room Info."
+    , mkDebugCmd "gmcproom"    debugGmcpRm      "Send GMCP Room Info."
     , mkDebugCmd "gmcpvitals"  debugGmcpVitals  "Send GMCP Vitals."
     , mkDebugCmd "gmcpwill"    debugGmcpWill    "Send IAC WILL GMCP."
     , mkDebugCmd "handle"      debugHandle      "Display information about the handle for your network connection."
@@ -432,12 +432,11 @@ debugGmcpDo p = withoutArgs debugGmcpDo p
 -----
 
 
-debugGmcpRoom :: ActionFun
-debugGmcpRoom (NoArgs i mq cols) = do
-    wrapSend mq cols . gmcpRoomInfo i =<< getState
-    -- TODO: sendGmcpRoomInfo i mq
+debugGmcpRm :: ActionFun
+debugGmcpRm (NoArgs i mq cols) = do
+    ((>>) <$> wrapSend mq cols . gmcpRmInfo i <*> sendGmcpRmInfo i) =<< getState
     logPlaExec (prefixDebugCmd "gmcproom") i
-debugGmcpRoom p = withoutArgs debugGmcpRoom p
+debugGmcpRm p = withoutArgs debugGmcpRm p
 
 
 -----
@@ -445,8 +444,7 @@ debugGmcpRoom p = withoutArgs debugGmcpRoom p
 
 debugGmcpVitals :: ActionFun
 debugGmcpVitals (NoArgs i mq cols) = do
-    wrapSend mq cols . gmcpVitals i =<< getState
-    sendGmcpVitals i mq
+    ((>>) <$> wrapSend mq cols . gmcpVitals i <*> sendGmcpVitals i) =<< getState
     logPlaExec (prefixDebugCmd "gmcpvitals") i
 debugGmcpVitals p = withoutArgs debugGmcpVitals p
 

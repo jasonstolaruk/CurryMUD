@@ -47,8 +47,8 @@ gmcpVitals i ms = "Char.Vitals " <> curlyQuote (spaced rest)
     f = getPts i ms & each %~ (both %~ (dblQuote . showText))
 
 
-gmcpRoomInfo :: Id -> MudState -> Text
-gmcpRoomInfo i ms = "Room.Info " <> curlyQuote (spaced rest)
+gmcpRmInfo :: Id -> MudState -> Text
+gmcpRmInfo i ms = "Room.Info " <> curlyQuote (spaced rest)
   where
     rest = T.concat [ dblQuote "num"       <> colon
                     , showText ri          <> comma

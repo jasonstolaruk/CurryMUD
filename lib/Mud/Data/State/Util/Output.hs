@@ -28,6 +28,7 @@ module Mud.Data.State.Util.Output ( anglePrompt
                                   , send
                                   , sendCmdNotFound
                                   , sendDfltPrompt
+                                  , sendGmcpRmInfo
                                   , sendGmcpVitals
                                   , sendMsgBoot
                                   , sendPrompt
@@ -351,9 +352,7 @@ firstSpiritCmdNotFound i pt
 
 
 sendDfltPrompt :: MsgQueue -> Id -> MudStack ()
-sendDfltPrompt mq i = do
-    sendPrompt mq . mkDfltPrompt i =<< getState
-    sendGmcpVitals i mq
+sendDfltPrompt mq i = ((>>) <$> sendPrompt mq . mkDfltPrompt i <*> sendGmcpVitals i) =<< getState
 
 
 mkDfltPrompt :: Id -> MudState -> Text
@@ -377,12 +376,18 @@ mkDfltPrompt i ms = let (hps,  mps,  pps,  fps ) = getPts i ms
 -----
 
 
-sendGmcp :: MsgQueue -> Text -> MudStack ()
-sendGmcp mq = send mq . quoteWith' (telnetGmcpLeft, telnetGmcpRight)
+sendGmcpRmInfo :: Id -> MudState -> MudStack ()
+sendGmcpRmInfo = gmcpHelper gmcpRmInfo
 
 
-sendGmcpVitals :: Id -> MsgQueue -> MudStack ()
-sendGmcpVitals i mq = sendGmcp mq . gmcpVitals i =<< getState
+gmcpHelper :: (Id -> MudState -> Text) -> Id -> MudState -> MudStack ()
+gmcpHelper f i ms
+  | isGmcpId i ms = send (getMsgQueue i ms) . quoteWith' (telnetGmcpLeft, telnetGmcpRight) . f i $ ms
+  | otherwise     = unit
+
+
+sendGmcpVitals :: Id -> MudState -> MudStack ()
+sendGmcpVitals = gmcpHelper gmcpVitals
 
 
 -----
