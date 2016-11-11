@@ -40,7 +40,6 @@ module Mud.Cmds.Util.Pla ( adminTagTxt
                          , isRingRol
                          , isRndmName
                          , isSlotAvail
-                         , linkDirToCmdName
                          , maybeSingleSlot
                          , mkChanBindings
                          , mkChanNamesTunings
@@ -1143,19 +1142,6 @@ mkExitsSummary cols (view rmLinks -> rls) =
   where
     summarize []  []  = "None!"
     summarize std cus = commas . (std ++) $ cus
-
-
-linkDirToCmdName :: LinkDir -> CmdName
-linkDirToCmdName North     = "n"
-linkDirToCmdName Northeast = "ne"
-linkDirToCmdName East      = "e"
-linkDirToCmdName Southeast = "se"
-linkDirToCmdName South     = "s"
-linkDirToCmdName Southwest = "sw"
-linkDirToCmdName West      = "w"
-linkDirToCmdName Northwest = "nw"
-linkDirToCmdName Up        = "u"
-linkDirToCmdName Down      = "d"
 
 
 isNonStdLink :: RmLink -> Bool

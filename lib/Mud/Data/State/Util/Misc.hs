@@ -36,6 +36,7 @@ module Mud.Data.State.Util.Misc ( addToInv
                                 , isNpc
                                 , isPC
                                 , leaveParty
+                                , linkDirToCmdName
                                 , lookupHooks
                                 , mkAdminIdSingList
                                 , mkAdminPlaIdSingList
@@ -379,6 +380,22 @@ leaveParty i ms = let helper p = memberOfHelper . myGroupHelper . followersHelpe
                               f memberOfId = ms' & mobTbl.ind i         .party.memberOf .~ Nothing
                                                  & mobTbl.ind memberOfId.party.myGroup  %~ delete i
                   in helper . getParty i $ ms
+
+
+-----
+
+
+linkDirToCmdName :: LinkDir -> CmdName
+linkDirToCmdName North     = "n"
+linkDirToCmdName Northeast = "ne"
+linkDirToCmdName East      = "e"
+linkDirToCmdName Southeast = "se"
+linkDirToCmdName South     = "s"
+linkDirToCmdName Southwest = "sw"
+linkDirToCmdName West      = "w"
+linkDirToCmdName Northwest = "nw"
+linkDirToCmdName Up        = "u"
+linkDirToCmdName Down      = "d"
 
 
 -----

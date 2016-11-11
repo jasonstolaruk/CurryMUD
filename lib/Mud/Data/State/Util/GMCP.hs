@@ -4,11 +4,12 @@ module Mud.Data.State.Util.GMCP where
 
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
+import Mud.Data.State.Util.Misc
 import Mud.TheWorld.Zones.ZoneRmMap
 import Mud.Util.Quoting
 import Mud.Util.Text
 
-import Control.Lens (both, each)
+import Control.Lens (both, each, views)
 import Control.Lens.Operators ((%~), (&), (^.))
 import Data.Monoid ((<>))
 import Data.Text (Text)
@@ -50,16 +51,19 @@ gmcpRoomInfo :: Id -> MudState -> Text
 gmcpRoomInfo i ms = "Room.Info " <> curlyQuote (spaced rest)
   where
     rest = T.concat [ dblQuote "num"       <> colon
-                    , "1234"               <> comma
+                    , showText ri          <> comma
                     , dblQuote "room name" <> colon
                     , dblQuote name        <> comma
                     , dblQuote "room area" <> colon
                     , dblQuote area        <> comma
                     , dblQuote "exits"     <> colon
                     , exits ]
-    rm    = getMobRm i ms
+    ri    = getRmId i  ms
+    rm    = getRm   ri ms
     name  = rm^.rmName
     area  = getZoneNameForRmId i
-    exits = curlyQuote . spaced $ t
+    exits = curlyQuote . spaced . views rmLinks (commas . map mkExitTxt) $ rm
       where
-        t = "\"n\": 1234, \"se\": 5678"
+        mkExitTxt (StdLink    dir destId _    ) = f (linkDirToCmdName dir) destId
+        mkExitTxt (NonStdLink n   destId _ _ _) = f n                      destId
+        f n destId                              = dblQuote n <> ": " <> showText destId
