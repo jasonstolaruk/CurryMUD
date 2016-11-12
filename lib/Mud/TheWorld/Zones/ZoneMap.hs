@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Mud.TheWorld.Zones.ZoneRmMap (getZoneNameForRmId) where
+module Mud.TheWorld.Zones.ZoneMap (getZoneForRmId) where
 
 import Mud.Data.State.MudData
 import Mud.TheWorld.Zones.AdminZoneIds
@@ -11,20 +11,22 @@ import Data.Text (Text)
 import qualified Data.IntMap.Lazy as IM (IntMap, fromList, lookup)
 
 
+type Zone     = (ZoneId, ZoneName)
+type ZoneId   = Int
 type ZoneName = Text
 
 
-getZoneNameForRmId :: Id -> ZoneName
-getZoneNameForRmId = fromMaybe "unknown" . (`IM.lookup` zoneRmMap)
+getZoneForRmId :: Id -> Zone
+getZoneForRmId = fromMaybe (0, "unknown") . (`IM.lookup` zoneMap)
 
 
-zoneRmMap :: IM.IntMap ZoneName
-zoneRmMap = IM.fromList . concat $ [ adminZone
-                                   , tutorialZone ]
+zoneMap :: IM.IntMap Zone
+zoneMap = IM.fromList . concat $ [ adminZone
+                                 , tutorialZone ]
 
 
-adminZone :: [(Id, ZoneName)]
-adminZone = zip rmIds . repeat $ "Admin zone"
+adminZone :: [(Id, Zone)]
+adminZone = zip rmIds . repeat $ (0, "Admin zone")
   where
     rmIds = [ iAccessoriesCloset
             , iArmCloset
@@ -48,7 +50,7 @@ adminZone = zip rmIds . repeat $ "Admin zone"
             , iWpnCloset ]
 
 
-tutorialZone :: [(Id, ZoneName)]
-tutorialZone = zip rmIds . repeat $ "Tutorial"
+tutorialZone :: [(Id, Zone)]
+tutorialZone = zip rmIds . repeat $ (1, "Tutorial")
   where
     rmIds = pure iTutWelcome
