@@ -9,7 +9,7 @@ import Mud.TheWorld.Zones.ZoneMap
 import Mud.Util.Quoting
 import Mud.Util.Text
 
-import Control.Lens (both, each, views)
+import Control.Lens (both, each, to, views)
 import Control.Lens.Operators ((%~), (&), (^.))
 import Data.Monoid ((<>))
 import Data.Text (Text)
@@ -58,13 +58,20 @@ gmcpRmInfo i ms = "Room.Info " <> curlyQuote (spaced rest)
                     , showText ri           <> comma
                     , dblQuote "room_name"  <> colon
                     , dblQuote roomName     <> comma
+                    , dblQuote "x_coord"    <> colon
+                    , dblQuote xCoord       <> comma
+                    , dblQuote "y_coord"    <> colon
+                    , dblQuote yCoord       <> comma
+                    , dblQuote "z_coord"    <> colon
+                    , dblQuote zCoord       <> comma
                     , dblQuote "room_exits" <> colon
                     , exits ]
-    ri                 = getRmId i ms
-    (zoneId, zoneName) = getZoneForRmId ri
-    rm                 = getRm ri ms
-    roomName           = rm^.rmName
-    exits              = curlyQuote . spaced . views rmLinks (commas . map mkExitTxt) $ rm
+    ri                       = getRmId i ms
+    (zoneId, zoneName)       = getZoneForRmId ri
+    rm                       = getRm ri ms
+    roomName                 = rm^.rmName
+    (xCoord, yCoord, zCoord) = rm^.rmCoords.to (each %~ showText)
+    exits                    = curlyQuote . spaced . views rmLinks (commas . map mkExitTxt) $ rm
       where
         mkExitTxt (StdLink    dir destId _    ) = f (linkDirToCmdName dir) destId
         mkExitTxt (NonStdLink n   destId _ _ _) = f n                      destId
