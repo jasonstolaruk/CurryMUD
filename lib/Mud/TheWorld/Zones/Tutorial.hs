@@ -54,6 +54,7 @@ createTutorial = do
             Nothing
             zeroBits
             []
+            (0, 0, 0)
             (M.fromList [ ("look", [ lookTrashHook ])
                         , ("put",  [ putTrashHook  ]) ])
             [ trashRmAction ]

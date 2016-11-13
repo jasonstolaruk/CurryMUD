@@ -214,6 +214,7 @@ data RmTemplate = RmTemplate { rtName      :: Text
                              , rtSmell     :: Maybe Text
                              , rtFlags     :: Int
                              , rtLinks     :: [RmLink]
+                             , rtCoords    :: RmCoords
                              , rtHookMap   :: HookMap
                              , rtActions   :: [RmAction]
                              , rtFunNames  :: [FunName] }
@@ -226,6 +227,7 @@ mkRm RmTemplate { .. } = Rm { _rmName      = rtName
                             , _rmSmell     = rtSmell
                             , _rmFlags     = rtFlags
                             , _rmLinks     = rtLinks
+                            , _rmCoords    = rtCoords
                             , _rmHookMap   = rtHookMap
                             , _rmActions   = rtActions
                             , _rmFunNames  = rtFunNames

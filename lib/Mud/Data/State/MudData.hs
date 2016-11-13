@@ -884,6 +884,7 @@ data Rm = Rm { _rmName      :: Text
              , _rmSmell     :: Maybe Text
              , _rmFlags     :: Int
              , _rmLinks     :: [RmLink]
+             , _rmCoords    :: RmCoords
              , _rmHookMap   :: HookMap
              , _rmActions   :: [RmAction]
              , _rmFunNames  :: [FunName]
@@ -920,6 +921,18 @@ data LinkMove = LinkMove { _moveCost :: Int
 
 
 type LinkName = Text
+
+
+type RmCoords = (XCoord, YCoord, ZCoord)
+
+
+type XCoord = Int
+
+
+type YCoord = Int
+
+
+type ZCoord = Int
 
 
 type HookMap = M.Map CmdName [Hook]
@@ -971,6 +984,7 @@ rmToJSON Rm { .. } = object [ "rmName"     .= _rmName
                             , "rmSmell"    .= _rmSmell
                             , "rmFlags"    .= _rmFlags
                             , "rmLinks"    .= _rmLinks
+                            , "rmCoords"   .= _rmCoords
                             , "rmHookMap"  .= _rmHookMap
                             , "rmActions"  .= _rmActions
                             , "rmFunNames" .= _rmFunNames ]
@@ -983,6 +997,7 @@ jsonToRm (Object o) = Rm <$> o .: "rmName"
                          <*> o .: "rmSmell"
                          <*> o .: "rmFlags"
                          <*> o .: "rmLinks"
+                         <*> o .: "rmCoords"
                          <*> o .: "rmHookMap"
                          <*> o .: "rmActions"
                          <*> o .: "rmFunNames"
