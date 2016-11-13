@@ -692,6 +692,13 @@ getRm i = view (rmTbl.ind i)
 -----
 
 
+getRmCoords :: Id -> MudState -> RmCoords
+getRmCoords i = view rmCoords . getRm i
+
+
+-----
+
+
 getRmId :: Id -> MudState -> Id
 getRmId i = view rmId . getMob i
 

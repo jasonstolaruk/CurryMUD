@@ -826,11 +826,12 @@ examinePla i ms = let p = getPla i ms
     helper = noneOnNull . commas . map (`descSingId` ms)
 
 
-examineRm :: ExamineHelper
+examineRm :: ExamineHelper -- TODO: Missing fields.
 examineRm i ms = let r = getRm i ms in [ "Name: "        <> r^.rmName
                                        , "Description: " <> r^.rmDesc.to xformNls
                                        , "Room flags: "  <> (commas . dropBlanks . descFlags $ r)
-                                       , "Links: "       <> r^.rmLinks.to (noneOnNull . commas . map helper) ]
+                                       , "Links: "       <> r^.rmLinks.to (noneOnNull . commas . map helper)
+                                       , "Coordinates: " <> r^.rmCoords.to showText ]
   where
     descFlags r | r^.rmFlags == zeroBits = none
                 | otherwise              = none -- TODO: Room flags.
