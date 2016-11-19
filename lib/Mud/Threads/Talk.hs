@@ -117,6 +117,7 @@ adHoc mq host = do
                        , _hand           = RHand
                        , _knownLangs     = pure . raceToLang $ r
                        , _rmId           = iWelcome
+                       , _lastRmId       = iWelcome
                        , _mobRmDesc      = Nothing
                        , _tempDesc       = Nothing
                        , _mobSize        = Nothing

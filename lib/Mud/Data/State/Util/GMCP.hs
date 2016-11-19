@@ -50,27 +50,38 @@ gmcpVitals i ms = "Char.Vitals " <> curlyQuote (spaced rest)
 gmcpRmInfo :: Id -> MudState -> Text
 gmcpRmInfo i ms = "Room.Info " <> curlyQuote (spaced rest)
   where
-    rest = T.concat [ dblQuote "area_name"  <> colon
-                    , dblQuote zoneName     <> comma
-                    , dblQuote "room_id"    <> colon
-                    , showText ri           <> comma
-                    , dblQuote "room_name"  <> colon
-                    , dblQuote roomName     <> comma
-                    , dblQuote "x_coord"    <> colon
-                    , showText xCoord       <> comma
-                    , dblQuote "y_coord"    <> colon
-                    , showText yCoord       <> comma
-                    , dblQuote "z_coord"    <> colon
-                    , showText zCoord       <> comma
-                    , dblQuote "room_exits" <> colon
-                    , exits ]
+    rest = T.concat [ dblQuote "area_name"    <> colon
+                    , dblQuote zoneName       <> comma
+                    , dblQuote "room_id"      <> colon
+                    , showText ri             <> comma
+                    , dblQuote "room_name"    <> colon
+                    , dblQuote roomName       <> comma
+                    , dblQuote "x_coord"      <> colon
+                    , showText xCoord         <> comma
+                    , dblQuote "y_coord"      <> colon
+                    , showText yCoord         <> comma
+                    , dblQuote "z_coord"      <> colon
+                    , showText zCoord         <> comma
+                    , dblQuote "last_room_id" <> colon
+                    , showText lastId         <> comma
+                    , mkDir ]
     ri                       = getRmId i ms
     zoneName                 = getZoneForRmId ri
     rm                       = getRm ri ms
     roomName                 = rm^.rmName
     (xCoord, yCoord, zCoord) = rm^.rmCoords
-    exits                    = curlyQuote . spaced . views rmLinks (commas . map mkExitTxt) $ rm
+    lastId                   = getLastRmId i ms
+    mkDir                    = views rmLinks dirHelper . getRm lastId $ ms
       where
-        mkExitTxt (StdLink    dir destId _    ) = f (linkDirToCmdName dir) destId
-        mkExitTxt (NonStdLink n   destId _ _ _) = f n                      destId
-        f n destId                              = dblQuote n <> ": " <> showText destId
+        dirHelper links =
+            let f (StdLink    dir destId _    ) | destId == ri = pure . T.concat $ [ dblQuote "dir"
+                                                                                   , colon
+                                                                                   , dblQuote . linkDirToCmdName $ dir ]
+                f (NonStdLink n   destId _ _ _) | destId == ri = pure . T.concat $ [ dblQuote "special_dir"
+                                                                                   , colon
+                                                                                   , dblQuote n ]
+                f _                                            = []
+            in case concatMap f links of (x:_) -> x
+                                         []    -> T.concat [ dblQuote "teleport"
+                                                           , colon
+                                                           , "true" ]

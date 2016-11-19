@@ -513,6 +513,7 @@ data Mob = Mob { _sex                    :: Sex
                , _hand                   :: Hand
                , _knownLangs             :: [Lang]
                , _rmId                   :: Id
+               , _lastRmId               :: Id -- TODO: Add to Admin and Debug cmds.
                , _mobRmDesc              :: MobRmDesc
                , _tempDesc               :: TempDesc
                , _mobSize                :: Maybe MobSize -- Used to calculate NPC stomach size.
@@ -663,6 +664,7 @@ mobToJSON Mob { .. } = object [ "sex"            .= _sex
                               , "hand"           .= _hand
                               , "knownLangs"     .= _knownLangs
                               , "rmId"           .= _rmId
+                              , "lastRmId"       .= _lastRmId
                               , "mobRmDesc"      .= _mobRmDesc
                               , "tempDesc"       .= _tempDesc
                               , "mobSize"        .= _mobSize
@@ -693,6 +695,7 @@ jsonToMob (Object o) = Mob <$> o .: "sex"
                            <*> o .: "hand"
                            <*> o .: "knownLangs"
                            <*> o .: "rmId"
+                           <*> o .: "lastRmId"
                            <*> o .: "mobRmDesc"
                            <*> o .: "tempDesc"
                            <*> o .: "mobSize"

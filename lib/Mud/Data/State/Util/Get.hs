@@ -390,6 +390,13 @@ getKnownLangs i = view knownLangs . getMob i
 -----
 
 
+getLastRmId :: Id -> MudState -> Id
+getLastRmId i = view lastRmId . getMob i
+
+
+-----
+
+
 getLinked :: Id -> MudState -> [Sing]
 getLinked = onPC (view linked) []
 

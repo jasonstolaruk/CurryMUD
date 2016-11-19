@@ -138,6 +138,7 @@ mkMob MobTemplate { .. } = Mob { _sex            = mtSex
                                , _hand           = mtHand
                                , _knownLangs     = mtKnownLangs
                                , _rmId           = mtRmId
+                               , _lastRmId       = mtRmId
                                , _mobRmDesc      = Nothing
                                , _tempDesc       = Nothing
                                , _mobSize        = mtSize
