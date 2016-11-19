@@ -2600,11 +2600,11 @@ handleEgress i = do
         host           = getCurrHostName i ms
         duration       = round $ now `diffUTCTime` conTime
         conTime        = fromJust . getConnectTime i $ ms
-    movePC ms ri     = ms & invTbl     .ind ri         %~ (i `delete`)
-                          & invTbl     .ind iLoggedOut %~ (i :)
-                          & msgQueueTbl.at  i          .~ Nothing
-                          & mobTbl     .ind i.rmId     .~ iLoggedOut
-                          & plaTbl     .ind i.lastRmId ?~ ri
+    movePC ms ri     = ms & invTbl     .ind ri           %~ (i `delete`)
+                          & invTbl     .ind iLoggedOut   %~ (i :)
+                          & msgQueueTbl.at  i            .~ Nothing
+                          & mobTbl     .ind i.rmId       .~ iLoggedOut
+                          & plaTbl     .ind i.logoutRmId ?~ ri
     possessHelper ms = let f = maybe id (\npcId -> npcTbl.ind npcId.npcPossessor .~ Nothing) . getPossessing i $ ms
                        in ms & plaTbl.ind i.possessing .~ Nothing & f
 

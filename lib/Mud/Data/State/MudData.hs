@@ -814,7 +814,7 @@ data Pla = Pla { _currHostName :: HostName
                , _peeping      :: Inv
                , _possessing   :: Maybe Id
                , _retainedMsgs :: [Text]
-               , _lastRmId     :: Maybe Id
+               , _logoutRmId   :: Maybe Id
                , _bonusTime    :: Maybe UTCTime
                , _spiritAsync  :: Maybe SpiritAsync } deriving Eq
 
@@ -854,7 +854,7 @@ plaToJSON Pla { .. } = object [ "currHostName" .= _currHostName
                               , "columns"      .= _columns
                               , "pageLines"    .= _pageLines
                               , "retainedMsgs" .= _retainedMsgs
-                              , "lastRmId"     .= _lastRmId
+                              , "logoutRmId"   .= _logoutRmId
                               , "bonusTime"    .= _bonusTime ]
 
 
@@ -868,7 +868,7 @@ jsonToPla (Object o) = Pla <$> o .: "currHostName"
                            <*> pure []
                            <*> pure Nothing
                            <*> o .: "retainedMsgs"
-                           <*> o .: "lastRmId"
+                           <*> o .: "logoutRmId"
                            <*> o .: "bonusTime"
                            <*> pure Nothing
 jsonToPla _          = empty

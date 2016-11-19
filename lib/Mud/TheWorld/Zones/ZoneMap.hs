@@ -11,13 +11,11 @@ import Data.Text (Text)
 import qualified Data.IntMap.Lazy as IM (IntMap, fromList, lookup)
 
 
-type Zone     = (ZoneId, ZoneName)
-type ZoneId   = Int
-type ZoneName = Text
+type Zone = Text
 
 
 getZoneForRmId :: Id -> Zone
-getZoneForRmId = fromMaybe (0, "unknown") . (`IM.lookup` zoneMap)
+getZoneForRmId = fromMaybe "unknown" . (`IM.lookup` zoneMap)
 
 
 zoneMap :: IM.IntMap Zone
@@ -26,7 +24,7 @@ zoneMap = IM.fromList . concat $ [ adminZone
 
 
 adminZone :: [(Id, Zone)]
-adminZone = zip rmIds . repeat $ (0, "Admin zone")
+adminZone = zip rmIds . repeat $ "Admin zone"
   where
     rmIds = [ iAccessoriesCloset
             , iArmCloset
@@ -51,6 +49,6 @@ adminZone = zip rmIds . repeat $ (0, "Admin zone")
 
 
 tutorialZone :: [(Id, Zone)]
-tutorialZone = zip rmIds . repeat $ (1, "Tutorial")
+tutorialZone = zip rmIds . repeat $ "Tutorial"
   where
     rmIds = pure iTutWelcome

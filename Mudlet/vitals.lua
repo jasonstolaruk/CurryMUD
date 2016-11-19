@@ -1,4 +1,4 @@
-did_init = false
+local did_init = false
 
 function init()
   createGauge("hp_bar", 200, 20, 0,   0, "HP", "red"   )

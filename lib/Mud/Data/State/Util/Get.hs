@@ -390,13 +390,6 @@ getKnownLangs i = view knownLangs . getMob i
 -----
 
 
-getLastRmId :: Id -> MudState -> Maybe Id
-getLastRmId = onPla (view lastRmId) Nothing
-
-
------
-
-
 getLinked :: Id -> MudState -> [Sing]
 getLinked = onPC (view linked) []
 
@@ -406,6 +399,13 @@ getLinked = onPC (view linked) []
 
 getListenThreadId :: MudState -> ThreadId
 getListenThreadId = reverseLookup Listen . view threadTbl
+
+
+-----
+
+
+getLogoutRmId :: Id -> MudState -> Maybe Id
+getLogoutRmId = onPla (view logoutRmId) Nothing
 
 
 -----

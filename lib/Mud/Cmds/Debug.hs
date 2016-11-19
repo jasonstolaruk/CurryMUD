@@ -518,8 +518,8 @@ debugId   (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
                     , f . filter (views peeping (searchId `elem`) . snd) . tblToList plaTbl $ ms ]
                   , [ T.concat [ "Players possessing ID ", searchIdTxt, ":" ]
                     , f . filter (views possessing (searchId `elem`) . snd) . tblToList plaTbl $ ms ]
-                  , [ T.concat [ "Players with a ", dblQuote "lastRmId", " of ", searchIdTxt, ":" ]
-                    , f . filter (views lastRmId (searchId `elem`) . snd) . tblToList plaTbl $ ms ]
+                  , [ T.concat [ "Players with a ", dblQuote "logoutRmId", " of ", searchIdTxt, ":" ]
+                    , f . filter (views logoutRmId (searchId `elem`) . snd) . tblToList plaTbl $ ms ]
                   , [ T.concat [ "Rooms with a ", dblQuote "StdLink", " to ID ", searchIdTxt, ":" ]
                     , let g (StdLink _ di _) = di == searchId
                           g NonStdLink {}    = False

@@ -350,7 +350,7 @@ isAwake = onPla ((&&) <$> isLoggedIn <*> not . isIncognito) True
 
 
 isLoggedIn :: Pla -> Bool
-isLoggedIn = views lastRmId ((()#) . (Sum <$>))
+isLoggedIn = views logoutRmId ((()#) . (Sum <$>))
 
 
 -----

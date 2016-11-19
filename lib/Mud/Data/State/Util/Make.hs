@@ -186,8 +186,8 @@ newObj ms et ot invId = let (i, typeTbl.ind i .~ ObjType -> ms', fs) = createObj
 -----
 
 
-data PlaTemplate = PlaTemplate { ptPlaFlags :: Int
-                               , ptLastRmId :: Id }
+data PlaTemplate = PlaTemplate { ptPlaFlags   :: Int
+                               , ptLogoutRmId :: Id }
 
 
 mkPla :: PlaTemplate -> Pla
@@ -200,7 +200,7 @@ mkPla PlaTemplate { .. } = Pla { _currHostName = ""
                                , _peeping      = []
                                , _possessing   = Nothing
                                , _retainedMsgs = []
-                               , _lastRmId     = Just ptLastRmId
+                               , _logoutRmId   = Just ptLogoutRmId
                                , _bonusTime    = Nothing
                                , _spiritAsync  = Nothing }
 

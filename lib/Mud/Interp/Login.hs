@@ -775,12 +775,12 @@ logIn newId ms newHost newTime originId = peepNewId . movePC $ adoptNewId
                     & typeTbl         .at  originId      .~ Nothing
       where
         gmcp = isGmcpId newId ms
-    movePC ms' = let newRmId = fromJust . getLastRmId newId $ ms'
-                 in ms' & invTbl.ind iWelcome       %~ (newId    `delete`)
-                        & invTbl.ind iLoggedOut     %~ (originId `delete`)
-                        & invTbl.ind newRmId        %~ addToInv ms' (pure newId)
-                        & mobTbl.ind newId.rmId     .~ newRmId
-                        & plaTbl.ind newId.lastRmId .~ Nothing
+    movePC ms' = let newRmId = fromJust . getLogoutRmId newId $ ms'
+                 in ms' & invTbl.ind iWelcome         %~ (newId    `delete`)
+                        & invTbl.ind iLoggedOut       %~ (originId `delete`)
+                        & invTbl.ind newRmId          %~ addToInv ms' (pure newId)
+                        & mobTbl.ind newId.rmId       .~ newRmId
+                        & plaTbl.ind newId.logoutRmId .~ Nothing
     peepNewId ms'@(getPeepers newId -> peeperIds) =
         let replaceId = (newId :) . (originId `delete`)
         in ms' & plaTbl %~ flip (foldr (\peeperId -> ind peeperId.peeping %~ replaceId)) peeperIds

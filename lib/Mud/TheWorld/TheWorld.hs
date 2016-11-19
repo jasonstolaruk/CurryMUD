@@ -228,8 +228,8 @@ movePCs = tweak $ \ms ->
     let idsWithRmIds       = let pairs   = views mobTbl (IM.foldrWithKey f []) ms
                                  f i mob = onTrue (isPC i ms) ((i, mob^.rmId) :)
                              in filter ((/= iLoggedOut) . snd) pairs
-        helper (i, ri) ms' = ms' & invTbl.ind ri         %~ (i `delete`)
-                                 & invTbl.ind iLoggedOut %~ (i :)
-                                 & mobTbl.ind i.rmId     .~ iLoggedOut
-                                 & plaTbl.ind i.lastRmId ?~ ri
+        helper (i, ri) ms' = ms' & invTbl.ind ri           %~ (i `delete`)
+                                 & invTbl.ind iLoggedOut   %~ (i :)
+                                 & mobTbl.ind i.rmId       .~ iLoggedOut
+                                 & plaTbl.ind i.logoutRmId ?~ ri
     in foldr helper ms idsWithRmIds

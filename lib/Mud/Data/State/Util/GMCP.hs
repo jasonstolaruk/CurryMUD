@@ -50,9 +50,7 @@ gmcpVitals i ms = "Char.Vitals " <> curlyQuote (spaced rest)
 gmcpRmInfo :: Id -> MudState -> Text
 gmcpRmInfo i ms = "Room.Info " <> curlyQuote (spaced rest)
   where
-    rest = T.concat [ dblQuote "zone_id"    <> colon
-                    , showText zoneId       <> comma
-                    , dblQuote "zone_name"  <> colon
+    rest = T.concat [ dblQuote "area_name"  <> colon
                     , dblQuote zoneName     <> comma
                     , dblQuote "room_id"    <> colon
                     , showText ri           <> comma
@@ -67,7 +65,7 @@ gmcpRmInfo i ms = "Room.Info " <> curlyQuote (spaced rest)
                     , dblQuote "room_exits" <> colon
                     , exits ]
     ri                       = getRmId i ms
-    (zoneId, zoneName)       = getZoneForRmId ri
+    zoneName                 = getZoneForRmId ri
     rm                       = getRm ri ms
     roomName                 = rm^.rmName
     (xCoord, yCoord, zCoord) = rm^.rmCoords
