@@ -63,7 +63,7 @@ gmcpRmInfo i ms = "Room.Info " <> curlyQuote (spaced rest)
                     , dblQuote "z_coord"      <> colon
                     , showText zCoord         <> comma
                     , dblQuote "last_room_id" <> colon
-                    , showText lastId         <> comma
+                    , showText lastId
                     , mkDir ]
     ri                       = getRmId i ms
     zoneName                 = getZoneForRmId ri
@@ -74,14 +74,27 @@ gmcpRmInfo i ms = "Room.Info " <> curlyQuote (spaced rest)
     mkDir                    = views rmLinks dirHelper . getRm lastId $ ms
       where
         dirHelper links =
-            let f (StdLink    dir destId _    ) | destId == ri = pure . T.concat $ [ dblQuote "dir"
-                                                                                   , colon
-                                                                                   , dblQuote . linkDirToCmdName $ dir ]
-                f (NonStdLink n   destId _ _ _) | destId == ri = pure . T.concat $ [ dblQuote "special_dir"
-                                                                                   , colon
-                                                                                   , dblQuote n ]
-                f _                                            = []
-            in case concatMap f links of (x:_) -> x
-                                         []    -> T.concat [ dblQuote "teleport"
-                                                           , colon
-                                                           , "true" ]
+            let f (StdLink    dir destId _    ) | destId == ri = mkStdDir . linkDirToCmdName $ dir
+                f (NonStdLink n   destId _ _ _) | destId == ri =
+                    case n of "in"  -> mkStdDir n
+                              "out" -> mkStdDir n
+                              _     -> pure . T.concat $ [ dblQuote "special_dir", colon, n ] -- TODO: OK?
+                f _ = []
+                mkStdDir t = pure . T.concat $ [ dblQuote "dir", colon, dblQuote . showText $ dirInt ]
+                  where
+                    dirInt :: Int
+                    dirInt = case t of "n"   -> 1
+                                       "ne"  -> 2
+                                       "nw"  -> 3
+                                       "e"   -> 4
+                                       "w"   -> 5
+                                       "s"   -> 6
+                                       "se"  -> 7
+                                       "sw"  -> 8
+                                       "u"   -> 9
+                                       "d"   -> 10
+                                       "in"  -> 11
+                                       "out" -> 12
+                                       _     -> undefined -- TODO
+            in case concatMap f links of (x:_) -> comma <> x
+                                         []    -> ""

@@ -1960,16 +1960,18 @@ teleHelper p@ActionParams { myId } ms originId destId destName mt f sorry =
         s            = fromJust . desigEntSing $ originDesig
         destDesig    = mkSerializedNonStdDesig myId ms s A Don'tCap
         destMobIds   = findMobIds ms $ ms^.invTbl.ind destId
-        ms'          = ms & mobTbl.ind myId.rmId .~ destId
-                          & invTbl.ind originId  %~ (myId `delete`)
-                          & invTbl.ind destId    %~ addToInv ms (pure myId)
+        ms'          = ms & mobTbl.ind myId.rmId     .~ destId
+                          & mobTbl.ind myId.lastRmId .~ originId
+                          & invTbl.ind originId      %~ (myId `delete`)
+                          & invTbl.ind destId        %~ addToInv ms (pure myId)
         bs           = map (first nlnl) [ (teleDescMsg,                             pure myId   )
                                         , (teleOriginMsg . serialize $ originDesig, originMobIds)
                                         , (teleDestMsg destDesig,                   destMobIds  ) ]
     in if | destId == originId   -> sorry sorryTeleAlready
           | destId == iWelcome   -> sorry sorryTeleWelcomeRm
           | destId == iLoggedOut -> sorry sorryTeleLoggedOutRm
-          | otherwise            -> (ms', [ bcastIfNotIncog myId . f myId . g $ bs
+          | otherwise            -> (ms', [ sendGmcpRmInfo  myId ms'
+                                          , bcastIfNotIncog myId . f myId . g $ bs
                                           , look p
                                           , logPla "telehelper" myId . prd $ "teleported to " <> dblQuote destName
                                           , rndmDos [ (calcProbTeleportDizzy   myId ms, mkExpAction "dizzy"   p)

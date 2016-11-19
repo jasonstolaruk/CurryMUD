@@ -10,8 +10,8 @@ end
 
 function curry_vitals()
   if not did_init then init() end
-  set_gauge("hp_bar", gmcp.Char.Vitals.curr_hp, gmcp.Char.Vitals.max_hp)
-  set_gauge("mp_bar", gmcp.Char.Vitals.curr_mp, gmcp.Char.Vitals.max_mp)
-  set_gauge("pp_bar", gmcp.Char.Vitals.curr_pp, gmcp.Char.Vitals.max_pp)
-  set_gauge("fp_bar", gmcp.Char.Vitals.curr_fp, gmcp.Char.Vitals.max_fp)
+  setGauge("hp_bar", gmcp.Char.Vitals.curr_hp, gmcp.Char.Vitals.max_hp)
+  setGauge("mp_bar", gmcp.Char.Vitals.curr_mp, gmcp.Char.Vitals.max_mp)
+  setGauge("pp_bar", gmcp.Char.Vitals.curr_pp, gmcp.Char.Vitals.max_pp)
+  setGauge("fp_bar", gmcp.Char.Vitals.curr_fp, gmcp.Char.Vitals.max_fp)
 end

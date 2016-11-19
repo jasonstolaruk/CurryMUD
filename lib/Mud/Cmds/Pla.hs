@@ -1587,6 +1587,7 @@ tryMove i mq cols p dir = helper |&| modifyState >=> \case
                 originMobIds = i `delete` desigIds originDesig
                 destMobIds   = findMobIds ms $ ms^.invTbl.ind destId
                 ms'          = ms & mobTbl.ind i.rmId      .~ destId
+                                  & mobTbl.ind i.lastRmId  .~ originId
                                   & mobTbl.ind i.mobRmDesc .~ Nothing
                                   & invTbl.ind originId    %~ (i `delete`)
                                   & invTbl.ind destId      %~ addToInv ms (pure i)
