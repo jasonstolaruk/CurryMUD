@@ -747,7 +747,8 @@ examineMob i ms =
        , "Level: "            <> m^.lvl .to showText
        , "Handedness: "       <> m^.hand.to pp
        , "Know languages: "   <> m^.knownLangs.to ppList
-       , "Room: "             <> let ri = m^.rmId in getRmName ri ms |<>| parensQuote (showText ri)
+       , "Room: "             <> m^.rmId     .to rmHelper
+       , "Last room: "        <> m^.lastRmId .to rmHelper
        , "Room description: " <> m^.mobRmDesc.to (fromMaybe none)
        , "Temp description: " <> m^.tempDesc .to (fromMaybe none)
        , "Size: "             <> m^.mobSize       .to ppMaybe
@@ -765,7 +766,15 @@ examineMob i ms =
                                  in T.concat [ mouths, " / ", size, " ", parensQuote $ perFull <> "%" ]
        , "Feeling map: "      <> let f tag feel = (tag |<>| pp feel :)
                                  in noneOnNull . commas . views feelingMap (M.foldrWithKey f []) $ m
+       , "Now eating: "       <> m^.nowEating  .to (fromMaybe none)
+       , "Now drinking: "     <> m^.nowDrinking.to (maybe none drinkHelper)
        , encHelper i ms ]
+  where
+    rmHelper ri                        = getRmName ri ms |<>| parensQuote (showText ri)
+    drinkHelper (view liqNoun -> n, s) = f n |<>| parensQuote s
+      where
+        f (DoArticle    t) = t
+        f (Don'tArticle t) = t
 
 
 encHelper :: Id -> MudState -> Text

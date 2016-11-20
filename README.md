@@ -24,7 +24,7 @@ CurryMUD will have the following features:
 
 ## What I have so far
 
-* About 85 player commands and 50 administrator commands.
+* About 85 player commands, 50 administrator commands, and 55 commands for debugging purposes.
 * About 220 built-in emotes.
 * Help files for all existing non-debug commands. Help topics.
 * Commands have a consistent structure and a unique syntax for indicating target locations and quantities.

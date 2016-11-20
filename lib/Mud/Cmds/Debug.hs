@@ -496,6 +496,8 @@ debugId   (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
                     , f . filter ((searchId `elem`) . snd) . tblToList invTbl $ ms ]
                   , [ T.concat [ "Mobiles with a ", dblQuote "rmId", " of ", searchIdTxt, ":" ]
                     , f . filter (views rmId (== searchId) . snd) . tblToList mobTbl $ ms ]
+                  , [ T.concat [ "Mobiles with a ", dblQuote "lastRmId", " of ", searchIdTxt, ":" ]
+                    , f . filter (views lastRmId (== searchId) . snd) . tblToList mobTbl $ ms ]
                   , [ T.concat [ "Mobiles following ID ", searchIdTxt, ":" ]
                     , f . filter (views (party.following) (== Just searchId) . snd) . tblToList mobTbl $ ms ]
                   , [ T.concat [ "Mobiles followed by ID ", searchIdTxt, ":" ]

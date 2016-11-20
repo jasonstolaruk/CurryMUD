@@ -513,7 +513,7 @@ data Mob = Mob { _sex                    :: Sex
                , _hand                   :: Hand
                , _knownLangs             :: [Lang]
                , _rmId                   :: Id
-               , _lastRmId               :: Id -- TODO: Add to Admin and Debug cmds.
+               , _lastRmId               :: Id
                , _mobRmDesc              :: MobRmDesc
                , _tempDesc               :: TempDesc
                , _mobSize                :: Maybe MobSize -- Used to calculate NPC stomach size.
