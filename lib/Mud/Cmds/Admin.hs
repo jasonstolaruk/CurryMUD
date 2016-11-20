@@ -827,14 +827,15 @@ examinePla i ms = let p = getPla i ms
 
 
 examineRm :: ExamineHelper
-examineRm i ms = let r = getRm i ms in [ "Name: "        <> r^.rmName
-                                       , "Description: " <> r^.rmDesc  .to xformNls
-                                       , "Listen: "      <> r^.rmListen.to (fromMaybe none)
-                                       , "Smell: "       <> r^.rmSmell .to (fromMaybe none)
-                                       , "Room flags: "  <> (commas . dropBlanks . descFlags $ r)
-                                       , "Links: "       <> r^.rmLinks  .to (noneOnNull . commas . map linkHelper)
-                                       , "Coordinates: " <> r^.rmCoords .to showText
-                                       , "Hooks: "       <> r^.rmHookMap.to hookHelper ]
+examineRm i ms = let r = getRm i ms in [ "Name: "           <> r^.rmName
+                                       , "Description: "    <> r^.rmDesc  .to xformNls
+                                       , "Listen: "         <> r^.rmListen.to (fromMaybe none)
+                                       , "Smell: "          <> r^.rmSmell .to (fromMaybe none)
+                                       , "Room flags: "     <> (commas . dropBlanks . descFlags $ r)
+                                       , "Links: "          <> r^.rmLinks   .to (noneOnNull . commas . map linkHelper)
+                                       , "Coordinates: "    <> r^.rmCoords  .to showText
+                                       , "Hooks: "          <> r^.rmHookMap .to hookHelper
+                                       , "Room functions: " <> r^.rmFunNames.to (noneOnNull . commas) ]
   where
     descFlags r | r^.rmFlags == zeroBits = none
                 | otherwise              = none -- TODO: Room flags.
