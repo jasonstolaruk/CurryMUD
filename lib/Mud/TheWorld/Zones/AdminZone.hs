@@ -770,7 +770,7 @@ createAdminZone = do
             Nothing
             zeroBits
             [ StdLink West iBasement dfltLinkMove, StdLink Down iAccessoriesCloset dfltLinkMove ]
-            (0, 1, -1)
+            (1, 0, -1)
             M.empty [] []))
   putRm iAccessoriesCloset
         [ iEar1
@@ -869,7 +869,7 @@ createAdminZone = do
             Nothing
             zeroBits
             [ StdLink East iBasement dfltLinkMove ]
-            (0, -1, -1)
+            (-1, 0, -1)
             M.empty [] []))
   putRm iMobCloset
         [ iPidge, iRockCavy1, iRockCavy2, iSkeleton1, iSkeleton2, iSkeleton3 ]
