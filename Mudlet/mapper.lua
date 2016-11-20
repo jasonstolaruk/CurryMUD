@@ -4,6 +4,7 @@ local did_init = false
 
 function init()
   did_init = true
+  setMapZoom(12)
   local r, g, b
   -- Inside
   r, g, b = unpack(color_table.brown)
@@ -27,27 +28,23 @@ function curry_mapper()
   local info = gmcp.Room.Info
   -- display(info)
   local area_id = find_area_id(info.area_name)
-  if not area_id then
-    area_id = addAreaName(info.area_name)
-  end
+  if not area_id then area_id = addAreaName(info.area_name) end
   if not find_room_id(info.room_id) then
     addRoom(info.room_id)
     setRoomName(info.room_id, info.room_name)
     setRoomArea(info.room_id, area_id)
     setRoomCoordinates(info.room_id, info.x_coord, info.y_coord, info.z_coord)
     setRoomEnv(info.room_id, info.room_env)
+    createMapLabel(area_id, info.room_label, info.x_coord, info.y_coord, info.z_coord, 255,255,255, 0,0,0, 0, 14)
   end
-  if find_room_id(info.last_room_id) then
-    if info.last_room_id ~= info.room_id then
-      if info.dir ~= -1 then
-        setExit(info.last_room_id, info.room_id, info.dir)
-      elseif info.special_dir ~= "-1" then
-        addSpecialExit(info.last_room_id, info.room_id, info.special_dir)
-        addCustomLine(info.last_room_id, info.room_id, info.special_dir, "solid line", {0, 255, 255}, true)
-      end
+  if find_room_id(info.last_room_id) and info.last_room_id ~= info.room_id then
+    if info.dir ~= -1 then
+      setExit(info.last_room_id, info.room_id, info.dir)
+    elseif info.special_dir ~= "-1" then
+      addSpecialExit(info.last_room_id, info.room_id, info.special_dir)
+      addCustomLine(info.last_room_id, info.room_id, info.special_dir, "solid line", {0, 255, 255}, true)
     end
   end
-  setMapZoom(12)
   centerview(info.room_id)
 end
 

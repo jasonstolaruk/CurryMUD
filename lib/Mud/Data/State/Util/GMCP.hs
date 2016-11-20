@@ -52,6 +52,8 @@ gmcpRmInfo i ms = "Room.Info " <> curlyQuote (spaced rest)
                     , showText zCoord         <> comma
                     , dblQuote "room_env"     <> colon
                     , env                     <> comma
+                    , dblQuote "room_label"   <> colon
+                    , label                   <> comma
                     , dblQuote "last_room_id" <> colon
                     , showText lastId         <> comma
                     , mkDir ]
@@ -60,7 +62,8 @@ gmcpRmInfo i ms = "Room.Info " <> curlyQuote (spaced rest)
     rm                       = getRm ri ms
     roomName                 = rm^.rmName
     (xCoord, yCoord, zCoord) = rm^.rmCoords
-    env                      = views rmEnv (showText . (200 +) . fromEnum) rm
+    env                      = views rmEnv (showText . (200 +) . fromEnum) rm -- TODO: Mudlet's user-defined mapper colors?
+    label                    = views rmLabel (dblQuote . fromMaybeEmp) rm
     lastId                   = getLastRmId i ms
     mkDir                    = views rmLinks dirHelper . getRm lastId $ ms
       where

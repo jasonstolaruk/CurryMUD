@@ -889,6 +889,7 @@ data Rm = Rm { _rmName      :: Text
              , _rmLinks     :: [RmLink]
              , _rmCoords    :: RmCoords
              , _rmEnv       :: RmEnv
+             , _rmLabel     :: RmLabel
              , _rmHookMap   :: HookMap
              , _rmActions   :: [RmAction]
              , _rmFunNames  :: [FunName]
@@ -946,6 +947,9 @@ data RmEnv = InsideEnv
            | NoEnv deriving (Enum, Eq, Generic, Show)
 
 
+type RmLabel = Maybe Text
+
+
 type HookMap = M.Map CmdName [Hook]
 
 
@@ -997,6 +1001,7 @@ rmToJSON Rm { .. } = object [ "rmName"     .= _rmName
                             , "rmLinks"    .= _rmLinks
                             , "rmCoords"   .= _rmCoords
                             , "rmEnv"      .= _rmEnv
+                            , "rmLabel"    .= _rmLabel
                             , "rmHookMap"  .= _rmHookMap
                             , "rmActions"  .= _rmActions
                             , "rmFunNames" .= _rmFunNames ]
@@ -1011,6 +1016,7 @@ jsonToRm (Object o) = Rm <$> o .: "rmName"
                          <*> o .: "rmLinks"
                          <*> o .: "rmCoords"
                          <*> o .: "rmEnv"
+                         <*> o .: "rmLabel"
                          <*> o .: "rmHookMap"
                          <*> o .: "rmActions"
                          <*> o .: "rmFunNames"

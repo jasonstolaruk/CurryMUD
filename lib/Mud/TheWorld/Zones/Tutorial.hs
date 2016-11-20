@@ -56,6 +56,7 @@ createTutorial = do
             []
             (0, 0, 0)
             InsideEnv
+            (Just "Entrance")
             (M.fromList [ ("look", [ lookTrashHook ])
                         , ("put",  [ putTrashHook  ]) ])
             [ trashRmAction ]

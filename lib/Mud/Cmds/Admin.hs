@@ -844,6 +844,7 @@ examineRm i ms = let r = getRm i ms in [ "Name: "           <> r^.rmName
                                        , "Links: "          <> r^.rmLinks   .to (noneOnNull . commas . map linkHelper)
                                        , "Coordinates: "    <> r^.rmCoords  .to showText
                                        , "Environment: "    <> r^.rmEnv     .to pp
+                                       , "Label: "          <> r^.rmLabel   .to (fromMaybe none)
                                        , "Hooks: "          <> r^.rmHookMap .to hookHelper
                                        , "Room functions: " <> r^.rmFunNames.to (noneOnNull . commas) ]
   where
