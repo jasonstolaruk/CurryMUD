@@ -6,7 +6,6 @@ function curry_mapper()
   local area_id = find_area_id(info.area_name)
   if not area_id then
     area_id = addAreaName(info.area_name)
-    setMapZoom(12)
   end
   if not find_room_id(info.room_id) then
     addRoom(info.room_id)
@@ -23,6 +22,7 @@ function curry_mapper()
       end
     end
   end
+  setMapZoom(12)
   centerview(info.room_id)
 end
 

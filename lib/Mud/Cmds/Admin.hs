@@ -72,7 +72,7 @@ import GHC.Conc (ThreadStatus(..), threadStatus)
 import GHC.Exts (sortWith)
 import Prelude hiding (exp, pi)
 import qualified Data.IntMap.Lazy as IM (elems, filter, filterWithKey, keys, lookup, size, toList)
-import qualified Data.Map.Lazy as M (elems, foldl, foldrWithKey, keys, size, toList)
+import qualified Data.Map.Lazy as M (elems, foldl, foldrWithKey, keys, null, size, toList)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import qualified Data.Text.IO as T (putStrLn)
@@ -826,17 +826,20 @@ examinePla i ms = let p = getPla i ms
     helper = noneOnNull . commas . map (`descSingId` ms)
 
 
-examineRm :: ExamineHelper -- TODO: Missing fields.
+examineRm :: ExamineHelper
 examineRm i ms = let r = getRm i ms in [ "Name: "        <> r^.rmName
-                                       , "Description: " <> r^.rmDesc.to xformNls
+                                       , "Description: " <> r^.rmDesc  .to xformNls
+                                       , "Listen: "      <> r^.rmListen.to (fromMaybe none)
+                                       , "Smell: "       <> r^.rmSmell .to (fromMaybe none)
                                        , "Room flags: "  <> (commas . dropBlanks . descFlags $ r)
-                                       , "Links: "       <> r^.rmLinks.to (noneOnNull . commas . map helper)
-                                       , "Coordinates: " <> r^.rmCoords.to showText ]
+                                       , "Links: "       <> r^.rmLinks  .to (noneOnNull . commas . map linkHelper)
+                                       , "Coordinates: " <> r^.rmCoords .to showText
+                                       , "Hooks: "       <> r^.rmHookMap.to hookHelper ]
   where
     descFlags r | r^.rmFlags == zeroBits = none
                 | otherwise              = none -- TODO: Room flags.
-    helper = \case (StdLink    dir destId linkMove    ) -> f (pp dir) destId linkMove
-                   (NonStdLink dir destId linkMove _ _) -> f dir      destId linkMove
+    linkHelper = \case (StdLink    dir destId linkMove    ) -> f (pp dir) destId linkMove
+                       (NonStdLink dir destId linkMove _ _) -> f dir      destId linkMove
       where
         f dir destId linkMove = spaces [ dir
                                        , "to"
@@ -844,6 +847,11 @@ examineRm i ms = let r = getRm i ms in [ "Name: "        <> r^.rmName
                                        , parensQuote . showText $ destId
                                        , linkMove^.moveCost.to showText
                                        , linkMove^.moveTime.to commaShow ]
+    hookHelper hookMap | M.null hookMap = none
+                       | otherwise      = commas . map f . M.toList $ hookMap
+      where
+        f (cmdName, hooks)     = T.concat [ cmdName, ": ", bracketQuote . slashes . map g $ hooks ]
+        g (Hook name triggers) = parensQuote name |<>| commas triggers
 
 
 xformNls :: Text -> Text

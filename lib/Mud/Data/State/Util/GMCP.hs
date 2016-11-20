@@ -76,19 +76,10 @@ gmcpRmInfo i ms = "Room.Info " <> curlyQuote (spaced rest)
                 mkStdDir t = pure . T.concat $ [ dblQuote "dir",         colon, showText dirInt, comma
                                                , dblQuote "special_dir", colon, dblQuote "-1" ]
                   where
-                    dirInt = case t of "n"   -> 1
-                                       "ne"  -> 2
-                                       "nw"  -> 3
-                                       "e"   -> 4
-                                       "w"   -> 5
-                                       "s"   -> 6
-                                       "se"  -> 7
-                                       "sw"  -> 8
-                                       "u"   -> 9
-                                       "d"   -> 10
-                                       "in"  -> 11
-                                       "out" -> 12
-                                       _     -> patternMatchFail "gmcpRmInfo mkDir dirHelper mkStdDir dirInt" t
+                    dirInt = case filter ((== t) . fst) dirs of
+                      [pair] -> snd pair
+                      _      -> patternMatchFail "gmcpRmInfo mkDir dirHelper mkStdDir dirInt" t
+                    dirs = zip [ "n", "ne", "nw", "e", "w", "s", "se", "sw", "u", "d", "in", "out" ] [1..]
             in case concatMap f links of (x:_) -> x
                                          []    -> T.concat [ dblQuote "dir",         colon, "-1", comma
                                                            , dblQuote "special_dir", colon, dblQuote "-1" ]
