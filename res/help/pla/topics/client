@@ -24,4 +24,4 @@ TinTin++ users:
 Please execute the "##split" command to create a separate input and output area: CurryMUD works best with a client that has a dedicated field for input. To account for the presence of the input area, you may need to decrease CurryMUD's "lines" setting by 2 (via the "set" command) or vertically expand your terminal window.
 
 \uSEE ALSO\n
-clear, color, mapper, password, set, texteditor
+clear, color, mapper, password, set, texteditor, zoom

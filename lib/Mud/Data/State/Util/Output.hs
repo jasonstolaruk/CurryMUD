@@ -30,6 +30,7 @@ module Mud.Data.State.Util.Output ( anglePrompt
                                   , sendDfltPrompt
                                   , sendGmcpRmInfo
                                   , sendGmcpVitals
+                                  , sendGmcpZoom
                                   , sendMsgBoot
                                   , sendPrompt
                                   , sendSilentBoot
@@ -388,6 +389,10 @@ gmcpHelper f i ms
 
 sendGmcpVitals :: Id -> MudState -> MudStack ()
 sendGmcpVitals = gmcpHelper gmcpVitals
+
+
+sendGmcpZoom :: Id -> MudState -> Int -> MudStack ()
+sendGmcpZoom i ms zoom = gmcpHelper (const . const . gmcpZoom $ zoom) i ms >> sendGmcpRmInfo i ms
 
 
 -----

@@ -167,7 +167,6 @@ regularCmds = map (uncurry4 mkRegularCmd) regularCmdTuples
 
 
 -- TODO: "retire"
--- TODO: "zoom"
 regularCmdTuples :: [(CmdFullName, ActionFun, Bool, CmdDesc)]
 regularCmdTuples =
     [ ("?",          plaDispCmdList,     True,  cmdDescDispCmdList)
@@ -211,7 +210,8 @@ regularCmdTuples =
     , ("unlink",     unlink,             True,  cmdDescUnlink)
     , ("uptime",     uptime,             True,  cmdDescUptime)
     , ("w",          go "w",             True,  cmdDescGoWest)
-    , ("whoami",     whoAmI,             True,  cmdDescWhoAmI) ]
+    , ("whoami",     whoAmI,             True,  cmdDescWhoAmI)
+    , ("zoom",       zoom,               True,  cmdDescZoom) ]
 
 
 mkRegularCmd :: CmdFullName -> ActionFun -> Bool -> CmdDesc -> Cmd
@@ -323,7 +323,8 @@ spiritRegularCmdTuples =
     , ("unlink",     unlink,            True,  cmdDescUnlink)
     , ("uptime",     uptime,            True,  cmdDescUptime)
     , ("w",          go "w",            True,  cmdDescGoWest)
-    , ("whoami",     whoAmI,            True,  cmdDescWhoAmI) ]
+    , ("whoami",     whoAmI,            True,  cmdDescWhoAmI)
+    , ("zoom",       zoom,              True,  cmdDescZoom) ]
 
 
 spiritPriorityAbbrevCmds :: [Cmd]
@@ -399,7 +400,8 @@ npcRegularCmdTuples =
     , ("sw",         go "sw",        True,  cmdDescGoSouthwest)
     , ("taste",      taste,          True,  cmdDescTaste)
     , ("u",          go "u",         True,  cmdDescGoUp)
-    , ("w",          go "w",         True,  cmdDescGoWest) ]
+    , ("w",          go "w",         True,  cmdDescGoWest)
+    , ("zoom",       zoom,           True,  cmdDescZoom) ]
 
 
 npcPriorityAbbrevCmds :: [Cmd]
@@ -4374,3 +4376,21 @@ whoAmI (NoArgs i mq cols) = (wrapSend mq cols =<< helper =<< getState) >> logPla
                          else T.concat [ "a ", sexy, " ", r ]
                        , "." ]
 whoAmI p = withoutArgs whoAmI p
+
+
+-----
+
+
+zoom :: ActionFun
+zoom (NoArgs' i mq       ) = zoomHelper i mq 14
+zoom (OneArg  i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
+  [(x, "")] | x <= 0    -> sorry
+            | otherwise -> zoomHelper i mq x
+  _                     -> sorry
+  where
+    sorry = wrapSend mq cols . sorryParseZoom $ a
+zoom p = advise p ["zoom"] adviceZoomExcessArgs
+
+
+zoomHelper :: Id -> MsgQueue -> Int -> MudStack ()
+zoomHelper i mq x = (flip (sendGmcpZoom i) x =<< getState) >> ok mq

@@ -184,6 +184,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryParseNum
                            , sorryParseOnOff
                            , sorryParseSetting
+                           , sorryParseZoom
                            , sorryPCName
                            , sorryPCNameLoggedIn
                            , sorryPeepAdmin
@@ -1362,6 +1363,10 @@ sorryParseOnOff value n = T.concat [ dblQuote value
 
 sorryParseSetting :: Text -> Text -> Text
 sorryParseSetting value name = T.concat [ dblQuote value, " is not a valid value for the ", dblQuote name, " setting." ]
+
+
+sorryParseZoom :: Text -> Text
+sorryParseZoom a = dblQuote a <> " is not a valid zoom level."
 
 
 -----

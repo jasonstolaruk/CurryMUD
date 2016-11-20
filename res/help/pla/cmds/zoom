@@ -1,0 +1,16 @@
+\h ZOOM \d
+
+\uUSAGE\n
+zoom \s[\dlevel\s]\d
+
+\uDESCRIPTION\n
+Set the zoom level of the Mudlet mapper.
+1 is the closest possible zoom level. The greater the zoom level, the more the map will zoom out.
+When no arguments are provided, the zoom will be set to the default level of 14.
+
+\uEXAMPLES\n
+\qzoom\d to zoom to the default level of 14.4`
+\qzoom 20\d to set the zoom level to 20.4`
+
+\uSEE ALSO\n
+clear, client, mapper

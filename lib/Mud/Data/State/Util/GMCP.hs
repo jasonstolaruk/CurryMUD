@@ -2,7 +2,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Mud.Data.State.Util.GMCP ( gmcpRmInfo
-                                , gmcpVitals ) where
+                                , gmcpVitals
+                                , gmcpZoom ) where
 
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
@@ -33,6 +34,9 @@ patternMatchFail = U.patternMatchFail "Mud.Data.State.Util.GMCP"
 colon, comma :: Text
 colon = ": "
 comma = ", "
+
+
+-----
 
 
 gmcpRmInfo :: Id -> MudState -> Text
@@ -100,6 +104,9 @@ envToColorInt SpecialEnv = 270 -- Light cyan.
 envToColorInt NoEnv      = 264 -- Light black.
 
 
+-----
+
+
 gmcpVitals :: Id -> MudState -> Text
 gmcpVitals i ms = "Char.Vitals " <> curlyQuote (spaced rest)
   where
@@ -124,3 +131,14 @@ gmcpVitals i ms = "Char.Vitals " <> curlyQuote (spaced rest)
                     , fpMax ]
     ((hpCurr, hpMax), (mpCurr, mpMax), (ppCurr, ppMax), (fpCurr, fpMax)) = f
     f = getPts i ms & each %~ (both %~ (dblQuote . showText))
+
+
+-----
+
+
+gmcpZoom :: Int -> Text
+gmcpZoom zoom = "Zoom " <> curlyQuote (spaced rest)
+  where
+    rest = T.concat [ dblQuote "zoom"
+                    , colon
+                    , showText zoom ]

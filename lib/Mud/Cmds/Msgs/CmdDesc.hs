@@ -253,3 +253,7 @@ cmdDescWho = "Display or search a list of who is currently awake."
 
 cmdDescWhoAmI :: Text
 cmdDescWhoAmI = "Confirm your name, sex, and race."
+
+
+cmdDescZoom :: Text
+cmdDescZoom = "Set the zoom of the Mudlet mapper to the default level or a specified zoom level."

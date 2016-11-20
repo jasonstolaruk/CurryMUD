@@ -120,6 +120,7 @@ module Mud.Cmds.Msgs.Advice ( adviceAAnnounceNoArgs
                             , adviceWhisperNoMsg
                             , adviceYouEmote
                             , adviceYouEmoteChar
+                            , adviceZoomExcessArgs
                             , advise ) where
 
 import Mud.Cmds.Util.CmdPrefixes
@@ -881,3 +882,11 @@ adviceYouEmoteChar cn = T.concat [ "Sorry, but you can't use a form of the word 
                                                                      , etc
                                                                      , "taro" ]
                                  , "." ]
+
+
+adviceZoomExcessArgs :: Text
+adviceZoomExcessArgs = T.concat [ "Please either provide no arguments "
+                                , parensQuote "to zoom to the default level of 14"
+                                , ", or a single argument: the zoom level, as in "
+                                , colorWith quoteColor "zoom 20"
+                                , "." ]

@@ -4,7 +4,7 @@ local did_init = false
 
 function curry_mapper()
   if not did_init then
-    setMapZoom(12)
+    setMapZoom(14)
     did_init = true
   end
   local info = gmcp.Room.Info
