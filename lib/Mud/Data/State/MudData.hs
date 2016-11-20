@@ -944,7 +944,7 @@ data RmEnv = InsideEnv
            | OutsideEnv
            | ShopEnv
            | SpecialEnv
-           | NoEnv deriving (Enum, Eq, Generic, Show)
+           | NoEnv deriving (Eq, Generic, Show)
 
 
 type RmLabel = Maybe Text

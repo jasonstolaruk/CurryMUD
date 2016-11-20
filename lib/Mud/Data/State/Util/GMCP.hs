@@ -62,8 +62,8 @@ gmcpRmInfo i ms = "Room.Info " <> curlyQuote (spaced rest)
     rm                       = getRm ri ms
     roomName                 = rm^.rmName
     (xCoord, yCoord, zCoord) = rm^.rmCoords
-    env                      = views rmEnv (showText . (200 +) . fromEnum) rm -- TODO: Mudlet's user-defined mapper colors?
-    label                    = views rmLabel (dblQuote . fromMaybeEmp) rm
+    env                      = views rmEnv   (showText . envToColorInt) rm
+    label                    = views rmLabel (dblQuote . fromMaybeEmp ) rm
     lastId                   = getLastRmId i ms
     mkDir                    = views rmLinks dirHelper . getRm lastId $ ms
       where
@@ -89,6 +89,15 @@ gmcpRmInfo i ms = "Room.Info " <> curlyQuote (spaced rest)
             in case concatMap f links of (x:_) -> x
                                          []    -> T.concat [ dblQuote "dir",         colon, "-1", comma
                                                            , dblQuote "special_dir", colon, dblQuote "-1" ]
+
+
+-- Numbers correspond to Mudlet's user-adjustable mapper colors.
+envToColorInt :: RmEnv -> Int
+envToColorInt InsideEnv  = 268 -- Light blue.
+envToColorInt OutsideEnv = 266 -- Light green.
+envToColorInt ShopEnv    = 265 -- Light red.
+envToColorInt SpecialEnv = 270 -- Light cyan.
+envToColorInt NoEnv      = 264 -- Light black.
 
 
 gmcpVitals :: Id -> MudState -> Text

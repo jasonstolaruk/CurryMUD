@@ -62,7 +62,7 @@ import Data.Char (isDigit, isLower, isUpper)
 import Data.Either (rights)
 import Data.Function (on)
 import Data.Ix (inRange)
-import Data.List ((\\), delete, foldl', groupBy, intercalate, intersperse, nub, partition, sortBy)
+import Data.List ((\\), delete, foldl', groupBy, intercalate, intersperse, nub, partition, sort, sortBy)
 import Data.Maybe (fromJust, fromMaybe, isJust)
 import Data.Monoid ((<>), Any(..), Sum(..), getSum)
 import Data.Text (Text)
@@ -2022,7 +2022,7 @@ adminTelePC ActionParams { plaMsgQueue, plaCols } = wrapSend plaMsgQueue plaCols
 adminTeleRm :: ActionFun
 adminTeleRm (NoArgs i mq cols) = (multiWrapSend mq cols =<< mkTxt) >> logPlaExecArgs (prefixAdminCmd "telerm") [] i
   where
-    mkTxt  = views rmTeleNameTbl ((header :) . styleAbbrevs Don'tQuote . IM.elems) <$> getState
+    mkTxt  = views rmTeleNameTbl ((header :) . styleAbbrevs Don'tQuote . sort . IM.elems) <$> getState
     header = "You may teleport to the following rooms:"
 adminTeleRm p@(OneArgLower i mq cols target) = modifyStateSeq $ \ms ->
     let SingleTarget { .. }        = mkSingleTarget mq cols target "The name of the room to which you want to teleport"

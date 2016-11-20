@@ -33,15 +33,17 @@ adminZone = zip rmIds . repeat $ "Admin zone"
             , iBasement
             , iCentral
             , iClothCloset
-            , iConCloset
             , iCoinsCloset
+            , iConCloset
             , iEmpty
             , iHallwayEast
             , iHallwayWest
             , iLounge
             , iLoungeEntrance
             , iMobCloset
+            , iNecropolis
             , iObjCloset
+            , iTrashDump
             , iTutEntrance
             , iVoid
             , iWeightRm

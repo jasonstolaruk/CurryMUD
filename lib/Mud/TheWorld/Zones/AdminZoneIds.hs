@@ -16,15 +16,15 @@ iRoot = 0 :: Id
 
 -----
 
-iLoggedOut = 1 :: Id
+iWelcome = 1 :: Id
 
 -----
 
-iNecropolis = 2 :: Id
+iLoggedOut = 2 :: Id
 
 -----
 
-iWelcome = 3 :: Id
+iEmpty = 3 :: Id
 
 -----
 
@@ -32,7 +32,7 @@ iTrashDump = 4 :: Id
 
 -----
 
-iEmpty = 5 :: Id
+iNecropolis = 5 :: Id
 
 -----
 
@@ -332,4 +332,24 @@ iLounge = 190 :: Id
 
 -----
 
-iCurry = 191 :: Id
+iInside = 191 :: Id
+
+-----
+
+iOutside = 192 :: Id
+
+-----
+
+iShop = 193 :: Id
+
+-----
+
+iSpecial = 194 :: Id
+
+-----
+
+iNoEnv = 195 :: Id
+
+-----
+
+iCurry = 196 :: Id

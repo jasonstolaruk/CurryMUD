@@ -167,6 +167,7 @@ regularCmds = map (uncurry4 mkRegularCmd) regularCmdTuples
 
 
 -- TODO: "retire"
+-- TODO: "zoom"
 regularCmdTuples :: [(CmdFullName, ActionFun, Bool, CmdDesc)]
 regularCmdTuples =
     [ ("?",          plaDispCmdList,     True,  cmdDescDispCmdList)

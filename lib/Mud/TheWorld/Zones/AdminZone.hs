@@ -563,32 +563,6 @@ createAdminZone = do
 
   -- ==================================================
   -- Rooms:
-  putRm iLoggedOut
-        [ iRoot ]
-        mempty
-        (mkRm (RmTemplate "Logged out room"
-            "PCs are placed here when their players log out."
-            Nothing
-            Nothing
-            zeroBits
-            []
-            (-1, 0, 0)
-            SpecialEnv
-            (Just "Logged out")
-            M.empty [] []))
-  putRm iNecropolis
-        []
-        mempty
-        (mkRm (RmTemplate "Necropolis"
-            "PCs are placed here when they die."
-            Nothing
-            Nothing
-            zeroBits
-            []
-            (-2, 0, 0)
-            SpecialEnv
-            (Just "Necropolis")
-            M.empty [] []))
   putRm iWelcome
         []
         mempty
@@ -598,22 +572,22 @@ createAdminZone = do
             Nothing
             zeroBits
             []
-            (-1, 1, 0)
+            (0, 0, 0) -- This room is technically in the "unknown" zone.
             SpecialEnv
             (Just "Welcome")
             M.empty [] []))
-  putRm iTrashDump
-        []
+  putRm iLoggedOut
+        [ iRoot ]
         mempty
-        (mkRm (RmTemplate "Trash dump"
-            "Items deposited in magic trash bins end up here."
+        (mkRm (RmTemplate "Logged out room"
+            "PCs are placed here when their players log out."
             Nothing
-            (Just "This place sure does smell like shit.")
+            Nothing
             zeroBits
             []
-            (-2, 1, 0)
+            (1, 0, 0) -- This room is technically in the "unknown" zone.
             SpecialEnv
-            (Just "Trash")
+            (Just "Logged out")
             M.empty [] []))
   putRm iEmpty
         []
@@ -631,6 +605,32 @@ createAdminZone = do
             (M.fromList [ ("look", [ readLookSign_iEmptyHook, lookWallsHook, lookCeilingHook ])
                         , ("read", [ readLookSign_iEmptyHook                                 ]) ])
             [] []))
+  putRm iTrashDump
+        []
+        mempty
+        (mkRm (RmTemplate "Trash dump"
+            "Items deposited in magic trash bins end up here."
+            Nothing
+            (Just "This place sure does smell like shit.")
+            zeroBits
+            []
+            (2, 1, 0)
+            SpecialEnv
+            (Just "Trash")
+            M.empty [] []))
+  putRm iNecropolis
+        []
+        mempty
+        (mkRm (RmTemplate "Necropolis"
+            "PCs are placed here when they die."
+            Nothing
+            Nothing
+            zeroBits
+            []
+            (3, 1, 0)
+            SpecialEnv
+            (Just "Necropolis")
+            M.empty [] []))
   putRm iCentral
         []
         mempty
@@ -644,7 +644,9 @@ createAdminZone = do
             (Just "The cooling fans spinning inside the control panels give off a soothing whirring sound.")
             (Just "You vaguely detect the chemical scents of plastic and cleaning solutions.")
             zeroBits
-            [ StdLink Down iBasement dfltLinkMove, StdLink East iHallwayWest dfltLinkMove ]
+            [ StdLink Down  iBasement    dfltLinkMove
+            , StdLink East  iHallwayWest dfltLinkMove
+            , StdLink South iInside      dfltLinkMove ]
             (0, 0, 0)
             InsideEnv
             (Just "Central")
@@ -704,6 +706,71 @@ createAdminZone = do
                         , ("smell", [ smellFlowerbedHook ]) ])
             [ pickRmAction     ]
             [ beeBuzzRmFunName ]))
+  putRm iInside
+        []
+        mempty
+        (mkRm (RmTemplate "Inside"
+            "This room is inside."
+            Nothing
+            Nothing
+            zeroBits
+            [ StdLink North iCentral dfltLinkMove, StdLink South iOutside dfltLinkMove ]
+            (0, -1, 0)
+            InsideEnv
+            Nothing
+            M.empty [] []))
+  putRm iOutside
+        []
+        mempty
+        (mkRm (RmTemplate "Outside"
+            "This room is outside."
+            Nothing
+            Nothing
+            zeroBits
+            [ StdLink North iInside dfltLinkMove, StdLink South iShop dfltLinkMove ]
+            (0, -2, 0)
+            OutsideEnv
+            Nothing
+            M.empty [] []))
+  putRm iShop
+        []
+        mempty
+        (mkRm (RmTemplate "Shop"
+            "This room is a shop."
+            Nothing
+            Nothing
+            zeroBits
+            [ StdLink North iOutside dfltLinkMove, StdLink South iSpecial dfltLinkMove ]
+            (0, -3, 0)
+            ShopEnv
+            Nothing
+            M.empty [] []))
+  putRm iSpecial
+        []
+        mempty
+        (mkRm (RmTemplate "Special"
+            "This is a special room."
+            Nothing
+            Nothing
+            zeroBits
+            [ StdLink North iShop dfltLinkMove, StdLink South iNoEnv dfltLinkMove ]
+            (0, -4, 0)
+            ShopEnv
+            Nothing
+            M.empty [] []))
+  putRm iNoEnv
+        []
+        mempty
+        (mkRm (RmTemplate "No environment"
+            "This room doesn't have an environment."
+            Nothing
+            Nothing
+            zeroBits
+            [ StdLink North iSpecial dfltLinkMove ]
+            (0, -5, 0)
+            NoEnv
+            Nothing
+            M.empty [] []))
   putRm iBasement
         []
         mempty
@@ -840,7 +907,7 @@ createAdminZone = do
             Nothing
             zeroBits
             [ StdLink Up iClothCloset dfltLinkMove ]
-            (0, 1, -2)
+            (1, 0, -2)
             InsideEnv
             (Just "Accessories")
             M.empty [] []))
@@ -994,11 +1061,12 @@ createAdminZone = do
   -- ==================================================
   -- Room teleport names:
 
-  putRmTeleName iAtrium    "atrium"
-  putRmTeleName iCentral   "central"
-  putRmTeleName iTrashDump "dump"
-  putRmTeleName iEmpty     "empty"
-  putRmTeleName iLounge    "lounge"
+  putRmTeleName iAtrium     "atrium"
+  putRmTeleName iCentral    "central"
+  putRmTeleName iEmpty      "empty"
+  putRmTeleName iLounge     "lounge"
+  putRmTeleName iNecropolis "necropolis"
+  putRmTeleName iTrashDump  "trash"
 
   -- ==================================================
   -- Objects:
