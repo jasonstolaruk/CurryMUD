@@ -755,7 +755,7 @@ createAdminZone = do
             zeroBits
             [ StdLink North iShop dfltLinkMove, StdLink South iNoEnv dfltLinkMove ]
             (0, -4, 0)
-            ShopEnv
+            SpecialEnv
             Nothing
             M.empty [] []))
   putRm iNoEnv
