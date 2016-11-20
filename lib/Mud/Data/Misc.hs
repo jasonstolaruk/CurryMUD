@@ -426,21 +426,6 @@ instance Pretty PtsType where
   pp CurFp = "cur FP"
 
 
-instance Pretty SetOp where
-  pp Assign    = "="
-  pp AddAssign = "+="
-  pp SubAssign = "-="
-
-
-instance Pretty StomachCont where
-  pp (StomachCont (Left  dli) t b) = ppStomachContHelper (showText dli) t b
-  pp (StomachCont (Right dfi) t b) = ppStomachContHelper (showText dfi) t b
-
-
-ppStomachContHelper :: Text -> UTCTime -> Bool -> Text
-ppStomachContHelper txt t b = slashes [ txt, T.pack . formatTime defaultTimeLocale "%F %T" $ t, showText b ]
-
-
 instance Pretty Race where
   pp Dwarf     = "dwarf"
   pp Elf       = "elf"
@@ -456,6 +441,20 @@ instance Pretty RightOrLeft where
   pp R   = "right"
   pp L   = "left"
   pp rol = pp (fromRol rol :: Slot)
+
+
+instance Pretty RmEnv where
+  pp InsideEnv  = "inside"
+  pp OutsideEnv = "outside"
+  pp ShopEnv    = "shop"
+  pp SpecialEnv = "special"
+  pp NoEnv      = "none"
+
+
+instance Pretty SetOp where
+  pp Assign    = "="
+  pp AddAssign = "+="
+  pp SubAssign = "-="
 
 
 instance Pretty Sex where
@@ -509,6 +508,15 @@ instance Pretty Slot where
   pp RHandS      = "right hand"
   pp LHandS      = "left hand"
   pp BothHandsS  = "both hands"
+
+
+instance Pretty StomachCont where
+  pp (StomachCont (Left  dli) t b) = ppStomachContHelper (showText dli) t b
+  pp (StomachCont (Right dfi) t b) = ppStomachContHelper (showText dfi) t b
+
+
+ppStomachContHelper :: Text -> UTCTime -> Bool -> Text
+ppStomachContHelper txt t b = slashes [ txt, T.pack . formatTime defaultTimeLocale "%F %T" $ t, showText b ]
 
 
 instance Pretty TelnetData where

@@ -573,6 +573,7 @@ createAdminZone = do
             zeroBits
             []
             (-1, 0, 0)
+            SpecialEnv
             M.empty [] []))
   putRm iNecropolis
         []
@@ -584,6 +585,7 @@ createAdminZone = do
             zeroBits
             []
             (-2, 0, 0)
+            SpecialEnv
             M.empty [] []))
   putRm iWelcome
         []
@@ -595,6 +597,7 @@ createAdminZone = do
             zeroBits
             []
             (-1, 1, 0)
+            SpecialEnv
             M.empty [] []))
   putRm iTrashDump
         []
@@ -606,6 +609,7 @@ createAdminZone = do
             zeroBits
             []
             (-2, 1, 0)
+            SpecialEnv
             M.empty [] []))
   putRm iEmpty
         []
@@ -618,6 +622,7 @@ createAdminZone = do
             zeroBits
             []
             (1, 1, 0)
+            SpecialEnv
             (M.fromList [ ("look", [ readLookSign_iEmptyHook, lookWallsHook, lookCeilingHook ])
                         , ("read", [ readLookSign_iEmptyHook                                 ]) ])
             [] []))
@@ -636,6 +641,7 @@ createAdminZone = do
             zeroBits
             [ StdLink Down iBasement dfltLinkMove, StdLink East iHallwayWest dfltLinkMove ]
             (0, 0, 0)
+            InsideEnv
             (M.fromList [ ("look", [ lookTrashHook, readLookPosterHook ])
                         , ("put",  [ putTrashHook                      ])
                         , ("read", [ readLookPosterHook                ]) ])
@@ -651,6 +657,7 @@ createAdminZone = do
             zeroBits
             [ StdLink West iCentral dfltLinkMove, StdLink East iHallwayEast dfltLinkMove ]
             (1, 0, 0)
+            InsideEnv
             M.empty [] []))
   putRm iHallwayEast
         []
@@ -662,6 +669,7 @@ createAdminZone = do
             zeroBits
             [ StdLink West iHallwayWest dfltLinkMove, StdLink East iAtrium dfltLinkMove ]
             (2, 0, 0)
+            InsideEnv
             M.empty [] []))
   putRm iAtrium
         []
@@ -679,6 +687,7 @@ createAdminZone = do
             zeroBits
             [ StdLink West iHallwayEast dfltLinkMove ]
             (3, 0, 0)
+            InsideEnv
             (M.fromList [ ("drink", [ drinkPoolHook      ])
                         , ("fill",  [ fillPoolHook       ])
                         , ("get",   [ getFlowerHook      ])
@@ -708,6 +717,7 @@ createAdminZone = do
             , StdLink Up        iCentral     dfltLinkMove
             , NonStdLink "manhole" iVoid dfltLinkMove "% climbs into the manhole." "% climbs out of the manhole." ]
             (0, 0, -1)
+            InsideEnv
             M.empty [] []))
   putRm iWeightRm
         [ i190Lb
@@ -737,6 +747,7 @@ createAdminZone = do
             , NonStdLink "u" iAttic dfltLinkMove "% climbs up the ladder and into the hole in the ceiling."
                                                  "% climbs up the ladder and out of the hole in the floor." ]
             (0, 1, -1)
+            InsideEnv
             M.empty [] []))
   putRm iAttic
         [iCube1..iCube1 + 19]
@@ -749,6 +760,7 @@ createAdminZone = do
             [ NonStdLink "d" iWeightRm dfltLinkMove "% climbs down the ladder and into the hole in the floor."
                                                     "% climbs down the ladder and out of the hole in the ceiling." ]
             (0, 1, 0)
+            InsideEnv
             M.empty [] []))
   putRm iObjCloset
         [ iKewpie1, iKewpie2, iPaperSml, iParchment1, iParchment2, iParchment3, iParchment4, iParchment5 ]
@@ -760,6 +772,7 @@ createAdminZone = do
             zeroBits
             [ StdLink Southwest iBasement dfltLinkMove ]
             (1, 1, -1)
+            InsideEnv
             M.empty [] []))
   putRm iClothCloset
         [ iChemise, iTunic, iApron, iTabard, iGreyCoat, iFrockCoat, iBreeches1, iBreeches2, iTrousers1, iTrousers2 ]
@@ -771,6 +784,7 @@ createAdminZone = do
             zeroBits
             [ StdLink West iBasement dfltLinkMove, StdLink Down iAccessoriesCloset dfltLinkMove ]
             (1, 0, -1)
+            InsideEnv
             M.empty [] []))
   putRm iAccessoriesCloset
         [ iEar1
@@ -813,6 +827,7 @@ createAdminZone = do
             zeroBits
             [ StdLink Up iClothCloset dfltLinkMove ]
             (0, 1, -2)
+            InsideEnv
             M.empty [] []))
   putRm iCoinsCloset
         []
@@ -824,6 +839,7 @@ createAdminZone = do
             zeroBits
             [ StdLink Northwest iBasement dfltLinkMove ]
             (1, -1, -1)
+            InsideEnv
             M.empty [] []))
   let conIds    = [ iSack1, iSack2, iSackSml, iSackLrg, iBack1, iBack2, iBackSml, iBackLrg ]
       vesselIds = [iPotionFlask1   ..iPotionFlask1    + 19] ++
@@ -848,6 +864,7 @@ createAdminZone = do
             zeroBits
             [ StdLink North iBasement dfltLinkMove ]
             (0, -1, -1)
+            InsideEnv
             M.empty [] []))
   putRm iWpnCloset
         [ iSword1, iSword2, iLongSword, iClub, iKnife1, iKnife2 ]
@@ -859,6 +876,7 @@ createAdminZone = do
             zeroBits
             [ StdLink Northeast iBasement dfltLinkMove ]
             (-1, -1, -1)
+            InsideEnv
             M.empty [] []))
   putRm iArmCloset
         [ iCap, iHelm, iSandals1, iSandals2, iBoots ]
@@ -870,6 +888,7 @@ createAdminZone = do
             zeroBits
             [ StdLink East iBasement dfltLinkMove ]
             (-1, 0, -1)
+            InsideEnv
             M.empty [] []))
   putRm iMobCloset
         [ iPidge, iRockCavy1, iRockCavy2, iSkeleton1, iSkeleton2, iSkeleton3 ]
@@ -881,6 +900,7 @@ createAdminZone = do
             zeroBits
             [ StdLink Southeast iBasement dfltLinkMove ]
             (-1, 1, -1)
+            InsideEnv
             M.empty [] []))
   let voidListen = Just "It's eerily silent here."
       voidSmell  = Just "Strangely, the air here is utterly devoid of scent."
@@ -898,6 +918,7 @@ createAdminZone = do
             , StdLink South iLoungeEntrance dfltLinkMove
             , NonStdLink "manhole" iBasement dfltLinkMove "% climbs into the manhole." "% climbs out of the manhole." ]
             (0, 0, -2)
+            InsideEnv
             M.empty [] []))
   putRm iTutEntrance
         []
@@ -913,6 +934,7 @@ createAdminZone = do
             , NonStdLink "portal" iTutWelcome dfltLinkMove "% floats into the portal and promptly disappears."
                                                            "% arrives in the tutorial." ]
             (0, 1, -2)
+            InsideEnv
             (M.fromList [ ("look", [ readLookSign_iTutEntranceHook, readLookPaperHook ])
                         , ("read", [ readLookSign_iTutEntranceHook, readLookPaperHook ]) ])
             [] []))
@@ -928,6 +950,7 @@ createAdminZone = do
             [ StdLink North iVoid dfltLinkMove
             , NonStdLink "lounge" iLounge dfltLinkMove "% enters the lounge." "% enters the lounge." ]
             (0, -1, -2)
+            InsideEnv
             (M.fromList [ ("look", [ readLookSign_iLoungeEntranceHook ])
                         , ("read", [ readLookSign_iLoungeEntranceHook ]) ])
             [] []))
@@ -941,6 +964,7 @@ createAdminZone = do
             zeroBits
             [ NonStdLink "out" iLoungeEntrance dfltLinkMove "% exits the lounge." "% exits the lounge." ]
             (0, -2, -2)
+            SpecialEnv
             M.empty [] []))
 
   -- ==================================================

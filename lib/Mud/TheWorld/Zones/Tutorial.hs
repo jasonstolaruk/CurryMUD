@@ -55,6 +55,7 @@ createTutorial = do
             zeroBits
             []
             (0, 0, 0)
+            InsideEnv
             (M.fromList [ ("look", [ lookTrashHook ])
                         , ("put",  [ putTrashHook  ]) ])
             [ trashRmAction ]

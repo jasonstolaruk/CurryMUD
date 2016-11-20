@@ -1,5 +1,7 @@
 \h CLIENT \d
 
+TODO: Mudlet gauges and mapper.
+
 A "MUD client" is a type of software used to connect to a MUD server and play.
 
 While there are a variety of MUD clients available, we recommend Mudlet and TinTin++ (CurryMUD has been tested extensively with both). These clients run on a variety of operating systems, are feature-rich, and free.

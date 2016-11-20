@@ -50,6 +50,8 @@ gmcpRmInfo i ms = "Room.Info " <> curlyQuote (spaced rest)
                     , showText yCoord         <> comma
                     , dblQuote "z_coord"      <> colon
                     , showText zCoord         <> comma
+                    , dblQuote "room_env"     <> colon
+                    , env                     <> comma
                     , dblQuote "last_room_id" <> colon
                     , showText lastId         <> comma
                     , mkDir ]
@@ -58,6 +60,7 @@ gmcpRmInfo i ms = "Room.Info " <> curlyQuote (spaced rest)
     rm                       = getRm ri ms
     roomName                 = rm^.rmName
     (xCoord, yCoord, zCoord) = rm^.rmCoords
+    env                      = views rmEnv (showText . (200 +) . fromEnum) rm
     lastId                   = getLastRmId i ms
     mkDir                    = views rmLinks dirHelper . getRm lastId $ ms
       where

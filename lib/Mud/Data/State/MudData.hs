@@ -888,6 +888,7 @@ data Rm = Rm { _rmName      :: Text
              , _rmFlags     :: Int
              , _rmLinks     :: [RmLink]
              , _rmCoords    :: RmCoords
+             , _rmEnv       :: RmEnv
              , _rmHookMap   :: HookMap
              , _rmActions   :: [RmAction]
              , _rmFunNames  :: [FunName]
@@ -936,6 +937,13 @@ type YCoord = Int
 
 
 type ZCoord = Int
+
+
+data RmEnv = InsideEnv
+           | OutsideEnv
+           | ShopEnv
+           | SpecialEnv
+           | NoEnv deriving (Enum, Eq, Generic, Show)
 
 
 type HookMap = M.Map CmdName [Hook]
@@ -988,6 +996,7 @@ rmToJSON Rm { .. } = object [ "rmName"     .= _rmName
                             , "rmFlags"    .= _rmFlags
                             , "rmLinks"    .= _rmLinks
                             , "rmCoords"   .= _rmCoords
+                            , "rmEnv"      .= _rmEnv
                             , "rmHookMap"  .= _rmHookMap
                             , "rmActions"  .= _rmActions
                             , "rmFunNames" .= _rmFunNames ]
@@ -1001,6 +1010,7 @@ jsonToRm (Object o) = Rm <$> o .: "rmName"
                          <*> o .: "rmFlags"
                          <*> o .: "rmLinks"
                          <*> o .: "rmCoords"
+                         <*> o .: "rmEnv"
                          <*> o .: "rmHookMap"
                          <*> o .: "rmActions"
                          <*> o .: "rmFunNames"
@@ -1148,6 +1158,7 @@ instance FromJSON PC             where parseJSON = genericParseJSON dropUndersco
 instance FromJSON PtsType
 instance FromJSON Race
 instance FromJSON RmAction
+instance FromJSON RmEnv          where parseJSON = genericParseJSON dropUnderscore
 instance FromJSON RmLink         where parseJSON = genericParseJSON dropUnderscore
 instance FromJSON Sex
 instance FromJSON Slot
@@ -1190,6 +1201,7 @@ instance ToJSON PC               where toJSON    = genericToJSON    dropUndersco
 instance ToJSON PtsType
 instance ToJSON Race
 instance ToJSON RmAction
+instance ToJSON RmEnv            where toJSON    = genericToJSON    dropUnderscore
 instance ToJSON RmLink           where toJSON    = genericToJSON    dropUnderscore
 instance ToJSON Sex
 instance ToJSON Slot
