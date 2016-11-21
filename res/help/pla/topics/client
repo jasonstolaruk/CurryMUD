@@ -17,7 +17,7 @@ http://tintin.sourceforge.net/index.php
 
 Mudlet users:
 Please allow CurryMUD to handle line wrapping for you: using the (CurryMUD) "set" command, set "columns" to your desired line length. To ensure that Mudlet won't perform line wrapping, set your line length to a higher value in the Mudlet preferences ("Wrap lines at" under "Main display").
-Other Mudlet preferences to change (optional): Check "Force new line on empty commands" under "Special Options." We also recommend checking "Auto clear the input line after you sent text" under "Input line," and changing the "Command separator" to something less common than the semicolon ("\", for example).
+Other Mudlet preferences to change (optional): Check "Force new line on empty commands" under "Special Options." We also recommend checking "Auto clear the input line after you sent text" under "Input line," and changing the "Command separator" to something less common than the semicolon ("\\", for example).
 
 TinTin++ users:
 Please execute the "##split" command to create a separate input and output area: CurryMUD works best with a client that has a dedicated field for input. To account for the presence of the input area, you may need to decrease CurryMUD's "lines" setting by 2 (via the "set" command) or vertically expand your terminal window.
