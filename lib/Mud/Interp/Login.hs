@@ -793,7 +793,7 @@ handleLogin (NewCharBundle oldSing s _) isNew params@ActionParams { .. } = do
     (ms, p) <- showRetainedMsgs
     look params
     sendDfltPrompt plaMsgQueue myId
-    sendGmcpRmInfo myId ms
+    sendGmcpRmInfo Nothing myId ms
     when (getPlaFlag IsAdmin p) stopInacTimer
     runDigesterAsync     myId
     runRegenAsync        myId

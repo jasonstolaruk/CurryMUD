@@ -2,8 +2,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Mud.Data.State.Util.GMCP ( gmcpRmInfo
-                                , gmcpVitals
-                                , gmcpZoom ) where
+                                , gmcpVitals ) where
 
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
@@ -16,6 +15,7 @@ import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Lens (both, each, views)
 import Control.Lens.Operators ((%~), (&), (^.))
+import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -39,8 +39,8 @@ comma = ", "
 -----
 
 
-gmcpRmInfo :: Id -> MudState -> Text
-gmcpRmInfo i ms = "Room.Info " <> curlyQuote (spaced rest)
+gmcpRmInfo :: Maybe Int -> Id -> MudState -> Text
+gmcpRmInfo maybeZoom i ms = "Room.Info " <> curlyQuote (spaced rest)
   where
     rest = T.concat [ dblQuote "area_name"    <> colon
                     , dblQuote zoneName       <> comma
@@ -60,7 +60,9 @@ gmcpRmInfo i ms = "Room.Info " <> curlyQuote (spaced rest)
                     , label                   <> comma
                     , dblQuote "last_room_id" <> colon
                     , showText lastId         <> comma
-                    , mkDir ]
+                    , mkDir                   <> comma
+                    , dblQuote "zoom"         <> colon
+                    , showText zoom ]
     ri                       = getRmId i ms
     zoneName                 = getZoneForRmId ri
     rm                       = getRm ri ms
@@ -93,6 +95,7 @@ gmcpRmInfo i ms = "Room.Info " <> curlyQuote (spaced rest)
             in case concatMap f links of (x:_) -> x
                                          []    -> T.concat [ dblQuote "dir",         colon, "-1", comma
                                                            , dblQuote "special_dir", colon, dblQuote "-1" ]
+    zoom = fromMaybe (-1) maybeZoom
 
 
 -- Numbers correspond to Mudlet's user-adjustable mapper colors.
@@ -131,14 +134,3 @@ gmcpVitals i ms = "Char.Vitals " <> curlyQuote (spaced rest)
                     , fpMax ]
     ((hpCurr, hpMax), (mpCurr, mpMax), (ppCurr, ppMax), (fpCurr, fpMax)) = f
     f = getPts i ms & each %~ (both %~ (dblQuote . showText))
-
-
------
-
-
-gmcpZoom :: Int -> Text
-gmcpZoom zoom = "Zoom " <> curlyQuote (spaced rest)
-  where
-    rest = T.concat [ dblQuote "zoom"
-                    , colon
-                    , showText zoom ]

@@ -1577,7 +1577,7 @@ tryMove :: Id -> MsgQueue -> Cols -> ActionParams -> Text -> MudStack ()
 tryMove i mq cols p dir = helper |&| modifyState >=> \case
   Left  msg          -> wrapSend mq cols msg
   Right (bs, logMsg) -> do
-      sendGmcpRmInfo i =<< getState
+      sendGmcpRmInfo Nothing i =<< getState
       look p
       bcastIfNotIncog i bs
       logPla "tryMove" i logMsg
@@ -4393,4 +4393,4 @@ zoom p = advise p ["zoom"] adviceZoomExcessArgs
 
 
 zoomHelper :: Id -> MsgQueue -> Int -> MudStack ()
-zoomHelper i mq x = (flip (sendGmcpZoom i) x =<< getState) >> ok mq
+zoomHelper i mq x = (sendGmcpRmInfo (Just x) i =<< getState) >> ok mq

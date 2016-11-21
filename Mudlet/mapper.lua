@@ -27,6 +27,7 @@ function curry_mapper()
       addCustomLine(info.last_room_id, info.room_id, info.special_dir, "solid line", {255, 0, 255}, false)
     end
   end
+  if info.zoom ~= -1 then setMapZoom(info.zoom) end
   centerview(info.room_id)
 end
 

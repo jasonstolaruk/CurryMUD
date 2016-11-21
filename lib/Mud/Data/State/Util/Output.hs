@@ -30,7 +30,6 @@ module Mud.Data.State.Util.Output ( anglePrompt
                                   , sendDfltPrompt
                                   , sendGmcpRmInfo
                                   , sendGmcpVitals
-                                  , sendGmcpZoom
                                   , sendMsgBoot
                                   , sendPrompt
                                   , sendSilentBoot
@@ -377,8 +376,8 @@ mkDfltPrompt i ms = let (hps,  mps,  pps,  fps ) = getPts i ms
 -----
 
 
-sendGmcpRmInfo :: Id -> MudState -> MudStack ()
-sendGmcpRmInfo = gmcpHelper gmcpRmInfo
+sendGmcpRmInfo :: Maybe Int -> Id -> MudState -> MudStack ()
+sendGmcpRmInfo maybeZoom = gmcpHelper (gmcpRmInfo maybeZoom)
 
 
 gmcpHelper :: (Id -> MudState -> Text) -> Id -> MudState -> MudStack ()
@@ -389,10 +388,6 @@ gmcpHelper f i ms
 
 sendGmcpVitals :: Id -> MudState -> MudStack ()
 sendGmcpVitals = gmcpHelper gmcpVitals
-
-
-sendGmcpZoom :: Id -> MudState -> Int -> MudStack ()
-sendGmcpZoom i ms zoom = gmcpHelper (const . const . gmcpZoom $ zoom) i ms >> sendGmcpRmInfo i ms
 
 
 -----

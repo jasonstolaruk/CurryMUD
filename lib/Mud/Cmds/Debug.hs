@@ -434,7 +434,7 @@ debugGmcpDo p = withoutArgs debugGmcpDo p
 
 debugGmcpRm :: ActionFun
 debugGmcpRm (NoArgs i mq cols) = do
-    ((>>) <$> wrapSend mq cols . gmcpRmInfo i <*> sendGmcpRmInfo i) =<< getState
+    ((>>) <$> wrapSend mq cols . gmcpRmInfo Nothing i <*> sendGmcpRmInfo Nothing i) =<< getState
     logPlaExec (prefixDebugCmd "gmcproom") i
 debugGmcpRm p = withoutArgs debugGmcpRm p
 
