@@ -58,6 +58,8 @@ gmcpRmInfo maybeZoom i ms = "Room.Info " <> curlyQuote (spaced rest)
                     , env                     <> comma
                     , dblQuote "room_label"   <> colon
                     , label                   <> comma
+                    , dblQuote "room_exits"   <> colon
+                    , mkExits                 <> comma
                     , dblQuote "last_room_id" <> colon
                     , showText lastId         <> comma
                     , mkDir                   <> comma
@@ -70,6 +72,17 @@ gmcpRmInfo maybeZoom i ms = "Room.Info " <> curlyQuote (spaced rest)
     (xCoord, yCoord, zCoord) = rm^.rmCoords
     env                      = views rmEnv   (showText . envToColorInt) rm
     label                    = views rmLabel (dblQuote . fromMaybeEmp ) rm
+    mkExits                  = views rmLinks exitHelper rm
+      where
+        exitHelper links =
+            let f (StdLink dir _ _ ) = pure . dirToInt . linkDirToCmdName $ dir
+                f _                  = []
+            in bracketQuote . spaced . commas . map showText . concatMap f $ links
+    dirToInt t = case filter ((== t) . fst) dirs of
+      [pair] -> snd pair
+      _      -> patternMatchFail "gmcpRmInfo dirToInt" t
+      where
+        dirs = zip [ "n", "ne", "nw", "e", "w", "s", "se", "sw", "u", "d", "in", "out" ] [1..]
     lastId                   = getLastRmId i ms
     mkDir                    = views rmLinks dirHelper . getRm lastId $ ms
       where
@@ -85,13 +98,8 @@ gmcpRmInfo maybeZoom i ms = "Room.Info " <> curlyQuote (spaced rest)
                   where
                     g = mkStdDir n
                 f _ = []
-                mkStdDir t = pure . T.concat $ [ dblQuote "dir",         colon, showText dirInt, comma
+                mkStdDir t = pure . T.concat $ [ dblQuote "dir",         colon, showText . dirToInt $ t, comma
                                                , dblQuote "special_dir", colon, dblQuote "-1" ]
-                  where
-                    dirInt = case filter ((== t) . fst) dirs of
-                      [pair] -> snd pair
-                      _      -> patternMatchFail "gmcpRmInfo mkDir dirHelper mkStdDir dirInt" t
-                    dirs = zip [ "n", "ne", "nw", "e", "w", "s", "se", "sw", "u", "d", "in", "out" ] [1..]
             in case concatMap f links of (x:_) -> x
                                          []    -> T.concat [ dblQuote "dir",         colon, "-1", comma
                                                            , dblQuote "special_dir", colon, dblQuote "-1" ]

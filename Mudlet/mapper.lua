@@ -18,6 +18,9 @@ function curry_mapper()
     setRoomCoordinates(info.room_id, info.x_coord, info.y_coord, info.z_coord)
     setRoomEnv(info.room_id, info.room_env)
     createMapLabel(area_id, info.room_label, info.x_coord, info.y_coord, info.z_coord, 255,255,255, 0,0,0, 0, 12)
+    for i, dir in pairs(info.room_exits) do
+      setExitStub(info.room_id, dir, true)
+    end
   end
   if find_room_id(info.last_room_id) and info.last_room_id ~= info.room_id then
     if info.dir ~= -1 then
