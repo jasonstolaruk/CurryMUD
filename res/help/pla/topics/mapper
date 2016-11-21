@@ -5,10 +5,10 @@ Mudlet users who have imported our custom scripts can take advantage of Mudlet's
 Select "Toolbox" -> "Show map" to view the mapper.
 
 Significant rooms are assigned a text label automatically. Furthermore, rooms are color coded as follows:
-Inside rooms: light blue
+Inside rooms: cyan
 Outside rooms: light green
 Shops: light red
-"Special" rooms: light cyan
+"Special" rooms: light magenta
 You can adjust these colors in Mudlet's preferences under "Mapper colors."
 
 The CurryMUD "zoom" command can be used to adjust the zoom to your desired level.

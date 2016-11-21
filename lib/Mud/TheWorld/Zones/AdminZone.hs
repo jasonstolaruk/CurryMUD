@@ -644,9 +644,7 @@ createAdminZone = do
             (Just "The cooling fans spinning inside the control panels give off a soothing whirring sound.")
             (Just "You vaguely detect the chemical scents of plastic and cleaning solutions.")
             zeroBits
-            [ StdLink Down  iBasement    dfltLinkMove
-            , StdLink East  iHallwayWest dfltLinkMove
-            , StdLink South iInside      dfltLinkMove ]
+            [ StdLink Down iBasement dfltLinkMove, StdLink East iHallwayWest dfltLinkMove ]
             (0, 0, 0)
             InsideEnv
             (Just "Central")
@@ -706,71 +704,6 @@ createAdminZone = do
                         , ("smell", [ smellFlowerbedHook ]) ])
             [ pickRmAction     ]
             [ beeBuzzRmFunName ]))
-  putRm iInside
-        []
-        mempty
-        (mkRm (RmTemplate "Inside"
-            "This room is inside."
-            Nothing
-            Nothing
-            zeroBits
-            [ StdLink North iCentral dfltLinkMove, StdLink South iOutside dfltLinkMove ]
-            (0, -1, 0)
-            InsideEnv
-            Nothing
-            M.empty [] []))
-  putRm iOutside
-        []
-        mempty
-        (mkRm (RmTemplate "Outside"
-            "This room is outside."
-            Nothing
-            Nothing
-            zeroBits
-            [ StdLink North iInside dfltLinkMove, StdLink South iShop dfltLinkMove ]
-            (0, -2, 0)
-            OutsideEnv
-            Nothing
-            M.empty [] []))
-  putRm iShop
-        []
-        mempty
-        (mkRm (RmTemplate "Shop"
-            "This room is a shop."
-            Nothing
-            Nothing
-            zeroBits
-            [ StdLink North iOutside dfltLinkMove, StdLink South iSpecial dfltLinkMove ]
-            (0, -3, 0)
-            ShopEnv
-            Nothing
-            M.empty [] []))
-  putRm iSpecial
-        []
-        mempty
-        (mkRm (RmTemplate "Special"
-            "This is a special room."
-            Nothing
-            Nothing
-            zeroBits
-            [ StdLink North iShop dfltLinkMove, StdLink South iNoEnv dfltLinkMove ]
-            (0, -4, 0)
-            SpecialEnv
-            Nothing
-            M.empty [] []))
-  putRm iNoEnv
-        []
-        mempty
-        (mkRm (RmTemplate "No environment"
-            "This room doesn't have an environment."
-            Nothing
-            Nothing
-            zeroBits
-            [ StdLink North iSpecial dfltLinkMove ]
-            (0, -5, 0)
-            NoEnv
-            Nothing
-            M.empty [] []))
   putRm iBasement
         []
         mempty
@@ -1057,6 +990,71 @@ createAdminZone = do
             SpecialEnv
             (Just "Lounge")
             M.empty [] []))
+  putRm iInside
+        []
+        mempty
+        (mkRm (RmTemplate "Inside"
+            "This room is inside."
+            Nothing
+            Nothing
+            zeroBits
+            [ StdLink South iOutside dfltLinkMove ]
+            (-2, 1, -2)
+            InsideEnv
+            (Just "Inside")
+            M.empty [] []))
+  putRm iOutside
+        []
+        mempty
+        (mkRm (RmTemplate "Outside"
+            "This room is outside."
+            Nothing
+            Nothing
+            zeroBits
+            [ StdLink North iInside dfltLinkMove, StdLink South iShop dfltLinkMove ]
+            (-2, 0, -2)
+            OutsideEnv
+            (Just "Outside")
+            M.empty [] []))
+  putRm iShop
+        []
+        mempty
+        (mkRm (RmTemplate "Shop"
+            "This room is a shop."
+            Nothing
+            Nothing
+            zeroBits
+            [ StdLink North iOutside dfltLinkMove, StdLink South iSpecial dfltLinkMove ]
+            (-2, -1, -2)
+            ShopEnv
+            (Just "Shop")
+            M.empty [] []))
+  putRm iSpecial
+        []
+        mempty
+        (mkRm (RmTemplate "Special"
+            "This is a special room."
+            Nothing
+            Nothing
+            zeroBits
+            [ StdLink North iShop dfltLinkMove, StdLink South iNoEnv dfltLinkMove ]
+            (-2, -2, -2)
+            SpecialEnv
+            (Just "Special")
+            M.empty [] []))
+  putRm iNoEnv
+        []
+        mempty
+        (mkRm (RmTemplate "No environment"
+            "This room doesn't have an environment."
+            Nothing
+            Nothing
+            zeroBits
+            [ StdLink North iSpecial dfltLinkMove ]
+            (-2, -3, -2)
+            NoEnv
+            (Just "No env")
+            M.empty [] []))
 
   -- ==================================================
   -- Room teleport names:
@@ -1064,6 +1062,7 @@ createAdminZone = do
   putRmTeleName iAtrium     "atrium"
   putRmTeleName iCentral    "central"
   putRmTeleName iEmpty      "empty"
+  putRmTeleName iInside     "inside"
   putRmTeleName iLounge     "lounge"
   putRmTeleName iNecropolis "necropolis"
   putRmTeleName iTrashDump  "trash"

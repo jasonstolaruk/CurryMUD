@@ -100,10 +100,10 @@ gmcpRmInfo maybeZoom i ms = "Room.Info " <> curlyQuote (spaced rest)
 
 -- Numbers correspond to Mudlet's user-adjustable mapper colors.
 envToColorInt :: RmEnv -> Int
-envToColorInt InsideEnv  = 268 -- Light blue.
+envToColorInt InsideEnv  = 262 -- Cyan.
 envToColorInt OutsideEnv = 266 -- Light green.
 envToColorInt ShopEnv    = 265 -- Light red.
-envToColorInt SpecialEnv = 270 -- Light cyan.
+envToColorInt SpecialEnv = 269 -- Light magenta.
 envToColorInt NoEnv      = 264 -- Light black.
 
 
