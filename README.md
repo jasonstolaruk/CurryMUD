@@ -53,7 +53,7 @@ CurryMUD will have the following features:
 * Durational effects that can be paused and resumed.
 * Upon death, PCs may have a limited amount of time to exist in the virtual world as a spirit.
 * [GMCP](https://www.gammon.com.au/gmcp).
-* Mudlet scripts for vitals gauges and mapping.
+* [Mudlet scripts](https://github.com/jasonstolaruk/CurryMUD/tree/master/Mudlet) for vitals gauges and mapping.
 
 I am still in the initial stage of developing basic commands. There is very little content in the virtual world.
 
