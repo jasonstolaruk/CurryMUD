@@ -133,4 +133,4 @@ gmcpVitals i ms = "Char.Vitals " <> curlyQuote (spaced rest)
                     , dblQuote "max_fp"  <> colon
                     , fpMax ]
     ((hpCurr, hpMax), (mpCurr, mpMax), (ppCurr, ppMax), (fpCurr, fpMax)) = f
-    f = getPts i ms & each %~ (both %~ (dblQuote . showText))
+    f = getPts i ms & each %~ (both %~ showText)
