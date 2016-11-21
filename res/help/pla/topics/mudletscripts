@@ -1,0 +1,13 @@
+\h MUDLET SCRIPTS \d
+
+Mudlet users will want to take advantage of our custom scripts for displaying vitals gauges and mapping. This help topic describes how to turn these features on by obtaining and importing the scripts.
+
+First, download the "CurryMUD.xml" file, available here: TODO.
+Next, connect to CurryMUD as usual. Open the script editor ("Toolbox" -> "Script editor") and click the "Scripts" icon on the left. Click the "Import" button at the top and import the "CurryMUD.xml" file.
+
+That's it! The vitals gauges will automatically appear at the bottom of the screen, above the input area. To view the mapper, select "Toolbox" -> "Show map."
+
+See "help client" for information regarding general Mudlet settings to optimize when playing CurryMUD.
+
+\uSEE ALSO\n
+client, mapper, zoom

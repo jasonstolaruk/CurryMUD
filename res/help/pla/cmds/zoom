@@ -13,4 +13,4 @@ When no arguments are provided, the zoom will be set to the default level of 14.
 \qzoom 20\d to set the zoom level to 20.4`
 
 \uSEE ALSO\n
-clear, client, mapper
+clear, client, mapper, mudletscripts

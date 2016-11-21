@@ -55,6 +55,7 @@ function curry_vitals()
   local mp_text = "&nbsp;<b><font size=\"3\">MP: "..gmcp.Char.Vitals.curr_mp.."</font></b>"
   local pp_text = "&nbsp;<b><font size=\"3\">PP: "..gmcp.Char.Vitals.curr_pp.."</font></b>"
   local fp_text = "&nbsp;<b><font size=\"3\" color=\"black\">FP: "..gmcp.Char.Vitals.curr_fp.."</font></b>"
+
   hp_bar:setValue(gmcp.Char.Vitals.curr_hp, gmcp.Char.Vitals.max_hp, hp_text)
   mp_bar:setValue(gmcp.Char.Vitals.curr_mp, gmcp.Char.Vitals.max_mp, mp_text)
   pp_bar:setValue(gmcp.Char.Vitals.curr_pp, gmcp.Char.Vitals.max_pp, pp_text)
