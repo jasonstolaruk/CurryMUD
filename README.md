@@ -49,7 +49,7 @@ CurryMUD will have the following features:
 * Players can interact with permanent room fixtures that are not listed in a room's inventory.
 * Objects can be configured to automatically disappear when left on the ground for some time.
 * Smell and taste. Listen.
-* Eating foods and drinking liquids. Digestion.
+* Drinking. Digestion.
 * Durational effects that can be paused and resumed.
 * Upon death, PCs may have a limited amount of time to exist in the virtual world as a spirit.
 * Sending [GMCP](https://www.gammon.com.au/gmcp) `Char.Vitals` and `Info.Room`.
