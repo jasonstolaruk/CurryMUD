@@ -242,6 +242,7 @@ priorityAbbrevCmdTuples =
     , ("get",         "g",   getAction,      True,  cmdDescGet)
     , ("give",        "gi",  give,           True,  cmdDescGive)
     , ("help",        "h",   help,           True,  cmdDescHelp)
+    -- TODO: "in" clashes with the "in" exit.
     , ("intro",       "in",  intro,          True,  "Display a list of the people who have introduced themselves to \
                                                     \you, or introduce yourself to one or more people.")
     , ("inventory",   "i",   inv,            True,  cmdDescInv)
@@ -4382,7 +4383,7 @@ whoAmI p = withoutArgs whoAmI p
 
 
 zoom :: ActionFun
-zoom (NoArgs' i mq       ) = zoomHelper i mq 14
+zoom (NoArgs' i mq       ) = zoomHelper i mq 10
 zoom (OneArg  i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
   [(x, "")] | x <= 0    -> sorry
             | otherwise -> zoomHelper i mq x

@@ -146,8 +146,9 @@ mkCorpse i ms = let et     = EntTemplate (Just "corpse")
 spiritize :: Id -> MudStack ()
 spiritize i = getState >>= \ms -> if isPC i ms
   then let (mySing, secs) = (uncurry getSing &&& uncurry calcSpiritTime) (i, ms)
+           (mq,     cols) = getMsgQueueColumns i ms
        in if secs == 0
-         then unit -- TODO
+         then theBeyond i mq cols []
          else (withDbExHandler "spiritize" . liftIO . lookupTeleNames $ mySing) >>= \case
            Nothing                    -> uncurry dbError . getMsgQueueColumns i $ ms
            Just (procOnlySings -> ss) ->
@@ -168,7 +169,7 @@ spiritize i = getState >>= \ms -> if isPC i ms
                      ; forM_ asleepIds $ \i' ->　retainedMsg i' ms . linkMissingMsg $ mySing
                      ; bcast bs
                      ; sequence_ (fs :: Funs)
-                     ; detach secs
+                     ; detach mq cols secs . map (view _1) $ retaineds'
                      ; logPla "spiritize" i "spirit created." }
   else deleteNpc ms
   where
@@ -192,16 +193,15 @@ spiritize i = getState >>= \ms -> if isPC i ms
                                 , i' `notElem` select _1 retaineds
                                 , isAwake i' ms ]
             in (linkLostMsg mySing, targetIds)
-        -- TODO: When a spirit passes into the beyond, a retained msg should be sent to those link retainers who are asleep.
         toLinkRetainersHelper
           | targetIds <- [ i' | (i', _, ia) <- retaineds, ia ]
           , f         <- \i' -> rndmDo (calcProbSpiritizeShiver i' ms) . mkExpAction "shiver" . mkActionParams i' ms $ []
           , fs        <- pure . mapM_ f $ targetIds
           = ((linkRetainedMsg mySing, targetIds), fs)
-    detach secs = onNewThread $ getMsgQueueColumns i <$> getState >>= \(mq, cols) -> do
+    detach mq cols secs retainedIds = onNewThread $ do
         liftIO . threadDelay $ 2 * 10 ^ 6
         wrapSend mq cols . colorWith spiritMsgColor $ spiritDetachMsg
-        runSpiritTimerAsync i secs
+        runSpiritTimerAsync i secs retainedIds
     deleteNpc ms = let ri = getRmId i ms in do { tweaks [ activeEffectsTbl.at  i  .~ Nothing
                                                         , coinsTbl        .at  i  .~ Nothing
                                                         , entTbl          .at  i  .~ Nothing

@@ -1046,14 +1046,29 @@ createAdminZone = do
         []
         mempty
         (mkRm (RmTemplate "No environment"
-            "This room doesn't have an environment."
+            "This room doesn't have an environment.\n\
+            \There is a cottage to the south."
             Nothing
             Nothing
             zeroBits
-            [ StdLink North iSpecial dfltLinkMove ]
+            [ StdLink North iSpecial dfltLinkMove
+            , NonStdLink "in" iCottage dfltLinkMove "% enters the cottage." "% enters the cottage." ]
             (-2, -3, -2)
             NoEnv
             (Just "No env")
+            M.empty [] []))
+  putRm iCottage
+        []
+        mempty
+        (mkRm (RmTemplate "Cottage"
+            "You are inside a quaint cottage."
+            Nothing
+            Nothing
+            zeroBits
+            [ NonStdLink "out" iNoEnv dfltLinkMove "% exits the cottage." "% exits the cottage." ]
+            (-2, -4, -2)
+            InsideEnv
+            (Just "Cottage")
             M.empty [] []))
 
   -- ==================================================
@@ -1062,7 +1077,7 @@ createAdminZone = do
   putRmTeleName iAtrium     "atrium"
   putRmTeleName iCentral    "central"
   putRmTeleName iEmpty      "empty"
-  putRmTeleName iInside     "inside"
+  putRmTeleName iInside     "test"
   putRmTeleName iLounge     "lounge"
   putRmTeleName iNecropolis "necropolis"
   putRmTeleName iTrashDump  "trash"

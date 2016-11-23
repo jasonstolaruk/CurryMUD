@@ -2,8 +2,10 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Mud.Threads.SpiritTimer ( runSpiritTimerAsync
+                               , theBeyond
                                , throwWaitSpiritTimer ) where
 
+import Mud.Cmds.Msgs.Misc
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
@@ -45,8 +47,9 @@ logPlaOut = L.logPlaOut "Mud.Threads.SpiritTimer"
 -- ==================================================
 
 
-runSpiritTimerAsync :: Id -> Seconds -> MudStack ()
-runSpiritTimerAsync i secs = runAsync (threadSpiritTimer i secs) >>= \a -> tweak $ plaTbl.ind i.spiritAsync ?~ a
+runSpiritTimerAsync :: Id -> Seconds -> Inv -> MudStack ()
+runSpiritTimerAsync i secs retainedIds =
+    runAsync (threadSpiritTimer i secs retainedIds) >>= \a -> tweak $ plaTbl.ind i.spiritAsync ?~ a
 
 
 throwWaitSpiritTimer :: Id -> MudStack ()
@@ -59,27 +62,31 @@ throwWaitSpiritTimer i = helper |&| modifyState >=> maybeVoid throwWait
 -----
 
 
-threadSpiritTimer :: Id -> Seconds -> MudStack ()
-threadSpiritTimer i secs = handle (threadExHandler (Just i) "spirit timer") $ do
+threadSpiritTimer :: Id -> Seconds -> Inv -> MudStack ()
+threadSpiritTimer i secs retainedIds = handle (threadExHandler (Just i) "spirit timer") $ do
     (mq, cols) <- getMsgQueueColumns i <$> getState
     setThreadType . SpiritTimer $ i
     logPla "threadSpiritTimer" i . prd $ "spirit timer started " <> parensQuote (showText secs <> " seconds")
-    handle (die (Just i) "spirit timer") . spiritTimer i mq cols $ secs
+    handle (die (Just i) "spirit timer") . spiritTimer i mq cols retainedIds $ secs
 
-
-spiritTimer :: Id -> MsgQueue -> Cols -> Seconds -> MudStack ()
-spiritTimer i mq cols 0 = do
+spiritTimer :: Id -> MsgQueue -> Cols -> Inv -> Seconds -> MudStack ()
+spiritTimer i mq cols retainedIds 0 = do
     logPla "spiritTimer" i "spirit timer expired."
-    wrapSend mq cols . colorWith spiritMsgColor $ "You pass into the beyond." -- TODO
-spiritTimer i mq cols secs | secs == 75 = helper "You feel the uncanny pull of the beyond. Your time in this dimension \
-                                                 \is coming to an end."
-                           | secs == 45 = helper . thrice prd $ "You feel the uncanny pull of the beyond. You have \
-                                                                \VERY little time left in this dimension"
-                           | secs == 15 = helper . thrice prd $ "You are fading away"
-                           | otherwise  = next
+    theBeyond i mq cols retainedIds
+spiritTimer i mq cols retainedIds secs
+  | secs == 75 = helper "You feel the uncanny pull of the beyond. Your time in this dimension is coming to an end."
+  | secs == 45 = helper . thrice prd $ "You feel the uncanny pull of the beyond. You have VERY little time left in \
+                                       \this dimension"
+  | secs == 15 = helper . thrice prd $ "You are fading away"
+  | otherwise  = next
   where
     helper msg = do
         wrapSend mq cols . colorWith spiritMsgColor $ msg
         logPlaOut "spiritTimer" i . pure $ msg
         next
-    next = (liftIO . threadDelay $ 1 * 10 ^ 6) >> spiritTimer i mq cols (pred secs)
+    next = (liftIO . threadDelay $ 1 * 10 ^ 6) >> spiritTimer i mq cols retainedIds (pred secs)
+
+
+-- TODO: A retained msg should be sent to those link retainers who are asleep.
+theBeyond :: Id -> MsgQueue -> Cols -> Inv -> MudStack ()
+theBeyond _ mq cols _ = wrapSend mq cols . colorWith spiritMsgColor $ theBeyondMsg

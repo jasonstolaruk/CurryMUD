@@ -278,6 +278,10 @@ teleOriginMsg :: Text -> Text
 teleOriginMsg t = "There is a soft audible pop as " <> t <> " vanishes in a jarring flash of white light."
 
 
+theBeyondMsg :: Text
+theBeyondMsg = "Your spirit passes into the beyond."
+
+
 unlinkMsg :: Text -> Sing -> Text
 unlinkMsg t s = T.concat [ "You suddenly feel a slight tingle "
                          , t

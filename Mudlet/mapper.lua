@@ -4,14 +4,14 @@ local did_init = false
 
 function curry_mapper()
   if not did_init then
-    setMapZoom(14)
+    setMapZoom(10)
     did_init = true
   end
   local info = gmcp.Room.Info
   -- display(info)
   local area_id = find_area_id(info.area_name)
   if not area_id then area_id = addAreaName(info.area_name) end
-  if not find_room_id(info.room_id) then
+  if not getRoomName(info.room_id) then
     addRoom(info.room_id)
     setRoomName(info.room_id, info.room_name)
     setRoomArea(info.room_id, area_id)
@@ -22,7 +22,7 @@ function curry_mapper()
       setExitStub(info.room_id, dir, true)
     end
   end
-  if find_room_id(info.last_room_id) and info.last_room_id ~= info.room_id then
+  if getRoomName(info.last_room_id) and info.last_room_id ~= info.room_id then
     if info.dir ~= -1 then
       setExit(info.last_room_id, info.room_id, info.dir)
     elseif info.special_dir ~= "-1" then
@@ -37,11 +37,5 @@ end
 function find_area_id(name)
   for area, id in pairs(getAreaTable()) do
     if area:find(name, 1, true) then return id end
-  end
-end
-
-function find_room_id(room_id)
-  for id in pairs(getRooms()) do
-    if id == room_id then return id end
   end
 end

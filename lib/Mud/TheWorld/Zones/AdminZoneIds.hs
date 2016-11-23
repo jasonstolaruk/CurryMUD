@@ -352,4 +352,8 @@ iNoEnv = 195 :: Id
 
 -----
 
-iCurry = 196 :: Id
+iCottage = 196 :: Id
+
+-----
+
+iCurry = 197 :: Id

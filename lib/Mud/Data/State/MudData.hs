@@ -271,7 +271,7 @@ instance Monoid Coins where
   Coins (cop, sil, gol) `mappend` Coins (cop', sil', gol') = do
       let res = ( cop + cop'
                 , sil + sil'
-                , gol + gol')
+                , gol + gol' )
       Coins res
 
 
