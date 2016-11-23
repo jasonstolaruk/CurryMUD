@@ -150,9 +150,9 @@ spiritize i = getState >>= \ms -> if isPC i ms
        in if secs == 0
          then theBeyond i mq cols []
          else (withDbExHandler "spiritize" . liftIO . lookupTeleNames $ mySing) >>= \case
-           Nothing                    -> uncurry dbError . getMsgQueueColumns i $ ms
+           Nothing                    -> dbError mq cols
            Just (procOnlySings -> ss) ->
-               let triples    = [ (i', s, ia) | s <- ss, let i' = getIdForMobSing s ms, let ia = isAwake i' ms ]
+               let triples    = [ (i', s, isLoggedIn p) | s <- ss, let i' = getIdForMobSing s ms, let p = getPla i' ms ]
                    n          = calcRetainedLinks i ms
                    retaineds  = take n triples
                    retaineds' = (retaineds |&|) $ case filter (view _3) retaineds of
@@ -160,7 +160,7 @@ spiritize i = getState >>= \ms -> if isPC i ms
                      _  -> id
                    asleepIds = let f i' p = and [ views linked (mySing `elem`) p
                                                 , i' `notElem` select _1 retaineds'
-                                                , not (isAwake i' ms) ]
+                                                , not . isLoggedIn . getPla i' $ ms ]
                                in views pcTbl (IM.keys . IM.filterWithKey f . IM.delete i) ms
                    (bs, fs)  = mkBcasts ms mySing retaineds'
                in do { tweaks [ plaTbl.ind i %~ setPlaFlag IsSpirit True
@@ -169,7 +169,7 @@ spiritize i = getState >>= \ms -> if isPC i ms
                      ; forM_ asleepIds $ \i' ->　retainedMsg i' ms . linkMissingMsg $ mySing
                      ; bcast bs
                      ; sequence_ (fs :: Funs)
-                     ; detach mq cols secs . map (view _1) $ retaineds'
+                     ; detach mq cols secs . select _1 $ retaineds'
                      ; logPla "spiritize" i "spirit created." }
   else deleteNpc ms
   where
@@ -191,7 +191,7 @@ spiritize i = getState >>= \ms -> if isPC i ms
             let targetIds = views pcTbl (IM.keys . IM.filterWithKey f . IM.delete i) ms
                 f i' p    = and [ views linked (mySing `elem`) p
                                 , i' `notElem` select _1 retaineds
-                                , isAwake i' ms ]
+                                , isLoggedIn . getPla i' $ ms ]
             in (linkLostMsg mySing, targetIds)
         toLinkRetainersHelper
           | targetIds <- [ i' | (i', _, ia) <- retaineds, ia ]

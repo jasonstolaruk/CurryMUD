@@ -27,7 +27,9 @@ function curry_mapper()
       setExit(info.last_room_id, info.room_id, info.dir)
     elseif info.special_dir ~= "-1" then
       addSpecialExit(info.last_room_id, info.room_id, info.special_dir)
-      addCustomLine(info.last_room_id, info.room_id, info.special_dir, "solid line", {255, 0, 255}, false)
+      if addCustomLine ~= nil then
+        addCustomLine(info.last_room_id, info.room_id, info.special_dir, "solid line", {255, 0, 255}, false)
+      end
     end
   end
   if info.zoom ~= -1 then setMapZoom(info.zoom) end
