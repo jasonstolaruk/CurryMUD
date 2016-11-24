@@ -23,10 +23,10 @@ import qualified Mud.Misc.Logging as L (logPla, logPlaOut)
 
 import Control.Concurrent (threadDelay)
 import Control.Exception.Lifted (handle)
-import Control.Lens.Operators ((&), (.~), (?~), (^.))
+import Control.Lens.Operators ((%~), (&), (.~), (?~), (^.))
 import Control.Monad ((>=>), forM_)
 import Control.Monad.IO.Class (liftIO)
-import Data.List (partition)
+import Data.List (delete, partition)
 import Data.Monoid ((<>))
 import Data.Text (Text)
 
@@ -89,12 +89,13 @@ spiritTimer i mq cols retainedIds secs
     next = (liftIO . threadDelay $ 1 * 10 ^ 6) >> spiritTimer i mq cols retainedIds (pred secs)
 
 
--- TODO: A retained msg should be sent to those link retainers who are asleep.
 theBeyond :: Id -> MsgQueue -> Cols -> Inv -> MudStack ()
 theBeyond i mq cols retainedIds = modifyStateSeq $ \ms ->
     let s               = getSing i ms
         (inIds, outIds) = partition (isLoggedIn . (`getPla` ms)) retainedIds
-        fs = [ wrapSend mq cols . colorWith spiritMsgColor $ theBeyondMsg
+        ms'             = foldr f ms retainedIds
+        f pcId          = pcTbl.ind pcId.linked %~ (s `delete`)
+    in (ms', [ wrapSend mq cols . colorWith spiritMsgColor $ theBeyondMsg
+             , writeMsg mq TheBeyond
              , bcast . pure $ (linkLostMsg s, inIds)
-             , forM_ outIds $ \i' ->　retainedMsg i' ms (linkMissingMsg s) ]
-    in (ms, fs)
+             , forM_ outIds $ \i' ->　retainedMsg i' ms (linkMissingMsg s) ])

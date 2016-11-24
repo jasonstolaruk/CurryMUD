@@ -90,6 +90,7 @@ threadServer h i mq tq = sequence_ [ setThreadType . Server $ i
       ShowHandle     -> handleShowHandle i h               >> loop
       Shutdown       -> shutDown                           >> loop
       SilentBoot     ->                                    sayonara
+      TheBeyond      ->                                    sayonara
       ToNpc msg      -> handleFromServer i h Npcに msg     >> loop
     sayonara = sequence_ [ stopTimer tq, handleEgress i ]
 

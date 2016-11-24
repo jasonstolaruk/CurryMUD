@@ -2541,9 +2541,10 @@ question p = patternMatchFail "question" . showText $ p
 -----
 
 
--- TODO: When a spirit quits.
 quit :: ActionFun
-quit (NoArgs' i mq)                        = do { logPlaExec "quit" i; writeMsg mq Quit }
+quit (NoArgs' i mq) = (logPlaExec "quit" i >>) $ writeMsg mq =<< mIf (isSpiritId i <$> getState)
+    (return TheBeyond)
+    (return Quit     )
 quit ActionParams { plaMsgQueue, plaCols } = wrapSend plaMsgQueue plaCols adviceQuitExcessArgs
 
 
@@ -2551,9 +2552,12 @@ handleEgress :: Id -> MudStack ()
 handleEgress i = do
     now <- liftIO getCurrentTime
     ms  <- getState
-    let (s, ri, iah) = dup3 (i, ms) & _1 %~ uncurry getSing & _2 %~ uncurry getRmId & _3 %~ uncurry isAdHoc
-    unless iah . bcastOthersInRm i . nlnl . egressMsg . serialize . mkStdDesig i ms $ DoCap
-    helper now ri iah s |&| modifyState >=> \(bs, logMsgs) -> do
+    let (s, ri, hoc, spirit) = ((,,,) <$> uncurry getSing
+                                      <*> uncurry getRmId
+                                      <*> uncurry isAdHoc
+                                      <*> uncurry isSpiritId) (i, ms)
+    unless (hoc || spirit) . bcastOthersInRm i . nlnl . egressMsg . serialize . mkStdDesig i ms $ DoCap
+    helper now ri hoc s |&| modifyState >=> \(bs, logMsgs) -> do
         stopActs          i
         pauseEffects      i
         stopFeelings      i
@@ -2564,11 +2568,11 @@ handleEgress i = do
         bcastAdmins $ s <> " has left CurryMUD."
         forM_ logMsgs . uncurry . logPla $ "handleEgress"
         logNotice "handleEgress" . T.concat $ [ descSingId i ms, " has left CurryMUD." ]
-        when iah . tweak $ removeAdHoc i
+        when hoc . tweak $ removeAdHoc i
   where
-    helper now ri iah s ms =
+    helper now ri hoc s ms =
         let (ms', bs, logMsgs) = peepHelper ms s
-            ms''               = iah ? ms' :? updateHostMap (possessHelper . leaveParty i . movePC ms' $ ri) s now
+            ms''               = hoc ? ms' :? updateHostMap (possessHelper . leaveParty i . movePC ms' $ ri) s now
         in (ms'', (bs, logMsgs))
     peepHelper ms s =
         let (peeperIds, peepingIds) = getPeepersPeeping i ms

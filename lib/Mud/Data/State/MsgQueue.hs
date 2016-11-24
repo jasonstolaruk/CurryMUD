@@ -26,6 +26,7 @@ data Msg = AsSelf     Text
          | ShowHandle
          | Shutdown
          | SilentBoot
+         | TheBeyond
          | ToNpc      Text
 
 
