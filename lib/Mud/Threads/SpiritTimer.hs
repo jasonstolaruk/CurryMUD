@@ -19,7 +19,7 @@ import Mud.Util.Misc
 import Mud.Util.Operators
 import Mud.Util.Quoting
 import Mud.Util.Text
-import qualified Mud.Misc.Logging as L (logPla, logPlaOut)
+import qualified Mud.Misc.Logging as L (logNotice, logPla, logPlaOut)
 
 import Control.Concurrent (threadDelay)
 import Control.Exception.Lifted (handle)
@@ -29,12 +29,17 @@ import Control.Monad.IO.Class (liftIO)
 import Data.List (delete, partition)
 import Data.Monoid ((<>))
 import Data.Text (Text)
+import qualified Data.Text as T
 
 
 default (Int)
 
 
 -----
+
+
+logNotice :: Text -> Text -> MudStack ()
+logNotice = L.logNotice "Mud.Threads.SpiritTimer"
 
 
 logPla :: Text -> Id -> Text -> MudStack ()
@@ -100,4 +105,5 @@ theBeyond i mq cols retainedIds = modifyStateSeq $ \ms ->
              , forM_ outIds $ \i' ->　retainedMsg i' ms (linkMissingMsg s)
              , bcastAdmins $ s <> " passes into the beyond."
              , logPla "theBeyond" i "passing into the beyond."
+             , logNotice "theBeyond" . T.concat $ [ descSingId i ms, " is passing into the beyond." ]
              , writeMsg mq TheBeyond ])

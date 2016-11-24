@@ -31,6 +31,7 @@ module Mud.Data.State.Util.Misc ( addToInv
                                 , getVisibleInv
                                 , getVisibleInvCoins
                                 , isAwake
+                                , isDead
                                 , isKnownLang
                                 , isLoggedIn
                                 , isNpc
@@ -69,7 +70,7 @@ import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Hierarchy
 import Mud.Misc.Misc
-import Mud.TheWorld.Zones.AdminZoneIds (iWelcome)
+import Mud.TheWorld.Zones.AdminZoneIds (iNecropolis, iWelcome)
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
 import Mud.Util.List hiding (countOcc)
@@ -351,6 +352,13 @@ isAwake = onPla ((&&) <$> isLoggedIn <*> not . isIncognito) True
 
 isLoggedIn :: Pla -> Bool
 isLoggedIn = views logoutRmId ((()#) . (Sum <$>))
+
+
+-----
+
+
+isDead :: Id -> MudState -> Bool
+isDead i = (== iNecropolis) . getRmId i
 
 
 -----
