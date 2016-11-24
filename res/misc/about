@@ -1,10 +1,10 @@
-CurryMUD - A Multi-User Dungeon by Jason Stolaruk.
-Copyright (c) 2013-2016, Jason Stolaruk and Detroit Labs LLC.
+CurryMUD - A Multi-User Dungeon by Jason Stolaruk
+Copyright (c) 2013-2016 Jason Stolaruk and Detroit Labs LLC
 This is version "0.1.0.0". CurryMUD has been in development since October 2013.
 Administration may be contacted at "CurryMUD@gmail.com".
 
 CurryMUD is comprised of an original code base written entirely in the Haskell programming language.
 CurryMUD is named for mathematician Haskell Curry (for whom the Haskell language itself is also named).
-The source code is open and available on GitHub under the 3-clause BSD license: "https://github.com/jasonstolaruk/CurryMUD".
+The source code is available on GitHub under a 3-clause BSD license with additional unique clauses regarding the creation of derivative MUDs. https://github.com/jasonstolaruk/CurryMUD
 
 CurryMUD has made use of many open source Haskell libraries. Type "help attributions" for more information.

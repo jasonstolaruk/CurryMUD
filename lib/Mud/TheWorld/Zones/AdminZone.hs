@@ -1146,12 +1146,10 @@ createAdminZone = do
                    Nothing
                    zeroBits)
               (mkObj . ObjTemplate paperWeight paperVol Nothing $ zeroBits)
-              (Writable (Just ( "CurryMUD - A Multi-User Dungeon by Jason Stolaruk.\n\
-                                \Copyright (c) 2013-2016, Jason Stolaruk and Detroit Labs LLC.\n\
-                                \Version 0.1.0.0.\n\
-                                \CurryMUD@gmail.com\n\
-                                \CurryMUD is comprised of an original codebase written entirely in the Haskell \
-                                \programming language."
+              (Writable (Just ( "CurryMUD - A Multi-User Dungeon by Jason Stolaruk\n\
+                                \Copyright (c) 2013-2016 Jason Stolaruk and Detroit Labs LLC\n\
+                                \Version 0.1.0.0\n\
+                                \CurryMUD@gmail.com"
                               , CommonLang ))
                         Nothing)
   let putParchment i = putWritable i
