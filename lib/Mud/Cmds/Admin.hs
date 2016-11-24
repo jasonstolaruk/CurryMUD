@@ -1433,6 +1433,10 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
                       , "curmp"
                       , "curpp"
                       , "curfp"
+                      , "maxhp"
+                      , "maxmp"
+                      , "maxpp"
+                      , "maxfp"
                       , "exp"
                       , "hand"
                       , "knownlangs"
@@ -1464,10 +1468,14 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
           "ht"             -> setMobAttribHelper     t "ht" "HT" ht ht
           "ma"             -> setMobAttribHelper     t "ma" "MA" ma ma
           "ps"             -> setMobAttribHelper     t "ps" "PS" ps ps
-          "curhp"          -> setMobCurHelper        t "curHp" "HP" getHps curHp
-          "curmp"          -> setMobCurHelper        t "curMp" "MP" getMps curMp
-          "curpp"          -> setMobCurHelper        t "curPp" "PP" getPps curPp
-          "curfp"          -> setMobCurHelper        t "curFp" "FP" getFps curFp
+          "curhp"          -> setMobXpsHelper        t "curHp" "HP"     (\i -> fst . getHps i) curHp
+          "curmp"          -> setMobXpsHelper        t "curMp" "MP"     (\i -> fst . getMps i) curMp
+          "curpp"          -> setMobXpsHelper        t "curPp" "PP"     (\i -> fst . getPps i) curPp
+          "curfp"          -> setMobXpsHelper        t "curFp" "FP"     (\i -> fst . getFps i) curFp
+          "maxhp"          -> setMobXpsHelper        t "maxHp" "max HP" (\i -> snd . getHps i) maxHp
+          "maxmp"          -> setMobXpsHelper        t "maxMp" "max MP" (\i -> snd . getMps i) maxMp
+          "maxpp"          -> setMobXpsHelper        t "maxPp" "max PP" (\i -> snd . getPps i) maxPp
+          "maxfp"          -> setMobXpsHelper        t "maxFp" "max FP" (\i -> snd . getFps i) maxFp
           "exp"            -> setMobExpHelper        t
           "hand"           -> setMobHandHelper       t
           "knownlangs"     -> setMobKnownLangsHelper t
@@ -1537,17 +1545,17 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
           | otherwise        = case eitherDecode value' of
             Left  _ -> appendMsg . sorryAdminSetValue k $ value
             Right x -> let prev                 = view getter . getMob targetId $ ms
-                           addSubAssignHelper f = let x'     = max1 $ prev `f` x
-                                                      diff   = x' - prev
-                                                      toSelf = mkToSelfForInt k x' diff
-                                                  in a & _1.mobTbl.ind targetId.setter .~ x'
+                           addSubAssignHelper f = let new    = max1 $ prev `f` x
+                                                      diff   = new - prev
+                                                      toSelf = mkToSelfForInt k new diff
+                                                  in a & _1.mobTbl.ind targetId.setter .~ new
                                                        & _2 <>~ toSelf
                                                        & _3 <>~ (Sum diff |!| mkToTarget diff)
                                                        & _4 <>~ (Sum diff |!| toSelf)
-                       in case op of Assign    -> let x'     = max1 x
-                                                      diff   = x' - prev
-                                                      toSelf = mkToSelfForInt k x' diff
-                                                  in a & _1.mobTbl.ind targetId.setter .~ x'
+                       in case op of Assign    -> let new    = max1 x
+                                                      diff   = new - prev
+                                                      toSelf = mkToSelfForInt k new diff
+                                                  in a & _1.mobTbl.ind targetId.setter .~ new
                                                        & _2 <>~ toSelf
                                                        & _3 <>~ (Sum diff |!| mkToTarget diff)
                                                        & _4 <>~ (Sum diff |!| toSelf)
@@ -1557,30 +1565,29 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
             mkToTarget diff | diff > 0  = pure . T.concat $ [ "You have gained ", commaShow diff,         " ", n, "." ]
                             | otherwise = pure . T.concat $ [ "You have lost ",   commaShow . abs $ diff, " ", n, "." ]
         -----
-        setMobCurHelper t k n f setter
+        setMobXpsHelper t k n f setter
           | not . hasMob $ t = sorryType
           | otherwise        = case eitherDecode value' of
             Left  _ -> appendMsg . sorryAdminSetValue k $ value
-            Right x -> let (c, m)               = f targetId ms
-                           addSubAssignHelper g = let c'     = (c `g` x) `min` m
-                                                      diff   = c' - c
-                                                      toSelf = mkToSelfForInt k c' diff
-                                                  in a & _1.mobTbl.ind targetId.setter .~ c'
+            Right x -> let prev                 = f targetId ms
+                           addSubAssignHelper g = let new    = prev `g` x
+                                                      diff   = new - prev
+                                                      toSelf = mkToSelfForInt k new diff
+                                                  in a & _1.mobTbl.ind targetId.setter .~ new
                                                        & _2 <>~ toSelf
                                                        & _3 <>~ (Sum diff |!| mkToTarget diff)
                                                        & _4 <>~ (Sum diff |!| toSelf)
-                       in case op of Assign    -> let x'     = x `min` m
-                                                      diff   = x' - c
-                                                      toSelf = mkToSelfForInt k x' diff
-                                                  in a & _1.mobTbl.ind targetId.setter .~ x'
+                       in case op of Assign    -> let diff   = x - prev
+                                                      toSelf = mkToSelfForInt k x diff
+                                                  in a & _1.mobTbl.ind targetId.setter .~ x
                                                        & _2 <>~ toSelf
                                                        & _3 <>~ (Sum diff |!| mkToTarget diff)
                                                        & _4 <>~ (Sum diff |!| toSelf)
                                      AddAssign -> addSubAssignHelper (+)
                                      SubAssign -> addSubAssignHelper (-)
           where
-            mkToTarget diff | diff > 0  = pure . T.concat $ [ "You have recovered ", commaShow diff,         " ", n, "." ]
-                            | otherwise = pure . T.concat $ [ "You have lost ",      commaShow . abs $ diff, " ", n, "." ]
+            mkToTarget diff | diff > 0  = pure . T.concat $ [ "You have gained ", commaShow diff,         " ", n, "." ]
+                            | otherwise = pure . T.concat $ [ "You have lost ",   commaShow . abs $ diff, " ", n, "." ]
         -----
         setMobExpHelper t
           | not . hasMob $ t = sorryType
@@ -1588,13 +1595,13 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
             Left  _ -> appendMsg . sorryAdminSetValue "exp" $ value
             Right x -> let prev                 = getExp targetId ms
                            addSubAssignHelper g = f $ max0 (prev `g` x)
-                           f x'                 = let diff   = x' - prev
-                                                      toSelf = mkToSelfForInt "exp" x' diff
+                           f new                = let diff   = new - prev
+                                                      toSelf = mkToSelfForInt "exp" new diff
                                                       a' | isPC targetId ms
                                                          , diff > 0
                                                          = a & _5 <>~ pure (awardExp diff (prefixAdminCmd "set") targetId)
                                                          | otherwise
-                                                         = a & _1.mobTbl.ind targetId.exp .~ x'
+                                                         = a & _1.mobTbl.ind targetId.exp .~ new
                                                   in a' & _2 <>~ toSelf
                                                         & _3 <>~ (Sum diff |!| mkToTarget diff)
                                                         & _4 <>~ (Sum diff |!| toSelf)
@@ -1626,10 +1633,10 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
             Left  _              -> appendMsg . sorryAdminSetValue "knownLangs" $ value
             Right (nubSort -> x) ->
                 let prev                 = getKnownLangs targetId ms
-                    addSubAssignHelper f = let (x', toSelf, isDiff) = mkTupleForList prev f x mkToSelf
-                                           in a & _1.mobTbl.ind targetId.knownLangs .~ x'
+                    addSubAssignHelper f = let (new, toSelf, isDiff) = mkTupleForList prev f x mkToSelf
+                                           in a & _1.mobTbl.ind targetId.knownLangs .~ new
                                                 & _2 <>~ toSelf
-                                                & _3 <>~ (isDiff |?| mkToTarget x')
+                                                & _3 <>~ (isDiff |?| mkToTarget new)
                                                 & _4 <>~ (isDiff |?| toSelf)
                 in case op of Assign    -> let toSelf = mkToSelf x isDiff
                                                isDiff = x /= prev
@@ -1695,17 +1702,17 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
           | otherwise        = case eitherDecode value' of
             Left  _ -> appendMsg . sorryAdminSetValue k $ value
             Right x -> let prev                 = view getter . getMob targetId $ ms
-                           addSubAssignHelper f = let x'     = max0 $ prev `f` x
-                                                      diff   = x' - prev
-                                                      toSelf = mkToSelfForInt k x' diff
-                                                  in a & _1.mobTbl.ind targetId.setter .~ x'
+                           addSubAssignHelper f = let new    = max0 $ prev `f` x
+                                                      diff   = new - prev
+                                                      toSelf = mkToSelfForInt k new diff
+                                                  in a & _1.mobTbl.ind targetId.setter .~ new
                                                        & _2 <>~ toSelf
                                                        & _3 <>~ (Sum diff |!| mkToTarget diff)
                                                        & _4 <>~ (Sum diff |!| toSelf)
-                       in case op of Assign    -> let x'     = max0 x
-                                                      diff   = x' - prev
-                                                      toSelf = mkToSelfForInt k x' diff
-                                                  in a & _1.mobTbl.ind targetId.setter .~ x'
+                       in case op of Assign    -> let new    = max0 x
+                                                      diff   = new - prev
+                                                      toSelf = mkToSelfForInt k new diff
+                                                  in a & _1.mobTbl.ind targetId.setter .~ new
                                                        & _2 <>~ toSelf
                                                        & _3 <>~ (Sum diff |!| mkToTarget diff)
                                                        & _4 <>~ (Sum diff |!| toSelf)
@@ -1736,10 +1743,10 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
             Left  _              -> appendMsg . sorryAdminSetValue k $ value
             Right (nubSort -> x) ->
                 let prev                 = view getter . getMob targetId $ ms
-                    addSubAssignHelper f = let (x', toSelf, isDiff) = mkTupleForList prev f x mkToSelf
-                                           in a & _1.mobTbl.ind targetId.setter .~ x'
+                    addSubAssignHelper f = let (new, toSelf, isDiff) = mkTupleForList prev f x mkToSelf
+                                           in a & _1.mobTbl.ind targetId.setter .~ new
                                                 & _2 <>~ toSelf
-                                                & _3 <>~ (isDiff |?| mkToTarget x')
+                                                & _3 <>~ (isDiff |?| mkToTarget new)
                                                 & _4 <>~ (isDiff |?| toSelf)
                 in case op of Assign    -> let toSelf = mkToSelf x isDiff
                                                isDiff = x /= prev
@@ -1797,10 +1804,10 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
             Left  _              -> appendMsg . sorryAdminSetValue k $ value
             Right (nubSort -> x) ->
                 let prev                 = view getter . getPC targetId $ ms
-                    addSubAssignHelper f = let (x', toSelf, isDiff) = mkTupleForList prev f x mkToSelf
-                                           in a & _1.pcTbl.ind targetId.setter .~ x'
+                    addSubAssignHelper f = let (new, toSelf, isDiff) = mkTupleForList prev f x mkToSelf
+                                           in a & _1.pcTbl.ind targetId.setter .~ new
                                                 & _2 <>~ toSelf
-                                                & _3 <>~ (isDiff |?| mkToTarget x')
+                                                & _3 <>~ (isDiff |?| mkToTarget new)
                                                 & _4 <>~ (isDiff |?| toSelf)
                 in case op of Assign    -> let toSelf = mkToSelf x isDiff
                                                isDiff = x /= prev
@@ -1821,9 +1828,9 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
             Left  _ -> appendMsg . sorryAdminSetValue "skillPts" $ value
             Right x -> let prev                 = getSkillPts targetId ms
                            addSubAssignHelper g = f . max0 $ prev `g` x
-                           f x'                 = let diff   = x' - prev
-                                                      toSelf = mkToSelfForInt "skillPts" x' diff
-                                                  in a & _1.pcTbl.ind targetId.skillPts .~ x'
+                           f new                = let diff   = new - prev
+                                                      toSelf = mkToSelfForInt "skillPts" new diff
+                                                  in a & _1.pcTbl.ind targetId.skillPts .~ new
                                                        & _2 <>~ toSelf
                                                        & _3 <>~ (Sum diff |!| mkToTarget diff)
                                                        & _4 <>~ (Sum diff |!| toSelf)
@@ -1845,10 +1852,10 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
             diffTxt = if | diff == 0 -> "no change"
                          | diff >  0 -> "added "      <> commaShow diff
                          | otherwise -> "subtracted " <> commaShow (abs diff)
-        mkTupleForList prev f x g = let x'     = nubSort $ prev `f` x
-                                        toSelf = g x' isDiff
-                                        isDiff = x' /= prev
-                                    in (x', toSelf, isDiff)
+        mkTupleForList prev f x g = let new    = nubSort $ prev `f` x
+                                        toSelf = g new isDiff
+                                        isDiff = new /= prev
+                                    in (new, toSelf, isDiff)
 
 
 -----
