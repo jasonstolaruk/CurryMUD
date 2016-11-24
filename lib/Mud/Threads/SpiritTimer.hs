@@ -96,6 +96,8 @@ theBeyond i mq cols retainedIds = modifyStateSeq $ \ms ->
         ms'             = foldr f ms retainedIds
         f pcId          = pcTbl.ind pcId.linked %~ (s `delete`)
     in (ms', [ wrapSend mq cols . colorWith spiritMsgColor $ theBeyondMsg
-             , writeMsg mq TheBeyond
              , bcast . pure $ (linkLostMsg s, inIds)
-             , forM_ outIds $ \i' ->　retainedMsg i' ms (linkMissingMsg s) ])
+             , forM_ outIds $ \i' ->　retainedMsg i' ms (linkMissingMsg s)
+             , bcastAdmins $ s <> " passes into the beyond."
+             , logPla "theBeyond" i "passing into the beyond."
+             , writeMsg mq TheBeyond ])

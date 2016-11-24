@@ -49,7 +49,7 @@ import Mud.Misc.LocPref
 import Mud.Misc.Logging hiding (logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut)
 import Mud.Misc.Misc
 import Mud.Misc.NameResolution
-import Mud.TheWorld.Zones.AdminZoneIds (iLoggedOut, iPidge, iRoot)
+import Mud.TheWorld.Zones.AdminZoneIds (iLoggedOut, iNecropolis, iPidge, iRoot)
 import Mud.Threads.Act
 import Mud.Threads.Digester
 import Mud.Threads.Effect
@@ -2552,12 +2552,13 @@ handleEgress :: Id -> MudStack ()
 handleEgress i = do
     now <- liftIO getCurrentTime
     ms  <- getState
-    let (s, ri, hoc, spirit) = ((,,,) <$> uncurry getSing
-                                      <*> uncurry getRmId
-                                      <*> uncurry isAdHoc
-                                      <*> uncurry isSpiritId) (i, ms)
+    let tuple@(s, _, hoc, spirit) = ((,,,) <$> uncurry getSing
+                                           <*> uncurry getRmId
+                                           <*> uncurry isAdHoc
+                                           <*> uncurry isSpiritId) (i, ms)
     unless (hoc || spirit) . bcastOthersInRm i . nlnl . egressMsg . serialize . mkStdDesig i ms $ DoCap
-    helper now ri hoc s |&| modifyState >=> \(bs, logMsgs) -> do
+    when spirit . farewell i $ ms
+    helper now tuple |&| modifyState >=> \(bs, logMsgs) -> do
         stopActs          i
         pauseEffects      i
         stopFeelings      i
@@ -2570,22 +2571,25 @@ handleEgress i = do
         logNotice "handleEgress" . T.concat $ [ descSingId i ms, " has left CurryMUD." ]
         when hoc . tweak $ removeAdHoc i
   where
-    helper now ri hoc s ms =
-        let (ms', bs, logMsgs) = peepHelper ms s
-            ms''               = hoc ? ms' :? updateHostMap (possessHelper . leaveParty i . movePC ms' $ ri) s now
+    helper now (s, ri, hoc, spirit) ms =
+        let (ms', bs, logMsgs) = peepHelper ms s spirit
+            ms'' | hoc         = ms'
+                 | otherwise   = updateHostMap (possessHelper . leaveParty i . movePC ms' ri $ spirit) s now
         in (ms'', (bs, logMsgs))
-    peepHelper ms s =
+    peepHelper ms s spirit =
         let (peeperIds, peepingIds) = getPeepersPeeping i ms
-            bs                      = [ (nlnl    . T.concat $ [ "You are no longer peeping "
-                                                              , s
-                                                              , " "
-                                                              , parensQuote $ s <> " has disconnected"
-                                                              , "." ], pure peeperId) | peeperId <- peeperIds ]
-            logMsgs                 = [ (peeperId, T.concat   [ "no longer peeping "
-                                                              , s
-                                                              , " "
-                                                              , parensQuote $ s <> " has disconnected"
-                                                              , "." ]) | peeperId <- peeperIds ]
+            bs      = [ (nlnl    . T.concat $ [ "You are no longer peeping "
+                                              , s
+                                              , " "
+                                              , parensQuote $ s <> spaced "has" <> txt
+                                              , "." ], pure peeperId) | peeperId <- peeperIds ]
+            logMsgs = [ (peeperId, T.concat   [ "no longer peeping "
+                                              , s
+                                              , " "
+                                              , parensQuote $ s <> spaced "has" <> txt
+                                              , "." ]) | peeperId <- peeperIds ]
+            txt | spirit    = "passed into the beyond"
+                | otherwise = "disconnected"
         in (ms & plaTbl %~ stopPeeping     peepingIds
                & plaTbl %~ stopBeingPeeped peeperIds
                & plaTbl.ind i.peeping .~ []
@@ -2600,22 +2604,29 @@ handleEgress i = do
       Just hostMap -> case hostMap^.at host of Nothing -> Just $ hostMap & at host ?~ newRecord
                                                Just r  -> Just $ hostMap & at host ?~ reviseRecord r
       where
-        newRecord      = HostRecord { _noOfLogouts   = 1
-                                    , _secsConnected = duration
-                                    , _lastLogout    = now }
-        reviseRecord r = r & noOfLogouts   +~ 1
-                           & secsConnected +~ duration
-                           & lastLogout    .~ now
-        host           = getCurrHostName i ms
-        duration       = round $ now `diffUTCTime` conTime
-        conTime        = fromJust . getConnectTime i $ ms
-    movePC ms ri     = ms & invTbl     .ind ri           %~ (i `delete`)
-                          & invTbl     .ind iLoggedOut   %~ (i :)
-                          & msgQueueTbl.at  i            .~ Nothing
-                          & mobTbl     .ind i.rmId       .~ iLoggedOut
-                          & plaTbl     .ind i.logoutRmId ?~ ri
+        newRecord       = HostRecord { _noOfLogouts   = 1
+                                     , _secsConnected = duration
+                                     , _lastLogout    = now }
+        reviseRecord r  = r & noOfLogouts   +~ 1
+                            & secsConnected +~ duration
+                            & lastLogout    .~ now
+        host            = getCurrHostName i ms
+        duration        = round $ now `diffUTCTime` conTime
+        conTime         = fromJust . getConnectTime i $ ms
+    movePC ms ri spirit = ms & invTbl     .ind ri           %~ (i `delete`)
+                             & invTbl     .ind ri'          %~ (i :)
+                             & msgQueueTbl.at  i            .~ Nothing
+                             & mobTbl     .ind i.rmId       .~ ri'
+                             & plaTbl     .ind i.logoutRmId ?~ ri
+      where
+        ri' | spirit    = iNecropolis
+            | otherwise = iLoggedOut
     possessHelper ms = let f = maybe id (\npcId -> npcTbl.ind npcId.npcPossessor .~ Nothing) . getPossessing i $ ms
                        in ms & plaTbl.ind i.possessing .~ Nothing & f
+
+
+farewell :: Id -> MudState -> MudStack ()
+farewell _ _ = unit
 
 
 -----
