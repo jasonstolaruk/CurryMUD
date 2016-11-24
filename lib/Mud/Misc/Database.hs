@@ -350,7 +350,7 @@ insertDbTblAdminChan = insertDbTblHelper "insert into admin_chan (timestamp, nam
 
 
 insertDbTblAdminMsg :: AdminMsgRec -> IO ()
-insertDbTblAdminMsg = insertDbTblHelper "insert into admin_msg (timestamp, fromName, toName, msg) values (?, ?, ?, ?)"
+insertDbTblAdminMsg = insertDbTblHelper "insert into admin_msg (timestamp, from_name, to_name, msg) values (?, ?, ?, ?)"
 
 
 insertDbTblAlertExec :: AlertExecRec -> IO ()
@@ -372,7 +372,7 @@ insertDbTblBanPC = insertDbTblHelper "insert into ban_pc (timestamp, name, is_ba
 
 
 insertDbTblBonus :: BonusRec -> IO ()
-insertDbTblBonus = insertDbTblHelper "insert into bonus (timestamp, fromName, toName, amt) values (?, ?, ?, ?)"
+insertDbTblBonus = insertDbTblHelper "insert into bonus (timestamp, from_name, to_name, amt) values (?, ?, ?, ?)"
 
 
 insertDbTblBug :: BugRec -> IO ()
@@ -400,7 +400,7 @@ insertDbTblSec = insertDbTblHelper "insert into sec (name, question, answer) val
 
 
 insertDbTblTele :: TeleRec -> IO ()
-insertDbTblTele = insertDbTblHelper "insert into tele (timestamp, fromName, toName, msg) values (?, ?, ?, ?)"
+insertDbTblTele = insertDbTblHelper "insert into tele (timestamp, from_name, to_name, msg) values (?, ?, ?, ?)"
 
 
 insertDbTblTelnetChars :: TelnetCharsRec -> IO ()
@@ -497,7 +497,7 @@ lookupTeleNames :: Sing -> IO [Only Text]
 lookupTeleNames s = onDbFile $ \conn -> query conn (Query t) (dup4 s)
   where
     t = "select case\
-        \  when fromName != ? then fromName\
-        \  when toName != ? then toName\
+        \  when from_name != ? then from_name\
+        \  when to_name   != ? then to_name\
         \  end as name \
-        \from (select fromName, toName from tele where fromName = ? or toName = ?)"
+        \from (select from_name, to_name from tele where from_name = ? or to_name = ?)"
