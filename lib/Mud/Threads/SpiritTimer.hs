@@ -99,7 +99,7 @@ theBeyond i mq cols retainedIds = modifyStateSeq $ \ms ->
     let s               = getSing i ms
         (inIds, outIds) = partition (isLoggedIn . (`getPla` ms)) retainedIds
         ms'             = foldr f ms retainedIds
-        f pcId          = pcTbl.ind pcId.linked %~ (s `delete`)
+        f pcId          = pcTbl.ind pcId.linked %~ (s `delete`) -- TODO: TeleLinkMstrTbl
     in (ms', [ wrapSend mq cols . colorWith spiritMsgColor $ theBeyondMsg
              , bcast . pure $ (linkLostMsg s, inIds)
              , forM_ outIds $ \i' ->　retainedMsg i' ms (linkMissingMsg s)

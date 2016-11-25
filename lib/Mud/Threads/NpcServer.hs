@@ -3,6 +3,7 @@
 module Mud.Threads.NpcServer ( runNpcServerAsync
                              , startNpcServers
                              , stopNpcServers
+                             , stopWaitNpcServer
                              , threadNpcServer ) where
 
 import Mud.Data.Misc

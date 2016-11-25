@@ -57,6 +57,7 @@ import Mud.Threads.Effect
 import Mud.Threads.FeelingTimer
 import Mud.Threads.Misc
 import Mud.Threads.Regen
+import Mud.Threads.SpiritTimer
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
@@ -2544,8 +2545,8 @@ question p = patternMatchFail "question" . showText $ p
 
 quit :: ActionFun
 quit (NoArgs' i mq) = (logPlaExec "quit" i >>) $ writeMsg mq =<< mIf (isSpiritId i <$> getState)
-    (return TheBeyond)
-    (return Quit     )
+    (throwWaitSpiritTimer i >> return TheBeyond)
+    (return Quit)
 quit ActionParams { plaMsgQueue, plaCols } = wrapSend plaMsgQueue plaCols adviceQuitExcessArgs
 
 
@@ -2561,7 +2562,7 @@ handleEgress i = do
     when spirit . farewell i $ ms
     helper now tuple |&| modifyState >=> \(bs, logMsgs) -> do
         stopActs i
-        unless spirit $ do { pauseEffects      i
+        unless spirit $ do { pauseEffects      i -- Done in "handleDeath".
                            ; stopFeelings      i
                            ; stopRegen         i
                            ; throwWaitDigester i }
@@ -2589,8 +2590,7 @@ handleEgress i = do
                                               , " "
                                               , parensQuote $ s <> spaced "has" <> txt
                                               , "." ]) | peeperId <- peeperIds ]
-            txt | spirit    = "passed into the beyond"
-                | otherwise = "disconnected"
+            txt     = spirit ? "passed into the beyond" :? "disconnected"
         in (ms & plaTbl %~ stopPeeping     peepingIds
                & plaTbl %~ stopBeingPeeped peeperIds
                & plaTbl.ind i.peeping .~ []
@@ -2620,8 +2620,7 @@ handleEgress i = do
                              & mobTbl     .ind i.rmId       .~ ri'
                              & plaTbl     .ind i.logoutRmId ?~ ri
       where
-        ri' | spirit    = iNecropolis
-            | otherwise = iLoggedOut
+        ri' = spirit ? iNecropolis :? iLoggedOut
     possessHelper ms = let f = maybe id (\npcId -> npcTbl.ind npcId.npcPossessor .~ Nothing) . getPossessing i $ ms
                        in ms & plaTbl.ind i.possessing .~ Nothing & f
 
