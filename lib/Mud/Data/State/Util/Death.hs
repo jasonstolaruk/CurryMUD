@@ -34,7 +34,7 @@ import Control.Arrow ((***), (&&&), first, second)
 import Control.Concurrent (threadDelay)
 import Control.Lens (_1, _2, _3, at, view, views)
 import Control.Lens.Operators ((%~), (&), (.~), (^.))
-import Control.Monad (forM_, when)
+import Control.Monad (forM_, unless, when)
 import Control.Monad.IO.Class (liftIO)
 import Data.Bits (zeroBits)
 import Data.Bool (bool)
@@ -85,8 +85,9 @@ Those links with the greatest volume of messages are retained. If the deceased P
 
 
 handleDeath :: Id -> MudStack ()
-handleDeath i = do
-    mWhen (isNpc i <$> getState) possessHelper
+handleDeath i = isNpc i <$> getState >>= \b -> do
+    when   b possessHelper
+    unless b leaveChans
     tweaks [ leaveParty i
            , mobTbl.ind i.mobRmDesc .~ Nothing
            , mobTbl.ind i.tempDesc  .~ Nothing
@@ -108,6 +109,7 @@ handleDeath i = do
                    in [ wrapSend mq cols . prd $ "You stop possessing " <> aOrAnOnLower (getSing i ms)
                       , sendDfltPrompt mq pi
                       , logPla "handleDeath" pi . prd $ "stopped possessing " <> t ] )
+    leaveChans = unit
 
 
 logPlaHelper :: Id -> MudState -> Text -> Text -> MudStack ()
@@ -174,6 +176,7 @@ spiritize i = getState >>= \ms -> if isPC i ms
   where
     procOnlySings xs = map snd . sortBy (flip compare `on` fst) $ [ (length g, s)
                                                                   | g@(s:_) <- sortGroup . map fromOnly $ xs ]
+    -- TODO: TeleLinkMstrTbl
     pcTblHelper mySing retaineds@(select _1 -> retainerIds) = IM.mapWithKey helper
       where
         helper pcId | pcId == i               = linked .~ select _2 retaineds
@@ -201,6 +204,7 @@ spiritize i = getState >>= \ms -> if isPC i ms
         liftIO . threadDelay $ 2 * 10 ^ 6
         wrapSend mq cols . colorWith spiritMsgColor $ spiritDetachMsg
         runSpiritTimerAsync i secs retainedIds
+    -- TODO: Stop the NPC server thread?
     deleteNpc ms = let ri = getRmId i ms in do { tweaks [ activeEffectsTbl.at  i  .~ Nothing
                                                         , coinsTbl        .at  i  .~ Nothing
                                                         , entTbl          .at  i  .~ Nothing
