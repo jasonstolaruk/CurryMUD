@@ -138,6 +138,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryInterpPW
                            , sorryInterpPwBanned
                            , sorryInterpPwBoot
+                           , sorryInterpPwDead
                            , sorryInterpPwLoggedIn
                            , sorryIntroAlready
                            , sorryIntroCoin
@@ -1096,6 +1097,10 @@ sorryInterpPwBoot = "You are being booted due to excessive incorrect passwords."
 
 sorryInterpPwBanned :: Sing -> Text
 sorryInterpPwBanned s = colorWith bootMsgColor $ s <> " has been banned from CurryMUD!"
+
+
+sorryInterpPwDead :: Sing -> Text
+sorryInterpPwDead s = but $ s <> " has deceased. Please create a new character."
 
 
 sorryInterpPwLoggedIn :: Sing -> Text

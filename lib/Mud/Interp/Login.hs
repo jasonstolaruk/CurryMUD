@@ -688,17 +688,19 @@ interpPW times targetSing targetId targetPla cn params@(WithArgs i mq cols as) =
       else (withDbExHandler "interpPW" . liftIO . lookupPW $ targetSing) >>= \case
         Nothing        -> dbError mq cols
         Just (Just pw) -> if uncurry validatePassword ((pw, cn) & both %~ T.encodeUtf8)
-          then if isLoggedIn targetPla
-            then sorry oldSing (sorryInterpPwLoggedIn targetSing) . T.concat $ [ oldSing
-                                                                               , " has entered the correct password for "
-                                                                               , targetSing
-                                                                               , "; however, "
-                                                                               , targetSing
-                                                                               , " is already logged in." ]
-            else (withDbExHandler "interpPW" . isPCBanned $ targetSing) >>= \case
-              Nothing          -> dbError mq cols
-              Just (Any True ) -> handleBanned    ms oldSing
-              Just (Any False) -> handleNotBanned ms oldSing
+          then let mkMsg t = T.concat [ oldSing
+                                      , " has entered the correct password for "
+                                      , targetSing
+                                      , "; however, "
+                                      , targetSing
+                                      , t ]
+               in if
+                 | isDead targetId ms   -> sorry oldSing (sorryInterpPwDead     targetSing) . mkMsg $ " is deceased."
+                 | isLoggedIn targetPla -> sorry oldSing (sorryInterpPwLoggedIn targetSing) . mkMsg $ " is already logged in."
+                 | otherwise            -> (withDbExHandler "interpPW" . isPCBanned $ targetSing) >>= \case
+                                             Nothing          -> dbError mq cols
+                                             Just (Any True ) -> handleBanned    ms oldSing
+                                             Just (Any False) -> handleNotBanned ms oldSing
           else sorryPW oldSing
         Just Nothing -> sorryHelper oldSing sorryInterpPW
   where

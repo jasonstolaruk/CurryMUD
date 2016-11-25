@@ -2626,7 +2626,7 @@ handleEgress i = do
 
 
 farewell :: Id -> MudState -> MudStack ()
-farewell _ _ = unit
+farewell _ _ = unit -- TODO
 
 
 -----
