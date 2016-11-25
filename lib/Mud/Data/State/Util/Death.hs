@@ -147,7 +147,7 @@ spiritize :: Id -> MudStack ()
 spiritize i = getState >>= \ms -> if isPC i ms
   then let (mySing, secs) = (uncurry getSing &&& uncurry calcSpiritTime) (i, ms)
            (mq,     cols) = getMsgQueueColumns i ms
-       in (tweak $ plaTbl.ind i %~ setPlaFlag IsSpirit True) >> if secs == 0
+       in tweak (plaTbl.ind i %~ setPlaFlag IsSpirit True) >> if isZero secs
          then theBeyond i mq cols []
          else (withDbExHandler "spiritize" . liftIO . lookupTeleNames $ mySing) >>= \case
            Nothing                    -> dbError mq cols

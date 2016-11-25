@@ -1851,9 +1851,9 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
         showMaybe (Just x)      = showText x
         mkToSelfForInt k v diff = pure . T.concat $ [ "Set ", k, " to ", commaShow v, " ", parensQuote diffTxt, "." ]
           where
-            diffTxt = if | diff == 0 -> "no change"
-                         | diff >  0 -> "added "      <> commaShow diff
-                         | otherwise -> "subtracted " <> commaShow (abs diff)
+            diffTxt = if | isZero diff -> "no change"
+                         | diff > 0    -> "added "      <> commaShow diff
+                         | otherwise   -> "subtracted " <> commaShow (abs diff)
         mkTupleForList prev f x g = let new    = nubSort $ prev `f` x
                                         toSelf = g new isDiff
                                         isDiff = new /= prev

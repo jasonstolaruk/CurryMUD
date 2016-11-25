@@ -73,7 +73,7 @@ threadEffect i (Effect effSub _ secs _) q = handle (threadExHandler (Just i) "ef
     ti <- liftIO myThreadId
     let effectTimer ior = setThreadType (EffectTimer i) >> loop secs `finally` done
           where
-            loop x = liftIO (atomicWriteIORef' ior x) >> if x == 0
+            loop x = liftIO (atomicWriteIORef' ior x) >> if isZero x
               then unit
               else liftIO (threadDelay $ 1 * 10 ^ 6) >> f >> loop (pred x)
               where

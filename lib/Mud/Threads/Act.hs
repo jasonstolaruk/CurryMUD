@@ -130,14 +130,14 @@ drinkAct DrinkBundle { .. } =
                                                                                         , " dry after "
                                                                                         , showText x'
                                                                                         , " mouthful"
-                                                                                        , theLetterS $ x /= 0
+                                                                                        , theLetterS . isNonZero $ x
                                                                                         , "." ]
-           | stomAvail == 0 -> (>> bcastHelper False) . ioHelper x' . T.concat $ [ "You are so full after "
-                                                                                 , showText x'
-                                                                                 , " mouthful"
-                                                                                 , theLetterS $ x /= 0
-                                                                                 , thrice prd " that you have to stop \
-                                                                                   \drinking. You don't feel so good" ]
+           | isZero stomAvail -> let t = thrice prd " that you have to stop drinking. You don't feel so good"
+                                 in (>> bcastHelper False) . ioHelper x' . T.concat $ [ "You are so full after "
+                                                                                      , showText x'
+                                                                                      , " mouthful"
+                                                                                      , theLetterS . isNonZero $ x
+                                                                                      , t ]
            | x' == drinkAmt -> (>> bcastHelper False) . ioHelper x' $ "You finish drinking."
            | otherwise      -> loop x'
     ioHelper m t = wrapSend drinkerMq drinkerCols t >> promptHelper >> logHelper

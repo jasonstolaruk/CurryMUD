@@ -127,9 +127,9 @@ reconcileCoins (Coins (cop, sil, gol)) enscs = guard (()!# enscs) Prelude.>> con
   where
     helper Empty                                        = pure . Left $ Empty
     helper (NoneOf c)                                   = pure . Left . NoneOf $ c
-    helper (SomeOf (Coins (someCop, someSil, someGol))) = concat [ [ mkEitherCop | someCop /= 0 ]
-                                                                 , [ mkEitherSil | someSil /= 0 ]
-                                                                 , [ mkEitherGol | someGol /= 0 ] ]
+    helper (SomeOf (Coins (someCop, someSil, someGol))) = concat [ [ mkEitherCop | isNonZero someCop ]
+                                                                 , [ mkEitherSil | isNonZero someSil ]
+                                                                 , [ mkEitherGol | isNonZero someGol ] ]
       where
         mkEitherCop | someCop <= cop = Right . SomeOf . Coins $ (someCop, 0,       0      )
                     | otherwise      = Left  . SomeOf . Coins $ (someCop, 0,       0      )
@@ -193,13 +193,13 @@ mkGecrMultForCoins a n c@(Coins (cop, sil, gol)) = Mult { amount          = a
              then c
              else coinsFromList . distributeAmt a . coinsToList $ c
            | otherwise = case n of
-             "cp" | cop == 0               -> NoneOf . Coins $ (a,   0,   0  )
+             "cp" | isZero cop             -> NoneOf . Coins $ (a,   0,   0  )
                   | a == (maxBound :: Int) -> SomeOf . Coins $ (cop, 0,   0  )
                   | otherwise              -> SomeOf . Coins $ (a,   0,   0  )
-             "sp" | sil == 0               -> NoneOf . Coins $ (0,   a,   0  )
+             "sp" | isZero sil             -> NoneOf . Coins $ (0,   a,   0  )
                   | a == (maxBound :: Int) -> SomeOf . Coins $ (0,   sil, 0  )
                   | otherwise              -> SomeOf . Coins $ (0,   a,   0  )
-             "gp" | gol == 0               -> NoneOf . Coins $ (0,   0,   a  )
+             "gp" | isZero gol             -> NoneOf . Coins $ (0,   0,   a  )
                   | a == (maxBound :: Int) -> SomeOf . Coins $ (0,   0,   gol)
                   | otherwise              -> SomeOf . Coins $ (0,   0,   a  )
              _                             -> patternMatchFail "mkGecrMultForCoins helper" n
@@ -453,7 +453,7 @@ extractCoinsTxt (Just  x:xs) = x : extractCoinsTxt xs
 
 
 msgOnNonzero :: Int -> Text -> Maybe Text
-msgOnNonzero x msg = guard (x /= 0) Prelude.>> return msg
+msgOnNonzero x msg = guard (isNonZero x) Prelude.>> return msg
 
 
 procReconciledCoinsRm :: ReconciledCoins -> Either [Text] Coins

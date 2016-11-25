@@ -447,7 +447,7 @@ showAttribs i mq = getState >>= \ms -> multiSend mq . footer ms . map helper . g
 interpPickPts :: NewCharBundle -> Interp
 interpPickPts _                         "" (NoArgs' i mq        ) = promptPickPts i mq
 interpPickPts ncb@(NewCharBundle _ s _) cn (Lower   i mq cols as) = getState >>= \ms -> let pts = getPickPts i ms in if
-  | cn `T.isPrefixOf` "quit" -> if pts == 0
+  | cn `T.isPrefixOf` "quit" -> if isZero pts
     then do
         blankLine mq
         let msgs = [ lSpcs <> "Next you'll write a description of "
@@ -471,11 +471,11 @@ interpPickPts ncb@(NewCharBundle _ s _) cn (Lower   i mq cols as) = getState >>=
             then sorry
             else let (attribTxt, x, setter) = procAttribChar i ms c
                  in case reads . T.unpack $ amt :: [(Int, String)] of
-                   [(y, "")] | y < 0     -> sorryHelper sorryWtf
-                             | y == 0    -> a
+                   [(y, "")] | y < 0    -> sorryHelper sorryWtf
+                             | isZero y -> a
                              | otherwise -> case op of
-                               '+' | pts == 0 -> sorryHelper sorryInterpPickPtsPts
-                                   | x == 100 -> sorryHelper . sorryInterpPickPtsMax $ attribTxt
+                               '+' | isZero pts -> sorryHelper sorryInterpPickPtsPts
+                                   | x == 100   -> sorryHelper . sorryInterpPickPtsMax $ attribTxt
                                    | x' <- (x + (y `min` pts)) `min` 100
                                    , y' <- x' - x
                                    -> ( ms & mobTbl    .ind i.setter +~ y'

@@ -4364,10 +4364,10 @@ mkFooter i ms = let plaIds@(length -> x) = [ i' | i' <- getLoggedInPlaIds ms
                             , pluralize ("person", "people") x
                             , " awake"
                             , plaIds == pure i |?| ": you"
-                            , y /= 0 |?| spcL . parensQuote . T.concat $ [ "excluding "
-                                                                         , showText y
-                                                                         , " administrator"
-                                                                         , pluralize ("", "s") y ]
+                            , isNonZero y |?| spcL . parensQuote . T.concat $ [ "excluding "
+                                                                              , showText y
+                                                                              , " administrator"
+                                                                              , pluralize ("", "s") y ]
                             , "." ]
 
 

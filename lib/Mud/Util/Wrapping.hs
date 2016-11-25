@@ -18,7 +18,7 @@ module Mud.Util.Wrapping ( adjustIndent
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Misc.ANSI
 import Mud.TopLvlDefs.Chars
-import Mud.Util.Misc (PatternMatchFail)
+import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Operators
 import Mud.Util.Text
 import qualified Mud.Util.Misc as U (patternMatchFail)
@@ -154,7 +154,7 @@ wrapLineWithIndentTag cols (T.break (not . isDigit) . T.reverse . T.init -> brok
     extractInt [(x, _)] | x > 0 = x
     extractInt xs               = patternMatchFail "wrapLineWithIndentTag extractInt" . showText $ xs
     indent                      = extractInt readsRes
-    n | indent == 0             = calcIndent . dropANSI $ t
+    n | isZero indent           = calcIndent . dropANSI $ t
       | otherwise               = adjustIndent indent cols
 
 

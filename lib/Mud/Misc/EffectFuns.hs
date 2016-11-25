@@ -30,7 +30,7 @@ tinnitusEffectFunName = "Effect_tinnitus"
 
 tinnitusEffectFun :: EffectFun
 tinnitusEffectFun i secs
-  | secs `mod` 5 == 0 = rndmDo 25 $ getMsgQueueColumns i <$> getState >>= \(mq, cols) ->
+  | isZero $ secs `mod` 5 = rndmDo 25 $ getMsgQueueColumns i <$> getState >>= \(mq, cols) ->
       wrapSend mq cols "You hear an awful ringing in your ears."
   | otherwise = unit
 

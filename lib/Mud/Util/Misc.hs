@@ -32,7 +32,9 @@ module Mud.Util.Misc ( atLst1
                      , ifThenElse
                      , ind
                      , intDivide
+                     , isNonZero
                      , isVowel
+                     , isZero
                      , listToMaybe
                      , max0
                      , max1
@@ -84,6 +86,7 @@ import Data.Bool (bool)
 import Data.Function (on)
 import Data.IORef (IORef, atomicWriteIORef)
 import Data.List (delete)
+import Data.Monoid (Sum(..))
 import Data.Text (Text)
 import Data.Time (getZonedTime)
 import qualified Data.IntMap.Lazy as IM (IntMap, (!), insert)
@@ -239,8 +242,16 @@ intDivide :: (Integral a) => a -> a -> a
 x `intDivide` y = (x + y `div` 2) `div` y
 
 
+isNonZero :: (Eq a, Num a) => a -> Bool
+isNonZero = not . isZero
+
+
 isVowel :: Char -> Bool
 isVowel = (`elem` ("aeiou" :: String))
+
+
+isZero :: (Eq a, Num a) => a -> Bool
+isZero = (()#) . Sum
 
 
 listToMaybe :: (Show a) => [a] -> Maybe a
