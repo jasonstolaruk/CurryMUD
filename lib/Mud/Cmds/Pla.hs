@@ -2632,20 +2632,28 @@ farewell i ms = pager i (getMsgQueue i ms) Nothing . mkFarewellStats i $ ms
 
 mkFarewellStats :: Id -> MudState -> [Text]
 mkFarewellStats i ms = [ T.concat [ s, ", the ", sexy, " ", r ]
-                       , "Strength:  " <> str
-                       , "Dexterity: " <> dex
-                       , "Health:    " <> hea
-                       , "Magic:     " <> mag
-                       , "Psionics:  " <> psi
-                       , "Points:    " <> xpsHelper ]
+                       , f "Strength: "   <> str
+                       , f "Dexterity: "  <> dex
+                       , f "Health: "     <> hea
+                       , f "Magic: "      <> mag
+                       , f "Psionics: "   <> psi
+                       , f "Points: "     <> xpsHelper
+                       , f "Handedness: " <> handy
+                       , f "Languages: "  <> langs
+                       , f "Level: "      <> showText l
+                       , f "Experience: " <> commaShow expr ]
   where
+    f                         = pad 12
     s                         = getSing         i ms
     (sexy, r)                 = mkPrettySexRace i ms
     (str, dex, hea, mag, psi) = calcEffAttribs  i ms & each %~ showText
     xpsHelper                 | (hps, mps, pps, fps) <- getPts i ms
-                              = commas [ f "h" hps, f "m" mps, f "p" pps, f "f" fps ]
+                              = commas [ g "h" hps, g "m" mps, g "p" pps, g "f" fps ]
       where
-        f a (_, x) = showText x |<>| a <> "p"
+        g a (_, x) = showText x |<>| a <> "p"
+    handy     = prd . capitalize . pp . getHand i $ ms
+    langs     = commas [ pp lang | lang <- sort . getKnownLangs i $ ms ]
+    (l, expr) = getLvlExp i ms
 
 
 -----
