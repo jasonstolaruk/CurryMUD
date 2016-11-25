@@ -296,7 +296,7 @@ createDbTbls :: IO ()
 createDbTbls = onDbFile $ \conn -> do
     forM_ qs $ execute_ conn . Query
     [Only x] <- query_ conn . Query $ "select count(*) from unpw" :: IO [Only Int]
-    when (isNonZero x) . execute conn (Query "insert into unpw (id, un, pw) values (2, 'Curry', ?)") . Only =<< hashPW "curry"
+    when (isZero x) . execute conn (Query "insert into unpw (id, un, pw) values (2, 'Curry', ?)") . Only =<< hashPW "curry"
     execute conn (Query "insert or ignore into unpw (id, un, pw) values (1, 'Root',  ?)") . Only =<< hashPW "root"
   where
     qs = [ "create table if not exists admin_chan   (id integer primary key, timestamp text, name text, msg text)"

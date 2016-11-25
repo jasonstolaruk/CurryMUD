@@ -1,0 +1,11 @@
+\h #dFAREWELL \d
+
+\uUSAGE\n
+#dfarewell name \s...\d
+
+\uDESCRIPTION\n
+Display the farewell stats for one or more PCs.
+
+\uEXAMPLES\n
+\q#dfarewell taro\d to display Taro's farewell stats.4`
+\q#dfarewell taro hanako\d to display farewell stats for both Taro and Hanako.4`

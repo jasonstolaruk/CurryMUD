@@ -702,7 +702,7 @@ interpPW times targetSing targetId targetPla cn params@(WithArgs i mq cols as) =
                                              Just (Any True ) -> handleBanned    ms oldSing
                                              Just (Any False) -> handleNotBanned ms oldSing
           else sorryPW oldSing
-        Just Nothing -> sorryHelper oldSing sorryInterpPW
+        Just Nothing -> sorryPW oldSing
   where
     sorryPW oldSing            = let msg = T.concat [ oldSing, " has entered an incorrect password for ", targetSing, "." ]
                                  in (liftIO . threadDelay $ 2 * 10 ^ 6) >> sorry oldSing sorryInterpPW msg

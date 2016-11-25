@@ -149,6 +149,7 @@ adminCmds =
     , mkAdminCmd "examine"    adminExamine     True  "Display the properties of one or more IDs."
     , mkAdminCmd "experience" adminExp         True  "Dump the experience table."
     , mkAdminCmd "exself"     adminExamineSelf True  "Self-examination."
+    , mkAdminCmd "farewell"   adminFarewell    True  "Display the farewell stats for one or more PCs."
     , mkAdminCmd "hash"       adminHash        True  "Compare a plain-text password with a hashed password."
     , mkAdminCmd "host"       adminHost        True  "Display a report of connection statistics for one or more \
                                                      \players."
@@ -923,6 +924,20 @@ adminExp p = withoutArgs adminExp p
 -----
 
 
+adminFarewell :: ActionFun
+adminFarewell p@AdviseNoArgs            = advise p [ prefixAdminCmd "farewell" ] adviceAFarewellNoArgs
+adminFarewell   (LowerNub i mq cols as) = getState >>= \ms ->
+    let helper target | notFound <- pure . sorryPCName $ target
+                      , found    <- (`mkFarewellStats` ms) . fst
+                      = findFullNameForAbbrev target (mkAdminPlaIdSingList ms) |&| maybe notFound found
+    in do { pager i mq Nothing . intercalateDivider cols . map (helper . capitalize) $ as
+          ; logPlaExecArgs (prefixAdminCmd "farewell") as i }
+adminFarewell p = patternMatchFail "adminFarewell" . showText $ p
+
+
+-----
+
+
 adminHash :: ActionFun
 adminHash p@AdviseNoArgs                      = advise p [ prefixAdminCmd "hash" ] adviceAHashNoArgs
 adminHash p@AdviseOneArg                      = advise p [ prefixAdminCmd "hash" ] adviceAHashNoHash
@@ -945,7 +960,7 @@ adminHost   (LowerNub i mq cols as) = do
     let helper target = let notFound = pure . sorryPCName $ target
                             found    = uncurry . mkHostReport ms now $ zone
                         in findFullNameForAbbrev target (mkAdminPlaIdSingList ms) |&| maybe notFound found
-    multiWrapSend mq cols . intercalate [""] . map (helper . capitalize . T.toLower) $ as
+    multiWrapSend mq cols . intercalate [""] . map (helper . capitalize) $ as
     logPlaExecArgs (prefixAdminCmd "host") as i
 adminHost p = patternMatchFail "adminHost" . showText $ p
 

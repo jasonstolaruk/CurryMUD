@@ -77,8 +77,6 @@ Would it be possible for the server to accurately track client latency during co
 
 MISC:
 
-Is multi-playing allowed? If not, then players need a way to formally retire their character.
-
 Allow some degree of player-created content, but only using in-context methods (which is to say that players cannot be "builders"). p.457-8
 
 Create a history and backstory for the virtual world.
@@ -267,6 +265,8 @@ COMBAT:
 
 During combat, a PC may manually switch the opponent they attack.
 In a combat where there are multiple opponents, a mobile may automatically switch the opponent they attack.
+
+Combat "stances:" defensive, offensive, neutral.
 
 Attempting to flee gives the opponent a free attack.
 When fighting more than one mobile, there is a chance you will be unable to flee. The chance to flee could also be contingent upon the number of exits.

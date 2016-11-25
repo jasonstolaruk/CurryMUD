@@ -10,6 +10,7 @@ module Mud.Data.State.Util.Calc ( calcBarLen
                                 , calcCorpseWeight
                                 , calcDigesterDelay
                                 , calcEffAttrib
+                                , calcEffAttribs
                                 , calcEffDx
                                 , calcEffHt
                                 , calcEffMa
@@ -204,8 +205,8 @@ calcDigesterDelay = let f = (calcDigesterDelay Human |&|) in \case
 -----
 
 
-calcEffDx :: Id -> MudState -> Int
-calcEffDx = calcEffAttrib Dx
+calcEffAttribs :: Id -> MudState -> (Int, Int, Int, Int, Int)
+calcEffAttribs i ms = listToTuple [ calcEffAttrib a i ms | a <- allValues ]
 
 
 calcEffAttrib :: Attrib -> Id -> MudState -> Int
@@ -215,6 +216,13 @@ calcEffAttrib attrib i ms =
   where
     helper acc (Effect (MobEffectAttrib a) (Just (DefiniteVal x)) _ _) | a == attrib = acc + x
     helper acc _                                                                     = acc
+
+
+-----
+
+
+calcEffDx :: Id -> MudState -> Int
+calcEffDx = calcEffAttrib Dx
 
 
 -----

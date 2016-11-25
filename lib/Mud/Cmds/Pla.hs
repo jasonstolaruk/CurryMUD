@@ -5,6 +5,7 @@ module Mud.Cmds.Pla ( getRecordUptime
                     , getUptime
                     , handleEgress
                     , look
+                    , mkFarewellStats
                     , mkNonStdRmLinkCmds
                     , mkRacialLangCmds
                     , noOfNpcCmds
@@ -2559,12 +2560,12 @@ handleEgress i = do
     unless (hoc || spirit) . bcastOthersInRm i . nlnl . egressMsg . serialize . mkStdDesig i ms $ DoCap
     when spirit . farewell i $ ms
     helper now tuple |&| modifyState >=> \(bs, logMsgs) -> do
-        stopActs          i
-        pauseEffects      i
-        stopFeelings      i
-        stopRegen         i
-        throwWaitDigester i
-        closePlaLog       i
+        stopActs i
+        unless spirit $ do { pauseEffects      i
+                           ; stopFeelings      i
+                           ; stopRegen         i
+                           ; throwWaitDigester i }
+        closePlaLog i
         bcast bs
         bcastAdmins $ s <> " has left CurryMUD."
         forM_ logMsgs . uncurry . logPla $ "handleEgress"
@@ -2626,7 +2627,25 @@ handleEgress i = do
 
 
 farewell :: Id -> MudState -> MudStack ()
-farewell _ _ = unit -- TODO
+farewell i ms = pager i (getMsgQueue i ms) Nothing . mkFarewellStats i $ ms
+
+
+mkFarewellStats :: Id -> MudState -> [Text]
+mkFarewellStats i ms = [ T.concat [ s, ", the ", sexy, " ", r ]
+                       , "Strength:  " <> str
+                       , "Dexterity: " <> dex
+                       , "Health:    " <> hea
+                       , "Magic:     " <> mag
+                       , "Psionics:  " <> psi
+                       , "Points:    " <> xpsHelper ]
+  where
+    s                         = getSing         i ms
+    (sexy, r)                 = mkPrettySexRace i ms
+    (str, dex, hea, mag, psi) = calcEffAttribs  i ms & each %~ showText
+    xpsHelper                 | (hps, mps, pps, fps) <- getPts i ms
+                              = commas [ f "h" hps, f "m" mps, f "p" pps, f "f" fps ]
+      where
+        f a (_, x) = showText x |<>| a <> "p"
 
 
 -----

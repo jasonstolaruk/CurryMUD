@@ -9,6 +9,7 @@ module Mud.Cmds.Msgs.Advice ( adviceAAnnounceNoArgs
                             , adviceAdminNoMsg
                             , adviceAdverbCloseChar
                             , adviceAExamineNoArgs
+                            , adviceAFarewellNoArgs
                             , adviceAHashExcessArgs
                             , adviceAHashNoArgs
                             , adviceAHashNoHash
@@ -198,6 +199,10 @@ adviceABootNoArgs = "Please specify the full PC name of the player you wish to b
 
 adviceAExamineNoArgs :: Text
 adviceAExamineNoArgs = "Please provide one or more IDs to examine."
+
+
+adviceAFarewellNoArgs :: Text
+adviceAFarewellNoArgs = "Please specify the names of one or more PCs whose farewell stats you would like to see."
 
 
 adviceAHashExcessArgs :: Text
