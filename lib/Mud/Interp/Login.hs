@@ -705,20 +705,18 @@ interpPW times targetSing targetId targetPla cn params@(WithArgs i mq cols as) =
         Just Nothing -> sorryHelper oldSing sorryInterpPW
   where
     sorryPW oldSing            = let msg = T.concat [ oldSing, " has entered an incorrect password for ", targetSing, "." ]
-                                 in sorry oldSing sorryInterpPW msg
+                                 in (liftIO . threadDelay $ 2 * 10 ^ 6) >> sorry oldSing sorryInterpPW msg
     sorry oldSing sorryMsg msg = do
         bcastAdmins msg
         logNotice "interpPW sorry" msg
         sorryHelper oldSing sorryMsg
-    sorryHelper oldSing sorryMsg = (liftIO . threadDelay $ 2 * 10 ^ 6) >> if
-      | times == 4 -> do
-          let msg = "Booting " <> oldSing <> " due to excessive incorrect passwords."
-          sendMsgBoot mq . Just $ sorryInterpPwBoot
-          bcastAdmins msg
-          logNotice "interpPW sorryHelper" msg
-      | otherwise -> do
-          promptRetryName mq cols sorryMsg
-          setInterp i . Just . interpName $ succ times
+    sorryHelper oldSing sorryMsg = if times == 4
+                                     then do { let msg = "Booting " <> oldSing <> " due to excessive incorrect passwords."
+                                             ; sendMsgBoot mq . Just $ sorryInterpPwBoot
+                                             ; bcastAdmins msg
+                                             ; logNotice "interpPW sorryHelper" msg }
+                                     else do { promptRetryName mq cols sorryMsg
+                                             ; setInterp i . Just . interpName $ succ times }
     handleBanned (T.pack . getCurrHostName i -> host) oldSing = do
         let msg = T.concat [ oldSing
                            , " has been booted at login upon entering the correct password for "

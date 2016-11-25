@@ -147,7 +147,7 @@ spiritize :: Id -> MudStack ()
 spiritize i = getState >>= \ms -> if isPC i ms
   then let (mySing, secs) = (uncurry getSing &&& uncurry calcSpiritTime) (i, ms)
            (mq,     cols) = getMsgQueueColumns i ms
-       in if secs == 0
+       in (tweak $ plaTbl.ind i %~ setPlaFlag IsSpirit True) >> if secs == 0
          then theBeyond i mq cols []
          else (withDbExHandler "spiritize" . liftIO . lookupTeleNames $ mySing) >>= \case
            Nothing                    -> dbError mq cols
@@ -163,8 +163,7 @@ spiritize i = getState >>= \ms -> if isPC i ms
                                                 , not . isLoggedIn . getPla i' $ ms ]
                                in views pcTbl (IM.keys . IM.filterWithKey f . IM.delete i) ms
                    (bs, fs)  = mkBcasts ms mySing retaineds'
-               in do { tweaks [ plaTbl.ind i %~ setPlaFlag IsSpirit True
-                              , pcTbl        %~ pcTblHelper mySing retaineds'
+               in do { tweaks [ pcTbl        %~ pcTblHelper mySing retaineds'
                               , mobTbl.ind i %~ setCurXps ]
                      ; forM_ asleepIds $ \i' ->　retainedMsg i' ms . linkMissingMsg $ mySing
                      ; bcast bs
