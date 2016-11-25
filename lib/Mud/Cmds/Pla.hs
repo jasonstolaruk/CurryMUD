@@ -2559,7 +2559,6 @@ handleEgress i = do
                                            <*> uncurry isAdHoc
                                            <*> uncurry isSpiritId) (i, ms)
     unless (hoc || spirit) . bcastOthersInRm i . nlnl . egressMsg . serialize . mkStdDesig i ms $ DoCap
-    when spirit . farewell i $ ms
     helper now tuple |&| modifyState >=> \(bs, logMsgs) -> do
         stopActs i
         unless spirit $ do { pauseEffects      i -- Done in "handleDeath".
@@ -2623,36 +2622,6 @@ handleEgress i = do
         ri' = spirit ? iNecropolis :? iLoggedOut
     possessHelper ms = let f = maybe id (\npcId -> npcTbl.ind npcId.npcPossessor .~ Nothing) . getPossessing i $ ms
                        in ms & plaTbl.ind i.possessing .~ Nothing & f
-
-
-farewell :: Id -> MudState -> MudStack ()
-farewell i ms = pager i (getMsgQueue i ms) Nothing . mkFarewellStats i $ ms
-
-
-mkFarewellStats :: Id -> MudState -> [Text]
-mkFarewellStats i ms = [ T.concat [ s, ", the ", sexy, " ", r ]
-                       , f "Strength: "   <> str
-                       , f "Dexterity: "  <> dex
-                       , f "Health: "     <> hea
-                       , f "Magic: "      <> mag
-                       , f "Psionics: "   <> psi
-                       , f "Points: "     <> xpsHelper
-                       , f "Handedness: " <> handy
-                       , f "Languages: "  <> langs
-                       , f "Level: "      <> showText l
-                       , f "Experience: " <> commaShow expr ]
-  where
-    f                         = pad 12
-    s                         = getSing         i ms
-    (sexy, r)                 = mkPrettySexRace i ms
-    (str, dex, hea, mag, psi) = calcEffAttribs  i ms & each %~ showText
-    xpsHelper                 | (hps, mps, pps, fps) <- getPts i ms
-                              = commas [ g "h" hps, g "m" mps, g "p" pps, g "f" fps ]
-      where
-        g a (_, x) = showText x |<>| a <> "p"
-    handy     = prd . capitalize . pp . getHand i $ ms
-    langs     = commas [ pp lang | lang <- sort . getKnownLangs i $ ms ]
-    (l, expr) = getLvlExp i ms
 
 
 -----

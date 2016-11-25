@@ -1,14 +1,16 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Mud.Threads.SpiritTimer ( runSpiritTimerAsync
+module Mud.Threads.SpiritTimer ( mkFarewellStats
+                               , runSpiritTimerAsync
                                , theBeyond
                                , throwWaitSpiritTimer ) where
 
 import Mud.Cmds.Msgs.Misc
-import Mud.Data.State.ActionParams.ActionParams
+import Mud.Data.Misc
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
+import Mud.Data.State.Util.Calc
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
@@ -17,16 +19,18 @@ import Mud.Threads.Misc
 import Mud.TopLvlDefs.Misc
 import Mud.Util.Misc
 import Mud.Util.Operators
+import Mud.Util.Padding
 import Mud.Util.Quoting
 import Mud.Util.Text
 import qualified Mud.Misc.Logging as L (logNotice, logPla, logPlaOut)
 
 import Control.Concurrent (threadDelay)
 import Control.Exception.Lifted (handle)
+import Control.Lens (each)
 import Control.Lens.Operators ((%~), (&), (.~), (?~), (^.))
 import Control.Monad ((>=>), forM_)
 import Control.Monad.IO.Class (liftIO)
-import Data.List (delete, partition)
+import Data.List (delete, partition, sort)
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -101,9 +105,40 @@ theBeyond i mq cols retainedIds = modifyStateSeq $ \ms ->
         ms'             = foldr f ms retainedIds
         f pcId          = pcTbl.ind pcId.linked %~ (s `delete`) -- TODO: TeleLinkMstrTbl
     in (ms', [ wrapSend mq cols . colorWith spiritMsgColor $ theBeyondMsg
+             , farewell i mq cols
              , bcast . pure $ (linkLostMsg s, inIds)
              , forM_ outIds $ \i' ->　retainedMsg i' ms (linkMissingMsg s)
              , bcastAdmins $ s <> " passes into the beyond."
              , logPla "theBeyond" i "passing into the beyond."
              , logNotice "theBeyond" . T.concat $ [ descSingId i ms, " is passing into the beyond." ]
              , writeMsg mq TheBeyond ])
+
+
+farewell :: Id -> MsgQueue -> Cols -> MudStack ()
+farewell i mq cols = multiWrapSend mq cols . mkFarewellStats i =<< getState
+
+
+mkFarewellStats :: Id -> MudState -> [Text]
+mkFarewellStats i ms = [ T.concat [ s, ", the ", sexy, " ", r ]
+                       , f "Strength: "   <> str
+                       , f "Dexterity: "  <> dex
+                       , f "Health: "     <> hea
+                       , f "Magic: "      <> mag
+                       , f "Psionics: "   <> psi
+                       , f "Points: "     <> xpsHelper
+                       , f "Handedness: " <> handy
+                       , f "Languages: "  <> langs
+                       , f "Level: "      <> showText l
+                       , f "Experience: " <> commaShow expr ]
+  where
+    f                         = pad 12
+    s                         = getSing         i ms
+    (sexy, r)                 = mkPrettySexRace i ms
+    (str, dex, hea, mag, psi) = calcEffAttribs  i ms & each %~ showText
+    xpsHelper                 | (hps, mps, pps, fps) <- getPts i ms
+                              = commas [ g "h" hps, g "m" mps, g "p" pps, g "f" fps ]
+      where
+        g a (_, x) = showText x |<>| a <> "p"
+    handy     = capitalize . pp . getHand i $ ms
+    langs     = commas [ pp lang | lang <- sort . getKnownLangs i $ ms ]
+    (l, expr) = getLvlExp i ms
