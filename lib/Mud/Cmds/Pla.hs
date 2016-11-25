@@ -2561,7 +2561,7 @@ handleEgress i = do
     unless (hoc || spirit) . bcastOthersInRm i . nlnl . egressMsg . serialize . mkStdDesig i ms $ DoCap
     helper now tuple |&| modifyState >=> \(bs, logMsgs) -> do
         stopActs i
-        unless spirit $ do { pauseEffects      i -- Done in "handleDeath".
+        unless spirit $ do { pauseEffects      i -- Already done in "handleDeath".
                            ; stopFeelings      i
                            ; stopRegen         i
                            ; throwWaitDigester i }

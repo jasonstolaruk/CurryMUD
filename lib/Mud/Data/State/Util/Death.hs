@@ -212,5 +212,5 @@ spiritize i = getState >>= \ms -> if isNpc i ms
                                                         , mobTbl          .at  i  .~ Nothing
                                                         , pausedEffectsTbl.at  i  .~ Nothing
                                                         , typeTbl         .at  i  .~ Nothing ]
-                                               ; stopWaitNpcServer i
-                                               ; logNotice "spiritize" $ descSingId i ms <> " has died." }
+                                               ; stopWaitNpcServer i -- This removes the NPC from the "NpcTbl".
+                                               ; logNotice "spiritize" $ "NPC " <> descSingId i ms <> " has died." }
