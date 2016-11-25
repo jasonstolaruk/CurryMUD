@@ -12,7 +12,7 @@ Note that you may provide multiple key/value pairs for a single ID, as in:
 
 \uPURPOSE\n
 You may use this command to tweak virtual world content. It can come in quite handy while debugging.
-You may use this command to reward players for reporting typos and bugs. See \qhelp rewards\d for more information.
+This command may also be used to reward players for reporting typos and bugs. See \qhelp rewards\d for more information.
 
 \uKEY/VALUE LIST\n
 Key name: entName4`
@@ -61,7 +61,7 @@ Examples:4`
 \qst+=10\d (to add 10)4`
 \qst-=10\d (to subtract 10)4`
 
-Key names: curHp, curMp, curPp, curFp4`
+Key names: curHp, maxHp, curMp, maxMp, curPp, maxPp, curFp, maxFp4`
 Properties of: Mob4`
 Value type: Int4`
 Examples:4`
@@ -155,3 +155,11 @@ Examples:4`
 \l#q\qintroduced=["Taro", "Hanako"]\l#q\d (to set to Taro and Hanako)4`
 \qintroduced+=["Taro"]\d (to add Taro)4`
 \qintroduced-=["Taro"]\d (to remove Taro)4`
+
+Key name: skillPts`
+Property of: PC4`
+Value type: Int4`
+Examples:4`
+\qskillPts=100\d (to set to 100)4`
+\qskillPts+=100\d (to add 100)4`
+\qskillPts-=100\d (to subtract 100)4`
