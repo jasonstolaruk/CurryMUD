@@ -1018,7 +1018,9 @@ adminKill   (LowerNub i mq cols as) = getState >>= \ms -> do
     let (is, toSelfs) = helper ms
     multiWrapSend mq cols toSelfs
     bcast . mkBs ms $ is
-    is |#| logPla (prefixAdminCmd "kill") i . prd . ("killing " <>) . commas . map (`descSingId` ms)
+    let f = logPla (prefixAdminCmd "kill")
+    unless (()# is) $ do { f i . prd . ("killing " <>) . commas . map (`descSingId` ms) $ is
+                         ; forM_ is $ \targetId -> f targetId . prd $ "killed by " <> getSing i ms }
     mapM_ handleDeath is
   where
     helper ms = foldl' f mempties as
