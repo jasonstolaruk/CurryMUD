@@ -109,7 +109,7 @@ theBeyond i mq cols retainedIds = modifyStateSeq $ \ms ->
         h               = teleLinkMstrTbl.ind i               .~ M.empty
     in (ms', [ wrapSend mq cols . colorWith spiritMsgColor $ theBeyondMsg
              , farewell i mq cols
-             , bcast . pure $ (linkLostMsg s, inIds)
+             , bcast . pure $ (nlnl . linkLostMsg $ s, inIds)
              , forM_ outIds $ \i' ->　retainedMsg i' ms (linkMissingMsg s)
              , bcastAdmins $ s <> " passes into the beyond."
              , logPla "theBeyond" i "passing into the beyond."
@@ -142,6 +142,6 @@ mkFarewellStats i ms = [ T.concat [ s, ", the ", sexy, " ", r ] -- TODO: Explana
                               = commas [ g "h" hps, g "m" mps, g "p" pps, g "f" fps ]
       where
         g a (_, x) = showText x |<>| a <> "p"
-    handy     = capitalize . pp . getHand i $ ms
+    handy     = pp . getHand i $ ms
     langs     = commas [ pp lang | lang <- sort . getKnownLangs i $ ms ]
     (l, expr) = getLvlExp i ms

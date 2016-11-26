@@ -705,10 +705,11 @@ interpPW times targetSing targetId targetPla cn params@(WithArgs i mq cols as) =
         Just Nothing -> sorryPW oldSing
   where
     sorryPW oldSing            = let msg = T.concat [ oldSing, " has entered an incorrect password for ", targetSing, "." ]
-                                 in (liftIO . threadDelay $ 2 * 10 ^ 6) >> sorry oldSing sorryInterpPW msg
+                                 in sorry oldSing sorryInterpPW msg
     sorry oldSing sorryMsg msg = do
         bcastAdmins msg
         logNotice "interpPW sorry" msg
+        liftIO . threadDelay $ 2 * 10 ^ 6
         sorryHelper oldSing sorryMsg
     sorryHelper oldSing sorryMsg = if times == 4
                                      then do { let msg = "Booting " <> oldSing <> " due to excessive incorrect passwords."

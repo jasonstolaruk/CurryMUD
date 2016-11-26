@@ -855,7 +855,7 @@ debugRndm p@ActionParams { myId, args } = do
 
 
 mkRndmNamesMstrTblTxt :: MudState -> [Text]
-mkRndmNamesMstrTblTxt ms = views rndmNamesMstrTbl helper ms
+mkRndmNamesMstrTblTxt ms = sort . views rndmNamesMstrTbl helper $ ms
   where
     helper :: RndmNamesMstrTbl -> [Text]
     helper = map f . IM.toList
@@ -934,7 +934,7 @@ debugTele p@ActionParams { myId, args } = do
 
 
 mkTeleLinkMstrTblTxt :: MudState -> [Text]
-mkTeleLinkMstrTblTxt ms = views teleLinkMstrTbl helper ms
+mkTeleLinkMstrTblTxt ms = sort . views teleLinkMstrTbl helper $ ms
   where
     helper :: TeleLinkMstrTbl -> [Text]
     helper = map f . IM.toList
