@@ -162,6 +162,7 @@ debugCmds =
     , mkDebugCmd "random"      debugRandom      "Display random numbers generated with \"rndmRs\" and \"rndmInts\"."
     , mkDebugCmd "regen"       debugRegen       "Display regen amounts and delays for a given mob ID."
     , mkDebugCmd "remput"      debugRemPut      "In quick succession, remove from and put into a sack on the ground."
+    , mkDebugCmd "rndm"        debugRndm        "Display or search the random names master table."
     , mkDebugCmd "rnt"         debugRnt         "Dump your random names table, or generate a random name for a given PC."
     , mkDebugCmd "rotate"      debugRotate      "Send the signal to rotate your player log."
     , mkDebugCmd "rules"       debugRules       "Display the rules message."
@@ -839,6 +840,28 @@ debugRemPut (NoArgs' i mq) = do
   where
     rest = spaced (T.singleton allChar) <> ('r' `T.cons` selectorChar `T.cons` "sack")
 debugRemPut p = withoutArgs debugRemPut p
+
+
+-----
+
+
+debugRndm :: ActionFun
+debugRndm (NoArgs i mq cols) = do
+    pager i mq Nothing . concatMap (wrapIndent 2 cols) . mkRndmNamesMstrTblTxt =<< getState
+    logPlaExecArgs (prefixDebugCmd "rndm") [] i
+debugRndm p@ActionParams { myId, args } = do
+    dispMatches p 2 . mkRndmNamesMstrTblTxt =<< getState
+    logPlaExecArgs (prefixDebugCmd "rndm") args myId
+
+
+mkRndmNamesMstrTblTxt :: MudState -> [Text]
+mkRndmNamesMstrTblTxt ms = views rndmNamesMstrTbl helper ms
+  where
+    helper :: RndmNamesMstrTbl -> [Text]
+    helper = map f . IM.toList
+      where
+        f :: (Id, RndmNamesTbl) -> Text
+        f = uncurry (|<>|) . ((`descSingId` ms) *** commas . map (uncurry (|<>|)) . M.toList)
 
 
 -----
