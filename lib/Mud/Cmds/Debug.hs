@@ -861,7 +861,7 @@ mkRndmNamesMstrTblTxt ms = views rndmNamesMstrTbl helper ms
     helper = map f . IM.toList
       where
         f :: (Id, RndmNamesTbl) -> Text
-        f = uncurry (|<>|) . ((`descSingId` ms) *** commas . map (uncurry (|<>|)) . M.toList)
+        f = uncurry (|<>|) . ((<> ":") . (`descSingId` ms) *** noneOnNull . commas . map (uncurry (|<>|)) . M.toList)
 
 
 -----
@@ -940,7 +940,7 @@ mkTeleLinkMstrTblTxt ms = views teleLinkMstrTbl helper ms
     helper = map f . IM.toList
       where
         f :: (Id, TeleLinkTbl) -> Text
-        f = uncurry (|<>|) . ((`descSingId` ms) *** commas . map g . M.toList)
+        f = uncurry (|<>|) . ((<> ":") . (`descSingId` ms) *** noneOnNull . commas . map g . M.toList)
           where
             g :: (Sing, IsTuned) -> Text
             g = uncurry (|<>|) . second showText
