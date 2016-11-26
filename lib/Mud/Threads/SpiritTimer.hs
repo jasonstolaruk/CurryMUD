@@ -33,7 +33,7 @@ import Control.Monad.IO.Class (liftIO)
 import Data.List (delete, partition, sort)
 import Data.Monoid ((<>))
 import Data.Text (Text)
-import qualified Data.Map.Lazy as M (delete)
+import qualified Data.Map.Lazy as M (delete, empty)
 import qualified Data.Text as T
 
 
@@ -103,9 +103,10 @@ theBeyond :: Id -> MsgQueue -> Cols -> Inv -> MudStack ()
 theBeyond i mq cols retainedIds = modifyStateSeq $ \ms ->
     let s               = getSing i ms
         (inIds, outIds) = partition (isLoggedIn . (`getPla` ms)) retainedIds
-        ms'             = flip (foldr g) retainedIds . flip (foldr f) retainedIds $ ms
+        ms'             = h . flip (foldr g) retainedIds . flip (foldr f) retainedIds $ ms
         f targetId      = pcTbl          .ind targetId.linked %~ (s `delete`)
         g targetId      = teleLinkMstrTbl.ind targetId        %~ M.delete s
+        h               = teleLinkMstrTbl.ind i               .~ M.empty
     in (ms', [ wrapSend mq cols . colorWith spiritMsgColor $ theBeyondMsg
              , farewell i mq cols
              , bcast . pure $ (linkLostMsg s, inIds)
@@ -121,7 +122,7 @@ farewell i mq cols = multiWrapSend mq cols . mkFarewellStats i =<< getState
 
 
 mkFarewellStats :: Id -> MudState -> [Text]
-mkFarewellStats i ms = [ T.concat [ s, ", the ", sexy, " ", r ]
+mkFarewellStats i ms = [ T.concat [ s, ", the ", sexy, " ", r ] -- TODO: Explanatory message.
                        , f "Strength: "   <> str
                        , f "Dexterity: "  <> dex
                        , f "Health: "     <> hea

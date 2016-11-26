@@ -149,6 +149,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryKillAdHoc
                            , sorryKillAdmin
                            , sorryKillAsleep
+                           , sorryKillDead
                            , sorryKillSelf
                            , sorryKillSpirit
                            , sorryKillType
@@ -1152,6 +1153,10 @@ sorryKillAdmin t = t <> " is an admin " <> can'tKill
 
 sorryKillAsleep :: Text -> Text
 sorryKillAsleep t = t <> " is presently asleep " <> can'tKill
+
+
+sorryKillDead :: Text -> Text
+sorryKillDead t = t <> " is already dead."
 
 
 sorryKillSelf :: Text

@@ -1051,10 +1051,11 @@ adminKill   (LowerNub i mq cols as) = getState >>= \ms -> do
             go targetId     | targetId == i     = sorryHelper sorryKillSelf
                             | isNpc targetId ms = kill
                             | isPC  targetId ms =
-                                if | isAdminId  targetId ms      -> sorryHelper . sorryKillAdmin  $ singId
+                                if | isAdminId     targetId   ms -> sorryHelper . sorryKillAdmin  $ singId
+                                   | isDead        targetId   ms -> sorryHelper . sorryKillDead   $ singId
                                    | not . isAwake targetId $ ms -> sorryHelper . sorryKillAsleep $ singId
-                                   | isSpiritId targetId ms      -> sorryHelper . sorryKillSpirit $ singId
-                                   | isAdHoc    targetId ms      -> sorryHelper . sorryKillAdHoc  $ singId
+                                   | isSpiritId    targetId   ms -> sorryHelper . sorryKillSpirit $ singId
+                                   | isAdHoc       targetId   ms -> sorryHelper . sorryKillAdHoc  $ singId
                                    | otherwise                   -> kill
                             | otherwise = sorryHelper . sorryKillType $ targetId
               where

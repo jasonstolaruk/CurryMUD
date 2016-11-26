@@ -148,7 +148,7 @@ spiritize i = getState >>= \ms -> if isNpc i ms
   else let (mySing, secs) = (getSing `fanUncurry` calcSpiritTime) (i, ms)
            (mq,     cols) = getMsgQueueColumns i ms
        in setSpiritFlag >>= \ms' -> if isZero secs
-         then theBeyond i mq cols []
+         then theBeyond i mq cols [] -- TODO: Needs debugging around links.
          else (withDbExHandler "spiritize" . liftIO . lookupTeleNames $ mySing) >>= \case
            Nothing                    -> dbError mq cols
            Just (procOnlySings -> ss) ->
