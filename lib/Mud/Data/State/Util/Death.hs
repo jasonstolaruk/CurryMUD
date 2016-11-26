@@ -46,7 +46,7 @@ import Data.Text (Text)
 import Database.SQLite.Simple (fromOnly)
 import Prelude hiding (pi)
 import qualified Data.IntMap.Lazy as IM (delete, filterWithKey, keys, mapWithKey)
-import qualified Data.Map.Lazy as M (elems, empty)
+import qualified Data.Map.Lazy as M (delete, elems, empty, filterWithKey)
 
 
 default (Int)
@@ -159,39 +159,46 @@ spiritize i = getState >>= \ms -> if isNpc i ms
                    retaineds' = (retaineds |&|) $ case filter (view _3) retaineds of
                      [] -> let bonus = take 1 . filter (view _3) . drop n $ triples in (++ bonus)
                      _  -> id
-                   asleepIds = let f i' p = and [ views linked (mySing `elem`) p
-                                                , i' `notElem` select _1 retaineds'
-                                                , not . isLoggedIn . getPla i' $ ms' ]
-                               in views pcTbl (IM.keys . IM.filterWithKey f . IM.delete i) ms'
-                   (bs, fs)  = mkBcasts ms' mySing retaineds'
-               in do { tweaks [ pcTbl        %~ pcTblHelper mySing retaineds'
-                              , mobTbl.ind i %~ setCurXps ]
+                   retainedIds   = select _1 retaineds'
+                   retainedSings = select _2 retaineds'
+                   asleepIds     = let f i' p = and [ views linked (mySing `elem`) p
+                                                    , i' `notElem` retainedIds
+                                                    , not . isLoggedIn . getPla i' $ ms' ]
+                                   in views pcTbl (IM.keys . IM.filterWithKey f . IM.delete i) ms'
+                   (bs, fs)      = mkBcasts ms' mySing retaineds' retainedIds
+               in do { tweaks [ pcTbl           %~ pcTblHelper           mySing retainedIds retainedSings
+                              , teleLinkMstrTbl %~ teleLinkMstrTblHelper mySing retainedIds retainedSings
+                              , mobTbl.ind i    %~ setCurXps ]
                      ; forM_ asleepIds $ \i' ->　retainedMsg i' ms' . linkMissingMsg $ mySing
                      ; bcast bs
                      ; sequence_ (fs :: Funs)
-                     ; detach mq cols secs . select _1 $ retaineds'
+                     ; detach mq cols secs retainedIds
                      ; logPla "spiritize" i "spirit created." }
   where
-    setSpiritFlag    = modifyState $ \ms -> let ms' = ms & plaTbl.ind i %~ setPlaFlag IsSpirit True in dup ms'
+    setSpiritFlag    = modifyState $ dup . (plaTbl.ind i %~ setPlaFlag IsSpirit True)
     procOnlySings xs = map snd . sortBy (flip compare `on` fst) $ [ (length g, s)
                                                                   | g@(s:_) <- sortGroup . map fromOnly $ xs ]
-    -- TODO: TeleLinkMstrTbl
-    pcTblHelper mySing retaineds@(select _1 -> retainedIds) = IM.mapWithKey helper
+    pcTblHelper mySing retainedIds retainedSings = IM.mapWithKey helper
       where
-        helper pcId | pcId == i               = linked .~ select _2 retaineds
+        helper pcId | pcId == i               = linked .~ retainedSings
                     | pcId `elem` retainedIds = id
                     | otherwise               = linked %~ (mySing `delete`)
+    teleLinkMstrTblHelper mySing retainedIds retainedSings = IM.mapWithKey helper
+      where
+        helper targetId | targetId == i               = M.filterWithKey (\s _ -> s `elem` retainedSings)
+                        | targetId `elem` retainedIds = id
+                        | otherwise                   = M.delete mySing
     setCurXps m = m & curHp .~ (m^.maxHp)
                     & curMp .~ (m^.maxMp)
                     & curPp .~ (m^.maxPp)
                     & curFp .~ (m^.maxFp)
-    mkBcasts ms mySing retaineds = let (toLinkRetainers, fs) = toLinkRetainersHelper
-                                   in ([ toLinkLosers, toLinkRetainers ], fs)
+    mkBcasts ms mySing retaineds retainedIds = let (toLinkRetainers, fs) = toLinkRetainersHelper
+                                               in ([ toLinkLosers, toLinkRetainers ], fs)
       where
         toLinkLosers =
             let targetIds = views pcTbl (IM.keys . IM.filterWithKey f . IM.delete i) ms
                 f i' p    = and [ views linked (mySing `elem`) p
-                                , i' `notElem` select _1 retaineds
+                                , i' `notElem` retainedIds
                                 , isLoggedIn . getPla i' $ ms ]
             in (linkLostMsg mySing, targetIds)
         toLinkRetainersHelper
