@@ -170,6 +170,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryNoAdmins
                            , sorryNoConHere
                            , sorryNoLinks
+                           , sorryNoLinksSpirit
                            , sorryNonexistentId
                            , sorryNoOneHere
                            , sorryNotPossessed
@@ -1286,6 +1287,10 @@ sorryNotPossessed s cn = T.concat [ "You must first possess "
 
 sorryNoLinks :: Text
 sorryNoLinks = "You haven't established a telepathic link with anyone."
+
+
+sorryNoLinksSpirit :: Text
+sorryNoLinksSpirit = "You've lost all your telepathic links."
 
 
 -----
