@@ -242,6 +242,7 @@ getHookFun n = views (hookFunTbl.at n) (fromMaybe oops)
 -----
 
 
+-- TODO: Consider creating a map from Sing to Id.
 getIdForMobSing :: Sing -> MudState -> Id
 getIdForMobSing s ms = let [(i, _)] = views entTbl (IM.toList . IM.filter (views sing (== s))) ms in i
 

@@ -51,7 +51,7 @@ import qualified Mud.Misc.Logging as L (logAndDispIOEx, logNotice, logPlaExec, l
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Applicative (Const)
-import Control.Arrow (first)
+import Control.Arrow ((***), first, second)
 import Control.Concurrent (getNumCapabilities, myThreadId)
 import Control.Concurrent.Async (asyncThreadId, poll)
 import Control.Exception (ArithException(..), IOException)
@@ -159,13 +159,14 @@ debugCmds =
     , mkDebugCmd "pidge"       debugPidge       "Send a message to Pidge."
     , mkDebugCmd "pmf"         debugPmf         "Trigger a pattern match failure."
     , mkDebugCmd "purge"       debugPurge       "Purge the thread tables."
-    , mkDebugCmd "random"      debugRandom      "Dump random numbers generated with \"rndmRs\" and \"rndmInts\"."
+    , mkDebugCmd "random"      debugRandom      "Display random numbers generated with \"rndmRs\" and \"rndmInts\"."
     , mkDebugCmd "regen"       debugRegen       "Display regen amounts and delays for a given mob ID."
     , mkDebugCmd "remput"      debugRemPut      "In quick succession, remove from and put into a sack on the ground."
     , mkDebugCmd "rnt"         debugRnt         "Dump your random names table, or generate a random name for a given PC."
     , mkDebugCmd "rotate"      debugRotate      "Send the signal to rotate your player log."
     , mkDebugCmd "rules"       debugRules       "Display the rules message."
     , mkDebugCmd "talk"        debugTalk        "Dump the talk async table."
+    , mkDebugCmd "tele"        debugTele        "Display or search the telepathic links master table."
     , mkDebugCmd "threads"     debugThreads     "Display or search the thread table."
     , mkDebugCmd "throw"       debugThrow       "Throw an exception."
     , mkDebugCmd "throwlog"    debugThrowLog    "Throw an exception on your player log thread."
@@ -895,6 +896,31 @@ debugTalk (NoArgs i mq cols) = getState >>= \(views talkAsyncTbl M.elems -> asyn
                         Just (Left  e ) -> "exception " <> parensQuote (showText e)
                         Just (Right ()) -> "finished"
 debugTalk p = withoutArgs debugTalk p
+
+
+-----
+
+
+debugTele :: ActionFun
+debugTele (NoArgs i mq cols) = do
+    pager i mq Nothing . concatMap (wrapIndent 2 cols) . mkTeleLinkMstrTblTxt =<< getState
+    logPlaExecArgs (prefixDebugCmd "tele") [] i
+debugTele p@ActionParams { myId, args } = do
+    dispMatches p 2 . mkTeleLinkMstrTblTxt =<< getState
+    logPlaExecArgs (prefixDebugCmd "tele") args myId
+
+
+mkTeleLinkMstrTblTxt :: MudState -> [Text]
+mkTeleLinkMstrTblTxt ms = views teleLinkMstrTbl helper ms
+  where
+    helper :: TeleLinkMstrTbl -> [Text]
+    helper = map f . IM.toList
+      where
+        f :: (Id, TeleLinkTbl) -> Text
+        f = uncurry (|<>|) . ((`descSingId` ms) *** commas . map g . M.toList)
+          where
+            g :: (Sing, IsTuned) -> Text
+            g = uncurry (|<>|) . second showText
 
 
 -----
