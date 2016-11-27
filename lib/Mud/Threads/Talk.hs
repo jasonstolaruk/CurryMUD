@@ -157,6 +157,7 @@ adHoc mq host = do
                        & mobTbl          .ind i .~ m
                        & msgQueueTbl     .ind i .~ mq
                        & pausedEffectsTbl.ind i .~ []
+                       & pcSingTbl       .at  s ?~ i
                        & pcTbl           .ind i .~ pc
                        & plaTbl          .ind i .~ pla
                        & rndmNamesMstrTbl.ind i .~ M.empty

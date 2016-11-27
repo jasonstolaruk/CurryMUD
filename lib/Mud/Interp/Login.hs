@@ -46,8 +46,8 @@ import Control.Applicative (liftA2)
 import Control.Arrow (first)
 import Control.Concurrent (threadDelay)
 import Control.Exception.Lifted (try)
-import Control.Lens (ASetter, at, both, views)
-import Control.Lens.Operators ((%~), (&), (+~), (-~), (.~), (^.))
+import Control.Lens (ASetter, at, both, set, views)
+import Control.Lens.Operators ((%~), (&), (+~), (-~), (.~), (?~), (^.))
 import Control.Monad ((>=>), unless, when)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Loops (orM)
@@ -172,7 +172,7 @@ checkNameHelper funName sorry cn file = liftIO (T.readFile file) |&| try >=> eit
 
 
 checkSet :: CmdName -> Fun -> S.Set Text -> MudStack Any
-checkSet cn sorry set = let isNG = cn `S.member` set in do { when isNG sorry; return . Any $ isNG }
+checkSet cn sorry s = let isNG = cn `S.member` s in do { when isNG sorry; return . Any $ isNG }
 
 
 checkIllegalNames :: MudState -> MsgQueue -> Cols -> CmdName -> MudStack Any
@@ -219,15 +219,18 @@ interpConfirmNewChar _ _ _ ActionParams { plaMsgQueue, plaCols } = promptRetryYe
 
 
 setSingIfNotTaken :: Int -> Sing -> ActionParams -> MudStack (Maybe Sing)
-setSingIfNotTaken times s (NoArgs i mq cols) = getSing i <$> getState >>= \oldSing -> mIf (modifyState helper)
+setSingIfNotTaken times s (NoArgs i mq cols) = getSing i <$> getState >>= \oldSing -> mIf (modifyState . helper $ oldSing)
   (let msg = T.concat [ oldSing, " is now known as ", s, "." ]
    in do { bcastAdmins msg
          ; logNotice "setSingIfNotTaken" msg
          ; return (Just oldSing) })
   (emptied $ promptRetryName mq cols sorryInterpNameTaken >> (setInterp i . Just . interpName $ times))
   where
-    helper ms | ()!# (filter ((== s) . (`getSing` ms) . fst) . views plaTbl IM.toList $ ms) = (ms, False)
-              | otherwise = (ms & entTbl.ind i.sing .~ s, True)
+    helper oldSing ms | ()!# (filter ((== s) . (`getSing` ms) . fst) . views plaTbl IM.toList $ ms) = (ms, False)
+                      | otherwise = ( ms & entTbl   .ind i.sing .~ s
+                                         & pcSingTbl.at oldSing .~ Nothing
+                                         & pcSingTbl.at s       ?~ i
+                                    , True )
 setSingIfNotTaken _ _ p = patternMatchFail "setSingIfNotTaken" . showText $ p
 
 
@@ -729,7 +732,7 @@ interpPW times targetSing targetId targetPla cn params@(WithArgs i mq cols as) =
         bcastAdmins . prd $ msg <> " Consider also banning host " <> dblQuote host
         logNotice "interpPW handleBanned" msg
     handleNotBanned ((i `getPla`) -> newPla) oldSing =
-        let helper ms = dup . logIn i ms (newPla^.currHostName) (newPla^.connectTime) $ targetId
+        let helper ms = dup . logIn i ms oldSing (newPla^.currHostName) (newPla^.connectTime) $ targetId
         in helper |&| modifyState >=> \ms -> do
                logNotice "interpPW handleNotBanned" . T.concat $ [ oldSing
                                                                  , " has logged in as "
@@ -745,14 +748,14 @@ interpPW times targetSing targetId targetPla cn params@(WithArgs i mq cols as) =
 interpPW _ _ _ _ _ p = patternMatchFail "interpPW" . showText $ p
 
 
-logIn :: Id -> MudState -> HostName -> Maybe UTCTime -> Id -> MudState
-logIn newId ms newHost newTime originId = peepNewId . movePC $ adoptNewId
+logIn :: Id -> MudState -> Sing -> HostName -> Maybe UTCTime -> Id -> MudState
+logIn newId ms oldSing newHost newTime originId = peepNewId . movePC $ adoptNewId
   where
     adoptNewId = ms & activeEffectsTbl.ind newId         .~ getActiveEffects originId ms
                     & activeEffectsTbl.at  originId      .~ Nothing
                     & coinsTbl        .ind newId         .~ getCoins         originId ms
                     & coinsTbl        .at  originId      .~ Nothing
-                    & entTbl          .ind newId         .~ (getEnt          originId ms & entId .~ newId)
+                    & entTbl          .ind newId         .~ set entId newId e
                     & entTbl          .at  originId      .~ Nothing
                     & eqTbl           .ind newId         .~ getEqMap         originId ms
                     & eqTbl           .at  originId      .~ Nothing
@@ -762,6 +765,8 @@ logIn newId ms newHost newTime originId = peepNewId . movePC $ adoptNewId
                     & mobTbl          .at  originId      .~ Nothing
                     & pausedEffectsTbl.ind newId         .~ getPausedEffects originId ms
                     & pausedEffectsTbl.at  originId      .~ Nothing
+                    & pcSingTbl       .at  (e^.sing)     ?~ newId
+                    & pcSingTbl       .at  oldSing       .~ Nothing
                     & pcTbl           .ind newId         .~ getPC            originId ms
                     & pcTbl           .at  originId      .~ Nothing
                     & plaTbl          .ind newId         .~ (getPla          originId ms & currHostName .~ newHost
@@ -775,7 +780,8 @@ logIn newId ms newHost newTime originId = peepNewId . movePC $ adoptNewId
                     & teleLinkMstrTbl .at  originId      .~ Nothing
                     & typeTbl         .at  originId      .~ Nothing
       where
-        gmcp = isGmcpId newId ms
+        e    = getEnt   originId ms
+        gmcp = isGmcpId newId    ms
     movePC ms' = let newRmId = fromJust . getLogoutRmId newId $ ms'
                  in ms' & invTbl.ind iWelcome         %~ (newId    `delete`)
                         & invTbl.ind iLoggedOut       %~ (originId `delete`)

@@ -80,6 +80,7 @@ initMudData shouldLog = do
                                  , _npcTbl            = IM.empty
                                  , _objTbl            = IM.empty
                                  , _pausedEffectsTbl  = IM.empty
+                                 , _pcSingTbl         =  M.empty
                                  , _pcTbl             = IM.empty
                                  , _pickPtsTbl        = IM.empty
                                  , _plaLogTbl         = IM.empty
@@ -184,6 +185,7 @@ loadWorld dir = (</> dir) <$> liftIO (mkMudFilePath persistDirFun) >>= \path -> 
                                                  , loadTbl mobTblFile           mobTbl
                                                  , loadTbl objTblFile           objTbl
                                                  , loadTbl pausedEffectsTblFile pausedEffectsTbl
+                                                 , loadTbl pcSingTblFile        pcSingTbl
                                                  , loadTbl pcTblFile            pcTbl
                                                  , loadTbl plaTblFile           plaTbl
                                                  , loadTbl rmTblFile            rmTbl

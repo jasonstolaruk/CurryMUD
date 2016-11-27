@@ -9,7 +9,7 @@ import Mud.Util.Misc
 
 import Control.Arrow (second)
 import Control.Lens (at)
-import Control.Lens.Operators ((.~))
+import Control.Lens.Operators ((.~), (?~), (^.))
 import Data.Text (Text)
 
 
@@ -88,6 +88,7 @@ putPla i e is c em m r t pc pla = tweaks [ activeEffectsTbl.ind i .~ []
                                          , invTbl          .ind i .~ is
                                          , mobTbl          .ind i .~ m
                                          , pausedEffectsTbl.ind i .~ []
+                                         , pcSingTbl       .at (e^.sing) ?~ i
                                          , pcTbl           .ind i .~ pc
                                          , plaTbl          .ind i .~ pla
                                          , rndmNamesMstrTbl.ind i .~ r

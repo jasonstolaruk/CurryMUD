@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
-{-# LANGUAGE ExistentialQuantification, LambdaCase, MonadComprehensions, NamedFieldPuns, OverloadedStrings, PatternSynonyms, TupleSections, ViewPatterns #-}
+{-# LANGUAGE ExistentialQuantification, LambdaCase, MonadComprehensions, NamedFieldPuns, OverloadedStrings, PatternSynonyms, ScopedTypeVariables, TupleSections, ViewPatterns #-}
 
 module Mud.Cmds.Debug ( debugCmds
                       , purgeThreadTbls
@@ -52,7 +52,7 @@ import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Applicative (Const)
 import Control.Arrow ((***), first, second)
-import Control.Concurrent (getNumCapabilities, myThreadId)
+import Control.Concurrent (ThreadId, getNumCapabilities, myThreadId)
 import Control.Concurrent.Async (asyncThreadId, poll)
 import Control.Exception (ArithException(..), IOException)
 import Control.Exception.Lifted (throwIO, try)
@@ -145,7 +145,7 @@ debugCmds =
     , mkDebugCmd "handle"      debugHandle      "Display information about the handle for your network connection."
     , mkDebugCmd "id"          debugId          "Search the \"MudState\" tables for a given ID."
     , mkDebugCmd "kewpie"      debugKewpie      "Create a kewpie doll."
-    , mkDebugCmd "keys"        debugKeys        "Dump a list of \"MudState\" table keys."
+    , mkDebugCmd "keys"        debugKeys        "Dump a list of \"MudState\" \"IntMap\" keys."
     , mkDebugCmd "liquid"      debugLiq         "Consume a given amount (in mouthfuls) of a given liquid (by distinct \
                                                 \liquid ID)."
     , mkDebugCmd "log"         debugLog         "Put the logging service under heavy load."
@@ -516,6 +516,8 @@ debugId   (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
                       in f . filter (views stomach ((()!#) . g) . snd) . tblToList mobTbl $ ms ]
                   , [ T.concat [ "NPCs possessed by ID ", searchIdTxt, ":" ]
                     , f . filter (views npcPossessor (searchId `elem`) . snd) . tblToList npcTbl $ ms ]
+                  , [ T.concat [ "PC ", dblQuote "sing", "s with an ID of ", searchIdTxt, " in the ", dblQuote "PCSingTbl", ":" ]
+                    , views pcSingTbl (commas . map fst . filter ((== searchId) . snd) . M.toList) ms ]
                   , [ T.concat [ "Players peeped by ID ", searchIdTxt, ":" ]
                     , f . filter (views peepers (searchId `elem`) . snd) . tblToList plaTbl $ ms ]
                   , [ T.concat [ "Players peeping ID ", searchIdTxt, ":" ]
@@ -909,12 +911,12 @@ debugRules p = withoutArgs debugRandom p
 
 
 debugTalk :: ActionFun
-debugTalk (NoArgs i mq cols) = getState >>= \(views talkAsyncTbl M.elems -> asyncs) -> do
-    pager i mq Nothing =<< [ concatMap (wrapIndent 2 cols) descs | descs <- mapM mkDesc asyncs ]
+debugTalk (NoArgs i mq cols) = views talkAsyncTbl M.toList <$> getState >>= \(pairs :: [(ThreadId, TalkAsync)]) -> do
+    pager i mq Nothing =<< [ concatMap (wrapIndent 2 cols) descs | descs <- mapM mkDesc pairs ]
     logPlaExec (prefixDebugCmd "talk") i
   where
-    mkDesc a    = [ T.concat [ "Talk async ", showText . asyncThreadId $ a, ": ", statusTxt, "." ]
-                  | statusTxt <- mkStatusTxt <$> liftIO (poll a) ]
+    mkDesc (tid, async) = [ T.concat [ showText tid, ": ", statusTxt, "." ]
+                          | statusTxt <- mkStatusTxt <$> liftIO (poll async) ]
     mkStatusTxt = \case Nothing         -> "running"
                         Just (Left  e ) -> "exception " <> parensQuote (showText e)
                         Just (Right ()) -> "finished"
@@ -971,12 +973,12 @@ descThreads = do
     mkTypeName (Digester       (showText -> pi)) = padOrTrunc padAmt "Digester"     <> pi
     mkTypeName (DrinkingThread (showText -> pi)) = padOrTrunc padAmt "Drinking"     <> pi
     mkTypeName (EatingThread   (showText -> pi)) = padOrTrunc padAmt "Eating"       <> pi
-    mkTypeName (MovingThread   (showText -> pi)) = padOrTrunc padAmt "Moving"       <> pi
-    mkTypeName (EffectListener (showText -> pi)) = padOrTrunc padAmt "Eff Listen"   <> pi
-    mkTypeName (EffectThread   (showText -> pi)) = padOrTrunc padAmt "Eff Thread"   <> pi
-    mkTypeName (EffectTimer    (showText -> pi)) = padOrTrunc padAmt "Eff Timer"    <> pi
+    mkTypeName (EffectListener (showText -> pi)) = padOrTrunc padAmt "EffListen"    <> pi
+    mkTypeName (EffectThread   (showText -> pi)) = padOrTrunc padAmt "EffThread"    <> pi
+    mkTypeName (EffectTimer    (showText -> pi)) = padOrTrunc padAmt "EffTimer"     <> pi
     mkTypeName (FeelingTimer   (showText -> pi)) = padOrTrunc padAmt "FeelingTimer" <> pi
     mkTypeName (InacTimer      (showText -> pi)) = padOrTrunc padAmt "InacTimer"    <> pi
+    mkTypeName (MovingThread   (showText -> pi)) = padOrTrunc padAmt "Moving"       <> pi
     mkTypeName (NpcServer      (showText -> pi)) = padOrTrunc padAmt "NpcServer"    <> pi
     mkTypeName (PlaLog         (showText -> pi)) = padOrTrunc padAmt "PlaLog"       <> pi
     mkTypeName (Receive        (showText -> pi)) = padOrTrunc padAmt "Receive"      <> pi
@@ -984,8 +986,9 @@ descThreads = do
     mkTypeName (RegenParent    (showText -> pi)) = padOrTrunc padAmt "RegenParent"  <> pi
     mkTypeName (RmFun          (showText -> pi)) = padOrTrunc padAmt "RmFun"        <> pi
     mkTypeName (Server         (showText -> pi)) = padOrTrunc padAmt "Server"       <> pi
+    mkTypeName (SpiritTimer    (showText -> pi)) = padOrTrunc padAmt "SpiritTimer"  <> pi
     mkTypeName (Talk           (showText -> pi)) = padOrTrunc padAmt "Talk"         <> pi
-    mkTypeName (showText -> tt)                  = tt
+    mkTypeName (showText -> tt)                  = tt -- For thread types without an ID.
     padAmt                                       = 13
 
 
