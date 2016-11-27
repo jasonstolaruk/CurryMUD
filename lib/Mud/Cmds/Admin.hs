@@ -1481,7 +1481,7 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
         appendMsg m = a & _2 <>~ pure m
         found       = let t = getType targetId ms in \case
           "entname"        -> setEntMaybeTextHelper  t "entName"  "name"        entName  entName
-          "sing"           -> setEntTextHelper       t "sing"     "singular"    sing     sing -- TODO
+          "sing"           -> setEntSingHelper       t
           "plur"           -> setEntTextHelper       t "plur"     "plural"      plur     plur
           "entdesc"        -> setEntTextHelper       t "entDesc"  "description" entDesc  entDesc
           "entsmell"       -> setEntMaybeTextHelper  t "entSmell" "smell"       entSmell entSmell
@@ -1532,6 +1532,23 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
                              & _3 <>~ ((isNpcPC targetId ms && isDiff) |?| toTarget)
                              & _4 <>~ (isDiff |?| toSelf)
               _      -> sorryOp k
+        -----
+        setEntSingHelper t
+          | not . hasEnt $ t = sorryType
+          | otherwise        = case eitherDecode value' of
+            Left  _ -> appendMsg . sorryAdminSetValue "sing" $ value
+            Right x -> case op of
+              Assign -> let toSelf   = pure . T.concat $ [ "Set sing to ", dblQuote x, mkDiffTxt isDiff, "." ]
+                            prev     = getSing targetId ms
+                            isDiff   = x /= prev
+                            toTarget = pure . prd $ "Your singular has changed to " <> dblQuote x
+                        in a & _1.entTbl   .ind targetId.sing .~ x
+                             & _1.pcSingTbl.at  prev .~ Nothing
+                             & _1.pcSingTbl.at  x    ?~ targetId
+                             & _2 <>~ toSelf
+                             & _3 <>~ ((isNpcPC targetId ms && isDiff) |?| toTarget)
+                             & _4 <>~ (isDiff |?| toSelf)
+              _      -> sorryOp "sing"
         -----
         setEntTextHelper t k n getter setter
           | not . hasEnt $ t = sorryType
