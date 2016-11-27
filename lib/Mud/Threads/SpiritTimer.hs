@@ -22,6 +22,7 @@ import Mud.Util.Operators
 import Mud.Util.Padding
 import Mud.Util.Quoting
 import Mud.Util.Text
+import Mud.Util.Wrapping
 import qualified Mud.Misc.Logging as L (logNotice, logPla, logPlaOut)
 
 import Control.Concurrent (threadDelay)
@@ -118,22 +119,27 @@ theBeyond i mq cols retainedIds = modifyStateSeq $ \ms ->
 
 
 farewell :: Id -> MsgQueue -> Cols -> MudStack ()
-farewell i mq cols = multiWrapSend mq cols . mkFarewellStats i =<< getState
+farewell i mq cols = multiWrapSend mq cols . mkFarewellStats i cols =<< getState
 
 
-mkFarewellStats :: Id -> MudState -> [Text]
-mkFarewellStats i ms = [ T.concat [ s, ", the ", sexy, " ", r ] -- TODO: Explanatory message.
-                       , f "Strength: "   <> str
-                       , f "Dexterity: "  <> dex
-                       , f "Health: "     <> hea
-                       , f "Magic: "      <> mag
-                       , f "Psionics: "   <> psi
-                       , f "Points: "     <> xpsHelper
-                       , f "Handedness: " <> handy
-                       , f "Languages: "  <> langs
-                       , f "Level: "      <> showText l
-                       , f "Experience: " <> commaShow expr ]
+mkFarewellStats :: Id -> Cols -> MudState -> [Text]
+mkFarewellStats i cols ms = concatMap (wrapIndent 2 cols) ts
   where
+    ts = [ T.concat [ "Sadly, ", s, " has passed away. Here is a final summary of ", s, "'s stats:" ]
+         , ""
+         , T.concat [ s, ", the ", sexy, " ", r ]
+         , f "Strength: "   <> str
+         , f "Dexterity: "  <> dex
+         , f "Health: "     <> hea
+         , f "Magic: "      <> mag
+         , f "Psionics: "   <> psi
+         , f "Points: "     <> xpsHelper
+         , f "Handedness: " <> handy
+         , f "Languages: "  <> langs
+         , f "Level: "      <> showText l
+         , f "Experience: " <> commaShow expr
+         , ""
+         , "Thank you for playing CurryMUD! Please reconnect to play again with a new character." ]
     f                         = pad 12
     s                         = getSing         i ms
     (sexy, r)                 = mkPrettySexRace i ms

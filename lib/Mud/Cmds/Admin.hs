@@ -933,7 +933,7 @@ adminFarewell :: ActionFun
 adminFarewell p@AdviseNoArgs            = advise p [ prefixAdminCmd "farewell" ] adviceAFarewellNoArgs
 adminFarewell   (LowerNub i mq cols as) = getState >>= \ms ->
     let helper target | notFound <- pure . sorryPCName $ target
-                      , found    <- (`mkFarewellStats` ms) . fst
+                      , found    <- \(targetId, _) -> mkFarewellStats targetId cols ms
                       = findFullNameForAbbrev target (mkAdminPlaIdSingList ms) |&| maybe notFound found
     in do { pager i mq Nothing . intercalateDivider cols . map (helper . capitalize) $ as
           ; logPlaExecArgs (prefixAdminCmd "farewell") as i }
