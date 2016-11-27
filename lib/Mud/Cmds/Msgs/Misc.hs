@@ -248,7 +248,7 @@ rulesMsg =
     \\\uMULTI-PLAYING\\d\n" <>
     lSpcs <> "\"Multi-playing\" is when a single player simultaneously logs in multiple times, as multiple characters. This is not allowed.\n" <>
     lSpcs <> "It is likewise illegal to transfer items and wealth between characters through indirect means (for example, dropping items in a certain location, logging in as a different character, and picking up those items).\n" <>
-    lSpcs <> "You are discouraged from actively maintaining multiple characters at a time. It can be quite difficult to juggle the different scopes of knowledge - and to maintain the disparate levels of objectivity - inherent in multiple characters. If you find yourself wanting to play a new character, consider formally retiring your current character via the \"retire\" command.\n\
+    lSpcs <> "You are discouraged from actively maintaining multiple characters at a time. It can be quite difficult to juggle the different scopes of knowledge - and to maintain the disparate levels of objectivity - inherent in multiple characters. If you find yourself wanting to play a new character, consider formally retiring your current character.\n\
     \\n\
     \\\uBUGS\\d\n" <>
     lSpcs <> "The abuse of bugs constitutes cheating and is not allowed. If you find a bug, you must promptly report it via the \"bug\" command, or inform an administrator directly via the \"admin\" command.\n\
