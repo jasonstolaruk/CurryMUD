@@ -44,7 +44,7 @@ import Mud.Util.Wrapping
 import qualified Mud.Misc.Logging as L (logIOEx, logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut, massLogPla)
 import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 
-import Control.Arrow ((&&&), first, second)
+import Control.Arrow ((***), (&&&), first, second)
 import Control.Concurrent.Async (asyncThreadId)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (writeTQueue)
@@ -130,7 +130,6 @@ massLogPla = L.massLogPla "Mud.Cmds.Admin"
 -- ==================================================
 
 
--- TODO: "PCSingTbl"?
 adminCmds :: [Cmd]
 adminCmds =
     [ mkAdminCmd "?"          adminDispCmdList True  cmdDescDispCmdList
@@ -794,10 +793,15 @@ examineObj i ms = let o = getObj i ms in [ "Weight: " <> o^.objWeight.to commaSh
 
 
 examinePC :: ExamineHelper
-examinePC i ms = let p = getPC i ms in [ "Race: "         <> p^.race      .to pp
-                                       , "Known names: "  <> p^.introduced.to (noneOnNull . commas)
-                                       , "Links: "        <> p^.linked    .to (noneOnNull . commas)
-                                       , "Skill points: " <> p^.skillPts  .to commaShow ]
+examinePC i ms = let p = getPC i ms in [ "Entry in the PCSingTbl: " <> ms^.pcSingTbl .to f
+                                       , "Race: "                   <> p ^.race      .to pp
+                                       , "Known names: "            <> p ^.introduced.to (noneOnNull . commas)
+                                       , "Links: "                  <> p ^.linked    .to (noneOnNull . commas)
+                                       , "Skill points: "           <> p ^.skillPts  .to commaShow ]
+  where
+    f = noneOnNull . commas . map h . filter g . M.toList
+    g = (||) <$> (== i) . snd  <*> (== getSing i ms) . fst
+    h = parensQuote . uncurry (<>) . ((<> ", ") *** showText)
 
 
 examinePickPts :: ExamineHelper
@@ -1477,7 +1481,7 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
         appendMsg m = a & _2 <>~ pure m
         found       = let t = getType targetId ms in \case
           "entname"        -> setEntMaybeTextHelper  t "entName"  "name"        entName  entName
-          "sing"           -> setEntTextHelper       t "sing"     "singular"    sing     sing
+          "sing"           -> setEntTextHelper       t "sing"     "singular"    sing     sing -- TODO
           "plur"           -> setEntTextHelper       t "plur"     "plural"      plur     plur
           "entdesc"        -> setEntTextHelper       t "entDesc"  "description" entDesc  entDesc
           "entsmell"       -> setEntMaybeTextHelper  t "entSmell" "smell"       entSmell entSmell
