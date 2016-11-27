@@ -175,7 +175,6 @@ regularCmdTuples =
     , ("admin",      admin,              True,  cmdDescAdmin)
     , ("bonus",      bonus,              True,  cmdDescBonus)
     , ("bug",        bug,                True,  cmdDescBug)
-    , ("channel",    chan,               True,  "Send a message on a telepathic channel " <> plusRelatedMsg) -- TODO: Change to priority abbrev cmd "c".
     , ("d",          go "d",             True,  cmdDescGoDown)
     , ("e",          go "e",             True,  cmdDescGoEast)
     , ("empty",      emptyAction,        True,  cmdDescEmpty)
@@ -230,6 +229,7 @@ priorityAbbrevCmds = concatMap (uncurry5 mkPriorityAbbrevCmd) priorityAbbrevCmdT
 priorityAbbrevCmdTuples :: [(CmdFullName, CmdPriorityAbbrevTxt, ActionFun, Bool, CmdDesc)]
 priorityAbbrevCmdTuples =
     [ ("bars",        "b",   bars,           True,  cmdDescBars)
+    , ("channel",     "c",   chan,           True,  "Send a message on a telepathic channel " <> plusRelatedMsg)
     , ("clear",       "cl",  clear,          True,  cmdDescClear)
     , ("color",       "col", color,          True,  cmdDescColor)
     , ("connect",     "co",  connect,        True,  "Connect one or more people to a telepathic channel.")
