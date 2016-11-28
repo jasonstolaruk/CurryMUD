@@ -2543,8 +2543,11 @@ question p = patternMatchFail "question" . showText $ p
 
 
 quit :: ActionFun
-quit (NoArgs' i mq) = (logPlaExec "quit" i >>) $ writeMsg mq =<< mIf (isSpiritId i <$> getState)
-    (throwWaitSpiritTimer i >> return TheBeyond) -- TODO: Special message upon quitting as a spirit.
+quit (NoArgs i mq cols) = (logPlaExec "quit" i >>) $ writeMsg mq =<< mIf (isSpiritId i <$> getState)
+    (do
+         wrapSend mq cols . colorWith spiritMsgColor $ theBeyondMsg
+         throwWaitSpiritTimer i
+         return TheBeyond)
     (return Quit)
 quit ActionParams { plaMsgQueue, plaCols } = wrapSend plaMsgQueue plaCols adviceQuitExcessArgs
 
