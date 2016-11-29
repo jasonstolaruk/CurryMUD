@@ -72,7 +72,7 @@ data MudState = MudState { _activeEffectsTbl  :: ActiveEffectsTbl
                          , _npcTbl            :: NpcTbl
                          , _objTbl            :: ObjTbl
                          , _pausedEffectsTbl  :: PausedEffectsTbl
-                         , _pcSingTbl         :: PCSingTbl
+                         , _pcSingTbl         :: PCSingTbl -- TODO: Use this.
                          , _pcTbl             :: PCTbl
                          , _pickPtsTbl        :: PickPtsTbl
                          , _plaLogTbl         :: PlaLogTbl

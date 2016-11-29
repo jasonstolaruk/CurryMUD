@@ -22,6 +22,7 @@ import Mud.Threads.Misc
 import Mud.Threads.NpcServer
 import Mud.Threads.Regen
 import Mud.Threads.RmFuns
+import Mud.Threads.SpiritTimer
 import Mud.TopLvlDefs.FilePaths
 import Mud.Util.List
 import Mud.Util.Operators
@@ -35,7 +36,7 @@ import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TMQueue (writeTMQueue)
 import Control.Concurrent.STM.TQueue (readTQueue, writeTQueue)
 import Control.Exception.Lifted (catch)
-import Control.Lens (view)
+import Control.Lens (view, views)
 import Control.Lens.Operators ((^.))
 import Control.Monad ((>=>), forM_)
 import Control.Monad.IO.Class (liftIO)
@@ -92,7 +93,10 @@ threadServer h i mq tq = sequence_ [ setThreadType . Server $ i
       SilentBoot     ->                                    sayonara
       TheBeyond      ->                                    sayonara
       ToNpc msg      -> handleFromServer i h Npcに msg     >> loop
-    sayonara = sequence_ [ stopTimer tq, handleEgress i ]
+    sayonara = views spiritAsync (maybe f g) . getPla i =<< getState
+      where
+        f = sequence_ [ stopTimer tq, handleEgress i ]
+        g = const $ throwWaitSpiritTimer i >> loop
 
 
 handleBlankLine :: Handle -> MudStack ()

@@ -17,10 +17,10 @@ modification, are permitted provided that the following conditions are met:
       contributors may be used to endorse or promote products derived
       from this software without specific prior written permission.
 
-If you fork the CurryMUD source code and derive your own MUD:
+If you intend to run this software on a public-facing server:
 
     * You may not continue to use the CurryMUD name. You must devise
-      an original name for your derived MUD.
+      an original name for your MUD.
 
     * You must make it clear that your MUD is a fork of/is derived
       from CurryMUD.

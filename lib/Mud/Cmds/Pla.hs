@@ -96,7 +96,7 @@ import Data.Time (diffUTCTime, getCurrentTime)
 import Data.Tuple (swap)
 import Prelude hiding (log, pi)
 import qualified Data.IntMap.Lazy as IM (IntMap, (!), keys)
-import qualified Data.Map.Lazy as M ((!), elems, filter, foldrWithKey, keys, lookup, map, singleton, size, toList)
+import qualified Data.Map.Lazy as M ((!), delete, elems, empty, filter, foldrWithKey, keys, lookup, map, singleton, size, toList)
 import qualified Data.Set as S (filter, toList)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
@@ -2543,23 +2543,21 @@ question p = patternMatchFail "question" . showText $ p
 
 
 quit :: ActionFun
-quit (NoArgs i mq cols) = (logPlaExec "quit" i >>) $ writeMsg mq =<< mIf (isSpiritId i <$> getState)
-    (do
-         wrapSend mq cols . colorWith spiritMsgColor $ theBeyondMsg
-         throwWaitSpiritTimer i
-         return TheBeyond)
-    (return Quit)
+quit (NoArgs' i mq) = logPlaExec "quit" i >> mIf (isSpiritId i <$> getState)
+    (throwWaitSpiritTimer i)
+    (writeMsg mq Quit)
 quit ActionParams { plaMsgQueue, plaCols } = wrapSend plaMsgQueue plaCols adviceQuitExcessArgs
 
 
-handleEgress :: Id -> MudStack ()
+handleEgress :: Id -> MudStack () -- TODO: Move egress to its own module?
 handleEgress i = do
     now <- liftIO getCurrentTime
-    ms  <- getState
-    let tuple@(s, _, hoc, spirit) = ((,,,) <$> uncurry getSing
-                                           <*> uncurry getRmId
-                                           <*> uncurry isAdHoc
-                                           <*> uncurry isSpiritId) (i, ms)
+    tuple@(s, _, hoc, spirit) <- ((,,,) <$> uncurry getSing
+                                        <*> uncurry getRmId
+                                        <*> uncurry isAdHoc
+                                        <*> uncurry isSpiritId) . (i, ) <$> getState
+    when spirit . theBeyond i $ s
+    ms <- getState
     unless (hoc || spirit) . bcastOthersInRm i . nlnl . egressMsg . serialize . mkStdDesig i ms $ DoCap
     helper now tuple |&| modifyState >=> \(bs, logMsgs) -> do
         stopActs i
@@ -2624,6 +2622,60 @@ handleEgress i = do
         ri' = spirit ? iNecropolis :? iLoggedOut
     possessHelper ms = let f = maybe id (\npcId -> npcTbl.ind npcId.npcPossessor .~ Nothing) . getPossessing i $ ms
                        in ms & plaTbl.ind i.possessing .~ Nothing & f
+
+
+theBeyond :: Id -> Sing -> MudStack ()
+theBeyond i s = modifyStateSeq $ \ms ->
+    let (mq, cols)      = getMsgQueueColumns i ms
+        retainedIds     = views (teleLinkMstrTbl.ind i) (map (`getIdForMobSing` ms) . M.keys) ms
+        (inIds, outIds) = partition (isLoggedIn . (`getPla` ms)) retainedIds
+        ms'             = h . flip (foldr g) retainedIds . flip (foldr f) retainedIds $ ms
+        f targetId      = pcTbl          .ind targetId.linked %~ (s `delete`)
+        g targetId      = teleLinkMstrTbl.ind targetId        %~ M.delete s
+        h               = teleLinkMstrTbl.ind i               .~ M.empty
+    in (ms', [ wrapSend mq cols . colorWith spiritMsgColor $ theBeyondMsg
+             , farewell i mq cols
+             , bcast . pure $ (nlnl . linkLostMsg $ s, inIds)
+             , forM_ outIds $ \outId ->　retainedMsg outId ms' (linkMissingMsg s)
+             , bcastAdmins $ s <> " passes into the beyond."
+             , logPla "theBeyond" i "passing into the beyond."
+             , logNotice "theBeyond" . T.concat $ [ descSingId i ms', " is passing into the beyond." ] ])
+
+
+farewell :: Id -> MsgQueue -> Cols -> MudStack ()
+farewell i mq cols = multiWrapSend mq cols . mkFarewellStats i cols =<< getState
+
+
+-- TODO: Stats regarding time spent playing.
+mkFarewellStats :: Id -> Cols -> MudState -> [Text]
+mkFarewellStats i cols ms = concatMap (wrapIndent 2 cols) ts -- TODO: Issue with the indentation.
+  where
+    ts = [ T.concat [ "Sadly, ", s, " has passed away. Here is a final summary of ", s, "'s stats:" ] -- TODO: This line shouldn't be wrap indented.
+         , ""
+         , T.concat [ s, ", the ", sexy, " ", r ]
+         , f "Strength: "   <> str
+         , f "Dexterity: "  <> dex
+         , f "Health: "     <> hea
+         , f "Magic: "      <> mag
+         , f "Psionics: "   <> psi
+         , f "Points: "     <> xpsHelper
+         , f "Handedness: " <> handy
+         , f "Languages: "  <> langs
+         , f "Level: "      <> showText l
+         , f "Experience: " <> commaShow expr
+         , ""
+         , "Thank you for playing CurryMUD! Please reconnect to play again with a new character." ] -- TODO: This line shouldn't be wrap indented.
+    f                         = pad 12
+    s                         = getSing         i ms
+    (sexy, r)                 = mkPrettySexRace i ms
+    (str, dex, hea, mag, psi) = calcEffAttribs  i ms & each %~ showText
+    xpsHelper                 | (hps, mps, pps, fps) <- getPts i ms
+                              = commas [ g "h" hps, g "m" mps, g "p" pps, g "f" fps ]
+      where
+        g a (_, x) = showText x |<>| a <> "p"
+    handy     = pp . getHand i $ ms
+    langs     = commas [ pp lang | lang <- sort . getKnownLangs i $ ms ]
+    (l, expr) = getLvlExp i ms
 
 
 -----

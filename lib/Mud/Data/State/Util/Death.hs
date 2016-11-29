@@ -14,14 +14,12 @@ import Mud.Data.State.Util.Make
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Data.State.Util.Random
-import Mud.Misc.ANSI
 import Mud.Misc.Database
 import Mud.Misc.Misc
 import Mud.Threads.Act
 import Mud.Threads.Digester
 import Mud.Threads.Effect
 import Mud.Threads.FeelingTimer
-import Mud.Threads.Misc
 import Mud.Threads.NpcServer
 import Mud.Threads.Regen
 import Mud.Threads.SpiritTimer
@@ -31,8 +29,7 @@ import Mud.Util.Operators
 import Mud.Util.Text
 import qualified Mud.Misc.Logging as L (logNotice, logPla)
 
-import Control.Arrow ((***), first, second)
-import Control.Concurrent (threadDelay)
+import Control.Arrow ((***), first)
 import Control.Lens (_1, _2, _3, at, view, views)
 import Control.Lens.Operators ((%~), (&), (.~), (^.))
 import Control.Monad (forM_, unless, when)
@@ -87,19 +84,20 @@ Those links with the greatest volume of messages are retained. If the deceased P
 
 handleDeath :: Id -> MudStack ()
 handleDeath i = isNpc i <$> getState >>= \npc -> do
+    logPla "handleDeath" i "handling death."
     when   npc possessHelper
     unless npc leaveChans
     tweaks [ leaveParty i
            , mobTbl.ind i.mobRmDesc .~ Nothing
            , mobTbl.ind i.tempDesc  .~ Nothing
            , mobTbl.ind i.stomach   .~ [] ]
-    stopActs          i
-    pauseEffects      i
-    stopFeelings      i
-    stopRegen         i
-    throwWaitDigester i
-    modifyStateSeq (second (logPla "handleDeath" i "handling death." :) . mkCorpse i)
-    spiritize         i
+    stopActs                    i
+    pauseEffects                i
+    stopFeelings                i
+    stopRegen                   i
+    throwWaitDigester           i
+    modifyStateSeq . mkCorpse $ i
+    spiritize                   i
   where
     possessHelper = modifyStateSeq $ \ms -> case getPossessor i ms of
       Nothing -> (ms, [])
@@ -143,72 +141,70 @@ mkCorpse i ms = let et     = EntTemplate (Just "corpse")
 
 
 spiritize :: Id -> MudStack ()
-spiritize i = getState >>= \ms -> if isNpc i ms
-  then deleteNpc ms
-  else let (mySing, secs) = (getSing `fanUncurry` calcSpiritTime) (i, ms)
-           (mq,     cols) = getMsgQueueColumns i ms
-       in setSpiritFlag >>= \ms' -> (withDbExHandler "spiritize" . liftIO . lookupTeleNames $ mySing) >>= \case
-         Nothing                    -> dbError mq cols
-         Just (procOnlySings -> ss) ->
-           let triples    = [ (i', s, isLoggedIn p) | s <- ss, let i' = getIdForMobSing s  ms'
-                                                             , let p  = getPla          i' ms' ]
-               n          = calcRetainedLinks i ms'
-               retaineds  | isZero secs = []
-                          | otherwise   = let xs = take n triples
-                                          in (xs |&|) $ case filter (view _3) xs of
-                                            [] -> let bonus = take 1 . filter (view _3) . drop n $ triples in (++ bonus)
-                                            _  -> id
-               retainedIds   = select _1 retaineds
-               retainedSings = select _2 retaineds
-               asleepIds     = let f i' p = and [ views linked (mySing `elem`) p
-                                                , i' `notElem` retainedIds
-                                                , not . isLoggedIn . getPla i' $ ms' ]
-                               in views pcTbl (IM.keys . IM.filterWithKey f . IM.delete i) ms'
-               (bs, fs)      = mkBcasts ms' mySing retaineds retainedIds
-           in do { tweaks [ pcTbl           %~ pcTblHelper           mySing retainedIds retainedSings
-                          , teleLinkMstrTbl %~ teleLinkMstrTblHelper mySing retainedIds retainedSings
-                          , mobTbl.ind i    %~ setCurrXps ]
-                 ; forM_ asleepIds $ \i' ->　retainedMsg i' ms' . linkMissingMsg $ mySing
-                 ; bcast bs
-                 ; sequence_ (fs :: Funs)
-                 ; isZero secs ? theBeyond i mq cols [] :? detach mq cols secs retainedIds
-                 ; logPla "spiritize" i "spirit created." }
+spiritize i = getState >>= \ms ->
+    let ((mq, cols), s, npc, secs) = ((,,,) <$> uncurry getMsgQueueColumns
+                                            <*> uncurry getSing
+                                            <*> uncurry isNpc
+                                            <*> uncurry calcSpiritTime) (i, ms)
+    in if npc
+      then deleteNpc ms
+      else (withDbExHandler "spiritize" . liftIO . lookupTeleNames $ s) >>= \case
+        Nothing                    -> dbError mq cols
+        Just (procOnlySings -> ss) -> modifyStateSeq $ \ms' ->
+            let triples    = [ (targetId, targetSing, isLoggedIn targetPla) | targetSing <- ss
+                             , let targetId  = getIdForMobSing s        ms'
+                             , let targetPla = getPla          targetId ms' ]
+                n          = calcRetainedLinks i ms'
+                retaineds  | isZero secs = []
+                           | otherwise   = let xs = take n triples
+                                           in (xs |&|) $ case filter (view _3) xs of
+                                             [] -> let bonus = take 1 . filter (view _3) . drop n $ triples in (++ bonus)
+                                             _  -> id
+                retainedIds   = select _1 retaineds
+                retainedSings = select _2 retaineds
+                asleepIds     = let f targetId targetPC = and [ views linked (s `elem`) targetPC
+                                                              , targetId `notElem` retainedIds
+                                                              , not . isLoggedIn . getPla targetId $ ms' ]
+                                in views pcTbl (IM.keys . IM.filterWithKey f . IM.delete i) ms'
+                (bs, fs)      = mkBcasts ms' s . map dropSnd $ retaineds
+            in ( ms' & plaTbl.ind i    %~ setPlaFlag IsSpirit True
+                     & pcTbl           %~ pcTblHelper           s retainedIds retainedSings
+                     & teleLinkMstrTbl %~ teleLinkMstrTblHelper s retainedIds retainedSings
+                     & mobTbl.ind i    %~ setCurrXps
+               , [ logPla "spiritize" i "spirit created."
+                 , forM_ asleepIds $ \targetId -> retainedMsg targetId ms' . linkMissingMsg $ s
+                 , bcast bs
+                 , sequence_ (fs :: Funs)
+                 , runSpiritTimerAsync i secs ] )
   where
-    setSpiritFlag    = modifyState $ dup . (plaTbl.ind i %~ setPlaFlag IsSpirit True)
     procOnlySings xs = map snd . sortBy (flip compare `on` fst) $ [ (length g, s)
                                                                   | g@(s:_) <- sortGroup . map fromOnly $ xs ]
-    pcTblHelper mySing retainedIds retainedSings = IM.mapWithKey helper
+    pcTblHelper s retainedIds retainedSings = IM.mapWithKey helper
       where
         helper pcId | pcId == i               = linked .~ retainedSings
                     | pcId `elem` retainedIds = id
-                    | otherwise               = linked %~ (mySing `delete`)
-    teleLinkMstrTblHelper mySing retainedIds retainedSings = IM.mapWithKey helper
+                    | otherwise               = linked %~ (s `delete`)
+    teleLinkMstrTblHelper s retainedIds retainedSings = IM.mapWithKey helper
       where
-        helper targetId | targetId == i               = M.filterWithKey (\s _ -> s `elem` retainedSings)
+        helper targetId | targetId == i               = M.filterWithKey (const . (`elem` retainedSings))
                         | targetId `elem` retainedIds = id
-                        | otherwise                   = M.delete mySing
-    setCurrXps m = m & curHp .~ (m^.maxHp)
-                     & curMp .~ (m^.maxMp)
-                     & curPp .~ (m^.maxPp)
-                     & curFp .~ (m^.maxFp)
-    mkBcasts ms mySing retaineds retainedIds = let (toLinkRetainers, fs) = toLinkRetainersHelper
-                                               in ([ toLinkLosers, toLinkRetainers ], fs)
+                        | otherwise                   = M.delete s
+    setCurrXps ms = ms & curHp .~ (ms^.maxHp)
+                       & curMp .~ (ms^.maxMp)
+                       & curPp .~ (ms^.maxPp)
+                       & curFp .~ (ms^.maxFp)
+    mkBcasts ms s retainedPairs = let (toLinkRetainers, fs) = toLinkRetainersHelper
+                                  in ([ toLinkLosers, toLinkRetainers ], fs)
       where
-        toLinkLosers =
-            let targetIds = views pcTbl (IM.keys . IM.filterWithKey f . IM.delete i) ms
-                f i' p    = and [ views linked (mySing `elem`) p
-                                , i' `notElem` retainedIds
-                                , isLoggedIn . getPla i' $ ms ]
-            in (nlnl . linkLostMsg $ mySing, targetIds)
-        toLinkRetainersHelper
-          | targetIds <- [ i' | (i', _, ia) <- retaineds, ia ]
-          , f         <- \i' -> rndmDo (calcProbSpiritizeShiver i' ms) . mkExpAction "shiver" . mkActionParams i' ms $ []
-          , fs        <- pure . mapM_ f $ targetIds
-          = ((nlnl . linkRetainedMsg $ mySing, targetIds), fs)
-    detach mq cols secs retainedIds = onNewThread $ do
-        liftIO . threadDelay $ 2 * 10 ^ 6
-        wrapSend mq cols . colorWith spiritMsgColor $ spiritDetachMsg
-        runSpiritTimerAsync i secs retainedIds
+        toLinkRetainersHelper =
+            let targetIds = [ targetId | (targetId, targetIsLoggedIn) <- retainedPairs, targetIsLoggedIn ]
+                f i'      = rndmDo (calcProbSpiritizeShiver i' ms) . mkExpAction "shiver" . mkActionParams i' ms $ []
+            in ((nlnl . linkRetainedMsg $ s, targetIds), pure . mapM_ f $ targetIds)
+        toLinkLosers = let targetIds           = views pcTbl (IM.keys . IM.filterWithKey f . IM.delete i) ms
+                           f targetId targetPC = and [ views linked (s `elem`) targetPC
+                                                     , targetId `notElem` map fst retainedPairs
+                                                     , isLoggedIn . getPla targetId $ ms ]
+                       in (nlnl . linkLostMsg $ s, targetIds)
     deleteNpc ms = let ri = getRmId i ms in do { tweaks [ activeEffectsTbl.at  i  .~ Nothing
                                                         , coinsTbl        .at  i  .~ Nothing
                                                         , entTbl          .at  i  .~ Nothing
