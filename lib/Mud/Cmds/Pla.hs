@@ -2629,17 +2629,18 @@ theBeyond i mq s = modifyStateSeq $ \ms ->
     let cols            = getColumns i ms
         retainedIds     = views (teleLinkMstrTbl.ind i) (map (`getIdForMobSing` ms) . M.keys) ms
         (inIds, outIds) = partition (isLoggedIn . (`getPla` ms)) retainedIds
-        ms'             = h . flip (foldr g) retainedIds . flip (foldr f) retainedIds $ ms
         f targetId      = pcTbl          .ind targetId.linked %~ (s `delete`)
         g targetId      = teleLinkMstrTbl.ind targetId        %~ M.delete s
-        h               = teleLinkMstrTbl.ind i               .~ M.empty
-    in (ms', [ wrapSend mq cols . colorWith spiritMsgColor $ theBeyondMsg
-             , farewell i mq cols
-             , bcast . pure $ (nlnl . linkLostMsg $ s, inIds)
-             , forM_ outIds $ \outId ->　retainedMsg outId ms' (linkMissingMsg s)
-             , bcastAdmins $ s <> " passes into the beyond."
-             , logPla "theBeyond" i "passing into the beyond."
-             , logNotice "theBeyond" . T.concat $ [ descSingId i ms', " is passing into the beyond." ] ])
+        h               = (pcTbl.ind i.linked .~ []) . (teleLinkMstrTbl.ind i .~ M.empty)
+        ms'             = h . flip (foldr g) retainedIds . flip (foldr f) retainedIds $ ms
+        fs              = [ wrapSend mq cols . colorWith spiritMsgColor $ theBeyondMsg
+                          , farewell i mq cols
+                          , bcast . pure $ (nlnl . linkLostMsg $ s, inIds)
+                          , forM_ outIds $ \outId -> retainedMsg outId ms' (linkMissingMsg s)
+                          , bcastAdmins $ s <> " passes into the beyond."
+                          , logPla "theBeyond" i "passing into the beyond."
+                          , logNotice "theBeyond" . T.concat $ [ descSingId i ms', " is passing into the beyond." ] ]
+    in (ms', fs)
 
 
 farewell :: Id -> MsgQueue -> Cols -> MudStack ()
