@@ -37,7 +37,7 @@ import Data.List (delete, partition, sort)
 import Data.Maybe (fromJust)
 import Data.Monoid ((<>))
 import Data.Text (Text)
-import Data.Time (diffUTCTime, getCurrentTime)
+import Data.Time (UTCTime, diffUTCTime, getCurrentTime)
 import Prelude hiding (pi)
 import qualified Data.Map.Lazy as M (delete, empty, keys, singleton)
 import qualified Data.Text as T
@@ -78,56 +78,10 @@ handleEgress i mq isDropped = egressHelper `finally` writeMsg mq FinishedEgress
             logNotice "handleEgress egressHelper" . T.concat $ [ descSingId i ms, " has left CurryMUD." ]
             when hoc . tweak . removeAdHoc $ i
     helper now (s, hoc, spirit) ms =
-        let (ms', bs, logMsgs) = peepHelper ms s spirit
+        let (ms', bs, logMsgs) = peepHelper i ms s spirit
             ms'' | hoc         = ms'
-                 | otherwise   = updateHostMap (possessHelper . leaveParty i . movePC ms' $ spirit) s now
+                 | otherwise   = updateHostMap i (possessHelper i . leaveParty i . movePC i ms' $ spirit) s now
         in (ms'', (bs, logMsgs))
-    peepHelper ms s spirit =
-        let (peeperIds, peepingIds) = getPeepersPeeping i ms
-            bs      = [ (nlnl .    T.concat $ [ "You are no longer peeping "
-                                              , s
-                                              , " "
-                                              , parensQuote $ s <> spaced "has" <> txt
-                                              , "." ], pure peeperId) | peeperId <- peeperIds ]
-            logMsgs = [ (peeperId, T.concat   [ "no longer peeping "
-                                              , s
-                                              , " "
-                                              , parensQuote $ s <> spaced "has" <> txt
-                                              , "." ]) | peeperId <- peeperIds ]
-            txt     = spirit ? "passed into the beyond" :? "disconnected"
-        in (ms & plaTbl %~ stopPeeping     peepingIds
-               & plaTbl %~ stopBeingPeeped peeperIds
-               & plaTbl.ind i.peeping .~ []
-               & plaTbl.ind i.peepers .~ [], bs, logMsgs)
-      where
-        stopPeeping     peepingIds pt = let f peepedId ptAcc = ptAcc & ind peepedId.peepers %~ (i `delete`)
-                                        in foldr f pt peepingIds
-        stopBeingPeeped peeperIds  pt = let f peeperId ptAcc = ptAcc & ind peeperId.peeping %~ (i `delete`)
-                                        in foldr f pt peeperIds
-    updateHostMap ms s now = flip (set $ hostTbl.at s) ms $ case getHostMap s ms of
-      Nothing      -> Just . M.singleton host $ newRecord
-      Just hostMap -> case hostMap^.at host of Nothing -> Just $ hostMap & at host ?~ newRecord
-                                               Just r  -> Just $ hostMap & at host ?~ reviseRecord r
-      where
-        newRecord       = HostRecord { _noOfLogouts   = 1
-                                     , _secsConnected = duration
-                                     , _lastLogout    = now }
-        reviseRecord r  = r & noOfLogouts   +~ 1
-                            & secsConnected +~ duration
-                            & lastLogout    .~ now
-        host            = getCurrHostName i ms
-        duration        = round $ now `diffUTCTime` conTime
-        conTime         = fromJust . getConnectTime i $ ms
-    movePC ms spirit = ms & invTbl     .ind ri           %~ (i `delete`)
-                          & invTbl     .ind ri'          %~ (i :)
-                          & msgQueueTbl.at  i            .~ Nothing
-                          & mobTbl     .ind i.rmId       .~ ri'
-                          & plaTbl     .ind i.logoutRmId ?~ ri
-      where
-        ri  = getRmId i ms
-        ri' = spirit ? iNecropolis :? iLoggedOut
-    possessHelper ms = let f = maybe id (\npcId -> npcTbl.ind npcId.npcPossessor .~ Nothing) . getPossessing i $ ms
-                       in ms & plaTbl.ind i.possessing .~ Nothing & f
 
 
 theBeyond :: Id -> MsgQueue -> Sing -> Bool -> MudStack ()
@@ -147,6 +101,64 @@ theBeyond i mq s isDropped = modifyStateSeq $ \ms ->
                           , logPla "theBeyond" i "passing into the beyond."
                           , logNotice "theBeyond" . T.concat $ [ descSingId i ms', " is passing into the beyond." ] ]
     in (ms', fs)
+
+
+peepHelper :: Id -> MudState -> Sing -> Bool -> (MudState, [Broadcast], [(Id, Text)])
+peepHelper i ms s spirit =
+    let (peeperIds, peepingIds) = getPeepersPeeping i ms
+        bs      = [ (nlnl .    T.concat $ [ "You are no longer peeping "
+                                          , s
+                                          , " "
+                                          , parensQuote $ s <> spaced "has" <> txt
+                                          , "." ], pure peeperId) | peeperId <- peeperIds ]
+        logMsgs = [ (peeperId, T.concat   [ "no longer peeping "
+                                          , s
+                                          , " "
+                                          , parensQuote $ s <> spaced "has" <> txt
+                                          , "." ]) | peeperId <- peeperIds ]
+        txt     = spirit ? "passed into the beyond" :? "disconnected"
+    in (ms & plaTbl %~ stopPeeping     peepingIds
+           & plaTbl %~ stopBeingPeeped peeperIds
+           & plaTbl.ind i.peeping .~ []
+           & plaTbl.ind i.peepers .~ [], bs, logMsgs)
+  where
+    stopPeeping     peepingIds pt = let f peepedId ptAcc = ptAcc & ind peepedId.peepers %~ (i `delete`)
+                                    in foldr f pt peepingIds
+    stopBeingPeeped peeperIds  pt = let f peeperId ptAcc = ptAcc & ind peeperId.peeping %~ (i `delete`)
+                                    in foldr f pt peeperIds
+
+
+updateHostMap :: Id -> MudState -> Sing -> UTCTime -> MudState
+updateHostMap i ms s now = flip (set $ hostTbl.at s) ms $ case getHostMap s ms of
+  Nothing      -> Just . M.singleton host $ newRecord
+  Just hostMap -> case hostMap^.at host of Nothing -> Just $ hostMap & at host ?~ newRecord
+                                           Just r  -> Just $ hostMap & at host ?~ reviseRecord r
+  where
+    newRecord       = HostRecord { _noOfLogouts   = 1
+                                 , _secsConnected = duration
+                                 , _lastLogout    = now }
+    reviseRecord r  = r & noOfLogouts   +~ 1
+                        & secsConnected +~ duration
+                        & lastLogout    .~ now
+    host            = getCurrHostName i ms
+    duration        = round $ now `diffUTCTime` conTime
+    conTime         = fromJust . getConnectTime i $ ms
+
+
+movePC :: Id -> MudState -> Bool -> MudState
+movePC i ms spirit = ms & invTbl     .ind ri           %~ (i `delete`)
+                        & invTbl     .ind ri'          %~ (i :)
+                        & msgQueueTbl.at  i            .~ Nothing
+                        & mobTbl     .ind i.rmId       .~ ri'
+                        & plaTbl     .ind i.logoutRmId ?~ ri
+  where
+    ri  = getRmId i ms
+    ri' = spirit ? iNecropolis :? iLoggedOut
+
+
+possessHelper :: Int -> MudState -> MudState
+possessHelper i ms = let f = maybe id (\npcId -> npcTbl.ind npcId.npcPossessor .~ Nothing) . getPossessing i $ ms
+                     in ms & plaTbl.ind i.possessing .~ Nothing & f
 
 
 farewell :: Id -> MsgQueue -> Cols -> MudStack ()
@@ -174,8 +186,8 @@ mkFarewellStats i cols ms = (header :) . (<> pure footer) . concatMap (wrapInden
                                            , s
                                            , "'s stats:" ]
     footer = wrapUnlinesInit cols "Thank you for playing CurryMUD! Please reconnect to play again with a new character."
-    f                         = pad 12
     s                         = getSing         i ms
+    f                         = pad 12
     (sexy, r)                 = mkPrettySexRace i ms
     (str, dex, hea, mag, psi) = calcEffAttribs  i ms & each %~ showText
     xpsHelper                 | (hps, mps, pps, fps) <- getPts i ms
