@@ -186,10 +186,10 @@ spiritize i = do
                                                             , targetId `notElem` retainedIds
                                                             , not . isLoggedIn . getPla targetId $ ms ]
                               in views pcTbl (IM.keys . IM.filterWithKey f . IM.delete i) ms
-              (bs, fs)      = mkBcasts ms s . map dropSnd $ retaineds
+              (bs, fs)      = mkLinkBcasts i ms s . map dropSnd $ retaineds
           in ( ms & plaTbl.ind i    %~ setPlaFlag IsSpirit True
-                  & pcTbl           %~ pcTblHelper           s retainedIds retainedSings
-                  & teleLinkMstrTbl %~ teleLinkMstrTblHelper s retainedIds retainedSings
+                  & pcTbl           %~ pcTblHelper           i s retainedIds retainedSings
+                  & teleLinkMstrTbl %~ teleLinkMstrTblHelper i s retainedIds retainedSings
                   & mobTbl.ind i    %~ setCurrXps
              , [ logPla "spiritize" i "spirit created."
                , forM_ asleepIds $ \targetId -> retainedMsg targetId ms . linkMissingMsg $ s
@@ -199,29 +199,41 @@ spiritize i = do
   where
     procOnlySings xs = map snd . sortBy (flip compare `on` fst) $ [ (length g, s)
                                                                   | g@(s:_) <- sortGroup . map fromOnly $ xs ]
-    pcTblHelper s retainedIds retainedSings = IM.mapWithKey helper
-      where
-        helper pcId | pcId == i               = linked .~ retainedSings
-                    | pcId `elem` retainedIds = id
-                    | otherwise               = linked %~ (s `delete`)
-    teleLinkMstrTblHelper s retainedIds retainedSings = IM.mapWithKey helper
-      where
-        helper targetId | targetId == i               = M.filterWithKey (const . (`elem` retainedSings))
-                        | targetId `elem` retainedIds = id
-                        | otherwise                   = M.delete s
-    setCurrXps ms = ms & curHp .~ (ms^.maxHp)
-                       & curMp .~ (ms^.maxMp)
-                       & curPp .~ (ms^.maxPp)
-                       & curFp .~ (ms^.maxFp)
-    mkBcasts ms s retainedPairs = let (toLinkRetainers, fs) = toLinkRetainersHelper
-                                  in ([ toLinkLosers, toLinkRetainers ], fs)
-      where
-        toLinkRetainersHelper =
-            let targetIds = [ targetId | (targetId, targetIsLoggedIn) <- retainedPairs, targetIsLoggedIn ]
-                f i'      = rndmDo (calcProbSpiritizeShiver i' ms) . mkExpAction "shiver" . mkActionParams i' ms $ []
-            in ((nlnl . linkRetainedMsg $ s, targetIds), pure . mapM_ f $ targetIds)
-        toLinkLosers = let targetIds           = views pcTbl (IM.keys . IM.filterWithKey f . IM.delete i) ms
-                           f targetId targetPC = and [ views linked (s `elem`) targetPC
-                                                     , targetId `notElem` map fst retainedPairs
-                                                     , isLoggedIn . getPla targetId $ ms ]
-                       in (nlnl . linkLostMsg $ s, targetIds)
+
+
+pcTblHelper :: Id -> Sing -> Inv -> [Sing] -> PCTbl -> PCTbl
+pcTblHelper i s retainedIds retainedSings = IM.mapWithKey helper
+  where
+    helper pcId | pcId == i               = linked .~ retainedSings
+                | pcId `elem` retainedIds = id
+                | otherwise               = linked %~ (s `delete`)
+
+
+teleLinkMstrTblHelper :: Id -> Sing -> Inv -> [Sing] -> TeleLinkMstrTbl -> TeleLinkMstrTbl
+teleLinkMstrTblHelper i s retainedIds retainedSings = IM.mapWithKey helper
+  where
+    helper targetId | targetId == i               = M.filterWithKey (const . (`elem` retainedSings))
+                    | targetId `elem` retainedIds = id
+                    | otherwise                   = M.delete s
+
+
+setCurrXps :: Mob -> Mob
+setCurrXps ms = ms & curHp .~ (ms^.maxHp)
+                   & curMp .~ (ms^.maxMp)
+                   & curPp .~ (ms^.maxPp)
+                   & curFp .~ (ms^.maxFp)
+
+
+mkLinkBcasts :: Id -> MudState -> Sing -> [(Id, Bool)] -> ([Broadcast], Funs) -- TODO: Rename?
+mkLinkBcasts i ms s retainedPairs = let (toLinkRetainers, fs) = toLinkRetainersHelper
+                                    in ([ toLinkLosers, toLinkRetainers ], fs)
+  where
+    toLinkRetainersHelper =
+        let targetIds = [ targetId | (targetId, targetIsLoggedIn) <- retainedPairs, targetIsLoggedIn ]
+            f i'      = rndmDo (calcProbSpiritizeShiver i' ms) . mkExpAction "shiver" . mkActionParams i' ms $ [] -- TODO: Working?
+        in ((nlnl . linkRetainedMsg $ s, targetIds), pure . mapM_ f $ targetIds)
+    toLinkLosers = let targetIds           = views pcTbl (IM.keys . IM.filterWithKey f . IM.delete i) ms
+                       f targetId targetPC = and [ views linked (s `elem`) targetPC
+                                                 , targetId `notElem` map fst retainedPairs
+                                                 , isLoggedIn . getPla targetId $ ms ]
+                   in (nlnl . linkLostMsg $ s, targetIds)
