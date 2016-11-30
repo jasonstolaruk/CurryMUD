@@ -22,6 +22,7 @@ import Mud.Threads.Misc
 import Mud.Threads.NpcServer
 import Mud.Threads.Regen
 import Mud.Threads.RmFuns
+import Mud.Threads.SpiritTimer
 import Mud.TopLvlDefs.FilePaths
 import Mud.Util.List
 import Mud.Util.Misc
@@ -36,7 +37,7 @@ import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TMQueue (writeTMQueue)
 import Control.Concurrent.STM.TQueue (readTQueue, writeTQueue)
 import Control.Exception.Lifted (catch)
-import Control.Lens (view)
+import Control.Lens (view, views)
 import Control.Lens.Operators ((^.))
 import Control.Monad ((>=>), forM_)
 import Control.Monad.IO.Class (liftIO)
@@ -74,27 +75,33 @@ data ToWhom = Plaに | Npcに
 
 threadServer :: Handle -> Id -> MsgQueue -> TimerQueue -> MudStack ()
 threadServer h i mq tq = sequence_ [ setThreadType . Server $ i
-                                   , loop `catch` threadExHandler (Just i) "server" ]
+                                   , loop False `catch` threadExHandler (Just i) "server" ]
   where
-    loop = mq |&| liftIO . atomically . readTQueue >=> \case
-      AsSelf     msg -> handleFromClient i mq tq True msg >> loop
-      BlankLine      -> handleBlankLine h >> loop
-      Dropped        -> egress
-      FromClient msg -> handleFromClient i mq tq False msg >> loop
-      FromServer msg -> handleFromServer i h Plaに msg >> loop
-      InacBoot       -> sendInacBootMsg h >> egress
-      InacStop       -> stopTimer tq >> loop
-      MsgBoot msg    -> sendBootMsg h msg >> egress
-      Peeped  msg    -> (liftIO . T.hPutStr h $ msg) >> loop
-      Prompt p       -> promptHelper i h p >> loop
-      Quit           -> cowbye h >> egress
-      ShowHandle     -> handleShowHandle i h >> loop
-      Shutdown       -> shutDown >> loop
-      SilentBoot     -> egress
-      FinishedSpirit -> egress
+    loop isDropped = mq |&| liftIO . atomically . readTQueue >=> \case
+      AsSelf     msg -> handleFromClient i mq tq True msg  >> next
+      BlankLine      -> handleBlankLine h                  >> next
+      Dropped        -> egress True
+      FromClient msg -> handleFromClient i mq tq False msg >> next
+      FromServer msg -> handleFromServer i h Plaに msg     >> next
+      InacBoot       -> sendInacBootMsg h                  >> sayonara
+      InacStop       -> stopTimer tq                       >> next
+      MsgBoot msg    -> sendBootMsg h msg                  >> sayonara
+      Peeped  msg    -> (liftIO . T.hPutStr h $ msg)       >> next
+      Prompt p       -> promptHelper i h p                 >> next
+      Quit           -> cowbye h                           >> sayonara
+      ShowHandle     -> handleShowHandle i h               >> next
+      Shutdown       -> shutDown                           >> next
+      SilentBoot     -> sayonara
+      FinishedSpirit -> sayonara
       FinishedEgress -> unit
-      ToNpc msg      -> handleFromServer i h Npcに msg >> loop
-    egress = stopTimer tq >> handleEgress i mq >> loop -- TODO: What if there is a spirit timer running?
+      ToNpc msg      -> handleFromServer i h Npcに msg     >> next
+      where
+        next     = loop   isDropped
+        sayonara = egress isDropped
+    egress isDropped = (views (plaTbl.ind i.spiritAsync) (maybe a b) =<< getState) >> loop isDropped
+      where
+        a = stopTimer tq >> handleEgress i mq isDropped
+        b = const . throwWaitSpiritTimer $ i
 
 
 handleBlankLine :: Handle -> MudStack ()

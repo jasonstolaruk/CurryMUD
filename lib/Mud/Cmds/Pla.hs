@@ -2549,18 +2549,19 @@ quit (NoArgs' i mq) = logPlaExec "quit" i >> mIf (isSpiritId i <$> getState)
 quit ActionParams { plaMsgQueue, plaCols } = wrapSend plaMsgQueue plaCols adviceQuitExcessArgs
 
 
-handleEgress :: Id -> MsgQueue -> MudStack () -- TODO: Move egress to its own module.
-handleEgress i mq = egressHelper `finally` writeMsg mq FinishedEgress
+handleEgress :: Id -> MsgQueue -> Bool -> MudStack () -- TODO: Move egress to its own module.
+handleEgress i mq isDropped = egressHelper `finally` writeMsg mq FinishedEgress
   where
-    egressHelper = (,) <$> getState <*> liftIO getCurrentTime >>= \(ms, now) -> do
+    egressHelper = do
         logPla "handleEgress egressHelper" i "handling egress."
+        stopActs i
+        (ms, now) <- (,) <$> getState <*> liftIO getCurrentTime
         let tuple@(s, hoc, spirit) = ((,,) <$> uncurry getSing
                                            <*> uncurry isAdHoc
                                            <*> uncurry isSpiritId) (i, ms)
         unless (hoc || spirit) . bcastOthersInRm i . nlnl . egressMsg . serialize . mkStdDesig i ms $ DoCap
-        when spirit . theBeyond i mq $ s
+        when spirit . theBeyond i mq s $ isDropped
         helper now tuple |&| modifyState >=> \(bs, logMsgs) -> do
-            stopActs i
             unless spirit $ do { pauseEffects      i -- Already done in "handleDeath".
                                ; stopFeelings      i
                                ; stopRegen         i
@@ -2624,8 +2625,8 @@ handleEgress i mq = egressHelper `finally` writeMsg mq FinishedEgress
                        in ms & plaTbl.ind i.possessing .~ Nothing & f
 
 
-theBeyond :: Id -> MsgQueue -> Sing -> MudStack ()
-theBeyond i mq s = modifyStateSeq $ \ms ->
+theBeyond :: Id -> MsgQueue -> Sing -> Bool -> MudStack ()
+theBeyond i mq s isDropped = modifyStateSeq $ \ms ->
     let cols            = getColumns i ms
         retainedIds     = views (teleLinkMstrTbl.ind i) (map (`getIdForMobSing` ms) . M.keys) ms
         (inIds, outIds) = partition (isLoggedIn . (`getPla` ms)) retainedIds
@@ -2633,8 +2634,8 @@ theBeyond i mq s = modifyStateSeq $ \ms ->
         g targetId      = teleLinkMstrTbl.ind targetId        %~ M.delete s
         h               = (pcTbl.ind i.linked .~ []) . (teleLinkMstrTbl.ind i .~ M.empty)
         ms'             = h . flip (foldr g) retainedIds . flip (foldr f) retainedIds $ ms
-        fs              = [ wrapSend mq cols . colorWith spiritMsgColor $ theBeyondMsg
-                          , farewell i mq cols
+        fs              = [ unless isDropped $ do { wrapSend mq cols . colorWith spiritMsgColor $ theBeyondMsg
+                                                  ; farewell i mq cols }
                           , bcast . pure $ (nlnl . linkLostMsg $ s, inIds)
                           , forM_ outIds $ \outId -> retainedMsg outId ms' (linkMissingMsg s)
                           , bcastAdmins $ s <> " passes into the beyond."
@@ -3982,6 +3983,7 @@ taste p = advise p ["taste"] adviceTasteExcessArgs
 -----
 
 
+-- TODO: "head: empty list" exception when tele to a PC who is singly linked from his mind to yours.
 tele :: ActionFun
 tele p@AdviseNoArgs                         = advise p ["telepathy"] adviceTeleNoArgs
 tele p@AdviseOneArg                         = advise p ["telepathy"] adviceTeleNoMsg

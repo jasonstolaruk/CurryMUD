@@ -85,13 +85,13 @@ Those links with the greatest volume of messages are retained. If the deceased P
 handleDeath :: Id -> MudStack ()
 handleDeath i = isNpc i <$> getState >>= \npc -> do
     logPla "handleDeath" i "handling death."
-    when   npc possessHelper
-    unless npc leaveChans
+    stopActs i
     tweaks [ leaveParty i
            , mobTbl.ind i.mobRmDesc .~ Nothing
            , mobTbl.ind i.tempDesc  .~ Nothing
            , mobTbl.ind i.stomach   .~ [] ]
-    stopActs                    i
+    when   npc possessHelper
+    unless npc leaveChans
     pauseEffects                i
     stopFeelings                i
     stopRegen                   i

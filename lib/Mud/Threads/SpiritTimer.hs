@@ -15,15 +15,15 @@ import Mud.Misc.ANSI
 import Mud.Threads.Misc
 import Mud.TopLvlDefs.Misc
 import Mud.Util.Misc
-import Mud.Util.Operators
 import Mud.Util.Quoting
 import Mud.Util.Text
 import qualified Mud.Misc.Logging as L (logPla, logPlaOut)
 
 import Control.Concurrent (threadDelay)
 import Control.Exception.Lifted (finally, handle)
-import Control.Lens.Operators ((&), (.~), (?~), (^.))
-import Control.Monad ((>=>), when)
+import Control.Lens (views)
+import Control.Lens.Operators ((.~), (?~))
+import Control.Monad (when)
 import Control.Monad.IO.Class (liftIO)
 import Data.Monoid ((<>))
 import Data.Text (Text)
@@ -50,11 +50,9 @@ runSpiritTimerAsync :: Id -> Seconds -> MudStack ()
 runSpiritTimerAsync i secs = runAsync (threadSpiritTimer i secs) >>= \a -> tweak $ plaTbl.ind i.spiritAsync ?~ a
 
 
+-- Note that "threadSpiritTimer" sets "spiritAsync" to "Nothing" when the timer finishes.
 throwWaitSpiritTimer :: Id -> MudStack ()
-throwWaitSpiritTimer i = helper |&| modifyState >=> maybeVoid throwWait
-  where
-    helper ms = let a = ms^.plaTbl.ind i.spiritAsync
-                in (ms & plaTbl.ind i.spiritAsync .~ Nothing, a)
+throwWaitSpiritTimer i = views (plaTbl.ind i.spiritAsync) (maybeVoid throwWait) =<< getState
 
 
 -----
@@ -68,7 +66,10 @@ threadSpiritTimer i secs = handle (threadExHandler (Just i) "spirit timer") $ do
     let go     = when (secs > 0) $ do { liftIO . threadDelay $ 2 * 10 ^ 6
                                       ; wrapSend mq cols . colorWith spiritMsgColor $ spiritDetachMsg
                                       ; spiritTimer i mq cols secs }
-        finish = logPla "threadSpiritTimer finish" i "spirit timer finishing." >> writeMsg mq FinishedSpirit
+        finish = do
+            logPla "threadSpiritTimer finish" i "spirit timer finishing."
+            tweak $ plaTbl.ind i.spiritAsync .~ Nothing
+            writeMsg mq FinishedSpirit
     handle (die (Just i) "spirit timer") $ go `finally` finish
 
 
