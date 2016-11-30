@@ -58,6 +58,7 @@ library
                        Mud.Data.State.Util.Death
                        Mud.Data.State.Util.Destroy
                        Mud.Data.State.Util.Effect
+                       Mud.Data.State.Util.Egress
                        Mud.Data.State.Util.Get
                        Mud.Data.State.Util.GMCP
                        Mud.Data.State.Util.Hierarchy

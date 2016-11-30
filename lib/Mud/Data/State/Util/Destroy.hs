@@ -15,7 +15,7 @@ import Data.List (delete)
 import qualified Data.IntMap.Lazy as IM (map)
 
 
-destroy :: Inv -> MudStack ()
+destroy :: Inv -> MudStack () -- TODO: More uses of this (destroying NPCs)?
 destroy is = stopBiodegraders >> destroyHelper is
   where
     stopBiodegraders = getState >>= \ms -> let f i = maybeVoid throwDeath . getObjBiodegAsync i $ ms
