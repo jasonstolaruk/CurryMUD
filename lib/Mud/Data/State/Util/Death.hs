@@ -109,18 +109,18 @@ handleDeath i = isNpc i <$> getState >>= \npc -> do
                       , sendDfltPrompt mq pi
                       , logPla "handleDeath" pi . prd $ "stopped possessing " <> t ] )
     leaveChans = unit -- TODO
-    deleteNpc  = getState >>= \ms ->
-        let ri = getRmId i ms in do { tweaks [ activeEffectsTbl.at  i  .~ Nothing
-                                             , coinsTbl        .at  i  .~ Nothing
-                                             , entTbl          .at  i  .~ Nothing
-                                             , eqTbl           .at  i  .~ Nothing
-                                             , invTbl          .at  i  .~ Nothing
-                                             , invTbl          .ind ri %~ (i `delete`)
-                                             , mobTbl          .at  i  .~ Nothing
-                                             , pausedEffectsTbl.at  i  .~ Nothing
-                                             , typeTbl         .at  i  .~ Nothing ]
-                                    ; stopWaitNpcServer i -- This removes the NPC from the "NpcTbl".
-                                    ; logNotice "spiritize" $ "NPC " <> descSingId i ms <> " has died." }
+    deleteNpc  = getState >>= \ms -> let ri = getRmId i ms
+                                     in do { tweaks [ activeEffectsTbl.at  i  .~ Nothing
+                                                    , coinsTbl        .at  i  .~ Nothing
+                                                    , entTbl          .at  i  .~ Nothing
+                                                    , eqTbl           .at  i  .~ Nothing
+                                                    , invTbl          .at  i  .~ Nothing
+                                                    , invTbl          .ind ri %~ (i `delete`)
+                                                    , mobTbl          .at  i  .~ Nothing
+                                                    , pausedEffectsTbl.at  i  .~ Nothing
+                                                    , typeTbl         .at  i  .~ Nothing ]
+                                           ; stopWaitNpcServer i -- This removes the NPC from the "NpcTbl".
+                                           ; logNotice "spiritize" $ "NPC " <> descSingId i ms <> " has died." }
 
 
 mkCorpse :: Id -> MudState -> (MudState, Funs)

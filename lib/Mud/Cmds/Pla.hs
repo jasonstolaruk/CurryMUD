@@ -2552,16 +2552,13 @@ quit ActionParams { plaMsgQueue, plaCols } = wrapSend plaMsgQueue plaCols advice
 handleEgress :: Id -> MsgQueue -> MudStack () -- TODO: Move egress to its own module.
 handleEgress i mq = egressHelper `finally` writeMsg mq FinishedEgress
   where
-    egressHelper = do -- TODO: Clean up.
+    egressHelper = (,) <$> getState <*> liftIO getCurrentTime >>= \(ms, now) -> do
         logPla "handleEgress egressHelper" i "handling egress."
-        tuple@(s, _, hoc, spirit) <- ((,,,) <$> uncurry getSing
-                                            <*> uncurry getRmId
-                                            <*> uncurry isAdHoc
-                                            <*> uncurry isSpiritId) . (i, ) <$> getState
-        when spirit . theBeyond i mq $ s
-        ms <- getState
+        let tuple@(s, hoc, spirit) = ((,,) <$> uncurry getSing
+                                           <*> uncurry isAdHoc
+                                           <*> uncurry isSpiritId) (i, ms)
         unless (hoc || spirit) . bcastOthersInRm i . nlnl . egressMsg . serialize . mkStdDesig i ms $ DoCap
-        now <- liftIO getCurrentTime
+        when spirit . theBeyond i mq $ s
         helper now tuple |&| modifyState >=> \(bs, logMsgs) -> do
             stopActs i
             unless spirit $ do { pauseEffects      i -- Already done in "handleDeath".
@@ -2574,10 +2571,10 @@ handleEgress i mq = egressHelper `finally` writeMsg mq FinishedEgress
             forM_ logMsgs . uncurry . logPla $ "handleEgress egressHelper"
             logNotice "handleEgress egressHelper" . T.concat $ [ descSingId i ms, " has left CurryMUD." ]
             when hoc . tweak . removeAdHoc $ i
-    helper now (s, ri, hoc, spirit) ms =
+    helper now (s, hoc, spirit) ms =
         let (ms', bs, logMsgs) = peepHelper ms s spirit
             ms'' | hoc         = ms'
-                 | otherwise   = updateHostMap (possessHelper . leaveParty i . movePC ms' ri $ spirit) s now
+                 | otherwise   = updateHostMap (possessHelper . leaveParty i . movePC ms' $ spirit) s now
         in (ms'', (bs, logMsgs))
     peepHelper ms s spirit =
         let (peeperIds, peepingIds) = getPeepersPeeping i ms
@@ -2615,12 +2612,13 @@ handleEgress i mq = egressHelper `finally` writeMsg mq FinishedEgress
         host            = getCurrHostName i ms
         duration        = round $ now `diffUTCTime` conTime
         conTime         = fromJust . getConnectTime i $ ms
-    movePC ms ri spirit = ms & invTbl     .ind ri           %~ (i `delete`)
-                             & invTbl     .ind ri'          %~ (i :)
-                             & msgQueueTbl.at  i            .~ Nothing
-                             & mobTbl     .ind i.rmId       .~ ri'
-                             & plaTbl     .ind i.logoutRmId ?~ ri
+    movePC ms spirit = ms & invTbl     .ind ri           %~ (i `delete`)
+                          & invTbl     .ind ri'          %~ (i :)
+                          & msgQueueTbl.at  i            .~ Nothing
+                          & mobTbl     .ind i.rmId       .~ ri'
+                          & plaTbl     .ind i.logoutRmId ?~ ri
       where
+        ri  = getRmId i ms
         ri' = spirit ? iNecropolis :? iLoggedOut
     possessHelper ms = let f = maybe id (\npcId -> npcTbl.ind npcId.npcPossessor .~ Nothing) . getPossessing i $ ms
                        in ms & plaTbl.ind i.possessing .~ Nothing & f
