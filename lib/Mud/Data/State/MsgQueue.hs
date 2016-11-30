@@ -15,6 +15,8 @@ type MsgQueue = TQueue Msg
 data Msg = AsSelf     Text
          | BlankLine
          | Dropped
+         | FinishedEgress
+         | FinishedSpirit
          | FromClient Text
          | FromServer Text
          | InacBoot
@@ -26,7 +28,6 @@ data Msg = AsSelf     Text
          | ShowHandle
          | Shutdown
          | SilentBoot
-         | TheBeyond
          | ToNpc      Text
 
 

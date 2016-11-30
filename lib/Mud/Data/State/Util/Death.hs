@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
-{-# LANGUAGE FlexibleContexts, LambdaCase, OverloadedStrings, ViewPatterns #-}
+{-# LANGUAGE FlexibleContexts, LambdaCase, OverloadedStrings, TupleSections, ViewPatterns #-}
 
 module Mud.Data.State.Util.Death (handleDeath) where
 
@@ -97,7 +97,7 @@ handleDeath i = isNpc i <$> getState >>= \npc -> do
     stopRegen                   i
     throwWaitDigester           i
     modifyStateSeq . mkCorpse $ i
-    spiritize                   i
+    npc ? deleteNpc :? spiritize i
   where
     possessHelper = modifyStateSeq $ \ms -> case getPossessor i ms of
       Nothing -> (ms, [])
@@ -109,6 +109,18 @@ handleDeath i = isNpc i <$> getState >>= \npc -> do
                       , sendDfltPrompt mq pi
                       , logPla "handleDeath" pi . prd $ "stopped possessing " <> t ] )
     leaveChans = unit -- TODO
+    deleteNpc  = getState >>= \ms ->
+        let ri = getRmId i ms in do { tweaks [ activeEffectsTbl.at  i  .~ Nothing
+                                             , coinsTbl        .at  i  .~ Nothing
+                                             , entTbl          .at  i  .~ Nothing
+                                             , eqTbl           .at  i  .~ Nothing
+                                             , invTbl          .at  i  .~ Nothing
+                                             , invTbl          .ind ri %~ (i `delete`)
+                                             , mobTbl          .at  i  .~ Nothing
+                                             , pausedEffectsTbl.at  i  .~ Nothing
+                                             , typeTbl         .at  i  .~ Nothing ]
+                                    ; stopWaitNpcServer i -- This removes the NPC from the "NpcTbl".
+                                    ; logNotice "spiritize" $ "NPC " <> descSingId i ms <> " has died." }
 
 
 mkCorpse :: Id -> MudState -> (MudState, Funs)
@@ -141,41 +153,38 @@ mkCorpse i ms = let et     = EntTemplate (Just "corpse")
 
 
 spiritize :: Id -> MudStack ()
-spiritize i = getState >>= \ms ->
-    let ((mq, cols), s, npc, secs) = ((,,,) <$> uncurry getMsgQueueColumns
-                                            <*> uncurry getSing
-                                            <*> uncurry isNpc
-                                            <*> uncurry calcSpiritTime) (i, ms)
-    in if npc
-      then deleteNpc ms
-      else (withDbExHandler "spiritize" . liftIO . lookupTeleNames $ s) >>= \case
-        Nothing                    -> dbError mq cols
-        Just (procOnlySings -> ss) -> modifyStateSeq $ \ms' ->
-            let triples    = [ (targetId, targetSing, isLoggedIn targetPla) | targetSing <- ss
-                             , let targetId  = getIdForMobSing s        ms'
-                             , let targetPla = getPla          targetId ms' ]
-                n          = calcRetainedLinks i ms'
-                retaineds  | isZero secs = []
-                           | otherwise   = let xs = take n triples
-                                           in (xs |&|) $ case filter (view _3) xs of
-                                             [] -> let bonus = take 1 . filter (view _3) . drop n $ triples in (++ bonus)
-                                             _  -> id
-                retainedIds   = select _1 retaineds
-                retainedSings = select _2 retaineds
-                asleepIds     = let f targetId targetPC = and [ views linked (s `elem`) targetPC
-                                                              , targetId `notElem` retainedIds
-                                                              , not . isLoggedIn . getPla targetId $ ms' ]
-                                in views pcTbl (IM.keys . IM.filterWithKey f . IM.delete i) ms'
-                (bs, fs)      = mkBcasts ms' s . map dropSnd $ retaineds
-            in ( ms' & plaTbl.ind i    %~ setPlaFlag IsSpirit True
-                     & pcTbl           %~ pcTblHelper           s retainedIds retainedSings
-                     & teleLinkMstrTbl %~ teleLinkMstrTblHelper s retainedIds retainedSings
-                     & mobTbl.ind i    %~ setCurrXps
-               , [ logPla "spiritize" i "spirit created."
-                 , forM_ asleepIds $ \targetId -> retainedMsg targetId ms' . linkMissingMsg $ s
-                 , bcast bs
-                 , sequence_ (fs :: Funs)
-                 , runSpiritTimerAsync i secs ] )
+spiritize i = do
+    ((mq, cols), s, secs) <- ((,,) <$> uncurry getMsgQueueColumns
+                                   <*> uncurry getSing
+                                   <*> uncurry calcSpiritTime) . (i, ) <$> getState
+    (withDbExHandler "spiritize" . liftIO . lookupTeleNames $ s) >>= \case
+      Nothing                    -> dbError mq cols
+      Just (procOnlySings -> ss) -> modifyStateSeq $ \ms ->
+          let triples    = [ (targetId, targetSing, isLoggedIn targetPla) | targetSing <- ss
+                           , let targetId  = getIdForMobSing s        ms
+                           , let targetPla = getPla          targetId ms ]
+              n          = calcRetainedLinks i ms
+              retaineds  | isZero secs = []
+                         | otherwise   = let xs = take n triples
+                                         in (xs |&|) $ case filter (view _3) xs of
+                                           [] -> let bonus = take 1 . filter (view _3) . drop n $ triples in (++ bonus)
+                                           _  -> id
+              retainedIds   = select _1 retaineds
+              retainedSings = select _2 retaineds
+              asleepIds     = let f targetId targetPC = and [ views linked (s `elem`) targetPC
+                                                            , targetId `notElem` retainedIds
+                                                            , not . isLoggedIn . getPla targetId $ ms ]
+                              in views pcTbl (IM.keys . IM.filterWithKey f . IM.delete i) ms
+              (bs, fs)      = mkBcasts ms s . map dropSnd $ retaineds
+          in ( ms & plaTbl.ind i    %~ setPlaFlag IsSpirit True
+                  & pcTbl           %~ pcTblHelper           s retainedIds retainedSings
+                  & teleLinkMstrTbl %~ teleLinkMstrTblHelper s retainedIds retainedSings
+                  & mobTbl.ind i    %~ setCurrXps
+             , [ logPla "spiritize" i "spirit created."
+               , forM_ asleepIds $ \targetId -> retainedMsg targetId ms . linkMissingMsg $ s
+               , bcast bs
+               , sequence_ (fs :: Funs)
+               , runSpiritTimerAsync i secs ] )
   where
     procOnlySings xs = map snd . sortBy (flip compare `on` fst) $ [ (length g, s)
                                                                   | g@(s:_) <- sortGroup . map fromOnly $ xs ]
@@ -205,14 +214,3 @@ spiritize i = getState >>= \ms ->
                                                      , targetId `notElem` map fst retainedPairs
                                                      , isLoggedIn . getPla targetId $ ms ]
                        in (nlnl . linkLostMsg $ s, targetIds)
-    deleteNpc ms = let ri = getRmId i ms in do { tweaks [ activeEffectsTbl.at  i  .~ Nothing
-                                                        , coinsTbl        .at  i  .~ Nothing
-                                                        , entTbl          .at  i  .~ Nothing
-                                                        , eqTbl           .at  i  .~ Nothing
-                                                        , invTbl          .at  i  .~ Nothing
-                                                        , invTbl          .ind ri %~ (i `delete`)
-                                                        , mobTbl          .at  i  .~ Nothing
-                                                        , pausedEffectsTbl.at  i  .~ Nothing
-                                                        , typeTbl         .at  i  .~ Nothing ]
-                                               ; stopWaitNpcServer i -- This removes the NPC from the "NpcTbl".
-                                               ; logNotice "spiritize" $ "NPC " <> descSingId i ms <> " has died." }

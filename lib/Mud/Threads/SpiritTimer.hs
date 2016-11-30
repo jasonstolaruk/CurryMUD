@@ -64,13 +64,12 @@ threadSpiritTimer :: Id -> Seconds -> MudStack ()
 threadSpiritTimer i secs = handle (threadExHandler (Just i) "spirit timer") $ do
     setThreadType . SpiritTimer $ i
     logPla "threadSpiritTimer" i . prd $ "spirit timer started " <> parensQuote (showText secs <> " seconds")
-    pair@(mq, _) <- getMsgQueueColumns i <$> getState
-    handle (die (Just i) "spirit timer") $ uncurry go pair `finally` writeMsg mq TheBeyond
-  where
-    go mq cols = when (secs > 0) $ do
-        liftIO . threadDelay $ 2 * 10 ^ 6
-        wrapSend mq cols . colorWith spiritMsgColor $ spiritDetachMsg
-        spiritTimer i mq cols secs
+    (mq, cols) <- getMsgQueueColumns i <$> getState
+    let go     = when (secs > 0) $ do { liftIO . threadDelay $ 2 * 10 ^ 6
+                                      ; wrapSend mq cols . colorWith spiritMsgColor $ spiritDetachMsg
+                                      ; spiritTimer i mq cols secs }
+        finish = logPla "threadSpiritTimer finish" i "spirit timer finishing." >> writeMsg mq FinishedSpirit
+    handle (die (Just i) "spirit timer") $ go `finally` finish
 
 
 spiritTimer :: Id -> MsgQueue -> Cols -> Seconds -> MudStack ()

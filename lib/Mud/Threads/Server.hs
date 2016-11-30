@@ -22,9 +22,9 @@ import Mud.Threads.Misc
 import Mud.Threads.NpcServer
 import Mud.Threads.Regen
 import Mud.Threads.RmFuns
-import Mud.Threads.SpiritTimer
 import Mud.TopLvlDefs.FilePaths
 import Mud.Util.List
+import Mud.Util.Misc
 import Mud.Util.Operators
 import Mud.Util.Quoting
 import Mud.Util.Text hiding (headTail)
@@ -36,7 +36,7 @@ import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TMQueue (writeTMQueue)
 import Control.Concurrent.STM.TQueue (readTQueue, writeTQueue)
 import Control.Exception.Lifted (catch)
-import Control.Lens (view, views)
+import Control.Lens (view)
 import Control.Lens.Operators ((^.))
 import Control.Monad ((>=>), forM_)
 import Control.Monad.IO.Class (liftIO)
@@ -77,26 +77,24 @@ threadServer h i mq tq = sequence_ [ setThreadType . Server $ i
                                    , loop `catch` threadExHandler (Just i) "server" ]
   where
     loop = mq |&| liftIO . atomically . readTQueue >=> \case
-      AsSelf     msg -> handleFromClient i mq tq True msg  >> loop
-      BlankLine      -> handleBlankLine h                  >> loop
-      Dropped        ->                                    sayonara
+      AsSelf     msg -> handleFromClient i mq tq True msg >> loop
+      BlankLine      -> handleBlankLine h >> loop
+      Dropped        -> egress
       FromClient msg -> handleFromClient i mq tq False msg >> loop
-      FromServer msg -> handleFromServer i h Plaに msg     >> loop
-      InacBoot       -> sendInacBootMsg h                  >> sayonara
-      InacStop       -> stopTimer tq                       >> loop
-      MsgBoot msg    -> sendBootMsg h msg                  >> sayonara
-      Peeped  msg    -> (liftIO . T.hPutStr h $ msg)       >> loop
-      Prompt p       -> promptHelper i h p                 >> loop
-      Quit           -> cowbye h                           >> sayonara
-      ShowHandle     -> handleShowHandle i h               >> loop
-      Shutdown       -> shutDown                           >> loop
-      SilentBoot     ->                                    sayonara
-      TheBeyond      ->                                    sayonara
-      ToNpc msg      -> handleFromServer i h Npcに msg     >> loop
-    sayonara = views spiritAsync (maybe f g) . getPla i =<< getState
-      where
-        f = sequence_ [ stopTimer tq, handleEgress i ]
-        g = const $ throwWaitSpiritTimer i >> loop
+      FromServer msg -> handleFromServer i h Plaに msg >> loop
+      InacBoot       -> sendInacBootMsg h >> egress
+      InacStop       -> stopTimer tq >> loop
+      MsgBoot msg    -> sendBootMsg h msg >> egress
+      Peeped  msg    -> (liftIO . T.hPutStr h $ msg) >> loop
+      Prompt p       -> promptHelper i h p >> loop
+      Quit           -> cowbye h >> egress
+      ShowHandle     -> handleShowHandle i h >> loop
+      Shutdown       -> shutDown >> loop
+      SilentBoot     -> egress
+      FinishedSpirit -> egress
+      FinishedEgress -> unit
+      ToNpc msg      -> handleFromServer i h Npcに msg >> loop
+    egress = stopTimer tq >> handleEgress i mq >> loop -- TODO: What if there is a spirit timer running?
 
 
 handleBlankLine :: Handle -> MudStack ()

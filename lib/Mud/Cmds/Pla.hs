@@ -75,7 +75,7 @@ import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 
 import Control.Applicative (liftA2)
 import Control.Arrow ((***), (&&&), first, second)
-import Control.Exception.Lifted (catch, try)
+import Control.Exception.Lifted (catch, finally, try)
 import Control.Lens (_1, _2, _3, _4, _5, at, both, each, set, to, view, views)
 import Control.Lens.Operators ((%~), (&), (+~), (-~), (.~), (<>~), (?~), (^.))
 import Control.Monad ((>=>), foldM, forM, forM_, guard, mplus, unless, when)
@@ -2549,29 +2549,31 @@ quit (NoArgs' i mq) = logPlaExec "quit" i >> mIf (isSpiritId i <$> getState)
 quit ActionParams { plaMsgQueue, plaCols } = wrapSend plaMsgQueue plaCols adviceQuitExcessArgs
 
 
-handleEgress :: Id -> MudStack () -- TODO: Move egress to its own module?
-handleEgress i = do
-    now <- liftIO getCurrentTime
-    tuple@(s, _, hoc, spirit) <- ((,,,) <$> uncurry getSing
-                                        <*> uncurry getRmId
-                                        <*> uncurry isAdHoc
-                                        <*> uncurry isSpiritId) . (i, ) <$> getState
-    when spirit . theBeyond i $ s
-    ms <- getState
-    unless (hoc || spirit) . bcastOthersInRm i . nlnl . egressMsg . serialize . mkStdDesig i ms $ DoCap
-    helper now tuple |&| modifyState >=> \(bs, logMsgs) -> do
-        stopActs i
-        unless spirit $ do { pauseEffects      i -- Already done in "handleDeath".
-                           ; stopFeelings      i
-                           ; stopRegen         i
-                           ; throwWaitDigester i }
-        closePlaLog i
-        bcast bs
-        bcastAdmins $ s <> " has left CurryMUD."
-        forM_ logMsgs . uncurry . logPla $ "handleEgress"
-        logNotice "handleEgress" . T.concat $ [ descSingId i ms, " has left CurryMUD." ]
-        when hoc . tweak $ removeAdHoc i
+handleEgress :: Id -> MsgQueue -> MudStack () -- TODO: Move egress to its own module.
+handleEgress i mq = egressHelper `finally` writeMsg mq FinishedEgress
   where
+    egressHelper = do -- TODO: Clean up.
+        logPla "handleEgress egressHelper" i "handling egress."
+        tuple@(s, _, hoc, spirit) <- ((,,,) <$> uncurry getSing
+                                            <*> uncurry getRmId
+                                            <*> uncurry isAdHoc
+                                            <*> uncurry isSpiritId) . (i, ) <$> getState
+        when spirit . theBeyond i mq $ s
+        ms <- getState
+        unless (hoc || spirit) . bcastOthersInRm i . nlnl . egressMsg . serialize . mkStdDesig i ms $ DoCap
+        now <- liftIO getCurrentTime
+        helper now tuple |&| modifyState >=> \(bs, logMsgs) -> do
+            stopActs i
+            unless spirit $ do { pauseEffects      i -- Already done in "handleDeath".
+                               ; stopFeelings      i
+                               ; stopRegen         i
+                               ; throwWaitDigester i }
+            closePlaLog i
+            bcast bs
+            bcastAdmins $ s <> " has left CurryMUD."
+            forM_ logMsgs . uncurry . logPla $ "handleEgress egressHelper"
+            logNotice "handleEgress egressHelper" . T.concat $ [ descSingId i ms, " has left CurryMUD." ]
+            when hoc . tweak . removeAdHoc $ i
     helper now (s, ri, hoc, spirit) ms =
         let (ms', bs, logMsgs) = peepHelper ms s spirit
             ms'' | hoc         = ms'
@@ -2624,9 +2626,9 @@ handleEgress i = do
                        in ms & plaTbl.ind i.possessing .~ Nothing & f
 
 
-theBeyond :: Id -> Sing -> MudStack ()
-theBeyond i s = modifyStateSeq $ \ms ->
-    let (mq, cols)      = getMsgQueueColumns i ms
+theBeyond :: Id -> MsgQueue -> Sing -> MudStack ()
+theBeyond i mq s = modifyStateSeq $ \ms ->
+    let cols            = getColumns i ms
         retainedIds     = views (teleLinkMstrTbl.ind i) (map (`getIdForMobSing` ms) . M.keys) ms
         (inIds, outIds) = partition (isLoggedIn . (`getPla` ms)) retainedIds
         ms'             = h . flip (foldr g) retainedIds . flip (foldr f) retainedIds $ ms
@@ -2670,9 +2672,9 @@ mkFarewellStats i cols ms = concatMap (wrapIndent 2 cols) ts -- TODO: Issue with
     (sexy, r)                 = mkPrettySexRace i ms
     (str, dex, hea, mag, psi) = calcEffAttribs  i ms & each %~ showText
     xpsHelper                 | (hps, mps, pps, fps) <- getPts i ms
-                              = commas [ g "h" hps, g "m" mps, g "p" pps, g "f" fps ]
+                              = commas [ g "H" hps, g "M" mps, g "P" pps, g "F" fps ]
       where
-        g a (_, x) = showText x |<>| a <> "p"
+        g a (_, x) = showText x |<>| a <> "P"
     handy     = pp . getHand i $ ms
     langs     = commas [ pp lang | lang <- sort . getKnownLangs i $ ms ]
     (l, expr) = getLvlExp i ms
