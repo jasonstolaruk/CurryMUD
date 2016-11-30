@@ -90,37 +90,45 @@ handleDeath i = isNpc i <$> getState >>= \npc -> do
            , mobTbl.ind i.mobRmDesc .~ Nothing
            , mobTbl.ind i.tempDesc  .~ Nothing
            , mobTbl.ind i.stomach   .~ [] ]
-    when   npc possessHelper
-    unless npc leaveChans
-    pauseEffects                i
-    stopFeelings                i
-    stopRegen                   i
-    throwWaitDigester           i
-    modifyStateSeq . mkCorpse $ i
-    npc ? deleteNpc :? spiritize i
-  where
-    possessHelper = modifyStateSeq $ \ms -> case getPossessor i ms of
-      Nothing -> (ms, [])
-      Just pi -> ( ms & plaTbl.ind pi.possessing   .~ Nothing
-                      & npcTbl.ind i .npcPossessor .~ Nothing
-                 , let (mq, cols) = getMsgQueueColumns pi ms
-                       t          = aOrAnOnLower (descSingId i ms) <> "; NPC has died"
-                   in [ wrapSend mq cols . prd $ "You stop possessing " <> aOrAnOnLower (getSing i ms)
-                      , sendDfltPrompt mq pi
-                      , logPla "handleDeath" pi . prd $ "stopped possessing " <> t ] )
-    leaveChans = unit -- TODO
-    deleteNpc  = getState >>= \ms -> let ri = getRmId i ms
-                                     in do { tweaks [ activeEffectsTbl.at  i  .~ Nothing
-                                                    , coinsTbl        .at  i  .~ Nothing
-                                                    , entTbl          .at  i  .~ Nothing
-                                                    , eqTbl           .at  i  .~ Nothing
-                                                    , invTbl          .at  i  .~ Nothing
-                                                    , invTbl          .ind ri %~ (i `delete`)
-                                                    , mobTbl          .at  i  .~ Nothing
-                                                    , pausedEffectsTbl.at  i  .~ Nothing
-                                                    , typeTbl         .at  i  .~ Nothing ]
-                                           ; stopWaitNpcServer i -- This removes the NPC from the "NpcTbl".
-                                           ; logNotice "spiritize" $ "NPC " <> descSingId i ms <> " has died." }
+    when   npc . possessHelper $ i
+    unless npc . leaveChans    $ i
+    pauseEffects                 i
+    stopFeelings                 i
+    stopRegen                    i
+    throwWaitDigester            i
+    modifyStateSeq . mkCorpse  $ i
+    npc ? deleteNpc i :? spiritize i
+
+
+possessHelper :: Id -> MudStack ()
+possessHelper i = modifyStateSeq $ \ms -> case getPossessor i ms of
+  Nothing -> (ms, [])
+  Just pi -> ( ms & plaTbl.ind pi.possessing   .~ Nothing
+                  & npcTbl.ind i .npcPossessor .~ Nothing
+             , let (mq, cols) = getMsgQueueColumns pi ms
+                   t          = aOrAnOnLower (descSingId i ms) <> "; NPC has died"
+               in [ wrapSend mq cols . prd $ "You stop possessing " <> aOrAnOnLower (getSing i ms)
+                  , sendDfltPrompt mq pi
+                  , logPla "handleDeath" pi . prd $ "stopped possessing " <> t ] )
+
+
+leaveChans :: Id -> MudStack ()
+leaveChans _ = unit -- TODO
+
+
+deleteNpc :: Id -> MudStack ()
+deleteNpc i = getState >>= \ms -> let ri = getRmId i ms
+                                  in do { tweaks [ activeEffectsTbl.at  i  .~ Nothing
+                                                 , coinsTbl        .at  i  .~ Nothing
+                                                 , entTbl          .at  i  .~ Nothing
+                                                 , eqTbl           .at  i  .~ Nothing
+                                                 , invTbl          .at  i  .~ Nothing
+                                                 , invTbl          .ind ri %~ (i `delete`)
+                                                 , mobTbl          .at  i  .~ Nothing
+                                                 , pausedEffectsTbl.at  i  .~ Nothing
+                                                 , typeTbl         .at  i  .~ Nothing ]
+                                        ; stopWaitNpcServer i -- This removes the NPC from the "NpcTbl".
+                                        ; logNotice "spiritize" $ "NPC " <> descSingId i ms <> " has died." }
 
 
 mkCorpse :: Id -> MudState -> (MudState, Funs)
@@ -150,6 +158,9 @@ mkCorpse i ms = let et     = EntTemplate (Just "corpse")
                   , "corpses of "  <> sexy |<>| plurRace r )
           else (("corpse of " <>) *** ("corpses of " <>)) . first aOrAnOnLower $ let bgns = getBothGramNos i ms
                                                                                  in bgns & _2 .~ mkPlurFromBoth bgns
+
+
+-----
 
 
 spiritize :: Id -> MudStack ()
