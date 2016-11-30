@@ -1340,7 +1340,7 @@ adminProfanity p@ActionParams { plaMsgQueue, plaCols } = dumpCmdHelper "profanit
 
 
 adminSearch :: ActionFun
-adminSearch p@AdviseNoArgs                          = advise p [ prefixAdminCmd "id" ] adviceASearchNoArgs
+adminSearch p@AdviseNoArgs                          = advise p [ prefixAdminCmd "search" ] adviceASearchNoArgs
 adminSearch   (WithArgs i mq cols (T.unwords -> a)) = getState >>= \ms -> do
     multiWrapSend mq cols $ descMatchingSings ms ++ [""] ++ descMatchingRmNames ms
     logPlaExecArgs (prefixAdminCmd "search") (pure a) i
