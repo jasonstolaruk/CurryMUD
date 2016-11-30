@@ -2650,23 +2650,25 @@ farewell i mq cols = multiWrapSend mq cols . mkFarewellStats i cols =<< getState
 
 -- TODO: Stats regarding time spent playing.
 mkFarewellStats :: Id -> Cols -> MudState -> [Text]
-mkFarewellStats i cols ms = concatMap (wrapIndent 2 cols) ts -- TODO: Issue with the indentation.
+mkFarewellStats i cols ms = (header :) . (<> pure footer) . concatMap (wrapIndent 2 cols) $ ts
   where
-    ts = [ T.concat [ "Sadly, ", s, " has passed away. Here is a final summary of ", s, "'s stats:" ] -- TODO: This line shouldn't be wrap indented.
-         , ""
-         , T.concat [ s, ", the ", sexy, " ", r ]
-         , f "Strength: "   <> str
-         , f "Dexterity: "  <> dex
-         , f "Health: "     <> hea
-         , f "Magic: "      <> mag
-         , f "Psionics: "   <> psi
-         , f "Points: "     <> xpsHelper
-         , f "Handedness: " <> handy
-         , f "Languages: "  <> langs
-         , f "Level: "      <> showText l
-         , f "Experience: " <> commaShow expr
-         , ""
-         , "Thank you for playing CurryMUD! Please reconnect to play again with a new character." ] -- TODO: This line shouldn't be wrap indented.
+    ts     = [ T.concat [ s, ", the ", sexy, " ", r ]
+             , f "Strength: "   <> str
+             , f "Dexterity: "  <> dex
+             , f "Health: "     <> hea
+             , f "Magic: "      <> mag
+             , f "Psionics: "   <> psi
+             , f "Points: "     <> xpsHelper
+             , f "Handedness: " <> handy
+             , f "Languages: "  <> langs
+             , f "Level: "      <> showText l
+             , f "Experience: " <> commaShow expr ]
+    header = wrapUnlines cols . T.concat $ [ "Sadly, "
+                                           , s
+                                           , " has passed away. Here is a final summary of "
+                                           , s
+                                           , "'s stats:" ]
+    footer = wrapUnlinesInit cols "Thank you for playing CurryMUD! Please reconnect to play again with a new character."
     f                         = pad 12
     s                         = getSing         i ms
     (sexy, r)                 = mkPrettySexRace i ms

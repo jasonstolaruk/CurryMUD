@@ -242,7 +242,7 @@ interpConfirmAge ncb cn (NoArgs i mq cols) = case yesNoHelper cn of
   Just True -> do
     sendPrompt mq $ "Have you read the rules? " <> mkYesNoChoiceTxt
     setInterp i . Just . interpConfirmReadRules $ ncb
-  Just False -> wrapSend         mq cols "You must be at least 18 years old to play CurryMUD." >> writeMsg mq Dropped -- TODO: Why not SilentBoot?
+  Just False -> wrapSend         mq cols "You must be at least 18 years old to play CurryMUD." >> writeMsg mq SilentBoot
   Nothing    -> promptRetryYesNo mq cols
 interpConfirmAge _ _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNo plaMsgQueue plaCols
 
@@ -275,9 +275,8 @@ interpConfirmFollowRules ncb@(NewCharBundle _ s _) cn (NoArgs i mq cols) = case 
       multiWrapSend1Nl mq cols . pwMsg . prd $ "Please choose a password for " <> s
       sendPrompt       mq "New password:"
       setInterp i . Just . interpNewPW $ ncb
-  Just False -> do
-      wrapSend mq cols "You can't play CurryMUD if you don't agree to follow the rules."
-      writeMsg mq Dropped -- TODO: Why not SilentBoot?
+  Just False ->
+      wrapSend mq cols "You can't play CurryMUD if you don't agree to follow the rules." >> writeMsg mq SilentBoot
   Nothing -> promptRetryYesNo mq cols
 interpConfirmFollowRules _ _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNo plaMsgQueue plaCols
 
