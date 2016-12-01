@@ -70,6 +70,7 @@ threadTalk h host = helper `finally` cleanUp
         handle (threadExHandler (Just i) "talk") $ do
             liftIO configBuffer
             telnetHelper mq
+            send         mq . nl       $ "CurryMUD " <> ver
             dumpTitle    mq
             send         mq . nlnl     $ helloRulesMsg
             send         mq . nl . prd $ "If you are new to CurryMUD, please enter " <> dblQuote "new"
