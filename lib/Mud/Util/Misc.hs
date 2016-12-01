@@ -100,6 +100,12 @@ default (Int, Double)
 -----
 
 
+{-# ANN strictId ("HLint: ignore Redundant seq" :: String) #-}
+
+
+-----
+
+
 infixl 7 `divide`, `divideRound`, `intDivide`, `percent`
 
 
