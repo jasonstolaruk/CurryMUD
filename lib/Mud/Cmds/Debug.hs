@@ -5,6 +5,7 @@ module Mud.Cmds.Debug ( debugCmds
                       , purgeThreadTbls
                       , {- Not a typo. -} ) where
 
+import Mud.Cmds.ExpCmds
 import Mud.Cmds.Msgs.Advice
 import Mud.Cmds.Msgs.CmdDesc
 import Mud.Cmds.Msgs.Misc
@@ -166,6 +167,7 @@ debugCmds =
     , mkDebugCmd "rnt"         debugRnt         "Dump your random names table, or generate a random name for a given PC."
     , mkDebugCmd "rotate"      debugRotate      "Send the signal to rotate your player log."
     , mkDebugCmd "rules"       debugRules       "Display the rules message."
+    , mkDebugCmd "shiver"      debugShiver      "Test the spiritize shiver random do."
     , mkDebugCmd "talk"        debugTalk        "Dump the talk async table."
     , mkDebugCmd "tele"        debugTele        "Display or search the telepathic links master table."
     , mkDebugCmd "threads"     debugThreads     "Display or search the thread table."
@@ -905,6 +907,17 @@ debugRules (NoArgs i mq cols) = do
   where
     i' = safeCoerce (i :: Id) :: Int
 debugRules p = withoutArgs debugRandom p
+
+
+-----
+
+
+debugShiver :: ActionFun
+debugShiver (NoArgs' i mq) = getState >>= \ms -> do
+    replicateM_ 50 . rndmDo (calcProbSpiritizeShiver i ms) . mkExpAction "shiver" . mkActionParams i ms $ []
+    ok mq
+    logPlaExec (prefixDebugCmd "shiver") i
+debugShiver p = withoutArgs debugShiver p
 
 
 -----
