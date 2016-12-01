@@ -100,12 +100,6 @@ default (Int, Double)
 -----
 
 
-{-# ANN strictId ("HLint: ignore Redundant seq" :: String) #-}
-
-
------
-
-
 infixl 7 `divide`, `divideRound`, `intDivide`, `percent`
 
 
@@ -387,6 +381,7 @@ sortEithers = foldr helper mempties
     helper (Left  b) = _2 %~ (b :)
 
 
+{-# ANN strictId ("HLint: ignore Redundant seq" :: String) #-}
 strictId :: a -> a
 strictId = join seq
 

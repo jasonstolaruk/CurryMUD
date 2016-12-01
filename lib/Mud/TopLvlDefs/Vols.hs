@@ -6,13 +6,6 @@ import Mud.Data.State.MudData
 import Mud.Util.Misc
 
 
-{-# ANN braceletVol ("HLint: ignore" :: String) #-}
-{-# ANN swordVol    ("HLint: ignore" :: String) #-}
-
-
--- ==================================================
-
-
 -- 100 "Vol" = 1 cubic in
 
 
@@ -43,6 +36,7 @@ bootsVol :: Vol
 bootsVol = 3 * 2 * 4 * 100
 
 
+{-# ANN braceletVol ("HLint: ignore" :: String) #-}
 braceletVol :: Vol
 braceletVol = 3 * 1 * 3 * 100
 
@@ -157,6 +151,7 @@ shirtVol :: Vol
 shirtVol = round (12 * 8 * 0.25 * 100 :: Double)
 
 
+{-# ANN swordVol ("HLint: ignore" :: String) #-}
 swordVol, swordLongVol :: Vol
 swordVol     = 6 * 1 * 30 * 100
 swordLongVol = plusQuarter swordVol
