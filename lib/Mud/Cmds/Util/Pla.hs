@@ -226,7 +226,7 @@ checkMutuallyTuned i ms targetSing = case areMutuallyTuned of
   (True,  False, _      ) -> Left . (effortsBlockedMsg <>) . sorryTunedOutPCTarget $ targetSing
   (True,  True, targetId) -> Right targetId
   where
-    areMutuallyTuned | targetId <- getIdForMobSing targetSing ms
+    areMutuallyTuned | targetId <- getIdForPCSing targetSing ms
                      , a <- (M.! targetSing) . getTeleLinkTbl i        $ ms
                      , b <- (M.! s         ) . getTeleLinkTbl targetId $ ms
                      = (a, b, targetId)
@@ -1301,7 +1301,7 @@ notFoundSuggestAsleeps :: Text -> [Sing] -> MudState -> Text
 notFoundSuggestAsleeps a@(capitalize . T.toLower -> a') asleepSings ms =
     case findFullNameForAbbrev a' asleepSings of
       Just asleepTarget ->
-          let heShe = mkThrPerPro . getSex (getIdForMobSing asleepTarget ms) $ ms
+          let heShe = mkThrPerPro . getSex (getIdForPCSing asleepTarget ms) $ ms
               guess = a' /= asleepTarget |?| ("Perhaps you mean " <> asleepTarget <> "? ")
           in T.concat [ guess
                       , "Unfortunately, "

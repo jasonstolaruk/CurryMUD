@@ -172,8 +172,8 @@ spiritize i = do
       Nothing                    -> dbError mq cols
       Just (procOnlySings -> ss) -> modifyStateSeq $ \ms ->
           let triples    = [ (targetId, targetSing, isLoggedIn targetPla) | targetSing <- ss
-                           , let targetId  = getIdForMobSing targetSing ms
-                           , let targetPla = getPla          targetId   ms ]
+                           , let targetId  = getIdForPCSing targetSing ms
+                           , let targetPla = getPla         targetId   ms ]
               n          = calcRetainedLinks i ms
               retaineds  | isZero secs = []
                          | otherwise   = let xs = take n triples
@@ -224,7 +224,7 @@ setCurrXps ms = ms & curHp .~ (ms^.maxHp)
                    & curFp .~ (ms^.maxFp)
 
 
-mkLinkBcasts :: Id -> MudState -> Sing -> [(Id, Bool)] -> ([Broadcast], Funs) -- TODO: Rename?
+mkLinkBcasts :: Id -> MudState -> Sing -> [(Id, Bool)] -> ([Broadcast], Funs)
 mkLinkBcasts i ms s retainedPairs = let (toLinkRetainers, fs) = toLinkRetainersHelper
                                     in ([ toLinkLosers, toLinkRetainers ], fs)
   where

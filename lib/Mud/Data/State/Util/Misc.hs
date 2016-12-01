@@ -17,7 +17,6 @@ module Mud.Data.State.Util.Misc ( addToInv
                                 , getFeelingFun
                                 , getFun
                                 , getHookFun
-                                , getIdForMobSing
                                 , getInstaEffectFun
                                 , getLogAsyncs
                                 , getLoggedInAdminIds
@@ -92,7 +91,7 @@ import Data.Maybe (fromJust, fromMaybe)
 import Data.Monoid (Sum(..), (<>))
 import Data.Text (Text)
 import GHC.Exts (sortWith)
-import qualified Data.IntMap.Lazy as IM ((!), filter, keys, toList)
+import qualified Data.IntMap.Lazy as IM ((!), filter, keys)
 import qualified Data.Map.Lazy as M (lookup)
 import qualified Data.Text as T
 import qualified Data.Vector.Unboxed as V (Vector)
@@ -237,13 +236,6 @@ getHookFun :: HookName -> MudState -> HookFun
 getHookFun n = views (hookFunTbl.at n) (fromMaybe oops)
   where
     oops = blowUp "getHookFun" "hook name not found in hook function table" n
-
-
------
-
-
-getIdForMobSing :: Sing -> MudState -> Id
-getIdForMobSing s ms = let [(i, _)] = views entTbl (IM.toList . IM.filter (views sing (== s))) ms in i
 
 
 -----

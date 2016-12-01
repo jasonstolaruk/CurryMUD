@@ -87,7 +87,7 @@ handleEgress i mq isDropped = egressHelper `finally` writeMsg mq FinishedEgress
 theBeyond :: Id -> MsgQueue -> Sing -> Bool -> MudStack ()
 theBeyond i mq s isDropped = modifyStateSeq $ \ms ->
     let cols            = getColumns i ms
-        retainedIds     = views (teleLinkMstrTbl.ind i) (map (`getIdForMobSing` ms) . M.keys) ms
+        retainedIds     = views (teleLinkMstrTbl.ind i) (map (`getIdForPCSing` ms) . M.keys) ms
         (inIds, outIds) = partition (isLoggedIn . (`getPla` ms)) retainedIds
         f targetId      = pcTbl          .ind targetId.linked %~ (s `delete`)
         g targetId      = teleLinkMstrTbl.ind targetId        %~ M.delete s
@@ -129,10 +129,10 @@ peepHelper i ms s spirit =
 
 
 updateHostMap :: Id -> MudState -> Sing -> UTCTime -> MudState
-updateHostMap i ms s now = flip (set $ hostTbl.at s) ms $ case getHostMap s ms of
-  Nothing      -> Just . M.singleton host $ newRecord
-  Just hostMap -> case hostMap^.at host of Nothing -> Just $ hostMap & at host ?~ newRecord
-                                           Just r  -> Just $ hostMap & at host ?~ reviseRecord r
+updateHostMap i ms s now = flip (set $ hostTbl.at s) ms . Just $ case getHostMap s ms of
+  Nothing      -> M.singleton host newRecord
+  Just hostMap -> case hostMap^.at host of Nothing -> hostMap & at host ?~ newRecord
+                                           Just r  -> hostMap & at host ?~ reviseRecord r
   where
     newRecord       = HostRecord { _noOfLogouts   = 1
                                  , _secsConnected = duration

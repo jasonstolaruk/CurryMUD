@@ -876,7 +876,7 @@ debugRnt (NoArgs i mq cols) = do
 debugRnt (OneArgNubbed i mq cols (capitalize -> a)) = getState >>= \ms ->
     let notFound    = wrapSend mq cols . sorryPCName $ a
         found match = do
-            rndmName <- updateRndmName i . getIdForMobSing match $ ms
+            rndmName <- updateRndmName i . getIdForPCSing match $ ms
             wrapSend mq cols . T.concat $ [ dblQuote rndmName, " has been randomly generated for ", match, "." ]
             logPlaExec (prefixDebugCmd "rnt") i
         pcSings = [ getSing pcId ms | pcId <- views pcTbl IM.keys ms ]

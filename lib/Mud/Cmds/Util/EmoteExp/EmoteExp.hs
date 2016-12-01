@@ -16,7 +16,6 @@ import Mud.Data.Misc
 import Mud.Data.State.ActionParams.Misc
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
-import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Misc.ANSI
 import Mud.TopLvlDefs.Chars
@@ -296,7 +295,7 @@ adminChanProcExpCmd i ms tunedIds tunedSings (map T.toLower . unmsg -> [cn, targ
             then Left . sorryExpCmdRequiresTarget $ match
             else case findTarget of
               Nothing -> Left . sorryAdminChanTargetName $ target
-              Just n  -> let targetId = getIdForMobSing n ms
+              Just n  -> let targetId = getIdForPCSing n ms
                              toSelf'  = format (Just n) toSelf
                              f        = ((colorizeYous . format Nothing $ toTarget, pure targetId              ) :)
                              g        = ((format (Just n) toOthers,                 tunedIds \\ [ i, targetId ]) :)
@@ -305,7 +304,7 @@ adminChanProcExpCmd i ms tunedIds tunedSings (map T.toLower . unmsg -> [cn, targ
             then Right . dupFirst (((format Nothing toOthers, i `delete` tunedIds) :) . mkBcast i) $ toSelf
             else case findTarget of
               Nothing -> Left . sorryAdminChanTargetName $ target
-              Just n  -> let targetId          = getIdForMobSing n ms
+              Just n  -> let targetId          = getIdForPCSing n ms
                              toSelfWithTarget' = format (Just n) toSelfWithTarget
                              f                 = ((colorizeYous . format Nothing $ toTarget, pure targetId              ) :)
                              g                 = ((format (Just n) toOthersWithTarget,       tunedIds \\ [ i, targetId ]) :)

@@ -2,14 +2,166 @@
 
 -- This module contains straightforward getter methods that do little or no calculation.
 
-module Mud.Data.State.Util.Get where
+module Mud.Data.State.Util.Get ( entFlagHelper
+                               , getActiveEffects
+                               , getActMap
+                               , getArm
+                               , getArmSub
+                               , getBaseAttrib
+                               , getBaseAttribs
+                               , getBaseAttribTuples
+                               , getBaseDx
+                               , getBaseHt
+                               , getBaseMa
+                               , getBasePs
+                               , getBaseSt
+                               , getBonusTime
+                               , getChan
+                               , getCloth
+                               , getCoins
+                               , getColumns
+                               , getCon
+                               , getConCapacity
+                               , getConIsCloth
+                               , getConnectTime
+                               , getCorpse
+                               , getCorpseCapacity
+                               , getCorpseVol
+                               , getCorpseWeight
+                               , getCurrHostName
+                               , getDistinctFood
+                               , getDistinctFoodForFood
+                               , getDistinctLiq
+                               , getDistinctLiqForLiq
+                               , getEnt
+                               , getEntDesc
+                               , getEntSmell
+                               , getEqMap
+                               , getExp
+                               , getFeelingMap
+                               , getFollowers
+                               , getFollowing
+                               , getFood
+                               , getFps
+                               , getHand
+                               , getHostMap
+                               , getHps
+                               , getIdForPCSing
+                               , getInterp
+                               , getIntroduced
+                               , getInv
+                               , getInvCoins
+                               , getKnownLangs
+                               , getLastRmId
+                               , getLinked
+                               , getListenThreadId
+                               , getLogoutRmId
+                               , getLogQueue
+                               , getLvl
+                               , getLvlExp
+                               , getMaxMouthfuls
+                               , getMemberOf
+                               , getMob
+                               , getMobRm
+                               , getMobRmCoins
+                               , getMobRmDesc
+                               , getMobRmInv
+                               , getMobRmInvCoins
+                               , getMobSize
+                               , getMps
+                               , getMsgQueue
+                               , getMsgQueueColumns
+                               , getMyGroup
+                               , getNowDrinking
+                               , getNowEating
+                               , getNpc
+                               , getNpcMsgQueue
+                               , getObj
+                               , getObjBiodegAsync
+                               , getObjTaste
+                               , getObjVol
+                               , getObjWeight
+                               , getPageLines
+                               , getParty
+                               , getPausedEffects
+                               , getPC
+                               , getPeepers
+                               , getPeepersPeeping
+                               , getPeeping
+                               , getPickPts
+                               , getPla
+                               , getPossessing
+                               , getPossessor
+                               , getPps
+                               , getPts
+                               , getRace
+                               , getRm
+                               , getRmCoords
+                               , getRmId
+                               , getRmName
+                               , getRndmNamesTbl
+                               , getSex
+                               , getSexRace
+                               , getSexRaceLvl
+                               , getSing
+                               , getSkillPts
+                               , getStomach
+                               , getTeleLinkTbl
+                               , getTempDesc
+                               , getType
+                               , getVessel
+                               , getVesselCont
+                               , getWpn
+                               , getWpnSub
+                               , getWritable
+                               , getWritMessage
+                               , getWritRecip
+                               , isAdmin
+                               , isAdminId
+                               , isBiodegradable
+                               , isBiodegradableId
+                               , isGmcp
+                               , isGmcpId
+                               , isIncognito
+                               , isIncognitoId
+                               , isInvis
+                               , isInvisId
+                               , isNotFirstAdminMsg
+                               , isNotFirstAdminMsgId
+                               , isNotFirstMobSay
+                               , isNotFirstModSayId
+                               , isNotFirstSpiritCmdNotFound
+                               , isNotFirstSpiritCmdNotFoundId
+                               , isNpc
+                               , isNpcPC
+                               , isPC
+                               , isShowingFp
+                               , isShowingFpId
+                               , isShowingHp
+                               , isShowingHpId
+                               , isShowingMp
+                               , isShowingMpId
+                               , isShowingPp
+                               , isShowingPpId
+                               , isSpirit
+                               , isSpiritId
+                               , isTunedAdmin
+                               , isTunedAdminId
+                               , isTunedQuestion
+                               , isTunedQuestionId
+                               , objFlagHelper
+                               , onHelper
+                               , onPC
+                               , onPla
+                               , plaFlagHelper ) where
 
 import Mud.Cmds.Msgs.Misc
 import Mud.Data.Misc
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
 import Mud.Util.List
-import Mud.Util.Misc
+import Mud.Util.Misc hiding (blowUp)
+import qualified Mud.Util.Misc as U (blowUp)
 
 import Control.Arrow ((&&&))
 import Control.Concurrent (ThreadId)
@@ -20,6 +172,10 @@ import Data.Text (Text)
 import Data.Time (UTCTime)
 import Network (HostName)
 import Prelude hiding (exp)
+
+
+blowUp :: BlowUp a
+blowUp = U.blowUp "Mud.Data.State.Util.Get"
 
 
 -- ============================================================
@@ -350,6 +506,15 @@ getHostMap s = view (hostTbl.at s)
 
 getHps :: Id -> MudState -> (Int, Int)
 getHps i ms = let (pair, _, _, _) = getPts i ms in pair
+
+
+-----
+
+
+getIdForPCSing :: Sing -> MudState -> Id
+getIdForPCSing s = views (pcSingTbl.at s) (fromMaybe oops)
+  where
+    oops = blowUp "getIdForPCSing" "PC sing now found in the PC sing table" s
 
 
 -----

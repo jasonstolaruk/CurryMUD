@@ -370,7 +370,7 @@ getChanLinkeds_nonLinkedIds i c ms =
     let s                     = getSing i ms
         others                = views chanConnTbl (filter h . map g . filter f . M.toList) c
         f (s', isTuned)       = s' /= s && isTuned
-        g (s', _      )       = ((`getIdForMobSing` ms) &&& id) s'
+        g (s', _      )       = ((`getIdForPCSing` ms) &&& id) s'
         h                     = (`isAwake` ms) . fst
         (linkeds, nonLinkeds) = partition (isLinked ms . (i, ) . fst) others
         nonLinkedIds          = map fst nonLinkeds
@@ -654,7 +654,7 @@ mkActionParams i ms as = ActionParams { myId        = i
 mkChanReport :: Id -> MudState -> Chan -> [Text]
 mkChanReport i ms (Chan ci cn cct tappers) =
     let desc    = commas . map descPla . f $ [ (s, t, l) | (s, t) <- M.toList cct
-                                                         , let l = isAwake (getIdForMobSing s ms) ms ]
+                                                         , let l = isAwake (getIdForPCSing s ms) ms ]
         tapping = getSing i ms `elem` tappers |?| spcL . parensQuote $ "wiretapped"
     in [ T.concat [ bracketQuote . showText $ ci, " ", dblQuote cn, tapping, ":" ], desc ]
   where

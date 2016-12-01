@@ -634,7 +634,7 @@ bonus   (OneArgLower i mq cols a) = getState >>= \ms ->
         bonusHelper now               = case filter (a' `T.isPrefixOf`) intros of
           []           -> wrapSend mq cols . sorryBonusName $ a'
           [targetSing] ->
-              let targetId = getIdForMobSing targetSing ms
+              let targetId = getIdForPCSing targetSing ms
                   x        = calcBonus targetId ms
                   bs       = pure (prd $ "You give a bonus to " <> targetSing, pure i)
               in fmap2 getAll (canBonus targetSing) >>= \case
@@ -717,7 +717,7 @@ chan (OneArg i mq cols a@(T.toLower -> a')) = getState >>= \ms ->
                                                                  | (i', _, isTuned') <- combo' ]
                   else wrapSend mq cols . sorryTunedOutICChan $ cn
         (cs, cns, s)           = mkChanBindings i ms
-        mkTriple (s', isTuned) = (getIdForMobSing s' ms, s', isTuned)
+        mkTriple (s', isTuned) = (getIdForPCSing s' ms, s', isTuned)
     in findFullNameForAbbrev a' (map T.toLower cns) |&| maybe notFound found
 chan (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
     let notFound    = wrapSend mq cols . sorryChanName $ target
@@ -743,7 +743,7 @@ chan (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
                          withDbExHandler_ "chan" . insertDbTblChan . ChanRec ts (c^.chanId) cn s $ logMsg
                      sendToWiretappers tappedMsg =
                          let cn' = colorWith wiretapColor . spaced . parensQuote $ cn
-                             is  = c^.chanWiretappers.to (map (`getIdForMobSing` ms))
+                             is  = c^.chanWiretappers.to (map (`getIdForPCSing` ms))
                              is' = filter (isLoggedIn . (`getPla` ms)) is
                          in bcastNl . pure $ (T.concat [ cn', " ", s, ": ", tappedMsg ], is')
                      cc   = ChanContext "chan" (Just cn) False
@@ -795,7 +795,7 @@ color p = withoutArgs color p
 connect :: ActionFun
 connect p@AdviseNoArgs         = advise p ["connect"] adviceConnectNoArgs
 connect p@AdviseOneArg         = advise p ["connect"] adviceConnectNoChan
-connect   (Lower i mq cols as) = getState >>= \ms -> let getIds = map (`getIdForMobSing` ms) in
+connect   (Lower i mq cols as) = getState >>= \ms -> let getIds = map (`getIdForPCSing` ms) in
     if isIncognitoId i ms
       then wrapSend mq cols . sorryIncog $ "connect"
       else connectHelper i (mkLastArgWithNubbedOthers as) |&| modifyState >=> \case
@@ -930,7 +930,7 @@ interpConfirmDesc _ _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNo p
 disconnect :: ActionFun
 disconnect p@AdviseNoArgs         = advise p ["disconnect"] adviceDisconnectNoArgs
 disconnect p@AdviseOneArg         = advise p ["disconnect"] adviceDisconnectNoChan
-disconnect   (Lower i mq cols as) = getState >>= \ms -> let getIds = map (`getIdForMobSing` ms) in
+disconnect   (Lower i mq cols as) = getState >>= \ms -> let getIds = map (`getIdForPCSing` ms) in
     if isIncognitoId i ms
       then wrapSend mq cols . sorryIncog $ "disconnect"
       else getAllChanIdNames i ms >>= \idNamesTbl ->
@@ -1911,7 +1911,7 @@ leave   (WithArgs i mq cols (nub -> as)) = helper |&| modifyState >=> \(ms, chan
         msgs       = ()# sorryMsgs ? toSelfMsgs :? sorryMsgs ++ (toSelfMsgs |!| "" : toSelfMsgs)
         f bs ci    = let c        = getChan ci ms
                          otherIds = views chanConnTbl g c
-                         g        = filter (`isAwake` ms) . map (`getIdForMobSing` ms) . M.keys . M.filter id
+                         g        = filter (`isAwake` ms) . map (`getIdForPCSing` ms) . M.keys . M.filter id
                      in (bs ++) <$> forM otherIds (\i' -> [ ( T.concat [ "You sense that "
                                                                        , n
                                                                        , " has left the "
@@ -3883,7 +3883,7 @@ tele p = patternMatchFail "tele" . showText $ p
 getDblLinkedSings :: Id -> MudState -> ([Sing], [Sing])
 getDblLinkedSings i ms = foldr helper mempties . getLinked i $ ms
   where
-    helper s pair = let lens = isAwake (getIdForMobSing s ms) ms ? _1 :? _2
+    helper s pair = let lens = isAwake (getIdForPCSing s ms) ms ? _1 :? _2
                     in pair & lens %~ (s :)
 
 
@@ -3910,7 +3910,7 @@ tempDescAction p = patternMatchFail "tempDescAction" . showText $ p
 
 tune :: ActionFun
 tune (NoArgs i mq cols) = getState >>= \ms ->
-    let linkPairs   = map (dupFirst (`getIdForMobSing` ms)) . getLinked i $ ms
+    let linkPairs   = map (dupFirst (`getIdForPCSing` ms)) . getLinked i $ ms
         linkSings   = sort . map snd . filter (isDblLinked ms . (i, ) . fst) $ linkPairs
         styleds     = styleAbbrevs Don'tQuote linkSings
         linkTunings = foldr (\s -> (linkTbl M.! s :)) [] linkSings
@@ -4008,7 +4008,7 @@ unlink   (LowerNub i mq cols as) =
                   where
                     sorry msg = a & _2 <>~ mkBcast i (nlnl msg)
                     procArgHelper
-                      | targetId <- getIdForMobSing targetSing ms'
+                      | targetId <- getIdForPCSing targetSing ms'
                       , p        <- getPla i ms'
                       = if not $ hasPp i ms' 5 || isSpiritId targetId ms'
                           then sorry . sorryPp $ "sever your link with " <> targetSing
