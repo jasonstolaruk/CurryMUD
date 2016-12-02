@@ -1,6 +1,7 @@
 mudlet = mudlet or {}; mudlet.mapper_script = true
 
 local did_init = false
+local yellow   = {255, 255, 0}
 
 function curry_mapper()
   if not did_init then
@@ -25,10 +26,13 @@ function curry_mapper()
   if getRoomName(info.last_room_id) and info.last_room_id ~= info.room_id then
     if info.dir ~= -1 then
       setExit(info.last_room_id, info.room_id, info.dir)
+      if info.dir == 11 or info.dir == 12 then -- "in" or "out"
+        addCustomLine(info.last_room_id, info.room_id, info.dir, "solid line", yellow, false)
+      end
     elseif info.special_dir ~= "-1" then
       addSpecialExit(info.last_room_id, info.room_id, info.special_dir)
       if addCustomLine ~= nil then
-        addCustomLine(info.last_room_id, info.room_id, info.special_dir, "solid line", {255, 0, 255}, false)
+        addCustomLine(info.last_room_id, info.room_id, info.special_dir, "solid line", yellow, false)
       end
     end
   end
