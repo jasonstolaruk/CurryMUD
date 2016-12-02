@@ -934,9 +934,9 @@ adminFarewell :: ActionFun
 adminFarewell p@AdviseNoArgs            = advise p [ prefixAdminCmd "farewell" ] adviceAFarewellNoArgs
 adminFarewell   (LowerNub i mq cols as) = getState >>= \ms ->
     let helper target | notFound <- pure . sorryPCName $ target
-                      , found    <- \(targetId, _) -> mkFarewellStats targetId cols ms
+                      , found    <- \(targetId, _) -> mkFarewellStats targetId ms
                       = findFullNameForAbbrev target (mkAdminPlaIdSingList ms) |&| maybe notFound found
-    in do { pager i mq Nothing . intercalateDivider cols . map (helper . capitalize) $ as
+    in do { pager i mq Nothing . concat . wrapLines cols . intercalateDivider cols . map (helper . capitalize) $ as
           ; logPlaExecArgs (prefixAdminCmd "farewell") as i }
 adminFarewell p = patternMatchFail "adminFarewell" . showText $ p
 
@@ -988,9 +988,8 @@ mkHostReport ms now zone i s = (header ++) $ case getHostMap s ms of
                                , "." ]
                  else "out." ]
     ili       = isLoggedIn . getPla i $ ms
+    duration  = Sum . round $ now `diffUTCTime` fromJust (getConnectTime i ms)
     renderIt  = T.pack . renderSecs
-    duration  = Sum . round $ now `diffUTCTime` conTime
-    conTime   = fromJust . getConnectTime i $ ms
     helper (T.pack -> host) r = (T.concat [ host
                                           , ": "
                                           , let n      = r^.noOfLogouts

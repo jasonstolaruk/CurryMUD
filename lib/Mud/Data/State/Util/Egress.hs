@@ -25,12 +25,11 @@ import Mud.Util.Operators
 import Mud.Util.Padding
 import Mud.Util.Quoting
 import Mud.Util.Text
-import Mud.Util.Wrapping
 import qualified Mud.Misc.Logging as L (logNotice, logPla)
 
 import Control.Exception.Lifted (finally)
 import Control.Lens (at, each, set, views)
-import Control.Lens.Operators ((%~), (&), (+~), (.~), (?~), (^.))
+import Control.Lens.Operators ((%~), (&), (+~), (.~), (?~))
 import Control.Monad ((>=>), forM_, unless, when)
 import Control.Monad.IO.Class (liftIO)
 import Data.List (delete, partition, sort)
@@ -39,8 +38,9 @@ import Data.Monoid ((<>))
 import Data.Text (Text)
 import Data.Time (UTCTime, diffUTCTime, getCurrentTime)
 import Prelude hiding (pi)
-import qualified Data.Map.Lazy as M (delete, empty, keys, singleton)
+import qualified Data.Map.Lazy as M (delete, empty, foldl, keys, singleton)
 import qualified Data.Text as T
+import System.Time.Utils (renderSecs)
 
 
 logNotice :: Text -> Text -> MudStack ()
@@ -65,12 +65,11 @@ handleEgress i mq isDropped = egressHelper `finally` writeMsg mq FinishedEgress
                                            <*> uncurry isAdHoc
                                            <*> uncurry isSpiritId) (i, ms)
         unless (hoc || spirit) . bcastOthersInRm i . nlnl . egressMsg . serialize . mkStdDesig i ms $ DoCap
-        when spirit . theBeyond i mq s $ isDropped
         helper now tuple |&| modifyState >=> \(bs, logMsgs) -> do
-            unless spirit $ do { pauseEffects      i -- Already done in "handleDeath".
-                               ; stopFeelings      i
-                               ; stopRegen         i
-                               ; throwWaitDigester i }
+            spirit ? theBeyond i mq s isDropped :? do { pauseEffects      i -- Already done in "handleDeath".
+                                                      ; stopFeelings      i
+                                                      ; stopRegen         i
+                                                      ; throwWaitDigester i }
             closePlaLog i
             bcast bs
             bcastAdmins $ s <> " has left CurryMUD."
@@ -82,25 +81,6 @@ handleEgress i mq isDropped = egressHelper `finally` writeMsg mq FinishedEgress
             ms'' | hoc         = ms'
                  | otherwise   = updateHostMap i (possessHelper i . leaveParty i . movePC i ms' $ spirit) s now
         in (ms'', (bs, logMsgs))
-
-
-theBeyond :: Id -> MsgQueue -> Sing -> Bool -> MudStack ()
-theBeyond i mq s isDropped = modifyStateSeq $ \ms ->
-    let cols            = getColumns i ms
-        retainedIds     = views (teleLinkMstrTbl.ind i) (map (`getIdForPCSing` ms) . M.keys) ms
-        (inIds, outIds) = partition (isLoggedIn . (`getPla` ms)) retainedIds
-        f targetId      = pcTbl          .ind targetId.linked %~ (s `delete`)
-        g targetId      = teleLinkMstrTbl.ind targetId        %~ M.delete s
-        h               = (pcTbl.ind i.linked .~ []) . (teleLinkMstrTbl.ind i .~ M.empty)
-        ms'             = h . flip (foldr g) retainedIds . flip (foldr f) retainedIds $ ms
-        fs              = [ unless isDropped $ do { wrapSend mq cols . colorWith spiritMsgColor $ theBeyondMsg
-                                                  ; farewell i mq cols }
-                          , bcast . pure $ (nlnl . linkLostMsg $ s, inIds)
-                          , forM_ outIds $ \outId -> retainedMsg outId ms' (linkMissingMsg s)
-                          , bcastAdmins $ s <> " passes into the beyond."
-                          , logPla "theBeyond" i "passing into the beyond."
-                          , logNotice "theBeyond" . T.concat $ [ descSingId i ms', " is passing into the beyond." ] ]
-    in (ms', fs)
 
 
 peepHelper :: Id -> MudState -> Sing -> Bool -> (MudState, [Broadcast], [(Id, Text)])
@@ -128,23 +108,6 @@ peepHelper i ms s spirit =
                                     in foldr f pt peeperIds
 
 
-updateHostMap :: Id -> MudState -> Sing -> UTCTime -> MudState
-updateHostMap i ms s now = flip (set $ hostTbl.at s) ms . Just $ case getHostMap s ms of
-  Nothing      -> M.singleton host newRecord
-  Just hostMap -> case hostMap^.at host of Nothing -> hostMap & at host ?~ newRecord
-                                           Just r  -> hostMap & at host ?~ reviseRecord r
-  where
-    newRecord       = HostRecord { _noOfLogouts   = 1
-                                 , _secsConnected = duration
-                                 , _lastLogout    = now }
-    reviseRecord r  = r & noOfLogouts   +~ 1
-                        & secsConnected +~ duration
-                        & lastLogout    .~ now
-    host            = getCurrHostName i ms
-    duration        = round $ now `diffUTCTime` conTime
-    conTime         = fromJust . getConnectTime i $ ms
-
-
 movePC :: Id -> MudState -> Bool -> MudState
 movePC i ms spirit = ms & invTbl     .ind ri           %~ (i `delete`)
                         & invTbl     .ind ri'          %~ (i :)
@@ -161,14 +124,58 @@ possessHelper i ms = let f = maybe id (\npcId -> npcTbl.ind npcId.npcPossessor .
                      in ms & plaTbl.ind i.possessing .~ Nothing & f
 
 
-farewell :: Id -> MsgQueue -> Cols -> MudStack ()
-farewell i mq cols = multiWrapSend mq cols . mkFarewellStats i cols =<< getState
-
-
--- TODO: Stats regarding time spent playing.
-mkFarewellStats :: Id -> Cols -> MudState -> [Text]
-mkFarewellStats i cols ms = (header :) . (<> pure footer) . concatMap (wrapIndent 2 cols) $ ts
+updateHostMap :: Id -> MudState -> Sing -> UTCTime -> MudState
+updateHostMap i ms s now = flip (set $ hostTbl.at s) ms . Just $ case getHostMap s ms of
+  Nothing      -> M.singleton host newRecord
+  Just hostMap -> let f rec = hostMap & at host ?~ rec
+                  in views (at host) (f . maybe newRecord reviseRecord) hostMap
   where
+    newRecord       = HostRecord { _noOfLogouts   = 1
+                                 , _secsConnected = duration
+                                 , _lastLogout    = now }
+    reviseRecord r  = r & noOfLogouts   +~ 1
+                        & secsConnected +~ duration
+                        & lastLogout    .~ now
+    host            = getCurrHostName i ms
+    duration        = round $ now `diffUTCTime` conTime
+    conTime         = fromJust . getConnectTime i $ ms
+
+
+-----
+
+
+theBeyond :: Id -> MsgQueue -> Sing -> Bool -> MudStack ()
+theBeyond i mq s isDropped = modifyStateSeq $ \ms ->
+    let cols            = getColumns i ms
+        retainedIds     = views (teleLinkMstrTbl.ind i) (map (`getIdForPCSing` ms) . M.keys) ms
+        (inIds, outIds) = partition (isLoggedIn . (`getPla` ms)) retainedIds
+        f targetId      = pcTbl          .ind targetId.linked %~ (s `delete`)
+        g targetId      = teleLinkMstrTbl.ind targetId        %~ M.delete s
+        h               = (pcTbl.ind i.linked .~ []) . (teleLinkMstrTbl.ind i .~ M.empty)
+        ms'             = h . flip (foldr g) retainedIds . flip (foldr f) retainedIds $ ms
+        fs              = [ unless isDropped $ do { wrapSend   mq cols . colorWith spiritMsgColor $ theBeyondMsg
+                                                  ; farewell i mq cols }
+                          , bcast . pure $ (nlnl . linkLostMsg $ s, inIds)
+                          , forM_ outIds $ \outId -> retainedMsg outId ms' (linkMissingMsg s)
+                          , bcastAdmins $ s <> " passes into the beyond."
+                          , logPla "theBeyond" i "passing into the beyond."
+                          , logNotice "theBeyond" . T.concat $ [ descSingId i ms', " is passing into the beyond." ] ]
+    in (ms', fs)
+
+
+farewell :: Id -> MsgQueue -> Cols -> MudStack ()
+farewell i mq cols = multiWrapSend mq cols . mkFarewellStats i =<< getState
+
+
+mkFarewellStats :: Id -> MudState -> [Text]
+mkFarewellStats i ms = concat [ header, ts, footer ]
+  where
+    header = [ T.concat [ "Sadly, "
+                        , s
+                        , " has passed away. Here is a final summary of "
+                        , s
+                        , "'s stats:" ]
+             , "" ]
     ts     = [ T.concat [ s, ", the ", sexy, " ", r ]
              , f "Strength: "   <> str
              , f "Dexterity: "  <> dex
@@ -179,15 +186,13 @@ mkFarewellStats i cols ms = (header :) . (<> pure footer) . concatMap (wrapInden
              , f "Handedness: " <> handy
              , f "Languages: "  <> langs
              , f "Level: "      <> showText l
-             , f "Experience: " <> commaShow expr ]
-    header = wrapUnlines cols . T.concat $ [ "Sadly, "
-                                           , s
-                                           , " has passed away. Here is a final summary of "
-                                           , s
-                                           , "'s stats:" ]
-    footer = wrapUnlinesInit cols "Thank you for playing CurryMUD! Please reconnect to play again with a new character."
-    s                         = getSing         i ms
+             , f "Experience: " <> commaShow expr
+             , "" ]
+    footer = [ T.concat [ "You played ", s, " for a total of ", totalTime, "." ]
+             , ""
+             , "Thank you for playing CurryMUD! Please reconnect to play again with a new character." ]
     f                         = pad 12
+    s                         = getSing         i ms
     (sexy, r)                 = mkPrettySexRace i ms
     (str, dex, hea, mag, psi) = calcEffAttribs  i ms & each %~ showText
     xpsHelper                 | (hps, mps, pps, fps) <- getPts i ms
@@ -197,3 +202,6 @@ mkFarewellStats i cols ms = (header :) . (<> pure footer) . concatMap (wrapInden
     handy     = pp . getHand i $ ms
     langs     = commas [ pp lang | lang <- sort . getKnownLangs i $ ms ]
     (l, expr) = getLvlExp i ms
+    totalTime = maybe (parensQuote "no host records") g . getHostMap s $ ms
+      where
+        g = T.pack . renderSecs . M.foldl (\acc -> views secsConnected (+ acc)) 0
