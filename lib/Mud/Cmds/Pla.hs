@@ -3845,7 +3845,6 @@ taste p = advise p ["taste"] adviceTasteExcessArgs
 -----
 
 
--- TODO: "head: empty list" exception when tele to a PC who is singly linked from his mind to yours.
 tele :: ActionFun
 tele p@AdviseNoArgs                         = advise p ["telepathy"] adviceTeleNoArgs
 tele p@AdviseOneArg                         = advise p ["telepathy"] adviceTeleNoMsg
@@ -3863,8 +3862,8 @@ tele   (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
                            Right bs       -> ioHelper targetId bs
                        ioHelper targetId bs = let bs'@[(toSelf, _), _] = formatBs targetId bs in do
                            bcastNl . consLocPrefBcast i $ bs'
-                           logPlaOut "tele" i . pure $ toSelf
-                           alertMsgHelper i "tele" toSelf
+                           logPlaOut "telepathy" i . pure $ toSelf
+                           alertMsgHelper i "telepathy" toSelf
                            ts <- liftIO mkTimestamp
                            withDbExHandler_ "tele" . insertDbTblTele . TeleRec ts s targetSing $ toSelf
                        formatBs targetId [toMe, toTarget] = let f n m = bracketQuote n |<>| m
@@ -3883,8 +3882,10 @@ tele p = patternMatchFail "tele" . showText $ p
 getDblLinkedSings :: Id -> MudState -> ([Sing], [Sing])
 getDblLinkedSings i ms = foldr helper mempties . getLinked i $ ms
   where
-    helper s pair = let lens = isAwake (getIdForPCSing s ms) ms ? _1 :? _2
-                    in pair & lens %~ (s :)
+    helper targetSing pair = let targetId = getIdForPCSing targetSing ms
+                                 lens     = isAwake targetId ms ? _1 :? _2
+                             in (pair |&|) $ if s `elem` getLinked targetId ms then lens %~ (targetSing :) else id
+    s = getSing i ms
 
 
 -----

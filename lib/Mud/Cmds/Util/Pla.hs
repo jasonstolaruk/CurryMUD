@@ -222,9 +222,9 @@ bugTypoLogger p _ = patternMatchFail "bugTypoLogger" . showText $ p
 
 checkMutuallyTuned :: Id -> MudState -> Sing -> Either Text Id
 checkMutuallyTuned i ms targetSing = case areMutuallyTuned of
-  (False, _,    _       ) -> Left . sorryTunedOutPCSelf $ targetSing
-  (True,  False, _      ) -> Left . (effortsBlockedMsg <>) . sorryTunedOutPCTarget $ targetSing
-  (True,  True, targetId) -> Right targetId
+  (False, _,     _       ) -> Left . sorryTunedOutPCSelf $ targetSing
+  (True,  False, _       ) -> Left . (effortsBlockedMsg <>) . sorryTunedOutPCTarget $ targetSing
+  (True,  True,  targetId) -> Right targetId
   where
     areMutuallyTuned | targetId <- getIdForPCSing targetSing ms
                      , a <- (M.! targetSing) . getTeleLinkTbl i        $ ms
