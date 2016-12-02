@@ -236,7 +236,6 @@ priorityAbbrevCmdTuples =
     , ("get",         "g",   getAction,      True,  cmdDescGet)
     , ("give",        "gi",  give,           True,  cmdDescGive)
     , ("help",        "h",   help,           True,  cmdDescHelp)
-    -- TODO: "in" clashes with the "in" exit.
     , ("intro",       "in",  intro,          True,  "Display a list of the people who have introduced themselves to \
                                                     \you, or introduce yourself to one or more people.")
     , ("inventory",   "i",   inv,            True,  cmdDescInv)

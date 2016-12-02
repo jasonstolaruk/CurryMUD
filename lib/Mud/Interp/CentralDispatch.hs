@@ -19,9 +19,9 @@ centralDispatch = dispatch findAction
 
 
 findAction :: FindActionFun
-findAction i ms (T.toLower -> cn) = findActionHelper i ms cn $ let p = getPla i ms in if isSpirit p
-  then spiritCmds
-  else let ia = isAdmin p
-       in concat [ plaCmds
-                 , ia            |?| adminCmds
-                 , ia && isDebug |?| debugCmds ]
+findAction i ms (T.toLower -> cn) = findActionHelper i ms cn cmds
+  where
+    cmds = let (spirit, admin) = ((,) <$> isSpirit <*> isAdmin) . getPla i $ ms
+           in spirit ? spiritCmds :? concat [ plaCmds
+                                            , admin            |?| adminCmds
+                                            , admin && isDebug |?| debugCmds ]

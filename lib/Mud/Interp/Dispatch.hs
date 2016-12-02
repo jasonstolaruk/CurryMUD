@@ -45,9 +45,10 @@ dispatch f cn p@ActionParams { .. } = getState >>= \ms -> maybe notFound found =
 findActionHelper :: Id -> MudState -> CmdName -> [Cmd] -> MudStack (Maybe Action)
 findActionHelper i ms cn cmds =
     let r     = getMobRm i ms
-        ras   = view rmActions r
-        cmds' = sort $ cmds ++ mkNonStdRmLinkCmds r ++ mkRacialLangCmds i ms
-    in return $ case [ ra | ra <- ras, cn == rmActionCmdName ra ] of
+        cmds' = sort . concat $ [ mkNonStdRmLinkCmds r -- Exit "in" should be prioritized over the "intro" cmd abbreviation.
+                                , cmds
+                                , mkRacialLangCmds i ms ]
+    in return $ case [ ra | ra <- view rmActions r, cn == rmActionCmdName ra ] of
       []   -> cmdAction . fst <$> findFullNameForAbbrev cn [ (cmd, cmdName cmd) | cmd <- cmds' ]
       [ra] -> Just . Action (getRmActionFun (rmActionFunName ra) ms) $ True
       xs   -> patternMatchFail "findActionHelper" . showText $ xs
