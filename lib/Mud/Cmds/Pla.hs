@@ -1898,9 +1898,9 @@ lagomorphean = sayHelper LagomorphLang
 
 leave :: ActionFun
 leave p@AdviseNoArgs                     = advise p ["leave"] adviceLeaveNoArgs
-leave   (WithArgs i mq cols (nub -> as)) = helper |&| modifyState >=> \(ms, chanIdNameIsDels, sorryMsgs) ->
+leave   (WithArgs i mq cols (nub -> as)) = helper |&| modifyState >=> \(ms, chanId_name_isDels, sorryMsgs) ->
     let s                              = getSing i ms
-        (chanIds, chanNames, chanRecs) = foldl' unzipper ([], [], []) chanIdNameIsDels
+        (chanIds, chanNames, chanRecs) = foldl' unzipper ([], [], []) chanId_name_isDels
         unzipper acc (ci, cn, isDel)
           | isDel     = acc & _2 <>~ pure cn
                             & _3 <>~ (pure . ChanRec "" ci cn s . asteriskQuote $ "Channel deleted.")
@@ -1924,8 +1924,8 @@ leave   (WithArgs i mq cols (nub -> as)) = helper |&| modifyState >=> \(ms, chan
         ts <- liftIO mkTimestamp
         withDbExHandler_ "leave" . forM_ chanRecs $ \cr -> insertDbTblChan cr { dbTimestamp = ts }
   where
-    helper ms = let (ms', chanIdNameIsDels, sorryMsgs) = foldl' f (ms, [], []) as
-                in (ms', (ms', chanIdNameIsDels, sorryMsgs))
+    helper ms = let (ms', chanId_name_isDels, sorryMsgs) = foldl' f (ms, [], []) as
+                in (ms', (ms', chanId_name_isDels, sorryMsgs))
       where
         f triple a@(T.toLower -> a') =
             let notFound     = triple & _3 <>~ pure (sorryChanName a)

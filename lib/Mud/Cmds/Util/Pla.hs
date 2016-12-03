@@ -383,7 +383,7 @@ helperDropEitherInv i d fromId toId a@(ms, _, _, _) = \case
 
 
 mkGetDropInvDescs :: Id -> MudState -> Desig -> GetOrDrop -> Inv -> ([Text], [Broadcast])
-mkGetDropInvDescs i ms d god (mkName_MaybeCorpseId_Count_BothList i ms -> tuple) = unzip . map helper $ tuple
+mkGetDropInvDescs i ms d god (mkName_maybeCorpseId_count_bothList i ms -> tuple) = unzip . map helper $ tuple
   where
     helper (_, mci, c, (s, _)) | c == 1 =
         (  T.concat [ "You ",               mkGodVerb god SndPer,   " the ", s,          "." ]
@@ -1060,14 +1060,14 @@ mkInvCoinsDesc i cols ms targetId targetSing =
 
 mkEntsInInvDesc :: Id -> Cols -> MudState -> Inv -> Text
 mkEntsInInvDesc i cols ms =
-    T.unlines . concatMap (wrapIndent bracketedEntNamePadding cols . helper) . mkStyledName_Count_BothList i ms
+    T.unlines . concatMap (wrapIndent bracketedEntNamePadding cols . helper) . mkStyledName_count_bothList i ms
   where
     helper (padBracketedEntName -> en, c, (s, _)) | c == 1 = en <> "1 " <> s
     helper (padBracketedEntName -> en, c, b     )          = T.concat [ en, showText c, " ", mkPlurFromBoth b ]
 
 
-mkStyledName_Count_BothList :: Id -> MudState -> Inv -> [(Text, Int, BothGramNos)]
-mkStyledName_Count_BothList i ms is =
+mkStyledName_count_bothList :: Id -> MudState -> Inv -> [(Text, Int, BothGramNos)]
+mkStyledName_count_bothList i ms is =
     let styleds                       = styleAbbrevs DoQuote [ getEffName        i ms targetId | targetId <- is ]
         boths@(mkCountList -> counts) =                      [ getEffBothGramNos i ms targetId | targetId <- is ]
     in nub . zip3 styleds counts $ boths

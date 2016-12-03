@@ -113,7 +113,7 @@ possessHelper i = modifyStateSeq $ \ms -> case getPossessor i ms of
 
 
 leaveChans :: Id -> MudStack ()
-leaveChans _ = unit -- TODO
+leaveChans _ = unit
 
 
 deleteNpc :: Id -> MudStack ()

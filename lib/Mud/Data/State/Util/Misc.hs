@@ -42,7 +42,7 @@ module Mud.Data.State.Util.Misc ( addToInv
                                 , mkAdminPlaIdSingList
                                 , mkMaybeCorpseId
                                 , mkMobRmDesc
-                                , mkName_MaybeCorpseId_Count_BothList
+                                , mkName_maybeCorpseId_count_bothList
                                 , mkNameCountBothList
                                 , mkPlaIdSingList
                                 , mkPrettySexRace
@@ -445,8 +445,8 @@ mkNameCountBothList i ms targetIds = let ens   = [ getEffName        i ms target
                                      in nub . zip3 ens cs $ ebgns
 
 
-mkName_MaybeCorpseId_Count_BothList :: Id -> MudState -> Inv -> [(Text, Maybe Id, Int, BothGramNos)]
-mkName_MaybeCorpseId_Count_BothList i ms targetIds =
+mkName_maybeCorpseId_count_bothList :: Id -> MudState -> Inv -> [(Text, Maybe Id, Int, BothGramNos)]
+mkName_maybeCorpseId_count_bothList i ms targetIds =
     let ens   = [ getEffName i ms targetId        | targetId <- targetIds ]
         mcis  = [ mkMaybeCorpseId targetId ms     | targetId <- targetIds ]
         cs    = mkCountList ebgns
