@@ -123,10 +123,10 @@ leaveChans i = liftIO mkTimestamp >>= \ts -> do
       then pair & _1.chanTbl.at ci .~ Nothing
                 & _2 <>~ let msg = asteriskQuote . prd $ "Channel deleted " <> parensQuote (s <> " has died")
                          in pure . withDbExHandler_ "leaveChans" . insertDbTblChan . ChanRec ts ci name s $ msg
-      else pair & _1.chanTbl.ind ci.chanConnTbl.at s .~ Nothing
-                & _2 <>~ let f    = filter (`isAwake` ms) . map (`getIdForPCSing` ms) . M.keys . M.filter id
-                             g i' = [ (leftChanMsg n name, pure i') | n <- getRelativePCName ms (i', i) ]
-                         in pure $ bcastNl =<< mapM g (f connTbl)
+      else let f    = filter (`isAwake` ms) . map (`getIdForPCSing` ms) . M.keys . M.filter id . M.delete s
+               g i' = [ (leftChanMsg n name, pure i') | n <- getRelativePCName ms (i', i) ]
+           in pair & _1.chanTbl.ind ci.chanConnTbl.at s .~ Nothing
+                   & _2 <>~ pure (bcastNl =<< mapM g (f connTbl))
       where
         s = getSing i ms
 
