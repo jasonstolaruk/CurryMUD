@@ -117,6 +117,10 @@ inacBootMsg :: Text
 inacBootMsg = "You are being disconnected from CurryMUD due to inactivity."
 
 
+leftChanMsg :: Text -> ChanName -> Text
+leftChanMsg n cn = T.concat [ "You sense that ", n, " has left the ", dblQuote cn, " channel." ]
+
+
 linkLostMsg :: Sing -> Text
 linkLostMsg s = "Your telepathic link with " <> s <> " fizzles away!"
 

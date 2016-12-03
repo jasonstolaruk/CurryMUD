@@ -1909,14 +1909,11 @@ leave   (WithArgs i mq cols (nub -> as)) = helper |&| modifyState >=> \(ms, chan
         toSelfMsgs = mkLeaveMsg chanNames
         msgs       = ()# sorryMsgs ? toSelfMsgs :? sorryMsgs ++ (toSelfMsgs |!| "" : toSelfMsgs)
         f bs ci    = let c        = getChan ci ms
+                         cn       = c^.chanName
                          otherIds = views chanConnTbl g c
                          g        = filter (`isAwake` ms) . map (`getIdForPCSing` ms) . M.keys . M.filter id
-                     in (bs ++) <$> forM otherIds (\i' -> [ ( T.concat [ "You sense that "
-                                                                       , n
-                                                                       , " has left the "
-                                                                       , views chanName dblQuote c
-                                                                       , " channel." ]
-                                                            , pure i' ) | n <- getRelativePCName ms (i', i) ])
+                     in (bs ++) <$> forM otherIds (\i' -> [ (leftChanMsg n cn, pure i')
+                                                          | n <- getRelativePCName ms (i', i) ])
     in do
         multiWrapSend mq cols msgs
         bcastNl =<< foldM f [] chanIds

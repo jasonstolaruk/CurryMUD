@@ -1,11 +1,12 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
-{-# LANGUAGE FlexibleContexts, LambdaCase, OverloadedStrings, TupleSections, ViewPatterns #-}
+{-# LANGUAGE FlexibleContexts, LambdaCase, MonadComprehensions, OverloadedStrings, TupleSections, ViewPatterns #-}
 
 module Mud.Data.State.Util.Death (handleDeath) where
 
 import Mud.Cmds.ExpCmds
 import Mud.Cmds.Msgs.Misc
 import Mud.Cmds.Util.Misc
+import Mud.Cmds.Util.Pla
 import Mud.Data.Misc
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Calc
@@ -26,12 +27,13 @@ import Mud.Threads.SpiritTimer
 import Mud.Util.List
 import Mud.Util.Misc
 import Mud.Util.Operators
+import Mud.Util.Quoting
 import Mud.Util.Text
 import qualified Mud.Misc.Logging as L (logNotice, logPla)
 
 import Control.Arrow ((***), first)
 import Control.Lens (_1, _2, _3, at, view, views)
-import Control.Lens.Operators ((%~), (&), (.~), (^.))
+import Control.Lens.Operators ((%~), (&), (.~), (<>~), (^.))
 import Control.Monad (forM_, unless, when)
 import Control.Monad.IO.Class (liftIO)
 import Data.Bits (zeroBits)
@@ -43,7 +45,7 @@ import Data.Text (Text)
 import Database.SQLite.Simple (fromOnly)
 import Prelude hiding (pi)
 import qualified Data.IntMap.Lazy as IM (delete, filterWithKey, keys, mapWithKey)
-import qualified Data.Map.Lazy as M (delete, elems, empty, filterWithKey)
+import qualified Data.Map.Lazy as M (delete, elems, empty, filter, filterWithKey, keys, size)
 
 
 default (Int)
@@ -113,7 +115,20 @@ possessHelper i = modifyStateSeq $ \ms -> case getPossessor i ms of
 
 
 leaveChans :: Id -> MudStack ()
-leaveChans _ = unit
+leaveChans i = liftIO mkTimestamp >>= \ts -> do
+    logPla "leaveChans" i "leaving channels."
+    modifyStateSeq $ \ms -> foldr (helper ts) (ms, []) . getPCChans i $ ms
+  where
+    helper ts (Chan ci name connTbl _) pair@(ms, _) = if M.size connTbl == 1
+      then pair & _1.chanTbl.at ci .~ Nothing
+                & _2 <>~ let msg = asteriskQuote . prd $ "Channel deleted " <> parensQuote (s <> " has died")
+                         in pure . withDbExHandler_ "leaveChans" . insertDbTblChan . ChanRec ts ci name s $ msg
+      else pair & _1.chanTbl.ind ci.chanConnTbl.at s .~ Nothing
+                & _2 <>~ let f    = filter (`isAwake` ms) . map (`getIdForPCSing` ms) . M.keys . M.filter id
+                             g i' = [ (leftChanMsg n name, pure i') | n <- getRelativePCName ms (i', i) ]
+                         in pure $ bcastNl =<< mapM g (f connTbl)
+      where
+        s = getSing i ms
 
 
 deleteNpc :: Id -> MudStack ()
