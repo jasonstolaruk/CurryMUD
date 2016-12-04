@@ -61,15 +61,14 @@ throwWaitSpiritTimer i = views (plaTbl.ind i.spiritAsync) (maybeVoid throwWait) 
 threadSpiritTimer :: Id -> Seconds -> MudStack ()
 threadSpiritTimer i secs = handle (threadExHandler (Just i) "spirit timer") $ do
     setThreadType . SpiritTimer $ i
-    logPla "threadSpiritTimer" i . prd $ "spirit timer started " <> parensQuote (showText secs <> " seconds")
+    logPla "threadSpiritTimer" i . prd $ "spirit timer starting " <> parensQuote (showText secs <> " seconds")
     (mq, cols) <- getMsgQueueColumns i <$> getState
     let go     = when (secs > 0) $ do { liftIO . threadDelay $ 2 * 10 ^ 6
                                       ; wrapSend mq cols . colorWith spiritMsgColor $ spiritDetachMsg
                                       ; spiritTimer i mq cols secs }
-        finish = do
-            logPla "threadSpiritTimer finish" i "spirit timer finishing."
-            tweak $ plaTbl.ind i.spiritAsync .~ Nothing
-            writeMsg mq FinishedSpirit
+        finish = do { logPla "threadSpiritTimer finish" i "spirit timer finishing."
+                    ; tweak $ plaTbl.ind i.spiritAsync .~ Nothing
+                    ; writeMsg mq FinishedSpirit }
     handle (die (Just i) "spirit timer") $ go `finally` finish
 
 
@@ -82,8 +81,7 @@ spiritTimer i mq cols secs
   | secs == 15 = helper . thrice prd $ "You are fading away"
   | otherwise  = next
   where
-    helper msg = do
-        wrapSend mq cols . colorWith spiritMsgColor $ msg
-        logPlaOut "spiritTimer" i . pure $ msg
-        next
+    helper msg = do { logPlaOut "spiritTimer" i . pure $ msg
+                    ; wrapSend mq cols . colorWith spiritMsgColor $ msg
+                    ; next }
     next = (liftIO . threadDelay $ 1 * 10 ^ 6) >> spiritTimer i mq cols (pred secs)

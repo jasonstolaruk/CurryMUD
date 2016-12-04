@@ -43,7 +43,6 @@ threadTrashDumpPurger = handle (threadExHandler Nothing "trash dump purger") $ d
 
 
 purgeTrashDump :: MudStack ()
-purgeTrashDump = getInv iTrashDump <$> getState >>= \is -> do
-    logNotice "purgeTrashDump" "purging the trash dump."
-    destroy is
-    tweak $ coinsTbl.ind iTrashDump .~ mempty
+purgeTrashDump = getInv iTrashDump <$> getState >>= \is -> do { logNotice "purgeTrashDump" "purging the trash dump."
+                                                              ; destroy is
+                                                              ; tweak $ coinsTbl.ind iTrashDump .~ mempty }

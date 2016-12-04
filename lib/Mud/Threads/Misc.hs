@@ -94,9 +94,7 @@ dbExHandler fn e =
 
 
 die :: Maybe Id -> Text -> PlsDie -> MudStack ()
-die mi threadName = const . f $ "the " <> threadName <> " thread is dying."
-  where
-    f = maybe (logNotice "die") (logPla "die") mi
+die mi threadName = const . maybe (logNotice "die") (logPla "die") mi $ "the " <> threadName <> " thread is dying."
 
 
 dieSilently :: PlsDie -> MudStack ()
@@ -107,10 +105,9 @@ dieSilently = const unit
 
 
 fileIOExHandler :: Text -> IOException -> MudStack ()
-fileIOExHandler fn e = do
-    logIOEx fn e
-    let rethrow = throwToListenThread . toException $ e
-    unless (any (e |&|) [ isAlreadyInUseError, isDoesNotExistError, isPermissionError ]) rethrow
+fileIOExHandler fn e = do { logIOEx fn e
+                          ; let rethrow = throwToListenThread . toException $ e
+                          ; unless (any (e |&|) [ isAlreadyInUseError, isDoesNotExistError, isPermissionError ]) rethrow }
 
 
 -----

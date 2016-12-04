@@ -68,6 +68,7 @@ threadTalk h host = helper `finally` cleanUp
         (i, s  ) <- adHoc mq host
         setThreadType . Talk $ i
         handle (threadExHandler (Just i) "talk") $ do
+            logNotice "threadTalk helper" . prd $ "new PC name for incoming player: " <> s
             liftIO configBuffer
             telnetHelper mq
             send         mq . nl       $ "CurryMUD " <> ver
@@ -76,7 +77,6 @@ threadTalk h host = helper `finally` cleanUp
             send         mq . nl . prd $ "If you are new to CurryMUD, please enter " <> dblQuote "new"
             sendPrompt   mq "What is your character's name?"
             bcastAdmins . prd $ "A new player has connected: " <> s
-            logNotice "threadTalk helper" . prd $ "new PC name for incoming player: " <> s
             onNewThread   . threadInacTimer i   mq $ tq
             a <- runAsync . threadReceive h i $ mq
             b <- runAsync . threadServer  h i   mq $ tq
@@ -84,9 +84,8 @@ threadTalk h host = helper `finally` cleanUp
     telnetHelper mq = mapM_ (send mq) [ telnetWillTType, telnetTTypeRequest, telnetWillGMCP ]
     configBuffer    = hSetBuffering h LineBuffering >> hSetNewlineMode h nlMode >> hSetEncoding h latin1
     nlMode          = NewlineMode { inputNL = CRLF, outputNL = CRLF }
-    cleanUp         = do
-        logNotice "threadTalk cleanUp" . prd $ "closing the handle for " <> T.pack host
-        liftIO . hClose $ h
+    cleanUp         = do { logNotice "threadTalk cleanUp" . prd $ "closing the handle for " <> T.pack host
+                         ; liftIO . hClose $ h }
 
 
 adHoc :: MsgQueue -> HostName -> MudStack (Id, Sing)
