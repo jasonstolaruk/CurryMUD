@@ -2317,7 +2317,7 @@ npcExorciseHelper p = withoutArgs npcExorciseHelper p
 
 
 plaDispCmdList :: ActionFun
-plaDispCmdList p@(LowerNub' i as) = getState >>= \ms -> dispCmdList (mkPlaCmds i ms) p >> logPlaExecArgs "?" as i
+plaDispCmdList p@(LowerNub' i as) = logPlaExecArgs "?" as i >> (flip dispCmdList p . mkPlaCmds i =<< getState)
 plaDispCmdList p                  = patternMatchFail "plaDispCmdList" . showText $ p
 
 
@@ -2446,13 +2446,13 @@ interpNewPW _ _ ActionParams { .. } = pwSorryHelper myId plaMsgQueue plaCols sor
 interpVerifyNewPW :: Text -> Text -> Interp
 interpVerifyNewPW oldPW pass cn (NoArgs i mq cols)
   | cn == pass = getSing i <$> getState >>= \s -> do
+      logPla "interpVerifyNewPW" i . prd $ "password changed " <> parensQuote ("was " <> dblQuote oldPW)
       withDbExHandler_ "unpw" . insertDbTblUnPw . UnPwRec s $ pass
       send mq telnetShowInput
       blankLine mq
       wrapSend  mq cols $ "Password changed. " <> pwWarningMsg
       sendDfltPrompt mq i
       resetInterp i
-      logPla "interpVerifyNewPW" i . prd $ "password changed " <> parensQuote ("was " <> dblQuote oldPW)
   | otherwise = pwSorryHelper i mq cols sorryInterpNewPwMatch
 interpVerifyNewPW _ _ _ p = patternMatchFail "interpVerifyNewPW" . showText $ p
 
@@ -2480,21 +2480,20 @@ question (NoArgs' i mq) = getState >>= \ms ->
                mkDesc (i', n) = pad (succ namePadding) n <> tunedInOut (isTunedQuestionId i' ms)
                descs          = mkDesc (i, getSing i ms <> (isAdminId i ms |?| asterisk)) : map mkDesc combo
                descs'         = "Question channel:" : descs
-           in pager i mq Nothing descs' >> logPlaExecArgs "question" [] i
+           in logPlaExecArgs "question" [] i >> pager i mq Nothing descs'
 question (Msg i mq cols msg) = getState >>= \ms -> if
   | not . isTunedQuestionId i $ ms -> wrapSend mq cols . sorryTunedOutOOCChan $ "question"
   | isIncognitoId i ms             -> wrapSend mq cols . sorryChanIncog $ "the question"
   | otherwise                      -> getQuestionStyleds i ms >>= \triples -> if ()# triples
     then wrapSend mq cols . sorryChanNoOneListening $ "question"
     else let ioHelper (expandEmbeddedIdsToSings ms -> logMsg) bs = do
-                 bcastNl =<< expandEmbeddedIds ms questionChanContext bs
                  logPlaOut "question" i . pure $ logMsg
+                 bcastNl =<< expandEmbeddedIds ms questionChanContext bs
                  alertMsgHelper i "question" logMsg
                  ts <- liftIO mkTimestamp
                  withDbExHandler_ "question" . insertDbTblQuestion . QuestionRec ts s $ logMsg
              s    = getSing i ms
-             f bs = let logMsg = dropANSI . fst . head $ bs
-                    in ioHelper logMsg =<< g bs
+             f bs = ioHelper (dropANSI . fst . head $ bs) =<< g bs
              g    = concatMapM (formatQuestion i ms)
              ws   = wrapSend      mq cols
              mws  = multiWrapSend mq cols
@@ -2577,10 +2576,9 @@ readAction   (LowerNub i mq cols as) = (,) <$> getState <*> mkRndmVector >>= \(m
         helperEitherInv   acc (Right is  ) = readHelper i cols ms d acc is
         helperEitherCoins acc (Left  msgs) = acc & _1 <>~ (multiWrapNl cols . intersperse "" $ msgs)
         helperEitherCoins acc (Right _   ) = acc & _1 <>~ wrapUnlinesNl cols sorryReadCoins
-    ioHelper (toSelf, bs, logMsgs) = do
-        send mq toSelf
-        bcastIfNotIncogNl i bs
-        logMsgs |#| logPla "read" i . prd . slashes
+    ioHelper (toSelf, bs, logMsgs) = do { logMsgs |#| logPla "read" i . prd . slashes
+                                        ; send mq toSelf
+                                        ; bcastIfNotIncogNl i bs }
     wrapper = T.unlines . map (multiWrap cols . T.lines)
 readAction p = patternMatchFail "readAction" . showText $ p
 
@@ -2940,16 +2938,14 @@ shuffleRem i ms d conName icir as invCoinsWithCon@(invWithCon, _) f =
 
 
 roomDesc :: ActionFun
-roomDesc (NoArgs i mq cols) = do
-    tweak $ mobTbl.ind i.mobRmDesc .~ Nothing
-    wrapSend mq cols "Your room description has been cleared."
-    logPla "roomDesc" i "room description cleared."
+roomDesc (NoArgs i mq cols) = do { logPla "roomDesc" i "clearing room description."
+                                 ; tweak $ mobTbl.ind i.mobRmDesc .~ Nothing
+                                 ; wrapSend mq cols "Your room description has been cleared." }
 roomDesc (WithArgs i mq cols (T.unwords -> desc@(dblQuote -> desc'))) = if T.length desc > maxMobRmDescLen
   then wrapSend mq cols $ "A room description cannot exceed " <> showText maxMobRmDescLen <> " characters in length."
-  else do
-    tweak $ mobTbl.ind i.mobRmDesc ?~ desc
-    wrapSend mq cols . prd $ "Your room description has been set to " <> desc'
-    logPla "roomDesc" i . prd $ "room description set to " <> desc'
+  else do { logPla "roomDesc" i . prd $ "setting room description to " <> desc'
+          ; tweak $ mobTbl.ind i.mobRmDesc ?~ desc
+          ; wrapSend mq cols . prd $ "Your room description has been set to " <> desc' }
 roomDesc p = patternMatchFail "roomDesc" . showText $ p
 
 
@@ -3156,9 +3152,9 @@ interpSecurityA _ _  p                       = patternMatchFail "interpSecurityA
 
 securitySetHelper :: Id -> MsgQueue -> Cols -> Text -> Text -> MudStack ()
 securitySetHelper i mq cols q a = getSing i <$> getState >>= \s -> do
+    logPla "securitySetHelper" i "setting security Q&A."
     withDbExHandler_ "interpSecurityA" . insertDbTblSec . SecRec s q $ a
     wrapSend mq cols "Thank you! Your security Q&A has been set."
-    logPla "securitySetHelper" i "set security Q&A."
     sendDfltPrompt mq i
     resetInterp i
 
@@ -3204,9 +3200,9 @@ interpSecurityCreateA _ _  p                       = patternMatchFail "interpSec
 setAction :: ActionFun
 setAction (NoArgs i mq cols) = getState >>= \ms ->
     let (styleAbbrevs Don'tQuote -> names, values) = unzip . mkSettingPairs i $ ms
-    in multiWrapSend mq cols [ padSettingName (n <> ": ") <> v | n <- names | v <- values ] >> logPlaExecArgs "set" [] i
+    in logPlaExecArgs "set" [] i >> multiWrapSend mq cols [ padSettingName (n <> ": ") <> v | n <- names | v <- values ]
 setAction (Lower i mq cols as) = helper |&| modifyState >=> \(msgs, logMsgs) ->
-    multiWrapSend mq cols msgs >> logMsgs |#| logPlaOut "set" i
+    logMsgs |#| logPlaOut "set" i >> multiWrapSend mq cols msgs
   where
     helper ms = let (p, msgs, logMsgs) = foldl' (helperSettings i ms) (getPla i ms, [], []) as
                 in (ms & plaTbl.ind i .~ p, (msgs, logMsgs))
@@ -3307,14 +3303,14 @@ showAction   (Lower i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
                    in if theType theTarget `notElem` [ NpcType, PCType ]
                      then wrapSend mq cols . sorryShowTarget . theSing $ theTarget
                      else do
+                         let logMsg = slashes . dropBlanks $ [ invLogMsg |!| parensQuote "inv" |<>| invLogMsg
+                                                             , eqLogMsg  |!| parensQuote "eq"  |<>| eqLogMsg ]
+                         logMsg |#| logPla "show" i . (T.concat [ "showing to "
+                                                                , theSing theTarget
+                                                                , ": " ] <>)
                          multiWrapSend mq cols . dropBlanks $ sorryRmMsg : [ parseDesig i ms msg
                                                                            | msg <- invToSelfs ++ eqToSelfs ]
                          bcastNl $ invBs ++ eqBs
-                         let logMsg = slashes . dropBlanks $ [ invLogMsg |!| parensQuote "inv" |<>| invLogMsg
-                                                             , eqLogMsg  |!| parensQuote "eq"  |<>| eqLogMsg ]
-                         logMsg |#| logPla "show" i . (T.concat [ "showed to "
-                                                                , theSing theTarget
-                                                                , ": " ] <>)
                  Right _ -> wrapSend mq cols sorryShowExcessTargets
   where
     tryThisInstead = " Try showing something to someone in your current room."
@@ -3411,8 +3407,7 @@ showAction   (Lower i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
                                          | itemId <- itemIds ]
               -----
               showCoinsInEqHelper = rcs |!| sorryEquipCoins
-          in let (toSelfMsgs, bs, logMsgs) = showEqHelper
-             in (showCoinsInEqHelper : toSelfMsgs, bs, slashes logMsgs)
+          in let (toSelfMsgs, bs, logMsgs) = showEqHelper in (showCoinsInEqHelper : toSelfMsgs, bs, slashes logMsgs)
       | otherwise = (pure dudeYou'reNaked, [], "")
 showAction p = patternMatchFail "showAction" . showText $ p
 
@@ -3475,10 +3470,10 @@ mkSlotDesc i ms s = case s of
 
 smell :: ActionFun
 smell (NoArgs i mq cols) = getState >>= \ms -> do
+    logPlaExec "smell" i
     views rmSmell (wrapSend mq cols . fromMaybe noSmellMsg) . getMobRm i $ ms
     let d = mkStdDesig i ms DoCap
     bcastIfNotIncogNl i . pure . ((<> " smells the air.") . serialize &&& (i `delete`) . desigIds) $ d
-    logPlaExec "smell" i
 smell (OneArgLower i mq cols a) = getState >>= \ms ->
     let invCoins   = getInvCoins i ms
         eqMap      = getEqMap    i ms
@@ -3576,21 +3571,21 @@ smell (OneArgLower i mq cols a) = getState >>= \ms ->
                       | tuple <- procHooks i ms' v "smell" . pure $ target
                       , (targets', (ms'', hooksToSelfs, hooksBs, hooksLogMsgs), fs) <- tuple
                       , sorryMsgs <- targets' |!| pure sorrySmellEmptyRmWithHooks
-                      = (ms'', [ sorryMsgs    |#| multiWrapSend mq cols
+                      = (ms'', [ hooksLogMsgs |#| logPla "smell" i . prd . slashes
+                               , sorryMsgs    |#| multiWrapSend mq cols
                                , hooksToSelfs |#| multiWrapSend mq cols
                                , bcastIfNotIncogNl i hooksBs
-                               , sequence_ fs
-                               , hooksLogMsgs |#| logPla "smell" i . prd . slashes ])
+                               , sequence_ fs ])
                 in mkRndmVector >>= \v -> helper v |&| modifyState >=> sequence_
             (True,  True ) ->
                 let helper v ms'
                       | tuple <- procHooks i ms' v "smell" . pure $ target
                       , (targets', (ms'', hooksToSelfs, hooksBs, hooksLogMsgs), fs) <- tuple
                       = if ()# targets'
-                          then (ms'', [ hooksToSelfs |#| multiWrapSend mq cols
+                          then (ms'', [ hooksLogMsgs |#| logPla "smell" i . prd . slashes
+                                      , hooksToSelfs |#| multiWrapSend mq cols
                                       , bcastIfNotIncogNl i hooksBs
-                                      , sequence_ fs
-                                      , hooksLogMsgs |#| logPla "smell" i . prd . slashes ])
+                                      , sequence_ fs ])
                           else (ms', pure . smellRmHelper . head $ eiss)
                 in mkRndmVector >>= \v -> helper v |&| modifyState >=> sequence_
             x -> patternMatchFail "smell smellRm" . showText $ x
@@ -3613,9 +3608,9 @@ smell (OneArgLower i mq cols a) = getState >>= \ms ->
                                 _       -> wrapSend mq cols . sorrySmellRmNoHooks $ targetSing
           Right _          -> sorryExcess
     -----
-    ioHelper x ys z = do { wrapSend mq cols x
-                         ; bcastIfNotIncogNl i ys
-                         ; logPla "smell" i z }
+    ioHelper x ys z = do { logPla "smell" i z
+                         ; wrapSend mq cols x
+                         ; bcastIfNotIncogNl i ys }
     -----
     sorryExcess     = wrapSend mq cols sorrySmellExcessTargets
 smell p = advise p ["smell"] adviceSmellExcessArgs
@@ -3625,7 +3620,7 @@ smell p = advise p ["smell"] adviceSmellExcessArgs
 
 
 spiritDispCmdList :: ActionFun
-spiritDispCmdList p@(LowerNub' i as) = dispCmdList spiritCmds p >> logPlaExecArgs "?" as i
+spiritDispCmdList p@(LowerNub' i as) = logPlaExecArgs "?" as i >> dispCmdList spiritCmds p
 spiritDispCmdList p                  = patternMatchFail "spiritDispCmdList" . showText $ p
 
 
@@ -3657,7 +3652,7 @@ stats (NoArgs i mq cols) = getState >>= \ms ->
         skillPtsHelper  = let pts = getSkillPts i ms in pts > 0 |?| (commaShow pts <> " unspent skill points")
         mobRmDescHelper = maybeEmp (prd . ("Your room description is " <>))        $ dblQuote <$> getMobRmDesc i ms
         tempDescHelper  = maybeEmp ("Your temporary character description is " <>) $ dblQuote <$> getTempDesc  i ms
-    in multiWrapSend mq cols mkStats >> logPlaExec "stats" i
+    in logPlaExec "stats" i >> multiWrapSend mq cols mkStats
 stats p = withoutArgs stats p
 
 
