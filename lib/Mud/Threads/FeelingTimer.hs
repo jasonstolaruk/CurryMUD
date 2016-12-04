@@ -81,11 +81,7 @@ startFeeling i (Just (EffectFeeling tag newDur)) newV = getState >>= \ms ->
         return (newQ, newA)
     helper feel     = tweak $ mobTbl.ind i.feelingMap %~ M.insert tag feel
     logHelper       = logPla "startFeeling" i
-    logRestart feel = logHelper . T.concat $ [ "feeling "
-                                             , dblQuote tag
-                                             , " has been restarted: "
-                                             , pp feel
-                                             , "." ]
+    logRestart feel = logHelper . T.concat $ [ "feeling ", dblQuote tag, " has been restarted: ", pp feel, "." ]
 
 
 threadFeelingTimer :: Id -> FeelingTag -> Seconds -> TimerQueue -> MudStack ()
@@ -95,8 +91,8 @@ threadFeelingTimer i tag dur tq = sequence_ [ setThreadType . FeelingTimer $ i
     loop secs = getState >>= \ms -> do
         liftIO . threadDelay $ 1 * 10 ^ 6
         tq |&| liftIO . atomically . tryReadTMQueue >=> \case
-          Just Nothing | secs >= dur -> do { tweak $ mobTbl.ind i.feelingMap %~ (tag `M.delete`)
-                                           ; logHelper $ mkName ms <> " has expired." }
+          Just Nothing | secs >= dur -> do { logHelper $ mkName ms <> " is expiring."
+                                           ; tweak $ mobTbl.ind i.feelingMap %~ (tag `M.delete`) }
                        | otherwise   -> loop . succ $ secs
           Just (Just ResetTimer)     -> do { logHelper $ mkName ms <> " is resetting."
                                            ; loop 0 }

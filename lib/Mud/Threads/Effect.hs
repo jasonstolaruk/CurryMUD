@@ -70,6 +70,8 @@ startEffectHelper i e@(view effectFeeling -> ef) = getState >>= \ms -> do
 
 threadEffect :: Id -> Effect -> EffectQueue -> MudStack ()
 threadEffect i (Effect effSub _ secs _) q = handle (threadExHandler (Just i) "effect") . onEnv $ \md -> do
+    setThreadType . EffectThread $ i
+    logHelper "has started."
     ti <- liftIO myThreadId
     let effectTimer ior = setThreadType (EffectTimer i) >> loop secs `finally` done
           where
@@ -87,8 +89,6 @@ threadEffect i (Effect effSub _ secs _) q = handle (threadExHandler (Just i) "ef
               QueryRemTime tmv -> putTMVarHelper tmv >> loop
               StopEffect       -> unit
             putTMVarHelper tmv = liftIO (atomically . putTMVar tmv =<< readIORef ior)
-    setThreadType . EffectThread $ i
-    logHelper "has started."
     ior <- liftIO . newIORef $ secs
     racer md (effectTimer ior) . queueListener $ ior
     logHelper "is finishing."
@@ -99,11 +99,10 @@ threadEffect i (Effect effSub _ secs _) q = handle (threadExHandler (Just i) "ef
 pauseEffects :: Id -> MudStack () -- When a player logs out.
 pauseEffects i = getState >>= \ms ->
     let aes = getActiveEffects i ms
-    in unless (null aes) $ do
-        logNotice "pauseEffects" . prd $ "pausing effects for ID " <> showText i
-        pes <- mapM helper aes
-        tweaks [ activeEffectsTbl.ind i .~  []
-               , pausedEffectsTbl.ind i <>~ pes ]
+    in unless (null aes) $ do { logNotice "pauseEffects" . prd $ "pausing effects for ID " <> showText i
+                              ; pes <- mapM helper aes
+                              ; tweaks [ activeEffectsTbl.ind i .~  []
+                                       , pausedEffectsTbl.ind i <>~ pes ] }
   where
     helper (ActiveEffect e (_, q)) = do
         tmv <- liftIO newEmptyTMVarIO
@@ -129,9 +128,8 @@ restartPausedHelper i pes = sequence_ [ forM_ pes $ \(PausedEffect e) -> startEf
 
 
 massRestartPausedEffects :: MudStack () -- At server startup.
-massRestartPausedEffects = getState >>= \ms -> do
-    logNotice "massRestartPausedEffects" "mass restarting paused effects."
-    mapM_ (helper ms) . views pausedEffectsTbl IM.toList $ ms
+massRestartPausedEffects = getState >>= \ms -> do { logNotice "massRestartPausedEffects" "mass restarting paused effects."
+                                                  ; mapM_ (helper ms) . views pausedEffectsTbl IM.toList $ ms }
   where
     helper _  (_, [] )                          = unit
     helper ms (i, _  ) | getType i ms == PCType = unit

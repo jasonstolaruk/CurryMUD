@@ -58,7 +58,7 @@ threadInacTimer i mq tq =
           Just (Just ResetTimer)             -> loop 0
           Nothing                            -> unit
     inacBoot (parensQuote . T.pack . renderSecs -> secs) = getState >>= \ms -> let s = getSing i ms in do
-        logPla "threadInacTimer inacBoot" i . prd $ "booted due to inactivity " <> secs
+        logPla "threadInacTimer inacBoot" i . prd $ "booting due to inactivity " <> secs
         let noticeMsg = T.concat [ "booting player ", showText i, " ", parensQuote s, " due to inactivity." ]
         logNotice "threadInacTimer inacBoot" noticeMsg
         writeMsg mq InacBoot

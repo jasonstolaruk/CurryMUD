@@ -44,15 +44,13 @@ runBiodegAsync i = runAsync (threadBiodegrader i) >>= \a -> tweak $ objTbl.ind i
 
 
 startBiodegraders :: MudStack ()
-startBiodegraders = do
-    logNotice "startBiodegraders" "starting biodegraders."
-    mapM_ runBiodegAsync . findBiodegradableIds =<< getState
+startBiodegraders = do { logNotice "startBiodegraders" "starting biodegraders."
+                       ; mapM_ runBiodegAsync . findBiodegradableIds =<< getState }
 
 
 stopBiodegraders :: MudStack ()
-stopBiodegraders = do
-    logNotice "stopBiodegraders"  "stopping biodegraders."
-    mapM_ throwWaitBiodegrader . findBiodegradableIds =<< getState
+stopBiodegraders = do { logNotice "stopBiodegraders"  "stopping biodegraders."
+                      ; mapM_ throwWaitBiodegrader . findBiodegradableIds =<< getState }
 
 
 throwWaitBiodegrader :: Id -> MudStack ()
