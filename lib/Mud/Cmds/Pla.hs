@@ -3663,8 +3663,7 @@ stop :: ActionFun
 stop p@(NoArgs i mq cols) = getState >>= \ms ->
     case filter (view _3) . mkStopTuples p $ ms of
       [] -> wrapSend mq cols sorryStopNotDoingAnything
-      xs -> let (_, actType, True, f) = head xs
-            in stopLogHelper i (pure actType) >> f
+      xs -> let (_, actType, True, f) = head xs in stopLogHelper i (pure actType) >> f
 stop p@(OneArgLower i mq cols a) = getState >>= \ms ->
     if a `T.isPrefixOf` "all" || a == T.singleton allChar
       then case filter (view _3) . mkStopTuples p $ ms of
@@ -3807,9 +3806,9 @@ taste   (OneArgLower i mq cols a) = getState >>= \ms ->
                                 in ioHelper tasteDesc bs logMsg
             Right _          -> sorryExcess
     -----
-    ioHelper x ys z = do { wrapSend mq cols x
-                         ; bcastIfNotIncogNl i ys
-                         ; logPla "taste" i z }
+    ioHelper x ys z = do { logPla "taste" i z
+                         ; wrapSend mq cols x
+                         ; bcastIfNotIncogNl i ys }
     -----
     sorryExcess     = wrapSend mq cols sorryTasteExcessTargets
 taste p = advise p ["taste"] adviceTasteExcessArgs
@@ -3834,8 +3833,8 @@ tele   (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
                            Left  errorMsg -> sendFun errorMsg
                            Right bs       -> ioHelper targetId bs
                        ioHelper targetId bs = let bs'@[(toSelf, _), _] = formatBs targetId bs in do
-                           bcastNl . consLocPrefBcast i $ bs'
                            logPlaOut "telepathy" i . pure $ toSelf
+                           bcastNl . consLocPrefBcast i $ bs'
                            alertMsgHelper i "telepathy" toSelf
                            ts <- liftIO mkTimestamp
                            withDbExHandler_ "tele" . insertDbTblTele . TeleRec ts s targetSing $ toSelf
@@ -3866,16 +3865,16 @@ getDblLinkedSings i ms = foldr helper mempties . getLinked i $ ms
 
 tempDescAction :: ActionFun
 tempDescAction (NoArgs i mq cols) = do
+    logPla "tempDescAction" i "clearing temporary character description."
     tweak $ mobTbl.ind i.tempDesc .~ Nothing
     wrapSend mq cols "Your temporary character description has been cleared."
-    logPla "tempDescAction" i "temporary character description cleared."
 tempDescAction (Msg i mq cols desc@(dblQuote -> desc')) = if T.length desc > maxTempDescLen
   then wrapSend mq cols $ "A temporary character description cannot exceed " <> showText maxTempDescLen <> " \
                           \characters in length."
   else do
+    logPla "tempDescAction" i $ "setting temporary character description set to " <> desc'
     tweak $ mobTbl.ind i.tempDesc ?~ desc
     wrapSend mq cols $ "Your temporary character description has been set to " <> desc'
-    logPla "tempDescAction" i $ "temporary character description set to " <> desc'
 tempDescAction p = patternMatchFail "tempDescAction" . showText $ p
 
 
@@ -3894,14 +3893,12 @@ tune (NoArgs i mq cols) = getState >>= \ms ->
                                      in [ title, ()!# txts ? commas txts :? none ]
           where
             mkConnTxts = [ n <> T.cons '=' (inOut t) | n <- names | t <- tunings ]
-    in do
-        let msgs = [ helper "Two-way telepathic links:" styleds linkTunings
-                   , pure ""
-                   , helper "Telepathic channels:" (styleAbbrevs Don'tQuote chanNames) chanTunings ]
-        multiWrapSend mq cols . concat $ msgs
-        logPlaExecArgs "tune" [] i
-tune (Lower' i as) = helper |&| modifyState >=> \(bs, logMsgs) ->
-    bcastNl bs >> logMsgs |#| logPlaOut "tune" i
+    in do { logPlaExecArgs "tune" [] i
+          ; let msgs = [ helper "Two-way telepathic links:" styleds linkTunings
+                       , pure ""
+                       , helper "Telepathic channels:" (styleAbbrevs Don'tQuote chanNames) chanTunings ]
+          ; multiWrapSend mq cols . concat $ msgs }
+tune (Lower' i as) = helper |&| modifyState >=> \(bs, logMsgs) -> logMsgs |#| logPlaOut "tune" i >> bcastNl bs
   where
     helper ms = let s       = getSing i ms
                     linkTbl = getTeleLinkTbl i ms
@@ -4000,8 +3997,8 @@ unlink   (LowerNub i mq cols as) =
                                     & _2 <>~ (nlnl srcMsg, pure i) : targetBs
                                     & _3 <>~ pure targetSing
             in helper |&| modifyState >=> \(bs, logMsgs) -> do
-                bcast . onFalse (()# guessWhat) ((guessWhat, pure i) :) $ bs
                 logMsgs |#| logPla "unlink" i . slashes
+                bcast . onFalse (()# guessWhat) ((guessWhat, pure i) :) $ bs
 unlink p = patternMatchFail "unlink" . showText $ p
 
 
@@ -4109,9 +4106,7 @@ mkIdCountBothList i ms targetIds =
 
 
 uptime :: ActionFun
-uptime (NoArgs i mq cols) = do
-    wrapSend mq cols =<< uptimeHelper =<< getUptime
-    logPlaExec "uptime" i
+uptime (NoArgs i mq cols) = logPlaExec "uptime" i >> (wrapSend mq cols =<< uptimeHelper =<< getUptime)
 uptime p = withoutArgs uptime p
 
 
@@ -4185,10 +4180,10 @@ whisper   (WithArgs i mq cols (target:(T.unwords -> rest))) = getState >>= \ms -
     formatMsg = dblQuote . capitalizeMsg . punctuateMsg
     ioHelper ms triple@(x:xs, _, _) | (toSelfs, bs, logMsg) <- triple & _1 .~ parseDesig       i ms x : xs
                                                                       & _3 %~ parseExpandDesig i ms
-                                    = do { multiWrapSend mq cols toSelfs
-                                         ; bcastIfNotIncogNl i bs
-                                         ; logMsg |#| logPlaOut "whisper" i . pure
-                                         ; logMsg |#| alertMsgHelper i "whisper" }
+                                    = do { logMsg |#| logPlaOut "whisper" i . pure
+                                         ; logMsg |#| alertMsgHelper i "whisper"
+                                         ; multiWrapSend mq cols toSelfs
+                                         ; bcastIfNotIncogNl i bs }
     ioHelper _  triple              = patternMatchFail "whisper ioHelper" . showText $ triple
 whisper p = patternMatchFail "whisper" . showText $ p
 
@@ -4198,9 +4193,9 @@ whisper p = patternMatchFail "whisper" . showText $ p
 
 who :: ActionFun
 who (NoArgs i mq cols) = getState >>= \ms ->
-    sequence_ [ pager i mq Nothing . concatMap (wrapIndent namePadding cols) . mkWhoTxt i $ ms, logPlaExecArgs "who" [] i ]
+    sequence_ [ logPlaExecArgs "who" [] i, pager i mq Nothing . concatMap (wrapIndent namePadding cols) . mkWhoTxt i $ ms ]
 who p@ActionParams { myId, args } = getState >>= \ms ->
-    sequence_ [ dispMatches p namePadding . mkWhoTxt myId $ ms, logPlaExecArgs "who" args myId ]
+    sequence_ [ logPlaExecArgs "who" args myId, dispMatches p namePadding . mkWhoTxt myId $ ms ]
 
 
 mkWhoTxt :: Id -> MudState -> [Text]
@@ -4263,7 +4258,7 @@ mkFooter i ms = let plaIds@(length -> x) = [ i' | i' <- getLoggedInPlaIds ms
 
 
 whoAmI :: ActionFun
-whoAmI (NoArgs i mq cols) = (wrapSend mq cols =<< helper =<< getState) >> logPlaExec "whoami" i
+whoAmI (NoArgs i mq cols) = logPlaExec "whoami" i >> (wrapSend mq cols =<< helper =<< getState)
   where
     helper ms = return $ let s = getSing i ms in if isNpc i ms
       then let sexy = getSex i ms
