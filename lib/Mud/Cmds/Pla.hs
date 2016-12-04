@@ -2060,14 +2060,14 @@ look (NoArgs i mq cols) = getState >>= \ms ->
 look (LowerNub i mq cols as) = mkRndmVector >>= \v ->
     helper v |&| modifyState >=> \(toSelf, bs, hookLogMsg, maybeTargetDesigs, fs) -> do
         ms <- getState
+        let mkLogMsgForDesigs targetDesigs | targetSings <- [ parseExpandDesig i ms . serialize $ targetDesig
+                                                            | targetDesig <- targetDesigs ]
+                                           = "looking at " <> commas targetSings
+            logMsg = T.intercalate " / " . dropBlanks $ [ maybeEmp mkLogMsgForDesigs maybeTargetDesigs, hookLogMsg ]
+        logMsg |#| logPla "look" i . prd
         send mq toSelf
         bcastIfNotIncogNl i bs
         sequence_ fs
-        let mkLogMsgForDesigs targetDesigs | targetSings <- [ parseExpandDesig i ms . serialize $ targetDesig
-                                                            | targetDesig <- targetDesigs ]
-                                           = "looked at " <> commas targetSings
-            logMsg = T.intercalate " / " . dropBlanks $ [ maybeEmp mkLogMsgForDesigs maybeTargetDesigs, hookLogMsg ]
-        logMsg |#| logPla "look" i . prd
   where
     helper v ms =
         let invCoins               = first (i `delete`) . getMobRmVisibleInvCoins i $ ms
@@ -2195,7 +2195,7 @@ molestCan'tAbbrev ActionParams { .. } = sendCmdNotFound myId plaMsgQueue plaCols
 
 
 motd :: ActionFun
-motd (NoArgs i mq cols) = showMotd mq cols >> logPlaExec "motd" i
+motd (NoArgs i mq cols) = logPlaExec "motd" i >> showMotd mq cols
 motd p                  = withoutArgs motd p
 
 
@@ -2225,11 +2225,10 @@ newChan   (WithArgs i mq cols (nub -> as)) = helper |&| modifyState >=> \(unzip 
     let (sorryMsgs', otherMsgs) = (intersperse "" sorryMsgs, mkNewChanMsg newChanNames)
         msgs | ()# otherMsgs    = sorryMsgs'
              | otherwise        = otherMsgs ++ (sorryMsgs' |!| "" : sorryMsgs')
-    in do
-        multiWrapSend mq cols msgs
-        newChanNames |#| logPla "newChan" i . commas
-        ts <- liftIO mkTimestamp
-        forM_ chanRecs $ \cr -> withDbExHandler_ "newChan" . insertDbTblChan $ (cr { dbTimestamp = ts } :: ChanRec)
+    in do { newChanNames |#| logPla "newChan" i . commas
+          ; multiWrapSend mq cols msgs
+          ; ts <- liftIO mkTimestamp
+          ; forM_ chanRecs $ \cr -> withDbExHandler_ "newChan" . insertDbTblChan $ (cr { dbTimestamp = ts } :: ChanRec) }
   where
     helper ms = let s                              = getSing i ms
                     (ms', newChanNames, sorryMsgs) = foldl' (f s) (ms, [], []) as
@@ -2285,9 +2284,8 @@ npcAsSelf p = execIfPossessed p "." npcAsSelfHelper
 
 npcAsSelfHelper :: ActionFun
 npcAsSelfHelper p@(NoArgs'  i mq     ) = advise p [] adviceAsSelfNoArgs >> sendDfltPrompt mq i
-npcAsSelfHelper   (WithArgs i mq _ as) = do
-    logPlaExecArgs "." as i
-    writeMsg mq . AsSelf . nl . T.unwords $ as
+npcAsSelfHelper   (WithArgs i mq _ as) = do { logPlaExecArgs "." as i
+                                            ; writeMsg mq . AsSelf . nl . T.unwords $ as }
 npcAsSelfHelper p = patternMatchFail "npcAsSelfHelper" . showText $ p
 
 
@@ -2295,7 +2293,7 @@ npcAsSelfHelper p = patternMatchFail "npcAsSelfHelper" . showText $ p
 
 
 npcDispCmdList :: ActionFun
-npcDispCmdList p@(LowerNub' i as) = getState >>= \ms -> dispCmdList (mkNpcCmds i ms) p >> logPlaExecArgs "?" as i
+npcDispCmdList p@(LowerNub' i as) = logPlaExecArgs "?" as i >> (flip dispCmdList p . mkNpcCmds i =<< getState)
 npcDispCmdList p                  = patternMatchFail "npcDispCmdList" . showText $ p
 
 
@@ -2308,10 +2306,10 @@ npcExorcise p = execIfPossessed p "stop" npcExorciseHelper
 
 npcExorciseHelper :: ActionFun
 npcExorciseHelper (NoArgs i mq cols) = getState >>= \ms -> let pi = fromJust . getPossessor i $ ms in do
+    logPla "npcExorciseHelper" i . prd $ "no longer possessing " <> aOrAnOnLower (descSingId i ms)
+    tweaks [ plaTbl.ind pi.possessing .~ Nothing, npcTbl.ind i.npcPossessor .~ Nothing ]
     wrapSend mq cols . prd $ "You stop possessing " <> aOrAnOnLower (getSing i ms)
     sendDfltPrompt mq pi
-    logPla "npcExorciseHelper" i . prd $ "stopped possessing " <> aOrAnOnLower (descSingId i ms)
-    tweaks [ plaTbl.ind pi.possessing .~ Nothing, npcTbl.ind i.npcPossessor .~ Nothing ]
 npcExorciseHelper p = withoutArgs npcExorciseHelper p
 
 
