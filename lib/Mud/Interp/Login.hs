@@ -153,16 +153,15 @@ checkProfanitiesDict :: Id -> MsgQueue -> Cols -> CmdName -> MudStack Any
 checkProfanitiesDict i mq cols cn =
     checkNameHelper "checkProfanitiesDict" sorry cn =<< liftIO (mkMudFilePath profanitiesFileFun)
   where
-    sorry = getState >>= \ms -> do
-        wrapSend mq cols . colorWith bootMsgColor $ sorryInterpNameProfanityLogged
-        sendMsgBoot mq . Just $ sorryInterpNameProfanityBoot
-        -----
-        ts <- liftIO mkTimestamp
-        let prof = ProfRec ts (T.pack . getCurrHostName i $ ms) cn
-        withDbExHandler_ "checkProfanitiesDict sorry" . insertDbTblProf $ prof
-        -----
-        let msg = T.concat [ "booting ", getSing i ms, " due to profanity." ]
-        bcastAdmins (capitalize msg) >> logNotice "checkProfanitiesDict sorry" msg
+    sorry = getState >>= \ms -> do { let msg = T.concat [ "booting ", getSing i ms, " due to profanity." ]
+                                   ; bcastAdmins (capitalize msg) >> logNotice "checkProfanitiesDict sorry" msg
+                                   ; -----
+                                   ; wrapSend mq cols . colorWith bootMsgColor $ sorryInterpNameProfanityLogged
+                                   ; sendMsgBoot mq . Just $ sorryInterpNameProfanityBoot
+                                   ; -----
+                                   ; ts <- liftIO mkTimestamp
+                                   ; let prof = ProfRec ts (T.pack . getCurrHostName i $ ms) cn
+                                   ; withDbExHandler_ "checkProfanitiesDict sorry" . insertDbTblProf $ prof }
 
 
 checkNameHelper :: Text -> Fun -> CmdName -> FilePath -> MudStack Any
@@ -221,8 +220,8 @@ interpConfirmNewChar _ _ _ ActionParams { plaMsgQueue, plaCols } = promptRetryYe
 setSingIfNotTaken :: Int -> Sing -> ActionParams -> MudStack (Maybe Sing)
 setSingIfNotTaken times s (NoArgs i mq cols) = getSing i <$> getState >>= \oldSing -> mIf (modifyState . helper $ oldSing)
   (let msg = T.concat [ oldSing, " is now known as ", s, "." ]
-   in do { bcastAdmins msg
-         ; logNotice "setSingIfNotTaken" msg
+   in do { logNotice "setSingIfNotTaken" msg
+         ; bcastAdmins msg
          ; return (Just oldSing) })
   (emptied $ promptRetryName mq cols sorryInterpNameTaken >> (setInterp i . Just . interpName $ times))
   where
@@ -708,16 +707,15 @@ interpPW times targetSing targetId targetPla cn params@(WithArgs i mq cols as) =
   where
     sorryPW oldSing            = let msg = T.concat [ oldSing, " has entered an incorrect password for ", targetSing, "." ]
                                  in sorry oldSing sorryInterpPW msg
-    sorry oldSing sorryMsg msg = do
-        bcastAdmins msg
-        logNotice "interpPW sorry" msg
-        liftIO . threadDelay $ 2 * 10 ^ 6
-        sorryHelper oldSing sorryMsg
+    sorry oldSing sorryMsg msg = do { logNotice "interpPW sorry" msg
+                                    ; bcastAdmins msg
+                                    ; liftIO . threadDelay $ 2 * 10 ^ 6
+                                    ; sorryHelper oldSing sorryMsg }
     sorryHelper oldSing sorryMsg = if times == 4
                                      then do { let msg = "Booting " <> oldSing <> " due to excessive incorrect passwords."
+                                             ; logNotice "interpPW sorryHelper" msg
                                              ; sendMsgBoot mq . Just $ sorryInterpPwBoot
-                                             ; bcastAdmins msg
-                                             ; logNotice "interpPW sorryHelper" msg }
+                                             ; bcastAdmins msg }
                                      else do { promptRetryName mq cols sorryMsg
                                              ; setInterp i . Just . interpName $ succ times }
     handleBanned (T.pack . getCurrHostName i -> host) oldSing = do
@@ -727,9 +725,9 @@ interpPW times targetSing targetId targetPla cn params@(WithArgs i mq cols as) =
                            , " "
                            , parensQuote "player is banned"
                            , "." ]
-        sendMsgBoot mq . Just . sorryInterpPwBanned $ targetSing
-        bcastAdmins . prd $ msg <> " Consider also banning host " <> dblQuote host
         logNotice "interpPW handleBanned" msg
+        bcastAdmins . prd $ msg <> " Consider also banning host " <> dblQuote host
+        sendMsgBoot mq . Just . sorryInterpPwBanned $ targetSing
     handleNotBanned ((i `getPla`) -> newPla) oldSing =
         let helper ms = dup . logIn i ms oldSing (newPla^.currHostName) (newPla^.connectTime) $ targetId
         in helper |&| modifyState >=> \ms -> do
@@ -811,23 +809,21 @@ handleLogin (NewCharBundle oldSing s _) isNew params@ActionParams { .. } = do
                                               | otherwise   -> nlPrefix "Welcome back, " <> s <> "!"
     showRetainedMsgs = helper |&| modifyState >=> \(ms, msgs, p) -> do
         unless (()# msgs) $ do
+            logPla "handleLogin showRetainedMsgs" myId "showing retained messages."
             let (fromPpl, others) = first (map T.tail) . partition ((== fromPersonMarker) . T.head) $ msgs
             others  |#| multiWrapSend plaMsgQueue plaCols . intersperse ""
             fromPpl |#| let m   = "message" <> case fromPpl of [_] -> ""
                                                                _   -> "s"
                             msg = "You missed the following " <> m <> " while you were away:"
                         in multiWrapSend plaMsgQueue plaCols . (msg :)
-            logPla "handleLogin showRetainedMsgs" myId "showed retained messages."
         return (ms, p)
     helper ms = let p   = getPla myId ms
                     p'  = p  & retainedMsgs    .~ []
                     ms' = ms & plaTbl.ind myId .~ p'
                 in (ms', (ms', p^.retainedMsgs, p'))
-    stopInacTimer = do
-        writeMsg plaMsgQueue InacStop
-        logPla "handleLogin stopInacTimer" myId "stopping the inactivity timer."
-    notifyArrival ms = do
-        bcastOtherAdmins myId $ if isNew
-          then T.concat [ s, " has arrived in CurryMUD ", parensQuote ("was " <> oldSing), "." ]
-          else T.concat [ oldSing, " has logged in as ", s, "." ]
-        bcastOthersInRm  myId . nlnl . notifyArrivalMsg . mkSerializedNonStdDesig myId ms s A $ DoCap
+    stopInacTimer    = do { logPla "handleLogin stopInacTimer" myId "stopping the inactivity timer."
+                          ; writeMsg plaMsgQueue InacStop }
+    notifyArrival ms = do { bcastOtherAdmins myId $ if isNew
+                              then T.concat [ s, " has arrived in CurryMUD ", parensQuote ("was " <> oldSing), "." ]
+                              else T.concat [ oldSing, " has logged in as ", s, "." ]
+                          ; bcastOthersInRm  myId . nlnl . notifyArrivalMsg . mkSerializedNonStdDesig myId ms s A $ DoCap }

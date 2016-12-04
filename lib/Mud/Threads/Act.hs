@@ -55,10 +55,9 @@ logPla = L.logPla "Mud.Threads.Act"
 
 
 startAct :: Id -> ActType -> Fun -> MudStack ()
-startAct i actType f = do
-    logPla "startAct" i $ pp actType <> " act started."
-    a <- runAsync . threadAct i actType $ f
-    tweak $ mobTbl.ind i.actMap.at actType ?~ a
+startAct i actType f = do { logPla "startAct" i $ pp actType <> " act started."
+                          ; a <- runAsync . threadAct i actType $ f
+                          ; tweak $ mobTbl.ind i.actMap.at actType ?~ a }
 
 
 stopAct :: Id -> ActType -> MudStack ()
@@ -66,11 +65,11 @@ stopAct i actType = views (at actType) (maybeVoid throwDeath) . getActMap i =<< 
 
 
 stopActs :: Id -> MudStack ()
-stopActs i = do { logPla "stopActs" i "stopping all acts."; mapM_ throwWait . M.elems . getActMap i =<< getState }
+stopActs i = logPla "stopActs" i "stopping all acts." >> (mapM_ throwWait . M.elems . getActMap i =<< getState)
 
 
 stopNpcActs :: MudStack ()
-stopNpcActs = do { logNotice "stopNpcActs" "stopping NPC acts."; mapM_ stopActs =<< getNpcIds <$> getState }
+stopNpcActs = logNotice "stopNpcActs" "stopping NPC acts." >> (mapM_ stopActs =<< getNpcIds <$> getState)
 
 
 threadAct :: Id -> ActType -> Fun -> MudStack ()
@@ -78,9 +77,8 @@ threadAct i actType f = let a = (>> f) . setThreadType $ case actType of Attacki
                                                                          Drinking  -> DrinkingThread i
                                                                          Eating    -> EatingThread   i
                                                                          Moving    -> MovingThread   i
-                            b = do
-                                tweak $ mobTbl.ind i.actMap.at actType .~ Nothing
-                                logPla "threadAct" i $ pp actType <> " act finished."
+                            b = do { logPla "threadAct" i $ pp actType <> " act finished."
+                                   ; tweak $ mobTbl.ind i.actMap.at actType .~ Nothing }
                         in handle (threadExHandler (Just i) . pp $ actType) $ a `finally` b
 
 
@@ -140,19 +138,17 @@ drinkAct DrinkBundle { .. } =
                                                                                       , t ]
            | x' == drinkAmt -> (>> bcastHelper False) . ioHelper x' $ "You finish drinking."
            | otherwise      -> loop x'
-    ioHelper m t = wrapSend drinkerMq drinkerCols t >> promptHelper >> logHelper
-      where
-        promptHelper = sendDfltPrompt drinkerMq drinkerId
-        logHelper    =
-            logPla "drinkAct loop" drinkerId . T.concat $ [ "drank "
-                                                          , showText m
-                                                          , " mouthful"
-                                                          , theLetterS $ m /= 1
-                                                          , " of "
-                                                          , renderLiqNoun drinkLiq aOrAn
-                                                          , " "
-                                                          , let DistinctLiqId i = drinkLiq^.liqId
-                                                            in parensQuote . showText $ i
-                                                          , " from "
-                                                          , renderVesselSing
-                                                          , "." ]
+    ioHelper m t = do { logPla "drinkAct loop" drinkerId . T.concat $ [ "drank "
+                                                                      , showText m
+                                                                      , " mouthful"
+                                                                      , theLetterS $ m /= 1
+                                                                      , " of "
+                                                                      , renderLiqNoun drinkLiq aOrAn
+                                                                      , " "
+                                                                      , let DistinctLiqId i = drinkLiq^.liqId
+                                                                        in parensQuote . showText $ i
+                                                                      , " from "
+                                                                      , renderVesselSing
+                                                                      , "." ]
+                      ; wrapSend drinkerMq drinkerCols t
+                      ; sendDfltPrompt drinkerMq drinkerId }

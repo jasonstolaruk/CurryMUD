@@ -165,10 +165,10 @@ trashRmActionFunName = "(common)_trash"
 trash :: RmActionFun
 trash p@AdviseNoArgs          = advise p [] adviceTrashNoArgs
 trash (LowerNub i mq cols as) = helper |&| modifyState >=> \((toSelfs, bs, logMsgs), fs) -> do
+    logMsgs |#| logPlaOut "trash" i
     multiWrapSend mq cols toSelfs
     bcastIfNotIncogNl i bs
     sequence_ fs
-    logMsgs |#| logPlaOut "trash" i
   where
     helper ms = let ((ms', toSelfs, bs, logMsgs), fs) = trashHelper i ms as in (ms', ((toSelfs, bs, logMsgs), fs))
 trash p = patternMatchFail "trash" . showText $ p
