@@ -228,11 +228,11 @@ logPla modName (dblQuote -> funName) i msg =
 
 
 logPlaExec :: Text -> CmdName -> Id -> MudStack ()
-logPlaExec modName cn i = logPla modName cn i . prd $ "executed " <> dblQuote cn
+logPlaExec modName cn i = logPla modName cn i . prd $ "executing " <> dblQuote cn
 
 
 logPlaExecArgs :: Text -> CmdName -> Args -> Id -> MudStack ()
-logPlaExecArgs modName cn as i = logPla modName cn i . prd $ "executed " <> helper
+logPlaExecArgs modName cn as i = logPla modName cn i . prd $ "executing " <> helper
   where
     helper | ()# as    = dblQuote cn <> " with no arguments"
            | otherwise = dblQuote . T.unwords $ cn : as

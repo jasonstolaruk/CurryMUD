@@ -213,7 +213,7 @@ adminAdmin (NoArgs i mq cols) = getState >>= \ms ->
         others'                = zipWith (\triple styled -> triple & _2 .~ styled) tunedIns styleds ++ tunedOuts
         mkDesc (_, n, isTuned) = padName n <> tunedInOut isTuned
         descs                  = mkDesc self : map mkDesc others'
-    in multiWrapSend mq cols descs >> logPlaExecArgs (prefixAdminCmd "admin") [] i
+    in logPlaExecArgs (prefixAdminCmd "admin") [] i >> multiWrapSend mq cols descs
 adminAdmin (Msg i mq cols msg) = getState >>= \ms ->
     if isTunedAdminId i ms
       then case getTunedAdminIds ms of
@@ -244,7 +244,7 @@ adminAdmin (Msg i mq cols msg) = getState >>= \ms ->
   where
     getTunedAdminIds ms  = [ ai | ai <- getLoggedInAdminIds ms, isTunedAdminId ai ms ]
     mkLogMsg             = dropANSI . fst . head
-    ioHelper s bs logMsg = bcastNl bs >> logHelper
+    ioHelper s bs logMsg = logHelper >> bcastNl bs
       where
         logHelper = do
             logPlaOut (prefixAdminCmd "admin") i . pure $ logMsg
@@ -265,7 +265,7 @@ adminAlertExec p@ActionParams { plaMsgQueue, plaCols } = dumpCmdHelper "alert_ex
 
 dumpCmdHelper :: (FromRow a) => Text -> ([a] -> MudStack ()) -> CmdName -> ActionFun
 dumpCmdHelper tblName f cn (NoArgs i mq cols) = withDbExHandler "dumpCmdHelper" (getDbTblRecs tblName) >>= \case
-  Just xs -> f xs >> logPlaExec (prefixAdminCmd cn) i
+  Just xs -> logPlaExec (prefixAdminCmd cn) i >> f xs
   Nothing -> dbError mq cols
 dumpCmdHelper tblName f cn p = withoutArgs (dumpCmdHelper tblName f cn) p
 
@@ -291,10 +291,10 @@ adminAlertMsg p@ActionParams { plaMsgQueue, plaCols } = dumpCmdHelper "alert_msg
 adminAnnounce :: ActionFun
 adminAnnounce p@AdviseNoArgs    = advise p [ prefixAdminCmd "announce" ] adviceAAnnounceNoArgs
 adminAnnounce   (Msg' i mq msg) = getState >>= \ms -> let s = getSing i ms in do
+    logPla    "adminAnnounce" i $          "announcing "  <> dblQuote msg
+    logNotice "adminAnnounce"   $ s <> " is announcing, " <> dblQuote msg
     ok mq
     massSend . colorWith announceColor $ msg
-    logPla    "adminAnnounce" i $       "announced "  <> dblQuote msg
-    logNotice "adminAnnounce"   $ s <> " announced, " <> dblQuote msg
 adminAnnounce p = patternMatchFail "adminAnnounce" . showText $ p
 
 
@@ -325,12 +325,12 @@ adminAs   (WithTarget i mq cols target rest) = getState >>= \ms ->
                       fakeClientInput targetMq rest
           _ -> sorry . sorryAsType $ s
         ioHelper targetId s = do
-            sendFun . parensQuote . thrice prd $ "Executing as " <> aOrAnOnLower s
             logPla "adminAs" i . T.concat $ [ "Executing "
                                             , dblQuote rest
                                             , " as "
                                             , aOrAnOnLower . descSingId targetId $ ms
                                             , "." ]
+            sendFun . parensQuote . thrice prd $ "Executing as " <> aOrAnOnLower s
         sorry txt  = sendFun txt >> sendDfltPrompt mq i
         sorryParse = sorry . sorryParseId $ strippedTarget'
     in case reads . T.unpack $ strippedTarget :: [(Int, String)] of
@@ -350,7 +350,7 @@ hasType i = views typeTbl ((i `elem`) . IM.keys)
 
 adminBanHost :: ActionFun
 adminBanHost (NoArgs i mq cols) = (withDbExHandler "adminBanHost" . getDbTblRecs $ "ban_host") >>= \case
-  Just xs -> dumpDbTblHelper mq cols (xs :: [BanHostRec]) >> logPlaExecArgs (prefixAdminCmd "banhost") [] i
+  Just xs -> logPlaExecArgs (prefixAdminCmd "banhost") [] i >> dumpDbTblHelper mq cols (xs :: [BanHostRec])
   Nothing -> dbError mq cols
 adminBanHost p@AdviseOneArg = advise p [ prefixAdminCmd "banhost" ] adviceABanHostNoReason
 adminBanHost   (MsgWithTarget i mq cols (uncapitalize -> target) msg) = getState >>= \ms ->
@@ -368,10 +368,10 @@ notifyBan i mq cols selfSing target newStatus x =
     let fn          = "notifyBan"
         (v, suffix) = newStatus ? ("banned", [ ": " <> pp x ]) :? ("unbanned", [ ": " <> pp x ])
     in do
-        wrapSend mq cols   . T.concat $ [ "You have ",     v, " ", target ] ++ suffix
-        bcastOtherAdmins i . T.concat $ [ selfSing, spaced v,      target ] ++ suffix
         logNotice fn       . T.concat $ [ selfSing, spaced v,      target ] ++ suffix
         logPla    fn i     . T.concat $ [                  v, " ", target ] ++ suffix
+        wrapSend mq cols   . T.concat $ [ "You have ",     v, " ", target ] ++ suffix
+        bcastOtherAdmins i . T.concat $ [ selfSing, spaced v,      target ] ++ suffix
 
 
 -----
@@ -379,7 +379,7 @@ notifyBan i mq cols selfSing target newStatus x =
 
 adminBanPC :: ActionFun
 adminBanPC (NoArgs i mq cols) = withDbExHandler "adminBanPC" (getDbTblRecs "ban_pc") >>= \case
-  Just xs -> dumpDbTblHelper mq cols (xs :: [BanPCRec]) >> logPlaExecArgs (prefixAdminCmd "banpc") [] i
+  Just xs -> logPlaExecArgs (prefixAdminCmd "banpc") [] i >> dumpDbTblHelper mq cols (xs :: [BanPCRec])
   Nothing -> dbError mq cols
 adminBanPC p@AdviseOneArg                         = advise p [ prefixAdminCmd "banpc" ] adviceABanPCNoReason
 adminBanPC p@(MsgWithTarget i mq cols target msg) = getState >>= \ms ->
@@ -470,8 +470,8 @@ informNoChans mq cols = wrapSend mq cols "No channels exist!"
 
 
 adminChanIOHelper :: Id -> MsgQueue -> [[Text]] -> MudStack ()
-adminChanIOHelper i mq reports = sequence_ [ pager i mq Nothing . intercalate [""] $ reports
-                                           , logPlaExec (prefixAdminCmd "channel") i ]
+adminChanIOHelper i mq reports = sequence_ [ logPlaExec (prefixAdminCmd "channel") i
+                                           , pager i mq Nothing . intercalate [""] $ reports ]
 
 
 -----
@@ -479,11 +479,11 @@ adminChanIOHelper i mq reports = sequence_ [ pager i mq Nothing . intercalate ["
 
 adminCount :: ActionFun
 adminCount (NoArgs i mq cols) = do
-    pager i mq Nothing . concatMap (wrapIndent 2 cols) =<< mkCountTxt
     logPlaExecArgs (prefixAdminCmd "count") [] i
+    pager i mq Nothing . concatMap (wrapIndent 2 cols) =<< mkCountTxt
 adminCount p@ActionParams { myId, args } = do
-    dispMatches p 2 =<< mkCountTxt
     logPlaExecArgs (prefixAdminCmd "count") args myId
+    dispMatches p 2 =<< mkCountTxt
 
 
 mkCountTxt :: MudStack [Text]
@@ -576,8 +576,8 @@ mkCountTxt = map (uncurry mappend . second commaShow) <$> helper
 
 adminDate :: ActionFun
 adminDate (NoArgs' i mq) = do
-    send mq . nlnl . T.pack . formatTime defaultTimeLocale "%A %B %d" =<< liftIO getZonedTime
     logPlaExec (prefixAdminCmd "date") i
+    send mq . nlnl . T.pack . formatTime defaultTimeLocale "%A %B %d" =<< liftIO getZonedTime
 adminDate p = withoutArgs adminDate p
 
 
@@ -595,7 +595,7 @@ adminDiscover p@ActionParams { plaMsgQueue, plaCols } = dumpCmdHelper "discover"
 
 
 adminDispCmdList :: ActionFun
-adminDispCmdList p@(LowerNub' i as) = dispCmdList adminCmds p >> logPlaExecArgs (prefixAdminCmd "?") as i
+adminDispCmdList p@(LowerNub' i as) = logPlaExecArgs (prefixAdminCmd "?") as i >> dispCmdList adminCmds p
 adminDispCmdList p                  = patternMatchFail "adminDispCmdList" . showText $ p
 
 
@@ -613,8 +613,8 @@ adminExamine   (LowerNub i mq cols as) = getState >>= \ms ->
           where
             sorry = pure . sorryParseId $ a
     in do
-        pager i mq Nothing . concatMap (wrapIndent 2 cols) . intercalateDivider cols . map helper $ as
         logPlaExecArgs (prefixAdminCmd "examine") as i
+        pager i mq Nothing . concatMap (wrapIndent 2 cols) . intercalateDivider cols . map helper $ as
 adminExamine p = patternMatchFail "adminExamine" . showText $ p
 
 
@@ -918,7 +918,7 @@ adminExamineSelf p              = withoutArgs adminExamineSelf p
 
 
 adminExp :: ActionFun
-adminExp (NoArgs' i mq) = pager i mq Nothing mkReport >> logPlaExec (prefixAdminCmd "experience") i
+adminExp (NoArgs' i mq) = logPlaExec (prefixAdminCmd "experience") i >> pager i mq Nothing mkReport
   where
     mkReport = header ++ pure zero ++ take 25 (map helper calcLvlExps)
     header   = [ "Level  Experience", T.replicate 17 "=" ]
@@ -936,8 +936,8 @@ adminFarewell   (LowerNub i mq cols as) = getState >>= \ms ->
     let helper target | notFound <- pure . sorryPCName $ target
                       , found    <- \(targetId, _) -> mkFarewellStats targetId ms
                       = findFullNameForAbbrev target (mkAdminPlaIdSingList ms) |&| maybe notFound found
-    in do { pager i mq Nothing . concat . wrapLines cols . intercalateDivider cols . map (helper . capitalize) $ as
-          ; logPlaExecArgs (prefixAdminCmd "farewell") as i }
+    in do { logPlaExecArgs (prefixAdminCmd "farewell") as i
+          ; pager i mq Nothing . concat . wrapLines cols . intercalateDivider cols . map (helper . capitalize) $ as }
 adminFarewell p = patternMatchFail "adminFarewell" . showText $ p
 
 
@@ -948,10 +948,10 @@ adminHash :: ActionFun
 adminHash p@AdviseNoArgs                      = advise p [ prefixAdminCmd "hash" ] adviceAHashNoArgs
 adminHash p@AdviseOneArg                      = advise p [ prefixAdminCmd "hash" ] adviceAHashNoHash
 adminHash   (WithArgs i mq cols [ pw, hash ]) = do
+    logPlaExec (prefixAdminCmd "hash") i
     wrapSend mq cols $ if uncurry validatePassword ((hash, pw) & both %~ T.encodeUtf8)
       then "It's a match!"
       else "The plain-text password does not match the hashed password."
-    logPlaExec (prefixAdminCmd "hash") i
 adminHash p = advise p [ prefixAdminCmd "hash" ] adviceAHashExcessArgs
 
 
@@ -960,14 +960,13 @@ adminHash p = advise p [ prefixAdminCmd "hash" ] adviceAHashExcessArgs
 
 adminHost :: ActionFun
 adminHost p@AdviseNoArgs            = advise p [ prefixAdminCmd "host" ] adviceAHostNoArgs
-adminHost   (LowerNub i mq cols as) = do
-    ms          <- getState
+adminHost   (LowerNub i mq cols as) = getState >>= \ms -> do
+    logPlaExecArgs (prefixAdminCmd "host") as i
     (now, zone) <- (,) <$> liftIO getCurrentTime <*> liftIO getCurrentTimeZone
     let helper target = let notFound = pure . sorryPCName $ target
                             found    = uncurry . mkHostReport ms now $ zone
                         in findFullNameForAbbrev target (mkAdminPlaIdSingList ms) |&| maybe notFound found
     multiWrapSend mq cols . intercalate [""] . map (helper . capitalize) $ as
-    logPlaExecArgs (prefixAdminCmd "host") as i
 adminHost p = patternMatchFail "adminHost" . showText $ p
 
 
@@ -1008,12 +1007,12 @@ adminIncognito :: ActionFun
 adminIncognito (NoArgs i mq cols) = modifyStateSeq $ \ms ->
     let s              = getSing i ms
         isIncog        = isIncognitoId i ms
-        fs | isIncog   = [ wrapSend mq cols "You are no longer incognito."
-                         , bcastOtherAdmins i $ s <> " is no longer incognito."
-                         , logPla "adminIncognito helper fs" i "no longer incognito." ]
-           | otherwise = [ wrapSend mq cols "You have gone incognito."
-                         , bcastOtherAdmins i $ s <> " has gone incognito."
-                         , logPla "adminIncognito helper fs" i "went incognito." ]
+        fs | isIncog   = [ logPla "adminIncognito helper fs" i "going visible."
+                         , wrapSend mq cols "You are no longer incognito."
+                         , bcastOtherAdmins i $ s <> " is no longer incognito." ]
+           | otherwise = [ logPla "adminIncognito helper fs" i "going incognito."
+                         , wrapSend mq cols "You have gone incognito."
+                         , bcastOtherAdmins i $ s <> " has gone incognito." ]
     in (ms & plaTbl.ind i %~ setPlaFlag IsIncognito (not isIncog), fs)
 adminIncognito p = withoutArgs adminIncognito p
 
@@ -1023,9 +1022,9 @@ adminIncognito p = withoutArgs adminIncognito p
 
 adminIp :: ActionFun
 adminIp (NoArgs i mq cols) = do
+    logPlaExec (prefixAdminCmd "ip") i
     ifList <- liftIO mkInterfaceList
     multiWrapSend mq cols [ "Interfaces: " <> ifList, prd $ "Listening on port " <> showText port ]
-    logPlaExec (prefixAdminCmd "ip") i
 adminIp p = withoutArgs adminIp p
 
 
@@ -1036,11 +1035,11 @@ adminKill :: ActionFun
 adminKill p@AdviseNoArgs            = advise p [ prefixAdminCmd "kill" ] adviceAKillNoArgs
 adminKill   (LowerNub i mq cols as) = getState >>= \ms -> do
     let (is, toSelfs) = helper ms
+        f             = logPla (prefixAdminCmd "kill")
+    unless (()# is) $ do { f i . prd . ("killing " <>) . commas . map (`descSingId` ms) $ is
+                         ; forM_ is . flip f $ prd ("killed by " <> getSing i ms) }
     multiWrapSend mq cols toSelfs
     bcast . mkBs ms $ is
-    let f = logPla (prefixAdminCmd "kill")
-    unless (()# is) $ do { f i . prd . ("killing " <>) . commas . map (`descSingId` ms) $ is
-                         ; forM_ is $ \targetId -> f targetId . prd $ "killed by " <> getSing i ms }
     mapM_ handleDeath is
   where
     helper ms = foldl' f mempties as
@@ -1083,6 +1082,7 @@ adminKill p = patternMatchFail "adminKill" . showText $ p
 adminLink :: ActionFun
 adminLink p@AdviseNoArgs            = advise p [ prefixAdminCmd "link" ] adviceALinkNoArgs
 adminLink   (LowerNub i mq cols as) = getState >>= \ms -> do
+    logPlaExecArgs (prefixAdminCmd "link") as i
     let helper target =
             let notFound              = unadulterated . sorryPCName $ target
                 found (_, targetSing) = (\case
@@ -1095,7 +1095,6 @@ adminLink   (LowerNub i mq cols as) = getState >>= \ms -> do
                     mkCountSings ss = [ (length &&& head) g | g <- sortGroup . map fromOnly $ ss ]
             in findFullNameForAbbrev target (mkAdminPlaIdSingList ms) |&| maybe notFound found
     pager i mq Nothing . noneOnNull . intercalateDivider cols =<< forM as (helper . capitalize . T.toLower)
-    logPlaExecArgs (prefixAdminCmd "link") as i
 adminLink p = patternMatchFail "adminLink" . showText $ p
 
 
@@ -1114,8 +1113,8 @@ adminLocate   (LowerNub i mq cols as) = getState >>= \ms ->
             locate targetId = let (_, desc) = locateHelper ms [] targetId
                               in mkNameTypeIdDesc targetId ms <> (()!# desc |?| (", " <> desc))
     in do
-        multiWrapSend mq cols . intersperse "" . map helper $ as
         logPlaExecArgs (prefixAdminCmd "locate") as i
+        multiWrapSend mq cols . intersperse "" . map helper $ as
 adminLocate p = patternMatchFail "adminLocate" . showText $ p
 
 
@@ -1125,8 +1124,7 @@ adminLocate p = patternMatchFail "adminLocate" . showText $ p
 adminMsg :: ActionFun
 adminMsg p@AdviseNoArgs                         = advise p [ prefixAdminCmd "message" ] adviceAMsgNoArgs
 adminMsg p@AdviseOneArg                         = advise p [ prefixAdminCmd "message" ] adviceAMsgNoMsg
-adminMsg   (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsgs ->
-    logMsgs |#| let f = uncurry . logPla $ "adminMsg" in mapM_ f
+adminMsg   (MsgWithTarget i mq cols target msg) = getState >>= helper >>= (|#| mapM_ (uncurry . logPla $ "adminMsg"))
   where
     helper ms =
         let SingleTarget { .. } = mkSingleTarget mq cols target "The PC name of the player you wish to message"
@@ -1189,14 +1187,14 @@ adminPassword p@(WithTarget i mq cols target pw)
       let SingleTarget { .. } = mkSingleTarget mq cols target "The PC name of the player whose password you wish to change"
           changePW            = (withDbExHandler fn . liftIO . lookupPW $ strippedTarget) >>= \case
             Nothing           -> dbError mq cols
-            Just (Just oldPW) -> do
-                withDbExHandler_ fn . insertDbTblUnPw . UnPwRec strippedTarget $ pw
-                sendFun $ strippedTarget <> "'s password has been changed."
-                let msg      = T.concat [ getSing i ms, " has changed ", strippedTarget, "'s password" ]
+            Just (Just oldPW) ->
+                let msg      = T.concat [ getSing i ms, " is changing ", strippedTarget, "'s password" ]
                     oldPwMsg = prd . spcL $ parensQuote ("was " <> dblQuote oldPW)
-                bcastOtherAdmins i . prd $ msg
-                logPla fn i . T.concat $ [ "changed ", strippedTarget, "'s password", oldPwMsg ]
-                logNotice fn $ msg <> oldPwMsg
+                in do { logPla fn i . T.concat $ [ "changing ", strippedTarget, "'s password", oldPwMsg ]
+                      ; logNotice fn $ msg <> oldPwMsg
+                      ; bcastOtherAdmins i . prd $ msg
+                      ; withDbExHandler_ fn . insertDbTblUnPw . UnPwRec strippedTarget $ pw
+                      ; sendFun $ strippedTarget <> "'s password has been changed." }
             Just Nothing -> blowUp fn "password not found in database" strippedTarget
       in if
         | not . inRange (minPwLen, maxPwLen) . T.length $ pw -> sendFun sorryInterpNewPwLen
@@ -1231,7 +1229,7 @@ adminMyChans   (LowerNub i mq cols as) = getState >>= \ms ->
         allReports = intercalateDivider cols . map (helper . capitalize) $ as
     in case views chanTbl IM.size ms of
       0 -> informNoChans mq cols
-      _ -> pager i mq Nothing allReports >> logPlaExec (prefixAdminCmd "mychannels") i
+      _ -> logPlaExec (prefixAdminCmd "mychannels") i >> pager i mq Nothing allReports
 adminMyChans p = patternMatchFail "adminMyChans" . showText $ p
 
 
@@ -1240,11 +1238,10 @@ adminMyChans p = patternMatchFail "adminMyChans" . showText $ p
 
 adminPeep :: ActionFun
 adminPeep p@AdviseNoArgs            = advise p [ prefixAdminCmd "peep" ] adviceAPeepNoArgs
-adminPeep   (LowerNub i mq cols as) = do
-    (msgs, unzip -> (logMsgsSelf, logMsgsOthers)) <- modifyState helper
-    multiWrapSend mq cols msgs
-    logPla "adminPeep" i . prd . slashes $ logMsgsSelf
-    forM_ logMsgsOthers . uncurry . logPla $ "adminPeep"
+adminPeep   (LowerNub i mq cols as) = do { (msgs, unzip -> (logMsgsSelf, logMsgsOthers)) <- modifyState helper
+                                         ; logPla "adminPeep" i . prd . slashes $ logMsgsSelf
+                                         ; forM_ logMsgsOthers . uncurry . logPla $ "adminPeep"
+                                         ; multiWrapSend mq cols msgs }
   where
     helper ms =
         let s     = getSing i ms
@@ -1275,7 +1272,7 @@ adminPeep p = patternMatchFail "adminPeep" . showText $ p
 
 
 adminPersist :: ActionFun
-adminPersist (NoArgs' i mq) = persist >> ok mq >> logPlaExec (prefixAdminCmd "persist") i
+adminPersist (NoArgs' i mq) = logPlaExec (prefixAdminCmd "persist") i >> persist >> ok mq
 adminPersist p              = withoutArgs adminPersist p
 
 
@@ -1294,11 +1291,10 @@ adminPossess   (OneArgNubbed i mq cols target) = modifyStateSeq $ \ms ->
             can'tPossess pi = sorry . sorryAlreadyPossessed targetSing . getSing pi $ ms
             canPossess      = ( ms & plaTbl.ind i       .possessing   ?~ targetId
                                    & npcTbl.ind targetId.npcPossessor ?~ i
-                              , [ sendFun . prd $ "You are now possessing " <> aOrAnOnLower targetSing
-                                , sendDfltPrompt mq targetId
-                                , logPla "adminPossess" i $ "started possessing "                 <>
-                                                            aOrAnOnLower (descSingId targetId ms) <>
-                                                            "." ] )
+                              , [ logPla "adminPossess" i logMsg
+                                , sendFun . prd $ "You are now possessing " <> aOrAnOnLower targetSing
+                                , sendDfltPrompt mq targetId ] )
+            logMsg          = prd $ "started possessing " <> aOrAnOnLower (descSingId targetId ms)
         sorry txt = (ms, [ sendFun txt, sendDfltPrompt mq i ])
     in case reads . T.unpack $ strippedTarget :: [(Int, String)] of
       [(targetId, "")]
@@ -1319,10 +1315,10 @@ adminPossess ActionParams { myId, plaMsgQueue, plaCols } = do
 adminPrint :: ActionFun
 adminPrint p@AdviseNoArgs    = advise p [ prefixAdminCmd "print" ] adviceAPrintNoArgs
 adminPrint   (Msg' i mq msg) = getState >>= \ms -> let s = getSing i ms in do
-    liftIO . T.putStrLn $ bracketQuote s |<>| colorWith printConsoleColor msg
-    ok mq
     logPla    "adminPrint" i $       "printed "  <> dblQuote msg
     logNotice "adminPrint"   $ s <> " printed, " <> dblQuote msg
+    liftIO . T.putStrLn $ bracketQuote s |<>| colorWith printConsoleColor msg
+    ok mq
 adminPrint p = patternMatchFail "adminPrint" . showText $ p
 
 
@@ -1341,9 +1337,9 @@ adminProfanity p@ActionParams { plaMsgQueue, plaCols } = dumpCmdHelper "profanit
 
 adminSearch :: ActionFun
 adminSearch p@AdviseNoArgs                          = advise p [ prefixAdminCmd "search" ] adviceASearchNoArgs
-adminSearch   (WithArgs i mq cols (T.unwords -> a)) = getState >>= \ms -> do
-    multiWrapSend mq cols $ descMatchingSings ms ++ [""] ++ descMatchingRmNames ms
+adminSearch   (WithArgs i mq cols (T.unwords -> a)) = do
     logPlaExecArgs (prefixAdminCmd "search") (pure a) i
+    multiWrapSend mq cols =<< (middle (++) [""] <$> descMatchingSings <*> descMatchingRmNames) <$> getState
   where
     descMatchingSings ms =
       let idSings = views entTbl (map (_2 %~ view sing) . IM.toList) ms

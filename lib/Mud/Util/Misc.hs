@@ -42,6 +42,7 @@ module Mud.Util.Misc ( atLst1
                      , maybeRet
                      , maybeVoid
                      , mempties
+                     , middle
                      , mIf
                      , minusFifth
                      , minusQuarter
@@ -258,6 +259,10 @@ listToMaybe :: (Show a) => [a] -> Maybe a
 listToMaybe []  = Nothing
 listToMaybe [a] = Just a
 listToMaybe xs  = patternMatchFail "Mud.Util.Misc" "listToMaybe" xs
+
+
+middle :: (a -> b -> a) -> b -> a -> b -> a
+middle f mid x y = x `f` mid `f` y
 
 
 mIf :: (Monad m) => m Bool -> m a -> m a -> m a
