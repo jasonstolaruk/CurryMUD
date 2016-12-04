@@ -1368,8 +1368,8 @@ adminSecurity :: ActionFun
 adminSecurity p@AdviseNoArgs            = advise p [ prefixAdminCmd "security" ] adviceASecurityNoArgs
 adminSecurity   (LowerNub i mq cols as) = withDbExHandler "adminSecurity" (getDbTblRecs "sec") >>= \case
   Just (recs :: [SecRec]) -> do
-      multiWrapSend mq cols . intercalateDivider cols . concatMap (helper recs . capitalize . T.toLower) $ as
       logPlaExecArgs (prefixAdminCmd "security") as i
+      multiWrapSend mq cols . intercalateDivider cols . concatMap (helper recs . capitalize . T.toLower) $ as
   Nothing   -> dbError mq cols
   where
     helper recs target = case filter ((target `T.isPrefixOf`) . (dbName :: SecRec -> Text)) recs of
@@ -1391,19 +1391,18 @@ adminSet :: ActionFun
 adminSet p@AdviseNoArgs = advise p [ prefixAdminCmd "set" ] adviceASetNoArgs
 adminSet p@AdviseOneArg = advise p [ prefixAdminCmd "set" ] adviceASetNoSettings
 adminSet   (WithArgs i mq cols (target:rest)) =
-    helper |&| modifyState >=> \(toSelfMsgs, mTargetId, toTargetMsgs, logMsgs, fs) -> do
-        multiWrapSend mq cols toSelfMsgs
-        let ioHelper targetId = getState >>= \ms -> do
-                let f = case getType targetId ms of
-                          PCType  -> retainedMsg targetId ms
-                          NpcType -> bcast . mkBcast targetId
-                          t       -> patternMatchFail "adminSet f" . showText $ t
-                unless (isIncognitoId i ms || targetId == i) . forM_ (dropBlanks toTargetMsgs) $ f . colorWith adminSetColor
-                sequence_ fs
-                logMsgs |#| logPla (prefixAdminCmd "set") i . g . slashes
+    helper |&| modifyState >=> \(toSelfMsgs, mTargetId, toTargetMsgs, logMsgs, fs) ->
+        let ioHelper targetId = getState >>= \ms ->
+                let f msg = (colorWith adminSetColor msg |&|) $ case getType targetId ms of
+                        PCType  -> retainedMsg targetId ms
+                        NpcType -> bcast . mkBcast targetId
+                        t       -> patternMatchFail "adminSet f" . showText $ t
+                in do { logMsgs |#| logPla (prefixAdminCmd "set") i . g . slashes
+                      ; unless (isIncognitoId i ms || targetId == i) . mapM_ f . dropBlanks $ toTargetMsgs
+                      ; sequence_ fs }
               where
                 g = (parensQuote ("for ID " <> showText targetId) <>) . spcL
-        maybeVoid ioHelper mTargetId
+        in multiWrapSend mq cols toSelfMsgs >> maybeVoid ioHelper mTargetId
   where
     helper ms = case reads . T.unpack $ target :: [(Int, String)] of
       [(targetId, "")] | targetId < 0                -> sorryHelper sorryWtf
@@ -1415,7 +1414,9 @@ adminSet   (WithArgs i mq cols (target:rest)) =
         sorryHelper = (ms, ) . (, Nothing, [], [], []) . pure
         f targetId  = maybe (sorryHelper sorryQuoteChars) g . procQuoteChars $ rest
           where
-            g rest' = let (ms', toSelfMsgs, toTargetMsgs, logMsgs, fs) = foldl' (setHelper targetId) (ms, [], [], [], []) rest'
+            g rest' = let (ms', toSelfMsgs, toTargetMsgs, logMsgs, fs) = foldl' (setHelper targetId)
+                                                                                (ms, [], [], [], [])
+                                                                                rest'
                       in (ms', (toSelfMsgs, Just targetId, toTargetMsgs, logMsgs, fs))
 adminSet p = patternMatchFail "adminSet" . showText $ p
 
@@ -1908,10 +1909,10 @@ shutdownHelper i mq maybeMsg = getState >>= \ms ->
     let s    = getSing i ms
         rest = maybeMsg |&| maybe (prd . spcL . parensQuote $ "no message given") (("; message: " <>) . dblQuote)
     in do
-        massSend . colorWith shutdownMsgColor . fromMaybe dfltShutdownMsg $ maybeMsg
         logPla     "shutdownHelper" i $ "initiating shutdown" <> rest
         massLogPla "shutdownHelper"   $ "closing connection due to server shutdown initiated by " <> s <> rest
         logNotice  "shutdownHelper"   $ "server shutdown initiated by "                           <> s <> rest
+        massSend . colorWith shutdownMsgColor . fromMaybe dfltShutdownMsg $ maybeMsg
         writeMsg mq Shutdown
 
 
@@ -1935,17 +1936,13 @@ adminSudoer   (OneArgNubbed i mq cols target) = modifyStateSeq $ \ms ->
         , handlePeep     <-
             let peepingIds = getPeeping targetId ms
             in unless (()# peepingIds) . adminPeep . mkActionParams targetId ms . map (`getSing` ms) $ peepingIds
-        , fs <- [ retainedMsg targetId ms . colorWith promoteDemoteColor . T.concat $ [ selfSing
-                                                                                      , " has "
-                                                                                      , verb
-                                                                                      , " you "
-                                                                                      , toFrom
-                                                                                      , " admin status." ]
+        , fs <- [ logNotice fn          . T.concat $ [ selfSing, spaced verb, targetSing, "." ]
+                , logPla    fn i        . T.concat $ [ verb, " ",             targetSing, "." ]
+                , logPla    fn targetId . T.concat $ [ verb, " by ",          selfSing,   "." ]
+                , let msg = T.concat [ selfSing, " has ", verb, " you ", toFrom, " admin status." ]
+                  in retainedMsg targetId ms . colorWith promoteDemoteColor $ msg
                 , sendFun                           . T.concat $ [ "You have ",       verb, " ", targetSing, "." ]
                 , bcastAdminsExcept [ i, targetId ] . T.concat $ [ selfSing, " has ", verb, " ", targetSing, "." ]
-                , logNotice fn                      . T.concat $ [ selfSing, spaced verb,        targetSing, "." ]
-                , logPla    fn i                    . T.concat $ [ verb, " ",                    targetSing, "." ]
-                , logPla    fn targetId             . T.concat $ [ verb, " by ",                 selfSing,   "." ]
                 , handleIncog
                 , handlePeep ]
         -> if | targetId   == i        -> sorry sorrySudoerDemoteSelf
@@ -2033,10 +2030,10 @@ teleHelper p@ActionParams { myId } ms originId destId destName mt f sorry =
     in if | destId == originId   -> sorry sorryTeleAlready
           | destId == iWelcome   -> sorry sorryTeleWelcomeRm
           | destId == iLoggedOut -> sorry sorryTeleLoggedOutRm
-          | otherwise            -> (ms', [ sendGmcpRmInfo Nothing myId ms'
+          | otherwise            -> (ms', [ logPla "telehelper" myId . prd $ "teleported to " <> dblQuote destName
+                                          , sendGmcpRmInfo Nothing myId ms'
                                           , bcastIfNotIncog myId . f myId . g $ bs
                                           , look p
-                                          , logPla "telehelper" myId . prd $ "teleported to " <> dblQuote destName
                                           , rndmDos [ (calcProbTeleportDizzy   myId ms, mkExpAction "dizzy"   p)
                                                     , (calcProbTeleportShudder myId ms, mkExpAction "shudder" p) ] ])
 
@@ -2063,7 +2060,7 @@ adminTelePC ActionParams { plaMsgQueue, plaCols } = wrapSend plaMsgQueue plaCols
 
 
 adminTeleRm :: ActionFun
-adminTeleRm (NoArgs i mq cols) = (multiWrapSend mq cols =<< mkTxt) >> logPlaExecArgs (prefixAdminCmd "telerm") [] i
+adminTeleRm (NoArgs i mq cols) = logPlaExecArgs (prefixAdminCmd "telerm") [] i >> (multiWrapSend mq cols =<< mkTxt)
   where
     mkTxt  = views rmTeleNameTbl ((header :) . styleAbbrevs Don'tQuote . sort . IM.elems) <$> getState
     header = "You may teleport to the following rooms:"
@@ -2083,9 +2080,9 @@ adminTeleRm p = advise p [] adviceATeleRmExcessArgs
 
 adminTime :: ActionFun
 adminTime (NoArgs i mq cols) = do
+    logPlaExec (prefixAdminCmd "time") i
     (ct, zt) <- liftIO $ (,) <$> formatThat `fmap` getCurrentTime <*> formatThat `fmap` getZonedTime
     multiWrapSend mq cols [ thrice prd "At the tone, the time will be", ct, zt ]
-    logPlaExec (prefixAdminCmd "time") i
   where
     formatThat :: (FormatTime a) => a -> Text
     formatThat = T.pack . formatTime defaultTimeLocale "%Z: %F %T"
@@ -2100,17 +2097,12 @@ adminTType (NoArgs i mq cols) = (withDbExHandler "adminTType" . getDbTblRecs $ "
   Just xs ->
     let grouped = groupBy ((==) `on` dbTType) xs
         folded  = foldr (\g -> (((dbTType . head) &&& (nubSort . map (dbHost :: TTypeRec -> Text))) g :)) [] grouped
-        txtss   = [ uncurry (:) . first (<> t) $ pair | pair@(_, hosts) <- folded
-                                                      , let l = length hosts
-                                                      , let t = T.concat [ ": "
-                                                                         , showText l
-                                                                         , " host"
-                                                                         , pluralize ("", "s") l ] ]
-    in (>> logPlaExec (prefixAdminCmd "ttype") i) $ case intercalateDivider cols txtss of
+        txtss   = [ uncurry (:) . first (<> t) $ pair
+                  | pair@(_, hosts) <- folded, let l = length hosts
+                                             , let t = T.concat [ ": ", showText l, " host", pluralize ("", "s") l ] ]
+    in (logPlaExec (prefixAdminCmd "ttype") i >>) $ case intercalateDivider cols txtss of
           [] -> wrapSend      mq cols dbEmptyMsg
           ts -> multiWrapSend mq cols ts
-
-
   Nothing -> dbError mq cols
 adminTType p = withoutArgs adminTType p
 
@@ -2130,8 +2122,8 @@ adminTypo p@ActionParams { plaMsgQueue, plaCols } = dumpCmdHelper "typo" f "typo
 
 adminUptime :: ActionFun
 adminUptime (NoArgs i mq cols) = do
-    send mq . nl =<< liftIO uptime |&| try >=> eitherRet ((sendGenericErrorMsg mq cols >>) . logIOEx "adminUptime")
     logPlaExec (prefixAdminCmd "uptime") i
+    send mq . nl =<< liftIO uptime |&| try >=> eitherRet (\res -> sendGenericErrorMsg mq cols >> logIOEx "adminUptime" res)
   where
     uptime = T.pack <$> readProcess "uptime" [] ""
 adminUptime p = withoutArgs adminUptime p
@@ -2146,10 +2138,10 @@ adminWhoIn = whoHelper LoggedIn "whoin"
 
 whoHelper :: LoggedInOrOut -> Text -> ActionFun
 whoHelper inOrOut cn (NoArgs i mq cols) = do
-    pager i mq Nothing =<< [ concatMap (wrapIndent 20 cols) charListTxt | charListTxt <- mkCharListTxt inOrOut <$> getState ]
     logPlaExecArgs (prefixAdminCmd cn) [] i
+    pager i mq Nothing =<< [ concatMap (wrapIndent 20 cols) charListTxt | charListTxt <- mkCharListTxt inOrOut <$> getState ]
 whoHelper inOrOut cn p@ActionParams { myId, args } =
-    (dispMatches p 20 =<< mkCharListTxt inOrOut <$> getState) >> logPlaExecArgs (prefixAdminCmd cn) args myId
+    logPlaExecArgs (prefixAdminCmd cn) args myId >> (dispMatches p 20 =<< mkCharListTxt inOrOut <$> getState)
 
 
 mkCharListTxt :: LoggedInOrOut -> MudState -> [Text]
@@ -2190,7 +2182,7 @@ adminWire p@AdviseNoArgs            = advise p [ prefixAdminCmd "wiretap" ] advi
 adminWire   (WithArgs i mq cols as) = views chanTbl IM.size <$> getState >>= \case
   0 -> informNoChans mq cols
   _ -> helper |&| modifyState >=> \(msgs, logMsgs) ->
-           multiWrapSend mq cols msgs >> logMsgs |#| logPlaOut (prefixAdminCmd "wiretap") i
+           logMsgs |#| logPlaOut (prefixAdminCmd "wiretap") i >> multiWrapSend mq cols msgs
   where
     helper ms = let (ms', msgs) = foldl' helperWire (ms, []) as
                 in (ms', (map fromEither &&& rights) msgs)
