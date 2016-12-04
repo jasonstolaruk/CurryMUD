@@ -62,31 +62,32 @@ persistHelper l ms = withLock l $ do
     createDirectory path
     cont <- dropIrrelevantFiles . sort <$> getDirectoryContents dir
     when (length cont > noOfPersistedWorlds) . removeDirectoryRecursive . (dir </>) . head $ cont
-    flip withAsync wait $ mapM_ runResourceT [ write (ms^.armTbl          ) $ path </> armTblFile
-                                             , write (ms^.chanTbl         ) $ path </> chanTblFile
-                                             , write (ms^.clothTbl        ) $ path </> clothTblFile
-                                             , write (ms^.coinsTbl        ) $ path </> coinsTblFile
-                                             , write (ms^.conTbl          ) $ path </> conTblFile
-                                             , write (ms^.corpseTbl       ) $ path </> corpseTblFile
-                                             , write (ms^.entTbl          ) $ path </> entTblFile
-                                             , write (eqTblHelper ms      ) $ path </> eqTblFile
-                                             , write (ms^.foodTbl         ) $ path </> foodTblFile
-                                             , write (ms^.hostTbl         ) $ path </> hostTblFile
-                                             , write (ms^.invTbl          ) $ path </> invTblFile
-                                             , write (ms^.mobTbl          ) $ path </> mobTblFile
-                                             , write (ms^.objTbl          ) $ path </> objTblFile
-                                             , write (ms^.pausedEffectsTbl) $ path </> pausedEffectsTblFile
-                                             , write (ms^.pcSingTbl       ) $ path </> pcSingTblFile
-                                             , write (ms^.pcTbl           ) $ path </> pcTblFile
-                                             , write (ms^.plaTbl          ) $ path </> plaTblFile
-                                             , write (ms^.rmTbl           ) $ path </> rmTblFile
-                                             , write (ms^.rmTeleNameTbl   ) $ path </> rmTeleNameTblFile
-                                             , write (ms^.rndmNamesMstrTbl) $ path </> rndmNamesMstrTblFile
-                                             , write (ms^.teleLinkMstrTbl ) $ path </> teleLinkMstrTblFile
-                                             , write (ms^.typeTbl         ) $ path </> typeTblFile
-                                             , write (ms^.vesselTbl       ) $ path </> vesselTblFile
-                                             , write (ms^.wpnTbl          ) $ path </> wpnTblFile
-                                             , write (ms^.writableTbl     ) $ path </> writableTblFile ]
+    flip withAsync wait $ mapM_ runResourceT [ write (ms^.armTbl                ) $ path </> armTblFile
+                                             , write (ms^.chanTbl               ) $ path </> chanTblFile
+                                             , write (ms^.clothTbl              ) $ path </> clothTblFile
+                                             , write (ms^.coinsTbl              ) $ path </> coinsTblFile
+                                             , write (ms^.conTbl                ) $ path </> conTblFile
+                                             , write (ms^.corpseTbl             ) $ path </> corpseTblFile
+                                             , write (ms^.entTbl                ) $ path </> entTblFile
+                                             , write (eqTblHelper ms            ) $ path </> eqTblFile
+                                             , write (ms^.foodTbl               ) $ path </> foodTblFile
+                                             , write (ms^.hostTbl               ) $ path </> hostTblFile
+                                             , write (ms^.invTbl                ) $ path </> invTblFile
+                                             , write (ms^.mobTbl                ) $ path </> mobTblFile
+                                             , write (ms^.objTbl                ) $ path </> objTblFile
+                                             , write (ms^.pausedCorpseDecompsTbl) $ path </> pausedCorpseDecompsTblFile
+                                             , write (ms^.pausedEffectsTbl      ) $ path </> pausedEffectsTblFile
+                                             , write (ms^.pcSingTbl             ) $ path </> pcSingTblFile
+                                             , write (ms^.pcTbl                 ) $ path </> pcTblFile
+                                             , write (ms^.plaTbl                ) $ path </> plaTblFile
+                                             , write (ms^.rmTbl                 ) $ path </> rmTblFile
+                                             , write (ms^.rmTeleNameTbl         ) $ path </> rmTeleNameTblFile
+                                             , write (ms^.rndmNamesMstrTbl      ) $ path </> rndmNamesMstrTblFile
+                                             , write (ms^.teleLinkMstrTbl       ) $ path </> teleLinkMstrTblFile
+                                             , write (ms^.typeTbl               ) $ path </> typeTblFile
+                                             , write (ms^.vesselTbl             ) $ path </> vesselTblFile
+                                             , write (ms^.wpnTbl                ) $ path </> wpnTblFile
+                                             , write (ms^.writableTbl           ) $ path </> writableTblFile ]
   where
     getNonExistingPath path = mIf (doesDirectoryExist path)
                                   (getNonExistingPath $ path ++ "_")

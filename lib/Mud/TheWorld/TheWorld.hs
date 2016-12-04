@@ -56,46 +56,48 @@ initMudData shouldLog = do
     (errorLogService, noticeLogService) <- initLogging shouldLog . Just $ logExLock
     genIO   <- createSystemRandom
     start   <- getTime Monotonic
-    msIORef <- newIORef MudState { _activeEffectsTbl  = IM.empty
-                                 , _armTbl            = IM.empty
-                                 , _chanTbl           = IM.empty
-                                 , _clothTbl          = IM.empty
-                                 , _coinsTbl          = IM.empty
-                                 , _conTbl            = IM.empty
-                                 , _corpseTbl         = IM.empty
-                                 , _distinctFoodTbl   = IM.empty
-                                 , _distinctLiqTbl    = IM.empty
-                                 , _effectFunTbl      =  M.empty
-                                 , _entTbl            = IM.empty
-                                 , _eqTbl             = IM.empty
-                                 , _feelingFunTbl     =  M.empty
-                                 , _foodTbl           = IM.empty
-                                 , _funTbl            =  M.empty
-                                 , _hookFunTbl        =  M.empty
-                                 , _hostTbl           =  M.empty
-                                 , _instaEffectFunTbl =  M.empty
-                                 , _invTbl            = IM.empty
-                                 , _mobTbl            = IM.empty
-                                 , _msgQueueTbl       = IM.empty
-                                 , _npcTbl            = IM.empty
-                                 , _objTbl            = IM.empty
-                                 , _pausedEffectsTbl  = IM.empty
-                                 , _pcSingTbl         =  M.empty
-                                 , _pcTbl             = IM.empty
-                                 , _pickPtsTbl        = IM.empty
-                                 , _plaLogTbl         = IM.empty
-                                 , _plaTbl            = IM.empty
-                                 , _rmActionFunTbl    =  M.empty
-                                 , _rmTbl             = IM.empty
-                                 , _rmTeleNameTbl     = IM.empty
-                                 , _rndmNamesMstrTbl  = IM.empty
-                                 , _talkAsyncTbl      =  M.empty
-                                 , _teleLinkMstrTbl   = IM.empty
-                                 , _threadTbl         =  M.empty
-                                 , _typeTbl           = IM.empty
-                                 , _vesselTbl         = IM.empty
-                                 , _wpnTbl            = IM.empty
-                                 , _writableTbl       = IM.empty }
+    msIORef <- newIORef MudState { _activeEffectsTbl       = IM.empty
+                                 , _armTbl                 = IM.empty
+                                 , _chanTbl                = IM.empty
+                                 , _clothTbl               = IM.empty
+                                 , _coinsTbl               = IM.empty
+                                 , _conTbl                 = IM.empty
+                                 , _corpseDecompAsyncTbl   = IM.empty
+                                 , _corpseTbl              = IM.empty
+                                 , _distinctFoodTbl        = IM.empty
+                                 , _distinctLiqTbl         = IM.empty
+                                 , _effectFunTbl           =  M.empty
+                                 , _entTbl                 = IM.empty
+                                 , _eqTbl                  = IM.empty
+                                 , _feelingFunTbl          =  M.empty
+                                 , _foodTbl                = IM.empty
+                                 , _funTbl                 =  M.empty
+                                 , _hookFunTbl             =  M.empty
+                                 , _hostTbl                =  M.empty
+                                 , _instaEffectFunTbl      =  M.empty
+                                 , _invTbl                 = IM.empty
+                                 , _mobTbl                 = IM.empty
+                                 , _msgQueueTbl            = IM.empty
+                                 , _npcTbl                 = IM.empty
+                                 , _objTbl                 = IM.empty
+                                 , _pausedCorpseDecompsTbl = IM.empty
+                                 , _pausedEffectsTbl       = IM.empty
+                                 , _pcSingTbl              =  M.empty
+                                 , _pcTbl                  = IM.empty
+                                 , _pickPtsTbl             = IM.empty
+                                 , _plaLogTbl              = IM.empty
+                                 , _plaTbl                 = IM.empty
+                                 , _rmActionFunTbl         =  M.empty
+                                 , _rmTbl                  = IM.empty
+                                 , _rmTeleNameTbl          = IM.empty
+                                 , _rndmNamesMstrTbl       = IM.empty
+                                 , _talkAsyncTbl           =  M.empty
+                                 , _teleLinkMstrTbl        = IM.empty
+                                 , _threadTbl              =  M.empty
+                                 , _typeTbl                = IM.empty
+                                 , _vesselTbl              = IM.empty
+                                 , _wpnTbl                 = IM.empty
+                                 , _writableTbl            = IM.empty }
     return MudData { _errorLog      = errorLogService
                    , _noticeLog     = noticeLogService
                    , _gen           = genIO
@@ -172,30 +174,31 @@ loadWorld :: FilePath -> MudStack Bool
 loadWorld dir = (</> dir) <$> liftIO (mkMudFilePath persistDirFun) >>= \path -> do
     logNotice "loadWorld" $ "loading the world from the " <> showText dir <> " directory."
     loadEqTblRes <- loadEqTbl path
-    ((loadEqTblRes :) -> res) <- mapM (path |&|) [ loadTbl armTblFile           armTbl
-                                                 , loadTbl chanTblFile          chanTbl
-                                                 , loadTbl clothTblFile         clothTbl
-                                                 , loadTbl coinsTblFile         coinsTbl
-                                                 , loadTbl conTblFile           conTbl
-                                                 , loadTbl corpseTblFile        corpseTbl
-                                                 , loadTbl entTblFile           entTbl
-                                                 , loadTbl foodTblFile          foodTbl
-                                                 , loadTbl hostTblFile          hostTbl
-                                                 , loadTbl invTblFile           invTbl
-                                                 , loadTbl mobTblFile           mobTbl
-                                                 , loadTbl objTblFile           objTbl
-                                                 , loadTbl pausedEffectsTblFile pausedEffectsTbl
-                                                 , loadTbl pcSingTblFile        pcSingTbl
-                                                 , loadTbl pcTblFile            pcTbl
-                                                 , loadTbl plaTblFile           plaTbl
-                                                 , loadTbl rmTblFile            rmTbl
-                                                 , loadTbl rmTeleNameTblFile    rmTeleNameTbl
-                                                 , loadTbl rndmNamesMstrTblFile rndmNamesMstrTbl
-                                                 , loadTbl teleLinkMstrTblFile  teleLinkMstrTbl
-                                                 , loadTbl typeTblFile          typeTbl
-                                                 , loadTbl vesselTblFile        vesselTbl
-                                                 , loadTbl wpnTblFile           wpnTbl
-                                                 , loadTbl writableTblFile      writableTbl ]
+    ((loadEqTblRes :) -> res) <- mapM (path |&|) [ loadTbl armTblFile                 armTbl
+                                                 , loadTbl chanTblFile                chanTbl
+                                                 , loadTbl clothTblFile               clothTbl
+                                                 , loadTbl coinsTblFile               coinsTbl
+                                                 , loadTbl conTblFile                 conTbl
+                                                 , loadTbl corpseTblFile              corpseTbl
+                                                 , loadTbl entTblFile                 entTbl
+                                                 , loadTbl foodTblFile                foodTbl
+                                                 , loadTbl hostTblFile                hostTbl
+                                                 , loadTbl invTblFile                 invTbl
+                                                 , loadTbl mobTblFile                 mobTbl
+                                                 , loadTbl objTblFile                 objTbl
+                                                 , loadTbl pausedCorpseDecompsTblFile pausedCorpseDecompsTbl
+                                                 , loadTbl pausedEffectsTblFile       pausedEffectsTbl
+                                                 , loadTbl pcSingTblFile              pcSingTbl
+                                                 , loadTbl pcTblFile                  pcTbl
+                                                 , loadTbl plaTblFile                 plaTbl
+                                                 , loadTbl rmTblFile                  rmTbl
+                                                 , loadTbl rmTeleNameTblFile          rmTeleNameTbl
+                                                 , loadTbl rndmNamesMstrTblFile       rndmNamesMstrTbl
+                                                 , loadTbl teleLinkMstrTblFile        teleLinkMstrTbl
+                                                 , loadTbl typeTblFile                typeTbl
+                                                 , loadTbl vesselTblFile              vesselTbl
+                                                 , loadTbl wpnTblFile                 wpnTbl
+                                                 , loadTbl writableTblFile            writableTbl ]
     tweak $ \ms -> foldr removeAdHoc ms . getInv iWelcome $ ms
     initActiveEffectsTbl
     movePCs

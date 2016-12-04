@@ -965,27 +965,28 @@ descThreads = do
   where
     mkDesc (ti, bracketPad 20 . mkTypeName -> tn) = [ T.concat [ padOrTrunc 16 . showText $ ti, tn, ts ]
                                                     | (showText -> ts) <- liftIO . threadStatus $ ti ]
-    mkTypeName (Biodegrader    (showText -> pi)) = padOrTrunc padAmt "Biodegrader"  <> pi
-    mkTypeName (Digester       (showText -> pi)) = padOrTrunc padAmt "Digester"     <> pi
-    mkTypeName (DrinkingThread (showText -> pi)) = padOrTrunc padAmt "Drinking"     <> pi
-    mkTypeName (EatingThread   (showText -> pi)) = padOrTrunc padAmt "Eating"       <> pi
-    mkTypeName (EffectListener (showText -> pi)) = padOrTrunc padAmt "EffListen"    <> pi
-    mkTypeName (EffectThread   (showText -> pi)) = padOrTrunc padAmt "EffThread"    <> pi
-    mkTypeName (EffectTimer    (showText -> pi)) = padOrTrunc padAmt "EffTimer"     <> pi
-    mkTypeName (FeelingTimer   (showText -> pi)) = padOrTrunc padAmt "FeelingTimer" <> pi
-    mkTypeName (InacTimer      (showText -> pi)) = padOrTrunc padAmt "InacTimer"    <> pi
-    mkTypeName (MovingThread   (showText -> pi)) = padOrTrunc padAmt "Moving"       <> pi
-    mkTypeName (NpcServer      (showText -> pi)) = padOrTrunc padAmt "NpcServer"    <> pi
-    mkTypeName (PlaLog         (showText -> pi)) = padOrTrunc padAmt "PlaLog"       <> pi
-    mkTypeName (Receive        (showText -> pi)) = padOrTrunc padAmt "Receive"      <> pi
-    mkTypeName (RegenChild     (showText -> pi)) = padOrTrunc padAmt "RegenChild"   <> pi
-    mkTypeName (RegenParent    (showText -> pi)) = padOrTrunc padAmt "RegenParent"  <> pi
-    mkTypeName (RmFun          (showText -> pi)) = padOrTrunc padAmt "RmFun"        <> pi
-    mkTypeName (Server         (showText -> pi)) = padOrTrunc padAmt "Server"       <> pi
-    mkTypeName (SpiritTimer    (showText -> pi)) = padOrTrunc padAmt "SpiritTimer"  <> pi
-    mkTypeName (Talk           (showText -> pi)) = padOrTrunc padAmt "Talk"         <> pi
-    mkTypeName (showText -> tt)                  = tt -- For thread types without an ID.
-    padAmt                                       = 13
+    mkTypeName (Biodegrader      (showText -> pi)) = padOrTrunc padAmt "Biodegrader"  <> pi
+    mkTypeName (CorpseDecomposer (showText -> pi)) = padOrTrunc padAmt "CorpseDecomp" <> pi
+    mkTypeName (Digester         (showText -> pi)) = padOrTrunc padAmt "Digester"     <> pi
+    mkTypeName (DrinkingThread   (showText -> pi)) = padOrTrunc padAmt "Drinking"     <> pi
+    mkTypeName (EatingThread     (showText -> pi)) = padOrTrunc padAmt "Eating"       <> pi
+    mkTypeName (EffectListener   (showText -> pi)) = padOrTrunc padAmt "EffListen"    <> pi
+    mkTypeName (EffectThread     (showText -> pi)) = padOrTrunc padAmt "EffThread"    <> pi
+    mkTypeName (EffectTimer      (showText -> pi)) = padOrTrunc padAmt "EffTimer"     <> pi
+    mkTypeName (FeelingTimer     (showText -> pi)) = padOrTrunc padAmt "FeelingTimer" <> pi
+    mkTypeName (InacTimer        (showText -> pi)) = padOrTrunc padAmt "InacTimer"    <> pi
+    mkTypeName (MovingThread     (showText -> pi)) = padOrTrunc padAmt "Moving"       <> pi
+    mkTypeName (NpcServer        (showText -> pi)) = padOrTrunc padAmt "NpcServer"    <> pi
+    mkTypeName (PlaLog           (showText -> pi)) = padOrTrunc padAmt "PlaLog"       <> pi
+    mkTypeName (Receive          (showText -> pi)) = padOrTrunc padAmt "Receive"      <> pi
+    mkTypeName (RegenChild       (showText -> pi)) = padOrTrunc padAmt "RegenChild"   <> pi
+    mkTypeName (RegenParent      (showText -> pi)) = padOrTrunc padAmt "RegenParent"  <> pi
+    mkTypeName (RmFun            (showText -> pi)) = padOrTrunc padAmt "RmFun"        <> pi
+    mkTypeName (Server           (showText -> pi)) = padOrTrunc padAmt "Server"       <> pi
+    mkTypeName (SpiritTimer      (showText -> pi)) = padOrTrunc padAmt "SpiritTimer"  <> pi
+    mkTypeName (Talk             (showText -> pi)) = padOrTrunc padAmt "Talk"         <> pi
+    mkTypeName (showText -> tt)                    = tt -- For thread types without an ID.
+    padAmt                                         = 13
 
 
 -----

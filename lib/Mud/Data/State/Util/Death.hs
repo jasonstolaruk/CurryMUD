@@ -152,11 +152,11 @@ mkCorpse :: Id -> MudState -> (MudState, Funs)
 mkCorpse i ms = let et     = EntTemplate (Just "corpse")
                                          s p
                                          (getEntDesc i ms)
-                                         Nothing -- TODO: Smell.
+                                         Nothing -- TODO
                                          zeroBits
                     ot     = ObjTemplate (getCorpseWeight i ms)
                                          (getCorpseVol    i ms)
-                                         Nothing -- TODO: Taste.
+                                         Nothing -- TODO
                                          zeroBits
                     ct     = ConTemplate (getCorpseCapacity i ms `max` calcCarriedVol i ms)
                                          zeroBits
@@ -166,7 +166,7 @@ mkCorpse i ms = let et     = EntTemplate (Just "corpse")
                 in ( ms' & coinsTbl.ind i .~ mempty
                          & eqTbl   .ind i .~ M.empty
                          & invTbl  .ind i .~ []
-                   , logPla "mkCorpse" i "corpse created." : fs )
+                   , fs ++ [ logPla "mkCorpse" i "corpse created.", unit {- TODO: Start decomp. -} ] )
       where
         (s, p) = if isPC i ms
           then let pair @(_,    r) = getSexRace i ms
