@@ -31,7 +31,7 @@ tinnitusEffectFunName = "Effect_tinnitus"
 tinnitusEffectFun :: EffectFun
 tinnitusEffectFun i secs
   | isZero $ secs `mod` 5 = rndmDo 25 $ getMsgQueueColumns i <$> getState >>= \(mq, cols) ->
-      wrapSend mq cols "You hear an awful ringing in your ears."
+      wrapSend mq cols "There is an awful ringing in your ears."
   | otherwise = unit
 
 
@@ -41,4 +41,4 @@ tinnitusInstaEffectFunName = "InstaEffect_tinnitus"
 
 tinnitusInstaEffectFun :: InstaEffectFun
 tinnitusInstaEffectFun i = getMsgQueueColumns i <$> getState >>= \(mq, cols) ->
-    wrapSend mq cols "You hear a terrible ringing in your ears."
+    wrapSend mq cols "There is a terrible ringing in your ears."

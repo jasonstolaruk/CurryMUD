@@ -462,8 +462,8 @@ actionFunForLang = \case CommonLang    -> undefined
 
 about :: ActionFun
 about (NoArgs i mq cols) = do
-    helper |&| try >=> eitherRet ((sendGenericErrorMsg mq cols >>) . fileIOExHandler "about")
     logPlaExec "about" i
+    helper |&| try >=> eitherRet ((sendGenericErrorMsg mq cols >>) . fileIOExHandler "about")
   where
     helper = multiWrapSend mq cols =<< liftIO [ T.lines cont | file <- mkMudFilePath aboutFileFun, cont <- T.readFile file ]
 about p = withoutArgs about p
@@ -511,23 +511,22 @@ admin p = patternMatchFail "admin" . showText $ p
 
 
 adminList :: ActionFun
-adminList (NoArgs i mq cols) = (multiWrapSend mq cols =<< helper =<< getState) >> logPlaExecArgs "admin" [] i
+adminList (NoArgs i mq cols) = logPlaExecArgs "admin" [] i >> (multiWrapSend mq cols =<< helper =<< getState)
   where
-    helper ms =
-        let p            = getPla i ms
-            singSuffixes = sortBy (compare `on` fst) [ second ((" logged " <>) . mkSuffix) pair
-                                                     | (swap -> pair) <- mkAdminIdSingList ms ]
-            mkSuffix ai  = if isAdmin p && isIncognitoId ai ms
-              then inOut (isLoggedIn . getPla ai $ ms) |<>| parensQuote "incognito"
-              else inOut . isAwake ai $ ms
-            singSuffixes' = onFalse (isAdmin p) (filter f) singSuffixes
-              where
-                f (a, b) | a == "Root" = b == " logged in"
-                         | otherwise   = otherwise
-            combineds = [ padName abbrev <> suffix
-                        | (_, suffix) <- singSuffixes'
-                        | abbrev      <- styleAbbrevs Don'tQuote . map fst $ singSuffixes' ]
-        in ()!# combineds ? return combineds :? unadulterated sorryNoAdmins
+    helper ms = let p            = getPla i ms
+                    singSuffixes = sortBy (compare `on` fst) [ second ((" logged " <>) . mkSuffix) pair
+                                                             | (swap -> pair) <- mkAdminIdSingList ms ]
+                    mkSuffix ai  = if isAdmin p && isIncognitoId ai ms
+                      then inOut (isLoggedIn . getPla ai $ ms) |<>| parensQuote "incognito"
+                      else inOut . isAwake ai $ ms
+                    singSuffixes' = onFalse (isAdmin p) (filter f) singSuffixes
+                      where
+                        f (a, b) | a == "Root" = b == " logged in"
+                                 | otherwise   = otherwise
+                    combineds = [ padName abbrev <> suffix
+                                | (_, suffix) <- singSuffixes'
+                                | abbrev      <- styleAbbrevs Don'tQuote . map fst $ singSuffixes' ]
+                in ()!# combineds ? return combineds :? unadulterated sorryNoAdmins
 adminList p = patternMatchFail "adminList" . showText $ p
 
 
@@ -550,11 +549,11 @@ alertExecHelper i mq cols cn target args = do
         msg        = T.concat [ s, " attempted to execute ", dblQuote cn, targetingMsg targetSing, " ", argsMsg, "." ]
         outIds     = (iRoot `delete`) $ getAdminIds ms \\ getLoggedInAdminIds ms
         rec        = AlertExecRec ts s cn targetSing args
+    logNotice fn   msg
+    logPla    fn i msg
     sendCmdNotFound i mq cols
     bcastAdmins msg
     forM_ outIds (\adminId -> retainedMsg adminId ms . mkRetainedMsgFromPerson s $ msg)
-    logNotice        fn   msg
-    logPla           fn i msg
     withDbExHandler_ fn . insertDbTblAlertExec $ rec
   where
     fn                      = "alertExecHelper"
@@ -581,7 +580,7 @@ alertExecFindTargetSing i ms target =
 bars :: ActionFun
 bars (NoArgs i mq cols) = getState >>= \ms ->
     let mkBars = map (uncurry . mkBar . calcBarLen $ cols) . mkPtPairs i $ ms
-    in multiWrapSend mq cols mkBars >> logPlaExecArgs "bars" [] i
+    in logPlaExecArgs "bars" [] i >> multiWrapSend mq cols mkBars
 bars (LowerNub i mq cols as) = getState >>= \ms ->
     let mkBars  = case second nub . partitionEithers . foldr f [] $ as of
                     (x:xs, []     ) -> x |<>| hint : xs
@@ -591,7 +590,7 @@ bars (LowerNub i mq cols as) = getState >>= \ms ->
           []      -> Left . sorryParseArg $ a
           [match] -> Right . uncurry (mkBar . calcBarLen $ cols) $ match
           xs      -> patternMatchFail "bars f" . showText $ xs
-    in multiWrapSend mq cols mkBars >> logPlaExecArgs "bars" as i
+    in logPlaExecArgs "bars" as i >> multiWrapSend mq cols mkBars
   where
     hint = T.concat [ "Please specify any of the following: "
                     , commas . map dblQuote $ [ "hp", "mp", "pp" ]
@@ -637,15 +636,12 @@ bonus   (OneArgLower i mq cols a) = getState >>= \ms ->
                   x        = calcBonus targetId ms
                   bs       = pure (prd $ "You give a bonus to " <> targetSing, pure i)
               in fmap2 getAll (canBonus targetSing) >>= \case
-                Just True  -> do { bcastNl . onFalse (()# guessWhat) ((guessWhat, pure i) :) $ bs
+                Just True  -> do { let msg = T.concat [ "giving a bonus of ", commaShow x, " exp to ", targetSing, "." ]
+                                   in logPla "bonus bonusHelper" i msg
+                                 ; bcastNl . onFalse (()# guessWhat) ((guessWhat, pure i) :) $ bs
                                  ; retainedMsg targetId ms . colorWith bonusColor . mkToTarget $ targetId
                                  ; awardExp x ("bonus from " <> s) targetId
                                  ; tweak $ plaTbl.ind i.bonusTime ?~ now
-                                 ; logPla "bonus bonusHelper" i . T.concat $ [ "gave a bonus of "
-                                                                             , commaShow x
-                                                                             , " exp to "
-                                                                             , targetSing
-                                                                             , "." ]
                                  ; ts <- liftIO mkTimestamp
                                  ; withDbExHandler_ "bonus bonusHelper" . insertDbTblBonus . BonusRec ts s targetSing $ x }
                 Just False -> wrapSend mq cols . sorryBonusCount $ targetSing
@@ -690,9 +686,8 @@ chan (NoArgs i mq cols) = getState >>= \ms ->
                                    in (()!# txts ? txts :? none) |&| ("Telepathic channels:" :)
           where
             mkChanTxts = [ padChanName n <> tunedInOut t | n <- names | t <- tunings ]
-    in do
-        multiWrapSend mq cols . helper (styleAbbrevs Don'tQuote chanNames) $ chanTunings
-        logPlaExecArgs "chan" [] i
+    in do { logPlaExecArgs "chan" [] i
+          ; multiWrapSend mq cols . helper (styleAbbrevs Don'tQuote chanNames) $ chanTunings }
 chan (OneArg i mq cols a@(T.toLower -> a')) = getState >>= \ms ->
     let notFound    = wrapSend mq cols . sorryChanName $ a
         found match =
@@ -711,9 +706,9 @@ chan (OneArg i mq cols a@(T.toLower -> a')) = getState >>= \ms ->
                   then do
                       let msgs              = ()!# combo' ? map g combo' :? pure "You are the only person connected."
                           affixChanName txt = parensQuote cn |<>| txt
-                      multiWrapSend mq cols $ "Channel " <> dblQuote cn <> ":" : msgs
                       logPla "chan" i . affixChanName . commas $ [ getSing i' ms <> " is " <> tunedInOut isTuned'
                                                                  | (i', _, isTuned') <- combo' ]
+                      multiWrapSend mq cols $ "Channel " <> dblQuote cn <> ":" : msgs
                   else wrapSend mq cols . sorryTunedOutICChan $ cn
         (cs, cns, s)           = mkChanBindings i ms
         mkTriple (s', isTuned) = (getIdForPCSing s' ms, s', isTuned)
@@ -732,21 +727,21 @@ chan (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
                        where
                          mkBsWithStyled is' = mapM getStyled is' >>= \styleds ->
                              return [ (formatChanMsg cn styled txt, pure i') | i' <- is' | styled <- styleds ]
-                     ioHelper (expandEmbeddedIdsToSings ms -> logMsg) bs = do
+                     ioHelper (expandEmbeddedIdsToSings ms -> expanded) bs = do
+                         let expanded' = parensQuote cn |<>| expanded
+                         logPlaOut "chan" i . pure $ expanded'
                          bcastNl =<< expandEmbeddedIds ms cc bs
-                         sendToWiretappers logMsg
-                         let logMsg' = parensQuote cn |<>| logMsg
-                         logPlaOut "chan" i . pure $ logMsg'
-                         alertMsgHelper i "chan" logMsg'
+                         sendToWiretappers expanded
+                         alertMsgHelper i "chan" expanded'
                          ts <- liftIO mkTimestamp
-                         withDbExHandler_ "chan" . insertDbTblChan . ChanRec ts (c^.chanId) cn s $ logMsg
+                         withDbExHandler_ "chan" . insertDbTblChan . ChanRec ts (c^.chanId) cn s $ expanded
                      sendToWiretappers tappedMsg =
                          let cn' = colorWith wiretapColor . spaced . parensQuote $ cn
                              is  = c^.chanWiretappers.to (map (`getIdForPCSing` ms))
                              is' = filter (isLoggedIn . (`getPla` ms)) is
                          in bcastNl . pure $ (T.concat [ cn', " ", s, ": ", tappedMsg ], is')
                      cc   = ChanContext "chan" (Just cn) False
-                     f bs = let logMsg = dropANSI . fst . head $ bs in ioHelper logMsg =<< g bs
+                     f bs = let msg' = dropANSI . fst . head $ bs in ioHelper msg' =<< g bs
                      g    = concatMapM format
                      ws   = wrapSend      mq cols
                      mws  = multiWrapSend mq cols
@@ -757,8 +752,8 @@ chan (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
                      Left  errorMsgs  -> mws errorMsgs
                      Right (Right bs) -> f bs
                      Right (Left  ()) -> case expCmdify i ms cc triples msg of
-                       Left  errorMsg     -> ws errorMsg
-                       Right (bs, logMsg) -> ioHelper logMsg =<< g bs
+                       Left  errorMsg   -> ws errorMsg
+                       Right (bs, msg') -> ioHelper msg' =<< g bs
         (cs, cns, s) = mkChanBindings i ms
     in findFullNameForAbbrev (T.toLower target) (map T.toLower cns) |&| maybe notFound found
 chan p = patternMatchFail "chan" . showText $ p
@@ -768,7 +763,7 @@ chan p = patternMatchFail "chan" . showText $ p
 
 
 clear :: ActionFun
-clear (NoArgs' i mq) = sequence_ [ send mq . T.pack $ clearScreenCode, logPlaExec "clear" i ]
+clear (NoArgs' i mq) = sequence_ [ logPlaExec "clear" i, send mq . T.pack $ clearScreenCode ]
 clear p              = withoutArgs clear p
 
 
@@ -776,7 +771,7 @@ clear p              = withoutArgs clear p
 
 
 color :: ActionFun
-color (NoArgs' i mq) = sequence_ [ send mq . nl . T.concat $ msg, logPlaExec "color" i ]
+color (NoArgs' i mq) = sequence_ [ logPlaExec "color" i, send mq . nl . T.concat $ msg ]
   where
     msg = [ nl . T.concat $ [ mkColorDesc fg bg, colorWith ansi . spaced $  "CurryMUD" ]
           | fgc <- colors, bgc <- colors, fgc /= bgc
@@ -797,43 +792,41 @@ connect p@AdviseOneArg         = advise p ["connect"] adviceConnectNoChan
 connect   (Lower i mq cols as) = getState >>= \ms -> let getIds = map (`getIdForPCSing` ms) in
     if isIncognitoId i ms
       then wrapSend mq cols . sorryIncog $ "connect"
-      else connectHelper i (mkLastArgWithNubbedOthers as) |&| modifyState >=> \case
+      else connectHelper i (mkLastArgWithNubbedOthers as) |&| modifyState >=> \(ms', pair) -> case pair of
         ([Left msg], Nothing) -> bcastNl . mkBcast i $ msg
         (res,        Just ci)
           | (sorryMsgs, targetSings) <- partitionEithers res
           , sorryBs   <- [ (msg, pure i) | msg <- sorryMsgs ]
           , targetIds <- getIds targetSings
-          , c         <- getChan ci ms
+          , c         <- getChan ci ms'
           , cn        <- c^.chanName
-          , otherIds  <- let f = (\\ (i : targetIds)) . filter (`isAwake` ms) . getIds . M.keys . M.filter id
+          , otherIds  <- let f = (\\ (i : targetIds)) . filter (`isAwake` ms') . getIds . M.keys . M.filter id
                          in views chanConnTbl f c
-          , toTargets <- (T.concat [ getSing i ms, " has connected you to the ", dblQuote cn, " channel." ], targetIds)
+          , toTargets <- (T.concat [ getSing i ms', " has connected you to the ", dblQuote cn, " channel." ], targetIds)
           , toSelf    <- (focusingInnateMsg <>) $ case targetSings of
             [one] -> T.concat [ "you connect ", one, " to the ", dblQuote cn, " channel." ]
             _     -> T.concat [ "you connect the following people to the "
                               , dblQuote cn
                               , " channel: "
                               , commas targetSings
-                              , "." ] -> do
-              toOthers <- mkToOthers ms otherIds targetIds cn
-              bcastNl $ toTargets : toOthers ++ (()!# targetSings |?| mkBcast i toSelf) ++ sorryBs
-              connectBlink targetIds ms
-              logPla "connect" i $ "connected to " <> dblQuote cn <> ": " <> commas targetSings
+                              , "." ]
+          -> do { logPla "connect" i $ "connected to " <> dblQuote cn <> ": " <> commas targetSings
+                ; toOthers <- mkToOthers ms' otherIds targetIds cn
+                ; bcastNl $ toTargets : toOthers ++ (()!# targetSings |?| mkBcast i toSelf) ++ sorryBs
+                ; connectBlink targetIds ms' }
         xs -> patternMatchFail "connect" . showText $ xs
   where
     mkToOthers ms otherIds targetIds cn = do
         namesForMe      <- mapM (getRelativePCName ms . (, i)) otherIds
         namesForTargets <- mapM (\otherId -> mapM (getRelativePCName ms . (otherId, )) targetIds) otherIds
-        let f i' me = map g
-              where
-                g n = (T.concat [ me, " has connected ", n, " to the ", dblQuote cn, " channel." ], pure i')
+        let f i' me = map (\n -> (T.concat [ me, " has connected ", n, " to the ", dblQuote cn, " channel." ], pure i'))
         return . concat . zipWith3 f otherIds namesForMe $ namesForTargets
     connectBlink targetIds ms = forM_ targetIds $ \targetId ->
         rndmDo (calcProbConnectBlink targetId ms) . mkExpAction "blink" . mkActionParams targetId ms $ []
 connect p = patternMatchFail "connect" . showText $ p
 
 
-connectHelper :: Id -> (Text, Args) -> MudState -> (MudState, ([Either Text Sing], Maybe Id))
+connectHelper :: Id -> (Text, Args) -> MudState -> (MudState, (MudState, ([Either Text Sing], Maybe Id)))
 connectHelper i (target, as) ms =
     let (f, guessWhat) | any hasLocPref as = (stripLocPref, sorryConnectIgnore)
                        | otherwise         = (id,           ""                )
@@ -865,10 +858,10 @@ connectHelper i (target, as) ms =
                                               , targetCns <- selects chanName T.toLower targetCs
                                               = T.toLower cn `elem` targetCns
                    (ms'', res)                = foldl' procTarget (ms, []) as'
-               in (ms'', (onFalse (()# guessWhat) (Left guessWhat :) res, Just ci))
+               in (ms'', (ms'', (onFalse (()# guessWhat) (Left guessWhat :) res, Just ci)))
           else sorry . sorryTunedOutICChan $ cn
         (cs, cns, s) = mkChanBindings i ms
-        sorry        = (ms, ) . (, Nothing) . pure . Left
+        sorry        = (ms, ) . (ms, ) . (, Nothing) . pure . Left
     in findFullNameForAbbrev target (map T.toLower cns) |&| maybe notFound found
 
 
@@ -912,12 +905,11 @@ descHelper i mq cols = sequence_ [ send mq . nl . T.unlines . parseWrapXform col
 
 interpConfirmDesc :: Text -> Interp
 interpConfirmDesc desc cn (NoArgs i mq cols) = case yesNoHelper cn of
-  Just True -> do
-      ok mq
-      tweak $ entTbl.ind i.entDesc .~ desc
-      sendDfltPrompt mq i
-      resetInterp i
-      logPla "description" i . prd $ "changed description to " <> dblQuote desc
+  Just True  -> do { logPla "description" i . prd $ "changing description to " <> dblQuote desc
+                   ; tweak $ entTbl.ind i.entDesc .~ desc
+                   ; ok mq
+                   ; sendDfltPrompt mq i
+                   ; resetInterp i }
   Just False -> neverMind i mq
   Nothing    -> promptRetryYesNo mq cols
 interpConfirmDesc _ _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNo plaMsgQueue plaCols
@@ -954,10 +946,8 @@ disconnect   (Lower i mq cols as) = getState >>= \ms -> let getIds = map (`getId
                                 , "." ] -> do
                   toOthers <- mkToOthers ms otherIds targetIds cn
                   bcastNl $ toTargets : toOthers ++ (()!# targetNames |?| mkBcast i toSelf) ++ sorryBs
-                  targetSings |#| (const . logPla "disconnect" i . T.concat $ [ "disconnected from "
-                                                                              , dblQuote cn
-                                                                              , ": "
-                                                                              , commas targetSings ])
+                  targetSings |#| let msg = T.concat [ "disconnected from ", dblQuote cn, ": ", commas targetSings ]
+                                  in const . logPla "disconnect" i $ msg
             xs -> patternMatchFail "disconnect" . showText $ xs
   where
     format n = isRndmName n ? underline n :? n
@@ -1061,16 +1051,16 @@ drink   (Lower   i mq cols [amt, target]) = getState >>= \ms -> let (isDrink, is
                       (False, True ) ->
                           let (inRms', (ms', _, bs, logMsgs), fs) = procHooks i ms v "drink" . pure $ hookArg
                               sorryMsgs                           = inRms' |!| pure sorryDrinkEmptyRmWithHooks
-                          in (ms', [ when (()!# sorryMsgs) $ multiWrapSend mq cols sorryMsgs >> sendDfltPrompt mq i
+                          in (ms', [ logMsgs |#| logPla "drink" i . prd . slashes
+                                   , when (()!# sorryMsgs) $ multiWrapSend mq cols sorryMsgs >> sendDfltPrompt mq i
                                    , bcastIfNotIncogNl i bs
-                                   , sequence_ fs
-                                   , logMsgs |#| logPla "drink" i . prd . slashes ])
+                                   , sequence_ fs ])
                       (True,  True ) ->
                           let (inRms', (ms', _, bs, logMsgs), fs) = procHooks i ms v "drink" . pure $ hookArg
                           in if ()# inRms'
-                            then (ms', [ bcastIfNotIncogNl i bs
-                                       , sequence_ fs
-                                       , logMsgs |#| logPla "drink" i . prd . slashes ])
+                            then (ms', [ logMsgs |#| logPla "drink" i . prd . slashes
+                                       , bcastIfNotIncogNl i bs
+                                       , sequence_ fs ])
                             else sorry . sorryDrinkRmWithHooks . head $ inRms
                       a -> patternMatchFail "drink helper next drinkRm" . showText $ a
             in if
@@ -1089,19 +1079,18 @@ dropAction :: ActionFun
 dropAction p@AdviseNoArgs     = advise p ["drop"] adviceDropNoArgs
 dropAction p@(LowerNub' i as) = genericAction p helper "drop"
   where
-    helper ms =
-        let (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv as
-            sorryInEq              = inEqs |!| sorryDropInEq
-            sorryInRm              = inRms |!| sorryDropInRm
-            invCoins               = getInvCoins i ms
-            d                      = mkStdDesig  i ms DoCap
-            ri                     = getRmId     i ms
-            (eiss, ecs)            = uncurry (resolveMobInvCoins i ms inInvs) invCoins
-            (ms',  toSelfs,  bs,  logMsgs ) = foldl' (helperDropEitherInv      i d      i ri) (ms,  [],      [], []     ) eiss
-            (ms'', toSelfs', bs', logMsgs') =         helperGetDropEitherCoins i d Drop i ri  (ms', toSelfs, bs, logMsgs) ecs
-        in if ()!# invCoins
-          then (ms'', (dropBlanks $ [ sorryInEq, sorryInRm ] ++ toSelfs', bs', logMsgs'))
-          else (ms,   (pure dudeYourHandsAreEmpty,                        [],  []      ))
+    helper ms = let (inInvs, inEqs, inRms)      = sortArgsInvEqRm InInv as
+                    sorryInEq                   = inEqs |!| sorryDropInEq
+                    sorryInRm                   = inRms |!| sorryDropInRm
+                    invCoins                    = getInvCoins i ms
+                    d                           = mkStdDesig  i ms DoCap
+                    ri                          = getRmId     i ms
+                    (eiss, ecs)                 = uncurry (resolveMobInvCoins i ms inInvs) invCoins
+                    tuple                       = foldl' (helperDropEitherInv i d i ri) (ms, [], [], []) eiss
+                    (ms', toSelfs, bs, logMsgs) = helperGetDropEitherCoins i d Drop i ri tuple ecs
+                in if ()!# invCoins
+                  then (ms', (dropBlanks $ [ sorryInEq, sorryInRm ] ++ toSelfs, bs, logMsgs))
+                  else (ms,  (pure dudeYourHandsAreEmpty,                       [],  []    ))
 dropAction p = patternMatchFail "dropAction" . showText $ p
 
 
