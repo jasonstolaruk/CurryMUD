@@ -175,12 +175,11 @@ alertMsgHelper i cn txt = getState >>= \ms -> if isAdminId i ms
                                    , txt ]
                  outIds = (iRoot `delete`) $ getAdminIds ms \\ getLoggedInAdminIds ms
                  rec    = AlertMsgRec ts s cn match txt
-             in do
-                 bcastAdmins msg
-                 forM_ outIds (\adminId -> retainedMsg adminId ms . mkRetainedMsgFromPerson s $ msg)
-                 logNotice        "alertMsgHelper"   msg
-                 logPla           "alertMsgHelper" i msg
-                 withDbExHandler_ "alertMsgHelper" . insertDbTblAlertMsg $ rec
+             in do { logNotice        "alertMsgHelper"   msg
+                   ; logPla           "alertMsgHelper" i msg
+                   ; bcastAdmins msg
+                   ; forM_ outIds (\adminId -> retainedMsg adminId ms . mkRetainedMsgFromPerson s $ msg)
+                   ; withDbExHandler_ "alertMsgHelper" . insertDbTblAlertMsg $ rec }
          else unit
 
 
@@ -206,6 +205,7 @@ bugTypoLogger (Msg' i mq msg) wl = getState >>= \ms ->
         ri    = getRmId i  ms
         mkLoc = parensQuote (showText ri) |<>| view rmName (getRm ri ms)
     in liftIO mkTimestamp >>= \ts -> do
+        logPla "bugTypoLogger" i . T.concat $ [ "logging a ", showText wl, ": ", msg ]
         sequence_ $ case wl of BugLog  -> let b = BugRec ts s mkLoc msg
                                           in [ withDbExHandler_ "bugTypoLogger" . insertDbTblBug $ b
                                              , bcastOtherAdmins i $ s <> " has logged a bug: "  <> pp b ]
@@ -213,7 +213,6 @@ bugTypoLogger (Msg' i mq msg) wl = getState >>= \ms ->
                                           in [ withDbExHandler_ "bugTypoLogger" . insertDbTblTypo $ t
                                              , bcastOtherAdmins i $ s <> " has logged a typo: " <> pp t ]
         send mq . nlnl $ "Thank you."
-        logPla "bugTypoLogger" i . T.concat $ [ "logged a ", showText wl, ": ", msg ]
 bugTypoLogger p _ = patternMatchFail "bugTypoLogger" . showText $ p
 
 
@@ -288,11 +287,10 @@ genericAction p helper fn = helper |&| modifyState >=> \(toSelfs, bs, logMsgs) -
 
 
 genericActionHelper :: ActionParams -> Text -> [Text] -> [Broadcast] -> [Text] -> MudStack ()
-genericActionHelper ActionParams { .. } fn toSelfs bs logMsgs = do
-    ms <- getState
+genericActionHelper ActionParams { .. } fn toSelfs bs logMsgs = getState >>= \ms -> do
+    logMsgs |#| logPlaOut fn myId . map (parseExpandDesig myId ms)
     multiWrapSend plaMsgQueue plaCols [ parseDesig myId ms msg | msg <- toSelfs ]
     bcastIfNotIncogNl myId bs
-    logMsgs |#| logPlaOut fn myId . map (parseExpandDesig myId ms)
 
 
 genericActionWithHooks :: ActionParams
@@ -641,8 +639,8 @@ helperLinkUnlink ms i mq cols =
                              | otherwise                = acc
         twoWays = map fst . filter ((== 2) . snd) . countOccs $ othersLinkedToMe ++ meLinkedToOthers
     in if all (()#) [ othersLinkedToMe, meLinkedToOthers ]
-      then emptied $ do { wrapSend mq cols (isSpiritId i ms ? sorryNoLinksSpirit :? sorryNoLinks)
-                        ; logPlaOut "helperLinkUnlink" i . pure $ sorryNoLinks }
+      then emptied $ do { logPlaOut "helperLinkUnlink" i . pure $ sorryNoLinks
+                        ; wrapSend mq cols (isSpiritId i ms ? sorryNoLinksSpirit :? sorryNoLinks) }
       else unadulterated (meLinkedToOthers, othersLinkedToMe, twoWays)
 
 

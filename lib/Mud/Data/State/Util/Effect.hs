@@ -37,12 +37,12 @@ procEffectList i (EffectList xs) = let (ies, es) = partitionEithers xs
 
 procInstaEffect :: Id -> InstaEffect -> MudStack ()
 procInstaEffect i ie@(InstaEffect sub val feel) = getState >>= \ms -> do
+    logHelper ms
     case sub of
       EntInstaEffectFlags         -> undefined -- TODO
       (MobInstaEffectPts ptsType) -> maybeVoid (effectPts ptsType) val
       RmInstaEffectFlags          -> undefined -- TODO
       (InstaEffectOther fn)       -> getInstaEffectFun fn ms i >> startFeeling i feel NoVal
-    logHelper ms
   where
     effectPts ptsType   = (helper ptsType =<<) . \case DefiniteVal x -> return x
                                                        RangeVal    r -> rndmR r

@@ -66,6 +66,7 @@ handleEgress i mq isDropped = egressHelper `finally` writeMsg mq FinishedEgress
                                            <*> uncurry isSpiritId) (i, ms)
         unless (hoc || spirit) . bcastOthersInRm i . nlnl . egressMsg . serialize . mkStdDesig i ms $ DoCap
         helper now tuple |&| modifyState >=> \(bs, logMsgs) -> do
+            forM_ logMsgs . uncurry . logPla $ "handleEgress egressHelper helper"
             spirit ? theBeyond i mq s isDropped :? do { pauseEffects      i -- Already done in "handleDeath".
                                                       ; stopFeelings      i
                                                       ; stopRegen         i
@@ -73,8 +74,7 @@ handleEgress i mq isDropped = egressHelper `finally` writeMsg mq FinishedEgress
             closePlaLog i
             bcast bs
             bcastAdmins $ s <> " has left CurryMUD."
-            forM_ logMsgs . uncurry . logPla $ "handleEgress egressHelper"
-            logNotice "handleEgress egressHelper" . T.concat $ [ descSingId i ms, " has left CurryMUD." ]
+            logNotice "handleEgress egressHelper helper" . T.concat $ [ descSingId i ms, " has left CurryMUD." ]
             when hoc . tweak . removeAdHoc $ i
     helper now (s, hoc, spirit) ms =
         let (ms', bs, logMsgs) = peepHelper i ms s spirit
@@ -153,13 +153,13 @@ theBeyond i mq s isDropped = modifyStateSeq $ \ms ->
         g targetId      = teleLinkMstrTbl.ind targetId        %~ M.delete s
         h               = (pcTbl.ind i.linked .~ []) . (teleLinkMstrTbl.ind i .~ M.empty)
         ms'             = h . flip (foldr g) retainedIds . flip (foldr f) retainedIds $ ms
-        fs              = [ unless isDropped $ do { wrapSend   mq cols . colorWith spiritMsgColor $ theBeyondMsg
+        fs              = [ logPla "theBeyond" i "passing into the beyond."
+                          , logNotice "theBeyond" $ descSingId i ms' <> " is passing into the beyond."
+                          , unless isDropped $ do { wrapSend   mq cols . colorWith spiritMsgColor $ theBeyondMsg
                                                   ; farewell i mq cols }
                           , bcast . pure $ (nlnl . linkLostMsg $ s, inIds)
                           , forM_ outIds $ \outId -> retainedMsg outId ms' (linkMissingMsg s)
-                          , bcastAdmins $ s <> " passes into the beyond."
-                          , logPla "theBeyond" i "passing into the beyond."
-                          , logNotice "theBeyond" . T.concat $ [ descSingId i ms', " is passing into the beyond." ] ]
+                          , bcastAdmins $ s <> " passes into the beyond." ]
     in (ms', fs)
 
 

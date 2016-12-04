@@ -163,7 +163,6 @@ asterisk = colorWith asteriskColor "*"
 awardExp :: Exp -> Text -> Id -> MudStack ()
 awardExp amt reason i = getLvlExp i <$> getState >>= \(l, x) -> let diff = calcLvlForExp (x + amt) - l in
     rndmVector (diff * noOfLvlUpRndmInts) >>= \v -> helper v |&| modifyState >=> \(ms, (msgs, logMsgs)) -> do
-        mapM_ (retainedMsg i ms) msgs
         let logMsg = T.concat [ "awarded "
                               , commaShow amt
                               , " exp "
@@ -171,6 +170,7 @@ awardExp amt reason i = getLvlExp i <$> getState >>= \(l, x) -> let diff = calcL
                               , "."
                               , logMsgs |!| (spcL . capitalize . prd . slashes $ logMsgs) ]
         when (isNpc i ms || isLoggedIn (getPla i ms)) . logPla "awardExp" i $ logMsg
+        mapM_ (retainedMsg i ms) msgs
   where
     helper v ms =
         let oldLvl = getLvl i ms
@@ -210,10 +210,9 @@ lvlUp i = helper
 
 consume :: Id -> [StomachCont] -> MudStack ()
 consume _ []     = unit
-consume i newScs = do
-    logPla "consume" i . prd $ "consuming " <> commas (map pp newScs)
-    now <- liftIO getCurrentTime
-    procEffectList i =<< modifyState (helper now)
+consume i newScs = do { now <- liftIO getCurrentTime
+                      ; modifyState (helper now) >>= procEffectList i
+                      ; logPla "consume" i . prd $ "consumed " <> commas (map pp newScs) }
   where
     helper now ms =
         let scs   = getStomach i ms ++ newScs
