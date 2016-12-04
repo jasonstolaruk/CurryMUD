@@ -196,7 +196,7 @@ mkDebugCmd (prefixDebugCmd -> cn) f cd = Cmd { cmdName           = cn
 
 
 debugAp :: ActionFun
-debugAp p@(WithArgs i mq cols _) = sequence_ [ wrapSend mq cols . showText $ p, logPlaExec (prefixDebugCmd "ap") i ]
+debugAp p@(WithArgs i mq cols _) = logPlaExec (prefixDebugCmd "ap") i >> wrapSend mq cols (showText p)
 debugAp p                        = patternMatchFail "debugAp" . showText $ p
 
 
@@ -204,10 +204,7 @@ debugAp p                        = patternMatchFail "debugAp" . showText $ p
 
 
 debugAYT :: ActionFun
-debugAYT (NoArgs' i mq) = do
-    send mq . T.pack $ [ telnetIAC, telnetAYT ]
-    ok mq
-    logPlaExec (prefixDebugCmd "ayt") i
+debugAYT (NoArgs' i mq) = logPlaExec (prefixDebugCmd "ayt") i >> send mq (T.pack [ telnetIAC, telnetAYT ]) >> ok mq
 debugAYT p = withoutArgs debugAYT p
 
 
@@ -215,7 +212,7 @@ debugAYT p = withoutArgs debugAYT p
 
 
 debugBoot :: ActionFun
-debugBoot (NoArgs' i mq) = do { ok mq; massMsg . MsgBoot $ dfltBootMsg; logPlaExec (prefixDebugCmd "boot") i }
+debugBoot (NoArgs' i mq) = logPlaExec (prefixDebugCmd "boot") i >> ok mq >> massMsg (MsgBoot dfltBootMsg)
 debugBoot p              = withoutArgs debugBoot p
 
 
@@ -223,7 +220,7 @@ debugBoot p              = withoutArgs debugBoot p
 
 
 debugBcast :: ActionFun
-debugBcast (NoArgs'' i) = bcastNl (mkBcast i msg) >> logPlaExec (prefixDebugCmd "broadcast") i
+debugBcast (NoArgs'' i) = logPlaExec (prefixDebugCmd "broadcast") i >> bcastNl (mkBcast i msg)
   where
     msg = "[1] abcdefghij\n\
           \[2] abcdefghij abcdefghij\n\
@@ -242,9 +239,8 @@ debugBcast p = withoutArgs debugBcast p
 
 
 debugBuffCheck :: ActionFun
-debugBuffCheck (NoArgs i mq cols) = do
-    helper |&| try >=> eitherRet (logAndDispIOEx mq cols "debugBuffCheck")
-    logPlaExec (prefixDebugCmd "buffer") i
+debugBuffCheck (NoArgs i mq cols) = do { logPlaExec (prefixDebugCmd "buffer") i
+                                       ; helper |&| try >=> eitherRet (logAndDispIOEx mq cols "debugBuffCheck") }
   where
     helper = liftIO (flip openTempFile "temp" =<< getTemporaryDirectory) >>= \(fn, h) -> do
         send mq . nl =<< [ T.unlines . wrapIndent 2 cols $ msg | msg <- mkMsg fn <$> liftIO (hGetBuffering h) ]
@@ -266,9 +262,8 @@ debugCins   (OneArg i mq cols a) = getState >>= \ms -> case reads . T.unpack $ a
     helper ms targetId@(showText -> targetIdTxt)
       | targetId < 0                                    = wrapSend mq cols sorryWtf
       | views pcTbl ((targetId `notElem`) . IM.keys) ms = wrapSend mq cols . sorryNonexistentId targetId . pure $ "PC"
-      | otherwise                                       = do
-          multiWrapSend mq cols . (header :) . pure . showText =<< getAllChanIdNames i ms
-          logPlaExecArgs (prefixDebugCmd "cins") (pure a) i
+      | otherwise = do { logPlaExecArgs (prefixDebugCmd "cins") (pure a) i
+                       ; multiWrapSend mq cols . (header :) . pure . showText =<< getAllChanIdNames i ms }
       where
         header = T.concat [ "All channel ID/names "
                           , parensQuote "IM.IntMap [(Id, Text)]"
@@ -288,8 +283,8 @@ data Penny = forall a. (Myモルモット a) => Pennyちゃん a
 debugCoercePenny :: ActionFun
 debugCoercePenny (NoArgs' i mq) = let penny        = Pennyちゃん True
                                       coercedPenny = coercePenny penny
-                                  in do { send mq . nlnl $ "Coerced Penny: " <> showText coercedPenny
-                                        ; logPlaExec (prefixDebugCmd "coercepenny") i }
+                                  in do { logPlaExec (prefixDebugCmd "coercepenny") i
+                                        ; send mq . nlnl $ "Coerced Penny: " <> showText coercedPenny }
   where
     coercePenny :: Penny -> Bool
     coercePenny (Pennyちゃん a) = unsafeCoerce a
@@ -300,7 +295,7 @@ debugCoercePenny p = withoutArgs debugUnderline p
 
 
 debugColor :: ActionFun
-debugColor (NoArgs' i mq) = sequence_ [ send mq . nl . T.concat $ msg, logPlaExec (prefixDebugCmd "color") i ]
+debugColor (NoArgs' i mq) = sequence_ [ logPlaExec (prefixDebugCmd "color") i, send mq . nl . T.concat $ msg ]
   where
     msg :: [] Text
     msg = [ nl $ pad 15 (showText ansi) <> mkColorDesc fg bg <> colorWith ansi (spaced "CurryMUD")
@@ -311,14 +306,15 @@ debugColor (NoArgs' i mq) = sequence_ [ send mq . nl . T.concat $ msg, logPlaExe
     mkColorName = (<>) <$> pad 6 . showText <*> padColorName . showText
 debugColor p = withoutArgs debugColor p
 
+
 -----
 
 
 debugCores :: ActionFun
 debugCores (NoArgs i mq cols) = do
+    logPlaExec (prefixDebugCmd "cores") i
     wrapSend mq cols =<< [ T.concat [ showText cores, " processor core", theLetterS (cores > 1), "." ]
                          | cores <- liftIO . safePerformIO $ getNumCapabilities ]
-    logPlaExec (prefixDebugCmd "cores") i
 debugCores p = withoutArgs debugCores p
 
 
@@ -326,11 +322,9 @@ debugCores p = withoutArgs debugCores p
 
 
 debugCPU :: ActionFun
-debugCPU (NoArgs i mq cols) = do
-    wrapSend mq cols =<< [ "CPU time: " <> time | time <- liftIO . safePerformIO $ cpuTime ]
+debugCPU (NoArgs i mq cols) = let cpuTime = showText . (`divide` 10 ^ 12) <$> getCPUTime in do
     logPlaExec (prefixDebugCmd "cpu") i
-  where
-    cpuTime = showText . (`divide` 10 ^ 12) <$> getCPUTime
+    wrapSend mq cols =<< [ "CPU time: " <> time | time <- liftIO . safePerformIO $ cpuTime ]
 debugCPU p = withoutArgs debugCPU p
 
 
@@ -338,7 +332,7 @@ debugCPU p = withoutArgs debugCPU p
 
 
 debugDispCmdList :: ActionFun
-debugDispCmdList p@(LowerNub' i as) = dispCmdList debugCmds p >> logPlaExecArgs (prefixDebugCmd "?") as i
+debugDispCmdList p@(LowerNub' i as) = logPlaExecArgs (prefixDebugCmd "?") as i >> dispCmdList debugCmds p
 debugDispCmdList p                  = patternMatchFail "debugDispCmdList" . showText $ p
 
 
@@ -346,10 +340,9 @@ debugDispCmdList p                  = patternMatchFail "debugDispCmdList" . show
 
 
 debugEchoWill :: ActionFun
-debugEchoWill (NoArgs' i mq) = do
-    send mq . T.pack $ [ telnetIAC, telnetWILL, telnetECHO ]
-    ok mq
-    logPlaExec (prefixDebugCmd "echowill") i
+debugEchoWill (NoArgs' i mq) = do { logPlaExec (prefixDebugCmd "echowill") i
+                                  ; send mq . T.pack $ [ telnetIAC, telnetWILL, telnetECHO ]
+                                  ; ok mq }
 debugEchoWill p = withoutArgs debugEchoWill p
 
 
@@ -357,10 +350,9 @@ debugEchoWill p = withoutArgs debugEchoWill p
 
 
 debugEchoWon't :: ActionFun
-debugEchoWon't (NoArgs' i mq) = do
-    send mq . T.pack $ [ telnetIAC, telnetWON'T, telnetECHO ]
-    ok mq
-    logPlaExec (prefixDebugCmd "echowon't") i
+debugEchoWon't (NoArgs' i mq) = do { logPlaExec (prefixDebugCmd "echowon't") i
+                                   ; send mq . T.pack $ [ telnetIAC, telnetWON'T, telnetECHO ]
+                                   ; ok mq }
 debugEchoWon't p = withoutArgs debugEchoWon't p
 
 
@@ -368,10 +360,9 @@ debugEchoWon't p = withoutArgs debugEchoWon't p
 
 
 debugEffect :: ActionFun
-debugEffect (NoArgs' i mq) = do
-    ok mq
-    startEffect i . Effect (MobEffectAttrib St) (Just . RangeVal $ (10, 20)) 30 $ Nothing
-    logPlaExec (prefixDebugCmd "effect") i
+debugEffect (NoArgs' i mq) = do { logPlaExec (prefixDebugCmd "effect") i
+                                ; ok mq
+                                ; startEffect i . Effect (MobEffectAttrib St) (Just . RangeVal $ (10, 20)) 30 $ Nothing }
 debugEffect p = withoutArgs debugEffect p
 
 
@@ -379,13 +370,12 @@ debugEffect p = withoutArgs debugEffect p
 
 
 debugEnv :: ActionFun
-debugEnv (NoArgs i mq cols) = do
-    pager i mq Nothing =<< [ concatMap (wrapIndent 2 cols) . mkEnvListTxt $ env
-                           | env <- liftIO . safePerformIO $ getEnvironment ]
-    logPlaExecArgs (prefixDebugCmd "env") [] i
+debugEnv (NoArgs i mq cols) = do { logPlaExecArgs (prefixDebugCmd "env") [] i
+                                 ; pager i mq Nothing =<< [ concatMap (wrapIndent 2 cols) . mkEnvListTxt $ env
+                                                          | env <- liftIO . safePerformIO $ getEnvironment ] }
 debugEnv p@ActionParams { myId, args } = do
-    dispMatches p 2 =<< [ mkEnvListTxt env | env <- liftIO . safePerformIO $ getEnvironment ]
     logPlaExecArgs (prefixDebugCmd "env") args myId
+    dispMatches p 2 =<< [ mkEnvListTxt env | env <- liftIO . safePerformIO $ getEnvironment ]
 
 
 mkEnvListTxt :: [(String, String)] -> [Text]
@@ -398,18 +388,17 @@ mkEnvListTxt = map (mkAssocTxt . (both %~ T.pack))
 
 
 debugExp :: ActionFun
-debugExp (NoArgs' i mq) = let cn = prefixDebugCmd "exp" in do
-    awardExp 5000 ("executed " <> dblQuote cn) i
-    ok mq
-    logPlaExec cn i
-debugExp p = withoutArgs debugExp p
+debugExp (NoArgs' i mq) = let cn = prefixDebugCmd "exp" in do { logPlaExec cn i
+                                                              ; awardExp 5000 ("executed " <> dblQuote cn) i
+                                                              ; ok mq }
+debugExp p              = withoutArgs debugExp p
 
 
 -----
 
 
 debugFun :: ActionFun
-debugFun (NoArgs i mq cols) = getState >>= \ms -> do
+debugFun (NoArgs i mq cols) = getState >>= \ms ->
     let helper t lens = t <> ":" : views lens (S.toAscList . M.keysSet) ms
         tss           = [ helper "EffectFunTbl"      effectFunTbl
                         , helper "FeelingFunTbl"     feelingFunTbl
@@ -417,8 +406,8 @@ debugFun (NoArgs i mq cols) = getState >>= \ms -> do
                         , helper "HookFunTbl"        hookFunTbl
                         , helper "InstaEffectFunTbl" instaEffectFunTbl
                         , helper "RmActionFunTbl"    rmActionFunTbl ]
-    pager i mq Nothing . concatMap (wrapIndent 2 cols) . intercalateDivider cols $ tss
-    logPlaExec (prefixDebugCmd "fun") i
+    in do { logPlaExec (prefixDebugCmd "fun") i
+          ; pager i mq Nothing . concatMap (wrapIndent 2 cols) . intercalateDivider cols $ tss }
 debugFun p = withoutArgs debugFun p
 
 
@@ -426,10 +415,9 @@ debugFun p = withoutArgs debugFun p
 
 
 debugGmcpDo :: ActionFun
-debugGmcpDo (NoArgs' i mq) = do
-    send mq . T.pack $ [ telnetIAC, telnetDO, telnetGMCP ]
-    ok mq
-    logPlaExec (prefixDebugCmd "gmcpdo") i
+debugGmcpDo (NoArgs' i mq) = do { logPlaExec (prefixDebugCmd "gmcpdo") i
+                                ; send mq . T.pack $ [ telnetIAC, telnetDO, telnetGMCP ]
+                                ; ok mq }
 debugGmcpDo p = withoutArgs debugGmcpDo p
 
 
@@ -438,8 +426,8 @@ debugGmcpDo p = withoutArgs debugGmcpDo p
 
 debugGmcpRm :: ActionFun
 debugGmcpRm (NoArgs i mq cols) = do
-    ((>>) <$> wrapSend mq cols . gmcpRmInfo Nothing i <*> sendGmcpRmInfo Nothing i) =<< getState
     logPlaExec (prefixDebugCmd "gmcproom") i
+    ((>>) <$> wrapSend mq cols . gmcpRmInfo Nothing i <*> sendGmcpRmInfo Nothing i) =<< getState
 debugGmcpRm p = withoutArgs debugGmcpRm p
 
 
@@ -448,8 +436,8 @@ debugGmcpRm p = withoutArgs debugGmcpRm p
 
 debugGmcpVitals :: ActionFun
 debugGmcpVitals (NoArgs i mq cols) = do
-    ((>>) <$> wrapSend mq cols . gmcpVitals i <*> sendGmcpVitals i) =<< getState
     logPlaExec (prefixDebugCmd "gmcpvitals") i
+    ((>>) <$> wrapSend mq cols . gmcpVitals i <*> sendGmcpVitals i) =<< getState
 debugGmcpVitals p = withoutArgs debugGmcpVitals p
 
 
@@ -457,10 +445,9 @@ debugGmcpVitals p = withoutArgs debugGmcpVitals p
 
 
 debugGmcpWill :: ActionFun
-debugGmcpWill (NoArgs' i mq) = do
-    send mq . T.pack $ [ telnetIAC, telnetWILL, telnetGMCP ]
-    ok mq
-    logPlaExec (prefixDebugCmd "gmcpwill") i
+debugGmcpWill (NoArgs' i mq) = do { logPlaExec (prefixDebugCmd "gmcpwill") i
+                                  ; send mq . T.pack $ [ telnetIAC, telnetWILL, telnetGMCP ]
+                                  ; ok mq }
 debugGmcpWill p = withoutArgs debugGmcpWill p
 
 
@@ -468,7 +455,7 @@ debugGmcpWill p = withoutArgs debugGmcpWill p
 
 
 debugHandle :: ActionFun
-debugHandle (NoArgs' i mq) = writeMsg mq ShowHandle >> logPlaExec (prefixDebugCmd "handle") i
+debugHandle (NoArgs' i mq) = logPlaExec (prefixDebugCmd "handle") i >> writeMsg mq ShowHandle
 debugHandle p              = withoutArgs debugHandle p
 
 
@@ -539,8 +526,8 @@ debugId   (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
                   , [ T.concat [ "Vessels containing ", dblQuote "liqId", " ", searchIdTxt, ":" ]
                     , let g = views vesselCont (maybe False (views liqId (== DistinctLiqId searchId) . fst)) . snd
                       in f . filter g . tblToList vesselTbl $ ms ] ]
-          pager i mq Nothing . concat . wrapLines cols . intercalate [""] $ mkTxt
           logPlaExecArgs (prefixDebugCmd "id") (pure a) i
+          pager i mq Nothing . concat . wrapLines cols . intercalate [""] $ mkTxt
 debugId p = advise p [] adviceDIdExcessArgs
 
 
@@ -590,6 +577,7 @@ tblKeys lens = views lens IM.keys
 
 debugKewpie :: ActionFun
 debugKewpie (NoArgs' i mq) = do
+    logPlaExec (prefixDebugCmd "kewpie") i
     modifyStateSeq $ \ms -> let et = EntTemplate (Just "doll")
                                                  "kewpie doll" ""
                                                  "The kewpie doll is disgustingly cute."
@@ -599,9 +587,7 @@ debugKewpie (NoArgs' i mq) = do
                                                  dollVol
                                                  Nothing
                                                  zeroBits
-                            in dropFst . newObj ms et ot . getRmId i $ ms
-    ok mq
-    logPlaExec (prefixDebugCmd "kewpie") i
+                            in second (++ pure (ok mq)) . dropFst . newObj ms et ot . getRmId i $ ms
 debugKewpie p = withoutArgs debugKewpie p
 
 
@@ -609,11 +595,9 @@ debugKewpie p = withoutArgs debugKewpie p
 
 
 debugKeys :: ActionFun
-debugKeys (NoArgs i mq cols) = getState >>= \ms -> do
-    pager i mq Nothing . concat . wrapLines cols . intercalate [""] . map mkKeysTxt . mkTblNameKeysList $ ms
+debugKeys (NoArgs i mq cols) = getState >>= \ms -> let mkKeysTxt (tblName, ks) = [ tblName <> ": ", showText ks ] in do
     logPlaExec (prefixDebugCmd "keys") i
-  where
-    mkKeysTxt (tblName, ks) = [ tblName <> ": ", showText ks ]
+    pager i mq Nothing . concat . wrapLines cols . intercalate [""] . map mkKeysTxt . mkTblNameKeysList $ ms
 debugKeys p = withoutArgs debugKeys p
 
 
@@ -629,10 +613,9 @@ debugLiq   (WithArgs i mq cols as) = getState >>= \ms ->
     helper ms amt di
       | amt < 1 || di < 0                            = wrapSend mq cols sorryWtf
       | di `notElem` views distinctLiqTbl IM.keys ms = wrapSend mq cols . sorryNonexistentId di . pure $ "distinct liquid"
-      | otherwise = do
-          ok mq
-          logPlaExecArgs (prefixDebugCmd "liquid") as i
-          consume i =<< mkStomachConts <$> liftIO getCurrentTime
+      | otherwise = do { logPlaExecArgs (prefixDebugCmd "liquid") as i
+                       ; ok mq
+                       ; consume i =<< mkStomachConts <$> liftIO getCurrentTime }
       where
         mkStomachConts now = replicate amt . StomachCont (Left . DistinctLiqId $ di) now $ False
 debugLiq p = advise p [] adviceDLiqExcessArgs
@@ -659,7 +642,7 @@ parseTwoIntArgs _ _ as _ _ _ = patternMatchFail "parseTwoIntArgs" . showText $ a
 
 
 debugLog :: ActionFun
-debugLog (NoArgs' i mq) = helper >> ok mq >> logPlaExec (prefixDebugCmd "log") i
+debugLog (NoArgs' i mq) = logPlaExec (prefixDebugCmd "log") i >> helper >> ok mq
   where
     helper       = replicateM_ 100 . onNewThread $ heavyLogging
     heavyLogging = replicateM_ 100 . logNotice "debugLog heavyLogging" =<< mkMsg
