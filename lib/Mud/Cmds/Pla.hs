@@ -101,15 +101,15 @@ import System.FilePath ((</>))
 import System.Time.Utils (renderSecs)
 
 
-default (Int, Double)
+{-# ANN module ("HLint: ignore Use &&"        :: String) #-}
+{-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
+{-# ANN module ("HLint: ignore Use ||"        :: String) #-}
 
 
 -----
 
 
-{-# ANN module ("HLint: ignore Use &&"        :: String) #-}
-{-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
-{-# ANN module ("HLint: ignore Use ||"        :: String) #-}
+default (Int, Double)
 
 
 -----

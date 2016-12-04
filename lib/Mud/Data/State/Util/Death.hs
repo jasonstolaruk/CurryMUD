@@ -48,10 +48,13 @@ import qualified Data.IntMap.Lazy as IM (delete, filterWithKey, keys, mapWithKey
 import qualified Data.Map.Lazy as M (delete, elems, empty, filter, filterWithKey, keys, size)
 
 
-default (Int)
-
-
 {-# ANN module ("HLint: ignore Use &&" :: String) #-}
+
+
+-----
+
+
+default (Int)
 
 
 -----

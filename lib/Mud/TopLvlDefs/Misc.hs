@@ -12,13 +12,13 @@ import qualified Data.Text as T
 import System.Posix.Types (FileOffset)
 
 
-default (Int)
+{-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
 
 
 -----
 
 
-{-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
+default (Int)
 
 
 -- ==================================================
