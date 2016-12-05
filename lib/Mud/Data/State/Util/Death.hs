@@ -47,6 +47,7 @@ import Database.SQLite.Simple (fromOnly)
 import Prelude hiding (pi)
 import qualified Data.IntMap.Lazy as IM (delete, filterWithKey, keys, mapWithKey)
 import qualified Data.Map.Lazy as M (delete, elems, empty, filter, filterWithKey, keys, size)
+import qualified Data.Text as T
 
 
 {-# ANN module ("HLint: ignore Use &&" :: String) #-}
@@ -150,27 +151,28 @@ deleteNpc i = getState >>= \ms -> let ri = getRmId i ms
 
 
 mkCorpse :: Id -> MudState -> (MudState, Funs)
-mkCorpse i ms = let et     = EntTemplate (Just "corpse")
-                                         s p
-                                         (getEntDesc i ms)
-                                         Nothing -- TODO
-                                         zeroBits
-                    ot     = ObjTemplate (getCorpseWeight i ms)
-                                         (getCorpseVol    i ms)
-                                         Nothing -- TODO
-                                         zeroBits
-                    ct     = ConTemplate (getCorpseCapacity i ms `max` calcCarriedVol i ms)
-                                         zeroBits
-                    ic     = (M.elems (getEqMap i ms) ++ getInv i ms, getCoins i ms)
-                    corpse = bool NpcCorpse (PCCorpse (getSing i ms) (getSex i ms) . getRace i $ ms) . isPC i $ ms
-                    (corpseId, ms', fs) = newCorpse ms et ot ct ic corpse . getRmId i $ ms
-                    secs                = getCorpseDecompSecs i ms
-                in ( ms' & coinsTbl.ind i .~ mempty
-                         & eqTbl   .ind i .~ M.empty
-                         & invTbl  .ind i .~ []
-                   , fs ++ [ logPla "mkCorpse" i "corpse created."
-                           , logNotice "" "." -- TODO: Log PC ID and corpse ID.
-                           , startCorpseDecomp corpseId secs ] )
+mkCorpse i ms =
+    let et                  = EntTemplate (Just "corpse")
+                                          s p
+                                          (getEntDesc i ms)
+                                          Nothing -- TODO
+                                          zeroBits
+        ot                  = ObjTemplate (getCorpseWeight i ms)
+                                          (getCorpseVol    i ms)
+                                          Nothing -- TODO
+                                          zeroBits
+        ct                  = ConTemplate (getCorpseCapacity i ms `max` calcCarriedVol i ms)
+                                          zeroBits
+        ic                  = (M.elems (getEqMap i ms) ++ getInv i ms, getCoins i ms)
+        corpse              = bool NpcCorpse (PCCorpse (getSing i ms) (getSex i ms) . getRace i $ ms) . isPC i $ ms
+        (corpseId, ms', fs) = newCorpse ms et ot ct ic corpse . getRmId i $ ms
+        logMsg              = T.concat [ "corpse with ID ", showText corpseId, " created for ", descSingId i ms, "." ]
+    in ( ms' & coinsTbl.ind i .~ mempty
+             & eqTbl   .ind i .~ M.empty
+             & invTbl  .ind i .~ []
+       , fs ++ [ logPla "mkCorpse" i "corpse created."
+               , logNotice "mkCorpse" logMsg
+               , startCorpseDecomp corpseId . getCorpseDecompSecs i $ ms ] )
       where
         (s, p) = if isPC i ms
           then let pair @(_,    r) = getSexRace i ms
