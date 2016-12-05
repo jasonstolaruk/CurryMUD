@@ -149,8 +149,8 @@ calcCorpseDecompSecs = let f = (calcCorpseDecompSecs Human |&|) in \case
   Hobbit    -> f (\x -> round $ fromIntegral x * hobbitToHumanWeightRatio)
   Human     -> 60 {- mins -} * 60 {- secs -} -- one hr
   Lagomorph -> f id
-  Nymph     -> f minusHalf
-  Vulpenoid -> f plusHalf
+  Nymph     -> f minusThird
+  Vulpenoid -> f plusQuarter
 
 
 -----

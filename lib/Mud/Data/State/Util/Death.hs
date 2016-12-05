@@ -168,7 +168,9 @@ mkCorpse i ms = let et     = EntTemplate (Just "corpse")
                 in ( ms' & coinsTbl.ind i .~ mempty
                          & eqTbl   .ind i .~ M.empty
                          & invTbl  .ind i .~ []
-                   , fs ++ [ logPla "mkCorpse" i "corpse created.", startCorpseDecomp corpseId secs ] )
+                   , fs ++ [ logPla "mkCorpse" i "corpse created."
+                           , logNotice "" "." -- TODO: Log PC ID and corpse ID.
+                           , startCorpseDecomp corpseId secs ] )
       where
         (s, p) = if isPC i ms
           then let pair @(_,    r) = getSexRace i ms
