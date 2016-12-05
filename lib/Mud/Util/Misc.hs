@@ -45,6 +45,7 @@ module Mud.Util.Misc ( atLst1
                      , middle
                      , mIf
                      , minusFifth
+                     , minusHalf
                      , minusQuarter
                      , minusThird
                      , mkDateTimeTxt
@@ -59,6 +60,7 @@ module Mud.Util.Misc ( atLst1
                      , PatternMatchFail
                      , percent
                      , plusFifth
+                     , plusHalf
                      , plusQuarter
                      , plusThird
                      , reverseLookup
@@ -309,6 +311,10 @@ minusFifth :: Int -> Int
 minusFifth x = round (fromIntegral x * 0.80 :: Double)
 
 
+minusHalf :: Int -> Int
+minusHalf x = round (fromIntegral x * 0.50 :: Double)
+
+
 minusQuarter :: Int -> Int
 minusQuarter x = round (fromIntegral x * 0.75 :: Double)
 
@@ -357,6 +363,10 @@ percent x y = 100 * x `divideRound` y
 
 plusFifth :: Int -> Int
 plusFifth x = round (fromIntegral x * 1.20 :: Double)
+
+
+plusHalf :: Int -> Int
+plusHalf x = round (fromIntegral x * 1.50 :: Double)
 
 
 plusQuarter :: Int -> Int

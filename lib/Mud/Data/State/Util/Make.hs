@@ -6,6 +6,7 @@ import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Threads.Biodegrader
+import Mud.TopLvlDefs.Misc
 import Mud.Util.Misc
 
 import Control.Lens (at)
@@ -96,64 +97,66 @@ newCorpse ms et ot ct ic corpse invId =
 -----
 
 
-data MobTemplate = MobTemplate { mtSex            :: Sex
-                               , mtSt             :: Int
-                               , mtDx             :: Int
-                               , mtHt             :: Int
-                               , mtMa             :: Int
-                               , mtPs             :: Int
-                               , mtMaxHp          :: Int
-                               , mtMaxMp          :: Int
-                               , mtMaxPp          :: Int
-                               , mtMaxFp          :: Int
-                               , mtExp            :: Exp
-                               , mtLvl            :: Lvl
-                               , mtHand           :: Hand
-                               , mtKnownLangs     :: [Lang]
-                               , mtRmId           :: Id
-                               , mtSize           :: Maybe MobSize
-                               , mtCorpseWeight   :: Weight
-                               , mtCorpseVol      :: Vol
-                               , mtCorpseCapacity :: Vol
-                               , mtParty          :: Party }
+data MobTemplate = MobTemplate { mtSex              :: Sex
+                               , mtSt               :: Int
+                               , mtDx               :: Int
+                               , mtHt               :: Int
+                               , mtMa               :: Int
+                               , mtPs               :: Int
+                               , mtMaxHp            :: Int
+                               , mtMaxMp            :: Int
+                               , mtMaxPp            :: Int
+                               , mtMaxFp            :: Int
+                               , mtExp              :: Exp
+                               , mtLvl              :: Lvl
+                               , mtHand             :: Hand
+                               , mtKnownLangs       :: [Lang]
+                               , mtRmId             :: Id
+                               , mtSize             :: Maybe MobSize
+                               , mtCorpseWeight     :: Weight
+                               , mtCorpseVol        :: Vol
+                               , mtCorpseCapacity   :: Vol
+                               , mtCorpseDecompSecs :: Seconds
+                               , mtParty            :: Party }
 
 
 mkMob :: MobTemplate -> Mob
-mkMob MobTemplate { .. } = Mob { _sex            = mtSex
-                               , _st             = mtSt
-                               , _dx             = mtDx
-                               , _ht             = mtHt
-                               , _ma             = mtMa
-                               , _ps             = mtPs
-                               , _curHp          = mtMaxHp
-                               , _maxHp          = mtMaxHp
-                               , _curMp          = mtMaxMp
-                               , _maxMp          = mtMaxMp
-                               , _curPp          = mtMaxPp
-                               , _maxPp          = mtMaxPp
-                               , _curFp          = mtMaxFp
-                               , _maxFp          = mtMaxFp
-                               , _exp            = mtExp
-                               , _lvl            = mtLvl
-                               , _hand           = mtHand
-                               , _knownLangs     = mtKnownLangs
-                               , _rmId           = mtRmId
-                               , _lastRmId       = mtRmId
-                               , _mobRmDesc      = Nothing
-                               , _tempDesc       = Nothing
-                               , _mobSize        = mtSize
-                               , _corpseWeight   = mtCorpseWeight
-                               , _corpseVol      = mtCorpseVol
-                               , _corpseCapacity = mtCorpseCapacity
-                               , _party          = mtParty
-                               , _stomach        = []
-                               , _digesterAsync  = Nothing
-                               , _feelingMap     = M.empty
-                               , _actMap         = M.empty
-                               , _nowEating      = Nothing
-                               , _nowDrinking    = Nothing
-                               , _regenQueue     = Nothing
-                               , _interp         = Nothing }
+mkMob MobTemplate { .. } = Mob { _sex              = mtSex
+                               , _st               = mtSt
+                               , _dx               = mtDx
+                               , _ht               = mtHt
+                               , _ma               = mtMa
+                               , _ps               = mtPs
+                               , _curHp            = mtMaxHp
+                               , _maxHp            = mtMaxHp
+                               , _curMp            = mtMaxMp
+                               , _maxMp            = mtMaxMp
+                               , _curPp            = mtMaxPp
+                               , _maxPp            = mtMaxPp
+                               , _curFp            = mtMaxFp
+                               , _maxFp            = mtMaxFp
+                               , _exp              = mtExp
+                               , _lvl              = mtLvl
+                               , _hand             = mtHand
+                               , _knownLangs       = mtKnownLangs
+                               , _rmId             = mtRmId
+                               , _lastRmId         = mtRmId
+                               , _mobRmDesc        = Nothing
+                               , _tempDesc         = Nothing
+                               , _mobSize          = mtSize
+                               , _corpseWeight     = mtCorpseWeight
+                               , _corpseVol        = mtCorpseVol
+                               , _corpseCapacity   = mtCorpseCapacity
+                               , _corpseDecompSecs = mtCorpseDecompSecs
+                               , _party            = mtParty
+                               , _stomach          = []
+                               , _digesterAsync    = Nothing
+                               , _feelingMap       = M.empty
+                               , _actMap           = M.empty
+                               , _nowEating        = Nothing
+                               , _nowDrinking      = Nothing
+                               , _regenQueue       = Nothing
+                               , _interp           = Nothing }
 
 
 -----

@@ -116,7 +116,7 @@ type MobTbl                 = IM.IntMap Mob
 type MsgQueueTbl            = IM.IntMap MsgQueue
 type NpcTbl                 = IM.IntMap Npc
 type ObjTbl                 = IM.IntMap Obj
-type PausedCorpseDecompsTbl = IM.IntMap Seconds
+type PausedCorpseDecompsTbl = IM.IntMap PausedCorpseDecomp
 type PausedEffectsTbl       = IM.IntMap [PausedEffect]
 type PCSingTbl              = M.Map Sing Id
 type PCTbl                  = IM.IntMap PC
@@ -532,6 +532,7 @@ data Mob = Mob { _sex                    :: Sex
                , _corpseWeight           :: Weight
                , _corpseVol              :: Vol
                , _corpseCapacity         :: Vol
+               , _corpseDecompSecs       :: Seconds
                , _party                  :: Party
                , _stomach                :: [StomachCont]
                , _digesterAsync          :: Maybe StomachAsync
@@ -657,34 +658,35 @@ instance ToJSON   Mob where toJSON    = mobToJSON
 
 
 mobToJSON :: Mob -> Value
-mobToJSON Mob { .. } = object [ "sex"            .= _sex
-                              , "st"             .= _st
-                              , "dx"             .= _dx
-                              , "ht"             .= _ht
-                              , "ma"             .= _ma
-                              , "ps"             .= _ps
-                              , "curHp"          .= _curHp
-                              , "maxHp"          .= _maxHp
-                              , "curMp"          .= _curMp
-                              , "maxMp"          .= _maxMp
-                              , "curPp"          .= _curPp
-                              , "maxPp"          .= _maxPp
-                              , "curFp"          .= _curFp
-                              , "maxFp"          .= _maxFp
-                              , "exp"            .= _exp
-                              , "lvl"            .= _lvl
-                              , "hand"           .= _hand
-                              , "knownLangs"     .= _knownLangs
-                              , "rmId"           .= _rmId
-                              , "lastRmId"       .= _lastRmId
-                              , "mobRmDesc"      .= _mobRmDesc
-                              , "tempDesc"       .= _tempDesc
-                              , "mobSize"        .= _mobSize
-                              , "corpseWeight"   .= _corpseWeight
-                              , "corpseVol"      .= _corpseVol
-                              , "corpseCapacity" .= _corpseCapacity
-                              , "party"          .= _party
-                              , "stomach"        .= _stomach ]
+mobToJSON Mob { .. } = object [ "sex"              .= _sex
+                              , "st"               .= _st
+                              , "dx"               .= _dx
+                              , "ht"               .= _ht
+                              , "ma"               .= _ma
+                              , "ps"               .= _ps
+                              , "curHp"            .= _curHp
+                              , "maxHp"            .= _maxHp
+                              , "curMp"            .= _curMp
+                              , "maxMp"            .= _maxMp
+                              , "curPp"            .= _curPp
+                              , "maxPp"            .= _maxPp
+                              , "curFp"            .= _curFp
+                              , "maxFp"            .= _maxFp
+                              , "exp"              .= _exp
+                              , "lvl"              .= _lvl
+                              , "hand"             .= _hand
+                              , "knownLangs"       .= _knownLangs
+                              , "rmId"             .= _rmId
+                              , "lastRmId"         .= _lastRmId
+                              , "mobRmDesc"        .= _mobRmDesc
+                              , "tempDesc"         .= _tempDesc
+                              , "mobSize"          .= _mobSize
+                              , "corpseWeight"     .= _corpseWeight
+                              , "corpseVol"        .= _corpseVol
+                              , "corpseCapacity"   .= _corpseCapacity
+                              , "corpseDecompSecs" .= _corpseDecompSecs
+                              , "party"            .= _party
+                              , "stomach"          .= _stomach ]
 
 
 jsonToMob :: Value -> Parser Mob
@@ -714,6 +716,7 @@ jsonToMob (Object o) = Mob <$> o .: "sex"
                            <*> o .: "corpseWeight"
                            <*> o .: "corpseVol"
                            <*> o .: "corpseCapacity"
+                           <*> o .: "corpseDecompSecs"
                            <*> o .: "party"
                            <*> o .: "stomach"
                            <*> pure Nothing
@@ -780,6 +783,12 @@ jsonToObj (Object o) = Obj <$> o .: "objWeight"
                            <*> o .: "objFlags"
                            <*> pure Nothing
 jsonToObj _          = empty
+
+
+-- ==================================================
+
+
+type PausedCorpseDecomp = (Seconds, Seconds)
 
 
 -- ==================================================

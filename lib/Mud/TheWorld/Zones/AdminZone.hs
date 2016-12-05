@@ -531,6 +531,7 @@ createAdminZone = do
                              iLoggedOut
                              Nothing
                              (calcCorpseWeight Human) (calcCorpseVol Human) (calcCorpseCapacity Human)
+                             (calcCorpseDecompSecs Human)
                              dfltParty))
          M.empty
          (M.singleton "Curry" True)
@@ -555,6 +556,7 @@ createAdminZone = do
                              iLoggedOut
                              Nothing
                              (calcCorpseWeight Human) (calcCorpseVol Human) (calcCorpseCapacity Human)
+                             (calcCorpseDecompSecs Human)
                              dfltParty))
          M.empty
          (M.singleton "Root" True)
@@ -1604,6 +1606,7 @@ createAdminZone = do
                     iMobCloset
                     (Just SmlMinus)
                     rockCavyCorpseWeight rockCavyCorpseVol rockCavyCorpseCap
+                    (calcCorpseDecompSecsForMobSize SmlMinus)
                     dfltParty))
   putNpc iPidge
          (Ent iPidge
@@ -1628,6 +1631,7 @@ createAdminZone = do
                              iMobCloset
                              (Just MedMinus)
                              (calcCorpseWeight Hobbit) (calcCorpseVol Hobbit) (calcCorpseCapacity Hobbit)
+                             (calcCorpseDecompSecs Hobbit)
                              dfltParty))
   putCloth iPeasant'sShirt
            (Ent iPeasant'sShirt
@@ -1686,4 +1690,5 @@ createAdminZone = do
                     iMobCloset
                     (Just MedMinus)
                     skeletonCorpseWeight (calcCorpseVol Human) (calcCorpseCapacity Human)
+                    (5 * 60)
                     dfltParty))

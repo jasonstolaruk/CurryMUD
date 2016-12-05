@@ -1996,7 +1996,7 @@ link (LowerNub i mq cols as) = getState >>= \ms -> if
                                               , "'s mind."
                                               , twoWayMsg ]
                 twoWayMsg = isTwoWay |?| " This completes the psionic circuit and you may now communicate with each \
-                                         \other telepathically."
+                                         \other telepathically." -- TODO: Shorter msg?
                 isTwoWay  = targetSing `elem` srcLinks
                 logMsg    = T.concat [ "Established a ", oneTwoWay, " link with ", targetSing, "." ]
                 oneTwoWay | isTwoWay  = "two-way"

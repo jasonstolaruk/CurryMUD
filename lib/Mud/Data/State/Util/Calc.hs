@@ -6,6 +6,8 @@ module Mud.Data.State.Util.Calc ( calcBarLen
                                 , calcCarriedVol
                                 , calcConPerFull
                                 , calcCorpseCapacity
+                                , calcCorpseDecompSecs
+                                , calcCorpseDecompSecsForMobSize
                                 , calcCorpseVol
                                 , calcCorpseWeight
                                 , calcDigesterDelay
@@ -139,6 +141,33 @@ calcConPerFull i = uncurry percent . (calcInvCoinsVol `fanUncurry` getConCapacit
 -----
 
 
+calcCorpseDecompSecs :: Race -> Seconds
+calcCorpseDecompSecs = let f = (calcCorpseDecompSecs Human |&|) in \case
+  Dwarf     -> f (\x -> round $ fromIntegral x * dwarfToHumanWeightRatio)
+  Elf       -> f minusFifth
+  Felinoid  -> f plusFifth
+  Hobbit    -> f (\x -> round $ fromIntegral x * hobbitToHumanWeightRatio)
+  Human     -> 60 {- mins -} * 60 {- secs -} -- one hr
+  Lagomorph -> f id
+  Nymph     -> f minusHalf
+  Vulpenoid -> f plusHalf
+
+
+-----
+
+
+calcCorpseDecompSecsForMobSize :: MobSize -> Seconds
+calcCorpseDecompSecsForMobSize = (* 60 {- secs -}) . \case SmlMinus -> 20 {- mins -}
+                                                           SmlPlus  -> 25
+                                                           MedMinus -> 30
+                                                           MedPlus  -> 35
+                                                           LrgMinus -> 40
+                                                           LrgPlus  -> 45
+
+
+-----
+
+
 calcCorpseCapacity :: Race -> Vol
 calcCorpseCapacity = let f = (calcCorpseCapacity Human |&|) in \case
   Dwarf     -> f (\x -> round $ fromIntegral x * dwarfToHumanWeightRatio)
@@ -149,14 +178,6 @@ calcCorpseCapacity = let f = (calcCorpseCapacity Human |&|) in \case
   Lagomorph -> f id
   Nymph     -> f minusQuarter
   Vulpenoid -> f plusQuarter
-
-
-dwarfToHumanWeightRatio :: Double
-dwarfToHumanWeightRatio = calcCorpseWeight Dwarf `divide` calcCorpseWeight Human
-
-
-hobbitToHumanWeightRatio :: Double
-hobbitToHumanWeightRatio = calcCorpseWeight Hobbit `divide` calcCorpseWeight Human
 
 
 -----
@@ -187,6 +208,14 @@ calcCorpseWeight = let f = (calcCorpseWeight Human |&|) in \case
   Lagomorph -> f id
   Nymph     -> f minusQuarter
   Vulpenoid -> f plusQuarter
+
+
+dwarfToHumanWeightRatio :: Double
+dwarfToHumanWeightRatio = calcCorpseWeight Dwarf `divide` calcCorpseWeight Human
+
+
+hobbitToHumanWeightRatio :: Double
+hobbitToHumanWeightRatio = calcCorpseWeight Hobbit `divide` calcCorpseWeight Human
 
 
 -----
