@@ -27,7 +27,7 @@ import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
 import Control.Exception.Lifted (finally, handle)
 import Control.Lens (view, views)
 import Control.Lens.Operators ((%~), (&), (.~), (<>~), (?~))
-import Control.Monad ((>=>), forM_, unless, when)
+import Control.Monad ((>=>), forM_, unless)
 import Control.Monad.IO.Class (liftIO)
 import Data.IORef (newIORef, readIORef)
 import Data.Monoid ((<>))
@@ -60,12 +60,11 @@ startEffect i e = startEffectHelper i e
 
 
 startEffectHelper :: Id -> Effect -> MudStack ()
-startEffectHelper i e@(view effectFeeling -> ef) = getState >>= \ms -> do
-    when (getType i ms == PCType) . logPla  "startEffectHelper" i $ "starting effect: " <> pp e
-    q <- liftIO newTQueueIO
-    a <- runAsync . threadEffect i e $ q
-    startFeeling i ef NoVal
-    tweak $ activeEffectsTbl.ind i <>~ pure (ActiveEffect e (a, q))
+startEffectHelper i e@(view effectFeeling -> ef) = do { logPla "startEffectHelper" i $ "starting effect: " <> pp e
+                                                      ; q <- liftIO newTQueueIO
+                                                      ; a <- runAsync . threadEffect i e $ q
+                                                      ; startFeeling i ef NoVal
+                                                      ; tweak $ activeEffectsTbl.ind i <>~ pure (ActiveEffect e (a, q)) }
 
 
 threadEffect :: Id -> Effect -> EffectQueue -> MudStack ()

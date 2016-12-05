@@ -223,8 +223,7 @@ logAndDispIOEx mq cols modName (dblQuote -> funName) (dblQuote . showText -> e) 
 
 
 logPla :: Text -> Text -> Id -> Text -> MudStack ()
-logPla modName (dblQuote -> funName) i msg =
-    doIfLogging i . registerMsg . T.concat $ [ modName, " ", funName, ": ", msg ]
+logPla modName (dblQuote -> funName) i msg = doIfLogging i . registerMsg . T.concat $ [ modName, " ", funName, ": ", msg ]
 
 
 logPlaExec :: Text -> CmdName -> Id -> MudStack ()

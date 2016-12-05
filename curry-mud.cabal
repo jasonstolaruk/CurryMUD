@@ -98,7 +98,7 @@ library
                        Mud.TheWorld.Zones.ZoneMap
                        Mud.Threads.Act
                        Mud.Threads.Biodegrader
-                      --  Mud.Threads.CorpseDecomposer
+                       Mud.Threads.CorpseDecomposer
                        Mud.Threads.DbTblPurger
                        Mud.Threads.Digester
                        Mud.Threads.Effect

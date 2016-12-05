@@ -26,6 +26,7 @@ module Mud.Data.State.Util.Get ( entFlagHelper
                                , getConnectTime
                                , getCorpse
                                , getCorpseCapacity
+                               , getCorpseDecompSecs
                                , getCorpseVol
                                , getCorpseWeight
                                , getCurrHostName
@@ -159,6 +160,7 @@ import Mud.Cmds.Msgs.Misc
 import Mud.Data.Misc
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
+import Mud.TopLvlDefs.Misc
 import Mud.Util.List
 import Mud.Util.Misc hiding (blowUp)
 import qualified Mud.Util.Misc as U (blowUp)
@@ -367,6 +369,13 @@ getCorpse i = view (corpseTbl.ind i)
 
 getCorpseCapacity :: Id -> MudState -> Vol
 getCorpseCapacity i = view corpseCapacity . getMob i
+
+
+-----
+
+
+getCorpseDecompSecs :: Id -> MudState -> Seconds
+getCorpseDecompSecs i = view corpseDecompSecs . getMob i
 
 
 -----

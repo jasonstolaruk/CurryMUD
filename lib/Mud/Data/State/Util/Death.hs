@@ -18,6 +18,7 @@ import Mud.Data.State.Util.Random
 import Mud.Misc.Database
 import Mud.Misc.Misc
 import Mud.Threads.Act
+import Mud.Threads.CorpseDecomposer
 import Mud.Threads.Digester
 import Mud.Threads.Effect
 import Mud.Threads.FeelingTimer
@@ -112,7 +113,7 @@ possessHelper i = modifyStateSeq $ \ms -> case getPossessor i ms of
                   & npcTbl.ind i .npcPossessor .~ Nothing
              , let (mq, cols) = getMsgQueueColumns pi ms
                    t          = aOrAnOnLower (descSingId i ms) <> "; NPC has died"
-               in [ logPla "handleDeath" pi . prd $ "stopped possessing " <> t
+               in [ logPla "possessHelper" pi . prd $ "stopped possessing " <> t
                   , wrapSend mq cols . prd $ "You stop possessing " <> aOrAnOnLower (getSing i ms)
                   , sendDfltPrompt mq pi ] )
 
@@ -135,7 +136,7 @@ leaveChans i = liftIO mkTimestamp >>= \ts -> do { logPla "leaveChans" i "leaving
 
 deleteNpc :: Id -> MudStack ()
 deleteNpc i = getState >>= \ms -> let ri = getRmId i ms
-                                  in do { logNotice "spiritize" $ "NPC " <> descSingId i ms <> " has died."
+                                  in do { logNotice "deleteNpc" $ "NPC " <> descSingId i ms <> " has died."
                                         ; tweaks [ activeEffectsTbl.at  i  .~ Nothing
                                                  , coinsTbl        .at  i  .~ Nothing
                                                  , entTbl          .at  i  .~ Nothing
@@ -162,11 +163,12 @@ mkCorpse i ms = let et     = EntTemplate (Just "corpse")
                                          zeroBits
                     ic     = (M.elems (getEqMap i ms) ++ getInv i ms, getCoins i ms)
                     corpse = bool NpcCorpse (PCCorpse (getSing i ms) (getSex i ms) . getRace i $ ms) . isPC i $ ms
-                    (_, ms', fs) = newCorpse ms et ot ct ic corpse . getRmId i $ ms
+                    (corpseId, ms', fs) = newCorpse ms et ot ct ic corpse . getRmId i $ ms
+                    secs                = getCorpseDecompSecs i ms
                 in ( ms' & coinsTbl.ind i .~ mempty
                          & eqTbl   .ind i .~ M.empty
                          & invTbl  .ind i .~ []
-                   , fs ++ [ logPla "mkCorpse" i "corpse created.", unit {- TODO: Start decomp. -} ] )
+                   , fs ++ [ logPla "mkCorpse" i "corpse created.", startCorpseDecomp corpseId secs ] )
       where
         (s, p) = if isPC i ms
           then let pair @(_,    r) = getSexRace i ms

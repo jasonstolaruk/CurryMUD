@@ -1690,5 +1690,5 @@ createAdminZone = do
                     iMobCloset
                     (Just MedMinus)
                     skeletonCorpseWeight (calcCorpseVol Human) (calcCorpseCapacity Human)
-                    (5 * 60)
+                    (5 {- mins -} * 60 {- secs -})
                     dfltParty))
