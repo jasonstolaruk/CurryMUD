@@ -112,9 +112,9 @@ Examples:4`
 \qmobSize=null\d (to set to Nothing)4`
 \qmobSize="LrgPlus"\d4`
 
-Key names: corpseWeight, corpseVol, corpseCapacity4`
+Key names: corpseWeight, corpseVol, corpseCapacity, corpseDecompSecs4`
 Properties of: Mob4`
-Value types: Weight, Vol, Vol4`
+Value types: Weight, Vol, Vol, Seconds4`
 Examples:4`
 \qcorpseWeight=100\d (to set to 100)4`
 \qcorpseWeight+=100\d (to add 100)4`

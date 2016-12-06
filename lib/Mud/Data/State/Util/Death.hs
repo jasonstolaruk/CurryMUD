@@ -150,7 +150,7 @@ deleteNpc i = getState >>= \ms -> let ri = getRmId i ms
                                         stopWaitNpcServer i {- This removes the NPC from the "NpcTbl". -}
 
 
-mkCorpse :: Id -> MudState -> (MudState, Funs)
+mkCorpse :: Id -> MudState -> (MudState, Funs) -- TODO: Nymph corpses hum faintly.
 mkCorpse i ms =
     let et                  = EntTemplate (Just "corpse")
                                           s p

@@ -735,41 +735,42 @@ examineMob i ms =
         showAttrib a       = showText (getBaseAttrib a i ms) |<>| (parensQuote . showText . calcEffAttrib a i $ ms)
         showPts x y        = m^.x.to showText <> " / " <> m^.y.to showText
         descSingIdHelper f = noneOnNull . commas . map (`descSingId` ms) . f i $ ms
-    in [ "Sex: "              <> m^.sex.to pp
-       , "ST: "               <> showAttrib St
-       , "DX: "               <> showAttrib Dx
-       , "HT: "               <> showAttrib Ht
-       , "MA: "               <> showAttrib Ma
-       , "PS: "               <> showAttrib Ps
-       , "HP: "               <> showPts curHp maxHp
-       , "MP: "               <> showPts curMp maxMp
-       , "PP: "               <> showPts curPp maxPp
-       , "FP: "               <> showPts curFp maxFp
-       , "Exp: "              <> m^.exp .to commaShow
-       , "Level: "            <> m^.lvl .to showText
-       , "Handedness: "       <> m^.hand.to pp
-       , "Know languages: "   <> m^.knownLangs.to ppList
-       , "Room: "             <> m^.rmId     .to rmHelper
-       , "Last room: "        <> m^.lastRmId .to rmHelper
-       , "Room description: " <> m^.mobRmDesc.to (fromMaybe none)
-       , "Temp description: " <> m^.tempDesc .to (fromMaybe none)
-       , "Size: "             <> m^.mobSize       .to ppMaybe
-       , "Corpse weight: "    <> m^.corpseWeight  .to commaShow
-       , "Corpse volume: "    <> m^.corpseVol     .to commaShow
-       , "Corpse capacity: "  <> m^.corpseCapacity.to commaShow
-       , "Following: "        <> descMaybeId ms (getFollowing i ms)
-       , "Followers: "        <> descSingIdHelper getFollowers
-       , "My group: "         <> descSingIdHelper getMyGroup
-       , "Member of: "        <> descMaybeId ms (getMemberOf i ms)
-       , "Stomach: "          <> m^.stomach.to ppList
-       , "Stomach ratio: "    <> let (mouths, size, perFull) = ( length . getStomach i $ ms
-                                                               , calcStomachSize i ms
-                                                               , calcStomachPerFull i ms ) & each %~ showText
-                                 in T.concat [ mouths, " / ", size, " ", parensQuote $ perFull <> "%" ]
-       , "Feeling map: "      <> let f tag feel = (tag |<>| pp feel :)
-                                 in noneOnNull . commas . views feelingMap (M.foldrWithKey f []) $ m
-       , "Now eating: "       <> m^.nowEating  .to (fromMaybe none)
-       , "Now drinking: "     <> m^.nowDrinking.to (maybe none drinkHelper)
+    in [ "Sex: "                <> m^.sex.to pp
+       , "ST: "                 <> showAttrib St
+       , "DX: "                 <> showAttrib Dx
+       , "HT: "                 <> showAttrib Ht
+       , "MA: "                 <> showAttrib Ma
+       , "PS: "                 <> showAttrib Ps
+       , "HP: "                 <> showPts curHp maxHp
+       , "MP: "                 <> showPts curMp maxMp
+       , "PP: "                 <> showPts curPp maxPp
+       , "FP: "                 <> showPts curFp maxFp
+       , "Exp: "                <> m^.exp .to commaShow
+       , "Level: "              <> m^.lvl .to showText
+       , "Handedness: "         <> m^.hand.to pp
+       , "Know languages: "     <> m^.knownLangs.to ppList
+       , "Room: "               <> m^.rmId     .to rmHelper
+       , "Last room: "          <> m^.lastRmId .to rmHelper
+       , "Room description: "   <> m^.mobRmDesc.to (fromMaybe none)
+       , "Temp description: "   <> m^.tempDesc .to (fromMaybe none)
+       , "Size: "               <> m^.mobSize         .to ppMaybe
+       , "Corpse weight: "      <> m^.corpseWeight    .to commaShow
+       , "Corpse volume: "      <> m^.corpseVol       .to commaShow
+       , "Corpse capacity: "    <> m^.corpseCapacity  .to commaShow
+       , "Corpse decomp secs: " <> m^.corpseDecompSecs.to commaShow
+       , "Following: "          <> descMaybeId ms (getFollowing i ms)
+       , "Followers: "          <> descSingIdHelper getFollowers
+       , "My group: "           <> descSingIdHelper getMyGroup
+       , "Member of: "          <> descMaybeId ms (getMemberOf i ms)
+       , "Stomach: "            <> m^.stomach.to ppList
+       , "Stomach ratio: "      <> let (mouths, size, perFull) = each %~ showText $ ( length . getStomach i $ ms
+                                                                                    , calcStomachSize     i   ms
+                                                                                    , calcStomachPerFull  i   ms )
+                                   in T.concat [ mouths, " / ", size, " ", parensQuote $ perFull <> "%" ]
+       , "Feeling map: "        <> let f tag feel = (tag |<>| pp feel :)
+                                   in noneOnNull . commas . views feelingMap (M.foldrWithKey f []) $ m
+       , "Now eating: "         <> m^.nowEating  .to (fromMaybe none)
+       , "Now drinking: "       <> m^.nowDrinking.to (maybe none drinkHelper)
        , encHelper i ms ]
   where
     rmHelper ri                        = getRmName ri ms |<>| parensQuote (showText ri)
@@ -1387,7 +1388,6 @@ mkSecReport SecRec { .. } = [ "Name: "     <> dbName
 -----
 
 
--- TODO: "corpseDecompSecs". Update help.
 adminSet :: ActionFun
 adminSet p@AdviseNoArgs = advise p [ prefixAdminCmd "set" ] adviceASetNoArgs
 adminSet p@AdviseOneArg = advise p [ prefixAdminCmd "set" ] adviceASetNoSettings
@@ -1467,6 +1467,7 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
                       , "corpseweight"
                       , "corpsevol"
                       , "corpsecapacity"
+                      , "corpsedecompsecs"
                       , "following"
                       , "followers"
                       , "mygroup"
@@ -1478,43 +1479,44 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
         notFound    = appendMsg . sorryAdminSetKey $ key
         appendMsg m = a & _2 <>~ pure m
         found       = let t = getType targetId ms in \case
-          "entname"        -> setEntMaybeTextHelper  t "entName"  "name"        entName  entName
-          "sing"           -> setEntSingHelper       t
-          "plur"           -> setEntTextHelper       t "plur"     "plural"      plur     plur
-          "entdesc"        -> setEntTextHelper       t "entDesc"  "description" entDesc  entDesc
-          "entsmell"       -> setEntMaybeTextHelper  t "entSmell" "smell"       entSmell entSmell
-          "sex"            -> setMobSexHelper        t
-          "st"             -> setMobAttribHelper     t "st" "ST" st st
-          "dx"             -> setMobAttribHelper     t "dx" "DX" dx dx
-          "ht"             -> setMobAttribHelper     t "ht" "HT" ht ht
-          "ma"             -> setMobAttribHelper     t "ma" "MA" ma ma
-          "ps"             -> setMobAttribHelper     t "ps" "PS" ps ps
-          "curhp"          -> setMobXpsHelper        t "curHp" "HP"     (\i -> fst . getHps i) curHp
-          "curmp"          -> setMobXpsHelper        t "curMp" "MP"     (\i -> fst . getMps i) curMp
-          "curpp"          -> setMobXpsHelper        t "curPp" "PP"     (\i -> fst . getPps i) curPp
-          "curfp"          -> setMobXpsHelper        t "curFp" "FP"     (\i -> fst . getFps i) curFp
-          "maxhp"          -> setMobXpsHelper        t "maxHp" "max HP" (\i -> snd . getHps i) maxHp
-          "maxmp"          -> setMobXpsHelper        t "maxMp" "max MP" (\i -> snd . getMps i) maxMp
-          "maxpp"          -> setMobXpsHelper        t "maxPp" "max PP" (\i -> snd . getPps i) maxPp
-          "maxfp"          -> setMobXpsHelper        t "maxFp" "max FP" (\i -> snd . getFps i) maxFp
-          "exp"            -> setMobExpHelper        t
-          "hand"           -> setMobHandHelper       t
-          "knownlangs"     -> setMobKnownLangsHelper t
-          "mobrmdesc"      -> setMobRmDescHelper     t
-          "tempdesc"       -> setMobTempDescHelper   t
-          "mobsize"        -> setMobSizeHelper       t
-          "corpseweight"   -> setMobCorpseHelper     t "corpseWeight"   "corpse weight"   corpseWeight   corpseWeight
-          "corpsevol"      -> setMobCorpseHelper     t "corpseVol"      "corpse volume"   corpseVol      corpseVol
-          "corpsecapacity" -> setMobCorpseHelper     t "corpseCapacity" "corpse capacity" corpseCapacity corpseCapacity
-          "following"      -> setMobFollowingHelper  t
-          "followers"      -> setMobInvHelper        t "followers" "followers have" (party.followers) (party.followers)
-          "mygroup"        -> setMobInvHelper        t "myGroup"   "group has"      (party.myGroup  ) (party.myGroup  )
-          "memberof"       -> setMobMemberOfHelper   t
-          "race"           -> setPCRaceHelper        t
-          "introduced"     -> setPCSingListHelper    t "introduced" "known names"  introduced introduced
-          "linked"         -> setPCSingListHelper    t "linked"     "linked names" linked     linked
-          "skillpts"       -> setPCSkillPtsHelper    t
-          x                -> patternMatchFail "setHelper helper found" (x :: Text)
+          "entname"          -> setEntMaybeTextHelper  t "entName"  "name"        entName  entName
+          "sing"             -> setEntSingHelper       t
+          "plur"             -> setEntTextHelper       t "plur"     "plural"      plur     plur
+          "entdesc"          -> setEntTextHelper       t "entDesc"  "description" entDesc  entDesc
+          "entsmell"         -> setEntMaybeTextHelper  t "entSmell" "smell"       entSmell entSmell
+          "sex"              -> setMobSexHelper        t
+          "st"               -> setMobAttribHelper     t "st" "ST" st st
+          "dx"               -> setMobAttribHelper     t "dx" "DX" dx dx
+          "ht"               -> setMobAttribHelper     t "ht" "HT" ht ht
+          "ma"               -> setMobAttribHelper     t "ma" "MA" ma ma
+          "ps"               -> setMobAttribHelper     t "ps" "PS" ps ps
+          "curhp"            -> setMobXpsHelper        t "curHp" "HP"     (\i -> fst . getHps i) curHp
+          "curmp"            -> setMobXpsHelper        t "curMp" "MP"     (\i -> fst . getMps i) curMp
+          "curpp"            -> setMobXpsHelper        t "curPp" "PP"     (\i -> fst . getPps i) curPp
+          "curfp"            -> setMobXpsHelper        t "curFp" "FP"     (\i -> fst . getFps i) curFp
+          "maxhp"            -> setMobXpsHelper        t "maxHp" "max HP" (\i -> snd . getHps i) maxHp
+          "maxmp"            -> setMobXpsHelper        t "maxMp" "max MP" (\i -> snd . getMps i) maxMp
+          "maxpp"            -> setMobXpsHelper        t "maxPp" "max PP" (\i -> snd . getPps i) maxPp
+          "maxfp"            -> setMobXpsHelper        t "maxFp" "max FP" (\i -> snd . getFps i) maxFp
+          "exp"              -> setMobExpHelper        t
+          "hand"             -> setMobHandHelper       t
+          "knownlangs"       -> setMobKnownLangsHelper t
+          "mobrmdesc"        -> setMobRmDescHelper     t
+          "tempdesc"         -> setMobTempDescHelper   t
+          "mobsize"          -> setMobSizeHelper       t
+          "corpseweight"     -> setMobCorpseHelper     t "corpseWeight"   "corpse weight"   corpseWeight   corpseWeight
+          "corpsevol"        -> setMobCorpseHelper     t "corpseVol"      "corpse volume"   corpseVol      corpseVol
+          "corpsecapacity"   -> setMobCorpseHelper     t "corpseCapacity" "corpse capacity" corpseCapacity corpseCapacity
+          "corpsedecompsecs" -> setMobCorpseHelper     t "corpseDecompSecs" "corpse decomp secs" corpseDecompSecs corpseDecompSecs
+          "following"        -> setMobFollowingHelper  t
+          "followers"        -> setMobInvHelper        t "followers" "followers have" (party.followers) (party.followers)
+          "mygroup"          -> setMobInvHelper        t "myGroup"   "group has"      (party.myGroup  ) (party.myGroup  )
+          "memberof"         -> setMobMemberOfHelper   t
+          "race"             -> setPCRaceHelper        t
+          "introduced"       -> setPCSingListHelper    t "introduced" "known names"  introduced introduced
+          "linked"           -> setPCSingListHelper    t "linked"     "linked names" linked     linked
+          "skillpts"         -> setPCSkillPtsHelper    t
+          x                  -> patternMatchFail "setHelper helper found" (x :: Text)
         -----
         setEntMaybeTextHelper t k n getter setter
           | not . hasEnt $ t = sorryType
@@ -1757,8 +1759,9 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
                                      AddAssign -> addSubAssignHelper (+)
                                      SubAssign -> addSubAssignHelper (-)
           where
-            mkToTarget diff | diff > 0  = pure . T.concat $ [ "You have gained ", commaShow diff,         " ", n, "." ]
-                            | otherwise = pure . T.concat $ [ "You have lost ",   commaShow . abs $ diff, " ", n, "." ]
+            mkToTarget diff
+              | diff > 0  = pure . T.concat $ [ "Your ", n, " has increased by ", commaShow diff,         "." ]
+              | otherwise = pure . T.concat $ [ "Your ", n, " has decreased by ", commaShow . abs $ diff, "." ]
         -----
         setMobFollowingHelper t
           | not . hasMob $ t = sorryType
