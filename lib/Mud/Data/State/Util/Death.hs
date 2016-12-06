@@ -120,8 +120,8 @@ possessHelper i = modifyStateSeq $ \ms -> case getPossessor i ms of
 
 
 leaveChans :: Id -> MudStack ()
-leaveChans i = liftIO mkTimestamp >>= \ts -> do { logPla "leaveChans" i "leaving channels."
-                                                ; modifyStateSeq $ \ms -> foldr (helper ts) (ms, []) . getPCChans i $ ms }
+leaveChans i = liftIO mkTimestamp >>= \ts -> do logPla "leaveChans" i "leaving channels."
+                                                modifyStateSeq $ \ms -> foldr (helper ts) (ms, []) . getPCChans i $ ms
   where
     helper ts (Chan ci name connTbl _) pair@(ms, _) = if M.size connTbl == 1
       then pair & _1.chanTbl.at ci .~ Nothing
@@ -137,17 +137,17 @@ leaveChans i = liftIO mkTimestamp >>= \ts -> do { logPla "leaveChans" i "leaving
 
 deleteNpc :: Id -> MudStack ()
 deleteNpc i = getState >>= \ms -> let ri = getRmId i ms
-                                  in do { logNotice "deleteNpc" $ "NPC " <> descSingId i ms <> " has died."
-                                        ; tweaks [ activeEffectsTbl.at  i  .~ Nothing
-                                                 , coinsTbl        .at  i  .~ Nothing
-                                                 , entTbl          .at  i  .~ Nothing
-                                                 , eqTbl           .at  i  .~ Nothing
-                                                 , invTbl          .at  i  .~ Nothing
-                                                 , invTbl          .ind ri %~ (i `delete`)
-                                                 , mobTbl          .at  i  .~ Nothing
-                                                 , pausedEffectsTbl.at  i  .~ Nothing
-                                                 , typeTbl         .at  i  .~ Nothing ]
-                                        ; stopWaitNpcServer i {- This removes the NPC from the "NpcTbl". -} }
+                                  in do logNotice "deleteNpc" $ "NPC " <> descSingId i ms <> " has died."
+                                        tweaks [ activeEffectsTbl.at  i  .~ Nothing
+                                               , coinsTbl        .at  i  .~ Nothing
+                                               , entTbl          .at  i  .~ Nothing
+                                               , eqTbl           .at  i  .~ Nothing
+                                               , invTbl          .at  i  .~ Nothing
+                                               , invTbl          .ind ri %~ (i `delete`)
+                                               , mobTbl          .at  i  .~ Nothing
+                                               , pausedEffectsTbl.at  i  .~ Nothing
+                                               , typeTbl         .at  i  .~ Nothing ]
+                                        stopWaitNpcServer i {- This removes the NPC from the "NpcTbl". -}
 
 
 mkCorpse :: Id -> MudState -> (MudState, Funs)

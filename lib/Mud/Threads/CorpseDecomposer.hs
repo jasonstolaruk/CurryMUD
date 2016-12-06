@@ -62,10 +62,10 @@ corpseDecomp i pair = finally <$> loop <*> finish =<< liftIO (newIORef pair)
   where
     loop ref = liftIO (readIORef ref) >>= \case
       (_, 0) -> unit
-      p      -> do { corpseDecompHelper i p
-                   ; liftIO . threadDelay $ 1 * 10 ^ 6
-                   ; liftIO . atomicModifyIORef' ref $ ((, ()) . second pred)
-                   ; loop ref }
+      p      -> do corpseDecompHelper i p
+                   liftIO . threadDelay $ 1 * 10 ^ 6
+                   liftIO . atomicModifyIORef' ref $ ((, ()) . second pred)
+                   loop ref
     finish ref = liftIO (readIORef ref) >>= \case
       (_, 0) -> logHelper $ "corpse decomposer for ID " <> showText i <> " has expired."
       p      -> let msg     = prd $ "pausing corpse decomposer for ID " <> showText i |<>| parensQuote secsTxt

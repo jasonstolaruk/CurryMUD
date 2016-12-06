@@ -55,9 +55,9 @@ logPla = L.logPla "Mud.Threads.Act"
 
 
 startAct :: Id -> ActType -> Fun -> MudStack ()
-startAct i actType f = do { logPla "startAct" i $ pp actType <> " act started."
-                          ; a <- runAsync . threadAct i actType $ f
-                          ; tweak $ mobTbl.ind i.actMap.at actType ?~ a }
+startAct i actType f = do logPla "startAct" i $ pp actType <> " act started."
+                          a <- runAsync . threadAct i actType $ f
+                          tweak $ mobTbl.ind i.actMap.at actType ?~ a
 
 
 stopAct :: Id -> ActType -> MudStack ()
@@ -77,8 +77,8 @@ threadAct i actType f = let a = (>> f) . setThreadType $ case actType of Attacki
                                                                          Drinking  -> DrinkingThread i
                                                                          Eating    -> EatingThread   i
                                                                          Moving    -> MovingThread   i
-                            b = do { logPla "threadAct" i $ pp actType <> " act finished."
-                                   ; tweak $ mobTbl.ind i.actMap.at actType .~ Nothing }
+                            b = do logPla "threadAct" i $ pp actType <> " act finished."
+                                   tweak $ mobTbl.ind i.actMap.at actType .~ Nothing
                         in handle (threadExHandler (Just i) . pp $ actType) $ a `finally` b
 
 
@@ -138,17 +138,17 @@ drinkAct DrinkBundle { .. } =
                                                                                       , t ]
            | x' == drinkAmt -> (>> bcastHelper False) . ioHelper x' $ "You finish drinking."
            | otherwise      -> loop x'
-    ioHelper m t = do { logPla "drinkAct loop" drinkerId . T.concat $ [ "drank "
-                                                                      , showText m
-                                                                      , " mouthful"
-                                                                      , theLetterS $ m /= 1
-                                                                      , " of "
-                                                                      , renderLiqNoun drinkLiq aOrAn
-                                                                      , " "
-                                                                      , let DistinctLiqId i = drinkLiq^.liqId
-                                                                        in parensQuote . showText $ i
-                                                                      , " from "
-                                                                      , renderVesselSing
-                                                                      , "." ]
-                      ; wrapSend drinkerMq drinkerCols t
-                      ; sendDfltPrompt drinkerMq drinkerId }
+    ioHelper m t = do logPla "drinkAct loop" drinkerId . T.concat $ [ "drank "
+                                                                    , showText m
+                                                                    , " mouthful"
+                                                                    , theLetterS $ m /= 1
+                                                                    , " of "
+                                                                    , renderLiqNoun drinkLiq aOrAn
+                                                                    , " "
+                                                                    , let DistinctLiqId i = drinkLiq^.liqId
+                                                                      in parensQuote . showText $ i
+                                                                    , " from "
+                                                                    , renderVesselSing
+                                                                    , "." ]
+                      wrapSend drinkerMq drinkerCols t
+                      sendDfltPrompt drinkerMq drinkerId

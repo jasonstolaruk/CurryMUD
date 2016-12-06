@@ -47,12 +47,12 @@ procInstaEffect i ie@(InstaEffect sub val feel) = getState >>= \ms -> do
     effectPts ptsType   = (helper ptsType =<<) . \case DefiniteVal x -> return x
                                                        RangeVal    r -> rndmR r
     helper    ptsType x = let (getCur, getMax, setCur) = snd . head . filter ((== ptsType) . fst) $ assocs
-                          in do { diff <- modifyState $ \ms -> let curPts = ms^.myMobGet.getCur
-                                                                   maxPts = ms^.myMobGet.getMax
-                                                                   newPts = (curPts + x) `min` maxPts
-                                                                   diff   = newPts - curPts
-                                                               in (ms & myMobSet.setCur .~ newPts, diff)
-                                ; startFeeling i feel . IntVal $ diff }
+                          in do diff <- modifyState $ \ms -> let curPts = ms^.myMobGet.getCur
+                                                                 maxPts = ms^.myMobGet.getMax
+                                                                 newPts = (curPts + x) `min` maxPts
+                                                                 diff   = newPts - curPts
+                                                             in (ms & myMobSet.setCur .~ newPts, diff)
+                                startFeeling i feel . IntVal $ diff
     assocs       = [ (CurHp, (curHp, maxHp, curHp))
                    , (CurMp, (curMp, maxMp, curMp))
                    , (CurPp, (curPp, maxPp, curPp))

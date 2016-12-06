@@ -53,12 +53,12 @@ runDigesterAsync i = runAsync (threadDigester i) >>= \a -> tweak $ mobTbl.ind i.
 
 startNpcDigesters :: MudStack ()
 startNpcDigesters =
-    do { logNotice "startNpcDigesters" "starting NPC digesters."; mapM_ runDigesterAsync  . findNpcIds =<< getState }
+    sequence_ [ logNotice "startNpcDigesters" "starting NPC digesters.", mapM_ runDigesterAsync  . findNpcIds =<< getState ]
 
 
 stopNpcDigesters :: MudStack ()
 stopNpcDigesters =
-    do { logNotice "stopNpcDigesters"  "stopping NPC digesters."; mapM_ throwWaitDigester . findNpcIds =<< getState }
+    sequence_ [ logNotice "stopNpcDigesters"  "stopping NPC digesters.", mapM_ throwWaitDigester . findNpcIds =<< getState ]
 
 
 throwWaitDigester :: Id -> MudStack ()

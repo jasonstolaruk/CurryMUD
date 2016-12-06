@@ -67,10 +67,10 @@ handleEgress i mq isDropped = egressHelper `finally` writeMsg mq FinishedEgress
         unless (hoc || spirit) . bcastOthersInRm i . nlnl . egressMsg . serialize . mkStdDesig i ms $ DoCap
         helper now tuple |&| modifyState >=> \(bs, logMsgs) -> do
             forM_ logMsgs . uncurry . logPla $ "handleEgress egressHelper helper"
-            spirit ? theBeyond i mq s isDropped :? do { pauseEffects      i -- Already done in "handleDeath".
-                                                      ; stopFeelings      i
-                                                      ; stopRegen         i
-                                                      ; throwWaitDigester i }
+            spirit ? theBeyond i mq s isDropped :? do pauseEffects      i -- Already done in "handleDeath".
+                                                      stopFeelings      i
+                                                      stopRegen         i
+                                                      throwWaitDigester i
             closePlaLog i
             bcast bs
             bcastAdmins $ s <> " has left CurryMUD."
@@ -155,8 +155,8 @@ theBeyond i mq s isDropped = modifyStateSeq $ \ms ->
         ms'             = h . flip (foldr g) retainedIds . flip (foldr f) retainedIds $ ms
         fs              = [ logPla "theBeyond" i "passing into the beyond."
                           , logNotice "theBeyond" $ descSingId i ms' <> " is passing into the beyond."
-                          , unless isDropped $ do { wrapSend   mq cols . colorWith spiritMsgColor $ theBeyondMsg
-                                                  ; farewell i mq cols }
+                          , unless isDropped $ do wrapSend   mq cols . colorWith spiritMsgColor $ theBeyondMsg
+                                                  farewell i mq cols
                           , bcast . pure $ (nlnl . linkLostMsg $ s, inIds)
                           , forM_ outIds $ \outId -> retainedMsg outId ms' (linkMissingMsg s)
                           , bcastAdmins $ s <> " passes into the beyond." ]

@@ -175,11 +175,11 @@ alertMsgHelper i cn txt = getState >>= \ms -> if isAdminId i ms
                                    , txt ]
                  outIds = (iRoot `delete`) $ getAdminIds ms \\ getLoggedInAdminIds ms
                  rec    = AlertMsgRec ts s cn match txt
-             in do { logNotice        "alertMsgHelper"   msg
-                   ; logPla           "alertMsgHelper" i msg
-                   ; bcastAdmins msg
-                   ; forM_ outIds (\adminId -> retainedMsg adminId ms . mkRetainedMsgFromPerson s $ msg)
-                   ; withDbExHandler_ "alertMsgHelper" . insertDbTblAlertMsg $ rec }
+             in do logNotice        "alertMsgHelper"   msg
+                   logPla           "alertMsgHelper" i msg
+                   bcastAdmins msg
+                   forM_ outIds (\adminId -> retainedMsg adminId ms . mkRetainedMsgFromPerson s $ msg)
+                   withDbExHandler_ "alertMsgHelper" . insertDbTblAlertMsg $ rec
          else unit
 
 
@@ -298,8 +298,8 @@ genericActionWithHooks :: ActionParams
                        -> Text
                        -> MudStack ()
 genericActionWithHooks p helper fn = mkRndmVector >>= \v ->
-    helper v |&| modifyState >=> \(toSelfs, bs, logMsgs, fs) -> do { genericActionHelper p fn toSelfs bs logMsgs
-                                                                   ; sequence_ fs }
+    helper v |&| modifyState >=> \(toSelfs, bs, logMsgs, fs) -> do genericActionHelper p fn toSelfs bs logMsgs
+                                                                   sequence_ fs
 
 
 -----
@@ -639,8 +639,8 @@ helperLinkUnlink ms i mq cols =
                              | otherwise                = acc
         twoWays = map fst . filter ((== 2) . snd) . countOccs $ othersLinkedToMe ++ meLinkedToOthers
     in if all (()#) [ othersLinkedToMe, meLinkedToOthers ]
-      then emptied $ do { logPlaOut "helperLinkUnlink" i . pure $ sorryNoLinks
-                        ; wrapSend mq cols (isSpiritId i ms ? sorryNoLinksSpirit :? sorryNoLinks) }
+      then emptied $ do logPlaOut "helperLinkUnlink" i . pure $ sorryNoLinks
+                        wrapSend mq cols (isSpiritId i ms ? sorryNoLinksSpirit :? sorryNoLinks)
       else unadulterated (meLinkedToOthers, othersLinkedToMe, twoWays)
 
 

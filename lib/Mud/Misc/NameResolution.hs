@@ -304,11 +304,11 @@ dupIdsRes = Left ""
 
 
 don'tHaveInv :: Text -> Either Text Inv
-don'tHaveInv = Left . sformat (do { "You don't have "; "." })
+don'tHaveInv = Left . sformat ("You don't have " >> ".")
 
 
 don'tHaveAnyInv :: Text -> Either Text Inv
-don'tHaveAnyInv = Left . sformat (do { "You don't have any "; "s." })
+don'tHaveAnyInv = Left . sformat ("You don't have any " >> "s.")
 
 
 don'tHaveIndexedInv :: Int -> Text -> Either Text Inv
@@ -317,7 +317,7 @@ don'tHaveIndexedInv x = Left . sformat (do { "You don't have " % int % " "; "." 
 
 sorryIndexedCoins :: Either Text Inv
 sorryIndexedCoins =
-    Left . sformat (do { "Sorry, but "; " cannot be used with coins." }) . dblQuote . T.singleton $ indexChar
+    Left . sformat ("Sorry, but " >> " cannot be used with coins.") . dblQuote . T.singleton $ indexChar
 
 
 procGecrMisReady :: (GetEntsCoinsRes, Maybe Inv) -> Either Text Inv
@@ -328,9 +328,9 @@ procGecrMisReady gecrMis                                = procGecrMisMobInv gecr
 sorryBadSlot :: Text -> Text
 sorryBadSlot n
   | T.singleton slotChar `T.isInfixOf` n = sformat m (mkSlotTxt "r") (mkSlotTxt "l") . nlPrefix $ ringHelp
-  | otherwise                            = sformat (do { "You don't have "; "." }) . aOrAn $ n
+  | otherwise                            = sformat ("You don't have " >> ".") . aOrAn $ n
   where
-    m = do { "Please specify "; " or "; "."; "" }
+    m = "Please specify " >> " or " >> "." >> ""
 
 
 mkSlotTxt :: Text -> Text
@@ -359,11 +359,11 @@ procGecrMisMobEq gecrMis = patternMatchFail "procGecrMisMobEq" . showText $ gecr
 
 
 don'tHaveEq :: Text -> Either Text Inv
-don'tHaveEq = Left . sformat (do { "You don't have "; " among your readied equipment." })
+don'tHaveEq = Left . sformat ("You don't have " >> " among your readied equipment.")
 
 
 don'tHaveAnyEq :: Text -> Either Text Inv
-don'tHaveAnyEq = Left . sformat (do { "You don't have any "; "s among your readied equipment." })
+don'tHaveAnyEq = Left . sformat ("You don't have any " >> "s among your readied equipment.")
 
 
 don'tHaveIndexedEq :: Int -> Text -> Either Text Inv
@@ -384,11 +384,11 @@ procGecrMisRm gecrMis = patternMatchFail "procGecrMisRm" . showText $ gecrMis
 
 
 don'tSee :: Text -> Either Text Inv
-don'tSee = Left . sformat (do { "You don't see "; " here." })
+don'tSee = Left . sformat ("You don't see " >> " here.")
 
 
 don'tSeeAny :: Text -> Either Text Inv
-don'tSeeAny = Left . sformat (do { "You don't see any "; "s here." })
+don'tSeeAny = Left . sformat ("You don't see any " >> "s here.")
 
 
 don'tSeeIndexed :: Int -> Text -> Either Text Inv
@@ -411,13 +411,13 @@ procGecrMisCon _ gecrMis = patternMatchFail "procGecrMisCon" . showText $ gecrMi
 doesn'tContain :: Text -> Text -> Either Text Inv
 doesn'tContain cn = Left . sformat m cn
   where
-    m = do { "The "; " doesn't contain "; "." }
+    m = "The " >> " doesn't contain " >> "."
 
 
 doesn'tContainAny :: Text -> Text -> Either Text Inv
 doesn'tContainAny cn = Left . sformat m cn
   where
-    m = do { "The "; " doesn't contain any "; "s." }
+    m = "The " >> " doesn't contain any " >> "s."
 
 
 doesn'tContainIndexed :: Text -> Int -> Text -> Either Text Inv
@@ -476,9 +476,9 @@ procReconciledCoinsCon :: ConName -> ReconciledCoins -> Either [Text] Coins
 procReconciledCoinsCon cn (Left  Empty)                            = doesn'tContainAnyCoins cn
 procReconciledCoinsCon cn (Left  (NoneOf (Coins (cop, sil, gol)))) = Left . extractCoinsTxt $ [ c, s, g ]
   where
-    c = msgOnNonzero cop . sformat (do { "The "; " doesn't contain any copper pieces." }) $ cn
-    s = msgOnNonzero sil . sformat (do { "The "; " doesn't contain any silver pieces." }) $ cn
-    g = msgOnNonzero gol . sformat (do { "The "; " doesn't contain any gold pieces."   }) $ cn
+    c = msgOnNonzero cop . sformat ("The " >> " doesn't contain any copper pieces.") $ cn
+    s = msgOnNonzero sil . sformat ("The " >> " doesn't contain any silver pieces.") $ cn
+    g = msgOnNonzero gol . sformat ("The " >> " doesn't contain any gold pieces."  ) $ cn
 procReconciledCoinsCon _  (Right (SomeOf c                      )) = Right c
 procReconciledCoinsCon cn (Left  (SomeOf (Coins (cop, sil, gol)))) = Left . extractCoinsTxt $ [ c, s, g ]
   where
@@ -489,4 +489,4 @@ procReconciledCoinsCon _ rc = patternMatchFail "procReconciledCoinsCon" . showTe
 
 
 doesn'tContainAnyCoins :: Text -> Either [Text] Coins
-doesn'tContainAnyCoins cn = Left [ sformat (do { "The "; " doesn't contain any coins." }) cn ]
+doesn'tContainAnyCoins cn = Left [ sformat ("The " >> " doesn't contain any coins.") cn ]
