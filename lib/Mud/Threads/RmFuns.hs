@@ -29,8 +29,8 @@ runRmFunAsync i fun = runAsync fun >>= \a -> tweak $ rmTbl.ind i.rmFunAsyncs <>~
 
 
 startRmFuns :: MudStack ()
-startRmFuns = getState >>= \ms -> do { logNotice "startRmFuns" "starting room functions."
-                                     ; mapM_ (\(i, fns) -> mapM_ (runRmFunAsync i . (`getFun` ms)) fns) . helper $ ms }
+startRmFuns = getState >>= \ms -> do logNotice "startRmFuns" "starting room functions."
+                                     mapM_ (\(i, fns) -> mapM_ (runRmFunAsync i . (`getFun` ms)) fns) . helper $ ms
   where
     helper = views rmTbl (map (second (view rmFunNames)) . IM.toList . IM.filter (views rmFunNames (()!#)))
 

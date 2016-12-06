@@ -202,7 +202,7 @@ spcsToFiller = T.replace " " (T.singleton indentFiller)
 findFullNameForAbbrev :: (Eq a, HasText a) => Text -> [a] -> Maybe a
 findFullNameForAbbrev needle hay =
     let res = sortBy (compare `on` extractText) . filter ((needle `T.isPrefixOf`) . extractText) $ hay
-    in do { guard $ ()!# res; return . head $ res }
+    in guard $ ()!# res >> return (head res)
 
 
 -----

@@ -83,9 +83,9 @@ interpTelnet i tds = do
                | ((||) <$> (gmcpWon't `isInfixOf`) <*> (gmcpDon't `isInfixOf`)) tds = setFlag False
                | otherwise = unit
       where
-        setFlag b = getSing i <$> getState >>= \s -> do { tweak $ plaTbl.ind i %~ setPlaFlag IsGmcp b
-                                                        ; let msg = prd $ s <> " set GMCP " <> onOff b
-                                                        ; logNotice "interpTelnet gmcpHelper setFlag" msg }
+        setFlag b = getSing i <$> getState >>= \s -> do tweak $ plaTbl.ind i %~ setPlaFlag IsGmcp b
+                                                        let msg = prd $ s <> " set GMCP " <> onOff b
+                                                        logNotice "interpTelnet gmcpHelper setFlag" msg
         gmcpWill  = mkCodes TelnetWILL
         gmcpWon't = mkCodes TelnetWON'T
         gmcpDo    = mkCodes TelnetDO

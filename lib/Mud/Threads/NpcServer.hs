@@ -48,12 +48,12 @@ runNpcServerAsync i = do
 
 startNpcServers :: MudStack ()
 startNpcServers =
-    do { logNotice "startNpcServers" "starting NPC server threads."; mapM_ runNpcServerAsync  . findNpcIds =<< getState }
+    logNotice "startNpcServers" "starting NPC server threads." >> (mapM_ runNpcServerAsync  . findNpcIds =<< getState)
 
 
 stopNpcServers :: MudStack ()
 stopNpcServers =
-    do { logNotice "stopNpcServers"  "stopping NPC server threads."; mapM_ stopWaitNpcServer  . findNpcIds =<< getState }
+    logNotice "stopNpcServers"  "stopping NPC server threads." >> (mapM_ stopWaitNpcServer  . findNpcIds =<< getState)
 
 
 stopWaitNpcServer :: Id -> MudStack ()

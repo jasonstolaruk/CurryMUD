@@ -105,9 +105,9 @@ dieSilently = const unit
 
 
 fileIOExHandler :: Text -> IOException -> MudStack ()
-fileIOExHandler fn e = do { logIOEx fn e
-                          ; let rethrow = throwToListenThread . toException $ e
-                          ; unless (any (e |&|) [ isAlreadyInUseError, isDoesNotExistError, isPermissionError ]) rethrow }
+fileIOExHandler fn e = do logIOEx fn e
+                          let rethrow = throwToListenThread . toException $ e
+                          unless (any (e |&|) [ isAlreadyInUseError, isDoesNotExistError, isPermissionError ]) rethrow
 
 
 -----
@@ -197,4 +197,4 @@ throwToListenThread e = flip throwTo e . getListenThreadId =<< getState
 
 
 throwWait :: Async () -> MudStack ()
-throwWait a = do { throwDeath a; liftIO . void . wait $ a }
+throwWait a = sequence_ [ throwDeath a, liftIO . void . wait $ a ]

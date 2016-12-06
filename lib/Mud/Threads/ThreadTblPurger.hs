@@ -46,8 +46,8 @@ threadThreadTblPurger = handle (threadExHandler Nothing "thread table purger") $
 
 
 purgeThreadTbls :: MudStack ()
-purgeThreadTbls = do { logNotice "purgeThreadTbls" "purging the thread tables."
-                     ; sequence_ [ purgePlaLogTbl, purgeTalkAsyncTbl, purgeThreadTbl ] }
+purgeThreadTbls = do logNotice "purgeThreadTbls" "purging the thread tables."
+                     sequence_ [ purgePlaLogTbl, purgeTalkAsyncTbl, purgeThreadTbl ]
 
 
 purgePlaLogTbl :: MudStack ()

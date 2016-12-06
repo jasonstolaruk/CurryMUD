@@ -54,26 +54,26 @@ startFeeling _ Nothing                           _    = unit
 startFeeling i (Just (EffectFeeling tag newDur)) newV = getState >>= \ms ->
     let fm = getFeelingMap i ms
     in case M.lookup tag fm of
-      Nothing -> do { feel <- uncurry (Feeling newV newDur) <$> spawn
-                    ; helper feel
-                    ; logHelper . T.concat $ [ "started new feeling with tag ", dblQuote tag, ": ", pp feel, "." ] }
+      Nothing -> do feel <- uncurry (Feeling newV newDur) <$> spawn
+                    helper feel
+                    logHelper . T.concat $ [ "started new feeling with tag ", dblQuote tag, ": ", pp feel, "." ]
       Just (Feeling _ existDur existQ existA)
-        | newDur > existDur -> do { liftIO . cancel $ existA
-                                  ; feel <- uncurry (Feeling newV newDur) <$> spawn
-                                  ; helper feel
-                                  ; logHelper . T.concat $ [ "feeling "
-                                                           , dblQuote tag
-                                                           , " has been restarted with a longer duration: "
-                                                           , pp feel
-                                                           , "." ] }
+        | newDur > existDur -> do liftIO . cancel $ existA
+                                  feel <- uncurry (Feeling newV newDur) <$> spawn
+                                  helper feel
+                                  logHelper . T.concat $ [ "feeling "
+                                                         , dblQuote tag
+                                                         , " has been restarted with a longer duration: "
+                                                         , pp feel
+                                                         , "." ]
         | otherwise         -> liftIO (poll existA) >>= \case
-          Nothing -> do { liftIO . atomically . writeTMQueue existQ $ ResetTimer
-                        ; let feel = Feeling newV existDur existQ existA
-                        ; helper     feel
-                        ; logRestart feel }
-          _       -> do { feel <- uncurry (Feeling newV existDur) <$> spawn
-                        ; helper     feel
-                        ; logRestart feel }
+          Nothing -> do liftIO . atomically . writeTMQueue existQ $ ResetTimer
+                        let feel = Feeling newV existDur existQ existA
+                        helper     feel
+                        logRestart feel
+          _       -> do feel <- uncurry (Feeling newV existDur) <$> spawn
+                        helper     feel
+                        logRestart feel
   where
     spawn = do
         newQ <- liftIO newTMQueueIO
@@ -91,11 +91,10 @@ threadFeelingTimer i tag dur tq = sequence_ [ setThreadType . FeelingTimer $ i
     loop secs = getState >>= \ms -> do
         liftIO . threadDelay $ 1 * 10 ^ 6
         tq |&| liftIO . atomically . tryReadTMQueue >=> \case
-          Just Nothing | secs >= dur -> do { logHelper $ mkName ms <> " is expiring."
-                                           ; tweak $ mobTbl.ind i.feelingMap %~ (tag `M.delete`) }
+          Just Nothing | secs >= dur -> do logHelper $ mkName ms <> " is expiring."
+                                           tweak $ mobTbl.ind i.feelingMap %~ (tag `M.delete`)
                        | otherwise   -> loop . succ $ secs
-          Just (Just ResetTimer)     -> do { logHelper $ mkName ms <> " is resetting."
-                                           ; loop 0 }
+          Just (Just ResetTimer)     -> logHelper (mkName ms <> " is resetting.") >> loop 0
           Nothing                    -> unit
     exHandler :: SomeException -> MudStack ()
     exHandler e = getState >>= \ms -> case fromException e of

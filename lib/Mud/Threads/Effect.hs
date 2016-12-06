@@ -60,11 +60,11 @@ startEffect i e = startEffectHelper i e
 
 
 startEffectHelper :: Id -> Effect -> MudStack ()
-startEffectHelper i e@(view effectFeeling -> ef) = do { logPla "startEffectHelper" i $ "starting effect: " <> pp e
-                                                      ; q <- liftIO newTQueueIO
-                                                      ; a <- runAsync . threadEffect i e $ q
-                                                      ; startFeeling i ef NoVal
-                                                      ; tweak $ activeEffectsTbl.ind i <>~ pure (ActiveEffect e (a, q)) }
+startEffectHelper i e@(view effectFeeling -> ef) = do logPla "startEffectHelper" i $ "starting effect: " <> pp e
+                                                      q <- liftIO newTQueueIO
+                                                      a <- runAsync . threadEffect i e $ q
+                                                      startFeeling i ef NoVal
+                                                      tweak $ activeEffectsTbl.ind i <>~ pure (ActiveEffect e (a, q))
 
 
 threadEffect :: Id -> Effect -> EffectQueue -> MudStack ()
@@ -98,10 +98,10 @@ threadEffect i (Effect effSub _ secs _) q = handle (threadExHandler (Just i) "ef
 pauseEffects :: Id -> MudStack () -- When a player logs out.
 pauseEffects i = getState >>= \ms ->
     let aes = getActiveEffects i ms
-    in unless (null aes) $ do { logNotice "pauseEffects" . prd $ "pausing effects for ID " <> showText i
-                              ; pes <- mapM helper aes
-                              ; tweaks [ activeEffectsTbl.ind i .~  []
-                                       , pausedEffectsTbl.ind i <>~ pes ] }
+    in unless (null aes) $ do logNotice "pauseEffects" . prd $ "pausing effects for ID " <> showText i
+                              pes <- mapM helper aes
+                              tweaks [ activeEffectsTbl.ind i .~  []
+                                     , pausedEffectsTbl.ind i <>~ pes ]
   where
     helper (ActiveEffect e (_, q)) = do
         tmv <- liftIO newEmptyTMVarIO
@@ -127,8 +127,8 @@ restartPausedHelper i pes = sequence_ [ forM_ pes $ \(PausedEffect e) -> startEf
 
 
 massRestartPausedEffects :: MudStack () -- At server startup.
-massRestartPausedEffects = getState >>= \ms -> do { logNotice "massRestartPausedEffects" "mass restarting paused effects."
-                                                  ; mapM_ (helper ms) . views pausedEffectsTbl IM.toList $ ms }
+massRestartPausedEffects = getState >>= \ms -> do logNotice "massRestartPausedEffects" "mass restarting paused effects."
+                                                  mapM_ (helper ms) . views pausedEffectsTbl IM.toList $ ms
   where
     helper _  (_, [] )                          = unit
     helper ms (i, _  ) | getType i ms == PCType = unit

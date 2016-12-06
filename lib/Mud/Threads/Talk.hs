@@ -84,8 +84,8 @@ threadTalk h host = helper `finally` cleanUp
     telnetHelper mq = mapM_ (send mq) [ telnetWillTType, telnetTTypeRequest, telnetWillGMCP ]
     configBuffer    = hSetBuffering h LineBuffering >> hSetNewlineMode h nlMode >> hSetEncoding h latin1
     nlMode          = NewlineMode { inputNL = CRLF, outputNL = CRLF }
-    cleanUp         = do { logNotice "threadTalk cleanUp" . prd $ "closing the handle for " <> T.pack host
-                         ; liftIO . hClose $ h }
+    cleanUp         = do logNotice "threadTalk cleanUp" . prd $ "closing the handle for " <> T.pack host
+                         liftIO . hClose $ h
 
 
 adHoc :: MsgQueue -> HostName -> MudStack (Id, Sing)

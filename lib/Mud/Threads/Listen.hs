@@ -87,28 +87,28 @@ saveUptime up@(T.pack . renderSecs . fromIntegral -> upTxt) =
 listen :: MudStack ()
 listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed halt
   where
-    proceed = do { initialize
-                 ; logNotice "listen proceed" . prd $ "listening for incoming connections on port " <> showText port
-                 ; sock      <- liftIO . listenOn . PortNumber . fromIntegral $ port
-                 ; auxAsyncs <- mapM runAsync [ threadAdminChanTblPurger
-                                              , threadAdminMsgTblPurger
-                                              , threadChanTblPurger
-                                              , threadQuestionChanTblPurger
-                                              , threadTeleTblPurger
-                                              , threadThreadTblPurger
-                                              , threadTrashDumpPurger
-                                              , threadWorldPersister ]
-                 ; (forever . loop $ sock) `finally` cleanUp auxAsyncs sock }
-    initialize = do { logNotice "listen initialize" "creating database tables."
-                    ; liftIO createDbTbls `catch` dbExHandler "listen initialize"
-                    ; startNpcServers
-                    ; startNpcDigesters
-                    ; startNpcRegens
-                    ; massRestartPausedEffects
-                    ; startRmFuns
-                    ; startBiodegraders
-                    ; sortAllInvs
-                    ; logInterfaces }
+    proceed = do initialize
+                 logNotice "listen proceed" . prd $ "listening for incoming connections on port " <> showText port
+                 sock      <- liftIO . listenOn . PortNumber . fromIntegral $ port
+                 auxAsyncs <- mapM runAsync [ threadAdminChanTblPurger
+                                            , threadAdminMsgTblPurger
+                                            , threadChanTblPurger
+                                            , threadQuestionChanTblPurger
+                                            , threadTeleTblPurger
+                                            , threadThreadTblPurger
+                                            , threadTrashDumpPurger
+                                            , threadWorldPersister ]
+                 (forever . loop $ sock) `finally` cleanUp auxAsyncs sock
+    initialize = do logNotice "listen initialize" "creating database tables."
+                    liftIO createDbTbls `catch` dbExHandler "listen initialize"
+                    startNpcServers
+                    startNpcDigesters
+                    startNpcRegens
+                    massRestartPausedEffects
+                    startRmFuns
+                    startBiodegraders
+                    sortAllInvs
+                    logInterfaces
     logInterfaces = liftIO mkInterfaceList >>= \ifList ->
         logNotice "listen listInterfaces" . prd $ "server network interfaces: " <> ifList
     loop sock = let fn = "listen loop" in (liftIO . accept $ sock) >>= \(h, host@(T.pack -> host'), localPort) -> do
@@ -121,10 +121,10 @@ listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed 
               let msg = T.concat [ "Connection from ", dblQuote host', " refused ", parensQuote "host is banned", "." ]
               bcastAdmins msg
               logNotice fn . uncapitalize $ msg
-    cleanUp auxAsyncs sock = do { logNotice "listen cleanUp" "closing the socket."
-                                ; liftIO . sClose $ sock
-                                ; mapM_ throwWait auxAsyncs
-                                ; onEnv $ liftIO . atomically . void . takeTMVar . view (locks.persistLock) }
+    cleanUp auxAsyncs sock = do logNotice "listen cleanUp" "closing the socket."
+                                liftIO . sClose $ sock
+                                mapM_ throwWait auxAsyncs
+                                onEnv $ liftIO . atomically . void . takeTMVar . view (locks.persistLock)
     halt = liftIO . T.putStrLn $ loadWorldErrorMsg
 
 
