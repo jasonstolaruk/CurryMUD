@@ -20,7 +20,7 @@ import Control.Arrow (second)
 import Control.Concurrent (threadDelay)
 import Control.Exception.Lifted (finally, handle)
 import Control.Lens (at, both)
-import Control.Lens.Operators ((%~), (&), (.~))
+import Control.Lens.Operators ((%~), (.~))
 -- import Control.Monad (forM_, unless, when)
 import Control.Monad.IO.Class (liftIO)
 import Data.IORef (atomicModifyIORef', newIORef, readIORef)
@@ -62,14 +62,17 @@ corpseDecomp i pair = finally <$> loop <*> finish =<< liftIO (newIORef pair)
   where
     loop ref = liftIO (readIORef ref) >>= \case
       (_, 0) -> unit
-      (_, _) -> do
-          liftIO . threadDelay $ 1 * 10 ^ 6
-          liftIO . atomicModifyIORef' ref $ ((, ()) . second pred)
-          loop ref
+      p      -> do { corpseDecompHelper i p
+                   ; liftIO . threadDelay $ 1 * 10 ^ 6
+                   ; liftIO . atomicModifyIORef' ref $ ((, ()) . second pred)
+                   ; loop ref }
     finish ref = liftIO (readIORef ref) >>= \case
-      (_, 0) -> logNotice "corpseDecomp" $ "corpse decomposer for ID " <> showText i <> " is finishing."
-      p      -> let secsTxt = uncurry (middle (<>) "/") (p & both %~ commaShow)
-                    msg     = prd $ "pausing corpse decomposer for ID " <> showText i |<>| parensQuote secsTxt
-                in do
-                    logNotice "corpseDecomp" msg
-                    tweak $ pausedCorpseDecompsTbl.ind i .~ pair
+      (_, 0) -> logHelper $ "corpse decomposer for ID " <> showText i <> " has expired."
+      p      -> let msg     = prd $ "pausing corpse decomposer for ID " <> showText i |<>| parensQuote secsTxt
+                    secsTxt = uncurry (middle (<>) "/") . (both %~ commaShow) $ p
+                in logHelper msg >> tweak (pausedCorpseDecompsTbl.ind i .~ pair)
+    logHelper = logNotice "corpseDecomp finish"
+
+
+corpseDecompHelper :: Id -> (Seconds, Seconds) -> MudStack ()
+corpseDecompHelper _ _ = unit
