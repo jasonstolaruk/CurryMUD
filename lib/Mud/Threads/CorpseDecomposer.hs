@@ -8,14 +8,13 @@ module Mud.Threads.CorpseDecomposer ( pauseCorpseDecomps
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Misc
 import Mud.Threads.Misc
-import Mud.TopLvlDefs.Misc
 import Mud.Util.Misc
 import Mud.Util.Operators
 import Mud.Util.Quoting
 import Mud.Util.Text
 import qualified Mud.Misc.Logging as L (logNotice)
 
-import Control.Arrow (second)
+import Control.Arrow (first)
 import Control.Concurrent (threadDelay)
 import Control.Exception.Lifted (finally, handle)
 import Control.Lens (at, both, views)
@@ -40,14 +39,6 @@ logNotice = L.logNotice "Mud.Threads.CorpseDecomposer"
 -- ==================================================
 
 
-type SecondsPair      = (TotalSeconds, RemainingSeconds)
-type TotalSeconds     = Seconds
-type RemainingSeconds = Seconds
-
-
------
-
-
 startCorpseDecomp :: Id -> SecondsPair -> MudStack ()
 startCorpseDecomp i secs = runAsync (threadCorpseDecomp i secs) >>= \a -> tweak $ corpseDecompAsyncTbl.ind i .~ a
 
@@ -57,7 +48,7 @@ threadCorpseDecomp i secs = handle (threadExHandler (Just i) "corpse decomposer"
     setThreadType . CorpseDecomposer $ i
     let msg = prd $ "starting corpse decomposer for ID " <> showText i |<>| mkSecsTxt secs
     logNotice "threadCorpseDecomp" msg
-    handle (die (Just i) "corpse decomposer") $ corpseDecomp i secs `finally` finish
+    handle (die Nothing "corpse decomposer") $ corpseDecomp i secs `finally` finish
   where
     finish = tweak $ corpseDecompAsyncTbl.at i .~ Nothing
 
@@ -70,16 +61,17 @@ corpseDecomp :: Id -> SecondsPair -> MudStack ()
 corpseDecomp i pair = finally <$> loop <*> finish =<< liftIO (newIORef pair)
   where
     loop ref = liftIO (readIORef ref) >>= \case
-      (_, 0) -> unit
+      (0, _) -> unit
       secs   -> do corpseDecompHelper i secs
                    liftIO . threadDelay $ 1 * 10 ^ 6
-                   liftIO . writeIORef ref . second pred $ secs
+                   liftIO . writeIORef ref . first pred $ secs
                    loop ref
     finish ref = liftIO (readIORef ref) >>= \case
-      (_, 0) -> logHelper $ "corpse decomposer for ID " <> showText i <> " has expired."
+      (0, _) -> logHelper $ "corpse decomposer for ID " <> showText i <> " has expired."
       secs   -> let msg = prd $ "pausing corpse decomposer for ID " <> showText i |<>| mkSecsTxt secs
                 in logHelper msg >> tweak (pausedCorpseDecompsTbl.ind i .~ secs)
-    logHelper = logNotice "corpseDecomp finish"
+      where
+        logHelper = logNotice "corpseDecomp finish"
 
 
 corpseDecompHelper :: Id -> SecondsPair -> MudStack ()
@@ -91,9 +83,7 @@ corpseDecompHelper _ _ = unit
 
 pauseCorpseDecomps :: MudStack ()
 pauseCorpseDecomps = do logNotice "pauseCorpseDecomps" "pausing corpse decomposers."
-                        modifyStateSeq $ \ms -> let asyncs = views corpseDecompAsyncTbl IM.elems ms
-                                                in ( ms & corpseDecompAsyncTbl .~ IM.empty
-                                                   , pure . mapM_ throwWait $ asyncs )
+                        views corpseDecompAsyncTbl (mapM_ throwWait . IM.elems) =<< getState
 
 
 -----

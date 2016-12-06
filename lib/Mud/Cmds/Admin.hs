@@ -1387,6 +1387,7 @@ mkSecReport SecRec { .. } = [ "Name: "     <> dbName
 -----
 
 
+-- TODO: "corpseDecompSecs". Update help.
 adminSet :: ActionFun
 adminSet p@AdviseNoArgs = advise p [ prefixAdminCmd "set" ] adviceASetNoArgs
 adminSet p@AdviseOneArg = advise p [ prefixAdminCmd "set" ] adviceASetNoSettings

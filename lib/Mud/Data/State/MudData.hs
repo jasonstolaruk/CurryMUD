@@ -116,7 +116,7 @@ type MobTbl                 = IM.IntMap Mob
 type MsgQueueTbl            = IM.IntMap MsgQueue
 type NpcTbl                 = IM.IntMap Npc
 type ObjTbl                 = IM.IntMap Obj
-type PausedCorpseDecompsTbl = IM.IntMap PausedCorpseDecomp
+type PausedCorpseDecompsTbl = IM.IntMap SecondsPair
 type PausedEffectsTbl       = IM.IntMap [PausedEffect]
 type PCSingTbl              = M.Map Sing Id
 type PCTbl                  = IM.IntMap PC
@@ -788,7 +788,13 @@ jsonToObj _          = empty
 -- ==================================================
 
 
-type PausedCorpseDecomp = (Seconds, Seconds)
+type SecondsPair = (RemainingSeconds, TotalSeconds)
+
+
+type RemainingSeconds = Seconds
+
+
+type TotalSeconds = Seconds
 
 
 -- ==================================================
