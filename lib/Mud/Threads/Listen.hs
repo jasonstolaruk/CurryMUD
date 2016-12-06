@@ -12,6 +12,7 @@ import Mud.Misc.Database
 import Mud.Misc.Logging hiding (logExMsg, logIOEx, logNotice)
 import Mud.TheWorld.TheWorld
 import Mud.Threads.Biodegrader
+import Mud.Threads.CorpseDecomposer
 import Mud.Threads.DbTblPurger
 import Mud.Threads.Digester
 import Mud.Threads.Effect
@@ -104,6 +105,7 @@ listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed 
                     startNpcServers
                     startNpcDigesters
                     startNpcRegens
+                    restartCorpseDecomps
                     massRestartPausedEffects
                     startRmFuns
                     startBiodegraders

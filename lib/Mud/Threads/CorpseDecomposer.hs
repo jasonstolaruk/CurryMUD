@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
-{-# LANGUAGE LambdaCase, OverloadedStrings, TupleSections #-}
+{-# LANGUAGE LambdaCase, OverloadedStrings #-}
 
 module Mud.Threads.CorpseDecomposer ( pauseCorpseDecomps
                                     , restartCorpseDecomps

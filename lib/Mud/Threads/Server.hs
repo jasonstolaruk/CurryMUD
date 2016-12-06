@@ -16,6 +16,7 @@ import Mud.Misc.ANSI
 import Mud.Misc.Persist
 import Mud.Threads.Act
 import Mud.Threads.Biodegrader
+import Mud.Threads.CorpseDecomposer
 import Mud.Threads.Digester
 import Mud.Threads.Effect
 import Mud.Threads.Misc
@@ -183,6 +184,7 @@ shutDown = do
         stopBiodegraders
         stopRmFuns
         massPauseEffects
+        pauseCorpseDecomps
         stopNpcRegens
         stopNpcDigesters
         stopNpcServers
