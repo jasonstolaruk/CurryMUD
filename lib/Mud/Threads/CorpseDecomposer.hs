@@ -1,9 +1,9 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
 {-# LANGUAGE LambdaCase, OverloadedStrings, TupleSections #-}
 
-module Mud.Threads.CorpseDecomposer (startCorpseDecomp) where
--- TODO: pauseCorpseDecomps
--- TODO: restartCorpseDecomps
+module Mud.Threads.CorpseDecomposer ( pauseCorpseDecomps
+                                    , restartCorpseDecomps
+                                    , startCorpseDecomp ) where
 
 import Mud.Data.State.MudData
 -- import Mud.Data.State.Util.Get
@@ -19,14 +19,14 @@ import qualified Mud.Misc.Logging as L (logNotice)
 import Control.Arrow (second)
 import Control.Concurrent (threadDelay)
 import Control.Exception.Lifted (finally, handle)
-import Control.Lens (at, both)
-import Control.Lens.Operators ((%~), (.~))
+import Control.Lens (at, both, views)
+import Control.Lens.Operators ((%~), (&), (.~))
 -- import Control.Monad (forM_, unless, when)
 import Control.Monad.IO.Class (liftIO)
 import Data.IORef (atomicModifyIORef', newIORef, readIORef)
 import Data.Monoid ((<>))
 import Data.Text (Text)
--- import qualified Data.IntMap.Lazy as IM (keys, toList)
+import qualified Data.IntMap.Lazy as IM (elems, empty)
 -- import qualified Data.Text as T
 
 
@@ -76,3 +76,20 @@ corpseDecomp i pair = finally <$> loop <*> finish =<< liftIO (newIORef pair)
 
 corpseDecompHelper :: Id -> (Seconds, Seconds) -> MudStack ()
 corpseDecompHelper _ _ = unit
+
+
+-----
+
+
+pauseCorpseDecomps :: MudStack ()
+pauseCorpseDecomps = do logNotice "pauseCorpseDecomps" "pausing corpse decomposers."
+                        modifyStateSeq $ \ms -> let asyncs = views corpseDecompAsyncTbl IM.elems ms
+                                                in ( ms & corpseDecompAsyncTbl .~ IM.empty
+                                                   , pure . mapM_ throwWait $ asyncs )
+
+
+-----
+
+
+restartCorpseDecomps :: MudStack ()
+restartCorpseDecomps = unit

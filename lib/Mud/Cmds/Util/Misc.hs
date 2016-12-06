@@ -210,9 +210,9 @@ lvlUp i = helper
 
 consume :: Id -> [StomachCont] -> MudStack ()
 consume _ []     = unit
-consume i newScs = do { now <- liftIO getCurrentTime
-                      ; modifyState (helper now) >>= procEffectList i
-                      ; logPla "consume" i . prd $ "consumed " <> commas (map pp newScs) }
+consume i newScs = do now <- liftIO getCurrentTime
+                      modifyState (helper now) >>= procEffectList i
+                      logPla "consume" i . prd $ "consumed " <> commas (map pp newScs)
   where
     helper now ms =
         let scs   = getStomach i ms ++ newScs

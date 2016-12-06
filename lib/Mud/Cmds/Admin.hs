@@ -936,8 +936,8 @@ adminFarewell   (LowerNub i mq cols as) = getState >>= \ms ->
     let helper target | notFound <- pure . sorryPCName $ target
                       , found    <- \(targetId, _) -> mkFarewellStats targetId ms
                       = findFullNameForAbbrev target (mkAdminPlaIdSingList ms) |&| maybe notFound found
-    in do { logPlaExecArgs (prefixAdminCmd "farewell") as i
-          ; pager i mq Nothing . concat . wrapLines cols . intercalateDivider cols . map (helper . capitalize) $ as }
+    in do logPlaExecArgs (prefixAdminCmd "farewell") as i
+          pager i mq Nothing . concat . wrapLines cols . intercalateDivider cols . map (helper . capitalize) $ as
 adminFarewell p = patternMatchFail "adminFarewell" . showText $ p
 
 
@@ -1036,8 +1036,8 @@ adminKill p@AdviseNoArgs            = advise p [ prefixAdminCmd "kill" ] adviceA
 adminKill   (LowerNub i mq cols as) = getState >>= \ms -> do
     let (is, toSelfs) = helper ms
         f             = logPla (prefixAdminCmd "kill")
-    unless (()# is) $ do { f i . prd . ("killing " <>) . commas . map (`descSingId` ms) $ is
-                         ; forM_ is . flip f $ prd ("killed by " <> getSing i ms) }
+    unless (()# is) $ do f i . prd . ("killing " <>) . commas . map (`descSingId` ms) $ is
+                         forM_ is . flip f $ prd ("killed by " <> getSing i ms)
     multiWrapSend mq cols toSelfs
     bcast . mkBs ms $ is
     mapM_ handleDeath is
@@ -1190,11 +1190,11 @@ adminPassword p@(WithTarget i mq cols target pw)
             Just (Just oldPW) ->
                 let msg      = T.concat [ getSing i ms, " is changing ", strippedTarget, "'s password" ]
                     oldPwMsg = prd . spcL $ parensQuote ("was " <> dblQuote oldPW)
-                in do { logPla fn i . T.concat $ [ "changing ", strippedTarget, "'s password", oldPwMsg ]
-                      ; logNotice fn $ msg <> oldPwMsg
-                      ; bcastOtherAdmins i . prd $ msg
-                      ; withDbExHandler_ fn . insertDbTblUnPw . UnPwRec strippedTarget $ pw
-                      ; sendFun $ strippedTarget <> "'s password has been changed." }
+                in do logPla fn i . T.concat $ [ "changing ", strippedTarget, "'s password", oldPwMsg ]
+                      logNotice fn $ msg <> oldPwMsg
+                      bcastOtherAdmins i . prd $ msg
+                      withDbExHandler_ fn . insertDbTblUnPw . UnPwRec strippedTarget $ pw
+                      sendFun $ strippedTarget <> "'s password has been changed."
             Just Nothing -> blowUp fn "password not found in database" strippedTarget
       in if
         | not . inRange (minPwLen, maxPwLen) . T.length $ pw -> sendFun sorryInterpNewPwLen
@@ -1238,10 +1238,10 @@ adminMyChans p = patternMatchFail "adminMyChans" . showText $ p
 
 adminPeep :: ActionFun
 adminPeep p@AdviseNoArgs            = advise p [ prefixAdminCmd "peep" ] adviceAPeepNoArgs
-adminPeep   (LowerNub i mq cols as) = do { (msgs, unzip -> (logMsgsSelf, logMsgsOthers)) <- modifyState helper
-                                         ; logPla "adminPeep" i . prd . slashes $ logMsgsSelf
-                                         ; forM_ logMsgsOthers . uncurry . logPla $ "adminPeep"
-                                         ; multiWrapSend mq cols msgs }
+adminPeep   (LowerNub i mq cols as) = do (msgs, unzip -> (logMsgsSelf, logMsgsOthers)) <- modifyState helper
+                                         logPla "adminPeep" i . prd . slashes $ logMsgsSelf
+                                         forM_ logMsgsOthers . uncurry . logPla $ "adminPeep"
+                                         multiWrapSend mq cols msgs
   where
     helper ms =
         let s     = getSing i ms
@@ -1397,9 +1397,9 @@ adminSet   (WithArgs i mq cols (target:rest)) =
                         PCType  -> retainedMsg targetId ms
                         NpcType -> bcast . mkBcast targetId
                         t       -> patternMatchFail "adminSet f" . showText $ t
-                in do { logMsgs |#| logPla (prefixAdminCmd "set") i . g . slashes
-                      ; unless (isIncognitoId i ms || targetId == i) . mapM_ f . dropBlanks $ toTargetMsgs
-                      ; sequence_ fs }
+                in do logMsgs |#| logPla (prefixAdminCmd "set") i . g . slashes
+                      unless (isIncognitoId i ms || targetId == i) . mapM_ f . dropBlanks $ toTargetMsgs
+                      sequence_ fs
               where
                 g = (parensQuote ("for ID " <> showText targetId) <>) . spcL
         in multiWrapSend mq cols toSelfMsgs >> maybeVoid ioHelper mTargetId

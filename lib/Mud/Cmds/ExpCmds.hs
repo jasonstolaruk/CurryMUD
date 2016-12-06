@@ -1112,10 +1112,10 @@ mkSerializedDesig d toOthers = serialize . bool d { desigShouldCap = Don'tCap } 
 
 
 expCmdHelper :: ExpCmdFun
-expCmdHelper i mq cols ecn (toSelf, bs, desc, logMsg) = do { logPlaOut ecn i . pure $ logMsg
-                                                           ; wrapSend mq cols toSelf
-                                                           ; bcastIfNotIncog i bs
-                                                           ; mobRmDescHelper i desc }
+expCmdHelper i mq cols ecn (toSelf, bs, desc, logMsg) = do logPlaOut ecn i . pure $ logMsg
+                                                           wrapSend mq cols toSelf
+                                                           bcastIfNotIncog i bs
+                                                           mobRmDescHelper i desc
 
 
 

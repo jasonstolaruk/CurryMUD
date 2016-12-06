@@ -636,14 +636,14 @@ bonus   (OneArgLower i mq cols a) = getState >>= \ms ->
                   x        = calcBonus targetId ms
                   bs       = pure (prd $ "You give a bonus to " <> targetSing, pure i)
               in fmap2 getAll (canBonus targetSing) >>= \case
-                Just True  -> do { let msg = T.concat [ "giving a bonus of ", commaShow x, " exp to ", targetSing, "." ]
-                                   in logPla "bonus bonusHelper" i msg
-                                 ; bcastNl . onFalse (()# guessWhat) ((guessWhat, pure i) :) $ bs
-                                 ; retainedMsg targetId ms . colorWith bonusColor . mkToTarget $ targetId
-                                 ; awardExp x ("bonus from " <> s) targetId
-                                 ; tweak $ plaTbl.ind i.bonusTime ?~ now
-                                 ; ts <- liftIO mkTimestamp
-                                 ; withDbExHandler_ "bonus bonusHelper" . insertDbTblBonus . BonusRec ts s targetSing $ x }
+                Just True  -> do let msg = T.concat [ "giving a bonus of ", commaShow x, " exp to ", targetSing, "." ]
+                                 logPla "bonus bonusHelper" i msg
+                                 bcastNl . onFalse (()# guessWhat) ((guessWhat, pure i) :) $ bs
+                                 retainedMsg targetId ms . colorWith bonusColor . mkToTarget $ targetId
+                                 awardExp x ("bonus from " <> s) targetId
+                                 tweak $ plaTbl.ind i.bonusTime ?~ now
+                                 ts <- liftIO mkTimestamp
+                                 withDbExHandler_ "bonus bonusHelper" . insertDbTblBonus . BonusRec ts s targetSing $ x
                 Just False -> wrapSend mq cols . sorryBonusCount $ targetSing
                 Nothing    -> unit
           xs -> patternMatchFail "bonus bonusHelper" . showText $ xs
@@ -686,8 +686,8 @@ chan (NoArgs i mq cols) = getState >>= \ms ->
                                    in (()!# txts ? txts :? none) |&| ("Telepathic channels:" :)
           where
             mkChanTxts = [ padChanName n <> tunedInOut t | n <- names | t <- tunings ]
-    in do { logPlaExecArgs "chan" [] i
-          ; multiWrapSend mq cols . helper (styleAbbrevs Don'tQuote chanNames) $ chanTunings }
+    in do logPlaExecArgs "chan" [] i
+          multiWrapSend mq cols . helper (styleAbbrevs Don'tQuote chanNames) $ chanTunings
 chan (OneArg i mq cols a@(T.toLower -> a')) = getState >>= \ms ->
     let notFound    = wrapSend mq cols . sorryChanName $ a
         found match =
@@ -810,10 +810,10 @@ connect   (Lower i mq cols as) = getState >>= \ms -> let getIds = map (`getIdFor
                               , " channel: "
                               , commas targetSings
                               , "." ]
-          -> do { logPla "connect" i $ "connected to " <> dblQuote cn <> ": " <> commas targetSings
-                ; toOthers <- mkToOthers ms' otherIds targetIds cn
-                ; bcastNl $ toTargets : toOthers ++ (()!# targetSings |?| mkBcast i toSelf) ++ sorryBs
-                ; connectBlink targetIds ms' }
+          -> do logPla "connect" i $ "connected to " <> dblQuote cn <> ": " <> commas targetSings
+                toOthers <- mkToOthers ms' otherIds targetIds cn
+                bcastNl $ toTargets : toOthers ++ (()!# targetSings |?| mkBcast i toSelf) ++ sorryBs
+                connectBlink targetIds ms'
         xs -> patternMatchFail "connect" . showText $ xs
   where
     mkToOthers ms otherIds targetIds cn = do
@@ -905,11 +905,11 @@ descHelper i mq cols = sequence_ [ send mq . nl . T.unlines . parseWrapXform col
 
 interpConfirmDesc :: Text -> Interp
 interpConfirmDesc desc cn (NoArgs i mq cols) = case yesNoHelper cn of
-  Just True  -> do { logPla "description" i . prd $ "changing description to " <> dblQuote desc
-                   ; tweak $ entTbl.ind i.entDesc .~ desc
-                   ; ok mq
-                   ; sendDfltPrompt mq i
-                   ; resetInterp i }
+  Just True  -> do logPla "description" i . prd $ "changing description to " <> dblQuote desc
+                   tweak $ entTbl.ind i.entDesc .~ desc
+                   ok mq
+                   sendDfltPrompt mq i
+                   resetInterp i
   Just False -> neverMind i mq
   Nothing    -> promptRetryYesNo mq cols
 interpConfirmDesc _ _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNo plaMsgQueue plaCols
@@ -1143,10 +1143,10 @@ emote   (WithArgs i mq cols as) = getState >>= \ms ->
       []      -> let (msg, toOthers, targetIds, toTargetBs) = happyTimes ms xformed
                      toSelf = parseDesig       i ms msg
                      logMsg = parseExpandDesig i ms msg
-                 in do { logPlaOut "emote" i . pure $ logMsg
-                       ; wrapSend mq cols toSelf
-                       ; bcastIfNotIncogNl i $ (toOthers, desigIds d \\ (i : targetIds)) : toTargetBs
-                       ; alertMsgHelper i "emote" logMsg }
+                 in do logPlaOut "emote" i . pure $ logMsg
+                       wrapSend mq cols toSelf
+                       bcastIfNotIncogNl i $ (toOthers, desigIds d \\ (i : targetIds)) : toTargetBs
+                       alertMsgHelper i "emote" logMsg
       advices -> multiWrapSend mq cols . nub $ advices
   where
     procTarget ms word =
@@ -1248,8 +1248,7 @@ equip p = patternMatchFail "equip" . showText $ p
 
 
 exits :: ActionFun
-exits (NoArgs i mq cols) = do { logPlaExec "exits" i
-                              ; send mq . nl . mkExitsSummary cols . getMobRm i =<< getState }
+exits (NoArgs i mq cols) = logPlaExec "exits" i >> (send mq . nl . mkExitsSummary cols . getMobRm i =<< getState)
 exits p = withoutArgs exits p
 
 
@@ -1258,10 +1257,10 @@ exits p = withoutArgs exits p
 
 expCmdList :: ActionFun
 expCmdList (NoArgs i mq cols) =
-    do { logPlaExecArgs "expressive" [] i
-       ; pager i mq Nothing . concatMap (wrapIndent cmdNamePadding cols) . mkExpCmdListTxt i =<< getState }
-expCmdList p@ActionParams { myId, args } = do { logPlaExecArgs "expressive" args myId
-                                              ; dispMatches p cmdNamePadding . mkExpCmdListTxt myId =<< getState }
+    do logPlaExecArgs "expressive" [] i
+       pager i mq Nothing . concatMap (wrapIndent cmdNamePadding cols) . mkExpCmdListTxt i =<< getState
+expCmdList p@ActionParams { myId, args } = do logPlaExecArgs "expressive" args myId
+                                              dispMatches p cmdNamePadding . mkExpCmdListTxt myId =<< getState
 
 
 mkExpCmdListTxt :: Id -> MudState -> [Text]
@@ -1558,10 +1557,10 @@ goDispatcher p                            = patternMatchFail "goDispatcher" . sh
 tryMove :: Id -> MsgQueue -> Cols -> ActionParams -> Text -> MudStack ()
 tryMove i mq cols p dir = helper |&| modifyState >=> \case
   Left  msg          -> wrapSend mq cols msg
-  Right (bs, logMsg) -> do { logPla "tryMove" i logMsg
-                           ; sendGmcpRmInfo Nothing i =<< getState
-                           ; look p
-                           ; bcastIfNotIncog i bs }
+  Right (bs, logMsg) -> do logPla "tryMove" i logMsg
+                           sendGmcpRmInfo Nothing i =<< getState
+                           look p
+                           bcastIfNotIncog i bs
   where
     helper ms = let { originId = getRmId i ms; originRm = getRm originId ms } in case findExit originRm dir of
           Nothing -> (ms, Left sorry)
@@ -1779,8 +1778,8 @@ intro :: ActionFun
 intro (NoArgs i mq cols) = getState >>= \ms -> let intros = getIntroduced i ms in if ()# intros
   then let introsTxt = "No one has introduced themselves to you yet."
        in logPlaOut "intro" i (pure introsTxt) >> wrapSend mq cols introsTxt
-  else let introsTxt = commas intros in do { logPla "intro" i $ "known names: " <> introsTxt
-                                           ; multiWrapSend mq cols [ "You know the following names:", introsTxt ] }
+  else let introsTxt = commas intros in do logPla "intro" i $ "known names: " <> introsTxt
+                                           multiWrapSend mq cols [ "You know the following names:", introsTxt ]
 intro (LowerNub i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
   then wrapSend mq cols . sorryIncog $ "intro"
   else helper |&| modifyState >=> \(map fromClassifiedBcast . sort -> bs, logMsgs, intro'dIds) -> do
@@ -1901,11 +1900,11 @@ leave   (WithArgs i mq cols (nub -> as)) = helper |&| modifyState >=> \(ms, chan
                          g        = filter (`isAwake` ms) . map (`getIdForPCSing` ms) . M.keys . M.filter id
                      in (bs ++) <$> forM otherIds (\i' -> [ (leftChanMsg n cn, pure i')
                                                           | n <- getRelativePCName ms (i', i) ])
-    in do { chanNames |#| logPla "leave" i . commas
-          ; multiWrapSend mq cols msgs
-          ; bcastNl =<< foldM f [] chanIds
-          ; ts <- liftIO mkTimestamp
-          ; withDbExHandler_ "leave" . forM_ chanRecs $ \cr -> insertDbTblChan cr { dbTimestamp = ts } }
+    in do chanNames |#| logPla "leave" i . commas
+          multiWrapSend mq cols msgs
+          bcastNl =<< foldM f [] chanIds
+          ts <- liftIO mkTimestamp
+          withDbExHandler_ "leave" . forM_ chanRecs $ \cr -> insertDbTblChan cr { dbTimestamp = ts }
   where
     helper ms = let (ms', chanId_name_isDels, sorryMsgs) = foldl' f (ms, [], []) as
                 in (ms', (ms', chanId_name_isDels, sorryMsgs))
@@ -1960,10 +1959,10 @@ link (NoArgs i mq cols) = do
                           Nothing  -> x
                           Just val -> val ? x :? x |<>| parensQuote "tuned out"
                 in linkSing |&| (isAwake linkId ms ? f _1 :? f _2)
-        in do { logPla "link" i . slashes . dropBlanks $ [ twoWays       |!| "Two-way: "         <> commas twoWays
-                                                         , oneWaysFromMe |!| "One-way from me: " <> commas oneWaysFromMe
-                                                         , oneWaysToMe   |!| "One-way to me: "   <> commas oneWaysToMe ]
-              ; multiWrapSend mq cols msgs }
+        in do logPla "link" i . slashes . dropBlanks $ [ twoWays       |!| "Two-way: "         <> commas twoWays
+                                                       , oneWaysFromMe |!| "One-way from me: " <> commas oneWaysFromMe
+                                                       , oneWaysToMe   |!| "One-way to me: "   <> commas oneWaysToMe ]
+              multiWrapSend mq cols msgs
 link (LowerNub i mq cols as) = getState >>= \ms -> if
   | isIncognitoId i ms -> wrapSend mq cols . sorryIncog $ "link"
   | isSpiritId    i ms -> wrapSend mq cols   sorryLinkSpirit
@@ -2037,8 +2036,8 @@ link p = patternMatchFail "link" . showText $ p
 
 
 listen :: ActionFun
-listen (NoArgs i mq cols) = do { views rmListen (wrapSend mq cols . fromMaybe noSoundMsg) . getMobRm i =<< getState
-                               ; logPlaExec "listen" i }
+listen (NoArgs i mq cols) = do views rmListen (wrapSend mq cols . fromMaybe noSoundMsg) . getMobRm i =<< getState
+                               logPlaExec "listen" i
 listen p                  = withoutArgs listen p
 
 
@@ -2225,10 +2224,10 @@ newChan   (WithArgs i mq cols (nub -> as)) = helper |&| modifyState >=> \(unzip 
     let (sorryMsgs', otherMsgs) = (intersperse "" sorryMsgs, mkNewChanMsg newChanNames)
         msgs | ()# otherMsgs    = sorryMsgs'
              | otherwise        = otherMsgs ++ (sorryMsgs' |!| "" : sorryMsgs')
-    in do { newChanNames |#| logPla "newChan" i . commas
-          ; multiWrapSend mq cols msgs
-          ; ts <- liftIO mkTimestamp
-          ; forM_ chanRecs $ \cr -> withDbExHandler_ "newChan" . insertDbTblChan $ (cr { dbTimestamp = ts } :: ChanRec) }
+    in do newChanNames |#| logPla "newChan" i . commas
+          multiWrapSend mq cols msgs
+          ts <- liftIO mkTimestamp
+          forM_ chanRecs $ \cr -> withDbExHandler_ "newChan" . insertDbTblChan $ (cr { dbTimestamp = ts } :: ChanRec)
   where
     helper ms = let s                              = getSing i ms
                     (ms', newChanNames, sorryMsgs) = foldl' (f s) (ms, [], []) as
@@ -2284,8 +2283,7 @@ npcAsSelf p = execIfPossessed p "." npcAsSelfHelper
 
 npcAsSelfHelper :: ActionFun
 npcAsSelfHelper p@(NoArgs'  i mq     ) = advise p [] adviceAsSelfNoArgs >> sendDfltPrompt mq i
-npcAsSelfHelper   (WithArgs i mq _ as) = do { logPlaExecArgs "." as i
-                                            ; writeMsg mq . AsSelf . nl . T.unwords $ as }
+npcAsSelfHelper   (WithArgs i mq _ as) = logPlaExecArgs "." as i >> (writeMsg mq . AsSelf . nl . T.unwords $ as)
 npcAsSelfHelper p = patternMatchFail "npcAsSelfHelper" . showText $ p
 
 
@@ -2576,9 +2574,9 @@ readAction   (LowerNub i mq cols as) = (,) <$> getState <*> mkRndmVector >>= \(m
         helperEitherInv   acc (Right is  ) = readHelper i cols ms d acc is
         helperEitherCoins acc (Left  msgs) = acc & _1 <>~ (multiWrapNl cols . intersperse "" $ msgs)
         helperEitherCoins acc (Right _   ) = acc & _1 <>~ wrapUnlinesNl cols sorryReadCoins
-    ioHelper (toSelf, bs, logMsgs) = do { logMsgs |#| logPla "read" i . prd . slashes
-                                        ; send mq toSelf
-                                        ; bcastIfNotIncogNl i bs }
+    ioHelper (toSelf, bs, logMsgs) = do logMsgs |#| logPla "read" i . prd . slashes
+                                        send mq toSelf
+                                        bcastIfNotIncogNl i bs
     wrapper = T.unlines . map (multiWrap cols . T.lines)
 readAction p = patternMatchFail "readAction" . showText $ p
 
@@ -2938,14 +2936,14 @@ shuffleRem i ms d conName icir as invCoinsWithCon@(invWithCon, _) f =
 
 
 roomDesc :: ActionFun
-roomDesc (NoArgs i mq cols) = do { logPla "roomDesc" i "clearing room description."
-                                 ; tweak $ mobTbl.ind i.mobRmDesc .~ Nothing
-                                 ; wrapSend mq cols "Your room description has been cleared." }
+roomDesc (NoArgs i mq cols) = do logPla "roomDesc" i "clearing room description."
+                                 tweak $ mobTbl.ind i.mobRmDesc .~ Nothing
+                                 wrapSend mq cols "Your room description has been cleared."
 roomDesc (WithArgs i mq cols (T.unwords -> desc@(dblQuote -> desc'))) = if T.length desc > maxMobRmDescLen
   then wrapSend mq cols $ "A room description cannot exceed " <> showText maxMobRmDescLen <> " characters in length."
-  else do { logPla "roomDesc" i . prd $ "setting room description to " <> desc'
-          ; tweak $ mobTbl.ind i.mobRmDesc ?~ desc
-          ; wrapSend mq cols . prd $ "Your room description has been set to " <> desc' }
+  else do logPla "roomDesc" i . prd $ "setting room description to " <> desc'
+          tweak $ mobTbl.ind i.mobRmDesc ?~ desc
+          wrapSend mq cols . prd $ "Your room description has been set to " <> desc'
 roomDesc p = patternMatchFail "roomDesc" . showText $ p
 
 
@@ -3045,10 +3043,10 @@ sayHelper l p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
     formatMsg     = dblQuote . capitalizeMsg . punctuateMsg
     ioHelper ms triple@(x:xs, _, _) | (toSelfs, bs, logMsg) <- triple & _1 .~ parseDesig       i ms x : xs
                                                                       & _3 %~ parseExpandDesig i ms
-                                    = do { multiWrapSend mq cols toSelfs
-                                         ; bcastIfNotIncogNl i bs
-                                         ; logMsg |#| logPlaOut (mkCmdNameForLang l) i . pure
-                                         ; logMsg |#| alertMsgHelper i (mkCmdNameForLang l) }
+                                    = do multiWrapSend mq cols toSelfs
+                                         bcastIfNotIncogNl i bs
+                                         logMsg |#| logPlaOut (mkCmdNameForLang l) i . pure
+                                         logMsg |#| alertMsgHelper i (mkCmdNameForLang l)
     ioHelper _  triple              = patternMatchFail "sayHelper ioHelper" . showText $ triple
     simpleSayHelper ms (maybeEmp spcL -> adverb) (formatMsg -> msg) =
         return $ let d                = mkStdDesig i ms DoCap
@@ -3128,7 +3126,7 @@ interpSecurityNum cn (NoArgs i mq cols) = case cn of
   "5" -> securityCreateQHelper i mq cols
   _   -> retrySecurityNum mq cols
   where
-    helper q = do { promptAnswer mq; setInterp i . Just . interpSecurityA $ q }
+    helper q = promptAnswer mq >> (setInterp i . Just . interpSecurityA $ q)
 interpSecurityNum _ ActionParams { .. } = retrySecurityNum plaMsgQueue plaCols
 
 
@@ -3608,9 +3606,9 @@ smell (OneArgLower i mq cols a) = getState >>= \ms ->
                                 _       -> wrapSend mq cols . sorrySmellRmNoHooks $ targetSing
           Right _          -> sorryExcess
     -----
-    ioHelper x ys z = do { logPla "smell" i z
-                         ; wrapSend mq cols x
-                         ; bcastIfNotIncogNl i ys }
+    ioHelper x ys z = do logPla "smell" i z
+                         wrapSend mq cols x
+                         bcastIfNotIncogNl i ys
     -----
     sorryExcess     = wrapSend mq cols sorrySmellExcessTargets
 smell p = advise p ["smell"] adviceSmellExcessArgs
@@ -3806,9 +3804,7 @@ taste   (OneArgLower i mq cols a) = getState >>= \ms ->
                                 in ioHelper tasteDesc bs logMsg
             Right _          -> sorryExcess
     -----
-    ioHelper x ys z = do { logPla "taste" i z
-                         ; wrapSend mq cols x
-                         ; bcastIfNotIncogNl i ys }
+    ioHelper x ys z = logPla "taste" i z >> wrapSend mq cols x >> bcastIfNotIncogNl i ys
     -----
     sorryExcess     = wrapSend mq cols sorryTasteExcessTargets
 taste p = advise p ["taste"] adviceTasteExcessArgs
@@ -3893,11 +3889,11 @@ tune (NoArgs i mq cols) = getState >>= \ms ->
                                      in [ title, ()!# txts ? commas txts :? none ]
           where
             mkConnTxts = [ n <> T.cons '=' (inOut t) | n <- names | t <- tunings ]
-    in do { logPlaExecArgs "tune" [] i
-          ; let msgs = [ helper "Two-way telepathic links:" styleds linkTunings
-                       , pure ""
-                       , helper "Telepathic channels:" (styleAbbrevs Don'tQuote chanNames) chanTunings ]
-          ; multiWrapSend mq cols . concat $ msgs }
+    in do logPlaExecArgs "tune" [] i
+          let msgs = [ helper "Two-way telepathic links:" styleds linkTunings
+                     , pure ""
+                     , helper "Telepathic channels:" (styleAbbrevs Don'tQuote chanNames) chanTunings ]
+          multiWrapSend mq cols . concat $ msgs
 tune (Lower' i as) = helper |&| modifyState >=> \(bs, logMsgs) -> logMsgs |#| logPlaOut "tune" i >> bcastNl bs
   where
     helper ms = let s       = getSing i ms
@@ -4180,10 +4176,10 @@ whisper   (WithArgs i mq cols (target:(T.unwords -> rest))) = getState >>= \ms -
     formatMsg = dblQuote . capitalizeMsg . punctuateMsg
     ioHelper ms triple@(x:xs, _, _) | (toSelfs, bs, logMsg) <- triple & _1 .~ parseDesig       i ms x : xs
                                                                       & _3 %~ parseExpandDesig i ms
-                                    = do { logMsg |#| logPlaOut "whisper" i . pure
-                                         ; logMsg |#| alertMsgHelper i "whisper"
-                                         ; multiWrapSend mq cols toSelfs
-                                         ; bcastIfNotIncogNl i bs }
+                                    = do logMsg |#| logPlaOut "whisper" i . pure
+                                         logMsg |#| alertMsgHelper i "whisper"
+                                         multiWrapSend mq cols toSelfs
+                                         bcastIfNotIncogNl i bs
     ioHelper _  triple              = patternMatchFail "whisper ioHelper" . showText $ triple
 whisper p = patternMatchFail "whisper" . showText $ p
 
