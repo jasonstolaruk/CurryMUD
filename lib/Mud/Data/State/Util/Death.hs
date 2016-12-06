@@ -172,7 +172,7 @@ mkCorpse i ms =
              & invTbl  .ind i .~ []
        , fs ++ [ logPla "mkCorpse" i "corpse created."
                , logNotice "mkCorpse" logMsg
-               , startCorpseDecomp corpseId . getCorpseDecompSecs i $ ms ] )
+               , startCorpseDecomp corpseId . dup . getCorpseDecompSecs i $ ms ] )
       where
         (s, p) = if isPC i ms
           then let pair @(_,    r) = getSexRace i ms
