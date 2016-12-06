@@ -511,7 +511,7 @@ admin p = patternMatchFail "admin" . showText $ p
 
 
 adminList :: ActionFun
-adminList (NoArgs i mq cols) = logPlaExecArgs "admin" [] i >> (multiWrapSend mq cols =<< helper =<< getState)
+adminList (NoArgs i mq cols) = sequence_ [ logPlaExecArgs "admin" [] i, multiWrapSend mq cols =<< helper =<< getState ]
   where
     helper ms = let p            = getPla i ms
                     singSuffixes = sortBy (compare `on` fst) [ second ((" logged " <>) . mkSuffix) pair
@@ -1248,7 +1248,7 @@ equip p = patternMatchFail "equip" . showText $ p
 
 
 exits :: ActionFun
-exits (NoArgs i mq cols) = logPlaExec "exits" i >> (send mq . nl . mkExitsSummary cols . getMobRm i =<< getState)
+exits (NoArgs i mq cols) = sequence_ [ logPlaExec "exits" i, send mq . nl . mkExitsSummary cols . getMobRm i =<< getState ]
 exits p = withoutArgs exits p
 
 
@@ -2283,7 +2283,7 @@ npcAsSelf p = execIfPossessed p "." npcAsSelfHelper
 
 npcAsSelfHelper :: ActionFun
 npcAsSelfHelper p@(NoArgs'  i mq     ) = advise p [] adviceAsSelfNoArgs >> sendDfltPrompt mq i
-npcAsSelfHelper   (WithArgs i mq _ as) = logPlaExecArgs "." as i >> (writeMsg mq . AsSelf . nl . T.unwords $ as)
+npcAsSelfHelper   (WithArgs i mq _ as) = sequence_ [ logPlaExecArgs "." as i, writeMsg mq . AsSelf . nl . T.unwords $ as ]
 npcAsSelfHelper p = patternMatchFail "npcAsSelfHelper" . showText $ p
 
 
@@ -2291,7 +2291,7 @@ npcAsSelfHelper p = patternMatchFail "npcAsSelfHelper" . showText $ p
 
 
 npcDispCmdList :: ActionFun
-npcDispCmdList p@(LowerNub' i as) = logPlaExecArgs "?" as i >> (flip dispCmdList p . mkNpcCmds i =<< getState)
+npcDispCmdList p@(LowerNub' i as) = sequence_ [ logPlaExecArgs "?" as i, flip dispCmdList p . mkNpcCmds i =<< getState ]
 npcDispCmdList p                  = patternMatchFail "npcDispCmdList" . showText $ p
 
 
@@ -2315,7 +2315,7 @@ npcExorciseHelper p = withoutArgs npcExorciseHelper p
 
 
 plaDispCmdList :: ActionFun
-plaDispCmdList p@(LowerNub' i as) = logPlaExecArgs "?" as i >> (flip dispCmdList p . mkPlaCmds i =<< getState)
+plaDispCmdList p@(LowerNub' i as) = sequence_ [ logPlaExecArgs "?" as i, flip dispCmdList p . mkPlaCmds i =<< getState ]
 plaDispCmdList p                  = patternMatchFail "plaDispCmdList" . showText $ p
 
 
@@ -3126,7 +3126,7 @@ interpSecurityNum cn (NoArgs i mq cols) = case cn of
   "5" -> securityCreateQHelper i mq cols
   _   -> retrySecurityNum mq cols
   where
-    helper q = promptAnswer mq >> (setInterp i . Just . interpSecurityA $ q)
+    helper q = sequence_ [ promptAnswer mq, setInterp i . Just . interpSecurityA $ q ]
 interpSecurityNum _ ActionParams { .. } = retrySecurityNum plaMsgQueue plaCols
 
 
@@ -4102,8 +4102,8 @@ mkIdCountBothList i ms targetIds =
 
 
 uptime :: ActionFun
-uptime (NoArgs i mq cols) = logPlaExec "uptime" i >> (wrapSend mq cols =<< uptimeHelper =<< getUptime)
-uptime p = withoutArgs uptime p
+uptime (NoArgs i mq cols) = sequence_ [ logPlaExec "uptime" i, wrapSend mq cols =<< uptimeHelper =<< getUptime ]
+uptime p                  = withoutArgs uptime p
 
 
 getUptime :: MudStack Int64
@@ -4254,7 +4254,7 @@ mkFooter i ms = let plaIds@(length -> x) = [ i' | i' <- getLoggedInPlaIds ms
 
 
 whoAmI :: ActionFun
-whoAmI (NoArgs i mq cols) = logPlaExec "whoami" i >> (wrapSend mq cols =<< helper =<< getState)
+whoAmI (NoArgs i mq cols) = sequence_ [ logPlaExec "whoami" i, wrapSend mq cols =<< helper =<< getState ]
   where
     helper ms = return $ let s = getSing i ms in if isNpc i ms
       then let sexy = getSex i ms

@@ -2141,7 +2141,7 @@ whoHelper inOrOut cn (NoArgs i mq cols) = do
     logPlaExecArgs (prefixAdminCmd cn) [] i
     pager i mq Nothing =<< [ concatMap (wrapIndent 20 cols) charListTxt | charListTxt <- mkCharListTxt inOrOut <$> getState ]
 whoHelper inOrOut cn p@ActionParams { myId, args } =
-    logPlaExecArgs (prefixAdminCmd cn) args myId >> (dispMatches p 20 =<< mkCharListTxt inOrOut <$> getState)
+    sequence_ [ logPlaExecArgs (prefixAdminCmd cn) args myId, dispMatches p 20 =<< mkCharListTxt inOrOut <$> getState ]
 
 
 mkCharListTxt :: LoggedInOrOut -> MudState -> [Text]

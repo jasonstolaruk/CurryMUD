@@ -221,7 +221,7 @@ setSingIfNotTaken :: Int -> Sing -> ActionParams -> MudStack (Maybe Sing)
 setSingIfNotTaken times s (NoArgs i mq cols) = getSing i <$> getState >>= \oldSing -> mIf (modifyState . helper $ oldSing)
   (let msg = T.concat [ oldSing, " is now known as ", s, "." ]
    in logNotice "setSingIfNotTaken" msg >> bcastAdmins msg >> return (Just oldSing))
-  (emptied $ promptRetryName mq cols sorryInterpNameTaken >> (setInterp i . Just . interpName $ times))
+  (emptied . sequence_ [ promptRetryName mq cols sorryInterpNameTaken, setInterp i . Just . interpName $ times ])
   where
     helper oldSing ms | ()!# (filter ((== s) . (`getSing` ms) . fst) . views plaTbl IM.toList $ ms) = (ms, False)
                       | otherwise = ( ms & entTbl   .ind i.sing .~ s

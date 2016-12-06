@@ -68,7 +68,7 @@ threadListen :: MudStack ()
 threadListen = a `finally` b
   where
     a = logNotice "threadListen" "server started." >> listen
-    b = getUptime >>= saveUptime >> closeLogs >> (liftIO . T.putStrLn . nl $ "Goodbye!")
+    b = sequence_ [ getUptime >>= saveUptime, closeLogs, liftIO . T.putStrLn . nl $ "Goodbye!" ]
 
 
 saveUptime :: Int64 -> MudStack ()
