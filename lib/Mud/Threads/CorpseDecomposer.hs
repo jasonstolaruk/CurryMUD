@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
-{-# LANGUAGE LambdaCase, OverloadedStrings #-}
+{-# LANGUAGE LambdaCase, MultiWayIf, OverloadedStrings #-}
 
 module Mud.Threads.CorpseDecomposer ( pauseCorpseDecomps
                                     , restartCorpseDecomps
@@ -75,7 +75,15 @@ corpseDecomp i pair = finally <$> loop <*> finish =<< liftIO (newIORef pair)
 
 
 corpseDecompHelper :: Id -> SecondsPair -> MudStack ()
-corpseDecompHelper _ _ = unit
+corpseDecompHelper _ (x, total) =
+    let step           = total `intDivide` 4
+        [ a, b, c, d ] = [ step, step * 2, step * 3, total ]
+    in do
+        if | x == d    -> unit
+           | x == c    -> unit
+           | x == b    -> unit
+           | x == a    -> unit
+           | otherwise -> unit
 
 
 -----
