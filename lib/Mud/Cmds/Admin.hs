@@ -664,10 +664,12 @@ examineCon i ms = let c = getCon i ms in [ "Is clothing: " <> c^.conIsCloth.to s
 
 
 examineCorpse :: ExamineHelper
-examineCorpse i ms = case getCorpse i ms of PCCorpse cSing cSex cRace -> [ "Corpse sing: " <>    cSing
-                                                                         , "Corpse sex: "  <> pp cSex
-                                                                         , "Corpse race: " <> pp cRace ]
-                                            NpcCorpse                 -> []
+examineCorpse i ms = case getCorpse i ms of
+  PCCorpse cSing cDesc cSex cRace -> [ "Corpse sing: "        <> cSing
+                                     , "Corpse description: " <> cDesc
+                                     , "Corpse sex: "         <> pp cSex
+                                     , "Corpse race: "        <> pp cRace ]
+  NpcCorpse                       -> []
 
 
 examineEnt :: ExamineHelper

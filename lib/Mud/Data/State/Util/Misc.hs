@@ -33,8 +33,7 @@ module Mud.Data.State.Util.Misc ( addToInv
                                 , isDead
                                 , isKnownLang
                                 , isLoggedIn
-                                , isNpc
-                                , isPC
+                                , isPCCorpse
                                 , leaveParty
                                 , linkDirToCmdName
                                 , lookupHooks
@@ -181,10 +180,10 @@ getEffBothGramNos i ms targetId =
                    then (targetSing,    ""                 )
                    else (pp targetRace, plurRace targetRace) & both %~ ((targetSexy <>) . spcL)
       Just {} | getType targetId ms == CorpseType -> case getCorpse targetId ms of
-                NpcCorpse                                                  -> pair
-                (PCCorpse cs _ _) | cs == getSing i ms || cs `elem` intros -> ("corpse of " <> cs, "")
-                                  | otherwise                              -> pair
-              | otherwise -> pair
+                NpcCorpse                                                                 -> pair
+                (PCCorpse cs _ _ _) | ((||) <$> (== getSing i ms) <*> (`elem` intros)) cs -> ("corpse of " <> cs, "")
+                                    | otherwise                                           -> pair
+              | otherwise                                                                 -> pair
 
 
 plurRace :: Race -> Text
@@ -359,6 +358,14 @@ isDead i = (== iNecropolis) . getRmId i
 isKnownLang :: Id -> MudState -> Lang -> Bool
 isKnownLang i ms lang | lang == CommonLang = True
                       | otherwise          = lang `elem` getKnownLangs i ms
+
+
+-----
+
+
+isPCCorpse :: Corpse -> Bool
+isPCCorpse PCCorpse {} = True
+isPCCorpse NpcCorpse   = False
 
 
 -----

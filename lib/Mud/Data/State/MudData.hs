@@ -301,6 +301,7 @@ type ConName = Text
 
 -- Has a container.
 data Corpse = PCCorpse { _corpseSing :: Sing
+                       , _corpseDesc :: Text
                        , _corpseSex  :: Sex
                        , _corpseRace :: Race }
             | NpcCorpse deriving (Eq, Generic, Show)

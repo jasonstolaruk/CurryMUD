@@ -154,19 +154,21 @@ mkCorpse :: Id -> MudState -> (MudState, Funs) -- TODO: Nymph corpses hum faintl
 mkCorpse i ms =
     let et                  = EntTemplate (Just "corpse")
                                           s p
-                                          (getEntDesc i ms)
-                                          Nothing -- TODO
+                                          placeholder
+                                          Nothing
                                           zeroBits
         ot                  = ObjTemplate (getCorpseWeight i ms)
                                           (getCorpseVol    i ms)
-                                          Nothing -- TODO
+                                          Nothing
                                           zeroBits
         ct                  = ConTemplate (getCorpseCapacity i ms `max` calcCarriedVol i ms)
                                           zeroBits
         ic                  = (M.elems (getEqMap i ms) ++ getInv i ms, getCoins i ms)
-        corpse              = bool NpcCorpse (PCCorpse (getSing i ms) (getSex i ms) . getRace i $ ms) . isPC i $ ms
+        corpse              = bool NpcCorpse pcCorpse . isPC i $ ms
+        pcCorpse            = PCCorpse (getSing i ms) placeholder (getSex i ms) . getRace i $ ms
         (corpseId, ms', fs) = newCorpse ms et ot ct ic corpse . getRmId i $ ms
         logMsg              = T.concat [ "corpse with ID ", showText corpseId, " created for ", descSingId i ms, "." ]
+        placeholder         = parensQuote "corpse"
     in ( ms' & coinsTbl.ind i .~ mempty
              & eqTbl   .ind i .~ M.empty
              & invTbl  .ind i .~ []

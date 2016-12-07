@@ -1017,23 +1017,22 @@ mkEntDescs i cols ms eis = T.intercalate theNl [ mkEntDesc i cols ms (ei, e) | e
 
 
 mkEntDesc :: Id -> Cols -> MudState -> (Id, Ent) -> Text
-mkEntDesc i cols ms (ei, e) | ed <- views entDesc (wrapUnlines cols) e, s <- getSing ei ms, t <- getType ei ms =
-    case t of ConType      ->                 (ed <>) . mkInvCoinsDesc i cols ms ei $ s
-              CorpseType   ->                 (ed <>) . mkInvCoinsDesc i cols ms ei $ s
-              NpcType      ->                 (ed <>) . (tempDescHelper <>) . mkEqDesc i cols ms ei s $ t
-              PCType       -> (pcHeader <>) . (ed <>) . (tempDescHelper <>) . mkEqDesc i cols ms ei s $ t
-              VesselType   ->                 (ed <>) . mkVesselContDesc  cols ms $ ei
-              WritableType ->                 (ed <>) . mkWritableMsgDesc cols ms $ ei
+mkEntDesc i cols ms (ei, e) = let ed = views entDesc (wrapUnlines cols) e in
+    case t of ConType      ->                  (ed <>) . mkInvCoinsDesc i cols ms ei $ s
+              CorpseType   -> (corpseTxt <>)           . mkInvCoinsDesc i cols ms ei $ s
+              NpcType      ->                  (ed <>) . (tempDescHelper <>) . mkEqDesc i cols ms ei s $ t
+              PCType       -> (pcHeader  <>) . (ed <>) . (tempDescHelper <>) . mkEqDesc i cols ms ei s $ t
+              VesselType   ->                  (ed <>) . mkVesselContDesc  cols ms $ ei
+              WritableType ->                  (ed <>) . mkWritableMsgDesc cols ms $ ei
               _            -> ed
   where
-    pcHeader = wrapUnlines cols mkPCDescHeader
-    mkPCDescHeader | (s, r) <- mkPrettySexRace ei ms = T.concat [ "You see a "
-                                                                , s
-                                                                , " "
-                                                                , r
-                                                                , rmDescHelper
-                                                                , adminTagHelper
-                                                                , "." ]
+    (s, t)    = ((,) <$> uncurry getSing <*> uncurry getType) (ei, ms)
+    corpseTxt = wrapUnlines cols $ case getCorpse ei ms of -- TODO: Use "isPCCorpse"?
+      NpcCorpse           -> ""
+      (PCCorpse _ _ _ _ ) -> ""
+    pcHeader            = wrapUnlines cols mkPCDescHeader
+    mkPCDescHeader      = let sexRace = uncurry (|<>|) . mkPrettySexRace ei $ ms
+                          in T.concat [ "You see a ", sexRace, rmDescHelper, adminTagHelper, "." ]
     rmDescHelper        = case mkMobRmDesc ei ms of "" -> ""
                                                     d  -> spcL d
     adminTagHelper      | isAdminId ei ms = spcL adminTagTxt

@@ -50,7 +50,7 @@ import qualified Prelude ((>>))
 -----
 
 
-(>>) :: Format (Text -> b) a -> Format c b -> Format c a
+(>>) :: Format (Text -> r) a -> Format r' r -> Format r' a
 a >> b = a % stext % b
 
 
