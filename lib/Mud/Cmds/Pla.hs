@@ -3329,7 +3329,6 @@ showAction   (Lower i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
                                                   , underline . aOrAn . getSing itemId $ ms
                                                   , " "
                                                   , parensQuote "carried"
-                                                  , " "
                                                   , nl ":"
                                                   , getEntDesc itemId ms ]
                                        , pure theId )

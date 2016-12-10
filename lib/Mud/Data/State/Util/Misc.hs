@@ -456,8 +456,8 @@ mkAdminPlaIdSingList = mkIdSingListHelper (const True)
 
 mkCorpseAppellation :: Id -> MudState -> Id -> Text
 mkCorpseAppellation i ms ci
-  | isPCCorpse c = ((||) <$> (== s) <*> (`elem` getIntroduced i ms)) cs ? ("corpse of " <> cs) :? s
-  | otherwise    = s
+  | isPCCorpse c, ((||) <$> (== getSing i ms) <*> (`elem` getIntroduced i ms)) cs = "corpse of " <> cs
+  | otherwise = s
   where
     (c, s) = (getCorpse `fanUncurry` getSing) (ci, ms)
     cs     = c^.pcCorpseSing

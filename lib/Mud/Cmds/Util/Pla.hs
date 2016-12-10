@@ -1027,6 +1027,7 @@ mkEntDesc i cols ms (ei, e) = let ed = views entDesc (wrapUnlines cols) e in
               _            -> ed
   where
     (s, t)              = ((,) <$> uncurry getSing <*> uncurry getType) (ei, ms)
+    -- TODO: Nymph corpses hum faintly.
     corpseTxt           = wrapUnlines cols . expandCorpseTxt (mkCorpseAppellation i ms ei) . getCorpseDesc ei $ ms
     pcHeader            = wrapUnlines cols mkPCDescHeader
     mkPCDescHeader      = let sexRace = uncurry (|<>|) . mkPrettySexRace ei $ ms
