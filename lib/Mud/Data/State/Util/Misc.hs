@@ -8,10 +8,12 @@ module Mud.Data.State.Util.Misc ( addToInv
                                 , descSingId
                                 , dropPrefixes
                                 , dropPrefixesForHooks
+                                , expandCorpseTxt
                                 , findInvContaining
                                 , findMobIds
                                 , getAdminIds
                                 , getBothGramNos
+                                , getCorpseDesc
                                 , getEffBothGramNos
                                 , getEffName
                                 , getFeelingFun
@@ -39,6 +41,8 @@ module Mud.Data.State.Util.Misc ( addToInv
                                 , lookupHooks
                                 , mkAdminIdSingList
                                 , mkAdminPlaIdSingList
+                                , mkCorpseAppellation
+                                , mkCorpseTxt
                                 , mkMaybeCorpseId
                                 , mkMobRmDesc
                                 , mkName_maybeCorpseId_count_bothList
@@ -84,6 +88,7 @@ import Control.Lens.Operators ((%~), (&), (.~), (^.))
 import Control.Monad ((>=>))
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (ask)
+import Data.Bool (bool)
 import Data.IORef (atomicModifyIORef', readIORef)
 import Data.List ((\\), delete, foldl', nub, nubBy, sortBy, zip4)
 import Data.Maybe (fromJust, fromMaybe)
@@ -138,6 +143,13 @@ descMaybeSingId (Just x) ms = descSingId x ms
 -----
 
 
+expandCorpseTxt :: Text -> Text -> Text
+expandCorpseTxt = T.replace (T.singleton corpseNameMarker)
+
+
+-----
+
+
 findInvContaining :: Id -> MudState -> Maybe Id
 findInvContaining i ms = let matches = views invTbl (IM.keys . IM.filter (i `elem`)) ms
                          in ()# matches ? Nothing :? Just (head matches)
@@ -173,23 +185,29 @@ getEffBothGramNos i ms targetId =
     let targetEnt  = getEnt targetId ms
         targetSing = targetEnt^.sing
         pair       = (targetSing, targetEnt^.plur)
-        intros     = getIntroduced i ms
     in case targetEnt^.entName of
       Nothing -> let (pp -> targetSexy, targetRace) = getSexRace targetId ms
-                 in if targetSing `elem` intros
+                 in if targetSing `elem` getIntroduced i ms
                    then (targetSing,    ""                 )
                    else (pp targetRace, plurRace targetRace) & both %~ ((targetSexy <>) . spcL)
-      Just {} | getType targetId ms == CorpseType -> case getCorpse targetId ms of
-                NpcCorpse                                                                 -> pair
-                (PCCorpse cs _ _ _) | ((||) <$> (== getSing i ms) <*> (`elem` intros)) cs -> ("corpse of " <> cs, "")
-                                    | otherwise                                           -> pair
-              | otherwise                                                                 -> pair
+      Just {} | getType targetId ms == CorpseType
+              , isPCCorpse . getCorpse targetId $ ms -> pair & _1 .~ mkCorpseAppellation i ms targetId
+              | otherwise                            -> pair
 
 
 plurRace :: Race -> Text
 plurRace Dwarf = "dwarves"
 plurRace Elf   = "elves"
 plurRace r     = pp r <> "s"
+
+
+-----
+
+
+getCorpseDesc :: Id -> MudState -> Text
+getCorpseDesc i ms = let c    = getCorpse i ms
+                         lens = bool npcCorpseDesc pcCorpseDesc . isPCCorpse $ c
+                     in c^.lens
 
 
 -----
@@ -364,8 +382,8 @@ isKnownLang i ms lang | lang == CommonLang = True
 
 
 isPCCorpse :: Corpse -> Bool
-isPCCorpse PCCorpse {} = True
-isPCCorpse NpcCorpse   = False
+isPCCorpse PCCorpse  {} = True
+isPCCorpse NpcCorpse {} = False
 
 
 -----
@@ -436,6 +454,25 @@ mkAdminPlaIdSingList = mkIdSingListHelper (const True)
 -----
 
 
+mkCorpseAppellation :: Id -> MudState -> Id -> Text
+mkCorpseAppellation i ms ci
+  | isPCCorpse . getCorpse ci $ ms = ((||) <$> (== s) <*> (`elem` getIntroduced i ms)) cs ? ("corpse of " <> cs) :? s
+  | otherwise                      = s
+  where
+    cs = view pcCorpseSing . getCorpse ci $ ms
+    s  = getSing i ms
+
+
+-----
+
+
+mkCorpseTxt :: (Text, Text) -> Text
+mkCorpseTxt = uncurry (middle (<>) . T.singleton $ corpseNameMarker)
+
+
+-----
+
+
 mkMobRmDesc :: Id -> MudState -> Text
 mkMobRmDesc i ms | hasMobId i ms = case getMobRmDesc i ms of Nothing   -> ""
                                                              Just desc -> parensQuote desc
@@ -464,8 +501,8 @@ mkName_maybeCorpseId_count_bothList i ms targetIds =
 
 
 mkMaybeCorpseId :: Id -> MudState -> Maybe Id
-mkMaybeCorpseId i ms | getType i ms == CorpseType = case getCorpse i ms of PCCorpse {} -> Just i
-                                                                           NpcCorpse   -> Nothing
+mkMaybeCorpseId i ms | getType i ms == CorpseType = case getCorpse i ms of PCCorpse  {} -> Just i
+                                                                           NpcCorpse {} -> Nothing
                      | otherwise                  = Nothing
 
 

@@ -1026,10 +1026,8 @@ mkEntDesc i cols ms (ei, e) = let ed = views entDesc (wrapUnlines cols) e in
               WritableType ->                  (ed <>) . mkWritableMsgDesc cols ms $ ei
               _            -> ed
   where
-    (s, t)    = ((,) <$> uncurry getSing <*> uncurry getType) (ei, ms)
-    corpseTxt = wrapUnlines cols $ case getCorpse ei ms of -- TODO: Use "isPCCorpse"?
-      NpcCorpse           -> ""
-      (PCCorpse _ _ _ _ ) -> ""
+    (s, t)              = ((,) <$> uncurry getSing <*> uncurry getType) (ei, ms)
+    corpseTxt           = wrapUnlines cols . expandCorpseTxt (mkCorpseAppellation i ms ei) . getCorpseDesc ei $ ms
     pcHeader            = wrapUnlines cols mkPCDescHeader
     mkPCDescHeader      = let sexRace = uncurry (|<>|) . mkPrettySexRace ei $ ms
                           in T.concat [ "You see a ", sexRace, rmDescHelper, adminTagHelper, "." ]
@@ -1042,17 +1040,22 @@ mkEntDesc i cols ms (ei, e) = let ed = views entDesc (wrapUnlines cols) e in
 
 
 mkInvCoinsDesc :: Id -> Cols -> MudState -> Id -> Sing -> Text
-mkInvCoinsDesc i cols ms targetId targetSing =
-    let pair@(targetInv, targetCoins) = (getInv `fanUncurry` getCoins) (targetId, ms)
+mkInvCoinsDesc i cols ms i' s =
+    let pair@(is, c)           = (getInv `fanUncurry` getCoins) (i', ms)
+        msg | i' == i          = dudeYourHandsAreEmpty
+            | t  == CorpseType = "There is nothing on the corpse."
+            | otherwise        = "The " <> s <> " is empty."
     in case ((()#) *** (()#)) pair of
-      (True,  True ) -> wrapUnlines cols . bool ("The " <> targetSing <> " is empty.") dudeYourHandsAreEmpty $ targetId == i
-      (False, True ) -> header <> mkEntsInInvDesc i cols ms targetInv                                    <> footer
-      (True,  False) -> header                                        <> mkCoinsSummary cols targetCoins <> footer
-      (False, False) -> header <> mkEntsInInvDesc i cols ms targetInv <> mkCoinsSummary cols targetCoins <> footer
+      (True,  True ) -> wrapUnlines cols msg
+      (False, True ) -> header <> mkEntsInInvDesc i cols ms is                          <> footer
+      (True,  False) -> header                                 <> mkCoinsSummary cols c <> footer
+      (False, False) -> header <> mkEntsInInvDesc i cols ms is <> mkCoinsSummary cols c <> footer
   where
-    header = targetId == i ? nl "You are carrying:" :? wrapUnlines cols ("The " <> targetSing <> " contains:")
-    footer | targetId == i = nl $ showText (calcEncPer     i        ms) <> "% encumbered."
-           | otherwise     = nl $ showText (calcConPerFull targetId ms) <> "% full."
+    t      = getType i' ms
+    header = i' == i ? nl "You are carrying:" :? let n = t == CorpseType ? mkCorpseAppellation i ms i' :? s
+                                                 in wrapUnlines cols $ "The " <> n <> " contains:"
+    footer | i' == i   = nl $ showText (calcEncPer     i  ms) <> "% encumbered."
+           | otherwise = nl $ showText (calcConPerFull i' ms) <> "% full."
 
 
 mkEntsInInvDesc :: Id -> Cols -> MudState -> Inv -> Text

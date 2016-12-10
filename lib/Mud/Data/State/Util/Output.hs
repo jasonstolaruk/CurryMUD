@@ -271,16 +271,9 @@ parseDesigHelper f i ms = loop (getIntroduced i ms)
                     , (left, NonStdDesig { .. }, rest) <- extractDesig nonStdDesigDelimiter txt
                     = left <> (dEntSing `elem` intros ? dEntSing :? dDesc) <> loop intros rest
                     | T.singleton corpseDesigDelimiter `T.isInfixOf` txt
-                    , (left, d@(CorpseDesig _), rest) <- extractDesig corpseDesigDelimiter txt
-                    = left <> parseCorpseDesig d <> loop intros rest
+                    , (left, CorpseDesig ci, rest) <- extractDesig corpseDesigDelimiter txt
+                    = left <> mkCorpseAppellation i ms ci <> loop intros rest
                     | otherwise = txt
-      where
-        parseCorpseDesig (CorpseDesig ci) =
-            let c          = getCorpse ci ms
-                cs         = c^.corpseSing
-                sexRaceTxt = (|<>|) <$> views corpseSex pp <*> views corpseRace pp $ c
-            in  cs `elem` (getSing i ms : intros) ? ("corpse of " <> cs) :? ("corpse of a " <> sexRaceTxt)
-        parseCorpseDesig d = patternMatchFail "parseDesigHelper loop parseCorpseDesig" . showText $ d
     extractDesig (T.singleton -> c) (T.breakOn c -> (left, T.breakOn c . T.tail -> (desigTxt, T.tail -> rest)))
       | desig <- deserialize . quoteWith c $ desigTxt :: Desig
       = (left, desig, rest)

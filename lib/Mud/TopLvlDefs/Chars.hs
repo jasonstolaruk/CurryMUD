@@ -81,13 +81,17 @@ styleTokenDelimiter = '\\'
 -- Other:
 
 
+corpseNameMarker :: Char
+corpseNameMarker = '\135'
+
+
 fromPersonMarker :: Char
-fromPersonMarker = '\135'
+fromPersonMarker = '\136'
 
 
 hookArgDelimiter :: Char
-hookArgDelimiter = '\136'
+hookArgDelimiter = '\137'
 
 
 plaIdDelimiter :: Char
-plaIdDelimiter = '\137'
+plaIdDelimiter = '\138'

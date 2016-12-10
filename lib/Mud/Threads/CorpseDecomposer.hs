@@ -6,6 +6,7 @@ module Mud.Threads.CorpseDecomposer ( pauseCorpseDecomps
                                     , startCorpseDecomp ) where
 
 import Mud.Data.State.MudData
+import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Threads.Misc
 import Mud.Util.Misc
@@ -20,6 +21,7 @@ import Control.Exception.Lifted (finally, handle)
 import Control.Lens (at, both, views)
 import Control.Lens.Operators ((%~), (&), (.~))
 import Control.Monad.IO.Class (liftIO)
+import Data.Bool (bool)
 import Data.IORef (newIORef, readIORef, writeIORef)
 import Data.Monoid ((<>))
 import Data.Text (Text)
@@ -75,14 +77,19 @@ corpseDecomp i pair = finally <$> loop <*> finish =<< liftIO (newIORef pair)
 
 
 corpseDecompHelper :: Id -> SecondsPair -> MudStack ()
-corpseDecompHelper _ (x, total) =
+corpseDecompHelper i (x, total) =
     let step           = total `intDivide` 4
         [ a, b, c, d ] = [ step, step * 2, step * 3, total ]
-    in if | x == d    -> unit
-          | x == c    -> unit
-          | x == b    -> unit
-          | x == a    -> unit
-          | otherwise -> unit
+    in bool npcCorpseDesc pcCorpseDesc . isPCCorpse . getCorpse i <$> getState >>= \lens ->
+        if | x == d ->
+                tweaks [ corpseTbl.ind i.lens .~ mkCorpseTxt ("You see the ", ".") ]
+            | x == c ->
+                tweaks [ corpseTbl.ind i.lens .~ mkCorpseTxt ("The ", " has begun to decompose.") ]
+            | x == b ->
+                tweaks [ corpseTbl.ind i.lens .~ mkCorpseTxt ("The ", " has decomposed significantly.") ]
+            | x == a ->
+                tweaks [ corpseTbl.ind i.lens .~ mkCorpseTxt ("The ", " is in an advanced stage of composition.") ]
+            | otherwise -> unit
 
 
 -----

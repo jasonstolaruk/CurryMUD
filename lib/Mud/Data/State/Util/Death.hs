@@ -164,7 +164,8 @@ mkCorpse i ms =
         ct                  = ConTemplate (getCorpseCapacity i ms `max` calcCarriedVol i ms)
                                           zeroBits
         ic                  = (M.elems (getEqMap i ms) ++ getInv i ms, getCoins i ms)
-        corpse              = bool NpcCorpse pcCorpse . isPC i $ ms
+        corpse              = bool npcCorpse pcCorpse . isPC i $ ms
+        npcCorpse           = NpcCorpse placeholder
         pcCorpse            = PCCorpse (getSing i ms) placeholder (getSex i ms) . getRace i $ ms
         (corpseId, ms', fs) = newCorpse ms et ot ct ic corpse . getRmId i $ ms
         logMsg              = T.concat [ "corpse with ID ", showText corpseId, " created for ", descSingId i ms, "." ]
