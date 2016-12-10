@@ -1027,8 +1027,11 @@ mkEntDesc i cols ms (ei, e) = let ed = views entDesc (wrapUnlines cols) e in
               _            -> ed
   where
     (s, t)              = ((,) <$> uncurry getSing <*> uncurry getType) (ei, ms)
-    -- TODO: Nymph corpses hum faintly.
-    corpseTxt           = wrapUnlines cols . expandCorpseTxt (mkCorpseAppellation i ms ei) . getCorpseDesc ei $ ms
+    corpseTxt           = multiWrap cols . dropBlanks $ [ expandedCorpseDesc, nymphHumTxt ]
+    expandedCorpseDesc  = expandCorpseTxt (mkCorpseAppellation i ms ei) . getCorpseDesc ei $ ms
+    nymphHumTxt         = case getCorpse ei ms of
+                            NpcCorpse {}       -> ""
+                            (PCCorpse _ _ _ r) -> r == Nymph |?| "There is a faint, steady hum originating from the corpse."
     pcHeader            = wrapUnlines cols mkPCDescHeader
     mkPCDescHeader      = let sexRace = uncurry (|<>|) . mkPrettySexRace ei $ ms
                           in T.concat [ "You see a ", sexRace, rmDescHelper, adminTagHelper, "." ]
