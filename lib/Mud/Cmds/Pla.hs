@@ -2035,9 +2035,22 @@ link p = patternMatchFail "link" . showText $ p
 
 
 listen :: ActionFun
-listen (NoArgs i mq cols) = do views rmListen (wrapSend mq cols . fromMaybe noSoundMsg) . getMobRm i =<< getState
-                               logPlaExec "listen" i
-listen p                  = withoutArgs listen p
+listen (NoArgs i mq cols) = getState >>= \ms ->
+    let maybeListenMsg = view rmListen . getMobRm i $ ms
+        humMsg         = mkHumMsg ms
+        msgs           = case (()!# maybeListenMsg, ()!# humMsg) of (True,  True ) -> [ fromJust maybeListenMsg, humMsg ]
+                                                                    (True,  False) -> pure . fromJust $ maybeListenMsg
+                                                                    (False, True ) -> pure humMsg
+                                                                    (False, False) -> pure noSoundMsg
+    in multiWrapSend mq cols (dropBlanks msgs) >> logPlaExec "listen" i
+  where
+    mkHumMsg ms = let f i' | getType i' ms == CorpseType, (PCCorpse _ _ _ Nymph) <- getCorpse i' ms = True
+                           | otherwise = False
+                      g t  = prd $ "A faint, steady hum is originating from the " <> t
+                  in case filter f . getMobRmInv i $ ms of []   -> ""
+                                                           [ci] -> g . mkCorpseAppellation i ms $ ci
+                                                           _    -> g "nymph corpses"
+listen p = withoutArgs listen p
 
 
 -----

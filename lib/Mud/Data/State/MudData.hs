@@ -760,7 +760,8 @@ data Obj = Obj { _objWeight      :: Weight
 type Weight = Int -- 100 "Weight" = 1 lb
 
 
-data ObjFlags = IsBiodegradable deriving Enum
+data ObjFlags = IsBiodegradable
+              | IsHumming deriving Enum
 
 
 type BiodegAsync = Async ()

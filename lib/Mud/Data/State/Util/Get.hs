@@ -123,6 +123,8 @@ module Mud.Data.State.Util.Get ( entFlagHelper
                                , isBiodegradableId
                                , isGmcp
                                , isGmcpId
+                               , isHumming
+                               , isHummingId
                                , isIncognito
                                , isIncognitoId
                                , isInvis
@@ -1046,6 +1048,17 @@ isBiodegradable = getObjFlag IsBiodegradable
 
 isBiodegradableId :: Id -> MudState -> Bool
 isBiodegradableId = objFlagHelper IsBiodegradable
+
+
+-----
+
+
+isHumming :: Obj -> Bool
+isHumming = getObjFlag IsHumming
+
+
+isHummingId :: Id -> MudState -> Bool
+isHummingId = objFlagHelper IsHumming
 
 
 -- ==================================================
