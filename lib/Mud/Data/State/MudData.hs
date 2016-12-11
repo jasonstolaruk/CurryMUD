@@ -293,6 +293,9 @@ data Con = Con { _conIsCloth  :: Bool
 type Vol = Int -- 100 "Vol" = 1 cubic in
 
 
+data ConFlags = ConFlagsTODO deriving Enum
+
+
 type ConName = Text
 
 
@@ -356,7 +359,7 @@ type Sing = Text
 type Plur = Text
 
 
-data EntFlags = IsInvis deriving Enum
+data EntFlags = EntFlagsTODO deriving Enum
 
 
 -- ==================================================

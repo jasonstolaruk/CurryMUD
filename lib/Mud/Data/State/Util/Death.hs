@@ -37,7 +37,7 @@ import Control.Lens (_1, _2, _3, at, view, views)
 import Control.Lens.Operators ((%~), (&), (.~), (<>~), (^.))
 import Control.Monad (forM_, unless, when)
 import Control.Monad.IO.Class (liftIO)
-import Data.Bits (zeroBits)
+import Data.Bits (setBit, zeroBits)
 import Data.Bool (bool)
 import Data.Function (on)
 import Data.List (delete, sortBy)
@@ -160,13 +160,13 @@ mkCorpse i ms =
         ot                  = ObjTemplate (getCorpseWeight i ms)
                                           (getCorpseVol    i ms)
                                           Nothing
-                                          zeroBits
+                                          (onTrue (r == Nymph) (`setBit` fromEnum IsHumming) zeroBits)
         ct                  = ConTemplate (getCorpseCapacity i ms `max` calcCarriedVol i ms)
                                           zeroBits
         ic                  = (M.elems (getEqMap i ms) ++ getInv i ms, getCoins i ms)
         corpse              = bool npcCorpse pcCorpse . isPC i $ ms
         npcCorpse           = NpcCorpse placeholder
-        pcCorpse            = PCCorpse (getSing i ms) placeholder (getSex i ms) . getRace i $ ms
+        pcCorpse            = PCCorpse (getSing i ms) placeholder (getSex i ms) r
         (corpseId, ms', fs) = newCorpse ms et ot ct ic corpse . getRmId i $ ms
         logMsg              = T.concat [ "corpse with ID ", showText corpseId, " created for ", descSingId i ms, "." ]
         placeholder         = parensQuote "corpse"
@@ -178,12 +178,11 @@ mkCorpse i ms =
                , startCorpseDecomp corpseId . dup . getCorpseDecompSecs i $ ms ] )
       where
         (s, p) = if isPC i ms
-          then let pair @(_,    r) = getSexRace i ms
-                   pair'@(sexy, _) = (pp *** pp) pair
-               in ( "corpse of a " <> uncurry (|<>|) pair'
-                  , "corpses of "  <> sexy |<>| plurRace r )
+          then ( "corpse of a " <> sexy |<>| pp r
+               , "corpses of "  <> sexy |<>| plurRace r )
           else (("corpse of " <>) *** ("corpses of " <>)) . first aOrAnOnLower $ let bgns = getBothGramNos i ms
                                                                                  in bgns & _2 .~ mkPlurFromBoth bgns
+        (sexy, r) = first pp . getSexRace i $ ms
 
 
 -----

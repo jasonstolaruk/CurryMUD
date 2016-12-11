@@ -660,7 +660,11 @@ examineCon i ms = let c = getCon i ms in [ "Is clothing: " <> c^.conIsCloth.to s
                                                     , " / "
                                                     , c^.conCapacity.to commaShow
                                                     , " "
-                                                    , parensQuote $ (<> "%") . commaShow . calcConPerFull i $ ms ] ]
+                                                    , parensQuote $ (<> "%") . commaShow . calcConPerFull i $ ms ]
+                                         , "Container flags: " <> (commas . dropBlanks . descFlags $ c) ]
+  where
+    descFlags c | c^.conFlags == zeroBits = none
+                | otherwise               = none -- TODO: Con flags.
 
 
 examineCorpse :: ExamineHelper
@@ -682,9 +686,8 @@ examineEnt i ms = let e = getEnt i ms in [ "Name: "           <> e^.entName .to 
                                          , "Active effects: " <> descActiveEffects
                                          , "Paused effects: " <> descPausedEffects ]
   where
-    descFlags e | e^.entFlags == zeroBits = none
-                | otherwise               = let pairs = [(isInvis, "invisible")]
-                                            in [ f e |?| t | (f, t) <- pairs ]
+    descFlags e       | e^.entFlags == zeroBits = none
+                      | otherwise               = none -- TODO: Ent flags.
     descActiveEffects = descEffect getActiveEffects
     descPausedEffects = descEffect getPausedEffects
     descEffect f      = ppList . f i $ ms
@@ -866,9 +869,9 @@ examineRm i ms = let r = getRm i ms in [ "Name: "           <> r^.rmName
                                        , "Room functions: " <> r^.rmFunNames.to (noneOnNull . commas) ]
   where
     descFlags r | r^.rmFlags == zeroBits = none
-                | otherwise              = none -- TODO: Room flags.
-    linkHelper = \case (StdLink    dir destId linkMove    ) -> f (pp dir) destId linkMove
-                       (NonStdLink dir destId linkMove _ _) -> f dir      destId linkMove
+                | otherwise              = none -- TODO: Rm flags.
+    linkHelper  = \case (StdLink    dir destId linkMove    ) -> f (pp dir) destId linkMove
+                        (NonStdLink dir destId linkMove _ _) -> f dir      destId linkMove
       where
         f dir destId linkMove = spaces [ dir
                                        , "to"

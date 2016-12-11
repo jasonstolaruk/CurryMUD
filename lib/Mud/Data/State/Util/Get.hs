@@ -2,8 +2,7 @@
 
 -- This module contains straightforward getter methods that do little or no calculation.
 
-module Mud.Data.State.Util.Get ( entFlagHelper
-                               , getActiveEffects
+module Mud.Data.State.Util.Get ( getActiveEffects
                                , getActMap
                                , getArm
                                , getArmSub
@@ -127,8 +126,6 @@ module Mud.Data.State.Util.Get ( entFlagHelper
                                , isHummingId
                                , isIncognito
                                , isIncognitoId
-                               , isInvis
-                               , isInvisId
                                , isNotFirstAdminMsg
                                , isNotFirstAdminMsgId
                                , isNotFirstMobSay
@@ -1010,25 +1007,6 @@ getWritRecip i = view writRecip . getWritable i
 
 getWritable :: Id -> MudState -> Writable
 getWritable i = view (writableTbl.ind i)
-
-
--- ==================================================
--- Entity flag getters:
-
-
-entFlagHelper :: EntFlags -> Id -> MudState -> Bool
-entFlagHelper flag i = getEntFlag flag . getEnt i
-
-
------
-
-
-isInvis :: Ent -> Bool
-isInvis = getEntFlag IsInvis
-
-
-isInvisId :: Id -> MudState -> Bool
-isInvisId = entFlagHelper IsInvis
 
 
 -- ==================================================

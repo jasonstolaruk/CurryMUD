@@ -2037,19 +2037,19 @@ link p = patternMatchFail "link" . showText $ p
 listen :: ActionFun
 listen (NoArgs i mq cols) = getState >>= \ms ->
     let maybeListenMsg = view rmListen . getMobRm i $ ms
-        humMsg         = mkHumMsg ms
-        msgs           = case (()!# maybeListenMsg, ()!# humMsg) of (True,  True ) -> [ fromJust maybeListenMsg, humMsg ]
-                                                                    (True,  False) -> pure . fromJust $ maybeListenMsg
-                                                                    (False, True ) -> pure humMsg
-                                                                    (False, False) -> pure noSoundMsg
-    in multiWrapSend mq cols (dropBlanks msgs) >> logPlaExec "listen" i
+        humMsgs        = mkHumMsgs ms
+        ts             = case (()!# maybeListenMsg, ()!# humMsgs) of (True,  True ) -> fromJust maybeListenMsg : humMsgs
+                                                                     (True,  False) -> pure . fromJust $ maybeListenMsg
+                                                                     (False, True ) -> humMsgs
+                                                                     (False, False) -> pure noSoundMsg
+    in multiWrapSend mq cols ts >> logPlaExec "listen" i
   where
-    mkHumMsg ms = let f i' | getType i' ms == CorpseType, (PCCorpse _ _ _ Nymph) <- getCorpse i' ms = True
-                           | otherwise = False
-                      g t  = prd $ "A faint, steady hum is originating from the " <> t
-                  in case filter f . getMobRmInv i $ ms of []   -> ""
-                                                           [ci] -> g . mkCorpseAppellation i ms $ ci
-                                                           _    -> g "nymph corpses"
+    mkHumMsgs ms = let f i' acc | t <- getType i' ms, hasObj t, isHummingId i' ms = (: acc) . mkMsg $ if t == CorpseType
+                                  then mkCorpseAppellation i ms i'
+                                  else getSing i' ms
+                                | otherwise = acc
+                       mkMsg n = "A faint, steady hum is originating from the " <> n <> " on the ground."
+                   in foldr f [] . getMobRmInv i $ ms
 listen p = withoutArgs listen p
 
 
