@@ -1531,6 +1531,7 @@ createAdminZone = do
               zeroBits)
          (mkObj . ObjTemplate clubWeight clubVol Nothing $ zeroBits)
          (Wpn OneHanded 1 10)
+  let mkKnifeFlags i = onTrue (i == iKnife1) (`setBit` fromEnum IsHumming) zeroBits
   forM_ [ iKnife1, iKnife2 ] $ \i ->
       putWpn i
              (Ent i
@@ -1539,7 +1540,7 @@ createAdminZone = do
                   "This small knife could be useful in a pinch."
                   Nothing
                   zeroBits)
-             (mkObj . ObjTemplate knifeWeight knifeVol Nothing $ zeroBits)
+             (mkObj . ObjTemplate knifeWeight knifeVol Nothing . mkKnifeFlags $ i)
              (Wpn OneHanded 1 10)
 
   -- ==================================================

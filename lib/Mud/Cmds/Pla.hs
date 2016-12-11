@@ -2048,7 +2048,7 @@ listen (NoArgs i mq cols) = getState >>= \ms ->
                                   then mkCorpseAppellation i ms i'
                                   else getSing i' ms
                                 | otherwise = acc
-                       mkMsg n = "A faint, steady hum is originating from the " <> n <> " on the ground."
+                       mkMsg n  = "A faint, steady hum is originating from the " <> n <> " on the ground."
                    in foldr f [] . getMobRmInv i $ ms
 listen p = withoutArgs listen p
 

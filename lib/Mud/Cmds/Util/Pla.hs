@@ -86,6 +86,7 @@ import Mud.Data.State.MudData
 import Mud.Data.State.Util.Calc
 import Mud.Data.State.Util.Coins
 import Mud.Data.State.Util.Get
+import Mud.Data.State.Util.Hierarchy
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Misc.ANSI
@@ -116,7 +117,7 @@ import Control.Monad.IO.Class (liftIO)
 import Data.Bool (bool)
 import Data.Char (isLower)
 import Data.Function (on)
-import Data.List ((\\), delete, elemIndex, find, foldl', intercalate, nub, sortBy)
+import Data.List ((\\), delete, elemIndex, find, foldl', intercalate, nub, sort, sortBy, unzip3, zip4)
 import Data.Maybe (fromJust)
 import Data.Monoid ((<>), Sum(..))
 import Data.Text (Text)
@@ -1085,21 +1086,22 @@ mkEqDesc i cols ms descId descSing descType = let descs = bool mkDescsOther mkDe
     ()# descs ? noDescs :? ((header <>) . T.unlines . concatMap (wrapIndent 15 cols) $ descs)
   where
     mkDescsSelf =
-        let (slotNames,  es ) = unzip [ (pp slot, getEnt ei ms)                  | (slot, ei) <- M.toList . getEqMap i $ ms ]
-            (sings,      ens) = unzip [ (view sing &&& views entName fromJust) e | e          <- es                         ]
-        in map helper . zip3 slotNames sings . styleAbbrevs DoQuote $ ens
+        let (eis, slotNames, es) = unzip3 [ (ei, pp slot, getEnt ei ms) | (slot, ei) <- M.toList . getEqMap i $ ms ]
+            (sings, ens)         = unzip  [ (view sing &&& views entName fromJust) e | e <- es ]
+        in map helper . zip4 eis slotNames sings . styleAbbrevs DoQuote $ ens
       where
-        helper (T.breakOn " finger" -> (slotName, _), s, styled) = T.concat [ parensPad 15 slotName, s, " ", styled ]
-    mkDescsOther = map helper [ (pp slot, getSing ei ms) | (slot, ei) <- M.toList . getEqMap descId $ ms ]
+        helper (ei, T.breakOn (spcL "finger") -> (slotName, _), s, styled) =
+            T.concat [ parensPad 15 slotName, s, " ", styled, mkFlagTags ei ms ]
+    mkDescsOther = map helper [ (ei, pp slot, getSing ei ms) | (slot, ei) <- M.toList . getEqMap descId $ ms ]
       where
-        helper (T.breakOn " finger" -> (slotName, _), s) = parensPad 15 slotName <> s
+        helper (ei, T.breakOn (spcL "finger") -> (slotName, _), s) = parensPad 15 slotName <> s <> mkFlagTags ei ms
     noDescs = wrapUnlines cols $ if
       | descId   == i      -> dudeYou'reNaked
-      | descType == PCType -> parseDesig i ms $ d  <> " doesn't have anything readied."
+      | descType == PCType -> parseDesig i ms $ d    <> " doesn't have anything readied."
       | otherwise          -> theOnLowerCap descSing <> " doesn't have anything readied."
     header = wrapUnlines cols $ if
       | descId   == i      -> "You have readied the following equipment:"
-      | descType == PCType -> parseDesig i ms $ d  <> " has readied the following equipment:"
+      | descType == PCType -> parseDesig i ms $ d    <> " has readied the following equipment:"
       | otherwise          -> theOnLowerCap descSing <> " has readied the following equipment:"
     d = mkSerializedNonStdDesig descId ms descSing The DoCap
 
@@ -1148,6 +1150,15 @@ mkExitsSummary cols (view rmLinks -> rls) =
 isNonStdLink :: RmLink -> Bool
 isNonStdLink NonStdLink {} = True
 isNonStdLink _             = False
+
+
+-----
+
+
+mkFlagTags :: Id -> MudState -> Text
+mkFlagTags i ms = tags |!| (spcL . parensQuote . commas . sort $ tags)
+  where
+    tags = ((&&) <$> uncurry hasObjId <*> uncurry isHummingId) (i, ms) |?| pure "humming"
 
 
 -----
