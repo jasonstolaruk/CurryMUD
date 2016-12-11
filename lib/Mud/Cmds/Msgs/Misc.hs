@@ -113,6 +113,10 @@ helpFileErrorMsg :: Text -> Text
 helpFileErrorMsg n = "Unfortunately, the " <> n <> " help file could not be read."
 
 
+humMsg :: Text -> Text
+humMsg t = prd $ "A faint, steady hum is originating from the " <> t
+
+
 inacBootMsg :: Text
 inacBootMsg = "You are being disconnected from CurryMUD due to inactivity."
 

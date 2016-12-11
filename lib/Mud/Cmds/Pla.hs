@@ -2044,11 +2044,12 @@ listen (NoArgs i mq cols) = getState >>= \ms ->
                                                                      (False, False) -> pure noSoundMsg
     in multiWrapSend mq cols ts >> logPlaExec "listen" i
   where
+    -- TODO: Humming from item in your inv or eq.
     mkHumMsgs ms = let f i' acc | t <- getType i' ms, hasObj t, isHummingId i' ms = (: acc) . mkMsg $ if t == CorpseType
                                   then mkCorpseAppellation i ms i'
                                   else getSing i' ms
                                 | otherwise = acc
-                       mkMsg n  = "A faint, steady hum is originating from the " <> n <> " on the ground."
+                       mkMsg n  = humMsg $ n <> " on the ground"
                    in foldr f [] . getMobRmInv i $ ms
 listen p = withoutArgs listen p
 
