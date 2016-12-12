@@ -2044,13 +2044,15 @@ listen (NoArgs i mq cols) = getState >>= \ms ->
                                                                      (False, False) -> pure noSoundMsg
     in multiWrapSend mq cols ts >> logPlaExec "listen" i
   where
-    -- TODO: Humming from item in your inv or eq.
-    mkHumMsgs ms = let f i' acc | t <- getType i' ms, hasObj t, isHummingId i' ms = (: acc) . mkMsg $ if t == CorpseType
-                                  then mkCorpseAppellation i ms i'
-                                  else getSing i' ms
-                                | otherwise = acc
-                       mkMsg n  = humMsg $ n <> " on the ground"
-                   in foldr f [] . getMobRmInv i $ ms
+    mkHumMsgs ms = concatMap (helper ms) [ (\i' -> M.elems . getEqMap i', (<> " in your readied equipment"))
+                                         , (getInv,                       (<> " in your inventory"        ))
+                                         , (getMobRmInv,                  (<> " on the ground"            )) ]
+    helper ms (f, g) = foldr h [] . uncurry f $ (i, ms)
+      where
+        h i' acc | t <- getType i' ms, hasObj t, isHummingId i' ms = (: acc) . humMsg . g $ if t == CorpseType
+                   then mkCorpseAppellation i ms i'
+                   else getSing i' ms
+                 | otherwise = acc
 listen p = withoutArgs listen p
 
 
@@ -3279,7 +3281,7 @@ helperSettings i ms a (T.breakOn "=" -> (name, T.tail -> value)) =
 -----
 
 
-showAction :: ActionFun
+showAction :: ActionFun -- TODO: Should use "mkCorpseAppellation" when showing a corpse.
 showAction p@AdviseNoArgs         = advise p ["show"] adviceShowNoArgs
 showAction p@AdviseOneArg         = advise p ["show"] adviceShowNoName
 showAction   (Lower i mq cols as) = getState >>= \ms -> if isIncognitoId i ms

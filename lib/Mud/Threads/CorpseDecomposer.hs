@@ -77,7 +77,7 @@ corpseDecomp i pair = finally <$> loop <*> finish =<< liftIO (newIORef pair)
 
 
 corpseDecompHelper :: Id -> SecondsPair -> MudStack ()
-corpseDecompHelper i (x, total) =
+corpseDecompHelper i (x, total) = -- TODO: smell, taste
     let step           = total `intDivide` 4
         [ a, b, c, d ] = [ step, step * 2, step * 3, total ]
     in bool npcCorpseDesc pcCorpseDesc . isPCCorpse . getCorpse i <$> getState >>= \lens ->
