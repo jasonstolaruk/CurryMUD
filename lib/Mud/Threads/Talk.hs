@@ -175,7 +175,7 @@ randomRace :: IO Race
 randomRace = randomIO
 
 
-initPlaFlags :: Int
+initPlaFlags :: Flags
 initPlaFlags = foldl setBit zeroBits . map fromEnum $ [ IsShowingHp
                                                       , IsShowingMp
                                                       , IsShowingPp

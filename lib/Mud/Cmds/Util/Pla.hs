@@ -60,6 +60,7 @@ module Mud.Cmds.Util.Pla ( adminTagTxt
                          , mkInvCoinsDesc
                          , mkLastArgIsTargetBindings
                          , mkLastArgWithNubbedOthers
+                         , mkMaybeHumMsg
                          , mkMaybeNthOfM
                          , mkMpDesc
                          , mkPpDesc
@@ -86,6 +87,7 @@ import Mud.Data.State.MudData
 import Mud.Data.State.Util.Calc
 import Mud.Data.State.Util.Coins
 import Mud.Data.State.Util.Get
+import Mud.Data.State.Util.Hierarchy
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Misc.ANSI
@@ -1016,8 +1018,8 @@ mkEntDescs :: Id -> Cols -> MudState -> Inv -> Text
 mkEntDescs i cols ms eis = T.intercalate theNl [ mkEntDesc i cols ms (ei, e) | ei <- eis, let e = getEnt ei ms ]
 
 
-mkEntDesc :: Id -> Cols -> MudState -> (Id, Ent) -> Text -- TODO: Humming when examining item using "look", "inv", "eq", "show".
-mkEntDesc i cols ms (ei, e) = let ed = views entDesc (wrapUnlines cols) e in
+mkEntDesc :: Id -> Cols -> MudState -> (Id, Ent) -> Text
+mkEntDesc i cols ms (ei, e) = let ed = views entDesc (wrapUnlines cols) e <> mkAuxDesc i cols ms ei in
     case t of ConType      ->                  (ed <>) . mkInvCoinsDesc i cols ms ei $ s
               CorpseType   -> (corpseTxt <>)           . mkInvCoinsDesc i cols ms ei $ s
               NpcType      ->                  (ed <>) . (tempDescHelper <>) . mkEqDesc i cols ms ei s $ t
@@ -1027,7 +1029,7 @@ mkEntDesc i cols ms (ei, e) = let ed = views entDesc (wrapUnlines cols) e in
               _            -> ed
   where
     (s, t)              = ((,) <$> uncurry getSing <*> uncurry getType) (ei, ms)
-    corpseTxt           = expandCorpseTxt (mkCorpseAppellation i ms ei) . getCorpseDesc ei $ ms
+    corpseTxt           = expandCorpseTxt (mkCorpseAppellation i ms ei) (getCorpseDesc ei ms) <> mkAuxDesc i cols ms ei
     pcHeader            = wrapUnlines cols mkPCDescHeader
     mkPCDescHeader      = let sexRace = uncurry (|<>|) . mkPrettySexRace ei $ ms
                           in T.concat [ "You see a ", sexRace, rmDescHelper, adminTagHelper, "." ]
@@ -1037,6 +1039,17 @@ mkEntDesc i cols ms (ei, e) = let ed = views entDesc (wrapUnlines cols) e in
                         | otherwise       = ""
     tempDescHelper      = maybeEmp (wrapUnlines cols . coloredBracketQuote) . getTempDesc ei $ ms
     coloredBracketQuote = quoteWith' (("[ ", " ]") & both %~ colorWith tempDescColor)
+
+
+mkAuxDesc :: Id -> Cols -> MudState -> Id -> Text
+mkAuxDesc i cols ms i' = maybeEmp (wrapUnlines cols) . mkMaybeHumMsg i ms i' $ id
+
+
+mkMaybeHumMsg :: Id -> MudState -> Id -> (Text -> Text) -> Maybe Text
+mkMaybeHumMsg i ms i' f | t <- getType i' ms, hasObj t, isHummingId i' ms = Just . humMsg . f $ if t == CorpseType
+                          then mkCorpseAppellation i ms i'
+                          else getSing i' ms
+                        | otherwise = Nothing
 
 
 mkInvCoinsDesc :: Id -> Cols -> MudState -> Id -> Sing -> Text

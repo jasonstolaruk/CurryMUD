@@ -18,6 +18,7 @@ import Control.Lens.Operators ((%~), (&))
 import Control.Monad.Reader (ReaderT)
 import Data.Aeson ((.:), (.=), FromJSON(..), ToJSON(..), Value(..), genericParseJSON, genericToJSON, object)
 import Data.Aeson.Types (Options, Parser, defaultOptions, fieldLabelModifier)
+import Data.Int (Int16)
 import Data.IORef (IORef)
 import Data.Text (Text)
 import Data.Time (UTCTime)
@@ -287,13 +288,16 @@ instance Monoid Coins where
 -- Has an object and an inventory and coins.
 data Con = Con { _conIsCloth  :: Bool
                , _conCapacity :: Vol
-               , _conFlags    :: Int } deriving (Eq, Generic, Show)
+               , _conFlags    :: Flags } deriving (Eq, Generic, Show)
 
 
 type Vol = Int -- 100 "Vol" = 1 cubic in
 
 
 data ConFlags = ConFlagsTODO deriving Enum
+
+
+type Flags = Int16
 
 
 type ConName = Text
@@ -347,7 +351,7 @@ data Ent = Ent { _entId    :: Id
                , _plur     :: Plur
                , _entDesc  :: Text
                , _entSmell :: Maybe Text
-               , _entFlags :: Int } deriving (Eq, Generic, Show)
+               , _entFlags :: Flags } deriving (Eq, Generic, Show)
 
 
 type Id = Int
@@ -756,7 +760,7 @@ type NpcServerAsync = Async ()
 data Obj = Obj { _objWeight      :: Weight
                , _objVol         :: Vol
                , _objTaste       :: Maybe Text
-               , _objFlags       :: Int
+               , _objFlags       :: Flags
                , _objBiodegAsync :: Maybe BiodegAsync }
 
 
@@ -842,7 +846,7 @@ type SkillPts = Int
 -- Has a PC and random names and telepathic links.
 data Pla = Pla { _currHostName :: HostName
                , _connectTime  :: Maybe UTCTime
-               , _plaFlags     :: Int
+               , _plaFlags     :: Flags
                , _columns      :: Int
                , _pageLines    :: Int
                , _peepers      :: Inv
@@ -917,7 +921,7 @@ data Rm = Rm { _rmName      :: Text
              , _rmDesc      :: Text
              , _rmListen    :: Maybe Text
              , _rmSmell     :: Maybe Text
-             , _rmFlags     :: Int
+             , _rmFlags     :: Flags
              , _rmLinks     :: [RmLink]
              , _rmCoords    :: RmCoords
              , _rmEnv       :: RmEnv

@@ -27,7 +27,7 @@ data EntTemplate = EntTemplate { etName  :: Maybe Text
                                , etPlur  :: Plur
                                , etDesc  :: Text
                                , etSmell :: Maybe Text
-                               , etFlags :: Int }
+                               , etFlags :: Flags }
 
 
 mkEnt :: Id -> EntTemplate -> Ent
@@ -50,7 +50,7 @@ createEnt ms et = let i = getUnusedId ms in (i, ms & activeEffectsTbl.ind i .~ [
 
 
 data ConTemplate = ConTemplate { ctCapacity :: Vol
-                               , ctFlags    :: Int }
+                               , ctFlags    :: Flags }
 
 
 mkCon :: ConTemplate -> Con
@@ -165,7 +165,7 @@ mkMob MobTemplate { .. } = Mob { _sex              = mtSex
 data ObjTemplate = ObjTemplate { otWeight :: Weight
                                , otVol    :: Vol
                                , otTaste  :: Maybe Text
-                               , otFlags  :: Int }
+                               , otFlags  :: Flags }
 
 
 mkObj :: ObjTemplate -> Obj
@@ -190,7 +190,7 @@ newObj ms et ot invId = let (i, typeTbl.ind i .~ ObjType -> ms', fs) = createObj
 -----
 
 
-data PlaTemplate = PlaTemplate { ptPlaFlags   :: Int
+data PlaTemplate = PlaTemplate { ptPlaFlags   :: Flags
                                , ptLogoutRmId :: Id }
 
 
@@ -216,7 +216,7 @@ data RmTemplate = RmTemplate { rtName      :: Text
                              , rtDesc      :: Text
                              , rtListen    :: Maybe Text
                              , rtSmell     :: Maybe Text
-                             , rtFlags     :: Int
+                             , rtFlags     :: Flags
                              , rtLinks     :: [RmLink]
                              , rtCoords    :: RmCoords
                              , rtEnv       :: RmEnv

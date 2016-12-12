@@ -498,7 +498,7 @@ beeBuzzRmFun = mkRndmBcastRmFun iAtrium "iAtrium" beeBuzzRmFunName 25 60 beeBuzz
 -- Zone definition:
 
 
-adminFlags :: Int
+adminFlags :: Flags
 adminFlags = foldl setBit zeroBits . map fromEnum $ [ IsAdmin
                                                     , IsNotFirstAdminMsg
                                                     , IsNotFirstMobSay

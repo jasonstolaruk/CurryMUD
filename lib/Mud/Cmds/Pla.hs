@@ -2047,12 +2047,7 @@ listen (NoArgs i mq cols) = getState >>= \ms ->
     mkHumMsgs ms = concatMap (helper ms) [ (\i' -> M.elems . getEqMap i', (<> " in your readied equipment"))
                                          , (getInv,                       (<> " in your inventory"        ))
                                          , (getMobRmInv,                  (<> " on the ground"            )) ]
-    helper ms (f, g) = foldr h [] . uncurry f $ (i, ms)
-      where
-        h i' acc | t <- getType i' ms, hasObj t, isHummingId i' ms = (: acc) . humMsg . g $ if t == CorpseType
-                   then mkCorpseAppellation i ms i'
-                   else getSing i' ms
-                 | otherwise = acc
+    helper ms (f, g) = foldr (\i' acc -> maybe acc (: acc) . mkMaybeHumMsg i ms i' $ g) [] . uncurry f $ (i, ms)
 listen p = withoutArgs listen p
 
 

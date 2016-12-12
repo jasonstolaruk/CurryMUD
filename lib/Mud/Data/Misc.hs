@@ -144,9 +144,9 @@ instance BanRecord BanPCRec where
 
 
 class HasFlags a where
-  flagGetter :: Getting Int a Int
+  flagGetter :: Getting Flags a Flags
 
-  flagSetter :: Setting (->) a a Int Int
+  flagSetter :: Setting (->) a a Flags Flags
 
   getFlag :: (Enum e) => e -> a -> Bool
   getFlag (fromEnum -> flagBitNum) a = (a^.flagGetter) `testBit` flagBitNum
