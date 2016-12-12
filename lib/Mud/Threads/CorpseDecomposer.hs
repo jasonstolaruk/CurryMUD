@@ -9,6 +9,7 @@ import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Threads.Misc
+import Mud.TopLvlDefs.Misc
 import Mud.Util.Misc
 import Mud.Util.Operators
 import Mud.Util.Quoting
@@ -18,8 +19,8 @@ import qualified Mud.Misc.Logging as L (logNotice)
 import Control.Arrow (first)
 import Control.Concurrent (threadDelay)
 import Control.Exception.Lifted (finally, handle)
-import Control.Lens (at, both, views)
-import Control.Lens.Operators ((%~), (&), (.~))
+import Control.Lens (at, both, set, views)
+import Control.Lens.Operators ((%~), (&), (.~), (?~))
 import Control.Monad.IO.Class (liftIO)
 import Data.Bool (bool)
 import Data.IORef (newIORef, readIORef, writeIORef)
@@ -76,19 +77,31 @@ corpseDecomp i pair = finally <$> loop <*> finish =<< liftIO (newIORef pair)
         logHelper = logNotice "corpseDecomp finish"
 
 
-corpseDecompHelper :: Id -> SecondsPair -> MudStack ()
-corpseDecompHelper i (x, total) = -- TODO: smell, taste
+corpseDecompHelper :: Id -> SecondsPair -> MudStack () -- TODO
+corpseDecompHelper i (x, total) =
     let step           = total `intDivide` 4
         [ a, b, c, d ] = [ step, step * 2, step * 3, total ]
-    in bool npcCorpseDesc pcCorpseDesc . isPCCorpse . getCorpse i <$> getState >>= \lens ->
+    in isPCCorpse . getCorpse i <$> getState >>= \ipc -> do
+        let lens = bool npcCorpseDesc pcCorpseDesc ipc
         if | x == d ->
-                tweaks [ corpseTbl.ind i.lens .~ mkCorpseTxt ("You see the ", ".") ]
+                tweaks [ corpseTbl.ind i.lens     .~ mkCorpseTxt ("You see the ", ".")
+                       , entTbl   .ind i.entSmell ?~ ""
+                       , objTbl   .ind i.objTaste ?~ "" ]
             | x == c ->
-                tweaks [ corpseTbl.ind i.lens .~ mkCorpseTxt ("The ", " has begun to decompose.") ]
+                tweaks [ corpseTbl.ind i.lens     .~ mkCorpseTxt ("The ", " has begun to decompose.")
+                       , entTbl   .ind i.entSmell ?~ ""
+                       , objTbl   .ind i.objTaste ?~ "" ]
             | x == b ->
-                tweaks [ corpseTbl.ind i.lens .~ mkCorpseTxt ("The ", " has decomposed significantly.") ]
+                tweaks [ corpseTbl.ind i.lens     .~ mkCorpseTxt ("The ", " has decomposed significantly.")
+                       , entTbl   .ind i.entSmell ?~ ""
+                       , objTbl   .ind i.objTaste ?~ "" ]
             | x == a ->
-                tweaks [ corpseTbl.ind i.lens .~ mkCorpseTxt ("The ", " is in an advanced stage of composition.") ]
+                tweaks [ corpseTbl.ind i.lens     .~ "The corpse is in an advanced stage of decomposition."
+                       , entTbl   .ind i.entSmell ?~ ""
+                       , objTbl   .ind i.objTaste ?~ ""
+
+                       , entTbl   .ind i.sing     .~ "decomposed corpse"
+                       , corpseTbl.ind i          %~ (ipc ? set pcCorpseSing corpsePlaceholder :? id) ]
             | otherwise -> unit
 
 

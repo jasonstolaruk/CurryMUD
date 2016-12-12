@@ -1029,7 +1029,8 @@ mkEntDesc i cols ms (ei, e) = let ed = views entDesc (wrapUnlines cols) e <> mkA
               _            -> ed
   where
     (s, t)              = ((,) <$> uncurry getSing <*> uncurry getType) (ei, ms)
-    corpseTxt           = expandCorpseTxt (mkCorpseAppellation i ms ei) (getCorpseDesc ei ms) <> mkAuxDesc i cols ms ei
+    corpseTxt           = let txt = expandCorpseTxt (mkCorpseAppellation i ms ei) . getCorpseDesc ei $ ms
+                          in wrapUnlines cols txt <> mkAuxDesc i cols ms ei
     pcHeader            = wrapUnlines cols mkPCDescHeader
     mkPCDescHeader      = let sexRace = uncurry (|<>|) . mkPrettySexRace ei $ ms
                           in T.concat [ "You see a ", sexRace, rmDescHelper, adminTagHelper, "." ]

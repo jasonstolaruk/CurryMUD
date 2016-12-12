@@ -25,6 +25,7 @@ import Mud.Threads.FeelingTimer
 import Mud.Threads.NpcServer
 import Mud.Threads.Regen
 import Mud.Threads.SpiritTimer
+import Mud.TopLvlDefs.Misc
 import Mud.Util.List
 import Mud.Util.Misc
 import Mud.Util.Operators
@@ -38,7 +39,6 @@ import Control.Lens.Operators ((%~), (&), (.~), (<>~), (^.))
 import Control.Monad (forM_, unless, when)
 import Control.Monad.IO.Class (liftIO)
 import Data.Bits (setBit, zeroBits)
-import Data.Bool (bool)
 import Data.Function (on)
 import Data.List (delete, sortBy)
 import Data.Monoid ((<>))
@@ -154,22 +154,21 @@ mkCorpse :: Id -> MudState -> (MudState, Funs)
 mkCorpse i ms =
     let et                  = EntTemplate (Just "corpse")
                                           s p
-                                          placeholder
+                                          corpsePlaceholder
                                           Nothing
                                           zeroBits
         ot                  = ObjTemplate (getCorpseWeight i ms)
                                           (getCorpseVol    i ms)
                                           Nothing
-                                          (onTrue (r == Nymph) (`setBit` fromEnum IsHumming) zeroBits)
+                                          (onTrue (ip && r == Nymph) (`setBit` fromEnum IsHumming) zeroBits)
         ct                  = ConTemplate (getCorpseCapacity i ms `max` calcCarriedVol i ms)
                                           zeroBits
         ic                  = (M.elems (getEqMap i ms) ++ getInv i ms, getCoins i ms)
-        corpse              = bool npcCorpse pcCorpse . isPC i $ ms
-        npcCorpse           = NpcCorpse placeholder
-        pcCorpse            = PCCorpse (getSing i ms) placeholder (getSex i ms) r
+        corpse              = ip ? pcCorpse :? npcCorpse
+        npcCorpse           = NpcCorpse corpsePlaceholder
+        pcCorpse            = PCCorpse (getSing i ms) corpsePlaceholder (getSex i ms) r
         (corpseId, ms', fs) = newCorpse ms et ot ct ic corpse . getRmId i $ ms
         logMsg              = T.concat [ "corpse with ID ", showText corpseId, " created for ", descSingId i ms, "." ]
-        placeholder         = parensQuote "corpse"
     in ( ms' & coinsTbl.ind i .~ mempty
              & eqTbl   .ind i .~ M.empty
              & invTbl  .ind i .~ []
@@ -177,11 +176,11 @@ mkCorpse i ms =
                , logNotice "mkCorpse" logMsg
                , startCorpseDecomp corpseId . dup . getCorpseDecompSecs i $ ms ] )
       where
-        (s, p) = if isPC i ms
-          then ( "corpse of a " <> sexy |<>| pp r
-               , "corpses of "  <> sexy |<>| plurRace r )
-          else (("corpse of " <>) *** ("corpses of " <>)) . first aOrAnOnLower $ let bgns = getBothGramNos i ms
-                                                                                 in bgns & _2 .~ mkPlurFromBoth bgns
+        ip        = isPC i ms
+        (s, p)    | ip = ( "corpse of a " <> sexy |<>| pp r
+                         , "corpses of "  <> sexy |<>| plurRace r )
+                  | bgns <- getBothGramNos i ms -- TODO: "bgns & _2 .~ mkPlurFromBoth bgns" ?
+                  = (("corpse of " <>) *** ("corpses of " <>)) . first aOrAnOnLower $ bgns & _2 .~ mkPlurFromBoth bgns
         (sexy, r) = first pp . getSexRace i $ ms
 
 

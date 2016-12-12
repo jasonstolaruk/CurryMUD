@@ -3276,7 +3276,7 @@ helperSettings i ms a (T.breakOn "=" -> (name, T.tail -> value)) =
 -----
 
 
-showAction :: ActionFun -- TODO: Should use "mkCorpseAppellation" when showing a corpse.
+showAction :: ActionFun -- TODO: "mkCorpseAppellation"
 showAction p@AdviseNoArgs         = advise p ["show"] adviceShowNoArgs
 showAction p@AdviseOneArg         = advise p ["show"] adviceShowNoName
 showAction   (Lower i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
@@ -3475,7 +3475,7 @@ mkSlotDesc i ms s = case s of
 -----
 
 
-smell :: ActionFun
+smell :: ActionFun -- TODO: "mkCorpseAppellation". Corpse smell when smelling air, similar to listen and hum.
 smell (NoArgs i mq cols) = getState >>= \ms -> do
     logPlaExec "smell" i
     views rmSmell (wrapSend mq cols . fromMaybe noSmellMsg) . getMobRm i $ ms
@@ -3734,7 +3734,7 @@ stopAttacking _ _ = undefined -- TODO
 -----
 
 
-taste :: ActionFun
+taste :: ActionFun -- TODO: "mkCorpseAppellation"
 taste p@AdviseNoArgs              = advise p ["taste"] adviceTasteNoArgs
 taste   (OneArgLower i mq cols a) = getState >>= \ms ->
     let invCoins   = getInvCoins i ms
