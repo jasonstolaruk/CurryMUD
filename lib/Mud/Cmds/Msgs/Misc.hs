@@ -37,6 +37,13 @@ blankWritableMsg :: Sing -> Text
 blankWritableMsg s = prd $ "There isn't anything written on the " <> s
 
 
+corpseSmellLvl1, corpseSmellLvl2, corpseSmellLvl3, corpseSmellLvl4 :: Text
+corpseSmellLvl1 = "Due to the lack of an offensive odor, it's clear that the deceased expired recently."
+corpseSmellLvl2 = "There is an unpleasant scent akin to that of rotting fruit."
+corpseSmellLvl3 = "The multifaceted odor is truly putrid."
+corpseSmellLvl4 = "Oh my... so rank, yet sickeningly sweet."
+
+
 dbEmptyMsg :: Text
 dbEmptyMsg = "The database is empty."
 

@@ -5,6 +5,7 @@ module Mud.Threads.CorpseDecomposer ( pauseCorpseDecomps
                                     , restartCorpseDecomps
                                     , startCorpseDecomp ) where
 
+import Mud.Cmds.Msgs.Misc
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
@@ -85,21 +86,20 @@ corpseDecompHelper i (x, total) =
         let lens = bool npcCorpseDesc pcCorpseDesc ipc
         if | x == d ->
                 tweaks [ corpseTbl.ind i.lens     .~ mkCorpseTxt ("You see the ", ".")
-                       , entTbl   .ind i.entSmell ?~ ""
+                       , entTbl   .ind i.entSmell ?~ corpseSmellLvl1
                        , objTbl   .ind i.objTaste ?~ "" ]
             | x == c ->
                 tweaks [ corpseTbl.ind i.lens     .~ mkCorpseTxt ("The ", " has begun to decompose.")
-                       , entTbl   .ind i.entSmell ?~ ""
+                       , entTbl   .ind i.entSmell ?~ corpseSmellLvl2
                        , objTbl   .ind i.objTaste ?~ "" ]
             | x == b ->
                 tweaks [ corpseTbl.ind i.lens     .~ mkCorpseTxt ("The ", " has decomposed significantly.")
-                       , entTbl   .ind i.entSmell ?~ ""
+                       , entTbl   .ind i.entSmell ?~ corpseSmellLvl3
                        , objTbl   .ind i.objTaste ?~ "" ]
             | x == a ->
-                tweaks [ corpseTbl.ind i.lens     .~ "The corpse is in an advanced stage of decomposition."
-                       , entTbl   .ind i.entSmell ?~ ""
+                tweaks [ corpseTbl.ind i.lens     .~ "The unidentifiable corpse is in an advanced stage of decomposition."
+                       , entTbl   .ind i.entSmell ?~ corpseSmellLvl4
                        , objTbl   .ind i.objTaste ?~ ""
-
                        , entTbl   .ind i.sing     .~ "decomposed corpse"
                        , corpseTbl.ind i          %~ (ipc ? set pcCorpseSing corpsePlaceholder :? id) ]
             | otherwise -> unit
