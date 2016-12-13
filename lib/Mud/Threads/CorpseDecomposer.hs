@@ -78,7 +78,7 @@ corpseDecomp i pair = finally <$> loop <*> finish =<< liftIO (newIORef pair)
         logHelper = logNotice "corpseDecomp finish"
 
 
-corpseDecompHelper :: Id -> SecondsPair -> MudStack () -- TODO
+corpseDecompHelper :: Id -> SecondsPair -> MudStack () -- TODO: Taste.
 corpseDecompHelper i (x, total) =
     let step           = total `intDivide` 4
         [ a, b, c, d ] = [ step, step * 2, step * 3, total ]

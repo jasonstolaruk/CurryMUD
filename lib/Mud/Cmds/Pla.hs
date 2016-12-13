@@ -3475,7 +3475,7 @@ mkSlotDesc i ms s = case s of
 -----
 
 
-smell :: ActionFun -- TODO: "mkCorpseAppellation".
+smell :: ActionFun -- TODO: "mkCorpseAppellation". Smelling corpse -> horfing.
 smell (NoArgs i mq cols) = getState >>= \ms ->
     let maybeSmellMsg = view rmSmell . getMobRm i $ ms
         corpseMsgs    = mkCorpseMsgs ms
@@ -3745,7 +3745,7 @@ stopAttacking _ _ = undefined -- TODO
 -----
 
 
-taste :: ActionFun -- TODO: "mkCorpseAppellation"
+taste :: ActionFun -- TODO: "mkCorpseAppellation". Tasting corpse -> horfing.
 taste p@AdviseNoArgs              = advise p ["taste"] adviceTasteNoArgs
 taste   (OneArgLower i mq cols a) = getState >>= \ms ->
     let invCoins   = getInvCoins i ms

@@ -1259,7 +1259,7 @@ mkMaybeCorpseSmellMsg i ms i' f | getType i' ms == CorpseType, n <- mkCorpseAppe
       | t == corpseSmellLvl2 -> prd $ "There is a distinct odor eminating from the " <> n
       | t == corpseSmellLvl3 -> "The " <> n <> " is exuding a most repulsive aroma."
       | t == corpseSmellLvl4 -> "There's no denying that the foul smell of death is in the air."
-      | otherwise -> blowUp "mkMaybeCorpseSmellMsg" "unexpected ent smell value" . showText $ t
+      | otherwise -> blowUp "mkMaybeCorpseSmellMsg helper" "unexpected ent smell value" . showText $ t
 
 
 -----
