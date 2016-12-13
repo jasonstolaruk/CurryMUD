@@ -3475,12 +3475,23 @@ mkSlotDesc i ms s = case s of
 -----
 
 
-smell :: ActionFun -- TODO: "mkCorpseAppellation". Corpse smell when smelling air, similar to listen and hum.
-smell (NoArgs i mq cols) = getState >>= \ms -> do
-    logPlaExec "smell" i
-    views rmSmell (wrapSend mq cols . fromMaybe noSmellMsg) . getMobRm i $ ms
-    let d = mkStdDesig i ms DoCap
-    bcastIfNotIncogNl i . pure . ((<> " smells the air.") . serialize &&& (i `delete`) . desigIds) $ d
+smell :: ActionFun -- TODO: "mkCorpseAppellation".
+smell (NoArgs i mq cols) = getState >>= \ms ->
+    let maybeSmellMsg = view rmSmell . getMobRm i $ ms
+        corpseMsgs    = mkCorpseMsgs ms
+        ts            = case (()!# maybeSmellMsg, ()!# corpseMsgs) of (True,  True ) -> fromJust maybeSmellMsg : corpseMsgs
+                                                                      (True,  False) -> pure . fromJust $ maybeSmellMsg
+                                                                      (False, True ) -> corpseMsgs
+                                                                      (False, False) -> pure noSmellMsg
+    in do logPlaExec "smell" i
+          multiWrapSend mq cols ts
+          let d = mkStdDesig i ms DoCap
+          bcastIfNotIncogNl i . pure . ((<> " smells the air.") . serialize &&& (i `delete`) . desigIds) $ d
+  where
+    mkCorpseMsgs ms = concatMap (helper ms) [ (getInv, f "in your inventory"), (getMobRmInv, f "on the ground") ]
+      where
+        f t = let t' = spcL . parensQuote $ t in (<> t')
+    helper ms (f, g) = foldr (\i' acc -> maybe acc (: acc) . mkMaybeCorpseSmellMsg i ms i' $ g) [] . uncurry f $ (i, ms)
 smell (OneArgLower i mq cols a) = getState >>= \ms ->
     let invCoins   = getInvCoins i ms
         eqMap      = getEqMap    i ms

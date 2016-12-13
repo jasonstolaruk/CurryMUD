@@ -85,7 +85,7 @@ corpseDecompHelper i (x, total) =
     in isPCCorpse . getCorpse i <$> getState >>= \ipc -> do
         let lens = bool npcCorpseDesc pcCorpseDesc ipc
         if | x == d ->
-                tweaks [ corpseTbl.ind i.lens     .~ mkCorpseTxt ("You see the ", ".")
+                tweaks [ corpseTbl.ind i.lens     .~ mkCorpseTxt ("You see the lifeless ", ".")
                        , entTbl   .ind i.entSmell ?~ corpseSmellLvl1
                        , objTbl   .ind i.objTaste ?~ "" ]
             | x == c ->

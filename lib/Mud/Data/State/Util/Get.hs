@@ -522,7 +522,7 @@ getHps i ms = let (pair, _, _, _) = getPts i ms in pair
 getIdForPCSing :: Sing -> MudState -> Id
 getIdForPCSing s = views (pcSingTbl.at s) (fromMaybe oops)
   where
-    oops = blowUp "getIdForPCSing" "PC sing now found in the PC sing table" s
+    oops = blowUp "getIdForPCSing" "PC sing not found in the PC sing table" s
 
 
 -----

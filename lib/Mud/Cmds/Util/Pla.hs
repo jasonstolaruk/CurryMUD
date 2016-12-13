@@ -60,6 +60,7 @@ module Mud.Cmds.Util.Pla ( adminTagTxt
                          , mkInvCoinsDesc
                          , mkLastArgIsTargetBindings
                          , mkLastArgWithNubbedOthers
+                         , mkMaybeCorpseSmellMsg
                          , mkMaybeHumMsg
                          , mkMaybeNthOfM
                          , mkMpDesc
@@ -1244,6 +1245,21 @@ mkLastArgWithNubbedOthers as = let lastArg = last as
                                      [_, _] -> as
                                      _      -> (++ pure lastArg) . nub . init $ as
                                in (lastArg, otherArgs)
+
+
+-----
+
+
+mkMaybeCorpseSmellMsg :: Id -> MudState -> Id -> (Text -> Text) -> Maybe Text
+mkMaybeCorpseSmellMsg i ms i' f | getType i' ms == CorpseType, n <- mkCorpseAppellation i ms i' = Just . helper . f $ n
+                                | otherwise = Nothing
+  where
+    helper n = let t = getEntSmell i' ms in if
+      | t == corpseSmellLvl1 -> thrice prd $ "Thankfully, the " <> n <> " hasn't begun to give off an odor yet"
+      | t == corpseSmellLvl2 -> prd $ "There is a distinct odor eminating from the " <> n
+      | t == corpseSmellLvl3 -> "The " <> n <> " is exuding a most repulsive aroma."
+      | t == corpseSmellLvl4 -> "There's no denying that the foul smell of death is in the air."
+      | otherwise -> blowUp "mkMaybeCorpseSmellMsg" "unexpected ent smell value" . showText $ t
 
 
 -----
