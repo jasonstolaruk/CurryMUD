@@ -3750,7 +3750,7 @@ stopAttacking _ _ = undefined -- TODO
 -----
 
 
-taste :: ActionFun -- TODO: "mkCorpseAppellation". Tasting corpse -> horfing.
+taste :: ActionFun -- TODO: Tasting corpse -> horfing.
 taste p@AdviseNoArgs              = advise p ["taste"] adviceTasteNoArgs
 taste   (OneArgLower i mq cols a) = getState >>= \ms ->
     let invCoins   = getInvCoins i ms
@@ -3773,9 +3773,9 @@ taste   (OneArgLower i mq cols a) = getState >>= \ms ->
               let (canCoins, can'tCoinMsgs) = distillEcs ecs
               in if ()# can'tCoinMsgs
                 then let (coinTxt, _) = mkCoinPieceTxt canCoins
-                         tasteDesc    = prd $ "You are first struck by an unmistakably metallic taste, followed soon \
-                                              \by the salty taste of sweat and waxy residue left by the hands of the \
-                                              \many people who have handled the " <> coinTxt <> " before you"
+                         tasteDesc    = "You are first struck by an unmistakably metallic taste, followed soon by the \
+                                        \salty essence of sweat and waxy residue left by the hands of the many people \
+                                        \who handled the " <> coinTxt <> " before you."
                          bs           = pure (T.concat [ serialize d
                                                        , " tastes "
                                                        , aCoinSomeCoins canCoins
@@ -3786,22 +3786,23 @@ taste   (OneArgLower i mq cols a) = getState >>= \ms ->
           | otherwise -> case head eiss of
             Left  msg        -> wrapSend mq cols msg
             Right [targetId] -> let targetSing = getSing targetId ms
+                                    t          = getType targetId ms
                                     tasteDesc  = case getType targetId ms of
                                       VesselType -> case getVesselCont targetId ms of
                                         Nothing     -> "The " <> getSing targetId ms <> " is empty."
                                         Just (l, _) -> l^.liqTasteDesc
                                       _ -> getObjTaste targetId ms
-                                    bs         = pure (T.concat [ serialize d
-                                                                , " tastes "
-                                                                , aOrAn targetSing
-                                                                , " "
-                                                                , parensQuote "carried"
-                                                                , "." ], i `delete` desigIds d)
-                                    logMsg     = T.concat [ "tasted "
-                                                          , aOrAn targetSing
+                                    bs = foldr f [] $ i `delete` desigIds d
+                                      where
+                                        f i' = ((T.concat [ serialize d
+                                                          , " tastes "
+                                                          , aOrAn $ if t == CorpseType
+                                                              then mkCorpseAppellation i' ms targetId
+                                                              else targetSing
                                                           , " "
                                                           , parensQuote "carried"
-                                                          , "." ]
+                                                          , "." ], pure i') :)
+                                    logMsg = T.concat [ "tasted ", aOrAn targetSing, " ", parensQuote "carried", "." ]
                                 in ioHelper tasteDesc bs logMsg
             Right _          -> sorryExcess
     -----

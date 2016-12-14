@@ -78,7 +78,7 @@ corpseDecomp i pair = finally <$> loop <*> finish =<< liftIO (newIORef pair)
         logHelper = logNotice "corpseDecomp finish"
 
 
-corpseDecompHelper :: Id -> SecondsPair -> MudStack () -- TODO: Taste.
+corpseDecompHelper :: Id -> SecondsPair -> MudStack ()
 corpseDecompHelper i (x, total) =
     let step           = total `intDivide` 4
         [ a, b, c, d ] = [ step, step * 2, step * 3, total ]
@@ -87,19 +87,22 @@ corpseDecompHelper i (x, total) =
         if | x == d ->
                 tweaks [ corpseTbl.ind i.lens     .~ mkCorpseTxt ("You see the lifeless ", ".")
                        , entTbl   .ind i.entSmell ?~ corpseSmellLvl1
-                       , objTbl   .ind i.objTaste ?~ "" ]
+                       , objTbl   .ind i.objTaste ?~ (thrice prd "What did you expect? At least the corpse hasn't \
+                                                                 \yet decomposed much") ]
             | x == c ->
                 tweaks [ corpseTbl.ind i.lens     .~ mkCorpseTxt ("The ", " has begun to decompose.")
                        , entTbl   .ind i.entSmell ?~ corpseSmellLvl2
-                       , objTbl   .ind i.objTaste ?~ "" ]
+                       , objTbl   .ind i.objTaste ?~ "As you may have anticipated, the taste of the decomposing corpse \
+                                                     \is decidedly unappetizing." ]
             | x == b ->
                 tweaks [ corpseTbl.ind i.lens     .~ mkCorpseTxt ("The ", " has decomposed significantly.")
                        , entTbl   .ind i.entSmell ?~ corpseSmellLvl3
-                       , objTbl   .ind i.objTaste ?~ "" ]
+                       , objTbl   .ind i.objTaste ?~ "The decomposing corpse could very well be the most vile thing \
+                                                     \you have ever tasted in your life." ]
             | x == a ->
                 tweaks [ corpseTbl.ind i.lens     .~ "The unidentifiable corpse is in an advanced stage of decomposition."
                        , entTbl   .ind i.entSmell ?~ corpseSmellLvl4
-                       , objTbl   .ind i.objTaste ?~ ""
+                       , objTbl   .ind i.objTaste ?~ "Ugh! Why? WHY?"
                        , entTbl   .ind i.sing     .~ "decomposed corpse"
                        , corpseTbl.ind i          %~ (ipc ? set pcCorpseSing corpsePlaceholder :? id) ]
             | otherwise -> unit
