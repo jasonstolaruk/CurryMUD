@@ -630,22 +630,24 @@ bonus   (OneArgLower i mq cols a) = getState >>= \ms ->
         s                             = getSing i ms
         intros                        = getIntroduced i ms
         bonusHelper now               = case filter (a' `T.isPrefixOf`) intros of
-          []           -> wrapSend mq cols . sorryBonusName $ a'
+          []           -> sorry . sorryBonusName $ a'
           [targetSing] ->
               let targetId = getIdForPCSing targetSing ms
                   x        = calcBonus targetId ms
                   bs       = pure (prd $ "You give a bonus to " <> targetSing, pure i)
-              in fmap2 getAll (canBonus targetSing) >>= \case
-                Just True  -> do let msg = T.concat [ "giving a bonus of ", commaShow x, " exp to ", targetSing, "." ]
-                                 logPla "bonus bonusHelper" i msg
-                                 bcastNl . onFalse (()# guessWhat) ((guessWhat, pure i) :) $ bs
-                                 retainedMsg targetId ms . colorWith bonusColor . mkToTarget $ targetId
-                                 awardExp x ("bonus from " <> s) targetId
-                                 tweak $ plaTbl.ind i.bonusTime ?~ now
-                                 ts <- liftIO mkTimestamp
-                                 withDbExHandler_ "bonus bonusHelper" . insertDbTblBonus . BonusRec ts s targetSing $ x
-                Just False -> wrapSend mq cols . sorryBonusCount $ targetSing
-                Nothing    -> unit
+              in if isAdminId targetId ms
+                then sorry sorryBonusAdmin
+                else fmap2 getAll (canBonus targetSing) >>= \case
+                  Just True  -> do let msg = T.concat [ "giving a bonus of ", commaShow x, " exp to ", targetSing, "." ]
+                                   logPla "bonus bonusHelper" i msg
+                                   bcastNl . onFalse (()# guessWhat) ((guessWhat, pure i) :) $ bs
+                                   retainedMsg targetId ms . colorWith bonusColor . mkToTarget $ targetId
+                                   awardExp x ("bonus from " <> s) targetId
+                                   tweak $ plaTbl.ind i.bonusTime ?~ now
+                                   ts <- liftIO mkTimestamp
+                                   withDbExHandler_ "bonus bonusHelper" . insertDbTblBonus . BonusRec ts s targetSing $ x
+                  Just False -> sorry . sorryBonusCount $ targetSing
+                  Nothing    -> unit
           xs -> patternMatchFail "bonus bonusHelper" . showText $ xs
         canBonus targetSing = (withDbExHandler "bonus canBonus" . getDbTblRecs $ "bonus") >>= \case
           Just xs | c <- length . filter (\(BonusRec _ fn tn _) -> fn == s && tn == targetSing) $ xs
@@ -659,12 +661,14 @@ bonus   (OneArgLower i mq cols a) = getState >>= \ms ->
           where
             g = (<> " has given you bonus experience points for outstanding role-playing.")
     in if getLvl i ms <= 2
-      then wrapSend mq cols sorryBonusLvl
+      then sorry sorryBonusLvl
       else liftIO getCurrentTime >>= \now -> case getBonusTime i ms of
         Nothing -> bonusHelper now
         Just bt -> if round (now `diffUTCTime` bt) < bonusDelay
-          then wrapSend mq cols sorryBonusTime
+          then sorry sorryBonusTime
           else bonusHelper now
+  where
+    sorry = wrapSend mq cols
 bonus p = advise p ["bonus"] adviceBonusExcessArgs
 
 

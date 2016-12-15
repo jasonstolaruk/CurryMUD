@@ -18,6 +18,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryBanAdHoc
                            , sorryBanAdmin
                            , sorryBanSelf
+                           , sorryBonusAdmin
                            , sorryBonusCount
                            , sorryBonusIgnore
                            , sorryBonusLvl
@@ -476,6 +477,10 @@ sorryBanSelf = can't "ban yourself."
 
 
 -----
+
+
+sorryBonusAdmin :: Text
+sorryBonusAdmin = can't "give a bonus to an administrator."
 
 
 sorryBonusCount :: Sing -> Text

@@ -125,6 +125,7 @@ debugCmds =
     [ mkDebugCmd "?"           debugDispCmdList ("\&" <> cmdDescDispCmdList)
     , mkDebugCmd "ap"          debugAp          "Show \"ActionParams\", including any arguments you provide."
     , mkDebugCmd "ayt"         debugAYT         "Send IAC AYT."
+    , mkDebugCmd "bonus"       debugBonus       "Calculate experience bonus for a given PC."
     , mkDebugCmd "boot"        debugBoot        "Boot all players (including yourself)."
     , mkDebugCmd "broadcast"   debugBcast       "Broadcast a multi-line message to yourself."
     , mkDebugCmd "buffer"      debugBuffCheck   "Confirm the default buffering mode for file handles."
@@ -211,14 +212,6 @@ debugAYT p = withoutArgs debugAYT p
 -----
 
 
-debugBoot :: ActionFun
-debugBoot (NoArgs' i mq) = logPlaExec (prefixDebugCmd "boot") i >> ok mq >> massMsg (MsgBoot dfltBootMsg)
-debugBoot p              = withoutArgs debugBoot p
-
-
------
-
-
 debugBcast :: ActionFun
 debugBcast (NoArgs'' i) = logPlaExec (prefixDebugCmd "broadcast") i >> bcastNl (mkBcast i msg)
   where
@@ -233,6 +226,28 @@ debugBcast (NoArgs'' i) = logPlaExec (prefixDebugCmd "broadcast") i >> bcastNl (
           \[9] abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij\n\
           \[0] abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij abcdefghij"
 debugBcast p = withoutArgs debugBcast p
+
+
+-----
+
+
+debugBonus :: ActionFun
+debugBonus p@AdviseNoArgs                               = advise p [] adviceDBonusNoArgs
+debugBonus   (OneArgNubbed i mq cols (capitalize -> a)) = getState >>= \ms ->
+    let notFound    = wrapSend mq cols . sorryPCName $ a
+        found match = let bonus = calcBonus (getIdForPCSing match ms) ms
+                      in logPlaExec (prefixDebugCmd "bonus") i >> (send mq . nl . showText $ bonus)
+        pcSings     = [ getSing pcId ms | pcId <- views pcTbl IM.keys ms ]
+    in findFullNameForAbbrev a pcSings |&| maybe notFound found
+debugBonus p = advise p [] adviceDBonusExcessArgs
+
+
+-----
+
+
+debugBoot :: ActionFun
+debugBoot (NoArgs' i mq) = logPlaExec (prefixDebugCmd "boot") i >> ok mq >> massMsg (MsgBoot dfltBootMsg)
+debugBoot p              = withoutArgs debugBoot p
 
 
 -----

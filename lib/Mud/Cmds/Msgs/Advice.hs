@@ -49,6 +49,8 @@ module Mud.Cmds.Msgs.Advice ( adviceAAnnounceNoArgs
                             , adviceBugNoArgs
                             , adviceConnectNoArgs
                             , adviceConnectNoChan
+                            , adviceDBonusExcessArgs
+                            , adviceDBonusNoArgs
                             , adviceDCinsExcessArgs
                             , adviceDCinsNoArgs
                             , adviceDIdExcessArgs
@@ -362,6 +364,16 @@ adviceAWireNoArgs = "Please specify the IDs of one or more telepathic channels y
 
 
 -----
+
+
+adviceDBonusExcessArgs :: Text
+adviceDBonusExcessArgs = prd $ "Please provide one argument: the PC name of the player for which you would like to \
+                               \calculate bonus experience, as in " <>
+                               colorWith quoteColor (prefixDebugCmd "bonus" <> " hanako")
+
+
+adviceDBonusNoArgs :: Text
+adviceDBonusNoArgs = adviceDBonusExcessArgs
 
 
 adviceDCinsExcessArgs :: Text
