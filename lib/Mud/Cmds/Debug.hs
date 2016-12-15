@@ -236,7 +236,7 @@ debugBonus p@AdviseNoArgs                               = advise p [] adviceDBon
 debugBonus   (OneArgNubbed i mq cols (capitalize -> a)) = getState >>= \ms ->
     let notFound    = wrapSend mq cols . sorryPCName $ a
         found match = let bonus = calcBonus (getIdForPCSing match ms) ms
-                      in logPlaExec (prefixDebugCmd "bonus") i >> (send mq . nl . showText $ bonus)
+                      in sequence_ [ logPlaExec (prefixDebugCmd "bonus") i, send mq . nlnl . commaShow $ bonus ]
         pcSings     = [ getSing pcId ms | pcId <- views pcTbl IM.keys ms ]
     in findFullNameForAbbrev a pcSings |&| maybe notFound found
 debugBonus p = advise p [] adviceDBonusExcessArgs

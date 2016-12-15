@@ -117,7 +117,7 @@ calcBonus :: Id -> MudState -> Exp -- Used by the "bonus" command.
 calcBonus i ms = let l                 = getLvl i ms
                      ((_, a):(_, b):_) = drop l $ (0, 0) : calcLvlExps
                      diff              = b - a
-                 in ((diff `divideRound` 10) `max` 100) `min` 5000
+                 in ((diff `divideRound` 10) `max` 250) `min` 12500
 
 
 -----
