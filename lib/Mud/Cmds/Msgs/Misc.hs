@@ -249,7 +249,7 @@ rulesMsg =
     lSpcs <> "You must conduct yourself in a manner that is empathetic towards your fellow players. Be respectful and sensible; don't be rude or condescending.\n\
     \\n\
     \\\uHARASSMENT\\d\n" <>
-    lSpcs <> "Harassment and bullying is not be tolerated. The role-play of rape is absolutely illegal.\n\
+    lSpcs <> "Harassment and bullying is not tolerated. The role-play of rape is absolutely illegal.\n\
     \\n\
     \\\uSEXUAL ORIENTATION/IDENTITY\\d\n" <>
     lSpcs <> "Players are free to role-play characters who are homosexual, bisexual, pansexual, gender nonconforming, etc. Intolerant attitudes are unacceptable.\n\

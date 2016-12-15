@@ -87,8 +87,8 @@ corpseDecompHelper i (x, total) =
         if | x == d ->
                 tweaks [ corpseTbl.ind i.lens     .~ mkCorpseTxt ("You see the lifeless ", ".")
                        , entTbl   .ind i.entSmell ?~ corpseSmellLvl1
-                       , objTbl   .ind i.objTaste ?~ thrice prd "What did you expect? At least the corpse hasn't yet \
-                                                                \decomposed much" ]
+                       , objTbl   .ind i.objTaste ?~ thrice prd "Really? What did you expect? At least the corpse \
+                                                                \hasn't decomposed much yet" ]
             | x == c ->
                 tweaks [ corpseTbl.ind i.lens     .~ mkCorpseTxt ("The ", " has begun to decompose.")
                        , entTbl   .ind i.entSmell ?~ corpseSmellLvl2
