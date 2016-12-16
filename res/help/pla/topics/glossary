@@ -16,7 +16,7 @@ See "MUD Client."
 Commands that facilitate the execution of discreet actions In-Character (IC); commands such as "bow", "cry", "kiss", etc. There are about 200 such commands. Sometimes referred to as "built-in emotes."
 
 \uExperience Points\d
-TODO
+A unit of measurement quantifying your character's advancement.
 
 \uFixture\d
 See "Room Fixture."
@@ -28,7 +28,7 @@ Something said or done as a character, in the context of role-playing. Or, in th
 A character that is usually controlled by the server, and sometimes controlled, or otherwise actively managed, by the administrators.
 
 \uLevel\d
-TODO
+A measure of a character's power and achievement. Upon accumulating a sufficient number of experience points, your character gains a level or "levels up," at which point certain stats increase (max hit points, etc.) and you are granted a number of skill points.
 
 \uLink\d
 See "Telepathic Link."
@@ -76,7 +76,7 @@ A singular place/space of arbitrary dimensions in the virtual world. Typing \qlo
 A permanent feature of a room (such as a sign) with which you can interact via one or more commands ("look", "read", etc.). Room fixtures are depicted in a room's static description.
 
 \uSkill Points\d
-TODO
+A quantification of one's proficiency in a particular skill. When your character levels up, she acquires a number of skill points which may be assigned to ("spent on") skills of your choice, thereby advancing your proficiency in those skills.
 
 \uTelepathic Channel\d
 An ad-hoc channel created by a player for In-Character (IC) communication. Using her innate psionic powers, a Player Character (PC) may create and name a channel, then connect to it anyone with whom she is two-way linked.

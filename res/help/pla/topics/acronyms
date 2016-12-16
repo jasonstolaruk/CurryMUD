@@ -3,10 +3,10 @@
 Note that the use of acronyms in In-Character (IC) communication is prohibited!
 
 FP      Fatigue Points`
-        A number representing a character's capacity for physical activity. Most commonly, movement and combat cost fp; fp are recovered naturally as one rests. When a character's fp reaches 0, that character is totally exhausted (he/she may neither move nor swing a weapon).
+        A number representing a character's capacity for physical activity. Most commonly, movement and combat cost FP; FP are recovered naturally as one rests. When a character's FP reaches 0, that character is totally exhausted (he/she may neither move nor swing a weapon).
 
 HP      Hit Points`
-        A number representing a character's physical health. One looses hp as one is injured; hp are recovered naturally as one heals. When a character's hp falls below 0, that character dies.
+        A number representing a character's physical health. One looses HP as one is injured; HP are recovered naturally as one heals. When a character's HP falls below 0, that character dies.
 
 IC      In-Character`
         Something said or done as a character, in the context of role-playing.
@@ -17,7 +17,7 @@ INPC    Interactive Non-Player Character`
 IRL     In Real Life`
 
 MP      Magic Points`
-        A number representing a character's capacity to cast magic spells. The casting of spells costs mp; mp are recovered naturally as one rests. A character's mp may never drop below 0, as 0 represents the total depletion of one's magical energy.
+        A number representing a character's capacity to cast magic spells. The casting of spells costs MP; MP are recovered naturally as one rests. A character's MP may never drop below 0, as 0 represents the total depletion of one's magical energy.
 
 MUD     Multi-User Dungeon`
         This generally refers to a (usually text-based) virtual world in its totality.
@@ -38,7 +38,7 @@ PKing   Player Killing`
         When one Player Character (PC) kills another PC.
 
 PP      Psionic Points`
-        A number representing a character's capacity to use psionic abilities. The use of psionics costs pp; pp are recovered naturally as one rests. A character's pp may never drop below 0, as 0 represents the total depletion of one's psionic energy.
+        A number representing a character's capacity to use psionic abilities. The use of psionics costs PP; PP are recovered naturally as one rests. A character's PP may never drop below 0, as 0 represents the total depletion of one's psionic energy.
 
 PvP     Player vs. Player`
         Denotes combat between Player Characters (PCs). Often used to describe a MUD in which this is allowed.
@@ -46,7 +46,7 @@ PvP     Player vs. Player`
 RP      Role-Playing`
 
 RPI     Role-Play Intensive`
-        Used to describe a MUD with requirements that players stay In-Character (IC).
+        Used to describe a MUD that requires players to stay In-Character (IC).
 
 \uSEE ALSO\n
 coins, glossary, permadeath, role-play, rules, stats
