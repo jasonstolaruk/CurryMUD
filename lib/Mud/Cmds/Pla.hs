@@ -3342,7 +3342,7 @@ showAction   (Lower i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
                                      , let n = if getType itemId ms == CorpseType
                                                  then mkCorpseAppellation i ms itemId
                                                  else getSing itemId ms ]
-              mkToTargetBs = foldl' f [] -- TODO: Test.
+              mkToTargetBs = foldl' f []
                 where
                   f acc itemId = let (n, t) | getType itemId ms == CorpseType
                                             , ca <- mkCorpseAppellation theId ms itemId
@@ -3356,7 +3356,7 @@ showAction   (Lower i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
                                                            , nl ":"
                                                            , t ]
                                                 , pure theId )
-              mkToOthersBs itemIds = concat . foldr f [] $ desigIds d \\ [ i, theId ] -- TODO: Test.
+              mkToOthersBs itemIds = concat . foldr f [] $ desigIds d \\ [ i, theId ]
                 where
                   f targetId = (foldl' g [] itemIds :)
                     where
@@ -3367,7 +3367,6 @@ showAction   (Lower i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
                                                                , aOrAn n
                                                                , " "
                                                                , parensQuote "carried"
-                                                               , " "
                                                                , " to "
                                                                , theDesig
                                                                , "." ]
