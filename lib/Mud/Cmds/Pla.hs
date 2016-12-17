@@ -3633,13 +3633,17 @@ smell (OneArgLower i mq cols a) = getState >>= \ms ->
                                                              _          -> wrapSend mq cols . sorrySmellRmNoHooks $ targetSing
           Right _          -> sorryExcess
     -----
-    ioHelper ms mci msg bs logMsg = do logPla "smell" i logMsg
-                                       wrapSend mq cols msg
-                                       bcastIfNotIncogNl i bs
-                                       maybeVoid (corpseHorf i ms) mci
+    ioHelper    = smellTasteIOHelper "smell" i mq cols
     -----
     sorryExcess = wrapSend mq cols sorrySmellExcessTargets
 smell p = advise p ["smell"] adviceSmellExcessArgs
+
+
+smellTasteIOHelper :: Text -> Id -> MsgQueue -> Cols -> MudState -> Maybe Id -> Text -> [Broadcast] -> Text -> MudStack ()
+smellTasteIOHelper fn i mq cols ms mci msg bs logMsg = do logPla fn i logMsg
+                                                          wrapSend mq cols msg
+                                                          bcastIfNotIncogNl i bs
+                                                          maybeVoid (corpseHorf i ms) mci
 
 
 corpseHorf :: Id -> MudState -> Id -> MudStack ()
@@ -3835,10 +3839,7 @@ taste   (OneArgLower i mq cols a) = getState >>= \ms ->
                                 in ioHelper ms Nothing tasteDesc bs logMsg
             Right _          -> sorryExcess
     -----
-    ioHelper ms mci msg bs logMsg = do logPla "taste" i logMsg
-                                       wrapSend mq cols msg
-                                       bcastIfNotIncogNl i bs
-                                       maybeVoid (corpseHorf i ms) mci
+    ioHelper    = smellTasteIOHelper "taste" i mq cols
     -----
     sorryExcess = wrapSend mq cols sorryTasteExcessTargets
 taste p = advise p ["taste"] adviceTasteExcessArgs
