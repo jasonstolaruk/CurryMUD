@@ -1974,7 +1974,7 @@ adminSudoer p = advise p [] adviceASudoerExcessArgs
 -----
 
 
-adminSummon :: ActionFun -- TODO: Msgs describing disappearance/appearance.
+adminSummon :: ActionFun
 adminSummon p@AdviseNoArgs                    = advise p [ prefixAdminCmd "summon" ] adviceASummonNoArgs
 adminSummon   (OneArgNubbed i mq cols target) = modifyStateSeq $ \ms ->
     let SingleTarget { .. } = mkSingleTarget mq cols target "The name of the PC you wish to summon"
