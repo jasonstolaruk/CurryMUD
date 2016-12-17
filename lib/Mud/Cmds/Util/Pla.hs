@@ -1041,7 +1041,7 @@ mkEntDesc i cols ms (ei, e) = let ed = views entDesc (wrapUnlines cols) e <> mkA
               WritableType ->                  (ed <>) . mkWritableMsgDesc cols ms $ ei
               _            -> ed
   where
-    (s, t)              = ((,) <$> uncurry getSing <*> uncurry getType) (ei, ms)
+    (s, t)              = (getSing `fanUncurry` getType) (ei, ms)
     corpseTxt           = let txt = expandCorpseTxt (mkCorpseAppellation i ms ei) . getCorpseDesc ei $ ms
                           in wrapUnlines cols txt <> mkAuxDesc i cols ms ei
     pcHeader            = wrapUnlines cols mkPCDescHeader

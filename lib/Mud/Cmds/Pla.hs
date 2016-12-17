@@ -3533,7 +3533,7 @@ smell (OneArgLower i mq cols a) = getState >>= \ms ->
                     else wrapSend mq cols . head $ can'tCoinMsgs
               | otherwise -> case head eiss of
                 Left  msg        -> wrapSend mq cols msg
-                Right [targetId] -> let (targetSing, t) = ((,) <$> uncurry getSing <*> uncurry getType) (targetId, ms)
+                Right [targetId] -> let (targetSing, t) = (getSing `fanUncurry` getType) (targetId, ms)
                                         ic              = t == CorpseType
                                         smellDesc       = case t of
                                           VesselType -> case getVesselCont targetId ms of
@@ -3559,7 +3559,7 @@ smell (OneArgLower i mq cols a) = getState >>= \ms ->
           then wrapSend mq cols sorryEquipCoins
           else case eis of
             Left  msg        -> wrapSend mq cols msg
-            Right [targetId] -> let (targetSing, smellDesc) = ((,) <$> uncurry getSing <*> uncurry getEntSmell) (targetId, ms)
+            Right [targetId] -> let (targetSing, smellDesc) = (getSing `fanUncurry` getEntSmell) (targetId, ms)
                                     slotDesc = parensQuote . mkSlotDesc i ms . reverseLookup targetId $ eqMap
                                     bs       = pure (T.concat [ serialize d
                                                               , " smells "
@@ -3604,7 +3604,7 @@ smell (OneArgLower i mq cols a) = getState >>= \ms ->
       where
         smellRmHelper = \case
           Left  msg        -> wrapSend mq cols msg
-          Right [targetId] -> let (targetSing, smellDesc) = ((,) <$> uncurry getSing <*> uncurry getEntSmell) (targetId, ms)
+          Right [targetId] -> let (targetSing, smellDesc) = (getSing `fanUncurry` getEntSmell) (targetId, ms)
                                   targetDesig = serialize . mkStdDesig targetId ms $ Don'tCap
                                   bs          = [ (T.concat [ serialize d
                                                             , " smells "
@@ -3759,7 +3759,7 @@ stopAttacking _ _ = undefined -- TODO
 -----
 
 
-taste :: ActionFun -- TODO: Tasting corpse -> horfing.
+taste :: ActionFun
 taste p@AdviseNoArgs              = advise p ["taste"] adviceTasteNoArgs
 taste   (OneArgLower i mq cols a) = getState >>= \ms ->
     let invCoins   = getInvCoins i ms
@@ -3794,11 +3794,10 @@ taste   (OneArgLower i mq cols a) = getState >>= \ms ->
                 else wrapSend mq cols . head $ can'tCoinMsgs
           | otherwise -> case head eiss of
             Left  msg        -> wrapSend mq cols msg
-            Right [targetId] -> let targetSing = getSing targetId ms
-                                    t          = getType targetId ms
-                                    tasteDesc  = case getType targetId ms of
+            Right [targetId] -> let (targetSing, t) = (getSing `fanUncurry` getType) (targetId, ms)
+                                    tasteDesc = case getType targetId ms of
                                       VesselType -> case getVesselCont targetId ms of
-                                        Nothing     -> "The " <> getSing targetId ms <> " is empty."
+                                        Nothing     -> "The " <> targetSing <> " is empty."
                                         Just (l, _) -> l^.liqTasteDesc
                                       _ -> getObjTaste targetId ms
                                     bs = foldr f [] $ i `delete` desigIds d
