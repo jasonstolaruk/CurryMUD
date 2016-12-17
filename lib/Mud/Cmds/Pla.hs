@@ -3280,7 +3280,7 @@ helperSettings i ms a (T.breakOn "=" -> (name, T.tail -> value)) =
 -----
 
 
-showAction :: ActionFun -- TODO: "mkCorpseAppellation"
+showAction :: ActionFun
 showAction p@AdviseNoArgs         = advise p ["show"] adviceShowNoArgs
 showAction p@AdviseOneArg         = advise p ["show"] adviceShowNoName
 showAction   (Lower i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
@@ -3337,28 +3337,41 @@ showAction   (Lower i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
                 where
                   mkBs     = mkToTargetBs itemIds ++ mkToOthersBs itemIds
                   mkLogMsg = commas . map (`getSing` ms) $ itemIds
-              mkToSelfMsgs itemIds = [ T.concat [ "You show the ", getSing itemId ms, " to ", theDesig, "." ]
-                                     | itemId <- itemIds ]
-              mkToTargetBs itemIds = [ ( T.concat [ serialize d
-                                                  , " shows you "
-                                                  , underline . aOrAn . getSing itemId $ ms
-                                                  , " "
-                                                  , parensQuote "carried"
-                                                  , nl ":"
-                                                  , getEntDesc itemId ms ]
-                                       , pure theId )
-                                     | itemId <- itemIds ]
-              mkToOthersBs itemIds = [ ( T.concat [ serialize d
-                                                  , " shows "
-                                                  , aOrAn . getSing itemId $ ms
-                                                  , " "
-                                                  , parensQuote "carried"
-                                                  , " "
-                                                  , " to "
-                                                  , theDesig
-                                                  , "." ]
-                                       , desigIds d \\ [ i, theId ] )
-                                     | itemId <- itemIds ]
+              mkToSelfMsgs itemIds = [ T.concat [ "You show the ", n, " to ", theDesig, "." ]
+                                     | itemId <- itemIds
+                                     , let n = if getType itemId ms == CorpseType
+                                                 then mkCorpseAppellation i ms itemId
+                                                 else getSing itemId ms ]
+              mkToTargetBs itemIds = foldl' f [] itemIds -- TODO: Test.
+                where
+                  f acc itemId = let (n, t) | getType itemId ms == CorpseType
+                                            , ca <- mkCorpseAppellation theId ms itemId
+                                            = (ca, expandCorpseTxt ca . getCorpseDesc itemId $ ms)
+                                            | otherwise = (getSing `fanUncurry` getEntDesc) (itemId, ms)
+                                 in acc ++ pure ( T.concat [ serialize d
+                                                           , " shows you "
+                                                           , underline . aOrAn $ n
+                                                           , " "
+                                                           , parensQuote "carried"
+                                                           , nl ":"
+                                                           , t ]
+                                                , pure theId )
+              mkToOthersBs itemIds = concat . foldr f [] $ desigIds d \\ [ i, theId ] -- TODO: Test.
+                where
+                  f targetId = (foldl' g [] itemIds :)
+                    where
+                      g acc itemId = let n | getType itemId ms == CorpseType = mkCorpseAppellation targetId ms itemId
+                                           | otherwise                       = getSing itemId ms
+                                     in acc ++ pure ( T.concat [ serialize d
+                                                               , " shows "
+                                                               , aOrAn n
+                                                               , " "
+                                                               , parensQuote "carried"
+                                                               , " "
+                                                               , " to "
+                                                               , theDesig
+                                                               , "." ]
+                                                    , pure targetId )
               -----
               (canCoins, can'tCoinMsgs) = distillEcs ecs
               showCoinsHelper           = ( can'tCoinMsgs     ++ pure mkToSelfCoinsMsg
@@ -3382,7 +3395,7 @@ showAction   (Lower i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
           in let (toSelfMsgs, bs, logMsgs)  = showInvHelper
                  (toSelfCoinsMsgs, coinsBs) = showCoinsHelper
              in (toSelfMsgs ++ toSelfCoinsMsgs, bs ++ coinsBs, slashes . dropEmpties $ [ slashes logMsgs, coinTxt ])
-      | otherwise = (pure dudeYourHandsAreEmpty, [], "")
+      | otherwise = (pure dudeYourHandsAreEmpty, , ) mempty mempty
     showEq ms d eqMap inEqs IdSingTypeDesig { .. }
       | ()!# eqMap =
           let (gecrs, miss, rcs)                  = resolveEntCoinNames i ms inEqs (M.elems eqMap) mempty
@@ -3419,7 +3432,7 @@ showAction   (Lower i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
               -----
               showCoinsInEqHelper = rcs |!| sorryEquipCoins
           in let (toSelfMsgs, bs, logMsgs) = showEqHelper in (showCoinsInEqHelper : toSelfMsgs, bs, slashes logMsgs)
-      | otherwise = (pure dudeYou'reNaked, [], "")
+      | otherwise = (pure dudeYou'reNaked, , ) mempty mempty
 showAction p = patternMatchFail "showAction" . showText $ p
 
 
