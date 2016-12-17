@@ -42,6 +42,7 @@ module Mud.Data.State.Util.Calc ( calcBarLen
                                 , calcModifierPs
                                 , calcModifierSt
                                 , calcProbConnectBlink
+                                , calcProbCorpseHorf
                                 , calcProbLinkFlinch
                                 , calcProbSpiritizeShiver
                                 , calcProbTeleportDizzy
@@ -516,6 +517,16 @@ calcModifierEffPs i = calcModifierForEffAttrib . calcEffPs i
 
 calcProbConnectBlink :: Id -> MudState -> Int
 calcProbConnectBlink i ms = (avgHelper calcEffHt calcEffPs i ms - 100) ^ 2 `quot` 125
+
+
+calcProbCorpseHorf :: Id -> MudState -> Int -> Int
+calcProbCorpseHorf i ms corpseSmellLvl | corpseSmellLvl == 1 = 0
+                                       | otherwise           = (calcEffHt i ms - 125) ^ 2 `quot` x
+  where
+    x | corpseSmellLvl == 2 = 250 -- About a 25%  chance at HT 50.
+      | corpseSmellLvl == 3 = 100 -- About a 50%  chance at HT 50.
+      | corpseSmellLvl == 4 = 50  -- About a 100% chance at HT 50 and a 50% chance at HT 75.
+      | otherwise           = blowUp "calcProbCorpseHorf x" "unexpected corpse smell level" . showText $ x
 
 
 avgHelper :: (Id -> MudState -> Int) -> (Id -> MudState -> Int) -> Id -> MudState -> Int

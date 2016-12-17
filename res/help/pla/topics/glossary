@@ -1,5 +1,7 @@
 \h GLOSSARY \d
 
+See "help acronyms" for definitions of additional terms.
+
 \uAsleep\d
 This is an In-Character (IC) term for the state of being logged out.
 
@@ -28,7 +30,7 @@ Something said or done as a character, in the context of role-playing. Or, in th
 A character that is usually controlled by the server, and sometimes controlled, or otherwise actively managed, by the administrators.
 
 \uLevel\d
-A measure of a character's power and achievement. Upon accumulating a sufficient number of experience points, your character gains a level or "levels up," at which point certain stats increase (max hit points, etc.) and you are granted a number of skill points.
+A measure of a character's power and achievement. Upon accumulating a sufficient number of experience points, your character gains a level or "levels up," at which point certain stats increase (max hit points, etc.) and you are granted a number of skill points. New characters start at level zero.
 
 \uLink\d
 See "Telepathic Link."

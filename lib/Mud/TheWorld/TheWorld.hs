@@ -15,7 +15,7 @@ import Mud.TheWorld.Foods
 import Mud.TheWorld.Liqs
 import Mud.TheWorld.Misc
 import Mud.TheWorld.Zones.AdminZone
-import Mud.TheWorld.Zones.AdminZoneIds (iLoggedOut, iWelcome)
+import Mud.TheWorld.Zones.AdminZoneIds (iLoggedOut, iNecropolis, iWelcome)
 import Mud.TheWorld.Zones.Tutorial
 import Mud.TopLvlDefs.FilePaths
 import Mud.Util.Misc
@@ -232,7 +232,7 @@ movePCs :: MudStack ()
 movePCs = tweak $ \ms ->
     let idsWithRmIds       = let pairs   = views mobTbl (IM.foldrWithKey f []) ms
                                  f i mob = onTrue (isPC i ms) ((i, mob^.rmId) :)
-                             in filter ((/= iLoggedOut) . snd) pairs
+                             in filter (((&&) <$> (/= iLoggedOut) <*> (/= iNecropolis)) . snd) pairs
         helper (i, ri) ms' = ms' & invTbl.ind ri           %~ (i `delete`)
                                  & invTbl.ind iLoggedOut   %~ (i :)
                                  & mobTbl.ind i.rmId       .~ iLoggedOut

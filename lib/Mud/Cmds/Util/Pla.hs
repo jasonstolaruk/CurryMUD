@@ -45,6 +45,7 @@ module Mud.Cmds.Util.Pla ( adminTagTxt
                          , mkChanNamesTunings
                          , mkCoinsDesc
                          , mkCoinsSummary
+                         , mkCorpseSmellLvl
                          , mkEffDxDesc
                          , mkEffHtDesc
                          , mkEffMaDesc
@@ -963,6 +964,17 @@ mkCoinsDesc cols (Coins (each %~ Sum -> (cop, sil, gol))) =
 -----
 
 
+mkCorpseSmellLvl :: Text -> Int
+mkCorpseSmellLvl t = if | t == corpseSmellLvl1 -> 1
+                        | t == corpseSmellLvl2 -> 2
+                        | t == corpseSmellLvl3 -> 3
+                        | t == corpseSmellLvl4 -> 4
+                        | otherwise            -> blowUp "mkCorpseSmellLvl" "unexpected ent smell" . showText $ t
+
+
+-----
+
+
 mkEffStDesc :: Id -> MudState -> Text
 mkEffStDesc = mkEffDesc getBaseSt calcEffSt "weaker" "stronger"
 
@@ -1254,12 +1266,12 @@ mkMaybeCorpseSmellMsg :: Id -> MudState -> Id -> (Text -> Text) -> Maybe Text
 mkMaybeCorpseSmellMsg i ms i' f | getType i' ms == CorpseType, n <- mkCorpseAppellation i ms i' = Just . helper . f $ n
                                 | otherwise = Nothing
   where
-    helper n = let t = getEntSmell i' ms in if
-      | t == corpseSmellLvl1 -> thrice prd $ "Thankfully, the " <> n <> " hasn't begun to give off an odor yet"
-      | t == corpseSmellLvl2 -> prd $ "There is a distinct odor eminating from the " <> n
-      | t == corpseSmellLvl3 -> "The " <> n <> " is exuding a most repulsive aroma."
-      | t == corpseSmellLvl4 -> "There's no denying that the foul smell of death is in the air."
-      | otherwise -> blowUp "mkMaybeCorpseSmellMsg helper" "unexpected ent smell value" . showText $ t
+    helper n = case mkCorpseSmellLvl . getEntSmell i' $ ms of
+      1 -> thrice prd $ "Thankfully, the " <> n <> " hasn't begun to give off an odor yet"
+      2 -> prd $ "There is a distinct odor eminating from the " <> n
+      3 -> "The " <> n <> " is exuding a most repulsive aroma."
+      4 -> "There's no denying that the foul smell of death is in the air."
+      x -> blowUp "mkMaybeCorpseSmellMsg helper" "unexpected corpse smell level" . showText $ x
 
 
 -----

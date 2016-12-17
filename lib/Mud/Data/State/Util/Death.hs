@@ -179,7 +179,7 @@ mkCorpse i ms =
         ip        = isPC i ms
         (s, p)    | ip = ( "corpse of a " <> sexy |<>| pp r
                          , "corpses of "  <> sexy |<>| plurRace r )
-                  | bgns <- getBothGramNos i ms -- TODO: "bgns & _2 .~ mkPlurFromBoth bgns" ?
+                  | bgns <- getBothGramNos i ms
                   = (("corpse of " <>) *** ("corpses of " <>)) . first aOrAnOnLower $ bgns & _2 .~ mkPlurFromBoth bgns
         (sexy, r) = first pp . getSexRace i $ ms
 

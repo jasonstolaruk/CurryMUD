@@ -1,12 +1,13 @@
 \h ACRONYMS \d
 
+See "help glossary" for definitions of additional terms.
 Note that the use of acronyms in In-Character (IC) communication is prohibited!
 
 FP      Fatigue Points`
         A number representing a character's capacity for physical activity. Most commonly, movement and combat cost FP; FP are recovered naturally as one rests. When a character's FP reaches 0, that character is totally exhausted (he/she may neither move nor swing a weapon).
 
 HP      Hit Points`
-        A number representing a character's physical health. One looses HP as one is injured; HP are recovered naturally as one heals. When a character's HP falls below 0, that character dies.
+        A number representing a character's physical health. One looses HP as one is injured; HP are recovered naturally as one heals. An HP less than zero represents fatal injury.
 
 IC      In-Character`
         Something said or done as a character, in the context of role-playing.
