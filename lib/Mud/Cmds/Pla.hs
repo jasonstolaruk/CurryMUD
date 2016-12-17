@@ -3633,7 +3633,6 @@ smell (OneArgLower i mq cols a) = getState >>= \ms ->
                                                              _          -> wrapSend mq cols . sorrySmellRmNoHooks $ targetSing
           Right _          -> sorryExcess
     -----
-    ioHelper :: MudState -> Maybe Id -> Text -> [Broadcast] -> Text -> MudStack ()
     ioHelper ms mci msg bs logMsg = do logPla "smell" i logMsg
                                        wrapSend mq cols msg
                                        bcastIfNotIncogNl i bs
@@ -3790,12 +3789,13 @@ taste   (OneArgLower i mq cols a) = getState >>= \ms ->
                                                        , aCoinSomeCoins canCoins
                                                        , "." ], i `delete` desigIds d)
                          logMsg       = prd $ "tasted " <> aCoinSomeCoins canCoins
-                     in ioHelper tasteDesc bs logMsg
+                     in ioHelper ms Nothing tasteDesc bs logMsg
                 else wrapSend mq cols . head $ can'tCoinMsgs
           | otherwise -> case head eiss of
             Left  msg        -> wrapSend mq cols msg
             Right [targetId] -> let (targetSing, t) = (getSing `fanUncurry` getType) (targetId, ms)
-                                    tasteDesc = case getType targetId ms of
+                                    ic              = t == CorpseType
+                                    tasteDesc       = case t of
                                       VesselType -> case getVesselCont targetId ms of
                                         Nothing     -> "The " <> targetSing <> " is empty."
                                         Just (l, _) -> l^.liqTasteDesc
@@ -3804,14 +3804,12 @@ taste   (OneArgLower i mq cols a) = getState >>= \ms ->
                                       where
                                         f i' = ((T.concat [ serialize d
                                                           , " tastes "
-                                                          , aOrAn $ if t == CorpseType
-                                                              then mkCorpseAppellation i' ms targetId
-                                                              else targetSing
+                                                          , aOrAn (ic ? mkCorpseAppellation i' ms targetId :? targetSing)
                                                           , " "
                                                           , parensQuote "carried"
                                                           , "." ], pure i') :)
                                     logMsg = T.concat [ "tasted ", aOrAn targetSing, " ", parensQuote "carried", "." ]
-                                in ioHelper tasteDesc bs logMsg
+                                in ioHelper ms (boolToMaybe ic targetId) tasteDesc bs logMsg
             Right _          -> sorryExcess
     -----
     tasteEq ms d eqMap target =
@@ -3821,26 +3819,28 @@ taste   (OneArgLower i mq cols a) = getState >>= \ms ->
           then wrapSend mq cols sorryEquipCoins
           else case eis of
             Left  msg        -> wrapSend mq cols msg
-            Right [targetId] -> let targetSing = getSing targetId ms
-                                    slotDesc   = parensQuote . mkSlotDesc i ms . reverseLookup targetId $ eqMap
-                                    tasteDesc  = getObjTaste targetId ms
-                                    bs         = pure (T.concat [ serialize d
-                                                                , " tastes "
-                                                                , aOrAn targetSing
-                                                                , " "
-                                                                , slotDesc
-                                                                , "." ], i `delete` desigIds d)
-                                    logMsg     = T.concat [ "tasted "
-                                                          , aOrAn targetSing
-                                                          , " "
-                                                          , slotDesc
-                                                          , "." ]
-                                in ioHelper tasteDesc bs logMsg
+            Right [targetId] -> let (targetSing, tasteDesc) = (getSing `fanUncurry` getObjTaste) (targetId, ms)
+                                    slotDesc = parensQuote . mkSlotDesc i ms . reverseLookup targetId $ eqMap
+                                    bs       = pure (T.concat [ serialize d
+                                                              , " tastes "
+                                                              , aOrAn targetSing
+                                                              , " "
+                                                              , slotDesc
+                                                              , "." ], i `delete` desigIds d)
+                                    logMsg   = T.concat [ "tasted "
+                                                        , aOrAn targetSing
+                                                        , " "
+                                                        , slotDesc
+                                                        , "." ]
+                                in ioHelper ms Nothing tasteDesc bs logMsg
             Right _          -> sorryExcess
     -----
-    ioHelper x ys z = logPla "taste" i z >> wrapSend mq cols x >> bcastIfNotIncogNl i ys
+    ioHelper ms mci msg bs logMsg = do logPla "taste" i logMsg
+                                       wrapSend mq cols msg
+                                       bcastIfNotIncogNl i bs
+                                       maybeVoid (corpseHorf i ms) mci
     -----
-    sorryExcess     = wrapSend mq cols sorryTasteExcessTargets
+    sorryExcess = wrapSend mq cols sorryTasteExcessTargets
 taste p = advise p ["taste"] adviceTasteExcessArgs
 
 
