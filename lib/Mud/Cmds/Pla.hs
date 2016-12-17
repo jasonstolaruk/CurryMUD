@@ -3342,7 +3342,7 @@ showAction   (Lower i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
                                      , let n = if getType itemId ms == CorpseType
                                                  then mkCorpseAppellation i ms itemId
                                                  else getSing itemId ms ]
-              mkToTargetBs itemIds = foldl' f [] itemIds -- TODO: Test.
+              mkToTargetBs = foldl' f [] -- TODO: Test.
                 where
                   f acc itemId = let (n, t) | getType itemId ms == CorpseType
                                             , ca <- mkCorpseAppellation theId ms itemId
