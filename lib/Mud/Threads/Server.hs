@@ -122,10 +122,9 @@ handleFromClient i mq tq isAsSelf = go
                                  in liftIO . atomically . writeTQueue npcMq . ExternCmd mq (p^.columns) $ msg'
         in isAsSelf ? thruCentral :? maybe (helper thruCentral) forwardToNpc poss
       where
-        interpret asId p f (cn, as) = do
-            forwardToPeepers i (p^.peepers) FromThePeeped msg'
-            liftIO . atomically . writeTMQueue tq $ ResetTimer
-            f cn . WithArgs asId mq (p^.columns) $ as
+        interpret asId p f (cn, as) = do forwardToPeepers i (p^.peepers) FromThePeeped msg'
+                                         liftIO . atomically . writeTMQueue tq $ ResetTimer
+                                         f cn . WithArgs asId mq (p^.columns) $ as
 
 
 forwardToPeepers :: Id -> Inv -> ToOrFromThePeeped -> Text -> MudStack ()
@@ -175,17 +174,16 @@ cowbye h = liftIO takeADump `catch` fileIOExHandler "cowbye"
 shutDown :: MudStack ()
 shutDown = massMsg SilentBoot >> onNewThread commitSuicide
   where
-    commitSuicide = do
-        liftIO . mapM_ wait . M.elems . view talkAsyncTbl =<< getState
-        logNotice "shutDown commitSuicide" "everyone has been disconnected."
-        stopNpcActs
-        stopBiodegraders
-        stopRmFuns
-        massPauseEffects
-        pauseCorpseDecomps
-        stopNpcRegens
-        stopNpcDigesters
-        stopNpcServers
-        persist
-        logNotice "shutDown commitSuicide" "killing the listen thread."
-        liftIO . killThread . getListenThreadId =<< getState
+    commitSuicide = do liftIO . mapM_ wait . M.elems . view talkAsyncTbl =<< getState
+                       logNotice "shutDown commitSuicide" "everyone has been disconnected."
+                       stopNpcActs
+                       stopBiodegraders
+                       stopRmFuns
+                       massPauseEffects
+                       pauseCorpseDecomps
+                       stopNpcRegens
+                       stopNpcDigesters
+                       stopNpcServers
+                       persist
+                       logNotice "shutDown commitSuicide" "killing the listen thread."
+                       liftIO . killThread . getListenThreadId =<< getState

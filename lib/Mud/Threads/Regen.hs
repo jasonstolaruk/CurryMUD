@@ -21,7 +21,7 @@ import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
 import Control.Lens (Getter, Lens')
 import Control.Lens.Operators ((&), (.~), (?~), (^.))
-import Control.Monad ((>=>), forever, void, when)
+import Control.Monad ((>=>), forever, void)
 import Control.Monad.IO.Class (liftIO)
 import Data.Text (Text)
 
@@ -83,14 +83,13 @@ threadRegen i tq = let regens = [ regen curHp maxHp calcRegenHpAmt calcRegenHpDe
     regen :: Lens' Mob Int -> Getter Mob Int -> (Id -> MudState -> Int) -> (Id -> MudState -> Int) -> MudStack ()
     regen curLens maxLens calcAmt calcDelay = setThreadType (RegenChild i) >> forever loop
       where
-        loop = delay >> getState >>= \ms -> -- TODO: modifyStateSeq
-            let mob    = getMob i ms
-                (c, m) = (curLens `fanView` maxLens) mob
-                amt    = calcAmt i ms
-                total  = c + amt
-                c'     = (total > m) ? m :? total
-            in if isLoggedIn . getPla i $ ms
-              then when (c < m) . tweak $ mobTbl.ind i.curLens .~ c'
-              else stopRegen i
+        loop = delay >> modifyStateSeq (\ms -> let (mob, amt) = (getMob  `fanUncurry` calcAmt) (i, ms)
+                                                   (c, m)     = (curLens `fanView`    maxLens) mob
+                                                   total      = c + amt
+                                                   c'         = (total > m) ? m :? total
+                                                   f          = mobTbl.ind i.curLens .~ c'
+                                               in if isLoggedIn . getPla i $ ms
+                                                 then (onTrue (c < m) f ms, []                  )
+                                                 else (ms,                  pure . stopRegen $ i))
           where
             delay = getState >>= \ms -> liftIO . threadDelay $ calcDelay i ms * 10 ^ 6

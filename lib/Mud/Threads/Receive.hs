@@ -46,11 +46,10 @@ threadReceive h i mq = sequence_ [ setThreadType . Receive $ i, loop `catch` pla
     loop = mIf (liftIO . hIsEOF $ h)
                (sequence_ [ logPla "threadReceive loop" i "connection dropped.", writeMsg mq Dropped ])
                go
-    go = do
-        (parseTelnet -> (msg, telnetDatas)) <- liftIO . T.hGetLine $ h
-        interpTelnet i telnetDatas
-        writeMsg mq . FromClient . remDelimiters $ msg
-        loop
+    go = do (parseTelnet -> (msg, telnetDatas)) <- liftIO . T.hGetLine $ h
+            interpTelnet i telnetDatas
+            writeMsg mq . FromClient . remDelimiters $ msg
+            loop
       where
         remDelimiters = T.foldr helper ""
         helper c acc  | T.singleton c `notInfixOf` delimiters = c `T.cons` acc

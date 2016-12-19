@@ -75,10 +75,9 @@ startFeeling i (Just (EffectFeeling tag newDur)) newV = getState >>= \ms ->
                         helper     feel
                         logRestart feel
   where
-    spawn = do
-        newQ <- liftIO newTMQueueIO
-        newA <- runAsync . threadFeelingTimer i tag newDur $ newQ
-        return (newQ, newA)
+    spawn = do newQ <- liftIO newTMQueueIO
+               newA <- runAsync . threadFeelingTimer i tag newDur $ newQ
+               return (newQ, newA)
     helper feel     = tweak $ mobTbl.ind i.feelingMap %~ M.insert tag feel
     logHelper       = logPla "startFeeling" i
     logRestart feel = logHelper . T.concat $ [ "feeling ", dblQuote tag, " has been restarted: ", pp feel, "." ]

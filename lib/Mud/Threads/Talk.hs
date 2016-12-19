@@ -63,24 +63,23 @@ runTalkAsync h host = runAsync (threadTalk h host) >>= \a@(asyncThreadId -> ti) 
 threadTalk :: Handle -> HostName -> MudStack ()
 threadTalk h host = helper `finally` cleanUp
   where
-    helper = do
-        (mq, tq) <- liftIO $ (,) <$> newTQueueIO <*> newTMQueueIO
-        (i, s  ) <- adHoc mq host
-        setThreadType . Talk $ i
-        handle (threadExHandler (Just i) "talk") $ do
-            logNotice "threadTalk helper" . prd $ "new PC name for incoming player: " <> s
-            liftIO configBuffer
-            telnetHelper mq
-            send         mq . nl       $ "CurryMUD " <> ver
-            dumpTitle    mq
-            send         mq . nlnl     $ helloRulesMsg
-            send         mq . nl . prd $ "If you are new to CurryMUD, please enter " <> dblQuote "new"
-            sendPrompt   mq "What is your character's name?"
-            bcastAdmins . prd $ "A new player has connected: " <> s
-            onNewThread   . threadInacTimer i   mq $ tq
-            a <- runAsync . threadReceive h i $ mq
-            b <- runAsync . threadServer  h i   mq $ tq
-            liftIO $ wait b >> cancel a
+    helper = do (mq, tq) <- liftIO $ (,) <$> newTQueueIO <*> newTMQueueIO
+                (i, s  ) <- adHoc mq host
+                setThreadType . Talk $ i
+                handle (threadExHandler (Just i) "talk") $ do
+                    logNotice "threadTalk helper" . prd $ "new PC name for incoming player: " <> s
+                    liftIO configBuffer
+                    telnetHelper mq
+                    send         mq . nl       $ "CurryMUD " <> ver
+                    dumpTitle    mq
+                    send         mq . nlnl     $ helloRulesMsg
+                    send         mq . nl . prd $ "If you are new to CurryMUD, please enter " <> dblQuote "new"
+                    sendPrompt   mq "What is your character's name?"
+                    bcastAdmins . prd $ "A new player has connected: " <> s
+                    onNewThread   . threadInacTimer i   mq $ tq
+                    a <- runAsync . threadReceive h i $ mq
+                    b <- runAsync . threadServer  h i   mq $ tq
+                    liftIO $ wait b >> cancel a
     telnetHelper mq = mapM_ (send mq) [ telnetWillTType, telnetTTypeRequest, telnetWillGMCP ]
     configBuffer    = hSetBuffering h LineBuffering >> hSetNewlineMode h nlMode >> hSetEncoding h latin1
     nlMode          = NewlineMode { inputNL = CRLF, outputNL = CRLF }

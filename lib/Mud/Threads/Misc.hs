@@ -127,7 +127,8 @@ findNpcIds = views typeTbl (IM.keys . IM.filter (== NpcType))
 -----
 
 
-onNewThread :: Fun -> MudStack ()
+onNewThread :: Fun -> MudStack () -- Generally speaking, if you do anything on a new thread requiring a player to be
+                                  -- logged in, you should first check that the player is in fact still logged in.
 onNewThread f = onEnv $ liftIO . void . forkIO . runReaderT f
 
 
@@ -167,9 +168,8 @@ runAsync f = onEnv $ liftIO . async . runReaderT f
 
 
 setThreadType :: ThreadType -> MudStack ()
-setThreadType threadType = do
-    ti <- liftIO $ myThreadId >>= \ti -> labelThread ti (show threadType) >> return ti
-    tweak $ threadTbl.at ti ?~ threadType
+setThreadType threadType = do ti <- liftIO $ myThreadId >>= \ti -> labelThread ti (show threadType) >> return ti
+                              tweak $ threadTbl.at ti ?~ threadType
 
 
 -----

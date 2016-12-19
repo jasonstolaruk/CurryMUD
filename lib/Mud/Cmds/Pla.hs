@@ -68,6 +68,7 @@ import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 
 import Control.Applicative (liftA2)
 import Control.Arrow ((***), (&&&), first, second)
+import Control.Concurrent (threadDelay)
 import Control.Exception.Lifted (catch, try)
 import Control.Lens (_1, _2, _3, _4, _5, at, both, each, to, view, views)
 import Control.Lens.Operators ((%~), (&), (-~), (.~), (<>~), (?~), (^.))
@@ -3658,9 +3659,13 @@ smellTasteIOHelper fn i mq cols ms mci msg bs logMsg = do logPla fn i logMsg
                                                           maybeVoid (corpseHorf i ms) mci
 
 
-corpseHorf :: Id -> MudState -> Id -> MudStack () -- TODO: Delay before horfing?
+corpseHorf :: Id -> MudState -> Id -> MudStack ()
 corpseHorf i ms corpseId = let x = mkCorpseSmellLvl . getEntSmell corpseId $ ms
-                           in rndmDo (calcProbCorpseHorf i ms x) . mkExpAction "horf" . mkActionParams i ms $ []
+                           in rndmDo (calcProbCorpseHorf i ms x) f
+  where
+    f = do liftIO . threadDelay $ 2 * 10 ^ 6
+           ms' <- getState
+           when (isLoggedIn . getPla i $ ms') . mkExpAction "horf" . mkActionParams i ms' $ []
 
 
 -----

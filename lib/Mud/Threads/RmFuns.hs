@@ -42,6 +42,5 @@ stopRmFuns = do
 
 
 throwWaitRmFuns :: Id -> Rm -> MudStack ()
-throwWaitRmFuns i r = do
-    mapM_ throwWait $ r^.rmFunAsyncs
-    tweak $ rmTbl.ind i.rmFunAsyncs .~ []
+throwWaitRmFuns i r = do mapM_ throwWait $ r^.rmFunAsyncs
+                         tweak $ rmTbl.ind i.rmFunAsyncs .~ []

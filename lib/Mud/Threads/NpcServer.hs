@@ -40,10 +40,9 @@ logNotice = L.logNotice "Mud.Threads.NpcServer"
 
 
 runNpcServerAsync :: Id -> MudStack ()
-runNpcServerAsync i = do
-    npcMq <- liftIO newTQueueIO
-    a     <- runAsync . threadNpcServer i $ npcMq
-    tweak $ npcTbl.ind i .~ Npc npcMq a Nothing
+runNpcServerAsync i = do npcMq <- liftIO newTQueueIO
+                         a     <- runAsync . threadNpcServer i $ npcMq
+                         tweak $ npcTbl.ind i .~ Npc npcMq a Nothing
 
 
 startNpcServers :: MudStack ()
@@ -69,9 +68,7 @@ stopWaitNpcServer i = helper |&| modifyState >=> \npc -> do
 
 
 threadNpcServer :: Id -> NpcMsgQueue -> MudStack ()
-threadNpcServer i npcMq = do
-    setThreadType . NpcServer $ i
-    loop `catch` threadExHandler (Just i) "NPC server"
+threadNpcServer i npcMq = setThreadType (NpcServer i) >> loop `catch` threadExHandler (Just i) "NPC server"
   where
     loop = npcMq |&| liftIO . atomically . readTQueue >=> \case
       ExternCmd mq cols msg -> handleExternCmd i mq cols msg >> loop

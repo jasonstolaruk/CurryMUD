@@ -103,11 +103,10 @@ pauseEffects i = getState >>= \ms ->
                               tweaks [ activeEffectsTbl.ind i .~  []
                                      , pausedEffectsTbl.ind i <>~ pes ]
   where
-    helper (ActiveEffect e (_, q)) = do
-        tmv <- liftIO newEmptyTMVarIO
-        liftIO . atomically . writeTQueue q . PauseEffect $ tmv
-        secs <- liftIO . atomically . takeTMVar $ tmv
-        return . PausedEffect $ e & effectDur .~ secs
+    helper (ActiveEffect e (_, q)) = do tmv <- liftIO newEmptyTMVarIO
+                                        liftIO . atomically . writeTQueue q . PauseEffect $ tmv
+                                        secs <- liftIO . atomically . takeTMVar $ tmv
+                                        return . PausedEffect $ e & effectDur .~ secs
 
 
 massPauseEffects :: MudStack () -- At server shutdown, after everyone has been disconnected.
@@ -116,9 +115,8 @@ massPauseEffects = sequence_ [ logNotice "massPauseEffects" "mass pausing effect
 
 
 restartPausedEffects :: Id -> MudStack () -- When a player logs in.
-restartPausedEffects i = do
-    pes <- getPausedEffects i <$> getState
-    unless (null pes) . restartPausedHelper i $ pes
+restartPausedEffects i = do pes <- getPausedEffects i <$> getState
+                            unless (null pes) . restartPausedHelper i $ pes
 
 
 restartPausedHelper :: Id -> [PausedEffect] -> MudStack ()
