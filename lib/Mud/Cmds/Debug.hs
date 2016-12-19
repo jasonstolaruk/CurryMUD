@@ -48,12 +48,12 @@ import Mud.Util.Quoting
 import Mud.Util.Text
 import Mud.Util.Token
 import Mud.Util.Wrapping
-import qualified Mud.Misc.Logging as L (logAndDispIOEx, logNotice, logPlaExec, logPlaExecArgs)
+import qualified Mud.Misc.Logging as L (logAndDispIOEx, logNotice, logPla, logPlaExec, logPlaExecArgs)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Applicative (Const)
 import Control.Arrow ((***), first, second)
-import Control.Concurrent (ThreadId, getNumCapabilities, myThreadId)
+import Control.Concurrent (ThreadId, getNumCapabilities, myThreadId, threadDelay)
 import Control.Concurrent.Async (asyncThreadId, poll)
 import Control.Exception (ArithException(..), IOException)
 import Control.Exception.Lifted (throwIO, try)
@@ -109,6 +109,10 @@ logNotice :: Text -> Text -> MudStack ()
 logNotice = L.logNotice "Mud.Cmds.Debug"
 
 
+logPla :: Text -> Id -> Text -> MudStack ()
+logPla = L.logPla "Mud.Cmds.Debug"
+
+
 logPlaExec :: CmdName -> Id -> MudStack ()
 logPlaExec = L.logPlaExec "Mud.Cmds.Debug"
 
@@ -134,6 +138,8 @@ debugCmds =
     , mkDebugCmd "color"       debugColor       "Perform a color test."
     , mkDebugCmd "cores"       debugCores       "Display the number of processor cores."
     , mkDebugCmd "cpu"         debugCPU         "Display the CPU time."
+    , mkDebugCmd "delay"       debugDelay       "On a new thread, send yourself a message and horf after a delay of 10 \
+                                                \seconds."
     , mkDebugCmd "echowill"    debugEchoWill    "Send IAC WILL ECHO (hide user input)."
     , mkDebugCmd "echowon't"   debugEchoWon't   "Send IAC WON'T ECHO (show user input)."
     , mkDebugCmd "effect"      debugEffect      "Add 10-20 to your ST for 30 seconds."
@@ -331,6 +337,27 @@ debugCores (NoArgs i mq cols) = do
     wrapSend mq cols =<< [ T.concat [ showText cores, " processor core", theLetterS (cores > 1), "." ]
                          | cores <- liftIO . safePerformIO $ getNumCapabilities ]
 debugCores p = withoutArgs debugCores p
+
+
+-----
+
+
+debugDelay :: ActionFun
+debugDelay (NoArgs i mq cols) = send mq theNl >> onNewThread f
+  where
+    f   = do logPla fn i "delaying."
+             liftIO . threadDelay $ 10 * 10 ^ 6
+             logPla fn i "sending message."
+             wrapSend mq cols msg
+             logPla fn i "horfing."
+             ms <- getState
+             if isLoggedIn . getPla i $ ms
+               then mkExpAction "horf" . mkActionParams i ms $ []
+               else logNotice fn $ getSing i ms <> " is no longer logged in."
+             ok mq
+    fn  = prefixDebugCmd "delay f"
+    msg = colorWith zingColor "I can't forget to turn the earth so both sides get their share of darkness and of light."
+debugDelay p = withoutArgs debugDelay p
 
 
 -----

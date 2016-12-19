@@ -3658,7 +3658,7 @@ smellTasteIOHelper fn i mq cols ms mci msg bs logMsg = do logPla fn i logMsg
                                                           maybeVoid (corpseHorf i ms) mci
 
 
-corpseHorf :: Id -> MudState -> Id -> MudStack ()
+corpseHorf :: Id -> MudState -> Id -> MudStack () -- TODO: Delay before horfing?
 corpseHorf i ms corpseId = let x = mkCorpseSmellLvl . getEntSmell corpseId $ ms
                            in rndmDo (calcProbCorpseHorf i ms x) . mkExpAction "horf" . mkActionParams i ms $ []
 

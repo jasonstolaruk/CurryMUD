@@ -173,9 +173,7 @@ cowbye h = liftIO takeADump `catch` fileIOExHandler "cowbye"
 
 
 shutDown :: MudStack ()
-shutDown = do
-    massMsg SilentBoot
-    onNewThread commitSuicide
+shutDown = massMsg SilentBoot >> onNewThread commitSuicide
   where
     commitSuicide = do
         liftIO . mapM_ wait . M.elems . view talkAsyncTbl =<< getState
