@@ -111,7 +111,7 @@ corpseDecompHelper i (x, total) =
                        , entTbl   .ind i.entSmell ?~ corpseSmellLvl3
                        , objTbl   .ind i.objTaste ?~ "The decomposing corpse could very well be the most vile thing \
                                                      \you have ever tasted in your life." ]
-            | x == a ->
+            | x == a -> -- TODO: Corpse weight.
                 tweaks [ corpseTbl.ind i.lens     .~ "The unidentifiable corpse is in an advanced stage of decomposition."
                        , entTbl   .ind i.entSmell ?~ corpseSmellLvl4
                        , objTbl   .ind i.objTaste ?~ "Ugh! Why? WHY?"
@@ -125,7 +125,7 @@ finishDecomp i = modifyStateSeq $ \ms ->
     let invId          = fromMaybe oops . findInvContaining i $ ms
         bs             = if | getType invId ms == RmType -> foldr f [] . findMobIds ms . getInv invId $ ms
                             | isPC    invId ms           -> mkCarriedBs
-                            | otherwise -> []
+                            | otherwise                  -> []
         f targetId acc | isPC targetId ms = let n = mkCorpseAppellation targetId ms i
                                             in (("The " <> n <> " disintegrates.", pure targetId) : acc)
                        | otherwise        = acc
