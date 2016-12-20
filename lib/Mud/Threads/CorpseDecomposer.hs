@@ -6,9 +6,11 @@ module Mud.Threads.CorpseDecomposer ( pauseCorpseDecomps
                                     , startCorpseDecomp ) where
 
 import Mud.Cmds.Msgs.Misc
+import Mud.Cmds.Util.Misc
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
+import Mud.Data.State.Util.Output
 import Mud.Threads.Misc
 import Mud.TopLvlDefs.Misc
 import Mud.Util.Misc
@@ -28,6 +30,7 @@ import Data.IORef (newIORef, readIORef, writeIORef)
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import qualified Data.IntMap.Lazy as IM (elems, empty, toList)
+import qualified Data.Text as T
 
 
 default (Int)
@@ -71,7 +74,7 @@ corpseDecomp i pair = finally <$> loop <*> finish =<< liftIO (newIORef pair)
                    liftIO . writeIORef ref . first pred $ secs
                    loop ref
     finish ref = liftIO (readIORef ref) >>= \case
-      (0, _) -> logHelper $ "corpse decomposer for ID " <> showText i <> " has expired."
+      (0, _) -> logHelper ("corpse decomposer for ID " <> showText i <> " has expired.") >> finishDecomp i
       secs   -> let msg = prd $ "pausing corpse decomposer for ID " <> showText i |<>| mkSecsTxt secs
                 in logHelper msg >> tweak (pausedCorpseDecompsTbl.ind i .~ secs)
       where
@@ -106,6 +109,19 @@ corpseDecompHelper i (x, total) =
                        , entTbl   .ind i.sing     .~ "decomposed corpse"
                        , corpseTbl.ind i          %~ (ipc ? set pcCorpseSing corpsePlaceholder :? id) ]
             | otherwise -> unit
+
+
+finishDecomp :: Id -> MudStack ()
+finishDecomp i = modifyStateSeq $ \ms ->
+    let locId = fst . locateHelper ms [] $ i
+        bs    = if | getType locId ms == RmType -> foldr f [] . findMobIds ms . getInv locId $ ms
+                   | isPC    locId ms, n <- mkCorpseAppellation locId ms i
+                   -> pure (T.concat [ "The ", n, " ", parensQuote "carried", " disintegrates." ], pure locId)
+                   | otherwise -> []
+        f targetId acc | isPC targetId ms = let n = mkCorpseAppellation targetId ms i
+                                            in (("The " <> n <> " disintegrates.", pure targetId) : acc)
+                       | otherwise        = acc
+    in (ms, pure . bcastNl $ bs)
 
 
 -----

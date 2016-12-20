@@ -343,7 +343,7 @@ debugCores p = withoutArgs debugCores p
 
 
 debugDelay :: ActionFun
-debugDelay (NoArgs i mq cols) = send mq theNl >> onNewThread f
+debugDelay (NoArgs i mq cols) = blankLine mq >> onNewThread f
   where
     f   = do logPla fn i "delaying."
              liftIO . threadDelay $ 10 * 10 ^ 6

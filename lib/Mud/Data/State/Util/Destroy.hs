@@ -15,14 +15,14 @@ import Data.List (delete)
 import qualified Data.IntMap.Lazy as IM (map)
 
 
-destroy :: Inv -> MudStack ()
+destroy :: Inv -> MudStack () -- TODO: Should take a MudState and return (Mudstate, fs).
 destroy is = stopBiodegraders >> destroyHelper is
   where
     stopBiodegraders = getState >>= \ms -> let f i = maybeVoid throwDeath . getObjBiodegAsync i $ ms
                                            in mapM_ f . filter (`hasObjId` ms) $ is
 
 
-destroyHelper :: Inv -> MudStack ()
+destroyHelper :: Inv -> MudStack () -- TODO: Should take a MudState and return (Mudstate, fs).
 destroyHelper is = tweak $ flip (foldr helper) is
   where
     helper i ms = case getType i ms of

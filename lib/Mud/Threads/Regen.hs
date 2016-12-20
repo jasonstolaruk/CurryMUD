@@ -88,8 +88,9 @@ threadRegen i tq = let regens = [ regen curHp maxHp calcRegenHpAmt calcRegenHpDe
                                                    total      = c + amt
                                                    c'         = (total > m) ? m :? total
                                                    f          = mobTbl.ind i.curLens .~ c'
-                                               in if isLoggedIn . getPla i $ ms
-                                                 then (onTrue (c < m) f ms, []                  )
-                                                 else (ms,                  pure . stopRegen $ i))
+                                                   res        = (onTrue (c < m) f ms, [])
+                                               in if isPC i ms
+                                                 then isLoggedIn (getPla i ms) ? res :? (ms, pure . stopRegen $ i)
+                                                 else res)
           where
             delay = getState >>= \ms -> liftIO . threadDelay $ calcDelay i ms * 10 ^ 6
