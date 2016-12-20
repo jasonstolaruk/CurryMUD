@@ -3661,7 +3661,7 @@ smellTasteIOHelper fn i mq cols ms mci msg bs logMsg = do logPla fn i logMsg
 
 corpseHorf :: Id -> MudState -> Id -> MudStack ()
 corpseHorf i ms corpseId = let x = mkCorpseSmellLvl . getEntSmell corpseId $ ms
-                           in rndmDo (calcProbCorpseHorf i ms x) f
+                           in rndmDo (calcProbCorpseHorf i ms x) . onNewThread $ f
   where
     f = do liftIO . threadDelay $ 2 * 10 ^ 6
            ms' <- getState

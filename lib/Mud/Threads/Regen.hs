@@ -83,14 +83,14 @@ threadRegen i tq = let regens = [ regen curHp maxHp calcRegenHpAmt calcRegenHpDe
     regen :: Lens' Mob Int -> Getter Mob Int -> (Id -> MudState -> Int) -> (Id -> MudState -> Int) -> MudStack ()
     regen curLens maxLens calcAmt calcDelay = setThreadType (RegenChild i) >> forever loop
       where
-        loop = delay >> modifyStateSeq (\ms -> let (mob, amt) = (getMob  `fanUncurry` calcAmt) (i, ms)
-                                                   (c, m)     = (curLens `fanView`    maxLens) mob
-                                                   total      = c + amt
-                                                   c'         = (total > m) ? m :? total
-                                                   f          = mobTbl.ind i.curLens .~ c'
-                                                   res        = (onTrue (c < m) f ms, [])
-                                               in if isPC i ms
-                                                 then isLoggedIn (getPla i ms) ? res :? (ms, pure . stopRegen $ i)
-                                                 else res)
-          where
-            delay = getState >>= \ms -> liftIO . threadDelay $ calcDelay i ms * 10 ^ 6
+        loop  = delay >> modifyStateSeq f
+        delay = getState >>= \ms -> liftIO . threadDelay $ calcDelay i ms * 10 ^ 6
+        f ms  = let (mob, amt) = (getMob  `fanUncurry` calcAmt) (i, ms)
+                    (c, m)     = (curLens `fanView`    maxLens) mob
+                    total      = c + amt
+                    c'         = (total > m) ? m :? total
+                    g          = mobTbl.ind i.curLens .~ c'
+                    res        = (onTrue (c < m) g ms, [])
+                in if isPC i ms
+                  then isLoggedIn (getPla i ms) ? res :? (ms, pure . stopRegen $ i)
+                  else res

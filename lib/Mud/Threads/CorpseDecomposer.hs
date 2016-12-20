@@ -6,18 +6,19 @@ module Mud.Threads.CorpseDecomposer ( pauseCorpseDecomps
                                     , startCorpseDecomp ) where
 
 import Mud.Cmds.Msgs.Misc
-import Mud.Cmds.Util.Misc
 import Mud.Data.State.MudData
+import Mud.Data.State.Util.Destroy
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Threads.Misc
 import Mud.TopLvlDefs.Misc
-import Mud.Util.Misc
+import Mud.Util.Misc hiding (blowUp)
 import Mud.Util.Operators
 import Mud.Util.Quoting
 import Mud.Util.Text
 import qualified Mud.Misc.Logging as L (logNotice)
+import qualified Mud.Util.Misc as U (blowUp)
 
 import Control.Arrow (first)
 import Control.Concurrent (threadDelay)
@@ -27,6 +28,7 @@ import Control.Lens.Operators ((%~), (&), (.~), (?~))
 import Control.Monad.IO.Class (liftIO)
 import Data.Bool (bool)
 import Data.IORef (newIORef, readIORef, writeIORef)
+import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import qualified Data.IntMap.Lazy as IM (elems, empty, toList)
@@ -34,6 +36,13 @@ import qualified Data.Text as T
 
 
 default (Int)
+
+
+-----
+
+
+blowUp :: BlowUp a
+blowUp = U.blowUp "Mud.Threads.CorpseDecomposer"
 
 
 -----
@@ -113,15 +122,17 @@ corpseDecompHelper i (x, total) =
 
 finishDecomp :: Id -> MudStack ()
 finishDecomp i = modifyStateSeq $ \ms ->
-    let locId = fst . locateHelper ms [] $ i
-        bs    = if | getType locId ms == RmType -> foldr f [] . findMobIds ms . getInv locId $ ms
-                   | isPC    locId ms, n <- mkCorpseAppellation locId ms i
-                   -> pure (T.concat [ "The ", n, " ", parensQuote "carried", " disintegrates." ], pure locId)
-                   | otherwise -> []
+    let invId          = fromMaybe oops . findInvContaining i $ ms
+        bs             = if | getType invId ms == RmType -> foldr f [] . findMobIds ms . getInv invId $ ms
+                            | isPC    invId ms           -> mkCarriedBs
+                            | otherwise -> []
         f targetId acc | isPC targetId ms = let n = mkCorpseAppellation targetId ms i
                                             in (("The " <> n <> " disintegrates.", pure targetId) : acc)
                        | otherwise        = acc
-    in (ms, pure . bcastNl $ bs)
+        mkCarriedBs    = let n = mkCorpseAppellation invId ms i
+                         in pure (T.concat [ "The ", n, " ", parensQuote "carried", " disintegrates." ], pure invId)
+        oops           = blowUp "finishDecomp" (descSingId i ms <> " is in limbo") ""
+    in (destroyHelper (pure i) ms, pure . bcastNl $ bs)
 
 
 -----
