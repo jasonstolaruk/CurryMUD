@@ -3,6 +3,7 @@
 module Mud.Data.State.Util.Random ( dropRndmElems
                                   , percentRange
                                   , rndmDo
+                                  , rndmDo_
                                   , rndmDos
                                   , rndmElem
                                   , rndmInts
@@ -63,8 +64,12 @@ percentRange :: Range
 percentRange = (1, 100)
 
 
-rndmDo :: Int -> Fun -> MudStack ()
-rndmDo prob = mWhen (isSuccess prob)
+rndmDo :: Int -> Fun -> MudStack Bool
+rndmDo prob f = mIf (isSuccess prob) (f >> return True) . return $ False
+
+
+rndmDo_ :: Int -> Fun -> MudStack ()
+rndmDo_ prob = mWhen (isSuccess prob)
 
 
 rndmDos :: [(Int, MudStack ())] -> MudStack ()

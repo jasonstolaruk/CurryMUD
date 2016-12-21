@@ -939,7 +939,7 @@ debugRules p = withoutArgs debugRandom p
 
 debugShiver :: ActionFun
 debugShiver (NoArgs' i mq) = getState >>= \ms -> do
-    replicateM_ 50 . rndmDo (calcProbSpiritizeShiver i ms) . mkExpAction "shiver" . mkActionParams i ms $ []
+    replicateM_ 50 . rndmDo_ (calcProbSpiritizeShiver i ms) . mkExpAction "shiver" . mkActionParams i ms $ []
     ok mq
     logPlaExec (prefixDebugCmd "shiver") i
 debugShiver p = withoutArgs debugShiver p

@@ -254,7 +254,7 @@ mkLinkBcasts i ms s retainedPairs = let (toLinkRetainers, fs) = toLinkRetainersH
   where
     toLinkRetainersHelper =
         let targetIds = [ targetId | (targetId, targetIsLoggedIn) <- retainedPairs, targetIsLoggedIn ]
-            f i'      = rndmDo (calcProbSpiritizeShiver i' ms) . mkExpAction "shiver" . mkActionParams i' ms $ []
+            f i'      = rndmDo_ (calcProbSpiritizeShiver i' ms) . mkExpAction "shiver" . mkActionParams i' ms $ []
         in ((nlnl . linkRetainedMsg $ s, targetIds), pure . mapM_ f $ targetIds)
     toLinkLosers = let targetIds           = views pcTbl (IM.keys . IM.filterWithKey f . IM.delete i) ms
                        f targetId targetPC = and [ views linked (s `elem`) targetPC

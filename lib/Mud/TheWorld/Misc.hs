@@ -136,11 +136,11 @@ trashHelper i ms as =
                                     else _2 %~ (dropBlanks [ sorryInEq, sorryInRm ] ++)
     in (gir', logMsgs |!| pure f)
   where
-    f = rndmDo 10 $ let msg = "The lid of the trash bin momentarily opens of its own accord as a loud belch is emitted \
-                              \from inside the container."
-                    in rndmR (1, 4) >>= \secs -> do
-                           liftIO . threadDelay $ secs * 10 ^ 6
-                           getState >>= \ms' -> bcastNl . pure $ (msg, findMobIds ms' . getMobRmInv i $ ms')
+    f = rndmDo_ 10 $ let msg = "The lid of the trash bin momentarily opens of its own accord as a loud belch is emitted \
+                               \from inside the container."
+                     in rndmR (1, 4) >>= \secs -> do
+                            liftIO . threadDelay $ secs * 10 ^ 6
+                            getState >>= \ms' -> bcastNl . pure $ (msg, findMobIds ms' . getMobRmInv i $ ms')
 
 
 -- ==================================================
@@ -249,6 +249,6 @@ mkRndmBcastRmFun i idName fn prob secs msg = handle (threadExHandler (Just i) th
   where
     threadName = T.concat [ "room function ", dblQuote fn, " ", idName ]
     loop       = getState >>= \ms -> let is = filter (`isNpcPC` ms) . getInv i $ ms in do
-        unless (()# is) . rndmDo prob . bcastNl . pure $ (msg, is)
+        unless (()# is) . rndmDo_ prob . bcastNl . pure $ (msg, is)
         liftIO . threadDelay $ secs * 10 ^ 6
         loop

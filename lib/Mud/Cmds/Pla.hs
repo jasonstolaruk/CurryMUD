@@ -827,7 +827,7 @@ connect   (Lower i mq cols as) = getState >>= \ms -> let getIds = map (`getIdFor
         let f i' me = map (\n -> (T.concat [ me, " has connected ", n, " to the ", dblQuote cn, " channel." ], pure i'))
         return . concat . zipWith3 f otherIds namesForMe $ namesForTargets
     connectBlink targetIds ms = forM_ targetIds $ \targetId ->
-        rndmDo (calcProbConnectBlink targetId ms) . mkExpAction "blink" . mkActionParams targetId ms $ []
+        rndmDo_ (calcProbConnectBlink targetId ms) . mkExpAction "blink" . mkActionParams targetId ms $ []
 connect p = patternMatchFail "connect" . showText $ p
 
 
@@ -2030,7 +2030,7 @@ link (LowerNub i mq cols as) = getState >>= \ms -> if
           _  -> let b = (nlnl . sorryLinkType $ targetSing, pure i)
                 in a' & _2 %~ (`appendIfUnique` b)
           where
-            action = rndmDo (calcProbLinkFlinch targetId ms) . mkExpAction "flinch" . mkActionParams targetId ms $ []
+            action = rndmDo_ (calcProbLinkFlinch targetId ms) . mkExpAction "flinch" . mkActionParams targetId ms $ []
     helperLinkEitherCoins a (Left msgs) = a & _1 <>~ (mkBcast i . T.concat $ [ nlnl msg | msg <- msgs ])
     helperLinkEitherCoins a Right {}    = let b = (nlnl sorryLinkCoin, pure i) in first (`appendIfUnique` b) a
 link p = patternMatchFail "link" . showText $ p
@@ -3661,7 +3661,7 @@ smellTasteIOHelper fn i mq cols ms mci msg bs logMsg = do logPla fn i logMsg
 
 corpseHorf :: Id -> MudState -> Id -> MudStack ()
 corpseHorf i ms corpseId = let x = mkCorpseSmellLvl . getEntSmell corpseId $ ms
-                           in rndmDo (calcProbCorpseHorf i ms x) . onNewThread $ f
+                           in rndmDo_ (calcProbCorpseHorf i ms x) . onNewThread $ f
   where
     f = do liftIO . threadDelay $ 2 * 10 ^ 6
            ms' <- getState
