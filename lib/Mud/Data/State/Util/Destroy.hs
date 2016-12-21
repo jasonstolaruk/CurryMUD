@@ -18,7 +18,7 @@ import qualified Data.IntMap.Lazy as IM (map)
 destroy :: Inv -> MudStack ()
 destroy is = sequence_ [ stopBiodegraders, tweak . destroyHelper $ is ]
   where
-    stopBiodegraders = getState >>= \ms -> let f i = maybeVoid throwDeath . getObjBiodegAsync i $ ms
+    stopBiodegraders = getState >>= \ms -> let f = maybeVoid throwDeath . (`getObjBiodegAsync` ms)
                                            in mapM_ f . filter (`hasObjId` ms) $ is
 
 

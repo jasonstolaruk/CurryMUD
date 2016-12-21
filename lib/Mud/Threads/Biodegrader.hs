@@ -66,21 +66,21 @@ throwWaitBiodegrader i = helper |&| modifyState >=> maybeVoid throwWait
 threadBiodegrader :: Id -> MudStack ()
 threadBiodegrader i = handle (threadExHandler (Just i) "biodegrader") $ descSingId i <$> getState >>= \singId -> do
     setThreadType . Biodegrader $ i
-    logNotice "threadBiodegrader"  . prd $ "biodegrader started for " <> singId
+    logNotice "threadBiodegrader" . prd $ "biodegrader started for " <> singId
     loop 0 Nothing `catch` die Nothing "biodegrader"
   where
-    loop secs lastMaybeInvId = getState >>= \ms -> do
+    loop secs lastMaybeInvId = modifyStateSeq $ \ms ->
         let newMaybeInvId = findInvContaining i ms
-        case newMaybeInvId of
-          Nothing -> delay >> loop 0 Nothing
+            mkRes         = (ms, ) . (delay :) . pure
+        in case newMaybeInvId of
+          Nothing -> mkRes . loop 0 $ Nothing
           Just invId
             | newMaybeInvId == lastMaybeInvId -> if secs < biodegSecs
-              then delay >> loop (secs + biodegDelay) lastMaybeInvId
+              then mkRes . loop (secs + biodegDelay) $ lastMaybeInvId
               else let pcsInRm = filter (`isPC` ms) . getInv invId $ ms
-                       helper  = sequence_ [ logNotice "threadBiodegrader" $ descSingId i ms <> " has biodegraded."
-                                           , tweak . destroyHelper . pure $ i ]
-                   in bool helper (delay >> loop secs lastMaybeInvId) $ ()!# pcsInRm
-            | otherwise -> (delay >>) $ case getType invId ms of
-              RmType -> loop biodegDelay newMaybeInvId
-              _      -> loop 0 Nothing
+                       helper  = ( destroyHelper (pure i) ms
+                                 , pure . logNotice "threadBiodegrader" $ descSingId i ms <> " has biodegraded." )
+                   in bool helper (mkRes . loop secs $ lastMaybeInvId) $ ()!# pcsInRm
+            | otherwise -> mkRes . uncurry loop $ case getType invId ms of RmType -> (biodegDelay, newMaybeInvId)
+                                                                           _      -> (0,           Nothing      )
     delay = liftIO . threadDelay $ biodegDelay * 10 ^ 6

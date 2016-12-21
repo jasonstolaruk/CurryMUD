@@ -108,9 +108,8 @@ interpName times (T.toLower -> cn@(capitalize -> cn')) params@(NoArgs i mq cols)
                                             , checkRndmNames          mq cols cn ])
                   unit
                   confirmName
-        [(targetId, targetPla)] -> do
-            sendPrompt mq $ telnetHideInput <> cn' <> " is an existing character. Password:"
-            setInterp i . Just . interpPW times cn' targetId $ targetPla
+        [(targetId, targetPla)] -> do sendPrompt mq $ telnetHideInput <> cn' <> " is an existing character. Password:"
+                                      setInterp i . Just . interpPW times cn' targetId $ targetPla
         xs -> patternMatchFail "interpName" . showText . map fst $ xs
   where
     new          = sequence_ [ send mq . nlPrefix . nl . T.unlines . parseWrapXform cols $ newPlaMsg, promptName mq ]
@@ -210,10 +209,9 @@ interpConfirmNewChar times s cn params@(NoArgs i mq cols) = case yesNoHelper cn 
   Just False -> promptRetryName  mq cols "" >> setInterp i (Just . interpName $ times)
   Nothing    -> promptRetryYesNo mq cols
   where
-    helper oldSing = do
-      blankLine  mq
-      sendPrompt mq $ "Are you at least 18 years of age? " <> mkYesNoChoiceTxt
-      setInterp i . Just . interpConfirmAge . NewCharBundle oldSing s $ ""
+    helper oldSing = do blankLine  mq
+                        sendPrompt mq $ "Are you at least 18 years of age? " <> mkYesNoChoiceTxt
+                        setInterp i . Just . interpConfirmAge . NewCharBundle oldSing s $ ""
 interpConfirmNewChar _ _ _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNo plaMsgQueue plaCols
 
 
@@ -236,9 +234,8 @@ setSingIfNotTaken _ _ p = patternMatchFail "setSingIfNotTaken" . showText $ p
 
 interpConfirmAge :: NewCharBundle -> Interp
 interpConfirmAge ncb cn (NoArgs i mq cols) = case yesNoHelper cn of
-  Just True -> do
-    sendPrompt mq $ "Have you read the rules? " <> mkYesNoChoiceTxt
-    setInterp i . Just . interpConfirmReadRules $ ncb
+  Just True -> do sendPrompt mq $ "Have you read the rules? " <> mkYesNoChoiceTxt
+                  setInterp i . Just . interpConfirmReadRules $ ncb
   Just False -> wrapSend         mq cols "You must be at least 18 years old to play CurryMUD." >> writeMsg mq SilentBoot
   Nothing    -> promptRetryYesNo mq cols
 interpConfirmAge _ _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNo plaMsgQueue plaCols
@@ -250,14 +247,11 @@ interpConfirmAge _ _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNo pl
 interpConfirmReadRules :: NewCharBundle -> Interp
 interpConfirmReadRules ncb cn (NoArgs i mq cols) = case yesNoHelper cn of
   Just True  -> next
-  Just False -> do
-      blankLine mq
-      pager i mq (Just next) . parseWrapXform cols $ rulesMsg
-  Nothing -> promptRetryYesNo mq cols
+  Just False -> sequence_ [ blankLine mq, pager i mq (Just next) . parseWrapXform cols $ rulesMsg ]
+  Nothing    -> promptRetryYesNo mq cols
   where
-    next = do
-        sendPrompt mq $ "Do you understand and agree to follow the rules? " <> mkYesNoChoiceTxt
-        setInterp i . Just . interpConfirmFollowRules $ ncb
+    next = do sendPrompt mq $ "Do you understand and agree to follow the rules? " <> mkYesNoChoiceTxt
+              setInterp i . Just . interpConfirmFollowRules $ ncb
 interpConfirmReadRules _ _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNo plaMsgQueue plaCols
 
 
@@ -266,15 +260,14 @@ interpConfirmReadRules _ _ ActionParams { plaMsgQueue, plaCols } = promptRetryYe
 
 interpConfirmFollowRules :: NewCharBundle -> Interp
 interpConfirmFollowRules ncb@(NewCharBundle _ s _) cn (NoArgs i mq cols) = case yesNoHelper cn of
-  Just True -> do
-      send             mq telnetHideInput
-      blankLine        mq
-      multiWrapSend1Nl mq cols . pwMsg . prd $ "Please choose a password for " <> s
-      sendPrompt       mq "New password:"
-      setInterp i . Just . interpNewPW $ ncb
-  Just False ->
-      wrapSend mq cols "You can't play CurryMUD if you don't agree to follow the rules." >> writeMsg mq SilentBoot
-  Nothing -> promptRetryYesNo mq cols
+  Just True  -> do send             mq telnetHideInput
+                   blankLine        mq
+                   multiWrapSend1Nl mq cols . pwMsg . prd $ "Please choose a password for " <> s
+                   sendPrompt       mq "New password:"
+                   setInterp i . Just . interpNewPW $ ncb
+  Just False -> do wrapSend mq cols "You can't play CurryMUD if you don't agree to follow the rules."
+                   writeMsg mq SilentBoot
+  Nothing    -> promptRetryYesNo mq cols
 interpConfirmFollowRules _ _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNo plaMsgQueue plaCols
 
 
@@ -287,18 +280,16 @@ interpNewPW ncb cn (NoArgs i mq cols)
   | helper isUpper                                     = promptRetryNewPW mq cols sorryInterpNewPwUpper
   | helper isLower                                     = promptRetryNewPW mq cols sorryInterpNewPwLower
   | helper isDigit                                     = promptRetryNewPW mq cols sorryInterpNewPwDigit
-  | otherwise = do
-      sendPrompt mq "Verify password:"
-      setInterp i . Just . interpVerifyNewPW $ ncb { ncbPW = cn }
+  | otherwise = do sendPrompt mq "Verify password:"
+                   setInterp i . Just . interpVerifyNewPW $ ncb { ncbPW = cn }
   where
     helper f = ()# T.filter f cn
 interpNewPW _ _ ActionParams { plaMsgQueue, plaCols } = promptRetryNewPW plaMsgQueue plaCols sorryInterpNewPwExcessArgs
 
 
 promptRetryNewPW :: MsgQueue -> Cols -> Text -> MudStack ()
-promptRetryNewPW mq cols msg = do
-    msg |#| wrapSend mq cols
-    wrapSendPrompt mq cols "Let's try this again. New password:"
+promptRetryNewPW mq cols msg = do msg |#| wrapSend mq cols
+                                  wrapSendPrompt mq cols "Let's try this again. New password:"
 
 
 -- ==================================================
@@ -306,12 +297,11 @@ promptRetryNewPW mq cols msg = do
 
 interpVerifyNewPW :: NewCharBundle -> Interp
 interpVerifyNewPW ncb@(NewCharBundle _ _ pass) cn params@(NoArgs i mq cols)
-  | cn == pass = do
-      send      mq telnetShowInput
-      wrapSend  mq cols pwWarningLoginMsg
-      promptSex ncb mq cols
-      setInterp i . Just . interpSex $ ncb
-  | otherwise = promptRetryNewPwMatch ncb params
+  | cn == pass = do send      mq telnetShowInput
+                    wrapSend  mq cols pwWarningLoginMsg
+                    promptSex ncb mq cols
+                    setInterp i . Just . interpSex $ ncb
+  | otherwise  = promptRetryNewPwMatch ncb params
 interpVerifyNewPW ncb _ params = promptRetryNewPwMatch ncb params
 
 
@@ -336,12 +326,11 @@ interpSex ncb@(NewCharBundle _ s _) (T.toLower -> cn) (NoArgs i mq cols)
   | cn `T.isPrefixOf` "female" = helper Female
   | otherwise                  = promptRetrySex mq cols
   where
-    helper sexy = do
-      tweak $ mobTbl.ind i.sex .~ sexy
-      blankLine     mq
-      multiWrapSend mq cols $ "Next we'll choose " <> s <> "'s race." : raceTxt
-      promptRace    mq cols
-      setInterp i . Just . interpRace $ ncb
+    helper sexy = do tweak $ mobTbl.ind i.sex .~ sexy
+                     blankLine     mq
+                     multiWrapSend mq cols $ "Next we'll choose " <> s <> "'s race." : raceTxt
+                     promptRace    mq cols
+                     setInterp i . Just . interpRace $ ncb
 interpSex _ _ ActionParams { .. } = promptRetrySex plaMsgQueue plaCols
 
 
@@ -373,9 +362,7 @@ promptRetrySex mq cols =
 
 
 interpRace :: NewCharBundle -> Interp
-interpRace _ "" (NoArgs _ mq cols) = do
-    multiWrapSend mq cols raceTxt
-    promptRace mq cols
+interpRace _ "" (NoArgs _ mq cols) = multiWrapSend mq cols raceTxt >> promptRace mq cols
 interpRace ncb@(NewCharBundle _ s _) (T.toLower -> cn) (NoArgs i mq cols) = case cn of
   "1" -> helper Dwarf
   "2" -> helper Elf
@@ -390,20 +377,18 @@ interpRace ncb@(NewCharBundle _ s _) (T.toLower -> cn) (NoArgs i mq cols) = case
     [raceName] -> readRaceHelp raceName >>= multiWrapSend mq cols . T.lines >> promptRace mq cols
     _          -> sorryRace mq cols cn
   where
-    helper r = do
-        tweaks [ pcTbl     .ind i.race       .~ r
-               , mobTbl    .ind i.knownLangs .~ pure (raceToLang r)
-               , pickPtsTbl.ind i            .~ initPickPts ]
-        blankLine mq
-        send mq . nl . T.unlines . parseWrapXform cols . mkPickPtsIntroTxt $ s
-        promptPickPts i mq
-        setInterp i . Just . interpPickPts $ ncb
+    helper r              = do tweaks [ pcTbl     .ind i.race       .~ r
+                                      , mobTbl    .ind i.knownLangs .~ pure (raceToLang r)
+                                      , pickPtsTbl.ind i            .~ initPickPts ]
+                               blankLine mq
+                               send mq . nl . T.unlines . parseWrapXform cols . mkPickPtsIntroTxt $ s
+                               promptPickPts i mq
+                               setInterp i . Just . interpPickPts $ ncb
     readRaceHelp raceName = let f = (</> T.unpack raceName) <$> mkMudFilePath raceDirFun
                             in liftIO (T.readFile =<< f) |&| try >=> eitherRet handler
       where
-        handler e = do
-            fileIOExHandler "interpRace readRaceHelp" e
-            return . helpFileErrorMsg . dblQuote $ raceName
+        handler e = do fileIOExHandler "interpRace readRaceHelp" e
+                       return . helpFileErrorMsg . dblQuote $ raceName
 interpRace _ cn ActionParams { .. } = sorryRace plaMsgQueue plaCols . T.unwords $ cn : args
 
 
@@ -447,16 +432,15 @@ interpPickPts :: NewCharBundle -> Interp
 interpPickPts _                         "" (NoArgs' i mq        ) = promptPickPts i mq
 interpPickPts ncb@(NewCharBundle _ s _) cn (Lower   i mq cols as) = getState >>= \ms -> let pts = getPickPts i ms in if
   | cn `T.isPrefixOf` "quit" -> if isZero pts
-    then do
-        blankLine mq
-        let msgs = [ lSpcs <> "Next you'll write a description of "
-                   , s
-                   , ", which others will see when they look at "
-                   , mkHimHer . getSex i $ ms
-                   , ". Your description must adhere to the following rules:" ]
-        send mq . T.unlines . parseWrapXform cols . T.concat $ msgs
-        send mq . T.unlines . concat . wrapLines cols . T.lines $ descRulesMsg
-        pause i mq . Just . descHelper ncb i mq $ cols
+    then do blankLine mq
+            let msgs = [ lSpcs <> "Next you'll write a description of "
+                       , s
+                       , ", which others will see when they look at "
+                       , mkHimHer . getSex i $ ms
+                       , ". Your description must adhere to the following rules:" ]
+            send mq . T.unlines . parseWrapXform cols . T.concat $ msgs
+            send mq . T.unlines . concat . wrapLines cols . T.lines $ descRulesMsg
+            pause i mq . Just . descHelper ncb i mq $ cols
     else wrapSend mq cols sorryInterpPickPtsQuit >> anglePrompt mq
   | otherwise -> helper |&| modifyState >=> \msgs -> multiWrapSend mq cols msgs >> promptPickPts i mq
   where
@@ -530,12 +514,11 @@ setDescInterpHelper ncb i mq cols = setInterp i . Just . interpMutliLine (descEn
 descEntered :: NewCharBundle -> Id -> MsgQueue -> Cols -> [Text] -> MudStack ()
 descEntered ncb i mq cols desc = case spaces . dropBlanks . map T.strip $ desc of
   ""    -> wrapSend mq cols "Your description may not be blank." >> promptRetryDesc ncb i mq cols
-  desc' -> do
-    blankLine      mq
-    wrapSend1Nl    mq cols "You entered:"
-    wrapSend       mq cols desc'
-    wrapSendPrompt mq cols $ "Keep this description? " <> mkYesNoChoiceTxt
-    setInterp i . Just . interpConfirmDesc ncb $ desc'
+  desc' -> do blankLine      mq
+              wrapSend1Nl    mq cols "You entered:"
+              wrapSend       mq cols desc'
+              wrapSendPrompt mq cols $ "Keep this description? " <> mkYesNoChoiceTxt
+              setInterp i . Just . interpConfirmDesc ncb $ desc'
 
 
 promptRetryDesc :: NewCharBundle -> Id -> MsgQueue -> Cols -> MudStack ()
@@ -789,18 +772,17 @@ logIn newId ms oldSing newHost newTime originId = peepNewId . movePC $ adoptNewI
 
 
 handleLogin :: NewCharBundle -> Bool -> ActionParams -> MudStack ()
-handleLogin (NewCharBundle oldSing s _) isNew params@ActionParams { .. } = do
-    greet
-    showMotd plaMsgQueue plaCols
-    (ms, p) <- showRetainedMsgs
-    look params
-    sendDfltPrompt plaMsgQueue myId
-    sendGmcpRmInfo Nothing myId ms
-    when (getPlaFlag IsAdmin p) stopInacTimer
-    runDigesterAsync     myId
-    runRegenAsync        myId
-    restartPausedEffects myId
-    notifyArrival ms
+handleLogin (NewCharBundle oldSing s _) isNew params@ActionParams { .. } = do greet
+                                                                              showMotd plaMsgQueue plaCols
+                                                                              (ms, p) <- showRetainedMsgs
+                                                                              look params
+                                                                              sendDfltPrompt plaMsgQueue myId
+                                                                              sendGmcpRmInfo Nothing myId ms
+                                                                              when (getPlaFlag IsAdmin p) stopInacTimer
+                                                                              runDigesterAsync     myId
+                                                                              runRegenAsync        myId
+                                                                              restartPausedEffects myId
+                                                                              notifyArrival ms
   where
     greet = wrapSend plaMsgQueue plaCols $ if | s == "Root" -> colorWith zingColor sudoMsg
                                               | isNew       -> "Welcome to CurryMUD, "   <> s <> "!"
