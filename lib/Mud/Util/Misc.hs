@@ -47,6 +47,7 @@ module Mud.Util.Misc ( atLst1
                      , minusFifth
                      , minusHalf
                      , minusQuarter
+                     , minusTenth
                      , minusThird
                      , mkDateTimeTxt
                      , mkTimestamp
@@ -317,6 +318,10 @@ minusHalf x = round (fromIntegral x * 0.50 :: Double)
 
 minusQuarter :: Int -> Int
 minusQuarter x = round (fromIntegral x * 0.75 :: Double)
+
+
+minusTenth :: Int -> Int
+minusTenth x = round (fromIntegral x * 0.90 :: Double)
 
 
 minusThird :: Int -> Int
