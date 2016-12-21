@@ -63,6 +63,7 @@ module Mud.Util.Misc ( atLst1
                      , plusFifth
                      , plusHalf
                      , plusQuarter
+                     , plusTenth
                      , plusThird
                      , reverseLookup
                      , safeCoerce
@@ -376,6 +377,10 @@ plusHalf x = round (fromIntegral x * 1.50 :: Double)
 
 plusQuarter :: Int -> Int
 plusQuarter x = round (fromIntegral x * 1.25 :: Double)
+
+
+plusTenth :: Int -> Int
+plusTenth x = round (fromIntegral x * 1.10 :: Double)
 
 
 plusThird :: Int -> Int
