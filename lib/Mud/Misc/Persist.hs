@@ -98,6 +98,5 @@ persistHelper l ms = withLock l $ do
 
 
 persistExHandler :: SomeException -> MudStack ()
-persistExHandler e = do
-    logExMsg "persistExHandler" (rethrowExMsg "while persisting the world") e
-    throwToListenThread e
+persistExHandler e = do logExMsg "persistExHandler" (rethrowExMsg "while persisting the world") e
+                        throwToListenThread e

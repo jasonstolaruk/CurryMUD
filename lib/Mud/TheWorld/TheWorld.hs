@@ -10,7 +10,7 @@ import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Misc.EffectFuns
 import Mud.Misc.FeelingFuns
-import Mud.Misc.Logging hiding (logNotice)
+import Mud.Misc.Logging hiding (logErrorMsg, logNotice)
 import Mud.TheWorld.Foods
 import Mud.TheWorld.Liqs
 import Mud.TheWorld.Misc
@@ -21,7 +21,7 @@ import Mud.TopLvlDefs.FilePaths
 import Mud.Util.Misc
 import Mud.Util.Operators
 import Mud.Util.Text
-import qualified Mud.Misc.Logging as L (logNotice)
+import qualified Mud.Misc.Logging as L (logErrorMsg, logNotice)
 
 import Control.Concurrent.STM.TMVar (newTMVarIO)
 import Control.Lens (ASetter, views)
@@ -41,6 +41,10 @@ import System.Clock (Clock(..), getTime)
 import System.Directory (getDirectoryContents)
 import System.FilePath ((</>))
 import System.Random.MWC (createSystemRandom)
+
+
+logErrorMsg :: Text -> Text -> MudStack ()
+logErrorMsg = L.logErrorMsg "Mud.TheWorld.TheWorld"
 
 
 logNotice :: Text -> Text -> MudStack ()
@@ -214,7 +218,7 @@ loadEqTbl ((</> eqTblFile) -> absolute) = do
 
 
 sorry :: FilePath -> String -> MudStack Bool
-sorry absolute (T.pack -> err) = (logError . loadTblErrorMsg absolute $ err) >> return False
+sorry absolute (T.pack -> err) = logErrorMsg "sorry" (loadTblErrorMsg absolute err) >> return False
 
 
 loadTbl :: (FromJSON b) => FilePath -> ASetter MudState MudState a b -> FilePath -> MudStack Bool

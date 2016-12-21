@@ -6,7 +6,7 @@ module Mud.Misc.Logging ( closeLogs
                         , initLogging
                         , initPlaLog
                         , logAndDispIOEx
-                        , logError
+                        , logErrorMsg
                         , logExMsg
                         , logIOEx
                         , logNotice
@@ -205,6 +205,10 @@ logNotice modName (dblQuote -> funName) msg = onEnv $ maybeVoid (helper . snd) .
 
 logError :: Text -> MudStack ()
 logError msg = onEnv $ maybeVoid (registerMsg msg . snd) . view errorLog
+
+
+logErrorMsg :: Text -> Text -> Text -> MudStack ()
+logErrorMsg modName (dblQuote -> funName) msg = logError . T.concat $ [ modName, " ", funName, ": ", msg ]
 
 
 logExMsg :: Text -> Text -> Text -> SomeException -> MudStack ()
