@@ -85,25 +85,17 @@ threadAct i actType f = let a = (>> f) . setThreadType $ case actType of Attacki
 -- ==================================================
 
 
-drinkAct :: DrinkBundle -> MudStack ()
-drinkAct DrinkBundle { .. } =
-    let a = do
-            multiWrapSend1Nl drinkerMq drinkerCols . dropEmpties $ [ thrice prd . T.concat $ [ "You begin drinking "
-                                                                                             , renderLiqNoun drinkLiq the
-                                                                                             , " from the "
-                                                                                             , drinkVesselSing ]
-                                                                   , drinkLiq^.liqDrinkDesc ]
-            d <- flip (mkStdDesig drinkerId) DoCap <$> getState
-            bcastIfNotIncogNl drinkerId . pure $ ( T.concat [ serialize d
-                                                            , " begins drinking from "
-                                                            , renderVesselSing
-                                                            , "." ]
-                                                 , drinkerId `delete` desigIds d )
-            tweak $ mobTbl.ind drinkerId.nowDrinking ?~ (drinkLiq, drinkVesselSing)
-            loop 0 `catch` die (Just drinkerId) (pp Drinking)
-        b = tweak $ mobTbl.ind drinkerId.nowDrinking .~ Nothing
-    in a `finally` b
+drinkAct :: DrinkBundle -> MudStack () -- TODO: Mouthfuls reporting.
+drinkAct DrinkBundle { .. } = modifyStateSeq f `finally` tweak (mobTbl.ind drinkerId.nowDrinking .~ Nothing)
   where
+    f ms = let t  = thrice prd . T.concat $ [ "You begin drinking ", renderLiqNoun drinkLiq the, " from the ", drinkVesselSing ]
+               d  = mkStdDesig drinkerId ms DoCap
+               bs = pure ( T.concat [ serialize d, " begins drinking from ", renderVesselSing, "." ]
+                         , drinkerId `delete` desigIds d )
+               fs = [ multiWrapSend1Nl drinkerMq drinkerCols . dropEmpties $ [ t, drinkLiq^.liqDrinkDesc ]
+                    , bcastIfNotIncogNl drinkerId bs
+                    , loop 0 `catch` die (Just drinkerId) (pp Drinking) ]
+           in (ms & mobTbl.ind drinkerId.nowDrinking ?~ (drinkLiq, drinkVesselSing), fs)
     renderVesselSing    = drinkVesselSing |&| (isJust drinkVesselId ? aOrAn :? the)
     loop x@(succ -> x') = do
         liftIO . threadDelay $ 1 * 10 ^ 6

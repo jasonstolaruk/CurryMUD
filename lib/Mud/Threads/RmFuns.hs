@@ -12,7 +12,7 @@ import qualified Mud.Misc.Logging as L (logNotice)
 
 import Control.Arrow (second)
 import Control.Lens (view, views)
-import Control.Lens.Operators ((.~), (<>~), (^.))
+import Control.Lens.Operators ((.~), (<>~))
 import Data.Text (Text)
 import qualified Data.IntMap.Lazy as IM (filter, toList)
 
@@ -37,10 +37,9 @@ startRmFuns = getState >>= \ms -> do logNotice "startRmFuns" "starting room func
 
 stopRmFuns :: MudStack ()
 stopRmFuns = do
-    logNotice "stopRmFuns"  "stopping room functions."
+    logNotice "stopRmFuns" "stopping room functions."
     mapM_ (uncurry throwWaitRmFuns) . views rmTbl (IM.toList . IM.filter (views rmFunAsyncs (()!#))) =<< getState
 
 
 throwWaitRmFuns :: Id -> Rm -> MudStack ()
-throwWaitRmFuns i r = do mapM_ throwWait $ r^.rmFunAsyncs
-                         tweak $ rmTbl.ind i.rmFunAsyncs .~ []
+throwWaitRmFuns i r = views rmFunAsyncs (mapM_ throwWait) r >> tweak (rmTbl.ind i.rmFunAsyncs .~ [])

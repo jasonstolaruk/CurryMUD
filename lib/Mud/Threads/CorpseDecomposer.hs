@@ -97,31 +97,28 @@ corpseDecompHelper i (x, total) = getState >>= \ms ->
         ipc            = isPCCorpse . getCorpse i $ ms
         lens           = bool npcCorpseDesc pcCorpseDesc ipc
         w              = getCorpseWeight i ms
-    in if | x == d ->
-              tweaks [ corpseTbl.ind i.lens      .~ mkCorpseTxt ("You see the lifeless ", ".")
-                     , entTbl   .ind i.entSmell  ?~ corpseSmellLvl1
-                     , objTbl   .ind i.objTaste  ?~ thrice prd "Really? What did you expect? At least the corpse \
-                                                               \hasn't decomposed much yet" ]
-          | x == c ->
-              tweaks [ corpseTbl.ind i.lens      .~ mkCorpseTxt ("The ", " has begun to decompose.")
-                     , entTbl   .ind i.entSmell  ?~ corpseSmellLvl2
-                     , objTbl   .ind i.objTaste  ?~ "As you may have anticipated, the taste of the decomposing corpse \
-                                                    \is decidedly unappetizing."
-                     , objTbl   .ind i.objWeight .~ minusTenth w ]
-          | x == b ->
-              tweaks [ corpseTbl.ind i.lens      .~ mkCorpseTxt ("The ", " has decomposed significantly.")
-                     , entTbl   .ind i.entSmell  ?~ corpseSmellLvl3
-                     , objTbl   .ind i.objTaste  ?~ "The decomposing corpse could very well be the most vile thing \
-                                                    \you have ever tasted in your life."
-                     , objTbl   .ind i.objWeight .~ minusQuarter w ]
-          | x == a ->
-              tweaks [ corpseTbl.ind i.lens      .~ "The unidentifiable corpse is in an advanced stage of decomposition."
-                     , entTbl   .ind i.entSmell  ?~ corpseSmellLvl4
-                     , objTbl   .ind i.objTaste  ?~ "Ugh! Why? WHY?"
-                     , objTbl   .ind i.objWeight .~ minusHalf w
-                     , entTbl   .ind i.sing      .~ "decomposed corpse"
-                     , corpseTbl.ind i           %~ (ipc ? set pcCorpseSing corpsePlaceholder :? id) ]
-          | otherwise -> unit
+    in tweaks $ if
+      | x == d -> [ corpseTbl.ind i.lens      .~ mkCorpseTxt ("You see the lifeless ", ".")
+                  , entTbl   .ind i.entSmell  ?~ corpseSmellLvl1
+                  , objTbl   .ind i.objTaste  ?~ thrice prd "Really? What did you expect? At least the corpse hasn't \
+                                                            \decomposed much yet" ]
+      | x == c -> [ corpseTbl.ind i.lens      .~ mkCorpseTxt ("The ", " has begun to decompose.")
+                  , entTbl   .ind i.entSmell  ?~ corpseSmellLvl2
+                  , objTbl   .ind i.objTaste  ?~ "As you may have anticipated, the taste of the decomposing corpse is \
+                                                 \decidedly unappetizing."
+                  , objTbl   .ind i.objWeight .~ minusTenth w ]
+      | x == b -> [ corpseTbl.ind i.lens      .~ mkCorpseTxt ("The ", " has decomposed significantly.")
+                  , entTbl   .ind i.entSmell  ?~ corpseSmellLvl3
+                  , objTbl   .ind i.objTaste  ?~ "The decomposing corpse could very well be the most vile thing you \
+                                                 \have ever tasted in your life."
+                  , objTbl   .ind i.objWeight .~ minusQuarter w ]
+      | x == a -> [ corpseTbl.ind i.lens      .~ "The unidentifiable corpse is in an advanced stage of decomposition."
+                  , entTbl   .ind i.entSmell  ?~ corpseSmellLvl4
+                  , objTbl   .ind i.objTaste  ?~ "Ugh! Why? WHY?"
+                  , objTbl   .ind i.objWeight .~ minusHalf w
+                  , entTbl   .ind i.sing      .~ "decomposed corpse"
+                  , corpseTbl.ind i           %~ (ipc ? set pcCorpseSing corpsePlaceholder :? id) ]
+      | otherwise -> []
 
 
 finishDecomp :: Id -> MudStack ()

@@ -22,7 +22,6 @@ import Control.Exception.Lifted (catch)
 import Control.Lens.Operators ((%~))
 import Control.Monad.IO.Class (liftIO)
 import Data.List (isInfixOf)
-import Data.Monoid ((<>))
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (hGetLine)
@@ -82,9 +81,9 @@ interpTelnet i tds = do
                | ((||) <$> (gmcpWon't `isInfixOf`) <*> (gmcpDon't `isInfixOf`)) tds = setFlag False
                | otherwise = unit
       where
-        setFlag b = getSing i <$> getState >>= \s -> do tweak $ plaTbl.ind i %~ setPlaFlag IsGmcp b
-                                                        let msg = prd $ s <> " set GMCP " <> onOff b
-                                                        logNotice "interpTelnet gmcpHelper setFlag" msg
+        setFlag b = getSing i <$> getState >>= \s -> let msg = T.concat [ "setting GMCP ", onOff b, " for ", s, "." ]
+                                                     in sequence_ [ logNotice "interpTelnet gmcpHelper setFlag" msg
+                                                                  , tweak $ plaTbl.ind i %~ setPlaFlag IsGmcp b ]
         gmcpWill  = mkCodes TelnetWILL
         gmcpWon't = mkCodes TelnetWON'T
         gmcpDo    = mkCodes TelnetDO

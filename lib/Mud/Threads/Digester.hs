@@ -84,10 +84,10 @@ digest :: Id -> MudStack ()
 digest i = getState >>= \ms -> case getStomach i ms of []  -> unit
                                                        scs -> helper ms scs
   where
-    helper ms scs = rndmElem scs >>= \sc ->
-        sequence_ [ logPla "digest" i . prd $ "digesting " <> pp sc
-                  , case sc^.distinctId of Left  (DistinctLiqId  x) -> f liqEdibleEffects  . getDistinctLiq  $ x
-                                           Right (DistinctFoodId x) -> f foodEdibleEffects . getDistinctFood $ x
-                  , tweak $ mobTbl.ind i.stomach %~ (sc `delete`) ]
+    helper ms scs = rndmElem scs >>= \sc -> do
+        logPla "digest" i . prd $ "digesting " <> pp sc
+        case sc^.distinctId of Left  (DistinctLiqId  x) -> f liqEdibleEffects  . getDistinctLiq  $ x
+                               Right (DistinctFoodId x) -> f foodEdibleEffects . getDistinctFood $ x
+        tweak $ mobTbl.ind i.stomach %~ (sc `delete`)
       where
-        f a b = views (a.digestEffects) (maybeVoid (procEffectList i)) . b $ ms
+        f lens g = views (lens.digestEffects) (maybeVoid (procEffectList i)) . g $ ms
