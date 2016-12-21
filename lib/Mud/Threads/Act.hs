@@ -85,7 +85,7 @@ threadAct i actType f = let a = (>> f) . setThreadType $ case actType of Attacki
 -- ==================================================
 
 
-drinkAct :: DrinkBundle -> MudStack () -- TODO: Mouthfuls reporting.
+drinkAct :: DrinkBundle -> MudStack ()
 drinkAct DrinkBundle { .. } = modifyStateSeq f `finally` tweak (mobTbl.ind drinkerId.nowDrinking .~ Nothing)
   where
     f ms = let t  = thrice prd . T.concat $ [ "You begin drinking ", renderLiqNoun drinkLiq the, " from the ", drinkVesselSing ]
@@ -118,29 +118,31 @@ drinkAct DrinkBundle { .. } = modifyStateSeq f `finally` tweak (mobTbl.ind drink
         if | newCont == Right Nothing -> (>> bcastHelper True) . ioHelper x' $ T.concat [ "You drain the "
                                                                                         , drinkVesselSing
                                                                                         , " dry after "
-                                                                                        , showText x'
+                                                                                        , mkMouthfulTxt x'
                                                                                         , " mouthful"
                                                                                         , theLetterS . isNonZero $ x
                                                                                         , "." ]
            | isZero stomAvail -> let t = thrice prd " that you have to stop drinking. You don't feel so good"
                                  in (>> bcastHelper False) . ioHelper x' . T.concat $ [ "You are so full after "
-                                                                                      , showText x'
+                                                                                      , mkMouthfulTxt x'
                                                                                       , " mouthful"
                                                                                       , theLetterS . isNonZero $ x
                                                                                       , t ]
            | x' == drinkAmt -> (>> bcastHelper False) . ioHelper x' $ "You finish drinking."
            | otherwise      -> loop x'
-    ioHelper m t = do logPla "drinkAct loop" drinkerId . T.concat $ [ "drank "
-                                                                    , showText m
-                                                                    , " mouthful"
-                                                                    , theLetterS $ m /= 1
-                                                                    , " of "
-                                                                    , renderLiqNoun drinkLiq aOrAn
-                                                                    , " "
-                                                                    , let DistinctLiqId i = drinkLiq^.liqId
-                                                                      in parensQuote . showText $ i
-                                                                    , " from "
-                                                                    , renderVesselSing
-                                                                    , "." ]
-                      wrapSend drinkerMq drinkerCols t
-                      sendDfltPrompt drinkerMq drinkerId
+    mkMouthfulTxt x | x <= 8     = showText x
+                    | otherwise  = "many"
+    ioHelper m t    = do logPla "drinkAct loop" drinkerId . T.concat $ [ "drank "
+                                                                       , showText m
+                                                                       , " mouthful"
+                                                                       , theLetterS $ m /= 1
+                                                                       , " of "
+                                                                       , renderLiqNoun drinkLiq aOrAn
+                                                                       , " "
+                                                                       , let DistinctLiqId i = drinkLiq^.liqId
+                                                                         in parensQuote . showText $ i
+                                                                       , " from "
+                                                                       , renderVesselSing
+                                                                       , "." ]
+                         wrapSend drinkerMq drinkerCols t
+                         sendDfltPrompt drinkerMq drinkerId
