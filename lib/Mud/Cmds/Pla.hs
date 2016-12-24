@@ -3528,9 +3528,9 @@ smell (OneArgLower i mq cols a) = getState >>= \ms ->
   where
     sorry msg                     = wrapSend mq cols msg >> sendDfltPrompt mq i
     smellInv ms d invCoins target =
-        let (eiss, ecs) = uncurry (resolveMobInvCoins i ms . pure $ target) invCoins
-        in if | ()!# eiss, ()!# ecs -> sorry sorrySmellExcessTargets
-              | ()!# ecs            ->
+        let pair@(eiss, ecs) = uncurry (resolveMobInvCoins i ms . pure $ target) invCoins
+        in if | uncurry (&&) . ((()!#) *** (()!#)) $ pair -> sorry sorrySmellExcessTargets
+              | ()!# ecs                                  ->
                   let (canCoins, can'tCoinMsgs) = distillEcs ecs
                   in case can'tCoinMsgs of
                     []    -> let (coinTxt, isPlur) = mkCoinPieceTxt canCoins
@@ -3587,8 +3587,8 @@ smell (OneArgLower i mq cols a) = getState >>= \ms ->
             Right _          -> sorry sorrySmellExcessTargets
     -----
     smellRm ms d invCoins maybeHooks target = -- You can smell a mob or a corpse in your current room.
-        let (eiss, ecs) = uncurry (resolveRmInvCoins i ms . pure $ target) invCoins
-        in ()!# eiss && ()!# ecs ? sorry sorrySmellExcessTargets :? case eiss of
+        let pair@(eiss, ecs) = uncurry (resolveRmInvCoins i ms . pure $ target) invCoins
+        in (uncurry (&&) . ((()!#) *** (()!#)) $ pair) ? sorry sorrySmellExcessTargets :? case eiss of
           []      -> sorry $ let (canCoins, can'tCoinMsgs) = distillEcs ecs
                              in case can'tCoinMsgs of []    -> sorrySmellRmCoins . mkCoinPieceTxt $ canCoins
                                                       (x:_) -> x
@@ -3785,34 +3785,18 @@ taste   (OneArgLower i mq cols a) = getState >>= \ms ->
     let invCoins   = getInvCoins i ms
         eqMap      = getEqMap    i ms
         d          = mkStdDesig  i ms DoCap
-    in if
-      | ()# invCoins, ()# eqMap -> wrapSend mq cols sorryTasteNothingToTaste
-      | otherwise               -> case singleArgInvEqRm InInv a of
-        (InInv, target) | ()# invCoins -> wrapSend mq cols dudeYourHandsAreEmpty
-                        | otherwise    -> tasteInv ms d invCoins target
-        (InEq,  target) | ()# eqMap    -> wrapSend mq cols dudeYou'reNaked
-                        | otherwise    -> tasteEq ms d eqMap target
-        (InRm,  _     )                -> wrapSend mq cols sorryTasteInRm
-      where
+    in if uncurry (&&) . ((()#) *** (()#)) $ (invCoins, eqMap)
+      then wrapSend mq cols sorryTasteNothingToTaste
+      else case singleArgInvEqRm InInv a of (InInv, target) | ()# invCoins -> wrapSend mq cols dudeYourHandsAreEmpty
+                                                            | otherwise    -> tasteInv ms d invCoins target
+                                            (InEq,  target) | ()# eqMap    -> wrapSend mq cols dudeYou'reNaked
+                                                            | otherwise    -> tasteEq ms d eqMap target
+                                            (InRm,  _     )                -> wrapSend mq cols sorryTasteInRm
+  where
     tasteInv ms d invCoins target =
-        let (eiss, ecs) = uncurry (resolveMobInvCoins i ms . pure $ target) invCoins
-        in if
-          | ()!# eiss, ()!# ecs -> sorryExcess
-          | ()!# ecs            ->
-              let (canCoins, can'tCoinMsgs) = distillEcs ecs
-              in if ()# can'tCoinMsgs
-                then let (coinTxt, _) = mkCoinPieceTxt canCoins
-                         tasteDesc    = "You are first struck by an unmistakably metallic taste, followed soon by the \
-                                        \salty essence of sweat and waxy residue left by the hands of the many people \
-                                        \who handled the " <> coinTxt <> " before you."
-                         bs           = pure (T.concat [ serialize d
-                                                       , " tastes "
-                                                       , aCoinSomeCoins canCoins
-                                                       , "." ], i `delete` desigIds d)
-                         logMsg       = prd $ "tasted " <> aCoinSomeCoins canCoins
-                     in ioHelper ms Nothing tasteDesc bs logMsg
-                else wrapSend mq cols . head $ can'tCoinMsgs
-          | otherwise -> case head eiss of
+        let pair@(eiss, ecs) = uncurry (resolveMobInvCoins i ms . pure $ target) invCoins
+        in (uncurry (&&) . ((()!#) *** (()!#)) $ pair) ? sorryExcess :? case eiss of
+          (eis:_) -> case eis of
             Left  msg        -> wrapSend mq cols msg
             Right [targetId] -> let (targetSing, t) = (getSing `fanUncurry` getType) (targetId, ms)
                                     ic              = t == CorpseType
@@ -3832,10 +3816,22 @@ taste   (OneArgLower i mq cols a) = getState >>= \ms ->
                                     logMsg = T.concat [ "tasted ", aOrAn targetSing, " ", parensQuote "carried", "." ]
                                 in ioHelper ms (boolToMaybe ic targetId) tasteDesc bs logMsg
             Right _          -> sorryExcess
+          _ -> let (canCoins, can'tCoinMsgs) = distillEcs ecs in case can'tCoinMsgs of
+            []    -> let (coinTxt, _) = mkCoinPieceTxt canCoins
+                         tasteDesc    = "You are first struck by an unmistakably metallic taste, followed soon by the \
+                                        \salty essence of sweat and waxy residue left by the hands of the many people \
+                                        \who handled the " <> coinTxt <> " before you."
+                         bs           = pure (T.concat [ serialize d
+                                                       , " tastes "
+                                                       , aCoinSomeCoins canCoins
+                                                       , "." ], i `delete` desigIds d)
+                         logMsg       = prd $ "tasted " <> aCoinSomeCoins canCoins
+                     in ioHelper ms Nothing tasteDesc bs logMsg
+            (t:_) -> wrapSend mq cols t
     -----
     tasteEq ms d eqMap target =
         let (gecrs, miss, rcs) = resolveEntCoinNames i ms (pure target) (M.elems eqMap) mempty
-            eis                = procGecrMisMobEq . head . zip gecrs $ miss
+            eis                = procGecrMisMobEq . head . zip gecrs $ miss -- TODO: head
         in if ()!# rcs
           then wrapSend mq cols sorryEquipCoins
           else case eis of
