@@ -74,14 +74,14 @@ mkSecsTxt = parensQuote . uncurry (middle (<>) "/") . (both %~ commaShow)
 
 
 corpseDecomp :: Id -> SecondsPair -> MudStack ()
-corpseDecomp i pair = finally <$> loop <*> finish =<< liftIO (newIORef pair)
+corpseDecomp i pair = getObjWeight i <$> getState >>= \w ->
+    finally <$> loop w <*> finish =<< liftIO (newIORef pair)
   where
-    loop ref = liftIO (readIORef ref) >>= \case
-      (0, _) -> unit
-      secs   -> do corpseDecompHelper i secs
-                   liftIO . threadDelay $ 1 * 10 ^ 6
-                   liftIO . writeIORef ref . first pred $ secs
-                   loop ref
+    loop w ref = liftIO (readIORef ref) >>= \case (0, _) -> unit
+                                                  secs   -> do corpseDecompHelper i w secs
+                                                               liftIO . threadDelay $ 1 * 10 ^ 6
+                                                               liftIO . writeIORef ref . first pred $ secs
+                                                               loop w ref
     finish ref = liftIO (readIORef ref) >>= \case
       (0, _) -> logHelper ("corpse decomposer for ID " <> showText i <> " has expired.") >> finishDecomp i
       secs   -> let msg = prd $ "pausing corpse decomposer for ID " <> showText i |<>| mkSecsTxt secs
@@ -90,13 +90,12 @@ corpseDecomp i pair = finally <$> loop <*> finish =<< liftIO (newIORef pair)
         logHelper = logNotice "corpseDecomp finish"
 
 
-corpseDecompHelper :: Id -> SecondsPair -> MudStack ()
-corpseDecompHelper i (x, total) = getState >>= \ms ->
+corpseDecompHelper :: Id -> Weight -> SecondsPair -> MudStack ()
+corpseDecompHelper i w (x, total) = getState >>= \ms ->
     let step           = total `intDivide` 4
         [ a, b, c, d ] = [ step, step * 2, step * 3, total ]
         ipc            = isPCCorpse . getCorpse i $ ms
         lens           = bool npcCorpseDesc pcCorpseDesc ipc
-        w              = getCorpseWeight i ms
     in tweaks $ if
       | x == d -> [ corpseTbl.ind i.lens      .~ mkCorpseTxt ("You see the lifeless ", ".")
                   , entTbl   .ind i.entSmell  ?~ corpseSmellLvl1

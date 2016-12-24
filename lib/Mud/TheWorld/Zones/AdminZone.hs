@@ -714,7 +714,7 @@ createAdminZone = do
             \Eight doors are positioned about the round, stucco wall at even intervals. A spiral staircase leads up. \
             \Next to the staircase lies an open manhole."
             Nothing
-            (Just "The unmistakable scent of mildew fills your nostrils. They really ought to ventillate this room \
+            (Just "The unmistakable scent of mildew fills your nostrils. This room really ought to be ventillated \
                   \better.")
             zeroBits
             [ StdLink North     iWeightRm    dfltLinkMove
