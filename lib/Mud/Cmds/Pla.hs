@@ -1465,12 +1465,12 @@ helperFillEitherInv i srcDesig targetId (eis:eiss) a@(ms, _, _, _) = case getVes
 
 
 getAction :: ActionFun
-getAction p@AdviseNoArgs             = advise p ["get"] adviceGetNoArgs
-getAction   (Lower     _ mq cols as) | length as >= 3, (head . tail . reverse $ as) == "from" = wrapSend mq cols hintGet
-getAction p@(LowerNub' i         as) = genericActionWithHooks p helper "get"
+getAction p@AdviseNoArgs         = advise p ["get"] adviceGetNoArgs
+getAction p@(Lower i mq cols as) = case reverse as of (_:"from":_:_) -> wrapSend mq cols hintGet
+                                                      _              -> genericActionWithHooks p helper "get"
   where
     helper v ms =
-        let (inInvs, inEqs, inRms) = sortArgsInvEqRm InRm as
+        let (inInvs, inEqs, inRms) = sortArgsInvEqRm InRm . nub $ as
             sorrys                 = dropEmpties [ inInvs |!| sorryGetInInv, inEqs |!| sorryGetInEq ]
             d                      = mkStdDesig i ms DoCap
             ri                     = getRmId i ms

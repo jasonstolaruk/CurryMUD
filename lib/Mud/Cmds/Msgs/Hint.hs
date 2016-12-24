@@ -63,7 +63,7 @@ hintGet :: Text
 hintGet = hintHelper [ "it appears that you want to remove an object from a container. In that case, please use the "
                      , dblQuote "remove"
                      , " command. For example, to remove a ring from your sack, type "
-                     , colorWith quoteColor "rem ring sack"
+                     , colorWith quoteColor "remove ring sack"
                      , "." ]
 
 
