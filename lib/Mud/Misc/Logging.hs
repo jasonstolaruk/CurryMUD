@@ -8,6 +8,7 @@ module Mud.Misc.Logging ( closeLogs
                         , logAndDispIOEx
                         , logErrorMsg
                         , logExMsg
+                        , logImpossible
                         , logIOEx
                         , logNotice
                         , logPla
@@ -214,6 +215,12 @@ logErrorMsg modName (dblQuote -> funName) msg = logError . T.concat $ [ modName,
 logExMsg :: Text -> Text -> Text -> SomeException -> MudStack ()
 logExMsg modName (dblQuote -> funName) msg (dblQuote . showText -> e) =
     logError . T.concat $ [ modName, " ", funName, ": ", msg, ". ", e ]
+
+
+logImpossible :: Text -> Text -> Text -> MudStack ()
+logImpossible modName funName msg = logErrorMsg modName funName $ t |<>| msg
+  where
+    t = "panic! " <> parensQuote ("the " <> singleQuote "impossible" <> " happened")
 
 
 logIOEx :: Text -> Text -> IOException -> MudStack ()

@@ -77,11 +77,10 @@ resolveEntCoinNames i ms (map T.toLower -> as) is c = expandGecrs c [ mkGecr i m
 
 
 expandGecrs :: Coins -> [GetEntsCoinsRes] -> ([GetEntsCoinsRes], [Maybe Inv], [ReconciledCoins])
-expandGecrs c (extractEnscsFromGecrs -> (gecrs, enscs))
-  | mess <- map extractMesFromGecr gecrs
-  , miss <- pruneDupIds $ view entId `fmap3` mess
-  , rcs  <- reconcileCoins c . distillEnscs $ enscs
-  = (gecrs, miss, rcs)
+expandGecrs c (extractEnscsFromGecrs -> (gecrs, enscs)) | mess <- map extractMesFromGecr gecrs
+                                                        , miss <- pruneDupIds $ view entId `fmap3` mess
+                                                        , rcs  <- reconcileCoins c . distillEnscs $ enscs
+                                                        = (gecrs, miss, rcs)
 
 
 extractEnscsFromGecrs :: [GetEntsCoinsRes] -> ([GetEntsCoinsRes], [EmptyNoneSome Coins])
@@ -169,12 +168,11 @@ mkGecr i ms searchIs searchCoins searchName@(headTail -> (h, t))
   | otherwise = mkGecrMult i ms 1 searchName searchIs searchCoins
   where
     oops = blowUp "mkGecr" "unable to convert Text to Int"
-    parse rest numInt
-      | T.length rest < 2               = Sorry searchName
-      | (delim, rest') <- headTail rest =
-          if | delim == amountChar -> mkGecrMult    i ms numInt rest' searchIs searchCoins
-             | delim == indexChar  -> mkGecrIndexed i ms numInt rest' searchIs
-             | otherwise           -> Sorry searchName
+    parse rest numInt | T.length rest < 2               = Sorry searchName
+                      | (delim, rest') <- headTail rest =
+                          if | delim == amountChar -> mkGecrMult    i ms numInt rest' searchIs searchCoins
+                             | delim == indexChar  -> mkGecrIndexed i ms numInt rest' searchIs
+                             | otherwise           -> Sorry searchName
 
 
 mkGecrMult :: Id -> MudState -> Amount -> Text -> Inv -> Coins -> GetEntsCoinsRes
@@ -349,10 +347,10 @@ procGecrMisMobEq :: (GetEntsCoinsRes, Maybe Inv) -> Either Text Inv
 procGecrMisMobEq DupIdsEmpty        | res <- dupIdsRes              = res
 procGecrMisMobEq (SorryOne     (don'tHaveEq    -> res))             = res
 procGecrMisMobEq (NoneMult     (don'tHaveAnyEq -> res))             = res
-procGecrMisMobEq (FoundMult                       res)              = res
+procGecrMisMobEq (FoundMult                       res )             = res
 procGecrMisMobEq (NoneIndexed  (don'tHaveAnyEq -> res))             = res
 procGecrMisMobEq (SorryIndexed x p) | res <- don'tHaveIndexedEq x p = res
-procGecrMisMobEq (FoundIndexed                    res)              = res
+procGecrMisMobEq (FoundIndexed                    res )             = res
 procGecrMisMobEq SorryCoins         | res <- sorryIndexedCoins      = res
 procGecrMisMobEq (GenericSorry (don'tHaveEq    -> res))             = res
 procGecrMisMobEq gecrMis = patternMatchFail "procGecrMisMobEq" . showText $ gecrMis

@@ -63,7 +63,7 @@ import Mud.Util.Padding
 import Mud.Util.Quoting
 import Mud.Util.Text
 import Mud.Util.Wrapping
-import qualified Mud.Misc.Logging as L (logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut)
+import qualified Mud.Misc.Logging as L (logImpossible, logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut)
 import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 
 import Control.Applicative (liftA2)
@@ -125,6 +125,10 @@ patternMatchFail = U.patternMatchFail "Mud.Cmds.Pla"
 
 
 -----
+
+
+logImpossible :: Text -> Text -> MudStack ()
+logImpossible = L.logImpossible "Mud.Cmds.Pla"
 
 
 logNotice :: Text -> Text -> MudStack ()
@@ -3782,22 +3786,22 @@ stopAttacking _ _ = undefined -- TODO
 taste :: ActionFun
 taste p@AdviseNoArgs              = advise p ["taste"] adviceTasteNoArgs
 taste   (OneArgLower i mq cols a) = getState >>= \ms ->
-    let invCoins   = getInvCoins i ms
-        eqMap      = getEqMap    i ms
-        d          = mkStdDesig  i ms DoCap
+    let (invCoins, eqMap) = (getInvCoins `fanUncurry` getEqMap) (i, ms)
+        d                 = mkStdDesig  i ms DoCap
     in if uncurry (&&) . ((()#) *** (()#)) $ (invCoins, eqMap)
-      then wrapSend mq cols sorryTasteNothingToTaste
-      else case singleArgInvEqRm InInv a of (InInv, target) | ()# invCoins -> wrapSend mq cols dudeYourHandsAreEmpty
+      then sorry sorryTasteNothingToTaste
+      else case singleArgInvEqRm InInv a of (InInv, target) | ()# invCoins -> sorry dudeYourHandsAreEmpty
                                                             | otherwise    -> tasteInv ms d invCoins target
-                                            (InEq,  target) | ()# eqMap    -> wrapSend mq cols dudeYou'reNaked
-                                                            | otherwise    -> tasteEq ms d eqMap target
-                                            (InRm,  _     )                -> wrapSend mq cols sorryTasteInRm
+                                            (InEq,  target) | ()# eqMap    -> sorry dudeYou'reNaked
+                                                            | otherwise    -> tasteEq  ms d eqMap    target
+                                            (InRm,  _     )                -> sorry sorryTasteInRm
   where
+    sorry msg                     = wrapSend mq cols msg >> sendDfltPrompt mq i
     tasteInv ms d invCoins target =
         let pair@(eiss, ecs) = uncurry (resolveMobInvCoins i ms . pure $ target) invCoins
-        in (uncurry (&&) . ((()!#) *** (()!#)) $ pair) ? sorryExcess :? case eiss of
+        in (uncurry (&&) . ((()!#) *** (()!#)) $ pair) ? sorry sorryTasteExcessTargets :? case eiss of
           (eis:_) -> case eis of
-            Left  msg        -> wrapSend mq cols msg
+            Left  msg        -> sorry msg
             Right [targetId] -> let (targetSing, t) = (getSing `fanUncurry` getType) (targetId, ms)
                                     ic              = t == CorpseType
                                     tasteDesc       = case t of
@@ -3815,7 +3819,7 @@ taste   (OneArgLower i mq cols a) = getState >>= \ms ->
                                                           , "." ], pure i') :)
                                     logMsg = T.concat [ "tasted ", aOrAn targetSing, " ", parensQuote "carried", "." ]
                                 in ioHelper ms (boolToMaybe ic targetId) tasteDesc bs logMsg
-            Right _          -> sorryExcess
+            Right _          -> sorry sorryTasteExcessTargets
           _ -> let (canCoins, can'tCoinMsgs) = distillEcs ecs in case can'tCoinMsgs of
             []    -> let (coinTxt, _) = mkCoinPieceTxt canCoins
                          tasteDesc    = "You are first struck by an unmistakably metallic taste, followed soon by the \
@@ -3827,15 +3831,13 @@ taste   (OneArgLower i mq cols a) = getState >>= \ms ->
                                                        , "." ], i `delete` desigIds d)
                          logMsg       = prd $ "tasted " <> aCoinSomeCoins canCoins
                      in ioHelper ms Nothing tasteDesc bs logMsg
-            (t:_) -> wrapSend mq cols t
+            (t:_) -> sorry t
     -----
-    tasteEq ms d eqMap target =
-        let (gecrs, miss, rcs) = resolveEntCoinNames i ms (pure target) (M.elems eqMap) mempty
-            eis                = procGecrMisMobEq . head . zip gecrs $ miss -- TODO: head
-        in if ()!# rcs
-          then wrapSend mq cols sorryEquipCoins
-          else case eis of
-            Left  msg        -> wrapSend mq cols msg
+    tasteEq ms d eqMap target | (gecrs, miss, rcs) <- resolveEntCoinNames i ms (pure target) (M.elems eqMap) mempty =
+        ()!# rcs ? sorry sorryEquipCoins :? case zip gecrs miss of
+          []       -> logImpossible "taste tasteEq" "unexpected empty list." >> sorry noTasteMsg
+          (pair:_) -> case procGecrMisMobEq pair of
+            Left  msg        -> sorry msg
             Right [targetId] -> let (targetSing, tasteDesc) = (getSing `fanUncurry` getObjTaste) (targetId, ms)
                                     slotDesc = parensQuote . mkSlotDesc i ms . reverseLookup targetId $ eqMap
                                     bs       = pure (T.concat [ serialize d
@@ -3844,17 +3846,11 @@ taste   (OneArgLower i mq cols a) = getState >>= \ms ->
                                                               , " "
                                                               , slotDesc
                                                               , "." ], i `delete` desigIds d)
-                                    logMsg   = T.concat [ "tasted "
-                                                        , aOrAn targetSing
-                                                        , " "
-                                                        , slotDesc
-                                                        , "." ]
+                                    logMsg   = T.concat [ "tasted ", aOrAn targetSing, " ", slotDesc, "." ]
                                 in ioHelper ms Nothing tasteDesc bs logMsg
-            Right _          -> sorryExcess
+            Right _          -> sorry sorryTasteExcessTargets
     -----
-    ioHelper    = smellTasteIOHelper "taste" i mq cols
-    -----
-    sorryExcess = wrapSend mq cols sorryTasteExcessTargets
+    ioHelper = smellTasteIOHelper "taste" i mq cols
 taste p = advise p ["taste"] adviceTasteExcessArgs
 
 
