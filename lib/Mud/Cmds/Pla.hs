@@ -63,7 +63,7 @@ import Mud.Util.Padding
 import Mud.Util.Quoting
 import Mud.Util.Text
 import Mud.Util.Wrapping
-import qualified Mud.Misc.Logging as L (logImpossible, logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut)
+import qualified Mud.Misc.Logging as L (logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut)
 import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 
 import Control.Applicative (liftA2)
@@ -125,10 +125,6 @@ patternMatchFail = U.patternMatchFail "Mud.Cmds.Pla"
 
 
 -----
-
-
-logImpossible :: Text -> Text -> MudStack ()
-logImpossible = L.logImpossible "Mud.Cmds.Pla"
 
 
 logNotice :: Text -> Text -> MudStack ()
@@ -3833,9 +3829,9 @@ taste   (OneArgLower i mq cols a) = getState >>= \ms ->
                      in ioHelper ms Nothing tasteDesc bs logMsg
             (t:_) -> sorry t
     -----
-    tasteEq ms d eqMap target | (gecrs, miss, rcs) <- resolveEntCoinNames i ms (pure target) (M.elems eqMap) mempty =
-        ()!# rcs ? sorry sorryEquipCoins :? case zip gecrs miss of
-          []       -> logImpossible "taste tasteEq" "unexpected empty list." >> sorry noTasteMsg
+    tasteEq ms d eqMap target | (gecrs, miss, _) <- resolveEntCoinNames i ms (pure target) (M.elems eqMap) mempty =
+        case zip gecrs miss of
+          []       -> sorry sorryEquipCoins
           (pair:_) -> case procGecrMisMobEq pair of
             Left  msg        -> sorry msg
             Right [targetId] -> let (targetSing, tasteDesc) = (getSing `fanUncurry` getObjTaste) (targetId, ms)
