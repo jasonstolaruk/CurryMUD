@@ -72,7 +72,7 @@ import Control.Concurrent (threadDelay)
 import Control.Exception.Lifted (catch, try)
 import Control.Lens (_1, _2, _3, _4, _5, at, both, each, to, view, views)
 import Control.Lens.Operators ((%~), (&), (-~), (.~), (<>~), (?~), (^.))
-import Control.Monad ((>=>), foldM, forM, forM_, guard, mplus, when)
+import Control.Monad ((>=>), foldM, forM, forM_, guard, mplus, unless, when)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (asks)
 import Crypto.BCrypt (validatePassword)
@@ -2063,7 +2063,7 @@ listen p = withoutArgs listen p
 -----
 
 
-look :: ActionFun -- TODO: Spirit looking at a PC.
+look :: ActionFun
 look (NoArgs i mq cols) = getState >>= \ms ->
     let ri        = getRmId i  ms
         r         = getRm   ri ms
@@ -2084,7 +2084,7 @@ look (LowerNub i mq cols as) = mkRndmVector >>= \v ->
             logMsg = T.intercalate " / " . dropBlanks $ [ maybeEmp mkLogMsgForDesigs maybeTargetDesigs, hookLogMsg ]
         logMsg |#| logPla "look" i . prd
         send mq toSelf
-        bcastIfNotIncogNl i bs
+        unless (isSpiritId i ms) . bcastIfNotIncogNl i $ bs
         sequence_ fs
   where
     helper v ms =
