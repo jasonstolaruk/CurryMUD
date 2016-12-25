@@ -16,6 +16,7 @@ import Mud.TheWorld.Liqs
 import Mud.TheWorld.Misc
 import Mud.TheWorld.Zones.AdminZone
 import Mud.TheWorld.Zones.AdminZoneIds (iLoggedOut, iNecropolis, iWelcome)
+import Mud.TheWorld.Zones.Dalben
 import Mud.TheWorld.Zones.Tutorial
 import Mud.TopLvlDefs.FilePaths
 import Mud.Util.Misc
@@ -168,10 +169,10 @@ initDistinctLiqTbl = tweak $ distinctLiqTbl .~ IM.fromList distinctLiqList
 
 
 createWorld :: MudStack ()
-createWorld = do
-    logNotice "createWorld" "creating the world."
-    createAdminZone
-    createTutorial
+createWorld = do logNotice "createWorld" "creating the world."
+                 createAdminZone
+                 createTutorial
+                 createDalben
 
 
 loadWorld :: FilePath -> MudStack Bool

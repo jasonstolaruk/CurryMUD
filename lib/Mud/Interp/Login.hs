@@ -25,6 +25,7 @@ import Mud.Misc.Database
 import Mud.Misc.Logging hiding (logNotice, logPla)
 import Mud.Misc.Misc
 import Mud.TheWorld.Zones.AdminZoneIds (iCentral, iLoggedOut, iWelcome)
+import Mud.TheWorld.Zones.DalbenIds (iDalbenWelcome)
 import Mud.Threads.Digester
 import Mud.Threads.Effect
 import Mud.Threads.Misc
@@ -55,7 +56,7 @@ import Crypto.BCrypt (validatePassword)
 import Data.Char (isDigit, isLower, isUpper, toLower)
 import Data.Ix (inRange)
 import Data.List (delete, foldl', intersperse, partition)
-import Data.Maybe (fromJust)
+import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>), Any(..))
 import Data.Text (Text)
 import Data.Time (UTCTime)
@@ -759,7 +760,7 @@ logIn newId ms oldSing newHost newTime originId = peepNewId . movePC $ adoptNewI
       where
         e    = getEnt   originId ms
         gmcp = isGmcpId newId    ms
-    movePC ms' = let newRmId = fromJust . getLogoutRmId newId $ ms'
+    movePC ms' = let newRmId = fromMaybe iDalbenWelcome . getLogoutRmId newId $ ms'
                  in ms' & invTbl.ind iWelcome         %~ (newId    `delete`)
                         & invTbl.ind iLoggedOut       %~ (originId `delete`)
                         & invTbl.ind newRmId          %~ addToInv ms' (pure newId)

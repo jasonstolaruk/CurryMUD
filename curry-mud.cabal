@@ -93,6 +93,8 @@ library
                        Mud.TheWorld.TheWorld
                        Mud.TheWorld.Zones.AdminZone
                        Mud.TheWorld.Zones.AdminZoneIds
+                       Mud.TheWorld.Zones.Dalben
+                       Mud.TheWorld.Zones.DalbenIds
                        Mud.TheWorld.Zones.Tutorial
                        Mud.TheWorld.Zones.TutorialIds
                        Mud.TheWorld.Zones.ZoneMap
