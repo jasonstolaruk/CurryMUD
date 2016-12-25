@@ -33,7 +33,6 @@ import Mud.Util.Quoting
 import Mud.Util.Text
 import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 
-import Control.Arrow ((***))
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (async, race_, wait)
 import Control.Concurrent.STM (atomically)
@@ -46,7 +45,6 @@ import Control.Monad ((>=>), forM_, forever, guard, when)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (asks)
 import Data.List (sort)
-import Data.Maybe (fromJust)
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import qualified Data.IntMap.Lazy as IM (elems, lookup)
@@ -107,11 +105,10 @@ spawnLogger fn p (T.unpack -> ln) f q logExLock =
   where
     initLog = p |&| fileHandler fn >=> \gh -> let h = setFormatter gh . simpleLogFormatter $ "[$time $loggername] $msg"
                                               in updateGlobalLogger ln (setHandlers (pure h) . setLevel p) >> return gh
-    loop gh = q |&| atomically . readTQueue >=> \case
-      LogMsg (T.unpack -> msg) -> f ln msg >> loop gh
-      RotateLog                -> rotateLog gh
-      StopLog                  -> close     gh
-      Throw                    -> throwIO DivideByZero
+    loop gh = q |&| atomically . readTQueue >=> \case LogMsg (T.unpack -> msg) -> f ln msg >> loop gh
+                                                      RotateLog                -> rotateLog gh
+                                                      StopLog                  -> close     gh
+                                                      Throw                    -> throwIO DivideByZero
     rotateLog gh = mIf (doesFileExist fn)
                        (mIf ((>= maxLogSize) <$> fileSize `fmap` getFileStatus fn)
                             rotateIt
@@ -179,14 +176,15 @@ doIfLogging i f = getState >>= \ms ->
 
 
 closeLogs :: MudStack ()
-closeLogs = asks mkBindings >>= \((ea, eq), (na, nq)) -> do
-    logNotice "Mud.Logging" "closeLogs" "closing the logs."
-    (as, qs) <- unzip . views plaLogTbl IM.elems <$> getState
-    liftIO $ do mapM_ (atomically . (`writeTQueue` StopLog)) (eq : nq : qs)
-                mapM_ wait $ ea : na : as
-                removeAllHandlers
+closeLogs = asks (errorLog `fanView` noticeLog) >>= \case
+  (Just (ea, eq), Just (na, nq)) -> do logNotice "Mud.Logging" "closeLogs" "closing the logs."
+                                       helper ([ ea, na ], [ eq, nq ])
+  _                              -> helper ([], [])
   where
-    mkBindings = (fromJust *** fromJust) . (errorLog `fanView` noticeLog)
+    helper (asyncs, queues) = views plaLogTbl (unzip . IM.elems) <$> getState >>= \(as, qs) ->
+        liftIO $ do mapM_ (atomically . (`writeTQueue` StopLog)) (queues ++ qs)
+                    mapM_ wait $ asyncs ++ as
+                    removeAllHandlers
 
 
 -- ==================================================
