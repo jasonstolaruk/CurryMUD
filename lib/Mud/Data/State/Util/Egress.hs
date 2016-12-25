@@ -4,7 +4,6 @@ module Mud.Data.State.Util.Egress ( handleEgress
                                   , mkFarewellStats ) where
 
 import Mud.Cmds.Msgs.Misc
-import Mud.Cmds.Util.Misc
 import Mud.Data.Misc
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
@@ -115,8 +114,7 @@ movePC i ms spirit = ms & invTbl     .ind ri           %~ (i `delete`)
                         & mobTbl     .ind i.rmId       .~ ri'
                         & plaTbl     .ind i.logoutRmId ?~ ri
   where
-    ri  = getRmId i ms
-    ri' = spirit ? iNecropolis :? iLoggedOut
+    (ri, ri') = (getRmId i ms, spirit ? iNecropolis :? iLoggedOut)
 
 
 possessHelper :: Int -> MudState -> MudState

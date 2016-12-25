@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
-{-# LANGUAGE LambdaCase, OverloadedStrings, TupleSections, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, MultiWayIf, OverloadedStrings, TupleSections, ViewPatterns #-}
 
 module Mud.Misc.Logging ( closeLogs
                         , closePlaLog
@@ -27,11 +27,11 @@ import Mud.Data.State.Util.Output
 import Mud.Misc.Misc
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
-import Mud.Util.Misc hiding (blowUp)
+import Mud.Util.Misc hiding (blowUp, patternMatchFail)
 import Mud.Util.Operators
 import Mud.Util.Quoting
 import Mud.Util.Text
-import qualified Mud.Util.Misc as U (blowUp)
+import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 
 import Control.Arrow ((***))
 import Control.Concurrent (threadDelay)
@@ -74,6 +74,10 @@ blowUp :: BlowUp a
 blowUp = U.blowUp "Mud.Misc.Logging"
 
 
+patternMatchFail :: (Show a) => PatternMatchFail a b
+patternMatchFail = U.patternMatchFail "Mud.Misc.Logging"
+
+
 -- ==================================================
 -- Starting logs:
 
@@ -98,16 +102,15 @@ type LoggingFun = String -> String -> IO ()
 
 spawnLogger :: FilePath -> Priority -> LogName -> LoggingFun -> LogQueue -> Lock -> IO LogAsync
 spawnLogger fn p (T.unpack -> ln) f q logExLock =
-    async $ race_ ((loop =<< initLog)   `catch` loggingThreadExHandler logExLock "spawnLogger")
+    async $ race_ ((loop =<< initLog)   `catch` loggingThreadExHandler logExLock "spawnLogger"       )
                   (logRotationFlagger q `catch` loggingThreadExHandler logExLock "logRotationFlagger")
   where
-    initLog = p |&| fileHandler fn >=> \gh ->
-        let h = setFormatter gh . simpleLogFormatter $ "[$time $loggername] $msg"
-        in updateGlobalLogger ln (setHandlers (pure h) . setLevel p) >> return gh
+    initLog = p |&| fileHandler fn >=> \gh -> let h = setFormatter gh . simpleLogFormatter $ "[$time $loggername] $msg"
+                                              in updateGlobalLogger ln (setHandlers (pure h) . setLevel p) >> return gh
     loop gh = q |&| atomically . readTQueue >=> \case
       LogMsg (T.unpack -> msg) -> f ln msg >> loop gh
       RotateLog                -> rotateLog gh
-      StopLog                  -> close gh
+      StopLog                  -> close     gh
       Throw                    -> throwIO DivideByZero
     rotateLog gh = mIf (doesFileExist fn)
                        (mIf ((>= maxLogSize) <$> fileSize `fmap` getFileStatus fn)
@@ -134,15 +137,12 @@ loggingThreadExHandler logExLock n e = guard (fromException e /= Just ThreadKill
                        , parensQuote $ "inside " <> dblQuote n
                        , ". "
                        , dblQuote . showText $ e ]
-    in do
-      file <- mkMudFilePath loggingExLogFileFun
-      handle (handler msg) . withLock logExLock . T.appendFile file . nl $ msg
+    in do file <- mkMudFilePath loggingExLogFileFun
+          handle (handler msg) . withLock logExLock . T.appendFile file . nl $ msg
   where
-    handler msg ex | isAlreadyInUseError ex = showIt
-                   | isPermissionError   ex = showIt
-                   | otherwise              = throwIO ex
-      where
-        showIt = T.hPutStrLn stderr msg
+    handler msg ex = let showIt = T.hPutStrLn stderr msg in if | isAlreadyInUseError ex -> showIt
+                                                               | isPermissionError   ex -> showIt
+                                                               | otherwise              -> throwIO ex
 
 
 logRotationFlagger :: LogQueue -> IO ()
@@ -172,20 +172,19 @@ closePlaLog = flip doIfLogging stopLog
 
 doIfLogging :: Id -> (LogQueue -> MudStack ()) -> MudStack ()
 doIfLogging i f = getState >>= \ms ->
-    let a = maybeVoid (f . snd) . views plaLogTbl (IM.lookup i) $ ms
-        b = maybeVoid (`doIfLogging` f) . getPossessor i $ ms
-        (🍡) = pcNpc i ms
-    in a 🍡 b
+    let helper = \case PCType  -> views plaLogTbl (maybeVoid (f . snd) . (i `IM.lookup`)) ms
+                       NpcType -> maybeVoid (`doIfLogging` f) . getPossessor i $ ms
+                       t       -> patternMatchFail "doIfLogging helper" . showText $ t
+    in views typeTbl (maybeVoid helper . (i `IM.lookup`)) ms
 
 
 closeLogs :: MudStack ()
 closeLogs = asks mkBindings >>= \((ea, eq), (na, nq)) -> do
     logNotice "Mud.Logging" "closeLogs" "closing the logs."
     (as, qs) <- unzip . views plaLogTbl IM.elems <$> getState
-    liftIO $ do
-        mapM_ (atomically . (`writeTQueue` StopLog)) $ eq : nq : qs
-        mapM_ wait $ ea : na : as
-        removeAllHandlers
+    liftIO $ do mapM_ (atomically . (`writeTQueue` StopLog)) (eq : nq : qs)
+                mapM_ wait $ ea : na : as
+                removeAllHandlers
   where
     mkBindings = (fromJust *** fromJust) . (errorLog `fanView` noticeLog)
 

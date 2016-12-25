@@ -23,7 +23,6 @@ module Mud.Cmds.Util.Misc ( asterisk
                           , hasEnc
                           , hasYou
                           , inOut
-                          , isAdHoc
                           , isAlive
                           , isAttacking
                           , isBracketed
@@ -88,7 +87,7 @@ import Mud.Interp.Pager
 import Mud.Misc.ANSI
 import Mud.Misc.Database
 import Mud.Misc.LocPref
-import Mud.TheWorld.Zones.AdminZoneIds (iNecropolis, iWelcome)
+import Mud.TheWorld.Zones.AdminZoneIds (iNecropolis)
 import Mud.Threads.Misc
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.FilePaths
@@ -471,13 +470,6 @@ hasEnc as = any (`elem` [ enc, enc's ]) as || last as == prd enc
 
 hasYou :: [Text] -> Bool
 hasYou = any (`elem` yous) . map (T.dropAround (not . isLetter) . T.toLower)
-
-
------
-
-
-isAdHoc :: Id -> MudState -> Bool
-isAdHoc i = (== iWelcome) . getRmId i
 
 
 -----

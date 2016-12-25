@@ -31,6 +31,7 @@ module Mud.Data.State.Util.Misc ( addToInv
                                 , getUnusedId
                                 , getVisibleInv
                                 , getVisibleInvCoins
+                                , isAdHoc
                                 , isAwake
                                 , isDead
                                 , isKnownLang
@@ -56,7 +57,6 @@ module Mud.Data.State.Util.Misc ( addToInv
                                 , modifyState
                                 , modifyStateSeq
                                 , onEnv
-                                , pcNpc
                                 , plurRace
                                 , procHooks
                                 , procQuoteChars
@@ -355,6 +355,13 @@ getUnusedId = views typeTbl (head . (enumFrom 0 \\) . IM.keys)
 -----
 
 
+isAdHoc :: Id -> MudState -> Bool
+isAdHoc i = (== iWelcome) . getRmId i
+
+
+-----
+
+
 isAwake :: Id -> MudState -> Bool
 isAwake = onPla ((&&) <$> isLoggedIn <*> not . isIncognito) True
 
@@ -558,16 +565,6 @@ modifyState f = ask >>= \md -> liftIO .  atomicModifyIORef' (md^.mudStateIORef) 
 
 modifyStateSeq :: (MudState -> (MudState, Funs)) -> MudStack ()
 modifyStateSeq = modifyState >=> sequence_
-
-
------
-
-
-pcNpc :: Id -> MudState -> Fun -> Fun -> MudStack ()
-pcNpc i ms a b = case getType i ms of
-  PCType  -> a
-  NpcType -> b
-  t       -> patternMatchFail "pcNpc" . showText $ t
 
 
 -----

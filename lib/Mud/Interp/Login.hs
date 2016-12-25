@@ -114,14 +114,13 @@ interpName times (T.toLower -> cn@(capitalize -> cn')) params@(NoArgs i mq cols)
   where
     new          = sequence_ [ send mq . nlPrefix . nl . T.unlines . parseWrapXform cols $ newPlaMsg, promptName mq ]
     illegalChars = let { a = '!' `enumFromTo` '@'; b = '[' `enumFromTo` '`'; c = '{' `enumFromTo` '~' } in a ++ b ++ c
-    confirmName
-      | isDebug, isZBackDoor, T.head cn' == 'Z' = zBackDoor times cn' params
-      | otherwise                               = do
-          wrapSendPrompt mq cols . T.concat $ [ "We'll create a new character named "
-                                              , dblQuote . prd $ cn'
-                                              , spaced "OK?"
-                                              , mkYesNoChoiceTxt ]
-          setInterp i . Just . interpConfirmNewChar times $ cn'
+    confirmName | isDebug, isZBackDoor, T.head cn' == 'Z' = zBackDoor times cn' params
+                | otherwise                               = do
+                    wrapSendPrompt mq cols . T.concat $ [ "We'll create a new character named "
+                                                        , dblQuote . prd $ cn'
+                                                        , spaced "OK?"
+                                                        , mkYesNoChoiceTxt ]
+                    setInterp i . Just . interpConfirmNewChar times $ cn'
 interpName _ _ ActionParams { .. } = promptRetryName plaMsgQueue plaCols sorryInterpNameExcessArgs
 
 
