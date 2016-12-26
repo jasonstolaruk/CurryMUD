@@ -24,6 +24,7 @@ module Mud.Cmds.Util.Pla ( adminTagTxt
                          , hasMp
                          , hasPp
                          , helperDropEitherInv
+                         , helperFillEitherInv
                          , helperGetDropEitherCoins
                          , helperGetEitherInv
                          , helperGiveEitherCoins
@@ -121,7 +122,7 @@ import Data.Bool (bool)
 import Data.Char (isLower)
 import Data.Function (on)
 import Data.List ((\\), delete, elemIndex, find, foldl', intercalate, nub, sortBy)
-import Data.Maybe (fromJust)
+import Data.Maybe (isNothing)
 import Data.Monoid ((<>), Sum(..))
 import Data.Text (Text)
 import qualified Data.IntMap.Lazy as IM (keys)
@@ -406,6 +407,81 @@ mkGodVerb Get  SndPer = "pick up"
 mkGodVerb Get  ThrPer = "picks up"
 mkGodVerb Drop SndPer = "drop"
 mkGodVerb Drop ThrPer = "drops"
+
+
+-----
+
+
+helperFillEitherInv :: Id
+                    -> Desig
+                    -> Id
+                    -> [Either Text Inv]
+                    -> GenericIntermediateRes
+                    -> GenericIntermediateRes
+helperFillEitherInv _ _        _        []         a               = a
+helperFillEitherInv i srcDesig targetId (eis:eiss) a@(ms, _, _, _) = case getVesselCont targetId ms of
+  Nothing   -> sorry . sorryFillEmptySource $ targetSing
+  Just cont -> next $ case eis of Left msg -> sorry msg
+                                  Right is -> helper cont is a
+  where
+    targetSing = getSing targetId ms
+    next       = helperFillEitherInv i srcDesig targetId eiss
+    sorry msg  = a & _2 <>~ pure msg
+    helper _                              []       a'                = a'
+    helper cont@(targetLiq, targetMouths) (vi:vis) a'@(ms', _, _, _)
+      | isNothing . getVesselCont targetId $ ms' = a'
+      | vi == targetId                           = helper cont vis . sorry' . sorryFillSelf $ vs
+      | getType vi ms' /= VesselType             = helper cont vis . sorry' . sorryFillType $ vs
+      | otherwise                                = helper cont vis . (_3 <>~ bcastHelper) $ case getVesselCont vi ms' of
+          Nothing | vmm <  targetMouths ->
+                      a' & _1.vesselTbl.ind targetId.vesselCont ?~ (targetLiq, targetMouths - vmm)
+                         & _1.vesselTbl.ind vi      .vesselCont ?~ (targetLiq, vmm)
+                         & _2 <>~ mkFillUpMsg
+                         & _4 <>~ mkFillUpMsg
+                  | vmm == targetMouths ->
+                      a' & _1.vesselTbl.ind targetId.vesselCont .~ Nothing
+                         & _1.vesselTbl.ind vi      .vesselCont ?~ (targetLiq, vmm)
+                         & _2 <>~ mkFillUpEmptyMsg
+                         & _4 <>~ mkFillUpEmptyMsg
+                  | otherwise           ->
+                      a' & _1.vesselTbl.ind targetId.vesselCont .~ Nothing
+                         & _1.vesselTbl.ind vi      .vesselCont ?~ (targetLiq, targetMouths)
+                         & _2 <>~ mkXferEmptyMsg
+                         & _4 <>~ mkXferEmptyMsg
+          Just (vl, vm)
+            | vl 🍰 targetLiq    -> sorry' . uncurry sorryFillLiqTypes $ (targetId, vi) & both %~ flip getBothGramNos ms'
+            | vm >= vmm          -> sorry' . sorryFillAlreadyFull $ vs
+            | vAvail <- vmm - vm -> if | vAvail <  targetMouths ->
+                                           a' & _1.vesselTbl.ind targetId.vesselCont ?~ (targetLiq, targetMouths - vAvail)
+                                              & _1.vesselTbl.ind vi      .vesselCont ?~ (targetLiq, vmm)
+                                              & _2 <>~ mkFillUpMsg
+                                              & _4 <>~ mkFillUpMsg
+                                       | vAvail == targetMouths ->
+                                           a' & _1.vesselTbl.ind targetId.vesselCont .~ Nothing
+                                              & _1.vesselTbl.ind vi      .vesselCont ?~ (targetLiq, vmm)
+                                              & _2 <>~ mkFillUpEmptyMsg
+                                              & _4 <>~ mkFillUpEmptyMsg
+                                       | otherwise ->
+                                           a' & _1.vesselTbl.ind targetId.vesselCont .~ Nothing
+                                              & _1.vesselTbl.ind vi      .vesselCont ?~ (targetLiq, vm + targetMouths)
+                                              & _2 <>~ mkXferEmptyMsg
+                                              & _4 <>~ mkXferEmptyMsg
+      where
+        (🍰) = (/=) `on` view liqId
+        sorry' msg       = a' & _2 <>~ pure msg
+        (vs, vmm)        = (getSing `fanUncurry` getMaxMouthfuls) (vi, ms')
+        n                = renderLiqNoun targetLiq id
+        mkFillUpMsg      = pure . T.concat $ [ "You fill up the ", vs, " with ", n, " from the ", targetSing, "." ]
+        mkFillUpEmptyMsg = pure . T.concat $ [ "You fill up the ", vs, " with ", n, " from the ", targetSing
+                                             , ", emptying it." ]
+        mkXferEmptyMsg   = pure . T.concat $ [ "You transfer ", n, " to the ", vs,  " from the ", targetSing
+                                             , ", emptying it." ]
+        bcastHelper      = pure (T.concat [ serialize srcDesig
+                                          , " transfers liquid from "
+                                          , aOrAn targetSing
+                                          , " to "
+                                          , aOrAn vs
+                                          , "." ], i `delete` desigIds srcDesig)
 
 
 -----
@@ -1112,8 +1188,8 @@ mkEqDesc i cols ms descId descSing descType = let descs = bool mkDescsOther mkDe
     ()# descs ? noDescs :? ((header <>) . T.unlines . concatMap (wrapIndent 15 cols) $ descs)
   where
     mkDescsSelf =
-        let (slotNames,  es ) = unzip [ (pp slot, getEnt ei ms)                  | (slot, ei) <- M.toList . getEqMap i $ ms ]
-            (sings,      ens) = unzip [ (view sing &&& views entName fromJust) e | e          <- es                         ]
+        let (slotNames,  es ) = unzip [ (pp slot, getEnt ei ms)     | (slot, ei) <- M.toList . getEqMap i $ ms ]
+            (sings,      ens) = unzip [ view sing &&& mkEntName $ e | e          <- es                         ]
         in map helper . zip3 slotNames sings . styleAbbrevs DoQuote $ ens
       where
         helper (T.breakOn (spcL "finger") -> (slotName, _), s, styled) = T.concat [ parensPad 15 slotName, s, " ", styled ]
@@ -1282,10 +1358,12 @@ type InvWithCon = Inv
 
 
 mkMaybeNthOfM :: MudState -> IsConInRm -> Id -> Sing -> InvWithCon -> Maybe NthOfM
-mkMaybeNthOfM ms icir conId conSing invWithCon = guard icir >> return helper
+mkMaybeNthOfM ms icir conId conSing invWithCon = guard icir >> res
   where
-    helper  = succ . fromJust . elemIndex conId &&& length $ matches
-    matches = filter ((== conSing) . flip getSing ms) invWithCon
+    res = case filter ((== conSing) . flip getSing ms) invWithCon of
+      []      -> Nothing
+      matches -> case elemIndex conId &&& length $ matches of (Nothing, _) -> Nothing
+                                                              (Just n,  m) -> Just (succ n, m)
 
 
 -----

@@ -83,7 +83,7 @@ import Data.Int (Int64)
 import Data.Ix (inRange)
 import Data.List ((\\), delete, foldl', group, intercalate, intersperse, nub, nubBy, partition, sort, sortBy, unfoldr, zip4)
 import Data.List.Split (chunksOf)
-import Data.Maybe (fromJust, fromMaybe, isNothing)
+import Data.Maybe (fromJust, fromMaybe)
 import Data.Monoid ((<>), All(..), Sum(..))
 import Data.Text (Text)
 import Data.Time (diffUTCTime, getCurrentTime)
@@ -1382,79 +1382,6 @@ fillHelper i ms LastArgIsTargetBindings { .. } targetId =
         sorryCoins                  = ecs |!| sorryFillCoins
         (ms', toSelfs, bs, logMsgs) = helperFillEitherInv i srcDesig targetId eiss (ms, [], [], [])
     in (ms', (dropBlanks $ [ sorryInEq, sorryInRm, sorryCoins ] ++ toSelfs, bs, logMsgs, []))
-
-
-helperFillEitherInv :: Id
-                    -> Desig
-                    -> Id
-                    -> [Either Text Inv]
-                    -> GenericIntermediateRes
-                    -> GenericIntermediateRes
-helperFillEitherInv _ _        _        []         a               = a
-helperFillEitherInv i srcDesig targetId (eis:eiss) a@(ms, _, _, _) = case getVesselCont targetId ms of
-  Nothing     -> sorry . sorryFillEmptySource $ targetSing
-  Just (_, _) -> next $ case eis of
-    Left msg -> sorry msg
-    Right is -> helper is a
-  where
-    targetSing = getSing targetId ms
-    next       = helperFillEitherInv i srcDesig targetId eiss
-    sorry msg  = a & _2 <>~ pure msg
-    helper []       a'                = a'
-    helper (vi:vis) a'@(ms', _, _, _)
-      | isNothing . getVesselCont targetId $ ms' = a'
-      | vi == targetId                           = helper vis . sorry' . sorryFillSelf $ vs
-      | getType vi ms' /= VesselType             = helper vis . sorry' . sorryFillType $ vs
-      | otherwise                                = helper vis . (_3 <>~ bcastHelper) $ case getVesselCont vi ms' of
-          Nothing | vmm <  targetMouths ->
-                      a' & _1.vesselTbl.ind targetId.vesselCont ?~ (targetLiq, targetMouths - vmm)
-                         & _1.vesselTbl.ind vi      .vesselCont ?~ (targetLiq, vmm)
-                         & _2 <>~ mkFillUpMsg
-                         & _4 <>~ mkFillUpMsg
-                  | vmm == targetMouths ->
-                      a' & _1.vesselTbl.ind targetId.vesselCont .~ Nothing
-                         & _1.vesselTbl.ind vi      .vesselCont ?~ (targetLiq, vmm)
-                         & _2 <>~ mkFillUpEmptyMsg
-                         & _4 <>~ mkFillUpEmptyMsg
-                  | otherwise           ->
-                      a' & _1.vesselTbl.ind targetId.vesselCont .~ Nothing
-                         & _1.vesselTbl.ind vi      .vesselCont ?~ (targetLiq, targetMouths)
-                         & _2 <>~ mkXferEmptyMsg
-                         & _4 <>~ mkXferEmptyMsg
-          Just (vl, vm)
-            | vl 🍰 targetLiq -> sorry' . uncurry sorryFillLiqTypes $ (targetId, vi) & both %~ flip getBothGramNos ms'
-            | vm >= vmm -> sorry' . sorryFillAlreadyFull $ vs
-            | vAvail <- vmm - vm -> if | vAvail <  targetMouths ->
-                                           a' & _1.vesselTbl.ind targetId.vesselCont ?~ (targetLiq, targetMouths - vAvail)
-                                              & _1.vesselTbl.ind vi      .vesselCont ?~ (targetLiq, vmm)
-                                              & _2 <>~ mkFillUpMsg
-                                              & _4 <>~ mkFillUpMsg
-                                       | vAvail == targetMouths ->
-                                           a' & _1.vesselTbl.ind targetId.vesselCont .~ Nothing
-                                              & _1.vesselTbl.ind vi      .vesselCont ?~ (targetLiq, vmm)
-                                              & _2 <>~ mkFillUpEmptyMsg
-                                              & _4 <>~ mkFillUpEmptyMsg
-                                       | otherwise ->
-                                           a' & _1.vesselTbl.ind targetId.vesselCont .~ Nothing
-                                              & _1.vesselTbl.ind vi      .vesselCont ?~ (targetLiq, vm + targetMouths)
-                                              & _2 <>~ mkXferEmptyMsg
-                                              & _4 <>~ mkXferEmptyMsg
-      where
-        (🍰) = (/=) `on` view liqId
-        sorry' msg = a' & _2 <>~ pure msg
-        vs         = getSing         vi ms'
-        vmm        = getMaxMouthfuls vi ms'
-        (targetLiq, targetMouths) = fromJust . getVesselCont targetId $ ms'
-        n                         = renderLiqNoun targetLiq id
-        mkFillUpMsg      = pure . T.concat $ [ "You fill up the ", vs, " with ", n, " from the ", targetSing, "." ]
-        mkFillUpEmptyMsg = pure . T.concat $ [ "You fill up the ", vs, " with ", n, " from the ", targetSing, ", emptying it." ]
-        mkXferEmptyMsg   = pure . T.concat $ [ "You transfer ", n, " to the ", vs,  " from the ", targetSing, ", emptying it." ]
-        bcastHelper      = pure (T.concat [ serialize srcDesig
-                                          , " transfers liquid from "
-                                          , aOrAn targetSing
-                                          , " to "
-                                          , aOrAn vs
-                                          , "." ], i `delete` desigIds srcDesig)
 
 
 -----

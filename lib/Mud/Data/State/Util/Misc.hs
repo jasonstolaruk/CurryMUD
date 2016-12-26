@@ -44,6 +44,7 @@ module Mud.Data.State.Util.Misc ( addToInv
                                 , mkAdminPlaIdSingList
                                 , mkCorpseAppellation
                                 , mkCorpseTxt
+                                , mkEntName
                                 , mkMaybeCorpseId
                                 , mkMobRmDesc
                                 , mkName_maybeCorpseId_count_bothList
@@ -215,7 +216,7 @@ getCorpseDesc i ms = let c    = getCorpse i ms
 
 getEffName :: Id -> MudState -> Id -> Text
 getEffName i ms targetId = let targetEnt = getEnt targetId ms
-                           in fromMaybe (helper $ targetEnt^.sing) $ targetEnt^.entName
+                           in views entName (fromMaybe (views sing helper targetEnt)) targetEnt
   where
     helper targetSing
       | isNpc i ms || views (pcTbl.ind i.introduced) (targetSing `notElem`) ms = mkUnknownPCEntName targetId ms
@@ -480,6 +481,13 @@ mkCorpseTxt = uncurry (middle (<>) . T.singleton $ corpseNameMarker)
 -----
 
 
+mkEntName :: Ent -> Text
+mkEntName = views entName (fromMaybe "unknown")
+
+
+-----
+
+
 mkMobRmDesc :: Id -> MudState -> Text
 mkMobRmDesc i ms | hasMobId i ms = case getMobRmDesc i ms of Nothing   -> ""
                                                              Just desc -> parensQuote desc
@@ -681,8 +689,7 @@ sortInv ms is = let (foldr helper mempties -> (pcs, others)) = [ (i, getType i m
                                          in t == PCType ? consTo _1 :? consTo _2
     sortOthers                         = select _1 . sortBy nameThenSing . zipped
     nameThenSing (_, n, s) (_, n', s') = (n `compare` n') <> (s `compare` s')
-    zipped others                      = [ (i, views entName fromJust e, e^.sing) | i <- others
-                                                                                  , let e = getEnt i ms ]
+    zipped others                      = [ (i, mkEntName e, e^.sing) | i <- others, let e = getEnt i ms ]
 
 
 -----
