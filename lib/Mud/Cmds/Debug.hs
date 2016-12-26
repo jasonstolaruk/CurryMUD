@@ -58,9 +58,9 @@ import Control.Concurrent.Async (asyncThreadId, poll)
 import Control.Exception (ArithException(..), IOException)
 import Control.Exception.Lifted (throwIO, try)
 import Control.Lens (Optical, both, views)
-import Control.Lens.Operators ((%~), (&))
+import Control.Lens.Operators ((%~))
 import Control.Lens.Type (LensLike')
-import Control.Monad ((>=>), replicateM_, unless)
+import Control.Monad ((>=>), replicateM_)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (asks)
 import Data.Bits (zeroBits)
@@ -68,7 +68,7 @@ import Data.Char (ord, digitToInt, isDigit, toLower)
 import Data.Function (on)
 import Data.Ix (inRange)
 import Data.List (delete, intercalate, sort)
-import Data.Maybe (fromJust)
+import Data.Maybe (catMaybes)
 import Data.Monoid ((<>), Sum(..))
 import Data.Text (Text)
 import Data.Time (getCurrentTime)
@@ -670,11 +670,12 @@ parseTwoIntArgs :: MsgQueue
                 -> (Text -> Text)
                 -> (Int -> Int -> MudStack ())
                 -> MudStack ()
-parseTwoIntArgs mq cols [a, b] sorryParseA sorryParseB helper = do
-    parsed <- (,) <$> parse a sorryParseA <*> parse b sorryParseB
-    unless (uncurry (||) $ parsed & both %~ (()#)) . uncurry helper $ parsed & both %~ (getSum . fromJust)
+parseTwoIntArgs mq cols [a, b] sorryParseA sorryParseB helper =
+    map getSum . catMaybes <$> mapM parse [ (a, sorryParseA), (b, sorryParseB) ] >>= \case
+      [x, y] -> helper x y
+      _      -> unit
   where
-    parse txt sorry = case reads . T.unpack $ txt :: [(Int, String)] of
+    parse (txt, sorry) = case reads . T.unpack $ txt :: [(Int, String)] of
       [(x, "")] -> unadulterated . Sum $ x
       _         -> emptied . wrapSend mq cols . sorry $ txt
 parseTwoIntArgs _ _ as _ _ _ = patternMatchFail "parseTwoIntArgs" . showText $ as
