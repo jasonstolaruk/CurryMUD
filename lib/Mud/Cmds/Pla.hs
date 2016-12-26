@@ -1494,7 +1494,7 @@ tryMove i mq cols p dir = helper |&| modifyState >=> \case
           Nothing -> (ms, Left sorry)
           Just (linkTxt, destId, maybeOriginMsg, maybeDestMsg) ->
             let originDesig  = mkStdDesig i ms DoCap
-                s            = fromJust . desigEntSing $ originDesig
+                s            = getSing    i ms
                 originMobIds = i `delete` desigIds originDesig
                 destMobIds   = findMobIds ms $ ms^.invTbl.ind destId
                 ms'          = ms & mobTbl.ind i.rmId      .~ destId
@@ -1964,17 +1964,15 @@ link p = patternMatchFail "link" . showText $ p
 
 listen :: ActionFun
 listen (NoArgs i mq cols) = getState >>= \ms ->
-    let maybeListenMsg = view rmListen . getMobRm i $ ms
-        humMsgs        = mkHumMsgs ms
-        ts             = case (()!# maybeListenMsg, ()!# humMsgs) of (True,  True ) -> fromJust maybeListenMsg : humMsgs
-                                                                     (True,  False) -> pure . fromJust $ maybeListenMsg
-                                                                     (False, True ) -> humMsgs
-                                                                     (False, False) -> pure noSoundMsg
+    let humMsgs = mkHumMsgs ms
+        ts      = views rmListen (maybe a b) . getMobRm i $ ms
+        a       = ()# humMsgs ? pure noSoundMsg :? humMsgs
+        b       = onFalse (()# humMsgs) (++ humMsgs) . pure
     in multiWrapSend mq cols ts >> logPlaExec "listen" i
   where
-    mkHumMsgs ms = concatMap (helper ms) [ (\i' -> M.elems . getEqMap i', (<> " in your readied equipment"))
-                                         , (getInv,                       (<> " in your inventory"        ))
-                                         , (getMobRmInv,                  (<> " on the ground"            )) ]
+    mkHumMsgs ms     = concatMap (helper ms) [ (\i' -> M.elems . getEqMap i', (<> " in your readied equipment"))
+                                             , (getInv,                       (<> " in your inventory"        ))
+                                             , (getMobRmInv,                  (<> " on the ground"            )) ]
     helper ms (f, g) = foldr (\i' acc -> maybe acc (: acc) . mkMaybeHumMsg i ms i' $ g) [] . uncurry f $ (i, ms)
 listen p = withoutArgs listen p
 
