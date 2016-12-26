@@ -739,9 +739,8 @@ debugNumber p@AdviseOneArg                             = advise p [] adviceDNumb
 debugNumber   (WithArgs i mq cols [ numTxt, baseTxt ]) = case reads . T.unpack $ baseTxt :: [(Base, String)] of
       [(base, "")] | not . inRange (2, 36) $ base -> wrapSend mq cols . sorryParseBase $ baseTxt
                    | otherwise -> case numTxt `inBase` base of
-                     [(res, "")] -> do
-                         send mq $ fmap nlnl showText res
-                         logPlaExecArgs (prefixDebugCmd "number") [ numTxt, baseTxt ] i
+                     [(res, "")] -> do send mq $ fmap nlnl showText res
+                                       logPlaExecArgs (prefixDebugCmd "number") [ numTxt, baseTxt ] i
                      _ -> wrapSend mq cols . sorryParseNum numTxt . showText $ base
       _ -> wrapSend mq cols . sorryParseBase $ baseTxt
 debugNumber p = advise p [] adviceDNumberExcessArgs
@@ -752,10 +751,10 @@ numTxt `inBase` base = readInt base (isValidDigit base) letterToNum . T.unpack $
 
 
 isValidDigit :: Base -> Char -> Bool
-isValidDigit base (toLower -> c) | isDigit c                              = digitToInt c < base
-                                 | not . inRange ('a', 'z') $ c           = False
-                                 | val <- fromJust . lookup c . zip a $ b = val <= base
-  where { a = enumFrom 'a'; b = enumFrom 11 }
+isValidDigit base (toLower -> c) | isDigit c                    = digitToInt c < base
+                                 | not . inRange ('a', 'z') $ c = False
+                                 | otherwise                    = maybe False (<= base) . lookup c . zip a $ b
+  where { a = 'a' `enumFromTo` 'z'; b = enumFrom 11 }
 
 
 letterToNum :: Char -> Int
