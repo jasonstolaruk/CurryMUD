@@ -64,7 +64,7 @@ import Data.Either (rights)
 import Data.Function (on)
 import Data.Ix (inRange)
 import Data.List ((\\), delete, foldl', groupBy, intercalate, intersperse, nub, partition, sort, sortBy)
-import Data.Maybe (fromJust, fromMaybe, isJust)
+import Data.Maybe (fromMaybe, isJust)
 import Data.Monoid ((<>), Any(..), Sum(..), getSum)
 import Data.Text (Text)
 import Data.Time (FormatTime, TimeZone, UTCTime, defaultTimeLocale, diffUTCTime, formatTime, getCurrentTime, getCurrentTimeZone, getZonedTime, utcToLocalTime)
@@ -2029,9 +2029,8 @@ teleHelper p@ActionParams { myId } ms originId destId destName mt f sorry =
     let g            = maybe strictId ((:) . (, pure myId) . nlnl) mt
         originDesig  = mkStdDesig myId ms Don'tCap
         originMobIds = myId `delete` desigIds originDesig
-        s            = fromJust . desigEntSing $ originDesig
-        destDesig    = mkSerializedNonStdDesig myId ms s A Don'tCap
-        destMobIds   = findMobIds ms $ ms^.invTbl.ind destId
+        destDesig    = mkSerializedNonStdDesig myId ms (getSing myId ms) A Don'tCap
+        destMobIds   = views (invTbl.ind destId) (findMobIds ms) ms
         ms'          = ms & mobTbl.ind myId.rmId     .~ destId
                           & mobTbl.ind myId.lastRmId .~ originId
                           & invTbl.ind originId      %~ (myId `delete`)
