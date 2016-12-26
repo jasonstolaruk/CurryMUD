@@ -243,13 +243,13 @@ adminAdmin (Msg i mq cols msg) = getState >>= \ms ->
       else wrapSend mq cols . sorryTunedOutOOCChan $ "admin"
   where
     getTunedAdminIds ms  = [ ai | ai <- getLoggedInAdminIds ms, isTunedAdminId ai ms ]
-    mkLogMsg             = dropANSI . fst . head
+    mkLogMsg []          = ""
+    mkLogMsg ((t, _):_)  = dropANSI t
     ioHelper s bs logMsg = logHelper >> bcastNl bs
       where
-        logHelper = do
-            logPlaOut (prefixAdminCmd "admin") i . pure $ logMsg
-            ts <- liftIO mkTimestamp
-            withDbExHandler_ "adminAdmin" . insertDbTblAdminChan . AdminChanRec ts s $ logMsg
+        logHelper = liftIO mkTimestamp >>= \ts ->
+            logMsg |#| ((>>) <$> logPlaOut (prefixAdminCmd "admin") i . pure
+                             <*> withDbExHandler_ "adminAdmin" . insertDbTblAdminChan . AdminChanRec ts s)
 adminAdmin p = patternMatchFail "adminAdmin" . showText $ p
 
 
