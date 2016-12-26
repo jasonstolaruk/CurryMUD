@@ -1120,16 +1120,14 @@ emote :: ActionFun
 emote p@AdviseNoArgs                                                       = advise p ["emote"] adviceEmoteNoArgs
 emote p@ActionParams { args }   | any (`elem` yous) . map T.toLower $ args = advise p ["emote"] adviceYouEmote
 emote   (WithArgs i mq cols as) = getState >>= \ms ->
-    let d                    = mkStdDesig i ms DoCap
-        ser                  = serialize d
-        d'                   = d { desigShouldCap = Don'tCap }
-        ser'                 = serialize d'
-        xformed              = xformArgs True as
-        xformArgs _      []  = []
-        xformArgs isHead [x] | (h, t) <- headTail x
-                             , h == emoteNameChar
-                             , all isPunc . T.unpack $ t
-                             = pure . mkRightForNonTargets $ expandEnc isHead & each <>~ t
+    let d                       = mkStdDesig i ms DoCap
+        ser                     = serialize d
+        d'                      = d { desigShouldCap = Don'tCap }
+        ser'                    = serialize d'
+        xformed                 = xformArgs True as
+        xformArgs _      []     = []
+        xformArgs isHead [x]    | (h, t) <- headTail x, h == emoteNameChar, all isPunc . T.unpack $ t
+                                = pure . mkRightForNonTargets $ expandEnc isHead & each <>~ t
         xformArgs isHead (x:xs) = (: xformArgs False xs) $ if
           | x == enc             -> mkRightForNonTargets . expandEnc $ isHead
           | x == enc's           -> mkRightForNonTargets $ expandEnc isHead & each <>~ "'s"
@@ -1138,16 +1136,16 @@ emote   (WithArgs i mq cols as) = getState >>= \ms ->
           | T.take 1 x == etc    -> isHead ? Left adviceEtcHead :? procTarget ms (T.tail x)
           | etc `T.isInfixOf` x  -> Left . adviceEtc $ "emote "
           | isHead, hasEnc as    -> mkRightForNonTargets $ dup3 x  & each %~ capitalizeMsg
-          | isHead, x' <- spcL x -> mkRightForNonTargets $ dup3 x' & _1   %~ (myName True <>)
-                                                                   & _2   %~ (ser         <>)
-                                                                   & _3   %~ (ser         <>)
+          | isHead, x' <- spcL x -> mkRightForNonTargets $ dup3 x' & _1   %~ (mkMyName True <>)
+                                                                   & _2   %~ (ser           <>)
+                                                                   & _3   %~ (ser           <>)
           | otherwise            -> mkRightForNonTargets . dup3 $ x
-        expandEnc isHead = (isHead ? dup ser :? dup ser') |&| uncurry (myName isHead, , )
-        myName    isHead = onTrue isHead capitalize . onTrue (isNpc i ms) theOnLower . fromJust . desigEntSing $ d
+        expandEnc isHead = (isHead ? dup ser :? dup ser') |&| uncurry (mkMyName isHead, , )
+        mkMyName  isHead = onTrue isHead capitalize . onTrue (isNpc i ms) theOnLower . getSing i $ ms
     in case lefts xformed of
       []      -> let (msg, toOthers, targetIds, toTargetBs) = happyTimes ms xformed
-                     toSelf = parseDesig       i ms msg
-                     logMsg = parseExpandDesig i ms msg
+                     toSelf                                 = parseDesig       i ms msg
+                     logMsg                                 = parseExpandDesig i ms msg
                  in do logPlaOut "emote" i . pure $ logMsg
                        wrapSend mq cols toSelf
                        bcastIfNotIncogNl i $ (toOthers, desigIds d \\ (i : targetIds)) : toTargetBs
@@ -1166,18 +1164,16 @@ emote   (WithArgs i mq cols as) = getState >>= \ms ->
                 (InInv, _      ) -> sorry sorryEmoteTargetInInv
                 (InEq,  _      ) -> sorry sorryEmoteTargetInEq
                 (InRm,  target') -> case uncurry (resolveRmInvCoins i ms . pure $ target') invCoins of
-                  (_,                    [Left [msg]]) -> Left msg
-                  (_,                    Right _:_   ) -> sorry sorryEmoteTargetCoins
-                  ([Left  msg       ], _             ) -> Left msg
-                  ([Right (_:_:_)   ], _             ) -> Left sorryEmoteExcessTargets
-                  ([Right [targetId]], _             ) ->
-                      let targetSing = getSing targetId ms
-                      in if not . isNpcPC targetId $ ms
-                        then Left . sorryEmoteTargetType $ targetSing
-                        else let targetDesig = addSuffix isPoss p . serialize . mkStdDesig targetId ms $ Don'tCap
-                             in Right ( targetDesig
-                                      , [ mkEmoteWord isPoss p targetId, ForNonTargets targetDesig ]
-                                      , targetDesig )
+                  (_,                  [Left [msg]]) -> Left msg
+                  (_,                  Right _:_   ) -> sorry sorryEmoteTargetCoins
+                  ([Left  msg       ], _           ) -> Left msg
+                  ([Right (_:_:_)   ], _           ) -> Left sorryEmoteExcessTargets
+                  ([Right [targetId]], _           ) | targetSing <- getSing targetId ms -> if not (isNpcPC targetId ms)
+                    then Left . sorryEmoteTargetType $ targetSing
+                    else let targetDesig = addSuffix isPoss p . serialize . mkStdDesig targetId ms $ Don'tCap
+                         in Right ( targetDesig
+                                  , [ mkEmoteWord isPoss p targetId, ForNonTargets targetDesig ]
+                                  , targetDesig )
                   x -> patternMatchFail "emote procTarget" . showText $ x
               else Left sorryNoOneHere
     addSuffix   isPoss p = (<> p) . onTrue isPoss (<> "'s")
