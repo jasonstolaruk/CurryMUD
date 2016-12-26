@@ -2217,10 +2217,11 @@ npcAsSelf :: ActionFun
 npcAsSelf p = execIfPossessed p "." npcAsSelfHelper
 
 
-npcAsSelfHelper :: ActionFun
-npcAsSelfHelper p@(NoArgs'  i mq     ) = advise p [] adviceAsSelfNoArgs >> sendDfltPrompt mq i
-npcAsSelfHelper   (WithArgs i mq _ as) = sequence_ [ logPlaExecArgs "." as i, writeMsg mq . AsSelf . nl . T.unwords $ as ]
-npcAsSelfHelper p = patternMatchFail "npcAsSelfHelper" . showText $ p
+npcAsSelfHelper :: Id -> ActionFun
+npcAsSelfHelper _ p@(NoArgs'  i mq     ) = advise p [] adviceAsSelfNoArgs >> sendDfltPrompt mq i
+npcAsSelfHelper _   (WithArgs i mq _ as) = do logPlaExecArgs "." as i
+                                              writeMsg mq . AsSelf . nl . T.unwords $ as
+npcAsSelfHelper _ p                      = patternMatchFail "npcAsSelfHelper" . showText $ p
 
 
 -----
@@ -2235,16 +2236,16 @@ npcDispCmdList p                  = patternMatchFail "npcDispCmdList" . showText
 
 
 npcExorcise :: ActionFun
-npcExorcise p = execIfPossessed p "stop" npcExorciseHelper
+npcExorcise p = execIfPossessed p "exorcise" npcExorciseHelper
 
 
-npcExorciseHelper :: ActionFun
-npcExorciseHelper (NoArgs i mq cols) = getState >>= \ms -> let pi = fromJust . getPossessor i $ ms in do
+npcExorciseHelper :: Id -> ActionFun
+npcExorciseHelper pi (NoArgs i mq cols) = getState >>= \ms -> do
     logPla "npcExorciseHelper" i . prd $ "no longer possessing " <> aOrAnOnLower (descSingId i ms)
     tweaks [ plaTbl.ind pi.possessing .~ Nothing, npcTbl.ind i.npcPossessor .~ Nothing ]
     wrapSend mq cols . prd $ "You stop possessing " <> aOrAnOnLower (getSing i ms)
     sendDfltPrompt mq pi
-npcExorciseHelper p = withoutArgs npcExorciseHelper p
+npcExorciseHelper pi p = withoutArgs (npcExorciseHelper pi) p
 
 
 -----
