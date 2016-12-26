@@ -976,41 +976,37 @@ adminHost p@AdviseNoArgs            = advise p [ prefixAdminCmd "host" ] adviceA
 adminHost   (LowerNub i mq cols as) = getState >>= \ms -> do
     logPlaExecArgs (prefixAdminCmd "host") as i
     (now, zone) <- (,) <$> liftIO getCurrentTime <*> liftIO getCurrentTimeZone
-    let helper target = let notFound = pure . sorryPCName $ target
-                            found    = uncurry . mkHostReport ms now $ zone
-                        in findFullNameForAbbrev target (mkAdminPlaIdSingList ms) |&| maybe notFound found
+    let helper target | notFound <- pure . sorryPCName $ target
+                      , found    <- uncurry . mkHostReport ms now $ zone
+                      = findFullNameForAbbrev target (mkAdminPlaIdSingList ms) |&| maybe notFound found
     multiWrapSend mq cols . intercalate [""] . map (helper . capitalize) $ as
 adminHost p = patternMatchFail "adminHost" . showText $ p
 
 
 mkHostReport :: MudState -> UTCTime -> TimeZone -> Id -> Sing -> [Text]
-mkHostReport ms now zone i s = (header ++) $ case getHostMap s ms of
-  Nothing      -> pure . prd $ "There are no host records for " <> s
-  Just hostMap | duration' <- ili |?| duration
-               , total     <- M.foldl (\acc -> views secsConnected (+ acc)) 0 hostMap + getSum duration'
-               , totalDesc <- "Grand total time connected: " <> renderIt total
-               -> M.foldrWithKey helper [] hostMap ++ pure totalDesc
+mkHostReport ms now zone i s = case getHostMap s ms of Nothing      -> pure . prd $ "There are no host records for " <> s
+                                                       Just hostMap -> maybe oops (helper hostMap) . getConnectTime i $ ms
   where
-    header = [ s <> ": "
-             , "Currently logged " <> if ili
-                 then T.concat [ "in from "
-                               , T.pack . getCurrHostName i $ ms
-                               , " "
-                               , parensQuote . renderIt . getSum $ duration
-                               , "." ]
-                 else "out." ]
-    ili       = isLoggedIn . getPla i $ ms
-    duration  = Sum . round $ now `diffUTCTime` fromJust (getConnectTime i ms)
-    renderIt  = T.pack . renderSecs
-    helper (T.pack -> host) r = (T.concat [ host
-                                          , ": "
-                                          , let n      = r^.noOfLogouts
-                                                suffix = n > 1 |?| "s"
-                                            in showText n <> " time" <> suffix
-                                          , ", "
-                                          , views secsConnected renderIt r
-                                          , ", "
-                                          , views lastLogout (showText . utcToLocalTime zone) r ] :)
+    oops              = pure . prd $ "There is no connect time for " <> s
+    helper hostMap ct | duration' <- ili |?| duration
+                      , total     <- M.foldl (\acc -> views secsConnected (+ acc)) 0 hostMap + getSum duration'
+                      , totalDesc <- "Grand total time connected: " <> renderIt total
+                      = concat [ header, M.foldrWithKey f [] hostMap, pure totalDesc ]
+      where
+        ili      = isLoggedIn . getPla i $ ms
+        duration = Sum . round $ now `diffUTCTime` ct
+        renderIt = T.pack . renderSecs
+        header   =
+            [ s <> ": "
+            , let ts = [ "in from ", T.pack . getCurrHostName i $ ms, " ", parensQuote . renderIt . getSum $ duration, "." ]
+              in "Currently logged " <> (ili ? T.concat ts :? "out.") ]
+        f host r = (T.concat [ T.pack host
+                             , ": "
+                             , let { n = r^.noOfLogouts; suffix = n > 1 |?| "s" } in showText n <> " time" <> suffix
+                             , ", "
+                             , views secsConnected renderIt r
+                             , ", "
+                             , views lastLogout (showText . utcToLocalTime zone) r ] :)
 
 
 -----
