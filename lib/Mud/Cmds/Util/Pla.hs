@@ -125,6 +125,7 @@ import Data.List ((\\), delete, elemIndex, find, foldl', intercalate, nub, sortB
 import Data.Maybe (isNothing)
 import Data.Monoid ((<>), Sum(..))
 import Data.Text (Text)
+import GHC.Stack (HasCallStack)
 import qualified Data.IntMap.Lazy as IM (keys)
 import qualified Data.Map.Lazy as M ((!), notMember, toList)
 import qualified Data.Text as T
@@ -163,7 +164,7 @@ logPlaOut = L.logPlaOut "Mud.Cmds.Util.Pla"
 -- ==================================================
 
 
-alertMsgHelper :: Id -> CmdName -> Text -> MudStack ()
+alertMsgHelper :: HasCallStack => Id -> CmdName -> Text -> MudStack ()
 alertMsgHelper i cn txt = getState >>= \ms -> if isAdminId i ms
   then unit
   else let matches = filter (`T.isInfixOf` T.toLower txt) alertMsgTriggers
@@ -204,7 +205,7 @@ armSubToSlot = \case Head      -> HeadS
 -----
 
 
-bugTypoLogger :: ActionParams -> WhichLog -> MudStack ()
+bugTypoLogger :: HasCallStack => ActionParams -> WhichLog -> MudStack ()
 bugTypoLogger (Msg' i mq msg) wl = getState >>= \ms ->
     let s     = getSing i  ms
         ri    = getRmId i  ms
@@ -224,7 +225,7 @@ bugTypoLogger p _ = patternMatchFail "bugTypoLogger" . showText $ p
 -----
 
 
-checkMutuallyTuned :: Id -> MudState -> Sing -> Either Text Id
+checkMutuallyTuned :: HasCallStack => Id -> MudState -> Sing -> Either Text Id
 checkMutuallyTuned i ms targetSing = case areMutuallyTuned of
   (False, _,     _       ) -> Left . sorryTunedOutPCSelf $ targetSing
   (True,  False, _       ) -> Left . (effortsBlockedMsg <>) . sorryTunedOutPCTarget $ targetSing
@@ -256,7 +257,7 @@ clothToSlot = \case Shirt    -> ShirtS
 -----
 
 
-donMsgs :: Id -> Desig -> Sing -> (Text, Broadcast)
+donMsgs :: HasCallStack => Id -> Desig -> Sing -> (Text, Broadcast)
 donMsgs = mkReadyMsgs "don" "dons"
 
 
@@ -264,7 +265,7 @@ type SndPerVerb = Text
 type ThrPerVerb = Text
 
 
-mkReadyMsgs :: SndPerVerb -> ThrPerVerb -> Id -> Desig -> Sing -> (Text, Broadcast)
+mkReadyMsgs :: HasCallStack => SndPerVerb -> ThrPerVerb -> Id -> Desig -> Sing -> (Text, Broadcast)
 mkReadyMsgs spv tpv i d s = (  T.concat [ "You ", spv, " the ", s, "." ]
                             , (T.concat [ serialize d, spaced tpv, aOrAn s, "." ], i `delete` desigIds d) )
 
@@ -272,7 +273,7 @@ mkReadyMsgs spv tpv i d s = (  T.concat [ "You ", spv, " the ", s, "." ]
 -----
 
 
-execIfPossessed :: ActionParams -> CmdName -> (Id -> ActionFun) -> MudStack ()
+execIfPossessed :: HasCallStack => ActionParams -> CmdName -> (Id -> ActionFun) -> MudStack ()
 execIfPossessed p@(WithArgs i mq cols _) cn f = getState >>= \ms -> let s = getSing i ms in case getPossessor i ms of
       Nothing -> wrapSend mq cols (sorryNotPossessed s cn)
       Just i' -> f i' p
@@ -282,22 +283,22 @@ execIfPossessed p _ _ = patternMatchFail "execIfPossessed" . showText $ p
 -----
 
 
-genericAction :: ActionParams
-              -> (MudState -> GenericRes)
-              -> Text
-              -> MudStack ()
+genericAction :: HasCallStack => ActionParams
+                              -> (MudState -> GenericRes)
+                              -> Text
+                              -> MudStack ()
 genericAction p helper fn = helper |&| modifyState >=> \(toSelfs, bs, logMsgs) ->
     genericActionHelper p fn toSelfs bs logMsgs
 
 
-genericActionHelper :: ActionParams -> Text -> [Text] -> [Broadcast] -> [Text] -> MudStack ()
+genericActionHelper :: HasCallStack => ActionParams -> Text -> [Text] -> [Broadcast] -> [Text] -> MudStack ()
 genericActionHelper ActionParams { .. } fn toSelfs bs logMsgs = getState >>= \ms -> do
     logMsgs |#| logPlaOut fn myId . map (parseExpandDesig myId ms)
     multiWrapSend plaMsgQueue plaCols [ parseDesig myId ms msg | msg <- toSelfs ]
     bcastIfNotIncogNl myId bs
 
 
-genericActionWithHooks :: ActionParams
+genericActionWithHooks :: HasCallStack => ActionParams
                        -> (V.Vector Int -> MudState -> GenericResWithHooks)
                        -> Text
                        -> MudStack ()
@@ -320,7 +321,7 @@ genericSorryWithHooks ms = (ms, ) . (, [], [], []) . pure
 -----
 
 
-getMatchingChanWithName :: Text -> [ChanName] -> [Chan] -> (ChanName, Chan)
+getMatchingChanWithName :: HasCallStack => Text -> [ChanName] -> [Chan] -> (ChanName, Chan)
 getMatchingChanWithName match cns cs = let cn  = head . filter ((== match) . T.toLower) $ cns
                                            c   = head . filter (views chanName (== cn)) $ cs
                                        in (cn, c)
@@ -329,7 +330,7 @@ getMatchingChanWithName match cns cs = let cn  = head . filter ((== match) . T.t
 -----
 
 
-getRelativePCName :: MudState -> (Id, Id) -> MudStack Text
+getRelativePCName :: HasCallStack => MudState -> (Id, Id) -> MudStack Text
 getRelativePCName ms pair@(_, y)
   | isLinked ms pair = return . getSing y $ ms
   | otherwise        = underline <$> uncurry updateRndmName pair
@@ -338,23 +339,23 @@ getRelativePCName ms pair@(_, y)
 -----
 
 
-hasHp :: Id -> MudState -> Int -> Bool
+hasHp :: HasCallStack => Id -> MudState -> Int -> Bool
 hasHp = hasPoints curHp
 
 
-hasMp :: Id -> MudState -> Int -> Bool
+hasMp :: HasCallStack => Id -> MudState -> Int -> Bool
 hasMp = hasPoints curMp
 
 
-hasPp :: Id -> MudState -> Int -> Bool
+hasPp :: HasCallStack => Id -> MudState -> Int -> Bool
 hasPp = hasPoints curPp
 
 
-hasFp :: Id -> MudState -> Int -> Bool
+hasFp :: HasCallStack => Id -> MudState -> Int -> Bool
 hasFp = hasPoints curFp
 
 
-hasPoints :: Getter Mob Int -> Id -> MudState -> Int -> Bool
+hasPoints :: HasCallStack => Getter Mob Int -> Id -> MudState -> Int -> Bool
 hasPoints lens i ms amt = views (mobTbl.ind i.lens) (>= amt) ms
 
 
@@ -367,13 +368,13 @@ type ToId     = Id
 type ToSing   = Sing
 
 
-helperDropEitherInv :: Id
-                    -> Desig
-                    -> FromId
-                    -> ToId
-                    -> GenericIntermediateRes
-                    -> Either Text Inv
-                    -> GenericIntermediateRes
+helperDropEitherInv :: HasCallStack => Id
+                                    -> Desig
+                                    -> FromId
+                                    -> ToId
+                                    -> GenericIntermediateRes
+                                    -> Either Text Inv
+                                    -> GenericIntermediateRes
 helperDropEitherInv i d fromId toId a@(ms, _, _, _) = \case
   Left  msg -> a & _2 <>~ pure msg
   Right is  -> let (toSelfs, bs) = mkGetDropInvDescs i ms d Drop is
@@ -384,7 +385,7 @@ helperDropEitherInv i d fromId toId a@(ms, _, _, _) = \case
                     & _4                   <>~ toSelfs
 
 
-mkGetDropInvDescs :: Id -> MudState -> Desig -> GetOrDrop -> Inv -> ([Text], [Broadcast])
+mkGetDropInvDescs :: HasCallStack => Id -> MudState -> Desig -> GetOrDrop -> Inv -> ([Text], [Broadcast])
 mkGetDropInvDescs i ms d god (mkName_maybeCorpseId_count_bothList i ms -> tuple) = unzip . map helper $ tuple
   where
     helper (_, mci, c, (s, _)) | c == 1 =
@@ -411,12 +412,12 @@ mkGodVerb Drop ThrPer = "drops"
 -----
 
 
-helperFillEitherInv :: Id
-                    -> Desig
-                    -> Id
-                    -> [Either Text Inv]
-                    -> GenericIntermediateRes
-                    -> GenericIntermediateRes
+helperFillEitherInv :: HasCallStack => Id
+                                    -> Desig
+                                    -> Id
+                                    -> [Either Text Inv]
+                                    -> GenericIntermediateRes
+                                    -> GenericIntermediateRes
 helperFillEitherInv _ _        _        []         a               = a
 helperFillEitherInv i srcDesig targetId (eis:eiss) a@(ms, _, _, _) = case getVesselCont targetId ms of
   Nothing   -> sorry . sorryFillEmptySource $ targetSing
@@ -486,14 +487,14 @@ helperFillEitherInv i srcDesig targetId (eis:eiss) a@(ms, _, _, _) = case getVes
 -----
 
 
-helperGetDropEitherCoins :: Id
-                         -> Desig
-                         -> GetOrDrop
-                         -> FromId
-                         -> ToId
-                         -> GenericIntermediateRes
-                         -> [Either [Text] Coins]
-                         -> GenericIntermediateRes
+helperGetDropEitherCoins :: HasCallStack => Id
+                                         -> Desig
+                                         -> GetOrDrop
+                                         -> FromId
+                                         -> ToId
+                                         -> GenericIntermediateRes
+                                         -> [Either [Text] Coins]
+                                         -> GenericIntermediateRes
 helperGetDropEitherCoins i d god fromId toId (ms, toSelfs, bs, logMsgs) ecs =
     let (ms', toSelfs', logMsgs', canCoins) = foldl' helper (ms, toSelfs, logMsgs, mempty) ecs
     in (ms', toSelfs', bs ++ mkGetDropCoinsDescOthers i d god canCoins, logMsgs')
@@ -510,17 +511,17 @@ helperGetDropEitherCoins i d god fromId toId (ms, toSelfs, bs, logMsgs) ecs =
                          & _4                     <>~ can
 
 
-partitionCoinsByEnc :: Id -> MudState -> Coins -> (Coins, Coins)
+partitionCoinsByEnc :: HasCallStack => Id -> MudState -> Coins -> (Coins, Coins)
 partitionCoinsByEnc = partitionCoinsHelper calcMaxEnc calcWeight coinWeight
 
 
-partitionCoinsHelper :: (Id -> MudState -> Int)
-                     -> (Id -> MudState -> Int)
-                     -> Int
-                     -> Id
-                     -> MudState
-                     -> Coins
-                     -> (Coins, Coins)
+partitionCoinsHelper :: HasCallStack => (Id -> MudState -> Int)
+                                     -> (Id -> MudState -> Int)
+                                     -> Int
+                                     -> Id
+                                     -> MudState
+                                     -> Coins
+                                     -> (Coins, Coins)
 partitionCoinsHelper calcMax calcCurr factor i ms coins = let maxAmt    = calcMax  i ms
                                                               currAmt   = calcCurr i ms
                                                               noOfCoins = sum . coinsToList $ coins
@@ -539,35 +540,35 @@ mkCanCan'tCoins (Coins (0, 0, g)) n = (Coins (0, 0, n), Coins (0,     0,     g -
 mkCanCan'tCoins c                 _ = patternMatchFail "mkCanCan'tCoins" . showText $ c
 
 
-mkGetDropCoinsDescOthers :: Id -> Desig -> GetOrDrop -> Coins -> [Broadcast]
+mkGetDropCoinsDescOthers :: HasCallStack => Id -> Desig -> GetOrDrop -> Coins -> [Broadcast]
 mkGetDropCoinsDescOthers i d god c =
   c |!| [ (T.concat [ serialize d, spaced . mkGodVerb god $ ThrPer, aCoinSomeCoins c, "." ], i `delete` desigIds d) ]
 
 
-mkGetDropCoinsDescsSelf :: GetOrDrop -> Coins -> [Text]
+mkGetDropCoinsDescsSelf :: HasCallStack => GetOrDrop -> Coins -> [Text]
 mkGetDropCoinsDescsSelf god = mkCoinsMsgs helper
   where
-    helper 1 cn = T.concat [ "You ", mkGodVerb god SndPer, " ", aOrAn cn,             "."  ]
+    helper 1 cn = T.concat [ "You ", mkGodVerb god SndPer, " ",             aOrAn cn, "."  ]
     helper a cn = T.concat [ "You ", mkGodVerb god SndPer, spaced . showText $ a, cn, "s." ]
 
 
-mkCan'tGetCoinsDesc :: Coins -> [Text]
+mkCan'tGetCoinsDesc :: HasCallStack => Coins -> [Text]
 mkCan'tGetCoinsDesc = mkCoinsMsgs (can'tCoinsDescHelper sorryGetEnc)
 
 
-can'tCoinsDescHelper :: Text -> Int -> Text -> Text
+can'tCoinsDescHelper :: HasCallStack => Text -> Int -> Text -> Text
 can'tCoinsDescHelper t a cn = t <> bool (T.concat [ showText a, " ", cn, "s." ]) (prd $ "the " <> cn) (a == 1)
 
 
 -----
 
 
-helperGetEitherInv :: Id
-                   -> Desig
-                   -> FromId
-                   -> GenericIntermediateRes
-                   -> Either Text Inv
-                   -> GenericIntermediateRes
+helperGetEitherInv :: HasCallStack => Id
+                                   -> Desig
+                                   -> FromId
+                                   -> GenericIntermediateRes
+                                   -> Either Text Inv
+                                   -> GenericIntermediateRes
 helperGetEitherInv i d fromId a@(ms, _, _, _) = \case
   Left  msg                              -> a & _2 <>~ pure msg
   Right (sortByType -> (npcPCs, others)) ->
@@ -592,11 +593,11 @@ helperGetEitherInv i d fromId a@(ms, _, _, _) = \case
     sorryType targetId     = sorryGetType . serialize . mkStdDesig targetId ms $ Don'tCap
 
 
-partitionInvByEnc :: MudState -> Weight -> (Weight, Inv, Inv) -> Id -> (Weight, Inv, Inv)
+partitionInvByEnc :: HasCallStack => MudState -> Weight -> (Weight, Inv, Inv) -> Id -> (Weight, Inv, Inv)
 partitionInvByEnc = partitionInvHelper calcWeight
 
 
-partitionInvHelper :: (Id -> MudState -> Int) -> MudState -> Int -> (Int, Inv, Inv) -> Id -> (Int, Inv, Inv)
+partitionInvHelper :: HasCallStack => (Id -> MudState -> Int) -> MudState -> Int -> (Int, Inv, Inv) -> Id -> (Int, Inv, Inv)
 partitionInvHelper f ms maxAmt acc@(x, _, _) targetId = let x' = x + f targetId ms
                                                             a  = acc & _1 .~ x'
                                                                      & _2 <>~ pure targetId
@@ -604,14 +605,14 @@ partitionInvHelper f ms maxAmt acc@(x, _, _) targetId = let x' = x + f targetId 
                                                         in bool b a $ x' <= maxAmt
 
 
-mkCan'tGetInvDescs :: Id -> MudState -> Weight -> Inv -> [Text]
+mkCan'tGetInvDescs :: HasCallStack => Id -> MudState -> Weight -> Inv -> [Text]
 mkCan'tGetInvDescs i ms maxEnc = concatMap helper
   where
     helper targetId | calcWeight targetId ms > maxEnc = pure . sorryGetWeight . getSing targetId $ ms
                     | otherwise                       = can'tInvDescsHelper sorryGetEnc i ms . pure $ targetId
 
 
-can'tInvDescsHelper :: Text -> Id -> MudState -> Inv -> [Text]
+can'tInvDescsHelper :: HasCallStack => Text -> Id -> MudState -> Inv -> [Text]
 can'tInvDescsHelper t i ms = map helper . mkNameCountBothList i ms
   where
     helper (_, c, b@(s, _)) = t <> bool (T.concat [ showText c, " ", mkPlurFromBoth b, "." ]) (prd $ "the " <> s) (c == 1)
@@ -620,12 +621,12 @@ can'tInvDescsHelper t i ms = map helper . mkNameCountBothList i ms
 -----
 
 
-helperGiveEitherCoins :: Id
-                      -> Desig
-                      -> ToId
-                      -> GenericIntermediateRes
-                      -> [Either [Text] Coins]
-                      -> GenericIntermediateRes
+helperGiveEitherCoins :: HasCallStack => Id
+                                      -> Desig
+                                      -> ToId
+                                      -> GenericIntermediateRes
+                                      -> [Either [Text] Coins]
+                                      -> GenericIntermediateRes
 helperGiveEitherCoins i d toId (ms, toSelfs, bs, logMsgs) ecs =
     let toDesig                             = serialize . mkStdDesig toId ms $ Don'tCap
         (ms', toSelfs', logMsgs', canCoins) = foldl' (helper toDesig) (ms, toSelfs, logMsgs, mempty) ecs
@@ -642,7 +643,7 @@ helperGiveEitherCoins i d toId (ms, toSelfs, bs, logMsgs) ecs =
                          & _4                   <>~ can
 
 
-mkGiveCoinsDescOthers :: Id -> Desig -> ToId -> Text -> Coins -> [Broadcast]
+mkGiveCoinsDescOthers :: HasCallStack => Id -> Desig -> ToId -> Text -> Coins -> [Broadcast]
 mkGiveCoinsDescOthers i d toId toDesig c = c |!| toOthersBcast : [ (msg, pure toId) | msg <- toTargetMsgs ]
   where
     toOthersBcast = ( T.concat [ serialize d, " gives ", aCoinSomeCoins c, " to ", toDesig, "." ]
@@ -652,26 +653,26 @@ mkGiveCoinsDescOthers i d toId toDesig c = c |!| toOthersBcast : [ (msg, pure to
     helper a cn   = T.concat [ serialize d, " gives you",  spaced . showText $ a, cn, "s." ]
 
 
-mkGiveCoinsDescsSelf :: Text -> Coins -> [Text]
+mkGiveCoinsDescsSelf :: HasCallStack => Text -> Coins -> [Text]
 mkGiveCoinsDescsSelf targetDesig = mkCoinsMsgs helper
   where
     helper 1 cn = T.concat [ "You give ", aOrAn cn,                  " to ",  targetDesig, "." ]
     helper a cn = T.concat [ "You give",  spaced . showText $ a, cn, "s to ", targetDesig, "." ]
 
 
-mkCan'tGiveCoinsDesc :: Text -> Coins -> [Text]
+mkCan'tGiveCoinsDesc :: HasCallStack => Text -> Coins -> [Text]
 mkCan'tGiveCoinsDesc targetDesig = mkCoinsMsgs (can'tCoinsDescHelper . sorryGiveEnc $ targetDesig)
 
 
 -----
 
 
-helperGiveEitherInv :: Id
-                    -> Desig
-                    -> ToId
-                    -> GenericIntermediateRes
-                    -> Either Text Inv
-                    -> GenericIntermediateRes
+helperGiveEitherInv :: HasCallStack => Id
+                                    -> Desig
+                                    -> ToId
+                                    -> GenericIntermediateRes
+                                    -> Either Text Inv
+                                    -> GenericIntermediateRes
 helperGiveEitherInv i d toId a@(ms, _, _, _) = \case
   Left  msg -> a & _2 <>~ pure msg
   Right is  ->
@@ -686,7 +687,7 @@ helperGiveEitherInv i d toId a@(ms, _, _, _) = \case
          & _4                 <>~ toSelfs
 
 
-mkGiveInvDescs :: Id -> MudState -> Desig -> ToId -> Text -> Inv -> ([Text], [Broadcast])
+mkGiveInvDescs :: HasCallStack => Id -> MudState -> Desig -> ToId -> Text -> Inv -> ([Text], [Broadcast])
 mkGiveInvDescs i ms d toId toDesig = second concat . unzip . map helper . mkNameCountBothList i ms
   where
     helper (_, c, (s, _)) | c == 1 =
@@ -702,14 +703,14 @@ mkGiveInvDescs i ms d toId toDesig = second concat . unzip . map helper . mkName
     otherIds = desigIds d \\ [ i, toId ]
 
 
-mkCan'tGiveInvDescs :: Text -> Id -> MudState -> Inv -> [Text]
+mkCan'tGiveInvDescs :: HasCallStack => Text -> Id -> MudState -> Inv -> [Text]
 mkCan'tGiveInvDescs = can'tInvDescsHelper
 
 
 -----
 
 
-helperLinkUnlink :: MudState -> Id -> MsgQueue -> Cols -> MudStack (Maybe ([Text], [Text], [Text]))
+helperLinkUnlink :: HasCallStack => MudState -> Id -> MsgQueue -> Cols -> MudStack (Maybe ([Text], [Text], [Text]))
 helperLinkUnlink ms i mq cols =
     let s                = getSing   i ms
         othersLinkedToMe = getLinked i ms
@@ -729,14 +730,14 @@ helperLinkUnlink ms i mq cols =
 type NthOfM = (Int, Int)
 
 
-helperPutEitherCoins :: Id
-                     -> Desig
-                     -> Maybe NthOfM
-                     -> ToId
-                     -> ToSing
-                     -> GenericIntermediateRes
-                     -> [Either [Text] Coins]
-                     -> GenericIntermediateRes
+helperPutEitherCoins :: HasCallStack => Id
+                                     -> Desig
+                                     -> Maybe NthOfM
+                                     -> ToId
+                                     -> ToSing
+                                     -> GenericIntermediateRes
+                                     -> [Either [Text] Coins]
+                                     -> GenericIntermediateRes
 helperPutEitherCoins i d mnom toId toSing (ms, toSelfs, bs, logMsgs) ecs =
     let (ms', toSelfs', logMsgs', canCoins) = foldl' helper (ms, toSelfs, logMsgs, mempty) ecs
     in (ms', toSelfs', bs ++ mkPutRemCoinsDescOthers i d Put mnom mci toSing canCoins, logMsgs')
@@ -753,11 +754,11 @@ helperPutEitherCoins i d mnom toId toSing (ms, toSelfs, bs, logMsgs) ecs =
                          & _4                   <>~ can
 
 
-partitionCoinsByVol :: Id -> MudState -> Coins -> (Coins, Coins)
+partitionCoinsByVol :: HasCallStack => Id -> MudState -> Coins -> (Coins, Coins)
 partitionCoinsByVol = partitionCoinsHelper getConCapacity calcInvCoinsVol coinVol
 
 
-mkPutRemCoinsDescOthers :: Id -> Desig -> PutOrRem -> Maybe NthOfM -> Maybe Id -> Sing -> Coins -> [Broadcast]
+mkPutRemCoinsDescOthers :: HasCallStack => Id -> Desig -> PutOrRem -> Maybe NthOfM -> Maybe Id -> Sing -> Coins -> [Broadcast]
 mkPutRemCoinsDescOthers i d por mnom mci conSing c = c |!| pure ( T.concat [ serialize d
                                                                            , spaced . mkPorVerb por $ ThrPer
                                                                            , aCoinSomeCoins c
@@ -767,7 +768,7 @@ mkPutRemCoinsDescOthers i d por mnom mci conSing c = c |!| pure ( T.concat [ ser
                                                                , i `delete` desigIds d )
 
 
-mkPutRemCoinsDescsSelf :: PutOrRem -> Maybe NthOfM -> Maybe Id -> Sing -> Coins -> [Text]
+mkPutRemCoinsDescsSelf :: HasCallStack => PutOrRem -> Maybe NthOfM -> Maybe Id -> Sing -> Coins -> [Text]
 mkPutRemCoinsDescsSelf por mnom mci conSing = mkCoinsMsgs helper
   where
     helper a cn | a == 1 = T.concat [ partA, aOrAn cn,   " ",           partB ]
@@ -783,7 +784,7 @@ mkPorVerb Rem SndPer = "remove"
 mkPorVerb Rem ThrPer = "removes"
 
 
-mkPorPrep :: PutOrRem -> Verb -> Maybe NthOfM -> Maybe Id -> Sing -> Text
+mkPorPrep :: HasCallStack => PutOrRem -> Verb -> Maybe NthOfM -> Maybe Id -> Sing -> Text
 mkPorPrep Put SndPer Nothing       Nothing  = ("in the "   <>)
 mkPorPrep Rem SndPer Nothing       Nothing  = ("from the " <>)
 mkPorPrep Put ThrPer Nothing       Nothing  = ("in "       <>) . aOrAn
@@ -811,21 +812,21 @@ onTheGround :: Maybe NthOfM -> Text
 onTheGround = (|!| " on the ground") . ((both %~ Sum) <$>)
 
 
-mkCan'tPutCoinsDesc :: Sing -> Coins -> [Text]
+mkCan'tPutCoinsDesc :: HasCallStack => Sing -> Coins -> [Text]
 mkCan'tPutCoinsDesc conSing = mkCoinsMsgs (can'tCoinsDescHelper . sorryPutVol $ conSing)
 
 
 -----
 
 
-helperPutEitherInv :: Id
-                   -> Desig
-                   -> Maybe NthOfM
-                   -> ToId
-                   -> ToSing
-                   -> GenericIntermediateRes
-                   -> Either Text Inv
-                   -> GenericIntermediateRes
+helperPutEitherInv :: HasCallStack => Id
+                                   -> Desig
+                                   -> Maybe NthOfM
+                                   -> ToId
+                                   -> ToSing
+                                   -> GenericIntermediateRes
+                                   -> Either Text Inv
+                                   -> GenericIntermediateRes
 helperPutEitherInv i d mnom toId toSing a@(ms, origToSelfs, _, _) = \case
   Left  msg -> a & _2 <>~ pure msg
   Right is  ->
@@ -842,19 +843,19 @@ helperPutEitherInv i d mnom toId toSing a@(ms, origToSelfs, _, _) = \case
          & _4                 <>~ toSelfs'
 
 
-partitionInvByVol :: MudState -> Vol -> (Vol, Inv, Inv) -> Id -> (Vol, Inv, Inv)
+partitionInvByVol :: HasCallStack => MudState -> Vol -> (Vol, Inv, Inv) -> Id -> (Vol, Inv, Inv)
 partitionInvByVol = partitionInvHelper calcVol
 
 
-mkPutRemInvDescs :: Id
-                 -> MudState
-                 -> Desig
-                 -> PutOrRem
-                 -> Maybe NthOfM
-                 -> Maybe Id
-                 -> Sing
-                 -> Inv
-                 -> ([Text], [Broadcast])
+mkPutRemInvDescs :: HasCallStack => Id
+                                 -> MudState
+                                 -> Desig
+                                 -> PutOrRem
+                                 -> Maybe NthOfM
+                                 -> Maybe Id
+                                 -> Sing
+                                 -> Inv
+                                 -> ([Text], [Broadcast])
 mkPutRemInvDescs i ms d por mnom mci conSing = unzip . map helper . mkNameCountBothList i ms
   where
     helper (_, c, (s, _)) | c == 1 =
@@ -889,22 +890,22 @@ mkPutRemInvDescs i ms d por mnom mci conSing = unzip . map helper . mkNameCountB
     otherIds = i `delete` desigIds d
 
 
-mkCan'tPutInvDescs :: ToSing -> Id -> MudState -> Inv -> [Text]
+mkCan'tPutInvDescs :: HasCallStack => ToSing -> Id -> MudState -> Inv -> [Text]
 mkCan'tPutInvDescs = can'tInvDescsHelper . sorryPutVol
 
 
 -----
 
 
-helperRemEitherCoins :: Id
-                     -> Desig
-                     -> Maybe NthOfM
-                     -> FromId
-                     -> FromSing
-                     -> IsConInRm
-                     -> GenericIntermediateRes
-                     -> [Either [Text] Coins]
-                     -> GenericIntermediateRes
+helperRemEitherCoins :: HasCallStack => Id
+                                     -> Desig
+                                     -> Maybe NthOfM
+                                     -> FromId
+                                     -> FromSing
+                                     -> IsConInRm
+                                     -> GenericIntermediateRes
+                                     -> [Either [Text] Coins]
+                                     -> GenericIntermediateRes
 helperRemEitherCoins i d mnom fromId fromSing icir (ms, toSelfs, bs, logMsgs) ecs =
     let (ms', toSelfs', logMsgs', canCoins) = foldl' helper (ms, toSelfs, logMsgs, mempty) ecs
     in (ms', toSelfs', bs ++ mkPutRemCoinsDescOthers i d Rem mnom mci fromSing canCoins, logMsgs')
@@ -923,22 +924,22 @@ helperRemEitherCoins i d mnom fromId fromSing icir (ms, toSelfs, bs, logMsgs) ec
                          & _4 <>~ c
 
 
-mkCan'tRemCoinsDesc :: Coins -> [Text]
+mkCan'tRemCoinsDesc :: HasCallStack => Coins -> [Text]
 mkCan'tRemCoinsDesc = mkCoinsMsgs (can'tCoinsDescHelper sorryRemEnc)
 
 
 -----
 
 
-helperRemEitherInv :: Id
-                   -> Desig
-                   -> Maybe NthOfM
-                   -> FromId
-                   -> FromSing
-                   -> IsConInRm
-                   -> GenericIntermediateRes
-                   -> Either Text Inv
-                   -> GenericIntermediateRes
+helperRemEitherInv :: HasCallStack => Id
+                                   -> Desig
+                                   -> Maybe NthOfM
+                                   -> FromId
+                                   -> FromSing
+                                   -> IsConInRm
+                                   -> GenericIntermediateRes
+                                   -> Either Text Inv
+                                   -> GenericIntermediateRes
 helperRemEitherInv i d mnom fromId fromSing icir a@(ms, _, _, _) = \case
   Left  msg -> a & _2 <>~ pure msg
   Right is  -> let (_, cans, can'ts) = f is
@@ -952,7 +953,7 @@ helperRemEitherInv i d mnom fromId fromSing icir a@(ms, _, _, _) = \case
                     & _4                   <>~ toSelfs
 
 
-mkCan'tRemInvDescs :: Id -> MudState -> Inv -> [Text]
+mkCan'tRemInvDescs :: HasCallStack => Id -> MudState -> Inv -> [Text]
 mkCan'tRemInvDescs = can'tInvDescsHelper sorryRemEnc
 
 
@@ -1007,7 +1008,7 @@ maybeSingleSlot em s = boolToMaybe (isSlotAvail em s) s
 -----
 
 
-mkChanBindings :: Id -> MudState -> ([Chan], [ChanName], Sing)
+mkChanBindings :: HasCallStack => Id -> MudState -> ([Chan], [ChanName], Sing)
 mkChanBindings i ms = let cs  = getPCChans i ms
                           cns = select chanName cs
                       in (cs, cns, getSing i ms)
@@ -1016,7 +1017,7 @@ mkChanBindings i ms = let cs  = getPCChans i ms
 -----
 
 
-mkChanNamesTunings :: Id -> MudState -> ([Text], [Bool])
+mkChanNamesTunings :: HasCallStack => Id -> MudState -> ([Text], [Bool])
 mkChanNamesTunings i ms = unzip . sortBy (compare `on` fst) . map helper . getPCChans i $ ms
   where
     helper = view chanName &&& views chanConnTbl (M.! getSing i ms)
@@ -1025,7 +1026,7 @@ mkChanNamesTunings i ms = unzip . sortBy (compare `on` fst) . map helper . getPC
 -----
 
 
-mkCoinsDesc :: Cols -> Coins -> Text
+mkCoinsDesc :: HasCallStack => Cols -> Coins -> Text
 mkCoinsDesc cols (Coins (each %~ Sum -> (cop, sil, gol))) =
     T.unlines . intercalate [""] . map (wrap cols) . dropEmpties $ [ cop |!| copDesc
                                                                    , sil |!| silDesc
@@ -1050,11 +1051,11 @@ mkCorpseSmellLvl t = if | t == corpseSmellLvl1 -> 1
 -----
 
 
-mkEffStDesc :: Id -> MudState -> Text
+mkEffStDesc :: HasCallStack => Id -> MudState -> Text
 mkEffStDesc = mkEffDesc getBaseSt calcEffSt "weaker" "stronger"
 
 
-mkEffDesc :: (Id -> MudState -> Int) -> (Id -> MudState -> Int) -> Text -> Text -> Id -> MudState -> Text
+mkEffDesc :: HasCallStack => (Id -> MudState -> Int) -> (Id -> MudState -> Int) -> Text -> Text -> Id -> MudState -> Text
 mkEffDesc f g lessAdj moreAdj i ms =
     let x    = f i ms
         y    = g i ms - x
@@ -1083,30 +1084,30 @@ mkEffDesc f g lessAdj moreAdj i ms =
                           , (100, over                                                                     ) ]
 
 
-mkEffDxDesc :: Id -> MudState -> Text
+mkEffDxDesc :: HasCallStack => Id -> MudState -> Text
 mkEffDxDesc = mkEffDesc getBaseDx calcEffDx "less agile" "more agile"
 
 
-mkEffHtDesc :: Id -> MudState -> Text
+mkEffHtDesc :: HasCallStack => Id -> MudState -> Text
 mkEffHtDesc = mkEffDesc getBaseHt calcEffHt "less vigorous" "more vigorous"
 
 
-mkEffMaDesc :: Id -> MudState -> Text
+mkEffMaDesc :: HasCallStack => Id -> MudState -> Text
 mkEffMaDesc = mkEffDesc getBaseMa calcEffMa "less proficient in magic" "more proficient in magic"
 
 
-mkEffPsDesc :: Id -> MudState -> Text
+mkEffPsDesc :: HasCallStack => Id -> MudState -> Text
 mkEffPsDesc = mkEffDesc getBasePs calcEffPs "less proficient in psionics" "more proficient in psionics"
 
 
 -----
 
 
-mkEntDescs :: Id -> Cols -> MudState -> Inv -> Text
+mkEntDescs :: HasCallStack => Id -> Cols -> MudState -> Inv -> Text
 mkEntDescs i cols ms eis = T.intercalate theNl [ mkEntDesc i cols ms (ei, e) | ei <- eis, let e = getEnt ei ms ]
 
 
-mkEntDesc :: Id -> Cols -> MudState -> (Id, Ent) -> Text
+mkEntDesc :: HasCallStack => Id -> Cols -> MudState -> (Id, Ent) -> Text
 mkEntDesc i cols ms (ei, e) = let ed = views entDesc (wrapUnlines cols) e <> mkAuxDesc i cols ms ei in
     case t of ConType      ->                  (ed <>) . mkInvCoinsDesc i cols ms ei $ s
               CorpseType   -> (corpseTxt <>)           . mkInvCoinsDesc i cols ms ei $ s
@@ -1130,18 +1131,18 @@ mkEntDesc i cols ms (ei, e) = let ed = views entDesc (wrapUnlines cols) e <> mkA
     coloredBracketQuote = quoteWith' (("[ ", " ]") & both %~ colorWith tempDescColor)
 
 
-mkAuxDesc :: Id -> Cols -> MudState -> Id -> Text
+mkAuxDesc :: HasCallStack => Id -> Cols -> MudState -> Id -> Text
 mkAuxDesc i cols ms i' = maybeEmp (wrapUnlines cols) . mkMaybeHumMsg i ms i' $ id
 
 
-mkMaybeHumMsg :: Id -> MudState -> Id -> (Text -> Text) -> Maybe Text
+mkMaybeHumMsg :: HasCallStack => Id -> MudState -> Id -> (Text -> Text) -> Maybe Text
 mkMaybeHumMsg i ms i' f | t <- getType i' ms, hasObj t, isHummingId i' ms = Just . humMsg . f $ if t == CorpseType
                           then mkCorpseAppellation i ms i'
                           else getSing i' ms
                         | otherwise = Nothing
 
 
-mkInvCoinsDesc :: Id -> Cols -> MudState -> Id -> Sing -> Text
+mkInvCoinsDesc :: HasCallStack => Id -> Cols -> MudState -> Id -> Sing -> Text
 mkInvCoinsDesc i cols ms i' s =
     let pair@(is, c)           = (getInv `fanUncurry` getCoins) (i', ms)
         msg | i' == i          = dudeYourHandsAreEmpty
@@ -1160,7 +1161,7 @@ mkInvCoinsDesc i cols ms i' s =
            | otherwise = nl $ showText (calcConPerFull i' ms) <> "% full."
 
 
-mkEntsInInvDesc :: Id -> Cols -> MudState -> Inv -> Text
+mkEntsInInvDesc :: HasCallStack => Id -> Cols -> MudState -> Inv -> Text
 mkEntsInInvDesc i cols ms =
     T.unlines . concatMap (wrapIndent bracketedEntNamePadding cols . helper) . mkStyledName_count_bothList i ms
   where
@@ -1168,21 +1169,21 @@ mkEntsInInvDesc i cols ms =
     helper (padBracketedEntName -> en, c, b     )          = T.concat [ en, showText c, " ", mkPlurFromBoth b ]
 
 
-mkStyledName_count_bothList :: Id -> MudState -> Inv -> [(Text, Int, BothGramNos)]
+mkStyledName_count_bothList :: HasCallStack => Id -> MudState -> Inv -> [(Text, Int, BothGramNos)]
 mkStyledName_count_bothList i ms is =
     let styleds                       = styleAbbrevs DoQuote [ getEffName        i ms targetId | targetId <- is ]
         boths@(mkCountList -> counts) =                      [ getEffBothGramNos i ms targetId | targetId <- is ]
     in nub . zip3 styleds counts $ boths
 
 
-mkCoinsSummary :: Cols -> Coins -> Text
+mkCoinsSummary :: HasCallStack => Cols -> Coins -> Text
 mkCoinsSummary cols = helper . zipWith mkNameAmt coinNames . coinsToList
   where
     helper         = T.unlines . wrapIndent 2 cols . commas . dropEmpties
     mkNameAmt cn a = Sum a |!| showText a |<>| bracketQuote (colorWith abbrevColor cn)
 
 
-mkEqDesc :: Id -> Cols -> MudState -> Id -> Sing -> Type -> Text
+mkEqDesc :: HasCallStack => Id -> Cols -> MudState -> Id -> Sing -> Type -> Text
 mkEqDesc i cols ms descId descSing descType = let descs = bool mkDescsOther mkDescsSelf $ descId == i in
     ()# descs ? noDescs :? ((header <>) . T.unlines . concatMap (wrapIndent 15 cols) $ descs)
   where
@@ -1206,7 +1207,7 @@ mkEqDesc i cols ms descId descSing descType = let descs = bool mkDescsOther mkDe
     d = mkSerializedNonStdDesig descId ms descSing The DoCap
 
 
-mkVesselContDesc :: Cols -> MudState -> Id -> Text
+mkVesselContDesc :: HasCallStack => Cols -> MudState -> Id -> Text
 mkVesselContDesc cols ms targetId =
     let s = getSing   targetId ms
         v = getVessel targetId ms
@@ -1221,7 +1222,7 @@ mkVesselContDesc cols ms targetId =
     in views vesselCont (maybe emptyDesc mkContDesc) v
 
 
-mkWritableMsgDesc :: Cols -> MudState -> Id -> Text
+mkWritableMsgDesc :: HasCallStack => Cols -> MudState -> Id -> Text
 mkWritableMsgDesc cols ms targetId = case getWritable targetId ms of
   (Writable Nothing          _       ) -> ""
   (Writable (Just _        ) (Just _)) -> helper "a language you don't recognize"
@@ -1237,7 +1238,7 @@ adminTagTxt = colorWith adminTagColor (parensQuote "admin")
 -----
 
 
-mkExitsSummary :: Cols -> Rm -> Text
+mkExitsSummary :: HasCallStack => Cols -> Rm -> Text
 mkExitsSummary cols (view rmLinks -> rls) =
     let stdNames    = [ rl^.slDir  .to (colorWith exitsColor . linkDirToCmdName) | rl <- rls, not . isNonStdLink $ rl ]
         customNames = [ rl^.nslName.to (colorWith exitsColor                   ) | rl <- rls,       isNonStdLink   rl ]
@@ -1255,7 +1256,7 @@ isNonStdLink _             = False
 -----
 
 
-mkFpDesc :: Id -> MudState -> Text
+mkFpDesc :: HasCallStack => Id -> MudState -> Text
 mkFpDesc i ms = let (c, m) = getFps i ms
                 in mkDescForPercent9 (c `percent` m) [ colorWith magenta "You are too exhausted to move."
                                                      , colorWith magenta "You are seriously tired."
@@ -1268,11 +1269,11 @@ mkFpDesc i ms = let (c, m) = getFps i ms
                                                      , "" ]
 
 
-mkDescForPercent9 :: Int -> [Text] -> Text
+mkDescForPercent9 :: HasCallStack => Int -> [Text] -> Text
 mkDescForPercent9 x = mkDescForPercent x . zip [ 0, 14, 28, 42, 56, 70, 84, 99, 100 ]
 
 
-mkDescForPercent :: Int -> [(Int, Text)] -> Text
+mkDescForPercent :: HasCallStack => Int -> [(Int, Text)] -> Text
 mkDescForPercent _ []                          = blowUp "mkDescForPercent" "empty list" ""
 mkDescForPercent _ [(_, txt)]                  = txt
 mkDescForPercent x ((y, txt):rest) | x <= y    = txt
@@ -1283,7 +1284,7 @@ mkDescForPercent x ((y, txt):rest) | x <= y    = txt
 -----
 
 
-mkFullDesc :: Id -> MudState -> Text
+mkFullDesc :: HasCallStack => Id -> MudState -> Text
 mkFullDesc i ms = mkDescForPercent9 (calcStomachPerFull i ms)
     [ colorWith magenta                "You are famished."
     , colorWith red                    "You are extremely hungry."
@@ -1299,7 +1300,7 @@ mkFullDesc i ms = mkDescForPercent9 (calcStomachPerFull i ms)
 -----
 
 
-mkHpDesc :: Id -> MudState -> Text
+mkHpDesc :: HasCallStack => Id -> MudState -> Text
 mkHpDesc i ms =
     let (c, m) = getHps i ms
     in mkDescForPercent (c `percent` m) [ (-15, colorWith magenta "You are dead."                            )
@@ -1317,7 +1318,7 @@ mkHpDesc i ms =
 -----
 
 
-mkLastArgIsTargetBindings :: Id -> MudState -> Args -> LastArgIsTargetBindings
+mkLastArgIsTargetBindings :: HasCallStack => Id -> MudState -> Args -> LastArgIsTargetBindings
 mkLastArgIsTargetBindings i ms as | (lastArg, others) <- mkLastArgWithNubbedOthers as =
     LastArgIsTargetBindings { srcDesig    = mkStdDesig  i ms DoCap
                             , srcInvCoins = getInvCoins i ms
@@ -1326,7 +1327,7 @@ mkLastArgIsTargetBindings i ms as | (lastArg, others) <- mkLastArgWithNubbedOthe
                             , otherArgs   = others }
 
 
-mkLastArgWithNubbedOthers :: Args -> (Text, Args)
+mkLastArgWithNubbedOthers :: HasCallStack => Args -> (Text, Args)
 mkLastArgWithNubbedOthers as = let lastArg = last as
                                    otherArgs = init $ case as of
                                      [_, _] -> as
@@ -1337,7 +1338,7 @@ mkLastArgWithNubbedOthers as = let lastArg = last as
 -----
 
 
-mkMaybeCorpseSmellMsg :: Id -> MudState -> Id -> (Text -> Text) -> Maybe Text
+mkMaybeCorpseSmellMsg :: HasCallStack => Id -> MudState -> Id -> (Text -> Text) -> Maybe Text
 mkMaybeCorpseSmellMsg i ms i' f | getType i' ms == CorpseType, n <- mkCorpseAppellation i ms i' = Just . helper . f $ n
                                 | otherwise = Nothing
   where
@@ -1356,7 +1357,7 @@ type IsConInRm  = Bool
 type InvWithCon = Inv
 
 
-mkMaybeNthOfM :: MudState -> IsConInRm -> Id -> Sing -> InvWithCon -> Maybe NthOfM
+mkMaybeNthOfM :: HasCallStack => MudState -> IsConInRm -> Id -> Sing -> InvWithCon -> Maybe NthOfM
 mkMaybeNthOfM ms icir conId conSing invWithCon = guard icir >> res
   where
     res = case filter ((== conSing) . flip getSing ms) invWithCon of
@@ -1368,7 +1369,7 @@ mkMaybeNthOfM ms icir conId conSing invWithCon = guard icir >> res
 -----
 
 
-mkMpDesc :: Id -> MudState -> Text
+mkMpDesc :: HasCallStack => Id -> MudState -> Text
 mkMpDesc i ms = let (c, m) = getMps i ms
                 in mkDescForPercent9 (c `percent` m) [ colorWith magenta "Your mana is entirely depleted."
                                                      , colorWith magenta "Your mana is severely depleted."
@@ -1384,7 +1385,7 @@ mkMpDesc i ms = let (c, m) = getMps i ms
 -----
 
 
-mkPpDesc :: Id -> MudState -> Text
+mkPpDesc :: HasCallStack => Id -> MudState -> Text
 mkPpDesc i ms = let (c, m) = getPps i ms
                 in mkDescForPercent9 (c `percent` m) [ colorWith magenta "Your psionic energy is entirely depleted."
                                                      , colorWith magenta "Your psionic energy is severely depleted."
@@ -1400,12 +1401,12 @@ mkPpDesc i ms = let (c, m) = getPps i ms
 -----
 
 
-moveReadiedItem :: Id
-                -> (EqTbl, InvTbl, [Text], [Broadcast], [Text])
-                -> Slot
-                -> Id
-                -> (Text, Broadcast)
-                -> (EqTbl, InvTbl, [Text], [Broadcast], [Text])
+moveReadiedItem :: HasCallStack => Id
+                                -> (EqTbl, InvTbl, [Text], [Broadcast], [Text])
+                                -> Slot
+                                -> Id
+                                -> (Text, Broadcast)
+                                -> (EqTbl, InvTbl, [Text], [Broadcast], [Text])
 moveReadiedItem i a s targetId (msg, b) = a & _1.ind i.at s ?~ targetId
                                             & _2.ind i %~ (targetId `delete`)
                                             & _3 <>~ pure msg
@@ -1416,7 +1417,7 @@ moveReadiedItem i a s targetId (msg, b) = a & _1.ind i.at s ?~ targetId
 -----
 
 
-notFoundSuggestAsleeps :: Text -> [Sing] -> MudState -> Text
+notFoundSuggestAsleeps :: HasCallStack => Text -> [Sing] -> MudState -> Text
 notFoundSuggestAsleeps a@(capitalize . T.toLower -> a') asleepSings ms =
     case findFullNameForAbbrev a' asleepSings of
       Just asleepTarget ->
@@ -1451,38 +1452,38 @@ otherHand NoHand = LHand
 -----
 
 
-putOnMsgs :: Id -> Desig -> Sing -> (Text, Broadcast)
+putOnMsgs :: HasCallStack => Id -> Desig -> Sing -> (Text, Broadcast)
 putOnMsgs = mkReadyMsgs "put on" "puts on"
 
 
 -----
 
 
-resolveMobInvCoins :: Id -> MudState -> Args -> Inv -> Coins -> ([Either Text Inv], [Either [Text] Coins])
+resolveMobInvCoins :: HasCallStack => Id -> MudState -> Args -> Inv -> Coins -> ([Either Text Inv], [Either [Text] Coins])
 resolveMobInvCoins i ms = resolveHelper i ms procGecrMisMobInv procReconciledCoinsMobInv
 
 
-resolveHelper :: Id
-              -> MudState
-              -> ((GetEntsCoinsRes, Maybe Inv) -> Either Text Inv)
-              -> (ReconciledCoins -> Either [Text] Coins)
-              -> Args
-              -> Inv
-              -> Coins
-              -> ([Either Text Inv], [Either [Text] Coins])
+resolveHelper :: HasCallStack => Id
+                              -> MudState
+                              -> ((GetEntsCoinsRes, Maybe Inv) -> Either Text Inv)
+                              -> (ReconciledCoins -> Either [Text] Coins)
+                              -> Args
+                              -> Inv
+                              -> Coins
+                              -> ([Either Text Inv], [Either [Text] Coins])
 resolveHelper i ms f g as is c | (gecrs, miss, rcs) <- resolveEntCoinNames i ms as is c
                                , eiss               <- zipWith (curry f) gecrs miss
                                , ecs                <- map g rcs = (eiss, ecs)
 
 
-resolveRmInvCoins :: Id -> MudState -> Args -> Inv -> Coins -> ([Either Text Inv], [Either [Text] Coins])
+resolveRmInvCoins :: HasCallStack => Id -> MudState -> Args -> Inv -> Coins -> ([Either Text Inv], [Either [Text] Coins])
 resolveRmInvCoins i ms = resolveHelper i ms procGecrMisRm procReconciledCoinsRm
 
 
 -----
 
 
-sorryConHelper :: Id -> MudState -> Id -> Sing -> Text
+sorryConHelper :: HasCallStack => Id -> MudState -> Id -> Sing -> Text
 sorryConHelper i ms conId conSing
   | isNpcPC conId ms = sorryCon . parseDesig i ms . serialize . mkStdDesig conId ms $ Don'tCap
   | otherwise        = sorryCon conSing
@@ -1491,5 +1492,5 @@ sorryConHelper i ms conId conSing
 -----
 
 
-spiritHelper :: Id -> (MudState -> MudStack ()) -> (MudState -> MudStack ()) -> MudStack ()
+spiritHelper :: HasCallStack => Id -> (MudState -> MudStack ()) -> (MudState -> MudStack ()) -> MudStack ()
 spiritHelper i a b = getState >>= \ms -> ms |&| bool a b (isSpiritId i ms)

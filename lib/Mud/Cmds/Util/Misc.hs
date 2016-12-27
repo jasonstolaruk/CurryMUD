@@ -117,6 +117,7 @@ import Data.List (delete, groupBy, intercalate, nub, partition, sortBy, unfoldr)
 import Data.Monoid ((<>), Any(..), Sum(..))
 import Data.Text (Text)
 import Data.Time (diffUTCTime, getCurrentTime)
+import GHC.Stack (HasCallStack)
 import Prelude hiding (exp)
 import qualified Data.IntMap.Lazy as IM (IntMap, empty, filter, foldlWithKey', foldr, fromList, keys, map, mapWithKey)
 import qualified Data.Map.Lazy as M ((!), elems, keys, lookup, member, toList)
@@ -158,7 +159,7 @@ asterisk = colorWith asteriskColor "*"
 -----
 
 
-awardExp :: Exp -> Text -> Id -> MudStack ()
+awardExp :: HasCallStack => Exp -> Text -> Id -> MudStack ()
 awardExp amt reason i = getLvlExp i <$> getState >>= \(l, x) -> let diff = calcLvlForExp (x + amt) - l in
     rndmVector (diff * noOfLvlUpRndmInts) >>= \v -> helper v |&| modifyState >=> \(ms, (msgs, logMsgs)) -> do
         let logMsg = T.concat [ "awarded "
@@ -188,7 +189,7 @@ noOfLvlUpRndmInts :: Int
 noOfLvlUpRndmInts = 5
 
 
-lvlUp :: Id -> MudState -> V.Vector Int -> Lvl -> Lvl -> MudState
+lvlUp :: HasCallStack => Id -> MudState -> V.Vector Int -> Lvl -> Lvl -> MudState
 lvlUp i = helper
   where
     helper ms v oldLvl newLvl
@@ -206,7 +207,7 @@ lvlUp i = helper
 -----
 
 
-consume :: Id -> [StomachCont] -> MudStack ()
+consume :: HasCallStack => Id -> [StomachCont] -> MudStack ()
 consume _ []     = unit
 consume i newScs = do now <- liftIO getCurrentTime
                       modifyState (helper now) >>= procEffectList i
@@ -244,17 +245,17 @@ consume i newScs = do now <- liftIO getCurrentTime
 -----
 
 
-dispCmdList :: [Cmd] -> ActionFun
+dispCmdList :: HasCallStack => [Cmd] -> ActionFun
 dispCmdList cmds (NoArgs i mq cols) = pager i mq Nothing . concatMap (wrapIndent cmdNamePadding cols) . mkCmdListText $ cmds
 dispCmdList cmds p                  = dispMatches p cmdNamePadding . mkCmdListText $ cmds
 
 
-mkCmdListText :: [Cmd] -> [Text]
+mkCmdListText :: HasCallStack => [Cmd] -> [Text]
 mkCmdListText cmds = let zipped = zip (styleCmdAbbrevs cmds) [ cmdDesc cmd | cmd <- cmds ]
                      in [ uncurry (<>) . first padCmdName $ pair | pair@(_, d) <- zipped, ()!# d ]
 
 
-styleCmdAbbrevs :: [Cmd] -> [Text]
+styleCmdAbbrevs :: HasCallStack => [Cmd] -> [Text]
 styleCmdAbbrevs cmds = let cmdNames       = [ cmdName           cmd | cmd <- cmds ]
                            cmdPAs         = [ cmdPriorityAbbrev cmd | cmd <- cmds ]
                            styledCmdNames = styleAbbrevs Don'tQuote cmdNames
@@ -269,7 +270,7 @@ styleCmdAbbrevs cmds = let cmdNames       = [ cmdName           cmd | cmd <- cmd
 -----
 
 
-dispMatches :: ActionParams -> Int -> [Text] -> MudStack ()
+dispMatches :: HasCallStack => ActionParams -> Int -> [Text] -> MudStack ()
 dispMatches (LowerNub i mq cols needles) indent haystack = let (dropEmpties -> matches) = map grep needles in
     if ()# matches
       then wrapSend mq cols sorrySearch
@@ -290,7 +291,7 @@ embedId = quoteWith (T.singleton plaIdDelimiter) . showText
 -----
 
 
-expandEmbeddedIds :: MudState -> ChanContext -> [Broadcast] -> MudStack [Broadcast]
+expandEmbeddedIds :: HasCallStack => MudState -> ChanContext -> [Broadcast] -> MudStack [Broadcast]
 expandEmbeddedIds ms ChanContext { revealAdminNames } = concatMapM helper
   where
     helper a@(msg, is) = case breakIt msg of
@@ -308,11 +309,11 @@ breakIt :: Text -> (Text, Text)
 breakIt = T.break (== plaIdDelimiter)
 
 
-expandEmbeddedIdsToSings :: MudState -> Text -> Text
+expandEmbeddedIdsToSings :: HasCallStack => MudState -> Text -> Text
 expandEmbeddedIdsToSings ms = helper
   where
     helper msg = case breakIt msg of
-      (_, "")                                        -> msg
+      (_, ""                                       ) -> msg
       (x, breakIt . T.tail -> (numTxt, T.tail -> y)) -> let embeddedId = read . T.unpack $ numTxt :: Int
                                                         in helper . quoteWith' (x, y) . getSing embeddedId $ ms
 
@@ -320,7 +321,7 @@ expandEmbeddedIdsToSings ms = helper
 -----
 
 
-fakeClientInput :: MsgQueue -> Text -> MudStack ()
+fakeClientInput :: HasCallStack => MsgQueue -> Text -> MudStack ()
 fakeClientInput mq = writeMsg mq . FromClient . nl
 
 
@@ -328,17 +329,13 @@ fakeClientInput mq = writeMsg mq . FromClient . nl
 
 
 formatChanMsg :: Text -> Text -> Text -> Text
-formatChanMsg cn n msg = T.concat [ parensQuote cn
-                                  , " "
-                                  , n
-                                  , ": "
-                                  , msg ]
+formatChanMsg cn n msg = T.concat [ parensQuote cn, " ", n, ": ", msg ]
 
 
 -----
 
 
-formatQuestion :: Id  -> MudState -> Broadcast -> MudStack [Broadcast]
+formatQuestion :: HasCallStack => Id  -> MudState -> Broadcast -> MudStack [Broadcast]
 formatQuestion i ms (txt, is)
   | i `elem` is = let pair = i |&| (flip (formatChanMsg "Question") txt . (`getSing` ms) &&& pure)
                   in (pair :) <$> mkBsWithStyled (i `delete` is)
@@ -352,19 +349,19 @@ formatQuestion i ms (txt, is)
 -----
 
 
-getAllChanIdNames :: Id -> MudState -> MudStack (IM.IntMap [(Id, Text)])
+getAllChanIdNames :: HasCallStack => Id -> MudState -> MudStack (IM.IntMap [(Id, Text)])
 getAllChanIdNames i ms = let tunedChans = foldr helper [] . getPCChans i $ ms in
     IM.fromList . zipWith (\chan -> (chan^.chanId, )) tunedChans <$> forM tunedChans (flip (getChanIdNames i) ms)
   where
     helper chan acc = views chanConnTbl (M.! getSing i ms) chan ? (chan : acc) :? acc
 
 
-getChanIdNames :: Id -> Chan -> MudState -> MudStack [(Id, Text)]
+getChanIdNames :: HasCallStack => Id -> Chan -> MudState -> MudStack [(Id, Text)]
 getChanIdNames i c ms = let (linkeds, nonLinkedIds) = getChanLinkeds_nonLinkedIds i c ms in
     sortBy (compare `on` snd) . (linkeds ++) . zip nonLinkedIds <$> mapM (updateRndmName i) nonLinkedIds
 
 
-getChanLinkeds_nonLinkedIds :: Id -> Chan -> MudState -> ([(Id, Sing)], Inv)
+getChanLinkeds_nonLinkedIds :: HasCallStack => Id -> Chan -> MudState -> ([(Id, Sing)], Inv)
 getChanLinkeds_nonLinkedIds i c ms =
     let s                     = getSing i ms
         others                = views chanConnTbl (filter h . map g . filter f . M.toList) c
@@ -376,7 +373,7 @@ getChanLinkeds_nonLinkedIds i c ms =
     in (linkeds, nonLinkedIds)
 
 
-getChanStyleds :: Id -> Chan -> MudState -> MudStack [(Id, Text, Text)]
+getChanStyleds :: HasCallStack => Id -> Chan -> MudState -> MudStack [(Id, Text, Text)]
 getChanStyleds i c ms = let (linkeds, nonLinkedIds) = getChanLinkeds_nonLinkedIds i c ms in
     mapM (updateRndmName i) nonLinkedIds >>= \rndmNames ->
         let nonLinkeds' = zip nonLinkedIds rndmNames
@@ -392,7 +389,7 @@ getChanStyleds i c ms = let (linkeds, nonLinkedIds) = getChanLinkeds_nonLinkedId
 -----
 
 
-getPCChans :: Id -> MudState -> [Chan]
+getPCChans :: HasCallStack => Id -> MudState -> [Chan]
 getPCChans i ms = views chanTbl (IM.foldr helper []) ms
   where
     helper chan acc = getSing i ms `elem` (chan^.chanConnTbl.to M.keys) ? (chan : acc) :? acc
@@ -401,28 +398,27 @@ getPCChans i ms = views chanTbl (IM.foldr helper []) ms
 -----
 
 
-getQuestionStyleds :: Id -> MudState -> MudStack [(Id, Text, Text)]
-getQuestionStyleds i ms =
-    let (plaIds,    adminIds) = getTunedQuestionIds i ms
-        (linkedIds, otherIds) = partition (isLinked ms . (i, )) plaIds
-    in mapM (updateRndmName i) otherIds >>= \rndmNames ->
-        let rndms   = zip otherIds rndmNames
-            f       = map (dupSecond (`getSing` ms))
-            linkeds = f linkedIds
-            admins  = f adminIds
-            combo   = sortBy (compare `on` snd) $ rndms ++ nubSort (linkeds ++ admins)
-            styleds = styleAbbrevs Don'tQuote . map snd $ combo
-            helper (x, y) styled | x `elem` otherIds = a & _3 %~ underline
-                                 | otherwise         = a
-              where
-                a = (x, y, styled)
-        in return . zipWith helper combo $ styleds
+getQuestionStyleds :: HasCallStack => Id -> MudState -> MudStack [(Id, Text, Text)]
+getQuestionStyleds i ms = let (plaIds,    adminIds) = getTunedQuestionIds i ms
+                              (linkedIds, otherIds) = partition (isLinked ms . (i, )) plaIds
+                          in mapM (updateRndmName i) otherIds >>= \rndmNames ->
+                              let rndms   = zip otherIds rndmNames
+                                  f       = map (dupSecond (`getSing` ms))
+                                  linkeds = f linkedIds
+                                  admins  = f adminIds
+                                  combo   = sortBy (compare `on` snd) $ rndms ++ nubSort (linkeds ++ admins)
+                                  styleds = styleAbbrevs Don'tQuote . map snd $ combo
+                                  helper (x, y) styled | x `elem` otherIds = a & _3 %~ underline
+                                                       | otherwise         = a
+                                    where
+                                      a = (x, y, styled)
+                              in return . zipWith helper combo $ styleds
 
 
 -----
 
 
-getTunedQuestionIds :: Id -> MudState -> (Inv, Inv)
+getTunedQuestionIds :: HasCallStack => Id -> MudState -> (Inv, Inv)
 getTunedQuestionIds i ms =
     (getLoggedInPlaIds &&& getNonIncogLoggedInAdminIds) ms & both %~ filter (`isTunedQuestionId` ms) . (i `delete`)
 
@@ -430,7 +426,7 @@ getTunedQuestionIds i ms =
 -----
 
 
-happyTimes :: MudState -> [Either Text (Text, [EmoteWord], Text)] -> (Text, Text, Inv, [Broadcast])
+happyTimes :: HasCallStack => MudState -> [Either Text (Text, [EmoteWord], Text)] -> (Text, Text, Inv, [Broadcast])
 happyTimes ms xformed =
     let (toSelf, toTargets, toOthers)               = unzip3 . rights $ xformed
         targetIds                                   = nub . foldr extractIds [] $ toTargets
@@ -463,7 +459,7 @@ happyTimes ms xformed =
 
 hasEnc :: Args -> Bool
 hasEnc [] = False
-hasEnc as = any (`elem` [ enc, enc's ]) as || last as == prd enc
+hasEnc as = ((||) <$> any (`elem` [ enc, enc's ]) <*> (== prd enc) . last) as
 
 
 -----
@@ -476,34 +472,34 @@ hasYou = any (`elem` yous) . map (T.dropAround (not . isLetter) . T.toLower)
 -----
 
 
-isAlive :: Id -> MudState -> Bool
+isAlive :: HasCallStack => Id -> MudState -> Bool
 isAlive i = (i `notElem`) . getInv iNecropolis
 
 
 -----
 
 
-isAttacking :: Id -> MudState -> Bool
+isAttacking :: HasCallStack => Id -> MudState -> Bool
 isAttacking = isActing Attacking
 
 
-isDrinking :: Id -> MudState -> Bool
-isDrinking = isActing Drinking
-
-
-isActing :: ActType -> Id -> MudState -> Bool
+isActing :: HasCallStack => ActType -> Id -> MudState -> Bool
 isActing actType i = M.member actType . getActMap i
 
 
-isEating :: Id -> MudState -> Bool
+isDrinking :: HasCallStack => Id -> MudState -> Bool
+isDrinking = isActing Drinking
+
+
+isEating :: HasCallStack => Id -> MudState -> Bool
 isEating = isActing Eating
 
 
-isDrinkingEating :: Id -> MudState -> (Bool, Bool)
+isDrinkingEating :: HasCallStack => Id -> MudState -> (Bool, Bool)
 isDrinkingEating i = (isDrinking `fanUncurry` isEating) . (i, )
 
 
-isMoving :: Id -> MudState -> Bool
+isMoving :: HasCallStack => Id -> MudState -> Bool
 isMoving = isActing Moving
 
 
@@ -526,14 +522,14 @@ isHeDon't c = (== prd (T.singleton c))
 -----
 
 
-isHostBanned :: Text -> IO Any
+isHostBanned :: HasCallStack => Text -> IO Any
 isHostBanned host = isBanned host <$> (getDbTblRecs "ban_host" :: IO [BanHostRec])
 
 
-isBanned :: (BanRecord a) => Text -> [a] -> Any
+isBanned :: HasCallStack => (BanRecord a) => Text -> [a] -> Any
 isBanned target = helper . reverse
   where
-    helper [] = Any False
+    helper []                             = Any False
     helper (x:xs) | recTarget x == target = Any . recIsBanned $ x
                   | otherwise             = helper xs
 
@@ -541,11 +537,11 @@ isBanned target = helper . reverse
 -----
 
 
-isLinked :: MudState -> (Id, Id) -> Bool
+isLinked :: HasCallStack => MudState -> (Id, Id) -> Bool
 isLinked = helperIsLinked (||)
 
 
-helperIsLinked :: (Bool -> Bool -> Bool) -> MudState -> (Id, Id) -> Bool
+helperIsLinked :: HasCallStack => (Bool -> Bool -> Bool) -> MudState -> (Id, Id) -> Bool
 helperIsLinked f ms (i, i') = let s                = getSing i  ms
                                   s'               = getSing i' ms
                                   targetLinkedToMe = s' `elem` getLinked i  ms
@@ -555,21 +551,21 @@ helperIsLinked f ms (i, i') = let s                = getSing i  ms
     noNpcs = not ((||) <$> isNpc i <*> isNpc i' $ ms)
 
 
-isDblLinked :: MudState -> (Id, Id) -> Bool
+isDblLinked :: HasCallStack => MudState -> (Id, Id) -> Bool
 isDblLinked = helperIsLinked (&&)
 
 
 -----
 
 
-isPCBanned :: Sing -> IO Any
+isPCBanned :: HasCallStack => Sing -> IO Any
 isPCBanned banSing = isBanned banSing <$> (getDbTblRecs "ban_pc" :: IO [BanPCRec])
 
 
 -----
 
 
-locateHelper :: MudState -> [Text] -> Id -> (Id, Text)
+locateHelper :: HasCallStack => MudState -> [Text] -> Id -> (Id, Text)
 locateHelper ms txts i = case getType i ms of
   RmType -> (i, commas txts)
   _      -> maybe oops (uncurry . locateHelper $ ms) $ searchInvs `mplus` searchEqs
@@ -587,7 +583,7 @@ loggedInOut :: Bool -> Text
 loggedInOut = loggedInOutHelper id
 
 
-loggedInOutHelper :: (Text -> Text) -> Bool -> Text
+loggedInOutHelper :: HasCallStack => (Text -> Text) -> Bool -> Text
 loggedInOutHelper f = ("logged " <>) . f . inOut
 
 
@@ -613,7 +609,7 @@ mkHimHer NoSex  = "it"
 -----
 
 
-mkInterfaceList :: IO Text
+mkInterfaceList :: HasCallStack => IO Text
 mkInterfaceList = NI.getNetworkInterfaces >>= \ns -> return . commas $ [ T.concat [ showText . NI.name $ n
                                                                                   , ": "
                                                                                   , showText . NI.ipv4 $ n ]
@@ -623,7 +619,7 @@ mkInterfaceList = NI.getNetworkInterfaces >>= \ns -> return . commas $ [ T.conca
 -----
 
 
-mkNameTypeIdDesc :: Id -> MudState -> Text
+mkNameTypeIdDesc :: HasCallStack => Id -> MudState -> Text
 mkNameTypeIdDesc i ms = let (n, typeTxt) = case getType i ms of RmType -> (getRmName i ms, pp RmType)
                                                                 t      -> (getSing   i ms, pp t     )
                         in n <> spaced (parensQuote typeTxt) <> bracketQuote (showText i)
@@ -632,7 +628,7 @@ mkNameTypeIdDesc i ms = let (n, typeTxt) = case getType i ms of RmType -> (getRm
 -----
 
 
-mkActionParams :: Id -> MudState -> Args -> ActionParams
+mkActionParams :: HasCallStack => Id -> MudState -> Args -> ActionParams
 mkActionParams i ms as = ActionParams { myId        = i
                                       , plaMsgQueue = getMsgQueue i ms
                                       , plaCols     = getColumns  i ms
@@ -642,7 +638,7 @@ mkActionParams i ms as = ActionParams { myId        = i
 -----
 
 
-mkChanReport :: Id -> MudState -> Chan -> [Text]
+mkChanReport :: HasCallStack => Id -> MudState -> Chan -> [Text]
 mkChanReport i ms (Chan ci cn cct tappers) =
     let desc    = commas . map descPla . f $ [ (s, t, l) | (s, t) <- M.toList cct
                                                          , let l = isAwake (getIdForPCSing s ms) ms ]
@@ -695,14 +691,14 @@ mkRightForNonTargets = Right . (_2 %~ (pure . ForNonTargets))
 -----
 
 
-mkRndmVector :: MudStack (V.Vector Int)
+mkRndmVector :: HasCallStack => MudStack (V.Vector Int)
 mkRndmVector = rndmVector rndmVectorLen
 
 
 -----
 
 
-mkSingleTarget :: MsgQueue -> Cols -> Text -> Text -> SingleTarget
+mkSingleTarget :: HasCallStack => MsgQueue -> Cols -> Text -> Text -> SingleTarget
 mkSingleTarget mq cols target (sorryIgnoreLocPref -> sorryMsg) =
     SingleTarget { strippedTarget   = capitalize   t
                  , strippedTarget'  = uncapitalize t
@@ -729,13 +725,10 @@ mkThrPerPro NoSex  = "it"
 
 
 mkWhoHeader :: Bool -> [Text]
-mkWhoHeader b = T.concat [ padName "Name"
-                         , b |?| padId "Id"
-                         , padSex  "Sex"
-                         , padRace "Race"
-                         , "Level" ] : [ T.replicate (namePadding + getSum x + sexPadding + racePadding + lvlPadding) "=" ]
+mkWhoHeader b = [ T.concat [ padName "Name", b |?| padId "Id", padSex  "Sex", padRace "Race", "Level" ], divider cols ]
   where
-    x = b |?| Sum idPadding
+    cols = namePadding + getSum x + sexPadding + racePadding + lvlPadding
+    x    = b |?| Sum idPadding
 
 
 -----
@@ -749,7 +742,7 @@ onOff False = "off"
 -----
 
 
-pager :: Id -> MsgQueue -> Maybe Fun -> [Text] -> MudStack ()
+pager :: HasCallStack => Id -> MsgQueue -> Maybe Fun -> [Text] -> MudStack ()
 pager i mq mf txt@(length -> txtLen) = getState >>= \ms -> let pl = getPageLines i ms in if txtLen + 3 <= pl
   then send mq . nl . T.unlines $ txt
   else let pair@(page, _) = splitAt (pl - 2) txt in do
@@ -825,7 +818,7 @@ unmsg xs           = patternMatchFail "unmsg" . showText $ xs
 -----
 
 
-updateRndmName :: Id -> Id -> MudStack Sing
+updateRndmName :: HasCallStack => Id -> Id -> MudStack Sing
 updateRndmName i targetId = do
     rndmNames <- T.lines <$> readRndmNames
     rndmName  <- ()# rndmNames ? return "xyz" :? rndmElem rndmNames

@@ -13,10 +13,11 @@ import qualified Mud.Util.Misc as U (patternMatchFail)
 import Control.Arrow ((&&&), first)
 import Data.Monoid ((<>))
 import Data.Text (Text)
+import GHC.Stack (HasCallStack)
 import qualified Data.Text as T
 
 
-patternMatchFail :: (Show a) => PatternMatchFail a b
+patternMatchFail :: HasCallStack => (Show a) => PatternMatchFail a b
 patternMatchFail = U.patternMatchFail "Mud.Cmds.Util.Abbrev"
 
 
@@ -26,7 +27,7 @@ patternMatchFail = U.patternMatchFail "Mud.Cmds.Util.Abbrev"
 type FullWord = Text
 
 
-styleAbbrevs :: ShouldQuote -> [FullWord] -> [FullWord]
+styleAbbrevs :: HasCallStack => ShouldQuote -> [FullWord] -> [FullWord]
 styleAbbrevs sq fws =
     let abbrevs   = mkAbbrevs fws
         helper fw = let [(_, (abbrev, rest))] = filter ((fw ==) . fst) abbrevs
@@ -39,10 +40,10 @@ type Rest           = Text
 type PrevWordInList = Text
 
 
-mkAbbrevs :: [FullWord] -> [(FullWord, (Abbrev, Rest))]
+mkAbbrevs :: HasCallStack => [FullWord] -> [(FullWord, (Abbrev, Rest))]
 mkAbbrevs = helper "" . nubSort
   where
-    helper :: PrevWordInList -> [FullWord] -> [(FullWord, (Abbrev, Rest))]
+    helper :: HasCallStack => PrevWordInList -> [FullWord] -> [(FullWord, (Abbrev, Rest))]
     helper _    []     = []
     helper ""   (x:xs) = (id &&& first T.singleton . headTail) x : helper x xs
     helper prev (x:xs) = let abbrev = calcAbbrev x prev
@@ -50,7 +51,7 @@ mkAbbrevs = helper "" . nubSort
                                                                                        Just rest -> (abbrev, rest)
 
 
-calcAbbrev :: Text -> Text -> Text
+calcAbbrev :: HasCallStack => Text -> Text -> Text
 calcAbbrev (T.uncons -> Just (x, _ )) ""                                  = T.singleton x
 calcAbbrev (T.uncons -> Just (x, xs)) (T.uncons -> Just (y, ys)) | x == y = T.cons      x (calcAbbrev xs ys)
                                                                  | x /= y = T.singleton x
