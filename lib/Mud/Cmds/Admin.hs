@@ -336,10 +336,6 @@ adminAs   (WithTarget i mq cols target rest) = getState >>= \ms ->
 adminAs p = patternMatchFail "adminAs" . showText $ p
 
 
-hasType :: HasCallStack => Id -> MudState -> Bool -- TODO: Move?
-hasType i = views typeTbl ((i `elem`) . IM.keys)
-
-
 -----
 
 

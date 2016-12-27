@@ -21,6 +21,7 @@ module Mud.Cmds.Util.Misc ( asterisk
                           , getTunedQuestionIds
                           , happyTimes
                           , hasEnc
+                          , hasType
                           , hasYou
                           , inOut
                           , isAlive
@@ -457,9 +458,16 @@ happyTimes ms xformed =
 -----
 
 
-hasEnc :: Args -> Bool
+hasEnc :: HasCallStack => Args -> Bool
 hasEnc [] = False
 hasEnc as = ((||) <$> any (`elem` [ enc, enc's ]) <*> (== prd enc) . last) as
+
+
+-----
+
+
+hasType :: HasCallStack => Id -> MudState -> Bool
+hasType i = views typeTbl ((i `elem`) . IM.keys)
 
 
 -----
