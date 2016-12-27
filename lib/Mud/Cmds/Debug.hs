@@ -308,7 +308,7 @@ debugCoercePenny (NoArgs' i mq) = let penny        = Pennyちゃん True
   where
     coercePenny :: Penny -> Bool
     coercePenny (Pennyちゃん a) = unsafeCoerce a
-debugCoercePenny p = withoutArgs debugUnderline p
+debugCoercePenny p = withoutArgs debugCoercePenny p
 
 
 -----
@@ -916,7 +916,7 @@ debugRules (NoArgs i mq cols) = do logPlaExec (prefixDebugCmd "rules") i'
                                    pager i' mq Nothing . parseWrapXform cols $ rulesMsg
   where
     i' = safeCoerce (i :: Id) :: Int
-debugRules p = withoutArgs debugRandom p
+debugRules p = withoutArgs debugRules p
 
 
 -----
