@@ -70,6 +70,7 @@ import Data.List ((\\), delete, elemIndex)
 import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>))
 import Data.Text (Text)
+import GHC.Stack (HasCallStack)
 import Prelude hiding (pi)
 import qualified Data.IntMap.Lazy as IM (elems, toList)
 import qualified Data.Text as T
@@ -82,14 +83,14 @@ patternMatchFail = U.patternMatchFail "Mud.Data.State.Util.Output"
 -- ============================================================
 
 
-anglePrompt :: MsgQueue -> MudStack ()
+anglePrompt :: HasCallStack => MsgQueue -> MudStack ()
 anglePrompt = flip sendPrompt ">"
 
 
 -----
 
 
-bcast :: [Broadcast] -> MudStack ()
+bcast :: HasCallStack => [Broadcast] -> MudStack ()
 bcast [] = unit
 bcast bs = getState >>= \ms -> liftIO . atomically . forM_ bs . sendBcast $ ms
   where
@@ -106,11 +107,11 @@ bcast bs = getState >>= \ms -> liftIO . atomically . forM_ bs . sendBcast $ ms
 -----
 
 
-bcastAdmins :: Text -> MudStack ()
+bcastAdmins :: HasCallStack => Text -> MudStack ()
 bcastAdmins = bcastAdminsHelper id
 
 
-bcastAdminsHelper :: (Inv -> Inv) -> Text -> MudStack ()
+bcastAdminsHelper :: HasCallStack => (Inv -> Inv) -> Text -> MudStack ()
 bcastAdminsHelper f msg =
     bcastNl . pure . (colorWith adminBcastColor msg, ) =<< f . getLoggedInAdminIds <$> getState
 
@@ -118,46 +119,46 @@ bcastAdminsHelper f msg =
 -----
 
 
-bcastAdminsExcept :: Inv -> Text -> MudStack ()
+bcastAdminsExcept :: HasCallStack => Inv -> Text -> MudStack ()
 bcastAdminsExcept = bcastAdminsHelper . flip (\\)
 
 
 -----
 
 
-bcastIfNotIncog :: Id -> [Broadcast] -> MudStack ()
+bcastIfNotIncog :: HasCallStack => Id -> [Broadcast] -> MudStack ()
 bcastIfNotIncog i bs = getState >>= \ms -> onTrue (isPC i ms) (unless (isIncognito . getPla i $ ms)) . bcast $ bs
 
 
 -----
 
 
-bcastIfNotIncogNl :: Id -> [Broadcast] -> MudStack ()
+bcastIfNotIncogNl :: HasCallStack => Id -> [Broadcast] -> MudStack ()
 bcastIfNotIncogNl i = bcastIfNotIncog i . appendNlBs
 
 
-appendNlBs :: [Broadcast] -> [Broadcast]
+appendNlBs :: HasCallStack => [Broadcast] -> [Broadcast]
 appendNlBs bs = bs ++ pure (theNl, nubSort . concatMap snd $ bs)
 
 
 -----
 
 
-bcastNl :: [Broadcast] -> MudStack ()
+bcastNl :: HasCallStack => [Broadcast] -> MudStack ()
 bcastNl = bcast . appendNlBs
 
 
 -----
 
 
-bcastOtherAdmins :: Id -> Text -> MudStack ()
+bcastOtherAdmins :: HasCallStack => Id -> Text -> MudStack ()
 bcastOtherAdmins = bcastAdminsHelper . delete
 
 
 -----
 
 
-bcastOthersInRm :: Id -> Text -> MudStack ()
+bcastOthersInRm :: HasCallStack => Id -> Text -> MudStack ()
 bcastOthersInRm i msg = getState >>= \ms ->
     let helper = let ((i `delete`) -> ris) = getMobRmInv i ms
                  in bcast . pure $ (msg, findMobIds ms ris)
@@ -167,21 +168,21 @@ bcastOthersInRm i msg = getState >>= \ms ->
 -----
 
 
-blankLine :: MsgQueue -> MudStack ()
+blankLine :: HasCallStack => MsgQueue -> MudStack ()
 blankLine = flip writeMsg BlankLine
 
 
 -----
 
 
-dbError :: MsgQueue -> Cols -> MudStack ()
+dbError :: HasCallStack => MsgQueue -> Cols -> MudStack ()
 dbError mq cols = wrapSend mq cols dbErrorMsg >> sendSilentBoot mq
 
 
 -----
 
 
-massMsg :: Msg -> MudStack ()
+massMsg :: HasCallStack => Msg -> MudStack ()
 massMsg msg = liftIO . atomically . helper =<< getState
   where
     helper (views msgQueueTbl IM.elems -> mqs) = forM_ mqs . flip writeTQueue $ msg
@@ -190,7 +191,7 @@ massMsg msg = liftIO . atomically . helper =<< getState
 -----
 
 
-massSend :: Text -> MudStack ()
+massSend :: HasCallStack => Text -> MudStack ()
 massSend msg = liftIO . atomically . helper =<< getState
   where
     helper ms@(views msgQueueTbl IM.toList -> kvs) = forM_ kvs $ \(i, mq) ->
@@ -215,44 +216,44 @@ mkNTBcast i = pure . NonTargetBcast . (, pure i)
 -----
 
 
-multiSend :: MsgQueue -> [Text] -> MudStack ()
+multiSend :: HasCallStack => MsgQueue -> [Text] -> MudStack ()
 multiSend mq = send mq . T.unlines
 
 
 -----
 
 
-multiWrapSend :: MsgQueue -> Cols -> [Text] -> MudStack ()
+multiWrapSend :: HasCallStack => MsgQueue -> Cols -> [Text] -> MudStack ()
 multiWrapSend = multiWrapSendHepler multiWrapNl
 
 
-multiWrapSend1Nl :: MsgQueue -> Cols -> [Text] -> MudStack ()
+multiWrapSend1Nl :: HasCallStack => MsgQueue -> Cols -> [Text] -> MudStack ()
 multiWrapSend1Nl = multiWrapSendHepler multiWrap
 
 
-multiWrapSendHepler :: (Cols -> [Text] -> Text) -> MsgQueue -> Cols -> [Text] -> MudStack ()
+multiWrapSendHepler :: HasCallStack => (Cols -> [Text] -> Text) -> MsgQueue -> Cols -> [Text] -> MudStack ()
 multiWrapSendHepler f mq cols = send mq . f cols
 
 
 -----
 
 
-ok :: MsgQueue -> MudStack ()
+ok :: HasCallStack => MsgQueue -> MudStack ()
 ok mq = send mq . nlnl $ "OK!"
 
 
 -----
 
 
-parseDesig :: Id -> MudState -> Text -> Text
+parseDesig :: HasCallStack => Id -> MudState -> Text -> Text
 parseDesig = parseDesigHelper (const id)
 
 
-parseExpandDesig :: Id -> MudState -> Text -> Text
+parseExpandDesig :: HasCallStack => Id -> MudState -> Text -> Text
 parseExpandDesig = parseDesigHelper (\es -> (<> parensQuote es))
 
 
-parseDesigHelper :: (Sing -> Text -> Text) -> Id -> MudState -> Text -> Text
+parseDesigHelper :: HasCallStack => (Sing -> Text -> Text) -> Id -> MudState -> Text -> Text
 parseDesigHelper f i ms = loop (getIntroduced i ms)
   where
     loop intros txt | T.singleton stdDesigDelimiter `T.isInfixOf` txt
@@ -279,7 +280,7 @@ parseDesigHelper f i ms = loop (getIntroduced i ms)
       = (left, desig, rest)
 
 
-expandEntName :: Id -> MudState -> Desig -> Text
+expandEntName :: HasCallStack => Id -> MudState -> Desig -> Text
 expandEntName i ms StdDesig { .. } = let f      = mkCapsFun desigShouldCap
                                          (h, t) = headTail desigEntName
                                          s      = getSing desigId ms
@@ -300,7 +301,7 @@ expandEntName _ _ d = patternMatchFail "expandEntName" . showText $ d
 -----
 
 
-retainedMsg :: Id -> MudState -> Text -> MudStack ()
+retainedMsg :: HasCallStack => Id -> MudState -> Text -> MudStack ()
 retainedMsg targetId ms msg@(T.uncons -> Just (x, xs))
   | isNpc targetId ms                 = bcastNl . mkBcast targetId $ stripMarker
   | isLoggedIn . getPla targetId $ ms = let (targetMq, targetCols) = getMsgQueueColumns targetId ms
@@ -315,14 +316,14 @@ retainedMsg _ _ _ = unit
 -----
 
 
-send :: MsgQueue -> Text -> MudStack ()
+send :: HasCallStack => MsgQueue -> Text -> MudStack ()
 send mq = writeMsg mq . FromServer
 
 
 -----
 
 
-sendCmdNotFound :: Id -> MsgQueue -> Cols -> MudStack ()
+sendCmdNotFound :: HasCallStack => Id -> MsgQueue -> Cols -> MudStack ()
 sendCmdNotFound i mq cols = isSpiritId i <$> getState >>= \case
   True -> modifyStateSeq $ \ms ->
       let helperA pt   = ms & plaTbl .~ pt
@@ -334,7 +335,7 @@ sendCmdNotFound i mq cols = isSpiritId i <$> getState >>= \case
     f = send mq . nlnl $ sorryCmdNotFound
 
 
-firstSpiritCmdNotFound :: Id -> PlaTbl -> (PlaTbl, [Text])
+firstSpiritCmdNotFound :: HasCallStack => Id -> PlaTbl -> (PlaTbl, [Text])
 firstSpiritCmdNotFound i pt
   | pt^.ind i.to isNotFirstSpiritCmdNotFound = (pt, [])
   | otherwise                                = ( pt & ind i %~ setPlaFlag IsNotFirstSpiritCmdNotFound True
@@ -344,11 +345,11 @@ firstSpiritCmdNotFound i pt
 -----
 
 
-sendDfltPrompt :: MsgQueue -> Id -> MudStack ()
+sendDfltPrompt :: HasCallStack => MsgQueue -> Id -> MudStack ()
 sendDfltPrompt mq i = ((>>) <$> sendPrompt mq . mkDfltPrompt i <*> sendGmcpVitals i) =<< getState
 
 
-mkDfltPrompt :: Id -> MudState -> Text
+mkDfltPrompt :: HasCallStack => Id -> MudState -> Text
 mkDfltPrompt i ms = let (hps,  mps,  pps,  fps ) = getPts i ms
                         (isHp, isMp, isPp, isFp) | isPC i ms = ( isShowingHp
                                                                , isShowingMp
@@ -369,62 +370,62 @@ mkDfltPrompt i ms = let (hps,  mps,  pps,  fps ) = getPts i ms
 -----
 
 
-sendGmcpRmInfo :: Maybe Int -> Id -> MudState -> MudStack ()
+sendGmcpRmInfo :: HasCallStack => Maybe Int -> Id -> MudState -> MudStack ()
 sendGmcpRmInfo maybeZoom = gmcpHelper (gmcpRmInfo maybeZoom)
 
 
-gmcpHelper :: (Id -> MudState -> Text) -> Id -> MudState -> MudStack ()
+gmcpHelper :: HasCallStack => (Id -> MudState -> Text) -> Id -> MudState -> MudStack ()
 gmcpHelper f i ms
   | isGmcpId i ms = send (getMsgQueue i ms) . quoteWith' (telnetGmcpLeft, telnetGmcpRight) . f i $ ms
   | otherwise     = unit
 
 
-sendGmcpVitals :: Id -> MudState -> MudStack ()
+sendGmcpVitals :: HasCallStack => Id -> MudState -> MudStack ()
 sendGmcpVitals = gmcpHelper gmcpVitals
 
 
 -----
 
 
-sendMsgBoot :: MsgQueue -> Maybe Text -> MudStack ()
+sendMsgBoot :: HasCallStack => MsgQueue -> Maybe Text -> MudStack ()
 sendMsgBoot mq = writeMsg mq . MsgBoot . fromMaybe dfltBootMsg
 
 
-sendSilentBoot :: MsgQueue -> MudStack ()
+sendSilentBoot :: HasCallStack => MsgQueue -> MudStack ()
 sendSilentBoot mq = writeMsg mq SilentBoot
 
 
 -----
 
 
-sendPrompt :: MsgQueue -> Text -> MudStack ()
+sendPrompt :: HasCallStack => MsgQueue -> Text -> MudStack ()
 sendPrompt mq = writeMsg mq . Prompt
 
 
 -----
 
 
-wrapSend :: MsgQueue -> Cols -> Text -> MudStack ()
+wrapSend :: HasCallStack => MsgQueue -> Cols -> Text -> MudStack ()
 wrapSend = wrapSendHepler wrapUnlinesNl
 
 
-wrapSend1Nl :: MsgQueue -> Cols -> Text -> MudStack ()
+wrapSend1Nl :: HasCallStack => MsgQueue -> Cols -> Text -> MudStack ()
 wrapSend1Nl = wrapSendHepler wrapUnlines
 
 
-wrapSendHepler :: (Cols -> Text -> Text) -> MsgQueue -> Cols -> Text -> MudStack ()
+wrapSendHepler :: HasCallStack => (Cols -> Text -> Text) -> MsgQueue -> Cols -> Text -> MudStack ()
 wrapSendHepler f mq cols = send mq . f cols
 
 
 -----
 
 
-wrapSendPrompt :: MsgQueue -> Cols -> Text -> MudStack ()
+wrapSendPrompt :: HasCallStack => MsgQueue -> Cols -> Text -> MudStack ()
 wrapSendPrompt mq cols = sendPrompt mq . wrapUnlinesInit cols
 
 
 -----
 
 
-writeMsg :: MsgQueue -> Msg -> MudStack ()
+writeMsg :: HasCallStack => MsgQueue -> Msg -> MudStack ()
 writeMsg mq = liftIO . atomically . writeTQueue mq
