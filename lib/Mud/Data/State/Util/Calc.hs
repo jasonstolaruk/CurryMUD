@@ -81,10 +81,12 @@ import Mud.Util.Operators
 import Mud.Util.Text
 import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 
+import Control.Arrow (first)
 import Control.Lens (both, view, views)
 import Control.Lens.Getter (Getter)
 import Control.Lens.Operators ((%~), (&))
 import Data.List (foldl')
+import GHC.Stack (HasCallStack)
 import Prelude hiding (getContents)
 import qualified Data.Map.Lazy as M (elems)
 import qualified Data.Text as T
@@ -114,7 +116,7 @@ calcBarLen cols = cols < 59 ? (cols - 9) :? 50
 -----
 
 
-calcBonus :: Id -> MudState -> Exp -- Used by the "bonus" command.
+calcBonus :: HasCallStack => Id -> MudState -> Exp -- Used by the "bonus" command.
 calcBonus i ms = let l                 = getLvl i ms
                      ((_, a):(_, b):_) = drop l $ (0, 0) : calcLvlExps
                      diff              = b - a
@@ -124,25 +126,25 @@ calcBonus i ms = let l                 = getLvl i ms
 -----
 
 
-calcCarriedVol :: Id -> MudState -> Vol
+calcCarriedVol :: HasCallStack => Id -> MudState -> Vol
 calcCarriedVol i ms = sum [ calcInvVol i ms, calcCoinsVol i ms, calcEqVol i ms ]
 
 
-calcEqVol :: Id -> MudState -> Vol
+calcEqVol :: HasCallStack => Id -> MudState -> Vol
 calcEqVol i ms = sum . map (`calcVol` ms) . M.elems . getEqMap i $ ms
 
 
 -----
 
 
-calcConPerFull :: Id -> MudState -> Int
+calcConPerFull :: HasCallStack => Id -> MudState -> Int
 calcConPerFull i = uncurry percent . (calcInvCoinsVol `fanUncurry` getConCapacity) . (i, )
 
 
 -----
 
 
-calcCorpseDecompSecs :: Race -> Seconds
+calcCorpseDecompSecs :: HasCallStack => Race -> Seconds
 calcCorpseDecompSecs = let f = (calcCorpseDecompSecs Human |&|) in \case
   Dwarf     -> f (\x -> round $ fromIntegral x * dwarfToHumanWeightRatio)
   Elf       -> f minusFifth
@@ -169,7 +171,7 @@ calcCorpseDecompSecsForMobSize = (* 60 {- secs -}) . \case SmlMinus -> 20 {- min
 -----
 
 
-calcCorpseCapacity :: Race -> Vol
+calcCorpseCapacity :: HasCallStack => Race -> Vol
 calcCorpseCapacity = let f = (calcCorpseCapacity Human |&|) in \case
   Dwarf     -> f (\x -> round $ fromIntegral x * dwarfToHumanWeightRatio)
   Elf       -> f minusFifth
@@ -184,7 +186,7 @@ calcCorpseCapacity = let f = (calcCorpseCapacity Human |&|) in \case
 -----
 
 
-calcCorpseVol :: Race -> Vol
+calcCorpseVol :: HasCallStack => Race -> Vol
 calcCorpseVol = let f = (calcCorpseVol Human |&|) in \case
   Dwarf     -> f (\x -> round $ fromIntegral x * dwarfToHumanWeightRatio)
   Elf       -> f minusFifth
@@ -199,7 +201,7 @@ calcCorpseVol = let f = (calcCorpseVol Human |&|) in \case
 -----
 
 
-calcCorpseWeight :: Race -> Weight
+calcCorpseWeight :: HasCallStack => Race -> Weight
 calcCorpseWeight = let f = (calcCorpseWeight Human |&|) in \case
   Dwarf     -> 15000 -- 150 lbs, 4'6"
   Elf       -> f minusFifth
@@ -211,18 +213,18 @@ calcCorpseWeight = let f = (calcCorpseWeight Human |&|) in \case
   Vulpenoid -> f plusQuarter
 
 
-dwarfToHumanWeightRatio :: Double
+dwarfToHumanWeightRatio :: HasCallStack => Double
 dwarfToHumanWeightRatio = calcCorpseWeight Dwarf `divide` calcCorpseWeight Human
 
 
-hobbitToHumanWeightRatio :: Double
+hobbitToHumanWeightRatio :: HasCallStack => Double
 hobbitToHumanWeightRatio = calcCorpseWeight Hobbit `divide` calcCorpseWeight Human
 
 
 -----
 
 
-calcDigesterDelay :: Race -> Seconds
+calcDigesterDelay :: HasCallStack => Race -> Seconds
 calcDigesterDelay = let f = (calcDigesterDelay Human |&|) in \case
   Elf       -> f minusFifth
   Hobbit    -> f minusFifth
@@ -235,14 +237,13 @@ calcDigesterDelay = let f = (calcDigesterDelay Human |&|) in \case
 -----
 
 
-calcEffAttribs :: Id -> MudState -> (Int, Int, Int, Int, Int)
+calcEffAttribs :: HasCallStack => Id -> MudState -> (Int, Int, Int, Int, Int)
 calcEffAttribs i ms = listToTuple [ calcEffAttrib a i ms | a <- allValues ]
 
 
-calcEffAttrib :: Attrib -> Id -> MudState -> Int
-calcEffAttrib attrib i ms =
-    let effects = select effect . getActiveEffects i $ ms
-    in max1 . foldl' helper (getBaseAttrib attrib i ms) $ effects
+calcEffAttrib :: HasCallStack => Attrib -> Id -> MudState -> Int
+calcEffAttrib attrib i ms = let effects = select effect . getActiveEffects i $ ms
+                            in max1 . foldl' helper (getBaseAttrib attrib i ms) $ effects
   where
     helper acc (Effect (MobEffectAttrib a) (Just (DefiniteVal x)) _ _) | a == attrib = acc + x
     helper acc _                                                                     = acc
@@ -251,71 +252,71 @@ calcEffAttrib attrib i ms =
 -----
 
 
-calcEffDx :: Id -> MudState -> Int
+calcEffDx :: HasCallStack => Id -> MudState -> Int
 calcEffDx = calcEffAttrib Dx
 
 
 -----
 
 
-calcEffHt :: Id -> MudState -> Int
+calcEffHt :: HasCallStack => Id -> MudState -> Int
 calcEffHt = calcEffAttrib Ht
 
 
 -----
 
 
-calcEffMa :: Id -> MudState -> Int
+calcEffMa :: HasCallStack => Id -> MudState -> Int
 calcEffMa = calcEffAttrib Ma
 
 
 -----
 
 
-calcEffPs :: Id -> MudState -> Int
+calcEffPs :: HasCallStack => Id -> MudState -> Int
 calcEffPs = calcEffAttrib Ps
 
 
 -----
 
 
-calcEffSt :: Id -> MudState -> Int
+calcEffSt :: HasCallStack => Id -> MudState -> Int
 calcEffSt = calcEffAttrib St
 
 
 -----
 
 
-calcEncPer :: Id -> MudState -> Int
+calcEncPer :: HasCallStack => Id -> MudState -> Int
 calcEncPer i ms = calcWeight i ms `percent` calcMaxEnc i ms
 
 
-calcMaxEnc :: Id -> MudState -> Weight
+calcMaxEnc :: HasCallStack => Id -> MudState -> Weight
 calcMaxEnc i ms = calcEffSt i ms ^ 2 `percent` 13
 
 
 -----
 
 
-calcMaxMouthfuls :: Obj -> Mouthfuls
+calcMaxMouthfuls :: HasCallStack => Obj -> Mouthfuls
 calcMaxMouthfuls = views objVol (`divideRound` mouthfulVol)
 
 
 -----
 
 
-calcMaxRaceLen :: Int
+calcMaxRaceLen :: HasCallStack => Int
 calcMaxRaceLen = maximum . map (T.length . showText) $ (allValues :: [Race])
 
 
 -----
 
 
-calcLvl :: Id -> MudState -> Lvl -- Effective level.
+calcLvl :: HasCallStack => Id -> MudState -> Lvl -- Effective level.
 calcLvl i = calcLvlForExp . getExp i
 
 
-calcLvlForExp :: Exp -> Lvl
+calcLvlForExp :: HasCallStack => Exp -> Lvl
 calcLvlForExp amt = let helper ((l, x):rest) | amt < x   = pred l
                                              | otherwise = helper rest
                         helper xs                        = patternMatchFail "calcLvlForExp" . showText $ xs
@@ -332,7 +333,7 @@ calcLvlExps = [ (l, 1250 * l ^ 2) | l <- [1..] ]
 -----
 
 
-calcLvlUpHp :: Id -> MudState -> Int -> Int
+calcLvlUpHp :: HasCallStack => Id -> MudState -> Int -> Int
 calcLvlUpHp i ms x = max1 (rndmIntToRange x r + calcModifierHt i ms)
   where
     r = case getRace i ms of Dwarf     -> (3, 12)
@@ -345,7 +346,7 @@ calcLvlUpHp i ms x = max1 (rndmIntToRange x r + calcModifierHt i ms)
                              Vulpenoid -> (2, 10)
 
 
-calcLvlUpMp :: Id -> MudState -> Int -> Int
+calcLvlUpMp :: HasCallStack => Id -> MudState -> Int -> Int
 calcLvlUpMp i ms x = max1 (rndmIntToRange x r + calcModifierMa i ms)
   where
     r = case getRace i ms of Dwarf     -> (1, 7)
@@ -358,7 +359,7 @@ calcLvlUpMp i ms x = max1 (rndmIntToRange x r + calcModifierMa i ms)
                              Vulpenoid -> (1, 7)
 
 
-calcLvlUpPp :: Id -> MudState -> Int -> Int
+calcLvlUpPp :: HasCallStack => Id -> MudState -> Int -> Int
 calcLvlUpPp i ms x = max1 (rndmIntToRange x r + calcModifierPs i ms)
   where
     r = case getRace i ms of Dwarf     -> (1, 7)
@@ -371,7 +372,7 @@ calcLvlUpPp i ms x = max1 (rndmIntToRange x r + calcModifierPs i ms)
                              Vulpenoid -> (1, 7)
 
 
-calcLvlUpFp :: Id -> MudState -> Int -> Int
+calcLvlUpFp :: HasCallStack => Id -> MudState -> Int -> Int
 calcLvlUpFp i ms x = let a = calcModifierHt i ms
                          b = calcModifierSt i ms
                          y = (a + b) `divideRound` 2
@@ -387,7 +388,7 @@ calcLvlUpFp i ms x = let a = calcModifierHt i ms
                              Vulpenoid -> (2, 10)
 
 
-calcLvlUpSkillPts :: Id -> MudState -> Int -> Int
+calcLvlUpSkillPts :: HasCallStack => Id -> MudState -> Int -> Int
 calcLvlUpSkillPts i ms x = rndmIntToRange x (20, 30) + y
   where
     y = case getRace i ms of Human -> 5
@@ -397,11 +398,11 @@ calcLvlUpSkillPts i ms x = rndmIntToRange x (20, 30) + y
 -----
 
 
-calcModifierSt :: Id -> MudState -> Int
+calcModifierSt :: HasCallStack => Id -> MudState -> Int
 calcModifierSt i ms = calcModifierForAttrib st i ms + racialStModifier (getRace i ms)
 
 
-calcModifierForAttrib :: Getter Mob Int -> Int -> MudState -> Int
+calcModifierForAttrib :: HasCallStack => Getter Mob Int -> Int -> MudState -> Int
 calcModifierForAttrib l i = views (mobTbl.ind i.l) calcModifierForEffAttrib
 
 
@@ -420,14 +421,14 @@ racialStModifier = \case Dwarf     -> 1
                          Vulpenoid -> 2
 
 
-calcModifierEffSt :: Id -> MudState -> Int
+calcModifierEffSt :: HasCallStack => Id -> MudState -> Int
 calcModifierEffSt i = calcModifierForEffAttrib . calcEffSt i
 
 
 -----
 
 
-calcModifierDx :: Id -> MudState -> Int
+calcModifierDx :: HasCallStack => Id -> MudState -> Int
 calcModifierDx i ms = calcModifierForAttrib dx i ms + racialDxModifier (getRace i ms)
 
 
@@ -442,14 +443,14 @@ racialDxModifier = \case Dwarf     -> 0
                          Vulpenoid -> 0
 
 
-calcModifierEffDx :: Id -> MudState -> Int
+calcModifierEffDx :: HasCallStack => Id -> MudState -> Int
 calcModifierEffDx i = calcModifierForEffAttrib . calcEffDx i
 
 
 -----
 
 
-calcModifierHt :: Id -> MudState -> Int
+calcModifierHt :: HasCallStack => Id -> MudState -> Int
 calcModifierHt i ms = calcModifierForAttrib ht i ms + racialHtModifier (getRace i ms)
 
 
@@ -464,14 +465,14 @@ racialHtModifier = \case Dwarf     -> 1
                          Vulpenoid -> 2
 
 
-calcModifierEffHt :: Id -> MudState -> Int
+calcModifierEffHt :: HasCallStack => Id -> MudState -> Int
 calcModifierEffHt i = calcModifierForEffAttrib . calcEffHt i
 
 
 -----
 
 
-calcModifierMa :: Id -> MudState -> Int
+calcModifierMa :: HasCallStack => Id -> MudState -> Int
 calcModifierMa i ms = calcModifierForAttrib ma i ms + racialMaModifier (getRace i ms)
 
 
@@ -486,14 +487,14 @@ racialMaModifier = \case Dwarf     -> -1
                          Vulpenoid -> -2
 
 
-calcModifierEffMa :: Id -> MudState -> Int
+calcModifierEffMa :: HasCallStack => Id -> MudState -> Int
 calcModifierEffMa i = calcModifierForEffAttrib . calcEffMa i
 
 
 -----
 
 
-calcModifierPs :: Id -> MudState -> Int
+calcModifierPs :: HasCallStack => Id -> MudState -> Int
 calcModifierPs i ms = calcModifierForAttrib ps i ms + racialPsModifier (getRace i ms)
 
 
@@ -508,18 +509,18 @@ racialPsModifier = \case Dwarf     -> -1
                          Vulpenoid -> -2
 
 
-calcModifierEffPs :: Id -> MudState -> Int
+calcModifierEffPs :: HasCallStack => Id -> MudState -> Int
 calcModifierEffPs i = calcModifierForEffAttrib . calcEffPs i
 
 
 -----
 
 
-calcProbConnectBlink :: Id -> MudState -> Int
+calcProbConnectBlink :: HasCallStack => Id -> MudState -> Int
 calcProbConnectBlink i ms = (avgHelper calcEffHt calcEffPs i ms - 100) ^ 2 `quot` 125
 
 
-calcProbCorpseHorf :: Id -> MudState -> Int -> Int
+calcProbCorpseHorf :: HasCallStack => Id -> MudState -> Int -> Int
 calcProbCorpseHorf i ms corpseSmellLvl | corpseSmellLvl == 1 = 0
                                        | otherwise           = (calcEffHt i ms - 125) ^ 2 `quot` x
   where
@@ -529,24 +530,24 @@ calcProbCorpseHorf i ms corpseSmellLvl | corpseSmellLvl == 1 = 0
       | otherwise           = blowUp "calcProbCorpseHorf x" "unexpected corpse smell level" . showText $ x
 
 
-avgHelper :: (Id -> MudState -> Int) -> (Id -> MudState -> Int) -> Id -> MudState -> Int
+avgHelper :: HasCallStack => (Id -> MudState -> Int) -> (Id -> MudState -> Int) -> Id -> MudState -> Int
 avgHelper f g i ms = let pair = (uncurry f, uncurry g) & both %~ (fromIntegral . ((i, ms) |&|))
                      in uncurry (+) pair `divideRound` 2
 
 
-calcProbLinkFlinch :: Id -> MudState -> Int
+calcProbLinkFlinch :: HasCallStack => Id -> MudState -> Int
 calcProbLinkFlinch = calcProbConnectBlink
 
 
-calcProbSpiritizeShiver :: Id -> MudState -> Int
+calcProbSpiritizeShiver :: HasCallStack => Id -> MudState -> Int
 calcProbSpiritizeShiver = calcProbConnectBlink
 
 
-calcProbTeleportDizzy :: Id -> MudState -> Int
+calcProbTeleportDizzy :: HasCallStack => Id -> MudState -> Int
 calcProbTeleportDizzy i ms = (calcEffHt i ms - 100) ^ 2 `quot` 250
 
 
-calcProbTeleportShudder :: Id -> MudState -> Int
+calcProbTeleportShudder :: HasCallStack => Id -> MudState -> Int
 calcProbTeleportShudder i ms = (calcEffHt i ms - 100) ^ 2 `quot` 125
 
 
@@ -557,26 +558,26 @@ calcRegenAmt :: Double -> Int
 calcRegenAmt x = max1 . round $ x / 13
 
 
-calcRegenHpAmt :: Id -> MudState -> Int
+calcRegenHpAmt :: HasCallStack => Id -> MudState -> Int
 calcRegenHpAmt i = calcRegenAmt . fromIntegral . calcEffHt i
 
 
-calcRegenMpAmt :: Id -> MudState -> Int
+calcRegenMpAmt :: HasCallStack => Id -> MudState -> Int
 calcRegenMpAmt i = calcRegenAmt . weightedAvgHt calcEffMa i
 
 
-weightedAvgHt :: (Id -> MudState -> Int) -> Id -> MudState -> Double
+weightedAvgHt :: HasCallStack => (Id -> MudState -> Int) -> Id -> MudState -> Double
 weightedAvgHt f i ms = a + b
   where
     a = fromIntegral (calcEffHt i ms) * 0.25
     b = fromIntegral (f         i ms) * 0.75
 
 
-calcRegenPpAmt :: Id -> MudState -> Int
+calcRegenPpAmt :: HasCallStack => Id -> MudState -> Int
 calcRegenPpAmt i = calcRegenAmt . weightedAvgHt calcEffPs i
 
 
-calcRegenFpAmt :: Id -> MudState -> Int
+calcRegenFpAmt :: HasCallStack => Id -> MudState -> Int
 calcRegenFpAmt i = calcRegenAmt . weightedAvgHt calcEffSt i
 
 
@@ -587,33 +588,33 @@ calcRegenDelay :: Double -> Int
 calcRegenDelay x = (30 +) . round $ ((x - 50) ^ 2) / 250
 
 
-calcRegenHpDelay :: Id -> MudState -> Int
+calcRegenHpDelay :: HasCallStack => Id -> MudState -> Int
 calcRegenHpDelay i = calcRegenDelay . fromIntegral . calcEffHt i
 
 
-calcRegenMpDelay :: Id -> MudState -> Int
+calcRegenMpDelay :: HasCallStack => Id -> MudState -> Int
 calcRegenMpDelay i = calcRegenDelay . weightedAvgHt calcEffMa i
 
 
-calcRegenPpDelay :: Id -> MudState -> Int
+calcRegenPpDelay :: HasCallStack => Id -> MudState -> Int
 calcRegenPpDelay i = calcRegenDelay . weightedAvgHt calcEffPs i
 
 
-calcRegenFpDelay :: Id -> MudState -> Int
+calcRegenFpDelay :: HasCallStack => Id -> MudState -> Int
 calcRegenFpDelay i = calcRegenDelay . weightedAvgHt calcEffSt i
 
 
 -----
 
 
-calcRetainedLinks :: Id -> MudState -> Int
+calcRetainedLinks :: HasCallStack => Id -> MudState -> Int
 calcRetainedLinks i ms = ceiling $ getBasePs i ms `divide` 10
 
 
 -----
 
 
-calcSpiritTime :: Id -> MudState -> Seconds
+calcSpiritTime :: HasCallStack => Id -> MudState -> Seconds
 calcSpiritTime i ms = maxSpiritSecs `min` helper (getLvl i ms)
   where
     helper = \case 0 -> 0
@@ -625,12 +626,12 @@ calcSpiritTime i ms = maxSpiritSecs `min` helper (getLvl i ms)
 -----
 
 
-calcStomachAvailSize :: Id -> MudState -> (Mouthfuls, Mouthfuls)
+calcStomachAvailSize :: HasCallStack => Id -> MudState -> (Mouthfuls, Mouthfuls)
 calcStomachAvailSize i ms | size <- calcStomachSize i ms, avail <- size - length (getStomach i ms)
                           = (avail, size)
 
 
-calcStomachSize :: Id -> MudState -> Mouthfuls
+calcStomachSize :: HasCallStack => Id -> MudState -> Mouthfuls
 calcStomachSize i ms = if isPC i ms
   then calcStomachSizeForRace . getRace i $ ms
   else calcStomachSizeForMobSize . mobSizeHelper . getMobSize i $ ms
@@ -639,7 +640,7 @@ calcStomachSize i ms = if isPC i ms
     mobSizeHelper x        = blowUp "calcStomachSize mobSizeHelper" "NPC mob size of Nothing" . showText $ x
 
 
-calcStomachSizeForRace :: Race -> Mouthfuls
+calcStomachSizeForRace :: HasCallStack => Race -> Mouthfuls
 calcStomachSizeForRace = helper
   where
     helper = let f = (helper Human |&|) in \case
@@ -653,7 +654,7 @@ calcStomachSizeForRace = helper
       Vulpenoid -> f plusQuarter
 
 
-calcStomachSizeForMobSize :: MobSize -> Mouthfuls
+calcStomachSizeForMobSize :: HasCallStack => MobSize -> Mouthfuls
 calcStomachSizeForMobSize = \case SmlMinus -> 5
                                   SmlPlus  -> 20
                                   MedMinus -> x
@@ -664,42 +665,40 @@ calcStomachSizeForMobSize = \case SmlMinus -> 5
     x = calcStomachSizeForRace Human
 
 
-calcStomachPerFull :: Id -> MudState -> Int
-calcStomachPerFull i ms = let mouths = length . getStomach i $ ms
-                              size   = calcStomachSize i ms
-                          in mouths `percent` size
+calcStomachPerFull :: HasCallStack => Id -> MudState -> Int
+calcStomachPerFull i = uncurry percent . first length . (getStomach `fanUncurry` calcStomachSize) . (i, )
 
 
 -----
 
 
-calcVesselPerFull :: Vessel -> Mouthfuls -> Int
+calcVesselPerFull :: HasCallStack => Vessel -> Mouthfuls -> Int
 calcVesselPerFull (view vesselMaxMouthfuls -> m) = (`percent` m)
 
 
 -----
 
 
-calcVol :: Id -> MudState -> Vol
+calcVol :: HasCallStack => Id -> MudState -> Vol
 calcVol i ms = getObjVol i ms + (hasConId i ms ? calcInvCoinsVol i ms :? 0)
 
 
-calcInvCoinsVol :: Id -> MudState -> Vol
+calcInvCoinsVol :: HasCallStack => Id -> MudState -> Vol
 calcInvCoinsVol i = uncurry (+) . (calcInvVol `fanUncurry` calcCoinsVol) . (i, )
 
 
-calcInvVol :: Id -> MudState -> Vol
+calcInvVol :: HasCallStack => Id -> MudState -> Vol
 calcInvVol i ms = sum . map (`calcVol` ms) . getInv i $ ms
 
 
-calcCoinsVol :: Id -> MudState -> Vol
+calcCoinsVol :: HasCallStack => Id -> MudState -> Vol
 calcCoinsVol i = (* coinVol) . sum . coinsToList . getCoins i
 
 
 -----
 
 
-calcWeight :: Id -> MudState -> Weight
+calcWeight :: HasCallStack => Id -> MudState -> Weight
 calcWeight i ms = case getType i ms of
   ConType    -> sum [ getObjWeight i ms, calcInvWeight, calcCoinsWeight ]
   NpcType    -> npcPC

@@ -44,6 +44,7 @@ import Data.List (delete, sortBy)
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import Database.SQLite.Simple (fromOnly)
+import GHC.Stack (HasCallStack)
 import Prelude hiding (pi)
 import qualified Data.IntMap.Lazy as IM (delete, filterWithKey, keys, mapWithKey)
 import qualified Data.Map.Lazy as M (delete, elems, empty, filter, filterWithKey, keys, size)
@@ -89,7 +90,7 @@ Those links with the greatest volume of messages are retained. If the deceased P
 -}
 
 
-handleDeath :: Id -> MudStack ()
+handleDeath :: HasCallStack => Id -> MudStack ()
 handleDeath i = isNpc i <$> getState >>= \npc -> do
     logPla "handleDeath" i "handling death."
     stopActs i
@@ -107,7 +108,7 @@ handleDeath i = isNpc i <$> getState >>= \npc -> do
     npc ? deleteNpc i :? spiritize i
 
 
-possessHelper :: Id -> MudStack ()
+possessHelper :: HasCallStack => Id -> MudStack ()
 possessHelper i = modifyStateSeq $ \ms -> case getPossessor i ms of
   Nothing -> (ms, [])
   Just pi -> ( ms & plaTbl.ind pi.possessing   .~ Nothing
@@ -119,7 +120,7 @@ possessHelper i = modifyStateSeq $ \ms -> case getPossessor i ms of
                   , sendDfltPrompt mq pi ] )
 
 
-leaveChans :: Id -> MudStack ()
+leaveChans :: HasCallStack => Id -> MudStack ()
 leaveChans i = liftIO mkTimestamp >>= \ts -> do logPla "leaveChans" i "leaving channels."
                                                 modifyStateSeq $ \ms -> foldr (helper ts) (ms, []) . getPCChans i $ ms
   where
@@ -135,7 +136,7 @@ leaveChans i = liftIO mkTimestamp >>= \ts -> do logPla "leaveChans" i "leaving c
         s = getSing i ms
 
 
-deleteNpc :: Id -> MudStack ()
+deleteNpc :: HasCallStack => Id -> MudStack ()
 deleteNpc i = getState >>= \ms -> let ri = getRmId i ms
                                   in do logNotice "deleteNpc" $ "NPC " <> descSingId i ms <> " has died."
                                         tweaks [ activeEffectsTbl.at  i  .~ Nothing
@@ -150,7 +151,7 @@ deleteNpc i = getState >>= \ms -> let ri = getRmId i ms
                                         stopWaitNpcServer i {- This removes the NPC from the "NpcTbl". -}
 
 
-mkCorpse :: Id -> MudState -> (MudState, Funs)
+mkCorpse :: HasCallStack => Id -> MudState -> (MudState, Funs)
 mkCorpse i ms =
     let et                  = EntTemplate (Just "corpse")
                                           s p
@@ -187,7 +188,7 @@ mkCorpse i ms =
 -----
 
 
-spiritize :: Id -> MudStack ()
+spiritize :: HasCallStack => Id -> MudStack ()
 spiritize i = do
     ((mq, cols), s, secs) <- ((,,) <$> uncurry getMsgQueueColumns
                                    <*> uncurry getSing
@@ -218,14 +219,14 @@ spiritize i = do
              , [ logPla "spiritize" i "spirit created."
                , forM_ asleepIds $ \targetId -> retainedMsg targetId ms . linkMissingMsg $ s
                , bcast bs
-               , sequence_ (fs :: Funs)
+               , sequence_ (fs :: HasCallStack => Funs)
                , runSpiritTimerAsync i secs ] )
   where
     procOnlySings xs = map snd . sortBy (flip compare `on` fst) $ [ (length g, s)
                                                                   | g@(s:_) <- sortGroup . map fromOnly $ xs ]
 
 
-pcTblHelper :: Id -> Sing -> Inv -> [Sing] -> PCTbl -> PCTbl
+pcTblHelper :: HasCallStack => Id -> Sing -> Inv -> [Sing] -> PCTbl -> PCTbl
 pcTblHelper i s retainedIds retainedSings = IM.mapWithKey helper
   where
     helper pcId | pcId == i               = linked .~ retainedSings
@@ -233,7 +234,7 @@ pcTblHelper i s retainedIds retainedSings = IM.mapWithKey helper
                 | otherwise               = linked %~ (s `delete`)
 
 
-teleLinkMstrTblHelper :: Id -> Sing -> Inv -> [Sing] -> TeleLinkMstrTbl -> TeleLinkMstrTbl
+teleLinkMstrTblHelper :: HasCallStack => Id -> Sing -> Inv -> [Sing] -> TeleLinkMstrTbl -> TeleLinkMstrTbl
 teleLinkMstrTblHelper i s retainedIds retainedSings = IM.mapWithKey helper
   where
     helper targetId | targetId == i               = M.filterWithKey (const . (`elem` retainedSings))
@@ -241,14 +242,14 @@ teleLinkMstrTblHelper i s retainedIds retainedSings = IM.mapWithKey helper
                     | otherwise                   = M.delete s
 
 
-setCurrXps :: Mob -> Mob
+setCurrXps :: HasCallStack => Mob -> Mob
 setCurrXps ms = ms & curHp .~ (ms^.maxHp)
                    & curMp .~ (ms^.maxMp)
                    & curPp .~ (ms^.maxPp)
                    & curFp .~ (ms^.maxFp)
 
 
-mkLinkBcasts :: Id -> MudState -> Sing -> [(Id, Bool)] -> ([Broadcast], Funs)
+mkLinkBcasts :: HasCallStack => Id -> MudState -> Sing -> [(Id, Bool)] -> ([Broadcast], Funs)
 mkLinkBcasts i ms s retainedPairs = let (toLinkRetainers, fs) = toLinkRetainersHelper
                                     in ([ toLinkLosers, toLinkRetainers ], fs)
   where

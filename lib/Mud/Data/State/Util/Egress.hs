@@ -35,6 +35,7 @@ import Data.List (delete, partition, sort)
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import Data.Time (UTCTime, diffUTCTime, getCurrentTime)
+import GHC.Stack (HasCallStack)
 import Prelude hiding (pi)
 import qualified Data.Map.Lazy as M (delete, empty, foldl, keys, singleton)
 import qualified Data.Text as T
@@ -52,7 +53,7 @@ logPla = L.logPla "Mud.Data.State.Util.Egress"
 -- ==================================================
 
 
-handleEgress :: Id -> MsgQueue -> Bool -> MudStack ()
+handleEgress :: HasCallStack => Id -> MsgQueue -> Bool -> MudStack ()
 handleEgress i mq isDropped = egressHelper `finally` writeMsg mq FinishedEgress
   where
     egressHelper = do
@@ -81,7 +82,7 @@ handleEgress i mq isDropped = egressHelper `finally` writeMsg mq FinishedEgress
         in (ms'', (bs, logMsgs))
 
 
-peepHelper :: Id -> MudState -> Sing -> Bool -> (MudState, [Broadcast], [(Id, Text)])
+peepHelper :: HasCallStack => Id -> MudState -> Sing -> Bool -> (MudState, [Broadcast], [(Id, Text)])
 peepHelper i ms s spirit =
     let (peeperIds, peepingIds) = getPeepersPeeping i ms
         bs      = [ (nlnl .    T.concat $ [ "You are no longer peeping "
@@ -106,7 +107,7 @@ peepHelper i ms s spirit =
                                     in foldr f pt peeperIds
 
 
-movePC :: Id -> MudState -> Bool -> MudState
+movePC :: HasCallStack => Id -> MudState -> Bool -> MudState
 movePC i ms spirit = ms & invTbl     .ind ri           %~ (i `delete`)
                         & invTbl     .ind ri'          %~ (i :)
                         & msgQueueTbl.at  i            .~ Nothing
@@ -116,12 +117,12 @@ movePC i ms spirit = ms & invTbl     .ind ri           %~ (i `delete`)
     (ri, ri') = (getRmId i ms, spirit ? iNecropolis :? iLoggedOut)
 
 
-possessHelper :: Int -> MudState -> MudState
+possessHelper :: HasCallStack => Int -> MudState -> MudState
 possessHelper i ms = let f = maybe id (\npcId -> npcTbl.ind npcId.npcPossessor .~ Nothing) . getPossessing i $ ms
                      in ms & plaTbl.ind i.possessing .~ Nothing & f
 
 
-updateHostMap :: Id -> MudState -> Sing -> UTCTime -> MudState
+updateHostMap :: HasCallStack => Id -> MudState -> Sing -> UTCTime -> MudState
 updateHostMap i ms s now = maybe ms helper . getConnectTime i $ ms
   where
     helper conTime    = let dur = round $ now `diffUTCTime` conTime
@@ -137,7 +138,7 @@ updateHostMap i ms s now = maybe ms helper . getConnectTime i $ ms
 -----
 
 
-theBeyond :: Id -> MsgQueue -> Sing -> Bool -> MudStack ()
+theBeyond :: HasCallStack => Id -> MsgQueue -> Sing -> Bool -> MudStack ()
 theBeyond i mq s isDropped = modifyStateSeq $ \ms ->
     let cols            = getColumns i ms
         retainedIds     = views (teleLinkMstrTbl.ind i) (map (`getIdForPCSing` ms) . M.keys) ms
@@ -156,11 +157,11 @@ theBeyond i mq s isDropped = modifyStateSeq $ \ms ->
     in (ms', fs)
 
 
-farewell :: Id -> MsgQueue -> Cols -> MudStack ()
+farewell :: HasCallStack => Id -> MsgQueue -> Cols -> MudStack ()
 farewell i mq cols = multiWrapSend mq cols . mkFarewellStats i =<< getState
 
 
-mkFarewellStats :: Id -> MudState -> [Text]
+mkFarewellStats :: HasCallStack => Id -> MudState -> [Text]
 mkFarewellStats i ms = concat [ header, ts, footer ]
   where
     header = [ T.concat [ "Sadly, "

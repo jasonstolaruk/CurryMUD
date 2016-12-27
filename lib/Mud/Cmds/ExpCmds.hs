@@ -36,6 +36,7 @@ import Data.List ((\\), delete)
 import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>))
 import Data.Text (Text)
+import GHC.Stack (HasCallStack)
 import qualified Data.Set as S (Set, filter, foldr, fromList, map, toList)
 import qualified Data.Text as T
 import qualified Data.Vector.Unboxed as V (head)
@@ -55,7 +56,7 @@ logPlaOut = L.logPlaOut "Mud.Cmds.ExpCmds"
 -- ==================================================
 
 
-expCmdSet :: S.Set ExpCmd
+expCmdSet :: HasCallStack => S.Set ExpCmd
 expCmdSet = S.fromList
     [ ExpCmd "admire"       (HasTarget "You admire @."
                                        "% admires you."
@@ -1023,7 +1024,7 @@ expCmdSet = S.fromList
                             Nothing Nothing ]
 
 
-expCmds :: [Cmd]
+expCmds :: HasCallStack => [Cmd]
 expCmds = S.foldr helper [] expCmdSet
   where
     helper ec@(ExpCmd expCmdName _ _ _) = do
@@ -1035,18 +1036,18 @@ expCmds = S.foldr helper [] expCmdSet
         (theCmd :)
 
 
-expCmdNames :: [Text]
+expCmdNames :: HasCallStack => [Text]
 expCmdNames = S.toList . S.map (\(ExpCmd n _ _ _) -> n) $ expCmdSet
 
 
-getExpCmdByName :: ExpCmdName -> ExpCmd
+getExpCmdByName :: HasCallStack => ExpCmdName -> ExpCmd
 getExpCmdByName cn = head . S.toList . S.filter (\(ExpCmd cn' _ _ _) -> cn' == cn) $ expCmdSet
 
 
 -----
 
 
-expCmd :: ExpCmd -> ActionFun
+expCmd :: HasCallStack => ExpCmd -> ActionFun
 expCmd (ExpCmd ecn HasTarget {} _  _   ) p@NoArgs {}        = advise p [] . sorryExpCmdRequiresTarget $ ecn
 expCmd (ExpCmd ecn ect          mf desc) (NoArgs i mq cols) = case ect of
   (NoTarget  toSelf toOthers      ) -> helper toSelf toOthers
@@ -1107,11 +1108,11 @@ expCmd (ExpCmd ecn ect         mf desc)   (OneArgNubbed i mq cols target) = case
 expCmd _ p = advise p [] adviceExpCmdExcessArgs
 
 
-mkSerializedDesig :: Desig -> Text -> Text
+mkSerializedDesig :: HasCallStack => Desig -> Text -> Text
 mkSerializedDesig d toOthers = serialize . bool d { desigShouldCap = Don'tCap } d $ T.head toOthers == '%'
 
 
-expCmdHelper :: ExpCmdFun
+expCmdHelper :: HasCallStack => ExpCmdFun
 expCmdHelper i mq cols ecn (toSelf, bs, desc, logMsg) = do logPlaOut ecn i . pure $ logMsg
                                                            wrapSend mq cols toSelf
                                                            bcastIfNotIncog i bs
@@ -1119,7 +1120,7 @@ expCmdHelper i mq cols ecn (toSelf, bs, desc, logMsg) = do logPlaOut ecn i . pur
 
 
 
-mobRmDescHelper :: Id -> MobRmDesc -> MudStack ()
+mobRmDescHelper :: HasCallStack => Id -> MobRmDesc -> MudStack ()
 mobRmDescHelper _ Nothing    = unit
 mobRmDescHelper i (Just "" ) = tweak $ mobTbl.ind i.mobRmDesc .~ Nothing
 mobRmDescHelper i (Just txt) = tweak $ mobTbl.ind i.mobRmDesc ?~ txt
@@ -1128,7 +1129,7 @@ mobRmDescHelper i (Just txt) = tweak $ mobTbl.ind i.mobRmDesc ?~ txt
 -----
 
 
-mkExpAction :: Text -> ActionFun
+mkExpAction :: HasCallStack => Text -> ActionFun
 mkExpAction name = expCmd . head . S.toList . S.filter helper $ expCmdSet
   where
     helper (ExpCmd ecn _ _ _) = ecn == name
@@ -1137,7 +1138,7 @@ mkExpAction name = expCmd . head . S.toList . S.filter helper $ expCmdSet
 -----
 
 
-vomit :: ExpCmdFun
+vomit :: HasCallStack => ExpCmdFun
 vomit i mq cols ecn a = getState >>= \ms -> case getStomach i ms of
   []   -> let txt = "You dry heave."
               d   = mkStdDesig i ms DoCap
@@ -1157,4 +1158,4 @@ vomit i mq cols ecn a = getState >>= \ms -> case getStomach i ms of
             a'        = a & _4 <>~ amtTxt
             fs        = pure . expCmdHelper i mq cols ecn $ a'
             cont'     = not isEmptied |?| dropRndmElems v actualAmt cont
-        in (ms & mobTbl.ind i.stomach .~ cont', fs :: Funs)
+        in (ms & mobTbl.ind i.stomach .~ cont', fs :: HasCallStack => Funs)

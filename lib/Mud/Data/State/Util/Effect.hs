@@ -18,6 +18,7 @@ import Control.Monad (when)
 import Data.Either (partitionEithers)
 import Data.Monoid ((<>))
 import Data.Text (Text)
+import GHC.Stack (HasCallStack)
 
 
 logPla :: Text -> Id -> Text -> MudStack ()
@@ -27,7 +28,7 @@ logPla = L.logPla "Mud.Data.State.Util.Effect"
 -- ==================================================
 
 
-procEffectList :: Id -> EffectList -> MudStack ()
+procEffectList :: HasCallStack => Id -> EffectList -> MudStack ()
 procEffectList i (EffectList xs) = let (ies, es) = partitionEithers xs
                                    in mapM_ (procInstaEffect i) ies >> mapM_ (startEffect i) es
 
@@ -35,7 +36,7 @@ procEffectList i (EffectList xs) = let (ies, es) = partitionEithers xs
 -----
 
 
-procInstaEffect :: Id -> InstaEffect -> MudStack ()
+procInstaEffect :: HasCallStack => Id -> InstaEffect -> MudStack ()
 procInstaEffect i ie@(InstaEffect sub val feel) = getState >>= \ms -> do
     logHelper ms
     case sub of
