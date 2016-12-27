@@ -134,7 +134,8 @@ loggingThreadExHandler logExLock n e = guard (fromException e /= Just ThreadKill
                        , parensQuote $ "inside " <> dblQuote n
                        , ". "
                        , dblQuote . showText $ e ]
-    in do file <- mkMudFilePath loggingExLogFileFun
+    in do liftIO printPanicMsg
+          file <- mkMudFilePath loggingExLogFileFun
           handle (handler msg) . withLock logExLock . T.appendFile file . nl $ msg
   where
     handler msg ex = let showIt = T.hPutStrLn stderr msg in if | isAlreadyInUseError ex -> showIt
