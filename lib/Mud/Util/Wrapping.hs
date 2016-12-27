@@ -28,6 +28,7 @@ import Control.Lens.Operators ((%~), (&))
 import Data.Char (isDigit, isSpace)
 import Data.Monoid ((<>))
 import Data.Text (Text)
+import GHC.Stack (HasCallStack)
 import qualified Data.Text as T
 
 
@@ -38,7 +39,7 @@ patternMatchFail = U.patternMatchFail "Mud.Util.Wrapping"
 -- ==================================================
 
 
-wrap :: Cols -> Text -> [Text]
+wrap :: HasCallStack => Cols -> Text -> [Text]
 wrap cols t | extracted <- extractANSI t
             , wrapped   <- wrapIt . T.concat . map fst $ extracted = insertANSI extracted wrapped
   where
@@ -51,40 +52,40 @@ wrap cols t | extracted <- extractANSI t
         (beforeMax, afterMax) = T.splitAt cols txt
 
 
-breakEnd :: Text -> (Text, Text)
+breakEnd :: HasCallStack => Text -> (Text, Text)
 breakEnd (T.break isSpace . T.reverse -> (after, before)) = (before, after) & both %~ T.reverse
 
 
 -----
 
 
-wrapUnlines :: Cols -> Text -> Text
+wrapUnlines :: HasCallStack => Cols -> Text -> Text
 wrapUnlines cols = T.unlines . wrap cols
 
 
-wrapUnlinesNl :: Cols -> Text -> Text
+wrapUnlinesNl :: HasCallStack => Cols -> Text -> Text
 wrapUnlinesNl cols = nl . wrapUnlines cols
 
 
-wrapUnlinesInit :: Cols -> Text -> Text
+wrapUnlinesInit :: HasCallStack => Cols -> Text -> Text
 wrapUnlinesInit cols = T.intercalate theNl . wrap cols
 
 
 -----
 
 
-multiWrap :: Cols -> [Text] -> Text
+multiWrap :: HasCallStack => Cols -> [Text] -> Text
 multiWrap cols = T.unlines . concatMap (wrap cols)
 
 
-multiWrapNl :: Cols -> [Text] -> Text
+multiWrapNl :: HasCallStack => Cols -> [Text] -> Text
 multiWrapNl cols = nl . multiWrap cols
 
 
 -----
 
 
-wrapIndent :: Int -> Cols -> Text -> [Text]
+wrapIndent :: HasCallStack => Int -> Cols -> Text -> [Text]
 wrapIndent n cols t = let extracted = extractANSI t
                           wrapped   = helper . T.concat . map fst $ extracted
                       in map leadingFillerToSpcs . insertANSI extracted $ wrapped
@@ -100,27 +101,27 @@ wrapIndent n cols t = let extracted = extractANSI t
         leadingIndent         = T.replicate (adjustIndent n cols) . T.singleton $ indentFiller
 
 
-leadingSpcsToFiller :: Text -> Text
+leadingSpcsToFiller :: HasCallStack => Text -> Text
 leadingSpcsToFiller = xformLeading ' ' indentFiller
 
 
-leadingFillerToSpcs :: Text -> Text
+leadingFillerToSpcs :: HasCallStack => Text -> Text
 leadingFillerToSpcs = xformLeading indentFiller ' '
 
 
-xformLeading :: Char -> Char -> Text -> Text
+xformLeading :: HasCallStack => Char -> Char -> Text -> Text
 xformLeading _ _                  ""                                       = ""
 xformLeading a (T.singleton -> b) (T.span (== a) -> (T.length -> n, rest)) = T.replicate n b <> rest
 
 
-adjustIndent :: Int -> Cols -> Int
+adjustIndent :: HasCallStack => Int -> Cols -> Int
 adjustIndent n cols = n >= cols ? pred cols :? n
 
 
 -----
 
 
-wrapLines :: Cols -> [Text] -> [[Text]]
+wrapLines :: HasCallStack => Cols -> [Text] -> [[Text]]
 wrapLines _    []                          = []
 wrapLines cols [t]        | hasIndentTag t = pure . wrapLineWithIndentTag cols $ t
                           | otherwise      = pure . wrapIndent (noOfLeadingSpcs t) cols $ t
@@ -136,16 +137,16 @@ wrapLines cols (a:b:rest) | ()# a          = [""]     : wrapNext
     (nolsa, nolsb)     = (a, b) & both %~ noOfLeadingSpcs
 
 
-hasIndentTag :: Text -> Bool
+hasIndentTag :: HasCallStack => Text -> Bool
 hasIndentTag "" = False
 hasIndentTag t  = T.last t == indentTagChar
 
 
-noOfLeadingSpcs :: Text -> Int
+noOfLeadingSpcs :: HasCallStack => Text -> Int
 noOfLeadingSpcs = T.length . T.takeWhile isSpace
 
 
-wrapLineWithIndentTag :: Cols -> Text -> [Text]
+wrapLineWithIndentTag :: HasCallStack => Cols -> Text -> [Text]
 wrapLineWithIndentTag cols (T.break (not . isDigit) . T.reverse . T.init -> broken) = wrapIndent n cols t
   where
     (numTxt, t)                 = broken & both %~ T.reverse
@@ -158,14 +159,13 @@ wrapLineWithIndentTag cols (T.break (not . isDigit) . T.reverse . T.init -> brok
       | otherwise               = adjustIndent indent cols
 
 
-calcIndent :: Text -> Int
-calcIndent (T.break isSpace -> (T.length -> lenOfFirstWord, rest))
-  | ()# rest  = 0
-  | otherwise = lenOfFirstWord + noOfLeadingSpcs rest
+calcIndent :: HasCallStack => Text -> Int
+calcIndent (T.break isSpace -> (T.length -> lenOfFirstWord, rest)) | ()# rest  = 0
+                                                                   | otherwise = lenOfFirstWord + noOfLeadingSpcs rest
 
 
 -----
 
 
-xformLeadingSpaceChars :: Text -> Text
+xformLeadingSpaceChars :: HasCallStack => Text -> Text
 xformLeadingSpaceChars = xformLeading leadingSpaceChar ' '

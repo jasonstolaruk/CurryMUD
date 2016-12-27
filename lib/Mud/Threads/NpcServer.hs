@@ -28,6 +28,7 @@ import Control.Lens.Operators ((&), (.~), (^.))
 import Control.Monad ((>=>), unless)
 import Control.Monad.IO.Class (liftIO)
 import Data.Text (Text)
+import GHC.Stack (HasCallStack)
 import Prelude hiding (pi)
 import qualified Data.Text as T
 
@@ -39,23 +40,23 @@ logNotice = L.logNotice "Mud.Threads.NpcServer"
 -- ==================================================
 
 
-runNpcServerAsync :: Id -> MudStack ()
+runNpcServerAsync :: HasCallStack => Id -> MudStack ()
 runNpcServerAsync i = do npcMq <- liftIO newTQueueIO
                          a     <- runAsync . threadNpcServer i $ npcMq
                          tweak $ npcTbl.ind i .~ Npc npcMq a Nothing
 
 
-startNpcServers :: MudStack ()
+startNpcServers :: HasCallStack => MudStack ()
 startNpcServers =
     logNotice "startNpcServers" "starting NPC server threads." >> (mapM_ runNpcServerAsync  . findNpcIds =<< getState)
 
 
-stopNpcServers :: MudStack ()
+stopNpcServers :: HasCallStack => MudStack ()
 stopNpcServers =
     logNotice "stopNpcServers"  "stopping NPC server threads." >> (mapM_ stopWaitNpcServer  . findNpcIds =<< getState)
 
 
-stopWaitNpcServer :: Id -> MudStack ()
+stopWaitNpcServer :: HasCallStack => Id -> MudStack ()
 stopWaitNpcServer i = helper |&| modifyState >=> \npc -> do
     npc^.npcMsgQueue   .to (liftIO . atomically . (`writeTQueue` StopNpcServer))
     npc^.npcServerAsync.to (liftIO . wait)
@@ -67,7 +68,7 @@ stopWaitNpcServer i = helper |&| modifyState >=> \npc -> do
 -----
 
 
-threadNpcServer :: Id -> NpcMsgQueue -> MudStack ()
+threadNpcServer :: HasCallStack => Id -> NpcMsgQueue -> MudStack ()
 threadNpcServer i npcMq = setThreadType (NpcServer i) >> loop `catch` threadExHandler (Just i) "NPC server"
   where
     loop = npcMq |&| liftIO . atomically . readTQueue >=> \case
@@ -75,7 +76,7 @@ threadNpcServer i npcMq = setThreadType (NpcServer i) >> loop `catch` threadExHa
       StopNpcServer         -> unit
 
 
-handleExternCmd :: Id -> MsgQueue -> Cols -> Text -> MudStack ()
+handleExternCmd :: HasCallStack => Id -> MsgQueue -> Cols -> Text -> MudStack ()
 handleExternCmd i mq cols msg = getState >>= \ms ->
     let (cn, as)      = ()# msg ? ("", []) :? (headTail . T.words $ msg)
         mkWithArgs i' = WithArgs i' mq cols as

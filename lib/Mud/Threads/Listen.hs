@@ -42,6 +42,7 @@ import Control.Monad.IO.Class (liftIO)
 import Data.Int (Int64)
 import Data.Monoid ((<>), Any(..), getSum)
 import Data.Text (Text)
+import GHC.Stack (HasCallStack)
 import Network (PortID(..), accept, listenOn, sClose)
 import qualified Data.IntMap.Lazy as IM (map)
 import qualified Data.Text as T
@@ -65,14 +66,14 @@ logNotice = L.logNotice "Mud.Threads.Listen"
 -- ==================================================
 
 
-threadListen :: MudStack ()
+threadListen :: HasCallStack => MudStack ()
 threadListen = a `finally` b
   where
     a = logNotice "threadListen" "server started." >> listen
     b = sequence_ [ getUptime >>= saveUptime, closeLogs, liftIO . T.putStrLn . nl $ "Goodbye!" ]
 
 
-saveUptime :: Int64 -> MudStack ()
+saveUptime :: HasCallStack => Int64 -> MudStack ()
 saveUptime up@(T.pack . renderSecs . fromIntegral -> upTxt) =
     maybe (saveIt >> logIt) checkRecord =<< getSum `fmap2` getRecordUptime
   where
@@ -85,7 +86,7 @@ saveUptime up@(T.pack . renderSecs . fromIntegral -> upTxt) =
     logHelper         = logNotice "saveUptime logHelper" . ("CurryMUD was up for " <>) . (upTxt <>)
 
 
-listen :: MudStack ()
+listen :: HasCallStack => MudStack ()
 listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed halt
   where
     proceed = do initialize
@@ -137,5 +138,5 @@ listenExHandler e = liftIO printPanicMsg >> case fromException e of
   _                  -> logExMsg  "listenExHandler" "exception caught on listen thread" e
 
 
-sortAllInvs :: MudStack ()
+sortAllInvs :: HasCallStack => MudStack ()
 sortAllInvs = logNotice "sortAllInvs" "sorting all inventories." >> tweak (\ms -> ms & invTbl %~ IM.map (sortInv ms))

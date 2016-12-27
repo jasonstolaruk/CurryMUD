@@ -44,6 +44,7 @@ import Control.Monad ((>=>), forM_, unless)
 import Control.Monad.IO.Class (liftIO)
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
+import GHC.Stack (HasCallStack)
 import qualified Data.Map.Lazy as M (elems)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (hPutStr, hPutStrLn, readFile)
@@ -74,7 +75,7 @@ consistency.
 data ToWhom = Plaに | Npcに
 
 
-threadServer :: Handle -> Id -> MsgQueue -> TimerQueue -> MudStack ()
+threadServer :: HasCallStack => Handle -> Id -> MsgQueue -> TimerQueue -> MudStack ()
 threadServer h i mq tq = sequence_ [ setThreadType . Server $ i
                                    , loop False `catch` threadExHandler (Just i) "server" ]
   where
@@ -105,11 +106,11 @@ threadServer h i mq tq = sequence_ [ setThreadType . Server $ i
         in views (plaTbl.ind i.spiritAsync) (maybe a b) ms
 
 
-handleBlankLine :: Handle -> MudStack ()
+handleBlankLine :: HasCallStack => Handle -> MudStack ()
 handleBlankLine h = liftIO $ T.hPutStr h theNl >> hFlush h
 
 
-handleFromClient :: Id -> MsgQueue -> TimerQueue -> Bool -> Text -> MudStack ()
+handleFromClient :: HasCallStack => Id -> MsgQueue -> TimerQueue -> Bool -> Text -> MudStack ()
 handleFromClient i mq tq isAsSelf = go
   where
     go (T.strip . stripControl -> msg') = getState >>= \ms ->
@@ -127,7 +128,7 @@ handleFromClient i mq tq isAsSelf = go
                                          f cn . WithArgs asId mq (p^.columns) $ as
 
 
-forwardToPeepers :: Id -> Inv -> ToOrFromThePeeped -> Text -> MudStack ()
+forwardToPeepers :: HasCallStack => Id -> Inv -> ToOrFromThePeeped -> Text -> MudStack ()
 forwardToPeepers i peeperIds toOrFrom msg = liftIO . atomically . helper =<< getState
   where
     helper ms     = forM_ [ getMsgQueue peeperId ms | peeperId <- peeperIds ] (`writeTQueue` (mkPeepedMsg . getSing i $ ms))
@@ -138,40 +139,40 @@ forwardToPeepers i peeperIds toOrFrom msg = liftIO . atomically . helper =<< get
         rest = [ spaced . bracketQuote $ s, dfltColor, " ", msg ]
 
 
-handleFromServer :: Id -> Handle -> ToWhom -> Text -> MudStack ()
+handleFromServer :: HasCallStack => Id -> Handle -> ToWhom -> Text -> MudStack ()
 handleFromServer _ h Npcに msg = fromServerHelper h $ colorWith toNpcColor " " |<>| msg
 handleFromServer i h Plaに msg = getState >>= \ms ->
     forwardToPeepers i (getPeepers i ms) ToThePeeped msg >> fromServerHelper h msg
 
 
-fromServerHelper :: Handle -> Text -> MudStack ()
+fromServerHelper :: HasCallStack => Handle -> Text -> MudStack ()
 fromServerHelper h t = liftIO $ T.hPutStr h t >> hFlush h
 
 
-sendInacBootMsg :: Handle -> MudStack ()
+sendInacBootMsg :: HasCallStack => Handle -> MudStack ()
 sendInacBootMsg h = liftIO . T.hPutStrLn h . nl . colorWith bootMsgColor $ inacBootMsg
 
 
-sendBootMsg :: Handle -> Text -> MudStack ()
+sendBootMsg :: HasCallStack => Handle -> Text -> MudStack ()
 sendBootMsg h = liftIO . T.hPutStrLn h . nl . colorWith bootMsgColor
 
 
-promptHelper :: Id -> Handle -> Text -> MudStack ()
+promptHelper :: HasCallStack => Id -> Handle -> Text -> MudStack ()
 promptHelper i h t = sequence_ [ handleFromServer i h Plaに . nl $ t, liftIO . hFlush $ h ]
 
 
-handleShowHandle :: Id -> Handle -> MudStack ()
+handleShowHandle :: HasCallStack => Id -> Handle -> MudStack ()
 handleShowHandle i h = getMsgQueueColumns i <$> getState >>= \pair ->
     uncurry wrapSend1Nl pair . T.pack =<< liftIO (hShow h)
 
 
-cowbye :: Handle -> MudStack ()
+cowbye :: HasCallStack => Handle -> MudStack ()
 cowbye h = liftIO takeADump `catch` fileIOExHandler "cowbye"
   where
     takeADump = T.hPutStrLn h =<< T.readFile =<< mkMudFilePath cowbyeFileFun
 
 
-shutDown :: MudStack ()
+shutDown :: HasCallStack => MudStack ()
 shutDown = massMsg SilentBoot >> onNewThread commitSuicide
   where
     commitSuicide = do liftIO . mapM_ wait . M.elems . view talkAsyncTbl =<< getState

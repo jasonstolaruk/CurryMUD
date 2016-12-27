@@ -44,6 +44,7 @@ import qualified Data.Text.IO as T (readFile)
 import System.FilePath ((</>))
 import System.IO (BufferMode(..), Handle, Newline(..), NewlineMode(..), hClose, hSetBuffering, hSetEncoding, hSetNewlineMode, latin1)
 import System.Random (randomIO, randomRIO)
+import GHC.Stack (HasCallStack)
 
 
 logNotice :: Text -> Text -> MudStack ()
@@ -53,14 +54,14 @@ logNotice = L.logNotice "Mud.Threads.Talk"
 -- ==================================================
 
 
-runTalkAsync :: Handle -> HostName -> MudStack ()
+runTalkAsync :: HasCallStack => Handle -> HostName -> MudStack ()
 runTalkAsync h host = runAsync (threadTalk h host) >>= \a@(asyncThreadId -> ti) -> tweak $ talkAsyncTbl.at ti ?~ a
 
 
 -----
 
 
-threadTalk :: Handle -> HostName -> MudStack ()
+threadTalk :: HasCallStack => Handle -> HostName -> MudStack ()
 threadTalk h host = helper `finally` cleanUp
   where
     helper = do (mq, tq) <- liftIO $ (,) <$> newTQueueIO <*> newTMQueueIO
@@ -87,7 +88,7 @@ threadTalk h host = helper `finally` cleanUp
                          liftIO . hClose $ h
 
 
-adHoc :: MsgQueue -> HostName -> MudStack (Id, Sing)
+adHoc :: HasCallStack => MsgQueue -> HostName -> MudStack (Id, Sing)
 adHoc mq host = do
     (sexy, r) <- liftIO $ (,) <$> randomSex <*> randomRace
     ct        <- liftIO getCurrentTime
@@ -181,7 +182,7 @@ initPlaFlags = foldl setBit zeroBits . map fromEnum $ [ IsShowingHp
                                                       , IsShowingFp ]
 
 
-dumpTitle :: MsgQueue -> MudStack ()
+dumpTitle :: HasCallStack => MsgQueue -> MudStack ()
 dumpTitle mq = liftIO mkFilename >>= try . takeADump >>= eitherRet (fileIOExHandler "dumpTitle")
   where
     mkFilename   = ("title" ++) . show <$> randomRIO (1, noOfTitles)

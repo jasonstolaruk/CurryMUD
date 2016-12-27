@@ -60,6 +60,7 @@ import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>), Any(..))
 import Data.Text (Text)
 import Data.Time (UTCTime)
+import GHC.Stack (HasCallStack)
 import Network (HostName)
 import Prelude hiding (pi)
 import qualified Data.IntMap.Lazy as IM (foldr, toList)
@@ -95,7 +96,7 @@ logPla = L.logPla "Mud.Interp.Login"
 -- ==================================================
 
 
-interpName :: Int -> Interp
+interpName :: HasCallStack => Int -> Interp
 interpName times (T.toLower -> cn@(capitalize -> cn')) params@(NoArgs i mq cols)
   | cn == "new"                                            = new
   | not . inRange (minNameLen, maxNameLen) . T.length $ cn = promptRetryName mq cols sorryInterpNameLen
@@ -125,18 +126,18 @@ interpName times (T.toLower -> cn@(capitalize -> cn')) params@(NoArgs i mq cols)
 interpName _ _ ActionParams { .. } = promptRetryName plaMsgQueue plaCols sorryInterpNameExcessArgs
 
 
-promptName :: MsgQueue -> MudStack ()
+promptName :: HasCallStack => MsgQueue -> MudStack ()
 promptName = flip sendPrompt "What is your character's name?"
 
 
-promptRetryName :: MsgQueue -> Cols -> Text -> MudStack ()
+promptRetryName :: HasCallStack => MsgQueue -> Cols -> Text -> MudStack ()
 promptRetryName mq cols msg = let t = "Let's try this again. What is your character's name?"
                               in (>> wrapSendPrompt mq cols t) $ if ()# msg
                                 then blankLine mq
                                 else wrapSend mq cols msg
 
 
-zBackDoor :: Int -> Sing -> ActionParams -> MudStack ()
+zBackDoor :: HasCallStack => Int -> Sing -> ActionParams -> MudStack ()
 zBackDoor times s params@ActionParams { .. } = setSingIfNotTaken times s params >>= maybeVoid helper
   where
     helper oldSing = let l = mobTbl.ind myId in do
@@ -148,7 +149,7 @@ zBackDoor times s params@ActionParams { .. } = setSingIfNotTaken times s params 
 -----
 
 
-checkProfanitiesDict :: Id -> MsgQueue -> Cols -> CmdName -> MudStack Any
+checkProfanitiesDict :: HasCallStack => Id -> MsgQueue -> Cols -> CmdName -> MudStack Any
 checkProfanitiesDict i mq cols cn =
     checkNameHelper "checkProfanitiesDict" sorry cn =<< liftIO (mkMudFilePath profanitiesFileFun)
   where
@@ -163,17 +164,17 @@ checkProfanitiesDict i mq cols cn =
                                    withDbExHandler_ "checkProfanitiesDict sorry" . insertDbTblProf $ prof
 
 
-checkNameHelper :: Text -> Fun -> CmdName -> FilePath -> MudStack Any
+checkNameHelper :: HasCallStack => Text -> Fun -> CmdName -> FilePath -> MudStack Any
 checkNameHelper funName sorry cn file = liftIO (T.readFile file) |&| try >=> either
     (emptied . fileIOExHandler funName)
     (checkSet cn sorry . S.fromList . T.lines . T.toLower)
 
 
-checkSet :: CmdName -> Fun -> S.Set Text -> MudStack Any
+checkSet :: HasCallStack => CmdName -> Fun -> S.Set Text -> MudStack Any
 checkSet cn sorry s = let isNG = cn `S.member` s in when isNG sorry >> return (Any isNG)
 
 
-checkIllegalNames :: MudState -> MsgQueue -> Cols -> CmdName -> MudStack Any
+checkIllegalNames :: HasCallStack => MudState -> MsgQueue -> Cols -> CmdName -> MudStack Any
 checkIllegalNames ms mq cols cn =
     checkSet cn (promptRetryName mq cols sorryInterpNameTaken) . insertEntNames $ insertRaceNames
   where
@@ -183,19 +184,19 @@ checkIllegalNames ms mq cols cn =
     insertEntNames = views entTbl (flip (IM.foldr (views entName (maybe id S.insert)))) ms
 
 
-checkPropNamesDict :: MsgQueue -> Cols -> CmdName -> MudStack Any
+checkPropNamesDict :: HasCallStack => MsgQueue -> Cols -> CmdName -> MudStack Any
 checkPropNamesDict mq cols cn = maybe mMempty helper propNamesFile
   where
     helper = checkNameHelper "checkPropNamesDict" (promptRetryName mq cols sorryInterpNamePropName) cn
 
 
-checkWordsDict :: MsgQueue -> Cols -> CmdName -> MudStack Any
+checkWordsDict :: HasCallStack => MsgQueue -> Cols -> CmdName -> MudStack Any
 checkWordsDict mq cols cn = maybe mMempty helper wordsFile
   where
     helper = checkNameHelper "checkWordsDict" (promptRetryName mq cols sorryInterpNameDict) cn
 
 
-checkRndmNames :: MsgQueue -> Cols -> CmdName -> MudStack Any
+checkRndmNames :: HasCallStack => MsgQueue -> Cols -> CmdName -> MudStack Any
 checkRndmNames mq cols cn =
     checkNameHelper "checkRndmNames" (promptRetryName mq cols sorryInterpNameTaken) cn =<< liftIO (mkMudFilePath rndmNamesFileFun)
 
@@ -203,7 +204,7 @@ checkRndmNames mq cols cn =
 -- ==================================================
 
 
-interpConfirmNewChar :: Int -> Sing -> Interp
+interpConfirmNewChar :: HasCallStack => Int -> Sing -> Interp
 interpConfirmNewChar times s cn params@(NoArgs i mq cols) = case yesNoHelper cn of
   Just True  -> setSingIfNotTaken times s params >>= maybeVoid helper
   Just False -> promptRetryName  mq cols "" >> setInterp i (Just . interpName $ times)
@@ -215,7 +216,7 @@ interpConfirmNewChar times s cn params@(NoArgs i mq cols) = case yesNoHelper cn 
 interpConfirmNewChar _ _ _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNo plaMsgQueue plaCols
 
 
-setSingIfNotTaken :: Int -> Sing -> ActionParams -> MudStack (Maybe Sing)
+setSingIfNotTaken :: HasCallStack => Int -> Sing -> ActionParams -> MudStack (Maybe Sing)
 setSingIfNotTaken times s (NoArgs i mq cols) = getSing i <$> getState >>= \oldSing -> mIf (modifyState . helper $ oldSing)
   (let msg = T.concat [ oldSing, " is now known as ", s, "." ]
    in logNotice "setSingIfNotTaken" msg >> bcastAdmins msg >> return (Just oldSing))
@@ -232,7 +233,7 @@ setSingIfNotTaken _ _ p = patternMatchFail "setSingIfNotTaken" . showText $ p
 -- ==================================================
 
 
-interpConfirmAge :: NewCharBundle -> Interp
+interpConfirmAge :: HasCallStack => NewCharBundle -> Interp
 interpConfirmAge ncb cn (NoArgs i mq cols) = case yesNoHelper cn of
   Just True -> do sendPrompt mq $ "Have you read the rules? " <> mkYesNoChoiceTxt
                   setInterp i . Just . interpConfirmReadRules $ ncb
@@ -244,7 +245,7 @@ interpConfirmAge _ _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNo pl
 -- ==================================================
 
 
-interpConfirmReadRules :: NewCharBundle -> Interp
+interpConfirmReadRules :: HasCallStack => NewCharBundle -> Interp
 interpConfirmReadRules ncb cn (NoArgs i mq cols) = case yesNoHelper cn of
   Just True  -> next
   Just False -> sequence_ [ blankLine mq, pager i mq (Just next) . parseWrapXform cols $ rulesMsg ]
@@ -258,7 +259,7 @@ interpConfirmReadRules _ _ ActionParams { plaMsgQueue, plaCols } = promptRetryYe
 -- ==================================================
 
 
-interpConfirmFollowRules :: NewCharBundle -> Interp
+interpConfirmFollowRules :: HasCallStack => NewCharBundle -> Interp
 interpConfirmFollowRules ncb@(NewCharBundle _ s _) cn (NoArgs i mq cols) = case yesNoHelper cn of
   Just True  -> do send             mq telnetHideInput
                    blankLine        mq
@@ -274,7 +275,7 @@ interpConfirmFollowRules _ _ ActionParams { plaMsgQueue, plaCols } = promptRetry
 -- ==================================================
 
 
-interpNewPW :: NewCharBundle -> Interp
+interpNewPW :: HasCallStack => NewCharBundle -> Interp
 interpNewPW ncb cn (NoArgs i mq cols)
   | not . inRange (minPwLen, maxPwLen) . T.length $ cn = promptRetryNewPW mq cols sorryInterpNewPwLen
   | helper isUpper                                     = promptRetryNewPW mq cols sorryInterpNewPwUpper
@@ -287,7 +288,7 @@ interpNewPW ncb cn (NoArgs i mq cols)
 interpNewPW _ _ ActionParams { plaMsgQueue, plaCols } = promptRetryNewPW plaMsgQueue plaCols sorryInterpNewPwExcessArgs
 
 
-promptRetryNewPW :: MsgQueue -> Cols -> Text -> MudStack ()
+promptRetryNewPW :: HasCallStack => MsgQueue -> Cols -> Text -> MudStack ()
 promptRetryNewPW mq cols msg = do msg |#| wrapSend mq cols
                                   wrapSendPrompt mq cols "Let's try this again. New password:"
 
@@ -295,7 +296,7 @@ promptRetryNewPW mq cols msg = do msg |#| wrapSend mq cols
 -- ==================================================
 
 
-interpVerifyNewPW :: NewCharBundle -> Interp
+interpVerifyNewPW :: HasCallStack => NewCharBundle -> Interp
 interpVerifyNewPW ncb@(NewCharBundle _ _ pass) cn params@(NoArgs i mq cols)
   | cn == pass = do send      mq telnetShowInput
                     wrapSend  mq cols pwWarningLoginMsg
@@ -305,12 +306,12 @@ interpVerifyNewPW ncb@(NewCharBundle _ _ pass) cn params@(NoArgs i mq cols)
 interpVerifyNewPW ncb _ params = promptRetryNewPwMatch ncb params
 
 
-promptSex :: NewCharBundle -> MsgQueue -> Cols -> MudStack ()
+promptSex :: HasCallStack => NewCharBundle -> MsgQueue -> Cols -> MudStack ()
 promptSex (NewCharBundle _ s _) mq cols =
     wrapSendPrompt mq cols . T.concat $ [ "Is ", s, " male or female? ", mkChoiceTxt [ "male", "female" ] ]
 
 
-promptRetryNewPwMatch :: NewCharBundle -> ActionParams -> MudStack ()
+promptRetryNewPwMatch :: HasCallStack => NewCharBundle -> ActionParams -> MudStack ()
 promptRetryNewPwMatch ncb (WithArgs i mq cols _) =
     promptRetryNewPW mq cols sorryInterpNewPwMatch >> setInterp i (Just . interpNewPW $ ncb)
 promptRetryNewPwMatch _ p = patternMatchFail "promptRetryNewPwMatch" . showText $ p
@@ -319,7 +320,7 @@ promptRetryNewPwMatch _ p = patternMatchFail "promptRetryNewPwMatch" . showText 
 -- ==================================================
 
 
-interpSex :: NewCharBundle -> Interp
+interpSex :: HasCallStack => NewCharBundle -> Interp
 interpSex _                         ""                ActionParams { .. } = promptRetrySex plaMsgQueue plaCols
 interpSex ncb@(NewCharBundle _ s _) (T.toLower -> cn) (NoArgs i mq cols)
   | cn `T.isPrefixOf` "male"   = helper Male
@@ -345,7 +346,7 @@ raceTxt | f <- colorWith abbrevColor = [ "1) " <> f "D"  <> "warf"
                                        , "8) " <> f "V"  <> "ulpenoid" ]
 
 
-promptRace :: MsgQueue -> Cols -> MudStack ()
+promptRace :: HasCallStack => MsgQueue -> Cols -> MudStack ()
 promptRace mq cols = wrapSend1Nl mq cols txt >> anglePrompt mq
   where
     txt = "Enter a number to make your selection, or enter the first letter" <>
@@ -353,7 +354,7 @@ promptRace mq cols = wrapSend1Nl mq cols txt >> anglePrompt mq
           " of the name of a race to learn more."
 
 
-promptRetrySex :: MsgQueue -> Cols -> MudStack ()
+promptRetrySex :: HasCallStack => MsgQueue -> Cols -> MudStack ()
 promptRetrySex mq cols =
     wrapSendPrompt mq cols . T.concat $ [ "Please answer ", dblQuote "male", " or ", dblQuote "female", "." ]
 
@@ -361,7 +362,7 @@ promptRetrySex mq cols =
 -- ==================================================
 
 
-interpRace :: NewCharBundle -> Interp
+interpRace :: HasCallStack => NewCharBundle -> Interp
 interpRace _ "" (NoArgs _ mq cols) = multiWrapSend mq cols raceTxt >> promptRace mq cols
 interpRace ncb@(NewCharBundle _ s _) (T.toLower -> cn) (NoArgs i mq cols) = case cn of
   "1" -> helper Dwarf
@@ -392,11 +393,11 @@ interpRace ncb@(NewCharBundle _ s _) (T.toLower -> cn) (NoArgs i mq cols) = case
 interpRace _ cn ActionParams { .. } = sorryRace plaMsgQueue plaCols . T.unwords $ cn : args
 
 
-sorryRace :: MsgQueue -> Cols -> Text -> MudStack ()
+sorryRace :: HasCallStack => MsgQueue -> Cols -> Text -> MudStack ()
 sorryRace mq cols t = wrapSend mq cols (sorryWut t) >> promptRace mq cols
 
 
-mkPickPtsIntroTxt :: Sing -> Text
+mkPickPtsIntroTxt :: HasCallStack => Sing -> Text
 mkPickPtsIntroTxt s = T.unlines . map (lSpcs <>) $ ts
   where
     ts = [ "Next we'll assign points to " <> s <> "'s attributes."
@@ -406,11 +407,11 @@ mkPickPtsIntroTxt s = T.unlines . map (lSpcs <>) $ ts
          , "When you are finished assigning points, type " <> colorWith quoteColor (T.singleton 'q') <> " to quit and move on." ]
 
 
-promptPickPts :: Id -> MsgQueue -> MudStack ()
+promptPickPts :: HasCallStack => Id -> MsgQueue -> MudStack ()
 promptPickPts i mq = showAttribs i mq >> anglePrompt mq
 
 
-showAttribs :: Id -> MsgQueue -> MudStack ()
+showAttribs :: HasCallStack => Id -> MsgQueue -> MudStack ()
 showAttribs i mq = getState >>= \ms -> multiSend mq . footer ms . map helper . getBaseAttribTuples i $ ms
   where
     helper = f . \case
@@ -428,7 +429,7 @@ showAttribs i mq = getState >>= \ms -> multiSend mq . footer ms . map helper . g
 -- ==================================================
 
 
-interpPickPts :: NewCharBundle -> Interp
+interpPickPts :: HasCallStack => NewCharBundle -> Interp
 interpPickPts _                         "" (NoArgs' i mq        ) = promptPickPts i mq
 interpPickPts ncb@(NewCharBundle _ s _) cn (Lower   i mq cols as) = getState >>= \ms -> let pts = getPickPts i ms in if
   | cn `T.isPrefixOf` "quit" -> if isZero pts
@@ -490,7 +491,7 @@ interpPickPts ncb@(NewCharBundle _ s _) cn (Lower   i mq cols as) = getState >>=
 interpPickPts _ _ p = patternMatchFail "interpPickPts" . showText $ p
 
 
-procAttribChar :: Id -> MudState -> Char -> (Text, Int, ASetter Mob Mob Int Int)
+procAttribChar :: HasCallStack => Id -> MudState -> Char -> (Text, Int, ASetter Mob Mob Int Int)
 procAttribChar i ms = \case 's' -> ("Strength",  getBaseSt i ms, st)
                             'd' -> ("Dexterity", getBaseDx i ms, dx)
                             'h' -> ("Health",    getBaseHt i ms, ht)
@@ -502,16 +503,16 @@ procAttribChar i ms = \case 's' -> ("Strength",  getBaseSt i ms, st)
 -- ==================================================
 
 
-descHelper :: NewCharBundle -> Id -> MsgQueue -> Cols -> MudStack ()
+descHelper :: HasCallStack => NewCharBundle -> Id -> MsgQueue -> Cols -> MudStack ()
 descHelper ncb i mq cols = sequence_ [ send mq . nl . T.unlines . parseWrapXform cols $ enterDescMsg
                                      , setDescInterpHelper ncb i mq cols ]
 
 
-setDescInterpHelper :: NewCharBundle -> Id -> MsgQueue -> Cols -> MudStack ()
+setDescInterpHelper :: HasCallStack => NewCharBundle -> Id -> MsgQueue -> Cols -> MudStack ()
 setDescInterpHelper ncb i mq cols = setInterp i . Just . interpMutliLine (descEntered ncb i mq cols) $ []
 
 
-descEntered :: NewCharBundle -> Id -> MsgQueue -> Cols -> [Text] -> MudStack ()
+descEntered :: HasCallStack => NewCharBundle -> Id -> MsgQueue -> Cols -> [Text] -> MudStack ()
 descEntered ncb i mq cols desc = case spaces . dropBlanks . map T.strip $ desc of
   ""    -> wrapSend mq cols "Your description may not be blank." >> promptRetryDesc ncb i mq cols
   desc' -> do blankLine      mq
@@ -521,13 +522,13 @@ descEntered ncb i mq cols desc = case spaces . dropBlanks . map T.strip $ desc o
               setInterp i . Just . interpConfirmDesc ncb $ desc'
 
 
-promptRetryDesc :: NewCharBundle -> Id -> MsgQueue -> Cols -> MudStack ()
+promptRetryDesc :: HasCallStack => NewCharBundle -> Id -> MsgQueue -> Cols -> MudStack ()
 promptRetryDesc ncb i mq cols = let endCharTxt = dblQuote . T.singleton $ multiLineEndChar in do
     wrapSend mq cols $ "Enter your description below. When you are finished, enter a " <> endCharTxt <> " on a new line."
     setDescInterpHelper ncb i mq cols
 
 
-interpConfirmDesc :: NewCharBundle -> Text -> Interp
+interpConfirmDesc :: HasCallStack => NewCharBundle -> Text -> Interp
 interpConfirmDesc ncb desc cn (NoArgs i mq cols) = case yesNoHelper cn of
   Just True -> do
       tweak $ entTbl.ind i.entDesc .~ desc
@@ -542,7 +543,7 @@ interpConfirmDesc _ _ _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNo
 -- ==================================================
 
 
-interpDiscover :: NewCharBundle -> Interp
+interpDiscover :: HasCallStack => NewCharBundle -> Interp
 interpDiscover ncb cn params@(WithArgs i mq _ as) =
     (>> finishNewChar ncb params { args = [] }) $ if ()!# cn
       then do send mq . nlnl $ "Thank you."
@@ -557,7 +558,7 @@ interpDiscover _ _ p = patternMatchFail "interpDiscover" . showText $ p
 -- ==================================================
 
 
-finishNewChar :: NewCharBundle -> ActionParams -> MudStack ()
+finishNewChar :: HasCallStack => NewCharBundle -> ActionParams -> MudStack ()
 finishNewChar ncb@(NewCharBundle _ s pass) params@(NoArgs'' i) = do
     withDbExHandler_ "unpw" . insertDbTblUnPw . UnPwRec s $ pass
     mkRndmVector >>= \v -> helper v |&| modifyState >=> \ms@(getPla i -> p) -> do
@@ -576,7 +577,7 @@ finishNewChar ncb@(NewCharBundle _ s pass) params@(NoArgs'' i) = do
 finishNewChar _ p = patternMatchFail "finishNewChar" . showText $ p
 
 
-notifyQuestion :: Id -> MudState -> MudStack ()
+notifyQuestion :: HasCallStack => Id -> MudState -> MudStack ()
 notifyQuestion i ms =
     let msg      = f "A new character has arrived in CurryMUD."
         f        = (colorWith arrowColor "<- " <>) . colorWith questionArrivalColor
@@ -584,11 +585,11 @@ notifyQuestion i ms =
     in bcastNl =<< expandEmbeddedIds ms questionChanContext =<< formatQuestion i ms (msg, tunedIds)
 
 
-newChar :: Id -> V.Vector Int -> MudState -> MudState
+newChar :: HasCallStack => Id -> V.Vector Int -> MudState -> MudState
 newChar i v = newXps i v . modifyMobForRace i
 
 
-modifyMobForRace :: Id -> MudState -> MudState
+modifyMobForRace :: HasCallStack => Id -> MudState -> MudState
 modifyMobForRace i ms = let r     = getRace i ms
                             myMob = mobTbl.ind i
                             ms'   = ms & myMob.corpseWeight   .~ calcCorpseWeight   r
@@ -641,7 +642,7 @@ Linking costs 10 PP. Unlinking costs 5 PP.
 Creating a new channel costs 5 PP. Connecting/disconnecting costs 3 PP.
 ギリギリセーフ。
 -}
-newXps :: Id -> V.Vector Int -> MudState -> MudState
+newXps :: HasCallStack => Id -> V.Vector Int -> MudState -> MudState
 newXps i (V.toList -> (a:b:c:d:_)) ms = let x | getRace i ms == Human = 20
                                               | otherwise             = 15
                                             myMob  = mobTbl.ind i
@@ -662,7 +663,7 @@ newXps _ v _ = patternMatchFail "newXps" . showText . V.length $ v
 
 
 -- Returning player.
-interpPW :: Int -> Sing -> Id -> Pla -> Interp
+interpPW :: HasCallStack => Int -> Sing -> Id -> Pla -> Interp
 interpPW times targetSing targetId targetPla cn params@(WithArgs i mq cols as) = getState >>= \ms -> do
     let oldSing = getSing i ms
     send mq telnetShowInput >> if ()# cn || ()!# as
@@ -726,7 +727,7 @@ interpPW times targetSing targetId targetPla cn params@(WithArgs i mq cols as) =
 interpPW _ _ _ _ _ p = patternMatchFail "interpPW" . showText $ p
 
 
-logIn :: Id -> MudState -> Sing -> HostName -> Maybe UTCTime -> Id -> MudState
+logIn :: HasCallStack => Id -> MudState -> Sing -> HostName -> Maybe UTCTime -> Id -> MudState
 logIn newId ms oldSing newHost newTime originId = peepNewId . movePC $ adoptNewId
   where
     adoptNewId = ms & activeEffectsTbl.ind newId         .~ getActiveEffects originId ms
@@ -771,7 +772,7 @@ logIn newId ms oldSing newHost newTime originId = peepNewId . movePC $ adoptNewI
         in ms' & plaTbl %~ flip (foldr (\peeperId -> ind peeperId.peeping %~ replaceId)) peeperIds
 
 
-handleLogin :: NewCharBundle -> Bool -> ActionParams -> MudStack ()
+handleLogin :: HasCallStack => NewCharBundle -> Bool -> ActionParams -> MudStack ()
 handleLogin (NewCharBundle oldSing s _) isNew params@ActionParams { .. } = do greet
                                                                               showMotd plaMsgQueue plaCols
                                                                               (ms, p) <- showRetainedMsgs

@@ -17,6 +17,7 @@ import Control.Lens (view)
 import Control.Monad (when)
 import Data.List (sort)
 import Data.Maybe (isNothing)
+import GHC.Stack (HasCallStack)
 
 
 patternMatchFail :: (Show a) => PatternMatchFail a b
@@ -29,20 +30,19 @@ patternMatchFail = U.patternMatchFail "Mud.Interp.Dispatch"
 type FindActionFun = Id -> MudState -> CmdName -> MudStack (Maybe Action)
 
 
-dispatch :: FindActionFun -> Interp
+dispatch :: HasCallStack => FindActionFun -> Interp
 dispatch f cn p@ActionParams { .. } = getState >>= \ms -> maybe notFound found =<< f myId ms cn
   where
     notFound                = sendCmdNotFound myId plaMsgQueue plaCols
-    found (Action actFun b) = do
-        actFun p
-        ms <- getState
-        when (b && isNothing (getInterp myId ms)) . sendDfltPrompt plaMsgQueue $ myId
+    found (Action actFun b) = do actFun p
+                                 ms <- getState
+                                 when (b && isNothing (getInterp myId ms)) . sendDfltPrompt plaMsgQueue $ myId
 
 
 -----
 
 
-findActionHelper :: Id -> MudState -> CmdName -> [Cmd] -> MudStack (Maybe Action)
+findActionHelper :: HasCallStack => Id -> MudState -> CmdName -> [Cmd] -> MudStack (Maybe Action)
 findActionHelper i ms cn cmds =
     let r     = getMobRm i ms
         cmds' = sort . concat $ [ mkNonStdRmLinkCmds r -- Exit "in" should be prioritized over the "intro" cmd abbreviation.

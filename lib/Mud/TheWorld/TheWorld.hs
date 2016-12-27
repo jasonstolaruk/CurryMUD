@@ -34,6 +34,7 @@ import Data.List (delete, sort)
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import Data.Tuple (swap)
+import GHC.Stack (HasCallStack)
 import qualified Data.ByteString.Lazy as B (readFile)
 import qualified Data.IntMap.Lazy as IM (empty, foldrWithKey, fromList, keys, toList, map)
 import qualified Data.Map.Lazy as M (empty, fromList)
@@ -55,7 +56,7 @@ logNotice = L.logNotice "Mud.TheWorld.TheWorld"
 -- ==================================================
 
 
-initMudData :: ShouldLog -> IO MudData
+initMudData :: HasCallStack => ShouldLog -> IO MudData
 initMudData shouldLog = do
     (logExLock,       perLock         ) <- (,) <$> newTMVarIO Done <*> newTMVarIO Done
     (errorLogService, noticeLogService) <- initLogging shouldLog . Just $ logExLock
@@ -111,7 +112,7 @@ initMudData shouldLog = do
                    , _mudStateIORef = msIORef }
 
 
-initWorld :: MudStack Bool
+initWorld :: HasCallStack => MudStack Bool
 initWorld = dropIrrelevantFiles . sort <$> liftIO (getDirectoryContents =<< mkMudFilePath persistDirFun) >>= \cont -> do
     sequence_ [ initFunTbl
               , initEffectFunTbl
@@ -124,58 +125,58 @@ initWorld = dropIrrelevantFiles . sort <$> liftIO (getDirectoryContents =<< mkMu
     ()# cont ? (createWorld >> return True) :? loadWorld (last cont)
 
 
-initFunTbl :: MudStack ()
+initFunTbl :: HasCallStack => MudStack ()
 initFunTbl = tweak $ funTbl .~ M.fromList list
   where
     list = adminZoneRmFuns
 
 
-initEffectFunTbl :: MudStack ()
+initEffectFunTbl :: HasCallStack => MudStack ()
 initEffectFunTbl = tweak $ effectFunTbl .~ M.fromList list
   where
     list = effectFuns
 
 
-initInstaEffectFunTbl :: MudStack ()
+initInstaEffectFunTbl :: HasCallStack => MudStack ()
 initInstaEffectFunTbl = tweak $ instaEffectFunTbl .~ M.fromList list
   where
     list = instaEffectFuns
 
 
-initFeelingFunTbl :: MudStack ()
+initFeelingFunTbl :: HasCallStack => MudStack ()
 initFeelingFunTbl = tweak $ feelingFunTbl .~ M.fromList list
   where
     list = feelingFuns
 
 
-initHookFunTbl :: MudStack ()
+initHookFunTbl :: HasCallStack => MudStack ()
 initHookFunTbl = tweak $ hookFunTbl .~ M.fromList list
   where
     list = concat [ commonHooks, adminZoneHooks, tutorialHooks ]
 
 
-initRmActionFunTbl :: MudStack ()
+initRmActionFunTbl :: HasCallStack => MudStack ()
 initRmActionFunTbl = tweak $ rmActionFunTbl .~ M.fromList list
   where
     list = concat [ commonRmActionFuns, adminZoneRmActionFuns, tutorialRmActionFuns ]
 
 
-initDistinctFoodTbl :: MudStack ()
+initDistinctFoodTbl :: HasCallStack => MudStack ()
 initDistinctFoodTbl = tweak $ distinctFoodTbl .~ IM.fromList distinctFoodList
 
 
-initDistinctLiqTbl :: MudStack ()
+initDistinctLiqTbl :: HasCallStack => MudStack ()
 initDistinctLiqTbl = tweak $ distinctLiqTbl .~ IM.fromList distinctLiqList
 
 
-createWorld :: MudStack ()
+createWorld :: HasCallStack => MudStack ()
 createWorld = do logNotice "createWorld" "creating the world."
                  createAdminZone
                  createTutorial
                  createDalben
 
 
-loadWorld :: FilePath -> MudStack Bool
+loadWorld :: HasCallStack => FilePath -> MudStack Bool
 loadWorld dir = (</> dir) <$> liftIO (mkMudFilePath persistDirFun) >>= \path -> do
     logNotice "loadWorld" $ "loading the world from the " <> showText dir <> " directory."
     loadEqTblRes <- loadEqTbl path
@@ -210,7 +211,7 @@ loadWorld dir = (</> dir) <$> liftIO (mkMudFilePath persistDirFun) >>= \path -> 
     return . and $ res
 
 
-loadEqTbl :: FilePath -> MudStack Bool
+loadEqTbl :: HasCallStack => FilePath -> MudStack Bool
 loadEqTbl ((</> eqTblFile) -> absolute) = do
     json <- liftIO . B.readFile $ absolute
     case eitherDecode json of
@@ -218,22 +219,22 @@ loadEqTbl ((</> eqTblFile) -> absolute) = do
       Right (IM.map (M.fromList . map swap . IM.toList) -> tbl) -> tweak (eqTbl .~ tbl) >> return True
 
 
-sorry :: FilePath -> String -> MudStack Bool
+sorry :: HasCallStack => FilePath -> String -> MudStack Bool
 sorry absolute (T.pack -> err) = logErrorMsg "sorry" (loadTblErrorMsg absolute err) >> return False
 
 
-loadTbl :: (FromJSON b) => FilePath -> ASetter MudState MudState a b -> FilePath -> MudStack Bool
+loadTbl :: HasCallStack => (FromJSON b) => FilePath -> ASetter MudState MudState a b -> FilePath -> MudStack Bool
 loadTbl tblFile lens path = let absolute = path </> tblFile in
     eitherDecode <$> (liftIO . B.readFile $ absolute) >>= \case
       Left  err -> sorry absolute err
       Right tbl -> tweak (lens .~ tbl) >> return True
 
 
-initActiveEffectsTbl :: MudStack ()
+initActiveEffectsTbl :: HasCallStack => MudStack ()
 initActiveEffectsTbl = tweak $ \ms -> ms & activeEffectsTbl .~ IM.fromList [ (i, []) | i <- views entTbl IM.keys ms ]
 
 
-movePCs :: MudStack ()
+movePCs :: HasCallStack => MudStack ()
 movePCs = tweak $ \ms ->
     let idsWithRmIds       = let pairs   = views mobTbl (IM.foldrWithKey f []) ms
                                  f i mob = onTrue (isPC i ms) ((i, mob^.rmId) :)

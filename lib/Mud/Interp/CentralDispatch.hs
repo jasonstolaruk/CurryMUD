@@ -11,14 +11,15 @@ import Mud.Interp.Dispatch
 import Mud.TopLvlDefs.Misc
 import Mud.Util.Operators
 
+import GHC.Stack (HasCallStack)
 import qualified Data.Text as T
 
 
-centralDispatch :: Interp
+centralDispatch :: HasCallStack => Interp
 centralDispatch = dispatch findAction
 
 
-findAction :: FindActionFun
+findAction :: HasCallStack => FindActionFun
 findAction i ms (T.toLower -> cn) = findActionHelper i ms cn cmds
   where
     cmds = let (spirit, admin) = ((,) <$> isSpirit <*> isAdmin) . getPla i $ ms

@@ -33,6 +33,7 @@ import Data.Maybe (isJust)
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import Data.Time (getCurrentTime)
+import GHC.Stack (HasCallStack)
 import qualified Data.Map.Lazy as M (elems)
 import qualified Data.Text as T
 
@@ -54,25 +55,25 @@ logPla = L.logPla "Mud.Threads.Act"
 -- ==================================================
 
 
-startAct :: Id -> ActType -> Fun -> MudStack ()
+startAct :: HasCallStack => Id -> ActType -> Fun -> MudStack ()
 startAct i actType f = do logPla "startAct" i $ pp actType <> " act started."
                           a <- runAsync . threadAct i actType $ f
                           tweak $ mobTbl.ind i.actMap.at actType ?~ a
 
 
-stopAct :: Id -> ActType -> MudStack ()
+stopAct :: HasCallStack => Id -> ActType -> MudStack ()
 stopAct i actType = views (at actType) (maybeVoid throwDeath) . getActMap i =<< getState
 
 
-stopActs :: Id -> MudStack ()
+stopActs :: HasCallStack => Id -> MudStack ()
 stopActs i = sequence_ [ logPla "stopActs" i "stopping all acts.", mapM_ throwWait . M.elems . getActMap i =<< getState ]
 
 
-stopNpcActs :: MudStack ()
+stopNpcActs :: HasCallStack => MudStack ()
 stopNpcActs = sequence_ [ logNotice "stopNpcActs" "stopping NPC acts.", mapM_ stopActs . getNpcIds =<< getState ]
 
 
-threadAct :: Id -> ActType -> Fun -> MudStack ()
+threadAct :: HasCallStack => Id -> ActType -> Fun -> MudStack ()
 threadAct i actType f = let a = (>> f) . setThreadType $ case actType of Attacking -> undefined -- TODO
                                                                          Drinking  -> DrinkingThread i
                                                                          Eating    -> EatingThread   i
@@ -85,7 +86,7 @@ threadAct i actType f = let a = (>> f) . setThreadType $ case actType of Attacki
 -- ==================================================
 
 
-drinkAct :: DrinkBundle -> MudStack ()
+drinkAct :: HasCallStack => DrinkBundle -> MudStack ()
 drinkAct DrinkBundle { .. } = modifyStateSeq f `finally` tweak (mobTbl.ind drinkerId.nowDrinking .~ Nothing)
   where
     f ms = let t  = thrice prd . T.concat $ [ "You begin drinking ", renderLiqNoun drinkLiq the, " from the ", drinkVesselSing ]

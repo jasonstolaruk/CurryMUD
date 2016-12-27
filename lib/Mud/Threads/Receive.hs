@@ -23,6 +23,7 @@ import Control.Lens.Operators ((%~))
 import Control.Monad.IO.Class (liftIO)
 import Data.List (isInfixOf)
 import Data.Text (Text)
+import GHC.Stack (HasCallStack)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (hGetLine)
 import System.IO (Handle, hIsEOF)
@@ -39,7 +40,7 @@ logPla = L.logPla "Mud.Threads.Receive"
 -- ==================================================
 
 
-threadReceive :: Handle -> Id -> MsgQueue -> MudStack ()
+threadReceive :: HasCallStack => Handle -> Id -> MsgQueue -> MudStack ()
 threadReceive h i mq = sequence_ [ setThreadType . Receive $ i, loop `catch` plaThreadExHandler i "receive" ]
   where
     loop = mIf (liftIO . hIsEOF $ h)
@@ -56,7 +57,7 @@ threadReceive h i mq = sequence_ [ setThreadType . Receive $ i, loop `catch` pla
         delimiters    = T.pack [ stdDesigDelimiter, nonStdDesigDelimiter, desigDelimiter ]
 
 
-interpTelnet :: Id -> [TelnetData] -> MudStack ()
+interpTelnet :: HasCallStack => Id -> [TelnetData] -> MudStack ()
 interpTelnet _ []  = unit
 interpTelnet i tds = do
     p@(ts, host) <- (,) <$> liftIO mkTimestamp <*> (T.pack . getCurrHostName i) `fmap` getState
