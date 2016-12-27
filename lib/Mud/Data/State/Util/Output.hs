@@ -67,7 +67,7 @@ import Control.Lens.Operators ((%~), (&), (.~), (<>~), (^.))
 import Control.Monad (forM_, unless)
 import Control.Monad.IO.Class (liftIO)
 import Data.List ((\\), delete, elemIndex)
-import Data.Maybe (fromJust, fromMaybe)
+import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import Prelude hiding (pi)
@@ -290,7 +290,7 @@ expandEntName i ms StdDesig { .. } = let f      = mkCapsFun desigShouldCap
     xth = let intros  = getIntroduced i ms
               idsInRm = filter ((`notElem` intros) . (`getSing` ms)) $ i `delete` desigIds
               matches = foldr (\pi -> onTrue (mkUnknownPCEntName pi ms == desigEntName) (pi :)) [] idsInRm
-          in length matches > 1 |?| spcR . mkOrdinal . succ . fromJust . elemIndex desigId $ matches
+          in length matches > 1 |?| maybeEmp (spcR . mkOrdinal . succ) (elemIndex desigId matches)
     expandSex 'm' = "male"
     expandSex 'f' = "female"
     expandSex x   = patternMatchFail "expandEntName expandSex" . T.singleton $ x
