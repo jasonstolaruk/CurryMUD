@@ -55,7 +55,6 @@ import Control.Lens (_1, _2, _3, _4, _5, at, both, each, to, view, views)
 import Control.Lens.Operators ((%~), (&), (.~), (<>~), (?~), (^.))
 import Control.Monad ((<=<), (>=>), forM, forM_, unless, when)
 import Control.Monad.IO.Class (liftIO)
-import Control.Monad.Reader (asks)
 import Crypto.BCrypt (validatePassword)
 import Data.Aeson (eitherDecode)
 import Data.Bits (zeroBits)
@@ -502,10 +501,10 @@ mkCountTxt = map (uncurry mappend . second commaShow) <$> helper
                 f i p = getSex i ms == sexy && not (isAdmin p)
             countRace r = views plaTbl (length . filter ((== r) . (`getRace` ms)) . IM.keys . IM.filter (not . isAdmin)) ms
         [ noOfPlaHelpCmds, noOfPlaHelpTopics, noOfAdminHelpCmds, noOfAdminHelpTopics ] <- countHelps
-        (noticeThrId, errorThrId) <- asks $ (both %~ asyncThreadId) . getLogAsyncs
+        noticeErrorThrIds <- getLogThreadIds
         let plaLogThrIds = views plaLogTbl (map (asyncThreadId . fst) . IM.elems) ms
             otherThrIds  = views threadTbl M.keys ms
-            threadIds    = noticeThrId : errorThrId : plaLogThrIds ++ otherThrIds
+            threadIds    = concat [ noticeErrorThrIds, plaLogThrIds, otherThrIds ]
         noOfThreads <- length . filterThreads <$> mapM (liftIO . threadStatus) threadIds
         return [ ("Armor: ",        countType ArmType     )
                , ("Clothing: ",     countType ClothType   )

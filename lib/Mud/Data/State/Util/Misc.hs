@@ -23,6 +23,7 @@ module Mud.Data.State.Util.Misc ( addToInv
                                 , getLogAsyncs
                                 , getLoggedInAdminIds
                                 , getLoggedInPlaIds
+                                , getLogThreadIds
                                 , getMobRmVisibleInvCoins
                                 , getNonIncogLoggedInAdminIds
                                 , getNpcIds
@@ -84,15 +85,17 @@ import Mud.Util.Text
 import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 
 import Control.Arrow ((***), (&&&), first)
+import Control.Concurrent (ThreadId)
+import Control.Concurrent.Async (asyncThreadId)
 import Control.Lens (_1, _2, at, both, view, views)
 import Control.Lens.Operators ((%~), (&), (.~), (^.))
 import Control.Monad ((>=>))
 import Control.Monad.IO.Class (liftIO)
-import Control.Monad.Reader (ask)
+import Control.Monad.Reader (ask, asks)
 import Data.Bool (bool)
 import Data.IORef (atomicModifyIORef', readIORef)
 import Data.List ((\\), delete, foldl', nub, nubBy, sortBy, zip4)
-import Data.Maybe (fromJust, fromMaybe)
+import Data.Maybe (fromMaybe)
 import Data.Monoid (Sum(..), (<>))
 import Data.Text (Text)
 import GHC.Exts (sortWith)
@@ -268,10 +271,19 @@ getInstaEffectFun n = views (instaEffectFunTbl.at n) (fromMaybe oops)
 -----
 
 
-getLogAsyncs :: MudData -> (LogAsync, LogAsync)
-getLogAsyncs = getAsync noticeLog &&& getAsync errorLog
+getLogAsyncs :: MudData -> Maybe (LogAsync, LogAsync)
+getLogAsyncs = helper . (noticeLog `fanView` errorLog)
   where
-    getAsync = flip views (fst . fromJust)
+    helper = \case (Just (noticeAsync, _), Just (errorAsync, _)) -> Just (noticeAsync, errorAsync)
+                   _                                             -> Nothing
+
+
+-----
+
+
+getLogThreadIds :: MudStack [ThreadId]
+getLogThreadIds = asks getLogAsyncs >>= \case Nothing     -> mMempty
+                                              Just (a, b) -> return . map asyncThreadId $ [ a, b ]
 
 
 -----
@@ -290,25 +302,6 @@ getLoggedInPlaIds = views plaTbl (IM.keys . IM.filter ((&&) <$> isLoggedIn <*> n
 
 getMobRmVisibleInvCoins :: Id -> MudState -> (Inv, Coins)
 getMobRmVisibleInvCoins i ms = let ri = getRmId i ms in getVisibleInvCoins ri ms
-
-
------
-
-
-getVisibleInv :: Id -> MudState -> Inv
-getVisibleInv i ms = filter isVisible . getInv i $ ms
-  where
-    isVisible targetId | not . isPC targetId $ ms          = otherwise
-                       | isSpiritId targetId ms            = likewise
-                       | not . isIncognitoId targetId $ ms = otherwise
-                       | otherwise                         = likewise
-
-
------
-
-
-getVisibleInvCoins :: Id -> MudState -> (Inv, Coins)
-getVisibleInvCoins i = getVisibleInv i &&& getCoins i
 
 
 -----
@@ -351,6 +344,25 @@ onEnv = (ask >>=)
 
 getUnusedId :: MudState -> Id
 getUnusedId = views typeTbl (head . (enumFrom 0 \\) . IM.keys)
+
+
+-----
+
+
+getVisibleInv :: Id -> MudState -> Inv
+getVisibleInv i ms = filter isVisible . getInv i $ ms
+  where
+    isVisible targetId | not . isPC targetId $ ms          = otherwise
+                       | isSpiritId targetId ms            = likewise
+                       | not . isIncognitoId targetId $ ms = otherwise
+                       | otherwise                         = likewise
+
+
+-----
+
+
+getVisibleInvCoins :: Id -> MudState -> (Inv, Coins)
+getVisibleInvCoins i = getVisibleInv i &&& getCoins i
 
 
 -----
