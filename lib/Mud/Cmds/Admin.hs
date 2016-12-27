@@ -307,9 +307,8 @@ adminAs   (WithTarget i mq cols target rest) = getState >>= \ms ->
     let SingleTarget { .. } = mkSingleTarget mq cols target "The target ID"
         as targetId         = let s = getSing targetId ms in case getType targetId ms of
           NpcType -> let npcMq        = getNpcMsgQueue targetId ms
-                         notPossessed = do
-                             ioHelper targetId s
-                             liftIO . atomically . writeTQueue npcMq . ExternCmd mq cols $ rest
+                         notPossessed = do ioHelper targetId s
+                                           liftIO . atomically . writeTQueue npcMq . ExternCmd mq cols $ rest
                          isPossessed pi = sorry $ if pi == i
                            then sorryAlreadyPossessing s
                            else sorryAlreadyPossessed  s . getSing pi $ ms
@@ -318,17 +317,13 @@ adminAs   (WithTarget i mq cols target rest) = getState >>= \ms ->
                   | isAdminId targetId ms                   -> sorry sorryAsAdmin
                   | not . isLoggedIn . getPla targetId $ ms -> sorry . sorryLoggedOut $ s
                   | isAdHoc targetId ms                     -> sorry sorryAsAdHoc
-                  | (targetMq, targetCols) <- getMsgQueueColumns targetId ms -> do
-                      ioHelper targetId s
-                      wrapSend targetMq targetCols asMsg
-                      fakeClientInput targetMq rest
+                  | (targetMq, targetCols) <- getMsgQueueColumns targetId ms -> do ioHelper targetId s
+                                                                                   wrapSend targetMq targetCols asMsg
+                                                                                   fakeClientInput targetMq rest
           _ -> sorry . sorryAsType $ s
         ioHelper targetId s = do
-            logPla "adminAs" i . T.concat $ [ "Executing "
-                                            , dblQuote rest
-                                            , " as "
-                                            , aOrAnOnLower . descSingId targetId $ ms
-                                            , "." ]
+            let ts = [ "Executing ", dblQuote rest, " as ", aOrAnOnLower . descSingId targetId $ ms, "." ]
+            logPla "adminAs" i . T.concat $ ts
             sendFun . parensQuote . thrice prd $ "Executing as " <> aOrAnOnLower s
         sorry txt  = sendFun txt >> sendDfltPrompt mq i
         sorryParse = sorry . sorryParseId $ strippedTarget'
@@ -366,11 +361,10 @@ notifyBan :: (Pretty a) => Id -> MsgQueue -> Cols -> Sing -> Text -> Bool -> a -
 notifyBan i mq cols selfSing target newStatus x =
     let fn          = "notifyBan"
         (v, suffix) = newStatus ? ("banned", [ ": " <> pp x ]) :? ("unbanned", [ ": " <> pp x ])
-    in do
-        logNotice fn       . T.concat $ [ selfSing, spaced v,      target ] ++ suffix
-        logPla    fn i     . T.concat $ [                  v, " ", target ] ++ suffix
-        wrapSend mq cols   . T.concat $ [ "You have ",     v, " ", target ] ++ suffix
-        bcastOtherAdmins i . T.concat $ [ selfSing, spaced v,      target ] ++ suffix
+    in do logNotice fn       . T.concat $ [ selfSing, spaced v,      target ] ++ suffix
+          logPla    fn i     . T.concat $ [                  v, " ", target ] ++ suffix
+          wrapSend mq cols   . T.concat $ [ "You have ",     v, " ", target ] ++ suffix
+          bcastOtherAdmins i . T.concat $ [ selfSing, spaced v,      target ] ++ suffix
 
 
 -----
@@ -1116,9 +1110,8 @@ adminLocate   (LowerNub i mq cols as) = getState >>= \ms ->
           where
             locate targetId = let (_, desc) = locateHelper ms [] targetId
                               in mkNameTypeIdDesc targetId ms <> (()!# desc |?| (", " <> desc))
-    in do
-        logPlaExecArgs (prefixAdminCmd "locate") as i
-        multiWrapSend mq cols . intersperse "" . map helper $ as
+    in do logPlaExecArgs (prefixAdminCmd "locate") as i
+          multiWrapSend mq cols . intersperse "" . map helper $ as
 adminLocate p = patternMatchFail "adminLocate" . showText $ p
 
 
@@ -1156,17 +1149,15 @@ adminMsg   (MsgWithTarget i mq cols target msg) = getState >>= helper >>= (|#| m
                         then unadulterated toTarget'
                         else [ toTarget' : hints | hints <- firstAdminMsg targetId s ]
                       dbHelper
-              | otherwise -> do
-                  multiSendFun [ formatted, parensQuote "Message retained." ]
-                  retainedMsg targetId ms . mkRetainedMsgFromPerson s $ toTarget
-                  dbHelper
+              | otherwise -> do multiSendFun [ formatted, parensQuote "Message retained." ]
+                                retainedMsg targetId ms . mkRetainedMsgFromPerson s $ toTarget
+                                dbHelper
               where
                 targetPla = getPla targetId ms
                 formatted = parensQuote ("to " <> targetSing) <> spaced (quoteWith "__" s) <> toSelf
-                dbHelper  = do
-                    ts <- liftIO mkTimestamp
-                    withDbExHandler_ "admin_msg" . insertDbTblAdminMsg . AdminMsgRec ts s targetSing $ toSelf
-                    return [ sentLogMsg, receivedLogMsg ]
+                dbHelper  = do ts <- liftIO mkTimestamp
+                               withDbExHandler_ "admin_msg" . insertDbTblAdminMsg . AdminMsgRec ts s targetSing $ toSelf
+                               return [ sentLogMsg, receivedLogMsg ]
                 sentLogMsg     = (i,        T.concat [ "sent message to ", targetSing, ": ", toSelf   ])
                 receivedLogMsg = (targetId, T.concat [ "received message from ", s,    ": ", toTarget ])
             ioHelper _ xs = patternMatchFail "adminMsg helper ioHelper" . showText $ xs
@@ -1308,9 +1299,8 @@ adminPossess   (OneArgNubbed i mq cols target) = modifyStateSeq $ \ms ->
           Nothing -> possess targetId
           Just pi -> sorry . sorryAlreadyPossessing . getSing pi $ ms
       _ -> sorry . sorryParseId $ strippedTarget'
-adminPossess ActionParams { myId, plaMsgQueue, plaCols } = do
-    wrapSend plaMsgQueue plaCols adviceAPossessExcessArgs
-    sendDfltPrompt plaMsgQueue myId
+adminPossess ActionParams { myId, plaMsgQueue, plaCols } = do wrapSend plaMsgQueue plaCols adviceAPossessExcessArgs
+                                                              sendDfltPrompt plaMsgQueue myId
 
 
 -----
@@ -1915,12 +1905,11 @@ shutdownHelper :: Id -> MsgQueue -> Maybe Text -> MudStack ()
 shutdownHelper i mq maybeMsg = getState >>= \ms ->
     let s    = getSing i ms
         rest = maybeMsg |&| maybe (prd . spcL . parensQuote $ "no message given") (("; message: " <>) . dblQuote)
-    in do
-        logPla     "shutdownHelper" i $ "initiating shutdown" <> rest
-        massLogPla "shutdownHelper"   $ "closing connection due to server shutdown initiated by " <> s <> rest
-        logNotice  "shutdownHelper"   $ "server shutdown initiated by "                           <> s <> rest
-        massSend . colorWith shutdownMsgColor . fromMaybe dfltShutdownMsg $ maybeMsg
-        writeMsg mq Shutdown
+    in do logPla     "shutdownHelper" i $ "initiating shutdown" <> rest
+          massLogPla "shutdownHelper"   $ "closing connection due to server shutdown initiated by " <> s <> rest
+          logNotice  "shutdownHelper"   $ "server shutdown initiated by "                           <> s <> rest
+          massSend . colorWith shutdownMsgColor . fromMaybe dfltShutdownMsg $ maybeMsg
+          writeMsg mq Shutdown
 
 
 -----
