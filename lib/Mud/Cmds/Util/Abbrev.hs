@@ -11,7 +11,6 @@ import Mud.Util.Text
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Arrow ((&&&), first)
-import Data.Maybe (fromJust)
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import qualified Data.Text as T
@@ -47,7 +46,8 @@ mkAbbrevs = helper "" . nubSort
     helper _    []     = []
     helper ""   (x:xs) = (id &&& first T.singleton . headTail) x : helper x xs
     helper prev (x:xs) = let abbrev = calcAbbrev x prev
-                         in (id &&& (abbrev, ) . fromJust . (abbrev `T.stripPrefix`)) x : helper x xs
+                         in (: helper x xs) . (x, ) $ case abbrev `T.stripPrefix` x of Nothing   -> (x,      ""  )
+                                                                                       Just rest -> (abbrev, rest)
 
 
 calcAbbrev :: Text -> Text -> Text
