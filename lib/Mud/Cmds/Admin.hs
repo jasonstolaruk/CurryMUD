@@ -808,7 +808,7 @@ examinePC i ms = let p = getPC i ms in [ "Entry in the PCSingTbl: " <> ms^.pcSin
 
 
 examinePickPts :: ExamineHelper
-examinePickPts i = pure . ("Pick pts: " <>) . views pickPtsTbl (maybe none commaShow . IM.lookup i)
+examinePickPts i = pure . ("Pick pts: " <>) . views pickPtsTbl (maybe none commaShow . (i `IM.lookup`))
 
 
 examinePla :: ExamineHelper

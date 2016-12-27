@@ -21,6 +21,7 @@ module Mud.Util.Misc ( atLst1
                      , dupSecond
                      , eitherRet
                      , emptied
+                     , errorWithStack
                      , fanUncurry
                      , fanView
                      , fmap2
@@ -91,10 +92,12 @@ import Data.Bool (bool)
 import Data.Function (on)
 import Data.IORef (IORef, atomicWriteIORef)
 import Data.List (delete)
+import Data.Maybe (fromMaybe)
 import Data.Monoid (Sum(..))
 import Data.Text (Text)
 import Data.Time (getZonedTime)
-import qualified Data.IntMap.Lazy as IM (IntMap, (!), insert)
+import GHC.Stack (HasCallStack, callStack, prettyCallStack)
+import qualified Data.IntMap.Lazy as IM (IntMap, insert, lookup)
 import qualified Data.Map.Lazy as M (Map, assocs)
 import qualified Data.Text as T
 
@@ -192,6 +195,10 @@ emptied :: (Monad m, Monoid b) => m a -> m b
 emptied m = m >> mMempty
 
 
+errorWithStack :: HasCallStack => String -> a
+errorWithStack msg = error $ msg ++ "\n" ++ prettyCallStack callStack
+
+
 -- "(&&&)" is the "fanout" operator.
 fanUncurry :: (a -> b -> c) -> (a -> b -> c') -> (a, b) -> (c, c')
 f `fanUncurry` g = uncurry f &&& uncurry g
@@ -233,8 +240,10 @@ ifThenElse True  x _ = x
 ifThenElse False _ y = y
 
 
-ind :: Int -> Lens' (IM.IntMap a) a
-ind k = lens (IM.! k) (flip (IM.insert k))
+ind :: HasCallStack => Int -> Lens' (IM.IntMap a) a
+ind k = lens getter (flip (IM.insert k))
+  where
+    getter = fromMaybe (errorWithStack $ "key " ++ show k ++ " is not an element of the map") . (k `IM.lookup`)
 
 
 {-

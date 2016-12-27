@@ -166,16 +166,17 @@ import qualified Mud.Util.Misc as U (blowUp)
 
 import Control.Arrow ((&&&))
 import Control.Concurrent (ThreadId)
-import Control.Lens (at, to, view, views)
+import Control.Lens (at, view, views)
 import Control.Lens.Operators ((^.))
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import Data.Time (UTCTime)
+import GHC.Stack (HasCallStack)
 import Network (HostName)
 import Prelude hiding (exp)
 
 
-blowUp :: BlowUp a
+blowUp :: HasCallStack => BlowUp a
 blowUp = U.blowUp "Mud.Data.State.Util.Get"
 
 
@@ -183,30 +184,30 @@ blowUp = U.blowUp "Mud.Data.State.Util.Get"
 -- Helper functions:
 
 
-onPC :: (PC -> a) -> a -> Id -> MudState -> a
+onPC :: HasCallStack => (PC -> a) -> a -> Id -> MudState -> a
 onPC = onHelper getPC
 
 
-onPla :: (Pla -> a) -> a -> Id -> MudState -> a
+onPla :: HasCallStack => (Pla -> a) -> a -> Id -> MudState -> a
 onPla = onHelper getPla
 
 
-onHelper :: (Id -> MudState -> a) -> (a -> b) -> b -> Id -> MudState -> b
+onHelper :: HasCallStack => (Id -> MudState -> a) -> (a -> b) -> b -> Id -> MudState -> b
 onHelper f g dflt i ms | isNpc i ms = maybe dflt helper . getPossessor i $ ms
                        | otherwise  = helper i
   where
     helper i' = g . f i' $ ms
 
 
-isNpc :: Id -> MudState -> Bool
+isNpc :: HasCallStack => Id -> MudState -> Bool
 isNpc i = (== NpcType) . getType i
 
 
-isPC :: Id -> MudState -> Bool
+isPC :: HasCallStack => Id -> MudState -> Bool
 isPC i = (== PCType) . getType i
 
 
-isNpcPC :: Id -> MudState -> Bool
+isNpcPC :: HasCallStack => Id -> MudState -> Bool
 isNpcPC i ms = getType i ms `elem` [ NpcType, PCType ]
 
 
@@ -214,35 +215,35 @@ isNpcPC i ms = getType i ms `elem` [ NpcType, PCType ]
 -- Getters:
 
 
-getActiveEffects :: Id -> MudState -> [ActiveEffect]
+getActiveEffects :: HasCallStack => Id -> MudState -> [ActiveEffect]
 getActiveEffects i = view (activeEffectsTbl.ind i)
 
 
 -----
 
 
-getActMap :: Id -> MudState -> ActMap
+getActMap :: HasCallStack => Id -> MudState -> ActMap
 getActMap i = view actMap . getMob i
 
 
 -----
 
 
-getArm :: Id -> MudState -> Arm
+getArm :: HasCallStack => Id -> MudState -> Arm
 getArm i = view (armTbl.ind i)
 
 
 -----
 
 
-getArmSub :: Id -> MudState -> ArmSub
+getArmSub :: HasCallStack => Id -> MudState -> ArmSub
 getArmSub i = view armSub . getArm i
 
 
 -----
 
 
-getBaseAttrib :: Attrib -> Id -> MudState -> Int
+getBaseAttrib :: HasCallStack => Attrib -> Id -> MudState -> Int
 getBaseAttrib = \case St -> getBaseSt
                       Dx -> getBaseDx
                       Ht -> getBaseHt
@@ -250,276 +251,276 @@ getBaseAttrib = \case St -> getBaseSt
                       Ps -> getBasePs
 
 
-getBaseAttribs :: Id -> MudState -> (Int, Int, Int, Int, Int)
+getBaseAttribs :: HasCallStack => Id -> MudState -> (Int, Int, Int, Int, Int)
 getBaseAttribs i ms = listToTuple [ getBaseAttrib a i ms | a <- allValues ]
 
 
-getBaseAttribTuples :: Id -> MudState -> [(Attrib, Int)]
+getBaseAttribTuples :: HasCallStack => Id -> MudState -> [(Attrib, Int)]
 getBaseAttribTuples i ms = [ (a, getBaseAttrib a i ms) | a <- allValues ]
 
 
 -----
 
 
-getBaseDx :: Id -> MudState -> Int
+getBaseDx :: HasCallStack => Id -> MudState -> Int
 getBaseDx i = view dx . getMob i
 
 
 -----
 
 
-getBaseHt :: Id -> MudState -> Int
+getBaseHt :: HasCallStack => Id -> MudState -> Int
 getBaseHt i = view ht . getMob i
 
 
 -----
 
 
-getBaseMa :: Id -> MudState -> Int
+getBaseMa :: HasCallStack => Id -> MudState -> Int
 getBaseMa i = view ma . getMob i
 
 
 -----
 
 
-getBasePs :: Id -> MudState -> Int
+getBasePs :: HasCallStack => Id -> MudState -> Int
 getBasePs i = view ps . getMob i
 
 
 -----
 
 
-getBaseSt :: Id -> MudState -> Int
+getBaseSt :: HasCallStack => Id -> MudState -> Int
 getBaseSt i = view st . getMob i
 
 
 -----
 
 
-getBonusTime :: Id -> MudState -> Maybe UTCTime
+getBonusTime :: HasCallStack => Id -> MudState -> Maybe UTCTime
 getBonusTime i = view bonusTime . getPla i
 
 
 -----
 
 
-getChan :: Id -> MudState -> Chan
+getChan :: HasCallStack => Id -> MudState -> Chan
 getChan i = view (chanTbl.ind i)
 
 
 -----
 
 
-getCloth :: Id -> MudState -> Cloth
+getCloth :: HasCallStack => Id -> MudState -> Cloth
 getCloth i = view (clothTbl.ind i)
 
 
 -----
 
 
-getCoins :: Id -> MudState -> Coins
+getCoins :: HasCallStack => Id -> MudState -> Coins
 getCoins i = view (coinsTbl.ind i)
 
 
 -----
 
 
-getColumns :: Id -> MudState -> Cols
+getColumns :: HasCallStack => Id -> MudState -> Cols
 getColumns = onPla (view columns) 80
 
 
 -----
 
 
-getCon :: Id -> MudState -> Con
+getCon :: HasCallStack => Id -> MudState -> Con
 getCon i = view (conTbl.ind i)
 
 
 -----
 
 
-getConCapacity :: Id -> MudState -> Vol
+getConCapacity :: HasCallStack => Id -> MudState -> Vol
 getConCapacity i = view conCapacity . getCon i
 
 
 -----
 
 
-getConIsCloth :: Id -> MudState -> Bool
+getConIsCloth :: HasCallStack => Id -> MudState -> Bool
 getConIsCloth i = view conIsCloth . getCon i
 
 
 -----
 
 
-getConnectTime :: Id -> MudState -> Maybe UTCTime
+getConnectTime :: HasCallStack => Id -> MudState -> Maybe UTCTime
 getConnectTime i = view connectTime . getPla i
 
 
 -----
 
 
-getCorpse :: Id -> MudState -> Corpse
+getCorpse :: HasCallStack => Id -> MudState -> Corpse
 getCorpse i = view (corpseTbl.ind i)
 
 
 -----
 
 
-getCorpseCapacity :: Id -> MudState -> Vol
+getCorpseCapacity :: HasCallStack => Id -> MudState -> Vol
 getCorpseCapacity i = view corpseCapacity . getMob i
 
 
 -----
 
 
-getCorpseDecompSecs :: Id -> MudState -> Seconds
+getCorpseDecompSecs :: HasCallStack => Id -> MudState -> Seconds
 getCorpseDecompSecs i = view corpseDecompSecs . getMob i
 
 
 -----
 
 
-getCorpseVol :: Id -> MudState -> Vol
+getCorpseVol :: HasCallStack => Id -> MudState -> Vol
 getCorpseVol i = view corpseVol . getMob i
 
 
 -----
 
 
-getCorpseWeight :: Id -> MudState -> Weight
+getCorpseWeight :: HasCallStack => Id -> MudState -> Weight
 getCorpseWeight i = view corpseWeight . getMob i
 
 
 -----
 
 
-getCurrHostName :: Id -> MudState -> HostName
+getCurrHostName :: HasCallStack => Id -> MudState -> HostName
 getCurrHostName i = view currHostName . getPla i
 
 
 -----
 
 
-getDistinctFood :: Id -> MudState -> DistinctFood
+getDistinctFood :: HasCallStack => Id -> MudState -> DistinctFood
 getDistinctFood i = view (distinctFoodTbl.ind i)
 
 
 -----
 
 
-getDistinctFoodForFood :: Food -> MudState -> DistinctFood
+getDistinctFoodForFood :: HasCallStack => Food -> MudState -> DistinctFood
 getDistinctFoodForFood (view foodId -> DistinctFoodId i) = view (distinctFoodTbl.ind i)
 
 
 -----
 
 
-getDistinctLiq :: Id -> MudState -> DistinctLiq
+getDistinctLiq :: HasCallStack => Id -> MudState -> DistinctLiq
 getDistinctLiq i = view (distinctLiqTbl.ind i)
 
 
 -----
 
 
-getDistinctLiqForLiq :: Liq -> MudState -> DistinctLiq
+getDistinctLiqForLiq :: HasCallStack => Liq -> MudState -> DistinctLiq
 getDistinctLiqForLiq (view liqId -> DistinctLiqId i) = view (distinctLiqTbl.ind i)
 
 
 -----
 
 
-getEnt :: Id -> MudState -> Ent
+getEnt :: HasCallStack => Id -> MudState -> Ent
 getEnt i = view (entTbl.ind i)
 
 
 -----
 
 
-getEntDesc :: Id -> MudState -> Text
+getEntDesc :: HasCallStack => Id -> MudState -> Text
 getEntDesc i = view entDesc . getEnt i
 
 
 -----
 
 
-getEntSmell :: Id -> MudState -> Text
+getEntSmell :: HasCallStack => Id -> MudState -> Text
 getEntSmell i = views entSmell (fromMaybe noSmellMsg) . getEnt i
 
 
 -----
 
 
-getEqMap :: Id -> MudState -> EqMap
+getEqMap :: HasCallStack => Id -> MudState -> EqMap
 getEqMap i = view (eqTbl.ind i)
 
 
 -----
 
 
-getExp :: Id -> MudState -> Exp
+getExp :: HasCallStack => Id -> MudState -> Exp
 getExp i = view exp . getMob i
 
 
 -----
 
 
-getFeelingMap :: Id -> MudState -> FeelingMap
+getFeelingMap :: HasCallStack => Id -> MudState -> FeelingMap
 getFeelingMap i = view feelingMap . getMob i
 
 
 -----
 
 
-getFollowing :: Id -> MudState -> Maybe Id
+getFollowing :: HasCallStack => Id -> MudState -> Maybe Id
 getFollowing i = view following . getParty i
 
 
 -----
 
 
-getFollowers :: Id -> MudState -> Inv
+getFollowers :: HasCallStack => Id -> MudState -> Inv
 getFollowers i = view followers . getParty i
 
 
 -----
 
-getFood :: Id -> MudState -> Food
+getFood :: HasCallStack => Id -> MudState -> Food
 getFood i = view (foodTbl.ind i)
 
 
 -----
 
 
-getFps :: Id -> MudState -> (Int, Int)
+getFps :: HasCallStack => Id -> MudState -> (Int, Int)
 getFps i ms = let (_, _, _, pair) = getPts i ms in pair
 
 
 -----
 
 
-getHand :: Id -> MudState -> Hand
+getHand :: HasCallStack => Id -> MudState -> Hand
 getHand i = view hand . getMob i
 
 
 -----
 
 
-getHostMap :: Sing -> MudState -> Maybe HostMap
+getHostMap :: HasCallStack => Sing -> MudState -> Maybe HostMap
 getHostMap s = view (hostTbl.at s)
 
 
 -----
 
 
-getHps :: Id -> MudState -> (Int, Int)
+getHps :: HasCallStack => Id -> MudState -> (Int, Int)
 getHps i ms = let (pair, _, _, _) = getPts i ms in pair
 
 
 -----
 
 
-getIdForPCSing :: Sing -> MudState -> Id
+getIdForPCSing :: HasCallStack => Sing -> MudState -> Id
 getIdForPCSing s = views (pcSingTbl.at s) (fromMaybe oops)
   where
     oops = blowUp "getIdForPCSing" "PC sing not found in the PC sing table" s
@@ -528,280 +529,280 @@ getIdForPCSing s = views (pcSingTbl.at s) (fromMaybe oops)
 -----
 
 
-getInterp :: Id -> MudState -> Maybe Interp
+getInterp :: HasCallStack => Id -> MudState -> Maybe Interp
 getInterp i = view interp . getMob i
 
 
 -----
 
 
-getIntroduced :: Id -> MudState -> [Sing]
+getIntroduced :: HasCallStack => Id -> MudState -> [Sing]
 getIntroduced = onPC (view introduced) []
 
 
 -----
 
 
-getInv :: Id -> MudState -> Inv
+getInv :: HasCallStack => Id -> MudState -> Inv
 getInv i = view (invTbl.ind i)
 
 
 -----
 
 
-getInvCoins :: Id -> MudState -> (Inv, Coins)
+getInvCoins :: HasCallStack => Id -> MudState -> (Inv, Coins)
 getInvCoins i = getInv i &&& getCoins i
 
 
 -----
 
 
-getKnownLangs :: Id -> MudState -> [Lang]
+getKnownLangs :: HasCallStack => Id -> MudState -> [Lang]
 getKnownLangs i = view knownLangs . getMob i
 
 
 -----
 
 
-getLastRmId :: Id -> MudState -> Id
+getLastRmId :: HasCallStack => Id -> MudState -> Id
 getLastRmId i = view lastRmId . getMob i
 
 
 -----
 
 
-getLinked :: Id -> MudState -> [Sing]
+getLinked :: HasCallStack => Id -> MudState -> [Sing]
 getLinked = onPC (view linked) []
 
 
 -----
 
 
-getListenThreadId :: MudState -> ThreadId
+getListenThreadId :: HasCallStack => MudState -> ThreadId
 getListenThreadId = reverseLookup Listen . view threadTbl
 
 
 -----
 
 
-getLogoutRmId :: Id -> MudState -> Maybe Id
+getLogoutRmId :: HasCallStack => Id -> MudState -> Maybe Id
 getLogoutRmId = onPla (view logoutRmId) Nothing
 
 
 -----
 
 
-getLogQueue :: Id -> MudState -> LogQueue
-getLogQueue i = view (plaLogTbl.ind i.to snd)
+getLogQueue :: HasCallStack => Id -> MudState -> LogQueue
+getLogQueue i = views (plaLogTbl.ind i) snd
 
 
 -----
 
 
-getLvl :: Id -> MudState -> Lvl
+getLvl :: HasCallStack => Id -> MudState -> Lvl
 getLvl i = view lvl . getMob i
 
 
 -----
 
 
-getLvlExp :: Id -> MudState -> (Lvl, Exp)
+getLvlExp :: HasCallStack => Id -> MudState -> (Lvl, Exp)
 getLvlExp i = getLvl i &&& getExp i
 
 
 -----
 
 
-getMaxMouthfuls :: Id -> MudState -> Mouthfuls
+getMaxMouthfuls :: HasCallStack => Id -> MudState -> Mouthfuls
 getMaxMouthfuls i = view vesselMaxMouthfuls . getVessel i
 
 
 -----
 
 
-getMemberOf :: Id -> MudState -> Maybe Id
+getMemberOf :: HasCallStack => Id -> MudState -> Maybe Id
 getMemberOf i = view memberOf . getParty i
 
 
 -----
 
 
-getMob :: Id -> MudState -> Mob
+getMob :: HasCallStack => Id -> MudState -> Mob
 getMob i = view (mobTbl.ind i)
 
 
 -----
 
 
-getMobRm :: Id -> MudState -> Rm
+getMobRm :: HasCallStack => Id -> MudState -> Rm
 getMobRm i ms = let ri = getRmId i ms in getRm ri ms
 
 
 -----
 
 
-getMobRmCoins :: Id -> MudState -> Coins
+getMobRmCoins :: HasCallStack => Id -> MudState -> Coins
 getMobRmCoins i ms = let ri = getRmId i ms in getCoins ri ms
 
 
 -----
 
 
-getMobRmDesc :: Id -> MudState -> MobRmDesc
+getMobRmDesc :: HasCallStack => Id -> MudState -> MobRmDesc
 getMobRmDesc i = view mobRmDesc . getMob i
 
 
 -----
 
 
-getMobRmInv :: Id -> MudState -> Inv
+getMobRmInv :: HasCallStack => Id -> MudState -> Inv
 getMobRmInv i ms = let ri = getRmId i ms in getInv ri ms
 
 
 -----
 
 
-getMobRmInvCoins :: Id -> MudState -> (Inv, Coins)
+getMobRmInvCoins :: HasCallStack => Id -> MudState -> (Inv, Coins)
 getMobRmInvCoins i ms = let ri = getRmId i ms in getInvCoins ri ms
 
 
 -----
 
 
-getMobSize :: Id -> MudState -> Maybe MobSize
+getMobSize :: HasCallStack => Id -> MudState -> Maybe MobSize
 getMobSize i = view mobSize . getMob i
 
 
 -----
 
 
-getMps :: Id -> MudState -> (Int, Int)
+getMps :: HasCallStack => Id -> MudState -> (Int, Int)
 getMps i ms = let (_, pair, _, _) = getPts i ms in pair
 
 
 -----
 
 
-getMsgQueue :: Id -> MudState -> MsgQueue
+getMsgQueue :: HasCallStack => Id -> MudState -> MsgQueue
 getMsgQueue i = view (msgQueueTbl.ind i)
 
 
 -----
 
 
-getMsgQueueColumns :: Id -> MudState -> (MsgQueue, Cols)
+getMsgQueueColumns :: HasCallStack => Id -> MudState -> (MsgQueue, Cols)
 getMsgQueueColumns i = getMsgQueue i &&& getColumns i
 
 
 -----
 
 
-getMyGroup :: Id -> MudState -> Inv
+getMyGroup :: HasCallStack => Id -> MudState -> Inv
 getMyGroup i = view myGroup . getParty i
 
 
 -----
 
 
-getNowDrinking :: Id -> MudState -> Maybe NowDrinking
+getNowDrinking :: HasCallStack => Id -> MudState -> Maybe NowDrinking
 getNowDrinking i = view nowDrinking . getMob i
 
 
 -----
 
 
-getNowEating :: Id -> MudState -> Maybe NowEating
+getNowEating :: HasCallStack => Id -> MudState -> Maybe NowEating
 getNowEating i = view nowEating . getMob i
 
 
 -----
 
 
-getNpc :: Id -> MudState -> Npc
+getNpc :: HasCallStack => Id -> MudState -> Npc
 getNpc i = view (npcTbl.ind i)
 
 
 -----
 
 
-getNpcMsgQueue :: Id -> MudState -> NpcMsgQueue
+getNpcMsgQueue :: HasCallStack => Id -> MudState -> NpcMsgQueue
 getNpcMsgQueue i = view npcMsgQueue . getNpc i
 
 
 -----
 
 
-getObj :: Id -> MudState -> Obj
+getObj :: HasCallStack => Id -> MudState -> Obj
 getObj i = view (objTbl.ind i)
 
 
 -----
 
 
-getObjBiodegAsync :: Id -> MudState -> Maybe BiodegAsync
+getObjBiodegAsync :: HasCallStack => Id -> MudState -> Maybe BiodegAsync
 getObjBiodegAsync i = view objBiodegAsync . getObj i
 
 
 -----
 
 
-getObjTaste :: Id -> MudState -> Text
+getObjTaste :: HasCallStack => Id -> MudState -> Text
 getObjTaste i = views objTaste (fromMaybe noTasteMsg) . getObj i
 
 
 -----
 
 
-getObjVol :: Id -> MudState -> Vol
+getObjVol :: HasCallStack => Id -> MudState -> Vol
 getObjVol i = view objVol . getObj i
 
 
 -----
 
 
-getObjWeight :: Id -> MudState -> Weight
+getObjWeight :: HasCallStack => Id -> MudState -> Weight
 getObjWeight i = view objWeight . getObj i
 
 
 -----
 
 
-getPausedEffects :: Id -> MudState -> [PausedEffect]
+getPausedEffects :: HasCallStack => Id -> MudState -> [PausedEffect]
 getPausedEffects i = view (pausedEffectsTbl.ind i)
 
 
 -----
 
 
-getPC :: Id -> MudState -> PC
+getPC :: HasCallStack => Id -> MudState -> PC
 getPC i = view (pcTbl.ind i)
 
 
 -----
 
 
-getParty :: Id -> MudState -> Party
+getParty :: HasCallStack => Id -> MudState -> Party
 getParty i = view party . getMob i
 
 
 -----
 
 
-getPickPts :: Id -> MudState -> Int
+getPickPts :: HasCallStack => Id -> MudState -> Int
 getPickPts i = view (pickPtsTbl.ind i)
 
 
 -----
 
 
-getPps :: Id -> MudState -> (Int, Int)
+getPps :: HasCallStack => Id -> MudState -> (Int, Int)
 getPps i ms = let (_, _, pair, _) = getPts i ms in pair
 
 
 -----
 
 
-getPts :: Id -> MudState -> ((Int, Int), (Int, Int), (Int, Int), (Int, Int))
+getPts :: HasCallStack => Id -> MudState -> ((Int, Int), (Int, Int), (Int, Int), (Int, Int))
 getPts i ms = let m = getMob i ms
               in listToTuple [ (m^.curHp, m^.maxHp), (m^.curMp, m^.maxMp), (m^.curPp, m^.maxPp), (m^.curFp, m^.maxFp) ]
 
@@ -809,203 +810,203 @@ getPts i ms = let m = getMob i ms
 -----
 
 
-getPageLines :: Id -> MudState -> Int
+getPageLines :: HasCallStack => Id -> MudState -> Int
 getPageLines = onPla (view pageLines) 24
 
 
 -----
 
 
-getPeepers :: Id -> MudState -> Inv
+getPeepers :: HasCallStack => Id -> MudState -> Inv
 getPeepers = onPla (view peepers) []
 
 
 -----
 
 
-getPeeping :: Id -> MudState -> Inv
+getPeeping :: HasCallStack => Id -> MudState -> Inv
 getPeeping = onPla (view peeping) []
 
 
 -----
 
 
-getPeepersPeeping :: Id -> MudState -> (Inv, Inv)
+getPeepersPeeping :: HasCallStack => Id -> MudState -> (Inv, Inv)
 getPeepersPeeping i = getPeepers i &&& getPeeping i
 
 
 -----
 
 
-getPla :: Id -> MudState -> Pla
+getPla :: HasCallStack => Id -> MudState -> Pla
 getPla i = view (plaTbl.ind i)
 
 
 -----
 
 
-getPossessing :: Id -> MudState -> Maybe Id
+getPossessing :: HasCallStack => Id -> MudState -> Maybe Id
 getPossessing i = view possessing . getPla i
 
 
 -----
 
 
-getPossessor :: Id -> MudState -> Maybe Id
+getPossessor :: HasCallStack => Id -> MudState -> Maybe Id
 getPossessor i = view npcPossessor . getNpc i
 
 
 -----
 
 
-getRace :: Id -> MudState -> Race
+getRace :: HasCallStack => Id -> MudState -> Race
 getRace i = view race . getPC i
 
 
 -----
 
 
-getRm :: Id -> MudState -> Rm
+getRm :: HasCallStack => Id -> MudState -> Rm
 getRm i = view (rmTbl.ind i)
 
 
 -----
 
 
-getRmCoords :: Id -> MudState -> RmCoords
+getRmCoords :: HasCallStack => Id -> MudState -> RmCoords
 getRmCoords i = view rmCoords . getRm i
 
 
 -----
 
 
-getRmId :: Id -> MudState -> Id
+getRmId :: HasCallStack => Id -> MudState -> Id
 getRmId i = view rmId . getMob i
 
 
 -----
 
 
-getRmName :: Id -> MudState -> Text
+getRmName :: HasCallStack => Id -> MudState -> Text
 getRmName i = view rmName . getRm i
 
 
 -----
 
 
-getRndmNamesTbl :: Id -> MudState -> RndmNamesTbl
+getRndmNamesTbl :: HasCallStack => Id -> MudState -> RndmNamesTbl
 getRndmNamesTbl i = view (rndmNamesMstrTbl.ind i)
 
 
 -----
 
 
-getSex :: Id -> MudState -> Sex
+getSex :: HasCallStack => Id -> MudState -> Sex
 getSex i = view sex . getMob i
 
 
 -----
 
 
-getSexRace :: Id -> MudState -> (Sex, Race)
+getSexRace :: HasCallStack => Id -> MudState -> (Sex, Race)
 getSexRace i = getSex i &&& getRace i
 
 
 -----
 
 
-getSexRaceLvl :: Id -> MudState -> (Sex, Race, Lvl)
+getSexRaceLvl :: HasCallStack => Id -> MudState -> (Sex, Race, Lvl)
 getSexRaceLvl i ms | (s, r) <- getSexRace i ms = (s, r, getLvl i ms)
 
 
 -----
 
 
-getSing :: Id -> MudState -> Sing
+getSing :: HasCallStack => Id -> MudState -> Sing
 getSing i = view sing . getEnt i
 
 
 -----
 
 
-getSkillPts :: Id -> MudState -> SkillPts
+getSkillPts :: HasCallStack => Id -> MudState -> SkillPts
 getSkillPts i = view skillPts . getPC i
 
 
 -----
 
 
-getStomach :: Id -> MudState -> [StomachCont]
+getStomach :: HasCallStack => Id -> MudState -> [StomachCont]
 getStomach i = view stomach . getMob i
 
 
 -----
 
 
-getTeleLinkTbl :: Id -> MudState -> TeleLinkTbl
+getTeleLinkTbl :: HasCallStack => Id -> MudState -> TeleLinkTbl
 getTeleLinkTbl i = view (teleLinkMstrTbl.ind i)
 
 
 -----
 
 
-getTempDesc :: Id -> MudState -> TempDesc
+getTempDesc :: HasCallStack => Id -> MudState -> TempDesc
 getTempDesc i = view tempDesc . getMob i
 
 
 -----
 
 
-getType :: Id -> MudState -> Type
+getType :: HasCallStack => Id -> MudState -> Type
 getType i = view (typeTbl.ind i)
 
 
 -----
 
 
-getVessel :: Id -> MudState -> Vessel
+getVessel :: HasCallStack => Id -> MudState -> Vessel
 getVessel i = view (vesselTbl.ind i)
 
 
 -----
 
 
-getVesselCont :: Id -> MudState -> Maybe VesselCont
+getVesselCont :: HasCallStack => Id -> MudState -> Maybe VesselCont
 getVesselCont i = view vesselCont . getVessel i
 
 
 -----
 
 
-getWpn :: Id -> MudState -> Wpn
+getWpn :: HasCallStack => Id -> MudState -> Wpn
 getWpn i = view (wpnTbl.ind i)
 
 
 -----
 
 
-getWpnSub :: Id -> MudState -> WpnSub
+getWpnSub :: HasCallStack => Id -> MudState -> WpnSub
 getWpnSub i = view wpnSub . getWpn i
 
 
 -----
 
 
-getWritMessage :: Id -> MudState -> Maybe (Text, Lang)
+getWritMessage :: HasCallStack => Id -> MudState -> Maybe (Text, Lang)
 getWritMessage i = view writMessage . getWritable i
 
 
 -----
 
 
-getWritRecip :: Id -> MudState -> Maybe Sing
+getWritRecip :: HasCallStack => Id -> MudState -> Maybe Sing
 getWritRecip i = view writRecip . getWritable i
 
 
 -----
 
 
-getWritable :: Id -> MudState -> Writable
+getWritable :: HasCallStack => Id -> MudState -> Writable
 getWritable i = view (writableTbl.ind i)
 
 
@@ -1013,7 +1014,7 @@ getWritable i = view (writableTbl.ind i)
 -- Object flag getters:
 
 
-objFlagHelper :: ObjFlags -> Id -> MudState -> Bool
+objFlagHelper :: HasCallStack => ObjFlags -> Id -> MudState -> Bool
 objFlagHelper flag i = getObjFlag flag . getObj i
 
 
@@ -1024,7 +1025,7 @@ isBiodegradable :: Obj -> Bool
 isBiodegradable = getObjFlag IsBiodegradable
 
 
-isBiodegradableId :: Id -> MudState -> Bool
+isBiodegradableId :: HasCallStack => Id -> MudState -> Bool
 isBiodegradableId = objFlagHelper IsBiodegradable
 
 
@@ -1035,7 +1036,7 @@ isHumming :: Obj -> Bool
 isHumming = getObjFlag IsHumming
 
 
-isHummingId :: Id -> MudState -> Bool
+isHummingId :: HasCallStack => Id -> MudState -> Bool
 isHummingId = objFlagHelper IsHumming
 
 
@@ -1043,7 +1044,7 @@ isHummingId = objFlagHelper IsHumming
 -- Player flag getters:
 
 
-plaFlagHelper :: PlaFlags -> Id -> MudState -> Bool
+plaFlagHelper :: HasCallStack => PlaFlags -> Id -> MudState -> Bool
 plaFlagHelper flag i = getPlaFlag flag . getPla i
 
 
@@ -1054,7 +1055,7 @@ isAdmin :: Pla -> Bool
 isAdmin = getPlaFlag IsAdmin
 
 
-isAdminId :: Id -> MudState -> Bool
+isAdminId :: HasCallStack => Id -> MudState -> Bool
 isAdminId = onPla isAdmin False
 
 
@@ -1065,7 +1066,7 @@ isGmcp :: Pla -> Bool
 isGmcp = getPlaFlag IsGmcp
 
 
-isGmcpId :: Id -> MudState -> Bool
+isGmcpId :: HasCallStack => Id -> MudState -> Bool
 isGmcpId = onPla isGmcp False
 
 
@@ -1076,7 +1077,7 @@ isIncognito :: Pla -> Bool
 isIncognito = getPlaFlag IsIncognito
 
 
-isIncognitoId :: Id -> MudState -> Bool
+isIncognitoId :: HasCallStack => Id -> MudState -> Bool
 isIncognitoId = onPla isIncognito False
 
 
@@ -1087,7 +1088,7 @@ isNotFirstAdminMsg :: Pla -> Bool
 isNotFirstAdminMsg = getPlaFlag IsNotFirstAdminMsg
 
 
-isNotFirstAdminMsgId :: Id -> MudState -> Bool
+isNotFirstAdminMsgId :: HasCallStack => Id -> MudState -> Bool
 isNotFirstAdminMsgId = onPla isNotFirstAdminMsg True
 
 
@@ -1098,7 +1099,7 @@ isNotFirstMobSay :: Pla -> Bool
 isNotFirstMobSay = getPlaFlag IsNotFirstMobSay
 
 
-isNotFirstModSayId :: Id -> MudState -> Bool
+isNotFirstModSayId :: HasCallStack => Id -> MudState -> Bool
 isNotFirstModSayId = onPla isNotFirstMobSay True
 
 
@@ -1109,7 +1110,7 @@ isNotFirstSpiritCmdNotFound :: Pla -> Bool
 isNotFirstSpiritCmdNotFound = getPlaFlag IsNotFirstSpiritCmdNotFound
 
 
-isNotFirstSpiritCmdNotFoundId :: Id -> MudState -> Bool
+isNotFirstSpiritCmdNotFoundId :: HasCallStack => Id -> MudState -> Bool
 isNotFirstSpiritCmdNotFoundId = onPla isNotFirstSpiritCmdNotFound True
 
 
@@ -1120,7 +1121,7 @@ isShowingHp :: Pla -> Bool
 isShowingHp = getPlaFlag IsShowingHp
 
 
-isShowingHpId :: Id -> MudState -> Bool
+isShowingHpId :: HasCallStack => Id -> MudState -> Bool
 isShowingHpId = plaFlagHelper IsShowingHp
 
 
@@ -1131,7 +1132,7 @@ isShowingMp :: Pla -> Bool
 isShowingMp = getPlaFlag IsShowingMp
 
 
-isShowingMpId :: Id -> MudState -> Bool
+isShowingMpId :: HasCallStack => Id -> MudState -> Bool
 isShowingMpId = plaFlagHelper IsShowingMp
 
 
@@ -1142,7 +1143,7 @@ isShowingPp :: Pla -> Bool
 isShowingPp = getPlaFlag IsShowingPp
 
 
-isShowingPpId :: Id -> MudState -> Bool
+isShowingPpId :: HasCallStack => Id -> MudState -> Bool
 isShowingPpId = plaFlagHelper IsShowingPp
 
 
@@ -1153,7 +1154,7 @@ isShowingFp :: Pla -> Bool
 isShowingFp = getPlaFlag IsShowingFp
 
 
-isShowingFpId :: Id -> MudState -> Bool
+isShowingFpId :: HasCallStack => Id -> MudState -> Bool
 isShowingFpId = plaFlagHelper IsShowingFp
 
 
@@ -1164,7 +1165,7 @@ isSpirit :: Pla -> Bool
 isSpirit = getPlaFlag IsSpirit
 
 
-isSpiritId :: Id -> MudState -> Bool
+isSpiritId :: HasCallStack => Id -> MudState -> Bool
 isSpiritId = onPla isSpirit False
 
 
@@ -1175,7 +1176,7 @@ isTunedAdmin :: Pla -> Bool
 isTunedAdmin = getPlaFlag IsTunedAdmin
 
 
-isTunedAdminId :: Id -> MudState -> Bool
+isTunedAdminId :: HasCallStack => Id -> MudState -> Bool
 isTunedAdminId = plaFlagHelper IsTunedAdmin
 
 
@@ -1186,5 +1187,5 @@ isTunedQuestion :: Pla -> Bool
 isTunedQuestion = getPlaFlag IsTunedQuestion
 
 
-isTunedQuestionId :: Id -> MudState -> Bool
+isTunedQuestionId :: HasCallStack => Id -> MudState -> Bool
 isTunedQuestionId = plaFlagHelper IsTunedQuestion

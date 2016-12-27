@@ -72,6 +72,7 @@ import Data.Monoid ((<>), Sum(..))
 import Data.Text (Text)
 import Data.Time (getCurrentTime)
 import GHC.Conc (threadStatus)
+import GHC.Stack (HasCallStack)
 import Numeric (readInt)
 import Prelude hiding (pi)
 import qualified Data.IntMap.Lazy as IM (IntMap, assocs, keys, toList)
@@ -156,6 +157,7 @@ debugCmds =
     , mkDebugCmd "liquid"      debugLiq         "Consume a given amount (in mouthfuls) of a given liquid (by distinct \
                                                 \liquid ID)."
     , mkDebugCmd "log"         debugLog         "Put the logging service under heavy load."
+    , mkDebugCmd "missing"     debugMissing     "Attempt to look up the ent description of a nonexistent ID."
     , mkDebugCmd "multiline"   debugMultiLine   "Test multi-line input."
     , mkDebugCmd "nop"         debugNOP         "Send IAC NOP."
     , mkDebugCmd "npcserver"   debugNpcServer   "Stop all NPC server threads."
@@ -689,6 +691,15 @@ debugLog (NoArgs' i mq) = logPlaExec (prefixDebugCmd "log") i >> helper >> ok mq
     heavyLogging = replicateM_ 100 . logNotice "debugLog heavyLogging" =<< mkMsg
     mkMsg        = [ prd $ "Logging from " <> ti | ti <- showText <$> liftIO myThreadId ]
 debugLog p = withoutArgs debugLog p
+
+
+-----
+
+
+debugMissing :: HasCallStack => ActionFun
+debugMissing (NoArgs i mq cols) = do logPlaExec (prefixDebugCmd "missing") i
+                                     wrapSend mq cols =<< getEntDesc (-1) <$> getState
+debugMissing p                  = withoutArgs debugMissing p
 
 
 -----
