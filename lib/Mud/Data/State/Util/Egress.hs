@@ -32,7 +32,6 @@ import Control.Lens.Operators ((%~), (&), (+~), (.~), (?~))
 import Control.Monad ((>=>), forM_, unless, when)
 import Control.Monad.IO.Class (liftIO)
 import Data.List (delete, partition, sort)
-import Data.Maybe (fromJust)
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import Data.Time (UTCTime, diffUTCTime, getCurrentTime)
@@ -123,20 +122,16 @@ possessHelper i ms = let f = maybe id (\npcId -> npcTbl.ind npcId.npcPossessor .
 
 
 updateHostMap :: Id -> MudState -> Sing -> UTCTime -> MudState
-updateHostMap i ms s now = flip (set $ hostTbl.at s) ms . Just $ case getHostMap s ms of
-  Nothing      -> M.singleton host newRecord
-  Just hostMap -> let f rec = hostMap & at host ?~ rec
-                  in views (at host) (f . maybe newRecord reviseRecord) hostMap
+updateHostMap i ms s now = maybe ms helper . getConnectTime i $ ms
   where
-    newRecord       = HostRecord { _noOfLogouts   = 1
-                                 , _secsConnected = duration
-                                 , _lastLogout    = now }
-    reviseRecord r  = r & noOfLogouts   +~ 1
-                        & secsConnected +~ duration
-                        & lastLogout    .~ now
-    host            = getCurrHostName i ms
-    duration        = round $ now `diffUTCTime` conTime
-    conTime         = fromJust . getConnectTime i $ ms
+    helper conTime    = let dur = round $ now `diffUTCTime` conTime
+                        in flip (set $ hostTbl.at s) ms . Just $ case getHostMap s ms of
+                          Nothing      -> M.singleton host (mkNewRecord dur)
+                          Just hostMap -> let f rec = hostMap & at host ?~ rec
+                                          in views (at host) (f . maybe (mkNewRecord dur) (reviseRecord dur)) hostMap
+    mkNewRecord  dur  = HostRecord { _noOfLogouts = 1, _secsConnected = dur, _lastLogout = now }
+    reviseRecord dur  = (noOfLogouts +~ 1) . (secsConnected +~ dur) . (lastLogout .~ now)
+    host              = getCurrHostName i ms
 
 
 -----
