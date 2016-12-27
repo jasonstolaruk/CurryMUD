@@ -477,12 +477,10 @@ adminChanIOHelper i mq reports = sequence_ [ logPlaExec (prefixAdminCmd "channel
 
 
 adminCount :: ActionFun
-adminCount (NoArgs i mq cols) = do
-    logPlaExecArgs (prefixAdminCmd "count") [] i
-    pager i mq Nothing . concatMap (wrapIndent 2 cols) =<< mkCountTxt
-adminCount p@ActionParams { myId, args } = do
-    logPlaExecArgs (prefixAdminCmd "count") args myId
-    dispMatches p 2 =<< mkCountTxt
+adminCount   (NoArgs i mq cols)          = do logPlaExecArgs (prefixAdminCmd "count") [] i
+                                              pager i mq Nothing . concatMap (wrapIndent 2 cols) =<< mkCountTxt
+adminCount p@ActionParams { myId, args } = do logPlaExecArgs (prefixAdminCmd "count") args myId
+                                               dispMatches p 2 =<< mkCountTxt
 
 
 mkCountTxt :: MudStack [Text]
@@ -574,9 +572,8 @@ mkCountTxt = map (uncurry mappend . second commaShow) <$> helper
 
 
 adminDate :: ActionFun
-adminDate (NoArgs' i mq) = do
-    logPlaExec (prefixAdminCmd "date") i
-    send mq . nlnl . T.pack . formatTime defaultTimeLocale "%A %B %d" =<< liftIO getZonedTime
+adminDate (NoArgs' i mq) = do logPlaExec (prefixAdminCmd "date") i
+                              send mq . nlnl . T.pack . formatTime defaultTimeLocale "%A %B %d" =<< liftIO getZonedTime
 adminDate p = withoutArgs adminDate p
 
 
@@ -611,9 +608,8 @@ adminExamine   (LowerNub i mq cols as) = getState >>= \ms ->
           _                                              -> sorry
           where
             sorry = pure . sorryParseId $ a
-    in do
-        logPlaExecArgs (prefixAdminCmd "examine") as i
-        pager i mq Nothing . concatMap (wrapIndent 2 cols) . intercalateDivider cols . map helper $ as
+    in do logPlaExecArgs (prefixAdminCmd "examine") as i
+          pager i mq Nothing . concatMap (wrapIndent 2 cols) . intercalateDivider cols . map helper $ as
 adminExamine p = patternMatchFail "adminExamine" . showText $ p
 
 
