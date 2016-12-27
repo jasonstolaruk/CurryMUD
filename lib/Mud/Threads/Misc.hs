@@ -136,9 +136,8 @@ onNewThread f = onEnv $ liftIO . void . forkIO . runReaderT f
 
 
 plaThreadExHandler :: Id -> Text -> SomeException -> MudStack ()
-plaThreadExHandler i threadName e
-  | Just ThreadKilled <- fromException e = closePlaLog i
-  | otherwise                            = threadExHandler (Just i) threadName e
+plaThreadExHandler i threadName e | Just ThreadKilled <- fromException e = closePlaLog i
+                                  | otherwise                            = threadExHandler (Just i) threadName e
 
 
 threadExHandler :: Maybe Id -> Text -> SomeException -> MudStack ()

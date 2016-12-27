@@ -58,6 +58,7 @@ module Mud.Util.Misc ( atLst1
                      , onFalse
                      , onLeft
                      , onTrue
+                     , panicMsg
                      , patternMatchFail
                      , PatternMatchFail
                      , percent
@@ -66,6 +67,7 @@ module Mud.Util.Misc ( atLst1
                      , plusQuarter
                      , plusTenth
                      , plusThird
+                     , printPanicMsg
                      , reverseLookup
                      , safeCoerce
                      , safePerformIO
@@ -93,13 +95,14 @@ import Data.Function (on)
 import Data.IORef (IORef, atomicWriteIORef)
 import Data.List (delete)
 import Data.Maybe (fromMaybe)
-import Data.Monoid (Sum(..))
+import Data.Monoid (Sum(..), (<>))
 import Data.Text (Text)
 import Data.Time (getZonedTime)
 import GHC.Stack (HasCallStack, callStack, prettyCallStack)
 import qualified Data.IntMap.Lazy as IM (IntMap, insert, lookup)
 import qualified Data.Map.Lazy as M (Map, assocs)
 import qualified Data.Text as T
+import System.IO (hPutStrLn, stderr)
 
 
 default (Int, Double)
@@ -365,6 +368,10 @@ onLeft f (Left  a) = Left . f $ a
 onLeft _ x         = blowUp "Mud.Util.Misc" "onLeft" "Right" . T.pack . show $ x
 
 
+panicMsg :: Text
+panicMsg = "panic! " <> parensQuote ("the " <> singleQuote "impossible" <> " happened")
+
+
 type PatternMatchFail a b = Text -> a -> b
 
 
@@ -394,6 +401,10 @@ plusTenth x = round (fromIntegral x * 1.10 :: Double)
 
 plusThird :: Int -> Int
 plusThird x = round (fromIntegral x * 1.33 :: Double)
+
+
+printPanicMsg :: IO ()
+printPanicMsg = hPutStrLn stderr . T.unpack $ panicMsg <> ": see the logs for details"
 
 
 reverseLookup :: (Eq v) => v -> M.Map k v -> k

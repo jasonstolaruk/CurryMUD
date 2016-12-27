@@ -215,9 +215,7 @@ logExMsg modName (dblQuote -> funName) msg (dblQuote . showText -> e) =
 
 
 logImpossible :: Text -> Text -> Text -> MudStack ()
-logImpossible modName funName msg = logErrorMsg modName funName $ t |<>| msg
-  where
-    t = "panic! " <> parensQuote ("the " <> singleQuote "impossible" <> " happened")
+logImpossible modName funName msg = logErrorMsg modName funName $ panicMsg |<>| msg
 
 
 logIOEx :: Text -> Text -> IOException -> MudStack ()
