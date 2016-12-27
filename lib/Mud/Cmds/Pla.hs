@@ -83,7 +83,7 @@ import Data.Int (Int64)
 import Data.Ix (inRange)
 import Data.List ((\\), delete, foldl', group, intercalate, intersperse, nub, nubBy, partition, sort, sortBy, unfoldr, zip4)
 import Data.List.Split (chunksOf)
-import Data.Maybe (fromJust, fromMaybe)
+import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>), All(..), Sum(..))
 import Data.Text (Text)
 import Data.Time (diffUTCTime, getCurrentTime)
@@ -1963,12 +1963,11 @@ link p = patternMatchFail "link" . showText $ p
 
 
 listen :: ActionFun
-listen (NoArgs i mq cols) = getState >>= \ms ->
-    let humMsgs = mkHumMsgs ms
-        ts      = views rmListen (maybe a b) . getMobRm i $ ms
-        a       = ()# humMsgs ? pure noSoundMsg :? humMsgs
-        b       = onFalse (()# humMsgs) (++ humMsgs) . pure
-    in multiWrapSend mq cols ts >> logPlaExec "listen" i
+listen (NoArgs i mq cols) = getState >>= \ms -> let humMsgs = mkHumMsgs ms
+                                                    ts      = views rmListen (maybe a b) . getMobRm i $ ms
+                                                    a       = ()# humMsgs ? pure noSoundMsg :? humMsgs
+                                                    b       = onFalse (()# humMsgs) (++ humMsgs) . pure
+                                                in multiWrapSend mq cols ts >> logPlaExec "listen" i
   where
     mkHumMsgs ms     = concatMap (helper ms) [ (\i' -> M.elems . getEqMap i', (<> " in your readied equipment"))
                                              , (getInv,                       (<> " in your inventory"        ))
@@ -3416,12 +3415,10 @@ mkSlotDesc i ms s = case s of
 
 smell :: ActionFun
 smell (NoArgs i mq cols) = getState >>= \ms ->
-    let maybeSmellMsg = view rmSmell . getMobRm i $ ms
-        corpseMsgs    = mkCorpseMsgs ms
-        ts            = case (()!# maybeSmellMsg, ()!# corpseMsgs) of (True,  True ) -> fromJust maybeSmellMsg : corpseMsgs
-                                                                      (True,  False) -> pure . fromJust $ maybeSmellMsg
-                                                                      (False, True ) -> corpseMsgs
-                                                                      (False, False) -> pure noSmellMsg
+    let corpseMsgs = mkCorpseMsgs ms
+        ts         = views rmSmell (maybe a b) . getMobRm i $ ms
+        a          = ()# corpseMsgs ? pure noSmellMsg :? corpseMsgs
+        b          = onFalse (()# corpseMsgs) (++ corpseMsgs) . pure
     in do logPlaExec "smell" i
           multiWrapSend mq cols ts
           let d = mkStdDesig i ms DoCap
