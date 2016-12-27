@@ -114,7 +114,6 @@ import Data.Char (isDigit, isLetter)
 import Data.Either (rights)
 import Data.Function (on)
 import Data.List (delete, groupBy, intercalate, nub, partition, sortBy, unfoldr)
-import Data.Maybe (fromJust)
 import Data.Monoid ((<>), Any(..), Sum(..))
 import Data.Text (Text)
 import Data.Time (diffUTCTime, getCurrentTime)
@@ -262,7 +261,9 @@ styleCmdAbbrevs cmds = let cmdNames       = [ cmdName           cmd | cmd <- cmd
                        in [ checkProrityAbbrev a | a <- zip3 cmdNames cmdPAs styledCmdNames ]
   where
     checkProrityAbbrev (_,  Nothing,  scn) = scn
-    checkProrityAbbrev (cn, Just cpa, _  ) = colorWith abbrevColor cpa <> fromJust (T.stripPrefix cpa cn)
+    checkProrityAbbrev (cn, Just cpa, _  ) = uncurry (<>) . first (colorWith abbrevColor) $ case cpa `T.stripPrefix` cn of
+      Nothing   -> (cn,  ""  )
+      Just rest -> (cpa, rest)
 
 
 -----
