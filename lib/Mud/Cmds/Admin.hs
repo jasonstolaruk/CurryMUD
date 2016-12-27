@@ -474,7 +474,7 @@ adminCount :: ActionFun
 adminCount   (NoArgs i mq cols)          = do logPlaExecArgs (prefixAdminCmd "count") [] i
                                               pager i mq Nothing . concatMap (wrapIndent 2 cols) =<< mkCountTxt
 adminCount p@ActionParams { myId, args } = do logPlaExecArgs (prefixAdminCmd "count") args myId
-                                               dispMatches p 2 =<< mkCountTxt
+                                              dispMatches p 2 =<< mkCountTxt
 
 
 mkCountTxt :: MudStack [Text]

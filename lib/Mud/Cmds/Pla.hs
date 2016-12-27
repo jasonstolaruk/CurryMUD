@@ -1250,7 +1250,7 @@ equip p = patternMatchFail "equip" . showText $ p
 
 exits :: ActionFun
 exits (NoArgs i mq cols) = sequence_ [ logPlaExec "exits" i, send mq . nl . mkExitsSummary cols . getMobRm i =<< getState ]
-exits p = withoutArgs exits p
+exits p                  = withoutArgs exits p
 
 
 -----
