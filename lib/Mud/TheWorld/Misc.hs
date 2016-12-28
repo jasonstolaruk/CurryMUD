@@ -237,7 +237,7 @@ mkTrashCoinsDescsSelf = mkCoinsMsgs helper
 
 
 dfltLinkMove :: LinkMove
-dfltLinkMove = LinkMove 1 0
+dfltLinkMove = LinkMove { _moveCost = 1, _moveTime = 0 }
 
 
 -- If "prob" is 25 (1 in 4), and "secs" is 60, we can expect the event to occurr once every 4 mins.
