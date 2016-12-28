@@ -1493,37 +1493,33 @@ tryMove i mq cols dir = helper |&| modifyState >=> \case Left  msg          -> w
                                                                                   look . ActionParams i mq cols $ []
                                                                                   bcastIfNotIncog i bs
   where
-    helper ms =
-        let originId   = getRmId i ms
-            originRm   = getRm originId ms
-            fpHelper x = x -- TODO
-        in case findExit originRm dir of
-          Nothing -> (ms, Left sorry)
-          Just (linkTxt, destId, maybeOriginMsg, maybeDestMsg) ->
-            let originDesig  = mkStdDesig i ms DoCap
-                s            = getSing    i ms
-                originMobIds = i `delete` desigIds originDesig
-                destMobIds   = findMobIds ms . getInv destId $ ms
-                ms'          = ms & mobTbl.ind i.rmId      .~ destId
-                                  & mobTbl.ind i.lastRmId  .~ originId
-                                  & mobTbl.ind i.curFp     %~ fpHelper
-                                  & mobTbl.ind i.mobRmDesc .~ Nothing
-                                  & invTbl.ind originId    %~ (i `delete`)
-                                  & invTbl.ind destId      %~ addToInv ms (pure i)
-                msgAtOrigin  = nlnl $ case maybeOriginMsg of
-                                 Nothing  -> T.concat [ serialize originDesig, spaced verb, expandLinkName dir, "." ]
-                                 Just msg -> T.replace "%" (serialize originDesig) msg
-                msgAtDest    = let destDesig = mkSerializedNonStdDesig i ms s A DoCap in nlnl $ case maybeDestMsg of
-                                 Nothing  -> T.concat [ destDesig, " arrives from ", expandOppLinkName dir, "." ]
-                                 Just msg -> T.replace "%" destDesig msg
-                logMsg       = T.concat [ "moved "
-                                        , linkTxt
-                                        , " from room "
-                                        , showRm originId originRm
-                                        , " to room "
-                                        , showRm destId . getRm destId $ ms
-                                        , "." ]
-            in (ms', Right (not (isSpiritId i ms) |?| [ (msgAtOrigin, originMobIds), (msgAtDest, destMobIds) ], logMsg))
+    helper ms = let { originId = getRmId i ms; originRm = getRm originId ms } in case findExit originRm dir of
+      Nothing -> (ms, Left sorry)
+      Just (linkTxt, destId, linkMove, maybeOriginMsg, maybeDestMsg) ->
+          let originDesig  = mkStdDesig i ms DoCap
+              s            = getSing    i ms
+              originMobIds = i `delete` desigIds originDesig
+              destMobIds   = findMobIds ms . getInv destId $ ms
+              ms'          = ms & mobTbl.ind i.rmId      .~ destId
+                                & mobTbl.ind i.lastRmId  .~ originId
+                                & mobTbl.ind i.curFp     %~ subtract (linkMove^.moveCost)
+                                & mobTbl.ind i.mobRmDesc .~ Nothing
+                                & invTbl.ind originId    %~ (i `delete`)
+                                & invTbl.ind destId      %~ addToInv ms (pure i)
+              msgAtOrigin  = nlnl $ case maybeOriginMsg of
+                               Nothing  -> T.concat [ serialize originDesig, spaced verb, expandLinkName dir, "." ]
+                               Just msg -> T.replace "%" (serialize originDesig) msg
+              msgAtDest    = let destDesig = mkSerializedNonStdDesig i ms s A DoCap in nlnl $ case maybeDestMsg of
+                               Nothing  -> T.concat [ destDesig, " arrives from ", expandOppLinkName dir, "." ]
+                               Just msg -> T.replace "%" destDesig msg
+              logMsg       = T.concat [ "moved "
+                                      , linkTxt
+                                      , " from room "
+                                      , showRm originId originRm
+                                      , " to room "
+                                      , showRm destId . getRm destId $ ms
+                                      , "." ]
+          in (ms', Right (not (isSpiritId i ms) |?| [ (msgAtOrigin, originMobIds), (msgAtDest, destMobIds) ], logMsg))
     sorry     = dir `elem` stdLinkNames ? sorryGoExit :? sorryGoParseDir dir
     verb      | dir == "u"              = "goes"
               | dir == "d"              = "heads"
@@ -1532,18 +1528,19 @@ tryMove i mq cols dir = helper |&| modifyState >=> \case Left  msg          -> w
     showRm ri = ((|<>|) <$> showText . fst <*> views rmName parensQuote . snd) . (ri, )
 
 
-findExit :: HasCallStack => Rm -> LinkName -> Maybe (Text, Id, Maybe Text, Maybe Text)
-findExit (view rmLinks -> rls) ln =
-    case [ (showLink rl, getDestId rl, getOriginMsg rl, getDestMsg rl) | rl <- rls, isValid rl ] of
-      [] -> Nothing
-      xs -> Just . head $ xs
+findExit :: HasCallStack => Rm -> LinkName -> Maybe (Text, Id, LinkMove, Maybe Text, Maybe Text)
+findExit rm ln = case views rmLinks (filter isValid) rm of
+  []     -> Nothing
+  (rl:_) -> Just . ((,,,,) <$> getLinkName <*> getDestId <*> getLinkMove <*> getOriginMsg <*> getDestMsg) $ rl
   where
     isValid      StdLink    { .. } = ln == linkDirToCmdName _slDir
     isValid      NonStdLink { .. } = ln `T.isPrefixOf` _nslName
-    showLink     StdLink    { .. } = showText _slDir
-    showLink     NonStdLink { .. } = _nslName
+    getLinkName  StdLink    { .. } = showText _slDir
+    getLinkName  NonStdLink { .. } = _nslName
     getDestId    StdLink    { .. } = _slDestId
     getDestId    NonStdLink { .. } = _nslDestId
+    getLinkMove  StdLink    { .. } = _slMove
+    getLinkMove  NonStdLink { .. } = _nslMove
     getOriginMsg NonStdLink { .. } = Just _nslOriginMsg
     getOriginMsg _                 = Nothing
     getDestMsg   NonStdLink { .. } = Just _nslDestMsg
