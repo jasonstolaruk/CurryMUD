@@ -1472,34 +1472,41 @@ shuffleGive i ms LastArgIsTargetBindings { .. } =
 
 
 go :: HasCallStack => Text -> ActionFun
-go dir p@ActionParams { args = [] } = goDispatcher p { args = pure dir   }
-go dir p@ActionParams { args      } = goDispatcher p { args = dir : args }
+go dir p@ActionParams { args } = goDispatcher p { args = dir : args }
 
 
 goDispatcher :: HasCallStack => ActionFun
-goDispatcher   ActionParams { args = [] } = unit
-goDispatcher p@(Lower i mq cols as)       = mapM_ (tryMove i mq cols p { args = [] }) as
-goDispatcher p                            = patternMatchFail "goDispatcher" . showText $ p
-
-
--- TODO: Movement costs FP.
-tryMove :: HasCallStack => Id -> MsgQueue -> Cols -> ActionParams -> Text -> MudStack ()
-tryMove i mq cols p dir = helper |&| modifyState >=> \case
-  Left  msg          -> wrapSend mq cols msg
-  Right (bs, logMsg) -> do logPla "tryMove" i logMsg
-                           sendGmcpRmInfo Nothing i =<< getState
-                           look p
-                           bcastIfNotIncog i bs
+goDispatcher ActionParams { args = [] } = unit
+goDispatcher (Lower i mq cols as)       = helper as
   where
-    helper ms = let { originId = getRmId i ms; originRm = getRm originId ms } in case findExit originRm dir of
+    helper []         = unit
+    helper (dir:dirs) = fst . getFps i <$> getState >>= \x -> if x <= 0
+      then wrapSend mq cols "You are too exhausted to move."
+      else tryMove i mq cols dir >> helper dirs
+goDispatcher p = patternMatchFail "goDispatcher" . showText $ p
+
+
+tryMove :: HasCallStack => Id -> MsgQueue -> Cols -> Text -> MudStack ()
+tryMove i mq cols dir = helper |&| modifyState >=> \case Left  msg          -> wrapSend mq cols msg
+                                                         Right (bs, logMsg) -> do logPla "tryMove" i logMsg
+                                                                                  sendGmcpRmInfo Nothing i =<< getState
+                                                                                  look . ActionParams i mq cols $ []
+                                                                                  bcastIfNotIncog i bs
+  where
+    helper ms =
+        let originId   = getRmId i ms
+            originRm   = getRm originId ms
+            fpHelper x = x -- TODO
+        in case findExit originRm dir of
           Nothing -> (ms, Left sorry)
           Just (linkTxt, destId, maybeOriginMsg, maybeDestMsg) ->
             let originDesig  = mkStdDesig i ms DoCap
                 s            = getSing    i ms
                 originMobIds = i `delete` desigIds originDesig
-                destMobIds   = findMobIds ms $ ms^.invTbl.ind destId
+                destMobIds   = findMobIds ms . getInv destId $ ms
                 ms'          = ms & mobTbl.ind i.rmId      .~ destId
                                   & mobTbl.ind i.lastRmId  .~ originId
+                                  & mobTbl.ind i.curFp     %~ fpHelper
                                   & mobTbl.ind i.mobRmDesc .~ Nothing
                                   & invTbl.ind originId    %~ (i `delete`)
                                   & invTbl.ind destId      %~ addToInv ms (pure i)
