@@ -132,10 +132,10 @@ listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed 
 
 
 listenExHandler :: SomeException -> MudStack ()
-listenExHandler e = liftIO printPanicMsg >> case fromException e of
+listenExHandler e = case fromException e of
   Just UserInterrupt -> logNotice "listenExHandler" "exiting on user interrupt."
   Just ThreadKilled  -> logNotice "listenExHandler" "thread killed."
-  _                  -> logExMsg  "listenExHandler" "exception caught on listen thread" e
+  _                  -> logExMsg  "listenExHandler" "exception caught on listen thread" e >> liftIO printPanicMsg
 
 
 sortAllInvs :: HasCallStack => MudStack ()
