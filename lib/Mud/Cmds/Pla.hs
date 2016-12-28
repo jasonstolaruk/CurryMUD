@@ -1500,25 +1500,22 @@ tryMove i mq cols dir = helper |&| modifyState >=> \case Left  msg          -> w
               s            = getSing    i ms
               originMobIds = i `delete` desigIds originDesig
               destMobIds   = findMobIds ms . getInv destId $ ms
-              ms'          = ms & mobTbl.ind i.rmId      .~ destId
-                                & mobTbl.ind i.lastRmId  .~ originId
-                                & mobTbl.ind i.curFp     %~ subtract (linkMove^.moveCost)
-                                & mobTbl.ind i.mobRmDesc .~ Nothing
-                                & invTbl.ind originId    %~ (i `delete`)
-                                & invTbl.ind destId      %~ addToInv ms (pure i)
+              ms'          = upd ms [ mobTbl.ind i.rmId      .~ destId
+                                    , mobTbl.ind i.lastRmId  .~ originId
+                                    , mobTbl.ind i.curFp     %~ moveCostHelper
+                                    , mobTbl.ind i.mobRmDesc .~ Nothing
+                                    , invTbl.ind originId    %~ (i `delete`)
+                                    , invTbl.ind destId      %~ addToInv ms (pure i) ]
               msgAtOrigin  = nlnl $ case maybeOriginMsg of
                                Nothing  -> T.concat [ serialize originDesig, spaced verb, expandLinkName dir, "." ]
                                Just msg -> T.replace "%" (serialize originDesig) msg
               msgAtDest    = let destDesig = mkSerializedNonStdDesig i ms s A DoCap in nlnl $ case maybeDestMsg of
                                Nothing  -> T.concat [ destDesig, " arrives from ", expandOppLinkName dir, "." ]
                                Just msg -> T.replace "%" destDesig msg
-              logMsg       = T.concat [ "moved "
-                                      , linkTxt
-                                      , " from room "
-                                      , showRm originId originRm
-                                      , " to room "
-                                      , showRm destId . getRm destId $ ms
-                                      , "." ]
+              logMsg       = let { fromTxt = showRm originId originRm; toTxt = showRm destId . getRm destId $ ms }
+                             in T.concat [ "moved ", linkTxt, " from room ", fromTxt, " to room ", toTxt, "." ]
+              moveCostHelper x | uncurry (||) . (isAdminId `fanUncurry` isSpiritId) $ (i, ms) = x
+                               | otherwise = subtract (linkMove^.moveCost) x
           in (ms', Right (not (isSpiritId i ms) |?| [ (msgAtOrigin, originMobIds), (msgAtDest, destMobIds) ], logMsg))
     sorry     = dir `elem` stdLinkNames ? sorryGoExit :? sorryGoParseDir dir
     verb      | dir == "u"              = "goes"
@@ -3876,8 +3873,8 @@ tune (Lower' i as) = helper |&| modifyState >=> \(bs, logMsgs) -> logMsgs |#| lo
                     linkTbl = getTeleLinkTbl i ms
                     chans   = getPCChans     i ms
                     (linkTbl', chans', msgs, logMsgs) = foldl' (helperTune s) (linkTbl, chans, [], []) as
-                in ( ms & teleLinkMstrTbl.ind i .~ linkTbl'
-                        & chanTbl %~ flip (foldr (\c -> ind (c^.chanId) .~ c)) chans'
+                in ( upd ms [ teleLinkMstrTbl.ind i .~ linkTbl'
+                            , chanTbl %~ flip (foldr (\c -> ind (c^.chanId) .~ c)) chans' ]
                    , (mkBcast i . T.unlines $ msgs, logMsgs) )
 tune p = patternMatchFail "tune" . showText $ p
 
@@ -3960,11 +3957,11 @@ unlink   (LowerNub i mq cols as) =
                                    targetBs | colorize <- colorWith unlinkColor
                                             , bs       <- mkBcast targetId . nlnl . colorize . unlinkMsg tingleLoc $ s
                                             = isAwake targetId ms' |?| bs
-                                   ms''     = ms' & teleLinkMstrTbl.ind i       .at targetSing .~ Nothing
-                                                  & teleLinkMstrTbl.ind targetId.at s          .~ Nothing
-                                                  & pcTbl .ind i       .linked %~ (targetSing `delete`)
-                                                  & pcTbl .ind targetId.linked %~ (s          `delete`)
-                                                  & mobTbl.ind i       .curPp  -~ onTrue (isSpirit p) (const 0) 5
+                                   ms''     = upd ms' [ teleLinkMstrTbl.ind i       .at targetSing .~ Nothing
+                                                      , teleLinkMstrTbl.ind targetId.at s          .~ Nothing
+                                                      , pcTbl .ind i       .linked %~ (targetSing `delete`)
+                                                      , pcTbl .ind targetId.linked %~ (s          `delete`)
+                                                      , mobTbl.ind i       .curPp  -~ onTrue (isSpirit p) (const 0) 5 ]
                                in a & _1 .~  ms''
                                     & _2 <>~ (nlnl srcMsg, pure i) : targetBs
                                     & _3 <>~ pure targetSing

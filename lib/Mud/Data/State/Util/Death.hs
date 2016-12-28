@@ -111,8 +111,8 @@ handleDeath i = isNpc i <$> getState >>= \npc -> do
 possessHelper :: HasCallStack => Id -> MudStack ()
 possessHelper i = modifyStateSeq $ \ms -> case getPossessor i ms of
   Nothing -> (ms, [])
-  Just pi -> ( ms & plaTbl.ind pi.possessing   .~ Nothing
-                  & npcTbl.ind i .npcPossessor .~ Nothing
+  Just pi -> ( upd ms [ plaTbl.ind pi.possessing   .~ Nothing
+                      , npcTbl.ind i .npcPossessor .~ Nothing ]
              , let (mq, cols) = getMsgQueueColumns pi ms
                    t          = aOrAnOnLower (descSingId i ms) <> "; NPC has died"
                in [ logPla "possessHelper" pi . prd $ "stopped possessing " <> t
@@ -170,9 +170,9 @@ mkCorpse i ms =
         pcCorpse            = PCCorpse (getSing i ms) corpsePlaceholder (getSex i ms) r
         (corpseId, ms', fs) = newCorpse ms et ot ct ic corpse . getRmId i $ ms
         logMsg              = T.concat [ "corpse with ID ", showText corpseId, " created for ", descSingId i ms, "." ]
-    in ( ms' & coinsTbl.ind i .~ mempty
-             & eqTbl   .ind i .~ M.empty
-             & invTbl  .ind i .~ []
+    in ( upd ms' [ coinsTbl.ind i .~ mempty
+                 , eqTbl   .ind i .~ M.empty
+                 , invTbl  .ind i .~ [] ]
        , fs ++ [ logPla "mkCorpse" i "corpse created."
                , logNotice "mkCorpse" logMsg
                , startCorpseDecomp corpseId . dup . getCorpseDecompSecs i $ ms ] )
@@ -212,14 +212,14 @@ spiritize i = do
                                                             , not . isLoggedIn . getPla targetId $ ms ]
                               in views pcTbl (IM.keys . IM.filterWithKey f . IM.delete i) ms
               (bs, fs)      = mkLinkBcasts i ms s . map dropSnd $ retaineds
-          in ( ms & plaTbl.ind i    %~ setPlaFlag IsSpirit True
-                  & pcTbl           %~ pcTblHelper           i s retainedIds retainedSings
-                  & teleLinkMstrTbl %~ teleLinkMstrTblHelper i s retainedIds retainedSings
-                  & mobTbl.ind i    %~ setCurrXps
+          in ( upd ms [ plaTbl.ind i    %~ setPlaFlag IsSpirit True
+                      , pcTbl           %~ pcTblHelper           i s retainedIds retainedSings
+                      , teleLinkMstrTbl %~ teleLinkMstrTblHelper i s retainedIds retainedSings
+                      , mobTbl.ind i    %~ setCurrXps ]
              , [ logPla "spiritize" i "spirit created."
                , forM_ asleepIds $ \targetId -> retainedMsg targetId ms . linkMissingMsg $ s
                , bcast bs
-               , sequence_ (fs :: HasCallStack => Funs)
+               , sequence_ (fs :: Funs)
                , runSpiritTimerAsync i secs ] )
   where
     procOnlySings xs = map snd . sortBy (flip compare `on` fst) $ [ (length g, s)
@@ -243,10 +243,7 @@ teleLinkMstrTblHelper i s retainedIds retainedSings = IM.mapWithKey helper
 
 
 setCurrXps :: HasCallStack => Mob -> Mob
-setCurrXps ms = ms & curHp .~ (ms^.maxHp)
-                   & curMp .~ (ms^.maxMp)
-                   & curPp .~ (ms^.maxPp)
-                   & curFp .~ (ms^.maxFp)
+setCurrXps m = (curHp .~ (m^.maxHp)) . (curMp .~ (m^.maxMp)) . (curPp .~ (m^.maxPp)) . (curFp .~ (m^.maxFp)) $ m
 
 
 mkLinkBcasts :: HasCallStack => Id -> MudState -> Sing -> [(Id, Bool)] -> ([Broadcast], Funs)

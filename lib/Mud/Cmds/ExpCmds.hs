@@ -1158,4 +1158,4 @@ vomit i mq cols ecn a = getState >>= \ms -> case getStomach i ms of
             a'        = a & _4 <>~ amtTxt
             fs        = pure . expCmdHelper i mq cols ecn $ a'
             cont'     = not isEmptied |?| dropRndmElems v actualAmt cont
-        in (ms & mobTbl.ind i.stomach .~ cont', fs :: HasCallStack => Funs)
+        in (ms & mobTbl.ind i.stomach .~ cont', fs :: Funs)

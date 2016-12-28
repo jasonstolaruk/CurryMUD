@@ -1005,7 +1005,7 @@ createAdminZone = do
             Nothing
             Nothing
             zeroBits
-            [ StdLink South iOutside dfltLinkMove ]
+            [ StdLink South iOutside (LinkMove 5 0) ]
             (-2, 1, -2)
             InsideEnv
             (Just "Inside")
@@ -1018,8 +1018,8 @@ createAdminZone = do
             Nothing
             Nothing
             zeroBits
-            [ StdLink North iInside dfltLinkMove
-            , StdLink South iShop   dfltLinkMove ]
+            [ StdLink North iInside (LinkMove 5 0)
+            , StdLink South iShop   (LinkMove 5 0) ]
             (-2, 0, -2)
             OutsideEnv
             (Just "Outside")
@@ -1032,8 +1032,8 @@ createAdminZone = do
             Nothing
             Nothing
             zeroBits
-            [ StdLink North iOutside dfltLinkMove
-            , StdLink South iSpecial dfltLinkMove ]
+            [ StdLink North iOutside (LinkMove 5 0)
+            , StdLink South iSpecial (LinkMove 5 0) ]
             (-2, -1, -2)
             ShopEnv
             (Just "Shop")
@@ -1046,8 +1046,8 @@ createAdminZone = do
             Nothing
             Nothing
             zeroBits
-            [ StdLink North iShop  dfltLinkMove
-            , StdLink South iNoEnv dfltLinkMove ]
+            [ StdLink North iShop  (LinkMove 5 0)
+            , StdLink South iNoEnv (LinkMove 5 0) ]
             (-2, -2, -2)
             SpecialEnv
             (Just "Special")
@@ -1061,7 +1061,7 @@ createAdminZone = do
             Nothing
             Nothing
             zeroBits
-            [ StdLink    North iSpecial dfltLinkMove
+            [ StdLink    North iSpecial (LinkMove 5 0)
             , NonStdLink "in"  iCottage dfltLinkMove "% enters the cottage." "% enters the cottage." ]
             (-2, -3, -2)
             NoEnv

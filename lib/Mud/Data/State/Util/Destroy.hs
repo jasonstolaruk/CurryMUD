@@ -10,7 +10,7 @@ import Mud.Threads.Misc
 import Mud.Util.Misc
 
 import Control.Lens (at)
-import Control.Lens.Operators ((%~), (&), (.~))
+import Control.Lens.Operators ((%~), (.~))
 import Data.List (delete)
 import qualified Data.IntMap.Lazy as IM (map)
 
@@ -26,28 +26,30 @@ destroyHelper :: Inv -> MudState -> MudState
 destroyHelper = flip . foldr $ helper
   where
     helper i ms = case getType i ms of
-      ArmType      -> ms & destroyEnt & destroyObj & destroyArm   & rest
-      ClothType    -> ms & destroyEnt & destroyObj & destroyCloth & rest
-      ConType      -> destroyCont & destroyEnt
-                                  & destroyObj
-                                  & destroyInv
-                                  & destroyCoins
-                                  & destroyCloth
-                                  & destroyCon
-                                  & rest
-      CorpseType   -> destroyCont & destroyEnt
-                                  & destroyObj
-                                  & destroyInv
-                                  & destroyCoins
-                                  & destroyCloth
-                                  & destroyCon
-                                  & destroyCorpse
-                                  & rest
-      FoodType     -> ms & destroyEnt & destroyObj & destoryFood     & rest
-      ObjType      -> ms & destroyEnt & destroyObj                   & rest
-      VesselType   -> ms & destroyEnt & destroyObj & destroyVessel   & rest
-      WpnType      -> ms & destroyEnt & destroyObj & destroyWpn      & rest
-      WritableType -> ms & destroyEnt & destroyObj & destroyWritable & rest
+      ArmType      -> upd ms [ destroyEnt, destroyObj, destroyArm,   rest ]
+      ClothType    -> upd ms [ destroyEnt, destroyObj, destroyCloth, rest ]
+      ConType      -> upd ms [ destroyCont
+                             , destroyEnt
+                             , destroyObj
+                             , destroyInv
+                             , destroyCoins
+                             , destroyCloth
+                             , destroyCon
+                             , rest ]
+      CorpseType   -> upd ms [ destroyCont
+                             , destroyEnt
+                             , destroyObj
+                             , destroyInv
+                             , destroyCoins
+                             , destroyCloth
+                             , destroyCon
+                             , destroyCorpse
+                             , rest ]
+      FoodType     -> upd ms [ destroyEnt, destroyObj, destoryFood,     rest ]
+      ObjType      -> upd ms [ destroyEnt, destroyObj,                  rest ]
+      VesselType   -> upd ms [ destroyEnt, destroyObj, destroyVessel,   rest ]
+      WpnType      -> upd ms [ destroyEnt, destroyObj, destroyWpn,      rest ]
+      WritableType -> upd ms [ destroyEnt, destroyObj, destroyWritable, rest ]
       _            -> ms
       where
         destroyArm      = armTbl     .at i .~ Nothing
@@ -63,5 +65,5 @@ destroyHelper = flip . foldr $ helper
         destroyVessel   = vesselTbl  .at i .~ Nothing
         destroyWpn      = wpnTbl     .at i .~ Nothing
         destroyWritable = writableTbl.at i .~ Nothing
-        destroyCont     = foldr helper ms . getInv i $ ms
-        rest ms'        = ms' & destroyType & invTbl %~ IM.map (i `delete`)
+        destroyCont ms' = foldr helper ms' . getInv i $ ms'
+        rest            = flip upd [ destroyType, invTbl %~ IM.map (i `delete`) ]

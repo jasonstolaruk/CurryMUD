@@ -67,7 +67,8 @@ module Mud.Data.State.Util.Misc ( addToInv
                                 , setInterp
                                 , sortInv
                                 , tweak
-                                , tweaks ) where
+                                , tweaks
+                                , upd ) where
 
 import Mud.Data.Misc
 import Mud.Data.State.MudData
@@ -415,16 +416,16 @@ leaveParty i ms = let helper p = memberOfHelper . myGroupHelper . followersHelpe
                         where
                           followingHelper ms' = views following (maybe ms' f) p
                             where
-                              f followingId = ms' & mobTbl.ind i          .party.following .~ Nothing
-                                                  & mobTbl.ind followingId.party.followers %~ delete i
+                              f followingId = upd ms' [ mobTbl.ind i          .party.following .~ Nothing
+                                                      , mobTbl.ind followingId.party.followers %~ delete i ]
                           followersHelper ms' = (mobTbl.ind i.party.followers .~ []) . foldr f ms' $ p^.followers
                             where
                               f followerId = mobTbl.ind followerId.party.following .~ Nothing
                           myGroupHelper      = mobTbl.ind i.party.myGroup .~ []
                           memberOfHelper ms' = views memberOf (maybe ms' f) p
                             where
-                              f memberOfId = ms' & mobTbl.ind i         .party.memberOf .~ Nothing
-                                                 & mobTbl.ind memberOfId.party.myGroup  %~ delete i
+                              f memberOfId = upd ms' [ mobTbl.ind i         .party.memberOf .~ Nothing
+                                                     , mobTbl.ind memberOfId.party.myGroup  %~ delete i ]
                   in helper . getParty i $ ms
 
 
@@ -657,20 +658,20 @@ procQuoteChars as@(T.unwords -> txt) | not $ q `T.isInfixOf` txt = Just as
 
 
 removeAdHoc :: HasCallStack => Id -> MudState -> MudState
-removeAdHoc i ms = ms & activeEffectsTbl.at  i        .~ Nothing
-                      & coinsTbl        .at  i        .~ Nothing
-                      & entTbl          .at  i        .~ Nothing
-                      & eqTbl           .at  i        .~ Nothing
-                      & invTbl          .at  i        .~ Nothing
-                      & invTbl          .ind iWelcome %~ (i `delete`)
-                      & mobTbl          .at  i        .~ Nothing
-                      & msgQueueTbl     .at  i        .~ Nothing
-                      & pausedEffectsTbl.at  i        .~ Nothing
-                      & pcTbl           .at  i        .~ Nothing
-                      & plaTbl          .at  i        .~ Nothing
-                      & rndmNamesMstrTbl.at  i        .~ Nothing
-                      & teleLinkMstrTbl .at  i        .~ Nothing
-                      & typeTbl         .at  i        .~ Nothing
+removeAdHoc i = flip upd [ activeEffectsTbl.at  i        .~ Nothing
+                         , coinsTbl        .at  i        .~ Nothing
+                         , entTbl          .at  i        .~ Nothing
+                         , eqTbl           .at  i        .~ Nothing
+                         , invTbl          .at  i        .~ Nothing
+                         , invTbl          .ind iWelcome %~ (i `delete`)
+                         , mobTbl          .at  i        .~ Nothing
+                         , msgQueueTbl     .at  i        .~ Nothing
+                         , pausedEffectsTbl.at  i        .~ Nothing
+                         , pcTbl           .at  i        .~ Nothing
+                         , plaTbl          .at  i        .~ Nothing
+                         , rndmNamesMstrTbl.at  i        .~ Nothing
+                         , teleLinkMstrTbl .at  i        .~ Nothing
+                         , typeTbl         .at  i        .~ Nothing ]
 
 
 -----
@@ -712,3 +713,10 @@ tweak f = modifyState $ (, ()) . f
 
 tweaks :: HasCallStack => [MudState -> MudState] -> MudStack ()
 tweaks fs = tweak $ \ms -> foldl' (&) ms fs
+
+
+-----
+
+
+upd :: MudState -> [MudState -> MudState] -> MudState
+upd = foldl' (|&|)

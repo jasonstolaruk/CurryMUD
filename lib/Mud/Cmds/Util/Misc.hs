@@ -197,11 +197,11 @@ lvlUp i = helper
       | oldLvl >= newLvl = ms
       | otherwise        = let (V.toList -> [ a, b, c, d, e ], v') = V.splitAt noOfLvlUpRndmInts v
                                myMob = mobTbl.ind i
-                               ms'   = ms & myMob.maxHp          +~ calcLvlUpHp       i ms a
-                                          & myMob.maxMp          +~ calcLvlUpMp       i ms b
-                                          & myMob.maxPp          +~ calcLvlUpPp       i ms c
-                                          & myMob.maxFp          +~ calcLvlUpFp       i ms d
-                                          & pcTbl.ind i.skillPts +~ calcLvlUpSkillPts i ms e
+                               ms'   = upd ms [ myMob.maxHp          +~ calcLvlUpHp       i ms a
+                                              , myMob.maxMp          +~ calcLvlUpMp       i ms b
+                                              , myMob.maxPp          +~ calcLvlUpPp       i ms c
+                                              , myMob.maxFp          +~ calcLvlUpFp       i ms d
+                                              , pcTbl.ind i.skillPts +~ calcLvlUpSkillPts i ms e ]
                            in helper ms' v' (succ oldLvl) newLvl
 
 

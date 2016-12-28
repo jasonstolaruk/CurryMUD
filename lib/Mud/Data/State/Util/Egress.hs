@@ -96,10 +96,10 @@ peepHelper i ms s spirit =
                                           , parensQuote $ s <> spaced "has" <> txt
                                           , "." ]) | peeperId <- peeperIds ]
         txt     = spirit ? "passed into the beyond" :? "disconnected"
-    in (ms & plaTbl %~ stopPeeping     peepingIds
-           & plaTbl %~ stopBeingPeeped peeperIds
-           & plaTbl.ind i.peeping .~ []
-           & plaTbl.ind i.peepers .~ [], bs, logMsgs)
+    in (upd ms [ plaTbl %~ stopPeeping     peepingIds
+               , plaTbl %~ stopBeingPeeped peeperIds
+               , plaTbl.ind i.peeping .~ []
+               , plaTbl.ind i.peepers .~ [] ], bs, logMsgs)
   where
     stopPeeping     peepingIds pt = let f peepedId ptAcc = ptAcc & ind peepedId.peepers %~ (i `delete`)
                                     in foldr f pt peepingIds
@@ -108,18 +108,18 @@ peepHelper i ms s spirit =
 
 
 movePC :: HasCallStack => Id -> MudState -> Bool -> MudState
-movePC i ms spirit = ms & invTbl     .ind ri           %~ (i `delete`)
-                        & invTbl     .ind ri'          %~ (i :)
-                        & msgQueueTbl.at  i            .~ Nothing
-                        & mobTbl     .ind i.rmId       .~ ri'
-                        & plaTbl     .ind i.logoutRmId ?~ ri
+movePC i ms spirit = upd ms [ invTbl     .ind ri           %~ (i `delete`)
+                            , invTbl     .ind ri'          %~ (i :)
+                            , msgQueueTbl.at  i            .~ Nothing
+                            , mobTbl     .ind i.rmId       .~ ri'
+                            , plaTbl     .ind i.logoutRmId ?~ ri ]
   where
     (ri, ri') = (getRmId i ms, spirit ? iNecropolis :? iLoggedOut)
 
 
 possessHelper :: HasCallStack => Int -> MudState -> MudState
 possessHelper i ms = let f = maybe id (\npcId -> npcTbl.ind npcId.npcPossessor .~ Nothing) . getPossessing i $ ms
-                     in ms & plaTbl.ind i.possessing .~ Nothing & f
+                     in upd ms [ plaTbl.ind i.possessing .~ Nothing, f ]
 
 
 updateHostMap :: HasCallStack => Id -> MudState -> Sing -> UTCTime -> MudState

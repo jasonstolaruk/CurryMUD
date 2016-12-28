@@ -1281,8 +1281,8 @@ adminPossess   (OneArgNubbed i mq cols target) = modifyStateSeq $ \ms ->
           where
             targetSing      = getSing targetId ms
             can'tPossess pi = sorry . sorryAlreadyPossessed targetSing . getSing pi $ ms
-            canPossess      = ( ms & plaTbl.ind i       .possessing   ?~ targetId
-                                   & npcTbl.ind targetId.npcPossessor ?~ i
+            canPossess      = ( upd ms [ plaTbl.ind i       .possessing   ?~ targetId
+                                       , npcTbl.ind targetId.npcPossessor ?~ i ]
                               , [ logPla "adminPossess" i logMsg
                                 , sendFun . prd $ "You are now possessing " <> aOrAnOnLower targetSing
                                 , sendDfltPrompt mq targetId ] )
@@ -1945,8 +1945,8 @@ adminSudoer   (OneArgNubbed i mq cols target) = modifyStateSeq $ \ms ->
               | targetSing == "Root"   -> sorry sorrySudoerDemoteRoot
               | isAdHoc    targetId ms -> sorry sorrySudoerAdHoc
               | isSpiritId targetId ms -> sorry . sorrySudoerSpirit $ targetSing
-              | otherwise              -> (ms & plaTbl.ind targetId %~ setPlaFlag IsAdmin      (not ia)
-                                              & plaTbl.ind targetId %~ setPlaFlag IsTunedAdmin (not ia), fs)
+              | otherwise              -> (upd ms [ plaTbl.ind targetId %~ setPlaFlag IsAdmin      (not ia)
+                                                  , plaTbl.ind targetId %~ setPlaFlag IsTunedAdmin (not ia) ], fs)
       xs -> patternMatchFail fn . showText $ xs
 adminSudoer p = advise p [] adviceASudoerExcessArgs
 

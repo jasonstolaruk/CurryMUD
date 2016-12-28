@@ -236,11 +236,11 @@ initActiveEffectsTbl = tweak $ \ms -> ms & activeEffectsTbl .~ IM.fromList [ (i,
 
 movePCs :: HasCallStack => MudStack ()
 movePCs = tweak $ \ms ->
-    let idsWithRmIds       = let pairs   = views mobTbl (IM.foldrWithKey f []) ms
-                                 f i mob = onTrue (isPC i ms) ((i, mob^.rmId) :)
-                             in filter (((&&) <$> (/= iLoggedOut) <*> (/= iNecropolis)) . snd) pairs
-        helper (i, ri) ms' = ms' & invTbl.ind ri           %~ (i `delete`)
-                                 & invTbl.ind iLoggedOut   %~ (i :)
-                                 & mobTbl.ind i.rmId       .~ iLoggedOut
-                                 & plaTbl.ind i.logoutRmId ?~ ri
+    let idsWithRmIds   = let pairs   = views mobTbl (IM.foldrWithKey f []) ms
+                             f i mob = onTrue (isPC i ms) ((i, mob^.rmId) :)
+                         in filter (((&&) <$> (/= iLoggedOut) <*> (/= iNecropolis)) . snd) pairs
+        helper (i, ri) = flip upd [ invTbl.ind ri           %~ (i `delete`)
+                                  , invTbl.ind iLoggedOut   %~ (i :)
+                                  , mobTbl.ind i.rmId       .~ iLoggedOut
+                                  , plaTbl.ind i.logoutRmId ?~ ri ]
     in foldr helper ms idsWithRmIds
