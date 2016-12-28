@@ -1481,7 +1481,7 @@ goDispatcher (Lower i mq cols as)       = helper as
   where
     helper []         = unit
     helper (dir:dirs) = fst . getFps i <$> getState >>= \x -> if x <= 0
-      then wrapSend mq cols "You are too exhausted to move."
+      then wrapSend mq cols exhaustedMsg
       else tryMove i mq cols dir >> helper dirs
 goDispatcher p = patternMatchFail "goDispatcher" . showText $ p
 

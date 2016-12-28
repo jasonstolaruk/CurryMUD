@@ -1258,7 +1258,7 @@ isNonStdLink _             = False
 
 mkFpDesc :: HasCallStack => Id -> MudState -> Text
 mkFpDesc i ms = let (c, m) = getFps i ms
-                in mkDescForPercent9 (c `percent` m) [ colorWith magenta "You are too exhausted to move."
+                in mkDescForPercent9 (c `percent` m) [ colorWith magenta exhaustedMsg
                                                      , colorWith magenta "You are seriously tired."
                                                      , colorWith red     "You are extremely tired."
                                                      , "You are very tired."

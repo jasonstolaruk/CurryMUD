@@ -100,6 +100,10 @@ enterDescMsg = T.unlines . map (lSpcs <>) $ ts
     endCharTxt = dblQuote . T.singleton $ multiLineEndChar
 
 
+exhaustedMsg :: Text
+exhaustedMsg = "You are too exhausted to move."
+
+
 focusingInnateMsg :: Text
 focusingInnateMsg = "Focusing your innate psionic energy for a brief moment, "
 
