@@ -1718,8 +1718,6 @@ sorryStopActName t = T.concat [ dblQuote t
                               , " is not the name of an activity that can be stopped. Please type "
                               , colorWith quoteColor "stop"
                               , " followed by one of the following: "
-                              , colorWith quoteColor "moving"
-                              , ", "
                               , colorWith quoteColor "eating"
                               , ", "
                               , colorWith quoteColor "drinking"
@@ -1735,8 +1733,8 @@ sorryStopNotDoing actType = "You're not " <> pp actType <> " anything at the mom
 
 
 sorryStopNotDoingAnything :: Text
-sorryStopNotDoingAnything = "You're not doing anything that can be stopped "     <>
-                            parensQuote "moving, eating, drinking, or attacking" <>
+sorryStopNotDoingAnything = "You're not doing anything that can be stopped " <>
+                            parensQuote "eating, drinking, or attacking"     <>
                             "."
 
 

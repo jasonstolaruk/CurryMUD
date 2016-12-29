@@ -208,7 +208,7 @@ cmdDescStats = "Display your stats."
 
 
 cmdDescStop :: Text
-cmdDescStop = "Stop moving, eating, drinking, or attacking."
+cmdDescStop = "Stop eating, drinking, or attacking."
 
 
 cmdDescTaste :: Text

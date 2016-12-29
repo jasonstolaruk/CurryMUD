@@ -794,8 +794,6 @@ adviceStopExcessArgs :: Text
 adviceStopExcessArgs = T.concat [ "Please type "
                                 , colorWith quoteColor "stop"
                                 , " followed by one of the following: "
-                                , colorWith quoteColor "moving"
-                                , ", "
                                 , colorWith quoteColor "eating"
                                 , ", "
                                 , colorWith quoteColor "drinking"
