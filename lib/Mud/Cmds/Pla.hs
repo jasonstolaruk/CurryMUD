@@ -536,10 +536,10 @@ adminList p = patternMatchFail "adminList" . showText $ p
 
 
 alertExec :: HasCallStack => CmdName -> ActionFun
-alertExec cn (NoArgs      i mq cols   ) = alertExecHelper i mq cols cn "" ""
-alertExec cn (OneArgLower i mq cols a ) = alertExecHelper i mq cols cn a  a
-alertExec cn (WithArgs    i mq cols as) = alertExecHelper i mq cols cn (head as) . spaces $ as
-alertExec _  p                          = patternMatchFail "alertExec" . showText $ p
+alertExec cn (NoArgs      i mq cols         ) = alertExecHelper i mq cols cn "" ""
+alertExec cn (OneArgLower i mq cols a       ) = alertExecHelper i mq cols cn a  a
+alertExec cn (WithArgs    i mq cols as@(a:_)) = alertExecHelper i mq cols cn a . spaces $ as
+alertExec _  p                                = patternMatchFail "alertExec" . showText $ p
 
 
 alertExecHelper :: HasCallStack => Id -> MsgQueue -> Cols -> CmdName -> Text -> Text -> MudStack ()
@@ -566,14 +566,12 @@ alertExecHelper i mq cols cn target args = do
 
 alertExecFindTargetSing :: HasCallStack => Id -> MudState -> Text -> Text
 alertExecFindTargetSing _ _  ""     = ""
-alertExecFindTargetSing i ms target =
-    let (_, _, inRms) = sortArgsInvEqRm InRm . pure $ target
-        ri            = getRmId i ms
-        invCoins      = first (i `delete`) . getVisibleInvCoins ri $ ms
-        (eiss, ecs)   = uncurry (resolveRmInvCoins i ms inRms) invCoins
-        a             = boolEmp b $ ()!# ecs
-        b             = either (const "") ((`getSing` ms) . head) . head $ eiss
-    in boolEmp a $ ()# invCoins
+alertExecFindTargetSing i ms target = let (_, _, inRms) = sortArgsInvEqRm InRm . pure $ target
+                                          invCoins      = first (i `delete`) . getVisibleInvCoins (getRmId i ms) $ ms
+                                          (eiss, _)     = uncurry (resolveRmInvCoins i ms inRms) invCoins
+                                      in ()!# invCoins |?| case eiss of []           -> ""
+                                                                        (Right is:_) -> commas . map (`getSing` ms) $ is
+                                                                        _            -> ""
 
 
 -----
@@ -1033,7 +1031,7 @@ drink   (Lower   i mq cols [amt, target]) = getState >>= \ms -> let (isDrink, is
                 maybeHooks             = lookupHooks i ms "drink"
                 -----
                 drinkInv =
-                    let (eiss, ecs)  = uncurry (resolveMobInvCoins i ms inInvs) myInvCoins
+                    let (eiss, _)    = uncurry (resolveMobInvCoins i ms inInvs) myInvCoins
                         f [targetId] = case (getSing `fanUncurry` getType) (targetId, ms) of
                           (s, VesselType) -> maybe (sorry . sorryDrinkEmpty $ s) (g s) . getVesselCont targetId $ ms
                           (s, _         ) -> sorry . sorryDrinkType $ s
@@ -1048,7 +1046,8 @@ drink   (Lower   i mq cols [amt, target]) = getState >>= \ms -> let (isDrink, is
                                                            , drinkAmt        = x }
                                        = (ms, pure . startAct i Drinking . drinkAct $ db)
                         f _ = sorry sorryDrinkExcessTargets
-                    in ()!# ecs ? sorry sorryDrinkCoins :? either sorry f (head eiss)
+                    in case eiss of []      -> sorry sorryDrinkCoins
+                                    (eis:_) -> either sorry f eis
                 -----
                 drinkRm =
                     let hookArg = head inRms <> T.cons hookArgDelimiter (showText x)
@@ -3650,7 +3649,7 @@ stop p@(NoArgs i mq cols) = getState >>= \ms ->
       [] -> wrapSend mq cols sorryStopNotDoingAnything
       xs -> let (_, actType, True, f) = head xs in stopLogHelper i (pure actType) >> f
 stop p@(OneArgLower i mq cols a) = getState >>= \ms ->
-    if a `T.isPrefixOf` "all" || a == T.singleton allChar
+    if ((||) <$> (`T.isPrefixOf` "all") <*> (== T.singleton allChar)) a
       then case filter (view _3) . mkStopTuples p $ ms of
         [] -> wrapSend mq cols sorryStopNotDoingAnything
         xs -> stopLogHelper i (select _2 xs) >> mapM_ (view _4) xs

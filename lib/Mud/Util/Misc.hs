@@ -5,7 +5,6 @@ module Mud.Util.Misc ( atLst1
                      , atomicWriteIORef'
                      , blowUp
                      , BlowUp
-                     , boolEmp
                      , boolToMaybe
                      , concatMapM
                      , divide
@@ -125,10 +124,6 @@ atLst1 x = case signum x of -1 -> 1
 
 atomicWriteIORef' :: IORef a -> a -> IO ()
 atomicWriteIORef' ior = (atomicWriteIORef ior $!)
-
-
-boolEmp :: (Monoid a) => a -> Bool -> a
-boolEmp x = bool x mempty
 
 
 boolToMaybe :: Bool -> a -> Maybe a
