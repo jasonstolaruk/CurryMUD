@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -fno-warn-type-defaults #-}
+{-# OPTIONS_GHC -fno-warn-type-defaults -Wno-redundant-constraints #-}
 {-# LANGUAGE FlexibleContexts, LambdaCase, MonadComprehensions, OverloadedStrings, TupleSections, ViewPatterns #-}
 
 module Mud.Data.State.Util.Death (handleDeath) where

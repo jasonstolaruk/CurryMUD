@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -fno-warn-type-defaults #-}
+{-# OPTIONS_GHC -fno-warn-type-defaults -Wno-redundant-constraints #-}
 {-# LANGUAGE LambdaCase, MonadComprehensions, MultiWayIf, NamedFieldPuns, OverloadedStrings, PatternSynonyms, RecordWildCards, TupleSections, ViewPatterns #-}
 
 module Mud.Interp.Login ( interpName

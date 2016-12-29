@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -Wno-redundant-constraints #-}
 {-# LANGUAGE FlexibleContexts, LambdaCase, NamedFieldPuns, OverloadedStrings, TransformListComp, TupleSections, ViewPatterns #-}
 
 -- This module contains state-related functions used by multiple modules.

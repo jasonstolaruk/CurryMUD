@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -Wno-redundant-constraints #-}
 {-# LANGUAGE FlexibleContexts, LambdaCase, MultiWayIf, NamedFieldPuns, OverloadedStrings, ParallelListComp, PatternSynonyms, TupleSections, ViewPatterns #-}
 
 -- This module contains helper functions used by multiple modules under "Mud.Cmds".

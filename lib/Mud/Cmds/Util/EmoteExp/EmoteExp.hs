@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -Wno-redundant-constraints #-}
 {-# LANGUAGE FlexibleContexts, MultiWayIf, OverloadedStrings, TupleSections, ViewPatterns #-}
 
 module Mud.Cmds.Util.EmoteExp.EmoteExp ( adminChanEmotify

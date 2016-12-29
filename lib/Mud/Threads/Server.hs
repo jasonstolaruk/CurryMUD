@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -Wno-redundant-constraints #-}
 {-# LANGUAGE LambdaCase, OverloadedStrings, ViewPatterns #-}
 
 module Mud.Threads.Server (threadServer) where

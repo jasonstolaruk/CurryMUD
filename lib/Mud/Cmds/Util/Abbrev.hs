@@ -1,3 +1,4 @@
+{-# OPTIONS_GHC -Wno-redundant-constraints #-}
 {-# LANGUAGE OverloadedStrings, TupleSections, ViewPatterns #-}
 
 module Mud.Cmds.Util.Abbrev (styleAbbrevs) where
