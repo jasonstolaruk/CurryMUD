@@ -120,7 +120,7 @@ calcBonus :: HasCallStack => Id -> MudState -> Exp -- Used by the "bonus" comman
 calcBonus i ms = let l                 = getLvl i ms
                      ((_, a):(_, b):_) = drop l $ (0, 0) : calcLvlExps
                      diff              = b - a
-                 in (diff `divideRound` 10) `max` 250
+                 in (diff `divideRound` 10) `max` 315
 
 
 -----

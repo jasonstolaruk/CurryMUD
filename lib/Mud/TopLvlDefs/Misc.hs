@@ -104,7 +104,7 @@ logRotationDelay = 60 {- mins -} * 60 {- secs -} -- one hr
 
 
 maxBonuses :: Int
-maxBonuses = 8
+maxBonuses = 10
 
 
 maxChanNameLen :: Int
