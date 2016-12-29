@@ -1347,11 +1347,12 @@ fill p@(Lower' i as) = genericActionWithHooks p helper "fill"
           then sorry dudeYourHandsAreEmpty
           else case singleArgInvEqRm InInv targetArg of
             (InInv, target) ->
-                let (eiss, ecs)  = uncurry (resolveMobInvCoins i ms . pure $ target) srcInvCoins
+                let (eiss, _)    = uncurry (resolveMobInvCoins i ms . pure $ target) srcInvCoins
                     f [targetId] | getType targetId ms /= VesselType = sorry . sorryFillSourceType . getSing targetId $ ms
                                  | otherwise                         = fillHelper i ms b targetId
                     f _          = sorry sorryFillExcessSources
-                in ()!# ecs ? sorry sorryFillSourceCoins :? either sorry f (head eiss)
+                in case eiss of []      -> sorry sorryFillSourceCoins
+                                (eis:_) -> either sorry f eis
             (InEq, _     ) -> sorry sorryFillSourceEq
             (InRm, target)
               | ()# rmInvCoins, ()# maybeHooks -> sorry sorryFillEmptyRmNoHooks
@@ -3452,9 +3453,10 @@ smell (OneArgLower i mq cols a) = getState >>= \ms ->
     sorry msg                     = wrapSend mq cols msg >> sendDfltPrompt mq i
     smellInv ms d invCoins target =
         let pair@(eiss, ecs) = uncurry (resolveMobInvCoins i ms . pure $ target) invCoins
-        in if | uncurry (&&) . ((()!#) *** (()!#)) $ pair -> sorry sorrySmellExcessTargets
-              | ()!# ecs                                  ->
-                  let (canCoins, can'tCoinMsgs) = distillEcs ecs
+        in if uncurry (&&) . ((()!#) *** (()!#)) $ pair
+          then sorry sorrySmellExcessTargets
+          else case eiss of
+            [] -> let (canCoins, can'tCoinMsgs) = distillEcs ecs
                   in case can'tCoinMsgs of
                     []    -> let (coinTxt, isPlur) = mkCoinPieceTxt canCoins
                                  smellDesc         = T.concat [ "The "
@@ -3469,26 +3471,26 @@ smell (OneArgLower i mq cols a) = getState >>= \ms ->
                                  logMsg            = prd $ "smelled " <> aCoinSomeCoins canCoins
                              in ioHelper ms Nothing smellDesc bs logMsg
                     (t:_) -> sorry t
-              | otherwise -> case head eiss of
-                Left  msg        -> sorry msg
-                Right [targetId] -> let (targetSing, t) = (getSing `fanUncurry` getType) (targetId, ms)
-                                        ic              = t == CorpseType
-                                        smellDesc       = case t of
-                                          VesselType -> case getVesselCont targetId ms of
-                                            Nothing     -> "The " <> getSing targetId ms <> " is empty."
-                                            Just (l, _) -> l^.liqSmellDesc
-                                          _ -> getEntSmell targetId ms
-                                        bs = foldr f [] $ i `delete` desigIds d
-                                          where
-                                            f i' = ((T.concat [ serialize d
-                                                              , " smells "
-                                                              , aOrAn (ic ? mkCorpseAppellation i' ms targetId :? targetSing)
-                                                              , " "
-                                                              , parensQuote "carried"
-                                                              , "." ], pure i') :)
-                                        logMsg = T.concat [ "smelled ", aOrAn targetSing, " ", parensQuote "carried", "." ]
-                                    in ioHelper ms (boolToMaybe ic targetId) smellDesc bs logMsg
-                Right _          -> sorry sorrySmellExcessTargets
+            (eis:_) -> case eis of
+              Left  msg        -> sorry msg
+              Right [targetId] -> let (targetSing, t) = (getSing `fanUncurry` getType) (targetId, ms)
+                                      ic              = t == CorpseType
+                                      smellDesc       = case t of
+                                        VesselType -> case getVesselCont targetId ms of
+                                          Nothing     -> "The " <> getSing targetId ms <> " is empty."
+                                          Just (l, _) -> l^.liqSmellDesc
+                                        _ -> getEntSmell targetId ms
+                                      bs = foldr f [] $ i `delete` desigIds d
+                                        where
+                                          f i' = ((T.concat [ serialize d
+                                                            , " smells "
+                                                            , aOrAn (ic ? mkCorpseAppellation i' ms targetId :? targetSing)
+                                                            , " "
+                                                            , parensQuote "carried"
+                                                            , "." ], pure i') :)
+                                      logMsg = T.concat [ "smelled ", aOrAn targetSing, " ", parensQuote "carried", "." ]
+                                  in ioHelper ms (boolToMaybe ic targetId) smellDesc bs logMsg
+              Right _          -> sorry sorrySmellExcessTargets
     -----
     smellEq ms d eqMap target =
         let (gecrs, miss, rcs) = resolveEntCoinNames i ms (pure target) (M.elems eqMap) mempty
