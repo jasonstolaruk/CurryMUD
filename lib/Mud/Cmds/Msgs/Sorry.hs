@@ -1731,8 +1731,7 @@ sorryStopActName t = T.concat [ dblQuote t
 
 
 sorryStopNotDoing :: ActType -> Text
-sorryStopNotDoing actType = let helper t = T.concat [ "You're not ", pp actType, " ", t, " at the moment." ]
-                            in helper . onTrue (actType == Moving) (const "anywhere") $ "anything"
+sorryStopNotDoing actType = "You're not " <> pp actType <> " anything at the moment."
 
 
 sorryStopNotDoingAnything :: Text

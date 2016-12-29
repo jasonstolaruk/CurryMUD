@@ -224,7 +224,6 @@ instance Pretty ActType where
   pp Attacking = "attacking"
   pp Drinking  = "drinking"
   pp Eating    = "eating"
-  pp Moving    = "moving"
 
 
 instance Pretty AlertExecRec where

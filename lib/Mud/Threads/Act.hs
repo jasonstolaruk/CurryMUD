@@ -74,10 +74,9 @@ stopNpcActs = sequence_ [ logNotice "stopNpcActs" "stopping NPC acts.", mapM_ st
 
 
 threadAct :: HasCallStack => Id -> ActType -> Fun -> MudStack ()
-threadAct i actType f = let a = (>> f) . setThreadType $ case actType of Attacking -> undefined -- TODO
+threadAct i actType f = let a = (>> f) . setThreadType $ case actType of Eating    -> EatingThread   i
                                                                          Drinking  -> DrinkingThread i
-                                                                         Eating    -> EatingThread   i
-                                                                         Moving    -> MovingThread   i
+                                                                         Attacking -> undefined -- TODO
                             b = do logPla "threadAct" i $ pp actType <> " act finished."
                                    tweak $ mobTbl.ind i.actMap.at actType .~ Nothing
                         in handle (threadExHandler (Just i) . pp $ actType) $ a `finally` b

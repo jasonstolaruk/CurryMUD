@@ -12,9 +12,6 @@ The names of commands themselves, and the names of just about everything else, m
 
 The subject of abbreviation is fully covered in its own help topic (type \qhelp abbreviation\d - or just \qh a\d - for more information).
 
-\uSTACKING MOVEMENT COMMANDS\d
-The various movement commands ("n", "s", "e", "w", etc.) are unique in that may be used alone, or strung together: type \qn ne u\d to go north, northeast, then up, in succession.
-
 \uPREFIXES\d
 You can add prefixes to the names of things in your commands so as to indicate location, ordinal number, and amount. Here are some example use cases:
 * You want to put something into a container in the room (as opposed to a container in your inventory)... use the \lr#l\d (room) prefix:

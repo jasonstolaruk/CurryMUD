@@ -613,8 +613,7 @@ data Party = Party { _following :: Maybe Id
 type ActMap = M.Map ActType ActAsync
 
 
-data ActType = Moving
-             | Eating
+data ActType = Eating
              | Drinking
              | Attacking deriving (Bounded, Enum, Eq, Ord)
 
@@ -1100,7 +1099,6 @@ data ThreadType = Biodegrader      Id
                 | FeelingTimer     Id
                 | InacTimer        Id
                 | Listen
-                | MovingThread     Id
                 | Notice
                 | NpcServer        Id
                 | PlaLog           Id

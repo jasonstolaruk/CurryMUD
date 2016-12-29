@@ -76,6 +76,7 @@ import Control.Monad ((>=>), foldM, forM, forM_, guard, mplus, unless, when)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (asks)
 import Crypto.BCrypt (validatePassword)
+import Data.Bool (bool)
 import Data.Char (isDigit, isLetter, isLower, isUpper)
 import Data.Either (lefts, partitionEithers)
 import Data.Function (on)
@@ -1472,18 +1473,9 @@ shuffleGive i ms LastArgIsTargetBindings { .. } =
 
 
 go :: HasCallStack => Text -> ActionFun
-go dir p@ActionParams { args } = goDispatcher p { args = dir : args }
-
-
-goDispatcher :: HasCallStack => ActionFun
-goDispatcher ActionParams { args = [] } = unit
-goDispatcher (Lower i mq cols as)       = helper as
-  where
-    helper []         = unit
-    helper (dir:dirs) = fst . getFps i <$> getState >>= \x -> if x <= 0
-      then wrapSend mq cols exhaustedMsg
-      else tryMove i mq cols dir >> helper dirs
-goDispatcher p = patternMatchFail "goDispatcher" . showText $ p
+go dir (NoArgs i mq cols) =
+    bool (wrapSend mq cols exhaustedMsg) (tryMove i mq cols dir) =<< ((> 0) . fst . getFps i <$> getState)
+go dir p = withoutArgs (go dir) p
 
 
 tryMove :: HasCallStack => Id -> MsgQueue -> Cols -> Text -> MudStack ()
@@ -3646,36 +3638,28 @@ stats p = withoutArgs stats p
 
 
 stop :: HasCallStack => ActionFun
-stop p@(NoArgs i mq cols) = getState >>= \ms ->
-    case filter (view _3) . mkStopTuples p $ ms of
-      [] -> wrapSend mq cols sorryStopNotDoingAnything
-      xs -> let (_, actType, True, f) = head xs in stopLogHelper i (pure actType) >> f
+stop p@(NoArgs i mq cols) = getState >>= \ms -> case filter (view _3) . mkStopTuples p $ ms of
+  []                     -> wrapSend mq cols sorryStopNotDoingAnything
+  ((_, actType, _, f):_) -> stopLogHelper i (pure actType) >> f
 stop p@(OneArgLower i mq cols a) = getState >>= \ms ->
     if ((||) <$> (`T.isPrefixOf` "all") <*> (== T.singleton allChar)) a
-      then case filter (view _3) . mkStopTuples p $ ms of
-        [] -> wrapSend mq cols sorryStopNotDoingAnything
-        xs -> stopLogHelper i (select _2 xs) >> mapM_ (view _4) xs
+      then case filter (view _3) . mkStopTuples p $ ms of [] -> wrapSend mq cols sorryStopNotDoingAnything
+                                                          xs -> stopLogHelper i (select _2 xs) >> mapM_ (view _4) xs
       else case filter (views _1 (a `T.isPrefixOf`)) . mkStopTuples p $ ms of
         [] -> wrapSend mq cols . sorryStopActName $ a
-        xs -> let (_, actType, b, f) = head xs
-              in b ? (stopLogHelper i (pure actType) >> f) :? wrapSend mq cols (sorryStopNotDoing actType)
+        ((_, actType, b, f):_) -> b ? (stopLogHelper i (pure actType) >> f) :? wrapSend mq cols (sorryStopNotDoing actType)
 stop p = advise p ["stop"] adviceStopExcessArgs
 
 
 stopLogHelper :: HasCallStack => Id -> [ActType] -> MudStack ()
 stopLogHelper i [actType] = logPla "stop" i . prd $ "stopped " <> pp actType
-stopLogHelper i actTypes  = logPla "stop" i . prd $ "stopped " <> T.intercalate " and " (map pp actTypes)
+stopLogHelper i actTypes  = logPla "stop" i . prd $ "stopped " <> T.intercalate (spaced "and") (map pp actTypes)
 
 
 mkStopTuples :: HasCallStack => ActionParams -> MudState -> [(Text, ActType, Bool, MudStack ())]
-mkStopTuples p@ActionParams { myId } ms = [ ("moving",    Moving,    isMoving    myId ms, stopMoving    p ms)
-                                          , ("eating",    Eating,    isEating    myId ms, stopEating    p ms)
+mkStopTuples p@ActionParams { myId } ms = [ ("eating",    Eating,    isEating    myId ms, stopEating    p ms)
                                           , ("drinking",  Drinking,  isDrinking  myId ms, stopDrinking  p ms)
                                           , ("attacking", Attacking, isAttacking myId ms, stopAttacking p ms) ]
-
-
-stopMoving :: HasCallStack => ActionParams -> MudState -> MudStack ()
-stopMoving _ _ = undefined -- TODO: Stop moving. Note that player could be a spirit.
 
 
 stopEating :: HasCallStack => ActionParams -> MudState -> MudStack ()
@@ -3683,11 +3667,8 @@ stopEating (WithArgs i mq cols _) ms =
     let Just s      = getNowEating i ms
         toSelf      = prd $ "You stop eating " <> theOnLower s
         d           = mkStdDesig i ms DoCap
-        bcastHelper = bcastIfNotIncogNl i . pure $ ( T.concat [ serialize d
-                                                              , " stops eating "
-                                                              , aOrAn s
-                                                              , "." ]
-                                                   , i `delete` desigIds d )
+        msg         = T.concat [ serialize d, " stops eating ", aOrAn s, "." ]
+        bcastHelper = bcastIfNotIncogNl i . pure $ (msg, i `delete` desigIds d)
     in sequence_ [ stopAct i Eating, wrapSend mq cols toSelf, bcastHelper ]
 stopEating p _ = patternMatchFail "stopEating" . showText $ p
 
@@ -3697,11 +3678,8 @@ stopDrinking (WithArgs i mq cols _) ms =
     let Just (l, s) = getNowDrinking i ms
         toSelf      = T.concat [ "You stop drinking ", renderLiqNoun l the, " from the ", s, "." ]
         d           = mkStdDesig i ms DoCap
-        bcastHelper = bcastIfNotIncogNl i . pure $ ( T.concat [ serialize d
-                                                              , " stops drinking from "
-                                                              , aOrAn s
-                                                              , "." ]
-                                                   , i `delete` desigIds d )
+        msg         = T.concat [ serialize d, " stops drinking from ", aOrAn s, "." ]
+        bcastHelper = bcastIfNotIncogNl i . pure $ (msg, i `delete` desigIds d)
     in sequence_ [ stopAct i Drinking, wrapSend mq cols toSelf, bcastHelper ]
 stopDrinking p _ = patternMatchFail "stopDrinking" . showText $ p
 
