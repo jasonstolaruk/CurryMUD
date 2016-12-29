@@ -1,14 +1,10 @@
 \h SE \d
 
 \uUSAGE\n
-se \s[\ddirection \s...]\d
+se
 
 \uDESCRIPTION\n
-Move southeast, optionally followed by more movement.
-
-\uEXAMPLES\n
-\qse\d to move southeast.4`
-\qse u n\d to move southeast, then up, then north.4`
+Move southeast.
 
 \uSEE ALSO\n
-d, e, exits, n, ne, nw, s, stop, sw, u, w
+d, e, exits, n, ne, nw, s, sw, u, w

@@ -1,14 +1,10 @@
 \h N \d
 
 \uUSAGE\n
-n \s[\ddirection \s...]\d
+n
 
 \uDESCRIPTION\n
-Move north, optionally followed by more movement.
-
-\uEXAMPLES\n
-\qn\d to move north.4`
-\qn u s\d to move north, then up, then south.4`
+Move north.
 
 \uSEE ALSO\n
-d, e, exits, ne, nw, s, se, stop, sw, u, w
+d, e, exits, ne, nw, s, se, sw, u, w
