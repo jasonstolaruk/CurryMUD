@@ -651,8 +651,8 @@ bonus   (OneArgLower i mq cols a) = getState >>= \ms ->
                   Nothing    -> unit
           xs -> patternMatchFail "bonus bonusHelper" . showText $ xs
         canBonus targetSing = (withDbExHandler "bonus canBonus" . getDbTblRecs $ "bonus") >>= \case
-          Just xs -> unadulterated . All $ let c                      = length . filter f $ xs
-                                               f (BonusRec _ fn tn _) = fn == s && tn == targetSing
+          Just xs -> unadulterated . All $ let c                      = length . filter p $ xs
+                                               p (BonusRec _ fn tn _) = fn == s && tn == targetSing
                                            in c < maxBonuses
           Nothing -> emptied . dbError mq $ cols
         mkToTarget targetId | s `elem` getIntroduced targetId ms = g s
