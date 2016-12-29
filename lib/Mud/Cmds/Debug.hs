@@ -1009,7 +1009,6 @@ descThreads = do logAsyncKvs <- getLogThreadIds >>= \case [ a, b ] -> return [ (
     mkTypeName (EffectTimer      (showText -> pi)) = padOrTrunc padAmt "EffTimer"     <> pi
     mkTypeName (FeelingTimer     (showText -> pi)) = padOrTrunc padAmt "FeelingTimer" <> pi
     mkTypeName (InacTimer        (showText -> pi)) = padOrTrunc padAmt "InacTimer"    <> pi
-    mkTypeName (MovingThread     (showText -> pi)) = padOrTrunc padAmt "Moving"       <> pi
     mkTypeName (NpcServer        (showText -> pi)) = padOrTrunc padAmt "NpcServer"    <> pi
     mkTypeName (PlaLog           (showText -> pi)) = padOrTrunc padAmt "PlaLog"       <> pi
     mkTypeName (Receive          (showText -> pi)) = padOrTrunc padAmt "Receive"      <> pi
