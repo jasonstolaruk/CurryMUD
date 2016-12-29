@@ -651,11 +651,9 @@ bonus   (OneArgLower i mq cols a) = getState >>= \ms ->
                   Nothing    -> unit
           xs -> patternMatchFail "bonus bonusHelper" . showText $ xs
         canBonus targetSing = (withDbExHandler "bonus canBonus" . getDbTblRecs $ "bonus") >>= \case
-          Just xs | c <- length . filter (\(BonusRec _ fn tn _) -> fn == s && tn == targetSing) $ xs
-                  , c >= 5
-                  -> unadulterated . All $ False
-                  | otherwise
-                  -> unadulterated . All $ otherwise
+          Just xs -> unadulterated . All $ let c                      = length . filter f $ xs
+                                               f (BonusRec _ fn tn _) = fn == s && tn == targetSing
+                                           in c < maxBonuses
           Nothing -> emptied . dbError mq $ cols
         mkToTarget targetId | s `elem` getIntroduced targetId ms = g s
                             | otherwise                          = g "Someone"
@@ -665,9 +663,7 @@ bonus   (OneArgLower i mq cols a) = getState >>= \ms ->
       then sorry sorryBonusLvl
       else liftIO getCurrentTime >>= \now -> case getBonusTime i ms of
         Nothing -> bonusHelper now
-        Just bt -> if round (now `diffUTCTime` bt) < bonusDelay
-          then sorry sorryBonusTime
-          else bonusHelper now
+        Just bt -> round (now `diffUTCTime` bt) < bonusDelay ? sorry sorryBonusTime :? bonusHelper now
   where
     sorry = wrapSend mq cols
 bonus p = advise p ["bonus"] adviceBonusExcessArgs

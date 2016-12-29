@@ -103,16 +103,12 @@ logRotationDelay :: Seconds
 logRotationDelay = 60 {- mins -} * 60 {- secs -} -- one hr
 
 
+maxBonuses :: Int
+maxBonuses = 8
+
+
 maxChanNameLen :: Int
 maxChanNameLen = 12
-
-
-maxSpiritSecs :: Seconds
-maxSpiritSecs = 5 {- mins -} * 60 {- secs -} -- five mins
-
-
-maxTempDescLen :: Int
-maxTempDescLen = 200
 
 
 maxCmdLen :: Int
@@ -134,6 +130,10 @@ maxHelpTopicLen = 13
 
 maxInacSecs :: Integer
 maxInacSecs = 10 {- mins -} * 60 {- secs -} -- ten mins
+
+
+maxLogSize :: FileOffset
+maxLogSize = 1000000
 
 
 maxMobRmDescLen :: Int
@@ -158,8 +158,12 @@ maxPwLen = 20
 minPwLen = 6
 
 
-maxLogSize :: FileOffset
-maxLogSize = 1000000
+maxSpiritSecs :: Seconds
+maxSpiritSecs = 5 {- mins -} * 60 {- secs -} -- five mins
+
+
+maxTempDescLen :: Int
+maxTempDescLen = 200
 
 
 noOfDbTblRecsToPurge :: Int
@@ -211,14 +215,4 @@ worldPersisterDelay = 10 {- mins -} * 60 {- secs -} -- ten mins
 
 
 yous :: [Text]
-yous = [ "you"
-       , "you'd"
-       , "you'll"
-       , "you're"
-       , "you's"
-       , "you've"
-       , "your"
-       , "yours"
-       , "yourself"
-       , "yourselves"
-       , "yous" ]
+yous = [ "you", "you'd", "you'll", "you're", "you's", "you've", "your", "yours", "yourself", "yourselves", "yous" ]
