@@ -1483,7 +1483,7 @@ tryMove i mq cols dir = helper |&| modifyState >=> \case Left  msg          -> w
   where
     helper ms = let { originId = getRmId i ms; originRm = getRm originId ms } in case findExit originRm dir of
       Nothing -> (ms, Left sorry)
-      Just (linkTxt, destId, linkMove, maybeOriginMsg, maybeDestMsg) ->
+      Just (linkTxt, destId, moveCost, maybeOriginMsg, maybeDestMsg) ->
           let originDesig  = mkStdDesig i ms DoCap
               s            = getSing    i ms
               originMobIds = i `delete` desigIds originDesig
@@ -1503,7 +1503,7 @@ tryMove i mq cols dir = helper |&| modifyState >=> \case Left  msg          -> w
               logMsg       = let { fromTxt = showRm originId originRm; toTxt = showRm destId . getRm destId $ ms }
                              in T.concat [ "moved ", linkTxt, " from room ", fromTxt, " to room ", toTxt, "." ]
               moveCostHelper x | uncurry (||) . (isAdminId `fanUncurry` isSpiritId) $ (i, ms) = x
-                               | otherwise = subtract (linkMove^.moveCost) x
+                               | otherwise = subtract moveCost x
           in (ms', Right (not (isSpiritId i ms) |?| [ (msgAtOrigin, originMobIds), (msgAtDest, destMobIds) ], logMsg))
     sorry     = dir `elem` stdLinkNames ? sorryGoExit :? sorryGoParseDir dir
     verb      | dir == "u"              = "goes"
@@ -1513,10 +1513,10 @@ tryMove i mq cols dir = helper |&| modifyState >=> \case Left  msg          -> w
     showRm ri = ((|<>|) <$> showText . fst <*> views rmName parensQuote . snd) . (ri, )
 
 
-findExit :: HasCallStack => Rm -> LinkName -> Maybe (Text, Id, LinkMove, Maybe Text, Maybe Text)
+findExit :: HasCallStack => Rm -> LinkName -> Maybe (Text, Id, MoveCost, Maybe Text, Maybe Text)
 findExit rm ln = case views rmLinks (filter isValid) rm of
   []     -> Nothing
-  (rl:_) -> Just . ((,,,,) <$> getLinkName <*> getDestId <*> getLinkMove <*> getOriginMsg <*> getDestMsg) $ rl
+  (rl:_) -> Just . ((,,,,) <$> getLinkName <*> getDestId <*> getMoveCost <*> getOriginMsg <*> getDestMsg) $ rl
   where
     isValid      StdLink    { .. } = ln == linkDirToCmdName _slDir
     isValid      NonStdLink { .. } = ln `T.isPrefixOf` _nslName
@@ -1524,8 +1524,8 @@ findExit rm ln = case views rmLinks (filter isValid) rm of
     getLinkName  NonStdLink { .. } = _nslName
     getDestId    StdLink    { .. } = _slDestId
     getDestId    NonStdLink { .. } = _nslDestId
-    getLinkMove  StdLink    { .. } = _slMove
-    getLinkMove  NonStdLink { .. } = _nslMove
+    getMoveCost  StdLink    { .. } = _slCost
+    getMoveCost  NonStdLink { .. } = _nslCost
     getOriginMsg NonStdLink { .. } = Just _nslOriginMsg
     getOriginMsg _                 = Nothing
     getDestMsg   NonStdLink { .. } = Just _nslDestMsg

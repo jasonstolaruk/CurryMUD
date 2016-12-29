@@ -936,10 +936,10 @@ data RmFlags = RmFlagsTODO deriving Enum
 
 data RmLink = StdLink    { _slDir        :: LinkDir
                          , _slDestId     :: Id
-                         , _slMove       :: LinkMove }
+                         , _slCost       :: MoveCost }
             | NonStdLink { _nslName      :: LinkName
                          , _nslDestId    :: Id
-                         , _nslMove      :: LinkMove
+                         , _nslCost      :: MoveCost
                          , _nslOriginMsg :: Text
                          , _nslDestMsg   :: Text } deriving (Eq, Generic)
 
@@ -956,8 +956,7 @@ data LinkDir = North
              | Down deriving (Eq, Generic, Show)
 
 
-data LinkMove = LinkMove { _moveCost :: Int
-                         , _moveTime :: Milliseconds } deriving (Eq, Generic)
+type MoveCost = Int
 
 
 type LinkName = Text
@@ -1189,7 +1188,6 @@ instance FromJSON InstaEffect    where parseJSON = genericParseJSON dropUndersco
 instance FromJSON InstaEffectSub
 instance FromJSON Lang
 instance FromJSON LinkDir
-instance FromJSON LinkMove       where parseJSON = genericParseJSON dropUnderscore
 instance FromJSON Liq            where parseJSON = genericParseJSON dropUnderscore
 instance FromJSON MobSize        where parseJSON = genericParseJSON dropUnderscore
 instance FromJSON Noun
@@ -1232,7 +1230,6 @@ instance ToJSON InstaEffect      where toJSON    = genericToJSON    dropUndersco
 instance ToJSON InstaEffectSub
 instance ToJSON Lang
 instance ToJSON LinkDir
-instance ToJSON LinkMove         where toJSON    = genericToJSON    dropUnderscore
 instance ToJSON Liq              where toJSON    = genericToJSON    dropUnderscore
 instance ToJSON MobSize          where toJSON    = genericToJSON    dropUnderscore
 instance ToJSON Noun
@@ -1275,7 +1272,6 @@ makeLenses ''Ent
 makeLenses ''Food
 makeLenses ''HostRecord
 makeLenses ''InstaEffect
-makeLenses ''LinkMove
 makeLenses ''Liq
 makeLenses ''Locks
 makeLenses ''Mob

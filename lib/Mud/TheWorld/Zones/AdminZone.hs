@@ -646,8 +646,8 @@ createAdminZone = do
             (Just "The cooling fans spinning inside the control panels give off a soothing, whirring sound.")
             (Just "You vaguely detect the chemical scents of plastic and cleaning solutions.")
             zeroBits
-            [ StdLink Down iBasement    dfltLinkMove
-            , StdLink East iHallwayWest dfltLinkMove ]
+            [ StdLink Down iBasement    1
+            , StdLink East iHallwayWest 1 ]
             (0, 0, 0)
             InsideEnv
             (Just "Central")
@@ -664,8 +664,8 @@ createAdminZone = do
             Nothing
             Nothing
             zeroBits
-            [ StdLink West iCentral     dfltLinkMove
-            , StdLink East iHallwayEast dfltLinkMove ]
+            [ StdLink West iCentral     1
+            , StdLink East iHallwayEast 1 ]
             (1, 0, 0)
             InsideEnv
             Nothing
@@ -678,8 +678,8 @@ createAdminZone = do
             Nothing
             Nothing
             zeroBits
-            [ StdLink West iHallwayWest dfltLinkMove
-            , StdLink East iAtrium      dfltLinkMove ]
+            [ StdLink West iHallwayWest 1
+            , StdLink East iAtrium      1 ]
             (2, 0, 0)
             InsideEnv
             Nothing
@@ -698,7 +698,7 @@ createAdminZone = do
             (Just "The scent of fresh air wafting in from the ceiling combines the with sweet, grassy smells of the \
                   \flowerbed.")
             zeroBits
-            [ StdLink West iHallwayEast dfltLinkMove ]
+            [ StdLink West iHallwayEast 1 ]
             (3, 0, 0)
             InsideEnv
             (Just "Atrium")
@@ -720,16 +720,16 @@ createAdminZone = do
             (Just "The unmistakable scent of mildew fills your nostrils. This room really ought to be ventillated \
                   \better.")
             zeroBits
-            [ StdLink    North     iWeightRm    dfltLinkMove
-            , StdLink    Northeast iObjCloset   dfltLinkMove
-            , StdLink    East      iClothCloset dfltLinkMove
-            , StdLink    Southeast iCoinsCloset dfltLinkMove
-            , StdLink    South     iConCloset   dfltLinkMove
-            , StdLink    Southwest iWpnCloset   dfltLinkMove
-            , StdLink    West      iArmCloset   dfltLinkMove
-            , StdLink    Northwest iMobCloset   dfltLinkMove
-            , StdLink    Up        iCentral     dfltLinkMove
-            , NonStdLink "manhole" iVoid        dfltLinkMove "% climbs into the manhole." "% climbs out of the manhole." ]
+            [ StdLink    North     iWeightRm    1
+            , StdLink    Northeast iObjCloset   1
+            , StdLink    East      iClothCloset 1
+            , StdLink    Southeast iCoinsCloset 1
+            , StdLink    South     iConCloset   1
+            , StdLink    Southwest iWpnCloset   1
+            , StdLink    West      iArmCloset   1
+            , StdLink    Northwest iMobCloset   1
+            , StdLink    Up        iCentral     1
+            , NonStdLink "manhole" iVoid        1 "% climbs into the manhole." "% climbs out of the manhole." ]
             (0, 0, -1)
             InsideEnv
             Nothing
@@ -758,9 +758,9 @@ createAdminZone = do
             Nothing
             Nothing
             zeroBits
-            [ StdLink    South iBasement dfltLinkMove
-            , NonStdLink "u"   iAttic    dfltLinkMove "% climbs up the ladder and into the hole in the ceiling."
-                                                      "% climbs up the ladder and out of the hole in the floor." ]
+            [ StdLink    South iBasement 1
+            , NonStdLink "u"   iAttic    1 "% climbs up the ladder and into the hole in the ceiling."
+                                           "% climbs up the ladder and out of the hole in the floor." ]
             (0, 1, -1)
             InsideEnv
             (Just "Weights")
@@ -773,8 +773,8 @@ createAdminZone = do
             (Just . thrice prd $ "Is that the soft squeek of a mouse you hear? Maybe you're just hearing things")
             (Just "The air here is dusty and a little stale, though not stifling.")
             zeroBits
-            [ NonStdLink "d" iWeightRm dfltLinkMove "% climbs down the ladder and into the hole in the floor."
-                                                    "% climbs down the ladder and out of the hole in the ceiling." ]
+            [ NonStdLink "d" iWeightRm 1 "% climbs down the ladder and into the hole in the floor."
+                                         "% climbs down the ladder and out of the hole in the ceiling." ]
             (0, 1, 0)
             InsideEnv
             (Just "Attic")
@@ -787,7 +787,7 @@ createAdminZone = do
             Nothing
             Nothing
             zeroBits
-            [ StdLink Southwest iBasement dfltLinkMove ]
+            [ StdLink Southwest iBasement 1 ]
             (1, 1, -1)
             InsideEnv
             (Just "Objects")
@@ -800,8 +800,8 @@ createAdminZone = do
             Nothing
             Nothing
             zeroBits
-            [ StdLink West iBasement          dfltLinkMove
-            , StdLink Down iAccessoriesCloset dfltLinkMove ]
+            [ StdLink West iBasement          1
+            , StdLink Down iAccessoriesCloset 1 ]
             (1, 0, -1)
             InsideEnv
             (Just "Clothing")
@@ -845,7 +845,7 @@ createAdminZone = do
             Nothing
             Nothing
             zeroBits
-            [ StdLink Up iClothCloset dfltLinkMove ]
+            [ StdLink Up iClothCloset 1 ]
             (1, 0, -2)
             InsideEnv
             (Just "Accessories")
@@ -858,7 +858,7 @@ createAdminZone = do
             Nothing
             Nothing
             zeroBits
-            [ StdLink Northwest iBasement dfltLinkMove ]
+            [ StdLink Northwest iBasement 1 ]
             (1, -1, -1)
             InsideEnv
             (Just "Coins")
@@ -884,7 +884,7 @@ createAdminZone = do
             Nothing
             Nothing
             zeroBits
-            [ StdLink North iBasement dfltLinkMove ]
+            [ StdLink North iBasement 1 ]
             (0, -1, -1)
             InsideEnv
             (Just "Containers")
@@ -897,7 +897,7 @@ createAdminZone = do
             Nothing
             Nothing
             zeroBits
-            [ StdLink Northeast iBasement dfltLinkMove ]
+            [ StdLink Northeast iBasement 1 ]
             (-1, -1, -1)
             InsideEnv
             (Just "Weapons")
@@ -910,7 +910,7 @@ createAdminZone = do
             Nothing
             Nothing
             zeroBits
-            [ StdLink East iBasement dfltLinkMove ]
+            [ StdLink East iBasement 1 ]
             (-1, 0, -1)
             InsideEnv
             (Just "Armor")
@@ -923,7 +923,7 @@ createAdminZone = do
             Nothing
             Nothing
             zeroBits
-            [ StdLink Southeast iBasement dfltLinkMove ]
+            [ StdLink Southeast iBasement 1 ]
             (-1, 1, -1)
             InsideEnv
             (Just "Mobs")
@@ -940,10 +940,9 @@ createAdminZone = do
             voidListen
             voidSmell
             zeroBits
-            [ StdLink    North     iTutEntrance    (LinkMove 0 0)
-            , StdLink    South     iLoungeEntrance (LinkMove 0 0)
-            , NonStdLink "manhole" iBasement       (LinkMove 0 0) "% climbs into the manhole."
-                                                                  "% climbs out of the manhole." ]
+            [ StdLink    North     iTutEntrance    0
+            , StdLink    South     iLoungeEntrance 0
+            , NonStdLink "manhole" iBasement       0 "% climbs into the manhole." "% climbs out of the manhole." ]
             (0, 0, -2)
             InsideEnv
             Nothing
@@ -958,9 +957,9 @@ createAdminZone = do
             voidListen
             voidSmell
             zeroBits
-            [ StdLink    South    iVoid       (LinkMove 0 0)
-            , NonStdLink "portal" iTutWelcome (LinkMove 0 0) "% floats into the portal and promptly disappears."
-                                                             "% arrives in the tutorial." ]
+            [ StdLink    South    iVoid       0
+            , NonStdLink "portal" iTutWelcome 0 "% floats into the portal and promptly disappears."
+                                                "% arrives in the tutorial." ]
             (0, 1, -2)
             InsideEnv
             (Just "Tutorial entrance")
@@ -976,8 +975,8 @@ createAdminZone = do
             voidListen
             voidSmell
             zeroBits
-            [ StdLink    North    iVoid   (LinkMove 0 0)
-            , NonStdLink "lounge" iLounge (LinkMove 0 0) "% enters the lounge." "% enters the lounge." ]
+            [ StdLink    North    iVoid   0
+            , NonStdLink "lounge" iLounge 0 "% enters the lounge." "% enters the lounge." ]
             (0, -1, -2)
             InsideEnv
             Nothing
@@ -992,7 +991,7 @@ createAdminZone = do
             Nothing
             (Just "There is a lingering scent of pipe tobacco in the air.")
             zeroBits
-            [ NonStdLink "out" iLoungeEntrance dfltLinkMove "% exits the lounge." "% exits the lounge." ]
+            [ NonStdLink "out" iLoungeEntrance 1 "% exits the lounge." "% exits the lounge." ]
             (0, -2, -2)
             SpecialEnv
             (Just "Lounge")
@@ -1005,7 +1004,7 @@ createAdminZone = do
             Nothing
             Nothing
             zeroBits
-            [ StdLink South iOutside (LinkMove 5 0) ]
+            [ StdLink South iOutside 5 ]
             (-2, 1, -2)
             InsideEnv
             (Just "Inside")
@@ -1018,8 +1017,8 @@ createAdminZone = do
             Nothing
             Nothing
             zeroBits
-            [ StdLink North iInside (LinkMove 5 0)
-            , StdLink South iShop   (LinkMove 5 0) ]
+            [ StdLink North iInside 5
+            , StdLink South iShop   5 ]
             (-2, 0, -2)
             OutsideEnv
             (Just "Outside")
@@ -1032,8 +1031,8 @@ createAdminZone = do
             Nothing
             Nothing
             zeroBits
-            [ StdLink North iOutside (LinkMove 5 0)
-            , StdLink South iSpecial (LinkMove 5 0) ]
+            [ StdLink North iOutside 5
+            , StdLink South iSpecial 5 ]
             (-2, -1, -2)
             ShopEnv
             (Just "Shop")
@@ -1046,8 +1045,8 @@ createAdminZone = do
             Nothing
             Nothing
             zeroBits
-            [ StdLink North iShop  (LinkMove 5 0)
-            , StdLink South iNoEnv (LinkMove 5 0) ]
+            [ StdLink North iShop  5
+            , StdLink South iNoEnv 5 ]
             (-2, -2, -2)
             SpecialEnv
             (Just "Special")
@@ -1061,8 +1060,8 @@ createAdminZone = do
             Nothing
             Nothing
             zeroBits
-            [ StdLink    North iSpecial (LinkMove 5 0)
-            , NonStdLink "in"  iCottage dfltLinkMove "% enters the cottage." "% enters the cottage." ]
+            [ StdLink    North iSpecial 5
+            , NonStdLink "in"  iCottage 1 "% enters the cottage." "% enters the cottage." ]
             (-2, -3, -2)
             NoEnv
             (Just "No env")
@@ -1075,7 +1074,7 @@ createAdminZone = do
             Nothing
             Nothing
             zeroBits
-            [ NonStdLink "out" iNoEnv dfltLinkMove "% exits the cottage." "% exits the cottage." ]
+            [ NonStdLink "out" iNoEnv 1 "% exits the cottage." "% exits the cottage." ]
             (-2, -4, -2)
             InsideEnv
             (Just "Cottage")

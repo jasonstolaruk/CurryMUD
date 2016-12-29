@@ -856,15 +856,14 @@ examineRm i ms = let r = getRm i ms in [ "Name: "           <> r^.rmName
   where
     descFlags r | r^.rmFlags == zeroBits = none
                 | otherwise              = none -- TODO: Rm flags.
-    linkHelper  = \case (StdLink    dir destId linkMove    ) -> f (pp dir) destId linkMove
-                        (NonStdLink dir destId linkMove _ _) -> f dir      destId linkMove
+    linkHelper  = \case (StdLink    dir destId moveCost    ) -> f (pp dir) destId moveCost
+                        (NonStdLink dir destId moveCost _ _) -> f dir      destId moveCost
       where
-        f dir destId linkMove = spaces [ dir
+        f dir destId moveCost = spaces [ dir
                                        , "to"
                                        , getRmName destId ms
                                        , parensQuote . showText $ destId
-                                       , linkMove^.moveCost.to showText
-                                       , linkMove^.moveTime.to commaShow ]
+                                       , showText moveCost ]
     hookHelper hookMap | M.null hookMap = none
                        | otherwise      = commas . map f . M.toList $ hookMap
       where
