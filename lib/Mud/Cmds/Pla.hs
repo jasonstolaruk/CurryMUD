@@ -4206,18 +4206,10 @@ whoAmI (NoArgs i mq cols) = sequence_ [ logPlaExec "whoami" i, wrapSend mq cols 
   where
     helper ms = return $ let s = getSing i ms in if isNpc i ms
       then let sexy = getSex i ms
-           in T.concat [ "You are "
-                       , aOrAnOnLower s
-                       , sexy /= NoSex |?| spcL . parensQuote . pp $ sexy
-                       , "." ]
-      else let (sexy, r) = mkPrettySexRace i ms
-           in T.concat [ "You are "
-                       , colorWith knownNameColor s
-                       , " "
-                       , parensQuote $ if isSpiritId i ms
-                         then "a disembodied spirit"
-                         else T.concat [ "a ", sexy, " ", r ]
-                       , "." ]
+           in T.concat [ "You are ", aOrAnOnLower s, sexy /= NoSex |?| spcL . parensQuote . pp $ sexy, "." ]
+      else prd . T.concat $ [ "You are ", colorWith knownNameColor s, " ", parensQuote $ if isSpiritId i ms
+        then "a disembodied spirit"
+        else "a " <> (uncurry (|<>|) . mkPrettySexRace i $ ms) ]
 whoAmI p = withoutArgs whoAmI p
 
 
