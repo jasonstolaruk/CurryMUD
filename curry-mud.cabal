@@ -55,6 +55,7 @@ library
                        Mud.Data.State.MudData
                        Mud.Data.State.Util.Calc
                        Mud.Data.State.Util.Coins
+                       Mud.Data.State.Util.CurryTime
                        Mud.Data.State.Util.Death
                        Mud.Data.State.Util.Destroy
                        Mud.Data.State.Util.Effect
