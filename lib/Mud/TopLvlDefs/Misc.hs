@@ -79,6 +79,10 @@ dbTblPurgerDelay :: Seconds
 dbTblPurgerDelay = 60 {- mins -} * 60 {- secs -} -- one hr
 
 
+dfltZoom :: Int
+dfltZoom = 10
+
+
 initPickPts :: Int
 initPickPts = 200
 

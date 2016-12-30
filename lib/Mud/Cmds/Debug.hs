@@ -1093,16 +1093,17 @@ debugToken (NoArgs i mq cols) = do logPlaExec (prefixDebugCmd "token") i
                 , styleTokenDelimiter `T.cons` ("t " <> dfltColorStyleToken <> " <- toNpcColor")
                 , styleTokenDelimiter `T.cons` ("uunderlineANSI"     <> noUnderlineStyleToken  )
                 , styleTokenDelimiter `T.cons` ("zzingColor"         <> dfltColorStyleToken    )
-                , "dfltBootMsg: "     <> (miscTokenDelimiter `T.cons` "b")
-                , "descRule5: "       <> (miscTokenDelimiter `T.cons` "c")
-                , "isDebug: "         <> (miscTokenDelimiter `T.cons` "d")
-                , "descRulesMsg: "    <> "elided"
-                , "pwWarningMsg: "    <> (miscTokenDelimiter `T.cons` "p")
-                , "rulesIntroMsg: "   <> (miscTokenDelimiter `T.cons` "r")
-                , "dfltShutdownMsg: " <> (miscTokenDelimiter `T.cons` "s")
-                , "rulesMsg: "        <> "elided"
-                , "violationMsg: "    <> (miscTokenDelimiter `T.cons` "v")
-                , "isZBackDoor: "     <> (miscTokenDelimiter `T.cons` "z") ]
+                , "dfltBootMsg: "      <> (miscTokenDelimiter `T.cons` "b")
+                , "descRule5: "        <> "elided"
+                , "isDebug: "          <> (miscTokenDelimiter `T.cons` "d")
+                , "descRulesMsg: "     <> "elided"
+                , "dfltZoom: "         <> (miscTokenDelimiter `T.cons` "o")
+                , "pwWarningMsg: "     <> (miscTokenDelimiter `T.cons` "p")
+                , "rulesIntroMsg: "    <> (miscTokenDelimiter `T.cons` "r")
+                , "dfltShutdownMsg: "  <> (miscTokenDelimiter `T.cons` "s")
+                , "rulesMsg: "         <> "elided"
+                , "violationMsg: "     <> (miscTokenDelimiter `T.cons` "v")
+                , "isZBackDoor: "      <> (miscTokenDelimiter `T.cons` "z") ]
     dfltColorStyleToken   = styleTokenDelimiter `T.cons` "d"
     noUnderlineStyleToken = styleTokenDelimiter `T.cons` "n"
 debugToken p = withoutArgs debugToken p

@@ -84,6 +84,7 @@ expandMiscCode (toLower -> code) = case code of
   'c' -> descRule5
   'd' -> yesNo isDebug
   'e' -> descRulesMsg
+  'o' -> showText dfltZoom
   'p' -> pwWarningMsg
   'r' -> rulesIntroMsg
   's' -> dfltShutdownMsg

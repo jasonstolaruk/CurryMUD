@@ -778,7 +778,7 @@ handleLogin (NewCharBundle oldSing s _) isNew params@ActionParams { .. } = do gr
                                                                               (ms, p) <- showRetainedMsgs
                                                                               look params
                                                                               sendDfltPrompt plaMsgQueue myId
-                                                                              sendGmcpRmInfo (Just 10) myId ms -- TODO: Default zoom binding.
+                                                                              sendGmcpRmInfo (Just dfltZoom) myId ms
                                                                               when (getPlaFlag IsAdmin p) stopInacTimer
                                                                               runDigesterAsync     myId
                                                                               runRegenAsync        myId

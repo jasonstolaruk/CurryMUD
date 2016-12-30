@@ -901,7 +901,7 @@ adviceYouEmoteChar cn = T.concat [ "Sorry, but you can't use a form of the word 
 
 adviceZoomExcessArgs :: Text
 adviceZoomExcessArgs = T.concat [ "Please either provide no arguments "
-                                , parensQuote "to zoom to the default level of 10"
+                                , parensQuote $ "to zoom to the default level of " <> showText dfltZoom
                                 , ", or a single argument: the zoom level, as in "
                                 , colorWith quoteColor "zoom 20"
                                 , "." ]
