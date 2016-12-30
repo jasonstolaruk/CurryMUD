@@ -89,8 +89,6 @@ Give players badges for achievements.
 
 Have an in-game newspaper. There should be a way for players to read old newspapers. The newspaper could be produced automatically (as opposed to being written by players).
 
-Have an in-game calendar.
-
 Have in-game mail and BBS. Have a special BBS dedicated to OOC topics.
 
 Make a library or similar area where players may read, for example, the history and backstory of the virtual world.
