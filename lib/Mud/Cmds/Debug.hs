@@ -1064,7 +1064,6 @@ debugToken (NoArgs i mq cols) = do logPlaExec (prefixDebugCmd "token") i
                 , charTokenDelimiter  `T.cons` "e emoteNameChar"
                 , charTokenDelimiter  `T.cons` "h chanTargetChar"
                 , charTokenDelimiter  `T.cons` "i indexChar"
-                , charTokenDelimiter  `T.cons` "k miscTokenDelimiter"
                 , charTokenDelimiter  `T.cons` "l selectorChar"
                 , charTokenDelimiter  `T.cons` "m amountChar"
                 , charTokenDelimiter  `T.cons` "n leadingSpaceChar"
@@ -1076,6 +1075,7 @@ debugToken (NoArgs i mq cols) = do logPlaExec (prefixDebugCmd "token") i
                 , charTokenDelimiter  `T.cons` "t sayToChar"
                 , charTokenDelimiter  `T.cons` "u multiLineEndChar"
                 , charTokenDelimiter  `T.cons` "x emoteChar"
+                -----
                 , styleTokenDelimiter `T.cons` styleTokenDelimiter `T.cons` " literal styleTokenDelimiter"
                 , styleTokenDelimiter `T.cons` ("aabbrevColor"       <> dfltColorStyleToken    )
                 , styleTokenDelimiter `T.cons` ("ddfltColor"         <> dfltColorStyleToken    )
@@ -1093,6 +1093,8 @@ debugToken (NoArgs i mq cols) = do logPlaExec (prefixDebugCmd "token") i
                 , styleTokenDelimiter `T.cons` ("t " <> dfltColorStyleToken <> " <- toNpcColor")
                 , styleTokenDelimiter `T.cons` ("uunderlineANSI"     <> noUnderlineStyleToken  )
                 , styleTokenDelimiter `T.cons` ("zzingColor"         <> dfltColorStyleToken    )
+                -----
+                , miscTokenDelimiter `T.cons` miscTokenDelimiter `T.cons` " literal miscTokenDelimiter"
                 , "dfltBootMsg: "      <> (miscTokenDelimiter `T.cons` "b")
                 , "descRule5: "        <> "elided"
                 , "isDebug: "          <> (miscTokenDelimiter `T.cons` "d")
