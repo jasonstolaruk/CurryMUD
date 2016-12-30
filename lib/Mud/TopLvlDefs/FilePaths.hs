@@ -140,7 +140,7 @@ wordsFile :: Maybe FilePath
 wordsFile = Just $ drive : "usr" </> "share" </> "dict" </> "words"
 
 
--- In addition to the words file, Mac OS X ships with a dictionary of proper names. Set to "Nothing" if this file is
+-- In addition to the words file, macOS ships with a dictionary of proper names. Set to "Nothing" if this file is
 -- unavailable on your system.
 propNamesFile :: Maybe FilePath
 propNamesFile = Just $ drive : "usr" </> "share" </> "dict" </> "propernames"
