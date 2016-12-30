@@ -1,23 +1,9 @@
-{-# OPTIONS_GHC -Wno-redundant-constraints #-} -- TODO: Needed?
 {-# LANGUAGE OverloadedStrings #-}
 
-module Mud.Data.State.Util.CurryTime where
+module Mud.Misc.CurryTime where
 
--- import Mud.Data.Misc
--- import Mud.Data.State.MudData
--- import Mud.Data.State.Util.Misc
--- import Mud.Misc.Misc
--- import Mud.TopLvlDefs.Misc
--- import Mud.Util.Misc
--- import Mud.Util.Operators
--- import Mud.Util.Quoting
-
--- import Data.Monoid ((<>))
--- import Data.Text (Text)
 import Data.Time (UTCTime(..), diffUTCTime, fromGregorian, getCurrentTime)
--- import GHC.Stack (HasCallStack)
 import Prelude hiding (min)
--- import qualified Data.Text as T
 
 
 type Year  = Integer
