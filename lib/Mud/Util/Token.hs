@@ -34,9 +34,8 @@ type Delimiter = Char
 
 
 parser :: (Char -> Text) -> Delimiter -> Text -> Text
-parser f d t
-  | T.singleton d `notInfixOf` t = t
-  | (left, headTail . T.tail -> (c, right)) <- T.breakOn (T.singleton d) t = left <> f c <> parser f d right
+parser f d t | T.singleton d `notInfixOf` t                                           = t
+             | (left, headTail . T.tail -> (c, right)) <- T.breakOn (T.singleton d) t = left <> f c <> parser f d right
 
 
 -----
@@ -46,7 +45,7 @@ parseCharTokens :: Text -> Text
 parseCharTokens = parser expandCharCode charTokenDelimiter
 
 
-expandCharCode :: Char -> Text
+expandCharCode :: Char -> Text -- '#'
 expandCharCode c | c == charTokenDelimiter = T.singleton charTokenDelimiter
 expandCharCode (toLower -> code)           = T.singleton $ case code of
   'a' -> allChar
@@ -56,13 +55,12 @@ expandCharCode (toLower -> code)           = T.singleton $ case code of
   'e' -> emoteNameChar
   'h' -> chanTargetChar
   'i' -> indexChar
-  'k' -> miscTokenDelimiter
   'l' -> selectorChar
   'm' -> amountChar
-  'n' -> leadingSpaceChar
+  'n' -> leadingSpaceChar -- TODO: Does this really belong here?
   'o' -> adverbOpenChar
   'p' -> expCmdChar
-  'q' -> quoteChar
+  'q' -> quoteChar -- TODO: What is this?
   'r' -> emoteTargetChar
   's' -> slotChar
   't' -> sayToChar
@@ -75,11 +73,13 @@ expandCharCode (toLower -> code)           = T.singleton $ case code of
 
 
 parseMiscTokens :: Text -> Text
-parseMiscTokens = twice (parser expandMiscCode miscTokenDelimiter)
+parseMiscTokens = twice . parser expandMiscCode $ miscTokenDelimiter -- "twice" because the expanded msg may itself
+                                                                     -- contain a misc token.
 
 
-expandMiscCode :: Char -> Text
-expandMiscCode (toLower -> code) = case code of
+expandMiscCode :: Char -> Text -- '@'
+expandMiscCode c | c == miscTokenDelimiter = T.singleton miscTokenDelimiter
+expandMiscCode (toLower -> code)           = case code of
   'b' -> dfltBootMsg
   'c' -> descRule5
   'd' -> yesNo isDebug
@@ -101,7 +101,7 @@ parseStyleTokens :: Text -> Text
 parseStyleTokens = parser expandStyleCode styleTokenDelimiter
 
 
-expandStyleCode :: Char -> Text
+expandStyleCode :: Char -> Text -- '\'
 expandStyleCode c | c == styleTokenDelimiter = T.singleton styleTokenDelimiter
 expandStyleCode (toLower -> code)            = case code of
   'a' -> abbrevColor

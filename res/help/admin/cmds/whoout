@@ -6,7 +6,7 @@
 \uDESCRIPTION\n
 Display a list of all the PCs that are currently logged out. Optionally, search the list for one or more terms.
 * denotes an admin.
-@ denotes an incognito admin.
+@@ denotes an incognito admin.
 
 \uEXAMPLES\n
 \q#dwhoout\d to display the full list.4`
