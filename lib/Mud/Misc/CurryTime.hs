@@ -21,88 +21,43 @@ curryMonthsInYear = 8
 
 
 -- Weeks
-curryWeeksInMonth :: Week
+curryWeeksInMonth, curryWeeksInYear :: Week
 curryWeeksInMonth = 3
-
-
-curryWeeksInYear :: Week
-curryWeeksInYear = curryWeeksInMonth * curryMonthsInYear
+curryWeeksInYear  = curryWeeksInMonth * curryMonthsInYear
 
 
 -- Days
-curryDaysInWeek :: Day
-curryDaysInWeek = 7
-
-
-curryDaysInMonth :: Day
-curryDaysInMonth = curryDaysInWeek * curryWeeksInMonth
-
-
-curryDaysInYear :: Day
-curryDaysInYear = curryDaysInMonth * curryMonthsInYear
+curryDaysInWeek, curryDaysInMonth, curryDaysInYear :: Day
+curryDaysInWeek  = 7
+curryDaysInMonth = curryDaysInWeek  * curryWeeksInMonth
+curryDaysInYear  = curryDaysInMonth * curryMonthsInYear
 
 
 -- Hours
-curryHoursInDay :: Hour
-curryHoursInDay = 20
-
-
-curryHoursInWeek :: Hour
-curryHoursInWeek = curryHoursInDay * curryDaysInWeek
-
-
-curryHoursInMonth :: Hour
-curryHoursInMonth = curryHoursInWeek * curryWeeksInMonth
-
-
-curryHoursInYear :: Hour
-curryHoursInYear = curryHoursInMonth * curryMonthsInYear
+curryHoursInDay, curryHoursInWeek, curryHoursInMonth, curryHoursInYear :: Hour
+curryHoursInDay   = 20
+curryHoursInWeek  = curryHoursInDay   * curryDaysInWeek
+curryHoursInMonth = curryHoursInWeek  * curryWeeksInMonth
+curryHoursInYear  = curryHoursInMonth * curryMonthsInYear
 
 
 -- Mins
-curryMinsInHour :: Min
-curryMinsInHour = 60
-
-
-curryMinsInDay :: Min
-curryMinsInDay = curryMinsInHour * curryHoursInDay
-
-
-curryMinsInWeek :: Min
-curryMinsInWeek = curryMinsInDay * curryDaysInWeek
-
-
-curryMinsInMonth :: Min
-curryMinsInMonth = curryMinsInWeek * curryWeeksInMonth
-
-
-curryMinsInYear :: Min
-curryMinsInYear = curryMinsInMonth * curryMonthsInYear
+curryMinsInHour, curryMinsInDay, curryMinsInWeek, curryMinsInMonth, curryMinsInYear :: Min
+curryMinsInHour  = 60
+curryMinsInDay   = curryMinsInHour  * curryHoursInDay
+curryMinsInWeek  = curryMinsInDay   * curryDaysInWeek
+curryMinsInMonth = curryMinsInWeek  * curryWeeksInMonth
+curryMinsInYear  = curryMinsInMonth * curryMonthsInYear
 
 
 -- Seconds
-currySecsInMin :: Sec
+currySecsInMin, currySecsInHour, currySecsInDay, currySecsInWeek, currySecsInMonth, currySecsInYear :: Sec
 currySecsInMin = 60
-
-
-currySecsInHour :: Sec
-currySecsInHour = currySecsInMin * curryMinsInHour
-
-
-currySecsInDay :: Sec
-currySecsInDay = currySecsInHour * curryHoursInDay
-
-
-currySecsInWeek :: Sec
-currySecsInWeek = currySecsInDay * curryDaysInWeek
-
-
-currySecsInMonth :: Sec
-currySecsInMonth = currySecsInWeek * curryWeeksInMonth
-
-
-currySecsInYear :: Sec
-currySecsInYear = currySecsInMonth * curryMonthsInYear
+currySecsInHour  = currySecsInMin   * curryMinsInHour
+currySecsInDay   = currySecsInHour  * curryHoursInDay
+currySecsInWeek  = currySecsInDay   * curryDaysInWeek
+currySecsInMonth = currySecsInWeek  * curryWeeksInMonth
+currySecsInYear  = currySecsInMonth * curryMonthsInYear
 
 
 -- ==================================================

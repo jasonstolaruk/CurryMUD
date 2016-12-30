@@ -30,6 +30,7 @@ import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Data.State.Util.Random
 import Mud.Misc.ANSI
+import Mud.Misc.CurryTime
 import Mud.Misc.Database
 import Mud.Misc.Misc
 import Mud.Misc.Persist
@@ -67,7 +68,7 @@ import Data.List ((\\), delete, foldl', groupBy, intercalate, intersperse, nub, 
 import Data.Maybe (fromMaybe, isJust)
 import Data.Monoid ((<>), Any(..), Sum(..), getSum)
 import Data.Text (Text)
-import Data.Time (FormatTime, TimeZone, UTCTime, defaultTimeLocale, diffUTCTime, formatTime, getCurrentTime, getCurrentTimeZone, getZonedTime, utcToLocalTime)
+import Data.Time (TimeZone, UTCTime, defaultTimeLocale, diffUTCTime, formatTime, getCurrentTime, getCurrentTimeZone, getZonedTime, utcToLocalTime, utcToZonedTime)
 import Database.SQLite.Simple (FromRow, fromOnly)
 import GHC.Conc (ThreadStatus(..), threadStatus)
 import GHC.Exts (sortWith)
@@ -146,6 +147,7 @@ adminCmds =
     , mkAdminCmd "bug"        adminBug         True  "Dump the bug database."
     , mkAdminCmd "channel"    adminChan        True  "Display information about one or more telepathic channels."
     , mkAdminCmd "count"      adminCount       True  "Display or search a list of miscellaneous running totals."
+    , mkAdminCmd "currytime"  adminCurryTime   True  "Display the current Curry Time."
     , mkAdminCmd "date"       adminDate        True  "Display the current system date."
     , mkAdminCmd "discover"   adminDiscover    True  "Dump the discover database."
     , mkAdminCmd "examine"    adminExamine     True  "Display the properties of one or more IDs."
@@ -264,14 +266,14 @@ adminAlertExec p@ActionParams { plaMsgQueue, plaCols } = dumpCmdHelper "alert_ex
     f = dumpDbTblHelper plaMsgQueue plaCols
 
 
-dumpCmdHelper :: HasCallStack => (FromRow a) => Text -> ([a] -> MudStack ()) -> CmdName -> ActionFun
+dumpCmdHelper :: (HasCallStack, FromRow a) => Text -> ([a] -> MudStack ()) -> CmdName -> ActionFun
 dumpCmdHelper tblName f cn (NoArgs i mq cols) = withDbExHandler "dumpCmdHelper" (getDbTblRecs tblName) >>= \case
   Just xs -> logPlaExec (prefixAdminCmd cn) i >> f xs
   Nothing -> dbError mq cols
 dumpCmdHelper tblName f cn p = withoutArgs (dumpCmdHelper tblName f cn) p
 
 
-dumpDbTblHelper :: HasCallStack => (Pretty a) => MsgQueue -> Cols -> [a] -> MudStack ()
+dumpDbTblHelper :: (HasCallStack, Pretty a) => MsgQueue -> Cols -> [a] -> MudStack ()
 dumpDbTblHelper mq cols [] = wrapSend mq cols dbEmptyMsg
 dumpDbTblHelper mq cols xs = multiWrapSend mq cols . map pp $ xs
 
@@ -355,7 +357,7 @@ adminBanHost   (MsgWithTarget i mq cols (uncapitalize -> target) msg) = getState
 adminBanHost p = patternMatchFail "adminBanHost" . showText $ p
 
 
-notifyBan :: HasCallStack => (Pretty a) => Id -> MsgQueue -> Cols -> Sing -> Text -> Bool -> a -> MudStack ()
+notifyBan :: (HasCallStack, Pretty a) => Id -> MsgQueue -> Cols -> Sing -> Text -> Bool -> a -> MudStack ()
 notifyBan i mq cols selfSing target newStatus x =
     let fn          = "notifyBan"
         (v, suffix) = newStatus ? ("banned", [ ": " <> pp x ]) :? ("unbanned", [ ": " <> pp x ])
@@ -563,10 +565,33 @@ mkCountTxt = map (uncurry mappend . second commaShow) <$> helper
 -----
 
 
+-- TODO: Help.
+adminCurryTime :: HasCallStack => ActionFun
+adminCurryTime (NoArgs i mq cols) = do logPlaExec (prefixAdminCmd "currytime") i
+                                       (CurryTime year month week dayOfMonth dayOfWeek hour m sec) <- liftIO getCurryTime
+                                       ts <- mkFooter
+                                       multiWrapSend mq cols $ [ "Year:         " <> showText year
+                                                               , "Month:        " <> showText month
+                                                               , "Week:         " <> showText week
+                                                               , "Day of month: " <> showText dayOfMonth
+                                                               , "Day of week:  " <> showText dayOfWeek
+                                                               , "Hour:         " <> showText hour
+                                                               , "Min:          " <> showText m
+                                                               , "Sec:          " <> showText sec ] ++ ts
+  where
+    mkFooter = liftIO getCurrentTimeZone >>= \z ->
+        let (a, b) = ((,) <$> formatTimeHelper <*> formatTimeHelper . utcToZonedTime z) curryEpoch
+        in return [ "As measured from the Curry Epoch:", a, b ]
+adminCurryTime p = withoutArgs adminCurryTime p
+
+
+-----
+
+
 adminDate :: HasCallStack => ActionFun
 adminDate (NoArgs' i mq) = do logPlaExec (prefixAdminCmd "date") i
                               send mq . nlnl . T.pack . formatTime defaultTimeLocale "%A %B %d" =<< liftIO getZonedTime
-adminDate p = withoutArgs adminDate p
+adminDate p              = withoutArgs adminDate p
 
 
 -----
@@ -680,7 +705,7 @@ examineEnt i ms = let e = getEnt i ms in [ "Name: "           <> e^.entName .to 
     descEffect f      = ppList . f i $ ms
 
 
-ppList :: HasCallStack => (Pretty a) => [a] -> Text
+ppList :: (HasCallStack, Pretty a) => [a] -> Text
 ppList = noneOnNull . commas . map pp
 
 
@@ -2076,11 +2101,8 @@ adminTeleRm p = advise p [] adviceATeleRmExcessArgs
 adminTime :: HasCallStack => ActionFun
 adminTime (NoArgs i mq cols) = do
     logPlaExec (prefixAdminCmd "time") i
-    (ct, zt) <- liftIO $ (,) <$> formatThat `fmap` getCurrentTime <*> formatThat `fmap` getZonedTime
+    (ct, zt) <- liftIO $ (,) <$> formatTimeHelper `fmap` getCurrentTime <*> formatTimeHelper `fmap` getZonedTime
     multiWrapSend mq cols [ thrice prd "At the tone, the time will be", ct, zt ]
-  where
-    formatThat :: HasCallStack => (FormatTime a) => a -> Text
-    formatThat = T.pack . formatTime defaultTimeLocale "%Z: %F %T"
 adminTime p = withoutArgs adminTime p
 
 

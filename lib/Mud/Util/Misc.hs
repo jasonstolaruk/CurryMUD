@@ -25,6 +25,7 @@ module Mud.Util.Misc ( atLst1
                      , fanView
                      , fmap2
                      , fmap3
+                     , formatTimeHelper
                      , fromEither
                      , fromLeft
                      , fromMaybeEmp
@@ -96,7 +97,7 @@ import Data.List (delete)
 import Data.Maybe (fromMaybe)
 import Data.Monoid (Sum(..), (<>))
 import Data.Text (Text)
-import Data.Time (getZonedTime)
+import Data.Time (FormatTime, defaultTimeLocale, formatTime, getZonedTime)
 import GHC.Stack (HasCallStack, callStack, prettyCallStack)
 import qualified Data.IntMap.Lazy as IM (IntMap, insert, lookup)
 import qualified Data.Map.Lazy as M (Map, assocs)
@@ -212,6 +213,10 @@ fmap2 = fmap . fmap
 
 fmap3 :: (Functor f1, Functor f2, Functor f3) => (a -> b) -> f1 (f2 (f3 a)) -> f1 (f2 (f3 b))
 fmap3 = fmap2 . fmap
+
+
+formatTimeHelper :: (FormatTime a) => a -> Text
+formatTimeHelper = T.pack . formatTime defaultTimeLocale "%Z: %F %T"
 
 
 fromEither :: Either a a -> a

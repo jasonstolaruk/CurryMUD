@@ -4217,7 +4217,7 @@ whoAmI p = withoutArgs whoAmI p
 
 
 zoom :: HasCallStack => ActionFun
-zoom (NoArgs' i mq       ) = zoomHelper i mq 10
+zoom (NoArgs' i mq       ) = zoomHelper i mq 10 -- TODO: Default zoom binding.
 zoom (OneArg  i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
   [(x, "")] | x <= 0    -> sorry
             | otherwise -> zoomHelper i mq x

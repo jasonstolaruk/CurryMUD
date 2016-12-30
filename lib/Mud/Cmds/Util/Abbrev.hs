@@ -18,7 +18,7 @@ import GHC.Stack (HasCallStack)
 import qualified Data.Text as T
 
 
-patternMatchFail :: HasCallStack => (Show a) => PatternMatchFail a b
+patternMatchFail :: (Show a) => PatternMatchFail a b
 patternMatchFail = U.patternMatchFail "Mud.Cmds.Util.Abbrev"
 
 

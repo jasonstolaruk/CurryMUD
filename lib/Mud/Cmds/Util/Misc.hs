@@ -530,7 +530,7 @@ isHostBanned :: HasCallStack => Text -> IO Any
 isHostBanned host = isBanned host <$> (getDbTblRecs "ban_host" :: IO [BanHostRec])
 
 
-isBanned :: HasCallStack => (BanRecord a) => Text -> [a] -> Any
+isBanned :: (HasCallStack, BanRecord a) => Text -> [a] -> Any
 isBanned target = helper . reverse
   where
     helper []                             = Any False

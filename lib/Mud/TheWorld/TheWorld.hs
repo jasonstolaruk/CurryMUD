@@ -224,7 +224,7 @@ sorry :: HasCallStack => FilePath -> String -> MudStack Bool
 sorry absolute (T.pack -> err) = logErrorMsg "sorry" (loadTblErrorMsg absolute err) >> return False
 
 
-loadTbl :: HasCallStack => (FromJSON b) => FilePath -> ASetter MudState MudState a b -> FilePath -> MudStack Bool
+loadTbl :: (HasCallStack, FromJSON b) => FilePath -> ASetter MudState MudState a b -> FilePath -> MudStack Bool
 loadTbl tblFile lens path = let absolute = path </> tblFile in
     eitherDecode <$> (liftIO . B.readFile $ absolute) >>= \case
       Left  err -> sorry absolute err
