@@ -28,7 +28,7 @@ emoteTargetChar  = '>'
 expCmdChar       = '='
 indexChar        = '.'
 multiLineEndChar = '.'
-quoteChar        = '`'
+quoteChar        = '`' -- Used in ":set".
 sayToChar        = '>'
 selectorChar     = '-'
 slotChar         = ':'
