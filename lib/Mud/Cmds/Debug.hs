@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
-{-# LANGUAGE ExistentialQuantification, LambdaCase, MonadComprehensions, NamedFieldPuns, OverloadedStrings, PatternSynonyms, ScopedTypeVariables, TupleSections, ViewPatterns #-}
+{-# LANGUAGE ExistentialQuantification, LambdaCase, MonadComprehensions, NamedFieldPuns, OverloadedStrings, PatternSynonyms, RecordWildCards, ScopedTypeVariables, TupleSections, ViewPatterns #-}
 
 module Mud.Cmds.Debug ( debugCmds
                       , purgeThreadTbls
@@ -27,6 +27,7 @@ import Mud.Interp.Misc
 import Mud.Interp.MultiLine
 import Mud.Interp.Pause
 import Mud.Misc.ANSI
+import Mud.Misc.CurryTime
 import Mud.Misc.EffectFuns
 import Mud.Misc.Logging (writeLog)
 import Mud.Misc.Misc
@@ -70,7 +71,7 @@ import Data.List (delete, intercalate, sort)
 import Data.Maybe (catMaybes)
 import Data.Monoid ((<>), Sum(..))
 import Data.Text (Text)
-import Data.Time (getCurrentTime)
+import Data.Time (UTCTime(..), diffUTCTime, fromGregorianValid, getCurrentTime)
 import GHC.Conc (threadStatus)
 import GHC.Stack (HasCallStack)
 import Numeric (readInt)
@@ -138,6 +139,7 @@ debugCmds =
     , mkDebugCmd "color"       debugColor       "Perform a color test."
     , mkDebugCmd "cores"       debugCores       "Display the number of processor cores."
     , mkDebugCmd "cpu"         debugCPU         "Display the CPU time."
+    , mkDebugCmd "currytime"   debugCurryTime   "Display the Curry Time for a given year, month, and date in UTC."
     , mkDebugCmd "delay"       debugDelay       "On a new thread, send yourself a message and horf after a delay of 10 \
                                                 \seconds."
     , mkDebugCmd "echowill"    debugEchoWill    "Send IAC WILL ECHO (hide user input)."
@@ -369,6 +371,26 @@ debugCPU (NoArgs i mq cols) = let cpuTime = showText . (`divide` 10 ^ 12) <$> ge
     logPlaExec (prefixDebugCmd "cpu") i
     wrapSend mq cols =<< [ "CPU time: " <> time | time <- liftIO . safePerformIO $ cpuTime ]
 debugCPU p = withoutArgs debugCPU p
+
+
+-----
+
+
+debugCurryTime :: ActionFun
+debugCurryTime (WithArgs i mq cols as@[year, month, day]) = do
+    logPlaExecArgs (prefixDebugCmd "currytime") (map showText as) i
+    case fromGregorianValid (read . T.unpack $ year :: Integer) (read . T.unpack $ month :: Int) (read . T.unpack $ day :: Int) of -- TODO
+      Nothing -> undefined -- TODO
+      Just d  -> let CurryTime { .. } = secsToCurryTime . round $ UTCTime d 0 `diffUTCTime` curryEpoch
+                 in multiWrapSend mq cols [ "Year:         " <> showText curryYear
+                                          , "Month:        " <> showText curryMonth
+                                          , "Week:         " <> showText curryWeek
+                                          , "Day of month: " <> showText curryDayOfMonth
+                                          , "Day of week:  " <> showText curryDayOfWeek
+                                          , "Hour:         " <> showText curryHour
+                                          , "Min:          " <> showText curryMin
+                                          , "Sec:          " <> showText currySec ]
+debugCurryTime _ = undefined -- TODO
 
 
 -----

@@ -568,16 +568,16 @@ mkCountTxt = map (uncurry mappend . second commaShow) <$> helper
 -- TODO: Help.
 adminCurryTime :: HasCallStack => ActionFun
 adminCurryTime (NoArgs i mq cols) = do logPlaExec (prefixAdminCmd "currytime") i
-                                       (CurryTime year month week dayOfMonth dayOfWeek hour m sec) <- liftIO getCurryTime
-                                       ts <- mkFooter
-                                       multiWrapSend mq cols $ [ "Year:         " <> showText year
-                                                               , "Month:        " <> showText month
-                                                               , "Week:         " <> showText week
-                                                               , "Day of month: " <> showText dayOfMonth
-                                                               , "Day of week:  " <> showText dayOfWeek
-                                                               , "Hour:         " <> showText hour
-                                                               , "Min:          " <> showText m
-                                                               , "Sec:          " <> showText sec ] ++ ts
+                                       CurryTime { .. } <- liftIO getCurryTime
+                                       ts               <- mkFooter
+                                       multiWrapSend mq cols $ [ "Year:         " <> showText curryYear
+                                                               , "Month:        " <> showText curryMonth
+                                                               , "Week:         " <> showText curryWeek
+                                                               , "Day of month: " <> showText curryDayOfMonth
+                                                               , "Day of week:  " <> showText curryDayOfWeek
+                                                               , "Hour:         " <> showText curryHour
+                                                               , "Min:          " <> showText curryMin
+                                                               , "Sec:          " <> showText currySec ] ++ ts
   where
     mkFooter = liftIO getCurrentTimeZone >>= \z ->
         let (a, b) = ((,) <$> formatTimeHelper <*> formatTimeHelper . utcToZonedTime z) curryEpoch
