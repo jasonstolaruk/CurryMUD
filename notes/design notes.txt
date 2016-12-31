@@ -169,8 +169,7 @@ Believable settlements have access to food and water, nearby building materials,
 
 Rooms may be either "outside" or "inside".
 
-Make a distinction between day and night. During the night, outside rooms automatically become dark (a light source is required).
-The sun rises and sets. Moon(s) become visible.
+Make a distinction between day and night. The sun rises and sets. Moon(s) become visible.
 
 When PCs enter a dark room from a light one, consider providing the description of the dark room after a few seconds delay, so as to model the time it takes for one's eyes to adjust. p.388
 

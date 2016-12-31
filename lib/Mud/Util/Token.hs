@@ -73,9 +73,9 @@ expandCharCode (toLower -> code)           = T.singleton $ case code of
 
 
 parseMiscTokens :: Text -> Text
-parseMiscTokens txt = let expanded = parser expandMiscCode miscTokenDelimiter txt
-                      -- The expanded text itself may contain a misc token.
-                      in onTrue (expanded == T.singleton miscTokenDelimiter) parseMiscTokens expanded
+parseMiscTokens txt = let f        = parser expandMiscCode miscTokenDelimiter
+                          expanded = f txt -- The expanded text itself may contain a misc token.
+                      in onFalse (expanded == T.singleton miscTokenDelimiter) f expanded
 
 
 expandMiscCode :: Char -> Text -- '@'

@@ -567,7 +567,7 @@ finishNewChar ncb@(NewCharBundle _ s pass) params@(NoArgs'' i) = do
         handleLogin ncb True params
         notifyQuestion i ms
   where
-    helper v ms | ms' <- ms & pickPtsTbl.at  i        .~ Nothing
+    helper v ms | ms' <- ms & pickPtsTbl.at  i        .~ Nothing -- TODO: Kits. Include a light source.
                             & invTbl    .ind iWelcome %~ (i `delete`)
                             & mobTbl    .ind i.rmId   .~ iCentral
                             & mobTbl    .ind i.interp .~ Nothing
