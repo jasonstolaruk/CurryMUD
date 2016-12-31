@@ -15,7 +15,7 @@ import qualified Data.Text as T
 
 
 lSpcs :: Text
-lSpcs = T.replicate 2 . T.pack $ charTokenDelimiter : "n"
+lSpcs = T.replicate 2 . T.pack $ miscTokenDelimiter : "l"
 
 
 -----

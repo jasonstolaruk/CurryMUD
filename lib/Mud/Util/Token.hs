@@ -57,7 +57,6 @@ expandCharCode (toLower -> code)           = T.singleton $ case code of
   'i' -> indexChar
   'l' -> selectorChar
   'm' -> amountChar
-  'n' -> leadingSpaceChar -- TODO: Does this really belong here?
   'o' -> adverbOpenChar
   'p' -> expCmdChar
   'q' -> quoteChar -- TODO: What is this?
@@ -91,6 +90,7 @@ expandMiscCode (toLower -> code)           = case code of
   'c' -> descRule5
   'd' -> yesNo isDebug
   'e' -> descRulesMsg
+  'l' -> T.singleton leadingSpaceChar
   'o' -> showText dfltZoom
   'p' -> pwWarningMsg
   'r' -> rulesIntroMsg

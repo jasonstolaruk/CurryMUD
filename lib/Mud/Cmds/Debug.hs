@@ -1066,7 +1066,6 @@ debugToken (NoArgs i mq cols) = do logPlaExec (prefixDebugCmd "token") i
                 , charTokenDelimiter  `T.cons` "i indexChar"
                 , charTokenDelimiter  `T.cons` "l selectorChar"
                 , charTokenDelimiter  `T.cons` "m amountChar"
-                , charTokenDelimiter  `T.cons` "n leadingSpaceChar"
                 , charTokenDelimiter  `T.cons` "o adverbOpenChar"
                 , charTokenDelimiter  `T.cons` "p expCmdChar"
                 , charTokenDelimiter  `T.cons` "q quoteChar"
@@ -1099,6 +1098,7 @@ debugToken (NoArgs i mq cols) = do logPlaExec (prefixDebugCmd "token") i
                 , "descRule5: "        <> "elided"
                 , "isDebug: "          <> (miscTokenDelimiter `T.cons` "d")
                 , "descRulesMsg: "     <> "elided"
+                , "leadingSpaceChar: " <> (miscTokenDelimiter `T.cons` "l")
                 , "dfltZoom: "         <> (miscTokenDelimiter `T.cons` "o")
                 , "pwWarningMsg: "     <> (miscTokenDelimiter `T.cons` "p")
                 , "rulesIntroMsg: "    <> (miscTokenDelimiter `T.cons` "r")
