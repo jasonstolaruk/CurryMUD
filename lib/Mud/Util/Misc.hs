@@ -352,15 +352,13 @@ mkTimestamp = [ bracketQuote . uncurry (|<>|) $ pair | pair <- mkDateTimeTxt ]
 
 
 onFalse :: Bool -> (a -> a) -> a -> a
-onFalse = onHelper id
-
-
-onHelper :: (Bool -> Bool) -> Bool -> (a -> a) -> a -> a
-onHelper g b f = bool f id . g $ b
+onFalse b f x | b         = x
+              | otherwise = f x
 
 
 onTrue :: Bool -> (a -> a) -> a -> a
-onTrue = onHelper not
+onTrue b f x | b         = f x
+             | otherwise = x
 
 
 onLeft :: (Show a, Show b) => (a -> c) -> Either a b -> Either c b
