@@ -94,12 +94,12 @@ secsToCurryTime x = let years  = x `div` currySecsInYear
                         mins   = x `div` currySecsInMin
                         secs   = x
                         -----
-                        year       = succ $ years + 200
-                        month      = succ $ months `rem` curryMonthsInYear
-                        week       = succ $ weeks  `rem` curryWeeksInMonth
-                        dayOfMonth = succ $ days   `rem` curryDaysInMonth
-                        dayOfWeek  = succ $ days   `rem` curryDaysInWeek
-                        hour       = succ $ hours  `rem` curryHoursInDay
-                        min        = succ $ mins   `rem` curryMinsInHour
-                        sec        = succ $ secs   `rem` currySecsInMin
+                        year       = years + 200
+                        month      = months `rem` curryMonthsInYear
+                        week       = weeks  `rem` curryWeeksInMonth
+                        dayOfMonth = days   `rem` curryDaysInMonth
+                        dayOfWeek  = days   `rem` curryDaysInWeek
+                        hour       = hours  `rem` curryHoursInDay
+                        min        = mins   `rem` curryMinsInHour
+                        sec        = secs   `rem` currySecsInMin
                     in CurryTime year month week dayOfMonth dayOfWeek hour min sec
