@@ -77,7 +77,7 @@ import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (asks)
 import Crypto.BCrypt (validatePassword)
 import Data.Bool (bool)
-import Data.Char (isDigit, isLetter, isLower, isUpper)
+import Data.Char (isDigit, isLetter, isLower, isSpace, isUpper)
 import Data.Either (lefts, partitionEithers)
 import Data.Function (on)
 import Data.Int (Int64)
@@ -1594,7 +1594,7 @@ help (NoArgs i mq cols) = liftIO (T.readFile =<< mkMudFilePath rootHeplFileFun) 
                                               , nl "TOPICS:"
                                               , topicNames
                                               , ia |?| footnote ]
-        pager i mq Nothing . parseHelpTxt cols $ helpTxt
+        pager i mq Nothing . parseHelpTxt (mkPlaCmds i ms) cols $ helpTxt
     mkHelpNames zipped    = [ padHelpTopic . (styled <>) $ isAdminHelp h |?| asterisk | (styled, h) <- zipped ]
     formatHelpNames names = let wordsPerLine = cols `div` helpTopicPadding
                             in T.unlines . map T.concat . chunksOf wordsPerLine $ names
@@ -1602,7 +1602,7 @@ help (NoArgs i mq cols) = liftIO (T.readFile =<< mkMudFilePath rootHeplFileFun) 
 help (LowerNub i mq cols as) = getState >>= \ms -> do
     let (is, ia, ls) = mkHelpTriple i ms
     hs <- liftIO . mkHelpData ls is $ ia
-    (map (parseHelpTxt cols) -> helpTxts, dropBlanks -> hns) <- unzip <$> forM as (getHelpByName cols hs)
+    (map (parseHelpTxt (mkPlaCmds i ms) cols) -> helpTxts, dropBlanks -> hns) <- unzip <$> forM as (getHelpByName cols hs)
     hns |#| logPla "help" i . ("reading help on: " <>) . commas
     pager i mq Nothing . intercalateDivider cols $ helpTxts
 help p = patternMatchFail "help" . showText $ p
@@ -1656,11 +1656,25 @@ mkHelpData ls is ia = do
     filterSpiritCmds cns = [ cn | cn <- cns, let scns = map cmdName spiritCmds, T.pack cn `elem` scns ]
 
 
-parseHelpTxt :: HasCallStack => Cols -> Text -> [Text]
-parseHelpTxt cols txt = [ xformLeadingSpaceChars . expandDividers $ t | t <- parseWrap cols txt ]
+parseHelpTxt :: HasCallStack => [Cmd] -> Cols -> Text -> [Text]
+parseHelpTxt cmds cols txt = [ procCmdTokens . xformLeadingSpaceChars . expandDividers $ t | t <- parseWrap cols txt ]
   where
-    expandDividers l | l == T.singleton dividerToken = T.replicate cols "-"
-                     | otherwise                     = l
+    expandDividers l | l == T.singleton dividerToken         = T.replicate cols "-"
+                     | otherwise                             = l
+    procCmdTokens (T.uncons -> Just (x, xs)) | x == cmdToken = helper -- TODO: Clean up?
+      where
+        helper          = let (cn, rest) = T.break isSpace xs
+                          in case filter ((== cn) . fst) styleCmdAbbrevs of []              -> xs
+                                                                            ((_, styled):_) -> styled <> rest
+        styleCmdAbbrevs = let cmdNames       = [ cmdName           cmd | cmd <- cmds ]
+                              cmdPAs         = [ cmdPriorityAbbrev cmd | cmd <- cmds ]
+                              styledCmdNames = styleAbbrevs Don'tQuote cmdNames
+                          in [ checkProrityAbbrev a | a <- zip3 cmdNames cmdPAs styledCmdNames ]
+        checkProrityAbbrev (cn, Nothing,  scn) = (cn, scn)
+        checkProrityAbbrev (cn, Just cpa, _  ) = (cn, ) . uncurry (<>) . first (colorWith abbrevColor) $ case cpa `T.stripPrefix` cn of
+          Nothing   -> (cn,  ""  )
+          Just rest -> (cpa, rest)
+    procCmdTokens l = l
 
 
 getHelpByName :: HasCallStack => Cols -> [Help] -> HelpName -> MudStack (Text, Text)

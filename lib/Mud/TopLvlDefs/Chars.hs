@@ -69,8 +69,9 @@ leadingSpaceChar = '\134'
 -- Denotative characters used in text files:
 
 
-charTokenDelimiter, dividerToken, indentTagChar, miscTokenDelimiter, styleTokenDelimiter :: Char
+charTokenDelimiter, cmdToken, dividerToken, indentTagChar, miscTokenDelimiter, styleTokenDelimiter :: Char
 charTokenDelimiter  = '#'
+cmdToken            = '!'
 dividerToken        = '-'
 indentTagChar       = '`'
 miscTokenDelimiter  = '@'

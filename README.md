@@ -89,7 +89,7 @@ Linux and macOS are supported. Sorry, but Windows is _not_ supported.
 
 Prior to building, it may be necessary to change the values of the `wordsFile` and `propNamesFile` bindings found at the bottom of `FilePaths.hs`. [Refer to `FilePaths.hs`](https://github.com/jasonstolaruk/CurryMUD/blob/master/lib/Mud/TopLvlDefs/FilePaths.hs) for more details.
 
-Please build with [stack](http://docs.haskellstack.org/en/stable/README.html) (otherwise, I cannot guarantee that CurryMUD will build on your machine).
+Please build with [stack](http://docs.haskellstack.org/en/stable/README.html) (otherwise I cannot guarantee that CurryMUD will build on your machine).
 
 0. [Install stack.](http://docs.haskellstack.org/en/stable/install_and_upgrade/)
 0. Clone the repo from your home directory (the server expects to find various folders under `$HOME/CurryMUD`).

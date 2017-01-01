@@ -1,7 +1,7 @@
 \h DRINK \d
 
 \uUSAGE\n
-drink mouthfuls vessel
+!drink mouthfuls vessel
 
 \uDESCRIPTION\n
 Drink a given number of mouthfuls from a vessel.
