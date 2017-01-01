@@ -14,6 +14,7 @@ module Mud.Data.Misc ( Action(..)
                      , CmdPriorityAbbrevTxt
                      , Cols
                      , CurryTime(..)
+                     , CurryWeekday
                      , Day
                      , deserialize
                      , Desig(..)
@@ -744,13 +745,13 @@ instance Ord Cmd where
 -----
 
 
-type Year  = Integer
-type Month = Integer
-type Week  = Integer
-type Day   = Integer
-type Hour  = Integer
-type Min   = Integer
-type Sec   = Integer
+type Year  = Int
+type Month = Int
+type Week  = Int
+type Day   = Int
+type Hour  = Int
+type Min   = Int
+type Sec   = Int
 
 
 data CurryTime = CurryTime { curryYear       :: Year

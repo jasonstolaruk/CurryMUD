@@ -377,7 +377,7 @@ debugCPU p = withoutArgs debugCPU p
 
 
 debugCurryTime :: ActionFun
-debugCurryTime (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Integer, String)] of
+debugCurryTime (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
   [(secs, "")] -> helper secs
   _            -> wrapSend mq cols . sorryParseSeconds $ a
   where

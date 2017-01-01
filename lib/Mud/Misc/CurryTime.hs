@@ -3,6 +3,7 @@
 module Mud.Misc.CurryTime where
 
 import Mud.Data.Misc
+import Mud.Util.Operators
 import Mud.Util.Text
 
 import Data.Monoid ((<>))
@@ -69,7 +70,7 @@ showCurryTime CurryTime { .. } = [ "Year:         " <> showText  curryYear
                                  , "Min:          " <> showText  curryMin
                                  , "Sec:          " <> showText  currySec ]
   where
-    helper = (|<>|) <$> mkOrdinal . fromIntegral <*> pp . toEnum
+    helper = (|<>|) <$> mkOrdinal <*> pp . (toEnum :: Int -> CurryWeekday)
 
 
 curryEpoch :: UTCTime
