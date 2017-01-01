@@ -53,6 +53,7 @@ module Mud.Cmds.Msgs.Advice ( adviceAAnnounceNoArgs
                             , adviceDBonusNoArgs
                             , adviceDCinsExcessArgs
                             , adviceDCinsNoArgs
+                            , adviceDCurryTimeExcessArgs
                             , adviceDIdExcessArgs
                             , adviceDIdNoArgs
                             , adviceDisconnectNoArgs
@@ -383,6 +384,11 @@ adviceDCinsExcessArgs = prd $ "Please provide one argument: the target ID, as in
 
 adviceDCinsNoArgs :: Text
 adviceDCinsNoArgs = adviceDCinsExcessArgs
+
+
+adviceDCurryTimeExcessArgs :: Text
+adviceDCurryTimeExcessArgs = prd $ "Please provide one argument: the number of seconds to display in Curry Time, as in " <>
+                                   colorWith quoteColor (prefixDebugCmd "currytime" <> " 60")
 
 
 adviceDIdExcessArgs :: Text

@@ -187,6 +187,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryParseMouthfuls
                            , sorryParseNum
                            , sorryParseOnOff
+                           , sorryParseSeconds
                            , sorryParseSetting
                            , sorryParseZoom
                            , sorryPCName
@@ -1379,6 +1380,10 @@ sorryParseOnOff value n = T.concat [ dblQuote value
                                    , " or "
                                    , dblQuote "off"
                                    , "." ]
+
+
+sorryParseSeconds :: Text -> Text
+sorryParseSeconds a = dblQuote a <> " is not a valid number of seconds."
 
 
 sorryParseSetting :: Text -> Text -> Text

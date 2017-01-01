@@ -71,7 +71,7 @@ import Data.List (delete, intercalate, sort)
 import Data.Maybe (catMaybes)
 import Data.Monoid ((<>), Sum(..))
 import Data.Text (Text)
-import Data.Time (UTCTime(..), diffUTCTime, fromGregorianValid, getCurrentTime, secondsToDiffTime)
+import Data.Time (getCurrentTime)
 import GHC.Conc (threadStatus)
 import GHC.Stack (HasCallStack)
 import Numeric (readInt)
@@ -139,8 +139,7 @@ debugCmds =
     , mkDebugCmd "color"       debugColor       "Perform a color test."
     , mkDebugCmd "cores"       debugCores       "Display the number of processor cores."
     , mkDebugCmd "cpu"         debugCPU         "Display the CPU time."
-    , mkDebugCmd "currytime"   debugCurryTime   "Display the Curry Time for a given UTC year, month, date, and seconds \
-                                                \past midnight."
+    , mkDebugCmd "currytime"   debugCurryTime   "Display a given number of seconds in Curry Time."
     , mkDebugCmd "delay"       debugDelay       "On a new thread, send yourself a message and horf after a delay of 10 \
                                                 \seconds."
     , mkDebugCmd "echowill"    debugEchoWill    "Send IAC WILL ECHO (hide user input)."
@@ -377,21 +376,23 @@ debugCPU p = withoutArgs debugCPU p
 -----
 
 
-debugCurryTime :: ActionFun -- TODO
-debugCurryTime (WithArgs i mq cols as@[year, month, day, seconds]) = do -- TODO: Just pass in a number of secs past the Curry Epoch.
-    logPlaExecArgs (prefixDebugCmd "currytime") (map showText as) i
-    case fromGregorianValid (read . T.unpack $ year :: Integer) (read . T.unpack $ month :: Int) (read . T.unpack $ day :: Int) of
-      Nothing -> undefined
-      Just d  -> let CurryTime { .. } = secsToCurryTime . round $ UTCTime d (secondsToDiffTime . read . T.unpack $ seconds) `diffUTCTime` curryEpoch
-                 in multiWrapSend mq cols [ "Year:         " <> showText curryYear
-                                          , "Month:        " <> showText curryMonth
-                                          , "Week:         " <> showText curryWeek
-                                          , "Day of month: " <> showText curryDayOfMonth
-                                          , "Day of week:  " <> showText curryDayOfWeek
-                                          , "Hour:         " <> showText curryHour
-                                          , "Min:          " <> showText curryMin
-                                          , "Sec:          " <> showText currySec ]
-debugCurryTime _ = undefined
+debugCurryTime :: ActionFun
+debugCurryTime (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Integer, String)] of
+  [(secs, "")] -> helper secs
+  _            -> wrapSend mq cols . sorryParseSeconds $ a
+  where
+    helper x | x < 0     = wrapSend mq cols sorryWtf
+             | otherwise = do logPlaExecArgs (prefixDebugCmd "currytime") (pure a) i
+                              let CurryTime { .. } = secsToCurryTime x
+                              multiWrapSend mq cols [ "Year:         " <> showText curryYear
+                                                    , "Month:        " <> showText curryMonth
+                                                    , "Week:         " <> showText curryWeek
+                                                    , "Day of month: " <> showText curryDayOfMonth
+                                                    , "Day of week:  " <> showText curryDayOfWeek
+                                                    , "Hour:         " <> showText curryHour
+                                                    , "Min:          " <> showText curryMin
+                                                    , "Sec:          " <> showText currySec ]
+debugCurryTime p = advise p [] adviceDCurryTimeExcessArgs
 
 
 -----

@@ -53,11 +53,11 @@ curryMinsInYear  = curryMinsInMonth * curryMonthsInYear
 -- Seconds
 currySecsInMin, currySecsInHour, currySecsInDay, currySecsInWeek, currySecsInMonth, currySecsInYear :: Sec
 currySecsInMin = 60
-currySecsInHour  = currySecsInMin   * curryMinsInHour
-currySecsInDay   = currySecsInHour  * curryHoursInDay
-currySecsInWeek  = currySecsInDay   * curryDaysInWeek
-currySecsInMonth = currySecsInWeek  * curryWeeksInMonth
-currySecsInYear  = currySecsInMonth * curryMonthsInYear
+currySecsInHour  = currySecsInMin   * curryMinsInHour   -- 3,600
+currySecsInDay   = currySecsInHour  * curryHoursInDay   -- 72,000
+currySecsInWeek  = currySecsInDay   * curryDaysInWeek   -- 504,000
+currySecsInMonth = currySecsInWeek  * curryWeeksInMonth -- 1,512,000
+currySecsInYear  = currySecsInMonth * curryMonthsInYear -- 12,096,000
 
 
 -- ==================================================
