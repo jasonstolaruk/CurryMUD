@@ -565,15 +565,12 @@ mkCountTxt = map (uncurry mappend . second commaShow) <$> helper
 -----
 
 
--- TODO: Help.
 adminCurryTime :: HasCallStack => ActionFun
-adminCurryTime (NoArgs i mq cols) = do
+adminCurryTime (NoArgs i mq cols) = liftIO ((,) <$> getSecsFromCurryEpoch <*> getCurrentTimeZone) >>= \(secs, z) -> do
     logPlaExec (prefixAdminCmd "currytime") i
-    multiWrapSend mq cols =<< (++) <$> showCurryTime `fmap` liftIO getCurryTime <*> mkFooter
-  where
-    mkFooter = liftIO getCurrentTimeZone >>= \z ->
-        let (a, b) = ((,) <$> formatTimeHelper <*> formatTimeHelper . utcToZonedTime z) curryEpoch
-        in return [ "As measured from the Curry Epoch:", a, b ]
+    let ct     = secsToCurryTime secs
+        (a, b) = ((,) <$> formatTimeHelper <*> formatTimeHelper . utcToZonedTime z) curryEpoch
+    multiWrapSend mq cols $ showCurryTime ct ++ [ commaShow secs <> " seconds have passed since the Curry Epoch:", a, b ]
 adminCurryTime p = withoutArgs adminCurryTime p
 
 

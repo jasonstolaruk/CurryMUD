@@ -761,7 +761,7 @@ data CurryTime = CurryTime { curryYear       :: Year
                            , curryDayOfWeek  :: Day
                            , curryHour       :: Hour
                            , curryMin        :: Min
-                           , currySec        :: Sec }
+                           , currySec        :: Sec } deriving (Eq, Show)
 
 
 -----

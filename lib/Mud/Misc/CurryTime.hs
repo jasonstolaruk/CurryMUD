@@ -4,12 +4,20 @@ module Mud.Misc.CurryTime where
 
 import Mud.Data.Misc
 import Mud.Util.Operators
+import Mud.Util.Quoting
 import Mud.Util.Text
 
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import Data.Time (UTCTime(..), diffUTCTime, fromGregorian, getCurrentTime)
 import Prelude hiding (min)
+
+
+initCurryYear :: Year
+initCurryYear = 200
+
+
+-- ==================================================
 
 
 -- Months
@@ -62,15 +70,15 @@ currySecsInYear  = currySecsInMonth * curryMonthsInYear -- 12,096,000
 
 showCurryTime :: CurryTime -> [Text]
 showCurryTime CurryTime { .. } = [ "Year:         " <> showText  curryYear
-                                 , "Month:        " <> showText  curryMonth
-                                 , "Week:         " <> showText  curryWeek
-                                 , "Day of month: " <> helper    curryDayOfMonth
+                                 , "Month:        " <> mkOrdinal curryMonth
+                                 , "Week:         " <> mkOrdinal curryWeek
+                                 , "Day of month: " <> mkOrdinal curryDayOfMonth
                                  , "Day of week:  " <> helper    curryDayOfWeek
                                  , "Hour:         " <> showText  curryHour
                                  , "Min:          " <> showText  curryMin
                                  , "Sec:          " <> showText  currySec ]
   where
-    helper = (|<>|) <$> mkOrdinal <*> pp . (toEnum :: Int -> CurryWeekday)
+    helper = (|<>|) <$> mkOrdinal <*> parensQuote . pp . (toEnum :: Int -> CurryWeekday) . pred
 
 
 curryEpoch :: UTCTime
@@ -94,9 +102,9 @@ secsToCurryTime x = let years  = x `div` currySecsInYear
                         mins   = x `div` currySecsInMin
                         secs   = x
                         -----
-                        year       =        years + 200
-                        month      =        months `rem` curryMonthsInYear
-                        week       =        weeks  `rem` curryWeeksInMonth
+                        year       = initCurryYear + years
+                        month      = succ $ months `rem` curryMonthsInYear
+                        week       = succ $ weeks  `rem` curryWeeksInMonth
                         dayOfMonth = succ $ days   `rem` curryDaysInMonth
                         dayOfWeek  = succ $ days   `rem` curryDaysInWeek
                         hour       =        hours  `rem` curryHoursInDay

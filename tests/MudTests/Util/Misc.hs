@@ -13,8 +13,8 @@ import Test.Tasty.HUnit ((@=?), Assertion)
 -- ==================================================
 
 
-test_division_compare_results :: Assertion
-test_division_compare_results = a && b @=? True
+test_division_compareResults :: Assertion
+test_division_compareResults = a && b @=? True
   where
     x = 5 `divideRound` 2
     y = 5 `intDivide`   2
@@ -34,17 +34,17 @@ helper f b aOrB = newIORef A >>= \ref -> do
     (aOrB @=?) =<< readIORef ref
 
 
-test_mWhen_IO_True :: Assertion
-test_mWhen_IO_True = helper mWhen True B
+test_mWhen_IOTrue :: Assertion
+test_mWhen_IOTrue = helper mWhen True B
 
 
-test_mWhen_IO_False :: Assertion
-test_mWhen_IO_False = helper mWhen False A
+test_mWhen_IOFalse :: Assertion
+test_mWhen_IOFalse = helper mWhen False A
 
 
-test_mUnless_IO_True :: Assertion
-test_mUnless_IO_True = helper mUnless True A
+test_mUnless_IOTrue :: Assertion
+test_mUnless_IOTrue = helper mUnless True A
 
 
-test_mUnless_IO_False :: Assertion
-test_mUnless_IO_False = helper mUnless False B
+test_mUnless_IOFalse :: Assertion
+test_mUnless_IOFalse = helper mUnless False B

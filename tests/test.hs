@@ -1,6 +1,7 @@
 import MudTests.Data.Misc
 import MudTests.Data.State.Util.Misc
 import MudTests.Data.State.Util.Random
+import MudTests.Misc.CurryTime
 import MudTests.TheWorld.TheWorld
 import MudTests.Util.List
 import MudTests.Util.Misc
@@ -54,14 +55,14 @@ propTests_Mud_Data_State_Util_Misc = testGroup "Mud.Data.State.Util.Misc"
 
 propTests_Mud_Data_State_Util_Random :: TestTree
 propTests_Mud_Data_State_Util_Random = testGroup "Mud.Data.State.Util.Random"
-    [ QC.testProperty "prop_dropRndmElems"                          prop_dropRndmElems
-    , QC.testProperty "prop_rndmIntToRange_within_range_from_zero"  prop_rndmIntToRange_within_range_from_zero
-    , QC.testProperty "prop_rndmIntToRange_within_range_from_other" prop_rndmIntToRange_within_range_from_zero
-    , QC.testProperty "prop_rndmIntToRange_distribution"            prop_rndmIntToRange_distribution
-    , QC.testProperty "prop_rndmIntToRangeHelper_low_max"           prop_rndmIntToRangeHelper_low_max
-    , QC.testProperty "prop_rndmRs_within_range"                    prop_rndmRs_within_range
-    , QC.testProperty "prop_rndmRs_no_range"                        prop_rndmRs_no_range
-    , QC.testProperty "prop_rndmRs_minimal_range"                   prop_rndmRs_minimal_range ]
+    [ QC.testProperty "prop_dropRndmElems"                       prop_dropRndmElems
+    , QC.testProperty "prop_rndmIntToRange_withinRangeFromZero"  prop_rndmIntToRange_withinRangeFromZero
+    , QC.testProperty "prop_rndmIntToRange_withinRangeFromOther" prop_rndmIntToRange_withinRangeFromOther
+    , QC.testProperty "prop_rndmIntToRange_distribution"         prop_rndmIntToRange_distribution
+    , QC.testProperty "prop_rndmIntToRangeHelper_lowMax"         prop_rndmIntToRangeHelper_lowMax
+    , QC.testProperty "prop_rndmRs_withinRange"                  prop_rndmRs_withinRange
+    , QC.testProperty "prop_rndmRs_noRange"                      prop_rndmRs_noRange
+    , QC.testProperty "prop_rndmRs_minimalRange"                 prop_rndmRs_minimalRange ]
 
 
 -- --------------------------------------------------
@@ -122,6 +123,7 @@ propTests_Mud_Util_Wrapping = testGroup "Mud.Util.Wrapping"
 unitTests :: TestTree
 unitTests = testGroup "unit tests" [ unitTests_Mud_Data_Misc
                                    , unitTests_Mud_Data_State_Util_Misc
+                                   , unitTests_Mud_Misc_CurryTime
                                    , unitTests_Mud_Util_Misc
                                    , unitTests_Mud_Util_Telnet
                                    , unitTests_Mud_Util_Text ]
@@ -143,16 +145,56 @@ unitTests_Mud_Data_Misc = testGroup "Mud.Data.Misc"
 
 unitTests_Mud_Data_State_Util_Misc :: TestTree
 unitTests_Mud_Data_State_Util_Misc = testGroup "Mud.Data.State.Util.Misc"
-    [ testCase "test_dropPrefixesForHook_no_prefixes"  test_dropPrefixesForHooks_no_prefixes
-    , testCase "test_dropPrefixesForHook_no_matches"   test_dropPrefixesForHooks_no_matches
-    , testCase "test_dropPrefixesForHook_with_matches" test_dropPrefixesForHooks_with_matches
-    , testCase "test_dropPrefixesForHook_abbrev"       test_dropPrefixesForHooks_abbrev
-    , testCase "test_procQuoteChars_null"         test_procQuoteChars_null
-    , testCase "test_procQuoteChars_zero"         test_procQuoteChars_zero
-    , testCase "test_procQuoteChars_one"          test_procQuoteChars_one
-    , testCase "test_procQuoteChars_two"          test_procQuoteChars_two
-    , testCase "test_procQuoteChars_three"        test_procQuoteChars_three
-    , testCase "test_procQuoteChars_four"         test_procQuoteChars_four ]
+    [ testCase "test_dropPrefixesForHook_noPrefixes"  test_dropPrefixesForHooks_noPrefixes
+    , testCase "test_dropPrefixesForHook_noMatches"   test_dropPrefixesForHooks_noMatches
+    , testCase "test_dropPrefixesForHook_withMatches" test_dropPrefixesForHooks_withMatches
+    , testCase "test_dropPrefixesForHook_abbrev"      test_dropPrefixesForHooks_abbrev
+    , testCase "test_procQuoteChars_null"             test_procQuoteChars_null
+    , testCase "test_procQuoteChars_zero"             test_procQuoteChars_zero
+    , testCase "test_procQuoteChars_one"              test_procQuoteChars_one
+    , testCase "test_procQuoteChars_two"              test_procQuoteChars_two
+    , testCase "test_procQuoteChars_three"            test_procQuoteChars_three
+    , testCase "test_procQuoteChars_four"             test_procQuoteChars_four ]
+
+
+-- --------------------------------------------------
+
+
+unitTests_Mud_Misc_CurryTime :: TestTree
+unitTests_Mud_Misc_CurryTime = testGroup "Mud.Misc.CurryTime"
+    [ testCase "test_secsToCurryTime_zeroSecs"                      test_secsToCurryTime_zeroSecs
+    , testCase "test_secsToCurryTime_oneSec"                        test_secsToCurryTime_oneSec
+    , testCase "test_secsToCurryTime_oneMin"                        test_secsToCurryTime_oneMin
+    , testCase "test_secsToCurryTime_oneHour"                       test_secsToCurryTime_oneHour
+    , testCase "test_secsToCurryTime_oneDay"                        test_secsToCurryTime_oneDay
+    , testCase "test_secsToCurryTime_oneWeek"                       test_secsToCurryTime_oneWeek
+    , testCase "test_secsToCurryTime_oneMonth"                      test_secsToCurryTime_oneMonth
+    , testCase "test_secsToCurryTime_oneYear"                       test_secsToCurryTime_oneYear
+    , testCase "test_secsToCurryTime_twoSecs"                       test_secsToCurryTime_twoSecs
+    , testCase "test_secsToCurryTime_twoMins"                       test_secsToCurryTime_twoMins
+    , testCase "test_secsToCurryTime_twoHours"                      test_secsToCurryTime_twoHours
+    , testCase "test_secsToCurryTime_twoDays"                       test_secsToCurryTime_twoDays
+    , testCase "test_secsToCurryTime_twoWeeks"                      test_secsToCurryTime_twoWeeks
+    , testCase "test_secsToCurryTime_twoMonths"                     test_secsToCurryTime_twoMonths
+    , testCase "test_secsToCurryTime_twoYears"                      test_secsToCurryTime_twoYears
+    , testCase "test_secsToCurryTime_oneMinOneSec"                  test_secsToCurryTime_oneMinOneSec
+    , testCase "test_secsToCurryTime_oneHourOneSec"                 test_secsToCurryTime_oneHourOneSec
+    , testCase "test_secsToCurryTime_oneDayOneSec"                  test_secsToCurryTime_oneDayOneSec
+    , testCase "test_secsToCurryTime_oneWeekOneSec"                 test_secsToCurryTime_oneWeekOneSec
+    , testCase "test_secsToCurryTime_oneMonthOneSec"                test_secsToCurryTime_oneMonthOneSec
+    , testCase "test_secsToCurryTime_oneYearOneSec"                 test_secsToCurryTime_oneYearOneSec
+    , testCase "test_secsToCurryTime_sevenDays"                     test_secsToCurryTime_sevenDays
+    , testCase "test_secsToCurryTime_eightDays"                     test_secsToCurryTime_eightDays
+    , testCase "test_secsToCurryTime_fourteenDays"                  test_secsToCurryTime_fourteenDays
+    , testCase "test_secsToCurryTime_fifteenDays"                   test_secsToCurryTime_fifteenDays
+    , testCase "test_secsToCurryTime_twentyOneDays"                 test_secsToCurryTime_twentyOneDays
+    , testCase "test_secsToCurryTime_twentyTwoDays"                 test_secsToCurryTime_twentyTwoDays
+    , testCase "test_secsToCurryTime_oneSecLessThanAYear"           test_secsToCurryTime_oneSecLessThanAYear
+    , testCase "test_secsToCurryTime_oneSecLessThanAYearPlusOne"    test_secsToCurryTime_oneSecLessThanAYearPlusOne
+    , testCase "test_secsToCurryTime_oneSecLessThanAYearPlusTwo"    test_secsToCurryTime_oneSecLessThanAYearPlusTwo
+    , testCase "test_secsToCurryTime_oneSecLessThanTwoYears"        test_secsToCurryTime_oneSecLessThanTwoYears
+    , testCase "test_secsToCurryTime_oneSecLessThanTwoYearsPlusOne" test_secsToCurryTime_oneSecLessThanTwoYearsPlusOne
+    , testCase "test_secsToCurryTime_oneSecLessThanTwoYearsPlusTwo" test_secsToCurryTime_oneSecLessThanTwoYearsPlusTwo ]
 
 
 -- --------------------------------------------------
@@ -160,11 +202,11 @@ unitTests_Mud_Data_State_Util_Misc = testGroup "Mud.Data.State.Util.Misc"
 
 unitTests_Mud_Util_Misc :: TestTree
 unitTests_Mud_Util_Misc = testGroup "Mud.Util.Misc"
-    [ testCase "test_division_compare_results" test_division_compare_results
-    , testCase "test_mWhen_IO_True"            test_mWhen_IO_True
-    , testCase "test_mWhen_IO_False"           test_mWhen_IO_False
-    , testCase "test_mUnless_IO_True"          test_mUnless_IO_True
-    , testCase "test_mUnless_IO_False"         test_mUnless_IO_False ]
+    [ testCase "test_division_compareResults" test_division_compareResults
+    , testCase "test_mWhen_IOTrue"            test_mWhen_IOTrue
+    , testCase "test_mWhen_IOFalse"           test_mWhen_IOFalse
+    , testCase "test_mUnless_IOTrue"          test_mUnless_IOTrue
+    , testCase "test_mUnless_IOFalse"         test_mUnless_IOFalse ]
 
 
 -- --------------------------------------------------

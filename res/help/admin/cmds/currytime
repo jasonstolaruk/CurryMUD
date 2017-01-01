@@ -1,0 +1,7 @@
+\h #dCURRYTIME \d
+
+\uUSAGE\n
+#dcurrytime
+
+\uDESCRIPTION\n
+Display the current Curry Time.

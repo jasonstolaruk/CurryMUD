@@ -27,16 +27,16 @@ prop_getUnusedId = monadicIO $ inWorld getState >>= \ms ->
 -- ==================================================
 
 
-test_dropPrefixesForHooks_no_prefixes :: Assertion
-test_dropPrefixesForHooks_no_prefixes = actual @?= expected
+test_dropPrefixesForHooks_noPrefixes :: Assertion
+test_dropPrefixesForHooks_noPrefixes = actual @?= expected
   where
     args     = [ "abc", "def", "ghi" ]
     actual   = dropPrefixesForHooks [ getFlowerHook, lookFlowerbedHook ] args
     expected = args
 
 
-test_dropPrefixesForHooks_no_matches :: Assertion
-test_dropPrefixesForHooks_no_matches = actual @?= expected
+test_dropPrefixesForHooks_noMatches :: Assertion
+test_dropPrefixesForHooks_noMatches = actual @?= expected
   where
     args     = [ attachPrefix ""   allChar    "abc"
                , attachPrefix "5"  amountChar "def"
@@ -49,8 +49,8 @@ attachPrefix :: Text -> Char -> Text -> Text
 attachPrefix digits c t = digits <> (c `T.cons` t)
 
 
-test_dropPrefixesForHooks_with_matches :: Assertion
-test_dropPrefixesForHooks_with_matches = actual @?= expected
+test_dropPrefixesForHooks_withMatches :: Assertion
+test_dropPrefixesForHooks_withMatches = actual @?= expected
   where
     args     = [ attachPrefix ""   allChar    "abc"
                , attachPrefix ""   allChar    "flower"

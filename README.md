@@ -64,7 +64,7 @@ The code is available here on GitHub under [this license](https://github.com/jas
 
 * About 40,000 lines of code/text.
 * About 105 modules, excluding tests.
-* About 70 unit and property tests exist (I'm using the [tasty testing framework](https://hackage.haskell.org/package/tasty)).
+* About 105 unit and property tests exist (I'm using the [tasty testing framework](https://hackage.haskell.org/package/tasty)).
 * A `ReaderT` monad transformer stack with the world state inside a single `IORef`.
 * `STM`-based concurrency.
 * Using `aeson` (with `conduit`) and `sqlite-simple` for persistence.
