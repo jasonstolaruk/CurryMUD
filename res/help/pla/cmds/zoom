@@ -1,7 +1,7 @@
 \h ZOOM \d
 
 \uUSAGE\n
-zoom \s[\dlevel\s]\d
+!zoom \s[\dlevel\s]\d
 
 \uDESCRIPTION\n
 Set the zoom level of the Mudlet mapper.

@@ -1,7 +1,7 @@
 \h READ \d
 
 \uUSAGE\n
-read thing \s...\d
+!read thing \s...\d
 
 \uDESCRIPTION\n
 Read the text that is written on a) an item in your inventory, or b) a fixture of your current room.

@@ -1,7 +1,7 @@
 \h NEWCHANNEL \d
 
 \uUSAGE\n
-newchannel name \s...\d
+!newchannel name \s...\d
 
 \uDESCRIPTION\n
 Create one or more new telepathic channels.

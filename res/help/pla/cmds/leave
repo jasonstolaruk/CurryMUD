@@ -1,7 +1,7 @@
 \h LEAVE \d
 
 \uUSAGE\n
-leave name \s...\d
+!leave name \s...\d
 
 \uDESCRIPTION\n
 Sever your connections to (disconnect from) one or more telepathic channels.

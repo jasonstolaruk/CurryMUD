@@ -1,7 +1,7 @@
 \h LAGOMORPHEAN \d
 
 \uUSAGE\n
-lagomorphean \s[\d#oadverb#c\s]\d \s[\d#ttarget\s]\d \s[\d#oadverb#c\s]\d utterance
+!lagomorphean \s[\d#oadverb#c\s]\d \s[\d#ttarget\s]\d \s[\d#oadverb#c\s]\d utterance
 
 \uDESCRIPTION\n
 Say something out loud in lagomorphean.

@@ -1,7 +1,7 @@
 \h TELEPATHY \d
 
 \uUSAGE\n
-telepathy name message
+!telepathy name message
 
 \uDESCRIPTION\n
 Send a private message to a person with whom you have established a two-way telepathic link.

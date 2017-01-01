@@ -1,7 +1,7 @@
 \h LINK \d
 
 \uUSAGE\n
-link \s[\dperson \s...]\d
+!link \s[\dperson \s...]\d
 
 \uDESCRIPTION\n
 Establish a telepathic link with one or more people.

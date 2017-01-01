@@ -1,7 +1,7 @@
 \h WHOAMI \d
 
 \uUSAGE\n
-whoami
+!whoami
 
 \uDESCRIPTION\n
 Did you forget who you are? Use this command to confirm your name, sex, and race.

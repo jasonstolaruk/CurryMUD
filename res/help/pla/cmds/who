@@ -1,7 +1,7 @@
 \h WHO \d
 
 \uUSAGE\n
-who \s[\dterm \s...]\d
+!who \s[\dterm \s...]\d
 
 \uDESCRIPTION\n
 Display a list of all the people that are currently "awake" (logged in). Optionally, search the list for one or more terms.

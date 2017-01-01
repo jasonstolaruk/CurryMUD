@@ -1,7 +1,7 @@
 \h GIVE \d
 
 \uUSAGE\n
-give item \s...\d person
+!give item \s...\d person
 
 \uDESCRIPTION\n
 Give one or more items to a person.

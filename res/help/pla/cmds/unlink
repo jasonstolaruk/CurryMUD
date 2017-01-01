@@ -1,7 +1,7 @@
 \h UNLINK \d
 
 \uUSAGE\n
-unlink \s[\dperson \s...]\d
+!unlink \s[\dperson \s...]\d
 
 \uDESCRIPTION\n
 Sever one or more telepathic links.

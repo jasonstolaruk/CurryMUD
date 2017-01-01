@@ -1,7 +1,7 @@
 \h NAELYNI \d
 
 \uUSAGE\n
-naelyni \s[\d#oadverb#c\s]\d \s[\d#ttarget\s]\d \s[\d#oadverb#c\s]\d utterance
+!naelyni \s[\d#oadverb#c\s]\d \s[\d#ttarget\s]\d \s[\d#oadverb#c\s]\d utterance
 
 \uDESCRIPTION\n
 Say something out loud in naelyni.

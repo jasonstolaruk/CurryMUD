@@ -1,7 +1,7 @@
 \h MOTD \d
 
 \uUSAGE\n
-motd
+!motd
 
 \uDESCRIPTION\n
 Show the "message of the day" (announcements and such from the CurryMUD administrators).

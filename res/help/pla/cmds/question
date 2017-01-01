@@ -1,7 +1,7 @@
 \h QUESTION \d
 
 \uUSAGE\n
-question \s[\dmessage\s]\d
+!question \s[\dmessage\s]\d
 
 \uDESCRIPTION\n
 Send a message on the question channel (a "channel" is somewhat analogous to a chat room or party line).

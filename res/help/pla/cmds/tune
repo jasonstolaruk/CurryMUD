@@ -1,7 +1,7 @@
 \h TUNE \d
 
 \uUSAGE\n
-tune \s[\dname=\s{\din\s|\dout\s|\don\s|\doff\s} ...]\d
+!tune \s[\dname=\s{\din\s|\dout\s|\don\s|\doff\s} ...]\d
 
 \uDESCRIPTION\n
 Tune in/out one or more telepathic connections, including both two-way links and In-Character (IC) channels. (When you tune a connection out, you temporarily close your mind to the telepathic thoughts originating from it.)

@@ -1,7 +1,7 @@
 \h SHOW \d
 
 \uUSAGE\n
-show item \s...\d person
+!show item \s...\d person
 
 \uDESCRIPTION\n
 Show one or more items in your inventory and/or readied equipment to another person.

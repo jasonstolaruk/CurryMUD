@@ -1,7 +1,7 @@
 \h HOMINAL \d
 
 \uUSAGE\n
-hominal \s[\d#oadverb#c\s]\d \s[\d#ttarget\s]\d \s[\d#oadverb#c\s]\d utterance
+!hominal \s[\d#oadverb#c\s]\d \s[\d#ttarget\s]\d \s[\d#oadverb#c\s]\d utterance
 
 \uDESCRIPTION\n
 Say something out loud in hominal.

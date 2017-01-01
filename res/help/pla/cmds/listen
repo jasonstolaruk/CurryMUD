@@ -1,7 +1,7 @@
 \h LISTEN \d
 
 \uUSAGE\n
-listen
+!listen
 
 \uDESCRIPTION\n
 Display a description of what you hear in your current room.

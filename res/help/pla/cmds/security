@@ -1,7 +1,7 @@
 \h SECURITY \d
 
 \uUSAGE\n
-security
+!security
 
 \uDESCRIPTION\n
 View or change your security Q&A. (Should you forget your password, an administrator will ask to answer your security question before resetting your password.)

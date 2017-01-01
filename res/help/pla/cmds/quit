@@ -1,7 +1,7 @@
 \h QUIT \d
 
 \uUSAGE\n
-quit
+!quit
 
 \uDESCRIPTION\n
 Quit playing CurryMUD... until next time!

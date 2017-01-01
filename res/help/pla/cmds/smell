@@ -1,7 +1,7 @@
 \h SMELL \d
 
 \uUSAGE\n
-smell \s[\dthing\s]\d
+!smell \s[\dthing\s]\d
 
 \uDESCRIPTION\n
 Smell a) the air, b) an item in your inventory, c) an item in your readied equipment, or d) a being or fixture in your current room.

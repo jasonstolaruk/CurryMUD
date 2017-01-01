@@ -1,7 +1,7 @@
 \h WHISPER \d
 
 \uUSAGE\n
-whisper target utterance
+!whisper target utterance
 
 \uDESCRIPTION\n
 Whisper something to someone in your current room, such that only the target will hear you.

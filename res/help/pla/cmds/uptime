@@ -1,7 +1,7 @@
 \h UPTIME \d
 
 \uUSAGE\n
-uptime
+!uptime
 
 \uDESCRIPTION\n
 Display how long CurryMUD has been running.

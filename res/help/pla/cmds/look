@@ -1,7 +1,7 @@
 \h LOOK \d
 
 \uUSAGE\n
-look \s[\dobject \s...]\d
+!look \s[\dobject \s...]\d
 
 \uDESCRIPTION\n
 Display a description of your current room, or examine one or more things in your current room.

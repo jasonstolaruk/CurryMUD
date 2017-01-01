@@ -1,7 +1,7 @@
 \h ROOMDESC \d
 
 \uUSAGE\n
-roomdesc \s[\ddescription\s]\d
+!roomdesc \s[\ddescription\s]\d
 
 \uDESCRIPTION\n
 Specify a temporary description to appear next to your name in the description of your current room.

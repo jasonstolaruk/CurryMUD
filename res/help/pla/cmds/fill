@@ -1,7 +1,7 @@
 \h FILL \d
 
 \uUSAGE\n
-fill vessel \s...\d source
+!fill vessel \s...\d source
 
 \uDESCRIPTION\n
 Fill one or more vessels with a) the contents of another vessel, or b) a source of liquid in your current room.

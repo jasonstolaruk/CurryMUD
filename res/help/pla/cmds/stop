@@ -1,7 +1,7 @@
 \h STOP \d
 
 \uUSAGE\n
-stop \s[\daction\s]\d
+!stop \s[\daction\s]\d
 
 \uDESCRIPTION\n
 Stop eating, drinking, or attacking.
