@@ -567,17 +567,9 @@ mkCountTxt = map (uncurry mappend . second commaShow) <$> helper
 
 -- TODO: Help.
 adminCurryTime :: HasCallStack => ActionFun
-adminCurryTime (NoArgs i mq cols) = do logPlaExec (prefixAdminCmd "currytime") i
-                                       CurryTime { .. } <- liftIO getCurryTime
-                                       ts               <- mkFooter
-                                       multiWrapSend mq cols $ [ "Year:         " <> showText curryYear
-                                                               , "Month:        " <> showText curryMonth
-                                                               , "Week:         " <> showText curryWeek
-                                                               , "Day of month: " <> showText curryDayOfMonth
-                                                               , "Day of week:  " <> showText curryDayOfWeek
-                                                               , "Hour:         " <> showText curryHour
-                                                               , "Min:          " <> showText curryMin
-                                                               , "Sec:          " <> showText currySec ] ++ ts
+adminCurryTime (NoArgs i mq cols) = do
+    logPlaExec (prefixAdminCmd "currytime") i
+    multiWrapSend mq cols =<< (++) <$> showCurryTime `fmap` liftIO getCurryTime <*> mkFooter
   where
     mkFooter = liftIO getCurrentTimeZone >>= \z ->
         let (a, b) = ((,) <$> formatTimeHelper <*> formatTimeHelper . utcToZonedTime z) curryEpoch

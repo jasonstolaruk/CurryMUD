@@ -13,6 +13,8 @@ module Mud.Data.Misc ( Action(..)
                      , CmdFullName
                      , CmdPriorityAbbrevTxt
                      , Cols
+                     , CurryTime(..)
+                     , Day
                      , deserialize
                      , Desig(..)
                      , DrinkBundle(..)
@@ -33,16 +35,20 @@ module Mud.Data.Misc ( Action(..)
                      , getRmFlag
                      , Help(..)
                      , HelpName
+                     , Hour
                      , IdSingTypeDesig(..)
                      , Index
                      , InInvEqRm(..)
                      , LastArgIsTargetBindings(..)
                      , LoggedInOrOut(..)
+                     , Min
+                     , Month
                      , NewCharBundle(..)
                      , pp
                      , Pretty
                      , PutOrRem(..)
                      , RightOrLeft(..)
+                     , Sec
                      , Serializable
                      , serialize
                      , setEntFlag
@@ -58,7 +64,9 @@ module Mud.Data.Misc ( Action(..)
                      , TelnetData(..)
                      , ToOrFromThePeeped(..)
                      , Verb(..)
-                     , WhichLog(..) ) where
+                     , Week
+                     , WhichLog(..)
+                     , Year ) where
 
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MsgQueue
@@ -300,6 +308,16 @@ instance Pretty Cloth where
   pp Skirt    = "skirt"
   pp Smock    = "smock"
   pp Trousers = "trousers"
+
+
+instance Pretty CurryWeekday where
+  pp SunDay   = "Sun Day"
+  pp MoonDay  = "Moon Day"
+  pp FireDay  = "Fire Day"
+  pp WaterDay = "Water Day"
+  pp WoodDay  = "Wood Day"
+  pp GoldDay  = "Gold Day"
+  pp EarthDay = "Earth Day"
 
 
 instance Pretty DiscoverRec where
@@ -721,6 +739,40 @@ instance Eq Cmd where
 
 instance Ord Cmd where
   compare = compare `on` cmdName
+
+
+-----
+
+
+type Year  = Integer
+type Month = Integer
+type Week  = Integer
+type Day   = Integer
+type Hour  = Integer
+type Min   = Integer
+type Sec   = Integer
+
+
+data CurryTime = CurryTime { curryYear       :: Year
+                           , curryMonth      :: Month
+                           , curryWeek       :: Week
+                           , curryDayOfMonth :: Day
+                           , curryDayOfWeek  :: Day
+                           , curryHour       :: Hour
+                           , curryMin        :: Min
+                           , currySec        :: Sec }
+
+
+-----
+
+
+data CurryWeekday = SunDay
+                  | MoonDay
+                  | FireDay
+                  | WaterDay
+                  | WoodDay
+                  | GoldDay
+                  | EarthDay deriving (Enum, Eq)
 
 
 -----

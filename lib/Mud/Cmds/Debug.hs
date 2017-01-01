@@ -383,15 +383,7 @@ debugCurryTime (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Integer, St
   where
     helper x | x < 0     = wrapSend mq cols sorryWtf
              | otherwise = do logPlaExecArgs (prefixDebugCmd "currytime") (pure a) i
-                              let CurryTime { .. } = secsToCurryTime x
-                              multiWrapSend mq cols [ "Year:         " <> showText curryYear
-                                                    , "Month:        " <> showText curryMonth
-                                                    , "Week:         " <> showText curryWeek
-                                                    , "Day of month: " <> showText curryDayOfMonth
-                                                    , "Day of week:  " <> showText curryDayOfWeek
-                                                    , "Hour:         " <> showText curryHour
-                                                    , "Min:          " <> showText curryMin
-                                                    , "Sec:          " <> showText currySec ]
+                              multiWrapSend mq cols . showCurryTime . secsToCurryTime $ x
 debugCurryTime p = advise p [] adviceDCurryTimeExcessArgs
 
 

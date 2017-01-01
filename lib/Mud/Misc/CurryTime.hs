@@ -1,18 +1,14 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings, RecordWildCards #-}
 
 module Mud.Misc.CurryTime where
 
+import Mud.Data.Misc
+import Mud.Util.Text
+
+import Data.Monoid ((<>))
+import Data.Text (Text)
 import Data.Time (UTCTime(..), diffUTCTime, fromGregorian, getCurrentTime)
 import Prelude hiding (min)
-
-
-type Year  = Integer
-type Month = Integer
-type Week  = Integer
-type Day   = Integer
-type Hour  = Integer
-type Min   = Integer
-type Sec   = Integer
 
 
 -- Months
@@ -63,14 +59,17 @@ currySecsInYear  = currySecsInMonth * curryMonthsInYear -- 12,096,000
 -- ==================================================
 
 
-data CurryTime = CurryTime { curryYear       :: Year
-                           , curryMonth      :: Month
-                           , curryWeek       :: Week
-                           , curryDayOfMonth :: Day
-                           , curryDayOfWeek  :: Day
-                           , curryHour       :: Hour
-                           , curryMin        :: Min
-                           , currySec        :: Sec }
+showCurryTime :: CurryTime -> [Text]
+showCurryTime CurryTime { .. } = [ "Year:         " <> showText  curryYear
+                                 , "Month:        " <> showText  curryMonth
+                                 , "Week:         " <> showText  curryWeek
+                                 , "Day of month: " <> helper    curryDayOfMonth
+                                 , "Day of week:  " <> helper    curryDayOfWeek
+                                 , "Hour:         " <> showText  curryHour
+                                 , "Min:          " <> showText  curryMin
+                                 , "Sec:          " <> showText  currySec ]
+  where
+    helper = (|<>|) <$> mkOrdinal . fromIntegral <*> pp . toEnum
 
 
 curryEpoch :: UTCTime
@@ -94,12 +93,12 @@ secsToCurryTime x = let years  = x `div` currySecsInYear
                         mins   = x `div` currySecsInMin
                         secs   = x
                         -----
-                        year       = years + 200
-                        month      = months `rem` curryMonthsInYear
-                        week       = weeks  `rem` curryWeeksInMonth
-                        dayOfMonth = days   `rem` curryDaysInMonth
-                        dayOfWeek  = days   `rem` curryDaysInWeek
-                        hour       = hours  `rem` curryHoursInDay
-                        min        = mins   `rem` curryMinsInHour
-                        sec        = secs   `rem` currySecsInMin
+                        year       =        years + 200
+                        month      =        months `rem` curryMonthsInYear
+                        week       =        weeks  `rem` curryWeeksInMonth
+                        dayOfMonth = succ $ days   `rem` curryDaysInMonth
+                        dayOfWeek  = succ $ days   `rem` curryDaysInWeek
+                        hour       =        hours  `rem` curryHoursInDay
+                        min        =        mins   `rem` curryMinsInHour
+                        sec        =        secs   `rem` currySecsInMin
                     in CurryTime year month week dayOfMonth dayOfWeek hour min sec
