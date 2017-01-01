@@ -1661,19 +1661,13 @@ parseHelpTxt cmds cols txt = [ procCmdTokens . xformLeadingSpaceChars . expandDi
   where
     expandDividers l | l == T.singleton dividerToken         = T.replicate cols "-"
                      | otherwise                             = l
-    procCmdTokens (T.uncons -> Just (x, xs)) | x == cmdToken = helper -- TODO: Clean up?
+    procCmdTokens (T.uncons -> Just (x, xs)) | x == cmdToken = helper
       where
-        helper          = let (cn, rest) = T.break isSpace xs
-                          in case filter ((== cn) . fst) styleCmdAbbrevs of []              -> xs
-                                                                            ((_, styled):_) -> styled <> rest
-        styleCmdAbbrevs = let cmdNames       = [ cmdName           cmd | cmd <- cmds ]
-                              cmdPAs         = [ cmdPriorityAbbrev cmd | cmd <- cmds ]
-                              styledCmdNames = styleAbbrevs Don'tQuote cmdNames
-                          in [ checkProrityAbbrev a | a <- zip3 cmdNames cmdPAs styledCmdNames ]
-        checkProrityAbbrev (cn, Nothing,  scn) = (cn, scn)
-        checkProrityAbbrev (cn, Just cpa, _  ) = (cn, ) . uncurry (<>) . first (colorWith abbrevColor) $ case cpa `T.stripPrefix` cn of
-          Nothing   -> (cn,  ""  )
-          Just rest -> (cpa, rest)
+        helper = let (cn, rest) = T.break isSpace xs
+                 in maybe xs (<> rest) . lookup cn . map f . mkCmdTriplesForStyling $ cmds
+        f a@(_,  Nothing,  _) = dropSnd a
+        f   (cn, Just cpa, _) = let a = cpa `T.stripPrefix` cn
+                                in (cn, ) . uncurry (<>) . first (colorWith abbrevColor) . maybe (cn, "") (cpa, ) $ a
     procCmdTokens l = l
 
 
@@ -3194,16 +3188,14 @@ helperSettings i ms a (T.breakOn "=" -> (name, T.tail -> value)) =
       | not . inRange (minVal, maxVal) $ x = appendMsg . sorrySetRange settingName minVal $ maxVal
       | otherwise = let msg = T.concat [ "Set ", settingName, " to ", showText x, "." ]
                     in appendMsg msg & _1.lens .~ x & _3 <>~ pure msg
-    alterTuning n flag = case filter ((== value) . fst) inOutOnOffs of
-      [(_, newBool)] -> let msg = T.concat [ "Tuned ", inOut newBool, " the ", n, " channel." ]
-                        in appendMsg msg & _1 %~ setPlaFlag flag newBool & _3 <>~ pure msg
-      [] -> appendMsg . sorryParseInOut value $ n
-      xs -> patternMatchFail "helperSettings alterTuning" . showText $ xs
-    alterPts n flag = case filter ((== value) . fst) onOffs of
-      [(_, newBool)] -> let msg = T.concat [ "Turned ", onOff newBool, " ", T.toUpper n, " in prompt." ]
-                        in appendMsg msg & _1 %~ setPlaFlag flag newBool & _3 <>~ pure msg
-      [] -> appendMsg . sorryParseOnOff value $ n
-      xs -> patternMatchFail "helperSettings alterPts" . showText $ xs
+    alterTuning n flag = case lookup value inOutOnOffs of
+      Nothing      -> appendMsg . sorryParseInOut value $ n
+      Just newBool -> let msg = T.concat [ "Tuned ", inOut newBool, " the ", n, " channel." ]
+                      in appendMsg msg & _1 %~ setPlaFlag flag newBool & _3 <>~ pure msg
+    alterPts n flag = case lookup value onOffs of
+      Nothing      -> appendMsg . sorryParseOnOff value $ n
+      Just newBool -> let msg = T.concat [ "Turned ", onOff newBool, " ", T.toUpper n, " in prompt." ]
+                      in appendMsg msg & _1 %~ setPlaFlag flag newBool & _3 <>~ pure msg
 
 
 -----

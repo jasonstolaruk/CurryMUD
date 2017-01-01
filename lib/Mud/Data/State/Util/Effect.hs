@@ -47,17 +47,16 @@ procInstaEffect i ie@(InstaEffect sub val feel) = getState >>= \ms -> do
   where
     effectPts ptsType   = (helper ptsType =<<) . \case DefiniteVal x -> return x
                                                        RangeVal    r -> rndmR r
-    helper    ptsType x = let (getCur, getMax, setCur) = snd . head . filter ((== ptsType) . fst) $ assocs
+    helper    ptsType x = let (getCur, getMax, setCur) = case ptsType of CurHp -> (curHp, maxHp, curHp)
+                                                                         CurMp -> (curMp, maxHp, curMp)
+                                                                         CurPp -> (curPp, maxHp, curPp)
+                                                                         CurFp -> (curFp, maxHp, curFp)
                           in do diff <- modifyState $ \ms -> let curPts = ms^.myMobGet.getCur
                                                                  maxPts = ms^.myMobGet.getMax
                                                                  newPts = (curPts + x) `min` maxPts
                                                                  diff   = newPts - curPts
                                                              in (ms & myMobSet.setCur .~ newPts, diff)
                                 startFeeling i feel . IntVal $ diff
-    assocs       = [ (CurHp, (curHp, maxHp, curHp))
-                   , (CurMp, (curMp, maxMp, curMp))
-                   , (CurPp, (curPp, maxPp, curPp))
-                   , (CurFp, (curFp, maxFp, curFp)) ]
     myMobGet     = mobTbl.ind i
     myMobSet     = mobTbl.ind i
     logHelper ms = when (getType i ms == PCType) . logPla  "procInstaEffect" i $ "applying instantaneous effect: " <> pp ie

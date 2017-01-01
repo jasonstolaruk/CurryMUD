@@ -1,7 +1,7 @@
 \h DROP \d
 
 \uUSAGE\n
-drop item \s...\d
+!drop item \s...\d
 
 \uDESCRIPTION\n
 Drop one or more items; move item(s) from your inventory to your current room.

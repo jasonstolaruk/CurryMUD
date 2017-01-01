@@ -1,7 +1,7 @@
 \h EMPTY \d
 
 \uUSAGE\n
-empty vessel \s...\d
+!empty vessel \s...\d
 
 \uDESCRIPTION\n
 Empty the liquid contents of one or more vessels.

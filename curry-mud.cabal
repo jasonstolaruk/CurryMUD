@@ -185,6 +185,7 @@ test-suite             test
   other-modules:       MudTests.Data.Misc
                        MudTests.Data.State.Util.Misc
                        MudTests.Data.State.Util.Random
+                       MudTests.Misc.CurryTime
                        MudTests.TestUtil
                        MudTests.TheWorld.TheWorld
                        MudTests.Util.List

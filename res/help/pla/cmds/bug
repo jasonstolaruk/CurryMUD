@@ -1,7 +1,7 @@
 \h BUG \d
 
 \uUSAGE\n
-bug description
+!bug description
 
 \uDESCRIPTION\n
 If you find a bug, please use this command to inform the CurryMUD administrators.

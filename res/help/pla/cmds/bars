@@ -1,7 +1,7 @@
 \h BARS \d
 
 \uUSAGE\n
-bars \s[\dhp mp pp fp\s]\d
+!bars \s[\dhp mp pp fp\s]\d
 
 \uDESCRIPTION\n
 Display one or more status bars.

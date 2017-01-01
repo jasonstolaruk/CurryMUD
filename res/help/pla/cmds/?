@@ -1,7 +1,7 @@
 \h ? \d
 
 \uUSAGE\n
-? \s[\dterm \s...]\d
+!? \s[\dterm \s...]\d
 
 \uDESCRIPTION\n
 Display a list of available commands and their descriptions. Optionally, search the list for one or more terms.

@@ -1,7 +1,7 @@
 \h EXPRESSIVE \d
 
 \uUSAGE\n
-expressive \s[\dterm \s...]\d
+!expressive \s[\dterm \s...]\d
 
 \uDESCRIPTION\n
 Display a list of available expressive commands and their results. Optionally, search the list for one or more terms.

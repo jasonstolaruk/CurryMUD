@@ -1,7 +1,7 @@
 \h DWARVISH \d
 
 \uUSAGE\n
-dwarvish \s[\d#oadverb#c\s]\d \s[\d#ttarget\s]\d \s[\d#oadverb#c\s]\d utterance
+!dwarvish \s[\d#oadverb#c\s]\d \s[\d#ttarget\s]\d \s[\d#oadverb#c\s]\d utterance
 
 \uDESCRIPTION\n
 Say something out loud in dwarvish.

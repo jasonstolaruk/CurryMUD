@@ -1,7 +1,7 @@
 \h FELINOIDEAN \d
 
 \uUSAGE\n
-felinoidean \s[\d#oadverb#c\s]\d \s[\d#ttarget\s]\d \s[\d#oadverb#c\s]\d utterance
+!felinoidean \s[\d#oadverb#c\s]\d \s[\d#ttarget\s]\d \s[\d#oadverb#c\s]\d utterance
 
 \uDESCRIPTION\n
 Say something out loud in felinoidean.

@@ -1,7 +1,7 @@
 \h ADMIN \d
 
 \uUSAGE\n
-admin \s[\dname message\s]\d
+!admin \s[\dname message\s]\d
 
 \uDESCRIPTION\n
 Display a list of administrators, or send a message to an administrator.

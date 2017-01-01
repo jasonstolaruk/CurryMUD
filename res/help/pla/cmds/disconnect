@@ -1,7 +1,7 @@
 \h DISCONNECT \d
 
 \uUSAGE\n
-disconnect name \s...\d channel
+!disconnect name \s...\d channel
 
 \uDESCRIPTION\n
 Disconnect one or more people from a telepathic channel.

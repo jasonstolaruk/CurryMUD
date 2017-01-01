@@ -43,6 +43,7 @@ module Mud.Cmds.Util.Misc ( asterisk
                           , mkActionParams
                           , mkChanReport
                           , mkCmdListText
+                          , mkCmdTriplesForStyling
                           , mkHimHer
                           , mkInterfaceList
                           , mkNameTypeIdDesc
@@ -257,15 +258,17 @@ mkCmdListText cmds = let zipped = zip (styleCmdAbbrevs cmds) [ cmdDesc cmd | cmd
 
 
 styleCmdAbbrevs :: HasCallStack => [Cmd] -> [Text]
-styleCmdAbbrevs cmds = let cmdNames       = [ cmdName           cmd | cmd <- cmds ]
-                           cmdPAs         = [ cmdPriorityAbbrev cmd | cmd <- cmds ]
-                           styledCmdNames = styleAbbrevs Don'tQuote cmdNames
-                       in [ checkProrityAbbrev a | a <- zip3 cmdNames cmdPAs styledCmdNames ]
+styleCmdAbbrevs = map f . mkCmdTriplesForStyling
   where
-    checkProrityAbbrev (_,  Nothing,  scn) = scn
-    checkProrityAbbrev (cn, Just cpa, _  ) = uncurry (<>) . first (colorWith abbrevColor) $ case cpa `T.stripPrefix` cn of
-      Nothing   -> (cn,  ""  )
-      Just rest -> (cpa, rest)
+    f (_,  Nothing,  scn) = scn
+    f (cn, Just cpa, _  ) = uncurry (<>) . first (colorWith abbrevColor) . maybe (cn, "") (cpa, ) $ cpa `T.stripPrefix` cn
+
+
+mkCmdTriplesForStyling :: HasCallStack => [Cmd] -> [(CmdName, Maybe CmdPriorityAbbrevTxt, Text)]
+mkCmdTriplesForStyling cmds = let cmdNames       = [ cmdName           cmd | cmd <- cmds ]
+                                  cmdPAs         = [ cmdPriorityAbbrev cmd | cmd <- cmds ]
+                                  styledCmdNames = styleAbbrevs Don'tQuote cmdNames
+                              in zip3 cmdNames cmdPAs styledCmdNames
 
 
 -----

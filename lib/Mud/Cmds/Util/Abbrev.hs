@@ -28,12 +28,11 @@ patternMatchFail = U.patternMatchFail "Mud.Cmds.Util.Abbrev"
 type FullWord = Text
 
 
-styleAbbrevs :: HasCallStack => ShouldQuote -> [FullWord] -> [FullWord]
-styleAbbrevs sq fws =
-    let abbrevs   = mkAbbrevs fws
-        helper fw = let [(_, (abbrev, rest))] = filter ((fw ==) . fst) abbrevs
-                    in onTrue (sq == DoQuote) bracketQuote $ quoteWith' (abbrevColor, dfltColor') abbrev <> rest
-    in map helper fws
+styleAbbrevs :: HasCallStack => ShouldQuote -> [FullWord] -> [Text]
+styleAbbrevs sq fws = let abbrevs   = mkAbbrevs fws
+                          helper fw = f . maybe fw (uncurry (<>)) . lookup fw $ abbrevs
+                          f         = onTrue (sq == DoQuote) bracketQuote . quoteWith' (abbrevColor, dfltColor')
+                      in map helper fws
 
 
 type Abbrev         = Text

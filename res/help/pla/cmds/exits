@@ -1,7 +1,7 @@
 \h EXITS \d
 
 \uUSAGE\n
-exits
+!exits
 
 \uDESCRIPTION\n
 Get a list of the directions you can go from your current room.

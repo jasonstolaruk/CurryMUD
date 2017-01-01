@@ -55,7 +55,7 @@ import Control.Monad.Loops (orM)
 import Crypto.BCrypt (validatePassword)
 import Data.Char (isDigit, isLower, isUpper, toLower)
 import Data.Ix (inRange)
-import Data.List (delete, foldl', intersperse, partition)
+import Data.List (delete, find, foldl', intersperse, partition)
 import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>), Any(..))
 import Data.Text (Text)
@@ -102,17 +102,16 @@ interpName times (T.toLower -> cn@(capitalize -> cn')) params@(NoArgs i mq cols)
   | not . inRange (minNameLen, maxNameLen) . T.length $ cn = promptRetryName mq cols sorryInterpNameLen
   | T.any (`elem` illegalChars) cn                         = promptRetryName mq cols sorryInterpNameIllegal
   | otherwise                                              = getState >>= \ms ->
-      case filter ((== cn') . (`getSing` ms) . fst) . views plaTbl IM.toList $ ms of
-        [] -> mIf (orM . map (getAny <$>) $ [ checkProfanitiesDict i  mq cols cn
-                                            , checkIllegalNames    ms mq cols cn
-                                            , checkPropNamesDict      mq cols cn
-                                            , checkWordsDict          mq cols cn
-                                            , checkRndmNames          mq cols cn ])
-                  unit
-                  confirmName
-        [(targetId, targetPla)] -> do sendPrompt mq $ telnetHideInput <> cn' <> " is an existing character. Password:"
-                                      setInterp i . Just . interpPW times cn' targetId $ targetPla
-        xs -> patternMatchFail "interpName" . showText . map fst $ xs
+      case views plaTbl (find ((== cn') . (`getSing` ms) . fst) . IM.toList) ms of
+        Nothing    -> mIf (orM . map (getAny <$>) $ [ checkProfanitiesDict i  mq cols cn
+                                                    , checkIllegalNames    ms mq cols cn
+                                                    , checkPropNamesDict      mq cols cn
+                                                    , checkWordsDict          mq cols cn
+                                                    , checkRndmNames          mq cols cn ])
+                          unit
+                          confirmName
+        Just match -> do sendPrompt mq $ telnetHideInput <> cn' <> " is an existing character. Password:"
+                         setInterp i . Just . uncurry (interpPW times cn') $ match
   where
     new          = sequence_ [ send mq . nlPrefix . nl . T.unlines . parseWrapXform cols $ newPlaMsg, promptName mq ]
     illegalChars = let { a = '!' `enumFromTo` '@'; b = '[' `enumFromTo` '`'; c = '{' `enumFromTo` '~' } in a ++ b ++ c
@@ -222,11 +221,9 @@ setSingIfNotTaken times s (NoArgs i mq cols) = getSing i <$> getState >>= \oldSi
    in logNotice "setSingIfNotTaken" msg >> bcastAdmins msg >> return (Just oldSing))
   (emptied . sequence_ $ [ promptRetryName mq cols sorryInterpNameTaken, setInterp i . Just . interpName $ times ])
   where
-    helper oldSing ms | ()!# (filter ((== s) . (`getSing` ms) . fst) . views plaTbl IM.toList $ ms) = (ms, False)
-                      | otherwise = ( ms & entTbl   .ind i.sing .~ s
-                                         & pcSingTbl.at oldSing .~ Nothing
-                                         & pcSingTbl.at s       ?~ i
-                                    , True )
+    helper oldSing ms = case views plaTbl (find ((== s) . (`getSing` ms) . fst) . IM.toList) ms of
+        Nothing -> (upd ms [ entTbl.ind i.sing .~ s, pcSingTbl.at oldSing .~ Nothing, pcSingTbl.at s ?~ i ], True)
+        Just _  -> (ms, False)
 setSingIfNotTaken _ _ p = patternMatchFail "setSingIfNotTaken" . showText $ p
 
 

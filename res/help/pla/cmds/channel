@@ -1,7 +1,7 @@
 \h CHANNEL \d
 
 \uUSAGE\n
-channel \s[\dname \s[\dmessage\s]]\d
+!channel \s[\dname \s[\dmessage\s]]\d
 
 \uDESCRIPTION\n
 Send a message on a telepathic channel (provide a channel name followed by the message to send).

@@ -1,7 +1,7 @@
 \h ABOUT \d
 
 \uUSAGE\n
-about
+!about
 
 \uDESCRIPTION\n
 Display CurryMUD version and copyright information.

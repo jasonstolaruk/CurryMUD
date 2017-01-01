@@ -8,13 +8,14 @@ import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.TheWorld.Zones.ZoneMap
-import Mud.Util.Misc hiding (patternMatchFail)
+import Mud.Util.Misc hiding (blowUp)
 import Mud.Util.Quoting
 import Mud.Util.Text
-import qualified Mud.Util.Misc as U (patternMatchFail)
+import qualified Mud.Util.Misc as U (blowUp)
 
 import Control.Lens (both, each, views)
 import Control.Lens.Operators ((%~), (&), (^.))
+import Data.List (lookup)
 import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>))
 import Data.Text (Text)
@@ -27,8 +28,8 @@ default (Int)
 -----
 
 
-patternMatchFail :: (Show a) => PatternMatchFail a b
-patternMatchFail = U.patternMatchFail "Mud.Data.State.Util.GMCP"
+blowUp :: BlowUp a
+blowUp = U.blowUp "Mud.Data.State.Util.GMCP"
 
 
 -- ==================================================
@@ -81,13 +82,12 @@ gmcpRmInfo maybeZoom i ms = "Room.Info " <> curlyQuote (spaced rest)
             let f (StdLink dir _ _ ) = pure . dirToInt . linkDirToCmdName $ dir
                 f _                  = []
             in bracketQuote . spaced . commas . map showText . concatMap f $ links
-    dirToInt t = case filter ((== t) . fst) dirs of
-      [pair] -> snd pair
-      _      -> patternMatchFail "gmcpRmInfo dirToInt" t
+    dirToInt t = fromMaybe oops . lookup t $ dirs
       where
         dirs = zip [ "n", "ne", "nw", "e", "w", "s", "se", "sw", "u", "d", "in", "out" ] [1..]
-    lastId                   = getLastRmId i ms
-    mkDir                    = views rmLinks dirHelper . getRm lastId $ ms
+        oops = blowUp "gmcpRmInfo dirToInt" "nonstandard direction" t
+    lastId = getLastRmId i ms
+    mkDir  = views rmLinks dirHelper . getRm lastId $ ms
       where
         dirHelper links =
             let f (StdLink    dir destId _    ) | destId == ri = mkStdDir . linkDirToCmdName $ dir
