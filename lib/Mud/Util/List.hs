@@ -74,7 +74,7 @@ listToTuple :: (Each s t a a) => [a] -> t
 listToTuple xs = undefined & partsOf each .~ xs
 
 
-lookupValue :: (Eq v) => v -> [(k, v)] -> Maybe k -- TODO: Use this.
+lookupValue :: (Eq v) => v -> [(k, v)] -> Maybe k
 lookupValue v assocs = case filter ((== v) . snd) assocs of []         -> Nothing
                                                             ((k, _):_) -> Just k
 

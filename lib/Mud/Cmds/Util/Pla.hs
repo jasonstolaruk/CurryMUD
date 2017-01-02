@@ -779,8 +779,8 @@ helperLinkUnlink ms i mq cols =
         meLinkedToOthers = foldr buildSingList [] $ i `delete` views pcTbl IM.keys ms
         buildSingList pi acc | s `elem` getLinked pi ms = getSing pi ms : acc
                              | otherwise                = acc
-        twoWays = map fst . filter ((== 2) . snd) . countOccs $ othersLinkedToMe ++ meLinkedToOthers
-    in if all (()#) [ othersLinkedToMe, meLinkedToOthers ]
+        twoWays              = map fst . filter ((== 2) . snd) . countOccs $ othersLinkedToMe ++ meLinkedToOthers
+    in if uncurry (&&) . ((()#) *** (()#)) $ (othersLinkedToMe, meLinkedToOthers)
       then emptied $ do logPlaOut "helperLinkUnlink" i . pure $ sorryNoLinks
                         wrapSend mq cols (isSpiritId i ms ? sorryNoLinksSpirit :? sorryNoLinks)
       else unadulterated (meLinkedToOthers, othersLinkedToMe, twoWays)

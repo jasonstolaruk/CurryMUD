@@ -202,13 +202,14 @@ adminChanProcChanTarget :: HasCallStack => Inv -> [Sing] -> Args -> Either Text 
 adminChanProcChanTarget tunedIds tunedSings ((capitalize . T.toLower -> target):rest) =
     bool (findFullNameForAbbrev target tunedSings |&| maybe notFound found) (Left sorryChanMsg) $ ()# rest
   where
-    notFound         = Left . sorryAdminChanTargetName $ target
-    found targetSing =
-        let targetId    = fst . head . filter ((== targetSing) . snd) . zip tunedIds $ tunedSings
-            msg         = capitalizeMsg . T.unwords $ rest
-            formatMsg x = parensQuote ("to " <> x) |<>| msg
-        in Right [ (formatMsg targetSing,                           targetId `delete` tunedIds)
-                 , (formatMsg . colorWith emoteTargetColor $ "you", pure targetId             ) ]
+    notFound         = sorry
+    found targetSing = case lookup targetSing . zip tunedSings $ tunedIds of
+      Nothing       -> sorry
+      Just targetId -> let msg         = capitalizeMsg . T.unwords $ rest
+                           formatMsg x = parensQuote ("to " <> x) |<>| msg
+                       in Right [ (formatMsg targetSing,                           targetId `delete` tunedIds)
+                                , (formatMsg . colorWith emoteTargetColor $ "you", pure targetId             ) ]
+    sorry = Left . sorryAdminChanTargetName $ target
 adminChanProcChanTarget _ _ as = patternMatchFail "adminChanProcChanTarget" . showText $ as
 
 
