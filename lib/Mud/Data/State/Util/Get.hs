@@ -55,7 +55,6 @@ module Mud.Data.State.Util.Get ( getActiveEffects
                                , getKnownLangs
                                , getLastRmId
                                , getLinked
-                               , getListenThreadId
                                , getLogoutRmId
                                , getLogQueue
                                , getLvl
@@ -166,7 +165,6 @@ import Mud.Util.Misc hiding (blowUp)
 import qualified Mud.Util.Misc as U (blowUp)
 
 import Control.Arrow ((&&&))
-import Control.Concurrent (ThreadId)
 import Control.Lens (at, view, views)
 import Control.Lens.Operators ((^.))
 import Data.Maybe (fromMaybe)
@@ -574,13 +572,6 @@ getLastRmId i = view lastRmId . getMob i
 
 getLinked :: HasCallStack => Id -> MudState -> [Sing]
 getLinked = onPC (view linked) []
-
-
------
-
-
-getListenThreadId :: HasCallStack => MudState -> ThreadId
-getListenThreadId = reverseLookup Listen . view threadTbl
 
 
 -----

@@ -146,7 +146,7 @@ threadExHandler mi threadName e = f >>= \threadName' -> do
     throwToListenThread e
   where
     f = case mi of Nothing -> return threadName
-                   Just i  -> [ threadName <> " " <> txt | txt <- descSingId i <$> getState ]
+                   Just i  -> [ threadName |<>| txt | txt <- descSingId i <$> getState ]
 
 
 -----
@@ -189,7 +189,7 @@ throwDeath a = throwTo (asyncThreadId a) PlsDie
 
 
 throwToListenThread :: SomeException -> MudStack ()
-throwToListenThread e = flip throwTo e . getListenThreadId =<< getState
+throwToListenThread e = maybeVoid (`throwTo` e) . getListenThreadId =<< getState
 
 
 -----

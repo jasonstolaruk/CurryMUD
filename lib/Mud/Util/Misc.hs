@@ -37,6 +37,7 @@ module Mud.Util.Misc ( atLst1
                      , isVowel
                      , isZero
                      , listToMaybe
+                     , lookupMapValue
                      , max0
                      , max1
                      , maybeEmp
@@ -68,7 +69,6 @@ module Mud.Util.Misc ( atLst1
                      , plusTenth
                      , plusThird
                      , printPanicMsg
-                     , reverseLookup
                      , safeCoerce
                      , safePerformIO
                      , sortEithers
@@ -81,6 +81,7 @@ module Mud.Util.Misc ( atLst1
                      , uncurry5
                      , unit ) where
 
+import Mud.Util.List
 import Mud.Util.Operators
 import Mud.Util.Quoting
 
@@ -219,12 +220,12 @@ formatTimeHelper :: (FormatTime a) => a -> Text
 formatTimeHelper = T.pack . formatTime defaultTimeLocale "%Z: %F %T"
 
 
-fromEither :: Either a a -> a
+fromEither :: Either a a -> a -- TODO: Eew!
 fromEither (Right a) = a
 fromEither (Left  a) = a
 
 
-fromLeft :: (Show a, Show b) => Either a b -> a
+fromLeft :: (Show a, Show b) => Either a b -> a -- TODO: Eew!
 fromLeft (Left x) = x
 fromLeft x        = blowUp "Mud.Util.Misc" "fromLeft" "Right" . T.pack . show $ x
 
@@ -405,8 +406,8 @@ printPanicMsg :: IO ()
 printPanicMsg = hPutStrLn stderr . T.unpack $ panicMsg <> ": see the logs for details"
 
 
-reverseLookup :: (Eq v) => v -> M.Map k v -> k
-reverseLookup v = fst . head . filter ((== v) . snd) . M.assocs
+lookupMapValue :: (Eq v) => v -> M.Map k v -> Maybe k
+lookupMapValue v = lookupValue v . M.assocs
 
 
 safeCoerce :: a ~ b => a -> b

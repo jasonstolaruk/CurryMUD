@@ -10,6 +10,7 @@ module Mud.Cmds.Util.Pla ( adminTagTxt
                          , bugTypoLogger
                          , checkMutuallyTuned
                          , clothToSlot
+                         , descSlotForId
                          , donMsgs
                          , execIfPossessed
                          , fillerToSpcs
@@ -253,6 +254,66 @@ clothToSlot = \case Shirt    -> ShirtS
                     Backpack -> BackpackS
                     Cloak    -> CloakS
                     _        -> undefined
+
+
+-----
+
+
+descSlotForId :: HasCallStack => Id -> MudState -> Id -> EqMap -> Text
+descSlotForId i ms itemId = maybeEmp (parensQuote . mkSlotDesc i ms) . lookupMapValue itemId
+
+
+mkSlotDesc :: HasCallStack => Id -> MudState -> Slot -> Text
+mkSlotDesc i ms s = case s of
+  -- Clothing slots:
+  EarringR1S  -> wornOn -- "right ear"
+  EarringR2S  -> wornOn -- "right ear"
+  EarringL1S  -> wornOn -- "left ear"
+  EarringL2S  -> wornOn -- "left ear"
+  NoseRing1S  -> wornOn -- "nose"
+  NoseRing2S  -> wornOn -- "nose"
+  Necklace1S  -> wornOn -- "neck"
+  Necklace2S  -> wornOn -- "neck"
+  Necklace3S  -> wornOn -- "neck"
+  BraceletR1S -> wornOn -- "right wrist"
+  BraceletR2S -> wornOn -- "right wrist"
+  BraceletR3S -> wornOn -- "right wrist"
+  BraceletL1S -> wornOn -- "left wrist"
+  BraceletL2S -> wornOn -- "left wrist"
+  BraceletL3S -> wornOn -- "left wrist"
+  RingRIS     -> wornOn -- "right index finger"
+  RingRMS     -> wornOn -- "right middle finger"
+  RingRRS     -> wornOn -- "right ring finger"
+  RingRPS     -> wornOn -- "right pinky finger"
+  RingLIS     -> wornOn -- "left index finger"
+  RingLMS     -> wornOn -- "left middle finger"
+  RingLRS     -> wornOn -- "left ring finger"
+  RingLPS     -> wornOn -- "left pinky finger"
+  ShirtS      -> wornAs -- "shirt"
+  SmockS      -> wornAs -- "smock"
+  CoatS       -> wornAs -- "coat"
+  TrousersS   -> "worn as trousers" -- "trousers"
+  SkirtS      -> wornAs -- "skirt"
+  DressS      -> wornAs -- "dress"
+  FullBodyS   -> "worn about " <> hisHer <> " body" -- "about body"
+  BackpackS   -> "worn on "    <> hisHer <> " back" -- "backpack"
+  CloakS      -> wornAs -- "cloak"
+  -- Armor slots:
+  HeadS       -> wornOn -- "head"
+  TorsoS      -> wornOn -- "torso"
+  ArmsS       -> wornOn -- "arms"
+  HandsS      -> wornOn -- "hands"
+  LowerBodyS  -> wornOn -- "lower body"
+  FeetS       -> wornOn -- "feet"
+  -- Weapon/shield slots:
+  RHandS      -> heldIn -- "right hand"
+  LHandS      -> heldIn -- "left hand"
+  BothHandsS  -> "wielding with both hands" -- "both hands"
+  where
+    hisHer = mkPossPro . getSex i $ ms
+    wornOn = T.concat [ "worn on ", hisHer, " ", pp s ]
+    wornAs = "worn as " <> aOrAn (pp s)
+    heldIn = "held in " <> hisHer <> pp s
 
 
 -----

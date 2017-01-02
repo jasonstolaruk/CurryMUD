@@ -10,6 +10,7 @@ module Mud.Util.List ( allValues
                      , headLast
                      , headTail
                      , listToTuple
+                     , lookupValue
                      , mkCountList
                      , nubSort
                      , select
@@ -71,6 +72,11 @@ headTail = (,) <$> head <*> tail
 
 listToTuple :: (Each s t a a) => [a] -> t
 listToTuple xs = undefined & partsOf each .~ xs
+
+
+lookupValue :: (Eq v) => v -> [(k, v)] -> Maybe k -- TODO: Use this.
+lookupValue v assocs = case filter ((== v) . snd) assocs of []         -> Nothing
+                                                            ((k, _):_) -> Just k
 
 
 mkCountList :: (Eq a) => [a] -> [Int]

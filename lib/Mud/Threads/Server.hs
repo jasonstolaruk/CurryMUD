@@ -188,4 +188,4 @@ shutDown = massMsg SilentBoot >> onNewThread commitSuicide
                        stopNpcServers
                        persist
                        logNotice "shutDown commitSuicide" "killing the listen thread."
-                       liftIO . killThread . getListenThreadId =<< getState
+                       liftIO . maybeVoid killThread . getListenThreadId =<< getState

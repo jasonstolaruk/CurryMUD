@@ -539,7 +539,7 @@ ppStomachContHelper txt t b = slashes [ txt, T.pack . formatTime defaultTimeLoca
 
 instance Pretty TelnetData where
   pp (TCode  tc) = pp tc
-  pp (TOther c ) | ((&&) <$> (<= 126) <*> (>= 32)) x = showText c <> " " <> x'
+  pp (TOther c ) | ((&&) <$> (<= 126) <*> (>= 32)) x = showText c |<>| x'
                  | otherwise                         = x'
     where
       x  = ord c

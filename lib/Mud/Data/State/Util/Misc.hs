@@ -21,6 +21,7 @@ module Mud.Data.State.Util.Misc ( addToInv
                                 , getFun
                                 , getHookFun
                                 , getInstaEffectFun
+                                , getListenThreadId
                                 , getLogAsyncs
                                 , getLoggedInAdminIds
                                 , getLoggedInPlaIds
@@ -269,6 +270,13 @@ getInstaEffectFun :: HasCallStack => FunName -> MudState -> InstaEffectFun
 getInstaEffectFun n = views (instaEffectFunTbl.at n) (fromMaybe oops)
   where
     oops = blowUp "getInstaEffectFun" "function name not found in instantaneous effect function table" n
+
+
+-----
+
+
+getListenThreadId :: HasCallStack => MudState -> Maybe ThreadId
+getListenThreadId = lookupMapValue Listen . view threadTbl
 
 
 -----
