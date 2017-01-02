@@ -772,6 +772,7 @@ logIn newId ms oldSing newHost newTime originId = peepNewId . movePC $ adoptNewI
 handleLogin :: HasCallStack => NewCharBundle -> Bool -> ActionParams -> MudStack ()
 handleLogin (NewCharBundle oldSing s _) isNew params@ActionParams { .. } = do greet
                                                                               showMotd plaMsgQueue plaCols
+                                                                              showDate plaMsgQueue plaCols
                                                                               (ms, p) <- showRetainedMsgs
                                                                               look params
                                                                               sendDfltPrompt plaMsgQueue myId

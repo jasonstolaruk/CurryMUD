@@ -11,6 +11,7 @@ module Mud.Cmds.Pla ( getRecordUptime
                     , noOfSpiritCmds
                     , npcCmds
                     , plaCmds
+                    , showDate
                     , showMotd
                     , spiritCmds ) where
 
@@ -874,8 +875,12 @@ connectHelper i (target, as) ms =
 
 
 date :: HasCallStack => ActionFun
-date (NoArgs i mq cols) = liftIO getCurryTime >>= \CurryTime { .. } -> do
-    logPlaExec "date" i
+date (NoArgs i mq cols) = logPlaExec "date" i >> showDate mq cols
+date p                  = withoutArgs date p
+
+
+showDate :: HasCallStack => MsgQueue -> Cols -> MudStack ()
+showDate mq cols = liftIO getCurryTime >>= \CurryTime { .. } ->
     wrapSend mq cols . T.concat $ [ "It's the "
                                   , mkOrdinal curryDayOfWeek
                                   , " day "
@@ -891,7 +896,6 @@ date (NoArgs i mq cols) = liftIO getCurryTime >>= \CurryTime { .. } -> do
                                   , ". The date is "
                                   , T.intercalate "-" . map showText $ [ curryMonth, curryDayOfMonth, curryYear ]
                                   , "." ]
-date p = withoutArgs date p
 
 
 -----
