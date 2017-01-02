@@ -60,7 +60,6 @@ import Control.Exception (ArithException(..), IOException)
 import Control.Exception.Lifted (throwIO, try)
 import Control.Lens (Optical, both, views)
 import Control.Lens.Operators ((%~))
-import Control.Lens.Type (LensLike')
 import Control.Monad ((>=>), replicateM_)
 import Control.Monad.IO.Class (liftIO)
 import Data.Bits (zeroBits)
@@ -76,8 +75,8 @@ import GHC.Conc (threadStatus)
 import GHC.Stack (HasCallStack)
 import Numeric (readInt)
 import Prelude hiding (pi)
-import qualified Data.IntMap.Lazy as IM (IntMap, assocs, keys, toList)
-import qualified Data.Map.Lazy as M (assocs, elems, keysSet, toList)
+import qualified Data.IntMap.Lazy as IM (IntMap, assocs, filter, keys, toList)
+import qualified Data.Map.Lazy as M (assocs, elems, filter, keys, keysSet, toList)
 import qualified Data.Set as S (toAscList)
 import qualified Data.Text as T
 import System.Console.ANSI (Color(..), ColorIntensity(..))
@@ -530,67 +529,63 @@ debugId   (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
       | searchId < 0 = wrapSend mq cols sorryWtf
       | otherwise    = getState >>= \ms -> do
           logPlaExecArgs (prefixDebugCmd "id") (pure a) i
-          let f     = commas . map (showText . fst)
+          let f     = commas . map showText
               mkTxt =
                   [ [ "Tables containing key " <> searchIdTxt <> ":"
                     , commas . map fst . filter ((searchId `elem`) . snd) . mkTblNameKeysList $ ms ]
                   , [ T.concat [ "Channels with a ", dblQuote "chanId", " of ", searchIdTxt, ":" ]
-                    , f . filter (views chanId (== searchId) . snd) . tblToList chanTbl $ ms ]
+                    , f . views chanTbl (IM.keys . IM.filter (views chanId (== searchId))) $ ms ]
                   , [ T.concat [ "Entities with an ", dblQuote "entId", " of ", searchIdTxt, ":" ]
-                    , f . filter (views entId (== searchId) . snd) . tblToList entTbl $ ms ]
+                    , f . views entTbl (IM.keys . IM.filter (views entId (== searchId))) $ ms ]
                   , [ T.concat [ "Foods with a ", dblQuote "foodId", " of ", searchIdTxt, ":" ]
-                    , f . filter (views foodId (== DistinctFoodId searchId) . snd) . tblToList foodTbl $ ms ]
+                    , f . views foodTbl (IM.keys . IM.filter (views foodId (== DistinctFoodId searchId))) $ ms ]
                   , [ T.concat [ "Equipment maps containing ID ", searchIdTxt, ":" ]
-                    , f . filter ((searchId `elem`) . M.elems . snd) . tblToList eqTbl $ ms ]
+                    , f . views eqTbl (IM.keys . IM.filter ((searchId `elem`) . M.elems)) $ ms ]
                   , [ T.concat [ "Inventories containing ID ", searchIdTxt, ":" ]
-                    , f . filter ((searchId `elem`) . snd) . tblToList invTbl $ ms ]
+                    , f . views invTbl (IM.keys . IM.filter (searchId `elem`)) $ ms ]
                   , [ T.concat [ "Mobiles with a ", dblQuote "rmId", " of ", searchIdTxt, ":" ]
-                    , f . filter (views rmId (== searchId) . snd) . tblToList mobTbl $ ms ]
+                    , f . views mobTbl (IM.keys . IM.filter (views rmId (== searchId))) $ ms ]
                   , [ T.concat [ "Mobiles with a ", dblQuote "lastRmId", " of ", searchIdTxt, ":" ]
-                    , f . filter (views lastRmId (== searchId) . snd) . tblToList mobTbl $ ms ]
+                    , f . views mobTbl (IM.keys . IM.filter (views lastRmId (== searchId))) $ ms ]
                   , [ T.concat [ "Mobiles following ID ", searchIdTxt, ":" ]
-                    , f . filter (views (party.following) (== Just searchId) . snd) . tblToList mobTbl $ ms ]
+                    , f . views mobTbl (IM.keys . IM.filter (views (party.following) (== Just searchId))) $ ms ]
                   , [ T.concat [ "Mobiles followed by ID ", searchIdTxt, ":" ]
-                    , f . filter (views (party.followers) (searchId `elem`) . snd) . tblToList mobTbl $ ms ]
+                    , f . views mobTbl (IM.keys . IM.filter (views (party.followers) (searchId `elem`))) $ ms ]
                   , [ T.concat [ "Mobiles whose group includes ID ", searchIdTxt, ":" ]
-                    , f . filter (views (party.myGroup) (searchId `elem`) . snd) . tblToList mobTbl $ ms ]
+                    , f . views mobTbl (IM.keys . IM.filter (views (party.myGroup) (searchId `elem`))) $ ms ]
                   , [ T.concat [ "Mobiles who are a member of ID ", searchIdTxt, "'s group:" ]
-                    , f . filter (views (party.memberOf) (== Just searchId) . snd) . tblToList mobTbl $ ms ]
+                    , f . views mobTbl (IM.keys . IM.filter (views (party.memberOf) (== Just searchId))) $ ms ]
                   , [ T.concat [ "Mobiles whose stomach contains ", dblQuote "DistinctFoodId", " ", searchIdTxt, ":" ]
                     , let g = filter $ views distinctId (== (Right . DistinctFoodId $ searchId))
-                      in f . filter (views stomach ((()!#) . g) . snd) . tblToList mobTbl $ ms ]
+                      in f . views mobTbl (IM.keys . IM.filter (views stomach ((()!#) . g))) $ ms ]
                   , [ T.concat [ "Mobiles whose stomach contains ", dblQuote "DistinctLiqId", " ", searchIdTxt, ":" ]
                     , let g = filter $ views distinctId (== (Left . DistinctLiqId $ searchId))
-                      in f . filter (views stomach ((()!#) . g) . snd) . tblToList mobTbl $ ms ]
+                      in f . views mobTbl (IM.keys . IM.filter (views stomach ((()!#) . g))) $ ms ]
                   , [ T.concat [ "NPCs possessed by ID ", searchIdTxt, ":" ]
-                    , f . filter (views npcPossessor (searchId `elem`) . snd) . tblToList npcTbl $ ms ]
+                    , f . views npcTbl (IM.keys . IM.filter (views npcPossessor (searchId `elem`))) $ ms ]
                   , [ T.concat [ "PC ", dblQuote "sing", "s with an ID of ", searchIdTxt, " in the ", dblQuote "PCSingTbl", ":" ]
-                    , views pcSingTbl (commas . map fst . filter ((== searchId) . snd) . M.toList) ms ]
+                    , views pcSingTbl (commas . M.keys . M.filter (== searchId)) ms ]
                   , [ T.concat [ "Players peeped by ID ", searchIdTxt, ":" ]
-                    , f . filter (views peepers (searchId `elem`) . snd) . tblToList plaTbl $ ms ]
+                    , f . views plaTbl (IM.keys . IM.filter (views peepers (searchId `elem`))) $ ms ]
                   , [ T.concat [ "Players peeping ID ", searchIdTxt, ":" ]
-                    , f . filter (views peeping (searchId `elem`) . snd) . tblToList plaTbl $ ms ]
+                    , f . views plaTbl (IM.keys . IM.filter (views peeping (searchId `elem`))) $ ms ]
                   , [ T.concat [ "Players possessing ID ", searchIdTxt, ":" ]
-                    , f . filter (views possessing (searchId `elem`) . snd) . tblToList plaTbl $ ms ]
+                    , f . views plaTbl (IM.keys . IM.filter (views possessing (searchId `elem`))) $ ms ]
                   , [ T.concat [ "Players with a ", dblQuote "logoutRmId", " of ", searchIdTxt, ":" ]
-                    , f . filter (views logoutRmId (searchId `elem`) . snd) . tblToList plaTbl $ ms ]
+                    , f . views plaTbl (IM.keys . IM.filter (views logoutRmId (searchId `elem`))) $ ms ]
                   , [ T.concat [ "Rooms with a ", dblQuote "StdLink", " to ID ", searchIdTxt, ":" ]
                     , let g (StdLink _ di _) = di == searchId
-                          g NonStdLink {}    = False
-                      in f . filter ((()!#) . views rmLinks (filter g) . snd) . tblToList rmTbl $ ms ]
+                          g _                = False
+                      in f . views rmTbl (IM.keys . IM.filter (views rmLinks ((()!#) . filter g))) $ ms ]
                   , [ T.concat [ "Rooms with a ", dblQuote "NonStdLink", " to ID ", searchIdTxt, ":" ]
-                    , let g StdLink {}              = False
-                          g (NonStdLink _ di _ _ _) = di == searchId
-                      in f . filter ((()!#) . views rmLinks (filter g) . snd) . tblToList rmTbl $ ms ]
+                    , let g (NonStdLink _ di _ _ _) = di == searchId
+                          g _                       = False
+                      in f . views rmTbl (IM.keys . IM.filter (views rmLinks ((()!#) . filter g))) $ ms ]
                   , [ T.concat [ "Vessels containing ", dblQuote "liqId", " ", searchIdTxt, ":" ]
-                    , let g = views vesselCont (maybe False (views liqId (== DistinctLiqId searchId) . fst)) . snd
-                      in f . filter g . tblToList vesselTbl $ ms ] ]
+                    , let g = views vesselCont (maybe False (views liqId (== DistinctLiqId searchId) . fst))
+                      in f . views vesselTbl (IM.keys . IM.filter g) $ ms ] ]
           pager i mq Nothing . concat . wrapLines cols . intercalate [""] $ mkTxt
 debugId p = advise p [] adviceDIdExcessArgs
-
-
-tblToList :: LensLike' (Const [(Int, a)]) MudState (IM.IntMap a) -> MudState -> [(Int, a)]
-tblToList lens ms = views lens IM.toList (ms :: MudState)
 
 
 mkTblNameKeysList :: MudState -> [(Text, Inv)]
