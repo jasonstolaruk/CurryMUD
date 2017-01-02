@@ -6,6 +6,7 @@ module Mud.Util.Misc ( atLst1
                      , blowUp
                      , BlowUp
                      , boolToMaybe
+                     , compose
                      , concatMapM
                      , divide
                      , divideRound
@@ -141,6 +142,10 @@ type BlowUp a = Text -> Text -> Text -> a
 
 blowUp :: Text -> BlowUp a
 blowUp modName funName msg t = error . T.unpack . T.concat $ [ modName, " ", funName, ": ", msg ] ++ (t |!| [ "; ", t ])
+
+
+compose :: (Foldable t) => a -> t (a -> a) -> a
+compose = foldr ($)
 
 
 divide :: (Integral a, Fractional b) => a -> a -> b

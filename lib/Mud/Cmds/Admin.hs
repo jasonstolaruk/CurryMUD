@@ -825,8 +825,9 @@ examinePickPts i = pure . ("Pick pts: " <>) . views pickPtsTbl (maybe none comma
 
 examinePla :: HasCallStack => ExamineHelper
 examinePla i ms = let p = getPla i ms
-                  in [ "Host: "              <> p^.currHostName.to (noneOnNull . T.pack)
-                     , "Connect time: "      <> p^.connectTime .to (maybe none showText)
+                  in [ "Host: "              <> p^.currHostName   .to (noneOnNull . T.pack)
+                     , "Connect time: "      <> p^.connectTime    .to (maybe none showText)
+                     , "Disconnect time: "   <> p^.disconnectTime .to (maybe none showText)
                      , "Player flags: "      <> (commas . dropBlanks . descFlags $ p)
                      , "Columns: "           <> p^.columns     .to showText
                      , "Lines: "             <> p^.pageLines   .to showText

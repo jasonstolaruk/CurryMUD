@@ -30,6 +30,7 @@ module Mud.Data.State.Util.Get ( getActiveEffects
                                , getCorpseVol
                                , getCorpseWeight
                                , getCurrHostName
+                               , getDisconnectTime
                                , getDistinctFood
                                , getDistinctFoodForFood
                                , getDistinctLiq
@@ -396,6 +397,13 @@ getCorpseWeight i = view corpseWeight . getMob i
 
 getCurrHostName :: HasCallStack => Id -> MudState -> HostName
 getCurrHostName i = view currHostName . getPla i
+
+
+-----
+
+
+getDisconnectTime :: HasCallStack => Id -> MudState -> Maybe UTCTime
+getDisconnectTime i = view disconnectTime . getPla i
 
 
 -----

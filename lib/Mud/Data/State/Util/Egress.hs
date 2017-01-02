@@ -66,10 +66,12 @@ handleEgress i mq isDropped = egressHelper `finally` writeMsg mq FinishedEgress
         unless (hoc || spirit) . bcastOthersInRm i . nlnl . egressMsg . serialize . mkStdDesig i ms $ DoCap
         helper now tuple |&| modifyState >=> \(bs, logMsgs) -> do
             forM_ logMsgs . uncurry . logPla $ "handleEgress egressHelper helper"
-            spirit ? theBeyond i mq s isDropped :? do pauseEffects      i -- Already done in "handleDeath".
-                                                      stopFeelings      i
-                                                      stopRegen         i
-                                                      throwWaitDigester i
+            if spirit
+              then theBeyond i mq s isDropped
+              else do pauseEffects      i -- Already done for spirits in "handleDeath".
+                      stopFeelings      i
+                      stopRegen         i
+                      throwWaitDigester i
             closePlaLog i
             bcast bs
             bcastAdmins $ s <> " has left CurryMUD."
@@ -78,8 +80,12 @@ handleEgress i mq isDropped = egressHelper `finally` writeMsg mq FinishedEgress
     helper now (s, hoc, spirit) ms =
         let (ms', bs, logMsgs) = peepHelper i ms s spirit
             ms'' | hoc         = ms'
-                 | otherwise   = updateHostMap i (possessHelper i . leaveParty i . movePC i ms' $ spirit) s now
-        in (ms'', (bs, logMsgs))
+                 | otherwise   = compose ms' [ set (plaTbl.ind i.disconnectTime) . Just $ now
+                                             , updateHostMap i s now
+                                             , possessHelper i
+                                             , leaveParty    i
+                                             , movePC        i spirit ]
+         in (ms'', (bs, logMsgs))
 
 
 peepHelper :: HasCallStack => Id -> MudState -> Sing -> Bool -> (MudState, [Broadcast], [(Id, Text)])
@@ -107,8 +113,8 @@ peepHelper i ms s spirit =
                                     in foldr f pt peeperIds
 
 
-movePC :: HasCallStack => Id -> MudState -> Bool -> MudState
-movePC i ms spirit = upd ms [ invTbl     .ind ri           %~ (i `delete`)
+movePC :: HasCallStack => Id -> Bool -> MudState -> MudState
+movePC i spirit ms = upd ms [ invTbl     .ind ri           %~ (i `delete`)
                             , invTbl     .ind ri'          %~ (i :)
                             , msgQueueTbl.at  i            .~ Nothing
                             , mobTbl     .ind i.rmId       .~ ri'
@@ -122,8 +128,8 @@ possessHelper i ms = let f = maybe id (\npcId -> npcTbl.ind npcId.npcPossessor .
                      in upd ms [ plaTbl.ind i.possessing .~ Nothing, f ]
 
 
-updateHostMap :: HasCallStack => Id -> MudState -> Sing -> UTCTime -> MudState
-updateHostMap i ms s now = maybe ms helper . getConnectTime i $ ms
+updateHostMap :: HasCallStack => Id -> Sing -> UTCTime -> MudState -> MudState
+updateHostMap i s now ms = maybe ms helper . getConnectTime i $ ms
   where
     helper conTime    = let dur = round $ now `diffUTCTime` conTime
                         in flip (set $ hostTbl.at s) ms . Just $ case getHostMap s ms of
