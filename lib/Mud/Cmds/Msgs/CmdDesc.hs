@@ -39,6 +39,10 @@ cmdDescColor :: Text
 cmdDescColor = "Perform a color test."
 
 
+cmdDescDate :: Text
+cmdDescDate = "Display the date."
+
+
 cmdDescDescription :: Text
 cmdDescDescription = "Change your character description."
 

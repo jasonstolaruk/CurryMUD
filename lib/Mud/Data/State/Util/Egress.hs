@@ -182,7 +182,7 @@ mkFarewellStats i ms = concat [ header, ts, footer ]
              , f "Level: "      <> showText l
              , f "Experience: " <> commaShow expr
              , "" ]
-    footer = [ T.concat [ "You played ", s, " for a total of ", totalTime, "." ]
+    footer = [ T.concat [ "You played ", s, " for a total of ", totalTime, " in real-world time." ]
              , ""
              , "Thank you for playing CurryMUD! Please reconnect to play again with a new character." ]
     f                         = pad 12

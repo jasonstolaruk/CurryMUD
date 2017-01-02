@@ -317,8 +317,8 @@ instance Pretty CurryWeekday where
   pp FireDay  = "Fire Day"
   pp WaterDay = "Water Day"
   pp WoodDay  = "Wood Day"
-  pp GoldDay  = "Gold Day"
-  pp EarthDay = "Earth Day"
+  pp WindDay  = "Wind Day"
+  pp StarDay  = "Star Day"
 
 
 instance Pretty DiscoverRec where
@@ -772,8 +772,8 @@ data CurryWeekday = SunDay
                   | FireDay
                   | WaterDay
                   | WoodDay
-                  | GoldDay
-                  | EarthDay deriving (Enum, Eq)
+                  | WindDay
+                  | StarDay deriving (Enum, Eq)
 
 
 -----

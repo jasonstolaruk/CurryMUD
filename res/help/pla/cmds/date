@@ -1,0 +1,10 @@
+\h DATE \d
+
+\uUSAGE\n
+!date
+
+\uDESCRIPTION\n
+Display the current date.
+
+\uSEE ALSO\n
+calendar, time

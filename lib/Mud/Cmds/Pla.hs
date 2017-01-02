@@ -43,6 +43,7 @@ import Mud.Interp.Misc
 import Mud.Interp.MultiLine
 import Mud.Interp.Pause
 import Mud.Misc.ANSI
+import Mud.Misc.CurryTime
 import Mud.Misc.Database
 import Mud.Misc.LocPref
 import Mud.Misc.Misc
@@ -229,6 +230,7 @@ priorityAbbrevCmdTuples =
     , ("clear",       "cl",  clear,          True,  cmdDescClear)
     , ("color",       "col", color,          True,  cmdDescColor)
     , ("connect",     "co",  connect,        True,  "Connect one or more people to a telepathic channel.")
+    , ("date",        "da",  date,           True,  cmdDescDate)
     , ("description", "de",  description,    False, cmdDescDescription)
     , ("disconnect",  "di",  disconnect,     True,  "Disconnect one or more people from a telepathic channel.")
     , ("drink",       "dri", drink,          False, cmdDescDrink)
@@ -333,6 +335,7 @@ spiritPriorityAbbrevCmdTuples =
     [ ("bars",        "b",   bars,           True,  cmdDescBars)
     , ("clear",       "cl",  clear,          True,  cmdDescClear)
     , ("color",       "col", color,          True,  cmdDescColor)
+    , ("date",        "da",  date,           True,  cmdDescDate)
     , ("exits",       "ex",  exits,          True,  cmdDescExits)
     , ("help",        "h",   help,           True,  cmdDescHelp)
     , ("link",        "li",  link,           True,  cmdDescLink)
@@ -409,6 +412,7 @@ npcPriorityAbbrevCmdTuples :: HasCallStack => [(CmdFullName, CmdPriorityAbbrevTx
 npcPriorityAbbrevCmdTuples =
     [ ("bars",        "b",   bars,           True,  cmdDescBars)
     , ("clear",       "c",   clear,          True,  cmdDescClear)
+    , ("date",        "da",  date,           True,  cmdDescDate)
     , ("description", "de",  description,    False, cmdDescDescription)
     , ("drink",       "dri", drink,          False, cmdDescDrink)
     , ("drop",        "dr",  dropAction,     True,  cmdDescDrop)
@@ -864,6 +868,30 @@ connectHelper i (target, as) ms =
         (cs, cns, s) = mkChanBindings i ms
         sorry        = (ms, ) . (ms, ) . (, Nothing) . pure . Left
     in findFullNameForAbbrev target (map T.toLower cns) |&| maybe notFound found
+
+
+-----
+
+
+date :: HasCallStack => ActionFun
+date (NoArgs i mq cols) = liftIO getCurryTime >>= \CurryTime { .. } -> do
+    logPlaExec "date" i
+    wrapSend mq cols . T.concat $ [ "It's the "
+                                  , mkOrdinal curryDayOfWeek
+                                  , " day "
+                                  , parensQuote . ppWeekdayForDayOfWeek $ curryDayOfWeek
+                                  , " of the "
+                                  , mkOrdinal curryWeek
+                                  , " week of the "
+                                  , mkOrdinal curryMonth
+                                  , " month "
+                                  , parensQuote "month_name"
+                                  , " of the year "
+                                  , showText curryYear
+                                  , ". The date is "
+                                  , T.intercalate "-" . map showText $ [ curryMonth, curryDayOfMonth, curryYear ]
+                                  , "." ]
+date p = withoutArgs date p
 
 
 -----

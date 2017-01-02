@@ -68,19 +68,6 @@ currySecsInYear  = currySecsInMonth * curryMonthsInYear -- 12,096,000
 -- ==================================================
 
 
-showCurryTime :: CurryTime -> [Text]
-showCurryTime CurryTime { .. } = [ "Year:         " <> showText  curryYear
-                                 , "Month:        " <> mkOrdinal curryMonth
-                                 , "Week:         " <> mkOrdinal curryWeek
-                                 , "Day of month: " <> mkOrdinal curryDayOfMonth
-                                 , "Day of week:  " <> helper    curryDayOfWeek
-                                 , "Hour:         " <> showText  curryHour
-                                 , "Min:          " <> showText  curryMin
-                                 , "Sec:          " <> showText  currySec ]
-  where
-    helper = (|<>|) <$> mkOrdinal <*> parensQuote . pp . (toEnum :: Int -> CurryWeekday) . pred
-
-
 curryEpoch :: UTCTime
 curryEpoch = UTCTime (fromGregorian 2016 1 1) 0
 
@@ -111,3 +98,20 @@ secsToCurryTime x = let years  = x `div` currySecsInYear
                         min        =        mins   `rem` curryMinsInHour
                         sec        =        secs   `rem` currySecsInMin
                     in CurryTime year month week dayOfMonth dayOfWeek hour min sec
+
+
+showCurryTime :: CurryTime -> [Text]
+showCurryTime CurryTime { .. } = [ "Year:         " <> showText  curryYear
+                                 , "Month:        " <> mkOrdinal curryMonth
+                                 , "Week:         " <> mkOrdinal curryWeek
+                                 , "Day of month: " <> mkOrdinal curryDayOfMonth
+                                 , "Day of week:  " <> helper    curryDayOfWeek
+                                 , "Hour:         " <> showText  curryHour
+                                 , "Min:          " <> showText  curryMin
+                                 , "Sec:          " <> showText  currySec ]
+  where
+    helper = (|<>|) <$> mkOrdinal <*> parensQuote . ppWeekdayForDayOfWeek
+
+
+ppWeekdayForDayOfWeek :: Day -> Text
+ppWeekdayForDayOfWeek = pp . (toEnum :: Int -> CurryWeekday) . pred

@@ -1,0 +1,32 @@
+\h CALENDAR \d
+
+On Rumia, time is measured somewhat differently than it is in the real world. There are:
+* 60 seconds in a minute
+* 60 minutes in an hour
+* 20 hours in a day
+* 7 days in a week
+* 3 weeks in a month
+* 8 months in a year
+
+The days of the week are:
+1) Sun Day
+2) Moon Day
+3) Fire Day
+4) Water Day
+5) Wood Day
+6) Wind Day
+7) Star Day
+
+The names of the month are:
+1) (winter)
+2) (winter)
+3) (spring)
+4) (spring)
+5) (summer)
+6) (summer)
+7) (fall)
+8) (fall)
+
+
+\uSEE ALSO\n
+date, time
