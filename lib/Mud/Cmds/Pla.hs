@@ -1663,8 +1663,8 @@ parseHelpTxt cmds cols txt = [ procCmdTokens . xformLeadingSpaceChars . expandDi
                      | otherwise                             = l
     procCmdTokens (T.uncons -> Just (x, xs)) | x == cmdToken = helper
       where
-        helper = let (cn, rest) = T.break isSpace xs
-                 in maybe xs (<> rest) . lookup cn . map f . mkCmdTriplesForStyling $ cmds
+        helper                = let (cn, rest) = T.break isSpace xs
+                                in maybe xs (<> rest) . lookup cn . map f . mkCmdTriplesForStyling $ cmds
         f a@(_,  Nothing,  _) = dropSnd a
         f   (cn, Just cpa, _) = let a = cpa `T.stripPrefix` cn
                                 in (cn, ) . uncurry (<>) . first (colorWith abbrevColor) . maybe (cn, "") (cpa, ) $ a

@@ -30,8 +30,8 @@ type FullWord = Text
 
 styleAbbrevs :: HasCallStack => ShouldQuote -> [FullWord] -> [Text]
 styleAbbrevs sq fws = let abbrevs   = mkAbbrevs fws
-                          helper fw = f . maybe fw (uncurry (<>)) . lookup fw $ abbrevs
-                          f         = onTrue (sq == DoQuote) bracketQuote . quoteWith' (abbrevColor, dfltColor')
+                          helper fw = onTrue (sq == DoQuote) bracketQuote . maybe fw f . lookup fw $ abbrevs
+                          f         = uncurry (<>) . first (quoteWith' (abbrevColor, dfltColor'))
                       in map helper fws
 
 
