@@ -14,7 +14,7 @@ import Prelude hiding (min)
 
 
 initCurryYear :: Year
-initCurryYear = 200
+initCurryYear = 4171 -- Approximately the same number of seconds in 1600 earth years.
 
 
 -- ==================================================
