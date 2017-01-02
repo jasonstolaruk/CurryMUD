@@ -843,18 +843,19 @@ type SkillPts = Int
 
 
 -- Has a PC and random names and telepathic links.
-data Pla = Pla { _currHostName :: HostName
-               , _connectTime  :: Maybe UTCTime
-               , _plaFlags     :: Flags
-               , _columns      :: Int
-               , _pageLines    :: Int
-               , _peepers      :: Inv
-               , _peeping      :: Inv
-               , _possessing   :: Maybe Id
-               , _retainedMsgs :: [Text]
-               , _logoutRmId   :: Maybe Id
-               , _bonusTime    :: Maybe UTCTime
-               , _spiritAsync  :: Maybe SpiritAsync } deriving Eq
+data Pla = Pla { _currHostName   :: HostName
+               , _connectTime    :: Maybe UTCTime
+               , _disconnectTime :: Maybe UTCTime
+               , _plaFlags       :: Flags
+               , _columns        :: Int
+               , _pageLines      :: Int
+               , _peepers        :: Inv
+               , _peeping        :: Inv
+               , _possessing     :: Maybe Id
+               , _retainedMsgs   :: [Text]
+               , _logoutRmId     :: Maybe Id
+               , _bonusTime      :: Maybe UTCTime
+               , _spiritAsync    :: Maybe SpiritAsync } deriving Eq
 
 
 data PlaFlags = IsAdmin
@@ -886,19 +887,21 @@ instance ToJSON   Pla where toJSON    = plaToJSON
 
 
 plaToJSON :: Pla -> Value
-plaToJSON Pla { .. } = object [ "currHostName" .= _currHostName
-                              , "connectTime"  .= _connectTime
-                              , "plaFlags"     .= _plaFlags
-                              , "columns"      .= _columns
-                              , "pageLines"    .= _pageLines
-                              , "retainedMsgs" .= _retainedMsgs
-                              , "logoutRmId"   .= _logoutRmId
-                              , "bonusTime"    .= _bonusTime ]
+plaToJSON Pla { .. } = object [ "currHostName"   .= _currHostName
+                              , "connectTime"    .= _connectTime
+                              , "disconnectTime" .= _disconnectTime
+                              , "plaFlags"       .= _plaFlags
+                              , "columns"        .= _columns
+                              , "pageLines"      .= _pageLines
+                              , "retainedMsgs"   .= _retainedMsgs
+                              , "logoutRmId"     .= _logoutRmId
+                              , "bonusTime"      .= _bonusTime ]
 
 
 jsonToPla :: Value -> Parser Pla
 jsonToPla (Object o) = Pla <$> o .: "currHostName"
                            <*> o .: "connectTime"
+                           <*> o .: "disconnectTime"
                            <*> o .: "plaFlags"
                            <*> o .: "columns"
                            <*> o .: "pageLines"

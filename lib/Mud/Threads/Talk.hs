@@ -138,18 +138,19 @@ adHoc mq host = do
                        , _introduced = []
                        , _linked     = []
                        , _skillPts   = 0 }
-            pla  = Pla { _currHostName = host
-                       , _connectTime  = Just ct
-                       , _plaFlags     = initPlaFlags
-                       , _columns      = 80
-                       , _pageLines    = 24
-                       , _peepers      = []
-                       , _peeping      = []
-                       , _possessing   = Nothing
-                       , _retainedMsgs = []
-                       , _logoutRmId   = Nothing
-                       , _bonusTime    = Nothing
-                       , _spiritAsync  = Nothing }
+            pla  = Pla { _currHostName   = host
+                       , _connectTime    = Just ct
+                       , _disconnectTime = Nothing
+                       , _plaFlags       = initPlaFlags
+                       , _columns        = 80
+                       , _pageLines      = 24
+                       , _peepers        = []
+                       , _peeping        = []
+                       , _possessing     = Nothing
+                       , _retainedMsgs   = []
+                       , _logoutRmId     = Nothing
+                       , _bonusTime      = Nothing
+                       , _spiritAsync    = Nothing }
             ms'  = upd ms [ activeEffectsTbl.ind i .~ []
                           , coinsTbl        .ind i .~ mempty
                           , entTbl          .ind i .~ e

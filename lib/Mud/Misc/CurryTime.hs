@@ -81,13 +81,13 @@ getCurryTime = secsToCurryTime <$> getSecsFromCurryEpoch
 
 
 secsToCurryTime :: Sec -> CurryTime
-secsToCurryTime x = let years  = x `div` currySecsInYear
-                        months = x `div` currySecsInMonth
-                        weeks  = x `div` currySecsInWeek
-                        days   = x `div` currySecsInDay
-                        hours  = x `div` currySecsInHour
-                        mins   = x `div` currySecsInMin
-                        secs   = x
+secsToCurryTime x = let years      = x `div` currySecsInYear
+                        months     = x `div` currySecsInMonth
+                        weeks      = x `div` currySecsInWeek
+                        days       = x `div` currySecsInDay
+                        hours      = x `div` currySecsInHour
+                        mins       = x `div` currySecsInMin
+                        secs       = x
                         -----
                         year       = initCurryYear + years
                         month      = succ $ months `rem` curryMonthsInYear

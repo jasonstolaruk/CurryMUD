@@ -195,18 +195,19 @@ data PlaTemplate = PlaTemplate { ptPlaFlags   :: Flags
 
 
 mkPla :: PlaTemplate -> Pla
-mkPla PlaTemplate { .. } = Pla { _currHostName = ""
-                               , _connectTime  = Nothing
-                               , _plaFlags     = ptPlaFlags
-                               , _columns      = 80
-                               , _pageLines    = 24
-                               , _peepers      = []
-                               , _peeping      = []
-                               , _possessing   = Nothing
-                               , _retainedMsgs = []
-                               , _logoutRmId   = Just ptLogoutRmId
-                               , _bonusTime    = Nothing
-                               , _spiritAsync  = Nothing }
+mkPla PlaTemplate { .. } = Pla { _currHostName   = ""
+                               , _connectTime    = Nothing
+                               , _disconnectTime = Nothing
+                               , _plaFlags       = ptPlaFlags
+                               , _columns        = 80
+                               , _pageLines      = 24
+                               , _peepers        = []
+                               , _peeping        = []
+                               , _possessing     = Nothing
+                               , _retainedMsgs   = []
+                               , _logoutRmId     = Just ptLogoutRmId
+                               , _bonusTime      = Nothing
+                               , _spiritAsync    = Nothing }
 
 
 -----
