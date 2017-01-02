@@ -69,7 +69,7 @@ currySecsInYear  = currySecsInMonth * curryMonthsInYear -- 12,096,000
 
 
 curryEpoch :: UTCTime
-curryEpoch = UTCTime (fromGregorian 2016 1 1) 0
+curryEpoch = UTCTime (fromGregorian 2017 1 1) 0
 
 
 getSecsFromCurryEpoch :: IO Sec
