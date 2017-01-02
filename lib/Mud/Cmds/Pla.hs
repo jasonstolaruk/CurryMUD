@@ -885,7 +885,7 @@ date (NoArgs i mq cols) = liftIO getCurryTime >>= \CurryTime { .. } -> do
                                   , " week of the "
                                   , mkOrdinal curryMonth
                                   , " month "
-                                  , parensQuote "month_name"
+                                  , parensQuote . ppMonthForMonthNum $ curryMonth
                                   , " of the year "
                                   , showText curryYear
                                   , ". The date is "

@@ -104,13 +104,17 @@ showCurryTime :: CurryTime -> [Text]
 showCurryTime CurryTime { .. } = [ "Year:         " <> showText  curryYear
                                  , "Month:        " <> mkOrdinal curryMonth
                                  , "Week:         " <> mkOrdinal curryWeek
-                                 , "Day of month: " <> mkOrdinal curryDayOfMonth
-                                 , "Day of week:  " <> helper    curryDayOfWeek
+                                 , "Day of month: " <> helper    ppMonthForMonthNum    curryDayOfMonth
+                                 , "Day of week:  " <> helper    ppWeekdayForDayOfWeek curryDayOfWeek
                                  , "Hour:         " <> showText  curryHour
                                  , "Min:          " <> showText  curryMin
                                  , "Sec:          " <> showText  currySec ]
   where
-    helper = (|<>|) <$> mkOrdinal <*> parensQuote . ppWeekdayForDayOfWeek
+    helper f = (|<>|) <$> mkOrdinal <*> parensQuote . f
+
+
+ppMonthForMonthNum :: Day -> Text
+ppMonthForMonthNum = pp . (toEnum :: Int -> CurryMonth) . pred
 
 
 ppWeekdayForDayOfWeek :: Day -> Text

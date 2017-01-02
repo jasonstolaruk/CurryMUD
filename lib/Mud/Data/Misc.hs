@@ -13,6 +13,7 @@ module Mud.Data.Misc ( Action(..)
                      , CmdFullName
                      , CmdPriorityAbbrevTxt
                      , Cols
+                     , CurryMonth
                      , CurryTime(..)
                      , CurryWeekday
                      , Day
@@ -309,6 +310,17 @@ instance Pretty Cloth where
   pp Skirt    = "skirt"
   pp Smock    = "smock"
   pp Trousers = "trousers"
+
+
+instance Pretty CurryMonth where
+  pp DunLun  = "Dun Lun"
+  pp RimeLun = "Rime Lun"
+  pp NewLun  = "New Lun"
+  pp LushLun = "Lush Lun"
+  pp FeteLun = "Fete Lun"
+  pp SunLun  = "Sun Lun"
+  pp LeafLun = "Leaf Lun"
+  pp NutLun  = "Nut Lun"
 
 
 instance Pretty CurryWeekday where
@@ -740,6 +752,19 @@ instance Eq Cmd where
 
 instance Ord Cmd where
   compare = compare `on` cmdName
+
+
+-----
+
+
+data CurryMonth = DunLun
+                | RimeLun
+                | NewLun
+                | LushLun
+                | FeteLun
+                | SunLun
+                | LeafLun
+                | NutLun deriving (Enum, Eq)
 
 
 -----
