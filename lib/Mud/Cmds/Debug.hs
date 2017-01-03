@@ -682,10 +682,10 @@ parseTwoIntArgs :: MsgQueue
                 -> (Int -> Int -> MudStack ())
                 -> MudStack ()
 parseTwoIntArgs mq cols [a, b] sorryParseA sorryParseB helper =
-    map getSum . catMaybes <$> mapM parse [ (a, sorryParseA), (b, sorryParseB) ] >>= \case
-      [x, y] -> helper x y
-      _      -> unit
+    map getSum . catMaybes <$> mapM parse [ (a, sorryParseA), (b, sorryParseB) ] >>= \case [x, y] -> helper x y
+                                                                                           _      -> unit
   where
+    parse :: (Text, Text -> Text) -> MudStack (Maybe (Sum Int))
     parse (txt, sorry) = case reads . T.unpack $ txt :: [(Int, String)] of
       [(x, "")] -> unadulterated . Sum $ x
       _         -> emptied . wrapSend mq cols . sorry $ txt

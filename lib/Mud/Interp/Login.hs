@@ -57,14 +57,14 @@ import Crypto.BCrypt (validatePassword)
 import Data.Char (isDigit, isLower, isUpper, toLower)
 import Data.Ix (inRange)
 import Data.List (delete, find, foldl', intersperse, partition)
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, isNothing)
 import Data.Monoid ((<>), Any(..))
 import Data.Text (Text)
 import Data.Time (UTCTime, getCurrentTime)
 import GHC.Stack (HasCallStack)
 import Network (HostName)
 import Prelude hiding (pi)
-import qualified Data.IntMap.Lazy as IM (foldr, toList)
+import qualified Data.IntMap.Lazy as IM (foldr, keys, toList)
 import qualified Data.Set as S (Set, empty, fromList, insert, member)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
@@ -103,26 +103,25 @@ interpName times (T.toLower -> cn@(capitalize -> cn')) params@(NoArgs i mq cols)
   | not . inRange (minNameLen, maxNameLen) . T.length $ cn = promptRetryName mq cols sorryInterpNameLen
   | T.any (`elem` illegalChars) cn                         = promptRetryName mq cols sorryInterpNameIllegal
   | otherwise                                              = getState >>= \ms ->
-      case views plaTbl (find ((== cn') . (`getSing` ms) . fst) . IM.toList) ms of
-        Nothing    -> mIf (orM . map (getAny <$>) $ [ checkProfanitiesDict i  mq cols cn
-                                                    , checkIllegalNames    ms mq cols cn
-                                                    , checkPropNamesDict      mq cols cn
-                                                    , checkWordsDict          mq cols cn
-                                                    , checkRndmNames          mq cols cn ])
-                          unit
-                          confirmName
-        Just match -> do sendPrompt mq $ telnetHideInput <> cn' <> " is an existing character. Password:"
-                         setInterp i . Just . uncurry (interpPW times cn') $ match
+      if views plaTbl (isNothing . find ((== cn') . (`getSing` ms)) . IM.keys) ms
+        then mIf (orM . fmap2 getAny $ [ checkProfanitiesDict i  mq cols cn
+                                       , checkIllegalNames    ms mq cols cn
+                                       , checkPropNamesDict      mq cols cn
+                                       , checkWordsDict          mq cols cn
+                                       , checkRndmNames          mq cols cn ])
+                 unit
+                 confirmName
+        else do sendPrompt mq $ telnetHideInput <> cn' <> " is an existing character. Password:"
+                setInterp i . Just . interpPW times $ cn'
   where
     new          = sequence_ [ send mq . nlPrefix . nl . T.unlines . parseWrapXform cols $ newPlaMsg, promptName mq ]
     illegalChars = let { a = '!' `enumFromTo` '@'; b = '[' `enumFromTo` '`'; c = '{' `enumFromTo` '~' } in a ++ b ++ c
     confirmName | isDebug, isZBackDoor, T.head cn' == 'Z' = zBackDoor times cn' params
-                | otherwise                               = do
-                    wrapSendPrompt mq cols . T.concat $ [ "We'll create a new character named "
-                                                        , dblQuote . prd $ cn'
-                                                        , spaced "OK?"
-                                                        , mkYesNoChoiceTxt ]
-                    setInterp i . Just . interpConfirmNewChar times $ cn'
+                | otherwise = do wrapSendPrompt mq cols . T.concat $ [ "We'll create a new character named "
+                                                                     , dblQuote . prd $ cn'
+                                                                     , spaced "OK?"
+                                                                     , mkYesNoChoiceTxt ]
+                                 setInterp i . Just . interpConfirmNewChar times $ cn'
 interpName _ _ ActionParams { .. } = promptRetryName plaMsgQueue plaCols sorryInterpNameExcessArgs
 
 
@@ -141,7 +140,7 @@ zBackDoor :: HasCallStack => Int -> Sing -> ActionParams -> MudStack ()
 zBackDoor times s params@ActionParams { .. } = setSingIfNotTaken times s params >>= maybeVoid helper
   where
     helper oldSing = let l = mobTbl.ind myId in do
-      tweaks [ l.st .~ 50, l.dx .~ 50, l.ht .~ 50, l.ma .~ 50, l.ps .~ 50 ]
+      tweaks . map (50 |&|) $ [ (l.st .~), (l.dx .~), (l.ht .~), (l.ma .~), (l.ps .~) ]
       wrapSend plaMsgQueue plaCols . thrice prd $ "You quietly slip through the back door"
       finishNewChar (NewCharBundle oldSing s "Aoeui1") params
 
@@ -660,11 +659,11 @@ newXps _ v _ = patternMatchFail "newXps" . showText . V.length $ v
 -- ==================================================
 
 
--- TODO: When reconnecting after entering UN: "SQLite3 returned ErrorBusy while attempting to perform prepare "select * from ban_host": database is locked".
 -- Returning player.
-interpPW :: HasCallStack => Int -> Sing -> Id -> Pla -> Interp
-interpPW times targetSing targetId targetPla cn params@(WithArgs i mq cols as) = getState >>= \ms -> do
-    let oldSing = getSing i ms
+interpPW :: HasCallStack => Int -> Sing -> Interp
+interpPW times targetSing cn params@(WithArgs i mq cols as) = getState >>= \ms -> do
+    let (oldSing, targetId) = ((,) <$> getSing i <*> getIdForPCSing targetSing) ms
+        targetPla           = getPla targetId ms
     send mq telnetShowInput >> if ()# cn || ()!# as
       then sorryPW oldSing
       else (fmap join . withDbExHandler "interpPW" . liftIO . lookupPW $ targetSing) >>= \case
@@ -682,7 +681,7 @@ interpPW times targetSing targetId targetPla cn params@(WithArgs i mq cols as) =
                  | otherwise            -> (withDbExHandler "interpPW" . isPCBanned $ targetSing) >>= \case
                                              Nothing          -> dbError mq cols
                                              Just (Any True ) -> handleBanned    ms oldSing
-                                             Just (Any False) -> handleNotBanned ms oldSing
+                                             Just (Any False) -> handleNotBanned ms oldSing targetId
           else sorryPW oldSing
   where
     sorryPW oldSing            = let msg = T.concat [ oldSing, " has entered an incorrect password for ", targetSing, "." ]
@@ -708,7 +707,7 @@ interpPW times targetSing targetId targetPla cn params@(WithArgs i mq cols as) =
         logNotice "interpPW handleBanned" msg
         bcastAdmins . prd $ msg <> " Consider also banning host " <> dblQuote host
         sendMsgBoot mq . Just . sorryInterpPwBanned $ targetSing
-    handleNotBanned ((i `getPla`) -> newPla) oldSing =
+    handleNotBanned ((i `getPla`) -> newPla) oldSing targetId =
         let helper ms = dup . logIn i ms oldSing (newPla^.currHostName) (newPla^.connectTime) $ targetId
         in helper |&| modifyState >=> \ms -> do
                logNotice "interpPW handleNotBanned" . T.concat $ [ oldSing
@@ -722,7 +721,7 @@ interpPW times targetSing targetId targetPla cn params@(WithArgs i mq cols as) =
                initPlaLog i targetSing
                logPla "interpPW handleNotBanned" i . prd $ "logged in from " <> T.pack (getCurrHostName i ms)
                handleLogin (NewCharBundle oldSing targetSing "") False params { args = [] }
-interpPW _ _ _ _ _ p = patternMatchFail "interpPW" . showText $ p
+interpPW _ _ _ p = patternMatchFail "interpPW" . showText $ p
 
 
 logIn :: HasCallStack => Id -> MudState -> Sing -> HostName -> Maybe UTCTime -> Id -> MudState

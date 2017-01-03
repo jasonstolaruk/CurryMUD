@@ -474,7 +474,7 @@ adminCount p@ActionParams { myId, args } = do logPlaExecArgs (prefixAdminCmd "co
 
 
 mkCountTxt :: HasCallStack => MudStack [Text]
-mkCountTxt = map (uncurry mappend . second commaShow) <$> helper
+mkCountTxt = (uncurry mappend . second commaShow) `fmap2` helper
   where
     helper = getState >>= \ms -> do
         let countType t = views typeTbl  (IM.size . IM.filter (== t)) ms
