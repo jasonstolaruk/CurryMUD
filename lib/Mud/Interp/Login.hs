@@ -50,7 +50,7 @@ import Control.Concurrent (threadDelay)
 import Control.Exception.Lifted (try)
 import Control.Lens (ASetter, at, both, set, views)
 import Control.Lens.Operators ((%~), (&), (+~), (-~), (.~), (?~), (^.))
-import Control.Monad ((>=>), unless, when)
+import Control.Monad ((>=>), join, unless, when)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Loops (orM)
 import Crypto.BCrypt (validatePassword)
@@ -667,7 +667,7 @@ interpPW times targetSing targetId targetPla cn params@(WithArgs i mq cols as) =
     let oldSing = getSing i ms
     send mq telnetShowInput >> if ()# cn || ()!# as
       then sorryPW oldSing
-      else (liftM join . withDbExHandler "interpPW" . liftIO . lookupPW $ targetSing) >>= \case
+      else (fmap join . withDbExHandler "interpPW" . liftIO . lookupPW $ targetSing) >>= \case
         Nothing -> sorryPW oldSing
         Just pw -> if uncurry validatePassword ((pw, cn) & both %~ T.encodeUtf8)
           then let mkMsg t = T.concat [ oldSing
