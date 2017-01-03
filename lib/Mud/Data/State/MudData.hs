@@ -490,7 +490,8 @@ data Noun = DoArticle    Text
 -- ==================================================
 
 
-data Locks = Locks { _loggingExLock :: Lock
+data Locks = Locks { _dbLock        :: Lock
+                   , _loggingExLock :: Lock
                    , _persistLock   :: Lock }
 
 

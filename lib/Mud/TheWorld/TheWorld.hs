@@ -28,6 +28,7 @@ import qualified Mud.Misc.Logging as L (logErrorMsg, logNotice)
 import Control.Concurrent.STM.TMVar (newTMVarIO)
 import Control.Lens (ASetter, views)
 import Control.Lens.Operators ((%~), (&), (.~), (?~), (^.))
+import Control.Monad (replicateM)
 import Control.Monad.IO.Class (liftIO)
 import Data.Aeson (FromJSON, eitherDecode)
 import Data.IORef (newIORef)
@@ -58,59 +59,58 @@ logNotice = L.logNotice "Mud.TheWorld.TheWorld"
 
 
 initMudData :: HasCallStack => ShouldLog -> IO MudData
-initMudData shouldLog = do
-    (logExLock,       perLock         ) <- (,) <$> newTMVarIO Done <*> newTMVarIO Done
-    (errorLogService, noticeLogService) <- initLogging shouldLog . Just $ logExLock
-    genIO   <- createSystemRandom
-    start   <- getTime Monotonic
-    msIORef <- newIORef MudState { _activeEffectsTbl       = IM.empty
-                                 , _armTbl                 = IM.empty
-                                 , _chanTbl                = IM.empty
-                                 , _clothTbl               = IM.empty
-                                 , _coinsTbl               = IM.empty
-                                 , _conTbl                 = IM.empty
-                                 , _corpseDecompAsyncTbl   = IM.empty
-                                 , _corpseTbl              = IM.empty
-                                 , _distinctFoodTbl        = IM.empty
-                                 , _distinctLiqTbl         = IM.empty
-                                 , _effectFunTbl           =  M.empty
-                                 , _entTbl                 = IM.empty
-                                 , _eqTbl                  = IM.empty
-                                 , _feelingFunTbl          =  M.empty
-                                 , _foodTbl                = IM.empty
-                                 , _funTbl                 =  M.empty
-                                 , _hookFunTbl             =  M.empty
-                                 , _hostTbl                =  M.empty
-                                 , _instaEffectFunTbl      =  M.empty
-                                 , _invTbl                 = IM.empty
-                                 , _mobTbl                 = IM.empty
-                                 , _msgQueueTbl            = IM.empty
-                                 , _npcTbl                 = IM.empty
-                                 , _objTbl                 = IM.empty
-                                 , _pausedCorpseDecompsTbl = IM.empty
-                                 , _pausedEffectsTbl       = IM.empty
-                                 , _pcSingTbl              =  M.empty
-                                 , _pcTbl                  = IM.empty
-                                 , _pickPtsTbl             = IM.empty
-                                 , _plaLogTbl              = IM.empty
-                                 , _plaTbl                 = IM.empty
-                                 , _rmActionFunTbl         =  M.empty
-                                 , _rmTbl                  = IM.empty
-                                 , _rmTeleNameTbl          = IM.empty
-                                 , _rndmNamesMstrTbl       = IM.empty
-                                 , _talkAsyncTbl           =  M.empty
-                                 , _teleLinkMstrTbl        = IM.empty
-                                 , _threadTbl              =  M.empty
-                                 , _typeTbl                = IM.empty
-                                 , _vesselTbl              = IM.empty
-                                 , _wpnTbl                 = IM.empty
-                                 , _writableTbl            = IM.empty }
-    return MudData { _errorLog      = errorLogService
-                   , _noticeLog     = noticeLogService
-                   , _gen           = genIO
-                   , _locks         = Locks logExLock perLock
-                   , _startTime     = start
-                   , _mudStateIORef = msIORef }
+initMudData shouldLog = do [ a, b, c ]                         <- replicateM 3 . liftIO . newTMVarIO $ Done
+                           (errorLogService, noticeLogService) <- initLogging shouldLog . Just $ b
+                           genIO   <- createSystemRandom
+                           start   <- getTime Monotonic
+                           msIORef <- newIORef MudState { _activeEffectsTbl       = IM.empty
+                                                        , _armTbl                 = IM.empty
+                                                        , _chanTbl                = IM.empty
+                                                        , _clothTbl               = IM.empty
+                                                        , _coinsTbl               = IM.empty
+                                                        , _conTbl                 = IM.empty
+                                                        , _corpseDecompAsyncTbl   = IM.empty
+                                                        , _corpseTbl              = IM.empty
+                                                        , _distinctFoodTbl        = IM.empty
+                                                        , _distinctLiqTbl         = IM.empty
+                                                        , _effectFunTbl           =  M.empty
+                                                        , _entTbl                 = IM.empty
+                                                        , _eqTbl                  = IM.empty
+                                                        , _feelingFunTbl          =  M.empty
+                                                        , _foodTbl                = IM.empty
+                                                        , _funTbl                 =  M.empty
+                                                        , _hookFunTbl             =  M.empty
+                                                        , _hostTbl                =  M.empty
+                                                        , _instaEffectFunTbl      =  M.empty
+                                                        , _invTbl                 = IM.empty
+                                                        , _mobTbl                 = IM.empty
+                                                        , _msgQueueTbl            = IM.empty
+                                                        , _npcTbl                 = IM.empty
+                                                        , _objTbl                 = IM.empty
+                                                        , _pausedCorpseDecompsTbl = IM.empty
+                                                        , _pausedEffectsTbl       = IM.empty
+                                                        , _pcSingTbl              =  M.empty
+                                                        , _pcTbl                  = IM.empty
+                                                        , _pickPtsTbl             = IM.empty
+                                                        , _plaLogTbl              = IM.empty
+                                                        , _plaTbl                 = IM.empty
+                                                        , _rmActionFunTbl         =  M.empty
+                                                        , _rmTbl                  = IM.empty
+                                                        , _rmTeleNameTbl          = IM.empty
+                                                        , _rndmNamesMstrTbl       = IM.empty
+                                                        , _talkAsyncTbl           =  M.empty
+                                                        , _teleLinkMstrTbl        = IM.empty
+                                                        , _threadTbl              =  M.empty
+                                                        , _typeTbl                = IM.empty
+                                                        , _vesselTbl              = IM.empty
+                                                        , _wpnTbl                 = IM.empty
+                                                        , _writableTbl            = IM.empty }
+                           return MudData { _errorLog      = errorLogService
+                                          , _noticeLog     = noticeLogService
+                                          , _gen           = genIO
+                                          , _locks         = Locks a b c
+                                          , _startTime     = start
+                                          , _mudStateIORef = msIORef }
 
 
 initWorld :: HasCallStack => MudStack Bool
