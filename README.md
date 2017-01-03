@@ -40,7 +40,7 @@ CurryMUD will have the following features:
 * PCs can introduce themselves to each other. :bow:
 * PCs can "link" with each other so as to enable "tells." :couple_with_heart:
 * Question channel for OOC newbie Q&A. :question:
-* Players can create their own ad-hoc channels. :bust_in_silhouette:
+* Players can create their own ad-hoc channels. :busts_in_silhouette:
 * Free-form emotes and built-in emotes may be used in "tells" and channel communications. :clap:
 * Functionality enabling one-on-one communication between players and administrators. :speech_balloon:
 * An in-game calendar. :calendar:
