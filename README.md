@@ -34,7 +34,7 @@ CurryMUD will have the following features:
 * ANSI color.
 * Character creation.
 * The virtual world is automatically persisted at regular intervals and at shutdown.
-* Systems for reporting bugs and typos.
+* Systems for reporting bugs :bugs: and typos.
 * Commands to aid in the process of resetting a forgotten password.
 * NPCs can execute commands, either from within code or via the ":as" administrator command.
 * PCs can introduce themselves to each other.
@@ -43,6 +43,7 @@ CurryMUD will have the following features:
 * Players can create their own ad-hoc channels.
 * Free-form emotes and built-in emotes may be used in "tells" and channel communications.
 * Functionality enabling one-on-one communication between players and administrators.
+* An in-game calendar. :calendar:
 * Weight and encumbrance.
 * Volume and container capacity.
 * Vessels for containing liquids. Vessels may be filled and emptied.
