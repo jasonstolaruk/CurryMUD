@@ -120,13 +120,13 @@ drinkAct DrinkBundle { .. } = modifyStateSeq f `finally` tweak (mobTbl.ind drink
                                                                                         , " dry after "
                                                                                         , mkMouthfulTxt x'
                                                                                         , " mouthful"
-                                                                                        , theLetterS . isNonZero $ x
+                                                                                        , sOnNon1 x
                                                                                         , "." ]
            | isZero stomAvail -> let t = thrice prd " that you have to stop drinking. You don't feel so good"
                                  in (>> bcastHelper False) . ioHelper x' . T.concat $ [ "You are so full after "
                                                                                       , mkMouthfulTxt x'
                                                                                       , " mouthful"
-                                                                                      , theLetterS . isNonZero $ x
+                                                                                      , sOnNon1 x
                                                                                       , t ]
            | x' == drinkAmt -> (>> bcastHelper False) . ioHelper x' $ "You finish drinking."
            | otherwise      -> loop x'
@@ -135,7 +135,7 @@ drinkAct DrinkBundle { .. } = modifyStateSeq f `finally` tweak (mobTbl.ind drink
     ioHelper m t    = do logPla "drinkAct loop" drinkerId . T.concat $ [ "drank "
                                                                        , showText m
                                                                        , " mouthful"
-                                                                       , theLetterS $ m /= 1
+                                                                       , sOnNon1 m
                                                                        , " of "
                                                                        , renderLiqNoun drinkLiq aOrAn
                                                                        , " "

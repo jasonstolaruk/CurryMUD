@@ -285,8 +285,8 @@ expandEntName i ms StdDesig { .. } = let f      = mkCapsFun desigShouldCap
                                          (h, t) = headTail desigEntName
                                          s      = getSing desigId ms
                                      in if isPC desigId ms
-                                       then T.concat [ f "the ", xth, expandSex h, " ", t ]
-                                       else onFalse (isCapital s) (f . ("the " <>)) s
+                                       then f . T.concat $ [ the xth, expandSex h, " ", t ]
+                                       else onFalse (isCapital s) (f . the) s
   where
     xth = let intros  = getIntroduced i ms
               idsInRm = filter ((`notElem` intros) . (`getSing` ms)) $ i `delete` desigIds

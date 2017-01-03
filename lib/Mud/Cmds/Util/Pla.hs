@@ -454,7 +454,7 @@ mkGetDropInvDescs i ms d god (mkName_maybeCorpseId_count_bothList i ms -> tuple)
         (  T.concat [ "You ",               mkGodVerb god SndPer,   " the ", s,          "." ]
         , (T.concat [ serialize d, spaced . mkGodVerb god $ ThrPer, renderMaybeCorpseId, "." ], otherIds) )
       where
-        renderMaybeCorpseId = case mci of (Just ci) -> ("the " <>) . serialize . CorpseDesig $ ci
+        renderMaybeCorpseId = case mci of (Just ci) -> the . serialize . CorpseDesig $ ci
                                           Nothing   -> aOrAn s
     helper (_, _, c, b) =
         (  T.concat [ "You ",           mkGodVerb god SndPer, rest ]
@@ -619,7 +619,7 @@ mkCan'tGetCoinsDesc = mkCoinsMsgs (can'tCoinsDescHelper sorryGetEnc)
 
 
 can'tCoinsDescHelper :: HasCallStack => Text -> Int -> Text -> Text
-can'tCoinsDescHelper t a cn = t <> bool (T.concat [ showText a, " ", cn, "s." ]) (prd $ "the " <> cn) (a == 1)
+can'tCoinsDescHelper t a cn = t <> bool (T.concat [ showText a, " ", cn, "s." ]) (prd . the $ cn) (a == 1)
 
 
 -----
@@ -677,7 +677,7 @@ mkCan'tGetInvDescs i ms maxEnc = concatMap helper
 can'tInvDescsHelper :: HasCallStack => Text -> Id -> MudState -> Inv -> [Text]
 can'tInvDescsHelper t i ms = map helper . mkNameCountBothList i ms
   where
-    helper (_, c, b@(s, _)) = t <> bool (T.concat [ showText c, " ", mkPlurFromBoth b, "." ]) (prd $ "the " <> s) (c == 1)
+    helper (_, c, b@(s, _)) = t <> bool (T.concat [ showText c, " ", mkPlurFromBoth b, "." ]) (prd . the $ s) (c == 1)
 
 
 -----
@@ -933,7 +933,7 @@ mkPutRemInvDescs i ms d por mnom mci conSing = unzip . map helper . mkNameCountB
                     , mkPorPrep por ThrPer mnom mci conSing
                     , rest ], otherIds) )
       where
-        withArticle = bool (aOrAn s) ("the " <> s) $ por == Put
+        withArticle = bool (aOrAn s) (the s) $ por == Put
     helper (_, c, b) =
         (  T.concat [ "You "
                     , mkPorVerb por SndPer

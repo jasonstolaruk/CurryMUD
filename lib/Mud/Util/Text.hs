@@ -30,6 +30,8 @@ module Mud.Util.Text ( aOrAn
                      , replace
                      , showText
                      , slashes
+                     , sOnNon1
+                     , sOnTrue
                      , spaces
                      , spcL
                      , spcR
@@ -37,7 +39,6 @@ module Mud.Util.Text ( aOrAn
                      , strictTextToLazyBS
                      , stripControl
                      , the
-                     , theLetterS
                      , theNl
                      , theOnLower
                      , theOnLowerCap
@@ -316,6 +317,17 @@ slashes = T.intercalate " / "
 -----
 
 
+sOnNon1 :: (Eq a, Num a) => a -> Text
+sOnNon1 = sOnTrue . (/= 1)
+
+
+sOnTrue :: Bool -> Text
+sOnTrue = (|?| "s")
+
+
+-----
+
+
 spaces :: [Text] -> Text
 spaces = T.intercalate " "
 
@@ -355,16 +367,9 @@ the = ("the " <>)
 -----
 
 
-theLetterS :: Bool -> Text
-theLetterS = (|?| "s")
-
-
------
-
-
 theOnLower :: Text -> Text
 theOnLower t | isCapital t = t
-             | otherwise   = "the " <> t
+             | otherwise   = the t
 
 
 theOnLowerCap :: Text -> Text

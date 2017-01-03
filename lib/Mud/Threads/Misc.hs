@@ -27,6 +27,7 @@ import Mud.Misc.Logging hiding (logExMsg, logIOEx, logNotice, logPla)
 import Mud.Util.Misc
 import Mud.Util.Operators
 import Mud.Util.Quoting
+import Mud.Util.Text
 import qualified Mud.Misc.Logging as L (logExMsg, logIOEx, logNotice, logPla)
 
 import Control.Concurrent (forkIO, myThreadId)
@@ -94,7 +95,7 @@ dbExHandler fn e =
 
 
 die :: Maybe Id -> Text -> PlsDie -> MudStack ()
-die mi threadName = const . maybe (logNotice "die") (logPla "die") mi $ "the " <> threadName <> " thread is dying."
+die mi threadName = const . maybe (logNotice "die") (logPla "die") mi $ the threadName <> " thread is dying."
 
 
 dieSilently :: PlsDie -> MudStack ()

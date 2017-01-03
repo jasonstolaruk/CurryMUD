@@ -336,7 +336,7 @@ debugColor p = withoutArgs debugColor p
 debugCores :: ActionFun
 debugCores (NoArgs i mq cols) = do
     logPlaExec (prefixDebugCmd "cores") i
-    wrapSend mq cols =<< [ T.concat [ showText cores, " processor core", theLetterS (cores > 1), "." ]
+    wrapSend mq cols =<< [ T.concat [ showText cores, " processor core", sOnNon1 cores, "." ]
                          | cores <- liftIO . safePerformIO $ getNumCapabilities ]
 debugCores p = withoutArgs debugCores p
 

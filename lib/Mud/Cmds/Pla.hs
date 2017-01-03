@@ -1883,7 +1883,7 @@ leave   (WithArgs i mq cols (nub -> as)) = helper |&| modifyState >=> \(ms, chan
     mkMsgHelper isPlur (map dblQuote -> ns) =
         T.concat [ focusingInnateMsg
                  , "you sever your telepathic connection"
-                 , theLetterS isPlur
+                 , sOnTrue isPlur
                  , " to the "
                  , isPlur ? (nl "following channels:" <> commas ns) :? (head ns <> " channel")
                  , "." ]
@@ -2227,10 +2227,10 @@ newChan   (WithArgs i mq cols (nub -> as)) = helper |&| modifyState >=> \(unzip 
                  , "you create a "
                  , isPlur |?| "group of "
                  , "telepathic network"
-                 , theLetterS isPlur
+                 , sOnTrue isPlur
                  , " to which others may be connected. To "
                  , isPlur ? "these " :? "this "
-                 , dblQuote . ("channel" <>) . theLetterS $ isPlur
+                 , dblQuote . ("channel" <>) . sOnTrue $ isPlur
                  , " you assign the "
                  , isPlur |?| "following "
                  , "name"
