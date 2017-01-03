@@ -102,7 +102,7 @@ drinkAct DrinkBundle { .. } = modifyStateSeq f `finally` tweak (mobTbl.ind drink
         now <- liftIO getCurrentTime
         consume drinkerId . pure . StomachCont (drinkLiq^.liqId.to Left) now $ False
         (ms, newCont) <- case drinkVesselId of
-          Just i  -> modifyState $ \ms -> let Just (_, m) = getVesselCont i ms
+          Just i  -> modifyState $ \ms -> let Just (_, m) = getVesselCont i ms -- TODO: Use "case" or "maybe".
                                               newCont     = m == 1 ? Nothing :? Just (drinkLiq, pred m)
                                               ms'         = ms & vesselTbl.ind i.vesselCont .~ newCont
                                           in (ms', (ms', Right newCont))

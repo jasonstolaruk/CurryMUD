@@ -10,7 +10,6 @@ import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Threads.Misc
 import Mud.TopLvlDefs.Misc
-import Mud.Util.Misc
 import Mud.Util.Operators
 import Mud.Util.Quoting
 import Mud.Util.Text
@@ -20,7 +19,7 @@ import Control.Concurrent (threadDelay)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TMQueue (tryReadTMQueue)
 import Control.Exception.Lifted (catch, finally)
-import Control.Monad ((>=>))
+import Control.Monad ((>=>), join)
 import Control.Monad.IO.Class (liftIO)
 import Data.Monoid ((<>))
 import Data.Text (Text)
@@ -50,11 +49,10 @@ threadInacTimer i mq tq = sequence_ [ setThreadType . InacTimer $ i
                                     , loop 0 `catch` threadExHandler (Just i) "inactivity timer" ] `finally` stopTimer tq
   where
     loop secs = do liftIO . threadDelay $ 1 * 10 ^ 6
-                   tq |&| liftIO . atomically . tryReadTMQueue >=> \case
-                     Just Nothing | secs >= maxInacSecs -> inacBoot secs
-                                  | otherwise           -> loop . succ $ secs
-                     Just (Just ResetTimer)             -> loop 0
-                     Nothing                            -> unit
+                   tq |&| fmap join . liftIO . atomically . tryReadTMQueue >=> \case
+                     Nothing | secs >= maxInacSecs -> inacBoot secs
+                             | otherwise           -> loop . succ $ secs
+                     Just ResetTimer               -> loop 0
     inacBoot (parensQuote . T.pack . renderSecs -> secs) = getState >>= \ms -> let s = getSing i ms in do
         logPla "threadInacTimer inacBoot" i . prd $ "booting due to inactivity " <> secs
         let noticeMsg = T.concat [ "booting player ", showText i, " ", parensQuote s, " due to inactivity." ]

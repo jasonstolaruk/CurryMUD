@@ -24,7 +24,7 @@ import Control.Concurrent.STM.TMQueue (newTMQueueIO, tryReadTMQueue, writeTMQueu
 import Control.Exception (AsyncException(..), SomeException, fromException)
 import Control.Exception.Lifted (catch, finally)
 import Control.Lens.Operators ((%~), (.~))
-import Control.Monad ((>=>), mapM_)
+import Control.Monad ((>=>), join, mapM_)
 import Control.Monad.IO.Class (liftIO)
 import Data.Monoid ((<>))
 import Data.Text (Text)
@@ -89,12 +89,11 @@ threadFeelingTimer i tag dur tq = sequence_ [ setThreadType . FeelingTimer $ i
   where
     loop secs = getState >>= \ms -> do
         liftIO . threadDelay $ 1 * 10 ^ 6
-        tq |&| liftIO . atomically . tryReadTMQueue >=> \case
-          Just Nothing | secs >= dur -> do logHelper $ mkName ms <> " is expiring."
-                                           tweak $ mobTbl.ind i.feelingMap %~ (tag `M.delete`)
-                       | otherwise   -> loop . succ $ secs
-          Just (Just ResetTimer)     -> logHelper (mkName ms <> " is resetting.") >> loop 0
-          Nothing                    -> unit
+        tq |&| fmap join . liftIO . atomically . tryReadTMQueue >=> \case
+          Nothing | secs >= dur -> do logHelper $ mkName ms <> " is expiring."
+                                      tweak $ mobTbl.ind i.feelingMap %~ (tag `M.delete`)
+                  | otherwise   -> loop . succ $ secs
+          Just ResetTimer       -> logHelper (mkName ms <> " is resetting.") >> loop 0
     exHandler :: SomeException -> MudStack ()
     exHandler e = getState >>= \ms -> case fromException e of
       Just ThreadKilled  -> logHelper . prd $ "killed " <> mkName ms

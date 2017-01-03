@@ -74,7 +74,7 @@ import Control.Concurrent (threadDelay)
 import Control.Exception.Lifted (catch, try)
 import Control.Lens (_1, _2, _3, _4, _5, at, both, each, to, view, views)
 import Control.Lens.Operators ((%~), (&), (-~), (.~), (<>~), (?~), (^.))
-import Control.Monad ((>=>), foldM, forM, forM_, guard, mplus, unless, when)
+import Control.Monad ((>=>), foldM, forM, forM_, guard, join, mplus, unless, when)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (asks)
 import Crypto.BCrypt (validatePassword)
@@ -2371,16 +2371,14 @@ password p = withoutArgs password p
 interpCurrPW :: HasCallStack => Interp
 interpCurrPW cn (WithArgs i mq cols as)
   | ()# cn || ()!# as = pwSorryHelper i mq cols sorryInterpPW
-  | otherwise         = (getState >>=) $ withDbExHandler "interpCurrPW" . liftIO . lookupPW . getSing i >=> \case
-    Nothing        -> dbError mq cols
-    Just (Just pw) -> if uncurry validatePassword ((pw, cn) & both %~ T.encodeUtf8)
-      then do
-          blankLine        mq
-          multiWrapSend1Nl mq cols . pwMsg $ "Please choose a new password."
-          sendPrompt       mq "New password:"
-          setInterp i . Just . interpNewPW $ pw
+  | otherwise         = (getState >>=) $ fmap join . withDbExHandler "interpCurrPW" . liftIO . lookupPW . getSing i >=> \case
+    Nothing -> pwSorryHelper i mq cols sorryInterpPW
+    Just pw -> if uncurry validatePassword ((pw, cn) & both %~ T.encodeUtf8)
+      then do blankLine        mq
+              multiWrapSend1Nl mq cols . pwMsg $ "Please choose a new password."
+              sendPrompt       mq "New password:"
+              setInterp i . Just . interpNewPW $ pw
       else pwSorryHelper i mq cols sorryInterpPW
-    Just Nothing -> pwSorryHelper i mq cols sorryInterpPW
 interpCurrPW _ p = patternMatchFail "interpCurrPW" . showText $ p
 
 

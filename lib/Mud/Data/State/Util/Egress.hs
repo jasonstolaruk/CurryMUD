@@ -80,7 +80,7 @@ handleEgress i mq isDropped = egressHelper `finally` writeMsg mq FinishedEgress
     helper now (s, hoc, spirit) ms =
         let (ms', bs, logMsgs) = peepHelper i ms s spirit
             ms'' | hoc         = ms'
-                 | otherwise   = compose ms' [ set (plaTbl.ind i.disconnectTime) . Just $ now
+                 | otherwise   = compose ms' [ plaTbl.ind i.disconnectTime ?~ now
                                              , updateHostMap i s now
                                              , possessHelper i
                                              , leaveParty    i

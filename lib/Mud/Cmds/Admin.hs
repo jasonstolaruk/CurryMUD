@@ -38,14 +38,14 @@ import Mud.TheWorld.Zones.AdminZoneIds (iLoggedOut, iRoot, iWelcome)
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
 import Mud.Util.List
-import Mud.Util.Misc hiding (blowUp, patternMatchFail)
+import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Operators
 import Mud.Util.Padding
 import Mud.Util.Quoting
 import Mud.Util.Text
 import Mud.Util.Wrapping
 import qualified Mud.Misc.Logging as L (logIOEx, logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut, massLogPla)
-import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
+import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Arrow ((***), (&&&), first, second)
 import Control.Concurrent.Async (asyncThreadId)
@@ -55,7 +55,7 @@ import Control.Exception (IOException)
 import Control.Exception.Lifted (catch, try)
 import Control.Lens (_1, _2, _3, _4, _5, at, both, each, to, view, views)
 import Control.Lens.Operators ((%~), (&), (.~), (<>~), (?~), (^.))
-import Control.Monad ((<=<), (>=>), forM, forM_, unless, when)
+import Control.Monad ((<=<), (>=>), forM, forM_, join, unless, when)
 import Control.Monad.IO.Class (liftIO)
 import Crypto.BCrypt (validatePassword)
 import Data.Aeson (eitherDecode)
@@ -89,10 +89,6 @@ import Text.Regex.Posix ((=~))
 
 
 -----
-
-
-blowUp :: BlowUp a
-blowUp = U.blowUp "Mud.Cmds.Admin"
 
 
 patternMatchFail :: (Show a) => PatternMatchFail a b
@@ -1193,17 +1189,15 @@ adminPassword p@(WithTarget i mq cols target pw)
   | length (T.words pw) > 1 = advise p [ prefixAdminCmd "password" ] adviceAPasswordExcessArgs
   | otherwise               = getState >>= \ms ->
       let SingleTarget { .. } = mkSingleTarget mq cols target "The PC name of the player whose password you wish to change"
-          changePW            = (withDbExHandler fn . liftIO . lookupPW $ strippedTarget) >>= \case
-            Nothing           -> dbError mq cols
-            Just (Just oldPW) ->
-                let msg      = T.concat [ getSing i ms, " is changing ", strippedTarget, "'s password" ]
-                    oldPwMsg = prd . spcL $ parensQuote ("was " <> dblQuote oldPW)
-                in do logPla fn i . T.concat $ [ "changing ", strippedTarget, "'s password", oldPwMsg ]
-                      logNotice fn $ msg <> oldPwMsg
-                      bcastOtherAdmins i . prd $ msg
-                      withDbExHandler_ fn . insertDbTblUnPw . UnPwRec strippedTarget $ pw
-                      sendFun $ strippedTarget <> "'s password has been changed."
-            Just Nothing -> blowUp fn "password not found in database" strippedTarget
+          changePW            = (fmap join . withDbExHandler fn . liftIO . lookupPW $ strippedTarget) >>= \case
+            Nothing    -> dbError mq cols
+            Just oldPW -> let msg      = T.concat [ getSing i ms, " is changing ", strippedTarget, "'s password" ]
+                              oldPwMsg = prd . spcL $ parensQuote ("was " <> dblQuote oldPW)
+                          in do logPla fn i . T.concat $ [ "changing ", strippedTarget, "'s password", oldPwMsg ]
+                                logNotice fn $ msg <> oldPwMsg
+                                bcastOtherAdmins i . prd $ msg
+                                withDbExHandler_ fn . insertDbTblUnPw . UnPwRec strippedTarget $ pw
+                                sendFun $ strippedTarget <> "'s password has been changed."
       in if
         | not . inRange (minPwLen, maxPwLen) . T.length $ pw -> sendFun sorryInterpNewPwLen
         | helper isUpper                                     -> sendFun sorryInterpNewPwUpper

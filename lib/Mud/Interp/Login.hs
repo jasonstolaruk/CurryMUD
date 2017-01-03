@@ -667,9 +667,9 @@ interpPW times targetSing targetId targetPla cn params@(WithArgs i mq cols as) =
     let oldSing = getSing i ms
     send mq telnetShowInput >> if ()# cn || ()!# as
       then sorryPW oldSing
-      else (withDbExHandler "interpPW" . liftIO . lookupPW $ targetSing) >>= \case
-        Nothing        -> dbError mq cols
-        Just (Just pw) -> if uncurry validatePassword ((pw, cn) & both %~ T.encodeUtf8)
+      else (liftM join . withDbExHandler "interpPW" . liftIO . lookupPW $ targetSing) >>= \case
+        Nothing -> sorryPW oldSing
+        Just pw -> if uncurry validatePassword ((pw, cn) & both %~ T.encodeUtf8)
           then let mkMsg t = T.concat [ oldSing
                                       , " has entered the correct password for "
                                       , targetSing
@@ -684,7 +684,6 @@ interpPW times targetSing targetId targetPla cn params@(WithArgs i mq cols as) =
                                              Just (Any True ) -> handleBanned    ms oldSing
                                              Just (Any False) -> handleNotBanned ms oldSing
           else sorryPW oldSing
-        Just Nothing -> sorryPW oldSing
   where
     sorryPW oldSing            = let msg = T.concat [ oldSing, " has entered an incorrect password for ", targetSing, "." ]
                                  in sorry oldSing sorryInterpPW msg
