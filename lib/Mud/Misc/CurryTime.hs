@@ -7,7 +7,7 @@ import Mud.Util.Operators
 import Mud.Util.Quoting
 import Mud.Util.Text
 
-import Data.Monoid ((<>))
+import Data.Monoid (Sum(..), (<>))
 import Data.Text (Text)
 import Data.Time (UTCTime(..), diffUTCTime, fromGregorian, getCurrentTime)
 import Prelude hiding (min)
@@ -72,12 +72,35 @@ curryEpoch :: UTCTime
 curryEpoch = UTCTime (fromGregorian 2017 1 1) 0
 
 
-getSecsFromCurryEpoch :: IO Sec
-getSecsFromCurryEpoch = round . (`diffUTCTime` curryEpoch) <$> getCurrentTime
+-----
 
 
 getCurryTime :: IO CurryTime
 getCurryTime = secsToCurryTime <$> getSecsFromCurryEpoch
+
+
+-----
+
+
+getSecsFromCurryEpoch :: IO Sec
+getSecsFromCurryEpoch = round . (`diffUTCTime` curryEpoch) <$> getCurrentTime
+
+
+-----
+
+
+ppMonthForMonthNum :: Day -> Text
+ppMonthForMonthNum = pp . (toEnum :: Int -> CurryMonth) . pred
+
+
+-----
+
+
+ppWeekdayForDayOfWeek :: Day -> Text
+ppWeekdayForDayOfWeek = pp . (toEnum :: Int -> CurryWeekday) . pred
+
+
+-----
 
 
 secsToCurryTime :: Sec -> CurryTime
@@ -100,6 +123,28 @@ secsToCurryTime x = let years      = x `div` currySecsInYear
                     in CurryTime year month week dayOfMonth dayOfWeek hour min sec
 
 
+-----
+
+
+showElapsedCurryTime :: UTCTime -> UTCTime -> Text
+showElapsedCurryTime a b = let CurryTime { .. } = secsToCurryTime . round $ a `diffUTCTime` b
+                               f t x            = Sum x |!| (showText x <> spcL t <> sOnNon1 x)
+                               ts               = [ f "year"         $ curryYear - initCurryYear
+                                                  , f "month" . pred $ curryMonth
+                                                  , f "week"  . pred $ curryWeek
+                                                  , f "day"   . pred $ curryDayOfMonth
+                                                  , f "hour"           curryHour
+                                                  , f "minute"         curryMin ]
+                           in case reverse . dropBlanks $ ts of []       -> ""
+                                                                [x]      -> x
+                                                                [y, x]   -> quoteWith' (x, y) . spaced $ "and"
+                                                                (x:rest) -> commas . reverse $ "and " <> x : rest
+
+
+
+-----
+
+
 showCurryTime :: CurryTime -> [Text]
 showCurryTime CurryTime { .. } = [ "Year:         " <> showText  curryYear
                                  , "Month:        " <> mkOrdinal curryMonth
@@ -111,11 +156,3 @@ showCurryTime CurryTime { .. } = [ "Year:         " <> showText  curryYear
                                  , "Sec:          " <> showText  currySec ]
   where
     helper f = (|<>|) <$> mkOrdinal <*> parensQuote . f
-
-
-ppMonthForMonthNum :: Day -> Text
-ppMonthForMonthNum = pp . (toEnum :: Int -> CurryMonth) . pred
-
-
-ppWeekdayForDayOfWeek :: Day -> Text
-ppWeekdayForDayOfWeek = pp . (toEnum :: Int -> CurryWeekday) . pred

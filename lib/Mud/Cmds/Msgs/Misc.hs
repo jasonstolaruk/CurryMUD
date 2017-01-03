@@ -276,6 +276,10 @@ rulesMsg =
     lSpcs <> "Please be aware that player activity is automatically logged by the system. Furthermore, administrators have the ability to actively monitor player activity with the express purpose of 1) ensuring that players are playing by the rules, and 2) tracking down bugs. Administrators promise to maintain player privacy as much as possible."
 
 
+sleepMsg :: Text
+sleepMsg = thrice prd "You go to sleep"
+
+
 spiritDetachMsg :: Text
 spiritDetachMsg = "Your spirit detaches from your dead body!"
 

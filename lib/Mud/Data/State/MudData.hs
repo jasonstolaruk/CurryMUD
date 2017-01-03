@@ -845,6 +845,7 @@ type SkillPts = Int
 -- Has a PC and random names and telepathic links.
 data Pla = Pla { _currHostName   :: HostName
                , _connectTime    :: Maybe UTCTime
+               , _loginTime      :: Maybe UTCTime
                , _disconnectTime :: Maybe UTCTime
                , _plaFlags       :: Flags
                , _columns        :: Int
@@ -889,6 +890,7 @@ instance ToJSON   Pla where toJSON    = plaToJSON
 plaToJSON :: Pla -> Value
 plaToJSON Pla { .. } = object [ "currHostName"   .= _currHostName
                               , "connectTime"    .= _connectTime
+                              , "loginTime"      .= _loginTime
                               , "disconnectTime" .= _disconnectTime
                               , "plaFlags"       .= _plaFlags
                               , "columns"        .= _columns
@@ -901,6 +903,7 @@ plaToJSON Pla { .. } = object [ "currHostName"   .= _currHostName
 jsonToPla :: Value -> Parser Pla
 jsonToPla (Object o) = Pla <$> o .: "currHostName"
                            <*> o .: "connectTime"
+                           <*> o .: "loginTime"
                            <*> o .: "disconnectTime"
                            <*> o .: "plaFlags"
                            <*> o .: "columns"

@@ -56,6 +56,7 @@ module Mud.Data.State.Util.Get ( getActiveEffects
                                , getKnownLangs
                                , getLastRmId
                                , getLinked
+                               , getLoginTime
                                , getLogoutRmId
                                , getLogQueue
                                , getLvl
@@ -580,6 +581,13 @@ getLastRmId i = view lastRmId . getMob i
 
 getLinked :: HasCallStack => Id -> MudState -> [Sing]
 getLinked = onPC (view linked) []
+
+
+-----
+
+
+getLoginTime :: HasCallStack => Id -> MudState -> Maybe UTCTime
+getLoginTime i = view loginTime . getPla i
 
 
 -----

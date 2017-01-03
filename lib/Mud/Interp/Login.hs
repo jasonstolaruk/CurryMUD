@@ -21,6 +21,7 @@ import Mud.Interp.Misc
 import Mud.Interp.MultiLine
 import Mud.Interp.Pause
 import Mud.Misc.ANSI
+import Mud.Misc.CurryTime
 import Mud.Misc.Database
 import Mud.Misc.Logging hiding (logNotice, logPla)
 import Mud.Misc.Misc
@@ -59,7 +60,7 @@ import Data.List (delete, find, foldl', intersperse, partition)
 import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>), Any(..))
 import Data.Text (Text)
-import Data.Time (UTCTime)
+import Data.Time (UTCTime, getCurrentTime)
 import GHC.Stack (HasCallStack)
 import Network (HostName)
 import Prelude hiding (pi)
@@ -659,6 +660,7 @@ newXps _ v _ = patternMatchFail "newXps" . showText . V.length $ v
 -- ==================================================
 
 
+-- TODO: When reconnecting after entering UN: "SQLite3 returned ErrorBusy while attempting to perform prepare "select * from ban_host": database is locked".
 -- Returning player.
 interpPW :: HasCallStack => Int -> Sing -> Id -> Pla -> Interp
 interpPW times targetSing targetId targetPla cn params@(WithArgs i mq cols as) = getState >>= \ms -> do
@@ -770,39 +772,47 @@ logIn newId ms oldSing newHost newTime originId = peepNewId . movePC $ adoptNewI
 
 
 handleLogin :: HasCallStack => NewCharBundle -> Bool -> ActionParams -> MudStack ()
-handleLogin (NewCharBundle oldSing s _) isNew params@ActionParams { .. } = do greet
-                                                                              showMotd plaMsgQueue plaCols
-                                                                              showDate plaMsgQueue plaCols
-                                                                              (ms, p) <- showRetainedMsgs
-                                                                              look params
-                                                                              sendDfltPrompt plaMsgQueue myId
-                                                                              sendGmcpRmInfo (Just dfltZoom) myId ms
-                                                                              when (getPlaFlag IsAdmin p) stopInacTimer
-                                                                              runDigesterAsync     myId
-                                                                              runRegenAsync        myId
-                                                                              restartPausedEffects myId
-                                                                              notifyArrival ms
+handleLogin (NewCharBundle oldSing s _) isNew params@ActionParams { .. } = do
+    logPla "handleLogin" myId "handling login."
+    setLoginTime
+    ms <- getState
+    sendGmcpRmInfo (Just dfltZoom) myId ms
+    when (isAdminId myId ms) stopInacTimer
+    mapM_ (myId |&|) [ runDigesterAsync, runRegenAsync, restartPausedEffects ]
+    notifyArrival
+    greet
+    ((>>) <$> uncurry showMotd <*> uncurry showDate) (plaMsgQueue, plaCols)
+    showElapsedTime
+    showRetainedMsgs
+    look params
+    sendDfltPrompt plaMsgQueue myId
   where
+    setLoginTime = liftIO getCurrentTime >>= \ct -> do
+        logPla "handleLogin setLoginTime" myId . prd $ "setting login time to " <> showText ct
+        tweak $ plaTbl.ind myId.loginTime ?~ ct
     greet = wrapSend plaMsgQueue plaCols $ if | s == "Root" -> colorWith zingColor sudoMsg
                                               | isNew       -> "Welcome to CurryMUD, "   <> s <> "!"
                                               | otherwise   -> nlPrefix "Welcome back, " <> s <> "!"
-    showRetainedMsgs = helper |&| modifyState >=> \(ms, msgs, p) -> do
-        unless (()# msgs) $ do
-            logPla "handleLogin showRetainedMsgs" myId "showing retained messages."
-            let (fromPpl, others) = first (map T.tail) . partition ((== fromPersonMarker) . T.head) $ msgs
-            others  |#| multiWrapSend plaMsgQueue plaCols . intersperse ""
-            fromPpl |#| let m   = "message" <> case fromPpl of [_] -> ""
-                                                               _   -> "s"
-                            msg = "You missed the following " <> m <> " while you were away:"
-                        in multiWrapSend plaMsgQueue plaCols . (msg :)
-        return (ms, p)
-    helper ms = let p   = getPla myId ms
-                    p'  = p  & retainedMsgs    .~ []
-                    ms' = ms & plaTbl.ind myId .~ p'
-                in (ms', (ms', p^.retainedMsgs, p'))
-    stopInacTimer    = do logPla "handleLogin stopInacTimer" myId "stopping the inactivity timer."
-                          writeMsg plaMsgQueue InacStop
-    notifyArrival ms = do bcastOtherAdmins myId $ if isNew
-                            then T.concat [ s, " has arrived in CurryMUD ", parensQuote ("was " <> oldSing), "." ]
-                            else T.concat [ oldSing, " has logged in as ", s, "." ]
-                          bcastOthersInRm  myId . nlnl . notifyArrivalMsg . mkSerializedNonStdDesig myId ms s A $ DoCap
+    showElapsedTime = getState >>= \ms -> case (getLoginTime `fanUncurry` getDisconnectTime) (myId, ms) of
+      (Just lt, Just dt) -> let f t = "It's been " <> t <> " since you went to sleep."
+                            in showElapsedCurryTime lt dt |#| wrapSend plaMsgQueue plaCols . f
+      _                  -> unit
+    showRetainedMsgs = helper |&| modifyState >=> \msgs -> unless (()# msgs) $ do
+       logPla "handleLogin showRetainedMsgs" myId "showing retained messages."
+       let (fromPpl, others) = first (map T.tail) . partition ((== fromPersonMarker) . T.head) $ msgs
+       others  |#| multiWrapSend plaMsgQueue plaCols . intersperse ""
+       fromPpl |#| let m   = "message" <> case fromPpl of [_] -> ""
+                                                          _   -> "s"
+                       msg = "You missed the following " <> m <> " while you were away:"
+                   in multiWrapSend plaMsgQueue plaCols . (msg :)
+    helper ms     = let p   = getPla myId ms
+                        p'  = p  & retainedMsgs    .~ []
+                        ms' = ms & plaTbl.ind myId .~ p'
+                    in (ms', p^.retainedMsgs)
+    stopInacTimer = do logPla "handleLogin stopInacTimer" myId "stopping the inactivity timer."
+                       writeMsg plaMsgQueue InacStop
+    notifyArrival = getState >>= \ms -> do
+        bcastOtherAdmins myId $ if isNew
+          then T.concat [ s, " has arrived in CurryMUD ", parensQuote ("was " <> oldSing), "." ]
+          else T.concat [ oldSing, " has logged in as ", s, "." ]
+        bcastOthersInRm myId . nlnl . notifyArrivalMsg . mkSerializedNonStdDesig myId ms s A $ DoCap

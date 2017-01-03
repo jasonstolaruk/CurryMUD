@@ -827,6 +827,7 @@ examinePla :: HasCallStack => ExamineHelper
 examinePla i ms = let p = getPla i ms
                   in [ "Host: "              <> p^.currHostName   .to (noneOnNull . T.pack)
                      , "Connect time: "      <> p^.connectTime    .to (maybe none showText)
+                     , "Login time: "        <> p^.loginTime      .to (maybe none showText)
                      , "Disconnect time: "   <> p^.disconnectTime .to (maybe none showText)
                      , "Player flags: "      <> (commas . dropBlanks . descFlags $ p)
                      , "Columns: "           <> p^.columns     .to showText

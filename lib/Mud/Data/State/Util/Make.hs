@@ -197,6 +197,7 @@ data PlaTemplate = PlaTemplate { ptPlaFlags   :: Flags
 mkPla :: PlaTemplate -> Pla
 mkPla PlaTemplate { .. } = Pla { _currHostName   = ""
                                , _connectTime    = Nothing
+                               , _loginTime      = Nothing
                                , _disconnectTime = Nothing
                                , _plaFlags       = ptPlaFlags
                                , _columns        = 80

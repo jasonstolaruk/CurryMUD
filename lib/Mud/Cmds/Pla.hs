@@ -2477,9 +2477,9 @@ question p = patternMatchFail "question" . showText $ p
 
 
 quit :: HasCallStack => ActionFun
-quit (NoArgs' i mq) = logPlaExec "quit" i >> mIf (isSpiritId i <$> getState)
+quit (NoArgs i mq cols) = logPlaExec "quit" i >> mIf (isSpiritId i <$> getState)
     (throwWaitSpiritTimer i)
-    (writeMsg mq Quit)
+    (wrapSend mq cols sleepMsg >> writeMsg mq Quit)
 quit ActionParams { plaMsgQueue, plaCols } = wrapSend plaMsgQueue plaCols adviceQuitExcessArgs
 
 

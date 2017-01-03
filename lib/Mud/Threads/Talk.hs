@@ -140,6 +140,7 @@ adHoc mq host = do
                        , _skillPts   = 0 }
             pla  = Pla { _currHostName   = host
                        , _connectTime    = Just ct
+                       , _loginTime      = Nothing
                        , _disconnectTime = Nothing
                        , _plaFlags       = initPlaFlags
                        , _columns        = 80
