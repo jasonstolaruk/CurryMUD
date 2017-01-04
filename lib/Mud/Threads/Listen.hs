@@ -6,6 +6,7 @@ import Mud.Cmds.Msgs.Misc
 import Mud.Cmds.Pla
 import Mud.Cmds.Util.Misc
 import Mud.Data.State.MudData
+import Mud.Data.State.Util.Locks
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Misc.Database
@@ -35,11 +36,9 @@ import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TMVar (takeTMVar)
 import Control.Exception (AsyncException(..), IOException, SomeException, fromException)
 import Control.Exception.Lifted (catch, finally, handle)
-import Control.Lens (view)
 import Control.Lens.Operators ((%~), (&))
 import Control.Monad (forever, void)
 import Control.Monad.IO.Class (liftIO)
-import Control.Monad.Reader (asks)
 import Data.Int (Int64)
 import Data.Monoid ((<>), Any(..), getSum)
 import Data.Text (Text)
@@ -128,7 +127,7 @@ listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed 
     cleanUp auxAsyncs sock = do logNotice "listen cleanUp" "closing the socket."
                                 liftIO . sClose $ sock
                                 mapM_ throwWait auxAsyncs
-                                liftIO . atomically . void . takeTMVar =<< asks (view $ locks.persistLock)
+                                liftIO . atomically . void . takeTMVar =<< getLock persistLock
     halt = liftIO . T.putStrLn $ loadWorldErrorMsg
 
 

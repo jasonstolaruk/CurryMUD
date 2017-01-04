@@ -150,7 +150,7 @@ logRotationFlagger q = forever $ threadDelay (logRotationDelay * 10 ^ 6) >> atom
 initPlaLog :: Id -> Sing -> MudStack ()
 initPlaLog i n@(T.unpack -> n') = do
     dir       <- liftIO . mkMudFilePath $ logDirFun
-    logExLock <- asks . view $ locks.loggingExLock
+    logExLock <- getLock loggingExLock
     q         <- liftIO newTQueueIO
     a         <- liftIO . spawnLogger (dir </> n' <.> "log") INFO ("currymud." <> n) infoM q $ logExLock
     tweak $ plaLogTbl.ind i .~ (a, q)

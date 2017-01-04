@@ -58,10 +58,8 @@ import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
 import Mud.Util.Misc
 
-import Control.Lens (view)
 import Control.Monad (forM_, when)
 import Control.Monad.IO.Class (liftIO)
-import Control.Monad.Reader (asks)
 import Crypto.BCrypt (fastBcryptHashingPolicy, hashPasswordUsingPolicy)
 import Data.Monoid ((<>))
 import Data.Text (Text)
@@ -294,7 +292,7 @@ instance ToRow UnPwRec where
 
 
 dbOperation :: IO a -> MudStack a
-dbOperation f = asks (view $ locks.dbLock) >>= \lock -> liftIO (withLock lock f)
+dbOperation f = liftIO . flip withLock f =<< getLock dbLock
 
 
 onDbFile :: (Connection -> IO a) -> IO a

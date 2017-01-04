@@ -8,6 +8,7 @@ import Mud.Cmds.Msgs.Misc
 import Mud.Data.Misc
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
+import Mud.Data.State.Util.Locks
 import Mud.Data.State.Util.Misc
 import Mud.Misc.EffectFuns
 import Mud.Misc.FeelingFuns
@@ -25,10 +26,8 @@ import Mud.Util.Operators
 import Mud.Util.Text
 import qualified Mud.Misc.Logging as L (logErrorMsg, logNotice)
 
-import Control.Concurrent.STM.TMVar (newTMVarIO)
 import Control.Lens (ASetter, views)
 import Control.Lens.Operators ((%~), (&), (.~), (?~), (^.))
-import Control.Monad (replicateM)
 import Control.Monad.IO.Class (liftIO)
 import Data.Aeson (FromJSON, eitherDecode)
 import Data.IORef (newIORef)
@@ -59,7 +58,7 @@ logNotice = L.logNotice "Mud.TheWorld.TheWorld"
 
 
 initMudData :: HasCallStack => ShouldLog -> IO MudData
-initMudData shouldLog = do [ databaseLock, logLock, persLock ] <- replicateM 3 . liftIO . newTMVarIO $ Done
+initMudData shouldLog = do [ databaseLock, logLock, persLock ] <- mkLocks
                            (errorLogService, noticeLogService) <- initLogging shouldLog . Just $ logLock
                            genIO   <- createSystemRandom
                            start   <- getTime Monotonic

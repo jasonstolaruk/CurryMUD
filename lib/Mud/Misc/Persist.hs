@@ -19,7 +19,6 @@ import Control.Lens (views)
 import Control.Lens.Operators ((^.))
 import Control.Monad (when)
 import Control.Monad.IO.Class (liftIO)
-import Control.Monad.Reader (ask)
 import Control.Monad.Trans.Resource (runResourceT)
 import Data.Aeson (encode, toJSON)
 import Data.Conduit (($$), (=$), yield)
@@ -49,9 +48,8 @@ logNotice = L.logNotice "Mud.Misc.Persist"
 
 persist :: MudStack ()
 persist = do logNotice "persist" "persisting the world."
-             (ask >>= mkBindings >>= liftIO . uncurry persistHelper) `catch` persistExHandler
-  where
-    mkBindings md = (md^.locks.persistLock, ) <$> getState
+             pair <- (,) <$> getLock persistLock <*> getState
+             liftIO (uncurry persistHelper pair) `catch` persistExHandler
 
 
 persistHelper :: Lock -> MudState -> IO ()
