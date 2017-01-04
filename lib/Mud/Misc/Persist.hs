@@ -4,13 +4,12 @@ module Mud.Misc.Persist (persist) where
 
 import Mud.Cmds.Msgs.Misc
 import Mud.Data.State.MudData
+import Mud.Data.State.Util.Locks
 import Mud.Data.State.Util.Misc
-import Mud.Misc.Misc
 import Mud.Threads.Misc
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
 import Mud.Util.Misc
-import Mud.Util.Operators
 import qualified Mud.Misc.Logging as L (logExMsg, logNotice)
 
 import Control.Concurrent.Async (wait, withAsync)
@@ -18,12 +17,12 @@ import Control.Exception (SomeException)
 import Control.Exception.Lifted (catch)
 import Control.Lens (views)
 import Control.Lens.Operators ((^.))
-import Control.Monad ((>=>), when)
+import Control.Monad (when)
 import Control.Monad.IO.Class (liftIO)
+import Control.Monad.Reader (ask)
 import Control.Monad.Trans.Resource (runResourceT)
 import Data.Aeson (encode, toJSON)
 import Data.Conduit (($$), (=$), yield)
-import Data.IORef (readIORef)
 import Data.List (sort)
 import Data.Text (Text)
 import Data.Tuple (swap)
@@ -50,9 +49,9 @@ logNotice = L.logNotice "Mud.Misc.Persist"
 
 persist :: MudStack ()
 persist = do logNotice "persist" "persisting the world."
-             (mkBindings |&| onEnv >=> liftIO . uncurry persistHelper) `catch` persistExHandler
+             (ask >>= mkBindings >>= liftIO . uncurry persistHelper) `catch` persistExHandler
   where
-    mkBindings md = md^.mudStateIORef |&| liftIO . readIORef >=> return . (md^.locks.persistLock, )
+    mkBindings md = (md^.locks.persistLock, ) <$> getState
 
 
 persistHelper :: Lock -> MudState -> IO ()

@@ -666,7 +666,7 @@ interpPW times targetSing cn params@(WithArgs i mq cols as) = getState >>= \ms -
         targetPla           = getPla targetId ms
     send mq telnetShowInput >> if ()# cn || ()!# as
       then sorryPW oldSing
-      else (fmap join . withDbExHandler "interpPW" . liftIO . lookupPW $ targetSing) >>= \case
+      else join <$> withDbExHandler "interpPW" (lookupPW targetSing) >>= \case
         Nothing -> sorryPW oldSing
         Just pw -> if uncurry validatePassword ((pw, cn) & both %~ T.encodeUtf8)
           then let mkMsg t = T.concat [ oldSing

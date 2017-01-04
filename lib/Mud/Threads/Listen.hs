@@ -39,6 +39,7 @@ import Control.Lens (view)
 import Control.Lens.Operators ((%~), (&))
 import Control.Monad (forever, void)
 import Control.Monad.IO.Class (liftIO)
+import Control.Monad.Reader (asks)
 import Data.Int (Int64)
 import Data.Monoid ((<>), Any(..), getSum)
 import Data.Text (Text)
@@ -102,7 +103,7 @@ listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed 
                                             , threadWorldPersister ]
                  (forever . loop $ sock) `finally` cleanUp auxAsyncs sock
     initialize = do logNotice "listen initialize" "creating database tables."
-                    liftIO createDbTbls `catch` dbExHandler "listen initialize"
+                    withDbExHandler_ "listen initialize" createDbTbls
                     startNpcServers
                     startNpcDigesters
                     startNpcRegens
@@ -127,7 +128,7 @@ listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed 
     cleanUp auxAsyncs sock = do logNotice "listen cleanUp" "closing the socket."
                                 liftIO . sClose $ sock
                                 mapM_ throwWait auxAsyncs
-                                onEnv $ liftIO . atomically . void . takeTMVar . view (locks.persistLock)
+                                liftIO . atomically . void . takeTMVar =<< asks (view $ locks.persistLock)
     halt = liftIO . T.putStrLn $ loadWorldErrorMsg
 
 

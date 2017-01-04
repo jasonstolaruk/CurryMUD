@@ -40,7 +40,7 @@ import Control.Lens (at, views)
 import Control.Lens.Operators ((?~))
 import Control.Monad (unless, void)
 import Control.Monad.IO.Class (liftIO)
-import Control.Monad.Reader (runReaderT)
+import Control.Monad.Reader (ask, runReaderT)
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import Data.Typeable (Typeable)
@@ -130,7 +130,7 @@ findNpcIds = views typeTbl (IM.keys . IM.filter (== NpcType))
 
 onNewThread :: Fun -> MudStack () -- Generally speaking, if you do anything on a new thread requiring a player to be
                                   -- logged in, you should first check that the player is in fact still logged in.
-onNewThread f = onEnv $ liftIO . void . forkIO . runReaderT f
+onNewThread f = liftIO . void . forkIO . runReaderT f =<< ask
 
 
 -----
@@ -161,7 +161,7 @@ racer md a b = liftIO . race_ (runReaderT a md) . runReaderT b $ md
 
 
 runAsync :: Fun -> MudStack (Async ())
-runAsync f = onEnv $ liftIO . async . runReaderT f
+runAsync f = liftIO . async . runReaderT f =<< ask
 
 
 -----

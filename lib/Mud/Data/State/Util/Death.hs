@@ -193,7 +193,7 @@ spiritize i = do
     ((mq, cols), s, secs) <- ((,,) <$> uncurry getMsgQueueColumns
                                    <*> uncurry getSing
                                    <*> uncurry calcSpiritTime) . (i, ) <$> getState
-    (withDbExHandler "spiritize" . liftIO . lookupTeleNames $ s) >>= \case
+    withDbExHandler "spiritize" (lookupTeleNames s) >>= \case
       Nothing                    -> dbError mq cols
       Just (procOnlySings -> ss) -> modifyStateSeq $ \ms ->
           let triples    = [ (targetId, targetSing, isLoggedIn targetPla) | targetSing <- ss

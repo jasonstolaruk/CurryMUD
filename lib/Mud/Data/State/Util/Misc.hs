@@ -60,7 +60,6 @@ module Mud.Data.State.Util.Misc ( addToInv
                                 , mkUnknownPCEntName
                                 , modifyState
                                 , modifyStateSeq
-                                , onEnv
                                 , plurRace
                                 , procHooks
                                 , procQuoteChars
@@ -343,11 +342,7 @@ getRmActionFun n = views (rmActionFunTbl.at n) (fromMaybe oops)
 
 
 getState :: HasCallStack => MudStack MudState
-getState = onEnv $ liftIO . readIORef . view mudStateIORef
-
-
-onEnv :: HasCallStack => (MudData -> MudStack a) -> MudStack a
-onEnv = (ask >>=)
+getState = liftIO . readIORef =<< asks (view mudStateIORef)
 
 
 -----

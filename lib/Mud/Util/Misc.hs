@@ -144,7 +144,7 @@ blowUp :: Text -> BlowUp a
 blowUp modName funName msg t = error . T.unpack . T.concat $ [ modName, " ", funName, ": ", msg ] ++ (t |!| [ "; ", t ])
 
 
-compose :: (Foldable t) => a -> t (a -> a) -> a
+compose :: a -> [a -> a] -> a
 compose = foldr ($)
 
 

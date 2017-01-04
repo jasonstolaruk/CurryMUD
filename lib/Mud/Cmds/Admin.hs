@@ -1189,7 +1189,7 @@ adminPassword p@(WithTarget i mq cols target pw)
   | length (T.words pw) > 1 = advise p [ prefixAdminCmd "password" ] adviceAPasswordExcessArgs
   | otherwise               = getState >>= \ms ->
       let SingleTarget { .. } = mkSingleTarget mq cols target "The PC name of the player whose password you wish to change"
-          changePW            = (fmap join . withDbExHandler fn . liftIO . lookupPW $ strippedTarget) >>= \case
+          changePW            = join <$> withDbExHandler fn (lookupPW strippedTarget) >>= \case
             Nothing    -> dbError mq cols
             Just oldPW -> let msg      = T.concat [ getSing i ms, " is changing ", strippedTarget, "'s password" ]
                               oldPwMsg = prd . spcL $ parensQuote ("was " <> dblQuote oldPW)
