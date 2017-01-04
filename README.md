@@ -24,19 +24,19 @@ CurryMUD will have the following features:
 
 ## What I have so far
 
-* About 85 player commands, 50 administrator commands, and 60 commands for debugging purposes.
+* About 85 player commands, 50 administrator commands, and 60 commands for debugging purposes. :1234:
 * About 220 built-in emotes. :clap:
 * Help files for all existing non-debug commands. Help topics. :information_desk_person:
 * Commands have a consistent structure and a unique syntax for indicating target locations and quantities. :dart:
-* Unique commands, accessible only when a player is in a particular room, may be created.
-* The names of commands, as well as the names of the targets they act upon, may be abbreviated.
-* Logging.
+* Unique commands, accessible only when a player is in a particular room, may be created. :house_with_garden:
+* The names of commands, as well as the names of the targets they act upon, may be abbreviated. :ok:
+* Logging. :scroll:
 * ANSI color. :red_circle:
 * Character creation. :runner:
 * The virtual world is automatically persisted at regular intervals and at shutdown. :floppy_disk:
 * Systems for reporting bugs and typos. :bug:
 * Commands to aid in the process of resetting a forgotten password. :passport_control:
-* NPCs can execute commands, either from within code or via the ":as" administrator command.
+* NPCs can execute commands, either from within code or via the ":as" administrator command. :cool:
 * PCs can introduce themselves to each other. :bow:
 * PCs can "link" with each other so as to enable "tells." :couple_with_heart:
 * Question channel for OOC newbie Q&A. :question:
@@ -44,10 +44,10 @@ CurryMUD will have the following features:
 * Free-form emotes and built-in emotes may be used in "tells" and channel communications. :clap:
 * Functionality enabling one-on-one communication between players and administrators. :speech_balloon:
 * An in-game calendar. :calendar:
-* Weight and encumbrance.
+* Weight and encumbrance. :chart_with_downwards_trend:
 * Volume and container capacity. :school_satchel:
 * Vessels for containing liquids. Vessels may be filled and emptied. :wine_glass:
-* Players can interact with permanent room fixtures that are not listed in a room's inventory.
+* Players can interact with permanent room fixtures that are not listed in a room's inventory. :rice_scene:
 * Objects can be configured to automatically disappear when left on the ground for some time. :boom:
 * Smell and taste. Listen. :nose::tongue::ear:
 * Drinking. Digestion. :beer:
