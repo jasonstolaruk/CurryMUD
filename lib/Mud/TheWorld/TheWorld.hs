@@ -8,6 +8,7 @@ import Mud.Cmds.Msgs.Misc
 import Mud.Data.Misc
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
+import Mud.Data.State.Util.Locks
 import Mud.Data.State.Util.Misc
 import Mud.Misc.EffectFuns
 import Mud.Misc.FeelingFuns
@@ -25,10 +26,8 @@ import Mud.Util.Operators
 import Mud.Util.Text
 import qualified Mud.Misc.Logging as L (logErrorMsg, logNotice)
 
-import Control.Concurrent.STM.TMVar (newTMVarIO)
 import Control.Lens (ASetter, views)
 import Control.Lens.Operators ((%~), (&), (.~), (?~), (^.))
-import Control.Monad (replicateM)
 import Control.Monad.IO.Class (liftIO)
 import Data.Aeson (FromJSON, eitherDecode)
 import Data.IORef (newIORef)
@@ -59,8 +58,8 @@ logNotice = L.logNotice "Mud.TheWorld.TheWorld"
 
 
 initMudData :: HasCallStack => ShouldLog -> IO MudData
-initMudData shouldLog = do [ a, b, c ]                         <- replicateM 3 . liftIO . newTMVarIO $ Done
-                           (errorLogService, noticeLogService) <- initLogging shouldLog . Just $ b
+initMudData shouldLog = do [ databaseLock, logLock, persLock ] <- mkLocks
+                           (errorLogService, noticeLogService) <- initLogging shouldLog . Just $ logLock
                            genIO   <- createSystemRandom
                            start   <- getTime Monotonic
                            msIORef <- newIORef MudState { _activeEffectsTbl       = IM.empty
@@ -108,7 +107,7 @@ initMudData shouldLog = do [ a, b, c ]                         <- replicateM 3 .
                            return MudData { _errorLog      = errorLogService
                                           , _noticeLog     = noticeLogService
                                           , _gen           = genIO
-                                          , _locks         = Locks a b c
+                                          , _locks         = Locks databaseLock logLock persLock
                                           , _startTime     = start
                                           , _mudStateIORef = msIORef }
 
@@ -206,18 +205,16 @@ loadWorld dir = (</> dir) <$> liftIO (mkMudFilePath persistDirFun) >>= \path -> 
                                                  , loadTbl vesselTblFile              vesselTbl
                                                  , loadTbl wpnTblFile                 wpnTbl
                                                  , loadTbl writableTblFile            writableTbl ]
-    tweak $ \ms -> foldr removeAdHoc ms . getInv iWelcome $ ms
-    initActiveEffectsTbl
-    movePCs
+    tweak . flip compose $ [ movePCs, initActiveEffectsTbl, removeAdHocHelper ]
     return . and $ res
+  where
+    removeAdHocHelper ms = foldr removeAdHoc ms . getInv iWelcome $ ms
 
 
 loadEqTbl :: HasCallStack => FilePath -> MudStack Bool
-loadEqTbl ((</> eqTblFile) -> absolute) = do
-    json <- liftIO . B.readFile $ absolute
-    case eitherDecode json of
-      Left err -> sorry absolute err
-      Right (IM.map (M.fromList . map swap . IM.toList) -> tbl) -> tweak (eqTbl .~ tbl) >> return True
+loadEqTbl ((</> eqTblFile) -> absolute) = eitherDecode <$> liftIO (B.readFile absolute) >>= \case
+  Left err                                                  -> sorry absolute err
+  Right (IM.map (M.fromList . map swap . IM.toList) -> tbl) -> tweak (eqTbl .~ tbl) >> return True
 
 
 sorry :: HasCallStack => FilePath -> String -> MudStack Bool
@@ -225,23 +222,21 @@ sorry absolute (T.pack -> err) = logErrorMsg "sorry" (loadTblErrorMsg absolute e
 
 
 loadTbl :: (HasCallStack, FromJSON b) => FilePath -> ASetter MudState MudState a b -> FilePath -> MudStack Bool
-loadTbl tblFile lens path = let absolute = path </> tblFile in
-    eitherDecode <$> (liftIO . B.readFile $ absolute) >>= \case
-      Left  err -> sorry absolute err
-      Right tbl -> tweak (lens .~ tbl) >> return True
+loadTbl tblFile lens path = let absolute = path </> tblFile in eitherDecode <$> liftIO (B.readFile absolute) >>= \case
+  Left  err -> sorry absolute err
+  Right tbl -> tweak (lens .~ tbl) >> return True
 
 
-initActiveEffectsTbl :: HasCallStack => MudStack ()
-initActiveEffectsTbl = tweak $ \ms -> ms & activeEffectsTbl .~ IM.fromList [ (i, []) | i <- views entTbl IM.keys ms ]
+initActiveEffectsTbl :: HasCallStack => MudState -> MudState
+initActiveEffectsTbl ms = ms & activeEffectsTbl .~ IM.fromList [ (i, []) | i <- views entTbl IM.keys ms ]
 
 
-movePCs :: HasCallStack => MudStack ()
-movePCs = tweak $ \ms ->
-    let idsWithRmIds   = let pairs   = views mobTbl (IM.foldrWithKey f []) ms
-                             f i mob = onTrue (isPC i ms) ((i, mob^.rmId) :)
-                         in filter (((&&) <$> (/= iLoggedOut) <*> (/= iNecropolis)) . snd) pairs
-        helper (i, ri) = flip upd [ invTbl.ind ri           %~ (i `delete`)
-                                  , invTbl.ind iLoggedOut   %~ (i :)
-                                  , mobTbl.ind i.rmId       .~ iLoggedOut
-                                  , plaTbl.ind i.logoutRmId ?~ ri ]
-    in foldr helper ms idsWithRmIds
+movePCs :: HasCallStack => MudState -> MudState
+movePCs ms = let idsWithRmIds   | f     <- \i mob -> onTrue (isPC i ms) ((i, mob^.rmId) :)
+                                , pairs <- views mobTbl (IM.foldrWithKey f []) ms
+                                = filter (((&&) <$> (/= iLoggedOut) <*> (/= iNecropolis)) . snd) pairs
+                 helper (i, ri) = flip upd [ invTbl.ind ri           %~ (i `delete`)
+                                           , invTbl.ind iLoggedOut   %~ (i :)
+                                           , mobTbl.ind i.rmId       .~ iLoggedOut
+                                           , plaTbl.ind i.logoutRmId ?~ ri ]
+             in foldr helper ms idsWithRmIds

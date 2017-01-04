@@ -2192,7 +2192,7 @@ newChan   (WithArgs i mq cols (nub -> as)) = helper |&| modifyState >=> \(unzip 
     in do newChanNames |#| logPla "newChan" i . commas
           multiWrapSend mq cols msgs
           ts <- liftIO mkTimestamp
-          forM_ chanRecs $ \cr -> withDbExHandler_ "newChan" . insertDbTblChan $ (cr { dbTimestamp = ts } :: ChanRec)
+          forM_ chanRecs (\cr -> withDbExHandler_ "newChan" . insertDbTblChan $ (cr { dbTimestamp = ts } :: ChanRec))
   where
     helper ms = let s                              = getSing i ms
                     (ms', newChanNames, sorryMsgs) = foldl' (f s) (ms, [], []) as
@@ -2371,7 +2371,7 @@ password p = withoutArgs password p
 interpCurrPW :: HasCallStack => Interp
 interpCurrPW cn (WithArgs i mq cols as)
   | ()# cn || ()!# as = pwSorryHelper i mq cols sorryInterpPW
-  | otherwise         = (getState >>=) $ fmap join . withDbExHandler "interpCurrPW" . liftIO . lookupPW . getSing i >=> \case
+  | otherwise         = getState >>= fmap join . withDbExHandler "interpCurrPW" . lookupPW . getSing i >>= \case
     Nothing -> pwSorryHelper i mq cols sorryInterpPW
     Just pw -> if uncurry validatePassword ((pw, cn) & both %~ T.encodeUtf8)
       then do blankLine        mq

@@ -10,8 +10,7 @@ module Mud.Misc.Misc ( BothGramNos
                      , pluralize
                      , raceToLang
                      , renderLiqNoun
-                     , renderNoun
-                     , withLock ) where
+                     , renderNoun ) where
 
 import Mud.Data.Misc
 import Mud.Data.State.MudData
@@ -20,9 +19,6 @@ import Mud.Util.Text
 import Mud.Util.Token
 import Mud.Util.Wrapping
 
-import Control.Concurrent.STM (atomically)
-import Control.Concurrent.STM.TMVar (putTMVar, takeTMVar)
-import Control.Exception.Lifted (bracket)
 import Control.Lens (to)
 import Control.Lens.Operators ((^.))
 import Data.Maybe (catMaybes)
@@ -112,12 +108,3 @@ renderLiqNoun l f = l^.liqNoun.to (renderNoun f)
 renderNoun :: (Text -> Text) -> Noun -> Text
 renderNoun _ (Don'tArticle t) = t
 renderNoun f (DoArticle    t) = f t
-
-
------
-
-
-withLock :: Lock -> IO () -> IO ()
-withLock l f = bracket (atomically . takeTMVar $ l)
-                       (\Done -> atomically . putTMVar l $ Done)
-                       (\Done -> f)

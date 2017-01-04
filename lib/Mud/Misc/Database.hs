@@ -15,6 +15,7 @@ module Mud.Misc.Database ( AdminChanRec(..)
                          , countDbTblRecsQuestion
                          , countDbTblRecsTele
                          , createDbTbls
+                         , dbOperation
                          , DiscoverRec(..)
                          , getDbTblRecs
                          , insertDbTblAdminChan
@@ -52,11 +53,13 @@ module Mud.Misc.Database ( AdminChanRec(..)
                          , UnPwRec(..) ) where
 
 import Mud.Data.State.MudData
+import Mud.Data.State.Util.Locks
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
 import Mud.Util.Misc
 
 import Control.Monad (forM_, when)
+import Control.Monad.IO.Class (liftIO)
 import Crypto.BCrypt (fastBcryptHashingPolicy, hashPasswordUsingPolicy)
 import Data.Monoid ((<>))
 import Data.Text (Text)
@@ -67,6 +70,7 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 
 
+-- TODO: Move dicts to DB.
 data AdminChanRec   = AdminChanRec   { dbTimestamp   :: Text
                                      , dbName        :: Text
                                      , dbMsg         :: Text }
@@ -288,6 +292,10 @@ instance ToRow UnPwRec where
 -----
 
 
+dbOperation :: IO a -> MudStack a
+dbOperation f = liftIO . flip withLock f =<< getLock dbLock
+
+
 onDbFile :: (Connection -> IO a) -> IO a
 onDbFile f = flip withConnection f =<< mkMudFilePath dbFileFun
 
@@ -474,11 +482,7 @@ purgeDbTblTele = purgeHelper "tele"
 purgeHelper :: Text -> IO ()
 purgeHelper tblName = onDbFile $ \conn -> execute conn q x
   where
-    q = Query . T.concat $ [ "delete from "
-                           , tblName
-                           , " where id in (select id from "
-                           , tblName
-                           , " limit ?)" ]
+    q = Query . T.concat $ [ "delete from ", tblName, " where id in (select id from ", tblName, " limit ?)" ]
     x = Only noOfDbTblRecsToPurge
 
 
@@ -489,8 +493,8 @@ lookupPW :: Sing -> IO (Maybe Text)
 lookupPW s = onDbFile $ \conn -> f <$> query conn (Query "select pw from unpw where un = ?") (Only s)
   where
     f :: [Only Text] -> Maybe Text
-    f [] = Nothing
-    f xs = Just . fromOnly . head $ xs
+    f (x:_) = Just . fromOnly $ x
+    f _     = Nothing
 
 
 lookupTeleNames :: Sing -> IO [Only Text]

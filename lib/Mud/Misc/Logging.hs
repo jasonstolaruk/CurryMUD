@@ -22,9 +22,9 @@ import Mud.Data.Misc
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
+import Mud.Data.State.Util.Locks
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
-import Mud.Misc.Misc
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
 import Mud.Util.Misc hiding (blowUp, patternMatchFail)
@@ -150,7 +150,7 @@ logRotationFlagger q = forever $ threadDelay (logRotationDelay * 10 ^ 6) >> atom
 initPlaLog :: Id -> Sing -> MudStack ()
 initPlaLog i n@(T.unpack -> n') = do
     dir       <- liftIO . mkMudFilePath $ logDirFun
-    logExLock <- onEnv $ views (locks.loggingExLock) return
+    logExLock <- getLock loggingExLock
     q         <- liftIO newTQueueIO
     a         <- liftIO . spawnLogger (dir </> n' <.> "log") INFO ("currymud." <> n) infoM q $ logExLock
     tweak $ plaLogTbl.ind i .~ (a, q)
@@ -197,13 +197,13 @@ registerMsg msg = flip writeLog (LogMsg msg)
 
 
 logNotice :: Text -> Text -> Text -> MudStack ()
-logNotice modName (dblQuote -> funName) msg = onEnv $ maybeVoid (helper . snd) . view noticeLog
+logNotice modName (dblQuote -> funName) msg = maybeVoid (helper . snd) =<< asks (view noticeLog)
   where
     helper = registerMsg (T.concat [ modName, " ", funName, ": ", msg ])
 
 
 logError :: Text -> MudStack ()
-logError msg = onEnv $ maybeVoid (registerMsg msg . snd) . view errorLog
+logError msg = maybeVoid (registerMsg msg . snd) =<< asks (view errorLog)
 
 
 logErrorMsg :: Text -> Text -> Text -> MudStack ()

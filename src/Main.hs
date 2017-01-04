@@ -29,6 +29,7 @@ import System.Environment (getEnv, getProgName)
 import System.Remote.Monitoring (forkServer)
 
 
+-- TODO: Get most recent dictionaries from FreeBSD 11.
 main :: IO ()
 main = mkMudFilePath mudDirFun >>= \dir ->
     let stop = T.putStrLn $ "The " <> dblQuote (T.pack dir) <> " directory does not exist; aborting."

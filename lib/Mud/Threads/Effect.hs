@@ -29,6 +29,7 @@ import Control.Lens (view, views)
 import Control.Lens.Operators ((%~), (&), (.~), (<>~), (?~))
 import Control.Monad ((>=>), forM_, unless)
 import Control.Monad.IO.Class (liftIO)
+import Control.Monad.Reader (ask)
 import Data.IORef (newIORef, readIORef)
 import Data.Monoid ((<>))
 import Data.Text (Text)
@@ -68,7 +69,7 @@ startEffectHelper i e@(view effectFeeling -> ef) = do logPla "startEffectHelper"
 
 
 threadEffect :: Id -> Effect -> EffectQueue -> MudStack ()
-threadEffect i (Effect effSub _ secs _) q = handle (threadExHandler (Just i) "effect") . onEnv $ \md -> do
+threadEffect i (Effect effSub _ secs _) q = handle (threadExHandler (Just i) "effect") $ ask >>= \md -> do
     setThreadType . EffectThread $ i
     logHelper "has started."
     ti <- liftIO myThreadId

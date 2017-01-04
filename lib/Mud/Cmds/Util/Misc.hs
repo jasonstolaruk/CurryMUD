@@ -854,12 +854,13 @@ updateRndmName i targetId = do
 -----
 
 
+-- TODO: Explicitly close DB connection on exception?
 withDbExHandler :: (Monoid a) => Text -> IO a -> MudStack (Maybe a)
-withDbExHandler fn f = liftIO (Just <$> f) `catch` (emptied . dbExHandler fn)
+withDbExHandler fn f = (Just <$> dbOperation f) `catch` (emptied . dbExHandler fn)
 
 
 withDbExHandler_ :: Text -> IO () -> MudStack ()
-withDbExHandler_ fn f = liftIO f `catch` dbExHandler fn
+withDbExHandler_ fn f = dbOperation f `catch` dbExHandler fn
 
 
 -----
