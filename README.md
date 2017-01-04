@@ -24,21 +24,21 @@ CurryMUD will have the following features:
 
 ## What I have so far
 
-* About 85 player commands, 50 administrator commands, and 60 commands for debugging purposes.
+* About 85 player commands, 50 administrator commands, and 60 commands for debugging purposes.:nut_and_bolt:
 * About 220 built-in emotes. :clap:
 * Help files for all existing non-debug commands. Help topics. :information_desk_person:
 * Commands have a consistent structure and a unique syntax for indicating target locations and quantities. :dart:
 * Unique commands, accessible only when a player is in a particular room, may be created.
-* The names of commands, as well as the names of the targets they act upon, may be abbreviated.
-* Logging.
+* The names of commands, as well as the names of the targets they act upon, may be abbreviated. :abc:
+* Logging. :ledger:
 * ANSI color. :red_circle:
 * Character creation. :runner:
 * The virtual world is automatically persisted at regular intervals and at shutdown. :floppy_disk:
 * Systems for reporting bugs and typos. :bug:
 * Commands to aid in the process of resetting a forgotten password. :passport_control:
-* NPCs can execute commands, either from within code or via the ":as" administrator command.
+* NPCs can execute commands, either from within code or via the ":as" administrator command. :performing_arts:
 * PCs can introduce themselves to each other. :bow:
-* PCs can "link" with each other so as to enable "tells." :couple_with_heart:
+* PCs can "link" with each other so as to enable "tells." :link:
 * Question channel for OOC newbie Q&A. :question:
 * Players can create their own ad-hoc channels. :busts_in_silhouette:
 * Free-form emotes and built-in emotes may be used in "tells" and channel communications. :clap:
@@ -47,7 +47,7 @@ CurryMUD will have the following features:
 * Weight and encumbrance.
 * Volume and container capacity. :school_satchel:
 * Vessels for containing liquids. Vessels may be filled and emptied. :wine_glass:
-* Players can interact with permanent room fixtures that are not listed in a room's inventory.
+* Players can interact with permanent room fixtures that are not listed in a room's inventory. :fountain:
 * Objects can be configured to automatically disappear when left on the ground for some time. :boom:
 * Smell and taste. Listen. :nose::tongue::ear:
 * Drinking. Digestion. :beer:
