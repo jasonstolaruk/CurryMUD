@@ -170,7 +170,7 @@ cmdDescPut = "Put one or more items into a) a container in your inventory, or b)
 
 
 cmdDescQuit :: Text
-cmdDescQuit = "Quit playing CurryMUD."
+cmdDescQuit = prd $ dblQuote "Go to sleep" <> spcL (parensQuote "quit playing CurryMUD")
 
 
 cmdDescRead :: Text

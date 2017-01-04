@@ -576,7 +576,7 @@ finishNewChar _ p = patternMatchFail "finishNewChar" . showText $ p
 
 notifyQuestion :: HasCallStack => Id -> MudState -> MudStack ()
 notifyQuestion i ms =
-    let msg      = f "A new character has arrived in CurryMUD."
+    let msg      = f "A new character has arrived in Rumia."
         f        = (colorWith arrowColor "<- " <>) . colorWith questionArrivalColor
         tunedIds = uncurry (++) . getTunedQuestionIds i $ ms
     in bcastNl =<< expandEmbeddedIds ms questionChanContext =<< formatQuestion i ms (msg, tunedIds)
@@ -811,6 +811,6 @@ handleLogin (NewCharBundle oldSing s _) isNew params@ActionParams { .. } = do
                        writeMsg plaMsgQueue InacStop
     notifyArrival = getState >>= \ms -> do
         bcastOtherAdmins myId $ if isNew
-          then T.concat [ s, " has arrived in CurryMUD ", parensQuote ("was " <> oldSing), "." ]
+          then T.concat [ s, " has arrived in Rumia ", parensQuote ("was " <> oldSing), "." ]
           else T.concat [ oldSing, " has logged in as ", s, "." ]
         bcastOthersInRm myId . nlnl . notifyArrivalMsg . mkSerializedNonStdDesig myId ms s A $ DoCap

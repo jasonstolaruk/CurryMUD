@@ -719,7 +719,11 @@ advicePutNoCon = prd $ "Please also specify where you want to put it, as in " <>
 
 
 adviceQuitExcessArgs :: Text
-adviceQuitExcessArgs = "Type " <> colorWith quoteColor "quit" <> " with no arguments to quit CurryMUD."
+adviceQuitExcessArgs = prd . T.concat $ [ "Type "
+                                        , colorWith quoteColor "quit"
+                                        , " with no arguments to "
+                                        , dblQuote "go to sleep"
+                                        , spcL . parensQuote $ "quit CurryMUD" ]
 
 
 adviceReadNoArgs :: Text

@@ -4,4 +4,5 @@
 !quit
 
 \uDESCRIPTION\n
-Quit playing CurryMUD... until next time!
+"Go to sleep" (quit playing CurryMUD)... until next time!
+-- TODO: Your character state will be saved...
