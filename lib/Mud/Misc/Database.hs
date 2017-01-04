@@ -70,7 +70,7 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 
 
--- TODO: Move dicts to DB.
+-- TODO: Get most recent dictionaries from FreeBSD 11. Store words in DB.
 data AdminChanRec   = AdminChanRec   { dbTimestamp   :: Text
                                      , dbName        :: Text
                                      , dbMsg         :: Text }
@@ -297,7 +297,7 @@ dbOperation f = liftIO . flip withLock f =<< getLock dbLock
 
 
 onDbFile :: (Connection -> IO a) -> IO a
-onDbFile f = flip withConnection f =<< mkMudFilePath dbFileFun
+onDbFile f = flip withConnection (\conn -> {- TODO: Finally close conn? -} f conn) =<< mkMudFilePath dbFileFun
 
 
 createDbTbls :: IO ()
