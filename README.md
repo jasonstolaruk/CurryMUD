@@ -38,7 +38,7 @@ CurryMUD will have the following features:
 * Commands to aid in the process of resetting a forgotten password. :passport_control:
 * NPCs can execute commands, either from within code or via the ":as" administrator command. :cool:
 * PCs can introduce themselves to each other. :bow:
-* PCs can "link" with each other so as to enable "tells." :couple_with_heart:
+* PCs can "link" with each other so as to enable "tells." :link:
 * Question channel for OOC newbie Q&A. :question:
 * Players can create their own ad-hoc channels. :busts_in_silhouette:
 * Free-form emotes and built-in emotes may be used in "tells" and channel communications. :clap:
@@ -54,7 +54,7 @@ CurryMUD will have the following features:
 * Durational effects that can be paused and resumed. :dizzy:
 * PC and NPC death. Corpse decomposition. :skull:
 * Upon death, PCs may have a limited amount of time to exist in the virtual world as a spirit. :angel:
-* Sending [GMCP](https://www.gammon.com.au/gmcp) `Char.Vitals` and `Info.Room`.
+* Sending [GMCP](https://www.gammon.com.au/gmcp) `Char.Vitals` and `Info.Room`. :satellite:
 * [Mudlet scripts](https://github.com/jasonstolaruk/CurryMUD/tree/master/Mudlet) for vitals gauges and mapping. :scroll:
 
 I am still in the initial stage of developing basic commands. There is very little content in the virtual world.
