@@ -58,12 +58,13 @@ import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
 import Mud.Util.Misc
 
+import Control.Exception.Lifted (finally)
 import Control.Monad (forM_, when)
 import Control.Monad.IO.Class (liftIO)
 import Crypto.BCrypt (fastBcryptHashingPolicy, hashPasswordUsingPolicy)
 import Data.Monoid ((<>))
 import Data.Text (Text)
-import Database.SQLite.Simple (Connection, FromRow, Only(..), Query(..), ToRow, execute, execute_, field, fromRow, query, query_, toRow, withConnection)
+import Database.SQLite.Simple (Connection, FromRow, Only(..), Query(..), ToRow, close, execute, execute_, field, fromRow, query, query_, toRow, withConnection)
 import Database.SQLite.Simple.FromRow (RowParser)
 import qualified Data.ByteString.Char8 as B
 import qualified Data.Text as T
@@ -297,7 +298,7 @@ dbOperation f = liftIO . flip withLock f =<< getLock dbLock
 
 
 onDbFile :: (Connection -> IO a) -> IO a
-onDbFile f = flip withConnection (\conn -> {- TODO: Finally close conn? -} f conn) =<< mkMudFilePath dbFileFun
+onDbFile f = flip withConnection (finally <$> f <*> close) =<< mkMudFilePath dbFileFun
 
 
 createDbTbls :: IO ()

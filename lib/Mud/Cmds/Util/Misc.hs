@@ -793,7 +793,7 @@ questionChanContext = ChanContext "question" Nothing True
 -----
 
 
-sendGenericErrorMsg :: MsgQueue -> Cols -> MudStack ()
+sendGenericErrorMsg :: HasCallStack => MsgQueue -> Cols -> MudStack ()
 sendGenericErrorMsg mq cols = wrapSend mq cols genericErrorMsg
 
 
@@ -854,21 +854,21 @@ updateRndmName i targetId = do
 -----
 
 
-withDbExHandler :: (Monoid a) => Text -> IO a -> MudStack (Maybe a)
+withDbExHandler :: (HasCallStack, Monoid a) => Text -> IO a -> MudStack (Maybe a)
 withDbExHandler fn f = (Just <$> dbOperation f) `catch` (emptied . dbExHandler fn)
 
 
-withDbExHandler_ :: Text -> IO () -> MudStack ()
+withDbExHandler_ :: HasCallStack => Text -> IO () -> MudStack ()
 withDbExHandler_ fn f = dbOperation f `catch` dbExHandler fn
 
 
 -----
 
 
-withoutArgs :: ActionFun -> ActionParams -> MudStack ()
+withoutArgs :: HasCallStack => ActionFun -> ActionParams -> MudStack ()
 withoutArgs f p = ignore p >> f p { args = [] }
 
 
-ignore :: ActionFun
+ignore :: HasCallStack => ActionFun
 ignore (Ignoring mq cols as) = wrapSend1Nl mq cols . parensQuote . thrice prd $ "Ignoring " <> as
 ignore p                     = patternMatchFail "ignore" . showText $ p
