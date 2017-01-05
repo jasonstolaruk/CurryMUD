@@ -38,6 +38,7 @@ module Mud.Misc.Database ( AdminChanRec(..)
                          , insertDbTblUnPw
                          , lookupPW
                          , lookupTeleNames
+                         , lookupWord
                          , ProfRec(..)
                          , purgeDbTblAdminChan
                          , purgeDbTblAdminMsg
@@ -50,7 +51,8 @@ module Mud.Misc.Database ( AdminChanRec(..)
                          , TelnetCharsRec(..)
                          , TTypeRec(..)
                          , TypoRec(..)
-                         , UnPwRec(..) ) where
+                         , UnPwRec(..)
+                         , WordRec(..) ) where
 
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Locks
@@ -58,20 +60,18 @@ import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
 import Mud.Util.Misc
 
-import Control.Exception.Lifted (finally)
 import Control.Monad (forM_, when)
 import Control.Monad.IO.Class (liftIO)
 import Crypto.BCrypt (fastBcryptHashingPolicy, hashPasswordUsingPolicy)
 import Data.Monoid ((<>))
 import Data.Text (Text)
-import Database.SQLite.Simple (Connection, FromRow, Only(..), Query(..), ToRow, close, execute, execute_, field, fromRow, query, query_, toRow, withConnection)
+import Database.SQLite.Simple (Connection, FromRow, Only(..), Query(..), ToRow, execute, execute_, field, fromRow, query, query_, toRow, withConnection)
 import Database.SQLite.Simple.FromRow (RowParser)
 import qualified Data.ByteString.Char8 as B
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 
 
--- TODO: Get most recent dictionaries from FreeBSD 11. Store words in DB.
 data AdminChanRec   = AdminChanRec   { dbTimestamp   :: Text
                                      , dbName        :: Text
                                      , dbMsg         :: Text }
@@ -138,6 +138,7 @@ data TypoRec        = TypoRec        { dbTimestamp   :: Text
                                      , dbDesc        :: Text }
 data UnPwRec        = UnPwRec        { dbUn          :: Text
                                      , dbPw          :: Text }
+data WordRec        = WordRec        { word          :: Text }
 
 
 -----
@@ -215,6 +216,10 @@ instance FromRow UnPwRec where
   fromRow = UnPwRec <$ (field :: RowParser Int) <*> field <*> field
 
 
+instance FromRow WordRec where
+  fromRow = WordRec <$ (field :: RowParser Int) <*> field
+
+
 -----
 
 
@@ -290,6 +295,10 @@ instance ToRow UnPwRec where
   toRow (UnPwRec a b) = toRow (a, b)
 
 
+instance ToRow WordRec where
+  toRow (WordRec a) = toRow . Only $ a
+
+
 -----
 
 
@@ -298,10 +307,10 @@ dbOperation f = liftIO . flip withLock f =<< getLock dbLock
 
 
 onDbFile :: (Connection -> IO a) -> IO a
-onDbFile f = flip withConnection (finally <$> f <*> close) =<< mkMudFilePath dbFileFun
+onDbFile f = flip withConnection f =<< mkMudFilePath dbFileFun
 
 
-createDbTbls :: IO ()
+createDbTbls :: IO () -- TODO: Init the words table.
 createDbTbls = onDbFile $ \conn -> do
     forM_ qs $ execute_ conn . Query
     [Only x] <- query_ conn . Query $ "select count(*) from unpw" :: IO [Only Int]
@@ -333,7 +342,8 @@ createDbTbls = onDbFile $ \conn -> do
          , "create table if not exists telnet_chars (id integer primary key, timestamp text, host text, telnet_chars text)"
          , "create table if not exists ttype        (id integer primary key, timestamp text, host text, ttype text)"
          , "create table if not exists typo         (id integer primary key, timestamp text, name text, loc text, desc text)"
-         , "create table if not exists unpw         (id integer primary key, un text, pw text)" ]
+         , "create table if not exists unpw         (id integer primary key, un text, pw text)"
+         , "create table if not exists words        (id integer primary key, word text)" ]
 
 
 hashPW :: String -> IO Text
@@ -506,3 +516,11 @@ lookupTeleNames s = onDbFile $ \conn -> query conn (Query t) (dup4 s)
         \  when to_name   != ? then to_name\
         \  end as name \
         \from (select from_name, to_name from tele where from_name = ? or to_name = ?)"
+
+
+lookupWord :: Text -> IO (Maybe Text)
+lookupWord s = onDbFile $ \conn -> f <$> query conn (Query "select word from words where word = ?") (Only s)
+  where
+    f :: [Only Text] -> Maybe Text
+    f (x:_) = Just . fromOnly $ x
+    f _     = Nothing

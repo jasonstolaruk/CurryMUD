@@ -166,7 +166,7 @@ regularCmds :: HasCallStack => [Cmd]
 regularCmds = map (uncurry4 mkRegularCmd) regularCmdTuples
 
 
-regularCmdTuples :: HasCallStack => [(CmdFullName, ActionFun, Bool, CmdDesc)]
+regularCmdTuples :: HasCallStack => [(CmdFullName, ActionFun, Bool, CmdDesc)] -- TODO: "time" command.
 regularCmdTuples =
     [ ("?",          plaDispCmdList,     True,  cmdDescDispCmdList)
     , ("about",      about,              True,  cmdDescAbout)
@@ -2474,7 +2474,7 @@ question p = patternMatchFail "question" . showText $ p
 -----
 
 
-quit :: HasCallStack => ActionFun
+quit :: HasCallStack => ActionFun -- TODO: Can you quit while attacking?
 quit (NoArgs i mq cols) = logPlaExec "quit" i >> mIf (isSpiritId i <$> getState)
     (throwWaitSpiritTimer i)
     (wrapSend mq cols sleepMsg >> writeMsg mq Quit)

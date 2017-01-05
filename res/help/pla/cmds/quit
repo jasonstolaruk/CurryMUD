@@ -4,5 +4,5 @@
 !quit
 
 \uDESCRIPTION\n
-"Go to sleep" (quit playing CurryMUD)... until next time!
--- TODO: Your character will disappear, your character state will be saved...
+Quit playing CurryMUD.
+Upon quitting, you will slowly dissolve into nothingness and "go to sleep." The next time you log in ("wake up"), you will reappear in the same place, in the same state as when you quit.
