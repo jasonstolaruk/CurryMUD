@@ -187,6 +187,7 @@ debugCmds =
     , mkDebugCmd "underline"   debugUnderline   "Test underlining."
     , mkDebugCmd "volume"      debugVolume      "Calculate carried volume for a given mob ID."
     , mkDebugCmd "weight"      debugWeight      "Calculate weight for a given ID."
+    , mkDebugCmd "words"       debugWords       "Initialize the words table."
     , mkDebugCmd "wrap"        debugWrap        "Test the wrapping of a line containing ANSI escape sequences."
     , mkDebugCmd "wrapindent"  debugWrapIndent  "Test the indented wrapping of a line containing ANSI escape \
                                                 \sequences." ]
@@ -1164,6 +1165,14 @@ debugWeight   (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)
       | otherwise                                  = do logPlaExecArgs (prefixDebugCmd "weight") (pure a) i
                                                         send mq . nlnl . showText . calcWeight searchId $ ms
 debugWeight p = advise p [] adviceDWeightExcessArgs
+
+
+-----
+
+
+debugWords :: ActionFun
+debugWords (NoArgs' i mq) = logPlaExec (prefixDebugCmd "words") i >> initWordsTbl >> ok mq
+debugWords p              = withoutArgs debugWords p
 
 
 -----

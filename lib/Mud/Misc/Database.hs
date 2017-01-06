@@ -36,6 +36,7 @@ module Mud.Misc.Database ( AdminChanRec(..)
                          , insertDbTblTType
                          , insertDbTblTypo
                          , insertDbTblUnPw
+                         , insertWords
                          , lookupPW
                          , lookupTeleNames
                          , lookupWord
@@ -59,6 +60,8 @@ import Mud.Data.State.Util.Locks
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
 import Mud.Util.Misc
+import Mud.Util.Quoting
+import Mud.Util.Text
 
 import Control.Monad (forM_, when)
 import Control.Monad.IO.Class (liftIO)
@@ -310,7 +313,7 @@ onDbFile :: (Connection -> IO a) -> IO a
 onDbFile f = flip withConnection f =<< mkMudFilePath dbFileFun
 
 
-createDbTbls :: IO () -- TODO: Init the words table.
+createDbTbls :: IO ()
 createDbTbls = onDbFile $ \conn -> do
     forM_ qs $ execute_ conn . Query
     [Only x] <- query_ conn . Query $ "select count(*) from unpw" :: IO [Only Int]
@@ -518,9 +521,19 @@ lookupTeleNames s = onDbFile $ \conn -> query conn (Query t) (dup4 s)
         \from (select from_name, to_name from tele where from_name = ? or to_name = ?)"
 
 
-lookupWord :: Text -> IO (Maybe Text)
+lookupWord :: Text -> IO (Maybe Text) -- TODO: Use this.
 lookupWord s = onDbFile $ \conn -> f <$> query conn (Query "select word from words where word = ?") (Only s)
   where
     f :: [Only Text] -> Maybe Text
     f (x:_) = Just . fromOnly $ x
     f _     = Nothing
+
+
+-----
+
+
+insertWords :: Text -> IO ()
+insertWords = onDbFile . flip execute_ . buildQuery
+  where
+    buildQuery = Query . ("insert into words (word) values " <>) . buildVals
+    buildVals  = commas . map (parensQuote . dblQuote) . T.lines . T.toLower

@@ -24,6 +24,7 @@ module Mud.Cmds.Util.Misc ( asterisk
                           , hasEnc
                           , hasType
                           , hasYou
+                          , initWordsTbl
                           , inOut
                           , isAlive
                           , isAttacking
@@ -102,14 +103,14 @@ import Mud.Util.Padding
 import Mud.Util.Quoting
 import Mud.Util.Text
 import Mud.Util.Wrapping
-import qualified Mud.Misc.Logging as L (logPla)
+import qualified Mud.Misc.Logging as L (logNotice, logPla)
 import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 
 import Control.Arrow ((***), (&&&), first)
 import Control.Exception.Lifted (catch, try)
 import Control.Lens (_1, _2, _3, at, both, each, to, view, views)
 import Control.Lens.Operators ((%~), (&), (+~), (.~), (<>~), (?~), (^.))
-import Control.Monad ((>=>), forM, mplus, when)
+import Control.Monad ((>=>), forM, join, mplus, when)
 import Control.Monad.IO.Class (liftIO)
 import Data.Bool (bool)
 import Data.Char (isDigit, isLetter)
@@ -149,6 +150,10 @@ patternMatchFail = U.patternMatchFail "Mud.Cmds.Util.Misc"
 
 logPla :: Text -> Id -> Text -> MudStack ()
 logPla = L.logPla "Mud.Cmds.Util.Misc"
+
+
+logNotice :: Text -> Text -> MudStack ()
+logNotice = L.logNotice "Mud.Cmds.Util.Misc"
 
 
 -- ==================================================
@@ -478,6 +483,20 @@ hasType i = views typeTbl ((i `elem`) . IM.keys)
 
 hasYou :: [Text] -> Bool
 hasYou = any (`elem` yous) . map (T.dropAround (not . isLetter) . T.toLower)
+
+
+-----
+
+
+initWordsTbl :: HasCallStack => MudStack () -- Used by the "!words" debug cmd.
+initWordsTbl = maybeVoid helper wordsFile
+  where
+    logHelper        = logNotice fn
+    fn               = "initWordsTbl"
+    helper fp        = liftIO (T.readFile fp) |&| try >=> either (emptied . fileIOExHandler fn) proceed
+    proceed wordsTxt = join <$> withDbExHandler fn (lookupWord "a") >>= \case
+      Nothing -> logHelper "initializing the words table." >> withDbExHandler_ fn (insertWords wordsTxt)
+      Just _  -> logHelper "the words table has already been initialized."
 
 
 -----
