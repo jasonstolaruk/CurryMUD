@@ -3,7 +3,7 @@
 module Mud.TopLvlDefs.FilePaths where
 
 import System.Directory (getHomeDirectory)
-import System.FilePath ((<.>), (</>), pathSeparator)
+import System.FilePath ((<.>), (</>))
 
 
 type HomeDir     = FilePath
@@ -33,7 +33,8 @@ persistDirFun = under mudDirFun "persist"
 resDirFun     = under mudDirFun "res"
 
 
-helpDirFun, miscDirFun, raceDirFun, titleDirFun :: FilePathFun
+dictDirFun, helpDirFun, miscDirFun, raceDirFun, titleDirFun :: FilePathFun
+dictDirFun  = under resDirFun "dict"
 helpDirFun  = under resDirFun "help"
 miscDirFun  = under resDirFun "misc"
 raceDirFun  = under resDirFun "races"
@@ -110,37 +111,23 @@ dbFileFun = under dbDirFun $ "CurryMUD" <.> "sqlite3"
 
 
 -- ==================================================
+-- Dictionaries:
+
+
+profanitiesFileFun, propNamesFileFun, rndmNamesFileFun, wordsFileFun :: FilePathFun
+profanitiesFileFun = under dictDirFun "profanities"
+propNamesFileFun   = under dictDirFun "propnames"
+rndmNamesFileFun   = under dictDirFun "randomnames"
+wordsFileFun       = under dictDirFun "words"
+
+
+-- ==================================================
 -- Misc. files:
 
 
-aboutFileFun, cowbyeFileFun, descRulesFileFun, motdFileFun, rndmNamesFileFun, uptimeFileFun :: FilePathFun
+aboutFileFun, cowbyeFileFun, descRulesFileFun, motdFileFun, uptimeFileFun :: FilePathFun
 aboutFileFun     = under miscDirFun "about"
 cowbyeFileFun    = under miscDirFun "cowbye"
 descRulesFileFun = under miscDirFun "descRules"
 motdFileFun      = under miscDirFun "motd"
-rndmNamesFileFun = under miscDirFun "randomnames"
 uptimeFileFun    = under mudDirFun  "uptime"
-
-
-profanitiesFileFun :: FilePathFun
-profanitiesFileFun = under miscDirFun "profanities"
-
-
--- ==================================================
--- Dictionaries:
-
-
-drive :: Char
-drive = pathSeparator
-
-
--- "words" - a standard file on all Unix and Unix-like operating systems - is simply a newline-delimited list of
--- dictionary words. Change the path if necessary, or set to "Nothing" if the words file is unavailable.
-wordsFile :: Maybe FilePath
-wordsFile = Just $ drive : "usr" </> "share" </> "dict" </> "words"
-
-
--- In addition to the words file, macOS ships with a dictionary of proper names. Set to "Nothing" if this file is
--- unavailable on your system.
-propNamesFile :: Maybe FilePath
-propNamesFile = Just $ drive : "usr" </> "share" </> "dict" </> "propernames"

@@ -490,21 +490,21 @@ hasYou = any (`elem` yous) . map (T.dropAround (not . isLetter) . T.toLower)
 
 
 initPropNamesTbl :: HasCallStack => MudStack () -- Used by the "!propnames" debug cmd.
-initPropNamesTbl = initTblHelper "initPropNamesTbl" "prop_names" (lookupPropName "jason") insertPropNames propNamesFile
+initPropNamesTbl = initTblHelper "initPropNamesTbl" "prop_names" (lookupPropName "jason") insertPropNames propNamesFileFun
 
 
-initTblHelper :: HasCallStack => FunName -> Text -> IO (Maybe Text) -> (Text -> IO ()) -> Maybe FilePath -> MudStack ()
-initTblHelper fn (dblQuote -> tblName) lookupFun insertFun = maybeVoid helper
+initTblHelper :: HasCallStack => FunName -> Text -> IO (Maybe Text) -> (Text -> IO ()) -> FilePathFun -> MudStack ()
+initTblHelper fn (dblQuote -> tblName) lookupFun insertFun fpf = liftIO (mkMudFilePath fpf) >>= \fp ->
+    liftIO (T.readFile fp) |&| try >=> either (emptied . fileIOExHandler fn) proceed
   where
     logHelper   = logNotice fn
-    helper fp   = liftIO (T.readFile fp) |&| try >=> either (emptied . fileIOExHandler fn) proceed
     proceed txt = join <$> withDbExHandler fn lookupFun >>= \case
       Nothing -> logHelper ("initializing the " <> tblName <> " table.") >> withDbExHandler_ fn (insertFun txt)
       Just _  -> logHelper $ "the " <> tblName <> " table has already been initialized."
 
 
 initWordsTbl :: HasCallStack => MudStack () -- Used by the "!words" debug cmd.
-initWordsTbl = initTblHelper "initWordsTbl" "words" (lookupWord "a") insertWords wordsFile
+initWordsTbl = initTblHelper "initWordsTbl" "words" (lookupWord "a") insertWords wordsFileFun
 
 
 -----

@@ -184,20 +184,20 @@ checkIllegalNames ms mq cols cn =
 
 
 checkPropNamesDict :: HasCallStack => MsgQueue -> Cols -> CmdName -> MudStack Any
-checkPropNamesDict mq cols cn = maybe mMempty helper propNamesFile
+checkPropNamesDict mq cols cn = helper =<< liftIO (mkMudFilePath propNamesFileFun)
   where
     helper = checkNameHelper "checkPropNamesDict" (promptRetryName mq cols sorryInterpNamePropName) cn
 
 
 checkWordsDict :: HasCallStack => MsgQueue -> Cols -> CmdName -> MudStack Any
-checkWordsDict mq cols cn = maybe mMempty helper wordsFile
+checkWordsDict mq cols cn = helper =<< liftIO (mkMudFilePath wordsFileFun)
   where
     helper = checkNameHelper "checkWordsDict" (promptRetryName mq cols sorryInterpNameDict) cn
 
 
 checkRndmNames :: HasCallStack => MsgQueue -> Cols -> CmdName -> MudStack Any
-checkRndmNames mq cols cn =
-    checkNameHelper "checkRndmNames" (promptRetryName mq cols sorryInterpNameTaken) cn =<< liftIO (mkMudFilePath rndmNamesFileFun)
+checkRndmNames mq cols cn = liftIO (mkMudFilePath rndmNamesFileFun) >>=
+    checkNameHelper "checkRndmNames" (promptRetryName mq cols sorryInterpNameTaken) cn
 
 
 -- ==================================================
