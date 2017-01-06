@@ -116,7 +116,7 @@ dbFileFun = under dbDirFun $ "CurryMUD" <.> "sqlite3"
 
 profanitiesFileFun, propNamesFileFun, rndmNamesFileFun, wordsFileFun :: FilePathFun
 profanitiesFileFun = under dictDirFun "profanities"
-propNamesFileFun   = under dictDirFun "propnames"
+propNamesFileFun   = under dictDirFun "propernames"
 rndmNamesFileFun   = under dictDirFun "randomnames"
 wordsFileFun       = under dictDirFun "words"
 

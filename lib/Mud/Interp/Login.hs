@@ -184,15 +184,23 @@ checkIllegalNames ms mq cols cn =
 
 
 checkPropNamesDict :: HasCallStack => MsgQueue -> Cols -> CmdName -> MudStack Any
-checkPropNamesDict mq cols cn = helper =<< liftIO (mkMudFilePath propNamesFileFun)
-  where
-    helper = checkNameHelper "checkPropNamesDict" (promptRetryName mq cols sorryInterpNamePropName) cn
+checkPropNamesDict = checkDictHelper "checkPropNamesDict" lookupPropName sorryInterpNamePropName
+
+
+checkDictHelper :: HasCallStack => FunName
+                                -> (Text -> IO (Maybe Text))
+                                -> Text
+                                -> MsgQueue
+                                -> Cols
+                                -> CmdName
+                                -> MudStack Any
+checkDictHelper fn lookupFun sorryTxt mq cols cn = join <$> withDbExHandler fn (lookupFun cn) >>= \case
+  Nothing -> return . Any $ False
+  Just _  -> promptRetryName mq cols sorryTxt >> return (Any True)
 
 
 checkWordsDict :: HasCallStack => MsgQueue -> Cols -> CmdName -> MudStack Any
-checkWordsDict mq cols cn = helper =<< liftIO (mkMudFilePath wordsFileFun)
-  where
-    helper = checkNameHelper "checkWordsDict" (promptRetryName mq cols sorryInterpNameDict) cn
+checkWordsDict = checkDictHelper "checkWordsDict" lookupWord sorryInterpNameDict
 
 
 checkRndmNames :: HasCallStack => MsgQueue -> Cols -> CmdName -> MudStack Any

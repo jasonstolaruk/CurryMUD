@@ -516,7 +516,7 @@ purgeHelper tblName = onDbFile $ \conn -> execute conn q x
 -----
 
 
-lookupPropName :: Text -> IO (Maybe Text) -- TODO: Use this.
+lookupPropName :: Text -> IO (Maybe Text)
 lookupPropName t = onDbFile $ \conn -> f <$> query conn (Query "select prop_name from prop_names where prop_name = ?") (Only t)
   where
     f :: [Only Text] -> Maybe Text
@@ -542,7 +542,7 @@ lookupTeleNames s = onDbFile $ \conn -> query conn (Query t) (dup4 s)
         \from (select from_name, to_name from tele where from_name = ? or to_name = ?)"
 
 
-lookupWord :: Text -> IO (Maybe Text) -- TODO: Use this.
+lookupWord :: Text -> IO (Maybe Text)
 lookupWord t = onDbFile $ \conn -> f <$> query conn (Query "select word from words where word = ?") (Only t)
   where
     f :: [Only Text] -> Maybe Text
