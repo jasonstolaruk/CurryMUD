@@ -168,6 +168,7 @@ debugCmds =
     , mkDebugCmd "persist"     debugPersist     "Attempt to persist the world multiple times in quick succession."
     , mkDebugCmd "pidge"       debugPidge       "Send a message to Pidge."
     , mkDebugCmd "pmf"         debugPmf         "Trigger a pattern match failure."
+    , mkDebugCmd "propnames"   debugPropNames   "Initialize the proper names table."
     , mkDebugCmd "purge"       debugPurge       "Purge the thread tables."
     , mkDebugCmd "random"      debugRandom      "Display random numbers generated with \"rndmRs\" and \"rndmInts\"."
     , mkDebugCmd "regen"       debugRegen       "Display regen amounts and delays for a given mob ID."
@@ -825,6 +826,14 @@ debugPmf :: ActionFun
 debugPmf (NoArgs'' i) = do logPlaExec (prefixDebugCmd "pmf") i
                            patternMatchFail "debugPmf" . showText $ (0, 'a', "abcdef")
 debugPmf p            = withoutArgs debugPmf p
+
+
+-----
+
+
+debugPropNames :: ActionFun
+debugPropNames (NoArgs' i mq) = logPlaExec (prefixDebugCmd "propnames") i >> initPropNamesTbl >> ok mq
+debugPropNames p              = withoutArgs debugPropNames p
 
 
 -----

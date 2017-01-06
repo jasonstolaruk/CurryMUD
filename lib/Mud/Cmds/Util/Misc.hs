@@ -24,6 +24,7 @@ module Mud.Cmds.Util.Misc ( asterisk
                           , hasEnc
                           , hasType
                           , hasYou
+                          , initPropNamesTbl
                           , initWordsTbl
                           , inOut
                           , isAlive
@@ -488,15 +489,22 @@ hasYou = any (`elem` yous) . map (T.dropAround (not . isLetter) . T.toLower)
 -----
 
 
-initWordsTbl :: HasCallStack => MudStack () -- Used by the "!words" debug cmd.
-initWordsTbl = maybeVoid helper wordsFile
+initPropNamesTbl :: HasCallStack => MudStack () -- Used by the "!propnames" debug cmd.
+initPropNamesTbl = initTblHelper "initPropNamesTbl" "prop_names" (lookupPropName "jason") insertPropNames propNamesFile
+
+
+initTblHelper :: HasCallStack => FunName -> Text -> IO (Maybe Text) -> (Text -> IO ()) -> Maybe FilePath -> MudStack ()
+initTblHelper fn (dblQuote -> tblName) lookupFun insertFun = maybeVoid helper
   where
-    logHelper        = logNotice fn
-    fn               = "initWordsTbl"
-    helper fp        = liftIO (T.readFile fp) |&| try >=> either (emptied . fileIOExHandler fn) proceed
-    proceed wordsTxt = join <$> withDbExHandler fn (lookupWord "a") >>= \case
-      Nothing -> logHelper "initializing the words table." >> withDbExHandler_ fn (insertWords wordsTxt)
-      Just _  -> logHelper "the words table has already been initialized."
+    logHelper   = logNotice fn
+    helper fp   = liftIO (T.readFile fp) |&| try >=> either (emptied . fileIOExHandler fn) proceed
+    proceed txt = join <$> withDbExHandler fn lookupFun >>= \case
+      Nothing -> logHelper ("initializing the " <> tblName <> " table.") >> withDbExHandler_ fn (insertFun txt)
+      Just _  -> logHelper $ "the " <> tblName <> " table has already been initialized."
+
+
+initWordsTbl :: HasCallStack => MudStack () -- Used by the "!words" debug cmd.
+initWordsTbl = initTblHelper "initWordsTbl" "words" (lookupWord "a") insertWords wordsFile
 
 
 -----

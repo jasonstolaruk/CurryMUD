@@ -36,11 +36,14 @@ module Mud.Misc.Database ( AdminChanRec(..)
                          , insertDbTblTType
                          , insertDbTblTypo
                          , insertDbTblUnPw
+                         , insertPropNames
                          , insertWords
+                         , lookupPropName
                          , lookupPW
                          , lookupTeleNames
                          , lookupWord
                          , ProfRec(..)
+                         , PropNameRec(..)
                          , purgeDbTblAdminChan
                          , purgeDbTblAdminMsg
                          , purgeDbTblChan
@@ -119,6 +122,7 @@ data DiscoverRec    = DiscoverRec    { dbTimestamp   :: Text
 data ProfRec        = ProfRec        { dbTimestamp   :: Text
                                      , dbHost        :: Text
                                      , dbProfanity   :: Text }
+data PropNameRec    = PropNameRec    { dbWord        :: Text }
 data QuestionRec    = QuestionRec    { dbTimestamp   :: Text
                                      , dbName        :: Text
                                      , dbMsg         :: Text }
@@ -141,7 +145,7 @@ data TypoRec        = TypoRec        { dbTimestamp   :: Text
                                      , dbDesc        :: Text }
 data UnPwRec        = UnPwRec        { dbUn          :: Text
                                      , dbPw          :: Text }
-data WordRec        = WordRec        { word          :: Text }
+data WordRec        = WordRec        { dbWord        :: Text }
 
 
 -----
@@ -189,6 +193,10 @@ instance FromRow DiscoverRec where
 
 instance FromRow ProfRec where
   fromRow = ProfRec <$ (field :: RowParser Int) <*> field <*> field <*> field
+
+
+instance FromRow PropNameRec where
+  fromRow = PropNameRec <$ (field :: RowParser Int) <*> field
 
 
 instance FromRow QuestionRec where
@@ -270,6 +278,10 @@ instance ToRow ProfRec where
   toRow (ProfRec a b c) = toRow (a, b, c)
 
 
+instance ToRow PropNameRec where
+  toRow (PropNameRec a) = toRow . Only $ a
+
+
 instance ToRow QuestionRec where
   toRow (QuestionRec a b c) = toRow (a, b, c)
 
@@ -338,6 +350,7 @@ createDbTbls = onDbFile $ \conn -> do
            \text, name text, msg text)"
          , "create table if not exists discover     (id integer primary key, timestamp text, host text, msg text)"
          , "create table if not exists profanity    (id integer primary key, timestamp text, host text, prof text)"
+         , "create table if not exists prop_names   (id integer primary key, prop_name text)"
          , "create table if not exists question     (id integer primary key, timestamp text, name text, msg text)"
          , "create table if not exists sec          (id integer primary key, name text, question text, answer text)"
          , "create table if not exists tele         (id integer primary key, timestamp text, from_name text, to_name text, \
@@ -503,6 +516,14 @@ purgeHelper tblName = onDbFile $ \conn -> execute conn q x
 -----
 
 
+lookupPropName :: Text -> IO (Maybe Text) -- TODO: Use this.
+lookupPropName t = onDbFile $ \conn -> f <$> query conn (Query "select prop_name from prop_names where prop_name = ?") (Only t)
+  where
+    f :: [Only Text] -> Maybe Text
+    f (x:_) = Just . fromOnly $ x
+    f _     = Nothing
+
+
 lookupPW :: Sing -> IO (Maybe Text)
 lookupPW s = onDbFile $ \conn -> f <$> query conn (Query "select pw from unpw where un = ?") (Only s)
   where
@@ -522,7 +543,7 @@ lookupTeleNames s = onDbFile $ \conn -> query conn (Query t) (dup4 s)
 
 
 lookupWord :: Text -> IO (Maybe Text) -- TODO: Use this.
-lookupWord s = onDbFile $ \conn -> f <$> query conn (Query "select word from words where word = ?") (Only s)
+lookupWord t = onDbFile $ \conn -> f <$> query conn (Query "select word from words where word = ?") (Only t)
   where
     f :: [Only Text] -> Maybe Text
     f (x:_) = Just . fromOnly $ x
@@ -532,8 +553,16 @@ lookupWord s = onDbFile $ \conn -> f <$> query conn (Query "select word from wor
 -----
 
 
-insertWords :: Text -> IO ()
-insertWords = onDbFile . flip execute_ . buildQuery
+insertPropNames :: Text -> IO ()
+insertPropNames = procSrcFileTxt "prop_names" "prop_name"
+
+
+procSrcFileTxt :: Text -> Text -> Text -> IO ()
+procSrcFileTxt tblName colName = onDbFile . flip execute_ . buildQuery
   where
-    buildQuery = Query . ("insert into words (word) values " <>) . buildVals
+    buildQuery = Query . (T.concat [ "insert into ", tblName, " ", parensQuote colName, " values " ] <>) . buildVals
     buildVals  = commas . map (parensQuote . dblQuote) . T.lines . T.toLower
+
+
+insertWords :: Text -> IO ()
+insertWords = procSrcFileTxt "words" "word"
