@@ -3819,27 +3819,27 @@ showTime mq cols = liftIO getCurryTime >>= \CurryTime { .. } ->
         phaseTxt = pp (getMoonPhaseForDayOfMonth curryDayOfMonth) <> " moon"
     in ((>>) <$> wrapSend mq cols <*> return) msg
   where
-    assocs = [ (0,  (`judgingBy` "blah"))
-             , (1,  (`judgingBy` "blah"))
-             , (2,  (`judgingBy` "blah"))
-             , (3,  (`judgingBy` "blah"))
-             , (4,  (`judgingBy` "blah"))
-             , (5,  (`judgingBy` "blah"))
-             , (6,  (`judgingBy` "blah"))
-             , (7,  (`judgingBy` "blah"))
-             , (8,  (`judgingBy` "blah"))
-             , (9,  (`judgingBy` "blah"))
-             , (10, const $ judgingBy "sun" "blah")
-             , (11, const $ judgingBy "sun" "blah")
-             , (12, const $ judgingBy "sun" "blah")
-             , (13, const $ judgingBy "sun" "blah")
-             , (14, const $ judgingBy "sun" "blah")
-             , (15, const $ judgingBy "sun" "blah")
-             , (16, const $ judgingBy "sun" "blah")
-             , (17, const $ judgingBy "sun" "blah")
-             , (18, const $ judgingBy "sun" "blah")
-             , (19, const $ judgingBy "sun" "blah") ]
-    judgingBy a b = prd $ "Judging by the position of the " <> a <> " in the sky, " <> b
+    assocs = [ (0,  (`f` "blah"))
+             , (1,  (`f` "blah"))
+             , (2,  (`f` "blah"))
+             , (3,  (`f` "blah"))
+             , (4,  (`f` "blah"))
+             , (5,  const . f "rising sun" $ "blah")
+             , (6,  const . f "sun" $ "blah")
+             , (7,  const . f "sun" $ "blah")
+             , (8,  const . f "sun" $ "blah")
+             , (9,  const . f "sun" $ "blah")
+             , (10, const . f "sun" $ "blah")
+             , (11, const . f "sun" $ "blah")
+             , (12, const . f "sun" $ "blah")
+             , (13, const . f "sun" $ "blah")
+             , (14, const . f "setting sun" $ "blah")
+             , (15, (`f` "blah"))
+             , (16, (`f` "blah"))
+             , (17, (`f` "blah"))
+             , (18, (`f` "blah"))
+             , (19, (`f` "blah")) ]
+    f a b = prd $ "Judging by the position of the " <> a <> " in the sky, " <> b -- TODO: A new moon isn't visible.
 
 
 -----
