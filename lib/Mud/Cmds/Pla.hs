@@ -3808,6 +3808,7 @@ tempDescAction p = patternMatchFail "tempDescAction" . showText $ p
 -----
 
 
+-- TODO: The real-world moon reflects only 3-12% of the light that hits it. The surface of Rumia's moon is more reflective.
 time :: HasCallStack => ActionFun
 time (NoArgs i mq cols) = logPlaOut "time" i . pure =<< showTime mq cols
 time p                  = withoutArgs time p
@@ -3830,8 +3831,7 @@ tune (NoArgs i mq cols) = getState >>= \ms ->
         linkTunings = foldr (\s -> (linkTbl M.! s :)) [] linkSings
         linkTbl     = getTeleLinkTbl i ms
         (chanNames, chanTunings)   = mkChanNamesTunings i ms
-        helper title names tunings = let txts = mkConnTxts
-                                     in [ title, ()!# txts ? commas txts :? none ]
+        helper title names tunings = let txts = mkConnTxts in [ title, ()!# txts ? commas txts :? none ]
           where
             mkConnTxts = [ n <> T.cons '=' (inOut t) | n <- names | t <- tunings ]
     in do logPlaExecArgs "tune" [] i

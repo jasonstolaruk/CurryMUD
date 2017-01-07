@@ -45,6 +45,7 @@ module Mud.Data.Misc ( Action(..)
                      , LoggedInOrOut(..)
                      , Min
                      , Month
+                     , MoonPhase(..)
                      , NewCharBundle(..)
                      , pp
                      , Pretty
@@ -439,6 +440,18 @@ instance Pretty MobSize where
   pp MedPlus  = "Med Plus"
   pp LrgMinus = "Lrg Minus"
   pp LrgPlus  = "Lrg Plus"
+
+
+instance Pretty MoonPhase where
+  pp NewMoon        = "new"
+  pp WaxingCrescent = "waxing crescent"
+  pp FirstQuarter   = "first quarter"
+  pp WaxingGibbous  = "waxing gibbous"
+  pp FullMoon       = "full"
+  pp WaningGibbous  = "waning gibbous"
+  pp ThirdQuarter   = "third quarter"
+  pp WaningCrescent = "waning crescent"
+
 
 
 instance Pretty PausedEffect where
@@ -911,6 +924,20 @@ data LastArgIsTargetBindings = LastArgIsTargetBindings { srcDesig    :: Desig
 
 
 data LoggedInOrOut = LoggedIn | LoggedOut deriving Eq
+
+
+-----
+
+
+data MoonPhase = NewMoon        -- the moon is not visible
+               | WaxingCrescent -- sliver on the right is visible
+               | FirstQuarter   -- right half is visible
+               | WaxingGibbous  -- greater than half (from right) is visible
+               | FullMoon       -- sun, earth, and moon are aligned in a straight line
+               | WaningGibbous  -- greater than half (from left) is visible
+               | ThirdQuarter   -- left half is visible
+               | WaningCrescent {- sliver on left is visible -} deriving Eq
+
 
 
 -----

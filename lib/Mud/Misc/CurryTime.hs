@@ -7,6 +7,8 @@ import Mud.Util.Operators
 import Mud.Util.Quoting
 import Mud.Util.Text
 
+import Data.List (lookup)
+import Data.Maybe (fromMaybe)
 import Data.Monoid (Sum(..), (<>))
 import Data.Text (Text)
 import Data.Time (UTCTime(..), diffUTCTime, fromGregorian, getCurrentTime)
@@ -82,6 +84,33 @@ getCurryTime = secsToCurryTime <$> getSecsFromCurryEpoch
 -----
 
 
+getMoonPhaseForDayOfMonth :: Day -> MoonPhase
+getMoonPhaseForDayOfMonth d = fromMaybe NewMoon . lookup d $ [ (1,  NewMoon)
+                                                             , (2,  NewMoon)
+                                                             , (3,  WaxingCrescent)
+                                                             , (4,  WaxingCrescent)
+                                                             , (5,  FirstQuarter)
+                                                             , (6,  FirstQuarter)
+                                                             , (7,  FirstQuarter)
+                                                             , (8,  WaxingGibbous)
+                                                             , (9,  WaxingGibbous)
+                                                             , (10, WaxingGibbous)
+                                                             , (11, FullMoon)
+                                                             , (12, FullMoon)
+                                                             , (13, FullMoon)
+                                                             , (14, WaningGibbous)
+                                                             , (15, WaningGibbous)
+                                                             , (16, WaningGibbous)
+                                                             , (17, ThirdQuarter)
+                                                             , (18, ThirdQuarter)
+                                                             , (19, ThirdQuarter)
+                                                             , (20, WaningCrescent)
+                                                             , (21, WaningCrescent) ]
+
+
+-----
+
+
 getSecsFromCurryEpoch :: IO Sec
 getSecsFromCurryEpoch = round . (`diffUTCTime` curryEpoch) <$> getCurrentTime
 
@@ -89,7 +118,7 @@ getSecsFromCurryEpoch = round . (`diffUTCTime` curryEpoch) <$> getCurrentTime
 -----
 
 
-ppMonthForMonthNum :: Day -> Text
+ppMonthForMonthNum :: Month -> Text
 ppMonthForMonthNum = pp . (toEnum :: Int -> CurryMonth) . pred
 
 
@@ -147,9 +176,9 @@ showElapsedCurryTime a b = let CurryTime { .. } = secsToCurryTime . round $ a `d
 
 showCurryTime :: CurryTime -> [Text]
 showCurryTime CurryTime { .. } = [ "Year:         " <> showText  curryYear
-                                 , "Month:        " <> mkOrdinal curryMonth
+                                 , "Month:        " <> helper    ppMonthForMonthNum    curryMonth
                                  , "Week:         " <> mkOrdinal curryWeek
-                                 , "Day of month: " <> helper    ppMonthForMonthNum    curryDayOfMonth
+                                 , "Day of month: " <> mkOrdinal curryDayOfMonth
                                  , "Day of week:  " <> helper    ppWeekdayForDayOfWeek curryDayOfWeek
                                  , "Hour:         " <> showText  curryHour
                                  , "Min:          " <> showText  curryMin

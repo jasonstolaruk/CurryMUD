@@ -160,6 +160,7 @@ adminCmds =
                                                      \messages in descending order."
     , mkAdminCmd "locate"     adminLocate      True  "Locate one or more IDs."
     , mkAdminCmd "message"    adminMsg         True  "Send a message to a regular player."
+    , mkAdminCmd "moon"       adminMoon        True  "Display the current phase of the moon."
     , mkAdminCmd "mychannels" adminMyChans     True  "Display information about telepathic channels for one or more \
                                                      \players."
     , mkAdminCmd "password"   adminPassword    True  "Change a player's password."
@@ -1127,6 +1128,15 @@ adminLocate p = patternMatchFail "adminLocate" . showText $ p
 -----
 
 
+adminMoon :: HasCallStack => ActionFun
+adminMoon (NoArgs i mq cols) = getMoonPhaseForDayOfMonth . curryDayOfMonth <$> liftIO getCurryTime >>= \phase ->
+    ((>>) <$> logPlaOut (prefixAdminCmd "moon") i . pure <*> wrapSend mq cols) $ "The moon is in its " <> pp phase <> " phase."
+adminMoon p = withoutArgs adminMoon p
+
+
+-----
+
+
 adminMsg :: HasCallStack => ActionFun
 adminMsg p@AdviseNoArgs                         = advise p [ prefixAdminCmd "message" ] adviceAMsgNoArgs
 adminMsg p@AdviseOneArg                         = advise p [ prefixAdminCmd "message" ] adviceAMsgNoMsg
@@ -1182,6 +1192,26 @@ firstAdminMsg i adminSing =
 -----
 
 
+adminMyChans :: HasCallStack => ActionFun
+adminMyChans p@AdviseNoArgs            = advise p [ prefixAdminCmd "mychannels" ] adviceAMyChansNoArgs
+adminMyChans   (LowerNub i mq cols as) = getState >>= \ms ->
+    let helper target = let notFound                     = pure . sorryPCName $ target
+                            found (targetId, targetSing) = case getPCChans targetId ms of
+                              [] -> header none
+                              cs -> header . intercalate [""] . map (mkChanReport i ms) $ cs
+                              where
+                                header = (targetSing <> "'s channels:" :) . ("" :)
+                        in findFullNameForAbbrev target (mkAdminPlaIdSingList ms) |&| maybe notFound found
+        allReports = intercalateDivider cols . map (helper . capitalize) $ as
+    in case views chanTbl IM.size ms of
+      0 -> informNoChans mq cols
+      _ -> logPlaExec (prefixAdminCmd "mychannels") i >> pager i mq Nothing allReports
+adminMyChans p = patternMatchFail "adminMyChans" . showText $ p
+
+
+-----
+
+
 adminPassword :: HasCallStack => ActionFun
 adminPassword p@AdviseNoArgs = advise p [ prefixAdminCmd "password" ] adviceAPasswordNoArgs
 adminPassword p@AdviseOneArg = advise p [ prefixAdminCmd "password" ] adviceAPasswordNoPw
@@ -1213,26 +1243,6 @@ adminPassword p@(WithTarget i mq cols target pw)
     fn       = "adminPassword"
     helper f = ()# T.filter f pw
 adminPassword p = patternMatchFail "adminPassword" . showText $ p
-
-
------
-
-
-adminMyChans :: HasCallStack => ActionFun
-adminMyChans p@AdviseNoArgs            = advise p [ prefixAdminCmd "mychannels" ] adviceAMyChansNoArgs
-adminMyChans   (LowerNub i mq cols as) = getState >>= \ms ->
-    let helper target = let notFound                     = pure . sorryPCName $ target
-                            found (targetId, targetSing) = case getPCChans targetId ms of
-                              [] -> header none
-                              cs -> header . intercalate [""] . map (mkChanReport i ms) $ cs
-                              where
-                                header = (targetSing <> "'s channels:" :) . ("" :)
-                        in findFullNameForAbbrev target (mkAdminPlaIdSingList ms) |&| maybe notFound found
-        allReports = intercalateDivider cols . map (helper . capitalize) $ as
-    in case views chanTbl IM.size ms of
-      0 -> informNoChans mq cols
-      _ -> logPlaExec (prefixAdminCmd "mychannels") i >> pager i mq Nothing allReports
-adminMyChans p = patternMatchFail "adminMyChans" . showText $ p
 
 
 -----
