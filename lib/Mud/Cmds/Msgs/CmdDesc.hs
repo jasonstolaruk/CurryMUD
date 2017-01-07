@@ -227,6 +227,10 @@ cmdDescTempDesc :: Text
 cmdDescTempDesc = "Specify a temporary character description visible when someone looks at you."
 
 
+cmdDescTime :: Text
+cmdDescTime = "Tell the time."
+
+
 cmdDescTune :: Text
 cmdDescTune = "Display a list of your telepathic connections, or tune in/out one or more telepathic connections."
 

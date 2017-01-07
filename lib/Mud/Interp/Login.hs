@@ -50,7 +50,7 @@ import Control.Concurrent (threadDelay)
 import Control.Exception.Lifted (try)
 import Control.Lens (ASetter, at, both, set, views)
 import Control.Lens.Operators ((%~), (&), (+~), (-~), (.~), (?~), (^.))
-import Control.Monad ((>=>), join, unless, when)
+import Control.Monad ((>=>), join, unless, void, when)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Loops (orM)
 import Crypto.BCrypt (validatePassword)
@@ -787,7 +787,7 @@ handleLogin (NewCharBundle oldSing s _) isNew params@ActionParams { .. } = do
     mapM_ (myId |&|) [ runDigesterAsync, runRegenAsync, restartPausedEffects ]
     notifyArrival
     greet
-    ((>>) <$> uncurry showMotd <*> uncurry showDate) (plaMsgQueue, plaCols)
+    ((>>) <$> uncurry showMotd <*> void . uncurry showDate) (plaMsgQueue, plaCols)
     showElapsedTime
     showRetainedMsgs
     look params

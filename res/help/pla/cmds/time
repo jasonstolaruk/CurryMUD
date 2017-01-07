@@ -1,0 +1,10 @@
+\h TIME \d
+
+\uUSAGE\n
+!time
+
+\uDESCRIPTION\n
+Tell the time.
+
+\uSEE ALSO\n
+calendar, date

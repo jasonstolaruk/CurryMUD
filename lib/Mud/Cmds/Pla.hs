@@ -166,7 +166,7 @@ regularCmds :: HasCallStack => [Cmd]
 regularCmds = map (uncurry4 mkRegularCmd) regularCmdTuples
 
 
-regularCmdTuples :: HasCallStack => [(CmdFullName, ActionFun, Bool, CmdDesc)] -- TODO: "time" command.
+regularCmdTuples :: HasCallStack => [(CmdFullName, ActionFun, Bool, CmdDesc)]
 regularCmdTuples =
     [ ("?",          plaDispCmdList,     True,  cmdDescDispCmdList)
     , ("about",      about,              True,  cmdDescAbout)
@@ -259,6 +259,7 @@ priorityAbbrevCmdTuples =
     , ("taste",       "ta",  taste,          False, cmdDescTaste)
     , ("telepathy",   "t",   tele,           True,  cmdDescTelepathy)
     , ("tempdesc",    "te",  tempDescAction, True,  cmdDescTempDesc)
+    , ("time",        "ti",  time,           True,  cmdDescTime)
     , ("unready",     "un",  unready,        True,  cmdDescUnready)
     , ("whisper",     "whi", whisper,        True,  cmdDescWhisper)
     , ("who",         "wh",  who,            True,  cmdDescWho) ]
@@ -299,32 +300,32 @@ spiritRegularCmds = sort . map (uncurry4 mkRegularCmd) $ spiritRegularCmdTuples
 
 spiritRegularCmdTuples :: HasCallStack => [(CmdFullName, ActionFun, Bool, CmdDesc)]
 spiritRegularCmdTuples =
-    [ ("?",          spiritDispCmdList, True,  cmdDescDispCmdList)
-    , ("about",      about,             True,  cmdDescAbout)
-    , ("admin",      admin,             True,  cmdDescAdmin)
-    , ("bonus",      bonus,             True,  cmdDescBonus)
-    , ("bug",        bug,               True,  cmdDescBug)
-    , ("d",          go "d",            True,  cmdDescGoDown)
-    , ("e",          go "e",            True,  cmdDescGoEast)
-    , ("feeling",    feeling,           True,  cmdDescFeeling)
-    , ("lookself",   lookSelf,          True,  cmdDescLookSelf)
-    , ("n",          go "n",            True,  cmdDescGoNorth)
-    , ("ne",         go "ne",           True,  cmdDescGoNortheast)
-    , ("nw",         go "nw",           True,  cmdDescGoNorthwest)
-    , ("qui",        quitCan'tAbbrev,   True,  "")
-    , ("quit",       quit,              False, cmdDescQuit)
-    , ("s",          go "s",            True,  cmdDescGoSouth)
-    , ("se",         go "se",           True,  cmdDescGoSoutheast)
-    , ("set",        setAction,         True,  cmdDescSet)
-    , ("sw",         go "sw",           True,  cmdDescGoSouthwest)
-    , ("tune",       tune,              True,  cmdDescTune)
-    , ("typo",       typo,              True,  cmdDescTypo)
-    , ("u",          go "u",            True,  cmdDescGoUp)
-    , ("unlink",     unlink,            True,  cmdDescUnlink)
-    , ("uptime",     uptime,            True,  cmdDescUptime)
-    , ("w",          go "w",            True,  cmdDescGoWest)
-    , ("whoami",     whoAmI,            True,  cmdDescWhoAmI)
-    , ("zoom",       zoom,              True,  cmdDescZoom) ]
+    [ ("?",        spiritDispCmdList, True,  cmdDescDispCmdList)
+    , ("about",    about,             True,  cmdDescAbout)
+    , ("admin",    admin,             True,  cmdDescAdmin)
+    , ("bonus",    bonus,             True,  cmdDescBonus)
+    , ("bug",      bug,               True,  cmdDescBug)
+    , ("d",        go "d",            True,  cmdDescGoDown)
+    , ("e",        go "e",            True,  cmdDescGoEast)
+    , ("feeling",  feeling,           True,  cmdDescFeeling)
+    , ("lookself", lookSelf,          True,  cmdDescLookSelf)
+    , ("n",        go "n",            True,  cmdDescGoNorth)
+    , ("ne",       go "ne",           True,  cmdDescGoNortheast)
+    , ("nw",       go "nw",           True,  cmdDescGoNorthwest)
+    , ("qui",      quitCan'tAbbrev,   True,  "")
+    , ("quit",     quit,              False, cmdDescQuit)
+    , ("s",        go "s",            True,  cmdDescGoSouth)
+    , ("se",       go "se",           True,  cmdDescGoSoutheast)
+    , ("set",      setAction,         True,  cmdDescSet)
+    , ("sw",       go "sw",           True,  cmdDescGoSouthwest)
+    , ("tune",     tune,              True,  cmdDescTune)
+    , ("typo",     typo,              True,  cmdDescTypo)
+    , ("u",        go "u",            True,  cmdDescGoUp)
+    , ("unlink",   unlink,            True,  cmdDescUnlink)
+    , ("uptime",   uptime,            True,  cmdDescUptime)
+    , ("w",        go "w",            True,  cmdDescGoWest)
+    , ("whoami",   whoAmI,            True,  cmdDescWhoAmI)
+    , ("zoom",     zoom,              True,  cmdDescZoom) ]
 
 
 spiritPriorityAbbrevCmds :: HasCallStack => [Cmd]
@@ -333,19 +334,20 @@ spiritPriorityAbbrevCmds = concatMap (uncurry5 mkPriorityAbbrevCmd) spiritPriori
 
 spiritPriorityAbbrevCmdTuples :: HasCallStack => [(CmdFullName, CmdPriorityAbbrevTxt, ActionFun, Bool, CmdDesc)]
 spiritPriorityAbbrevCmdTuples =
-    [ ("bars",        "b",   bars,           True,  cmdDescBars)
-    , ("clear",       "cl",  clear,          True,  cmdDescClear)
-    , ("color",       "col", color,          True,  cmdDescColor)
-    , ("date",        "da",  date,           True,  cmdDescDate)
-    , ("exits",       "ex",  exits,          True,  cmdDescExits)
-    , ("help",        "h",   help,           True,  cmdDescHelp)
-    , ("link",        "li",  link,           True,  cmdDescLink)
-    , ("look",        "l",   look,           True,  cmdDescLook)
-    , ("motd",        "m",   motd,           True,  cmdDescMotd)
-    , ("stats",       "st",  stats,          True,  cmdDescStats)
-    , ("stop",        "sto", stop,           True,  cmdDescStop)
-    , ("telepathy",   "t",   tele,           True,  cmdDescTelepathy)
-    , ("who",         "wh",  who,            True,  cmdDescWho) ]
+    [ ("bars",      "b",   bars,  True,  cmdDescBars)
+    , ("clear",     "cl",  clear, True,  cmdDescClear)
+    , ("color",     "col", color, True,  cmdDescColor)
+    , ("date",      "da",  date,  True,  cmdDescDate)
+    , ("exits",     "ex",  exits, True,  cmdDescExits)
+    , ("help",      "h",   help,  True,  cmdDescHelp)
+    , ("link",      "li",  link,  True,  cmdDescLink)
+    , ("look",      "l",   look,  True,  cmdDescLook)
+    , ("motd",      "m",   motd,  True,  cmdDescMotd)
+    , ("stats",     "st",  stats, True,  cmdDescStats)
+    , ("stop",      "sto", stop,  True,  cmdDescStop)
+    , ("telepathy", "t",   tele,  True,  cmdDescTelepathy)
+    , ("time",      "ti",  time,  True,  cmdDescTime)
+    , ("who",       "wh",  who,   True,  cmdDescWho) ]
 
 
 noOfSpiritCmds :: HasCallStack => Int
@@ -433,6 +435,7 @@ npcPriorityAbbrevCmdTuples =
     , ("stats",       "st",  stats,          True,  cmdDescStats)
     , ("stop",        "sto", stop,           True,  cmdDescStop)
     , ("tempdesc",    "te",  tempDescAction, True,  cmdDescTempDesc)
+    , ("time",        "ti",  time,           True,  cmdDescTime)
     , ("unready",     "un",  unready,        True,  cmdDescUnready)
     , ("whisper",     "whi", whisper,        True,  cmdDescWhisper)
     , ("whoami",      "wh",  whoAmI,         True,  "Confirm who " <> parensQuote "and what" <> " you are.") ]
@@ -875,27 +878,28 @@ connectHelper i (target, as) ms =
 
 
 date :: HasCallStack => ActionFun
-date (NoArgs i mq cols) = logPlaExec "date" i >> showDate mq cols
+date (NoArgs i mq cols) = logPlaOut "date" i . pure =<< showDate mq cols
 date p                  = withoutArgs date p
 
 
-showDate :: HasCallStack => MsgQueue -> Cols -> MudStack ()
+showDate :: HasCallStack => MsgQueue -> Cols -> MudStack Text
 showDate mq cols = liftIO getCurryTime >>= \CurryTime { .. } ->
-    wrapSend mq cols . T.concat $ [ "It's the "
-                                  , mkOrdinal curryDayOfWeek
-                                  , " day "
-                                  , parensQuote . ppWeekdayForDayOfWeek $ curryDayOfWeek
-                                  , " of the "
-                                  , mkOrdinal curryWeek
-                                  , " week of the "
-                                  , mkOrdinal curryMonth
-                                  , " month "
-                                  , parensQuote . ppMonthForMonthNum $ curryMonth
-                                  , " of the year "
-                                  , showText curryYear
-                                  , ". The date is "
-                                  , T.intercalate "-" . map showText $ [ curryMonth, curryDayOfMonth, curryYear ]
-                                  , "." ]
+    let msg = T.concat [ "It's the "
+                       , mkOrdinal curryDayOfWeek
+                       , " day "
+                       , parensQuote . ppWeekdayForDayOfWeek $ curryDayOfWeek
+                       , " of the "
+                       , mkOrdinal curryWeek
+                       , " week of the "
+                       , mkOrdinal curryMonth
+                       , " month "
+                       , parensQuote . ppMonthForMonthNum $ curryMonth
+                       , " of the year "
+                       , showText curryYear
+                       , ". The date is "
+                       , T.intercalate "-" . map showText $ [ curryMonth, curryDayOfMonth, curryYear ]
+                       , "." ]
+    in ((>>) <$> wrapSend mq cols <*> return) msg
 
 
 -----
@@ -3799,6 +3803,20 @@ tempDescAction (Msg i mq cols desc@(dblQuote -> desc')) = if T.length desc > max
     tweak $ mobTbl.ind i.tempDesc ?~ desc
     wrapSend mq cols $ "Your temporary character description has been set to " <> desc'
 tempDescAction p = patternMatchFail "tempDescAction" . showText $ p
+
+
+-----
+
+
+time :: HasCallStack => ActionFun
+time (NoArgs i mq cols) = logPlaOut "time" i . pure =<< showTime mq cols
+time p                  = withoutArgs time p
+
+
+showTime :: HasCallStack => MsgQueue -> Cols -> MudStack Text
+showTime mq cols = liftIO getCurryTime >>= \CurryTime { .. } ->
+    let msg = T.concat []
+    in ((>>) <$> wrapSend mq cols <*> return) msg
 
 
 -----
