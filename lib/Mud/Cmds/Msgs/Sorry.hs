@@ -274,6 +274,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryTeleRmName
                            , sorryTeleSelf
                            , sorryTeleWelcomeRm
+                           , sorryTimeUnknown
                            , sorryTrashInEq
                            , sorryTrashInRm
                            , sorryTunedOutChan
@@ -1824,6 +1825,13 @@ sorryTeleSelf = can't "teleport to yourself."
 
 sorryTeleWelcomeRm :: Text
 sorryTeleWelcomeRm = can't "teleport to the welcome room."
+
+
+-----
+
+
+sorryTimeUnknown :: Text
+sorryTimeUnknown = "You can't tell what time it is."
 
 
 -----
