@@ -3819,27 +3819,29 @@ showTime mq cols = liftIO getCurryTime >>= \CurryTime { .. } ->
         phaseTxt = pp (getMoonPhaseForDayOfMonth curryDayOfMonth) <> " moon"
     in ((>>) <$> wrapSend mq cols <*> return) msg
   where
-    assocs = [ (0,  (`f` "blah"))
-             , (1,  (`f` "blah"))
-             , (2,  (`f` "blah"))
-             , (3,  (`f` "blah"))
-             , (4,  (`f` "blah"))
-             , (5,  const . f "rising sun" $ "blah")
-             , (6,  const . f "sun" $ "blah")
-             , (7,  const . f "sun" $ "blah")
-             , (8,  const . f "sun" $ "blah")
-             , (9,  const . f "sun" $ "blah")
-             , (10, const . f "sun" $ "blah")
-             , (11, const . f "sun" $ "blah")
-             , (12, const . f "sun" $ "blah")
-             , (13, const . f "sun" $ "blah")
-             , (14, const . f "setting sun" $ "blah")
-             , (15, (`f` "blah"))
-             , (16, (`f` "blah"))
-             , (17, (`f` "blah"))
-             , (18, (`f` "blah"))
-             , (19, (`f` "blah")) ]
-    f a b = prd $ "Judging by the position of the " <> a <> " in the sky, " <> b -- TODO: A new moon isn't visible.
+    assocs = [ -- midnight
+               {- night     -} (0,  (`f` "it's about midnight."))
+             , {- night     -} (1,  (`f` "it's shortly after midnight."))
+             , {- night     -} (2,  (`f` "it's the middle of the night."))
+             , {- night     -} (3,  (`f` "the night is more than half over."))
+             , {- night     -} (4,  (`f` "it's less than 2 hours to sunrise."))
+             , {- night     -} (5,  (`f` "the sun will soon be rising."))
+             , {- morning   -} (6,  const "The sun is rising in the east; a new day is dawning. It's about 6:00.")
+             , {- morning   -} (7,  const . f "sun" $ "it's early morning.")
+             , {- morning   -} (8,  const . f "sun" $ "it's mid-morning.")
+             , {- morning   -} (9,  const . f "sun" $ "it's late morning.")
+             -- noon
+             , {- afternoon -} (10, const . f "sun" $ "it's about midday, or 10:00.")
+             , {- afternoon -} (11, const . f "sun" $ "it's early afternoon.")
+             , {- afternoon -} (12, const . f "sun" $ "it's midafternoon, or about 12:00.")
+             , {- afternoon -} (13, const . f "sun" $ "it's past midafternoon.")
+             , {- afternoon -} (14, const . f "sun" $ "it's late afternoon.")
+             , {- evening   -} (15, const . f "sun" $ "it's now evening, or about 15:00.")
+             , {- evening   -} (16, const . f "sun" $ "it's mid evening.")
+             , {- evening   -} (17, const . f "sun" $ "it's late in the evening.")
+             , {- night     -} (18, const "The sun has finished setting. It's about 18:00.")
+             , {- night     -} (19, (`f` "night has only just begun.")) ]
+    f a b = "Judging by the position of the " <> a <> " in the sky, " <> b -- TODO: A new moon isn't visible.
 
 
 -----
