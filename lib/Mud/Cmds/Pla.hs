@@ -3809,8 +3809,11 @@ tempDescAction p = patternMatchFail "tempDescAction" . showText $ p
 
 
 time :: HasCallStack => ActionFun
-time (NoArgs i mq cols) = logPlaOut "time" i . pure =<< showTime mq cols
-time p                  = withoutArgs time p
+time (NoArgs i mq cols) = getState >>= \ms ->
+    let f OutsideEnv = logPlaOut  "time" i . pure =<< showTime mq cols
+        f _          = logPlaExec "time" i >> wrapSend mq cols sorryTimeNotOutside
+    in views rmEnv f . getMobRm i $ ms
+time p = withoutArgs time p
 
 
 showTime :: HasCallStack => MsgQueue -> Cols -> MudStack Text
