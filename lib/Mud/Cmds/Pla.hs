@@ -3815,33 +3815,49 @@ time p                  = withoutArgs time p
 
 showTime :: HasCallStack => MsgQueue -> Cols -> MudStack Text
 showTime mq cols = liftIO getCurryTime >>= \CurryTime { .. } ->
-    let msg      = maybe sorryTimeUnknown (phaseTxt |&|) . lookup curryDayOfMonth $ assocs
-        phaseTxt = pp (getMoonPhaseForDayOfMonth curryDayOfMonth) <> " moon"
+    let msg = (curryHour |&|) $ if isNight curryHour
+                then case getMoonPhaseForDayOfMonth curryDayOfMonth of Nothing    -> const sorryTimeUnknown
+                                                                       Just phase -> mkTimeDescNight phase
+                else mkTimeDescDay
     in ((>>) <$> wrapSend mq cols <*> return) msg
-  where
-    assocs = [ -- midnight
-               {- night     -} (0,  (`f` "it's about midnight."))
-             , {- night     -} (1,  (`f` "it's shortly after midnight."))
-             , {- night     -} (2,  (`f` "it's the middle of the night."))
-             , {- night     -} (3,  (`f` "the night is more than half over."))
-             , {- night     -} (4,  (`f` "it's less than 2 hours to sunrise."))
-             , {- night     -} (5,  (`f` "the sun will soon be rising."))
-             , {- morning   -} (6,  const "The sun is rising in the east; a new day is dawning. It's about 6:00.")
-             , {- morning   -} (7,  const . f "sun" $ "it's early morning.")
-             , {- morning   -} (8,  const . f "sun" $ "it's mid-morning.")
-             , {- morning   -} (9,  const . f "sun" $ "it's late morning.")
-             -- noon
-             , {- afternoon -} (10, const . f "sun" $ "it's about midday, or 10:00.")
-             , {- afternoon -} (11, const . f "sun" $ "it's early afternoon.")
-             , {- afternoon -} (12, const . f "sun" $ "it's midafternoon, or about 12:00.")
-             , {- afternoon -} (13, const . f "sun" $ "it's past midafternoon.")
-             , {- afternoon -} (14, const . f "sun" $ "it's late afternoon.")
-             , {- evening   -} (15, const . f "sun" $ "it's now evening, or about 15:00.")
-             , {- evening   -} (16, const . f "sun" $ "it's mid evening.")
-             , {- evening   -} (17, const . f "sun" $ "it's late in the evening.")
-             , {- night     -} (18, const "The sun has finished setting. It's about 18:00.")
-             , {- night     -} (19, (`f` "night has only just begun.")) ]
-    f a b = "Judging by the position of the " <> a <> " in the sky, " <> b -- TODO: A new moon isn't visible.
+
+
+mkTimeDescDay :: Hour -> Text
+mkTimeDescDay {- morning   -} 6  = "The sun is rising in the east; a new day is dawning. It's about 6:00."
+mkTimeDescDay {- morning   -} 7  = mkTimeDescDayHelper "it's early morning."
+mkTimeDescDay {- morning   -} 8  = mkTimeDescDayHelper "it's mid-morning."
+mkTimeDescDay {- morning   -} 9  = mkTimeDescDayHelper "it's late morning."
+mkTimeDescDay {- afternoon -} 10 = mkTimeDescDayHelper "it's about midday, or 10:00."
+mkTimeDescDay {- afternoon -} 11 = mkTimeDescDayHelper "it's early afternoon."
+mkTimeDescDay {- afternoon -} 12 = mkTimeDescDayHelper "it's midafternoon, or about 12:00."
+mkTimeDescDay {- afternoon -} 13 = mkTimeDescDayHelper "it's past midafternoon."
+mkTimeDescDay {- afternoon -} 14 = mkTimeDescDayHelper "it's late afternoon."
+mkTimeDescDay {- evening   -} 15 = mkTimeDescDayHelper "it's now evening, or about 15:00."
+mkTimeDescDay {- evening   -} 16 = mkTimeDescDayHelper "it's mid evening."
+mkTimeDescDay {- evening   -} 17 = mkTimeDescDayHelper "it's late in the evening."
+mkTimeDescDay                 x  = patternMatchFail "mkTimeDescDay" . showText $ x
+
+
+mkTimeDescDayHelper :: Text -> Text
+mkTimeDescDayHelper = ("Judging by the position of the sun in the sky, " <>)
+
+
+mkTimeDescNight :: MoonPhase -> Hour -> Text
+mkTimeDescNight NewMoon _  = "" -- TODO
+mkTimeDescNight phase   0  = mkTimeDescNightHelper phase "it's about midnight."
+mkTimeDescNight phase   1  = mkTimeDescNightHelper phase "it's shortly after midnight."
+mkTimeDescNight phase   2  = mkTimeDescNightHelper phase "it's the middle of the night."
+mkTimeDescNight phase   3  = mkTimeDescNightHelper phase "the night is more than half over."
+mkTimeDescNight phase   4  = mkTimeDescNightHelper phase "it's less than 2 hours to sunrise."
+mkTimeDescNight phase   5  = mkTimeDescNightHelper phase "the sun will soon be rising."
+mkTimeDescNight _       18 = "The sun has finished setting. It's about 18:00."
+mkTimeDescNight phase   19 = mkTimeDescNightHelper phase "night has only just begun."
+mkTimeDescNight _       x  = patternMatchFail "mkTimeDescNight" . showText $ x
+
+
+mkTimeDescNightHelper :: MoonPhase -> Text -> Text
+mkTimeDescNightHelper phase t = let phaseTxt = pp phase <> " moon"
+                                in "Judging by the position of the " <> phaseTxt <> " in the sky, " <> t
 
 
 -----

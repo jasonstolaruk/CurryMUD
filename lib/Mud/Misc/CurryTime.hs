@@ -8,7 +8,6 @@ import Mud.Util.Quoting
 import Mud.Util.Text
 
 import Data.List (lookup)
-import Data.Maybe (fromMaybe)
 import Data.Monoid (Sum(..), (<>))
 import Data.Text (Text)
 import Data.Time (UTCTime(..), diffUTCTime, fromGregorian, getCurrentTime)
@@ -84,28 +83,28 @@ getCurryTime = secsToCurryTime <$> getSecsFromCurryEpoch
 -----
 
 
-getMoonPhaseForDayOfMonth :: Day -> MoonPhase
-getMoonPhaseForDayOfMonth d = fromMaybe NewMoon . lookup d $ [ (1,  NewMoon)
-                                                             , (2,  NewMoon)
-                                                             , (3,  WaxingCrescent)
-                                                             , (4,  WaxingCrescent)
-                                                             , (5,  FirstQuarter)
-                                                             , (6,  FirstQuarter)
-                                                             , (7,  FirstQuarter)
-                                                             , (8,  WaxingGibbous)
-                                                             , (9,  WaxingGibbous)
-                                                             , (10, WaxingGibbous)
-                                                             , (11, FullMoon)
-                                                             , (12, FullMoon)
-                                                             , (13, FullMoon)
-                                                             , (14, WaningGibbous)
-                                                             , (15, WaningGibbous)
-                                                             , (16, WaningGibbous)
-                                                             , (17, ThirdQuarter)
-                                                             , (18, ThirdQuarter)
-                                                             , (19, ThirdQuarter)
-                                                             , (20, WaningCrescent)
-                                                             , (21, WaningCrescent) ]
+getMoonPhaseForDayOfMonth :: Day -> Maybe MoonPhase
+getMoonPhaseForDayOfMonth = flip lookup [ (1,  NewMoon)
+                                        , (2,  NewMoon)
+                                        , (3,  WaxingCrescent)
+                                        , (4,  WaxingCrescent)
+                                        , (5,  FirstQuarter)
+                                        , (6,  FirstQuarter)
+                                        , (7,  FirstQuarter)
+                                        , (8,  WaxingGibbous)
+                                        , (9,  WaxingGibbous)
+                                        , (10, WaxingGibbous)
+                                        , (11, FullMoon)
+                                        , (12, FullMoon)
+                                        , (13, FullMoon)
+                                        , (14, WaningGibbous)
+                                        , (15, WaningGibbous)
+                                        , (16, WaningGibbous)
+                                        , (17, ThirdQuarter)
+                                        , (18, ThirdQuarter)
+                                        , (19, ThirdQuarter)
+                                        , (20, WaningCrescent)
+                                        , (21, WaningCrescent) ]
 
 
 -----
@@ -113,6 +112,13 @@ getMoonPhaseForDayOfMonth d = fromMaybe NewMoon . lookup d $ [ (1,  NewMoon)
 
 getSecsFromCurryEpoch :: IO Sec
 getSecsFromCurryEpoch = round . (`diffUTCTime` curryEpoch) <$> getCurrentTime
+
+
+-----
+
+
+isNight :: Hour -> Bool
+isNight = (||) <$> (< 6) <*> (> 17)
 
 
 -----

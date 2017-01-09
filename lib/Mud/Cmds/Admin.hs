@@ -1129,8 +1129,11 @@ adminLocate p = patternMatchFail "adminLocate" . showText $ p
 
 
 adminMoon :: HasCallStack => ActionFun
-adminMoon (NoArgs i mq cols) = getMoonPhaseForDayOfMonth . curryDayOfMonth <$> liftIO getCurryTime >>= \phase ->
-    ((>>) <$> logPlaOut (prefixAdminCmd "moon") i . pure <*> wrapSend mq cols) $ "The moon is in its " <> pp phase <> " phase."
+adminMoon (NoArgs i mq cols) = getMoonPhaseForDayOfMonth . curryDayOfMonth <$> liftIO getCurryTime >>= f . \case
+  Nothing    -> "The phase of the moon cannot be determined."
+  Just phase -> "The moon is in its " <> pp phase <> " phase."
+  where
+    f = (>>) <$> logPlaOut (prefixAdminCmd "moon") i . pure <*> wrapSend mq cols
 adminMoon p = withoutArgs adminMoon p
 
 
