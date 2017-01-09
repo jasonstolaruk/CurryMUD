@@ -44,7 +44,7 @@ createDalben :: MudStack ()
 createDalben = do
   logNotice "createDalben" "creating Dalben."
 
-  putRm iDalbenWelcome
+  putRm iDalbenWelcome -- TODO: Put a sundial and a moondial here. The moondial can't be used during the New Moon phase.
         []
         mempty
         (mkRm (RmTemplate "Welcome to Dalben"
