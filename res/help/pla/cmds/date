@@ -5,6 +5,7 @@
 
 \uDESCRIPTION\n
 Display the current date in Rumia time.
+The date is numerically stated in the following format: mm-dd-yyyy.
 
 \uSEE ALSO\n
 calendar, time

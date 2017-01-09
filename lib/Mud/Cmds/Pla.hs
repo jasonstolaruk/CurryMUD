@@ -878,28 +878,27 @@ connectHelper i (target, as) ms =
 
 
 date :: HasCallStack => ActionFun
-date (NoArgs i mq cols) = logPlaOut "date" i . pure =<< showDate mq cols
+date (NoArgs i mq cols) = logPlaOut "date" i =<< showDate mq cols
 date p                  = withoutArgs date p
 
 
-showDate :: HasCallStack => MsgQueue -> Cols -> MudStack Text
+showDate :: HasCallStack => MsgQueue -> Cols -> MudStack [Text]
 showDate mq cols = liftIO getCurryTime >>= \CurryTime { .. } ->
-    let msg = T.concat [ "It's the "
-                       , mkOrdinal curryDayOfWeek
-                       , " day "
-                       , parensQuote . ppWeekdayForDayOfWeek $ curryDayOfWeek
-                       , " of the "
-                       , mkOrdinal curryWeek
-                       , " week of the "
-                       , mkOrdinal curryMonth
-                       , " month "
-                       , parensQuote . ppMonthForMonthNum $ curryMonth
-                       , " of the year "
-                       , showText curryYear
-                       , ". The date is "
-                       , T.intercalate "-" . map showText $ [ curryMonth, curryDayOfMonth, curryYear ]
-                       , "." ]
-    in ((>>) <$> wrapSend mq cols <*> return) msg
+    let msgs = [ T.concat [ "It's the "
+                          , mkOrdinal curryDayOfWeek
+                          , " day "
+                          , parensQuote . ppWeekdayForDayOfWeek $ curryDayOfWeek
+                          , " of the "
+                          , mkOrdinal curryWeek
+                          , " week of the "
+                          , mkOrdinal curryMonth
+                          , " month "
+                          , parensQuote . ppMonthForMonthNum $ curryMonth
+                          , " of the year "
+                          , showText curryYear
+                          , "." ]
+               , prd $ "The date is " <> T.intercalate "-" (map showText [ curryMonth, curryDayOfMonth, curryYear ]) ]
+    in ((>>) <$> multiWrapSend mq cols <*> return) msgs
 
 
 -----
