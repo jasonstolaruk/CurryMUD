@@ -787,7 +787,8 @@ handleLogin (NewCharBundle oldSing s _) isNew params@ActionParams { .. } = do
     mapM_ (myId |&|) [ runDigesterAsync, runRegenAsync, restartPausedEffects ]
     notifyArrival
     greet
-    ((>>) <$> uncurry showMotd <*> void . uncurry showDate) (plaMsgQueue, plaCols) -- TODO: Show time if outside?
+    ((>>) <$> uncurry showMotd <*> void . uncurry showDate) (plaMsgQueue, plaCols)
+    when (isOutside myId ms) (wrapSend plaMsgQueue plaCols =<< showTime plaMsgQueue plaCols)
     showElapsedTime
     showRetainedMsgs
     look params

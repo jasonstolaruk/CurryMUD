@@ -85,7 +85,7 @@ effortsBlockedMsg = "Your efforts are blocked; "
 
 
 egressMsg :: Text -> Text
-egressMsg n = n <> " slowly dissolves into nothingness."
+egressMsg n = n <> " slowly dissolves into nothingness and goes to sleep."
 
 
 enterDescMsg :: Text
@@ -189,7 +189,7 @@ noTasteMsg = "You don't taste anything in particular."
 
 
 notifyArrivalMsg :: Text -> Text
-notifyArrivalMsg n = n <> " slowly materializes out of thin air."
+notifyArrivalMsg n = "Waking up, " <> n <> " slowly materializes out of thin air."
 
 
 plusRelatedMsg :: Text

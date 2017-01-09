@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
-{-# LANGUAGE FlexibleContexts, LambdaCase, MultiWayIf, NamedFieldPuns, OverloadedStrings, ParallelListComp, PatternSynonyms, TupleSections, ViewPatterns #-}
+{-# LANGUAGE FlexibleContexts, LambdaCase, MultiWayIf, NamedFieldPuns, OverloadedStrings, ParallelListComp, PatternSynonyms, RecordWildCards, TupleSections, ViewPatterns #-}
 
 -- This module contains helper functions used by multiple modules under "Mud.Cmds".
 
@@ -37,6 +37,7 @@ module Mud.Cmds.Util.Misc ( asterisk
                           , isHeDon't
                           , isHostBanned
                           , isLinked
+                          , isOutside
                           , isPCBanned
                           , isPunc
                           , locateHelper
@@ -65,6 +66,7 @@ module Mud.Cmds.Util.Misc ( asterisk
                           , punc
                           , questionChanContext
                           , sendGenericErrorMsg
+                          , showTime
                           , tunedInOut
                           , tunedInOutColorize
                           , unmsg
@@ -89,6 +91,7 @@ import Mud.Data.State.Util.Output
 import Mud.Data.State.Util.Random
 import Mud.Interp.Pager
 import Mud.Misc.ANSI
+import Mud.Misc.CurryTime
 import Mud.Misc.Database
 import Mud.Misc.LocPref
 import Mud.TheWorld.Zones.AdminZoneIds (iNecropolis)
@@ -592,6 +595,13 @@ isDblLinked = helperIsLinked (&&)
 -----
 
 
+isOutside :: Id -> MudState -> Bool
+isOutside i = views rmEnv (== OutsideEnv) . getMobRm i
+
+
+-----
+
+
 isPCBanned :: HasCallStack => Sing -> IO Any
 isPCBanned banSing = isBanned banSing <$> (getDbTblRecs "ban_pc" :: IO [BanPCRec])
 
@@ -822,6 +832,54 @@ questionChanContext = ChanContext "question" Nothing True
 
 sendGenericErrorMsg :: HasCallStack => MsgQueue -> Cols -> MudStack ()
 sendGenericErrorMsg mq cols = wrapSend mq cols genericErrorMsg
+
+
+-----
+
+
+showTime :: HasCallStack => MsgQueue -> Cols -> MudStack Text
+showTime mq cols = liftIO getCurryTime >>= \CurryTime { .. } ->
+    ((>>) <$> wrapSend mq cols <*> return) . (curryHour |&|) $ if isNight curryHour
+      then case getMoonPhaseForDayOfMonth curryDayOfMonth of Nothing    -> const sorryTimeUnknown
+                                                             Just phase -> mkTimeDescNight phase
+      else mkTimeDescDay
+
+
+mkTimeDescDay :: Hour -> Text
+mkTimeDescDay {- morning   -} 6  = "The sun is rising in the east; a new day is dawning. It's about 6:00."
+mkTimeDescDay {- morning   -} 7  = mkTimeDescDayHelper "it's early morning."
+mkTimeDescDay {- morning   -} 8  = mkTimeDescDayHelper "it's mid-morning."
+mkTimeDescDay {- morning   -} 9  = mkTimeDescDayHelper "it's late morning."
+mkTimeDescDay {- afternoon -} 10 = mkTimeDescDayHelper "it's about midday, or 10:00."
+mkTimeDescDay {- afternoon -} 11 = mkTimeDescDayHelper "it's early afternoon."
+mkTimeDescDay {- afternoon -} 12 = mkTimeDescDayHelper "it's midafternoon, or about 12:00."
+mkTimeDescDay {- afternoon -} 13 = mkTimeDescDayHelper "it's past midafternoon."
+mkTimeDescDay {- afternoon -} 14 = mkTimeDescDayHelper "it's late afternoon."
+mkTimeDescDay {- evening   -} 15 = mkTimeDescDayHelper "it's now evening, or about 15:00."
+mkTimeDescDay {- evening   -} 16 = mkTimeDescDayHelper "it's mid evening."
+mkTimeDescDay {- evening   -} 17 = mkTimeDescDayHelper "it's late in the evening."
+mkTimeDescDay                 x  = patternMatchFail "mkTimeDescDay" . showText $ x
+
+
+mkTimeDescDayHelper :: Text -> Text
+mkTimeDescDayHelper = ("Judging by the position of the sun in the sky, " <>)
+
+
+mkTimeDescNight :: MoonPhase -> Hour -> Text
+mkTimeDescNight NewMoon _  = "Given that the moon is altogether absent in the sky, you can't tell what time of night it is."
+mkTimeDescNight phase   0  = mkTimeDescNightHelper phase "it's about midnight."
+mkTimeDescNight phase   1  = mkTimeDescNightHelper phase "it's shortly after midnight."
+mkTimeDescNight phase   2  = mkTimeDescNightHelper phase "it's the middle of the night."
+mkTimeDescNight phase   3  = mkTimeDescNightHelper phase "the night is more than half over."
+mkTimeDescNight phase   4  = mkTimeDescNightHelper phase "it's less than 2 hours to sunrise."
+mkTimeDescNight phase   5  = mkTimeDescNightHelper phase "the sun will soon be rising."
+mkTimeDescNight _       18 = "The sun has finished setting. It's about 18:00."
+mkTimeDescNight phase   19 = mkTimeDescNightHelper phase "night has only just begun."
+mkTimeDescNight _       x  = patternMatchFail "mkTimeDescNight" . showText $ x
+
+
+mkTimeDescNightHelper :: MoonPhase -> Text -> Text
+mkTimeDescNightHelper phase t = T.concat [ "Judging by the position of the ", pp phase, " moon in the sky, ", t ]
 
 
 -----
