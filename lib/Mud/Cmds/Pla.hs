@@ -3843,7 +3843,7 @@ mkTimeDescDayHelper = ("Judging by the position of the sun in the sky, " <>)
 
 
 mkTimeDescNight :: MoonPhase -> Hour -> Text
-mkTimeDescNight NewMoon _  = "" -- TODO
+mkTimeDescNight NewMoon _  = "Given that the moon is altogether absent in the sky, you can't tell what time of night it is."
 mkTimeDescNight phase   0  = mkTimeDescNightHelper phase "it's about midnight."
 mkTimeDescNight phase   1  = mkTimeDescNightHelper phase "it's shortly after midnight."
 mkTimeDescNight phase   2  = mkTimeDescNightHelper phase "it's the middle of the night."
@@ -3856,8 +3856,7 @@ mkTimeDescNight _       x  = patternMatchFail "mkTimeDescNight" . showText $ x
 
 
 mkTimeDescNightHelper :: MoonPhase -> Text -> Text
-mkTimeDescNightHelper phase t = let phaseTxt = pp phase <> " moon"
-                                in "Judging by the position of the " <> phaseTxt <> " in the sky, " <> t
+mkTimeDescNightHelper phase t = T.concat [ "Judging by the position of the ", pp phase, " moon in the sky, ", t ]
 
 
 -----

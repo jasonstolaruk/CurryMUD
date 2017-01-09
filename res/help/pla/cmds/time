@@ -4,7 +4,8 @@
 !time
 
 \uDESCRIPTION\n
-Tell the time.
+Tell the time based on the position of the sun or moon.
+You must be outside to use this command.
 
 \uSEE ALSO\n
 calendar, date

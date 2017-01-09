@@ -7,6 +7,7 @@ import Mud.Util.Operators
 import Mud.Util.Quoting
 import Mud.Util.Text
 
+import Data.Ix (inRange)
 import Data.List (lookup)
 import Data.Monoid (Sum(..), (<>))
 import Data.Text (Text)
@@ -118,7 +119,7 @@ getSecsFromCurryEpoch = round . (`diffUTCTime` curryEpoch) <$> getCurrentTime
 
 
 isNight :: Hour -> Bool
-isNight = (||) <$> (< 6) <*> (> 17)
+isNight = not . inRange (6, 17)
 
 
 -----
