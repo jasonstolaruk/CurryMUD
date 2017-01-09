@@ -778,7 +778,7 @@ logIn newId ms oldSing newHost newTime originId = peepNewId . movePC $ adoptNewI
 
 
 handleLogin :: HasCallStack => NewCharBundle -> Bool -> ActionParams -> MudStack ()
-handleLogin (NewCharBundle oldSing s _) isNew params@ActionParams { .. } = do
+handleLogin (NewCharBundle oldSing s _) isNew params@ActionParams { .. } = let pair = (plaMsgQueue, plaCols) in do
     logPla "handleLogin" myId "handling login."
     setLoginTime
     ms <- getState
@@ -787,8 +787,8 @@ handleLogin (NewCharBundle oldSing s _) isNew params@ActionParams { .. } = do
     mapM_ (myId |&|) [ runDigesterAsync, runRegenAsync, restartPausedEffects ]
     notifyArrival
     greet
-    ((>>) <$> uncurry showMotd <*> void . uncurry showDate) (plaMsgQueue, plaCols)
-    when (isOutside myId ms) (wrapSend plaMsgQueue plaCols =<< showTime plaMsgQueue plaCols)
+    ((>>) <$> uncurry showMotd <*> void . uncurry showDate) pair
+    when (isOutside myId ms) . void . uncurry showTime $ pair
     showElapsedTime
     showRetainedMsgs
     look params
