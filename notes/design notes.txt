@@ -270,7 +270,9 @@ When fighting more than one mobile, there is a chance you will be unable to flee
 
 ==========
 
-SPELLS/PSI:
+MAGIC/PSIONICS:
+
+Magic is affected by the phase of the moon.
 
 There is a cool-down period in which another spell cannot be cast.
 
