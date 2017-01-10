@@ -56,11 +56,11 @@ lookSundialHookName = "Dalben_iDalbenWelcome_lookSundial"
 
 lookSundialHookFun :: HookFun
 lookSundialHookFun i Hook { .. } _ a@(_, (ms, _, _, _), _) =
-  a & _1    %~  (\\ hookTriggers)
-    & _2._3 <>~ ( let selfDesig = mkStdDesig i ms DoCap
-                  in pure (serialize selfDesig <> " looks at the sundial.", i `delete` desigIds selfDesig) )
-    & _2._4 <>~ pure (bracketQuote hookName <> " looked at sundial")
-    & _3    .~  pure helper
+    a & _1    %~  (\\ hookTriggers)
+      & _2._3 <>~ ( let selfDesig = mkStdDesig i ms DoCap
+                    in pure (serialize selfDesig <> " looks at the sundial.", i `delete` desigIds selfDesig) )
+      & _2._4 <>~ pure (bracketQuote hookName <> " looked at sundial")
+      & _3    .~  pure helper
   where
     helper = do (ms', CurryTime { .. }) <- (,) <$> getState <*> liftIO getCurryTime
                 let (mq, cols) = getMsgQueueColumns i ms'
@@ -82,11 +82,11 @@ lookMoondialHookName = "Dalben_iDalbenWelcome_lookMoondial"
 
 lookMoondialHookFun :: HookFun -- TODO: Also useless during New Moon.
 lookMoondialHookFun i Hook { .. } _ a@(_, (ms, _, _, _), _) =
-  a & _1    %~  (\\ hookTriggers)
-    & _2._3 <>~ ( let selfDesig = mkStdDesig i ms DoCap
-                  in pure (serialize selfDesig <> " looks at the moondial.", i `delete` desigIds selfDesig) )
-    & _2._4 <>~ pure (bracketQuote hookName <> " looked at moondial")
-    & _3    .~  pure helper
+    a & _1    %~  (\\ hookTriggers)
+      & _2._3 <>~ ( let selfDesig = mkStdDesig i ms DoCap
+                    in pure (serialize selfDesig <> " looks at the moondial.", i `delete` desigIds selfDesig) )
+      & _2._4 <>~ pure (bracketQuote hookName <> " looked at moondial")
+      & _3    .~  pure helper
   where
     helper = do (ms', CurryTime { .. }) <- (,) <$> getState <*> liftIO getCurryTime
                 let (mq, cols) = getMsgQueueColumns i ms'
