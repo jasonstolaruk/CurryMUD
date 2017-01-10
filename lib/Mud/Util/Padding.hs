@@ -4,7 +4,9 @@ module Mud.Util.Padding where
 
 import Mud.Misc.ANSI
 import Mud.TopLvlDefs.Padding
+import Mud.Util.Misc
 import Mud.Util.Quoting
+import Mud.Util.Text
 
 import Data.Monoid ((<>))
 import Data.Text (Text)
@@ -56,6 +58,13 @@ padName :: Text -> Text
 padName = pad namePadding
 
 
+padOrTrunc :: Int -> Text -> Text
+padOrTrunc x _                 | x < 0 = ""
+padOrTrunc x t@(T.length -> l) | l < x = t <> T.replicate (x - l) " "
+                               | l > x = T.take x t
+padOrTrunc _ t = t
+
+
 padRace :: Text -> Text
 padRace = pad racePadding
 
@@ -68,12 +77,9 @@ padSex :: Text -> Text
 padSex = pad sexPadding
 
 
+padTwoDigits :: Int -> Text
+padTwoDigits x@(showText -> x') = onTrue (x < 10) ('0' `T.cons`) x'
+
+
 parensPad :: Int -> Text -> Text
 parensPad = quoteWithAndPad ("(", ")")
-
-
-padOrTrunc :: Int -> Text -> Text
-padOrTrunc x _                 | x < 0 = ""
-padOrTrunc x t@(T.length -> l) | l < x = t <> T.replicate (x - l) " "
-                               | l > x = T.take x t
-padOrTrunc _ t = t

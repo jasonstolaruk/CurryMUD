@@ -14,7 +14,10 @@ import Mud.Data.State.Util.Put
 import Mud.Misc.CurryTime
 import Mud.TheWorld.Misc
 import Mud.TheWorld.Zones.DalbenIds
+import Mud.Util.Padding
 import Mud.Util.Quoting
+import Mud.Util.Text
+import qualified Data.Text as T
 import qualified Mud.Misc.Logging as L (logNotice)
 
 import Control.Lens (_1, _2, _3, _4)
@@ -55,15 +58,15 @@ lookSundialHookFun :: HookFun
 lookSundialHookFun i Hook { .. } _ a@(_, (ms, _, _, _), _) =
   a & _1    %~  (\\ hookTriggers)
     & _2._3 <>~ ( let selfDesig = mkStdDesig i ms DoCap
-                  in pure (serialize selfDesig <> " examines the sundial.", i `delete` desigIds selfDesig) )
-    & _2._4 <>~ pure (bracketQuote hookName <> " examined sundial")
+                  in pure (serialize selfDesig <> " looks at the sundial.", i `delete` desigIds selfDesig) )
+    & _2._4 <>~ pure (bracketQuote hookName <> " looked at sundial")
     & _3    .~  pure helper
   where
-    helper = liftIO getCurryTime >>= \CurryTime { .. } ->
-        let (mq, cols) = getMsgQueueColumns i ms
-        in wrapSend mq cols $ if isNight curryHour
-          then ""
-          else ""
+    helper = do (ms', CurryTime { .. }) <- (,) <$> getState <*> liftIO getCurryTime
+                let (mq, cols) = getMsgQueueColumns i ms'
+                wrapSend mq cols $ if isNight curryHour
+                  then "Alas, the sundial is useless when the sun isn't out."
+                  else T.concat [ "The sundial reads ", showText curryHour, ":", padTwoDigits $ (curryMin `div` 5) * 5, "." ]
 
 
 -----
@@ -77,8 +80,19 @@ lookMoondialHookName :: HookName
 lookMoondialHookName = "Dalben_iDalbenWelcome_lookMoondial"
 
 
-lookMoondialHookFun :: HookFun
-lookMoondialHookFun = undefined
+lookMoondialHookFun :: HookFun -- TODO: Also useless during New Moon.
+lookMoondialHookFun i Hook { .. } _ a@(_, (ms, _, _, _), _) =
+  a & _1    %~  (\\ hookTriggers)
+    & _2._3 <>~ ( let selfDesig = mkStdDesig i ms DoCap
+                  in pure (serialize selfDesig <> " looks at the moondial.", i `delete` desigIds selfDesig) )
+    & _2._4 <>~ pure (bracketQuote hookName <> " looked at moondial")
+    & _3    .~  pure helper
+  where
+    helper = do (ms', CurryTime { .. }) <- (,) <$> getState <*> liftIO getCurryTime
+                let (mq, cols) = getMsgQueueColumns i ms'
+                wrapSend mq cols $ if isNight curryHour
+                  then T.concat [ "The moondial reads ", showText curryHour, ":", padTwoDigits $ (curryMin `div` 5) * 5, "." ]
+                  else "Alas, the moondial is useless when the moon isn't out."
 
 
 -- ==================================================

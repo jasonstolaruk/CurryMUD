@@ -2048,7 +2048,7 @@ teleHelper p@ActionParams { myId } ms originId destId destName mt f sorry =
     in if | destId == originId   -> sorry sorryTeleAlready
           | destId == iWelcome   -> sorry sorryTeleWelcomeRm
           | destId == iLoggedOut -> sorry sorryTeleLoggedOutRm
-          | otherwise            -> (ms', [ logPla "telehelper" myId . prd $ "teleported to " <> dblQuote destName
+          | otherwise            -> (ms', [ logPla "teleHelper" myId . prd $ "teleported to " <> destName
                                           , sendGmcpRmInfo Nothing myId ms'
                                           , bcastIfNotIncog myId . f myId . g $ bs
                                           , look p

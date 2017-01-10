@@ -152,7 +152,7 @@ initFeelingFunTbl = tweak $ feelingFunTbl .~ M.fromList list
 initHookFunTbl :: HasCallStack => MudStack ()
 initHookFunTbl = tweak $ hookFunTbl .~ M.fromList list
   where
-    list = concat [ commonHooks, adminZoneHooks, tutorialHooks ]
+    list = concat [ commonHooks, adminZoneHooks, tutorialHooks, dalbenHooks ]
 
 
 initRmActionFunTbl :: HasCallStack => MudStack ()
