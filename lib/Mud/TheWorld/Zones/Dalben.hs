@@ -40,25 +40,25 @@ logNotice = L.logNotice "Mud.TheWorld.Zones.Dalben"
 
 
 dalbenHooks :: [(HookName, HookFun)]
-dalbenHooks = [ (lookSundialHookName,  lookSundialHookFun )
-              , (lookMoondialHookName, lookMoondialHookFun)
-              , (readSundialHookName,  readSundialHookFun )
-              , (readMoondialHookName, readMoondialHookFun) ]
+dalbenHooks = [ (lookMoondialHookName, lookMoondialHookFun)
+              , (lookSundialHookName,  lookSundialHookFun )
+              , (readMoondialHookName, readMoondialHookFun)
+              , (readSundialHookName,  readSundialHookFun ) ]
 
 
 -----
 
 
-lookSundialHook :: Hook
-lookSundialHook = Hook lookSundialHookName . pure $ "sundial"
+lookMoondialHook :: Hook
+lookMoondialHook = Hook lookMoondialHookName . pure $ "moondial"
 
 
-lookSundialHookName :: HookName
-lookSundialHookName = "Dalben_iDalbenWelcome_lookSundial"
+lookMoondialHookName :: HookName
+lookMoondialHookName = "Dalben_iDalbenWelcome_lookMoondial"
 
 
-lookSundialHookFun :: HookFun
-lookSundialHookFun = mkGenericHookFun (mkDialDesc "sun") "looks at the sundial." "looked at sundial"
+lookMoondialHookFun :: HookFun
+lookMoondialHookFun = mkGenericHookFun (mkDialDesc "moon") "looks at the moondial." "looked at moondial"
 
 
 mkDialDesc :: Text -> Text
@@ -82,16 +82,47 @@ mkDialDesc t = T.concat [ "The "
 -----
 
 
-lookMoondialHook :: Hook
-lookMoondialHook = Hook lookMoondialHookName . pure $ "moondial"
+lookSundialHook :: Hook
+lookSundialHook = Hook lookSundialHookName . pure $ "sundial"
 
 
-lookMoondialHookName :: HookName
-lookMoondialHookName = "Dalben_iDalbenWelcome_lookMoondial"
+lookSundialHookName :: HookName
+lookSundialHookName = "Dalben_iDalbenWelcome_lookSundial"
 
 
-lookMoondialHookFun :: HookFun
-lookMoondialHookFun = mkGenericHookFun (mkDialDesc "moon") "looks at the moondial." "looked at moondial"
+lookSundialHookFun :: HookFun
+lookSundialHookFun = mkGenericHookFun (mkDialDesc "sun") "looks at the sundial." "looked at sundial"
+
+
+-----
+
+
+readMoondialHook :: Hook
+readMoondialHook = Hook readMoondialHookName . pure $ "moondial"
+
+
+readMoondialHookName :: HookName
+readMoondialHookName = "Dalben_iDalbenWelcome_readMoondial"
+
+
+readMoondialHookFun :: HookFun
+readMoondialHookFun i Hook { .. } _ a@(_, (ms, _, _, _), _) =
+    a & _1    %~  (\\ hookTriggers)
+      & _2._3 <>~ ( let selfDesig = mkStdDesig i ms DoCap
+                    in pure (serialize selfDesig <> " reads the moondial.", i `delete` desigIds selfDesig) )
+      & _2._4 <>~ pure (bracketQuote hookName <> " read moondial")
+      & _3    .~  pure (uncurry helper . getMsgQueueColumns i $ ms)
+  where
+    helper mq cols = liftIO getCurryTime >>= \CurryTime { .. } ->
+        let f msg = isNight curryHour ? msg :? "Alas, you'll have to wait for the moon to come out."
+        in wrapSend mq cols . f $ case getMoonPhaseForDayOfMonth curryDayOfMonth of
+          Just NewMoon -> "On account of the moon being absent from the sky tonight, you can't take a reading off the \
+                          \moondial."
+          _            -> T.concat [ "The moondial reads ", showText curryHour, ":", formatMins curryMin, "." ]
+
+
+formatMins :: Min -> Text
+formatMins x = padTwoDigits $ (x `div` 5) * 5
 
 
 -----
@@ -116,39 +147,8 @@ readSundialHookFun i Hook { .. } _ a@(_, (ms, _, _, _), _) =
     helper = do (ms', CurryTime { .. }) <- (,) <$> getState <*> liftIO getCurryTime
                 let (mq, cols) = getMsgQueueColumns i ms'
                 wrapSend mq cols $ if isNight curryHour
-                  then "Alas, the sundial is useless when the sun isn't out."
+                  then "Alas, you'll have to wait for the sun to come out."
                   else T.concat [ "The sundial reads ", showText curryHour, ":", formatMins curryMin, "." ]
-
-
-formatMins :: Min -> Text
-formatMins x = padTwoDigits $ (x `div` 5) * 5
-
-
------
-
-
-readMoondialHook :: Hook
-readMoondialHook = Hook readMoondialHookName . pure $ "moondial"
-
-
-readMoondialHookName :: HookName
-readMoondialHookName = "Dalben_iDalbenWelcome_readMoondial"
-
-
-readMoondialHookFun :: HookFun
-readMoondialHookFun i Hook { .. } _ a@(_, (ms, _, _, _), _) =
-    a & _1    %~  (\\ hookTriggers)
-      & _2._3 <>~ ( let selfDesig = mkStdDesig i ms DoCap
-                    in pure (serialize selfDesig <> " reads the moondial.", i `delete` desigIds selfDesig) )
-      & _2._4 <>~ pure (bracketQuote hookName <> " read moondial")
-      & _3    .~  pure (uncurry helper . getMsgQueueColumns i $ ms)
-  where
-    helper mq cols = liftIO getCurryTime >>= \CurryTime { .. } ->
-        let f msg = isNight curryHour ? msg :? "Alas, the moondial is useless when the moon isn't out."
-        in wrapSend mq cols . f $ case getMoonPhaseForDayOfMonth curryDayOfMonth of
-          Just NewMoon -> "On account of the moon being absent from the sky tonight, you can't take a reading off the \
-                          \moondial."
-          _            -> T.concat [ "The moondial reads ", showText curryHour, ":", formatMins curryMin, "." ]
 
 
 -- ==================================================
