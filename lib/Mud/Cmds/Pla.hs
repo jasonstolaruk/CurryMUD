@@ -37,6 +37,7 @@ import Mud.Data.State.Util.Coins
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Hierarchy
 import Mud.Data.State.Util.Lang
+import Mud.Data.State.Util.Make
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Data.State.Util.Random
@@ -49,6 +50,7 @@ import Mud.Misc.Database
 import Mud.Misc.LocPref
 import Mud.Misc.Misc
 import Mud.Misc.NameResolution
+import Mud.TheWorld.Liqs
 import Mud.TheWorld.Zones.AdminZoneIds (iPidge, iRoot)
 import Mud.Threads.Act
 import Mud.Threads.Misc
@@ -58,6 +60,8 @@ import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
 import Mud.TopLvlDefs.Padding
 import Mud.TopLvlDefs.Telnet.Chars
+import Mud.TopLvlDefs.Vols
+import Mud.TopLvlDefs.Weights
 import Mud.Util.List hiding (headTail)
 import Mud.Util.Misc hiding (blowUp, patternMatchFail)
 import Mud.Util.Operators
@@ -78,6 +82,7 @@ import Control.Monad ((>=>), foldM, forM, forM_, guard, join, mplus, unless, whe
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (asks)
 import Crypto.BCrypt (validatePassword)
+import Data.Bits (setBit, zeroBits)
 import Data.Bool (bool)
 import Data.Char (isDigit, isLetter, isLower, isSpace, isUpper)
 import Data.Either (lefts, partitionEithers)
@@ -2498,9 +2503,25 @@ quitCan'tAbbrev p                  = withoutArgs quitCan'tAbbrev p
 
 
 razzle :: HasCallStack => ActionFun
-razzle (WithArgs i mq _ [ "dazzle", "root", "beer" ]) = do
-    logPlaExec "razzle" i
-    ok mq
+razzle p@(WithArgs i mq cols [ "dazzle", "root", "beer" ]) = mIf (hasRazzledId i <$> getState)
+    (cmdNotFoundAction p)
+    (do logPlaExec "razzle" i
+        modifyStateSeq $ \ms ->
+            let et  = EntTemplate (Just "flask")
+                                  "potion flask" ""
+                                  "This small, glass flask complete with cork stopper is the ideal vessel for potion \
+                                  \storage and transportation."
+                                  Nothing
+                                  zeroBits
+                ot  = ObjTemplate potionFlaskWeight
+                                  potionFlaskVol
+                                  Nothing
+                                  (setBit zeroBits . fromEnum $ IsBiodegradable)
+                vt  = VesselTemplate . Just $ potTinnitusLiq
+                res = dropFst . newVessel (ms & plaTbl.ind i %~ setPlaFlag HasRazzled True) et ot vt $ i
+                f   = bcastOtherAdmins i . prd $ getSing i ms <> " has executed " <> dblQuote "razzle dazzle root beer"
+            in second (++ pure f) res
+        wrapSend mq cols "A potion flask materializes in your hands.")
 razzle p = cmdNotFoundAction p
 
 

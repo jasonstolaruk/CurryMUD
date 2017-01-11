@@ -1,8 +1,9 @@
-{-# LANGUAGE OverloadedStrings, RecordWildCards, ViewPatterns #-}
+{-# LANGUAGE OverloadedStrings, RecordWildCards, TupleSections, ViewPatterns #-}
 
 module Mud.Data.State.Util.Make where
 
 import Mud.Data.State.MudData
+import Mud.Data.State.Util.Calc
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Threads.Biodegrader
@@ -242,3 +243,27 @@ mkRm RmTemplate { .. } = Rm { _rmName      = rtName
                             , _rmActions   = rtActions
                             , _rmFunNames  = rtFunNames
                             , _rmFunAsyncs = [] }
+
+
+-----
+
+
+data VesselTemplate = VesselTemplate { vtLiq :: Maybe Liq }
+
+
+mkVessel :: Obj -> VesselTemplate -> Vessel
+mkVessel (calcMaxMouthfuls -> m) VesselTemplate { .. } = Vessel { _vesselMaxMouthfuls = m
+                                                                , _vesselCont         = (, m) <$> vtLiq }
+
+
+createVessel :: MudState -> EntTemplate -> ObjTemplate -> VesselTemplate -> (Id, MudState, Funs)
+createVessel ms et ot vt = let (i, ms') = createEnt ms et
+                               o        = mkObj ot
+                               v        = mkVessel o vt
+                           in (i, ms' & objTbl   .ind i .~ o
+                                      & vesselTbl.ind i .~ v, pure . when (isBiodegradable o) . runBiodegAsync $ i)
+
+
+newVessel :: MudState -> EntTemplate -> ObjTemplate -> VesselTemplate -> InvId -> (Id, MudState, Funs)
+newVessel ms et ot vt invId = let (i, typeTbl.ind i .~ VesselType -> ms', fs) = createVessel ms et ot vt
+                              in (i, ms' & invTbl.ind invId %~ addToInv ms' (pure i), fs)

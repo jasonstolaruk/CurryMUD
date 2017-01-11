@@ -838,7 +838,8 @@ examinePla i ms = let p = getPla i ms
                      , "Bonus time: "        <> p^.bonusTime.to (maybe none showText) ]
   where
     descFlags p | p^.plaFlags == zeroBits = none
-                | otherwise               = let pairs = [ (isAdmin,                     "admin"                         )
+                | otherwise               = let pairs = [ (hasRazzled,                  "has razzled"                   )
+                                                        , (isAdmin,                     "admin"                         )
                                                         , (isGmcp,                      "gmcp"                          )
                                                         , (isIncognito,                 "incognito"                     )
                                                         , (isNotFirstAdminMsg,          "not first admin msg"           )

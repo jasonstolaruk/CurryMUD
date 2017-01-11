@@ -860,7 +860,8 @@ data Pla = Pla { _currHostName   :: HostName
                , _spiritAsync    :: Maybe SpiritAsync } deriving Eq
 
 
-data PlaFlags = IsAdmin
+data PlaFlags = HasRazzled
+              | IsAdmin
               | IsGmcp
               | IsIncognito
               | IsNotFirstAdminMsg

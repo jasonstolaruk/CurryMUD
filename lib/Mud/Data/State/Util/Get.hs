@@ -118,6 +118,8 @@ module Mud.Data.State.Util.Get ( getActiveEffects
                                , getWritable
                                , getWritMessage
                                , getWritRecip
+                               , hasRazzled
+                               , hasRazzledId
                                , isAdmin
                                , isAdminId
                                , isBiodegradable
@@ -1054,6 +1056,17 @@ isHummingId = objFlagHelper IsHumming
 
 plaFlagHelper :: HasCallStack => PlaFlags -> Id -> MudState -> Bool
 plaFlagHelper flag i = getPlaFlag flag . getPla i
+
+
+-----
+
+
+hasRazzled :: Pla -> Bool
+hasRazzled = getPlaFlag HasRazzled
+
+
+hasRazzledId :: HasCallStack => Id -> MudState -> Bool
+hasRazzledId = onPla hasRazzled False
 
 
 -----
