@@ -181,7 +181,7 @@ regularCmdTuples =
     , ("feeling",    feeling,            True,  cmdDescFeeling)
     , ("listen",     listen,             True,  cmdDescListen)
     , ("lookself",   lookSelf,           True,  cmdDescLookSelf)
-    , ("moles",      molestCan'tAbbrev,  True,  "")
+    , ("moles",      cmdNotFoundAction,  True,  "")
     , ("molest",     alertExec "molest", True,  "")
     , ("n",          go "n",             True,  cmdDescGoNorth)
     , ("ne",         go "ne",            True,  cmdDescGoNortheast)
@@ -191,8 +191,10 @@ regularCmdTuples =
     , ("question",   question,           True,  "Ask/answer newbie questions " <> plusRelatedMsg)
     , ("qui",        quitCan'tAbbrev,    True,  "")
     , ("quit",       quit,               False, cmdDescQuit)
-    , ("rap",        rapeCan'tAbbrev,    True,  "")
+    , ("rap",        cmdNotFoundAction,  True,  "")
     , ("rape",       alertExec "rape",   True,  "")
+    , ("razzl",      cmdNotFoundAction,  True,  "")
+    , ("razzle",     razzle,             True,  "")
     , ("read",       readAction,         True,  cmdDescRead)
     , ("remove",     remove,             True,  cmdDescRemove)
     , ("roomdesc",   roomDesc,           True,  cmdDescRoomDesc)
@@ -790,6 +792,13 @@ color (NoArgs' i mq) = sequence_ [ logPlaExec "color" i, send mq . nl . T.concat
     other = [ nl . T.concat $ [ pad 19 "Blinking",   blink     . spaced $ "CurryMUD" ]
             , nl . T.concat $ [ pad 19 "Underlined", underline . spaced $ "CurryMUD" ] ]
 color p = withoutArgs color p
+
+
+-----
+
+
+cmdNotFoundAction :: HasCallStack => ActionFun
+cmdNotFoundAction ActionParams { .. } = sendCmdNotFound myId plaMsgQueue plaCols
 
 
 -----
@@ -2154,13 +2163,6 @@ lookSelf p = withoutArgs lookSelf p
 -----
 
 
-molestCan'tAbbrev :: HasCallStack => ActionFun
-molestCan'tAbbrev ActionParams { .. } = sendCmdNotFound myId plaMsgQueue plaCols
-
-
------
-
-
 motd :: HasCallStack => ActionFun
 motd (NoArgs i mq cols) = logPlaExec "motd" i >> showMotd mq cols
 motd p                  = withoutArgs motd p
@@ -2495,8 +2497,11 @@ quitCan'tAbbrev p                  = withoutArgs quitCan'tAbbrev p
 -----
 
 
-rapeCan'tAbbrev :: HasCallStack => ActionFun
-rapeCan'tAbbrev ActionParams { .. } = sendCmdNotFound myId plaMsgQueue plaCols
+razzle :: HasCallStack => ActionFun
+razzle (WithArgs i mq _ [ "dazzle", "root", "beer" ]) = do
+    logPlaExec "razzle" i
+    ok mq
+razzle p = cmdNotFoundAction p
 
 
 -----

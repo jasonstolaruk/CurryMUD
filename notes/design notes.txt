@@ -109,7 +109,7 @@ Implement, in moderation, "environmental" affects, such as making PCs involuntar
 
 To sacrifice something (typically a corpse), a PC must have in their possession the holy symbol of a deity. Devotees with the necessary skills may produce holy symbols; holy symbols are readily made available for free at places of worship. New characters may start with the holy symbol of their deity of choice.
 
-Corpses that are not sacrificed may become undead.
+Corpses that are not sacrificed may become zombies.
 
 Make a "newbie donation pit" (possibly in a temple).
 
@@ -117,15 +117,11 @@ Make a "newbie donation pit" (possibly in a temple).
 
 COMMANDS:
 
-When a PC dies, all those who have linked with him/her should be notified.
-
 Encourage players to create aliases (using their MUD clients) for emotes unique to their characters. This will give their characters personality and make them more vibrant.
 
 "punch", "kick", and "headbutt" to attack a PC without formally entering combat. These commands may not work with NPCs.
 
 Make a command to get help on known powers/skills.
-
-Make a "razzle dazzle root beer" easter egg.
 
 ==========
 
