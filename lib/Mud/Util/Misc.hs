@@ -28,9 +28,7 @@ module Mud.Util.Misc ( atLst1
                      , fmap3
                      , formatTimeHelper
                      , fromEither
-                     , fromLeft
                      , fromMaybeEmp
-                     , fromRight
                      , ifThenElse
                      , ind
                      , intDivide
@@ -225,19 +223,9 @@ formatTimeHelper :: (FormatTime a) => a -> Text
 formatTimeHelper = T.pack . formatTime defaultTimeLocale "%Z: %F %T"
 
 
-fromEither :: Either a a -> a -- TODO: Eew!
+fromEither :: Either a a -> a
 fromEither (Right a) = a
 fromEither (Left  a) = a
-
-
-fromLeft :: (Show a, Show b) => Either a b -> a -- TODO: Eew!
-fromLeft (Left x) = x
-fromLeft x        = blowUp "Mud.Util.Misc" "fromLeft" "Right" . T.pack . show $ x
-
-
-fromRight :: (Show a, Show b) => Either a b -> b
-fromRight (Right x) = x
-fromRight x         = blowUp "Mud.Util.Misc" "fromRight" "Left" . T.pack . show $ x
 
 
 fromMaybeEmp :: (Monoid a) => Maybe a -> a
