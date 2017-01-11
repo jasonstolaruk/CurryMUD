@@ -14,6 +14,7 @@ import Mud.Data.State.Util.Put
 import Mud.Misc.CurryTime
 import Mud.TheWorld.Misc
 import Mud.TheWorld.Zones.DalbenIds
+import Mud.Util.Operators
 import Mud.Util.Padding
 import Mud.Util.Quoting
 import Mud.Util.Text
@@ -116,7 +117,11 @@ readSundialHookFun i Hook { .. } _ a@(_, (ms, _, _, _), _) =
                 let (mq, cols) = getMsgQueueColumns i ms'
                 wrapSend mq cols $ if isNight curryHour
                   then "Alas, the sundial is useless when the sun isn't out."
-                  else T.concat [ "The sundial reads ", showText curryHour, ":", padTwoDigits $ (curryMin `div` 5) * 5, "." ]
+                  else T.concat [ "The sundial reads ", showText curryHour, ":", formatMins curryMin, "." ]
+
+
+formatMins :: Min -> Text
+formatMins x = padTwoDigits $ (x `div` 5) * 5
 
 
 -----
@@ -136,13 +141,13 @@ readMoondialHookFun i Hook { .. } _ a@(_, (ms, _, _, _), _) =
       & _2._3 <>~ ( let selfDesig = mkStdDesig i ms DoCap
                     in pure (serialize selfDesig <> " reads the moondial.", i `delete` desigIds selfDesig) )
       & _2._4 <>~ pure (bracketQuote hookName <> " read moondial")
-      & _3    .~  pure helper
+      & _3    .~  pure (uncurry helper . getMsgQueueColumns i $ ms)
   where
-    helper = do (ms', CurryTime { .. }) <- (,) <$> getState <*> liftIO getCurryTime
-                let (mq, cols) = getMsgQueueColumns i ms'
-                wrapSend mq cols $ if isNight curryHour
-                  then T.concat [ "The moondial reads ", showText curryHour, ":", padTwoDigits $ (curryMin `div` 5) * 5, "." ]
-                  else "Alas, the moondial is useless when the moon isn't out."
+    helper mq cols = liftIO getCurryTime >>= \CurryTime { .. } ->
+        let f msg = isNight curryHour ? msg :? "Alas, the moondial is useless when the moon isn't out."
+        in wrapSend mq cols . f $ case getMoonPhaseForDayOfMonth curryDayOfMonth of
+          Just NewMoon -> "Since the moon is absent in the sky tonight, you can't take a reading off the moondial."
+          _            -> T.concat [ "The moondial reads ", showText curryHour, ":", formatMins curryMin, "." ]
 
 
 -- ==================================================
