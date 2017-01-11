@@ -146,7 +146,8 @@ readMoondialHookFun i Hook { .. } _ a@(_, (ms, _, _, _), _) =
     helper mq cols = liftIO getCurryTime >>= \CurryTime { .. } ->
         let f msg = isNight curryHour ? msg :? "Alas, the moondial is useless when the moon isn't out."
         in wrapSend mq cols . f $ case getMoonPhaseForDayOfMonth curryDayOfMonth of
-          Just NewMoon -> "Since the moon is absent in the sky tonight, you can't take a reading off the moondial."
+          Just NewMoon -> "On account of the moon being absent from the sky tonight, you can't take a reading off the \
+                          \moondial."
           _            -> T.concat [ "The moondial reads ", showText curryHour, ":", formatMins curryMin, "." ]
 
 
