@@ -40,7 +40,9 @@ logNotice = L.logNotice "Mud.TheWorld.Zones.Dalben"
 
 dalbenHooks :: [(HookName, HookFun)]
 dalbenHooks = [ (lookSundialHookName,  lookSundialHookFun )
-              , (lookMoondialHookName, lookMoondialHookFun) ]
+              , (lookMoondialHookName, lookMoondialHookFun)
+              , (readSundialHookName,  readSundialHookFun )
+              , (readMoondialHookName, readMoondialHookFun) ]
 
 
 -----
@@ -55,18 +57,25 @@ lookSundialHookName = "Dalben_iDalbenWelcome_lookSundial"
 
 
 lookSundialHookFun :: HookFun
-lookSundialHookFun i Hook { .. } _ a@(_, (ms, _, _, _), _) =
-    a & _1    %~  (\\ hookTriggers)
-      & _2._3 <>~ ( let selfDesig = mkStdDesig i ms DoCap
-                    in pure (serialize selfDesig <> " looks at the sundial.", i `delete` desigIds selfDesig) )
-      & _2._4 <>~ pure (bracketQuote hookName <> " looked at sundial")
-      & _3    .~  pure helper
-  where
-    helper = do (ms', CurryTime { .. }) <- (,) <$> getState <*> liftIO getCurryTime
-                let (mq, cols) = getMsgQueueColumns i ms'
-                wrapSend mq cols $ if isNight curryHour
-                  then "Alas, the sundial is useless when the sun isn't out."
-                  else T.concat [ "The sundial reads ", showText curryHour, ":", padTwoDigits $ (curryMin `div` 5) * 5, "." ]
+lookSundialHookFun = mkGenericHookFun (mkDialDesc "sun") "looks at the sundial." "looked at sundial"
+
+
+mkDialDesc :: Text -> Text
+mkDialDesc t = T.concat [ "The "
+                        , t
+                        , "dial is inlaid into a 3-foot-high square base of white marble. Two triangles affixed \
+                          \perpendicular to the "
+                        , t
+                        , "dial's flat plate cast a shadow when the "
+                        , t
+                        , "'s light hits them; the time can be determined based on where that shadow falls on the \
+                          \plate."
+                        , theNl
+                        , "You can "
+                        , dblQuote "read"
+                        , " the "
+                        , t
+                        , "dial to tell the time." ]
 
 
 -----
@@ -80,12 +89,53 @@ lookMoondialHookName :: HookName
 lookMoondialHookName = "Dalben_iDalbenWelcome_lookMoondial"
 
 
-lookMoondialHookFun :: HookFun -- TODO: Also useless during New Moon.
-lookMoondialHookFun i Hook { .. } _ a@(_, (ms, _, _, _), _) =
+lookMoondialHookFun :: HookFun
+lookMoondialHookFun = mkGenericHookFun (mkDialDesc "moon") "looks at the moondial." "looked at moondial"
+
+
+-----
+
+
+readSundialHook :: Hook
+readSundialHook = Hook readSundialHookName . pure $ "sundial"
+
+
+readSundialHookName :: HookName
+readSundialHookName = "Dalben_iDalbenWelcome_readSundial"
+
+
+readSundialHookFun :: HookFun
+readSundialHookFun i Hook { .. } _ a@(_, (ms, _, _, _), _) =
     a & _1    %~  (\\ hookTriggers)
       & _2._3 <>~ ( let selfDesig = mkStdDesig i ms DoCap
-                    in pure (serialize selfDesig <> " looks at the moondial.", i `delete` desigIds selfDesig) )
-      & _2._4 <>~ pure (bracketQuote hookName <> " looked at moondial")
+                    in pure (serialize selfDesig <> " reads the sundial.", i `delete` desigIds selfDesig) )
+      & _2._4 <>~ pure (bracketQuote hookName <> " read sundial")
+      & _3    .~  pure helper
+  where
+    helper = do (ms', CurryTime { .. }) <- (,) <$> getState <*> liftIO getCurryTime
+                let (mq, cols) = getMsgQueueColumns i ms'
+                wrapSend mq cols $ if isNight curryHour
+                  then "Alas, the sundial is useless when the sun isn't out."
+                  else T.concat [ "The sundial reads ", showText curryHour, ":", padTwoDigits $ (curryMin `div` 5) * 5, "." ]
+
+
+-----
+
+
+readMoondialHook :: Hook
+readMoondialHook = Hook readMoondialHookName . pure $ "moondial"
+
+
+readMoondialHookName :: HookName
+readMoondialHookName = "Dalben_iDalbenWelcome_readMoondial"
+
+
+readMoondialHookFun :: HookFun
+readMoondialHookFun i Hook { .. } _ a@(_, (ms, _, _, _), _) =
+    a & _1    %~  (\\ hookTriggers)
+      & _2._3 <>~ ( let selfDesig = mkStdDesig i ms DoCap
+                    in pure (serialize selfDesig <> " reads the moondial.", i `delete` desigIds selfDesig) )
+      & _2._4 <>~ pure (bracketQuote hookName <> " read moondial")
       & _3    .~  pure helper
   where
     helper = do (ms', CurryTime { .. }) <- (,) <$> getState <*> liftIO getCurryTime
@@ -116,7 +166,7 @@ createDalben = do
         mempty
         (mkRm (RmTemplate "Welcome to Dalben"
             "Hello!\n\
-            \There is a sundial and a moondial here.\n\
+            \A few feet from a sundial stands a similar moondial.\n\
             \There is a trash bin here."
             Nothing
             Nothing
@@ -126,7 +176,8 @@ createDalben = do
             OutsideEnv
             (Just "Welcome")
             (M.fromList [ ("look", [ lookSundialHook, lookMoondialHook, lookTrashHook ])
-                        , ("put",  [ putTrashHook                                     ]) ])
+                        , ("put",  [ putTrashHook                                     ])
+                        , ("read", [ readSundialHook, readMoondialHook                ]) ])
             [ trashRmAction ]
             []))
 
