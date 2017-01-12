@@ -17,4 +17,4 @@ godSet = S.fromList [ God Aule      GodOfWealth            . Just $ (Male,   Dwa
                     , God GodName   GodOfPsionics          . Just $ (Female, Lagomorph)
                     , God Iminye    GodOfArtAndEngineering . Just $ (Female, Elf      )
                     , God Itulvatar GodOfVirtue            . Just $ (Female, Vulpenoid)
-                    , God Rumialys  GodOfNature            . Just $ (Male,   Nymph    )
+                    , God Rumialys  GodOfNature            . Just $ (Male,   Nymph    ) ]
