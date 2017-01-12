@@ -36,7 +36,7 @@ module Mud.Data.Misc ( Action(..)
                      , getPlaFlag
                      , getRmFlag
                      , God(..)
-                     , GodName
+                     , GodName(..)
                      , GodOf(..)
                      , Help(..)
                      , HelpName
@@ -391,6 +391,15 @@ instance Pretty Feeling where
 instance Pretty FeelingVal where
   pp NoVal      = "NoVal"
   pp (IntVal x) = "IntVal " <> showText x
+
+
+instance Pretty GodName where
+  pp Aule      = "Aule"
+  pp Drogo     = "Drogo"
+  pp GodName   = "TODO"
+  pp Iminye    = "Iminye"
+  pp Itulvatar = "Itulvatar"
+  pp Rumialys  = "Rumialys"
 
 
 instance Pretty GodOf where
@@ -901,10 +910,12 @@ data GetOrDrop = Get | Drop
 -----
 
 
-type GodName = Text
-
-
-data God = God GodOf GodName (Maybe (Sex, Race)) deriving (Eq, Ord)
+data GodName = Aule
+             | Drogo
+             | GodName -- TODO: Delete.
+             | Iminye
+             | Itulvatar
+             | Rumialys deriving (Bounded, Enum, Eq, Ord)
 
 
 data GodOf = GodOfArtAndEngineering
@@ -916,6 +927,9 @@ data GodOf = GodOfArtAndEngineering
            | GodOfPsionics
            | GodOfVirtue
            | GodOfWealth deriving (Eq, Ord)
+
+
+data God = God GodName GodOf (Maybe (Sex, Race)) deriving (Eq, Ord)
 
 
 -----

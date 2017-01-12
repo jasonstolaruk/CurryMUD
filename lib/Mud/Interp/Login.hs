@@ -65,7 +65,7 @@ import GHC.Stack (HasCallStack)
 import Network (HostName)
 import Prelude hiding (pi)
 import qualified Data.IntMap.Lazy as IM (foldr, keys, toList)
-import qualified Data.Set as S (Set, empty, fromList, insert, member)
+import qualified Data.Set as S (Set, empty, fromList, insert, member, union)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import qualified Data.Text.IO as T (readFile)
@@ -175,12 +175,13 @@ checkSet cn sorry s = let isNG = cn `S.member` s in when isNG sorry >> return (A
 
 checkIllegalNames :: HasCallStack => MudState -> MsgQueue -> Cols -> CmdName -> MudStack Any
 checkIllegalNames ms mq cols cn =
-    checkSet cn (promptRetryName mq cols sorryInterpNameTaken) . insertEntNames $ insertRaceNames
+    checkSet cn (promptRetryName mq cols sorryInterpNameTaken) . insertEntNames . insertGodNames $ insertRaceNames
   where
+    insertEntNames  = views entTbl (flip (IM.foldr (views entName (maybe id S.insert)))) ms
+    insertGodNames  = S.union (S.fromList [ pp x | x <- allValues :: [GodName] ])
     insertRaceNames = foldr helper S.empty (allValues :: [Race])
       where
         helper (uncapitalize . showText -> r) acc = foldr S.insert acc . (r :) . map (`T.cons` r) $ "mf"
-    insertEntNames = views entTbl (flip (IM.foldr (views entName (maybe id S.insert)))) ms
 
 
 checkPropNamesDict :: HasCallStack => MsgQueue -> Cols -> CmdName -> MudStack Any
