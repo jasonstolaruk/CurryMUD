@@ -395,10 +395,13 @@ instance Pretty FeelingVal where
 
 instance Pretty GodName where
   pp Aule      = "Aule"
+  pp Caila     = "Caila"
+  pp Celoriel  = "Celoriel"
+  pp Dellio    = "Dellio"
   pp Drogo     = "Drogo"
-  pp GodName   = "TODO"
   pp Iminye    = "Iminye"
   pp Itulvatar = "Itulvatar"
+  pp Morgorhd  = "Morgorhd"
   pp Rumialys  = "Rumialys"
 
 
@@ -911,10 +914,13 @@ data GetOrDrop = Get | Drop
 
 
 data GodName = Aule
+             | Caila
+             | Celoriel
+             | Dellio
              | Drogo
-             | GodName -- TODO: Delete.
              | Iminye
              | Itulvatar
+             | Morgorhd
              | Rumialys deriving (Bounded, Enum, Eq, Ord)
 
 
