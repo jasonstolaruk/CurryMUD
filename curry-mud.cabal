@@ -82,6 +82,7 @@ library
                        Mud.Misc.Database
                        Mud.Misc.EffectFuns
                        Mud.Misc.FeelingFuns
+                       Mud.Misc.Gods
                        Mud.Misc.LocPref
                        Mud.Misc.Logging
                        Mud.Misc.Misc

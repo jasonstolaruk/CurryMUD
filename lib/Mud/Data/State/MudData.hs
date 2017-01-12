@@ -555,7 +555,7 @@ data Mob = Mob { _sex                    :: Sex
 
 data Sex = Male
          | Female
-         | NoSex deriving (Eq, Generic, Show)
+         | NoSex deriving (Eq, Generic, Ord, Show)
 
 
 data StomachCont = StomachCont { _distinctId             :: Either DistinctLiqId DistinctFoodId
@@ -829,7 +829,7 @@ data Race = Dwarf
           | Human
           | Lagomorph
           | Nymph
-          | Vulpenoid deriving (Bounded, Enum, Eq, Generic, Show)
+          | Vulpenoid deriving (Bounded, Enum, Eq, Generic, Ord, Show)
 
 
 instance Random Race where

@@ -35,6 +35,9 @@ module Mud.Data.Misc ( Action(..)
                      , GetOrDrop(..)
                      , getPlaFlag
                      , getRmFlag
+                     , God(..)
+                     , GodName
+                     , GodOf(..)
                      , Help(..)
                      , HelpName
                      , Hour
@@ -388,6 +391,18 @@ instance Pretty Feeling where
 instance Pretty FeelingVal where
   pp NoVal      = "NoVal"
   pp (IntVal x) = "IntVal " <> showText x
+
+
+instance Pretty GodOf where
+  pp GodOfArtAndEngineering = "art and engineering"
+  pp GodOfDarkness          = "darkness"
+  pp GodOfDebauchery        = "debauchery"
+  pp GodOfHarvest           = "harvest"
+  pp GodOfTheMoonAndMagic   = "the moon and magic"
+  pp GodOfNature            = "nature"
+  pp GodOfPsionics          = "psionics"
+  pp GodOfVirtue            = "virtue"
+  pp GodOfWealth            = "wealth"
 
 
 instance Pretty Hand where
@@ -881,6 +896,26 @@ data EmptyNoneSome a = Empty
 
 
 data GetOrDrop = Get | Drop
+
+
+-----
+
+
+type GodName = Text
+
+
+data God = God GodOf GodName (Maybe (Sex, Race)) deriving (Eq, Ord)
+
+
+data GodOf = GodOfArtAndEngineering
+           | GodOfDarkness
+           | GodOfDebauchery
+           | GodOfHarvest
+           | GodOfTheMoonAndMagic
+           | GodOfNature
+           | GodOfPsionics
+           | GodOfVirtue
+           | GodOfWealth deriving (Eq, Ord)
 
 
 -----

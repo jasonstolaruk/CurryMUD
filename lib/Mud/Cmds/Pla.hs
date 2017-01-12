@@ -2508,13 +2508,13 @@ razzle p@(WithArgs i mq cols [ "dazzle", "root", "beer" ]) = mIf (hasRazzledId i
     (do logPlaExec "razzle" i
         modifyStateSeq $ \ms ->
             let et  = EntTemplate (Just "flask")
-                                  "potion flask" ""
-                                  "This small, glass flask complete with cork stopper is the ideal vessel for potion \
-                                  \storage and transportation."
+                                  "large potion flask" ""
+                                  "This glass flask complete with cork stopper is the ideal vessel for potion storage \
+                                  \and transportation."
                                   Nothing
                                   zeroBits
-                ot  = ObjTemplate potionFlaskWeight
-                                  potionFlaskVol
+                ot  = ObjTemplate potionFlaskLrgWeight
+                                  potionFlaskLrgVol
                                   Nothing
                                   (setBit zeroBits . fromEnum $ IsBiodegradable)
                 vt  = VesselTemplate . Just $ potTinnitusLiq
