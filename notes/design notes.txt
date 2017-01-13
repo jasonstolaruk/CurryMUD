@@ -113,6 +113,8 @@ Corpses that are not sacrificed may become zombies.
 
 Make a "newbie donation pit" (possibly in a temple).
 
+Consider putting your MUD on Fedora minimal installation (no GUI).
+
 ==========
 
 COMMANDS:

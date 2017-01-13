@@ -402,6 +402,7 @@ instance Pretty GodName where
   pp Iminye    = "Iminye"
   pp Itulvatar = "Itulvatar"
   pp Morgorhd  = "Morgorhd"
+  pp Rha'yk    = "Rha'yk"
   pp Rumialys  = "Rumialys"
 
 
@@ -410,10 +411,11 @@ instance Pretty GodOf where
   pp GodOfDarkness          = "darkness"
   pp GodOfDebauchery        = "debauchery"
   pp GodOfHarvest           = "harvest"
-  pp GodOfTheMoonAndMagic   = "the moon and magic"
+  pp GodOfLight             = "light"
   pp GodOfNature            = "nature"
   pp GodOfPsionics          = "psionics"
-  pp GodOfVirtue            = "virtue"
+  pp GodOfTheMoonAndMagic   = "the moon and magic"
+  pp GodOfWar               = "war"
   pp GodOfWealth            = "wealth"
 
 
@@ -921,6 +923,7 @@ data GodName = Aule
              | Iminye
              | Itulvatar
              | Morgorhd
+             | Rha'yk
              | Rumialys deriving (Bounded, Enum, Eq, Ord)
 
 
@@ -928,10 +931,11 @@ data GodOf = GodOfArtAndEngineering
            | GodOfDarkness
            | GodOfDebauchery
            | GodOfHarvest
-           | GodOfTheMoonAndMagic
+           | GodOfLight
            | GodOfNature
            | GodOfPsionics
-           | GodOfVirtue
+           | GodOfTheMoonAndMagic
+           | GodOfWar
            | GodOfWealth deriving (Eq, Ord)
 
 
