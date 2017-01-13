@@ -13,7 +13,7 @@ godSet = S.fromList [ God Aule      GodOfWealth            . Just $ (Male,   Dwa
                     , God Caila     GodOfHarvest           . Just $ (Female, Human    )
                     , God Celoriel  GodOfPsionics          . Just $ (Female, Lagomorph)
                     , God Dellio    GodOfDebauchery        . Just $ (Female, Felinoid )
-                    , God Drogo     GodOfTheMoonAndMagic   . Just $ (Male,   Hobbit   )
+                    , God Drogo     GodOfMoonAndMagic      . Just $ (Male,   Hobbit   )
                     , God Iminye    GodOfArtAndEngineering . Just $ (Female, Elf      )
                     , God Itulvatar GodOfLight               Nothing
                     , God Morgorhd  GodOfDarkness            Nothing

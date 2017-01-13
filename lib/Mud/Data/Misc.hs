@@ -412,9 +412,9 @@ instance Pretty GodOf where
   pp GodOfDebauchery        = "debauchery"
   pp GodOfHarvest           = "harvest"
   pp GodOfLight             = "light"
+  pp GodOfMoonAndMagic      = "the moon and magic"
   pp GodOfNature            = "nature"
   pp GodOfPsionics          = "psionics"
-  pp GodOfTheMoonAndMagic   = "the moon and magic"
   pp GodOfWar               = "war"
   pp GodOfWealth            = "wealth"
 
@@ -932,9 +932,9 @@ data GodOf = GodOfArtAndEngineering
            | GodOfDebauchery
            | GodOfHarvest
            | GodOfLight
+           | GodOfMoonAndMagic
            | GodOfNature
            | GodOfPsionics
-           | GodOfTheMoonAndMagic
            | GodOfWar
            | GodOfWealth deriving (Eq, Ord)
 
