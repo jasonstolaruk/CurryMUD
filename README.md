@@ -50,6 +50,7 @@ CurryMUD will have the following features:
 * Players can create their own ad-hoc channels. :busts_in_silhouette:
 * Free-form emotes and built-in emotes may be used in "tells" and channel communications. :clap:
 * Functionality enabling one-on-one communication between players and administrators. :speech_balloon:
+* In-game gods. :godmode:
 * An in-game calendar. :calendar:
 * Weight and encumbrance. :chart_with_downwards_trend:
 * Volume and container capacity. :school_satchel:
