@@ -410,7 +410,7 @@ instance Pretty GodOf where
   pp GodOfArtAndEngineering = "art and engineering"
   pp GodOfDarkness          = "darkness"
   pp GodOfDebauchery        = "debauchery"
-  pp GodOfHarvest           = "harvest"
+  pp GodOfHarvest           = "the harvest"
   pp GodOfLight             = "light"
   pp GodOfMoonAndMagic      = "the moon and magic"
   pp GodOfNature            = "nature"
