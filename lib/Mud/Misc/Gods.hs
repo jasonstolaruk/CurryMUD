@@ -4,6 +4,7 @@ module Mud.Misc.Gods where
 
 import Mud.Data.Misc
 import Mud.Data.State.MudData
+import Mud.Util.Misc
 
 import qualified Data.Set as S (Set, filter, fromList, toList)
 
@@ -21,7 +22,5 @@ godSet = S.fromList [ God Aule      GodOfWealth            . Just $ (Male,   Dwa
                     , God Rumialys  GodOfNature            . Just $ (Male,   Nymph    ) ]
 
 
-getGodForGodName :: GodName -> Maybe God -- TODO: Make a "safeHead" function?
-getGodForGodName gn = case S.toList . S.filter (\(God gn' _ _) -> gn == gn') $ godSet of
-  []    -> Nothing
-  (x:_) -> Just x
+getGodForGodName :: GodName -> Maybe God
+getGodForGodName gn = safeHead . S.toList . S.filter (\(God gn' _ _) -> gn' == gn) $ godSet

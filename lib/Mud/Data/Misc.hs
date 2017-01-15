@@ -394,7 +394,7 @@ instance Pretty FeelingVal where
   pp (IntVal x) = "IntVal " <> showText x
 
 
-instance Pretty God where -- TODO: Test.
+instance Pretty God where
   pp (God godName godOf maybeSexRace) = let t = maybeEmp (spcL . parensQuote . uncurry (|<>|) . (pp *** pp)) maybeSexRace
                                         in T.concat [ pp godName, ", god of ", pp godOf, t ]
 

@@ -69,6 +69,7 @@ module Mud.Util.Misc ( atLst1
                      , plusThird
                      , printPanicMsg
                      , safeCoerce
+                     , safeHead
                      , safePerformIO
                      , sortEithers
                      , strictId
@@ -405,6 +406,11 @@ lookupMapValue v = lookupValue v . M.assocs
 
 safeCoerce :: a ~ b => a -> b
 safeCoerce x = x
+
+
+safeHead :: [a] -> Maybe a
+safeHead []    = Nothing
+safeHead (x:_) = Just x
 
 
 safePerformIO :: IO a -> IO a
