@@ -234,8 +234,9 @@ adviceAHolySymbolExcessArgs = adviceAHolySymbolNoArgs
 
 
 adviceAHolySymbolNoArgs :: Text
-adviceAHolySymbolNoArgs = "Please provide one argument: the name of a god, as in " <>
-                          colorWith quoteColor (prefixAdminCmd "holysymbol" <> " aule")
+adviceAHolySymbolNoArgs = "Please provide two arguments: the number of holy symbols to make, followed by the name of a \
+                          \god, as in " <>
+                          colorWith quoteColor (prefixAdminCmd "holysymbol" <> " 5 aule")
 
 
 adviceAHostNoArgs :: Text

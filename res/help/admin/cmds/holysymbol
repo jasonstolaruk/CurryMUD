@@ -1,0 +1,12 @@
+\h #dHOLYSYMBOL \d
+
+\uUSAGE\n
+#dholysymbol amount name
+
+\uDESCRIPTION\n
+Create a given number of holy symbols of a given god by god name.
+You can create between 1 and 100 holy symbols of a given god. The holy symbols will appear in your inventory.
+
+\uEXAMPLES\n
+\q#dholysymbol 5 aule\d to create 5 holy symbols of Aule.4`
+\q#dholysymbol 10 caila\d to create 10 holy symbols of Caila.4`

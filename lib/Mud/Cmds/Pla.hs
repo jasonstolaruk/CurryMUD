@@ -1652,7 +1652,7 @@ help (LowerNub i mq cols as) = getState >>= \ms -> do
     let (is, ia, ls) = mkHelpTriple i ms
     hs <- liftIO . mkHelpData ls is $ ia
     (map (parseHelpTxt (mkPlaCmds i ms) cols) -> helpTxts, dropBlanks -> hns) <- unzip <$> forM as (getHelpByName cols hs)
-    hns |#| logPla "help" i . ("reading help on: " <>) . commas
+    hns |#| logPla "help" i . prd . ("reading help on: " <>) . commas
     pager i mq Nothing . intercalateDivider cols $ helpTxts
 help p = patternMatchFail "help" . showText $ p
 

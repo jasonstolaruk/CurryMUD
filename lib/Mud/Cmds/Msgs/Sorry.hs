@@ -113,6 +113,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryGoExit
                            , sorryGoParseDir
                            , sorryHelpName
+                           , sorryHolySymbolAmt
                            , sorryHolySymbolGodName
                            , sorryIgnoreLocPref
                            , sorryIgnoreLocPrefPlur
@@ -1003,6 +1004,12 @@ sorryHelpName t = prd $ "No help is available on " <> dblQuote t
 
 
 -----
+
+
+sorryHolySymbolAmt :: Text -> Text
+sorryHolySymbolAmt a = dblQuote a                                 <>
+                       " is not a valid number of holy symbols. " <>
+                       parensQuote "You can create between 1 and 100 holy symbols of a given god."
 
 
 sorryHolySymbolGodName :: Text -> Text
