@@ -65,6 +65,7 @@ data MudState = MudState { _activeEffectsTbl       :: ActiveEffectsTbl
                          , _feelingFunTbl          :: FeelingFunTbl
                          , _foodTbl                :: FoodTbl
                          , _funTbl                 :: FunTbl
+                         , _holySymbolTbl          :: HolySymbolTbl
                          , _hookFunTbl             :: HookFunTbl
                          , _hostTbl                :: HostTbl
                          , _instaEffectFunTbl      :: InstaEffectFunTbl
@@ -109,6 +110,7 @@ type EqTbl                  = IM.IntMap EqMap
 type FeelingFunTbl          = M.Map FeelingTag FeelingFun
 type FoodTbl                = IM.IntMap Food
 type FunTbl                 = M.Map FunName Fun
+type HolySymbolTbl          = IM.IntMap HolySymbol
 type HookFunTbl             = M.Map HookName HookFun
 type HostTbl                = M.Map Sing HostMap
 type InstaEffectFunTbl      = M.Map FunName InstaEffectFun
@@ -427,6 +429,25 @@ type Funs = [Fun]
 
 
 type FunName = Text
+
+
+-- ==================================================
+
+
+-- Has an object.
+newtype HolySymbol = HolySymbol GodName deriving (Generic)
+
+
+data GodName = Aule
+             | Caila
+             | Celoriel
+             | Dellio
+             | Drogo
+             | Iminye
+             | Itulvatar
+             | Morgorhd
+             | Rha'yk
+             | Rumialys deriving (Bounded, Enum, Eq, Generic, Ord)
 
 
 -- ==================================================
@@ -1129,6 +1150,7 @@ data Type = ArmType
           | ConType
           | CorpseType
           | FoodType
+          | HolySymbolType
           | NpcType
           | ObjType
           | PCType
@@ -1189,7 +1211,9 @@ instance FromJSON EffectSub
 instance FromJSON EffectVal
 instance FromJSON Ent            where parseJSON = genericParseJSON dropUnderscore
 instance FromJSON Food           where parseJSON = genericParseJSON dropUnderscore
+instance FromJSON GodName
 instance FromJSON Hand
+instance FromJSON HolySymbol
 instance FromJSON Hook
 instance FromJSON HostRecord     where parseJSON = genericParseJSON dropUnderscore
 instance FromJSON InstaEffect    where parseJSON = genericParseJSON dropUnderscore
@@ -1231,7 +1255,9 @@ instance ToJSON EffectSub
 instance ToJSON EffectVal
 instance ToJSON Ent              where toJSON    = genericToJSON    dropUnderscore
 instance ToJSON Food             where toJSON    = genericToJSON    dropUnderscore
+instance ToJSON GodName
 instance ToJSON Hand
+instance ToJSON HolySymbol
 instance ToJSON Hook
 instance ToJSON HostRecord       where toJSON    = genericToJSON    dropUnderscore
 instance ToJSON InstaEffect      where toJSON    = genericToJSON    dropUnderscore

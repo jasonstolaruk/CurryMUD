@@ -13,6 +13,8 @@ module Mud.Cmds.Msgs.Advice ( adviceAAnnounceNoArgs
                             , adviceAHashExcessArgs
                             , adviceAHashNoArgs
                             , adviceAHashNoHash
+                            , adviceAHolySymbolExcessArgs
+                            , adviceAHolySymbolNoArgs
                             , adviceAHostNoArgs
                             , adviceAKillNoArgs
                             , adviceALinkNoArgs
@@ -225,6 +227,15 @@ adviceAHashEx = colorWith quoteColor $ prefixAdminCmd "hash" |<>| t
 
 adviceAHashNoHash :: Text
 adviceAHashNoHash = prd $ "Please also provide a hashed password, as in " <> adviceAHashEx
+
+
+adviceAHolySymbolExcessArgs :: Text
+adviceAHolySymbolExcessArgs = adviceAHolySymbolNoArgs
+
+
+adviceAHolySymbolNoArgs :: Text
+adviceAHolySymbolNoArgs = "Please provide one argument: the name of a god, as in " <>
+                          colorWith quoteColor (prefixAdminCmd "holysymbol" <> " aule")
 
 
 adviceAHostNoArgs :: Text

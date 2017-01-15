@@ -78,6 +78,7 @@ initMudData shouldLog = do [ databaseLock, logLock, persLock ] <- mkLocks
                                                         , _feelingFunTbl          =  M.empty
                                                         , _foodTbl                = IM.empty
                                                         , _funTbl                 =  M.empty
+                                                        , _holySymbolTbl          = IM.empty
                                                         , _hookFunTbl             =  M.empty
                                                         , _hostTbl                =  M.empty
                                                         , _instaEffectFunTbl      =  M.empty
@@ -188,6 +189,7 @@ loadWorld dir = (</> dir) <$> liftIO (mkMudFilePath persistDirFun) >>= \path -> 
                                                  , loadTbl corpseTblFile              corpseTbl
                                                  , loadTbl entTblFile                 entTbl
                                                  , loadTbl foodTblFile                foodTbl
+                                                 , loadTbl holySymbolTblFile          holySymbolTbl
                                                  , loadTbl hostTblFile                hostTbl
                                                  , loadTbl invTblFile                 invTbl
                                                  , loadTbl mobTblFile                 mobTbl

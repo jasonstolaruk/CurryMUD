@@ -68,6 +68,7 @@ persistHelper l ms = withLock l $ do
                                              , write (ms^.entTbl                ) $ path </> entTblFile
                                              , write (eqTblHelper ms            ) $ path </> eqTblFile
                                              , write (ms^.foodTbl               ) $ path </> foodTblFile
+                                             , write (ms^.holySymbolTbl         ) $ path </> holySymbolTblFile
                                              , write (ms^.hostTbl               ) $ path </> hostTblFile
                                              , write (ms^.invTbl                ) $ path </> invTblFile
                                              , write (ms^.mobTbl                ) $ path </> mobTblFile

@@ -55,6 +55,18 @@ putCon i e o is coi mc con = tweaks [ activeEffectsTbl.ind i .~ []
 -----
 
 
+putHolySymbol :: Id -> Ent -> Obj -> HolySymbol -> MudStack ()
+putHolySymbol i e o h = tweaks [ activeEffectsTbl.ind i .~ [] -- TODO: Use this in Admin Zone.
+                               , entTbl          .ind i .~ e
+                               , holySymbolTbl   .ind i .~ h
+                               , objTbl          .ind i .~ o
+                               , pausedEffectsTbl.ind i .~ []
+                               , typeTbl         .ind i .~ HolySymbolType ]
+
+
+-----
+
+
 putNpc :: Id -> Ent -> Inv -> Coins -> EqMap -> Mob -> MudStack ()
 putNpc i e is c em m = tweaks [ activeEffectsTbl.ind i .~ []
                               , coinsTbl        .ind i .~ c

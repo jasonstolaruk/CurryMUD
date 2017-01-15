@@ -26,17 +26,21 @@ import Mud.Data.State.Util.Death
 import Mud.Data.State.Util.Egress
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Hierarchy
+import Mud.Data.State.Util.Make
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Data.State.Util.Random
 import Mud.Misc.ANSI
 import Mud.Misc.CurryTime
 import Mud.Misc.Database
+import Mud.Misc.Gods
 import Mud.Misc.Misc
 import Mud.Misc.Persist
 import Mud.TheWorld.Zones.AdminZoneIds (iLoggedOut, iRoot, iWelcome)
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
+import Mud.TopLvlDefs.Vols
+import Mud.TopLvlDefs.Weights
 import Mud.Util.List
 import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Operators
@@ -151,6 +155,7 @@ adminCmds =
     , mkAdminCmd "exself"     adminExamineSelf True  "Self-examination."
     , mkAdminCmd "farewell"   adminFarewell    True  "Display the farewell stats for one or more PCs."
     , mkAdminCmd "hash"       adminHash        True  "Compare a plain-text password with a hashed password."
+    , mkAdminCmd "holysymbol" adminHolySymbol  True  "Create a holy symbol for a given god by god name."
     , mkAdminCmd "host"       adminHost        True  "Display a report of connection statistics for one or more \
                                                      \players."
     , mkAdminCmd "incognito"  adminIncognito   True  "Toggle your incognito status."
@@ -618,18 +623,19 @@ adminExamine p = patternMatchFail "adminExamine" . showText $ p
 
 examineHelper :: HasCallStack => MudState -> Id -> [Text]
 examineHelper ms targetId = let t = getType targetId ms in helper t $ case t of
-  ArmType      -> [ examineEnt, examineObj,   examineArm   ]
-  ClothType    -> [ examineEnt, examineObj,   examineCloth ]
-  ConType      -> [ examineEnt, examineObj,   examineInv,   examineCoins, examineCon ]
-  CorpseType   -> [ examineEnt, examineObj,   examineInv,   examineCoins, examineCon, examineCorpse ]
-  FoodType     -> [ examineEnt, examineObj,   examineFood ]
-  NpcType      -> [ examineEnt, examineInv,   examineCoins, examineEqMap, examineMob, examineNpc ]
-  ObjType      -> [ examineEnt, examineObj ]
-  PCType       -> [ examineEnt, examineInv,   examineCoins, examineEqMap, examineMob, examinePC, examinePla, examinePickPts ]
-  RmType       -> [ examineInv, examineCoins, examineRm       ]
-  VesselType   -> [ examineEnt, examineObj,   examineVessel   ]
-  WpnType      -> [ examineEnt, examineObj,   examineWpn      ]
-  WritableType -> [ examineEnt, examineObj,   examineWritable ]
+  ArmType        -> [ examineEnt, examineObj,   examineArm        ]
+  ClothType      -> [ examineEnt, examineObj,   examineCloth      ]
+  ConType        -> [ examineEnt, examineObj,   examineInv,   examineCoins, examineCon ]
+  CorpseType     -> [ examineEnt, examineObj,   examineInv,   examineCoins, examineCon, examineCorpse ]
+  FoodType       -> [ examineEnt, examineObj,   examineFood       ]
+  HolySymbolType -> [ examineEnt, examineObj,   examineHolySymbol ]
+  NpcType        -> [ examineEnt, examineInv,   examineCoins, examineEqMap, examineMob, examineNpc    ]
+  ObjType        -> [ examineEnt, examineObj ]
+  PCType         -> [ examineEnt, examineInv,   examineCoins, examineEqMap, examineMob, examinePC, examinePla, examinePickPts ]
+  RmType         -> [ examineInv, examineCoins, examineRm         ]
+  VesselType     -> [ examineEnt, examineObj,   examineVessel     ]
+  WpnType        -> [ examineEnt, examineObj,   examineWpn        ]
+  WritableType   -> [ examineEnt, examineObj,   examineWritable   ]
   where
     helper t fs = let header = T.concat [ showText targetId, " ", parensQuote . pp $ t ]
                   in header : "" : concatMap (((targetId, ms) |&|) . uncurry) fs
@@ -724,6 +730,13 @@ descEffectList (EffectList xs) = commas . map helper $ xs
   where
     helper (Left  instaEff) = pp instaEff
     helper (Right eff     ) = pp eff
+
+
+examineHolySymbol :: HasCallStack => ExamineHelper -- TODO: Test.
+examineHolySymbol i = helper . getHolySymbol i
+  where
+    helper (HolySymbol gn) = maybeEmp f . getGodForGodName $ gn
+    f god                  = [ "Holy symbol's god: " <> pp god ]
 
 
 examineInv :: HasCallStack => ExamineHelper
@@ -966,6 +979,33 @@ adminHash   (WithArgs i mq cols [ pw, hash ]) = do
       then "It's a match!"
       else "The plain-text password does not match the hashed password."
 adminHash p = advise p [ prefixAdminCmd "hash" ] adviceAHashExcessArgs
+
+
+-----
+
+
+-- TODO: Make a given number of holy symbols.
+adminHolySymbol :: HasCallStack => ActionFun -- TODO: Help.
+adminHolySymbol p@AdviseNoArgs                    = advise p [ prefixAdminCmd "holysymbol" ] adviceAHolySymbolNoArgs
+adminHolySymbol   (OneArgNubbed i mq cols target) = modifyStateSeq $ \ms ->
+    let SingleTarget { .. } = mkSingleTarget mq cols target "The name of the god for which you would like to create a holy symbol"
+        sorry               = (ms, ) . pure . sendFun
+        found godName       = case filter ((== godName) . snd) [ (x, pp x) | x <- allGodNames ] of
+          []          -> notFound
+          ((gn, _):_) -> let et = EntTemplate (Just "holy")
+                                              "holy symbol" ""
+                                              "This is a holy symbol."
+                                              Nothing
+                                              zeroBits
+                             ot = ObjTemplate holySymbolWeight
+                                              holySymbolVol
+                                              Nothing
+                                              zeroBits
+                         in second (++ pure (ok mq)) . dropFst . newHolySymbol ms et ot (HolySymbol gn) $ i
+        notFound    = sorry . sorryHolySymbolGodName $ strippedTarget
+        allGodNames = allValues :: [GodName]
+    in findFullNameForAbbrev strippedTarget (map pp allGodNames) |&| maybe notFound found -- TODO: Casing?
+adminHolySymbol p = advise p [ prefixAdminCmd "holysymbol" ] adviceAHolySymbolExcessArgs
 
 
 -----

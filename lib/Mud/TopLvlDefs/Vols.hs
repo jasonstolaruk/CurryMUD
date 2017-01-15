@@ -74,6 +74,11 @@ helmLeatherVol :: Vol
 helmLeatherVol = 10 * 8 * 8 * 100
 
 
+{-# ANN holySymbolVol ("HLint: ignore" :: String) #-}
+holySymbolVol :: Vol
+holySymbolVol = 2 * 4 * 1 * 100
+
+
 jarSmlVol, jarVol, jarLrgVol :: Vol
 jarSmlVol = minusThird jarVol
 jarVol    = 40 * 100

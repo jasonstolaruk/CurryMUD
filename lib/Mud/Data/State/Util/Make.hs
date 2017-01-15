@@ -98,6 +98,21 @@ newCorpse ms et ot ct ic corpse invId =
 -----
 
 
+createHolySymbol :: MudState -> EntTemplate -> ObjTemplate -> HolySymbol -> (Id, MudState, Funs)
+createHolySymbol ms et ot h = let (i, ms') = createEnt ms et
+                                  o        = mkObj ot
+                              in (i, ms' & objTbl       .ind i .~ o
+                                         & holySymbolTbl.ind i .~ h, pure . when (isBiodegradable o) . runBiodegAsync $ i)
+
+
+newHolySymbol :: MudState -> EntTemplate -> ObjTemplate -> HolySymbol -> InvId -> (Id, MudState, Funs)
+newHolySymbol ms et ot h invId = let (i, typeTbl.ind i .~ HolySymbolType -> ms', fs) = createHolySymbol ms et ot h
+                                 in (i, ms' & invTbl.ind invId %~ addToInv ms' (pure i), fs)
+
+
+-----
+
+
 data MobTemplate = MobTemplate { mtSex              :: Sex
                                , mtSt               :: Int
                                , mtDx               :: Int

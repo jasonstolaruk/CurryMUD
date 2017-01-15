@@ -86,6 +86,7 @@ import Mud.Util.Quoting
 import Mud.Util.Text
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
+import Control.Arrow ((***))
 import Control.Lens (Getting, Setting, both)
 import Control.Lens.Operators ((%~), (&), (^.))
 import Data.Bits (clearBit, setBit, testBit)
@@ -393,6 +394,11 @@ instance Pretty FeelingVal where
   pp (IntVal x) = "IntVal " <> showText x
 
 
+instance Pretty God where -- TODO: Test.
+  pp (God godName godOf maybeSexRace) = let t = maybeEmp (spcL . parensQuote . uncurry (|<>|) . (pp *** pp)) maybeSexRace
+                                        in T.concat [ pp godName, ", god of ", pp godOf, t ]
+
+
 instance Pretty GodName where
   pp Aule      = "Aule"
   pp Caila     = "Caila"
@@ -620,18 +626,19 @@ instance Pretty TelnetCode where
 
 
 instance Pretty Type where
-  pp ArmType      = "armor"
-  pp ClothType    = "clothing"
-  pp ConType      = "container"
-  pp CorpseType   = "corpse"
-  pp FoodType     = "food"
-  pp NpcType      = "NPC"
-  pp ObjType      = "object"
-  pp PCType       = "PC"
-  pp RmType       = "room"
-  pp VesselType   = "vessel"
-  pp WpnType      = "weapon"
-  pp WritableType = "writable"
+  pp ArmType        = "armor"
+  pp ClothType      = "clothing"
+  pp ConType        = "container"
+  pp CorpseType     = "corpse"
+  pp FoodType       = "food"
+  pp HolySymbolType = "holy symbol"
+  pp NpcType        = "NPC"
+  pp ObjType        = "object"
+  pp PCType         = "PC"
+  pp RmType         = "room"
+  pp VesselType     = "vessel"
+  pp WpnType        = "weapon"
+  pp WritableType   = "writable"
 
 
 instance Pretty TypoRec where
@@ -913,18 +920,6 @@ data GetOrDrop = Get | Drop
 
 
 -----
-
-
-data GodName = Aule
-             | Caila
-             | Celoriel
-             | Dellio
-             | Drogo
-             | Iminye
-             | Itulvatar
-             | Morgorhd
-             | Rha'yk
-             | Rumialys deriving (Bounded, Enum, Eq, Ord)
 
 
 data GodOf = GodOfArtAndEngineering

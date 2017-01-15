@@ -46,6 +46,7 @@ module Mud.Data.State.Util.Get ( getActiveEffects
                                , getFood
                                , getFps
                                , getHand
+                               , getHolySymbol
                                , getHostMap
                                , getHps
                                , getIdForPCSing
@@ -511,6 +512,13 @@ getFps i ms = let (_, _, _, pair) = getPts i ms in pair
 
 getHand :: HasCallStack => Id -> MudState -> Hand
 getHand i = view hand . getMob i
+
+
+-----
+
+
+getHolySymbol :: HasCallStack => Id -> MudState -> HolySymbol
+getHolySymbol i = view (holySymbolTbl.ind i)
 
 
 -----

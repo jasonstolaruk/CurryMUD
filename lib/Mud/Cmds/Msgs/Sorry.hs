@@ -113,6 +113,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryGoExit
                            , sorryGoParseDir
                            , sorryHelpName
+                           , sorryHolySymbolGodName
                            , sorryIgnoreLocPref
                            , sorryIgnoreLocPrefPlur
                            , sorryIncog
@@ -999,6 +1000,13 @@ sorryGoParseDir t = dblQuote t <> " is not a valid exit."
 
 sorryHelpName :: Text -> Text
 sorryHelpName t = prd $ "No help is available on " <> dblQuote t
+
+
+-----
+
+
+sorryHolySymbolGodName :: Text -> Text
+sorryHolySymbolGodName a = dblQuote a <> " is not a valid god name."
 
 
 -----
