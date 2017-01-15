@@ -80,6 +80,7 @@ import GHC.Stack (HasCallStack)
 import Prelude hiding (exp, pi)
 import qualified Data.IntMap.Lazy as IM (elems, filter, filterWithKey, keys, lookup, size, toList)
 import qualified Data.Map.Lazy as M (elems, foldl, foldrWithKey, keys, null, size, toList)
+import qualified Data.Set as S (toList)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import qualified Data.Text.IO as T (putStrLn)
@@ -154,6 +155,7 @@ adminCmds =
     , mkAdminCmd "experience" adminExp         True  "Dump the experience table."
     , mkAdminCmd "exself"     adminExamineSelf True  "Self-examination."
     , mkAdminCmd "farewell"   adminFarewell    True  "Display the farewell stats for one or more PCs."
+    , mkAdminCmd "gods"       adminGods        True  "Display a list of the gods."
     , mkAdminCmd "hash"       adminHash        True  "Compare a plain-text password with a hashed password."
     , mkAdminCmd "holysymbol" adminHolySymbol  True  "Create a given number of holy symbols of a given god by god name."
     , mkAdminCmd "host"       adminHost        True  "Display a report of connection statistics for one or more \
@@ -965,6 +967,14 @@ adminFarewell   (LowerNub i mq cols as) = getState >>= \ms ->
     in do logPlaExecArgs (prefixAdminCmd "farewell") as i
           pager i mq Nothing . concat . wrapLines cols . intercalateDivider cols . map (helper . capitalize) $ as
 adminFarewell p = patternMatchFail "adminFarewell" . showText $ p
+
+
+-----
+
+
+adminGods :: HasCallStack => ActionFun
+adminGods (NoArgs i mq cols) = logPlaExec (prefixAdminCmd "gods") i >> (multiWrapSend mq cols . map pp . S.toList $ godSet)
+adminGods p                  = withoutArgs adminGods p
 
 
 -----
