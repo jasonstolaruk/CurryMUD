@@ -780,7 +780,7 @@ createAdminZone = do
             (Just "Attic")
             M.empty [] []))
   putRm iObjCloset
-        [ iKewpie1, iKewpie2, iPaperSml, iParchment1, iParchment2, iParchment3, iParchment4, iParchment5 ]
+        ([ iKewpie1, iKewpie2, iPaperSml, iParchment1, iParchment2, iParchment3, iParchment4, iParchment5 ] ++ [iHolySymbol1..iHolySymbol1 + 9])
         mempty
         (mkRm (RmTemplate "Object closet"
             "This closet holds objects."
@@ -1082,7 +1082,6 @@ createAdminZone = do
 
   -- ==================================================
   -- Room teleport names:
-
   putRmTeleName iAtrium     "atrium"
   putRmTeleName iCentral    "central"
   putRmTeleName iEmpty      "empty"
@@ -1144,6 +1143,19 @@ createAdminZone = do
                   Nothing
                   zeroBits)
              (mkObj . ObjTemplate cubeWeight cubeVol Nothing $ zeroBits)
+
+  -- ==================================================
+  -- Holy symbols:
+  forM_ (zip [iHolySymbol1..iHolySymbol1 + 9] (allValues :: [GodName])) $ \(i, gn) ->
+      putHolySymbol i
+                    (Ent i
+                         (Just "holy")
+                         "holy symbol" ""
+                         "This is a holy symbol." -- TODO
+                         Nothing
+                         zeroBits)
+                    (mkObj . ObjTemplate holySymbolWeight holySymbolVol Nothing . setBit zeroBits . fromEnum $ IsBiodegradable)
+                    (HolySymbol gn)
 
   -- ==================================================
   -- Writables:

@@ -56,7 +56,7 @@ putCon i e o is coi mc con = tweaks [ activeEffectsTbl.ind i .~ []
 
 
 putHolySymbol :: Id -> Ent -> Obj -> HolySymbol -> MudStack ()
-putHolySymbol i e o h = tweaks [ activeEffectsTbl.ind i .~ [] -- TODO: Use this in Admin Zone.
+putHolySymbol i e o h = tweaks [ activeEffectsTbl.ind i .~ []
                                , entTbl          .ind i .~ e
                                , holySymbolTbl   .ind i .~ h
                                , objTbl          .ind i .~ o

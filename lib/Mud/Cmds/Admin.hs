@@ -63,7 +63,7 @@ import Control.Monad ((<=<), (>=>), forM, forM_, join, unless, when)
 import Control.Monad.IO.Class (liftIO)
 import Crypto.BCrypt (validatePassword)
 import Data.Aeson (eitherDecode)
-import Data.Bits (zeroBits)
+import Data.Bits (setBit, zeroBits)
 import Data.Char (isDigit, isLower, isUpper)
 import Data.Either (rights)
 import Data.Function (on)
@@ -732,11 +732,11 @@ descEffectList (EffectList xs) = commas . map helper $ xs
     helper (Right eff     ) = pp eff
 
 
-examineHolySymbol :: HasCallStack => ExamineHelper -- TODO: Test.
+examineHolySymbol :: HasCallStack => ExamineHelper
 examineHolySymbol i = helper . getHolySymbol i
   where
     helper (HolySymbol gn) = maybeEmp f . getGodForGodName $ gn
-    f god                  = [ "Holy symbol's god: " <> pp god ]
+    f god                  = [ "God: " <> pp god ]
 
 
 examineInv :: HasCallStack => ExamineHelper
@@ -994,17 +994,17 @@ adminHolySymbol   (OneArgNubbed i mq cols target) = modifyStateSeq $ \ms ->
           []          -> notFound
           ((gn, _):_) -> let et = EntTemplate (Just "holy")
                                               "holy symbol" ""
-                                              "This is a holy symbol."
+                                              "This is a holy symbol." -- TODO
                                               Nothing
                                               zeroBits
                              ot = ObjTemplate holySymbolWeight
                                               holySymbolVol
                                               Nothing
-                                              zeroBits
+                                              (setBit zeroBits . fromEnum $ IsBiodegradable)
                          in second (++ pure (ok mq)) . dropFst . newHolySymbol ms et ot (HolySymbol gn) $ i
         notFound    = sorry . sorryHolySymbolGodName $ strippedTarget
         allGodNames = allValues :: [GodName]
-    in findFullNameForAbbrev strippedTarget (map pp allGodNames) |&| maybe notFound found -- TODO: Casing?
+    in findFullNameForAbbrev strippedTarget (map pp allGodNames) |&| maybe notFound found
 adminHolySymbol p = advise p [ prefixAdminCmd "holysymbol" ] adviceAHolySymbolExcessArgs
 
 

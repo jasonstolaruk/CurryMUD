@@ -167,7 +167,7 @@ farewell :: HasCallStack => Id -> MsgQueue -> Cols -> MudStack ()
 farewell i mq cols = multiWrapSend mq cols . mkFarewellStats i =<< getState
 
 
-mkFarewellStats :: HasCallStack => Id -> MudState -> [Text]
+mkFarewellStats :: HasCallStack => Id -> MudState -> [Text] -- TODO: Show #/corpses sacrificed to each god.
 mkFarewellStats i ms = concat [ header, ts, footer ]
   where
     header = [ T.concat [ "Sadly, "
