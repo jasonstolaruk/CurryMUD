@@ -48,6 +48,7 @@ module Mud.Cmds.Util.Misc ( asterisk
                           , mkCmdListText
                           , mkCmdTriplesForStyling
                           , mkHimHer
+                          , mkHolySymbolDesc
                           , mkInterfaceList
                           , mkNameTypeIdDesc
                           , mkPossPro
@@ -648,6 +649,22 @@ mkHimHer :: Sex -> Text
 mkHimHer Male   = "him"
 mkHimHer Female = "her"
 mkHimHer NoSex  = "it"
+
+
+-----
+
+
+mkHolySymbolDesc :: GodName -> Text -- TODO
+mkHolySymbolDesc Aule      = "holysymbol"
+mkHolySymbolDesc Caila     = "holysymbol"
+mkHolySymbolDesc Celoriel  = "holysymbol"
+mkHolySymbolDesc Dellio    = "holysymbol"
+mkHolySymbolDesc Drogo     = "holysymbol"
+mkHolySymbolDesc Iminye    = "holysymbol"
+mkHolySymbolDesc Itulvatar = "holysymbol"
+mkHolySymbolDesc Morgorhd  = "holysymbol"
+mkHolySymbolDesc Rha'yk    = "holysymbol"
+mkHolySymbolDesc Rumialys  = "holysymbol"
 
 
 -----

@@ -9,6 +9,7 @@ module Mud.TheWorld.Zones.AdminZone ( adminZoneHooks
 
 import Mud.Cmds.Msgs.Advice
 import Mud.Cmds.Msgs.Sorry
+import Mud.Cmds.Util.Misc
 import Mud.Cmds.Util.Pla
 import Mud.Data.Misc
 import Mud.Data.State.ActionParams.ActionParams
@@ -1150,8 +1151,8 @@ createAdminZone = do
       putHolySymbol i
                     (Ent i
                          (Just "holy")
-                         "holy symbol" ""
-                         "This is a holy symbol." -- TODO
+                         ("holy symbol of " <> pp gn) ("holy symbols of " <> pp gn)
+                         (mkHolySymbolDesc gn)
                          Nothing
                          zeroBits)
                     (mkObj . ObjTemplate holySymbolWeight holySymbolVol Nothing . setBit zeroBits . fromEnum $ IsBiodegradable)

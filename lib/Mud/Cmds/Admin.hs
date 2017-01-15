@@ -993,8 +993,8 @@ adminHolySymbol   (WithArgs i mq cols [ numTxt, godNameTxt ]) = case reads . T.u
                     found godName       = case filter ((== godName) . snd) [ (x, pp x) | x <- allGodNames ] of
                       []          -> notFound
                       ((gn, _):_) -> let et  = EntTemplate (Just "holy")
-                                                           "holy symbol" ""
-                                                           "This is a holy symbol." -- TODO
+                                                           ("holy symbol of " <> pp gn) ("holy symbols of " <> pp gn)
+                                                           (mkHolySymbolDesc gn)
                                                            Nothing
                                                            zeroBits
                                          ot  = ObjTemplate holySymbolWeight
@@ -1008,7 +1008,6 @@ adminHolySymbol   (WithArgs i mq cols [ numTxt, godNameTxt ]) = case reads . T.u
                                                               in helper (pred x) . second (fs ++) $ pair
                                      in second (++ [ logPla "adminHolySymbol found" i msg
                                                    , wrapSend mq cols . capitalize $ msg ]) . helper n $ (ms, [])
-
                     notFound    = sorry . sorryHolySymbolGodName $ godNameTxt
                     allGodNames = allValues :: [GodName]
                 in findFullNameForAbbrev (capitalize . T.toLower $ godNameTxt) (map pp allGodNames) |&| maybe notFound found
