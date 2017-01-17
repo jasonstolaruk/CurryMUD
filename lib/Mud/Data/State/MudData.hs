@@ -16,7 +16,7 @@ import Control.Concurrent.STM.TQueue (TQueue)
 import Control.Lens (both, makeLenses)
 import Control.Lens.Operators ((%~), (&))
 import Control.Monad.Reader (ReaderT)
-import Data.Aeson ((.:), (.=), FromJSON(..), ToJSON(..), Value(..), genericParseJSON, genericToJSON, object)
+import Data.Aeson ((.:), (.=), FromJSON(..), FromJSONKey(..), ToJSON(..), ToJSONKey(..), Value(..), genericParseJSON, genericToJSON, object)
 import Data.Aeson.Types (Options, Parser, defaultOptions, fieldLabelModifier)
 import Data.Int (Int16)
 import Data.IORef (IORef)
@@ -447,7 +447,7 @@ data GodName = Aule
              | Itulvatar
              | Morgorhd
              | Rha'yk
-             | Rumialys deriving (Bounded, Enum, Eq, Generic, Ord)
+             | Rumialys deriving (Bounded, Enum, Eq, Generic, Ord, Show)
 
 
 -- ==================================================
@@ -837,10 +837,11 @@ newtype PausedEffect = PausedEffect Effect deriving (Eq, Generic, Show)
 
 
 -- Has a mob.
-data PC = PC { _race       :: Race
-             , _introduced :: [Sing]
-             , _linked     :: [Sing]
-             , _skillPts   :: SkillPts } deriving (Eq, Generic, Show)
+data PC = PC { _race          :: Race
+             , _introduced    :: [Sing]
+             , _linked        :: [Sing]
+             , _skillPts      :: SkillPts
+             , _sacrificesTbl :: SacrificesTbl } deriving (Eq, Generic, Show)
 
 
 data Race = Dwarf
@@ -859,6 +860,9 @@ instance Random Race where
 
 
 type SkillPts = Int
+
+
+type SacrificesTbl = M.Map GodName Int
 
 
 -- ==================================================
@@ -1283,6 +1287,9 @@ instance ToJSON Vessel           where toJSON    = genericToJSON    dropUndersco
 instance ToJSON Wpn              where toJSON    = genericToJSON    dropUnderscore
 instance ToJSON WpnSub
 instance ToJSON Writable         where toJSON    = genericToJSON    dropUnderscore
+
+instance FromJSONKey GodName
+instance ToJSONKey   GodName
 
 
 dropUnderscore :: Options

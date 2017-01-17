@@ -73,13 +73,14 @@ import Data.Maybe (fromMaybe, isJust)
 import Data.Monoid ((<>), Any(..), Sum(..), getSum)
 import Data.Text (Text)
 import Data.Time (TimeZone, UTCTime, defaultTimeLocale, diffUTCTime, formatTime, getCurrentTime, getCurrentTimeZone, getZonedTime, utcToLocalTime, utcToZonedTime)
+import Data.Tuple (swap)
 import Database.SQLite.Simple (FromRow, fromOnly)
 import GHC.Conc (ThreadStatus(..), threadStatus)
 import GHC.Exts (sortWith)
 import GHC.Stack (HasCallStack)
 import Prelude hiding (exp, pi)
 import qualified Data.IntMap.Lazy as IM (elems, filter, filterWithKey, keys, lookup, size, toList)
-import qualified Data.Map.Lazy as M (elems, foldl, foldrWithKey, keys, null, size, toList)
+import qualified Data.Map.Lazy as M (elems, findWithDefault, foldl, foldrWithKey, keys, null, size, toList)
 import qualified Data.Set as S (toList)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
@@ -824,11 +825,13 @@ examinePC i ms = let p = getPC i ms in [ "Entry in the PCSingTbl: " <> ms^.pcSin
                                        , "Race: "                   <> p ^.race      .to pp
                                        , "Known names: "            <> p ^.introduced.to (noneOnNull . commas)
                                        , "Links: "                  <> p ^.linked    .to (noneOnNull . commas)
-                                       , "Skill points: "           <> p ^.skillPts  .to commaShow ]
+                                       , "Skill points: "           <> p ^.skillPts  .to commaShow
+                                       , "Sacrifices: "             <> views sacrificesTbl helper p ]
   where
-    f = noneOnNull . commas . map h . filter g . M.toList
-    g = (||) <$> (== i) . snd  <*> (== getSing i ms) . fst
-    h = parensQuote . uncurry (<>) . ((<> ", ") *** showText)
+    f      = noneOnNull . commas . map h . filter g . M.toList
+    g      = (||) <$> (== i) . snd  <*> (== getSing i ms) . fst
+    h      = parensQuote . uncurry (<>) . ((<> ", ") *** showText)
+    helper = noneOnNull . commas . map (flip quoteWith' " to " . swap . (pp *** commaShow)) . sort . M.toList
 
 
 examinePickPts :: HasCallStack => ExamineHelper
@@ -1551,7 +1554,17 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
                       , "race"
                       , "introduced"
                       , "linked"
-                      , "skillpts" ] :: [Text]
+                      , "skillpts"
+                      , "aule"
+                      , "caila"
+                      , "celoriel"
+                      , "dellio"
+                      , "drogo"
+                      , "iminye"
+                      , "itulvatar"
+                      , "morgorhd"
+                      , "rha'yk"
+                      , "rumialys" ] :: [Text]
         notFound    = appendMsg . sorryAdminSetKey $ key
         appendMsg m = a & _2 <>~ pure m
         found       = let t = getType targetId ms in \case
@@ -1592,6 +1605,16 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
           "introduced"       -> setPCSingListHelper    t "introduced" "known names"  introduced introduced
           "linked"           -> setPCSingListHelper    t "linked"     "linked names" linked     linked
           "skillpts"         -> setPCSkillPtsHelper    t
+          "aule"             -> setPCSacrificesHelper  t Aule
+          "caila"            -> setPCSacrificesHelper  t Caila
+          "celoriel"         -> setPCSacrificesHelper  t Celoriel
+          "dellio"           -> setPCSacrificesHelper  t Dellio
+          "drogo"            -> setPCSacrificesHelper  t Drogo
+          "iminye"           -> setPCSacrificesHelper  t Iminye
+          "itulvatar"        -> setPCSacrificesHelper  t Itulvatar
+          "morgorhd"         -> setPCSacrificesHelper  t Morgorhd
+          "rha'yk"           -> setPCSacrificesHelper  t Rha'yk
+          "rumialys"         -> setPCSacrificesHelper  t Rumialys
           x                  -> patternMatchFail "setHelper helper found" (x :: Text)
         -----
         setEntMaybeTextHelper t k n getter setter
@@ -1957,6 +1980,31 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
           where
             mkToTarget diff | diff > 0  = pure . T.concat $ [ "You have been awarded ", commaShow diff, " skill points." ]
                             | otherwise = pure . T.concat $ [ "You have lost ", commaShow . abs $ diff, " skill points." ]
+        -----
+        setPCSacrificesHelper t gn@(T.toLower . pp -> k)
+          | t /= PCType = sorryType
+          | otherwise   = case eitherDecode value' of
+            Left  _ -> appendMsg . sorryAdminSetValue k $ value
+            Right x -> let prev                 = M.findWithDefault 0 gn . getSacrificesTbl targetId $ ms
+                           addSubAssignHelper g = f . max0 $ prev `g` x
+                           f new                = let diff   = new - prev
+                                                      k'     = "the number of corpses sacrificed to " <> pp gn
+                                                      toSelf = mkToSelfForInt k' new diff
+                                                  in a & _1.pcTbl.ind targetId.sacrificesTbl.at gn ?~ new
+                                                       & _2 <>~ toSelf
+                                                       & _3 <>~ (Sum diff |!| mkToTarget diff)
+                                                       & _4 <>~ (Sum diff |!| toSelf)
+                       in case op of Assign    -> f . max0 $ x
+                                     AddAssign -> addSubAssignHelper (+)
+                                     SubAssign -> addSubAssignHelper (-)
+          where
+            mkToTarget diff = pure . T.concat $ [ "The number of corpses you have sacrificed to "
+                                                , pp gn
+                                                , " has "
+                                                , diff > 0 ? "increased" :? "decreased"
+                                                , " by "
+                                                , commaShow . abs $ diff
+                                                , "." ]
         -----
         sorryType               = appendMsg . sorryAdminSetType $ targetId
         sorryOp                 = appendMsg . sorryAdminSetOp (pp op)

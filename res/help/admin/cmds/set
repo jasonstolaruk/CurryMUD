@@ -163,3 +163,11 @@ Examples:4`
 \qskillPts=100\d (to set to 100)4`
 \qskillPts+=100\d (to add 100)4`
 \qskillPts-=100\d (to subtract 100)4`
+
+Key names: aule, caila, celoriel, dellio, drogo, iminye, itulvatar, morgorhd, rha'yk, rumialys4`
+Properties of: PC sacrificesTbl4`
+Value type: Int4`
+Examples:4`
+\qaule=50\d (to set 50)4`
+\qaule+=10\d (to add 10)4`
+\qaule-=10\d (to subtract 10)4`

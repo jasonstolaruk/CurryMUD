@@ -103,6 +103,7 @@ module Mud.Data.State.Util.Get ( getActiveEffects
                                , getRmId
                                , getRmName
                                , getRndmNamesTbl
+                               , getSacrificesTbl
                                , getSex
                                , getSexRace
                                , getSexRaceLvl
@@ -914,6 +915,13 @@ getRmName i = view rmName . getRm i
 
 getRndmNamesTbl :: HasCallStack => Id -> MudState -> RndmNamesTbl
 getRndmNamesTbl i = view (rndmNamesMstrTbl.ind i)
+
+
+-----
+
+
+getSacrificesTbl :: HasCallStack => Id -> MudState -> SacrificesTbl
+getSacrificesTbl i = view sacrificesTbl . getPC i
 
 
 -----

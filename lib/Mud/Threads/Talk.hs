@@ -95,13 +95,13 @@ adHoc mq host = do
     modifyState $ \ms ->
         let i    = getUnusedId ms
             s    = showText r <> showText i
-            e    = Ent { _entId    = i
-                       , _entName  = Nothing
-                       , _sing     = s
-                       , _plur     = ""
-                       , _entDesc  = capitalize $ mkThrPerPro sexy <> " is an ad-hoc player character."
-                       , _entSmell = Nothing
-                       , _entFlags = zeroBits }
+            e    = Ent { _entId            = i
+                       , _entName          = Nothing
+                       , _sing             = s
+                       , _plur             = ""
+                       , _entDesc          = capitalize $ mkThrPerPro sexy <> " is an ad-hoc player character."
+                       , _entSmell         = Nothing
+                       , _entFlags         = zeroBits }
             m    = Mob { _sex              = sexy
                        , _st               = 10
                        , _dx               = 10
@@ -134,24 +134,25 @@ adHoc mq host = do
                        , _nowDrinking      = Nothing
                        , _regenQueue       = Nothing
                        , _interp           = Just . interpName $ 0 }
-            pc   = PC  { _race       = r
-                       , _introduced = []
-                       , _linked     = []
-                       , _skillPts   = 0 }
-            pla  = Pla { _currHostName   = host
-                       , _connectTime    = Just ct
-                       , _loginTime      = Nothing
-                       , _disconnectTime = Nothing
-                       , _plaFlags       = initPlaFlags
-                       , _columns        = 80
-                       , _pageLines      = 24
-                       , _peepers        = []
-                       , _peeping        = []
-                       , _possessing     = Nothing
-                       , _retainedMsgs   = []
-                       , _logoutRmId     = Nothing
-                       , _bonusTime      = Nothing
-                       , _spiritAsync    = Nothing }
+            pc   = PC  { _race             = r
+                       , _introduced       = []
+                       , _linked           = []
+                       , _skillPts         = 0
+                       , _sacrificesTbl    = M.empty }
+            pla  = Pla { _currHostName     = host
+                       , _connectTime      = Just ct
+                       , _loginTime        = Nothing
+                       , _disconnectTime   = Nothing
+                       , _plaFlags         = initPlaFlags
+                       , _columns          = 80
+                       , _pageLines        = 24
+                       , _peepers          = []
+                       , _peeping          = []
+                       , _possessing       = Nothing
+                       , _retainedMsgs     = []
+                       , _logoutRmId       = Nothing
+                       , _bonusTime        = Nothing
+                       , _spiritAsync      = Nothing }
             ms'  = upd ms [ activeEffectsTbl.ind i .~ []
                           , coinsTbl        .ind i .~ mempty
                           , entTbl          .ind i .~ e

@@ -26,6 +26,7 @@ import Mud.Util.Quoting
 import Mud.Util.Text
 import qualified Mud.Misc.Logging as L (logNotice, logPla)
 
+import Control.Arrow ((***))
 import Control.Exception.Lifted (finally)
 import Control.Lens (at, each, set, views)
 import Control.Lens.Operators ((%~), (&), (+~), (.~), (?~))
@@ -35,9 +36,10 @@ import Data.List (delete, partition, sort)
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import Data.Time (UTCTime, diffUTCTime, getCurrentTime)
+import Data.Tuple (swap)
 import GHC.Stack (HasCallStack)
 import Prelude hiding (pi)
-import qualified Data.Map.Lazy as M (delete, empty, foldl, keys, singleton)
+import qualified Data.Map.Lazy as M (delete, empty, foldl, keys, singleton, toList)
 import qualified Data.Text as T
 import System.Time.Utils (renderSecs)
 
@@ -167,7 +169,7 @@ farewell :: HasCallStack => Id -> MsgQueue -> Cols -> MudStack ()
 farewell i mq cols = multiWrapSend mq cols . mkFarewellStats i =<< getState
 
 
-mkFarewellStats :: HasCallStack => Id -> MudState -> [Text] -- TODO: Show #/corpses sacrificed to each god.
+mkFarewellStats :: HasCallStack => Id -> MudState -> [Text]
 mkFarewellStats i ms = concat [ header, ts, footer ]
   where
     header = [ T.concat [ "Sadly, "
@@ -187,6 +189,7 @@ mkFarewellStats i ms = concat [ header, ts, footer ]
              , f "Languages: "  <> langs
              , f "Level: "      <> showText l
              , f "Experience: " <> commaShow expr
+             , f "Sacrifices: " <> sacrificesHelper (getSacrificesTbl i ms)
              , "" ]
     footer = [ T.concat [ "You played ", s, " for a total of ", totalTime, " in real-world time." ]
              , ""
@@ -199,9 +202,10 @@ mkFarewellStats i ms = concat [ header, ts, footer ]
                               = commas [ g "H" hps, g "M" mps, g "P" pps, g "F" fps ]
       where
         g a (_, x) = showText x |<>| a <> "P"
-    handy     = pp . getHand i $ ms
-    langs     = commas [ pp lang | lang <- sort . getKnownLangs i $ ms ]
-    (l, expr) = getLvlExp i ms
-    totalTime = maybe (parensQuote "no host records") g . getHostMap s $ ms
+    handy            = pp . getHand i $ ms
+    langs            = commas [ pp lang | lang <- sort . getKnownLangs i $ ms ]
+    (l, expr)        = getLvlExp i ms
+    sacrificesHelper = noneOnNull . commas . map (flip quoteWith' " to " . swap . (pp *** commaShow)) . sort . M.toList
+    totalTime        = maybe (parensQuote "no host records") g . getHostMap s $ ms
       where
         g = T.pack . renderSecs . M.foldl (\acc -> views secsConnected (+ acc)) 0

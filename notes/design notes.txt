@@ -107,7 +107,7 @@ Make a cursed doll.
 
 Implement, in moderation, "environmental" affects, such as making PCs involuntarily sneeze when in a dusty room.
 
-To sacrifice something (typically a corpse), a PC must have in their possession the holy symbol of a deity. Devotees with the necessary skills may produce holy symbols; holy symbols are readily made available for free at places of worship. New characters may start with the holy symbol of their deity of choice.
+To sacrifice a corpse, a PC must have in their possession the holy symbol of a deity. Devotees with the necessary skills may produce holy symbols; holy symbols are readily made available for free at places of worship. New characters may start with the holy symbol of their deity of choice.
 
 Corpses that are not sacrificed may become zombies.
 

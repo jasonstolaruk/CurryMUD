@@ -536,7 +536,7 @@ createAdminZone = do
                              dfltParty))
          M.empty
          (M.singleton "Curry" True)
-         (PC Human ["Curry"] ["Curry"] 0)
+         (PC Human ["Curry"] ["Curry"] 0 M.empty)
          (mkPla . PlaTemplate (setBit adminFlags . fromEnum $ IsIncognito) $ iLounge)
   putPla iCurry
          (Ent iCurry
@@ -561,7 +561,7 @@ createAdminZone = do
                              dfltParty))
          M.empty
          (M.singleton "Root" True)
-         (PC Human ["Root"] ["Root"] 0)
+         (PC Human ["Root"] ["Root"] 0 M.empty)
          (mkPla . PlaTemplate adminFlags $ iLounge)
 
   -- ==================================================
