@@ -445,7 +445,7 @@ data GodName = Aule
              | Drogo
              | Iminye
              | Itulvatar
-             | Morgorhd
+             | Murgorhd
              | Rha'yk
              | Rumialys deriving (Bounded, Enum, Eq, Generic, Ord, Show)
 

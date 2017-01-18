@@ -1612,7 +1612,7 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
           "drogo"            -> setPCSacrificesHelper  t Drogo
           "iminye"           -> setPCSacrificesHelper  t Iminye
           "itulvatar"        -> setPCSacrificesHelper  t Itulvatar
-          "morgorhd"         -> setPCSacrificesHelper  t Morgorhd
+          "murgorhd"         -> setPCSacrificesHelper  t Murgorhd
           "rha'yk"           -> setPCSacrificesHelper  t Rha'yk
           "rumialys"         -> setPCSacrificesHelper  t Rumialys
           x                  -> patternMatchFail "setHelper helper found" (x :: Text)

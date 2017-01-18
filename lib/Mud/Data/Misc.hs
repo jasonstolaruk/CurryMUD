@@ -407,7 +407,7 @@ instance Pretty GodName where
   pp Drogo     = "Drogo"
   pp Iminye    = "Iminye"
   pp Itulvatar = "Itulvatar"
-  pp Morgorhd  = "Morgorhd"
+  pp Murgorhd  = "Murgorhd"
   pp Rha'yk    = "Rha'yk"
   pp Rumialys  = "Rumialys"
 

@@ -662,7 +662,7 @@ mkHolySymbolDesc Dellio    = "holysymbol"
 mkHolySymbolDesc Drogo     = "holysymbol"
 mkHolySymbolDesc Iminye    = "holysymbol"
 mkHolySymbolDesc Itulvatar = "holysymbol"
-mkHolySymbolDesc Morgorhd  = "holysymbol"
+mkHolySymbolDesc Murgorhd  = "holysymbol"
 mkHolySymbolDesc Rha'yk    = "holysymbol"
 mkHolySymbolDesc Rumialys  = "holysymbol"
 
