@@ -10,15 +10,15 @@ import qualified Data.Set as S (Set, filter, fromList, toList)
 
 
 godSet :: S.Set God
-godSet = S.fromList [ God Aule      GodOfWealth            . Just $ (Male,   Dwarf    )
-                    , God Caila     GodOfHarvest           . Just $ (Female, Human    )
-                    , God Celoriel  GodOfPsionics          . Just $ (Female, Lagomorph)
-                    , God Dellio    GodOfDebauchery        . Just $ (Female, Felinoid )
-                    , God Drogo     GodOfMoonAndMagic      . Just $ (Male,   Hobbit   )
-                    , God Iminye    GodOfArtAndEngineering . Just $ (Female, Elf      )
+godSet = S.fromList [ God Aule      GodOfWealth            . Just $ (Male,   Dwarf    ) -- Son of Drogo and Celoriel.
+                    , God Caila     GodOfHarvest           . Just $ (Female, Human    ) -- Daughter of Drogo and Celoriel.
+                    , God Celoriel  GodOfPsionics          . Just $ (Female, Lagomorph) -- Wife of Drogo.
+                    , God Dellio    GodOfDebauchery        . Just $ (Female, Felinoid ) -- Daughter of Murgorhd and Iminye.
+                    , God Drogo     GodOfMoonAndMagic      . Just $ (Male,   Hobbit   ) -- Husband of Celoriel.
+                    , God Iminye    GodOfArtAndEngineering . Just $ (Female, Elf      ) -- Daughter of Drogo and Celoriel.
                     , God Itulvatar GodOfLight               Nothing
                     , God Murgorhd  GodOfDarkness            Nothing
-                    , God Rha'yk    GodOfWar               . Just $ (Male,   Vulpenoid)
+                    , God Rha'yk    GodOfWar               . Just $ (Male,   Vulpenoid) -- Son of Murgorhd and Iminye.
                     , God Rumialys  GodOfNature            . Just $ (Male,   Nymph    ) ]
 
 
