@@ -33,7 +33,8 @@ persistDirFun = under mudDirFun "persist"
 resDirFun     = under mudDirFun "res"
 
 
-dictDirFun, helpDirFun, miscDirFun, raceDirFun, titleDirFun :: FilePathFun
+booksDirFun, dictDirFun, helpDirFun, miscDirFun, raceDirFun, titleDirFun :: FilePathFun
+booksDirFun = under resDirFun "books"
 dictDirFun  = under resDirFun "dict"
 helpDirFun  = under resDirFun "help"
 miscDirFun  = under resDirFun "misc"
@@ -109,6 +110,14 @@ writableTblFile            = "writableTbl"            <.> "json"
 
 dbFileFun :: FilePathFun
 dbFileFun = under dbDirFun $ "CurryMUD" <.> "sqlite3"
+
+
+-- ==================================================
+-- Books:
+
+
+creationFileFun :: FilePathFun
+creationFileFun = under booksDirFun "creation"
 
 
 -- ==================================================
