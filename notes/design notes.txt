@@ -109,11 +109,11 @@ Implement, in moderation, "environmental" affects, such as making PCs involuntar
 
 To sacrifice a corpse, a PC must have in their possession the holy symbol of a deity. Devotees with the necessary skills may produce holy symbols; holy symbols are readily made available for free at places of worship. New characters may start with the holy symbol of their deity of choice.
 
-Corpses that are not sacrificed may become zombies.
+Corpses that are not sacrificed may be "claimed" by Murgorhd. These corpses transform into zombies.
 
 Make a "newbie donation pit" (possibly in a temple).
 
-Consider putting your MUD on Fedora minimal installation (no GUI).
+Consider putting your MUD on a minimal installation of Fedora.
 
 ==========
 
