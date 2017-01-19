@@ -997,7 +997,7 @@ adminHash p = advise p [ prefixAdminCmd "hash" ] adviceAHashExcessArgs
 -----
 
 
-adminHolySymbol :: HasCallStack => ActionFun
+adminHolySymbol :: HasCallStack => ActionFun -- TODO: You can't make a holy symbol of Murgorhd.
 adminHolySymbol p@AdviseNoArgs                                = advise p [ prefixAdminCmd "holysymbol" ] adviceAHolySymbolNoArgs
 adminHolySymbol   (WithArgs i mq cols [ numTxt, godNameTxt ]) = case reads . T.unpack $ numTxt :: [(Int, String)] of
   [(n, "")] | not . inRange (1, 100) $ n -> sorryAmt
