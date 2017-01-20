@@ -178,7 +178,7 @@ checkIllegalNames ms mq cols cn = checkSet cn (promptRetryName mq cols sorryInte
   where
     illegalNames      = insertAuthorNames . insertEntNames . insertGodNames $ raceNames
     f xs              = S.union (S.fromList xs)
-    insertAuthorNames = f [ "Droiph", "Eldwara" ]
+    insertAuthorNames = f [ "droiph", "eldwara" ]
     insertEntNames    = views entTbl (flip (IM.foldr (views entName (maybe id S.insert)))) ms
     insertGodNames    = f [ uncapitalize . pp $ x | x <- allValues :: [GodName] ]
     raceNames         = foldr helper S.empty (allValues :: [Race])
