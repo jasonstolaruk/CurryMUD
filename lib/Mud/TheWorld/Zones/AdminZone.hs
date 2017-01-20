@@ -1147,7 +1147,7 @@ createAdminZone = do
 
   -- ==================================================
   -- Holy symbols:
-  forM_ (zip [iHolySymbol1..iHolySymbol1 + 8] (delete Murgorhd $ allValues :: [GodName])) $ \(i, gn) ->
+  forM_ (zip [iHolySymbol1..iHolySymbol1 + 8] (delete Murgorhd allValues :: [GodName])) $ \(i, gn) ->
       putHolySymbol i
                     (Ent i
                          (Just "holy")

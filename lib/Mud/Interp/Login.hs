@@ -174,12 +174,14 @@ checkSet cn sorry s = let isNG = cn `S.member` s in when isNG sorry >> return (A
 
 
 checkIllegalNames :: HasCallStack => MudState -> MsgQueue -> Cols -> CmdName -> MudStack Any
-checkIllegalNames ms mq cols cn =
-    checkSet cn (promptRetryName mq cols sorryInterpNameTaken) . insertEntNames . insertGodNames $ insertRaceNames
+checkIllegalNames ms mq cols cn = checkSet cn (promptRetryName mq cols sorryInterpNameTaken) illegalNames
   where
-    insertEntNames  = views entTbl (flip (IM.foldr (views entName (maybe id S.insert)))) ms
-    insertGodNames  = S.union (S.fromList [ uncapitalize . pp $ x | x <- allValues :: [GodName] ])
-    insertRaceNames = foldr helper S.empty (allValues :: [Race])
+    illegalNames      = insertAuthorNames . insertEntNames . insertGodNames $ raceNames
+    f xs              = S.union (S.fromList xs)
+    insertAuthorNames = f [ "Droiph", "Eldwara" ]
+    insertEntNames    = views entTbl (flip (IM.foldr (views entName (maybe id S.insert)))) ms
+    insertGodNames    = f [ uncapitalize . pp $ x | x <- allValues :: [GodName] ]
+    raceNames         = foldr helper S.empty (allValues :: [Race])
       where
         helper (uncapitalize . showText -> r) acc = foldr S.insert acc . (r :) . map (`T.cons` r) $ "mf"
 
