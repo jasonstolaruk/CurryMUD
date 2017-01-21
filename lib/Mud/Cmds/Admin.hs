@@ -997,30 +997,32 @@ adminHash p = advise p [ prefixAdminCmd "hash" ] adviceAHashExcessArgs
 -----
 
 
-adminHolySymbol :: HasCallStack => ActionFun -- TODO: You can't make a holy symbol of Murgorhd.
+adminHolySymbol :: HasCallStack => ActionFun
 adminHolySymbol p@AdviseNoArgs                                = advise p [ prefixAdminCmd "holysymbol" ] adviceAHolySymbolNoArgs
 adminHolySymbol   (WithArgs i mq cols [ numTxt, godNameTxt ]) = case reads . T.unpack $ numTxt :: [(Int, String)] of
   [(n, "")] | not . inRange (1, 100) $ n -> sorryAmt
             | otherwise                  -> modifyStateSeq $ \ms ->
                 let sorry               = (ms, ) . pure . wrapSend mq cols
                     found godName       = case filter ((== godName) . snd) [ (x, pp x) | x <- allGodNames ] of
-                      []          -> notFound
-                      ((gn, _):_) -> let et  = EntTemplate (Just "holy")
-                                                           ("holy symbol of " <> pp gn) ("holy symbols of " <> pp gn)
-                                                           (mkHolySymbolDesc gn)
-                                                           Nothing
-                                                           zeroBits
-                                         ot  = ObjTemplate holySymbolWeight
-                                                           holySymbolVol
-                                                           Nothing
-                                                           (setBit zeroBits . fromEnum $ IsBiodegradable)
-                                         msg = T.concat [ "created ", showText n, " holy symbol", sOnNon1 n, " of ", god, "." ]
-                                         god = maybe "unknown" pp . getGodForGodName $ gn
-                                         helper 0 pair      = pair
-                                         helper x (ms', fs) = let pair = dropFst . newHolySymbol ms' et ot (HolySymbol gn) $ i
-                                                              in helper (pred x) . second (fs ++) $ pair
-                                     in second (++ [ logPla "adminHolySymbol found" i msg
-                                                   , wrapSend mq cols . capitalize $ msg ]) . helper n $ (ms, [])
+                      []                -> notFound
+                      ((Murgorhd, _):_) -> sorry sorryHolySymbolMurgorhd
+                      ((gn,       _):_) ->
+                          let et  = EntTemplate (Just "holy")
+                                                ("holy symbol of " <> pp gn) ("holy symbols of " <> pp gn)
+                                                (mkHolySymbolDesc gn)
+                                                Nothing
+                                                zeroBits
+                              ot  = ObjTemplate holySymbolWeight
+                                                holySymbolVol
+                                                Nothing
+                                                (setBit zeroBits . fromEnum $ IsBiodegradable)
+                              msg = T.concat [ "created ", showText n, " holy symbol", sOnNon1 n, " of ", god, "." ]
+                              god = maybe "unknown" pp . getGodForGodName $ gn
+                              helper 0 pair      = pair
+                              helper x (ms', fs) = let pair = dropFst . newHolySymbol ms' et ot (HolySymbol gn) $ i
+                                                   in helper (pred x) . second (fs ++) $ pair
+                          in second (++ [ logPla "adminHolySymbol found" i msg
+                                        , wrapSend mq cols . capitalize $ msg ]) . helper n $ (ms, [])
                     notFound    = sorry . sorryHolySymbolGodName $ godNameTxt
                     allGodNames = allValues :: [GodName]
                 in findFullNameForAbbrev (capitalize . T.toLower $ godNameTxt) (map pp allGodNames) |&| maybe notFound found

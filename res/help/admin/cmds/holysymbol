@@ -5,7 +5,7 @@
 
 \uDESCRIPTION\n
 Create a given number of holy symbols of a given god by god name.
-You can create between 1 and 100 holy symbols of a given god. The holy symbols will appear in your inventory.
+You can create between 1 and 100 holy symbols of any god other than Murgorhd. The holy symbols will appear in your inventory.
 
 \uEXAMPLES\n
 \q#dholysymbol 5 aule\d to create 5 holy symbols of Aule.4`
