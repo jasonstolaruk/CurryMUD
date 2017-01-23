@@ -13,14 +13,15 @@ Creating a framework which others can leverage to develop their own MUDs is _not
 CurryMUD will have the following features:
 
 * Players will be offered an immersive virtual world environment.
-* Content will be created - and development will proceed - with the aim of supporting a small community of players.
+* Content will be created and development will proceed with the aim of supporting a small community of players.
 * Role-playing will be strictly enforced.
+* The focus will be on PvE (as opposed to PvP).
 * Classless/skill-based.
 * Permadeath. (When player characters die, they really die.)
 * Some degree of player-created content will be allowed and encouraged.
 * The state of the virtual world will be highly persisted upon server shutdown.
 * As is common with most textual MUDs, client connections will be supported with a loose implementation of the telnet protocol.
-* CurryMUD will always be free to play.
+* CurryMUD will always be free to play. No pay-to-win.
 
 ## What I have so far
 
