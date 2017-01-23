@@ -204,6 +204,7 @@ regularCmdTuples =
     , ("remove",     remove,             True,  cmdDescRemove)
     , ("roomdesc",   roomDesc,           True,  cmdDescRoomDesc)
     , ("s",          go "s",             True,  cmdDescGoSouth)
+    , ("sacrifice",  sacrifice,          True,  "Sacrifice a corpse using a holy symbol.")
     , ("se",         go "se",            True,  cmdDescGoSoutheast)
     , ("security",   security,           True,  "View or change your security Q&A.")
     , ("set",        setAction,          True,  cmdDescSet)
@@ -2232,20 +2233,19 @@ newChan   (WithArgs i mq cols (nub -> as)) = helper |&| modifyState >=> \(unzip 
     mkNewChanMsg []     = []
     mkNewChanMsg ns@[_] = pure    . mkMsgHelper False $ ns
     mkNewChanMsg ns     = T.lines . mkMsgHelper True  $ ns
-    mkMsgHelper isPlur (map dblQuote -> ns) =
-        T.concat [ focusingInnateMsg
-                 , "you create a "
-                 , isPlur |?| "group of "
-                 , "telepathic network"
-                 , sOnTrue isPlur
-                 , " to which others may be connected. To "
-                 , isPlur ? "these " :? "this "
-                 , dblQuote . ("channel" <>) . sOnTrue $ isPlur
-                 , " you assign the "
-                 , isPlur |?| "following "
-                 , "name"
-                 , isPlur ? nl "s:" <> commas ns :? spcL (head ns)
-                 , "." ]
+    mkMsgHelper isPlur (map dblQuote -> ns) = T.concat [ focusingInnateMsg
+                                                       , "you create a "
+                                                       , isPlur |?| "group of "
+                                                       , "telepathic network"
+                                                       , sOnTrue isPlur
+                                                       , " to which others may be connected. To "
+                                                       , isPlur ? "these " :? "this "
+                                                       , dblQuote . ("channel" <>) . sOnTrue $ isPlur
+                                                       , " you assign the "
+                                                       , isPlur |?| "following "
+                                                       , "name"
+                                                       , isPlur ? nl "s:" <> commas ns :? spcL (head ns)
+                                                       , "." ]
 newChan p = patternMatchFail "newChan" . showText $ p
 
 
@@ -2944,6 +2944,37 @@ roomDesc (WithArgs i mq cols (T.unwords -> desc@(dblQuote -> desc'))) = if T.len
           tweak $ mobTbl.ind i.mobRmDesc ?~ desc
           wrapSend mq cols . prd $ "Your room description has been set to " <> desc'
 roomDesc p = patternMatchFail "roomDesc" . showText $ p
+
+
+-----
+
+
+sacrifice :: HasCallStack => ActionFun -- TODO: Help.
+sacrifice (NoArgs i mq cols) = modifyStateSeq $ \ms ->
+    let sorry = (ms, ) . pure . wrapSend mq cols
+    in case (findHolySymbolGodName `fanUncurry` findCorpseIdInMobRm) (i, ms) of
+      (Just _,  Just ci) ->
+          let fs = pure $ ms^.corpseDecompAsyncTbl.at ci.to (maybeVoid throwDeath)
+          in (ms, fs)
+      (Nothing, Just _ ) -> sorry sorrySacrificeHolySymbol
+      (Just _,  Nothing) -> sorry sorrySacrificeCorpse
+      (Nothing, Nothing) -> sorry sorrySacrificeHolySymbolCorpse
+sacrifice (OneArgLower i mq cols _) = modifyStateSeq $ \ ms ->
+    let sorry = (ms, ) . pure . wrapSend mq cols
+    in case findCorpseIdInMobRm i ms of
+      Nothing -> sorry sorrySacrificeCorpse
+      Just _  -> undefined
+sacrifice (Lower _ _ _ [_, _]) = undefined
+sacrifice p = advise p ["sacrifice"] adviceSacrificeExcessArgs
+
+
+findHolySymbolGodName :: HasCallStack => Id -> MudState -> Maybe GodName
+findHolySymbolGodName i ms =
+    (`getHolySymbolGodName` ms) <$> (listToMaybe . filter ((== HolySymbolType) . (`getType` ms)) . getInv i $ ms)
+
+
+findCorpseIdInMobRm :: HasCallStack => Id -> MudState -> Maybe Id
+findCorpseIdInMobRm i ms = listToMaybe . filter ((== CorpseType) . (`getType` ms)) . getMobRmInv i $ ms
 
 
 -----

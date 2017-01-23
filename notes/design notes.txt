@@ -68,8 +68,6 @@ The actual risk of PD should be generally lower than players estimated to be. It
 
 When a PC dies at the hands of a mobile, the mobile should loot the corpse of all valuable items. p.429
 
-"If you let PKing become your virtual world's elder game, prepare for the worst." p.425
-
 Consider allowing players to appeal to have their character resurrected when they were unable to flee due to lag, bugs, or they were unjustly killed by another PC.
 Would it be possible for the server to accurately track client latency during combat?
 
@@ -102,9 +100,6 @@ Make cigars and pipes.
 
 PCs may have pets. Make pet shops where pets are sold.
 
-Consider having cursed items that cannot be dropped, given to others, or unequipped.
-Make a cursed doll.
-
 Implement, in moderation, "environmental" affects, such as making PCs involuntarily sneeze when in a dusty room.
 
 To sacrifice a corpse, a PC must have in their possession the holy symbol of a deity. Devotees with the necessary skills may produce holy symbols; holy symbols are readily made available for free at places of worship. New characters may start with the holy symbol of their deity of choice.
@@ -131,10 +126,6 @@ NETWORK:
 
 Implement MSSP to provide info to MUD crawlers?
 
-MCCP for data compression?
-
-MXP for markup, menus, etc.?
-
 ==========
 
 OBJECTS:
@@ -142,8 +133,6 @@ OBJECTS:
 Objects have varying degrees of persistence. Corpses decay...
 
 Objects have wear and tear.
-
-Consider putting seasonal content into the virtual world. Such content could be suggestive of real-world seasonal themes. (This only works if virtual world time progression coincides with that of the real world.)
 
 ==========
 
@@ -157,17 +146,11 @@ The size of the virtual world should be proportionate to the number of players. 
 
 Provide both verbose and brief descriptions of rooms.
 
-Have "safe" zones/rooms, where PvP is impossible. Temples.
-
 Have at least one area where PCs can fight each other essentially to the death, but instead of actually dying, a defeated player character will instead "surrender." Arenas.
 
 Have special rooms where OOC communication is allowed.
 
 Believable settlements have access to food and water, nearby building materials, a nonthreatening climate/geology/geography, and a population. Often, settlements are centers of trade and commerce.
-
-Rooms may be either "outside" or "inside".
-
-Make a distinction between day and night. The sun rises and sets. Moon(s) become visible.
 
 When PCs enter a dark room from a light one, consider providing the description of the dark room after a few seconds delay, so as to model the time it takes for one's eyes to adjust. p.388
 
@@ -194,8 +177,6 @@ Make settlements built above ground, in trees.
 ==========
 
 ECONOMICS:
-
-Economics is concerned with the allocation of resources.
 
 The more persistent the virtual world is, the greater the need for a formal economy.
 
@@ -243,8 +224,6 @@ NPCs:
 
 Even rudimentary AI is better than none.
 
-NPCs act even when there are no PCs around. Make it so that this behavior can be disabled (to relieve server load).
-
 Create "lore provider" NPCs designed to dispense knowledge in response to the "ask" command.
 
 Realistically, NPCs should go to bed at night. Certain mobiles should only come out at night.
@@ -280,12 +259,7 @@ Some spells can hit more than one mobile.
 
 QUESTIONS:
 
-How can the game be tailored to the visually impaired?
-This question is best answered by the actual community of visually impaired players.
-
 Can PCs higher henchmen NPCs to fight with them, heal them, and carry their items?
-
-Profiling? Make this the basis for an auto-generated in-game newspaper? p.185
 
 Boats?
 

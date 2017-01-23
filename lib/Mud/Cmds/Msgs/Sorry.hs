@@ -239,6 +239,9 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryRemEnc
                            , sorryRemExcessCon
                            , sorryRemIgnore
+                           , sorrySacrificeCorpse
+                           , sorrySacrificeHolySymbol
+                           , sorrySacrificeHolySymbolCorpse
                            , sorrySayCoins
                            , sorrySayExcessTargets
                            , sorrySayInEq
@@ -1639,6 +1642,22 @@ sorryRemExcessCon = "You can only remove things from one container at a time."
 
 sorryRemIgnore :: Text
 sorryRemIgnore = sorryIgnoreLocPrefPlur "The names of the items to be removed from a container"
+
+
+-----
+
+
+sorrySacrificeCorpse :: Text
+sorrySacrificeCorpse = "There isn't a corpse in your current room for your to sacrifice."
+
+
+sorrySacrificeHolySymbol :: Text
+sorrySacrificeHolySymbol = "You must have a holy symbol in your inventory to sacrifice a corpse."
+
+
+sorrySacrificeHolySymbolCorpse :: Text
+sorrySacrificeHolySymbolCorpse = "To sacrifice a corpse, you must have a holy symbol in your inventory and there must \
+                                 \be a corpse in your current room."
 
 
 -----

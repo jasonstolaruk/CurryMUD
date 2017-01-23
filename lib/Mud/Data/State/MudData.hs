@@ -435,7 +435,7 @@ type FunName = Text
 
 
 -- Has an object.
-newtype HolySymbol = HolySymbol GodName deriving (Generic)
+newtype HolySymbol = HolySymbol { unHolySymbol :: GodName } deriving (Generic)
 
 
 data GodName = Aule

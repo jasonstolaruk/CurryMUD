@@ -114,14 +114,14 @@ fileIOExHandler fn e = do logIOEx fn e
 -----
 
 
-findBiodegradableIds :: MudState -> Inv
+findBiodegradableIds :: MudState -> Inv -- TODO: Why is this here?
 findBiodegradableIds = views objTbl (IM.keys . IM.filter isBiodegradable)
 
 
 -----
 
 
-findNpcIds :: MudState -> Inv
+findNpcIds :: MudState -> Inv -- TODO: Why is this here?
 findNpcIds = views typeTbl (IM.keys . IM.filter (== NpcType))
 
 

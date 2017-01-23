@@ -22,15 +22,19 @@ import qualified Mud.Util.Misc as U (blowUp)
 
 import Control.Arrow (first)
 import Control.Concurrent (threadDelay)
-import Control.Exception.Lifted (finally, handle)
+import Control.Concurrent.Async (asyncThreadId, wait)
+import Control.Exception (Exception)
+import Control.Exception.Lifted (catch, finally, handle, throwTo)
 import Control.Lens (at, both, set, views)
 import Control.Lens.Operators ((%~), (&), (.~), (?~))
+import Control.Monad (void)
 import Control.Monad.IO.Class (liftIO)
 import Data.Bool (bool)
-import Data.IORef (newIORef, readIORef, writeIORef)
+import Data.IORef (IORef, newIORef, readIORef, writeIORef)
 import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>))
 import Data.Text (Text)
+import Data.Typeable (Typeable)
 import qualified Data.IntMap.Lazy as IM (elems, empty, toList)
 import qualified Data.Text as T
 
@@ -55,6 +59,15 @@ logNotice = L.logNotice "Mud.Threads.CorpseDecomposer"
 -- ==================================================
 
 
+data PauseCorpseDecomp = PauseCorpseDecomp deriving (Show, Typeable)
+
+
+instance Exception PauseCorpseDecomp
+
+
+-----
+
+
 startCorpseDecomp :: Id -> SecondsPair -> MudStack ()
 startCorpseDecomp i secs = runAsync (threadCorpseDecomp i secs) >>= \a -> tweak $ corpseDecompAsyncTbl.ind i .~ a
 
@@ -74,20 +87,18 @@ mkSecsTxt = parensQuote . uncurry (middle (<>) "/") . (both %~ commaShow)
 
 
 corpseDecomp :: Id -> SecondsPair -> MudStack ()
-corpseDecomp i pair = getObjWeight i <$> getState >>= \w ->
-    finally <$> loop w <*> finish =<< liftIO (newIORef pair)
+corpseDecomp i pair = getObjWeight i <$> getState >>= \w -> catch <$> loop w <*> handler =<< liftIO (newIORef pair)
   where
-    loop w ref = liftIO (readIORef ref) >>= \case (0, _) -> unit
-                                                  secs   -> do corpseDecompHelper i w secs
-                                                               liftIO . threadDelay $ 1 * 10 ^ 6
-                                                               liftIO . writeIORef ref . first pred $ secs
-                                                               loop w ref
-    finish ref = liftIO (readIORef ref) >>= \case
+    loop w ref = liftIO (readIORef ref) >>= \case
       (0, _) -> logHelper ("corpse decomposer for ID " <> showText i <> " has expired.") >> finishDecomp i
-      secs   -> let msg = prd $ "pausing corpse decomposer for ID " <> showText i |<>| mkSecsTxt secs
-                in logHelper msg >> tweak (pausedCorpseDecompsTbl.ind i .~ secs)
-      where
-        logHelper = logNotice "corpseDecomp finish"
+      secs   -> do corpseDecompHelper i w secs
+                   liftIO $ threadDelay (1 * 10 ^ 6) >> writeIORef ref (first pred secs)
+                   loop w ref
+    handler :: IORef SecondsPair -> PauseCorpseDecomp -> MudStack ()
+    handler ref = const $ liftIO (readIORef ref) >>= \secs ->
+      let msg = prd $ "pausing corpse decomposer for ID " <> showText i |<>| mkSecsTxt secs
+      in logHelper msg >> tweak (pausedCorpseDecompsTbl.ind i .~ secs)
+    logHelper = logNotice "corpseDecomp finish"
 
 
 corpseDecompHelper :: Id -> Weight -> SecondsPair -> MudStack ()
@@ -140,7 +151,10 @@ finishDecomp i = modifyStateSeq $ \ms ->
 
 pauseCorpseDecomps :: MudStack ()
 pauseCorpseDecomps = do logNotice "pauseCorpseDecomps" "pausing corpse decomposers."
-                        views corpseDecompAsyncTbl (mapM_ throwWait . IM.elems) =<< getState
+                        views corpseDecompAsyncTbl (mapM_ f . IM.elems) =<< getState
+  where
+    f :: CorpseDecompAsync -> MudStack ()
+    f a = sequence_ [ throwTo (asyncThreadId a) PauseCorpseDecomp, liftIO . void . wait $ a ]
 
 
 -----

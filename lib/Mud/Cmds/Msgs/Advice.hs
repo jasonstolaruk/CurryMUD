@@ -105,6 +105,7 @@ module Mud.Cmds.Msgs.Advice ( adviceAAnnounceNoArgs
                             , adviceReadyNoArgs
                             , adviceRemoveNoArgs
                             , adviceRemoveNoCon
+                            , adviceSacrificeExcessArgs
                             , adviceSayAdverbNoUtterance
                             , adviceSayNoArgs
                             , adviceSayToNoUtterance
@@ -760,6 +761,11 @@ adviceRemoveEx = colorWith quoteColor "remove doll sack"
 
 adviceRemoveNoCon :: Text
 adviceRemoveNoCon = prd $ "Please also specify the container you want to remove it from, as in " <> adviceRemoveEx
+
+
+adviceSacrificeExcessArgs :: Text
+adviceSacrificeExcessArgs = "Please provide at most two arguments: the holy symbol to use, followed by the corpse to \
+                            \sacrifice."
 
 
 adviceSayAdverbNoUtterance :: Lang -> Text

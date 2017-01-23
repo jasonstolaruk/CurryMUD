@@ -47,6 +47,7 @@ module Mud.Data.State.Util.Get ( getActiveEffects
                                , getFps
                                , getHand
                                , getHolySymbol
+                               , getHolySymbolGodName
                                , getHostMap
                                , getHps
                                , getIdForPCSing
@@ -520,6 +521,13 @@ getHand i = view hand . getMob i
 
 getHolySymbol :: HasCallStack => Id -> MudState -> HolySymbol
 getHolySymbol i = view (holySymbolTbl.ind i)
+
+
+-----
+
+
+getHolySymbolGodName :: HasCallStack => Id -> MudState -> GodName
+getHolySymbolGodName i = unHolySymbol . getHolySymbol i
 
 
 -----
