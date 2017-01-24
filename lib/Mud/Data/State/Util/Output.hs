@@ -72,7 +72,7 @@ import Data.Monoid ((<>))
 import Data.Text (Text)
 import GHC.Stack (HasCallStack)
 import Prelude hiding (pi)
-import qualified Data.IntMap.Lazy as IM (elems, toList)
+import qualified Data.IntMap.Strict as IM (elems, toList)
 import qualified Data.Text as T
 
 

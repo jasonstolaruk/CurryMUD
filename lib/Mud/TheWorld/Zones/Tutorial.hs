@@ -13,7 +13,7 @@ import qualified Mud.Misc.Logging as L (logNotice)
 
 import Data.Bits (zeroBits)
 import Data.Text (Text)
-import qualified Data.Map.Lazy as M (fromList)
+import qualified Data.Map.Strict as M (fromList)
 
 
 logNotice :: Text -> Text -> MudStack ()

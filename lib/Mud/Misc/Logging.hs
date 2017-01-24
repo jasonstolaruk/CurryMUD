@@ -47,7 +47,7 @@ import Control.Monad.Reader (asks)
 import Data.List (sort)
 import Data.Monoid ((<>))
 import Data.Text (Text)
-import qualified Data.IntMap.Lazy as IM (elems, lookup)
+import qualified Data.IntMap.Strict as IM (elems, lookup)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (appendFile, hPutStrLn)
 import System.Directory (doesFileExist, getDirectoryContents, removeFile, renameFile)

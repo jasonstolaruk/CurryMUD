@@ -44,7 +44,7 @@ import Data.Monoid ((<>), Any(..), getSum)
 import Data.Text (Text)
 import GHC.Stack (HasCallStack)
 import Network (PortID(..), accept, listenOn, sClose)
-import qualified Data.IntMap.Lazy as IM (map)
+import qualified Data.IntMap.Strict as IM (map)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (hPutStr, putStrLn)
 import System.IO (hClose)

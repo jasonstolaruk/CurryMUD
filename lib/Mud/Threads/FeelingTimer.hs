@@ -28,7 +28,7 @@ import Control.Monad ((>=>), mapM_)
 import Control.Monad.IO.Class (liftIO)
 import Data.Monoid ((<>))
 import Data.Text (Text)
-import qualified Data.Map.Lazy as M (delete, empty, insert, lookup, toList)
+import qualified Data.Map.Strict as M (delete, empty, insert, lookup, toList)
 import qualified Data.Text as T
 
 

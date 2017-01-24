@@ -45,7 +45,7 @@ import Data.Monoid ((<>))
 import Data.Text (Text)
 import Data.Typeable (Typeable)
 import GHC.Conc (labelThread)
-import qualified Data.IntMap.Lazy as IM (filter, keys)
+import qualified Data.IntMap.Strict as IM (filter, keys)
 import System.IO.Error (isAlreadyInUseError, isDoesNotExistError, isPermissionError)
 
 

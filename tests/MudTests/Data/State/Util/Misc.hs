@@ -12,7 +12,7 @@ import Control.Lens (to)
 import Control.Lens.Operators ((^.))
 import Data.Monoid ((<>))
 import Data.Text (Text)
-import qualified Data.IntMap.Lazy as IM (keys)
+import qualified Data.IntMap.Strict as IM (keys)
 import qualified Data.Text as T
 import Test.QuickCheck.Monadic (assert, monadicIO)
 import Test.Tasty.HUnit ((@?=), Assertion)

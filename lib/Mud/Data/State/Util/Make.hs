@@ -14,7 +14,7 @@ import Control.Lens (at)
 import Control.Lens.Operators ((%~), (&), (.~))
 import Control.Monad (when)
 import Data.Text (Text)
-import qualified Data.Map.Lazy as M (empty)
+import qualified Data.Map.Strict as M (empty)
 
 
 type InvId = Id

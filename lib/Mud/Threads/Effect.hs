@@ -33,7 +33,7 @@ import Control.Monad.Reader (ask)
 import Data.IORef (newIORef, readIORef)
 import Data.Monoid ((<>))
 import Data.Text (Text)
-import qualified Data.IntMap.Lazy as IM (keys, toList)
+import qualified Data.IntMap.Strict as IM (keys, toList)
 import qualified Data.Text as T
 
 

@@ -28,7 +28,7 @@ import Data.Bits (zeroBits)
 import Data.List ((\\), delete)
 import Data.Monoid ((<>))
 import Data.Text (Text)
-import qualified Data.Map.Lazy as M (fromList)
+import qualified Data.Map.Strict as M (fromList)
 
 
 logNotice :: Text -> Text -> MudStack ()

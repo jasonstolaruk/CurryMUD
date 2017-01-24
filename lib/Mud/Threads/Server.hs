@@ -46,7 +46,7 @@ import Control.Monad.IO.Class (liftIO)
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
 import GHC.Stack (HasCallStack)
-import qualified Data.Map.Lazy as M (elems)
+import qualified Data.Map.Strict as M (elems)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (hPutStr, hPutStrLn, readFile)
 import System.IO (Handle, hFlush, hShow)

@@ -46,8 +46,8 @@ import Data.Text (Text)
 import Database.SQLite.Simple (fromOnly)
 import GHC.Stack (HasCallStack)
 import Prelude hiding (pi)
-import qualified Data.IntMap.Lazy as IM (delete, filterWithKey, keys, mapWithKey)
-import qualified Data.Map.Lazy as M (delete, elems, empty, filter, filterWithKey, keys, size)
+import qualified Data.IntMap.Strict as IM (delete, filterWithKey, keys, mapWithKey)
+import qualified Data.Map.Strict as M (delete, elems, empty, filter, filterWithKey, keys, size)
 import qualified Data.Text as T
 
 

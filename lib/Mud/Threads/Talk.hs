@@ -38,7 +38,7 @@ import Data.Text (Text)
 import Data.Time (getCurrentTime)
 import Network (HostName)
 import Prelude hiding (pi)
-import qualified Data.Map.Lazy as M (empty)
+import qualified Data.Map.Strict as M (empty)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
 import System.FilePath ((</>))

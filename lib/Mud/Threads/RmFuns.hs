@@ -14,7 +14,7 @@ import Control.Arrow (second)
 import Control.Lens (view, views)
 import Control.Lens.Operators ((.~), (<>~))
 import Data.Text (Text)
-import qualified Data.IntMap.Lazy as IM (filter, toList)
+import qualified Data.IntMap.Strict as IM (filter, toList)
 
 
 logNotice :: Text -> Text -> MudStack ()

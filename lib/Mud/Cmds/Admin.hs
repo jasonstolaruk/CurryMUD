@@ -79,8 +79,8 @@ import GHC.Conc (ThreadStatus(..), threadStatus)
 import GHC.Exts (sortWith)
 import GHC.Stack (HasCallStack)
 import Prelude hiding (exp, pi)
-import qualified Data.IntMap.Lazy as IM (elems, filter, filterWithKey, keys, lookup, size, toList)
-import qualified Data.Map.Lazy as M (elems, findWithDefault, foldl, foldrWithKey, keys, null, size, toList)
+import qualified Data.IntMap.Strict as IM (elems, filter, filterWithKey, keys, lookup, size, toList)
+import qualified Data.Map.Strict as M (elems, findWithDefault, foldl, foldrWithKey, keys, null, size, toList)
 import qualified Data.Set as S (toList)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T

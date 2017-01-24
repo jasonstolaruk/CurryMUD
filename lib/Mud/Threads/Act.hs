@@ -34,7 +34,7 @@ import Data.Monoid ((<>))
 import Data.Text (Text)
 import Data.Time (getCurrentTime)
 import GHC.Stack (HasCallStack)
-import qualified Data.Map.Lazy as M (elems)
+import qualified Data.Map.Strict as M (elems)
 import qualified Data.Text as T
 
 

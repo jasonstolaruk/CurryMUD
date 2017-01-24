@@ -20,8 +20,8 @@ import Control.Monad (forever)
 import Control.Monad.IO.Class (liftIO)
 import Data.Text (Text)
 import GHC.Conc (ThreadStatus(..), threadStatus)
-import qualified Data.IntMap.Lazy as IM (assocs)
-import qualified Data.Map.Lazy as M (elems, keys)
+import qualified Data.IntMap.Strict as IM (assocs)
+import qualified Data.Map.Strict as M (elems, keys)
 
 
 default (Int)

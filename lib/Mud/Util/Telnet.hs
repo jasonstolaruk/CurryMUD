@@ -13,7 +13,7 @@ import qualified Mud.Util.Misc as U (patternMatchFail)
 import Data.Char (ord)
 import Data.Monoid ((<>))
 import Data.Text (Text)
-import qualified Data.IntMap.Lazy as IM (lookup)
+import qualified Data.IntMap.Strict as IM (lookup)
 import qualified Data.Text as T
 
 

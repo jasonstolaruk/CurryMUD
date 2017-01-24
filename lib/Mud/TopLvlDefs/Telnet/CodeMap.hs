@@ -7,7 +7,7 @@ import Mud.TopLvlDefs.Telnet.Chars
 
 import Control.Arrow (first)
 import Data.Char (ord)
-import qualified Data.IntMap.Lazy as IM (IntMap, fromList)
+import qualified Data.IntMap.Strict as IM (IntMap, fromList)
 
 
 telnetCodeMap :: IM.IntMap TelnetCode

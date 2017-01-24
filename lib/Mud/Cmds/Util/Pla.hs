@@ -128,8 +128,8 @@ import Data.Maybe (isNothing)
 import Data.Monoid ((<>), Sum(..))
 import Data.Text (Text)
 import GHC.Stack (HasCallStack)
-import qualified Data.IntMap.Lazy as IM (keys)
-import qualified Data.Map.Lazy as M ((!), notMember, toList)
+import qualified Data.IntMap.Strict as IM (keys)
+import qualified Data.Map.Strict as M ((!), notMember, toList)
 import qualified Data.Text as T
 import qualified Data.Vector.Unboxed as V (Vector)
 

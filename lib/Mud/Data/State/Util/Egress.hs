@@ -39,7 +39,7 @@ import Data.Time (UTCTime, diffUTCTime, getCurrentTime)
 import Data.Tuple (swap)
 import GHC.Stack (HasCallStack)
 import Prelude hiding (pi)
-import qualified Data.Map.Lazy as M (delete, empty, foldl, keys, singleton, toList)
+import qualified Data.Map.Strict as M (delete, empty, foldl, keys, singleton, toList)
 import qualified Data.Text as T
 import System.Time.Utils (renderSecs)
 

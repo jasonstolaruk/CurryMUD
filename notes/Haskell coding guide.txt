@@ -514,8 +514,6 @@ Apply "-funbox-strict-fields" when using strictness annotations/bang patterns ("
 
 When creating a recursively defined type, keep the spines lazy and make the leaves strict.
 
-When deciding on whether to use a lazy or strict data type (for example, "Data.Map.Lazy" vs. "Data.Map.Strict"), base your decision on profiling.
-
 
 ERROR HANDLING
 ==================================================

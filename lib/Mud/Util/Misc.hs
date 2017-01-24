@@ -100,8 +100,8 @@ import Data.Monoid (Sum(..), (<>))
 import Data.Text (Text)
 import Data.Time (FormatTime, defaultTimeLocale, formatTime, getZonedTime)
 import GHC.Stack (HasCallStack, callStack, prettyCallStack)
-import qualified Data.IntMap.Lazy as IM (IntMap, insert, lookup)
-import qualified Data.Map.Lazy as M (Map, assocs)
+import qualified Data.IntMap.Strict as IM (IntMap, insert, lookup)
+import qualified Data.Map.Strict as M (Map, assocs)
 import qualified Data.Text as T
 import System.IO (hPutStrLn, stderr)
 

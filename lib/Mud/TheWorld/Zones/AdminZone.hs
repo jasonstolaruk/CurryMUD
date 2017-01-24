@@ -47,7 +47,7 @@ import Data.Function (on)
 import Data.List ((\\), delete)
 import Data.Monoid ((<>))
 import Data.Text (Text)
-import qualified Data.Map.Lazy as M (empty, fromList, singleton)
+import qualified Data.Map.Strict as M (empty, fromList, singleton)
 import qualified Data.Text as T
 
 

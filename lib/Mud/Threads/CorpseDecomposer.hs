@@ -35,7 +35,7 @@ import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import Data.Typeable (Typeable)
-import qualified Data.IntMap.Lazy as IM (elems, empty, toList)
+import qualified Data.IntMap.Strict as IM (elems, empty, toList)
 import qualified Data.Text as T
 
 

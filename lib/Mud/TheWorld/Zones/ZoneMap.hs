@@ -8,7 +8,7 @@ import Mud.TheWorld.Zones.TutorialIds
 
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
-import qualified Data.IntMap.Lazy as IM (IntMap, fromList, lookup)
+import qualified Data.IntMap.Strict as IM (IntMap, fromList, lookup)
 
 
 type Zone = Text

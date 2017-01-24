@@ -12,7 +12,7 @@ import Mud.Util.Misc
 import Control.Lens (at)
 import Control.Lens.Operators ((%~), (.~))
 import Data.List (delete)
-import qualified Data.IntMap.Lazy as IM (map)
+import qualified Data.IntMap.Strict as IM (map)
 
 
 destroy :: Inv -> MudStack ()

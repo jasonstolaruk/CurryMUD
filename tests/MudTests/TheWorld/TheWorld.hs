@@ -7,7 +7,7 @@ import MudTests.TestUtil
 import Control.Lens (to)
 import Control.Lens.Operators ((^.))
 import Data.List (group)
-import qualified Data.IntMap.Lazy as IM (elems)
+import qualified Data.IntMap.Strict as IM (elems)
 import Test.QuickCheck.Monadic (assert, monadicIO)
 import Test.Tasty.QuickCheck (Property)
 

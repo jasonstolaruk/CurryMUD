@@ -34,6 +34,7 @@ import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Calc
 import Mud.Data.State.Util.Coins
+import Mud.Data.State.Util.Destroy
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Hierarchy
 import Mud.Data.State.Util.Lang
@@ -98,8 +99,8 @@ import Data.Time (diffUTCTime, getCurrentTime)
 import Data.Tuple (swap)
 import GHC.Stack (HasCallStack)
 import Prelude hiding (log, pi)
-import qualified Data.IntMap.Lazy as IM (IntMap, (!), keys)
-import qualified Data.Map.Lazy as M ((!), elems, filter, foldrWithKey, keys, lookup, map, singleton, size, toList)
+import qualified Data.IntMap.Strict as IM (IntMap, (!), keys)
+import qualified Data.Map.Strict as M ((!), elems, filter, foldrWithKey, insert, keys, lookup, map, singleton, size, toList)
 import qualified Data.Set as S (filter, toList)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
@@ -2953,9 +2954,9 @@ sacrifice :: HasCallStack => ActionFun -- TODO: Help.
 sacrifice (NoArgs i mq cols) = modifyStateSeq $ \ms ->
     let sorry = (ms, ) . pure . wrapSend mq cols
     in case (findHolySymbolGodName `fanUncurry` findCorpseIdInMobRm) (i, ms) of
-      (Just _,  Just ci) ->
+      (Just gn, Just ci) ->
           let fs = pure $ ms^.corpseDecompAsyncTbl.at ci.to (maybeVoid throwDeath)
-          in (ms, fs)
+          in (destroyHelper (pure ci) . sacrificesTblHelper gn i $ ms, fs) -- TODO: ActiveEffects, PausedEffects
       (Nothing, Just _ ) -> sorry sorrySacrificeHolySymbol
       (Just _,  Nothing) -> sorry sorrySacrificeCorpse
       (Nothing, Nothing) -> sorry sorrySacrificeHolySymbolCorpse
@@ -2975,6 +2976,12 @@ findHolySymbolGodName i ms =
 
 findCorpseIdInMobRm :: HasCallStack => Id -> MudState -> Maybe Id
 findCorpseIdInMobRm i ms = listToMaybe . filter ((== CorpseType) . (`getType` ms)) . getMobRmInv i $ ms
+
+
+sacrificesTblHelper :: HasCallStack => GodName -> Id -> MudState -> MudState
+sacrificesTblHelper gn i = pcTbl.ind i.sacrificesTbl %~ f
+  where
+    f tbl = maybe (M.insert gn 1 tbl) (flip (M.insert gn) tbl . succ) . M.lookup gn $ tbl
 
 
 -----
