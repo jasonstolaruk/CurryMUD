@@ -470,8 +470,7 @@ interpPickPts ncb@(NewCharBundle _ s _) cn (Lower   i mq cols as) = getState >>=
                                    | x == 100   -> sorryHelper . sorryInterpPickPtsMax $ attribTxt
                                    | x' <- (x + (y `min` pts)) `min` 100
                                    , y' <- x' - x
-                                   -> ( ms & mobTbl    .ind i.setter +~ y'
-                                           & pickPtsTbl.ind i        -~ y'
+                                   -> ( upd ms [ mobTbl.ind i.setter +~ y', pickPtsTbl.ind i -~ y' ]
                                       , msgs <> (pure . T.concat $ [ "Added "
                                                                    , showText y'
                                                                    , " point"
@@ -482,8 +481,7 @@ interpPickPts ncb@(NewCharBundle _ s _) cn (Lower   i mq cols as) = getState >>=
                                '-' | x == 10 -> sorryHelper . sorryInterpPickPtsMin $ attribTxt
                                    | x' <- (x - y) `max` 10
                                    , y' <- x - x'
-                                   -> ( ms & mobTbl    .ind i.setter -~ y'
-                                           & pickPtsTbl.ind i        +~ y'
+                                   -> ( upd ms [ mobTbl.ind i.setter -~ y', pickPtsTbl.ind i +~ y' ]
                                       , msgs <> (pure . T.concat $ [ "Subtracted "
                                                                    , showText y'
                                                                    , " point"
@@ -575,13 +573,13 @@ finishNewChar ncb@(NewCharBundle _ s pass) params@(NoArgs'' i) = do
         handleLogin ncb True params
         notifyQuestion i ms
   where
-    helper v ms | ms' <- ms & pickPtsTbl.at  i        .~ Nothing -- TODO: Kits. Include a light source and a holy symbol.
-                            & invTbl    .ind iWelcome %~ (i `delete`)
-                            & mobTbl    .ind i.rmId   .~ iCentral
-                            & mobTbl    .ind i.interp .~ Nothing
-                            & plaTbl    .ind i        %~ setPlaFlag IsTunedQuestion True
-                = dup $ ms' & invTbl    .ind iCentral %~ addToInv ms' (pure i)
-                            & newChar i v
+    helper v ms | ms' <- upd ms [ pickPtsTbl.at  i        .~ Nothing -- TODO: Kits. Include a light source and a holy symbol.
+                                , invTbl    .ind iWelcome %~ (i `delete`)
+                                , mobTbl    .ind i.rmId   .~ iCentral
+                                , mobTbl    .ind i.interp .~ Nothing
+                                , plaTbl    .ind i        %~ setPlaFlag IsTunedQuestion True ]
+                = dup $ upd ms' [ invTbl    .ind iCentral %~ addToInv ms' (pure i)
+                                , newChar i v ]
 finishNewChar _ p = patternMatchFail "finishNewChar" . showText $ p
 
 
@@ -600,45 +598,45 @@ newChar i v = newXps i v . modifyMobForRace i
 modifyMobForRace :: HasCallStack => Id -> MudState -> MudState
 modifyMobForRace i ms = let r     = getRace i ms
                             myMob = mobTbl.ind i
-                            ms'   = ms & myMob.corpseWeight   .~ calcCorpseWeight   r
-                                       & myMob.corpseVol      .~ calcCorpseVol      r
-                                       & myMob.corpseCapacity .~ calcCorpseCapacity r
-                        in case r of Dwarf     -> ms' & myMob.st +~ 2
-                                                      & myMob.ht +~ 2
-                                                      & myMob.ma -~ 2
-                                                      & myMob.ps -~ 2
+                            ms'   = upd ms [ myMob.corpseWeight   .~ calcCorpseWeight   r
+                                           , myMob.corpseVol      .~ calcCorpseVol      r
+                                           , myMob.corpseCapacity .~ calcCorpseCapacity r ]
+                        in case r of Dwarf     -> upd ms' [ myMob.st +~ 2
+                                                          , myMob.ht +~ 2
+                                                          , myMob.ma -~ 2
+                                                          , myMob.ps -~ 2 ]
                                      -----
-                                     Elf       -> ms' & myMob.st -~ 2
-                                                      & myMob.dx +~ 2
-                                                      & myMob.ht -~ 2
-                                                      & myMob.ma +~ 2
+                                     Elf       -> upd ms' [ myMob.st -~ 2
+                                                          , myMob.dx +~ 2
+                                                          , myMob.ht -~ 2
+                                                          , myMob.ma +~ 2 ]
                                      -----
-                                     Felinoid  -> ms' & myMob.dx +~ 4
-                                                      & myMob.ma -~ 2
-                                                      & myMob.ps -~ 2
+                                     Felinoid  -> upd ms' [ myMob.dx +~ 4
+                                                          , myMob.ma -~ 2
+                                                          , myMob.ps -~ 2 ]
                                      -----
-                                     Hobbit    -> ms' & myMob.st -~ 4
-                                                      & myMob.dx +~ 4
-                                                      & myMob.ht -~ 2
-                                                      & myMob.ma +~ 4
-                                                      & myMob.ps -~ 2
+                                     Hobbit    -> upd ms' [ myMob.st -~ 4
+                                                          , myMob.dx +~ 4
+                                                          , myMob.ht -~ 2
+                                                          , myMob.ma +~ 4
+                                                          , myMob.ps -~ 2 ]
                                      -----
                                      Human     -> ms'
                                      -----
-                                     Lagomorph -> ms' & myMob.st -~ 1
-                                                      & myMob.ht -~ 2
-                                                      & myMob.ma -~ 4
-                                                      & myMob.ps +~ 5
+                                     Lagomorph -> upd ms' [ myMob.st -~ 1
+                                                          , myMob.ht -~ 2
+                                                          , myMob.ma -~ 4
+                                                          , myMob.ps +~ 5 ]
                                      -----
-                                     Nymph     -> ms' & myMob.st -~ 2
-                                                      & myMob.dx -~ 1
-                                                      & myMob.ma +~ 5
-                                                      & myMob.ps -~ 4
+                                     Nymph     -> upd ms' [ myMob.st -~ 2
+                                                          , myMob.dx -~ 1
+                                                          , myMob.ma +~ 5
+                                                          , myMob.ps -~ 4 ]
                                      -----
-                                     Vulpenoid -> ms' & myMob.st +~ 4
-                                                      & myMob.ht +~ 4
-                                                      & myMob.ma -~ 4
-                                                      & myMob.ps -~ 4
+                                     Vulpenoid -> upd ms' [ myMob.st +~ 4
+                                                          , myMob.ht +~ 4
+                                                          , myMob.ma -~ 4
+                                                          , myMob.ps -~ 4 ]
 
 
 {-
@@ -660,10 +658,6 @@ newXps i (V.toList -> (a:b:c:d:_)) ms = let x | getRace i ms == Human = 20
                                             initFp = x + y                   + calcLvlUpFp i ms d
                                               where
                                                 y = (calcModifierHt i ms + calcModifierSt i ms) `divideRound` 2
-                                        in ms & myMob.curHp .~ initHp & myMob.maxHp .~ initHp
-                                              & myMob.curMp .~ initMp & myMob.maxMp .~ initMp
-                                              & myMob.curPp .~ initPp & myMob.maxPp .~ initPp
-                                              & myMob.curFp .~ initFp & myMob.maxFp .~ initFp
 newXps _ v _ = patternMatchFail "newXps" . showText . V.length $ v
 
 
@@ -738,43 +732,10 @@ interpPW _ _ _ p = patternMatchFail "interpPW" . showText $ p
 logIn :: HasCallStack => Id -> MudState -> Sing -> HostName -> Maybe UTCTime -> Id -> MudState
 logIn newId ms oldSing newHost newTime originId = peepNewId . movePC $ adoptNewId
   where
-    adoptNewId = ms & activeEffectsTbl.ind newId         .~ getActiveEffects originId ms
-                    & activeEffectsTbl.at  originId      .~ Nothing
-                    & coinsTbl        .ind newId         .~ getCoins         originId ms
-                    & coinsTbl        .at  originId      .~ Nothing
-                    & entTbl          .ind newId         .~ set entId newId e
-                    & entTbl          .at  originId      .~ Nothing
-                    & eqTbl           .ind newId         .~ getEqMap         originId ms
-                    & eqTbl           .at  originId      .~ Nothing
-                    & invTbl          .ind newId         .~ getInv           originId ms
-                    & invTbl          .at  originId      .~ Nothing
-                    & mobTbl          .ind newId         .~ getMob           originId ms
-                    & mobTbl          .at  originId      .~ Nothing
-                    & pausedEffectsTbl.ind newId         .~ getPausedEffects originId ms
-                    & pausedEffectsTbl.at  originId      .~ Nothing
-                    & pcSingTbl       .at  (e^.sing)     ?~ newId
-                    & pcSingTbl       .at  oldSing       .~ Nothing
-                    & pcTbl           .ind newId         .~ getPC            originId ms
-                    & pcTbl           .at  originId      .~ Nothing
-                    & plaTbl          .ind newId         .~ (getPla          originId ms & currHostName .~ newHost
-                                                                                         & connectTime  .~ newTime
-                                                                                         & setPlaFlag IsGmcp gmcp)
-                    & plaTbl          .ind newId.peepers .~ getPeepers       originId ms
-                    & plaTbl          .at  originId      .~ Nothing
-                    & rndmNamesMstrTbl.ind newId         .~ getRndmNamesTbl  originId ms
-                    & rndmNamesMstrTbl.at  originId      .~ Nothing
-                    & teleLinkMstrTbl .ind newId         .~ getTeleLinkTbl   originId ms
-                    & teleLinkMstrTbl .at  originId      .~ Nothing
-                    & typeTbl         .at  originId      .~ Nothing
       where
         e    = getEnt   originId ms
         gmcp = isGmcpId newId    ms
     movePC ms' = let newRmId = fromMaybe iDalbenWelcome . getLogoutRmId newId $ ms'
-                 in ms' & invTbl.ind iWelcome         %~ (newId    `delete`)
-                        & invTbl.ind iLoggedOut       %~ (originId `delete`)
-                        & invTbl.ind newRmId          %~ addToInv ms' (pure newId)
-                        & mobTbl.ind newId.rmId       .~ newRmId
-                        & plaTbl.ind newId.logoutRmId .~ Nothing
     peepNewId ms'@(getPeepers newId -> peeperIds) =
         let replaceId = (newId :) . (originId `delete`)
         in ms' & plaTbl %~ flip (foldr (\peeperId -> ind peeperId.peeping %~ replaceId)) peeperIds
