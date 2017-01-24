@@ -658,6 +658,14 @@ newXps i (V.toList -> (a:b:c:d:_)) ms = let x | getRace i ms == Human = 20
                                             initFp = x + y                   + calcLvlUpFp i ms d
                                               where
                                                 y = (calcModifierHt i ms + calcModifierSt i ms) `divideRound` 2
+                                        in upd ms [ myMob.curHp .~ initHp
+                                                  , myMob.maxHp .~ initHp
+                                                  , myMob.curMp .~ initMp
+                                                  , myMob.maxMp .~ initMp
+                                                  , myMob.curPp .~ initPp
+                                                  , myMob.maxPp .~ initPp
+                                                  , myMob.curFp .~ initFp
+                                                  , myMob.maxFp .~ initFp ]
 newXps _ v _ = patternMatchFail "newXps" . showText . V.length $ v
 
 
@@ -732,10 +740,43 @@ interpPW _ _ _ p = patternMatchFail "interpPW" . showText $ p
 logIn :: HasCallStack => Id -> MudState -> Sing -> HostName -> Maybe UTCTime -> Id -> MudState
 logIn newId ms oldSing newHost newTime originId = peepNewId . movePC $ adoptNewId
   where
+    adoptNewId = upd ms [ activeEffectsTbl.ind newId         .~ getActiveEffects originId ms
+                        , activeEffectsTbl.at  originId      .~ Nothing
+                        , coinsTbl        .ind newId         .~ getCoins         originId ms
+                        , coinsTbl        .at  originId      .~ Nothing
+                        , entTbl          .ind newId         .~ set entId newId e
+                        , entTbl          .at  originId      .~ Nothing
+                        , eqTbl           .ind newId         .~ getEqMap         originId ms
+                        , eqTbl           .at  originId      .~ Nothing
+                        , invTbl          .ind newId         .~ getInv           originId ms
+                        , invTbl          .at  originId      .~ Nothing
+                        , mobTbl          .ind newId         .~ getMob           originId ms
+                        , mobTbl          .at  originId      .~ Nothing
+                        , pausedEffectsTbl.ind newId         .~ getPausedEffects originId ms
+                        , pausedEffectsTbl.at  originId      .~ Nothing
+                        , pcSingTbl       .at  (e^.sing)     ?~ newId
+                        , pcSingTbl       .at  oldSing       .~ Nothing
+                        , pcTbl           .ind newId         .~ getPC            originId ms
+                        , pcTbl           .at  originId      .~ Nothing
+                        , plaTbl          .ind newId         .~ (getPla          originId ms & currHostName .~ newHost
+                                                                                             & connectTime  .~ newTime
+                                                                                             & setPlaFlag IsGmcp gmcp)
+                        , plaTbl          .ind newId.peepers .~ getPeepers       originId ms
+                        , plaTbl          .at  originId      .~ Nothing
+                        , rndmNamesMstrTbl.ind newId         .~ getRndmNamesTbl  originId ms
+                        , rndmNamesMstrTbl.at  originId      .~ Nothing
+                        , teleLinkMstrTbl .ind newId         .~ getTeleLinkTbl   originId ms
+                        , teleLinkMstrTbl .at  originId      .~ Nothing
+                        , typeTbl         .at  originId      .~ Nothing ]
       where
         e    = getEnt   originId ms
         gmcp = isGmcpId newId    ms
     movePC ms' = let newRmId = fromMaybe iDalbenWelcome . getLogoutRmId newId $ ms'
+                 in upd ms' [ invTbl.ind iWelcome         %~ (newId    `delete`)
+                            , invTbl.ind iLoggedOut       %~ (originId `delete`)
+                            , invTbl.ind newRmId          %~ addToInv ms' (pure newId)
+                            , mobTbl.ind newId.rmId       .~ newRmId
+                            , plaTbl.ind newId.logoutRmId .~ Nothing ]
     peepNewId ms'@(getPeepers newId -> peeperIds) =
         let replaceId = (newId :) . (originId `delete`)
         in ms' & plaTbl %~ flip (foldr (\peeperId -> ind peeperId.peeping %~ replaceId)) peeperIds
