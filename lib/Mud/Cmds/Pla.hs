@@ -2956,7 +2956,7 @@ sacrifice (NoArgs i mq cols) = modifyStateSeq $ \ms ->
     in case (findHolySymbolGodName `fanUncurry` findCorpseIdInMobRm) (i, ms) of
       (Just gn, Just ci) ->
           let fs = pure $ ms^.corpseDecompAsyncTbl.at ci.to (maybeVoid throwDeath)
-          in (upd ms [ destroyHelper (pure ci), sacrificesTblHelper gn i ], fs) -- TODO: ActiveEffects, PausedEffects
+          in (upd ms [ destroyHelper (pure ci), sacrificesTblHelper gn i ], fs) -- TODO: ActiveEffects
       (Nothing, Just _ ) -> sorry sorrySacrificeHolySymbol
       (Just _,  Nothing) -> sorry sorrySacrificeCorpse
       (Nothing, Nothing) -> sorry sorrySacrificeHolySymbolCorpse

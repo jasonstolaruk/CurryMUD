@@ -58,27 +58,26 @@ logPla = L.logPla "Mud.Data.State.Util.Egress"
 handleEgress :: HasCallStack => Id -> MsgQueue -> Bool -> MudStack ()
 handleEgress i mq isDropped = egressHelper `finally` writeMsg mq FinishedEgress
   where
-    egressHelper = do
-        logPla "handleEgress egressHelper" i "handling egress."
-        stopActs i
-        (ms, now) <- (,) <$> getState <*> liftIO getCurrentTime
-        let tuple@(s, hoc, spirit) = ((,,) <$> uncurry getSing
-                                           <*> uncurry isAdHoc
-                                           <*> uncurry isSpiritId) (i, ms)
-        unless (hoc || spirit) . bcastOthersInRm i . nlnl . egressMsg . serialize . mkStdDesig i ms $ DoCap
-        helper now tuple |&| modifyState >=> \(bs, logMsgs) -> do
-            forM_ logMsgs . uncurry . logPla $ "handleEgress egressHelper helper"
-            if spirit
-              then theBeyond i mq s isDropped
-              else do pauseEffects      i -- Already done for spirits in "handleDeath".
-                      stopFeelings      i
-                      stopRegen         i
-                      throwWaitDigester i
-            closePlaLog i
-            bcast bs
-            bcastAdmins $ s <> " has left CurryMUD."
-            logNotice "handleEgress egressHelper helper" . T.concat $ [ descSingId i ms, " has left CurryMUD." ]
-            when hoc . tweak . removeAdHoc $ i
+    egressHelper = do logPla "handleEgress egressHelper" i "handling egress."
+                      stopActs i
+                      (ms, now) <- (,) <$> getState <*> liftIO getCurrentTime
+                      let tuple@(s, hoc, spirit) = ((,,) <$> uncurry getSing
+                                                         <*> uncurry isAdHoc
+                                                         <*> uncurry isSpiritId) (i, ms)
+                      unless (hoc || spirit) . bcastOthersInRm i . nlnl . egressMsg . serialize . mkStdDesig i ms $ DoCap
+                      helper now tuple |&| modifyState >=> \(bs, logMsgs) -> do
+                          forM_ logMsgs . uncurry . logPla $ "handleEgress egressHelper helper"
+                          if spirit
+                            then theBeyond i mq s isDropped
+                            else do pauseEffects      i -- Already done for spirits in "handleDeath".
+                                    stopFeelings      i
+                                    stopRegen         i
+                                    throwWaitDigester i
+                          closePlaLog i
+                          bcast bs
+                          bcastAdmins $ s <> " has left CurryMUD."
+                          logNotice "handleEgress egressHelper helper" . T.concat $ [ descSingId i ms, " has left CurryMUD." ]
+                          when hoc . tweak . removeAdHoc $ i
     helper now (s, hoc, spirit) ms =
         let (ms', bs, logMsgs) = peepHelper i ms s spirit
             ms'' | hoc         = ms'

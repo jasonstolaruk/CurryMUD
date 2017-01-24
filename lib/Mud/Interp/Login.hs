@@ -550,11 +550,9 @@ interpConfirmDesc _ _ _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNo
 
 
 interpDiscover :: HasCallStack => NewCharBundle -> Interp
-interpDiscover ncb cn params@(WithArgs i mq _ as) =
-    (>> finishNewChar ncb params { args = [] }) $ if ()!# cn
-      then do send mq . nlnl $ "Thank you."
-              withDbExHandler_ "interpDiscover" . insertDbTblDiscover =<< mkDiscoverRec
-      else blankLine mq
+interpDiscover ncb cn params@(WithArgs i mq _ as) = (>> finishNewChar ncb params { args = [] }) $ if ()!# cn
+  then sequence_ [ send mq . nlnl $ "Thank you.", withDbExHandler_ "interpDiscover" . insertDbTblDiscover =<< mkDiscoverRec ]
+  else blankLine mq
   where
     mkDiscoverRec = (,) <$> liftIO mkTimestamp <*> (T.pack . getCurrHostName i <$> getState) >>= \(ts, host) ->
         return . DiscoverRec ts host . formatMsgArgs $ cn : as
@@ -738,7 +736,7 @@ interpPW _ _ _ p = patternMatchFail "interpPW" . showText $ p
 
 
 logIn :: HasCallStack => Id -> MudState -> Sing -> HostName -> Maybe UTCTime -> Id -> MudState
-logIn newId ms oldSing newHost newTime originId = peepNewId . movePC $ adoptNewId
+logIn newId ms oldSing newHost newTime originId = upd adoptNewId [ movePC, peepNewId ]
   where
     adoptNewId = upd ms [ activeEffectsTbl.ind newId         .~ getActiveEffects originId ms
                         , activeEffectsTbl.at  originId      .~ Nothing
