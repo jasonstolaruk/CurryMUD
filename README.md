@@ -108,8 +108,6 @@ Please build with [stack](http://docs.haskellstack.org/en/stable/README.html) (o
 0. Execute the `curry` binary.
 0. Telnet to `localhost` port 9696 to play.
 
-CurryMUD presently cannot be loaded into GHCi due to [a GHC bug](https://ghc.haskell.org/trac/ghc/ticket/12007).
-
 ## How to contact me
 
 Feel free to email me at the address associated with [my GitHub account](https://github.com/jasonstolaruk) if you have any questions.

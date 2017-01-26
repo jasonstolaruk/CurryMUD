@@ -92,7 +92,7 @@ isDebug = True
 
 
 isEKGing :: Bool
-isEKGing = True
+isEKGing = False
 
 
 isZBackDoor :: Bool
