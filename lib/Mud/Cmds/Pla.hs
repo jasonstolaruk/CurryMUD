@@ -2950,7 +2950,7 @@ roomDesc p = patternMatchFail "roomDesc" . showText $ p
 -----
 
 
-sacrifice :: HasCallStack => ActionFun -- TODO: Help.
+sacrifice :: HasCallStack => ActionFun
 sacrifice (NoArgs i mq cols) = modifyStateSeq $ \ms ->
     let sorry = (ms, ) . pure . wrapSend mq cols
     in case (findHolySymbolGodName `fanUncurry` findCorpseIdInMobRm) (i, ms) of

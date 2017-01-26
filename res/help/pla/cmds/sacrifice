@@ -1,0 +1,26 @@
+\h SACRIFICE \d
+
+\uUSAGE\n
+!sacrifice \s[\dholysymbol \s[\dcorpse\s]]\d
+
+\uDESCRIPTION\n
+Sacrifice a corpse using a holy symbol.
+The corpse must be in your current room, and you must have a holy symbol on hand in your inventory.
+
+When no arguments are given, you will sacrifice the first corpse in your current room, using the first holy symbol in your inventory.
+If you would like to sacrifice a corpse using the second (or third, etc.) holy symbol in your inventory, or sacrifice the second (or third, etc.) corpse in the room, you can specify as much by providing argument(s) with ordinal prefixes.
+
+You may only sacrifice one corpse at a time.
+
+\uSIGNIFICANCE\n
+The mechanism and meaning of the sacrifice of corpses has been a topic of debate throughout history. It is not well understood. What is known is that a proper holy symbol is required, and that, when sacrificed, a corpse disappears and ceases to exist. (A "proper holy symbol" is an object designated as such by a devotee in a formal ceremony.)
+Many believe that the sacrificing of a corpse entrusts the deceased's soul to a particular god, who will then guide the spirit through the afterlife and on to the next dimension. Another popular belief is that if a corpse is not properly sacrificed, Murgorhd (god of darkness) may step in and claim the soul of the deceased. Still others believe that the act of sacrifice formally consecrates the deceased's life to a singular god.
+Countless bipeds have claimed to have gained the favor of a particular god after repeated sacrifices. Science, however, has thus far failed to provide proof of such phenomena, and many remain skeptical.
+
+\uEXAMPLES\n
+\qsacrifice\d to sacrifice the first corpse in your current room, using the first holy symbol in your inventory.4`
+\qsacrifice \p2#i\qholy\d to sacrifice the first corpse in your current room, using the second holy symbol in your inventory.4`
+\qsacrifice holy \p2#i\qcorpse\d to to sacrifice the second corpse in your current room, using the first holy symbol in your inventory.4`
+
+\uSEE ALSO\n
+gods, prefixes
