@@ -14,7 +14,6 @@ import Mud.TopLvlDefs.Misc
 import Mud.Util.Misc
 import Mud.Util.Operators
 import Mud.Util.Quoting
-import Mud.Util.Text
 import qualified Mud.Misc.Logging as L (logExMsg, logPla)
 
 import Control.Concurrent (threadDelay)
@@ -49,38 +48,35 @@ logPla = L.logPla "Mud.Threads.FeelingTimer"
 -- ==================================================
 
 
-startFeeling :: Id -> Maybe EffectFeeling -> FeelingVal -> MudStack ()
-startFeeling _ Nothing                           _    = unit
-startFeeling i (Just (EffectFeeling tag newDur)) newV = getState >>= \ms ->
+startFeeling :: Id -> EffectFeeling -> FeelingVal -> MudStack ()
+startFeeling i (EffectFeeling tag newDur) newV = getState >>= \ms ->
     let fm = getFeelingMap i ms
     in case M.lookup tag fm of
       Nothing -> do feel <- uncurry (Feeling newV newDur) <$> spawn
-                    helper feel
+                    feelingMapHelper feel
                     logHelper . T.concat $ [ "started new feeling with tag ", dblQuote tag, ": ", pp feel, "." ]
       Just (Feeling _ existDur existQ existA)
-        | newDur > existDur -> do liftIO . cancel $ existA
-                                  feel <- uncurry (Feeling newV newDur) <$> spawn
-                                  helper feel
-                                  logHelper . T.concat $ [ "feeling "
-                                                         , dblQuote tag
-                                                         , " has been restarted with a longer duration: "
-                                                         , pp feel
-                                                         , "." ]
-        | otherwise         -> liftIO (poll existA) >>= \case
+        | newDur > existDur -> do
+            liftIO . cancel $ existA
+            feel <- uncurry (Feeling newV newDur) <$> spawn
+            feelingMapHelper feel
+            let msg = T.concat $ [ "feeling ", dblQuote tag, " has been restarted with a longer duration: ", pp feel, "." ]
+            logHelper msg
+        | otherwise -> liftIO (poll existA) >>= \case
           Nothing -> do liftIO . atomically . writeTMQueue existQ $ ResetTimer
                         let feel = Feeling newV existDur existQ existA
-                        helper     feel
-                        logRestart feel
+                        feelingMapHelper feel
+                        logRestart       feel
           _       -> do feel <- uncurry (Feeling newV existDur) <$> spawn
-                        helper     feel
-                        logRestart feel
+                        feelingMapHelper feel
+                        logRestart       feel
   where
     spawn = do newQ <- liftIO newTMQueueIO
                newA <- runAsync . threadFeelingTimer i tag newDur $ newQ
                return (newQ, newA)
-    helper feel     = tweak $ mobTbl.ind i.feelingMap %~ M.insert tag feel
-    logHelper       = logPla "startFeeling" i
-    logRestart feel = logHelper . T.concat $ [ "feeling ", dblQuote tag, " has been restarted: ", pp feel, "." ]
+    feelingMapHelper feel = tweak $ mobTbl.ind i.feelingMap %~ M.insert tag feel
+    logHelper             = logPla "startFeeling" i
+    logRestart feel       = logHelper . T.concat $ [ "feeling ", dblQuote tag, " has been restarted: ", pp feel, "." ]
 
 
 threadFeelingTimer :: Id -> FeelingTag -> Seconds -> TimerQueue -> MudStack ()
@@ -97,11 +93,11 @@ threadFeelingTimer i tag dur tq = sequence_ [ setThreadType . FeelingTimer $ i
           Nothing                    -> unit
     exHandler :: SomeException -> MudStack ()
     exHandler e = getState >>= \ms -> case fromException e of
-      Just ThreadKilled  -> logHelper . prd $ "killed " <> mkName ms
-      _                  -> logExMsg tn ("exception caught on thread for " <> mkName ms) e
+      Just ThreadKilled  -> logHelper $ mkName ms <> " has been killed."
+      _                  -> logExMsg fn ("exception caught on thread for " <> mkName ms) e
     mkName ms = T.concat [ "feeling timer ", descSingId i ms, " ", dblQuote tag ]
-    logHelper = logPla tn i
-    tn        = "threadFeelingTimer"
+    logHelper = logPla fn i
+    fn        = "threadFeelingTimer"
 
 
 -----

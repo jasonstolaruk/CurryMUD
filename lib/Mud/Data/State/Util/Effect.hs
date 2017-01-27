@@ -43,8 +43,9 @@ procInstaEffect i ie@(InstaEffect sub val feel) = getState >>= \ms -> do
       EntInstaEffectFlags         -> undefined -- TODO
       (MobInstaEffectPts ptsType) -> maybeVoid (effectPts ptsType) val
       RmInstaEffectFlags          -> undefined -- TODO
-      (InstaEffectOther fn)       -> getInstaEffectFun fn ms i >> startFeeling i feel NoVal
+      (InstaEffectOther fn)       -> getInstaEffectFun fn ms i >> startFeelingHelper NoVal feel
   where
+    startFeelingHelper  = maybeVoid . flip (startFeeling i)
     effectPts ptsType   = (helper ptsType =<<) . \case DefiniteVal x -> return x
                                                        RangeVal    r -> rndmR r
     helper    ptsType x = let (getCur, getMax, setCur) = case ptsType of CurHp -> (curHp, maxHp, curHp)
@@ -56,7 +57,7 @@ procInstaEffect i ie@(InstaEffect sub val feel) = getState >>= \ms -> do
                                                                  newPts = (curPts + x) `min` maxPts
                                                                  diff   = newPts - curPts
                                                              in (ms & myMobSet.setCur .~ newPts, diff)
-                                startFeeling i feel . IntVal $ diff
+                                startFeelingHelper (IntVal diff) feel
     myMobGet     = mobTbl.ind i
     myMobSet     = mobTbl.ind i
     logHelper ms = when (getType i ms == PCType) . logPla  "procInstaEffect" i $ "applying instantaneous effect: " <> pp ie

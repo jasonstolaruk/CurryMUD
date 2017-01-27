@@ -42,6 +42,7 @@ import Mud.TopLvlDefs.Misc
 import Mud.TopLvlDefs.Telnet.Chars
 import Mud.TopLvlDefs.Vols
 import Mud.TopLvlDefs.Weights
+import Mud.Util.List
 import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Operators
 import Mud.Util.Padding
@@ -56,9 +57,11 @@ import Control.Applicative (Const)
 import Control.Arrow ((***), first, second)
 import Control.Concurrent (ThreadId, getNumCapabilities, myThreadId, threadDelay)
 import Control.Concurrent.Async (asyncThreadId, poll)
+import Control.Concurrent.STM (atomically)
+import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception (ArithException(..), IOException)
 import Control.Exception.Lifted (throwIO, try)
-import Control.Lens (Optical, both, views)
+import Control.Lens (Optical, _2, both, views)
 import Control.Lens.Operators ((%~))
 import Control.Monad ((>=>), replicateM_)
 import Control.Monad.IO.Class (liftIO)
@@ -178,6 +181,7 @@ debugCmds =
     , mkDebugCmd "rotate"      debugRotate      "Send the signal to rotate your player log."
     , mkDebugCmd "rules"       debugRules       "Display the rules message."
     , mkDebugCmd "shiver"      debugShiver      "Test the spiritize shiver random do."
+    , mkDebugCmd "stopeffects" debugStopEffects "Stop all effects for your PC."
     , mkDebugCmd "talk"        debugTalk        "Dump the talk async table."
     , mkDebugCmd "tele"        debugTele        "Display or search the telepathic links master table."
     , mkDebugCmd "threads"     debugThreads     "Display or search the thread table."
@@ -960,6 +964,17 @@ debugShiver (NoArgs' i mq) = getState >>= \ms -> do
     replicateM_ 50 . rndmDo_ (calcProbSpiritizeShiver i ms) . mkExpAction "shiver" . mkActionParams i ms $ []
     ok mq
 debugShiver p = withoutArgs debugShiver p
+
+
+-----
+
+
+debugStopEffects :: ActionFun
+debugStopEffects (NoArgs' i mq) = getState >>= \ms -> do -- TODO: Stop feelings and remove from feeling map.
+    logPlaExec (prefixDebugCmd "stopeffects") i
+    mapM_ (liftIO . atomically . (`writeTQueue` StopEffect)) . select (effectService._2) . getActiveEffects i $ ms
+    ok mq
+debugStopEffects p = withoutArgs debugStopEffects p
 
 
 -----

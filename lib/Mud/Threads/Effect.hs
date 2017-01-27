@@ -64,7 +64,7 @@ startEffectHelper :: Id -> Effect -> MudStack ()
 startEffectHelper i e@(view effectFeeling -> ef) = do logPla "startEffectHelper" i $ "starting effect: " <> pp e
                                                       q <- liftIO newTQueueIO
                                                       a <- runAsync . threadEffect i e $ q
-                                                      startFeeling i ef NoVal
+                                                      maybeVoid (flip (startFeeling i) NoVal) ef
                                                       tweak $ activeEffectsTbl.ind i <>~ pure (ActiveEffect e (a, q))
 
 
@@ -87,7 +87,7 @@ threadEffect i (Effect effSub _ secs _) q = handle (threadExHandler (Just i) "ef
             loop = q |&| liftIO . atomically . readTQueue >=> \case
               PauseEffect  tmv -> putTMVarHelper tmv
               QueryRemTime tmv -> putTMVarHelper tmv >> loop
-              StopEffect       -> unit
+              StopEffect       -> logPla "threadEffect queueListener loop" i "received the signal to stop effect."
             putTMVarHelper tmv = liftIO (atomically . putTMVar tmv =<< readIORef ior)
     ior <- liftIO . newIORef $ secs
     racer md (effectTimer ior) . queueListener $ ior

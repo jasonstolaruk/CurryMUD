@@ -16,7 +16,7 @@ import qualified Data.IntMap.Strict as IM (map)
 
 
 destroy :: Inv -> MudStack ()
-destroy is = sequence_ [ stopBiodegraders, tweak . destroyHelper $ is ] -- TODO: ActiveEffets
+destroy is = sequence_ [ stopBiodegraders, tweak . destroyHelper $ is ] -- TODO: ActiveEffetcs
   where
     stopBiodegraders = getState >>= \ms -> let f = maybeVoid throwDeath . (`getObjBiodegAsync` ms)
                                            in mapM_ f . filter (`hasObjId` ms) $ is

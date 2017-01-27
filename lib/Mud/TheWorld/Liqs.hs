@@ -263,7 +263,7 @@ potStLiq :: Liq
 potStLiq = Liq (DistinctLiqId iLiqPotSt)
                (DoArticle "thick, muddy liquid")
                "You detect earthy scents of nuts and grasses in the highly nuanced odors."
-               "There is a very starchy taste reminiscent of grass clippings. You feel small, soft lumps in the liquid."
+               "There is a very starchy taste reminiscent of grass clippings. You sense small, soft lumps in the liquid."
                "The lumpy, viscous liquid is difficult to quaff."
 
 
