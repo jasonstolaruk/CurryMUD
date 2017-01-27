@@ -42,7 +42,6 @@ import Mud.TopLvlDefs.Misc
 import Mud.TopLvlDefs.Telnet.Chars
 import Mud.TopLvlDefs.Vols
 import Mud.TopLvlDefs.Weights
-import Mud.Util.List
 import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Operators
 import Mud.Util.Padding
@@ -57,11 +56,9 @@ import Control.Applicative (Const)
 import Control.Arrow ((***), first, second)
 import Control.Concurrent (ThreadId, getNumCapabilities, myThreadId, threadDelay)
 import Control.Concurrent.Async (asyncThreadId, poll)
-import Control.Concurrent.STM (atomically)
-import Control.Concurrent.STM.TQueue (writeTQueue)
 import Control.Exception (ArithException(..), IOException)
 import Control.Exception.Lifted (throwIO, try)
-import Control.Lens (Optical, _2, both, views)
+import Control.Lens (Optical, both, views)
 import Control.Lens.Operators ((%~))
 import Control.Monad ((>=>), replicateM_)
 import Control.Monad.IO.Class (liftIO)
@@ -970,11 +967,10 @@ debugShiver p = withoutArgs debugShiver p
 
 
 debugStopEffects :: ActionFun
-debugStopEffects (NoArgs' i mq) = getState >>= \ms -> do -- TODO: Stop feelings and remove from feeling map.
-    logPlaExec (prefixDebugCmd "stopeffects") i
-    mapM_ (liftIO . atomically . (`writeTQueue` StopEffect)) . select (effectService._2) . getActiveEffects i $ ms
-    ok mq
-debugStopEffects p = withoutArgs debugStopEffects p
+debugStopEffects (NoArgs' i mq) = getState >>= \ms -> do logPlaExec (prefixDebugCmd "stopeffects") i
+                                                         mapM_ (stopEffect i) . getActiveEffects i $ ms
+                                                         ok mq
+debugStopEffects p              = withoutArgs debugStopEffects p
 
 
 -----

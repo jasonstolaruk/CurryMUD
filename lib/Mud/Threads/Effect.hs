@@ -5,7 +5,8 @@ module Mud.Threads.Effect ( massPauseEffects
                           , massRestartPausedEffects
                           , pauseEffects
                           , restartPausedEffects
-                          , startEffect ) where
+                          , startEffect
+                          , stopEffect ) where
 
 import Mud.Data.Misc
 import Mud.Data.State.MudData
@@ -20,7 +21,7 @@ import Mud.Util.Text
 import qualified Mud.Misc.Logging as L (logNotice, logPla)
 
 import Control.Concurrent (myThreadId, threadDelay)
-import Control.Concurrent.Async (asyncThreadId)
+import Control.Concurrent.Async (asyncThreadId, cancel)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TMVar (newEmptyTMVarIO, putTMVar, takeTMVar)
 import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
@@ -34,6 +35,7 @@ import Data.IORef (newIORef, readIORef)
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import qualified Data.IntMap.Strict as IM (keys, toList)
+import qualified Data.Map.Strict as M (delete, lookup)
 import qualified Data.Text as T
 
 
@@ -132,3 +134,11 @@ massRestartPausedEffects = getState >>= \ms -> do logNotice "massRestartPausedEf
     helper _  (_, [] )                          = unit
     helper ms (i, _  ) | getType i ms == PCType = unit
     helper _  (i, pes)                          = restartPausedHelper i pes
+
+
+stopEffect :: Id -> ActiveEffect -> MudStack ()
+stopEffect i (ActiveEffect (Effect _ _ _ feel) (_, q)) = do
+    liftIO . atomically . writeTQueue q $ StopEffect
+    flip maybeVoid feel $ \(EffectFeeling tag _) -> getFeelingMap i <$> getState >>= \fm ->
+        flip maybeVoid (M.lookup tag fm) $ \(Feeling _ _ _ a) -> do liftIO . cancel $ a
+                                                                    tweak $ mobTbl.ind i.feelingMap %~ (tag `M.delete`)

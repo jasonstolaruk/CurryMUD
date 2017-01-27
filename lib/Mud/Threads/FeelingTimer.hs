@@ -60,7 +60,7 @@ startFeeling i (EffectFeeling tag newDur) newV = getState >>= \ms ->
             liftIO . cancel $ existA
             feel <- uncurry (Feeling newV newDur) <$> spawn
             feelingMapHelper feel
-            let msg = T.concat $ [ "feeling ", dblQuote tag, " has been restarted with a longer duration: ", pp feel, "." ]
+            let msg = T.concat [ "feeling ", dblQuote tag, " has been restarted with a longer duration: ", pp feel, "." ]
             logHelper msg
         | otherwise -> liftIO (poll existA) >>= \case
           Nothing -> do liftIO . atomically . writeTMQueue existQ $ ResetTimer
