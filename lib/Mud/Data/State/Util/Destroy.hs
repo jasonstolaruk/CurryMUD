@@ -6,6 +6,7 @@ import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Hierarchy
 import Mud.Data.State.Util.Misc
+import Mud.Threads.Effect
 import Mud.Threads.Misc
 import Mud.Util.Misc
 
@@ -16,13 +17,13 @@ import qualified Data.IntMap.Strict as IM (map)
 
 
 destroy :: Inv -> MudStack ()
-destroy is = sequence_ [ stopBiodegraders, tweak . destroyHelper $ is ] -- TODO: ActiveEffetcs
+destroy is = sequence_ [ stopBiodegraders, mapM_ stopEffects is, tweak . destroyHelper $ is ]
   where
     stopBiodegraders = getState >>= \ms -> let f = maybeVoid throwDeath . (`getObjBiodegAsync` ms)
                                            in mapM_ f . filter (`hasObjId` ms) $ is
 
 
-destroyHelper :: Inv -> MudState -> MudState
+destroyHelper :: Inv -> MudState -> MudState -- The caller is responsible for stopping the biodegrader and effects.
 destroyHelper = flip . foldr $ helper
   where
     helper i ms = case getType i ms of

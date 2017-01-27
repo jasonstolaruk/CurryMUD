@@ -9,6 +9,7 @@ import Mud.Data.State.MudData
 import Mud.Data.State.Util.Destroy
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
+import Mud.Threads.Effect
 import Mud.Threads.Misc
 import Mud.TopLvlDefs.Misc
 import Mud.Util.Misc
@@ -78,8 +79,9 @@ threadBiodegrader i = handle (threadExHandler (Just i) "biodegrader") $ descSing
             | newMaybeInvId == lastMaybeInvId -> if secs < biodegSecs
               then mkRes . loop (secs + biodegDelay) $ lastMaybeInvId
               else let pcsInRm = filter (`isPC` ms) . getInv invId $ ms
-                       helper  = ( destroyHelper (pure i) ms -- TODO: ActiveEffects
-                                 , pure . logNotice "threadBiodegrader" $ descSingId i ms <> " has biodegraded." )
+                       helper  = ( destroyHelper (pure i) ms
+                                 , [ stopEffects i
+                                   , logNotice "threadBiodegrader" $ descSingId i ms <> " has biodegraded." ] )
                    in bool helper (mkRes . loop secs $ lastMaybeInvId) $ ()!# pcsInRm
             | otherwise -> mkRes . uncurry loop $ case getType invId ms of RmType -> (biodegDelay, newMaybeInvId)
                                                                            _      -> (0,           Nothing      )

@@ -6,11 +6,13 @@ module Mud.Threads.Effect ( massPauseEffects
                           , pauseEffects
                           , restartPausedEffects
                           , startEffect
-                          , stopEffect ) where
+                          , stopEffect
+                          , stopEffects ) where
 
 import Mud.Data.Misc
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
+import Mud.Data.State.Util.Hierarchy
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Random
 import Mud.Threads.FeelingTimer
@@ -28,7 +30,7 @@ import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
 import Control.Exception.Lifted (finally, handle)
 import Control.Lens (view, views)
 import Control.Lens.Operators ((%~), (&), (.~), (<>~), (?~))
-import Control.Monad ((>=>), forM_, unless)
+import Control.Monad ((>=>), forM_, unless, when)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (ask)
 import Data.IORef (newIORef, readIORef)
@@ -137,8 +139,14 @@ massRestartPausedEffects = getState >>= \ms -> do logNotice "massRestartPausedEf
 
 
 stopEffect :: Id -> ActiveEffect -> MudStack ()
-stopEffect i (ActiveEffect (Effect _ _ _ feel) (_, q)) = do
+stopEffect i (ActiveEffect (Effect _ _ _ feel) (_, q)) = getState >>= \ms -> do
     liftIO . atomically . writeTQueue q $ StopEffect
-    flip maybeVoid feel $ \(EffectFeeling tag _) -> getFeelingMap i <$> getState >>= \fm ->
+    when (hasMobId i ms) stopFeeling
+  where
+    stopFeeling = flip maybeVoid feel $ \(EffectFeeling tag _) -> getFeelingMap i <$> getState >>= \fm ->
         flip maybeVoid (M.lookup tag fm) $ \(Feeling _ _ _ a) -> do liftIO . cancel $ a
                                                                     tweak $ mobTbl.ind i.feelingMap %~ (tag `M.delete`)
+
+
+stopEffects :: Id -> MudStack ()
+stopEffects i = mapM_ (stopEffect i) =<< getActiveEffects i <$> getState

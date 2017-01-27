@@ -143,7 +143,7 @@ finishDecomp i = modifyStateSeq $ \ms ->
         mkCarriedBs    = let n = mkCorpseAppellation invId ms i
                          in pure (T.concat [ "The ", n, " ", parensQuote "carried", " disintegrates." ], pure invId)
         oops           = blowUp "finishDecomp" (descSingId i ms <> " is in limbo") ""
-    in (destroyHelper (pure i) ms, pure . bcastNl $ bs) -- TODO: ActiveEffects
+    in (ms, [ destroy . pure $ i, bcastNl bs ])
 
 
 -----

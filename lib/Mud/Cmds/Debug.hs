@@ -967,9 +967,7 @@ debugShiver p = withoutArgs debugShiver p
 
 
 debugStopEffects :: ActionFun
-debugStopEffects (NoArgs' i mq) = getState >>= \ms -> do logPlaExec (prefixDebugCmd "stopeffects") i
-                                                         mapM_ (stopEffect i) . getActiveEffects i $ ms
-                                                         ok mq
+debugStopEffects (NoArgs' i mq) = logPlaExec (prefixDebugCmd "stopeffects") i >> stopEffects i >> ok mq
 debugStopEffects p              = withoutArgs debugStopEffects p
 
 

@@ -27,11 +27,11 @@ import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
-import Mud.Util.Misc hiding (blowUp, patternMatchFail)
+import Mud.Util.Misc hiding (blowUp)
 import Mud.Util.Operators
 import Mud.Util.Quoting
 import Mud.Util.Text
-import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
+import qualified Mud.Util.Misc as U (blowUp)
 
 import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (async, race_, wait)
@@ -70,10 +70,6 @@ default (Int)
 
 blowUp :: BlowUp a
 blowUp = U.blowUp "Mud.Misc.Logging"
-
-
-patternMatchFail :: (Show a) => PatternMatchFail a b
-patternMatchFail = U.patternMatchFail "Mud.Misc.Logging"
 
 
 -- ==================================================
@@ -172,7 +168,7 @@ doIfLogging :: Id -> (LogQueue -> MudStack ()) -> MudStack ()
 doIfLogging i f = getState >>= \ms ->
     let helper = \case PCType  -> views plaLogTbl (maybeVoid (f . snd) . (i `IM.lookup`)) ms
                        NpcType -> maybeVoid (`doIfLogging` f) . getPossessor i $ ms
-                       t       -> patternMatchFail "doIfLogging helper" . showText $ t
+                       _       -> unit
     in views typeTbl (maybeVoid helper . (i `IM.lookup`)) ms
 
 

@@ -82,7 +82,7 @@ interpTelnet i tds = do
                | ((||) <$> (gmcpWon't `isInfixOf`) <*> (gmcpDon't `isInfixOf`)) tds = setFlag False
                | otherwise = unit
       where
-        setFlag b = getSing i <$> getState >>= \s -> let msg = T.concat [ "setting GMCP ", onOff b, " for ", s, "." ]
+        setFlag b = getSing i <$> getState >>= \s -> let msg = T.concat [ "turning GMCP ", onOff b, " for ", s, "." ]
                                                      in sequence_ [ logNotice "interpTelnet gmcpHelper setFlag" msg
                                                                   , tweak $ plaTbl.ind i %~ setPlaFlag IsGmcp b ]
         gmcpWill  = mkCodes TelnetWILL

@@ -136,7 +136,7 @@ massLogPla = L.massLogPla "Mud.Cmds.Admin"
 
 
 adminCmds :: HasCallStack => [Cmd]
-adminCmds =
+adminCmds = -- TODO: Make a "destroy" cmd.
     [ mkAdminCmd "?"          adminDispCmdList True  cmdDescDispCmdList
     , mkAdminCmd "admin"      adminAdmin       True  ("Send a message on the admin channel " <> plusRelatedMsg)
     , mkAdminCmd "alertexec"  adminAlertExec   True  "Dump the alert exec database."
