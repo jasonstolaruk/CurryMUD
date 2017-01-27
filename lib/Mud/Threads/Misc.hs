@@ -5,8 +5,6 @@ module Mud.Threads.Misc ( concurrentTree
                         , die
                         , dieSilently
                         , fileIOExHandler
-                        , findBiodegradableIds
-                        , findNpcIds
                         , onNewThread
                         , plaThreadExHandler
                         , PlsDie(..)
@@ -21,7 +19,6 @@ module Mud.Threads.Misc ( concurrentTree
 
 import Mud.Cmds.Msgs.Misc
 import Mud.Data.State.MudData
-import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Misc.Logging hiding (logExMsg, logIOEx, logNotice, logPla)
 import Mud.Util.Misc
@@ -36,7 +33,7 @@ import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TMQueue (closeTMQueue)
 import Control.Exception (AsyncException(..), Exception, IOException, SomeException, fromException, toException)
 import Control.Exception.Lifted (throwTo)
-import Control.Lens (at, views)
+import Control.Lens (at)
 import Control.Lens.Operators ((?~))
 import Control.Monad (unless, void)
 import Control.Monad.IO.Class (liftIO)
@@ -45,7 +42,6 @@ import Data.Monoid ((<>))
 import Data.Text (Text)
 import Data.Typeable (Typeable)
 import GHC.Conc (labelThread)
-import qualified Data.IntMap.Strict as IM (filter, keys)
 import System.IO.Error (isAlreadyInUseError, isDoesNotExistError, isPermissionError)
 
 
@@ -109,20 +105,6 @@ fileIOExHandler :: Text -> IOException -> MudStack ()
 fileIOExHandler fn e = do logIOEx fn e
                           let rethrow = throwToListenThread . toException $ e
                           unless (any (e |&|) [ isAlreadyInUseError, isDoesNotExistError, isPermissionError ]) rethrow
-
-
------
-
-
-findBiodegradableIds :: MudState -> Inv -- TODO: Why is this here?
-findBiodegradableIds = views objTbl (IM.keys . IM.filter isBiodegradable)
-
-
------
-
-
-findNpcIds :: MudState -> Inv -- TODO: Why is this here?
-findNpcIds = views typeTbl (IM.keys . IM.filter (== NpcType))
 
 
 -----

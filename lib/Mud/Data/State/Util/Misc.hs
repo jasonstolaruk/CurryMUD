@@ -10,8 +10,10 @@ module Mud.Data.State.Util.Misc ( addToInv
                                 , dropPrefixes
                                 , dropPrefixesForHooks
                                 , expandCorpseTxt
+                                , findBiodegradableIds
                                 , findInvContaining
                                 , findMobIds
+                                , findNpcIds
                                 , getAdminIds
                                 , getBothGramNos
                                 , getCorpseDesc
@@ -157,6 +159,13 @@ expandCorpseTxt = T.replace (T.singleton corpseNameMarker)
 -----
 
 
+findBiodegradableIds :: MudState -> Inv
+findBiodegradableIds = views objTbl (IM.keys . IM.filter isBiodegradable)
+
+
+-----
+
+
 findInvContaining :: HasCallStack => Id -> MudState -> Maybe Id
 findInvContaining i ms = let matches = views invTbl (IM.keys . IM.filter (i `elem`)) ms
                          in ()# matches ? Nothing :? Just (head matches)
@@ -167,6 +176,13 @@ findInvContaining i ms = let matches = views invTbl (IM.keys . IM.filter (i `ele
 
 findMobIds :: HasCallStack => MudState -> Inv -> Inv
 findMobIds ms haystack = [ i | i <- haystack, (||) <$> (PCType ==) <*> (NpcType ==) $ getType i ms ]
+
+
+-----
+
+
+findNpcIds :: MudState -> Inv
+findNpcIds = views typeTbl (IM.keys . IM.filter (== NpcType))
 
 
 -----
