@@ -39,7 +39,8 @@ A measure of a character's power and achievement. Upon accumulating a sufficient
 See "Telepathic Link."
 
 \uMobile\d
-A Non-Player Character (NPC). Sometimes abbreviated to "mob."
+A Non-Player Character (NPC); often a "monster" meant to be killed by Player Characters (PCs). Sometimes abbreviated to "mob."
+The origin of the term goes all the way back to the very first MUD created circa 1980. One of its developers, Richard Bartle, explains in his book Designing Virtual Worlds: "I called them that because creatures moving in a controlled but unpredictable way are like the kind of 'mobiles' that hand from ceilings."
 
 \uMUD Client\d
 Software used to connect to a MUD server and play a MUD.
@@ -51,10 +52,10 @@ When a single player simultaneously logs in multiple times, as multiple characte
 This generally refers to a (usually text-based) virtual world in its totality.
 
 \uNewbie\d
-A new, inexperienced player.
+A new and inexperienced player.
 
 \uNon-Player Character\d
-A character normally controlled by the server (the CurryMUD administrators may occasionally take active control of non-player characters). A "mobile" or "mob."
+A character normally controlled by the server. A "mobile" or "mob."
 
 \uOut-Of-Character\d
 Something said or done as a player, outside the context of role-playing. Or, outside the context of the virtual world.

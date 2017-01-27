@@ -4,7 +4,7 @@ See "help glossary" for definitions of additional terms.
 Note that the use of acronyms in In-Character (IC) communication is prohibited!
 
 FP      Fatigue Points`
-        A number representing a character's capacity for physical activity. Most commonly, movement and combat cost FP; FP are recovered naturally as one rests. When a character's FP reaches 0, that character is totally exhausted (he/she may neither move nor swing a weapon).
+        A number representing a character's capacity for physical activity. Most commonly, movement and combat cost FP; FP are recovered naturally as one rests. When a character's FP falls below 1, that character is totally exhausted (he/she may neither move nor swing a weapon).
 
 HP      Hit Points`
         A number representing a character's physical health. One looses HP as one is injured; HP are recovered naturally as one heals. An HP less than zero represents fatal injury.
@@ -24,7 +24,7 @@ MUD     Multi-User Dungeon`
         This generally refers to a (usually text-based) virtual world in its totality.
 
 NPC     Non-Player Character`
-        A character controlled by the server. A "mobile."
+        A character controlled by the server. A "mobile" ("mob") or "monster."
 
 OOC     Out-Of-Character`
         Something said or done as a player, outside the context of role-playing.
@@ -36,18 +36,21 @@ PD      Permadeath`
         When a Player Character (PC) dies, he/she is truly dead; a deceased PC cannot return to the virtual world in any way, shape, or form.
 
 PKing   Player Killing`
-        When one Player Character (PC) kills another PC.
+        When one Player Character (PC) kills another PC. While this may occur in a Player vs. Player (PvP) MUD, CurryMUD does not allow PvP combat.
 
 PP      Psionic Points`
         A number representing a character's capacity to use psionic abilities. The use of psionics costs PP; PP are recovered naturally as one rests. A character's PP may never drop below 0, as 0 represents the total depletion of one's psionic energy.
 
+PvE     Player vs. Environment`
+        Denotes a MUD in which players are opposed by the environment and combat occurs between Player Characters (PCs) and Non-Player Characters (NPCs). CurryMUD is a "PvE MUD."
+
 PvP     Player vs. Player`
-        Denotes combat between Player Characters (PCs). Often used to describe a MUD in which this is allowed.
+        Denotes (a MUD that allows) combat between Player Characters (PCs) or, in a more general sense, competition between players. CurryMUD does not allow combat between PCs and thus is not a "PvP MUD."
 
 RP      Role-Playing`
 
 RPI     Role-Play Intensive`
-        Used to describe a MUD that requires players to stay In-Character (IC).
+        Used to describe a MUD that requires players to stay In-Character (IC). CurryMUD is an "RPI MUD."
 
 \uSEE ALSO\n
 coins, glossary, permadeath, role-play, rules, stats
