@@ -32,7 +32,7 @@ CurryMUD will have the following features:
 * Unique commands, accessible only when a player is in a particular room, may be created. :house_with_garden:
 * The names of commands, as well as the names of the targets they act upon, may be abbreviated. :abc:
 * Logging. :scroll:
-* About 85 player commands, 50 administrator commands, and 60 commands for debugging purposes. :1234:
+* About 85 player commands, 50 administrator commands, and 65 commands for debugging purposes. :1234:
 * About 220 built-in emotes. :clap:
 * Help files for all existing non-debug commands. Help topics. :information_desk_person:
 * Commands have a consistent structure and a unique syntax for indicating target locations and quantities. :dart:
