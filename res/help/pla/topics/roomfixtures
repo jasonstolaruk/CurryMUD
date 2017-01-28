@@ -1,10 +1,10 @@
 \h ROOM FIXTURES \d
 
-A "room fixture" is a permanent feature of a room (such as a sign) with which you can interact via one or more commands. Room fixtures are depicted in the static description of a room.
+A "room fixture" is a permanent feature of a room (such as a sign) with which you can interact via one or more commands. Room fixtures are depicted in the static description of a room; they are not designated in the list of items on the ground in a room (that is, the list that follows a room's static description).
 
 Frequently, you'll find that you can use everyday commands such as "look" and "read" to interact with room fixtures; however, in some cases, undocumented commands do exist.
 
-Keep in mind that the names of room fixtures may not be abbreviated. \qlook sign\d is legal, while \qlook sig\d, or any other abbreviated form, is not.
+Keep in mind that the names of room fixtures may not be abbreviated (the same is true of undocumented command names). \qlook sign\d is legal, while \qlook sig\d, or any other abbreviated form, is not.
 
 In addition, you may need to prefix the name of a room fixture with \lr#l\d to indicate that you are targeting an object in your current room. For example, by default the "drink" command will look in your inventory for the vessel you specify; therefore, to drink from the fountain in your current room, you must specify \lr#l\qfountain\d, as in \qdrink 4 \lr#l\qfountain\d.
 

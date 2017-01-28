@@ -27,8 +27,9 @@ The location prefix must come first, as in:
 \l#x\d to begin an emote2`
 \l#p\d to begin an expressive command2`
 
-\uADDRESSING A CHANNEL MESSAGE\d
-\l#h\qhanako\d to indicate your message is for Hanako8`
+\uSAY AND CHANNEL\d
+\qsay \l#o\qquietly\l#c\q \l#t\qtaro hello\d to say quietly to Taro4`
+\qchannel hunt \l#h\qhanako hello\d to address Hanako4`
 
 \uSEE ALSO\n
-?, coins, expressive, glossary, newbie, syntax, undocumented, veteranmudder
+?, acronyms, channel, coins, expressive, glossary, newbie, prefixes, roomfixtures, say, show, syntax, undocumented, veteranmudder

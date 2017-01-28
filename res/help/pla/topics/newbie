@@ -2,7 +2,7 @@
 
 (This cheatsheet is for newbies who have little or no experience with MUDs.)
 
-\q?\d to display a list of available commands.2`
+Type \q?\d to display a list of available commands.2`
 
 \uMOVEMENT\d
 The following commands move you between "rooms" (discrete locations in the virtual world):2`
@@ -56,12 +56,16 @@ There are "cp" (copper pieces), "sp" (silver pieces), and "gp" (gold pieces).2`
 \qlink taro\d or just \qli taro\d to establish a telepathic link with Taro.2`
 If Taro reciprocates and links with you, you'll then be able to message each other via the \qtelepathy\d command, like so: \qt taro hello\d.2`
 
+\uROOM FIXTURES\d
+A "room fixture" is a permanent feature of a room (such as a sign) with which you can interact via one or more commands. Room fixtures are depicted in the static description of a room.
+There are two things to keep in mind: you may not abbreviate the name of a room fixture, and you may need to tack on the \lr#l\d prefix to indicate that you are targeting an object in your current room. For example, by default the "read" command assumes you would like to read an item in your inventory... To read the sign in the room, you must type \qread \lr#l\qsign\d.
+
 \uOTHER\d
 \qwho\d or just \qwh\d to see who is currently logged in.2`
 
-Use the \qquestion\d (or just \qq\d) command to ask a question on the "question channel." A "channel" is analogous to a chat room or party line; the question channel is for asking and answering newbie questions.2`
+Use the \qquestion\d (or just \qq\d) command to ask a question on the "question channel." A "channel" is analogous to a chat room or party line; the question channel is for asking and answering newbie questions related to game play.2`
 \qq how can I pick up the second sword here?\d to ask a question (see "help prefixes" for the answer).2`
 \qq \l#h\qtaro take a look at the cheatsheet ("help cheatsheet")\d to give Taro's player a helpful suggestion ("#htaro" indicates that your message is addressed to Taro).2`
 
 \uSEE ALSO\n
-?, cheatsheet, client, coins, expressive, glossary, rules, syntax, texteditor, undocumented, veteranmudder
+?, acronyms, cheatsheet, client, coins, expressive, glossary, prefixes, question, roomfixtures, rules, syntax, texteditor, undocumented, veteranmudder
