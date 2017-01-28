@@ -23,6 +23,7 @@ import Mud.Data.State.MudData
 import Mud.Data.State.Util.Calc
 import Mud.Data.State.Util.Coins
 import Mud.Data.State.Util.Death
+import Mud.Data.State.Util.Destroy
 import Mud.Data.State.Util.Egress
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Hierarchy
@@ -136,7 +137,7 @@ massLogPla = L.massLogPla "Mud.Cmds.Admin"
 
 
 adminCmds :: HasCallStack => [Cmd]
-adminCmds = -- TODO: Make a "destroy" cmd.
+adminCmds =
     [ mkAdminCmd "?"          adminDispCmdList True  cmdDescDispCmdList
     , mkAdminCmd "admin"      adminAdmin       True  ("Send a message on the admin channel " <> plusRelatedMsg)
     , mkAdminCmd "alertexec"  adminAlertExec   True  "Dump the alert exec database."
@@ -151,6 +152,7 @@ adminCmds = -- TODO: Make a "destroy" cmd.
     , mkAdminCmd "count"      adminCount       True  "Display or search a list of miscellaneous running totals."
     , mkAdminCmd "currytime"  adminCurryTime   True  "Display the current Curry Time."
     , mkAdminCmd "date"       adminDate        True  "Display the current system date."
+    , mkAdminCmd "destroy"    adminDestroy     True  "Silently destroy one or more things by ID."
     , mkAdminCmd "discover"   adminDiscover    True  "Dump the discover database."
     , mkAdminCmd "examine"    adminExamine     True  "Display the properties of one or more IDs."
     , mkAdminCmd "experience" adminExp         True  "Dump the experience table."
@@ -586,6 +588,35 @@ adminDate :: HasCallStack => ActionFun
 adminDate (NoArgs' i mq) = do logPlaExec (prefixAdminCmd "date") i
                               send mq . nlnl . T.pack . formatTime defaultTimeLocale "%A %B %d" =<< liftIO getZonedTime
 adminDate p              = withoutArgs adminDate p
+
+
+-----
+
+
+adminDestroy :: HasCallStack => ActionFun
+adminDestroy p@AdviseNoArgs            = advise p [ prefixAdminCmd "destroy" ] adviceADestroyNoArgs
+adminDestroy   (LowerNub i mq cols as) = getState >>= \ms ->
+    let helper a = case reads . T.unpack $ a :: [(Int, String)] of
+          [(targetId, "")] | targetId < 0                -> sorry sorryWtf
+                           | targetId == i               -> sorry "Feeling suicidal?"
+                           | not . hasType targetId $ ms -> sorryId
+                           | otherwise                   -> destroyer i mq cols targetId
+          _                                              -> sorryId
+          where
+            sorry   = wrapSend mq cols
+            sorryId = sorry . sorryParseId $ a
+    in mapM_ helper as
+adminDestroy p = patternMatchFail "adminDestroy" . showText $ p
+
+
+destroyer :: Id -> MsgQueue -> Cols -> Id -> MudStack ()
+destroyer i mq cols targetId = getState >>= \ms -> let t = getType targetId ms in if t `elem` sorryTypes
+  then f . sorryDestroyType $ t
+  else let msg = T.concat [ "destroying ", pp t, ": ", descSingId targetId ms, "." ]
+       in logPla "destroyer" i msg >> f (capitalize msg) >> destroy (pure targetId)
+  where
+    sorryTypes = [ NpcType, PCType, RmType ]
+    f          = wrapSend mq cols
 
 
 -----

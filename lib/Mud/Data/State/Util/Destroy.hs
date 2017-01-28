@@ -52,7 +52,10 @@ destroyHelper = flip . foldr $ helper
       VesselType     -> upd ms [ destroyEnt, destroyObj, destroyVessel,     rest ]
       WpnType        -> upd ms [ destroyEnt, destroyObj, destroyWpn,        rest ]
       WritableType   -> upd ms [ destroyEnt, destroyObj, destroyWritable,   rest ]
-      _              -> ms
+      -----
+      NpcType        -> ms
+      PCType         -> ms
+      RmType         -> ms
       where
         destroyArm        = armTbl       .at i .~ Nothing
         destroyCloth      = clothTbl     .at i .~ Nothing

@@ -6,6 +6,7 @@ module Mud.Cmds.Msgs.Advice ( adviceAAnnounceNoArgs
                             , adviceABanHostNoReason
                             , adviceABanPCNoReason
                             , adviceABootNoArgs
+                            , adviceADestroyNoArgs
                             , adviceAdminNoMsg
                             , adviceAdverbCloseChar
                             , adviceAExamineNoArgs
@@ -201,6 +202,10 @@ adviceABanPCNoReason = prd $ "Please also provide a reason, as in " <>
 adviceABootNoArgs :: Text
 adviceABootNoArgs = "Please specify the full PC name of the player you wish to boot, optionally followed by a custom \
                     \message."
+
+
+adviceADestroyNoArgs :: Text
+adviceADestroyNoArgs = "Please provide one or more IDs to destroy."
 
 
 adviceAExamineNoArgs :: Text

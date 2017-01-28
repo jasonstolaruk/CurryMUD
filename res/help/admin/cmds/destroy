@@ -1,0 +1,12 @@
+\h #dDESTROY \d
+
+\uUSAGE\n
+#ddestroy ID \s...\d
+
+\uDESCRIPTION\n
+Silently destroy one or more things by ID.
+Use this command with caution: once something is destroyed, it ceases to exist and is entirely unrecoverable.
+
+\uEXAMPLES\n
+\q#ddestroy 100\d to destroy ID 100.4`
+\q#ddestroy 100 101\d to destroy IDs 100 and 101.4`

@@ -39,6 +39,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryConnectAlready
                            , sorryConnectChanName
                            , sorryConnectIgnore
+                           , sorryDestroyType
                            , sorryDisconnectIgnore
                            , sorryDrinkAlready
                            , sorryDrinkCoins
@@ -354,7 +355,7 @@ sorryIgnoreLocPrefPlur msg = parensQuote $ msg <> " need not be given location p
 
 
 sorryInterpPickPtsMax :: Text -> Text
-sorryInterpPickPtsMax t = T.concat [ "You can't add any more to "
+sorryInterpPickPtsMax t = T.concat [ can't "add any more to "
                                    , t
                                    , " "
                                    , parensQuote "it's set to the maximum value of 100"
@@ -362,7 +363,7 @@ sorryInterpPickPtsMax t = T.concat [ "You can't add any more to "
 
 
 sorryInterpPickPtsMin :: Text -> Text
-sorryInterpPickPtsMin t = T.concat [ "You can't subtract any more from "
+sorryInterpPickPtsMin t = T.concat [ can't "subtract any more from "
                                    , t
                                    , " "
                                    , parensQuote "it's set to the minimum value of 10"
@@ -610,6 +611,13 @@ sorryConnectChanName s cn = T.concat [ s, " is already connected to a channel na
 
 sorryConnectIgnore :: Text
 sorryConnectIgnore = sorryIgnoreLocPrefPlur "The names of the people you would like to connect"
+
+
+-----
+
+
+sorryDestroyType :: Type -> Text
+sorryDestroyType t = prd . can't $ "destroy " <> aOrAn (pp t)
 
 
 -----
@@ -1878,7 +1886,7 @@ sorryTimeNotOutside = "You must be outstide, where you can see the sky."
 
 
 sorryTimeUnknown :: Text
-sorryTimeUnknown = "You can't tell what time it is."
+sorryTimeUnknown = can't "tell what time it is."
 
 
 -----
