@@ -25,19 +25,12 @@ CurryMUD will have the following features:
 
 ## What I have so far
 
-* About 90 player commands, 55 administrator commands, and 65 commands for debugging purposes. :nut_and_bolt:
+* About 90 player commands, 55 administrator commands, and 65 commands for debugging purposes. :1234:
 * About 220 built-in emotes. :clap:
 * Help files for all existing non-debug commands. Help topics. :information_desk_person:
 * Commands have a consistent structure and a unique syntax for indicating target locations and quantities. :dart:
 * Unique commands, accessible only when a player is in a particular room, may be created. :house_with_garden:
 * The names of commands, as well as the names of the targets they act upon, may be abbreviated. :abc:
-* Logging. :scroll:
-* About 85 player commands, 50 administrator commands, and 65 commands for debugging purposes. :1234:
-* About 220 built-in emotes. :clap:
-* Help files for all existing non-debug commands. Help topics. :information_desk_person:
-* Commands have a consistent structure and a unique syntax for indicating target locations and quantities. :dart:
-* Unique commands, accessible only when a player is in a particular room, may be created. :house_with_garden:
-* The names of commands, as well as the names of the targets they act upon, may be abbreviated. :ok:
 * Logging. :scroll:
 * ANSI color. :red_circle:
 * Character creation. :runner:
@@ -94,7 +87,7 @@ The code is available here on GitHub under [this license](https://github.com/jas
   * `ViewPatterns`
 * Many functions are decorated with [the `HasCallStack` constraint](http://hackage.haskell.org/package/base-4.9.0.0/docs/GHC-Stack.html#t:HasCallStack). I hope to remove these when I'm convinced that the code is stable.
 
-### How to try it out
+## How to try it out
 
 Linux and macOS are supported. Sorry, but Windows is _not_ supported.
 
