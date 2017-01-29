@@ -41,7 +41,7 @@ import Control.Concurrent.STM.TQueue (readTQueue, writeTQueue)
 import Control.Exception.Lifted (catch)
 import Control.Lens (view, views)
 import Control.Lens.Operators ((^.))
-import Control.Monad ((>=>), forM_, unless)
+import Control.Monad ((>=>), forM_)
 import Control.Monad.IO.Class (liftIO)
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
@@ -81,30 +81,26 @@ threadServer h i mq tq = sequence_ [ setThreadType . Server $ i
                                    , loop False `catch` threadExHandler (Just i) "server" ]
   where
     loop isDropped = mq |&| liftIO . atomically . readTQueue >=> \case
-      AsSelf     msg -> handleFromClient i mq tq True msg  >> next
-      BlankLine      -> handleBlankLine h                  >> next
-      Dropped        -> egress True
-      FromClient msg -> handleFromClient i mq tq False msg >> next
-      FromServer msg -> handleFromServer i h Plaに msg     >> next
-      InacBoot       -> sendInacBootMsg h                  >> sayonara
-      InacStop       -> stopTimer tq                       >> next
-      MsgBoot msg    -> sendBootMsg h msg                  >> sayonara
-      Peeped  msg    -> (liftIO . T.hPutStr h $ msg)       >> next
-      Prompt p       -> promptHelper i h p                 >> next
-      Quit           -> cowbye h                           >> sayonara
-      ShowHandle     -> handleShowHandle i h               >> next
-      Shutdown       -> shutDown                           >> next
-      SilentBoot     ->                                       sayonara
-      FinishedSpirit ->                                       sayonara
+      AsSelf     msg -> handleFromClient i mq tq True msg  >> loop     isDropped
+      BlankLine      -> handleBlankLine h                  >> loop     isDropped
+      Dropped        -> sayonara True
+      FromClient msg -> handleFromClient i mq tq False msg >> loop     isDropped
+      FromServer msg -> handleFromServer i h Plaに msg     >> loop     isDropped
+      InacBoot       -> sendInacBootMsg h                  >> sayonara isDropped
+      InacStop       -> stopTimer tq                       >> loop     isDropped
+      MsgBoot msg    -> sendBootMsg h msg                  >> sayonara isDropped
+      Peeped  msg    -> (liftIO . T.hPutStr h $ msg)       >> loop     isDropped
+      Prompt p       -> promptHelper i h p                 >> loop     isDropped
+      Quit           -> cowbye h                           >> sayonara isDropped
+      ShowHandle     -> handleShowHandle i h               >> loop     isDropped
+      Shutdown       -> shutDown                           >> loop     isDropped
+      SilentBoot     ->                                       sayonara isDropped
+      FinishedSpirit -> nonSpiritEgress isDropped
       FinishedEgress -> unit
-      ToNpc msg      -> handleFromServer i h Npcに msg     >> next
-      where
-        next     = loop   isDropped
-        sayonara = egress isDropped
-    egress isDropped = getState >>= \ms ->
-        let a = stopTimer tq >> handleEgress i mq isDropped >> unless (isAdHoc i ms) (loop isDropped)
-            b = const $ throwWaitSpiritTimer i >> loop isDropped
-        in views (plaTbl.ind i.spiritAsync) (maybe a b) ms
+      ToNpc msg      -> handleFromServer i h Npcに msg     >> loop isDropped
+    sayonara isDropped = let f = const $ throwWaitSpiritTimer i >> loop isDropped
+                         in views (plaTbl.ind i.spiritAsync) (maybe (nonSpiritEgress isDropped) f) =<< getState
+    nonSpiritEgress    = (stopTimer tq >>) . ((>>) <$> handleEgress i mq <*> mUnless (isAdHoc i <$> getState) . loop)
 
 
 handleBlankLine :: HasCallStack => Handle -> MudStack ()
