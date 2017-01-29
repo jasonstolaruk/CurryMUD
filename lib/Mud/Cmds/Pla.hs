@@ -2955,12 +2955,12 @@ sacrifice (NoArgs i mq cols) = modifyStateSeq $ \ms ->
     let sorry = (ms, ) . pure . wrapSend mq cols
     in case (findHolySymbolGodName `fanUncurry` findCorpseIdInMobRm) (i, ms) of
       (Just gn, Just ci) ->
-          let fs = pure . destroy . pure $ ci
+          let fs = [ sacrificeLogHelper i ms ci gn, destroy . pure $ ci ]
           in (sacrificesTblHelper gn i ms, fs)
       (Nothing, Just _ ) -> sorry sorrySacrificeHolySymbol
       (Just _,  Nothing) -> sorry sorrySacrificeCorpse
       (Nothing, Nothing) -> sorry sorrySacrificeHolySymbolCorpse
-sacrifice (OneArgLower i mq cols _) = modifyStateSeq $ \ ms ->
+sacrifice (OneArgLower i mq cols _) = modifyStateSeq $ \ms ->
     let sorry = (ms, ) . pure . wrapSend mq cols
     in case findCorpseIdInMobRm i ms of
       Nothing -> sorry sorrySacrificeCorpse
@@ -2976,6 +2976,14 @@ findHolySymbolGodName i ms =
 
 findCorpseIdInMobRm :: HasCallStack => Id -> MudState -> Maybe Id
 findCorpseIdInMobRm i ms = listToMaybe . filter ((== CorpseType) . (`getType` ms)) . getMobRmInv i $ ms
+
+
+sacrificeLogHelper :: HasCallStack => Id -> MudState -> Id -> GodName -> MudStack ()
+sacrificeLogHelper i ms ci gn =
+    let msg = T.concat [ "sacrificed a ", descSingId ci ms, t, " using a holy symbol of ", pp gn, "." ]
+        t   = case getCorpse ci ms of PCCorpse s _ _ _ -> spcL . parensQuote $ s
+                                      _                -> ""
+    in logPla "sacrificeLogHelper" i msg
 
 
 sacrificesTblHelper :: HasCallStack => GodName -> Id -> MudState -> MudState
