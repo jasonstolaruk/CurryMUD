@@ -504,7 +504,7 @@ initTblHelper fn (dblQuote -> tblName) lookupFun insertFun fpf = liftIO (mkMudFi
     logHelper   = logNotice fn
     proceed txt = join <$> withDbExHandler fn lookupFun >>= \case
       Nothing -> logHelper ("initializing the " <> tblName <> " table.") >> withDbExHandler_ fn (insertFun txt)
-      Just _  -> logHelper $ "the " <> tblName <> " table has already been initialized."
+      Just _  -> logHelper $ the tblName <> " table has already been initialized."
 
 
 initWordsTbl :: HasCallStack => MudStack () -- Used by the "!words" debug cmd.

@@ -75,9 +75,9 @@ startCorpseDecomp i secs = runAsync (threadCorpseDecomp i secs) >>= \a -> tweak 
 threadCorpseDecomp :: Id -> SecondsPair -> MudStack ()
 threadCorpseDecomp i secs = handle (threadExHandler (Just i) "corpse decomposer") $ do
     setThreadType . CorpseDecomposer $ i
-    let msg = prd $ "starting corpse decomposer for ID " <> showText i |<>| mkSecsTxt secs
-    logNotice "threadCorpseDecomp" msg
-    handle (die Nothing "corpse decomposer") $ corpseDecomp i secs `finally` finish
+    singId <- descSingId i <$> getState
+    logNotice "threadCorpseDecomp" . prd $ "starting corpse decomposer for " <> singId |<>| mkSecsTxt secs
+    handle (die Nothing $ "corpse decomposer for " <> singId) $ corpseDecomp i secs `finally` finish
   where
     finish = tweak $ corpseDecompAsyncTbl.at i .~ Nothing
 

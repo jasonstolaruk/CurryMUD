@@ -14,6 +14,7 @@ import Mud.Threads.Misc
 import Mud.TopLvlDefs.Misc
 import Mud.Util.Misc
 import Mud.Util.Operators
+import Mud.Util.Quoting
 import Mud.Util.Text
 import qualified Mud.Misc.Logging as L (logNotice)
 
@@ -68,7 +69,7 @@ threadBiodegrader :: Id -> MudStack ()
 threadBiodegrader i = handle (threadExHandler (Just i) "biodegrader") $ descSingId i <$> getState >>= \singId -> do
     setThreadType . Biodegrader $ i
     logNotice "threadBiodegrader" . prd $ "biodegrader started for " <> singId
-    loop 0 Nothing `catch` die Nothing "biodegrader"
+    loop 0 Nothing `catch` die Nothing ("biodegrader " <> parensQuote singId)
   where
     loop secs lastMaybeInvId = modifyStateSeq $ \ms ->
         let newMaybeInvId = findInvContaining i ms

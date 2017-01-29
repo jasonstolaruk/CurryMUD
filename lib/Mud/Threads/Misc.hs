@@ -90,7 +90,7 @@ dbExHandler fn e =
 -----
 
 
-die :: Maybe Id -> Text -> PlsDie -> MudStack ()
+die :: Maybe Id -> Text -> PlsDie -> MudStack () -- TODO: The "Maybe Id" parameter is used to determine logging.
 die mi threadName = const . maybe (logNotice "die") (logPla "die") mi $ the threadName <> " thread is dying."
 
 
@@ -123,13 +123,13 @@ plaThreadExHandler i threadName e | Just ThreadKilled <- fromException e = close
                                   | otherwise                            = threadExHandler (Just i) threadName e
 
 
-threadExHandler :: Maybe Id -> Text -> SomeException -> MudStack ()
+threadExHandler :: Maybe Id -> Text -> SomeException -> MudStack () -- The "Maybe Id" parameter is used to decorate the thread name.
 threadExHandler mi threadName e = f >>= \threadName' -> do
     logExMsg "threadExHandler" (rethrowExMsg $ "on " <> threadName' <> " thread") e
     throwToListenThread e
   where
     f = case mi of Nothing -> return threadName
-                   Just i  -> [ threadName |<>| txt | txt <- descSingId i <$> getState ]
+                   Just i  -> [ threadName |<>| singId | singId <- descSingId i <$> getState ]
 
 
 -----

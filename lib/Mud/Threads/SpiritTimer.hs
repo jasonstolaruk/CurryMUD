@@ -61,6 +61,7 @@ throwWaitSpiritTimer i = views (plaTbl.ind i.spiritAsync) (maybeVoid throwWait) 
 threadSpiritTimer :: Id -> Seconds -> MudStack ()
 threadSpiritTimer i secs = handle (threadExHandler (Just i) "spirit timer") $ do
     setThreadType . SpiritTimer $ i
+    singId <- descSingId i <$> getState
     logPla "threadSpiritTimer" i . prd $ "spirit timer starting " <> parensQuote (showText secs <> " seconds")
     (mq, cols) <- getMsgQueueColumns i <$> getState
     let go     = when (secs > 0) $ do liftIO . threadDelay $ 2 * 10 ^ 6
@@ -69,7 +70,7 @@ threadSpiritTimer i secs = handle (threadExHandler (Just i) "spirit timer") $ do
         finish = do logPla "threadSpiritTimer finish" i "spirit timer finishing."
                     tweak $ plaTbl.ind i.spiritAsync .~ Nothing
                     writeMsg mq FinishedSpirit
-    handle (die (Just i) "spirit timer") $ go `finally` finish
+    handle (die (Just i) $ "spirit timer for " <> singId) $ go `finally` finish
 
 
 spiritTimer :: Id -> MsgQueue -> Cols -> Seconds -> MudStack ()
