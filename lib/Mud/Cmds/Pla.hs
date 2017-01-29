@@ -2955,8 +2955,7 @@ sacrifice (NoArgs i mq cols) = modifyStateSeq $ \ms ->
     let sorry = (ms, ) . pure . wrapSend mq cols
     in case (findHolySymbolGodName `fanUncurry` findCorpseIdInMobRm) (i, ms) of
       (Just gn, Just ci) ->
-          let fs = [ ms^.corpseDecompAsyncTbl.at ci.to (maybeVoid throwDeath)
-                   , destroy . pure $ ci ]
+          let fs = pure . destroy . pure $ ci
           in (sacrificesTblHelper gn i ms, fs)
       (Nothing, Just _ ) -> sorry sorrySacrificeHolySymbol
       (Just _,  Nothing) -> sorry sorrySacrificeCorpse

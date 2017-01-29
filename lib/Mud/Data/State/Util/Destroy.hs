@@ -10,20 +10,23 @@ import Mud.Threads.Effect
 import Mud.Threads.Misc
 import Mud.Util.Misc
 
-import Control.Lens (at)
-import Control.Lens.Operators ((%~), (.~))
+import Control.Lens (at, to)
+import Control.Lens.Operators ((%~), (.~), (^.))
+import Control.Monad (forM_)
 import Data.List (delete)
 import qualified Data.IntMap.Strict as IM (map)
 
 
 destroy :: Inv -> MudStack ()
-destroy is = sequence_ [ stopBiodegraders, mapM_ stopEffects is, tweak . destroyHelper $ is ]
+destroy is = do ((>>) <$> stopBiodegraders <*> stopCorpseDecomposers) =<< getState
+                mapM_ stopEffects is
+                tweak . destroyHelper $ is
   where
-    stopBiodegraders = getState >>= \ms -> let f = maybeVoid throwDeath . (`getObjBiodegAsync` ms)
-                                           in mapM_ f . filter (`hasObjId` ms) $ is
+    stopBiodegraders      ms = forM_ (filter (`hasObjId` ms) is) $ maybeVoid throwDeath . (`getObjBiodegAsync` ms)
+    stopCorpseDecomposers ms = forM_ is $ \i -> ms^.corpseDecompAsyncTbl.at i.to (maybeVoid throwDeath)
 
 
-destroyHelper :: Inv -> MudState -> MudState -- The caller is responsible for stopping the biodegrader and effects.
+destroyHelper :: Inv -> MudState -> MudState -- The caller is responsible for stopping the biodegrader, corpse decomposer, and effects.
 destroyHelper = flip . foldr $ helper
   where
     helper i ms = case getType i ms of
