@@ -62,7 +62,7 @@ threadSpiritTimer :: Id -> Seconds -> MudStack ()
 threadSpiritTimer i secs = handle (threadExHandler (Just i) "spirit timer") $ do
     setThreadType . SpiritTimer $ i
     singId <- descSingId i <$> getState
-    logPla "threadSpiritTimer" i . prd $ "spirit timer starting " <> parensQuote (showText secs <> " seconds")
+    logPla "threadSpiritTimer" i . prd $ "spirit timer starting " <> parensQuote (commaShow secs <> " seconds")
     (mq, cols) <- getMsgQueueColumns i <$> getState
     let go     = when (secs > 0) $ do liftIO . threadDelay $ 2 * 10 ^ 6
                                       wrapSend mq cols . colorWith spiritMsgColor $ spiritDetachMsg

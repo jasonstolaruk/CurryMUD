@@ -356,7 +356,7 @@ instance Pretty Effect where
 
 
 mkSecsTxt :: Seconds -> Text
-mkSecsTxt secs = parensQuote $ commaEvery3 (showText secs) <> " secs"
+mkSecsTxt secs = parensQuote $ commaShow secs <> " seconds"
 
 
 effectValHelper :: Maybe EffectVal -> Text

@@ -216,7 +216,7 @@ spiritize i = do
                       , pcTbl           %~ pcTblHelper           i s retainedIds retainedSings
                       , teleLinkMstrTbl %~ teleLinkMstrTblHelper i s retainedIds retainedSings
                       , mobTbl.ind i    %~ setCurrXps ]
-             , [ logPla "spiritize" i "spirit created."
+             , [ logPla "spiritize" i . prd $ "spirit created " <> parensQuote (commaShow secs <> " seconds")
                , forM_ asleepIds $ \targetId -> retainedMsg targetId ms . linkMissingMsg $ s
                , bcast bs
                , sequence_ (fs :: Funs)
