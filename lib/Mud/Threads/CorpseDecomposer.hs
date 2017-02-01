@@ -135,7 +135,7 @@ finishDecomp :: Id -> MudStack ()
 finishDecomp i = modifyStateSeq $ \ms ->
     let invId          = fromMaybe oops . findInvContaining i $ ms
         bs             = if | getType invId ms == RmType -> foldr f [] . findMobIds ms . getInv invId $ ms
-                            | isPC    invId ms           -> mkCarriedBs
+                            | isNpcPC invId ms           -> mkCarriedBs
                             | otherwise                  -> []
         f targetId acc | isPC targetId ms = let n = mkCorpseAppellation targetId ms i
                                             in (("The " <> n <> " disintegrates.", pure targetId) : acc)

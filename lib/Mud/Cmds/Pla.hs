@@ -205,7 +205,7 @@ regularCmdTuples =
     , ("remove",     remove,             True,  cmdDescRemove)
     , ("roomdesc",   roomDesc,           True,  cmdDescRoomDesc)
     , ("s",          go "s",             True,  cmdDescGoSouth)
-    , ("sacrifice",  sacrifice,          True,  "Sacrifice a corpse using a holy symbol.")
+    , ("sacrifice",  sacrifice,          False, "Sacrifice a corpse using a holy symbol.")
     , ("se",         go "se",            True,  cmdDescGoSoutheast)
     , ("security",   security,           True,  "View or change your security Q&A.")
     , ("set",        setAction,          True,  cmdDescSet)
@@ -1051,7 +1051,7 @@ disconnectHelper i (target, as) idNamesTbl ms =
 -----
 
 
-drink :: HasCallStack => ActionFun
+drink :: HasCallStack => ActionFun -- TODO: Can't "say" while drinking. Can't "drop" while drinking.
 drink p@(NoArgs' i mq                   ) = advise p ["drink"] adviceDrinkNoArgs   >> sendDfltPrompt mq i
 drink p@(OneArg  i mq _    _            ) = advise p ["drink"] adviceDrinkNoVessel >> sendDfltPrompt mq i
 drink   (Lower   i mq cols [amt, target]) = getState >>= \ms -> let (isDrink, isEat) = isDrinkingEating i ms in
@@ -2950,21 +2950,20 @@ roomDesc p = patternMatchFail "roomDesc" . showText $ p
 -----
 
 
+-- TODO: Can't sacrifice while eating, drinking, attacking...
 sacrifice :: HasCallStack => ActionFun
-sacrifice (NoArgs i mq cols) = modifyStateSeq $ \ms ->
-    let sorry = (ms, ) . pure . wrapSend mq cols
-    in case (findHolySymbolGodName `fanUncurry` findCorpseIdInMobRm) (i, ms) of
-      (Just gn, Just ci) ->
-          let fs = [ sacrificeLogHelper i ms ci gn, destroy . pure $ ci ]
-          in (sacrificesTblHelper gn i ms, fs)
-      (Nothing, Just _ ) -> sorry sorrySacrificeHolySymbol
-      (Just _,  Nothing) -> sorry sorrySacrificeCorpse
-      (Nothing, Nothing) -> sorry sorrySacrificeHolySymbolCorpse
-sacrifice (OneArgLower i mq cols _) = modifyStateSeq $ \ms ->
-    let sorry = (ms, ) . pure . wrapSend mq cols
-    in case findCorpseIdInMobRm i ms of
-      Nothing -> sorry sorrySacrificeCorpse
-      Just _  -> undefined
+sacrifice p@(NoArgs i mq cols) = getState >>= \ms -> case (findHolySymbolGodName `fanUncurry` findCorpseIdInMobRm) (i, ms) of
+  (Just gn, Just ci) -> sacrificeHelper p ci gn
+  (Nothing, Just _ ) -> sorry sorrySacrificeHolySymbol
+  (Just _,  Nothing) -> sorry sorrySacrificeCorpse
+  (Nothing, Nothing) -> sorry sorrySacrificeHolySymbolCorpse
+  where
+    sorry msg = wrapSend mq cols msg >> sendDfltPrompt mq i
+sacrifice (OneArgLower i mq cols _) = getState >>= \ms -> case findCorpseIdInMobRm i ms of
+  Nothing -> sorry sorrySacrificeCorpse
+  Just _  -> undefined
+  where
+    sorry msg = wrapSend mq cols msg >> sendDfltPrompt mq i
 sacrifice (Lower _ _ _ [_, _]) = undefined
 sacrifice p = advise p ["sacrifice"] adviceSacrificeExcessArgs
 
@@ -2978,18 +2977,46 @@ findCorpseIdInMobRm :: HasCallStack => Id -> MudState -> Maybe Id
 findCorpseIdInMobRm i ms = listToMaybe . filter ((== CorpseType) . (`getType` ms)) . getMobRmInv i $ ms
 
 
-sacrificeLogHelper :: HasCallStack => Id -> MudState -> Id -> GodName -> MudStack ()
-sacrificeLogHelper i ms ci gn =
-    let msg = T.concat [ "sacrificed a ", descSingId ci ms, t, " using a holy symbol of ", pp gn, "." ]
-        t   = case getCorpse ci ms of PCCorpse s _ _ _ -> spcL . parensQuote $ s
-                                      _                -> ""
-    in logPla "sacrificeLogHelper" i msg
-
-
-sacrificesTblHelper :: HasCallStack => GodName -> Id -> MudState -> MudState
-sacrificesTblHelper gn i = pcTbl.ind i.sacrificesTbl %~ f
+sacrificeHelper :: HasCallStack => ActionParams -> Id -> GodName -> MudStack ()
+sacrificeHelper (ActionParams i mq cols _) ci gn = getState >>= \ms ->
+    let toSelf     = T.concat [ "You kneel before the "
+                              , mkCorpseAppellation i ms ci
+                              , ", laying upon it the holy symbol of "
+                              , pp gn
+                              , ". You say a prayer..." ]
+        d          = mkStdDesig i ms DoCap
+        f targetId = ((T.concat [ serialize d
+                                , " kneels before the "
+                                , mkCorpseAppellation targetId ms ci
+                                , " and says a prayer to "
+                                , pp gn
+                                , "." ], pure targetId) :)
+    in do logHelper ms
+          wrapSend mq cols toSelf
+          bcastIfNotIncogNl i . foldr f [] $ i `delete` desigIds d
+          onNewThread next
   where
-    f tbl = maybe (M.insert gn 1 tbl) (flip (M.insert gn) tbl . succ) . M.lookup gn $ tbl
+    logHelper ms = let msg = T.concat [ "sacrificing a ", descSingId ci ms, t, " using a holy symbol of ", pp gn, "." ]
+                       t   = case getCorpse ci ms of PCCorpse s _ _ _ -> spcL . parensQuote $ s
+                                                     _                -> ""
+                   in logPla "sacrificeHelper logHelper" i msg
+    next = do liftIO . threadDelay $ 3 * 10 ^ 6
+              modifyStateSeq $ \ms ->
+                  let helper f            = (sacrificesTblHelper ms, [ destroy . pure $ ci, f, sendDfltPrompt mq i ])
+                      sacrificesTblHelper = pcTbl.ind i.sacrificesTbl %~ f
+                        where
+                          f tbl = maybe (M.insert gn 1 tbl) (flip (M.insert gn) tbl . succ) . M.lookup gn $ tbl
+                      foldHelper    targetId = (mkBcastHelper targetId :)
+                      mkBcastHelper targetId = ( "The " <> mkCorpseAppellation targetId ms ci <> " fades away and disappears."
+                                               , pure targetId )
+                  in if ((&&) <$> uncurry hasType <*> (== CorpseType) . uncurry getType) (ci, ms)
+                    then helper $ case findInvContaining ci ms of
+                      Just invId -> if | getType invId ms == RmType ->
+                                             bcastNl . foldr foldHelper [] . findMobIds ms . getInv invId $ ms
+                                       | isNpcPC invId ms -> bcastNl . pure . mkBcastHelper $ invId
+                                       | otherwise        -> unit
+                      Nothing    -> unit
+                    else (ms, [])
 
 
 -----
