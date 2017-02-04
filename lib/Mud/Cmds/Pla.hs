@@ -1051,7 +1051,7 @@ disconnectHelper i (target, as) idNamesTbl ms =
 -----
 
 
-drink :: HasCallStack => ActionFun -- TODO: Can't "say" while drinking. Can't "drop" while drinking.
+drink :: HasCallStack => ActionFun -- TODO: Can't "drop" while drinking.
 drink p@(NoArgs' i mq                   ) = advise p ["drink"] adviceDrinkNoArgs   >> sendDfltPrompt mq i
 drink p@(OneArg  i mq _    _            ) = advise p ["drink"] adviceDrinkNoVessel >> sendDfltPrompt mq i
 drink   (Lower   i mq cols [amt, target]) = getState >>= \ms -> let (isDrink, isEat) = isDrinkingEating i ms in
@@ -3029,7 +3029,8 @@ say = sayHelper CommonLang
 sayHelper :: HasCallStack => Lang -> ActionFun
 sayHelper l p@AdviseNoArgs                    = advise p [ mkCmdNameForLang l ] . adviceSayNoArgs $ l
 sayHelper l p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
-  | isIncognitoId i ms         -> wrapSend mq cols . sorryIncog . mkCmdNameForLang $ l
+  | isIncognitoId  i ms -> wrapSend mq cols . sorryIncog . mkCmdNameForLang $ l
+  | isDrinking     i ms -> wrapSend mq cols sorrySayDrinking
   | T.head a == adverbOpenChar -> case parseAdverb . T.unwords $ args of
     Left  msg                    -> adviseHelper msg
     Right (adverb, rest@(T.words -> rs@(head -> r)))

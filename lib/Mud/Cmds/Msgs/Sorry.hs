@@ -244,6 +244,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorrySacrificeHolySymbol
                            , sorrySacrificeHolySymbolCorpse
                            , sorrySayCoins
+                           , sorrySayDrinking
                            , sorrySayExcessTargets
                            , sorrySayInEq
                            , sorrySayInInv
@@ -1673,6 +1674,10 @@ sorrySacrificeHolySymbolCorpse = "To sacrifice a corpse, you must have a holy sy
 
 sorrySayCoins :: Text
 sorrySayCoins = "You're talking to coins now?"
+
+
+sorrySayDrinking :: Text
+sorrySayDrinking = can't "speak while drinking."
 
 
 sorrySayExcessTargets :: Text

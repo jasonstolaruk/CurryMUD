@@ -90,7 +90,7 @@ dbExHandler fn e =
 -----
 
 
-die :: Maybe Id -> Text -> PlsDie -> MudStack () -- TODO: The "Maybe Id" parameter is used to determine logging.
+die :: Maybe Id -> Text -> PlsDie -> MudStack () -- The "Maybe Id" parameter is used to determine logging.
 die mi threadName = const . maybe (logNotice "die") (logPla "die") mi $ the threadName <> " thread is dying."
 
 
