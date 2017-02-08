@@ -27,6 +27,7 @@ module Mud.Cmds.Util.Misc ( asterisk
                           , initPropNamesTbl
                           , initWordsTbl
                           , inOut
+                          , isActingAny
                           , isAlive
                           , isAttacking
                           , isBracketed
@@ -128,7 +129,7 @@ import Data.Time (diffUTCTime, getCurrentTime)
 import GHC.Stack (HasCallStack)
 import Prelude hiding (exp)
 import qualified Data.IntMap.Strict as IM (IntMap, empty, filter, foldlWithKey', foldr, fromList, keys, map, mapWithKey)
-import qualified Data.Map.Strict as M ((!), elems, keys, lookup, member, toList)
+import qualified Data.Map.Strict as M ((!), elems, keys, lookup, member, null, toList)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
 import qualified Data.Vector.Unboxed as V (Vector, splitAt, toList)
@@ -514,11 +515,8 @@ initWordsTbl = initTblHelper "initWordsTbl" "words" (lookupWord "a") insertWords
 -----
 
 
-isAlive :: HasCallStack => Id -> MudState -> Bool
-isAlive i = (i `notElem`) . getInv iNecropolis
-
-
------
+isActingAny :: HasCallStack => Id -> MudState -> Bool
+isActingAny i = not . M.null . getActMap i
 
 
 isAttacking :: HasCallStack => Id -> MudState -> Bool
@@ -539,6 +537,13 @@ isEating = isActing Eating
 
 isDrinkingEating :: HasCallStack => Id -> MudState -> (Bool, Bool)
 isDrinkingEating i = (isDrinking `fanUncurry` isEating) . (i, )
+
+
+-----
+
+
+isAlive :: HasCallStack => Id -> MudState -> Bool
+isAlive i = (i `notElem`) . getInv iNecropolis
 
 
 -----

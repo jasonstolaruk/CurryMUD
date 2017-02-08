@@ -240,6 +240,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryRemEnc
                            , sorryRemExcessCon
                            , sorryRemIgnore
+                           , sorrySacrificeActing
                            , sorrySacrificeCorpse
                            , sorrySacrificeHolySymbol
                            , sorrySacrificeHolySymbolCorpse
@@ -1654,6 +1655,10 @@ sorryRemIgnore = sorryIgnoreLocPrefPlur "The names of the items to be removed fr
 
 
 -----
+
+
+sorrySacrificeActing :: ActType -> Text
+sorrySacrificeActing act = prd . can't $ "sacrifice a corpse while " <> pp act
 
 
 sorrySacrificeCorpse :: Text

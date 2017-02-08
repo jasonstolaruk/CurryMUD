@@ -2991,10 +2991,12 @@ sacrificeHelper (ActionParams i mq cols _) ci gn = getState >>= \ms ->
                                 , " and says a prayer to "
                                 , pp gn
                                 , "." ], pure targetId) :)
-    in do logHelper ms
-          wrapSend mq cols toSelf
-          bcastIfNotIncogNl i . foldr f [] $ i `delete` desigIds d
-          onNewThread next
+    in case getActs i ms of
+      []      -> do logHelper ms
+                    wrapSend mq cols toSelf
+                    bcastIfNotIncogNl i . foldr f [] $ i `delete` desigIds d
+                    onNewThread next
+      (act:_) -> wrapSend mq cols . sorrySacrificeActing $ act
   where
     logHelper ms = let msg = T.concat [ "sacrificing a ", descSingId ci ms, t, " using a holy symbol of ", pp gn, "." ]
                        t   = case getCorpse ci ms of PCCorpse s _ _ _ -> spcL . parensQuote $ s
@@ -3029,8 +3031,8 @@ say = sayHelper CommonLang
 sayHelper :: HasCallStack => Lang -> ActionFun
 sayHelper l p@AdviseNoArgs                    = advise p [ mkCmdNameForLang l ] . adviceSayNoArgs $ l
 sayHelper l p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
-  | isIncognitoId  i ms -> wrapSend mq cols . sorryIncog . mkCmdNameForLang $ l
-  | isDrinking     i ms -> wrapSend mq cols sorrySayDrinking
+  | isIncognitoId i ms         -> wrapSend mq cols . sorryIncog . mkCmdNameForLang $ l
+  | isDrinking    i ms         -> wrapSend mq cols sorrySayDrinking
   | T.head a == adverbOpenChar -> case parseAdverb . T.unwords $ args of
     Left  msg                    -> adviseHelper msg
     Right (adverb, rest@(T.words -> rs@(head -> r)))

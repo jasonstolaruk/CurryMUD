@@ -19,6 +19,7 @@ module Mud.Cmds.Util.Pla ( adminTagTxt
                          , genericActionWithHooks
                          , genericSorry
                          , genericSorryWithHooks
+                         , getActs
                          , getMatchingChanWithName
                          , getRelativePCName
                          , hasFp
@@ -129,7 +130,7 @@ import Data.Monoid ((<>), Sum(..))
 import Data.Text (Text)
 import GHC.Stack (HasCallStack)
 import qualified Data.IntMap.Strict as IM (keys)
-import qualified Data.Map.Strict as M ((!), notMember, toList)
+import qualified Data.Map.Strict as M ((!), keys, notMember, toList)
 import qualified Data.Text as T
 import qualified Data.Vector.Unboxed as V (Vector)
 
@@ -378,6 +379,13 @@ genericSorry ms = (ms, ) . (, [], []) . pure
 
 genericSorryWithHooks :: MudState -> Text -> GenericResWithHooks
 genericSorryWithHooks ms = (ms, ) . (, [], [], []) . pure
+
+
+-----
+
+
+getActs :: HasCallStack => Id -> MudState -> [ActType]
+getActs i = M.keys . getActMap i
 
 
 -----
