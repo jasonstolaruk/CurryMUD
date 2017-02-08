@@ -1,6 +1,17 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Mud.TopLvlDefs.Padding where
+module Mud.TopLvlDefs.Padding ( bracketedEntNamePadding
+                              , chanNamePadding
+                              , cmdNamePadding
+                              , colorNamePadding
+                              , godNamePadding
+                              , helpTopicPadding
+                              , idPadding
+                              , lvlPadding
+                              , namePadding
+                              , racePadding
+                              , settingNamePadding
+                              , sexPadding ) where
 
 import Mud.Data.State.Util.Calc
 import Mud.TopLvlDefs.Misc
@@ -20,6 +31,10 @@ cmdNamePadding = succ maxCmdLen
 
 colorNamePadding :: Int
 colorNamePadding = 8
+
+
+godNamePadding :: Int
+godNamePadding = succ calcMaxGodNameLen
 
 
 helpTopicPadding :: Int

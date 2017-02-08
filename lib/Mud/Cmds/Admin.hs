@@ -166,7 +166,7 @@ adminCmds =
     , mkAdminCmd "incognito"  adminIncognito   True  "Toggle your incognito status."
     , mkAdminCmd "ip"         adminIp          True  "Display the server's IP addresses and listening port."
     , mkAdminCmd "kill"       adminKill        True  "Instantly kill one or more mobiles by ID."
-    , mkAdminCmd "link"       adminLink        True  "Dump two-way links for one or more PCs, sorted by volume of \
+    , mkAdminCmd "link"       adminLink        True  "Display two-way links for one or more PCs, sorted by volume of \
                                                      \messages in descending order."
     , mkAdminCmd "locate"     adminLocate      True  "Locate one or more IDs."
     , mkAdminCmd "message"    adminMsg         True  "Send a message to a regular player."
@@ -179,6 +179,7 @@ adminCmds =
     , mkAdminCmd "possess"    adminPossess     False "Temporarily take control of an NPC."
     , mkAdminCmd "print"      adminPrint       True  "Print a message to the server console."
     , mkAdminCmd "profanity"  adminProfanity   True  "Dump the profanity database."
+    , mkAdminCmd "sacrifice"  adminSacrifice   True  "Display sacrifice bonuses for one or more PCs."
     , mkAdminCmd "search"     adminSearch      True  "Search for names and IDs using a regular expression."
     , mkAdminCmd "security"   adminSecurity    True  "Display security Q&A for one or more players."
     , mkAdminCmd "set"        adminSet         True  "Set one or more values for a given ID."
@@ -1189,16 +1190,16 @@ adminLink   (LowerNub i mq cols as) = getState >>= \ms -> do
     logPlaExecArgs (prefixAdminCmd "link") as i
     let helper target =
             let notFound              = unadulterated . sorryPCName $ target
-                found (_, targetSing) = (\case
-                  [] -> header none
-                  ss -> header . mkReport $ ss) <$> liftIO (lookupTeleNames targetSing)
+                found (_, targetSing) = (header . \case
+                  [] -> none
+                  xs -> mkReport xs) <$> liftIO (lookupTeleNames targetSing)
                   where
-                    header          = (targetSing <> "'s two-way links:" :)
-                    mkReport     ss | pairs <- sortBy (flip compare `on` fst) . mkCountSings $ ss
-                                    = map (uncurry (flip (|<>|)) . first (parensQuote . showText)) pairs
-                    mkCountSings    = map (length &&& head) . sortGroup
+                    header       = (targetSing <> "'s two-way links:" :)
+                    mkReport xs  | pairs <- sortBy (flip compare `on` fst) . mkCountSings $ xs
+                                 = map (uncurry (flip (|<>|)) . first (parensQuote . showText)) pairs
+                    mkCountSings = map (length &&& head) . sortGroup
             in findFullNameForAbbrev target (mkAdminPlaIdSingList ms) |&| maybe notFound found
-    pager i mq Nothing . noneOnNull . intercalateDivider cols =<< forM as (helper . capitalize . T.toLower)
+    pager i mq Nothing . noneOnNull . intercalateDivider cols =<< forM as (helper . capitalize)
 adminLink p = patternMatchFail "adminLink" . showText $ p
 
 
@@ -1440,6 +1441,26 @@ adminProfanity p@ActionParams { plaMsgQueue, plaCols } = dumpCmdHelper "profanit
   where
     f :: HasCallStack => [ProfRec] -> MudStack ()
     f = dumpDbTblHelper plaMsgQueue plaCols
+
+
+-----
+
+
+adminSacrifice :: HasCallStack => ActionFun
+adminSacrifice p@AdviseNoArgs            = advise p [ prefixAdminCmd "sacrifice" ] adviceASacrificeNoArgs
+adminSacrifice   (LowerNub i mq cols as) = getState >>= \ms -> do
+    logPlaExecArgs (prefixAdminCmd "sacrifice") as i
+    let helper target =
+            let notFound              = unadulterated . sorryPCName $ target
+                found (_, targetSing) = (header . \case
+                  [] -> none
+                  xs -> mkReport xs) <$> liftIO (lookupSacBonuses targetSing)
+                  where
+                    header      = (targetSing <> "'s sacrifice bonuses:" :)
+                    mkReport xs = [ uncurry (|<>|) . (showText *** pp) $ pair | pair <- xs ] -- TODO: UTCTime needs better formatting.
+            in findFullNameForAbbrev target (mkAdminPlaIdSingList ms) |&| maybe notFound found
+    pager i mq Nothing . noneOnNull . intercalateDivider cols =<< forM as (helper . capitalize)
+adminSacrifice p = patternMatchFail "adminSacrifice" . showText $ p
 
 
 -----

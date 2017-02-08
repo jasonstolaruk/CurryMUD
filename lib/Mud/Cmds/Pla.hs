@@ -2950,7 +2950,7 @@ roomDesc p = patternMatchFail "roomDesc" . showText $ p
 -----
 
 
-sacrifice :: HasCallStack => ActionFun
+sacrifice :: HasCallStack => ActionFun -- TODO: We need a sacrifice act in the "ActMap".
 sacrifice p@(NoArgs i mq cols) = getState >>= \ms -> case (findHolySymbolGodName `fanUncurry` findCorpseIdInMobRm) (i, ms) of
   (Just gn, Just ci) -> sacrificeHelper p ci gn
   (Nothing, Just _ ) -> sorry sorrySacrificeHolySymbol

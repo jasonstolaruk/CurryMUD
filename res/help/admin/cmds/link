@@ -4,7 +4,7 @@
 #dlink name \s...\d
 
 \uDESCRIPTION\n
-Dump two-way links for one or more PCs, sorted by volume of messages in descending order.
+Display two-way links for one or more PCs, sorted by volume of messages in descending order.
 Linked PC names are displayed followed by the number of messages exchanged.
 
 \uEXAMPLES\n

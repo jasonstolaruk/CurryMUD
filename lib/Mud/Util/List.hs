@@ -29,7 +29,7 @@ import Data.List.Utils (breakList)
 import qualified Data.Set as S (fromList, toList)
 
 
-allValues :: (Enum a, Bounded a) => [a]
+allValues :: (Bounded a, Enum a) => [a]
 allValues = enumFrom minBound
 
 

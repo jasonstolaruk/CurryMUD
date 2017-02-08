@@ -30,6 +30,7 @@ module Mud.Cmds.Msgs.Advice ( adviceAAnnounceNoArgs
                             , adviceAPossessExcessArgs
                             , adviceAPossessNoArgs
                             , adviceAPrintNoArgs
+                            , adviceASacrificeNoArgs
                             , adviceASearchNoArgs
                             , adviceASecurityNoArgs
                             , adviceASetInvalid
@@ -312,6 +313,10 @@ adviceAPossessNoArgs = "Please specify the ID of the NPC you wish to possess."
 adviceAPrintNoArgs :: Text
 adviceAPrintNoArgs = prd $ "Please provide a message to print to the server console, as in " <>
                            colorWith quoteColor (prefixAdminCmd "print" <> " is anybody home?")
+
+
+adviceASacrificeNoArgs :: Text
+adviceASacrificeNoArgs = "Please specify the names of one or more PCs whose sacrifice bonuses you would like to see."
 
 
 adviceASearchNoArgs :: Text

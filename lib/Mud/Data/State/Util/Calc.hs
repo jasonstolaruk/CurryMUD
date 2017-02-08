@@ -29,6 +29,7 @@ module Mud.Data.State.Util.Calc ( calcBarLen
                                 , calcLvlUpPp
                                 , calcLvlUpSkillPts
                                 , calcMaxEnc
+                                , calcMaxGodNameLen
                                 , calcMaxMouthfuls
                                 , calcMaxRaceLen
                                 , calcModifierDx
@@ -298,6 +299,20 @@ calcMaxEnc i ms = calcEffSt i ms ^ 2 `percent` 13
 -----
 
 
+calcMaxGodNameLen :: HasCallStack => Int
+calcMaxGodNameLen = calcMaxHelper (allValues :: [GodName])
+
+
+-----
+
+
+calcMaxHelper :: (HasCallStack, Show a) => [a] -> Int
+calcMaxHelper = maximum . map (T.length . showText)
+
+
+-----
+
+
 calcMaxMouthfuls :: HasCallStack => Obj -> Mouthfuls
 calcMaxMouthfuls = views objVol (`divideRound` mouthfulVol)
 
@@ -306,7 +321,7 @@ calcMaxMouthfuls = views objVol (`divideRound` mouthfulVol)
 
 
 calcMaxRaceLen :: HasCallStack => Int
-calcMaxRaceLen = maximum . map (T.length . showText) $ (allValues :: [Race])
+calcMaxRaceLen = calcMaxHelper (allValues :: [Race])
 
 
 -----

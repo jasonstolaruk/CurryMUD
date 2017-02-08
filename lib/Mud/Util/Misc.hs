@@ -267,9 +267,8 @@ isZero = (()#) . Sum
 
 
 listToMaybe :: (Show a) => [a] -> Maybe a
-listToMaybe []  = Nothing
-listToMaybe [a] = Just a
-listToMaybe xs  = patternMatchFail "Mud.Util.Misc" "listToMaybe" xs
+listToMaybe []    = Nothing
+listToMaybe (a:_) = Just a
 
 
 middle :: (a -> b -> a) -> b -> a -> b -> a

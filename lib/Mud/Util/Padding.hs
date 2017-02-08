@@ -25,9 +25,8 @@ bracketPad = quoteWithAndPad ("[", "]")
 
 
 pad :: Int -> Text -> Text
-pad x t@(T.length . dropANSI -> l)
-  | l >= x    = t
-  | otherwise = t <> T.replicate (x - l) " "
+pad x t@(T.length . dropANSI -> l) | l >= x    = t
+                                   | otherwise = t <> T.replicate (x - l) " "
 
 
 padBracketedEntName :: Text -> Text
@@ -44,6 +43,10 @@ padCmdName = pad cmdNamePadding
 
 padColorName :: Text -> Text
 padColorName = pad colorNamePadding
+
+
+padGodName :: Text -> Text
+padGodName = pad godNamePadding
 
 
 padHelpTopic :: Text -> Text
