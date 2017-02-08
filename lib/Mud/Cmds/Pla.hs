@@ -2960,10 +2960,10 @@ sacrifice p@(NoArgs i mq cols) = getState >>= \ms -> case (findHolySymbolGodName
     sorry msg = wrapSend mq cols msg >> sendDfltPrompt mq i
 sacrifice (OneArgLower i mq cols _) = getState >>= \ms -> case findCorpseIdInMobRm i ms of
   Nothing -> sorry sorrySacrificeCorpse
-  Just _  -> undefined
+  Just _  -> undefined -- TODO
   where
     sorry msg = wrapSend mq cols msg >> sendDfltPrompt mq i
-sacrifice (Lower _ _ _ [_, _]) = undefined
+sacrifice (Lower _ _ _ [_, _]) = undefined -- TODO
 sacrifice p = advise p ["sacrifice"] adviceSacrificeExcessArgs
 
 
@@ -3003,7 +3003,9 @@ sacrificeHelper (ActionParams i mq cols _) ci gn = getState >>= \ms ->
                    in logPla "sacrificeHelper logHelper" i msg
     next = do liftIO . threadDelay $ 3 * 10 ^ 6
               modifyStateSeq $ \ms ->
-                  let helper f            = (sacrificesTblHelper ms, [ destroy . pure $ ci, f, sendDfltPrompt mq i ])
+                  let helper f = (sacrificesTblHelper ms, fs)
+                        where
+                          fs = [ destroy . pure $ ci, f, sacrificeBonus i gn, sendDfltPrompt mq i ]
                       sacrificesTblHelper = pcTbl.ind i.sacrificesTbl %~ f
                         where
                           f tbl = maybe (M.insert gn 1 tbl) (flip (M.insert gn) tbl . succ) . M.lookup gn $ tbl
@@ -3018,6 +3020,10 @@ sacrificeHelper (ActionParams i mq cols _) ci gn = getState >>= \ms ->
                                        | otherwise        -> unit
                       Nothing    -> unit
                     else (ms, [])
+
+
+sacrificeBonus :: Id -> GodName -> MudStack ()
+sacrificeBonus _ _ = unit
 
 
 -----
