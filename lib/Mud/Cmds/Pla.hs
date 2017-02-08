@@ -1051,7 +1051,7 @@ disconnectHelper i (target, as) idNamesTbl ms =
 -----
 
 
-drink :: HasCallStack => ActionFun -- TODO: Can't "drop" while drinking.
+drink :: HasCallStack => ActionFun
 drink p@(NoArgs' i mq                   ) = advise p ["drink"] adviceDrinkNoArgs   >> sendDfltPrompt mq i
 drink p@(OneArg  i mq _    _            ) = advise p ["drink"] adviceDrinkNoVessel >> sendDfltPrompt mq i
 drink   (Lower   i mq cols [amt, target]) = getState >>= \ms -> let (isDrink, isEat) = isDrinkingEating i ms in
@@ -1143,7 +1143,7 @@ dropAction p@(LowerNub' i as) = genericAction p helper "drop"
                     (ms', toSelfs, bs, logMsgs) = helperGetDropEitherCoins i d Drop i ri tuple ecs
                 in if ()!# invCoins
                   then (ms', (dropBlanks $ [ sorryInEq, sorryInRm ] ++ toSelfs, bs, logMsgs))
-                  else (ms,  (pure dudeYourHandsAreEmpty,                       [],  []    ))
+                  else genericSorry ms dudeYourHandsAreEmpty
 dropAction p = patternMatchFail "dropAction" . showText $ p
 
 
@@ -1250,7 +1250,7 @@ emptyAction   (LowerNub i mq cols as) = helper |&| modifyState >=> \(toSelfs, bs
             toSelfs'                     = dropBlanks $ [ sorryInEq, sorryInRm, ecs |!| sorryEmptyCoins ] ++ toSelfs
         in if ()!# invCoins
           then (ms', (toSelfs',                   bs, logSings))
-          else (ms,  (pure dudeYourHandsAreEmpty, [], []      ))
+          else genericSorry ms dudeYourHandsAreEmpty
     helperEmptyEitherInv d a = \case
       Left  msg -> a & _2 <>~ pure msg
       Right is  -> foldl' f a is
@@ -1448,7 +1448,7 @@ getAction p@(Lower i mq cols as) = case reverse as of (_:"from":_:_) -> wrapSend
             ri                     = getRmId i ms
             invCoins               = first (i `delete`) . getVisibleInvCoins ri $ ms
         in case ((()!#) *** (()!#)) (invCoins, lookupHooks i ms "get") of
-          (False, False) -> (ms, (pure sorryGetEmptyRmNoHooks, [], [], []))
+          (False, False) -> genericSorry ms sorryGetEmptyRmNoHooks
           -----
           (True,  False) -> let (ms', (toSelfs, bs, logMsgs)) = invCoinsHelper ms inRms d ri invCoins
                             in (ms', (sorrys ++ toSelfs, bs, logMsgs, []))
