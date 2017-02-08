@@ -53,6 +53,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryDrinkRmNoHooks
                            , sorryDrinkRmWithHooks
                            , sorryDrinkType
+                           , sorryDropDrinking
                            , sorryDropInEq
                            , sorryDropInRm
                            , sorryEmoteExcessTargets
@@ -696,6 +697,10 @@ sorryDrinkType s = prd $ can't "drink from " <> aOrAn s
 
 
 -----
+
+
+sorryDropDrinking :: Text
+sorryDropDrinking = can't "drop an item while drinking."
 
 
 sorryDropInEq :: Text

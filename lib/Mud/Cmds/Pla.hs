@@ -1141,9 +1141,9 @@ dropAction p@(LowerNub' i as) = genericAction p helper "drop"
                     (eiss, ecs)                 = uncurry (resolveMobInvCoins i ms inInvs) invCoins
                     tuple                       = foldl' (helperDropEitherInv i d i ri) (ms, [], [], []) eiss
                     (ms', toSelfs, bs, logMsgs) = helperGetDropEitherCoins i d Drop i ri tuple ecs
-                in if ()!# invCoins
-                  then (ms', (dropBlanks $ [ sorryInEq, sorryInRm ] ++ toSelfs, bs, logMsgs))
-                  else genericSorry ms dudeYourHandsAreEmpty
+                in if | isDrinking i ms -> genericSorry ms sorryDropDrinking
+                      | ()!# invCoins   -> (ms', (dropBlanks $ [ sorryInEq, sorryInRm ] ++ toSelfs, bs, logMsgs))
+                      | otherwise       -> genericSorry ms dudeYourHandsAreEmpty
 dropAction p = patternMatchFail "dropAction" . showText $ p
 
 
@@ -1448,7 +1448,7 @@ getAction p@(Lower i mq cols as) = case reverse as of (_:"from":_:_) -> wrapSend
             ri                     = getRmId i ms
             invCoins               = first (i `delete`) . getVisibleInvCoins ri $ ms
         in case ((()!#) *** (()!#)) (invCoins, lookupHooks i ms "get") of
-          (False, False) -> genericSorry ms sorryGetEmptyRmNoHooks
+          (False, False) -> (ms, (pure sorryGetEmptyRmNoHooks, [], [], []))
           -----
           (True,  False) -> let (ms', (toSelfs, bs, logMsgs)) = invCoinsHelper ms inRms d ri invCoins
                             in (ms', (sorrys ++ toSelfs, bs, logMsgs, []))
@@ -2950,7 +2950,6 @@ roomDesc p = patternMatchFail "roomDesc" . showText $ p
 -----
 
 
--- TODO: Can't sacrifice while eating, drinking, attacking...
 sacrifice :: HasCallStack => ActionFun
 sacrifice p@(NoArgs i mq cols) = getState >>= \ms -> case (findHolySymbolGodName `fanUncurry` findCorpseIdInMobRm) (i, ms) of
   (Just gn, Just ci) -> sacrificeHelper p ci gn
@@ -2996,7 +2995,7 @@ sacrificeHelper (ActionParams i mq cols _) ci gn = getState >>= \ms ->
                     wrapSend mq cols toSelf
                     bcastIfNotIncogNl i . foldr f [] $ i `delete` desigIds d
                     onNewThread next
-      (act:_) -> wrapSend mq cols . sorrySacrificeActing $ act
+      (act:_) -> sequence_ [ wrapSend mq cols . sorrySacrificeActing $ act, sendDfltPrompt mq i ]
   where
     logHelper ms = let msg = T.concat [ "sacrificing a ", descSingId ci ms, t, " using a holy symbol of ", pp gn, "." ]
                        t   = case getCorpse ci ms of PCCorpse s _ _ _ -> spcL . parensQuote $ s
