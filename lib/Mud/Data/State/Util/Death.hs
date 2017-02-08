@@ -43,7 +43,6 @@ import Data.Function (on)
 import Data.List (delete, sortBy)
 import Data.Monoid ((<>))
 import Data.Text (Text)
-import Database.SQLite.Simple (fromOnly)
 import GHC.Stack (HasCallStack)
 import Prelude hiding (pi)
 import qualified Data.IntMap.Strict as IM (delete, filterWithKey, keys, mapWithKey)
@@ -222,8 +221,7 @@ spiritize i = do
                , sequence_ (fs :: Funs)
                , runSpiritTimerAsync i secs ] )
   where
-    procOnlySings xs = map snd . sortBy (flip compare `on` fst) $ [ (length g, s)
-                                                                  | g@(s:_) <- sortGroup . map fromOnly $ xs ]
+    procOnlySings xs = map snd . sortBy (flip compare `on` fst) $ [ (length g, s) | g@(s:_) <- sortGroup xs ]
 
 
 pcTblHelper :: HasCallStack => Id -> Sing -> Inv -> [Sing] -> PCTbl -> PCTbl

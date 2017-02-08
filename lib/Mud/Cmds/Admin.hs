@@ -75,7 +75,7 @@ import Data.Monoid ((<>), Any(..), Sum(..), getSum)
 import Data.Text (Text)
 import Data.Time (TimeZone, UTCTime, defaultTimeLocale, diffUTCTime, formatTime, getCurrentTime, getCurrentTimeZone, getZonedTime, utcToLocalTime, utcToZonedTime)
 import Data.Tuple (swap)
-import Database.SQLite.Simple (FromRow, fromOnly)
+import Database.SQLite.Simple (FromRow)
 import GHC.Conc (ThreadStatus(..), threadStatus)
 import GHC.Exts (sortWith)
 import GHC.Stack (HasCallStack)
@@ -1196,7 +1196,7 @@ adminLink   (LowerNub i mq cols as) = getState >>= \ms -> do
                     header          = (targetSing <> "'s two-way links:" :)
                     mkReport     ss | pairs <- sortBy (flip compare `on` fst) . mkCountSings $ ss
                                     = map (uncurry (flip (|<>|)) . first (parensQuote . showText)) pairs
-                    mkCountSings ss = [ (length &&& head) g | g <- sortGroup . map fromOnly $ ss ]
+                    mkCountSings    = map (length &&& head) . sortGroup
             in findFullNameForAbbrev target (mkAdminPlaIdSingList ms) |&| maybe notFound found
     pager i mq Nothing . noneOnNull . intercalateDivider cols =<< forM as (helper . capitalize . T.toLower)
 adminLink p = patternMatchFail "adminLink" . showText $ p

@@ -2960,10 +2960,10 @@ sacrifice p@(NoArgs i mq cols) = getState >>= \ms -> case (findHolySymbolGodName
     sorry msg = wrapSend mq cols msg >> sendDfltPrompt mq i
 sacrifice (OneArgLower i mq cols _) = getState >>= \ms -> case findCorpseIdInMobRm i ms of
   Nothing -> sorry sorrySacrificeCorpse
-  Just _  -> undefined -- TODO
+  Just _  -> undefined -- TODO: "sacrifice" with one arg.
   where
     sorry msg = wrapSend mq cols msg >> sendDfltPrompt mq i
-sacrifice (Lower _ _ _ [_, _]) = undefined -- TODO
+sacrifice (Lower _ _ _ [_, _]) = undefined -- TODO: "sacrifice" with two args.
 sacrifice p = advise p ["sacrifice"] adviceSacrificeExcessArgs
 
 
@@ -3023,7 +3023,10 @@ sacrificeHelper (ActionParams i mq cols _) ci gn = getState >>= \ms ->
 
 
 sacrificeBonus :: Id -> GodName -> MudStack ()
-sacrificeBonus _ _ = unit
+sacrificeBonus i gn = getState >>= \ms -> do -- TODO
+    let s = getSing i ms
+    ts <- liftIO mkTimestamp
+    withDbExHandler_ "sac_bonus" . insertDbTblSacBonus . SacBonusRec ts s . showText $ gn
 
 
 -----

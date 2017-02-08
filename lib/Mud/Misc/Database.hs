@@ -30,6 +30,7 @@ module Mud.Misc.Database ( AdminChanRec(..)
                          , insertDbTblDiscover
                          , insertDbTblProf
                          , insertDbTblQuestion
+                         , insertDbTblSacBonus
                          , insertDbTblSec
                          , insertDbTblTele
                          , insertDbTblTelnetChars
@@ -40,6 +41,7 @@ module Mud.Misc.Database ( AdminChanRec(..)
                          , insertWords
                          , lookupPropName
                          , lookupPW
+                         , lookupSacBonuses
                          , lookupTeleNames
                          , lookupWord
                          , ProfRec(..)
@@ -50,6 +52,7 @@ module Mud.Misc.Database ( AdminChanRec(..)
                          , purgeDbTblQuestion
                          , purgeDbTblTele
                          , QuestionRec(..)
+                         , SacBonusRec(..)
                          , SecRec(..)
                          , TeleRec(..)
                          , TelnetCharsRec(..)
@@ -126,6 +129,9 @@ data PropNameRec    = PropNameRec    { dbWord        :: Text }
 data QuestionRec    = QuestionRec    { dbTimestamp   :: Text
                                      , dbName        :: Text
                                      , dbMsg         :: Text }
+data SacBonusRec    = SacBonusRec    { dbTimestamp   :: Text
+                                     , dbName        :: Text
+                                     , dbGodName     :: Text }
 data SecRec         = SecRec         { dbName        :: Text
                                      , dbQ           :: Text
                                      , dbA           :: Text } deriving Eq
@@ -201,6 +207,10 @@ instance FromRow PropNameRec where
 
 instance FromRow QuestionRec where
   fromRow = QuestionRec <$ (field :: RowParser Int) <*> field <*> field <*> field
+
+
+instance FromRow SacBonusRec where
+  fromRow = SacBonusRec <$ (field :: RowParser Int) <*> field <*> field <*> field
 
 
 instance FromRow SecRec where
@@ -286,6 +296,10 @@ instance ToRow QuestionRec where
   toRow (QuestionRec a b c) = toRow (a, b, c)
 
 
+instance ToRow SacBonusRec where
+  toRow (SacBonusRec a b c) = toRow (a, b, c)
+
+
 instance ToRow SecRec where
   toRow (SecRec a b c) = toRow (a, b, c)
 
@@ -352,6 +366,7 @@ createDbTbls = onDbFile $ \conn -> do
          , "create table if not exists profanity    (id integer primary key, timestamp text, host text, prof text)"
          , "create table if not exists prop_names   (id integer primary key, prop_name text)"
          , "create table if not exists question     (id integer primary key, timestamp text, name text, msg text)"
+         , "create table if not exists sac_bonus    (id integer primary key, timestamp text, name text, god_name text)"
          , "create table if not exists sec          (id integer primary key, name text, question text, answer text)"
          , "create table if not exists tele         (id integer primary key, timestamp text, from_name text, to_name text, \
            \msg text)"
@@ -428,6 +443,10 @@ insertDbTblProf = insertDbTblHelper "insert into profanity (timestamp, host, pro
 
 insertDbTblQuestion :: QuestionRec -> IO ()
 insertDbTblQuestion = insertDbTblHelper "insert into question (timestamp, name, msg) values (?, ?, ?)"
+
+
+insertDbTblSacBonus :: SacBonusRec -> IO ()
+insertDbTblSacBonus = insertDbTblHelper "insert into sac_bonus (timestamp, name, god_name) values (?, ?, ?)"
 
 
 insertDbTblSec :: SecRec -> IO ()
@@ -532,9 +551,15 @@ lookupPW s = onDbFile $ \conn -> f <$> query conn (Query "select pw from unpw wh
     f _     = Nothing
 
 
-lookupTeleNames :: Sing -> IO [Only Text]
-lookupTeleNames s = onDbFile $ \conn -> query conn (Query t) (dup4 s)
+lookupSacBonuses :: Sing -> IO [(Text, Text)] -- TODO: Can we return a better type?
+lookupSacBonuses s = onDbFile $ \conn -> query conn (Query "select timestamp, god_name from sac_bonus where name = ?") (Only s)
+
+
+lookupTeleNames :: Sing -> IO [Text]
+lookupTeleNames s = onDbFile $ \conn -> f <$> query conn (Query t) (dup4 s)
   where
+    f :: [Only Text] -> [Text]
+    f = map fromOnly
     t = "select case\
         \  when from_name != ? then from_name\
         \  when to_name   != ? then to_name\
