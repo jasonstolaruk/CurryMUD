@@ -2,45 +2,18 @@
 
 The following is a list of the gods worshipped by the inhabitants of Rumia. More information can be found about these gods in-game.
 
-Aule
-God of: wealth
-Personification: male dwarf
-
-Caila
-God of: the harvest
-Personification: female human
-
-Celoriel
-God of: psionics
-Personification: female lagomorph
-
-Dellio
-God of: debauchery
-Personification: female felinoid
-
-Drogo
-God of: the moon and magic
-Personification: male hobbit
-
-Iminye
-God of: art and engineering
-Personification: female elf
-
-Itulvatar
-God of: light
-Personification: none
-
-Murgorhd
-God of: darkness
-Personification: none
-
-Rha'yk
-God of: war
-Personification: male vulpenoid
-
-Rumialys
-God of: nature
-Personification: male nymph
+Name      | God of              | Personification
+----------+---------------------+----------------
+Aule      | wealth              | male dwarf
+Caila     | the harvest         | female human
+Celoriel  | psionics            | female lagomorph
+Dellio    | debauchery          | female felinoid
+Drogo     | the moon and magic  | male hobbit
+Iminye    | art and engineering | female elf
+Itulvatar | light               | none
+Murgorhd  | darkness            | none
+Rha'yk    | war                 | male vulpenoid
+Rumialys  | nature              | male nymph
 
 \uSEE ALSO\n
 calendar, sacrifice
