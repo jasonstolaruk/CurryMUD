@@ -3025,8 +3025,8 @@ sacrificeHelper (ActionParams i mq cols _) ci gn = getState >>= \ms ->
 sacrificeBonus :: Id -> GodName -> MudStack ()
 sacrificeBonus i gn = getState >>= \ms -> do -- TODO
     let s = getSing i ms
-    ts <- liftIO mkTimestamp
-    withDbExHandler_ "sac_bonus" . insertDbTblSacBonus . SacBonusRec ts s . showText $ gn
+    now <- liftIO getCurrentTime
+    withDbExHandler_ "sac_bonus" . insertDbTblSacBonus . SacBonusRec (showText now) s . showText $ gn
 
 
 -----

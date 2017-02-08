@@ -342,7 +342,7 @@ adminAs   (WithTarget i mq cols target rest) = getState >>= \ms ->
       [(targetId, "")] | targetId < 0                -> sorry sorryWtf
                        | not . hasType targetId $ ms -> sorryParse
                        | otherwise                   -> as targetId
-      _ -> sorryParse
+      _                                              -> sorryParse
 adminAs p = patternMatchFail "adminAs" . showText $ p
 
 

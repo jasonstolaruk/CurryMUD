@@ -1,4 +1,4 @@
-{-# LANGUAGE DuplicateRecordFields, OverloadedStrings, RecordWildCards, TupleSections #-}
+{-# LANGUAGE DuplicateRecordFields, OverloadedStrings, RecordWildCards, ScopedTypeVariables, TupleSections #-}
 
 module Mud.Misc.Database ( AdminChanRec(..)
                          , AdminMsgRec(..)
@@ -69,11 +69,13 @@ import Mud.Util.Misc
 import Mud.Util.Quoting
 import Mud.Util.Text
 
+import Control.Arrow ((***))
 import Control.Monad (forM_, when)
 import Control.Monad.IO.Class (liftIO)
 import Crypto.BCrypt (fastBcryptHashingPolicy, hashPasswordUsingPolicy)
 import Data.Monoid ((<>))
 import Data.Text (Text)
+import Data.Time (UTCTime)
 import Database.SQLite.Simple (Connection, FromRow, Only(..), Query(..), ToRow, execute, execute_, field, fromRow, query, query_, toRow, withConnection)
 import Database.SQLite.Simple.FromRow (RowParser)
 import qualified Data.ByteString.Char8 as B
@@ -129,7 +131,7 @@ data PropNameRec    = PropNameRec    { dbWord        :: Text }
 data QuestionRec    = QuestionRec    { dbTimestamp   :: Text
                                      , dbName        :: Text
                                      , dbMsg         :: Text }
-data SacBonusRec    = SacBonusRec    { dbTimestamp   :: Text
+data SacBonusRec    = SacBonusRec    { dbUTCTime     :: Text
                                      , dbName        :: Text
                                      , dbGodName     :: Text }
 data SecRec         = SecRec         { dbName        :: Text
@@ -366,7 +368,7 @@ createDbTbls = onDbFile $ \conn -> do
          , "create table if not exists profanity    (id integer primary key, timestamp text, host text, prof text)"
          , "create table if not exists prop_names   (id integer primary key, prop_name text)"
          , "create table if not exists question     (id integer primary key, timestamp text, name text, msg text)"
-         , "create table if not exists sac_bonus    (id integer primary key, timestamp text, name text, god_name text)"
+         , "create table if not exists sac_bonus    (id integer primary key, utc_time text, name text, god_name text)"
          , "create table if not exists sec          (id integer primary key, name text, question text, answer text)"
          , "create table if not exists tele         (id integer primary key, timestamp text, from_name text, to_name text, \
            \msg text)"
@@ -446,7 +448,7 @@ insertDbTblQuestion = insertDbTblHelper "insert into question (timestamp, name, 
 
 
 insertDbTblSacBonus :: SacBonusRec -> IO ()
-insertDbTblSacBonus = insertDbTblHelper "insert into sac_bonus (timestamp, name, god_name) values (?, ?, ?)"
+insertDbTblSacBonus = insertDbTblHelper "insert into sac_bonus (utc_time, name, god_name) values (?, ?, ?)"
 
 
 insertDbTblSec :: SecRec -> IO ()
@@ -551,8 +553,13 @@ lookupPW s = onDbFile $ \conn -> f <$> query conn (Query "select pw from unpw wh
     f _     = Nothing
 
 
-lookupSacBonuses :: Sing -> IO [(Text, Text)] -- TODO: Can we return a better type?
-lookupSacBonuses s = onDbFile $ \conn -> query conn (Query "select timestamp, god_name from sac_bonus where name = ?") (Only s)
+lookupSacBonuses :: Sing -> IO [(UTCTime, GodName)]
+lookupSacBonuses s = onDbFile $ \conn -> f <$> query conn (Query "select utc_time, god_name from sac_bonus where name = ?") (Only s)
+  where
+    f = let helper pair acc = case (reads . T.unpack *** reads . T.unpack) pair of
+              ([(now :: UTCTime, "")], [(gn :: GodName, "")]) -> (now, gn) : acc
+              _                                               -> acc
+        in foldr helper []
 
 
 lookupTeleNames :: Sing -> IO [Text]

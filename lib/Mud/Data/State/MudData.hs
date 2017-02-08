@@ -447,7 +447,7 @@ data GodName = Aule
              | Itulvatar
              | Murgorhd
              | Rha'yk
-             | Rumialys deriving (Bounded, Enum, Eq, Generic, Ord, Show)
+             | Rumialys deriving (Bounded, Enum, Eq, Generic, Ord, Show, Read)
 
 
 -- ==================================================
