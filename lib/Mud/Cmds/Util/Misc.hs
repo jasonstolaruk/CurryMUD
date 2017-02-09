@@ -41,6 +41,7 @@ module Mud.Cmds.Util.Misc ( asterisk
                           , isOutside
                           , isPCBanned
                           , isPunc
+                          , isSacrificing
                           , locateHelper
                           , loggedInOut
                           , loggedInOutColorize
@@ -537,6 +538,10 @@ isEating = isActing Eating
 
 isDrinkingEating :: HasCallStack => Id -> MudState -> (Bool, Bool)
 isDrinkingEating i = (isDrinking `fanUncurry` isEating) . (i, )
+
+
+isSacrificing :: HasCallStack => Id -> MudState -> Bool
+isSacrificing = isActing Sacrificing
 
 
 -----

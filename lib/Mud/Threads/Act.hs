@@ -2,6 +2,7 @@
 {-# LANGUAGE MultiWayIf, OverloadedStrings, RecordWildCards, TupleSections, ViewPatterns #-}
 
 module Mud.Threads.Act ( drinkAct
+                       , sacrificeAct
                        , startAct
                        , stopAct
                        , stopActs
@@ -74,9 +75,10 @@ stopNpcActs = sequence_ [ logNotice "stopNpcActs" "stopping NPC acts.", mapM_ st
 
 
 threadAct :: HasCallStack => Id -> ActType -> Fun -> MudStack ()
-threadAct i actType f = let a = (>> f) . setThreadType $ case actType of Eating    -> EatingThread   i
-                                                                         Drinking  -> DrinkingThread i
-                                                                         Attacking -> undefined -- TODO
+threadAct i actType f = let a = (>> f) . setThreadType $ case actType of Attacking   -> undefined -- TODO
+                                                                         Drinking    -> DrinkingThread    i
+                                                                         Eating      -> EatingThread      i
+                                                                         Sacrificing -> SacrificingThread i
                             b = do logPla "threadAct" i $ pp actType <> " act finished."
                                    tweak $ mobTbl.ind i.actMap.at actType .~ Nothing
                         in handle (threadExHandler (Just i) . pp $ actType) $ a `finally` b
@@ -128,21 +130,28 @@ drinkAct DrinkBundle { .. } = modifyStateSeq f `finally` tweak (mobTbl.ind drink
                                                                                       , " mouthful"
                                                                                       , sOnNon1 x
                                                                                       , t ]
-           | x' == drinkAmt -> (>> bcastHelper False) . ioHelper x' $ "You finish drinking."
-           | otherwise      -> loop x'
-    mkMouthfulTxt x | x <= 8     = showText x
-                    | otherwise  = "many"
-    ioHelper m t    = do logPla "drinkAct loop" drinkerId . T.concat $ [ "drank "
-                                                                       , showText m
-                                                                       , " mouthful"
-                                                                       , sOnNon1 m
-                                                                       , " of "
-                                                                       , renderLiqNoun drinkLiq aOrAn
-                                                                       , " "
-                                                                       , let DistinctLiqId i = drinkLiq^.liqId
-                                                                         in parensQuote . showText $ i
-                                                                       , " from "
-                                                                       , renderVesselSing
-                                                                       , "." ]
+           | x' == drinkAmt   -> (>> bcastHelper False) . ioHelper x' $ "You finish drinking."
+           | otherwise        -> loop x'
+    mkMouthfulTxt x | x <= 8    = showText x
+                    | otherwise = "many"
+    ioHelper m t    = do logPla "drinkAct ioHelper" drinkerId . T.concat $ [ "drank "
+                                                                           , showText m
+                                                                           , " mouthful"
+                                                                           , sOnNon1 m
+                                                                           , " of "
+                                                                           , renderLiqNoun drinkLiq aOrAn
+                                                                           , " "
+                                                                           , let DistinctLiqId i = drinkLiq^.liqId
+                                                                             in parensQuote . showText $ i
+                                                                           , " from "
+                                                                           , renderVesselSing
+                                                                           , "." ]
                          wrapSend drinkerMq drinkerCols t
                          sendDfltPrompt drinkerMq drinkerId
+
+
+-----
+
+
+sacrificeAct :: HasCallStack => MudStack () -- TODO
+sacrificeAct = undefined

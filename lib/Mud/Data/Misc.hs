@@ -236,9 +236,10 @@ instance Pretty ActiveEffect where
 
 
 instance Pretty ActType where
-  pp Attacking = "attacking"
-  pp Drinking  = "drinking"
-  pp Eating    = "eating"
+  pp Attacking   = "attacking"
+  pp Drinking    = "drinking"
+  pp Eating      = "eating"
+  pp Sacrificing = "sacrificing"
 
 
 instance Pretty AlertExecRec where

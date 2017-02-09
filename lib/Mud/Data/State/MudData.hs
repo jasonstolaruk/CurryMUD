@@ -620,7 +620,7 @@ type TempDesc = Maybe Text
 
 data MobSize = SmlMinus -- A rodent.
              | SmlPlus
-             | MedMinus -- A humanoid.
+             | MedMinus -- A biped (humanoid).
              | MedPlus
              | LrgMinus
              | LrgPlus deriving (Eq, Generic, Show)
@@ -635,9 +635,10 @@ data Party = Party { _following :: Maybe Id
 type ActMap = M.Map ActType ActAsync
 
 
-data ActType = Eating
+data ActType = Attacking
              | Drinking
-             | Attacking deriving (Bounded, Enum, Eq, Ord)
+             | Eating
+             | Sacrificing deriving (Bounded, Enum, Eq, Ord)
 
 
 type ActAsync = Async ()
@@ -1118,29 +1119,30 @@ type TeleLinkTbl = M.Map Sing IsTuned
 -- ==================================================
 
 
-data ThreadType = Biodegrader      Id
-                | CorpseDecomposer Id
+data ThreadType = Biodegrader       Id
+                | CorpseDecomposer  Id
                 | DbTblPurger
-                | Digester         Id
-                | DrinkingThread   Id
-                | EatingThread     Id
-                | EffectListener   Id
-                | EffectThread     Id
-                | EffectTimer      Id
+                | Digester          Id
+                | DrinkingThread    Id
+                | EatingThread      Id
+                | EffectListener    Id
+                | EffectThread      Id
+                | EffectTimer       Id
                 | Error
-                | FeelingTimer     Id
-                | InacTimer        Id
+                | FeelingTimer      Id
+                | InacTimer         Id
                 | Listen
                 | Notice
-                | NpcServer        Id
-                | PlaLog           Id
-                | Receive          Id
-                | RegenChild       Id
-                | RegenParent      Id
-                | RmFun            Id
-                | Server           Id
-                | SpiritTimer      Id
-                | Talk             Id
+                | NpcServer         Id
+                | PlaLog            Id
+                | Receive           Id
+                | RegenChild        Id
+                | RegenParent       Id
+                | RmFun             Id
+                | SacrificingThread Id
+                | Server            Id
+                | SpiritTimer       Id
+                | Talk              Id
                 | ThreadTblPurger
                 | TrashDumpPurger
                 | WorldPersister deriving (Eq, Ord, Show)
