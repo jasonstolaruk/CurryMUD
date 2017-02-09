@@ -34,7 +34,6 @@ import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Calc
 import Mud.Data.State.Util.Coins
-import Mud.Data.State.Util.Destroy
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Hierarchy
 import Mud.Data.State.Util.Lang
@@ -100,7 +99,7 @@ import Data.Tuple (swap)
 import GHC.Stack (HasCallStack)
 import Prelude hiding (log, pi)
 import qualified Data.IntMap.Strict as IM (IntMap, (!), keys)
-import qualified Data.Map.Strict as M ((!), elems, filter, foldrWithKey, insert, keys, lookup, map, singleton, size, toList)
+import qualified Data.Map.Strict as M ((!), elems, filter, foldrWithKey, keys, lookup, map, singleton, size, toList)
 import qualified Data.Set as S (filter, toList)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
@@ -2994,39 +2993,13 @@ sacrificeHelper (ActionParams i mq cols _) ci gn = getState >>= \ms ->
       []      -> do logHelper ms
                     wrapSend mq cols toSelf
                     bcastIfNotIncogNl i . foldr f [] $ i `delete` desigIds d
-                    onNewThread next
+                    startAct i Sacrificing . sacrificeAct i mq ci $ gn
       (act:_) -> sequence_ [ wrapSend mq cols . sorrySacrificeActing $ act, sendDfltPrompt mq i ]
   where
     logHelper ms = let msg = T.concat [ "sacrificing a ", descSingId ci ms, t, " using a holy symbol of ", pp gn, "." ]
                        t   = case getCorpse ci ms of PCCorpse s _ _ _ -> spcL . parensQuote $ s
                                                      _                -> ""
                    in logPla "sacrificeHelper logHelper" i msg
-    next = do liftIO . threadDelay $ 3 * 10 ^ 6
-              modifyStateSeq $ \ms ->
-                  let helper f = (sacrificesTblHelper ms, fs)
-                        where
-                          fs = [ destroy . pure $ ci, f, sacrificeBonus i gn, sendDfltPrompt mq i ]
-                      sacrificesTblHelper = pcTbl.ind i.sacrificesTbl %~ f
-                        where
-                          f tbl = maybe (M.insert gn 1 tbl) (flip (M.insert gn) tbl . succ) . M.lookup gn $ tbl
-                      foldHelper    targetId = (mkBcastHelper targetId :)
-                      mkBcastHelper targetId = ( "The " <> mkCorpseAppellation targetId ms ci <> " fades away and disappears."
-                                               , pure targetId )
-                  in if ((&&) <$> uncurry hasType <*> (== CorpseType) . uncurry getType) (ci, ms)
-                    then helper $ case findInvContaining ci ms of
-                      Just invId -> if | getType invId ms == RmType ->
-                                             bcastNl . foldr foldHelper [] . findMobIds ms . getInv invId $ ms
-                                       | isNpcPC invId ms -> bcastNl . pure . mkBcastHelper $ invId
-                                       | otherwise        -> unit
-                      Nothing    -> unit
-                    else (ms, [])
-
-
-sacrificeBonus :: Id -> GodName -> MudStack ()
-sacrificeBonus i gn = getState >>= \ms -> do -- TODO
-    let s = getSing i ms
-    now <- liftIO getCurrentTime
-    withDbExHandler_ "sac_bonus" . insertDbTblSacBonus . SacBonusRec (showText now) s . showText $ gn
 
 
 -----

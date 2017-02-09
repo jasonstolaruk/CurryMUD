@@ -10,13 +10,17 @@ module Mud.Threads.Act ( drinkAct
 
 import Mud.Cmds.Util.Misc
 import Mud.Data.Misc
+import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Calc
+import Mud.Data.State.Util.Destroy
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
+import Mud.Misc.Database
 import Mud.Misc.Misc
 import Mud.Threads.Misc
+import Mud.TopLvlDefs.Misc
 import Mud.Util.List
 import Mud.Util.Misc
 import Mud.Util.Operators
@@ -27,7 +31,7 @@ import qualified Mud.Misc.Logging as L (logNotice, logPla)
 import Control.Concurrent (threadDelay)
 import Control.Exception.Lifted (catch, finally, handle)
 import Control.Lens (at, to, views)
-import Control.Lens.Operators ((&), (.~), (?~), (^.))
+import Control.Lens.Operators ((%~), (&), (.~), (?~), (^.))
 import Control.Monad.IO.Class (liftIO)
 import Data.List (delete)
 import Data.Maybe (isJust)
@@ -35,7 +39,7 @@ import Data.Monoid ((<>))
 import Data.Text (Text)
 import Data.Time (getCurrentTime)
 import GHC.Stack (HasCallStack)
-import qualified Data.Map.Strict as M (elems)
+import qualified Data.Map.Strict as M (elems, insert, lookup)
 import qualified Data.Text as T
 
 
@@ -153,5 +157,31 @@ drinkAct DrinkBundle { .. } = modifyStateSeq f `finally` tweak (mobTbl.ind drink
 -----
 
 
-sacrificeAct :: HasCallStack => MudStack () -- TODO
-sacrificeAct = undefined
+sacrificeAct :: HasCallStack => Id -> MsgQueue -> Id -> GodName -> MudStack ()
+sacrificeAct i mq ci gn = do
+    liftIO . threadDelay $ sacrificeSecs * 10 ^ 6
+    modifyStateSeq $ \ms ->
+        let helper f = (sacrificesTblHelper ms, fs)
+              where
+                fs = [ destroy . pure $ ci, f, sacrificeBonus i gn, sendDfltPrompt mq i ]
+            sacrificesTblHelper = pcTbl.ind i.sacrificesTbl %~ f
+              where
+                f tbl = maybe (M.insert gn 1 tbl) (flip (M.insert gn) tbl . succ) . M.lookup gn $ tbl
+            foldHelper    targetId = (mkBcastHelper targetId :)
+            mkBcastHelper targetId = ( "The " <> mkCorpseAppellation targetId ms ci <> " fades away and disappears."
+                                     , pure targetId )
+        in if ((&&) <$> uncurry hasType <*> (== CorpseType) . uncurry getType) (ci, ms)
+          then helper $ case findInvContaining ci ms of
+            Just invId -> if | getType invId ms == RmType ->
+                                   bcastNl . foldr foldHelper [] . findMobIds ms . getInv invId $ ms
+                             | isNpcPC invId ms -> bcastNl . pure . mkBcastHelper $ invId
+                             | otherwise        -> unit
+            Nothing    -> unit
+          else (ms, [])
+
+
+sacrificeBonus :: Id -> GodName -> MudStack ()
+sacrificeBonus i gn = getState >>= \ms -> do -- TODO
+    let s = getSing i ms
+    now <- liftIO getCurrentTime
+    withDbExHandler_ "sac_bonus" . insertDbTblSacBonus . SacBonusRec (showText now) s . showText $ gn

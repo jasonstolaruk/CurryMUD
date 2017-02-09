@@ -198,6 +198,10 @@ rndmVectorLen :: Int
 rndmVectorLen = 5
 
 
+sacrificeSecs :: Int
+sacrificeSecs = 5
+
+
 stdLinkNames :: [Text]
 stdLinkNames = [ "n", "ne", "e", "se", "s", "sw", "w", "nw", "u", "d" ]
 
