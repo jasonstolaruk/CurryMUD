@@ -1457,7 +1457,9 @@ adminSacrifice   (LowerNub i mq cols as) = getState >>= \ms -> do
                   xs -> mkReport xs) <$> liftIO (lookupSacBonuses targetSing)
                   where
                     header      = (targetSing <> "'s sacrifice bonuses:" :)
-                    mkReport xs = [ uncurry (|<>|) . (showText *** pp) $ pair | pair <- xs ] -- TODO: UTCTime needs better formatting.
+                    mkReport xs = [ uncurry (|<>|) . (format . showText *** pp) $ pair | pair <- xs ]
+                    format t    = case T.words t of [a, T.break (== '.') -> (b, _), _] -> a |<>| b
+                                                    _                                  -> t
             in findFullNameForAbbrev target (mkAdminPlaIdSingList ms) |&| maybe notFound found
     pager i mq Nothing . noneOnNull . intercalateDivider cols =<< forM as (helper . capitalize)
 adminSacrifice p = patternMatchFail "adminSacrifice" . showText $ p
