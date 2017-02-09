@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
 {-# LANGUAGE MultiWayIf, OverloadedStrings, RecordWildCards, TupleSections, ViewPatterns #-}
 
-module Mud.Threads.Act ( drinkAct
+module Mud.Threads.Act ( drinkAct -- TODO: Reconsider what commands can't be used while acting.
                        , sacrificeAct
                        , startAct
                        , stopAct
