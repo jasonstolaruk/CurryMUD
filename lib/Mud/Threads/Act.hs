@@ -108,10 +108,10 @@ drinkAct DrinkBundle { .. } = modifyStateSeq f `finally` tweak (mobTbl.ind drink
         now <- liftIO getCurrentTime
         consume drinkerId . pure . StomachCont (drinkLiq^.liqId.to Left) now $ False
         (ms, newCont) <- case drinkVesselId of
-          Just i -> modifyState $ \ms -> let g (_, m) = let newCont     = m == 1 ? Nothing :? Just (drinkLiq, pred m)
-                                                            ms'         = ms & vesselTbl.ind i.vesselCont .~ newCont
-                                                        in (ms', (ms', Right newCont))
-                                         in maybe (ms, (ms, Left ())) g . getVesselCont i $ ms
+          Just i  -> modifyState $ \ms -> let g (_, m) = let newCont = m == 1 ? Nothing :? Just (drinkLiq, pred m)
+                                                             ms'     = ms & vesselTbl.ind i.vesselCont .~ newCont
+                                                         in (ms', (ms', Right newCont))
+                                          in maybe (ms, (ms, Left ())) g . getVesselCont i $ ms
           Nothing -> (, Left ()) <$> getState
         let (stomAvail, _) = calcStomachAvailSize drinkerId ms
             d              = mkStdDesig drinkerId ms DoCap
@@ -158,7 +158,7 @@ drinkAct DrinkBundle { .. } = modifyStateSeq f `finally` tweak (mobTbl.ind drink
 
 
 sacrificeAct :: HasCallStack => Id -> MsgQueue -> Id -> GodName -> MudStack ()
-sacrificeAct i mq ci gn = do
+sacrificeAct i mq ci gn = handle (die (Just i) (pp Sacrificing)) $ do
     liftIO . threadDelay $ sacrificeSecs * 10 ^ 6
     modifyStateSeq $ \ms ->
         let helper f = (sacrificesTblHelper ms, fs)
