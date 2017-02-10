@@ -37,11 +37,11 @@ import Data.List (delete)
 import Data.Maybe (isJust)
 import Data.Monoid ((<>))
 import Data.Text (Text)
-import Data.Time (getCurrentTime)
+import Data.Time (UTCTime, diffUTCTime, getCurrentTime)
 import GHC.Stack (HasCallStack)
 import qualified Data.Map.Strict as M (elems, insert, lookup)
 import qualified Data.Text as T
-
+import System.Time.Utils (renderSecs)
 
 default (Int)
 
@@ -181,7 +181,25 @@ sacrificeAct i mq ci gn = handle (die (Just i) (pp Sacrificing)) $ do
 
 
 sacrificeBonus :: Id -> GodName -> MudStack ()
-sacrificeBonus i gn = getState >>= \ms -> do -- TODO
-    let s = getSing i ms
+sacrificeBonus i gn = getSing i <$> getState >>= \s -> do
     now <- liftIO getCurrentTime
-    withDbExHandler_ "sac_bonus" . insertDbTblSacBonus . SacBonusRec (showText now) s . showText $ gn
+    let operation = do insertDbTblSacBonus . SacBonusRec (showText now) s . showText $ gn
+                       lookupSacBonuses s
+        next :: [(UTCTime, GodName)] -> MudStack ()
+        next res = case reverse . filter ((== gn) . snd) $ res of
+          []                      -> logNotice "sacrificeBonus" $ "unexpected lack of sacrifice records for " <> s
+          [_]                     -> unit -- The sacrifice made just now is the only sacrifice to that god.
+          matches@(_:(time, _):_) ->
+              let count = length matches -- TODO: Change to 10.
+                  msg   = T.concat [ commaShow count, " sacrifice", sOnNon1 count, " to ", pp gn, "; " ]
+              in if isZero $ count `mod` 2
+                then logHelper $ msg <> "no bonus yet."
+                else let diff@(T.pack . renderSecs -> secs) = round $ now `diffUTCTime` time
+                         mkMsgWithSecs t = msg <> t |<>| parensQuote (secs <> " seconds since the last bonus.")
+                     in if diff > 60 -- TODO: Change to one day.
+                       then logHelper (mkMsgWithSecs "applying bonus") >> applyBonus
+                       else logHelper . mkMsgWithSecs $ "not enough time has passed since the last bonus"
+        applyBonus = unit -- TODO
+    maybeVoid next =<< withDbExHandler "sac_bonus" operation
+  where
+    logHelper = logPla "sacrificeBonus" i
