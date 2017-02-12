@@ -23,7 +23,6 @@ import Control.Monad (forever)
 import Control.Monad.IO.Class (liftIO)
 import Data.Monoid ((<>))
 import Data.Text (Text)
-import Database.SQLite.Simple (Only(..))
 import qualified Data.Text as T
 
 
@@ -40,7 +39,7 @@ logNotice = L.logNotice "Mud.Threads.DbTblPurger"
 -- ==================================================
 
 
-dbTblPurger :: Text -> IO [Only Int] -> IO () -> MudStack ()
+dbTblPurger :: Text -> IO Int -> IO () -> MudStack ()
 dbTblPurger tblName countFun purgeFun = handle (threadExHandler Nothing threadName) $ do
     setThreadType DbTblPurger
     logNotice "dbTblPurger" $ "database table purger started for the " <> dblQuote tblName <> " table."
@@ -49,16 +48,16 @@ dbTblPurger tblName countFun purgeFun = handle (threadExHandler Nothing threadNa
   where
     threadName = "database table purger " <> parensQuote tblName
     helper     = let fn = "dbTblPurger helper" in withDbExHandler fn countFun >>= \case
-        Just [Only count] -> if count > maxDbTblRecs
-                               then do logNotice fn . T.concat $ [ the . dblQuote $ tblName
-                                                                 , " table is being purged of "
-                                                                 , showText noOfDbTblRecsToPurge
-                                                                 , " records." ]
-                                       withDbExHandler_ fn purgeFun
-                               else logNotice fn . T.concat $ [ the . dblQuote $ tblName
-                                                              , " table presently contains "
-                                                              , showText count
-                                                              , " records." ]
+        Just count -> if count > maxDbTblRecs
+          then do logNotice fn . T.concat $ [ the . dblQuote $ tblName
+                                            , " table is being purged of "
+                                            , showText noOfDbTblRecsToPurge
+                                            , " records." ]
+                  withDbExHandler_ fn purgeFun
+          else logNotice fn . T.concat $ [ the . dblQuote $ tblName
+                                         , " table presently contains "
+                                         , showText count
+                                         , " records." ]
         _ -> unit
 
 

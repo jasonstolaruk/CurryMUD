@@ -179,7 +179,6 @@ adminCmds =
     , mkAdminCmd "possess"    adminPossess     False "Temporarily take control of an NPC."
     , mkAdminCmd "print"      adminPrint       True  "Print a message to the server console."
     , mkAdminCmd "profanity"  adminProfanity   True  "Dump the profanity database."
-    , mkAdminCmd "sacrifice"  adminSacrifice   True  "Display sacrifice bonuses for one or more PCs."
     , mkAdminCmd "search"     adminSearch      True  "Search for names and IDs using a regular expression."
     , mkAdminCmd "security"   adminSecurity    True  "Display security Q&A for one or more players."
     , mkAdminCmd "set"        adminSet         True  "Set one or more values for a given ID."
@@ -1441,28 +1440,6 @@ adminProfanity p@ActionParams { plaMsgQueue, plaCols } = dumpCmdHelper "profanit
   where
     f :: HasCallStack => [ProfRec] -> MudStack ()
     f = dumpDbTblHelper plaMsgQueue plaCols
-
-
------
-
-
-adminSacrifice :: HasCallStack => ActionFun
-adminSacrifice p@AdviseNoArgs            = advise p [ prefixAdminCmd "sacrifice" ] adviceASacrificeNoArgs
-adminSacrifice   (LowerNub i mq cols as) = getState >>= \ms -> do
-    logPlaExecArgs (prefixAdminCmd "sacrifice") as i
-    let helper target =
-            let notFound              = unadulterated . sorryPCName $ target
-                found (_, targetSing) = (header . \case
-                  [] -> none
-                  xs -> mkReport xs) <$> liftIO (lookupSacBonuses targetSing)
-                  where
-                    header      = (targetSing <> "'s sacrifice bonuses:" :)
-                    mkReport xs = [ uncurry (|<>|) . (format . showText *** pp) $ pair | pair <- xs ]
-                    format t    = case T.words t of [a, T.break (== '.') -> (b, _), _] -> a |<>| b
-                                                    _                                  -> t
-            in findFullNameForAbbrev target (mkAdminPlaIdSingList ms) |&| maybe notFound found
-    pager i mq Nothing . noneOnNull . intercalateDivider cols =<< forM as (helper . capitalize)
-adminSacrifice p = patternMatchFail "adminSacrifice" . showText $ p
 
 
 -----

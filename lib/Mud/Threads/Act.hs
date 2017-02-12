@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
-{-# LANGUAGE MultiWayIf, OverloadedStrings, RecordWildCards, TupleSections, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, MultiWayIf, OverloadedStrings, RecordWildCards, TupleSections, ViewPatterns #-}
 
 module Mud.Threads.Act ( drinkAct -- TODO: Reconsider what commands can't be used while acting.
                        , sacrificeAct
@@ -32,12 +32,13 @@ import Control.Concurrent (threadDelay)
 import Control.Exception.Lifted (catch, finally, handle)
 import Control.Lens (at, to, views)
 import Control.Lens.Operators ((%~), (&), (.~), (?~), (^.))
+import Control.Monad (join)
 import Control.Monad.IO.Class (liftIO)
 import Data.List (delete)
 import Data.Maybe (isJust)
 import Data.Monoid ((<>))
 import Data.Text (Text)
-import Data.Time (UTCTime, diffUTCTime, getCurrentTime)
+import Data.Time (diffUTCTime, getCurrentTime)
 import GHC.Stack (HasCallStack)
 import qualified Data.Map.Strict as M (elems, insert, lookup)
 import qualified Data.Text as T
@@ -181,25 +182,26 @@ sacrificeAct i mq ci gn = handle (die (Just i) (pp Sacrificing)) $ do
 
 
 sacrificeBonus :: Id -> GodName -> MudStack ()
-sacrificeBonus i gn = getSing i <$> getState >>= \s -> do
+sacrificeBonus i (pp -> gn) = getSing i <$> getState >>= \s -> do
     now <- liftIO getCurrentTime
-    let operation = do insertDbTblSacBonus . SacBonusRec (showText now) s . showText $ gn
-                       lookupSacBonuses s
-        next :: [(UTCTime, GodName)] -> MudStack ()
-        next res = case reverse . filter ((== gn) . snd) $ res of
-          []                      -> logNotice "sacrificeBonus" $ "unexpected lack of sacrifice records for " <> s
-          [_]                     -> unit -- The sacrifice made just now is the only sacrifice to that god.
-          matches@(_:(time, _):_) ->
-              let count = length matches -- TODO: Change to 10.
-                  msg   = T.concat [ commaShow count, " sacrifice", sOnNon1 count, " to ", pp gn, "; " ]
-              in if isZero $ count `mod` 2
-                then logHelper $ msg <> "no bonus yet."
-                else let diff@(T.pack . renderSecs -> secs) = round $ now `diffUTCTime` time
-                         mkMsgWithSecs t = msg <> t |<>| parensQuote (secs <> " seconds since the last bonus.")
-                     in if diff > 60 -- TODO: Change to one day.
-                       then logHelper (mkMsgWithSecs "applying bonus") >> applyBonus
-                       else logHelper . mkMsgWithSecs $ "not enough time has passed since the last bonus"
-        applyBonus = unit -- TODO
-    maybeVoid next =<< withDbExHandler "sac_bonus" operation
+    let operation = do insertDbTblSacrifice . SacrificeRec (showText now) s $ gn
+                       lookupSacrifices s gn
+        next count
+          | count < 2 = logHelper . prd $ "first sacrifice made to " <> gn
+          | otherwise =
+              let msg = T.concat [ commaShow count, " sacrifices to ", gn, "; " ]
+              in if isZero $ count `mod` 2 -- TODO: Change to 10.
+                then join <$> withDbExHandler "sac_bonus" (lookupSacBonusTime s gn) >>= \case
+                  Nothing   -> applyBonus
+                  Just time -> let diff@(T.pack . renderSecs -> secs) = round $ now `diffUTCTime` time
+                               in if diff > 60 -- TODO: Change to one day.
+                                 then applyBonus
+                                 else logHelper . T.concat $ [ msg
+                                                             , "not enough time has passed since the last bonus "
+                                                             , parensQuote $ secs <> " seconsd since last bonus"
+                                                             , "." ]
+                else logHelper $ msg <> "no bonus yet."
+        applyBonus = logHelper "applying bonus." -- TODO
+    maybeVoid next =<< withDbExHandler "sacrifice" operation
   where
     logHelper = logPla "sacrificeBonus" i

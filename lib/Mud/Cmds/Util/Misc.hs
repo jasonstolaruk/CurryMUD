@@ -966,8 +966,8 @@ updateRndmName i targetId = do
 -----
 
 
-withDbExHandler :: (HasCallStack, Monoid a) => Text -> IO a -> MudStack (Maybe a)
-withDbExHandler fn f = (Just <$> dbOperation f) `catch` (emptied . dbExHandler fn)
+withDbExHandler :: HasCallStack => Text -> IO a -> MudStack (Maybe a)
+withDbExHandler fn f = (Just <$> dbOperation f) `catch` (\e -> dbExHandler fn e >> return Nothing)
 
 
 withDbExHandler_ :: HasCallStack => Text -> IO () -> MudStack ()

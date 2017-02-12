@@ -1,4 +1,4 @@
-{-# LANGUAGE DuplicateRecordFields, OverloadedStrings, RecordWildCards, ScopedTypeVariables, TupleSections #-}
+{-# LANGUAGE DuplicateRecordFields, LambdaCase, OverloadedStrings, RecordWildCards, ScopedTypeVariables, TupleSections, ViewPatterns #-}
 
 module Mud.Misc.Database ( AdminChanRec(..)
                          , AdminMsgRec(..)
@@ -31,6 +31,7 @@ module Mud.Misc.Database ( AdminChanRec(..)
                          , insertDbTblProf
                          , insertDbTblQuestion
                          , insertDbTblSacBonus
+                         , insertDbTblSacrifice
                          , insertDbTblSec
                          , insertDbTblTele
                          , insertDbTblTelnetChars
@@ -41,7 +42,8 @@ module Mud.Misc.Database ( AdminChanRec(..)
                          , insertWords
                          , lookupPropName
                          , lookupPW
-                         , lookupSacBonuses
+                         , lookupSacBonusTime
+                         , lookupSacrifices
                          , lookupTeleNames
                          , lookupWord
                          , ProfRec(..)
@@ -53,6 +55,7 @@ module Mud.Misc.Database ( AdminChanRec(..)
                          , purgeDbTblTele
                          , QuestionRec(..)
                          , SacBonusRec(..)
+                         , SacrificeRec(..)
                          , SecRec(..)
                          , TeleRec(..)
                          , TelnetCharsRec(..)
@@ -69,7 +72,6 @@ import Mud.Util.Misc
 import Mud.Util.Quoting
 import Mud.Util.Text
 
-import Control.Arrow ((***))
 import Control.Monad (forM_, when)
 import Control.Monad.IO.Class (liftIO)
 import Crypto.BCrypt (fastBcryptHashingPolicy, hashPasswordUsingPolicy)
@@ -132,6 +134,9 @@ data QuestionRec    = QuestionRec    { dbTimestamp   :: Text
                                      , dbName        :: Text
                                      , dbMsg         :: Text }
 data SacBonusRec    = SacBonusRec    { dbUTCTime     :: Text
+                                     , dbName        :: Text
+                                     , dbGodName     :: Text }
+data SacrificeRec   = SacrificeRec   { dbUTCTime     :: Text
                                      , dbName        :: Text
                                      , dbGodName     :: Text }
 data SecRec         = SecRec         { dbName        :: Text
@@ -213,6 +218,10 @@ instance FromRow QuestionRec where
 
 instance FromRow SacBonusRec where
   fromRow = SacBonusRec <$ (field :: RowParser Int) <*> field <*> field <*> field
+
+
+instance FromRow SacrificeRec where
+  fromRow = SacrificeRec <$ (field :: RowParser Int) <*> field <*> field <*> field
 
 
 instance FromRow SecRec where
@@ -302,6 +311,10 @@ instance ToRow SacBonusRec where
   toRow (SacBonusRec a b c) = toRow (a, b, c)
 
 
+instance ToRow SacrificeRec where
+  toRow (SacrificeRec a b c) = toRow (a, b, c)
+
+
 instance ToRow SecRec where
   toRow (SecRec a b c) = toRow (a, b, c)
 
@@ -344,7 +357,7 @@ onDbFile f = flip withConnection f =<< mkMudFilePath dbFileFun
 createDbTbls :: IO ()
 createDbTbls = onDbFile $ \conn -> do
     forM_ qs $ execute_ conn . Query
-    [Only x] <- query_ conn . Query $ "select count(*) from unpw" :: IO [Only Int]
+    x <- onlyIntsHelper <$> query_ conn (Query "select count(*) from unpw")
     when (isZero x) . execute conn (Query "insert into unpw (id, un, pw) values (2, 'Curry', ?)") . Only =<< hashPW "curry"
     execute conn (Query "insert or ignore into unpw (id, un, pw) values (1, 'Root',  ?)") . Only =<< hashPW "root"
   where
@@ -369,6 +382,7 @@ createDbTbls = onDbFile $ \conn -> do
          , "create table if not exists prop_names   (id integer primary key, prop_name text)"
          , "create table if not exists question     (id integer primary key, timestamp text, name text, msg text)"
          , "create table if not exists sac_bonus    (id integer primary key, utc_time text, name text, god_name text)"
+         , "create table if not exists sacrifice    (id integer primary key, utc_time text, name text, god_name text)"
          , "create table if not exists sec          (id integer primary key, name text, question text, answer text)"
          , "create table if not exists tele         (id integer primary key, timestamp text, from_name text, to_name text, \
            \msg text)"
@@ -377,6 +391,11 @@ createDbTbls = onDbFile $ \conn -> do
          , "create table if not exists typo         (id integer primary key, timestamp text, name text, loc text, desc text)"
          , "create table if not exists unpw         (id integer primary key, un text, pw text)"
          , "create table if not exists words        (id integer primary key, word text)" ]
+
+
+onlyIntsHelper :: [Only Int] -> Int
+onlyIntsHelper []         = 0
+onlyIntsHelper (Only x:_) = x
 
 
 hashPW :: String -> IO Text
@@ -451,6 +470,10 @@ insertDbTblSacBonus :: SacBonusRec -> IO ()
 insertDbTblSacBonus = insertDbTblHelper "insert into sac_bonus (utc_time, name, god_name) values (?, ?, ?)"
 
 
+insertDbTblSacrifice :: SacrificeRec -> IO ()
+insertDbTblSacrifice = insertDbTblHelper "insert into sacrifice (utc_time, name, god_name) values (?, ?, ?)"
+
+
 insertDbTblSec :: SecRec -> IO ()
 insertDbTblSec = insertDbTblHelper "insert into sec (name, question, answer) values (?, ?, ?)"
 
@@ -480,28 +503,30 @@ insertDbTblUnPw rec@UnPwRec { .. } = hashPW (T.unpack dbPw) >>= \pw -> onDbFile 
 -----
 
 
-countDbTblRecsAdminChan :: IO [Only Int]
+countDbTblRecsAdminChan :: IO Int
 countDbTblRecsAdminChan = countHelper "admin_chan"
 
 
-countDbTblRecsAdminMsg :: IO [Only Int]
+
+countDbTblRecsAdminMsg :: IO Int
 countDbTblRecsAdminMsg = countHelper "admin_msg"
 
 
-countDbTblRecsChan :: IO [Only Int]
+countDbTblRecsChan :: IO Int
 countDbTblRecsChan = countHelper "chan"
 
 
-countDbTblRecsQuestion :: IO [Only Int]
+countDbTblRecsQuestion :: IO Int
 countDbTblRecsQuestion = countHelper "question"
 
 
-countDbTblRecsTele :: IO [Only Int]
+countDbTblRecsTele :: IO Int
 countDbTblRecsTele = countHelper "tele"
 
 
-countHelper :: Text -> IO [Only Int]
-countHelper tblName = onDbFile $ \conn -> query_ conn . Query $ "select count(*) from " <> tblName
+countHelper :: Text -> IO Int
+countHelper tblName = let q = Query $ "select count(*) from " <> tblName
+                      in onDbFile $ \conn -> onlyIntsHelper <$> query_ conn q
 
 
 -----
@@ -528,45 +553,44 @@ purgeDbTblTele = purgeHelper "tele"
 
 
 purgeHelper :: Text -> IO ()
-purgeHelper tblName = onDbFile $ \conn -> execute conn q x
+purgeHelper tblName = onDbFile $ \conn -> execute conn q (Only noOfDbTblRecsToPurge)
   where
     q = Query . T.concat $ [ "delete from ", tblName, " where id in (select id from ", tblName, " limit ?)" ]
-    x = Only noOfDbTblRecsToPurge
 
 
 -----
 
 
 lookupPropName :: Text -> IO (Maybe Text)
-lookupPropName t = onDbFile $ \conn -> f <$> query conn (Query "select prop_name from prop_names where prop_name = ?") (Only t)
-  where
-    f :: [Only Text] -> Maybe Text
-    f (x:_) = Just . fromOnly $ x
-    f _     = Nothing
+lookupPropName t = let q = Query "select prop_name from prop_names where prop_name = ?"
+                   in onDbFile $ \conn -> onlyTextsHelper <$> query conn q (Only t)
+
+
+onlyTextsHelper :: [Only Text] -> Maybe Text
+onlyTextsHelper = listToMaybe . map fromOnly
 
 
 lookupPW :: Sing -> IO (Maybe Text)
-lookupPW s = onDbFile $ \conn -> f <$> query conn (Query "select pw from unpw where un = ?") (Only s)
-  where
-    f :: [Only Text] -> Maybe Text
-    f (x:_) = Just . fromOnly $ x
-    f _     = Nothing
+lookupPW s = onDbFile $ \conn -> onlyTextsHelper <$> query conn (Query "select pw from unpw where un = ?") (Only s)
 
 
-lookupSacBonuses :: Sing -> IO [(UTCTime, GodName)]
-lookupSacBonuses s = onDbFile $ \conn -> f <$> query conn (Query "select utc_time, god_name from sac_bonus where name = ?") (Only s)
+lookupSacBonusTime :: Sing -> Text -> IO (Maybe UTCTime) -- When was the last sacrifice bonus given?
+lookupSacBonusTime s gn = let q = Query "select utc_time from sac_bonus where name = ? and god_name = ?"
+                          in onDbFile $ \conn -> f <$> query conn q (s, gn)
   where
-    f = let helper pair acc = case (reads . T.unpack *** reads . T.unpack) pair of
-              ([(now :: UTCTime, "")], [(gn :: GodName, "")]) -> (now, gn) : acc
-              _                                               -> acc
-        in foldr helper []
+    f (reverse -> (Only t:_)) = case reads t :: [(UTCTime, String)] of [(time, "")] -> Just time
+                                                                       _            -> Nothing
+    f _                       = Nothing
+
+
+lookupSacrifices :: Sing -> Text -> IO Int -- How many sacrifices have been made?
+lookupSacrifices s gn = let q = Query "select count(*) from sacrifice where name = ? and god_name = ?"
+                        in onDbFile $ \conn -> onlyIntsHelper <$> query conn q (s, gn)
 
 
 lookupTeleNames :: Sing -> IO [Text]
-lookupTeleNames s = onDbFile $ \conn -> f <$> query conn (Query t) (dup4 s)
+lookupTeleNames s = onDbFile $ \conn -> map fromOnly <$> query conn (Query t) (dup4 s)
   where
-    f :: [Only Text] -> [Text]
-    f = map fromOnly
     t = "select case\
         \  when from_name != ? then from_name\
         \  when to_name   != ? then to_name\
@@ -575,11 +599,7 @@ lookupTeleNames s = onDbFile $ \conn -> f <$> query conn (Query t) (dup4 s)
 
 
 lookupWord :: Text -> IO (Maybe Text)
-lookupWord t = onDbFile $ \conn -> f <$> query conn (Query "select word from words where word = ?") (Only t)
-  where
-    f :: [Only Text] -> Maybe Text
-    f (x:_) = Just . fromOnly $ x
-    f _     = Nothing
+lookupWord t = onDbFile $ \conn -> onlyTextsHelper <$> query conn (Query "select word from words where word = ?") (Only t)
 
 
 -----

@@ -401,16 +401,7 @@ instance Pretty God where
 
 
 instance Pretty GodName where
-  pp Aule      = "Aule"
-  pp Caila     = "Caila"
-  pp Celoriel  = "Celoriel"
-  pp Dellio    = "Dellio"
-  pp Drogo     = "Drogo"
-  pp Iminye    = "Iminye"
-  pp Itulvatar = "Itulvatar"
-  pp Murgorhd  = "Murgorhd"
-  pp Rha'yk    = "Rha'yk"
-  pp Rumialys  = "Rumialys"
+  pp gn = showText gn
 
 
 instance Pretty GodOf where
