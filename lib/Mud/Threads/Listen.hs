@@ -83,7 +83,7 @@ saveUptime up@(T.pack . renderSecs . fromIntegral -> upTxt) =
     checkRecord recUp = case up `compare` recUp of GT -> saveIt >> logRec
                                                    _  -> logIt
     logRec            = logHelper " - it's a new record!"
-    logHelper         = logNotice "saveUptime logHelper" . ("CurryMUD was up for " <>) . (upTxt <>)
+    logHelper         = logNotice "saveUptime" . ("CurryMUD was up for " <>) . (upTxt <>)
 
 
 listen :: HasCallStack => MudStack ()

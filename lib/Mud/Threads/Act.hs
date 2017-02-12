@@ -209,4 +209,14 @@ sacrificeBonus i gn@(pp -> gn') = getSing i <$> getState >>= \s -> do
 applyBonus :: Id -> Sing -> GodName -> UTCTime -> MudStack ()
 applyBonus i s gn now = do
     logPla "applyBonus" i "applying bonus."
+    case gn of Aule      -> unit
+               Caila     -> unit
+               Celoriel  -> unit
+               Dellio    -> unit
+               Drogo     -> unit
+               Iminye    -> unit
+               Itulvatar -> unit
+               Murgorhd  -> unit
+               Rha'yk    -> unit
+               Rumialys  -> unit
     withDbExHandler_ "sac_bonus" . insertDbTblSacBonus . SacBonusRec (showText now) s . pp $ gn
