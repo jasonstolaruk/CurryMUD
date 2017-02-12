@@ -401,7 +401,7 @@ instance Pretty God where
 
 
 instance Pretty GodName where
-  pp gn = showText gn
+  pp = showText
 
 
 instance Pretty GodOf where
