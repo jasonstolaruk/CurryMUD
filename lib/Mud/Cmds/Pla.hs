@@ -1241,8 +1241,8 @@ emptyAction   (LowerNub i mq cols as) = helper |&| modifyState >=> \(toSelfs, bs
             (eiss, ecs)                  = uncurry (resolveMobInvCoins i ms inInvs) invCoins
             (ms', toSelfs, bs, logSings) = foldl' (helperEmptyEitherInv d) (ms, [], [], []) eiss
             toSelfs'                     = dropBlanks $ [ sorryInEq, sorryInRm, ecs |!| sorryEmptyCoins ] ++ toSelfs
-        in if ()!# invCoins
-          then (ms', (toSelfs',                   bs, logSings))
+        in genericCheckActing i ms (Right "empty a vessel") [ Attacking, Drinking, Sacrificing ] $ if ()!# invCoins
+          then (ms', (toSelfs', bs, logSings))
           else genericSorry ms dudeYourHandsAreEmpty
     helperEmptyEitherInv d a = \case
       Left  msg -> a & _2 <>~ pure msg
@@ -1513,8 +1513,9 @@ shuffleGive i ms LastArgIsTargetBindings { .. } =
 
 
 go :: HasCallStack => Text -> ActionFun
-go dir (NoArgs i mq cols) =
-    bool (wrapSend mq cols exhaustedMsg) (tryMove i mq cols dir) =<< ((> 0) . fst . getFps i <$> getState)
+go dir p@(NoArgs i mq cols) = getState >>= \ms ->
+    let f = bool (wrapSend mq cols exhaustedMsg) (tryMove i mq cols dir) . (> 0) . fst . getFps i $ ms
+    in checkActing p ms (Right "move") (pure Sacrificing) f
 go dir p = withoutArgs (go dir) p
 
 
@@ -2190,15 +2191,18 @@ naelyni = sayHelper NymphLang
 
 newChan :: HasCallStack => ActionFun
 newChan p@AdviseNoArgs                     = advise p ["newchannel"] adviceNewChanNoArgs
-newChan   (WithArgs i mq cols (nub -> as)) = helper |&| modifyState >=> \(unzip -> (newChanNames, chanRecs), sorryMsgs) ->
-    let (sorryMsgs', otherMsgs) = (intersperse "" sorryMsgs, mkNewChanMsg newChanNames)
-        msgs | ()# otherMsgs    = sorryMsgs'
-             | otherwise        = otherMsgs ++ (sorryMsgs' |!| "" : sorryMsgs')
-    in do newChanNames |#| logPla "newChan" i . commas
-          multiWrapSend mq cols msgs
-          ts <- liftIO mkTimestamp
-          forM_ chanRecs (\cr -> withDbExHandler_ "newChan" . insertDbTblChan $ (cr { dbTimestamp = ts } :: ChanRec))
+newChan p@(WithArgs i mq cols (nub -> as)) = getState >>= \ms ->
+    checkActing p ms (Right "create a new telepathic channel") (pure Sacrificing) next
   where
+    next = helper |&| modifyState >=> \(unzip -> (newChanNames, chanRecs), sorryMsgs) ->
+        let (sorryMsgs', otherMsgs) = (intersperse "" sorryMsgs, mkNewChanMsg newChanNames)
+            msgs | ()# otherMsgs    = sorryMsgs'
+                 | otherwise        = otherMsgs ++ (sorryMsgs' |!| "" : sorryMsgs')
+        in do newChanNames |#| logPla "newChan" i . commas
+              multiWrapSend mq cols msgs
+              ts <- liftIO mkTimestamp
+              let f cr = withDbExHandler_ "newChan" . insertDbTblChan $ (cr { dbTimestamp = ts } :: ChanRec)
+              mapM_ f chanRecs
     helper ms = let s                              = getSing i ms
                     (ms', newChanNames, sorryMsgs) = foldl' (f s) (ms, [], []) as
                 in (ms', (newChanNames, sorryMsgs))
@@ -2524,33 +2528,34 @@ razzle p = cmdNotFoundAction p
 
 readAction :: HasCallStack => ActionFun
 readAction p@AdviseNoArgs            = advise p ["read"] adviceReadNoArgs
-readAction   (LowerNub i mq cols as) = (,) <$> getState <*> mkRndmVector >>= \(ms, v) ->
+readAction p@(LowerNub i mq cols as) = (,) <$> getState <*> mkRndmVector >>= \(ms, v) ->
     let (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv as
         sorryInEq              = inEqs |!| wrapUnlinesNl cols sorryReadInEq
         sorryInRm              = inRms |!| wrapUnlinesNl cols sorryReadNoHooks
         d                      = mkStdDesig  i ms DoCap
         invCoins               = getInvCoins i ms
-    in case ((()!#) *** (()!#)) (invCoins, lookupHooks i ms "read") of
-      (False, False) -> let sorry = inInvs |!| wrapUnlinesNl cols dudeYourHandsAreEmpty
-                        in send mq . T.concat $ [ sorry, sorryInEq, sorryInRm ]
-      -----
-      (True,  False) -> let sorry = sorryInEq <> sorryInRm
-                        in ioHelper (invCoinsHelper ms inInvs d invCoins & _1 %~ (sorry <>))
-      -----
-      (False, True ) -> let sorry = (inInvs |!| wrapUnlinesNl cols dudeYourHandsAreEmpty) <> sorryInEq
-                            (inRms', (_, toSelfs, bs, logMsgs), fs) = procHooks i ms v "read" inRms
-                            sorry' = sorry <> wrapper (map sorryReadWithHooks inRms')
-                        in ioHelper (sorry' <> wrapper toSelfs, bs, logMsgs) >> sequence_ fs
-      -----
-      (True,  True ) ->
-        let (inRms', (_, hooksToSelfs, hooksBs, hooksLogMsgs), fs) = procHooks i ms v "read" inRms
-            sorry = sorryInEq <> wrapper (map sorryReadWithHooks inRms')
-            (invCoinsToSelf, invCoinsBs, invCoinsLogMsgs) = invCoinsHelper ms inInvs d invCoins
-        in do
-            ioHelper ( T.concat [ sorry, wrapper hooksToSelfs, invCoinsToSelf ]
-                                , hooksBs      ++ invCoinsBs
-                                , hooksLogMsgs ++ invCoinsLogMsgs )
-            sequence_ fs
+        helper                 = case ((()!#) *** (()!#)) (invCoins, lookupHooks i ms "read") of
+          (False, False) -> let sorry = inInvs |!| wrapUnlinesNl cols dudeYourHandsAreEmpty
+                            in send mq . T.concat $ [ sorry, sorryInEq, sorryInRm ]
+          -----
+          (True,  False) -> let sorry = sorryInEq <> sorryInRm
+                            in ioHelper (invCoinsHelper ms inInvs d invCoins & _1 %~ (sorry <>))
+          -----
+          (False, True ) -> let sorry = (inInvs |!| wrapUnlinesNl cols dudeYourHandsAreEmpty) <> sorryInEq
+                                (inRms', (_, toSelfs, bs, logMsgs), fs) = procHooks i ms v "read" inRms
+                                sorry' = sorry <> wrapper (map sorryReadWithHooks inRms')
+                            in ioHelper (sorry' <> wrapper toSelfs, bs, logMsgs) >> sequence_ fs
+          -----
+          (True,  True ) ->
+            let (inRms', (_, hooksToSelfs, hooksBs, hooksLogMsgs), fs) = procHooks i ms v "read" inRms
+                sorry = sorryInEq <> wrapper (map sorryReadWithHooks inRms')
+                (invCoinsToSelf, invCoinsBs, invCoinsLogMsgs) = invCoinsHelper ms inInvs d invCoins
+            in do
+                ioHelper ( T.concat [ sorry, wrapper hooksToSelfs, invCoinsToSelf ]
+                                    , hooksBs      ++ invCoinsBs
+                                    , hooksLogMsgs ++ invCoinsLogMsgs )
+                sequence_ fs
+    in checkActing p ms (Right "read") [ Attacking, Drinking, Sacrificing ] helper
   where
     invCoinsHelper ms args d invCoins =
         let (eiss, ecs) = uncurry (resolveMobInvCoins i ms args) invCoins
@@ -2879,9 +2884,10 @@ remove p@(Lower' i as) = genericAction p helper "remove"
       in case singleArgInvEqRm InInv targetArg of
         (InInv, target) -> shuffleRem i ms srcDesig target False otherArgs srcInvCoins procGecrMisMobInv
         (InEq,  _     ) -> genericSorry ms . sorryConInEq $ Rem
-        (InRm,  target) -> if ()# rmInvCoins
-          then genericSorry ms sorryNoConHere
-          else shuffleRem i ms srcDesig target True otherArgs rmInvCoins procGecrMisRm
+        (InRm,  target) ->
+          let f | ()# rmInvCoins = genericSorry ms sorryNoConHere
+                | otherwise      = shuffleRem i ms srcDesig target True otherArgs rmInvCoins procGecrMisRm
+          in genericCheckActing i ms (Right "remove an item from a container") [ Drinking, Sacrificing ] f
 remove p = patternMatchFail "remove" . showText $ p
 
 
@@ -3980,18 +3986,17 @@ typo p              = bugTypoLogger p TypoLog
 
 unlink :: HasCallStack => ActionFun
 unlink p@AdviseNoArgs            = advise p ["unlink"] adviceUnlinkNoArgs
-unlink   (LowerNub i mq cols as) =
+unlink p@(LowerNub i mq cols as) = getState >>= \ms ->
     let (f, guessWhat) | any hasLocPref as = (stripLocPref, sorryUnlinkIgnore)
                        | otherwise         = (id,           ""               )
         as'                                = map (capitalize . T.toLower . f) as
-    in do
+    in checkActing p ms (Right "sever a telepathic link") (pure Sacrificing) $ do
         tingleLoc <- rndmElem [ "behind your eyes"
                               , "deep in your lower back"
                               , "in your scalp"
                               , "on the back of your neck"
                               , "somewhere between your ears" ]
-        ms        <- getState
-        res       <- helperLinkUnlink ms i mq cols
+        res <- helperLinkUnlink ms i mq cols
         flip maybeVoid res $ \(meLinkedToOthers, othersLinkedToMe, twoWays) ->
             let helper ms' = let (ms'', bs, logMsgs) = foldl' procArg (ms', [], []) as'
                              in (ms'', (bs, logMsgs))
@@ -4002,7 +4007,7 @@ unlink   (LowerNub i mq cols as) =
                     sorry msg = a & _2 <>~ mkBcast i (nlnl msg)
                     procArgHelper
                       | targetId <- getIdForPCSing targetSing ms'
-                      , p        <- getPla i ms'
+                      , myPla    <- getPla i ms'
                       = if not $ hasPp i ms' 5 || isSpiritId targetId ms'
                           then sorry . sorryPp $ "sever your link with " <> targetSing
                           else let srcMsg   = T.concat [ focusingInnateMsg, "you sever your link with ", targetSing, "." ]
@@ -4014,7 +4019,7 @@ unlink   (LowerNub i mq cols as) =
                                                       , teleLinkMstrTbl.ind targetId.at s          .~ Nothing
                                                       , pcTbl .ind i       .linked %~ (targetSing `delete`)
                                                       , pcTbl .ind targetId.linked %~ (s          `delete`)
-                                                      , mobTbl.ind i       .curPp  -~ onTrue (isSpirit p) (const 0) 5 ]
+                                                      , mobTbl.ind i       .curPp  -~ onTrue (isSpirit myPla) (const 0) 5 ]
                                in a & _1 .~  ms''
                                     & _2 <>~ (nlnl srcMsg, pure i) : targetBs
                                     & _3 <>~ pure targetSing
