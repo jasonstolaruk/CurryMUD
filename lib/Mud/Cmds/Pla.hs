@@ -1053,21 +1053,15 @@ disconnectHelper i (target, as) idNamesTbl ms =
 drink :: HasCallStack => ActionFun
 drink p@(NoArgs' i mq                   ) = advise p ["drink"] adviceDrinkNoArgs   >> sendDfltPrompt mq i
 drink p@(OneArg  i mq _    _            ) = advise p ["drink"] adviceDrinkNoVessel >> sendDfltPrompt mq i
-drink   (Lower   i mq cols [amt, target]) = getState >>= \ms -> let (isDrink, isEat) = isDrinkingEating i ms in
-    if isDrink
-      then let Just pair = getNowDrinking i ms
-           in wrapSend mq cols . uncurry sorryDrinkAlready $ pair
-      else if isEat
-        then let Just s = getNowEating i ms
-             in wrapSend mq cols (sorryDrinkEating s) >> sendDfltPrompt mq i
-        else mkRndmVector >>= \v -> helper v |&| modifyState >=> sequence_
+drink p@(Lower   i mq cols [amt, target]) = getState >>= \ms ->
+    let f = mkRndmVector >>= \v -> helper v |&| modifyState >=> sequence_
+    in checkActing p ms (Left Drinking) [ Drinking, Eating, Sacrificing ] f
   where
-    helper v ms
-      | amt `T.isPrefixOf` "all" || amt == T.singleton allChar = next maxBound
-      | otherwise = case reads . T.unpack $ amt :: [(Int, String)] of
-        [(x, "")] | x <= 0    -> sorry sorryDrinkMouthfuls
-                  | otherwise -> next x
-        _                     -> sorry . sorryParseMouthfuls $ amt
+    helper v ms | amt `T.isPrefixOf` "all" || amt == T.singleton allChar = next maxBound
+                | otherwise = case reads . T.unpack $ amt :: [(Int, String)] of
+                  [(x, "")] | x <= 0    -> sorry sorryDrinkMouthfuls
+                            | otherwise -> next x
+                  _                     -> sorry . sorryParseMouthfuls $ amt
       where
         sorry  = (ms, ) . (: pure (sendDfltPrompt mq i)) . wrapSend mq cols
         next x =
@@ -1140,9 +1134,9 @@ dropAction p@(LowerNub' i as) = genericAction p helper "drop"
                     (eiss, ecs)                 = uncurry (resolveMobInvCoins i ms inInvs) invCoins
                     tuple                       = foldl' (helperDropEitherInv i d i ri) (ms, [], [], []) eiss
                     (ms', toSelfs, bs, logMsgs) = helperGetDropEitherCoins i d Drop i ri tuple ecs
-                in if | isDrinking i ms -> genericSorry ms sorryDropDrinking
-                      | ()!# invCoins   -> (ms', (dropBlanks $ [ sorryInEq, sorryInRm ] ++ toSelfs, bs, logMsgs))
-                      | otherwise       -> genericSorry ms dudeYourHandsAreEmpty
+                    f | ()!# invCoins = (ms', (dropBlanks $ [ sorryInEq, sorryInRm ] ++ toSelfs, bs, logMsgs))
+                      | otherwise     = genericSorry ms dudeYourHandsAreEmpty
+                in genericCheckActing i ms (Right "drop an item") [ Drinking, Sacrificing ] f
 dropAction p = patternMatchFail "dropAction" . showText $ p
 
 
@@ -2976,25 +2970,24 @@ findCorpseIdInMobRm i ms = listToMaybe . filter ((== CorpseType) . (`getType` ms
 
 
 sacrificeHelper :: HasCallStack => ActionParams -> Id -> GodName -> MudStack ()
-sacrificeHelper (ActionParams i mq cols _) ci gn = getState >>= \ms ->
-    let toSelf     = T.concat [ "You kneel before the "
-                              , mkCorpseAppellation i ms ci
-                              , ", laying upon it the holy symbol of "
-                              , pp gn
-                              , ". You say a prayer..." ]
-        d          = mkStdDesig i ms DoCap
-        f targetId = ((T.concat [ serialize d
-                                , " kneels before the "
-                                , mkCorpseAppellation targetId ms ci
-                                , " and says a prayer to "
-                                , pp gn
-                                , "." ], pure targetId) :)
-    in case getActs i ms of
-      []      -> do logHelper ms
-                    wrapSend mq cols toSelf
-                    bcastIfNotIncogNl i . foldr f [] $ i `delete` desigIds d
-                    startAct i Sacrificing . sacrificeAct i mq ci $ gn
-      (act:_) -> sequence_ [ wrapSend mq cols . sorrySacrificeActing $ act, sendDfltPrompt mq i ]
+sacrificeHelper p@(ActionParams i mq cols _) ci gn = getState >>= \ms ->
+    let toSelf          = T.concat [ "You kneel before the "
+                                   , mkCorpseAppellation i ms ci
+                                   , ", laying upon it the holy symbol of "
+                                   , pp gn
+                                   , ". You say a prayer..." ]
+        d               = mkStdDesig i ms DoCap
+        helper targetId = ((T.concat [ serialize d
+                                     , " kneels before the "
+                                     , mkCorpseAppellation targetId ms ci
+                                     , " and says a prayer to "
+                                     , pp gn
+                                     , "." ], pure targetId) :)
+    in checkActing p ms (Left Sacrificing) (allValues :: [ActType]) $ do
+        logHelper ms
+        wrapSend1Nl mq cols toSelf
+        bcastIfNotIncogNl i . foldr helper [] $ i `delete` desigIds d
+        startAct i Sacrificing . sacrificeAct i mq ci $ gn
   where
     logHelper ms = let msg = T.concat [ "sacrificing a ", descSingId ci ms, t, " using a holy symbol of ", pp gn, "." ]
                        t   = case getCorpse ci ms of PCCorpse s _ _ _ -> spcL . parensQuote $ s
@@ -3011,20 +3004,20 @@ say = sayHelper CommonLang
 
 sayHelper :: HasCallStack => Lang -> ActionFun
 sayHelper l p@AdviseNoArgs                    = advise p [ mkCmdNameForLang l ] . adviceSayNoArgs $ l
-sayHelper l p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms -> if
-  | isIncognitoId i ms         -> wrapSend mq cols . sorryIncog . mkCmdNameForLang $ l
-  | isDrinking    i ms         -> wrapSend mq cols sorrySayDrinking
-  | T.head a == adverbOpenChar -> case parseAdverb . T.unwords $ args of
-    Left  msg                    -> adviseHelper msg
-    Right (adverb, rest@(T.words -> rs@(head -> r)))
-      | T.head r == sayToChar, T.length r > 1 -> if length rs > 1
-        then sayTo (Just adverb) (T.tail rest) |&| modifyState >=> ioHelper ms
-        else adviseHelper . adviceSayToNoUtterance $ l
-      | otherwise -> ioHelper ms =<< simpleSayHelper ms (Just adverb) rest
-  | T.head a == sayToChar, T.length a > 1 -> if length args > 1
-    then sayTo Nothing (T.tail . T.unwords $ args) |&| modifyState >=> ioHelper ms
-    else adviseHelper . adviceSayToNoUtterance $ l
-  | otherwise -> ioHelper ms =<< simpleSayHelper ms Nothing (T.unwords args)
+sayHelper l p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms ->
+    let f | isIncognitoId i ms         = wrapSend mq cols . sorryIncog . mkCmdNameForLang $ l
+          | T.head a == adverbOpenChar = case parseAdverb . T.unwords $ args of
+            Left  msg                    -> adviseHelper msg
+            Right (adverb, rest@(T.words -> rs@(head -> r)))
+              | T.head r == sayToChar, T.length r > 1 -> if length rs > 1
+                then sayTo (Just adverb) (T.tail rest) |&| modifyState >=> ioHelper ms
+                else adviseHelper . adviceSayToNoUtterance $ l
+              | otherwise -> ioHelper ms =<< simpleSayHelper ms (Just adverb) rest
+          | T.head a == sayToChar, T.length a > 1 = if length args > 1
+            then sayTo Nothing (T.tail . T.unwords $ args) |&| modifyState >=> ioHelper ms
+            else adviseHelper . adviceSayToNoUtterance $ l
+          | otherwise = ioHelper ms =<< simpleSayHelper ms Nothing (T.unwords args)
+    in checkActing p ms (Right "speak") [ Drinking, Sacrificing ] f
   where
     adviseHelper                = advise p [ mkCmdNameForLang l ]
     parseAdverb (T.tail -> msg) = case T.break (== adverbCloseChar) msg of

@@ -1,6 +1,7 @@
 {-# LANGUAGE LambdaCase, MultiWayIf, OverloadedStrings, RecordWildCards, ViewPatterns #-}
 
-module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
+module Mud.Cmds.Msgs.Sorry ( sorryActing
+                           , sorryAdminChanSelf
                            , sorryAdminChanTargetName
                            , sorryAdminName
                            , sorryAdminPasswordAdmin
@@ -41,9 +42,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryConnectIgnore
                            , sorryDestroyType
                            , sorryDisconnectIgnore
-                           , sorryDrinkAlready
                            , sorryDrinkCoins
-                           , sorryDrinkEating
                            , sorryDrinkEmpty
                            , sorryDrinkEmptyRmNoHooks
                            , sorryDrinkEmptyRmWithHooks
@@ -53,7 +52,6 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryDrinkRmNoHooks
                            , sorryDrinkRmWithHooks
                            , sorryDrinkType
-                           , sorryDropDrinking
                            , sorryDropInEq
                            , sorryDropInRm
                            , sorryEmoteExcessTargets
@@ -78,7 +76,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryExpCmdName
                            , sorryExpCmdRequiresTarget
                            , sorryExpCmdTargetType
-                           , sorryFillAlreadyFull
+                           , sorryFillAlready
                            , sorryFillCoins
                            , sorryFillEmptyRmNoHooks
                            , sorryFillEmptyRmWithHooks
@@ -241,12 +239,10 @@ module Mud.Cmds.Msgs.Sorry ( sorryAdminChanSelf
                            , sorryRemEnc
                            , sorryRemExcessCon
                            , sorryRemIgnore
-                           , sorrySacrificeActing
                            , sorrySacrificeCorpse
                            , sorrySacrificeHolySymbol
                            , sorrySacrificeHolySymbolCorpse
                            , sorrySayCoins
-                           , sorrySayDrinking
                            , sorrySayExcessTargets
                            , sorrySayInEq
                            , sorrySayInInv
@@ -342,6 +338,17 @@ patternMatchFail = U.patternMatchFail "Mud.Cmds.Msgs.Sorry"
 
 
 -- ==================================================
+
+
+sorryActing :: Text -> ActType -> Text
+sorryActing t act = prd . can't $ t <> " while " <> pp act
+
+
+can't :: Text -> Text
+can't = ("You can't " <>)
+
+
+-----
 
 
 sorryIgnoreLocPref :: Text -> Text
@@ -456,10 +463,6 @@ sorryAsAdmin = can'tTarget "an admin" <> withAs
 
 can'tTarget :: Text -> Text
 can'tTarget = can't . ("target " <>)
-
-
-can't :: Text -> Text
-can't = ("You can't " <>)
 
 
 withAs :: Text
@@ -633,27 +636,8 @@ sorryDisconnectIgnore = sorryIgnoreLocPrefPlur "The names of the people you woul
 -----
 
 
-sorryDrinkAlready :: Liq -> Sing -> Text
-sorryDrinkAlready l s = T.concat [ "You are already drinking "
-                                 , renderLiqNoun l aOrAn
-                                 , " from "
-                                 , aOrAn s
-                                 , ". Please wait until you finish, or type "
-                                 , colorWith quoteColor "stop drinking"
-                                 , " to stop." ]
-
-
 sorryDrinkCoins :: Text
 sorryDrinkCoins = can't "drink from a coin."
-
-
-sorryDrinkEating :: Sing -> Text
-sorryDrinkEating s = T.concat [ "You are presently eating "
-                              , aOrAnOnLower s
-                              , ". Please wait until you finish, or type "
-                              , colorWith quoteColor "stop eating"
-                              , " to stop." ]
-
 
 
 sorryDrinkEmpty :: Sing -> Text
@@ -697,10 +681,6 @@ sorryDrinkType s = prd $ can't "drink from " <> aOrAn s
 
 
 -----
-
-
-sorryDropDrinking :: Text
-sorryDropDrinking = can't "drop an item while drinking."
 
 
 sorryDropInEq :: Text
@@ -846,8 +826,8 @@ sorryExpCmdTargetType = but "expressive commands can only target people."
 -----
 
 
-sorryFillAlreadyFull :: Sing -> Text
-sorryFillAlreadyFull s = "The " <> s <> " is already full."
+sorryFillAlready :: Sing -> Text
+sorryFillAlready s = "The " <> s <> " is already full."
 
 
 sorryFillCoins :: Text
@@ -1662,10 +1642,6 @@ sorryRemIgnore = sorryIgnoreLocPrefPlur "The names of the items to be removed fr
 -----
 
 
-sorrySacrificeActing :: ActType -> Text
-sorrySacrificeActing act = prd . can't $ "sacrifice a corpse while " <> pp act
-
-
 sorrySacrificeCorpse :: Text
 sorrySacrificeCorpse = "There isn't a corpse in your current room for your to sacrifice."
 
@@ -1684,10 +1660,6 @@ sorrySacrificeHolySymbolCorpse = "To sacrifice a corpse, you must have a holy sy
 
 sorrySayCoins :: Text
 sorrySayCoins = "You're talking to coins now?"
-
-
-sorrySayDrinking :: Text
-sorrySayDrinking = can't "speak while drinking."
 
 
 sorrySayExcessTargets :: Text

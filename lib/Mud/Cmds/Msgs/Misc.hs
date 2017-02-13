@@ -85,7 +85,7 @@ effortsBlockedMsg = "Your efforts are blocked; "
 
 
 egressMsg :: Text -> Text
-egressMsg n = n <> " slowly dissolves into nothingness and goes to sleep."
+egressMsg n = n <> " slowly dissolves into nothingness."
 
 
 enterDescMsg :: Text

@@ -525,7 +525,7 @@ isAttacking = isActing Attacking
 
 
 isActing :: HasCallStack => ActType -> Id -> MudState -> Bool
-isActing actType i = M.member actType . getActMap i
+isActing act i = M.member act . getActMap i
 
 
 isDrinking :: HasCallStack => Id -> MudState -> Bool

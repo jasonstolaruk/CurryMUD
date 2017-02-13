@@ -8,6 +8,7 @@ module Mud.Cmds.Util.Pla ( adminTagTxt
                          , alertMsgHelper
                          , armSubToSlot
                          , bugTypoLogger
+                         , checkActing
                          , checkMutuallyTuned
                          , clothToSlot
                          , descSlotForId
@@ -17,6 +18,7 @@ module Mud.Cmds.Util.Pla ( adminTagTxt
                          , findAvailSlot
                          , genericAction
                          , genericActionWithHooks
+                         , genericCheckActing
                          , genericSorry
                          , genericSorryWithHooks
                          , getActs
@@ -130,7 +132,7 @@ import Data.Monoid ((<>), Sum(..))
 import Data.Text (Text)
 import GHC.Stack (HasCallStack)
 import qualified Data.IntMap.Strict as IM (keys)
-import qualified Data.Map.Strict as M ((!), keys, notMember, toList)
+import qualified Data.Map.Strict as M ((!), keys, member, notMember, toList)
 import qualified Data.Text as T
 import qualified Data.Vector.Unboxed as V (Vector)
 
@@ -223,6 +225,31 @@ bugTypoLogger (Msg' i mq msg) wl = getState >>= \ms ->
                                              , bcastOtherAdmins i $ s <> " has logged a typo: " <> pp t ]
         send mq . nlnl $ "Thank you."
 bugTypoLogger p _ = patternMatchFail "bugTypoLogger" . showText $ p
+
+
+-----
+
+
+checkActing :: ActionParams -> MudState -> Either ActType Text -> [ActType] -> Fun -> MudStack ()
+checkActing (ActionParams i mq cols _) ms attempting ngActs f =
+    maybe f (wrapSend mq cols) . checkActingHelper i ms attempting $ ngActs
+
+
+checkActingHelper :: Id -> MudState -> Either ActType Text -> [ActType] -> Maybe Text
+checkActingHelper i ms attempting ngActs = case filter (`M.member` getActMap i ms) ngActs of
+  []                -> Nothing
+  matches@(match:_) ->
+      let f attemptingAct | attemptingAct `elem` matches = prd $ "You're already " <> pp attemptingAct
+                          | otherwise = let t = case attemptingAct of Attacking   -> "attack"
+                                                                      Drinking    -> "drink"
+                                                                      Eating      -> "eat"
+                                                                      Sacrificing -> "sacrifice a corpse"
+                                        in sorryActing t match
+      in Just . either f (`sorryActing` match) $ attempting
+
+
+genericCheckActing :: Id -> MudState -> Either ActType Text -> [ActType] -> GenericRes -> GenericRes
+genericCheckActing i ms attempting ngActs a = maybe a (genericSorry ms) . checkActingHelper i ms attempting $ ngActs
 
 
 -----
@@ -520,7 +547,7 @@ helperFillEitherInv i srcDesig targetId (eis:eiss) a@(ms, _, _, _) = case getVes
                          & _4 <>~ mkXferEmptyMsg
           Just (vl, vm)
             | vl 🍰 targetLiq    -> sorry' . uncurry sorryFillLiqTypes $ (targetId, vi) & both %~ flip getBothGramNos ms'
-            | vm >= vmm          -> sorry' . sorryFillAlreadyFull $ vs
+            | vm >= vmm          -> sorry' . sorryFillAlready $ vs
             | vAvail <- vmm - vm -> if | vAvail <  targetMouths ->
                                            a' & _1.vesselTbl.ind targetId.vesselCont ?~ (targetLiq, targetMouths - vAvail)
                                               & _1.vesselTbl.ind vi      .vesselCont ?~ (targetLiq, vmm)

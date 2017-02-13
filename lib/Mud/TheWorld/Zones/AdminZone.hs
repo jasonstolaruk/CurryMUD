@@ -160,7 +160,7 @@ helperFillWaterRmEitherInv i srcDesig (eis:eiss) a = next $ case eis of
                               | vmm > cans -> partialMsgHelper (a' & _1.vesselTbl.ind vi.vesselCont ?~ (waterLiq, cans))
                               | otherwise  -> fillUp
           Just (vl, vm) | vl 🍧 waterLiq -> sorry' . sorryFillWaterLiqTypes . getSing vi $ ms'
-                        | vm >= vmm -> sorry' . sorryFillAlreadyFull $ vs
+                        | vm >= vmm -> sorry' . sorryFillAlready $ vs
                         | vAvail <- vmm - vm
                         , cans   <- calcCanCarryMouthfuls vAvail
                         -> if | cans < 1      -> a' & _2 <>~ sorryEnc

@@ -17,8 +17,10 @@ import Mud.Data.State.Util.Destroy
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
+import Mud.Data.State.Util.Random
 import Mud.Misc.Database
 import Mud.Misc.Misc
+import Mud.Threads.Effect
 import Mud.Threads.Misc
 import Mud.TopLvlDefs.Misc
 import Mud.Util.List
@@ -209,14 +211,17 @@ sacrificeBonus i gn@(pp -> gn') = getSing i <$> getState >>= \s -> do
 applyBonus :: Id -> Sing -> GodName -> UTCTime -> MudStack ()
 applyBonus i s gn now = do
     logPla "applyBonus" i "applying bonus."
-    case gn of Aule      -> unit
-               Caila     -> unit
-               Celoriel  -> unit
-               Dellio    -> unit
-               Drogo     -> unit
-               Iminye    -> unit
-               Itulvatar -> unit
-               Murgorhd  -> unit
-               Rha'yk    -> unit
-               Rumialys  -> unit
     withDbExHandler_ "sac_bonus" . insertDbTblSacBonus . SacBonusRec (showText now) s . pp $ gn
+    case gn of Aule      -> flip effectHelper (15, 15) =<< rndmElem (allValues :: [Attrib]) -- TODO: Same as below...
+               Caila     -> flip effectHelper (15, 15) =<< rndmElem (allValues :: [Attrib])
+               Celoriel  -> effectHelper Ps (5, 15)
+               Dellio    -> effectHelper Dx (5, 15)
+               Drogo     -> effectHelper Ma (5, 15)
+               Iminye    -> effectHelper Dx (3, 8) >> effectHelper Ht (3, 8)
+               Itulvatar -> flip effectHelper (10, 15) =<< rndmElem [ St, Dx, Ht ]
+               Murgorhd  -> unit
+               Rha'yk    -> effectHelper St (5, 15)
+               Rumialys  -> effectHelper Ht (5, 15)
+  where
+    effectHelper attrib range =
+        startEffect i . Effect (MobEffectAttrib attrib) (Just . RangeVal $ range) sacrificeBonusSecs $ Nothing

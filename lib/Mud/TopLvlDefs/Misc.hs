@@ -198,6 +198,10 @@ rndmVectorLen :: Int
 rndmVectorLen = 5
 
 
+sacrificeBonusSecs :: Int
+sacrificeBonusSecs = 3 {- hrs -} * 60 {- mins -} * 60 {- secs -} -- three hrs
+
+
 sacrificeSecs :: Int
 sacrificeSecs = 5
 
