@@ -3519,7 +3519,7 @@ smell p@(OneArgLower i mq cols a) = getState >>= \ms ->
                                          | otherwise                      -> smellEq ms d eqMap target
                          (InRm,  target) | ()# rmInvCoins, ()# maybeHooks -> sorry sorrySmellEmptyRmNoHooks
                                          | otherwise                      -> smellRm ms d rmInvCoins maybeHooks target
-    in checkActing p ms (Right "smell an item") [ Attacking, Drinking, Eating, Sacrificing ] f
+    in checkActing p ms (Right "smell an item") [ Drinking, Eating, Sacrificing ] f
   where
     sorry msg                     = wrapSend mq cols msg >> sendDfltPrompt mq i
     smellInv ms d invCoins target =
@@ -3782,16 +3782,18 @@ stopAttacking _ _ = undefined -- TODO
 
 taste :: HasCallStack => ActionFun
 taste p@AdviseNoArgs              = advise p ["taste"] adviceTasteNoArgs
-taste   (OneArgLower i mq cols a) = getState >>= \ms ->
+taste p@(OneArgLower i mq cols a) = getState >>= \ms ->
     let (invCoins, eqMap) = (getInvCoins `fanUncurry` getEqMap) (i, ms)
         d                 = mkStdDesig  i ms DoCap
-    in if uncurry (&&) . ((()#) *** (()#)) $ (invCoins, eqMap)
-      then sorry sorryTasteNothingToTaste
-      else case singleArgInvEqRm InInv a of (InInv, target) | ()# invCoins -> sorry dudeYourHandsAreEmpty
-                                                            | otherwise    -> tasteInv ms d invCoins target
-                                            (InEq,  target) | ()# eqMap    -> sorry dudeYou'reNaked
-                                                            | otherwise    -> tasteEq  ms d eqMap    target
-                                            (InRm,  _     )                -> sorry sorryTasteInRm
+        f                 = if uncurry (&&) . ((()#) *** (()#)) $ (invCoins, eqMap)
+                              then sorry sorryTasteNothingToTaste
+                              else case singleArgInvEqRm InInv a of
+                                (InInv, target) | ()# invCoins -> sorry dudeYourHandsAreEmpty
+                                                | otherwise    -> tasteInv ms d invCoins target
+                                (InEq,  target) | ()# eqMap    -> sorry dudeYou'reNaked
+                                                | otherwise    -> tasteEq  ms d eqMap    target
+                                (InRm,  _     )                -> sorry sorryTasteInRm
+    in checkActing p ms (Right "taste an item") [ Drinking, Eating, Sacrificing ] f
   where
     sorry msg                     = wrapSend mq cols msg >> sendDfltPrompt mq i
     tasteInv ms d invCoins target =
