@@ -231,7 +231,7 @@ bugTypoLogger p _ = patternMatchFail "bugTypoLogger" . showText $ p
 
 
 checkActing :: ActionParams -> MudState -> Either ActType Text -> [ActType] -> Fun -> MudStack ()
-checkActing (ActionParams i mq cols _) ms attempting ngActs f = -- TODO: Reconsider what commands can't be used while acting.
+checkActing (ActionParams i mq cols _) ms attempting ngActs f =
     maybe f (wrapSend mq cols) . checkActingHelper i ms attempting $ ngActs
 
 

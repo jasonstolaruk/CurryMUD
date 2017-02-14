@@ -176,7 +176,10 @@ sacrificeAct i mq ci gn = handle (die (Just i) (pp Sacrificing)) $ do
         in if ((&&) <$> uncurry hasType <*> (== CorpseType) . uncurry getType) (ci, ms)
           then helper $ case findInvContaining ci ms of
             Just invId -> if | getType invId ms == RmType ->
-                                   bcastNl . foldr foldHelper [] . findMobIds ms . getInv invId $ ms
+                                   let mobIds = findMobIds ms . getInv invId $ ms
+                                   in bcastNl $ if ((&&) <$> (`isIncognitoId` ms) <*> (`elem` mobIds)) i
+                                     then pure . mkBcastHelper $ i
+                                     else foldr foldHelper [] mobIds
                              | isNpcPC invId ms -> bcastNl . pure . mkBcastHelper $ invId
                              | otherwise        -> unit
             Nothing    -> unit
