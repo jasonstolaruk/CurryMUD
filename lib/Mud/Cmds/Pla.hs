@@ -1382,7 +1382,8 @@ felinoidean = sayHelper FelinoidLang
 fill :: HasCallStack => RmActionFun
 fill p@AdviseNoArgs  = advise p [] adviceFillNoArgs
 fill p@AdviseOneArg  = advise p [] adviceFillNoSource
-fill p@(Lower' i as) = genericActionWithHooks p helper "fill"
+fill p@(Lower' i as) = getState >>= \ms ->
+    checkActing p ms (Right "fill a vessel") [ Attacking, Drinking, Sacrificing ] . genericActionWithHooks p helper $ "fill"
   where
     helper v ms =
         let b@LastArgIsTargetBindings { .. } = mkLastArgIsTargetBindings i ms as
@@ -1435,8 +1436,10 @@ fillHelper i ms LastArgIsTargetBindings { .. } targetId =
 
 getAction :: HasCallStack => ActionFun
 getAction p@AdviseNoArgs         = advise p ["get"] adviceGetNoArgs
-getAction p@(Lower i mq cols as) = case reverse as of (_:"from":_:_) -> wrapSend mq cols hintGet
-                                                      _              -> genericActionWithHooks p helper "get"
+getAction p@(Lower i mq cols as) = getState >>= \ms -> case reverse as of
+  (_:"from":_:_) -> wrapSend mq cols hintGet
+  _              -> let f = genericActionWithHooks p helper "get"
+                    in checkActing p ms (Right "pick up an item") [ Drinking, Sacrificing ] f
   where
     helper v ms =
         let (inInvs, inEqs, inRms) = sortArgsInvEqRm InRm . nub $ as
@@ -1479,7 +1482,8 @@ give p@(Lower' i as) = genericAction p helper "give"
   where
     helper ms =
         let b@LastArgIsTargetBindings { targetArg } = mkLastArgIsTargetBindings i ms as
-            f                                       = case singleArgInvEqRm InRm targetArg of
+            f    = genericCheckActing i ms (Right "give an item to a person") [ Drinking, Sacrificing ] next
+            next = case singleArgInvEqRm InRm targetArg of
               (InInv, _     ) -> genericSorry ms sorryGiveToInv
               (InEq,  _     ) -> genericSorry ms sorryGiveToEq
               (InRm,  target) -> shuffleGive i ms b { targetArg = target }
@@ -1755,12 +1759,13 @@ intro (NoArgs i mq cols) = getState >>= \ms -> let intros = getIntroduced i ms i
        in logPlaOut "intro" i (pure introsTxt) >> wrapSend mq cols introsTxt
   else let introsTxt = commas intros in do logPla "intro" i $ "known names: " <> introsTxt
                                            multiWrapSend mq cols [ "You know the following names:", introsTxt ]
-intro (LowerNub i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
-  then wrapSend mq cols . sorryIncog $ "intro"
-  else helper |&| modifyState >=> \(map fromClassifiedBcast . sort -> bs, logMsgs, intro'dIds) -> do
-    logMsgs |#| logPla "intro" i . slashes
-    bcast bs
-    mapM_ (awardExp 50 (getSing i ms <> " introduced")) intro'dIds
+intro p@(LowerNub i mq cols as) = getState >>= \ms ->
+    checkActing p ms (Right "introduce yourself") [ Attacking, Drinking, Sacrificing ] $ if isIncognitoId i ms
+      then wrapSend mq cols . sorryIncog $ "intro"
+      else helper |&| modifyState >=> \(map fromClassifiedBcast . sort -> bs, logMsgs, intro'dIds) -> do
+        logMsgs |#| logPla "intro" i . slashes
+        bcast bs
+        mapM_ (awardExp 50 (getSing i ms <> " introduced")) intro'dIds
   where
     helper ms =
         let (inInvs, inEqs, inRms) = sortArgsInvEqRm InRm as
