@@ -1055,7 +1055,7 @@ adminHolySymbol   (WithArgs i mq cols [ numTxt, godNameTxt ]) = case reads . T.u
                           in second (++ [ logPla "adminHolySymbol found" i msg
                                         , wrapSend mq cols . capitalize $ msg ]) . helper n $ (ms, [])
                     notFound    = sorry . sorryHolySymbolGodName $ godNameTxt
-                    allGodNames = allValues :: [GodName]
+                    allGodNames = allValues
                 in findFullNameForAbbrev (capitalize . T.toLower $ godNameTxt) (map pp allGodNames) |&| maybe notFound found
   _ -> sorryAmt
   where

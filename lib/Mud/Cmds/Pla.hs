@@ -3003,11 +3003,10 @@ sacrificeHelper p@(ActionParams i mq cols _) ci gn = getState >>= \ms ->
                                      , " and says a prayer to "
                                      , pp gn
                                      , "." ], pure targetId) :)
-    in checkActing p ms (Left Sacrificing) (allValues :: [ActType]) $ do
-        logHelper ms
-        wrapSend1Nl mq cols toSelf
-        bcastIfNotIncogNl i . foldr helper [] $ i `delete` desigIds d
-        startAct i Sacrificing . sacrificeAct i mq ci $ gn
+    in checkActing p ms (Left Sacrificing) allValues $ do logHelper ms
+                                                          wrapSend1Nl mq cols toSelf
+                                                          bcastIfNotIncogNl i . foldr helper [] $ i `delete` desigIds d
+                                                          startAct i Sacrificing . sacrificeAct i mq ci $ gn
   where
     logHelper ms = let msg = T.concat [ "sacrificing a ", descSingId ci ms, t, " using a holy symbol of ", pp gn, "." ]
                        t   = case getCorpse ci ms of PCCorpse s _ _ _ -> spcL . parensQuote $ s
@@ -4065,7 +4064,7 @@ unready p@(LowerNub' i as) = genericAction p helper "unready"
             (gecrs, miss, rcs)     = resolveEntCoinNames i ms inEqs is mempty
             eiss                   = zipWith (curry procGecrMisMobEq) gecrs miss
             (et, it, toSelfs, bs, logMsgs) = foldl' (helperUnready i ms d) (ms^.eqTbl, ms^.invTbl, [], [], []) eiss
-        in if ()!# is
+        in genericCheckActing i ms (Right "unready an item") [ Drinking, Sacrificing ] $ if ()!# is
           then (ms & eqTbl .~ et & invTbl .~ it, ( dropBlanks $ [ sorryInInv, sorryInRm, sorryCoins ] ++ toSelfs
                                                  , bs
                                                  , logMsgs ))
@@ -4192,9 +4191,10 @@ vulpenoidean = sayHelper VulpenoidLang
 whisper :: HasCallStack => ActionFun
 whisper p@AdviseNoArgs                                      = advise p ["whisper"] adviceWhisperNoArgs
 whisper p@AdviseOneArg                                      = advise p ["whisper"] adviceWhisperNoMsg
-whisper   (WithArgs i mq cols (target:(T.unwords -> rest))) = getState >>= \ms -> if isIncognitoId i ms
-  then wrapSend mq cols . sorryIncog $ "whisper"
-  else helper |&| modifyState >=> ioHelper ms
+whisper p@(WithArgs i mq cols (target:(T.unwords -> rest))) = getState >>= \ms ->
+    checkActing p ms (Right "whisper") allValues $ if isIncognitoId i ms
+      then wrapSend mq cols . sorryIncog $ "whisper"
+      else helper |&| modifyState >=> ioHelper ms
   where
     helper ms = let d        = mkStdDesig i ms DoCap
                     invCoins = first (i `delete`) . getMobRmVisibleInvCoins i $ ms
@@ -4230,7 +4230,7 @@ whisper   (WithArgs i mq cols (target:(T.unwords -> rest))) = getState >>= \ms -
                                          logMsg |#| alertMsgHelper i "whisper"
                                          multiWrapSend mq cols toSelfs
                                          bcastIfNotIncogNl i bs
-    ioHelper _  triple              = patternMatchFail "whisper ioHelper" . showText $ triple
+    ioHelper _ triple               = patternMatchFail "whisper ioHelper" . showText $ triple
 whisper p = patternMatchFail "whisper" . showText $ p
 
 

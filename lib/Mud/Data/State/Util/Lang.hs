@@ -12,7 +12,7 @@ import Data.Monoid ((<>))
 
 
 langsNoCommon :: [Lang]
-langsNoCommon = CommonLang `delete` (allValues :: [Lang])
+langsNoCommon = CommonLang `delete` allValues
 
 
 mkInLangTxtForLang :: Lang -> CmdName

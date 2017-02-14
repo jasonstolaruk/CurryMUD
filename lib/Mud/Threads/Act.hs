@@ -215,8 +215,8 @@ applyBonus :: Id -> Sing -> GodName -> UTCTime -> MudStack ()
 applyBonus i s gn now = do
     logPla "applyBonus" i "applying bonus."
     withDbExHandler_ "sac_bonus" . insertDbTblSacBonus . SacBonusRec (showText now) s . pp $ gn
-    case gn of Aule      -> flip effectHelper (15, 15) =<< rndmElem (allValues :: [Attrib]) -- TODO: Same as below...
-               Caila     -> flip effectHelper (15, 15) =<< rndmElem (allValues :: [Attrib])
+    case gn of Aule      -> flip effectHelper (15, 15) =<< rndmElem allValues -- TODO: Same as below...
+               Caila     -> flip effectHelper (15, 15) =<< rndmElem allValues
                Celoriel  -> effectHelper Ps (5, 15)
                Dellio    -> effectHelper Dx (5, 15)
                Drogo     -> effectHelper Ma (5, 15)
