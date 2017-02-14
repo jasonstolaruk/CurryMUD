@@ -3504,21 +3504,22 @@ smell (NoArgs i mq cols) = getState >>= \ms ->
       where
         f t = let t' = spcL . parensQuote $ t in (<> t')
     helper ms (f, g) = foldr (\i' acc -> maybe acc (: acc) . mkMaybeCorpseSmellMsg i ms i' $ g) [] . uncurry f $ (i, ms)
-smell (OneArgLower i mq cols a) = getState >>= \ms ->
+smell p@(OneArgLower i mq cols a) = getState >>= \ms ->
     let invCoins   = getInvCoins i ms
         eqMap      = getEqMap    i ms
         rmInvCoins = first (i `delete`) . getMobRmVisibleInvCoins i $ ms
         maybeHooks = lookupHooks i ms "smell"
         d          = mkStdDesig  i ms DoCap
-    in if and [ ()# invCoins, ()# eqMap, ()# rmInvCoins, ()# maybeHooks ]
-      then sorry sorrySmellNothingToSmell
-      else case singleArgInvEqRm InInv a of
-        (InInv, target) | ()# invCoins                   -> sorry dudeYourHandsAreEmpty
-                        | otherwise                      -> smellInv ms d invCoins target
-        (InEq,  target) | ()# eqMap                      -> sorry dudeYou'reNaked
-                        | otherwise                      -> smellEq ms d eqMap target
-        (InRm,  target) | ()# rmInvCoins, ()# maybeHooks -> sorry sorrySmellEmptyRmNoHooks
-                        | otherwise                      -> smellRm ms d rmInvCoins maybeHooks target
+        f          = if and [ ()# invCoins, ()# eqMap, ()# rmInvCoins, ()# maybeHooks ]
+                       then sorry sorrySmellNothingToSmell
+                       else case singleArgInvEqRm InInv a of
+                         (InInv, target) | ()# invCoins                   -> sorry dudeYourHandsAreEmpty
+                                         | otherwise                      -> smellInv ms d invCoins target
+                         (InEq,  target) | ()# eqMap                      -> sorry dudeYou'reNaked
+                                         | otherwise                      -> smellEq ms d eqMap target
+                         (InRm,  target) | ()# rmInvCoins, ()# maybeHooks -> sorry sorrySmellEmptyRmNoHooks
+                                         | otherwise                      -> smellRm ms d rmInvCoins maybeHooks target
+    in checkActing p ms (Right "smell an item") [ Attacking, Drinking, Eating, Sacrificing ] f
   where
     sorry msg                     = wrapSend mq cols msg >> sendDfltPrompt mq i
     smellInv ms d invCoins target =
@@ -3737,8 +3738,8 @@ mkStopTuples :: HasCallStack => ActionParams -> MudState -> [(Text, ActType, Boo
 mkStopTuples p@ActionParams { myId } ms = map (\(a, b, c) -> (pp a, a, uncurry b (myId, ms), uncurry c (p, ms))) xs
   where
     xs = [ (Sacrificing, isSacrificing, stopSacrificing)
-         , (Eating,      isEating,      stopEating     )
          , (Drinking,    isDrinking,    stopDrinking   )
+         , (Eating,      isEating,      stopEating     )
          , (Attacking,   isAttacking,   stopAttacking  ) ]
 
 
