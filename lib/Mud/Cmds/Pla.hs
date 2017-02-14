@@ -813,32 +813,34 @@ cmdNotFoundAction ActionParams { .. } = sendCmdNotFound myId plaMsgQueue plaCols
 connect :: HasCallStack => ActionFun
 connect p@AdviseNoArgs         = advise p ["connect"] adviceConnectNoArgs
 connect p@AdviseOneArg         = advise p ["connect"] adviceConnectNoChan
-connect   (Lower i mq cols as) = getState >>= \ms -> let getIds = map (`getIdForPCSing` ms) in
-    if isIncognitoId i ms
-      then wrapSend mq cols . sorryIncog $ "connect"
-      else connectHelper i (mkLastArgWithNubbedOthers as) |&| modifyState >=> \(ms', pair) -> case pair of
-        ([Left msg], Nothing) -> bcastNl . mkBcast i $ msg
-        (res,        Just ci)
-          | (sorryMsgs, targetSings) <- partitionEithers res
-          , sorryBs   <- [ (msg, pure i) | msg <- sorryMsgs ]
-          , targetIds <- getIds targetSings
-          , c         <- getChan ci ms'
-          , cn        <- c^.chanName
-          , otherIds  <- let f = (\\ (i : targetIds)) . filter (`isAwake` ms') . getIds . M.keys . M.filter id
-                         in views chanConnTbl f c
-          , toTargets <- (T.concat [ getSing i ms', " has connected you to the ", dblQuote cn, " channel." ], targetIds)
-          , toSelf    <- (focusingInnateMsg <>) $ case targetSings of
-            [one] -> T.concat [ "you connect ", one, " to the ", dblQuote cn, " channel." ]
-            _     -> T.concat [ "you connect the following people to the "
-                              , dblQuote cn
-                              , " channel: "
-                              , commas targetSings
-                              , "." ]
-          -> do logPla "connect" i $ "connected to " <> dblQuote cn <> ": " <> commas targetSings
-                toOthers <- mkToOthers ms' otherIds targetIds cn
-                bcastNl $ toTargets : toOthers ++ (()!# targetSings |?| mkBcast i toSelf) ++ sorryBs
-                connectBlink targetIds ms'
-        xs -> patternMatchFail "connect" . showText $ xs
+connect p@(Lower i mq cols as) = getState >>= \ms ->
+    let getIds = map (`getIdForPCSing` ms)
+        next   = if isIncognitoId i ms
+          then wrapSend mq cols . sorryIncog $ "connect"
+          else connectHelper i (mkLastArgWithNubbedOthers as) |&| modifyState >=> \(ms', pair) -> case pair of
+            ([Left msg], Nothing) -> bcastNl . mkBcast i $ msg
+            (res,        Just ci)
+              | (sorryMsgs, targetSings) <- partitionEithers res
+              , sorryBs   <- [ (msg, pure i) | msg <- sorryMsgs ]
+              , targetIds <- getIds targetSings
+              , c         <- getChan ci ms'
+              , cn        <- c^.chanName
+              , otherIds  <- let f = (\\ (i : targetIds)) . filter (`isAwake` ms') . getIds . M.keys . M.filter id
+                             in views chanConnTbl f c
+              , toTargets <- (T.concat [ getSing i ms', " has connected you to the ", dblQuote cn, " channel." ], targetIds)
+              , toSelf    <- (focusingInnateMsg <>) $ case targetSings of
+                [one] -> T.concat [ "you connect ", one, " to the ", dblQuote cn, " channel." ]
+                _     -> T.concat [ "you connect the following people to the "
+                                  , dblQuote cn
+                                  , " channel: "
+                                  , commas targetSings
+                                  , "." ]
+              -> do logPla "connect" i $ "connected to " <> dblQuote cn <> ": " <> commas targetSings
+                    toOthers <- mkToOthers ms' otherIds targetIds cn
+                    bcastNl $ toTargets : toOthers ++ (()!# targetSings |?| mkBcast i toSelf) ++ sorryBs
+                    connectBlink targetIds ms'
+            xs -> patternMatchFail "connect" . showText $ xs
+    in checkActing p ms (Right "connect a person to a telepathic channel") (pure Sacrificing) next
   where
     mkToOthers ms otherIds targetIds cn = do
         namesForMe      <- mapM (getRelativePCName ms . (, i)) otherIds
@@ -972,34 +974,36 @@ interpConfirmDesc _ _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNo p
 disconnect :: HasCallStack => ActionFun
 disconnect p@AdviseNoArgs         = advise p ["disconnect"] adviceDisconnectNoArgs
 disconnect p@AdviseOneArg         = advise p ["disconnect"] adviceDisconnectNoChan
-disconnect   (Lower i mq cols as) = getState >>= \ms -> let getIds = map (`getIdForPCSing` ms) in
-    if isIncognitoId i ms
-      then wrapSend mq cols . sorryIncog $ "disconnect"
-      else getAllChanIdNames i ms >>= \idNamesTbl ->
-          disconnectHelper i (mkLastArgWithNubbedOthers as) idNamesTbl |&| modifyState >=> \case
-            ([Left msg], Nothing) -> bcastNl . mkBcast i $ msg
-            (res,        Just ci)
-              | (sorryMsgs, idSingNames)              <- partitionEithers res
-              , (targetIds, targetSings, targetNames) <- unzip3 idSingNames
-              , sorryBs   <- [ (msg, pure i) | msg <- sorryMsgs ]
-              , c         <- getChan ci ms
-              , cn        <- c^.chanName
-              , otherIds  <- let f = (\\ (i : targetIds)) . filter (`isAwake` ms) . getIds . M.keys . M.filter id
-                             in views chanConnTbl f c
-              , toTargets <- ( "Someone has severed your telepathic connection to the " <> dblQuote cn <> " channel."
-                             , targetIds )
-              , toSelf    <- (focusingInnateMsg <>) $ case targetNames of
-                [n] -> T.concat [ "you disconnect ", format n, " from the ", dblQuote cn, " channel." ]
-                _   -> T.concat [ "you disconnect the following people from the "
-                                , dblQuote cn
-                                , " channel: "
-                                , commas . map format $ targetNames
-                                , "." ] -> do
-                  toOthers <- mkToOthers ms otherIds targetIds cn
-                  bcastNl $ toTargets : toOthers ++ (()!# targetNames |?| mkBcast i toSelf) ++ sorryBs
-                  targetSings |#| let msg = T.concat [ "disconnected from ", dblQuote cn, ": ", commas targetSings ]
-                                  in const . logPla "disconnect" i $ msg
-            xs -> patternMatchFail "disconnect" . showText $ xs
+disconnect p@(Lower i mq cols as) = getState >>= \ms ->
+    let getIds = map (`getIdForPCSing` ms)
+        next   = if isIncognitoId i ms
+          then wrapSend mq cols . sorryIncog $ "disconnect"
+          else getAllChanIdNames i ms >>= \idNamesTbl ->
+              disconnectHelper i (mkLastArgWithNubbedOthers as) idNamesTbl |&| modifyState >=> \case
+                ([Left msg], Nothing) -> bcastNl . mkBcast i $ msg
+                (res,        Just ci)
+                  | (sorryMsgs, idSingNames)              <- partitionEithers res
+                  , (targetIds, targetSings, targetNames) <- unzip3 idSingNames
+                  , sorryBs   <- [ (msg, pure i) | msg <- sorryMsgs ]
+                  , c         <- getChan ci ms
+                  , cn        <- c^.chanName
+                  , otherIds  <- let f = (\\ (i : targetIds)) . filter (`isAwake` ms) . getIds . M.keys . M.filter id
+                                 in views chanConnTbl f c
+                  , toTargets <- ( "Someone has severed your telepathic connection to the " <> dblQuote cn <> " channel."
+                                 , targetIds )
+                  , toSelf    <- (focusingInnateMsg <>) $ case targetNames of
+                    [n] -> T.concat [ "you disconnect ", format n, " from the ", dblQuote cn, " channel." ]
+                    _   -> T.concat [ "you disconnect the following people from the "
+                                    , dblQuote cn
+                                    , " channel: "
+                                    , commas . map format $ targetNames
+                                    , "." ] -> do
+                      toOthers <- mkToOthers ms otherIds targetIds cn
+                      bcastNl $ toTargets : toOthers ++ (()!# targetNames |?| mkBcast i toSelf) ++ sorryBs
+                      targetSings |#| let msg = T.concat [ "disconnected from ", dblQuote cn, ": ", commas targetSings ]
+                                      in const . logPla "disconnect" i $ msg
+                xs -> patternMatchFail "disconnect" . showText $ xs
+    in checkActing p ms (Right "disconnect a person to a telepathic channel") (pure Sacrificing) next
   where
     format n = isRndmName n ? underline n :? n
     mkToOthers ms otherIds targetIds cn = do
