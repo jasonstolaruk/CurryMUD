@@ -2646,7 +2646,7 @@ ready p@(LowerNub' i as) = genericAction p helper "ready"
             eiss                      = zipWith (curry procGecrMisReady) gecrs miss
             (et, it, toSelfs, bs, logMsgs) =
                 foldl' (helperReady i ms d) (ms^.eqTbl, ms^.invTbl, [], [], []) . zip eiss $ mrols
-        in if ()!# invCoins
+        in genericCheckActing i ms (Right "ready an item") [ Drinking, Sacrificing ] $ if ()!# invCoins
           then (ms & eqTbl .~ et & invTbl .~ it, ( dropBlanks $ [ sorryInEq, sorryInRm, sorryCoins ] ++ toSelfs
                                                  , bs
                                                  , logMsgs ))
@@ -3333,47 +3333,49 @@ helperSettings i ms a (T.breakOn "=" -> (name, T.tail -> value)) =
 showAction :: HasCallStack => ActionFun
 showAction p@AdviseNoArgs         = advise p ["show"] adviceShowNoArgs
 showAction p@AdviseOneArg         = advise p ["show"] adviceShowNoName
-showAction   (Lower i mq cols as) = getState >>= \ms -> if isIncognitoId i ms
-  then wrapSend mq cols . sorryIncog $ "show"
-  else let eqMap      = getEqMap    i ms
-           invCoins   = getInvCoins i ms
-           rmInvCoins = first (i `delete`) . getMobRmVisibleInvCoins i $ ms
-       in if
-         | ()# eqMap, ()# invCoins -> wrapSend mq cols dudeYou'reScrewed
-         | ()# rmInvCoins          -> wrapSend mq cols sorryNoOneHere
-         | otherwise               -> case singleArgInvEqRm InRm . last $ as of
-           (InInv, _     ) -> wrapSend mq cols $ sorryShowTarget "item in your inventory"         <> tryThisInstead
-           (InEq,  _     ) -> wrapSend mq cols $ sorryShowTarget "item in your readied equipment" <> tryThisInstead
-           (InRm,  target) ->
-             let argsWithoutTarget                    = init $ case as of [_, _] -> as
-                                                                          _      -> (++ pure target) . nub . init $ as
-                 (targetGecrs, targetMiss, targetRcs) = uncurry (resolveEntCoinNames i ms . pure $ target) rmInvCoins
-             in if ()# targetMiss && ()!# targetRcs
-               then wrapSend mq cols . sorryShowTarget $ "coin"
-               else case procGecrMisRm . head . zip targetGecrs $ targetMiss of
-                 Left  msg        -> wrapSend mq cols msg
-                 Right [targetId] ->
-                   let d         = mkStdDesig i ms DoCap
-                       theTarget = IdSingTypeDesig { theId    = targetId
-                                                   , theSing  = getSing targetId ms
-                                                   , theType  = getType targetId ms
-                                                   , theDesig = serialize . mkStdDesig targetId ms $ Don'tCap }
-                       (inInvs, inEqs, inRms)         = sortArgsInvEqRm InInv argsWithoutTarget
-                       (invToSelfs, invBs, invLogMsg) = inInvs |!| showInv ms d invCoins inInvs theTarget
-                       (eqToSelfs,  eqBs,  eqLogMsg ) = inEqs  |!| showEq  ms d eqMap    inEqs  theTarget
-                       sorryRmMsg                     = inRms  |!| sorryShowInRm
-                   in if theType theTarget `notElem` [ NpcType, PCType ]
-                     then wrapSend mq cols . sorryShowTarget . theSing $ theTarget
-                     else do
-                         let logMsg = slashes . dropBlanks $ [ invLogMsg |!| parensQuote "inv" |<>| invLogMsg
-                                                             , eqLogMsg  |!| parensQuote "eq"  |<>| eqLogMsg ]
-                         logMsg |#| logPla "show" i . (T.concat [ "showing to "
-                                                                , theSing theTarget
-                                                                , ": " ] <>)
-                         multiWrapSend mq cols . dropBlanks $ sorryRmMsg : [ parseDesig i ms msg
-                                                                           | msg <- invToSelfs ++ eqToSelfs ]
-                         bcastNl $ invBs ++ eqBs
-                 Right _ -> wrapSend mq cols sorryShowExcessTargets
+showAction p@(Lower i mq cols as) = getState >>= \ms ->
+  let next = if isIncognitoId i ms
+        then wrapSend mq cols . sorryIncog $ "show"
+        else let eqMap      = getEqMap    i ms
+                 invCoins   = getInvCoins i ms
+                 rmInvCoins = first (i `delete`) . getMobRmVisibleInvCoins i $ ms
+             in if
+               | ()# eqMap, ()# invCoins -> wrapSend mq cols dudeYou'reScrewed
+               | ()# rmInvCoins          -> wrapSend mq cols sorryNoOneHere
+               | otherwise               -> case singleArgInvEqRm InRm . last $ as of
+                 (InInv, _     ) -> wrapSend mq cols $ sorryShowTarget "item in your inventory"         <> tryThisInstead
+                 (InEq,  _     ) -> wrapSend mq cols $ sorryShowTarget "item in your readied equipment" <> tryThisInstead
+                 (InRm,  target) ->
+                   let argsWithoutTarget                    = init $ case as of [_, _] -> as
+                                                                                _      -> (++ pure target) . nub . init $ as
+                       (targetGecrs, targetMiss, targetRcs) = uncurry (resolveEntCoinNames i ms . pure $ target) rmInvCoins
+                   in if ()# targetMiss && ()!# targetRcs
+                     then wrapSend mq cols . sorryShowTarget $ "coin"
+                     else case procGecrMisRm . head . zip targetGecrs $ targetMiss of
+                       Left  msg        -> wrapSend mq cols msg
+                       Right [targetId] ->
+                         let d         = mkStdDesig i ms DoCap
+                             theTarget = IdSingTypeDesig { theId    = targetId
+                                                         , theSing  = getSing targetId ms
+                                                         , theType  = getType targetId ms
+                                                         , theDesig = serialize . mkStdDesig targetId ms $ Don'tCap }
+                             (inInvs, inEqs, inRms)         = sortArgsInvEqRm InInv argsWithoutTarget
+                             (invToSelfs, invBs, invLogMsg) = inInvs |!| showInv ms d invCoins inInvs theTarget
+                             (eqToSelfs,  eqBs,  eqLogMsg ) = inEqs  |!| showEq  ms d eqMap    inEqs  theTarget
+                             sorryRmMsg                     = inRms  |!| sorryShowInRm
+                         in if theType theTarget `notElem` [ NpcType, PCType ]
+                           then wrapSend mq cols . sorryShowTarget . theSing $ theTarget
+                           else do
+                               let logMsg = slashes . dropBlanks $ [ invLogMsg |!| parensQuote "inv" |<>| invLogMsg
+                                                                   , eqLogMsg  |!| parensQuote "eq"  |<>| eqLogMsg ]
+                               logMsg |#| logPla "show" i . (T.concat [ "showing to "
+                                                                      , theSing theTarget
+                                                                      , ": " ] <>)
+                               multiWrapSend mq cols . dropBlanks $ sorryRmMsg : [ parseDesig i ms msg
+                                                                                 | msg <- invToSelfs ++ eqToSelfs ]
+                               bcastNl $ invBs ++ eqBs
+                       Right _ -> wrapSend mq cols sorryShowExcessTargets
+  in checkActing p ms (Right "show an item to another person") [ Attacking, Drinking, Sacrificing ] next
   where
     tryThisInstead = " Try showing something to someone in your current room."
     showInv ms d invCoins inInvs IdSingTypeDesig { .. }
