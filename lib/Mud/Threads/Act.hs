@@ -215,16 +215,17 @@ applyBonus :: HasCallStack => Id -> Sing -> GodName -> UTCTime -> MudStack ()
 applyBonus i s gn now = do
     logPla "applyBonus" i "applying bonus."
     withDbExHandler_ "sac_bonus" . insertDbTblSacBonus . SacBonusRec (showText now) s . pp $ gn
-    case gn of Aule      -> flip effectHelper (15, 15) =<< rndmElem allValues -- TODO: Same as below...
-               Caila     -> flip effectHelper (15, 15) =<< rndmElem allValues
-               Celoriel  -> effectHelper Ps (5, 15)
-               Dellio    -> effectHelper Dx (5, 15)
-               Drogo     -> effectHelper Ma (5, 15)
-               Iminye    -> effectHelper Dx (3, 8) >> effectHelper Ht (3, 8)
-               Itulvatar -> flip effectHelper (10, 15) =<< rndmElem [ St, Dx, Ht ]
-               Murgorhd  -> unit
-               Rha'yk    -> effectHelper St (5, 15)
-               Rumialys  -> effectHelper Ht (5, 15)
+    let f gn' = case gn' of Aule      -> flip effectHelper (15, 15) =<< rndmElem allValues
+                            Caila     -> f Aule
+                            Celoriel  -> effectHelper Ps (5, 15)
+                            Dellio    -> effectHelper Dx (5, 15)
+                            Drogo     -> effectHelper Ma (5, 15)
+                            Iminye    -> effectHelper Dx (3, 8) >> effectHelper Ht (3, 8)
+                            Itulvatar -> flip effectHelper (10, 15) =<< rndmElem [ St, Dx, Ht ]
+                            Murgorhd  -> unit
+                            Rha'yk    -> effectHelper St (5, 15)
+                            Rumialys  -> effectHelper Ht (5, 15)
+    f gn
   where
     effectHelper attrib range =
         startEffect i . Effect (MobEffectAttrib attrib) (Just . RangeVal $ range) sacrificeBonusSecs $ Nothing
