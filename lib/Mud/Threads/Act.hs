@@ -186,7 +186,7 @@ sacrificeAct i mq ci gn = handle (die (Just i) (pp Sacrificing)) $ do
           else (ms, [])
 
 
-sacrificeBonus :: Id -> GodName -> MudStack ()
+sacrificeBonus :: HasCallStack => Id -> GodName -> MudStack ()
 sacrificeBonus i gn@(pp -> gn') = getSing i <$> getState >>= \s -> do
     now <- liftIO getCurrentTime
     let operation = do insertDbTblSacrifice . SacrificeRec (showText now) s $ gn'
@@ -211,7 +211,7 @@ sacrificeBonus i gn@(pp -> gn') = getSing i <$> getState >>= \s -> do
     logHelper = logPla "sacrificeBonus" i
 
 
-applyBonus :: Id -> Sing -> GodName -> UTCTime -> MudStack ()
+applyBonus :: HasCallStack => Id -> Sing -> GodName -> UTCTime -> MudStack ()
 applyBonus i s gn now = do
     logPla "applyBonus" i "applying bonus."
     withDbExHandler_ "sac_bonus" . insertDbTblSacBonus . SacBonusRec (showText now) s . pp $ gn

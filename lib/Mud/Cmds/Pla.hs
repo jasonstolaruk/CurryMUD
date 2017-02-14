@@ -3714,7 +3714,7 @@ stats p = withoutArgs stats p
 -----
 
 
-stop :: HasCallStack => ActionFun -- TODO: Revise help.
+stop :: HasCallStack => ActionFun
 stop p@(NoArgs i mq cols) = getState >>= \ms -> case filter (view _3) . mkStopTuples p $ ms of
   []                     -> wrapSend mq cols sorryStopNotDoingAnything
   ((_, actType, _, f):_) -> stopLogHelper i (pure actType) >> f

@@ -5,10 +5,12 @@
 
 \uDESCRIPTION\n
 Sacrifice a corpse using a holy symbol.
-The corpse must be in your current room, and you must have a holy symbol on hand in your inventory.
+The corpse must be in your current room and you must have a holy symbol on hand in your inventory.
 
 When no arguments are given, you will sacrifice the first corpse in your current room, using the first holy symbol in your inventory.
 If you would like to sacrifice a corpse using the second (or third, etc.) holy symbol in your inventory, or sacrifice the second (or third, etc.) corpse in the room, you can specify as much by providing argument(s) with ordinal prefixes.
+
+Sacrificing a corpse takes a few seconds. If you wish to stop sacrificing before you finish, type \qstop sacrificing\d.
 
 You may only sacrifice one corpse at a time.
 
@@ -23,4 +25,4 @@ Countless bipeds have claimed to have gained the favor of a particular god after
 \qsacrifice holy \p2#i\qcorpse\d to to sacrifice the second corpse in your current room, using the first holy symbol in your inventory.4`
 
 \uSEE ALSO\n
-gods, prefixes
+gods, prefixes, stop
