@@ -1864,27 +1864,29 @@ lagomorphean = sayHelper LagomorphLang
 
 leave :: HasCallStack => ActionFun
 leave p@AdviseNoArgs                     = advise p ["leave"] adviceLeaveNoArgs
-leave   (WithArgs i mq cols (nub -> as)) = helper |&| modifyState >=> \(ms, chanId_name_isDels, sorryMsgs) ->
-    let s                              = getSing i ms
-        (chanIds, chanNames, chanRecs) = foldl' unzipper ([], [], []) chanId_name_isDels
-        unzipper acc (ci, cn, isDel)
-          | isDel     = acc & _2 <>~ pure cn
-                            & _3 <>~ (pure . ChanRec "" ci cn s . asteriskQuote $ "Channel deleted.")
-          | otherwise = acc & _1 <>~ pure ci
-                            & _2 <>~ pure cn
-        toSelfMsgs = mkLeaveMsg chanNames
-        msgs       = ()# sorryMsgs ? toSelfMsgs :? sorryMsgs ++ (toSelfMsgs |!| "" : toSelfMsgs)
-        f bs ci    = let c        = getChan ci ms
-                         cn       = c^.chanName
-                         otherIds = views chanConnTbl g c
-                         g        = filter (`isAwake` ms) . map (`getIdForPCSing` ms) . M.keys . M.filter id
-                     in (bs ++) <$> forM otherIds (\i' -> [ (leftChanMsg n cn, pure i')
-                                                          | n <- getRelativePCName ms (i', i) ])
-    in do chanNames |#| logPla "leave" i . commas
-          multiWrapSend mq cols msgs
-          bcastNl =<< foldM f [] chanIds
-          ts <- liftIO mkTimestamp
-          withDbExHandler_ "leave" . forM_ chanRecs $ \cr -> insertDbTblChan cr { dbTimestamp = ts }
+leave p@(WithArgs i mq cols (nub -> as)) =
+    let next = helper |&| modifyState >=> \(ms, chanId_name_isDels, sorryMsgs) ->
+          let s                              = getSing i ms
+              (chanIds, chanNames, chanRecs) = foldl' unzipper ([], [], []) chanId_name_isDels
+              unzipper acc (ci, cn, isDel)
+                | isDel     = acc & _2 <>~ pure cn
+                                  & _3 <>~ (pure . ChanRec "" ci cn s . asteriskQuote $ "Channel deleted.")
+                | otherwise = acc & _1 <>~ pure ci
+                                  & _2 <>~ pure cn
+              toSelfMsgs = mkLeaveMsg chanNames
+              msgs       = ()# sorryMsgs ? toSelfMsgs :? sorryMsgs ++ (toSelfMsgs |!| "" : toSelfMsgs)
+              f bs ci    | c        <- getChan ci ms
+                         , cn       <- c^.chanName
+                         , g        <- filter (`isAwake` ms) . map (`getIdForPCSing` ms) . M.keys . M.filter id
+                         , otherIds <- views chanConnTbl g c
+                         = (bs ++) <$> forM otherIds (\i' -> [ (leftChanMsg n cn, pure i')
+                                                             | n <- getRelativePCName ms (i', i) ])
+          in do chanNames |#| logPla "leave" i . commas
+                multiWrapSend mq cols msgs
+                bcastNl =<< foldM f [] chanIds
+                ts <- liftIO mkTimestamp
+                withDbExHandler_ "leave" . forM_ chanRecs $ \cr -> insertDbTblChan cr { dbTimestamp = ts }
+    in getState >>= \ms -> checkActing p ms (Right "sever a connection") (pure Sacrificing) next
   where
     helper ms = let (ms', chanId_name_isDels, sorryMsgs) = foldl' f (ms, [], []) as
                 in (ms', (ms', chanId_name_isDels, sorryMsgs))
@@ -1943,11 +1945,12 @@ link (NoArgs i mq cols) = do
                                                        , oneWaysFromMe |!| "One-way from me: " <> commas oneWaysFromMe
                                                        , oneWaysToMe   |!| "One-way to me: "   <> commas oneWaysToMe ]
               multiWrapSend mq cols msgs
-link (LowerNub i mq cols as) = getState >>= \ms -> if
+link p@(LowerNub i mq cols as) = getState >>= \ms -> if
   | isIncognitoId i ms -> wrapSend mq cols . sorryIncog $ "link"
   | isSpiritId    i ms -> wrapSend mq cols   sorryLinkSpirit
-  | otherwise          -> helper |&| modifyState >=> \(bs, logMsgs, fs) ->
-      logMsgs |#| (logPla "link" i . slashes) >> bcast bs >> sequence_ fs
+  | otherwise          -> let f                   = helper |&| modifyState >=> g
+                              g (bs, logMsgs, fs) = logMsgs |#| (logPla "link" i . slashes) >> bcast bs >> sequence_ fs
+                          in checkActing p ms (Right "establish a link") (pure Sacrificing) f
   where
     helper ms = let (inInvs, inEqs, inRms)  = sortArgsInvEqRm InRm as
                     sorryInInv              = inInvs |!| (mkBcast i . nlnl $ sorryLinkInInv)
@@ -2308,7 +2311,9 @@ plaDispCmdList p                  = patternMatchFail "plaDispCmdList" . showText
 putAction :: HasCallStack => ActionFun
 putAction p@AdviseNoArgs  = advise p ["put"] advicePutNoArgs
 putAction p@AdviseOneArg  = advise p ["put"] advicePutNoCon
-putAction p@(Lower' i as) = genericActionWithHooks p helper "put"
+putAction p@(Lower' i as) = getState >>= \ms ->
+    let f = genericActionWithHooks p helper "put"
+    in checkActing p ms (Right "put an item into a container") [ Drinking, Sacrificing ] f
   where
     helper v ms =
       let LastArgIsTargetBindings { .. } = mkLastArgIsTargetBindings i ms as
