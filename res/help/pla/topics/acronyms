@@ -36,21 +36,21 @@ PD      Permadeath`
         When a Player Character (PC) dies, he/she is truly dead; a deceased PC cannot return to the virtual world in any way, shape, or form.
 
 PKing   Player Killing`
-        When one Player Character (PC) kills another PC. While this may occur in a Player vs. Player (PvP) MUD, CurryMUD does not allow PvP combat.
+        When one Player Character (PC) kills another PC.
 
 PP      Psionic Points`
         A number representing a character's capacity to use psionic abilities. The use of psionics costs PP; PP are recovered naturally as one rests. A character's PP may never drop below 0, as 0 represents the total depletion of one's psionic energy.
 
 PvE     Player vs. Environment`
-        Denotes a MUD in which players are opposed by the environment and combat occurs between Player Characters (PCs) and Non-Player Characters (NPCs). CurryMUD is a "PvE MUD."
+        Denotes a MUD in which players are opposed by the environment and combat occurs between Player Characters (PCs) and Non-Player Characters (NPCs). CurryMUD is a mix of PvE and PvP.
 
 PvP     Player vs. Player`
-        Denotes (a MUD that allows) combat between Player Characters (PCs) or, in a more general sense, competition between players. CurryMUD does not allow combat between PCs and thus is not a "PvP MUD."
+        Denotes a MUD that allows combat between Player Characters (PCs) or, in a more general sense, conflict between players. CurryMUD is a mix of PvP and PvE.
 
-RP      Role-Playing`
+RP      Role-Play`
 
 RPI     Role-Play Intensive`
-        Used to describe a MUD that requires players to stay In-Character (IC). CurryMUD is an "RPI MUD."
+        Used to describe a MUD that requires players to stay In-Character (IC). CurryMUD is an RPI MUD.
 
 \uSEE ALSO\n
 coins, glossary, permadeath, role-play, rules, stats

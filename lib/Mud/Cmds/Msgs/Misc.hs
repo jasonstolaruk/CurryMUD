@@ -249,20 +249,18 @@ rulesMsg =
     \\\uILLEGAL ROLE-PLAY\\d\n" <>
     lSpcs <> "You are not allowed to role-play a character who is insane, sadistic, or sociopathic.\n\
     \\n\
-    \\\uRESPECT\\d\n" <>
-    lSpcs <> "You must conduct yourself in a manner that is empathetic towards your fellow players. Be respectful and sensible; don't be rude or condescending.\n\
+    \\\uSEXUAL ORIENTATION/IDENTITY\\d\n" <>
+    lSpcs <> "Players are free to role-play characters who are homosexual, bisexual, pansexual, gender nonconforming, etc. Intolerant attitudes are unacceptable.\n\
     \\n\
     \\\uHARASSMENT\\d\n" <>
     lSpcs <> "Harassment and bullying is not tolerated. The role-play of rape is absolutely illegal.\n\
     \\n\
-    \\\uSEXUAL ORIENTATION/IDENTITY\\d\n" <>
-    lSpcs <> "Players are free to role-play characters who are homosexual, bisexual, pansexual, gender nonconforming, etc. Intolerant attitudes are unacceptable.\n\
+    \\\uPLAYER-VS-PLAYER\\d\n" <>
+    lSpcs <> "In Character (IC) conflict between Player Characters (PCs) may occur. Administrators will generally not step in to resolve such conflict.\n" <>
+    lSpcs <> "A PC may attack another PC if and only if there is an IC reason to justify the attack. PC-on-PC combat is not the focus of CurryMUD and should not be a common occurrence.\n\
     \\n\
     \\\uPERMADEATH\\d\n" <>
-    lSpcs <> "When a Player Character (PC) dies, he/she is truly dead; a deceased character cannot return to the virtual world in any way, shape, or form. This is known as \"permadeath.\" By playing CurryMUD, you consent to the fact that when your character dies, he/she becomes unrecoverable.\n\
-    \\n\
-    \\\uPLAYER-VS-PLAYER\\d\n\
-    \TODO\n\
+    lSpcs <> "When a Player Character (PC) dies, he/she is truly dead; a deceased character cannot return to the virtual world in any way, shape, or form. This is known as \"permadeath.\" By playing CurryMUD, you consent to the fact that when your character dies, he/she is unrecoverable.\n\
     \\n\
     \\\uMULTI-PLAYING\\d\n" <>
     lSpcs <> "\"Multi-playing\" is when a single player simultaneously logs in multiple times, as multiple characters. This is not allowed.\n" <>
@@ -273,7 +271,7 @@ rulesMsg =
     lSpcs <> "The abuse of bugs constitutes cheating and is not allowed. If you find a bug, you must promptly report it via the \"bug\" command, or inform an administrator directly via the \"admin\" command.\n\
     \\n\
     \\\uPRIVACY\\d\n" <>
-    lSpcs <> "Please be aware that player activity is automatically logged by the system. Furthermore, administrators have the ability to actively monitor player activity with the express purpose of 1) ensuring that players are playing by the rules, and 2) tracking down bugs. Administrators promise to maintain player privacy as much as possible."
+    lSpcs <> "Please be aware that player activity is automatically logged by the system. Furthermore, administrators have the ability to actively monitor player activity with the express purpose of 1) ensuring that players are following the rules, and 2) tracking down bugs. Administrators promise to maintain player privacy as much as possible."
 
 
 sleepMsg :: Text
