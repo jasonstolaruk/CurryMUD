@@ -2964,16 +2964,33 @@ roomDesc p = patternMatchFail "roomDesc" . showText $ p
 
 
 sacrifice :: HasCallStack => ActionFun
-sacrifice p@(NoArgs i mq cols) = getState >>= \ms -> case (findHolySymbolGodName `fanUncurry` findCorpseIdInMobRm) (i, ms) of
-  (Just gn, Just ci) -> sacrificeHelper p ci gn
-  (Nothing, Just _ ) -> sorry sorrySacrificeHolySymbol
-  (Just _,  Nothing) -> sorry sorrySacrificeCorpse
-  (Nothing, Nothing) -> sorry sorrySacrificeHolySymbolCorpse
+sacrifice p@(NoArgs i mq cols) = getState >>= \ms ->
+    case (findHolySymbolGodName `fanUncurry` findCorpseIdInMobRm) (i, ms) of
+      (Just gn, Just ci) -> sacrificeHelper p ci gn
+      (Nothing, Just _ ) -> sorry sorrySacrificeHolySymbol
+      (Just _,  Nothing) -> sorry sorrySacrificeCorpse
+      (Nothing, Nothing) -> sorry sorrySacrificeHolySymbolCorpse
   where
     sorry msg = wrapSend mq cols msg >> sendDfltPrompt mq i
-sacrifice (OneArgLower i mq cols _) = getState >>= \ms -> case findCorpseIdInMobRm i ms of
+sacrifice p@(OneArgLower i mq cols a) = getState >>= \ms -> case findCorpseIdInMobRm i ms of
   Nothing -> sorry sorrySacrificeCorpse
-  Just _  -> undefined -- TODO: "sacrifice" with one arg.
+  Just ci -> let invCoins    = getInvCoins i ms
+                 next target =
+                     let pair@(eiss, _) = uncurry (resolveMobInvCoins i ms . pure $ target) invCoins
+                     in if uncurry (&&) . ((()!#) *** (()!#)) $ pair
+                       then sorry sorrySacrificeHolySymbolExcessTargets
+                       else case eiss of
+                         []      -> sorry sorrySacrificeHolySymbolCoins
+                         (eis:_) -> case eis of
+                           Left  msg        -> sorry msg
+                           Right [targetId] -> let (targetSing, t) = (getSing `fanUncurry` getType) (targetId, ms)
+                                               in if t == HolySymbolType
+                                                 then sacrificeHelper p ci . getHolySymbolGodName targetId $ ms
+                                                 else sorry . sorrySacrificeHolySymbolType $ targetSing
+                           Right _          -> sorry sorrySacrificeHolySymbolExcessTargets
+             in case singleArgInvEqRm InInv a of (InInv, target) -> next target
+                                                 (InEq,  _     ) -> sorry sorrySacrificeHolySymbolInEq
+                                                 (InRm,  _     ) -> sorry sorrySacrificeHolySymbolInRm
   where
     sorry msg = wrapSend mq cols msg >> sendDfltPrompt mq i
 sacrifice (Lower _ _ _ [_, _]) = undefined -- TODO: "sacrifice" with two args.
@@ -3040,10 +3057,10 @@ sayHelper l p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms ->
   where
     adviseHelper                = advise p [ mkCmdNameForLang l ]
     parseAdverb (T.tail -> msg) = case T.break (== adverbCloseChar) msg of
-      (_,   "")            -> Left  . adviceAdverbCloseChar      $ l
-      ("",  _ )            -> Left  . adviceBlankAdverb          $ l
-      (" ", _ )            -> Left  . adviceBlankAdverb          $ l
-      (_,   x ) | x == acl -> Left  . adviceSayAdverbNoUtterance $ l
+      (_,   "")            -> Left . adviceAdverbCloseChar      $ l
+      ("",  _ )            -> Left . adviceBlankAdverb          $ l
+      (" ", _ )            -> Left . adviceBlankAdverb          $ l
+      (_,   x ) | x == acl -> Left . adviceSayAdverbNoUtterance $ l
       (adverb, right)      -> Right (adverb, T.drop 2 right)
     sayTo maybeAdverb (T.words -> (target:rest@(r:_))) ms =
         let d        = mkStdDesig i ms DoCap
@@ -3053,11 +3070,11 @@ sayHelper l p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms ->
             (InInv, _      ) -> sorry sorrySayInInv
             (InEq,  _      ) -> sorry sorrySayInEq
             (InRm,  target') -> case uncurry (resolveRmInvCoins i ms . pure $ target') invCoins of
-              (_,                    [Left [msg]]) -> sorry msg
-              (_,                    Right _:_   ) -> sorry sorrySayCoins
-              ([Left  msg       ], _             ) -> sorry msg
-              ([Right (_:_:_)   ], _             ) -> sorry sorrySayExcessTargets
-              ([Right [targetId]], _             ) ->
+              (_,                  [Left [msg]]) -> sorry msg
+              (_,                  Right _:_   ) -> sorry sorrySayCoins
+              ([Left  msg       ], _           ) -> sorry msg
+              ([Right (_:_:_)   ], _           ) -> sorry sorrySayExcessTargets
+              ([Right [targetId]], _           ) ->
                   let targetDesig = serialize . mkStdDesig targetId ms $ Don'tCap
                   in if isNpcPC targetId ms
                     then parseRearAdverb |&| either sorry (sayToHelper d targetId targetDesig)

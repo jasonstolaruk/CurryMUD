@@ -241,7 +241,12 @@ module Mud.Cmds.Msgs.Sorry ( sorryActing
                            , sorryRemIgnore
                            , sorrySacrificeCorpse
                            , sorrySacrificeHolySymbol
+                           , sorrySacrificeHolySymbolCoins
                            , sorrySacrificeHolySymbolCorpse
+                           , sorrySacrificeHolySymbolExcessTargets
+                           , sorrySacrificeHolySymbolInEq
+                           , sorrySacrificeHolySymbolInRm
+                           , sorrySacrificeHolySymbolType
                            , sorrySayCoins
                            , sorrySayExcessTargets
                            , sorrySayInEq
@@ -1650,9 +1655,34 @@ sorrySacrificeHolySymbol :: Text
 sorrySacrificeHolySymbol = "You must have a holy symbol in your inventory to sacrifice a corpse."
 
 
+sorrySacrificeHolySymbolCoins :: Text
+sorrySacrificeHolySymbolCoins = can't "sacrifice a corpse using a coin."
+
+
 sorrySacrificeHolySymbolCorpse :: Text
 sorrySacrificeHolySymbolCorpse = "To sacrifice a corpse, you must have a holy symbol in your inventory and there must \
                                  \be a corpse in your current room."
+
+
+sorrySacrificeHolySymbolExcessTargets :: Text
+sorrySacrificeHolySymbolExcessTargets = "Please specify a single holy symbol with which to sacrifice the corpse."
+
+
+sorrySacrificeHolySymbolInEq :: Text
+sorrySacrificeHolySymbolInEq = sorrySacrificeHolySymbolHelper "readied equipment"
+
+
+sorrySacrificeHolySymbolHelper :: Text -> Text
+sorrySacrificeHolySymbolHelper t = can't $ "sacrifice a corpse with a holy symbol in your " <> t <> ". The holy symbol \
+                                           \must be in your inventory."
+
+
+sorrySacrificeHolySymbolInRm :: Text
+sorrySacrificeHolySymbolInRm = sorrySacrificeHolySymbolHelper "current room"
+
+
+sorrySacrificeHolySymbolType :: Sing -> Text
+sorrySacrificeHolySymbolType s = prd $ can't "sacrifice a corpse using " <> aOrAn s
 
 
 -----
