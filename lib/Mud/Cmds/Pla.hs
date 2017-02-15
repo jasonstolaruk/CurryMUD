@@ -2977,7 +2977,7 @@ sacrifice p@(OneArgLower i mq cols a) = getState >>= \ms -> case findCorpseIdInM
   Just ci -> let invCoins    = getInvCoins i ms
                  next target =
                      let pair@(eiss, _) = uncurry (resolveMobInvCoins i ms . pure $ target) invCoins
-                     in if uncurry (&&) . ((()!#) *** (()!#)) $ pair
+                     in if ((&&) <$> ((()!#) . fst) <*> ((()!#) . snd)) pair
                        then sorry sorrySacrificeHolySymbolExcessTargets
                        else case eiss of
                          []      -> sorry sorrySacrificeHolySymbolCoins
