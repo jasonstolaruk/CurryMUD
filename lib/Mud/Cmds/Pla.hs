@@ -2977,7 +2977,9 @@ sacrifice p@(OneArgLower i mq cols a) = getState >>= \ms -> case findCorpseIdInM
   Just ci -> either id (sacrificeHelper p ci) . sacrificeHolySymbol i mq cols a $ ms
   where
     sorry msg = wrapSend mq cols msg >> sendDfltPrompt mq i
-sacrifice (Lower _ _ _ [_, _]) = undefined -- TODO: "sacrifice" with two args.
+sacrifice p@(Lower i mq cols [a, b]) = getState >>= \ms -> case sacrificeHolySymbol i mq cols a ms of
+  Left  f  -> f
+  Right gn -> either id (flip (sacrificeHelper p) gn) . sacrificeCorpse i mq cols b $ ms
 sacrifice p = advise p ["sacrifice"] adviceSacrificeExcessArgs
 
 
@@ -3010,6 +3012,10 @@ sacrificeHolySymbol i mq cols a ms =
                                         (InRm,  _     ) -> sorry sorrySacrificeHolySymbolInRm
   where
     sorry msg = Left $ wrapSend mq cols msg >> sendDfltPrompt mq i
+
+
+sacrificeCorpse :: HasCallStack => Id -> MsgQueue -> Cols -> Text -> MudState -> Either Fun Id
+sacrificeCorpse i mq cols a ms = undefined
 
 
 sacrificeHelper :: HasCallStack => ActionParams -> Id -> GodName -> MudStack ()
