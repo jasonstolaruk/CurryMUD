@@ -1263,7 +1263,7 @@ mkEntsInInvDesc i cols ms =
     T.unlines . concatMap (wrapIndent bracketedEntNamePadding cols . helper) . mkStyledName_count_bothList i ms
   where
     helper (padBracketedEntName -> en, c, (s, _)) | c == 1 = en <> "1 " <> s
-    helper (padBracketedEntName -> en, c, b     )          = T.concat [ en, showText c, " ", mkPlurFromBoth b ]
+    helper (padBracketedEntName -> en, c, b     )          = T.concat [ en, commaShow c, " ", mkPlurFromBoth b ]
 
 
 mkStyledName_count_bothList :: HasCallStack => Id -> MudState -> Inv -> [(Text, Int, BothGramNos)]
@@ -1277,7 +1277,7 @@ mkCoinsSummary :: HasCallStack => Cols -> Coins -> Text
 mkCoinsSummary cols = helper . zipWith mkNameAmt coinNames . coinsToList
   where
     helper         = T.unlines . wrapIndent 2 cols . commas . dropEmpties
-    mkNameAmt cn a = Sum a |!| showText a |<>| bracketQuote (colorWith abbrevColor cn)
+    mkNameAmt cn a = Sum a |!| commaShow a |<>| bracketQuote (colorWith abbrevColor cn)
 
 
 mkEqDesc :: HasCallStack => Id -> Cols -> MudState -> Id -> Sing -> Type -> Text

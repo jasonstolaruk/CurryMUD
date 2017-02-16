@@ -2123,13 +2123,13 @@ mkRmInvCoinsDesc i cols ms ri =
                                                           , adminTagHelper ia
                                                           , " "
                                                           , en ]
-    mkPCDesc (ia, (en, b,      d, c))          = T.concat [ colorWith unknownNameColor $ showText c |<>| mkPlurFromBoth b
+    mkPCDesc (ia, (en, b,      d, c))          = T.concat [ colorWith unknownNameColor $ commaShow c |<>| mkPlurFromBoth b
                                                           , rmDescHepler d
                                                           , adminTagHelper ia
                                                           , " "
                                                           , en ]
     mkOtherDesc (en, (s, _), _, c) | c == 1 = aOrAnOnLower s |<>| en
-    mkOtherDesc (en, b,      _, c)          = T.concat [ showText c, spaced . mkPlurFromBoth $ b, en ]
+    mkOtherDesc (en, b,      _, c)          = T.concat [ commaShow c, spaced . mkPlurFromBoth $ b, en ]
     adminTagHelper False = ""
     adminTagHelper True  = spcL adminTagTxt
     rmDescHepler   ""    = ""
