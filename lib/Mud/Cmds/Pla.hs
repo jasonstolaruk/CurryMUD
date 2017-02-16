@@ -2972,7 +2972,11 @@ sacrifice p@(NoArgs i mq cols) = getState >>= \ms ->
       (Nothing, Nothing) -> sorry sorrySacrificeHolySymbolCorpse
   where
     sorry msg = wrapSend mq cols msg >> sendDfltPrompt mq i
-sacrifice p@(OneArg' _ _) = either id (uncurry . sacrificeHelper $ p) . sacrificeHolySymbol p =<< getState
+sacrifice p@(OneArgLower i mq cols a) = getState >>= \ms -> case findCorpseIdInMobRm i ms of
+  Nothing -> sorry sorrySacrificeCorpse
+  Just ci -> either id (sacrificeHelper p ci) . sacrificeHolySymbol i mq cols a $ ms
+  where
+    sorry msg = wrapSend mq cols msg >> sendDfltPrompt mq i
 sacrifice (Lower _ _ _ [_, _]) = undefined -- TODO: "sacrifice" with two args.
 sacrifice p = advise p ["sacrifice"] adviceSacrificeExcessArgs
 
@@ -2986,29 +2990,26 @@ findCorpseIdInMobRm :: HasCallStack => Id -> MudState -> Maybe Id
 findCorpseIdInMobRm i ms = listToMaybe . filter ((== CorpseType) . (`getType` ms)) . getMobRmInv i $ ms
 
 
-sacrificeHolySymbol :: HasCallStack => ActionParams -> MudState -> Either Fun (Id, GodName)
-sacrificeHolySymbol (OneArgLower i mq cols a) ms = case findCorpseIdInMobRm i ms of
-  Nothing -> sorry sorrySacrificeCorpse
-  Just ci -> let invCoins    = getInvCoins i ms
-                 next target =
-                     let pair@(eiss, _) = uncurry (resolveMobInvCoins i ms . pure $ target) invCoins
-                     in if ((&&) <$> ((()!#) . fst) <*> ((()!#) . snd)) pair
-                       then sorry sorrySacrificeHolySymbolExcessTargets
-                       else case eiss of
-                         []      -> sorry sorrySacrificeHolySymbolCoins
-                         (eis:_) -> case eis of
-                           Left  msg        -> sorry msg
-                           Right [targetId] -> let (targetSing, t) = (getSing `fanUncurry` getType) (targetId, ms)
-                                               in if t == HolySymbolType
-                                                 then Right (ci, getHolySymbolGodName targetId ms)
-                                                 else sorry . sorrySacrificeHolySymbolType $ targetSing
-                           Right _          -> sorry sorrySacrificeHolySymbolExcessTargets
-             in case singleArgInvEqRm InInv a of (InInv, target) -> next target
-                                                 (InEq,  _     ) -> sorry sorrySacrificeHolySymbolInEq
-                                                 (InRm,  _     ) -> sorry sorrySacrificeHolySymbolInRm
+sacrificeHolySymbol :: HasCallStack => Id -> MsgQueue -> Cols -> Text -> MudState -> Either Fun GodName
+sacrificeHolySymbol i mq cols a ms =
+    let invCoins    = getInvCoins i ms
+        next target = let pair@(eiss, _) = uncurry (resolveMobInvCoins i ms . pure $ target) invCoins
+                      in if ((&&) <$> ((()!#) . fst) <*> ((()!#) . snd)) pair
+                        then sorry sorrySacrificeHolySymbolExcessTargets
+                        else case eiss of
+                          []      -> sorry sorrySacrificeHolySymbolCoins
+                          (eis:_) -> case eis of
+                            Left  msg        -> sorry msg
+                            Right [targetId] -> let (targetSing, t) = (getSing `fanUncurry` getType) (targetId, ms)
+                                                in if t == HolySymbolType
+                                                  then Right . getHolySymbolGodName targetId $ ms
+                                                  else sorry . sorrySacrificeHolySymbolType $ targetSing
+                            Right _          -> sorry sorrySacrificeHolySymbolExcessTargets
+    in case singleArgInvEqRm InInv a of (InInv, target) -> next target
+                                        (InEq,  _     ) -> sorry sorrySacrificeHolySymbolInEq
+                                        (InRm,  _     ) -> sorry sorrySacrificeHolySymbolInRm
   where
     sorry msg = Left $ wrapSend mq cols msg >> sendDfltPrompt mq i
-sacrificeHolySymbol p _ = patternMatchFail "sacrificeHolySymbol" . showText $ p
 
 
 sacrificeHelper :: HasCallStack => ActionParams -> Id -> GodName -> MudStack ()

@@ -257,7 +257,7 @@ rulesMsg =
     \\n\
     \\\uPLAYER-VS-PLAYER\\d\n" <>
     lSpcs <> "In Character (IC) conflict between Player Characters (PCs) may occur. Administrators will generally not step in to resolve such conflict.\n" <>
-    lSpcs <> "A PC may attack another PC if and only if there is an IC reason to justify the attack. PC-on-PC combat is not the focus of CurryMUD and should not be a common occurrence.\n\
+    lSpcs <> "A PC may attack another PC if and only if there is a viable IC reason to justify the attack. PC-on-PC combat is not the focus of CurryMUD and should not be a common occurrence.\n\
     \\n\
     \\\uPERMADEATH\\d\n" <>
     lSpcs <> "When a Player Character (PC) dies, he/she is truly dead; a deceased character cannot return to the virtual world in any way, shape, or form. This is known as \"permadeath.\" By playing CurryMUD, you consent to the fact that when your character dies, he/she is unrecoverable.\n\
