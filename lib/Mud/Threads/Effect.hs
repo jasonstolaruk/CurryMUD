@@ -139,13 +139,15 @@ massRestartPausedEffects = getState >>= \ms -> do logNotice "massRestartPausedEf
 
 
 stopEffect :: Id -> ActiveEffect -> MudStack ()
-stopEffect i (ActiveEffect (Effect _ _ _ feel) (_, q)) = getState >>= \ms -> do
-    liftIO . atomically . writeTQueue q $ StopEffect
-    when (hasMobId i ms) stopFeeling
-  where
-    stopFeeling = flip maybeVoid feel $ \(EffectFeeling tag _) -> getFeelingMap i <$> getState >>= \fm ->
-        flip maybeVoid (M.lookup tag fm) $ \(Feeling _ _ _ a) -> do liftIO . cancel $ a
-                                                                    tweak $ mobTbl.ind i.feelingMap %~ (tag `M.delete`)
+stopEffect i (ActiveEffect e (_, q)) = sequence_ [ liftIO . atomically . writeTQueue q $ StopEffect, stopFeeling i e ]
+
+
+stopFeeling :: Id -> Effect -> MudStack ()
+stopFeeling i (Effect _ _ _ feel) = getState >>= \ms ->
+    let f = flip maybeVoid feel $ \(EffectFeeling tag _) ->
+                flip maybeVoid (M.lookup tag . getFeelingMap i $ ms) $ \(Feeling _ _ _ a) ->
+                    sequence_ [ liftIO . cancel $ a, tweak $ mobTbl.ind i.feelingMap %~ (tag `M.delete`) ]
+    in when (hasMobId i ms) f
 
 
 stopEffects :: Id -> MudStack ()

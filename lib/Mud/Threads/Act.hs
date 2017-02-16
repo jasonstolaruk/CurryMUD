@@ -212,7 +212,7 @@ sacrificeBonus i gn@(pp -> gn') = getSing i <$> getState >>= \s -> do
 
 
 applyBonus :: HasCallStack => Id -> Sing -> GodName -> UTCTime -> MudStack ()
-applyBonus i s gn now = do
+applyBonus i s gn now = do -- TODO
     logPla "applyBonus" i "applying bonus."
     withDbExHandler_ "sac_bonus" . insertDbTblSacBonus . SacBonusRec (showText now) s . pp $ gn
     let f gn' = case gn' of Aule      -> flip effectHelper (15, 15) =<< rndmElem allValues
