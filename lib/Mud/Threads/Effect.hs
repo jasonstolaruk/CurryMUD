@@ -29,7 +29,7 @@ import Control.Concurrent.STM.TMVar (newEmptyTMVarIO, putTMVar, takeTMVar)
 import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
 import Control.Exception.Lifted (finally, handle)
 import Control.Lens (view, views)
-import Control.Lens.Operators ((%~), (&), (.~), (<>~), (?~))
+import Control.Lens.Operators ((?~), (.~), (&), (%~), (<>~))
 import Control.Monad ((>=>), forM_, unless, when)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (ask)
@@ -114,10 +114,12 @@ pauseEffects i = getState >>= \ms ->
                               tweaks [ activeEffectsTbl.ind i .~  []
                                      , pausedEffectsTbl.ind i <>~ pes ]
   where
-    helper (ActiveEffect e (_, q)) = do tmv <- liftIO newEmptyTMVarIO
-                                        liftIO . atomically . writeTQueue q . PauseEffect $ tmv
-                                        secs <- liftIO . atomically . takeTMVar $ tmv
-                                        return . PausedEffect $ e & effectDur .~ secs
+    helper (ActiveEffect e (_, q)) = do
+        tmv <- liftIO newEmptyTMVarIO
+        liftIO . atomically . writeTQueue q . PauseEffect $ tmv
+        secs <- liftIO . atomically . takeTMVar $ tmv
+        return . PausedEffect $ e & effectDur     .~ secs
+                                  & effectFeeling %~ fmap (\effFeel -> effFeel { efDur = secs })
 
 
 massPauseEffects :: MudStack () -- At server shutdown, after everyone has been disconnected.

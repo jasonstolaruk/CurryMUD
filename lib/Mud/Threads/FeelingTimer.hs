@@ -92,8 +92,8 @@ threadFeelingTimer i tag dur tq = sequence_ [ setThreadType . FeelingTimer $ i
           Nothing                    -> unit
     exHandler :: SomeException -> MudStack ()
     exHandler e = getState >>= \ms -> case fromException e of
-      Just ThreadKilled  -> logHelper $ mkName ms <> " has been killed."
-      _                  -> logExMsg fn ("exception caught on thread for " <> mkName ms) e
+      Just ThreadKilled -> logHelper $ mkName ms <> " has been killed."
+      _                 -> logExMsg fn ("exception caught on thread for " <> mkName ms) e
     mkName ms = T.concat [ "feeling timer ", descSingId i ms, " ", dblQuote tag ]
     logHelper = logPla fn i
     fn        = "threadFeelingTimer"
