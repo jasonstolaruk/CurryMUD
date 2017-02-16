@@ -3015,7 +3015,25 @@ sacrificeHolySymbol i mq cols a ms =
 
 
 sacrificeCorpse :: HasCallStack => Id -> MsgQueue -> Cols -> Text -> MudState -> Either Fun Id
-sacrificeCorpse i mq cols a ms = undefined
+sacrificeCorpse i mq cols a ms =
+    let invCoins    = first (i `delete`) . getMobRmVisibleInvCoins i $ ms
+        next target = let pair@(eiss, _) = uncurry (resolveRmInvCoins i ms . pure $ target) invCoins
+                      in if ((&&) <$> ((()!#) . fst) <*> ((()!#) . snd)) pair
+                        then sorry sorrySacrificeCorpseExcessTargets
+                        else case eiss of
+                          []      -> sorry sorrySacrificeCorpseCoins
+                          (eis:_) -> case eis of
+                            Left  msg        -> sorry msg
+                            Right [targetId] -> let (targetSing, t) = (getSing `fanUncurry` getType) (targetId, ms)
+                                                in if t == CorpseType
+                                                  then Right targetId
+                                                  else sorry . sorrySacrificeCorpseType $ targetSing
+                            Right _          -> sorry sorrySacrificeCorpseExcessTargets
+    in case singleArgInvEqRm InRm a of (InInv, _     ) -> sorry sorrySacrificeCorpseInInv
+                                       (InEq,  _     ) -> sorry sorrySacrificeCorpseInEq
+                                       (InRm,  target) -> next target
+  where
+    sorry msg = Left $ wrapSend mq cols msg >> sendDfltPrompt mq i
 
 
 sacrificeHelper :: HasCallStack => ActionParams -> Id -> GodName -> MudStack ()

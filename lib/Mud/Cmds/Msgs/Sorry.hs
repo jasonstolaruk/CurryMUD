@@ -240,6 +240,11 @@ module Mud.Cmds.Msgs.Sorry ( sorryActing
                            , sorryRemExcessCon
                            , sorryRemIgnore
                            , sorrySacrificeCorpse
+                           , sorrySacrificeCorpseCoins
+                           , sorrySacrificeCorpseExcessTargets
+                           , sorrySacrificeCorpseInEq
+                           , sorrySacrificeCorpseInInv
+                           , sorrySacrificeCorpseType
                            , sorrySacrificeHolySymbol
                            , sorrySacrificeHolySymbolCoins
                            , sorrySacrificeHolySymbolCorpse
@@ -1649,6 +1654,31 @@ sorryRemIgnore = sorryIgnoreLocPrefPlur "The names of the items to be removed fr
 
 sorrySacrificeCorpse :: Text
 sorrySacrificeCorpse = "There isn't a corpse in your current room for your to sacrifice."
+
+
+sorrySacrificeCorpseCoins :: Text
+sorrySacrificeCorpseCoins = can't "sacrifice a coin."
+
+
+sorrySacrificeCorpseExcessTargets :: Text
+sorrySacrificeCorpseExcessTargets = "You can only sacrifice one corpse at a time."
+
+
+sorrySacrificeCorpseInEq :: Text
+sorrySacrificeCorpseInEq = sorrySacrificeCorpseHelper "readied equipment"
+
+
+sorrySacrificeCorpseHelper :: Text -> Text
+sorrySacrificeCorpseHelper t = can't $ "sacrifice a corpse in your " <> t <> ". The corpse must be on the ground in \
+                                       \your current room."
+
+
+sorrySacrificeCorpseInInv :: Text
+sorrySacrificeCorpseInInv = sorrySacrificeCorpseHelper "inventory"
+
+
+sorrySacrificeCorpseType :: Sing -> Text
+sorrySacrificeCorpseType s = prd $ can't "sacrifice " <> aOrAnOnLower s
 
 
 sorrySacrificeHolySymbol :: Text
