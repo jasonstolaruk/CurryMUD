@@ -41,7 +41,7 @@ import Control.Concurrent.STM.TQueue (readTQueue, writeTQueue)
 import Control.Exception.Lifted (catch)
 import Control.Lens (view, views)
 import Control.Lens.Operators ((^.))
-import Control.Monad ((>=>), forM_)
+import Control.Monad ((>=>), forM_, unless)
 import Control.Monad.IO.Class (liftIO)
 import Data.Maybe (fromMaybe)
 import Data.Text (Text)
@@ -100,7 +100,9 @@ threadServer h i mq tq = sequence_ [ setThreadType . Server $ i
       ToNpc msg      -> handleFromServer i h Npcに msg     >> loop isDropped
     sayonara isDropped = let f = const $ throwWaitSpiritTimer i >> loop isDropped
                          in views (plaTbl.ind i.spiritAsync) (maybe (nonSpiritEgress isDropped) f) =<< getState
-    nonSpiritEgress    = (stopTimer tq >>) . ((>>) <$> handleEgress i mq <*> mUnless (isAdHoc i <$> getState) . loop)
+    nonSpiritEgress isDropped = isAdHoc i <$> getState >>= \iah -> do
+        stopTimer tq
+        ((>>) <$> handleEgress i mq <*> unless iah . loop) isDropped
 
 
 handleBlankLine :: HasCallStack => Handle -> MudStack ()
