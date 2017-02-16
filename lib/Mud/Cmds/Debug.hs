@@ -75,7 +75,7 @@ import GHC.Conc (threadStatus)
 import GHC.Stack (HasCallStack)
 import Numeric (readInt)
 import Prelude hiding (pi)
-import qualified Data.IntMap.Strict as IM (IntMap, assocs, filter, keys, toList)
+import qualified Data.IntMap.Strict as IM (IntMap, assocs, filter, keys, notMember, toList)
 import qualified Data.Map.Strict as M (assocs, elems, filter, keys, keysSet, toList)
 import qualified Data.Set as S (toAscList)
 import qualified Data.Text as T
@@ -286,8 +286,8 @@ debugCins   (OneArg i mq cols a) = getState >>= \ms -> case reads . T.unpack $ a
   _                -> wrapSend mq cols . sorryParseId $ a
   where
     helper ms targetId@(showText -> targetIdTxt)
-      | targetId < 0                                    = wrapSend mq cols sorryWtf
-      | views pcTbl ((targetId `notElem`) . IM.keys) ms = wrapSend mq cols . sorryNonexistentId targetId . pure $ "PC"
+      | targetId < 0                             = wrapSend mq cols sorryWtf
+      | views pcTbl (targetId `IM.notMember`) ms = wrapSend mq cols . sorryNonexistentId targetId . pure $ "PC"
       | otherwise = do logPlaExecArgs (prefixDebugCmd "cins") (pure a) i
                        multiWrapSend mq cols . (header :) . pure . showText =<< getAllChanIdNames i ms
       where
@@ -667,8 +667,8 @@ debugLiq   (WithArgs i mq cols as) = getState >>= \ms ->
     parseTwoIntArgs mq cols as sorryParseAmt sorryParseId (helper ms)
   where
     helper ms amt di
-      | amt < 1 || di < 0                            = wrapSend mq cols sorryWtf
-      | di `notElem` views distinctLiqTbl IM.keys ms = wrapSend mq cols . sorryNonexistentId di . pure $ "distinct liquid"
+      | amt < 1 || di < 0                           = wrapSend mq cols sorryWtf
+      | views distinctLiqTbl (di `IM.notMember`) ms = wrapSend mq cols . sorryNonexistentId di . pure $ "distinct liquid"
       | otherwise = do logPlaExecArgs (prefixDebugCmd "liquid") as i
                        ok mq
                        consume i =<< mkStomachConts <$> liftIO getCurrentTime
@@ -1162,10 +1162,10 @@ debugVolume   (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)
   _                -> wrapSend mq cols . sorryParseId $ a
   where
     helper searchId ms
-      | searchId < 0                               = wrapSend mq cols sorryWtf
-      | searchId `notElem` views mobTbl IM.keys ms = wrapSend mq cols . sorryNonexistentId searchId . pure $ "mobile"
-      | otherwise                                  = do logPlaExecArgs (prefixDebugCmd "volume") (pure a) i
-                                                        send mq . nlnl . showText . calcCarriedVol searchId $ ms
+      | searchId < 0                              = wrapSend mq cols sorryWtf
+      | views mobTbl (searchId `IM.notMember`) ms = wrapSend mq cols . sorryNonexistentId searchId . pure $ "mobile"
+      | otherwise                                 = do logPlaExecArgs (prefixDebugCmd "volume") (pure a) i
+                                                       send mq . nlnl . showText . calcCarriedVol searchId $ ms
 debugVolume p = advise p [] adviceDVolumeExcessArgs
 
 
@@ -1179,10 +1179,10 @@ debugWeight   (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)
   _                -> wrapSend mq cols . sorryParseId $ a
   where
     helper searchId ms
-      | searchId < 0                               = wrapSend mq cols sorryWtf
-      | searchId `notElem` views objTbl IM.keys ms = wrapSend mq cols . sorryNonexistentId searchId . pure $ "object"
-      | otherwise                                  = do logPlaExecArgs (prefixDebugCmd "weight") (pure a) i
-                                                        send mq . nlnl . showText . calcWeight searchId $ ms
+      | searchId < 0                              = wrapSend mq cols sorryWtf
+      | views objTbl (searchId `IM.notMember`) ms = wrapSend mq cols . sorryNonexistentId searchId . pure $ "object"
+      | otherwise                                 = do logPlaExecArgs (prefixDebugCmd "weight") (pure a) i
+                                                       send mq . nlnl . showText . calcWeight searchId $ ms
 debugWeight p = advise p [] adviceDWeightExcessArgs
 
 

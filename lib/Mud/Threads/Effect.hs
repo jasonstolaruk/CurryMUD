@@ -72,6 +72,9 @@ startEffectHelper i e@(view effectFeeling -> ef) = do logPla "startEffectHelper"
                                                       tweak $ activeEffectsTbl.ind i <>~ pure (ActiveEffect e (a, q))
 
 
+-----
+
+
 threadEffect :: Id -> Effect -> EffectQueue -> MudStack ()
 threadEffect i (Effect effSub _ secs _) q = handle (threadExHandler (Just i) "effect") $ ask >>= \md -> do
     setThreadType . EffectThread $ i
@@ -100,6 +103,9 @@ threadEffect i (Effect effSub _ secs _) q = handle (threadExHandler (Just i) "ef
     logHelper rest = logNotice "threadEffect" . T.concat $ [ "effect thread for ID ", showText i, " ", rest ]
 
 
+-----
+
+
 pauseEffects :: Id -> MudStack () -- When a player logs out.
 pauseEffects i = getState >>= \ms ->
     let aes = getActiveEffects i ms
@@ -119,6 +125,9 @@ massPauseEffects = sequence_ [ logNotice "massPauseEffects" "mass pausing effect
                              , mapM_ pauseEffects . views activeEffectsTbl IM.keys =<< getState ]
 
 
+-----
+
+
 restartPausedEffects :: Id -> MudStack () -- When a player logs in.
 restartPausedEffects i = do pes <- getPausedEffects i <$> getState
                             unless (null pes) . restartPausedHelper i $ pes
@@ -136,6 +145,9 @@ massRestartPausedEffects = getState >>= \ms -> do logNotice "massRestartPausedEf
     helper _  (_, [] )                          = unit
     helper ms (i, _  ) | getType i ms == PCType = unit
     helper _  (i, pes)                          = restartPausedHelper i pes
+
+
+-----
 
 
 stopEffect :: Id -> ActiveEffect -> MudStack ()

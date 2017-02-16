@@ -129,7 +129,7 @@ import Data.Text (Text)
 import Data.Time (diffUTCTime, getCurrentTime)
 import GHC.Stack (HasCallStack)
 import Prelude hiding (exp)
-import qualified Data.IntMap.Strict as IM (IntMap, empty, filter, foldlWithKey', foldr, fromList, keys, map, mapWithKey)
+import qualified Data.IntMap.Strict as IM (IntMap, empty, filter, foldlWithKey', foldr, fromList, keys, map, mapWithKey, member)
 import qualified Data.Map.Strict as M ((!), elems, keys, lookup, member, null, toList)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
@@ -482,7 +482,7 @@ hasEnc as = ((||) <$> any (`elem` [ enc, enc's ]) <*> (== prd enc) . last) as
 
 
 hasType :: HasCallStack => Id -> MudState -> Bool
-hasType i = views typeTbl ((i `elem`) . IM.keys)
+hasType i = views typeTbl (i `IM.member`)
 
 
 -----

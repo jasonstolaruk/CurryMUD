@@ -811,7 +811,7 @@ helperLinkUnlink :: HasCallStack => MudState -> Id -> MsgQueue -> Cols -> MudSta
 helperLinkUnlink ms i mq cols =
     let s                = getSing   i ms
         othersLinkedToMe = getLinked i ms
-        meLinkedToOthers = foldr buildSingList [] $ i `delete` views pcTbl IM.keys ms
+        meLinkedToOthers = foldr buildSingList [] $ views pcTbl ((i `delete`) . IM.keys) ms
         buildSingList pi acc | s `elem` getLinked pi ms = getSing pi ms : acc
                              | otherwise                = acc
         twoWays              = map fst . filter ((== 2) . snd) . countOccs $ othersLinkedToMe ++ meLinkedToOthers

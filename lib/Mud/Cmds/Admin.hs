@@ -80,7 +80,7 @@ import GHC.Conc (ThreadStatus(..), threadStatus)
 import GHC.Exts (sortWith)
 import GHC.Stack (HasCallStack)
 import Prelude hiding (exp, pi)
-import qualified Data.IntMap.Strict as IM (elems, filter, filterWithKey, keys, lookup, size, toList)
+import qualified Data.IntMap.Strict as IM (elems, filter, filterWithKey, keys, lookup, notMember, size, toList)
 import qualified Data.Map.Strict as M (elems, findWithDefault, foldl, foldrWithKey, keys, null, size, toList)
 import qualified Data.Set as S (toList)
 import qualified Data.Text as T
@@ -453,10 +453,10 @@ adminChan (NoArgs i mq cols) = getState >>= \ms -> case views chanTbl (map (mkCh
   reports -> adminChanIOHelper i mq reports
 adminChan (LowerNub i mq cols as) = getState >>= \ms ->
     let helper a = case reads . T.unpack $ a :: [(Int, String)] of
-          [(ci, "")] | ci < 0                                      -> pure sorryWtf
-                     | views chanTbl ((ci `notElem`) . IM.keys) ms -> sorry
-                     | otherwise                                   -> mkChanReport i ms . getChan ci $ ms
-          _                                                        -> sorry
+          [(ci, "")] | ci < 0                               -> pure sorryWtf
+                     | views chanTbl (ci `IM.notMember`) ms -> sorry
+                     | otherwise                            -> mkChanReport i ms . getChan ci $ ms
+          _                                                 -> sorry
           where
             sorry = pure . sorryParseChanId $ a
         reports = map helper as

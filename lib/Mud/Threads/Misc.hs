@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable, LambdaCase, MonadComprehensions, OverloadedStrings, TupleSections #-}
+{-# LANGUAGE DeriveDataTypeable, LambdaCase, OverloadedStrings, TupleSections #-}
 
 module Mud.Threads.Misc ( concurrentTree
                         , dbExHandler
@@ -33,7 +33,7 @@ import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TMQueue (closeTMQueue)
 import Control.Exception (AsyncException(..), Exception, IOException, SomeException, fromException, toException)
 import Control.Exception.Lifted (throwTo)
-import Control.Lens (at)
+import Control.Lens (at, views)
 import Control.Lens.Operators ((?~))
 import Control.Monad (unless, void)
 import Control.Monad.IO.Class (liftIO)
@@ -42,6 +42,7 @@ import Data.Monoid ((<>))
 import Data.Text (Text)
 import Data.Typeable (Typeable)
 import GHC.Conc (labelThread)
+import qualified Data.IntMap.Strict as IM (member)
 import System.IO.Error (isAlreadyInUseError, isDoesNotExistError, isPermissionError)
 
 
@@ -129,7 +130,9 @@ threadExHandler mi threadName e = f >>= \threadName' -> do
     throwToListenThread e
   where
     f = case mi of Nothing -> return threadName
-                   Just i  -> [ threadName |<>| singId | singId <- descSingId i <$> getState ]
+                   Just i  -> getState >>= \ms -> let t | views entTbl (i `IM.member`) ms = descSingId i ms
+                                                        | otherwise                       = showText i
+                                                  in return $ threadName |<>| t
 
 
 -----

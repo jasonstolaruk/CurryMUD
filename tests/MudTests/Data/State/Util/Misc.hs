@@ -12,7 +12,7 @@ import Control.Lens (to)
 import Control.Lens.Operators ((^.))
 import Data.Monoid ((<>))
 import Data.Text (Text)
-import qualified Data.IntMap.Strict as IM (keys)
+import qualified Data.IntMap.Strict as IM (notMember)
 import qualified Data.Text as T
 import Test.QuickCheck.Monadic (assert, monadicIO)
 import Test.Tasty.HUnit ((@?=), Assertion)
@@ -20,8 +20,7 @@ import Test.Tasty.QuickCheck (Property)
 
 
 prop_getUnusedId :: Property
-prop_getUnusedId = monadicIO $ inWorld getState >>= \ms ->
-    assert $ getUnusedId ms `notElem` ms^.typeTbl.to IM.keys
+prop_getUnusedId = monadicIO $ inWorld getState >>= \ms -> assert . views typeTbl (getUnusedId ms `IM.notMember`) $ ms
 
 
 -- ==================================================
