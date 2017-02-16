@@ -332,32 +332,32 @@ iLounge = 190 :: Id
 
 -----
 
-iHolySymbol1 = 191 :: Id -- 9
+iHolySymbol1 = 191 :: Id -- 10
 
 -----
 
-iInside = 200 :: Id
+iInside = 201 :: Id
 
 -----
 
-iOutside = 201 :: Id
+iOutside = 202 :: Id
 
 -----
 
-iShop = 202 :: Id
+iShop = 203 :: Id
 
 -----
 
-iSpecial = 203 :: Id
+iSpecial = 204 :: Id
 
 -----
 
-iNoEnv = 204 :: Id
+iNoEnv = 205 :: Id
 
 -----
 
-iCottage = 205 :: Id
+iCottage = 206 :: Id
 
 -----
 
-iCurry = 206 :: Id
+iCurry = 207 :: Id

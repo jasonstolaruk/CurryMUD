@@ -115,7 +115,6 @@ module Mud.Cmds.Msgs.Sorry ( sorryActing
                            , sorryHelpName
                            , sorryHolySymbolAmt
                            , sorryHolySymbolGodName
-                           , sorryHolySymbolMurgorhd
                            , sorryIgnoreLocPref
                            , sorryIgnoreLocPrefPlur
                            , sorryIncog
@@ -1023,10 +1022,6 @@ sorryHolySymbolAmt a = dblQuote a                                 <>
 
 sorryHolySymbolGodName :: Text -> Text
 sorryHolySymbolGodName a = dblQuote a <> " is not a valid god name."
-
-
-sorryHolySymbolMurgorhd :: Text
-sorryHolySymbolMurgorhd = can't "make a holy symbol of Murgorhd."
 
 
 -----

@@ -1035,9 +1035,8 @@ adminHolySymbol   (WithArgs i mq cols [ numTxt, godNameTxt ]) = case reads . T.u
             | otherwise                  -> modifyStateSeq $ \ms ->
                 let sorry               = (ms, ) . pure . wrapSend mq cols
                     found godName       = case filter ((== godName) . snd) [ (x, pp x) | x <- allGodNames ] of
-                      []                -> notFound
-                      ((Murgorhd, _):_) -> sorry sorryHolySymbolMurgorhd
-                      ((gn,       _):_) ->
+                      []          -> notFound
+                      ((gn, _):_) ->
                           let et  = EntTemplate (Just "holy")
                                                 ("holy symbol of " <> pp gn) ("holy symbols of " <> pp gn)
                                                 (mkHolySymbolDesc gn)

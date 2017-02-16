@@ -222,7 +222,7 @@ applyBonus i s gn now = do
                             Drogo     -> effectHelper Ma (5, 15)
                             Iminye    -> effectHelper Dx (3, 8) >> effectHelper Ht (3, 8)
                             Itulvatar -> flip effectHelper (10, 15) =<< rndmElem [ St, Dx, Ht ]
-                            Murgorhd  -> unit
+                            Murgorhd  -> f Aule
                             Rha'yk    -> effectHelper St (5, 15)
                             Rumialys  -> effectHelper Ht (5, 15)
     f gn
