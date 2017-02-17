@@ -8,8 +8,7 @@ import Mud.TheWorld.Zones.AdminZone
 import Mud.TopLvlDefs.Chars
 import MudTests.TestUtil
 
-import Control.Lens (to)
-import Control.Lens.Operators ((^.))
+import Control.Lens (views)
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import qualified Data.IntMap.Strict as IM (notMember)
