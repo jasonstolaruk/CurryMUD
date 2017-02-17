@@ -132,7 +132,7 @@ maxHelpTopicLen :: Int
 maxHelpTopicLen = 13
 
 
-maxInacSecs :: Integer
+maxInacSecs :: Seconds
 maxInacSecs = 10 {- mins -} * 60 {- secs -} -- ten mins
 
 

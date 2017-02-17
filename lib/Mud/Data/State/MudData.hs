@@ -678,6 +678,7 @@ type TimerQueue = TMQueue TimerMsg
 
 
 data TimerMsg = ResetTimer
+              | SetMaxSecs Seconds
 
 
 type FeelingAsync = Async ()

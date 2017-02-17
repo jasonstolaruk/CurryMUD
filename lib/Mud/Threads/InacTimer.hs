@@ -1,4 +1,3 @@
-{-# OPTIONS_GHC -fno-warn-type-defaults #-}
 {-# LANGUAGE LambdaCase, OverloadedStrings, ViewPatterns #-}
 
 module Mud.Threads.InacTimer (threadInacTimer) where
@@ -28,12 +27,6 @@ import qualified Data.Text as T
 import System.Time.Utils (renderSecs)
 
 
-default (Int)
-
-
------
-
-
 logNotice :: Text -> Text -> MudStack ()
 logNotice = L.logNotice "Mud.Threads.InacTimer"
 
@@ -46,14 +39,18 @@ logPla = L.logPla "Mud.Threads.InacTimer"
 
 
 threadInacTimer :: Id -> MsgQueue -> TimerQueue -> MudStack ()
-threadInacTimer i mq tq = sequence_ [ setThreadType . InacTimer $ i
-                                    , loop 0 `catch` threadExHandler (Just i) "inactivity timer" ] `finally` stopTimer tq
+threadInacTimer i mq tq = let f = sequence_ [ setThreadType . InacTimer $ i
+                                            , loop maxInacSecs 0 `catch` threadExHandler (Just i) "inactivity timer" ]
+                          in f `finally` stopTimer tq
   where
-    loop secs = do liftIO . threadDelay $ 1 * 10 ^ 6
-                   tq |&| liftIO . atomically . tryReadTMQueue >=> \case Just Nothing | secs >= maxInacSecs -> inacBoot secs
-                                                                                      | otherwise           -> loop . succ $ secs
-                                                                         Just (Just ResetTimer)             -> loop 0
-                                                                         Nothing                            -> unit
+    loop maxSecs secs = do
+        liftIO . threadDelay $ 1 * 10 ^ 6
+        tq |&| liftIO . atomically . tryReadTMQueue >=> \case
+          Just Nothing | secs >= maxInacSecs -> inacBoot . fromIntegral $ secs
+                       | otherwise           -> loop maxSecs . succ $ secs
+          Just (Just ResetTimer           )  -> loop maxSecs  0
+          Just (Just (SetMaxSecs maxSecs'))  -> loop maxSecs' 0
+          Nothing                            -> unit
     inacBoot (parensQuote . T.pack . renderSecs -> secs) = getState >>= \ms -> let s = getSing i ms in do
         logPla "threadInacTimer inacBoot" i . prd $ "booting due to inactivity " <> secs
         let noticeMsg = T.concat [ "booting player ", showText i, " ", parensQuote s, " due to inactivity." ]

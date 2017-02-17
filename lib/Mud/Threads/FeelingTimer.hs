@@ -88,7 +88,8 @@ threadFeelingTimer i tag dur tq = sequence_ [ setThreadType . FeelingTimer $ i
           Just Nothing | secs >= dur -> do logHelper $ mkName ms <> " is expiring."
                                            tweak $ mobTbl.ind i.feelingMap %~ (tag `M.delete`)
                        | otherwise   -> loop . succ $ secs
-          Just (Just ResetTimer)     -> logHelper (mkName ms <> " is resetting.") >> loop 0
+          Just (Just ResetTimer    ) -> logHelper (mkName ms <> " is resetting.") >> loop 0
+          Just (Just (SetMaxSecs _)) -> undefined -- TODO
           Nothing                    -> unit
     exHandler :: SomeException -> MudStack ()
     exHandler e = getState >>= \ms -> case fromException e of
