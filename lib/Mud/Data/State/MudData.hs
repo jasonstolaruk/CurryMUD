@@ -156,7 +156,12 @@ data ActiveEffect = ActiveEffect { _effect        :: Effect
                                  , _effectService :: EffectService }
 
 
--- Effects that have a duration.
+{-
+Effects that have a duration.
+These effects have a timer that may be paused (and later restarted) or stopped (cancelled).
+There may be a feeling associated with the effect.
+An "EffectOther" has an "effect function" that is run every second.
+-}
 data Effect = Effect { _effectSub     :: EffectSub
                      , _effectVal     :: Maybe EffectVal
                      , _effectDur     :: Seconds
@@ -181,8 +186,8 @@ data EffectVal = DefiniteVal Int
 type Range = (Int, Int)
 
 
-data EffectFeeling = EffectFeeling { efTag  :: FeelingTag
-                                   , efDur  :: Seconds } deriving (Eq, Generic, Show)
+data EffectFeeling = EffectFeeling { efTag :: FeelingTag
+                                   , efDur :: Seconds } deriving (Eq, Generic, Show)
 
 
 type EffectService = (EffectAsync, EffectQueue)

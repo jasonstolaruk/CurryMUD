@@ -189,7 +189,7 @@ noTasteMsg = "You don't taste anything in particular."
 
 
 notifyArrivalMsg :: Text -> Text
-notifyArrivalMsg n = "Waking up, " <> n <> " slowly materializes out of thin air."
+notifyArrivalMsg n = n <> " slowly materializes out of thin air."
 
 
 plusRelatedMsg :: Text
