@@ -3186,7 +3186,7 @@ firstMobSay i pt | pt^.ind i.to isNotFirstMobSay = (pt, [])
 -----
 
 
-security :: HasCallStack => ActionFun
+security :: HasCallStack => ActionFun -- TODO: Give the option to cancel.
 security (NoArgs i mq cols) = getSing i <$> getState >>= \s ->
     withDbExHandler "security" (getDbTblRecs "sec") >>= \case
       Just recs -> case filter ((s ==) . (dbName :: SecRec -> Text)) recs of

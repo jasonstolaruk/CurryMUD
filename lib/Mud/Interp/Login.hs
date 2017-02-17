@@ -370,7 +370,7 @@ promptRetrySex mq cols =
 -- ==================================================
 
 
-interpRace :: HasCallStack => NewCharBundle -> Interp
+interpRace :: HasCallStack => NewCharBundle -> Interp -- TODO: "h" for "Hobbit" isn't working.
 interpRace _ "" (NoArgs _ mq cols) = multiWrapSend mq cols raceTxt >> promptRace mq cols
 interpRace ncb@(NewCharBundle _ s _) (T.toLower -> cn) (NoArgs i mq cols) = case cn of
   "1" -> helper Dwarf
@@ -431,13 +431,13 @@ showAttribs i mq = getState >>= \ms -> multiSend mq . footer ms . map helper . g
     f (c, txt, x) = T.concat [ colorWith abbrevColor . T.singleton $ c, txt, " ", showText x ]
     footer ms     = (++ rest)
       where
-        rest = pure . nlPrefix $ showText (getPickPts i ms) <> " points remaining."
+        rest = pure . nlPrefix $ showText (getPickPts i ms) <> " points remaining." -- TODO: If pts is 0, indicate that the user may enter "q" to move on.
 
 
 -- ==================================================
 
 
-interpPickPts :: HasCallStack => NewCharBundle -> Interp
+interpPickPts :: HasCallStack => NewCharBundle -> Interp -- TODO: Command name should be downcased. Should probably do this in other functions, too.
 interpPickPts _                         "" (NoArgs' i mq        ) = promptPickPts i mq
 interpPickPts ncb@(NewCharBundle _ s _) cn (Lower   i mq cols as) = getState >>= \ms -> let pts = getPickPts i ms in if
   | cn `T.isPrefixOf` "quit" -> if isZero pts
@@ -509,7 +509,7 @@ procAttribChar i ms = \case 's' -> ("Strength",  getBaseSt i ms, st)
 -- ==================================================
 
 
-descHelper :: HasCallStack => NewCharBundle -> Id -> MsgQueue -> Cols -> MudStack ()
+descHelper :: HasCallStack => NewCharBundle -> Id -> MsgQueue -> Cols -> MudStack () -- TODO: User should be given more than 10 mins of inactivity.
 descHelper ncb i mq cols = sequence_ [ send mq . nl . T.unlines . parseWrapXform cols $ enterDescMsg
                                      , setDescInterpHelper ncb i mq cols ]
 

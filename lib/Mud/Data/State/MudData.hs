@@ -158,7 +158,7 @@ data ActiveEffect = ActiveEffect { _effect        :: Effect
 
 {-
 Effects that have a duration.
-These effects have a timer that may be paused (and later restarted) or stopped (cancelled).
+These effects have a timer that may be paused (and later restarted) or stopped (canceled).
 There may be a feeling associated with the effect. The feeling will be started and stopped with the effect.
 -}
 data Effect = Effect { _effectSub     :: EffectSub

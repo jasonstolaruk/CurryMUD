@@ -39,7 +39,7 @@ interpPager mf pageLen txtLen (left, right) (T.toLower -> cn) (NoArgs i mq cols)
                      send mq . T.unlines $ page
                      sendPagerPrompt mq (length left + pageLen - 2) txtLen
                      setInterp i . Just . interpPager mf pageLen txtLen $ (left ++ page, right')
-    in case cn of ""  -> next
+    in case cn of ""  -> next -- TODO: Get rid of undocumented commands.
                   "b" -> prev
                   "d" -> next
                   "f" -> next
