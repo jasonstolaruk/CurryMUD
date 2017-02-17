@@ -54,7 +54,7 @@ startFeeling i (EffectFeeling tag newDur) newV = getState >>= \ms ->
       Nothing -> do feel <- uncurry (Feeling newV newDur) <$> spawn
                     feelingMapHelper feel
                     logHelper . T.concat $ [ "started new feeling with tag ", dblQuote tag, ": ", pp feel, "." ]
-      Just (Feeling _ existDur existQ existA)
+      Just (Feeling _ existDur existQ existA) -- TODO: We need to be able to determine how many seconds remain for a running feeling.
         | newDur > existDur -> do
             liftIO . cancel $ existA
             feel <- uncurry (Feeling newV newDur) <$> spawn
@@ -62,11 +62,11 @@ startFeeling i (EffectFeeling tag newDur) newV = getState >>= \ms ->
             let msg = T.concat [ "feeling ", dblQuote tag, " has been restarted with a longer duration: ", pp feel, "." ]
             logHelper msg
         | otherwise -> liftIO (poll existA) >>= \case
-          Nothing -> do liftIO . atomically . writeTMQueue existQ $ ResetTimer
+          Nothing -> do liftIO . atomically . writeTMQueue existQ $ ResetTimer -- The async has not completed yet.
                         let feel = Feeling newV existDur existQ existA
                         feelingMapHelper feel
                         logRestart       feel
-          _       -> do feel <- uncurry (Feeling newV existDur) <$> spawn
+          _       -> do feel <- uncurry (Feeling newV existDur) <$> spawn -- The async has completed.
                         feelingMapHelper feel
                         logRestart       feel
   where

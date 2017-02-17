@@ -54,7 +54,7 @@ potPpFeelingFun (IntVal _) = mkFeelingMsg "psionic energy return"
 potFpFeelingFun :: FeelingFun
 potFpFeelingFun NoVal      = ""
 potFpFeelingFun (IntVal 0) = ""
-potFpFeelingFun (IntVal _) = mkFeelingMsg "energy return"
+potFpFeelingFun (IntVal _) = mkFeelingMsg "stamina return"
 
 
 -----

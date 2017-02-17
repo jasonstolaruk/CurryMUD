@@ -159,8 +159,7 @@ data ActiveEffect = ActiveEffect { _effect        :: Effect
 {-
 Effects that have a duration.
 These effects have a timer that may be paused (and later restarted) or stopped (cancelled).
-There may be a feeling associated with the effect.
-An "EffectOther" has an "effect function" that is run every second.
+There may be a feeling associated with the effect. The feeling will be started and stopped with the effect.
 -}
 data Effect = Effect { _effectSub     :: EffectSub
                      , _effectVal     :: Maybe EffectVal
@@ -173,7 +172,8 @@ data EffectSub = ArmEffectAC
                | MobEffectAttrib Attrib
                | MobEffectAC
                | RmEffectFlags
-               | EffectOther FunName deriving (Eq, Generic, Show)
+               | EffectOther FunName -- "EffectOther" has an "effect function" that is run every second.
+               deriving (Eq, Generic, Show)
 
 
 data Attrib = St | Dx | Ht | Ma | Ps deriving (Bounded, Enum, Eq, Generic, Show)
@@ -186,6 +186,10 @@ data EffectVal = DefiniteVal Int
 type Range = (Int, Int)
 
 
+{-
+A feeling is distinguished by its tag.
+TODO
+-}
 data EffectFeeling = EffectFeeling { efTag :: FeelingTag
                                    , efDur :: Seconds } deriving (Eq, Generic, Show)
 
@@ -469,7 +473,10 @@ data HostRecord = HostRecord { _noOfLogouts   :: Int
 -- ==================================================
 
 
--- Effects that are instantaneous.
+{-
+Effects that are instantaneous.
+There may be a feeling associated with the effect. The feeling will be started with the effect.
+-}
 data InstaEffect = InstaEffect { _instaEffectSub     :: InstaEffectSub
                                , _instaEffectVal     :: Maybe EffectVal
                                , _instaEffectFeeling :: Maybe EffectFeeling } deriving (Eq, Generic, Show)
