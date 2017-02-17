@@ -428,9 +428,11 @@ showAttribs i mq = getState >>= \ms -> multiSend mq . footer ms . map helper . g
       (Ma, x) -> ('M', "agic    ", x)
       (Ps, x) -> ('P', "sionics ", x)
     f (c, txt, x) = T.concat [ colorWith abbrevColor . T.singleton $ c, txt, " ", showText x ]
-    footer ms     = (++ rest)
+    footer ms     = (++ pure (msg <> hint))
       where
-        rest = pure . nlPrefix $ showText (getPickPts i ms) <> " points remaining." -- TODO: If pts is 0, indicate that the user may enter "q" to move on.
+        pts  = getPickPts i ms
+        msg  = nlPrefix $ showText pts <> " points remaining."
+        hint = isZero pts |?| (" Type " <> colorWith quoteColor (T.singleton 'q') <> " to quit and move on.")
 
 
 -- ==================================================
