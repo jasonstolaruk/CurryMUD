@@ -54,7 +54,7 @@ import Control.Monad ((>=>), join, unless, void, when)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Loops (orM)
 import Crypto.BCrypt (validatePassword)
-import Data.Char (isDigit, isLower, isUpper, toLower)
+import Data.Char (isDigit, isLower, isUpper)
 import Data.Ix (inRange)
 import Data.List (delete, find, foldl', intersperse, partition)
 import Data.Maybe (fromMaybe, isNothing)
@@ -370,7 +370,7 @@ promptRetrySex mq cols =
 -- ==================================================
 
 
-interpRace :: HasCallStack => NewCharBundle -> Interp -- TODO: "h" for "Hobbit" isn't working.
+interpRace :: HasCallStack => NewCharBundle -> Interp
 interpRace _ "" (NoArgs _ mq cols) = multiWrapSend mq cols raceTxt >> promptRace mq cols
 interpRace ncb@(NewCharBundle _ s _) (T.toLower -> cn) (NoArgs i mq cols) = case cn of
   "1" -> helper Dwarf
@@ -381,10 +381,9 @@ interpRace ncb@(NewCharBundle _ s _) (T.toLower -> cn) (NoArgs i mq cols) = case
   "6" -> helper Lagomorph
   "7" -> helper Nymph
   "8" -> helper Vulpenoid
-  _   -> case [ t | (headTail . showText -> (uncurry T.cons . first toLower -> t)) <- allValues :: [Race]
-                  , cn `T.isPrefixOf` t ] of
-    [raceName] -> readRaceHelp raceName >>= multiWrapSend mq cols . T.lines >> promptRace mq cols
-    _          -> sorryRace mq cols cn
+  _   -> case [ x | x <- map pp (allValues :: [Race]), cn `T.isPrefixOf` x ] of
+    (raceName:_) -> readRaceHelp raceName >>= multiWrapSend mq cols . T.lines >> promptRace mq cols
+    _            -> sorryRace mq cols cn
   where
     helper r              = do tweaks [ pcTbl     .ind i.race       .~ r
                                       , mobTbl    .ind i.knownLangs .~ pure (raceToLang r)
@@ -402,7 +401,7 @@ interpRace _ cn ActionParams { .. } = sorryRace plaMsgQueue plaCols . T.unwords 
 
 
 sorryRace :: HasCallStack => MsgQueue -> Cols -> Text -> MudStack ()
-sorryRace mq cols t = wrapSend mq cols (sorryWut t) >> promptRace mq cols
+sorryRace mq cols t = sequence_ [ multiWrapSend mq cols $ sorryWut t : "" : raceTxt, promptRace mq cols ]
 
 
 mkPickPtsIntroTxt :: HasCallStack => Sing -> Text
