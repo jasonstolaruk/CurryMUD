@@ -438,21 +438,22 @@ showAttribs i mq = getState >>= \ms -> multiSend mq . footer ms . map helper . g
 -- ==================================================
 
 
-interpPickPts :: HasCallStack => NewCharBundle -> Interp -- TODO: Command name should be downcased. Should probably do this in other functions, too.
-interpPickPts _                         "" (NoArgs' i mq        ) = promptPickPts i mq
-interpPickPts ncb@(NewCharBundle _ s _) cn (Lower   i mq cols as) = getState >>= \ms -> let pts = getPickPts i ms in if
-  | cn `T.isPrefixOf` "quit" -> if isZero pts
-    then do blankLine mq
-            let msgs = [ lSpcs <> "Next you'll write a description of "
-                       , s
-                       , ", which others will see when they look at "
-                       , mkHimHer . getSex i $ ms
-                       , ". Your description must adhere to the following rules:" ]
-            send mq . T.unlines . parseWrapXform cols . T.concat $ msgs
-            send mq . T.unlines . concat . wrapLines cols . T.lines $ descRulesMsg
-            pause i mq . Just . descHelper ncb i mq $ cols
-    else wrapSend mq cols sorryInterpPickPtsQuit >> anglePrompt mq
-  | otherwise -> helper |&| modifyState >=> \msgs -> multiWrapSend mq cols msgs >> promptPickPts i mq
+interpPickPts :: HasCallStack => NewCharBundle -> Interp
+interpPickPts _                         ""               (NoArgs' i mq        ) = promptPickPts i mq
+interpPickPts ncb@(NewCharBundle _ s _) (T.toLower ->cn) (Lower   i mq cols as) = getState >>= \ms ->
+    let pts = getPickPts i ms in if
+      | cn `T.isPrefixOf` "quit" -> if isZero pts
+        then do blankLine mq
+                let msgs = [ lSpcs <> "Next you'll write a description of "
+                           , s
+                           , ", which others will see when they look at "
+                           , mkHimHer . getSex i $ ms
+                           , ". Your description must adhere to the following rules:" ]
+                send mq . T.unlines . parseWrapXform cols . T.concat $ msgs
+                send mq . T.unlines . concat . wrapLines cols . T.lines $ descRulesMsg
+                pause i mq . Just . descHelper ncb i mq $ cols
+        else wrapSend mq cols sorryInterpPickPtsQuit >> anglePrompt mq
+      | otherwise -> helper |&| modifyState >=> \msgs -> multiWrapSend mq cols msgs >> promptPickPts i mq
   where
     helper ms = foldl' assignPts (ms, []) $ cn : as
     assignPts a@(ms, msgs) arg = let pts = getPickPts i ms in if
