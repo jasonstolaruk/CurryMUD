@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE MudletPackage>
+<MudletPackage version="1.0">
+    <ScriptPackage>
+        <ScriptGroup isActive="yes" isFolder="yes">
+            <name>CurryMUD scripts</name>
+            <packageName></packageName>
+            <script>-------------------------------------------------
+--         Put your Lua functions here.        --
+--                                             --
+-- Note that you can also use external Scripts --
+-------------------------------------------------
+</script>
+            <eventHandlerList/>
+            <Script isActive="yes" isFolder="no">
+                <name>curry_vitals</name>
+                <packageName></packageName>
+                <script>local did_init = false
+local hp_bar, mp_bar, pp_bar, fp_bar
+
+function init()
+  did_init = true
+
+  setBorderTop(2)
+  setBorderBottom(26)
+  setBorderLeft(2)
+
+  gauge_container = Geyser.Container:new({
+    name = &quot;gauge_container&quot;,
+    x = 0, y = -26,
+    width = &quot;100%&quot;, height = 26,
+  })
+
+  hp_bar = Geyser.Gauge:new({
+    name = &quot;hp_bar&quot;,
+    x = 2, y = 2,
+    width = 200, height = 20,
+  }, gauge_container)
+
+  mp_bar = Geyser.Gauge:new({
+    name = &quot;mp_bar&quot;,
+    x = 207, y = 2,
+    width = 200, height = 20,
+  }, gauge_container)
+
+  pp_bar = Geyser.Gauge:new({
+    name = &quot;pp_bar&quot;,
+    x = 412, y = 2,
+    width = 200, height = 20,
+  }, gauge_container)
+
+  fp_bar = Geyser.Gauge:new({
+    name = &quot;fp_bar&quot;,
+    x = 617, y = 2,
+    width = 200, height = 20,
+  }, gauge_container)
+
+  hp_bar.front:setStyleSheet([[background-color: red]])
+  hp_bar.back:setStyleSheet([[background-color: #808080]])
+  mp_bar.front:setStyleSheet([[background-color: green]])
+  mp_bar.back:setStyleSheet([[background-color: #808080]])
+  pp_bar.front:setStyleSheet([[background-color: blue]])
+  pp_bar.back:setStyleSheet([[background-color: #808080]])
+  fp_bar.front:setStyleSheet([[background-color: yellow]])
+  fp_bar.back:setStyleSheet([[background-color: #cccccc]])
+end
+
+function curry_vitals()
+  if not did_init then init() end
+
+  local hp_text = &quot;&amp;nbsp;&lt;b&gt;&lt;font size=\&quot;3\&quot;&gt;HP: &quot;..gmcp.Char.Vitals.curr_hp..&quot;&lt;/font&gt;&lt;/b&gt;&quot;
+  local mp_text = &quot;&amp;nbsp;&lt;b&gt;&lt;font size=\&quot;3\&quot;&gt;MP: &quot;..gmcp.Char.Vitals.curr_mp..&quot;&lt;/font&gt;&lt;/b&gt;&quot;
+  local pp_text = &quot;&amp;nbsp;&lt;b&gt;&lt;font size=\&quot;3\&quot;&gt;PP: &quot;..gmcp.Char.Vitals.curr_pp..&quot;&lt;/font&gt;&lt;/b&gt;&quot;
+  local fp_text = &quot;&amp;nbsp;&lt;b&gt;&lt;font size=\&quot;3\&quot; color=\&quot;black\&quot;&gt;FP: &quot;..gmcp.Char.Vitals.curr_fp..&quot;&lt;/font&gt;&lt;/b&gt;&quot;
+
+  hp_bar:setValue(gmcp.Char.Vitals.curr_hp, gmcp.Char.Vitals.max_hp, hp_text)
+  mp_bar:setValue(gmcp.Char.Vitals.curr_mp, gmcp.Char.Vitals.max_mp, mp_text)
+  pp_bar:setValue(gmcp.Char.Vitals.curr_pp, gmcp.Char.Vitals.max_pp, pp_text)
+  fp_bar:setValue(gmcp.Char.Vitals.curr_fp, gmcp.Char.Vitals.max_fp, fp_text)
+end
+</script>
+                <eventHandlerList>
+                    <string>gmcp.Char.Vitals</string>
+                </eventHandlerList>
+            </Script>
+            <Script isActive="yes" isFolder="no">
+                <name>curry_mapper</name>
+                <packageName></packageName>
+                <script>mudlet = mudlet or {}; mudlet.mapper_script = true
+
+local did_init = false
+local yellow   = {255, 255, 0}
+
+function curry_mapper()
+  if not did_init then
+    setMapZoom(10)
+    did_init = true
+  end
+  local info = gmcp.Room.Info
+  -- display(info)
+  local area_id = find_area_id(info.area_name)
+  if not area_id then area_id = addAreaName(info.area_name) end
+  if not getRoomName(info.room_id) then
+    addRoom(info.room_id)
+    setRoomName(info.room_id, info.room_name)
+    setRoomArea(info.room_id, area_id)
+    setRoomCoordinates(info.room_id, info.x_coord, info.y_coord, info.z_coord)
+    setRoomEnv(info.room_id, info.room_env)
+    createMapLabel(area_id, info.room_label, info.x_coord, info.y_coord, info.z_coord, 255,255,255, 0,0,0, 0, 12)
+    for i, dir in pairs(info.room_exits) do
+      setExitStub(info.room_id, dir, true)
+    end
+  end
+  if getRoomName(info.last_room_id) and info.last_room_id ~= info.room_id then
+    if info.dir ~= -1 then
+      setExit(info.last_room_id, info.room_id, info.dir)
+      if info.dir == 11 or info.dir == 12 then -- &quot;in&quot; or &quot;out&quot;
+        addCustomLine(info.last_room_id, info.room_id, info.dir, &quot;solid line&quot;, yellow, false)
+      end
+    elseif info.special_dir ~= &quot;-1&quot; then
+      addSpecialExit(info.last_room_id, info.room_id, info.special_dir)
+      if addCustomLine ~= nil then
+        addCustomLine(info.last_room_id, info.room_id, info.special_dir, &quot;solid line&quot;, yellow, false)
+      end
+    end
+  end
+  if info.zoom ~= -1 then setMapZoom(info.zoom) end
+  centerview(info.room_id)
+end
+
+function find_area_id(name)
+  for area, id in pairs(getAreaTable()) do
+    if area:find(name, 1, true) then return id end
+  end
+end
+</script>
+                <eventHandlerList>
+                    <string>gmcp.Room.Info</string>
+                </eventHandlerList>
+            </Script>
+        </ScriptGroup>
+    </ScriptPackage>
+</MudletPackage>
