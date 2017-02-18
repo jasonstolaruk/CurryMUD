@@ -3189,11 +3189,9 @@ firstMobSay i pt | pt^.ind i.to isNotFirstMobSay = (pt, [])
 
 security :: HasCallStack => ActionFun
 security (NoArgs i mq cols) = getSing i <$> getState >>= \s ->
-    withDbExHandler "security" (getDbTblRecs "sec") >>= \case
-      Just recs -> case filter ((s ==) . (dbName :: SecRec -> Text)) recs of -- TODO: Let the db do the filtering.
-        []      -> securityHelper i mq cols
-        matches -> securityChange . last $ matches
-      Nothing   -> dbError mq cols
+    withDbExHandler "security" (lookupSec s) >>= \case Just []   -> securityHelper i mq cols
+                                                       Just recs -> securityChange . last $ recs
+                                                       Nothing   -> dbError mq cols
   where
     securityChange SecRec { dbQ, dbA } = do multiWrapSend mq cols [ "You have set your security Q&A as follows:"
                                                                   , "Question: " <> dbQ

@@ -44,6 +44,7 @@ module Mud.Misc.Database ( AdminChanRec(..)
                          , lookupPW
                          , lookupSacBonusTime
                          , lookupSacrifices
+                         , lookupSec
                          , lookupTeleNames
                          , lookupWord
                          , ProfRec(..)
@@ -507,7 +508,6 @@ countDbTblRecsAdminChan :: IO Int
 countDbTblRecsAdminChan = countHelper "admin_chan"
 
 
-
 countDbTblRecsAdminMsg :: IO Int
 countDbTblRecsAdminMsg = countHelper "admin_msg"
 
@@ -586,6 +586,10 @@ lookupSacBonusTime s gn = let q = Query "select utc_time from sac_bonus where na
 lookupSacrifices :: Sing -> Text -> IO Int -- How many sacrifices have been made?
 lookupSacrifices s gn = let q = Query "select count(*) from sacrifice where name = ? and god_name = ?"
                         in onDbFile $ \conn -> onlyIntsHelper <$> query conn q (s, gn)
+
+
+lookupSec :: Sing -> IO [SecRec]
+lookupSec s = onDbFile $ \conn -> query conn (Query "select * from sec where name = ?") (Only s)
 
 
 lookupTeleNames :: Sing -> IO [Text]
