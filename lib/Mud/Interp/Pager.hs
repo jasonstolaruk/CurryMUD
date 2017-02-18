@@ -32,14 +32,13 @@ type EntireTxtLen = Int
 interpPager :: Maybe Fun -> PageLen -> EntireTxtLen -> ([Text], [Text]) -> Interp
 interpPager mf pageLen txtLen (left, right) (T.toLower -> cn) (NoArgs i mq cols) = getState >>= \ms ->
     let next = if length right + 3 <= pageLen
-                 then do
-                     send mq . nl . T.unlines $ right
-                     fromMaybe (sendDfltPrompt mq i >> setInterp i Nothing) mf
+                 then do send mq . nl . T.unlines $ right
+                         fromMaybe (sendDfltPrompt mq i >> setInterp i Nothing) mf
                  else let (page, right') = splitAt (pageLen - 2) right in do
                      send mq . T.unlines $ page
                      sendPagerPrompt mq (length left + pageLen - 2) txtLen
                      setInterp i . Just . interpPager mf pageLen txtLen $ (left ++ page, right')
-    in case cn of ""  -> next -- TODO: Get rid of undocumented commands.
+    in case cn of ""  -> next
                   "b" -> prev
                   "n" -> next
                   "q" -> fromMaybe (sequence_ [ sendPrompt mq . nlPrefix . mkDfltPrompt i $ ms, resetInterp i]) mf
