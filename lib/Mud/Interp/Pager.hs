@@ -41,10 +41,7 @@ interpPager mf pageLen txtLen (left, right) (T.toLower -> cn) (NoArgs i mq cols)
                      setInterp i . Just . interpPager mf pageLen txtLen $ (left ++ page, right')
     in case cn of ""  -> next -- TODO: Get rid of undocumented commands.
                   "b" -> prev
-                  "d" -> next
-                  "f" -> next
                   "n" -> next
-                  "p" -> prev
                   "q" -> fromMaybe (sequence_ [ sendPrompt mq . nlPrefix . mkDfltPrompt i $ ms, resetInterp i]) mf
                   "u" -> prev
                   _   -> promptRetry mq cols
