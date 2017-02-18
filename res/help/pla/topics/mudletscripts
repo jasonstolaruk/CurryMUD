@@ -1,11 +1,18 @@
 \h MUDLET SCRIPTS \d
 
-Mudlet users will want to take advantage of our custom scripts for displaying vitals gauges and mapping. This help topic describes how to turn these features on by obtaining and importing the scripts.
+Mudlet users will want to take advantage of our custom scripts for displaying vitals gauges and mapping. This help topic describes how to turn these features on by obtaining and importing the required scripts.
 
-First, download the "CurryMUD.xml" file, available here: TODO.
-Next, connect to CurryMUD as usual. Open the script editor ("Toolbox" -> "Script editor") and click the "Scripts" icon on the left. Click the "Import" button at the top and import the "CurryMUD.xml" file.
-
-That's it! The vitals gauges will automatically appear at the bottom of the screen, above the input area. To view the mapper, select "Toolbox" -> "Show map."
+1) Open your web browser and navigate to the following URL:4`
+https://gist.githubusercontent.com/jasonstolaruk/4e287f5e7125bdba4c0578e8462291a1/raw/896c0199c5eee9d5388d6f08307eb616c0ae42a9/CurryMUD.xml
+2)  Save the content on your PC in a file named "CurryMUD.xml". (In Chrome, select "File" -> "Save Page As...")4`
+3)  Open Mudlet and connect to CurryMUD as usual.4`
+4)  Open the Mudlet preferences. Under "Game protocols," check "Enable GMCP."4`
+5)  Reconnect to CurryMUD.4`
+6)  Open the Mudlet mapper ("Toolbox" -> "Show map").4`
+7)  Open the Mudlet script editor ("Toolbox" -> "Script editor") and click the "Scripts" icon on the left.4`
+8)  Click the "Import" button at the top and import the "CurryMUD.xml" file.4`
+9)  Move your character to a different room. The vitals gauges will appear and the map will begin to be drawn.4`
+10) Use the CurryMUD "zoom" command to adjust the map zoom to your desired level.4`
 
 See "help client" for information regarding general Mudlet settings to optimize when playing CurryMUD.
 

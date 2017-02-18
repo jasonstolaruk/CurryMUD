@@ -4376,4 +4376,4 @@ zoom p = advise p ["zoom"] adviceZoomExcessArgs
 
 
 zoomHelper :: HasCallStack => Id -> MsgQueue -> Int -> MudStack ()
-zoomHelper i mq x = (sendGmcpRmInfo (Just x) i =<< getState) >> ok mq
+zoomHelper i mq x = (sendGmcpRmInfo (Just x) i =<< getState) >> ok mq -- TODO: Indicate the new zoom level.
