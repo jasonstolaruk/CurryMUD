@@ -1479,7 +1479,7 @@ adminSecurity   (LowerNub i mq cols as) = withDbExHandler "adminSecurity" (getDb
   Just (recs :: [SecRec]) -> do
       logPlaExecArgs (prefixAdminCmd "security") as i
       multiWrapSend mq cols . intercalateDivider cols . concatMap (helper recs . capitalize . T.toLower) $ as
-  Nothing   -> dbError mq cols
+  Nothing -> dbError mq cols
   where
     helper recs target = case filter ((target `T.isPrefixOf`) . (dbName :: SecRec -> Text)) recs of
       []      -> pure . pure . prd $ "No records found for " <> dblQuote target

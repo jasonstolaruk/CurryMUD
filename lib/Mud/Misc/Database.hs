@@ -40,6 +40,7 @@ module Mud.Misc.Database ( AdminChanRec(..)
                          , insertDbTblUnPw
                          , insertPropNames
                          , insertWords
+                         , lookupBonuses
                          , lookupPropName
                          , lookupPW
                          , lookupSacBonusTime
@@ -568,6 +569,11 @@ lookupPropName t = let q = Query "select prop_name from prop_names where prop_na
 
 onlyTextsHelper :: [Only Text] -> Maybe Text
 onlyTextsHelper = listToMaybe . map fromOnly
+
+
+lookupBonuses :: Sing -> Sing -> IO Int -- How many bonuses have been given from one PC to the other?
+lookupBonuses fromSing toSing = let q = Query "select count(*) from bonus where from_name = ? and to_name = ?"
+                                in onDbFile $ \conn -> onlyIntsHelper <$> query conn q (fromSing, toSing)
 
 
 lookupPW :: Sing -> IO (Maybe Text)

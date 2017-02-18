@@ -666,10 +666,8 @@ bonus   (OneArgLower i mq cols a) = getState >>= \ms ->
                   Just False -> sorry . sorryBonusCount $ targetSing
                   Nothing    -> unit
           xs -> patternMatchFail "bonus bonusHelper" . showText $ xs
-        canBonus targetSing = (withDbExHandler "bonus canBonus" . getDbTblRecs $ "bonus") >>= \case
-          Just xs -> unadulterated . All $ let c                      = length . filter p $ xs
-                                               p (BonusRec _ fn tn _) = fn == s && tn == targetSing
-                                           in c < maxBonuses
+        canBonus targetSing = (withDbExHandler "bonus canBonus" . lookupBonuses s $ targetSing) >>= \case
+          Just c  -> unadulterated . All $ c < maxBonuses
           Nothing -> emptied . dbError mq $ cols
         mkToTarget targetId | s `elem` getIntroduced targetId ms = g s
                             | otherwise                          = g "Someone"
