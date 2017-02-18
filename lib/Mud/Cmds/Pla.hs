@@ -3187,28 +3187,26 @@ firstMobSay i pt | pt^.ind i.to isNotFirstMobSay = (pt, [])
 -----
 
 
-security :: HasCallStack => ActionFun -- TODO: Give the option to cancel.
+security :: HasCallStack => ActionFun
 security (NoArgs i mq cols) = getSing i <$> getState >>= \s ->
     withDbExHandler "security" (getDbTblRecs "sec") >>= \case
-      Just recs -> case filter ((s ==) . (dbName :: SecRec -> Text)) recs of
+      Just recs -> case filter ((s ==) . (dbName :: SecRec -> Text)) recs of -- TODO: Let the db do the filtering.
         []      -> securityHelper i mq cols
         matches -> securityChange . last $ matches
       Nothing   -> dbError mq cols
   where
-    securityChange SecRec { dbQ, dbA } = do
-        multiWrapSend mq cols [ "You have set your security Q&A as follows:"
-                              , "Question: " <> dbQ
-                              , "Answer: "   <> dbA ]
-        promptChangeIt mq cols
-        setInterp i . Just $ interpConfirmSecurityChange
+    securityChange SecRec { dbQ, dbA } = do multiWrapSend mq cols [ "You have set your security Q&A as follows:"
+                                                                  , "Question: " <> dbQ
+                                                                  , "Answer: "   <> dbA ]
+                                            promptChangeIt mq cols
+                                            setInterp i . Just $ interpConfirmSecurityChange
 security p = withoutArgs security p
 
 
 securityHelper :: HasCallStack => Id -> MsgQueue -> Cols -> MudStack ()
-securityHelper i mq cols = do
-    multiWrapSend mq cols $ middle (++) (pure "") securityWarn securityQs
-    promptSecurity mq
-    setInterp i . Just $ interpSecurityNum
+securityHelper i mq cols = do multiWrapSend mq cols $ middle (++) (pure "") securityWarn securityQs
+                              promptSecurity mq
+                              setInterp i . Just $ interpSecurityNum
 
 
 securityWarn :: [Text]
@@ -3226,11 +3224,12 @@ securityQs = [ "Please choose your security question from the following options:
              , "2) What was the last name of your first grade teacher?"
              , "3) Where were you on New Year's 2000?"
              , "4) What is your email address?"
-             , "5) Create your own question." ]
+             , "5) Create your own question."
+             , "6) Cancel." ]
 
 
 promptSecurity :: HasCallStack => MsgQueue -> MudStack ()
-promptSecurity = flip sendPrompt "Which will you choose? [1-5]"
+promptSecurity = flip sendPrompt "Which will you choose? [1-6]"
 
 
 interpSecurityNum :: HasCallStack => Interp
@@ -3240,6 +3239,8 @@ interpSecurityNum cn (NoArgs i mq cols) = case cn of
   "3" -> helper "Where were you on New Year's 2000?"
   "4" -> helper "What is your email address?"
   "5" -> securityCreateQHelper i mq cols
+  "6" -> neverMind i mq
+  ""  -> neverMind i mq
   _   -> retrySecurityNum mq cols
   where
     helper q = sequence_ [ promptAnswer mq, setInterp i . Just . interpSecurityA $ q ]
