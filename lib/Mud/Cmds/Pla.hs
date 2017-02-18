@@ -932,10 +932,9 @@ description p = withoutArgs description p
 
 interpConfirmDescChange :: HasCallStack => Interp
 interpConfirmDescChange cn (NoArgs i mq cols) = case yesNoHelper cn of
-  Just True -> do
-      blankLine mq
-      send mq . T.unlines . parseWrapXform cols $ descRules
-      pause i mq . Just . descHelper i mq $ cols
+  Just True -> do blankLine mq
+                  send mq . T.unlines . parseWrapXform cols $ descRules
+                  pause i mq . Just . descHelper i mq $ cols
   Just False -> neverMind i mq
   Nothing    -> promptRetryYesNo mq cols
   where
@@ -944,16 +943,15 @@ interpConfirmDescChange _ ActionParams { plaMsgQueue, plaCols } = promptRetryYes
 
 
 descHelper :: HasCallStack => Id -> MsgQueue -> Cols -> MudStack ()
-descHelper i mq cols = sequence_ [ send mq . nl . T.unlines . parseWrapXform cols $ enterDescMsg
+descHelper i mq cols = sequence_ [ writeMsg mq . InacSecs $ maxInacSecsDesc
+                                 , send mq . nl . T.unlines . parseWrapXform cols $ enterDescMsg
                                  , setInterp i . Just . interpMutliLine f $ [] ]
   where
     f desc = case spaces . dropBlanks . map T.strip $ desc of
       ""    -> neverMind i mq
-      desc' -> do
-        wrapSend1Nl    mq cols "You entered:"
-        wrapSend       mq cols desc'
-        wrapSendPrompt mq cols $ "Keep this description? " <> mkYesNoChoiceTxt
-        setInterp i . Just . interpConfirmDesc $ desc'
+      desc' -> do multiWrapSend  mq cols [ "", "You entered:", desc' ]
+                  wrapSendPrompt mq cols $ "Keep this description? " <> mkYesNoChoiceTxt
+                  setInterp i . Just . interpConfirmDesc $ desc'
 
 
 interpConfirmDesc :: HasCallStack => Text -> Interp
@@ -963,8 +961,11 @@ interpConfirmDesc desc cn (NoArgs i mq cols) = case yesNoHelper cn of
                    ok mq
                    sendDfltPrompt mq i
                    resetInterp i
-  Just False -> neverMind i mq
+                   resetInacTimer
+  Just False -> resetInacTimer >> neverMind i mq
   Nothing    -> promptRetryYesNo mq cols
+  where
+    resetInacTimer = writeMsg mq . InacSecs $ maxInacSecs
 interpConfirmDesc _ _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNo plaMsgQueue plaCols
 
 

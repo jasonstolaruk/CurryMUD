@@ -511,8 +511,9 @@ procAttribChar i ms = \case 's' -> ("Strength",  getBaseSt i ms, st)
 -- ==================================================
 
 
-descHelper :: HasCallStack => NewCharBundle -> Id -> MsgQueue -> Cols -> MudStack () -- TODO: User should be given more than 10 mins of inactivity.
-descHelper ncb i mq cols = sequence_ [ send mq . nl . T.unlines . parseWrapXform cols $ enterDescMsg
+descHelper :: HasCallStack => NewCharBundle -> Id -> MsgQueue -> Cols -> MudStack ()
+descHelper ncb i mq cols = sequence_ [ writeMsg mq . InacSecs $ maxInacSecsDesc
+                                     , send mq . nl . T.unlines . parseWrapXform cols $ enterDescMsg
                                      , setDescInterpHelper ncb i mq cols ]
 
 
@@ -543,6 +544,7 @@ interpConfirmDesc ncb desc cn (NoArgs i mq cols) = case yesNoHelper cn of
       blankLine mq
       wrapSendPrompt mq cols "If you are a new player, could you please tell us how you discovered CurryMUD?"
       setInterp i . Just . interpDiscover $ ncb
+      writeMsg mq . InacSecs $ maxInacSecs
   Just False -> blankLine mq >> promptRetryDesc ncb i mq cols
   Nothing    -> promptRetryYesNo mq cols
 interpConfirmDesc _ _ _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNo plaMsgQueue plaCols

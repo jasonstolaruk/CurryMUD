@@ -60,7 +60,7 @@ biodegSecs = 5 {- mins -} * 60 {- secs -} -- five mins
 
 
 bonusDelay :: Seconds
-bonusDelay = 24 {- hours -} * 60 {- mins -} * 60 {- secs -} -- twenty-four hours
+bonusDelay = 24 {- hrs -} * 60 {- mins -} * 60 {- secs -} -- twenty-four hrs
 
 
 coinNames :: [Text]
@@ -76,7 +76,7 @@ corpsePlaceholder = parensQuote "corpse"
 
 
 dbTblPurgerDelay :: Seconds
-dbTblPurgerDelay = 60 {- mins -} * 60 {- secs -} -- one hr
+dbTblPurgerDelay = 1 {- hr -} * 60 {- mins -} * 60 {- secs -} -- one hr
 
 
 dfltZoom :: Int
@@ -104,7 +104,7 @@ likewise = not otherwise
 
 
 logRotationDelay :: Seconds
-logRotationDelay = 60 {- mins -} * 60 {- secs -} -- one hr
+logRotationDelay = 1 {- hr -} * 60 {- mins -} * 60 {- secs -} -- one hr
 
 
 maxBonuses :: Int
@@ -134,6 +134,10 @@ maxHelpTopicLen = 13
 
 maxInacSecs :: Seconds
 maxInacSecs = 10 {- mins -} * 60 {- secs -} -- ten mins
+
+
+maxInacSecsDesc :: Seconds -- When a player is composing their PC description.
+maxInacSecsDesc = 1 {- hr -} * 60 {- mins -} * 60 {- secs -} -- one hr
 
 
 maxLogSize :: FileOffset

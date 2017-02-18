@@ -26,6 +26,7 @@ import Mud.Threads.Regen
 import Mud.Threads.RmFuns
 import Mud.Threads.SpiritTimer
 import Mud.TopLvlDefs.FilePaths
+import Mud.TopLvlDefs.Misc
 import Mud.Util.List
 import Mud.Util.Misc
 import Mud.Util.Operators
@@ -87,6 +88,7 @@ threadServer h i mq tq = sequence_ [ setThreadType . Server $ i
       FromClient msg -> handleFromClient i mq tq False msg >> loop     isDropped
       FromServer msg -> handleFromServer i h Plaに msg     >> loop     isDropped
       InacBoot       -> sendInacBootMsg h                  >> sayonara isDropped
+      InacSecs secs  -> setInacSecs tq secs                >> loop     isDropped
       InacStop       -> stopTimer tq                       >> loop     isDropped
       MsgBoot msg    -> sendBootMsg h msg                  >> sayonara isDropped
       Peeped  msg    -> (liftIO . T.hPutStr h $ msg)       >> loop     isDropped
@@ -150,6 +152,10 @@ fromServerHelper h t = liftIO $ T.hPutStr h t >> hFlush h
 
 sendInacBootMsg :: HasCallStack => Handle -> MudStack ()
 sendInacBootMsg h = liftIO . T.hPutStrLn h . nl . colorWith bootMsgColor $ inacBootMsg
+
+
+setInacSecs :: HasCallStack => TimerQueue -> Seconds -> MudStack ()
+setInacSecs tq = liftIO . atomically . writeTMQueue tq . SetMaxSecs
 
 
 sendBootMsg :: HasCallStack => Handle -> Text -> MudStack ()

@@ -5,6 +5,8 @@ module Mud.Data.State.MsgQueue ( Msg(..)
                                , NpcMsg(..)
                                , NpcMsgQueue ) where
 
+import Mud.TopLvlDefs.Misc
+
 import Control.Concurrent.STM.TQueue (TQueue)
 import Data.Text (Text)
 
@@ -20,6 +22,7 @@ data Msg = AsSelf     Text
          | FromClient Text
          | FromServer Text
          | InacBoot
+         | InacSecs   Seconds
          | InacStop
          | MsgBoot    Text
          | Peeped     Text

@@ -47,13 +47,16 @@ threadInacTimer i mq tq = let f = sequence_ [ setThreadType . InacTimer $ i
     loop maxSecs secs = do
         liftIO . threadDelay $ 1 * 10 ^ 6
         tq |&| liftIO . atomically . tryReadTMQueue >=> \case
-          Just Nothing | secs >= maxInacSecs -> inacBoot . fromIntegral $ secs
-                       | otherwise           -> loop maxSecs . succ $ secs
-          Just (Just ResetTimer           )  -> loop maxSecs  0
-          Just (Just (SetMaxSecs maxSecs'))  -> loop maxSecs' 0
-          Nothing                            -> unit
-    inacBoot (parensQuote . T.pack . renderSecs -> secs) = getState >>= \ms -> let s = getSing i ms in do
+          Just Nothing | secs >= maxSecs    -> inacBoot secs
+                       | otherwise          -> loop maxSecs . succ $ secs
+          Just (Just ResetTimer           ) -> loop maxSecs 0
+          Just (Just (SetMaxSecs maxSecs')) -> let msg = prd $ "setting max inactivity to " <> showSecs maxSecs'
+                                               in do logPla "threadInacTimer loop" i msg
+                                                     loop maxSecs' . succ $ secs
+          Nothing                           -> unit
+    inacBoot (parensQuote . showSecs -> secs) = getSing i <$> getState >>= \s -> do
         logPla "threadInacTimer inacBoot" i . prd $ "booting due to inactivity " <> secs
         let noticeMsg = T.concat [ "booting player ", showText i, " ", parensQuote s, " due to inactivity." ]
         logNotice "threadInacTimer inacBoot" noticeMsg
         writeMsg mq InacBoot
+    showSecs = T.pack . renderSecs . fromIntegral
