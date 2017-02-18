@@ -146,6 +146,7 @@ adminCmds =
     , mkAdminCmd "as"         adminAs          False "Execute a command as someone else."
     , mkAdminCmd "banhost"    adminBanHost     True  "Dump the banned hostname database, or ban/unban a host."
     , mkAdminCmd "banpc"      adminBanPC       True  "Dump the banned PC database, or ban/unban a PC."
+    , mkAdminCmd "bonus"      adminBonus       True  "Dump the bonus records for one or more PCs."
     , mkAdminCmd "boot"       adminBoot        True  "Boot a player, optionally with a custom message."
     , mkAdminCmd "bug"        adminBug         True  "Dump the bug database."
     , mkAdminCmd "channel"    adminChan        True  "Display information about one or more telepathic channels."
@@ -155,7 +156,7 @@ adminCmds =
     , mkAdminCmd "destroy"    adminDestroy     True  "Silently destroy one or more things by ID."
     , mkAdminCmd "discover"   adminDiscover    True  "Dump the discover database."
     , mkAdminCmd "examine"    adminExamine     True  "Display the properties of one or more IDs."
-    , mkAdminCmd "experience" adminExp         True  "Dump the experience table."
+    , mkAdminCmd "experience" adminExp         True  "Display the experience table."
     , mkAdminCmd "exself"     adminExamineSelf True  "Self-examination."
     , mkAdminCmd "farewell"   adminFarewell    True  "Display the farewell stats for one or more PCs."
     , mkAdminCmd "gods"       adminGods        True  "Display a list of the gods."
@@ -402,6 +403,24 @@ adminBanPC p@(MsgWithTarget i mq cols target msg) = getState >>= \ms ->
                          when (newStatus && isLoggedIn pla) . adminBoot $ p { args = strippedTarget : T.words bannedMsg }
       xs      -> patternMatchFail fn . showText $ xs
 adminBanPC p = patternMatchFail "adminBanPC" . showText $ p
+
+
+-----
+
+
+adminBonus :: HasCallStack => ActionFun -- TODO: Help.
+adminBonus p@AdviseNoArgs            = advise p [ prefixAdminCmd "bonus" ] adviceABonusNoArgs
+adminBonus   (LowerNub i mq cols as) = getState >>= \ms ->
+    let helper target
+          | notFound <- unadulterated . sorryPCName $ target
+          , found    <- \(targetId, targetSing) ->
+              withDbExHandler "adminBonus helper" (lookupBonuses targetSing) >>= return . \case
+                Nothing   -> pure dbErrorMsg
+                Just recs -> targetSing |<>| parensQuote (showText targetId) <> ":" : noneOnNull (map pp recs)
+          = findFullNameForAbbrev target (mkAdminPlaIdSingList ms) |&| maybe notFound found
+    in do logPlaExecArgs (prefixAdminCmd "bonus") as i
+          pager i mq Nothing . concat . wrapLines cols . intercalateDivider cols =<< forM as (helper . capitalize)
+adminBonus p = patternMatchFail "adminBonus" . showText $ p
 
 
 -----

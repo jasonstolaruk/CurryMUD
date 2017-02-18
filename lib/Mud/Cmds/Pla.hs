@@ -641,12 +641,13 @@ mkPtPairs i ms = let (hps, mps, pps, fps) = getPts i ms
 bonus :: HasCallStack => ActionFun
 bonus p@AdviseNoArgs              = advise p ["bonus"] adviceBonusNoArgs
 bonus   (OneArgLower i mq cols a) = getState >>= \ms ->
-    let (f, guessWhat) | hasLocPref a = (stripLocPref, sorryBonusIgnore)
-                       | otherwise    = (id,           ""              )
-        a'                            = capitalize . T.toLower . f $ a
-        s                             = getSing i ms
-        intros                        = getIntroduced i ms
-        bonusHelper now               = case filter (a' `T.isPrefixOf`) intros of
+    let (f, guessWhat)  | hasLocPref a = (stripLocPref, sorryBonusIgnore)
+                        | otherwise    = (id,           ""              )
+        a'                             = capitalize . T.toLower . f $ a
+        s                              = getSing i ms
+        intros                         = getIntroduced i ms
+        bonusHelper _   | a' == s      = sorry sorryBonusSelf
+        bonusHelper now                = case filter (a' `T.isPrefixOf`) intros of
           []           -> sorry . sorryBonusName $ a'
           [targetSing] ->
               let targetId = getIdForPCSing targetSing ms
@@ -666,7 +667,7 @@ bonus   (OneArgLower i mq cols a) = getState >>= \ms ->
                   Just False -> sorry . sorryBonusCount $ targetSing
                   Nothing    -> unit
           xs -> patternMatchFail "bonus bonusHelper" . showText $ xs
-        canBonus targetSing = (withDbExHandler "bonus canBonus" . lookupBonuses s $ targetSing) >>= \case
+        canBonus targetSing = (withDbExHandler "bonus canBonus" . lookupBonusesFromTo s $ targetSing) >>= \case
           Just c  -> unadulterated . All $ c < maxBonuses
           Nothing -> emptied . dbError mq $ cols
         mkToTarget targetId | s `elem` getIntroduced targetId ms = g s

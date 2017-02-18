@@ -5,6 +5,7 @@ module Mud.Cmds.Msgs.Advice ( adviceAAnnounceNoArgs
                             , adviceAAsNoCmd
                             , adviceABanHostNoReason
                             , adviceABanPCNoReason
+                            , adviceABonusNoArgs
                             , adviceABootNoArgs
                             , adviceADestroyNoArgs
                             , adviceAdminNoMsg
@@ -198,6 +199,10 @@ adviceABanHostNoReason = prd $ "Please also provide a reason, as in " <>
 adviceABanPCNoReason :: Text
 adviceABanPCNoReason = prd $ "Please also provide a reason, as in " <>
                              colorWith quoteColor (prefixAdminCmd "banpc" <> " taro for harassment")
+
+
+adviceABonusNoArgs :: Text
+adviceABonusNoArgs = "Please specify the names of one or more PCs whose bonus records you would like to see."
 
 
 adviceABootNoArgs :: Text

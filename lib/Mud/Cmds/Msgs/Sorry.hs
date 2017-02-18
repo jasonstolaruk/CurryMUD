@@ -24,6 +24,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryActing
                            , sorryBonusIgnore
                            , sorryBonusLvl
                            , sorryBonusName
+                           , sorryBonusSelf
                            , sorryBonusTime
                            , sorryBootAdmin
                            , sorryBootSelf
@@ -522,6 +523,10 @@ sorryBonusLvl = "You must be at least level 3 to give a bonus."
 
 sorryBonusName :: Text -> Text
 sorryBonusName n = prd $ "You don't know anyone by the name of " <> dblQuote n
+
+
+sorryBonusSelf :: Text
+sorryBonusSelf = can't "give a bonus to yourself."
 
 
 sorryBonusTime :: Text

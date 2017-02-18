@@ -290,6 +290,13 @@ instance Pretty BanPCRec where
                                , dbReason ]
 
 
+instance Pretty BonusRec where
+  pp BonusRec { .. } = slashes [ dbTimestamp
+                               , dbFromName
+                               , dbToName
+                               , commaShow dbAmt ]
+
+
 instance Pretty BugRec where
   pp BugRec { .. } = slashes [ dbTimestamp
                              , dbName

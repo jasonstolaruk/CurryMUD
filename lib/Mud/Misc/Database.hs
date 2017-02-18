@@ -41,6 +41,7 @@ module Mud.Misc.Database ( AdminChanRec(..)
                          , insertPropNames
                          , insertWords
                          , lookupBonuses
+                         , lookupBonusesFromTo
                          , lookupPropName
                          , lookupPW
                          , lookupSacBonusTime
@@ -571,9 +572,14 @@ onlyTextsHelper :: [Only Text] -> Maybe Text
 onlyTextsHelper = listToMaybe . map fromOnly
 
 
-lookupBonuses :: Sing -> Sing -> IO Int -- How many bonuses have been given from one PC to the other?
-lookupBonuses fromSing toSing = let q = Query "select count(*) from bonus where from_name = ? and to_name = ?"
-                                in onDbFile $ \conn -> onlyIntsHelper <$> query conn q (fromSing, toSing)
+lookupBonuses :: Sing -> IO [BonusRec]
+lookupBonuses s = let q = Query "select * from bonus where from_name = ? or to_name = ?"
+                  in onDbFile $ \conn -> query conn q . dup $ s
+
+
+lookupBonusesFromTo :: Sing -> Sing -> IO Int
+lookupBonusesFromTo fromSing toSing = let q = Query "select count(*) from bonus where from_name = ? and to_name = ?"
+                                      in onDbFile $ \conn -> onlyIntsHelper <$> query conn q (fromSing, toSing)
 
 
 lookupPW :: Sing -> IO (Maybe Text)
