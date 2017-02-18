@@ -136,7 +136,7 @@ massLogPla = L.massLogPla "Mud.Cmds.Admin"
 -- ==================================================
 
 
-adminCmds :: HasCallStack => [Cmd]
+adminCmds :: HasCallStack => [Cmd] -- TODO: ":clone"
 adminCmds =
     [ mkAdminCmd "?"          adminDispCmdList True  cmdDescDispCmdList
     , mkAdminCmd "admin"      adminAdmin       True  ("Send a message on the admin channel " <> plusRelatedMsg)
@@ -408,15 +408,15 @@ adminBanPC p = patternMatchFail "adminBanPC" . showText $ p
 -----
 
 
-adminBonus :: HasCallStack => ActionFun -- TODO: Help.
+adminBonus :: HasCallStack => ActionFun
 adminBonus p@AdviseNoArgs            = advise p [ prefixAdminCmd "bonus" ] adviceABonusNoArgs
 adminBonus   (LowerNub i mq cols as) = getState >>= \ms ->
     let helper target
           | notFound <- unadulterated . sorryPCName $ target
           , found    <- \(targetId, targetSing) ->
-              withDbExHandler "adminBonus helper" (lookupBonuses targetSing) >>= return . \case
-                Nothing   -> pure dbErrorMsg
-                Just recs -> targetSing |<>| parensQuote (showText targetId) <> ":" : noneOnNull (map pp recs)
+              let f = \case Nothing   -> pure dbErrorMsg
+                            Just recs -> targetSing |<>| parensQuote (showText targetId) <> ":" : noneOnNull (map pp recs)
+              in f <$> withDbExHandler "adminBonus helper" (lookupBonuses targetSing)
           = findFullNameForAbbrev target (mkAdminPlaIdSingList ms) |&| maybe notFound found
     in do logPlaExecArgs (prefixAdminCmd "bonus") as i
           pager i mq Nothing . concat . wrapLines cols . intercalateDivider cols =<< forM as (helper . capitalize)

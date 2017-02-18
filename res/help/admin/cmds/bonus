@@ -1,0 +1,15 @@
+\h #dBONUS \d
+
+\uUSAGE\n
+#dbonus name \s...\d
+
+\uDESCRIPTION\n
+Dump the bonus records for one or more PCs.
+
+\q#dbonus taro\d will display both bonuses given by and to Taro.
+For example, the following record is for a bonus given from Taro to Hanako:
+[2017-01-01 01:00:00] / Taro / Hanako / 1,125
+
+\uEXAMPLES\n
+\q#dbonus taro\d to display Taro's bonus records.4`
+\q#dbonus taro hanako\d to display bonus records for both Taro and Hanako.4`
