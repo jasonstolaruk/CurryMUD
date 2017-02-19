@@ -35,7 +35,7 @@ import qualified Mud.Misc.Logging as L (logNotice, logPla)
 
 import Control.Arrow ((***), first)
 import Control.Lens (_1, _2, _3, at, view, views)
-import Control.Lens.Operators ((%~), (&), (.~), (<>~), (^.))
+import Control.Lens.Operators ((.~), (&), (%~), (^.), (<>~))
 import Control.Monad (forM_, unless, when)
 import Control.Monad.IO.Class (liftIO)
 import Data.Bits (setBit, zeroBits)

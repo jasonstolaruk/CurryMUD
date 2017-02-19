@@ -25,7 +25,7 @@ import Mud.Util.Text
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Lens (both)
-import Control.Lens.Operators ((%~), (&))
+import Control.Lens.Operators ((&), (%~))
 import Data.Char (isDigit, isSpace)
 import Data.Monoid ((<>))
 import Data.Text (Text)

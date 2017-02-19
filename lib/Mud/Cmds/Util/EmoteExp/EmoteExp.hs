@@ -30,7 +30,7 @@ import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Arrow ((&&&))
 import Control.Lens (_1, _2, both, each, view, views)
-import Control.Lens.Operators ((%~), (&), (<>~))
+import Control.Lens.Operators ((&), (%~), (<>~))
 import Data.Bool (bool)
 import Data.Char (isLetter)
 import Data.Either (lefts)

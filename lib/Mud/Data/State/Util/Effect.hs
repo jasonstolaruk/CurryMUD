@@ -13,7 +13,7 @@ import Mud.Threads.FeelingTimer
 import Mud.Util.Misc
 import qualified Mud.Misc.Logging as L (logPla)
 
-import Control.Lens.Operators ((&), (.~), (^.))
+import Control.Lens.Operators ((.~), (&), (^.))
 import Control.Monad (when)
 import Data.Either (partitionEithers)
 import Data.Monoid ((<>))

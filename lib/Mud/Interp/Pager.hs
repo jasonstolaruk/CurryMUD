@@ -18,7 +18,7 @@ import Mud.Util.Text
 
 import Control.Arrow (second)
 import Control.Lens (both)
-import Control.Lens.Operators ((%~), (&))
+import Control.Lens.Operators ((&), (%~))
 import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>))
 import Data.Text (Text)

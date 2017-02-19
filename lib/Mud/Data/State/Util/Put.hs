@@ -9,7 +9,7 @@ import Mud.Util.Misc
 
 import Control.Arrow (second)
 import Control.Lens (at)
-import Control.Lens.Operators ((.~), (?~), (^.))
+import Control.Lens.Operators ((?~), (.~), (^.))
 import Data.Text (Text)
 
 

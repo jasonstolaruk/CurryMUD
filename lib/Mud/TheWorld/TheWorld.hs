@@ -27,7 +27,7 @@ import Mud.Util.Text
 import qualified Mud.Misc.Logging as L (logErrorMsg, logNotice)
 
 import Control.Lens (ASetter, views)
-import Control.Lens.Operators ((%~), (&), (.~), (?~), (^.))
+import Control.Lens.Operators ((?~), (.~), (&), (%~), (^.))
 import Control.Monad.IO.Class (liftIO)
 import Data.Aeson (FromJSON, eitherDecode)
 import Data.IORef (newIORef)

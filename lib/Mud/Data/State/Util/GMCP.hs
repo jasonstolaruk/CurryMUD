@@ -14,7 +14,7 @@ import Mud.Util.Text
 import qualified Mud.Util.Misc as U (blowUp)
 
 import Control.Lens (both, each, views)
-import Control.Lens.Operators ((%~), (&), (^.))
+import Control.Lens.Operators ((&), (%~), (^.))
 import Data.List (lookup)
 import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>))

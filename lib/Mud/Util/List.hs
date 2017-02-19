@@ -22,7 +22,7 @@ import Mud.Util.Operators
 import Control.Arrow ((&&&), second)
 import Control.Lens (Lens', LensLike', each, partsOf, view, views)
 import Control.Lens.Each (Each)
-import Control.Lens.Operators ((&), (.~))
+import Control.Lens.Operators ((.~), (&))
 import Data.Functor.Const (Const)
 import Data.List (foldl', group, isPrefixOf, sort)
 import Data.List.Utils (breakList)

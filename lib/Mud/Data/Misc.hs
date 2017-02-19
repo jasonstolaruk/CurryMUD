@@ -88,7 +88,7 @@ import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Arrow ((***))
 import Control.Lens (Getting, Setting, both)
-import Control.Lens.Operators ((%~), (&), (^.))
+import Control.Lens.Operators ((&), (%~), (^.))
 import Data.Bits (clearBit, setBit, testBit)
 import Data.Bool (bool)
 import Data.Char (ord)

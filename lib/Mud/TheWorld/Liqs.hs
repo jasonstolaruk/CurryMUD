@@ -26,7 +26,7 @@ module Mud.TheWorld.Liqs ( distinctLiqList
                          , waterLiq ) where
 
 import Control.Lens (both)
-import Control.Lens.Operators ((%~), (&))
+import Control.Lens.Operators ((&), (%~))
 import Mud.Cmds.Msgs.Misc
 import Mud.Data.State.MudData
 import Mud.Misc.EffectFuns

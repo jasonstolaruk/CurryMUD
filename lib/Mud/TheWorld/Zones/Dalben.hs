@@ -22,7 +22,7 @@ import qualified Data.Text as T
 import qualified Mud.Misc.Logging as L (logNotice)
 
 import Control.Lens (_1, _2, _3, _4)
-import Control.Lens.Operators ((%~), (&), (.~), (<>~))
+import Control.Lens.Operators ((.~), (&), (%~), (<>~))
 import Control.Monad.IO.Class (liftIO)
 import Data.Bits (zeroBits)
 import Data.List ((\\), delete)

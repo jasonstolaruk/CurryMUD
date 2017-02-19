@@ -29,7 +29,7 @@ import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Arrow ((&&&), first)
 import Control.Lens (_3, _4, view)
-import Control.Lens.Operators ((&), (.~), (<>~), (?~))
+import Control.Lens.Operators ((?~), (.~), (&), (<>~))
 import Control.Monad ((>=>))
 import Data.Bool (bool)
 import Data.List ((\\), delete)

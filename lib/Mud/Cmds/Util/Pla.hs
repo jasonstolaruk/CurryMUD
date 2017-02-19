@@ -120,7 +120,7 @@ import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 
 import Control.Arrow ((***), (&&&), first, second)
 import Control.Lens (Getter, _1, _2, _3, _4, _5, at, both, each, to, view, views)
-import Control.Lens.Operators ((%~), (&), (.~), (<>~), (?~), (^.))
+import Control.Lens.Operators ((?~), (.~), (&), (%~), (^.), (<>~))
 import Control.Monad ((>=>), forM_, guard)
 import Control.Monad.IO.Class (liftIO)
 import Data.Bool (bool)

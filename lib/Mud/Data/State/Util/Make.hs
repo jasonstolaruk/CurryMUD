@@ -11,7 +11,7 @@ import Mud.TopLvlDefs.Misc
 import Mud.Util.Misc
 
 import Control.Lens (at)
-import Control.Lens.Operators ((%~), (&), (.~))
+import Control.Lens.Operators ((.~), (&), (%~))
 import Control.Monad (when)
 import Data.Text (Text)
 import qualified Data.Map.Strict as M (empty)

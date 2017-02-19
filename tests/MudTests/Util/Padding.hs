@@ -6,7 +6,7 @@ import Mud.Util.Padding
 
 import Control.Applicative (liftA2)
 import Control.Lens (both)
-import Control.Lens.Operators ((%~), (&))
+import Control.Lens.Operators ((&), (%~))
 import Data.Char (isSpace)
 import Data.Text (Text)
 import qualified Data.Text as T

@@ -20,7 +20,7 @@ import qualified Mud.Misc.Logging as L (logNotice)
 
 import Control.Concurrent (threadDelay)
 import Control.Exception.Lifted (catch, handle)
-import Control.Lens.Operators ((&), (.~), (?~), (^.))
+import Control.Lens.Operators ((?~), (.~), (&), (^.))
 import Control.Monad ((>=>))
 import Control.Monad.IO.Class (liftIO)
 import Data.Bool (bool)

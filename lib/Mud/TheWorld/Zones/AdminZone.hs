@@ -40,7 +40,7 @@ import qualified Mud.Misc.Logging as L (logNotice)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Lens (_1, _2, _3, _4, view)
-import Control.Lens.Operators ((%~), (&), (.~), (<>~), (?~))
+import Control.Lens.Operators ((?~), (.~), (&), (%~), (<>~))
 import Control.Monad (forM_)
 import Data.Bits (setBit, zeroBits)
 import Data.Function (on)
