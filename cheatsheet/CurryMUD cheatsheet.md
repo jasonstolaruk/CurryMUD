@@ -43,7 +43,7 @@ Prefix | Purpose | Example | Result
 --- | --- | --- | ---
 `.` | ordinal number | `look 4.necklace` | examine the fourth necklace in the room
 `/` | amount | `get 2/knife` | pick up the first two knives in the room
-`'` | all | `show 'earring hanako` | show all of the earrings in your inventory to Hanako
+`'` | all | `show 'earring taro` | show all of the earrings in your inventory to Taro
 | | | `drop '` | drop everything in your inventory (including coins)
 
 ## Combining Prefixes
@@ -54,7 +54,7 @@ come first.
 Example | Result
 --- | ---
 `smell r-2/flower` | smell the first two flowers in the room
-`show e-'earring hanako` | show all the earrings you're wearing to Hanako
+`show e-'earring taro` | show all the earrings you're wearing to Taro
 
 ## Prefixes Used With Coins
 
