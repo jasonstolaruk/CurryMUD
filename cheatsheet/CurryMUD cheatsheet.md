@@ -10,11 +10,11 @@ a help article.
 
 Command | Example | Effect
 --- | --- | ---
-look | `look` | get a description of your current room, including a list of things in the room
+`look` | `look` | get a description of your current room, including a list of things in the room
 | | `look mhuman` | look at the male human in the room
-inventory | `inventory` | get a list of the items you're carrying
+`inventory` | `inventory` | get a list of the items you're carrying
 | | `inventory apple` | examine the apple you're carrying
-equipment | `equipment` | get a list of your readied equipment
+`equipment` | `equipment` | get a list of your readied equipment
 | | `equipment sword` | examine the sword you're wielding
 
 ## Coins
