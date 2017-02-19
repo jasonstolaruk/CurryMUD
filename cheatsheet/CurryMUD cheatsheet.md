@@ -8,6 +8,10 @@ Nearly all identifiers in CurryMUD may be abbreviated. This means that in many
 cases you need not type the entire name of an item, a character, a command, or 
 a help article.
 
+## Random Names
+
+In channel communications, randomly chosen nouns identify characters with whom you have not established a telepathic link. These "random names" are easily distinguished by the fact that they always start with a lowercase letter and appear underlined. See `help randomnames` for more info.
+
 ## Listing And Examining Things
 
 Command | Example | Result
@@ -41,7 +45,7 @@ Prefix | Location | Example | Result
 
 Prefix | Purpose | Example | Result
 --- | --- | --- | ---
-`.` | ordinal number | `look 4.necklace` | examine the fourth necklace in the room
+`.` | ordinal number | `empty 3.bottle` | empty your third bottle
 `/` | amount | `get 2/knife` | pick up the first two knives in the room
 `'` | all | `show 'earring taro` | show all of the earrings in your inventory to Taro
 | | | `drop '` | drop everything in your inventory (including coins)
@@ -61,9 +65,9 @@ Example | Result
 Prefix | Purpose | Example | Result
 --- | --- | --- | ---
 `/` | amount | `put 50/gp sack` | put 50 of your gold pieces in your sack
-| | | `remove 50/coins sack` | remove 50 of your coins from your sack
+| | | `remove 50/coins sack` | remove 50 coins from your sack
 `'` | all | `put 'gp sack` | put all of your gold pieces in your sack
-| | | `put 'coins sack` | put all of your coins in your sack
+| | | `remove 'coins sack` | remove all of the coins from your sack
 
 ## Emoting
 
@@ -72,7 +76,7 @@ Symbol | Purpose | Example | Output
 `@` | your name | `emote shielding her`</br>`eyes from the sun, @`</br>`looks out across the`</br>`plains` | [Shielding her eyes from the sun, Hanako looks out across the plains.]
 `@'s` | your name in possessive | `@'s leg twitches`</br>`involuntarily as she`</br>` laughs with gusto` | [Hanako's leg twitches involuntarily as she laughs with gusto.]
 `>taro` | target Taro | `emote slowly turns`</br>`her head to look`</br>`directly at >taro` | [Hanako slowly turns her head to look directly at Taro.]
-`>taro's` | target Taro, in possessive | `emote places her`</br>`hand firmly on`</br>`>taro's shoulder` | [Hanako places her hand firmly on Taro's shoulder.]
+`>fhobbit's` | target the female hobbit, in possessive | `emote places her`</br>`hand firmly on`</br>`>fhobbit's shoulder` | [Hanako places her hand firmly on the female hobbit's shoulder.]
 | | | `emote ignoring`</br>`>mnymph, @ takes`</br>`>taro's hand and`</br>`gestures eastward` | [Ignoring the male nymph, Hanako takes Taro's hand and gestures eastward.]
 
 ## Emotes And Expressive Commands Inside Other Commands
@@ -83,7 +87,7 @@ Symbol | Purpose | Example | Output
 | | | `channel hunt ;suggests`</br>`that >tomato stay put`</br>`for now` | (hunt) Hanako: [Hanako suggests that __tomato__ stay put for now.]
 | | | `question ;throws her`</br>`arms up in exasperation` | (Question) Hanako: [Hanako throws her arms up in exasperation.]
 `=` | begin an expressive command | `telepathy taro =nodagree`</br>`taro` | [Hanako] [Hanako nods to you in agreement.]
-| | | `channel hunt =slowclap`</br>`tomato` | (hunt) Hanako: \<With a mocking lack of enthusiasm, Hanako claps slowly for __tomato__.\>
+| | | `channel hunt =slowclap`</br>`wellwater` | (hunt) Hanako: \<With a mocking lack of enthusiasm, Hanako claps slowly for __wellWater__.\>
 | | | `question =comfort taro` | (Question) Hanako: \<Hanako comforts Taro.\>
 
 ## Addressing A Message
@@ -95,7 +99,7 @@ Example | Output
 `say >taro nice to mee, you, Taro` | Hanako says to Taro, "Nice to meet you, Taro."
 `felinoidean >taro he can't be trusted` | Hanako says to Taro in felinoidean, "He can't be trusted."
 `channel hunt >taro i'm still waiting`</br>`in the clearing` | (hunt) Hanako: (to Taro) I'm still waiting in the clearing.
-`question >taro try typing "help`</br>`cheatsheet"` | (Question) Hanako: (to Taro) Try typing "help cheatsheet".
+`question >ant try typing "help`</br>`cheatsheet"` | (Question) Hanako: (to __ant__) Try typing "help cheatsheet".
 
 ## Adverbial Phrases
 

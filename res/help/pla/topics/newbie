@@ -65,7 +65,7 @@ There are two things to keep in mind: you may not abbreviate the name of a room 
 \uOTHER\d
 \qwho\d or just \qwh\d to see who is currently logged in.2`
 
-Use the \qquestion\d (or just \qq\d) command to ask a question on the "question channel." A "channel" is analogous to a chat room or party line; the question channel is for asking and answering newbie questions related to game play.2`
+Use the \qquestion\d (or just \qq\d) command to ask a question on the "question channel." A "channel" is analogous to a chat room; the question channel is for asking and answering newbie questions related to game play.2`
 \qq how can I pick up the second sword here?\d to ask a question (see "help prefixes" for the answer).2`
 \qq \l#h\qtaro take a look at the cheatsheet ("help cheatsheet")\d to give Taro's player a helpful suggestion ("#htaro" indicates that your message is addressed to Taro).2`
 
