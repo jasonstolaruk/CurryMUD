@@ -11,7 +11,7 @@ LOCATION PREFIXES: "i#l", "e#l", and "r#l"
 \lr#l\d to specify something in your current room4`
 
 Examples:
-\qsmell \li#l\qpotion\d to smell the potion in your inventory.4`
+\qsmell \li#l\qflask\d to smell the (contents of the) flask in your inventory.4`
 \qsmell \le#l\qboots\d to smell the boots you're wearing.4`
 \qsmell \lr#l\qflower\d to smell the flower in the room.4`
 

@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults -Wno-redundant-constraints #-}
 {-# LANGUAGE DuplicateRecordFields, FlexibleContexts, LambdaCase, MonadComprehensions, MultiWayIf, NamedFieldPuns, OverloadedStrings, ParallelListComp, PatternSynonyms, RecordWildCards, TupleSections, TypeFamilies, ViewPatterns #-}
 
-module Mud.Cmds.Pla ( getRecordUptime -- TODO: Make a cheatsheet PDF.
+module Mud.Cmds.Pla ( getRecordUptime
                     , getUptime
                     , look
                     , mkNonStdRmLinkCmds

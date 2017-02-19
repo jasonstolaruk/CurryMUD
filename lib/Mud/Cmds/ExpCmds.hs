@@ -580,9 +580,9 @@ expCmdSet = S.fromList
                             Nothing Nothing
     , ExpCmd "nodagree"     (Versatile "You nod in agreement."
                                        "% nods in agreement."
-                                       "You nod in agreement to @."
-                                       "% nods in agreement to you."
-                                       "% nods in agreement to @.")
+                                       "You nod to @ in agreement."
+                                       "% nods to you in agreement."
+                                       "% nods to @ in agreement.")
                             Nothing Nothing
     , ExpCmd "noexpress"    (NoTarget  "Your face is entirely expressionless."
                                        "%'s face is entirely expressionless.")
