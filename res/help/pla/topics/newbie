@@ -1,6 +1,8 @@
 \h NEWBIE CHEATSHEET \d
 
-(This cheatsheet is for newbies who have little or no experience with MUDs.)
+This cheatsheet is for newbies who have little or no experience with MUDs.
+You can find a PDF cheatsheet here:
+https://github.com/jasonstolaruk/CurryMUD/blob/master/cheatsheet/CurryMUD%20cheatsheet.pdf
 
 Type \q?\d to display a list of available commands.2`
 
