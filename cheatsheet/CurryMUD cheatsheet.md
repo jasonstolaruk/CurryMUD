@@ -24,16 +24,6 @@ Command | Example | Result
 | | `equipment sword` | examine the sword you're wielding
 
 <div style="page-break-after: always;"></div>
-## Coins
-
-There are `cp` (copper pieces), `sp` (silver pieces), and `gp` (gold pieces).
-
-cp | sp | gp
---- | --- | ---
-1 cp | 1    | 1/10 | 1/100
-1 sp | 10   | 1    | 1/10
-1 gp | 100  | 10   | 1
-
 ## Location Prefixes
 
 Prefix | Location | Example | Result
@@ -51,7 +41,6 @@ Prefix | Purpose | Example | Result
 `'` | all | `show 'earring taro` | show all of the earrings in your inventory to Taro
 | | | `drop '` | drop everything in your inventory (including coins)
 
-<div style="page-break-after: always;"></div>
 ## Combining Prefixes
 
 You may combine a location prefix with another prefix. The location prefix must 
@@ -61,6 +50,17 @@ Example | Result
 --- | ---
 `smell r-2/flower` | smell the first two flowers in the room
 `show e-'earring taro` | show all the earrings you're wearing to Taro
+
+<div style="page-break-after: always;"></div>
+## Coins
+
+There are `cp` (copper pieces), `sp` (silver pieces), and `gp` (gold pieces).
+
+cp | sp | gp
+--- | --- | ---
+1 cp | 1    | 1/10 | 1/100
+1 sp | 10   | 1    | 1/10
+1 gp | 100  | 10   | 1
 
 ## Prefixes Used With Coins
 
