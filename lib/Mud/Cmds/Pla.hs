@@ -4365,15 +4365,16 @@ whoAmI p = withoutArgs whoAmI p
 
 
 zoom :: HasCallStack => ActionFun
-zoom (NoArgs' i mq       ) = zoomHelper i mq dfltZoom
-zoom (OneArg  i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
+zoom (NoArgs i mq cols  ) = zoomHelper i mq cols dfltZoom
+zoom (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
   [(x, "")] | x <= 0    -> sorry
-            | otherwise -> zoomHelper i mq x
+            | otherwise -> zoomHelper i mq cols x
   _                     -> sorry
   where
     sorry = wrapSend mq cols . sorryParseZoom $ a
 zoom p = advise p ["zoom"] adviceZoomExcessArgs
 
 
-zoomHelper :: HasCallStack => Id -> MsgQueue -> Int -> MudStack ()
-zoomHelper i mq x = (sendGmcpRmInfo (Just x) i =<< getState) >> ok mq -- TODO: Indicate the new zoom level.
+zoomHelper :: HasCallStack => Id -> MsgQueue -> Cols -> Int -> MudStack ()
+zoomHelper i mq cols x = do sendGmcpRmInfo (Just x) i =<< getState
+                            wrapSend mq cols . prd $ "Set zoom level to " <> showText x
