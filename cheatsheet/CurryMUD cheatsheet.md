@@ -1,5 +1,7 @@
 # CurryMUD Cheatsheet
 
+Example command output assumes your character's name is Hanako.
+
 ## Abbreviation
 
 Nearly all identifiers in CurryMUD may be abbreviated. This means that in many 
