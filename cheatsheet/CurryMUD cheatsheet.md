@@ -78,10 +78,10 @@ Symbol | Purpose | Example | Effect
 Symbol | Purpose | Example | Effect
 --- | --- | --- | ---
 `;` | begin an emote | `telepathy taro ;gives`</br>`you her full attention` | [Hanako] [Hanako gives you her full attention.]
-| | | `channel hunt ;suggests`</br>`that >dog stay put for`</br>`now` | (hunt) Hanako: [Hanako suggests that __dog__ stay put for now.]
+| | | `channel hunt ;suggests`</br>`that >tomato stay put`</br>`for now` | (hunt) Hanako: [Hanako suggests that __tomato__ stay put for now.]
 | | | `question ;throws her`</br>`arms up in exasperation` | (Question) Hanako: [Hanako throws her arms up in exasperation.]
 `=` | begin an expressive command | `telepathy taro =nodagree`</br>`taro` | [Hanako] [Hanako nods to you in agreement.]
-| | | `channel hunt =slowclap`</br>`dog` | (hunt) Hanako: \<With a mocking lack of enthusiasm, Hanako claps slowly for __dog__.\>
+| | | `channel hunt =slowclap`</br>`tomato` | (hunt) Hanako: \<With a mocking lack of enthusiasm, Hanako claps slowly for __tomato__.\>
 | | | `question =comfort taro` | (Question) Hanako: \<Hanako comforts Taro.\>
 
 ## Addressing A Message
