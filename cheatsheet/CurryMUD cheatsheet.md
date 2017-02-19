@@ -109,8 +109,8 @@ Example | Effect
 ## Room Fixtures
 
 A "room fixture" is a permanent feature of a room (such as a sign) with which 
-you can interact via one or more commands. There are two things to keep in mind: **you may not abbreviate the name of a room fixture, and you may need to tack on the `r-` prefix to indicate that you are targeting an object in your current room.**
+you can interact via one or more commands. **You may not abbreviate the name of a room fixture, and you may need to tack on the `r-` prefix to indicate that you are targeting an object in your current room.**
 
 ## Undocumented Commands
 
-There do exist commands for which there is no help available via the `help` and `?` commands. Typically, undocumented commands may only be used in certain rooms. One example is the `trash` command, which only works when you are in a room with a trash bin. **Keep in mind that the names of undocumented commands may not be abbreviated.**
+There do exist commands for which there is no help available via the `help` and `?` commands. Typically, undocumented commands may only be used in certain rooms. One example is the `trash` command, which only works when you are in a room with a trash bin. **The names of undocumented commands may not be abbreviated.**
