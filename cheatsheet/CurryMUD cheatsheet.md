@@ -102,7 +102,7 @@ You may use an adverbial phrase to describe how an utterance is spoken. Adverbia
 Example | Effect
 --- | ---
 `say [in a high-pitched voice] stop`</br>`pressuring me!` | Hanako says in a high-pitched voice, "Stop pressuring me!"
-`say [quietly] >taro she's`</br>`completely round the twist...` | Hanako says quietly to Zappy, "She's completely round the twist..."
+`say [quietly] >taro she's completely`</br>`round the twist...` | Hanako says quietly to Zappy, "She's completely round the twist..."
 `say >taro [with some hesitation] i`</br>`suppose you're right` | Hanako says to Taro with some hesitation, "I suppose you're right."
 `dwarvish [irately] now fetch me`</br>`another beer!` | Hanako says irately in dwarvish, "Now fetch me another beer!"
 
