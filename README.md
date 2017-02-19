@@ -58,6 +58,7 @@ CurryMUD will have the following features:
 * Upon death, PCs may have a limited amount of time to exist in the virtual world as a spirit. :angel:
 * Sending [GMCP](https://www.gammon.com.au/gmcp) `Char.Vitals` and `Info.Room`. :satellite:
 * [Mudlet scripts](https://github.com/jasonstolaruk/CurryMUD/tree/master/Mudlet) for vitals gauges and mapping. :scroll:
+* There's a cheatsheet PDF [here](https://github.com/jasonstolaruk/CurryMUD/blob/master/cheatsheet/CurryMUD%20cheatsheet.pdf). :memo:
 
 I am still in the initial stage of developing basic commands. There is very little content in the virtual world.
 
