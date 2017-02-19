@@ -23,6 +23,7 @@ Command | Example | Result
 `equipment` | `equipment` | get a list of your readied equipment
 | | `equipment sword` | examine the sword you're wielding
 
+<div style="page-break-after: always;"></div>
 ## Coins
 
 There are `cp` (copper pieces), `sp` (silver pieces), and `gp` (gold pieces).
@@ -50,6 +51,7 @@ Prefix | Purpose | Example | Result
 `'` | all | `show 'earring taro` | show all of the earrings in your inventory to Taro
 | | | `drop '` | drop everything in your inventory (including coins)
 
+<div style="page-break-after: always;"></div>
 ## Combining Prefixes
 
 You may combine a location prefix with another prefix. The location prefix must 
@@ -69,6 +71,7 @@ Prefix | Purpose | Example | Result
 `'` | all | `put 'gp sack` | put all of your gold pieces in your sack
 | | | `remove 'coins sack` | remove all of the coins from your sack
 
+<div style="page-break-after: always;"></div>
 ## Emoting
 
 Symbol | Purpose | Example | Output
@@ -79,6 +82,7 @@ Symbol | Purpose | Example | Output
 `>fhobbit's` | target the female hobbit, in possessive | `emote places her`</br>`hand firmly on`</br>`>fhobbit's shoulder` | [Hanako places her hand firmly on the female hobbit's shoulder.]
 | | | `emote ignoring`</br>`>mnymph, @ takes`</br>`>taro's hand and`</br>`gestures eastward` | [Ignoring the male nymph, Hanako takes Taro's hand and gestures eastward.]
 
+<div style="page-break-after: always;"></div>
 ## Emotes And Expressive Commands Inside Other Commands
 
 Symbol | Purpose | Example | Output
@@ -90,6 +94,7 @@ Symbol | Purpose | Example | Output
 | | | `channel hunt =slowclap`</br>`wellwater` | (hunt) Hanako: \<With a mocking lack of enthusiasm, Hanako claps slowly for __wellWater__.\>
 | | | `question =comfort taro` | (Question) Hanako: \<Hanako comforts Taro.\>
 
+<div style="page-break-after: always;"></div>
 ## Addressing A Message
 
 Use `>` to address a message.
@@ -112,6 +117,7 @@ Example | Output
 `say >taro [with some hesitation] i`</br>`suppose you're right` | Hanako says to Taro with some hesitation, "I suppose you're right."
 `dwarvish [irately] now fetch me`</br>`another beer!` | Hanako says irately in dwarvish, "Now fetch me another beer!"
 
+<div style="page-break-after: always;"></div>
 ## Room Fixtures
 
 A "room fixture" is a permanent feature of a room (such as a sign) with which 
