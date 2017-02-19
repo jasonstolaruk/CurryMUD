@@ -92,7 +92,7 @@ Example | Effect
 --- | ---
 `say >taro nice to mee, you, Taro` | Hanako says to Taro, "Nice to meet you, Taro."
 `felinoidean >taro he can't be trusted` | Hanako says to Taro in felinoidean, "He can't be trusted."
-`channel hunt >taro i'm still waiting in the clearing` | (hunt) Hanako: (to Taro) I'm still waiting in the clearing.
+`channel hunt >taro i'm still waiting`</br>`in the clearing` | (hunt) Hanako: (to Taro) I'm still waiting in the clearing.
 `question >taro try typing "help`</br>`cheatsheet"` | (Question) Hanako: (to Taro) Try typing "help cheatsheet".
 
 ## Adverbial Phrases
@@ -103,7 +103,7 @@ Example | Effect
 --- | ---
 `say [in a high-pitched voice] stop`</br>`pressuring me!` | Hanako says in a high-pitched voice, "Stop pressuring me!"
 `say [quietly] >taro she's`</br>`completely round the twist...` | Hanako says quietly to Zappy, "She's completely round the twist..."
-`say >taro [with some hesitation]`</br>`i suppose you're right` | Hanako says to Taro with some hesitation, "I suppose you're right."
+`say >taro [with some hesitation] i`</br>`suppose you're right` | Hanako says to Taro with some hesitation, "I suppose you're right."
 `dwarvish [irately] now fetch me`</br>`another beer!` | Hanako says irately in dwarvish, "Now fetch me another beer!"
 
 ## Room Fixtures
