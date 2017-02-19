@@ -41,7 +41,7 @@ Prefix | Purpose | Example | Effect
 --- | --- | --- | ---
 `.` | ordinal number | `look 4.necklace` | examine the fourth necklace in the room
 `/` | amount | `get 2/knife` | pick up the first two knives in the room
-`'` | all | `show 'earring`</br>`hanako` | show all of the earrings in your inventory to Hanako
+`'` | all | `show 'earring hanako` | show all of the earrings in your inventory to Hanako
 | | | `drop '` | drop everything in your inventory (including coins)
 
 ## Combining Prefixes
@@ -59,7 +59,7 @@ Example | Effect
 Prefix | Purpose | Example | Effect
 --- | --- | --- | ---
 `/` | amount | `put 50/gp sack` | put 50 of your gold pieces in your sack
-| | | `remove 50/coins`</br>`sack` | remove 50 of your coins from your sack
+| | | `remove 50/coins sack` | remove 50 of your coins from your sack
 `'` | all | `put 'gp sack` | put all of your gold pieces in your sack
 | | | `put 'coins sack` | put all of your coins in your sack
 
@@ -91,8 +91,8 @@ Use `>` to address a message.
 Example | Effect
 --- | ---
 `say >taro nice to mee, you, Taro` | Hanako says to Taro, "Nice to meet you, Taro."
-`felinoidean >taro he can't be`</br>`trusted` | Hanako says to Taro in felinoidean, "He can't be trusted."
-`channel hunt >taro i'm still`</br>`waiting in the clearing` | (hunt) Hanako: (to Taro) I'm still waiting in the clearing.
+`felinoidean >taro he can't be trusted` | Hanako says to Taro in felinoidean, "He can't be trusted."
+`channel hunt >taro i'm still waiting in the clearing` | (hunt) Hanako: (to Taro) I'm still waiting in the clearing.
 `question >taro try typing "help`</br>`cheatsheet"` | (Question) Hanako: (to Taro) Try typing "help cheatsheet".
 
 ## Adverbial Phrases
@@ -101,10 +101,10 @@ You may use an adverbial phrase to describe how an utterance is spoken. Adverbia
 
 Example | Effect
 --- | ---
-`say [in a high-pitched voice]`</br>`stop pressuring me!` | Hanako says in a high-pitched voice, "Stop pressuring me!"
+`say [in a high-pitched voice] stop`</br>`pressuring me!` | Hanako says in a high-pitched voice, "Stop pressuring me!"
 `say [quietly] >taro she's`</br>`completely round the twist...` | Hanako says quietly to Zappy, "She's completely round the twist..."
-`say >taro [with some`</br>`hesitation] i suppose you're`</br>`right` | Hanako says to Taro with some hesitation, "I suppose you're right."
-`dwarvish [irately] now fetch`</br>`me another beer!` | Hanako says irately in dwarvish, "Now fetch me another beer!"
+`say >taro [with some hesitation]`</br>`i suppose you're right` | Hanako says to Taro with some hesitation, "I suppose you're right."
+`dwarvish [irately] now fetch me`</br>`another beer!` | Hanako says irately in dwarvish, "Now fetch me another beer!"
 
 ## Room Fixtures
 
