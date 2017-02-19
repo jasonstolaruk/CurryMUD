@@ -9,7 +9,7 @@ Inside rooms: cyan
 Outside rooms: light green
 Shops: light red
 "Special" rooms: light magenta
-You can adjust these colors in Mudlet's preferences under "Mapper colors."
+(You can adjust these colors in Mudlet's preferences under "Mapper colors.")
 
 The CurryMUD "zoom" command can be used to adjust the zoom to your desired level.
 

@@ -2,10 +2,9 @@
 
 A "MUD client" is a type of software used to connect to a MUD server and play.
 
-While there are a variety of MUD clients available, we recommend Mudlet and TinTin++ (CurryMUD has been tested extensively with both). These clients run on a variety of operating systems, are feature-rich, and free.
+While there are a variety of MUD clients available, we recommend Mudlet and TinTin++ (CurryMUD has been tested extensively with both). These clients run on all the popular operating systems, are feature-rich, and free.
 
 Mudlet is a GUI application; TinTin++, on the other hand, is a console application. For this reason, TinTin++ is better suited for "power users" who know their way around the command line/shell.
-Mudlet users will want to take advantage of our custom scripts for displaying vitals gauges and mapping. See "help mudletscripts" for more information.
 
 Mudlet
 http://www.mudlet.org
@@ -13,16 +12,22 @@ http://www.mudlet.org
 TinTin++
 http://tintin.sourceforge.net/index.php
 
+\uMUDLET SCRIPTS\n
+
+Mudlet users will want to take advantage of our custom scripts for displaying vitals gauges and mapping. See "help mudletscripts" for more information.
+
 \uCLIENT CONFIGURATION\n
 
 Mudlet users:
-Please allow CurryMUD to handle line wrapping for you: using the CurryMUD "set" command, set "columns" to your desired line length. To ensure that Mudlet won't perform line wrapping, set your line length to a higher value in the Mudlet preferences ("Wrap lines at" under "Main display").
-Under "Input line," change the "Command separator" to something other than the semicolon ("\\", for example).
+* Please allow CurryMUD to handle line wrapping for you: using the CurryMUD "set" command, set "columns" to your desired line length. To ensure that Mudlet won't perform line wrapping, set your line length to a higher value in the Mudlet preferences ("Wrap lines at" under "Main display").2`
 
-Other Mudlet preferences to change (optional): check "Force new line on empty commands" under "Special Options." We also recommend checking "Auto clear the input line after you sent text" under "Input line."
+Change the following options in the Mudlet preferences:
+* Under "Input line," change the "Command separator" to something other than the semicolon ("\\" or "|", for example).2`
+* Under "Special Options," check "Force new line on empty commands."2`
+* Under "Input line," check "Auto clear the input line after you sent text" (recommended).2`
 
 TinTin++ users:
-Please execute the "##split" command to create a separate input and output area: CurryMUD works best with a client that has a dedicated field for input. To account for the presence of the input area, you may need to decrease CurryMUD's "lines" setting by 2 (via the CurryMUD "set" command) or vertically expand your terminal window.
+* Please execute the "##split" command: CurryMUD works best when there is a dedicated field for input. To account for the presence of the input area, you may need to decrease CurryMUD's "lines" setting by 2 (via the CurryMUD "set" command) or vertically expand your terminal window.2`
 
 \uSEE ALSO\n
 clear, color, mapper, mudletscripts, password, set, texteditor, zoom
