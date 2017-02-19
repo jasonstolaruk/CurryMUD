@@ -10,7 +10,7 @@ a help article.
 
 ## Listing And Examining Things
 
-Command | Example | Effect
+Command | Example | Result
 --- | --- | ---
 `look` | `look` | get a description of your current room, including a list of things in the room
 | | `look mhuman` | look at the male human in the room
@@ -31,7 +31,7 @@ cp | sp | gp
 
 ## Location Prefixes
 
-Prefix | Location | Example | Effect
+Prefix | Location | Example | Result
 --- | --- | --- | ---
 `i-` | inventory | `smell i-flask` | smell the (contents of the) flask in your inventory
 `e-` | equipment | `smell e-boots` | smell the boots you're wearing
@@ -39,7 +39,7 @@ Prefix | Location | Example | Effect
 
 ## Other Prefixes
 
-Prefix | Purpose | Example | Effect
+Prefix | Purpose | Example | Result
 --- | --- | --- | ---
 `.` | ordinal number | `look 4.necklace` | examine the fourth necklace in the room
 `/` | amount | `get 2/knife` | pick up the first two knives in the room
@@ -51,14 +51,14 @@ Prefix | Purpose | Example | Effect
 You may combine a location prefix with another prefix. The location prefix must 
 come first.
 
-Example | Effect
+Example | Result
 --- | ---
 `smell r-2/flower` | smell the first two flowers in the room
 `show e-'earring hanako` | show all the earrings you're wearing to Hanako
 
 ## Prefixes Used With Coins
 
-Prefix | Purpose | Example | Effect
+Prefix | Purpose | Example | Result
 --- | --- | --- | ---
 `/` | amount | `put 50/gp sack` | put 50 of your gold pieces in your sack
 | | | `remove 50/coins sack` | remove 50 of your coins from your sack
@@ -67,7 +67,7 @@ Prefix | Purpose | Example | Effect
 
 ## Emoting
 
-Symbol | Purpose | Example | Effect
+Symbol | Purpose | Example | Output
 --- | --- | --- | ---
 `@` | your name | `emote shielding her`</br>`eyes from the sun, @`</br>`looks out across the`</br>`plains` | [Shielding her eyes from the sun, Hanako looks out across the plains.]
 `@'s` | your name in possessive | `@'s leg twitches`</br>`involuntarily as she`</br>` laughs with gusto` | [Hanako's leg twitches involuntarily as she laughs with gusto.]
@@ -77,7 +77,7 @@ Symbol | Purpose | Example | Effect
 
 ## Emotes And Expressive Commands Inside Other Commands
 
-Symbol | Purpose | Example | Effect
+Symbol | Purpose | Example | Output
 --- | --- | --- | ---
 `;` | begin an emote | `telepathy taro ;gives`</br>`you her full attention` | [Hanako] [Hanako gives you her full attention.]
 | | | `channel hunt ;suggests`</br>`that >tomato stay put`</br>`for now` | (hunt) Hanako: [Hanako suggests that __tomato__ stay put for now.]
@@ -90,7 +90,7 @@ Symbol | Purpose | Example | Effect
 
 Use `>` to address a message.
 
-Example | Effect
+Example | Output
 --- | ---
 `say >taro nice to mee, you, Taro` | Hanako says to Taro, "Nice to meet you, Taro."
 `felinoidean >taro he can't be trusted` | Hanako says to Taro in felinoidean, "He can't be trusted."
@@ -101,7 +101,7 @@ Example | Effect
 
 You may use an adverbial phrase to describe how an utterance is spoken. Adverbial phrases are delimited by square brackets.
 
-Example | Effect
+Example | Output
 --- | ---
 `say [in a high-pitched voice] stop`</br>`pressuring me!` | Hanako says in a high-pitched voice, "Stop pressuring me!"
 `say [quietly] >taro she's completely`</br>`round the twist...` | Hanako says quietly to Zappy, "She's completely round the twist..."
