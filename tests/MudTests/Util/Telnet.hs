@@ -41,7 +41,7 @@ test_parseTelnet_telnetText = actual @?= expected
     expected = ("", telnetDatas)
 
 
-telnetText :: Text
+telnetText :: Text -- This is what Mudlet sends on connect.
 telnetText = T.pack . map chr $ [ 255 -- IAC
                                 , 252 -- WON'T
                                 , 3   -- SUPPRESS GO AHEAD
