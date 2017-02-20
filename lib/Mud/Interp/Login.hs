@@ -504,7 +504,7 @@ procAttribChar i ms = \case 's' -> ("Strength",  getBaseSt i ms, st)
 
 
 descHelper :: HasCallStack => NewCharBundle -> Id -> MsgQueue -> Cols -> MudStack ()
-descHelper ncb i mq cols = sequence_ [ writeMsg mq . InacSecs $ maxInacSecsDesc
+descHelper ncb i mq cols = sequence_ [ writeMsg mq . InacSecs $ maxInacSecsCompose
                                      , send mq . nl . T.unlines . parseWrapXform cols $ enterDescMsg
                                      , setDescInterpHelper ncb i mq cols ]
 

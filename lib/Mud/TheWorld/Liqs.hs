@@ -104,7 +104,7 @@ potXpEffectVal = 2
 
 
 mkPotEffectFeeling :: FeelingTag -> Maybe EffectFeeling
-mkPotEffectFeeling tag = Just . EffectFeeling tag $ 10
+mkPotEffectFeeling tag = Just . EffectFeeling tag $ 15
 
 
 potInstantHpLiq :: Liq

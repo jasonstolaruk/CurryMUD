@@ -26,6 +26,7 @@ import Control.Monad.IO.Class (liftIO)
 import Data.List (delete)
 import Data.Monoid ((<>))
 import Data.Text (Text)
+import GHC.Stack (HasCallStack)
 
 
 logNotice :: Text -> Text -> MudStack ()
@@ -39,21 +40,21 @@ logPla = L.logPla "Mud.Threads.Digester"
 -- ==================================================
 
 
-runDigesterAsync :: Id -> MudStack ()
+runDigesterAsync :: HasCallStack => Id -> MudStack ()
 runDigesterAsync i = runAsync (threadDigester i) >>= \a -> tweak $ mobTbl.ind i.digesterAsync ?~ a
 
 
-startNpcDigesters :: MudStack ()
+startNpcDigesters :: HasCallStack => MudStack ()
 startNpcDigesters =
     sequence_ [ logNotice "startNpcDigesters" "starting NPC digesters.", mapM_ runDigesterAsync  . findNpcIds =<< getState ]
 
 
-stopNpcDigesters :: MudStack ()
+stopNpcDigesters :: HasCallStack => MudStack ()
 stopNpcDigesters =
     sequence_ [ logNotice "stopNpcDigesters"  "stopping NPC digesters.", mapM_ throwWaitDigester . findNpcIds =<< getState ]
 
 
-throwWaitDigester :: Id -> MudStack ()
+throwWaitDigester :: HasCallStack => Id -> MudStack ()
 throwWaitDigester i = helper |&| modifyState >=> maybeVoid throwWait
   where
     helper ms = let a = ms^.mobTbl.ind i.digesterAsync
@@ -63,7 +64,7 @@ throwWaitDigester i = helper |&| modifyState >=> maybeVoid throwWait
 -----
 
 
-threadDigester :: Id -> MudStack ()
+threadDigester :: HasCallStack => Id -> MudStack ()
 threadDigester i = handle (threadExHandler (Just i) "digester") $ getState >>= \ms -> do
     setThreadType . Digester $ i
     let delay  | isPC i ms = calcDigesterDelay . getRace i $ ms
@@ -73,7 +74,7 @@ threadDigester i = handle (threadExHandler (Just i) "digester") $ getState >>= \
     handle (die (Just i) $ "digester for " <> singId) $ logPla "threadDigester" i "digester started." >> forever loop
 
 
-digest :: Id -> MudStack ()
+digest :: HasCallStack => Id -> MudStack ()
 digest i = getState >>= \ms -> case getStomach i ms of []  -> unit
                                                        scs -> helper ms scs
   where

@@ -22,6 +22,7 @@ import Control.Monad (mapM_)
 import Control.Monad.IO.Class (liftIO)
 import Data.Monoid ((<>))
 import Data.Text (Text)
+import GHC.Stack (HasCallStack)
 import qualified Data.Map.Strict as M (delete, elems, empty, insert, lookup)
 import qualified Data.Text as T
 
@@ -37,7 +38,7 @@ logPla = L.logPla "Mud.Threads.FeelingTimer"
 -- ==================================================
 
 
-startFeeling :: Id -> EffectFeeling -> FeelingVal -> MudStack ()
+startFeeling :: HasCallStack => Id -> EffectFeeling -> FeelingVal -> MudStack ()
 startFeeling i (EffectFeeling tag dur) val = do
     let f = liftIO . ((>>) <$> cancel <*> wait) . feelingAsync
     maybeVoid f =<< M.lookup tag . getFeelingMap i <$> getState
@@ -46,7 +47,7 @@ startFeeling i (EffectFeeling tag dur) val = do
     logPla "startFeeling" i . T.concat $ [ "started feeling with tag ", dblQuote tag, ": ", pp feel, "." ]
 
 
-threadFeelingTimer :: Id -> FeelingTag -> Seconds -> MudStack ()
+threadFeelingTimer :: HasCallStack => Id -> FeelingTag -> Seconds -> MudStack ()
 threadFeelingTimer i tag dur = sequence_ [ setThreadType . FeelingTimer $ i, loop 0 `catch` exHandler ]
   where
     loop secs | secs >= dur = sequence_ [ logHelper "is expiring.", tweak $ mobTbl.ind i.feelingMap %~ (tag `M.delete`) ]
@@ -66,6 +67,6 @@ threadFeelingTimer i tag dur = sequence_ [ setThreadType . FeelingTimer $ i, loo
 
 -- To stop a single feeling, cancel the async and remove the entry in the mob's feeling map. See "stopFeeling" in
 -- module "Mud.Threads.Effect".
-stopFeelings :: Id -> MudStack ()
+stopFeelings :: HasCallStack => Id -> MudStack ()
 stopFeelings i = sequence_ [ getFeelingMap i <$> getState >>= mapM_ (liftIO . cancel . feelingAsync) . M.elems
                            , tweak $ mobTbl.ind i.feelingMap .~ M.empty ]

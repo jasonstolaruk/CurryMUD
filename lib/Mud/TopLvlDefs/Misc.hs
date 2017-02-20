@@ -130,8 +130,8 @@ maxInacSecs :: Seconds
 maxInacSecs = 10 {- mins -} * 60 {- secs -} -- ten mins
 
 
-maxInacSecsDesc :: Seconds -- When a player is composing their PC description.
-maxInacSecsDesc = 1 {- hr -} * 60 {- mins -} * 60 {- secs -} -- one hr
+maxInacSecsCompose :: Seconds -- When a player is composing their PC description.
+maxInacSecsCompose = 1 {- hr -} * 60 {- mins -} * 60 {- secs -} -- one hr
 
 
 maxLogSize :: FileOffset

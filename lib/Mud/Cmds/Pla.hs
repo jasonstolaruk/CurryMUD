@@ -941,7 +941,7 @@ interpConfirmDescChange _ ActionParams { plaMsgQueue, plaCols } = promptRetryYes
 
 
 descHelper :: HasCallStack => Id -> MsgQueue -> Cols -> MudStack ()
-descHelper i mq cols = sequence_ [ writeMsg mq . InacSecs $ maxInacSecsDesc
+descHelper i mq cols = sequence_ [ writeMsg mq . InacSecs $ maxInacSecsCompose
                                  , send mq . nl . T.unlines . parseWrapXform cols $ enterDescMsg
                                  , setInterp i . Just . interpMutliLine f $ [] ]
   where
