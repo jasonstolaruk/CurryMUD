@@ -301,7 +301,7 @@ potInstantStDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Nothing
   where
     ce = mkPotConsumpEffects es
     es = EffectList . pure . Right $ e
-    e  = Effect { _effectTag     = Nothing
+    e  = Effect { _effectTag     = Just "potSt"
                 , _effectSub     = MobEffectAttrib St
                 , _effectVal     = Just . EffectRangedVal $ potInstantAtttribEffectRange
                 , _effectDur     = potAttribEffectDur
@@ -349,7 +349,7 @@ potInstantDxDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Nothing
   where
     ce = mkPotConsumpEffects es
     es = EffectList . pure . Right $ e
-    e  = Effect { _effectTag     = Nothing
+    e  = Effect { _effectTag     = Just "potDx"
                 , _effectSub     = MobEffectAttrib Dx
                 , _effectVal     = Just . EffectRangedVal $ potInstantAtttribEffectRange
                 , _effectDur     = potAttribEffectDur
@@ -393,7 +393,7 @@ potInstantHtDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Nothing
   where
     ce = mkPotConsumpEffects es
     es = EffectList . pure . Right $ e
-    e  = Effect { _effectTag     = Nothing
+    e  = Effect { _effectTag     = Just "potHt"
                 , _effectSub     = MobEffectAttrib Ht
                 , _effectVal     = Just . EffectRangedVal $ potInstantAtttribEffectRange
                 , _effectDur     = potAttribEffectDur
@@ -437,7 +437,7 @@ potInstantMaDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Nothing
   where
     ce = mkPotConsumpEffects es
     es = EffectList . pure . Right $ e
-    e  = Effect { _effectTag     = Nothing
+    e  = Effect { _effectTag     = Just "potMa"
                 , _effectSub     = MobEffectAttrib Ma
                 , _effectVal     = Just . EffectRangedVal $ potInstantAtttribEffectRange
                 , _effectDur     = potAttribEffectDur
@@ -481,7 +481,7 @@ potInstantPsDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Nothing
   where
     ce = mkPotConsumpEffects es
     es = EffectList . pure . Right $ e
-    e  = Effect { _effectTag     = Nothing
+    e  = Effect { _effectTag     = Just "potPs"
                 , _effectSub     = MobEffectAttrib Ps
                 , _effectVal     = Just . EffectRangedVal $ potInstantAtttribEffectRange
                 , _effectDur     = potAttribEffectDur
@@ -531,7 +531,7 @@ potInstantNegStDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Nothi
   where
     ce = mkPotConsumpEffects es
     es = EffectList . pure . Right $ e
-    e  = Effect { _effectTag     = Nothing
+    e  = Effect { _effectTag     = Just "potNegSt"
                 , _effectSub     = MobEffectAttrib St
                 , _effectVal     = Just . EffectRangedVal $ (potInstantAtttribEffectRange & both %~ negate)
                 , _effectDur     = potAttribEffectDur
@@ -573,7 +573,7 @@ potInstantTinnitusDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = No
   where
     ce = mkPotConsumpEffects es
     es = EffectList . pure . Right $ e
-    e  = Effect { _effectTag     = Nothing
+    e  = Effect { _effectTag     = Just "potTinnitus"
                 , _effectSub     = EffectOther tinnitusEffectFunName
                 , _effectVal     = Nothing
                 , _effectDur     = 2 * 60
