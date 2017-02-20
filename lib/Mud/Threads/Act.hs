@@ -220,5 +220,5 @@ applyBonus i s gn now = do -- TODO
                             Rumialys  -> effectHelper Ht (5, 15)
     f gn
   where
-    effectHelper attrib range =
-        startEffect i . Effect (MobEffectAttrib attrib) (Just . EffectRangedVal $ range) sacrificeBonusSecs $ Nothing
+    effectHelper attrib range = -- TODO: Effect tag.
+        startEffect i . Effect Nothing (MobEffectAttrib attrib) (Just . EffectRangedVal $ range) sacrificeBonusSecs $ Nothing

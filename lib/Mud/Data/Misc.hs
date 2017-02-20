@@ -353,14 +353,15 @@ instance Pretty DurationalEffect where
 
 
 instance Pretty Effect where
-  pp (Effect effSub effVal secs effFeeling) = T.concat [ bracketQuote "durational"
-                                                       , " "
-                                                       , pp effSub
-                                                       , " by "
-                                                       , effectValHelper effVal
-                                                       , " "
-                                                       , mkSecsTxt secs
-                                                       , effectFeelingHelper effFeeling ]
+  pp (Effect effTag effSub effVal secs effFeeling) = T.concat [ bracketQuote "durational"
+                                                              , " "
+                                                              , maybeEmp (spcR . dblQuote) effTag
+                                                              , pp effSub
+                                                              , " by "
+                                                              , effectValHelper effVal
+                                                              , " "
+                                                              , mkSecsTxt secs
+                                                              , effectFeelingHelper effFeeling ]
 
 
 mkSecsTxt :: Seconds -> Text

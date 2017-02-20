@@ -52,7 +52,7 @@ logPla = L.logPla "Mud.Threads.Effect"
 
 
 startEffect :: Id -> Effect -> MudStack ()
-startEffect i e@(Effect _ (Just (EffectRangedVal range)) _ _) = rndmR range >>= \x ->
+startEffect i e@(Effect _ _ (Just (EffectRangedVal range)) _ _) = rndmR range >>= \x ->
     startEffectHelper i $ e & effectVal ?~ EffectFixedVal x
 startEffect i e = startEffectHelper i e
 
@@ -69,7 +69,7 @@ startEffectHelper i e@(view effectFeeling -> ef) = do logPla "startEffectHelper"
 
 
 threadEffect :: Id -> Effect -> EffectQueue -> MudStack ()
-threadEffect i (Effect effSub _ secs _) q = handle (threadExHandler (Just i) "effect") $ ask >>= \md -> do
+threadEffect i (Effect _ effSub _ secs _) q = handle (threadExHandler (Just i) "effect") $ ask >>= \md -> do
     setThreadType . EffectThread $ i
     logHelper "has started."
     (ti, ior) <- (,) <$> liftIO myThreadId <*> liftIO (newIORef secs)
@@ -98,12 +98,11 @@ threadEffect i (Effect effSub _ secs _) q = handle (threadExHandler (Just i) "ef
 
 
 pauseEffects :: Id -> MudStack () -- When a player logs out.
-pauseEffects i = getState >>= \ms ->
-    let aes = getDurEffects i ms
-    in unless (null aes) $ do logNotice "pauseEffects" . prd $ "pausing effects for ID " <> showText i
-                              pes <- mapM helper aes
-                              tweaks [ durationalEffectTbl.ind i .~  []
-                                     , pausedEffectTbl    .ind i <>~ pes ]
+pauseEffects i = getDurEffects i <$> getState >>= \es ->
+    unless (null es) $ do logNotice "pauseEffects" . prd $ "pausing effects for ID " <> showText i
+                          pes <- mapM helper es
+                          tweaks [ durationalEffectTbl.ind i .~  []
+                                 , pausedEffectTbl    .ind i <>~ pes ]
   where
     helper (DurationalEffect e (_, q)) = do
         tmv <- liftIO newEmptyTMVarIO
@@ -148,7 +147,7 @@ stopEffect i (DurationalEffect e (_, q)) = sequence_ [ liftIO . atomically . wri
 
 
 stopFeeling :: Id -> Effect -> MudStack ()
-stopFeeling i (Effect _ _ _ feel) = getState >>= \ms ->
+stopFeeling i (view effectFeeling -> feel) = getState >>= \ms ->
     let f = flip maybeVoid feel $ \(EffectFeeling tag _) ->
                 flip maybeVoid (M.lookup tag . getFeelingMap i $ ms) $ \(Feeling _ _ a) ->
                     sequence_ [ liftIO . cancel $ a, tweak $ mobTbl.ind i.feelingMap %~ (tag `M.delete`) ]

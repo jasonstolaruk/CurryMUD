@@ -276,10 +276,14 @@ data DurationalEffect = DurationalEffect { _effect        :: Effect
                                          , _effectService :: EffectService }
 
 
-data Effect = Effect { _effectSub     :: EffectSub
+data Effect = Effect { _effectTag     :: Maybe EffectTag
+                     , _effectSub     :: EffectSub
                      , _effectVal     :: Maybe EffectVal
                      , _effectDur     :: Seconds
                      , _effectFeeling :: Maybe EffectFeeling } deriving (Eq, Generic, Show)
+
+
+type EffectTag = Text
 
 
 data EffectSub = ArmEffectAC
