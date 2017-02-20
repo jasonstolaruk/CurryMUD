@@ -672,7 +672,7 @@ debugLiq   (WithArgs i mq cols as) = getState >>= \ms ->
       | views distinctLiqTbl (di `IM.notMember`) ms = wrapSend mq cols . sorryNonexistentId di . pure $ "distinct liquid"
       | otherwise = do logPlaExecArgs (prefixDebugCmd "liquid") as i
                        ok mq
-                       consume i =<< mkStomachConts <$> liftIO getCurrentTime
+                       onNewThread (consume i =<< mkStomachConts <$> liftIO getCurrentTime)
       where
         mkStomachConts now = replicate amt . StomachCont (Left . DistinctLiqId $ di) now $ False
 debugLiq p = advise p [] adviceDLiqExcessArgs
