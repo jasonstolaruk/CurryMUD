@@ -153,14 +153,14 @@ adHoc mq host = do
                        , _logoutRmId       = Nothing
                        , _bonusTime        = Nothing
                        , _spiritAsync      = Nothing }
-            ms'  = upd ms [ activeEffectsTbl.ind i .~ []
+            ms'  = upd ms [ activeEffectTbl .ind i .~ []
                           , coinsTbl        .ind i .~ mempty
                           , entTbl          .ind i .~ e
                           , eqTbl           .ind i .~ M.empty
                           , invTbl          .ind i .~ []
                           , mobTbl          .ind i .~ m
                           , msgQueueTbl     .ind i .~ mq
-                          , pausedEffectsTbl.ind i .~ []
+                          , pausedEffectTbl .ind i .~ []
                           , pcSingTbl       .at  s ?~ i
                           , pcTbl           .ind i .~ pc
                           , plaTbl          .ind i .~ pla

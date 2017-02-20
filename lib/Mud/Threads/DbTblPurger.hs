@@ -1,4 +1,3 @@
-{-# OPTIONS_GHC -fno-warn-type-defaults #-}
 {-# LANGUAGE LambdaCase, OverloadedStrings #-}
 
 module Mud.Threads.DbTblPurger ( threadAdminChanTblPurger
@@ -17,19 +16,12 @@ import Mud.Util.Quoting
 import Mud.Util.Text
 import qualified Mud.Misc.Logging as L (logNotice)
 
-import Control.Concurrent (threadDelay)
 import Control.Exception.Lifted (catch, handle)
 import Control.Monad (forever)
 import Control.Monad.IO.Class (liftIO)
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import qualified Data.Text as T
-
-
-default (Int)
-
-
------
 
 
 logNotice :: Text -> Text -> MudStack ()
@@ -43,7 +35,7 @@ dbTblPurger :: Text -> IO Int -> IO () -> MudStack ()
 dbTblPurger tblName countFun purgeFun = handle (threadExHandler Nothing threadName) $ do
     setThreadType DbTblPurger
     logNotice "dbTblPurger" $ "database table purger started for the " <> dblQuote tblName <> " table."
-    let loop = (liftIO . threadDelay $ dbTblPurgerDelay * 10 ^ 6) >> helper
+    let loop = sequence_ [ liftIO . delaySecs $ dbTblPurgerDelay, helper ]
     forever loop `catch` die Nothing threadName
   where
     threadName = "database table purger " <> parensQuote tblName

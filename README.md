@@ -29,7 +29,7 @@ CurryMUD will have the following features:
 * Help files for all existing non-debug commands. Help topics. :information_desk_person:
 * Commands have a consistent structure and a unique syntax for indicating target locations and quantities. :dart:
 * Unique commands, accessible only when a player is in a particular room, may be created. :house_with_garden:
-* The names of commands, as well as the names of the targets they act upon, may be abbreviated. :abc:
+* Nearly everything may be abbreviated. :abc:
 * Logging. :scroll:
 * ANSI color. :red_circle:
 * Character creation. :runner:

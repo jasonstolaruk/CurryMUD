@@ -1,4 +1,3 @@
-{-# OPTIONS_GHC -fno-warn-type-defaults #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Mud.Threads.Digester ( runDigesterAsync
@@ -19,7 +18,6 @@ import Mud.Util.Operators
 import Mud.Util.Text
 import qualified Mud.Misc.Logging as L (logNotice, logPla)
 
-import Control.Concurrent (threadDelay)
 import Control.Exception.Lifted (handle)
 import Control.Lens (views)
 import Control.Lens.Operators ((?~), (.~), (&), (%~), (^.))
@@ -28,12 +26,6 @@ import Control.Monad.IO.Class (liftIO)
 import Data.List (delete)
 import Data.Monoid ((<>))
 import Data.Text (Text)
-
-
-default (Int)
-
-
------
 
 
 logNotice :: Text -> Text -> MudStack ()
@@ -76,7 +68,7 @@ threadDigester i = handle (threadExHandler (Just i) "digester") $ getState >>= \
     setThreadType . Digester $ i
     let delay  | isPC i ms = calcDigesterDelay . getRace i $ ms
                | otherwise = calcDigesterDelay Human
-        loop               = (liftIO . threadDelay $ delay * 10 ^ 6) >> digest i
+        loop               = sequence_ [ liftIO . delaySecs $ delay, digest i ]
         singId             = descSingId i ms
     handle (die (Just i) $ "digester for " <> singId) $ logPla "threadDigester" i "digester started." >> forever loop
 

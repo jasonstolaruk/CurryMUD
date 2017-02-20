@@ -49,7 +49,7 @@ data MudData = MudData { _errorLog      :: Maybe LogService
                        , _mudStateIORef :: IORef MudState }
 
 
-data MudState = MudState { _activeEffectsTbl       :: ActiveEffectsTbl
+data MudState = MudState { _activeEffectTbl        :: ActiveEffectTbl
                          , _armTbl                 :: ArmTbl
                          , _chanTbl                :: ChanTbl
                          , _clothTbl               :: ClothTbl
@@ -75,7 +75,7 @@ data MudState = MudState { _activeEffectsTbl       :: ActiveEffectsTbl
                          , _npcTbl                 :: NpcTbl
                          , _objTbl                 :: ObjTbl
                          , _pausedCorpseDecompsTbl :: PausedCorpseDecompsTbl
-                         , _pausedEffectsTbl       :: PausedEffectsTbl
+                         , _pausedEffectTbl        :: PausedEffectTbl
                          , _pcSingTbl              :: PCSingTbl
                          , _pcTbl                  :: PCTbl
                          , _pickPtsTbl             :: PickPtsTbl
@@ -94,7 +94,7 @@ data MudState = MudState { _activeEffectsTbl       :: ActiveEffectsTbl
                          , _writableTbl            :: WritableTbl }
 
 
-type ActiveEffectsTbl       = IM.IntMap [ActiveEffect]
+type ActiveEffectTbl        = IM.IntMap [ActiveEffect]
 type ArmTbl                 = IM.IntMap Arm
 type ChanTbl                = IM.IntMap Chan
 type ClothTbl               = IM.IntMap Cloth
@@ -120,7 +120,7 @@ type MsgQueueTbl            = IM.IntMap MsgQueue
 type NpcTbl                 = IM.IntMap Npc
 type ObjTbl                 = IM.IntMap Obj
 type PausedCorpseDecompsTbl = IM.IntMap SecondsPair
-type PausedEffectsTbl       = IM.IntMap [PausedEffect]
+type PausedEffectTbl        = IM.IntMap [PausedEffect]
 type PCSingTbl              = M.Map Sing Id
 type PCTbl                  = IM.IntMap PC
 type PickPtsTbl             = IM.IntMap Int
@@ -156,11 +156,6 @@ data ActiveEffect = ActiveEffect { _effect        :: Effect
                                  , _effectService :: EffectService }
 
 
-{-
-Effects that have a duration.
-These effects have a timer that may be paused (and later restarted) or stopped (canceled).
-There may be a feeling associated with the effect. The feeling will be started and stopped with the effect.
--}
 data Effect = Effect { _effectSub     :: EffectSub
                      , _effectVal     :: Maybe EffectVal
                      , _effectDur     :: Seconds
@@ -168,28 +163,22 @@ data Effect = Effect { _effectSub     :: EffectSub
 
 
 data EffectSub = ArmEffectAC
-               | EntEffectFlags
                | MobEffectAttrib Attrib
                | MobEffectAC
-               | RmEffectFlags
-               | EffectOther FunName -- "EffectOther" has an "effect function" that is run every second.
+               | EffectOther FunName -- Function is run every second.
                deriving (Eq, Generic, Show)
 
 
 data Attrib = St | Dx | Ht | Ma | Ps deriving (Bounded, Enum, Eq, Generic, Show)
 
 
-data EffectVal = DefiniteVal Int
-               | RangeVal    Range deriving (Eq, Generic, Show)
+data EffectVal = EffectFixedVal  Int
+               | EffectRangedVal Range deriving (Eq, Generic, Show)
 
 
 type Range = (Int, Int)
 
 
-{-
-A feeling is distinguished by its tag.
-TODO
--}
 data EffectFeeling = EffectFeeling { efTag :: FeelingTag
                                    , efDur :: Seconds } deriving (Eq, Generic, Show)
 
@@ -203,8 +192,8 @@ type EffectAsync = Async ()
 type EffectQueue = TQueue EffectCmd
 
 
-data EffectCmd = PauseEffect  (TMVar Seconds)
-               | QueryRemTime (TMVar Seconds)
+data EffectCmd = PauseEffect        (TMVar Seconds)
+               | QueryRemEffectTime (TMVar Seconds)
                | StopEffect
 
 
@@ -473,10 +462,16 @@ data HostRecord = HostRecord { _noOfLogouts   :: Int
 -- ==================================================
 
 
-{-
-Effects that are instantaneous.
-There may be a feeling associated with the effect. The feeling will be started with the effect.
--}
+type InacTimerQueue = TMQueue InacTimerCmd
+
+
+data InacTimerCmd = ResetInacTimer
+                  | SetInacTimerDur Seconds
+
+
+-----
+
+
 data InstaEffect = InstaEffect { _instaEffectSub     :: InstaEffectSub
                                , _instaEffectVal     :: Maybe EffectVal
                                , _instaEffectFeeling :: Maybe EffectFeeling } deriving (Eq, Generic, Show)
@@ -485,7 +480,8 @@ data InstaEffect = InstaEffect { _instaEffectSub     :: InstaEffectSub
 data InstaEffectSub = EntInstaEffectFlags
                     | MobInstaEffectPts PtsType
                     | RmInstaEffectFlags
-                    | InstaEffectOther FunName deriving (Eq, Generic, Show)
+                    | InstaEffectOther FunName -- Function is run once.
+                    deriving (Eq, Generic, Show)
 
 
 data PtsType = CurHp | CurMp | CurPp | CurFp deriving (Eq, Generic, Show)
@@ -591,14 +587,6 @@ data Sex = Male
          | NoSex deriving (Eq, Generic, Ord, Show)
 
 
-data StomachCont = StomachCont { _distinctId             :: Either DistinctLiqId DistinctFoodId
-                               , _consumpTime            :: UTCTime
-                               , _hasCausedConsumpEffect :: Bool } deriving (Eq, Generic, Show)
-
-
-type StomachAsync = Async ()
-
-
 type Exp = Int
 
 
@@ -644,6 +632,34 @@ data Party = Party { _following :: Maybe Id
                    , _memberOf  :: Maybe Id } deriving (Generic)
 
 
+data StomachCont = StomachCont { _distinctId             :: Either DistinctLiqId DistinctFoodId
+                               , _consumpTime            :: UTCTime
+                               , _hasCausedConsumpEffect :: Bool } deriving (Eq, Generic, Show)
+
+
+type StomachAsync = Async ()
+
+
+type FeelingMap = M.Map FeelingTag Feeling
+
+
+type FeelingTag = Text
+
+
+data Feeling = Feeling { feelingVal   :: FeelingVal
+                       , feelingDur   :: Seconds
+                       , feelingAsync :: FeelingAsync }
+
+
+data FeelingVal = FeelingNoVal | FeelingFixedVal Int deriving Eq
+
+
+type FeelingAsync = Async ()
+
+
+type FeelingFun = FeelingVal -> Text
+
+
 type ActMap = M.Map ActType ActAsync
 
 
@@ -654,34 +670,6 @@ data ActType = Attacking
 
 
 type ActAsync = Async ()
-
-
-type FeelingMap = M.Map FeelingTag Feeling
-
-
-type FeelingTag = Text
-
-
-data Feeling = Feeling { feelingVal        :: FeelingVal
-                       , feelingDur        :: Seconds
-                       , feelingTimerQueue :: TimerQueue
-                       , feelingAsync      :: FeelingAsync }
-
-
-data FeelingVal = NoVal | IntVal Int
-
-
-type FeelingFun = FeelingVal -> Text
-
-
-type TimerQueue = TMQueue TimerMsg
-
-
-data TimerMsg = ResetTimer
-              | SetMaxSecs Seconds
-
-
-type FeelingAsync = Async ()
 
 
 type NowEating = Sing

@@ -381,25 +381,23 @@ instance Pretty EffectFeeling where
 
 instance Pretty EffectSub where
   pp ArmEffectAC              = "armor AC"
-  pp EntEffectFlags           = "ent flags"
   pp (MobEffectAttrib attrib) = "mob "   <> pp attrib
   pp MobEffectAC              = "mob AC"
-  pp RmEffectFlags            = "room flags"
   pp (EffectOther fn)         = "other " <> parensQuote fn
 
 
 instance Pretty EffectVal where
-  pp (DefiniteVal x     ) = showText x
-  pp (RangeVal    (x, y)) = showText x <> T.cons '-' (showText y)
+  pp (EffectFixedVal  x     ) = showText x
+  pp (EffectRangedVal (x, y)) = showText x <> T.cons '-' (showText y)
 
 
 instance Pretty Feeling where
-  pp (Feeling fv dur _ _) = pp fv |<>| mkSecsTxt dur
+  pp (Feeling fv dur _) = pp fv |<>| mkSecsTxt dur
 
 
 instance Pretty FeelingVal where
-  pp NoVal      = "NoVal"
-  pp (IntVal x) = "IntVal " <> showText x
+  pp FeelingNoVal        = "no value"
+  pp (FeelingFixedVal x) = showText x
 
 
 instance Pretty God where

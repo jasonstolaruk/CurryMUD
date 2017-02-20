@@ -8,6 +8,7 @@ module Mud.Util.Misc ( atLst1
                      , boolToMaybe
                      , compose
                      , concatMapM
+                     , delaySecs
                      , divide
                      , divideRound
                      , dropFst
@@ -81,11 +82,13 @@ module Mud.Util.Misc ( atLst1
                      , uncurry5
                      , unit ) where
 
+import Mud.TopLvlDefs.Misc
 import Mud.Util.List
 import Mud.Util.Operators
 import Mud.Util.Quoting
 
 import Control.Arrow ((&&&), Arrow, first, second)
+import Control.Concurrent (threadDelay)
 import Control.Lens (_1, _2, Lens', lens, view)
 import Control.Lens.Getter (Getting)
 import Control.Lens.Operators ((%~))
@@ -145,6 +148,10 @@ blowUp modName funName msg t = error . T.unpack . T.concat $ [ modName, " ", fun
 
 compose :: a -> [a -> a] -> a
 compose = foldr ($)
+
+
+delaySecs :: Seconds -> IO ()
+delaySecs secs = threadDelay $ secs * 10 ^ 6
 
 
 divide :: (Integral a, Fractional b) => a -> a -> b

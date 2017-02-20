@@ -1,4 +1,3 @@
-{-# OPTIONS_GHC -fno-warn-type-defaults #-}
 {-# LANGUAGE MonadComprehensions, OverloadedStrings, TypeFamilies, ViewPatterns #-}
 
 module Mud.Threads.ThreadTblPurger ( purgeThreadTbls
@@ -8,10 +7,10 @@ import Mud.Data.State.MudData
 import Mud.Data.State.Util.Misc
 import Mud.Threads.Misc
 import Mud.TopLvlDefs.Misc
+import Mud.Util.Misc
 import Mud.Util.Operators
 import qualified Mud.Misc.Logging as L (logNotice)
 
-import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (asyncThreadId, poll)
 import Control.Exception.Lifted (catch, handle)
 import Control.Lens (at, views)
@@ -22,12 +21,6 @@ import Data.Text (Text)
 import GHC.Conc (ThreadStatus(..), threadStatus)
 import qualified Data.IntMap.Strict as IM (assocs)
 import qualified Data.Map.Strict as M (elems, keys)
-
-
-default (Int)
-
-
------
 
 
 logNotice :: Text -> Text -> MudStack ()
@@ -41,7 +34,7 @@ threadThreadTblPurger :: MudStack ()
 threadThreadTblPurger = handle (threadExHandler Nothing "thread table purger") $ do
     setThreadType ThreadTblPurger
     logNotice "threadThreadTblPurger" "thread table purger started."
-    let loop = (liftIO . threadDelay $ threadTblPurgerDelay * 10 ^ 6) >> purgeThreadTbls
+    let loop = sequence_ [ liftIO . delaySecs $ threadTblPurgerDelay, purgeThreadTbls ]
     forever loop `catch` die Nothing "thread table purger"
 
 

@@ -74,7 +74,7 @@ persistHelper l ms = withLock l $ do
                                              , write (ms^.mobTbl                ) $ path </> mobTblFile
                                              , write (ms^.objTbl                ) $ path </> objTblFile
                                              , write (ms^.pausedCorpseDecompsTbl) $ path </> pausedCorpseDecompsTblFile
-                                             , write (ms^.pausedEffectsTbl      ) $ path </> pausedEffectsTblFile
+                                             , write (ms^.pausedEffectTbl       ) $ path </> pausedEffectTblFile
                                              , write (ms^.pcSingTbl             ) $ path </> pcSingTblFile
                                              , write (ms^.pcTbl                 ) $ path </> pcTblFile
                                              , write (ms^.plaTbl                ) $ path </> plaTblFile

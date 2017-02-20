@@ -1,4 +1,3 @@
-{-# OPTIONS_GHC -fno-warn-type-defaults #-}
 {-# LANGUAGE LambdaCase, MultiWayIf, OverloadedStrings, RecordWildCards, TupleSections, ViewPatterns #-}
 
 module Mud.Threads.Act ( drinkAct
@@ -30,7 +29,6 @@ import Mud.Util.Quoting
 import Mud.Util.Text
 import qualified Mud.Misc.Logging as L (logNotice, logPla)
 
-import Control.Concurrent (threadDelay)
 import Control.Exception.Lifted (catch, finally, handle)
 import Control.Lens (at, to, views)
 import Control.Lens.Operators ((?~), (.~), (&), (%~), (^.))
@@ -45,11 +43,6 @@ import GHC.Stack (HasCallStack)
 import qualified Data.Map.Strict as M (elems, insert, lookup)
 import qualified Data.Text as T
 import System.Time.Utils (renderSecs)
-
-default (Int)
-
-
------
 
 
 logNotice :: Text -> Text -> MudStack ()
@@ -107,7 +100,7 @@ drinkAct DrinkBundle { .. } = modifyStateSeq f `finally` tweak (mobTbl.ind drink
            in (ms & mobTbl.ind drinkerId.nowDrinking ?~ (drinkLiq, drinkVesselSing), fs)
     renderVesselSing    = drinkVesselSing |&| (isJust drinkVesselId ? aOrAn :? the)
     loop x@(succ -> x') = do
-        liftIO . threadDelay $ 1 * 10 ^ 6
+        liftIO . delaySecs $ 1
         now <- liftIO getCurrentTime
         consume drinkerId . pure . StomachCont (drinkLiq^.liqId.to Left) now $ False
         (ms, newCont) <- case drinkVesselId of
@@ -162,7 +155,7 @@ drinkAct DrinkBundle { .. } = modifyStateSeq f `finally` tweak (mobTbl.ind drink
 
 sacrificeAct :: HasCallStack => Id -> MsgQueue -> Id -> GodName -> MudStack ()
 sacrificeAct i mq ci gn = handle (die (Just i) (pp Sacrificing)) $ do
-    liftIO . threadDelay $ sacrificeSecs * 10 ^ 6
+    liftIO . delaySecs $ sacrificeSecs
     modifyStateSeq $ \ms ->
         let helper f = (sacrificesTblHelper ms, fs)
               where
@@ -228,4 +221,4 @@ applyBonus i s gn now = do -- TODO
     f gn
   where
     effectHelper attrib range =
-        startEffect i . Effect (MobEffectAttrib attrib) (Just . RangeVal $ range) sacrificeBonusSecs $ Nothing
+        startEffect i . Effect (MobEffectAttrib attrib) (Just . EffectRangedVal $ range) sacrificeBonusSecs $ Nothing

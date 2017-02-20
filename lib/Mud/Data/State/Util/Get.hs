@@ -222,7 +222,7 @@ isNpcPC i ms = getType i ms `elem` [ NpcType, PCType ]
 
 
 getActiveEffects :: HasCallStack => Id -> MudState -> [ActiveEffect]
-getActiveEffects i = view (activeEffectsTbl.ind i)
+getActiveEffects i = view (activeEffectTbl.ind i)
 
 
 -----
@@ -795,7 +795,7 @@ getObjWeight i = view objWeight . getObj i
 
 
 getPausedEffects :: HasCallStack => Id -> MudState -> [PausedEffect]
-getPausedEffects i = view (pausedEffectsTbl.ind i)
+getPausedEffects i = view (pausedEffectTbl.ind i)
 
 
 -----

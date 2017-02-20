@@ -1,4 +1,3 @@
-{-# OPTIONS_GHC -fno-warn-type-defaults #-}
 {-# LANGUAGE LambdaCase, OverloadedStrings, ViewPatterns #-}
 
 module Mud.Threads.Effect ( massPauseEffects
@@ -22,7 +21,7 @@ import Mud.Util.Operators
 import Mud.Util.Text
 import qualified Mud.Misc.Logging as L (logNotice, logPla)
 
-import Control.Concurrent (myThreadId, threadDelay)
+import Control.Concurrent (myThreadId)
 import Control.Concurrent.Async (asyncThreadId, cancel)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TMVar (newEmptyTMVarIO, putTMVar, takeTMVar)
@@ -41,12 +40,6 @@ import qualified Data.Map.Strict as M (delete, lookup)
 import qualified Data.Text as T
 
 
-default (Int)
-
-
------
-
-
 logNotice :: Text -> Text -> MudStack ()
 logNotice = L.logNotice "Mud.Threads.Effect"
 
@@ -59,8 +52,8 @@ logPla = L.logPla "Mud.Threads.Effect"
 
 
 startEffect :: Id -> Effect -> MudStack ()
-startEffect i e@(Effect _ (Just (RangeVal range)) _ _) = rndmR range >>= \x ->
-    startEffectHelper i $ e & effectVal ?~ DefiniteVal x
+startEffect i e@(Effect _ (Just (EffectRangedVal range)) _ _) = rndmR range >>= \x ->
+    startEffectHelper i $ e & effectVal ?~ EffectFixedVal x
 startEffect i e = startEffectHelper i e
 
 
@@ -68,8 +61,8 @@ startEffectHelper :: Id -> Effect -> MudStack ()
 startEffectHelper i e@(view effectFeeling -> ef) = do logPla "startEffectHelper" i $ "starting effect: " <> pp e
                                                       q <- liftIO newTQueueIO
                                                       a <- runAsync . threadEffect i e $ q
-                                                      maybeVoid (flip (startFeeling i) NoVal) ef
-                                                      tweak $ activeEffectsTbl.ind i <>~ pure (ActiveEffect e (a, q))
+                                                      maybeVoid (flip (startFeeling i) FeelingNoVal) ef
+                                                      tweak $ activeEffectTbl.ind i <>~ pure (ActiveEffect e (a, q))
 
 
 -----
@@ -79,25 +72,23 @@ threadEffect :: Id -> Effect -> EffectQueue -> MudStack ()
 threadEffect i (Effect effSub _ secs _) q = handle (threadExHandler (Just i) "effect") $ ask >>= \md -> do
     setThreadType . EffectThread $ i
     logHelper "has started."
-    ti <- liftIO myThreadId
-    let effectTimer ior = setThreadType (EffectTimer i) >> loop secs `finally` done
+    (ti, ior) <- (,) <$> liftIO myThreadId <*> liftIO (newIORef secs)
+    let effectTimer = setThreadType (EffectTimer i) >> loop secs
           where
             loop x = liftIO (atomicWriteIORef' ior x) >> if isZero x
               then unit
-              else liftIO (threadDelay $ 1 * 10 ^ 6) >> f >> loop (pred x)
-              where
-                f = case effSub of EffectOther fn -> runEffectFun fn i x
-                                   _              -> unit
-        done = tweak $ activeEffectsTbl.ind i %~ filter (views effectService ((/= ti) . asyncThreadId . fst))
-        queueListener ior = setThreadType (EffectListener i) >> loop
+              else let f = case effSub of EffectOther fn -> runEffectFun fn i x
+                                          _              -> unit
+                   in sequence_ [ liftIO . delaySecs $ 1, f, loop . pred $ x ]
+        queueListener = setThreadType (EffectListener i) >> loop
           where
             loop = q |&| liftIO . atomically . readTQueue >=> \case
-              PauseEffect  tmv -> putTMVarHelper tmv
-              QueryRemTime tmv -> putTMVarHelper tmv >> loop
-              StopEffect       -> logPla "threadEffect queueListener loop" i "received the signal to stop effect."
+              PauseEffect        tmv -> putTMVarHelper tmv
+              QueryRemEffectTime tmv -> putTMVarHelper tmv >> loop
+              StopEffect             -> logPla "threadEffect queueListener loop" i "received the signal to stop effect."
             putTMVarHelper tmv = liftIO (atomically . putTMVar tmv =<< readIORef ior)
-    ior <- liftIO . newIORef $ secs
-    racer md (effectTimer ior) . queueListener $ ior
+        done = tweak $ activeEffectTbl.ind i %~ filter (views effectService ((/= ti) . asyncThreadId . fst))
+    racer md effectTimer queueListener `finally` done
     logHelper "is finishing."
   where
     logHelper rest = logNotice "threadEffect" . T.concat $ [ "effect thread for ID ", showText i, " ", rest ]
@@ -111,8 +102,8 @@ pauseEffects i = getState >>= \ms ->
     let aes = getActiveEffects i ms
     in unless (null aes) $ do logNotice "pauseEffects" . prd $ "pausing effects for ID " <> showText i
                               pes <- mapM helper aes
-                              tweaks [ activeEffectsTbl.ind i .~  []
-                                     , pausedEffectsTbl.ind i <>~ pes ]
+                              tweaks [ activeEffectTbl.ind i .~  []
+                                     , pausedEffectTbl.ind i <>~ pes ]
   where
     helper (ActiveEffect e (_, q)) = do
         tmv <- liftIO newEmptyTMVarIO
@@ -124,7 +115,7 @@ pauseEffects i = getState >>= \ms ->
 
 massPauseEffects :: MudStack () -- At server shutdown, after everyone has been disconnected.
 massPauseEffects = sequence_ [ logNotice "massPauseEffects" "mass pausing effects."
-                             , mapM_ pauseEffects . views activeEffectsTbl IM.keys =<< getState ]
+                             , mapM_ pauseEffects . views activeEffectTbl IM.keys =<< getState ]
 
 
 -----
@@ -137,12 +128,12 @@ restartPausedEffects i = do pes <- getPausedEffects i <$> getState
 
 restartPausedHelper :: Id -> [PausedEffect] -> MudStack ()
 restartPausedHelper i pes = sequence_ [ forM_ pes $ \(PausedEffect e) -> startEffect i e
-                                      , tweak $ pausedEffectsTbl.ind i .~ [] ]
+                                      , tweak $ pausedEffectTbl.ind i .~ [] ]
 
 
 massRestartPausedEffects :: MudStack () -- At server startup.
 massRestartPausedEffects = getState >>= \ms -> do logNotice "massRestartPausedEffects" "mass restarting paused effects."
-                                                  mapM_ (helper ms) . views pausedEffectsTbl IM.toList $ ms
+                                                  mapM_ (helper ms) . views pausedEffectTbl IM.toList $ ms
   where
     helper _  (_, [] )                          = unit
     helper ms (i, _  ) | getType i ms == PCType = unit
@@ -159,7 +150,7 @@ stopEffect i (ActiveEffect e (_, q)) = sequence_ [ liftIO . atomically . writeTQ
 stopFeeling :: Id -> Effect -> MudStack ()
 stopFeeling i (Effect _ _ _ feel) = getState >>= \ms ->
     let f = flip maybeVoid feel $ \(EffectFeeling tag _) ->
-                flip maybeVoid (M.lookup tag . getFeelingMap i $ ms) $ \(Feeling _ _ _ a) ->
+                flip maybeVoid (M.lookup tag . getFeelingMap i $ ms) $ \(Feeling _ _ a) ->
                     sequence_ [ liftIO . cancel $ a, tweak $ mobTbl.ind i.feelingMap %~ (tag `M.delete`) ]
     in when (hasMobId i ms) f
 

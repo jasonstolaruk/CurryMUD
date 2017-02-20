@@ -20,9 +20,9 @@ feelingFuns = [ ("potHp",       potHpFeelingFun      )
 
 
 potHpFeelingFun :: FeelingFun
-potHpFeelingFun NoVal      = ""
-potHpFeelingFun (IntVal 0) = ""
-potHpFeelingFun (IntVal _) = mkFeelingMsg "wounds heal"
+potHpFeelingFun FeelingNoVal        = ""
+potHpFeelingFun (FeelingFixedVal 0) = ""
+potHpFeelingFun (FeelingFixedVal _) = mkFeelingMsg "wounds heal"
 
 
 mkFeelingMsg :: Text -> Text
@@ -34,27 +34,27 @@ mkFeelingMsg txt = "You feel your " <> txt <> " as a warm sensation pulsates out
 
 
 potMpFeelingFun :: FeelingFun
-potMpFeelingFun NoVal      = ""
-potMpFeelingFun (IntVal 0) = ""
-potMpFeelingFun (IntVal _) = mkFeelingMsg "mana return"
+potMpFeelingFun FeelingNoVal        = ""
+potMpFeelingFun (FeelingFixedVal 0) = ""
+potMpFeelingFun (FeelingFixedVal _) = mkFeelingMsg "mana return"
 
 
 -----
 
 
 potPpFeelingFun :: FeelingFun
-potPpFeelingFun NoVal      = ""
-potPpFeelingFun (IntVal 0) = ""
-potPpFeelingFun (IntVal _) = mkFeelingMsg "psionic energy return"
+potPpFeelingFun FeelingNoVal        = ""
+potPpFeelingFun (FeelingFixedVal 0) = ""
+potPpFeelingFun (FeelingFixedVal _) = mkFeelingMsg "psionic energy return"
 
 
 -----
 
 
 potFpFeelingFun :: FeelingFun
-potFpFeelingFun NoVal      = ""
-potFpFeelingFun (IntVal 0) = ""
-potFpFeelingFun (IntVal _) = mkFeelingMsg "stamina return"
+potFpFeelingFun FeelingNoVal        = ""
+potFpFeelingFun (FeelingFixedVal 0) = ""
+potFpFeelingFun (FeelingFixedVal _) = mkFeelingMsg "stamina return"
 
 
 -----

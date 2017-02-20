@@ -11,7 +11,6 @@ module Mud.Threads.Misc ( concurrentTree
                         , racer
                         , runAsync
                         , setThreadType
-                        , stopTimer
                         , threadExHandler
                         , throwDeath
                         , throwToListenThread
@@ -29,8 +28,6 @@ import qualified Mud.Misc.Logging as L (logExMsg, logIOEx, logNotice, logPla)
 
 import Control.Concurrent (forkIO, myThreadId)
 import Control.Concurrent.Async (Async, async, asyncThreadId, concurrently, race_, wait)
-import Control.Concurrent.STM (atomically)
-import Control.Concurrent.STM.TMQueue (closeTMQueue)
 import Control.Exception (AsyncException(..), Exception, IOException, SomeException, fromException, toException)
 import Control.Exception.Lifted (throwTo)
 import Control.Lens (at, views)
@@ -155,13 +152,6 @@ runAsync f = liftIO . async . runReaderT f =<< ask
 setThreadType :: ThreadType -> MudStack ()
 setThreadType threadType = do ti <- liftIO $ myThreadId >>= \ti -> labelThread ti (show threadType) >> return ti
                               tweak $ threadTbl.at ti ?~ threadType
-
-
------
-
-
-stopTimer :: TimerQueue -> MudStack ()
-stopTimer = liftIO . atomically . closeTMQueue
 
 
 -----

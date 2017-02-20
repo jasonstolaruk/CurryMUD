@@ -1,4 +1,3 @@
-{-# OPTIONS_GHC -fno-warn-type-defaults #-}
 {-# LANGUAGE LambdaCase, MultiWayIf, OverloadedStrings, TupleSections, ViewPatterns #-}
 
 module Mud.Misc.Logging ( closeLogs
@@ -33,7 +32,6 @@ import Mud.Util.Quoting
 import Mud.Util.Text
 import qualified Mud.Util.Misc as U (blowUp)
 
-import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (async, race_, wait)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
@@ -60,12 +58,6 @@ import System.Log.Handler (close, setFormatter)
 import System.Log.Handler.Simple (fileHandler)
 import System.Log.Logger (errorM, infoM, noticeM, removeAllHandlers, removeHandler, rootLoggerName, setHandlers, setLevel, updateGlobalLogger)
 import System.Posix.Files (fileSize, getFileStatus)
-
-
-default (Int)
-
-
------
 
 
 blowUp :: BlowUp a
@@ -140,7 +132,7 @@ loggingThreadExHandler logExLock n e = guard (fromException e /= Just ThreadKill
 
 
 logRotationFlagger :: LogQueue -> IO ()
-logRotationFlagger q = forever $ threadDelay (logRotationDelay * 10 ^ 6) >> atomically (writeTQueue q RotateLog)
+logRotationFlagger q = forever . sequence_ $ [ delaySecs logRotationDelay, atomically . writeTQueue q $ RotateLog ]
 
 
 initPlaLog :: Id -> Sing -> MudStack ()

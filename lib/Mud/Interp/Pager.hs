@@ -25,6 +25,12 @@ import Data.Text (Text)
 import qualified Data.Text as T
 
 
+default (Int, Double)
+
+
+-- ==================================================
+
+
 type PageLen      = Int
 type EntireTxtLen = Int
 

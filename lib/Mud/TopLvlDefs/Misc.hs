@@ -16,12 +16,6 @@ import System.Posix.Types (FileOffset)
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
 
 
------
-
-
-default (Int)
-
-
 -- ==================================================
 
 

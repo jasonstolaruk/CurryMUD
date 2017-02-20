@@ -246,8 +246,8 @@ calcEffAttrib :: HasCallStack => Attrib -> Id -> MudState -> Int
 calcEffAttrib attrib i ms = let effects = select effect . getActiveEffects i $ ms
                             in max1 . foldl' helper (getBaseAttrib attrib i ms) $ effects
   where
-    helper acc (Effect (MobEffectAttrib a) (Just (DefiniteVal x)) _ _) | a == attrib = acc + x
-    helper acc _                                                                     = acc
+    helper acc (Effect (MobEffectAttrib a) (Just (EffectFixedVal x)) _ _) | a == attrib = acc + x
+    helper acc _                                                                        = acc
 
 
 -----

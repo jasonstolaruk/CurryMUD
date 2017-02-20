@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -fno-warn-type-defaults -Wno-redundant-constraints #-}
+{-# OPTIONS_GHC -Wno-redundant-constraints #-}
 {-# LANGUAGE FlexibleContexts, LambdaCase, MonadComprehensions, OverloadedStrings, TupleSections, ViewPatterns #-}
 
 module Mud.Data.State.Util.Death (handleDeath) where
@@ -51,12 +51,6 @@ import qualified Data.Text as T
 
 
 {-# ANN module ("HLint: ignore Use &&" :: String) #-}
-
-
------
-
-
-default (Int)
 
 
 -----
@@ -138,15 +132,15 @@ leaveChans i = liftIO mkTimestamp >>= \ts -> do logPla "leaveChans" i "leaving c
 deleteNpc :: HasCallStack => Id -> MudStack ()
 deleteNpc i = getState >>= \ms -> let ri = getRmId i ms
                                   in do logNotice "deleteNpc" $ "NPC " <> descSingId i ms <> " has died."
-                                        tweaks [ activeEffectsTbl.at  i  .~ Nothing
-                                               , coinsTbl        .at  i  .~ Nothing
-                                               , entTbl          .at  i  .~ Nothing
-                                               , eqTbl           .at  i  .~ Nothing
-                                               , invTbl          .at  i  .~ Nothing
-                                               , invTbl          .ind ri %~ (i `delete`)
-                                               , mobTbl          .at  i  .~ Nothing
-                                               , pausedEffectsTbl.at  i  .~ Nothing
-                                               , typeTbl         .at  i  .~ Nothing ]
+                                        tweaks [ activeEffectTbl.at  i  .~ Nothing
+                                               , coinsTbl       .at  i  .~ Nothing
+                                               , entTbl         .at  i  .~ Nothing
+                                               , eqTbl          .at  i  .~ Nothing
+                                               , invTbl         .at  i  .~ Nothing
+                                               , invTbl         .ind ri %~ (i `delete`)
+                                               , mobTbl         .at  i  .~ Nothing
+                                               , pausedEffectTbl.at  i  .~ Nothing
+                                               , typeTbl        .at  i  .~ Nothing ]
                                         stopWaitNpcServer i {- This removes the NPC from the "NpcTbl". -}
 
 

@@ -74,7 +74,6 @@ import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 
 import Control.Applicative (liftA2)
 import Control.Arrow ((***), (&&&), first, second)
-import Control.Concurrent (threadDelay)
 import Control.Exception.Lifted (catch, try)
 import Control.Lens (_1, _2, _3, _4, _5, at, both, each, to, view, views)
 import Control.Lens.Operators ((-~), (?~), (.~), (&), (%~), (^.), (<>~))
@@ -1366,7 +1365,7 @@ feeling p = withoutArgs feeling p
 mkFeelingDescs :: HasCallStack => Id -> MudState -> [Text]
 mkFeelingDescs i ms = M.foldrWithKey helper [] . getFeelingMap i $ ms
   where
-    helper tag (Feeling fv _ _ _) = (getFeelingFun tag ms fv :)
+    helper tag (Feeling fv _ _) = (getFeelingFun tag ms fv :)
 
 
 -----
@@ -3058,7 +3057,7 @@ sacrificeHelper p@(ActionParams i mq cols _) ci gn = getState >>= \ms ->
     logHelper ms = let msg = T.concat [ "sacrificing a ", descSingId ci ms, t, " using a holy symbol of ", pp gn, "." ]
                        t   = case getCorpse ci ms of PCCorpse s _ _ _ -> spcL . parensQuote $ s
                                                      _                -> ""
-                   in logPla "sacrificeHelper logHelper" i msg
+                   in logPla "sacrificeHelper" i msg
 
 
 -----
@@ -3711,7 +3710,7 @@ corpseHorf :: HasCallStack => Id -> MsgQueue -> MudState -> Id -> MudStack ()
 corpseHorf i mq ms corpseId = let x = mkCorpseSmellLvl . getEntSmell corpseId $ ms
                               in mUnless (rndmDo (calcProbCorpseHorf i ms x) . onNewThread $ f) . sendDfltPrompt mq $ i
   where
-    f = do liftIO . threadDelay $ 2 * 10 ^ 6
+    f = do liftIO . delaySecs $ 2
            ms' <- getState
            when (isLoggedIn . getPla i $ ms') . mkExpAction "horf" . mkActionParams i ms' $ []
            sendDfltPrompt mq i

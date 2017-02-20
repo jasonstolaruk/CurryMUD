@@ -1,4 +1,3 @@
-{-# OPTIONS_GHC -fno-warn-type-defaults -Wno-redundant-constraints #-}
 {-# LANGUAGE LambdaCase, MonadComprehensions, MultiWayIf, NamedFieldPuns, OverloadedStrings, PatternSynonyms, RecordWildCards, TupleSections, ViewPatterns #-}
 
 module Mud.Interp.Login ( interpName
@@ -46,7 +45,6 @@ import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Applicative (liftA2)
 import Control.Arrow (first)
-import Control.Concurrent (threadDelay)
 import Control.Exception.Lifted (try)
 import Control.Lens (ASetter, at, both, set, views)
 import Control.Lens.Operators ((-~), (?~), (.~), (&), (%~), (^.), (+~))
@@ -71,12 +69,6 @@ import qualified Data.Text.Encoding as T
 import qualified Data.Text.IO as T (readFile)
 import qualified Data.Vector.Unboxed as V (Vector, length, toList)
 import System.FilePath ((</>))
-
-
-default (Int, Double)
-
-
------
 
 
 patternMatchFail :: (Show a) => PatternMatchFail a b
@@ -703,7 +695,7 @@ interpPW times targetSing cn params@(WithArgs i mq cols as) = getState >>= \ms -
                                  in sorry oldSing sorryInterpPW msg
     sorry oldSing sorryMsg msg = do logNotice "interpPW sorry" msg
                                     bcastAdmins msg
-                                    liftIO . threadDelay $ 2 * 10 ^ 6
+                                    liftIO . delaySecs $ 2
                                     sorryHelper oldSing sorryMsg
     sorryHelper oldSing sorryMsg = if times == 4
                                      then do let msg = "Booting " <> oldSing <> " due to excessive incorrect passwords."
@@ -742,8 +734,8 @@ interpPW _ _ _ p = patternMatchFail "interpPW" . showText $ p
 logIn :: HasCallStack => Id -> MudState -> Sing -> HostName -> Maybe UTCTime -> Id -> MudState
 logIn newId ms oldSing newHost newTime originId = upd adoptNewId [ movePC, peepNewId ]
   where
-    adoptNewId = upd ms [ activeEffectsTbl.ind newId         .~ getActiveEffects originId ms
-                        , activeEffectsTbl.at  originId      .~ Nothing
+    adoptNewId = upd ms [ activeEffectTbl .ind newId         .~ getActiveEffects originId ms
+                        , activeEffectTbl .at  originId      .~ Nothing
                         , coinsTbl        .ind newId         .~ getCoins         originId ms
                         , coinsTbl        .at  originId      .~ Nothing
                         , entTbl          .ind newId         .~ set entId newId e
@@ -754,8 +746,8 @@ logIn newId ms oldSing newHost newTime originId = upd adoptNewId [ movePC, peepN
                         , invTbl          .at  originId      .~ Nothing
                         , mobTbl          .ind newId         .~ getMob           originId ms
                         , mobTbl          .at  originId      .~ Nothing
-                        , pausedEffectsTbl.ind newId         .~ getPausedEffects originId ms
-                        , pausedEffectsTbl.at  originId      .~ Nothing
+                        , pausedEffectTbl .ind newId         .~ getPausedEffects originId ms
+                        , pausedEffectTbl .at  originId      .~ Nothing
                         , pcSingTbl       .at  (e^.sing)     ?~ newId
                         , pcSingTbl       .at  oldSing       .~ Nothing
                         , pcTbl           .ind newId         .~ getPC            originId ms

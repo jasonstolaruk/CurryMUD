@@ -1,4 +1,3 @@
-{-# OPTIONS_GHC -fno-warn-type-defaults #-}
 {-# LANGUAGE LambdaCase, OverloadedStrings, RankNTypes, TupleSections #-}
 
 module Mud.Threads.Regen ( runRegenAsync
@@ -15,7 +14,6 @@ import Mud.Util.Misc
 import Mud.Util.Operators
 import qualified Mud.Misc.Logging as L (logNotice, logPla)
 
-import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (cancel)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
@@ -24,12 +22,6 @@ import Control.Lens.Operators ((?~), (.~), (&), (^.))
 import Control.Monad ((>=>), forever, void)
 import Control.Monad.IO.Class (liftIO)
 import Data.Text (Text)
-
-
-default (Int)
-
-
------
 
 
 logNotice :: Text -> Text -> MudStack ()
@@ -84,7 +76,7 @@ threadRegen i tq = let regens = [ regen curHp maxHp calcRegenHpAmt calcRegenHpDe
     regen curLens maxLens calcAmt calcDelay = setThreadType (RegenChild i) >> forever loop
       where
         loop  = delay >> modifyStateSeq f
-        delay = getState >>= \ms -> liftIO . threadDelay $ calcDelay i ms * 10 ^ 6
+        delay = liftIO . delaySecs . calcDelay i =<< getState
         f ms  = let (mob, amt) = (getMob  `fanUncurry` calcAmt) (i, ms)
                     (c, m)     = (curLens `fanView`    maxLens) mob
                     total      = c + amt

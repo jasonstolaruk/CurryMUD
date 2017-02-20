@@ -54,7 +54,7 @@ import qualified Mud.Util.Misc as U (patternMatchFail)
 
 import Control.Applicative (Const)
 import Control.Arrow ((***), first, second)
-import Control.Concurrent (ThreadId, getNumCapabilities, myThreadId, threadDelay)
+import Control.Concurrent (ThreadId, getNumCapabilities, myThreadId)
 import Control.Concurrent.Async (asyncThreadId, poll)
 import Control.Exception (ArithException(..), IOException)
 import Control.Exception.Lifted (throwIO, try)
@@ -351,7 +351,7 @@ debugDelay :: ActionFun
 debugDelay (NoArgs i mq cols) = blankLine mq >> onNewThread f
   where
     f   = do logPla fn i "delaying."
-             liftIO . threadDelay $ 10 * 10 ^ 6
+             liftIO . delaySecs $ 10
              logPla fn i "sending message."
              wrapSend mq cols msg
              logPla fn i "horfing."
@@ -423,7 +423,7 @@ debugEchoWon't p              = withoutArgs debugEchoWon't p
 debugEffect :: ActionFun
 debugEffect (NoArgs' i mq) = do logPlaExec (prefixDebugCmd "effect") i
                                 ok mq
-                                startEffect i . Effect (MobEffectAttrib St) (Just . RangeVal $ (10, 20)) 30 $ Nothing
+                                startEffect i . Effect (MobEffectAttrib St) (Just . EffectRangedVal $ (10, 20)) 30 $ Nothing
 debugEffect p              = withoutArgs debugEffect p
 
 
@@ -592,7 +592,7 @@ debugId p = advise p [] adviceDIdExcessArgs
 
 
 mkTblNameKeysList :: MudState -> [(Text, Inv)]
-mkTblNameKeysList ms = [ ("ActiveEffects", tblKeys activeEffectsTbl ms)
+mkTblNameKeysList ms = [ ("ActiveEffect",  tblKeys activeEffectTbl  ms)
                        , ("Arm",           tblKeys armTbl           ms)
                        , ("Chan",          tblKeys chanTbl          ms)
                        , ("Cloth",         tblKeys clothTbl         ms)
@@ -609,7 +609,7 @@ mkTblNameKeysList ms = [ ("ActiveEffects", tblKeys activeEffectsTbl ms)
                        , ("MsgQueue",      tblKeys msgQueueTbl      ms)
                        , ("Npc",           tblKeys npcTbl           ms)
                        , ("Obj",           tblKeys objTbl           ms)
-                       , ("PausedEffects", tblKeys pausedEffectsTbl ms)
+                       , ("PausedEffect",  tblKeys pausedEffectTbl  ms)
                        , ("PC",            tblKeys pcTbl            ms)
                        , ("PickPts",       tblKeys pickPtsTbl       ms)
                        , ("PlaLog",        tblKeys plaLogTbl        ms)

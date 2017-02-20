@@ -20,6 +20,7 @@ import Mud.Threads.Biodegrader
 import Mud.Threads.CorpseDecomposer
 import Mud.Threads.Digester
 import Mud.Threads.Effect
+import Mud.Threads.InacTimer
 import Mud.Threads.Misc
 import Mud.Threads.NpcServer
 import Mud.Threads.Regen
@@ -77,33 +78,33 @@ consistency.
 data ToWhom = Plaに | Npcに
 
 
-threadServer :: HasCallStack => Handle -> Id -> MsgQueue -> TimerQueue -> MudStack ()
-threadServer h i mq tq = sequence_ [ setThreadType . Server $ i
-                                   , loop False `catch` threadExHandler (Just i) "server" ]
+threadServer :: HasCallStack => Handle -> Id -> MsgQueue -> InacTimerQueue -> MudStack ()
+threadServer h i mq itq = sequence_ [ setThreadType . Server $ i
+                                    , loop False `catch` threadExHandler (Just i) "server" ]
   where
     loop isDropped = mq |&| liftIO . atomically . readTQueue >=> \case
-      AsSelf     msg -> handleFromClient i mq tq True msg  >> loop     isDropped
-      BlankLine      -> handleBlankLine h                  >> loop     isDropped
+      AsSelf     msg -> handleFromClient i mq itq True msg  >> loop     isDropped
+      BlankLine      -> handleBlankLine h                   >> loop     isDropped
       Dropped        -> sayonara True
-      FromClient msg -> handleFromClient i mq tq False msg >> loop     isDropped
-      FromServer msg -> handleFromServer i h Plaに msg     >> loop     isDropped
-      InacBoot       -> sendInacBootMsg h                  >> sayonara isDropped
-      InacSecs secs  -> setInacSecs tq secs                >> loop     isDropped
-      InacStop       -> stopTimer tq                       >> loop     isDropped
-      MsgBoot msg    -> sendBootMsg h msg                  >> sayonara isDropped
-      Peeped  msg    -> (liftIO . T.hPutStr h $ msg)       >> loop     isDropped
-      Prompt p       -> promptHelper i h p                 >> loop     isDropped
-      Quit           -> cowbye h                           >> sayonara isDropped
-      ShowHandle     -> handleShowHandle i h               >> loop     isDropped
-      Shutdown       -> shutDown                           >> loop     isDropped
-      SilentBoot     ->                                       sayonara isDropped
+      FromClient msg -> handleFromClient i mq itq False msg >> loop     isDropped
+      FromServer msg -> handleFromServer i h Plaに msg      >> loop     isDropped
+      InacBoot       -> sendInacBootMsg h                   >> sayonara isDropped
+      InacSecs secs  -> setInacSecs itq secs                >> loop     isDropped
+      InacStop       -> stopInacTimer itq                   >> loop     isDropped
+      MsgBoot msg    -> sendBootMsg h msg                   >> sayonara isDropped
+      Peeped  msg    -> (liftIO . T.hPutStr h $ msg)        >> loop     isDropped
+      Prompt p       -> promptHelper i h p                  >> loop     isDropped
+      Quit           -> cowbye h                            >> sayonara isDropped
+      ShowHandle     -> handleShowHandle i h                >> loop     isDropped
+      Shutdown       -> shutDown                            >> loop     isDropped
+      SilentBoot     ->                                        sayonara isDropped
       FinishedSpirit -> nonSpiritEgress isDropped
       FinishedEgress -> unit
-      ToNpc msg      -> handleFromServer i h Npcに msg     >> loop isDropped
+      ToNpc msg      -> handleFromServer i h Npcに msg      >> loop isDropped
     sayonara isDropped = let f = const $ throwWaitSpiritTimer i >> loop isDropped
                          in views (plaTbl.ind i.spiritAsync) (maybe (nonSpiritEgress isDropped) f) =<< getState
     nonSpiritEgress isDropped = isAdHoc i <$> getState >>= \iah -> do
-        stopTimer tq
+        stopInacTimer itq
         ((>>) <$> handleEgress i mq <*> unless iah . loop) isDropped
 
 
@@ -111,8 +112,8 @@ handleBlankLine :: HasCallStack => Handle -> MudStack ()
 handleBlankLine h = liftIO $ T.hPutStr h theNl >> hFlush h
 
 
-handleFromClient :: HasCallStack => Id -> MsgQueue -> TimerQueue -> Bool -> Text -> MudStack ()
-handleFromClient i mq tq isAsSelf = go
+handleFromClient :: HasCallStack => Id -> MsgQueue -> InacTimerQueue -> Bool -> Text -> MudStack ()
+handleFromClient i mq itq isAsSelf = go
   where
     go (T.strip . stripControl -> msg') = getState >>= \ms ->
         let p                  = getPla i ms
@@ -125,7 +126,7 @@ handleFromClient i mq tq isAsSelf = go
         in isAsSelf ? thruCentral :? maybe (helper thruCentral) forwardToNpc poss
       where
         interpret asId p f (cn, as) = do forwardToPeepers i (p^.peepers) FromThePeeped msg'
-                                         liftIO . atomically . writeTMQueue tq $ ResetTimer
+                                         liftIO . atomically . writeTMQueue itq $ ResetInacTimer
                                          f cn . WithArgs asId mq (p^.columns) $ as
 
 
@@ -154,8 +155,8 @@ sendInacBootMsg :: HasCallStack => Handle -> MudStack ()
 sendInacBootMsg h = liftIO . T.hPutStrLn h . nl . colorWith bootMsgColor $ inacBootMsg
 
 
-setInacSecs :: HasCallStack => TimerQueue -> Seconds -> MudStack ()
-setInacSecs tq = liftIO . atomically . writeTMQueue tq . SetMaxSecs
+setInacSecs :: HasCallStack => InacTimerQueue -> Seconds -> MudStack ()
+setInacSecs itq = liftIO . atomically . writeTMQueue itq . SetInacTimerDur
 
 
 sendBootMsg :: HasCallStack => Handle -> Text -> MudStack ()

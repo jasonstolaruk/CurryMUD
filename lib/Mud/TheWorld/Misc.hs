@@ -1,4 +1,3 @@
-{-# OPTIONS_GHC -fno-warn-type-defaults #-}
 {-# LANGUAGE FlexibleContexts, LambdaCase, OverloadedStrings, RecordWildCards, ViewPatterns #-}
 
 module Mud.TheWorld.Misc ( commonHooks
@@ -33,7 +32,6 @@ import Mud.Util.Text
 import qualified Mud.Misc.Logging as L (logNotice, logPlaOut)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
-import Control.Concurrent (threadDelay)
 import Control.Exception.Lifted (catch, handle)
 import Control.Lens (_1, _2, _3, _4)
 import Control.Lens.Operators ((.~), (&), (%~), (<>~))
@@ -138,7 +136,7 @@ trashHelper i ms as =
     f = rndmDo_ 10 $ let msg = "The lid of the trash bin momentarily opens of its own accord as a loud belch is emitted \
                                \from inside the container."
                      in rndmR (1, 4) >>= \secs -> do
-                            liftIO . threadDelay $ secs * 10 ^ 6
+                            liftIO . delaySecs $ secs
                             getState >>= \ms' -> bcastNl . pure $ (msg, findMobIds ms' . getMobRmInv i $ ms')
 
 
@@ -245,5 +243,5 @@ mkRndmBcastRmFun i idName fn prob secs msg = handle (threadExHandler (Just i) th
     threadName = T.concat [ "room function ", dblQuote fn, " ", idName ]
     loop       = getState >>= \ms -> let is = filter (`isNpcPC` ms) . getInv i $ ms in do
         unless (()# is) . rndmDo_ prob . bcastNl . pure $ (msg, is)
-        liftIO . threadDelay $ secs * 10 ^ 6
+        liftIO . delaySecs $ secs
         loop

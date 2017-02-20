@@ -1,4 +1,3 @@
-{-# OPTIONS_GHC -fno-warn-type-defaults #-}
 {-# LANGUAGE LambdaCase, MultiWayIf, OverloadedStrings #-}
 
 module Mud.Threads.CorpseDecomposer ( pauseCorpseDecomps
@@ -21,7 +20,6 @@ import qualified Mud.Misc.Logging as L (logNotice)
 import qualified Mud.Util.Misc as U (blowUp)
 
 import Control.Arrow (first)
-import Control.Concurrent (threadDelay)
 import Control.Concurrent.Async (asyncThreadId, wait)
 import Control.Exception (Exception)
 import Control.Exception.Lifted (catch, finally, handle, throwTo)
@@ -37,12 +35,6 @@ import Data.Text (Text)
 import Data.Typeable (Typeable)
 import qualified Data.IntMap.Strict as IM (elems, empty, toList)
 import qualified Data.Text as T
-
-
-default (Int)
-
-
------
 
 
 blowUp :: BlowUp a
@@ -92,7 +84,8 @@ corpseDecomp i pair = getObjWeight i <$> getState >>= \w -> catch <$> loop w <*>
     loop w ref = liftIO (readIORef ref) >>= \case
       (0, _) -> logHelper ("corpse decomposer for ID " <> showText i <> " has expired.") >> finishDecomp i
       secs   -> do corpseDecompHelper i w secs
-                   liftIO $ threadDelay (1 * 10 ^ 6) >> writeIORef ref (first pred secs)
+                   liftIO . delaySecs $ 1
+                   liftIO . writeIORef ref . first pred $ secs
                    loop w ref
     handler :: IORef SecondsPair -> PauseCorpseDecomp -> MudStack ()
     handler ref = const $ liftIO (readIORef ref) >>= \secs ->

@@ -1,4 +1,3 @@
-{-# OPTIONS_GHC -fno-warn-type-defaults #-}
 {-# LANGUAGE LambdaCase, OverloadedStrings, RankNTypes, TupleSections #-}
 
 module Mud.Threads.Biodegrader ( runBiodegAsync
@@ -18,7 +17,6 @@ import Mud.Util.Quoting
 import Mud.Util.Text
 import qualified Mud.Misc.Logging as L (logNotice)
 
-import Control.Concurrent (threadDelay)
 import Control.Exception.Lifted (catch, handle)
 import Control.Lens.Operators ((?~), (.~), (&), (^.))
 import Control.Monad ((>=>))
@@ -26,12 +24,6 @@ import Control.Monad.IO.Class (liftIO)
 import Data.Bool (bool)
 import Data.Monoid ((<>))
 import Data.Text (Text)
-
-
-default (Int)
-
-
------
 
 
 logNotice :: Text -> Text -> MudStack ()
@@ -86,4 +78,4 @@ threadBiodegrader i = handle (threadExHandler (Just i) "biodegrader") $ descSing
                    in bool helper (mkRes . loop secs $ lastMaybeInvId) $ ()!# pcsInRm
             | otherwise -> mkRes . uncurry loop $ case getType invId ms of RmType -> (biodegDelay, newMaybeInvId)
                                                                            _      -> (0,           Nothing      )
-    delay = liftIO . threadDelay $ biodegDelay * 10 ^ 6
+    delay = liftIO . delaySecs $ biodegDelay

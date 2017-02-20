@@ -74,7 +74,7 @@ typoLogFileFun      = under logDirFun $ "typo"                     <.> "log"
 -- Persistence files:
 
 
-armTblFile, chanTblFile, clothTblFile, coinsTblFile, conTblFile, corpseTblFile, entTblFile, eqTblFile, foodTblFile, holySymbolTblFile, hostTblFile, invTblFile, mobTblFile, objTblFile, pausedCorpseDecompsTblFile, pausedEffectsTblFile, pcSingTblFile, pcTblFile, plaTblFile, rmTblFile, rmTeleNameTblFile, rndmNamesMstrTblFile, teleLinkMstrTblFile, typeTblFile, vesselTblFile, wpnTblFile, writableTblFile :: FilePath
+armTblFile, chanTblFile, clothTblFile, coinsTblFile, conTblFile, corpseTblFile, entTblFile, eqTblFile, foodTblFile, holySymbolTblFile, hostTblFile, invTblFile, mobTblFile, objTblFile, pausedCorpseDecompsTblFile, pausedEffectTblFile, pcSingTblFile, pcTblFile, plaTblFile, rmTblFile, rmTeleNameTblFile, rndmNamesMstrTblFile, teleLinkMstrTblFile, typeTblFile, vesselTblFile, wpnTblFile, writableTblFile :: FilePath
 armTblFile                 = "armTbl"                 <.> "json"
 chanTblFile                = "chanTbl"                <.> "json"
 clothTblFile               = "clothTbl"               <.> "json"
@@ -90,7 +90,7 @@ invTblFile                 = "invTbl"                 <.> "json"
 mobTblFile                 = "mobTbl"                 <.> "json"
 objTblFile                 = "objTbl"                 <.> "json"
 pausedCorpseDecompsTblFile = "pausedCorpseDecompsTbl" <.> "json"
-pausedEffectsTblFile       = "pausedEffectsTbl"       <.> "json"
+pausedEffectTblFile        = "pausedEffectTbl"        <.> "json"
 pcSingTblFile              = "pcSingTbl"              <.> "json"
 pcTblFile                  = "pcTbl"                  <.> "json"
 plaTblFile                 = "plaTbl"                 <.> "json"

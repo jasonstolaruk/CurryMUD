@@ -10,6 +10,12 @@ import Test.Tasty.HUnit ((@=?), Assertion)
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
 
 
+-----
+
+
+default (Int, Double)
+
+
 -- ==================================================
 
 

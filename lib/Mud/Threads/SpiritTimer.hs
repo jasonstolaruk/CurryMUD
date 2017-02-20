@@ -1,4 +1,3 @@
-{-# OPTIONS_GHC -fno-warn-type-defaults #-}
 {-# LANGUAGE OverloadedStrings #-}
 
 module Mud.Threads.SpiritTimer ( runSpiritTimerAsync
@@ -19,7 +18,6 @@ import Mud.Util.Quoting
 import Mud.Util.Text
 import qualified Mud.Misc.Logging as L (logPla, logPlaOut)
 
-import Control.Concurrent (threadDelay)
 import Control.Exception.Lifted (finally, handle)
 import Control.Lens (views)
 import Control.Lens.Operators ((?~), (.~))
@@ -27,12 +25,6 @@ import Control.Monad (when)
 import Control.Monad.IO.Class (liftIO)
 import Data.Monoid ((<>))
 import Data.Text (Text)
-
-
-default (Int)
-
-
------
 
 
 logPla :: Text -> Id -> Text -> MudStack ()
@@ -64,7 +56,7 @@ threadSpiritTimer i secs = handle (threadExHandler (Just i) "spirit timer") $ do
     singId <- descSingId i <$> getState
     logPla "threadSpiritTimer" i . prd $ "spirit timer starting " <> parensQuote (commaShow secs <> " seconds")
     (mq, cols) <- getMsgQueueColumns i <$> getState
-    let go     = when (secs > 0) $ do liftIO . threadDelay $ 2 * 10 ^ 6
+    let go     = when (secs > 0) $ do liftIO . delaySecs $ 2
                                       wrapSend mq cols . colorWith spiritMsgColor $ spiritDetachMsg
                                       spiritTimer i mq cols secs
         finish = do logPla "threadSpiritTimer finish" i "spirit timer finishing."
@@ -85,4 +77,4 @@ spiritTimer i mq cols secs
     helper msg = do logPlaOut "spiritTimer" i . pure $ msg
                     wrapSend mq cols . colorWith spiritMsgColor $ msg
                     next
-    next = (liftIO . threadDelay $ 1 * 10 ^ 6) >> spiritTimer i mq cols (pred secs)
+    next       = sequence_ [ liftIO . delaySecs $ 1, spiritTimer i mq cols . pred $ secs ]

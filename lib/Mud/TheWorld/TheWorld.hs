@@ -62,7 +62,7 @@ initMudData shouldLog = do [ databaseLock, logLock, persLock ] <- mkLocks
                            (errorLogService, noticeLogService) <- initLogging shouldLog . Just $ logLock
                            genIO   <- createSystemRandom
                            start   <- getTime Monotonic
-                           msIORef <- newIORef MudState { _activeEffectsTbl       = IM.empty
+                           msIORef <- newIORef MudState { _activeEffectTbl        = IM.empty
                                                         , _armTbl                 = IM.empty
                                                         , _chanTbl                = IM.empty
                                                         , _clothTbl               = IM.empty
@@ -88,7 +88,7 @@ initMudData shouldLog = do [ databaseLock, logLock, persLock ] <- mkLocks
                                                         , _npcTbl                 = IM.empty
                                                         , _objTbl                 = IM.empty
                                                         , _pausedCorpseDecompsTbl = IM.empty
-                                                        , _pausedEffectsTbl       = IM.empty
+                                                        , _pausedEffectTbl        = IM.empty
                                                         , _pcSingTbl              =  M.empty
                                                         , _pcTbl                  = IM.empty
                                                         , _pickPtsTbl             = IM.empty
@@ -195,7 +195,7 @@ loadWorld dir = (</> dir) <$> liftIO (mkMudFilePath persistDirFun) >>= \path -> 
                                                  , loadTbl mobTblFile                 mobTbl
                                                  , loadTbl objTblFile                 objTbl
                                                  , loadTbl pausedCorpseDecompsTblFile pausedCorpseDecompsTbl
-                                                 , loadTbl pausedEffectsTblFile       pausedEffectsTbl
+                                                 , loadTbl pausedEffectTblFile        pausedEffectTbl
                                                  , loadTbl pcSingTblFile              pcSingTbl
                                                  , loadTbl pcTblFile                  pcTbl
                                                  , loadTbl plaTblFile                 plaTbl
@@ -207,7 +207,7 @@ loadWorld dir = (</> dir) <$> liftIO (mkMudFilePath persistDirFun) >>= \path -> 
                                                  , loadTbl vesselTblFile              vesselTbl
                                                  , loadTbl wpnTblFile                 wpnTbl
                                                  , loadTbl writableTblFile            writableTbl ]
-    tweak . flip compose $ [ movePCs, initActiveEffectsTbl, removeAdHocHelper ]
+    tweak . flip compose $ [ movePCs, initActiveEffectTbl, removeAdHocHelper ]
     return . and $ res
   where
     removeAdHocHelper ms = foldr removeAdHoc ms . getInv iWelcome $ ms
@@ -229,8 +229,8 @@ loadTbl tblFile lens path = let absolute = path </> tblFile in eitherDecode <$> 
   Right tbl -> tweak (lens .~ tbl) >> return True
 
 
-initActiveEffectsTbl :: HasCallStack => MudState -> MudState
-initActiveEffectsTbl ms = ms & activeEffectsTbl .~ IM.fromList [ (i, []) | i <- views entTbl IM.keys ms ]
+initActiveEffectTbl :: HasCallStack => MudState -> MudState
+initActiveEffectTbl ms = ms & activeEffectTbl .~ IM.fromList [ (i, []) | i <- views entTbl IM.keys ms ]
 
 
 movePCs :: HasCallStack => MudState -> MudState
