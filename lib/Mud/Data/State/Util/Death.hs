@@ -132,15 +132,15 @@ leaveChans i = liftIO mkTimestamp >>= \ts -> do logPla "leaveChans" i "leaving c
 deleteNpc :: HasCallStack => Id -> MudStack ()
 deleteNpc i = getState >>= \ms -> let ri = getRmId i ms
                                   in do logNotice "deleteNpc" $ "NPC " <> descSingId i ms <> " has died."
-                                        tweaks [ activeEffectTbl.at  i  .~ Nothing
-                                               , coinsTbl       .at  i  .~ Nothing
-                                               , entTbl         .at  i  .~ Nothing
-                                               , eqTbl          .at  i  .~ Nothing
-                                               , invTbl         .at  i  .~ Nothing
-                                               , invTbl         .ind ri %~ (i `delete`)
-                                               , mobTbl         .at  i  .~ Nothing
-                                               , pausedEffectTbl.at  i  .~ Nothing
-                                               , typeTbl        .at  i  .~ Nothing ]
+                                        tweaks [ coinsTbl           .at  i  .~ Nothing
+                                               , durationalEffectTbl.at  i  .~ Nothing
+                                               , entTbl             .at  i  .~ Nothing
+                                               , eqTbl              .at  i  .~ Nothing
+                                               , invTbl             .at  i  .~ Nothing
+                                               , invTbl             .ind ri %~ (i `delete`)
+                                               , mobTbl             .at  i  .~ Nothing
+                                               , pausedEffectTbl    .at  i  .~ Nothing
+                                               , typeTbl            .at  i  .~ Nothing ]
                                         stopWaitNpcServer i {- This removes the NPC from the "NpcTbl". -}
 
 

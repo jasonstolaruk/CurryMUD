@@ -3,8 +3,7 @@
 
 -- This module contains straightforward getter methods that do little or no calculation.
 
-module Mud.Data.State.Util.Get ( getActiveEffects
-                               , getActMap
+module Mud.Data.State.Util.Get ( getActMap
                                , getArm
                                , getArmSub
                                , getBaseAttrib
@@ -35,6 +34,7 @@ module Mud.Data.State.Util.Get ( getActiveEffects
                                , getDistinctFoodForFood
                                , getDistinctLiq
                                , getDistinctLiqForLiq
+                               , getDurEffects
                                , getEnt
                                , getEntDesc
                                , getEntSmell
@@ -219,13 +219,6 @@ isNpcPC i ms = getType i ms `elem` [ NpcType, PCType ]
 
 -- ============================================================
 -- Getters:
-
-
-getActiveEffects :: HasCallStack => Id -> MudState -> [ActiveEffect]
-getActiveEffects i = view (activeEffectTbl.ind i)
-
-
------
 
 
 getActMap :: HasCallStack => Id -> MudState -> ActMap
@@ -438,6 +431,13 @@ getDistinctLiq i = view (distinctLiqTbl.ind i)
 
 getDistinctLiqForLiq :: HasCallStack => Liq -> MudState -> DistinctLiq
 getDistinctLiqForLiq (view liqId -> DistinctLiqId i) = view (distinctLiqTbl.ind i)
+
+
+-----
+
+
+getDurEffects :: HasCallStack => Id -> MudState -> [DurationalEffect]
+getDurEffects i = view (durationalEffectTbl.ind i)
 
 
 -----

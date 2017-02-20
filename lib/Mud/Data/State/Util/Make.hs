@@ -42,9 +42,9 @@ mkEnt i EntTemplate { .. } = Ent { _entId    = i
 
 
 createEnt :: MudState -> EntTemplate -> (Id, MudState)
-createEnt ms et = let i = getUnusedId ms in (i, ms & activeEffectTbl.ind i .~ []
-                                                   & entTbl         .ind i .~ mkEnt i et
-                                                   & pausedEffectTbl.ind i .~ [])
+createEnt ms et = let i = getUnusedId ms in (i, ms & durationalEffectTbl.ind i .~ []
+                                                   & entTbl             .ind i .~ mkEnt i et
+                                                   & pausedEffectTbl    .ind i .~ [])
 
 
 -----

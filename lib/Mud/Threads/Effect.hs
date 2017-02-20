@@ -62,7 +62,7 @@ startEffectHelper i e@(view effectFeeling -> ef) = do logPla "startEffectHelper"
                                                       q <- liftIO newTQueueIO
                                                       a <- runAsync . threadEffect i e $ q
                                                       maybeVoid (flip (startFeeling i) FeelingNoVal) ef
-                                                      tweak $ activeEffectTbl.ind i <>~ pure (ActiveEffect e (a, q))
+                                                      tweak $ durationalEffectTbl.ind i <>~ pure (DurationalEffect e (a, q))
 
 
 -----
@@ -87,7 +87,7 @@ threadEffect i (Effect effSub _ secs _) q = handle (threadExHandler (Just i) "ef
               QueryRemEffectTime tmv -> putTMVarHelper tmv >> loop
               StopEffect             -> logPla "threadEffect queueListener loop" i "received the signal to stop effect."
             putTMVarHelper tmv = liftIO (atomically . putTMVar tmv =<< readIORef ior)
-        done = tweak $ activeEffectTbl.ind i %~ filter (views effectService ((/= ti) . asyncThreadId . fst))
+        done = tweak $ durationalEffectTbl.ind i %~ filter (views effectService ((/= ti) . asyncThreadId . fst))
     racer md effectTimer queueListener `finally` done
     logHelper "is finishing."
   where
@@ -99,13 +99,13 @@ threadEffect i (Effect effSub _ secs _) q = handle (threadExHandler (Just i) "ef
 
 pauseEffects :: Id -> MudStack () -- When a player logs out.
 pauseEffects i = getState >>= \ms ->
-    let aes = getActiveEffects i ms
+    let aes = getDurEffects i ms
     in unless (null aes) $ do logNotice "pauseEffects" . prd $ "pausing effects for ID " <> showText i
                               pes <- mapM helper aes
-                              tweaks [ activeEffectTbl.ind i .~  []
-                                     , pausedEffectTbl.ind i <>~ pes ]
+                              tweaks [ durationalEffectTbl.ind i .~  []
+                                     , pausedEffectTbl    .ind i <>~ pes ]
   where
-    helper (ActiveEffect e (_, q)) = do
+    helper (DurationalEffect e (_, q)) = do
         tmv <- liftIO newEmptyTMVarIO
         liftIO . atomically . writeTQueue q . PauseEffect $ tmv
         secs <- liftIO . atomically . takeTMVar $ tmv
@@ -115,7 +115,7 @@ pauseEffects i = getState >>= \ms ->
 
 massPauseEffects :: MudStack () -- At server shutdown, after everyone has been disconnected.
 massPauseEffects = sequence_ [ logNotice "massPauseEffects" "mass pausing effects."
-                             , mapM_ pauseEffects . views activeEffectTbl IM.keys =<< getState ]
+                             , mapM_ pauseEffects . views durationalEffectTbl IM.keys =<< getState ]
 
 
 -----
@@ -143,8 +143,8 @@ massRestartPausedEffects = getState >>= \ms -> do logNotice "massRestartPausedEf
 -----
 
 
-stopEffect :: Id -> ActiveEffect -> MudStack ()
-stopEffect i (ActiveEffect e (_, q)) = sequence_ [ liftIO . atomically . writeTQueue q $ StopEffect, stopFeeling i e ]
+stopEffect :: Id -> DurationalEffect -> MudStack ()
+stopEffect i (DurationalEffect e (_, q)) = sequence_ [ liftIO . atomically . writeTQueue q $ StopEffect, stopFeeling i e ]
 
 
 stopFeeling :: Id -> Effect -> MudStack ()
@@ -156,4 +156,4 @@ stopFeeling i (Effect _ _ _ feel) = getState >>= \ms ->
 
 
 stopEffects :: Id -> MudStack ()
-stopEffects i = mapM_ (stopEffect i) =<< getActiveEffects i <$> getState
+stopEffects i = mapM_ (stopEffect i) =<< getDurEffects i <$> getState

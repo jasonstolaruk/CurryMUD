@@ -734,18 +734,18 @@ examineCorpse i ms = case getCorpse i ms of
 
 
 examineEnt :: HasCallStack => ExamineHelper
-examineEnt i ms = let e = getEnt i ms in [ "Name: "           <> e^.entName .to (fromMaybe none)
-                                         , "Sing: "           <> e^.sing    .to noneOnNull
-                                         , "Plur: "           <> e^.plur    .to noneOnNull
-                                         , "Description: "    <> e^.entDesc .to noneOnNull
-                                         , "Smell: "          <> e^.entSmell.to (fromMaybe none)
-                                         , "Entity flags: "   <> (commas . dropBlanks . descFlags $ e)
-                                         , "Active effects: " <> descActiveEffects
-                                         , "Paused effects: " <> descPausedEffects ]
+examineEnt i ms = let e = getEnt i ms in [ "Name: "               <> e^.entName .to (fromMaybe none)
+                                         , "Sing: "               <> e^.sing    .to noneOnNull
+                                         , "Plur: "               <> e^.plur    .to noneOnNull
+                                         , "Description: "        <> e^.entDesc .to noneOnNull
+                                         , "Smell: "              <> e^.entSmell.to (fromMaybe none)
+                                         , "Entity flags: "       <> (commas . dropBlanks . descFlags $ e)
+                                         , "Durational effects: " <> descDurEffects
+                                         , "Paused effects: "     <> descPausedEffects ]
   where
     descFlags e       | e^.entFlags == zeroBits = none
                       | otherwise               = none -- TODO: Ent flags.
-    descActiveEffects = descEffect getActiveEffects
+    descDurEffects    = descEffect getDurEffects
     descPausedEffects = descEffect getPausedEffects
     descEffect f      = ppList . f i $ ms
 

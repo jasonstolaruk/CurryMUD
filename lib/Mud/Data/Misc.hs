@@ -231,10 +231,6 @@ class Pretty a where
   pp :: a -> Text
 
 
-instance Pretty ActiveEffect where
-  pp (ActiveEffect e _) = pp e
-
-
 instance Pretty ActType where
   pp Attacking   = "attacking"
   pp Drinking    = "drinking"
@@ -350,6 +346,10 @@ instance Pretty DiscoverRec where
   pp DiscoverRec { .. } = slashes [ dbTimestamp
                                   , dbHost
                                   , dbMsg ]
+
+
+instance Pretty DurationalEffect where
+  pp (DurationalEffect e _) = pp e
 
 
 instance Pretty Effect where

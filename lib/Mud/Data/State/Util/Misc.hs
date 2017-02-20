@@ -678,20 +678,20 @@ procQuoteChars as@(T.unwords -> txt) | not $ q `T.isInfixOf` txt = Just as
 
 
 removeAdHoc :: HasCallStack => Id -> MudState -> MudState
-removeAdHoc i = flip upd [ activeEffectTbl .at  i        .~ Nothing
-                         , coinsTbl        .at  i        .~ Nothing
-                         , entTbl          .at  i        .~ Nothing
-                         , eqTbl           .at  i        .~ Nothing
-                         , invTbl          .at  i        .~ Nothing
-                         , invTbl          .ind iWelcome %~ (i `delete`)
-                         , mobTbl          .at  i        .~ Nothing
-                         , msgQueueTbl     .at  i        .~ Nothing
-                         , pausedEffectTbl .at  i        .~ Nothing
-                         , pcTbl           .at  i        .~ Nothing
-                         , plaTbl          .at  i        .~ Nothing
-                         , rndmNamesMstrTbl.at  i        .~ Nothing
-                         , teleLinkMstrTbl .at  i        .~ Nothing
-                         , typeTbl         .at  i        .~ Nothing ]
+removeAdHoc i = flip upd [ coinsTbl           .at  i        .~ Nothing
+                         , durationalEffectTbl.at  i        .~ Nothing
+                         , entTbl             .at  i        .~ Nothing
+                         , eqTbl              .at  i        .~ Nothing
+                         , invTbl             .at  i        .~ Nothing
+                         , invTbl             .ind iWelcome %~ (i `delete`)
+                         , mobTbl             .at  i        .~ Nothing
+                         , msgQueueTbl        .at  i        .~ Nothing
+                         , pausedEffectTbl    .at  i        .~ Nothing
+                         , pcTbl              .at  i        .~ Nothing
+                         , plaTbl             .at  i        .~ Nothing
+                         , rndmNamesMstrTbl   .at  i        .~ Nothing
+                         , teleLinkMstrTbl    .at  i        .~ Nothing
+                         , typeTbl            .at  i        .~ Nothing ]
 
 
 -----

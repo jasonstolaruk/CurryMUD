@@ -734,34 +734,34 @@ interpPW _ _ _ p = patternMatchFail "interpPW" . showText $ p
 logIn :: HasCallStack => Id -> MudState -> Sing -> HostName -> Maybe UTCTime -> Id -> MudState
 logIn newId ms oldSing newHost newTime originId = upd adoptNewId [ movePC, peepNewId ]
   where
-    adoptNewId = upd ms [ activeEffectTbl .ind newId         .~ getActiveEffects originId ms
-                        , activeEffectTbl .at  originId      .~ Nothing
-                        , coinsTbl        .ind newId         .~ getCoins         originId ms
-                        , coinsTbl        .at  originId      .~ Nothing
-                        , entTbl          .ind newId         .~ set entId newId e
-                        , entTbl          .at  originId      .~ Nothing
-                        , eqTbl           .ind newId         .~ getEqMap         originId ms
-                        , eqTbl           .at  originId      .~ Nothing
-                        , invTbl          .ind newId         .~ getInv           originId ms
-                        , invTbl          .at  originId      .~ Nothing
-                        , mobTbl          .ind newId         .~ getMob           originId ms
-                        , mobTbl          .at  originId      .~ Nothing
-                        , pausedEffectTbl .ind newId         .~ getPausedEffects originId ms
-                        , pausedEffectTbl .at  originId      .~ Nothing
-                        , pcSingTbl       .at  (e^.sing)     ?~ newId
-                        , pcSingTbl       .at  oldSing       .~ Nothing
-                        , pcTbl           .ind newId         .~ getPC            originId ms
-                        , pcTbl           .at  originId      .~ Nothing
-                        , plaTbl          .ind newId         .~ (getPla          originId ms & currHostName .~ newHost
-                                                                                             & connectTime  .~ newTime
-                                                                                             & setPlaFlag IsGmcp gmcp)
-                        , plaTbl          .ind newId.peepers .~ getPeepers       originId ms
-                        , plaTbl          .at  originId      .~ Nothing
-                        , rndmNamesMstrTbl.ind newId         .~ getRndmNamesTbl  originId ms
-                        , rndmNamesMstrTbl.at  originId      .~ Nothing
-                        , teleLinkMstrTbl .ind newId         .~ getTeleLinkTbl   originId ms
-                        , teleLinkMstrTbl .at  originId      .~ Nothing
-                        , typeTbl         .at  originId      .~ Nothing ]
+    adoptNewId = upd ms [ coinsTbl           .ind newId         .~ getCoins         originId ms
+                        , coinsTbl           .at  originId      .~ Nothing
+                        , durationalEffectTbl.ind newId         .~ getDurEffects    originId ms
+                        , durationalEffectTbl.at  originId      .~ Nothing
+                        , entTbl             .ind newId         .~ set entId newId  e
+                        , entTbl             .at  originId      .~ Nothing
+                        , eqTbl              .ind newId         .~ getEqMap         originId ms
+                        , eqTbl              .at  originId      .~ Nothing
+                        , invTbl             .ind newId         .~ getInv           originId ms
+                        , invTbl             .at  originId      .~ Nothing
+                        , mobTbl             .ind newId         .~ getMob           originId ms
+                        , mobTbl             .at  originId      .~ Nothing
+                        , pausedEffectTbl    .ind newId         .~ getPausedEffects originId ms
+                        , pausedEffectTbl    .at  originId      .~ Nothing
+                        , pcSingTbl          .at  (e^.sing)     ?~ newId
+                        , pcSingTbl          .at  oldSing       .~ Nothing
+                        , pcTbl              .ind newId         .~ getPC            originId ms
+                        , pcTbl              .at  originId      .~ Nothing
+                        , plaTbl             .ind newId         .~ (getPla          originId ms & currHostName .~ newHost
+                                                                                                & connectTime  .~ newTime
+                                                                                                & setPlaFlag IsGmcp gmcp)
+                        , plaTbl             .ind newId.peepers .~ getPeepers       originId ms
+                        , plaTbl             .at  originId      .~ Nothing
+                        , rndmNamesMstrTbl   .ind newId         .~ getRndmNamesTbl  originId ms
+                        , rndmNamesMstrTbl   .at  originId      .~ Nothing
+                        , teleLinkMstrTbl    .ind newId         .~ getTeleLinkTbl   originId ms
+                        , teleLinkMstrTbl    .at  originId      .~ Nothing
+                        , typeTbl            .at  originId      .~ Nothing ]
       where
         e    = getEnt   originId ms
         gmcp = isGmcpId newId    ms

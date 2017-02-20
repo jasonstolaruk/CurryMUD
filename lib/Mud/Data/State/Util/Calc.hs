@@ -243,7 +243,7 @@ calcEffAttribs i ms = listToTuple [ calcEffAttrib a i ms | a <- allValues ]
 
 
 calcEffAttrib :: HasCallStack => Attrib -> Id -> MudState -> Int
-calcEffAttrib attrib i ms = let effects = select effect . getActiveEffects i $ ms
+calcEffAttrib attrib i ms = let effects = select effect . getDurEffects i $ ms
                             in max1 . foldl' helper (getBaseAttrib attrib i ms) $ effects
   where
     helper acc (Effect (MobEffectAttrib a) (Just (EffectFixedVal x)) _ _) | a == attrib = acc + x

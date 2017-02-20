@@ -49,8 +49,7 @@ data MudData = MudData { _errorLog      :: Maybe LogService
                        , _mudStateIORef :: IORef MudState }
 
 
-data MudState = MudState { _activeEffectTbl        :: ActiveEffectTbl
-                         , _armTbl                 :: ArmTbl
+data MudState = MudState { _armTbl                 :: ArmTbl
                          , _chanTbl                :: ChanTbl
                          , _clothTbl               :: ClothTbl
                          , _coinsTbl               :: CoinsTbl
@@ -59,6 +58,7 @@ data MudState = MudState { _activeEffectTbl        :: ActiveEffectTbl
                          , _corpseTbl              :: CorpseTbl
                          , _distinctFoodTbl        :: DistinctFoodTbl
                          , _distinctLiqTbl         :: DistinctLiqTbl
+                         , _durationalEffectTbl    :: DurationalEffectTbl
                          , _effectFunTbl           :: EffectFunTbl
                          , _entTbl                 :: EntTbl
                          , _eqTbl                  :: EqTbl
@@ -94,7 +94,6 @@ data MudState = MudState { _activeEffectTbl        :: ActiveEffectTbl
                          , _writableTbl            :: WritableTbl }
 
 
-type ActiveEffectTbl        = IM.IntMap [ActiveEffect]
 type ArmTbl                 = IM.IntMap Arm
 type ChanTbl                = IM.IntMap Chan
 type ClothTbl               = IM.IntMap Cloth
@@ -104,6 +103,7 @@ type CorpseDecompAsyncTbl   = IM.IntMap CorpseDecompAsync
 type CorpseTbl              = IM.IntMap Corpse
 type DistinctFoodTbl        = IM.IntMap DistinctFood
 type DistinctLiqTbl         = IM.IntMap DistinctLiq
+type DurationalEffectTbl    = IM.IntMap [DurationalEffect]
 type EffectFunTbl           = M.Map FunName EffectFun
 type EntTbl                 = IM.IntMap Ent
 type EqTbl                  = IM.IntMap EqMap
@@ -147,57 +147,6 @@ data Action = Action { actionFun          :: ActionFun
 
 
 type ActionFun = ActionParams -> MudStack ()
-
-
--- ==================================================
-
-
-data ActiveEffect = ActiveEffect { _effect        :: Effect
-                                 , _effectService :: EffectService }
-
-
-data Effect = Effect { _effectSub     :: EffectSub
-                     , _effectVal     :: Maybe EffectVal
-                     , _effectDur     :: Seconds
-                     , _effectFeeling :: Maybe EffectFeeling } deriving (Eq, Generic, Show)
-
-
-data EffectSub = ArmEffectAC
-               | MobEffectAttrib Attrib
-               | MobEffectAC
-               | EffectOther FunName -- Function is run every second.
-               deriving (Eq, Generic, Show)
-
-
-data Attrib = St | Dx | Ht | Ma | Ps deriving (Bounded, Enum, Eq, Generic, Show)
-
-
-data EffectVal = EffectFixedVal  Int
-               | EffectRangedVal Range deriving (Eq, Generic, Show)
-
-
-type Range = (Int, Int)
-
-
-data EffectFeeling = EffectFeeling { efTag :: FeelingTag
-                                   , efDur :: Seconds } deriving (Eq, Generic, Show)
-
-
-type EffectService = (EffectAsync, EffectQueue)
-
-
-type EffectAsync = Async ()
-
-
-type EffectQueue = TQueue EffectCmd
-
-
-data EffectCmd = PauseEffect        (TMVar Seconds)
-               | QueryRemEffectTime (TMVar Seconds)
-               | StopEffect
-
-
-type EffectFun = Id -> Seconds -> MudStack ()
 
 
 -- ==================================================
@@ -318,6 +267,57 @@ data Corpse = PCCorpse  { _pcCorpseSing  :: Sing
 
 
 type CorpseDecompAsync = Async ()
+
+
+-- ==================================================
+
+
+data DurationalEffect = DurationalEffect { _effect        :: Effect
+                                         , _effectService :: EffectService }
+
+
+data Effect = Effect { _effectSub     :: EffectSub
+                     , _effectVal     :: Maybe EffectVal
+                     , _effectDur     :: Seconds
+                     , _effectFeeling :: Maybe EffectFeeling } deriving (Eq, Generic, Show)
+
+
+data EffectSub = ArmEffectAC
+               | MobEffectAttrib Attrib
+               | MobEffectAC
+               | EffectOther FunName -- Function is run every second.
+               deriving (Eq, Generic, Show)
+
+
+data Attrib = St | Dx | Ht | Ma | Ps deriving (Bounded, Enum, Eq, Generic, Show)
+
+
+data EffectVal = EffectFixedVal  Int
+               | EffectRangedVal Range deriving (Eq, Generic, Show)
+
+
+type Range = (Int, Int)
+
+
+data EffectFeeling = EffectFeeling { efTag :: FeelingTag
+                                   , efDur :: Seconds } deriving (Eq, Generic, Show)
+
+
+type EffectService = (EffectAsync, EffectQueue)
+
+
+type EffectAsync = Async ()
+
+
+type EffectQueue = TQueue EffectCmd
+
+
+data EffectCmd = PauseEffect        (TMVar Seconds)
+               | QueryRemEffectTime (TMVar Seconds)
+               | StopEffect
+
+
+type EffectFun = Id -> Seconds -> MudStack ()
 
 
 -- ==================================================
@@ -1302,7 +1302,6 @@ dropUnderscore = defaultOptions { fieldLabelModifier = tail }
 -- ==================================================
 
 
-makeLenses ''ActiveEffect
 makeLenses ''Arm
 makeLenses ''Chan
 makeLenses ''Con
@@ -1310,6 +1309,7 @@ makeLenses ''ConsumpEffects
 makeLenses ''Corpse
 makeLenses ''DistinctFood
 makeLenses ''DistinctLiq
+makeLenses ''DurationalEffect
 makeLenses ''EdibleEffects
 makeLenses ''Effect
 makeLenses ''Ent
