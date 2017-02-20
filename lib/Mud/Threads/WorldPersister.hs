@@ -13,6 +13,7 @@ import Control.Exception.Lifted (catch, handle)
 import Control.Monad (forever)
 import Control.Monad.IO.Class (liftIO)
 import Data.Text (Text)
+import GHC.Stack (HasCallStack)
 
 
 logNotice :: Text -> Text -> MudStack ()
@@ -22,7 +23,7 @@ logNotice = L.logNotice "Mud.Threads.WorldPersister"
 -- ==================================================
 
 
-threadWorldPersister :: MudStack ()
+threadWorldPersister :: HasCallStack => MudStack ()
 threadWorldPersister = handle (threadExHandler Nothing "world persister") $ do
     setThreadType WorldPersister
     logNotice "threadWorldPersister" "world persister started."

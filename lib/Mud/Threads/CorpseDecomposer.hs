@@ -33,6 +33,7 @@ import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import Data.Typeable (Typeable)
+import GHC.Stack (HasCallStack)
 import qualified Data.IntMap.Strict as IM (elems, empty, toList)
 import qualified Data.Text as T
 
@@ -60,7 +61,7 @@ instance Exception PauseCorpseDecomp
 -----
 
 
-startCorpseDecomp :: Id -> SecondsPair -> MudStack ()
+startCorpseDecomp :: HasCallStack => Id -> SecondsPair -> MudStack ()
 startCorpseDecomp i secs = runAsync (threadCorpseDecomp i secs) >>= \a -> tweak $ corpseDecompAsyncTbl.ind i .~ a
 
 
@@ -74,11 +75,11 @@ threadCorpseDecomp i secs = handle (threadExHandler (Just i) "corpse decomposer"
     finish = tweak $ corpseDecompAsyncTbl.at i .~ Nothing
 
 
-mkSecsTxt :: SecondsPair -> Text
+mkSecsTxt :: HasCallStack => SecondsPair -> Text
 mkSecsTxt = parensQuote . uncurry (middle (<>) "/") . (both %~ commaShow)
 
 
-corpseDecomp :: Id -> SecondsPair -> MudStack ()
+corpseDecomp :: HasCallStack => Id -> SecondsPair -> MudStack ()
 corpseDecomp i pair = getObjWeight i <$> getState >>= \w -> catch <$> loop w <*> handler =<< liftIO (newIORef pair)
   where
     loop w ref = liftIO (readIORef ref) >>= \case
@@ -87,14 +88,14 @@ corpseDecomp i pair = getObjWeight i <$> getState >>= \w -> catch <$> loop w <*>
                    liftIO . delaySecs $ 1
                    liftIO . writeIORef ref . first pred $ secs
                    loop w ref
-    handler :: IORef SecondsPair -> PauseCorpseDecomp -> MudStack ()
+    handler :: HasCallStack => IORef SecondsPair -> PauseCorpseDecomp -> MudStack ()
     handler ref = const $ liftIO (readIORef ref) >>= \secs ->
       let msg = prd $ "pausing corpse decomposer for ID " <> showText i |<>| mkSecsTxt secs
       in logHelper msg >> tweak (pausedCorpseDecompsTbl.ind i .~ secs)
     logHelper = logNotice "corpseDecomp finish"
 
 
-corpseDecompHelper :: Id -> Weight -> SecondsPair -> MudStack ()
+corpseDecompHelper :: HasCallStack => Id -> Weight -> SecondsPair -> MudStack ()
 corpseDecompHelper i w (x, total) = getState >>= \ms ->
     let step           = total `intDivide` 4
         [ a, b, c, d ] = [ step, step * 2, step * 3, total ]
@@ -124,7 +125,7 @@ corpseDecompHelper i w (x, total) = getState >>= \ms ->
       | otherwise -> []
 
 
-finishDecomp :: Id -> MudStack ()
+finishDecomp :: HasCallStack => Id -> MudStack ()
 finishDecomp i = modifyStateSeq $ \ms ->
     let invId          = fromMaybe oops . findInvContaining i $ ms
         bs             = if | getType invId ms == RmType -> foldr f [] . findMobIds ms . getInv invId $ ms
@@ -142,18 +143,18 @@ finishDecomp i = modifyStateSeq $ \ms ->
 -----
 
 
-pauseCorpseDecomps :: MudStack ()
+pauseCorpseDecomps :: HasCallStack => MudStack ()
 pauseCorpseDecomps = do logNotice "pauseCorpseDecomps" "pausing corpse decomposers."
                         views corpseDecompAsyncTbl (mapM_ f . IM.elems) =<< getState
   where
-    f :: CorpseDecompAsync -> MudStack ()
+    f :: HasCallStack => CorpseDecompAsync -> MudStack ()
     f a = sequence_ [ throwTo (asyncThreadId a) PauseCorpseDecomp, liftIO . void . wait $ a ]
 
 
 -----
 
 
-restartCorpseDecomps :: MudStack ()
+restartCorpseDecomps :: HasCallStack => MudStack ()
 restartCorpseDecomps = do logNotice "restartCorpseDecomps" "restarting corpse decomposers."
                           modifyStateSeq $ \ms -> let pairs = views pausedCorpseDecompsTbl IM.toList ms
                                                   in ( ms & pausedCorpseDecompsTbl .~ IM.empty

@@ -22,6 +22,7 @@ import Control.Lens.Operators ((?~), (.~), (&), (^.))
 import Control.Monad ((>=>), forever, void)
 import Control.Monad.IO.Class (liftIO)
 import Data.Text (Text)
+import GHC.Stack (HasCallStack)
 
 
 logNotice :: Text -> Text -> MudStack ()
@@ -35,23 +36,23 @@ logPla = L.logPla "Mud.Threads.Regen"
 -- ==================================================
 
 
-runRegenAsync :: Id -> MudStack ()
+runRegenAsync :: HasCallStack => Id -> MudStack ()
 runRegenAsync i = liftIO newTQueueIO >>= \tq -> do
     tweak $ mobTbl.ind i.regenQueue ?~ tq
     onNewThread . threadRegen i $ tq
 
 
-startNpcRegens :: MudStack ()
+startNpcRegens :: HasCallStack => MudStack ()
 startNpcRegens =
     sequence_ [ logNotice "startNpcRegens" "starting NPC regens.", mapM_ runRegenAsync . findNpcIds =<< getState ]
 
 
-stopNpcRegens :: MudStack ()
+stopNpcRegens :: HasCallStack => MudStack ()
 stopNpcRegens =
     sequence_ [ logNotice "stopNpcRegens"  "stopping NPC regens.", mapM_ stopRegen     . findNpcIds =<< getState ]
 
 
-stopRegen :: Id -> MudStack ()
+stopRegen :: HasCallStack => Id -> MudStack ()
 stopRegen i = do logPla "stopRegen" i "stopping regen."
                  helper |&| modifyState >=> maybeVoid (liftIO . atomically . (`writeTQueue` StopRegen))
   where
@@ -62,7 +63,7 @@ stopRegen i = do logPla "stopRegen" i "stopping regen."
 -----
 
 
-threadRegen :: Id -> RegenQueue -> MudStack ()
+threadRegen :: HasCallStack => Id -> RegenQueue -> MudStack ()
 threadRegen i tq = let regens = [ regen curHp maxHp calcRegenHpAmt calcRegenHpDelay
                                 , regen curMp maxMp calcRegenMpAmt calcRegenMpDelay
                                 , regen curPp maxPp calcRegenPpAmt calcRegenPpDelay
@@ -72,7 +73,11 @@ threadRegen i tq = let regens = [ regen curHp maxHp calcRegenHpAmt calcRegenHpDe
                          asyncs <- mapM runAsync regens
                          liftIO $ (void . atomically . readTQueue $ tq) >> mapM_ cancel asyncs
   where
-    regen :: Lens' Mob Int -> Getter Mob Int -> (Id -> MudState -> Int) -> (Id -> MudState -> Int) -> MudStack ()
+    regen :: HasCallStack => Lens' Mob Int
+                          -> Getter Mob Int
+                          -> (Id -> MudState -> Int)
+                          -> (Id -> MudState -> Int)
+                          -> MudStack ()
     regen curLens maxLens calcAmt calcDelay = setThreadType (RegenChild i) >> forever loop
       where
         loop  = delay >> modifyStateSeq f

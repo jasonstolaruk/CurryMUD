@@ -22,6 +22,7 @@ import Control.Monad ((>=>))
 import Control.Monad.IO.Class (liftIO)
 import Data.Monoid ((<>))
 import Data.Text (Text)
+import GHC.Stack (HasCallStack)
 import qualified Data.Text as T
 import System.Time.Utils (renderSecs)
 
@@ -37,7 +38,7 @@ logPla = L.logPla "Mud.Threads.InacTimer"
 -- ==================================================
 
 
-threadInacTimer :: Id -> MsgQueue -> InacTimerQueue -> MudStack ()
+threadInacTimer :: HasCallStack => Id -> MsgQueue -> InacTimerQueue -> MudStack ()
 threadInacTimer i mq q = let f = sequence_ [ setThreadType . InacTimer $ i
                                            , loop maxInacSecs 0 `catch` threadExHandler (Just i) "inactivity timer" ]
                          in f `finally` stopInacTimer q
@@ -62,5 +63,5 @@ threadInacTimer i mq q = let f = sequence_ [ setThreadType . InacTimer $ i
 -----
 
 
-stopInacTimer :: InacTimerQueue -> MudStack ()
+stopInacTimer :: HasCallStack => InacTimerQueue -> MudStack ()
 stopInacTimer = liftIO . atomically . closeTMQueue

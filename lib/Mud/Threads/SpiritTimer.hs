@@ -25,6 +25,7 @@ import Control.Monad (when)
 import Control.Monad.IO.Class (liftIO)
 import Data.Monoid ((<>))
 import Data.Text (Text)
+import GHC.Stack (HasCallStack)
 
 
 logPla :: Text -> Id -> Text -> MudStack ()
@@ -38,19 +39,19 @@ logPlaOut = L.logPlaOut "Mud.Threads.SpiritTimer"
 -- ==================================================
 
 
-runSpiritTimerAsync :: Id -> Seconds -> MudStack ()
+runSpiritTimerAsync :: HasCallStack => Id -> Seconds -> MudStack ()
 runSpiritTimerAsync i secs = runAsync (threadSpiritTimer i secs) >>= \a -> tweak $ plaTbl.ind i.spiritAsync ?~ a
 
 
 -- Note that "threadSpiritTimer" sets "spiritAsync" to "Nothing" when the timer finishes.
-throwWaitSpiritTimer :: Id -> MudStack ()
+throwWaitSpiritTimer :: HasCallStack => Id -> MudStack ()
 throwWaitSpiritTimer i = views (plaTbl.ind i.spiritAsync) (maybeVoid throwWait) =<< getState
 
 
 -----
 
 
-threadSpiritTimer :: Id -> Seconds -> MudStack ()
+threadSpiritTimer :: HasCallStack => Id -> Seconds -> MudStack ()
 threadSpiritTimer i secs = handle (threadExHandler (Just i) "spirit timer") $ do
     setThreadType . SpiritTimer $ i
     singId <- descSingId i <$> getState
@@ -65,7 +66,7 @@ threadSpiritTimer i secs = handle (threadExHandler (Just i) "spirit timer") $ do
     handle (die (Just i) $ "spirit timer for " <> singId) $ go `finally` finish
 
 
-spiritTimer :: Id -> MsgQueue -> Cols -> Seconds -> MudStack ()
+spiritTimer :: HasCallStack => Id -> MsgQueue -> Cols -> Seconds -> MudStack ()
 spiritTimer i _  _    0 = logPla "spiritTimer" i "spirit timer expired."
 spiritTimer i mq cols secs
   | secs == 75 = helper "You feel the uncanny pull of the beyond. Your time in this dimension is coming to an end."
