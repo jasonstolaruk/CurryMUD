@@ -779,7 +779,7 @@ helperGiveEitherInv i d toId a@(ms, _, _, _) = \case
     in a & _1.invTbl.ind i    %~  (\\ cans)
          & _1.invTbl.ind toId %~  addToInv ms cans
          & _2                 <>~ toSelfs ++
-                                  mkCan'tGiveInvDescs (serialize toDesig { desigShouldCap = DoCap }) i ms can'ts
+                                  mkCan'tGiveInvDescs (serialize toDesig { desigCap = DoCap }) i ms can'ts
          & _3                 <>~ bs
          & _4                 <>~ toSelfs
 

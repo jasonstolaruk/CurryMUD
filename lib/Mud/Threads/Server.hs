@@ -75,9 +75,6 @@ consistency.
 -}
 
 
-data ToWhom = Plaに | Npcに
-
-
 threadServer :: HasCallStack => Handle -> Id -> MsgQueue -> InacTimerQueue -> MudStack ()
 threadServer h i mq itq = sequence_ [ setThreadType . Server $ i
                                     , loop False `catch` threadExHandler (Just i) "server" ]

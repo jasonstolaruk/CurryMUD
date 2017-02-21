@@ -281,7 +281,7 @@ parseDesigHelper f i ms = loop (getIntroduced i ms)
 
 
 expandEntName :: HasCallStack => Id -> MudState -> Desig -> Text
-expandEntName i ms StdDesig { .. } = let f      = mkCapsFun desigShouldCap
+expandEntName i ms StdDesig { .. } = let f      = mkCapsFun desigCap
                                          (h, t) = headTail desigEntName
                                          s      = getSing desigId ms
                                      in if isPC desigId ms

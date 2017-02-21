@@ -577,7 +577,7 @@ mkPrettySexRaceLvl i ms = let ((s, r), l) = (mkPrettySexRace `fanUncurry` getLvl
 -----
 
 
-mkSerializedNonStdDesig :: HasCallStack => Id -> MudState -> Sing -> AOrThe -> ShouldCap -> Text
+mkSerializedNonStdDesig :: HasCallStack => Id -> MudState -> Sing -> AOrThe -> DoOrDon'tCap -> Text
 mkSerializedNonStdDesig i ms s aot (mkCapsFun -> f) = serialize NonStdDesig { dEntSing = s, dDesc = helper }
   where
     helper | isPC i ms = g . uncurry (|<>|) . mkPrettySexRace i $ ms
@@ -588,12 +588,12 @@ mkSerializedNonStdDesig i ms s aot (mkCapsFun -> f) = serialize NonStdDesig { dE
 -----
 
 
-mkStdDesig :: HasCallStack => Id -> MudState -> ShouldCap -> Desig
-mkStdDesig i ms sc = StdDesig { desigEntSing   = Just . getSing i $ ms
-                              , desigShouldCap = sc
-                              , desigEntName   = views entName (fromMaybe (mkUnknownPCEntName i ms)) . getEnt i $ ms
-                              , desigId        = i
-                              , desigIds       = findMobIds ms . getMobRmInv i $ ms }
+mkStdDesig :: HasCallStack => Id -> MudState -> DoOrDon'tCap -> Desig
+mkStdDesig i ms cap = StdDesig { desigEntSing = Just . getSing i $ ms
+                               , desigCap     = cap
+                               , desigEntName = views entName (fromMaybe (mkUnknownPCEntName i ms)) . getEnt i $ ms
+                               , desigId      = i
+                               , desigIds     = findMobIds ms . getMobRmInv i $ ms }
 
 
 -----

@@ -1166,7 +1166,7 @@ emote p@ActionParams { args }   | any (`elem` yous) . map T.toLower $ args = adv
 emote   (WithArgs i mq cols as) = getState >>= \ms ->
     let d                       = mkStdDesig i ms DoCap
         ser                     = serialize d
-        d'                      = d { desigShouldCap = Don'tCap }
+        d'                      = d { desigCap = Don'tCap }
         ser'                    = serialize d'
         xformed                 = xformArgs True as
         xformArgs _      []     = []
@@ -1789,11 +1789,11 @@ intro p@(LowerNub i mq cols as) = getState >>= \ms ->
                         logMsg      = prd $ "Introduced to " <> targetSing
                         srcMsg      = nlnl msg
                         is          = findMobIds ms ris
-                        srcDesig    = StdDesig { desigEntSing   = Nothing
-                                               , desigShouldCap = DoCap
-                                               , desigEntName   = mkUnknownPCEntName i ms
-                                               , desigId        = i
-                                               , desigIds       = is }
+                        srcDesig    = StdDesig { desigEntSing = Nothing
+                                               , desigCap     = DoCap
+                                               , desigEntName = mkUnknownPCEntName i ms
+                                               , desigId      = i
+                                               , desigIds     = is }
                         himHerself  = mkReflexPro . getSex i $ ms
                         targetMsg   = nlnl . T.concat $ [ parseDesig targetId ms . serialize $ srcDesig
                                                         , " introduces "

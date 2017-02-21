@@ -1962,12 +1962,12 @@ sorryTunedOutICChan :: ChanName -> Text
 sorryTunedOutICChan = sorryTunedOutChan "tune" DoQuote
 
 
-sorryTunedOutChan :: CmdName -> ShouldQuote -> Text -> Text
-sorryTunedOutChan x sq y = T.concat [ "You have tuned out the "
-                                    , onTrue (sq == DoQuote) dblQuote y
-                                    , " channel. Type "
-                                    , colorWith quoteColor . T.concat $ [ x, " ", y, "=in" ]
-                                    , " to tune it back in." ]
+sorryTunedOutChan :: CmdName -> DoOrDon'tQuote -> Text -> Text
+sorryTunedOutChan x quote y = T.concat [ "You have tuned out the "
+                                       , onTrue (quote == DoQuote) dblQuote y
+                                       , " channel. Type "
+                                       , colorWith quoteColor . T.concat $ [ x, " ", y, "=in" ]
+                                       , " to tune it back in." ]
 
 
 sorryTunedOutOOCChan :: Text -> Text

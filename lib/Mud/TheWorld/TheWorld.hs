@@ -24,6 +24,7 @@ import Mud.TopLvlDefs.FilePaths
 import Mud.Util.Misc
 import Mud.Util.Operators
 import Mud.Util.Text
+import Prelude hiding (log)
 import qualified Mud.Misc.Logging as L (logErrorMsg, logNotice)
 
 import Control.Lens (ASetter, views)
@@ -57,60 +58,60 @@ logNotice = L.logNotice "Mud.TheWorld.TheWorld"
 -- ==================================================
 
 
-initMudData :: HasCallStack => ShouldLog -> IO MudData
-initMudData shouldLog = do [ databaseLock, logLock, persLock ] <- mkLocks
-                           (errorLogService, noticeLogService) <- initLogging shouldLog . Just $ logLock
-                           genIO   <- createSystemRandom
-                           start   <- getTime Monotonic
-                           msIORef <- newIORef MudState { _armTbl                 = IM.empty
-                                                        , _chanTbl                = IM.empty
-                                                        , _clothTbl               = IM.empty
-                                                        , _coinsTbl               = IM.empty
-                                                        , _conTbl                 = IM.empty
-                                                        , _corpseDecompAsyncTbl   = IM.empty
-                                                        , _corpseTbl              = IM.empty
-                                                        , _distinctFoodTbl        = IM.empty
-                                                        , _distinctLiqTbl         = IM.empty
-                                                        , _durationalEffectTbl    = IM.empty
-                                                        , _effectFunTbl           =  M.empty
-                                                        , _entTbl                 = IM.empty
-                                                        , _eqTbl                  = IM.empty
-                                                        , _feelingFunTbl          =  M.empty
-                                                        , _foodTbl                = IM.empty
-                                                        , _funTbl                 =  M.empty
-                                                        , _holySymbolTbl          = IM.empty
-                                                        , _hookFunTbl             =  M.empty
-                                                        , _hostTbl                =  M.empty
-                                                        , _instaEffectFunTbl      =  M.empty
-                                                        , _invTbl                 = IM.empty
-                                                        , _mobTbl                 = IM.empty
-                                                        , _msgQueueTbl            = IM.empty
-                                                        , _npcTbl                 = IM.empty
-                                                        , _objTbl                 = IM.empty
-                                                        , _pausedCorpseDecompsTbl = IM.empty
-                                                        , _pausedEffectTbl        = IM.empty
-                                                        , _pcSingTbl              =  M.empty
-                                                        , _pcTbl                  = IM.empty
-                                                        , _pickPtsTbl             = IM.empty
-                                                        , _plaLogTbl              = IM.empty
-                                                        , _plaTbl                 = IM.empty
-                                                        , _rmActionFunTbl         =  M.empty
-                                                        , _rmTbl                  = IM.empty
-                                                        , _rmTeleNameTbl          = IM.empty
-                                                        , _rndmNamesMstrTbl       = IM.empty
-                                                        , _talkAsyncTbl           =  M.empty
-                                                        , _teleLinkMstrTbl        = IM.empty
-                                                        , _threadTbl              =  M.empty
-                                                        , _typeTbl                = IM.empty
-                                                        , _vesselTbl              = IM.empty
-                                                        , _wpnTbl                 = IM.empty
-                                                        , _writableTbl            = IM.empty }
-                           return MudData { _errorLog      = errorLogService
-                                          , _noticeLog     = noticeLogService
-                                          , _gen           = genIO
-                                          , _locks         = Locks databaseLock logLock persLock
-                                          , _startTime     = start
-                                          , _mudStateIORef = msIORef }
+initMudData :: HasCallStack => DoOrDon'tLog -> IO MudData
+initMudData log = do [ databaseLock, logLock, persLock ] <- mkLocks
+                     (errorLogService, noticeLogService) <- initLogging log . Just $ logLock
+                     genIO   <- createSystemRandom
+                     start   <- getTime Monotonic
+                     msIORef <- newIORef MudState { _armTbl                 = IM.empty
+                                                  , _chanTbl                = IM.empty
+                                                  , _clothTbl               = IM.empty
+                                                  , _coinsTbl               = IM.empty
+                                                  , _conTbl                 = IM.empty
+                                                  , _corpseDecompAsyncTbl   = IM.empty
+                                                  , _corpseTbl              = IM.empty
+                                                  , _distinctFoodTbl        = IM.empty
+                                                  , _distinctLiqTbl         = IM.empty
+                                                  , _durationalEffectTbl    = IM.empty
+                                                  , _effectFunTbl           =  M.empty
+                                                  , _entTbl                 = IM.empty
+                                                  , _eqTbl                  = IM.empty
+                                                  , _feelingFunTbl          =  M.empty
+                                                  , _foodTbl                = IM.empty
+                                                  , _funTbl                 =  M.empty
+                                                  , _holySymbolTbl          = IM.empty
+                                                  , _hookFunTbl             =  M.empty
+                                                  , _hostTbl                =  M.empty
+                                                  , _instaEffectFunTbl      =  M.empty
+                                                  , _invTbl                 = IM.empty
+                                                  , _mobTbl                 = IM.empty
+                                                  , _msgQueueTbl            = IM.empty
+                                                  , _npcTbl                 = IM.empty
+                                                  , _objTbl                 = IM.empty
+                                                  , _pausedCorpseDecompsTbl = IM.empty
+                                                  , _pausedEffectTbl        = IM.empty
+                                                  , _pcSingTbl              =  M.empty
+                                                  , _pcTbl                  = IM.empty
+                                                  , _pickPtsTbl             = IM.empty
+                                                  , _plaLogTbl              = IM.empty
+                                                  , _plaTbl                 = IM.empty
+                                                  , _rmActionFunTbl         =  M.empty
+                                                  , _rmTbl                  = IM.empty
+                                                  , _rmTeleNameTbl          = IM.empty
+                                                  , _rndmNamesMstrTbl       = IM.empty
+                                                  , _talkAsyncTbl           =  M.empty
+                                                  , _teleLinkMstrTbl        = IM.empty
+                                                  , _threadTbl              =  M.empty
+                                                  , _typeTbl                = IM.empty
+                                                  , _vesselTbl              = IM.empty
+                                                  , _wpnTbl                 = IM.empty
+                                                  , _writableTbl            = IM.empty }
+                     return MudData { _errorLog      = errorLogService
+                                    , _noticeLog     = noticeLogService
+                                    , _gen           = genIO
+                                    , _locks         = Locks databaseLock logLock persLock
+                                    , _startTime     = start
+                                    , _mudStateIORef = msIORef }
 
 
 initWorld :: HasCallStack => MudStack Bool

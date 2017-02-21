@@ -68,7 +68,7 @@ blowUp = U.blowUp "Mud.Misc.Logging"
 -- Starting logs:
 
 
-initLogging :: ShouldLog -> Maybe Lock -> IO (Maybe LogService, Maybe LogService)
+initLogging :: DoOrDon'tLog -> Maybe Lock -> IO (Maybe LogService, Maybe LogService)
 initLogging Don'tLog _                = return (Nothing, Nothing)
 initLogging DoLog    (Just logExLock) = do
     updateGlobalLogger rootLoggerName removeHandler

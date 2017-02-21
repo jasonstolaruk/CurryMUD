@@ -19,6 +19,9 @@ module Mud.Data.Misc ( Action(..)
                      , Day
                      , deserialize
                      , Desig(..)
+                     , DoOrDon'tCap(..)
+                     , DoOrDon'tLog(..)
+                     , DoOrDon'tQuote(..)
                      , DrinkBundle(..)
                      , EmoteWord(..)
                      , EmptyNoneSome(..)
@@ -44,6 +47,7 @@ module Mud.Data.Misc ( Action(..)
                      , IdSingTypeDesig(..)
                      , Index
                      , InInvEqRm(..)
+                     , IsOrIsn'tRegex(..)
                      , LastArgIsTargetBindings(..)
                      , LoggedInOrOut(..)
                      , Min
@@ -62,13 +66,11 @@ module Mud.Data.Misc ( Action(..)
                      , SetOp(..)
                      , setPlaFlag
                      , setRmFlag
-                     , ShouldCap(..)
-                     , ShouldLog(..)
-                     , ShouldQuote(..)
                      , SingleTarget(..)
                      , TelnetCode(..)
                      , TelnetData(..)
                      , ToOrFromThePeeped(..)
+                     , ToWhom(..)
                      , Verb(..)
                      , Week
                      , WhichLog(..)
@@ -666,16 +668,15 @@ class Serializable a where
 
 instance Serializable Desig where
   serialize StdDesig { .. }
-    | fields <- [ serMaybeText desigEntSing, showText desigShouldCap, desigEntName, showText desigId, showText desigIds ]
+    | fields <- [ serMaybeText desigEntSing, showText desigCap, desigEntName, showText desigId, showText desigIds ]
     = quoteWith sdd . T.intercalate dd $ fields
     where
       serMaybeText Nothing    = ""
       serMaybeText (Just txt) = txt
       (sdd, dd)               = (stdDesigDelimiter, desigDelimiter) & both %~ T.singleton
-  serialize NonStdDesig { .. } = quoteWith nsdd $ do
-      dEntSing
-      dd
-      dDesc
+  serialize NonStdDesig { .. } = quoteWith nsdd $ do dEntSing
+                                                     dd
+                                                     dDesc
     where
       (>>)       = (<>)
       (nsdd, dd) = (nonStdDesigDelimiter, desigDelimiter) & both %~ T.singleton
@@ -684,12 +685,12 @@ instance Serializable Desig where
       cdd = T.singleton corpseDesigDelimiter
   deserialize a@(headTail -> (c, T.init -> t))
     | c == stdDesigDelimiter
-    , [ es, sc, en, i, is ] <- T.splitOn dd t
-    = StdDesig { desigEntSing   = deserMaybeText es
-               , desigShouldCap = read . T.unpack $ sc
-               , desigEntName   = en
-               , desigId        = read . T.unpack $ i
-               , desigIds       = read . T.unpack $ is }
+    , [ es, cap, en, i, is ] <- T.splitOn dd t
+    = StdDesig { desigEntSing = deserMaybeText es
+               , desigCap     = read . T.unpack $ cap
+               , desigEntName = en
+               , desigId      = read . T.unpack $ i
+               , desigIds     = read . T.unpack $ is }
     | c == nonStdDesigDelimiter
     , [ es, nsd ] <- T.splitOn dd t
     = NonStdDesig { dEntSing = es, dDesc = nsd }
@@ -850,17 +851,29 @@ data CurryWeekday = SunDay
 -----
 
 
-data Desig = StdDesig    { desigEntSing   :: Maybe Text
-                         , desigShouldCap :: ShouldCap
-                         , desigEntName   :: Text
-                         , desigId        :: Id
-                         , desigIds       :: Inv }
-           | NonStdDesig { dEntSing       :: Text
-                         , dDesc          :: Text }
+data Desig = StdDesig    { desigEntSing :: Maybe Text
+                         , desigCap     :: DoOrDon'tCap
+                         , desigEntName :: Text
+                         , desigId      :: Id
+                         , desigIds     :: Inv }
+           | NonStdDesig { dEntSing     :: Text
+                         , dDesc        :: Text }
            | CorpseDesig Id deriving (Eq, Show)
 
 
-data ShouldCap = DoCap | Don'tCap deriving (Eq, Read, Show)
+data DoOrDon'tCap = DoCap | Don'tCap deriving (Eq, Read, Show)
+
+
+-----
+
+
+data DoOrDon'tLog = DoLog | Don'tLog deriving Show
+
+
+-----
+
+
+data DoOrDon'tQuote = DoQuote | Don'tQuote deriving Eq
 
 
 -----
@@ -964,6 +977,12 @@ data InInvEqRm = InInv | InEq | InRm deriving Show
 -----
 
 
+data IsOrIsn'tRegex = IsRegex | Isn'tRegex
+
+
+-----
+
+
 data LastArgIsTargetBindings = LastArgIsTargetBindings { srcDesig    :: Desig
                                                        , srcInvCoins :: (Inv, Coins)
                                                        , rmInvCoins  :: (Inv, Coins)
@@ -1023,18 +1042,6 @@ data SetOp = Assign | AddAssign | SubAssign
 -----
 
 
-data ShouldQuote = DoQuote | Don'tQuote deriving Eq
-
-
------
-
-
-data ShouldLog = DoLog | Don'tLog deriving Show
-
-
------
-
-
 data SingleTarget = SingleTarget { strippedTarget   :: Text
                                  , strippedTarget'  :: Text
                                  , sendFun          :: Text   -> MudStack ()
@@ -1073,6 +1080,12 @@ data TelnetData = TCode  TelnetCode
 
 
 data ToOrFromThePeeped = ToThePeeped | FromThePeeped
+
+
+-----
+
+
+data ToWhom = Plaに | Npcに
 
 
 -----

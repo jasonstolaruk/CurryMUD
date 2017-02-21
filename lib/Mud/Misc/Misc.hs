@@ -36,7 +36,7 @@ dropSynonyms synonyms (x:xs) | x `elem` synonyms = x : filter (`notElem` synonym
 -----
 
 
-mkCapsFun :: ShouldCap -> Text -> Text
+mkCapsFun :: DoOrDon'tCap -> Text -> Text
 mkCapsFun = \case DoCap    -> capitalize
                   Don'tCap -> id
 
