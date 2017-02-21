@@ -737,7 +737,6 @@ type ExpCmdFun = Id -> MsgQueue -> Cols -> ExpCmdName -> (Text, [Broadcast], Mob
 
 data ExpCmd = ExpCmd { expCmdName :: ExpCmdName
                      , expCmdType :: ExpCmdType
-                     , expCmdFun  :: Maybe ExpCmdFun
                      , expDesc    :: MobRmDesc }
 
 
