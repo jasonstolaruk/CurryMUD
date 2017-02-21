@@ -207,7 +207,7 @@ emptied m = m >> mMempty
 
 
 errorWithStack :: HasCallStack => String -> a
-errorWithStack msg = error $ msg ++ "\n" ++ prettyCallStack callStack
+errorWithStack msg = error . middle (++) "\n" msg . prettyCallStack $ callStack
 
 
 -- "(&&&)" is the "fanout" operator.

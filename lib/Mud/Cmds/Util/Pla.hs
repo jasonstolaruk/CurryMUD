@@ -1125,9 +1125,9 @@ mkChanNamesTunings i ms = unzip . sortBy (compare `on` fst) . map helper . getPC
 
 mkCoinsDesc :: HasCallStack => Cols -> Coins -> Text
 mkCoinsDesc cols (Coins (each %~ Sum -> (cop, sil, gol))) =
-    T.unlines . intercalate [""] . map (wrap cols) . dropEmpties $ [ cop |!| copDesc
-                                                                   , sil |!| silDesc
-                                                                   , gol |!| golDesc ]
+    T.unlines . intercalate mMempty . map (wrap cols) . dropEmpties $ [ cop |!| copDesc
+                                                                      , sil |!| silDesc
+                                                                      , gol |!| golDesc ]
   where
     copDesc = "The copper piece is round and shiny."
     silDesc = "The silver piece is round and shiny."

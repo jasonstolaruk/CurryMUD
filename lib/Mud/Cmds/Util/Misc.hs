@@ -290,8 +290,9 @@ dispMatches :: HasCallStack => ActionParams -> Int -> [Text] -> MudStack ()
 dispMatches (LowerNub i mq cols needles) indent haystack = let (dropEmpties -> matches) = map grep needles in
     if ()# matches
       then wrapSend mq cols sorrySearch
-      else pager i mq Nothing . concatMap (wrapIndent indent cols) . intercalate [""] $ matches
+      else pager i mq Nothing . concatMap (wrapIndent indent cols) . intercalate mMempty $ matches
   where
+    -- TODO: Regex search.
     grep needle = let haystack' = [ (hay, hay') | hay <- haystack, let hay' = T.toLower . dropANSI $ hay ]
                   in [ fst match | match <- haystack', needle `T.isInfixOf` snd match ]
 dispMatches p _ _ = patternMatchFail "dispMatches" . showText $ p

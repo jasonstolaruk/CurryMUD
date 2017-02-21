@@ -601,7 +601,7 @@ bars (LowerNub i mq cols as) = getState >>= \ms ->
     let mkBars  = case second nub . partitionEithers . foldr f [] $ as of
                     (x:xs, []     ) -> x |<>| hint : xs
                     ([],   barTxts) -> barTxts
-                    (x:xs, barTxts) -> barTxts ++ [""] ++ (x |<>| hint : xs)
+                    (x:xs, barTxts) -> middle (++) mMempty barTxts $ x |<>| hint : xs
         f a acc = (: acc) $ case filter ((a `T.isPrefixOf`) . fst) . mkPtPairs i $ ms of
           []      -> Left . sorryParseArg $ a
           [match] -> Right . uncurry (mkBar . calcBarLen $ cols) $ match
@@ -1921,9 +1921,9 @@ link (NoArgs i mq cols) = do
     ms  <- getState
     res <- helperLinkUnlink ms i mq cols
     flip maybeVoid res $ \(meLinkedToOthers, othersLinkedToMe, twoWays) ->
-        let msgs             = intercalate [""] . dropEmpties $ [ twoWays       |!| twoWayMsgs
-                                                                , oneWaysFromMe |!| oneWayFromMeMsgs
-                                                                , oneWaysToMe   |!| oneWayToMeMsgs ]
+        let msgs             = intercalate mMempty . dropEmpties $ [ twoWays       |!| twoWayMsgs
+                                                                   , oneWaysFromMe |!| oneWayFromMeMsgs
+                                                                   , oneWaysToMe   |!| oneWayToMeMsgs ]
             oneWaysFromMe    = meLinkedToOthers \\ twoWays
             oneWaysToMe      = othersLinkedToMe \\ twoWays
             twoWayMsgs       = [ "Two-way links:",                mkSingsList True  twoWays       ]
@@ -3200,7 +3200,7 @@ security p = withoutArgs security p
 
 
 securityHelper :: HasCallStack => Id -> MsgQueue -> Cols -> MudStack ()
-securityHelper i mq cols = do multiWrapSend mq cols $ middle (++) (pure "") securityWarn securityQs
+securityHelper i mq cols = do multiWrapSend mq cols $ securityWarn ++ mMempty ++ securityQs
                               promptSecurity mq
                               setInterp i . Just $ interpSecurityNum
 
@@ -3986,7 +3986,7 @@ tune (NoArgs i mq cols) = getState >>= \ms ->
             mkConnTxts = [ n <> T.cons '=' (inOut t) | n <- names | t <- tunings ]
     in do logPlaExecArgs "tune" [] i
           let msgs = [ helper "Two-way telepathic links:" styleds linkTunings
-                     , pure ""
+                     , mMempty
                      , helper "Telepathic channels:" (styleAbbrevs Don'tQuote chanNames) chanTunings ]
           multiWrapSend mq cols . concat $ msgs
 tune (Lower' i as) = helper |&| modifyState >=> \(bs, logMsgs) -> logMsgs |#| logPlaOut "tune" i >> bcastNl bs

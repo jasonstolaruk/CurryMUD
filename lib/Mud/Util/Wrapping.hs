@@ -126,7 +126,7 @@ wrapLines :: HasCallStack => Cols -> [Text] -> [[Text]]
 wrapLines _    []                          = []
 wrapLines cols [t]        | hasIndentTag t = pure . wrapLineWithIndentTag cols $ t
                           | otherwise      = pure . wrapIndent (noOfLeadingSpcs t) cols $ t
-wrapLines cols (a:b:rest) | ()# a          = [""]     : wrapNext
+wrapLines cols (a:b:rest) | ()# a          = mMempty  : wrapNext
                           | otherwise      = helper a : wrapNext
   where
     wrapNext           = wrapLines cols $ b : rest

@@ -5,6 +5,7 @@ module Mud.Data.State.MudData where
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MsgQueue
 import Mud.TopLvlDefs.Misc
+import Mud.Util.Misc
 
 import Control.Applicative (empty)
 import Control.Arrow (first)
@@ -941,8 +942,8 @@ jsonToPla (Object o) = Pla <$> o .: "currHostName"
                            <*> o .: "plaFlags"
                            <*> o .: "columns"
                            <*> o .: "pageLines"
-                           <*> pure []
-                           <*> pure []
+                           <*> mMempty
+                           <*> mMempty
                            <*> pure Nothing
                            <*> o .: "retainedMsgs"
                            <*> o .: "logoutRmId"
@@ -1093,7 +1094,7 @@ jsonToRm (Object o) = Rm <$> o .: "rmName"
                          <*> o .: "rmHookMap"
                          <*> o .: "rmActions"
                          <*> o .: "rmFunNames"
-                         <*> pure []
+                         <*> mMempty
 jsonToRm _          = empty
 
 

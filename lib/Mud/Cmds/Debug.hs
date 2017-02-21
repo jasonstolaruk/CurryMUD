@@ -588,7 +588,7 @@ debugId   (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
                   , [ T.concat [ "Vessels containing ", dblQuote "liqId", " ", searchIdTxt, ":" ]
                     , let g = views vesselCont (maybe False (views liqId (== DistinctLiqId searchId) . fst))
                       in f . views vesselTbl (IM.keys . IM.filter g) $ ms ] ]
-          pager i mq Nothing . concat . wrapLines cols . intercalate [""] $ mkTxt
+          pager i mq Nothing . concat . wrapLines cols . intercalate mMempty $ mkTxt
 debugId p = advise p [] adviceDIdExcessArgs
 
 
@@ -654,7 +654,7 @@ debugKewpie p = withoutArgs debugKewpie p
 debugKeys :: HasCallStack => ActionFun
 debugKeys (NoArgs i mq cols) = getState >>= \ms -> let mkKeysTxt (tblName, ks) = [ tblName <> ": ", showText ks ] in do
     logPlaExec (prefixDebugCmd "keys") i
-    pager i mq Nothing . concat . wrapLines cols . intercalate [""] . map mkKeysTxt . mkTblNameKeysList $ ms
+    pager i mq Nothing . concat . wrapLines cols . intercalate mMempty . map mkKeysTxt . mkTblNameKeysList $ ms
 debugKeys p = withoutArgs debugKeys p
 
 
