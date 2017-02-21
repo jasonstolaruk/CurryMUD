@@ -119,7 +119,7 @@ calcBarLen cols = cols < 59 ? (cols - 9) :? 50
 
 calcBonus :: HasCallStack => Id -> MudState -> Exp -- Used by the "bonus" command.
 calcBonus i ms = let l                 = getLvl i ms
-                     ((_, a):(_, b):_) = drop l $ (0, 0) : calcLvlExps
+                     ((_, a):(_, b):_) = drop l $ dup 0 : calcLvlExps
                      diff              = b - a
                  in (diff `divideRound` 10) `max` 315
 

@@ -28,8 +28,5 @@ iLiqPotInstantMa    = 115 :: Id
 iLiqPotPs           = 116 :: Id
 iLiqPotInstantPs    = 117 :: Id
 
-iLiqPotNegSt        = 118 :: Id
-iLiqPotInstantNegSt = 119 :: Id
-
-iLiqPotTinnitus        = 120 :: Id
-iLiqPotInstantTinnitus = 121 :: Id
+iLiqPotTinnitus        = 118 :: Id
+iLiqPotInstantTinnitus = 119 :: Id

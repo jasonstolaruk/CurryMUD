@@ -136,6 +136,7 @@ massLogPla = L.massLogPla "Mud.Cmds.Admin"
 -- ==================================================
 
 
+-- TODO: Make a command to list liquids?
 adminCmds :: HasCallStack => [Cmd] -- TODO: ":clone"
 adminCmds =
     [ mkAdminCmd "?"          adminDispCmdList True  cmdDescDispCmdList

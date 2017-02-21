@@ -1486,10 +1486,10 @@ createAdminZone = do
                  Nothing
                  zeroBits)
             (mkObj . ObjTemplate jarLrgWeight jarLrgVol Nothing $ zeroBits)
-            (Just (potNegStLiq, maxBound))
-  let jugTuples = [ (iJugSml, "small ", jugSmlWeight, jugSmlVol, potStLiq          )
-                  , (iJug,     "",      jugWeight,    jugVol,    potInstantStLiq   )
-                  , (iJugLrg, "large ", jugLrgWeight, jugLrgVol, potInstantNegStLiq) ]
+            Nothing
+  let jugTuples = [ (iJugSml, "small ", jugSmlWeight, jugSmlVol, Just potStLiq          )
+                  , (iJug,     "",      jugWeight,    jugVol,    Just potInstantStLiq   )
+                  , (iJugLrg, "large ", jugLrgWeight, jugLrgVol, Nothing) ]
   forM_ jugTuples $ \(i, t, w, v, l) ->
       putVessel i
                 (Ent i
@@ -1500,7 +1500,7 @@ createAdminZone = do
                      Nothing
                      zeroBits)
                 (mkObj . ObjTemplate w v Nothing $ zeroBits)
-                (Just (l, maxBound))
+                ((, maxBound) <$> l)
   let mkBottleDesc a b = T.concat [ "This "
                                   , a
                                   , "earthenware bottle is designed to be as portable and practical as possible. A \

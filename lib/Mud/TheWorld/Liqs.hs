@@ -11,29 +11,23 @@ module Mud.TheWorld.Liqs ( distinctLiqList
                          , potInstantHtLiq
                          , potInstantMaLiq
                          , potInstantMpLiq
-                         , potInstantNegStLiq
                          , potInstantPpLiq
                          , potInstantPsLiq
                          , potInstantStLiq
                          , potInstantTinnitusLiq
                          , potMaLiq
                          , potMpLiq
-                         , potNegStLiq
                          , potPpLiq
                          , potPsLiq
                          , potStLiq
                          , potTinnitusLiq
                          , waterLiq ) where
 
-import Control.Lens (both)
-import Control.Lens.Operators ((&), (%~))
 import Mud.Cmds.Msgs.Misc
 import Mud.Data.State.MudData
 import Mud.Misc.EffectFuns
 import Mud.TheWorld.LiqIds
 import Mud.TopLvlDefs.Misc
-
-import Data.Text (Text)
 
 
 distinctLiqList :: [(Id, DistinctLiq)]
@@ -47,14 +41,12 @@ distinctLiqList = [ (iLiqPotDx,              potDxDistinctLiq             )
                   , (iLiqPotInstantHt,       potInstantHtDistinctLiq      )
                   , (iLiqPotInstantMa,       potInstantMaDistinctLiq      )
                   , (iLiqPotInstantMp,       potInstantMpDistinctLiq      )
-                  , (iLiqPotInstantNegSt,    potInstantNegStDistinctLiq   )
                   , (iLiqPotInstantPp,       potInstantPpDistinctLiq      )
                   , (iLiqPotInstantPs,       potInstantPsDistinctLiq      )
                   , (iLiqPotInstantSt,       potInstantStDistinctLiq      )
                   , (iLiqPotInstantTinnitus, potInstantTinnitusDistinctLiq)
                   , (iLiqPotMa,              potMaDistinctLiq             )
                   , (iLiqPotMp,              potMpDistinctLiq             )
-                  , (iLiqPotNegSt,           potNegStDistinctLiq          )
                   , (iLiqPotPp,              potPpDistinctLiq             )
                   , (iLiqPotPs,              potPsDistinctLiq             )
                   , (iLiqPotSt,              potStDistinctLiq             )
@@ -405,10 +397,10 @@ potInstantHtDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Nothing
 
 potMaLiq :: Liq
 potMaLiq = Liq (DistinctLiqId iLiqPotMa)
-               (DoArticle "")
-               "" -- TODO
-               ""
-               ""
+               (DoArticle "creamy, white liquid")
+               "The creamy liquid has a faint, sweet odor."
+               "The creamy liquid has a consistency reminiscent of coconut juice and a sweet, vaguely fruity taste."
+               "The sweet, creamy liquid is delicious."
 
 
 potMaDistinctLiq :: DistinctLiq
@@ -425,7 +417,7 @@ potMaDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just es
 
 potInstantMaLiq :: Liq
 potInstantMaLiq = Liq (DistinctLiqId iLiqPotInstantMa)
-                      (DoArticle "")
+                      (DoArticle "creamy, indigo liquid")
                       "" -- TODO
                       ""
                       ""
@@ -484,56 +476,6 @@ potInstantPsDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Nothing
     e  = Effect { _effectTag     = Just "potPs"
                 , _effectSub     = MobEffectAttrib Ps
                 , _effectVal     = Just . EffectRangedVal $ potInstantAtttribEffectRange
-                , _effectDur     = potAttribEffectDur
-                , _effectFeeling = Nothing }
-
-
------
-
-
-potNegStLiq :: Liq
-potNegStLiq = Liq (DistinctLiqId iLiqPotNegSt)
-                  (DoArticle "creamy white liquid")
-                  potNegStSmell
-                  potNegStTaste
-                  potNegStDrink
-
-
-potNegStSmell, potNegStTaste, potNegStDrink :: Text
-potNegStSmell = "The creamy liquid has a faint, sweet odor."
-potNegStTaste = "The creamy liquid has a consistency reminiscent of coconut juice and a sweet, vaguely fruity taste."
-potNegStDrink = "The sweet, creamy liquid is delicious."
-
-
-potNegStDistinctLiq :: DistinctLiq
-potNegStDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just es
-                                                , _consumpEffects = Nothing }
-  where
-    es = EffectList . pure . Right $ e
-    e  = Effect { _effectTag     = Nothing
-                , _effectSub     = MobEffectAttrib St
-                , _effectVal     = Just . EffectFixedVal . negate $ potAttribEffectVal
-                , _effectDur     = potAttribEffectDur
-                , _effectFeeling = Nothing }
-
-
-potInstantNegStLiq :: Liq
-potInstantNegStLiq = Liq (DistinctLiqId iLiqPotInstantNegSt)
-                         (DoArticle "creamy indigo liquid")
-                         potNegStSmell
-                         potNegStTaste
-                         potNegStDrink
-
-
-potInstantNegStDistinctLiq :: DistinctLiq
-potInstantNegStDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Nothing
-                                                       , _consumpEffects = Just ce }
-  where
-    ce = mkPotConsumpEffects es
-    es = EffectList . pure . Right $ e
-    e  = Effect { _effectTag     = Just "potNegSt"
-                , _effectSub     = MobEffectAttrib St
-                , _effectVal     = Just . EffectRangedVal $ (potInstantAtttribEffectRange & both %~ negate)
                 , _effectDur     = potAttribEffectDur
                 , _effectFeeling = Nothing }
 
