@@ -1106,9 +1106,7 @@ maybeSingleSlot em s = boolToMaybe (isSlotAvail em s) s
 
 
 mkChanBindings :: HasCallStack => Id -> MudState -> ([Chan], [ChanName], Sing)
-mkChanBindings i ms = let cs  = getPCChans i ms
-                          cns = select chanName cs
-                      in (cs, cns, getSing i ms)
+mkChanBindings i ms = let { cs = getPCChans i ms; cns = select chanName cs } in (cs, cns, getSing i ms)
 
 
 -----

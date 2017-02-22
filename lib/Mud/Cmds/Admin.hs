@@ -992,9 +992,8 @@ examineWritable i ms = let w = getWritable i ms in [ "Message: "   <> w^.writMes
 -----
 
 
-adminExamineSelf :: HasCallStack => ActionFun -- TODO: Regex search.
-adminExamineSelf p@(NoArgs'' i) = adminExamine p { args = pure . showText $ i }
-adminExamineSelf p              = withoutArgs adminExamineSelf p
+adminExamineSelf :: HasCallStack => ActionFun
+adminExamineSelf p@(ActionParams { myId }) = adminExamine p { args = pure . showText $ myId }
 
 
 -----
