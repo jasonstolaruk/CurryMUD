@@ -4,8 +4,8 @@
 #dsearch regex
 
 \uDESCRIPTION\n
-Search for names and IDs using a regular expression.
-The regular expression you provide is matched against all entity and room names. Matches are displayed along with their IDs.
+Regex search for names and IDs.
+The regex you provide is matched against all entity and room names. Matches are displayed along with their IDs.
 
 \uEXAMPLES\n
 \q#dsearch ^The\d to search for names starting with "The".4`

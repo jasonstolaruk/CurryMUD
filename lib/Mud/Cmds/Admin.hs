@@ -89,7 +89,6 @@ import qualified Data.Text.IO as T (putStrLn)
 import System.Directory (getDirectoryContents)
 import System.Process (readProcess)
 import System.Time.Utils (renderSecs)
-import Text.Regex.Posix ((=~))
 
 
 {-# ANN module ("HLint: ignore Use ||" :: String) #-}
@@ -151,12 +150,12 @@ adminCmds =
     , mkAdminCmd "boot"       adminBoot        True  "Boot a player, optionally with a custom message."
     , mkAdminCmd "bug"        adminBug         True  "Dump the bug database."
     , mkAdminCmd "channel"    adminChan        True  "Display information about one or more telepathic channels."
-    , mkAdminCmd "count"      adminCount       True  "Display or search a list of miscellaneous running totals."
+    , mkAdminCmd "count"      adminCount       True  "Display or regex search a list of miscellaneous running totals."
     , mkAdminCmd "currytime"  adminCurryTime   True  "Display the current Curry Time."
     , mkAdminCmd "date"       adminDate        True  "Display the current system date."
     , mkAdminCmd "destroy"    adminDestroy     True  "Silently destroy one or more things by ID."
     , mkAdminCmd "discover"   adminDiscover    True  "Dump the discover database."
-    , mkAdminCmd "examine"    adminExamine     True  "Display the properties of one or more IDs."
+    , mkAdminCmd "examine"    adminExamine     True  "Display or regex search the properties of a given ID."
     , mkAdminCmd "experience" adminExp         True  "Display the experience table."
     , mkAdminCmd "exself"     adminExamineSelf True  "Self-examination."
     , mkAdminCmd "farewell"   adminFarewell    True  "Display the farewell stats for one or more PCs."
@@ -181,7 +180,7 @@ adminCmds =
     , mkAdminCmd "possess"    adminPossess     False "Temporarily take control of an NPC."
     , mkAdminCmd "print"      adminPrint       True  "Print a message to the server console."
     , mkAdminCmd "profanity"  adminProfanity   True  "Dump the profanity database."
-    , mkAdminCmd "search"     adminSearch      True  "Search for names and IDs using a regular expression."
+    , mkAdminCmd "search"     adminSearch      True  "Regex search for names and IDs."
     , mkAdminCmd "security"   adminSecurity    True  "Display security Q&A for one or more players."
     , mkAdminCmd "set"        adminSet         True  "Set one or more values for a given ID."
     , mkAdminCmd "shutdown"   adminShutdown    False "Shut down CurryMUD, optionally with a custom message."
@@ -195,9 +194,9 @@ adminCmds =
     , mkAdminCmd "ttype"      adminTType       True  "Display a report of hosts by terminal type."
     , mkAdminCmd "typo"       adminTypo        True  "Dump the typo database."
     , mkAdminCmd "uptime"     adminUptime      True  "Display the system uptime."
-    , mkAdminCmd "whoin"      adminWhoIn       True  "Display or search a list of all the PCs that are currently \
+    , mkAdminCmd "whoin"      adminWhoIn       True  "Display or regex search a list of all the PCs that are currently \
                                                      \logged in."
-    , mkAdminCmd "whoout"     adminWhoOut      True  "Display or search a list of all the PCs that are currently \
+    , mkAdminCmd "whoout"     adminWhoOut      True  "Display or regex search a list of all the PCs that are currently \
                                                      \logged out."
     , mkAdminCmd "wiretap"    adminWire        True  "Start or stop tapping one or more telepathic channels." ]
 
@@ -491,17 +490,18 @@ informNoChans mq cols = wrapSend mq cols "No channels exist!"
 
 adminChanIOHelper :: HasCallStack => Id -> MsgQueue -> [[Text]] -> MudStack ()
 adminChanIOHelper i mq reports = sequence_ [ logPlaExec (prefixAdminCmd "channel") i
-                                           , pager i mq Nothing . intercalate [""] $ reports ]
+                                           , pager i mq Nothing . intercalate mMempty $ reports ]
 
 
 -----
 
 
 adminCount :: HasCallStack => ActionFun
-adminCount   (NoArgs i mq cols)          = do logPlaExecArgs (prefixAdminCmd "count") [] i
-                                              pager i mq Nothing . concatMap (wrapIndent 2 cols) =<< mkCountTxt
-adminCount p@ActionParams { myId, args } = do logPlaExecArgs (prefixAdminCmd "count") args myId
-                                              dispMatches p 2 =<< mkCountTxt
+adminCount (NoArgs   i mq cols   ) = do logPlaExecArgs (prefixAdminCmd "count") [] i
+                                        pager i mq Nothing . concatMap (wrapIndent 2 cols) =<< mkCountTxt
+adminCount (WithArgs i mq cols as) = do logPlaExecArgs (prefixAdminCmd "count") as i
+                                        dispMatches i mq cols 2 IsRegex as =<< mkCountTxt
+adminCount p                       = patternMatchFail "adminCount" . showText $ p
 
 
 mkCountTxt :: HasCallStack => MudStack [Text]
@@ -660,7 +660,7 @@ adminDispCmdList p                  = patternMatchFail "adminDispCmdList" . show
 -----
 
 
-adminExamine :: HasCallStack => ActionFun
+adminExamine :: HasCallStack => ActionFun -- TODO: Display or regex search the properties of a given ID.
 adminExamine p@AdviseNoArgs            = advise p [ prefixAdminCmd "examine" ] adviceAExamineNoArgs
 adminExamine   (LowerNub i mq cols as) = getState >>= \ms ->
     let helper a = case reads . T.unpack $ a :: [(Int, String)] of
@@ -1002,7 +1002,7 @@ adminExamineSelf p              = withoutArgs adminExamineSelf p
 adminExp :: HasCallStack => ActionFun
 adminExp (NoArgs' i mq) = logPlaExec (prefixAdminCmd "experience") i >> pager i mq Nothing mkReport
   where
-    mkReport = header ++ pure zero ++ take 25 (map helper calcLvlExps)
+    mkReport = middle (++) (pure zero) header . take 25 . map helper $ calcLvlExps
     header   = [ "Level  Experience", T.replicate 17 "=" ]
     zero     = uncurry (<>) . dupFirst (pad 7) $ "0"
     helper   = (<>) <$> pad 7 . showText . fst <*> commaShow . snd
@@ -1093,7 +1093,7 @@ adminHost   (LowerNub i mq cols as) = getState >>= \ms -> do
     let helper target | notFound <- pure . sorryPCName $ target
                       , found    <- uncurry . mkHostReport ms now $ zone
                       = findFullNameForAbbrev target (mkAdminPlaIdSingList ms) |&| maybe notFound found
-    multiWrapSend mq cols . intercalate [""] . map (helper . capitalize) $ as
+    multiWrapSend mq cols . intercalate mMempty . map (helper . capitalize) $ as
 adminHost p = patternMatchFail "adminHost" . showText $ p
 
 
@@ -1316,7 +1316,7 @@ adminMyChans   (LowerNub i mq cols as) = getState >>= \ms ->
     let helper target = let notFound                     = pure . sorryPCName $ target
                             found (targetId, targetSing) = case getPCChans targetId ms of
                               [] -> header none
-                              cs -> header . intercalate [""] . map (mkChanReport i ms) $ cs
+                              cs -> header . intercalate mMempty . map (mkChanReport i ms) $ cs
                               where
                                 header = (targetSing <> "'s channels:" :) . ("" :)
                         in findFullNameForAbbrev target (mkAdminPlaIdSingList ms) |&| maybe notFound found
@@ -1468,7 +1468,7 @@ adminSearch :: HasCallStack => ActionFun
 adminSearch p@AdviseNoArgs                          = advise p [ prefixAdminCmd "search" ] adviceASearchNoArgs
 adminSearch   (WithArgs i mq cols (T.unwords -> a)) = do
     logPlaExecArgs (prefixAdminCmd "search") (pure a) i
-    multiWrapSend mq cols =<< (middle (++) [""] <$> descMatchingSings <*> descMatchingRmNames) <$> getState
+    multiWrapSend mq cols =<< (middle (++) mMempty <$> descMatchingSings <*> descMatchingRmNames) <$> getState
   where
     descMatchingSings ms =
       let idSings = views entTbl (map (_2 %~ view sing) . IM.toList) ms
@@ -1476,7 +1476,7 @@ adminSearch   (WithArgs i mq cols (T.unwords -> a)) = do
     descMatchingRmNames ms =
       let idNames = views rmTbl (map (_2 %~ view rmName) . IM.toList) ms
       in "Room IDs with matching room names:" : (noneOnNull . map (descMatch ms False) . getMatches $ idNames)
-    getMatches = filter (views _2 (()!#) . snd) . map (second (applyRegex a))
+    getMatches = filter (views _2 (()!#) . snd) . map (second (a `applyRegex`))
     descMatch ms b (i', (x, y, z)) = T.concat [ padId . showText $ i'
                                               , " "
                                               , b |?| spcR . parensQuote . pp . getType i' $ ms
@@ -1484,10 +1484,6 @@ adminSearch   (WithArgs i mq cols (T.unwords -> a)) = do
                                               , colorWith regexMatchColor y
                                               , z ]
 adminSearch p = patternMatchFail "adminSearch" . showText $ p
-
-
-applyRegex :: HasCallStack => Text -> Text -> (Text, Text, Text)
-applyRegex searchTerm target = let (🍩) = (=~) `on` T.unpack in target 🍩 searchTerm |&| each %~ T.pack
 
 
 -----
@@ -2272,12 +2268,12 @@ adminTType (NoArgs i mq cols) = (withDbExHandler "adminTType" . getDbTblRecs $ "
   Just xs ->
     let grouped = groupBy ((==) `on` dbTType) xs
         folded  = foldr (\g -> (((dbTType . head) &&& (nubSort . map (dbHost :: TTypeRec -> Text))) g :)) [] grouped
-        txtss   = [ uncurry (:) . first (<> t) $ pair
-                  | pair@(_, hosts) <- folded, let l = length hosts
-                                             , let t = T.concat [ ": ", showText l, " host", pluralize ("", "s") l ] ]
-    in (logPlaExec (prefixAdminCmd "ttype") i >>) $ case intercalateDivider cols txtss of
-          [] -> wrapSend      mq cols dbEmptyMsg
-          ts -> multiWrapSend mq cols ts
+        ts      = [ uncurry (:) . first (<> msg) $ pair
+                  | pair@(_, hosts) <- folded, let l   = length hosts
+                                             , let msg = T.concat [ ": ", showText l, " host", pluralize ("", "s") l ] ]
+    in (logPlaExec (prefixAdminCmd "ttype") i >>) $ case intercalateDivider cols ts of
+          []   -> wrapSend      mq cols dbEmptyMsg
+          msgs -> multiWrapSend mq cols msgs
   Nothing -> dbError mq cols
 adminTType p = withoutArgs adminTType p
 
@@ -2315,8 +2311,10 @@ whoHelper :: HasCallStack => LoggedInOrOut -> Text -> ActionFun
 whoHelper inOrOut cn (NoArgs i mq cols) = do
     logPlaExecArgs (prefixAdminCmd cn) [] i
     pager i mq Nothing =<< [ concatMap (wrapIndent 20 cols) charListTxt | charListTxt <- mkCharListTxt inOrOut <$> getState ]
-whoHelper inOrOut cn p@ActionParams { myId, args } =
-    sequence_ [ logPlaExecArgs (prefixAdminCmd cn) args myId, dispMatches p 20 =<< mkCharListTxt inOrOut <$> getState ]
+whoHelper inOrOut cn (WithArgs i mq cols as) = do
+    logPlaExecArgs (prefixAdminCmd cn) as i
+    dispMatches i mq cols 20 IsRegex as =<< mkCharListTxt inOrOut <$> getState
+whoHelper _ _ p = patternMatchFail "whoHelper" . showText $ p
 
 
 mkCharListTxt :: HasCallStack => LoggedInOrOut -> MudState -> [Text]

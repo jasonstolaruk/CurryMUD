@@ -977,7 +977,7 @@ data InInvEqRm = InInv | InEq | InRm deriving Show
 -----
 
 
-data IsOrIsn'tRegex = IsRegex | Isn'tRegex
+data IsOrIsn'tRegex = IsRegex | Isn'tRegex deriving Eq
 
 
 -----

@@ -215,7 +215,7 @@ adviceADestroyNoArgs = "Please provide one or more IDs to destroy."
 
 
 adviceAExamineNoArgs :: Text
-adviceAExamineNoArgs = "Please provide one or more IDs to examine."
+adviceAExamineNoArgs = "Please provide one or more IDs to examine, optionally followed by a regex to search for."
 
 
 adviceAFarewellNoArgs :: Text
@@ -325,7 +325,7 @@ adviceASacrificeNoArgs = "Please specify the names of one or more PCs whose sacr
 
 
 adviceASearchNoArgs :: Text
-adviceASearchNoArgs = "Please provide a regular expression to search for."
+adviceASearchNoArgs = "Please provide a regex to search for."
 
 
 adviceASecurityNoArgs :: Text

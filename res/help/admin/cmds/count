@@ -1,10 +1,10 @@
 \h #dCOUNT \d
 
 \uUSAGE\n
-#dcount \s[\dterm \s...]\d
+#dcount \s[\dregex \s...]\d
 
 \uDESCRIPTION\n
-Display a list of miscellaneous running totals. Optionally, search the list for one or more terms.
+Display a list of miscellaneous running totals. Optionally, search the list for one or more regex patterns.
 
 \uEXAMPLES\n
 \q#dcount\d to display the full list.4`

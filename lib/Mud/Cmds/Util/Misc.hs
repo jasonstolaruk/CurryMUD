@@ -3,7 +3,8 @@
 
 -- This module contains helper functions used by multiple modules under "Mud.Cmds".
 
-module Mud.Cmds.Util.Misc ( asterisk
+module Mud.Cmds.Util.Misc ( applyRegex
+                          , asterisk
                           , awardExp
                           , consume
                           , dispCmdList
@@ -113,7 +114,7 @@ import Mud.Util.Wrapping
 import qualified Mud.Misc.Logging as L (logNotice, logPla)
 import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 
-import Control.Arrow ((***), (&&&), first)
+import Control.Arrow ((***), (&&&), first, second)
 import Control.Exception.Lifted (catch, try)
 import Control.Lens (_1, _2, _3, at, both, each, to, view, views)
 import Control.Lens.Operators ((?~), (.~), (&), (%~), (^.), (+~), (<>~))
@@ -135,6 +136,7 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
 import qualified Data.Vector.Unboxed as V (Vector, splitAt, toList)
 import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
+import Text.Regex.Posix ((=~))
 
 
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
@@ -164,6 +166,13 @@ logNotice = L.logNotice "Mud.Cmds.Util.Misc"
 
 
 -- ==================================================
+
+
+applyRegex :: HasCallStack => Text -> Text -> (Text, Text, Text)
+applyRegex needle haystack = let (🍩) = (=~) `on` T.unpack in haystack 🍩 needle |&| each %~ T.pack
+
+
+-----
 
 
 asterisk :: Text
@@ -260,8 +269,10 @@ consume i newScs = do now <- liftIO getCurrentTime
 
 
 dispCmdList :: HasCallStack => [Cmd] -> ActionFun
-dispCmdList cmds (NoArgs i mq cols) = pager i mq Nothing . concatMap (wrapIndent cmdNamePadding cols) . mkCmdListText $ cmds
-dispCmdList cmds p                  = dispMatches p cmdNamePadding . mkCmdListText $ cmds
+dispCmdList cmds (NoArgs i mq cols) =
+    pager i mq Nothing . concatMap (wrapIndent cmdNamePadding cols) . mkCmdListText $ cmds
+dispCmdList cmds (WithArgs i mq cols as) = dispMatches i mq cols cmdNamePadding Isn'tRegex as . mkCmdListText $ cmds
+dispCmdList _    p                       = patternMatchFail "dispCmdList" . showText $ p
 
 
 mkCmdListText :: HasCallStack => [Cmd] -> [Text]
@@ -286,16 +297,17 @@ mkCmdTriplesForStyling cmds = let cmdNames       = [ cmdName           cmd | cmd
 -----
 
 
-dispMatches :: HasCallStack => ActionParams -> Int -> [Text] -> MudStack ()
-dispMatches (LowerNub i mq cols needles) indent haystack = let (dropEmpties -> matches) = map grep needles in
-    if ()# matches
+dispMatches :: HasCallStack => Id -> MsgQueue -> Cols -> Int -> IsOrIsn'tRegex -> [Text] -> [Text] -> MudStack ()
+dispMatches i mq cols indent ((== IsRegex) -> isReg) needles haystack =
+    let matches = dropEmpties . map search $ needles
+    in if ()# matches
       then wrapSend mq cols sorrySearch
       else pager i mq Nothing . concatMap (wrapIndent indent cols) . intercalate mMempty $ matches
   where
-    -- TODO: Regex search.
-    grep needle = let haystack' = [ (hay, hay') | hay <- haystack, let hay' = T.toLower . dropANSI $ hay ]
-                  in [ fst match | match <- haystack', needle `T.isInfixOf` snd match ]
-dispMatches p _ _ = patternMatchFail "dispMatches" . showText $ p
+    search needle | isReg     = [ fst match   | match <- map (second (needle `applyRegex`)) haystack'
+                                              , views _2 (()!#) . snd $ match ]
+                  | otherwise = [ fst match   | match <- haystack', needle `T.isInfixOf` snd match ]
+    haystack'                 = [ (hay, hay') | hay   <- haystack, let hay' = onFalse isReg T.toLower . dropANSI $ hay ]
 
 
 -----

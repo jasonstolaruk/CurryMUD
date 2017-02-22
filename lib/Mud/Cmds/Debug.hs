@@ -144,7 +144,7 @@ debugCmds =
     , mkDebugCmd "echowill"    debugEchoWill    "Send IAC WILL ECHO (hide user input)."
     , mkDebugCmd "echowon't"   debugEchoWon't   "Send IAC WON'T ECHO (show user input)."
     , mkDebugCmd "effect"      debugEffect      "Add 10-20 to your ST for 30 seconds."
-    , mkDebugCmd "env"         debugEnv         "Display or search system environment variables."
+    , mkDebugCmd "env"         debugEnv         "Display or regex search system environment variables."
     , mkDebugCmd "exp"         debugExp         "Award yourself 5,000 exp."
     , mkDebugCmd "fun"         debugFun         "Dump the keys of the function tables."
     , mkDebugCmd "gmcpdo"      debugGmcpDo      "Send IAC DO GMCP."
@@ -173,15 +173,15 @@ debugCmds =
     , mkDebugCmd "random"      debugRandom      "Display random numbers generated with \"rndmRs\" and \"rndmInts\"."
     , mkDebugCmd "regen"       debugRegen       "Display regen amounts and delays for a given mob ID."
     , mkDebugCmd "remput"      debugRemPut      "In quick succession, remove from and put into a sack on the ground."
-    , mkDebugCmd "rndm"        debugRndm        "Display or search the random names master table."
+    , mkDebugCmd "rndm"        debugRndm        "Display or regex search the random names master table."
     , mkDebugCmd "rnt"         debugRnt         "Dump your random names table, or generate a random name for a given PC."
     , mkDebugCmd "rotate"      debugRotate      "Send the signal to rotate your player log."
     , mkDebugCmd "rules"       debugRules       "Display the rules message."
     , mkDebugCmd "shiver"      debugShiver      "Test the spiritize shiver random do."
     , mkDebugCmd "stopeffects" debugStopEffects "Stop all effects for your PC."
     , mkDebugCmd "talk"        debugTalk        "Dump the talk async table."
-    , mkDebugCmd "tele"        debugTele        "Display or search the telepathic links master table."
-    , mkDebugCmd "threads"     debugThreads     "Display or search the thread table."
+    , mkDebugCmd "tele"        debugTele        "Display or regex search the telepathic links master table."
+    , mkDebugCmd "threads"     debugThreads     "Display or regex search the thread table."
     , mkDebugCmd "throw"       debugThrow       "Throw an exception."
     , mkDebugCmd "throwlog"    debugThrowLog    "Throw an exception on your player log thread."
     , mkDebugCmd "tinnitus"    debugTinnitus    "Ringing in the ears."
@@ -432,18 +432,16 @@ debugEffect p              = withoutArgs debugEffect p
 
 
 debugEnv :: HasCallStack => ActionFun
-debugEnv (NoArgs i mq cols) = do logPlaExecArgs (prefixDebugCmd "env") [] i
-                                 pager i mq Nothing =<< [ concatMap (wrapIndent 2 cols) . mkEnvListTxt $ env
-                                                        | env <- liftIO . safePerformIO $ getEnvironment ]
-debugEnv p@ActionParams { myId, args } = do
-    logPlaExecArgs (prefixDebugCmd "env") args myId
-    dispMatches p 2 =<< [ mkEnvListTxt env | env <- liftIO . safePerformIO $ getEnvironment ]
+debugEnv (NoArgs   i mq cols   ) = do logPlaExecArgs (prefixDebugCmd "env") [] i
+                                      pager i mq Nothing =<< [ concatMap (wrapIndent 2 cols) . mkEnvListTxt $ env
+                                                             | env <- liftIO . safePerformIO $ getEnvironment ]
+debugEnv (WithArgs i mq cols as) = do logPlaExecArgs (prefixDebugCmd "env") as i
+    dispMatches i mq cols 2 IsRegex as =<< [ mkEnvListTxt env | env <- liftIO . safePerformIO $ getEnvironment ]
+debugEnv p = patternMatchFail "debugEnv" . showText $ p
 
 
 mkEnvListTxt :: HasCallStack => [(String, String)] -> [Text]
-mkEnvListTxt = map (mkAssocTxt . (both %~ T.pack))
-  where
-    mkAssocTxt = colorWith envVarColor . uncurry (<>) . first (<> ": ")
+mkEnvListTxt = map (colorWith envVarColor . uncurry (<>) . first (<> ": ") . (both %~ T.pack))
 
 
 -----
@@ -899,10 +897,12 @@ debugRemPut p = withoutArgs debugRemPut p
 
 
 debugRndm :: HasCallStack => ActionFun
-debugRndm (NoArgs i mq cols) = do logPlaExecArgs (prefixDebugCmd "rndm") [] i
-                                  pager i mq Nothing . concatMap (wrapIndent 2 cols) . mkRndmNamesMstrTblTxt =<< getState
-debugRndm p@ActionParams { myId, args } = do logPlaExecArgs (prefixDebugCmd "rndm") args myId
-                                             dispMatches p 2 . mkRndmNamesMstrTblTxt =<< getState
+debugRndm (NoArgs i mq cols) = do
+    logPlaExecArgs (prefixDebugCmd "rndm") [] i
+    pager i mq Nothing . concatMap (wrapIndent 2 cols) . mkRndmNamesMstrTblTxt =<< getState
+debugRndm (WithArgs i mq cols as) = do logPlaExecArgs (prefixDebugCmd "rndm") as i
+                                       dispMatches i mq cols 2 IsRegex as . mkRndmNamesMstrTblTxt =<< getState
+debugRndm p                       = patternMatchFail "debugRndm" . showText $ p
 
 
 mkRndmNamesMstrTblTxt :: HasCallStack => MudState -> [Text]
@@ -992,10 +992,12 @@ debugTalk p = withoutArgs debugTalk p
 
 
 debugTele :: HasCallStack => ActionFun
-debugTele (NoArgs i mq cols) = do logPlaExecArgs (prefixDebugCmd "tele") [] i
-                                  pager i mq Nothing . concatMap (wrapIndent 2 cols) . mkTeleLinkMstrTblTxt =<< getState
-debugTele p@ActionParams { myId, args } = do logPlaExecArgs (prefixDebugCmd "tele") args myId
-                                             dispMatches p 2 . mkTeleLinkMstrTblTxt =<< getState
+debugTele (NoArgs i mq cols) = do
+    logPlaExecArgs (prefixDebugCmd "tele") [] i
+    pager i mq Nothing . concatMap (wrapIndent 2 cols) . mkTeleLinkMstrTblTxt =<< getState
+debugTele (WithArgs i mq cols as) = do logPlaExecArgs (prefixDebugCmd "tele") as i
+                                       dispMatches i mq cols 2 IsRegex as . mkTeleLinkMstrTblTxt =<< getState
+debugTele p                       = patternMatchFail "debugTele" . showText $ p
 
 
 mkTeleLinkMstrTblTxt :: HasCallStack => MudState -> [Text]
@@ -1015,10 +1017,11 @@ mkTeleLinkMstrTblTxt ms = sort . views teleLinkMstrTbl helper $ ms
 
 
 debugThreads :: HasCallStack => ActionFun
-debugThreads (NoArgs i mq cols)            = do logPlaExec (prefixDebugCmd "threads") i
-                                                pager i mq Nothing . concatMap (wrapIndent 2 cols) =<< descThreads
-debugThreads p@ActionParams { myId, args } = do logPlaExecArgs (prefixDebugCmd "threads") args myId
-                                                dispMatches p 2 =<< descThreads
+debugThreads (NoArgs   i mq cols)    = do logPlaExec (prefixDebugCmd "threads") i
+                                          pager i mq Nothing . concatMap (wrapIndent 2 cols) =<< descThreads
+debugThreads (WithArgs i mq cols as) = do logPlaExecArgs (prefixDebugCmd "threads") as i
+                                          dispMatches i mq cols 2 IsRegex as =<< descThreads
+debugThreads p                       = patternMatchFail "debugThreads" . showText $ p
 
 
 descThreads :: HasCallStack => MudStack [Text]
