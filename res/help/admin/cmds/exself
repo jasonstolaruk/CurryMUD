@@ -1,11 +1,14 @@
 \h #dEXSELF \d
 
 \uUSAGE\n
-#dexself
+#dexself \sregex ...\d
 
 \uDESCRIPTION\n
 Self-examination.
-This command is equivalent to executing "#dexamine" with your ID.
+This command is equivalent to executing "#dexamine" for your ID.
 
 \uEXAMPLES\n
-\q#dexself\d to examine yourself.4`
+\q#dexself\d to display the properties of your ID.4`
+\q#dexself \d to search the properties of your ID 0 for .4`
+\q#dexself \d to search the properties of your ID 0 for .4`
+\q#dexself \d to search the properties of your ID 0 for .4`

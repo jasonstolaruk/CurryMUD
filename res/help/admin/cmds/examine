@@ -4,7 +4,7 @@
 #dexamine ID \sregex ...\d
 
 \uDESCRIPTION\n
-Display the properties of one or more IDs. Optionally, search the properties for one or more regex patterns.
+Display the properties of a given ID. Optionally, search the properties for one or more regex patterns.
 
 When examining a mob, two numbers are given for each of the attributes (ST, DX, etc.): the first number is the base value, and the second number (in parenthesis) is the effective value (the value after applying all effects from spells, etc.).
 
@@ -12,4 +12,6 @@ For information regarding the ethical use of this command, see "help ethics".
 
 \uEXAMPLES\n
 \q#dexamine 0\d to display the properties of ID 0.4`
-TODO
+\q#dexamine 0 \d to search the properties of ID 0 for .4`
+\q#dexamine 0 \d to search the properties of ID 0 for .4`
+\q#dexamine 0 \d to search the properties of ID 0 for .4`

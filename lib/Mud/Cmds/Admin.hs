@@ -661,7 +661,7 @@ adminDispCmdList p                  = patternMatchFail "adminDispCmdList" . show
 -----
 
 
-adminExamine :: HasCallStack => ActionFun -- TODO: Display or regex search the properties of a given ID.
+adminExamine :: HasCallStack => ActionFun -- TODO: Regex search.
 adminExamine p@AdviseNoArgs            = advise p [ prefixAdminCmd "examine" ] adviceAExamineNoArgs
 adminExamine   (LowerNub i mq cols as) = getState >>= \ms ->
     let helper a = case reads . T.unpack $ a :: [(Int, String)] of
@@ -992,7 +992,7 @@ examineWritable i ms = let w = getWritable i ms in [ "Message: "   <> w^.writMes
 -----
 
 
-adminExamineSelf :: HasCallStack => ActionFun
+adminExamineSelf :: HasCallStack => ActionFun -- TODO: Regex search.
 adminExamineSelf p@(NoArgs'' i) = adminExamine p { args = pure . showText $ i }
 adminExamineSelf p              = withoutArgs adminExamineSelf p
 
