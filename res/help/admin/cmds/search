@@ -4,7 +4,7 @@
 #dsearch regex
 
 \uDESCRIPTION\n
-Regex search for names and IDs.
+Regex search for entity and room names.
 The regex you provide is matched against all entity and room names. Matches are displayed along with their IDs.
 
 \uEXAMPLES\n

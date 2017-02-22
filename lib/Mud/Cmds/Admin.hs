@@ -181,7 +181,7 @@ adminCmds =
     , mkAdminCmd "possess"    adminPossess     False "Temporarily take control of an NPC."
     , mkAdminCmd "print"      adminPrint       True  "Print a message to the server console."
     , mkAdminCmd "profanity"  adminProfanity   True  "Dump the profanity database."
-    , mkAdminCmd "search"     adminSearch      True  "Regex search for names and IDs."
+    , mkAdminCmd "search"     adminSearch      True  "Regex search for entity and room names."
     , mkAdminCmd "security"   adminSecurity    True  "Display security Q&A for one or more players."
     , mkAdminCmd "set"        adminSet         True  "Set one or more values for a given ID."
     , mkAdminCmd "shutdown"   adminShutdown    False "Shut down CurryMUD, optionally with a custom message."
@@ -1477,7 +1477,7 @@ adminSearch   (WithArgs i mq cols (T.unwords -> a)) = do
     descMatchingRmNames ms =
       let idNames = views rmTbl (map (_2 %~ view rmName) . IM.toList) ms
       in "Room IDs with matching room names:" : (noneOnNull . map (descMatch ms False) . getMatches $ idNames)
-    getMatches = filter (views _2 (()!#) . snd) . map (second (a `applyRegex`))
+    getMatches haystack = [ match | match@(_, (_, x, _)) <- map (second (a `applyRegex`)) haystack, ()!# x ]
     descMatch ms b (i', (x, y, z)) = T.concat [ padId . showText $ i'
                                               , " "
                                               , b |?| spcR . parensQuote . pp . getType i' $ ms

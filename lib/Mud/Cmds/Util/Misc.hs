@@ -114,7 +114,7 @@ import Mud.Util.Wrapping
 import qualified Mud.Misc.Logging as L (logNotice, logPla)
 import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 
-import Control.Arrow ((***), (&&&), first, second)
+import Control.Arrow ((***), (&&&), first)
 import Control.Exception.Lifted (catch, try)
 import Control.Lens (_1, _2, _3, at, both, each, to, view, views)
 import Control.Lens.Operators ((?~), (.~), (&), (%~), (^.), (+~), (<>~))
@@ -298,16 +298,17 @@ mkCmdTriplesForStyling cmds = let cmdNames       = [ cmdName           cmd | cmd
 
 
 dispMatches :: HasCallStack => Id -> MsgQueue -> Cols -> Int -> IsOrIsn'tRegex -> [Text] -> [Text] -> MudStack ()
-dispMatches i mq cols indent ((== IsRegex) -> isReg) needles haystack =
+dispMatches i mq cols indent reg needles haystack =
     let matches = dropEmpties . map search $ needles
     in if ()# matches
       then wrapSend mq cols sorrySearch
       else pager i mq Nothing . concatMap (wrapIndent indent cols) . intercalate mMempty $ matches
   where
-    search needle | isReg     = [ fst match   | match <- map (second (needle `applyRegex`)) haystack'
-                                              , views _2 (()!#) . snd $ match ]
-                  | otherwise = [ fst match   | match <- haystack', needle `T.isInfixOf` snd match ]
-    haystack'                 = [ (hay, hay') | hay   <- haystack, let hay' = onFalse isReg T.toLower . dropANSI $ hay ]
+    search needle | reg == IsRegex
+                  = [ a <> colorWith regexMatchColor b <> c
+                    | (a, b, c) <- map ((needle `applyRegex`) . dropANSI) haystack, (()!#) b ]
+                  | haystack' <- [ (hay, hay') | hay <- haystack, let hay' = T.toLower . dropANSI $ hay ]
+                  = [ a | (a, b) <- haystack', needle `T.isInfixOf` b ]
 
 
 -----

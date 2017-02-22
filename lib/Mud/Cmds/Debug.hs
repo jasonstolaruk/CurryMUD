@@ -442,7 +442,7 @@ debugEnv p = patternMatchFail "debugEnv" . showText $ p
 
 
 mkEnvListTxt :: HasCallStack => [(String, String)] -> [Text]
-mkEnvListTxt = map (colorWith envVarColor . uncurry (<>) . first (<> ": ") . (both %~ T.pack))
+mkEnvListTxt = map (uncurry (<>) . first (<> ": ") . (both %~ T.pack))
 
 
 -----

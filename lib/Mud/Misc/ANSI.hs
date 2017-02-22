@@ -23,7 +23,6 @@ module Mud.Misc.ANSI ( abbrevColor
                      , dropANSI
                      , emoteTargetColor
                      , emphasisColor
-                     , envVarColor
                      , exitsColor
                      , extractANSI
                      , fromPeepedColor
@@ -224,10 +223,6 @@ emoteTargetColor = green
 
 emphasisColor :: Text
 emphasisColor = yellow
-
-
-envVarColor :: Text
-envVarColor = cyan
 
 
 exitsColor :: Text
