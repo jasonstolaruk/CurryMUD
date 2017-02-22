@@ -58,7 +58,7 @@ startEffect i e@(Effect _ _ (Just (EffectRangedVal range)) _ _) = rndmR range >>
 startEffect i e = startEffectHelper i e
 
 
-startEffectHelper :: HasCallStack => Id -> Effect -> MudStack ()
+startEffectHelper :: HasCallStack => Id -> Effect -> MudStack () -- TODO: Tags.
 startEffectHelper i e@(view effectFeeling -> ef) = do logPla "startEffectHelper" i $ "starting effect: " <> pp e
                                                       q <- liftIO newTQueueIO
                                                       a <- runAsync . threadEffect i e $ q

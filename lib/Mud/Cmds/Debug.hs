@@ -435,7 +435,8 @@ debugEnv :: HasCallStack => ActionFun
 debugEnv (NoArgs   i mq cols   ) = do logPlaExecArgs (prefixDebugCmd "env") [] i
                                       pager i mq Nothing =<< [ concatMap (wrapIndent 2 cols) . mkEnvListTxt $ env
                                                              | env <- liftIO . safePerformIO $ getEnvironment ]
-debugEnv (WithArgs i mq cols as) = do logPlaExecArgs (prefixDebugCmd "env") as i
+debugEnv (WithArgs i mq cols as) = do
+    logPlaExecArgs (prefixDebugCmd "env") as i
     dispMatches i mq cols 2 IsRegex as =<< [ mkEnvListTxt env | env <- liftIO . safePerformIO $ getEnvironment ]
 debugEnv p = patternMatchFail "debugEnv" . showText $ p
 
