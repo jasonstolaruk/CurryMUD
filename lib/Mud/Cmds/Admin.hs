@@ -663,7 +663,7 @@ adminDispCmdList p                  = patternMatchFail "adminDispCmdList" . show
 
 adminExamine :: HasCallStack => ActionFun -- TODO: Regex search.
 adminExamine p@AdviseNoArgs            = advise p [ prefixAdminCmd "examine" ] adviceAExamineNoArgs
-adminExamine   (LowerNub i mq cols as) = getState >>= \ms ->
+adminExamine   (WithArgs i mq cols as) = getState >>= \ms ->
     let helper a = case reads . T.unpack $ a :: [(Int, String)] of
           [(targetId, "")] | targetId < 0                -> pure sorryWtf
                            | not . hasType targetId $ ms -> sorry
@@ -993,7 +993,7 @@ examineWritable i ms = let w = getWritable i ms in [ "Message: "   <> w^.writMes
 
 
 adminExamineSelf :: HasCallStack => ActionFun
-adminExamineSelf p@ActionParams { myId } = adminExamine p { args = pure . showText $ myId }
+adminExamineSelf p@ActionParams { myId, args } = adminExamine p { args = showText myId : args }
 
 
 -----

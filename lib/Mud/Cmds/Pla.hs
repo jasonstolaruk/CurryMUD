@@ -4286,9 +4286,9 @@ whisper p = patternMatchFail "whisper" . showText $ p
 who :: HasCallStack => ActionFun
 who (NoArgs i mq cols) = getState >>= \ms ->
     sequence_ [ logPlaExecArgs "who" [] i, pager i mq Nothing . concatMap (wrapIndent namePadding cols) . mkWhoTxt i $ ms ]
-who (LowerNubbed i mq cols as) = do logPlaExecArgs "who" as i
-                                    dispMatches i mq cols namePadding Isn'tRegex as . mkWhoTxt i =<< getState
-who p                          = patternMatchFail "who" . showText $ p
+who (LowerNub i mq cols as) = do logPlaExecArgs "who" as i
+                                 dispMatches i mq cols namePadding Isn'tRegex as . mkWhoTxt i =<< getState
+who p                       = patternMatchFail "who" . showText $ p
 
 
 mkWhoTxt :: HasCallStack => Id -> MudState -> [Text]
