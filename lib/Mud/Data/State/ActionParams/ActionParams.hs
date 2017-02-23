@@ -17,6 +17,7 @@ module Mud.Data.State.ActionParams.ActionParams ( ActionParams(..)
                                                 , pattern NoArgs
                                                 , pattern NoArgs'
                                                 , pattern NoArgs''
+                                                , pattern Nubbed
                                                 , pattern OneArg
                                                 , pattern OneArg'
                                                 , pattern OneArgLower
@@ -120,6 +121,10 @@ pattern NoArgs' i mq <- NoArgs i mq _
 
 pattern NoArgs'' :: Id -> ActionParams
 pattern NoArgs'' i <- NoArgs' i _
+
+
+pattern Nubbed :: Id -> MsgQueue -> Cols -> Args -> ActionParams
+pattern Nubbed i mq cols as <- WithArgs i mq cols (nub -> as)
 
 
 pattern OneArg :: Id -> MsgQueue -> Cols -> Text -> ActionParams

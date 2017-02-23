@@ -498,11 +498,11 @@ adminChanIOHelper i mq reports = sequence_ [ logPlaExec (prefixAdminCmd "channel
 
 
 adminCount :: HasCallStack => ActionFun
-adminCount (NoArgs   i mq cols   ) = do logPlaExecArgs (prefixAdminCmd "count") [] i
-                                        pager i mq Nothing . concatMap (wrapIndent 2 cols) =<< mkCountTxt
-adminCount (WithArgs i mq cols as) = do logPlaExecArgs (prefixAdminCmd "count") as i
-                                        dispMatches i mq cols 2 IsRegex as =<< mkCountTxt
-adminCount p                       = patternMatchFail "adminCount" . showText $ p
+adminCount (NoArgs i mq cols   ) = do logPlaExecArgs (prefixAdminCmd "count") [] i
+                                      pager i mq Nothing . concatMap (wrapIndent 2 cols) =<< mkCountTxt
+adminCount (Nubbed i mq cols as) = do logPlaExecArgs (prefixAdminCmd "count") as i
+                                      dispMatches i mq cols 2 IsRegex as =<< mkCountTxt
+adminCount p                     = patternMatchFail "adminCount" . showText $ p
 
 
 mkCountTxt :: HasCallStack => MudStack [Text]
@@ -1465,8 +1465,8 @@ adminProfanity p@ActionParams { plaMsgQueue, plaCols } = dumpCmdHelper "profanit
 
 
 adminSearch :: HasCallStack => ActionFun
-adminSearch p@AdviseNoArgs                          = advise p [ prefixAdminCmd "search" ] adviceASearchNoArgs
-adminSearch   (WithArgs i mq cols (T.unwords -> a)) = do
+adminSearch p@AdviseNoArgs                        = advise p [ prefixAdminCmd "search" ] adviceASearchNoArgs
+adminSearch   (Nubbed i mq cols (T.unwords -> a)) = do
     logPlaExecArgs (prefixAdminCmd "search") (pure a) i
     multiWrapSend mq cols =<< (middle (++) mMempty <$> descMatchingSings <*> descMatchingRmNames) <$> getState
   where
@@ -2311,7 +2311,7 @@ whoHelper :: HasCallStack => LoggedInOrOut -> Text -> ActionFun
 whoHelper inOrOut cn (NoArgs i mq cols) = do
     logPlaExecArgs (prefixAdminCmd cn) [] i
     pager i mq Nothing =<< [ concatMap (wrapIndent 20 cols) charListTxt | charListTxt <- mkCharListTxt inOrOut <$> getState ]
-whoHelper inOrOut cn (WithArgs i mq cols as) = do
+whoHelper inOrOut cn (Nubbed i mq cols as) = do
     logPlaExecArgs (prefixAdminCmd cn) as i
     dispMatches i mq cols 20 IsRegex as =<< mkCharListTxt inOrOut <$> getState
 whoHelper _ _ p = patternMatchFail "whoHelper" . showText $ p
