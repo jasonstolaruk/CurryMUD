@@ -1304,9 +1304,9 @@ expCmdList :: HasCallStack => ActionFun
 expCmdList (NoArgs i mq cols) = do
     logPlaExecArgs "expressive" [] i
     pager i mq Nothing . concatMap (wrapIndent cmdNamePadding cols) . mkExpCmdListTxt i =<< getState
-expCmdList (Nubbed i mq cols as) = do logPlaExecArgs "expressive" as i
-                                      dispMatches i mq cols cmdNamePadding Isn'tRegex as . mkExpCmdListTxt i =<< getState
-expCmdList p                     = patternMatchFail "expCmdList" . showText $ p
+expCmdList (LowerNub i mq cols as) = do logPlaExecArgs "expressive" as i
+                                        dispMatches i mq cols cmdNamePadding Isn'tRegex as . mkExpCmdListTxt i =<< getState
+expCmdList p                       = patternMatchFail "expCmdList" . showText $ p
 
 
 mkExpCmdListTxt :: HasCallStack => Id -> MudState -> [Text]
@@ -4286,9 +4286,9 @@ whisper p = patternMatchFail "whisper" . showText $ p
 who :: HasCallStack => ActionFun
 who (NoArgs i mq cols) = getState >>= \ms ->
     sequence_ [ logPlaExecArgs "who" [] i, pager i mq Nothing . concatMap (wrapIndent namePadding cols) . mkWhoTxt i $ ms ]
-who (Nubbed i mq cols as) = do logPlaExecArgs "who" as i
-                               dispMatches i mq cols namePadding Isn'tRegex as . mkWhoTxt i =<< getState
-who p                     = patternMatchFail "who" . showText $ p
+who (LowerNubbed i mq cols as) = do logPlaExecArgs "who" as i
+                                    dispMatches i mq cols namePadding Isn'tRegex as . mkWhoTxt i =<< getState
+who p                          = patternMatchFail "who" . showText $ p
 
 
 mkWhoTxt :: HasCallStack => Id -> MudState -> [Text]

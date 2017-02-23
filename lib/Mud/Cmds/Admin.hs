@@ -993,7 +993,7 @@ examineWritable i ms = let w = getWritable i ms in [ "Message: "   <> w^.writMes
 
 
 adminExamineSelf :: HasCallStack => ActionFun
-adminExamineSelf p@(ActionParams { myId }) = adminExamine p { args = pure . showText $ myId }
+adminExamineSelf p@ActionParams { myId } = adminExamine p { args = pure . showText $ myId }
 
 
 -----
