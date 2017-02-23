@@ -215,7 +215,7 @@ adviceADestroyNoArgs = "Please provide one or more IDs to destroy."
 
 
 adviceAExamineNoArgs :: Text
-adviceAExamineNoArgs = "Please provide one or more IDs to examine, optionally followed by a regex to search for."
+adviceAExamineNoArgs = "Please provide an ID to examine, optionally followed by a regex to search for."
 
 
 adviceAFarewellNoArgs :: Text

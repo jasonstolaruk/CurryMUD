@@ -498,11 +498,11 @@ adminChanIOHelper i mq reports = sequence_ [ logPlaExec (prefixAdminCmd "channel
 
 
 adminCount :: HasCallStack => ActionFun
-adminCount (NoArgs i mq cols   ) = do logPlaExecArgs (prefixAdminCmd "count") [] i
-                                      pager i mq Nothing . concatMap (wrapIndent 2 cols) =<< mkCountTxt
-adminCount (Nubbed i mq cols as) = do logPlaExecArgs (prefixAdminCmd "count") as i
-                                      dispMatches i mq cols 2 IsRegex as =<< mkCountTxt
-adminCount p                     = patternMatchFail "adminCount" . showText $ p
+adminCount (NoArgs   i mq cols   ) = do logPlaExecArgs (prefixAdminCmd "count") [] i
+                                        pager i mq Nothing . concatMap (wrapIndent 2 cols) =<< mkCountTxt
+adminCount (WithArgs i mq cols as) = do logPlaExecArgs (prefixAdminCmd "count") as i
+                                        dispMatches i mq cols 2 IsRegex as =<< mkCountTxt
+adminCount p                       = patternMatchFail "adminCount" . showText $ p
 
 
 mkCountTxt :: HasCallStack => MudStack [Text]
@@ -661,23 +661,22 @@ adminDispCmdList p                  = patternMatchFail "adminDispCmdList" . show
 -----
 
 
-adminExamine :: HasCallStack => ActionFun -- TODO: Regex search.
-adminExamine p@AdviseNoArgs            = advise p [ prefixAdminCmd "examine" ] adviceAExamineNoArgs
-adminExamine   (WithArgs i mq cols as) = getState >>= \ms ->
-    let helper a = case reads . T.unpack $ a :: [(Int, String)] of
-          [(targetId, "")] | targetId < 0                -> pure sorryWtf
-                           | not . hasType targetId $ ms -> sorry
-                           | otherwise                   -> examineHelper ms targetId
-          _                                              -> sorry
-          where
-            sorry = pure . sorryParseId $ a
-    in do logPlaExecArgs (prefixAdminCmd "examine") as i
-          pager i mq Nothing . concatMap (wrapIndent 2 cols) . intercalateDivider cols . map helper $ as
+adminExamine :: HasCallStack => ActionFun
+adminExamine p@AdviseNoArgs                     = advise p [ prefixAdminCmd "examine" ] adviceAExamineNoArgs
+adminExamine   (WithArgs i mq cols args@(a:as)) = getState >>= \ms -> do
+    logPlaExecArgs (prefixAdminCmd "examine") args i
+    pager i mq Nothing . concatMap (wrapIndent 2 cols) $ case reads . T.unpack $ a :: [(Int, String)] of
+      [(targetId, "")] | targetId < 0                -> pure sorryWtf
+                       | not . hasType targetId $ ms -> sorry
+                       | otherwise                   -> examineHelper ms targetId . T.unwords $ as
+      _                                              -> sorry
+      where
+        sorry = pure . sorryParseId $ a
 adminExamine p = patternMatchFail "adminExamine" . showText $ p
 
 
-examineHelper :: HasCallStack => MudState -> Id -> [Text]
-examineHelper ms targetId = let t = getType targetId ms in helper t $ case t of
+examineHelper :: HasCallStack => MudState -> Id -> Text -> [Text]
+examineHelper ms targetId regex = let t = getType targetId ms in helper (pp t) $ case t of
   ArmType        -> [ examineEnt, examineObj,   examineArm        ]
   ClothType      -> [ examineEnt, examineObj,   examineCloth      ]
   ConType        -> [ examineEnt, examineObj,   examineInv,   examineCoins, examineCon ]
@@ -692,8 +691,14 @@ examineHelper ms targetId = let t = getType targetId ms in helper t $ case t of
   WpnType        -> [ examineEnt, examineObj,   examineWpn        ]
   WritableType   -> [ examineEnt, examineObj,   examineWritable   ]
   where
-    helper t fs = let header = T.concat [ showText targetId, " ", parensQuote . pp $ t ]
-                  in header : "" : concatMap (((targetId, ms) |&|) . uncurry) fs
+    helper typeTxt fs =
+        let haystack   = concatMap (((targetId, ms) |&|) . uncurry) fs
+            search hay = case regex `applyRegex` hay of (_, "", _) -> ""
+                                                        (a, b,  c) -> a <> colorWith regexMatchColor b <> c
+        in showText targetId |<>| parensQuote typeTxt : "" : if ()# regex
+             then haystack
+             else case dropBlanks . map search $ haystack of []   -> pure sorrySearch
+                                                             msgs -> msgs
 
 
 type ExamineHelper = Id -> MudState -> [Text]
@@ -1465,8 +1470,8 @@ adminProfanity p@ActionParams { plaMsgQueue, plaCols } = dumpCmdHelper "profanit
 
 
 adminSearch :: HasCallStack => ActionFun
-adminSearch p@AdviseNoArgs                        = advise p [ prefixAdminCmd "search" ] adviceASearchNoArgs
-adminSearch   (Nubbed i mq cols (T.unwords -> a)) = do
+adminSearch p@AdviseNoArgs                          = advise p [ prefixAdminCmd "search" ] adviceASearchNoArgs
+adminSearch   (WithArgs i mq cols (T.unwords -> a)) = do
     logPlaExecArgs (prefixAdminCmd "search") (pure a) i
     multiWrapSend mq cols =<< (middle (++) mMempty <$> descMatchingSings <*> descMatchingRmNames) <$> getState
   where
@@ -2311,7 +2316,7 @@ whoHelper :: HasCallStack => LoggedInOrOut -> Text -> ActionFun
 whoHelper inOrOut cn (NoArgs i mq cols) = do
     logPlaExecArgs (prefixAdminCmd cn) [] i
     pager i mq Nothing =<< [ concatMap (wrapIndent 20 cols) charListTxt | charListTxt <- mkCharListTxt inOrOut <$> getState ]
-whoHelper inOrOut cn (Nubbed i mq cols as) = do
+whoHelper inOrOut cn (WithArgs i mq cols as) = do
     logPlaExecArgs (prefixAdminCmd cn) as i
     dispMatches i mq cols 20 IsRegex as =<< mkCharListTxt inOrOut <$> getState
 whoHelper _ _ p = patternMatchFail "whoHelper" . showText $ p

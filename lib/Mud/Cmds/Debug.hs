@@ -432,10 +432,10 @@ debugEffect p              = withoutArgs debugEffect p
 
 
 debugEnv :: HasCallStack => ActionFun
-debugEnv (NoArgs i mq cols   ) = do logPlaExecArgs (prefixDebugCmd "env") [] i
-                                    pager i mq Nothing =<< [ concatMap (wrapIndent 2 cols) . mkEnvListTxt $ env
-                                                           | env <- liftIO . safePerformIO $ getEnvironment ]
-debugEnv (Nubbed i mq cols as) = do
+debugEnv (NoArgs   i mq cols   ) = do logPlaExecArgs (prefixDebugCmd "env") [] i
+                                      pager i mq Nothing =<< [ concatMap (wrapIndent 2 cols) . mkEnvListTxt $ env
+                                                             | env <- liftIO . safePerformIO $ getEnvironment ]
+debugEnv (WithArgs i mq cols as) = do
     logPlaExecArgs (prefixDebugCmd "env") as i
     dispMatches i mq cols 2 IsRegex as =<< [ mkEnvListTxt env | env <- liftIO . safePerformIO $ getEnvironment ]
 debugEnv p = patternMatchFail "debugEnv" . showText $ p
@@ -901,9 +901,9 @@ debugRndm :: HasCallStack => ActionFun
 debugRndm (NoArgs i mq cols) = do
     logPlaExecArgs (prefixDebugCmd "rndm") [] i
     pager i mq Nothing . concatMap (wrapIndent 2 cols) . mkRndmNamesMstrTblTxt =<< getState
-debugRndm (Nubbed i mq cols as) = do logPlaExecArgs (prefixDebugCmd "rndm") as i
-                                     dispMatches i mq cols 2 IsRegex as . mkRndmNamesMstrTblTxt =<< getState
-debugRndm p                     = patternMatchFail "debugRndm" . showText $ p
+debugRndm (WithArgs i mq cols as) = do logPlaExecArgs (prefixDebugCmd "rndm") as i
+                                       dispMatches i mq cols 2 IsRegex as . mkRndmNamesMstrTblTxt =<< getState
+debugRndm p                       = patternMatchFail "debugRndm" . showText $ p
 
 
 mkRndmNamesMstrTblTxt :: HasCallStack => MudState -> [Text]
@@ -996,9 +996,9 @@ debugTele :: HasCallStack => ActionFun
 debugTele (NoArgs i mq cols) = do
     logPlaExecArgs (prefixDebugCmd "tele") [] i
     pager i mq Nothing . concatMap (wrapIndent 2 cols) . mkTeleLinkMstrTblTxt =<< getState
-debugTele (Nubbed i mq cols as) = do logPlaExecArgs (prefixDebugCmd "tele") as i
-                                     dispMatches i mq cols 2 IsRegex as . mkTeleLinkMstrTblTxt =<< getState
-debugTele p                     = patternMatchFail "debugTele" . showText $ p
+debugTele (WithArgs i mq cols as) = do logPlaExecArgs (prefixDebugCmd "tele") as i
+                                       dispMatches i mq cols 2 IsRegex as . mkTeleLinkMstrTblTxt =<< getState
+debugTele p                       = patternMatchFail "debugTele" . showText $ p
 
 
 mkTeleLinkMstrTblTxt :: HasCallStack => MudState -> [Text]
@@ -1018,11 +1018,11 @@ mkTeleLinkMstrTblTxt ms = sort . views teleLinkMstrTbl helper $ ms
 
 
 debugThreads :: HasCallStack => ActionFun
-debugThreads (NoArgs i mq cols   ) = do logPlaExec (prefixDebugCmd "threads") i
-                                        pager i mq Nothing . concatMap (wrapIndent 2 cols) =<< descThreads
-debugThreads (Nubbed i mq cols as) = do logPlaExecArgs (prefixDebugCmd "threads") as i
-                                        dispMatches i mq cols 2 IsRegex as =<< descThreads
-debugThreads p                     = patternMatchFail "debugThreads" . showText $ p
+debugThreads (NoArgs   i mq cols   ) = do logPlaExec (prefixDebugCmd "threads") i
+                                          pager i mq Nothing . concatMap (wrapIndent 2 cols) =<< descThreads
+debugThreads (WithArgs i mq cols as) = do logPlaExecArgs (prefixDebugCmd "threads") as i
+                                          dispMatches i mq cols 2 IsRegex as =<< descThreads
+debugThreads p                       = patternMatchFail "debugThreads" . showText $ p
 
 
 descThreads :: HasCallStack => MudStack [Text]

@@ -1,7 +1,7 @@
 \h #dEXSELF \d
 
 \uUSAGE\n
-#dexself \sregex ...\d
+#dexself \s[\dregex\s]\d
 
 \uDESCRIPTION\n
 Self-examination.
@@ -9,6 +9,4 @@ This command is equivalent to executing "#dexamine" for your ID.
 
 \uEXAMPLES\n
 \q#dexself\d to display the properties of your ID.4`
-\q#dexself \d to search the properties of your ID 0 for .4`
-\q#dexself \d to search the properties of your ID 0 for .4`
-\q#dexself \d to search the properties of your ID 0 for .4`
+\q#dexself ^[A-Z]{2}\d to search the properties of your ID for lines that begin with two uppercase characters.4`
