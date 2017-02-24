@@ -135,7 +135,6 @@ massLogPla = L.massLogPla "Mud.Cmds.Admin"
 -- ==================================================
 
 
--- TODO: Make a command to list liquids?
 -- TODO: ":clone"
 adminCmds :: HasCallStack => [Cmd]
 adminCmds =
@@ -150,7 +149,7 @@ adminCmds =
     , mkAdminCmd "bonus"      adminBonus       True  "Dump the bonus records for one or more PCs."
     , mkAdminCmd "boot"       adminBoot        True  "Boot a player, optionally with a custom message."
     , mkAdminCmd "bug"        adminBug         True  "Dump the bug database."
-    , mkAdminCmd "channel"    adminChan        True  "Display information about one or more telepathic channels."
+    , mkAdminCmd "channels"   adminChans       True  "Display information about one or more telepathic channels."
     , mkAdminCmd "count"      adminCount       True  "Display or regex search a list of miscellaneous running totals."
     , mkAdminCmd "currytime"  adminCurryTime   True  "Display the current Curry Time."
     , mkAdminCmd "date"       adminDate        True  "Display the current system date."
@@ -163,13 +162,14 @@ adminCmds =
     , mkAdminCmd "gods"       adminGods        True  "Display a list of the gods."
     , mkAdminCmd "hash"       adminHash        True  "Compare a plain-text password with a hashed password."
     , mkAdminCmd "holysymbol" adminHolySymbol  True  "Create a given number of holy symbols of a given god by god name."
-    , mkAdminCmd "host"       adminHost        True  "Display a report of connection statistics for one or more \
+    , mkAdminCmd "hosts"      adminHosts       True  "Display a report of connection statistics for one or more \
                                                      \players."
     , mkAdminCmd "incognito"  adminIncognito   True  "Toggle your incognito status."
     , mkAdminCmd "ip"         adminIp          True  "Display the server's IP addresses and listening port."
     , mkAdminCmd "kill"       adminKill        True  "Instantly kill one or more mobiles by ID."
-    , mkAdminCmd "link"       adminLink        True  "Display two-way links for one or more PCs, sorted by volume of \
+    , mkAdminCmd "links"      adminLinks       True  "Display two-way links for one or more PCs, sorted by volume of \
                                                      \messages in descending order."
+    , mkAdminCmd "liquids"    adminLiqs        True  "Display or regex search a list of liquids."
     , mkAdminCmd "locate"     adminLocate      True  "Locate one or more IDs."
     , mkAdminCmd "message"    adminMsg         True  "Send a message to a regular player."
     , mkAdminCmd "moon"       adminMoon        True  "Display the current phase of the moon."
@@ -467,11 +467,11 @@ adminBug p@ActionParams { plaMsgQueue, plaCols } = dumpCmdHelper "bug" f "bug" p
 -----
 
 
-adminChan :: HasCallStack => ActionFun
-adminChan (NoArgs i mq cols) = getState >>= \ms -> case views chanTbl (map (mkChanReport i ms) . IM.elems) ms of
+adminChans :: HasCallStack => ActionFun
+adminChans (NoArgs i mq cols) = getState >>= \ms -> case views chanTbl (map (mkChanReport i ms) . IM.elems) ms of
   []      -> informNoChans mq cols
   reports -> adminChanIOHelper i mq reports
-adminChan (LowerNub i mq cols as) = getState >>= \ms ->
+adminChans (LowerNub i mq cols as) = getState >>= \ms ->
     let helper a = case reads . T.unpack $ a :: [(Int, String)] of
           [(ci, "")] | ci < 0                               -> pure sorryWtf
                      | views chanTbl (ci `IM.notMember`) ms -> sorry
@@ -479,10 +479,9 @@ adminChan (LowerNub i mq cols as) = getState >>= \ms ->
           _                                                 -> sorry
           where
             sorry = pure . sorryParseChanId $ a
-        reports = map helper as
     in case views chanTbl IM.size ms of 0 -> informNoChans mq cols
-                                        _ -> adminChanIOHelper i mq reports
-adminChan p = patternMatchFail "adminChan" . showText $ p
+                                        _ -> adminChanIOHelper i mq . map helper $ as
+adminChans p = patternMatchFail "adminChans" . showText $ p
 
 
 informNoChans :: HasCallStack => MsgQueue -> Cols -> MudStack ()
@@ -490,7 +489,7 @@ informNoChans mq cols = wrapSend mq cols "No channels exist!"
 
 
 adminChanIOHelper :: HasCallStack => Id -> MsgQueue -> [[Text]] -> MudStack ()
-adminChanIOHelper i mq reports = sequence_ [ logPlaExec (prefixAdminCmd "channel") i
+adminChanIOHelper i mq reports = sequence_ [ logPlaExec (prefixAdminCmd "channels") i
                                            , pager i mq Nothing . intercalate mMempty $ reports ]
 
 
@@ -1090,16 +1089,15 @@ adminHolySymbol p = advise p [ prefixAdminCmd "holysymbol" ] adviceAHolySymbolEx
 -----
 
 
-adminHost :: HasCallStack => ActionFun
-adminHost p@AdviseNoArgs            = advise p [ prefixAdminCmd "host" ] adviceAHostNoArgs
-adminHost   (LowerNub i mq cols as) = getState >>= \ms -> do
-    logPlaExecArgs (prefixAdminCmd "host") as i
+adminHosts :: HasCallStack => ActionFun
+adminHosts p@AdviseNoArgs            = advise p [ prefixAdminCmd "hosts" ] adviceAHostsNoArgs
+adminHosts   (LowerNub i mq cols as) = getState >>= \ms -> do
+    logPlaExecArgs (prefixAdminCmd "hosts") as i
     (now, zone) <- (,) <$> liftIO getCurrentTime <*> liftIO getCurrentTimeZone
-    let helper target | notFound <- pure . sorryPCName $ target
-                      , found    <- uncurry . mkHostReport ms now $ zone
+    let helper target | (notFound, found) <- (pure . sorryPCName $ target, uncurry . mkHostReport ms now $ zone)
                       = findFullNameForAbbrev target (mkAdminPlaIdSingList ms) |&| maybe notFound found
     multiWrapSend mq cols . intercalate mMempty . map (helper . capitalize) $ as
-adminHost p = patternMatchFail "adminHost" . showText $ p
+adminHosts p = patternMatchFail "adminHosts" . showText $ p
 
 
 mkHostReport :: HasCallStack => MudState -> UTCTime -> TimeZone -> Id -> Sing -> [Text]
@@ -1207,23 +1205,31 @@ adminKill p = patternMatchFail "adminKill" . showText $ p
 -----
 
 
-adminLink :: HasCallStack => ActionFun
-adminLink p@AdviseNoArgs            = advise p [ prefixAdminCmd "link" ] adviceALinkNoArgs
-adminLink   (LowerNub i mq cols as) = getState >>= \ms -> do
-    logPlaExecArgs (prefixAdminCmd "link") as i
-    let helper target =
-            let notFound              = unadulterated . sorryPCName $ target
-                found (_, targetSing) = (header . \case
-                  [] -> none
-                  xs -> mkReport xs) <$> liftIO (lookupTeleNames targetSing)
-                  where
-                    header       = (targetSing <> "'s two-way links:" :)
-                    mkReport xs  | pairs <- sortBy (flip compare `on` fst) . mkCountSings $ xs
-                                 = map (uncurry (flip (|<>|)) . first (parensQuote . showText)) pairs
-                    mkCountSings = map (length &&& head) . sortGroup
-            in findFullNameForAbbrev target (mkAdminPlaIdSingList ms) |&| maybe notFound found
+adminLinks :: HasCallStack => ActionFun
+adminLinks p@AdviseNoArgs            = advise p [ prefixAdminCmd "links" ] adviceALinksNoArgs
+adminLinks   (LowerNub i mq cols as) = getState >>= \ms -> do
+    logPlaExecArgs (prefixAdminCmd "links") as i
+    let helper target = let notFound              = unadulterated . sorryPCName $ target
+                            found (_, targetSing) = (header . \case
+                              [] -> none
+                              xs -> mkReport xs) <$> liftIO (lookupTeleNames targetSing)
+                              where
+                                header       = (targetSing <> "'s two-way links:" :)
+                                mkReport xs  | pairs <- sortBy (flip compare `on` fst) . mkCountSings $ xs
+                                             = map (uncurry (flip (|<>|)) . first (parensQuote . showText)) pairs
+                                mkCountSings = map (length &&& head) . sortGroup
+                        in findFullNameForAbbrev target (mkAdminPlaIdSingList ms) |&| maybe notFound found
     pager i mq Nothing . noneOnNull . intercalateDivider cols =<< forM as (helper . capitalize)
-adminLink p = patternMatchFail "adminLink" . showText $ p
+adminLinks p = patternMatchFail "adminLinks" . showText $ p
+
+
+-----
+
+
+adminLiqs :: HasCallStack => ActionFun -- TODO: Help.
+adminLiqs (WithArgs i _ _ as) =
+    logPlaExecArgs (prefixAdminCmd "liquids") as i
+adminLiqs p = patternMatchFail "adminLiqs" . showText $ p
 
 
 -----

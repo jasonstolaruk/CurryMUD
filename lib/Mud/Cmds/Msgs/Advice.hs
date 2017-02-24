@@ -17,9 +17,9 @@ module Mud.Cmds.Msgs.Advice ( adviceAAnnounceNoArgs
                             , adviceAHashNoHash
                             , adviceAHolySymbolExcessArgs
                             , adviceAHolySymbolNoArgs
-                            , adviceAHostNoArgs
+                            , adviceAHostsNoArgs
                             , adviceAKillNoArgs
-                            , adviceALinkNoArgs
+                            , adviceALinksNoArgs
                             , adviceALocateNoArgs
                             , adviceAMsgNoArgs
                             , adviceAMsgNoMsg
@@ -251,16 +251,16 @@ adviceAHolySymbolNoArgs = "Please provide two arguments: the number of holy symb
                           colorWith quoteColor (prefixAdminCmd "holysymbol" <> " 5 aule")
 
 
-adviceAHostNoArgs :: Text
-adviceAHostNoArgs = "Please specify the PC names of one or more players whose host statistics you would like to see."
+adviceAHostsNoArgs :: Text
+adviceAHostsNoArgs = "Please specify the PC names of one or more players whose host statistics you would like to see."
 
 
 adviceAKillNoArgs :: Text
 adviceAKillNoArgs = "Please provide one or more IDs to kill."
 
 
-adviceALinkNoArgs :: Text
-adviceALinkNoArgs = "Please specify the names of one or more PCs whose two-way links you would like to see."
+adviceALinksNoArgs :: Text
+adviceALinksNoArgs = "Please specify the names of one or more PCs whose two-way links you would like to see."
 
 
 adviceALocateNoArgs :: Text
