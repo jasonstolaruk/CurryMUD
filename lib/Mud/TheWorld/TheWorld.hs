@@ -164,11 +164,11 @@ initRmActionFunTbl = tweak $ rmActionFunTbl .~ M.fromList list
 
 
 initDistinctFoodTbl :: HasCallStack => MudStack ()
-initDistinctFoodTbl = tweak $ distinctFoodTbl .~ IM.fromList distinctFoodList
+initDistinctFoodTbl = tweak $ distinctFoodTbl .~ IM.fromList (map dropThr foodList)
 
 
 initDistinctLiqTbl :: HasCallStack => MudStack ()
-initDistinctLiqTbl = tweak $ distinctLiqTbl .~ IM.fromList distinctLiqList
+initDistinctLiqTbl = tweak $ distinctLiqTbl .~ IM.fromList (map dropThr liqList)
 
 
 createWorld :: HasCallStack => MudStack ()

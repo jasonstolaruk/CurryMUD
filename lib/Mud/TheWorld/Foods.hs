@@ -1,10 +1,10 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Mud.TheWorld.Foods (distinctFoodList) where
+module Mud.TheWorld.Foods (foodList) where
 
 import Mud.Data.State.MudData
 --import Mud.TheWorld.FoodIds
 
 
-distinctFoodList :: [(Id, DistinctFood)]
-distinctFoodList = []
+foodList :: [(Id, DistinctFood, Food)]
+foodList = []

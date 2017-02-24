@@ -1,0 +1,11 @@
+\h #dLIQUIDS \d
+
+\uUSAGE\n
+#dliquids \s[\dregex \s...]\d
+
+\uDESCRIPTION\n
+Display a list of liquids. Optionally, search the list for one or more regex patterns.
+
+\uEXAMPLES\n
+\q#dliquids\d to display the full list.4`
+\q#dliquids tonic\d to display entries containing "tonic".4`

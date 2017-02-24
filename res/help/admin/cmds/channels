@@ -1,7 +1,7 @@
-\h #dCHANNEL \d
+\h #dCHANNELS \d
 
 \uUSAGE\n
-#dchannel \s[\dID \s...]\d
+#dchannels \s[\dID \s...]\d
 
 \uDESCRIPTION\n
 Display information about one or more telepathic channels.
@@ -11,6 +11,6 @@ When no arguments are provided, you will get reports for all existing channels.
 For information regarding the ethical use of this command, see "help ethics".
 
 \uEXAMPLES\n
-\q#dchannel 0\d to display a report for channel 0.4`
-\q#dchannel 0 1\d to display reports for channels 0 and 1.4`
-\q#dchannel\d to display reports for all existing channels.4`
+\q#dchannels 0\d to display a report for channel 0.4`
+\q#dchannels 0 1\d to display reports for channels 0 and 1.4`
+\q#dchannels\d to display reports for all existing channels.4`

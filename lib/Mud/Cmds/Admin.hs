@@ -37,6 +37,7 @@ import Mud.Misc.Database
 import Mud.Misc.Gods
 import Mud.Misc.Misc
 import Mud.Misc.Persist
+import Mud.TheWorld.Liqs
 import Mud.TheWorld.Zones.AdminZoneIds (iLoggedOut, iRoot, iWelcome)
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
@@ -136,6 +137,7 @@ massLogPla = L.massLogPla "Mud.Cmds.Admin"
 
 
 -- TODO: ":clone"
+-- TODO: ":foods"
 adminCmds :: HasCallStack => [Cmd]
 adminCmds =
     [ mkAdminCmd "?"          adminDispCmdList True  cmdDescDispCmdList
@@ -1226,10 +1228,16 @@ adminLinks p = patternMatchFail "adminLinks" . showText $ p
 -----
 
 
-adminLiqs :: HasCallStack => ActionFun -- TODO: Help.
-adminLiqs (WithArgs i _ _ as) =
+adminLiqs :: HasCallStack => ActionFun
+adminLiqs (WithArgs i mq cols as) = do
     logPlaExecArgs (prefixAdminCmd "liquids") as i
+    (sort mkLiqsTxt |&|) $ case as of [] -> pager i mq Nothing . concatMap (wrapIndent 2 cols)
+                                      _  -> dispMatches i mq cols 2 IsRegex as
 adminLiqs p = patternMatchFail "adminLiqs" . showText $ p
+
+
+mkLiqsTxt :: [Text]
+mkLiqsTxt = [ showText i |<>| pp liq |<>| pp distinctLiq | (i, distinctLiq, liq) <- liqList ]
 
 
 -----

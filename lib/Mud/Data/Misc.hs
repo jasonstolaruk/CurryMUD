@@ -323,6 +323,12 @@ instance Pretty Cloth where
   pp Trousers = "trousers"
 
 
+instance Pretty ConsumpEffects where
+  pp (ConsumpEffects mouths secs effectList) = commas [ "mouthfuls: " <> commaShow mouths
+                                                      , "seconds: "   <> commaShow secs
+                                                      , "effects: "   <> pp effectList ]
+
+
 instance Pretty CurryMonth where
   pp DunLun  = "Dun Lun"
   pp RimeLun = "Rime Lun"
@@ -348,6 +354,13 @@ instance Pretty DiscoverRec where
   pp DiscoverRec { .. } = slashes [ dbTimestamp
                                   , dbHost
                                   , dbMsg ]
+
+
+instance Pretty DistinctLiq where
+  pp (DistinctLiq (EdibleEffects digest consump)) = a |<>| b
+    where
+      a = "DIGEST "  <> maybe none pp digest
+      b = "CONSUMP " <> maybe none pp consump
 
 
 instance Pretty DurationalEffect where
@@ -392,6 +405,10 @@ instance Pretty EffectSub where
 instance Pretty EffectVal where
   pp (EffectFixedVal  x     ) = showText x
   pp (EffectRangedVal (x, y)) = showText x <> T.cons '-' (showText y)
+
+
+instance Pretty EffectList where
+  pp (EffectList xs) = commas . map (either pp pp) $ xs
 
 
 instance Pretty Feeling where
@@ -461,6 +478,10 @@ instance Pretty Lang where
 
 instance Pretty LinkDir where
   pp = uncapitalize . showText
+
+
+instance Pretty Liq where
+  pp (Liq _ _ smell taste desc) = T.concat [ "SMELL ", dblQuote smell, " TASTE ", dblQuote taste, " DESC ", dblQuote desc ]
 
 
 instance Pretty LoggedInOrOut where

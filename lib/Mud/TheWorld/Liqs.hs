@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Mud.TheWorld.Liqs ( distinctLiqList
+module Mud.TheWorld.Liqs ( liqList
                          , potDxLiq
                          , potFpLiq
                          , potHpLiq
@@ -30,28 +30,28 @@ import Mud.TheWorld.LiqIds
 import Mud.TopLvlDefs.Misc
 
 
-distinctLiqList :: [(Id, DistinctLiq)]
-distinctLiqList = [ (iLiqPotDx,              potDxDistinctLiq             )
-                  , (iLiqPotFp,              potFpDistinctLiq             )
-                  , (iLiqPotHp,              potHpDistinctLiq             )
-                  , (iLiqPotHt,              potHtDistinctLiq             )
-                  , (iLiqPotInstantDx,       potInstantDxDistinctLiq      )
-                  , (iLiqPotInstantFp,       potInstantFpDistinctLiq      )
-                  , (iLiqPotInstantHp,       potInstantHpDistinctLiq      )
-                  , (iLiqPotInstantHt,       potInstantHtDistinctLiq      )
-                  , (iLiqPotInstantMa,       potInstantMaDistinctLiq      )
-                  , (iLiqPotInstantMp,       potInstantMpDistinctLiq      )
-                  , (iLiqPotInstantPp,       potInstantPpDistinctLiq      )
-                  , (iLiqPotInstantPs,       potInstantPsDistinctLiq      )
-                  , (iLiqPotInstantSt,       potInstantStDistinctLiq      )
-                  , (iLiqPotInstantTinnitus, potInstantTinnitusDistinctLiq)
-                  , (iLiqPotMa,              potMaDistinctLiq             )
-                  , (iLiqPotMp,              potMpDistinctLiq             )
-                  , (iLiqPotPp,              potPpDistinctLiq             )
-                  , (iLiqPotPs,              potPsDistinctLiq             )
-                  , (iLiqPotSt,              potStDistinctLiq             )
-                  , (iLiqPotTinnitus,        potTinnitusDistinctLiq       )
-                  , (iLiqWater,              waterDistinctLiq             ) ]
+liqList :: [(Id, DistinctLiq, Liq)]
+liqList = [ (iLiqPotDx,              potDxDistinctLiq,              potDxLiq             )
+          , (iLiqPotFp,              potFpDistinctLiq,              potFpLiq             )
+          , (iLiqPotHp,              potHpDistinctLiq,              potHpLiq             )
+          , (iLiqPotHt,              potHtDistinctLiq,              potHtLiq             )
+          , (iLiqPotInstantDx,       potInstantDxDistinctLiq,       potInstantDxLiq      )
+          , (iLiqPotInstantFp,       potInstantFpDistinctLiq,       potInstantFpLiq      )
+          , (iLiqPotInstantHp,       potInstantHpDistinctLiq,       potInstantHpLiq      )
+          , (iLiqPotInstantHt,       potInstantHtDistinctLiq,       potInstantHtLiq      )
+          , (iLiqPotInstantMa,       potInstantMaDistinctLiq,       potInstantMaLiq      )
+          , (iLiqPotInstantMp,       potInstantMpDistinctLiq,       potInstantMpLiq      )
+          , (iLiqPotInstantPp,       potInstantPpDistinctLiq,       potInstantPpLiq      )
+          , (iLiqPotInstantPs,       potInstantPsDistinctLiq,       potInstantPsLiq      )
+          , (iLiqPotInstantSt,       potInstantStDistinctLiq,       potInstantStLiq      )
+          , (iLiqPotInstantTinnitus, potInstantTinnitusDistinctLiq, potInstantTinnitusLiq)
+          , (iLiqPotMa,              potMaDistinctLiq,              potMaLiq             )
+          , (iLiqPotMp,              potMpDistinctLiq,              potMpLiq             )
+          , (iLiqPotPp,              potPpDistinctLiq,              potPpLiq             )
+          , (iLiqPotPs,              potPsDistinctLiq,              potPsLiq             )
+          , (iLiqPotSt,              potStDistinctLiq,              potStLiq             )
+          , (iLiqPotTinnitus,        potTinnitusDistinctLiq,        potTinnitusLiq       )
+          , (iLiqWater,              waterDistinctLiq,              waterLiq             ) ]
 
 
 -----
