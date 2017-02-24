@@ -66,6 +66,7 @@ library
                        Mud.Data.State.Util.Locks
                        Mud.Data.State.Util.Make
                        Mud.Data.State.Util.Misc
+                       Mud.Data.State.Util.Noun
                        Mud.Data.State.Util.Output
                        Mud.Data.State.Util.Put
                        Mud.Data.State.Util.Random

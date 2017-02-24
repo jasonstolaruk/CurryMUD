@@ -29,6 +29,7 @@ import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Hierarchy
 import Mud.Data.State.Util.Make
 import Mud.Data.State.Util.Misc
+import Mud.Data.State.Util.Noun
 import Mud.Data.State.Util.Output
 import Mud.Data.State.Util.Random
 import Mud.Misc.ANSI
@@ -967,7 +968,7 @@ xformNls = T.replace theNl (colorWith nlColor "\\n")
 
 
 examineVessel :: HasCallStack => ExamineHelper
-examineVessel i ms = let v = getVessel i ms in
+examineVessel i ms = let v = getVessel i ms in -- TODO: Describe the liq?
     [ "Max mouthfuls: "   <> v^.vesselMaxMouthfuls.to showText
     , "Vessel contents: " <> v^.vesselCont        .to (descCont v) ] ++ views vesselCont (maybeEmp (descLiq . fst)) v
   where
@@ -978,7 +979,7 @@ examineVessel i ms = let v = getVessel i ms in
                                         , " "
                                         , parensQuote $ showText (calcVesselPerFull v m) <> "%" ]
     descLiq l                = let dl = getDistinctLiqForLiq l ms
-                               in [ "Distinct liquid ID: " <> l^.liqId.to showText
+                               in [ "Distinct liquid ID: " <> l^.liqId       .to showText
                                   , "Liquid smell: "       <> l^.liqSmellDesc.to noneOnNull
                                   , "Liquid taste: "       <> l^.liqTasteDesc.to noneOnNull
                                   , "Drink description: "  <> l^.liqDrinkDesc ] ++ dl^.liqEdibleEffects.to descEdibleEffects

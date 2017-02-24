@@ -7,10 +7,7 @@ module Mud.Misc.Misc ( BothGramNos
                      , mkPlurFromBoth
                      , parseWrap
                      , parseWrapXform
-                     , pluralize
-                     , raceToLang
-                     , renderLiqNoun
-                     , renderNoun ) where
+                     , pluralize ) where
 
 import Mud.Data.Misc
 import Mud.Data.State.MudData
@@ -19,8 +16,6 @@ import Mud.Util.Text
 import Mud.Util.Token
 import Mud.Util.Wrapping
 
-import Control.Lens (to)
-import Control.Lens.Operators ((^.))
 import Data.Maybe (catMaybes)
 import Data.Monoid (Sum(..), (<>))
 import Data.Text (Text)
@@ -79,32 +74,3 @@ parseWrapXform cols = map xformLeadingSpaceChars . parseWrap cols
 
 pluralize :: BothGramNos -> Int -> Text
 pluralize (s, p) x = x == 1 ? s :? p
-
-
------
-
-
-raceToLang :: Race -> Lang
-raceToLang Dwarf     = DwarfLang
-raceToLang Elf       = ElfLang
-raceToLang Felinoid  = FelinoidLang
-raceToLang Hobbit    = HobbitLang
-raceToLang Human     = HumanLang
-raceToLang Lagomorph = LagomorphLang
-raceToLang Nymph     = NymphLang
-raceToLang Vulpenoid = VulpenoidLang
-
-
------
-
-
-renderLiqNoun :: Liq -> (Text -> Text) -> Text
-renderLiqNoun l f = l^.liqNoun.to (renderNoun f)
-
-
------
-
-
-renderNoun :: (Text -> Text) -> Noun -> Text
-renderNoun _ (Don'tArticle t) = t
-renderNoun f (DoArticle    t) = f t

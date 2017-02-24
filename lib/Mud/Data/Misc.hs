@@ -79,6 +79,7 @@ module Mud.Data.Misc ( Action(..)
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
+import Mud.Data.State.Util.Noun
 import Mud.Misc.Database
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
@@ -481,7 +482,10 @@ instance Pretty LinkDir where
 
 
 instance Pretty Liq where
-  pp (Liq _ _ smell taste desc) = T.concat [ "SMELL ", dblQuote smell, " TASTE ", dblQuote taste, " DESC ", dblQuote desc ]
+  pp l@(Liq _ _ smell taste desc) = T.concat [ "NOUN ",   renderLiqNoun l aOrAn
+                                             , " SMELL ", dblQuote smell
+                                             , " TASTE ", dblQuote taste
+                                             , " DESC ",  dblQuote desc ]
 
 
 instance Pretty LoggedInOrOut where

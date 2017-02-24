@@ -14,6 +14,7 @@ import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Calc
 import Mud.Data.State.Util.Get
+import Mud.Data.State.Util.Lang
 import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Interp.Misc

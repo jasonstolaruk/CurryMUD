@@ -97,6 +97,7 @@ import Mud.Data.State.Util.Coins
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Hierarchy
 import Mud.Data.State.Util.Misc
+import Mud.Data.State.Util.Noun
 import Mud.Data.State.Util.Output
 import Mud.Misc.ANSI
 import Mud.Misc.Database

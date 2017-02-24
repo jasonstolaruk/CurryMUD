@@ -39,6 +39,7 @@ import Mud.Data.State.Util.Hierarchy
 import Mud.Data.State.Util.Lang
 import Mud.Data.State.Util.Make
 import Mud.Data.State.Util.Misc
+import Mud.Data.State.Util.Noun
 import Mud.Data.State.Util.Output
 import Mud.Data.State.Util.Random
 import Mud.Interp.Misc
