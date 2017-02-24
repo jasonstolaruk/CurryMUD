@@ -172,7 +172,7 @@ adminCmds =
     , mkAdminCmd "kill"       adminKill        True  "Instantly kill one or more mobiles by ID."
     , mkAdminCmd "links"      adminLinks       True  "Display two-way links for one or more PCs, sorted by volume of \
                                                      \messages in descending order."
-    , mkAdminCmd "liquids"    adminLiqs        True  "Display or regex search a list of liquids."
+    , mkAdminCmd "liquids"    adminLiqs        True  "Display or regex search a list of hard-coded liquids."
     , mkAdminCmd "locate"     adminLocate      True  "Locate one or more IDs."
     , mkAdminCmd "message"    adminMsg         True  "Send a message to a regular player."
     , mkAdminCmd "moon"       adminMoon        True  "Display the current phase of the moon."

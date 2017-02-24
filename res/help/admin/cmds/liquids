@@ -4,7 +4,7 @@
 #dliquids \s[\dregex \s...]\d
 
 \uDESCRIPTION\n
-Display a list of liquids. Optionally, search the list for one or more regex patterns.
+Display a list of hard-coded liquids. Optionally, search the list for one or more regex patterns.
 
 \uEXAMPLES\n
 \q#dliquids\d to display the full list.4`
