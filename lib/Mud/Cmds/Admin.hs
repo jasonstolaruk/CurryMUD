@@ -788,10 +788,7 @@ descEdibleEffects (EdibleEffects d c) =
 
 
 descEffectList :: HasCallStack => EffectList -> Text
-descEffectList (EffectList xs) = commas . map helper $ xs
-  where
-    helper (Left  instaEff) = pp instaEff
-    helper (Right eff     ) = pp eff
+descEffectList (EffectList xs) = commas . map (either pp pp) $ xs
 
 
 examineHolySymbol :: HasCallStack => ExamineHelper
@@ -968,7 +965,7 @@ xformNls = T.replace theNl (colorWith nlColor "\\n")
 
 
 examineVessel :: HasCallStack => ExamineHelper
-examineVessel i ms = let v = getVessel i ms in -- TODO: Describe the liq?
+examineVessel i ms = let v = getVessel i ms in
     [ "Max mouthfuls: "   <> v^.vesselMaxMouthfuls.to showText
     , "Vessel contents: " <> v^.vesselCont        .to (descCont v) ] ++ views vesselCont (maybeEmp (descLiq . fst)) v
   where

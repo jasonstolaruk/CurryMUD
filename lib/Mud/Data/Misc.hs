@@ -483,9 +483,11 @@ instance Pretty LinkDir where
 
 instance Pretty Liq where
   pp l@(Liq _ _ smell taste drink) = T.concat [ "NOUN ",   renderLiqNoun l aOrAn
-                                              , " SMELL ", dblQuote smell
-                                              , " TASTE ", dblQuote taste
-                                              , " DRINK ", dblQuote drink ]
+                                              , " SMELL ", noneOnNull . f $ smell
+                                              , " TASTE ", noneOnNull . f $ taste
+                                              , " DRINK ", noneOnNull . f $ drink ]
+    where
+      f t = onFalse (()# t) dblQuote t
 
 
 instance Pretty LoggedInOrOut where
