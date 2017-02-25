@@ -96,7 +96,7 @@ potXpEffectVal = 2
 
 
 mkPotEffectFeeling :: FeelingTag -> Maybe EffectFeeling
-mkPotEffectFeeling tag = Just . EffectFeeling tag $ 15
+mkPotEffectFeeling tag = Just . EffectFeeling tag $ 15 {- secs -}
 
 
 potInstantHpLiq :: Liq
@@ -120,7 +120,7 @@ potInstantHpDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Nothing
 
 
 mkPotConsumpEffects :: EffectList -> ConsumpEffects
-mkPotConsumpEffects = ConsumpEffects 4 30
+mkPotConsumpEffects = ConsumpEffects 4 {- mouthfuls -} 30 {- secs -}
 
 
 potInstantXpEffectRange :: Range
@@ -272,11 +272,11 @@ potStDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just es
 
 
 potAttribEffectVal :: Int
-potAttribEffectVal = 2
+potAttribEffectVal = 3
 
 
 potAttribEffectDur :: Seconds
-potAttribEffectDur = 5 * 60
+potAttribEffectDur = 15 {- mins -} * 60 {- secs -}
 
 
 potInstantStLiq :: Liq
@@ -498,7 +498,7 @@ potTinnitusDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just es
     es = EffectList . pure . Left $ ie
     ie = InstaEffect { _instaEffectSub     = InstaEffectOther tinnitusInstaEffectFunName
                      , _instaEffectVal     = Nothing
-                     , _instaEffectFeeling = Just . EffectFeeling "potTinnitus" $ 30 }
+                     , _instaEffectFeeling = Just . EffectFeeling "potTinnitus" $ 30 {- secs -} }
 
 
 potInstantTinnitusLiq :: Liq
@@ -518,5 +518,5 @@ potInstantTinnitusDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = No
     e  = Effect { _effectTag     = Just "potTinnitus"
                 , _effectSub     = EffectOther tinnitusEffectFunName
                 , _effectVal     = Nothing
-                , _effectDur     = 2 * 60
-                , _effectFeeling = Just . EffectFeeling "potTinnitus" $ 2 * 60 }
+                , _effectDur     = 2 {- mins -} * 60 {- secs -}
+                , _effectFeeling = Just . EffectFeeling "potTinnitus" $ 2 {- mins -} * 60 {- secs -} }
