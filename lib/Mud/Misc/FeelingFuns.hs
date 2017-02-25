@@ -3,17 +3,18 @@
 module Mud.Misc.FeelingFuns (feelingFuns) where
 
 import Mud.Data.State.MudData
+import Mud.TheWorld.Liqs
 
 import Data.Text (Text)
 import Data.Monoid ((<>))
 
 
 feelingFuns :: [(FeelingTag, FeelingFun)]
-feelingFuns = [ ("potHp",       potHpFeelingFun      )
-              , ("potMp",       potMpFeelingFun      )
-              , ("potPp",       potPpFeelingFun      )
-              , ("potFp",       potFpFeelingFun      )
-              , ("potTinnitus", potTinnitusFeelingFun) ]
+feelingFuns = [ (potHpTag,       potHpFeelingFun      )
+              , (potMpTag,       potMpFeelingFun      )
+              , (potPpTag,       potPpFeelingFun      )
+              , (potFpTag,       potFpFeelingFun      )
+              , (potTinnitusTag, potTinnitusFeelingFun) ]
 
 
 -----

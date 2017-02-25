@@ -32,6 +32,7 @@ import Mud.Misc.EffectFuns
 import Mud.Misc.Logging (writeLog)
 import Mud.Misc.Misc
 import Mud.Misc.Persist
+import Mud.TheWorld.Liqs
 import Mud.TheWorld.Zones.AdminZoneIds (iLoggedOut, iPidge)
 import Mud.Threads.Effect
 import Mud.Threads.Misc
@@ -423,9 +424,9 @@ debugEchoWon't p              = withoutArgs debugEchoWon't p
 debugEffect :: HasCallStack => ActionFun
 debugEffect (NoArgs' i mq) = do
     logPlaExec (prefixDebugCmd "effect") i
-    ok mq -- TODO: Effect tag?
-    startEffect i . Effect Nothing (MobEffectAttrib St) (Just . EffectRangedVal $ (10, 20)) 30 $ Nothing
-debugEffect p              = withoutArgs debugEffect p
+    ok mq
+    startEffect i . Effect (Just "debugEfect") (MobEffectAttrib St) (Just . EffectRangedVal $ (10, 20)) 30 $ Nothing
+debugEffect p = withoutArgs debugEffect p
 
 
 -----
@@ -1081,8 +1082,8 @@ debugThrowLog p = withoutArgs debugThrowLog p
 debugTinnitus :: HasCallStack => ActionFun
 debugTinnitus (NoArgs' i mq) = do
     logPlaExec (prefixDebugCmd "tinnitus") i
-    ok mq -- TODO: Effect tag?
-    startEffect i . Effect Nothing (EffectOther tinnitusEffectFunName) Nothing (2 * 60) . Just . EffectFeeling "potTinnitus" $ 2 * 60
+    ok mq
+    startEffect i . Effect (Just potTinnitusTag) (EffectOther tinnitusEffectFunName) Nothing (2 * 60) . Just . EffectFeeling potTinnitusTag $ 2 * 60
 debugTinnitus p = withoutArgs debugTinnitus p
 
 

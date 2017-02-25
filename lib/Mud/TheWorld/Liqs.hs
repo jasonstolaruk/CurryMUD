@@ -3,24 +3,34 @@
 module Mud.TheWorld.Liqs ( liqList
                          , potDxLiq
                          , potFpLiq
+                         , potFpTag
                          , potHpLiq
+                         , potHpTag
                          , potHtLiq
                          , potInstantDxLiq
+                         , potInstantDxTag
                          , potInstantFpLiq
                          , potInstantHpLiq
                          , potInstantHtLiq
+                         , potInstantHtTag
                          , potInstantMaLiq
+                         , potInstantMaTag
                          , potInstantMpLiq
                          , potInstantPpLiq
                          , potInstantPsLiq
+                         , potInstantPsTag
                          , potInstantStLiq
+                         , potInstantStTag
                          , potInstantTinnitusLiq
                          , potMaLiq
                          , potMpLiq
+                         , potMpTag
                          , potPpLiq
+                         , potPpTag
                          , potPsLiq
                          , potStLiq
                          , potTinnitusLiq
+                         , potTinnitusTag
                          , waterLiq ) where
 
 import Mud.Cmds.Msgs.Misc
@@ -28,6 +38,8 @@ import Mud.Data.State.MudData
 import Mud.Misc.EffectFuns
 import Mud.TheWorld.LiqIds
 import Mud.TopLvlDefs.Misc
+
+import Data.Text (Text)
 
 
 liqList :: [(Id, DistinctLiq, Liq)]
@@ -88,7 +100,7 @@ potHpDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just es
     es = EffectList . pure . Left $ ie
     ie = InstaEffect { _instaEffectSub     = MobInstaEffectPts CurHp
                      , _instaEffectVal     = Just . EffectFixedVal $ potXpEffectVal
-                     , _instaEffectFeeling = mkPotEffectFeeling "potHp" }
+                     , _instaEffectFeeling = mkPotEffectFeeling potHpTag }
 
 
 potXpEffectVal :: Int
@@ -96,7 +108,11 @@ potXpEffectVal = 2
 
 
 mkPotEffectFeeling :: FeelingTag -> Maybe EffectFeeling
-mkPotEffectFeeling tag = Just . EffectFeeling tag $ 15 {- secs -}
+mkPotEffectFeeling tag = Just . EffectFeeling tag $ 30 {- secs -}
+
+
+potHpTag :: Text
+potHpTag = "potHp"
 
 
 potInstantHpLiq :: Liq
@@ -116,7 +132,7 @@ potInstantHpDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Nothing
     es = EffectList . pure . Left $ ie
     ie = InstaEffect { _instaEffectSub     = MobInstaEffectPts CurHp
                      , _instaEffectVal     = Just . EffectRangedVal $ potInstantXpEffectRange
-                     , _instaEffectFeeling = mkPotEffectFeeling "potHp" }
+                     , _instaEffectFeeling = mkPotEffectFeeling potHpTag }
 
 
 mkPotConsumpEffects :: EffectList -> ConsumpEffects
@@ -145,7 +161,10 @@ potMpDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just es
     es = EffectList . pure . Left $ ie
     ie = InstaEffect { _instaEffectSub     = MobInstaEffectPts CurMp
                      , _instaEffectVal     = Just . EffectFixedVal $ potXpEffectVal
-                     , _instaEffectFeeling = mkPotEffectFeeling "potMp" }
+                     , _instaEffectFeeling = mkPotEffectFeeling potMpTag }
+
+potMpTag :: Text
+potMpTag = "potMp"
 
 
 potInstantMpLiq :: Liq
@@ -164,7 +183,7 @@ potInstantMpDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Nothing
     es = EffectList . pure . Left $ ie
     ie = InstaEffect { _instaEffectSub     = MobInstaEffectPts CurMp
                      , _instaEffectVal     = Just . EffectRangedVal $ potInstantXpEffectRange
-                     , _instaEffectFeeling = mkPotEffectFeeling "potMp" }
+                     , _instaEffectFeeling = mkPotEffectFeeling potMpTag }
 
 
 -----
@@ -185,7 +204,11 @@ potPpDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just es
     es = EffectList . pure . Left $ ie
     ie = InstaEffect { _instaEffectSub     = MobInstaEffectPts CurPp
                      , _instaEffectVal     = Just . EffectFixedVal $ potXpEffectVal
-                     , _instaEffectFeeling = mkPotEffectFeeling "potPp" }
+                     , _instaEffectFeeling = mkPotEffectFeeling potPpTag }
+
+
+potPpTag :: Text
+potPpTag = "potPp"
 
 
 potInstantPpLiq :: Liq
@@ -204,7 +227,7 @@ potInstantPpDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Nothing
     es = EffectList . pure . Left $ ie
     ie = InstaEffect { _instaEffectSub     = MobInstaEffectPts CurPp
                      , _instaEffectVal     = Just . EffectRangedVal $ potInstantXpEffectRange
-                     , _instaEffectFeeling = mkPotEffectFeeling "potPp" }
+                     , _instaEffectFeeling = mkPotEffectFeeling potPpTag }
 
 
 -----
@@ -225,7 +248,11 @@ potFpDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just es
     es = EffectList . pure . Left $ ie
     ie = InstaEffect { _instaEffectSub     = MobInstaEffectPts CurFp
                      , _instaEffectVal     = Just . EffectFixedVal $ potXpEffectVal
-                     , _instaEffectFeeling = mkPotEffectFeeling "potFp" }
+                     , _instaEffectFeeling = mkPotEffectFeeling potFpTag }
+
+
+potFpTag :: Text
+potFpTag = "potFp"
 
 
 potInstantFpLiq :: Liq
@@ -245,7 +272,7 @@ potInstantFpDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Nothing
     es = EffectList . pure . Left $ ie
     ie = InstaEffect { _instaEffectSub     = MobInstaEffectPts CurFp
                      , _instaEffectVal     = Just . EffectRangedVal $ potInstantXpEffectRange
-                     , _instaEffectFeeling = mkPotEffectFeeling "potFp" }
+                     , _instaEffectFeeling = mkPotEffectFeeling potFpTag }
 
 
 -----
@@ -272,7 +299,7 @@ potStDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just es
 
 
 potAttribEffectVal :: Int
-potAttribEffectVal = 3
+potAttribEffectVal = 2
 
 
 potAttribEffectDur :: Seconds
@@ -293,11 +320,15 @@ potInstantStDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Nothing
   where
     ce = mkPotConsumpEffects es
     es = EffectList . pure . Right $ e
-    e  = Effect { _effectTag     = Just "potSt"
+    e  = Effect { _effectTag     = Just potInstantStTag
                 , _effectSub     = MobEffectAttrib St
                 , _effectVal     = Just . EffectRangedVal $ potInstantAtttribEffectRange
                 , _effectDur     = potAttribEffectDur
                 , _effectFeeling = Nothing }
+
+
+potInstantStTag :: Text
+potInstantStTag = "potInstantSt"
 
 
 potInstantAtttribEffectRange :: Range
@@ -341,11 +372,15 @@ potInstantDxDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Nothing
   where
     ce = mkPotConsumpEffects es
     es = EffectList . pure . Right $ e
-    e  = Effect { _effectTag     = Just "potDx"
+    e  = Effect { _effectTag     = Just potInstantDxTag
                 , _effectSub     = MobEffectAttrib Dx
                 , _effectVal     = Just . EffectRangedVal $ potInstantAtttribEffectRange
                 , _effectDur     = potAttribEffectDur
                 , _effectFeeling = Nothing }
+
+
+potInstantDxTag :: Text
+potInstantDxTag = "potInstantDxTag"
 
 
 -----
@@ -385,11 +420,15 @@ potInstantHtDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Nothing
   where
     ce = mkPotConsumpEffects es
     es = EffectList . pure . Right $ e
-    e  = Effect { _effectTag     = Just "potHt"
+    e  = Effect { _effectTag     = Just potInstantHtTag
                 , _effectSub     = MobEffectAttrib Ht
                 , _effectVal     = Just . EffectRangedVal $ potInstantAtttribEffectRange
                 , _effectDur     = potAttribEffectDur
                 , _effectFeeling = Nothing }
+
+
+potInstantHtTag :: Text
+potInstantHtTag = "potInstantHt"
 
 
 -----
@@ -429,11 +468,15 @@ potInstantMaDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Nothing
   where
     ce = mkPotConsumpEffects es
     es = EffectList . pure . Right $ e
-    e  = Effect { _effectTag     = Just "potMa"
+    e  = Effect { _effectTag     = Just potInstantMaTag
                 , _effectSub     = MobEffectAttrib Ma
                 , _effectVal     = Just . EffectRangedVal $ potInstantAtttribEffectRange
                 , _effectDur     = potAttribEffectDur
                 , _effectFeeling = Nothing }
+
+
+potInstantMaTag :: Text
+potInstantMaTag = "potInstantMa"
 
 
 -----
@@ -473,11 +516,15 @@ potInstantPsDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Nothing
   where
     ce = mkPotConsumpEffects es
     es = EffectList . pure . Right $ e
-    e  = Effect { _effectTag     = Just "potPs"
+    e  = Effect { _effectTag     = Just potInstantPsTag
                 , _effectSub     = MobEffectAttrib Ps
                 , _effectVal     = Just . EffectRangedVal $ potInstantAtttribEffectRange
                 , _effectDur     = potAttribEffectDur
                 , _effectFeeling = Nothing }
+
+
+potInstantPsTag :: Text
+potInstantPsTag = "potInstantPs"
 
 
 -----
@@ -498,7 +545,11 @@ potTinnitusDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just es
     es = EffectList . pure . Left $ ie
     ie = InstaEffect { _instaEffectSub     = InstaEffectOther tinnitusInstaEffectFunName
                      , _instaEffectVal     = Nothing
-                     , _instaEffectFeeling = Just . EffectFeeling "potTinnitus" $ 30 {- secs -} }
+                     , _instaEffectFeeling = mkPotEffectFeeling potTinnitusTag }
+
+
+potTinnitusTag :: Text
+potTinnitusTag = "potTinnitus"
 
 
 potInstantTinnitusLiq :: Liq
@@ -515,8 +566,8 @@ potInstantTinnitusDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = No
   where
     ce = mkPotConsumpEffects es
     es = EffectList . pure . Right $ e
-    e  = Effect { _effectTag     = Just "potTinnitus"
-                , _effectSub     = EffectOther tinnitusEffectFunName
+    e  = Effect { _effectTag     = Just potTinnitusTag
+                , _effectSub     = EffectOther potTinnitusTag
                 , _effectVal     = Nothing
                 , _effectDur     = 2 {- mins -} * 60 {- secs -}
-                , _effectFeeling = Just . EffectFeeling "potTinnitus" $ 2 {- mins -} * 60 {- secs -} }
+                , _effectFeeling = Just . EffectFeeling potTinnitusTag $ 2 {- mins -} * 60 {- secs -} }
