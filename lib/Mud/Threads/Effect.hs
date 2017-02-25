@@ -18,17 +18,18 @@ import Mud.Threads.FeelingTimer
 import Mud.Threads.Misc
 import Mud.Util.Misc
 import Mud.Util.Operators
+import Mud.Util.Quoting
 import Mud.Util.Text
 import qualified Mud.Misc.Logging as L (logNotice, logPla)
 
 import Control.Concurrent (myThreadId)
-import Control.Concurrent.Async (asyncThreadId, cancel)
+import Control.Concurrent.Async (asyncThreadId, cancel, wait)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TMVar (newEmptyTMVarIO, putTMVar, takeTMVar)
 import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
 import Control.Exception.Lifted (finally, handle)
-import Control.Lens (view, views)
-import Control.Lens.Operators ((?~), (.~), (&), (%~), (<>~))
+import Control.Lens (_1, view, views)
+import Control.Lens.Operators ((?~), (.~), (&), (%~), (^.), (<>~))
 import Control.Monad ((>=>), forM_, unless, when)
 import Control.Monad.IO.Class (liftIO)
 import Control.Monad.Reader (ask)
@@ -58,12 +59,19 @@ startEffect i e@(Effect _ _ (Just (EffectRangedVal range)) _ _) = rndmR range >>
 startEffect i e = startEffectHelper i e
 
 
-startEffectHelper :: HasCallStack => Id -> Effect -> MudStack () -- TODO: Tags.
-startEffectHelper i e@(view effectFeeling -> ef) = do logPla "startEffectHelper" i $ "starting effect: " <> pp e
-                                                      q <- liftIO newTQueueIO
-                                                      a <- runAsync . threadEffect i e $ q
-                                                      maybeVoid (flip (startFeeling i) FeelingNoVal) ef
-                                                      tweak $ durationalEffectTbl.ind i <>~ pure (DurationalEffect e (a, q))
+startEffectHelper :: HasCallStack => Id -> Effect -> MudStack ()
+startEffectHelper i e = getDurEffects i <$> getState >>= \durEffs -> do
+    flip maybeVoid (e^.effectTag) $ \tag -> case filter (views (effect.effectTag) (== Just tag)) durEffs of
+      [] -> unit
+      xs -> do logHelper . prd $ "stopping existing effect with tag " <> dblQuote tag
+               forM_ xs ((>>) <$> stopEffect i <*> views (effectService._1) (liftIO . wait))
+    logHelper . prd $ "starting effect: " <> pp e
+    q <- liftIO newTQueueIO
+    a <- runAsync . threadEffect i e $ q
+    views effectFeeling (maybeVoid (flip (startFeeling i) FeelingNoVal)) e
+    tweak $ durationalEffectTbl.ind i <>~ pure (DurationalEffect e (a, q))
+  where
+    logHelper = logPla "startEffectHelper" i
 
 
 -----
