@@ -205,7 +205,7 @@ sacrificeBonus i gn@(pp -> gn') = getSing i <$> getState >>= \s -> do
 
 
 applyBonus :: HasCallStack => Id -> Sing -> GodName -> UTCTime -> MudStack ()
-applyBonus i s gn now = do
+applyBonus i s gn now = do -- TODO: Continue testing.
     logPla "applyBonus" i "applying bonus."
     withDbExHandler_ "sac_bonus" . insertDbTblSacBonus . SacBonusRec (showText now) s . pp $ gn
     let f = \case Aule      -> let a = (,) <$> rndmElem (mkXpPairs allValues) <*> rndmElem (allValues :: [Attrib])
@@ -215,7 +215,7 @@ applyBonus i s gn now = do
                   Celoriel  -> maxXp curPp maxPp >> effectHelper Ps (5, 15)
                   Dellio    -> maxXpHelper       >> effectHelper Dx (5, 15)
                   Drogo     -> maxXp curMp maxMp >> effectHelper Ma (5, 15)
-                  Iminye    -> maxXpHelper       >> effectHelper Dx (3, 8) >> effectHelper Ht (3, 8)
+                  Iminye    -> maxXpHelper       >> effectHelper Dx (3, 8) >> effectHelper Ht (3, 8) -- TODO: DX not working.
                   Itulvatar -> maxXpHelper       >> rndmElem [ St, Dx, Ht ] >>= flip effectHelper (10, 15)
                   Murgorhd  -> f Aule
                   Rha'yk    -> maxXp curHp maxHp >> effectHelper St (5, 15)
