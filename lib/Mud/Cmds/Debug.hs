@@ -28,7 +28,6 @@ import Mud.Interp.MultiLine
 import Mud.Interp.Pause
 import Mud.Misc.ANSI
 import Mud.Misc.CurryTime
-import Mud.Misc.EffectFuns
 import Mud.Misc.Logging (writeLog)
 import Mud.Misc.Misc
 import Mud.Misc.Persist
@@ -425,7 +424,12 @@ debugEffect :: HasCallStack => ActionFun
 debugEffect (NoArgs' i mq) = do
     logPlaExec (prefixDebugCmd "effect") i
     ok mq
-    startEffect i . Effect (Just "debugEfect") (MobEffectAttrib St) (Just . EffectRangedVal $ (10, 20)) 30 $ Nothing
+    let tag     = Just "debugEffect"
+        effSub  = MobEffectAttrib St
+        effVal  = Just . EffectRangedVal $ (10, 20)
+        effDur  = 30
+        effFeel = Nothing
+    startEffect i . Effect tag effSub effVal effDur $ effFeel
 debugEffect p = withoutArgs debugEffect p
 
 
@@ -1083,7 +1087,12 @@ debugTinnitus :: HasCallStack => ActionFun
 debugTinnitus (NoArgs' i mq) = do
     logPlaExec (prefixDebugCmd "tinnitus") i
     ok mq
-    startEffect i . Effect (Just potTinnitusTag) (EffectOther tinnitusEffectFunName) Nothing (2 * 60) . Just . EffectFeeling potTinnitusTag $ 2 * 60
+    let tag    = potTinnitusTag
+        effSub = EffectOther tag
+        effVal = Nothing
+        effDur = 2 * 60
+        effFeel = Just . EffectFeeling potTinnitusTag $ 2 * 60
+    startEffect i . Effect (Just tag) effSub effVal effDur $ effFeel
 debugTinnitus p = withoutArgs debugTinnitus p
 
 

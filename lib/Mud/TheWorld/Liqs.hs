@@ -35,7 +35,6 @@ module Mud.TheWorld.Liqs ( liqList
 
 import Mud.Cmds.Msgs.Misc
 import Mud.Data.State.MudData
-import Mud.Misc.EffectFuns
 import Mud.TheWorld.LiqIds
 import Mud.TopLvlDefs.Misc
 
@@ -543,7 +542,7 @@ potTinnitusDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just es
                                                    , _consumpEffects = Nothing }
   where
     es = EffectList . pure . Left $ ie
-    ie = InstaEffect { _instaEffectSub     = InstaEffectOther tinnitusInstaEffectFunName
+    ie = InstaEffect { _instaEffectSub     = InstaEffectOther potTinnitusTag
                      , _instaEffectVal     = Nothing
                      , _instaEffectFeeling = mkPotEffectFeeling potTinnitusTag }
 

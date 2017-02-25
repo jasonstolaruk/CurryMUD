@@ -10,11 +10,28 @@ import Data.Monoid ((<>))
 
 
 feelingFuns :: [(FeelingTag, FeelingFun)]
-feelingFuns = [ (potHpTag,       potHpFeelingFun      )
-              , (potMpTag,       potMpFeelingFun      )
-              , (potPpTag,       potPpFeelingFun      )
-              , (potFpTag,       potFpFeelingFun      )
-              , (potTinnitusTag, potTinnitusFeelingFun) ]
+feelingFuns = [ ("sacrificeBonusAule",      sacrificeFeelingFun Aule     )
+              , ("sacrificeBonusCaila",     sacrificeFeelingFun Caila    )
+              , ("sacrificeBonusCeloriel",  sacrificeFeelingFun Celoriel )
+              , ("sacrificeBonusDellio",    sacrificeFeelingFun Dellio   )
+              , ("sacrificeBonusDrogo",     sacrificeFeelingFun Drogo    )
+              , ("sacrificeBonusIminye",    sacrificeFeelingFun Iminye   )
+              , ("sacrificeBonusItulvatar", sacrificeFeelingFun Itulvatar)
+              , ("sacrificeBonusMuhrgorhd", sacrificeFeelingFun Murgorhd )
+              , ("sacrificeBonusRha'yk",    sacrificeFeelingFun Rha'yk   )
+              , ("sacrificeBonusRumialys",  sacrificeFeelingFun Rumialys )
+              , (potFpTag,                  potFpFeelingFun              )
+              , (potHpTag,                  potHpFeelingFun              )
+              , (potMpTag,                  potMpFeelingFun              )
+              , (potPpTag,                  potPpFeelingFun              )
+              , (potTinnitusTag,            potTinnitusFeelingFun        ) ]
+
+
+-----
+
+
+sacrificeFeelingFun :: GodName -> FeelingFun
+sacrificeFeelingFun _ = const "" -- TODO
 
 
 -----
