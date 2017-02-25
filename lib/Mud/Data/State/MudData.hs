@@ -489,7 +489,7 @@ data InstaEffectSub = EntInstaEffectFlags
                     deriving (Eq, Generic, Show)
 
 
-data PtsType = CurHp | CurMp | CurPp | CurFp deriving (Eq, Generic, Show)
+data PtsType = CurHp | CurMp | CurPp | CurFp deriving (Bounded, Enum, Eq, Generic, Show)
 
 
 type InstaEffectFun = Id -> MudStack ()

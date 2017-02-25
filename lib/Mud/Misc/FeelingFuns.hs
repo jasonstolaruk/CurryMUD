@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE LambdaCase, OverloadedStrings #-}
 
 module Mud.Misc.FeelingFuns (feelingFuns) where
 
@@ -10,28 +10,38 @@ import Data.Monoid ((<>))
 
 
 feelingFuns :: [(FeelingTag, FeelingFun)]
-feelingFuns = [ ("sacrificeBonusAule",      sacrificeFeelingFun Aule     )
-              , ("sacrificeBonusCaila",     sacrificeFeelingFun Caila    )
-              , ("sacrificeBonusCeloriel",  sacrificeFeelingFun Celoriel )
-              , ("sacrificeBonusDellio",    sacrificeFeelingFun Dellio   )
-              , ("sacrificeBonusDrogo",     sacrificeFeelingFun Drogo    )
-              , ("sacrificeBonusIminye",    sacrificeFeelingFun Iminye   )
-              , ("sacrificeBonusItulvatar", sacrificeFeelingFun Itulvatar)
-              , ("sacrificeBonusMuhrgorhd", sacrificeFeelingFun Murgorhd )
-              , ("sacrificeBonusRha'yk",    sacrificeFeelingFun Rha'yk   )
-              , ("sacrificeBonusRumialys",  sacrificeFeelingFun Rumialys )
-              , (potFpTag,                  potFpFeelingFun              )
-              , (potHpTag,                  potHpFeelingFun              )
-              , (potMpTag,                  potMpFeelingFun              )
-              , (potPpTag,                  potPpFeelingFun              )
-              , (potTinnitusTag,            potTinnitusFeelingFun        ) ]
+feelingFuns = [ ("sacrificeBonusAule",      sacrificeBonusFeelingFun Aule     )
+              , ("sacrificeBonusCaila",     sacrificeBonusFeelingFun Caila    )
+              , ("sacrificeBonusCeloriel",  sacrificeBonusFeelingFun Celoriel )
+              , ("sacrificeBonusDellio",    sacrificeBonusFeelingFun Dellio   )
+              , ("sacrificeBonusDrogo",     sacrificeBonusFeelingFun Drogo    )
+              , ("sacrificeBonusIminye",    sacrificeBonusFeelingFun Iminye   )
+              , ("sacrificeBonusItulvatar", sacrificeBonusFeelingFun Itulvatar)
+              , ("sacrificeBonusMuhrgorhd", sacrificeBonusFeelingFun Murgorhd )
+              , ("sacrificeBonusRha'yk",    sacrificeBonusFeelingFun Rha'yk   )
+              , ("sacrificeBonusRumialys",  sacrificeBonusFeelingFun Rumialys )
+              , (potFpTag,                  potFpFeelingFun                   )
+              , (potHpTag,                  potHpFeelingFun                   )
+              , (potMpTag,                  potMpFeelingFun                   )
+              , (potPpTag,                  potPpFeelingFun                   )
+              , (potTinnitusTag,            potTinnitusFeelingFun             ) ]
 
 
 -----
 
 
-sacrificeFeelingFun :: GodName -> FeelingFun
-sacrificeFeelingFun _ = const "" -- TODO
+sacrificeBonusFeelingFun :: GodName -> FeelingFun -- TODO
+sacrificeBonusFeelingFun = const . \case
+  Aule      -> "feeling Aule"
+  Caila     -> "feeling Caila"
+  Celoriel  -> "feeling Celoriel"
+  Dellio    -> "feeling Dellio"
+  Drogo     -> "feeling Drogo"
+  Iminye    -> "feeling Iminye"
+  Itulvatar -> "feeling Itulvatar"
+  Murgorhd  -> "feeling Murgorhd"
+  Rha'yk    -> "feeling Rha'yk"
+  Rumialys  -> "feeling Rumialys"
 
 
 -----

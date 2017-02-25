@@ -30,7 +30,7 @@ import Mud.Util.Text
 import qualified Mud.Misc.Logging as L (logNotice, logPla)
 
 import Control.Exception.Lifted (catch, finally, handle)
-import Control.Lens (at, to, views)
+import Control.Lens (at, to, view, views)
 import Control.Lens.Operators ((?~), (.~), (&), (%~), (^.))
 import Control.Monad (join)
 import Control.Monad.IO.Class (liftIO)
@@ -205,23 +205,33 @@ sacrificeBonus i gn@(pp -> gn') = getSing i <$> getState >>= \s -> do
 
 
 applyBonus :: HasCallStack => Id -> Sing -> GodName -> UTCTime -> MudStack ()
-applyBonus i s gn now = do -- TODO
+applyBonus i s gn now = do
     logPla "applyBonus" i "applying bonus."
     withDbExHandler_ "sac_bonus" . insertDbTblSacBonus . SacBonusRec (showText now) s . pp $ gn
-    let f gn' = case gn' of Aule      -> flip effectHelper (15, 15) =<< rndmElem allValues
-                            Caila     -> f Aule
-                            Celoriel  -> effectHelper Ps (5, 15)
-                            Dellio    -> effectHelper Dx (5, 15)
-                            Drogo     -> effectHelper Ma (5, 15)
-                            Iminye    -> effectHelper Dx (3, 8) >> effectHelper Ht (3, 8)
-                            Itulvatar -> flip effectHelper (10, 15) =<< rndmElem [ St, Dx, Ht ]
-                            Murgorhd  -> f Aule
-                            Rha'yk    -> effectHelper St (5, 15)
-                            Rumialys  -> effectHelper Ht (5, 15)
+    let f = \case Aule      -> let a = (,) <$> rndmElem (mkXpPairs allValues) <*> rndmElem (allValues :: [Attrib])
+                                   b = ((>>) <$> uncurry maxXp . fst <*> flip effectHelper (15, 15) . snd)
+                               in a >>= b
+                  Caila     -> f Aule
+                  Celoriel  -> maxXp curPp maxPp >> effectHelper Ps (5, 15)
+                  Dellio    -> maxXpHelper       >> effectHelper Dx (5, 15)
+                  Drogo     -> maxXp curMp maxMp >> effectHelper Ma (5, 15)
+                  Iminye    -> maxXpHelper       >> effectHelper Dx (3, 8) >> effectHelper Ht (3, 8)
+                  Itulvatar -> maxXpHelper       >> rndmElem [ St, Dx, Ht ] >>= flip effectHelper (10, 15)
+                  Murgorhd  -> f Aule
+                  Rha'yk    -> maxXp curHp maxHp >> effectHelper St (5, 15)
+                  Rumialys  -> maxXp curFp maxFp >> effectHelper Ht (5, 15)
     f gn
   where
+    mkXpPairs                 = let helper ptsType acc = (: acc) $ case ptsType of CurHp -> (curHp, maxHp)
+                                                                                   CurMp -> (curMp, maxMp)
+                                                                                   CurPp -> (curPp, maxPp)
+                                                                                   CurFp -> (curFp, maxFp)
+                                in foldr helper []
+    maxXpHelper               = rndmElem (mkXpPairs [ CurHp, CurFp ]) >>= uncurry maxXp
     effectHelper attrib range = let tag     = "sacrificeBonus" <> pp gn
                                     effSub  = MobEffectAttrib attrib
                                     effVal  = Just . EffectRangedVal $ range
                                     effFeel = Just . EffectFeeling tag $ sacrificeBonusSecs
                                 in startEffect i . Effect (Just tag) effSub effVal sacrificeBonusSecs $ effFeel
+    maxXp curXpLens maxXpLens = tweak $ \ms -> let x = view (mobTbl.ind i.maxXpLens) ms
+                                               in ms & mobTbl.ind i.curXpLens .~ x
