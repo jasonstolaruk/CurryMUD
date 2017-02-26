@@ -48,10 +48,10 @@ procInstaEffect i ie@(InstaEffect sub val feel) = getState >>= \ms -> do
     startFeelingHelper  = maybeVoid . flip (startFeeling i)
     effectPts ptsType   = (helper ptsType =<<) . \case EffectFixedVal  x -> return x
                                                        EffectRangedVal r -> rndmR r
-    helper    ptsType x = let (getCur, getMax, setCur) = case ptsType of CurHp -> (curHp, maxHp, curHp)
-                                                                         CurMp -> (curMp, maxHp, curMp)
-                                                                         CurPp -> (curPp, maxHp, curPp)
-                                                                         CurFp -> (curFp, maxHp, curFp)
+    helper    ptsType x = let (getCur, getMax, setCur) = case ptsType of Hp -> (curHp, maxHp, curHp)
+                                                                         Mp -> (curMp, maxHp, curMp)
+                                                                         Pp -> (curPp, maxHp, curPp)
+                                                                         Fp -> (curFp, maxHp, curFp)
                           in do diff <- modifyState $ \ms -> let curPts = ms^.myMobGet.getCur
                                                                  maxPts = ms^.myMobGet.getMax
                                                                  newPts = (curPts + x) `min` maxPts

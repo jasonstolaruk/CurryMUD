@@ -525,10 +525,10 @@ instance Pretty ProfRec where
 
 
 instance Pretty PtsType where
-  pp CurHp = "cur HP"
-  pp CurMp = "cur MP"
-  pp CurPp = "cur PP"
-  pp CurFp = "cur FP"
+  pp Hp = "cur HP"
+  pp Mp = "cur MP"
+  pp Pp = "cur PP"
+  pp Fp = "cur FP"
 
 
 instance Pretty Race where

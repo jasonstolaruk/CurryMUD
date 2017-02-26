@@ -231,12 +231,12 @@ applyBonus i s gn now = do
                   Rumialys  -> maxXp curFp maxFp >>  effectHelper Nothing     (5,  15) Ht
     f gn
   where
-    mkXpPairs   = let helper ptsType acc = (: acc) $ case ptsType of CurHp -> (curHp, maxHp)
-                                                                     CurMp -> (curMp, maxMp)
-                                                                     CurPp -> (curPp, maxPp)
-                                                                     CurFp -> (curFp, maxFp)
+    mkXpPairs   = let helper ptsType acc = (: acc) $ case ptsType of Hp -> (curHp, maxHp)
+                                                                     Mp -> (curMp, maxMp)
+                                                                     Pp -> (curPp, maxPp)
+                                                                     Fp -> (curFp, maxFp)
                   in foldr helper []
-    maxXpHelper = uncurry maxXp =<< rndmElem (mkXpPairs [ CurHp, CurFp ])
+    maxXpHelper = uncurry maxXp =<< rndmElem (mkXpPairs [ Hp, Fp ])
     effectHelper effTagSuff range attrib = let tag     = "sacrificeBonus" <> pp gn <> fromMaybeEmp effTagSuff
                                                effSub  = MobEffectAttrib attrib
                                                effVal  = Just . EffectRangedVal $ range

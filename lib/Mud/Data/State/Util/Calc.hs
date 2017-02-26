@@ -16,6 +16,7 @@ module Mud.Data.State.Util.Calc ( calcBarLen
                                 , calcEffDx
                                 , calcEffHt
                                 , calcEffMa
+                                , calcEffMaxXp
                                 , calcEffPs
                                 , calcEffSt
                                 , calcEncPer
@@ -145,6 +146,21 @@ calcConPerFull i = uncurry percent . (calcInvCoinsVol `fanUncurry` getConCapacit
 -----
 
 
+calcCorpseCapacity :: HasCallStack => Race -> Vol
+calcCorpseCapacity = let f = (calcCorpseCapacity Human |&|) in \case
+  Dwarf     -> f (\x -> round $ fromIntegral x * dwarfToHumanWeightRatio)
+  Elf       -> f minusFifth
+  Felinoid  -> f plusFifth
+  Hobbit    -> f (\x -> round $ fromIntegral x * hobbitToHumanWeightRatio)
+  Human     -> 265000
+  Lagomorph -> f id
+  Nymph     -> f minusQuarter
+  Vulpenoid -> f plusQuarter
+
+
+-----
+
+
 calcCorpseDecompSecs :: HasCallStack => Race -> Seconds
 calcCorpseDecompSecs = let f = (calcCorpseDecompSecs Human |&|) in \case
   Dwarf     -> f (\x -> round $ fromIntegral x * dwarfToHumanWeightRatio)
@@ -167,21 +183,6 @@ calcCorpseDecompSecsForMobSize = (* 60 {- secs -}) . \case SmlMinus -> 20 {- min
                                                            MedPlus  -> 35
                                                            LrgMinus -> 40
                                                            LrgPlus  -> 45
-
-
------
-
-
-calcCorpseCapacity :: HasCallStack => Race -> Vol
-calcCorpseCapacity = let f = (calcCorpseCapacity Human |&|) in \case
-  Dwarf     -> f (\x -> round $ fromIntegral x * dwarfToHumanWeightRatio)
-  Elf       -> f minusFifth
-  Felinoid  -> f plusFifth
-  Hobbit    -> f (\x -> round $ fromIntegral x * hobbitToHumanWeightRatio)
-  Human     -> 265000
-  Lagomorph -> f id
-  Nymph     -> f minusQuarter
-  Vulpenoid -> f plusQuarter
 
 
 -----
@@ -250,39 +251,31 @@ calcEffAttrib attrib i ms = let effects = select effect . getDurEffects i $ ms
     helper acc _                                                                          = acc
 
 
------
-
-
 calcEffDx :: HasCallStack => Id -> MudState -> Int
 calcEffDx = calcEffAttrib Dx
-
-
------
 
 
 calcEffHt :: HasCallStack => Id -> MudState -> Int
 calcEffHt = calcEffAttrib Ht
 
 
------
-
-
 calcEffMa :: HasCallStack => Id -> MudState -> Int
 calcEffMa = calcEffAttrib Ma
-
-
------
 
 
 calcEffPs :: HasCallStack => Id -> MudState -> Int
 calcEffPs = calcEffAttrib Ps
 
 
+calcEffSt :: HasCallStack => Id -> MudState -> Int
+calcEffSt = calcEffAttrib St
+
+
 -----
 
 
-calcEffSt :: HasCallStack => Id -> MudState -> Int
-calcEffSt = calcEffAttrib St
+calcEffMaxXp :: Id -> MudState -> PtsType -> Int -- TODO: Use this.
+calcEffMaxXp _ _ = \case _ -> undefined
 
 
 -----
@@ -294,34 +287,6 @@ calcEncPer i ms = calcWeight i ms `percent` calcMaxEnc i ms
 
 calcMaxEnc :: HasCallStack => Id -> MudState -> Weight
 calcMaxEnc i ms = calcEffSt i ms ^ 2 `percent` 13
-
-
------
-
-
-calcMaxGodNameLen :: HasCallStack => Int
-calcMaxGodNameLen = calcMaxHelper (allValues :: [GodName])
-
-
------
-
-
-calcMaxHelper :: (HasCallStack, Show a) => [a] -> Int
-calcMaxHelper = maximum . map (T.length . showText)
-
-
------
-
-
-calcMaxMouthfuls :: HasCallStack => Obj -> Mouthfuls
-calcMaxMouthfuls = views objVol (`divideRound` mouthfulVol)
-
-
------
-
-
-calcMaxRaceLen :: HasCallStack => Int
-calcMaxRaceLen = calcMaxHelper (allValues :: [Race])
 
 
 -----
@@ -408,6 +373,34 @@ calcLvlUpSkillPts i ms x = rndmIntToRange x (20, 30) + y
   where
     y = case getRace i ms of Human -> 5
                              _     -> 0
+
+
+-----
+
+
+calcMaxGodNameLen :: HasCallStack => Int
+calcMaxGodNameLen = calcMaxHelper (allValues :: [GodName])
+
+
+-----
+
+
+calcMaxHelper :: (HasCallStack, Show a) => [a] -> Int
+calcMaxHelper = maximum . map (T.length . showText)
+
+
+-----
+
+
+calcMaxMouthfuls :: HasCallStack => Obj -> Mouthfuls
+calcMaxMouthfuls = views objVol (`divideRound` mouthfulVol)
+
+
+-----
+
+
+calcMaxRaceLen :: HasCallStack => Int
+calcMaxRaceLen = calcMaxHelper (allValues :: [Race])
 
 
 -----

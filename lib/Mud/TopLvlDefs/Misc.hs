@@ -49,7 +49,7 @@ biodegDelay :: Seconds
 biodegDelay = 5
 
 
-biodegSecs :: Seconds -- TODO: Make "fiveMins" etc.?
+biodegSecs :: Seconds -- TODO: Make "fiveMins" and other bindings?
 biodegSecs = 5 {- mins -} * 60 {- secs -} -- five mins
 
 
