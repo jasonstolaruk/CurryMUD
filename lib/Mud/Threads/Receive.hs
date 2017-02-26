@@ -18,7 +18,7 @@ import Mud.Util.Telnet
 import Mud.Util.Text
 import qualified Mud.Misc.Logging as L (logNotice, logPla)
 
-import Control.Exception.Lifted (catch)
+import Control.Exception.Lifted (handle)
 import Control.Lens.Operators ((%~))
 import Control.Monad.IO.Class (liftIO)
 import Data.List (isInfixOf)
@@ -41,7 +41,7 @@ logPla = L.logPla "Mud.Threads.Receive"
 
 
 threadReceive :: HasCallStack => Handle -> Id -> MsgQueue -> MudStack ()
-threadReceive h i mq = sequence_ [ setThreadType . Receive $ i, loop `catch` plaThreadExHandler i "receive" ]
+threadReceive h i mq = handle (plaThreadExHandler i "receive") $ setThreadType (Receive i) >> loop
   where
     loop = mIf (liftIO . hIsEOF $ h)
                (sequence_ [ logPla "threadReceive loop" i "connection dropped.", writeMsg mq Dropped ])

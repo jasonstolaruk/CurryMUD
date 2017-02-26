@@ -39,24 +39,18 @@ logPla = L.logPla "Mud.Threads.FeelingTimer"
 
 
 startFeeling :: HasCallStack => Id -> EffectFeeling -> FeelingVal -> MudStack ()
-startFeeling i (EffectFeeling tag dur) val = handle exHandler $ do -- TODO: Other "startXyz" functions should get a handler.
+startFeeling i (EffectFeeling tag dur) val = handle (threadStarterExHandler i fn . Just $ tag) $ do
     let f = liftIO . ((>>) <$> cancel <*> wait) . feelingAsync
     maybeVoid f =<< M.lookup tag . getFeelingMap i <$> getState
     feel <- Feeling val dur <$> runAsync (threadFeelingTimer i tag dur)
     tweak $ mobTbl.ind i.feelingMap %~ M.insert tag feel
-    logPla "startFeeling" i . T.concat $ [ "started feeling with tag ", dblQuote tag, ": ", pp feel, "." ]
+    logPla fn i . T.concat $ [ "started feeling with tag ", dblQuote tag, ": ", pp feel, "." ]
   where
-    exHandler :: SomeException -> MudStack ()
-    exHandler e = case fromException e of
-      Just ThreadKilled -> logPla "startFeeling" i $ name <> " has been killed prematurely."
-      _                 -> do t <- descSingId i <$> getState
-                              logExMsg "startFeeling" (T.concat [ "exception caught in ", name, " for ", t ]) e
-      where
-        name = dblQuote "startFeeling" |<>| dblQuote tag
+    fn = "startFeeling"
 
 
 threadFeelingTimer :: HasCallStack => Id -> FeelingTag -> Seconds -> MudStack ()
-threadFeelingTimer i tag dur = sequence_ [ setThreadType . FeelingTimer $ i, loop 0 ] `catch` exHandler -- TODO: Move the position of "catch" in other thread functions.
+threadFeelingTimer i tag dur = sequence_ [ setThreadType . FeelingTimer $ i, loop 0 ] `catch` exHandler
   where
     loop secs | secs >= dur = sequence_ [ logHelper "is expiring.", tweak $ mobTbl.ind i.feelingMap %~ (tag `M.delete`) ]
               | otherwise   = sequence_ [ liftIO . delaySecs $ 1, loop . succ $ secs ]

@@ -29,7 +29,7 @@ import Mud.Util.Quoting
 import Mud.Util.Text
 import qualified Mud.Misc.Logging as L (logNotice, logPla)
 
-import Control.Exception.Lifted (catch, finally, handle)
+import Control.Exception.Lifted (finally, handle)
 import Control.Lens (at, to, view, views)
 import Control.Lens.Operators ((?~), (.~), (&), (%~), (^.))
 import Control.Monad (join)
@@ -57,9 +57,12 @@ logPla = L.logPla "Mud.Threads.Act"
 
 
 startAct :: HasCallStack => Id -> ActType -> Fun -> MudStack ()
-startAct i actType f = do logPla "startAct" i $ pp actType <> " act started."
-                          a <- runAsync . threadAct i actType $ f
-                          tweak $ mobTbl.ind i.actMap.at actType ?~ a
+startAct i actType f = handle (threadStarterExHandler i fn . Just . pp $ actType) $ do
+    logPla fn i $ pp actType <> " act started."
+    a <- runAsync . threadAct i actType $ f
+    tweak $ mobTbl.ind i.actMap.at actType ?~ a
+  where
+    fn = "startAct"
 
 
 stopAct :: HasCallStack => Id -> ActType -> MudStack ()
@@ -90,13 +93,17 @@ threadAct i actType f = let a = (>> f) . setThreadType $ case actType of Attacki
 drinkAct :: HasCallStack => DrinkBundle -> MudStack ()
 drinkAct DrinkBundle { .. } = modifyStateSeq f `finally` tweak (mobTbl.ind drinkerId.nowDrinking .~ Nothing)
   where
-    f ms = let t  = thrice prd . T.concat $ [ "You begin drinking ", renderLiqNoun drinkLiq the, " from the ", drinkVesselSing ]
+    f ms = let t  = thrice prd . T.concat $ [ "You begin drinking "
+                                            , renderLiqNoun drinkLiq the
+                                            , " from the "
+                                            , drinkVesselSing ]
                d  = mkStdDesig drinkerId ms DoCap
                bs = pure ( T.concat [ serialize d, " begins drinking from ", renderVesselSing, "." ]
                          , drinkerId `delete` desigIds d )
-               fs = [ multiWrapSend1Nl drinkerMq drinkerCols . dropEmpties $ [ t, drinkLiq^.liqDrinkDesc ]
+               fs = pure . handle (die (Just drinkerId) (pp Drinking)) . sequence_ $ gs
+               gs = [ multiWrapSend1Nl drinkerMq drinkerCols . dropEmpties $ [ t, drinkLiq^.liqDrinkDesc ]
                     , bcastIfNotIncogNl drinkerId bs
-                    , loop 0 `catch` die (Just drinkerId) (pp Drinking) ]
+                    , loop 0 ]
            in (ms & mobTbl.ind drinkerId.nowDrinking ?~ (drinkLiq, drinkVesselSing), fs)
     renderVesselSing    = drinkVesselSing |&| (isJust drinkVesselId ? aOrAn :? the)
     loop x@(succ -> x') = do

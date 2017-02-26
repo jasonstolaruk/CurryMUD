@@ -12,6 +12,7 @@ module Mud.Threads.Misc ( concurrentTree
                         , runAsync
                         , setThreadType
                         , threadExHandler
+                        , threadStarterExHandler
                         , throwDeath
                         , throwToListenThread
                         , throwWait ) where
@@ -41,6 +42,7 @@ import Data.Typeable (Typeable)
 import GHC.Conc (labelThread)
 import GHC.Stack (HasCallStack)
 import qualified Data.IntMap.Strict as IM (member)
+import qualified Data.Text as T
 import System.IO.Error (isAlreadyInUseError, isDoesNotExistError, isPermissionError)
 
 
@@ -123,18 +125,6 @@ plaThreadExHandler i threadName e | Just ThreadKilled <- fromException e = close
                                   | otherwise                            = threadExHandler (Just i) threadName e
 
 
-threadExHandler :: HasCallStack => Maybe Id -> Text -> SomeException -> MudStack () -- The "Maybe Id" parameter is used
-                                                                                    -- to decorate the thread name.
-threadExHandler mi threadName e = f >>= \threadName' -> do
-    logExMsg "threadExHandler" (rethrowExMsg $ "on " <> threadName' <> " thread") e
-    throwToListenThread e
-  where
-    f = case mi of Nothing -> return threadName
-                   Just i  -> getState >>= \ms -> let t | views entTbl (i `IM.member`) ms = descSingId i ms
-                                                        | otherwise                       = showText i
-                                                  in return $ threadName |<>| t
-
-
 -----
 
 
@@ -155,6 +145,34 @@ runAsync f = liftIO . async . runReaderT f =<< ask
 setThreadType :: HasCallStack => ThreadType -> MudStack ()
 setThreadType threadType = do ti <- liftIO $ myThreadId >>= \ti -> labelThread ti (show threadType) >> return ti
                               tweak $ threadTbl.at ti ?~ threadType
+
+
+-----
+
+
+threadExHandler :: HasCallStack => Maybe Id -> Text -> SomeException -> MudStack () -- The "Maybe Id" parameter is used
+                                                                                    -- to decorate the thread name.
+threadExHandler mi threadName e = f >>= \threadName' -> do
+    logExMsg "threadExHandler" (rethrowExMsg $ "on " <> threadName' <> " thread") e
+    throwToListenThread e
+  where
+    f = case mi of Nothing -> return threadName
+                   Just i  -> getState >>= \ms -> let t | views entTbl (i `IM.member`) ms = descSingId i ms
+                                                        | otherwise                       = showText i
+                                                  in return $ threadName |<>| t
+
+
+-----
+
+
+threadStarterExHandler :: Id -> FunName -> Maybe Text -> SomeException -> MudStack ()
+threadStarterExHandler i fn maybeName e = case fromException e of
+  Just ThreadKilled -> logPla fn i $ fn <> onFalse (()# name) spcR name <> " has been killed prematurely."
+  _                 -> do t <- descSingId i <$> getState
+                          let msg = T.concat [ "exception caught", onFalse (()# name) (" in " <>) name, " for ", t ]
+                          logExMsg fn msg e
+  where
+    name = maybeEmp dblQuote maybeName
 
 
 -----

@@ -54,8 +54,9 @@ logPla = L.logPla "Mud.Threads.Effect"
 
 
 startEffect :: HasCallStack => Id -> Effect -> MudStack ()
-startEffect i e@(Effect _ _ (Just (EffectRangedVal range)) _ _) = rndmR range >>= \x ->
-    startEffectHelper i $ e & effectVal ?~ EffectFixedVal x
+startEffect i e@(Effect effTag _ (Just (EffectRangedVal range)) _ _) =
+  handle (threadStarterExHandler i "startEffect" effTag) $ rndmR range >>= \x ->
+      startEffectHelper i $ e & effectVal ?~ EffectFixedVal x
 startEffect i e = startEffectHelper i e
 
 

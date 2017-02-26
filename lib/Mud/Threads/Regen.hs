@@ -17,6 +17,7 @@ import qualified Mud.Misc.Logging as L (logNotice, logPla)
 import Control.Concurrent.Async (cancel)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
+import Control.Exception.Lifted (handle)
 import Control.Lens (Getter, Lens')
 import Control.Lens.Operators ((?~), (.~), (&), (^.))
 import Control.Monad ((>=>), forever, void)
@@ -68,11 +69,13 @@ threadRegen i tq = let regens = [ regen curHp maxHp calcRegenHpAmt calcRegenHpDe
                                 , regen curMp maxMp calcRegenMpAmt calcRegenMpDelay
                                 , regen curPp maxPp calcRegenPpAmt calcRegenPpDelay
                                 , regen curFp maxFp calcRegenFpAmt calcRegenFpDelay ]
-                   in do setThreadType . RegenParent $ i
-                         logPla "threadRegen" i "regen started."
-                         asyncs <- mapM runAsync regens
-                         liftIO $ (void . atomically . readTQueue $ tq) >> mapM_ cancel asyncs
+                   in handle (threadStarterExHandler i fn Nothing) $ do
+                          setThreadType . RegenParent $ i
+                          logPla fn i "regen started."
+                          asyncs <- mapM runAsync regens
+                          liftIO $ (void . atomically . readTQueue $ tq) >> mapM_ cancel asyncs
   where
+    fn = "threadRegen"
     regen :: HasCallStack => Lens' Mob Int
                           -> Getter Mob Int
                           -> (Id -> MudState -> Int)

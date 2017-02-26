@@ -40,7 +40,7 @@ import Control.Concurrent.Async (wait)
 import Control.Concurrent.STM (atomically)
 import Control.Concurrent.STM.TMQueue (writeTMQueue)
 import Control.Concurrent.STM.TQueue (readTQueue, writeTQueue)
-import Control.Exception.Lifted (catch)
+import Control.Exception.Lifted (catch, handle)
 import Control.Lens (view, views)
 import Control.Lens.Operators ((^.))
 import Control.Monad ((>=>), forM_, unless)
@@ -76,8 +76,7 @@ consistency.
 
 
 threadServer :: HasCallStack => Handle -> Id -> MsgQueue -> InacTimerQueue -> MudStack ()
-threadServer h i mq itq = sequence_ [ setThreadType . Server $ i
-                                    , loop False `catch` threadExHandler (Just i) "server" ]
+threadServer h i mq itq = handle (threadExHandler (Just i) "server") $ setThreadType (Server i) >> loop False
   where
     loop isDropped = mq |&| liftIO . atomically . readTQueue >=> \case
       AsSelf     msg -> handleFromClient i mq itq True msg  >> loop     isDropped
