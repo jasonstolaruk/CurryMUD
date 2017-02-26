@@ -49,12 +49,12 @@ biodegDelay :: Seconds
 biodegDelay = 5
 
 
-biodegSecs :: Seconds
+biodegSecs :: Seconds -- TODO: Make "fiveMins" etc.?
 biodegSecs = 5 {- mins -} * 60 {- secs -} -- five mins
 
 
 bonusDelay :: Seconds
-bonusDelay = 24 {- hrs -} * 60 {- mins -} * 60 {- secs -} -- twenty-four hrs
+bonusDelay = 1 {- day -} * 24 {- hrs -} * 60 {- mins -} * 60 {- secs -} -- one day
 
 
 coinNames :: [Text]

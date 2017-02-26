@@ -188,11 +188,12 @@ sacrificeBonus i gn@(pp -> gn') = getSing i <$> getState >>= \s -> do
           | count < 2 = logHelper . prd $ "first sacrifice made to " <> gn'
           | otherwise =
               let msg = T.concat [ commaShow count, " sacrifices to ", gn', "; " ]
-              in if isZero $ count `mod` 2 -- TODO: Change to 10.
+              in if isZero $ count `mod` 10
                 then join <$> withDbExHandler "sac_bonus" (lookupSacBonusTime s gn') >>= \case
                   Nothing   -> applyBonus i s gn now
                   Just time -> let diff@(T.pack . renderSecs -> secs) = round $ now `diffUTCTime` time
-                               in if diff > 60 -- TODO: Change to one day.
+                                   dur = 1 {- day -} * 24 {- hrs -} * 60 {- mins -} * 60 {- secs -} -- one day
+                               in if diff > dur
                                  then applyBonus i s gn now
                                  else logHelper . T.concat $ [ msg
                                                              , "not enough time has passed since the last bonus "

@@ -36,7 +36,7 @@ feelingFuns = [ ("sacrificeBonusAule",      sacrificeBonusFeelingFun Aule      )
 -----
 
 
-sacrificeBonusFeelingFun :: GodName -> FeelingFun -- TODO
+sacrificeBonusFeelingFun :: GodName -> FeelingFun
 sacrificeBonusFeelingFun gn =
     const . T.concat $ [ "You have the extraordinary feeling that "
                        , pp gn
