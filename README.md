@@ -52,7 +52,7 @@ CurryMUD will have the following features:
 * Objects can be configured to automatically disappear when left on the ground for some time. :boom:
 * Smell and taste. Listen. :nose::tongue::ear:
 * Drinking. Digestion. :beer:
-* Durational effects and corresponding feelings that can be paused and resumed. :dizzy:
+* Durational effects that can be paused and resumed. Corresponding feelings. :dizzy:
 * PC and NPC death. Corpse decomposition. :skull:
 * Corpses may be sacrificed using the holy symbol of a particular god. :pray:
 * Upon death, PCs may have a limited amount of time to exist in the virtual world as a spirit. :angel:
