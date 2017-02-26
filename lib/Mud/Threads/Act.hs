@@ -205,33 +205,34 @@ sacrificeBonus i gn@(pp -> gn') = getSing i <$> getState >>= \s -> do
 
 
 applyBonus :: HasCallStack => Id -> Sing -> GodName -> UTCTime -> MudStack ()
-applyBonus i s gn now = do -- TODO: Continue testing.
+applyBonus i s gn now = do
     logPla "applyBonus" i "applying bonus."
     withDbExHandler_ "sac_bonus" . insertDbTblSacBonus . SacBonusRec (showText now) s . pp $ gn
     let f = \case Aule      -> let a = (,) <$> rndmElem (mkXpPairs allValues) <*> rndmElem (allValues :: [Attrib])
-                                   b = ((>>) <$> uncurry maxXp . fst <*> flip effectHelper (15, 15) . snd)
+                                   b = ((>>) <$> uncurry maxXp . fst <*> effectHelper Nothing (15, 15) . snd)
                                in a >>= b
                   Caila     -> f Aule
-                  Celoriel  -> maxXp curPp maxPp >> effectHelper Ps (5, 15)
-                  Dellio    -> maxXpHelper       >> effectHelper Dx (5, 15)
-                  Drogo     -> maxXp curMp maxMp >> effectHelper Ma (5, 15)
-                  Iminye    -> maxXpHelper       >> effectHelper Dx (3, 8) >> effectHelper Ht (3, 8) -- TODO: DX not working.
-                  Itulvatar -> maxXpHelper       >> rndmElem [ St, Dx, Ht ] >>= flip effectHelper (10, 15)
+                  Celoriel  -> maxXp curPp maxPp >>  effectHelper Nothing     (5,  15) Ps
+                  Dellio    -> maxXpHelper       >>  effectHelper Nothing     (5,  15) Dx
+                  Drogo     -> maxXp curMp maxMp >>  effectHelper Nothing     (5,  15) Ma
+                  Iminye    -> maxXpHelper       >>  effectHelper (Just "Dx") (3,  8 ) Dx
+                                                 >>  effectHelper (Just "Ht") (3,  8 ) Ht
+                  Itulvatar -> maxXpHelper       >> (effectHelper Nothing     (10, 15) =<< rndmElem [ St, Dx, Ht ])
                   Murgorhd  -> f Aule
-                  Rha'yk    -> maxXp curHp maxHp >> effectHelper St (5, 15)
-                  Rumialys  -> maxXp curFp maxFp >> effectHelper Ht (5, 15)
+                  Rha'yk    -> maxXp curHp maxHp >>  effectHelper Nothing     (5,  15) St
+                  Rumialys  -> maxXp curFp maxFp >>  effectHelper Nothing     (5,  15) Ht
     f gn
   where
-    mkXpPairs                 = let helper ptsType acc = (: acc) $ case ptsType of CurHp -> (curHp, maxHp)
-                                                                                   CurMp -> (curMp, maxMp)
-                                                                                   CurPp -> (curPp, maxPp)
-                                                                                   CurFp -> (curFp, maxFp)
-                                in foldr helper []
-    maxXpHelper               = rndmElem (mkXpPairs [ CurHp, CurFp ]) >>= uncurry maxXp
-    effectHelper attrib range = let tag     = "sacrificeBonus" <> pp gn
-                                    effSub  = MobEffectAttrib attrib
-                                    effVal  = Just . EffectRangedVal $ range
-                                    effFeel = Just . EffectFeeling tag $ sacrificeBonusSecs
-                                in startEffect i . Effect (Just tag) effSub effVal sacrificeBonusSecs $ effFeel
-    maxXp curXpLens maxXpLens = tweak $ \ms -> let x = view (mobTbl.ind i.maxXpLens) ms
-                                               in ms & mobTbl.ind i.curXpLens .~ x
+    mkXpPairs   = let helper ptsType acc = (: acc) $ case ptsType of CurHp -> (curHp, maxHp)
+                                                                     CurMp -> (curMp, maxMp)
+                                                                     CurPp -> (curPp, maxPp)
+                                                                     CurFp -> (curFp, maxFp)
+                  in foldr helper []
+    maxXpHelper = uncurry maxXp =<< rndmElem (mkXpPairs [ CurHp, CurFp ])
+    effectHelper effTagSuff range attrib = let tag     = "sacrificeBonus" <> pp gn <> fromMaybeEmp effTagSuff
+                                               effSub  = MobEffectAttrib attrib
+                                               effVal  = Just . EffectRangedVal $ range
+                                               effFeel = Just . EffectFeeling tag $ sacrificeBonusSecs
+                                           in startEffect i . Effect (Just tag) effSub effVal sacrificeBonusSecs $ effFeel
+    maxXp curXpLens maxXpLens            = tweak $ \ms -> let x = view (mobTbl.ind i.maxXpLens) ms
+                                                          in ms & mobTbl.ind i.curXpLens .~ x

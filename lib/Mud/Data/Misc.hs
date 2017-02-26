@@ -393,7 +393,7 @@ effectFeelingHelper = maybeEmp (spcL . pp)
 
 
 instance Pretty EffectFeeling where
-  pp (EffectFeeling tag dur) = bracketQuote $ tag |<>| mkSecsTxt dur
+  pp (EffectFeeling tag dur) = bracketQuote $ dblQuote tag |<>| mkSecsTxt dur
 
 
 instance Pretty EffectSub where

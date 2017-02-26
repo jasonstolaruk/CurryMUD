@@ -559,7 +559,7 @@ data LogCmd = LogMsg Text
 -- Has an entity and an inventory and coins and equipment.
 data Mob = Mob { _sex                    :: Sex
                , _st, _dx, _ht, _ma, _ps :: Int
-               , _curHp, _maxHp          :: Int
+               , _curHp, _maxHp          :: Int -- TODO: Max Hp (and others?) should be calculated according to effective attrib.
                , _curMp, _maxMp          :: Int
                , _curPp, _maxPp          :: Int
                , _curFp, _maxFp          :: Int
