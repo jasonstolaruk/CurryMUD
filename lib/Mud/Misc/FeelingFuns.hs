@@ -2,11 +2,13 @@
 
 module Mud.Misc.FeelingFuns (feelingFuns) where
 
+import Mud.Data.Misc
 import Mud.Data.State.MudData
 import Mud.TheWorld.Liqs
 
-import Data.Text (Text)
 import Data.Monoid ((<>))
+import Data.Text (Text)
+import qualified Data.Text as T
 
 
 data DxOrHt = IsDx | IsHt
@@ -35,25 +37,30 @@ feelingFuns = [ ("sacrificeBonusAule",      sacrificeBonusFeelingFun Aule      )
 
 
 sacrificeBonusFeelingFun :: GodName -> FeelingFun -- TODO
-sacrificeBonusFeelingFun = const . \case
-  Aule      -> "feeling Aule"
-  Caila     -> "feeling Caila"
-  Celoriel  -> "feeling Celoriel"
-  Dellio    -> "feeling Dellio"
-  Drogo     -> "feeling Drogo"
-  Iminye    -> "" -- Intentionally blank.
-  Itulvatar -> "feeling Itulvatar"
-  Murgorhd  -> "feeling Murgorhd"
-  Rha'yk    -> "feeling Rha'yk"
-  Rumialys  -> "feeling Rumialys"
+sacrificeBonusFeelingFun gn =
+    const . T.concat $ [ "You have the extraordinary feeling that "
+                       , pp gn
+                       , " has blessed you. "
+                       , case gn of Aule      -> "You're feeling confident and reassured."
+                                    Caila     -> "The air is seemingly crackling with energy!"
+                                    Celoriel  -> "Your brain is tingling."
+                                    Dellio    -> "You're feeling whimsical."
+                                    Drogo     -> "You feel slightly giddy, as though you've been enchanted."
+                                    Iminye    -> "" -- Intentionally blank.
+                                    Itulvatar -> "A warm senssation coarses through your veins."
+                                    Murgorhd  -> "It's an exhilarating sensation!"
+                                    Rha'yk    -> "You feel inspired. You're ready to take on the world!"
+                                    Rumialys  -> "You are aware of the presence of Rumialys in all things." ]
 
 
 -----
 
 
 sacrificeBonusIminyeFeelingFun :: DxOrHt -> FeelingFun
-sacrificeBonusIminyeFeelingFun = const . \case IsDx -> "sacrificeBonusIminyeFeelingFun Dx" -- TODO
-                                               IsHt -> "" -- Intentionally blank.
+sacrificeBonusIminyeFeelingFun = const . \case
+  IsDx -> "You are overwhelmed by the vast intricacies of the universe. Somehow you feel both important and \
+          \insignificant at the same time."
+  IsHt -> "" -- Intentionally blank.
 
 
 -----
