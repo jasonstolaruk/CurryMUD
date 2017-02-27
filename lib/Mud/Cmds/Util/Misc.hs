@@ -680,7 +680,9 @@ mkHimHer NoSex  = "it"
 
 mkHolySymbolDesc :: GodName -> Text -- TODO
 mkHolySymbolDesc Aule      = "holysymbol"
-mkHolySymbolDesc Caila     = "holysymbol"
+mkHolySymbolDesc Caila     =
+    "The holy symbol of Caila is a small, white, and rectangular cloth bag, sewn shut and containing a handful of \
+    \grain. A vertical series of four ancient runes is embroidered in purple upon the cloth surface."
 mkHolySymbolDesc Celoriel  = "holysymbol"
 mkHolySymbolDesc Dellio    = "holysymbol"
 mkHolySymbolDesc Drogo     = "holysymbol"
@@ -688,7 +690,9 @@ mkHolySymbolDesc Iminye    = "holysymbol"
 mkHolySymbolDesc Itulvatar = "holysymbol"
 mkHolySymbolDesc Murgorhd  = "holysymbol"
 mkHolySymbolDesc Rha'yk    = "holysymbol"
-mkHolySymbolDesc Rumialys  = "holysymbol"
+mkHolySymbolDesc Rumialys  =
+    "The holy symbol of Rumialys is a steel ring, about four inches wide, with a single thin bar running through the \
+    \center and connecting two opposites edges of the ring."
 
 
 -----
