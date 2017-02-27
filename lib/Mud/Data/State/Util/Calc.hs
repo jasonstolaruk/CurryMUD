@@ -75,6 +75,7 @@ import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Hierarchy
 import Mud.Data.State.Util.Random
 import Mud.TopLvlDefs.Misc
+import Mud.TopLvlDefs.Seconds
 import Mud.TopLvlDefs.Vols
 import Mud.TopLvlDefs.Weights
 import Mud.Util.List
@@ -167,7 +168,7 @@ calcCorpseDecompSecs = let f = (calcCorpseDecompSecs Human |&|) in \case
   Elf       -> f minusFifth
   Felinoid  -> f plusFifth
   Hobbit    -> f (\x -> round $ fromIntegral x * hobbitToHumanWeightRatio)
-  Human     -> 60 {- mins -} * 60 {- secs -} -- one hr
+  Human     -> oneHrInSecs
   Lagomorph -> f id
   Nymph     -> f minusThird
   Vulpenoid -> f plusQuarter

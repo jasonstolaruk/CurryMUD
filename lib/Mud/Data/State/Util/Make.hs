@@ -7,7 +7,7 @@ import Mud.Data.State.Util.Calc
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Threads.Biodegrader
-import Mud.TopLvlDefs.Misc
+import Mud.TopLvlDefs.Seconds
 import Mud.Util.Misc
 
 import Control.Lens (at)

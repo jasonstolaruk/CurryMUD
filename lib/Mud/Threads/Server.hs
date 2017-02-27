@@ -27,7 +27,7 @@ import Mud.Threads.Regen
 import Mud.Threads.RmFuns
 import Mud.Threads.SpiritTimer
 import Mud.TopLvlDefs.FilePaths
-import Mud.TopLvlDefs.Misc
+import Mud.TopLvlDefs.Seconds
 import Mud.Util.List
 import Mud.Util.Misc
 import Mud.Util.Operators

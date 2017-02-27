@@ -1,6 +1,63 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Mud.TopLvlDefs.Misc where
+module Mud.TopLvlDefs.Misc ( acl
+                           , aggregateCoinNames
+                           , alertMsgTriggers
+                           , allCoinNames
+                           , aop
+                           , biodegDelay
+                           , biodegSecs
+                           , bonusDelay
+                           , coinFullNames
+                           , coinNames
+                           , corpsePlaceholder
+                           , dbTblPurgerDelay
+                           , dfltZoom
+                           , enc
+                           , enc's
+                           , etc
+                           , initPickPts
+                           , isDebug
+                           , isEKGing
+                           , isZBackDoor
+                           , likewise
+                           , logRotationDelay
+                           , maxBonuses
+                           , maxChanNameLen
+                           , maxCmdLen
+                           , maxCols
+                           , maxDbTblRecs
+                           , maxHelpTopicLen
+                           , maxInacSecs
+                           , maxInacSecsCompose
+                           , maxLogSize
+                           , maxMobRmDescLen
+                           , maxNameLen
+                           , maxNameLenTxt
+                           , maxPageLines
+                           , maxPwLen
+                           , maxSpiritSecs
+                           , maxTempDescLen
+                           , minCols
+                           , minNameLen
+                           , minNameLenTxt
+                           , minPageLines
+                           , minPwLen
+                           , noOfDbTblRecsToPurge
+                           , noOfLogFiles
+                           , noOfPersistedWorlds
+                           , noOfTitles
+                           , port
+                           , rmDescIndentAmt
+                           , rndmVectorLen
+                           , sacrificeBonusSecs
+                           , sacrificeSecs
+                           , stdLinkNames
+                           , threadTblPurgerDelay
+                           , trashDumpPurgerDelay
+                           , ver
+                           , worldPersisterDelay
+                           , yous ) where
 
 import Mud.TopLvlDefs.Chars
 import Mud.Util.Quoting
@@ -9,6 +66,7 @@ import Paths_curry_mud
 import Data.Monoid ((<>))
 import Data.Text (Text)
 import Data.Version (showVersion)
+import Mud.TopLvlDefs.Seconds
 import qualified Data.Text as T
 import System.Posix.Types (FileOffset)
 
@@ -17,12 +75,6 @@ import System.Posix.Types (FileOffset)
 
 
 -- ==================================================
-
-
-type Seconds = Int -- 10^6 microseconds (the unit used by "threadDelay").
-
-
-type Milliseconds = Int -- 10^-3 or 1/1000 or 0.001 seconds.
 
 
 aggregateCoinNames :: [Text]
@@ -49,12 +101,12 @@ biodegDelay :: Seconds
 biodegDelay = 5
 
 
-biodegSecs :: Seconds -- TODO: Make "fiveMins" and other bindings?
-biodegSecs = 5 {- mins -} * 60 {- secs -} -- five mins
+biodegSecs :: Seconds
+biodegSecs = fiveMinsInSecs
 
 
 bonusDelay :: Seconds
-bonusDelay = 1 {- day -} * 24 {- hrs -} * 60 {- mins -} * 60 {- secs -} -- one day
+bonusDelay = oneDayInSecs
 
 
 coinNames :: [Text]
@@ -70,7 +122,7 @@ corpsePlaceholder = parensQuote "corpse"
 
 
 dbTblPurgerDelay :: Seconds
-dbTblPurgerDelay = 1 {- hr -} * 60 {- mins -} * 60 {- secs -} -- one hr
+dbTblPurgerDelay = oneHrInSecs
 
 
 dfltZoom :: Int
@@ -98,7 +150,7 @@ likewise = not otherwise
 
 
 logRotationDelay :: Seconds
-logRotationDelay = 1 {- hr -} * 60 {- mins -} * 60 {- secs -} -- one hr
+logRotationDelay = oneHrInSecs
 
 
 maxBonuses :: Int
@@ -127,11 +179,11 @@ maxHelpTopicLen = 13
 
 
 maxInacSecs :: Seconds
-maxInacSecs = 10 {- mins -} * 60 {- secs -} -- ten mins
+maxInacSecs = tenMinsInSecs
 
 
 maxInacSecsCompose :: Seconds -- When a player is composing their PC description.
-maxInacSecsCompose = 1 {- hr -} * 60 {- mins -} * 60 {- secs -} -- one hr
+maxInacSecsCompose = oneHrInSecs
 
 
 maxLogSize :: FileOffset
@@ -161,7 +213,7 @@ minPwLen = 6
 
 
 maxSpiritSecs :: Seconds
-maxSpiritSecs = 5 {- mins -} * 60 {- secs -} -- five mins
+maxSpiritSecs = fiveMinsInSecs
 
 
 maxTempDescLen :: Int
@@ -197,7 +249,7 @@ rndmVectorLen = 5
 
 
 sacrificeBonusSecs :: Int
-sacrificeBonusSecs = 3 {- hrs -} * 60 {- mins -} * 60 {- secs -} -- three hrs
+sacrificeBonusSecs = threeHrsInSecs
 
 
 sacrificeSecs :: Int
@@ -209,11 +261,11 @@ stdLinkNames = [ "n", "ne", "e", "se", "s", "sw", "w", "nw", "u", "d" ]
 
 
 threadTblPurgerDelay :: Seconds
-threadTblPurgerDelay = 10 {- mins -} * 60 {- secs -} -- ten mins
+threadTblPurgerDelay = tenMinsInSecs
 
 
 trashDumpPurgerDelay :: Seconds
-trashDumpPurgerDelay = 6 {- hrs -} * 60 {- mins -} * 60 {- secs -} -- six hrs
+trashDumpPurgerDelay = sixHrsInSecs
 
 
 ver :: Text
@@ -221,7 +273,7 @@ ver = T.pack . showVersion $ version
 
 
 worldPersisterDelay :: Seconds
-worldPersisterDelay = 10 {- mins -} * 60 {- secs -} -- ten mins
+worldPersisterDelay = tenMinsInSecs
 
 
 yous :: [Text]

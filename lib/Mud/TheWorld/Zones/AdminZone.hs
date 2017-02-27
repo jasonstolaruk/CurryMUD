@@ -28,6 +28,7 @@ import Mud.TheWorld.Zones.AdminZoneIds
 import Mud.TheWorld.Zones.TutorialIds (iTutWelcome)
 import Mud.Threads.Act
 import Mud.TopLvlDefs.Chars
+import Mud.TopLvlDefs.Seconds
 import Mud.TopLvlDefs.Vols
 import Mud.TopLvlDefs.Weights
 import Mud.Util.List
@@ -1711,5 +1712,5 @@ createAdminZone = do
                     iMobCloset
                     (Just MedMinus)
                     skeletonCorpseWeight (calcCorpseVol Human) (calcCorpseCapacity Human)
-                    (5 {- mins -} * 60 {- secs -})
+                    fiveMinsInSecs
                     dfltParty))

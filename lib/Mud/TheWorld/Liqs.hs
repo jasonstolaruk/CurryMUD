@@ -36,7 +36,7 @@ module Mud.TheWorld.Liqs ( liqList
 import Mud.Cmds.Msgs.Misc
 import Mud.Data.State.MudData
 import Mud.TheWorld.LiqIds
-import Mud.TopLvlDefs.Misc
+import Mud.TopLvlDefs.Seconds
 
 import Data.Text (Text)
 
@@ -302,7 +302,7 @@ potAttribEffectVal = 2
 
 
 potAttribEffectDur :: Seconds
-potAttribEffectDur = 15 {- mins -} * 60 {- secs -}
+potAttribEffectDur = fifteenMinsInSecs
 
 
 potInstantStLiq :: Liq
@@ -568,5 +568,5 @@ potInstantTinnitusDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = No
     e  = Effect { _effectTag     = Just potTinnitusTag
                 , _effectSub     = EffectOther potTinnitusTag
                 , _effectVal     = Nothing
-                , _effectDur     = 2 {- mins -} * 60 {- secs -}
-                , _effectFeeling = Just . EffectFeeling potTinnitusTag $ 2 {- mins -} * 60 {- secs -} }
+                , _effectDur     = twoMinsInSecs
+                , _effectFeeling = Just . EffectFeeling potTinnitusTag $ twoMinsInSecs }

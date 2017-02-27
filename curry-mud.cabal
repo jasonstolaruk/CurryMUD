@@ -126,6 +126,7 @@ library
                        Mud.TopLvlDefs.FilePaths
                        Mud.TopLvlDefs.Misc
                        Mud.TopLvlDefs.Padding
+                       Mud.TopLvlDefs.Seconds
                        Mud.TopLvlDefs.Telnet.Chars
                        Mud.TopLvlDefs.Telnet.CodeMap
                        Mud.TopLvlDefs.Vols

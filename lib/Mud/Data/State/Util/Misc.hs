@@ -81,6 +81,7 @@ import Mud.Misc.Misc
 import Mud.TheWorld.Zones.AdminZoneIds (iNecropolis, iWelcome)
 import Mud.TopLvlDefs.Chars
 import Mud.TopLvlDefs.Misc
+import Mud.TopLvlDefs.Seconds
 import Mud.Util.List hiding (countOcc)
 import Mud.Util.Misc hiding (blowUp, patternMatchFail)
 import Mud.Util.Operators

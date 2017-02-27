@@ -12,7 +12,7 @@ import Mud.Data.State.Util.Misc
 import Mud.Data.State.Util.Output
 import Mud.Misc.ANSI
 import Mud.Threads.Misc
-import Mud.TopLvlDefs.Misc
+import Mud.TopLvlDefs.Seconds
 import Mud.Util.Misc
 import Mud.Util.Quoting
 import Mud.Util.Text

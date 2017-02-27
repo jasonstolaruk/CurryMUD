@@ -8,7 +8,7 @@ import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Threads.Misc
-import Mud.TopLvlDefs.Misc
+import Mud.TopLvlDefs.Seconds
 import Mud.Util.Misc
 import Mud.Util.Operators
 import Mud.Util.Quoting

@@ -4,7 +4,7 @@ module Mud.Data.State.MudData where
 
 import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MsgQueue
-import Mud.TopLvlDefs.Misc
+import Mud.TopLvlDefs.Seconds
 import Mud.Util.Misc
 
 import Control.Applicative (empty)

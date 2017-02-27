@@ -82,7 +82,7 @@ import Mud.Data.State.MudData
 import Mud.Data.State.Util.Noun
 import Mud.Misc.Database
 import Mud.TopLvlDefs.Chars
-import Mud.TopLvlDefs.Misc
+import Mud.TopLvlDefs.Seconds
 import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Operators
 import Mud.Util.Quoting

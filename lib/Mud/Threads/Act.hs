@@ -22,6 +22,7 @@ import Mud.Misc.Database
 import Mud.Threads.Effect
 import Mud.Threads.Misc
 import Mud.TopLvlDefs.Misc
+import Mud.TopLvlDefs.Seconds
 import Mud.Util.List
 import Mud.Util.Misc
 import Mud.Util.Operators
@@ -199,8 +200,7 @@ sacrificeBonus i gn@(pp -> gn') = getSing i <$> getState >>= \s -> do
                 then join <$> withDbExHandler "sac_bonus" (lookupSacBonusTime s gn') >>= \case
                   Nothing   -> applyBonus i s gn now
                   Just time -> let diff@(T.pack . renderSecs -> secs) = round $ now `diffUTCTime` time
-                                   dur = 1 {- day -} * 24 {- hrs -} * 60 {- mins -} * 60 {- secs -} -- one day
-                               in if diff > dur
+                               in if diff > fromIntegral oneDayInSecs
                                  then applyBonus i s gn now
                                  else logHelper . T.concat $ [ msg
                                                              , "not enough time has passed since the last bonus "

@@ -166,7 +166,7 @@ import Mud.Cmds.Msgs.Misc
 import Mud.Data.Misc
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
-import Mud.TopLvlDefs.Misc
+import Mud.TopLvlDefs.Seconds
 import Mud.Util.List
 import Mud.Util.Misc hiding (blowUp)
 import qualified Mud.Util.Misc as U (blowUp)

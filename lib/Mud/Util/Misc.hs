@@ -82,7 +82,7 @@ module Mud.Util.Misc ( atLst1
                      , uncurry5
                      , unit ) where
 
-import Mud.TopLvlDefs.Misc
+import Mud.TopLvlDefs.Seconds
 import Mud.Util.List
 import Mud.Util.Operators
 import Mud.Util.Quoting

@@ -5,7 +5,7 @@ module Mud.Data.State.MsgQueue ( Msg(..)
                                , NpcMsg(..)
                                , NpcMsgQueue ) where
 
-import Mud.TopLvlDefs.Misc
+import Mud.TopLvlDefs.Seconds
 
 import Control.Concurrent.STM.TQueue (TQueue)
 import Data.Text (Text)

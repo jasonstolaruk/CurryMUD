@@ -24,7 +24,7 @@ import Mud.Misc.LocPref
 import Mud.Misc.Misc
 import Mud.TheWorld.Zones.AdminZoneIds (iTrashDump)
 import Mud.Threads.Misc
-import Mud.TopLvlDefs.Misc
+import Mud.TopLvlDefs.Seconds
 import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Operators
 import Mud.Util.Quoting
