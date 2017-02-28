@@ -501,12 +501,12 @@ potPsDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just es
                 , _effectFeeling = Nothing }
 
 
-potInstantPsLiq :: Liq -- TODO
+potInstantPsLiq :: Liq
 potInstantPsLiq = Liq (DistinctLiqId iLiqPotInstantPs)
-                      (DoArticle "")
-                      ""
-                      ""
-                      ""
+                      (DoArticle "incandescent, sky-blue liquid")
+                      "There is a striking scent of heavy fog and mist on a cold morning."
+                      "The liquid itself might be tasteless. The smell, however, is pronounced."
+                      "The liquid doesn't taste like much... until the smell of cold rain hits you like a thick fog."
 
 
 potInstantPsDistinctLiq :: DistinctLiq
