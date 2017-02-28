@@ -385,12 +385,12 @@ potInstantDxTag = "potInstantDxTag"
 -----
 
 
-potHtLiq :: Liq -- TODO
+potHtLiq :: Liq
 potHtLiq = Liq (DistinctLiqId iLiqPotHt)
-               (DoArticle "")
-               ""
-               ""
-               ""
+               (DoArticle "pellucid, watery liquid")
+               "The smell is similar to that of sea surf upon a beach."
+               "The briny taste resembles that of seawater."
+               "You do your best to ignore the overpowering saltiness."
 
 
 potHtDistinctLiq :: DistinctLiq
@@ -405,7 +405,7 @@ potHtDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just es
                 , _effectFeeling = Nothing }
 
 
-potInstantHtLiq :: Liq -- TODO
+potInstantHtLiq :: Liq
 potInstantHtLiq = Liq (DistinctLiqId iLiqPotInstantHt)
                       (DoArticle "")
                       ""
