@@ -376,8 +376,11 @@ sendGmcpRmInfo maybeZoom = gmcpHelper (gmcpRmInfo maybeZoom)
 
 gmcpHelper :: HasCallStack => (Id -> MudState -> Text) -> Id -> MudState -> MudStack ()
 gmcpHelper f i ms
-  | isGmcpId i ms = send (getMsgQueue i ms) . quoteWith' (telnetGmcpLeft, telnetGmcpRight) . f i $ ms
-  | otherwise     = unit
+  | isNpc i ms = maybeVoid helper . getPossessor i $ ms
+  | otherwise  = helper i
+  where
+    helper i' | isGmcpId i' ms = send (getMsgQueue i' ms) . quoteWith' (telnetGmcpLeft, telnetGmcpRight) . f i $ ms
+              | otherwise      = unit
 
 
 sendGmcpVitals :: HasCallStack => Id -> MudState -> MudStack ()

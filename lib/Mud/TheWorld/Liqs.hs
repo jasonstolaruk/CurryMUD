@@ -405,7 +405,7 @@ potHtDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just es
                 , _effectFeeling = Nothing }
 
 
-potInstantHtLiq :: Liq
+potInstantHtLiq :: Liq -- TODO
 potInstantHtLiq = Liq (DistinctLiqId iLiqPotInstantHt)
                       (DoArticle "")
                       ""
