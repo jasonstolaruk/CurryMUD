@@ -456,9 +456,10 @@ potMaDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just es
 potInstantMaLiq :: Liq
 potInstantMaLiq = Liq (DistinctLiqId iLiqPotInstantMa)
                       (DoArticle "creamy, indigo liquid")
-                      "" -- TODO
-                      ""
-                      ""
+                      "The creamy liquid smells like dye."
+                      "The creamy concoction tastes as if it must be plant-based. It's quite bitter, though there is a \
+                      \sugary sweetness as well."
+                      "A sharply bitter taste hits you immediately, followed by a cloying sweetness."
 
 
 potInstantMaDistinctLiq :: DistinctLiq
