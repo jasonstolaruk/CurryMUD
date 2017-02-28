@@ -16,7 +16,6 @@ module Mud.Data.State.Util.Calc ( calcBarLen
                                 , calcEffDx
                                 , calcEffHt
                                 , calcEffMa
-                                , calcEffMaxXp
                                 , calcEffPs
                                 , calcEffSt
                                 , calcEncPer
@@ -270,13 +269,6 @@ calcEffPs = calcEffAttrib Ps
 
 calcEffSt :: HasCallStack => Id -> MudState -> Int
 calcEffSt = calcEffAttrib St
-
-
------
-
-
-calcEffMaxXp :: Id -> MudState -> PtsType -> Int -- TODO: Use this.
-calcEffMaxXp _ _ = \case _ -> undefined
 
 
 -----

@@ -385,10 +385,10 @@ potInstantDxTag = "potInstantDxTag"
 -----
 
 
-potHtLiq :: Liq
+potHtLiq :: Liq -- TODO: Would this potion be useful?
 potHtLiq = Liq (DistinctLiqId iLiqPotHt)
                (DoArticle "")
-               "" -- TODO
+               ""
                ""
                ""
 
@@ -405,10 +405,10 @@ potHtDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just es
                 , _effectFeeling = Nothing }
 
 
-potInstantHtLiq :: Liq
+potInstantHtLiq :: Liq -- TODO: Would this potion be useful?
 potInstantHtLiq = Liq (DistinctLiqId iLiqPotInstantHt)
                       (DoArticle "")
-                      "" -- TODO
+                      ""
                       ""
                       ""
 
