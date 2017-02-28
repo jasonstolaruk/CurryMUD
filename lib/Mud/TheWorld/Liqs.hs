@@ -385,7 +385,7 @@ potInstantDxTag = "potInstantDxTag"
 -----
 
 
-potHtLiq :: Liq -- TODO: Would this potion be useful?
+potHtLiq :: Liq -- TODO
 potHtLiq = Liq (DistinctLiqId iLiqPotHt)
                (DoArticle "")
                ""
@@ -405,7 +405,7 @@ potHtDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just es
                 , _effectFeeling = Nothing }
 
 
-potInstantHtLiq :: Liq -- TODO: Would this potion be useful?
+potInstantHtLiq :: Liq -- TODO
 potInstantHtLiq = Liq (DistinctLiqId iLiqPotInstantHt)
                       (DoArticle "")
                       ""
@@ -457,8 +457,7 @@ potInstantMaLiq :: Liq
 potInstantMaLiq = Liq (DistinctLiqId iLiqPotInstantMa)
                       (DoArticle "creamy, indigo liquid")
                       "The creamy liquid smells like dye."
-                      "The creamy concoction tastes as if it must be plant-based. It's quite bitter, though there is a \
-                      \sugary sweetness as well."
+                      "The plant-based concoction is quite bitter, though there is a sugary sweetness as well."
                       "A sharply bitter taste hits you immediately, followed by a cloying sweetness."
 
 
@@ -484,10 +483,10 @@ potInstantMaTag = "potInstantMa"
 
 potPsLiq :: Liq
 potPsLiq = Liq (DistinctLiqId iLiqPotPs)
-               (DoArticle "")
-               "" -- TODO
-               ""
-               ""
+               (DoArticle "syrupy, amber liquid")
+               "The syrup smells smoky-sweet."
+               "The viscous syrup tastes remarkably like brown sugar."
+               "You suck and slurp down the thick syrup."
 
 
 potPsDistinctLiq :: DistinctLiq
@@ -502,10 +501,10 @@ potPsDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just es
                 , _effectFeeling = Nothing }
 
 
-potInstantPsLiq :: Liq
+potInstantPsLiq :: Liq -- TODO
 potInstantPsLiq = Liq (DistinctLiqId iLiqPotInstantPs)
                       (DoArticle "")
-                      "" -- TODO
+                      ""
                       ""
                       ""
 
