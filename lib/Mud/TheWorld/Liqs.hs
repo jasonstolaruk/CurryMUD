@@ -89,7 +89,7 @@ potHpLiq = Liq (DistinctLiqId iLiqPotHp)
                (DoArticle "milky, off-white liquid")
                "A bitterly pungent smell bombards you."
                "You imagine that the rind of some intolerably bitter, inedible fruit might taste like this."
-               "Owing to its distinctly acrid taste, the elixir is difficult to ingest."
+               "The distinctly acrid taste is making this difficult."
 
 
 potHpDistinctLiq :: DistinctLiq
@@ -438,7 +438,7 @@ potMaLiq = Liq (DistinctLiqId iLiqPotMa)
                (DoArticle "creamy, white liquid")
                "The creamy liquid has a faint, sweet odor."
                "The creamy liquid has a consistency reminiscent of coconut juice and a sweet, vaguely fruity taste."
-               "The sweet, creamy liquid is delicious."
+               "The sweet, creamy tonic is delicious."
 
 
 potMaDistinctLiq :: DistinctLiq
@@ -456,7 +456,7 @@ potMaDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just es
 potInstantMaLiq :: Liq
 potInstantMaLiq = Liq (DistinctLiqId iLiqPotInstantMa)
                       (DoArticle "creamy, indigo liquid")
-                      "The creamy liquid smells like dye."
+                      "The frothy liquid smells like dye."
                       "The plant-based concoction is quite bitter, though there is a sugary sweetness as well."
                       "A sharply bitter taste hits you immediately, followed by a cloying sweetness."
 
@@ -504,7 +504,7 @@ potPsDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just es
 potInstantPsLiq :: Liq
 potInstantPsLiq = Liq (DistinctLiqId iLiqPotInstantPs)
                       (DoArticle "incandescent, sky-blue liquid")
-                      "There is a striking scent of heavy fog and mist on a cold morning."
+                      "There is a striking scent of mist on a cold morning."
                       "The liquid itself might be tasteless. The smell, however, is pronounced."
                       "The liquid doesn't taste like much... until the smell of cold rain hits you like a thick fog."
 
