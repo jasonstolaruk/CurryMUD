@@ -74,8 +74,6 @@ putNpc i e is c em m = tweaks [ coinsTbl           .ind i .~ c
                               , eqTbl              .ind i .~ em
                               , invTbl             .ind i .~ is
                               , mobTbl             .ind i .~ m
-                              -- TODO , npcTbl             .ind i .~ n
-                              -- TODO: Confirm that ":possess" works.
                               , pausedEffectTbl    .ind i .~ []
                               , typeTbl            .ind i .~ NpcType ]
 
