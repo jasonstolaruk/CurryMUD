@@ -37,7 +37,10 @@ import Mud.Cmds.Msgs.Misc
 import Mud.Data.State.MudData
 import Mud.TheWorld.LiqIds
 import Mud.TopLvlDefs.Seconds
+import Mud.Util.Misc
+import Mud.Util.Text
 
+import Data.Monoid ((<>))
 import Data.Text (Text)
 
 
@@ -389,7 +392,7 @@ potHtLiq :: Liq
 potHtLiq = Liq (DistinctLiqId iLiqPotHt)
                (DoArticle "pellucid, watery liquid")
                "The smell is similar to that of sea surf upon a beach."
-               "The briny taste resembles that of seawater."
+               "The briny taste brings seawater to mind."
                "You do your best to ignore the overpowering saltiness."
 
 
@@ -405,12 +408,14 @@ potHtDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just es
                 , _effectFeeling = Nothing }
 
 
-potInstantHtLiq :: Liq -- TODO
+potInstantHtLiq :: Liq
 potInstantHtLiq = Liq (DistinctLiqId iLiqPotInstantHt)
-                      (DoArticle "")
-                      ""
-                      ""
-                      ""
+                      (DoArticle "dirty liquid")
+                      "It smells like an ashtray!"
+                      ("It tastes like soot and coal. " <> f "Now your mouth feels dirty and gross")
+                      (f "You swallow gritty lumps of" <> " something. Could it be dirt? " <> f "Hmm")
+  where
+    f = thrice prd
 
 
 potInstantHtDistinctLiq :: DistinctLiq
@@ -555,7 +560,7 @@ potInstantTinnitusLiq :: Liq
 potInstantTinnitusLiq = Liq (DistinctLiqId iLiqPotInstantTinnitus)
                             (DoArticle "oily, puce liquid")
                             "You are greeted by a spicy, buttery odor."
-                            "The oily liquid greases your tongue. Its rich, spicy taste is not particularly pleasing."
+                            "The oily liquid greases your tongue. Its rich, spicy taste is not particularly appetizing."
                             "The draft coats your mouth and throat with a slippery residue."
 
 
