@@ -300,7 +300,7 @@ teleOriginMsg t = "There is a soft audible pop as " <> t <> " vanishes in a jarr
 
 
 theBeyondMsg :: Text
-theBeyondMsg = "Your spirit passes into the beyond."
+theBeyondMsg = thrice prd "Your spirit passes into the beyond. A hand reaches out to guide you, and pulls you in"
 
 
 unlinkMsg :: Text -> Sing -> Text
