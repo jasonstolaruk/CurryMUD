@@ -2620,28 +2620,37 @@ readHelper i cols ms d = foldl' helper
                     | otherwise -> f . sorryReadUnknownLang $ s
           HolySymbolType ->
               let langs          = getKnownLangs i ms
-                  holyHelper txt = f txt & _2 <>~ pure ( T.concat [ serialize d, " reads the writing on ", aOrAn s, "." ]
-                                                       , i `delete` desigIds d )
-                                         & _3 <>~ pure (s |<>| parensQuote (showText targetId))
+                  holyHelper ts = acc & _1 <>~ multiWrapNl cols ts
+                                      & _2 <>~ pure ( T.concat [ serialize d, " reads the writing on ", aOrAn s, "." ]
+                                                    , i `delete` desigIds d )
+                                      & _3 <>~ pure (s |<>| parensQuote (showText targetId))
               in either f holyHelper $ case getHolySymbolGodName targetId ms of
-                Caila    | isPC i ms, getRace i ms == Human -> Right cailaOK
-                         | otherwise                        -> Left  cailaNG
-                Rumialys | NymphLang `elem` langs           -> Right rumialysOK
-                         | otherwise                        -> Left  rumialysNG
-                _                                           -> Left  sorryReadHolySymbol
+                Caila     | isPC i ms, getRace i ms == Human -> Right . pure $ cailaOK
+                          | otherwise                        -> Left  cailaNG
+                Itulvatar                                    -> Right itulvatarOKs
+                Rumialys  | NymphLang `elem` langs           -> Right . pure $ rumialysOK
+                          | otherwise                        -> Left  rumialysNG
+                _                                            -> Left  sorryReadHolySymbol
           _ -> f . sorryReadType $ s
       where
-        f msg      = acc & _1 <>~ wrapUnlinesNl cols msg
-        cailaOK    = "You recognize that the runes are of an antiquated human writing system predating the modern \
-                     \hominal alphabet. Unfortunately, you don't know how to read them."
-        cailaNG    = "You can't make heads or tails of the ancient runes embroidered upon the holy symbol."
-        rumialysOK = T.concat [ "The following is etched upon the surface of the metal ring in "
-                              , pp NymphLang
-                              , ": "
-                              , dblQuote "Mother of Life, Architect of All." ]
-        rumialysNG = "You recognize that the language etched on upon the metal ring is " <>
-                     pp NymphLang                                                        <>
-                     ", but you can't read the words."
+        f msg        = acc & _1 <>~ wrapUnlinesNl cols msg
+        cailaOK      = "You recognize that the runes are of an antiquated human writing system predating the modern \
+                       \hominal alphabet. Unfortunately, you don't know how to read them."
+        cailaNG      = "You can't make heads or tails of the ancient runes embroidered upon the holy symbol."
+        itulvatarOKs = [ "The following is engraved upon the back of the disc in common:"
+                       , "Beloved Itulvatar,"
+                       , "Architect of Stars,"
+                       , "(may your Light bathe all existence):"
+                       , "I humbly offer myself to You,"
+                       , "that your Light may guide me"
+                       , "through all darkness and calamity." ]
+        rumialysOK   = T.concat [ "The following is etched upon the surface of the metal ring in "
+                                , pp NymphLang
+                                , ": "
+                                , dblQuote "Mother of Life, Architect of All." ]
+        rumialysNG   = "You recognize that the language etched on upon the metal ring is " <>
+                       pp NymphLang                                                        <>
+                       ", but you can't read the words."
     mkMagicMsgHeader s b lang =
         T.concat [ "At first glance, the writing on the "
                  , s
