@@ -680,15 +680,23 @@ mkHimHer NoSex  = "it"
 
 mkHolySymbolDesc :: GodName -> Text -- TODO: Write these descriptions after finishing the "holysymbols" book.
 mkHolySymbolDesc Aule      = "holysymbol"
-mkHolySymbolDesc Caila     = "HolySymbol"
+mkHolySymbolDesc Caila     = "The holy symbol of Caila is a small, white, rectangular cloth bag containing something \
+                             \that feels like grain. The bag is sewn shut, and a vertical series of four runes is \
+                             \embroidered upon its surface in vermillion thread."
 mkHolySymbolDesc Celoriel  = "holysymbol"
 mkHolySymbolDesc Dellio    = "holysymbol"
 mkHolySymbolDesc Drogo     = "holysymbol"
 mkHolySymbolDesc Iminye    = "holysymbol"
-mkHolySymbolDesc Itulvatar = "holysymbol"
-mkHolySymbolDesc Murgorhd  = "holysymbol"
+mkHolySymbolDesc Itulvatar = "The holy symbol of Itulvatar is a thick bronze disc, four inches in diameter. On the \
+                             \front is embossed an illustration of a large torch burning high, set upon a backdrop of \
+                             \rays of sunlight spreading far over the horizon. There are words etched on the back of \
+                             \the disc in common."
+mkHolySymbolDesc Murgorhd  = "The holy symbol of Murgorhd appears at first glance to be an everyday compass, but this \
+                             \compass is peculiar for the fact that it only ever points west."
 mkHolySymbolDesc Rha'yk    = "holysymbol"
-mkHolySymbolDesc Rumialys  = "holysymbol"
+mkHolySymbolDesc Rumialys  = "The holy symbol of Rumialys is a steel ring with a bar running the length of its \
+                             \four-inch diameter and connecting two opposites edges of the ring. There are words \
+                             \etched on the outer surface of the ring."
 
 
 -----
