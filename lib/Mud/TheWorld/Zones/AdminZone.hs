@@ -782,7 +782,7 @@ createAdminZone = do
             (Just "Attic")
             M.empty [] []))
   putRm iObjCloset
-        ([ iKewpie1, iKewpie2, iPaperSml, iParchment1, iParchment2, iParchment3, iParchment4, iParchment5 ] ++ [iHolySymbol1..iHolySymbol1 + 8])
+        ([ iKewpie1, iKewpie2, iPaperSml, iParchment1, iParchment2, iParchment3, iParchment4, iParchment5 ] ++ [iHolySymbol1..iHolySymbol1 + 9])
         mempty
         (mkRm (RmTemplate "Object closet"
             "This closet holds objects."

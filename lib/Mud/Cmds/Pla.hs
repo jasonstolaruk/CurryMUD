@@ -2541,7 +2541,7 @@ razzle p = cmdNotFoundAction p
 -----
 
 
-readAction :: HasCallStack => ActionFun -- TODO: Reading holy symbols.
+readAction :: HasCallStack => ActionFun
 readAction p@AdviseNoArgs            = advise p ["read"] adviceReadNoArgs
 readAction p@(LowerNub i mq cols as) = (,) <$> getState <*> mkRndmVector >>= \(ms, v) ->
     let (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv as
@@ -2606,19 +2606,42 @@ readHelper i cols ms d = foldl' helper
         in case getType targetId ms of
           WritableType ->
               let (Writable msg r) = getWritable targetId ms in case msg of
-                Nothing          -> acc & _1 <>~ wrapUnlinesNl cols (blankWritableMsg s)
+                Nothing          -> f . blankWritableMsg $ s
                 Just (txt, lang) -> case r of
                   Nothing -> if isKnownLang i ms lang
                     then readIt txt . T.concat $ [ "The following is written on the ", s, " in ", pp lang, nl ":" ]
-                    else acc & _1 <>~ wrapUnlinesNl cols (sorryReadLang s lang)
+                    else f . sorryReadLang s $ lang
                   Just recipSing
                     | isPC    i ms
                     , getSing i ms == recipSing || isAdminId i ms
                     , b    <- isKnownLang i ms lang
                     , txt' <- onFalse b (const . sorryReadOrigLang $ lang) txt
                     -> readIt txt' . mkMagicMsgHeader s b $ lang
-                    | otherwise -> acc & _1 <>~ wrapUnlinesNl cols (sorryReadUnknownLang s)
-          _ -> acc & _1 <>~ wrapUnlinesNl cols (sorryReadType s)
+                    | otherwise -> f . sorryReadUnknownLang $ s
+          HolySymbolType ->
+              let langs          = getKnownLangs i ms
+                  holyHelper txt = f txt & _2 <>~ pure ( T.concat [ serialize d, " reads the writing on ", aOrAn s, "." ]
+                                                       , i `delete` desigIds d )
+                                         & _3 <>~ pure (s |<>| parensQuote (showText targetId))
+              in either f holyHelper $ case getHolySymbolGodName targetId ms of
+                Caila    | isPC i ms, getRace i ms == Human -> Right cailaOK
+                         | otherwise                        -> Left  cailaNG
+                Rumialys | NymphLang `elem` langs           -> Right rumialysOK
+                         | otherwise                        -> Left  rumialysNG
+                _                                           -> Left  sorryReadHolySymbol
+          _ -> f . sorryReadType $ s
+      where
+        f msg      = acc & _1 <>~ wrapUnlinesNl cols msg
+        cailaOK    = "You recognize that the runes are of an antiquated human writing system predating the modern \
+                     \hominal alphabet. Unfortunately, you don't know how to read them."
+        cailaNG    = "You can't make heads or tails of the ancient runes embroidered upon the holy symbol."
+        rumialysOK = T.concat [ "The following is etched upon the surface of the metal ring in "
+                              , pp NymphLang
+                              , ": "
+                              , dblQuote "Mother of Life, Architect of All." ]
+        rumialysNG = "You recognize that the language etched on upon the metal ring is " <>
+                     pp NymphLang                                                        <>
+                     ", but you can't read the words."
     mkMagicMsgHeader s b lang =
         T.concat [ "At first glance, the writing on the "
                  , s

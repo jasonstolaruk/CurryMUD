@@ -212,6 +212,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryActing
                            , sorryQuitCan'tAbbrev
                            , sorryQuoteChars
                            , sorryReadCoins
+                           , sorryReadHolySymbol
                            , sorryReadInEq
                            , sorryReadLang
                            , sorryReadNoHooks
@@ -1519,6 +1520,10 @@ sorryQuoteChars = "Unbalanced quote character."
 
 sorryReadCoins :: Text
 sorryReadCoins = can't "read a coin."
+
+
+sorryReadHolySymbol :: Text
+sorryReadHolySymbol = "Try though you may, there is nothing to read."
 
 
 sorryReadInEq :: Text
