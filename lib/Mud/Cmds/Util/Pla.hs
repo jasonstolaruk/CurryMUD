@@ -28,6 +28,7 @@ module Mud.Cmds.Util.Pla ( adminTagTxt
                          , genericSorry
                          , genericSorryWithHooks
                          , getActs
+                         , getDblLinkedSings
                          , getMatchingChanWithName
                          , getRelativePCName
                          , hasFp
@@ -46,6 +47,8 @@ module Mud.Cmds.Util.Pla ( adminTagTxt
                          , helperRemEitherCoins
                          , helperRemEitherInv
                          , helperSettings
+                         , helperTune
+                         , helperUnready
                          , inOutOnOffs
                          , InvWithCon
                          , IsConInRm
@@ -90,11 +93,16 @@ module Mud.Cmds.Util.Pla ( adminTagTxt
                          , readHelper
                          , resolveMobInvCoins
                          , resolveRmInvCoins
+                         , sacrificeHelper
                          , shuffleGive
                          , shufflePut
                          , shuffleRem
                          , sorryConHelper
-                         , spiritHelper ) where
+                         , spiritHelper
+                         , stopAttacking
+                         , stopDrinking
+                         , stopEating
+                         , stopSacrificing ) where
 
 import Mud.Cmds.Msgs.Advice
 import Mud.Cmds.Msgs.Dude
@@ -120,6 +128,7 @@ import Mud.Misc.LocPref
 import Mud.Misc.Misc
 import Mud.Misc.NameResolution
 import Mud.TheWorld.Zones.AdminZoneIds (iRoot)
+import Mud.Threads.Act
 import Mud.TopLvlDefs.Misc
 import Mud.TopLvlDefs.Padding
 import Mud.TopLvlDefs.Vols
@@ -144,13 +153,13 @@ import Data.Bool (bool)
 import Data.Char (isLower)
 import Data.Function (on)
 import Data.Ix (inRange)
-import Data.List ((\\), delete, elemIndex, find, foldl', group, intercalate, nub, partition, sortBy, zip4)
+import Data.List ((\\), delete, elemIndex, find, foldl', group, intercalate, nub, nubBy, partition, sortBy, zip4)
 import Data.Maybe (isNothing)
 import Data.Monoid ((<>), Sum(..))
 import Data.Text (Text)
 import GHC.Stack (HasCallStack)
 import qualified Data.IntMap.Strict as IM (IntMap, (!), keys)
-import qualified Data.Map.Strict as M ((!), keys, member, notMember, toList)
+import qualified Data.Map.Strict as M ((!), filter, keys, map, member, notMember, toList)
 import qualified Data.Text as T
 import qualified Data.Vector.Unboxed as V (Vector)
 
@@ -567,6 +576,18 @@ genericSorryWithHooks ms = (ms, ) . (, [], [], []) . pure
 
 getActs :: HasCallStack => Id -> MudState -> [ActType]
 getActs i = M.keys . getActMap i
+
+
+-----
+
+
+getDblLinkedSings :: HasCallStack => Id -> MudState -> ([Sing], [Sing])
+getDblLinkedSings i ms = foldr helper mempties . getLinked i $ ms
+  where
+    helper targetSing pair = let targetId = getIdForPCSing targetSing ms
+                                 lens     = isAwake targetId ms ? _1 :? _2
+                             in (pair |&|) $ if s `elem` getLinked targetId ms then lens %~ (targetSing :) else id
+    s = getSing i ms
 
 
 -----
@@ -1268,6 +1289,122 @@ mkSettingPairs i ms = let p = getPla i ms
 -----
 
 
+helperTune :: HasCallStack => Sing -> (TeleLinkTbl, [Chan], [Text], [Text]) -> Text -> (TeleLinkTbl, [Chan], [Text], [Text])
+helperTune _ a arg@(T.length . T.filter (== '=') -> noOfEqs)
+  | or [ noOfEqs /= 1, T.head arg == '=', T.last arg == '=' ] = a & _3 %~ tuneInvalidArg arg
+helperTune s a@(linkTbl, chans, _, _) arg@(T.breakOn "=" -> (name, T.tail -> value)) = case lookup value inOutOnOffs of
+  Nothing  -> a & _3 %~ tuneInvalidArg arg
+  Just val -> let connNames = "all" : linkNames ++ chanNames
+              in findFullNameForAbbrev name connNames |&| maybe notFound (found val)
+  where
+    linkNames   = map uncapitalize . M.keys $ linkTbl
+    chanNames   = selects chanName T.toLower chans
+    notFound    = a & _3 <>~ pure (sorryTuneName name)
+    found val n = if n == "all"
+                    then appendMsg "all telepathic connections" & _1 %~ M.map (const val)
+                                                                & _2 %~ map (chanConnTbl.at s ?~ val)
+                    else foundHelper
+      where
+        appendMsg connName = let msg = T.concat [ "You tune ", connName, " ", inOut val, "." ]
+                             in a & _3 <>~ pure msg
+                                  & _4 <>~ pure msg
+        foundHelper
+          | n `elem` linkNames = foundLink
+          | n `elem` chanNames = foundChan
+          | otherwise          = blowUp "helperTune found foundHelper" "connection name not found" n
+          where
+            foundLink = let n' = capitalize n in appendMsg n' & _1.at n' ?~ val
+            foundChan =
+                let ([match], others) = partition (views chanName ((== n) . T.toLower)) chans
+                in appendMsg (views chanName dblQuote match) & _2 .~ (match & chanConnTbl.at s ?~ val) : others
+
+
+tuneInvalidArg :: HasCallStack => Text -> [Text] -> [Text]
+tuneInvalidArg arg msgs = let msg = sorryParseArg arg in
+    msgs |&| (any (adviceTuneInvalid `T.isInfixOf`) msgs ? (++ pure msg) :? (++ [ msg <> adviceTuneInvalid ]))
+
+
+-----
+
+
+helperUnready :: HasCallStack => Id
+                              -> MudState
+                              -> Desig
+                              -> (EqTbl, InvTbl, [Text], [Broadcast], [Text])
+                              -> Either Text Inv
+                              -> (EqTbl, InvTbl, [Text], [Broadcast], [Text])
+helperUnready i ms d a = \case
+  Left  msg       -> a & _3 <>~ pure msg
+  Right targetIds -> let (bs, msgs) = mkUnreadyDescs i ms d targetIds
+                     in a & _1.ind i %~ M.filter (`notElem` targetIds)
+                          & _2.ind i %~ addToInv ms targetIds
+                          & _3 <>~ msgs
+                          & _4 <>~ bs
+                          & _5 <>~ msgs
+
+
+mkUnreadyDescs :: HasCallStack => Id
+                               -> MudState
+                               -> Desig
+                               -> Inv
+                               -> ([Broadcast], [Text])
+mkUnreadyDescs i ms d targetIds = unzip [ helper icb | icb <- mkIdCountBothList i ms targetIds ]
+  where
+    helper (targetId, count, b@(targetSing, _)) = if count == 1
+      then let toSelfMsg   = T.concat [ "You ", mkVerb targetId SndPer, " the ", targetSing, "." ]
+               toOthersMsg = T.concat [ serialize d, spaced . mkVerb targetId $ ThrPer, aOrAn targetSing,  "." ]
+           in ((toOthersMsg, otherPCIds), toSelfMsg)
+      else let toSelfMsg   = T.concat [ "You "
+                                      , mkVerb targetId SndPer
+                                      , spaced . showText $ count
+                                      , mkPlurFromBoth b
+                                      , "." ]
+               toOthersMsg = T.concat [ serialize d
+                                      , spaced . mkVerb targetId $ ThrPer
+                                      , showText count
+                                      , " "
+                                      , mkPlurFromBoth b
+                                      , "." ]
+           in ((toOthersMsg, otherPCIds), toSelfMsg)
+    mkVerb targetId person = case getType targetId ms of
+      ClothType -> case getCloth targetId ms of
+        Earring  -> mkVerbRemove  person
+        NoseRing -> mkVerbRemove  person
+        Necklace -> mkVerbTakeOff person
+        Bracelet -> mkVerbTakeOff person
+        Ring     -> mkVerbTakeOff person
+        Backpack -> mkVerbTakeOff person
+        _        -> mkVerbDoff    person
+      ConType -> mkVerbTakeOff person
+      WpnType | person == SndPer -> "stop wielding"
+              | otherwise        -> "stops wielding"
+      ArmType -> case getArmSub targetId ms of
+        Head   -> mkVerbTakeOff person
+        Hands  -> mkVerbTakeOff person
+        Feet   -> mkVerbTakeOff person
+        Shield -> mkVerbUnready person
+        _      -> mkVerbDoff    person
+      t -> patternMatchFail "mkUnreadyDescs mkVerb" . showText $ t
+    mkVerbRemove  = \case SndPer -> "remove"
+                          ThrPer -> "removes"
+    mkVerbTakeOff = \case SndPer -> "take off"
+                          ThrPer -> "takes off"
+    mkVerbDoff    = \case SndPer -> "doff"
+                          ThrPer -> "doffs"
+    mkVerbUnready = \case SndPer -> "unready"
+                          ThrPer -> "unreadies"
+    otherPCIds    = i `delete` desigIds d
+
+
+mkIdCountBothList :: HasCallStack => Id -> MudState -> Inv -> [(Id, Int, BothGramNos)]
+mkIdCountBothList i ms targetIds =
+    let boths@(mkCountList -> counts) = [ getEffBothGramNos i ms targetId | targetId <- targetIds ]
+    in nubBy ((==) `on` dropFst) . zip3 targetIds counts $ boths
+
+
+-----
+
+
 inOutOnOffs :: [(Text, Bool)]
 inOutOnOffs = [ ("i",   otherwise)
               , ("in",  otherwise)
@@ -1916,6 +2053,34 @@ resolveRmInvCoins i ms = resolveHelper i ms procGecrMisRm procReconciledCoinsRm
 -----
 
 
+sacrificeHelper :: HasCallStack => ActionParams -> Id -> GodName -> MudStack ()
+sacrificeHelper p@(ActionParams i mq cols _) ci gn = getState >>= \ms ->
+    let toSelf          = T.concat [ "You kneel before the "
+                                   , mkCorpseAppellation i ms ci
+                                   , ", laying upon it the holy symbol of "
+                                   , pp gn
+                                   , ". You say a prayer..." ]
+        d               = mkStdDesig i ms DoCap
+        helper targetId = ((T.concat [ serialize d
+                                     , " kneels before the "
+                                     , mkCorpseAppellation targetId ms ci
+                                     , " and says a prayer to "
+                                     , pp gn
+                                     , "." ], pure targetId) :)
+    in checkActing p ms (Left Sacrificing) allValues $ do logHelper ms
+                                                          wrapSend1Nl mq cols toSelf
+                                                          bcastIfNotIncogNl i . foldr helper [] $ i `delete` desigIds d
+                                                          startAct i Sacrificing . sacrificeAct i mq ci $ gn
+  where
+    logHelper ms = let msg = T.concat [ "sacrificing a ", descSingId ci ms, t, " using a holy symbol of ", pp gn, "." ]
+                       t   = case getCorpse ci ms of PCCorpse s _ _ _ -> spcL . parensQuote $ s
+                                                     _                -> ""
+                   in logPla "sacrificeHelper" i msg
+
+
+-----
+
+
 shuffleGive :: HasCallStack => Id -> MudState -> LastArgIsTargetBindings -> GenericRes
 shuffleGive i ms LastArgIsTargetBindings { .. } =
     let (targetGecrs, targetMiss, targetRcs) = uncurry (resolveEntCoinNames i ms . pure $ targetArg) rmInvCoins
@@ -2038,3 +2203,40 @@ sorryConHelper i ms conId conSing
 
 spiritHelper :: HasCallStack => Id -> (MudState -> MudStack ()) -> (MudState -> MudStack ()) -> MudStack ()
 spiritHelper i a b = getState >>= \ms -> ms |&| bool a b (isSpiritId i ms)
+
+
+-----
+
+
+stopAttacking :: HasCallStack => ActionParams -> MudState -> MudStack ()
+stopAttacking _ _ = undefined -- TODO
+
+
+stopDrinking :: HasCallStack => ActionParams -> MudState -> MudStack ()
+stopDrinking (WithArgs i mq cols _) ms =
+    let Just (l, s) = getNowDrinking i ms
+        toSelf      = T.concat [ "You stop drinking ", renderLiqNoun l the, " from the ", s, "." ]
+        d           = mkStdDesig i ms DoCap
+        msg         = T.concat [ serialize d, " stops drinking from ", aOrAn s, "." ]
+        bcastHelper = bcastIfNotIncogNl i . pure $ (msg, i `delete` desigIds d)
+    in stopAct i Drinking >> wrapSend mq cols toSelf >> bcastHelper
+stopDrinking p _ = patternMatchFail "stopDrinking" . showText $ p
+
+
+stopEating :: HasCallStack => ActionParams -> MudState -> MudStack ()
+stopEating (WithArgs i mq cols _) ms = let Just s      = getNowEating i ms
+                                           toSelf      = prd $ "You stop eating " <> theOnLower s
+                                           d           = mkStdDesig i ms DoCap
+                                           msg         = T.concat [ serialize d, " stops eating ", aOrAn s, "." ]
+                                           bcastHelper = bcastIfNotIncogNl i . pure $ (msg, i `delete` desigIds d)
+                                       in stopAct i Eating >> wrapSend mq cols toSelf >> bcastHelper
+stopEating p _                       = patternMatchFail "stopEating" . showText $ p
+
+
+stopSacrificing :: HasCallStack => ActionParams -> MudState -> MudStack ()
+stopSacrificing (WithArgs i mq cols _) ms = let toSelf      = "You stop sacrificing the corpse."
+                                                d           = mkStdDesig i ms DoCap
+                                                msg         = serialize d <> " stops sacrificing a corpse."
+                                                bcastHelper = bcastIfNotIncogNl i . pure $ (msg, i `delete` desigIds d)
+                                            in stopAct i Sacrificing >> wrapSend mq cols toSelf >> bcastHelper
+stopSacrificing p _ = patternMatchFail "stopSacrificing" . showText $ p
