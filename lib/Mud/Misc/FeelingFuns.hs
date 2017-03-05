@@ -24,7 +24,7 @@ feelingFuns = [ ("sacrificeBonusAule",      sacrificeBonusFeelingFun Aule      )
               , ("sacrificeBonusIminyeHt",  sacrificeBonusIminyeFeelingFun IsHt)
               , ("sacrificeBonusItulvatar", sacrificeBonusFeelingFun Itulvatar )
               , ("sacrificeBonusMuhrgorhd", sacrificeBonusFeelingFun Murgorhd  )
-              , ("sacrificeBonusRha'yk",    sacrificeBonusFeelingFun Rha'yk    )
+              , ("sacrificeBonusRhayk",     sacrificeBonusFeelingFun Rhayk     )
               , ("sacrificeBonusRumialys",  sacrificeBonusFeelingFun Rumialys  )
               , (potFpTag,                  potFpFeelingFun                    )
               , (potHpTag,                  potHpFeelingFun                    )
@@ -49,7 +49,7 @@ sacrificeBonusFeelingFun gn =
                                     Iminye    -> "" -- Intentionally blank.
                                     Itulvatar -> "A warm senssation courses through your veins."
                                     Murgorhd  -> "It's an exhilarating sensation!"
-                                    Rha'yk    -> "You feel inspired. You're ready to take on the world!"
+                                    Rhayk     -> "You feel inspired. You're ready to take on the world!"
                                     Rumialys  -> "You are acutely aware of the presence of a divine energy in all things." ]
 
 

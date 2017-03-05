@@ -227,7 +227,7 @@ applyBonus i s gn now = do
                                                  >>  effectHelper (Just "Ht") (3,  8 ) Ht
                   Itulvatar -> maxXpHelper       >> (effectHelper Nothing     (10, 15) =<< rndmElem [ St, Dx, Ht ])
                   Murgorhd  -> f Aule
-                  Rha'yk    -> maxXp curHp maxHp >>  effectHelper Nothing     (5,  15) St
+                  Rhayk     -> maxXp curHp maxHp >>  effectHelper Nothing     (5,  15) St
                   Rumialys  -> maxXp curFp maxFp >>  effectHelper Nothing     (5,  15) Ht
     f gn
   where

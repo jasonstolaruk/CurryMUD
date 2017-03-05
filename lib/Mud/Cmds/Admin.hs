@@ -1628,7 +1628,7 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
                       , "iminye"
                       , "itulvatar"
                       , "morgorhd"
-                      , "rha'yk"
+                      , "rhayk"
                       , "rumialys" ] :: [Text]
         notFound    = appendMsg . sorryAdminSetKey $ key
         appendMsg m = a & _2 <>~ pure m
@@ -1678,7 +1678,7 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
           "iminye"           -> setPCSacrificesHelper  t Iminye
           "itulvatar"        -> setPCSacrificesHelper  t Itulvatar
           "murgorhd"         -> setPCSacrificesHelper  t Murgorhd
-          "rha'yk"           -> setPCSacrificesHelper  t Rha'yk
+          "rhayk"            -> setPCSacrificesHelper  t Rhayk
           "rumialys"         -> setPCSacrificesHelper  t Rumialys
           x                  -> patternMatchFail "setHelper helper found" (x :: Text)
         -----

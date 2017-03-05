@@ -696,7 +696,7 @@ mkHolySymbolDesc Itulvatar = "The holy symbol of Itulvatar is a thick bronze dis
                              \of rays of sunlight spreading high above the horizon. There are words etched on the back \
                              \of the disc."
 mkHolySymbolDesc Murgorhd  = "The holy symbol of Murgorhd is a "
-mkHolySymbolDesc Rha'yk    = "The holy symbol of Rha'yk is a "
+mkHolySymbolDesc Rhayk     = "The holy symbol of Rhayk is a "
 mkHolySymbolDesc Rumialys  = "The holy symbol of Rumialys is a steel ring about four inches in diameter. There is a \
                              \thin, straight bar running through the center and connecting two opposites edges of the \
                              \ring. There are words etched upon the outer surface of the ring."
