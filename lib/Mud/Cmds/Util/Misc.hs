@@ -679,22 +679,20 @@ mkHimHer NoSex  = "it"
 
 
 mkHolySymbolDesc :: GodName -> Text -- TODO: Write these descriptions after finishing the "holysymbols" book.
-mkHolySymbolDesc Aule      = "holysymbol"
+mkHolySymbolDesc Aule      = "The holy symbol of Aule is a "
 mkHolySymbolDesc Caila     = "The holy symbol of Caila is a small, white, rectangular cloth bag containing something \
                              \that might be grain. The bag is sewn shut, and a vertical series of four runes is \
                              \embroidered upon its surface in vermillion thread."
-mkHolySymbolDesc Celoriel  = "holysymbol"
-mkHolySymbolDesc Dellio    = "holysymbol"
-mkHolySymbolDesc Drogo     = "holysymbol"
-mkHolySymbolDesc Iminye    = "holysymbol"
+mkHolySymbolDesc Celoriel  = "The holy symbol of Celoriel is a "
+mkHolySymbolDesc Dellio    = "The holy symbol of Dellio is a "
+mkHolySymbolDesc Drogo     = "The holy symbol of Drogo is a "
+mkHolySymbolDesc Iminye    = "The holy symbol of Iminye is a "
 mkHolySymbolDesc Itulvatar = "The holy symbol of Itulvatar is a thick bronze disc, four inches in diameter. On the \
                              \front is embossed an illustration of a large torch burning fiercely, set upon a backdrop \
                              \of rays of sunlight spreading high above the horizon. There are words etched on the back \
                              \of the disc in common."
-mkHolySymbolDesc Murgorhd  = "The holy symbol of Murgorhd appears at first glance to be an everyday compass, but this \
-                             \compass is peculiar for the fact that it only ever points west. When you rotate the \
-                             \compass, the arrow remains fixed on the W."
-mkHolySymbolDesc Rha'yk    = "holysymbol"
+mkHolySymbolDesc Murgorhd  = "The holy symbol of Murgorhd is a "
+mkHolySymbolDesc Rha'yk    = "The holy symbol of Rha'yk is a "
 mkHolySymbolDesc Rumialys  = "The holy symbol of Rumialys is a steel ring about four inches in diameter. There is a \
                              \thin, straight bar running through the center and connecting two opposites edges of the \
                              \ring. There are words etched upon the outer surface of the ring."

@@ -2652,7 +2652,7 @@ roomDesc p = patternMatchFail "roomDesc" . showText $ p
 
 
 sacrifice :: HasCallStack => ActionFun
-sacrifice p@(NoArgs i mq cols) = getState >>= \ms ->
+sacrifice p@(NoArgs i mq cols) = getState >>= \ms -> -- TODO: Continue moving functions from here.
     case (findHolySymbolGodName `fanUncurry` findCorpseIdInMobRm) (i, ms) of
       (Just gn, Just ci) -> sacrificeHelper p ci gn
       (Nothing, Just _ ) -> sorry sorrySacrificeHolySymbol
