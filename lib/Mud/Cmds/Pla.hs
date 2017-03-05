@@ -98,7 +98,7 @@ import Data.Time (diffUTCTime, getCurrentTime)
 import Data.Tuple (swap)
 import GHC.Stack (HasCallStack)
 import Prelude hiding (log, pi)
-import qualified Data.IntMap.Strict as IM (IntMap, (!), keys)
+import qualified Data.IntMap.Strict as IM ((!), keys)
 import qualified Data.Map.Strict as M ((!), elems, filter, foldrWithKey, keys, lookup, map, singleton, size, toList)
 import qualified Data.Set as S (filter, toList)
 import qualified Data.Text as T
@@ -851,45 +851,6 @@ connect p@(Lower i mq cols as) = getState >>= \ms ->
 connect p = patternMatchFail "connect" . showText $ p
 
 
-connectHelper :: HasCallStack => Id -> (Text, Args) -> MudState -> (MudState, (MudState, ([Either Text Sing], Maybe Id)))
-connectHelper i (target, as) ms =
-    let (f, guessWhat) | any hasLocPref as = (stripLocPref, sorryConnectIgnore)
-                       | otherwise         = (id,           ""                )
-        as'         = map (capitalize . T.toLower . f) as
-        notFound    = sorry . sorryChanName $ target
-        found match = let (cn, c) = getMatchingChanWithName match cns cs in if views chanConnTbl (M.! s) c
-          then let procTarget pair@(ms', _) a =
-                       let notFoundSing         = sorryProcTarget . notFoundSuggestAsleeps a asleepSings $ ms'
-                           foundSing targetSing = case c^.chanConnTbl.at targetSing of
-                             Just _  -> sorryProcTarget . sorryConnectAlready targetSing $ cn
-                             Nothing ->
-                                 let checkChanName targetId = if hasChanOfSameName targetId
-                                       then blocked . sorryConnectChanName targetSing $ cn
-                                       else checkPp
-                                     checkPp | not . hasPp i ms' $ 3 = let msg = sorryPp $ "connect " <> targetSing
-                                                                       in sorryProcTarget msg
-                                             | otherwise = pair & _1.chanTbl.ind ci.chanConnTbl.at targetSing ?~ True
-                                                                & _1.mobTbl.ind i.curPp -~ 3
-                                                                & _2 <>~ pure (Right targetSing)
-                                 in either sorryProcTarget checkChanName . checkMutuallyTuned i ms' $ targetSing
-                           sorryProcTarget msg = pair & _2 <>~ pure (Left msg)
-                           blocked             = sorryProcTarget . (effortsBlockedMsg <>)
-                       in findFullNameForAbbrev a targetSings |&| maybe notFoundSing foundSing
-                   ci                         = c^.chanId
-                   dblLinkeds                 = views pcTbl (filter (isDblLinked ms . (i, )) . IM.keys) ms
-                   dblLinkedsPair             = partition (`isAwake` ms) dblLinkeds
-                   (targetSings, asleepSings) = dblLinkedsPair & both %~ map (`getSing` ms)
-                   hasChanOfSameName targetId | targetCs  <- getPCChans targetId ms
-                                              , targetCns <- selects chanName T.toLower targetCs
-                                              = T.toLower cn `elem` targetCns
-                   (ms'', res)                = foldl' procTarget (ms, []) as'
-               in (ms'', (ms'', (onFalse (()# guessWhat) (Left guessWhat :) res, Just ci)))
-          else sorry . sorryTunedOutICChan $ cn
-        (cs, cns, s) = mkChanBindings i ms
-        sorry        = (ms, ) . (ms, ) . (, Nothing) . pure . Left
-    in findFullNameForAbbrev target (map T.toLower cns) |&| maybe notFound found
-
-
 -----
 
 
@@ -1014,41 +975,6 @@ disconnect p@(Lower i mq cols as) = getState >>= \ms ->
                 g n = (T.concat [ me, " has disconnected ", n, " from the ", dblQuote cn, " channel." ], pure i')
         return . concat . zipWith3 f otherIds namesForMe $ namesForTargets
 disconnect p = patternMatchFail "disconnect" . showText $ p
-
-
-disconnectHelper :: HasCallStack => Id
-                                 -> (Text, Args)
-                                 -> IM.IntMap [(Id, Text)]
-                                 -> MudState
-                                 -> (MudState, ([Either Text (Id, Sing, Text)], Maybe Id))
-disconnectHelper i (target, as) idNamesTbl ms =
-    let (f, guessWhat) | any hasLocPref as = (stripLocPref, sorryDisconnectIgnore)
-                       | otherwise         = (id,           ""                   )
-        as'         = map (T.toLower . f) as
-        notFound    = sorry . sorryChanName $ target
-        found match = let (cn, c) = getMatchingChanWithName match cns cs in if views chanConnTbl (M.! s) c
-          then let procTarget (pair@(ms', _), b) a = case filter ((== a) . T.toLower . snd) $ idNamesTbl IM.! ci of
-                     [] -> (pair & _2 <>~ (pure . Left . hint . sorryChanTargetName (dblQuote cn) $ a), True)
-                     [(targetId, targetName)]
-                       | not . hasPp i ms' $ 3 ->
-                           let targetName' = isRndmName targetName ? underline targetName :? targetName
-                               msg         = sorryPp $ "disconnect " <> targetName'
-                           in (pair & _2 <>~ pure (Left msg), b)
-                       | otherwise -> let targetSing = getSing targetId ms'
-                                      in ( pair & _1.chanTbl.ind ci.chanConnTbl.at targetSing .~ Nothing
-                                                & _1.mobTbl.ind i.curPp -~ 3
-                                                & _2 <>~ pure (Right (targetId, targetSing, targetName))
-                                         , b )
-                     xs -> patternMatchFail "disconnectHelper found" . showText $ xs
-                     where
-                       hint = onFalse b ((<> hintDisconnect) . spcR)
-                   ci               = c^.chanId
-                   ((ms'', res), _) = foldl' procTarget ((ms, []), False) as'
-               in (ms'', (onFalse (()# guessWhat) (Left guessWhat :) res, Just ci))
-          else sorry . sorryTunedOutICChan $ cn
-        (cs, cns, s) = mkChanBindings i ms
-        sorry        = (ms, ) . (, Nothing) . pure . Left
-    in findFullNameForAbbrev target (map T.toLower cns) |&| maybe notFound found
 
 
 -----
@@ -1420,18 +1346,6 @@ fill p@(Lower' i as) = getState >>= \ms ->
 fill p = patternMatchFail "fill" . showText $ p
 
 
-
-fillHelper :: HasCallStack => Id -> MudState -> LastArgIsTargetBindings -> Id -> GenericResWithHooks
-fillHelper i ms LastArgIsTargetBindings { .. } targetId =
-    let (inInvs, inEqs, inRms)      = sortArgsInvEqRm InInv otherArgs
-        sorryInEq                   = inEqs |!| sorryFillInEq
-        sorryInRm                   = inRms |!| sorryFillInRm
-        (eiss, ecs)                 = uncurry (resolveMobInvCoins i ms inInvs) srcInvCoins
-        sorryCoins                  = ecs |!| sorryFillCoins
-        (ms', toSelfs, bs, logMsgs) = helperFillEitherInv i srcDesig targetId eiss (ms, [], [], [])
-    in (ms', (dropBlanks $ [ sorryInEq, sorryInRm, sorryCoins ] ++ toSelfs, bs, logMsgs, []))
-
-
 -----
 
 
@@ -1493,29 +1407,6 @@ give p@(Lower' i as) = genericAction p helper "give"
         ( ()# srcInvCoins |?| Just dudeYourHandsAreEmpty
         , ()# rmInvCoins  |?| Just sorryNoOneHere ) |&| uncurry mplus
 give p = patternMatchFail "give" . showText $ p
-
-
-shuffleGive :: HasCallStack => Id -> MudState -> LastArgIsTargetBindings -> GenericRes
-shuffleGive i ms LastArgIsTargetBindings { .. } =
-    let (targetGecrs, targetMiss, targetRcs) = uncurry (resolveEntCoinNames i ms . pure $ targetArg) rmInvCoins
-    in if ()# targetMiss && ()!# targetRcs
-      then genericSorry ms sorryGiveToCoin
-      else case procGecrMisRm . head . zip targetGecrs $ targetMiss of
-        Left  msg        -> genericSorry ms msg
-        Right [targetId] -> if isNpcPC targetId ms
-          then let (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv otherArgs
-                   sorryInEq              = inEqs |!| sorryGiveInEq
-                   sorryInRm              = inRms |!| sorryGiveInRm
-                   (eiss, ecs)            = uncurry (resolveMobInvCoins i ms inInvs) srcInvCoins
-                   (ms',  toSelfs,  bs,  logMsgs ) = foldl' (helperGiveEitherInv  i srcDesig targetId)
-                                                            (ms, [], [], [])
-                                                            eiss
-                   (ms'', toSelfs', bs', logMsgs') =        helperGiveEitherCoins i srcDesig targetId
-                                                            (ms', toSelfs, bs, logMsgs)
-                                                            ecs
-               in (ms'', (dropBlanks $ [ sorryInEq, sorryInRm ] ++ toSelfs', bs', map (parseExpandDesig i ms) logMsgs'))
-          else genericSorry ms . sorryGiveType . getSing targetId $ ms
-        Right {} -> genericSorry ms sorryGiveExcessTargets
 
 
 -----
@@ -2586,79 +2477,6 @@ readAction p@(LowerNub i mq cols as) = (,) <$> getState <*> mkRndmVector >>= \(m
                                         bcastIfNotIncogNl i bs
     wrapper = T.unlines . map (multiWrap cols . T.lines)
 readAction p = patternMatchFail "readAction" . showText $ p
-
-
-readHelper :: HasCallStack => Id
-                           -> Cols
-                           -> MudState
-                           -> Desig
-                           -> (Text, [Broadcast], [Text])
-                           -> Inv
-                           -> (Text, [Broadcast], [Text])
-readHelper i cols ms d = foldl' helper
-  where
-    helper acc targetId =
-        let s                 = getSing targetId ms
-            readIt txt header = acc & _1 <>~ (multiWrapNl cols . T.lines $ header <> txt)
-                                    & _2 <>~ pure ( T.concat [ serialize d, " reads ", aOrAn s, "." ]
-                                                  , i `delete` desigIds d )
-                                    & _3 <>~ pure (s |<>| parensQuote (showText targetId))
-        in case getType targetId ms of
-          WritableType ->
-              let (Writable msg r) = getWritable targetId ms in case msg of
-                Nothing          -> f . blankWritableMsg $ s
-                Just (txt, lang) -> case r of
-                  Nothing -> if isKnownLang i ms lang
-                    then readIt txt . T.concat $ [ "The following is written on the ", s, " in ", pp lang, nl ":" ]
-                    else f . sorryReadLang s $ lang
-                  Just recipSing
-                    | isPC    i ms
-                    , getSing i ms == recipSing || isAdminId i ms
-                    , b    <- isKnownLang i ms lang
-                    , txt' <- onFalse b (const . sorryReadOrigLang $ lang) txt
-                    -> readIt txt' . mkMagicMsgHeader s b $ lang
-                    | otherwise -> f . sorryReadUnknownLang $ s
-          HolySymbolType ->
-              let langs          = getKnownLangs i ms
-                  holyHelper ts = acc & _1 <>~ multiWrapNl cols ts
-                                      & _2 <>~ pure ( T.concat [ serialize d, " reads the writing on ", aOrAn s, "." ]
-                                                    , i `delete` desigIds d )
-                                      & _3 <>~ pure (s |<>| parensQuote (showText targetId))
-              in either f holyHelper $ case getHolySymbolGodName targetId ms of
-                Caila     | isPC i ms, getRace i ms == Human -> Right . pure $ cailaOK
-                          | otherwise                        -> Left  cailaNG
-                Itulvatar                                    -> Right itulvatarOKs
-                Rumialys  | NymphLang `elem` langs           -> Right . pure $ rumialysOK
-                          | otherwise                        -> Left  rumialysNG
-                _                                            -> Left  sorryReadHolySymbol
-          _ -> f . sorryReadType $ s
-      where
-        f msg        = acc & _1 <>~ wrapUnlinesNl cols msg
-        cailaOK      = "You recognize that the runes are of an antiquated human writing system predating the modern \
-                       \hominal alphabet. Unfortunately, you don't know how to read them."
-        cailaNG      = "You can't make heads or tails of the ancient runes embroidered upon the holy symbol."
-        itulvatarOKs = [ "The following is engraved upon the back of the disc in common:"
-                       , "Beloved Itulvatar,"
-                       , "Architect of Stars,"
-                       , "(may your Light bathe all existence):"
-                       , "I humbly offer myself to You,"
-                       , "that your Light may guide me"
-                       , "through all darkness and calamity." ]
-        rumialysOK   = T.concat [ "The following is etched upon the surface of the metal ring in "
-                                , pp NymphLang
-                                , ": "
-                                , dblQuote "Mother of Life, Architect of All." ]
-        rumialysNG   = "You recognize that the language etched on upon the metal ring is " <>
-                       pp NymphLang                                                        <>
-                       ", but you can't read the words."
-    mkMagicMsgHeader s b lang =
-        T.concat [ "At first glance, the writing on the "
-                 , s
-                 , " appears to be in a language you don't recognize. Then suddenly the unfamiliar glyphs come alive, \
-                   \squirming and melting into new forms. In a matter of seconds, the text transforms into "
-                 , nl $ if b
-                     then "the following message, written in " <> pp lang <> ":"
-                     else prd $ "a message written in " <> pp lang ]
 
 
 -----

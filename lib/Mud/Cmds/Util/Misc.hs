@@ -688,9 +688,9 @@ mkHolySymbolDesc Dellio    = "holysymbol"
 mkHolySymbolDesc Drogo     = "holysymbol"
 mkHolySymbolDesc Iminye    = "holysymbol"
 mkHolySymbolDesc Itulvatar = "The holy symbol of Itulvatar is a thick bronze disc, four inches in diameter. On the \
-                             \front is embossed an illustration of a large torch burning high, set upon a backdrop of \
-                             \rays of sunlight spreading far over the horizon. There are words etched on the back of \
-                             \the disc in common."
+                             \front is embossed an illustration of a large torch burning fiercely, set upon a backdrop \
+                             \of rays of sunlight spreading high above the horizon. There are words etched on the back \
+                             \of the disc in common."
 mkHolySymbolDesc Murgorhd  = "The holy symbol of Murgorhd appears at first glance to be an everyday compass, but this \
                              \compass is peculiar for the fact that it only ever points west."
 mkHolySymbolDesc Rha'yk    = "holysymbol"
