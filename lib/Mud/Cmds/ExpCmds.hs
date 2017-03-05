@@ -590,9 +590,13 @@ expCmdSet = S.fromList
     , ExpCmd "pant"         (NoTarget  "You pant."
                                        "% pants.")
                             Nothing
-    , ExpCmd "pat"          (HasTarget "You pat @ on the back."
+    , ExpCmd "patback"      (HasTarget "You pat @ on the back."
                                        "% pats you on the back."
                                        "% pats @ on the back.")
+                            Nothing
+    , ExpCmd "pathead"      (HasTarget "You pat @ on the head."
+                                       "% pats you on the head."
+                                       "% pats @ on the head.")
                             Nothing
     , ExpCmd "peer"         (HasTarget "You peer at @."
                                        "% peers at you."
@@ -690,6 +694,10 @@ expCmdSet = S.fromList
     , ExpCmd "ruffle"       (HasTarget "You ruffle @'s hair."
                                        "% ruffles your hair."
                                        "% ruffles @'s hair.")
+                            Nothing
+    , ExpCmd "salute"       (HasTarget "You salute @."
+                                       "% salutes you."
+                                       "% salutes @.")
                             Nothing
     , ExpCmd "satisfied"    (NoTarget  "You look satisfied."
                                        "% looks satisfied.")

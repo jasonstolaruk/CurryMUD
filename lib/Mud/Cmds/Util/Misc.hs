@@ -690,7 +690,7 @@ mkHolySymbolDesc Iminye    = "The holy symbol of Iminye is a "
 mkHolySymbolDesc Itulvatar = "The holy symbol of Itulvatar is a thick bronze disc, four inches in diameter. On the \
                              \front is embossed an illustration of a large torch burning fiercely, set upon a backdrop \
                              \of rays of sunlight spreading high above the horizon. There are words etched on the back \
-                             \of the disc in common."
+                             \of the disc."
 mkHolySymbolDesc Murgorhd  = "The holy symbol of Murgorhd is a "
 mkHolySymbolDesc Rha'yk    = "The holy symbol of Rha'yk is a "
 mkHolySymbolDesc Rumialys  = "The holy symbol of Rumialys is a steel ring about four inches in diameter. There is a \
