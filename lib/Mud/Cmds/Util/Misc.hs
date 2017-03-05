@@ -692,7 +692,8 @@ mkHolySymbolDesc Itulvatar = "The holy symbol of Itulvatar is a thick bronze dis
                              \of rays of sunlight spreading high above the horizon. There are words etched on the back \
                              \of the disc in common."
 mkHolySymbolDesc Murgorhd  = "The holy symbol of Murgorhd appears at first glance to be an everyday compass, but this \
-                             \compass is peculiar for the fact that it only ever points west."
+                             \compass is peculiar for the fact that it only ever points west. When you rotate the \
+                             \compass, the arrow remains fixed on the W."
 mkHolySymbolDesc Rha'yk    = "holysymbol"
 mkHolySymbolDesc Rumialys  = "The holy symbol of Rumialys is a steel ring about four inches in diameter. There is a \
                              \thin, straight bar running through the center and connecting two opposites edges of the \
