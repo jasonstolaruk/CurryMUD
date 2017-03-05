@@ -35,7 +35,6 @@ import Mud.Data.State.MudData
 import Mud.Data.State.Util.Calc
 import Mud.Data.State.Util.Coins
 import Mud.Data.State.Util.Get
-import Mud.Data.State.Util.Hierarchy
 import Mud.Data.State.Util.Lang
 import Mud.Data.State.Util.Make
 import Mud.Data.State.Util.Misc
@@ -89,7 +88,7 @@ import Data.Either (lefts, partitionEithers)
 import Data.Function (on)
 import Data.Int (Int64)
 import Data.Ix (inRange)
-import Data.List ((\\), delete, foldl', group, intercalate, intersperse, nub, nubBy, partition, sort, sortBy, unfoldr, zip4)
+import Data.List ((\\), delete, foldl', intercalate, intersperse, nub, nubBy, partition, sort, sortBy, unfoldr)
 import Data.List.Split (chunksOf)
 import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>), All(..), Sum(..))
@@ -1477,34 +1476,6 @@ findExit rm ln = case views rmLinks (filter isValid) rm of
     getDestMsg   _                 = Nothing
 
 
-expandLinkName :: HasCallStack => Text -> Text
-expandLinkName "n"  = "north"
-expandLinkName "ne" = "northeast"
-expandLinkName "e"  = "east"
-expandLinkName "se" = "southeast"
-expandLinkName "s"  = "south"
-expandLinkName "sw" = "southwest"
-expandLinkName "w"  = "west"
-expandLinkName "nw" = "northwest"
-expandLinkName "u"  = "up"
-expandLinkName "d"  = "down"
-expandLinkName x    = patternMatchFail "expandLinkName" x
-
-
-expandOppLinkName :: HasCallStack => Text -> Text
-expandOppLinkName "n"  = "the south"
-expandOppLinkName "ne" = "the southwest"
-expandOppLinkName "e"  = "the west"
-expandOppLinkName "se" = "the northwest"
-expandOppLinkName "s"  = "the north"
-expandOppLinkName "sw" = "the northeast"
-expandOppLinkName "w"  = "the east"
-expandOppLinkName "nw" = "the southeast"
-expandOppLinkName "u"  = "below"
-expandOppLinkName "d"  = "above"
-expandOppLinkName x    = patternMatchFail "expandOppLinkName" x
-
-
 -- The following 3 functions are in this module because they reference "go" (which references "look")...
 mkNonStdRmLinkCmds :: HasCallStack => Rm -> [Cmd]
 mkNonStdRmLinkCmds (view rmLinks -> rls) = [ mkCmdForRmLink rl | rl <- rls, isNonStdLink rl ]
@@ -1999,61 +1970,6 @@ look (LowerNub i mq cols as) = mkRndmVector >>= \v ->
 look p = patternMatchFail "look" . showText $ p
 
 
-mkRmInvCoinsDesc :: HasCallStack => Id -> Cols -> MudState -> Id -> Text
-mkRmInvCoinsDesc i cols ms ri =
-    let (ris, c)                = first (i `delete`) . getVisibleInvCoins ri $ ms
-        (pcTuples, otherTuples) = splitPCsOthers . mkRmInvCoinsDescTuples i ms $ ris
-        pcDescs                 = T.unlines . concatMap (wrapIndent 2 cols . mkPCDesc   ) $ pcTuples
-        otherDescs              = T.unlines . concatMap (wrapIndent 2 cols . mkOtherDesc) $ otherTuples
-    in (pcTuples |!| pcDescs) <> (otherTuples |!| otherDescs) <> (c |!| mkCoinsSummary cols c)
-  where
-    splitPCsOthers = first (map $ \((_, ia), rest) -> (ia, rest)) . second (map snd) . span (fst . fst)
-    mkPCDesc (ia, (en, (s, _), d, c)) | c == 1 = T.concat [ (s |&|) $ if isKnownPCSing s
-                                                              then colorWith knownNameColor
-                                                              else colorWith unknownNameColor . aOrAn
-                                                          , rmDescHepler d
-                                                          , adminTagHelper ia
-                                                          , " "
-                                                          , en ]
-    mkPCDesc (ia, (en, b,      d, c))          = T.concat [ colorWith unknownNameColor $ commaShow c |<>| mkPlurFromBoth b
-                                                          , rmDescHepler d
-                                                          , adminTagHelper ia
-                                                          , " "
-                                                          , en ]
-    mkOtherDesc (en, (s, _), _, c) | c == 1 = aOrAnOnLower s |<>| en
-    mkOtherDesc (en, b,      _, c)          = T.concat [ commaShow c, spaced . mkPlurFromBoth $ b, en ]
-    adminTagHelper False = ""
-    adminTagHelper True  = spcL adminTagTxt
-    rmDescHepler   ""    = ""
-    rmDescHepler   d     = spcL d
-
-
-mkRmInvCoinsDescTuples :: HasCallStack => Id -> MudState -> Inv -> [((Bool, Bool), (Text, BothGramNos, Text, Int))]
-mkRmInvCoinsDescTuples i ms targetIds =
-  let isPCAdmins =                      [ mkIsPCAdmin targetId            | targetId <- targetIds ]
-      styleds    = styleAbbrevs DoQuote [ getEffName        i ms targetId | targetId <- targetIds ]
-      boths      =                      [ getEffBothGramNos i ms targetId | targetId <- targetIds ]
-      rmDescs    =                      [ mkMobRmDesc targetId ms         | targetId <- targetIds ]
-      groups     = group . zip4 isPCAdmins styleds boths $ rmDescs
-  in [ (ipa, (s, b, d, c)) | ((ipa, s, b, d), c) <- [ (head &&& length) g | g <- groups ] ]
-  where
-    mkIsPCAdmin targetId | isPC targetId ms = (True, isAdminId targetId ms)
-                         | otherwise        = dup False
-
-
-isKnownPCSing :: HasCallStack => Sing -> Bool
-isKnownPCSing s = case T.words s of [ "male",   _ ] -> False
-                                    [ "female", _ ] -> False
-                                    _               -> True
-
-
-extractMobIdsFromEiss :: HasCallStack => MudState -> [Either Text Inv] -> Inv
-extractMobIdsFromEiss ms = foldl' helper []
-  where
-    helper acc Left   {}  = acc
-    helper acc (Right is) = acc ++ findMobIds ms is
-
-
 -----
 
 
@@ -2231,45 +2147,6 @@ putAction p@(Lower' i as) = getState >>= \ms ->
                 (_, (ms', toSelfs, bs, logMsgs), fs) = getHookFun hookName ms i h v (args, (ms, [], [], []), [])
             in (ms', (toSelfs, bs, logMsgs, fs))
 putAction p = patternMatchFail "putAction" . showText $ p
-
-
-type CoinsWithCon = Coins
-type PCInv        = Inv
-type PCCoins      = Coins
-
-
-shufflePut :: HasCallStack => Id
-                           -> MudState
-                           -> Desig
-                           -> ConName
-                           -> IsConInRm
-                           -> Args
-                           -> (InvWithCon, CoinsWithCon)
-                           -> (PCInv, PCCoins)
-                           -> ((GetEntsCoinsRes, Maybe Inv) -> Either Text Inv)
-                           -> GenericRes
-shufflePut i ms d conName icir as invCoinsWithCon@(invWithCon, _) mobInvCoins f =
-    let (conGecrs, conMiss, conRcs) = uncurry (resolveEntCoinNames i ms . pure $ conName) invCoinsWithCon
-    in if ()# conMiss && ()!# conRcs
-      then genericSorry ms sorryPutInCoin
-      else case f . head . zip conGecrs $ conMiss of
-        Left  msg     -> genericSorry ms msg
-        Right [conId] | (conSing, conType) <- (getSing `fanUncurry` getType) (conId, ms) ->
-            if not . hasCon $ conType
-              then genericSorry ms . sorryConHelper i ms conId $ conSing
-              else let (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv as
-                       sorryInEq              = inEqs |!| sorryPutInEq
-                       sorryInRm              = inRms |!| sorryPutInRm
-                       (eiss, ecs)            = uncurry (resolveMobInvCoins i ms inInvs) mobInvCoins
-                       mnom                   = mkMaybeNthOfM ms icir conId conSing invWithCon
-                       (ms',  toSelfs,  bs,  logMsgs ) = foldl' (helperPutEitherInv  i d mnom conId conSing)
-                                                                (ms, [], [], [])
-                                                                eiss
-                       (ms'', toSelfs', bs', logMsgs') =        helperPutEitherCoins i d mnom conId conSing
-                                                                (ms', toSelfs, bs, logMsgs)
-                                                                ecs
-                   in (ms'', (dropBlanks $ [ sorryInEq, sorryInRm ] ++ toSelfs', bs', logMsgs'))
-        Right {} -> genericSorry ms sorryPutExcessCon
 
 
 -----
@@ -2754,46 +2631,6 @@ remove p@(Lower' i as) = genericAction p helper "remove"
                 | otherwise      = shuffleRem i ms srcDesig target True otherArgs rmInvCoins procGecrMisRm
           in genericCheckActing i ms (Right "remove an item from a container") [ Drinking, Sacrificing ] f
 remove p = patternMatchFail "remove" . showText $ p
-
-
-shuffleRem :: HasCallStack => Id
-                           -> MudState
-                           -> Desig
-                           -> ConName
-                           -> IsConInRm
-                           -> Args
-                           -> (InvWithCon, CoinsWithCon)
-                           -> ((GetEntsCoinsRes, Maybe Inv) -> Either Text Inv)
-                           -> GenericRes
-shuffleRem i ms d conName icir as invCoinsWithCon@(invWithCon, _) f =
-    let (conGecrs, conMiss, conRcs) = uncurry (resolveEntCoinNames i ms . pure $ conName) invCoinsWithCon
-    in if ()# conMiss && ()!# conRcs
-      then genericSorry ms sorryRemCoin
-      else case f . head . zip conGecrs $ conMiss of
-        Left  msg     -> genericSorry ms msg
-        Right [conId] | (conSing, conType) <- (getSing `fanUncurry` getType) (conId, ms) ->
-            if not . hasCon $ conType
-              then genericSorry ms . sorryConHelper i ms conId $ conSing
-              else let (as', guessWhat)   = stripLocPrefs
-                       invCoinsInCon      = getInvCoins conId ms
-                       (gecrs, miss, rcs) = uncurry (resolveEntCoinNames i ms as') invCoinsInCon
-                       eiss               = zipWith (curry . procGecrMisCon $ conSing) gecrs miss
-                       ecs                = map (procReconciledCoinsCon conSing) rcs
-                       mnom               = mkMaybeNthOfM ms icir conId conSing invWithCon
-                       (ms',  toSelfs,  bs,  logMsgs ) = foldl' (helperRemEitherInv  i d mnom conId conSing icir)
-                                                                (ms, [], [], [])
-                                                                eiss
-                       (ms'', toSelfs', bs', logMsgs') =        helperRemEitherCoins i d mnom conId conSing icir
-                                                                (ms', toSelfs, bs, logMsgs)
-                                                                ecs
-                   in if ()!# invCoinsInCon
-                     then (ms'', (guessWhat ++ toSelfs', bs', logMsgs'))
-                     else genericSorry ms . sorryRemEmpty $ conSing
-        Right {} -> genericSorry ms sorryRemExcessCon
-  where
-    stripLocPrefs = onTrue (any hasLocPref as) g (as, [])
-    g pair        = pair & _1 %~ map stripLocPref
-                         & _2 .~ pure sorryRemIgnore
 
 
 -----
