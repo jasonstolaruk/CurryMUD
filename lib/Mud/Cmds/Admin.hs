@@ -1066,7 +1066,7 @@ adminHolySymbol   (WithArgs i mq cols [ numTxt, godNameTxt ]) = case reads . T.u
                                                 (mkHolySymbolDesc gn)
                                                 Nothing
                                                 zeroBits
-                              ot  = ObjTemplate holySymbolWeight
+                              ot  = ObjTemplate holySymbolWeight -- TODO: Do stats vary by holy symbol type?
                                                 holySymbolVol
                                                 Nothing
                                                 (setBit zeroBits . fromEnum $ IsBiodegradable)
