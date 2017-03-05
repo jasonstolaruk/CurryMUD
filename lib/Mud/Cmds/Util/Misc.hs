@@ -684,7 +684,7 @@ mkHolySymbolDesc Caila     = "The holy symbol of Caila is a small, white, rectan
                              \that might be grain. The bag is sewn shut, and a vertical series of four runes is \
                              \embroidered upon its surface in vermillion thread."
 mkHolySymbolDesc Celoriel  = "The holy symbol of Celoriel is a "
-mkHolySymbolDesc Dellio    = "The holy symbol of Dellio is a "
+mkHolySymbolDesc Dellio    = "The holy symbol of Dellio is a thin, curved bone, about 5 or 6 inches long."
 mkHolySymbolDesc Drogo     = "The holy symbol of Drogo is a "
 mkHolySymbolDesc Iminye    = "The holy symbol of Iminye is a "
 mkHolySymbolDesc Itulvatar = "The holy symbol of Itulvatar is a thick bronze disc, four inches in diameter. On the \
