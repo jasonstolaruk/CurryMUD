@@ -71,7 +71,6 @@ import Mud.Util.Wrapping
 import qualified Mud.Misc.Logging as L (logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut)
 import qualified Mud.Util.Misc as U (patternMatchFail)
 
-import Control.Applicative (liftA2)
 import Control.Arrow ((***), (&&&), first, second)
 import Control.Exception.Lifted (catch, try)
 import Control.Lens (_1, _2, _3, _4, at, both, each, to, view, views)
@@ -89,7 +88,6 @@ import Data.Int (Int64)
 import Data.Ix (inRange)
 import Data.List ((\\), delete, foldl', intercalate, intersperse, nub, partition, sort, sortBy, unfoldr)
 import Data.List.Split (chunksOf)
-import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>), All(..), Sum(..))
 import Data.Text (Text)
 import Data.Time (diffUTCTime, getCurrentTime)
@@ -3740,62 +3738,6 @@ who (NoArgs i mq cols) = getState >>= \ms ->
 who (LowerNub i mq cols as) = do logPlaExecArgs "who" as i
                                  dispMatches i mq cols namePadding Isn'tRegex as . mkWhoTxt i =<< getState
 who p                       = patternMatchFail "who" . showText $ p
-
-
-mkWhoTxt :: HasCallStack => Id -> MudState -> [Text]
-mkWhoTxt i ms = let txts = mkCharList i ms
-                in (++ [ mkWhoFooter i ms ]) $ txts |!| mkWhoHeader False ++ txts
-
-
-mkCharList :: HasCallStack => Id -> MudState -> [Text]
-mkCharList i ms =
-    let plaIds                = i `delete` getLoggedInPlaIds ms
-        (linkeds,  others   ) = partition (isLinked    ms . (i, )) plaIds
-        (twoWays,  oneWays  ) = partition (isDblLinked ms . (i, )) linkeds
-        (tunedIns, tunedOuts) = partition (isTunedIn   ms . (i, )) twoWays
-        -----
-        tunedIns'         = mkSingSexRaceLvls tunedIns
-        mkSingSexRaceLvls = sortBy (compare `on` view _1) . map helper
-        helper plaId      = let (s, r, l) = mkPrettySexRaceLvl plaId ms in (getSing plaId ms, s, r, l)
-        styleds           = styleAbbrevs Don'tQuote . select _1 $ tunedIns'
-        -----
-        tunedOuts' = mkSingSexRaceLvls (tunedOuts ++ oneWays)
-        -----
-        others' = sortBy raceLvlSex . map (`mkPrettySexRaceLvl` ms) $ [ i' | i' <- others, not . isSpiritId i' $ ms ]
-          where
-            raceLvlSex (s, r, l) (s', r', l') = (r `compare` r') <> (l `compare` l') <> (s `compare` s')
-        -----
-        descTunedIns = zipWith (curry descThem) styleds tunedIns'
-          where
-            descThem (styled, (_, s, r, l)) = T.concat [ padName styled, padSex s, padRace r, l ]
-        descTunedOuts = map descThem tunedOuts'
-          where
-            descThem (s, s', r, l) = T.concat [ padName s, padSex s', padRace r, l ]
-        descOthers = map descThem others'
-          where
-            descThem (s, r, l) = T.concat [ padName "?", padSex  s, padRace r, l ]
-    in concat [ descTunedIns, descTunedOuts, descOthers ]
-
-
-isTunedIn :: HasCallStack => MudState -> (Id, Id) -> Bool
-isTunedIn ms (i, i') | s <- getSing i' ms = fromMaybe False (view (at s) . getTeleLinkTbl i $ ms)
-
-
-mkWhoFooter :: HasCallStack => Id -> MudState -> Text
-mkWhoFooter i ms = let plaIds@(length -> x) = [ i' | i' <- getLoggedInPlaIds ms
-                                              , let b = liftA2 (&&) (i /=) (`isSpiritId` ms) i'
-                                                in onTrue b (const . isLinked ms $ (i, i')) True ]
-                       y                    = length [ ai | ai <- getLoggedInAdminIds ms, isIncognitoId ai ms ]
-                   in T.concat [ showText x
-                               , " "
-                               , pluralize ("person", "people") x
-                               , " awake"
-                               , plaIds == pure i |?| ": you"
-                               , isNonZero y |?| spcL . parensQuote . T.concat $ [ "excluding "
-                                                                                 , showText y
-                                                                                 , " administrator"
-                                                                                 , pluralize ("", "s") y ]
-                               , "." ]
 
 
 -----

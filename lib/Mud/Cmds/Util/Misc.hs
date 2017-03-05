@@ -63,6 +63,7 @@ module Mud.Cmds.Util.Misc ( applyRegex
                           , mkSingleTarget
                           , mkThrPerPro
                           , mkWhoHeader
+                          , mkWhoTxt
                           , onOff
                           , pager
                           , parseOutDenotative
@@ -98,6 +99,7 @@ import Mud.Misc.ANSI
 import Mud.Misc.CurryTime
 import Mud.Misc.Database
 import Mud.Misc.LocPref
+import Mud.Misc.Misc
 import Mud.TheWorld.Zones.AdminZoneIds (iNecropolis)
 import Mud.Threads.Misc
 import Mud.TopLvlDefs.Chars
@@ -114,6 +116,7 @@ import Mud.Util.Wrapping
 import qualified Mud.Misc.Logging as L (logNotice, logPla)
 import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 
+import Control.Applicative (liftA2)
 import Control.Arrow ((***), (&&&), first)
 import Control.Exception.Lifted (catch, try)
 import Control.Lens (_1, _2, _3, at, both, each, to, view, views)
@@ -125,6 +128,7 @@ import Data.Char (isDigit, isLetter)
 import Data.Either (rights)
 import Data.Function (on)
 import Data.List (delete, groupBy, intercalate, nub, partition, sortBy, unfoldr)
+import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>), Any(..), Sum(..))
 import Data.Text (Text)
 import Data.Time (diffUTCTime, getCurrentTime)
@@ -814,6 +818,62 @@ mkThrPerPro NoSex  = "it"
 
 
 -----
+
+
+mkWhoTxt :: HasCallStack => Id -> MudState -> [Text]
+mkWhoTxt i ms = let txts = mkWhoCharList i ms
+                in (++ [ mkWhoFooter i ms ]) $ txts |!| mkWhoHeader False ++ txts
+
+
+mkWhoCharList :: HasCallStack => Id -> MudState -> [Text]
+mkWhoCharList i ms =
+    let plaIds                = i `delete` getLoggedInPlaIds ms
+        (linkeds,  others   ) = partition (isLinked    ms . (i, )) plaIds
+        (twoWays,  oneWays  ) = partition (isDblLinked ms . (i, )) linkeds
+        (tunedIns, tunedOuts) = partition (isTunedIn   ms . (i, )) twoWays
+        -----
+        tunedIns'         = mkSingSexRaceLvls tunedIns
+        mkSingSexRaceLvls = sortBy (compare `on` view _1) . map helper
+        helper plaId      = let (s, r, l) = mkPrettySexRaceLvl plaId ms in (getSing plaId ms, s, r, l)
+        styleds           = styleAbbrevs Don'tQuote . select _1 $ tunedIns'
+        -----
+        tunedOuts' = mkSingSexRaceLvls (tunedOuts ++ oneWays)
+        -----
+        others' = sortBy raceLvlSex . map (`mkPrettySexRaceLvl` ms) $ [ i' | i' <- others, not . isSpiritId i' $ ms ]
+          where
+            raceLvlSex (s, r, l) (s', r', l') = (r `compare` r') <> (l `compare` l') <> (s `compare` s')
+        -----
+        descTunedIns = zipWith (curry descThem) styleds tunedIns'
+          where
+            descThem (styled, (_, s, r, l)) = T.concat [ padName styled, padSex s, padRace r, l ]
+        descTunedOuts = map descThem tunedOuts'
+          where
+            descThem (s, s', r, l) = T.concat [ padName s, padSex s', padRace r, l ]
+        descOthers = map descThem others'
+          where
+            descThem (s, r, l) = T.concat [ padName "?", padSex  s, padRace r, l ]
+    in concat [ descTunedIns, descTunedOuts, descOthers ]
+
+
+isTunedIn :: HasCallStack => MudState -> (Id, Id) -> Bool
+isTunedIn ms (i, i') | s <- getSing i' ms = fromMaybe False (view (at s) . getTeleLinkTbl i $ ms)
+
+
+mkWhoFooter :: HasCallStack => Id -> MudState -> Text
+mkWhoFooter i ms = let plaIds@(length -> x) = [ i' | i' <- getLoggedInPlaIds ms
+                                              , let b = liftA2 (&&) (i /=) (`isSpiritId` ms) i'
+                                                in onTrue b (const . isLinked ms $ (i, i')) True ]
+                       y                    = length [ ai | ai <- getLoggedInAdminIds ms, isIncognitoId ai ms ]
+                   in T.concat [ showText x
+                               , " "
+                               , pluralize ("person", "people") x
+                               , " awake"
+                               , plaIds == pure i |?| ": you"
+                               , isNonZero y |?| spcL . parensQuote . T.concat $ [ "excluding "
+                                                                                 , showText y
+                                                                                 , " administrator"
+                                                                                 , pluralize ("", "s") y ]
+                               , "." ]
 
 
 mkWhoHeader :: Bool -> [Text]
