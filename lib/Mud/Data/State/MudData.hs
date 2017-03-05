@@ -449,7 +449,7 @@ data GodName = Aule
              | Iminye
              | Itulvatar
              | Murgorhd
-             | Rha'yk
+             | Rha'yk -- TODO: Rename.
              | Rumialys deriving (Bounded, Enum, Eq, Generic, Ord, Show, Read)
 
 
