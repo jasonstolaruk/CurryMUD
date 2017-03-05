@@ -2352,7 +2352,7 @@ readAction p = patternMatchFail "readAction" . showText $ p
 -----
 
 
-ready :: HasCallStack => ActionFun
+ready :: HasCallStack => ActionFun -- TODO: Attempting to ready a holy symbol of Rha'yk.
 ready p@AdviseNoArgs     = advise p ["ready"] adviceReadyNoArgs
 ready p@(LowerNub' i as) = genericAction p helper "ready"
   where

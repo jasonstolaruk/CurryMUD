@@ -682,13 +682,13 @@ mkHimHer NoSex  = "it"
 -----
 
 
-mkHolySymbolDesc :: GodName -> Text -- TODO: Write these descriptions after finishing the "holysymbols" book.
+mkHolySymbolDesc :: GodName -> Text
 mkHolySymbolDesc Aule      = "The holy symbol of Aule is a "
 mkHolySymbolDesc Caila     = "The holy symbol of Caila is a small, white, rectangular cloth sack containing something \
                              \that might be grain. The sack is sewn shut, and a vertical series of four runes is \
                              \embroidered upon its surface in vermillion thread."
 mkHolySymbolDesc Celoriel  = "The holy symbol of Celoriel is a "
-mkHolySymbolDesc Dellio    = "The holy symbol of Dellio is a thin, curved bone, about 5 or 6 inches long."
+mkHolySymbolDesc Dellio    = "The holy symbol of Dellio is a thin, curved bone, about 5 inches long."
 mkHolySymbolDesc Drogo     = "The holy symbol of Drogo is a "
 mkHolySymbolDesc Iminye    = "The holy symbol of Iminye is a "
 mkHolySymbolDesc Itulvatar = "The holy symbol of Itulvatar is a thick bronze disc, four inches in diameter. On the \
