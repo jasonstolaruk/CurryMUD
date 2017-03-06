@@ -80,6 +80,8 @@ module Mud.Util.Misc ( atLst1
                      , uncurry3
                      , uncurry4
                      , uncurry5
+                     , uncurry6
+                     , uncurry7
                      , unit ) where
 
 import Mud.TopLvlDefs.Seconds
@@ -457,6 +459,14 @@ uncurry4 f (a, b, c, d) = f a b c d
 
 uncurry5 :: (a -> b -> c -> d -> e -> f) -> (,,,,) a b c d e -> f
 uncurry5 f (a, b, c, d, e) = f a b c d e
+
+
+uncurry6 :: (a -> b -> c -> d -> e -> f -> g) -> (,,,,,) a b c d e f -> g
+uncurry6 f (a, b, c, d, e, f') = f a b c d e f'
+
+
+uncurry7 :: (a -> b -> c -> d -> e -> f -> g -> h) -> (,,,,,,) a b c d e f g -> h
+uncurry7 f (a, b, c, d, e, f', g) = f a b c d e f' g
 
 
 unit :: (Monad m) => m ()

@@ -2352,7 +2352,7 @@ readAction p = patternMatchFail "readAction" . showText $ p
 -----
 
 
-ready :: HasCallStack => ActionFun -- TODO: Attempting to ready a holy symbol of Rhayk.
+ready :: HasCallStack => ActionFun
 ready p@AdviseNoArgs     = advise p ["ready"] adviceReadyNoArgs
 ready p@(LowerNub' i as) = genericAction p helper "ready"
   where
@@ -2392,16 +2392,19 @@ readyDispatcher :: HasCallStack => Id
                                 -> (EqTbl, InvTbl, [Text], [Broadcast], [Text])
                                 -> Id
                                 -> (EqTbl, InvTbl, [Text], [Broadcast], [Text])
-readyDispatcher i ms d mrol a targetId = let targetSing = getSing targetId ms in
-    helper |&| maybe (sorry targetSing) (\f -> f i ms d mrol a targetId targetSing)
+readyDispatcher i ms d mrol a targetId =
+    helper |&| either (\msg -> a & _3 <>~ pure msg) (`uncurry7` (i, ms, d, mrol, a, targetId, targetSing))
   where
     helper = case getType targetId ms of
-      ClothType -> Just readyCloth
-      ConType   -> boolToMaybe (getConIsCloth targetId ms) readyCloth
-      WpnType   -> Just readyWpn
-      ArmType   -> Just readyArm
-      _         -> Nothing
-    sorry targetSing = a & _3 <>~ pure (sorryReadyType targetSing)
+      ClothType      -> Right readyCloth
+      ConType        -> getConIsCloth targetId ms ? Right readyCloth :? sorry
+      WpnType        -> Right readyWpn
+      ArmType        -> Right readyArm
+      HolySymbolType | getHolySymbolGodName targetId ms == Rhayk -> Left sorryReadyHolySymbolRhayk
+                     | otherwise                                 -> sorry
+      _             -> sorry
+    sorry      = Left . sorryReadyType $ targetSing
+    targetSing = getSing targetId ms
 
 
 -- Readying clothing:

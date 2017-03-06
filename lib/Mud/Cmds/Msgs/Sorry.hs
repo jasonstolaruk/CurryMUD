@@ -228,6 +228,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryActing
                            , sorryReadyClothFull
                            , sorryReadyClothFullOneSide
                            , sorryReadyCoins
+                           , sorryReadyHolySymbolRhayk
                            , sorryReadyInEq
                            , sorryReadyInRm
                            , sorryReadyRol
@@ -1598,6 +1599,10 @@ sorryReadyClothFullOneSide (pp -> c) (pp -> s) = can't . T.concat $ [ "wear any 
 
 sorryReadyCoins :: Text
 sorryReadyCoins = can't "ready coins."
+
+
+sorryReadyHolySymbolRhayk :: Text
+sorryReadyHolySymbolRhayk = "The holy symbol of Rhayk is strictly a ceremonial object; it may not be used as a weapon."
 
 
 sorryReadyInEq :: Text
