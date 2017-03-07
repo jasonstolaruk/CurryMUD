@@ -698,7 +698,7 @@ mkHolySymbolDesc Itulvatar = "The holy symbol of Itulvatar is a thick metal disc
                              \of rays of sunlight spreading high above the horizon. There are words etched on the back \
                              \of the disc."
 mkHolySymbolDesc Murgorhd  = "The holy symbol of Murgorhd is a "
-mkHolySymbolDesc Rhayk     = "The holy symbol of Rhayk is a lightweight, smooth-headed round mace, about one foot long."
+mkHolySymbolDesc Rhayk     = "The holy symbol of Rhayk is a "
 mkHolySymbolDesc Rumialys  = "The holy symbol of Rumialys is a steel ring about four inches in diameter. There is a \
                              \thin, straight bar running through the center and connecting two opposites edges of the \
                              \ring. There are words etched upon the outer surface of the ring."
@@ -713,7 +713,7 @@ mkHolySymbolVol Dellio    = round (5 * 0.25 * 1 * 100 :: Double)
 mkHolySymbolVol Drogo     = 0
 mkHolySymbolVol Iminye    = 0
 mkHolySymbolVol Itulvatar = 250
-mkHolySymbolVol Murgorhd  = 0
+mkHolySymbolVol Murgorhd  = round (3.5  * 0.5  * 7  * 100 :: Double) -- 12.25 cubic inches, or 0.007 cubic feet.
 mkHolySymbolVol Rhayk     = round (1.25 * 1.25 * 11 * 100 :: Double)
 mkHolySymbolVol Rumialys  = 250
 
@@ -726,7 +726,7 @@ mkHolySymbolWeight Dellio    = 2
 mkHolySymbolWeight Drogo     = 0
 mkHolySymbolWeight Iminye    = 0
 mkHolySymbolWeight Itulvatar = 215
-mkHolySymbolWeight Murgorhd  = 0
+mkHolySymbolWeight Murgorhd  = 315 -- 45 lbs per cubic foot (oak) * 0.007 cubic feet = 0.315 lbs
 mkHolySymbolWeight Rhayk     = 310
 mkHolySymbolWeight Rumialys  = 15
 

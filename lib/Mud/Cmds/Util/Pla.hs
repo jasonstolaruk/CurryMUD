@@ -2059,6 +2059,7 @@ sacrificeHelper p@(ActionParams i mq cols _) ci gn = getState >>= \ms ->
                                    , mkCorpseAppellation i ms ci
                                    , ", laying upon it the holy symbol of "
                                    , pp gn
+                                   , gn == Murgorhd |?| murgorhdMsg
                                    , ". You say a prayer..." ]
         d               = mkStdDesig i ms DoCap
         helper targetId = ((T.concat [ serialize d
@@ -2076,6 +2077,7 @@ sacrificeHelper p@(ActionParams i mq cols _) ci gn = getState >>= \ms ->
                        t   = case getCorpse ci ms of PCCorpse s _ _ _ -> spcL . parensQuote $ s
                                                      _                -> ""
                    in logPla "sacrificeHelper" i msg
+    murgorhdMsg  = spcL . parensQuote $ "you are careful to point the apex of the triangle westward"
 
 
 -----
