@@ -704,9 +704,10 @@ mkHolySymbolDesc Rumialys  = "The holy symbol of Rumialys is a steel ring about 
                              \ring. There are words etched upon the outer surface of the ring."
 
 
+{-# ANN mkHolySymbolVol ("HLint: ignore" :: String) #-}
 mkHolySymbolVol :: GodName -> Vol -- TODO: Zeros.
 mkHolySymbolVol Aule      = 0
-mkHolySymbolVol Caila     = round (4 * 0.5 * 5 * 100 :: Double)
+mkHolySymbolVol Caila     = round (4 * 0.5  * 5 * 100 :: Double)
 mkHolySymbolVol Celoriel  = 0
 mkHolySymbolVol Dellio    = round (5 * 0.25 * 1 * 100 :: Double)
 mkHolySymbolVol Drogo     = 0
