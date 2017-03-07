@@ -686,9 +686,9 @@ mkHimHer NoSex  = "it"
 
 mkHolySymbolDesc :: GodName -> Text -- TODO
 mkHolySymbolDesc Aule      = "The holy symbol of Aule is a "
-mkHolySymbolDesc Caila     = "The holy symbol of Caila is a small, white, rectangular cloth sack containing something \
-                             \that might be grain. The sack is sewn shut, and a vertical series of four runes is \
-                             \embroidered upon its surface in vermillion thread."
+mkHolySymbolDesc Caila     = "The holy symbol of Caila is a small, white, rectangular cloth sack containing what is \
+                             \likely grain. The sack is sewn shut, and a vertical series of four runes is embroidered \
+                             \upon its surface in vermillion thread."
 mkHolySymbolDesc Celoriel  = "The holy symbol of Celoriel is a "
 mkHolySymbolDesc Dellio    = "The holy symbol of Dellio is a thin, curved bone, about 5 inches long."
 mkHolySymbolDesc Drogo     = "The holy symbol of Drogo is a "
