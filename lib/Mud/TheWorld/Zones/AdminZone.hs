@@ -1148,7 +1148,7 @@ createAdminZone = do
 
   -- ==================================================
   -- Holy symbols (will biodegrade...):
-  forM_ (zip [iHolySymbol1..iHolySymbol1 + 9] allValues) $ \(i, gn@(pp -> gn)) ->
+  forM_ (zip [iHolySymbol1..iHolySymbol1 + 9] allValues) $ \(i, gn@(pp -> gn')) ->
       let (desc, w, v) = ((,,) <$> mkHolySymbolDesc <*> mkHolySymbolWeight <*> mkHolySymbolVol) gn
       in putHolySymbol i
                        (Ent i
