@@ -63,10 +63,6 @@ helmLeatherWeight :: Weight
 helmLeatherWeight = 30
 
 
-holySymbolWeight :: Weight
-holySymbolWeight = 175
-
-
 jarSmlWeight, jarWeight, jarLrgWeight :: Weight
 jarSmlWeight = minusThird jarWeight
 jarWeight    = 120

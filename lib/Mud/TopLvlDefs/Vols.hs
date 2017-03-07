@@ -7,6 +7,7 @@ import Mud.Util.Misc
 
 
 -- 100 "Vol" = 1 cubic in
+-- length * depth * height * 100
 
 
 apronVol, apronHeavyVol :: Vol
@@ -72,11 +73,6 @@ flowerVol = round (0.5 * 0.5 * 10 * 100 :: Double)
 
 helmLeatherVol :: Vol
 helmLeatherVol = 10 * 8 * 8 * 100
-
-
-{-# ANN holySymbolVol ("HLint: ignore" :: String) #-}
-holySymbolVol :: Vol
-holySymbolVol = 2 * 4 * 1 * 100
 
 
 jarSmlVol, jarVol, jarLrgVol :: Vol

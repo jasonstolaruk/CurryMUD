@@ -1148,16 +1148,17 @@ createAdminZone = do
 
   -- ==================================================
   -- Holy symbols (will biodegrade...):
-  forM_ (zip [iHolySymbol1..iHolySymbol1 + 9] allValues) $ \(i, gn) ->
-      putHolySymbol i
-                    (Ent i
-                         (Just "holy")
-                         ("holy symbol of " <> pp gn) ("holy symbols of " <> pp gn)
-                         (mkHolySymbolDesc gn)
-                         Nothing
-                         zeroBits)
-                    (mkObj . ObjTemplate holySymbolWeight holySymbolVol Nothing . setBit zeroBits . fromEnum $ IsBiodegradable)
-                    (HolySymbol gn)
+  forM_ (zip [iHolySymbol1..iHolySymbol1 + 9] allValues) $ \(i, gn@(pp -> gn)) ->
+      let (desc, w, v) = ((,,) <$> mkHolySymbolDesc <*> mkHolySymbolWeight <*> mkHolySymbolVol) gn
+      in putHolySymbol i
+                       (Ent i
+                            (Just "holy")
+                            ("holy symbol of " <> gn') ("holy symbols of " <> gn')
+                            desc
+                            Nothing
+                            zeroBits)
+                       (mkObj . ObjTemplate w v Nothing . setBit zeroBits . fromEnum $ IsBiodegradable)
+                       (HolySymbol gn)
 
   -- ==================================================
   -- Writables:

@@ -52,6 +52,8 @@ module Mud.Cmds.Util.Misc ( applyRegex
                           , mkCmdTriplesForStyling
                           , mkHimHer
                           , mkHolySymbolDesc
+                          , mkHolySymbolVol
+                          , mkHolySymbolWeight
                           , mkInterfaceList
                           , mkNameTypeIdDesc
                           , mkPossPro
@@ -682,7 +684,7 @@ mkHimHer NoSex  = "it"
 -----
 
 
-mkHolySymbolDesc :: GodName -> Text
+mkHolySymbolDesc :: GodName -> Text -- TODO
 mkHolySymbolDesc Aule      = "The holy symbol of Aule is a "
 mkHolySymbolDesc Caila     = "The holy symbol of Caila is a small, white, rectangular cloth sack containing something \
                              \that might be grain. The sack is sewn shut, and a vertical series of four runes is \
@@ -691,15 +693,41 @@ mkHolySymbolDesc Celoriel  = "The holy symbol of Celoriel is a "
 mkHolySymbolDesc Dellio    = "The holy symbol of Dellio is a thin, curved bone, about 5 inches long."
 mkHolySymbolDesc Drogo     = "The holy symbol of Drogo is a "
 mkHolySymbolDesc Iminye    = "The holy symbol of Iminye is a "
-mkHolySymbolDesc Itulvatar = "The holy symbol of Itulvatar is a thick bronze disc, four inches in diameter. On the \
+mkHolySymbolDesc Itulvatar = "The holy symbol of Itulvatar is a thick metal disc, four inches in diameter. On the \
                              \front is embossed an illustration of a large torch burning fiercely, set upon a backdrop \
                              \of rays of sunlight spreading high above the horizon. There are words etched on the back \
                              \of the disc."
 mkHolySymbolDesc Murgorhd  = "The holy symbol of Murgorhd is a "
-mkHolySymbolDesc Rhayk     = "The holy symbol of Rhayk is a "
+mkHolySymbolDesc Rhayk     = "The holy symbol of Rhayk is a lightweight, smooth-headed round mace, about one foot long."
 mkHolySymbolDesc Rumialys  = "The holy symbol of Rumialys is a steel ring about four inches in diameter. There is a \
                              \thin, straight bar running through the center and connecting two opposites edges of the \
                              \ring. There are words etched upon the outer surface of the ring."
+
+
+mkHolySymbolVol :: GodName -> Vol -- TODO: Zeros.
+mkHolySymbolVol Aule      = 0
+mkHolySymbolVol Caila     = round (4 * 0.5 * 5 * 100 :: Double)
+mkHolySymbolVol Celoriel  = 0
+mkHolySymbolVol Dellio    = round (5 * 0.25 * 1 * 100 :: Double)
+mkHolySymbolVol Drogo     = 0
+mkHolySymbolVol Iminye    = 0
+mkHolySymbolVol Itulvatar = 250
+mkHolySymbolVol Murgorhd  = 0
+mkHolySymbolVol Rhayk     = round (1.25 * 1.25 * 11 * 100 :: Double)
+mkHolySymbolVol Rumialys  = 250
+
+
+mkHolySymbolWeight :: GodName -> Weight -- TODO: Zeros.
+mkHolySymbolWeight Aule      = 0
+mkHolySymbolWeight Caila     = 65
+mkHolySymbolWeight Celoriel  = 0
+mkHolySymbolWeight Dellio    = 2
+mkHolySymbolWeight Drogo     = 0
+mkHolySymbolWeight Iminye    = 0
+mkHolySymbolWeight Itulvatar = 215
+mkHolySymbolWeight Murgorhd  = 0
+mkHolySymbolWeight Rhayk     = 310
+mkHolySymbolWeight Rumialys  = 15
 
 
 -----

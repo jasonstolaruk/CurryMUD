@@ -42,8 +42,6 @@ import Mud.TheWorld.Liqs
 import Mud.TheWorld.Zones.AdminZoneIds (iLoggedOut, iRoot, iWelcome)
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
-import Mud.TopLvlDefs.Vols
-import Mud.TopLvlDefs.Weights
 import Mud.Util.List
 import Mud.Util.Misc hiding (patternMatchFail)
 import Mud.Util.Operators
@@ -1061,13 +1059,14 @@ adminHolySymbol   (WithArgs i mq cols [ numTxt, godNameTxt ]) = case reads . T.u
                     found godName       = case filter ((== godName) . snd) [ (x, pp x) | x <- allGodNames ] of
                       []          -> notFound
                       ((gn, _):_) ->
-                          let et  = EntTemplate (Just "holy")
+                          let (desc, w, v) = ((,,) <$> mkHolySymbolDesc <*> mkHolySymbolWeight <*> mkHolySymbolVol) gn
+                              et  = EntTemplate (Just "holy")
                                                 ("holy symbol of " <> pp gn) ("holy symbols of " <> pp gn)
-                                                (mkHolySymbolDesc gn)
+                                                desc
                                                 Nothing
                                                 zeroBits
-                              ot  = ObjTemplate holySymbolWeight -- TODO: Do stats vary by holy symbol type?
-                                                holySymbolVol
+                              ot  = ObjTemplate w
+                                                v
                                                 Nothing
                                                 (setBit zeroBits . fromEnum $ IsBiodegradable)
                               msg = T.concat [ "created ", showText n, " holy symbol", sOnNon1 n, " of ", god, "." ]
