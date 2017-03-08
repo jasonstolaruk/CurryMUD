@@ -708,7 +708,7 @@ mkHolySymbolDesc Rhayk     = "The holy symbol of Rhayk is a lightweight, ceremon
                              \inside a solid, rectangular border."
 mkHolySymbolDesc Rumialys  = "The holy symbol of Rumialys is a steel ring about four inches in diameter. There is a \
                              \thin, straight bar running through the center and connecting two opposites edges of the \
-                             \ring. There are words etched upon the outer surface of the ring."
+                             \ring. There are words etched upon the ring's outer surface."
 
 
 {-# ANN mkHolySymbolVol ("HLint: ignore" :: String) #-}
