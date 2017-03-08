@@ -697,8 +697,15 @@ mkHolySymbolDesc Itulvatar = "The holy symbol of Itulvatar is a thick metal disc
                              \front is embossed an illustration of a large torch burning fiercely, set upon a backdrop \
                              \of rays of sunlight spreading high above the horizon. There are words etched on the back \
                              \of the disc."
-mkHolySymbolDesc Murgorhd  = "The holy symbol of Murgorhd is a "
-mkHolySymbolDesc Rhayk     = "The holy symbol of Rhayk is a "
+mkHolySymbolDesc Murgorhd  = "The holy symbol of Murgorhd is a shallow block of oak that fits comfortably in your \
+                             \hand. The wood is stained a rich tone of black. Cleanly carved into the surface is a \
+                             \triangle inside a circle, such that the three points of the triangle connect with the \
+                             \circle. Next to each point of the triangle a letter of the common alphabet is inset: 'S' \
+                             \at the apex, 'F' at the bottom left, and 'J' at the bottom right."
+mkHolySymbolDesc Rhayk     = "The holy symbol of Rhayk is a lightweight, ceremonial mace, about one foot long. It has \
+                             \a smooth, round headed, with decorative, curved grooves set into it. Carved into the \
+                             \polished wooden handle is a highly-stylized capital letter R (from the common alphabet) \
+                             \inside a solid, rectangular border."
 mkHolySymbolDesc Rumialys  = "The holy symbol of Rumialys is a steel ring about four inches in diameter. There is a \
                              \thin, straight bar running through the center and connecting two opposites edges of the \
                              \ring. There are words etched upon the outer surface of the ring."
