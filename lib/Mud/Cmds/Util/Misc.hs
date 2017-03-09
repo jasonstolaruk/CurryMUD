@@ -684,7 +684,7 @@ mkHimHer NoSex  = "it"
 -----
 
 
-mkHolySymbolDesc :: GodName -> Text -- TODO
+mkHolySymbolDesc :: GodName -> Text -- TODO: 4 more holy symbols to go.
 mkHolySymbolDesc Aule      = "The holy symbol of Aule is a "
 mkHolySymbolDesc Caila     = "The holy symbol of Caila is a small, white, rectangular cloth sack containing what is \
                              \likely grain. The sack is sewn shut, and a vertical series of four runes is embroidered \

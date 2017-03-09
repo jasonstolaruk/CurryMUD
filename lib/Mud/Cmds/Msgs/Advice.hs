@@ -7,6 +7,7 @@ module Mud.Cmds.Msgs.Advice ( adviceAAnnounceNoArgs
                             , adviceABanPCNoReason
                             , adviceABonusNoArgs
                             , adviceABootNoArgs
+                            , adviceACloneNoArgs
                             , adviceADestroyNoArgs
                             , adviceAdminNoMsg
                             , adviceAdverbCloseChar
@@ -208,6 +209,10 @@ adviceABonusNoArgs = "Please specify the names of one or more PCs whose bonus re
 adviceABootNoArgs :: Text
 adviceABootNoArgs = "Please specify the full PC name of the player you wish to boot, optionally followed by a custom \
                     \message."
+
+
+adviceACloneNoArgs :: Text
+adviceACloneNoArgs = "Please provide one or more IDs to clone."
 
 
 adviceADestroyNoArgs :: Text

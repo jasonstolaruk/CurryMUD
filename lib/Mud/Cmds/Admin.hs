@@ -21,6 +21,7 @@ import Mud.Data.State.ActionParams.ActionParams
 import Mud.Data.State.MsgQueue
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Calc
+import Mud.Data.State.Util.Clone
 import Mud.Data.State.Util.Coins
 import Mud.Data.State.Util.Death
 import Mud.Data.State.Util.Destroy
@@ -135,7 +136,6 @@ massLogPla = L.massLogPla "Mud.Cmds.Admin"
 -- ==================================================
 
 
--- TODO: ":clone"
 -- TODO: ":foods". Write "eat" cmd first.
 adminCmds :: HasCallStack => [Cmd]
 adminCmds =
@@ -151,6 +151,7 @@ adminCmds =
     , mkAdminCmd "boot"       adminBoot        True  "Boot a player, optionally with a custom message."
     , mkAdminCmd "bug"        adminBug         True  "Dump the bug database."
     , mkAdminCmd "channels"   adminChans       True  "Display information about one or more telepathic channels."
+    , mkAdminCmd "clone"      adminClone       True  "Clone one or more things by ID."
     , mkAdminCmd "count"      adminCount       True  "Display or regex search a list of miscellaneous running totals."
     , mkAdminCmd "currytime"  adminCurryTime   True  "Display the current Curry Time."
     , mkAdminCmd "date"       adminDate        True  "Display the current system date."
@@ -492,6 +493,29 @@ informNoChans mq cols = wrapSend mq cols "No channels exist!"
 adminChanIOHelper :: HasCallStack => Id -> MsgQueue -> [[Text]] -> MudStack ()
 adminChanIOHelper i mq reports = sequence_ [ logPlaExec (prefixAdminCmd "channels") i
                                            , pager i mq Nothing . intercalate mMempty $ reports ]
+
+
+-----
+
+
+adminClone :: HasCallStack => ActionFun
+adminClone p@AdviseNoArgs            = advise p [ prefixAdminCmd "clone" ] adviceACloneNoArgs
+adminClone   (LowerNub i mq cols as) = modifyStateSeq $ \ms ->
+    let f pair@(ms', fs) a = case reads . T.unpack $ a :: [(Int, String)] of
+          [(targetId, "")]
+            | targetId < 0                -> sorry sorryWtf
+            | targetId == i               -> sorry sorryCloneSelf
+            | not . hasType targetId $ ms -> sorryId
+            | otherwise                   ->
+                let (ms'', fs', [newId]) = clone (getRmId i ms') (ms', fs, []) . pure $ targetId
+                    msg = prd $ "Cloned " <> aOrAnOnLower (descSingId newId ms'')
+                in (ms'', fs' ++ pure (wrapSend mq cols msg))
+          _ -> sorryId
+          where
+            sorry msg = pair & _2 <>~ pure (wrapSend mq cols msg)
+            sorryId   = sorry . sorryParseId $ a
+    in foldl' f (ms, []) as
+adminClone p = patternMatchFail "adminClone" . showText $ p
 
 
 -----

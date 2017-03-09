@@ -57,7 +57,6 @@ module Mud.Util.Misc ( atLst1
                      , mUnless
                      , mWhen
                      , onFalse
-                     , onLeft
                      , onTrue
                      , panicMsg
                      , patternMatchFail
@@ -72,7 +71,6 @@ module Mud.Util.Misc ( atLst1
                      , safeCoerce
                      , safeHead
                      , safePerformIO
-                     , sortEithers
                      , strictId
                      , thrice
                      , twice
@@ -91,9 +89,8 @@ import Mud.Util.Quoting
 
 import Control.Arrow ((&&&), Arrow, first, second)
 import Control.Concurrent (threadDelay)
-import Control.Lens (_1, _2, Lens', lens, view)
+import Control.Lens (Lens', lens, view)
 import Control.Lens.Getter (Getting)
-import Control.Lens.Operators ((%~))
 import Control.Monad (guard, join)
 import Control.Monad.Reader.Class (MonadReader)
 import Data.Bool (bool)
@@ -364,11 +361,6 @@ onTrue b f x | b         = f x
              | otherwise = x
 
 
-onLeft :: (Show a, Show b) => (a -> c) -> Either a b -> Either c b
-onLeft f (Left  a) = Left . f $ a
-onLeft _ x         = blowUp "Mud.Util.Misc" "onLeft" "Right" . T.pack . show $ x
-
-
 panicMsg :: Text
 panicMsg = "panic! " <> parensQuote ("the " <> singleQuote "impossible" <> " happened")
 
@@ -423,13 +415,6 @@ safeHead (x:_) = Just x
 
 safePerformIO :: IO a -> IO a
 safePerformIO = (return =<<)
-
-
-sortEithers :: [Either l r] -> ([r], [l])
-sortEithers = foldr helper mempties
-  where
-    helper (Right a) = _1 %~ (a :)
-    helper (Left  b) = _2 %~ (b :)
 
 
 {-# ANN strictId ("HLint: ignore Redundant seq" :: String) #-}

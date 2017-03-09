@@ -1,0 +1,12 @@
+\h #dCLONE \d
+
+\uUSAGE\n
+#dclone ID \s...\d
+
+\uDESCRIPTION\n
+Clone one or more things by ID.
+The clones you create will appear in the inventory of your current room.
+
+\uEXAMPLES\n
+\q#dclone 100\d to clone ID 100.4`
+\q#dclone 100 101\d to clone IDs 100 and 101.4`

@@ -67,6 +67,7 @@ logPla = L.logPla "Mud.Data.State.Util.Death"
 -- ==================================================
 
 
+-- TODO: We want Taro's PC to have cloned inv, coins, and eq when it goes to the Necropolis.
 {-
 When Taro dies:
 Taro's corpse is created. Inventory, equipment, and coins are transferred from PC to corpse.

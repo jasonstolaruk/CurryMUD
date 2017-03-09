@@ -54,6 +54,7 @@ library
                        Mud.Data.State.MsgQueue
                        Mud.Data.State.MudData
                        Mud.Data.State.Util.Calc
+                       Mud.Data.State.Util.Clone
                        Mud.Data.State.Util.Coins
                        Mud.Data.State.Util.Death
                        Mud.Data.State.Util.Destroy

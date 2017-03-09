@@ -35,6 +35,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryActing
                            , sorryChanNoOneListening
                            , sorryChanTargetName
                            , sorryChanTargetNameFromContext
+                           , sorryCloneSelf
                            , sorryCmdNotFound
                            , sorryCon
                            , sorryConInEq
@@ -584,6 +585,13 @@ sorryChanTargetNameFromContext :: Text -> ChanContext -> Text
 sorryChanTargetNameFromContext n ChanContext { .. } = sorryChanTargetName effChanName n
   where
     effChanName = maybe someCmdName dblQuote someChanName
+
+
+-----
+
+
+sorryCloneSelf :: Text
+sorryCloneSelf = "That would be neat, wouldn't it?"
 
 
 -----
