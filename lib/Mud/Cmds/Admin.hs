@@ -507,8 +507,8 @@ adminClone   (LowerNub i mq cols as) = modifyStateSeq $ \ms ->
             | targetId == i               -> sorry sorryCloneSelf
             | not . hasType targetId $ ms -> sorryId
             | otherwise                   ->
-                let (ms'', fs', [newId]) = clone (getRmId i ms') (ms', fs, []) . pure $ targetId
-                    msg = prd $ "Cloned " <> aOrAnOnLower (descSingId newId ms'')
+                let (ms'', fs', newIds) = clone (getRmId i ms') (ms', fs, []) . pure $ targetId
+                    msg = prd $ "Cloned: " <> commas [ aOrAnOnLower . descSingId newId $ ms'' | newId <- newIds ]
                 in (ms'', fs' ++ pure (wrapSend mq cols msg))
           _ -> sorryId
           where

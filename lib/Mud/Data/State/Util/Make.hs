@@ -42,31 +42,17 @@ newArm ms et ot a invId = let (i, typeTbl.ind i .~ ArmType -> ms', fs) = createA
 
 
 -- ==================================================
--- Entity
+-- Clothing
 
 
-data EntTemplate = EntTemplate { etName  :: Maybe Text
-                               , etSing  :: Sing
-                               , etPlur  :: Plur
-                               , etDesc  :: Text
-                               , etSmell :: Maybe Text
-                               , etFlags :: Flags }
+createCloth :: MudState -> EntTemplate -> ObjTemplate -> Cloth -> (Id, MudState, Funs)
+createCloth ms et ot c = let tuple@(i, _, _) = createObj ms et ot
+                         in tuple & _2.clothTbl.ind i .~ c
 
 
-mkEnt :: Id -> EntTemplate -> Ent
-mkEnt i EntTemplate { .. } = Ent { _entId    = i
-                                 , _entName  = etName
-                                 , _sing     = etSing
-                                 , _plur     = etPlur
-                                 , _entDesc  = etDesc
-                                 , _entSmell = etSmell
-                                 , _entFlags = etFlags }
-
-
-createEnt :: MudState -> EntTemplate -> (Id, MudState)
-createEnt ms et = let i = getUnusedId ms in (i, upd ms [ durationalEffectTbl.ind i .~ []
-                                                       , entTbl             .ind i .~ mkEnt i et
-                                                       , pausedEffectTbl    .ind i .~ [] ])
+newCloth :: MudState -> EntTemplate -> ObjTemplate -> Cloth -> InvId -> (Id, MudState, Funs)
+newCloth ms et ot c invId = let (i, typeTbl.ind i .~ ClothType -> ms', fs) = createCloth ms et ot c
+                            in (i, ms' & invTbl.ind invId %~ addToInv ms' (pure i), fs)
 
 
 -- ==================================================
@@ -116,6 +102,48 @@ newCorpse :: MudState
 newCorpse ms et ot ct ic c invId =
     let (i, typeTbl.ind i .~ CorpseType -> ms', fs) = createCorpse ms et ot ct ic c
     in (i, ms' & invTbl.ind invId %~ addToInv ms' (pure i), fs)
+
+
+-- ==================================================
+-- Entity
+
+
+data EntTemplate = EntTemplate { etName  :: Maybe Text
+                               , etSing  :: Sing
+                               , etPlur  :: Plur
+                               , etDesc  :: Text
+                               , etSmell :: Maybe Text
+                               , etFlags :: Flags }
+
+
+mkEnt :: Id -> EntTemplate -> Ent
+mkEnt i EntTemplate { .. } = Ent { _entId    = i
+                                 , _entName  = etName
+                                 , _sing     = etSing
+                                 , _plur     = etPlur
+                                 , _entDesc  = etDesc
+                                 , _entSmell = etSmell
+                                 , _entFlags = etFlags }
+
+
+createEnt :: MudState -> EntTemplate -> (Id, MudState)
+createEnt ms et = let i = getUnusedId ms in (i, upd ms [ durationalEffectTbl.ind i .~ []
+                                                       , entTbl             .ind i .~ mkEnt i et
+                                                       , pausedEffectTbl    .ind i .~ [] ])
+
+
+-- ==================================================
+-- Food
+
+
+createFood :: MudState -> EntTemplate -> ObjTemplate -> Food -> (Id, MudState, Funs)
+createFood ms et ot f = let tuple@(i, _, _) = createObj ms et ot
+                        in tuple & _2.foodTbl.ind i .~ f
+
+
+newFood :: MudState -> EntTemplate -> ObjTemplate -> Food -> InvId -> (Id, MudState, Funs)
+newFood ms et ot f invId = let (i, typeTbl.ind i .~ FoodType -> ms', fs) = createFood ms et ot f
+                           in (i, ms' & invTbl.ind invId %~ addToInv ms' (pure i), fs)
 
 
 -- ==================================================
@@ -294,7 +322,7 @@ mkRm RmTemplate { .. } = Rm { _rmName      = rtName
 data VesselTemplate = VesselTemplate { vtLiq :: Maybe Liq }
 
 
-mkVessel :: Obj -> VesselTemplate -> Vessel
+mkVessel :: Obj -> VesselTemplate -> Vessel -- TODO: We need to be able to specify the amount of the liq instead of defaulting to the max.
 mkVessel (calcMaxMouthfuls -> m) VesselTemplate { .. } = Vessel { _vesselMaxMouthfuls = m
                                                                 , _vesselCont         = (, m) <$> vtLiq }
 
@@ -307,3 +335,31 @@ createVessel ms et ot vt = let tuple@(i, ms', _) = createObj ms et ot
 newVessel :: MudState -> EntTemplate -> ObjTemplate -> VesselTemplate -> InvId -> (Id, MudState, Funs)
 newVessel ms et ot vt invId = let (i, typeTbl.ind i .~ VesselType -> ms', fs) = createVessel ms et ot vt
                               in (i, ms' & invTbl.ind invId %~ addToInv ms' (pure i), fs)
+
+
+-- ==================================================
+-- Weapon
+
+
+createWpn :: MudState -> EntTemplate -> ObjTemplate -> Wpn -> (Id, MudState, Funs)
+createWpn ms et ot w = let tuple@(i, _, _) = createObj ms et ot
+                       in tuple & _2.wpnTbl.ind i .~ w
+
+
+newWpn :: MudState -> EntTemplate -> ObjTemplate -> Wpn -> InvId -> (Id, MudState, Funs)
+newWpn ms et ot w invId = let (i, typeTbl.ind i .~ WpnType -> ms', fs) = createWpn ms et ot w
+                          in (i, ms' & invTbl.ind invId %~ addToInv ms' (pure i), fs)
+
+
+-- ==================================================
+-- Writable
+
+
+createWritable :: MudState -> EntTemplate -> ObjTemplate -> Writable -> (Id, MudState, Funs)
+createWritable ms et ot w = let tuple@(i, _, _) = createObj ms et ot
+                            in tuple & _2.writableTbl.ind i .~ w
+
+
+newWritable :: MudState -> EntTemplate -> ObjTemplate -> Writable -> InvId -> (Id, MudState, Funs)
+newWritable ms et ot w invId = let (i, typeTbl.ind i .~ WritableType -> ms', fs) = createWritable ms et ot w
+                               in (i, ms' & invTbl.ind invId %~ addToInv ms' (pure i), fs)
