@@ -503,10 +503,11 @@ adminClone p@AdviseNoArgs            = advise p [ prefixAdminCmd "clone" ] advic
 adminClone   (LowerNub i mq cols as) = modifyStateSeq $ \ms ->
     let f pair@(ms', fs) a = case reads . T.unpack $ a :: [(Int, String)] of
           [(targetId, "")]
-            | targetId < 0                -> sorry sorryWtf
-            | targetId == i               -> sorry sorryCloneSelf
-            | not . hasType targetId $ ms -> sorryId
-            | otherwise                   ->
+            | targetId < 0                  -> sorry sorryWtf
+            | targetId == i                 -> sorry sorryCloneSelf
+            | not . hasType targetId $ ms   -> sorryId
+            | getType targetId ms == RmType -> sorry sorryCloneRm
+            | otherwise                     ->
                 let (ms'', fs', newIds) = clone (getRmId i ms') (ms', fs, []) . pure $ targetId
                     msg = prd $ "Cloned: " <> commas [ aOrAnOnLower . descSingId newId $ ms'' | newId <- newIds ]
                 in (ms'', fs' ++ pure (wrapSend mq cols msg))

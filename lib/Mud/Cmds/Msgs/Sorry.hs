@@ -36,6 +36,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryActing
                            , sorryChanTargetName
                            , sorryChanTargetNameFromContext
                            , sorryCloneSelf
+                           , sorryCloneRm
                            , sorryCmdNotFound
                            , sorryCon
                            , sorryConInEq
@@ -592,6 +593,10 @@ sorryChanTargetNameFromContext n ChanContext { .. } = sorryChanTargetName effCha
 
 sorryCloneSelf :: Text
 sorryCloneSelf = "That would be neat, wouldn't it?"
+
+
+sorryCloneRm :: Text
+sorryCloneRm = can't "clone a room."
 
 
 -----
