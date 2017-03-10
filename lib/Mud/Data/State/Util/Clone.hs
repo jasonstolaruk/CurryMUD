@@ -22,13 +22,17 @@ clone destId = foldl' helper
             mkObjTemplate | o <- getObj targetId ms
                           = ObjTemplate (o^.objWeight) (o^.objVol) (o^.objTaste) (o^.objFlags)
         in case getType targetId ms of
-          ArmType        -> p
+          ArmType        -> let a                = getArm targetId ms
+                                (newId, ms', fs) = newArm ms mkEntTemplate mkObjTemplate a destId
+                            in p & _1 .~  ms'
+                                 & _2 <>~ fs
+                                 & _3 <>~ pure newId
           ClothType      -> p
           ConType        -> p
           CorpseType     -> p
           FoodType       -> p
-          HolySymbolType -> let holy = getHolySymbol targetId ms
-                                (newId, ms', fs) = newHolySymbol ms mkEntTemplate mkObjTemplate holy destId
+          HolySymbolType -> let h                = getHolySymbol targetId ms
+                                (newId, ms', fs) = newHolySymbol ms mkEntTemplate mkObjTemplate h destId
                             in p & _1 .~  ms'
                                  & _2 <>~ fs
                                  & _3 <>~ pure newId

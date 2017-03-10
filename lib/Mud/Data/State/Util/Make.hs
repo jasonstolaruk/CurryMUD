@@ -10,17 +10,39 @@ import Mud.Threads.Biodegrader
 import Mud.TopLvlDefs.Seconds
 import Mud.Util.Misc
 
-import Control.Lens (at)
+import Control.Lens (_2, at)
 import Control.Lens.Operators ((.~), (&), (%~))
 import Control.Monad (when)
 import Data.Text (Text)
 import qualified Data.Map.Strict as M (empty)
 
 
+{-
+Functions whose names begin with "mk" take a template and return the result of building out that template.
+Functions whose names begin with "create" take a "MudState", apply a "mk" function, and return the updated "MudState".
+Functions whose names begin with "new" take care of everything necessary to build a complete typed object.
+-}
+
+
 type InvId = Id
 
 
------
+-- ==================================================
+-- Armor
+
+
+createArm :: MudState -> EntTemplate -> ObjTemplate -> Arm -> (Id, MudState, Funs)
+createArm ms et ot a = let tuple@(i, _, _) = createObj ms et ot
+                       in tuple & _2.armTbl.ind i .~ a
+
+
+newArm :: MudState -> EntTemplate -> ObjTemplate -> Arm -> InvId -> (Id, MudState, Funs)
+newArm ms et ot a invId = let (i, typeTbl.ind i .~ ArmType -> ms', fs) = createArm ms et ot a
+                          in (i, ms' & invTbl.ind invId %~ addToInv ms' (pure i), fs)
+
+
+-- ==================================================
+-- Entity
 
 
 data EntTemplate = EntTemplate { etName  :: Maybe Text
@@ -42,12 +64,13 @@ mkEnt i EntTemplate { .. } = Ent { _entId    = i
 
 
 createEnt :: MudState -> EntTemplate -> (Id, MudState)
-createEnt ms et = let i = getUnusedId ms in (i, ms & durationalEffectTbl.ind i .~ []
-                                                   & entTbl             .ind i .~ mkEnt i et
-                                                   & pausedEffectTbl    .ind i .~ [])
+createEnt ms et = let i = getUnusedId ms in (i, upd ms [ durationalEffectTbl.ind i .~ []
+                                                       , entTbl             .ind i .~ mkEnt i et
+                                                       , pausedEffectTbl    .ind i .~ [] ])
 
 
------
+-- ==================================================
+-- Container
 
 
 data ConTemplate = ConTemplate { ctCapacity :: Vol
@@ -62,9 +85,9 @@ mkCon ConTemplate { .. } = Con { _conIsCloth  = False
 
 createCon :: MudState -> EntTemplate -> ObjTemplate -> ConTemplate -> (Inv, Coins) -> (Id, MudState, Funs)
 createCon ms et ot ct (is, c) = let (i, ms', fs) = createObj ms et ot
-                                    ms''         = ms' & clothTbl.at  i .~ Nothing
-                                                       & coinsTbl.ind i .~ c
-                                                       & conTbl  .ind i .~ mkCon ct
+                                    ms''         = upd ms' [ clothTbl.at  i .~ Nothing
+                                                           , coinsTbl.ind i .~ c
+                                                           , conTbl  .ind i .~ mkCon ct ]
                                 in (i, ms'' & invTbl.ind i .~ sortInv ms'' is, fs)
 
 
@@ -73,13 +96,13 @@ newCon ms et ot ct ic invId = let (i, typeTbl.ind i .~ ConType -> ms', fs) = cre
                               in (i, ms' & invTbl.ind invId %~ addToInv ms' (pure i), fs)
 
 
------
+-- ==================================================
+-- Corpse
 
 
 createCorpse :: MudState -> EntTemplate -> ObjTemplate -> ConTemplate -> (Inv, Coins) -> Corpse -> (Id, MudState, Funs)
-createCorpse ms et ot ct ic corpse = let (i, ms', fs) = createCon ms et ot ct ic
-                                         ms''         = ms' & corpseTbl.ind i .~ corpse
-                                     in (i, ms'', fs)
+createCorpse ms et ot ct ic c = let tuple@(i, _, _) = createCon ms et ot ct ic
+                                in tuple & _2.corpseTbl.ind i .~ c
 
 
 newCorpse :: MudState
@@ -90,27 +113,28 @@ newCorpse :: MudState
           -> Corpse
           -> InvId
           -> (Id, MudState, Funs)
-newCorpse ms et ot ct ic corpse invId =
-    let (i, typeTbl.ind i .~ CorpseType -> ms', fs) = createCorpse ms et ot ct ic corpse
+newCorpse ms et ot ct ic c invId =
+    let (i, typeTbl.ind i .~ CorpseType -> ms', fs) = createCorpse ms et ot ct ic c
     in (i, ms' & invTbl.ind invId %~ addToInv ms' (pure i), fs)
 
 
------
+-- ==================================================
+-- Holy symbol
 
 
 createHolySymbol :: MudState -> EntTemplate -> ObjTemplate -> HolySymbol -> (Id, MudState, Funs)
-createHolySymbol ms et ot h = let (i, ms') = createEnt ms et
-                                  o        = mkObj ot
-                              in (i, ms' & objTbl       .ind i .~ o
-                                         & holySymbolTbl.ind i .~ h, pure . when (isBiodegradable o) . runBiodegAsync $ i)
+createHolySymbol ms et ot h = let tuple@(i, _, _) = createObj ms et ot
+                              in tuple & _2.holySymbolTbl.ind i .~ h
 
 
 newHolySymbol :: MudState -> EntTemplate -> ObjTemplate -> HolySymbol -> InvId -> (Id, MudState, Funs)
-newHolySymbol ms et ot h invId = let (i, typeTbl.ind i .~ HolySymbolType -> ms', fs) = createHolySymbol ms et ot h
-                                 in (i, ms' & invTbl.ind invId %~ addToInv ms' (pure i), fs)
+newHolySymbol ms et ot h invId =
+    let (i, typeTbl.ind i .~ HolySymbolType -> ms', fs) = createHolySymbol ms et ot h
+    in (i, ms' & invTbl.ind invId %~ addToInv ms' (pure i), fs)
 
 
------
+-- ==================================================
+-- Mob
 
 
 data MobTemplate = MobTemplate { mtSex              :: Sex
@@ -175,7 +199,8 @@ mkMob MobTemplate { .. } = Mob { _sex              = mtSex
                                , _interp           = Nothing }
 
 
------
+-- ==================================================
+-- Object
 
 
 data ObjTemplate = ObjTemplate { otWeight :: Weight
@@ -203,7 +228,8 @@ newObj ms et ot invId = let (i, typeTbl.ind i .~ ObjType -> ms', fs) = createObj
                         in (i, ms' & invTbl.ind invId %~ addToInv ms' (pure i), fs)
 
 
------
+-- ==================================================
+-- Player
 
 
 data PlaTemplate = PlaTemplate { ptPlaFlags   :: Flags
@@ -227,7 +253,8 @@ mkPla PlaTemplate { .. } = Pla { _currHostName   = ""
                                , _spiritAsync    = Nothing }
 
 
------
+-- ==================================================
+-- Room
 
 
 data RmTemplate = RmTemplate { rtName      :: Text
@@ -260,7 +287,8 @@ mkRm RmTemplate { .. } = Rm { _rmName      = rtName
                             , _rmFunAsyncs = [] }
 
 
------
+-- ==================================================
+-- Vessel
 
 
 data VesselTemplate = VesselTemplate { vtLiq :: Maybe Liq }
@@ -272,11 +300,8 @@ mkVessel (calcMaxMouthfuls -> m) VesselTemplate { .. } = Vessel { _vesselMaxMout
 
 
 createVessel :: MudState -> EntTemplate -> ObjTemplate -> VesselTemplate -> (Id, MudState, Funs)
-createVessel ms et ot vt = let (i, ms') = createEnt ms et
-                               o        = mkObj ot
-                               v        = mkVessel o vt
-                           in (i, ms' & objTbl   .ind i .~ o
-                                      & vesselTbl.ind i .~ v, pure . when (isBiodegradable o) . runBiodegAsync $ i)
+createVessel ms et ot vt = let tuple@(i, ms', _) = createObj ms et ot
+                           in tuple & _2.vesselTbl.ind i .~ mkVessel (getObj i ms') vt
 
 
 newVessel :: MudState -> EntTemplate -> ObjTemplate -> VesselTemplate -> InvId -> (Id, MudState, Funs)
