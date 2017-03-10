@@ -498,7 +498,7 @@ adminChanIOHelper i mq reports = sequence_ [ logPlaExec (prefixAdminCmd "channel
 -----
 
 
-adminClone :: HasCallStack => ActionFun
+adminClone :: HasCallStack => ActionFun -- TODO: Logging.
 adminClone p@AdviseNoArgs            = advise p [ prefixAdminCmd "clone" ] adviceACloneNoArgs
 adminClone   (LowerNub i mq cols as) = modifyStateSeq $ \ms ->
     let f pair@(ms', fs) a = case reads . T.unpack $ a :: [(Int, String)] of

@@ -14,7 +14,6 @@ import Data.List (foldl')
 import GHC.Stack (HasCallStack)
 
 
--- TODO: Logging.
 clone :: HasCallStack => Id -> (MudState, Funs, Inv) -> Inv -> (MudState, Funs, Inv)
 clone destId = foldl' helper
   where

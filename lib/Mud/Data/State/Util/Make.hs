@@ -21,7 +21,7 @@ import qualified Data.Map.Strict as M (empty)
 {-
 Functions whose names begin with "mk" take a template and return the result of building out that template.
 Functions whose names begin with "create" take a "MudState", apply a "mk" function, and return the updated "MudState".
-Functions whose names begin with "new" take care of everything necessary to build a complete typed object.
+Functions whose names begin with "new" take care of everything necessary to build a complete typed thing.
 -}
 
 
@@ -316,6 +316,17 @@ mkRm RmTemplate { .. } = Rm { _rmName      = rtName
                             , _rmFunAsyncs = [] }
 
 
+createRm :: MudState -> RmTemplate -> (Id, MudState) -- TODO: , Funs)
+createRm ms rt = let i = getUnusedId ms in (i, upd ms [ coinsTbl           .ind i .~ mempty
+                                                      , durationalEffectTbl.ind i .~ []
+                                                      , invTbl             .ind i .~ []
+                                                      , pausedEffectTbl    .ind i .~ []
+                                                      , rmTbl              .ind i .~ mkRm rt ])
+
+
+-- TODO: newRm
+
+
 -- ==================================================
 -- Vessel
 
@@ -325,7 +336,7 @@ data VesselTemplate = VesselTemplate { vtCont :: Maybe VesselCont }
 
 mkVessel :: Obj -> VesselTemplate -> Vessel
 mkVessel (calcMaxMouthfuls -> m) VesselTemplate { .. } = Vessel { _vesselMaxMouthfuls = m
-                                                                , _vesselCont         = (second (min m)) <$> vtCont }
+                                                                , _vesselCont         = second (min m) <$> vtCont }
 
 
 createVessel :: MudState -> EntTemplate -> ObjTemplate -> VesselTemplate -> (Id, MudState, Funs)
