@@ -10,6 +10,7 @@ import Mud.Threads.Biodegrader
 import Mud.TopLvlDefs.Seconds
 import Mud.Util.Misc
 
+import Control.Arrow (second)
 import Control.Lens (_2, at)
 import Control.Lens.Operators ((.~), (&), (%~))
 import Control.Monad (when)
@@ -319,12 +320,12 @@ mkRm RmTemplate { .. } = Rm { _rmName      = rtName
 -- Vessel
 
 
-data VesselTemplate = VesselTemplate { vtLiq :: Maybe Liq }
+data VesselTemplate = VesselTemplate { vtCont :: Maybe VesselCont }
 
 
-mkVessel :: Obj -> VesselTemplate -> Vessel -- TODO: We need to be able to specify the amount of the liq instead of defaulting to the max.
+mkVessel :: Obj -> VesselTemplate -> Vessel
 mkVessel (calcMaxMouthfuls -> m) VesselTemplate { .. } = Vessel { _vesselMaxMouthfuls = m
-                                                                , _vesselCont         = (, m) <$> vtLiq }
+                                                                , _vesselCont         = (second (min m)) <$> vtCont }
 
 
 createVessel :: MudState -> EntTemplate -> ObjTemplate -> VesselTemplate -> (Id, MudState, Funs)

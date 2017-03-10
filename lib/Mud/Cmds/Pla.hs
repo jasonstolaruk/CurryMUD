@@ -2291,7 +2291,7 @@ razzle p@(WithArgs i mq cols [ "dazzle", "root", "beer" ]) = mIf (hasRazzledId i
                                   potionFlaskLrgVol
                                   Nothing
                                   (setBit zeroBits . fromEnum $ IsBiodegradable)
-                vt  = VesselTemplate . Just $ potTinnitusLiq
+                vt  = VesselTemplate . Just $ (potTinnitusLiq, maxBound)
                 res = dropFst . newVessel (ms & plaTbl.ind i %~ setPlaFlag HasRazzled True) et ot vt $ i
                 f   = bcastOtherAdmins i . prd $ getSing i ms <> " has executed " <> dblQuote "razzle dazzle root beer"
             in second (++ pure f) res
