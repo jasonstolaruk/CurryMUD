@@ -318,13 +318,15 @@ mkRm RmTemplate { .. } = Rm { _rmName      = rtName
 
 createRm :: MudState -> RmTemplate -> (Id, MudState) -- TODO: , Funs)
 createRm ms rt = let i = getUnusedId ms in (i, upd ms [ coinsTbl           .ind i .~ mempty
-                                                      , durationalEffectTbl.ind i .~ []
+                                                      , durationalEffectTbl.ind i .~ [] -- TODO: Correct?
                                                       , invTbl             .ind i .~ []
-                                                      , pausedEffectTbl    .ind i .~ []
+                                                      , pausedEffectTbl    .ind i .~ [] -- TODO: Correct?
                                                       , rmTbl              .ind i .~ mkRm rt ])
 
 
--- TODO: newRm
+newRm :: MudState -> RmTemplate -> (Id, MudState)
+newRm ms rt = let (i, ms') = createRm ms rt
+              in (i, ms' & typeTbl.ind i .~ RmType)
 
 
 -- ==================================================

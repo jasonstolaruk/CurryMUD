@@ -23,8 +23,8 @@ Mudlet users:
 
 Change the following options in the Mudlet preferences:
 * Under "Input line," change the "Command separator" to something other than the semicolon ("\\" or "|", for example).2`
-* Under "Special Options," check "Force new line on empty commands."2`
 * Under "Input line," check "Auto clear the input line after you sent text" (recommended).2`
+* Under "Special Options," check "Force new line on empty commands."2`
 
 TinTin++ users:
 * Please execute the "##split" command: CurryMUD works best when there is a dedicated field for input. To account for the presence of the input area, you may need to decrease CurryMUD's "lines" setting by 2 (via the CurryMUD "set" command) or vertically expand your terminal window.2`

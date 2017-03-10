@@ -8,7 +8,7 @@ import Mud.Data.State.Util.Make
 import Mud.Data.State.Util.Misc
 import Mud.Util.Misc
 
-import Control.Lens (_1, _2, _3)
+import Control.Lens (_1, _2, _3, views)
 import Control.Lens.Operators ((.~), (&), (^.), (<>~))
 import Data.List (foldl')
 import GHC.Stack (HasCallStack)
@@ -18,12 +18,14 @@ clone :: HasCallStack => Id -> (MudState, Funs, Inv) -> Inv -> (MudState, Funs, 
 clone destId = foldl' helper
   where
     helper p@(ms, _, _) targetId =
-        let mkEntTemplate  | e <- getEnt targetId ms
-                           = EntTemplate (e^.entName) (e^.sing) (e^.plur) (e^.entDesc) (e^.entSmell) (e^.entFlags)
-            mkObjTemplate  | o <- getObj targetId ms
-                           = ObjTemplate (o^.objWeight) (o^.objVol) (o^.objTaste) (o^.objFlags)
-            mkConTemtplate | c <- getCon targetId ms
-                           = ConTemplate (c^.conCapacity) (c^.conFlags)
+        let mkConTemtplate   | c <- getCon targetId ms
+                             = ConTemplate (c^.conCapacity) (c^.conFlags)
+            mkEntTemplate    | e <- getEnt targetId ms
+                             = EntTemplate (e^.entName) (e^.sing) (e^.plur) (e^.entDesc) (e^.entSmell) (e^.entFlags)
+            mkObjTemplate    | o <- getObj targetId ms
+                             = ObjTemplate (o^.objWeight) (o^.objVol) (o^.objTaste) (o^.objFlags)
+            mkVesselTemplate | v <- getVessel targetId ms
+                             = views vesselCont VesselTemplate v
         in case getType targetId ms of
           ArmType        -> let a                = getArm targetId ms
                                 (newId, ms', fs) = newArm ms mkEntTemplate mkObjTemplate a destId
@@ -61,14 +63,17 @@ clone destId = foldl' helper
                             in p & _1 .~  ms'
                                  & _2 <>~ fs
                                  & _3 <>~ pure newId
-          NpcType        -> p
+          NpcType        -> p -- TODO
           ObjType        -> let (newId, ms', fs) = newObj ms mkEntTemplate mkObjTemplate destId
                             in p & _1 .~  ms'
                                  & _2 <>~ fs
                                  & _3 <>~ pure newId
-          PCType         -> p
-          RmType         -> p
-          VesselType     -> p
+          PCType         -> p -- TODO
+          RmType         -> p -- You can't clone a room.
+          VesselType     -> let (newId, ms', fs) = newVessel ms mkEntTemplate mkObjTemplate mkVesselTemplate destId
+                            in p & _1 .~  ms'
+                                 & _2 <>~ fs
+                                 & _3 <>~ pure newId
           WpnType        -> let w                = getWpn targetId ms
                                 (newId, ms', fs) = newWpn ms mkEntTemplate mkObjTemplate w destId
                             in p & _1 .~  ms'
