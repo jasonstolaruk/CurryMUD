@@ -60,48 +60,45 @@ newCloth ms et ot c invId = let (i, typeTbl.ind i .~ ClothType -> ms', fs) = cre
 -- Container
 
 
-data ConTemplate = ConTemplate { ctCapacity :: Vol
-                               , ctFlags    :: Flags }
+createCon :: MudState -> EntTemplate -> ObjTemplate -> Con -> (Inv, Coins) -> Maybe Cloth -> (Id, MudState, Funs)
+createCon ms et ot con (is, c) mc = let (i, ms', fs) = createObj ms et ot
+                                        ms''         = upd ms' [ clothTbl.at  i .~ mc
+                                                               , coinsTbl.ind i .~ c
+                                                               , conTbl  .ind i .~ con ]
+                                    in (i, ms'' & invTbl.ind i .~ sortInv ms'' is, fs)
 
 
-mkCon :: ConTemplate -> Con
-mkCon ConTemplate { .. } = Con { _conIsCloth  = False
-                               , _conCapacity = ctCapacity
-                               , _conFlags    = ctFlags }
-
-
-createCon :: MudState -> EntTemplate -> ObjTemplate -> ConTemplate -> (Inv, Coins) -> (Id, MudState, Funs)
-createCon ms et ot ct (is, c) = let (i, ms', fs) = createObj ms et ot
-                                    ms''         = upd ms' [ clothTbl.at  i .~ Nothing
-                                                           , coinsTbl.ind i .~ c
-                                                           , conTbl  .ind i .~ mkCon ct ]
-                                in (i, ms'' & invTbl.ind i .~ sortInv ms'' is, fs)
-
-
-newCon :: MudState -> EntTemplate -> ObjTemplate -> ConTemplate -> (Inv, Coins) -> InvId -> (Id, MudState, Funs)
-newCon ms et ot ct ic invId = let (i, typeTbl.ind i .~ ConType -> ms', fs) = createCon ms et ot ct ic
-                              in (i, ms' & invTbl.ind invId %~ addToInv ms' (pure i), fs)
+newCon :: MudState
+       -> EntTemplate
+       -> ObjTemplate
+       -> Con
+       -> (Inv, Coins)
+       -> Maybe Cloth
+       -> InvId
+       -> (Id, MudState, Funs)
+newCon ms et ot con ic mc invId = let (i, typeTbl.ind i .~ ConType -> ms', fs) = createCon ms et ot con ic mc
+                                  in (i, ms' & invTbl.ind invId %~ addToInv ms' (pure i), fs)
 
 
 -- ==================================================
 -- Corpse
 
 
-createCorpse :: MudState -> EntTemplate -> ObjTemplate -> ConTemplate -> (Inv, Coins) -> Corpse -> (Id, MudState, Funs)
-createCorpse ms et ot ct ic c = let tuple@(i, _, _) = createCon ms et ot ct ic
-                                in tuple & _2.corpseTbl.ind i .~ c
+createCorpse :: MudState -> EntTemplate -> ObjTemplate -> Con -> (Inv, Coins) -> Corpse -> (Id, MudState, Funs)
+createCorpse ms et ot con ic c = let tuple@(i, _, _) = createCon ms et ot con ic Nothing
+                                 in tuple & _2.corpseTbl.ind i .~ c
 
 
 newCorpse :: MudState
           -> EntTemplate
           -> ObjTemplate
-          -> ConTemplate
+          -> Con
           -> (Inv, Coins)
           -> Corpse
           -> InvId
           -> (Id, MudState, Funs)
-newCorpse ms et ot ct ic c invId =
-    let (i, typeTbl.ind i .~ CorpseType -> ms', fs) = createCorpse ms et ot ct ic c
+newCorpse ms et ot con ic c invId =
+    let (i, typeTbl.ind i .~ CorpseType -> ms', fs) = createCorpse ms et ot con ic c
     in (i, ms' & invTbl.ind invId %~ addToInv ms' (pure i), fs)
 
 
@@ -228,6 +225,28 @@ mkMob MobTemplate { .. } = Mob { _sex              = mtSex
                                , _interp           = Nothing }
 
 
+createMob :: MudState -> EntTemplate -> (Inv, Coins) -> EqMap -> MobTemplate -> (Id, MudState)
+createMob ms et (is, c) em mt = let (i, ms') = createEnt ms et
+                                    ms''     = upd ms' [ coinsTbl.ind i .~ c
+                                                       , eqTbl   .ind i .~ em
+                                                       , mobTbl  .ind i .~ mkMob mt ]
+                                in (i, ms'' & invTbl.ind i .~ sortInv ms'' is)
+
+
+-- ==================================================
+-- NPC
+
+
+createNpc :: MudState -> EntTemplate -> (Inv, Coins) -> EqMap -> MobTemplate -> (Id, MudState, Funs)
+createNpc ms et ic em mt = let (i, ms') = createMob ms et ic em mt -- TODO: This doesn't make an "Npc" yet.
+                           in (i, ms', []) -- TODO: Presumably we'll have "Funs" to put here.
+
+
+newNpc :: MudState -> EntTemplate -> (Inv, Coins) -> EqMap -> MobTemplate -> InvId -> (Id, MudState, Funs)
+newNpc ms et ic em mt invId = let (i, typeTbl.ind i .~ NpcType -> ms', fs) = createNpc ms et ic em mt
+                              in (i, ms' & invTbl.ind invId %~ addToInv ms' (pure i), fs)
+
+
 -- ==================================================
 -- Object
 
@@ -255,6 +274,20 @@ createObj ms et ot = let (i, ms') = createEnt ms et
 newObj :: MudState -> EntTemplate -> ObjTemplate -> InvId -> (Id, MudState, Funs)
 newObj ms et ot invId = let (i, typeTbl.ind i .~ ObjType -> ms', fs) = createObj ms et ot
                         in (i, ms' & invTbl.ind invId %~ addToInv ms' (pure i), fs)
+
+
+-- ==================================================
+-- PC
+
+
+createPC :: MudState -> EntTemplate -> (Inv, Coins) -> EqMap -> MobTemplate -> PC -> (Id, MudState, Funs)
+createPC ms et ic em mt p = let (i, ms') = createMob ms et ic em mt
+                            in (i, ms' & pcTbl.ind i .~ p, []) -- TODO: Presumably we'll have "Funs" to put here.
+
+
+newPC :: MudState -> EntTemplate -> (Inv, Coins) -> EqMap -> MobTemplate -> PC -> InvId -> (Id, MudState, Funs)
+newPC ms et ic em mt p invId = let (i, typeTbl.ind i .~ PCType -> ms', fs) = createPC ms et ic em mt p
+                               in (i, ms' & invTbl.ind invId %~ addToInv ms' (pure i), fs)
 
 
 -- ==================================================
@@ -316,11 +349,12 @@ mkRm RmTemplate { .. } = Rm { _rmName      = rtName
                             , _rmFunAsyncs = [] }
 
 
+-- TODO: "rmTeleNameTbl"
 createRm :: MudState -> RmTemplate -> (Id, MudState) -- TODO: , Funs)
 createRm ms rt = let i = getUnusedId ms in (i, upd ms [ coinsTbl           .ind i .~ mempty
-                                                      , durationalEffectTbl.ind i .~ [] -- TODO: Correct?
+                                                      , durationalEffectTbl.ind i .~ []
                                                       , invTbl             .ind i .~ []
-                                                      , pausedEffectTbl    .ind i .~ [] -- TODO: Correct?
+                                                      , pausedEffectTbl    .ind i .~ []
                                                       , rmTbl              .ind i .~ mkRm rt ])
 
 

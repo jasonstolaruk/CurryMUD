@@ -156,13 +156,13 @@ mkCorpse i ms =
                                           (getCorpseVol    i ms)
                                           Nothing
                                           (onTrue (ip && r == Nymph) (`setBit` fromEnum IsHumming) zeroBits)
-        ct                  = ConTemplate (getCorpseCapacity i ms `max` calcCarriedVol i ms)
-                                          zeroBits
+        con                 = Con False cap zeroBits
+        cap                 = uncurry max . (getCorpseCapacity `fanUncurry` calcCarriedVol) $ (i, ms)
         ic                  = (M.elems (getEqMap i ms) ++ getInv i ms, getCoins i ms)
         corpse              = ip ? pcCorpse :? npcCorpse
         npcCorpse           = NpcCorpse corpsePlaceholder
         pcCorpse            = PCCorpse (getSing i ms) corpsePlaceholder (getSex i ms) r
-        (corpseId, ms', fs) = newCorpse ms et ot ct ic corpse . getRmId i $ ms
+        (corpseId, ms', fs) = newCorpse ms et ot con ic corpse . getRmId i $ ms
         logMsg              = T.concat [ "corpse with ID ", showText corpseId, " created for ", descSingId i ms, "." ]
     in ( upd ms' [ coinsTbl.ind i .~ mempty
                  , eqTbl   .ind i .~ M.empty
