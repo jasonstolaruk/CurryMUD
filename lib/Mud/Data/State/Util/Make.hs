@@ -18,13 +18,6 @@ import Data.Text (Text)
 import qualified Data.Map.Strict as M (empty)
 
 
-{-
-Functions whose names begin with "mk" take a template and return the result of building out that template.
-Functions whose names begin with "create" take a "MudState", apply a "mk" function, and return the updated "MudState".
-Functions whose names begin with "new" take care of everything necessary to build a complete typed thing.
--}
-
-
 type InvId = Id
 
 
@@ -347,20 +340,6 @@ mkRm RmTemplate { .. } = Rm { _rmName      = rtName
                             , _rmActions   = rtActions
                             , _rmFunNames  = rtFunNames
                             , _rmFunAsyncs = [] }
-
-
--- TODO: "rmTeleNameTbl"
-createRm :: MudState -> RmTemplate -> (Id, MudState) -- TODO: , Funs)
-createRm ms rt = let i = getUnusedId ms in (i, upd ms [ coinsTbl           .ind i .~ mempty
-                                                      , durationalEffectTbl.ind i .~ []
-                                                      , invTbl             .ind i .~ []
-                                                      , pausedEffectTbl    .ind i .~ []
-                                                      , rmTbl              .ind i .~ mkRm rt ])
-
-
-newRm :: MudState -> RmTemplate -> (Id, MudState)
-newRm ms rt = let (i, ms') = createRm ms rt
-              in (i, ms' & typeTbl.ind i .~ RmType)
 
 
 -- ==================================================

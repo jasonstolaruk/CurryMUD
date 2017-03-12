@@ -5,6 +5,7 @@ module Mud.TheWorld.TheWorld ( initMudData
                              , initWorld ) where
 
 import Mud.Cmds.Msgs.Misc
+import Mud.Cmds.Util.Misc
 import Mud.Data.Misc
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
@@ -19,7 +20,9 @@ import Mud.TheWorld.Misc
 import Mud.TheWorld.Zones.AdminZone
 import Mud.TheWorld.Zones.AdminZoneIds (iLoggedOut, iNecropolis, iWelcome)
 import Mud.TheWorld.Zones.Dalben
+import Mud.TheWorld.Zones.DalbenIds (iDalbenWelcome)
 import Mud.TheWorld.Zones.Tutorial
+import Mud.TheWorld.Zones.TutorialIds (iTutWelcome)
 import Mud.TopLvlDefs.FilePaths
 import Mud.Util.Misc
 import Mud.Util.Operators
@@ -29,6 +32,7 @@ import qualified Mud.Misc.Logging as L (logErrorMsg, logNotice)
 
 import Control.Lens (ASetter, views)
 import Control.Lens.Operators ((?~), (.~), (&), (%~), (^.))
+import Control.Monad (forM_, when)
 import Control.Monad.IO.Class (liftIO)
 import Data.Aeson (FromJSON, eitherDecode)
 import Data.IORef (newIORef)
@@ -124,7 +128,10 @@ initWorld = dropIrrelevantFiles . sort <$> liftIO (getDirectoryContents =<< mkMu
               , initRmActionFunTbl
               , initDistinctFoodTbl
               , initDistinctLiqTbl ]
-    ()# cont ? (createWorld >> return True) :? loadWorld (last cont)
+    let go = createWorld >> return True
+    if ()# cont
+      then go
+      else loadWorld (last cont) >>= \b -> onTrue b (const go) . return $ b
 
 
 initFunTbl :: HasCallStack => MudStack ()
@@ -172,10 +179,12 @@ initDistinctLiqTbl = tweak $ distinctLiqTbl .~ IM.fromList (map dropThr liqList)
 
 
 createWorld :: HasCallStack => MudStack ()
-createWorld = do logNotice "createWorld" "creating the world."
-                 createAdminZone
-                 createTutorial
-                 createDalben
+createWorld = getState >>= \ms -> let pairs = [ (iWelcome,       createAdminZone)
+                                              , (iTutWelcome,    createTutorial )
+                                              , (iDalbenWelcome, createDalben   ) ]
+                                  in do logNotice "createWorld" "creating the world."
+                                        forM_ pairs $ \(i, f) -> when (hasType i ms) f
+
 
 
 loadWorld :: HasCallStack => FilePath -> MudStack Bool

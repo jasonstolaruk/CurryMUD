@@ -14,13 +14,7 @@ import Data.Text (Text)
 
 
 -- These functions are meant to be used in zone-defining code run at server startup.
-{-
-TODO: Should all zones be defined using functions from "Make"?
-Consider the scenario in which a new zone needs to be added to a world that has been running for some time.
-At server startup, after having loaded the last persisted world, for each zone, check if the zone already exists
-If the zone doesn't exist, run the function to create the zone. This function would use the "new~" functions in "Make".
-No IDs would be hard-coded.
--}
+
 
 putArm :: Id -> Ent -> Obj -> Arm -> MudStack ()
 putArm i e o a = tweaks [ armTbl             .ind i .~ a
