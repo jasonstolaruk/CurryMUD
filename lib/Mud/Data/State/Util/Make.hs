@@ -1,18 +1,43 @@
 {-# LANGUAGE OverloadedStrings, RecordWildCards, TupleSections, ViewPatterns #-}
 
-module Mud.Data.State.Util.Make where
+module Mud.Data.State.Util.Make ( EntTemplate(..)
+                                , mkMob
+                                , mkObj
+                                , mkPla
+                                , mkRm
+                                , MobTemplate(..)
+                                , newArm
+                                , newCloth
+                                , newCon
+                                , newCorpse
+                                , newFood
+                                , newHolySymbol
+                                , newNpc
+                                , newObj
+                                , newPC
+                                , newVessel
+                                , newWpn
+                                , newWritable
+                                , ObjTemplate(..)
+                                , PlaTemplate(..)
+                                , RmTemplate(..)
+                                , VesselTemplate(..) ) where
 
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Calc
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Misc
 import Mud.Threads.Biodegrader
+import Mud.Threads.CorpseDecomposer
+import Mud.Threads.Digester
+import Mud.Threads.Regen
 import Mud.TopLvlDefs.Seconds
 import Mud.Util.Misc
+import Mud.Util.Operators
 
 import Control.Arrow (second)
-import Control.Lens (_2, at)
-import Control.Lens.Operators ((.~), (&), (%~))
+import Control.Lens (_2, _3, at)
+import Control.Lens.Operators ((.~), (&), (%~), (<>~))
 import Control.Monad (when)
 import Data.Text (Text)
 import qualified Data.Map.Strict as M (empty)
@@ -77,9 +102,10 @@ newCon ms et ot con ic mc invId = let (i, typeTbl.ind i .~ ConType -> ms', fs) =
 -- Corpse
 
 
-createCorpse :: MudState -> EntTemplate -> ObjTemplate -> Con -> (Inv, Coins) -> Corpse -> (Id, MudState, Funs)
-createCorpse ms et ot con ic c = let tuple@(i, _, _) = createCon ms et ot con ic Nothing
-                                 in tuple & _2.corpseTbl.ind i .~ c
+createCorpse :: MudState -> EntTemplate -> ObjTemplate -> Con -> (Inv, Coins) -> Corpse -> Seconds -> (Id, MudState, Funs)
+createCorpse ms et ot con ic c secs = let tuple@(i, _, _) = createCon ms et ot con ic Nothing
+                                      in tuple & _2.corpseTbl.ind i .~ c
+                                               & _3 <>~ pure (startCorpseDecomp i . dup $ secs)
 
 
 newCorpse :: MudState
@@ -88,10 +114,11 @@ newCorpse :: MudState
           -> Con
           -> (Inv, Coins)
           -> Corpse
+          -> Seconds
           -> InvId
           -> (Id, MudState, Funs)
-newCorpse ms et ot con ic c invId =
-    let (i, typeTbl.ind i .~ CorpseType -> ms', fs) = createCorpse ms et ot con ic c
+newCorpse ms et ot con ic c secs invId =
+    let (i, typeTbl.ind i .~ CorpseType -> ms', fs) = createCorpse ms et ot con ic c secs
     in (i, ms' & invTbl.ind invId %~ addToInv ms' (pure i), fs)
 
 
@@ -230,14 +257,29 @@ createMob ms et (is, c) em mt = let (i, ms') = createEnt ms et
 -- NPC
 
 
-createNpc :: MudState -> EntTemplate -> (Inv, Coins) -> EqMap -> MobTemplate -> (Id, MudState, Funs)
-createNpc ms et ic em mt = let (i, ms') = createMob ms et ic em mt -- TODO: This doesn't make an "Npc" yet.
-                           in (i, ms', []) -- TODO: Presumably we'll have "Funs" to put here.
+ -- The caller should pass in "runNpcServerAsync" from "Mud.Threads.NpcServer" as the "ncpCreator" parameter.
+createNpc :: MudState
+          -> EntTemplate
+          -> (Inv, Coins)
+          -> EqMap
+          -> MobTemplate
+          -> (Id -> MudStack ())
+          -> (Id, MudState, Funs)
+createNpc ms et ic em mt npcCreator = let (i, ms') = createMob ms et ic em mt
+                                      in (i, ms', map (i |&|) [ npcCreator, runDigesterAsync, runRegenAsync ])
 
 
-newNpc :: MudState -> EntTemplate -> (Inv, Coins) -> EqMap -> MobTemplate -> InvId -> (Id, MudState, Funs)
-newNpc ms et ic em mt invId = let (i, typeTbl.ind i .~ NpcType -> ms', fs) = createNpc ms et ic em mt
-                              in (i, ms' & invTbl.ind invId %~ addToInv ms' (pure i), fs)
+newNpc :: MudState
+       -> EntTemplate
+       -> (Inv, Coins)
+       -> EqMap
+       -> MobTemplate
+       -> (Id -> MudStack ())
+       -> InvId
+       -> (Id, MudState, Funs)
+newNpc ms et ic em mt npcCreator invId =
+    let (i, typeTbl.ind i .~ NpcType -> ms', fs) = createNpc ms et ic em mt npcCreator
+    in (i, ms' & invTbl.ind invId %~ addToInv ms' (pure i), fs)
 
 
 -- ==================================================

@@ -18,7 +18,6 @@ import Mud.Data.State.Util.Random
 import Mud.Misc.Database
 import Mud.Misc.Misc
 import Mud.Threads.Act
-import Mud.Threads.CorpseDecomposer
 import Mud.Threads.Digester
 import Mud.Threads.Effect
 import Mud.Threads.FeelingTimer
@@ -147,29 +146,28 @@ deleteNpc i = getState >>= \ms -> let ri = getRmId i ms
 
 mkCorpse :: HasCallStack => Id -> MudState -> (MudState, Funs)
 mkCorpse i ms =
-    let et                  = EntTemplate (Just "corpse")
-                                          s p
-                                          corpsePlaceholder
-                                          Nothing
-                                          zeroBits
-        ot                  = ObjTemplate (getCorpseWeight i ms)
-                                          (getCorpseVol    i ms)
-                                          Nothing
-                                          (onTrue (ip && r == Nymph) (`setBit` fromEnum IsHumming) zeroBits)
-        con                 = Con False cap zeroBits
-        cap                 = uncurry max . (getCorpseCapacity `fanUncurry` calcCarriedVol) $ (i, ms)
-        ic                  = (M.elems (getEqMap i ms) ++ getInv i ms, getCoins i ms)
-        corpse              = ip ? pcCorpse :? npcCorpse
-        npcCorpse           = NpcCorpse corpsePlaceholder
-        pcCorpse            = PCCorpse (getSing i ms) corpsePlaceholder (getSex i ms) r
-        (corpseId, ms', fs) = newCorpse ms et ot con ic corpse . getRmId i $ ms
-        logMsg              = T.concat [ "corpse with ID ", showText corpseId, " created for ", descSingId i ms, "." ]
+    let et        = EntTemplate (Just "corpse")
+                                s p
+                                corpsePlaceholder
+                                Nothing
+                                zeroBits
+        ot        = ObjTemplate (getCorpseWeight i ms)
+                                (getCorpseVol    i ms)
+                                Nothing
+                                (onTrue (ip && r == Nymph) (`setBit` fromEnum IsHumming) zeroBits)
+        con       = Con False cap zeroBits
+        cap       = uncurry max . (getCorpseCapacity `fanUncurry` calcCarriedVol) $ (i, ms)
+        ic        = (M.elems (getEqMap i ms) ++ getInv i ms, getCoins i ms)
+        corpse    = ip ? pcCorpse :? npcCorpse
+        npcCorpse = NpcCorpse corpsePlaceholder
+        pcCorpse  = PCCorpse (getSing i ms) corpsePlaceholder (getSex i ms) r
+        logMsg    = T.concat [ "corpse with ID ", showText corpseId, " created for ", descSingId i ms, "." ]
+        (corpseId, ms', fs) =
+            uncurry (newCorpse ms et ot con ic corpse) . (getCorpseDecompSecs `fanUncurry` getRmId) $ (i, ms)
     in ( upd ms' [ coinsTbl.ind i .~ mempty
                  , eqTbl   .ind i .~ M.empty
                  , invTbl  .ind i .~ [] ]
-       , fs ++ [ logPla "mkCorpse" i "corpse created."
-               , logNotice "mkCorpse" logMsg
-               , startCorpseDecomp corpseId . dup . getCorpseDecompSecs i $ ms ] )
+       , fs ++ [ logPla "mkCorpse" i "corpse created.", logNotice "mkCorpse" logMsg ] )
       where
         ip        = isPC i ms
         (s, p)    | ip = ( "corpse of a " <> sexy |<>| pp r

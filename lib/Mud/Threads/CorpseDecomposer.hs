@@ -85,8 +85,7 @@ corpseDecomp i pair = getObjWeight i <$> getState >>= \w -> catch <$> loop w <*>
     loop w ref = liftIO (readIORef ref) >>= \case
       (0, _) -> logHelper ("corpse decomposer for ID " <> showText i <> " has expired.") >> finishDecomp i
       secs   -> do corpseDecompHelper i w secs
-                   liftIO . delaySecs $ 1
-                   liftIO . writeIORef ref . first pred $ secs
+                   liftIO $ delaySecs 1 >> writeIORef ref (first pred secs)
                    loop w ref
     handler :: HasCallStack => IORef SecondsPair -> PauseCorpseDecomp -> MudStack ()
     handler ref = const $ liftIO (readIORef ref) >>= \secs ->

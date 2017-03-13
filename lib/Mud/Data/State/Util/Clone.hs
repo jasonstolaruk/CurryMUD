@@ -7,6 +7,7 @@ import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Make
 import Mud.Data.State.Util.Misc
 import Mud.TheWorld.Zones.AdminZoneIds (iWelcome)
+import Mud.Threads.NpcServer
 import Mud.Util.Misc
 
 import Control.Lens (_1, _2, _3, view, views)
@@ -73,15 +74,14 @@ clone destId = foldl' helper -- TODO: We'll probably need to be able to clone a 
                             mc                 = views conIsCloth (`boolToMaybe` getCloth targetId ms) con
                             (newId, ms', fs)   = newCon ms mkEntTemplate mkObjTemplate con (mempty, mempty) mc destId
                         in g newId coins . clone newId ([], ms', fs) $ is
-          CorpseType ->
-            let (c, con, (is, coins)) = ((,,) <$> uncurry getCorpse <*> uncurry getCon <*> uncurry getInvCoins) (targetId, ms)
-                (newId, ms', fs)      = newCorpse ms mkEntTemplate mkObjTemplate con (mempty, mempty) c destId
-            in g newId coins . clone newId ([], ms', fs) $ is
+          CorpseType     -> p -- You can't clone a corpse. You would need to know how many seconds to start the decomposer at,
+                              -- but unfortunately this is a property of "Mob".
           FoodType       -> f . newFood       ms mkEntTemplate mkObjTemplate (getFood       targetId ms) $ destId
           HolySymbolType -> f . newHolySymbol ms mkEntTemplate mkObjTemplate (getHolySymbol targetId ms) $ destId
-          NpcType        -> let ((is, coins), em) = (getInvCoins `fanUncurry` getEqMap) (targetId, ms)
-                                (newId, ms', fs)  = newNpc ms mkEntTemplate (mempty, mempty) M.empty mkMobTemplate destId
-                            in h newId coins . cloneEqMap em . clone newId ([], ms', fs) $ is
+          NpcType        ->
+              let ((is, coins), em) = (getInvCoins `fanUncurry` getEqMap) (targetId, ms)
+                  (newId, ms', fs)  = newNpc ms mkEntTemplate (mempty, mempty) M.empty mkMobTemplate runNpcServerAsync destId
+              in h newId coins . cloneEqMap em . clone newId ([], ms', fs) $ is
           ObjType        -> f . newObj ms mkEntTemplate mkObjTemplate $ destId
           PCType         ->
             let (pc, (is, coins), em) = ((,,) <$> uncurry getPC <*> uncurry getInvCoins <*> uncurry getEqMap) (targetId, ms)
