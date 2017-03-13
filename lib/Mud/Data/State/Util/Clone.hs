@@ -75,7 +75,7 @@ clone destId = foldl' helper -- TODO: We'll probably need to be able to clone a 
                             (newId, ms', fs)   = newCon ms mkEntTemplate mkObjTemplate con (mempty, mempty) mc destId
                         in g newId coins . clone newId ([], ms', fs) $ is
           CorpseType     -> p -- You can't clone a corpse. You would need to know how many seconds to start the decomposer at,
-                              -- but unfortunately this is a property of "Mob".
+                              -- but unfortunately that's a property of "Mob".
           FoodType       -> f . newFood       ms mkEntTemplate mkObjTemplate (getFood       targetId ms) $ destId
           HolySymbolType -> f . newHolySymbol ms mkEntTemplate mkObjTemplate (getHolySymbol targetId ms) $ destId
           NpcType        ->

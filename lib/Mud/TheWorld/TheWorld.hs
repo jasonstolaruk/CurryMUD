@@ -32,7 +32,7 @@ import qualified Mud.Misc.Logging as L (logErrorMsg, logNotice)
 
 import Control.Lens (ASetter, views)
 import Control.Lens.Operators ((?~), (.~), (&), (%~), (^.))
-import Control.Monad (forM_, when)
+import Control.Monad (forM_, unless)
 import Control.Monad.IO.Class (liftIO)
 import Data.Aeson (FromJSON, eitherDecode)
 import Data.IORef (newIORef)
@@ -183,7 +183,7 @@ createWorld = getState >>= \ms -> let pairs = [ (iWelcome,       createAdminZone
                                               , (iTutWelcome,    createTutorial )
                                               , (iDalbenWelcome, createDalben   ) ]
                                   in do logNotice "createWorld" "creating the world."
-                                        forM_ pairs $ \(i, f) -> when (hasType i ms) f
+                                        forM_ pairs $ \(i, f) -> unless (hasType i ms) f
 
 
 
