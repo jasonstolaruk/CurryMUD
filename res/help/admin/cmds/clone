@@ -6,6 +6,7 @@
 \uDESCRIPTION\n
 Clone one or more things by ID.
 The clones you create will appear in the inventory of your current room.
+TODO: What about when cloning a Pla?
 
 \uEXAMPLES\n
 \q#dclone 100\d to clone ID 100.4`

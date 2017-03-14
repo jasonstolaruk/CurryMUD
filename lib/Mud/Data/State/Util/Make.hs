@@ -14,7 +14,7 @@ module Mud.Data.State.Util.Make ( EntTemplate(..)
                                 , newHolySymbol
                                 , newNpc
                                 , newObj
-                                , newPC
+                                , newPla
                                 , newVessel
                                 , newWpn
                                 , newWritable
@@ -37,7 +37,7 @@ import Mud.Util.Operators
 
 import Control.Arrow (second)
 import Control.Lens (_2, _3, at)
-import Control.Lens.Operators ((.~), (&), (%~), (<>~))
+import Control.Lens.Operators ((?~), (.~), (&), (%~), (<>~))
 import Control.Monad (when)
 import Data.Text (Text)
 import qualified Data.Map.Strict as M (empty)
@@ -315,22 +315,18 @@ newObj ms et ot invId = let (i, typeTbl.ind i .~ ObjType -> ms', fs) = createObj
 -- PC
 
 
-createPC :: MudState -> EntTemplate -> (Inv, Coins) -> EqMap -> MobTemplate -> PC -> (Id, MudState, Funs)
-createPC ms et ic em mt p = let (i, ms') = createMob ms et ic em mt
-                            in (i, ms' & pcTbl.ind i .~ p, []) -- TODO: Presumably we'll have "Funs" to put here.
-
-
-newPC :: MudState -> EntTemplate -> (Inv, Coins) -> EqMap -> MobTemplate -> PC -> InvId -> (Id, MudState, Funs)
-newPC ms et ic em mt p invId = let (i, typeTbl.ind i .~ PCType -> ms', fs) = createPC ms et ic em mt p
-                               in (i, ms' & invTbl.ind invId %~ addToInv ms' (pure i), fs)
+createPC :: MudState -> EntTemplate -> (Inv, Coins) -> EqMap -> MobTemplate -> PC -> (Id, MudState)
+createPC ms et ic em mt p = let pair@(i, _) = createMob ms et ic em mt
+                            in pair & _2.pcTbl.ind i .~ p
 
 
 -- ==================================================
 -- Player
 
 
-data PlaTemplate = PlaTemplate { ptPlaFlags   :: Flags
-                               , ptLogoutRmId :: Id }
+data PlaTemplate = PlaTemplate { ptPlaFlags     :: Flags
+                               , ptRetainedMsgs :: [Text]
+                               , ptLogoutRmId   :: Id }
 
 
 mkPla :: PlaTemplate -> Pla
@@ -344,10 +340,43 @@ mkPla PlaTemplate { .. } = Pla { _currHostName   = ""
                                , _peepers        = []
                                , _peeping        = []
                                , _possessing     = Nothing
-                               , _retainedMsgs   = []
+                               , _retainedMsgs   = ptRetainedMsgs
                                , _logoutRmId     = Just ptLogoutRmId
                                , _bonusTime      = Nothing
                                , _spiritAsync    = Nothing }
+
+
+createPla :: MudState
+          -> EntTemplate
+          -> (Inv, Coins)
+          -> EqMap
+          -> MobTemplate
+          -> PC
+          -> PlaTemplate
+          -> RndmNamesTbl
+          -> TeleLinkTbl
+          -> (Id, MudState)
+createPla ms et ic em mt p pt r t = let (i, ms') = createPC ms et ic em mt p
+                                        s        = getSing i ms'
+                                    in (i, upd ms' [ pcSingTbl       .at  s ?~ i
+                                                   , plaTbl          .ind i .~ mkPla pt
+                                                   , rndmNamesMstrTbl.ind i .~ r
+                                                   , teleLinkMstrTbl .ind i .~ t ])
+
+
+newPla :: MudState
+       -> EntTemplate
+       -> (Inv, Coins)
+       -> EqMap
+       -> MobTemplate
+       -> PC
+       -> PlaTemplate
+       -> RndmNamesTbl
+       -> TeleLinkTbl
+       -> InvId
+       -> (Id, MudState)
+newPla ms et ic em mt p pt r t invId = let (i, typeTbl.ind i .~ PCType -> ms') = createPla ms et ic em mt p pt r t
+                                       in (i, ms' & invTbl.ind invId %~ addToInv ms' (pure i))
 
 
 -- ==================================================
