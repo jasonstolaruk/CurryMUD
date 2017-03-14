@@ -89,8 +89,8 @@ clone destId = foldl' helper
                             mc                 = views conIsCloth (`boolToMaybe` getCloth targetId ms) con
                             (newId, ms', fs)   = newCon ms mkEntTemplate mkObjTemplate con (mempty, mempty) mc destId
                         in g newId coins . clone newId ([], ms', fs) $ is
-          CorpseType     -> p -- You can't clone a corpse. You would need to know how many seconds to start the decomposer at,
-                              -- but unfortunately that's a property of "Mob".
+          CorpseType     -> p -- You can't clone a corpse. You would need to know how many seconds to start the
+                              -- decomposer at.
           FoodType       -> f . newFood       ms mkEntTemplate mkObjTemplate (getFood       targetId ms) $ destId
           HolySymbolType -> f . newHolySymbol ms mkEntTemplate mkObjTemplate (getHolySymbol targetId ms) $ destId
           NpcType        ->
@@ -119,7 +119,7 @@ clone destId = foldl' helper
                                       mkPlaTemplate
                                       r
                                       t
-                                      iLoggedOut -- TODO: Is this correct?
+                                      iLoggedOut
             in h newId coins . cloneEqMap em . clone newId ([], ms', []) $ is
           RmType         -> p -- You can't clone a room.
           VesselType     -> f . newVessel   ms mkEntTemplate mkObjTemplate mkVesselTemplate          $ destId
