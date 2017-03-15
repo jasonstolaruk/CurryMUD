@@ -635,6 +635,19 @@ createAdminZone = do
             SpecialEnv
             (Just "Necropolis")
             M.empty [] []))
+  putRm iClone
+        []
+        mempty
+        (mkRm (RmTemplate "Clone room"
+            "Cloned things are temporarily placed here."
+            Nothing
+            Nothing
+            zeroBits
+            []
+            (4, 1, 0)
+            SpecialEnv
+            (Just "Clone")
+            M.empty [] []))
   putRm iCentral
         []
         mempty
@@ -1086,6 +1099,7 @@ createAdminZone = do
   -- Room teleport names:
   putRmTeleName iAtrium     "atrium"
   putRmTeleName iCentral    "central"
+  putRmTeleName iClone      "clone"
   putRmTeleName iEmpty      "empty"
   putRmTeleName iInside     "test"
   putRmTeleName iLounge     "lounge"

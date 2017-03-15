@@ -9,5 +9,3 @@ If available, you may feel free to try out and play with the debug commands (tho
 Debug commands begin with a "#b" prefix. \q#b?\d will give you the debug command list.
 
 (Sorry, but there is no help available on individual debug commands.)
-
-\uSEE ALSO\n

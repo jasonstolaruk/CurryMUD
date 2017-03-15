@@ -7,19 +7,15 @@ import Mud.Data.State.MudData
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Make
 import Mud.Data.State.Util.Misc
-import Mud.TheWorld.Zones.AdminZoneIds (iLoggedOut, iWelcome)
+import Mud.TheWorld.Zones.AdminZoneIds (iClone)
 import Mud.Threads.NpcServer
 import Mud.Util.Misc
-import Mud.Util.Text
 
 import Control.Lens (_1, _2, _3, view, views)
 import Control.Lens.Operators ((.~), (&), (%~), (^.), (<>~))
-import Data.List ((\\), find, foldl')
-import Data.Maybe (fromMaybe, isNothing)
-import Data.Monoid ((<>))
+import Data.List ((\\), foldl')
 import GHC.Stack (HasCallStack)
 import Prelude hiding (exp)
-import qualified Data.IntMap.Strict as IM (keys)
 import qualified Data.Map.Strict as M (elems, empty, fromList, keys)
 
 
@@ -64,10 +60,6 @@ clone destId = foldl' helper
                                            , mtParty            = m^.party }
             mkObjTemplate    | o <- getObj targetId ms
                              = (ObjTemplate <$> view objWeight <*> view objVol <*> view objTaste <*> view objFlags) o
-            mkPlaTemplate    | pla <- getPla targetId ms
-                             = (PlaTemplate <$> view plaFlags
-                                            <*> view retainedMsgs
-                                            <*> views logoutRmId (fromMaybe iWelcome)) pla
             mkVesselTemplate | v <- getVessel targetId ms
                              = views vesselCont VesselTemplate v
             f             (newId,    ms', fs) = p & _1 <>~ pure newId
@@ -95,32 +87,16 @@ clone destId = foldl' helper
           HolySymbolType -> f . newHolySymbol ms mkEntTemplate mkObjTemplate (getHolySymbol targetId ms) $ destId
           NpcType        ->
               let ((is, coins), em) = (getInvCoins `fanUncurry` getEqMap) (targetId, ms)
-                  (newId, ms', fs)  = newNpc ms mkEntTemplate (mempty, mempty) M.empty mkMobTemplate runNpcServerAsync destId
+                  (newId, ms', fs)  = newNpc ms
+                                             mkEntTemplate
+                                             (mempty, mempty)
+                                             M.empty
+                                             mkMobTemplate
+                                             runNpcServerAsync
+                                             destId
               in h newId coins . cloneEqMap em . clone newId ([], ms', fs) $ is
           ObjType        -> f . newObj ms mkEntTemplate mkObjTemplate $ destId
-          PlaType        ->
-            let (pc, (is, coins), em, r, t) = ((,,,,) <$> uncurry getPC
-                                                      <*> uncurry getInvCoins
-                                                      <*> uncurry getEqMap
-                                                      <*> uncurry getRndmNamesTbl
-                                                      <*> uncurry getTeleLinkTbl) (targetId, ms)
-                s            = etSing mkEntTemplate
-                s'           = mkNewSing 1
-                mkNewSing x  = let newSing = s <> showText x
-                               in if views plaTbl (isNothing . find ((== newSing) . (`getSing` ms)) . IM.keys) ms
-                                 then newSing
-                                 else mkNewSing . succ $ x
-                (newId, ms') = newPla ms
-                                      mkEntTemplate { etSing = s' }
-                                      (mempty, mempty)
-                                      M.empty
-                                      mkMobTemplate
-                                      pc
-                                      mkPlaTemplate
-                                      r
-                                      t
-                                      iLoggedOut
-            in h newId coins . cloneEqMap em . clone newId ([], ms', []) $ is
+          PlaType        -> p -- You can't clone a player.
           RmType         -> p -- You can't clone a room.
           VesselType     -> f . newVessel   ms mkEntTemplate mkObjTemplate mkVesselTemplate          $ destId
           WpnType        -> f . newWpn      ms mkEntTemplate mkObjTemplate (getWpn      targetId ms) $ destId
@@ -128,6 +104,6 @@ clone destId = foldl' helper
 
 
 cloneEqMap :: EqMap -> (Inv, MudState, Funs) -> ((Inv, EqMap), MudState, Funs)
-cloneEqMap em (is, ms, fs) = let (is', ms', fs') = clone iWelcome ([], ms, fs) . M.elems $ em
+cloneEqMap em (is, ms, fs) = let (is', ms', fs') = clone iClone ([], ms, fs) . M.elems $ em
                                  em'             = M.fromList . zip (M.keys em) $ is'
-                             in ((is, em'), ms' & invTbl.ind iWelcome %~ (\\ is'), fs')
+                             in ((is, em'), ms' & invTbl.ind iClone %~ (\\ is'), fs')

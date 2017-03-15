@@ -7,5 +7,3 @@ This feature can be quite useful when you are testing new functionality, debuggi
 The back door is enabled if 1) debug commands are turned on, and 2) the "isZBackDoor" binding (set in Haskell code prior to compilation) is set to "True".
 
 Is the Z back door enabled? \e@z\d
-
-\uSEE ALSO\n

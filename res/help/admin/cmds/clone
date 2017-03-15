@@ -5,8 +5,9 @@
 
 \uDESCRIPTION\n
 Clone one or more things by ID.
-The clones you create will appear in the inventory of your current room, except when cloning a PC, in which case the clone in placed in the logged out room.
-You can't clone a corpse or a room.
+
+The clones you create will appear in the inventory of your current room.
+You can't clone a corpse, a player, or a room.
 
 \uEXAMPLES\n
 \q#dclone 100\d to clone ID 100.4`

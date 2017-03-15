@@ -502,15 +502,15 @@ adminClone :: HasCallStack => ActionFun -- TODO: Logging.
 adminClone p@AdviseNoArgs            = advise p [ prefixAdminCmd "clone" ] adviceACloneNoArgs
 adminClone   (LowerNub i mq cols as) = modifyStateSeq $ \ms ->
     let f pair@(ms', fs) a = case reads . T.unpack $ a :: [(Int, String)] of
-          [(targetId, "")]
-            | targetId < 0                      -> sorry sorryWtf
-            | targetId == i                     -> sorry sorryCloneSelf
-            | not . hasType targetId $ ms       -> sorryId
-            | getType targetId ms == RmType     -> sorry sorryCloneRm
-            | getType targetId ms == CorpseType -> sorry sorryCloneCorpse
-            | otherwise                         ->
+          [(targetId@((`getType` ms) -> t), "")]
+            | targetId < 0                             -> sorry sorryWtf
+            | targetId == i                            -> sorry sorryCloneSelf
+            | not . hasType targetId $ ms              -> sorryId
+            | t `elem` [ CorpseType, PlaType, RmType ] -> sorry . sorryCloneType $ t
+            | otherwise                                ->
                 let (newIds, ms'', fs') = clone (getRmId i ms') ([], ms', fs) . pure $ targetId
-                    msg                 = prd $ "Cloned: " <> commas [ aOrAnOnLower . descSingId newId $ ms'' | newId <- newIds ]
+                    msg                 = prd $ "Cloned: " <> commas [ aOrAnOnLower . descSingId newId $ ms''
+                                                                     | newId <- newIds ]
                 in (ms'', fs' ++ pure (wrapSend mq cols msg))
           _ -> sorryId
           where
@@ -1378,7 +1378,8 @@ adminPassword p@AdviseOneArg = advise p [ prefixAdminCmd "password" ] adviceAPas
 adminPassword p@(WithTarget i mq cols target pw)
   | length (T.words pw) > 1 = advise p [ prefixAdminCmd "password" ] adviceAPasswordExcessArgs
   | otherwise               = getState >>= \ms ->
-      let SingleTarget { .. } = mkSingleTarget mq cols target "The PC name of the player whose password you wish to change"
+      let SingleTarget { .. } = mkSingleTarget mq cols target "The PC name of the player whose password you wish to \
+                                                              \change"
           changePW            = join <$> withDbExHandler fn (lookupPW strippedTarget) >>= \case
             Nothing    -> dbError mq cols
             Just oldPW -> let msg      = T.concat [ getSing i ms, " is changing ", strippedTarget, "'s password" ]

@@ -36,328 +36,332 @@ iNecropolis = 5 :: Id
 
 -----
 
-iCentral = 6 :: Id
+iClone = 6 :: Id
 
 -----
 
-iHallwayWest = 7 :: Id
+iCentral = 7 :: Id
 
 -----
 
-iHallwayEast = 8 :: Id
+iHallwayWest = 8 :: Id
 
 -----
 
-iAtrium = 9 :: Id
+iHallwayEast = 9 :: Id
 
 -----
 
-iBasement = 10 :: Id
+iAtrium = 10 :: Id
 
 -----
 
-iWeightRm = 11 :: Id
-
-i190Lb = 12 :: Id
-
-i100Lb = 13 :: Id
-
-i75Lb = 14 :: Id
-
-i50Lb1 = 15 :: Id
-
-i50Lb2 = 16 :: Id
-
-i25Lb1 = 17 :: Id
-
-i25Lb2 = 18 :: Id
-
-i10Lb1 = 19 :: Id
-
-i10Lb2 = 20 :: Id
-
-i5Lb1 = 21 :: Id
-
-i5Lb2 = 22 :: Id
-
-i1Lb1 = 23 :: Id
-
-i1Lb2 = 24 :: Id
-
-i1Lb3 = 25 :: Id
-
-i1Lb4 = 26 :: Id
-
-i1Lb5 = 27 :: Id
-
-iSlab = 28 :: Id
+iBasement = 11 :: Id
 
 -----
 
-iAttic = 29 :: Id
+iWeightRm = 12 :: Id
 
-iCube1 = 30 :: Id -- 20
+i190Lb = 13 :: Id
 
------
+i100Lb = 14 :: Id
 
-iObjCloset = 50 :: Id
+i75Lb = 15 :: Id
 
-iKewpie1 = 51 :: Id
+i50Lb1 = 16 :: Id
 
-iKewpie2 = 52 :: Id
+i50Lb2 = 17 :: Id
 
-iPaperSml = 53 :: Id
+i25Lb1 = 18 :: Id
 
-iParchment1 = 54 :: Id
+i25Lb2 = 19 :: Id
 
-iParchment2 = 55 :: Id
+i10Lb1 = 20 :: Id
 
-iParchment3 = 56 :: Id
+i10Lb2 = 21 :: Id
 
-iParchment4 = 57 :: Id
+i5Lb1 = 22 :: Id
 
-iParchment5 = 58 :: Id
+i5Lb2 = 23 :: Id
 
------
+i1Lb1 = 24 :: Id
 
-iClothCloset = 59 :: Id
+i1Lb2 = 25 :: Id
 
-iChemise = 60 :: Id
+i1Lb3 = 26 :: Id
 
-iTunic = 61 :: Id
+i1Lb4 = 27 :: Id
 
-iApron = 62 :: Id
+i1Lb5 = 28 :: Id
 
-iTabard = 63 :: Id
-
-iGreyCoat = 64 :: Id
-
-iFrockCoat = 65 :: Id
-
-iBreeches1 = 66 :: Id
-
-iBreeches2 = 67 :: Id
-
-iTrousers1 = 68 :: Id
-
-iTrousers2 = 69 :: Id
+iSlab = 29 :: Id
 
 -----
 
-iAccessoriesCloset = 70 :: Id
+iAttic = 30 :: Id
 
-iEar1 = 71 :: Id
+iCube1 = 31 :: Id -- 20
 
-iEar2 = 72 :: Id
+-----
 
-iEar3 = 73 :: Id
+iObjCloset = 51 :: Id
 
-iEar4 = 74 :: Id
+iKewpie1 = 52 :: Id
 
-iEar5 = 75 :: Id
+iKewpie2 = 53 :: Id
 
-iEar6 = 76 :: Id
+iPaperSml = 54 :: Id
 
-iEar7 = 77 :: Id
+iParchment1 = 55 :: Id
 
-iEar8 = 78 :: Id
+iParchment2 = 56 :: Id
 
-iNoseRing1 = 79 :: Id
+iParchment3 = 57 :: Id
 
-iNoseRing2 = 80 :: Id
+iParchment4 = 58 :: Id
 
-iNoseRing3 = 81 :: Id
+iParchment5 = 59 :: Id
 
-iNeck1 = 82 :: Id
+-----
 
-iNeck2 = 83 :: Id
+iClothCloset = 60 :: Id
 
-iNeck3 = 84 :: Id
+iChemise = 61 :: Id
 
-iNeck4 = 85 :: Id
+iTunic = 62 :: Id
 
-iBracelet1 = 86 :: Id
+iApron = 63 :: Id
 
-iBracelet2 = 87 :: Id
+iTabard = 64 :: Id
 
-iBracelet3 = 88 :: Id
+iGreyCoat = 65 :: Id
 
-iBracelet4 = 89 :: Id
+iFrockCoat = 66 :: Id
 
-iBracelet5 = 90 :: Id
+iBreeches1 = 67 :: Id
 
-iBracelet6 = 91 :: Id
+iBreeches2 = 68 :: Id
 
-iBracelet7 = 92 :: Id
+iTrousers1 = 69 :: Id
 
-iBracelet8 = 93 :: Id
+iTrousers2 = 70 :: Id
 
-iRing1 = 94 :: Id
+-----
 
-iRing2 = 95 :: Id
+iAccessoriesCloset = 71 :: Id
+
+iEar1 = 72 :: Id
+
+iEar2 = 73 :: Id
+
+iEar3 = 74 :: Id
+
+iEar4 = 75 :: Id
+
+iEar5 = 76 :: Id
+
+iEar6 = 77 :: Id
+
+iEar7 = 78 :: Id
+
+iEar8 = 79 :: Id
+
+iNoseRing1 = 80 :: Id
+
+iNoseRing2 = 81 :: Id
+
+iNoseRing3 = 82 :: Id
+
+iNeck1 = 83 :: Id
+
+iNeck2 = 84 :: Id
+
+iNeck3 = 85 :: Id
+
+iNeck4 = 86 :: Id
+
+iBracelet1 = 87 :: Id
+
+iBracelet2 = 88 :: Id
+
+iBracelet3 = 89 :: Id
+
+iBracelet4 = 90 :: Id
+
+iBracelet5 = 91 :: Id
+
+iBracelet6 = 92 :: Id
+
+iBracelet7 = 93 :: Id
+
+iBracelet8 = 94 :: Id
+
+iRing1 = 95 :: Id
+
+iRing2 = 96 :: Id
 
 iRing3 = 29:: Id
 
-iRing4 = 96 :: Id
+iRing4 = 97 :: Id
 
-iRing5 = 97 :: Id
+iRing5 = 98 :: Id
 
-iRing6 = 98 :: Id
+iRing6 = 99 :: Id
 
-iRing7 = 99 :: Id
+iRing7 = 100 :: Id
 
-iRing8 = 100 :: Id
+iRing8 = 101 :: Id
 
-iRing9 = 101 :: Id
-
------
-
-iCoinsCloset = 102 :: Id
+iRing9 = 102 :: Id
 
 -----
 
-iConCloset = 103 :: Id
-
-iSack1 = 104 :: Id
-
-iSack2 = 105 :: Id
-
-iSackSml = 106 :: Id
-
-iSackLrg = 107 :: Id
-
-iBack1 = 108 :: Id
-
-iBack2 = 109 :: Id
-
-iBackSml = 110 :: Id
-
-iBackLrg = 111 :: Id
-
-iPotionFlask1 = 112 :: Id -- 20
-
-iPotionFlaskLrg1 = 132 :: Id -- 20
-
-iWaterskin = 152 :: Id
-
-iWaterskinLrg = 153 :: Id
-
-iJarSml = 154 :: Id
-
-iJar = 155 :: Id
-
-iJarLrg = 156 :: Id
-
-iJugSml = 157 :: Id
-
-iJug = 158 :: Id
-
-iJugLrg = 159 :: Id
-
-iBottleSml = 160 :: Id
-
-iBottle = 161 :: Id
-
-iBottleLrg = 162 :: Id
+iCoinsCloset = 103 :: Id
 
 -----
 
-iWpnCloset = 163 :: Id
+iConCloset = 104 :: Id
 
-iSword1 = 164 :: Id
+iSack1 = 105 :: Id
 
-iSword2 = 165 :: Id
+iSack2 = 106 :: Id
 
-iLongSword = 166 :: Id
+iSackSml = 107 :: Id
 
-iClub = 167 :: Id
+iSackLrg = 108 :: Id
 
-iKnife1 = 168 :: Id
+iBack1 = 109 :: Id
 
-iKnife2 = 169 :: Id
+iBack2 = 110 :: Id
 
------
+iBackSml = 111 :: Id
 
-iArmCloset = 170 :: Id
+iBackLrg = 112 :: Id
 
-iCap = 171 :: Id
+iPotionFlask1 = 113 :: Id -- 20
 
-iHelm = 172 :: Id
+iPotionFlaskLrg1 = 133 :: Id -- 20
 
-iSandals1 = 173 :: Id
+iWaterskin = 153 :: Id
 
-iSandals2 = 174 :: Id
+iWaterskinLrg = 154 :: Id
 
-iBoots = 175 :: Id
+iJarSml = 155 :: Id
 
------
+iJar = 156 :: Id
 
-iMobCloset = 176 :: Id
+iJarLrg = 157 :: Id
 
-iPidge = 177 :: Id
+iJugSml = 158 :: Id
 
-iPeasant'sShirt = 178 :: Id
+iJug = 159 :: Id
 
-iLeatherApron = 179 :: Id
+iJugLrg = 160 :: Id
 
-iOveralls = 180 :: Id
+iBottleSml = 161 :: Id
 
-iTraveler'sBoots = 181 :: Id
+iBottle = 162 :: Id
 
-iRockCavy1 = 182 :: Id
-
-iRockCavy2 = 183 :: Id
-
-iSkeleton1 = 184 :: Id
-
-iSkeleton2 = 185 :: Id
-
-iSkeleton3 = 186 :: Id
+iBottleLrg = 163 :: Id
 
 -----
 
-iVoid = 187 :: Id
+iWpnCloset = 164 :: Id
+
+iSword1 = 165 :: Id
+
+iSword2 = 166 :: Id
+
+iLongSword = 167 :: Id
+
+iClub = 168 :: Id
+
+iKnife1 = 169 :: Id
+
+iKnife2 = 170 :: Id
 
 -----
 
-iTutEntrance = 188 :: Id
+iArmCloset = 171 :: Id
+
+iCap = 172 :: Id
+
+iHelm = 173 :: Id
+
+iSandals1 = 174 :: Id
+
+iSandals2 = 175 :: Id
+
+iBoots = 176 :: Id
 
 -----
 
-iLoungeEntrance = 189 :: Id
+iMobCloset = 177 :: Id
+
+iPidge = 178 :: Id
+
+iPeasant'sShirt = 179 :: Id
+
+iLeatherApron = 180 :: Id
+
+iOveralls = 181 :: Id
+
+iTraveler'sBoots = 182 :: Id
+
+iRockCavy1 = 183 :: Id
+
+iRockCavy2 = 184 :: Id
+
+iSkeleton1 = 185 :: Id
+
+iSkeleton2 = 186 :: Id
+
+iSkeleton3 = 187 :: Id
 
 -----
 
-iLounge = 190 :: Id
+iVoid = 188 :: Id
 
 -----
 
-iHolySymbol1 = 191 :: Id -- 10
+iTutEntrance = 189 :: Id
 
 -----
 
-iInside = 201 :: Id
+iLoungeEntrance = 190 :: Id
 
 -----
 
-iOutside = 202 :: Id
+iLounge = 191 :: Id
 
 -----
 
-iShop = 203 :: Id
+iHolySymbol1 = 192 :: Id -- 10
 
 -----
 
-iSpecial = 204 :: Id
+iInside = 202 :: Id
 
 -----
 
-iNoEnv = 205 :: Id
+iOutside = 203 :: Id
 
 -----
 
-iCottage = 206 :: Id
+iShop = 204 :: Id
 
 -----
 
-iCurry = 207 :: Id
+iSpecial = 205 :: Id
+
+-----
+
+iNoEnv = 206 :: Id
+
+-----
+
+iCottage = 207 :: Id
+
+-----
+
+iCurry = 208 :: Id
