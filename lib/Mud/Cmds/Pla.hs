@@ -2086,7 +2086,7 @@ npcDispCmdList p                  = patternMatchFail "npcDispCmdList" . showText
 -----
 
 
-npcExorcise :: HasCallStack => ActionFun -- TODO: Center current room on map.
+npcExorcise :: HasCallStack => ActionFun
 npcExorcise p = execIfPossessed p "exorcise" npcExorciseHelper
 
 
@@ -2096,6 +2096,7 @@ npcExorciseHelper pi (NoArgs i mq cols) = getState >>= \ms -> do
     tweaks [ plaTbl.ind pi.possessing .~ Nothing, npcTbl.ind i.npcPossessor .~ Nothing ]
     wrapSend mq cols . prd $ "You stop possessing " <> aOrAnOnLower (getSing i ms)
     sendDfltPrompt mq pi
+    sendGmcpRmInfo Nothing pi ms
 npcExorciseHelper pi p = withoutArgs (npcExorciseHelper pi) p
 
 

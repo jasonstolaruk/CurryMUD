@@ -1456,7 +1456,7 @@ adminPersist p              = withoutArgs adminPersist p
 -----
 
 
-adminPossess :: HasCallStack => ActionFun -- TODO: Center current room on map.
+adminPossess :: HasCallStack => ActionFun
 adminPossess p@(NoArgs' i mq) = advise p [ prefixAdminCmd "possess" ] adviceAPossessNoArgs >> sendDfltPrompt mq i
 adminPossess   (OneArgNubbed i mq cols target) = modifyStateSeq $ \ms ->
     let SingleTarget { .. } = mkSingleTarget mq cols target "The ID of the NPC you wish to possess"
@@ -1466,11 +1466,12 @@ adminPossess   (OneArgNubbed i mq cols target) = modifyStateSeq $ \ms ->
           where
             targetSing      = getSing targetId ms
             can'tPossess pi = sorry . sorryAlreadyPossessed targetSing . getSing pi $ ms
-            canPossess      = ( upd ms [ plaTbl.ind i       .possessing   ?~ targetId
-                                       , npcTbl.ind targetId.npcPossessor ?~ i ]
-                              , [ logPla "adminPossess" i logMsg
-                                , sendFun . prd $ "You are now possessing " <> aOrAnOnLower targetSing
-                                , sendDfltPrompt mq targetId ] )
+            canPossess      = (ms', [ logPla "adminPossess" i logMsg
+                                    , sendFun . prd $ "You are now possessing " <> aOrAnOnLower targetSing
+                                    , sendDfltPrompt mq targetId
+                                    , sendGmcpRmInfo Nothing targetId ms' ])
+            ms'             = upd ms [ plaTbl.ind i       .possessing   ?~ targetId
+                                     , npcTbl.ind targetId.npcPossessor ?~ i ]
             logMsg          = prd $ "started possessing " <> aOrAnOnLower (descSingId targetId ms)
         sorry txt = (ms, [ sendFun txt, sendDfltPrompt mq i ])
     in case reads . T.unpack $ strippedTarget :: [(Int, String)] of
