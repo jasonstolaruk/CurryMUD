@@ -509,14 +509,17 @@ adminClone   (LowerNub i mq cols as) = modifyStateSeq $ \ms ->
             | t `elem` [ CorpseType, PlaType, RmType ] -> sorry . sorryCloneType $ t
             | otherwise                                ->
                 let (newIds, ms'', fs') = clone (getRmId i ms') ([], ms', fs) . pure $ targetId
-                    msg                 = prd $ "Cloned: " <> commas [ aOrAnOnLower . descSingId newId $ ms''
-                                                                     | newId <- newIds ]
-                in (ms'', fs' ++ pure (wrapSend mq cols msg))
+                    msg                 = T.concat [ "Cloning ID "
+                                                   , showText targetId
+                                                   , ": "
+                                                   , commas [ aOrAnOnLower . descSingId newId $ ms''
+                                                            | newId <- newIds ] ]
+                in (ms'', fs' ++ pure (wrapSend1Nl mq cols msg))
           _ -> sorryId
           where
-            sorry msg = pair & _2 <>~ pure (wrapSend mq cols msg)
+            sorry msg = pair & _2 <>~ pure (wrapSend1Nl mq cols msg)
             sorryId   = sorry . sorryParseId $ a
-    in foldl' f (ms, []) as
+    in foldl' f (ms, []) as & _2 <>~ pure (blankLine mq)
 adminClone p = patternMatchFail "adminClone" . showText $ p
 
 
