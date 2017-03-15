@@ -520,14 +520,14 @@ adminClone   (LowerNub i mq cols as) = modifyStateSeq $ \ms ->
             sorry msg = tuple & _2 <>~ pure (wrapSend1Nl mq cols msg)
             sorryId   = sorry . sorryParseId $ a
     in let (ms', fs, logMsgs) = foldl' f (ms, [], []) as & _2 <>~ pure (blankLine mq)
-       in (ms', fs ++ pure (logPla "adminClone" i . prd $ "Cloning " <> commas logMsgs))
+       in (ms', fs ++ pure (logPla "adminClone" i . prd $ "cloning " <> commas logMsgs))
 adminClone p = patternMatchFail "adminClone" . showText $ p
 
 
 -----
 
 
-adminCount :: HasCallStack => ActionFun
+adminCount :: HasCallStack => ActionFun -- TODO: Count dead PCs.
 adminCount (NoArgs   i mq cols   ) = do logPlaExecArgs (prefixAdminCmd "count") [] i
                                         pager i mq Nothing . concatMap (wrapIndent 2 cols) =<< mkCountTxt
 adminCount (WithArgs i mq cols as) = do logPlaExecArgs (prefixAdminCmd "count") as i
@@ -1475,7 +1475,7 @@ adminPossess   (OneArgNubbed i mq cols target) = modifyStateSeq $ \ms ->
             logMsg          = prd $ "started possessing " <> aOrAnOnLower (descSingId targetId ms)
         sorry txt = (ms, [ sendFun txt, sendDfltPrompt mq i ])
     in case reads . T.unpack $ strippedTarget :: [(Int, String)] of
-      [(targetId, "")]
+      [(targetId, "")] -- TODO: Possessing a room.
         | targetId < 0                -> sorry sorryWtf
         | not . hasType targetId $ ms -> sorry . sorryParseId $ strippedTarget'
         | otherwise                   -> case getPossessing i ms of
@@ -2281,7 +2281,7 @@ adminTelePC ActionParams { plaMsgQueue, plaCols } = wrapSend plaMsgQueue plaCols
 -----
 
 
-adminTeleRm :: HasCallStack => ActionFun
+adminTeleRm :: HasCallStack => ActionFun -- TODO: Teleporting to the Necropolis.
 adminTeleRm (NoArgs i mq cols) = logPlaExecArgs (prefixAdminCmd "telerm") [] i >> (multiWrapSend mq cols =<< mkTxt)
   where
     mkTxt  = views rmTeleNameTbl ((header :) . styleAbbrevs Don'tQuote . sort . IM.elems) <$> getState
@@ -2391,7 +2391,7 @@ mkCharListTxt inOrOut ms =
 -----
 
 
-adminWhoOut :: HasCallStack => ActionFun
+adminWhoOut :: HasCallStack => ActionFun -- TODO: Displaying dead PCs.
 adminWhoOut = whoHelper LoggedOut "whoout"
 
 

@@ -79,7 +79,7 @@ clone destId = foldl' helper
           ClothType  -> f . newCloth ms mkEntTemplate mkObjTemplate (getCloth targetId ms) $ destId
           ConType    -> let (con, (is, coins)) = (getCon `fanUncurry` getInvCoins) (targetId, ms)
                             mc                 = views conIsCloth (`boolToMaybe` getCloth targetId ms) con
-                            (newId, ms', fs)   = newCon ms mkEntTemplate mkObjTemplate con (mempty, mempty) mc destId
+                            (newId, ms', fs)   = newCon ms mkEntTemplate mkObjTemplate con mempties mc destId
                         in g newId coins . clone newId ([], ms', fs) $ is
           CorpseType     -> p -- You can't clone a corpse (you would need to know how many seconds to start the
                               -- decomposer at).
@@ -89,7 +89,7 @@ clone destId = foldl' helper
               let ((is, coins), em) = (getInvCoins `fanUncurry` getEqMap) (targetId, ms)
                   (newId, ms', fs)  = newNpc ms
                                              mkEntTemplate
-                                             (mempty, mempty)
+                                             mempties
                                              M.empty
                                              mkMobTemplate
                                              runNpcServerAsync

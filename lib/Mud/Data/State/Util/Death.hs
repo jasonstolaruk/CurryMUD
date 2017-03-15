@@ -10,6 +10,7 @@ import Mud.Cmds.Util.Pla
 import Mud.Data.Misc
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Calc
+import Mud.Data.State.Util.Clone
 import Mud.Data.State.Util.Get
 import Mud.Data.State.Util.Make
 import Mud.Data.State.Util.Misc
@@ -45,7 +46,7 @@ import Data.Text (Text)
 import GHC.Stack (HasCallStack)
 import Prelude hiding (pi)
 import qualified Data.IntMap.Strict as IM (delete, filterWithKey, keys, mapWithKey)
-import qualified Data.Map.Strict as M (delete, elems, empty, filter, filterWithKey, keys, size)
+import qualified Data.Map.Strict as M (delete, elems, filter, filterWithKey, keys, size)
 import qualified Data.Text as T
 
 
@@ -66,14 +67,15 @@ logPla = L.logPla "Mud.Data.State.Util.Death"
 -- ==================================================
 
 
--- TODO: We want Taro's PC to have cloned inv, coins, and eq when it goes to the Necropolis.
 {-
-When Taro dies:
-Taro's corpse is created. Inventory, equipment, and coins are transferred from PC to corpse.
-Taro's PC becomes a disembodied spirit (see below).
-When the allotted time is up, Taro's spirit passes into the beyond and is sent to the Necropolis.
-Taro's player is shown Taro's stats.
-Taro's player is returned to the login screen.
+When Taro (a PC) dies:
+1) Taro's corpse is created.
+2) Taro's inventory, equipment, and coins are cloned; the clones are placed on Taro's corpse.
+3) Taro's PC becomes a disembodied spirit (see below).
+4) When the allotted time is up, Taro's spirit passes into the beyond.
+5) Taro's PC is sent to the Necropolis.
+6) Taro's player is shown Taro's stats.
+7) Taro's player is disconnected.
 
 About spirits:
 A player has a certain amount of time as a spirit, depending on level.
@@ -141,40 +143,45 @@ deleteNpc i = getState >>= \ms -> let ri = getRmId i ms
                                                , mobTbl             .at  i  .~ Nothing
                                                , pausedEffectTbl    .at  i  .~ Nothing
                                                , typeTbl            .at  i  .~ Nothing ]
-                                        stopWaitNpcServer i {- This removes the NPC from the "NpcTbl". -}
+                                        stopWaitNpcServer i -- This removes the NPC from the "NpcTbl".
 
 
 mkCorpse :: HasCallStack => Id -> MudState -> (MudState, Funs)
 mkCorpse i ms =
-    let et        = EntTemplate (Just "corpse")
-                                s p
-                                corpsePlaceholder
-                                Nothing
-                                zeroBits
-        ot        = ObjTemplate (getCorpseWeight i ms)
-                                (getCorpseVol    i ms)
-                                Nothing
-                                (onTrue (ip && r == Nymph) (`setBit` fromEnum IsHumming) zeroBits)
-        con       = Con False cap zeroBits
-        cap       = uncurry max . (getCorpseCapacity `fanUncurry` calcCarriedVol) $ (i, ms)
-        ic        = (M.elems (getEqMap i ms) ++ getInv i ms, getCoins i ms)
+    let et  = EntTemplate (Just "corpse")
+                          s p
+                          corpsePlaceholder
+                          Nothing
+                          zeroBits
+        ot  = ObjTemplate (getCorpseWeight i ms)
+                          (getCorpseVol    i ms)
+                          Nothing
+                          (onTrue (ip && r == Nymph) (`setBit` fromEnum IsHumming) zeroBits)
+        con = Con False cap zeroBits
+        cap = uncurry max . (getCorpseCapacity `fanUncurry` calcCarriedVol) $ (i, ms)
+        ((is, c), em, secs, ri) = ((,,,) <$> uncurry getInvCoins
+                                         <*> uncurry getEqMap
+                                         <*> uncurry getCorpseDecompSecs
+                                         <*> uncurry getRmId) (i, ms)
         corpse    = ip ? pcCorpse :? npcCorpse
-        npcCorpse = NpcCorpse corpsePlaceholder
         pcCorpse  = PCCorpse (getSing i ms) corpsePlaceholder (getSex i ms) r
+        npcCorpse = NpcCorpse corpsePlaceholder
         logMsg    = T.concat [ "corpse with ID ", showText corpseId, " created for ", descSingId i ms, "." ]
-        (corpseId, ms', fs) =
-            uncurry (newCorpse ms et ot con ic corpse) . (getCorpseDecompSecs `fanUncurry` getRmId) $ (i, ms)
-    in ( upd ms' [ coinsTbl.ind i .~ mempty
-                 , eqTbl   .ind i .~ M.empty
-                 , invTbl  .ind i .~ [] ]
-       , fs ++ [ logPla "mkCorpse" i "corpse created.", logNotice "mkCorpse" logMsg ] )
-      where
-        ip        = isPla i ms
-        (s, p)    | ip = ( "corpse of a " <> sexy |<>| pp r
-                         , "corpses of "  <> sexy |<>| plurRace r )
-                  | bgns <- getBothGramNos i ms
-                  = (("corpse of " <>) *** ("corpses of " <>)) . first aOrAnOnLower $ bgns & _2 .~ mkPlurFromBoth bgns
-        (sexy, r) = first pp . getSexRace i $ ms
+        (corpseId,   ms',  fs ) = let ic = ip ? mempties :? (sortInv ms $ is ++ M.elems em, c)
+                                  in newCorpse ms et ot con ic corpse secs ri
+        ((is', em'), ms'', fs') = cloneEqMap em . clone corpseId ([], ms', fs) $ is
+    in (_2 <>~ [ logPla "mkCorpse" i "corpse created.", logNotice "mkCorpse" logMsg ]) $ if ip
+      then ( upd ms'' [ invTbl  .ind corpseId .~ sortInv ms'' (is' ++ M.elems em')
+                      , coinsTbl.ind corpseId .~ c ]
+           , fs' )
+      else (ms', fs)
+  where
+    ip        = isPla i ms
+    (s, p)    | ip = ( "corpse of a " <> sexy |<>| pp r
+                     , "corpses of "  <> sexy |<>| plurRace r )
+              | bgns <- getBothGramNos i ms
+              = (("corpse of " <>) *** ("corpses of " <>)) . first aOrAnOnLower $ bgns & _2 .~ mkPlurFromBoth bgns
+    (sexy, r) = first pp . getSexRace i $ ms
 
 
 -----
