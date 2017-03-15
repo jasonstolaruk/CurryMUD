@@ -858,7 +858,7 @@ helperGetEitherInv i d fromId a@(ms, _, _, _) = \case
          & _4                   <>~ toSelfs
   where
     sortByType             = foldr helper mempties
-    helper targetId sorted = let lens = case getType targetId ms of PCType  -> _1
+    helper targetId sorted = let lens = case getType targetId ms of PlaType -> _1
                                                                     NpcType -> _1
                                                                     _       -> _2
                              in sorted & lens %~ (targetId :)
@@ -1555,7 +1555,7 @@ mkEntDesc i cols ms (ei, e) = let ed = views entDesc (wrapUnlines cols) e <> mkA
     case t of ConType      ->                  (ed <>) . mkInvCoinsDesc i cols ms ei $ s
               CorpseType   -> (corpseTxt <>)           . mkInvCoinsDesc i cols ms ei $ s
               NpcType      ->                  (ed <>) . (tempDescHelper <>) . mkEqDesc i cols ms ei s $ t
-              PCType       -> (pcHeader  <>) . (ed <>) . (tempDescHelper <>) . mkEqDesc i cols ms ei s $ t
+              PlaType      -> (pcHeader  <>) . (ed <>) . (tempDescHelper <>) . mkEqDesc i cols ms ei s $ t
               VesselType   ->                  (ed <>) . mkVesselContDesc  cols ms $ ei
               WritableType ->                  (ed <>) . mkWritableMsgDesc cols ms $ ei
               _            -> ed
@@ -1640,13 +1640,13 @@ mkEqDesc i cols ms descId descSing descType = let descs = bool mkDescsOther mkDe
       where
         helper (T.breakOn (spcL "finger") -> (slotName, _), s) = parensPad 15 slotName <> s
     noDescs = wrapUnlines cols $ if
-      | descId   == i      -> dudeYou'reNaked
-      | descType == PCType -> parseDesig i ms $ d    <> " doesn't have anything readied."
-      | otherwise          -> theOnLowerCap descSing <> " doesn't have anything readied."
+      | descId   == i       -> dudeYou'reNaked
+      | descType == PlaType -> parseDesig i ms $ d    <> " doesn't have anything readied."
+      | otherwise           -> theOnLowerCap descSing <> " doesn't have anything readied."
     header = wrapUnlines cols $ if
-      | descId   == i      -> "You have readied the following equipment:"
-      | descType == PCType -> parseDesig i ms $ d    <> " has readied the following equipment:"
-      | otherwise          -> theOnLowerCap descSing <> " has readied the following equipment:"
+      | descId   == i       -> "You have readied the following equipment:"
+      | descType == PlaType -> parseDesig i ms $ d    <> " has readied the following equipment:"
+      | otherwise           -> theOnLowerCap descSing <> " has readied the following equipment:"
     d = mkSerializedNonStdDesig descId ms descSing The DoCap
 
 
@@ -1875,15 +1875,15 @@ mkRmInvCoinsDesc i cols ms ri =
 
 mkRmInvCoinsDescTuples :: HasCallStack => Id -> MudState -> Inv -> [((Bool, Bool), (Text, BothGramNos, Text, Int))]
 mkRmInvCoinsDescTuples i ms targetIds =
-  let isPCAdmins =                      [ mkIsPCAdmin targetId            | targetId <- targetIds ]
-      styleds    = styleAbbrevs DoQuote [ getEffName        i ms targetId | targetId <- targetIds ]
-      boths      =                      [ getEffBothGramNos i ms targetId | targetId <- targetIds ]
-      rmDescs    =                      [ mkMobRmDesc targetId ms         | targetId <- targetIds ]
-      groups     = group . zip4 isPCAdmins styleds boths $ rmDescs
+  let isPlaAdmins =                      [ mkIsPlaAdmin           targetId | targetId <- targetIds ]
+      styleds     = styleAbbrevs DoQuote [ getEffName        i ms targetId | targetId <- targetIds ]
+      boths       =                      [ getEffBothGramNos i ms targetId | targetId <- targetIds ]
+      rmDescs     =                      [ mkMobRmDesc targetId ms         | targetId <- targetIds ]
+      groups      = group . zip4 isPlaAdmins styleds boths $ rmDescs
   in [ (ipa, (s, b, d, c)) | ((ipa, s, b, d), c) <- [ (head &&& length) g | g <- groups ] ]
   where
-    mkIsPCAdmin targetId | isPC targetId ms = (True, isAdminId targetId ms)
-                         | otherwise        = dup False
+    mkIsPlaAdmin targetId | isPla targetId ms = (True, isAdminId targetId ms)
+                          | otherwise         = dup False
 
 
 isKnownPCSing :: HasCallStack => Sing -> Bool
@@ -1976,26 +1976,26 @@ readHelper i cols ms d = foldl' helper
                   Nothing -> if isKnownLang i ms lang
                     then readIt txt . T.concat $ [ "The following is written on the ", s, " in ", pp lang, nl ":" ]
                     else f . sorryReadLang s $ lang
-                  Just recipSing
-                    | isPC    i ms
-                    , getSing i ms == recipSing || isAdminId i ms
-                    , b    <- isKnownLang i ms lang
-                    , txt' <- onFalse b (const . sorryReadOrigLang $ lang) txt
-                    -> readIt txt' . mkMagicMsgHeader s b $ lang
-                    | otherwise -> f . sorryReadUnknownLang $ s
+                  Just recipSing | isPla   i ms
+                                 , uncurry (||) . first (== recipSing) . (getSing `fanUncurry` isAdminId) $ (i, ms)
+                                 , b    <- isKnownLang i ms lang
+                                 , txt' <- onFalse b (const . sorryReadOrigLang $ lang) txt
+                                 -> readIt txt' . mkMagicMsgHeader s b $ lang
+                                 | otherwise -> f . sorryReadUnknownLang $ s
           HolySymbolType ->
-              let langs          = getKnownLangs i ms
+              let langs         = getKnownLangs i ms
                   holyHelper ts = acc & _1 <>~ multiWrapNl cols ts
                                       & _2 <>~ pure ( T.concat [ serialize d, " reads the writing on ", aOrAn s, "." ]
                                                     , i `delete` desigIds d )
                                       & _3 <>~ pure (s |<>| parensQuote (showText targetId))
               in either f holyHelper $ case getHolySymbolGodName targetId ms of
-                Caila     | isPC i ms, getRace i ms == Human -> Right . pure $ cailaOK
-                          | otherwise                        -> Left  cailaNG
-                Itulvatar                                    -> Right itulvatarOKs
-                Rumialys  | NymphLang `elem` langs           -> Right . pure $ rumialysOK
-                          | otherwise                        -> Left  rumialysNG
-                _                                            -> Left  sorryReadHolySymbol
+                Caila     | uncurry (&&) . second (== Human) . (isPla `fanUncurry` getRace) $ (i, ms)
+                                                   -> Right . pure $ cailaOK
+                          | otherwise              -> Left  cailaNG
+                Itulvatar                          -> Right itulvatarOKs
+                Rumialys  | NymphLang `elem` langs -> Right . pure $ rumialysOK
+                          | otherwise              -> Left  rumialysNG
+                _                                  -> Left  sorryReadHolySymbol
           _ -> f . sorryReadType $ s
       where
         f msg        = acc & _1 <>~ wrapUnlinesNl cols msg
@@ -2090,7 +2090,7 @@ shuffleGive i ms LastArgIsTargetBindings { .. } =
       then genericSorry ms sorryGiveToCoin
       else case procGecrMisRm . head . zip targetGecrs $ targetMiss of
         Left  msg        -> genericSorry ms msg
-        Right [targetId] -> if isNpcPC targetId ms
+        Right [targetId] -> if isNpcPla targetId ms
           then let (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv otherArgs
                    sorryInEq              = inEqs |!| sorryGiveInEq
                    sorryInRm              = inRms |!| sorryGiveInRm
@@ -2196,8 +2196,8 @@ shuffleRem i ms d conName icir as invCoinsWithCon@(invWithCon, _) f =
 
 sorryConHelper :: HasCallStack => Id -> MudState -> Id -> Sing -> Text
 sorryConHelper i ms conId conSing
-  | isNpcPC conId ms = sorryCon . parseDesig i ms . serialize . mkStdDesig conId ms $ Don'tCap
-  | otherwise        = sorryCon conSing
+  | isNpcPla conId ms = sorryCon . parseDesig i ms . serialize . mkStdDesig conId ms $ Don'tCap
+  | otherwise         = sorryCon conSing
 
 
 -----

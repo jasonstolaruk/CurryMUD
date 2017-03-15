@@ -23,7 +23,7 @@ invCoinsTypes = RmType : conTypes ++ mobTypes
 
 
 mobTypes :: [Type]
-mobTypes = [ NpcType, PCType ]
+mobTypes = [ NpcType, PlaType ]
 
 
 -----

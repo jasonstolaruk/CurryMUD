@@ -1131,12 +1131,13 @@ emote   (WithArgs i mq cols as) = getState >>= \ms ->
                   (_,                  Right _:_   ) -> sorry sorryEmoteTargetCoins
                   ([Left  msg       ], _           ) -> Left msg
                   ([Right (_:_:_)   ], _           ) -> Left sorryEmoteExcessTargets
-                  ([Right [targetId]], _           ) | targetSing <- getSing targetId ms -> if not (isNpcPC targetId ms)
-                    then Left . sorryEmoteTargetType $ targetSing
-                    else let targetDesig = addSuffix isPoss p . serialize . mkStdDesig targetId ms $ Don'tCap
-                         in Right ( targetDesig
-                                  , [ mkEmoteWord isPoss p targetId, ForNonTargets targetDesig ]
-                                  , targetDesig )
+                  ([Right [targetId]], _           ) | targetSing <- getSing targetId ms ->
+                    if not (isNpcPla targetId ms)
+                      then Left . sorryEmoteTargetType $ targetSing
+                      else let targetDesig = addSuffix isPoss p . serialize . mkStdDesig targetId ms $ Don'tCap
+                           in Right ( targetDesig
+                                    , [ mkEmoteWord isPoss p targetId, ForNonTargets targetDesig ]
+                                    , targetDesig )
                   x -> patternMatchFail "emote procTarget" . showText $ x
               else Left sorryNoOneHere
     addSuffix   isPoss p = (<> p) . onTrue isPoss (<> "'s")
@@ -1190,7 +1191,7 @@ emptyAction p = patternMatchFail "emptyAction" . showText $ p
 
 
 equip :: HasCallStack => ActionFun
-equip (NoArgs   i mq cols   ) = getState >>= \ms -> send mq . nl . mkEqDesc i cols ms i (getSing i ms) $ PCType
+equip (NoArgs   i mq cols   ) = getState >>= \ms -> send mq . nl . mkEqDesc i cols ms i (getSing i ms) $ PlaType
 equip (LowerNub i mq cols as) = getState >>= \ms ->
     let em@(M.elems -> is) = getEqMap i ms in send mq $ if ()!# em
       then let (inInvs, inEqs, inRms)                = sortArgsInvEqRm InEq as
@@ -1640,42 +1641,42 @@ intro p@(LowerNub i mq cols as) = getState >>= \ms ->
     helperIntroEitherInv ms ris a (Right targetIds) = foldl' tryIntro a targetIds
       where
         tryIntro a'@(pt, _, _, _) targetId = let targetSing = getSing targetId ms in case getType targetId ms of
-          PCType -> let s           = getSing i ms
-                        targetDesig = serialize . mkStdDesig targetId ms $ Don'tCap
-                        msg         = prd $ "You introduce yourself to " <> targetDesig
-                        logMsg      = prd $ "Introduced to " <> targetSing
-                        srcMsg      = nlnl msg
-                        is          = findMobIds ms ris
-                        srcDesig    = StdDesig { desigEntSing = Nothing
-                                               , desigCap     = DoCap
-                                               , desigEntName = mkUnknownPCEntName i ms
-                                               , desigId      = i
-                                               , desigIds     = is }
-                        himHerself  = mkReflexPro . getSex i $ ms
-                        targetMsg   = nlnl . T.concat $ [ parseDesig targetId ms . serialize $ srcDesig
-                                                        , " introduces "
-                                                        , himHerself
-                                                        , " to you as "
-                                                        , colorWith knownNameColor s
-                                                        , "." ]
-                        othersMsg   = nlnl . T.concat $ [ serialize srcDesig { desigEntSing = Just s }
-                                                        , " introduces "
-                                                        , himHerself
-                                                        , " to "
-                                                        , targetDesig
-                                                        , "." ]
-                        cbs         = [ NonTargetBcast (srcMsg,    pure i               )
-                                      , TargetBcast    (targetMsg, pure targetId        )
-                                      , NonTargetBcast (othersMsg, is \\ [ i, targetId ]) ]
-                    in if s `elem` pt^.ind targetId.introduced
-                      then let sorry = nlnl . sorryIntroAlready $ targetDesig
-                           in a' & _2 <>~ mkNTBcast i sorry
-                      else a' & _1.ind targetId.introduced %~ (sort . (s :))
-                              & _2 <>~ cbs
-                              & _3 <>~ pure logMsg
-                              & _4 %~  (targetId :)
-          _      -> let b = head . mkNTB . sorryIntroType $ targetSing
-                    in a' & _2 %~ (`appendIfUnique` b)
+          PlaType -> let s           = getSing i ms
+                         targetDesig = serialize . mkStdDesig targetId ms $ Don'tCap
+                         msg         = prd $ "You introduce yourself to " <> targetDesig
+                         logMsg      = prd $ "Introduced to " <> targetSing
+                         srcMsg      = nlnl msg
+                         is          = findMobIds ms ris
+                         srcDesig    = StdDesig { desigEntSing = Nothing
+                                                , desigCap     = DoCap
+                                                , desigEntName = mkUnknownPCEntName i ms
+                                                , desigId      = i
+                                                , desigIds     = is }
+                         himHerself  = mkReflexPro . getSex i $ ms
+                         targetMsg   = nlnl . T.concat $ [ parseDesig targetId ms . serialize $ srcDesig
+                                                         , " introduces "
+                                                         , himHerself
+                                                         , " to you as "
+                                                         , colorWith knownNameColor s
+                                                         , "." ]
+                         othersMsg   = nlnl . T.concat $ [ serialize srcDesig { desigEntSing = Just s }
+                                                         , " introduces "
+                                                         , himHerself
+                                                         , " to "
+                                                         , targetDesig
+                                                         , "." ]
+                         cbs         = [ NonTargetBcast (srcMsg,    pure i               )
+                                       , TargetBcast    (targetMsg, pure targetId        )
+                                       , NonTargetBcast (othersMsg, is \\ [ i, targetId ]) ]
+                     in if s `elem` pt^.ind targetId.introduced
+                       then let sorry = nlnl . sorryIntroAlready $ targetDesig
+                            in a' & _2 <>~ mkNTBcast i sorry
+                       else a' & _1.ind targetId.introduced %~ (sort . (s :))
+                               & _2 <>~ cbs
+                               & _3 <>~ pure logMsg
+                               & _4 %~  (targetId :)
+          _       -> let b = head . mkNTB . sorryIntroType $ targetSing
+                     in a' & _2 %~ (`appendIfUnique` b)
     helperIntroEitherCoins a (Left msgs)   = a & _1 <>~ (mkNTBcast i . T.concat $ [ nlnl msg | msg <- msgs ])
     helperIntroEitherCoins a Right {}      = let cb = head . mkNTB $ sorryIntroCoin
                                              in first (`appendIfUnique` cb) a
@@ -1822,7 +1823,7 @@ link p@(LowerNub i mq cols as) = getState >>= \ms -> if
     helperLinkEitherInv a (Right targetIds) = foldl' tryLink a targetIds
       where
         tryLink a'@(ms, _, _, _) targetId = let targetSing = getSing targetId ms in case getType targetId ms of
-          PCType ->
+          PlaType ->
             let (srcIntros, targetIntros) = f getIntroduced
                 (srcLinks,  targetLinks ) = f getLinked
                 f g                       = ((i |&|) &&& (targetId |&|)) (uncurry g . (, ms))
@@ -2765,7 +2766,7 @@ sayHelper l p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms ->
               ([Right (_:_:_)   ], _           ) -> sorry sorrySayExcessTargets
               ([Right [targetId]], _           ) ->
                   let targetDesig = serialize . mkStdDesig targetId ms $ Don'tCap
-                  in if isNpcPC targetId ms
+                  in if isNpcPla targetId ms
                     then parseRearAdverb |&| either sorry (sayToHelper d targetId targetDesig)
                     else sorry . sorrySayTargetType . getSing targetId $ ms
               x -> patternMatchFail "sayHelper sayTo" . showText $ x
@@ -3013,7 +3014,7 @@ showAction p@(Lower i mq cols as) = getState >>= \ms ->
                              (invToSelfs, invBs, invLogMsg) = inInvs |!| showInv ms d invCoins inInvs theTarget
                              (eqToSelfs,  eqBs,  eqLogMsg ) = inEqs  |!| showEq  ms d eqMap    inEqs  theTarget
                              sorryRmMsg                     = inRms  |!| sorryShowInRm
-                         in if theType theTarget `notElem` [ NpcType, PCType ]
+                         in if theType theTarget `notElem` [ NpcType, PlaType ]
                            then wrapSend mq cols . sorryShowTarget . theSing $ theTarget
                            else do
                                let logMsg = slashes . dropBlanks $ [ invLogMsg |!| parensQuote "inv" |<>| invLogMsg
@@ -3287,7 +3288,7 @@ smell p@(OneArgLower i mq cols a) = getState >>= \ms ->
                                                                             , "." ]
                                                 in ioHelper ms (Just targetId) smellDesc corpseBs corpseLogMsg
                               in case getType targetId ms of NpcType    -> smellMob
-                                                             PCType     -> smellMob
+                                                             PlaType    -> smellMob
                                                              CorpseType -> smellCorpse
                                                              _          -> sorry . sorrySmellRmNoHooks $ targetSing
           Right _          -> sorry sorrySmellExcessTargets
@@ -3345,7 +3346,7 @@ stats (NoArgs i mq cols) = getState >>= \ms ->
                                 , skillPtsHelper
                                 , mobRmDescHelper
                                 , tempDescHelper ]
-        top       = underline . onTrue (isPC i ms) (quoteWith' (spiritTxt, sexRace)) . getSing i $ ms
+        top       = underline . onTrue (isPla i ms) (quoteWith' (spiritTxt, sexRace)) . getSing i $ ms
         spiritTxt = isSpiritId i ms |?| "The disembodied spirit of "
         sexRace   = T.concat [ ", the ", sexy, " ", r ]
         (sexy, r) = mkPrettySexRace i ms
@@ -3707,7 +3708,7 @@ whisper p@(WithArgs i mq cols (target:(T.unwords -> rest))) = getState >>= \ms -
                       ([Right (_:_:_)   ], _             ) -> sorry sorryWhisperExcessTargets
                       ([Right [targetId]], _             ) ->
                           let targetDesig = serialize . mkStdDesig targetId ms $ Don'tCap
-                          in if isNpcPC targetId ms
+                          in if isNpcPla targetId ms
                             then whispering d targetId targetDesig . formatMsg $ rest
                             else sorry . sorryWhisperTargetType . getSing targetId $ ms
                       x -> patternMatchFail "whisper helper" . showText $ x

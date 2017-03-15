@@ -67,10 +67,10 @@ throwWaitDigester i = helper |&| modifyState >=> maybeVoid throwWait
 threadDigester :: HasCallStack => Id -> MudStack ()
 threadDigester i = handle (threadExHandler (Just i) "digester") $ getState >>= \ms -> do
     setThreadType . Digester $ i
-    let delay  | isPC i ms = calcDigesterDelay . getRace i $ ms
-               | otherwise = calcDigesterDelay Human
-        loop               = sequence_ [ liftIO . delaySecs $ delay, digest i ]
-        singId             = descSingId i ms
+    let delay  | isPla i ms = calcDigesterDelay . getRace i $ ms
+               | otherwise  = calcDigesterDelay Human
+        loop                = sequence_ [ liftIO . delaySecs $ delay, digest i ]
+        singId              = descSingId i ms
     handle (die (Just i) $ "digester for " <> singId) $ logPla "threadDigester" i "digester started." >> forever loop
 
 

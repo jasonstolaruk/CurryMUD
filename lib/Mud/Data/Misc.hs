@@ -661,7 +661,7 @@ instance Pretty Type where
   pp HolySymbolType = "holy symbol"
   pp NpcType        = "NPC"
   pp ObjType        = "object"
-  pp PCType         = "PC"
+  pp PlaType        = "player"
   pp RmType         = "room"
   pp VesselType     = "vessel"
   pp WpnType        = "weapon"

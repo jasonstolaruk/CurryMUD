@@ -169,7 +169,7 @@ mkCorpse i ms =
                  , invTbl  .ind i .~ [] ]
        , fs ++ [ logPla "mkCorpse" i "corpse created.", logNotice "mkCorpse" logMsg ] )
       where
-        ip        = isPC i ms
+        ip        = isPla i ms
         (s, p)    | ip = ( "corpse of a " <> sexy |<>| pp r
                          , "corpses of "  <> sexy |<>| plurRace r )
                   | bgns <- getBothGramNos i ms

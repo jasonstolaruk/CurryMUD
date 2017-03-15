@@ -244,7 +244,7 @@ initDurEffectTbl ms = ms & durationalEffectTbl .~ IM.fromList [ (i, []) | i <- v
 
 
 movePCs :: HasCallStack => MudState -> MudState
-movePCs ms = let idsWithRmIds   | f     <- \i mob -> onTrue (isPC i ms) ((i, mob^.rmId) :)
+movePCs ms = let idsWithRmIds   | f     <- \i mob -> onTrue (isPla i ms) ((i, mob^.rmId) :)
                                 , pairs <- views mobTbl (IM.foldrWithKey f []) ms
                                 = filter (((&&) <$> (/= iLoggedOut) <*> (/= iNecropolis)) . snd) pairs
                  helper (i, ri) = flip upd [ invTbl.ind ri           %~ (i `delete`)

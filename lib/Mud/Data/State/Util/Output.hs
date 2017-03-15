@@ -97,7 +97,7 @@ bcast bs = getState >>= \ms -> liftIO . atomically . forM_ bs . sendBcast $ ms
     sendBcast ms (msg, is) = mapM_ helper is
       where
         helper targetId = case getType targetId ms of
-          PCType  -> writeIt FromServer targetId
+          PlaType -> writeIt FromServer targetId
           NpcType -> maybeVoid (writeIt ToNpc) . getPossessor targetId $ ms
           t       -> patternMatchFail "bcast sendBcast helper" . showText $ t
         writeIt f i = let (mq, cols) = getMsgQueueColumns i ms
@@ -127,7 +127,7 @@ bcastAdminsExcept = bcastAdminsHelper . flip (\\)
 
 
 bcastIfNotIncog :: HasCallStack => Id -> [Broadcast] -> MudStack ()
-bcastIfNotIncog i bs = getState >>= \ms -> onTrue (isPC i ms) (unless (isIncognito . getPla i $ ms)) . bcast $ bs
+bcastIfNotIncog i bs = getState >>= \ms -> onTrue (isPla i ms) (unless (isIncognito . getPla i $ ms)) . bcast $ bs
 
 
 -----
@@ -162,7 +162,7 @@ bcastOthersInRm :: HasCallStack => Id -> Text -> MudStack ()
 bcastOthersInRm i msg = getState >>= \ms ->
     let helper = let ((i `delete`) -> ris) = getMobRmInv i ms
                  in bcast . pure $ (msg, findMobIds ms ris)
-    in isPC i ms ? unless (isIncognito . getPla i $ ms) helper :? helper
+    in isPla i ms ? unless (isIncognito . getPla i $ ms) helper :? helper
 
 
 -----
@@ -260,10 +260,10 @@ parseDesigHelper f i ms = loop (getIntroduced i ms)
                     , (left, desig, rest) <- extractDesig stdDesigDelimiter txt
                     = case desig of
                       d@StdDesig { desigEntSing = Just es, .. } ->
-                        left                                                              <>
+                        left                                                               <>
                         (if es `elem` intros
                            then es
-                           else expandEntName i ms d ^.to (isPC desigId ms ? f es :? id)) <>
+                           else expandEntName i ms d ^.to (isPla desigId ms ? f es :? id)) <>
                         loop intros rest
                       d@StdDesig { desigEntSing = Nothing,  .. } ->
                         left <> expandEntName i ms d <> loop intros rest
@@ -284,7 +284,7 @@ expandEntName :: HasCallStack => Id -> MudState -> Desig -> Text
 expandEntName i ms StdDesig { .. } = let f      = mkCapsFun desigCap
                                          (h, t) = headTail desigEntName
                                          s      = getSing desigId ms
-                                     in if isPC desigId ms
+                                     in if isPla desigId ms
                                        then f . T.concat $ [ the xth, expandSex h, " ", t ]
                                        else onFalse (isCapital s) (f . the) s
   where
@@ -351,11 +351,11 @@ sendDfltPrompt mq i = ((>>) <$> sendPrompt mq . mkDfltPrompt i <*> sendGmcpVital
 
 mkDfltPrompt :: HasCallStack => Id -> MudState -> Text
 mkDfltPrompt i ms = let (hps,  mps,  pps,  fps ) = getPts i ms
-                        (isHp, isMp, isPp, isFp) | isPC i ms = ( isShowingHp
-                                                               , isShowingMp
-                                                               , isShowingPp
-                                                               , isShowingFp ) & each %~ (getPla i ms |&|)
-                                                 | otherwise = dup4 True
+                        (isHp, isMp, isPp, isFp) | isPla i ms = ( isShowingHp
+                                                                , isShowingMp
+                                                                , isShowingPp
+                                                                , isShowingFp ) & each %~ (getPla i ms |&|)
+                                                 | otherwise  = dup4 True
                         marker = colorWith indentColor " "
                         txt    = spaces . dropBlanks $ [ isHp |?| f "h" hps
                                                        , isMp |?| f "m" mps

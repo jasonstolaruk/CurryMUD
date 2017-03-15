@@ -60,4 +60,5 @@ procInstaEffect i ie@(InstaEffect sub val feel) = getState >>= \ms -> do
                                 startFeelingHelper (FeelingFixedVal diff) feel
     myMobGet     = mobTbl.ind i
     myMobSet     = mobTbl.ind i
-    logHelper ms = when (getType i ms == PCType) . logPla "procInstaEffect" i $ "applying instantaneous effect: " <> pp ie
+    logHelper ms = let f = logPla "procInstaEffect" i $ "applying instantaneous effect: " <> pp ie
+                   in when (getType i ms == PlaType) f

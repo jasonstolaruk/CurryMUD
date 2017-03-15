@@ -166,7 +166,7 @@ adHoc mq host = do
                           , plaTbl             .ind i .~ pla
                           , rndmNamesMstrTbl   .ind i .~ M.empty
                           , teleLinkMstrTbl    .ind i .~ M.empty
-                          , typeTbl            .ind i .~ PCType ]
+                          , typeTbl            .ind i .~ PlaType ]
         in (ms' & invTbl.ind iWelcome %~ addToInv ms' (pure i), (i, s))
 
 

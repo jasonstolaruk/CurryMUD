@@ -36,5 +36,5 @@ threadTrashDumpPurger = handle (threadExHandler Nothing "trash dump purger") $ d
 
 purgeTrashDump :: MudStack ()
 purgeTrashDump = getState >>= \ms -> do logNotice "purgeTrashDump" "purging the trash dump."
-                                        destroy . filter (not . (`isPC` ms)) . getInv iTrashDump $ ms
+                                        destroy . filter (not . (`isPla` ms)) . getInv iTrashDump $ ms
                                         tweak $ coinsTbl.ind iTrashDump .~ mempty

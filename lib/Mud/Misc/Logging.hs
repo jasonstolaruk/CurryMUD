@@ -158,7 +158,7 @@ closePlaLog = flip doIfLogging stopLog
 
 doIfLogging :: Id -> (LogQueue -> MudStack ()) -> MudStack ()
 doIfLogging i f = getState >>= \ms ->
-    let helper = \case PCType  -> views plaLogTbl (maybeVoid (f . snd) . (i `IM.lookup`)) ms
+    let helper = \case PlaType -> views plaLogTbl (maybeVoid (f . snd) . (i `IM.lookup`)) ms
                        NpcType -> maybeVoid (`doIfLogging` f) . getPossessor i $ ms
                        _       -> unit
     in views typeTbl (maybeVoid helper . (i `IM.lookup`)) ms

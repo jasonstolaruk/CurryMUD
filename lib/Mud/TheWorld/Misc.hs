@@ -241,7 +241,7 @@ mkRndmBcastRmFun i idName fn prob secs msg = handle (threadExHandler (Just i) th
     loop `catch` die Nothing threadName
   where
     threadName = T.concat [ "room function ", dblQuote fn, " ", idName ]
-    loop       = getState >>= \ms -> let is = filter (`isNpcPC` ms) . getInv i $ ms in do
+    loop       = getState >>= \ms -> let is = filter (`isNpcPla` ms) . getInv i $ ms in do
         unless (()# is) . rndmDo_ prob . bcastNl . pure $ (msg, is)
         liftIO . delaySecs $ secs
         loop

@@ -181,8 +181,8 @@ sacrificeAct i mq ci gn = handle (die (Just i) (pp Sacrificing)) $ do
                                    in bcastNl $ if ((&&) <$> (`isIncognitoId` ms) <*> (`elem` mobIds)) i
                                      then pure . mkBcastHelper $ i
                                      else foldr foldHelper [] mobIds
-                             | isNpcPC invId ms -> bcastNl . pure . mkBcastHelper $ invId
-                             | otherwise        -> unit
+                             | isNpcPla invId ms -> bcastNl . pure . mkBcastHelper $ invId
+                             | otherwise         -> unit
             Nothing    -> unit
           else (ms, [])
 

@@ -58,7 +58,7 @@ destroyHelper = flip . foldr $ helper
       WritableType   -> upd ms [ destroyEnt, destroyObj, destroyWritable,   rest ]
       -----
       NpcType        -> ms
-      PCType         -> ms
+      PlaType        -> ms
       RmType         -> ms
       where
         destroyArm          = armTbl       .at i .~ Nothing

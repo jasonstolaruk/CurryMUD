@@ -1072,7 +1072,7 @@ expCmd (ExpCmd ecn ect         desc)   (OneArgNubbed i mq cols target) = case ec
                                                                              , ("&", hisHer)
                                                                              , ("*", himHerself) ]
                                            in (toSelf', toOthers', logMsg, substitutions)
-                in if getType targetId ms `elem` [ PCType, NpcType ]
+                in if getType targetId ms `elem` [ PlaType, NpcType ]
                   then ioHelper . serialize . mkStdDesig targetId ms $ Don'tCap
                   else wrapSend mq cols sorryExpCmdTargetType
               x -> patternMatchFail "expCmd helper" . showText $ x

@@ -1165,7 +1165,7 @@ data Type = ArmType
           | HolySymbolType
           | NpcType
           | ObjType
-          | PCType -- TODO: Change to "PlaType"?
+          | PlaType
           | RmType
           | VesselType
           | WpnType

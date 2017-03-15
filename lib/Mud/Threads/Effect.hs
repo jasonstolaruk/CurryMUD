@@ -144,9 +144,9 @@ massRestartPausedEffects :: HasCallStack => MudStack () -- At server startup.
 massRestartPausedEffects = getState >>= \ms -> do logNotice "massRestartPausedEffects" "mass restarting paused effects."
                                                   mapM_ (helper ms) . views pausedEffectTbl IM.toList $ ms
   where
-    helper _  (_, [] )                          = unit
-    helper ms (i, _  ) | getType i ms == PCType = unit
-    helper _  (i, pes)                          = restartPausedHelper i pes
+    helper _  (_, [] )                           = unit
+    helper ms (i, _  ) | getType i ms == PlaType = unit
+    helper _  (i, pes)                           = restartPausedHelper i pes
 
 
 -----

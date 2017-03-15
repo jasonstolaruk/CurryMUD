@@ -98,7 +98,7 @@ clone destId = foldl' helper
                   (newId, ms', fs)  = newNpc ms mkEntTemplate (mempty, mempty) M.empty mkMobTemplate runNpcServerAsync destId
               in h newId coins . cloneEqMap em . clone newId ([], ms', fs) $ is
           ObjType        -> f . newObj ms mkEntTemplate mkObjTemplate $ destId
-          PCType         ->
+          PlaType        ->
             let (pc, (is, coins), em, r, t) = ((,,,,) <$> uncurry getPC
                                                       <*> uncurry getInvCoins
                                                       <*> uncurry getEqMap

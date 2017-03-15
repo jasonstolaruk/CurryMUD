@@ -88,6 +88,7 @@ import Control.Lens (both, view, views)
 import Control.Lens.Getter (Getter)
 import Control.Lens.Operators ((&), (%~))
 import Data.List (foldl')
+import Data.Maybe (fromMaybe)
 import GHC.Stack (HasCallStack)
 import Prelude hiding (getContents)
 import qualified Data.Map.Strict as M (elems)
@@ -633,12 +634,11 @@ calcStomachAvailSize i ms | size <- calcStomachSize i ms, avail <- size - length
 
 
 calcStomachSize :: HasCallStack => Id -> MudState -> Mouthfuls
-calcStomachSize i ms = if isPC i ms
-  then calcStomachSizeForRace . getRace i $ ms
-  else calcStomachSizeForMobSize . mobSizeHelper . getMobSize i $ ms
+calcStomachSize i ms =
+    let (ip, r, s) = ((,,) <$> uncurry isPla <*> uncurry getRace <*> uncurry getMobSize) (i, ms)
+    in ip ? calcStomachSizeForRace r :? calcStomachSizeForMobSize (fromMaybe oops s)
   where
-    mobSizeHelper (Just x) = x
-    mobSizeHelper x        = blowUp "calcStomachSize mobSizeHelper" "NPC mob size of Nothing" . showText $ x
+    oops = blowUp "calcStomachSize" "NPC mob size of Nothing" ""
 
 
 calcStomachSizeForRace :: HasCallStack => Race -> Mouthfuls
@@ -702,13 +702,13 @@ calcCoinsVol i = (* coinVol) . sum . coinsToList . getCoins i
 calcWeight :: HasCallStack => Id -> MudState -> Weight
 calcWeight i ms = case getType i ms of
   ConType    -> sum [ getObjWeight i ms, calcInvWeight, calcCoinsWeight ]
-  NpcType    -> npcPC
-  PCType     -> npcPC
+  NpcType    -> npcPla
+  PlaType    -> npcPla
   RmType     -> blowUp "calcWeight" "cannot calculate the weight of a room" . showText $ i
   VesselType -> getObjWeight i ms + calcVesselContWeight
   _          -> getObjWeight i ms
   where
-    npcPC                = sum [ calcInvWeight, calcCoinsWeight, calcEqWeight ]
+    npcPla               = sum [ calcInvWeight, calcCoinsWeight, calcEqWeight ]
     calcInvWeight        = helper .           getInv   i $ ms
     calcEqWeight         = helper . M.elems . getEqMap i $ ms
     helper               = sum . map (`calcWeight` ms)

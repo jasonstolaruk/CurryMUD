@@ -176,7 +176,7 @@ findInvContaining i ms = let matches = views invTbl (IM.keys . IM.filter (i `ele
 
 
 findMobIds :: HasCallStack => MudState -> Inv -> Inv
-findMobIds ms haystack = [ i | i <- haystack, (||) <$> (PCType ==) <*> (NpcType ==) $ getType i ms ]
+findMobIds ms haystack = [ i | i <- haystack, (||) <$> (PlaType ==) <*> (NpcType ==) $ getType i ms ]
 
 
 -----
@@ -375,7 +375,7 @@ getUnusedId = views typeTbl (head . (enumFrom 0 \\) . IM.keys)
 getVisibleInv :: HasCallStack => Id -> MudState -> Inv
 getVisibleInv i ms = filter isVisible . getInv i $ ms
   where
-    isVisible targetId | not . isPC targetId $ ms          = otherwise
+    isVisible targetId | not . isPla targetId $ ms         = otherwise
                        | isSpiritId targetId ms            = likewise
                        | not . isIncognitoId targetId $ ms = otherwise
                        | otherwise                         = likewise
@@ -581,9 +581,9 @@ mkPrettySexRaceLvl i ms = let ((s, r), l) = (mkPrettySexRace `fanUncurry` getLvl
 mkSerializedNonStdDesig :: HasCallStack => Id -> MudState -> Sing -> AOrThe -> DoOrDon'tCap -> Text
 mkSerializedNonStdDesig i ms s aot (mkCapsFun -> f) = serialize NonStdDesig { dEntSing = s, dDesc = helper }
   where
-    helper | isPC i ms = g . uncurry (|<>|) . mkPrettySexRace i $ ms
-           | otherwise = onFalse (isCapital s) g s
-    g                  = f . (pp aot <>) . spcL
+    helper | isPla i ms = g . uncurry (|<>|) . mkPrettySexRace i $ ms
+           | otherwise  = onFalse (isCapital s) g s
+    g                   = f . (pp aot <>) . spcL
 
 
 -----
@@ -719,7 +719,7 @@ sortInv ms is = let (foldr helper mempties -> (pcs, others)) = [ (i, getType i m
                 in (pcs ++) . sortOthers $ others
   where
     helper (i, t) acc                  = let consTo lens = acc & lens %~ (i :)
-                                         in t == PCType ? consTo _1 :? consTo _2
+                                         in t == PlaType ? consTo _1 :? consTo _2
     sortOthers                         = select _1 . sortBy nameThenSing . zipped
     nameThenSing (_, n, s) (_, n', s') = (n `compare` n') <> (s `compare` s')
     zipped others                      = [ (i, mkEntName e, e^.sing) | i <- others, let e = getEnt i ms ]

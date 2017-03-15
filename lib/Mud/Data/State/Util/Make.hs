@@ -375,7 +375,7 @@ newPla :: MudState
        -> TeleLinkTbl
        -> InvId
        -> (Id, MudState)
-newPla ms et ic em mt p pt r t invId = let (i, typeTbl.ind i .~ PCType -> ms') = createPla ms et ic em mt p pt r t
+newPla ms et ic em mt p pt r t invId = let (i, typeTbl.ind i .~ PlaType -> ms') = createPla ms et ic em mt p pt r t
                                        in (i, ms' & invTbl.ind invId %~ addToInv ms' (pure i))
 
 

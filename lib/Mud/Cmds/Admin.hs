@@ -328,7 +328,7 @@ adminAs   (WithTarget i mq cols target rest) = getState >>= \ms ->
                            then sorryAlreadyPossessing s
                            else sorryAlreadyPossessed  s . getSing pi $ ms
                      in maybe notPossessed isPossessed . getPossessor targetId $ ms
-          PCType  | targetId == i                           -> sorry sorryAsSelf
+          PlaType | targetId == i                           -> sorry sorryAsSelf
                   | isAdminId targetId ms                   -> sorry sorryAsAdmin
                   | not . isLoggedIn . getPla targetId $ ms -> sorry . sorryLoggedOut $ s
                   | isAdHoc targetId ms                     -> sorry sorryAsAdHoc
@@ -559,7 +559,7 @@ mkCountTxt = (uncurry mappend . second commaShow) `fmap2` helper
                , ("Foods: ",        countType FoodType    )
                , ("NPCs: ",         countType NpcType     )
                , ("Objects: ",      countType ObjType     )
-               , ("PCs: ",          countType PCType      )
+               , ("Players: ",      countType PlaType     )
                , ("Rooms: ",        countType RmType      )
                , ("Vessels: ",      countType VesselType  )
                , ("Weapons: ",      countType WpnType     )
@@ -662,7 +662,7 @@ destroyer i mq cols targetId = getState >>= \ms -> let t = getType targetId ms i
   else let msg = T.concat [ "destroying ", pp t, ": ", descSingId targetId ms, "." ]
        in logPla "destroyer" i msg >> f (capitalize msg) >> destroy (pure targetId)
   where
-    sorryTypes = [ NpcType, PCType, RmType ]
+    sorryTypes = [ NpcType, PlaType, RmType ]
     f          = wrapSend mq cols
 
 
@@ -711,7 +711,7 @@ examineHelper ms targetId regex = let t = getType targetId ms in helper (pp t) $
   HolySymbolType -> [ examineEnt, examineObj,   examineHolySymbol ]
   NpcType        -> [ examineEnt, examineInv,   examineCoins, examineEqMap, examineMob, examineNpc    ]
   ObjType        -> [ examineEnt, examineObj ]
-  PCType         -> [ examineEnt, examineInv,   examineCoins, examineEqMap, examineMob, examinePC, examinePla, examinePickPts ]
+  PlaType        -> [ examineEnt, examineInv,   examineCoins, examineEqMap, examineMob, examinePC, examinePla, examinePickPts ]
   RmType         -> [ examineInv, examineCoins, examineRm         ]
   VesselType     -> [ examineEnt, examineObj,   examineVessel     ]
   WpnType        -> [ examineEnt, examineObj,   examineWpn        ]
@@ -1205,7 +1205,7 @@ adminKill   (LowerNub i mq cols as) = getState >>= \ms -> do
             sorry           = sorryHelper . sorryParseId $ a
             go targetId     | targetId == i     = sorryHelper sorryKillSelf
                             | isNpc targetId ms = kill
-                            | isPC  targetId ms =
+                            | isPla targetId ms =
                                 if | isAdminId     targetId   ms -> sorryHelper . sorryKillAdmin  $ singId
                                    | isDead        targetId   ms -> sorryHelper . sorryKillDead   $ singId
                                    | not . isAwake targetId $ ms -> sorryHelper . sorryKillAsleep $ singId
@@ -1561,7 +1561,7 @@ adminSet   (WithArgs i mq cols (target:rest)) =
     helper |&| modifyState >=> \(toSelfMsgs, mTargetId, toTargetMsgs, logMsgs, fs) ->
         let ioHelper targetId = getState >>= \ms ->
                 let f msg = (colorWith adminSetColor msg |&|) $ case getType targetId ms of
-                        PCType  -> retainedMsg targetId ms
+                        PlaType -> retainedMsg targetId ms
                         NpcType -> bcast . mkBcast targetId
                         t       -> patternMatchFail "adminSet f" . showText $ t
                 in do logMsgs |#| logPla (prefixAdminCmd "set") i . g . slashes
@@ -1718,7 +1718,7 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
                             toTarget = pure . T.concat $ [ "Your ", n, " has changed to ", showMaybe x, "." ]
                         in a & _1.entTbl.ind targetId.setter .~ x
                              & _2 <>~ toSelf
-                             & _3 <>~ ((isNpcPC targetId ms && isDiff) |?| toTarget)
+                             & _3 <>~ ((isNpcPla targetId ms && isDiff) |?| toTarget)
                              & _4 <>~ (isDiff |?| toSelf)
               _      -> sorryOp k
         -----
@@ -1735,7 +1735,7 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
                              & _1.pcSingTbl.at  prev .~ Nothing
                              & _1.pcSingTbl.at  x    ?~ targetId
                              & _2 <>~ toSelf
-                             & _3 <>~ ((isNpcPC targetId ms && isDiff) |?| toTarget)
+                             & _3 <>~ ((isNpcPla targetId ms && isDiff) |?| toTarget)
                              & _4 <>~ (isDiff |?| toSelf)
               _      -> sorryOp "sing"
         -----
@@ -1750,7 +1750,7 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
                             toTarget = pure . T.concat $ [ "Your ", n, " has changed to ", dblQuote x, "." ]
                         in a & _1.entTbl.ind targetId.setter .~ x
                              & _2 <>~ toSelf
-                             & _3 <>~ ((isNpcPC targetId ms && isDiff) |?| toTarget)
+                             & _3 <>~ ((isNpcPla targetId ms && isDiff) |?| toTarget)
                              & _4 <>~ (isDiff |?| toSelf)
               _      -> sorryOp k
         -----
@@ -1824,16 +1824,16 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
             Left  _ -> appendMsg . sorryAdminSetValue "exp" $ value
             Right x -> let prev                 = getExp targetId ms
                            addSubAssignHelper g = f $ max0 (prev `g` x)
-                           f new                = let diff   = new - prev
-                                                      toSelf = mkToSelfForInt "exp" new diff
-                                                      a' | isPC targetId ms
-                                                         , diff > 0
-                                                         = a & _5 <>~ pure (awardExp diff (prefixAdminCmd "set") targetId)
-                                                         | otherwise
-                                                         = a & _1.mobTbl.ind targetId.exp .~ new
-                                                  in a' & _2 <>~ toSelf
-                                                        & _3 <>~ (Sum diff |!| mkToTarget diff)
-                                                        & _4 <>~ (Sum diff |!| toSelf)
+                           f new                =
+                               let diff   = new - prev
+                                   toSelf = mkToSelfForInt "exp" new diff
+                                   a' | isPla targetId ms, diff > 0
+                                      = a & _5 <>~ pure (awardExp diff (prefixAdminCmd "set") targetId)
+                                      | otherwise
+                                      = a & _1.mobTbl.ind targetId.exp .~ new
+                               in a' & _2 <>~ toSelf
+                                     & _3 <>~ (Sum diff |!| mkToTarget diff)
+                                     & _4 <>~ (Sum diff |!| toSelf)
                        in case op of Assign    -> f . max0 $ x
                                      AddAssign -> addSubAssignHelper (+)
                                      SubAssign -> addSubAssignHelper (-)
@@ -2014,8 +2014,8 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
               _      -> sorryOp "following"
         -----
         setPCRaceHelper t
-          | t /= PCType = sorryType
-          | otherwise   = case eitherDecode value' of
+          | t /= PlaType = sorryType
+          | otherwise    = case eitherDecode value' of
             Left  _ -> appendMsg . sorryAdminSetValue "race" $ value
             Right x -> case op of
               Assign -> let toSelf   = pure . T.concat $ [ "Set race to ", pp x, mkDiffTxt isDiff, "." ]
@@ -2029,8 +2029,8 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
               _      -> sorryOp "race"
         -----
         setPCSingListHelper t k n getter setter
-          | t /= PCType = sorryType
-          | otherwise   = case eitherDecode value' of
+          | t /= PlaType = sorryType
+          | otherwise    = case eitherDecode value' of
             Left  _              -> appendMsg . sorryAdminSetValue k $ value
             Right (nubSort -> x) ->
                 let prev                 = view getter . getPC targetId $ ms
@@ -2053,8 +2053,8 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
             mkValueTxt          = noneOnNull . commas
         -----
         setPCSkillPtsHelper t
-          | t /= PCType = sorryType
-          | otherwise   = case eitherDecode value' of
+          | t /= PlaType = sorryType
+          | otherwise    = case eitherDecode value' of
             Left  _ -> appendMsg . sorryAdminSetValue "skillPts" $ value
             Right x -> let prev                 = getSkillPts targetId ms
                            addSubAssignHelper g = f . max0 $ prev `g` x
@@ -2072,8 +2072,8 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
                             | otherwise = pure . T.concat $ [ "You have lost ", commaShow . abs $ diff, " skill points." ]
         -----
         setPCSacrificesHelper t gn@(T.toLower . pp -> k)
-          | t /= PCType = sorryType
-          | otherwise   = case eitherDecode value' of
+          | t /= PlaType = sorryType
+          | otherwise    = case eitherDecode value' of
             Left  _ -> appendMsg . sorryAdminSetValue k $ value
             Right x -> let prev                 = M.findWithDefault 0 gn . getSacrificesTbl targetId $ ms
                            addSubAssignHelper g = f . max0 $ prev `g` x

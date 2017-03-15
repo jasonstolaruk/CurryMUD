@@ -105,7 +105,7 @@ putPla i e is c em m r t pc pla = tweaks [ coinsTbl           .ind i .~ c
                                          , plaTbl             .ind i .~ pla
                                          , rndmNamesMstrTbl   .ind i .~ r
                                          , teleLinkMstrTbl    .ind i .~ t
-                                         , typeTbl            .ind i .~ PCType ]
+                                         , typeTbl            .ind i .~ PlaType ]
 
 
 -----

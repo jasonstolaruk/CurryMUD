@@ -71,7 +71,7 @@ threadBiodegrader i = handle (threadExHandler (Just i) "biodegrader") $ descSing
           Just invId
             | newMaybeInvId == lastMaybeInvId -> if secs < biodegSecs
               then mkRes . loop (secs + biodegDelay) $ lastMaybeInvId
-              else let pcsInRm = filter (`isPC` ms) . getInv invId $ ms
+              else let pcsInRm = filter (`isPla` ms) . getInv invId $ ms
                        helper  = ( destroyHelper (pure i) ms
                                  , [ stopEffects i
                                    , logNotice "threadBiodegrader" $ descSingId i ms <> " has biodegraded." ] )

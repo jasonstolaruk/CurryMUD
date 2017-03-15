@@ -140,8 +140,8 @@ module Mud.Data.State.Util.Get ( getActMap
                                , isNotFirstSpiritCmdNotFound
                                , isNotFirstSpiritCmdNotFoundId
                                , isNpc
-                               , isNpcPC
-                               , isPC
+                               , isNpcPla
+                               , isPla
                                , isShowingFp
                                , isShowingFpId
                                , isShowingHp
@@ -209,12 +209,12 @@ isNpc :: HasCallStack => Id -> MudState -> Bool
 isNpc i = (== NpcType) . getType i
 
 
-isPC :: HasCallStack => Id -> MudState -> Bool
-isPC i = (== PCType) . getType i
+isPla :: HasCallStack => Id -> MudState -> Bool
+isPla i = (== PlaType) . getType i
 
 
-isNpcPC :: HasCallStack => Id -> MudState -> Bool
-isNpcPC i ms = getType i ms `elem` [ NpcType, PCType ]
+isNpcPla :: HasCallStack => Id -> MudState -> Bool
+isNpcPla i = ((||) <$> (== NpcType) <*> (== PlaType)) . getType i
 
 
 -- ============================================================

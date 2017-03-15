@@ -127,12 +127,12 @@ corpseDecompHelper i w (x, total) = getState >>= \ms ->
 finishDecomp :: HasCallStack => Id -> MudStack ()
 finishDecomp i = modifyStateSeq $ \ms ->
     let invId          = fromMaybe oops . findInvContaining i $ ms
-        bs             = if | getType invId ms == RmType -> foldr f [] . findMobIds ms . getInv invId $ ms
-                            | isNpcPC invId ms           -> mkCarriedBs
-                            | otherwise                  -> []
-        f targetId acc | isPC targetId ms = let n = mkCorpseAppellation targetId ms i
-                                            in (("The " <> n <> " disintegrates.", pure targetId) : acc)
-                       | otherwise        = acc
+        bs             = if | getType  invId ms == RmType -> foldr f [] . findMobIds ms . getInv invId $ ms
+                            | isNpcPla invId ms           -> mkCarriedBs
+                            | otherwise                   -> []
+        f targetId acc | isPla targetId ms = let n = mkCorpseAppellation targetId ms i
+                                             in (("The " <> n <> " disintegrates.", pure targetId) : acc)
+                       | otherwise         = acc
         mkCarriedBs    = let n = mkCorpseAppellation invId ms i
                          in pure (T.concat [ "The ", n, " ", parensQuote "carried", " disintegrates." ], pure invId)
         oops           = blowUp "finishDecomp" (descSingId i ms <> " is in limbo") ""

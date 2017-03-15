@@ -91,6 +91,6 @@ threadRegen i tq = let regens = [ regen curHp maxHp calcRegenHpAmt calcRegenHpDe
                     c'         = (total > m) ? m :? total
                     g          = mobTbl.ind i.curLens .~ c'
                     res        = (onTrue (c < m) g ms, [])
-                in if isPC i ms
+                in if isPla i ms
                   then isLoggedIn (getPla i ms) ? res :? (ms, pure . stopRegen $ i)
                   else res
