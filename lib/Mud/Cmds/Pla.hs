@@ -2086,7 +2086,7 @@ npcDispCmdList p                  = patternMatchFail "npcDispCmdList" . showText
 -----
 
 
-npcExorcise :: HasCallStack => ActionFun
+npcExorcise :: HasCallStack => ActionFun -- TODO: Center current room on map.
 npcExorcise p = execIfPossessed p "exorcise" npcExorciseHelper
 
 

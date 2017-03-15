@@ -25,6 +25,7 @@ module Mud.Util.Text ( aOrAn
                      , none
                      , noneOnNull
                      , notInfixOf
+                     , periods
                      , prd
                      , readNum
                      , replace
@@ -275,6 +276,13 @@ noneOnNull a = isNull a ? none :? a
 
 notInfixOf :: Text -> Text -> Bool
 notInfixOf needle = not . T.isInfixOf needle
+
+
+-----
+
+
+periods :: [Text] -> Text
+periods = T.intercalate ". "
 
 
 -----

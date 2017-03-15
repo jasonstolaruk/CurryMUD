@@ -498,28 +498,29 @@ adminChanIOHelper i mq reports = sequence_ [ logPlaExec (prefixAdminCmd "channel
 -----
 
 
-adminClone :: HasCallStack => ActionFun -- TODO: Logging.
+adminClone :: HasCallStack => ActionFun
 adminClone p@AdviseNoArgs            = advise p [ prefixAdminCmd "clone" ] adviceACloneNoArgs
 adminClone   (LowerNub i mq cols as) = modifyStateSeq $ \ms ->
-    let f pair@(ms', fs) a = case reads . T.unpack $ a :: [(Int, String)] of
+    let f tuple@(ms', fs, logMsgs) a = case reads . T.unpack $ a :: [(Int, String)] of
           [(targetId@((`getType` ms) -> t), "")]
             | targetId < 0                             -> sorry sorryWtf
             | targetId == i                            -> sorry sorryCloneSelf
             | not . hasType targetId $ ms              -> sorryId
             | t `elem` [ CorpseType, PlaType, RmType ] -> sorry . sorryCloneType $ t
             | otherwise                                ->
-                let (newIds, ms'', fs') = clone (getRmId i ms') ([], ms', fs) . pure $ targetId
-                    msg                 = T.concat [ "Cloning ID "
-                                                   , showText targetId
-                                                   , ": "
-                                                   , commas [ aOrAnOnLower . descSingId newId $ ms''
-                                                            | newId <- newIds ] ]
-                in (ms'', fs' ++ pure (wrapSend1Nl mq cols msg))
+                let ([newId], ms'', fs') = clone (getRmId i ms') ([], ms', fs) . pure $ targetId
+                    msg                  = T.concat [ aOrAnOnLower . descSingId targetId $ ms
+                                                    , " "
+                                                    , bracketQuote . pp $ t
+                                                    , ": "
+                                                    , showText newId ]
+                in (ms'', fs' ++ pure (wrapSend1Nl mq cols . prd $ "Cloning " <> msg), logMsgs ++ pure msg)
           _ -> sorryId
           where
-            sorry msg = pair & _2 <>~ pure (wrapSend1Nl mq cols msg)
+            sorry msg = tuple & _2 <>~ pure (wrapSend1Nl mq cols msg)
             sorryId   = sorry . sorryParseId $ a
-    in foldl' f (ms, []) as & _2 <>~ pure (blankLine mq)
+    in let (ms', fs, logMsgs) = foldl' f (ms, [], []) as & _2 <>~ pure (blankLine mq)
+       in (ms', fs ++ pure (logPla "adminClone" i . prd $ "Cloning " <> commas logMsgs))
 adminClone p = patternMatchFail "adminClone" . showText $ p
 
 
@@ -1455,7 +1456,7 @@ adminPersist p              = withoutArgs adminPersist p
 -----
 
 
-adminPossess :: HasCallStack => ActionFun
+adminPossess :: HasCallStack => ActionFun -- TODO: Center current room on map.
 adminPossess p@(NoArgs' i mq) = advise p [ prefixAdminCmd "possess" ] adviceAPossessNoArgs >> sendDfltPrompt mq i
 adminPossess   (OneArgNubbed i mq cols target) = modifyStateSeq $ \ms ->
     let SingleTarget { .. } = mkSingleTarget mq cols target "The ID of the NPC you wish to possess"
