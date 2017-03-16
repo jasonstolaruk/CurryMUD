@@ -59,6 +59,10 @@ cmdDescDrop :: Text
 cmdDescDrop = "Drop one or more items."
 
 
+cmdDescEat :: Text
+cmdDescEat = "Eat a given number of mouthfuls of a food."
+
+
 cmdDescEmote :: Text
 cmdDescEmote = "Freely describe an action."
 

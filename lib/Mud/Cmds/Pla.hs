@@ -172,6 +172,7 @@ regularCmdTuples =
     , ("bug",        bug,                True,  cmdDescBug)
     , ("d",          go "d",             True,  cmdDescGoDown)
     , ("e",          go "e",             True,  cmdDescGoEast)
+    , ("eat",        eat,                False, cmdDescEat)
     , ("empty",      emptyAction,        True,  cmdDescEmpty)
     , ("equipment",  equip,              True,  cmdDescEquip)
     , ("expressive", expCmdList,         True,  cmdDescExpCmdList)
@@ -386,6 +387,7 @@ npcRegularCmdTuples =
     , (".",          npcAsSelf,      False, "Execute a command as your admin PC.")
     , ("d",          go "d",         True,  cmdDescGoDown)
     , ("e",          go "e",         True,  cmdDescGoEast)
+    , ("eat",        eat,            False, cmdDescEat)
     , ("empty",      emptyAction,    True,  cmdDescEmpty)
     , ("equipment",  equip,          True,  cmdDescEquip)
     , ("expressive", expCmdList,     True,  cmdDescExpCmdList)
@@ -1067,6 +1069,14 @@ dropAction p = patternMatchFail "dropAction" . showText $ p
 
 dwarvish :: HasCallStack => ActionFun
 dwarvish = sayHelper DwarfLang
+
+
+-----
+
+
+-- TODO: Logging.
+eat :: HasCallStack => ActionFun
+eat = undefined
 
 
 -----

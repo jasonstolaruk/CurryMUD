@@ -136,7 +136,7 @@ massLogPla = L.massLogPla "Mud.Cmds.Admin"
 -- ==================================================
 
 
--- TODO: ":foods". Write "eat" cmd first.
+-- TODO: ":foods".
 adminCmds :: HasCallStack => [Cmd]
 adminCmds =
     [ mkAdminCmd "?"          adminDispCmdList True  cmdDescDispCmdList

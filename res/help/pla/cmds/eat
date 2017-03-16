@@ -1,0 +1,19 @@
+\h EAT \d
+
+\uUSAGE\n
+!eat mouthfuls food
+
+\uDESCRIPTION\n
+Eat a given number of mouthfuls of a food.
+
+To consume an entire piece of a food (in this example, an apple), you may type either \qeat all apple\d or \qeat \p#a\q apple\d.
+
+Eating takes time, depending on the number of mouthfuls one consumes. You will be informed when your character has finished eating. If you wish to cut short your consumption, type \qstop eating\d.
+
+\uEXAMPLES\n
+\qeat 4 bread\d to eat 4 mouthfuls of your loaf of bread.4`
+\qeat 4 \p2#i\qbread\d to eat 4 mouthfuls of your second loaf of bread.4`
+\qeat all bread\d (or \qeat \p#a\q bread\d) to consume your entire loaf of bread.4`
+
+\uSEE ALSO\n
+abbreviation, drink, feeling, prefixes, smell, stop, taste
