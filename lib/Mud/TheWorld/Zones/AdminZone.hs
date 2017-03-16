@@ -769,7 +769,8 @@ createAdminZone = do
         , iSlab ]
         mempty
         (mkRm (RmTemplate "Weight room"
-            "Feel free to lift some weights and work out!"
+            "Feel free to lift some weights and work out!\n\
+            \There is a ladder leading up through a hole in the ceiling."
             Nothing
             Nothing
             zeroBits
@@ -784,7 +785,8 @@ createAdminZone = do
         [iCube1..iCube1 + 19]
         mempty
         (mkRm (RmTemplate "Attic"
-            "Though the confined attic is dusty, its cozy atmosphere creates an oddly welcoming space."
+            "Though the confined attic is dusty, its cozy atmosphere creates an oddly welcoming space.\n\
+            \There is a hole in the floor with a ladder leading down."
             (Just . thrice prd $ "Is that the soft squeek of a mouse you hear? Maybe you're just hearing things")
             (Just "The air here is dusty and a little stale, though not stifling.")
             zeroBits
@@ -899,10 +901,24 @@ createAdminZone = do
             Nothing
             Nothing
             zeroBits
-            [ StdLink North iBasement 1 ]
+            [ StdLink North iBasement 1
+            , StdLink Up    iPantry   1 ]
             (0, -1, -1)
             InsideEnv
             (Just "Containers")
+            M.empty [] []))
+  putRm iPantry
+        []
+        mempty
+        (mkRm (RmTemplate "Pantry"
+            "This walk-in pantry is designed to store a large amount of food."
+            Nothing
+            Nothing
+            zeroBits
+            [ StdLink Down iConCloset 1 ]
+            (0, -1, 0)
+            InsideEnv
+            (Just "Pantry")
             M.empty [] []))
   putRm iWpnCloset
         [ iSword1, iSword2, iLongSword, iClub, iKnife1, iKnife2 ]

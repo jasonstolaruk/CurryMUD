@@ -53,6 +53,7 @@ adminZone = zip rmIds . repeat $ "Admin zone"
             , iNoEnv
             , iObjCloset
             , iOutside
+            , iPantry
             , iShop
             , iSpecial
             , iTrashDump
