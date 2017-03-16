@@ -292,6 +292,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryActing
                            , sorryTasteType
                            , sorryTeleAlready
                            , sorryTeleLoggedOutRm
+                           , sorryTeleNecropolis
                            , sorryTeleRmName
                            , sorryTeleSelf
                            , sorryTeleWelcomeRm
@@ -1933,6 +1934,10 @@ sorryTeleAlready = "You're already there!"
 
 sorryTeleLoggedOutRm :: Text
 sorryTeleLoggedOutRm = can't "teleport to the logged out room."
+
+
+sorryTeleNecropolis :: Text
+sorryTeleNecropolis = can't "teleport to the necropolis."
 
 
 sorryTeleRmName :: Text -> Text

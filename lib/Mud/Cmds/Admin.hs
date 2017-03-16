@@ -2250,9 +2250,10 @@ teleHelper p@ActionParams { myId } ms originId destId destName mt f sorry =
         bs           = map (first nlnl) [ (teleDescMsg,                             pure myId   )
                                         , (teleOriginMsg . serialize $ originDesig, originMobIds)
                                         , (teleDestMsg destDesig,                   destMobIds  ) ]
-    in if | destId == originId   -> sorry sorryTeleAlready
-          | destId == iWelcome   -> sorry sorryTeleWelcomeRm
-          | destId == iLoggedOut -> sorry sorryTeleLoggedOutRm
+    in if | destId == originId    -> sorry sorryTeleAlready
+          | destId == iWelcome    -> sorry sorryTeleWelcomeRm
+          | destId == iLoggedOut  -> sorry sorryTeleLoggedOutRm
+          | destId == iNecropolis -> sorry sorryTeleNecropolis
           | otherwise            -> (ms', [ logPla "teleHelper" myId . prd $ "teleported to " <> destName
                                           , sendGmcpRmInfo Nothing myId ms'
                                           , bcastIfNotIncog myId . f myId . g $ bs
