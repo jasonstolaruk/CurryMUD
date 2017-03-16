@@ -2282,7 +2282,7 @@ adminTelePC ActionParams { plaMsgQueue, plaCols } = wrapSend plaMsgQueue plaCols
 -----
 
 
-adminTeleRm :: HasCallStack => ActionFun -- TODO: Teleporting to the Necropolis.
+adminTeleRm :: HasCallStack => ActionFun
 adminTeleRm (NoArgs i mq cols) = logPlaExecArgs (prefixAdminCmd "telerm") [] i >> (multiWrapSend mq cols =<< mkTxt)
   where
     mkTxt  = views rmTeleNameTbl ((header :) . styleAbbrevs Don'tQuote . sort . IM.elems) <$> getState

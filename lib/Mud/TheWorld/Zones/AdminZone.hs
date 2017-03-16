@@ -593,6 +593,19 @@ createAdminZone = do
             SpecialEnv
             (Just "Logged out")
             M.empty [] []))
+  putRm iNecropolis
+        []
+        mempty
+        (mkRm (RmTemplate "Necropolis"
+            "PCs are placed here when they die."
+            Nothing
+            Nothing
+            zeroBits
+            []
+            (2, 0, 0) -- This room is technically in the "unknown" zone.
+            SpecialEnv
+            (Just "Necropolis")
+            M.empty [] []))
   putRm iEmpty
         []
         mempty
@@ -622,19 +635,6 @@ createAdminZone = do
             SpecialEnv
             (Just "Trash")
             M.empty [] []))
-  putRm iNecropolis
-        []
-        mempty
-        (mkRm (RmTemplate "Necropolis"
-            "PCs are placed here when they die."
-            Nothing
-            Nothing
-            zeroBits
-            []
-            (3, 1, 0)
-            SpecialEnv
-            (Just "Necropolis")
-            M.empty [] []))
   putRm iClone
         []
         mempty
@@ -644,7 +644,7 @@ createAdminZone = do
             Nothing
             zeroBits
             []
-            (4, 1, 0)
+            (3, 1, 0)
             SpecialEnv
             (Just "Clone")
             M.empty [] []))
@@ -1103,7 +1103,6 @@ createAdminZone = do
   putRmTeleName iEmpty      "empty"
   putRmTeleName iInside     "test"
   putRmTeleName iLounge     "lounge"
-  putRmTeleName iNecropolis "necropolis"
   putRmTeleName iTrashDump  "trash"
 
   -- ==================================================
