@@ -1462,9 +1462,7 @@ adminPossess :: HasCallStack => ActionFun
 adminPossess p@(NoArgs' i mq) = advise p [ prefixAdminCmd "possess" ] adviceAPossessNoArgs >> sendDfltPrompt mq i
 adminPossess   (OneArgNubbed i mq cols target) = modifyStateSeq $ \ms ->
     let SingleTarget { .. } = mkSingleTarget mq cols target "The ID of the NPC you wish to possess"
-        possess targetId    = if isNpc targetId ms
-          then maybe canPossess can'tPossess . getPossessor targetId $ ms
-          else sorry . sorryPossessType $ targetSing
+        possess targetId    = maybe canPossess can'tPossess . getPossessor targetId $ ms
           where
             targetSing      = getSing targetId ms
             can'tPossess pi = sorry . sorryAlreadyPossessed targetSing . getSing pi $ ms
@@ -1477,12 +1475,13 @@ adminPossess   (OneArgNubbed i mq cols target) = modifyStateSeq $ \ms ->
             logMsg          = prd $ "started possessing " <> aOrAnOnLower (descSingId targetId ms)
         sorry txt = (ms, [ sendFun txt, sendDfltPrompt mq i ])
     in case reads . T.unpack $ strippedTarget :: [(Int, String)] of
-      [(targetId, "")] -- TODO: Possessing a room.
+      [(targetId, "")]
         | targetId < 0                -> sorry sorryWtf
         | not . hasType targetId $ ms -> sorry . sorryParseId $ strippedTarget'
-        | otherwise                   -> case getPossessing i ms of
-          Nothing -> possess targetId
-          Just pi -> sorry . sorryAlreadyPossessing . getSing pi $ ms
+        | otherwise                   -> case getType targetId ms of
+          NpcType -> maybe (possess targetId) (sorry . sorryAlreadyPossessing . (`getSing` ms)) . getPossessing i $ ms
+          RmType  -> sorry sorryPossessRm
+          t       -> sorry . sorryPossessType (getSing targetId ms) $ t
       _ -> sorry . sorryParseId $ strippedTarget'
 adminPossess ActionParams { myId, plaMsgQueue, plaCols } = do wrapSend plaMsgQueue plaCols adviceAPossessExcessArgs
                                                               sendDfltPrompt plaMsgQueue myId

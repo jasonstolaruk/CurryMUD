@@ -653,8 +653,8 @@ instance Pretty TelnetCode where
 
 
 instance Pretty Type where
-  pp ArmType        = "armor"
-  pp ClothType      = "clothing"
+  pp ArmType        = "piece of armor"
+  pp ClothType      = "piece of clothing"
   pp ConType        = "container"
   pp CorpseType     = "corpse"
   pp FoodType       = "food"

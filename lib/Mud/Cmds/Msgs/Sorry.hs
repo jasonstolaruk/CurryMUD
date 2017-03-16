@@ -202,6 +202,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryActing
                            , sorryPickInEq
                            , sorryPickInInv
                            , sorryPickNotFlower
+                           , sorryPossessRm
                            , sorryPossessType
                            , sorryPp
                            , sorryPutEmptyRmWithHooks
@@ -1468,9 +1469,12 @@ sorryPickInInv = can't "pick an item in your inventory."
 -----
 
 
+sorryPossessRm :: Text
+sorryPossessRm = can't "possess a room."
 
-sorryPossessType :: Sing -> Text
-sorryPossessType s = prd $ can't "possess " <> aOrAn s
+
+sorryPossessType :: Sing -> Type -> Text
+sorryPossessType s t = T.concat [ "The ", s, " is a ", pp t, " and cannot be possessed." ]
 
 
 -----
