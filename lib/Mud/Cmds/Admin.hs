@@ -2368,7 +2368,7 @@ whoHelper _ _ p = patternMatchFail "whoHelper" . showText $ p
 
 mkCharListTxt :: HasCallStack => LoggedInOrOut -> MudState -> [Text]
 mkCharListTxt inOrOut ms =
-    let is               = IM.keys . IM.filter predicate $ ms^.plaTbl
+    let is               = views plaTbl (IM.keys . IM.filterWithKey f) ms
         (is', ss)        = unzip [ (i, s) | i <- is, let s = getSing i ms, then sortWith by s ]
         ias              = zip is' . styleAbbrevs Don'tQuote $ ss
         mkCharTxt (i, a) = let (s, r, l) = mkPrettySexRaceLvl i ms
@@ -2380,8 +2380,8 @@ mkCharListTxt inOrOut ms =
                                                                     , pp inOrOut
                                                                     , "." ])
   where
-    predicate           = case inOrOut of LoggedIn  -> isLoggedIn
-                                          LoggedOut -> not . isLoggedIn
+    f i p               = case inOrOut of LoggedIn  -> isLoggedIn p
+                                          LoggedOut -> ((&&) <$> (`isAlive` ms) . fst <*> not . isLoggedIn . snd) (i, p)
     mkAnnotatedName i a = let p      = getPla i ms
                               admin  = isAdmin     p |?| asterisk
                               incog  = isIncognito p |?| colorWith asteriskColor "@"
@@ -2392,7 +2392,7 @@ mkCharListTxt inOrOut ms =
 -----
 
 
-adminWhoOut :: HasCallStack => ActionFun -- TODO: Displaying dead PCs.
+adminWhoOut :: HasCallStack => ActionFun
 adminWhoOut = whoHelper LoggedOut "whoout"
 
 
