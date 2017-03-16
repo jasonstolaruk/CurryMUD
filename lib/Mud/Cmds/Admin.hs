@@ -527,7 +527,7 @@ adminClone p = patternMatchFail "adminClone" . showText $ p
 -----
 
 
-adminCount :: HasCallStack => ActionFun -- TODO: Count dead PCs.
+adminCount :: HasCallStack => ActionFun
 adminCount (NoArgs   i mq cols   ) = do logPlaExecArgs (prefixAdminCmd "count") [] i
                                         pager i mq Nothing . concatMap (wrapIndent 2 cols) =<< mkCountTxt
 adminCount (WithArgs i mq cols as) = do logPlaExecArgs (prefixAdminCmd "count") as i
@@ -540,40 +540,42 @@ mkCountTxt = (uncurry mappend . second commaShow) `fmap2` helper
   where
     helper = getState >>= \ms -> do
         let countType t = views typeTbl  (IM.size . IM.filter (== t)) ms
-            countWealth = views coinsTbl (f . mconcat . IM.elems    ) ms
+            countWealth = views coinsTbl (h . mconcat . IM.elems    ) ms
               where
-                f (Coins (c, s, g)) = let x = c `divideRound` 100
-                                          y = s `divideRound` 10
-                                      in sum [ x, y, g ]
-            countLoggedOutPlas   = views plaTbl  (length . (\\ getLoggedInPlaIds ms) . IM.keys . IM.filter (not . isAdmin)) ms
-            countMaleFemale sexy = views plaTbl  (IM.size . IM.filterWithKey f) ms
-              where
-                f i p = getSex i ms == sexy && not (isAdmin p)
-            countRace r = views plaTbl (length . filter ((== r) . (`getRace` ms)) . IM.keys . IM.filter (not . isAdmin)) ms
+                h (Coins (c, s, g')) = let x = c `divideRound` 100
+                                           y = s `divideRound` 10
+                                       in sum [ x, y, g' ]
+            countLoggedOutPlas   = f $ length . (\\ getLoggedInPlaIds ms) . IM.keys . IM.filter (not . isAdmin)
+            countMaleFemale sexy = f $ IM.size . IM.filterWithKey (\i p -> getSex i ms == sexy && not (isAdmin p))
+            countRace r          = f $ length . filter ((== r) . (`getRace` ms)) . IM.keys . IM.filter (not . isAdmin)
+            f h                  = views plaTbl h ms
+            g h                  = f $ length . filter (`h` ms) . IM.keys
         [ noOfPlaHelpCmds, noOfPlaHelpTopics, noOfAdminHelpCmds, noOfAdminHelpTopics ] <- countHelps
         noticeErrorThrIds <- getLogThreadIds
         let plaLogThrIds = views plaLogTbl (map (asyncThreadId . fst) . IM.elems) ms
             otherThrIds  = views threadTbl M.keys ms
             threadIds    = concat [ noticeErrorThrIds, plaLogThrIds, otherThrIds ]
         noOfThreads <- length . filterThreads <$> mapM (liftIO . threadStatus) threadIds
-        return [ ("Armor: ",        countType ArmType     )
-               , ("Clothing: ",     countType ClothType   )
-               , ("Containers: ",   countType ConType     )
-               , ("Corpses: ",      countType CorpseType  )
-               , ("Foods: ",        countType FoodType    )
-               , ("NPCs: ",         countType NpcType     )
-               , ("Objects: ",      countType ObjType     )
-               , ("Players: ",      countType PlaType     )
-               , ("Rooms: ",        countType RmType      )
-               , ("Vessels: ",      countType VesselType  )
-               , ("Weapons: ",      countType WpnType     )
-               , ("Writables: ",    countType WritableType)
+        return [ ("Armor: ",            countType ArmType             )
+               , ("Clothing: ",         countType ClothType           )
+               , ("Containers: ",       countType ConType             )
+               , ("Corpses: ",          countType CorpseType          )
+               , ("Foods: ",            countType FoodType            )
+               , ("NPCs: ",             countType NpcType             )
+               , ("Objects: ",          countType ObjType             )
+               , ("Players: ",          countType PlaType             )
+               , ("Rooms: ",            countType RmType              )
+               , ("Vessels: ",          countType VesselType          )
+               , ("Weapons: ",          countType WpnType             )
+               , ("Writables: ",        countType WritableType        )
                , ("Typed things: ",     ms^.typeTbl        .to IM.size)
                , ("Distinct foods: ",   ms^.distinctFoodTbl.to IM.size)
                , ("Distinct liquids: ", ms^.distinctLiqTbl .to IM.size)
-               , ("Wealth (gp): ",         countWealth)
+               , ("Wealth (gp): ",         countWealth                                      )
                , ("Players logged in: ",   length . getLoggedInPlaIds $ ms                  )
                , ("Players logged out: ",  countLoggedOutPlas                               )
+               , ("Living PCs: ",          g isAlive                                        )
+               , ("Dead PCs: ",            g isDead                                         )
                , ("Admins logged in: ",    length . getLoggedInAdminIds $ ms                )
                , ("Admins logged out: ",   length $ getAdminIds ms \\ getLoggedInAdminIds ms)
                , ("Unique hosts: ",        views hostTbl (length . nub . M.elems) ms        )
@@ -595,18 +597,18 @@ mkCountTxt = (uncurry mappend . second commaShow) `fmap2` helper
                , ("Exp commands: ",    length expCmds        )
                , ("Admin commands: ",  length adminCmds      )
                , ("Debug commands: ",  length debugCmds      )
-               , ("Player help commands: ", noOfPlaHelpCmds             )
-               , ("Player help topics: ",   noOfPlaHelpTopics           )
-               , ("Admin help commands: ",  noOfAdminHelpCmds           )
-               , ("Admin help topics: ",    noOfAdminHelpTopics         )
-               , ("Room teleport names: ",  ms^.rmTeleNameTbl.to IM.size)
-               , ("Functions in the function table: ", ms^.funTbl           .to M.size)
-               , ("Effect functions: ",                ms^.effectFunTbl     .to M.size)
-               , ("Instantaneous effect functions: ",  ms^.instaEffectFunTbl.to M.size)
-               , ("Feeling functions: ",               ms^.feelingFunTbl    .to M.size)
-               , ("Hook functions: ",                  ms^.hookFunTbl       .to M.size)
-               , ("Room action functions: ",           ms^.rmActionFunTbl   .to M.size)
-               , ("Active threads: ",                  noOfThreads                    ) ]
+               , ("Player help commands: ",            noOfPlaHelpCmds                 )
+               , ("Player help topics: ",              noOfPlaHelpTopics               )
+               , ("Admin help commands: ",             noOfAdminHelpCmds               )
+               , ("Admin help topics: ",               noOfAdminHelpTopics             )
+               , ("Room teleport names: ",             ms^.rmTeleNameTbl    .to IM.size)
+               , ("Functions in the function table: ", ms^.funTbl           .to  M.size)
+               , ("Effect functions: ",                ms^.effectFunTbl     .to  M.size)
+               , ("Instantaneous effect functions: ",  ms^.instaEffectFunTbl.to  M.size)
+               , ("Feeling functions: ",               ms^.feelingFunTbl    .to  M.size)
+               , ("Hook functions: ",                  ms^.hookFunTbl       .to  M.size)
+               , ("Room action functions: ",           ms^.rmActionFunTbl   .to  M.size)
+               , ("Active threads: ",                  noOfThreads                     ) ]
     countHelps     = liftIO . mapM (countFiles <=< mkMudFilePath) $ [ plaHelpCmdsDirFun
                                                                     , plaHelpTopicsDirFun
                                                                     , adminHelpCmdsDirFun
