@@ -40,7 +40,7 @@ import Mud.Misc.Gods
 import Mud.Misc.Misc
 import Mud.Misc.Persist
 import Mud.TheWorld.Liqs
-import Mud.TheWorld.Zones.AdminZoneIds (iLoggedOut, iRoot, iWelcome)
+import Mud.TheWorld.Zones.AdminZoneIds (iLoggedOut, iNecropolis, iRoot, iWelcome)
 import Mud.TopLvlDefs.FilePaths
 import Mud.TopLvlDefs.Misc
 import Mud.Util.List
