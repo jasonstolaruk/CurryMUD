@@ -270,107 +270,111 @@ iPantry = 165 :: Id
 
 iApple = 166 :: Id
 
-iBread = 167 :: Id
+iBanana = 167 :: Id
+
+iBread = 168 :: Id
+
+iOrange = 169 :: Id
 
 -----
 
 
-iWpnCloset = 168 :: Id
+iWpnCloset = 170 :: Id
 
-iSword1 = 169 :: Id
+iSword1 = 171 :: Id
 
-iSword2 = 170 :: Id
+iSword2 = 172 :: Id
 
-iLongSword = 171 :: Id
+iLongSword = 173 :: Id
 
-iClub = 172 :: Id
+iClub = 174 :: Id
 
-iKnife1 = 173 :: Id
+iKnife1 = 175 :: Id
 
-iKnife2 = 174 :: Id
-
------
-
-iArmCloset = 175 :: Id
-
-iCap = 176 :: Id
-
-iHelm = 177 :: Id
-
-iSandals1 = 178 :: Id
-
-iSandals2 = 179 :: Id
-
-iBoots = 180 :: Id
+iKnife2 = 176 :: Id
 
 -----
 
-iMobCloset = 181 :: Id
+iArmCloset = 177 :: Id
 
-iPidge = 182 :: Id
+iCap = 178 :: Id
 
-iPeasant'sShirt = 183 :: Id
+iHelm = 179 :: Id
 
-iLeatherApron = 184 :: Id
+iSandals1 = 180 :: Id
 
-iOveralls = 185 :: Id
+iSandals2 = 181 :: Id
 
-iTraveler'sBoots = 186 :: Id
-
-iRockCavy1 = 187 :: Id
-
-iRockCavy2 = 188 :: Id
-
-iSkeleton1 = 189 :: Id
-
-iSkeleton2 = 190 :: Id
-
-iSkeleton3 = 191 :: Id
+iBoots = 182 :: Id
 
 -----
 
-iVoid = 192 :: Id
+iMobCloset = 183 :: Id
+
+iPidge = 184 :: Id
+
+iPeasant'sShirt = 185 :: Id
+
+iLeatherApron = 186 :: Id
+
+iOveralls = 187 :: Id
+
+iTraveler'sBoots = 188 :: Id
+
+iRockCavy1 = 189 :: Id
+
+iRockCavy2 = 190 :: Id
+
+iSkeleton1 = 191 :: Id
+
+iSkeleton2 = 192 :: Id
+
+iSkeleton3 = 193 :: Id
 
 -----
 
-iTutEntrance = 193 :: Id
+iVoid = 194 :: Id
 
 -----
 
-iLoungeEntrance = 194 :: Id
+iTutEntrance = 195 :: Id
 
 -----
 
-iLounge = 195 :: Id
+iLoungeEntrance = 196 :: Id
 
 -----
 
-iHolySymbol1 = 196 :: Id -- 10
+iLounge = 197 :: Id
 
 -----
 
-iInside = 206 :: Id
+iHolySymbol1 = 198 :: Id -- 10
 
 -----
 
-iOutside = 207 :: Id
+iInside = 208 :: Id
 
 -----
 
-iShop = 208 :: Id
+iOutside = 209 :: Id
 
 -----
 
-iSpecial = 209 :: Id
+iShop = 210 :: Id
 
 -----
 
-iNoEnv = 210 :: Id
+iSpecial = 211 :: Id
 
 -----
 
-iCottage = 211 :: Id
+iNoEnv = 212 :: Id
 
 -----
 
-iCurry = 212 :: Id
+iCottage = 213 :: Id
+
+-----
+
+iCurry = 214 :: Id

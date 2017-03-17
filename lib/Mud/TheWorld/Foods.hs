@@ -1,16 +1,20 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Mud.TheWorld.Foods ( appleFood
+module Mud.TheWorld.Foods ( appleFood -- TODO
+                          , bananaFood
                           , breadFood
-                          , foodList ) where
+                          , foodList
+                          , orangeFood ) where
 
 import Mud.Data.State.MudData
 import Mud.TheWorld.FoodIds
 
 
 foodList :: [(Id, DistinctFood, Food)]
-foodList = [ (iFoodApple, appleDistinctFood, appleFood)
-           , (iFoodBread, breadDistinctFood, breadFood) ]
+foodList = [ (iFoodApple,  appleDistinctFood,  appleFood )
+           , (iFoodBanana, bananaDistinctFood, bananaFood)
+           , (iFoodBread,  breadDistinctFood,  breadFood )
+           , (iFoodOrange, orangeDistinctFood, orangeFood) ]
 
 
 mkDistinctFood :: Mouthfuls -> DistinctFood
@@ -43,6 +47,19 @@ appleDistinctFood = mkDistinctFood fruitMouths
 -----
 
 
+bananaFood :: Food
+bananaFood = Food (DistinctFoodId iFoodBanana)
+                  "eat desc"
+                  fruitMouths
+
+
+bananaDistinctFood :: DistinctFood
+bananaDistinctFood = mkDistinctFood fruitMouths
+
+
+-----
+
+
 breadFood :: Food
 breadFood = Food (DistinctFoodId iFoodBread)
                  "eat desc"
@@ -55,3 +72,16 @@ breadMouths = 60
 
 breadDistinctFood :: DistinctFood
 breadDistinctFood = mkDistinctFood breadMouths
+
+
+-----
+
+
+orangeFood :: Food
+orangeFood = Food (DistinctFoodId iFoodOrange)
+                  "eat desc"
+                  fruitMouths
+
+
+orangeDistinctFood :: DistinctFood
+orangeDistinctFood = mkDistinctFood fruitMouths

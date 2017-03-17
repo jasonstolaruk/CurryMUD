@@ -781,6 +781,18 @@ createAdminZone = do
                               (Just "apple taste")
                               zeroBits))
           appleFood
+  putFood iBanana
+          (Ent iBanana
+               (Just "banana")
+               "banana" ""
+               "banana desc"
+               (Just "banana smell")
+               zeroBits)
+          (mkObj (ObjTemplate fruitWeight
+                              fruitVol
+                              (Just "banana taste")
+                              zeroBits))
+          bananaFood
   putFood iBread
           (Ent iBread
                (Just "bread")
@@ -793,6 +805,18 @@ createAdminZone = do
                               (Just "bread taste")
                               zeroBits))
           breadFood
+  putFood iOrange
+          (Ent iOrange
+               (Just "orange")
+               "orange" ""
+               "orange desc"
+               (Just "orange smell")
+               zeroBits)
+          (mkObj (ObjTemplate fruitWeight
+                              fruitVol
+                              (Just "orange taste")
+                              zeroBits))
+          orangeFood
 
   -- ==================================================
   -- Holy symbols:
