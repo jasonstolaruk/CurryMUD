@@ -42,6 +42,10 @@ braceletVol :: Vol
 braceletVol = 3 * 1 * 3 * 100
 
 
+breadVol :: Vol
+breadVol = 12 * 4 * 6 * 100
+
+
 clubVol :: Vol
 clubVol = swordVol
 

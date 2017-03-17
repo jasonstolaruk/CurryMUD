@@ -51,7 +51,7 @@ CurryMUD will have the following features:
 * Players can interact with permanent room fixtures that are not listed in a room's inventory. :fountain:
 * Objects can be configured to automatically disappear when left on the ground for some time. :boom:
 * Smell and taste. Listen. :nose::tongue::ear:
-* Drinking. Digestion. :beer:
+* Eating and drinking. Digestion. :bread::beer:
 * Durational effects that can be paused and resumed. Corresponding feelings. :dizzy:
 * PC and NPC death. Corpse decomposition. :skull:
 * Corpses may be sacrificed using the holy symbol of a particular god. :pray:

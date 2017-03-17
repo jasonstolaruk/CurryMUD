@@ -6,4 +6,4 @@ module Mud.TheWorld.FoodIds where
 import Mud.Data.State.MudData (Id)
 
 
-iFoodSomething = 0 :: Id
+iFoodBread = 0 :: Id

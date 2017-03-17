@@ -20,6 +20,10 @@ backWeight    = 100
 backLrgWeight = plusQuarter  backWeight
 
 
+breadWeight :: Weight
+breadWeight = 100
+
+
 bootsWeight :: Weight
 bootsWeight = 250
 

@@ -96,10 +96,10 @@ potHpLiq = Liq (DistinctLiqId iLiqPotHp)
 
 
 potHpDistinctLiq :: DistinctLiq
-potHpDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just es
+potHpDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just de
                                              , _consumpEffects = Nothing }
   where
-    es = EffectList . pure . Left $ ie
+    de = EffectList . pure . Left $ ie
     ie = InstaEffect { _instaEffectSub     = MobInstaEffectPts Hp
                      , _instaEffectVal     = Just . EffectFixedVal $ potXpEffectVal
                      , _instaEffectFeeling = mkPotEffectFeeling potHpTag }
@@ -157,10 +157,10 @@ potMpLiq = Liq (DistinctLiqId iLiqPotMp)
 
 
 potMpDistinctLiq :: DistinctLiq
-potMpDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just es
+potMpDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just de
                                              , _consumpEffects = Nothing }
   where
-    es = EffectList . pure . Left $ ie
+    de = EffectList . pure . Left $ ie
     ie = InstaEffect { _instaEffectSub     = MobInstaEffectPts Mp
                      , _instaEffectVal     = Just . EffectFixedVal $ potXpEffectVal
                      , _instaEffectFeeling = mkPotEffectFeeling potMpTag }
@@ -200,10 +200,10 @@ potPpLiq = Liq (DistinctLiqId iLiqPotPp)
 
 
 potPpDistinctLiq :: DistinctLiq
-potPpDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just es
+potPpDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just de
                                              , _consumpEffects = Nothing }
   where
-    es = EffectList . pure . Left $ ie
+    de = EffectList . pure . Left $ ie
     ie = InstaEffect { _instaEffectSub     = MobInstaEffectPts Pp
                      , _instaEffectVal     = Just . EffectFixedVal $ potXpEffectVal
                      , _instaEffectFeeling = mkPotEffectFeeling potPpTag }
@@ -244,10 +244,10 @@ potFpLiq = Liq (DistinctLiqId iLiqPotFp)
 
 
 potFpDistinctLiq :: DistinctLiq
-potFpDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just es
+potFpDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just de
                                              , _consumpEffects = Nothing }
   where
-    es = EffectList . pure . Left $ ie
+    de = EffectList . pure . Left $ ie
     ie = InstaEffect { _instaEffectSub     = MobInstaEffectPts Fp
                      , _instaEffectVal     = Just . EffectFixedVal $ potXpEffectVal
                      , _instaEffectFeeling = mkPotEffectFeeling potFpTag }
@@ -289,10 +289,10 @@ potStLiq = Liq (DistinctLiqId iLiqPotSt)
 
 
 potStDistinctLiq :: DistinctLiq
-potStDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just es
+potStDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just de
                                              , _consumpEffects = Nothing }
   where
-    es = EffectList . pure . Right $ e
+    de = EffectList . pure . Right $ e
     e  = Effect { _effectTag     = Nothing
                 , _effectSub     = MobEffectAttrib St
                 , _effectVal     = Just . EffectFixedVal $ potAttribEffectVal
@@ -349,10 +349,10 @@ potDxLiq = Liq (DistinctLiqId iLiqPotDx)
 
 
 potDxDistinctLiq :: DistinctLiq
-potDxDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just es
+potDxDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just de
                                              , _consumpEffects = Nothing }
   where
-    es = EffectList . pure . Right $ e
+    de = EffectList . pure . Right $ e
     e  = Effect { _effectTag     = Nothing
                 , _effectSub     = MobEffectAttrib Dx
                 , _effectVal     = Just . EffectFixedVal $ potAttribEffectVal
@@ -397,10 +397,10 @@ potHtLiq = Liq (DistinctLiqId iLiqPotHt)
 
 
 potHtDistinctLiq :: DistinctLiq
-potHtDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just es
+potHtDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just de
                                              , _consumpEffects = Nothing }
   where
-    es = EffectList . pure . Right $ e
+    de = EffectList . pure . Right $ e
     e  = Effect { _effectTag     = Nothing
                 , _effectSub     = MobEffectAttrib Ht
                 , _effectVal     = Just . EffectFixedVal $ potAttribEffectVal
@@ -447,10 +447,10 @@ potMaLiq = Liq (DistinctLiqId iLiqPotMa)
 
 
 potMaDistinctLiq :: DistinctLiq
-potMaDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just es
+potMaDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just de
                                              , _consumpEffects = Nothing }
   where
-    es = EffectList . pure . Right $ e
+    de = EffectList . pure . Right $ e
     e  = Effect { _effectTag     = Nothing
                 , _effectSub     = MobEffectAttrib Ma
                 , _effectVal     = Just . EffectFixedVal $ potAttribEffectVal
@@ -495,10 +495,10 @@ potPsLiq = Liq (DistinctLiqId iLiqPotPs)
 
 
 potPsDistinctLiq :: DistinctLiq
-potPsDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just es
+potPsDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just de
                                              , _consumpEffects = Nothing }
   where
-    es = EffectList . pure . Right $ e
+    de = EffectList . pure . Right $ e
     e  = Effect { _effectTag     = Nothing
                 , _effectSub     = MobEffectAttrib Ps
                 , _effectVal     = Just . EffectFixedVal $ potAttribEffectVal
@@ -543,10 +543,10 @@ potTinnitusLiq = Liq (DistinctLiqId iLiqPotTinnitus)
 
 
 potTinnitusDistinctLiq :: DistinctLiq
-potTinnitusDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just es
+potTinnitusDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just de
                                                    , _consumpEffects = Nothing }
   where
-    es = EffectList . pure . Left $ ie
+    de = EffectList . pure . Left $ ie
     ie = InstaEffect { _instaEffectSub     = InstaEffectOther potTinnitusTag
                      , _instaEffectVal     = Nothing
                      , _instaEffectFeeling = mkPotEffectFeeling potTinnitusTag }

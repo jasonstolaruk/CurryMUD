@@ -55,6 +55,18 @@ putCon i e o is coi mc con = tweaks [ clothTbl           .at  i .~ mc
 -----
 
 
+putFood :: Id -> Ent -> Obj -> Food -> MudStack ()
+putFood i e o f = tweaks [ durationalEffectTbl.ind i .~ []
+                         , entTbl             .ind i .~ e
+                         , foodTbl            .ind i .~ f
+                         , objTbl             .ind i .~ o
+                         , pausedEffectTbl    .ind i .~ []
+                         , typeTbl            .ind i .~ FoodType ]
+
+
+-----
+
+
 putHolySymbol :: Id -> Ent -> Obj -> HolySymbol -> MudStack ()
 putHolySymbol i e o h = tweaks [ durationalEffectTbl.ind i .~ []
                                , entTbl             .ind i .~ e
