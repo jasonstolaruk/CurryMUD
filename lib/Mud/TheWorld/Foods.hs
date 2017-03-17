@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Mud.TheWorld.Foods ( appleFood -- TODO
+module Mud.TheWorld.Foods ( appleFood -- TODO: Food definitions are incomplete.
                           , bananaFood
                           , breadFood
                           , foodList

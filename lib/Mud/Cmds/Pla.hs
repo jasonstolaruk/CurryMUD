@@ -991,8 +991,7 @@ drink p@(Lower   i mq cols [amt, target]) = getState >>= \ms ->
         sorry  = (ms, ) . (: pure (sendDfltPrompt mq i)) . wrapSend mq cols
         next x =
             let (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv . pure $ target
-                ri                     = getRmId i ms
-                myInvCoins             = getInvCoins i ms
+                (ri, myInvCoins)       = (getRmId `fanUncurry` getInvCoins) (i, ms)
                 rmInvCoins             = first (i `delete`) . getVisibleInvCoins ri $ ms
                 maybeHooks             = lookupHooks i ms "drink"
                 -----
@@ -1034,12 +1033,11 @@ drink p@(Lower   i mq cols [amt, target]) = getState >>= \ms ->
                                        , sequence_ fs ])
                             else sorry . sorryDrinkRmWithHooks . head $ inRms
                       a -> patternMatchFail "drink helper next drinkRm" . showText $ a
-            in if
-              | ()!# inEqs                      -> sorry sorryDrinkInEq
-              | ()!# inInvs,    ()#  myInvCoins -> sorry dudeYourHandsAreEmpty
-              | ()!# inInvs,    ()!# myInvCoins -> drinkInv
-              | ()# rmInvCoins, ()#  maybeHooks -> sorry sorryDrinkEmptyRmNoHooks
-              | otherwise                       -> drinkRm
+            in if | ()!# inEqs                      -> sorry sorryDrinkInEq
+                  | ()!# inInvs,    ()#  myInvCoins -> sorry dudeYourHandsAreEmpty
+                  | ()!# inInvs,    ()!# myInvCoins -> drinkInv
+                  | ()# rmInvCoins, ()#  maybeHooks -> sorry sorryDrinkEmptyRmNoHooks
+                  | otherwise                       -> drinkRm
 drink p = advise p ["drink"] adviceDrinkExcessArgs
 
 
@@ -1075,9 +1073,42 @@ dwarvish = sayHelper DwarfLang
 -----
 
 
--- TODO: Logging.
 eat :: HasCallStack => ActionFun
-eat = undefined
+eat p@(NoArgs' i mq                   ) = advise p ["eat"] adviceEatNoArgs >> sendDfltPrompt mq i
+eat p@(OneArg  i mq _    _            ) = advise p ["eat"] adviceEatNoFood >> sendDfltPrompt mq i
+eat p@(Lower   i mq cols [amt, target]) = getState >>= \ms ->
+    checkActing p ms (Left Eating) [ Drinking, Eating, Sacrificing ] (helper |&| modifyState >=> sequence_)
+  where
+    helper ms | amt `T.isPrefixOf` "all" || amt == T.singleton allChar = next maxBound
+              | otherwise = case reads . T.unpack $ amt :: [(Int, String)] of
+                [(x, "")] | x <= 0    -> sorry sorryEatMouthfuls
+                          | otherwise -> next x
+                _                     -> sorry . sorryParseMouthfuls $ amt
+      where
+        sorry  = (ms, ) . (: pure (sendDfltPrompt mq i)) . wrapSend mq cols
+        next x = let (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv . pure $ target
+                     myInvCoins             = getInvCoins i ms
+                     eatInv                 =
+                         let (eiss, _)    = uncurry (resolveMobInvCoins i ms inInvs) myInvCoins
+                             f [targetId] = case (getSing `fanUncurry` getType) (targetId, ms) of
+                               (s, FoodType) | fst (calcStomachAvailSize i ms) <= 0 -> sorry sorryFull
+                                             | eb <- EatBundle { eaterId     = i
+                                                               , eaterMq     = mq
+                                                               , eaterCols   = cols
+                                                               , eatFoodId   = targetId
+                                                               , eatFoodSing = s
+                                                               , eatFood     = getFood targetId ms
+                                                               , eatAmt      = x }
+                                             -> (ms, pure . startAct i Eating . eatAct $ eb)
+                               (s, _       ) -> sorry . sorryEatType $ s
+                             f _ = sorry sorryEatExcessTargets
+                         in case eiss of []      -> sorry sorryEatCoins
+                                         (eis:_) -> either sorry f eis
+                 in if | ()!# inEqs      -> sorry sorryEatInEq
+                       | ()!# inRms      -> sorry sorryEatInRm
+                       | ()#  myInvCoins -> sorry dudeYourHandsAreEmpty
+                       | otherwise       -> eatInv
+eat p = advise p ["eat"] adviceEatExcessArgs
 
 
 -----

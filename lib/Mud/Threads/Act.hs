@@ -1,6 +1,7 @@
 {-# LANGUAGE LambdaCase, MultiWayIf, OverloadedStrings, RecordWildCards, TupleSections, ViewPatterns #-}
 
 module Mud.Threads.Act ( drinkAct
+                       , eatAct
                        , sacrificeAct
                        , startAct
                        , stopAct
@@ -156,6 +157,13 @@ drinkAct DrinkBundle { .. } = modifyStateSeq f `finally` tweak (mobTbl.ind drink
                                                                            , "." ]
                          wrapSend drinkerMq drinkerCols t
                          sendDfltPrompt drinkerMq drinkerId
+
+
+-----
+
+
+eatAct :: HasCallStack => EatBundle -> MudStack ()
+eatAct EatBundle { .. } = undefined
 
 
 -----

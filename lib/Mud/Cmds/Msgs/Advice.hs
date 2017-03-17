@@ -86,6 +86,9 @@ module Mud.Cmds.Msgs.Advice ( adviceAAnnounceNoArgs
                             , adviceDWrapIndentNoAmt
                             , adviceDWrapIndentNoArgs
                             , adviceDWrapNoArgs
+                            , adviceEatExcessArgs
+                            , adviceEatNoArgs
+                            , adviceEatNoFood
                             , adviceEmoteNoArgs
                             , adviceEmptyNoArgs
                             , adviceEnc
@@ -611,6 +614,19 @@ adviceDrinkNoVessel = adviceDrinkNoArgs
 adviceDropNoArgs :: Text
 adviceDropNoArgs = prd $ "Please specify one or more items to drop, as in " <>
                          colorWith quoteColor "drop sword"
+
+
+adviceEatExcessArgs :: Text
+adviceEatExcessArgs = adviceEatNoArgs
+
+
+adviceEatNoArgs :: Text
+adviceEatNoArgs = prd $ "Please specify a number of mouthfuls followed by the food to eat, as in " <>
+                        colorWith quoteColor "eat 4 bread"
+
+
+adviceEatNoFood :: Text
+adviceEatNoFood = adviceEatNoArgs
 
 
 adviceEmoteNoArgs :: Text

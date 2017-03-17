@@ -23,6 +23,7 @@ module Mud.Data.Misc ( Action(..)
                      , DoOrDon'tLog(..)
                      , DoOrDon'tQuote(..)
                      , DrinkBundle(..)
+                     , EatBundle(..)
                      , EmoteWord(..)
                      , EmptyNoneSome(..)
                      , EquipInvLookCmd(..)
@@ -913,6 +914,18 @@ data DrinkBundle = DrinkBundle { drinkerId       :: Id
                                , drinkVesselSing :: Sing
                                , drinkLiq        :: Liq
                                , drinkAmt        :: Mouthfuls }
+
+
+-----
+
+
+data EatBundle = EatBundle { eaterId     :: Id
+                           , eaterMq     :: MsgQueue
+                           , eaterCols   :: Cols
+                           , eatFoodId   :: Id
+                           , eatFoodSing :: Sing
+                           , eatFood     :: Food
+                           , eatAmt      :: Mouthfuls }
 
 
 -----

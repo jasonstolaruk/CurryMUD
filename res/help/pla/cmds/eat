@@ -4,7 +4,7 @@
 !eat mouthfuls food
 
 \uDESCRIPTION\n
-Eat a given number of mouthfuls of a food.
+Eat a given number of mouthfuls of a food. The food must be in your inventory.
 
 To consume an entire piece of a food (in this example, an apple), you may type either \qeat all apple\d or \qeat \p#a\q apple\d.
 

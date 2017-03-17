@@ -57,6 +57,12 @@ module Mud.Cmds.Msgs.Sorry ( sorryActing
                            , sorryDrinkType
                            , sorryDropInEq
                            , sorryDropInRm
+                           , sorryEatCoins
+                           , sorryEatExcessTargets
+                           , sorryEatInEq
+                           , sorryEatInRm
+                           , sorryEatMouthfuls
+                           , sorryEatType
                            , sorryEmoteExcessTargets
                            , sorryEmoteTargetCoins
                            , sorryEmoteTargetInEq
@@ -668,7 +674,7 @@ sorryDisconnectIgnore = sorryIgnoreLocPrefPlur "The names of the people you woul
 
 
 sorryDrinkCoins :: Text
-sorryDrinkCoins = can't "drink from a coin."
+sorryDrinkCoins = can't "drink from a coin. Honestly I'm not quite sure why you'd want to do that in the first place."
 
 
 sorryDrinkEmpty :: Sing -> Text
@@ -692,7 +698,7 @@ sorryDrinkInEq = can't "drink from an item in your readied equipment."
 
 
 sorryDrinkMouthfuls :: Text
-sorryDrinkMouthfuls = "Do you or do you not wish to take a drink?"
+sorryDrinkMouthfuls = can't "drink less that one mouthful."
 
 
 sorryDrinkRmNoHooks :: Text
@@ -721,6 +727,33 @@ sorryDropInEq = butCan't "drop an item in your readied equipment. Please unready
 sorryDropInRm :: Text
 sorryDropInRm = can't "drop an item that's already in your current room. If you're intent on dropping it, try picking \
                       \it up first!"
+
+
+-----
+
+
+sorryEatCoins :: Text
+sorryEatCoins = can't "eat a coin. Honestly I'm not quite sure why you'd want to do that in the first place."
+
+
+sorryEatExcessTargets :: Text
+sorryEatExcessTargets = but "you can only eat one food at a time."
+
+
+sorryEatInEq :: Text
+sorryEatInEq = can't "eat an item in your readied equipment."
+
+
+sorryEatInRm :: Text
+sorryEatInRm = butCan't "eat food in your current room. Please pick up the food first."
+
+
+sorryEatMouthfuls :: Text
+sorryEatMouthfuls = can't "eat less than one mouthful."
+
+
+sorryEatType :: Sing -> Text
+sorryEatType s = prd $ can't "eat " <> aOrAn s
 
 
 -----

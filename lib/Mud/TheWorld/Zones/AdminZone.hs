@@ -768,7 +768,7 @@ createAdminZone = do
 
   -- ==================================================
   -- Foods:
-  -- TODO
+  -- TODO: Food definitions are incomplete.
   putFood iApple
           (Ent iApple
                (Just "apple")
