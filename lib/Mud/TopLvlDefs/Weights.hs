@@ -63,6 +63,10 @@ flowerWeight :: Weight
 flowerWeight = 10
 
 
+fruitWeight :: Weight
+fruitWeight = 35
+
+
 helmLeatherWeight :: Weight
 helmLeatherWeight = 30
 

@@ -768,6 +768,19 @@ createAdminZone = do
 
   -- ==================================================
   -- Foods:
+  -- TODO
+  putFood iApple
+          (Ent iApple
+               (Just "apple")
+               "apple" ""
+               "apple desc"
+               (Just "apple smell")
+               zeroBits)
+          (mkObj (ObjTemplate fruitWeight
+                              fruitVol
+                              (Just "apple taste")
+                              zeroBits))
+          appleFood
   putFood iBread
           (Ent iBread
                (Just "bread")

@@ -75,6 +75,10 @@ flowerVol :: Vol
 flowerVol = round (0.5 * 0.5 * 10 * 100 :: Double)
 
 
+fruitVol :: Vol
+fruitVol = 640
+
+
 helmLeatherVol :: Vol
 helmLeatherVol = 10 * 8 * 8 * 100
 
