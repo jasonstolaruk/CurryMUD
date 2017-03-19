@@ -374,7 +374,7 @@ mkRm RmTemplate { .. } = Rm { _rmName      = rtName
 -- Vessel
 
 
-data VesselTemplate = VesselTemplate { vtCont :: Maybe VesselCont }
+newtype VesselTemplate = VesselTemplate { vtCont :: Maybe VesselCont }
 
 
 mkVessel :: Obj -> VesselTemplate -> Vessel

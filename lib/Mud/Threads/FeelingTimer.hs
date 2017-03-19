@@ -1,4 +1,4 @@
-{-# LANGUAGE LambdaCase, OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Mud.Threads.FeelingTimer ( startFeeling
                                 , stopFeelings ) where

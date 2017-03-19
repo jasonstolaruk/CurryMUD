@@ -1,4 +1,4 @@
-{-# LANGUAGE LambdaCase, OverloadedStrings, RankNTypes, TupleSections #-}
+{-# LANGUAGE OverloadedStrings, TupleSections #-}
 
 module Mud.Threads.Biodegrader ( runBiodegAsync
                                , startBiodegraders

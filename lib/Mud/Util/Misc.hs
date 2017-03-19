@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
-{-# LANGUAGE FlexibleContexts, MonadComprehensions, OverloadedStrings, RankNTypes, TypeFamilies #-}
+{-# LANGUAGE MonadComprehensions, OverloadedStrings, RankNTypes, TypeFamilies #-}
 
 module Mud.Util.Misc ( atLst1
                      , atomicWriteIORef'

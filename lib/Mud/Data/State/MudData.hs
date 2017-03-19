@@ -514,7 +514,7 @@ data Liq = Liq { _liqId        :: DistinctLiqId
 newtype DistinctLiqId = DistinctLiqId Id  deriving (Eq, Generic, Ord, Show)
 
 
-data DistinctLiq = DistinctLiq { _liqEdibleEffects :: EdibleEffects }
+newtype DistinctLiq = DistinctLiq { _liqEdibleEffects :: EdibleEffects }
 
 
 data Noun = DoArticle    Text

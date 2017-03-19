@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable, LambdaCase, OverloadedStrings, TupleSections #-}
+{-# LANGUAGE DeriveDataTypeable, OverloadedStrings, TupleSections #-}
 
 module Mud.Threads.Misc ( concurrentTree
                         , dbExHandler

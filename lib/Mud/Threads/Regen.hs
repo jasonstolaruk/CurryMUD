@@ -1,4 +1,4 @@
-{-# LANGUAGE LambdaCase, OverloadedStrings, RankNTypes, TupleSections #-}
+{-# LANGUAGE OverloadedStrings, RankNTypes, TupleSections #-}
 
 module Mud.Threads.Regen ( runRegenAsync
                          , startNpcRegens

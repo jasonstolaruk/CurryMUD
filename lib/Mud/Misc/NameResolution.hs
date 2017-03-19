@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
-{-# LANGUAGE LambdaCase, MultiWayIf, OverloadedStrings, PatternSynonyms, RankNTypes, RebindableSyntax, ViewPatterns #-}
+{-# LANGUAGE MultiWayIf, OverloadedStrings, PatternSynonyms, RankNTypes, RebindableSyntax, ViewPatterns #-}
 
 module Mud.Misc.NameResolution ( ReconciledCoins
                                , procGecrMisCon

@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleContexts, MultiWayIf, OverloadedStrings, TupleSections, ViewPatterns #-}
+{-# LANGUAGE MultiWayIf, OverloadedStrings, TupleSections, ViewPatterns #-}
 
 module Mud.Cmds.Util.EmoteExp.TwoWayEmoteExp ( emotifyTwoWay
                                              , expCmdifyTwoWay ) where

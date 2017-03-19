@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
-{-# LANGUAGE FlexibleContexts, LambdaCase, MonadComprehensions, OverloadedStrings, TupleSections, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, MonadComprehensions, OverloadedStrings, TupleSections, ViewPatterns #-}
 
 module Mud.Data.State.Util.Death (handleDeath) where
 

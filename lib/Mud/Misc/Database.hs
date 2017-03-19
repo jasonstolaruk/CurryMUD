@@ -1,4 +1,4 @@
-{-# LANGUAGE DuplicateRecordFields, LambdaCase, OverloadedStrings, RecordWildCards, ScopedTypeVariables, TupleSections, ViewPatterns #-}
+{-# LANGUAGE DuplicateRecordFields, OverloadedStrings, RecordWildCards, ScopedTypeVariables, TupleSections, ViewPatterns #-}
 
 module Mud.Misc.Database ( AdminChanRec(..)
                          , AdminMsgRec(..)
@@ -88,80 +88,80 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 
 
-data AdminChanRec   = AdminChanRec   { dbTimestamp   :: Text
-                                     , dbName        :: Text
-                                     , dbMsg         :: Text }
-data AdminMsgRec    = AdminMsgRec    { dbTimestamp   :: Text
-                                     , dbFromName    :: Text
-                                     , dbToName      :: Text
-                                     , dbMsg         :: Text }
-data AlertExecRec   = AlertExecRec   { dbTimestamp   :: Text
-                                     , dbName        :: Text
-                                     , dbCmdName     :: Text
-                                     , dbTarget      :: Text
-                                     , dbArgs        :: Text }
-data AlertMsgRec    = AlertMsgRec    { dbTimestamp   :: Text
-                                     , dbName        :: Text
-                                     , dbCmdName     :: Text
-                                     , dbTrigger     :: Text
-                                     , dbMsg         :: Text }
-data BanHostRec     = BanHostRec     { dbTimestamp   :: Text
-                                     , dbHost        :: Text
-                                     , dbIsBanned    :: Bool
-                                     , dbReason      :: Text }
-data BanPCRec       = BanPCRec       { dbTimestamp   :: Text
-                                     , dbName        :: Text
-                                     , dbIsBanned    :: Bool
-                                     , dbReason      :: Text }
-data BonusRec       = BonusRec       { dbTimestamp   :: Text
-                                     , dbFromName    :: Text
-                                     , dbToName      :: Text
-                                     , dbAmt         :: Int }
-data BugRec         = BugRec         { dbTimestamp   :: Text
-                                     , dbName        :: Text
-                                     , dbLoc         :: Text
-                                     , dbDesc        :: Text }
-data ChanRec        = ChanRec        { dbTimestamp   :: Text
-                                     , dbChanId      :: Int
-                                     , dbChanName    :: Text
-                                     , dbName        :: Text
-                                     , dbMsg         :: Text }
-data DiscoverRec    = DiscoverRec    { dbTimestamp   :: Text
-                                     , dbHost        :: Text
-                                     , dbMsg         :: Text }
-data ProfRec        = ProfRec        { dbTimestamp   :: Text
-                                     , dbHost        :: Text
-                                     , dbProfanity   :: Text }
-data PropNameRec    = PropNameRec    { dbWord        :: Text }
-data QuestionRec    = QuestionRec    { dbTimestamp   :: Text
-                                     , dbName        :: Text
-                                     , dbMsg         :: Text }
-data SacBonusRec    = SacBonusRec    { dbUTCTime     :: Text
-                                     , dbName        :: Text
-                                     , dbGodName     :: Text }
-data SacrificeRec   = SacrificeRec   { dbUTCTime     :: Text
-                                     , dbName        :: Text
-                                     , dbGodName     :: Text }
-data SecRec         = SecRec         { dbName        :: Text
-                                     , dbQ           :: Text
-                                     , dbA           :: Text } deriving Eq
-data TeleRec        = TeleRec        { dbTimestamp   :: Text
-                                     , dbFromName    :: Text
-                                     , dbToName      :: Text
-                                     , dbMsg         :: Text }
-data TelnetCharsRec = TelnetCharsRec { dbTimestamp   :: Text
-                                     , dbHost        :: Text
-                                     , dbTelnetChars :: Text }
-data TTypeRec       = TTypeRec       { dbTimestamp   :: Text
-                                     , dbHost        :: Text
-                                     , dbTType       :: Text }
-data TypoRec        = TypoRec        { dbTimestamp   :: Text
-                                     , dbName        :: Text
-                                     , dbLoc         :: Text
-                                     , dbDesc        :: Text }
-data UnPwRec        = UnPwRec        { dbUn          :: Text
-                                     , dbPw          :: Text }
-data WordRec        = WordRec        { dbWord        :: Text }
+data    AdminChanRec   = AdminChanRec   { dbTimestamp   :: Text
+                                        , dbName        :: Text
+                                        , dbMsg         :: Text }
+data    AdminMsgRec    = AdminMsgRec    { dbTimestamp   :: Text
+                                        , dbFromName    :: Text
+                                        , dbToName      :: Text
+                                        , dbMsg         :: Text }
+data    AlertExecRec   = AlertExecRec   { dbTimestamp   :: Text
+                                        , dbName        :: Text
+                                        , dbCmdName     :: Text
+                                        , dbTarget      :: Text
+                                        , dbArgs        :: Text }
+data    AlertMsgRec    = AlertMsgRec    { dbTimestamp   :: Text
+                                        , dbName        :: Text
+                                        , dbCmdName     :: Text
+                                        , dbTrigger     :: Text
+                                        , dbMsg         :: Text }
+data    BanHostRec     = BanHostRec     { dbTimestamp   :: Text
+                                        , dbHost        :: Text
+                                        , dbIsBanned    :: Bool
+                                        , dbReason      :: Text }
+data    BanPCRec       = BanPCRec       { dbTimestamp   :: Text
+                                        , dbName        :: Text
+                                        , dbIsBanned    :: Bool
+                                        , dbReason      :: Text }
+data    BonusRec       = BonusRec       { dbTimestamp   :: Text
+                                        , dbFromName    :: Text
+                                        , dbToName      :: Text
+                                        , dbAmt         :: Int }
+data    BugRec         = BugRec         { dbTimestamp   :: Text
+                                        , dbName        :: Text
+                                        , dbLoc         :: Text
+                                        , dbDesc        :: Text }
+data    ChanRec        = ChanRec        { dbTimestamp   :: Text
+                                        , dbChanId      :: Int
+                                        , dbChanName    :: Text
+                                        , dbName        :: Text
+                                        , dbMsg         :: Text }
+data    DiscoverRec    = DiscoverRec    { dbTimestamp   :: Text
+                                        , dbHost        :: Text
+                                        , dbMsg         :: Text }
+data    ProfRec        = ProfRec        { dbTimestamp   :: Text
+                                        , dbHost        :: Text
+                                        , dbProfanity   :: Text }
+newtype PropNameRec    = PropNameRec    { dbWord        :: Text }
+data    QuestionRec    = QuestionRec    { dbTimestamp   :: Text
+                                        , dbName        :: Text
+                                        , dbMsg         :: Text }
+data    SacBonusRec    = SacBonusRec    { dbUTCTime     :: Text
+                                        , dbName        :: Text
+                                        , dbGodName     :: Text }
+data    SacrificeRec   = SacrificeRec   { dbUTCTime     :: Text
+                                        , dbName        :: Text
+                                        , dbGodName     :: Text }
+data    SecRec         = SecRec         { dbName        :: Text
+                                        , dbQ           :: Text
+                                        , dbA           :: Text } deriving Eq
+data    TeleRec        = TeleRec        { dbTimestamp   :: Text
+                                        , dbFromName    :: Text
+                                        , dbToName      :: Text
+                                        , dbMsg         :: Text }
+data    TelnetCharsRec = TelnetCharsRec { dbTimestamp   :: Text
+                                        , dbHost        :: Text
+                                        , dbTelnetChars :: Text }
+data    TTypeRec       = TTypeRec       { dbTimestamp   :: Text
+                                        , dbHost        :: Text
+                                        , dbTType       :: Text }
+data    TypoRec        = TypoRec        { dbTimestamp   :: Text
+                                        , dbName        :: Text
+                                        , dbLoc         :: Text
+                                        , dbDesc        :: Text }
+data    UnPwRec        = UnPwRec        { dbUn          :: Text
+                                        , dbPw          :: Text }
+newtype WordRec        = WordRec        { dbWord        :: Text }
 
 
 -----
