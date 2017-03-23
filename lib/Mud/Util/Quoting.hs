@@ -2,7 +2,7 @@
 
 module Mud.Util.Quoting where
 
-import Data.Text (Text)
+import           Data.Text (Text)
 import qualified Data.Text as T
 
 

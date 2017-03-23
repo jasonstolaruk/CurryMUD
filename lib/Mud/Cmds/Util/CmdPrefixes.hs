@@ -2,10 +2,10 @@
 
 module Mud.Cmds.Util.CmdPrefixes where
 
-import Mud.Data.State.MudData
-import Mud.TopLvlDefs.Chars
+import           Mud.Data.State.MudData
+import           Mud.TopLvlDefs.Chars
 
-import Data.Text (Text)
+import           Data.Text (Text)
 import qualified Data.Text as T
 
 

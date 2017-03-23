@@ -3,22 +3,22 @@
 module Mud.Threads.ThreadTblPurger ( purgeThreadTbls
                                    , threadThreadTblPurger ) where
 
-import Mud.Data.State.MudData
-import Mud.Data.State.Util.Misc
-import Mud.Threads.Misc
-import Mud.TopLvlDefs.Misc
-import Mud.Util.Misc
-import Mud.Util.Operators
+import           Mud.Data.State.MudData
+import           Mud.Data.State.Util.Misc
 import qualified Mud.Misc.Logging as L (logNotice)
+import           Mud.Threads.Misc
+import           Mud.TopLvlDefs.Misc
+import           Mud.Util.Misc
+import           Mud.Util.Operators
 
-import Control.Concurrent.Async (asyncThreadId, poll)
-import Control.Exception.Lifted (catch, handle)
-import Control.Lens (at, views)
-import Control.Lens.Operators ((.~), (&))
-import Control.Monad (forever)
-import Control.Monad.IO.Class (liftIO)
-import Data.Text (Text)
-import GHC.Conc (ThreadStatus(..), threadStatus)
+import           Control.Concurrent.Async (asyncThreadId, poll)
+import           Control.Exception.Lifted (catch, handle)
+import           Control.Lens (at, views)
+import           Control.Lens.Operators ((.~), (&))
+import           Control.Monad (forever)
+import           Control.Monad.IO.Class (liftIO)
+import           Data.Text (Text)
+import           GHC.Conc (ThreadStatus(..), threadStatus)
 import qualified Data.IntMap.Strict as IM (assocs)
 import qualified Data.Map.Strict as M (elems, keys)
 

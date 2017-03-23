@@ -2,19 +2,19 @@
 
 module Mud.Data.State.Util.Destroy where
 
-import Mud.Data.State.MudData
-import Mud.Data.State.Util.Get
-import Mud.Data.State.Util.Hierarchy
-import Mud.Data.State.Util.Misc
-import Mud.Threads.Effect
-import Mud.Threads.Misc
-import Mud.Util.Misc
+import           Mud.Data.State.MudData
+import           Mud.Data.State.Util.Get
+import           Mud.Data.State.Util.Hierarchy
+import           Mud.Data.State.Util.Misc
+import           Mud.Threads.Effect
+import           Mud.Threads.Misc
+import           Mud.Util.Misc
 
-import Control.Lens (at, to)
-import Control.Lens.Operators ((.~), (%~), (^.))
-import Control.Monad (forM_)
-import Data.List (delete)
-import GHC.Stack (HasCallStack)
+import           Control.Lens (at, to)
+import           Control.Lens.Operators ((.~), (%~), (^.))
+import           Control.Monad (forM_)
+import           Data.List (delete)
+import           GHC.Stack (HasCallStack)
 import qualified Data.IntMap.Strict as IM (map)
 
 

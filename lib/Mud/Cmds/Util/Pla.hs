@@ -104,60 +104,60 @@ module Mud.Cmds.Util.Pla ( adminTagTxt
                          , stopEating
                          , stopSacrificing ) where
 
-import Mud.Cmds.Msgs.Advice
-import Mud.Cmds.Msgs.Dude
-import Mud.Cmds.Msgs.Hint
-import Mud.Cmds.Msgs.Misc
-import Mud.Cmds.Msgs.Sorry
-import Mud.Cmds.Util.Abbrev
-import Mud.Cmds.Util.Misc
-import Mud.Data.Misc
-import Mud.Data.State.ActionParams.ActionParams
-import Mud.Data.State.MsgQueue
-import Mud.Data.State.MudData
-import Mud.Data.State.Util.Calc
-import Mud.Data.State.Util.Coins
-import Mud.Data.State.Util.Get
-import Mud.Data.State.Util.Hierarchy
-import Mud.Data.State.Util.Misc
-import Mud.Data.State.Util.Noun
-import Mud.Data.State.Util.Output
-import Mud.Misc.ANSI
-import Mud.Misc.Database
-import Mud.Misc.LocPref
-import Mud.Misc.Misc
-import Mud.Misc.NameResolution
-import Mud.TheWorld.Zones.AdminZoneIds (iRoot)
-import Mud.Threads.Act
-import Mud.TopLvlDefs.Misc
-import Mud.TopLvlDefs.Padding
-import Mud.TopLvlDefs.Vols
-import Mud.TopLvlDefs.Weights
-import Mud.Util.List
-import Mud.Util.Misc hiding (blowUp, patternMatchFail)
-import Mud.Util.Operators
-import Mud.Util.Padding
-import Mud.Util.Quoting
-import Mud.Util.Text
-import Mud.Util.Wrapping
-import Prelude hiding (pi)
+import           Mud.Cmds.Msgs.Advice
+import           Mud.Cmds.Msgs.Dude
+import           Mud.Cmds.Msgs.Hint
+import           Mud.Cmds.Msgs.Misc
+import           Mud.Cmds.Msgs.Sorry
+import           Mud.Cmds.Util.Abbrev
+import           Mud.Cmds.Util.Misc
+import           Mud.Data.Misc
+import           Mud.Data.State.ActionParams.ActionParams
+import           Mud.Data.State.MsgQueue
+import           Mud.Data.State.MudData
+import           Mud.Data.State.Util.Calc
+import           Mud.Data.State.Util.Coins
+import           Mud.Data.State.Util.Get
+import           Mud.Data.State.Util.Hierarchy
+import           Mud.Data.State.Util.Misc
+import           Mud.Data.State.Util.Noun
+import           Mud.Data.State.Util.Output
+import           Mud.Misc.ANSI
+import           Mud.Misc.Database
+import           Mud.Misc.LocPref
 import qualified Mud.Misc.Logging as L (logNotice, logPla, logPlaOut)
+import           Mud.Misc.Misc
+import           Mud.Misc.NameResolution
+import           Mud.TheWorld.Zones.AdminZoneIds (iRoot)
+import           Mud.Threads.Act
+import           Mud.TopLvlDefs.Misc
+import           Mud.TopLvlDefs.Padding
+import           Mud.TopLvlDefs.Vols
+import           Mud.TopLvlDefs.Weights
+import           Mud.Util.List
 import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
+import           Mud.Util.Misc hiding (blowUp, patternMatchFail)
+import           Mud.Util.Operators
+import           Mud.Util.Padding
+import           Mud.Util.Quoting
+import           Mud.Util.Text
+import           Mud.Util.Wrapping
+import           Prelude hiding (pi)
 
-import Control.Arrow ((***), (&&&), first, second)
-import Control.Lens (Getter, _1, _2, _3, _4, _5, at, both, each, to, view, views)
-import Control.Lens.Operators ((-~), (?~), (.~), (&), (%~), (^.), (<>~))
-import Control.Monad ((>=>), forM_, guard)
-import Control.Monad.IO.Class (liftIO)
-import Data.Bool (bool)
-import Data.Char (isLower)
-import Data.Function (on)
-import Data.Ix (inRange)
-import Data.List ((\\), delete, elemIndex, find, foldl', group, intercalate, nub, nubBy, partition, sortBy, zip4)
-import Data.Maybe (isNothing)
-import Data.Monoid ((<>), Sum(..))
-import Data.Text (Text)
-import GHC.Stack (HasCallStack)
+import           Control.Arrow ((***), (&&&), first, second)
+import           Control.Lens (Getter, _1, _2, _3, _4, _5, at, both, each, to, view, views)
+import           Control.Lens.Operators ((-~), (?~), (.~), (&), (%~), (^.), (<>~))
+import           Control.Monad ((>=>), forM_, guard)
+import           Control.Monad.IO.Class (liftIO)
+import           Data.Bool (bool)
+import           Data.Char (isLower)
+import           Data.Function (on)
+import           Data.Ix (inRange)
+import           Data.List ((\\), delete, elemIndex, find, foldl', group, intercalate, nub, nubBy, partition, sortBy, zip4)
+import           Data.Maybe (isNothing)
+import           Data.Monoid ((<>), Sum(..))
+import           Data.Text (Text)
+import           GHC.Stack (HasCallStack)
 import qualified Data.IntMap.Strict as IM (IntMap, (!), keys)
 import qualified Data.Map.Strict as M ((!), filter, keys, map, member, notMember, toList)
 import qualified Data.Text as T

@@ -16,20 +16,20 @@ module Mud.Data.State.Util.Random ( dropRndmElems
                                   , rndmRs
                                   , rndmVector ) where
 
-import Mud.Data.State.MudData
-import Mud.Util.List
-import Mud.Util.Misc hiding (blowUp)
-import Mud.Util.Operators
-import Mud.Util.Text
+import           Mud.Data.State.MudData
+import           Mud.Util.List
 import qualified Mud.Util.Misc as U (blowUp)
+import           Mud.Util.Misc hiding (blowUp)
+import           Mud.Util.Operators
+import           Mud.Util.Text
 
-import Control.Lens (view)
-import Control.Monad (replicateM)
-import Control.Monad.IO.Class (liftIO)
-import Control.Monad.Reader (ask)
-import Data.Ix (inRange)
+import           Control.Lens (view)
+import           Control.Monad (replicateM)
+import           Control.Monad.IO.Class (liftIO)
+import           Control.Monad.Reader (ask)
+import           Data.Ix (inRange)
 import qualified Data.Vector.Unboxed as V (Vector, (!), toList)
-import System.Random.MWC (GenIO, uniformR, uniformVector)
+import           System.Random.MWC (GenIO, uniformR, uniformVector)
 
 
 blowUp :: BlowUp a

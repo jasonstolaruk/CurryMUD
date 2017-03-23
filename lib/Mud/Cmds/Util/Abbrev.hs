@@ -3,18 +3,18 @@
 
 module Mud.Cmds.Util.Abbrev (styleAbbrevs) where
 
-import Mud.Data.Misc
-import Mud.Misc.ANSI
-import Mud.Util.List (nubSort)
-import Mud.Util.Misc hiding (patternMatchFail)
-import Mud.Util.Quoting
-import Mud.Util.Text
+import           Mud.Data.Misc
+import           Mud.Misc.ANSI
+import           Mud.Util.List (nubSort)
 import qualified Mud.Util.Misc as U (patternMatchFail)
+import           Mud.Util.Misc hiding (patternMatchFail)
+import           Mud.Util.Quoting
+import           Mud.Util.Text
 
-import Control.Arrow ((&&&), first)
-import Data.Monoid ((<>))
-import Data.Text (Text)
-import GHC.Stack (HasCallStack)
+import           Control.Arrow ((&&&), first)
+import           Data.Monoid ((<>))
+import           Data.Text (Text)
+import           GHC.Stack (HasCallStack)
 import qualified Data.Text as T
 
 

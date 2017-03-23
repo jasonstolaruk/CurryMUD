@@ -3,30 +3,30 @@
 module Mud.Cmds.Util.EmoteExp.TwoWayEmoteExp ( emotifyTwoWay
                                              , expCmdifyTwoWay ) where
 
-import Mud.Cmds.ExpCmds
-import Mud.Cmds.Msgs.Advice
-import Mud.Cmds.Msgs.Sorry
-import Mud.Cmds.Util.Misc
-import Mud.Data.Misc
-import Mud.Data.State.ActionParams.Misc
-import Mud.Data.State.MudData
-import Mud.Data.State.Util.Get
-import Mud.TopLvlDefs.Chars
-import Mud.TopLvlDefs.Misc
-import Mud.Util.Misc hiding (patternMatchFail)
-import Mud.Util.Operators
-import Mud.Util.Quoting
-import Mud.Util.Text
+import           Mud.Cmds.ExpCmds
+import           Mud.Cmds.Msgs.Advice
+import           Mud.Cmds.Msgs.Sorry
+import           Mud.Cmds.Util.Misc
+import           Mud.Data.Misc
+import           Mud.Data.State.ActionParams.Misc
+import           Mud.Data.State.MudData
+import           Mud.Data.State.Util.Get
+import           Mud.TopLvlDefs.Chars
+import           Mud.TopLvlDefs.Misc
 import qualified Mud.Util.Misc as U (patternMatchFail)
+import           Mud.Util.Misc hiding (patternMatchFail)
+import           Mud.Util.Operators
+import           Mud.Util.Quoting
+import           Mud.Util.Text
 
-import Control.Lens (_1)
-import Control.Lens.Operators ((%~))
-import Data.Bool (bool)
-import Data.Either (lefts, rights)
-import Data.List (intersperse, nub)
-import Data.Monoid ((<>))
-import Data.Text (Text)
-import GHC.Stack (HasCallStack)
+import           Control.Lens (_1)
+import           Control.Lens.Operators ((%~))
+import           Data.Bool (bool)
+import           Data.Either (lefts, rights)
+import           Data.List (intersperse, nub)
+import           Data.Monoid ((<>))
+import           Data.Text (Text)
+import           GHC.Stack (HasCallStack)
 import qualified Data.Text as T
 
 

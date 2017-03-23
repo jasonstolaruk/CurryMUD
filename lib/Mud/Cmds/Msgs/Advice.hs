@@ -137,23 +137,23 @@ module Mud.Cmds.Msgs.Advice ( adviceAAnnounceNoArgs
                             , adviceZoomExcessArgs
                             , advise ) where
 
-import Mud.Cmds.Util.CmdPrefixes
-import Mud.Data.Misc
-import Mud.Data.State.ActionParams.ActionParams
-import Mud.Data.State.MudData
-import Mud.Data.State.Util.Lang
-import Mud.Data.State.Util.Output
-import Mud.Misc.ANSI
-import Mud.TopLvlDefs.Chars
-import Mud.TopLvlDefs.Misc
-import Mud.Util.Misc (PatternMatchFail)
-import Mud.Util.Operators
-import Mud.Util.Quoting
-import Mud.Util.Text
+import           Mud.Cmds.Util.CmdPrefixes
+import           Mud.Data.Misc
+import           Mud.Data.State.ActionParams.ActionParams
+import           Mud.Data.State.MudData
+import           Mud.Data.State.Util.Lang
+import           Mud.Data.State.Util.Output
+import           Mud.Misc.ANSI
+import           Mud.TopLvlDefs.Chars
+import           Mud.TopLvlDefs.Misc
+import           Mud.Util.Misc (PatternMatchFail)
 import qualified Mud.Util.Misc as U (patternMatchFail)
+import           Mud.Util.Operators
+import           Mud.Util.Quoting
+import           Mud.Util.Text
 
-import Data.Monoid ((<>))
-import Data.Text (Text)
+import           Data.Monoid ((<>))
+import           Data.Text (Text)
 import qualified Data.Text as T
 
 

@@ -4,15 +4,15 @@ module Mud.TheWorld.Zones.Tutorial ( createTutorial
                                    , tutorialHooks
                                    , tutorialRmActionFuns ) where
 
-import Mud.Data.State.MudData
-import Mud.Data.State.Util.Make
-import Mud.Data.State.Util.Put
-import Mud.TheWorld.Misc
-import Mud.TheWorld.Zones.TutorialIds
+import           Mud.Data.State.MudData
+import           Mud.Data.State.Util.Make
+import           Mud.Data.State.Util.Put
 import qualified Mud.Misc.Logging as L (logNotice)
+import           Mud.TheWorld.Misc
+import           Mud.TheWorld.Zones.TutorialIds
 
-import Data.Bits (zeroBits)
-import Data.Text (Text)
+import           Data.Bits (zeroBits)
+import           Data.Text (Text)
 import qualified Data.Map.Strict as M (fromList)
 
 

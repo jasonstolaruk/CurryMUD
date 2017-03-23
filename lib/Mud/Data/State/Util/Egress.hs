@@ -3,45 +3,45 @@
 module Mud.Data.State.Util.Egress ( handleEgress
                                   , mkFarewellStats ) where
 
-import Mud.Cmds.Msgs.Misc
-import Mud.Data.Misc
-import Mud.Data.State.MsgQueue
-import Mud.Data.State.MudData
-import Mud.Data.State.Util.Calc
-import Mud.Data.State.Util.Get
-import Mud.Data.State.Util.Misc
-import Mud.Data.State.Util.Output
-import Mud.Misc.ANSI
-import Mud.Misc.Logging hiding (logNotice, logPla)
-import Mud.TheWorld.Zones.AdminZoneIds (iLoggedOut, iNecropolis)
-import Mud.Threads.Act
-import Mud.Threads.Digester
-import Mud.Threads.Effect
-import Mud.Threads.FeelingTimer
-import Mud.Threads.Regen
-import Mud.Util.Misc
-import Mud.Util.Operators
-import Mud.Util.Padding
-import Mud.Util.Quoting
-import Mud.Util.Text
+import           Mud.Cmds.Msgs.Misc
+import           Mud.Data.Misc
+import           Mud.Data.State.MsgQueue
+import           Mud.Data.State.MudData
+import           Mud.Data.State.Util.Calc
+import           Mud.Data.State.Util.Get
+import           Mud.Data.State.Util.Misc
+import           Mud.Data.State.Util.Output
+import           Mud.Misc.ANSI
 import qualified Mud.Misc.Logging as L (logNotice, logPla)
+import           Mud.Misc.Logging hiding (logNotice, logPla)
+import           Mud.TheWorld.Zones.AdminZoneIds (iLoggedOut, iNecropolis)
+import           Mud.Threads.Act
+import           Mud.Threads.Digester
+import           Mud.Threads.Effect
+import           Mud.Threads.FeelingTimer
+import           Mud.Threads.Regen
+import           Mud.Util.Misc
+import           Mud.Util.Operators
+import           Mud.Util.Padding
+import           Mud.Util.Quoting
+import           Mud.Util.Text
 
-import Control.Arrow ((***))
-import Control.Exception.Lifted (finally)
-import Control.Lens (at, each, set, views)
-import Control.Lens.Operators ((?~), (.~), (&), (%~), (+~))
-import Control.Monad ((>=>), forM_, unless, when)
-import Control.Monad.IO.Class (liftIO)
-import Data.List (delete, partition, sort)
-import Data.Monoid ((<>))
-import Data.Text (Text)
-import Data.Time (UTCTime, diffUTCTime, getCurrentTime)
-import Data.Tuple (swap)
-import GHC.Stack (HasCallStack)
-import Prelude hiding (pi)
+import           Control.Arrow ((***))
+import           Control.Exception.Lifted (finally)
+import           Control.Lens (at, each, set, views)
+import           Control.Lens.Operators ((?~), (.~), (&), (%~), (+~))
+import           Control.Monad ((>=>), forM_, unless, when)
+import           Control.Monad.IO.Class (liftIO)
+import           Data.List (delete, partition, sort)
+import           Data.Monoid ((<>))
+import           Data.Text (Text)
+import           Data.Time (UTCTime, diffUTCTime, getCurrentTime)
+import           Data.Tuple (swap)
+import           GHC.Stack (HasCallStack)
+import           Prelude hiding (pi)
 import qualified Data.Map.Strict as M (delete, empty, foldl, keys, singleton, toList)
 import qualified Data.Text as T
-import System.Time.Utils (renderSecs)
+import           System.Time.Utils (renderSecs)
 
 
 logNotice :: Text -> Text -> MudStack ()

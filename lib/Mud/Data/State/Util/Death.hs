@@ -3,48 +3,48 @@
 
 module Mud.Data.State.Util.Death (handleDeath) where
 
-import Mud.Cmds.ExpCmds
-import Mud.Cmds.Msgs.Misc
-import Mud.Cmds.Util.Misc
-import Mud.Cmds.Util.Pla
-import Mud.Data.Misc
-import Mud.Data.State.MudData
-import Mud.Data.State.Util.Calc
-import Mud.Data.State.Util.Clone
-import Mud.Data.State.Util.Get
-import Mud.Data.State.Util.Make
-import Mud.Data.State.Util.Misc
-import Mud.Data.State.Util.Output
-import Mud.Data.State.Util.Random
-import Mud.Misc.Database
-import Mud.Misc.Misc
-import Mud.Threads.Act
-import Mud.Threads.Digester
-import Mud.Threads.Effect
-import Mud.Threads.FeelingTimer
-import Mud.Threads.NpcServer
-import Mud.Threads.Regen
-import Mud.Threads.SpiritTimer
-import Mud.TopLvlDefs.Misc
-import Mud.Util.List
-import Mud.Util.Misc
-import Mud.Util.Operators
-import Mud.Util.Quoting
-import Mud.Util.Text
+import           Mud.Cmds.ExpCmds
+import           Mud.Cmds.Msgs.Misc
+import           Mud.Cmds.Util.Misc
+import           Mud.Cmds.Util.Pla
+import           Mud.Data.Misc
+import           Mud.Data.State.MudData
+import           Mud.Data.State.Util.Calc
+import           Mud.Data.State.Util.Clone
+import           Mud.Data.State.Util.Get
+import           Mud.Data.State.Util.Make
+import           Mud.Data.State.Util.Misc
+import           Mud.Data.State.Util.Output
+import           Mud.Data.State.Util.Random
+import           Mud.Misc.Database
 import qualified Mud.Misc.Logging as L (logNotice, logPla)
+import           Mud.Misc.Misc
+import           Mud.Threads.Act
+import           Mud.Threads.Digester
+import           Mud.Threads.Effect
+import           Mud.Threads.FeelingTimer
+import           Mud.Threads.NpcServer
+import           Mud.Threads.Regen
+import           Mud.Threads.SpiritTimer
+import           Mud.TopLvlDefs.Misc
+import           Mud.Util.List
+import           Mud.Util.Misc
+import           Mud.Util.Operators
+import           Mud.Util.Quoting
+import           Mud.Util.Text
 
-import Control.Arrow ((***), first)
-import Control.Lens (_1, _2, _3, at, view, views)
-import Control.Lens.Operators ((.~), (&), (%~), (^.), (<>~))
-import Control.Monad (forM_, unless, when)
-import Control.Monad.IO.Class (liftIO)
-import Data.Bits (setBit, zeroBits)
-import Data.Function (on)
-import Data.List (delete, sortBy)
-import Data.Monoid ((<>))
-import Data.Text (Text)
-import GHC.Stack (HasCallStack)
-import Prelude hiding (pi)
+import           Control.Arrow ((***), first)
+import           Control.Lens (_1, _2, _3, at, view, views)
+import           Control.Lens.Operators ((.~), (&), (%~), (^.), (<>~))
+import           Control.Monad (forM_, unless, when)
+import           Control.Monad.IO.Class (liftIO)
+import           Data.Bits (setBit, zeroBits)
+import           Data.Function (on)
+import           Data.List (delete, sortBy)
+import           Data.Monoid ((<>))
+import           Data.Text (Text)
+import           GHC.Stack (HasCallStack)
+import           Prelude hiding (pi)
 import qualified Data.IntMap.Strict as IM (delete, filterWithKey, keys, mapWithKey)
 import qualified Data.Map.Strict as M (delete, elems, filter, filterWithKey, keys, size)
 import qualified Data.Text as T

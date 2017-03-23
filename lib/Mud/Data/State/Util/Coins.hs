@@ -8,18 +8,18 @@ module Mud.Data.State.Util.Coins ( aCoinSomeCoins
                                  , mkCoinPieceTxt
                                  , negateCoins ) where
 
-import Mud.Data.State.MudData
-import Mud.TopLvlDefs.Misc
-import Mud.Util.Misc (PatternMatchFail)
-import Mud.Util.Operators
-import Mud.Util.Text
+import           Mud.Data.State.MudData
+import           Mud.TopLvlDefs.Misc
+import           Mud.Util.Misc (PatternMatchFail)
 import qualified Mud.Util.Misc as U (patternMatchFail)
+import           Mud.Util.Operators
+import           Mud.Util.Text
 
-import Control.Lens (_1, _2, each)
-import Control.Lens.Operators ((&), (%~), (^..), (<>~))
-import Data.List (foldl')
-import Data.Monoid ((<>))
-import Data.Text (Text)
+import           Control.Lens (_1, _2, each)
+import           Control.Lens.Operators ((&), (%~), (^..), (<>~))
+import           Data.List (foldl')
+import           Data.Monoid ((<>))
+import           Data.Text (Text)
 import qualified Data.Text as T
 
 

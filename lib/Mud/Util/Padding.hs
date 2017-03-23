@@ -2,14 +2,14 @@
 
 module Mud.Util.Padding where
 
-import Mud.Misc.ANSI
-import Mud.TopLvlDefs.Padding
-import Mud.Util.Misc
-import Mud.Util.Quoting
-import Mud.Util.Text
+import           Mud.Misc.ANSI
+import           Mud.TopLvlDefs.Padding
+import           Mud.Util.Misc
+import           Mud.Util.Quoting
+import           Mud.Util.Text
 
-import Data.Monoid ((<>))
-import Data.Text (Text)
+import           Data.Monoid ((<>))
+import           Data.Text (Text)
 import qualified Data.Text as T
 
 

@@ -8,22 +8,22 @@ module Mud.Interp.Misc ( mkChoiceTxt
                        , resetInterp
                        , yesNoHelper ) where
 
-import Mud.Data.Misc
-import Mud.Data.State.MsgQueue
-import Mud.Data.State.MudData
-import Mud.Data.State.Util.Misc
-import Mud.Data.State.Util.Output
-import Mud.Misc.ANSI
-import Mud.Util.Misc
-import Mud.Util.Operators
-import Mud.Util.Quoting
-import Mud.Util.Text
 import qualified Data.Text as T
+import           Mud.Data.Misc
+import           Mud.Data.State.MsgQueue
+import           Mud.Data.State.MudData
+import           Mud.Data.State.Util.Misc
+import           Mud.Data.State.Util.Output
+import           Mud.Misc.ANSI
+import           Mud.Util.Misc
+import           Mud.Util.Operators
+import           Mud.Util.Quoting
+import           Mud.Util.Text
 
-import Control.Lens.Operators ((.~))
-import Control.Monad (guard)
-import Data.Monoid ((<>))
-import Data.Text (Text)
+import           Control.Lens.Operators ((.~))
+import           Control.Monad (guard)
+import           Data.Monoid ((<>))
+import           Data.Text (Text)
 
 
 mkChoiceTxt :: [Text] -> Text

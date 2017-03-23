@@ -2,17 +2,17 @@
 
 module Mud.Util.Token (parseTokens) where
 
-import Mud.Cmds.Msgs.Misc
-import Mud.Misc.ANSI
-import Mud.TopLvlDefs.Chars
-import Mud.TopLvlDefs.Misc
-import Mud.Util.Misc hiding (patternMatchFail)
-import Mud.Util.Text
+import           Mud.Cmds.Msgs.Misc
+import           Mud.Misc.ANSI
+import           Mud.TopLvlDefs.Chars
+import           Mud.TopLvlDefs.Misc
 import qualified Mud.Util.Misc as U (patternMatchFail)
+import           Mud.Util.Misc hiding (patternMatchFail)
+import           Mud.Util.Text
 
-import Data.Char (toLower)
-import Data.Monoid ((<>))
-import Data.Text (Text)
+import           Data.Char (toLower)
+import           Data.Monoid ((<>))
+import           Data.Text (Text)
 import qualified Data.Text as T
 
 

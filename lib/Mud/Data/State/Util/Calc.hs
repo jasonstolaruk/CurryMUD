@@ -67,30 +67,30 @@ module Mud.Data.State.Util.Calc ( calcBarLen
                                 , calcVol
                                 , calcWeight ) where
 
-import Mud.Data.Misc
-import Mud.Data.State.MudData
-import Mud.Data.State.Util.Coins
-import Mud.Data.State.Util.Get
-import Mud.Data.State.Util.Hierarchy
-import Mud.Data.State.Util.Random
-import Mud.TopLvlDefs.Misc
-import Mud.TopLvlDefs.Seconds
-import Mud.TopLvlDefs.Vols
-import Mud.TopLvlDefs.Weights
-import Mud.Util.List
-import Mud.Util.Misc hiding (blowUp, patternMatchFail)
-import Mud.Util.Operators
-import Mud.Util.Text
+import           Mud.Data.Misc
+import           Mud.Data.State.MudData
+import           Mud.Data.State.Util.Coins
+import           Mud.Data.State.Util.Get
+import           Mud.Data.State.Util.Hierarchy
+import           Mud.Data.State.Util.Random
+import           Mud.TopLvlDefs.Misc
+import           Mud.TopLvlDefs.Seconds
+import           Mud.TopLvlDefs.Vols
+import           Mud.TopLvlDefs.Weights
+import           Mud.Util.List
 import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
+import           Mud.Util.Misc hiding (blowUp, patternMatchFail)
+import           Mud.Util.Operators
+import           Mud.Util.Text
 
-import Control.Arrow (first)
-import Control.Lens (both, view, views)
-import Control.Lens.Getter (Getter)
-import Control.Lens.Operators ((&), (%~))
-import Data.List (foldl')
-import Data.Maybe (fromMaybe)
-import GHC.Stack (HasCallStack)
-import Prelude hiding (getContents)
+import           Control.Arrow (first)
+import           Control.Lens (both, view, views)
+import           Control.Lens.Getter (Getter)
+import           Control.Lens.Operators ((&), (%~))
+import           Data.List (foldl')
+import           Data.Maybe (fromMaybe)
+import           GHC.Stack (HasCallStack)
+import           Prelude hiding (getContents)
 import qualified Data.Map.Strict as M (elems)
 import qualified Data.Text as T
 

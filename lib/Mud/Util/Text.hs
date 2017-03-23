@@ -46,20 +46,20 @@ module Mud.Util.Text ( aOrAn
                      , uncapitalize
                      , yesNo ) where
 
-import Mud.TopLvlDefs.Chars
-import Mud.Util.Misc hiding (blowUp)
-import Mud.Util.Operators
-import Mud.Util.Quoting
+import           Mud.TopLvlDefs.Chars
 import qualified Mud.Util.Misc as U (blowUp)
+import           Mud.Util.Misc hiding (blowUp)
+import           Mud.Util.Operators
+import           Mud.Util.Quoting
 
-import Control.Arrow ((&&&))
-import Control.Monad (guard)
-import Data.Char (isUpper, toLower, toUpper)
-import Data.Function (on)
-import Data.Ix (inRange)
-import Data.List (intercalate, sortBy)
-import Data.Monoid ((<>))
-import Data.Text (Text)
+import           Control.Arrow ((&&&))
+import           Control.Monad (guard)
+import           Data.Char (isUpper, toLower, toUpper)
+import           Data.Function (on)
+import           Data.Ix (inRange)
+import           Data.List (intercalate, sortBy)
+import           Data.Monoid ((<>))
+import           Data.Text (Text)
 import qualified Data.ByteString.Lazy as B
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as LT

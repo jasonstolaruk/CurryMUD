@@ -2,21 +2,21 @@
 
 module Mud.Threads.TrashDumpPurger (threadTrashDumpPurger) where
 
-import Mud.Data.State.MudData
-import Mud.Data.State.Util.Destroy
-import Mud.Data.State.Util.Get
-import Mud.Data.State.Util.Misc
-import Mud.TheWorld.Zones.AdminZoneIds (iTrashDump)
-import Mud.Threads.Misc
-import Mud.TopLvlDefs.Misc
-import Mud.Util.Misc
+import           Mud.Data.State.MudData
+import           Mud.Data.State.Util.Destroy
+import           Mud.Data.State.Util.Get
+import           Mud.Data.State.Util.Misc
 import qualified Mud.Misc.Logging as L (logNotice)
+import           Mud.TheWorld.Zones.AdminZoneIds (iTrashDump)
+import           Mud.Threads.Misc
+import           Mud.TopLvlDefs.Misc
+import           Mud.Util.Misc
 
-import Control.Exception.Lifted (catch, handle)
-import Control.Lens.Operators ((.~))
-import Control.Monad (forever)
-import Control.Monad.IO.Class (liftIO)
-import Data.Text (Text)
+import           Control.Exception.Lifted (catch, handle)
+import           Control.Lens.Operators ((.~))
+import           Control.Monad (forever)
+import           Control.Monad.IO.Class (liftIO)
+import           Data.Text (Text)
 
 
 logNotice :: Text -> Text -> MudStack ()

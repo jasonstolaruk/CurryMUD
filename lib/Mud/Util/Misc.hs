@@ -82,30 +82,30 @@ module Mud.Util.Misc ( atLst1
                      , uncurry7
                      , unit ) where
 
-import Mud.TopLvlDefs.Seconds
-import Mud.Util.List
-import Mud.Util.Operators
-import Mud.Util.Quoting
+import           Mud.TopLvlDefs.Seconds
+import           Mud.Util.List
+import           Mud.Util.Operators
+import           Mud.Util.Quoting
 
-import Control.Arrow ((&&&), Arrow, first, second)
-import Control.Concurrent (threadDelay)
-import Control.Lens (Lens', lens, view)
-import Control.Lens.Getter (Getting)
-import Control.Monad (guard, join)
-import Control.Monad.Reader.Class (MonadReader)
-import Data.Bool (bool)
-import Data.Function (on)
-import Data.IORef (IORef, atomicWriteIORef)
-import Data.List (delete)
-import Data.Maybe (fromMaybe)
-import Data.Monoid (Sum(..), (<>))
-import Data.Text (Text)
-import Data.Time (FormatTime, defaultTimeLocale, formatTime, getZonedTime)
-import GHC.Stack (HasCallStack, callStack, prettyCallStack)
+import           Control.Arrow ((&&&), Arrow, first, second)
+import           Control.Concurrent (threadDelay)
+import           Control.Lens (Lens', lens, view)
+import           Control.Lens.Getter (Getting)
+import           Control.Monad (guard, join)
+import           Control.Monad.Reader.Class (MonadReader)
+import           Data.Bool (bool)
+import           Data.Function (on)
+import           Data.IORef (IORef, atomicWriteIORef)
+import           Data.List (delete)
+import           Data.Maybe (fromMaybe)
+import           Data.Monoid (Sum(..), (<>))
+import           Data.Text (Text)
+import           Data.Time (FormatTime, defaultTimeLocale, formatTime, getZonedTime)
+import           GHC.Stack (HasCallStack, callStack, prettyCallStack)
 import qualified Data.IntMap.Strict as IM (IntMap, insert, lookup)
 import qualified Data.Map.Strict as M (Map, assocs)
 import qualified Data.Text as T
-import System.IO (hPutStrLn, stderr)
+import           System.IO (hPutStrLn, stderr)
 
 
 default (Int, Double)

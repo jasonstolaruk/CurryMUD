@@ -3,17 +3,17 @@
 module Mud.Threads.RmFuns ( startRmFuns
                           , stopRmFuns ) where
 
-import Mud.Data.State.MudData
-import Mud.Data.State.Util.Misc
-import Mud.Threads.Misc
-import Mud.Util.Misc
-import Mud.Util.Operators
+import           Mud.Data.State.MudData
+import           Mud.Data.State.Util.Misc
 import qualified Mud.Misc.Logging as L (logNotice)
+import           Mud.Threads.Misc
+import           Mud.Util.Misc
+import           Mud.Util.Operators
 
-import Control.Arrow (second)
-import Control.Lens (view, views)
-import Control.Lens.Operators ((.~), (<>~))
-import Data.Text (Text)
+import           Control.Arrow (second)
+import           Control.Lens (view, views)
+import           Control.Lens.Operators ((.~), (<>~))
+import           Data.Text (Text)
 import qualified Data.IntMap.Strict as IM (filter, toList)
 
 

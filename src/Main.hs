@@ -10,23 +10,23 @@ https://github.com/jasonstolaruk/CurryMUD
 
 module Main (main) where
 
-import Mud.Data.Misc
-import Mud.TheWorld.TheWorld
-import Mud.Threads.Listen
-import Mud.TopLvlDefs.FilePaths
-import Mud.TopLvlDefs.Misc
-import Mud.Util.Misc
-import Mud.Util.Quoting
-import Mud.Util.Text
+import           Mud.Data.Misc
+import           Mud.TheWorld.TheWorld
+import           Mud.Threads.Listen
+import           Mud.TopLvlDefs.FilePaths
+import           Mud.TopLvlDefs.Misc
+import           Mud.Util.Misc
+import           Mud.Util.Quoting
+import           Mud.Util.Text
 
-import Control.Monad ((<=<), forM_, void, when)
-import Control.Monad.Reader (runReaderT)
-import Data.Monoid ((<>))
+import           Control.Monad ((<=<), forM_, void, when)
+import           Control.Monad.Reader (runReaderT)
+import           Data.Monoid ((<>))
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (putStrLn)
-import System.Directory (createDirectoryIfMissing, doesDirectoryExist, setCurrentDirectory)
-import System.Environment (getEnv, getProgName)
-import System.Remote.Monitoring (forkServer)
+import           System.Directory (createDirectoryIfMissing, doesDirectoryExist, setCurrentDirectory)
+import           System.Environment (getEnv, getProgName)
+import           System.Remote.Monitoring (forkServer)
 
 
 main :: IO ()

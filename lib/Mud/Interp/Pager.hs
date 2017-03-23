@@ -4,24 +4,24 @@
 module Mud.Interp.Pager ( interpPager
                         , sendPagerPrompt ) where
 
-import Mud.Cmds.Msgs.Sorry
-import Mud.Data.State.ActionParams.ActionParams
-import Mud.Data.State.MsgQueue
-import Mud.Data.State.MudData
-import Mud.Data.State.Util.Misc
-import Mud.Data.State.Util.Output
-import Mud.Interp.Misc
-import Mud.Misc.ANSI
-import Mud.Util.Misc
-import Mud.Util.Quoting
-import Mud.Util.Text
+import           Mud.Cmds.Msgs.Sorry
+import           Mud.Data.State.ActionParams.ActionParams
+import           Mud.Data.State.MsgQueue
+import           Mud.Data.State.MudData
+import           Mud.Data.State.Util.Misc
+import           Mud.Data.State.Util.Output
+import           Mud.Interp.Misc
+import           Mud.Misc.ANSI
+import           Mud.Util.Misc
+import           Mud.Util.Quoting
+import           Mud.Util.Text
 
-import Control.Arrow (second)
-import Control.Lens (both)
-import Control.Lens.Operators ((&), (%~))
-import Data.Maybe (fromMaybe)
-import Data.Monoid ((<>))
-import Data.Text (Text)
+import           Control.Arrow (second)
+import           Control.Lens (both)
+import           Control.Lens.Operators ((&), (%~))
+import           Data.Maybe (fromMaybe)
+import           Data.Monoid ((<>))
+import           Data.Text (Text)
 import qualified Data.Text as T
 
 

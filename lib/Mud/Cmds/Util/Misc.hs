@@ -82,67 +82,67 @@ module Mud.Cmds.Util.Misc ( applyRegex
                           , withDbExHandler_
                           , withoutArgs ) where
 
-import Mud.Cmds.Msgs.Misc
-import Mud.Cmds.Msgs.Sorry
-import Mud.Cmds.Util.Abbrev
-import Mud.Data.Misc
-import Mud.Data.State.ActionParams.ActionParams
-import Mud.Data.State.ActionParams.Misc
-import Mud.Data.State.MsgQueue
-import Mud.Data.State.MudData
-import Mud.Data.State.Util.Calc
-import Mud.Data.State.Util.Effect
-import Mud.Data.State.Util.Get
-import Mud.Data.State.Util.Misc
-import Mud.Data.State.Util.Output
-import Mud.Data.State.Util.Random
-import Mud.Interp.Pager
-import Mud.Misc.ANSI
-import Mud.Misc.CurryTime
-import Mud.Misc.Database
-import Mud.Misc.LocPref
-import Mud.Misc.Misc
-import Mud.TheWorld.Zones.AdminZoneIds (iNecropolis)
-import Mud.Threads.Misc
-import Mud.TopLvlDefs.Chars
-import Mud.TopLvlDefs.FilePaths
-import Mud.TopLvlDefs.Misc
-import Mud.TopLvlDefs.Padding
-import Mud.Util.List hiding (headTail)
-import Mud.Util.Misc hiding (blowUp, patternMatchFail)
-import Mud.Util.Operators
-import Mud.Util.Padding
-import Mud.Util.Quoting
-import Mud.Util.Text
-import Mud.Util.Wrapping
+import           Mud.Cmds.Msgs.Misc
+import           Mud.Cmds.Msgs.Sorry
+import           Mud.Cmds.Util.Abbrev
+import           Mud.Data.Misc
+import           Mud.Data.State.ActionParams.ActionParams
+import           Mud.Data.State.ActionParams.Misc
+import           Mud.Data.State.MsgQueue
+import           Mud.Data.State.MudData
+import           Mud.Data.State.Util.Calc
+import           Mud.Data.State.Util.Effect
+import           Mud.Data.State.Util.Get
+import           Mud.Data.State.Util.Misc
+import           Mud.Data.State.Util.Output
+import           Mud.Data.State.Util.Random
+import           Mud.Interp.Pager
+import           Mud.Misc.ANSI
+import           Mud.Misc.CurryTime
+import           Mud.Misc.Database
+import           Mud.Misc.LocPref
 import qualified Mud.Misc.Logging as L (logNotice, logPla)
+import           Mud.Misc.Misc
+import           Mud.TheWorld.Zones.AdminZoneIds (iNecropolis)
+import           Mud.Threads.Misc
+import           Mud.TopLvlDefs.Chars
+import           Mud.TopLvlDefs.FilePaths
+import           Mud.TopLvlDefs.Misc
+import           Mud.TopLvlDefs.Padding
+import           Mud.Util.List hiding (headTail)
 import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
+import           Mud.Util.Misc hiding (blowUp, patternMatchFail)
+import           Mud.Util.Operators
+import           Mud.Util.Padding
+import           Mud.Util.Quoting
+import           Mud.Util.Text
+import           Mud.Util.Wrapping
 
-import Control.Applicative (liftA2)
-import Control.Arrow ((***), (&&&), first)
-import Control.Exception.Lifted (catch, try)
-import Control.Lens (_1, _2, _3, at, both, each, to, view, views)
-import Control.Lens.Operators ((?~), (.~), (&), (%~), (^.), (+~), (<>~))
-import Control.Monad ((>=>), forM, join, mplus, when)
-import Control.Monad.IO.Class (liftIO)
-import Data.Bool (bool)
-import Data.Char (isDigit, isLetter)
-import Data.Either (rights)
-import Data.Function (on)
-import Data.List (delete, groupBy, intercalate, nub, partition, sortBy, unfoldr)
-import Data.Maybe (fromMaybe)
-import Data.Monoid ((<>), Any(..), Sum(..))
-import Data.Text (Text)
-import Data.Time (diffUTCTime, getCurrentTime)
-import GHC.Stack (HasCallStack)
-import Prelude hiding (exp)
+import           Control.Applicative (liftA2)
+import           Control.Arrow ((***), (&&&), first)
+import           Control.Exception.Lifted (catch, try)
+import           Control.Lens (_1, _2, _3, at, both, each, to, view, views)
+import           Control.Lens.Operators ((?~), (.~), (&), (%~), (^.), (+~), (<>~))
+import           Control.Monad ((>=>), forM, join, mplus, when)
+import           Control.Monad.IO.Class (liftIO)
+import           Data.Bool (bool)
+import           Data.Char (isDigit, isLetter)
+import           Data.Either (rights)
+import           Data.Function (on)
+import           Data.List (delete, groupBy, intercalate, nub, partition, sortBy, unfoldr)
+import           Data.Maybe (fromMaybe)
+import           Data.Monoid ((<>), Any(..), Sum(..))
+import           Data.Text (Text)
+import           Data.Time (diffUTCTime, getCurrentTime)
+import           GHC.Stack (HasCallStack)
+import           Prelude hiding (exp)
 import qualified Data.IntMap.Strict as IM (IntMap, empty, filter, foldlWithKey', foldr, fromList, keys, map, mapWithKey, member)
 import qualified Data.Map.Strict as M ((!), elems, keys, lookup, member, null, toList)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
 import qualified Data.Vector.Unboxed as V (Vector, splitAt, toList)
 import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
-import Text.Regex.Posix ((=~))
+import           Text.Regex.Posix ((=~))
 
 
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}

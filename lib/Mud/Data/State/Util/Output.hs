@@ -38,40 +38,40 @@ module Mud.Data.State.Util.Output ( anglePrompt
                                   , wrapSendPrompt
                                   , writeMsg ) where
 
-import Mud.Cmds.Msgs.Hint
-import Mud.Cmds.Msgs.Misc
-import Mud.Cmds.Msgs.Sorry
-import Mud.Data.Misc
-import Mud.Data.State.MsgQueue
-import Mud.Data.State.MudData
-import Mud.Data.State.Util.Get
-import Mud.Data.State.Util.GMCP
-import Mud.Data.State.Util.Misc
-import Mud.Misc.ANSI
-import Mud.Misc.Misc
-import Mud.TopLvlDefs.Chars
-import Mud.TopLvlDefs.Telnet.Chars
-import Mud.Util.List (nubSort)
-import Mud.Util.Misc hiding (patternMatchFail)
-import Mud.Util.Operators
-import Mud.Util.Quoting
-import Mud.Util.Text
-import Mud.Util.Wrapping
+import           Mud.Cmds.Msgs.Hint
+import           Mud.Cmds.Msgs.Misc
+import           Mud.Cmds.Msgs.Sorry
+import           Mud.Data.Misc
+import           Mud.Data.State.MsgQueue
+import           Mud.Data.State.MudData
+import           Mud.Data.State.Util.GMCP
+import           Mud.Data.State.Util.Get
+import           Mud.Data.State.Util.Misc
+import           Mud.Misc.ANSI
+import           Mud.Misc.Misc
+import           Mud.TopLvlDefs.Chars
+import           Mud.TopLvlDefs.Telnet.Chars
+import           Mud.Util.List (nubSort)
 import qualified Mud.Util.Misc as U (patternMatchFail)
+import           Mud.Util.Misc hiding (patternMatchFail)
+import           Mud.Util.Operators
+import           Mud.Util.Quoting
+import           Mud.Util.Text
+import           Mud.Util.Wrapping
 
-import Control.Arrow ((***))
-import Control.Concurrent.STM (atomically)
-import Control.Concurrent.STM.TQueue (writeTQueue)
-import Control.Lens (each, to, views)
-import Control.Lens.Operators ((.~), (&), (%~), (^.), (<>~))
-import Control.Monad (forM_, unless)
-import Control.Monad.IO.Class (liftIO)
-import Data.List ((\\), delete, elemIndex)
-import Data.Maybe (fromMaybe)
-import Data.Monoid ((<>))
-import Data.Text (Text)
-import GHC.Stack (HasCallStack)
-import Prelude hiding (pi)
+import           Control.Arrow ((***))
+import           Control.Concurrent.STM (atomically)
+import           Control.Concurrent.STM.TQueue (writeTQueue)
+import           Control.Lens (each, to, views)
+import           Control.Lens.Operators ((.~), (&), (%~), (^.), (<>~))
+import           Control.Monad (forM_, unless)
+import           Control.Monad.IO.Class (liftIO)
+import           Data.List ((\\), delete, elemIndex)
+import           Data.Maybe (fromMaybe)
+import           Data.Monoid ((<>))
+import           Data.Text (Text)
+import           GHC.Stack (HasCallStack)
+import           Prelude hiding (pi)
 import qualified Data.IntMap.Strict as IM (elems, toList)
 import qualified Data.Text as T
 

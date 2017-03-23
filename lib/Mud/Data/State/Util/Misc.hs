@@ -73,43 +73,43 @@ module Mud.Data.State.Util.Misc ( addToInv
                                 , tweaks
                                 , upd ) where
 
-import Mud.Data.Misc
-import Mud.Data.State.MudData
-import Mud.Data.State.Util.Get
-import Mud.Data.State.Util.Hierarchy
-import Mud.Misc.Misc
-import Mud.TheWorld.Zones.AdminZoneIds (iNecropolis, iWelcome)
-import Mud.TopLvlDefs.Chars
-import Mud.TopLvlDefs.Misc
-import Mud.TopLvlDefs.Seconds
-import Mud.Util.List hiding (countOcc)
-import Mud.Util.Misc hiding (blowUp, patternMatchFail)
-import Mud.Util.Operators
-import Mud.Util.Quoting
-import Mud.Util.Text
+import           Mud.Data.Misc
+import           Mud.Data.State.MudData
+import           Mud.Data.State.Util.Get
+import           Mud.Data.State.Util.Hierarchy
+import           Mud.Misc.Misc
+import           Mud.TheWorld.Zones.AdminZoneIds (iNecropolis, iWelcome)
+import           Mud.TopLvlDefs.Chars
+import           Mud.TopLvlDefs.Misc
+import           Mud.TopLvlDefs.Seconds
+import           Mud.Util.List hiding (countOcc)
 import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
+import           Mud.Util.Misc hiding (blowUp, patternMatchFail)
+import           Mud.Util.Operators
+import           Mud.Util.Quoting
+import           Mud.Util.Text
 
-import Control.Arrow ((***), (&&&), first)
-import Control.Concurrent (ThreadId)
-import Control.Concurrent.Async (asyncThreadId)
-import Control.Lens (_1, _2, at, both, view, views)
-import Control.Lens.Operators ((.~), (&), (%~), (^.))
-import Control.Monad ((>=>))
-import Control.Monad.IO.Class (liftIO)
-import Control.Monad.Reader (ask, asks)
-import Data.Bool (bool)
-import Data.IORef (atomicModifyIORef', readIORef)
-import Data.List ((\\), delete, foldl', nub, nubBy, sortBy, zip4)
-import Data.Maybe (fromMaybe)
-import Data.Monoid (Sum(..), (<>))
-import Data.Text (Text)
-import GHC.Exts (sortWith)
-import GHC.Stack (HasCallStack)
+import           Control.Arrow ((***), (&&&), first)
+import           Control.Concurrent (ThreadId)
+import           Control.Concurrent.Async (asyncThreadId)
+import           Control.Lens (_1, _2, at, both, view, views)
+import           Control.Lens.Operators ((.~), (&), (%~), (^.))
+import           Control.Monad ((>=>))
+import           Control.Monad.IO.Class (liftIO)
+import           Control.Monad.Reader (ask, asks)
+import           Data.Bool (bool)
+import           Data.IORef (atomicModifyIORef', readIORef)
+import           Data.List ((\\), delete, foldl', nub, nubBy, sortBy, zip4)
+import           Data.Maybe (fromMaybe)
+import           Data.Monoid (Sum(..), (<>))
+import           Data.Text (Text)
+import           GHC.Exts (sortWith)
+import           GHC.Stack (HasCallStack)
 import qualified Data.IntMap.Strict as IM ((!), filter, keys)
 import qualified Data.Map.Strict as M (lookup)
 import qualified Data.Text as T
 import qualified Data.Vector.Unboxed as V (Vector)
-import Text.Regex.Posix ((=~))
+import           Text.Regex.Posix ((=~))
 
 
 {-# ANN module ("HLint: ignore Use &&"        :: String) #-}

@@ -17,47 +17,47 @@ module Mud.Misc.Logging ( closeLogs
                         , massLogPla
                         , writeLog ) where
 
-import Mud.Data.Misc
-import Mud.Data.State.MsgQueue
-import Mud.Data.State.MudData
-import Mud.Data.State.Util.Get
-import Mud.Data.State.Util.Locks
-import Mud.Data.State.Util.Misc
-import Mud.Data.State.Util.Output
-import Mud.TopLvlDefs.FilePaths
-import Mud.TopLvlDefs.Misc
-import Mud.Util.Misc hiding (blowUp)
-import Mud.Util.Operators
-import Mud.Util.Quoting
-import Mud.Util.Text
+import           Mud.Data.Misc
+import           Mud.Data.State.MsgQueue
+import           Mud.Data.State.MudData
+import           Mud.Data.State.Util.Get
+import           Mud.Data.State.Util.Locks
+import           Mud.Data.State.Util.Misc
+import           Mud.Data.State.Util.Output
+import           Mud.TopLvlDefs.FilePaths
+import           Mud.TopLvlDefs.Misc
 import qualified Mud.Util.Misc as U (blowUp)
+import           Mud.Util.Misc hiding (blowUp)
+import           Mud.Util.Operators
+import           Mud.Util.Quoting
+import           Mud.Util.Text
 
-import Control.Concurrent.Async (async, race_, wait)
-import Control.Concurrent.STM (atomically)
-import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
-import Control.Exception (ArithException(..), AsyncException(..), IOException, SomeException, fromException)
-import Control.Exception.Lifted (catch, handle, throwIO)
-import Control.Lens (both, view, views)
-import Control.Lens.Operators ((.~), (&), (%~))
-import Control.Monad ((>=>), forM_, forever, guard, when)
-import Control.Monad.IO.Class (liftIO)
-import Control.Monad.Reader (asks)
-import Data.List (sort)
-import Data.Monoid ((<>))
-import Data.Text (Text)
+import           Control.Concurrent.Async (async, race_, wait)
+import           Control.Concurrent.STM (atomically)
+import           Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
+import           Control.Exception (ArithException(..), AsyncException(..), IOException, SomeException, fromException)
+import           Control.Exception.Lifted (catch, handle, throwIO)
+import           Control.Lens (both, view, views)
+import           Control.Lens.Operators ((.~), (&), (%~))
+import           Control.Monad ((>=>), forM_, forever, guard, when)
+import           Control.Monad.IO.Class (liftIO)
+import           Control.Monad.Reader (asks)
+import           Data.List (sort)
+import           Data.Monoid ((<>))
+import           Data.Text (Text)
 import qualified Data.IntMap.Strict as IM (elems, lookup)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (appendFile, hPutStrLn)
-import System.Directory (doesFileExist, getDirectoryContents, removeFile, renameFile)
-import System.FilePath ((<.>), (</>), replaceExtension, takeBaseName)
-import System.IO (stderr)
-import System.IO.Error (isAlreadyInUseError, isPermissionError)
-import System.Log (Priority(..))
-import System.Log.Formatter (simpleLogFormatter)
-import System.Log.Handler (close, setFormatter)
-import System.Log.Handler.Simple (fileHandler)
-import System.Log.Logger (errorM, infoM, noticeM, removeAllHandlers, removeHandler, rootLoggerName, setHandlers, setLevel, updateGlobalLogger)
-import System.Posix.Files (fileSize, getFileStatus)
+import           System.Directory (doesFileExist, getDirectoryContents, removeFile, renameFile)
+import           System.FilePath ((<.>), (</>), replaceExtension, takeBaseName)
+import           System.IO (stderr)
+import           System.IO.Error (isAlreadyInUseError, isPermissionError)
+import           System.Log (Priority(..))
+import           System.Log.Formatter (simpleLogFormatter)
+import           System.Log.Handler (close, setFormatter)
+import           System.Log.Handler.Simple (fileHandler)
+import           System.Log.Logger (errorM, infoM, noticeM, removeAllHandlers, removeHandler, rootLoggerName, setHandlers, setLevel, updateGlobalLogger)
+import           System.Posix.Files (fileSize, getFileStatus)
 
 
 blowUp :: BlowUp a

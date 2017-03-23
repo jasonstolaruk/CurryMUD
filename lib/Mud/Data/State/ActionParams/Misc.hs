@@ -5,12 +5,12 @@ module Mud.Data.State.ActionParams.Misc ( capitalizeMsg
                                         , formatMsgWithTargetArgs
                                         , punctuateMsg ) where
 
-import Mud.Util.Misc (PatternMatchFail)
-import Mud.Util.Text
+import           Mud.Util.Misc (PatternMatchFail)
 import qualified Mud.Util.Misc as U (patternMatchFail)
+import           Mud.Util.Text
 
-import Data.Char (isLetter)
-import Data.Text (Text)
+import           Data.Char (isLetter)
+import           Data.Text (Text)
 import qualified Data.Text as T
 
 

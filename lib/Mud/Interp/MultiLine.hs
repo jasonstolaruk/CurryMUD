@@ -2,15 +2,15 @@
 
 module Mud.Interp.MultiLine (interpMutliLine) where
 
-import Mud.Data.State.ActionParams.ActionParams
-import Mud.Data.State.MudData
-import Mud.Data.State.Util.Misc
-import Mud.TopLvlDefs.Chars
-import Mud.Util.Misc (PatternMatchFail)
-import Mud.Util.Text
+import           Mud.Data.State.ActionParams.ActionParams
+import           Mud.Data.State.MudData
+import           Mud.Data.State.Util.Misc
+import           Mud.TopLvlDefs.Chars
+import           Mud.Util.Misc (PatternMatchFail)
 import qualified Mud.Util.Misc as U (patternMatchFail)
+import           Mud.Util.Text
 
-import Data.Text (Text)
+import           Data.Text (Text)
 import qualified Data.Text as T
 
 

@@ -16,20 +16,20 @@ module Mud.Util.Wrapping ( adjustIndent
                          , xformLeading
                          , xformLeadingSpaceChars ) where
 
-import Mud.Data.State.ActionParams.ActionParams
-import Mud.Misc.ANSI
-import Mud.TopLvlDefs.Chars
-import Mud.Util.Misc hiding (patternMatchFail)
-import Mud.Util.Operators
-import Mud.Util.Text
+import           Mud.Data.State.ActionParams.ActionParams
+import           Mud.Misc.ANSI
+import           Mud.TopLvlDefs.Chars
 import qualified Mud.Util.Misc as U (patternMatchFail)
+import           Mud.Util.Misc hiding (patternMatchFail)
+import           Mud.Util.Operators
+import           Mud.Util.Text
 
-import Control.Lens (both)
-import Control.Lens.Operators ((&), (%~))
-import Data.Char (isDigit, isSpace)
-import Data.Monoid ((<>))
-import Data.Text (Text)
-import GHC.Stack (HasCallStack)
+import           Control.Lens (both)
+import           Control.Lens.Operators ((&), (%~))
+import           Data.Char (isDigit, isSpace)
+import           Data.Monoid ((<>))
+import           Data.Text (Text)
+import           GHC.Stack (HasCallStack)
 import qualified Data.Text as T
 
 

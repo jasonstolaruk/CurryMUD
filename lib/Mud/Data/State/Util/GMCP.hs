@@ -4,21 +4,21 @@
 module Mud.Data.State.Util.GMCP ( gmcpRmInfo
                                 , gmcpVitals ) where
 
-import Mud.Data.State.MudData
-import Mud.Data.State.Util.Get
-import Mud.Data.State.Util.Misc
-import Mud.TheWorld.Zones.ZoneMap
-import Mud.Util.Misc hiding (blowUp)
-import Mud.Util.Quoting
-import Mud.Util.Text
+import           Mud.Data.State.MudData
+import           Mud.Data.State.Util.Get
+import           Mud.Data.State.Util.Misc
+import           Mud.TheWorld.Zones.ZoneMap
 import qualified Mud.Util.Misc as U (blowUp)
+import           Mud.Util.Misc hiding (blowUp)
+import           Mud.Util.Quoting
+import           Mud.Util.Text
 
-import Control.Lens (both, each, views)
-import Control.Lens.Operators ((&), (%~), (^.))
-import Data.List (lookup)
-import Data.Maybe (fromMaybe)
-import Data.Monoid ((<>))
-import Data.Text (Text)
+import           Control.Lens (both, each, views)
+import           Control.Lens.Operators ((&), (%~), (^.))
+import           Data.List (lookup)
+import           Data.Maybe (fromMaybe)
+import           Data.Monoid ((<>))
+import           Data.Text (Text)
 import qualified Data.Text as T
 
 

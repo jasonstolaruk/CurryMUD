@@ -67,22 +67,22 @@ module Mud.Misc.Database ( AdminChanRec(..)
                          , UnPwRec(..)
                          , WordRec(..) ) where
 
-import Mud.Data.State.MudData
-import Mud.Data.State.Util.Locks
-import Mud.TopLvlDefs.FilePaths
-import Mud.TopLvlDefs.Misc
-import Mud.Util.Misc
-import Mud.Util.Quoting
-import Mud.Util.Text
+import           Mud.Data.State.MudData
+import           Mud.Data.State.Util.Locks
+import           Mud.TopLvlDefs.FilePaths
+import           Mud.TopLvlDefs.Misc
+import           Mud.Util.Misc
+import           Mud.Util.Quoting
+import           Mud.Util.Text
 
-import Control.Monad (forM_, when)
-import Control.Monad.IO.Class (liftIO)
-import Crypto.BCrypt (fastBcryptHashingPolicy, hashPasswordUsingPolicy)
-import Data.Monoid ((<>))
-import Data.Text (Text)
-import Data.Time (UTCTime)
-import Database.SQLite.Simple (Connection, FromRow, Only(..), Query(..), ToRow, execute, execute_, field, fromRow, query, query_, toRow, withConnection)
-import Database.SQLite.Simple.FromRow (RowParser)
+import           Control.Monad (forM_, when)
+import           Control.Monad.IO.Class (liftIO)
+import           Crypto.BCrypt (fastBcryptHashingPolicy, hashPasswordUsingPolicy)
+import           Data.Monoid ((<>))
+import           Data.Text (Text)
+import           Data.Time (UTCTime)
+import           Database.SQLite.Simple (Connection, FromRow, Only(..), Query(..), ToRow, execute, execute_, field, fromRow, query, query_, toRow, withConnection)
+import           Database.SQLite.Simple.FromRow (RowParser)
 import qualified Data.ByteString.Char8 as B
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T

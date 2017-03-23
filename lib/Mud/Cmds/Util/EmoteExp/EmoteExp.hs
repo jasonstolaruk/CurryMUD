@@ -8,37 +8,37 @@ module Mud.Cmds.Util.EmoteExp.EmoteExp ( adminChanEmotify
                                        , expCmdify
                                        , targetify ) where
 
-import Mud.Cmds.ExpCmds
-import Mud.Cmds.Msgs.Advice
-import Mud.Cmds.Msgs.Sorry
-import Mud.Cmds.Util.CmdPrefixes
-import Mud.Cmds.Util.Misc
-import Mud.Data.Misc
-import Mud.Data.State.ActionParams.Misc
-import Mud.Data.State.MudData
-import Mud.Data.State.Util.Get
-import Mud.Data.State.Util.Output
-import Mud.Misc.ANSI
-import Mud.TopLvlDefs.Chars
-import Mud.TopLvlDefs.Misc
-import Mud.Util.List hiding (headTail)
-import Mud.Util.Misc hiding (patternMatchFail)
-import Mud.Util.Operators
-import Mud.Util.Quoting
-import Mud.Util.Text
+import           Mud.Cmds.ExpCmds
+import           Mud.Cmds.Msgs.Advice
+import           Mud.Cmds.Msgs.Sorry
+import           Mud.Cmds.Util.CmdPrefixes
+import           Mud.Cmds.Util.Misc
+import           Mud.Data.Misc
+import           Mud.Data.State.ActionParams.Misc
+import           Mud.Data.State.MudData
+import           Mud.Data.State.Util.Get
+import           Mud.Data.State.Util.Output
+import           Mud.Misc.ANSI
+import           Mud.TopLvlDefs.Chars
+import           Mud.TopLvlDefs.Misc
+import           Mud.Util.List hiding (headTail)
 import qualified Mud.Util.Misc as U (patternMatchFail)
+import           Mud.Util.Misc hiding (patternMatchFail)
+import           Mud.Util.Operators
+import           Mud.Util.Quoting
+import           Mud.Util.Text
 
-import Control.Arrow ((&&&))
-import Control.Lens (_1, _2, both, each, view, views)
-import Control.Lens.Operators ((&), (%~), (<>~))
-import Data.Bool (bool)
-import Data.Char (isLetter)
-import Data.Either (lefts)
-import Data.List ((\\), delete, intersperse, nub)
-import Data.Monoid ((<>))
-import Data.Text (Text)
-import Data.Tuple (swap)
-import GHC.Stack (HasCallStack)
+import           Control.Arrow ((&&&))
+import           Control.Lens (_1, _2, both, each, view, views)
+import           Control.Lens.Operators ((&), (%~), (<>~))
+import           Data.Bool (bool)
+import           Data.Char (isLetter)
+import           Data.Either (lefts)
+import           Data.List ((\\), delete, intersperse, nub)
+import           Data.Monoid ((<>))
+import           Data.Text (Text)
+import           Data.Tuple (swap)
+import           GHC.Stack (HasCallStack)
 import qualified Data.Text as T
 
 

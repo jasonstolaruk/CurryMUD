@@ -14,33 +14,33 @@ module Mud.Misc.NameResolution ( ReconciledCoins
                                , resolveEntCoinNamesWithRols
                                , ringHelp ) where
 
-import Mud.Data.Misc
-import Mud.Data.State.MudData
-import Mud.Data.State.Util.Coins
-import Mud.Data.State.Util.Get
-import Mud.Data.State.Util.Misc
-import Mud.Misc.ANSI
-import Mud.Misc.Misc
-import Mud.TopLvlDefs.Chars
-import Mud.TopLvlDefs.Misc
-import Mud.Util.Misc hiding (blowUp, patternMatchFail)
-import Mud.Util.Operators
-import Mud.Util.Quoting
-import Mud.Util.Text
+import           Mud.Data.Misc
+import           Mud.Data.State.MudData
+import           Mud.Data.State.Util.Coins
+import           Mud.Data.State.Util.Get
+import           Mud.Data.State.Util.Misc
+import           Mud.Misc.ANSI
+import           Mud.Misc.Misc
+import           Mud.TopLvlDefs.Chars
+import           Mud.TopLvlDefs.Misc
 import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
+import           Mud.Util.Misc hiding (blowUp, patternMatchFail)
+import           Mud.Util.Operators
+import           Mud.Util.Quoting
+import           Mud.Util.Text
 
-import Control.Arrow (first)
-import Control.Lens (view)
-import Control.Monad (guard)
-import Data.Char (isDigit)
-import Data.List ((\\), foldl')
-import Data.Monoid ((<>))
-import Data.String (fromString)
-import Data.Text (Text)
-import Data.Text.Read (decimal)
-import Formatting (Format, (%), sformat)
-import Formatting.Formatters (int, stext)
-import Prelude hiding ((>>))
+import           Control.Arrow (first)
+import           Control.Lens (view)
+import           Control.Monad (guard)
+import           Data.Char (isDigit)
+import           Data.List ((\\), foldl')
+import           Data.Monoid ((<>))
+import           Data.String (fromString)
+import           Data.Text (Text)
+import           Data.Text.Read (decimal)
+import           Formatting (Format, (%), sformat)
+import           Formatting.Formatters (int, stext)
+import           Prelude hiding ((>>))
 import qualified Data.Text as T
 import qualified Prelude ((>>))
 

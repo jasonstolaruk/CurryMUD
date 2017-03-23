@@ -3,22 +3,22 @@
 module Mud.Data.State.Util.Effect ( procEffectList
                                   , procInstaEffect ) where
 
-import Mud.Data.Misc
-import Mud.Data.State.MudData
-import Mud.Data.State.Util.Get
-import Mud.Data.State.Util.Misc
-import Mud.Data.State.Util.Random
-import Mud.Threads.Effect
-import Mud.Threads.FeelingTimer
-import Mud.Util.Misc
+import           Mud.Data.Misc
+import           Mud.Data.State.MudData
+import           Mud.Data.State.Util.Get
+import           Mud.Data.State.Util.Misc
+import           Mud.Data.State.Util.Random
 import qualified Mud.Misc.Logging as L (logPla)
+import           Mud.Threads.Effect
+import           Mud.Threads.FeelingTimer
+import           Mud.Util.Misc
 
-import Control.Lens.Operators ((.~), (&), (^.))
-import Control.Monad (when)
-import Data.Either (partitionEithers)
-import Data.Monoid ((<>))
-import Data.Text (Text)
-import GHC.Stack (HasCallStack)
+import           Control.Lens.Operators ((.~), (&), (^.))
+import           Control.Monad (when)
+import           Data.Either (partitionEithers)
+import           Data.Monoid ((<>))
+import           Data.Text (Text)
+import           GHC.Stack (HasCallStack)
 
 
 logPla :: Text -> Id -> Text -> MudStack ()

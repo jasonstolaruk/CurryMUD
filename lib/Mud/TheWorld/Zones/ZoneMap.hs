@@ -2,13 +2,13 @@
 
 module Mud.TheWorld.Zones.ZoneMap (getZoneForRmId) where
 
-import Mud.Data.State.MudData
-import Mud.TheWorld.Zones.AdminZoneIds
-import Mud.TheWorld.Zones.DalbenIds
-import Mud.TheWorld.Zones.TutorialIds
+import           Mud.Data.State.MudData
+import           Mud.TheWorld.Zones.AdminZoneIds
+import           Mud.TheWorld.Zones.DalbenIds
+import           Mud.TheWorld.Zones.TutorialIds
 
-import Data.Maybe (fromMaybe)
-import Data.Text (Text)
+import           Data.Maybe (fromMaybe)
+import           Data.Text (Text)
 import qualified Data.IntMap.Strict as IM (IntMap, fromList, lookup)
 
 

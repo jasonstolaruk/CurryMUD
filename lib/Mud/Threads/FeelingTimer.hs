@@ -3,26 +3,26 @@
 module Mud.Threads.FeelingTimer ( startFeeling
                                 , stopFeelings ) where
 
-import Mud.Data.Misc
-import Mud.Data.State.MudData
-import Mud.Data.State.Util.Get
-import Mud.Data.State.Util.Misc
-import Mud.Threads.Misc
-import Mud.TopLvlDefs.Seconds
-import Mud.Util.Misc
-import Mud.Util.Operators
-import Mud.Util.Quoting
+import           Mud.Data.Misc
+import           Mud.Data.State.MudData
+import           Mud.Data.State.Util.Get
+import           Mud.Data.State.Util.Misc
 import qualified Mud.Misc.Logging as L (logExMsg, logPla)
+import           Mud.Threads.Misc
+import           Mud.TopLvlDefs.Seconds
+import           Mud.Util.Misc
+import           Mud.Util.Operators
+import           Mud.Util.Quoting
 
-import Control.Concurrent.Async (cancel, wait)
-import Control.Exception (AsyncException(..), SomeException, fromException)
-import Control.Exception.Lifted (catch, handle)
-import Control.Lens.Operators ((.~), (%~))
-import Control.Monad (mapM_)
-import Control.Monad.IO.Class (liftIO)
-import Data.Monoid ((<>))
-import Data.Text (Text)
-import GHC.Stack (HasCallStack)
+import           Control.Concurrent.Async (cancel, wait)
+import           Control.Exception (AsyncException(..), SomeException, fromException)
+import           Control.Exception.Lifted (catch, handle)
+import           Control.Lens.Operators ((.~), (%~))
+import           Control.Monad (mapM_)
+import           Control.Monad.IO.Class (liftIO)
+import           Data.Monoid ((<>))
+import           Data.Text (Text)
+import           GHC.Stack (HasCallStack)
 import qualified Data.Map.Strict as M (delete, elems, empty, insert, lookup)
 import qualified Data.Text as T
 

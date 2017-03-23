@@ -6,21 +6,21 @@ module Mud.Threads.DbTblPurger ( threadAdminChanTblPurger
                                , threadQuestionChanTblPurger
                                , threadTeleTblPurger ) where
 
-import Mud.Cmds.Util.Misc
-import Mud.Data.State.MudData
-import Mud.Misc.Database
-import Mud.Threads.Misc
-import Mud.TopLvlDefs.Misc
-import Mud.Util.Misc
-import Mud.Util.Quoting
-import Mud.Util.Text
+import           Mud.Cmds.Util.Misc
+import           Mud.Data.State.MudData
+import           Mud.Misc.Database
 import qualified Mud.Misc.Logging as L (logNotice)
+import           Mud.Threads.Misc
+import           Mud.TopLvlDefs.Misc
+import           Mud.Util.Misc
+import           Mud.Util.Quoting
+import           Mud.Util.Text
 
-import Control.Exception.Lifted (catch, handle)
-import Control.Monad (forever)
-import Control.Monad.IO.Class (liftIO)
-import Data.Monoid ((<>))
-import Data.Text (Text)
+import           Control.Exception.Lifted (catch, handle)
+import           Control.Monad (forever)
+import           Control.Monad.IO.Class (liftIO)
+import           Data.Monoid ((<>))
+import           Data.Text (Text)
 import qualified Data.Text as T
 
 

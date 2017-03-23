@@ -75,17 +75,17 @@ module Mud.Misc.ANSI ( abbrevColor
                      , yellow
                      , zingColor ) where
 
-import Mud.TopLvlDefs.Chars
-import Mud.Util.Misc hiding (patternMatchFail)
-import Mud.Util.Operators
-import Mud.Util.Quoting
-import Mud.Util.Text
+import           Mud.TopLvlDefs.Chars
 import qualified Mud.Util.Misc as U (patternMatchFail)
+import           Mud.Util.Misc hiding (patternMatchFail)
+import           Mud.Util.Operators
+import           Mud.Util.Quoting
+import           Mud.Util.Text
 
-import Data.Monoid ((<>))
-import Data.Text (Text)
+import           Data.Monoid ((<>))
+import           Data.Text (Text)
 import qualified Data.Text as T
-import System.Console.ANSI (BlinkSpeed(..), Color(..), ColorIntensity(..), ConsoleLayer(..), SGR(..), Underlining(..), setSGRCode)
+import           System.Console.ANSI (BlinkSpeed(..), Color(..), ColorIntensity(..), ConsoleLayer(..), SGR(..), Underlining(..), setSGRCode)
 
 
 patternMatchFail :: (Show a) => PatternMatchFail a b

@@ -2,17 +2,17 @@
 
 module Mud.Util.Telnet where
 
-import Mud.Data.Misc
-import Mud.TopLvlDefs.Telnet.Chars
-import Mud.TopLvlDefs.Telnet.CodeMap
-import Mud.Util.Misc hiding (patternMatchFail)
-import Mud.Util.Operators
-import Mud.Util.Text
+import           Mud.Data.Misc
+import           Mud.TopLvlDefs.Telnet.Chars
+import           Mud.TopLvlDefs.Telnet.CodeMap
 import qualified Mud.Util.Misc as U (patternMatchFail)
+import           Mud.Util.Misc hiding (patternMatchFail)
+import           Mud.Util.Operators
+import           Mud.Util.Text
 
-import Data.Char (ord)
-import Data.Monoid ((<>))
-import Data.Text (Text)
+import           Data.Char (ord)
+import           Data.Monoid ((<>))
+import           Data.Text (Text)
 import qualified Data.IntMap.Strict as IM (lookup)
 import qualified Data.Text as T
 

@@ -2,9 +2,9 @@
 
 module Mud.Misc.Gods where
 
-import Mud.Data.Misc
-import Mud.Data.State.MudData
-import Mud.Util.Misc
+import           Mud.Data.Misc
+import           Mud.Data.State.MudData
+import           Mud.Util.Misc
 
 import qualified Data.Set as S (Set, filter, fromList, toList)
 

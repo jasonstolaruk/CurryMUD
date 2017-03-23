@@ -9,16 +9,16 @@ module Mud.Misc.Misc ( BothGramNos
                      , parseWrapXform
                      , pluralize ) where
 
-import Mud.Data.Misc
-import Mud.Data.State.MudData
-import Mud.Util.Operators
-import Mud.Util.Text
-import Mud.Util.Token
-import Mud.Util.Wrapping
+import           Mud.Data.Misc
+import           Mud.Data.State.MudData
+import           Mud.Util.Operators
+import           Mud.Util.Text
+import           Mud.Util.Token
+import           Mud.Util.Wrapping
 
-import Data.Maybe (catMaybes)
-import Data.Monoid (Sum(..), (<>))
-import Data.Text (Text)
+import           Data.Maybe (catMaybes)
+import           Data.Monoid (Sum(..), (<>))
+import           Data.Text (Text)
 import qualified Data.Text as T
 
 

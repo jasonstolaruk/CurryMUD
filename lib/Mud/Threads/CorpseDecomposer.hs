@@ -4,36 +4,36 @@ module Mud.Threads.CorpseDecomposer ( pauseCorpseDecomps
                                     , restartCorpseDecomps
                                     , startCorpseDecomp ) where
 
-import Mud.Cmds.Msgs.Misc
-import Mud.Data.State.MudData
-import Mud.Data.State.Util.Destroy
-import Mud.Data.State.Util.Get
-import Mud.Data.State.Util.Misc
-import Mud.Data.State.Util.Output
-import Mud.Threads.Misc
-import Mud.TopLvlDefs.Misc
-import Mud.Util.Misc hiding (blowUp)
-import Mud.Util.Operators
-import Mud.Util.Quoting
-import Mud.Util.Text
+import           Mud.Cmds.Msgs.Misc
+import           Mud.Data.State.MudData
+import           Mud.Data.State.Util.Destroy
+import           Mud.Data.State.Util.Get
+import           Mud.Data.State.Util.Misc
+import           Mud.Data.State.Util.Output
 import qualified Mud.Misc.Logging as L (logNotice)
+import           Mud.Threads.Misc
+import           Mud.TopLvlDefs.Misc
 import qualified Mud.Util.Misc as U (blowUp)
+import           Mud.Util.Misc hiding (blowUp)
+import           Mud.Util.Operators
+import           Mud.Util.Quoting
+import           Mud.Util.Text
 
-import Control.Arrow (first)
-import Control.Concurrent.Async (asyncThreadId, wait)
-import Control.Exception (Exception)
-import Control.Exception.Lifted (catch, finally, handle, throwTo)
-import Control.Lens (at, both, set, views)
-import Control.Lens.Operators ((?~), (.~), (&), (%~))
-import Control.Monad (void)
-import Control.Monad.IO.Class (liftIO)
-import Data.Bool (bool)
-import Data.IORef (IORef, newIORef, readIORef, writeIORef)
-import Data.Maybe (fromMaybe)
-import Data.Monoid ((<>))
-import Data.Text (Text)
-import Data.Typeable (Typeable)
-import GHC.Stack (HasCallStack)
+import           Control.Arrow (first)
+import           Control.Concurrent.Async (asyncThreadId, wait)
+import           Control.Exception (Exception)
+import           Control.Exception.Lifted (catch, finally, handle, throwTo)
+import           Control.Lens (at, both, set, views)
+import           Control.Lens.Operators ((?~), (.~), (&), (%~))
+import           Control.Monad (void)
+import           Control.Monad.IO.Class (liftIO)
+import           Data.Bool (bool)
+import           Data.IORef (IORef, newIORef, readIORef, writeIORef)
+import           Data.Maybe (fromMaybe)
+import           Data.Monoid ((<>))
+import           Data.Text (Text)
+import           Data.Typeable (Typeable)
+import           GHC.Stack (HasCallStack)
 import qualified Data.IntMap.Strict as IM (elems, empty, toList)
 import qualified Data.Text as T
 

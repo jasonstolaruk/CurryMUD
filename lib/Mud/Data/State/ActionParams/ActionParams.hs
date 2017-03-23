@@ -25,17 +25,17 @@ module Mud.Data.State.ActionParams.ActionParams ( ActionParams(..)
                                                 , pattern WithArgs
                                                 , pattern WithTarget ) where
 
-import Mud.Data.State.ActionParams.Misc
-import Mud.Data.State.MsgQueue
-import Mud.Util.List
-import Mud.Util.Quoting
+import           Mud.Data.State.ActionParams.Misc
+import           Mud.Data.State.MsgQueue
+import           Mud.Util.List
+import           Mud.Util.Quoting
 
-import Data.List (nub)
-import Data.String (fromString)
-import Data.Text (Text)
-import Formatting ((%), sformat)
-import Formatting.Formatters (string)
-import Prelude hiding ((>>))
+import           Data.List (nub)
+import           Data.String (fromString)
+import           Data.Text (Text)
+import           Formatting ((%), sformat)
+import           Formatting.Formatters (string)
+import           Prelude hiding ((>>))
 import qualified Data.Text as T
 
 

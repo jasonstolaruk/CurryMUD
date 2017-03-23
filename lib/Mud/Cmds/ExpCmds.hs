@@ -7,29 +7,29 @@ module Mud.Cmds.ExpCmds ( expCmdSet
                         , getExpCmdByName
                         , mkExpAction ) where
 
-import Mud.Cmds.Msgs.Advice
-import Mud.Cmds.Msgs.Sorry
-import Mud.Cmds.Util.Misc
-import Mud.Cmds.Util.Pla
-import Mud.Data.Misc
-import Mud.Data.State.ActionParams.ActionParams
-import Mud.Data.State.MudData
-import Mud.Data.State.Util.Get
-import Mud.Data.State.Util.Misc
-import Mud.Data.State.Util.Output
-import Mud.Misc.LocPref
-import Mud.Util.Misc hiding (patternMatchFail)
-import Mud.Util.Operators
-import Mud.Util.Text
+import           Mud.Cmds.Msgs.Advice
+import           Mud.Cmds.Msgs.Sorry
+import           Mud.Cmds.Util.Misc
+import           Mud.Cmds.Util.Pla
+import           Mud.Data.Misc
+import           Mud.Data.State.ActionParams.ActionParams
+import           Mud.Data.State.MudData
+import           Mud.Data.State.Util.Get
+import           Mud.Data.State.Util.Misc
+import           Mud.Data.State.Util.Output
+import           Mud.Misc.LocPref
 import qualified Mud.Misc.Logging as L (logPlaOut)
 import qualified Mud.Util.Misc as U (patternMatchFail)
+import           Mud.Util.Misc hiding (patternMatchFail)
+import           Mud.Util.Operators
+import           Mud.Util.Text
 
-import Control.Arrow (first)
-import Control.Lens.Operators ((?~), (.~))
-import Data.Bool (bool)
-import Data.List ((\\), delete)
-import Data.Text (Text)
-import GHC.Stack (HasCallStack)
+import           Control.Arrow (first)
+import           Control.Lens.Operators ((?~), (.~))
+import           Data.Bool (bool)
+import           Data.List ((\\), delete)
+import           Data.Text (Text)
+import           GHC.Stack (HasCallStack)
 import qualified Data.Set as S (Set, filter, foldr, fromList, map, toList)
 import qualified Data.Text as T
 

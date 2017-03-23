@@ -8,35 +8,35 @@ module Mud.Threads.Effect ( massPauseEffects
                           , stopEffect
                           , stopEffects ) where
 
-import Mud.Data.Misc
-import Mud.Data.State.MudData
-import Mud.Data.State.Util.Get
-import Mud.Data.State.Util.Hierarchy
-import Mud.Data.State.Util.Misc
-import Mud.Data.State.Util.Random
-import Mud.Threads.FeelingTimer
-import Mud.Threads.Misc
-import Mud.Util.Misc
-import Mud.Util.Operators
-import Mud.Util.Quoting
-import Mud.Util.Text
+import           Mud.Data.Misc
+import           Mud.Data.State.MudData
+import           Mud.Data.State.Util.Get
+import           Mud.Data.State.Util.Hierarchy
+import           Mud.Data.State.Util.Misc
+import           Mud.Data.State.Util.Random
 import qualified Mud.Misc.Logging as L (logNotice, logPla)
+import           Mud.Threads.FeelingTimer
+import           Mud.Threads.Misc
+import           Mud.Util.Misc
+import           Mud.Util.Operators
+import           Mud.Util.Quoting
+import           Mud.Util.Text
 
-import Control.Concurrent (myThreadId)
-import Control.Concurrent.Async (asyncThreadId, cancel, wait)
-import Control.Concurrent.STM (atomically)
-import Control.Concurrent.STM.TMVar (newEmptyTMVarIO, putTMVar, takeTMVar)
-import Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
-import Control.Exception.Lifted (finally, handle)
-import Control.Lens (_1, view, views)
-import Control.Lens.Operators ((?~), (.~), (&), (%~), (^.), (<>~))
-import Control.Monad ((>=>), forM_, unless, when)
-import Control.Monad.IO.Class (liftIO)
-import Control.Monad.Reader (ask)
-import Data.IORef (newIORef, readIORef)
-import Data.Monoid ((<>))
-import Data.Text (Text)
-import GHC.Stack (HasCallStack)
+import           Control.Concurrent (myThreadId)
+import           Control.Concurrent.Async (asyncThreadId, cancel, wait)
+import           Control.Concurrent.STM (atomically)
+import           Control.Concurrent.STM.TMVar (newEmptyTMVarIO, putTMVar, takeTMVar)
+import           Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
+import           Control.Exception.Lifted (finally, handle)
+import           Control.Lens (_1, view, views)
+import           Control.Lens.Operators ((?~), (.~), (&), (%~), (^.), (<>~))
+import           Control.Monad ((>=>), forM_, unless, when)
+import           Control.Monad.IO.Class (liftIO)
+import           Control.Monad.Reader (ask)
+import           Data.IORef (newIORef, readIORef)
+import           Data.Monoid ((<>))
+import           Data.Text (Text)
+import           GHC.Stack (HasCallStack)
 import qualified Data.IntMap.Strict as IM (keys, toList)
 import qualified Data.Map.Strict as M (delete, lookup)
 import qualified Data.Text as T

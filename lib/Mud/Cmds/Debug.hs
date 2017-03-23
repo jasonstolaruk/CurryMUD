@@ -5,86 +5,86 @@ module Mud.Cmds.Debug ( debugCmds
                       , purgeThreadTbls
                       , {- Not a typo. -} ) where
 
-import Mud.Cmds.ExpCmds
-import Mud.Cmds.Msgs.Advice
-import Mud.Cmds.Msgs.CmdDesc
-import Mud.Cmds.Msgs.Misc
-import Mud.Cmds.Msgs.Sorry
-import Mud.Cmds.Util.CmdPrefixes
-import Mud.Cmds.Util.Misc
-import Mud.Data.Misc
-import Mud.Data.State.ActionParams.ActionParams
-import Mud.Data.State.MsgQueue
-import Mud.Data.State.MudData
-import Mud.Data.State.Util.Calc
-import Mud.Data.State.Util.Get
-import Mud.Data.State.Util.GMCP
-import Mud.Data.State.Util.Make
-import Mud.Data.State.Util.Misc
-import Mud.Data.State.Util.Output
-import Mud.Data.State.Util.Random
-import Mud.Interp.Misc
-import Mud.Interp.MultiLine
-import Mud.Interp.Pause
-import Mud.Misc.ANSI
-import Mud.Misc.CurryTime
-import Mud.Misc.Logging (writeLog)
-import Mud.Misc.Misc
-import Mud.Misc.Persist
-import Mud.TheWorld.Liqs
-import Mud.TheWorld.Zones.AdminZoneIds (iLoggedOut, iPidge)
-import Mud.Threads.Effect
-import Mud.Threads.Misc
-import Mud.Threads.NpcServer
-import Mud.Threads.ThreadTblPurger
-import Mud.TopLvlDefs.Chars
-import Mud.TopLvlDefs.Misc
-import Mud.TopLvlDefs.Telnet.Chars
-import Mud.TopLvlDefs.Vols
-import Mud.TopLvlDefs.Weights
-import Mud.Util.Misc hiding (patternMatchFail)
-import Mud.Util.Operators
-import Mud.Util.Padding
-import Mud.Util.Quoting
-import Mud.Util.Text
-import Mud.Util.Token
-import Mud.Util.Wrapping
+import           Mud.Cmds.ExpCmds
+import           Mud.Cmds.Msgs.Advice
+import           Mud.Cmds.Msgs.CmdDesc
+import           Mud.Cmds.Msgs.Misc
+import           Mud.Cmds.Msgs.Sorry
+import           Mud.Cmds.Util.CmdPrefixes
+import           Mud.Cmds.Util.Misc
+import           Mud.Data.Misc
+import           Mud.Data.State.ActionParams.ActionParams
+import           Mud.Data.State.MsgQueue
+import           Mud.Data.State.MudData
+import           Mud.Data.State.Util.Calc
+import           Mud.Data.State.Util.GMCP
+import           Mud.Data.State.Util.Get
+import           Mud.Data.State.Util.Make
+import           Mud.Data.State.Util.Misc
+import           Mud.Data.State.Util.Output
+import           Mud.Data.State.Util.Random
+import           Mud.Interp.Misc
+import           Mud.Interp.MultiLine
+import           Mud.Interp.Pause
+import           Mud.Misc.ANSI
+import           Mud.Misc.CurryTime
+import           Mud.Misc.Logging (writeLog)
 import qualified Mud.Misc.Logging as L (logAndDispIOEx, logNotice, logPla, logPlaExec, logPlaExecArgs)
+import           Mud.Misc.Misc
+import           Mud.Misc.Persist
+import           Mud.TheWorld.Liqs
+import           Mud.TheWorld.Zones.AdminZoneIds (iLoggedOut, iPidge)
+import           Mud.Threads.Effect
+import           Mud.Threads.Misc
+import           Mud.Threads.NpcServer
+import           Mud.Threads.ThreadTblPurger
+import           Mud.TopLvlDefs.Chars
+import           Mud.TopLvlDefs.Misc
+import           Mud.TopLvlDefs.Telnet.Chars
+import           Mud.TopLvlDefs.Vols
+import           Mud.TopLvlDefs.Weights
 import qualified Mud.Util.Misc as U (patternMatchFail)
+import           Mud.Util.Misc hiding (patternMatchFail)
+import           Mud.Util.Operators
+import           Mud.Util.Padding
+import           Mud.Util.Quoting
+import           Mud.Util.Text
+import           Mud.Util.Token
+import           Mud.Util.Wrapping
 
-import Control.Applicative (Const)
-import Control.Arrow ((***), first, second)
-import Control.Concurrent (ThreadId, getNumCapabilities, myThreadId)
-import Control.Concurrent.Async (asyncThreadId, poll)
-import Control.Exception (ArithException(..), IOException)
-import Control.Exception.Lifted (throwIO, try)
-import Control.Lens (Optical, both, views)
-import Control.Lens.Operators ((%~))
-import Control.Monad ((>=>), replicateM_)
-import Control.Monad.IO.Class (liftIO)
-import Data.Bits (zeroBits)
-import Data.Char (ord, digitToInt, isDigit, toLower)
-import Data.Function (on)
-import Data.Ix (inRange)
-import Data.List (delete, intercalate, sort)
-import Data.Maybe (catMaybes)
-import Data.Monoid ((<>), Sum(..))
-import Data.Text (Text)
-import Data.Time (getCurrentTime)
-import GHC.Conc (threadStatus)
-import GHC.Stack (HasCallStack)
-import Numeric (readInt)
-import Prelude hiding (pi)
+import           Control.Applicative (Const)
+import           Control.Arrow ((***), first, second)
+import           Control.Concurrent (ThreadId, getNumCapabilities, myThreadId)
+import           Control.Concurrent.Async (asyncThreadId, poll)
+import           Control.Exception (ArithException(..), IOException)
+import           Control.Exception.Lifted (throwIO, try)
+import           Control.Lens (Optical, both, views)
+import           Control.Lens.Operators ((%~))
+import           Control.Monad ((>=>), replicateM_)
+import           Control.Monad.IO.Class (liftIO)
+import           Data.Bits (zeroBits)
+import           Data.Char (ord, digitToInt, isDigit, toLower)
+import           Data.Function (on)
+import           Data.Ix (inRange)
+import           Data.List (delete, intercalate, sort)
+import           Data.Maybe (catMaybes)
+import           Data.Monoid ((<>), Sum(..))
+import           Data.Text (Text)
+import           Data.Time (getCurrentTime)
+import           GHC.Conc (threadStatus)
+import           GHC.Stack (HasCallStack)
+import           Numeric (readInt)
+import           Prelude hiding (pi)
 import qualified Data.IntMap.Strict as IM (IntMap, assocs, filter, keys, notMember, toList)
 import qualified Data.Map.Strict as M (assocs, elems, filter, keys, keysSet, toList)
 import qualified Data.Set as S (toAscList)
 import qualified Data.Text as T
-import System.Console.ANSI (Color(..), ColorIntensity(..))
-import System.CPUTime (getCPUTime)
-import System.Directory (getTemporaryDirectory, removeFile)
-import System.Environment (getEnvironment)
-import System.IO (hClose, hGetBuffering, openTempFile)
-import Unsafe.Coerce (unsafeCoerce)
+import           System.Console.ANSI (Color(..), ColorIntensity(..))
+import           System.CPUTime (getCPUTime)
+import           System.Directory (getTemporaryDirectory, removeFile)
+import           System.Environment (getEnvironment)
+import           System.IO (hClose, hGetBuffering, openTempFile)
+import           Unsafe.Coerce (unsafeCoerce)
 
 
 {-# ANN module ("HLint: ignore Redundant where" :: String) #-}

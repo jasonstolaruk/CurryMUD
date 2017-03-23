@@ -59,16 +59,16 @@ module Mud.TopLvlDefs.Misc ( acl
                            , worldPersisterDelay
                            , yous ) where
 
-import Mud.TopLvlDefs.Chars
-import Mud.Util.Quoting
-import Paths_curry_mud
+import           Mud.TopLvlDefs.Chars
+import           Mud.Util.Quoting
+import           Paths_curry_mud
 
-import Data.Monoid ((<>))
-import Data.Text (Text)
-import Data.Version (showVersion)
-import Mud.TopLvlDefs.Seconds
+import           Data.Monoid ((<>))
+import           Data.Text (Text)
+import           Data.Version (showVersion)
+import           Mud.TopLvlDefs.Seconds
 import qualified Data.Text as T
-import System.Posix.Types (FileOffset)
+import           System.Posix.Types (FileOffset)
 
 
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}

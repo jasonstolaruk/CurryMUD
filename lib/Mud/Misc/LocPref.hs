@@ -5,16 +5,16 @@ module Mud.Misc.LocPref ( hasLocPref
                         , sortArgsInvEqRm
                         , stripLocPref ) where
 
-import Mud.Data.Misc
-import Mud.TopLvlDefs.Chars
-import Mud.Util.Misc (PatternMatchFail)
-import Mud.Util.Operators
-import Mud.Util.Text
+import           Mud.Data.Misc
+import           Mud.TopLvlDefs.Chars
+import           Mud.Util.Misc (PatternMatchFail)
 import qualified Mud.Util.Misc as U (patternMatchFail)
+import           Mud.Util.Operators
+import           Mud.Util.Text
 
-import Control.Lens (_1, _2, _3)
-import Control.Lens.Operators ((&), (%~))
-import Data.Text (Text)
+import           Control.Lens (_1, _2, _3)
+import           Control.Lens.Operators ((&), (%~))
+import           Data.Text (Text)
 import qualified Data.Text as T
 
 

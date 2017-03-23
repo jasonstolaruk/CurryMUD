@@ -2,12 +2,12 @@
 
 module Mud.Misc.FeelingFuns (feelingFuns) where
 
-import Mud.Data.Misc
-import Mud.Data.State.MudData
-import Mud.TheWorld.Liqs
+import           Mud.Data.Misc
+import           Mud.Data.State.MudData
+import           Mud.TheWorld.Liqs
 
-import Data.Monoid ((<>))
-import Data.Text (Text)
+import           Data.Monoid ((<>))
+import           Data.Text (Text)
 import qualified Data.Text as T
 
 

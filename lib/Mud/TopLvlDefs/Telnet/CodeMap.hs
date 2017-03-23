@@ -2,11 +2,11 @@
 
 module Mud.TopLvlDefs.Telnet.CodeMap where
 
-import Mud.Data.Misc
-import Mud.TopLvlDefs.Telnet.Chars
+import           Mud.Data.Misc
+import           Mud.TopLvlDefs.Telnet.Chars
 
-import Control.Arrow (first)
-import Data.Char (ord)
+import           Control.Arrow (first)
+import           Data.Char (ord)
 import qualified Data.IntMap.Strict as IM (IntMap, fromList)
 
 

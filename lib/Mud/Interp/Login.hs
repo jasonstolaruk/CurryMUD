@@ -3,73 +3,73 @@
 module Mud.Interp.Login ( interpName
                         , promptName ) where
 
-import Mud.Cmds.Msgs.Misc
-import Mud.Cmds.Msgs.Sorry
-import Mud.Cmds.Pla
-import Mud.Cmds.Util.Misc
-import Mud.Data.Misc
-import Mud.Data.State.ActionParams.ActionParams
-import Mud.Data.State.ActionParams.Misc
-import Mud.Data.State.MsgQueue
-import Mud.Data.State.MudData
-import Mud.Data.State.Util.Calc
-import Mud.Data.State.Util.Get
-import Mud.Data.State.Util.Lang
-import Mud.Data.State.Util.Misc
-import Mud.Data.State.Util.Output
-import Mud.Interp.Misc
-import Mud.Interp.MultiLine
-import Mud.Interp.Pause
-import Mud.Misc.ANSI
-import Mud.Misc.CurryTime
-import Mud.Misc.Database
-import Mud.Misc.Logging hiding (logNotice, logPla)
-import Mud.Misc.Misc
-import Mud.TheWorld.Zones.AdminZoneIds (iCentral, iLoggedOut, iWelcome)
-import Mud.TheWorld.Zones.DalbenIds (iDalbenWelcome)
-import Mud.Threads.Digester
-import Mud.Threads.Effect
-import Mud.Threads.Misc
-import Mud.Threads.Regen
-import Mud.TopLvlDefs.Chars
-import Mud.TopLvlDefs.FilePaths
-import Mud.TopLvlDefs.Misc
-import Mud.TopLvlDefs.Telnet.Chars
-import Mud.Util.List hiding (headTail)
-import Mud.Util.Misc hiding (patternMatchFail)
-import Mud.Util.Operators
-import Mud.Util.Quoting
-import Mud.Util.Text
-import Mud.Util.Wrapping
+import           Mud.Cmds.Msgs.Misc
+import           Mud.Cmds.Msgs.Sorry
+import           Mud.Cmds.Pla
+import           Mud.Cmds.Util.Misc
+import           Mud.Data.Misc
+import           Mud.Data.State.ActionParams.ActionParams
+import           Mud.Data.State.ActionParams.Misc
+import           Mud.Data.State.MsgQueue
+import           Mud.Data.State.MudData
+import           Mud.Data.State.Util.Calc
+import           Mud.Data.State.Util.Get
+import           Mud.Data.State.Util.Lang
+import           Mud.Data.State.Util.Misc
+import           Mud.Data.State.Util.Output
+import           Mud.Interp.Misc
+import           Mud.Interp.MultiLine
+import           Mud.Interp.Pause
+import           Mud.Misc.ANSI
+import           Mud.Misc.CurryTime
+import           Mud.Misc.Database
 import qualified Mud.Misc.Logging as L (logNotice, logPla)
+import           Mud.Misc.Logging hiding (logNotice, logPla)
+import           Mud.Misc.Misc
+import           Mud.TheWorld.Zones.AdminZoneIds (iCentral, iLoggedOut, iWelcome)
+import           Mud.TheWorld.Zones.DalbenIds (iDalbenWelcome)
+import           Mud.Threads.Digester
+import           Mud.Threads.Effect
+import           Mud.Threads.Misc
+import           Mud.Threads.Regen
+import           Mud.TopLvlDefs.Chars
+import           Mud.TopLvlDefs.FilePaths
+import           Mud.TopLvlDefs.Misc
+import           Mud.TopLvlDefs.Telnet.Chars
+import           Mud.Util.List hiding (headTail)
 import qualified Mud.Util.Misc as U (patternMatchFail)
+import           Mud.Util.Misc hiding (patternMatchFail)
+import           Mud.Util.Operators
+import           Mud.Util.Quoting
+import           Mud.Util.Text
+import           Mud.Util.Wrapping
 
-import Control.Applicative (liftA2)
-import Control.Arrow (first)
-import Control.Exception.Lifted (try)
-import Control.Lens (ASetter, at, both, set, views)
-import Control.Lens.Operators ((-~), (?~), (.~), (&), (%~), (^.), (+~))
-import Control.Monad ((>=>), join, unless, void, when)
-import Control.Monad.IO.Class (liftIO)
-import Control.Monad.Loops (orM)
-import Crypto.BCrypt (validatePassword)
-import Data.Char (isDigit, isLower, isUpper)
-import Data.Ix (inRange)
-import Data.List (delete, find, foldl', intersperse, partition)
-import Data.Maybe (fromMaybe, isNothing)
-import Data.Monoid ((<>), Any(..))
-import Data.Text (Text)
-import Data.Time (UTCTime, getCurrentTime)
-import GHC.Stack (HasCallStack)
-import Network (HostName)
-import Prelude hiding (pi)
+import           Control.Applicative (liftA2)
+import           Control.Arrow (first)
+import           Control.Exception.Lifted (try)
+import           Control.Lens (ASetter, at, both, set, views)
+import           Control.Lens.Operators ((-~), (?~), (.~), (&), (%~), (^.), (+~))
+import           Control.Monad ((>=>), join, unless, void, when)
+import           Control.Monad.IO.Class (liftIO)
+import           Control.Monad.Loops (orM)
+import           Crypto.BCrypt (validatePassword)
+import           Data.Char (isDigit, isLower, isUpper)
+import           Data.Ix (inRange)
+import           Data.List (delete, find, foldl', intersperse, partition)
+import           Data.Maybe (fromMaybe, isNothing)
+import           Data.Monoid ((<>), Any(..))
+import           Data.Text (Text)
+import           Data.Time (UTCTime, getCurrentTime)
+import           GHC.Stack (HasCallStack)
+import           Network (HostName)
+import           Prelude hiding (pi)
 import qualified Data.IntMap.Strict as IM (foldr, keys, toList)
 import qualified Data.Set as S (Set, empty, fromList, insert, member, union)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
 import qualified Data.Text.IO as T (readFile)
 import qualified Data.Vector.Unboxed as V (Vector, length, toList)
-import System.FilePath ((</>))
+import           System.FilePath ((</>))
 
 
 patternMatchFail :: (Show a) => PatternMatchFail a b

@@ -330,22 +330,22 @@ module Mud.Cmds.Msgs.Sorry ( sorryActing
                            , sorryWtf
                            , sorryWut ) where
 
-import Mud.Cmds.Util.CmdPrefixes
-import Mud.Data.Misc
-import Mud.Data.State.MudData
-import Mud.Misc.ANSI
-import Mud.Misc.Misc
-import Mud.TopLvlDefs.Chars
-import Mud.TopLvlDefs.Misc
-import Mud.Util.Misc hiding (patternMatchFail)
-import Mud.Util.Operators
-import Mud.Util.Quoting
-import Mud.Util.Text
+import           Mud.Cmds.Util.CmdPrefixes
+import           Mud.Data.Misc
+import           Mud.Data.State.MudData
+import           Mud.Misc.ANSI
+import           Mud.Misc.Misc
+import           Mud.TopLvlDefs.Chars
+import           Mud.TopLvlDefs.Misc
 import qualified Mud.Util.Misc as U (patternMatchFail)
+import           Mud.Util.Misc hiding (patternMatchFail)
+import           Mud.Util.Operators
+import           Mud.Util.Quoting
+import           Mud.Util.Text
 
-import Data.Char (toLower)
-import Data.Monoid ((<>))
-import Data.Text (Text)
+import           Data.Char (toLower)
+import           Data.Monoid ((<>))
+import           Data.Text (Text)
 import qualified Data.Text as T
 
 

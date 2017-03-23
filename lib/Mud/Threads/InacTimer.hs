@@ -3,28 +3,28 @@
 module Mud.Threads.InacTimer ( stopInacTimer
                              , threadInacTimer ) where
 
-import Mud.Data.State.MsgQueue
-import Mud.Data.State.MudData
-import Mud.Data.State.Util.Misc
-import Mud.Data.State.Util.Output
-import Mud.Threads.Misc
-import Mud.TopLvlDefs.Misc
-import Mud.Util.Misc
-import Mud.Util.Operators
-import Mud.Util.Quoting
-import Mud.Util.Text
+import           Mud.Data.State.MsgQueue
+import           Mud.Data.State.MudData
+import           Mud.Data.State.Util.Misc
+import           Mud.Data.State.Util.Output
 import qualified Mud.Misc.Logging as L (logNotice, logPla)
+import           Mud.Threads.Misc
+import           Mud.TopLvlDefs.Misc
+import           Mud.Util.Misc
+import           Mud.Util.Operators
+import           Mud.Util.Quoting
+import           Mud.Util.Text
 
-import Control.Concurrent.STM (atomically)
-import Control.Concurrent.STM.TMQueue (closeTMQueue, tryReadTMQueue)
-import Control.Exception.Lifted (handle, finally)
-import Control.Monad ((>=>))
-import Control.Monad.IO.Class (liftIO)
-import Data.Monoid ((<>))
-import Data.Text (Text)
-import GHC.Stack (HasCallStack)
+import           Control.Concurrent.STM (atomically)
+import           Control.Concurrent.STM.TMQueue (closeTMQueue, tryReadTMQueue)
+import           Control.Exception.Lifted (handle, finally)
+import           Control.Monad ((>=>))
+import           Control.Monad.IO.Class (liftIO)
+import           Data.Monoid ((<>))
+import           Data.Text (Text)
+import           GHC.Stack (HasCallStack)
 import qualified Data.Text as T
-import System.Time.Utils (renderSecs)
+import           System.Time.Utils (renderSecs)
 
 
 logNotice :: Text -> Text -> MudStack ()

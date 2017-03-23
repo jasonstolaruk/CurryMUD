@@ -2,7 +2,7 @@
 
 module Mud.TopLvlDefs.Telnet.Chars where
 
-import Data.Text (Text)
+import           Data.Text (Text)
 import qualified Data.Text as T
 
 
