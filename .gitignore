@@ -1,7 +1,3 @@
-.DS_Store
-.hpc
-.hsenv
-.stack-work/
 *.aux
 *.chi
 *.chs.h
@@ -11,6 +7,11 @@
 *.hp
 *.o
 *.prof
+.DS_Store
+.hpc
+.hsenv
+.projectile
+.stack-work/
 /db/
 /logs/
 /persist/

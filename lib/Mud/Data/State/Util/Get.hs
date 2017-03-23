@@ -498,6 +498,7 @@ getFollowers i = view followers . getParty i
 
 -----
 
+
 getFood :: HasCallStack => Id -> MudState -> Food
 getFood i = view (foodTbl.ind i)
 
