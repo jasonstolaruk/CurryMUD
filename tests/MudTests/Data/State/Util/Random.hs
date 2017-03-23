@@ -2,14 +2,14 @@
 
 module MudTests.Data.State.Util.Random where
 
-import Mud.Cmds.Util.Misc
-import Mud.Data.State.Util.Random
-import MudTests.TestUtil
+import           Mud.Cmds.Util.Misc
+import           Mud.Data.State.Util.Random
+import           MudTests.TestUtil
 
-import Data.Ix (inRange)
+import           Data.Ix (inRange)
 import qualified Data.Vector.Unboxed as V (elem, head, map)
-import Test.QuickCheck.Monadic (assert, monadicIO)
-import Test.Tasty.QuickCheck (Property, choose, forAll)
+import           Test.QuickCheck.Monadic (assert, monadicIO)
+import           Test.Tasty.QuickCheck (Property, choose, forAll)
 
 
 prop_dropRndmElems :: Property

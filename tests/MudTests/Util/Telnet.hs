@@ -2,16 +2,16 @@
 
 module MudTests.Util.Telnet where
 
-import Mud.Data.Misc
-import Mud.TopLvlDefs.Telnet.Chars
-import Mud.Util.Quoting
-import Mud.Util.Telnet
+import           Mud.Data.Misc
+import           Mud.TopLvlDefs.Telnet.Chars
+import           Mud.Util.Quoting
+import           Mud.Util.Telnet
 
-import Data.Char (chr)
-import Data.Monoid ((<>))
-import Data.Text (Text)
+import           Data.Char (chr)
+import           Data.Monoid ((<>))
+import           Data.Text (Text)
 import qualified Data.Text as T
-import Test.Tasty.HUnit ((@?=), Assertion)
+import           Test.Tasty.HUnit ((@?=), Assertion)
 
 
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}

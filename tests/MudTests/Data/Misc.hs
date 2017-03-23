@@ -2,14 +2,14 @@
 
 module MudTests.Data.Misc where
 
-import Mud.Data.Misc
-import Mud.TopLvlDefs.Chars
-import Mud.Util.Quoting
+import           Mud.Data.Misc
+import           Mud.TopLvlDefs.Chars
+import           Mud.Util.Quoting
 
-import Data.Monoid ((<>))
-import Data.Text (Text)
+import           Data.Monoid ((<>))
+import           Data.Text (Text)
 import qualified Data.Text as T
-import Test.Tasty.HUnit ((@?=), Assertion)
+import           Test.Tasty.HUnit ((@?=), Assertion)
 
 
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}

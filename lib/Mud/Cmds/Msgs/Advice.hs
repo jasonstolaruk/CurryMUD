@@ -9,8 +9,6 @@ module Mud.Cmds.Msgs.Advice ( adviceAAnnounceNoArgs
                             , adviceABootNoArgs
                             , adviceACloneNoArgs
                             , adviceADestroyNoArgs
-                            , adviceAdminNoMsg
-                            , adviceAdverbCloseChar
                             , adviceAExamineNoArgs
                             , adviceAFarewellNoArgs
                             , adviceAHashExcessArgs
@@ -38,7 +36,6 @@ module Mud.Cmds.Msgs.Advice ( adviceAAnnounceNoArgs
                             , adviceASetInvalid
                             , adviceASetNoArgs
                             , adviceASetNoSettings
-                            , adviceAsSelfNoArgs
                             , adviceASudoerExcessArgs
                             , adviceASudoerNoArgs
                             , adviceASummonExcessArgs
@@ -49,6 +46,9 @@ module Mud.Cmds.Msgs.Advice ( adviceAAnnounceNoArgs
                             , adviceATelePCNoArgs
                             , adviceATeleRmExcessArgs
                             , adviceAWireNoArgs
+                            , adviceAdminNoMsg
+                            , adviceAdverbCloseChar
+                            , adviceAsSelfNoArgs
                             , adviceBlankAdverb
                             , adviceBonusExcessArgs
                             , adviceBonusNoArgs
@@ -62,8 +62,6 @@ module Mud.Cmds.Msgs.Advice ( adviceAAnnounceNoArgs
                             , adviceDCurryTimeExcessArgs
                             , adviceDIdExcessArgs
                             , adviceDIdNoArgs
-                            , adviceDisconnectNoArgs
-                            , adviceDisconnectNoChan
                             , adviceDLiqExcessArgs
                             , adviceDLiqNoArgs
                             , adviceDLiqNoId
@@ -72,11 +70,7 @@ module Mud.Cmds.Msgs.Advice ( adviceAAnnounceNoArgs
                             , adviceDNumberNoBase
                             , adviceDRegenExcessArgs
                             , adviceDRegenNoArgs
-                            , adviceDrinkExcessArgs
-                            , adviceDrinkNoArgs
-                            , adviceDrinkNoVessel
                             , adviceDRntExcessArgs
-                            , adviceDropNoArgs
                             , adviceDVolumeExcessArgs
                             , adviceDVolumeNoArgs
                             , adviceDWeightExcessArgs
@@ -86,6 +80,12 @@ module Mud.Cmds.Msgs.Advice ( adviceAAnnounceNoArgs
                             , adviceDWrapIndentNoAmt
                             , adviceDWrapIndentNoArgs
                             , adviceDWrapNoArgs
+                            , adviceDisconnectNoArgs
+                            , adviceDisconnectNoChan
+                            , adviceDrinkExcessArgs
+                            , adviceDrinkNoArgs
+                            , adviceDrinkNoVessel
+                            , adviceDropNoArgs
                             , adviceEatExcessArgs
                             , adviceEatNoArgs
                             , adviceEatNoFood

@@ -1,18 +1,18 @@
 module MudTests.TestUtil where
 
-import Mud.Data.Misc
-import Mud.Data.State.MudData
-import Mud.TheWorld.TheWorld
-import Mud.TopLvlDefs.Misc
+import           Mud.Data.Misc
+import           Mud.Data.State.MudData
+import           Mud.TheWorld.TheWorld
+import           Mud.TopLvlDefs.Misc
 
-import Control.Monad (replicateM)
-import Control.Monad.IO.Class (liftIO)
-import Control.Monad.Reader (runReaderT)
-import Data.Char (chr)
-import Data.Text (Text)
+import           Control.Monad (replicateM)
+import           Control.Monad.IO.Class (liftIO)
+import           Control.Monad.Reader (runReaderT)
+import           Data.Char (chr)
+import           Data.Text (Text)
 import qualified Data.Text as T
-import Test.QuickCheck (Gen, choose)
-import Test.QuickCheck.Monadic (PropertyM, run)
+import           Test.QuickCheck (Gen, choose)
+import           Test.QuickCheck.Monadic (PropertyM, run)
 
 
 inWorld :: MudStack a -> PropertyM IO a

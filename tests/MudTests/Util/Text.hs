@@ -2,19 +2,19 @@
 
 module MudTests.Util.Text where
 
-import Mud.Util.List hiding (countOcc)
-import Mud.Util.Misc
-import Mud.Util.Operators
-import Mud.Util.Quoting
-import Mud.Util.Text
+import           Mud.Util.List hiding (countOcc)
+import           Mud.Util.Misc
+import           Mud.Util.Operators
+import           Mud.Util.Quoting
+import           Mud.Util.Text
 
-import Data.Char (isSpace)
-import Data.Monoid ((<>))
-import Data.Text (Text)
+import           Data.Char (isSpace)
+import           Data.Monoid ((<>))
+import           Data.Text (Text)
 import qualified Data.Text as T
-import Test.QuickCheck.Modifiers (NonEmptyList(..))
-import Test.Tasty.HUnit ((@?=), Assertion)
-import Test.Tasty.QuickCheck ((==>), Property)
+import           Test.QuickCheck.Modifiers (NonEmptyList(..))
+import           Test.Tasty.HUnit ((@?=), Assertion)
+import           Test.Tasty.QuickCheck ((==>), Property)
 
 
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}

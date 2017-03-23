@@ -2,20 +2,20 @@
 
 module MudTests.Data.State.Util.Misc where
 
-import Mud.Data.State.MudData
-import Mud.Data.State.Util.Misc
-import Mud.TheWorld.Zones.AdminZone
-import Mud.TopLvlDefs.Chars
-import MudTests.TestUtil
+import           Mud.Data.State.MudData
+import           Mud.Data.State.Util.Misc
+import           Mud.TheWorld.Zones.AdminZone
+import           Mud.TopLvlDefs.Chars
+import           MudTests.TestUtil
 
-import Control.Lens (views)
-import Data.Monoid ((<>))
-import Data.Text (Text)
+import           Control.Lens (views)
+import           Data.Monoid ((<>))
+import           Data.Text (Text)
 import qualified Data.IntMap.Strict as IM (notMember)
 import qualified Data.Text as T
-import Test.QuickCheck.Monadic (assert, monadicIO)
-import Test.Tasty.HUnit ((@?=), Assertion)
-import Test.Tasty.QuickCheck (Property)
+import           Test.QuickCheck.Monadic (assert, monadicIO)
+import           Test.Tasty.HUnit ((@?=), Assertion)
+import           Test.Tasty.QuickCheck (Property)
 
 
 prop_getUnusedId :: Property

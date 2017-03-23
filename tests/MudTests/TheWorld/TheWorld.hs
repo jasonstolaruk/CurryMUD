@@ -1,15 +1,15 @@
 module MudTests.TheWorld.TheWorld where
 
-import Mud.Data.State.MudData
-import Mud.Data.State.Util.Misc
-import MudTests.TestUtil
+import           Mud.Data.State.MudData
+import           Mud.Data.State.Util.Misc
+import           MudTests.TestUtil
 
-import Control.Lens (to)
-import Control.Lens.Operators ((^.))
-import Data.List (group)
+import           Control.Lens (to)
+import           Control.Lens.Operators ((^.))
+import           Data.List (group)
 import qualified Data.IntMap.Strict as IM (elems)
-import Test.QuickCheck.Monadic (assert, monadicIO)
-import Test.Tasty.QuickCheck (Property)
+import           Test.QuickCheck.Monadic (assert, monadicIO)
+import           Test.Tasty.QuickCheck (Property)
 
 
 prop_noDupIds :: Property

@@ -2,17 +2,17 @@
 
 module MudTests.Util.Padding where
 
-import Mud.Util.Padding
+import           Mud.Util.Padding
 
-import Control.Applicative (liftA2)
-import Control.Lens (both)
-import Control.Lens.Operators ((&), (%~))
-import Data.Char (isSpace)
-import Data.Text (Text)
+import           Control.Applicative (liftA2)
+import           Control.Lens (both)
+import           Control.Lens.Operators ((&), (%~))
+import           Data.Char (isSpace)
+import           Data.Text (Text)
 import qualified Data.Text as T
-import Test.QuickCheck.Instances ()
-import Test.QuickCheck.Modifiers (NonNegative(..))
-import Test.Tasty.QuickCheck ((==>), Property, choose, forAll)
+import           Test.QuickCheck.Instances ()
+import           Test.QuickCheck.Modifiers (NonNegative(..))
+import           Test.Tasty.QuickCheck ((==>), Property, choose, forAll)
 
 
 prop_quoteWithAndPad_length :: Text -> Property
