@@ -8,8 +8,8 @@ module Mud.Util.Wrapping ( adjustIndent
                          , multiWrapNl
                          , wrap
                          , wrapIndent
-                         , wrapLines
                          , wrapLineWithIndentTag
+                         , wrapLines
                          , wrapUnlines
                          , wrapUnlinesInit
                          , wrapUnlinesNl

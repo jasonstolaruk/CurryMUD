@@ -25,9 +25,9 @@ module Mud.Cmds.Util.Misc ( applyRegex
                           , hasEnc
                           , hasType
                           , hasYou
+                          , inOut
                           , initPropNamesTbl
                           , initWordsTbl
-                          , inOut
                           , isActingAny
                           , isAlive
                           , isAttacking

@@ -1,13 +1,13 @@
 {-# LANGUAGE DeriveDataTypeable, OverloadedStrings, TupleSections #-}
 
-module Mud.Threads.Misc ( concurrentTree
+module Mud.Threads.Misc ( PlsDie(..)
+                        , concurrentTree
                         , dbExHandler
                         , die
                         , dieSilently
                         , fileIOExHandler
                         , onNewThread
                         , plaThreadExHandler
-                        , PlsDie(..)
                         , racer
                         , runAsync
                         , setThreadType

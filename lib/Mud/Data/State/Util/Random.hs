@@ -6,11 +6,11 @@ module Mud.Data.State.Util.Random ( dropRndmElems
                                   , rndmDo_
                                   , rndmDos
                                   , rndmElem
-                                  , rndmInts
                                   , rndmIntToElem
                                   , rndmIntToPer
                                   , rndmIntToRange
                                   , rndmIntToRangeHelper
+                                  , rndmInts
                                   , rndmPer
                                   , rndmR
                                   , rndmRs

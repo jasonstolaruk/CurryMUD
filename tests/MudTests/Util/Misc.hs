@@ -1,4 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
+
 module MudTests.Util.Misc where
 
 import Mud.Util.Misc

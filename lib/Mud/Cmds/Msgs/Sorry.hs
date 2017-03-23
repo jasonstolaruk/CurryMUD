@@ -142,12 +142,12 @@ module Mud.Cmds.Msgs.Sorry ( sorryActing
                            , sorryInterpNewPwLower
                            , sorryInterpNewPwMatch
                            , sorryInterpNewPwUpper
+                           , sorryInterpPW
                            , sorryInterpPager
                            , sorryInterpPickPtsMax
                            , sorryInterpPickPtsMin
                            , sorryInterpPickPtsPts
                            , sorryInterpPickPtsQuit
-                           , sorryInterpPW
                            , sorryInterpPwBanned
                            , sorryInterpPwBoot
                            , sorryInterpPwDead
@@ -184,16 +184,18 @@ module Mud.Cmds.Msgs.Sorry ( sorryActing
                            , sorryNoConHere
                            , sorryNoLinks
                            , sorryNoLinksSpirit
-                           , sorryNonexistentId
                            , sorryNoOneHere
+                           , sorryNonexistentId
                            , sorryNotPossessed
+                           , sorryPCName
+                           , sorryPCNameLoggedIn
                            , sorryParseAmt
                            , sorryParseArg
                            , sorryParseBase
                            , sorryParseChanId
                            , sorryParseId
-                           , sorryParseIndent
                            , sorryParseInOut
+                           , sorryParseIndent
                            , sorryParseLineLen
                            , sorryParseMouthfuls
                            , sorryParseNum
@@ -201,8 +203,6 @@ module Mud.Cmds.Msgs.Sorry ( sorryActing
                            , sorryParseSeconds
                            , sorryParseSetting
                            , sorryParseZoom
-                           , sorryPCName
-                           , sorryPCNameLoggedIn
                            , sorryPeepAdmin
                            , sorryPeepSelf
                            , sorryPickInEq
@@ -306,12 +306,12 @@ module Mud.Cmds.Msgs.Sorry ( sorryActing
                            , sorryTimeUnknown
                            , sorryTrashInEq
                            , sorryTrashInRm
+                           , sorryTuneName
                            , sorryTunedOutChan
                            , sorryTunedOutICChan
                            , sorryTunedOutOOCChan
                            , sorryTunedOutPCSelf
                            , sorryTunedOutPCTarget
-                           , sorryTuneName
                            , sorryTwoWayLink
                            , sorryTwoWayTargetName
                            , sorryUnlinkIgnore

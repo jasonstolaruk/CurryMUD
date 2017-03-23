@@ -1,11 +1,15 @@
 {-# LANGUAGE OverloadedStrings, RecordWildCards, TupleSections, ViewPatterns #-}
 
 module Mud.Data.State.Util.Make ( EntTemplate(..)
+                                , MobTemplate(..)
+                                , ObjTemplate(..)
+                                , PlaTemplate(..)
+                                , RmTemplate(..)
+                                , VesselTemplate(..)
                                 , mkMob
                                 , mkObj
                                 , mkPla
                                 , mkRm
-                                , MobTemplate(..)
                                 , newArm
                                 , newCloth
                                 , newCon
@@ -16,11 +20,7 @@ module Mud.Data.State.Util.Make ( EntTemplate(..)
                                 , newObj
                                 , newVessel
                                 , newWpn
-                                , newWritable
-                                , ObjTemplate(..)
-                                , PlaTemplate(..)
-                                , RmTemplate(..)
-                                , VesselTemplate(..) ) where
+                                , newWritable ) where
 
 import           Mud.Data.State.MudData
 import           Mud.Data.State.Util.Calc

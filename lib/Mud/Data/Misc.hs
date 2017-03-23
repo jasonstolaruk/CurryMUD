@@ -1,9 +1,9 @@
 {-# LANGUAGE DuplicateRecordFields, OverloadedStrings, ParallelListComp, RebindableSyntax, RecordWildCards, ViewPatterns #-}
 
-module Mud.Data.Misc ( Action(..)
+module Mud.Data.Misc ( AOrThe(..)
+                     , Action(..)
                      , ActionFun
                      , Amount
-                     , AOrThe(..)
                      , Args
                      , BanRecord(..)
                      , ChanContext(..)
@@ -17,7 +17,6 @@ module Mud.Data.Misc ( Action(..)
                      , CurryTime(..)
                      , CurryWeekday
                      , Day
-                     , deserialize
                      , Desig(..)
                      , DoOrDon'tCap(..)
                      , DoOrDon'tLog(..)
@@ -31,14 +30,9 @@ module Mud.Data.Misc ( Action(..)
                      , ExpCmdFun
                      , ExpCmdName
                      , ExpCmdType(..)
-                     , fromRol
                      , GenericRes
-                     , getEntFlag
                      , GetEntsCoinsRes(..)
-                     , getObjFlag
                      , GetOrDrop(..)
-                     , getPlaFlag
-                     , getRmFlag
                      , God(..)
                      , GodName(..)
                      , GodOf(..)
@@ -46,8 +40,8 @@ module Mud.Data.Misc ( Action(..)
                      , HelpName
                      , Hour
                      , IdSingTypeDesig(..)
-                     , Index
                      , InInvEqRm(..)
+                     , Index
                      , IsOrIsn'tRegex(..)
                      , LastArgIsTargetBindings(..)
                      , LoggedInOrOut(..)
@@ -55,18 +49,12 @@ module Mud.Data.Misc ( Action(..)
                      , Month
                      , MoonPhase(..)
                      , NewCharBundle(..)
-                     , pp
                      , Pretty
                      , PutOrRem(..)
                      , RightOrLeft(..)
                      , Sec
                      , Serializable
-                     , serialize
-                     , setEntFlag
-                     , setObjFlag
                      , SetOp(..)
-                     , setPlaFlag
-                     , setRmFlag
                      , SingleTarget(..)
                      , TelnetCode(..)
                      , TelnetData(..)
@@ -75,7 +63,19 @@ module Mud.Data.Misc ( Action(..)
                      , Verb(..)
                      , Week
                      , WhichLog(..)
-                     , Year ) where
+                     , Year
+                     , deserialize
+                     , fromRol
+                     , getEntFlag
+                     , getObjFlag
+                     , getPlaFlag
+                     , getRmFlag
+                     , pp
+                     , serialize
+                     , setEntFlag
+                     , setObjFlag
+                     , setPlaFlag
+                     , setRmFlag ) where
 
 import           Mud.Data.State.ActionParams.ActionParams
 import           Mud.Data.State.MsgQueue

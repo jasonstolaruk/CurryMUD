@@ -25,9 +25,9 @@ module Mud.Data.State.Util.Misc ( addToInv
                                 , getInstaEffectFun
                                 , getListenThreadId
                                 , getLogAsyncs
+                                , getLogThreadIds
                                 , getLoggedInAdminIds
                                 , getLoggedInPlaIds
-                                , getLogThreadIds
                                 , getMobRmVisibleInvCoins
                                 , getNonIncogLoggedInAdminIds
                                 , getNpcIds
@@ -52,8 +52,8 @@ module Mud.Data.State.Util.Misc ( addToInv
                                 , mkEntName
                                 , mkMaybeCorpseId
                                 , mkMobRmDesc
-                                , mkName_maybeCorpseId_count_bothList
                                 , mkNameCountBothList
+                                , mkName_maybeCorpseId_count_bothList
                                 , mkPlaIdSingList
                                 , mkPrettySexRace
                                 , mkPrettySexRaceLvl

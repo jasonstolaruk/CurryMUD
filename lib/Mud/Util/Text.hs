@@ -4,8 +4,8 @@ module Mud.Util.Text ( aOrAn
                      , aOrAnOnLower
                      , capitalize
                      , commaEvery3
-                     , commas
                      , commaShow
+                     , commas
                      , countOcc
                      , divider
                      , dropBlanks
@@ -19,9 +19,9 @@ module Mud.Util.Text ( aOrAn
                      , mkOrdinal
                      , mkTimestamp
                      , nl
+                     , nlPrefix
                      , nlnl
                      , nlnlPrefix
-                     , nlPrefix
                      , none
                      , noneOnNull
                      , notInfixOf
@@ -29,10 +29,10 @@ module Mud.Util.Text ( aOrAn
                      , prd
                      , readNum
                      , replace
-                     , showText
-                     , slashes
                      , sOnNon1
                      , sOnTrue
+                     , showText
+                     , slashes
                      , spaces
                      , spcL
                      , spcR

@@ -1,8 +1,8 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults -Wno-redundant-constraints #-}
 {-# LANGUAGE NamedFieldPuns, OverloadedStrings, PatternSynonyms, ViewPatterns #-}
 
-module Mud.Cmds.ExpCmds ( expCmdSet
-                        , expCmdNames
+module Mud.Cmds.ExpCmds ( expCmdNames
+                        , expCmdSet
                         , expCmds
                         , getExpCmdByName
                         , mkExpAction ) where

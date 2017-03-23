@@ -9,6 +9,19 @@ module Mud.Misc.Database ( AdminChanRec(..)
                          , BonusRec(..)
                          , BugRec(..)
                          , ChanRec(..)
+                         , DiscoverRec(..)
+                         , ProfRec(..)
+                         , PropNameRec(..)
+                         , QuestionRec(..)
+                         , SacBonusRec(..)
+                         , SacrificeRec(..)
+                         , SecRec(..)
+                         , TTypeRec(..)
+                         , TeleRec(..)
+                         , TelnetCharsRec(..)
+                         , TypoRec(..)
+                         , UnPwRec(..)
+                         , WordRec(..)
                          , countDbTblRecsAdminChan
                          , countDbTblRecsAdminMsg
                          , countDbTblRecsChan
@@ -16,7 +29,6 @@ module Mud.Misc.Database ( AdminChanRec(..)
                          , countDbTblRecsTele
                          , createDbTbls
                          , dbOperation
-                         , DiscoverRec(..)
                          , getDbTblRecs
                          , insertDbTblAdminChan
                          , insertDbTblAdminMsg
@@ -33,39 +45,27 @@ module Mud.Misc.Database ( AdminChanRec(..)
                          , insertDbTblSacBonus
                          , insertDbTblSacrifice
                          , insertDbTblSec
+                         , insertDbTblTType
                          , insertDbTblTele
                          , insertDbTblTelnetChars
-                         , insertDbTblTType
                          , insertDbTblTypo
                          , insertDbTblUnPw
                          , insertPropNames
                          , insertWords
                          , lookupBonuses
                          , lookupBonusesFromTo
-                         , lookupPropName
                          , lookupPW
+                         , lookupPropName
                          , lookupSacBonusTime
                          , lookupSacrifices
                          , lookupSec
                          , lookupTeleNames
                          , lookupWord
-                         , ProfRec(..)
-                         , PropNameRec(..)
                          , purgeDbTblAdminChan
                          , purgeDbTblAdminMsg
                          , purgeDbTblChan
                          , purgeDbTblQuestion
-                         , purgeDbTblTele
-                         , QuestionRec(..)
-                         , SacBonusRec(..)
-                         , SacrificeRec(..)
-                         , SecRec(..)
-                         , TeleRec(..)
-                         , TelnetCharsRec(..)
-                         , TTypeRec(..)
-                         , TypoRec(..)
-                         , UnPwRec(..)
-                         , WordRec(..) ) where
+                         , purgeDbTblTele ) where
 
 import           Mud.Data.State.MudData
 import           Mud.Data.State.Util.Locks

@@ -7,8 +7,8 @@ module Mud.Misc.Logging ( closeLogs
                         , logAndDispIOEx
                         , logErrorMsg
                         , logExMsg
-                        , logImpossible
                         , logIOEx
+                        , logImpossible
                         , logNotice
                         , logPla
                         , logPlaExec

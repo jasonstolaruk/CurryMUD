@@ -4,8 +4,8 @@ module Mud.Data.State.Util.Coins ( aCoinSomeCoins
                                  , coinsFromList
                                  , coinsToList
                                  , distillEcs
-                                 , mkCoinTxt
                                  , mkCoinPieceTxt
+                                 , mkCoinTxt
                                  , negateCoins ) where
 
 import           Mud.Data.State.MudData

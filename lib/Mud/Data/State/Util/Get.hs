@@ -7,8 +7,8 @@ module Mud.Data.State.Util.Get ( getActMap
                                , getArm
                                , getArmSub
                                , getBaseAttrib
-                               , getBaseAttribs
                                , getBaseAttribTuples
+                               , getBaseAttribs
                                , getBaseDx
                                , getBaseHt
                                , getBaseMa
@@ -58,9 +58,9 @@ module Mud.Data.State.Util.Get ( getActMap
                                , getKnownLangs
                                , getLastRmId
                                , getLinked
+                               , getLogQueue
                                , getLoginTime
                                , getLogoutRmId
-                               , getLogQueue
                                , getLvl
                                , getLvlExp
                                , getMaxMouthfuls
@@ -85,10 +85,10 @@ module Mud.Data.State.Util.Get ( getActMap
                                , getObjTaste
                                , getObjVol
                                , getObjWeight
+                               , getPC
                                , getPageLines
                                , getParty
                                , getPausedEffects
-                               , getPC
                                , getPeepers
                                , getPeepersPeeping
                                , getPeeping
@@ -118,9 +118,9 @@ module Mud.Data.State.Util.Get ( getActMap
                                , getVesselCont
                                , getWpn
                                , getWpnSub
-                               , getWritable
                                , getWritMessage
                                , getWritRecip
+                               , getWritable
                                , hasRazzled
                                , hasRazzledId
                                , isAdmin

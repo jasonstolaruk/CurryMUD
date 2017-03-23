@@ -1,10 +1,11 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
 {-# LANGUAGE MonadComprehensions, OverloadedStrings, RankNTypes, TypeFamilies #-}
 
-module Mud.Util.Misc ( atLst1
+module Mud.Util.Misc ( BlowUp
+                     , PatternMatchFail
+                     , atLst1
                      , atomicWriteIORef'
                      , blowUp
-                     , BlowUp
                      , boolToMaybe
                      , compose
                      , concatMapM
@@ -38,6 +39,10 @@ module Mud.Util.Misc ( atLst1
                      , isZero
                      , listToMaybe
                      , lookupMapValue
+                     , mIf
+                     , mMempty
+                     , mUnless
+                     , mWhen
                      , max0
                      , max1
                      , maybeEmp
@@ -45,7 +50,6 @@ module Mud.Util.Misc ( atLst1
                      , maybeVoid
                      , mempties
                      , middle
-                     , mIf
                      , minusFifth
                      , minusHalf
                      , minusQuarter
@@ -53,14 +57,10 @@ module Mud.Util.Misc ( atLst1
                      , minusThird
                      , mkDateTimeTxt
                      , mkTimestamp
-                     , mMempty
-                     , mUnless
-                     , mWhen
                      , onFalse
                      , onTrue
                      , panicMsg
                      , patternMatchFail
-                     , PatternMatchFail
                      , percent
                      , plusFifth
                      , plusHalf

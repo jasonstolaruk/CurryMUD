@@ -14,9 +14,9 @@ module Mud.Misc.ANSI ( abbrevColor
                      , blue
                      , bonusColor
                      , bootMsgColor
+                     , colorWith
                      , colorizeFileTxt
                      , colors
-                     , colorWith
                      , cyan
                      , dfltColor
                      , dfltColor'

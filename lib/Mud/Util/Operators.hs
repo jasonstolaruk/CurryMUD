@@ -1,13 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Mud.Util.Operators ( (!#)
-                          , (?)
                           , (#)
+                          , (?)
                           , (|!|)
-                          , (|?|)
-                          , (|&|)
                           , (|#|)
+                          , (|&|)
                           , (|<>|)
+                          , (|?|)
                           , Cond(..) ) where
 
 import Control.Monad (unless)
