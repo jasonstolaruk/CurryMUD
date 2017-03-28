@@ -142,7 +142,7 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
 import qualified Data.Vector.Unboxed as V (Vector, splitAt, toList)
 import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
-import           Text.Regex.Posix ((=~))
+import           Text.Regex.PCRE ((=~))
 
 
 {-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
@@ -174,7 +174,7 @@ logNotice = L.logNotice "Mud.Cmds.Util.Misc"
 -- ==================================================
 
 
-applyRegex :: HasCallStack => Text -> Text -> (Text, Text, Text)
+applyRegex :: HasCallStack => Text -> Text -> (Text, Text, Text) -- Note that TinTin++ interprets "\" as escape.
 applyRegex needle haystack = let (🍩) = (=~) `on` T.unpack in haystack 🍩 needle |&| each %~ T.pack
 
 

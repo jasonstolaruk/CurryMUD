@@ -165,7 +165,7 @@ mkMouthfulTxt x | x <= 8    = showText x
 -----
 
 
-eatAct :: HasCallStack => EatBundle -> MudStack ()
+eatAct :: HasCallStack => EatBundle -> MudStack () -- TODO: Set room desc? (Do the same for other acts?)
 eatAct EatBundle { .. } = modifyStateSeq f `finally` tweak (mobTbl.ind eaterId.nowEating .~ Nothing)
   where
     distId@(DistinctFoodId i) = eatFood^.foodId

@@ -116,7 +116,7 @@ listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed 
                     logInterfaces
     logInterfaces = liftIO mkInterfaceList >>= \ifList ->
         logNotice "listen listInterfaces" . prd $ "server network interfaces: " <> ifList
-    loop sock = let fn = "listen loop" in (liftIO . accept $ sock) >>= \(h, host@(T.pack -> host'), localPort) -> do
+    loop sock = let fn = "listen loop" in liftIO (accept sock) >>= \(h, host@(T.pack -> host'), localPort) -> do
         logNotice fn . T.concat $ [ "connected to ", showText host, " on local port ", showText localPort, "." ]
         (withDbExHandler "listen loop" . isHostBanned . T.toLower . T.pack $ host) >>= \case
           Just (Any False) -> runTalkAsync h host

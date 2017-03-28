@@ -167,7 +167,7 @@ library
                        , network-info
                        , process
                        , random
-                       , regex-posix
+                       , regex-pcre
                        , resourcet
                        , split
                        , sqlite-simple

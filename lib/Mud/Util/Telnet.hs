@@ -51,12 +51,12 @@ parseTelnet = f ("", [])
           | otherwise =
               -- It's a 2-byte command (including the IAC).
               f (msg <> left, td ++ pure (TCode TelnetIAC) ++ mkTelnetDatas (pure x)) $ y `T.cons` rest
-        -- There is a single IAC and nothing else, or an IAC followed by just one byte:
+        -- There is a single IAC and nothing else, or an IAC followed by just one byte.
         helper (left, right) | right == T.singleton telnetIAC = (msg <> left, td ++ pure (TCode TelnetIAC))
                              | T.length right == 2 = let telnets = TCode TelnetIAC : mkTelnetDatas others
                                                          others  = T.unpack . T.drop 1 $ right
                                                      in (msg <> left, td ++ telnets)
-        helper pair = patternMatchFail "parseTelnet" . showText $ pair
+        helper pair = patternMatchFail "parseTelnet f helper" . showText $ pair
     mkTelnetDatas = map g
       where
         g c = case ord c `IM.lookup` telnetCodeMap of Nothing -> TOther c

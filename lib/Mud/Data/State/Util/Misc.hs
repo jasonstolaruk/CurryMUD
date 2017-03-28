@@ -109,7 +109,7 @@ import qualified Data.IntMap.Strict as IM ((!), filter, keys)
 import qualified Data.Map.Strict as M (lookup)
 import qualified Data.Text as T
 import qualified Data.Vector.Unboxed as V (Vector)
-import           Text.Regex.Posix ((=~))
+import           Text.Regex.PCRE ((=~))
 
 
 {-# ANN module ("HLint: ignore Use &&"        :: String) #-}
