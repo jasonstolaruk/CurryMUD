@@ -266,7 +266,7 @@ sacrificeBonus i gn@(pp -> gn') = getSing i <$> getState >>= \s -> do
                                  then applyBonus i s gn now
                                  else logHelper . T.concat $ [ msg
                                                              , "not enough time has passed since the last bonus "
-                                                             , parensQuote $ secs <> " seconsd since last bonus"
+                                                             , parensQuote $ secs <> " seconds since last bonus"
                                                              , "." ]
                 else logHelper $ msg <> "no bonus yet."
     maybeVoid next =<< withDbExHandler "sacrifice" operation

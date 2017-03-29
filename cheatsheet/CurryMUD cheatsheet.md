@@ -4,8 +4,8 @@ Example command output assumes your character's name is Hanako.
 
 ## Abbreviation
 
-Nearly all identifiers in CurryMUD may be abbreviated. This means that in many 
-cases you need not type the entire name of an item, a character, a command, or 
+Nearly all identifiers in CurryMUD may be abbreviated. This means that in many
+cases you need not type the entire name of an item, a character, a command, or
 a help article.
 
 ## Random Names
@@ -43,7 +43,7 @@ Prefix | Purpose | Example | Result
 
 ## Combining Prefixes
 
-You may combine a location prefix with another prefix. The location prefix must 
+You may combine a location prefix with another prefix. The location prefix must
 come first.
 
 Example | Result
@@ -101,7 +101,7 @@ Use `>` to address a message.
 
 Example | Output
 --- | ---
-`say >taro nice to mee, you, Taro` | Hanako says to Taro, "Nice to meet you, Taro."
+`say >taro nice to meet, you, Taro` | Hanako says to Taro, "Nice to meet you, Taro."
 `felinoidean >taro he can't be trusted` | Hanako says to Taro in felinoidean, "He can't be trusted."
 `channel hunt >taro i'm still waiting`</br>`in the clearing` | (hunt) Hanako: (to Taro) I'm still waiting in the clearing.
 `question >ant try typing "help`</br>`cheatsheet"` | (Question) Hanako: (to __ant__) Try typing "help cheatsheet".
@@ -120,7 +120,7 @@ Example | Output
 <div style="page-break-after: always;"></div>
 ## Room Fixtures
 
-A "room fixture" is a permanent feature of a room (such as a sign) with which 
+A "room fixture" is a permanent feature of a room (such as a sign) with which
 you can interact via one or more commands. **You may not abbreviate the name of a room fixture, and you may need to tack on the `r-` prefix to indicate that you are targeting an object in your current room.**
 
 ## Undocumented Commands
