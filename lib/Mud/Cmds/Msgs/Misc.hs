@@ -109,7 +109,7 @@ focusingInnateMsg = "Focusing your innate psionic energy for a brief moment, "
 
 
 genericErrorMsg :: Text
-genericErrorMsg = "Unfortunately, an error occured while executing your command."
+genericErrorMsg = "Unfortunately, an error occurred while executing your command."
 
 
 helloRulesMsg :: Text

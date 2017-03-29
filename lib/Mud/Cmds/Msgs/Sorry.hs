@@ -1230,7 +1230,7 @@ sorryKillAdHoc t = t <> " is an ad-hoc PC " <> can'tKill
 
 
 can'tKill :: Text
-can'tKill = "and cannot cannot be killed."
+can'tKill = "and cannot be killed."
 
 
 sorryKillAdmin :: Text -> Text
@@ -1992,7 +1992,7 @@ sorryTeleWelcomeRm = can't "teleport to the welcome room."
 
 
 sorryTimeNotOutside :: Text
-sorryTimeNotOutside = "You must be outstide, where you can see the sky."
+sorryTimeNotOutside = "You must be outside, where you can see the sky."
 
 
 -----
