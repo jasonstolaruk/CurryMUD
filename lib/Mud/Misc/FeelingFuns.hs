@@ -47,7 +47,7 @@ sacrificeBonusFeelingFun gn =
                                     Dellio    -> "You're feeling whimsical."
                                     Drogo     -> "You feel slightly giddy, as though you've been enchanted."
                                     Iminye    -> "" -- Intentionally blank.
-                                    Itulvatar -> "A warm senssation courses through your veins."
+                                    Itulvatar -> "A warm sensation courses through your veins."
                                     Murgorhd  -> "It's an exhilarating sensation!"
                                     Rhayk     -> "You feel inspired. You're ready to take on the world!"
                                     Rumialys  -> "You are acutely aware of the presence of a divine energy in all things." ]

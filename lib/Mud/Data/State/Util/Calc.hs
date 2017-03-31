@@ -1,7 +1,7 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults -Wno-redundant-constraints #-}
 {-# LANGUAGE LambdaCase, MultiWayIf, OverloadedStrings, RankNTypes, TupleSections, ViewPatterns #-}
 
-module Mud.Data.State.Util.Calc ( calcBarLen -- TODO: Continue spell checking from here.
+module Mud.Data.State.Util.Calc ( calcBarLen
                                 , calcBonus
                                 , calcCarriedVol
                                 , calcConPerFull
@@ -43,7 +43,6 @@ module Mud.Data.State.Util.Calc ( calcBarLen -- TODO: Continue spell checking fr
                                 , calcModifierPs
                                 , calcModifierSt
                                 , calcProbConnectBlink
-                                , calcProbCorpseHorf
                                 , calcProbLinkFlinch
                                 , calcProbSpiritizeShiver
                                 , calcProbTeleportDizzy
@@ -520,16 +519,6 @@ calcModifierEffPs i = calcModifierForEffAttrib . calcEffPs i
 
 calcProbConnectBlink :: HasCallStack => Id -> MudState -> Int
 calcProbConnectBlink i ms = (avgHelper calcEffHt calcEffPs i ms - 100) ^ 2 `quot` 125
-
-
-calcProbCorpseHorf :: HasCallStack => Id -> MudState -> Int -> Int
-calcProbCorpseHorf i ms corpseSmellLvl | corpseSmellLvl == 1 = 0
-                                       | otherwise           = (calcEffHt i ms - 125) ^ 2 `quot` x
-  where
-    x | corpseSmellLvl == 2 = 250 -- About a 25%  chance at HT 50.
-      | corpseSmellLvl == 3 = 100 -- About a 50%  chance at HT 50.
-      | corpseSmellLvl == 4 = 50  -- About a 100% chance at HT 50 and a 50% chance at HT 75.
-      | otherwise           = blowUp "calcProbCorpseHorf x" "unexpected corpse smell level" . showText $ x
 
 
 avgHelper :: HasCallStack => (Id -> MudState -> Int) -> (Id -> MudState -> Int) -> Id -> MudState -> Int

@@ -140,7 +140,7 @@ GEOGRAPHY:
 
 Divide the overall geography into the world, regions (large swaths of territory that have distinct, thematic differences), areas/zones (functional partitions imposed for technical reasons; these often coincide with and fit nicely inside regions), and rooms. The world should be partitioned such that it clusters players.
 
-Where the map ends, consider creating unsurmountable physical boundaries. p.275
+Where the map ends, consider creating insurmountable physical boundaries. p.275
 
 The size of the virtual world should be proportionate to the number of players. A rule of thumb is to aim for 40 rooms per player. 20 rooms per player is crowded, while 60 rooms per player is sparse. The actual number of rooms need not coincide with the perceived size of the virtual world.
 

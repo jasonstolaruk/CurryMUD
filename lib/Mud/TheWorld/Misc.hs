@@ -233,7 +233,7 @@ mkTrashCoinsDescsSelf = mkCoinsMsgs helper
 -- Other:
 
 
--- If "prob" is 25 (1 in 4), and "secs" is 60, we can expect the event to occurr once every 4 mins.
+-- If "prob" is 25 (1 in 4), and "secs" is 60, we can expect the event to occur once every 4 mins.
 mkRndmBcastRmFun :: Id -> Text -> FunName -> Int -> Seconds -> Text -> Fun
 mkRndmBcastRmFun i idName fn prob secs msg = handle (threadExHandler (Just i) threadName) $ do
     setThreadType . RmFun $ i

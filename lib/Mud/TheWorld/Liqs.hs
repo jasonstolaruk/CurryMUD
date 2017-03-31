@@ -152,7 +152,7 @@ potMpLiq :: Liq
 potMpLiq = Liq (DistinctLiqId iLiqPotMp)
                (DoArticle "cloudy, semi-transparent liquid")
                noSmellMsg
-               "Save for a nearly indetectable chalkiness, the liquid is tasteless."
+               "Save for a nearly undetectable chalkiness, the liquid is tasteless."
                "The cloudy liquid goes down like water."
 
 
@@ -216,7 +216,7 @@ potPpTag = "potPp"
 potInstantPpLiq :: Liq
 potInstantPpLiq = Liq (DistinctLiqId iLiqPotInstantPp)
                       (DoArticle "pale yellow liquid")
-                      "There is a yeast-like smell that reminds you of freashly-kneaded dough."
+                      "There is a yeast-like smell that reminds you of freshly-kneaded dough."
                       "You don't taste much until you are hit with a grain-like, malty aftertaste."
                       "The scents of yeast and fermentation fill your nostrils."
 
@@ -363,7 +363,7 @@ potDxDistinctLiq = DistinctLiq EdibleEffects { _digestEffects  = Just de
 potInstantDxLiq :: Liq
 potInstantDxLiq = Liq (DistinctLiqId iLiqPotInstantDx)
                       (DoArticle "heavy, translucent liquid")
-                      "There is a discinctly acidic aroma of lemon and lime."
+                      "There is a distinctly acidic aroma of lemon and lime."
                       "The liquid, though colorless, is rather thick, and has a notably acidic aftertaste."
                       "The dense tonic is oddly tart. Your eyes water slightly."
 

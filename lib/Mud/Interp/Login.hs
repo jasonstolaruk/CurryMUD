@@ -402,7 +402,7 @@ mkPickPtsIntroTxt :: HasCallStack => Sing -> Text
 mkPickPtsIntroTxt s = T.unlines . map (lSpcs <>) $ ts
   where
     ts = [ "Next we'll assign points to " <> s <> "'s attributes."
-         , "Characters have 5 attributes, each measuring inate talent in a given area. 10 (the minimum value) represents a staggering lack of talent, while 100 (the maximum value) represents near-supernatural talent. 50 represents an average degree of talent."
+         , "Characters have 5 attributes, each measuring innate talent in a given area. 10 (the minimum value) represents a staggering lack of talent, while 100 (the maximum value) represents near-supernatural talent. 50 represents an average degree of talent."
          , "You have a pool of " <> showText initPickPts <> " points to assign to your attributes as you wish. To add points to an attribute, type the first letter of the attribute name, immediately followed by + and the number of points to add. For example, to add 10 to your Strength, type " <> colorWith quoteColor "s+10" <> ". To subtract points, use - instead of +, as in " <> prd (colorWith quoteColor "s-10")
          , "You can specify multiple additions/subtractions on a single line. Simply separate them with a spaces, like so: " <> prd (colorWith quoteColor "s-10 d+10 h+5")
          , "When you are finished assigning points, type " <> colorWith quoteColor (T.singleton 'q') <> " to quit and move on." ]

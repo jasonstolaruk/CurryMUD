@@ -243,7 +243,7 @@ mkFlower i v = modifyStateSeq $ \ms -> let et = EntTemplate (Just "flower")
                , "The petals have a somewhat spicy, somewhat sour taste." )
              , ( "This eye-popping chrysanthemum has a fiery-orange bloom composed of many tiny petals."
                , "Though striking in appearance, the chrysanthemum is not particularly fragrant."
-               , "The petals taste slighly sour." )
+               , "The petals taste slightly sour." )
              , ( "This blue lily has six large, independent petals opening widely from its base."
                , "Sure to attract a variety of loyal pollinators, the lily is markedly fragrant."
                , "The petals taste a bit like nutmeg." ) ]
@@ -348,7 +348,7 @@ readLookPosterHookFun = mkGenericHookFun posterDesc "reads the poster on the wal
         \Whenever I came up with new core functionality, I'd need a way to test it. Often that meant tacking on a room \
         \to this zone - the only zone that existed at the time. There was never any unifying theme for the Admin Zone, \
         \just the notion that players would likely never step foot in it (hence the name). As such, it kind of has the \
-        \vibe of a makeshift funhouse; in the very least, it's a restricted area where admins can hang out.\n\
+        \vibe of a makeshift fun house; in the very least, it's a restricted area where admins can hang out.\n\
         \-Jason"
 
 
@@ -697,7 +697,7 @@ createAdminZone = do
                 (Just "coat")
                 "woman's red frock coat" ""
                 "This fashionable long-sleeved coat is made of soft, bright-red fabric decorated with a fine, rich \
-                \floral brochade. Six black buttons from the collar down the chest, when fastened, make this a \
+                \floral brocade. Six black buttons from the collar down the chest, when fastened, make this a \
                 \particularly figure-flattering garment."
                 Nothing
                 zeroBits)
@@ -1194,7 +1194,7 @@ createAdminZone = do
             \support the ceiling. Next to the pool is a raised flowerbed, surrounded by four unembellished stone \
             \benches.\n\
             \An opening in the west wall leads out into a hallway."
-            (Just "You hear the sound of trees blowing in the breeze coming through the openning in the ceiling.")
+            (Just "You hear the sound of trees blowing in the breeze coming through the opening in the ceiling.")
             (Just "The scent of fresh air wafting in from the ceiling combines the with sweet, grassy smells of the \
                   \flowerbed.")
             zeroBits
@@ -1217,7 +1217,7 @@ createAdminZone = do
             \Eight doors are positioned about the round, stucco wall at even intervals. A spiral staircase leads up. \
             \Next to the staircase lies an open manhole."
             Nothing
-            (Just "The unmistakable scent of mildew fills your nostrils. This room really ought to be ventillated \
+            (Just "The unmistakable scent of mildew fills your nostrils. This room really ought to be ventilated \
                   \better.")
             zeroBits
             [ StdLink    North     iWeightRm    1
@@ -1272,7 +1272,7 @@ createAdminZone = do
         (mkRm (RmTemplate "Attic"
             "Though the confined attic is dusty, its cozy atmosphere creates an oddly welcoming space.\n\
             \There is a hole in the floor with a ladder leading down."
-            (Just . thrice prd $ "Is that the soft squeek of a mouse you hear? Maybe you're just hearing things")
+            (Just . thrice prd $ "Is that the soft squeak of a mouse you hear? Maybe you're just hearing things")
             (Just "The air here is dusty and a little stale, though not stifling.")
             zeroBits
             [ NonStdLink "d" iWeightRm 1 "% climbs down the ladder and into the hole in the floor."
