@@ -10,7 +10,6 @@
 .DS_Store
 .hpc
 .hsenv
-.projectile
 .stack-work/
 /db/
 /logs/

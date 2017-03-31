@@ -214,12 +214,14 @@ alertMsgHelper i cn txt = getState >>= \ms -> if isAdminId i ms
                                    , txt ]
                  outIds = (iRoot `delete`) $ getAdminIds ms \\ getLoggedInAdminIds ms
                  rec    = AlertMsgRec ts s cn match txt
-             in do logNotice        "alertMsgHelper"   msg
-                   logPla           "alertMsgHelper" i msg
+             in do logNotice        fn   msg
+                   logPla           fn i msg
                    bcastAdmins msg
                    forM_ outIds (\adminId -> retainedMsg adminId ms . mkRetainedMsgFromPerson s $ msg)
-                   withDbExHandler_ "alertMsgHelper" . insertDbTblAlertMsg $ rec
+                   withDbExHandler_ fn . insertDbTblAlertMsg $ rec
          else unit
+  where
+    fn = "alertMsgHelper"
 
 
 -----
@@ -1787,7 +1789,7 @@ mkMaybeCorpseSmellMsg i ms i' f | getType i' ms == CorpseType, n <- mkCorpseAppe
   where
     helper n = case mkCorpseSmellLvl . getEntSmell i' $ ms of
       1 -> thrice prd $ "Thankfully, the " <> n <> " hasn't begun to give off an odor yet"
-      2 -> prd $ "There is a distinct odor eminating from the " <> n
+      2 -> prd $ "There is a distinct odor emanating from the " <> n
       3 -> "The " <> n <> " is exuding a most repulsive aroma."
       4 -> "There's no denying that the foul smell of death is in the air."
       x -> blowUp "mkMaybeCorpseSmellMsg helper" "unexpected corpse smell level" . showText $ x

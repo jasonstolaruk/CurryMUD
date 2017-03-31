@@ -338,7 +338,7 @@ adminAs   (WithTarget i mq cols target rest) = getState >>= \ms ->
           _ -> sorry . sorryAsType $ s
         ioHelper targetId s = do
             let ts = [ "Executing ", dblQuote rest, " as ", aOrAnOnLower . descSingId targetId $ ms, "." ]
-            logPla "adminAs" i . T.concat $ ts
+            logPla "adminAs ioHelper" i . T.concat $ ts
             sendFun . parensQuote . thrice prd $ "Executing as " <> aOrAnOnLower s
         sorry txt  = sendFun txt >> sendDfltPrompt mq i
         sorryParse = sorry . sorryParseId $ strippedTarget'
@@ -1164,10 +1164,10 @@ adminIncognito :: HasCallStack => ActionFun
 adminIncognito (NoArgs i mq cols) = modifyStateSeq $ \ms ->
     let s              = getSing i ms
         isIncog        = isIncognitoId i ms
-        fs | isIncog   = [ logPla "adminIncognito helper fs" i "going visible."
+        fs | isIncog   = [ logPla "adminIncognito fs" i "going visible."
                          , wrapSend mq cols "You are no longer incognito."
                          , bcastOtherAdmins i $ s <> " is no longer incognito." ]
-           | otherwise = [ logPla "adminIncognito helper fs" i "going incognito."
+           | otherwise = [ logPla "adminIncognito fs" i "going incognito."
                          , wrapSend mq cols "You have gone incognito."
                          , bcastOtherAdmins i $ s <> " has gone incognito." ]
     in (ms & plaTbl.ind i %~ setPlaFlag IsIncognito (not isIncog), fs)
@@ -1466,7 +1466,7 @@ adminPossess   (OneArgNubbed i mq cols target) = modifyStateSeq $ \ms ->
           where
             targetSing      = getSing targetId ms
             can'tPossess pi = sorry . sorryAlreadyPossessed targetSing . getSing pi $ ms
-            canPossess      = (ms', [ logPla "adminPossess" i logMsg
+            canPossess      = (ms', [ logPla "adminPossess canPossess" i logMsg
                                     , sendFun . prd $ "You are now possessing " <> aOrAnOnLower targetSing
                                     , sendDfltPrompt mq targetId
                                     , sendGmcpRmInfo Nothing targetId ms' ])
@@ -2133,11 +2133,13 @@ shutdownHelper :: HasCallStack => Id -> MsgQueue -> Maybe Text -> MudStack ()
 shutdownHelper i mq maybeMsg = getState >>= \ms ->
     let s    = getSing i ms
         rest = maybeMsg |&| maybe (prd . spcL . parensQuote $ "no message given") (("; message: " <>) . dblQuote)
-    in do logPla     "shutdownHelper" i $ "initiating shutdown" <> rest
-          massLogPla "shutdownHelper"   $ "closing connection due to server shutdown initiated by " <> s <> rest
-          logNotice  "shutdownHelper"   $ "server shutdown initiated by "                           <> s <> rest
+    in do logPla     fn i $ "initiating shutdown" <> rest
+          massLogPla fn   $ "closing connection due to server shutdown initiated by " <> s <> rest
+          logNotice  fn   $ "server shutdown initiated by "                           <> s <> rest
           massSend . colorWith shutdownMsgColor . fromMaybe dfltShutdownMsg $ maybeMsg
           writeMsg mq Shutdown
+  where
+    fn = "shutdownHelper"
 
 
 -----

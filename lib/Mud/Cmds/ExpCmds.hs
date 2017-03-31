@@ -749,16 +749,16 @@ expCmdSet = S.fromList
                                        "% shushed @.")
                             Nothing
     , ExpCmd "sigh"         (NoTarget  "You sigh."
-                                       "% sighes.")
+                                       "% sighs.")
                             Nothing
     , ExpCmd "sighrelief"   (NoTarget  "You sigh in relief."
-                                       "% sighes in relief.")
+                                       "% sighs in relief.")
                             Nothing
     , ExpCmd "sighsadly"    (NoTarget  "You sigh sadly."
-                                       "% sighes sadly.")
+                                       "% sighs sadly.")
                             Nothing
     , ExpCmd "sighwearily"  (NoTarget  "You sigh wearily."
-                                       "% sighes wearily.")
+                                       "% sighs wearily.")
                             Nothing
     , ExpCmd "sit"          (Versatile "You sit down."
                                        "% sits down."
@@ -871,7 +871,7 @@ expCmdSet = S.fromList
                                        "% struts & stuff.")
                             Nothing
     , ExpCmd "stumble"      (NoTarget  "Your stumble and almost fall over."
-                                       "% strumbles and almost falls over.")
+                                       "% stumbles and almost falls over.")
                             Nothing
     , ExpCmd "suckthumb"    (NoTarget  "You suck your thumb."
                                        "% sucks & thumb.")

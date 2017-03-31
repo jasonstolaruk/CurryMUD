@@ -362,7 +362,7 @@ noOfSpiritCmds = length spiritRegularCmdTuples + length spiritPriorityAbbrevCmdT
 {-
 NPC commands must conform to the following rules:
 * Messages should not be sent to the executor of the command in the form of broadcasts. (Otherwise they will be
-erroneously indented with "toNpcColor" in the case that the executor is an NPC.)
+erroneously decorated with "toNpcColor" in the case that the executor is an NPC.)
 * Given the above, "toSelf" messages should be subjected to "parseDesig", as necessary, before being sent to the
 executor (via "wrapSend" or a related function). Log messages may likewise need to be subjected to "parseDesig",
 depending on their content.
@@ -2237,7 +2237,7 @@ interpVerifyNewPW :: HasCallStack => Text -> Text -> Interp
 interpVerifyNewPW oldPW pass cn (NoArgs i mq cols)
   | cn == pass = getSing i <$> getState >>= \s -> do
       logPla "interpVerifyNewPW" i . prd $ "password changed " <> parensQuote ("was " <> dblQuote oldPW)
-      withDbExHandler_ "unpw" . insertDbTblUnPw . UnPwRec s $ pass
+      withDbExHandler_ "interpVerifyNewPW" . insertDbTblUnPw . UnPwRec s $ pass
       send mq telnetShowInput
       blankLine mq
       wrapSend  mq cols $ "Password changed. " <> pwWarningMsg
@@ -3234,7 +3234,7 @@ smell p@(OneArgLower i mq cols a) = getState >>= \ms ->
                                                                     , aCoinSomeCoins canCoins
                                                                     , "." ], i `delete` desigIds d)
                                  logMsg            = prd $ "smelled " <> aCoinSomeCoins canCoins
-                             in ioHelper ms Nothing smellDesc bs logMsg
+                             in ioHelper smellDesc bs logMsg
                     (t:_) -> sorry t
             (eis:_) -> case eis of
               Left  msg        -> sorry msg
@@ -3254,7 +3254,7 @@ smell p@(OneArgLower i mq cols a) = getState >>= \ms ->
                                                             , parensQuote "carried"
                                                             , "." ], pure i') :)
                                       logMsg = T.concat [ "smelled ", aOrAn targetSing, " ", parensQuote "carried", "." ]
-                                  in ioHelper ms (boolToMaybe ic targetId) smellDesc bs logMsg
+                                  in ioHelper smellDesc bs logMsg
               Right _          -> sorry sorrySmellExcessTargets
     -----
     smellEq ms d eqMap target =
@@ -3272,7 +3272,7 @@ smell p@(OneArgLower i mq cols a) = getState >>= \ms ->
                                                               , slotDesc |!| spcL slotDesc
                                                               , "." ], i `delete` desigIds d)
                                     logMsg   = T.concat [ "smelled ", aOrAn targetSing, " ", slotDesc, "." ]
-                                in ioHelper ms Nothing smellDesc bs logMsg
+                                in ioHelper smellDesc bs logMsg
             Right _          -> sorry sorrySmellExcessTargets
     -----
     smellRm ms d invCoins maybeHooks target = -- You can smell a mob or a corpse in your current room.
@@ -3315,7 +3315,7 @@ smell p@(OneArgLower i mq cols a) = getState >>= \ms ->
                                                             , "." ], desigIds d \\ [ i, targetId ])
                                                 , (serialize d <> " smells you.", pure targetId) ]
                                   logMsg      = parseExpandDesig i ms . prd $ "smelled " <> targetDesig
-                                  smellMob    = ioHelper ms Nothing smellDesc bs logMsg
+                                  smellMob    = ioHelper smellDesc bs logMsg
                                   smellCorpse = let corpseBs = foldr f [] $ i `delete` desigIds d
                                                       where
                                                         f i' = ((T.concat [ serialize d
@@ -3329,7 +3329,7 @@ smell p@(OneArgLower i mq cols a) = getState >>= \ms ->
                                                                             , " "
                                                                             , parensQuote "on the ground"
                                                                             , "." ]
-                                                in ioHelper ms (Just targetId) smellDesc corpseBs corpseLogMsg
+                                                in ioHelper smellDesc corpseBs corpseLogMsg
                               in case getType targetId ms of NpcType    -> smellMob
                                                              PlaType    -> smellMob
                                                              CorpseType -> smellCorpse
@@ -3344,26 +3344,13 @@ smellTasteIOHelper :: HasCallStack => Text
                                    -> Id
                                    -> MsgQueue
                                    -> Cols
-                                   -> MudState
-                                   -> Maybe Id
                                    -> Text
                                    -> [Broadcast]
                                    -> Text
                                    -> MudStack ()
-smellTasteIOHelper fn i mq cols ms mci msg bs logMsg = do logPla fn i logMsg
-                                                          wrapSend mq cols msg
-                                                          bcastIfNotIncogNl i bs
-                                                          maybe (sendDfltPrompt mq i) (corpseHorf i mq ms) mci
-
-
-corpseHorf :: HasCallStack => Id -> MsgQueue -> MudState -> Id -> MudStack ()
-corpseHorf i mq ms corpseId = let x = mkCorpseSmellLvl . getEntSmell corpseId $ ms
-                              in mUnless (rndmDo (calcProbCorpseHorf i ms x) . onNewThread $ f) . sendDfltPrompt mq $ i
-  where
-    f = do liftIO . delaySecs $ 2
-           ms' <- getState
-           when (isLoggedIn . getPla i $ ms') . mkExpAction "horf" . mkActionParams i ms' $ []
-           sendDfltPrompt mq i
+smellTasteIOHelper fn i mq cols msg bs logMsg = do logPla fn i logMsg
+                                                   wrapSend mq cols msg
+                                                   bcastIfNotIncogNl i bs
 
 
 -----
@@ -3477,7 +3464,7 @@ taste p@(OneArgLower i mq cols a) = getState >>= \ms ->
                                                           , parensQuote "carried"
                                                           , "." ], pure i') :)
                                     logMsg = T.concat [ "tasted ", aOrAn targetSing, " ", parensQuote "carried", "." ]
-                                in ioHelper ms (boolToMaybe ic targetId) tasteDesc bs logMsg
+                                in ioHelper tasteDesc bs logMsg
             Right _          -> sorry sorryTasteExcessTargets
           _ -> let (canCoins, can'tCoinMsgs) = distillEcs ecs in case can'tCoinMsgs of
             []    -> let (coinTxt, _) = mkCoinPieceTxt canCoins
@@ -3489,7 +3476,7 @@ taste p@(OneArgLower i mq cols a) = getState >>= \ms ->
                                                        , aCoinSomeCoins canCoins
                                                        , "." ], i `delete` desigIds d)
                          logMsg       = prd $ "tasted " <> aCoinSomeCoins canCoins
-                     in ioHelper ms Nothing tasteDesc bs logMsg
+                     in ioHelper tasteDesc bs logMsg
             (t:_) -> sorry t
     -----
     tasteEq ms d eqMap target | (gecrs, miss, _) <- resolveEntCoinNames i ms (pure target) (M.elems eqMap) mempty =
@@ -3505,7 +3492,7 @@ taste p@(OneArgLower i mq cols a) = getState >>= \ms ->
                                                               , slotDesc |!| spcL slotDesc
                                                               , "." ], i `delete` desigIds d)
                                     logMsg   = T.concat [ "tasted ", aOrAn targetSing, " ", slotDesc, "." ]
-                                in ioHelper ms Nothing tasteDesc bs logMsg
+                                in ioHelper tasteDesc bs logMsg
             Right _          -> sorry sorryTasteExcessTargets
     -----
     ioHelper = smellTasteIOHelper "taste" i mq cols

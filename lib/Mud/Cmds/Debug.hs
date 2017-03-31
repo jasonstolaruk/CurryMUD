@@ -29,7 +29,7 @@ import           Mud.Interp.Pause
 import           Mud.Misc.ANSI
 import           Mud.Misc.CurryTime
 import           Mud.Misc.Logging (writeLog)
-import qualified Mud.Misc.Logging as L (logAndDispIOEx, logNotice, logPla, logPlaExec, logPlaExecArgs)
+import qualified Mud.Misc.Logging as L (logAndDispIOEx, logNotice, logPlaExec, logPlaExecArgs)
 import           Mud.Misc.Misc
 import           Mud.Misc.Persist
 import           Mud.TheWorld.Liqs
@@ -109,10 +109,6 @@ logNotice :: Text -> Text -> MudStack ()
 logNotice = L.logNotice "Mud.Cmds.Debug"
 
 
-logPla :: Text -> Id -> Text -> MudStack ()
-logPla = L.logPla "Mud.Cmds.Debug"
-
-
 logPlaExec :: CmdName -> Id -> MudStack ()
 logPlaExec = L.logPlaExec "Mud.Cmds.Debug"
 
@@ -139,8 +135,6 @@ debugCmds =
     , mkDebugCmd "cores"       debugCores       "Display the number of processor cores."
     , mkDebugCmd "cpu"         debugCPU         "Display the CPU time."
     , mkDebugCmd "currytime"   debugCurryTime   "Display a given number of seconds in Curry Time."
-    , mkDebugCmd "delay"       debugDelay       "On a new thread, send yourself a message and horf after a delay of 10 \
-                                                \seconds."
     , mkDebugCmd "echowill"    debugEchoWill    "Send IAC WILL ECHO (hide user input)."
     , mkDebugCmd "echowon't"   debugEchoWon't   "Send IAC WON'T ECHO (show user input)."
     , mkDebugCmd "effect"      debugEffect      "Add 10-20 to your ST for 30 seconds."
@@ -342,27 +336,6 @@ debugCores (NoArgs i mq cols) = do
     wrapSend mq cols =<< [ T.concat [ showText cores, " processor core", sOnNon1 cores, "." ]
                          | cores <- liftIO . safePerformIO $ getNumCapabilities ]
 debugCores p = withoutArgs debugCores p
-
-
------
-
-
-debugDelay :: HasCallStack => ActionFun
-debugDelay (NoArgs i mq cols) = blankLine mq >> onNewThread f
-  where
-    f   = do logPla fn i "delaying."
-             liftIO . delaySecs $ 10
-             logPla fn i "sending message."
-             wrapSend mq cols msg
-             logPla fn i "horfing."
-             ms <- getState
-             if isLoggedIn . getPla i $ ms
-               then mkExpAction "horf" . mkActionParams i ms $ []
-               else logNotice fn $ getSing i ms <> " is no longer logged in."
-             ok mq
-    fn  = prefixDebugCmd "delay f"
-    msg = colorWith zingColor "I can't forget to turn the earth so both sides get their share of darkness and of light."
-debugDelay p = withoutArgs debugDelay p
 
 
 -----
@@ -820,7 +793,7 @@ debugPersist p              = withoutArgs debugPersist p
 debugPidge :: HasCallStack => ActionFun
 debugPidge (NoArgs' i mq) = serialize . flip (mkStdDesig i) Don'tCap <$> getState >>= \d -> do
     logPlaExec (prefixDebugCmd "pidge") i
-    bcastNl . mkBcast iPidge $ "Geetings from " <> d <> "!"
+    bcastNl . mkBcast iPidge $ "Greetings from " <> d <> "!"
     ok mq
 debugPidge p = withoutArgs debugPidge p
 
@@ -1039,28 +1012,29 @@ descThreads = do logAsyncKvs <- getLogThreadIds >>= \case [ a, b ] -> return [ (
   where
     mkDesc (ti, bracketPad 20 . mkTypeName -> tn) = [ T.concat [ padOrTrunc 16 . showText $ ti, tn, ts ]
                                                     | (showText -> ts) <- liftIO . threadStatus $ ti ]
-    mkTypeName (Biodegrader       (showText -> pi)) = padOrTrunc padAmt "Biodegrader"  <> pi
-    mkTypeName (CorpseDecomposer  (showText -> pi)) = padOrTrunc padAmt "CorpseDecomp" <> pi
-    mkTypeName (Digester          (showText -> pi)) = padOrTrunc padAmt "Digester"     <> pi
-    mkTypeName (DrinkingThread    (showText -> pi)) = padOrTrunc padAmt "Drinking"     <> pi
-    mkTypeName (EatingThread      (showText -> pi)) = padOrTrunc padAmt "Eating"       <> pi
-    mkTypeName (EffectListener    (showText -> pi)) = padOrTrunc padAmt "EffListen"    <> pi
-    mkTypeName (EffectThread      (showText -> pi)) = padOrTrunc padAmt "EffThread"    <> pi
-    mkTypeName (EffectTimer       (showText -> pi)) = padOrTrunc padAmt "EffTimer"     <> pi
-    mkTypeName (FeelingTimer      (showText -> pi)) = padOrTrunc padAmt "FeelingTimer" <> pi
-    mkTypeName (InacTimer         (showText -> pi)) = padOrTrunc padAmt "InacTimer"    <> pi
-    mkTypeName (NpcServer         (showText -> pi)) = padOrTrunc padAmt "NpcServer"    <> pi
-    mkTypeName (PlaLog            (showText -> pi)) = padOrTrunc padAmt "PlaLog"       <> pi
-    mkTypeName (Receive           (showText -> pi)) = padOrTrunc padAmt "Receive"      <> pi
-    mkTypeName (RegenChild        (showText -> pi)) = padOrTrunc padAmt "RegenChild"   <> pi
-    mkTypeName (RegenParent       (showText -> pi)) = padOrTrunc padAmt "RegenParent"  <> pi
-    mkTypeName (RmFun             (showText -> pi)) = padOrTrunc padAmt "RmFun"        <> pi
-    mkTypeName (SacrificingThread (showText -> pi)) = padOrTrunc padAmt "Sacrificing"  <> pi
-    mkTypeName (Server            (showText -> pi)) = padOrTrunc padAmt "Server"       <> pi
-    mkTypeName (SpiritTimer       (showText -> pi)) = padOrTrunc padAmt "SpiritTimer"  <> pi
-    mkTypeName (Talk              (showText -> pi)) = padOrTrunc padAmt "Talk"         <> pi
-    mkTypeName (showText -> tt)                     = tt -- For thread types without an ID.
-    padAmt                                          = 13
+    f pi t                            = padOrTrunc padAmt t <> showText pi
+    mkTypeName (Biodegrader       pi) = f pi "Biodegrader"
+    mkTypeName (CorpseDecomposer  pi) = f pi "CorpseDecomp"
+    mkTypeName (Digester          pi) = f pi "Digester"
+    mkTypeName (DrinkingThread    pi) = f pi "Drinking"
+    mkTypeName (EatingThread      pi) = f pi "Eating"
+    mkTypeName (EffectListener    pi) = f pi "EffListen"
+    mkTypeName (EffectThread      pi) = f pi "EffThread"
+    mkTypeName (EffectTimer       pi) = f pi "EffTimer"
+    mkTypeName (FeelingTimer      pi) = f pi "FeelingTimer"
+    mkTypeName (InacTimer         pi) = f pi "InacTimer"
+    mkTypeName (NpcServer         pi) = f pi "NpcServer"
+    mkTypeName (PlaLog            pi) = f pi "PlaLog"
+    mkTypeName (Receive           pi) = f pi "Receive"
+    mkTypeName (RegenChild        pi) = f pi "RegenChild"
+    mkTypeName (RegenParent       pi) = f pi "RegenParent"
+    mkTypeName (RmFun             pi) = f pi "RmFun"
+    mkTypeName (SacrificingThread pi) = f pi "Sacrificing"
+    mkTypeName (Server            pi) = f pi "Server"
+    mkTypeName (SpiritTimer       pi) = f pi "SpiritTimer"
+    mkTypeName (Talk              pi) = f pi "Talk"
+    mkTypeName (showText -> t       ) = t -- For thread types without an ID.
+    padAmt                            = 13
 
 
 -----
