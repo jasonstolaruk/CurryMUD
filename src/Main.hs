@@ -29,6 +29,8 @@ import           System.Environment (getEnv, getProgName)
 import           System.Remote.Monitoring (forkServer)
 
 
+-- TODO: Overloaded record fields coming in GHC 8.2.1...
+
 main :: IO ()
 main = mkMudFilePath mudDirFun >>= \dir ->
     let stop = T.putStrLn $ "The " <> dblQuote (T.pack dir) <> " directory does not exist; aborting."

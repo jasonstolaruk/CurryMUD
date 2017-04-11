@@ -95,7 +95,7 @@ Please build with [stack](http://docs.haskellstack.org/en/stable/README.html) (o
 
 1. [Install stack.](http://docs.haskellstack.org/en/stable/install_and_upgrade/)
 1. Clone the repo from your home directory (the server expects to find various folders under `$HOME/CurryMUD`).
-1. Inside `$HOME/CurryMUD`, run `stack setup` to get GHC 8 on your machine. (The `stack.yaml` file points to [a recent nightly resolver](https://www.stackage.org/snapshots), which uses GHC 8.)
+1. Inside `$HOME/CurryMUD`, run `stack setup` to get GHC 8 on your machine. (The `stack.yaml` file points to [a recent resolver](https://www.stackage.org/snapshots) which uses GHC 8.)
 1. Run `stack build` to compile the `curry` binary and libraries.
 1. Run `stack install` to copy the `curry` binary to `$HOME/.local/bin`.
 1. Execute the `curry` binary.
