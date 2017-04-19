@@ -55,6 +55,7 @@ module Mud.Cmds.Util.Misc ( applyRegex
                           , mkHolySymbolVol
                           , mkHolySymbolWeight
                           , mkInterfaceList
+                          , mkMobRmDesc
                           , mkNameTypeIdDesc
                           , mkPossPro
                           , mkPros
@@ -93,6 +94,7 @@ import           Mud.Data.State.MudData
 import           Mud.Data.State.Util.Calc
 import           Mud.Data.State.Util.Effect
 import           Mud.Data.State.Util.Get
+import           Mud.Data.State.Util.Hierarchy
 import           Mud.Data.State.Util.Misc
 import           Mud.Data.State.Util.Output
 import           Mud.Data.State.Util.Random
@@ -675,6 +677,31 @@ loggedInOutColorize False = loggedInOutHelper id                        False
 -----
 
 
+mkActionParams :: HasCallStack => Id -> MudState -> Args -> ActionParams
+mkActionParams i ms as = ActionParams { myId        = i
+                                      , plaMsgQueue = getMsgQueue i ms
+                                      , plaCols     = getColumns  i ms
+                                      , args        = as }
+
+
+-----
+
+
+mkChanReport :: HasCallStack => Id -> MudState -> Chan -> [Text]
+mkChanReport i ms (Chan ci cn cct tappers) =
+    let desc    = commas . map descPla . f $ [ (s, t, l) | (s, t) <- M.toList cct
+                                                         , let l = isAwake (getIdForPCSing s ms) ms ]
+        tapping = getSing i ms `elem` tappers |?| spcL . parensQuote $ "wiretapped"
+    in [ T.concat [ bracketQuote . showText $ ci, " ", dblQuote cn, tapping, ":" ], desc ]
+  where
+    descPla (s, t, l) = T.concat [ underline s, ": ", tunedInOutColorize t, " / ", loggedInOutColorize l ]
+    f                 = sortBy (compare `on` view _1)
+
+
+-----
+
+
+
 mkHimHer :: Sex -> Text
 mkHimHer Male   = "him"
 mkHimHer Female = "her"
@@ -751,34 +778,25 @@ mkInterfaceList = NI.getNetworkInterfaces >>= \ns -> return . commas $ [ T.conca
 -----
 
 
+mkMobRmDesc :: HasCallStack => Id -> MudState -> Text -- TODO: Should certain act commands erase room desc?
+mkMobRmDesc i ms | hasMobId i ms = let t = commas . dropEmpties $ fromMaybeEmp (getMobRmDesc i ms) : helper
+                                   in onFalse (()# t) parensQuote t
+                 | otherwise     = ""
+  where
+    helper = [ pp act | (act, f) <- pairs, f i ms ]
+    pairs  = [ (Sacrificing, isSacrificing)
+             , (Drinking,    isDrinking   )
+             , (Eating,      isEating     )
+             , (Attacking,   isAttacking  ) ]
+
+
+-----
+
+
 mkNameTypeIdDesc :: HasCallStack => Id -> MudState -> Text
 mkNameTypeIdDesc i ms = let (n, typeTxt) = case getType i ms of RmType -> (getRmName i ms, pp RmType)
                                                                 t      -> (getSing   i ms, pp t     )
                         in n <> spaced (parensQuote typeTxt) <> bracketQuote (showText i)
-
-
------
-
-
-mkActionParams :: HasCallStack => Id -> MudState -> Args -> ActionParams
-mkActionParams i ms as = ActionParams { myId        = i
-                                      , plaMsgQueue = getMsgQueue i ms
-                                      , plaCols     = getColumns  i ms
-                                      , args        = as }
-
-
------
-
-
-mkChanReport :: HasCallStack => Id -> MudState -> Chan -> [Text]
-mkChanReport i ms (Chan ci cn cct tappers) =
-    let desc    = commas . map descPla . f $ [ (s, t, l) | (s, t) <- M.toList cct
-                                                         , let l = isAwake (getIdForPCSing s ms) ms ]
-        tapping = getSing i ms `elem` tappers |?| spcL . parensQuote $ "wiretapped"
-    in [ T.concat [ bracketQuote . showText $ ci, " ", dblQuote cn, tapping, ":" ], desc ]
-  where
-    descPla (s, t, l) = T.concat [ underline s, ": ", tunedInOutColorize t, " / ", loggedInOutColorize l ]
-    f                 = sortBy (compare `on` view _1)
 
 
 -----

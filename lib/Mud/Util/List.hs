@@ -9,6 +9,7 @@ module Mud.Util.List ( allValues
                      , findDelimitedSubList
                      , headLast
                      , headTail
+                     , listToMaybe
                      , listToTuple
                      , lookupValue
                      , mkCountList
@@ -68,6 +69,11 @@ headLast = (,) <$> head <*> last
 
 headTail :: [a] -> (,) a ([] a)
 headTail = (,) <$> head <*> tail
+
+
+listToMaybe :: (Show a) => [a] -> Maybe a
+listToMaybe []    = Nothing
+listToMaybe (a:_) = Just a
 
 
 listToTuple :: (Each s t a a) => [a] -> t

@@ -272,11 +272,6 @@ isZero :: (Eq a, Num a) => a -> Bool
 isZero = (()#) . Sum
 
 
-listToMaybe :: (Show a) => [a] -> Maybe a
-listToMaybe []    = Nothing
-listToMaybe (a:_) = Just a
-
-
 middle :: (a -> b -> a) -> b -> a -> b -> a
 middle f mid x y = x `f` mid `f` y
 

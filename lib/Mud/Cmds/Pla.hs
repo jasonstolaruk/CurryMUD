@@ -3405,7 +3405,7 @@ stop p@(OneArgLower i mq cols a) = getState >>= \ms ->
       then case filter (view _3) . mkStopTuples p $ ms of [] -> wrapSend mq cols sorryStopNotDoingAnything
                                                           xs -> ((>>) <$> stopLogHelper i . select _2 <*> mapM_ (view _4)) xs
       else case filter (views _1 (a `T.isPrefixOf`)) . mkStopTuples p $ ms of
-        [] -> wrapSend mq cols . sorryStopActName $ a
+        []                     -> wrapSend mq cols . sorryStopActName $ a
         ((_, actType, b, f):_) -> b ? (stopLogHelper i (pure actType) >> f) :? wrapSend mq cols (sorryStopNotDoing actType)
 stop p = advise p ["stop"] adviceStopExcessArgs
 

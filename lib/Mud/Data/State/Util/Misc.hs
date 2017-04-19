@@ -51,7 +51,6 @@ module Mud.Data.State.Util.Misc ( addToInv
                                 , mkCorpseTxt
                                 , mkEntName
                                 , mkMaybeCorpseId
-                                , mkMobRmDesc
                                 , mkNameCountBothList
                                 , mkName_maybeCorpseId_count_bothList
                                 , mkPlaIdSingList
@@ -76,7 +75,6 @@ module Mud.Data.State.Util.Misc ( addToInv
 import           Mud.Data.Misc
 import           Mud.Data.State.MudData
 import           Mud.Data.State.Util.Get
-import           Mud.Data.State.Util.Hierarchy
 import           Mud.Misc.Misc
 import           Mud.TheWorld.Zones.AdminZoneIds (iNecropolis, iWelcome)
 import           Mud.TopLvlDefs.Chars
@@ -518,15 +516,6 @@ mkCorpseTxt = uncurry (middle (<>) . T.singleton $ corpseNameMarker)
 
 mkEntName :: Ent -> Text
 mkEntName = views entName (fromMaybe "unknown")
-
-
------
-
-
-mkMobRmDesc :: HasCallStack => Id -> MudState -> Text
-mkMobRmDesc i ms | hasMobId i ms = case getMobRmDesc i ms of Nothing   -> ""
-                                                             Just desc -> parensQuote desc
-                 | otherwise     = ""
 
 
 -----
