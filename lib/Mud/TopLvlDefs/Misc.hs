@@ -102,7 +102,7 @@ biodegDelay = 5
 
 
 biodegSecs :: Seconds
-biodegSecs = fiveMinsInSecs
+biodegSecs = tenMinsInSecs
 
 
 bonusDelay :: Seconds
