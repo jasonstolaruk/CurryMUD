@@ -778,7 +778,7 @@ mkInterfaceList = NI.getNetworkInterfaces >>= \ns -> return . commas $ [ T.conca
 -----
 
 
-mkMobRmDesc :: HasCallStack => Id -> MudState -> Text -- TODO: Should certain act commands erase room desc?
+mkMobRmDesc :: HasCallStack => Id -> MudState -> Text
 mkMobRmDesc i ms | hasMobId i ms = let t = commas . dropEmpties $ fromMaybeEmp (getMobRmDesc i ms) : helper
                                    in onFalse (()# t) parensQuote t
                  | otherwise     = ""

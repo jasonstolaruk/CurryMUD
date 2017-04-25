@@ -456,16 +456,28 @@ TUPLES
 Construct tuples using the "(,)" and "(,,)" tuple constructors when appropriate:
 (,,) <$> ['a','b'] <*> [LT,GT] <*> [Left True, Right False]
 
-Use "first" and "second" (from "Control.Arrow") to apply a function to an element of a tuple and get back the "updated" tuple: (RWH p.379)
-λ> second odd ('a', 1)
-('a',True)
-
 Use "uncurry" to apply a two-argument function to the elements of a pair:
 λ> uncurry compare ('a', 'b')
 LT
 Note that "curry" essentially does the opposite:
 λ> curry fst 'a' undefined
 'a'
+
+
+ARROWS
+==================================================
+
+Use "first" and "second" to apply a function to an element of a tuple and get back the "updated" tuple: (RWH p.379)
+λ> second odd ('a', 1)
+('a',True)
+
+"(***)" takes two functions and applies them to the elements of a pair, returning a new pair.
+λ> ((+ 1) *** (* 2)) (1, 2)
+(2,4)
+
+"(&&&)" is called "fanout." It takes two functions and applies both of them to the same input, returning a pair.
+λ> ((+ 1) &&& (* 2)) 2
+(3,4)
 
 
 MAPS

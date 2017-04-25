@@ -31,10 +31,11 @@ import           Mud.Util.Operators
 import           Mud.Util.Quoting
 import           Mud.Util.Text
 
+import           Control.Arrow ((***))
 import           Control.Exception.Lifted (finally, handle)
 import           Control.Lens (at, view, views)
 import           Control.Lens.Operators ((%~), (&), (.~), (<-~), (?~), (^.))
-import           Control.Monad (join)
+import           Control.Monad (join, when)
 import           Control.Monad.IO.Class (liftIO)
 import           Data.List (delete)
 import qualified Data.Map.Strict as M (elems, insert, lookup)
@@ -80,13 +81,17 @@ stopNpcActs = sequence_ [ logNotice "stopNpcActs" "stopping NPC acts.", mapM_ st
 
 
 threadAct :: HasCallStack => Id -> ActType -> Fun -> MudStack ()
-threadAct i actType f = let a = (>> f) . setThreadType $ case actType of Attacking   -> undefined -- TODO
-                                                                         Drinking    -> DrinkingThread    i
-                                                                         Eating      -> EatingThread      i
-                                                                         Sacrificing -> SacrificingThread i
-                            b = do logPla "threadAct" i $ pp actType <> " act finished."
-                                   tweak $ mobTbl.ind i.actMap.at actType .~ Nothing
-                        in handle (threadExHandler (Just i) . pp $ actType) $ a `finally` b
+threadAct i actType f = handle (threadExHandler (Just i) . pp $ actType) $ a `finally` b
+  where
+    a    = do uncurry (>>) . (setThreadType *** (`when` tweak (mobTbl.ind i.mobRmDesc .~ Nothing))) $ pair
+              f
+    pair = case actType of Attacking   -> (AttackingThread   i, True )
+                           Drinking    -> (DrinkingThread    i, False)
+                           Eating      -> (EatingThread      i, False)
+                           Sacrificing -> (SacrificingThread i, True )
+    b    = do logPla "threadAct" i $ pp actType <> " act finished."
+              tweak $ mobTbl.ind i.actMap.at actType .~ Nothing
+
 
 
 -- ==================================================

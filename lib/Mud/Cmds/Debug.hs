@@ -1013,6 +1013,7 @@ descThreads = do logAsyncKvs <- getLogThreadIds >>= \case [ a, b ] -> return [ (
     mkDesc (ti, bracketPad 20 . mkTypeName -> tn) = [ T.concat [ padOrTrunc 16 . showText $ ti, tn, ts ]
                                                     | (showText -> ts) <- liftIO . threadStatus $ ti ]
     f pi t                            = padOrTrunc padAmt t <> showText pi
+    mkTypeName (AttackingThread   pi) = f pi "Attacking"
     mkTypeName (Biodegrader       pi) = f pi "Biodegrader"
     mkTypeName (CorpseDecomposer  pi) = f pi "CorpseDecomp"
     mkTypeName (Digester          pi) = f pi "Digester"

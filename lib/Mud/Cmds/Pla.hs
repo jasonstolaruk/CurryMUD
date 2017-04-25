@@ -196,7 +196,7 @@ regularCmdTuples =
     , ("razzle",     razzle,             True,  "")
     , ("read",       readAction,         True,  cmdDescRead)
     , ("remove",     remove,             True,  cmdDescRemove)
-    , ("roomdesc",   roomDesc,           True,  cmdDescRoomDesc)
+    , ("roomdesc",   roomDesc,           True,  cmdDescRoomDesc) -- TODO: Should be a priority abbrev.
     , ("s",          go "s",             True,  cmdDescGoSouth)
     , ("sacrifice",  sacrifice,          False, "Sacrifice a corpse using a holy symbol.")
     , ("se",         go "se",            True,  cmdDescGoSoutheast)
