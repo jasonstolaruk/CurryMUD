@@ -40,6 +40,7 @@ import           Mud.Misc.Gods
 import qualified Mud.Misc.Logging as L (logIOEx, logNotice, logPla, logPlaExec, logPlaExecArgs, logPlaOut, massLogPla)
 import           Mud.Misc.Misc
 import           Mud.Misc.Persist
+import           Mud.TheWorld.Foods
 import           Mud.TheWorld.Liqs
 import           Mud.TheWorld.Zones.AdminZoneIds (iLoggedOut, iNecropolis, iRoot, iWelcome)
 import           Mud.TopLvlDefs.FilePaths
@@ -136,7 +137,6 @@ massLogPla = L.massLogPla "Mud.Cmds.Admin"
 -- ==================================================
 
 
--- TODO: ":foods".
 adminCmds :: HasCallStack => [Cmd]
 adminCmds =
     [ mkAdminCmd "?"          adminDispCmdList True  cmdDescDispCmdList
@@ -161,6 +161,7 @@ adminCmds =
     , mkAdminCmd "experience" adminExp         True  "Display the experience table."
     , mkAdminCmd "exself"     adminExamineSelf True  "Self-examination."
     , mkAdminCmd "farewell"   adminFarewell    True  "Display the farewell stats for one or more PCs."
+    , mkAdminCmd "foods"      adminFoods       True  "Display or regex search a list of hard-coded foods."
     , mkAdminCmd "gods"       adminGods        True  "Display a list of the gods."
     , mkAdminCmd "hash"       adminHash        True  "Compare a plain-text password with a hashed password."
     , mkAdminCmd "holysymbol" adminHolySymbol  True  "Create a given number of holy symbols of a given god by god name."
@@ -1055,6 +1056,21 @@ adminFarewell   (LowerNub i mq cols as) = getState >>= \ms ->
     in do logPlaExecArgs (prefixAdminCmd "farewell") as i
           pager i mq Nothing . concat . wrapLines cols . intercalateDivider cols . map (helper . capitalize) $ as
 adminFarewell p = patternMatchFail "adminFarewell" . showText $ p
+
+
+-----
+
+
+adminFoods :: HasCallStack => ActionFun
+adminFoods (WithArgs i mq cols as) = do -- TODO: Code is very similar to "adminLiqs".
+    logPlaExecArgs (prefixAdminCmd "foods") as i
+    (sort mkFoodsTxt |&|) $ case as of [] -> pager i mq Nothing . concatMap (wrapIndent 2 cols)
+                                       _  -> dispMatches i mq cols 2 IsRegex as
+adminFoods p = patternMatchFail "adminFoods" . showText $ p
+
+
+mkFoodsTxt :: [Text]
+mkFoodsTxt = [ showText i |<>| pp food |<>| pp distinctFood | (i, distinctFood, food) <- foodList ]
 
 
 -----

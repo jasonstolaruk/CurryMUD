@@ -1,0 +1,11 @@
+\h #dFOODS \d
+
+\uUSAGE\n
+#dfoods \s[\dregex \s...]\d
+
+\uDESCRIPTION\n
+Display a list of hard-coded foods. Optionally, search the list for one or more regex patterns.
+
+\uEXAMPLES\n
+\q#dfoods\d to display the full list.4`
+\q#dfoods sweet\d to display entries containing "sweet".4`

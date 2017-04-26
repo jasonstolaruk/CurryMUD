@@ -358,6 +358,14 @@ instance Pretty DiscoverRec where
                                   , dbMsg ]
 
 
+instance Pretty DistinctFood where
+  pp (DistinctFood mouths (EdibleEffects digest consump)) = spaces [ a, b, c ]
+    where
+      a = "MOUTHS "  <> showText mouths
+      b = "DIGEST "  <> maybe none pp digest
+      c = "CONSUMP " <> maybe none pp consump
+
+
 instance Pretty DistinctLiq where
   pp (DistinctLiq (EdibleEffects digest consump)) = a |<>| b
     where
@@ -420,6 +428,12 @@ instance Pretty Feeling where
 instance Pretty FeelingVal where
   pp FeelingNoVal        = "no value"
   pp (FeelingFixedVal x) = showText x
+
+
+instance Pretty Food where
+  pp (Food _ eat _) = "EAT " <> noneOnNull (f eat)
+    where
+      f t = onFalse (()# t) dblQuote t
 
 
 instance Pretty God where
