@@ -1062,15 +1062,16 @@ adminFarewell p = patternMatchFail "adminFarewell" . showText $ p
 
 
 adminFoods :: HasCallStack => ActionFun
-adminFoods (WithArgs i mq cols as) = do -- TODO: Code is very similar to "adminLiqs".
-    logPlaExecArgs (prefixAdminCmd "foods") as i
-    (sort mkFoodsTxt |&|) $ case as of [] -> pager i mq Nothing . concatMap (wrapIndent 2 cols)
-                                       _  -> dispMatches i mq cols 2 IsRegex as
-adminFoods p = patternMatchFail "adminFoods" . showText $ p
+adminFoods = foodsLiqsHelper "foods" [ spaces [ showText i, pp food, pp distinctFood ]
+                                     | (i, distinctFood, food) <- foodList ]
 
 
-mkFoodsTxt :: [Text]
-mkFoodsTxt = [ showText i |<>| pp food |<>| pp distinctFood | (i, distinctFood, food) <- foodList ]
+foodsLiqsHelper :: HasCallStack => CmdName -> [Text] -> ActionFun
+foodsLiqsHelper cn txts (WithArgs i mq cols as) = do
+    logPlaExecArgs (prefixAdminCmd cn) as i
+    (sort txts |&|) $ case as of [] -> pager i mq Nothing . concatMap (wrapIndent 2 cols)
+                                 _  -> dispMatches i mq cols 2 IsRegex as
+foodsLiqsHelper p _ _ = patternMatchFail "foodsLiqshelper" . showText $ p
 
 
 -----
@@ -1274,15 +1275,8 @@ adminLinks p = patternMatchFail "adminLinks" . showText $ p
 
 
 adminLiqs :: HasCallStack => ActionFun
-adminLiqs (WithArgs i mq cols as) = do
-    logPlaExecArgs (prefixAdminCmd "liquids") as i
-    (sort mkLiqsTxt |&|) $ case as of [] -> pager i mq Nothing . concatMap (wrapIndent 2 cols)
-                                      _  -> dispMatches i mq cols 2 IsRegex as
-adminLiqs p = patternMatchFail "adminLiqs" . showText $ p
-
-
-mkLiqsTxt :: [Text]
-mkLiqsTxt = [ showText i |<>| pp liq |<>| pp distinctLiq | (i, distinctLiq, liq) <- liqList ]
+adminLiqs = foodsLiqsHelper "liquids" [ spaces [ showText i, pp liq, pp distinctLiq ]
+                                      | (i, distinctLiq, liq) <- liqList ]
 
 
 -----
