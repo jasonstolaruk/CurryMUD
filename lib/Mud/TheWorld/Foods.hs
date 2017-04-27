@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Mud.TheWorld.Foods ( appleFood -- TODO: Food definitions are incomplete.
+module Mud.TheWorld.Foods ( appleFood
                           , bananaFood
                           , breadFood
                           , foodList
@@ -32,7 +32,7 @@ mkDistinctFood m = DistinctFood m EdibleEffects { _digestEffects  = Just de
 
 appleFood :: Food
 appleFood = Food (DistinctFoodId iFoodApple)
-                 "eat desc"
+                 "The crisp apple is juicy and sweet."
                  fruitMouths
 
 
@@ -49,7 +49,7 @@ appleDistinctFood = mkDistinctFood fruitMouths
 
 bananaFood :: Food
 bananaFood = Food (DistinctFoodId iFoodBanana)
-                  "eat desc"
+                  "The pulpous banana is sufficiently tasty."
                   fruitMouths
 
 
@@ -62,7 +62,7 @@ bananaDistinctFood = mkDistinctFood fruitMouths
 
 breadFood :: Food
 breadFood = Food (DistinctFoodId iFoodBread)
-                 "eat desc"
+                 "Though bland and dry, the bread serves well as a utilitarian nutriment."
                  breadMouths
 
 
@@ -79,7 +79,7 @@ breadDistinctFood = mkDistinctFood breadMouths
 
 orangeFood :: Food
 orangeFood = Food (DistinctFoodId iFoodOrange)
-                  "eat desc"
+                  "Tart, tangy, and more than a little juicy!"
                   fruitMouths
 
 
