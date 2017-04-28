@@ -359,7 +359,7 @@ instance Pretty DiscoverRec where
 
 
 instance Pretty DistinctFood where
-  pp (DistinctFood mouths (EdibleEffects digest consump)) = spaces [ a, b, c ]
+  pp (DistinctFood _ mouths (EdibleEffects digest consump)) = spaces [ a, b, c ]
     where
       a = "MOUTHS "  <> showText mouths
       b = "DIGEST "  <> maybe none pp digest
@@ -367,7 +367,7 @@ instance Pretty DistinctFood where
 
 
 instance Pretty DistinctLiq where
-  pp (DistinctLiq (EdibleEffects digest consump)) = a |<>| b
+  pp (DistinctLiq _ (EdibleEffects digest consump)) = a |<>| b
     where
       a = "DIGEST "  <> maybe none pp digest
       b = "CONSUMP " <> maybe none pp consump

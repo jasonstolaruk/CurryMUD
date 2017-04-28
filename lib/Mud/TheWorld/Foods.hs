@@ -36,9 +36,9 @@ foodList = [ (iFoodApple,  appleDistinctFood,  appleFood )
            , (iFoodOrange, orangeDistinctFood, orangeFood) ]
 
 
-mkDistinctFood :: Mouthfuls -> DistinctFood
-mkDistinctFood m = DistinctFood m EdibleEffects { _digestEffects  = Just de
-                                                , _consumpEffects = Nothing }
+mkDistinctFood :: FoodName -> Mouthfuls -> DistinctFood
+mkDistinctFood n m = DistinctFood n m EdibleEffects { _digestEffects  = Just de
+                                                    , _consumpEffects = Nothing }
   where
     de = EffectList . pure . Left $ ie
     ie = InstaEffect { _instaEffectSub     = MobInstaEffectPts Hp
@@ -75,7 +75,7 @@ appleFood = Food (DistinctFoodId iFoodApple)
 
 
 appleDistinctFood :: DistinctFood
-appleDistinctFood = mkDistinctFood fruitMouths
+appleDistinctFood = mkDistinctFood "apple" fruitMouths
 
 
 newFoodApple :: MudState -> InvId -> (Id, MudState, Funs)
@@ -104,7 +104,7 @@ bananaFood = Food (DistinctFoodId iFoodBanana)
 
 
 bananaDistinctFood :: DistinctFood
-bananaDistinctFood = mkDistinctFood fruitMouths
+bananaDistinctFood = mkDistinctFood "banana" fruitMouths
 
 
 newFoodBanana :: MudState -> InvId -> (Id, MudState, Funs)
@@ -116,7 +116,7 @@ newFoodBanana ms = newFood ms bananaEntTemplate bananaObjTemplate bananaFood
 
 breadEntTemplate :: EntTemplate
 breadEntTemplate = EntTemplate (Just "bread")
-                               "bread" ""
+                               "loaf of bread" "loaves of bread"
                                "bread desc"
                                (Just "bread smell")
                                zeroBits
@@ -133,7 +133,7 @@ breadFood = Food (DistinctFoodId iFoodBread)
 
 
 breadDistinctFood :: DistinctFood
-breadDistinctFood = mkDistinctFood breadMouths
+breadDistinctFood = mkDistinctFood "bread" breadMouths
 
 
 newFoodBread :: MudState -> InvId -> (Id, MudState, Funs)
@@ -162,7 +162,7 @@ orangeFood = Food (DistinctFoodId iFoodOrange)
 
 
 orangeDistinctFood :: DistinctFood
-orangeDistinctFood = mkDistinctFood fruitMouths
+orangeDistinctFood = mkDistinctFood "orange" fruitMouths
 
 
 newFoodOrange :: MudState -> InvId -> (Id, MudState, Funs)

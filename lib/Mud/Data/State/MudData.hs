@@ -418,8 +418,12 @@ data Food = Food { _foodId           :: DistinctFoodId
 newtype DistinctFoodId = DistinctFoodId Id deriving (Eq, Generic, Ord, Show)
 
 
-data DistinctFood = DistinctFood { _foodMouthfuls     :: Mouthfuls
+data DistinctFood = DistinctFood { _foodName          :: FoodName -- To aid in identifying a distinct food. Not seen by players.
+                                 , _foodMouthfuls     :: Mouthfuls
                                  , _foodEdibleEffects :: EdibleEffects }
+
+
+type FoodName = Text
 
 
 -- ==================================================
@@ -514,7 +518,11 @@ data Liq = Liq { _liqId        :: DistinctLiqId
 newtype DistinctLiqId = DistinctLiqId Id  deriving (Eq, Generic, Ord, Show)
 
 
-newtype DistinctLiq = DistinctLiq { _liqEdibleEffects :: EdibleEffects }
+data DistinctLiq = DistinctLiq { _liqName :: LiqName -- To aid in identifying a distinct liquid. Not seen by players.
+                               , _liqEdibleEffects :: EdibleEffects }
+
+
+type LiqName = Text
 
 
 data Noun = DoArticle    Text

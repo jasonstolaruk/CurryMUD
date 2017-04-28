@@ -805,10 +805,11 @@ examineFood :: HasCallStack => ExamineHelper
 examineFood i ms =
     let f  = getFood i ms
         df = getDistinctFoodForFood f ms
-    in [ "Distinct food ID: "    <> f^.foodId.to showText
-       , "Eat description: "     <> f^.foodEatDesc
-       , "Remaining mouthfuls: " <> f^.foodRemMouthfuls.to showText
-       , "Distinct mouthfuls: "  <> df^.foodMouthfuls  .to showText ] ++ df^.foodEdibleEffects.to descEdibleEffects
+    in [ "Distinct food ID: "    <> f ^.foodId.to showText
+       , "Eat description: "     <> f ^.foodEatDesc
+       , "Remaining mouthfuls: " <> f ^.foodRemMouthfuls.to showText
+       , "Distinct food name: "  <> df^.foodName
+       , "Distinct mouthfuls: "  <> df^.foodMouthfuls.to showText ] ++ df^.foodEdibleEffects.to descEdibleEffects
 
 
 descEdibleEffects :: HasCallStack => EdibleEffects -> [Text]
@@ -1008,10 +1009,11 @@ examineVessel i ms = let v = getVessel i ms in
                                         , " "
                                         , parensQuote $ showText (calcVesselPerFull v m) <> "%" ]
     descLiq l                = let dl = getDistinctLiqForLiq l ms
-                               in [ "Distinct liquid ID: " <> l^.liqId       .to showText
-                                  , "Liquid smell: "       <> l^.liqSmellDesc.to noneOnNull
-                                  , "Liquid taste: "       <> l^.liqTasteDesc.to noneOnNull
-                                  , "Drink description: "  <> l^.liqDrinkDesc ] ++ dl^.liqEdibleEffects.to descEdibleEffects
+                               in [ "Distinct liquid ID: "   <> l ^.liqId       .to showText
+                                  , "Liquid smell: "         <> l ^.liqSmellDesc.to noneOnNull
+                                  , "Liquid taste: "         <> l ^.liqTasteDesc.to noneOnNull
+                                  , "Drink description: "    <> l ^.liqDrinkDesc
+                                  , "Distinct liquid name: " <> dl^.liqName ] ++ dl^.liqEdibleEffects.to descEdibleEffects
 
 
 examineWpn :: HasCallStack => ExamineHelper
@@ -1063,15 +1065,16 @@ adminFarewell p = patternMatchFail "adminFarewell" . showText $ p
 
 
 adminFoods :: HasCallStack => ActionFun
-adminFoods = foodsLiqsHelper "foods" [ spaces [ showText i, pp food, pp distinctFood ]
-                                     | (i, distinctFood, food) <- foodList ]
+adminFoods p =
+    let ts = [ spaces [ distinctFood^.foodName, showText i, pp food, pp distinctFood ] | (i, distinctFood, food) <- foodList ]
+    in foodsLiqsHelper "foods" ts p
 
 
 foodsLiqsHelper :: HasCallStack => CmdName -> [Text] -> ActionFun
-foodsLiqsHelper cn txts (WithArgs i mq cols as) = do
+foodsLiqsHelper cn ts (WithArgs i mq cols as) = do
     logPlaExecArgs (prefixAdminCmd cn) as i
-    (sort txts |&|) $ case as of [] -> pager i mq Nothing . concatMap (wrapIndent 2 cols)
-                                 _  -> dispMatches i mq cols 2 IsRegex as
+    (sort ts |&|) $ case as of [] -> pager i mq Nothing . concatMap (wrapIndent 2 cols)
+                               _  -> dispMatches i mq cols 2 IsRegex as
 foodsLiqsHelper p _ _ = patternMatchFail "foodsLiqshelper" . showText $ p
 
 
@@ -1276,7 +1279,7 @@ adminLinks p = patternMatchFail "adminLinks" . showText $ p
 
 
 adminLiqs :: HasCallStack => ActionFun
-adminLiqs = foodsLiqsHelper "liquids" [ spaces [ showText i, pp liq, pp distinctLiq ]
+adminLiqs = foodsLiqsHelper "liquids" [ spaces [ distinctLiq^.liqName, showText i, pp liq, pp distinctLiq ]
                                       | (i, distinctLiq, liq) <- liqList ]
 
 
