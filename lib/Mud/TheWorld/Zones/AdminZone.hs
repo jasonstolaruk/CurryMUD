@@ -768,7 +768,6 @@ createAdminZone = do
 
   -- ==================================================
   -- Foods:
-  -- TODO: Food definitions are incomplete.
   putFood iApple
           (mkEnt iApple appleEntTemplate)
           (mkObj appleObjTemplate)
