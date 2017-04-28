@@ -137,6 +137,7 @@ massLogPla = L.massLogPla "Mud.Cmds.Admin"
 -- ==================================================
 
 
+-- TODO: "mkfood" command.
 adminCmds :: HasCallStack => [Cmd]
 adminCmds =
     [ mkAdminCmd "?"          adminDispCmdList True  cmdDescDispCmdList
@@ -164,7 +165,7 @@ adminCmds =
     , mkAdminCmd "foods"      adminFoods       True  "Display or regex search a list of hard-coded foods."
     , mkAdminCmd "gods"       adminGods        True  "Display a list of the gods."
     , mkAdminCmd "hash"       adminHash        True  "Compare a plain-text password with a hashed password."
-    , mkAdminCmd "holysymbol" adminHolySymbol  True  "Create a given number of holy symbols of a given god by god name."
+    , mkAdminCmd "holysymbol" adminHolySymbol  True  "Create a given number of holy symbols of a given god by god name." -- TODO: Rename to "mkHoly". Update help.
     , mkAdminCmd "hosts"      adminHosts       True  "Display a report of connection statistics for one or more \
                                                      \players."
     , mkAdminCmd "incognito"  adminIncognito   True  "Toggle your incognito status."

@@ -770,52 +770,20 @@ createAdminZone = do
   -- Foods:
   -- TODO: Food definitions are incomplete.
   putFood iApple
-          (Ent iApple
-               (Just "apple")
-               "apple" ""
-               "apple desc"
-               (Just "apple smell")
-               zeroBits)
-          (mkObj (ObjTemplate fruitWeight
-                              fruitVol
-                              (Just "apple taste")
-                              zeroBits))
+          (mkEnt iApple appleEntTemplate)
+          (mkObj appleObjTemplate)
           appleFood
   putFood iBanana
-          (Ent iBanana
-               (Just "banana")
-               "banana" ""
-               "banana desc"
-               (Just "banana smell")
-               zeroBits)
-          (mkObj (ObjTemplate fruitWeight
-                              fruitVol
-                              (Just "banana taste")
-                              zeroBits))
+          (mkEnt iBanana bananaEntTemplate)
+          (mkObj bananaObjTemplate)
           bananaFood
   putFood iBread
-          (Ent iBread
-               (Just "bread")
-               "loaf of bread" "loaves of bread"
-               "bread desc"
-               (Just "bread smell")
-               zeroBits)
-          (mkObj (ObjTemplate breadWeight
-                              breadVol
-                              (Just "bread taste")
-                              zeroBits))
+          (mkEnt iBread breadEntTemplate)
+          (mkObj breadObjTemplate)
           breadFood
   putFood iOrange
-          (Ent iOrange
-               (Just "orange")
-               "orange" ""
-               "orange desc"
-               (Just "orange smell")
-               zeroBits)
-          (mkObj (ObjTemplate fruitWeight
-                              fruitVol
-                              (Just "orange taste")
-                              zeroBits))
+          (mkEnt iOrange orangeEntTemplate)
+          (mkObj orangeObjTemplate)
           orangeFood
 
   -- ==================================================
@@ -1598,13 +1566,13 @@ createAdminZone = do
 
   -- ==================================================
   -- Room teleport names:
-  putRmTeleName iAtrium     "atrium"
-  putRmTeleName iCentral    "central"
-  putRmTeleName iClone      "clone"
-  putRmTeleName iEmpty      "empty"
-  putRmTeleName iInside     "test"
-  putRmTeleName iLounge     "lounge"
-  putRmTeleName iTrashDump  "trash"
+  putRmTeleName iAtrium    "atrium"
+  putRmTeleName iCentral   "central"
+  putRmTeleName iClone     "clone"
+  putRmTeleName iEmpty     "empty"
+  putRmTeleName iInside    "test"
+  putRmTeleName iLounge    "lounge"
+  putRmTeleName iTrashDump "trash"
 
   -- ==================================================
   -- Vessels:

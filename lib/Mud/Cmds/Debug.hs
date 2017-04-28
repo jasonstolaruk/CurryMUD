@@ -147,7 +147,7 @@ debugCmds =
     , mkDebugCmd "gmcpwill"    debugGmcpWill    "Send IAC WILL GMCP."
     , mkDebugCmd "handle"      debugHandle      "Display information about the handle for your network connection."
     , mkDebugCmd "id"          debugId          "Search the \"MudState\" tables for a given ID."
-    , mkDebugCmd "kewpie"      debugKewpie      "Create a kewpie doll."
+    , mkDebugCmd "kewpie"      debugKewpie      "Create a kewpie doll." -- TODO: Rename to "mkkewpie".
     , mkDebugCmd "keys"        debugKeys        "Dump a list of \"MudState\" \"IntMap\" keys."
     , mkDebugCmd "liquid"      debugLiq         "Consume a given amount (in mouthfuls) of a given liquid (by distinct \
                                                 \liquid ID)."

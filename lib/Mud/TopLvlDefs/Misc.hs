@@ -8,6 +8,7 @@ module Mud.TopLvlDefs.Misc ( acl
                            , biodegDelay
                            , biodegSecs
                            , bonusDelay
+                           , breadMouths
                            , coinFullNames
                            , coinNames
                            , corpsePlaceholder
@@ -16,6 +17,7 @@ module Mud.TopLvlDefs.Misc ( acl
                            , enc
                            , enc's
                            , etc
+                           , fruitMouths
                            , initPickPts
                            , isDebug
                            , isEKGing
@@ -59,6 +61,7 @@ module Mud.TopLvlDefs.Misc ( acl
                            , worldPersisterDelay
                            , yous ) where
 
+import           Mud.Data.State.MudData
 import           Mud.TopLvlDefs.Chars
 import           Mud.Util.Quoting
 import           Paths_curry_mud
@@ -109,6 +112,10 @@ bonusDelay :: Seconds
 bonusDelay = oneDayInSecs
 
 
+breadMouths :: Mouthfuls
+breadMouths = 60
+
+
 coinNames :: [Text]
 coinNames = [ "cp", "sp", "gp" ]
 
@@ -127,6 +134,10 @@ dbTblPurgerDelay = oneHrInSecs
 
 dfltZoom :: Int
 dfltZoom = 10
+
+
+fruitMouths :: Mouthfuls
+fruitMouths = 5
 
 
 initPickPts :: Int

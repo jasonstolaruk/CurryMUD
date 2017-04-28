@@ -1,11 +1,13 @@
 {-# LANGUAGE OverloadedStrings, RecordWildCards, TupleSections, ViewPatterns #-}
 
 module Mud.Data.State.Util.Make ( EntTemplate(..)
+                                , InvId
                                 , MobTemplate(..)
                                 , ObjTemplate(..)
                                 , PlaTemplate(..)
                                 , RmTemplate(..)
                                 , VesselTemplate(..)
+                                , mkEnt
                                 , mkMob
                                 , mkObj
                                 , mkPla
