@@ -60,7 +60,6 @@ module Mud.TopLvlDefs.Misc ( acl
                            , worldPersisterDelay
                            , yous ) where
 
-import           Mud.Data.State.MudData
 import           Mud.TopLvlDefs.Chars
 import           Mud.Util.Quoting
 import           Paths_curry_mud
