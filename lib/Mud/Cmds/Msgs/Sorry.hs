@@ -122,8 +122,6 @@ module Mud.Cmds.Msgs.Sorry ( sorryActing
                            , sorryGoExit
                            , sorryGoParseDir
                            , sorryHelpName
-                           , sorryHolySymbolAmt
-                           , sorryHolySymbolGodName
                            , sorryIgnoreLocPref
                            , sorryIgnoreLocPrefPlur
                            , sorryIncog
@@ -177,6 +175,8 @@ module Mud.Cmds.Msgs.Sorry ( sorryActing
                            , sorryLoggedOut
                            , sorryLookEmptyRmNoHooks
                            , sorryLookEmptyRmWithHooks
+                           , sorryMkHolySymbolAmt
+                           , sorryMkHolySymbolGodName
                            , sorryMsgIncog
                            , sorryNewChanExisting
                            , sorryNewChanName
@@ -1069,19 +1069,6 @@ sorryHelpName t = prd $ "No help is available on " <> dblQuote t
 -----
 
 
-sorryHolySymbolAmt :: Text -> Text
-sorryHolySymbolAmt a = dblQuote a                                 <>
-                       " is not a valid number of holy symbols. " <>
-                       parensQuote "You can create between 1 and 100 holy symbols of a given god."
-
-
-sorryHolySymbolGodName :: Text -> Text
-sorryHolySymbolGodName a = dblQuote a <> " is not a valid god name."
-
-
------
-
-
 sorryIncog :: Text -> Text
 sorryIncog cn = can't "use the " <> dblQuote cn <> " command while incognito."
 
@@ -1312,6 +1299,19 @@ sorryLookEmptyRmNoHooks = "You don't see anything to look at here."
 
 sorryLookEmptyRmWithHooks :: Text
 sorryLookEmptyRmWithHooks = "You don't see anything to look at on the ground here."
+
+
+-----
+
+
+sorryMkHolySymbolAmt :: Text -> Text
+sorryMkHolySymbolAmt a = dblQuote a                                 <>
+                         " is not a valid number of holy symbols. " <>
+                         parensQuote "You can create between 1 and 100 holy symbols of a given god."
+
+
+sorryMkHolySymbolGodName :: Text -> Text
+sorryMkHolySymbolGodName a = dblQuote a <> " is not a valid god name."
 
 
 -----

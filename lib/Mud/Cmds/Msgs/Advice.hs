@@ -14,12 +14,12 @@ module Mud.Cmds.Msgs.Advice ( adviceAAnnounceNoArgs
                             , adviceAHashExcessArgs
                             , adviceAHashNoArgs
                             , adviceAHashNoHash
-                            , adviceAHolySymbolExcessArgs
-                            , adviceAHolySymbolNoArgs
                             , adviceAHostsNoArgs
                             , adviceAKillNoArgs
                             , adviceALinksNoArgs
                             , adviceALocateNoArgs
+                            , adviceAMkHolySymbolExcessArgs
+                            , adviceAMkHolySymbolNoArgs
                             , adviceAMsgNoArgs
                             , adviceAMsgNoMsg
                             , adviceAMyChansNoArgs
@@ -249,16 +249,6 @@ adviceAHashNoHash :: Text
 adviceAHashNoHash = prd $ "Please also provide a hashed password, as in " <> adviceAHashEx
 
 
-adviceAHolySymbolExcessArgs :: Text
-adviceAHolySymbolExcessArgs = adviceAHolySymbolNoArgs
-
-
-adviceAHolySymbolNoArgs :: Text
-adviceAHolySymbolNoArgs = "Please provide two arguments: the number of holy symbols to make, followed by the name of a \
-                          \god, as in " <>
-                          colorWith quoteColor (prefixAdminCmd "holysymbol" <> " 5 aule")
-
-
 adviceAHostsNoArgs :: Text
 adviceAHostsNoArgs = "Please specify the PC names of one or more players whose host statistics you would like to see."
 
@@ -273,6 +263,16 @@ adviceALinksNoArgs = "Please specify the names of one or more PCs whose two-way 
 
 adviceALocateNoArgs :: Text
 adviceALocateNoArgs = "Please provide one or more IDs to locate."
+
+
+adviceAMkHolySymbolExcessArgs :: Text
+adviceAMkHolySymbolExcessArgs = adviceAMkHolySymbolNoArgs
+
+
+adviceAMkHolySymbolNoArgs :: Text
+adviceAMkHolySymbolNoArgs = "Please provide two arguments: the number of holy symbols to make, followed by the name of a \
+                            \god, as in " <>
+                            colorWith quoteColor (prefixAdminCmd "mkholysymbol" <> " 5 aule")
 
 
 adviceAMsgNoArgs :: Text

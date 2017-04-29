@@ -147,12 +147,12 @@ debugCmds =
     , mkDebugCmd "gmcpwill"    debugGmcpWill    "Send IAC WILL GMCP."
     , mkDebugCmd "handle"      debugHandle      "Display information about the handle for your network connection."
     , mkDebugCmd "id"          debugId          "Search the \"MudState\" tables for a given ID."
-    , mkDebugCmd "kewpie"      debugKewpie      "Create a kewpie doll." -- TODO: Rename to "mkkewpie".
     , mkDebugCmd "keys"        debugKeys        "Dump a list of \"MudState\" \"IntMap\" keys."
     , mkDebugCmd "liquid"      debugLiq         "Consume a given amount (in mouthfuls) of a given liquid (by distinct \
                                                 \liquid ID)."
     , mkDebugCmd "log"         debugLog         "Put the logging service under heavy load."
     , mkDebugCmd "missing"     debugMissing     "Attempt to look up the ent description of a nonexistent ID."
+    , mkDebugCmd "mkkewpie"    debugMkKewpie    "Create a kewpie doll."
     , mkDebugCmd "multiline"   debugMultiLine   "Test multi-line input."
     , mkDebugCmd "nop"         debugNOP         "Send IAC NOP."
     , mkDebugCmd "npcserver"   debugNpcServer   "Stop all NPC server threads."
@@ -609,25 +609,6 @@ tblKeys lens = views lens IM.keys
 -----
 
 
-debugKewpie :: HasCallStack => ActionFun
-debugKewpie (NoArgs' i mq) = do
-    logPlaExec (prefixDebugCmd "kewpie") i
-    modifyStateSeq $ \ms -> let et = EntTemplate (Just "doll")
-                                                 "kewpie doll" ""
-                                                 "The kewpie doll is disgustingly cute."
-                                                 Nothing
-                                                 zeroBits
-                                ot = ObjTemplate dollWeight
-                                                 dollVol
-                                                 Nothing
-                                                 zeroBits
-                            in second (++ pure (ok mq)) . dropFst . newObj ms et ot . getRmId i $ ms
-debugKewpie p = withoutArgs debugKewpie p
-
-
------
-
-
 debugKeys :: HasCallStack => ActionFun
 debugKeys (NoArgs i mq cols) = getState >>= \ms -> let mkKeysTxt (tblName, ks) = [ tblName <> ": ", showText ks ] in do
     logPlaExec (prefixDebugCmd "keys") i
@@ -692,6 +673,25 @@ debugMissing :: HasCallStack => ActionFun
 debugMissing (NoArgs i mq cols) = do logPlaExec (prefixDebugCmd "missing") i
                                      wrapSend mq cols =<< getEntDesc (-1) <$> getState
 debugMissing p                  = withoutArgs debugMissing p
+
+
+-----
+
+
+debugMkKewpie :: HasCallStack => ActionFun
+debugMkKewpie (NoArgs' i mq) = do
+    logPlaExec (prefixDebugCmd "mkkewpie") i
+    modifyStateSeq $ \ms -> let et = EntTemplate (Just "doll")
+                                                 "kewpie doll" ""
+                                                 "The kewpie doll is disgustingly cute."
+                                                 Nothing
+                                                 zeroBits
+                                ot = ObjTemplate dollWeight
+                                                 dollVol
+                                                 Nothing
+                                                 zeroBits
+                            in second (++ pure (ok mq)) . dropFst . newObj ms et ot . getRmId i $ ms
+debugMkKewpie p = withoutArgs debugMkKewpie p
 
 
 -----
