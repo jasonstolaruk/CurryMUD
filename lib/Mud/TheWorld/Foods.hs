@@ -132,17 +132,20 @@ breadEntTemplate = EntTemplate (Just "bread")
 
 
 breadObjTemplate :: ObjTemplate
-breadObjTemplate = mkFruitObjTemplate "bread taste"
+breadObjTemplate = ObjTemplate 35 -- TODO: Come up with accurate numbers.
+                               640
+                               (Just "bread taste")
+                               zeroBits
 
 
 breadFood :: Food
 breadFood = Food (DistinctFoodId iFoodBread)
                  "Though bland and dry, the bread serves well as a utilitarian nutriment."
-                 breadMouths
+                 50 -- TODO: Come up with an accurate number.
 
 
 breadDistinctFood :: DistinctFood
-breadDistinctFood = DistinctFood "bread" breadMouths breadSecsPerMouthful mkFoodEdibleEffects
+breadDistinctFood = DistinctFood "bread" 50 10 mkFoodEdibleEffects -- TODO: Come up with accurate numbers.
 
 
 newFoodBread :: MudState -> InvId -> (Id, MudState, Funs)

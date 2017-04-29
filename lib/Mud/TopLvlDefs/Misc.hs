@@ -8,8 +8,6 @@ module Mud.TopLvlDefs.Misc ( acl
                            , biodegDelay
                            , biodegSecs
                            , bonusDelay
-                           , breadMouths
-                           , breadSecsPerMouthful
                            , coinFullNames
                            , coinNames
                            , corpsePlaceholder
@@ -111,14 +109,6 @@ biodegSecs = tenMinsInSecs
 
 bonusDelay :: Seconds
 bonusDelay = oneDayInSecs
-
-
-breadMouths :: Mouthfuls
-breadMouths = 50 -- TODO: Come up with an accurate number.
-
-
-breadSecsPerMouthful :: Seconds
-breadSecsPerMouthful = 10 -- TODO: Come up with an accurate number.
 
 
 coinNames :: [Text]
