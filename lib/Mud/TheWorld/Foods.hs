@@ -37,9 +37,9 @@ foodList = [ (iFoodApple,  appleDistinctFood,  appleFood )
            , (iFoodOrange, orangeDistinctFood, orangeFood) ]
 
 
-mkDistinctFood :: FoodName -> Mouthfuls -> DistinctFood
-mkDistinctFood n m = DistinctFood n m EdibleEffects { _digestEffects  = Just de
-                                                    , _consumpEffects = Nothing }
+mkFoodEdibleEffects :: EdibleEffects
+mkFoodEdibleEffects = EdibleEffects { _digestEffects  = Just de
+                                    , _consumpEffects = Nothing }
   where
     de = EffectList . pure . Left $ ie
     ie = InstaEffect { _instaEffectSub     = MobInstaEffectPts Hp
@@ -80,11 +80,11 @@ appleObjTemplate = mkFruitObjTemplate "apple taste"
 appleFood :: Food
 appleFood = Food (DistinctFoodId iFoodApple)
                  "The crisp apple is juicy and sweet."
-                 fruitMouths
+                 5 -- TODO: Come up with an accurate number.
 
 
 appleDistinctFood :: DistinctFood
-appleDistinctFood = mkDistinctFood "apple" fruitMouths
+appleDistinctFood = DistinctFood "apple" 5 30 mkFoodEdibleEffects -- TODO: Come up with accurate numbers.
 
 
 newFoodApple :: MudState -> InvId -> (Id, MudState, Funs)
@@ -109,11 +109,11 @@ bananaObjTemplate = mkFruitObjTemplate "banana taste"
 bananaFood :: Food
 bananaFood = Food (DistinctFoodId iFoodBanana)
                   "The pulpous banana is sufficiently tasty."
-                  fruitMouths
+                  5 -- TODO: Come up with an accurate number.
 
 
 bananaDistinctFood :: DistinctFood
-bananaDistinctFood = mkDistinctFood "banana" fruitMouths
+bananaDistinctFood = DistinctFood "banana" 5 30 mkFoodEdibleEffects -- TODO: Come up with accurate numbers.
 
 
 newFoodBanana :: MudState -> InvId -> (Id, MudState, Funs)
@@ -142,7 +142,7 @@ breadFood = Food (DistinctFoodId iFoodBread)
 
 
 breadDistinctFood :: DistinctFood
-breadDistinctFood = mkDistinctFood "bread" breadMouths
+breadDistinctFood = DistinctFood "bread" breadMouths breadSecsPerMouthful mkFoodEdibleEffects
 
 
 newFoodBread :: MudState -> InvId -> (Id, MudState, Funs)
@@ -167,11 +167,11 @@ orangeObjTemplate = mkFruitObjTemplate "orange taste"
 orangeFood :: Food
 orangeFood = Food (DistinctFoodId iFoodOrange)
                   "Tart, tangy, and more than a little juicy!"
-                  fruitMouths
+                  5 -- TODO: Come up with an accurate number.
 
 
 orangeDistinctFood :: DistinctFood
-orangeDistinctFood = mkDistinctFood "orange" fruitMouths
+orangeDistinctFood = DistinctFood "orange" 5 30 mkFoodEdibleEffects -- TODO: Come up with accurate numbers.
 
 
 newFoodOrange :: MudState -> InvId -> (Id, MudState, Funs)

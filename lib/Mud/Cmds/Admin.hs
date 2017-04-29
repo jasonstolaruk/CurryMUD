@@ -803,13 +803,15 @@ examineEqMap i ms = map helper . M.toList . getEqMap i $ ms
 
 examineFood :: HasCallStack => ExamineHelper
 examineFood i ms =
-    let f  = getFood i ms
-        df = getDistinctFoodForFood f ms
-    in [ "Distinct food ID: "    <> f ^.foodId.to showText
-       , "Eat description: "     <> f ^.foodEatDesc
-       , "Remaining mouthfuls: " <> f ^.foodRemMouthfuls.to showText
-       , "Distinct food name: "  <> df^.foodName
-       , "Distinct mouthfuls: "  <> df^.foodMouthfuls.to showText ] ++ df^.foodEdibleEffects.to descEdibleEffects
+    let f    = getFood i ms
+        df   = getDistinctFoodForFood f ms
+        rest = df^.foodEdibleEffects.to descEdibleEffects
+    in [ "Distinct food ID: "           <> f ^.foodId.to showText
+       , "Eat description: "            <> f ^.foodEatDesc
+       , "Remaining mouthfuls: "        <> f ^.foodRemMouthfuls   .to commaShow
+       , "Distinct food name: "         <> df^.foodName
+       , "Distinct mouthfuls: "         <> df^.foodMouthfuls      .to commaShow
+       , "Distinct secs per mouthful: " <> df^.foodSecsPerMouthful.to commaShow ] ++ rest
 
 
 descEdibleEffects :: HasCallStack => EdibleEffects -> [Text]
@@ -999,21 +1001,22 @@ xformNls = T.replace theNl (colorWith nlColor "\\n")
 
 examineVessel :: HasCallStack => ExamineHelper
 examineVessel i ms = let v = getVessel i ms in
-    [ "Max mouthfuls: "   <> v^.vesselMaxMouthfuls.to showText
+    [ "Max mouthfuls: "   <> v^.vesselMaxMouthfuls.to commaShow
     , "Vessel contents: " <> v^.vesselCont        .to (descCont v) ] ++ views vesselCont (maybeEmp (descLiq . fst)) v
   where
     descCont _ Nothing       = none
-    descCont v (Just (l, m)) = T.concat [ showText m
+    descCont v (Just (l, m)) = T.concat [ commaShow m
                                         , " mouthfuls of "
                                         , renderLiqNoun l aOrAn
                                         , " "
                                         , parensQuote $ showText (calcVesselPerFull v m) <> "%" ]
-    descLiq l                = let dl = getDistinctLiqForLiq l ms
+    descLiq l                = let dl   = getDistinctLiqForLiq l ms
+                                   rest = dl^.liqEdibleEffects.to descEdibleEffects
                                in [ "Distinct liquid ID: "   <> l ^.liqId       .to showText
                                   , "Liquid smell: "         <> l ^.liqSmellDesc.to noneOnNull
                                   , "Liquid taste: "         <> l ^.liqTasteDesc.to noneOnNull
                                   , "Drink description: "    <> l ^.liqDrinkDesc
-                                  , "Distinct liquid name: " <> dl^.liqName ] ++ dl^.liqEdibleEffects.to descEdibleEffects
+                                  , "Distinct liquid name: " <> dl^.liqName ] ++ rest
 
 
 examineWpn :: HasCallStack => ExamineHelper

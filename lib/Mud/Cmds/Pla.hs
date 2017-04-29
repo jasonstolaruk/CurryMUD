@@ -1073,7 +1073,7 @@ dwarvish = sayHelper DwarfLang
 -----
 
 
-eat :: HasCallStack => ActionFun -- TODO: It should take longer to eat one mouthful of food than to drink one mouthful of liquid.
+eat :: HasCallStack => ActionFun
 eat p@(NoArgs' i mq                   ) = advise p ["eat"] adviceEatNoArgs >> sendDfltPrompt mq i
 eat p@(OneArg  i mq _    _            ) = advise p ["eat"] adviceEatNoFood >> sendDfltPrompt mq i
 eat p@(Lower   i mq cols [amt, target]) = getState >>= \ms ->

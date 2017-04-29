@@ -9,6 +9,7 @@ module Mud.TopLvlDefs.Misc ( acl
                            , biodegSecs
                            , bonusDelay
                            , breadMouths
+                           , breadSecsPerMouthful
                            , coinFullNames
                            , coinNames
                            , corpsePlaceholder
@@ -18,7 +19,6 @@ module Mud.TopLvlDefs.Misc ( acl
                            , enc's
                            , etc
                            , foodWaterEffDur
-                           , fruitMouths
                            , initPickPts
                            , isDebug
                            , isEKGing
@@ -114,7 +114,11 @@ bonusDelay = oneDayInSecs
 
 
 breadMouths :: Mouthfuls
-breadMouths = 60
+breadMouths = 50 -- TODO: Come up with an accurate number.
+
+
+breadSecsPerMouthful :: Seconds
+breadSecsPerMouthful = 10 -- TODO: Come up with an accurate number.
 
 
 coinNames :: [Text]
@@ -139,10 +143,6 @@ dfltZoom = 10
 
 foodWaterEffDur :: Seconds
 foodWaterEffDur = 15
-
-
-fruitMouths :: Mouthfuls
-fruitMouths = 5
 
 
 initPickPts :: Int

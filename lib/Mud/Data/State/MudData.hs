@@ -418,9 +418,10 @@ data Food = Food { _foodId           :: DistinctFoodId
 newtype DistinctFoodId = DistinctFoodId Id deriving (Eq, Generic, Ord, Show)
 
 
-data DistinctFood = DistinctFood { _foodName          :: FoodName -- To aid in identifying a distinct food. Not seen by players.
-                                 , _foodMouthfuls     :: Mouthfuls
-                                 , _foodEdibleEffects :: EdibleEffects }
+data DistinctFood = DistinctFood { _foodName            :: FoodName -- To aid in identifying a distinct food. Not seen by players.
+                                 , _foodMouthfuls       :: Mouthfuls
+                                 , _foodSecsPerMouthful :: Seconds
+                                 , _foodEdibleEffects   :: EdibleEffects }
 
 
 type FoodName = Text
