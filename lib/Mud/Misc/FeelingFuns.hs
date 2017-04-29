@@ -4,6 +4,7 @@ module Mud.Misc.FeelingFuns (feelingFuns) where
 
 import           Mud.Data.Misc
 import           Mud.Data.State.MudData
+import           Mud.TheWorld.Foods
 import           Mud.TheWorld.Liqs
 
 import           Data.Monoid ((<>))
@@ -26,11 +27,22 @@ feelingFuns = [ ("sacrificeBonusAule",      sacrificeBonusFeelingFun Aule      )
               , ("sacrificeBonusMuhrgorhd", sacrificeBonusFeelingFun Murgorhd  )
               , ("sacrificeBonusRhayk",     sacrificeBonusFeelingFun Rhayk     )
               , ("sacrificeBonusRumialys",  sacrificeBonusFeelingFun Rumialys  )
+              , (foodTag,                   foodFeelingFun                     )
               , (potFpTag,                  potFpFeelingFun                    )
               , (potHpTag,                  potHpFeelingFun                    )
               , (potMpTag,                  potMpFeelingFun                    )
               , (potPpTag,                  potPpFeelingFun                    )
-              , (potTinnitusTag,            potTinnitusFeelingFun              ) ]
+              , (potTinnitusTag,            potTinnitusFeelingFun              )
+              , (waterTag,                  waterFeelingFun                    ) ]
+
+
+-----
+
+
+foodFeelingFun :: FeelingFun
+foodFeelingFun FeelingNoVal        = ""
+foodFeelingFun (FeelingFixedVal 0) = ""
+foodFeelingFun (FeelingFixedVal _) = "You feel your health return as nourishment spreads through your body."
 
 
 -----
@@ -109,3 +121,12 @@ potFpFeelingFun (FeelingFixedVal _) = mkFeelingMsg "stamina return"
 
 potTinnitusFeelingFun :: FeelingFun
 potTinnitusFeelingFun = const "Your ears are ringing."
+
+
+-----
+
+
+waterFeelingFun :: FeelingFun
+waterFeelingFun FeelingNoVal        = ""
+waterFeelingFun (FeelingFixedVal 0) = ""
+waterFeelingFun (FeelingFixedVal _) = "You feel your energy return as your body is hydrated."

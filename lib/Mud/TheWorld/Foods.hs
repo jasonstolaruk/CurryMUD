@@ -10,6 +10,7 @@ module Mud.TheWorld.Foods ( appleEntTemplate
                           , breadFood
                           , breadObjTemplate
                           , foodList
+                          , foodTag
                           , newFoodApple
                           , newFoodBanana
                           , newFoodBread
@@ -43,7 +44,15 @@ mkDistinctFood n m = DistinctFood n m EdibleEffects { _digestEffects  = Just de
     de = EffectList . pure . Left $ ie
     ie = InstaEffect { _instaEffectSub     = MobInstaEffectPts Hp
                      , _instaEffectVal     = Just . EffectFixedVal $ 1
-                     , _instaEffectFeeling = Nothing }
+                     , _instaEffectFeeling = mkFoodEffectFeeling }
+
+
+mkFoodEffectFeeling :: Maybe EffectFeeling
+mkFoodEffectFeeling = Just . EffectFeeling foodTag $ foodWaterEffDur
+
+
+foodTag :: FeelingTag
+foodTag = "food"
 
 
 mkFruitObjTemplate :: Text -> ObjTemplate

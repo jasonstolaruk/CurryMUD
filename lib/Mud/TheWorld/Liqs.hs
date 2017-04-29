@@ -31,11 +31,13 @@ module Mud.TheWorld.Liqs ( liqList
                          , potStLiq
                          , potTinnitusLiq
                          , potTinnitusTag
-                         , waterLiq ) where
+                         , waterLiq
+                         , waterTag ) where
 
 import Mud.Cmds.Msgs.Misc
 import Mud.Data.State.MudData
 import Mud.TheWorld.LiqIds
+import Mud.TopLvlDefs.Misc
 import Mud.TopLvlDefs.Seconds
 import Mud.Util.Misc
 import Mud.Util.Text
@@ -80,8 +82,17 @@ waterLiq = Liq (DistinctLiqId iLiqWater)
 
 
 waterDistinctLiq :: DistinctLiq
-waterDistinctLiq = DistinctLiq "water" EdibleEffects { _digestEffects  = Nothing
+waterDistinctLiq = DistinctLiq "water" EdibleEffects { _digestEffects  = Just de
                                                      , _consumpEffects = Nothing }
+  where
+    de = EffectList . pure . Left $ ie
+    ie = InstaEffect { _instaEffectSub     = MobInstaEffectPts Fp
+                     , _instaEffectVal     = Just . EffectFixedVal $ 2
+                     , _instaEffectFeeling = Just . EffectFeeling waterTag $ foodWaterEffDur }
+
+
+waterTag :: FeelingTag
+waterTag = "water"
 
 
 -----

@@ -17,6 +17,7 @@ module Mud.TopLvlDefs.Misc ( acl
                            , enc
                            , enc's
                            , etc
+                           , foodWaterEffDur
                            , fruitMouths
                            , initPickPts
                            , isDebug
@@ -134,6 +135,10 @@ dbTblPurgerDelay = oneHrInSecs
 
 dfltZoom :: Int
 dfltZoom = 10
+
+
+foodWaterEffDur :: Seconds
+foodWaterEffDur = 15
 
 
 fruitMouths :: Mouthfuls
