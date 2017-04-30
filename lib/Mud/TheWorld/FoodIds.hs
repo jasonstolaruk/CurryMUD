@@ -6,10 +6,12 @@ module Mud.TheWorld.FoodIds where
 import Mud.Data.State.MudData (Id)
 
 
-iFoodApple  = 0 :: Id
+iFoodApple = 0 :: Id
 
 iFoodBanana = 1 :: Id
 
-iFoodBread  = 2 :: Id
+iFoodBread = 2 :: Id
 
-iFoodOrange = 3 :: Id
+iFoodGorhna = 3 :: Id
+
+iFoodOrange = 4 :: Id

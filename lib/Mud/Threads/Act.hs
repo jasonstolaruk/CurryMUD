@@ -108,7 +108,7 @@ drinkAct DrinkBundle { .. } = modifyStateSeq f `finally` tweak (mobTbl.ind drink
                d  = mkStdDesig drinkerId ms DoCap
                bs = pure ( T.concat [ serialize d, " begins drinking from ", renderVesselSing, "." ]
                          , drinkerId `delete` desigIds d )
-               fs = pure . handle (die (Just drinkerId) (pp Drinking)) . sequence_ $ gs
+               fs = pure . handle (die (Just drinkerId) . pp $ Drinking) . sequence_ $ gs
                gs = [ multiWrapSend1Nl drinkerMq drinkerCols . dropEmpties $ [ t, drinkLiq^.liqDrinkDesc ]
                     , bcastIfNotIncogNl drinkerId bs
                     , loop 0 ]
@@ -170,7 +170,7 @@ mkMouthfulTxt x | x <= 8    = showText x
 -----
 
 
-eatAct :: HasCallStack => EatBundle -> MudStack () -- TODO: Food should be destroyed when entirely consumed.
+eatAct :: HasCallStack => EatBundle -> MudStack ()
 eatAct EatBundle { .. } = modifyStateSeq f `finally` tweak (mobTbl.ind eaterId.nowEating .~ Nothing)
   where
     distId@(DistinctFoodId i) = eatFood^.foodId
@@ -178,13 +178,13 @@ eatAct EatBundle { .. } = modifyStateSeq f `finally` tweak (mobTbl.ind eaterId.n
                d  = mkStdDesig eaterId ms DoCap
                bs = pure ( T.concat [ serialize d, " begins eating ", aOrAn eatFoodSing, "." ]
                          , eaterId `delete` desigIds d )
-               fs = pure . handle (die (Just eaterId) (pp Eating)) . sequence_ $ gs
+               fs = pure . handle (die (Just eaterId) . pp $ Eating) . sequence_ $ gs
                gs = [ multiWrapSend1Nl eaterMq eaterCols . dropEmpties $ [ t, eatFood^.foodEatDesc ]
                     , bcastIfNotIncogNl eaterId bs
                     , loop 0 ]
            in (ms & mobTbl.ind eaterId.nowEating ?~ eatFoodSing, fs)
     loop x@(succ -> x') = do
-        liftIO . delaySecs =<< getSecs
+        liftIO . delaySecs =<< view foodSecsPerMouthful . getDistinctFood i <$> getState
         now <- liftIO getCurrentTime
         consume eaterId . pure . StomachCont (Right distId) now $ False
         (m, ms) <- modifyState $ \ms -> let pair@(_, ms') = ms & foodTbl.ind eatFoodId.foodRemMouthfuls <-~ 1
@@ -197,13 +197,16 @@ eatAct EatBundle { .. } = modifyStateSeq f `finally` tweak (mobTbl.ind eaterId.n
                                                                            , aOrAn eatFoodSing
                                                                            , "." ]
                                                                 , eaterId `delete` desigIds d )
-        if | m <= 0           -> (>> bcastHelper True) . ioHelper x' . T.concat $ [ "You finish eating all of the "
-                                                                                  , eatFoodSing
-                                                                                  , " after "
-                                                                                  , mkMouthfulTxt x'
-                                                                                  , " mouthful"
-                                                                                  , sOnNon1 x
-                                                                                  , "." ]
+        if | m <= 0 -> do
+               destroy . pure $ eatFoodId -- TODO: Test.
+               ioHelper x' . T.concat $ [ "You finish eating all of the "
+                                        , eatFoodSing
+                                        , " after "
+                                        , mkMouthfulTxt x'
+                                        , " mouthful"
+                                        , sOnNon1 x
+                                        , "." ]
+               bcastHelper True
            | isZero stomAvail -> let t = thrice prd " that you have to stop eating. You don't feel so good"
                                  in (>> bcastHelper False) . ioHelper x' . T.concat $ [ "You are so full after "
                                                                                       , mkMouthfulTxt x'
@@ -212,7 +215,6 @@ eatAct EatBundle { .. } = modifyStateSeq f `finally` tweak (mobTbl.ind eaterId.n
                                                                                       , t ]
            | x' == eatAmt     -> (>> bcastHelper False) . ioHelper x' $ "You finish eating."
            | otherwise        -> loop x'
-    getSecs      = view foodSecsPerMouthful . getDistinctFood i <$> getState
     ioHelper m t = do logPla "eatAct ioHelper" eaterId . T.concat $ [ "ate "
                                                                     , showText m
                                                                     , " mouthful"
@@ -230,7 +232,7 @@ eatAct EatBundle { .. } = modifyStateSeq f `finally` tweak (mobTbl.ind eaterId.n
 
 
 sacrificeAct :: HasCallStack => Id -> MsgQueue -> Id -> GodName -> MudStack ()
-sacrificeAct i mq ci gn = handle (die (Just i) (pp Sacrificing)) $ do
+sacrificeAct i mq ci gn = handle (die (Just i) . pp $ Sacrificing) $ do
     liftIO . delaySecs $ sacrificeSecs
     modifyStateSeq $ \ms ->
         let helper f = (sacrificesTblHelper ms, fs)

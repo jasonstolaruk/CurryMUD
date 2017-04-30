@@ -11,10 +11,14 @@ module Mud.TheWorld.Foods ( appleEntTemplate
                           , breadObjTemplate
                           , foodList
                           , foodTag
+                          , gorhnaEntTemplate
+                          , gorhnaFood
+                          , gorhnaObjTemplate
                           , newFoodApple
                           , newFoodBanana
                           , newFoodBread
                           , newFoodFuns
+                          , newFoodGorhna
                           , newFoodOrange
                           , orangeEntTemplate
                           , orangeFood
@@ -35,7 +39,19 @@ foodList :: [(Id, DistinctFood, Food)]
 foodList = [ (iFoodApple,  appleDistinctFood,  appleFood )
            , (iFoodBanana, bananaDistinctFood, bananaFood)
            , (iFoodBread,  breadDistinctFood,  breadFood )
+           , (iFoodGorhna, gorhnaDistinctFood, gorhnaFood)
            , (iFoodOrange, orangeDistinctFood, orangeFood) ]
+
+
+newFoodFuns :: [(Id, NewFoodFun)]
+newFoodFuns = [ (iFoodApple,  newFoodApple )
+              , (iFoodBanana, newFoodBanana)
+              , (iFoodBread,  newFoodBread )
+              , (iFoodGorhna, newFoodGorhna)
+              , (iFoodOrange, newFoodOrange) ]
+
+
+type NewFoodFun = MudState -> InvId -> (Id, MudState, Funs)
 
 
 -----
@@ -67,20 +83,6 @@ mkFruitObjTemplate t = ObjTemplate fruitWeight
                                    fruitVol
                                    (Just t)
                                    zeroBits
-
-
------
-
-
-newFoodFuns :: [(Id, NewFoodFun)]
-newFoodFuns = [ (iFoodApple,  newFoodApple )
-              , (iFoodBanana, newFoodBanana)
-              , (iFoodBread,  newFoodBread )
-              , (iFoodOrange, newFoodOrange) ]
-
-
-
-type NewFoodFun = MudState -> InvId -> (Id, MudState, Funs)
 
 
 -- ==================================================
@@ -174,6 +176,38 @@ breadDistinctFood = DistinctFood "bread" 50 10 mkFoodEdibleEffects -- TODO: Accu
 
 newFoodBread :: NewFoodFun
 newFoodBread ms = newFood ms breadEntTemplate breadObjTemplate breadFood
+
+
+-----
+
+
+gorhnaEntTemplate :: EntTemplate
+gorhnaEntTemplate = EntTemplate (Just "nut")
+                                "nut" ""
+                                "nut desc"
+                                (Just "nut smell")
+                                zeroBits
+
+
+gorhnaObjTemplate :: ObjTemplate
+gorhnaObjTemplate = ObjTemplate 50 -- TODO: Weight.
+                                500 -- TODO: Vol.
+                                (Just "nut taste")
+                                zeroBits
+
+
+gorhnaFood :: Food
+gorhnaFood = Food (DistinctFoodId iFoodGorhna)
+                  "nut eat"
+                  1
+
+
+gorhnaDistinctFood :: DistinctFood
+gorhnaDistinctFood = DistinctFood "gorhna" 1 1 mkFoodEdibleEffects -- TODO: "mkFoodEdibleEffects" is probably not appropriate here.
+
+
+newFoodGorhna :: NewFoodFun
+newFoodGorhna ms = newFood ms gorhnaEntTemplate gorhnaObjTemplate gorhnaFood
 
 
 -----
