@@ -175,6 +175,8 @@ module Mud.Cmds.Msgs.Sorry ( sorryActing
                            , sorryLoggedOut
                            , sorryLookEmptyRmNoHooks
                            , sorryLookEmptyRmWithHooks
+                           , sorryMkFoodAmt
+                           , sorryMkFoodName
                            , sorryMkHolySymbolAmt
                            , sorryMkHolySymbolGodName
                            , sorryMsgIncog
@@ -1304,10 +1306,23 @@ sorryLookEmptyRmWithHooks = "You don't see anything to look at on the ground her
 -----
 
 
+sorryMkFoodAmt :: Text -> Text
+sorryMkFoodAmt a = dblQuote a                           <>
+                   " is not a valid quantity of food. " <>
+                   parensQuote "You can create between 1 and 100 food objects."
+
+
+sorryMkFoodName :: Text -> Text
+sorryMkFoodName a = dblQuote a <> " is not a valid distinct food name."
+
+
+-----
+
+
 sorryMkHolySymbolAmt :: Text -> Text
-sorryMkHolySymbolAmt a = dblQuote a                                 <>
-                         " is not a valid number of holy symbols. " <>
-                         parensQuote "You can create between 1 and 100 holy symbols of a given god."
+sorryMkHolySymbolAmt a = dblQuote a                                   <>
+                         " is not a valid quantity of holy symbols. " <>
+                         parensQuote "You can create between 1 and 100 holy symbols."
 
 
 sorryMkHolySymbolGodName :: Text -> Text

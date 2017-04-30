@@ -1,10 +1,10 @@
 \h #dMKHOLYSYMBOL \d
 
 \uUSAGE\n
-#dmkholysymbol amount name
+#dmkholysymbol quantity name
 
 \uDESCRIPTION\n
-Create a given number of holy symbols of a given god by god name.
+Create a given quantity of holy symbols of a given god by god name.
 You can create between 1 and 100 holy symbols. The holy symbols will appear in your inventory.
 
 \uEXAMPLES\n

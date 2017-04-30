@@ -18,6 +18,8 @@ module Mud.Cmds.Msgs.Advice ( adviceAAnnounceNoArgs
                             , adviceAKillNoArgs
                             , adviceALinksNoArgs
                             , adviceALocateNoArgs
+                            , adviceAMkFoodExcessArgs
+                            , adviceAMkFoodNoArgs
                             , adviceAMkHolySymbolExcessArgs
                             , adviceAMkHolySymbolNoArgs
                             , adviceAMsgNoArgs
@@ -263,6 +265,16 @@ adviceALinksNoArgs = "Please specify the names of one or more PCs whose two-way 
 
 adviceALocateNoArgs :: Text
 adviceALocateNoArgs = "Please provide one or more IDs to locate."
+
+
+adviceAMkFoodExcessArgs :: Text
+adviceAMkFoodExcessArgs = adviceAMkFoodNoArgs
+
+
+adviceAMkFoodNoArgs :: Text
+adviceAMkFoodNoArgs = "Please provide two arguments: the number of food objects to make, followed by the distinct name \
+                      \of the food, as in " <>
+                      colorWith quoteColor (prefixAdminCmd "mkfood" <> " 5 apple")
 
 
 adviceAMkHolySymbolExcessArgs :: Text
