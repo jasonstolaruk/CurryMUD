@@ -102,11 +102,11 @@ appleObjTemplate = mkFruitObjTemplate "You sample a small morsel of the ripe app
 appleFood :: Food
 appleFood = Food (DistinctFoodId iFoodApple)
                  "The crisp apple is juicy and sweet."
-                 5 -- TODO: Come up with an accurate number.
+                 5 -- TODO: Accurate number(s).
 
 
 appleDistinctFood :: DistinctFood
-appleDistinctFood = DistinctFood "apple" 5 30 mkFoodEdibleEffects -- TODO: Come up with accurate numbers.
+appleDistinctFood = DistinctFood "apple" 5 30 mkFoodEdibleEffects -- TODO: Accurate number(s).
 
 
 newFoodApple :: NewFoodFun
@@ -131,11 +131,11 @@ bananaObjTemplate = mkFruitObjTemplate "You take a nibble off the ripe banana. T
 bananaFood :: Food
 bananaFood = Food (DistinctFoodId iFoodBanana)
                   "The soft flesh has a mellow, sweet taste. This particular banana is not overly starchy."
-                  5 -- TODO: Come up with an accurate number.
+                  5 -- TODO: Accurate number(s).
 
 
 bananaDistinctFood :: DistinctFood
-bananaDistinctFood = DistinctFood "banana" 5 30 mkFoodEdibleEffects -- TODO: Come up with accurate numbers.
+bananaDistinctFood = DistinctFood "banana" 5 30 mkFoodEdibleEffects -- TODO: Accurate number(s).
 
 
 newFoodBanana :: NewFoodFun
@@ -155,7 +155,7 @@ breadEntTemplate = EntTemplate (Just "bread")
 
 
 breadObjTemplate :: ObjTemplate
-breadObjTemplate = ObjTemplate 50 -- TODO: Come up with accurate numbers.
+breadObjTemplate = ObjTemplate 50 -- TODO: Accurate number(s).
                                500
                                (Just "You sample the bread. It's light and airy, a bit on the dry side, and not \
                                      \particularly tasty.")
@@ -165,11 +165,11 @@ breadObjTemplate = ObjTemplate 50 -- TODO: Come up with accurate numbers.
 breadFood :: Food
 breadFood = Food (DistinctFoodId iFoodBread)
                  "Though bland and dry, the bread serves well as a utilitarian nutriment."
-                 50 -- TODO: Come up with an accurate number.
+                 50 -- TODO: Accurate number(s).
 
 
 breadDistinctFood :: DistinctFood
-breadDistinctFood = DistinctFood "bread" 50 10 mkFoodEdibleEffects -- TODO: Come up with accurate numbers.
+breadDistinctFood = DistinctFood "bread" 50 10 mkFoodEdibleEffects -- TODO: Accurate number(s).
 
 
 newFoodBread :: NewFoodFun
@@ -195,11 +195,11 @@ orangeObjTemplate = mkFruitObjTemplate "The orange has a familiar citrus taste. 
 orangeFood :: Food
 orangeFood = Food (DistinctFoodId iFoodOrange)
                   "Tart, tangy, and more than a little juicy!"
-                  5 -- TODO: Come up with an accurate number.
+                  5 -- TODO: Accurate number(s).
 
 
 orangeDistinctFood :: DistinctFood
-orangeDistinctFood = DistinctFood "orange" 5 30 mkFoodEdibleEffects -- TODO: Come up with accurate numbers.
+orangeDistinctFood = DistinctFood "orange" 5 30 mkFoodEdibleEffects -- TODO: Accurate number(s).
 
 
 newFoodOrange :: NewFoodFun
