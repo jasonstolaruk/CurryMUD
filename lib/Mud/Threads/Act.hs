@@ -184,7 +184,7 @@ eatAct EatBundle { .. } = modifyStateSeq f `finally` tweak (mobTbl.ind eaterId.n
                     , loop 0 ]
            in (ms & mobTbl.ind eaterId.nowEating ?~ eatFoodSing, fs)
     loop x@(succ -> x') = do
-        liftIO . delaySecs $ 1 -- TODO
+        liftIO . delaySecs =<< getSecs
         now <- liftIO getCurrentTime
         consume eaterId . pure . StomachCont (Right distId) now $ False
         (m, ms) <- modifyState $ \ms -> let pair@(_, ms') = ms & foodTbl.ind eatFoodId.foodRemMouthfuls <-~ 1
@@ -212,6 +212,7 @@ eatAct EatBundle { .. } = modifyStateSeq f `finally` tweak (mobTbl.ind eaterId.n
                                                                                       , t ]
            | x' == eatAmt     -> (>> bcastHelper False) . ioHelper x' $ "You finish eating."
            | otherwise        -> loop x'
+    getSecs      = view foodSecsPerMouthful . getDistinctFood i <$> getState
     ioHelper m t = do logPla "eatAct ioHelper" eaterId . T.concat $ [ "ate "
                                                                     , showText m
                                                                     , " mouthful"
