@@ -14,6 +14,7 @@ module Mud.TheWorld.Foods ( appleEntTemplate
                           , newFoodApple
                           , newFoodBanana
                           , newFoodBread
+                          , newFoodFuns
                           , newFoodOrange
                           , orangeEntTemplate
                           , orangeFood
@@ -37,6 +38,9 @@ foodList = [ (iFoodApple,  appleDistinctFood,  appleFood )
            , (iFoodOrange, orangeDistinctFood, orangeFood) ]
 
 
+-----
+
+
 mkFoodEdibleEffects :: EdibleEffects
 mkFoodEdibleEffects = EdibleEffects { _digestEffects  = Just de
                                     , _consumpEffects = Nothing }
@@ -55,6 +59,9 @@ foodTag :: FeelingTag
 foodTag = "food"
 
 
+-----
+
+
 mkFruitObjTemplate :: Text -> ObjTemplate
 mkFruitObjTemplate t = ObjTemplate fruitWeight
                                    fruitVol
@@ -63,6 +70,20 @@ mkFruitObjTemplate t = ObjTemplate fruitWeight
 
 
 -----
+
+
+newFoodFuns :: [(Id, NewFoodFun)]
+newFoodFuns = [ (iFoodApple,  newFoodApple )
+              , (iFoodBanana, newFoodBanana)
+              , (iFoodBread,  newFoodBread )
+              , (iFoodOrange, newFoodOrange) ]
+
+
+
+type NewFoodFun = MudState -> InvId -> (Id, MudState, Funs)
+
+
+-- ==================================================
 
 
 appleEntTemplate :: EntTemplate
@@ -88,7 +109,7 @@ appleDistinctFood :: DistinctFood
 appleDistinctFood = DistinctFood "apple" 5 30 mkFoodEdibleEffects -- TODO: Come up with accurate numbers.
 
 
-newFoodApple :: MudState -> InvId -> (Id, MudState, Funs)
+newFoodApple :: NewFoodFun
 newFoodApple ms = newFood ms appleEntTemplate appleObjTemplate appleFood
 
 
@@ -117,7 +138,7 @@ bananaDistinctFood :: DistinctFood
 bananaDistinctFood = DistinctFood "banana" 5 30 mkFoodEdibleEffects -- TODO: Come up with accurate numbers.
 
 
-newFoodBanana :: MudState -> InvId -> (Id, MudState, Funs)
+newFoodBanana :: NewFoodFun
 newFoodBanana ms = newFood ms bananaEntTemplate bananaObjTemplate bananaFood
 
 
@@ -151,7 +172,7 @@ breadDistinctFood :: DistinctFood
 breadDistinctFood = DistinctFood "bread" 50 10 mkFoodEdibleEffects -- TODO: Come up with accurate numbers.
 
 
-newFoodBread :: MudState -> InvId -> (Id, MudState, Funs)
+newFoodBread :: NewFoodFun
 newFoodBread ms = newFood ms breadEntTemplate breadObjTemplate breadFood
 
 
@@ -181,5 +202,5 @@ orangeDistinctFood :: DistinctFood
 orangeDistinctFood = DistinctFood "orange" 5 30 mkFoodEdibleEffects -- TODO: Come up with accurate numbers.
 
 
-newFoodOrange :: MudState -> InvId -> (Id, MudState, Funs)
+newFoodOrange :: NewFoodFun
 newFoodOrange ms = newFood ms orangeEntTemplate orangeObjTemplate orangeFood

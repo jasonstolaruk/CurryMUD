@@ -272,8 +272,8 @@ adviceAMkFoodExcessArgs = adviceAMkFoodNoArgs
 
 
 adviceAMkFoodNoArgs :: Text
-adviceAMkFoodNoArgs = "Please provide two arguments: the number of food objects to make, followed by the distinct name \
-                      \of the food, as in " <>
+adviceAMkFoodNoArgs = "Please provide two arguments: the quantity of food objects to make, followed by the distinct \
+                      \name of the food, as in " <>
                       colorWith quoteColor (prefixAdminCmd "mkfood" <> " 5 apple")
 
 
@@ -282,8 +282,8 @@ adviceAMkHolySymbolExcessArgs = adviceAMkHolySymbolNoArgs
 
 
 adviceAMkHolySymbolNoArgs :: Text
-adviceAMkHolySymbolNoArgs = "Please provide two arguments: the number of holy symbols to make, followed by the name of a \
-                            \god, as in " <>
+adviceAMkHolySymbolNoArgs = "Please provide two arguments: the quantity of holy symbols to make, followed by the name \
+                            \of a god, as in " <>
                             colorWith quoteColor (prefixAdminCmd "mkholysymbol" <> " 5 aule")
 
 

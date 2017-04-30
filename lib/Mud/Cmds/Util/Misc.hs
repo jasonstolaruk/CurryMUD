@@ -278,8 +278,8 @@ consume i newScs = do now <- liftIO getCurrentTime
 
 dispCmdList :: HasCallStack => [Cmd] -> ActionFun
 dispCmdList cmds (NoArgs i mq cols) =
-    pager i mq Nothing . concatMap (wrapIndent cmdNamePadding cols) . mkCmdListText $ cmds
-dispCmdList cmds (LowerNub i mq cols as) = dispMatches i mq cols cmdNamePadding Isn'tRegex as . mkCmdListText $ cmds
+    pager i mq Nothing . concatMap (wrapIndent (succ cmdNamePadding) cols) . mkCmdListText $ cmds
+dispCmdList cmds (LowerNub i mq cols as) = dispMatches i mq cols (succ cmdNamePadding) Isn'tRegex as . mkCmdListText $ cmds
 dispCmdList _    p                       = patternMatchFail "dispCmdList" . showText $ p
 
 

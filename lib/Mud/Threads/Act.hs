@@ -170,7 +170,7 @@ mkMouthfulTxt x | x <= 8    = showText x
 -----
 
 
-eatAct :: HasCallStack => EatBundle -> MudStack ()
+eatAct :: HasCallStack => EatBundle -> MudStack () -- TODO: Food should be destroyed when entirely consumed.
 eatAct EatBundle { .. } = modifyStateSeq f `finally` tweak (mobTbl.ind eaterId.nowEating .~ Nothing)
   where
     distId@(DistinctFoodId i) = eatFood^.foodId
@@ -184,7 +184,7 @@ eatAct EatBundle { .. } = modifyStateSeq f `finally` tweak (mobTbl.ind eaterId.n
                     , loop 0 ]
            in (ms & mobTbl.ind eaterId.nowEating ?~ eatFoodSing, fs)
     loop x@(succ -> x') = do
-        liftIO . delaySecs $ 1
+        liftIO . delaySecs $ 1 -- TODO
         now <- liftIO getCurrentTime
         consume eaterId . pure . StomachCont (Right distId) now $ False
         (m, ms) <- modifyState $ \ms -> let pair@(_, ms') = ms & foodTbl.ind eatFoodId.foodRemMouthfuls <-~ 1

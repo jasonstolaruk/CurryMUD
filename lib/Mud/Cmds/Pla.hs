@@ -255,10 +255,10 @@ priorityAbbrevCmdTuples =
     , ("roomdesc",    "ro",  roomDesc,       True,  cmdDescRoomDesc)
     , ("say",         "sa",  say,            True,  cmdDescSay CommonLang)
     , ("show",        "sh",  showAction,     True,  cmdDescShow)
-    , ("smell",       "sm",  smell,          False, cmdDescSmell)
+    , ("smell",       "sm",  smell,          True,  cmdDescSmell)
     , ("stats",       "st",  stats,          True,  cmdDescStats)
     , ("stop",        "sto", stop,           True,  cmdDescStop)
-    , ("taste",       "ta",  taste,          False, cmdDescTaste)
+    , ("taste",       "ta",  taste,          True,  cmdDescTaste)
     , ("telepathy",   "t",   tele,           True,  cmdDescTelepathy)
     , ("tempdesc",    "te",  tempDescAction, True,  cmdDescTempDesc)
     , ("time",        "ti",  time,           True,  cmdDescTime)
@@ -1739,7 +1739,7 @@ inv (LowerNub i mq cols as) = getState >>= \ms ->
         invDesc                = foldl' (helperEitherInv ms) "" eiss
         coinsDesc              = foldl' helperEitherCoins    "" ecs
     in send mq $ if ()!# invCoins
-    then T.concat [ inEqs |!| sorryInEq, inRms |!| sorryInRm, invDesc, coinsDesc ]
+      then T.concat [ inEqs |!| sorryInEq, inRms |!| sorryInRm, invDesc, coinsDesc ]
       else wrapUnlinesNl cols dudeYourHandsAreEmpty
   where
     helperEitherInv _  acc (Left  msg ) = acc <> wrapUnlinesNl cols msg

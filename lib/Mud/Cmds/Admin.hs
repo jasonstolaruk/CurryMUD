@@ -137,7 +137,6 @@ massLogPla = L.massLogPla "Mud.Cmds.Admin"
 -- ==================================================
 
 
--- TODO: "mkfood" command.
 adminCmds :: HasCallStack => [Cmd]
 adminCmds =
     [ mkAdminCmd "?"            adminDispCmdList  True  cmdDescDispCmdList
@@ -175,7 +174,10 @@ adminCmds =
     , mkAdminCmd "liquids"      adminLiqs         True  "Display or regex search a list of hard-coded liquids."
     , mkAdminCmd "locate"       adminLocate       True  "Locate one or more IDs."
     , mkAdminCmd "message"      adminMsg          True  "Send a message to a regular player."
-    , mkAdminCmd "mkholysymbol" adminMkHolySymbol True  "Create a given number of holy symbols of a given god by god name."
+    , mkAdminCmd "mkfood"       adminMkFood       True  "Create a given quantity of a given type of food by distinct \
+                                                        \food name."
+    , mkAdminCmd "mkholysymbol" adminMkHolySymbol True  "Create a given quantity of holy symbols of a given god by god \
+                                                        \name."
     , mkAdminCmd "moon"         adminMoon         True  "Display the current phase of the moon."
     , mkAdminCmd "mychannels"   adminMyChans      True  "Display information about telepathic channels for one or more \
                                                         \players."
@@ -1270,13 +1272,40 @@ adminLocate p = patternMatchFail "adminLocate" . showText $ p
 -----
 
 
+adminMkFood :: HasCallStack => ActionFun
+adminMkFood p@AdviseNoArgs                                 = advise p [ prefixAdminCmd "mkfood" ] adviceAMkFoodNoArgs
+adminMkFood   (WithArgs i mq cols [ numTxt, foodNameTxt ]) = case reads . T.unpack $ numTxt :: [(Int, String)] of
+  [(n, "")] | not . inRange (1, 100) $ n -> sorryAmt
+            | otherwise                  -> modifyStateSeq $ \ms ->
+                let sorry          = (ms, ) . pure . wrapSend mq cols
+                    found (fi, fn) = case filter ((== fi) . fst) newFoodFuns of
+                      []         -> notFound
+                      ((_, f):_) ->
+                          let msg = T.concat [ "Created ", showText n, spcL fn, " food object", sOnNon1 n, "." ]
+                              helper 0 pair      = pair
+                              helper x (ms', fs) = let pair = dropFst . f ms' $ i
+                                                   in helper (pred x) . second (++ fs) $ pair
+                          in second (++ [ logPlaOut (prefixAdminCmd "mkfood") i . pure $ msg
+                                        , wrapSend mq cols msg ]) . helper n $ (ms, [])
+                    notFound     = sorry . sorryMkFoodName $ foodNameTxt
+                    foodIdsNames = [ (fi, views foodName T.toLower distinctFood) | (fi, distinctFood, _) <- foodList ]
+                in findFullNameForAbbrev (T.toLower foodNameTxt) foodIdsNames |&| maybe notFound found
+  _ -> sorryAmt
+  where
+    sorryAmt = wrapSend mq cols . sorryMkFoodAmt $ numTxt
+adminMkFood p = advise p [ prefixAdminCmd "mkfood" ] adviceAMkFoodExcessArgs
+
+
+-----
+
+
 adminMkHolySymbol :: HasCallStack => ActionFun
 adminMkHolySymbol p@AdviseNoArgs                                = advise p [ prefixAdminCmd "mkholysymbol" ] adviceAMkHolySymbolNoArgs
 adminMkHolySymbol   (WithArgs i mq cols [ numTxt, godNameTxt ]) = case reads . T.unpack $ numTxt :: [(Int, String)] of
   [(n, "")] | not . inRange (1, 100) $ n -> sorryAmt
             | otherwise                  -> modifyStateSeq $ \ms ->
-                let sorry               = (ms, ) . pure . wrapSend mq cols
-                    found godName       = case filter ((== godName) . snd) [ (x, pp x) | x <- allGodNames ] of
+                let sorry         = (ms, ) . pure . wrapSend mq cols
+                    found godName = case filter ((== godName) . snd) [ (x, pp x) | x <- allGodNames ] of
                       []          -> notFound
                       ((gn, _):_) ->
                           let (desc, w, v) = ((,,) <$> mkHolySymbolDesc <*> mkHolySymbolWeight <*> mkHolySymbolVol) gn
@@ -1289,13 +1318,13 @@ adminMkHolySymbol   (WithArgs i mq cols [ numTxt, godNameTxt ]) = case reads . T
                                                 v
                                                 Nothing
                                                 (setBit zeroBits . fromEnum $ IsBiodegradable)
-                              msg = T.concat [ "created ", showText n, " holy symbol", sOnNon1 n, " of ", god, "." ]
+                              msg = T.concat [ "Created ", showText n, " holy symbol", sOnNon1 n, " of ", god, "." ]
                               god = maybe "unknown" pp . getGodForGodName $ gn
                               helper 0 pair      = pair
                               helper x (ms', fs) = let pair = dropFst . newHolySymbol ms' et ot (HolySymbol gn) $ i
-                                                   in helper (pred x) . second (fs ++) $ pair
-                          in second (++ [ logPla "adminMkHolySymbol found" i msg
-                                        , wrapSend mq cols . capitalize $ msg ]) . helper n $ (ms, [])
+                                                   in helper (pred x) . second (++ fs) $ pair
+                          in second (++ [ logPlaOut (prefixAdminCmd "mkholysymbol") i . pure $ msg
+                                        , wrapSend mq cols msg ]) . helper n $ (ms, [])
                     notFound    = sorry . sorryMkHolySymbolGodName $ godNameTxt
                     allGodNames = allValues
                 in findFullNameForAbbrev (capitalize . T.toLower $ godNameTxt) (map pp allGodNames) |&| maybe notFound found

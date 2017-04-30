@@ -4,7 +4,7 @@
 #dmkfood quantity name
 
 \uDESCRIPTION\n
-Create a given quantity of a given type of food by distinct food name.
+Create a given quantity of a given type of food by name.
 The food to create should be specified by distinct food name, as reported by the "#dfoods" command.
 You can create between 1 and 100 food objects. The food will appear in your inventory.
 

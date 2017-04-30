@@ -1552,7 +1552,7 @@ mkEntDescs :: HasCallStack => Id -> Cols -> MudState -> Inv -> Text
 mkEntDescs i cols ms eis = T.intercalate theNl [ mkEntDesc i cols ms (ei, e) | ei <- eis, let e = getEnt ei ms ]
 
 
-mkEntDesc :: HasCallStack => Id -> Cols -> MudState -> (Id, Ent) -> Text
+mkEntDesc :: HasCallStack => Id -> Cols -> MudState -> (Id, Ent) -> Text -- TODO: Show % remaining for food.
 mkEntDesc i cols ms (ei, e) = let ed = views entDesc (wrapUnlines cols) e <> mkAuxDesc i cols ms ei in
     case t of ConType      ->                  (ed <>) . mkInvCoinsDesc i cols ms ei $ s
               CorpseType   -> (corpseTxt <>)           . mkInvCoinsDesc i cols ms ei $ s
