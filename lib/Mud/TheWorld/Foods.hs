@@ -65,16 +65,17 @@ mkFruitObjTemplate t = ObjTemplate fruitWeight
 -----
 
 
-appleEntTemplate :: EntTemplate -- TODO: Finish food definitions.
+appleEntTemplate :: EntTemplate
 appleEntTemplate = EntTemplate (Just "apple")
                                "apple" ""
-                               "apple desc"
-                               (Just "apple smell")
+                               "It's a common apple, bulbous in shape and red in color, with yellow-green splotches \
+                               \here and there."
+                               (Just "The ripe apple gives off a sweet, fruity smell.")
                                zeroBits
 
 
 appleObjTemplate :: ObjTemplate
-appleObjTemplate = mkFruitObjTemplate "apple taste"
+appleObjTemplate = mkFruitObjTemplate "You sample a small morsel of the ripe apple. It's delectable!"
 
 
 appleFood :: Food
@@ -97,18 +98,18 @@ newFoodApple ms = newFood ms appleEntTemplate appleObjTemplate appleFood
 bananaEntTemplate :: EntTemplate
 bananaEntTemplate = EntTemplate (Just "banana")
                                 "banana" ""
-                                "banana desc"
-                                (Just "banana smell")
+                                "The yellow banana is elongated and curved, with soft flesh rich in starch."
+                                (Just "A pleasant, sugary smell emanates from the ripe banana.")
                                 zeroBits
 
 
 bananaObjTemplate :: ObjTemplate
-bananaObjTemplate = mkFruitObjTemplate "banana taste"
+bananaObjTemplate = mkFruitObjTemplate "You take a nibble off the ripe banana. The pulpous fruit is sufficiently tasty."
 
 
 bananaFood :: Food
 bananaFood = Food (DistinctFoodId iFoodBanana)
-                  "The pulpous banana is sufficiently tasty."
+                  "The soft flesh has a mellow, sweet taste. This particular banana is not overly starchy."
                   5 -- TODO: Come up with an accurate number.
 
 
@@ -126,15 +127,17 @@ newFoodBanana ms = newFood ms bananaEntTemplate bananaObjTemplate bananaFood
 breadEntTemplate :: EntTemplate
 breadEntTemplate = EntTemplate (Just "bread")
                                "loaf of bread" "loaves of bread"
-                               "bread desc"
-                               (Just "bread smell")
+                               "It's a loaf of common white bread made from wheat-flower dough."
+                               (Just "The bread gives off the familiar inviting smell of baked goods. You don't detect \
+                                     \the sourness associated with certain types of bread.")
                                zeroBits
 
 
 breadObjTemplate :: ObjTemplate
-breadObjTemplate = ObjTemplate 35 -- TODO: Come up with accurate numbers.
-                               640
-                               (Just "bread taste")
+breadObjTemplate = ObjTemplate 50 -- TODO: Come up with accurate numbers.
+                               500
+                               (Just "You sample the bread. It's light and airy, a bit on the dry side, and not \
+                                     \particularly tasty.")
                                zeroBits
 
 
@@ -158,13 +161,14 @@ newFoodBread ms = newFood ms breadEntTemplate breadObjTemplate breadFood
 orangeEntTemplate :: EntTemplate
 orangeEntTemplate = EntTemplate (Just "orange")
                                 "orange" ""
-                                "orange desc"
-                                (Just "orange smell")
+                                "The orange is perfectly spherical with a fragrant, rugged rind."
+                                (Just "The orange has that comforting fragrance associated with citrus fruit.")
                                 zeroBits
 
 
 orangeObjTemplate :: ObjTemplate
-orangeObjTemplate = mkFruitObjTemplate "orange taste"
+orangeObjTemplate = mkFruitObjTemplate "The orange has a familiar citrus taste. This one might be a bit on the bitter \
+                                       \side."
 
 
 orangeFood :: Food
