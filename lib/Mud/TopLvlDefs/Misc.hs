@@ -270,7 +270,7 @@ threadTblPurgerDelay = fiveMinsInSecs
 
 
 trashDumpPurgerDelay :: Seconds
-trashDumpPurgerDelay = sixHrsInSecs
+trashDumpPurgerDelay = oneDayInSecs
 
 
 ver :: Text

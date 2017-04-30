@@ -111,7 +111,7 @@ expCmdSet = S.fromList
                                        "% blinks at you."
                                        "% blinks at @.")
                             Nothing
-    , ExpCmd "blush"        (NoTarget  "You blush."
+    , ExpCmd "blush"        (NoTarget  "You blush." -- TODO: The anthropomorphic races can't blush. (Are there other such exp cmds?)
                                        "% blushes.")
                             Nothing
     , ExpCmd "boggle"       (NoTarget  "You boggle at the concept."
