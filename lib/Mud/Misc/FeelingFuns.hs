@@ -28,6 +28,7 @@ feelingFuns = [ ("sacrificeBonusAule",      sacrificeBonusFeelingFun Aule      )
               , ("sacrificeBonusRhayk",     sacrificeBonusFeelingFun Rhayk     )
               , ("sacrificeBonusRumialys",  sacrificeBonusFeelingFun Rumialys  )
               , (foodTag,                   foodFeelingFun                     )
+              , (gorhnaTag,                 gorhnaFeelingFun                   )
               , (potFpTag,                  potFpFeelingFun                    )
               , (potHpTag,                  potHpFeelingFun                    )
               , (potMpTag,                  potMpFeelingFun                    )
@@ -43,6 +44,15 @@ foodFeelingFun :: FeelingFun
 foodFeelingFun FeelingNoVal        = ""
 foodFeelingFun (FeelingFixedVal 0) = ""
 foodFeelingFun (FeelingFixedVal _) = "You feel your health return as nourishment spreads through your body."
+
+
+-----
+
+
+gorhnaFeelingFun :: FeelingFun
+gorhnaFeelingFun FeelingNoVal        = ""
+gorhnaFeelingFun (FeelingFixedVal 0) = ""
+gorhnaFeelingFun (FeelingFixedVal _) = "" -- TODO: Gorhna feeling.
 
 
 -----

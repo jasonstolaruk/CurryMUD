@@ -14,6 +14,7 @@ module Mud.TheWorld.Foods ( appleEntTemplate
                           , gorhnaEntTemplate
                           , gorhnaFood
                           , gorhnaObjTemplate
+                          , gorhnaTag
                           , newFoodApple
                           , newFoodBanana
                           , newFoodBread
@@ -68,7 +69,7 @@ mkFoodEdibleEffects = EdibleEffects { _digestEffects  = Just de
 
 
 mkFoodEffectFeeling :: Maybe EffectFeeling
-mkFoodEffectFeeling = Just . EffectFeeling foodTag $ foodWaterEffDur
+mkFoodEffectFeeling = Just . EffectFeeling foodTag $ foodWaterFeelDur
 
 
 foodTag :: FeelingTag
@@ -181,17 +182,17 @@ newFoodBread ms = newFood ms breadEntTemplate breadObjTemplate breadFood
 -----
 
 
-gorhnaEntTemplate :: EntTemplate -- TODO: Finish definition.
+gorhnaEntTemplate :: EntTemplate -- TODO: Finish gorhna definition.
 gorhnaEntTemplate = EntTemplate (Just "nut")
-                                "nut" ""
+                                "gorhna nut" ""
                                 "nut desc"
                                 (Just "nut smell")
                                 zeroBits
 
 
 gorhnaObjTemplate :: ObjTemplate
-gorhnaObjTemplate = ObjTemplate 50 -- TODO: Weight.
-                                500 -- TODO: Vol.
+gorhnaObjTemplate = ObjTemplate gorhnaWeight
+                                gorhnaVol
                                 (Just "nut taste")
                                 zeroBits
 
@@ -203,7 +204,25 @@ gorhnaFood = Food (DistinctFoodId iFoodGorhna)
 
 
 gorhnaDistinctFood :: DistinctFood
-gorhnaDistinctFood = DistinctFood "gorhna" 1 1 mkFoodEdibleEffects -- TODO: "mkFoodEdibleEffects" is probably not appropriate here.
+gorhnaDistinctFood = DistinctFood "gorhna" 1 5 mkGorhnaEdibleEffects
+
+
+mkGorhnaEdibleEffects :: EdibleEffects
+mkGorhnaEdibleEffects = EdibleEffects { _digestEffects  = Just de
+                                      , _consumpEffects = Nothing }
+  where
+    de = EffectList . pure . Left $ ie
+    ie = InstaEffect { _instaEffectSub     = MobInstaEffectPts Hp
+                     , _instaEffectVal     = Just . EffectFixedVal $ 2
+                     , _instaEffectFeeling = mkGorhnaEffectFeeling }
+
+
+mkGorhnaEffectFeeling :: Maybe EffectFeeling
+mkGorhnaEffectFeeling = Just . EffectFeeling gorhnaTag $ potFeelDur
+
+
+gorhnaTag :: FeelingTag
+gorhnaTag = "gorhna"
 
 
 newFoodGorhna :: NewFoodFun

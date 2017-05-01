@@ -79,6 +79,10 @@ fruitVol :: Vol
 fruitVol = 640
 
 
+gorhnaVol :: Vol
+gorhnaVol = round (1 * 0.25 * 0.25 * 100 :: Double)
+
+
 helmLeatherVol :: Vol
 helmLeatherVol = 10 * 8 * 8 * 100
 

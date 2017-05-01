@@ -1364,7 +1364,7 @@ createAdminZone = do
             (Just "Containers")
             M.empty [] []))
   putRm iPantry
-        [ iApple, iBanana, iBread, iOrange ]
+        ([ iApple, iBanana, iBread, iOrange ] ++ [iGorhna1..iGorhna1 + 9])
         mempty
         (mkRm (RmTemplate "Pantry"
             "This walk-in pantry is designed to store a large amount of food."

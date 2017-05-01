@@ -88,7 +88,7 @@ waterDistinctLiq = DistinctLiq "water" EdibleEffects { _digestEffects  = Just de
     de = EffectList . pure . Left $ ie
     ie = InstaEffect { _instaEffectSub     = MobInstaEffectPts Fp
                      , _instaEffectVal     = Just . EffectFixedVal $ 2
-                     , _instaEffectFeeling = Just . EffectFeeling waterTag $ foodWaterEffDur }
+                     , _instaEffectFeeling = Just . EffectFeeling waterTag $ foodWaterFeelDur }
 
 
 waterTag :: FeelingTag
@@ -121,7 +121,7 @@ potXpEffectVal = 2
 
 
 mkPotEffectFeeling :: FeelingTag -> Maybe EffectFeeling
-mkPotEffectFeeling tag = Just . EffectFeeling tag $ 30 {- secs -}
+mkPotEffectFeeling = Just . (`EffectFeeling` potFeelDur)
 
 
 potHpTag :: Text

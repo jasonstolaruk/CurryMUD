@@ -67,6 +67,10 @@ fruitWeight :: Weight
 fruitWeight = 35
 
 
+gorhnaWeight :: Weight
+gorhnaWeight = 1
+
+
 helmLeatherWeight :: Weight
 helmLeatherWeight = 30
 

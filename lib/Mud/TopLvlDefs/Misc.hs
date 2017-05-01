@@ -16,7 +16,7 @@ module Mud.TopLvlDefs.Misc ( acl
                            , enc
                            , enc's
                            , etc
-                           , foodWaterEffDur
+                           , foodWaterFeelDur
                            , initPickPts
                            , isDebug
                            , isEKGing
@@ -49,6 +49,7 @@ module Mud.TopLvlDefs.Misc ( acl
                            , noOfPersistedWorlds
                            , noOfTitles
                            , port
+                           , potFeelDur
                            , rmDescIndentAmt
                            , rndmVectorLen
                            , sacrificeBonusSecs
@@ -130,8 +131,8 @@ dfltZoom :: Int
 dfltZoom = 10
 
 
-foodWaterEffDur :: Seconds
-foodWaterEffDur = 15
+foodWaterFeelDur :: Seconds
+foodWaterFeelDur = 20
 
 
 initPickPts :: Int
@@ -243,6 +244,10 @@ noOfTitles = 33
 
 port :: Int
 port = 9696
+
+
+potFeelDur :: Seconds
+potFeelDur = 30
 
 
 rmDescIndentAmt :: Int
