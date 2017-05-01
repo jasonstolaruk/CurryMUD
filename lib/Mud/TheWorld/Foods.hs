@@ -181,7 +181,7 @@ newFoodBread ms = newFood ms breadEntTemplate breadObjTemplate breadFood
 -----
 
 
-gorhnaEntTemplate :: EntTemplate
+gorhnaEntTemplate :: EntTemplate -- TODO: Finish definition.
 gorhnaEntTemplate = EntTemplate (Just "nut")
                                 "nut" ""
                                 "nut desc"

@@ -784,6 +784,10 @@ createAdminZone = do
           (mkEnt iOrange orangeEntTemplate)
           (mkObj orangeObjTemplate)
           orangeFood
+  forM_ [iGorhna1..iGorhna1 + 9] $ \i -> putFood i
+                                                 (mkEnt i gorhnaEntTemplate)
+                                                 (mkObj gorhnaObjTemplate)
+                                                 gorhnaFood
 
   -- ==================================================
   -- Holy symbols:

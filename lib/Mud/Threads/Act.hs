@@ -197,16 +197,15 @@ eatAct EatBundle { .. } = modifyStateSeq f `finally` tweak (mobTbl.ind eaterId.n
                                                                            , aOrAn eatFoodSing
                                                                            , "." ]
                                                                 , eaterId `delete` desigIds d )
-        if | m <= 0 -> do
-               destroy . pure $ eatFoodId -- TODO: Test.
-               ioHelper x' . T.concat $ [ "You finish eating all of the "
-                                        , eatFoodSing
-                                        , " after "
-                                        , mkMouthfulTxt x'
-                                        , " mouthful"
-                                        , sOnNon1 x
-                                        , "." ]
-               bcastHelper True
+        if | m <= 0 -> do destroy . pure $ eatFoodId
+                          ioHelper x' . T.concat $ [ "You finish eating all of the "
+                                                   , eatFoodSing
+                                                   , " after "
+                                                   , mkMouthfulTxt x'
+                                                   , " mouthful"
+                                                   , sOnNon1 x
+                                                   , "." ]
+                          bcastHelper True
            | isZero stomAvail -> let t = thrice prd " that you have to stop eating. You don't feel so good"
                                  in (>> bcastHelper False) . ioHelper x' . T.concat $ [ "You are so full after "
                                                                                       , mkMouthfulTxt x'
