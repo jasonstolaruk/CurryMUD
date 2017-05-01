@@ -19,6 +19,7 @@ module Mud.Data.State.Util.Calc ( calcBarLen
                                 , calcEffPs
                                 , calcEffSt
                                 , calcEncPer
+                                , calcFoodPerRem
                                 , calcInvCoinsVol
                                 , calcLvl
                                 , calcLvlExps
@@ -280,6 +281,15 @@ calcEncPer i ms = calcWeight i ms `percent` calcMaxEnc i ms
 
 calcMaxEnc :: HasCallStack => Id -> MudState -> Weight
 calcMaxEnc i ms = calcEffSt i ms ^ 2 `percent` 13
+
+
+-----
+
+
+calcFoodPerRem :: HasCallStack => Id -> MudState -> Int
+calcFoodPerRem i ms | f@(view foodRemMouthfuls -> x) <- getFood i ms
+                    , y                              <- view foodMouthfuls . getDistinctFoodForFood f $ ms
+                    = x `percent` y
 
 
 -----

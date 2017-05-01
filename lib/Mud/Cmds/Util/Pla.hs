@@ -1552,8 +1552,8 @@ mkEntDescs :: HasCallStack => Id -> Cols -> MudState -> Inv -> Text
 mkEntDescs i cols ms eis = T.intercalate theNl [ mkEntDesc i cols ms (ei, e) | ei <- eis, let e = getEnt ei ms ]
 
 
-mkEntDesc :: HasCallStack => Id -> Cols -> MudState -> (Id, Ent) -> Text -- TODO: Show % remaining for food.
-mkEntDesc i cols ms (ei, e) = let ed = views entDesc (wrapUnlines cols) e <> mkAuxDesc i cols ms ei in
+mkEntDesc :: HasCallStack => Id -> Cols -> MudState -> (Id, Ent) -> Text
+mkEntDesc i cols ms (ei, e) =
     case t of ConType      ->                  (ed <>) . mkInvCoinsDesc i cols ms ei $ s
               CorpseType   -> (corpseTxt <>)           . mkInvCoinsDesc i cols ms ei $ s
               NpcType      ->                  (ed <>) . (tempDescHelper <>) . mkEqDesc i cols ms ei s $ t
@@ -1562,6 +1562,9 @@ mkEntDesc i cols ms (ei, e) = let ed = views entDesc (wrapUnlines cols) e <> mkA
               WritableType ->                  (ed <>) . mkWritableMsgDesc cols ms $ ei
               _            -> ed
   where
+    ed                  = let foodRemTxt = t == FoodType |?| spcL (mkFoodRemTxt ei ms)
+                              desc       = views entDesc (<> foodRemTxt) e
+                          in wrapUnlines cols desc <> mkAuxDesc i cols ms ei
     (s, t)              = (getSing `fanUncurry` getType) (ei, ms)
     corpseTxt           = let txt = expandCorpseTxt (mkCorpseAppellation i ms ei) . getCorpseDesc ei $ ms
                           in wrapUnlines cols txt <> mkAuxDesc i cols ms ei
@@ -1628,6 +1631,10 @@ mkCoinsSummary cols = helper . zipWith mkNameAmt coinNames . coinsToList
     mkNameAmt cn a = Sum a |!| commaShow a |<>| bracketQuote (colorWith abbrevColor cn)
 
 
+mkFoodRemTxt :: HasCallStack => Id -> MudState -> Text
+mkFoodRemTxt i ms = parensQuote $ showText (calcFoodPerRem i ms) <> "% remaining"
+
+
 mkEqDesc :: HasCallStack => Id -> Cols -> MudState -> Id -> Sing -> Type -> Text
 mkEqDesc i cols ms descId descSing descType = let descs = bool mkDescsOther mkDescsSelf $ descId == i in
     ()# descs ? noDescs :? ((header <>) . T.unlines . concatMap (wrapIndent 15 cols) $ descs)
@@ -1657,12 +1664,12 @@ mkVesselContDesc cols ms targetId =
     let s = getSing   targetId ms
         v = getVessel targetId ms
         emptyDesc         = "The " <> s <> " is empty." |&| wrapUnlines cols
-        mkContDesc (l, q) = T.concat [ "The "
+        mkContDesc (l, m) = T.concat [ "The "
                                      , s
                                      , " contains "
                                      , renderLiqNoun l aOrAn
                                      , " "
-                                     , parensQuote $ showText (calcVesselPerFull v q) <> "% full"
+                                     , parensQuote $ showText (calcVesselPerFull v m) <> "% full"
                                      , "." ] |&| wrapUnlines cols
     in views vesselCont (maybe emptyDesc mkContDesc) v
 
