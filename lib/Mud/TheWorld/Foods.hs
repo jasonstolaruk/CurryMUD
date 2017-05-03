@@ -182,29 +182,29 @@ newFoodBread ms = newFood ms breadEntTemplate breadObjTemplate breadFood
 -----
 
 
-gorhnaEntTemplate :: EntTemplate -- TODO: Finish gorhna definition.
+gorhnaEntTemplate :: EntTemplate
 gorhnaEntTemplate = EntTemplate (Just "nut")
                                 "gorhna nut" ""
-                                "nut desc"
-                                (Just "nut smell")
+                                "The purple gorhna nut is about one inch long and roughly cylindrical in shape."
+                                (Just "The gorhna nut has a unique floral scent decorated with overtones of mildew.")
                                 zeroBits
 
 
 gorhnaObjTemplate :: ObjTemplate
 gorhnaObjTemplate = ObjTemplate gorhnaWeight
                                 gorhnaVol
-                                (Just "nut taste")
+                                (Just "You sample the nut. It's not particularly appetizing. Is this what worms taste like?")
                                 zeroBits
 
 
 gorhnaFood :: Food
 gorhnaFood = Food (DistinctFoodId iFoodGorhna)
-                  "nut eat"
+                  "The soft, fatty flesh of the gorhna nut nearly melts in your mouth."
                   1
 
 
 gorhnaDistinctFood :: DistinctFood
-gorhnaDistinctFood = DistinctFood "gorhna" 1 5 mkGorhnaEdibleEffects
+gorhnaDistinctFood = DistinctFood "gorhna" 1 4 mkGorhnaEdibleEffects
 
 
 mkGorhnaEdibleEffects :: EdibleEffects
