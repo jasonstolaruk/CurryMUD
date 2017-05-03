@@ -111,7 +111,7 @@ expCmdSet = S.fromList
                                        "% blinks at you."
                                        "% blinks at @.")
                             Nothing
-    , ExpCmd "blush"        (NoTarget  "You blush." -- TODO: The anthropomorphic races can't blush. (Are there other such exp cmds?)
+    , ExpCmd "blush"        (NoTarget  "You blush."
                                        "% blushes.")
                             Nothing
     , ExpCmd "boggle"       (NoTarget  "You boggle at the concept."
@@ -138,7 +138,7 @@ expCmdSet = S.fromList
     , ExpCmd "calm"         (NoTarget  "You appear calm and collected."
                                        "% appears calm and collected.")
                             Nothing
-    , ExpCmd "caresscheek"  (HasTarget "You caress @'s cheek'."
+    , ExpCmd "caresscheek"  (HasTarget "You caress @'s cheek."
                                        "% caresses your cheek."
                                        "% caresses @'s cheek.")
                             Nothing
@@ -224,15 +224,15 @@ expCmdSet = S.fromList
                                        "% cries out in anger at you."
                                        "% cries out in anger at @.")
                             Nothing
-    , ExpCmd "cuddle"       (HasTarget "You cuddle @."
-                                       "% cuddles you."
-                                       "% cuddles @.")
+    , ExpCmd "cuddle"       (HasTarget "You cuddle with @."
+                                       "% cuddles with you."
+                                       "% cuddles with @.")
                             Nothing
     , ExpCmd "curious"      (Versatile "You have a curious expression on your face."
                                        "% has a curious expression on & face."
-                                       "Interested in knowing more, you flash a curious expression at @."
-                                       "Interested in knowing more, % flashes a curious expression at you."
-                                       "Interested in knowing more, % flashes a curious expression at @.")
+                                       "You flash a curious expression at @."
+                                       "% flashes a curious expression at you."
+                                       "% flashes a curious expression at @.")
                             Nothing
     , ExpCmd "curse"        (Versatile "You curse."
                                        "% curses."
@@ -257,7 +257,7 @@ expCmdSet = S.fromList
                                        "You dance with @."
                                        "% dances with you."
                                        "% dances with @.")
-                            Nothing
+                            (Just "")
     , ExpCmd "daydream"     (NoTarget  "Staring off into the distance, you indulge in a daydream."
                                        "Staring off into the distance, % indulges in a daydream.")
                             Nothing
@@ -318,7 +318,7 @@ expCmdSet = S.fromList
                             Nothing
     , ExpCmd "flop"         (NoTarget  "You flop down on the ground."
                                        "% flops down on the ground.")
-                            Nothing
+                            (Just "on the ground")
     , ExpCmd "flustered"    (NoTarget  "You look entirely flustered."
                                        "% looks entirely flustered.")
                             Nothing
@@ -464,7 +464,7 @@ expCmdSet = S.fromList
                                        "You dance a lively jig with @."
                                        "% dances a lively jig with you."
                                        "% dances a lively jig with @.")
-                            Nothing
+                            (Just "")
     , ExpCmd "joytears"     (NoTarget  "You are overcome with tears of joy."
                                        "% is overcome with tears of joy.")
                             Nothing
@@ -586,7 +586,7 @@ expCmdSet = S.fromList
                             Nothing
     , ExpCmd "pace"         (NoTarget  "You pace around nervously."
                                        "% paces around nervously.")
-                            Nothing
+                            (Just "")
     , ExpCmd "pant"         (NoTarget  "You pant."
                                        "% pants.")
                             Nothing
@@ -642,7 +642,7 @@ expCmdSet = S.fromList
     , ExpCmd "pounce"       (HasTarget "You pounce on @."
                                        "% pounces on you."
                                        "% pounces on @.")
-                            Nothing
+                            (Just "")
     , ExpCmd "pout"         (Versatile "You pout."
                                        "% pouts."
                                        "You pout at @."
@@ -837,7 +837,7 @@ expCmdSet = S.fromList
                             Nothing
     , ExpCmd "stagger"      (NoTarget  "You stagger around."
                                        "% staggers around.")
-                            Nothing
+                            (Just "")
     , ExpCmd "stamp"        (NoTarget  "Your stamp your feet."
                                        "% stamps & feet.")
                             Nothing
@@ -1023,12 +1023,14 @@ getExpCmdByName cn = head . S.toList . S.filter (\(ExpCmd cn' _ _) -> cn' == cn)
 
 expCmd :: HasCallStack => ExpCmd -> ActionFun
 expCmd (ExpCmd ecn HasTarget {} _   ) p@NoArgs {}        = advise p [] . sorryExpCmdRequiresTarget $ ecn
-expCmd (ExpCmd ecn ect          desc) (NoArgs i mq cols) = case ect of
-  (NoTarget  toSelf toOthers      ) -> helper toSelf toOthers
-  (Versatile toSelf toOthers _ _ _) -> helper toSelf toOthers
-  _                                 -> patternMatchFail "expCmd" . showText $ ect
+expCmd (ExpCmd ecn ect          desc) (NoArgs i mq cols) = getState >>= \ms@(getRace i -> r) -> case ect of
+  (NoTarget  toSelf toOthers      ) | r `elem` furRaces -> wrapSend mq cols . sorryExpCmdBlush . pp $ r
+                                    | otherwise         -> helper ms toSelf toOthers
+  (Versatile toSelf toOthers _ _ _)                     -> helper ms toSelf toOthers
+  _                                                     -> patternMatchFail "expCmd" . showText $ ect
   where
-    helper toSelf toOthers = getState >>= \ms ->
+    furRaces                  = [ Felinoid, Lagomorph, Vulpenoid ]
+    helper ms toSelf toOthers =
         let d                           = mkStdDesig i ms DoCap
             serialized                  = mkSerializedDesig d toOthers
             (heShe, hisHer, himHerself) = mkPros . getSex i $ ms

@@ -78,6 +78,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryActing
                            , sorryEmptyType
                            , sorryEquipCoins
                            , sorryEquipInvLook
+                           , sorryExpCmdBlush
                            , sorryExpCmdCoins
                            , sorryExpCmdIllegalTarget
                            , sorryExpCmdInInvEq
@@ -855,6 +856,10 @@ sorryEquipInvLook a b = T.concat [ "You can only use the "
 
 
 -----
+
+
+sorryExpCmdBlush :: Text -> Text
+sorryExpCmdBlush r = prd . but $ r <> "s can't blush " <> parensQuote "the fur gets in the way"
 
 
 sorryExpCmdCoins :: Text
