@@ -837,7 +837,7 @@ expCmdSet = S.fromList
                             Nothing
     , ExpCmd "stagger"      (NoTarget  "You stagger around."
                                        "% staggers around.")
-                            (Just "")
+                            Nothing
     , ExpCmd "stamp"        (NoTarget  "Your stamp your feet."
                                        "% stamps & feet.")
                             Nothing
