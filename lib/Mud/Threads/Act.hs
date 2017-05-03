@@ -111,10 +111,10 @@ drinkAct DrinkBundle { .. } = modifyStateSeq f `finally` tweak (mobTbl.ind drink
                fs = pure . handle (die (Just drinkerId) . pp $ Drinking) . sequence_ $ gs
                gs = [ multiWrapSend1Nl drinkerMq drinkerCols . dropEmpties $ [ t, drinkLiq^.liqDrinkDesc ]
                     , bcastIfNotIncogNl drinkerId bs
-                    , loop 0 ]
+                    , loop 1 ]
            in (ms & mobTbl.ind drinkerId.nowDrinking ?~ (drinkLiq, drinkVesselSing), fs)
     renderVesselSing    = drinkVesselSing |&| (isJust drinkVesselId ? aOrAn :? the)
-    loop x@(succ -> x') = do
+    loop x = do
         liftIO . delaySecs $ 1
         now <- liftIO getCurrentTime
         consume drinkerId . pure . StomachCont (Left distId) now $ False
@@ -132,21 +132,21 @@ drinkAct DrinkBundle { .. } = modifyStateSeq f `finally` tweak (mobTbl.ind drink
                                                                              , b |?| " after draining it dry"
                                                                              , "." ]
                                                                   , drinkerId `delete` desigIds d )
-        if | newCont == Right Nothing -> (>> bcastHelper True) . ioHelper x' . T.concat $ [ "You drain the "
-                                                                                          , drinkVesselSing
-                                                                                          , " dry after "
-                                                                                          , mkMouthfulTxt x'
-                                                                                          , " mouthful"
-                                                                                          , sOnNon1 x
-                                                                                          , "." ]
+        if | newCont == Right Nothing -> (>> bcastHelper True) . ioHelper x . T.concat $ [ "You drain the "
+                                                                                         , drinkVesselSing
+                                                                                         , " dry after "
+                                                                                         , mkMouthfulTxt x
+                                                                                         , " mouthful"
+                                                                                         , sOnNon1 x -- TODO: Test.
+                                                                                         , "." ]
            | isZero stomAvail -> let t = thrice prd " that you have to stop drinking. You don't feel so good"
-                                 in (>> bcastHelper False) . ioHelper x' . T.concat $ [ "You are so full after "
-                                                                                      , mkMouthfulTxt x'
-                                                                                      , " mouthful"
-                                                                                      , sOnNon1 x
-                                                                                      , t ]
-           | x' == drinkAmt   -> (>> bcastHelper False) . ioHelper x' $ "You finish drinking."
-           | otherwise        -> loop x'
+                                 in (>> bcastHelper False) . ioHelper x . T.concat $ [ "You are so full after "
+                                                                                     , mkMouthfulTxt x
+                                                                                     , " mouthful"
+                                                                                     , sOnNon1 x
+                                                                                     , t ]
+           | x == drinkAmt    -> (>> bcastHelper False) . ioHelper x $ "You finish drinking."
+           | otherwise        -> loop . succ $ x
     ioHelper m t = do logPla "drinkAct ioHelper" drinkerId . T.concat $ [ "drank "
                                                                         , showText m
                                                                         , " mouthful"
@@ -181,9 +181,9 @@ eatAct EatBundle { .. } = modifyStateSeq f `finally` tweak (mobTbl.ind eaterId.n
                fs = pure . handle (die (Just eaterId) . pp $ Eating) . sequence_ $ gs
                gs = [ multiWrapSend1Nl eaterMq eaterCols . dropEmpties $ [ t, eatFood^.foodEatDesc ]
                     , bcastIfNotIncogNl eaterId bs
-                    , loop 0 ]
+                    , loop 1 ]
            in (ms & mobTbl.ind eaterId.nowEating ?~ eatFoodSing, fs)
-    loop x@(succ -> x') = do
+    loop (succ -> x) = do
         liftIO . delaySecs =<< view foodSecsPerMouthful . getDistinctFood i <$> getState
         now <- liftIO getCurrentTime
         consume eaterId . pure . StomachCont (Right distId) now $ False
@@ -198,22 +198,22 @@ eatAct EatBundle { .. } = modifyStateSeq f `finally` tweak (mobTbl.ind eaterId.n
                                                                            , "." ]
                                                                 , eaterId `delete` desigIds d )
         if | m <= 0 -> do destroy . pure $ eatFoodId
-                          ioHelper x' . T.concat $ [ "You finish eating all of the "
-                                                   , eatFoodSing
-                                                   , " after "
-                                                   , mkMouthfulTxt x'
-                                                   , " mouthful"
-                                                   , sOnNon1 x
-                                                   , "." ]
+                          ioHelper x . T.concat $ [ "You finish eating all of the "
+                                                  , eatFoodSing
+                                                  , " after "
+                                                  , mkMouthfulTxt x
+                                                  , " mouthful"
+                                                  , sOnNon1 x
+                                                  , "." ]
                           bcastHelper True
            | isZero stomAvail -> let t = thrice prd " that you have to stop eating. You don't feel so good"
-                                 in (>> bcastHelper False) . ioHelper x' . T.concat $ [ "You are so full after "
-                                                                                      , mkMouthfulTxt x'
-                                                                                      , " mouthful"
-                                                                                      , sOnNon1 x
-                                                                                      , t ]
-           | x' == eatAmt     -> (>> bcastHelper False) . ioHelper x' $ "You finish eating."
-           | otherwise        -> loop x'
+                                 in (>> bcastHelper False) . ioHelper x . T.concat $ [ "You are so full after "
+                                                                                     , mkMouthfulTxt x
+                                                                                     , " mouthful"
+                                                                                     , sOnNon1 x
+                                                                                     , t ]
+           | x == eatAmt      -> (>> bcastHelper False) . ioHelper x $ "You finish eating."
+           | otherwise        -> loop . succ $ x
     ioHelper m t = do logPla "eatAct ioHelper" eaterId . T.concat $ [ "ate "
                                                                     , showText m
                                                                     , " mouthful"
