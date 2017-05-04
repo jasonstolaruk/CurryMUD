@@ -137,7 +137,7 @@ drinkAct DrinkBundle { .. } = modifyStateSeq f `finally` tweak (mobTbl.ind drink
                                                                                          , " dry after "
                                                                                          , mkMouthfulTxt x
                                                                                          , " mouthful"
-                                                                                         , sOnNon1 x -- TODO: Test.
+                                                                                         , sOnNon1 x
                                                                                          , "." ]
            | isZero stomAvail -> let t = thrice prd " that you have to stop drinking. You don't feel so good"
                                  in (>> bcastHelper False) . ioHelper x . T.concat $ [ "You are so full after "
@@ -183,7 +183,7 @@ eatAct EatBundle { .. } = modifyStateSeq f `finally` tweak (mobTbl.ind eaterId.n
                     , bcastIfNotIncogNl eaterId bs
                     , loop 1 ]
            in (ms & mobTbl.ind eaterId.nowEating ?~ eatFoodSing, fs)
-    loop (succ -> x) = do
+    loop x = do
         liftIO . delaySecs =<< view foodSecsPerMouthful . getDistinctFood i <$> getState
         now <- liftIO getCurrentTime
         consume eaterId . pure . StomachCont (Right distId) now $ False
