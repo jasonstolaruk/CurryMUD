@@ -9,7 +9,7 @@ This is an In-Character (IC) term for the state of being logged out.
 This is an In-Character (IC) term for the state of being logged in.
 
 \uBipeds\d
-A collective term for Rumia's principle races.
+A blanket term for Rumia's principle races.
 
 \uChannel\d
 Somewhat analogous to a chat room. Provides the ability for a group of players to message each other in real-time. There is the "question channel" (OOC) along with "telepathic channels" (IC).
@@ -23,14 +23,23 @@ Commands that facilitate the execution of discreet actions In-Character (IC); co
 \uExperience Points\d
 A unit of measurement quantifying your character's advancement.
 
+\uFelinoidean\d
+The native language of the felinoid race.
+
 \uFixture\d
 See "Room Fixture."
+
+\uHominal\d
+The native language of the human race.
 
 \uIn-Character\d
 Something said or done as a character, in the context of role-playing. Or, in the context of the virtual world.
 
 \uInteractive Non-Player Character\d
 A character that is usually controlled by the server, and sometimes controlled, or otherwise actively managed, by the administrators.
+
+\uLagomorphean\d
+The native language of the lagomorph race.
 
 \uLevel\d
 A measure of a character's power and achievement. Upon accumulating a sufficient number of experience points, your character gains a level or "levels up," at which point certain stats increase (max hit points, etc.) and you are granted a number of skill points. New characters start at level zero.
@@ -50,6 +59,9 @@ When a single player simultaneously logs in multiple times, as multiple characte
 
 \uMulti-User Dungeon\d
 This generally refers to a (usually text-based) virtual world in its totality.
+
+\uNaelyni\d
+The native language of the nymph race.
 
 \uNewbie\d
 A new and inexperienced player.
@@ -104,6 +116,9 @@ A command for which there is no help available via the "help" command. You are m
 
 \uVessel\d
 A container for liquids.
+
+\uVulpenoidean\d
+The native language of the vulpenoid race.
 
 \uSEE ALSO\n
 acronyms, channel, client, expressive, link, permadeath, role-play, roomfixtures, rules, stats, telepathy, texteditor, tune, undocumented, unlink

@@ -107,9 +107,9 @@ random
 Copyright The University of Glasgow.
 https://github.com/haskell/random
 
-regex-posix
+regex-pcre
 Copyright Christopher Kuklewicz.
-http://sourceforge.net/projects/lazy-regex
+http://hackage.haskell.org/package/regex-pcre
 
 resourcet
 Copyright Michael Snoyman.
