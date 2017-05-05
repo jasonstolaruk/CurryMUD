@@ -21,7 +21,7 @@ backLrgWeight = plusQuarter  backWeight
 
 
 breadWeight :: Weight
-breadWeight = 100
+breadWeight = 120
 
 
 bootsWeight :: Weight

@@ -158,8 +158,8 @@ breadEntTemplate = EntTemplate (Just "bread")
 
 
 breadObjTemplate :: ObjTemplate
-breadObjTemplate = ObjTemplate 50 -- TODO: Accurate number(s).
-                               500
+breadObjTemplate = ObjTemplate breadWeight
+                               breadVol
                                (Just "You sample the bread. It's light and airy, a bit on the dry side, and not \
                                      \particularly tasty.")
                                zeroBits
@@ -168,11 +168,11 @@ breadObjTemplate = ObjTemplate 50 -- TODO: Accurate number(s).
 breadFood :: Food
 breadFood = Food (DistinctFoodId iFoodBread)
                  "Though bland and dry, the bread serves well as a utilitarian nutriment."
-                 50 -- TODO: Accurate number(s).
+                 64
 
 
 breadDistinctFood :: DistinctFood
-breadDistinctFood = DistinctFood "bread" 50 10 mkFoodEdibleEffects -- TODO: Accurate number(s).
+breadDistinctFood = DistinctFood "bread" 64 30 mkFoodEdibleEffects -- 8 slices, 8 mouthfuls per slice.
 
 
 newFoodBread :: NewFoodFun

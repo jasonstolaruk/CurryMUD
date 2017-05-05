@@ -43,7 +43,7 @@ braceletVol = 3 * 1 * 3 * 100
 
 
 breadVol :: Vol
-breadVol = 12 * 4 * 6 * 100
+breadVol = round (7.25 * 5.5 * 4.25 * 100 :: Double)
 
 
 clubVol :: Vol
