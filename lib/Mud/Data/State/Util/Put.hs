@@ -10,6 +10,7 @@ import Mud.Util.Misc
 import Control.Arrow (second)
 import Control.Lens (at)
 import Control.Lens.Operators ((?~), (.~), (^.))
+import Data.Maybe (isJust)
 import Data.Text (Text)
 
 
@@ -142,17 +143,18 @@ putRmTeleName i tn = tweak $ rmTeleNameTbl.ind i .~ tn
 -----
 
 
-putVessel :: Id -> Ent -> Obj -> Maybe VesselCont -> MudStack ()
-putVessel i e o c = tweaks [ durationalEffectTbl.ind i .~ []
-                           , entTbl             .ind i .~ e
-                           , objTbl             .ind i .~ o
-                           , pausedEffectTbl    .ind i .~ []
-                           , typeTbl            .ind i .~ VesselType
-                           , vesselTbl          .ind i .~ mkVessel ]
+putVessel :: Id -> Ent -> Obj -> Maybe VesselCont -> Maybe HolySymbol -> MudStack ()
+putVessel i e o c h = tweaks [ durationalEffectTbl.ind i .~ []
+                             , entTbl             .ind i .~ e
+                             , objTbl             .ind i .~ o
+                             , pausedEffectTbl    .ind i .~ []
+                             , typeTbl            .ind i .~ VesselType
+                             , vesselTbl          .ind i .~ mkVessel
+                             , holySymbolTbl      .at  i .~ h ]
   where
     mkVessel = let mouth = calcMaxMouthfuls o
                    c'    = second (min mouth) <$> c
-               in Vessel mouth c'
+               in Vessel (isJust h) mouth c'
 
 
 -----

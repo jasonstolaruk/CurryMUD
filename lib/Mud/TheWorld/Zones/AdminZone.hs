@@ -1601,6 +1601,7 @@ createAdminZone = do
                      zeroBits)
                 (mkObj . ObjTemplate potionFlaskWeight potionFlaskVol Nothing $ zeroBits)
                 mc
+                Nothing
   forM_ (zip flaskLrgIds flaskConts) $ \(i, mc) ->
       putVessel i
                 (Ent i
@@ -1612,6 +1613,7 @@ createAdminZone = do
                      zeroBits)
                 (mkObj . ObjTemplate potionFlaskLrgWeight potionFlaskLrgVol Nothing $ zeroBits)
                 mc
+                Nothing
   let waterskinDesc = "The handy waterskin, crafted from the bladder of a bovine animal, is an indispensable piece of \
                       \equipment when it comes to travel and, often, everyday life."
   putVessel iWaterskin
@@ -1623,6 +1625,7 @@ createAdminZone = do
                  zeroBits)
             (mkObj . ObjTemplate waterskinWeight waterskinVol Nothing $ zeroBits)
             (Just (waterLiq, maxBound))
+            Nothing
   putVessel iWaterskinLrg
             (Ent iWaterskinLrg
                  (Just "waterskin")
@@ -1632,6 +1635,7 @@ createAdminZone = do
                  zeroBits)
             (mkObj . ObjTemplate waterskinLrgWeight waterskinLrgVol Nothing $ zeroBits)
             (Just (waterLiq, maxBound))
+            Nothing
   putVessel iJarSml
             (Ent iJarSml
                  (Just "jar")
@@ -1641,6 +1645,7 @@ createAdminZone = do
                  zeroBits)
             (mkObj . ObjTemplate jarSmlWeight jarSmlVol Nothing $ zeroBits)
             (Just (potHpLiq, maxBound))
+            Nothing
   putVessel iJar
             (Ent iJar
                  (Just "jar")
@@ -1650,6 +1655,7 @@ createAdminZone = do
                  zeroBits)
             (mkObj . ObjTemplate jarWeight jarVol Nothing $ zeroBits)
             (Just (potInstantHpLiq, maxBound))
+            Nothing
   putVessel iJarLrg
             (Ent iJarLrg
                  (Just "jar")
@@ -1658,6 +1664,7 @@ createAdminZone = do
                  Nothing
                  zeroBits)
             (mkObj . ObjTemplate jarLrgWeight jarLrgVol Nothing $ zeroBits)
+            Nothing
             Nothing
   let jugTuples = [ (iJugSml, "small ", jugSmlWeight, jugSmlVol, Just potStLiq          )
                   , (iJug,     "",      jugWeight,    jugVol,    Just potInstantStLiq   )
@@ -1673,6 +1680,7 @@ createAdminZone = do
                      zeroBits)
                 (mkObj . ObjTemplate w v Nothing $ zeroBits)
                 ((, maxBound) <$> l)
+                Nothing
   let mkBottleDesc a b = T.concat [ "This "
                                   , a
                                   , "earthenware bottle is designed to be as portable and practical as possible. A \
@@ -1692,6 +1700,7 @@ createAdminZone = do
                      zeroBits)
                 (mkObj . ObjTemplate w v Nothing $ zeroBits)
                 (Just (l, maxBound))
+                Nothing
 
   -- ==================================================
   -- Weapons:

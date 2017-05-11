@@ -712,10 +712,12 @@ adminExamine p = patternMatchFail "adminExamine" . showText $ p
 
 
 examineHelper :: HasCallStack => MudState -> Id -> Text -> [Text]
-examineHelper ms targetId regex = let t = getType targetId ms in helper (pp t) $ case t of
+examineHelper ms targetId regex =
+    let (t, isCloth, isHoly) = ((,,) <$> uncurry getType <*> uncurry getConIsCloth <*> uncurry getVesselIsHoly) (targetId, ms)
+    in helper (pp t) $ case t of
   ArmType        -> [ examineEnt, examineObj,   examineArm        ]
   ClothType      -> [ examineEnt, examineObj,   examineCloth      ]
-  ConType        -> [ examineEnt, examineObj,   examineInv,   examineCoins, examineCon ]
+  ConType        -> [ examineEnt, examineObj,   examineInv,   examineCoins, examineCon ] ++ (isCloth |?| pure examineCloth)
   CorpseType     -> [ examineEnt, examineObj,   examineInv,   examineCoins, examineCon, examineCorpse ]
   FoodType       -> [ examineEnt, examineObj,   examineFood       ]
   HolySymbolType -> [ examineEnt, examineObj,   examineHolySymbol ]
@@ -723,7 +725,7 @@ examineHelper ms targetId regex = let t = getType targetId ms in helper (pp t) $
   ObjType        -> [ examineEnt, examineObj ]
   PlaType        -> [ examineEnt, examineInv,   examineCoins, examineEqMap, examineMob, examinePC, examinePla, examinePickPts ]
   RmType         -> [ examineInv, examineCoins, examineRm         ]
-  VesselType     -> [ examineEnt, examineObj,   examineVessel     ]
+  VesselType     -> [ examineEnt, examineObj,   examineVessel     ] ++ (isHoly |?| pure examineHolySymbol)
   WpnType        -> [ examineEnt, examineObj,   examineWpn        ]
   WritableType   -> [ examineEnt, examineObj,   examineWritable   ]
   where
@@ -1003,7 +1005,8 @@ xformNls = T.replace theNl (colorWith nlColor "\\n")
 
 examineVessel :: HasCallStack => ExamineHelper
 examineVessel i ms = let v = getVessel i ms in
-    [ "Max mouthfuls: "   <> v^.vesselMaxMouthfuls.to commaShow
+    [ "Is holy: "         <> v^.vesselIsHoly      .to showText
+    , "Max mouthfuls: "   <> v^.vesselMaxMouthfuls.to commaShow
     , "Vessel contents: " <> v^.vesselCont        .to (descCont v) ] ++ views vesselCont (maybeEmp (descLiq . fst)) v
   where
     descCont _ Nothing       = none

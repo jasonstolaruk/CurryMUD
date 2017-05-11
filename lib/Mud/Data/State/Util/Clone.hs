@@ -61,7 +61,8 @@ clone destId = foldl' helper
             mkObjTemplate    | o <- getObj targetId ms
                              = (ObjTemplate <$> view objWeight <*> view objVol <*> view objTaste <*> view objFlags) o
             mkVesselTemplate | v <- getVessel targetId ms
-                             = views vesselCont VesselTemplate v
+                             = VesselTemplate { vtCont = v^.vesselCont
+                                              , vtHoly = views vesselIsHoly (`boolToMaybe` getHolySymbol targetId ms) v }
             f             (newId,    ms', fs) = p & _1 <>~ pure newId
                                                   & _2 .~  ms'
                                                   & _3 <>~ fs

@@ -40,8 +40,9 @@ import           Control.Arrow (second)
 import           Control.Lens (_2, _3, at)
 import           Control.Lens.Operators ((.~), (&), (%~), (<>~))
 import           Control.Monad (when)
-import           Data.Text (Text)
 import qualified Data.Map.Strict as M (empty)
+import           Data.Maybe (isJust)
+import           Data.Text (Text)
 
 
 type InvId = Id
@@ -376,17 +377,20 @@ mkRm RmTemplate { .. } = Rm { _rmName      = rtName
 -- Vessel
 
 
-newtype VesselTemplate = VesselTemplate { vtCont :: Maybe VesselCont }
+data VesselTemplate = VesselTemplate { vtCont :: Maybe VesselCont
+                                     , vtHoly :: Maybe HolySymbol }
 
 
 mkVessel :: Obj -> VesselTemplate -> Vessel
-mkVessel (calcMaxMouthfuls -> m) VesselTemplate { .. } = Vessel { _vesselMaxMouthfuls = m
+mkVessel (calcMaxMouthfuls -> m) VesselTemplate { .. } = Vessel { _vesselIsHoly       = isJust vtHoly
+                                                                , _vesselMaxMouthfuls = m
                                                                 , _vesselCont         = second (min m) <$> vtCont }
 
 
 createVessel :: MudState -> EntTemplate -> ObjTemplate -> VesselTemplate -> (Id, MudState, Funs)
 createVessel ms et ot vt = let tuple@(i, ms', _) = createObj ms et ot
-                           in tuple & _2.vesselTbl.ind i .~ mkVessel (getObj i ms') vt
+                           in tuple & _2.vesselTbl    .ind i .~ mkVessel (getObj i ms') vt
+                                    & _2.holySymbolTbl.at  i .~ vtHoly vt
 
 
 newVessel :: MudState -> EntTemplate -> ObjTemplate -> VesselTemplate -> InvId -> (Id, MudState, Funs)

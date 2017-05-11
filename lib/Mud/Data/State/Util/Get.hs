@@ -116,6 +116,7 @@ module Mud.Data.State.Util.Get ( getActMap
                                , getType
                                , getVessel
                                , getVesselCont
+                               , getVesselIsHoly
                                , getWpn
                                , getWpnSub
                                , getWritMessage
@@ -1008,6 +1009,13 @@ getVessel i = view (vesselTbl.ind i)
 
 getVesselCont :: HasCallStack => Id -> MudState -> Maybe VesselCont
 getVesselCont i = view vesselCont . getVessel i
+
+
+-----
+
+
+getVesselIsHoly :: HasCallStack => Id -> MudState -> Bool
+getVesselIsHoly i = view vesselIsHoly . getVessel i
 
 
 -----

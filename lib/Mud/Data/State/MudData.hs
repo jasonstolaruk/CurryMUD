@@ -1186,7 +1186,8 @@ data Type = ArmType
 
 
 -- Has an object.
-data Vessel = Vessel { _vesselMaxMouthfuls :: Mouthfuls -- obj vol / mouthful vol
+data Vessel = Vessel { _vesselIsHoly       :: Bool
+                     , _vesselMaxMouthfuls :: Mouthfuls -- obj vol / mouthful vol
                      , _vesselCont         :: Maybe VesselCont } deriving (Eq, Generic, Show)
 
 

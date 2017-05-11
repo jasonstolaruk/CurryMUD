@@ -172,7 +172,7 @@ breadFood = Food (DistinctFoodId iFoodBread)
 
 
 breadDistinctFood :: DistinctFood
-breadDistinctFood = DistinctFood "bread" 64 30 mkFoodEdibleEffects -- 8 slices, 8 mouthfuls per slice.
+breadDistinctFood = DistinctFood "bread" 64 {- 8 slices, 8 mouthfuls per slice -} 30 mkFoodEdibleEffects
 
 
 newFoodBread :: NewFoodFun
