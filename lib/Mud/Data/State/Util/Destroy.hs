@@ -50,12 +50,12 @@ destroyHelper = flip . foldr $ helper
                                , destroyCon
                                , destroyCorpse
                                , rest ]
-      FoodType       -> upd ms [ destroyEnt, destroyObj, destoryFood,       rest ]
-      HolySymbolType -> upd ms [ destroyEnt, destroyObj, destroyHolySymbol, rest ]
-      ObjType        -> upd ms [ destroyEnt, destroyObj,                    rest ]
-      VesselType     -> upd ms [ destroyEnt, destroyObj, destroyVessel,     rest ]
-      WpnType        -> upd ms [ destroyEnt, destroyObj, destroyWpn,        rest ]
-      WritableType   -> upd ms [ destroyEnt, destroyObj, destroyWritable,   rest ]
+      FoodType       -> upd ms [ destroyEnt, destroyObj, destoryFood,                      rest ]
+      HolySymbolType -> upd ms [ destroyEnt, destroyObj, destroyHolySymbol,                rest ]
+      ObjType        -> upd ms [ destroyEnt, destroyObj,                                   rest ]
+      VesselType     -> upd ms [ destroyEnt, destroyObj, destroyVessel, destroyVesselHoly, rest ]
+      WpnType        -> upd ms [ destroyEnt, destroyObj, destroyWpn,                       rest ]
+      WritableType   -> upd ms [ destroyEnt, destroyObj, destroyWritable,                  rest ]
       -----
       NpcType        -> ms
       PlaType        -> ms
@@ -73,6 +73,8 @@ destroyHelper = flip . foldr $ helper
         destroyObj          = objTbl       .at i .~ Nothing
         destroyType         = typeTbl      .at i .~ Nothing
         destroyVessel       = vesselTbl    .at i .~ Nothing
+        destroyVesselHoly   | getVesselIsHoly i ms = destroyHolySymbol
+                            | otherwise            = id
         destroyWpn          = wpnTbl       .at i .~ Nothing
         destroyWritable     = writableTbl  .at i .~ Nothing
         destroyContents ms' = foldr helper ms' . getInv i $ ms'

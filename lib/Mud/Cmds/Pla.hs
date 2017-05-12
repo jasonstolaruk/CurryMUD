@@ -2440,12 +2440,12 @@ readyDispatcher i ms d mrol a targetId =
     helper |&| either (\msg -> a & _3 <>~ pure msg) (`uncurry7` (i, ms, d, mrol, a, targetId, targetSing))
   where
     helper = case getType targetId ms of
+      ArmType        -> Right readyArm
       ClothType      -> Right readyCloth
       ConType        -> getConIsCloth targetId ms ? Right readyCloth :? sorry
-      WpnType        -> Right readyWpn
-      ArmType        -> Right readyArm
       HolySymbolType | getHolySymbolGodName targetId ms == Rhayk -> Left sorryReadyHolySymbolRhayk
                      | otherwise                                 -> sorry
+      WpnType        -> Right readyWpn
       _             -> sorry
     sorry      = Left . sorryReadyType $ targetSing
     targetSing = getSing targetId ms
@@ -2713,7 +2713,7 @@ sacrifice p = advise p ["sacrifice"] adviceSacrificeExcessArgs
 
 findHolySymbolGodName :: HasCallStack => Id -> MudState -> Maybe GodName
 findHolySymbolGodName i ms =
-    (`getHolySymbolGodName` ms) <$> (listToMaybe . filter ((== HolySymbolType) . (`getType` ms)) . getInv i $ ms)
+    (`getHolySymbolGodName` ms) <$> (listToMaybe . filter (`isHolySymbol` ms) . getInv i $ ms)
 
 
 findCorpseIdInMobRm :: HasCallStack => Id -> MudState -> Maybe Id
@@ -2730,10 +2730,9 @@ sacrificeHolySymbol i mq cols a ms =
                           []      -> sorry sorrySacrificeHolySymbolCoins
                           (eis:_) -> case eis of
                             Left  msg        -> sorry msg
-                            Right [targetId] -> let (targetSing, t) = (getSing `fanUncurry` getType) (targetId, ms)
-                                                in if t == HolySymbolType
+                            Right [targetId] -> if isHolySymbol targetId ms
                                                   then Right . getHolySymbolGodName targetId $ ms
-                                                  else sorry . sorrySacrificeHolySymbolType $ targetSing
+                                                  else sorry . sorrySacrificeHolySymbolType . getSing targetId $ ms
                             Right _          -> sorry sorrySacrificeHolySymbolExcessTargets
     in case singleArgInvEqRm InInv a of (InInv, target) -> next target
                                         (InEq,  _     ) -> sorry sorrySacrificeHolySymbolInEq

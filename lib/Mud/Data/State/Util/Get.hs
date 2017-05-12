@@ -130,6 +130,7 @@ module Mud.Data.State.Util.Get ( getActMap
                                , isBiodegradableId
                                , isGmcp
                                , isGmcpId
+                               , isHolySymbol
                                , isHumming
                                , isHummingId
                                , isIncognito
@@ -1070,6 +1071,15 @@ isBiodegradable = getObjFlag IsBiodegradable
 
 isBiodegradableId :: HasCallStack => Id -> MudState -> Bool
 isBiodegradableId = objFlagHelper IsBiodegradable
+
+
+-----
+
+
+isHolySymbol :: HasCallStack => Id -> MudState -> Bool
+isHolySymbol i ms = case getType i ms of HolySymbolType -> True
+                                         VesselType     -> getVesselIsHoly i ms
+                                         _              -> False
 
 
 -----

@@ -1991,7 +1991,7 @@ readHelper i cols ms d = foldl' helper
                                  , txt' <- onFalse b (const . sorryReadOrigLang $ lang) txt
                                  -> readIt txt' . mkMagicMsgHeader s b $ lang
                                  | otherwise -> f . sorryReadUnknownLang $ s
-          HolySymbolType ->
+          HolySymbolType -> -- TODO: Can any holy vessels be read?
               let langs         = getKnownLangs i ms
                   holyHelper ts = acc & _1 <>~ multiWrapNl cols ts
                                       & _2 <>~ pure ( T.concat [ serialize d, " reads the writing on ", aOrAn s, "." ]
