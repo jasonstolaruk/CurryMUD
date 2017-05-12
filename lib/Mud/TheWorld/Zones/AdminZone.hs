@@ -792,7 +792,7 @@ createAdminZone = do
   -- ==================================================
   -- Holy symbols:
   forM_ (zip [iHolySymbol1..iHolySymbol1 + 8] (Iminye `delete` allValues)) $ \(i, gn@(pp -> gn')) ->
-      let (desc, w, v) = ((,,) <$> mkHolySymbolDesc <*> mkHolySymbolWeight <*> mkHolySymbolVol) gn
+      let (desc, w, v, h) = ((,,,) <$> mkHolySymbolDesc <*> mkHolySymbolWeight <*> mkHolySymbolVol <*> HolySymbol) gn
       in putHolySymbol i
                        (Ent i
                             (Just "holy")
@@ -801,17 +801,19 @@ createAdminZone = do
                             Nothing
                             zeroBits)
                        (mkObj . ObjTemplate w v Nothing . setBit zeroBits . fromEnum $ IsBiodegradable)
-                       (HolySymbol gn)
-  putVessel (iHolySymbol1 + 9) -- TODO: Refactor?
-            (Ent (iHolySymbol1 + 9)
-                 (Just "holy")
-                 ("holy symbol of " <> pp Iminye) ("holy symbols of " <> pp Iminye)
-                 (mkHolySymbolDesc Iminye)
-                 Nothing
-                 zeroBits)
-            (mkObj . ObjTemplate (mkHolySymbolWeight Iminye) (mkHolySymbolVol Iminye) Nothing . setBit zeroBits . fromEnum $ IsBiodegradable)
-            (Just (waterLiq, maxBound))
-            (Just . HolySymbol $ Iminye)
+                       h
+  forM_ (pure $ iHolySymbol1 + 9 :: Inv) $ \i -> -- TODO: Try cloning and destroying.
+      let (gn, desc, w, v, h) = ((,,,,) <$> pp <*> mkHolySymbolDesc <*> mkHolySymbolWeight <*> mkHolySymbolVol <*> HolySymbol) Iminye
+      in putVessel i
+                   (Ent i
+                        (Just "holy")
+                        ("holy symbol of " <> gn) ("holy symbols of " <> gn)
+                        desc
+                        Nothing
+                        zeroBits)
+                   (mkObj . ObjTemplate w v Nothing . setBit zeroBits . fromEnum $ IsBiodegradable)
+                   (Just (waterLiq, maxBound)) -- TODO
+                   (Just h)
 
   -- ==================================================
   -- Mobs:
