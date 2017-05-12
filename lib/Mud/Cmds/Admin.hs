@@ -1302,7 +1302,7 @@ adminMkFood p = advise p [ prefixAdminCmd "mkfood" ] adviceAMkFoodExcessArgs
 -----
 
 
-adminMkHolySymbol :: HasCallStack => ActionFun
+adminMkHolySymbol :: HasCallStack => ActionFun -- TODO: Iminye?
 adminMkHolySymbol p@AdviseNoArgs                                = advise p [ prefixAdminCmd "mkholysymbol" ] adviceAMkHolySymbolNoArgs
 adminMkHolySymbol   (WithArgs i mq cols [ numTxt, godNameTxt ]) = case reads . T.unpack $ numTxt :: [(Int, String)] of
   [(n, "")] | not . inRange (1, 100) $ n -> sorryAmt

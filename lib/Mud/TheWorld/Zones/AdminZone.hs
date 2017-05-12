@@ -791,7 +791,7 @@ createAdminZone = do
 
   -- ==================================================
   -- Holy symbols:
-  forM_ (zip [iHolySymbol1..iHolySymbol1 + 9] allValues) $ \(i, gn@(pp -> gn')) ->
+  forM_ (zip [iHolySymbol1..iHolySymbol1 + 8] (Iminye `delete` allValues)) $ \(i, gn@(pp -> gn')) ->
       let (desc, w, v) = ((,,) <$> mkHolySymbolDesc <*> mkHolySymbolWeight <*> mkHolySymbolVol) gn
       in putHolySymbol i
                        (Ent i
@@ -802,6 +802,16 @@ createAdminZone = do
                             zeroBits)
                        (mkObj . ObjTemplate w v Nothing . setBit zeroBits . fromEnum $ IsBiodegradable)
                        (HolySymbol gn)
+  putVessel (iHolySymbol1 + 9) -- TODO: Refactor?
+            (Ent (iHolySymbol1 + 9)
+                 (Just "holy")
+                 ("holy symbol of " <> pp Iminye) ("holy symbols of " <> pp Iminye)
+                 (mkHolySymbolDesc Iminye)
+                 Nothing
+                 zeroBits)
+            (mkObj . ObjTemplate (mkHolySymbolWeight Iminye) (mkHolySymbolVol Iminye) Nothing . setBit zeroBits . fromEnum $ IsBiodegradable)
+            (Just (waterLiq, maxBound))
+            (Just . HolySymbol $ Iminye)
 
   -- ==================================================
   -- Mobs:

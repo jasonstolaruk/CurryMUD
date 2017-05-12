@@ -111,6 +111,8 @@ import           Mud.TopLvlDefs.Chars
 import           Mud.TopLvlDefs.FilePaths
 import           Mud.TopLvlDefs.Misc
 import           Mud.TopLvlDefs.Padding
+import           Mud.TopLvlDefs.Vols
+import           Mud.TopLvlDefs.Weights
 import           Mud.Util.List hiding (headTail)
 import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
 import           Mud.Util.Misc hiding (blowUp, patternMatchFail)
@@ -745,7 +747,7 @@ mkHolySymbolVol Caila     = round (4 * 0.5  * 5 * 100 :: Double)
 mkHolySymbolVol Celoriel  = 0
 mkHolySymbolVol Dellio    = round (5 * 0.25 * 1 * 100 :: Double)
 mkHolySymbolVol Drogo     = 0
-mkHolySymbolVol Iminye    = 0
+mkHolySymbolVol Iminye    = bottleLrgVol
 mkHolySymbolVol Itulvatar = 250
 mkHolySymbolVol Murgorhd  = round (3.5  * 0.5  * 7  * 100 :: Double) -- 12.25 cubic inches, or 0.007 cubic feet.
 mkHolySymbolVol Rhayk     = round (1.25 * 1.25 * 11 * 100 :: Double)
@@ -758,7 +760,7 @@ mkHolySymbolWeight Caila     = 65
 mkHolySymbolWeight Celoriel  = 0
 mkHolySymbolWeight Dellio    = 2
 mkHolySymbolWeight Drogo     = 0
-mkHolySymbolWeight Iminye    = 0
+mkHolySymbolWeight Iminye    = bottleLrgWeight
 mkHolySymbolWeight Itulvatar = 215
 mkHolySymbolWeight Murgorhd  = 315 -- 45 lbs per cubic foot (oak) * 0.007 cubic feet = 0.315 lbs
 mkHolySymbolWeight Rhayk     = 310
