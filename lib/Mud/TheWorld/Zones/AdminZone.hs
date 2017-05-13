@@ -791,29 +791,24 @@ createAdminZone = do
 
   -- ==================================================
   -- Holy symbols:
-  forM_ (zip [iHolySymbol1..iHolySymbol1 + 8] (Iminye `delete` allValues)) $ \(i, gn@(pp -> gn')) ->
-      let (desc, w, v, h) = ((,,,) <$> mkHolySymbolDesc <*> mkHolySymbolWeight <*> mkHolySymbolVol <*> HolySymbol) gn
-      in putHolySymbol i
-                       (Ent i
-                            (Just "holy")
-                            ("holy symbol of " <> gn') ("holy symbols of " <> gn')
-                            desc
-                            Nothing
-                            zeroBits)
-                       (mkObj . ObjTemplate w v Nothing . setBit zeroBits . fromEnum $ IsBiodegradable)
-                       h
-  forM_ (pure $ iHolySymbol1 + 9 :: Inv) $ \i -> -- TODO: Try cloning and destroying.
-      let (gn, desc, w, v, h) = ((,,,,) <$> pp <*> mkHolySymbolDesc <*> mkHolySymbolWeight <*> mkHolySymbolVol <*> HolySymbol) Iminye
-      in putVessel i
-                   (Ent i
-                        (Just "holy")
-                        ("holy symbol of " <> gn) ("holy symbols of " <> gn)
-                        desc
-                        Nothing
-                        zeroBits)
-                   (mkObj . ObjTemplate w v Nothing . setBit zeroBits . fromEnum $ IsBiodegradable)
-                   (Just (waterLiq, maxBound)) -- TODO
-                   (Just h)
+  forM_ (zip [iHolySymbol1..iHolySymbol1 + 9] allValues) $ \(i, gn) ->
+      let (gn', desc, w, v, h) = ((,,,,) <$> pp <*> mkHolySymbolDesc <*> mkHolySymbolWeight <*> mkHolySymbolVol <*> HolySymbol) gn
+          e                    = Ent i
+                                     (Just "holy")
+                                     ("holy symbol of " <> gn') ("holy symbols of " <> gn')
+                                     desc
+                                     Nothing
+                                     zeroBits
+          o                    = mkObj . ObjTemplate w v Nothing . setBit zeroBits . fromEnum $ IsBiodegradable
+      in case gn of Iminye -> putVessel     i
+                                            e
+                                            o
+                                            (Just (waterLiq, maxBound)) -- TODO: Liquid.
+                                            (Just h)
+                    _      -> putHolySymbol i
+                                            e
+                                            o
+                                            h
 
   -- ==================================================
   -- Mobs:

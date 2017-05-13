@@ -1302,7 +1302,7 @@ adminMkFood p = advise p [ prefixAdminCmd "mkfood" ] adviceAMkFoodExcessArgs
 -----
 
 
-adminMkHolySymbol :: HasCallStack => ActionFun -- TODO: Iminye?
+adminMkHolySymbol :: HasCallStack => ActionFun -- TODO: Continue to test cloning and destroying.
 adminMkHolySymbol p@AdviseNoArgs                                = advise p [ prefixAdminCmd "mkholysymbol" ] adviceAMkHolySymbolNoArgs
 adminMkHolySymbol   (WithArgs i mq cols [ numTxt, godNameTxt ]) = case reads . T.unpack $ numTxt :: [(Int, String)] of
   [(n, "")] | not . inRange (1, 100) $ n -> sorryAmt
@@ -1311,9 +1311,14 @@ adminMkHolySymbol   (WithArgs i mq cols [ numTxt, godNameTxt ]) = case reads . T
                     found godName = case filter ((== godName) . snd) [ (x, pp x) | x <- allGodNames ] of
                       []          -> notFound
                       ((gn, _):_) ->
-                          let (desc, w, v) = ((,,) <$> mkHolySymbolDesc <*> mkHolySymbolWeight <*> mkHolySymbolVol) gn
+                          let (gn', desc, w, v, god, h) = ((,,,,,) <$> pp
+                                                                   <*> mkHolySymbolDesc
+                                                                   <*> mkHolySymbolWeight
+                                                                   <*> mkHolySymbolVol
+                                                                   <*> maybe "unknown" pp . getGodForGodName
+                                                                   <*> HolySymbol) gn
                               et  = EntTemplate (Just "holy")
-                                                ("holy symbol of " <> pp gn) ("holy symbols of " <> pp gn)
+                                                ("holy symbol of " <> gn') ("holy symbols of " <> gn')
                                                 desc
                                                 Nothing
                                                 zeroBits
@@ -1321,10 +1326,12 @@ adminMkHolySymbol   (WithArgs i mq cols [ numTxt, godNameTxt ]) = case reads . T
                                                 v
                                                 Nothing
                                                 (setBit zeroBits . fromEnum $ IsBiodegradable)
+                              vt  = VesselTemplate Nothing . Just $ h
                               msg = T.concat [ "Created ", showText n, " holy symbol", sOnNon1 n, " of ", god, "." ]
-                              god = maybe "unknown" pp . getGodForGodName $ gn
                               helper 0 pair      = pair
-                              helper x (ms', fs) = let pair = dropFst . newHolySymbol ms' et ot (HolySymbol gn) $ i
+                              helper x (ms', fs) = let pair = dropFst $ if gn == Iminye
+                                                                then newVessel     ms' et ot vt i
+                                                                else newHolySymbol ms' et ot h  i
                                                    in helper (pred x) . second (++ fs) $ pair
                           in second (++ [ logPlaOut (prefixAdminCmd "mkholysymbol") i . pure $ msg
                                         , wrapSend mq cols msg ]) . helper n $ (ms, [])

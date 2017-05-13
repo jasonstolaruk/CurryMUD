@@ -569,7 +569,7 @@ debugId   (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
 debugId p = advise p [] adviceDIdExcessArgs
 
 
-mkTblNameKeysList :: HasCallStack => MudState -> [(Text, Inv)]
+mkTblNameKeysList :: HasCallStack => MudState -> [(Text, Inv)] -- TODO: Are all tables listed?
 mkTblNameKeysList ms = [ ("Arm",              tblKeys armTbl              ms)
                        , ("Chan",             tblKeys chanTbl             ms)
                        , ("Cloth",            tblKeys clothTbl            ms)
@@ -582,6 +582,7 @@ mkTblNameKeysList ms = [ ("Arm",              tblKeys armTbl              ms)
                        , ("Ent",              tblKeys entTbl              ms)
                        , ("EqMap",            tblKeys eqTbl               ms)
                        , ("Food",             tblKeys foodTbl             ms)
+                       , ("HolySymbol",       tblKeys holySymbolTbl       ms)
                        , ("Inv",              tblKeys invTbl              ms)
                        , ("Mob",              tblKeys mobTbl              ms)
                        , ("MsgQueue",         tblKeys msgQueueTbl         ms)
