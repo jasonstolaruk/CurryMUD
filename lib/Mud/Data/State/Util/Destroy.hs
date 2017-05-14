@@ -66,7 +66,9 @@ destroyHelper = flip . foldr $ helper
         destroyCoins        = coinsTbl     .at i .~ Nothing
         destroyCon          = conTbl       .at i .~ Nothing
         destroyCorpse       = corpseTbl    .at i .~ Nothing
-        destroyEnt          = flip upd [ entTbl.at i .~ Nothing, pausedEffectTbl.at i .~ Nothing ]
+        destroyEnt          = flip upd [ durationalEffectTbl.at i .~ Nothing
+                                       , entTbl             .at i .~ Nothing
+                                       , pausedEffectTbl    .at i .~ Nothing ]
         destoryFood         = foodTbl      .at i .~ Nothing
         destroyHolySymbol   = holySymbolTbl.at i .~ Nothing
         destroyInv          = invTbl       .at i .~ Nothing

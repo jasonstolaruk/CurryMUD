@@ -100,7 +100,7 @@ handleDeath i = isNpc i <$> getState >>= \npc -> do
     stopRegen                    i
     throwWaitDigester            i
     modifyStateSeq . mkCorpse  $ i
-    npc ? deleteNpc i :? spiritize i
+    i |&| (npc ? deleteNpc :? spiritize)
 
 
 possessHelper :: HasCallStack => Id -> MudStack ()
