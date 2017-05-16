@@ -70,7 +70,7 @@ interpTelnet i tds = do
         logTType pair = case findDelimitedSubList pair tds of
             Nothing -> unit
             Just [] -> unit
-            Just xs -> case T.concat . map fromTelnetData $ xs of
+            Just xs -> case concatMapTxt fromTelnetData xs of
               ""  -> unit
               txt -> withDbExHandler_ "interpTelnet" . insertDbTblTType . TTypeRec ts host . T.strip $ txt
         ttypeLeft = map TCode [ TelnetIAC, TelnetSB, TelnetTTYPE, TelnetIS ]

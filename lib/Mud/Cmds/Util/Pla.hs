@@ -244,9 +244,9 @@ bugTypoLogger :: HasCallStack => ActionParams -> WhichLog -> MudStack ()
 bugTypoLogger (Msg' i mq msg) wl = getState >>= \ms ->
     let s     = getSing i  ms
         ri    = getRmId i  ms
-        mkLoc = parensQuote (showText ri) |<>| view rmName (getRm ri ms)
+        mkLoc = parensQuote (showTxt ri) |<>| view rmName (getRm ri ms)
     in liftIO mkTimestamp >>= \ts -> do
-        logPla "bugTypoLogger" i . T.concat $ [ "logging a ", showText wl, ": ", msg ]
+        logPla "bugTypoLogger" i . T.concat $ [ "logging a ", showTxt wl, ": ", msg ]
         sequence_ $ case wl of BugLog  -> let b = BugRec ts s mkLoc msg
                                           in [ withDbExHandler_ "bugTypoLogger" . insertDbTblBug $ b
                                              , bcastOtherAdmins i $ s <> " has logged a bug: "  <> pp b ]
@@ -254,7 +254,7 @@ bugTypoLogger (Msg' i mq msg) wl = getState >>= \ms ->
                                           in [ withDbExHandler_ "bugTypoLogger" . insertDbTblTypo $ t
                                              , bcastOtherAdmins i $ s <> " has logged a typo: " <> pp t ]
         send mq . nlnl $ "Thank you."
-bugTypoLogger p _ = patternMatchFail "bugTypoLogger" . showText $ p
+bugTypoLogger p _ = patternMatchFail "bugTypoLogger" . showTxt $ p
 
 
 -----
@@ -442,7 +442,7 @@ disconnectHelper i (target, as) idNamesTbl ms =
                                                 & _1.mobTbl.ind i.curPp -~ 3
                                                 & _2 <>~ pure (Right (targetId, targetSing, targetName))
                                          , b )
-                     xs -> patternMatchFail "disconnectHelper found" . showText $ xs
+                     xs -> patternMatchFail "disconnectHelper found" . showTxt $ xs
                      where
                        hint = onFalse b ((<> hintDisconnect) . spcR)
                    ci               = c^.chanId
@@ -477,7 +477,7 @@ execIfPossessed :: HasCallStack => ActionParams -> CmdName -> (Id -> ActionFun) 
 execIfPossessed p@(WithArgs i mq cols _) cn f = getState >>= \ms -> let s = getSing i ms in case getPossessor i ms of
       Nothing -> wrapSend mq cols (sorryNotPossessed s cn)
       Just i' -> f i' p
-execIfPossessed p _ _ = patternMatchFail "execIfPossessed" . showText $ p
+execIfPossessed p _ _ = patternMatchFail "execIfPossessed" . showTxt $ p
 
 
 -----
@@ -672,7 +672,7 @@ mkGetDropInvDescs i ms d god (mkName_maybeCorpseId_count_bothList i ms -> tuple)
         (  T.concat [ "You ",           mkGodVerb god SndPer, rest ]
         , (T.concat [ serialize d, " ", mkGodVerb god ThrPer, rest ], otherIds) )
       where
-        rest = prd $ spaced (showText c) <> mkPlurFromBoth b
+        rest = prd $ spaced (showTxt c) <> mkPlurFromBoth b
     otherIds = i `delete` desigIds d
 
 
@@ -811,7 +811,7 @@ mkCanCan'tCoins :: Coins -> Int -> (Coins, Coins)
 mkCanCan'tCoins (Coins (c, 0, 0)) n = (Coins (n, 0, 0), Coins (c - n, 0,     0    ))
 mkCanCan'tCoins (Coins (0, s, 0)) n = (Coins (0, n, 0), Coins (0,     s - n, 0    ))
 mkCanCan'tCoins (Coins (0, 0, g)) n = (Coins (0, 0, n), Coins (0,     0,     g - n))
-mkCanCan'tCoins c                 _ = patternMatchFail "mkCanCan'tCoins" . showText $ c
+mkCanCan'tCoins c                 _ = patternMatchFail "mkCanCan'tCoins" . showTxt $ c
 
 
 mkGetDropCoinsDescOthers :: HasCallStack => Id -> Desig -> GetOrDrop -> Coins -> [Broadcast]
@@ -822,8 +822,8 @@ mkGetDropCoinsDescOthers i d god c =
 mkGetDropCoinsDescsSelf :: HasCallStack => GetOrDrop -> Coins -> [Text]
 mkGetDropCoinsDescsSelf god = mkCoinsMsgs helper
   where
-    helper 1 cn = T.concat [ "You ", mkGodVerb god SndPer, " ",             aOrAn cn, "."  ]
-    helper a cn = T.concat [ "You ", mkGodVerb god SndPer, spaced . showText $ a, cn, "s." ]
+    helper 1 cn = T.concat [ "You ", mkGodVerb god SndPer, " ",            aOrAn cn, "."  ]
+    helper a cn = T.concat [ "You ", mkGodVerb god SndPer, spaced . showTxt $ a, cn, "s." ]
 
 
 mkCan'tGetCoinsDesc :: HasCallStack => Coins -> [Text]
@@ -831,7 +831,7 @@ mkCan'tGetCoinsDesc = mkCoinsMsgs (can'tCoinsDescHelper sorryGetEnc)
 
 
 can'tCoinsDescHelper :: HasCallStack => Text -> Int -> Text -> Text
-can'tCoinsDescHelper t a cn = t <> bool (T.concat [ showText a, " ", cn, "s." ]) (prd . the $ cn) (a == 1)
+can'tCoinsDescHelper t a cn = t <> bool (T.concat [ showTxt a, " ", cn, "s." ]) (prd . the $ cn) (a == 1)
 
 
 -----
@@ -889,7 +889,7 @@ mkCan'tGetInvDescs i ms maxEnc = concatMap helper
 can'tInvDescsHelper :: HasCallStack => Text -> Id -> MudState -> Inv -> [Text]
 can'tInvDescsHelper t i ms = map helper . mkNameCountBothList i ms
   where
-    helper (_, c, b@(s, _)) = t <> bool (T.concat [ showText c, " ", mkPlurFromBoth b, "." ]) (prd . the $ s) (c == 1)
+    helper (_, c, b@(s, _)) = t <> bool (T.concat [ showTxt c, " ", mkPlurFromBoth b, "." ]) (prd . the $ s) (c == 1)
 
 
 -----
@@ -923,15 +923,15 @@ mkGiveCoinsDescOthers i d toId toDesig c = c |!| toOthersBcast : [ (msg, pure to
     toOthersBcast = ( T.concat [ serialize d, " gives ", aCoinSomeCoins c, " to ", toDesig, "." ]
                     , desigIds d \\ [ i, toId ] )
     toTargetMsgs  = mkCoinsMsgs helper c
-    helper 1 cn   = T.concat [ serialize d, " gives you ", aOrAn cn,                  "."  ]
-    helper a cn   = T.concat [ serialize d, " gives you",  spaced . showText $ a, cn, "s." ]
+    helper 1 cn   = T.concat [ serialize d, " gives you ", aOrAn cn,                 "."  ]
+    helper a cn   = T.concat [ serialize d, " gives you",  spaced . showTxt $ a, cn, "s." ]
 
 
 mkGiveCoinsDescsSelf :: HasCallStack => Text -> Coins -> [Text]
 mkGiveCoinsDescsSelf targetDesig = mkCoinsMsgs helper
   where
-    helper 1 cn = T.concat [ "You give ", aOrAn cn,                  " to ",  targetDesig, "." ]
-    helper a cn = T.concat [ "You give",  spaced . showText $ a, cn, "s to ", targetDesig, "." ]
+    helper 1 cn = T.concat [ "You give ", aOrAn cn,                 " to ",  targetDesig, "." ]
+    helper a cn = T.concat [ "You give",  spaced . showTxt $ a, cn, "s to ", targetDesig, "." ]
 
 
 mkCan'tGiveCoinsDesc :: HasCallStack => Text -> Coins -> [Text]
@@ -973,7 +973,7 @@ mkGiveInvDescs i ms d toId toDesig = second concat . unzip . map helper . mkName
         , [ (T.concat [ serialize d, " gives",     stuff, " to ", toDesig, "." ], otherIds )
           , (T.concat [ serialize d, " gives you", stuff,                  "." ], pure toId) ] )
       where
-        stuff = spaced (showText c) <> mkPlurFromBoth b
+        stuff = spaced (showTxt c) <> mkPlurFromBoth b
     otherIds = desigIds d \\ [ i, toId ]
 
 
@@ -1045,8 +1045,8 @@ mkPutRemCoinsDescOthers i d por mnom mci conSing c = c |!| pure ( T.concat [ ser
 mkPutRemCoinsDescsSelf :: HasCallStack => PutOrRem -> Maybe NthOfM -> Maybe Id -> Sing -> Coins -> [Text]
 mkPutRemCoinsDescsSelf por mnom mci conSing = mkCoinsMsgs helper
   where
-    helper a cn | a == 1 = T.concat [ partA, aOrAn cn,   " ",           partB ]
-    helper a cn          = T.concat [ partA, showText a, " ", cn, "s ", partB ]
+    helper a cn | a == 1 = T.concat [ partA, aOrAn cn,  " ",           partB ]
+    helper a cn          = T.concat [ partA, showTxt a, " ", cn, "s ", partB ]
     partA                = spcR $ "You " <> mkPorVerb por SndPer
     partB                = prd $ mkPorPrep por SndPer mnom mci conSing <> onTheGround mnom
 
@@ -1149,14 +1149,14 @@ mkPutRemInvDescs i ms d por mnom mci conSing = unzip . map helper . mkNameCountB
     helper (_, c, b) =
         (  T.concat [ "You "
                     , mkPorVerb por SndPer
-                    , spaced . showText $ c
+                    , spaced . showTxt $ c
                     , mkPlurFromBoth b
                     , " "
                     , mkPorPrep por SndPer mnom mci conSing
                     , rest ]
         , (T.concat [ serialize d
                     , spaced . mkPorVerb por $ ThrPer
-                    , showText c
+                    , showTxt c
                     , spaced . mkPlurFromBoth $ b
                     , mkPorPrep por ThrPer mnom mci conSing
                     , rest ], otherIds) )
@@ -1262,7 +1262,7 @@ helperSettings i ms a (T.breakOn "=" -> (name, T.tail -> value)) =
         sorryParse   = Left . sorryParseSetting value $ name
     alterNumeric minVal maxVal settingName lens x
       | not . inRange (minVal, maxVal) $ x = appendMsg . sorrySetRange settingName minVal $ maxVal
-      | otherwise = let msg = T.concat [ "Set ", settingName, " to ", showText x, "." ]
+      | otherwise = let msg = T.concat [ "Set ", settingName, " to ", showTxt x, "." ]
                     in appendMsg msg & _1.lens .~ x & _3 <>~ pure msg
     alterTuning n flag = case lookup value inOutOnOffs of
       Nothing      -> appendMsg . sorryParseInOut value $ n
@@ -1278,13 +1278,13 @@ mkSettingPairs :: HasCallStack => Id -> MudState -> [(Text, Text)]
 mkSettingPairs i ms = let p = getPla i ms
                       in onTrue (isAdmin p) (adminPair p :) . pairs $ p
   where
-    pairs p   = [ ("columns",  showText . getColumns   i  $ ms)
-                , ("lines",    showText . getPageLines i  $ ms)
-                , ("question", inOut    . isTunedQuestion $ p )
-                , ("hp",       onOff    . isShowingHp     $ p )
-                , ("mp",       onOff    . isShowingMp     $ p )
-                , ("pp",       onOff    . isShowingPp     $ p )
-                , ("fp",       onOff    . isShowingFp     $ p ) ]
+    pairs p   = [ ("columns",  showTxt . getColumns   i  $ ms)
+                , ("lines",    showTxt . getPageLines i  $ ms)
+                , ("question", inOut   . isTunedQuestion $ p )
+                , ("hp",       onOff   . isShowingHp     $ p )
+                , ("mp",       onOff   . isShowingMp     $ p )
+                , ("pp",       onOff   . isShowingPp     $ p )
+                , ("fp",       onOff   . isShowingFp     $ p ) ]
     adminPair = ("admin", ) . inOut . isTunedAdmin
 
 
@@ -1358,12 +1358,12 @@ mkUnreadyDescs i ms d targetIds = unzip [ helper icb | icb <- mkIdCountBothList 
            in ((toOthersMsg, otherPCIds), toSelfMsg)
       else let toSelfMsg   = T.concat [ "You "
                                       , mkVerb targetId SndPer
-                                      , spaced . showText $ count
+                                      , spaced . showTxt $ count
                                       , mkPlurFromBoth b
                                       , "." ]
                toOthersMsg = T.concat [ serialize d
                                       , spaced . mkVerb targetId $ ThrPer
-                                      , showText count
+                                      , showTxt count
                                       , " "
                                       , mkPlurFromBoth b
                                       , "." ]
@@ -1386,7 +1386,7 @@ mkUnreadyDescs i ms d targetIds = unzip [ helper icb | icb <- mkIdCountBothList 
         Feet   -> mkVerbTakeOff person
         Shield -> mkVerbUnready person
         _      -> mkVerbDoff    person
-      t -> patternMatchFail "mkUnreadyDescs mkVerb" . showText $ t
+      t -> patternMatchFail "mkUnreadyDescs mkVerb" . showTxt $ t
     mkVerbRemove  = \case SndPer -> "remove"
                           ThrPer -> "removes"
     mkVerbTakeOff = \case SndPer -> "take off"
@@ -1490,7 +1490,7 @@ mkCorpseSmellLvl t = if | t == corpseSmellLvl1 -> 1
                         | t == corpseSmellLvl2 -> 2
                         | t == corpseSmellLvl3 -> 3
                         | t == corpseSmellLvl4 -> 4
-                        | otherwise            -> blowUp "mkCorpseSmellLvl" "unexpected ent smell" . showText $ t
+                        | otherwise            -> blowUp "mkCorpseSmellLvl" "unexpected ent smell" . showTxt $ t
 
 
 -----
@@ -1511,7 +1511,7 @@ mkEffDesc f g lessAdj moreAdj i ms =
                                                              , (59,  "40")
                                                              , (79,  "60")
                                                              , (99,  "80") ]
-               in colorWith magenta . T.concat $ [ "You feel ", showText q, t, "% ", moreAdj, " than usual." ]
+               in colorWith magenta . T.concat $ [ "You feel ", showTxt q, t, "% ", moreAdj, " than usual." ]
     in mkDescForPercent p [ (-84, colorWith magenta $ "You feel immensely "    <> lessAdj <> " than usual.")
                           , (-70, colorWith red     $ "You feel exceedingly "  <> lessAdj <> " than usual.")
                           , (-56,                     "You feel quite a bit "  <> lessAdj <> " than usual.")
@@ -1605,8 +1605,8 @@ mkInvCoinsDesc i cols ms i' s =
     t      = getType i' ms
     header = i' == i ? nl "You are carrying:" :? let n = t == CorpseType ? mkCorpseAppellation i ms i' :? s
                                                  in wrapUnlines cols $ "The " <> n <> " contains:"
-    footer | i' == i   = nl $ showText (calcEncPer     i  ms) <> "% encumbered."
-           | otherwise = nl $ showText (calcConPerFull i' ms) <> "% full."
+    footer | i' == i   = nl $ showTxt (calcEncPer     i  ms) <> "% encumbered."
+           | otherwise = nl $ showTxt (calcConPerFull i' ms) <> "% full."
 
 
 mkEntsInInvDesc :: HasCallStack => Id -> Cols -> MudState -> Inv -> Text
@@ -1632,7 +1632,7 @@ mkCoinsSummary cols = helper . zipWith mkNameAmt coinNames . coinsToList
 
 
 mkFoodRemTxt :: HasCallStack => Id -> MudState -> Text
-mkFoodRemTxt i ms = parensQuote $ showText (calcFoodPerRem i ms) <> "% remaining"
+mkFoodRemTxt i ms = parensQuote $ showTxt (calcFoodPerRem i ms) <> "% remaining"
 
 
 mkEqDesc :: HasCallStack => Id -> Cols -> MudState -> Id -> Sing -> Type -> Text
@@ -1669,7 +1669,7 @@ mkVesselContDesc cols ms targetId =
                                      , " contains "
                                      , renderLiqNoun l aOrAn
                                      , " "
-                                     , parensQuote $ showText (calcVesselPerFull v m) <> "% full"
+                                     , parensQuote $ showTxt (calcVesselPerFull v m) <> "% full"
                                      , "." ] |&| wrapUnlines cols
     in views vesselCont (maybe emptyDesc mkContDesc) v
 
@@ -1799,7 +1799,7 @@ mkMaybeCorpseSmellMsg i ms i' f | getType i' ms == CorpseType, n <- mkCorpseAppe
       2 -> prd $ "There is a distinct odor emanating from the " <> n
       3 -> "The " <> n <> " is exuding a most repulsive aroma."
       4 -> "There's no denying that the foul smell of death is in the air."
-      x -> blowUp "mkMaybeCorpseSmellMsg helper" "unexpected corpse smell level" . showText $ x
+      x -> blowUp "mkMaybeCorpseSmellMsg helper" "unexpected corpse smell level" . showTxt $ x
 
 
 -----
@@ -1976,7 +1976,7 @@ readHelper i cols ms d = foldl' helper
             readIt txt header = acc & _1 <>~ (multiWrapNl cols . T.lines $ header <> txt)
                                     & _2 <>~ pure ( T.concat [ serialize d, " reads ", aOrAn s, "." ]
                                                   , i `delete` desigIds d )
-                                    & _3 <>~ pure (s |<>| parensQuote (showText targetId))
+                                    & _3 <>~ pure (s |<>| parensQuote (showTxt targetId))
         in case getType targetId ms of
           WritableType ->
               let (Writable msg r) = getWritable targetId ms in case msg of
@@ -1996,7 +1996,7 @@ readHelper i cols ms d = foldl' helper
                   holyHelper ts = acc & _1 <>~ multiWrapNl cols ts
                                       & _2 <>~ pure ( T.concat [ serialize d, " reads the writing on ", aOrAn s, "." ]
                                                     , i `delete` desigIds d )
-                                      & _3 <>~ pure (s |<>| parensQuote (showText targetId))
+                                      & _3 <>~ pure (s |<>| parensQuote (showTxt targetId))
               in either f holyHelper $ case getHolySymbolGodName targetId ms of
                 Caila     | uncurry (&&) . second (== Human) . (isPla `fanUncurry` getRace) $ (i, ms)
                                                    -> Right . pure $ cailaOK
@@ -2231,7 +2231,7 @@ stopDrinking (WithArgs i mq cols _) ms =
         msg         = T.concat [ serialize d, " stops drinking from ", aOrAn s, "." ]
         bcastHelper = bcastIfNotIncogNl i . pure $ (msg, i `delete` desigIds d)
     in stopAct i Drinking >> wrapSend mq cols toSelf >> bcastHelper
-stopDrinking p _ = patternMatchFail "stopDrinking" . showText $ p
+stopDrinking p _ = patternMatchFail "stopDrinking" . showTxt $ p
 
 
 stopEating :: HasCallStack => ActionParams -> MudState -> MudStack ()
@@ -2241,7 +2241,7 @@ stopEating (WithArgs i mq cols _) ms = let Just s      = getNowEating i ms
                                            msg         = T.concat [ serialize d, " stops eating ", aOrAn s, "." ]
                                            bcastHelper = bcastIfNotIncogNl i . pure $ (msg, i `delete` desigIds d)
                                        in stopAct i Eating >> wrapSend mq cols toSelf >> bcastHelper
-stopEating p _                       = patternMatchFail "stopEating" . showText $ p
+stopEating p _                       = patternMatchFail "stopEating" . showTxt $ p
 
 
 stopSacrificing :: HasCallStack => ActionParams -> MudState -> MudStack ()
@@ -2250,4 +2250,4 @@ stopSacrificing (WithArgs i mq cols _) ms = let toSelf      = "You stop sacrific
                                                 msg         = serialize d <> " stops sacrificing a corpse."
                                                 bcastHelper = bcastIfNotIncogNl i . pure $ (msg, i `delete` desigIds d)
                                             in stopAct i Sacrificing >> wrapSend mq cols toSelf >> bcastHelper
-stopSacrificing p _ = patternMatchFail "stopSacrificing" . showText $ p
+stopSacrificing p _ = patternMatchFail "stopSacrificing" . showTxt $ p

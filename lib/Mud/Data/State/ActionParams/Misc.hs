@@ -52,4 +52,4 @@ punctuateMsg = \case "" -> ""
 
 formatMsgWithTargetArgs :: Args -> (Text, Text)
 formatMsgWithTargetArgs ((capitalize . T.toLower -> target):(formatMsgArgs -> msg)) = (target, msg)
-formatMsgWithTargetArgs as = patternMatchFail "formatMsgWithTargetArgs" . showText $ as
+formatMsgWithTargetArgs as = patternMatchFail "formatMsgWithTargetArgs" . showTxt $ as

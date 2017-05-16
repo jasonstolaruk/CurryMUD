@@ -92,7 +92,7 @@ extractEnscsFromGecrs = first reverse . foldl' helper mempties
     helper (gecrs, enscs)      Mult { entsRes = Nothing, coinsRes = Just ensc } = (gecrs,        ensc : enscs)
     helper (gecrs, enscs) gecr@Mult { entsRes = Nothing, coinsRes = Nothing   } = (gecr : gecrs,        enscs)
     helper (gecrs, enscs) gecr@Indexed {}                                       = (gecr : gecrs,        enscs)
-    helper _ x = patternMatchFail "extractEnscsFromGecrs helper" . showText $ x
+    helper _ x = patternMatchFail "extractEnscsFromGecrs helper" . showTxt $ x
 
 
 isSorryGecr :: GetEntsCoinsRes -> Bool
@@ -150,7 +150,7 @@ distillEnscs enscs | Empty `elem` enscs               = pure Empty
     distill      f enscs'   = guard (()!# enscs') Prelude.>> (pure . f . foldr ((<>) . fromEnsCoins) mempty $ enscs')
     fromEnsCoins (SomeOf c) = c
     fromEnsCoins (NoneOf c) = c
-    fromEnsCoins ensc       = patternMatchFail "distillEnscs fromEnsCoins" . showText $ ensc
+    fromEnsCoins ensc       = patternMatchFail "distillEnscs fromEnsCoins" . showTxt $ ensc
 
 
 mkGecr :: Id -> MudState -> Inv -> Coins -> Text -> GetEntsCoinsRes
@@ -294,7 +294,7 @@ procGecrMisMobInv (SorryIndexed x p) | res <- don'tHaveIndexedInv x p = res
 procGecrMisMobInv (FoundIndexed                     res)              = res
 procGecrMisMobInv SorryCoins         | res <- sorryIndexedCoins       = res
 procGecrMisMobInv (GenericSorry (don'tHaveInv    -> res))             = res
-procGecrMisMobInv gecrMis = patternMatchFail "procGecrMisMobInv" . showText $ gecrMis
+procGecrMisMobInv gecrMis = patternMatchFail "procGecrMisMobInv" . showTxt $ gecrMis
 
 
 dupIdsRes :: Either Text Inv
@@ -353,7 +353,7 @@ procGecrMisMobEq (SorryIndexed x p) | res <- don'tHaveIndexedEq x p = res
 procGecrMisMobEq (FoundIndexed                    res )             = res
 procGecrMisMobEq SorryCoins         | res <- sorryIndexedCoins      = res
 procGecrMisMobEq (GenericSorry (don'tHaveEq    -> res))             = res
-procGecrMisMobEq gecrMis = patternMatchFail "procGecrMisMobEq" . showText $ gecrMis
+procGecrMisMobEq gecrMis = patternMatchFail "procGecrMisMobEq" . showTxt $ gecrMis
 
 
 don'tHaveEq :: Text -> Either Text Inv
@@ -378,7 +378,7 @@ procGecrMisRm (SorryIndexed x p) | res <- don'tSeeIndexed x p = res
 procGecrMisRm (FoundIndexed                 res)              = res
 procGecrMisRm SorryCoins         | res <- sorryIndexedCoins   = res
 procGecrMisRm (GenericSorry (don'tSee    -> res))             = res
-procGecrMisRm gecrMis = patternMatchFail "procGecrMisRm" . showText $ gecrMis
+procGecrMisRm gecrMis = patternMatchFail "procGecrMisRm" . showTxt $ gecrMis
 
 
 don'tSee :: Text -> Either Text Inv
@@ -403,7 +403,7 @@ procGecrMisCon cn (SorryIndexed x p) | res <- doesn'tContainIndexed cn x p = res
 procGecrMisCon _  (FoundIndexed                          res)              = res
 procGecrMisCon _  SorryCoins         | res <- sorryIndexedCoins            = res
 procGecrMisCon cn (GenericSorry (doesn'tContain    cn -> res))             = res
-procGecrMisCon _ gecrMis = patternMatchFail "procGecrMisCon" . showText $ gecrMis
+procGecrMisCon _ gecrMis = patternMatchFail "procGecrMisCon" . showTxt $ gecrMis
 
 
 doesn'tContain :: Text -> Text -> Either Text Inv
@@ -441,7 +441,7 @@ procReconciledCoinsMobInv (Left  (SomeOf (Coins (cop, sil, gol)))) = Left . extr
     c = msgOnNonzero cop . sformat ("You don't have " % int % " copper pieces.") $ cop
     s = msgOnNonzero sil . sformat ("You don't have " % int % " silver pieces.") $ sil
     g = msgOnNonzero gol . sformat ("You don't have " % int % " gold pieces."  ) $ gol
-procReconciledCoinsMobInv rc = patternMatchFail "procReconciledCoinsMobInv" . showText $ rc
+procReconciledCoinsMobInv rc = patternMatchFail "procReconciledCoinsMobInv" . showTxt $ rc
 
 
 extractCoinsTxt :: [Maybe Text] -> [Text]
@@ -467,7 +467,7 @@ procReconciledCoinsRm (Left  (SomeOf (Coins (cop, sil, gol)))) = Left . extractC
     c = msgOnNonzero cop . sformat ("You don't see " % int % " copper pieces here.") $ cop
     s = msgOnNonzero sil . sformat ("You don't see " % int % " silver pieces here.") $ sil
     g = msgOnNonzero gol . sformat ("You don't see " % int % " gold pieces here."  ) $ gol
-procReconciledCoinsRm rc = patternMatchFail "procReconciledCoinsRm" . showText $ rc
+procReconciledCoinsRm rc = patternMatchFail "procReconciledCoinsRm" . showTxt $ rc
 
 
 procReconciledCoinsCon :: ConName -> ReconciledCoins -> Either [Text] Coins
@@ -483,7 +483,7 @@ procReconciledCoinsCon cn (Left  (SomeOf (Coins (cop, sil, gol)))) = Left . extr
     c = msgOnNonzero cop . sformat (do { "The "; "doesn't contain " % int % " copper pieces." }) cn $ cop
     s = msgOnNonzero sil . sformat (do { "The "; "doesn't contain " % int % " silver pieces." }) cn $ sil
     g = msgOnNonzero gol . sformat (do { "The "; "doesn't contain " % int % " gold pieces."   }) cn $ gol
-procReconciledCoinsCon _ rc = patternMatchFail "procReconciledCoinsCon" . showText $ rc
+procReconciledCoinsCon _ rc = patternMatchFail "procReconciledCoinsCon" . showTxt $ rc
 
 
 doesn'tContainAnyCoins :: Text -> Either [Text] Coins

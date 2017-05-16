@@ -158,7 +158,7 @@ threadExHandler mi threadName e = f >>= \threadName' -> do
   where
     f = case mi of Nothing -> return threadName
                    Just i  -> getState >>= \ms -> let t | views entTbl (i `IM.member`) ms = descSingId i ms
-                                                        | otherwise                       = showText i
+                                                        | otherwise                       = showTxt i
                                                   in return $ threadName |<>| t
 
 

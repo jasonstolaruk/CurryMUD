@@ -186,7 +186,7 @@ mkFarewellStats i ms = concat [ header, ts, footer ]
              , f "Points: "     <> xpsHelper
              , f "Handedness: " <> handy
              , f "Languages: "  <> langs
-             , f "Level: "      <> showText l
+             , f "Level: "      <> showTxt l
              , f "Experience: " <> commaShow expr
              , f "Sacrifices: " <> sacrificesHelper (getSacrificesTbl i ms)
              , "" ]
@@ -196,11 +196,11 @@ mkFarewellStats i ms = concat [ header, ts, footer ]
     f                         = pad 12
     s                         = getSing         i ms
     (sexy, r)                 = mkPrettySexRace i ms
-    (str, dex, hea, mag, psi) = calcEffAttribs  i ms & each %~ showText
+    (str, dex, hea, mag, psi) = calcEffAttribs  i ms & each %~ showTxt
     xpsHelper                 | (hps, mps, pps, fps) <- getPts i ms
                               = commas [ g "H" hps, g "M" mps, g "P" pps, g "F" fps ]
       where
-        g a (_, x) = showText x |<>| a <> "P"
+        g a (_, x) = showTxt x |<>| a <> "P"
     handy            = pp . getHand i $ ms
     langs            = commas [ pp lang | lang <- sort . getKnownLangs i $ ms ]
     (l, expr)        = getLvlExp i ms

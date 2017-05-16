@@ -43,12 +43,12 @@ dbTblPurger tblName countFun purgeFun = handle (threadExHandler Nothing threadNa
         Just count -> if count > maxDbTblRecs
           then do logNotice fn . T.concat $ [ the . dblQuote $ tblName
                                             , " table is being purged of "
-                                            , showText noOfDbTblRecsToPurge
+                                            , showTxt noOfDbTblRecsToPurge
                                             , " records." ]
                   withDbExHandler_ fn purgeFun
           else logNotice fn . T.concat $ [ the . dblQuote $ tblName
                                          , " table presently contains "
-                                         , showText count
+                                         , showTxt count
                                          , " records." ]
         _ -> unit
 

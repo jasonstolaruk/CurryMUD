@@ -25,6 +25,7 @@ import           Mud.Util.Misc
 import           Mud.Util.Quoting
 import           Mud.Util.Text
 
+import           Control.Arrow ((***))
 import           Control.Concurrent.Async (asyncThreadId, cancel, wait)
 import           Control.Concurrent.STM.TMQueue (newTMQueueIO)
 import           Control.Concurrent.STM.TQueue (newTQueueIO)
@@ -33,18 +34,18 @@ import           Control.Lens (at)
 import           Control.Lens.Operators ((?~), (.~), (&), (%~))
 import           Control.Monad.IO.Class (liftIO)
 import           Data.Bits (setBit, zeroBits)
+import qualified Data.Map.Strict as M (empty)
 import           Data.Monoid ((<>))
 import           Data.Text (Text)
-import           Data.Time (getCurrentTime)
-import           Network (HostName)
-import           Prelude hiding (pi)
-import qualified Data.Map.Strict as M (empty)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
+import           Data.Time (getCurrentTime)
+import           GHC.Stack (HasCallStack)
+import           Network (HostName)
+import           Prelude hiding (pi)
 import           System.FilePath ((</>))
 import           System.IO (BufferMode(..), Handle, Newline(..), NewlineMode(..), hClose, hSetBuffering, hSetEncoding, hSetNewlineMode, latin1)
 import           System.Random (randomIO, randomRIO)
-import           GHC.Stack (HasCallStack)
 
 
 logNotice :: Text -> Text -> MudStack ()
@@ -94,7 +95,7 @@ adHoc mq host = do
     ct        <- liftIO getCurrentTime
     modifyState $ \ms ->
         let i    = getUnusedId ms
-            s    = showText r <> showText i
+            s    = uncurry (<>) . (showTxt *** showTxt) $ (r, i)
             e    = Ent { _entId            = i
                        , _entName          = Nothing
                        , _sing             = s

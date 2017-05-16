@@ -71,7 +71,7 @@ procChanTarget i cc triples ((T.toLower -> target):rest)
                         , (formatMsg . colorWith emoteTargetColor $ "you", pure targetId) ]
   where
     getIdForMatch match  = view _1 . head . filter (views _2 ((== match) . T.toLower)) $ triples
-procChanTarget _ _ _ as = patternMatchFail "procChanTarget" . showText $ as
+procChanTarget _ _ _ as = patternMatchFail "procChanTarget" . showTxt $ as
 
 
 -----
@@ -183,7 +183,7 @@ procExpCmd i ms cc triples (map T.toLower . unmsg -> [cn, target]) =
         helper w = let (a, b) = T.break isLetter w
                        (c, d) = T.span  isLetter b
                    in bool w (a <> colorWith emoteTargetColor c <> d) $ T.toLower c `elem` yous
-procExpCmd _ _ _ _ as = patternMatchFail "procExpCmd" . showText $ as
+procExpCmd _ _ _ _ as = patternMatchFail "procExpCmd" . showTxt $ as
 
 
 -----
@@ -210,7 +210,7 @@ adminChanProcChanTarget tunedIds tunedSings ((capitalize . T.toLower -> target):
                        in Right [ (formatMsg targetSing,                           targetId `delete` tunedIds)
                                 , (formatMsg . colorWith emoteTargetColor $ "you", pure targetId             ) ]
     sorry = Left . sorryAdminChanTargetName $ target
-adminChanProcChanTarget _ _ as = patternMatchFail "adminChanProcChanTarget" . showText $ as
+adminChanProcChanTarget _ _ as = patternMatchFail "adminChanProcChanTarget" . showTxt $ as
 
 
 -----
@@ -324,4 +324,4 @@ adminChanProcExpCmd i ms tunedIds tunedSings (map T.toLower . unmsg -> [cn, targ
         helper w = let (a, b) = T.break isLetter w
                        (c, d) = T.span  isLetter b
                    in bool w (a <> colorWith emoteTargetColor c <> d) $ T.toLower c `elem` yous
-adminChanProcExpCmd _ _ _ _ as = patternMatchFail "adminChanProcExpCmd" . showText $ as
+adminChanProcExpCmd _ _ _ _ as = patternMatchFail "adminChanProcExpCmd" . showTxt $ as

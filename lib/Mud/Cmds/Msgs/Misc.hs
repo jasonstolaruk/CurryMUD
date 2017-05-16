@@ -199,9 +199,9 @@ plusRelatedMsg = prd . parensQuote $ "plus related functionality"
 pwMsg :: Text -> [Text]
 pwMsg t = [ T.concat [ t
                      , " Passwords must be "
-                     , showText minPwLen
+                     , showTxt minPwLen
                      , "-"
-                     , showText maxPwLen
+                     , showTxt maxPwLen
                      , " characters in length and contain:" ]
           , "* 1 or more lowercase characters"
           , "* 1 or more uppercase characters"

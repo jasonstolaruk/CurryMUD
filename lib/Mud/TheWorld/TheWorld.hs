@@ -189,7 +189,7 @@ createWorld = getState >>= \ms -> let pairs = [ (iWelcome,       createAdminZone
 
 loadWorld :: HasCallStack => FilePath -> MudStack Bool
 loadWorld dir = (</> dir) <$> liftIO (mkMudFilePath persistDirFun) >>= \path -> do
-    logNotice "loadWorld" $ "loading the world from the " <> showText dir <> " directory."
+    logNotice "loadWorld" $ "loading the world from the " <> showTxt dir <> " directory."
     loadEqTblRes <- loadEqTbl path
     ((loadEqTblRes :) -> res) <- mapM (path |&|) [ loadTbl armTblFile                 armTbl
                                                  , loadTbl chanTblFile                chanTbl

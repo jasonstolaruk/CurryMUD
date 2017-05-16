@@ -323,7 +323,7 @@ readLookPaperHookFun i Hook { .. } (V.head -> r) a@(_, (ms, _, _, _), _) =
       & _2._4 <>~ pure (bracketQuote hookName <> " read paper")
   where
     signDesc = "Scrawled on the piece of paper is the following message:\n\"Your lucky number is " <> x <> ".\""
-    x        = showText . rndmIntToPer $ r
+    x        = showTxt . rndmIntToPer $ r
 
 
 -----
@@ -459,7 +459,7 @@ pick p@(LowerNub' i as) = genericActionWithHooks p helper "pick"
             mkMsgForArg arg | arg `elem` hookTriggers = head toSelfs
                             | otherwise               = sorryPickNotFlower arg
         in (ms', (sorrys ++ map mkMsgForArg inRms', bs, logMsgs, fs))
-pick p = patternMatchFail "pick" . showText $ p
+pick p = patternMatchFail "pick" . showTxt $ p
 
 
 -- ==================================================

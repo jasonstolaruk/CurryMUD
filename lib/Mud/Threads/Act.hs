@@ -148,13 +148,13 @@ drinkAct DrinkBundle { .. } = modifyStateSeq f `finally` tweak (mobTbl.ind drink
            | x == drinkAmt    -> (>> bcastHelper False) . ioHelper x $ "You finish drinking."
            | otherwise        -> loop . succ $ x
     ioHelper m t = do logPla "drinkAct ioHelper" drinkerId . T.concat $ [ "drank "
-                                                                        , showText m
+                                                                        , showTxt m
                                                                         , " mouthful"
                                                                         , sOnNon1 m
                                                                         , " of "
                                                                         , renderLiqNoun drinkLiq aOrAn
                                                                         , " "
-                                                                        , parensQuote . showText $ i
+                                                                        , parensQuote . showTxt $ i
                                                                         , " from "
                                                                         , renderVesselSing
                                                                         , "." ]
@@ -163,7 +163,7 @@ drinkAct DrinkBundle { .. } = modifyStateSeq f `finally` tweak (mobTbl.ind drink
 
 
 mkMouthfulTxt :: Mouthfuls -> Text
-mkMouthfulTxt x | x <= 8    = showText x
+mkMouthfulTxt x | x <= 8    = showTxt x
                 | otherwise = "many"
 
 
@@ -215,13 +215,13 @@ eatAct EatBundle { .. } = modifyStateSeq f `finally` tweak (mobTbl.ind eaterId.n
            | x == eatAmt      -> (>> bcastHelper False) . ioHelper x $ "You finish eating."
            | otherwise        -> loop . succ $ x
     ioHelper m t = do logPla "eatAct ioHelper" eaterId . T.concat $ [ "ate "
-                                                                    , showText m
+                                                                    , showTxt m
                                                                     , " mouthful"
                                                                     , sOnNon1 m
                                                                     , " of "
                                                                     , aOrAn eatFoodSing
                                                                     , " "
-                                                                    , parensQuote . showText $ i
+                                                                    , parensQuote . showTxt $ i
                                                                     , "." ]
                       wrapSend eaterMq eaterCols t
                       sendDfltPrompt eaterMq eaterId
@@ -259,7 +259,7 @@ sacrificeAct i mq ci gn = handle (die (Just i) . pp $ Sacrificing) $ do
 sacrificeBonus :: HasCallStack => Id -> GodName -> MudStack ()
 sacrificeBonus i gn@(pp -> gn') = getSing i <$> getState >>= \s -> do
     now <- liftIO getCurrentTime
-    let operation = do insertDbTblSacrifice . SacrificeRec (showText now) s $ gn'
+    let operation = do insertDbTblSacrifice . SacrificeRec (showTxt now) s $ gn'
                        lookupSacrifices s gn'
         next count
           | count < 2 = logHelper . prd $ "first sacrifice made to " <> gn'
@@ -284,7 +284,7 @@ sacrificeBonus i gn@(pp -> gn') = getSing i <$> getState >>= \s -> do
 applyBonus :: HasCallStack => Id -> Sing -> GodName -> UTCTime -> MudStack ()
 applyBonus i s gn now = do
     logPla "applyBonus" i "applying bonus."
-    withDbExHandler_ "sac_bonus" . insertDbTblSacBonus . SacBonusRec (showText now) s . pp $ gn
+    withDbExHandler_ "sac_bonus" . insertDbTblSacBonus . SacBonusRec (showTxt now) s . pp $ gn
     let f = \case Aule      -> let a = (,) <$> rndmElem (mkXpPairs allValues) <*> rndmElem (allValues :: [Attrib])
                                    b = ((>>) <$> uncurry maxXp . fst <*> effectHelper Nothing (15, 15) . snd)
                                in a >>= b

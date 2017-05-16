@@ -59,7 +59,7 @@ import           Control.Concurrent.Async (asyncThreadId, poll)
 import           Control.Exception (ArithException(..), IOException)
 import           Control.Exception.Lifted (throwIO, try)
 import           Control.Lens (Optical, both, views)
-import           Control.Lens.Operators ((%~))
+import           Control.Lens.Operators ((&), (%~))
 import           Control.Monad ((>=>), replicateM_)
 import           Control.Monad.IO.Class (liftIO)
 import           Data.Bits (zeroBits)
@@ -202,8 +202,8 @@ mkDebugCmd (prefixDebugCmd -> cn) f cd = Cmd { cmdName           = cn
 
 
 debugAp :: HasCallStack => ActionFun
-debugAp p@(WithArgs i mq cols _) = logPlaExec (prefixDebugCmd "ap") i >> wrapSend mq cols (showText p)
-debugAp p                        = patternMatchFail "debugAp" . showText $ p
+debugAp p@(WithArgs i mq cols _) = logPlaExec (prefixDebugCmd "ap") i >> wrapSend mq cols (showTxt p)
+debugAp p                        = patternMatchFail "debugAp" . showTxt $ p
 
 
 -----
@@ -265,7 +265,7 @@ debugBuffCheck (NoArgs i mq cols) = do logPlaExec (prefixDebugCmd "buffer") i
     helper = liftIO (flip openTempFile "temp" =<< getTemporaryDirectory) >>= \(fn, h) -> do
         send mq . nl =<< [ T.unlines . wrapIndent 2 cols $ msg | msg <- mkMsg fn <$> liftIO (hGetBuffering h) ]
         liftIO $ hClose h >> removeFile fn
-    mkMsg (dblQuote . T.pack -> fn) (dblQuote . showText -> mode) =
+    mkMsg (dblQuote . T.pack -> fn) (dblQuote . showTxt -> mode) =
         T.concat [ "Default buffering mode for temp file ", fn, " is ", mode, "." ]
 debugBuffCheck p = withoutArgs debugBuffCheck p
 
@@ -279,11 +279,11 @@ debugCins   (OneArg i mq cols a) = getState >>= \ms -> case reads . T.unpack $ a
   [(targetId, "")] -> helper ms targetId
   _                -> wrapSend mq cols . sorryParseId $ a
   where
-    helper ms targetId@(showText -> targetIdTxt)
+    helper ms targetId@(showTxt -> targetIdTxt)
       | targetId < 0                             = wrapSend mq cols sorryWtf
       | views pcTbl (targetId `IM.notMember`) ms = wrapSend mq cols . sorryNonexistentId targetId . pure $ "PC"
       | otherwise = do logPlaExecArgs (prefixDebugCmd "cins") (pure a) i
-                       multiWrapSend mq cols . (header :) . pure . showText =<< getAllChanIdNames i ms
+                       multiWrapSend mq cols . (header :) . pure . showTxt =<< getAllChanIdNames i ms
       where
         header = T.concat [ "All channel ID/names "
                           , parensQuote "IM.IntMap [(Id, Text)]"
@@ -304,7 +304,7 @@ debugCoercePenny :: HasCallStack => ActionFun
 debugCoercePenny (NoArgs' i mq) = let penny        = Pennyちゃん True
                                       coercedPenny = coercePenny penny
                                   in do logPlaExec (prefixDebugCmd "coercepenny") i
-                                        send mq . nlnl $ "Coerced Penny: " <> showText coercedPenny
+                                        send mq . nlnl $ "Coerced Penny: " <> showTxt coercedPenny
   where
     coercePenny :: HasCallStack => Penny -> Bool
     coercePenny (Pennyちゃん a) = unsafeCoerce a
@@ -318,12 +318,12 @@ debugColor :: HasCallStack => ActionFun
 debugColor (NoArgs' i mq) = sequence_ [ logPlaExec (prefixDebugCmd "color") i, send mq . nl . T.concat $ msg ]
   where
     msg :: HasCallStack => [] Text
-    msg = [ nl $ pad 15 (showText ansi) <> mkColorDesc fg bg <> colorWith ansi (spaced "CurryMUD")
+    msg = [ nl $ pad 15 (showTxt ansi) <> mkColorDesc fg bg <> colorWith ansi (spaced "CurryMUD")
           | fgi <- intensities, fgc <- colors
           , bgi <- intensities, bgc <- colors
           , let fg = (fgi, fgc), let bg = (bgi, bgc), let ansi = mkColorANSI fg bg ]
     mkColorDesc (mkColorName -> fg) (mkColorName -> bg) = fg <> "on " <> bg
-    mkColorName = (<>) <$> pad 6 . showText <*> padColorName . showText
+    mkColorName = (<>) <$> pad 6 . showTxt <*> padColorName . showTxt
 debugColor p = withoutArgs debugColor p
 
 
@@ -333,7 +333,7 @@ debugColor p = withoutArgs debugColor p
 debugCores :: HasCallStack => ActionFun
 debugCores (NoArgs i mq cols) = do
     logPlaExec (prefixDebugCmd "cores") i
-    wrapSend mq cols =<< [ T.concat [ showText cores, " processor core", sOnNon1 cores, "." ]
+    wrapSend mq cols =<< [ T.concat [ showTxt cores, " processor core", sOnNon1 cores, "." ]
                          | cores <- liftIO . safePerformIO $ getNumCapabilities ]
 debugCores p = withoutArgs debugCores p
 
@@ -342,7 +342,7 @@ debugCores p = withoutArgs debugCores p
 
 
 debugCPU :: HasCallStack => ActionFun
-debugCPU (NoArgs i mq cols) = let cpuTime = showText . (`divide` 10 ^ 12) <$> getCPUTime in do
+debugCPU (NoArgs i mq cols) = let cpuTime = showTxt . (`divide` 10 ^ 12) <$> getCPUTime in do
     logPlaExec (prefixDebugCmd "cpu") i
     wrapSend mq cols =<< [ "CPU time: " <> time | time <- liftIO . safePerformIO $ cpuTime ]
 debugCPU p = withoutArgs debugCPU p
@@ -367,7 +367,7 @@ debugCurryTime p = advise p [] adviceDCurryTimeExcessArgs
 
 debugDispCmdList :: HasCallStack => ActionFun
 debugDispCmdList p@(LowerNub' i as) = logPlaExecArgs (prefixDebugCmd "?") as i >> dispCmdList debugCmds p
-debugDispCmdList p                  = patternMatchFail "debugDispCmdList" . showText $ p
+debugDispCmdList p                  = patternMatchFail "debugDispCmdList" . showTxt $ p
 
 
 -----
@@ -416,7 +416,7 @@ debugEnv (NoArgs   i mq cols   ) = do logPlaExecArgs (prefixDebugCmd "env") [] i
 debugEnv (WithArgs i mq cols as) = do
     logPlaExecArgs (prefixDebugCmd "env") as i
     dispMatches i mq cols 2 IsRegex as =<< [ mkEnvListTxt env | env <- liftIO . safePerformIO $ getEnvironment ]
-debugEnv p = patternMatchFail "debugEnv" . showText $ p
+debugEnv p = patternMatchFail "debugEnv" . showTxt $ p
 
 
 mkEnvListTxt :: HasCallStack => [(String, String)] -> [Text]
@@ -506,11 +506,11 @@ debugId   (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
   [(searchId, "")] -> helper searchId
   _                -> wrapSend mq cols . sorryParseId $ a
   where
-    helper searchId@(showText -> searchIdTxt)
+    helper searchId@(showTxt -> searchIdTxt)
       | searchId < 0 = wrapSend mq cols sorryWtf
       | otherwise    = getState >>= \ms -> do
           logPlaExecArgs (prefixDebugCmd "id") (pure a) i
-          let f     = commas . map showText
+          let f     = commas . map showTxt
               mkTxt =
                   [ [ "Tables containing key " <> searchIdTxt <> ":"
                     , commas . map fst . filter ((searchId `elem`) . snd) . mkTblNameKeysList $ ms ]
@@ -613,7 +613,7 @@ tblKeys lens = views lens IM.keys
 
 
 debugKeys :: HasCallStack => ActionFun
-debugKeys (NoArgs i mq cols) = getState >>= \ms -> let mkKeysTxt (tblName, ks) = [ tblName <> ": ", showText ks ] in do
+debugKeys (NoArgs i mq cols) = getState >>= \ms -> let mkKeysTxt (tblName, ks) = [ tblName <> ": ", showTxt ks ] in do
     logPlaExec (prefixDebugCmd "keys") i
     pager i mq Nothing . concat . wrapLines cols . intercalate mMempty . map mkKeysTxt . mkTblNameKeysList $ ms
 debugKeys p = withoutArgs debugKeys p
@@ -654,7 +654,7 @@ parseTwoIntArgs mq cols [a, b] sorryParseA sorryParseB helper =
     parse (txt, sorry) = case reads . T.unpack $ txt :: [(Int, String)] of
       [(x, "")] -> unadulterated . Sum $ x
       _         -> emptied . wrapSend mq cols . sorry $ txt
-parseTwoIntArgs _ _ as _ _ _ = patternMatchFail "parseTwoIntArgs" . showText $ as
+parseTwoIntArgs _ _ as _ _ _ = patternMatchFail "parseTwoIntArgs" . showTxt $ as
 
 
 -----
@@ -665,7 +665,7 @@ debugLog (NoArgs' i mq) = logPlaExec (prefixDebugCmd "log") i >> helper >> ok mq
   where
     helper       = replicateM_ 100 . onNewThread $ heavyLogging
     heavyLogging = replicateM_ 100 . logNotice "debugLog heavyLogging" =<< mkMsg
-    mkMsg        = [ prd $ "Logging from " <> ti | ti <- showText <$> liftIO myThreadId ]
+    mkMsg        = [ prd $ "Logging from " <> ti | ti <- showTxt <$> liftIO myThreadId ]
 debugLog p = withoutArgs debugLog p
 
 
@@ -743,8 +743,8 @@ debugNumber   (WithArgs i mq cols [ numTxt, baseTxt ]) = case reads . T.unpack $
       [(base, "")] | not . inRange (2, 36) $ base -> wrapSend mq cols . sorryParseBase $ baseTxt
                    | otherwise -> case numTxt `inBase` base of
                      [(res, "")] -> do logPlaExecArgs (prefixDebugCmd "number") [ numTxt, baseTxt ] i
-                                       send mq $ fmap nlnl showText res
-                     _ -> wrapSend mq cols . sorryParseNum numTxt . showText $ base
+                                       send mq $ fmap nlnl showTxt res
+                     _ -> wrapSend mq cols . sorryParseNum numTxt . showTxt $ base
       _ -> wrapSend mq cols . sorryParseBase $ baseTxt
 debugNumber p = advise p [] adviceDNumberExcessArgs
 
@@ -770,7 +770,7 @@ letterToNum c | isDigit c = digitToInt c
 
 debugOut :: HasCallStack => ActionFun
 debugOut (NoArgs i mq cols) = getState >>= \ms -> do logPlaExec (prefixDebugCmd "out") i
-                                                     wrapSend mq cols . showText . getInv iLoggedOut $ ms
+                                                     wrapSend mq cols . showTxt . getInv iLoggedOut $ ms
 debugOut p                  = withoutArgs debugOut p
 
 
@@ -806,7 +806,7 @@ debugPidge p = withoutArgs debugPidge p
 
 debugPmf :: HasCallStack => ActionFun
 debugPmf (NoArgs'' i) = do logPlaExec (prefixDebugCmd "pmf") i
-                           patternMatchFail "debugPmf" . showText $ (0, 'a', "abcdef")
+                           patternMatchFail "debugPmf" . showTxt $ (0, 'a', "abcdef")
 debugPmf p            = withoutArgs debugPmf p
 
 
@@ -831,8 +831,8 @@ debugPurge p              = withoutArgs debugPurge p
 
 debugRandom :: HasCallStack => ActionFun
 debugRandom (NoArgs i mq cols) = do logPlaExec (prefixDebugCmd "random") i
-                                    wrapSend mq cols . showText =<< rndmRs   10 (0, 99)
-                                    wrapSend mq cols . showText =<< rndmInts 10
+                                    wrapSend mq cols . showTxt =<< rndmRs   10 (0, 99)
+                                    wrapSend mq cols . showTxt =<< rndmInts 10
 debugRandom p                  = withoutArgs debugRandom p
 
 
@@ -857,9 +857,9 @@ debugRegen   (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)]
                                               , ("fp", calcRegenFpAmt, calcRegenFpDelay) ]
         descRegen t calcAmt calcDelay = T.concat [ t
                                                  , ": "
-                                                 , showText . calcAmt   targetId $ ms
+                                                 , showTxt . calcAmt   targetId $ ms
                                                  , " / "
-                                                 , showText . calcDelay targetId $ ms
+                                                 , showTxt . calcDelay targetId $ ms
                                                  , " sec" ]
 debugRegen p = advise p [] adviceDRegenExcessArgs
 
@@ -884,7 +884,7 @@ debugRndm (NoArgs i mq cols) = do
     pager i mq Nothing . concatMap (wrapIndent 2 cols) . mkRndmNamesMstrTblTxt =<< getState
 debugRndm (WithArgs i mq cols as) = do logPlaExecArgs (prefixDebugCmd "rndm") as i
                                        dispMatches i mq cols 2 IsRegex as . mkRndmNamesMstrTblTxt =<< getState
-debugRndm p                       = patternMatchFail "debugRndm" . showText $ p
+debugRndm p                       = patternMatchFail "debugRndm" . showTxt $ p
 
 
 mkRndmNamesMstrTblTxt :: HasCallStack => MudState -> [Text]
@@ -902,7 +902,7 @@ mkRndmNamesMstrTblTxt ms = sort . views rndmNamesMstrTbl helper $ ms
 
 debugRnt :: HasCallStack => ActionFun
 debugRnt (NoArgs i mq cols) = do logPlaExec (prefixDebugCmd "rnt") i
-                                 wrapSend mq cols . showText . M.toList . getRndmNamesTbl i =<< getState
+                                 wrapSend mq cols . showTxt . M.toList . getRndmNamesTbl i =<< getState
 debugRnt (OneArgNubbed i mq cols (capitalize -> a)) = getState >>= \ms ->
     let notFound    = wrapSend mq cols . sorryPCName $ a
         found match = do
@@ -962,10 +962,10 @@ debugTalk (NoArgs i mq cols) = views talkAsyncTbl M.toList <$> getState >>= \(pa
     logPlaExec (prefixDebugCmd "talk") i
     pager i mq Nothing =<< [ concatMap (wrapIndent 2 cols) descs | descs <- mapM mkDesc pairs ]
   where
-    mkDesc (tid, async) = [ T.concat [ showText tid, ": ", statusTxt, "." ]
+    mkDesc (tid, async) = [ T.concat [ showTxt tid, ": ", statusTxt, "." ]
                           | statusTxt <- mkStatusTxt <$> liftIO (poll async) ]
     mkStatusTxt = \case Nothing         -> "running"
-                        Just (Left  e ) -> "exception " <> parensQuote (showText e)
+                        Just (Left  e ) -> "exception " <> parensQuote (showTxt e)
                         Just (Right ()) -> "finished"
 debugTalk p = withoutArgs debugTalk p
 
@@ -979,7 +979,7 @@ debugTele (NoArgs i mq cols) = do
     pager i mq Nothing . concatMap (wrapIndent 2 cols) . mkTeleLinkMstrTblTxt =<< getState
 debugTele (WithArgs i mq cols as) = do logPlaExecArgs (prefixDebugCmd "tele") as i
                                        dispMatches i mq cols 2 IsRegex as . mkTeleLinkMstrTblTxt =<< getState
-debugTele p                       = patternMatchFail "debugTele" . showText $ p
+debugTele p                       = patternMatchFail "debugTele" . showTxt $ p
 
 
 mkTeleLinkMstrTblTxt :: HasCallStack => MudState -> [Text]
@@ -992,7 +992,7 @@ mkTeleLinkMstrTblTxt ms = sort . views teleLinkMstrTbl helper $ ms
         f = uncurry (|<>|) . ((<> ":") . (`descSingId` ms) *** noneOnNull . commas . map g . M.toList)
           where
             g :: HasCallStack => (Sing, IsTuned) -> Text
-            g = uncurry (|<>|) . second showText
+            g = uncurry (|<>|) . second showTxt
 
 
 -----
@@ -1003,7 +1003,7 @@ debugThreads (NoArgs   i mq cols   ) = do logPlaExec (prefixDebugCmd "threads") 
                                           pager i mq Nothing . concatMap (wrapIndent 2 cols) =<< descThreads
 debugThreads (WithArgs i mq cols as) = do logPlaExecArgs (prefixDebugCmd "threads") as i
                                           dispMatches i mq cols 2 IsRegex as =<< descThreads
-debugThreads p                       = patternMatchFail "debugThreads" . showText $ p
+debugThreads p                       = patternMatchFail "debugThreads" . showTxt $ p
 
 
 descThreads :: HasCallStack => MudStack [Text]
@@ -1013,9 +1013,9 @@ descThreads = do logAsyncKvs <- getLogThreadIds >>= \case [ a, b ] -> return [ (
                  let plaLogTblKvs = [ (asyncThreadId . fst $ v, PlaLog k) | (k, v) <- IM.assocs plt ]
                  mapM mkDesc . sort . concat $ [ logAsyncKvs, threadTblKvs, plaLogTblKvs ]
   where
-    mkDesc (ti, bracketPad 20 . mkTypeName -> tn) = [ T.concat [ padOrTrunc 16 . showText $ ti, tn, ts ]
-                                                    | (showText -> ts) <- liftIO . threadStatus $ ti ]
-    f pi t                            = padOrTrunc padAmt t <> showText pi
+    mkDesc (ti, bracketPad 20 . mkTypeName -> tn) = [ T.concat [ padOrTrunc 16 . showTxt $ ti, tn, ts ]
+                                                    | (showTxt -> ts) <- liftIO . threadStatus $ ti ]
+    f pi t                            = padOrTrunc padAmt t <> showTxt pi
     mkTypeName (AttackingThread   pi) = f pi "Attacking"
     mkTypeName (Biodegrader       pi) = f pi "Biodegrader"
     mkTypeName (CorpseDecomposer  pi) = f pi "CorpseDecomp"
@@ -1037,7 +1037,7 @@ descThreads = do logAsyncKvs <- getLogThreadIds >>= \case [ a, b ] -> return [ (
     mkTypeName (Server            pi) = f pi "Server"
     mkTypeName (SpiritTimer       pi) = f pi "SpiritTimer"
     mkTypeName (Talk              pi) = f pi "Talk"
-    mkTypeName (showText -> t       ) = t -- For thread types without an ID.
+    mkTypeName (showTxt -> t        ) = t -- For thread types without an ID.
     padAmt                            = 13
 
 
@@ -1139,9 +1139,9 @@ debugToken p = withoutArgs debugToken p
 
 
 debugUnderline :: HasCallStack => ActionFun
-debugUnderline (NoArgs i mq cols) = do
-    logPlaExec (prefixDebugCmd "underline") i
-    wrapSend mq cols $ showText underlineANSI <> underline " This text is underlined. " <> showText noUnderlineANSI
+debugUnderline (NoArgs i mq cols) = do logPlaExec (prefixDebugCmd "underline") i
+                                       let pair = (underlineANSI, noUnderlineANSI) & both %~ showTxt
+                                       wrapSend mq cols . quoteWith' pair . underline . spaced $  " This text is underlined. "
 debugUnderline p = withoutArgs debugUnderline p
 
 
@@ -1158,7 +1158,7 @@ debugVolume   (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)
       | searchId < 0                              = wrapSend mq cols sorryWtf
       | views mobTbl (searchId `IM.notMember`) ms = wrapSend mq cols . sorryNonexistentId searchId . pure $ "mobile"
       | otherwise                                 = do logPlaExecArgs (prefixDebugCmd "volume") (pure a) i
-                                                       send mq . nlnl . showText . calcCarriedVol searchId $ ms
+                                                       send mq . nlnl . showTxt . calcCarriedVol searchId $ ms
 debugVolume p = advise p [] adviceDVolumeExcessArgs
 
 
@@ -1175,7 +1175,7 @@ debugWeight   (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)
       | searchId < 0                              = wrapSend mq cols sorryWtf
       | views objTbl (searchId `IM.notMember`) ms = wrapSend mq cols . sorryNonexistentId searchId . pure $ "object"
       | otherwise                                 = do logPlaExecArgs (prefixDebugCmd "weight") (pure a) i
-                                                       send mq . nlnl . showText . calcWeight searchId $ ms
+                                                       send mq . nlnl . showTxt . calcWeight searchId $ ms
 debugWeight p = advise p [] adviceDWeightExcessArgs
 
 
@@ -1210,7 +1210,7 @@ wrapMsg = T.unwords wordy <> dfltColor
     wordy = [ T.concat [ u
                        , mkFgColorANSI (Dull, c)
                        , "This is "
-                       , showText c
+                       , showTxt c
                        , " text." ] | c <- Black `delete` colors, u <- [ underlineANSI, noUnderlineANSI ] ]
 
 

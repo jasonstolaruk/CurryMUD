@@ -173,7 +173,7 @@ advise (Advising mq cols) [h] msg = multiWrapSend mq cols [ msg
                                                                   colorWith quoteColor ("help " <> h) ]
 advise (Advising mq cols) (dblQuote . T.intercalate (dblQuote ", ") -> helpTopics) msg =
     multiWrapSend mq cols [ msg, prd $ "For more information, see the following help articles: " <> helpTopics ]
-advise p _ _ = patternMatchFail "advise" . showText $ p
+advise p _ _ = patternMatchFail "advise" . showTxt $ p
 
 
 -----
@@ -979,7 +979,7 @@ adviceYouEmoteChar cn = T.concat [ "Sorry, but you can't use a form of the word 
 
 adviceZoomExcessArgs :: Text
 adviceZoomExcessArgs = T.concat [ "Please either provide no arguments "
-                                , parensQuote $ "to zoom to the default level of " <> showText dfltZoom
+                                , parensQuote $ "to zoom to the default level of " <> showTxt dfltZoom
                                 , ", or a single argument: the zoom level, as in "
                                 , colorWith quoteColor "zoom 20"
                                 , "." ]

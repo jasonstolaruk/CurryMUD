@@ -118,7 +118,7 @@ readMoondialHookFun i Hook { .. } _ a@(_, (ms, _, _, _), _) =
         in wrapSend mq cols . f $ case getMoonPhaseForDayOfMonth curryDayOfMonth of
           Just NewMoon -> "On account of the moon being absent from the sky tonight, you can't take a reading off the \
                           \moondial."
-          _            -> T.concat [ "The moondial reads ", showText curryHour, ":", formatMins curryMin, "." ]
+          _            -> T.concat [ "The moondial reads ", showTxt curryHour, ":", formatMins curryMin, "." ]
 
 
 formatMins :: Min -> Text
@@ -148,7 +148,7 @@ readSundialHookFun i Hook { .. } _ a@(_, (ms, _, _, _), _) =
                 let (mq, cols) = getMsgQueueColumns i ms'
                 wrapSend mq cols $ if isNight curryHour
                   then "Alas, you'll have to wait for the sun to come out."
-                  else T.concat [ "The sundial reads ", showText curryHour, ":", formatMins curryMin, "." ]
+                  else T.concat [ "The sundial reads ", showTxt curryHour, ":", formatMins curryMin, "." ]
 
 
 -- ==================================================

@@ -164,7 +164,7 @@ secsToCurryTime x = let years      = x `div` currySecsInYear
 
 showElapsedCurryTime :: UTCTime -> UTCTime -> Text
 showElapsedCurryTime a b = let CurryTime { .. } = secsToCurryTime . round $ a `diffUTCTime` b
-                               f t x            = Sum x |!| (showText x <> spcL t <> sOnNon1 x)
+                               f t x            = Sum x |!| (showTxt x <> spcL t <> sOnNon1 x)
                                ts               = [ f "year"         $ curryYear - initCurryYear
                                                   , f "month" . pred $ curryMonth
                                                   , f "week"  . pred $ curryWeek
@@ -182,13 +182,13 @@ showElapsedCurryTime a b = let CurryTime { .. } = secsToCurryTime . round $ a `d
 
 
 showCurryTime :: CurryTime -> [Text]
-showCurryTime CurryTime { .. } = [ "Year:         " <> showText  curryYear
+showCurryTime CurryTime { .. } = [ "Year:         " <> showTxt   curryYear
                                  , "Month:        " <> helper    ppMonthForMonthNum    curryMonth
                                  , "Week:         " <> mkOrdinal curryWeek
                                  , "Day of month: " <> mkOrdinal curryDayOfMonth
                                  , "Day of week:  " <> helper    ppWeekdayForDayOfWeek curryDayOfWeek
-                                 , "Hour:         " <> showText  curryHour
-                                 , "Min:          " <> showText  curryMin
-                                 , "Sec:          " <> showText  currySec ]
+                                 , "Hour:         " <> showTxt   curryHour
+                                 , "Min:          " <> showTxt   curryMin
+                                 , "Sec:          " <> showTxt   currySec ]
   where
     helper f = (|<>|) <$> mkOrdinal <*> parensQuote . f

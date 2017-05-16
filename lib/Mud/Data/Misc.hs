@@ -132,7 +132,7 @@ instance FromRol Slot where
   fromRol LM = RingLMS
   fromRol LR = RingLRS
   fromRol LP = RingLPS
-  fromRol s  = patternMatchFail "fromRol" . showText $ s
+  fromRol s  = patternMatchFail "fromRol" . showTxt $ s
 
 
 -----
@@ -265,7 +265,7 @@ instance Pretty AOrThe where
 
 instance Pretty ArmSub where
   pp LowerBody = "lower body"
-  pp x         = uncapitalize . showText $ x
+  pp x         = uncapitalize . showTxt $ x
 
 
 instance Pretty Attrib where
@@ -414,8 +414,8 @@ instance Pretty EffectSub where
 
 
 instance Pretty EffectVal where
-  pp (EffectFixedVal  x     ) = showText x
-  pp (EffectRangedVal (x, y)) = showText x <> T.cons '-' (showText y)
+  pp (EffectFixedVal  x     ) = showTxt x
+  pp (EffectRangedVal (x, y)) = showTxt x <> T.cons '-' (showTxt y)
 
 
 instance Pretty EffectList where
@@ -428,7 +428,7 @@ instance Pretty Feeling where
 
 instance Pretty FeelingVal where
   pp FeelingNoVal        = "no value"
-  pp (FeelingFixedVal x) = showText x
+  pp (FeelingFixedVal x) = showTxt x
 
 
 instance Pretty Food where
@@ -443,7 +443,7 @@ instance Pretty God where
 
 
 instance Pretty GodName where
-  pp = showText
+  pp = showTxt
 
 
 instance Pretty GodOf where
@@ -494,7 +494,7 @@ instance Pretty Lang where
 
 
 instance Pretty LinkDir where
-  pp = uncapitalize . showText
+  pp = uncapitalize . showTxt
 
 
 instance Pretty Liq where
@@ -632,21 +632,21 @@ instance Pretty Slot where
 
 
 instance Pretty StomachCont where
-  pp (StomachCont (Left  dli) t b) = ppStomachContHelper (showText dli) t b
-  pp (StomachCont (Right dfi) t b) = ppStomachContHelper (showText dfi) t b
+  pp (StomachCont (Left  dli) t b) = ppStomachContHelper (showTxt dli) t b
+  pp (StomachCont (Right dfi) t b) = ppStomachContHelper (showTxt dfi) t b
 
 
 ppStomachContHelper :: Text -> UTCTime -> Bool -> Text
-ppStomachContHelper txt t b = slashes [ txt, T.pack . formatTime defaultTimeLocale "%F %T" $ t, showText b ]
+ppStomachContHelper txt t b = slashes [ txt, T.pack . formatTime defaultTimeLocale "%F %T" $ t, showTxt b ]
 
 
 instance Pretty TelnetData where
   pp (TCode  tc) = pp tc
-  pp (TOther c ) | ((&&) <$> (<= 126) <*> (>= 32)) x = showText c |<>| x'
+  pp (TOther c ) | ((&&) <$> (<= 126) <*> (>= 32)) x = showTxt c |<>| x'
                  | otherwise                         = x'
     where
       x  = ord c
-      x' = showText x
+      x' = showTxt x
 
 
 instance Pretty TelnetCode where
@@ -711,7 +711,7 @@ class Serializable a where
 
 instance Serializable Desig where
   serialize StdDesig { .. }
-    | fields <- [ serMaybeText desigEntSing, showText desigCap, desigEntName, showText desigId, showText desigIds ]
+    | fields <- [ serMaybeText desigEntSing, showTxt desigCap, desigEntName, showTxt desigId, showTxt desigIds ]
     = quoteWith sdd . T.intercalate dd $ fields
     where
       serMaybeText Nothing    = ""
@@ -723,7 +723,7 @@ instance Serializable Desig where
     where
       (>>)       = (<>)
       (nsdd, dd) = (nonStdDesigDelimiter, desigDelimiter) & both %~ T.singleton
-  serialize (CorpseDesig i) = quoteWith cdd . showText $ i
+  serialize (CorpseDesig i) = quoteWith cdd . showTxt $ i
     where
       cdd = T.singleton corpseDesigDelimiter
   deserialize a@(headTail -> (c, T.init -> t))
@@ -739,7 +739,7 @@ instance Serializable Desig where
     = NonStdDesig { dEntSing = es, dDesc = nsd }
     | c == corpseDesigDelimiter
     = CorpseDesig . read . T.unpack $ t
-    | otherwise = patternMatchFail "deserialize" . showText $ a
+    | otherwise = patternMatchFail "deserialize" . showTxt $ a
     where
       deserMaybeText ""  = Nothing
       deserMaybeText txt = Just txt

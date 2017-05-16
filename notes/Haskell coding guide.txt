@@ -433,6 +433,8 @@ foldl :: (a -> b -> a) -> a -> [b] -> a -- "a" is the type of the accumulator/re
 foldM :: (Monad m) => (a -> b -> m a) -> a -> [b] -> m a
 "foldM" thus differs from "foldl" in that the function applied to each element of the list is monadic (it returns a value in a monad), and, naturally, the final results of the fold are likewise in a monad.
 
+"scanr" and "scanl" are similar to "foldr" and "foldl". The scan functions return a list containing the values of the accumulator at each step.
+
 
 LENSES
 ==================================================

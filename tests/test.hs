@@ -216,7 +216,7 @@ unitTests_Mud_Util_Telnet :: TestTree
 unitTests_Mud_Util_Telnet = testGroup "Mud.Util.Telnet"
     [ testCase "test_parseTelnet_null"               test_parseTelnet_null
     , testCase "test_parseTelnet_noTelnet"           test_parseTelnet_noTelnet
-    , testCase "test_parseTelnet_telnetText"         test_parseTelnet_telnetText
+    , testCase "test_parseTelnet_telnetTxt"          test_parseTelnet_telnetTxt
     , testCase "test_parseTelnet_leading"            test_parseTelnet_leading
     , testCase "test_parseTelnet_trailing"           test_parseTelnet_trailing
     , testCase "test_parseTelnet_leadingAndTrailing" test_parseTelnet_leadingAndTrailing

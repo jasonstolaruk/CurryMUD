@@ -42,7 +42,7 @@ patternMatchFail = U.patternMatchFail "Mud.Util.Wrapping"
 
 wrap :: HasCallStack => Cols -> Text -> [Text]
 wrap cols t | extracted <- extractANSI t
-            , wrapped   <- wrapIt . T.concat . map fst $ extracted = insertANSI extracted wrapped
+            , wrapped   <- wrapIt . concatMapTxt fst $ extracted = insertANSI extracted wrapped
   where
     wrapIt txt
       | ()# afterMax                                    = pure txt
@@ -88,7 +88,7 @@ multiWrapNl cols = nl . multiWrap cols
 
 wrapIndent :: HasCallStack => Int -> Cols -> Text -> [Text]
 wrapIndent n cols t = let extracted = extractANSI t
-                          wrapped   = helper . T.concat . map fst $ extracted
+                          wrapped   = helper . concatMapTxt fst $ extracted
                       in map leadingFillerToSpcs . insertANSI extracted $ wrapped
   where
     helper = wrapIt . leadingSpcsToFiller
@@ -154,7 +154,7 @@ wrapLineWithIndentTag cols (T.break (not . isDigit) . T.reverse . T.init -> brok
     readsRes                    = reads . T.unpack $ numTxt :: [(Int, String)]
     extractInt []               = 0
     extractInt [(x, _)] | x > 0 = x
-    extractInt xs               = patternMatchFail "wrapLineWithIndentTag extractInt" . showText $ xs
+    extractInt xs               = patternMatchFail "wrapLineWithIndentTag extractInt" . showTxt $ xs
     indent                      = extractInt readsRes
     n | isZero indent           = calcIndent . dropANSI $ t
       | otherwise               = adjustIndent indent cols

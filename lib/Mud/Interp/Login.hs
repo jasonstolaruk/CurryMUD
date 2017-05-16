@@ -177,7 +177,7 @@ checkIllegalNames ms mq cols cn = checkSet cn (promptRetryName mq cols sorryInte
     insertGodNames    = f [ uncapitalize . pp $ x | x <- allValues :: [GodName] ]
     raceNames         = foldr helper S.empty (allValues :: [Race])
       where
-        helper (uncapitalize . showText -> r) acc = foldr S.insert acc . (r :) . map (`T.cons` r) $ "mf"
+        helper (uncapitalize . showTxt -> r) acc = foldr S.insert acc . (r :) . map (`T.cons` r) $ "mf"
 
 
 checkPropNamesDict :: HasCallStack => MsgQueue -> Cols -> CmdName -> MudStack Any
@@ -229,7 +229,7 @@ setSingIfNotTaken times s (NoArgs i mq cols) = getSing i <$> getState >>= \oldSi
     helper oldSing ms = case views plaTbl (find ((== s) . (`getSing` ms) . fst) . IM.toList) ms of
         Nothing -> (upd ms [ entTbl.ind i.sing .~ s, pcSingTbl.at oldSing .~ Nothing, pcSingTbl.at s ?~ i ], True)
         Just _  -> (ms, False)
-setSingIfNotTaken _ _ p = patternMatchFail "setSingIfNotTaken" . showText $ p
+setSingIfNotTaken _ _ p = patternMatchFail "setSingIfNotTaken" . showTxt $ p
 
 
 -- ==================================================
@@ -316,7 +316,7 @@ promptSex (NewCharBundle _ s _) mq cols =
 promptRetryNewPwMatch :: HasCallStack => NewCharBundle -> ActionParams -> MudStack ()
 promptRetryNewPwMatch ncb (WithArgs i mq cols _) =
     promptRetryNewPW mq cols sorryInterpNewPwMatch >> setInterp i (Just . interpNewPW $ ncb)
-promptRetryNewPwMatch _ p = patternMatchFail "promptRetryNewPwMatch" . showText $ p
+promptRetryNewPwMatch _ p = patternMatchFail "promptRetryNewPwMatch" . showTxt $ p
 
 
 -- ==================================================
@@ -403,7 +403,7 @@ mkPickPtsIntroTxt s = T.unlines . map (lSpcs <>) $ ts
   where
     ts = [ "Next we'll assign points to " <> s <> "'s attributes."
          , "Characters have 5 attributes, each measuring innate talent in a given area. 10 (the minimum value) represents a staggering lack of talent, while 100 (the maximum value) represents near-supernatural talent. 50 represents an average degree of talent."
-         , "You have a pool of " <> showText initPickPts <> " points to assign to your attributes as you wish. To add points to an attribute, type the first letter of the attribute name, immediately followed by + and the number of points to add. For example, to add 10 to your Strength, type " <> colorWith quoteColor "s+10" <> ". To subtract points, use - instead of +, as in " <> prd (colorWith quoteColor "s-10")
+         , "You have a pool of " <> showTxt initPickPts <> " points to assign to your attributes as you wish. To add points to an attribute, type the first letter of the attribute name, immediately followed by + and the number of points to add. For example, to add 10 to your Strength, type " <> colorWith quoteColor "s+10" <> ". To subtract points, use - instead of +, as in " <> prd (colorWith quoteColor "s-10")
          , "You can specify multiple additions/subtractions on a single line. Simply separate them with a spaces, like so: " <> prd (colorWith quoteColor "s-10 d+10 h+5")
          , "When you are finished assigning points, type " <> colorWith quoteColor (T.singleton 'q') <> " to quit and move on." ]
 
@@ -421,11 +421,11 @@ showAttribs i mq = getState >>= \ms -> multiSend mq . footer ms . map helper . g
       (Ht, x) -> ('H', "ealth   ", x)
       (Ma, x) -> ('M', "agic    ", x)
       (Ps, x) -> ('P', "sionics ", x)
-    f (c, txt, x) = T.concat [ colorWith abbrevColor . T.singleton $ c, txt, " ", showText x ]
+    f (c, txt, x) = T.concat [ colorWith abbrevColor . T.singleton $ c, txt, " ", showTxt x ]
     footer ms     = (++ pure (msg <> hint))
       where
         pts  = getPickPts i ms
-        msg  = nlPrefix $ showText pts <> " points remaining."
+        msg  = nlPrefix $ showTxt pts <> " points remaining."
         hint = isZero pts |?| (" Type " <> colorWith quoteColor (T.singleton 'q') <> " to quit and move on.")
 
 
@@ -468,7 +468,7 @@ interpPickPts ncb@(NewCharBundle _ s _) (T.toLower ->cn) (Lower   i mq cols as) 
                                    , y' <- x' - x
                                    -> ( upd ms [ mobTbl.ind i.setter +~ y', pickPtsTbl.ind i -~ y' ]
                                       , msgs <> (pure . T.concat $ [ "Added "
-                                                                   , showText y'
+                                                                   , showTxt y'
                                                                    , " point"
                                                                    , pts > 1 |?| "s"
                                                                    , " to "
@@ -479,7 +479,7 @@ interpPickPts ncb@(NewCharBundle _ s _) (T.toLower ->cn) (Lower   i mq cols as) 
                                    , y' <- x - x'
                                    -> ( upd ms [ mobTbl.ind i.setter -~ y', pickPtsTbl.ind i +~ y' ]
                                       , msgs <> (pure . T.concat $ [ "Subtracted "
-                                                                   , showText y'
+                                                                   , showTxt y'
                                                                    , " point"
                                                                    , pts > 1 |?| "s"
                                                                    , " from "
@@ -490,7 +490,7 @@ interpPickPts ncb@(NewCharBundle _ s _) (T.toLower ->cn) (Lower   i mq cols as) 
       where
         sorry       = sorryHelper . sorryWut $ arg
         sorryHelper = (ms, ) . (msgs <>) . pure
-interpPickPts _ _ p = patternMatchFail "interpPickPts" . showText $ p
+interpPickPts _ _ p = patternMatchFail "interpPickPts" . showTxt $ p
 
 
 procAttribChar :: HasCallStack => Id -> MudState -> Char -> (Text, Int, ASetter Mob Mob Int Int)
@@ -554,7 +554,7 @@ interpDiscover ncb cn params@(WithArgs i mq _ as) = (>> finishNewChar ncb params
   where
     mkDiscoverRec = (,) <$> liftIO mkTimestamp <*> (T.pack . getCurrHostName i <$> getState) >>= \(ts, host) ->
         return . DiscoverRec ts host . formatMsgArgs $ cn : as
-interpDiscover _ _ p = patternMatchFail "interpDiscover" . showText $ p
+interpDiscover _ _ p = patternMatchFail "interpDiscover" . showTxt $ p
 
 
 -- ==================================================
@@ -576,7 +576,7 @@ finishNewChar ncb@(NewCharBundle _ s pass) params@(NoArgs'' i) = do
                                 , plaTbl    .ind i        %~ setPlaFlag IsTunedQuestion True ]
                 = dup $ upd ms' [ invTbl    .ind iCentral %~ addToInv ms' (pure i)
                                 , newChar i v ]
-finishNewChar _ p = patternMatchFail "finishNewChar" . showText $ p
+finishNewChar _ p = patternMatchFail "finishNewChar" . showTxt $ p
 
 
 notifyQuestion :: HasCallStack => Id -> MudState -> MudStack ()
@@ -662,7 +662,7 @@ newXps i (V.toList -> (a:b:c:d:_)) ms = let x | getRace i ms == Human = 20
                                                   , myMob.maxPp .~ initPp
                                                   , myMob.curFp .~ initFp
                                                   , myMob.maxFp .~ initFp ]
-newXps _ v _ = patternMatchFail "newXps" . showText . V.length $ v
+newXps _ v _ = patternMatchFail "newXps" . showTxt . V.length $ v
 
 
 -- ==================================================
@@ -723,14 +723,14 @@ interpPW times targetSing cn params@(WithArgs i mq cols as) = getState >>= \ms -
                                                                  , " has logged in as "
                                                                  , targetSing
                                                                  , ". Id "
-                                                                 , showText targetId
+                                                                 , showTxt targetId
                                                                  , " has been changed to "
-                                                                 , showText i
+                                                                 , showTxt i
                                                                  , "." ]
                initPlaLog i targetSing
                logPla "interpPW handleNotBanned" i . prd $ "logged in from " <> T.pack (getCurrHostName i ms)
                handleLogin (NewCharBundle oldSing targetSing "") False params { args = [] }
-interpPW _ _ _ p = patternMatchFail "interpPW" . showText $ p
+interpPW _ _ _ p = patternMatchFail "interpPW" . showTxt $ p
 
 
 logIn :: HasCallStack => Id -> MudState -> Sing -> HostName -> Maybe UTCTime -> Id -> MudState
@@ -796,7 +796,7 @@ handleLogin (NewCharBundle oldSing s _) isNew params@ActionParams { .. } = let p
     sendDfltPrompt plaMsgQueue myId
   where
     setLoginTime = liftIO getCurrentTime >>= \ct -> do
-        logPla "handleLogin setLoginTime" myId . prd $ "setting login time to " <> showText ct
+        logPla "handleLogin setLoginTime" myId . prd $ "setting login time to " <> showTxt ct
         tweak $ plaTbl.ind myId.loginTime ?~ ct
     greet = wrapSend plaMsgQueue plaCols $ if | s == "Root" -> colorWith zingColor sudoMsg
                                               | isNew       -> "Welcome to CurryMUD, "   <> s <> "!"

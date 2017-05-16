@@ -56,7 +56,7 @@ parseTelnet = f ("", [])
                              | T.length right == 2 = let telnets = TCode TelnetIAC : mkTelnetDatas others
                                                          others  = T.unpack . T.drop 1 $ right
                                                      in (msg <> left, td ++ telnets)
-        helper pair = patternMatchFail "parseTelnet f helper" . showText $ pair
+        helper pair = patternMatchFail "parseTelnet f helper" . showTxt $ pair
     mkTelnetDatas = map g
       where
         g c = case ord c `IM.lookup` telnetCodeMap of Nothing -> TOther c

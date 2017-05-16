@@ -426,7 +426,7 @@ loopOverExtractedList ((xs, escSeq):rest) ys
   | ()# xs = escSeq <> loopOverExtractedList rest ys
   | left         <- loopOverExtractedTxt xs ys
   , (Just right) <- left `T.stripPrefix` ys = left <> escSeq <> loopOverExtractedList rest right
-loopOverExtractedList xs _ = patternMatchFail "loopOverExtractedList" . showText $ xs
+loopOverExtractedList xs _ = patternMatchFail "loopOverExtractedList" . showTxt $ xs
 
 
 loopOverExtractedTxt :: Text -> Text -> Text
@@ -435,4 +435,4 @@ loopOverExtractedTxt a@(T.uncons -> Just (x, xs)) (T.uncons -> Just (y, ys))
   | y == indentFiller = indentFiller `T.cons` loopOverExtractedTxt a  ys
   | y == breakMarker  = breakMarker  `T.cons` loopOverExtractedTxt a  ys
 loopOverExtractedTxt "" _ = ""
-loopOverExtractedTxt a  b = patternMatchFail "loopOverExtractedTxt" . showText $ (a, b)
+loopOverExtractedTxt a  b = patternMatchFail "loopOverExtractedTxt" . showTxt $ (a, b)

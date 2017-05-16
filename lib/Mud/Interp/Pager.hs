@@ -62,10 +62,10 @@ interpPager _ _ _ _ _ ActionParams { plaMsgQueue, plaCols } = promptRetry plaMsg
 
 sendPagerPrompt :: MsgQueue -> PageLen -> EntireTxtLen -> MudStack ()
 sendPagerPrompt mq pageLen txtLen =
-    let txt = T.concat [ showText pageLen, " of ", showText txtLen, " lines ", parensQuote $ per <> "%" ]
+    let txt = T.concat [ showTxt pageLen, " of ", showTxt txtLen, " lines ", parensQuote $ per <> "%" ]
     in sendPrompt mq . colorWith pagerPromptColor . spaced . bracketQuote . spaced $ txt
   where
-    per = uncurry (<>) . second (T.take 2) . T.breakOn "." . showText $ pageLen `divide` txtLen * 100
+    per = uncurry (<>) . second (T.take 2) . T.breakOn "." . showTxt $ pageLen `divide` txtLen * 100
 
 
 promptRetry :: MsgQueue -> Cols -> MudStack ()

@@ -168,7 +168,7 @@ trash (LowerNub i mq cols as) = helper |&| modifyState >=> \((toSelfs, bs, logMs
     sequence_ fs
   where
     helper ms = let ((ms', toSelfs, bs, logMsgs), fs) = trashHelper i ms as in (ms', ((toSelfs, bs, logMsgs), fs))
-trash p = patternMatchFail "trash" . showText $ p
+trash p = patternMatchFail "trash" . showTxt $ p
 
 
 helperTrashEitherInv :: Id
@@ -193,7 +193,7 @@ mkTrashInvDescs i ms d (mkNameCountBothList i ms -> ncbs) = unzip . map helper $
     helper (_, c, b) =
         ("You place " <> rest', (serialize d <> " places " <> rest', otherIds))
       where
-        rest' = T.concat [ showText c, " ", mkPlurFromBoth b, rest ]
+        rest' = T.concat [ showTxt c, " ", mkPlurFromBoth b, rest ]
     rest     = " into the trash bin."
     otherIds = i `delete` desigIds d
 
@@ -225,8 +225,8 @@ mkTrashCoinsDescOthers i d c =
 mkTrashCoinsDescsSelf :: Coins -> [Text]
 mkTrashCoinsDescsSelf = mkCoinsMsgs helper
   where
-    helper 1 cn = T.concat [ "You deposit ", aOrAn cn,             " into the trash bin." ]
-    helper a cn = T.concat [ "You deposit ", showText a, " ", cn, "s into the trash bin." ]
+    helper 1 cn = T.concat [ "You deposit ", aOrAn cn,            " into the trash bin." ]
+    helper a cn = T.concat [ "You deposit ", showTxt a, " ", cn, "s into the trash bin." ]
 
 
 -- ==================================================
@@ -237,7 +237,7 @@ mkTrashCoinsDescsSelf = mkCoinsMsgs helper
 mkRndmBcastRmFun :: Id -> Text -> FunName -> Int -> Seconds -> Text -> Fun
 mkRndmBcastRmFun i idName fn prob secs msg = handle (threadExHandler (Just i) threadName) $ do
     setThreadType . RmFun $ i
-    logNotice fn . T.concat $ [ "room function started for ", idName, " ", parensQuote . showText $ i, "." ]
+    logNotice fn . T.concat $ [ "room function started for ", idName, " ", parensQuote . showTxt $ i, "." ]
     loop `catch` die Nothing threadName
   where
     threadName = T.concat [ "room function ", dblQuote fn, " ", idName ]

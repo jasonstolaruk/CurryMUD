@@ -29,13 +29,13 @@ genCols :: Gen Int
 genCols = choose (minCols, maxCols)
 
 
-genTextOfLen :: Int -> Gen Text
-genTextOfLen n = T.pack <$> replicateM n genAsciiAlphaNum
+genTxtOfLen :: Int -> Gen Text
+genTxtOfLen n = T.pack <$> replicateM n genAsciiAlphaNum
 
 
-genTextOfRndmLen :: (Int, Int) -> Gen Text
-genTextOfRndmLen (nMin, nMax) = genTextOfLen =<< choose (nMin, nMax)
+genTxtOfRndmLen :: (Int, Int) -> Gen Text
+genTxtOfRndmLen (nMin, nMax) = genTextOfLen =<< choose (nMin, nMax)
 
 
-genTextLongerThan :: Int -> Gen Text
-genTextLongerThan n = genTextOfLen . (n +) =<< choose (1, 50)
+genTxtLongerThan :: Int -> Gen Text
+genTxtLongerThan n = genTextOfLen . (n +) =<< choose (1, 50)

@@ -136,7 +136,7 @@ addToInv ms addThese toThese = sortInv ms $ toThese ++ addThese
 
 
 descSingId :: HasCallStack => Id -> MudState -> Text
-descSingId i ms = quoteWith' (i |&| ((`getSing` ms) &&& parensQuote . showText)) " "
+descSingId i ms = quoteWith' (i |&| ((`getSing` ms) &&& parensQuote . showTxt)) " "
 
 
 descMaybeId :: HasCallStack => MudState -> Maybe Id -> Text
@@ -561,7 +561,7 @@ mkPrettySexRace i = (pp *** pp) . getSexRace i
 
 mkPrettySexRaceLvl :: HasCallStack => Id -> MudState -> (Text, Text, Text)
 mkPrettySexRaceLvl i ms = let ((s, r), l) = (mkPrettySexRace `fanUncurry` getLvl) (i, ms)
-                          in (s, r, showText l)
+                          in (s, r, showTxt l)
 
 
 -----
@@ -612,7 +612,7 @@ procHooks i ms v cn as | initAcc <- (as, (ms, [], [], []), []) = case lookupHook
           -> case filter (\Hook { hookTriggers } -> a `elem` hookTriggers) hooks of
                []  -> initAcc
                [h] -> getHookFun (hookName h) ms i h v (initAcc & _1 .~ pure rest)
-               xs  -> patternMatchFail "procHooks" . showText $ xs
+               xs  -> patternMatchFail "procHooks" . showTxt $ xs
     -- Process hooks whose triggers match on any single argument.
     _ -> let helper acc arg = case filter (\Hook { hookTriggers } -> arg `elem` hookTriggers) hooks of
                []        -> acc

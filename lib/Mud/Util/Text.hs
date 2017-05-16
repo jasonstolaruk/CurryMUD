@@ -6,6 +6,7 @@ module Mud.Util.Text ( aOrAn
                      , commaEvery3
                      , commaShow
                      , commas
+                     , concatMapTxt
                      , countOcc
                      , divider
                      , dropBlanks
@@ -31,13 +32,13 @@ module Mud.Util.Text ( aOrAn
                      , replace
                      , sOnNon1
                      , sOnTrue
-                     , showText
+                     , showTxt
                      , slashes
                      , spaces
                      , spcL
                      , spcR
                      , spcsToFiller
-                     , strictTextToLazyBS
+                     , strictTxtToLazyBS
                      , stripControl
                      , the
                      , theNl
@@ -73,16 +74,16 @@ blowUp = U.blowUp "Mud.Util.Text"
 -- ==================================================
 
 
-class HasText a where
-  extractText :: a -> Text
+class HasTxt a where
+  extractTxt :: a -> Text
 
 
-instance HasText Text where
-  extractText = id
+instance HasTxt Text where
+  extractTxt = id
 
 
-instance HasText (a, Text) where
-  extractText = snd
+instance HasTxt (a, Text) where
+  extractTxt = snd
 
 
 -----
@@ -145,7 +146,7 @@ commaEvery3 = T.reverse . T.intercalate "," . T.chunksOf 3 . T.reverse
 
 
 commaShow :: (Show a) => a -> Text
-commaShow = commaEvery3 . showText
+commaShow = commaEvery3 . showTxt
 
 
 -----
@@ -153,6 +154,13 @@ commaShow = commaEvery3 . showText
 
 commas :: [Text] -> Text
 commas = T.intercalate ", "
+
+
+-----
+
+
+concatMapTxt :: (a -> Text) -> [a] -> Text -- TODO: Use this.
+concatMapTxt f = T.concat . map f
 
 
 -----
@@ -201,9 +209,9 @@ spcsToFiller = T.replace " " (T.singleton indentFiller)
 -----
 
 
-findFullNameForAbbrev :: (Eq a, HasText a) => Text -> [a] -> Maybe a
+findFullNameForAbbrev :: (Eq a, HasTxt a) => Text -> [a] -> Maybe a
 findFullNameForAbbrev needle hay =
-    let res = sortBy (compare `on` extractText) . filter ((needle `T.isPrefixOf`) . extractText) $ hay
+    let res = sortBy (compare `on` extractTxt) . filter ((needle `T.isPrefixOf`) . extractTxt) $ hay
     in guard (()!# res) >> return (head res)
 
 
@@ -232,13 +240,13 @@ intercalateDivider cols = intercalate [ "", divider cols, "" ]
 
 
 mkOrdinal :: Int -> Text
-mkOrdinal 11              = "11th"
-mkOrdinal 12              = "12th"
-mkOrdinal 13              = "13th"
-mkOrdinal (showText -> n) = n <> case T.last n of '1' -> "st"
-                                                  '2' -> "nd"
-                                                  '3' -> "rd"
-                                                  _   -> "th"
+mkOrdinal 11             = "11th"
+mkOrdinal 12             = "12th"
+mkOrdinal 13             = "13th"
+mkOrdinal (showTxt -> n) = n <> case T.last n of '1' -> "st"
+                                                 '2' -> "nd"
+                                                 '3' -> "rd"
+                                                 _   -> "th"
 
 
 -----
@@ -311,8 +319,8 @@ replace = foldr ((.) . uncurry T.replace) id
 -----
 
 
-showText :: (Show a) => a -> Text
-showText = T.pack . show
+showTxt :: (Show a) => a -> Text
+showTxt = T.pack . show
 
 
 -----
@@ -354,8 +362,8 @@ spcR = (<> " ")
 -----
 
 
-strictTextToLazyBS :: Text -> B.ByteString
-strictTextToLazyBS = LT.encodeUtf8 . LT.fromStrict
+strictTxtToLazyBS :: Text -> B.ByteString
+strictTxtToLazyBS = LT.encodeUtf8 . LT.fromStrict
 
 
 -----

@@ -121,7 +121,7 @@ loggingThreadExHandler logExLock n e = guard (fromException e /= Just ThreadKill
                        , "Mud.Logging loggingThreadExHandler: exception caught on logging thread "
                        , parensQuote $ "inside " <> dblQuote n
                        , ". "
-                       , dblQuote . showText $ e ]
+                       , dblQuote . showTxt $ e ]
     in do liftIO printPanicMsg
           file <- mkMudFilePath loggingExLogFileFun
           handle (handler msg) . withLock logExLock . T.appendFile file . nl $ msg
@@ -199,7 +199,7 @@ logErrorMsg modName (dblQuote -> funName) msg = logError . T.concat $ [ modName,
 
 
 logExMsg :: Text -> Text -> Text -> SomeException -> MudStack ()
-logExMsg modName (dblQuote -> funName) msg (dblQuote . showText -> e) =
+logExMsg modName (dblQuote -> funName) msg (dblQuote . showTxt -> e) =
     logError . T.concat $ [ modName, " ", funName, ": ", msg, ". ", e ]
 
 
@@ -208,12 +208,12 @@ logImpossible modName funName msg = logErrorMsg modName funName $ panicMsg |<>| 
 
 
 logIOEx :: Text -> Text -> IOException -> MudStack ()
-logIOEx modName (dblQuote -> funName) (dblQuote . showText -> e) =
+logIOEx modName (dblQuote -> funName) (dblQuote . showTxt -> e) =
     logError . T.concat $ [ modName, " ", funName, ": ", e ]
 
 
 logAndDispIOEx :: MsgQueue -> Cols -> Text -> Text -> IOException -> MudStack ()
-logAndDispIOEx mq cols modName (dblQuote -> funName) (dblQuote . showText -> e) =
+logAndDispIOEx mq cols modName (dblQuote -> funName) (dblQuote . showTxt -> e) =
     let msg = T.concat [ modName, " ", funName, ": ", e ] in logError msg >> wrapSend mq cols msg
 
 

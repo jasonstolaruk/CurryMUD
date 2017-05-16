@@ -48,7 +48,7 @@ module Mud.Cmds.Util.Misc ( applyRegex
                           , loggedInOutColorize
                           , mkActionParams
                           , mkChanReport
-                          , mkCmdListText
+                          , mkCmdListTxt
                           , mkCmdTriplesForStyling
                           , mkHimHer
                           , mkHolySymbolDesc
@@ -214,7 +214,7 @@ awardExp amt reason i = getLvlExp i <$> getState >>= \(l, x) -> let diff = calcL
             f 0    = Nothing
             f seed = Just ((colorWith lvlUpColor lvlUpMsg, mkLogMsg), pred seed)
               where
-                mkLogMsg = ("gained a level " <>) . parensQuote $ "now level " <> showText (newLvl - seed + 1)
+                mkLogMsg = ("gained a level " <>) . parensQuote $ "now level " <> showTxt (newLvl - seed + 1)
         in (ms'', (ms'', bool (unzip . unfoldr f $ diff) mempties $ diff <= 0))
 
 
@@ -280,13 +280,13 @@ consume i newScs = do now <- liftIO getCurrentTime
 
 dispCmdList :: HasCallStack => [Cmd] -> ActionFun
 dispCmdList cmds (NoArgs i mq cols) =
-    pager i mq Nothing . concatMap (wrapIndent (succ cmdNamePadding) cols) . mkCmdListText $ cmds
-dispCmdList cmds (LowerNub i mq cols as) = dispMatches i mq cols (succ cmdNamePadding) Isn'tRegex as . mkCmdListText $ cmds
-dispCmdList _    p                       = patternMatchFail "dispCmdList" . showText $ p
+    pager i mq Nothing . concatMap (wrapIndent (succ cmdNamePadding) cols) . mkCmdListTxt $ cmds
+dispCmdList cmds (LowerNub i mq cols as) = dispMatches i mq cols (succ cmdNamePadding) Isn'tRegex as . mkCmdListTxt $ cmds
+dispCmdList _    p                       = patternMatchFail "dispCmdList" . showTxt $ p
 
 
-mkCmdListText :: HasCallStack => [Cmd] -> [Text]
-mkCmdListText cmds = let zipped = zip (styleCmdAbbrevs cmds) [ cmdDesc cmd | cmd <- cmds ]
+mkCmdListTxt :: HasCallStack => [Cmd] -> [Text]
+mkCmdListTxt cmds = let zipped = zip (styleCmdAbbrevs cmds) [ cmdDesc cmd | cmd <- cmds ]
                      in [ uncurry (<>) . first padCmdName $ pair | pair@(_, d) <- zipped, ()!# d ]
 
 
@@ -325,7 +325,7 @@ dispMatches i mq cols indent reg needles haystack =
 
 
 embedId :: Id -> Text
-embedId = quoteWith (T.singleton plaIdDelimiter) . showText
+embedId = quoteWith (T.singleton plaIdDelimiter) . showTxt
 
 
 -----
@@ -473,13 +473,13 @@ happyTimes ms xformed =
         extractIds [ForNonTargets _           ] acc = acc
         extractIds (ForTarget     _ targetId:_) acc = targetId : acc
         extractIds (ForTargetPoss _ targetId:_) acc = targetId : acc
-        extractIds xs                           _   = patternMatchFail "happyTimes extractIds" . showText $ xs
+        extractIds xs                           _   = patternMatchFail "happyTimes extractIds" . showTxt $ xs
         msgMap  = foldr (\targetId -> at targetId ?~ []) IM.empty targetIds
         msgMap' = foldr consWord msgMap toTargets
         consWord [ ForNonTargets word                           ] = IM.map (word :)
         consWord [ ForTarget     p targetId, ForNonTargets word ] = selectiveCons p targetId False word
         consWord [ ForTargetPoss p targetId, ForNonTargets word ] = selectiveCons p targetId True  word
-        consWord xs = const . patternMatchFail "happyTimes consWord" . showText $ xs
+        consWord xs = const . patternMatchFail "happyTimes consWord" . showTxt $ xs
         selectiveCons p targetId isPoss word = IM.mapWithKey helper
           where
             helper k v = let targetSing = onTrue isPoss (<> "'s") . getSing k $ ms
@@ -652,7 +652,7 @@ locateHelper ms txts i = case getType i ms of
     searchInvs = views invTbl (fmap (mkDescId "in"         ) . listToMaybe . IM.keys . IM.filter ( i `elem`)           ) ms
     searchEqs  = views eqTbl  (fmap (mkDescId "equipped by") . listToMaybe . IM.keys . IM.filter ((i `elem`) . M.elems)) ms
     mkDescId txt targetId = ((txts ++) . pure $ txt |<>| mkNameTypeIdDesc targetId ms, targetId)
-    oops                  = blowUp "locateHelper" "ID is in limbo" . showText $ i
+    oops                  = blowUp "locateHelper" "ID is in limbo" . showTxt $ i
 
 
 -----
@@ -694,7 +694,7 @@ mkChanReport i ms (Chan ci cn cct tappers) =
     let desc    = commas . map descPla . f $ [ (s, t, l) | (s, t) <- M.toList cct
                                                          , let l = isAwake (getIdForPCSing s ms) ms ]
         tapping = getSing i ms `elem` tappers |?| spcL . parensQuote $ "wiretapped"
-    in [ T.concat [ bracketQuote . showText $ ci, " ", dblQuote cn, tapping, ":" ], desc ]
+    in [ T.concat [ bracketQuote . showTxt $ ci, " ", dblQuote cn, tapping, ":" ], desc ]
   where
     descPla (s, t, l) = T.concat [ underline s, ": ", tunedInOutColorize t, " / ", loggedInOutColorize l ]
     f                 = sortBy (compare `on` view _1)
@@ -771,10 +771,8 @@ mkHolySymbolWeight Rumialys  = 15
 
 
 mkInterfaceList :: HasCallStack => IO Text
-mkInterfaceList = NI.getNetworkInterfaces >>= \ns -> return . commas $ [ T.concat [ showText . NI.name $ n
-                                                                                  , ": "
-                                                                                  , showText . NI.ipv4 $ n ]
-                                                                       | n <- ns ]
+mkInterfaceList = NI.getNetworkInterfaces >>= \ns ->
+    return . commas $ [ quoteWith' ((T.pack *** showTxt) . (NI.name &&& NI.ipv4) $ n) $ ": " | n <- ns ]
 
 
 -----
@@ -798,7 +796,7 @@ mkMobRmDesc i ms | hasMobId i ms = let t = commas . dropEmpties $ fromMaybeEmp (
 mkNameTypeIdDesc :: HasCallStack => Id -> MudState -> Text
 mkNameTypeIdDesc i ms = let (n, typeTxt) = case getType i ms of RmType -> (getRmName i ms, pp RmType)
                                                                 t      -> (getSing   i ms, pp t     )
-                        in n <> spaced (parensQuote typeTxt) <> bracketQuote (showText i)
+                        in n <> spaced (parensQuote typeTxt) <> bracketQuote (showTxt i)
 
 
 -----
@@ -920,13 +918,13 @@ mkWhoFooter i ms = let plaIds@(length -> x) = [ i' | i' <- getLoggedInPlaIds ms
                                               , let b = liftA2 (&&) (i /=) (`isSpiritId` ms) i'
                                                 in onTrue b (const . isLinked ms $ (i, i')) True ]
                        y                    = length [ ai | ai <- getLoggedInAdminIds ms, isIncognitoId ai ms ]
-                   in T.concat [ showText x
+                   in T.concat [ showTxt x
                                , " "
                                , pluralize ("person", "people") x
                                , " awake"
                                , plaIds == pure i |?| ": you"
                                , isNonZero y |?| spcL . parensQuote . T.concat $ [ "excluding "
-                                                                                 , showText y
+                                                                                 , showTxt y
                                                                                  , " administrator"
                                                                                  , pluralize ("", "s") y ]
                                , "." ]
@@ -1022,7 +1020,7 @@ mkTimeDescDay {- afternoon -} 14 = mkTimeDescDayHelper "it's late afternoon."
 mkTimeDescDay {- evening   -} 15 = mkTimeDescDayHelper "it's now evening, or about 15:00."
 mkTimeDescDay {- evening   -} 16 = mkTimeDescDayHelper "it's mid evening."
 mkTimeDescDay {- evening   -} 17 = mkTimeDescDayHelper "it's late in the evening."
-mkTimeDescDay                 x  = patternMatchFail "mkTimeDescDay" . showText $ x
+mkTimeDescDay                 x  = patternMatchFail "mkTimeDescDay" . showTxt $ x
 
 
 mkTimeDescDayHelper :: Text -> Text
@@ -1039,7 +1037,7 @@ mkTimeDescNight phase   4  = mkTimeDescNightHelper phase "it's less than 2 hours
 mkTimeDescNight phase   5  = mkTimeDescNightHelper phase "the sun will soon be rising."
 mkTimeDescNight _       18 = "The sun has finished setting. It's about 18:00."
 mkTimeDescNight phase   19 = mkTimeDescNightHelper phase "night has only just begun."
-mkTimeDescNight _       x  = patternMatchFail "mkTimeDescNight" . showText $ x
+mkTimeDescNight _       x  = patternMatchFail "mkTimeDescNight" . showTxt $ x
 
 
 mkTimeDescNightHelper :: MoonPhase -> Text -> Text
@@ -1068,7 +1066,7 @@ tunedInOutColorize False = tunedInOutHelper id                       False
 unmsg :: [Text] -> [Text]
 unmsg [cn        ] = [ T.init cn, ""            ]
 unmsg [cn, target] = [ cn,        T.init target ]
-unmsg xs           = patternMatchFail "unmsg" . showText $ xs
+unmsg xs           = patternMatchFail "unmsg" . showTxt $ xs
 
 
 -----
@@ -1097,7 +1095,7 @@ updateRndmName i targetId = do
       | otherwise = case sortBy (flip compare) . filter (rndmName `T.isPrefixOf`) $ existing of
         [_]             -> rndmName <> "2"
         (head -> match) -> let (name, readNum -> num) = T.break isDigit match
-                           in name <> showText (succ num)
+                           in name <> showTxt (succ num)
 
 
 -----
@@ -1120,4 +1118,4 @@ withoutArgs f p = ignore p >> f p { args = [] }
 
 ignore :: HasCallStack => ActionFun
 ignore (Ignoring mq cols as) = wrapSend1Nl mq cols . parensQuote . thrice prd $ "Ignoring " <> as
-ignore p                     = patternMatchFail "ignore" . showText $ p
+ignore p                     = patternMatchFail "ignore" . showTxt $ p

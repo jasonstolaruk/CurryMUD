@@ -565,11 +565,11 @@ purgeHelper tblName = onDbFile $ \conn -> execute conn q (Only noOfDbTblRecsToPu
 
 lookupPropName :: Text -> IO (Maybe Text)
 lookupPropName t = let q = Query "select prop_name from prop_names where prop_name = ?"
-                   in onDbFile $ \conn -> onlyTextsHelper <$> query conn q (Only t)
+                   in onDbFile $ \conn -> onlyTxtsHelper <$> query conn q (Only t)
 
 
-onlyTextsHelper :: [Only Text] -> Maybe Text
-onlyTextsHelper = listToMaybe . map fromOnly
+onlyTxtsHelper :: [Only Text] -> Maybe Text
+onlyTxtsHelper = listToMaybe . map fromOnly
 
 
 lookupBonuses :: Sing -> IO [BonusRec]
@@ -583,7 +583,7 @@ lookupBonusesFromTo fromSing toSing = let q = Query "select count(*) from bonus 
 
 
 lookupPW :: Sing -> IO (Maybe Text)
-lookupPW s = onDbFile $ \conn -> onlyTextsHelper <$> query conn (Query "select pw from unpw where un = ?") (Only s)
+lookupPW s = onDbFile $ \conn -> onlyTxtsHelper <$> query conn (Query "select pw from unpw where un = ?") (Only s)
 
 
 lookupSacBonusTime :: Sing -> Text -> IO (Maybe UTCTime) -- When was the last sacrifice bonus given?
@@ -615,7 +615,7 @@ lookupTeleNames s = onDbFile $ \conn -> map fromOnly <$> query conn (Query t) (d
 
 
 lookupWord :: Text -> IO (Maybe Text)
-lookupWord t = onDbFile $ \conn -> onlyTextsHelper <$> query conn (Query "select word from words where word = ?") (Only t)
+lookupWord t = onDbFile $ \conn -> onlyTxtsHelper <$> query conn (Query "select word from words where word = ?") (Only t)
 
 
 -----

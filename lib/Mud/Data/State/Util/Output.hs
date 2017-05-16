@@ -99,7 +99,7 @@ bcast bs = getState >>= \ms -> liftIO . atomically . forM_ bs . sendBcast $ ms
         helper targetId = case getType targetId ms of
           PlaType -> writeIt FromServer targetId
           NpcType -> maybeVoid (writeIt ToNpc) . getPossessor targetId $ ms
-          t       -> patternMatchFail "bcast sendBcast helper" . showText $ t
+          t       -> patternMatchFail "bcast sendBcast helper" . showTxt $ t
         writeIt f i = let (mq, cols) = getMsgQueueColumns i ms
                       in writeTQueue mq . f . T.unlines . concatMap (wrap cols) . T.lines . parseDesig i ms $ msg
 
@@ -267,7 +267,7 @@ parseDesigHelper f i ms = loop (getIntroduced i ms)
                         loop intros rest
                       d@StdDesig { desigEntSing = Nothing,  .. } ->
                         left <> expandEntName i ms d <> loop intros rest
-                      _ -> patternMatchFail "parseDesigHelper loop" . showText $ desig
+                      _ -> patternMatchFail "parseDesigHelper loop" . showTxt $ desig
                     | T.singleton nonStdDesigDelimiter `T.isInfixOf` txt
                     , (left, NonStdDesig { .. }, rest) <- extractDesig nonStdDesigDelimiter txt
                     = left <> (dEntSing `elem` intros ? dEntSing :? dDesc) <> loop intros rest
@@ -295,7 +295,7 @@ expandEntName i ms StdDesig { .. } = let f      = mkCapsFun desigCap
     expandSex 'm' = "male"
     expandSex 'f' = "female"
     expandSex x   = patternMatchFail "expandEntName expandSex" . T.singleton $ x
-expandEntName _ _ d = patternMatchFail "expandEntName" . showText $ d
+expandEntName _ _ d = patternMatchFail "expandEntName" . showTxt $ d
 
 
 -----

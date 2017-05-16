@@ -90,7 +90,7 @@ listen :: HasCallStack => MudStack ()
 listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed halt
   where
     proceed = do initialize
-                 logNotice "listen proceed" . prd $ "listening for incoming connections on port " <> showText port
+                 logNotice "listen proceed" . prd $ "listening for incoming connections on port " <> showTxt port
                  sock      <- liftIO . listenOn . PortNumber . fromIntegral $ port
                  auxAsyncs <- mapM runAsync [ threadAdminChanTblPurger
                                             , threadAdminMsgTblPurger
@@ -117,7 +117,7 @@ listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed 
     logInterfaces = liftIO mkInterfaceList >>= \ifList ->
         logNotice "listen listInterfaces" . prd $ "server network interfaces: " <> ifList
     loop sock = let fn = "listen loop" in liftIO (accept sock) >>= \(h, host@(T.pack -> host'), localPort) -> do
-        logNotice fn . T.concat $ [ "connected to ", showText host, " on local port ", showText localPort, "." ]
+        logNotice fn . T.concat $ [ "connected to ", showTxt host, " on local port ", showTxt localPort, "." ]
         (withDbExHandler "listen loop" . isHostBanned . T.toLower . T.pack $ host) >>= \case
           Just (Any False) -> runTalkAsync h host
           _                -> do

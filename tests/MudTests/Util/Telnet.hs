@@ -34,42 +34,42 @@ test_parseTelnet_noTelnet = actual @?= expected
     expected = ("test", [])
 
 
-test_parseTelnet_telnetText :: Assertion
-test_parseTelnet_telnetText = actual @?= expected
+test_parseTelnet_telnetTxt :: Assertion
+test_parseTelnet_telnetTxt = actual @?= expected
   where
-    actual   = parseTelnet telnetText
+    actual   = parseTelnet telnetTxt
     expected = ("", telnetDatas)
 
 
-telnetText :: Text -- This is what Mudlet sends on connect.
-telnetText = T.pack . map chr $ [ 255 -- IAC
-                                , 252 -- WON'T
-                                , 3   -- SUPPRESS GO AHEAD
-                                , 255 -- IAC
-                                , 250 -- SB
-                                , 201 -- GMCP
-                                , 67  -- C
-                                , 111 -- o
-                                , 114 -- r
-                                , 101 -- e
-                                , 46  -- .
-                                , 83  -- S
-                                , 117 -- u
-                                , 112 -- p
-                                , 112 -- p
-                                , 111 -- o
-                                , 114 -- r
-                                , 116 -- t
-                                , 115 -- s
-                                , 46  -- .
-                                , 83  -- S
-                                , 101 -- e
-                                , 116 -- t
-                                , 32  -- (space)
-                                , 91  -- [
-                                , 93  -- ]
-                                , 255 -- IAC
-                                , 240 {- SE -} ]
+telnetTxt :: Text -- This is what Mudlet sends on connect.
+telnetTxt = T.pack . map chr $ [ 255 -- IAC
+                               , 252 -- WON'T
+                               , 3   -- SUPPRESS GO AHEAD
+                               , 255 -- IAC
+                               , 250 -- SB
+                               , 201 -- GMCP
+                               , 67  -- C
+                               , 111 -- o
+                               , 114 -- r
+                               , 101 -- e
+                               , 46  -- .
+                               , 83  -- S
+                               , 117 -- u
+                               , 112 -- p
+                               , 112 -- p
+                               , 111 -- o
+                               , 114 -- r
+                               , 116 -- t
+                               , 115 -- s
+                               , 46  -- .
+                               , 83  -- S
+                               , 101 -- e
+                               , 116 -- t
+                               , 32  -- (space)
+                               , 91  -- [
+                               , 93  -- ]
+                               , 255 -- IAC
+                               , 240 {- SE -} ]
 
 
 telnetDatas :: [TelnetData]
@@ -106,28 +106,28 @@ telnetDatas = [ TCode TelnetIAC
 test_parseTelnet_leading :: Assertion
 test_parseTelnet_leading = actual @?= expected
   where
-    actual   = parseTelnet $ telnetText <> "test"
+    actual   = parseTelnet $ telnetTxt <> "test"
     expected = ("test", telnetDatas)
 
 
 test_parseTelnet_trailing :: Assertion
 test_parseTelnet_trailing = actual @?= expected
   where
-    actual   = parseTelnet $ "test" <> telnetText
+    actual   = parseTelnet $ "test" <> telnetTxt
     expected = ("test", telnetDatas)
 
 
 test_parseTelnet_leadingAndTrailing :: Assertion
 test_parseTelnet_leadingAndTrailing = actual @?= expected
   where
-    actual   = parseTelnet . quoteWith telnetText $ "test"
+    actual   = parseTelnet . quoteWith telnetTxt $ "test"
     expected = ("test", concat . replicate 2 $ telnetDatas)
 
 
 test_parseTelnet_intercalated :: Assertion
 test_parseTelnet_intercalated = actual @?= expected
   where
-    actual   = parseTelnet . T.intercalate telnetText $ [ "test1", "test2", "test3", "test4", "test5" ]
+    actual   = parseTelnet . T.intercalate telnetTxt $ [ "test1", "test2", "test3", "test4", "test5" ]
     expected = ("test1test2test3test4test5", concat . replicate 4 $ telnetDatas)
 
 

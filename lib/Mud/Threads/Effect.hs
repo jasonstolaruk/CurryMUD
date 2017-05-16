@@ -101,7 +101,7 @@ threadEffect i (Effect _ effSub _ secs _) q = handle (threadExHandler (Just i) "
     racer md effectTimer queueListener `finally` done
     logHelper "is finishing."
   where
-    logHelper rest = logNotice "threadEffect" . T.concat $ [ "effect thread for ID ", showText i, " ", rest ]
+    logHelper rest = logNotice "threadEffect" . T.concat $ [ "effect thread for ID ", showTxt i, " ", rest ]
 
 
 -----
@@ -109,7 +109,7 @@ threadEffect i (Effect _ effSub _ secs _) q = handle (threadExHandler (Just i) "
 
 pauseEffects :: HasCallStack => Id -> MudStack () -- When a player logs out.
 pauseEffects i = getDurEffects i <$> getState >>= \es ->
-    unless (null es) $ do logNotice "pauseEffects" . prd $ "pausing effects for ID " <> showText i
+    unless (null es) $ do logNotice "pauseEffects" . prd $ "pausing effects for ID " <> showTxt i
                           pes <- mapM helper es
                           tweaks [ durationalEffectTbl.ind i .~  []
                                  , pausedEffectTbl    .ind i <>~ pes ]

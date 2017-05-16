@@ -51,4 +51,4 @@ findActionHelper i ms cn cmds =
     in return $ case [ ra | ra <- view rmActions r, cn == rmActionCmdName ra ] of
       []   -> cmdAction . fst <$> findFullNameForAbbrev cn [ (cmd, cmdName cmd) | cmd <- cmds' ]
       [ra] -> Just . Action (getRmActionFun (rmActionFunName ra) ms) $ True
-      xs   -> patternMatchFail "findActionHelper" . showText $ xs
+      xs   -> patternMatchFail "findActionHelper" . showTxt $ xs

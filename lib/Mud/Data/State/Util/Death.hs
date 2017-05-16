@@ -166,7 +166,7 @@ mkCorpse i ms =
         corpse    = ip ? pcCorpse :? npcCorpse
         pcCorpse  = PCCorpse (getSing i ms) corpsePlaceholder (getSex i ms) r
         npcCorpse = NpcCorpse corpsePlaceholder
-        logMsg    = T.concat [ "corpse with ID ", showText corpseId, " created for ", descSingId i ms, "." ]
+        logMsg    = T.concat [ "corpse with ID ", showTxt corpseId, " created for ", descSingId i ms, "." ]
         (corpseId,   ms',  fs ) = let ic = ip ? mempties :? (sortInv ms $ is ++ M.elems em, c)
                                   in newCorpse ms et ot con ic corpse secs ri
         ((is', em'), ms'', fs') = cloneEqMap em . clone corpseId ([], ms', fs) $ is

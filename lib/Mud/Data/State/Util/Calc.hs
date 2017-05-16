@@ -302,7 +302,7 @@ calcLvl i = calcLvlForExp . getExp i
 calcLvlForExp :: HasCallStack => Exp -> Lvl
 calcLvlForExp amt = let helper ((l, x):rest) | amt < x   = pred l
                                              | otherwise = helper rest
-                        helper xs                        = patternMatchFail "calcLvlForExp" . showText $ xs
+                        helper xs                        = patternMatchFail "calcLvlForExp" . showTxt $ xs
                     in helper calcLvlExps
 
 
@@ -389,7 +389,7 @@ calcMaxGodNameLen = calcMaxHelper (allValues :: [GodName])
 
 
 calcMaxHelper :: (HasCallStack, Show a) => [a] -> Int
-calcMaxHelper = maximum . map (T.length . showText)
+calcMaxHelper = maximum . map (T.length . showTxt)
 
 
 -----
@@ -703,7 +703,7 @@ calcWeight i ms = case getType i ms of
   ConType    -> sum [ getObjWeight i ms, calcInvWeight, calcCoinsWeight ]
   NpcType    -> npcPla
   PlaType    -> npcPla
-  RmType     -> blowUp "calcWeight" "cannot calculate the weight of a room" . showText $ i
+  RmType     -> blowUp "calcWeight" "cannot calculate the weight of a room" . showTxt $ i
   VesselType -> getObjWeight i ms + calcVesselContWeight
   _          -> getObjWeight i ms
   where

@@ -49,15 +49,15 @@ gmcpRmInfo maybeZoom i ms = "Room.Info " <> curlyQuote (spaced rest)
     rest = T.concat [ dblQuote "area_name"    <> colon
                     , dblQuote zoneName       <> comma
                     , dblQuote "room_id"      <> colon
-                    , showText ri             <> comma
+                    , showTxt ri              <> comma
                     , dblQuote "room_name"    <> colon
                     , dblQuote roomName       <> comma
                     , dblQuote "x_coord"      <> colon
-                    , showText xCoord         <> comma
+                    , showTxt xCoord          <> comma
                     , dblQuote "y_coord"      <> colon
-                    , showText yCoord         <> comma
+                    , showTxt yCoord          <> comma
                     , dblQuote "z_coord"      <> colon
-                    , showText zCoord         <> comma
+                    , showTxt zCoord          <> comma
                     , dblQuote "room_env"     <> colon
                     , env                     <> comma
                     , dblQuote "room_label"   <> colon
@@ -65,23 +65,23 @@ gmcpRmInfo maybeZoom i ms = "Room.Info " <> curlyQuote (spaced rest)
                     , dblQuote "room_exits"   <> colon
                     , mkExits                 <> comma
                     , dblQuote "last_room_id" <> colon
-                    , showText lastId         <> comma
+                    , showTxt lastId          <> comma
                     , mkDir                   <> comma
                     , dblQuote "zoom"         <> colon
-                    , showText zoom ]
+                    , showTxt zoom ]
     ri                       = getRmId i ms
     zoneName                 = getZoneForRmId ri
     rm                       = getRm ri ms
     roomName                 = rm^.rmName
     (xCoord, yCoord, zCoord) = rm^.rmCoords
-    env                      = views rmEnv   (showText . envToColorInt) rm
+    env                      = views rmEnv   (showTxt  . envToColorInt) rm
     label                    = views rmLabel (dblQuote . fromMaybeEmp ) rm
     mkExits                  = views rmLinks exitHelper rm
       where
         exitHelper links =
             let f (StdLink dir _ _ ) = pure . dirToInt . linkDirToCmdName $ dir
                 f _                  = []
-            in bracketQuote . spaced . commas . map showText . concatMap f $ links
+            in bracketQuote . spaced . commas . map showTxt . concatMap f $ links
     dirToInt t = fromMaybe oops . lookup t $ dirs
       where
         dirs = zip [ "n", "ne", "nw", "e", "w", "s", "se", "sw", "u", "d", "in", "out" ] [1..]
@@ -101,7 +101,7 @@ gmcpRmInfo maybeZoom i ms = "Room.Info " <> curlyQuote (spaced rest)
                   where
                     g = mkStdDir n
                 f _ = []
-                mkStdDir t = pure . T.concat $ [ dblQuote "dir",         colon, showText . dirToInt $ t, comma
+                mkStdDir t = pure . T.concat $ [ dblQuote "dir",         colon, showTxt . dirToInt $ t, comma
                                                , dblQuote "special_dir", colon, dblQuote "-1" ]
             in case concatMap f links of (x:_) -> x
                                          []    -> T.concat [ dblQuote "dir",         colon, "-1", comma
@@ -144,4 +144,4 @@ gmcpVitals i ms = "Char.Vitals " <> curlyQuote (spaced rest)
                     , dblQuote "max_fp"  <> colon
                     , fpMax ]
     ((hpCurr, hpMax), (mpCurr, mpMax), (ppCurr, ppMax), (fpCurr, fpMax)) = f
-    f = getPts i ms & each %~ (both %~ showText)
+    f = getPts i ms & each %~ (both %~ showTxt)

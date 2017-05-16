@@ -58,7 +58,7 @@ singleArgInvEqRm dflt arg = case sortArgsInvEqRm dflt . pure $ arg of
   ([a], [],  [] ) -> (InInv, a)
   ([],  [a], [] ) -> (InEq,  a)
   ([],  [],  [a]) -> (InRm,  a)
-  x               -> patternMatchFail "singleArgInvEqRm" . showText $ x
+  x               -> patternMatchFail "singleArgInvEqRm" . showTxt $ x
 
 
 -----

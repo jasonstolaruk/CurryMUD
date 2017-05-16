@@ -108,4 +108,4 @@ procExpCmdTwoWay i ms targetId targetSing (map T.toLower . unmsg -> [cn, target]
                            in replace (substitutions ++ maybeEmp (const . pure $ ("@", targetSing)) maybeTargetId)
     s                    = getSing i ms
     (heShe, hisHer, himHerself) = mkPros . getSex i $ ms
-procExpCmdTwoWay _ _ _ _ as = patternMatchFail "procExpCmdTwoWay" . showText $ as
+procExpCmdTwoWay _ _ _ _ as = patternMatchFail "procExpCmdTwoWay" . showTxt $ as

@@ -108,7 +108,7 @@ rndmIntToRangeHelper m (abs -> r) pair@(x, y)
                                   | otherwise        = helper (succ step) $ z + stepAmt
                 in x + helper 0 0
   where
-    oops = blowUp "rndmIntToRangeHelper" "bad range" . showText $ pair
+    oops = blowUp "rndmIntToRangeHelper" "bad range" . showTxt $ pair
 
 
 rndmPer :: MudStack Int

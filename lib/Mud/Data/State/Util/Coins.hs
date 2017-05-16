@@ -39,7 +39,7 @@ aCoinSomeCoins = \case (Coins (1, 0, 0)) -> "a copper piece"
 
 coinsFromList :: [Int] -> Coins
 coinsFromList [ cop, sil, gol ] = Coins (cop, sil, gol)
-coinsFromList xs                = patternMatchFail "coinsFromList" . showText $ xs
+coinsFromList xs                = patternMatchFail "coinsFromList" . showTxt $ xs
 
 
 coinsToList :: Coins -> [Int]
@@ -59,11 +59,11 @@ mkCoinTxt coins = case mkCoinTxtList of
   [ x, y    ] -> x <> " and " <> y
   [ x       ] -> x
   [         ] -> ""
-  xs          -> patternMatchFail "mkCoinTxt" . showText $ xs
+  xs          -> patternMatchFail "mkCoinTxt" . showTxt $ xs
   where
     mkCoinTxtList = dropBlanks . foldr combineAmntName [] . zip (coinsToList coins) $ coinFullNames
-    combineAmntName (amt, coinName) acc | amt >  1  = T.concat [ showText amt, " ", coinName, "s" ] : acc
-                                        | amt == 1  = showText amt |<>| coinName : acc
+    combineAmntName (amt, coinName) acc | amt >  1  = T.concat [ showTxt amt, " ", coinName, "s" ] : acc
+                                        | amt == 1  = showTxt amt |<>| coinName : acc
                                         | otherwise = acc
 
 

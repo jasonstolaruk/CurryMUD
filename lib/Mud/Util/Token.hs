@@ -91,7 +91,7 @@ expandMiscCode (toLower -> code)           = case code of
   'd' -> yesNo isDebug
   'e' -> descRulesMsg
   'l' -> T.singleton leadingSpaceChar
-  'o' -> showText dfltZoom
+  'o' -> showTxt dfltZoom
   'p' -> pwWarningMsg
   'r' -> rulesIntroMsg
   's' -> dfltShutdownMsg

@@ -454,7 +454,7 @@ sorryAdminSetOp opTxt k = T.concat [ "The ", dblQuote opTxt, " operator cannot b
 
 
 sorryAdminSetType :: Id -> Text
-sorryAdminSetType i = "ID " <> showText i <> " is not of the correct type."
+sorryAdminSetType i = "ID " <> showTxt i <> " is not of the correct type."
 
 
 sorryAdminSetValue :: Text -> Text -> Text
@@ -841,13 +841,13 @@ sorryEquipCoins = "You don't have any coins among your readied equipment."
 
 sorryEquipInvLook :: EquipInvLookCmd -> EquipInvLookCmd -> Text
 sorryEquipInvLook a b = T.concat [ "You can only use the "
-                                 , dblQuote . showText $ a
+                                 , dblQuote . showTxt $ a
                                  , " command to examine items in your "
                                  , loc a
                                  , ". To examine items in your "
                                  , loc b
                                  , ", use the "
-                                 , dblQuote . showText $ b
+                                 , dblQuote . showTxt $ b
                                  , " command." ]
   where
     loc = \case EquipCmd -> "readied equipment"
@@ -871,7 +871,7 @@ sorryExpCmdInInvEq loc = can'tTarget "an item in your " <> loc' <> " with an exp
   where
     loc' = case loc of InEq  -> "readied equipment"
                        InInv -> "inventory"
-                       _     -> patternMatchFail "sorryExpCmdInInvEq loc'" . showText $ loc
+                       _     -> patternMatchFail "sorryExpCmdInInvEq loc'" . showTxt $ loc
 
 
 sorryExpCmdLen :: Text
@@ -1136,9 +1136,9 @@ sorryInterpNewPwExcessArgs = "Passwords may not contain whitespace."
 
 sorryInterpNewPwLen :: Text
 sorryInterpNewPwLen = T.concat [ "Passwords must be "
-                               , showText minPwLen
+                               , showTxt minPwLen
                                , "-"
-                               , showText maxPwLen
+                               , showTxt maxPwLen
                                , " characters in length." ]
 
 
@@ -1248,7 +1248,7 @@ sorryKillSpirit t = prd $ t <> " has already died " <> parensQuote "and is prese
 
 
 sorryKillType :: Id -> Text
-sorryKillType i = "ID " <> showText i <> " is not a mobile."
+sorryKillType i = "ID " <> showTxt i <> " is not a mobile."
 
 
 -----
@@ -1377,7 +1377,7 @@ sorryNoOneHere = "You don't see anyone here."
 
 
 sorryNonexistentId :: Id -> [Text] -> Text
-sorryNonexistentId i ts = T.concat [ "ID ", showText i, " does not exist in ", case ts of
+sorryNonexistentId i ts = T.concat [ "ID ", showTxt i, " does not exist in ", case ts of
   [t] -> the t <> " table."
   _   -> prd $ "any of the following tables: " <> commas ts ]
 
@@ -1840,9 +1840,9 @@ sorrySetName n = dblQuote n <> " is not a valid setting name."
 sorrySetRange :: Text -> Int -> Int -> Text
 sorrySetRange settingName minVal maxVal = T.concat [ capitalize settingName
                                                    , " must be between "
-                                                   , showText minVal
+                                                   , showTxt minVal
                                                    , " and "
-                                                   , showText maxVal
+                                                   , showTxt maxVal
                                                    , "." ]
 
 
@@ -2152,9 +2152,9 @@ sorryWireAlready cn = "As you are already connected to the " <> dblQuote cn <> "
 
 sorryWrapLineLen :: Text
 sorryWrapLineLen = T.concat [ "The line length must be between "
-                            , showText minCols
+                            , showTxt minCols
                             , " and "
-                            , showText maxCols
+                            , showTxt maxCols
                             , " characters." ]
 
 

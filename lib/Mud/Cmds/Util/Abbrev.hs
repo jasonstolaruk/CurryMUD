@@ -55,4 +55,4 @@ calcAbbrev :: HasCallStack => Text -> Text -> Text
 calcAbbrev (T.uncons -> Just (x, _ )) ""                                  = T.singleton x
 calcAbbrev (T.uncons -> Just (x, xs)) (T.uncons -> Just (y, ys)) | x == y = T.cons      x (calcAbbrev xs ys)
                                                                  | x /= y = T.singleton x
-calcAbbrev x                          y                                   = patternMatchFail "calcAbbrev" . showText $ (x, y)
+calcAbbrev x                          y                                   = patternMatchFail "calcAbbrev" . showTxt $ (x, y)

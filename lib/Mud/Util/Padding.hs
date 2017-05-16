@@ -81,7 +81,7 @@ padSex = pad sexPadding
 
 
 padTwoDigits :: Int -> Text
-padTwoDigits x@(showText -> x') = onTrue (x < 10) ('0' `T.cons`) x'
+padTwoDigits x = onTrue (x < 10) ('0' `T.cons`) . showTxt $ x
 
 
 parensPad :: Int -> Text -> Text
