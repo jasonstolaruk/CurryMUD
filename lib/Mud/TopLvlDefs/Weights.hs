@@ -9,6 +9,10 @@ import Mud.Util.Misc
 -- 100 "Weight" = 1 lb
 
 
+appleWeight :: Weight
+appleWeight = 50
+
+
 apronWeight, apronHeavyWeight :: Weight
 apronWeight      = 75
 apronHeavyWeight = plusQuarter apronWeight
@@ -18,6 +22,10 @@ backSmlWeight, backWeight, backLrgWeight :: Weight
 backSmlWeight = minusQuarter backWeight
 backWeight    = 100
 backLrgWeight = plusQuarter  backWeight
+
+
+bananaWeight :: Weight
+bananaWeight = 30
 
 
 breadWeight :: Weight
@@ -63,10 +71,6 @@ flowerWeight :: Weight
 flowerWeight = 10
 
 
-fruitWeight :: Weight
-fruitWeight = 35
-
-
 gorhnaWeight :: Weight
 gorhnaWeight = 1
 
@@ -105,6 +109,10 @@ neckWeight = 5
 
 noseWeight :: Weight
 noseWeight = earWeight
+
+
+orangeWeight :: Weight
+orangeWeight = appleWeight -- TODO
 
 
 overallsWeight :: Weight

@@ -33,7 +33,6 @@ import Mud.TopLvlDefs.Vols
 import Mud.TopLvlDefs.Weights
 
 import Data.Bits (zeroBits)
-import Data.Text (Text)
 
 
 foodList :: [(Id, DistinctFood, Food)]
@@ -76,16 +75,6 @@ foodTag :: FeelingTag
 foodTag = "food"
 
 
------
-
-
-mkFruitObjTemplate :: Text -> ObjTemplate
-mkFruitObjTemplate t = ObjTemplate fruitWeight
-                                   fruitVol
-                                   (Just t)
-                                   zeroBits
-
-
 -- ==================================================
 
 
@@ -99,17 +88,20 @@ appleEntTemplate = EntTemplate (Just "apple")
 
 
 appleObjTemplate :: ObjTemplate
-appleObjTemplate = mkFruitObjTemplate "You sample a small morsel of the ripe apple. It's delectable!"
+appleObjTemplate = ObjTemplate appleWeight
+                               appleVol
+                               (Just "You sample a small morsel of the ripe apple. It's delectable!")
+                               zeroBits
 
 
 appleFood :: Food
 appleFood = Food (DistinctFoodId iFoodApple)
                  "The crisp apple is juicy and sweet."
-                 5 -- TODO: Accurate number(s).
+                 7
 
 
 appleDistinctFood :: DistinctFood
-appleDistinctFood = DistinctFood "apple" 5 30 mkFoodEdibleEffects -- TODO: Accurate number(s).
+appleDistinctFood = DistinctFood "apple" 7 30 mkFoodEdibleEffects
 
 
 newFoodApple :: NewFoodFun
@@ -128,17 +120,20 @@ bananaEntTemplate = EntTemplate (Just "banana")
 
 
 bananaObjTemplate :: ObjTemplate
-bananaObjTemplate = mkFruitObjTemplate "You take a nibble off the ripe banana. The pulpous fruit is sufficiently tasty."
+bananaObjTemplate = ObjTemplate bananaWeight
+                                bananaVol
+                                (Just "You take a nibble off the ripe banana. The pulpous fruit is sufficiently tasty.")
+                                zeroBits
 
 
 bananaFood :: Food
 bananaFood = Food (DistinctFoodId iFoodBanana)
                   "The soft flesh has a mellow, sweet taste. This particular banana is not overly starchy."
-                  5 -- TODO: Accurate number(s).
+                  5
 
 
 bananaDistinctFood :: DistinctFood
-bananaDistinctFood = DistinctFood "banana" 5 30 mkFoodEdibleEffects -- TODO: Accurate number(s).
+bananaDistinctFood = DistinctFood "banana" 5 12 mkFoodEdibleEffects
 
 
 newFoodBanana :: NewFoodFun
@@ -241,8 +236,11 @@ orangeEntTemplate = EntTemplate (Just "orange")
 
 
 orangeObjTemplate :: ObjTemplate
-orangeObjTemplate = mkFruitObjTemplate "The orange has a familiar citrus taste. This one might be a bit on the bitter \
-                                       \side."
+orangeObjTemplate = ObjTemplate orangeWeight
+                                orangeVol
+                                (Just "The orange has a familiar citrus taste. This one might be a bit on the bitter \
+                                      \side.")
+                                zeroBits
 
 
 orangeFood :: Food

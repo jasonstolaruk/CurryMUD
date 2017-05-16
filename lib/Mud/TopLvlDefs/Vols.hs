@@ -10,6 +10,10 @@ import Mud.Util.Misc
 -- length * depth * height * 100
 
 
+appleVol :: Vol
+appleVol = 3 * 3 * 3
+
+
 apronVol, apronHeavyVol :: Vol
 apronVol      = round (12 * 8 * 0.25 * 100 :: Double)
 apronHeavyVol = plusQuarter apronVol
@@ -25,6 +29,10 @@ backSmlVol, backVol, backLrgVol :: Vol
 backSmlVol = minusQuarter backVol
 backVol    = 12 * 8 * 3 * 100
 backLrgVol = plusQuarter  backVol
+
+
+bananaVol :: Vol
+bananaVol = round (9 * 1.25 * 1.5 * 100 :: Double)
 
 
 bottleSmlVol, bottleVol, bottleLrgVol :: Vol
@@ -75,10 +83,6 @@ flowerVol :: Vol
 flowerVol = round (0.5 * 0.5 * 10 * 100 :: Double)
 
 
-fruitVol :: Vol
-fruitVol = 640
-
-
 gorhnaVol :: Vol
 gorhnaVol = round (1 * 0.25 * 0.25 * 100 :: Double)
 
@@ -117,6 +121,10 @@ neckVol = round (2 * 2 * 0.25 * 100 :: Double)
 
 noseVol :: Vol
 noseVol = earVol
+
+
+orangeVol :: Vol
+orangeVol = appleVol -- TODO
 
 
 overallsVol :: Vol
