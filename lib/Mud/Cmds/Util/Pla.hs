@@ -175,7 +175,7 @@ blowUp :: BlowUp a
 blowUp = U.blowUp "Mud.Cmds.Util.Pla"
 
 
-pmf :: (Show a) => PatternMatchFail a b
+pmf :: PatternMatchFail
 pmf = U.pmf "Mud.Cmds.Util.Pla"
 
 

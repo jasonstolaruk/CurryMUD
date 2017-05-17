@@ -88,7 +88,7 @@ import qualified Data.Text as T
 import           System.Console.ANSI (BlinkSpeed(..), Color(..), ColorIntensity(..), ConsoleLayer(..), SGR(..), Underlining(..), setSGRCode)
 
 
-pmf :: (Show a) => PatternMatchFail a b
+pmf :: PatternMatchFail
 pmf = U.pmf "Mud.Misc.ANSI"
 
 

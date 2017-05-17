@@ -99,7 +99,7 @@ import           System.Time.Utils (renderSecs)
 -----
 
 
-pmf :: (Show a) => PatternMatchFail a b
+pmf :: PatternMatchFail
 pmf = U.pmf "Mud.Cmds.Admin"
 
 

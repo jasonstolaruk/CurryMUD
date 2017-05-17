@@ -16,7 +16,7 @@ import qualified Data.IntMap.Strict as IM (lookup)
 import qualified Data.Text as T
 
 
-pmf :: (Show a) => PatternMatchFail a b
+pmf :: PatternMatchFail
 pmf = U.pmf "Mud.Util.Telnet"
 
 

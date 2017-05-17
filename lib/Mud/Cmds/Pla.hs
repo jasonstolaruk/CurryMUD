@@ -121,7 +121,7 @@ default (Int, Double)
 -----
 
 
-pmf :: (Show a) => PatternMatchFail a b
+pmf :: PatternMatchFail
 pmf = U.pmf "Mud.Cmds.Pla"
 
 

@@ -384,10 +384,10 @@ plusThird :: Int -> Int
 plusThird x = round (fromIntegral x * 1.33 :: Double)
 
 
-type PatternMatchFail a b = Text -> a -> b -- TODO: Why do we need this?
+type PatternMatchFail = forall a b. (Show a) => Text -> a -> b
 
 
-pmf :: (Show a) => Text -> PatternMatchFail a b
+pmf :: Text -> PatternMatchFail
 pmf modName funName = blowUp modName funName "pattern match failure" . T.pack . show
 
 

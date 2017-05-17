@@ -76,7 +76,7 @@ import qualified Data.IntMap.Strict as IM (elems, toList)
 import qualified Data.Text as T
 
 
-pmf :: (Show a) => PatternMatchFail a b
+pmf :: PatternMatchFail
 pmf = U.pmf "Mud.Data.State.Util.Output"
 
 

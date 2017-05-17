@@ -20,7 +20,7 @@ import           Data.Maybe (isNothing)
 import           GHC.Stack (HasCallStack)
 
 
-pmf :: (Show a) => PatternMatchFail a b
+pmf :: PatternMatchFail
 pmf = U.pmf "Mud.Interp.Dispatch"
 
 

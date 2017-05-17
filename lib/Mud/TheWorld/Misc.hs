@@ -43,7 +43,7 @@ import           Data.Text (Text)
 import qualified Data.Text as T
 
 
-pmf :: (Show a) => PatternMatchFail a b
+pmf :: PatternMatchFail
 pmf = U.pmf "Mud.TheWorld.Misc"
 
 

@@ -72,7 +72,7 @@ import qualified Data.Vector.Unboxed as V (Vector, length, toList)
 import           System.FilePath ((</>))
 
 
-pmf :: (Show a) => PatternMatchFail a b
+pmf :: PatternMatchFail
 pmf = U.pmf "Mud.Interp.Login"
 
 
