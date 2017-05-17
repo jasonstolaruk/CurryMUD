@@ -2375,9 +2375,9 @@ adminTType :: HasCallStack => ActionFun
 adminTType (NoArgs i mq cols) = (withDbExHandler "adminTType" . getDbTblRecs $ "ttype") >>= \case
   Just xs ->
     let grouped = groupBy ((==) `on` dbTType) xs
-        folded  = foldr (\g -> (((dbTType . head) &&& (nubSort . map (dbHost :: TTypeRec -> Text))) g :)) [] grouped
+        mapped  = map ((dbTType . head) &&& (nubSort . map (dbHost :: TTypeRec -> Text))) grouped
         ts      = [ uncurry (:) . first (<> msg) $ pair
-                  | pair@(_, hosts) <- folded, let l   = length hosts
+                  | pair@(_, hosts) <- mapped, let l   = length hosts
                                              , let msg = T.concat [ ": ", showTxt l, " host", pluralize ("", "s") l ] ]
     in (logPlaExec (prefixAdminCmd "ttype") i >>) $ case intercalateDivider cols ts of
           []   -> wrapSend      mq cols dbEmptyMsg
