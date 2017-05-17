@@ -25,6 +25,10 @@ oneHrInSecs :: Seconds
 oneHrInSecs = 1 {- hr -} * 60 {- mins -} * 60 {- secs -}
 
 
+oneMinInSecs :: Seconds
+oneMinInSecs = 60 {- secs -}
+
+
 sixHrsInSecs :: Seconds
 sixHrsInSecs = 6 {- hrs -} * 60 {- mins -} * 60 {- secs -}
 

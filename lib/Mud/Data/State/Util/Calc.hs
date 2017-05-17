@@ -178,12 +178,12 @@ calcCorpseDecompSecs = let f = (calcCorpseDecompSecs Human |&|) in \case
 
 
 calcCorpseDecompSecsForMobSize :: MobSize -> Seconds
-calcCorpseDecompSecsForMobSize = (* 60 {- secs -}) . \case SmlMinus -> 20 {- mins -}
-                                                           SmlPlus  -> 25
-                                                           MedMinus -> 30
-                                                           MedPlus  -> 35
-                                                           LrgMinus -> 40
-                                                           LrgPlus  -> 45
+calcCorpseDecompSecsForMobSize = (* oneMinInSecs) . \case SmlMinus -> 20 {- mins -}
+                                                          SmlPlus  -> 25
+                                                          MedMinus -> 30
+                                                          MedPlus  -> 35
+                                                          LrgMinus -> 40
+                                                          LrgPlus  -> 45
 
 
 -----
@@ -619,9 +619,9 @@ calcSpiritTime :: HasCallStack => Id -> MudState -> Seconds
 calcSpiritTime i ms = maxSpiritSecs `min` helper (getLvl i ms)
   where
     helper = \case 0 -> 0
-                   1 -> 60
+                   1 -> oneMinInSecs
                    2 -> helper 3
-                   x -> round $ (x `divide` 2) * 60
+                   x -> round $ (x `divide` 2) * fromIntegral oneMinInSecs
 
 
 -----

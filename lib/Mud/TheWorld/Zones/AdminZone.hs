@@ -492,7 +492,7 @@ beeBuzzRmFunName = "AdminZone_iAtrium_beeBuzz"
 
 
 beeBuzzRmFun :: Fun
-beeBuzzRmFun = mkRndmBcastRmFun iAtrium "iAtrium" beeBuzzRmFunName 25 60 beeBuzzMsg
+beeBuzzRmFun = mkRndmBcastRmFun iAtrium "iAtrium" beeBuzzRmFunName 25 oneMinInSecs beeBuzzMsg
   where
     beeBuzzMsg = "A plump bumblebee buzzes happily around the flowerbed."
 

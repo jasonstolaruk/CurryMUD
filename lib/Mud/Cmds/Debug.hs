@@ -40,6 +40,7 @@ import           Mud.Threads.NpcServer
 import           Mud.Threads.ThreadTblPurger
 import           Mud.TopLvlDefs.Chars
 import           Mud.TopLvlDefs.Misc
+import           Mud.TopLvlDefs.Seconds
 import           Mud.TopLvlDefs.Telnet.Chars
 import           Mud.TopLvlDefs.Vols
 import           Mud.TopLvlDefs.Weights
@@ -1064,11 +1065,11 @@ debugTinnitus :: HasCallStack => ActionFun
 debugTinnitus (NoArgs' i mq) = do
     logPlaExec (prefixDebugCmd "tinnitus") i
     ok mq
-    let tag    = potTinnitusTag
-        effSub = EffectOther tag
-        effVal = Nothing
-        effDur = 2 * 60
-        effFeel = Just . EffectFeeling potTinnitusTag $ 2 * 60
+    let tag     = potTinnitusTag
+        effSub  = EffectOther tag
+        effVal  = Nothing
+        effDur  = twoMinsInSecs
+        effFeel = Just . EffectFeeling potTinnitusTag $ twoMinsInSecs
     startEffect i . Effect (Just tag) effSub effVal effDur $ effFeel
 debugTinnitus p = withoutArgs debugTinnitus p
 
