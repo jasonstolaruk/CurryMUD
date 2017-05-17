@@ -6,8 +6,8 @@ module Mud.Cmds.Util.Abbrev (styleAbbrevs) where
 import           Mud.Data.Misc
 import           Mud.Misc.ANSI
 import           Mud.Util.List (nubSort)
-import qualified Mud.Util.Misc as U (patternMatchFail)
-import           Mud.Util.Misc hiding (patternMatchFail)
+import qualified Mud.Util.Misc as U (pmf)
+import           Mud.Util.Misc hiding (pmf)
 import           Mud.Util.Quoting
 import           Mud.Util.Text
 
@@ -18,8 +18,8 @@ import           GHC.Stack (HasCallStack)
 import qualified Data.Text as T
 
 
-patternMatchFail :: (Show a) => PatternMatchFail a b
-patternMatchFail = U.patternMatchFail "Mud.Cmds.Util.Abbrev"
+pmf :: (Show a) => PatternMatchFail a b
+pmf = U.pmf "Mud.Cmds.Util.Abbrev"
 
 
 -- ==================================================
@@ -55,4 +55,4 @@ calcAbbrev :: HasCallStack => Text -> Text -> Text
 calcAbbrev (T.uncons -> Just (x, _ )) ""                                  = T.singleton x
 calcAbbrev (T.uncons -> Just (x, xs)) (T.uncons -> Just (y, ys)) | x == y = T.cons      x (calcAbbrev xs ys)
                                                                  | x /= y = T.singleton x
-calcAbbrev x                          y                                   = patternMatchFail "calcAbbrev" . showTxt $ (x, y)
+calcAbbrev x                          y                                   = pmf "calcAbbrev" (x, y)

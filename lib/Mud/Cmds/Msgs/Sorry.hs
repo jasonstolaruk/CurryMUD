@@ -340,8 +340,8 @@ import           Mud.Misc.ANSI
 import           Mud.Misc.Misc
 import           Mud.TopLvlDefs.Chars
 import           Mud.TopLvlDefs.Misc
-import qualified Mud.Util.Misc as U (patternMatchFail)
-import           Mud.Util.Misc hiding (patternMatchFail)
+import qualified Mud.Util.Misc as U (pmf)
+import           Mud.Util.Misc hiding (pmf)
 import           Mud.Util.Operators
 import           Mud.Util.Quoting
 import           Mud.Util.Text
@@ -358,8 +358,8 @@ import qualified Data.Text as T
 -----
 
 
-patternMatchFail :: (Show a) => PatternMatchFail a b
-patternMatchFail = U.patternMatchFail "Mud.Cmds.Msgs.Sorry"
+pmf :: (Show a) => PatternMatchFail a b
+pmf = U.pmf "Mud.Cmds.Msgs.Sorry"
 
 
 -- ==================================================
@@ -871,7 +871,7 @@ sorryExpCmdInInvEq loc = can'tTarget "an item in your " <> loc' <> " with an exp
   where
     loc' = case loc of InEq  -> "readied equipment"
                        InInv -> "inventory"
-                       _     -> patternMatchFail "sorryExpCmdInInvEq loc'" . showTxt $ loc
+                       _     -> pmf "sorryExpCmdInInvEq loc'" loc
 
 
 sorryExpCmdLen :: Text

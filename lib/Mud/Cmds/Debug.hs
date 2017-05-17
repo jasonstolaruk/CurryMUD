@@ -43,8 +43,8 @@ import           Mud.TopLvlDefs.Misc
 import           Mud.TopLvlDefs.Telnet.Chars
 import           Mud.TopLvlDefs.Vols
 import           Mud.TopLvlDefs.Weights
-import qualified Mud.Util.Misc as U (patternMatchFail)
-import           Mud.Util.Misc hiding (patternMatchFail)
+import qualified Mud.Util.Misc as U (pmf)
+import           Mud.Util.Misc hiding (pmf)
 import           Mud.Util.Operators
 import           Mud.Util.Padding
 import           Mud.Util.Quoting
@@ -94,8 +94,8 @@ import           Unsafe.Coerce (unsafeCoerce)
 -- ==================================================
 
 
-patternMatchFail :: (Show a) => PatternMatchFail a b
-patternMatchFail = U.patternMatchFail "Mud.Cmds.Debug"
+pmf :: (Show a) => PatternMatchFail a b
+pmf = U.pmf "Mud.Cmds.Debug"
 
 
 -----
@@ -203,7 +203,7 @@ mkDebugCmd (prefixDebugCmd -> cn) f cd = Cmd { cmdName           = cn
 
 debugAp :: HasCallStack => ActionFun
 debugAp p@(WithArgs i mq cols _) = logPlaExec (prefixDebugCmd "ap") i >> wrapSend mq cols (showTxt p)
-debugAp p                        = patternMatchFail "debugAp" . showTxt $ p
+debugAp p                        = pmf "debugAp" p
 
 
 -----
@@ -367,7 +367,7 @@ debugCurryTime p = advise p [] adviceDCurryTimeExcessArgs
 
 debugDispCmdList :: HasCallStack => ActionFun
 debugDispCmdList p@(LowerNub' i as) = logPlaExecArgs (prefixDebugCmd "?") as i >> dispCmdList debugCmds p
-debugDispCmdList p                  = patternMatchFail "debugDispCmdList" . showTxt $ p
+debugDispCmdList p                  = pmf "debugDispCmdList" p
 
 
 -----
@@ -416,7 +416,7 @@ debugEnv (NoArgs   i mq cols   ) = do logPlaExecArgs (prefixDebugCmd "env") [] i
 debugEnv (WithArgs i mq cols as) = do
     logPlaExecArgs (prefixDebugCmd "env") as i
     dispMatches i mq cols 2 IsRegex as =<< [ mkEnvListTxt env | env <- liftIO . safePerformIO $ getEnvironment ]
-debugEnv p = patternMatchFail "debugEnv" . showTxt $ p
+debugEnv p = pmf "debugEnv" p
 
 
 mkEnvListTxt :: HasCallStack => [(String, String)] -> [Text]
@@ -654,7 +654,7 @@ parseTwoIntArgs mq cols [a, b] sorryParseA sorryParseB helper =
     parse (txt, sorry) = case reads . T.unpack $ txt :: [(Int, String)] of
       [(x, "")] -> unadulterated . Sum $ x
       _         -> emptied . wrapSend mq cols . sorry $ txt
-parseTwoIntArgs _ _ as _ _ _ = patternMatchFail "parseTwoIntArgs" . showTxt $ as
+parseTwoIntArgs _ _ as _ _ _ = pmf "parseTwoIntArgs" as
 
 
 -----
@@ -805,8 +805,7 @@ debugPidge p = withoutArgs debugPidge p
 
 
 debugPmf :: HasCallStack => ActionFun
-debugPmf (NoArgs'' i) = do logPlaExec (prefixDebugCmd "pmf") i
-                           patternMatchFail "debugPmf" . showTxt $ (0, 'a', "abcdef")
+debugPmf (NoArgs'' i) = logPlaExec (prefixDebugCmd "pmf") i >> pmf "debugPmf" (0, 'a', "abcdef")
 debugPmf p            = withoutArgs debugPmf p
 
 
@@ -884,7 +883,7 @@ debugRndm (NoArgs i mq cols) = do
     pager i mq Nothing . concatMap (wrapIndent 2 cols) . mkRndmNamesMstrTblTxt =<< getState
 debugRndm (WithArgs i mq cols as) = do logPlaExecArgs (prefixDebugCmd "rndm") as i
                                        dispMatches i mq cols 2 IsRegex as . mkRndmNamesMstrTblTxt =<< getState
-debugRndm p                       = patternMatchFail "debugRndm" . showTxt $ p
+debugRndm p                       = pmf "debugRndm" p
 
 
 mkRndmNamesMstrTblTxt :: HasCallStack => MudState -> [Text]
@@ -979,7 +978,7 @@ debugTele (NoArgs i mq cols) = do
     pager i mq Nothing . concatMap (wrapIndent 2 cols) . mkTeleLinkMstrTblTxt =<< getState
 debugTele (WithArgs i mq cols as) = do logPlaExecArgs (prefixDebugCmd "tele") as i
                                        dispMatches i mq cols 2 IsRegex as . mkTeleLinkMstrTblTxt =<< getState
-debugTele p                       = patternMatchFail "debugTele" . showTxt $ p
+debugTele p                       = pmf "debugTele" p
 
 
 mkTeleLinkMstrTblTxt :: HasCallStack => MudState -> [Text]
@@ -1003,7 +1002,7 @@ debugThreads (NoArgs   i mq cols   ) = do logPlaExec (prefixDebugCmd "threads") 
                                           pager i mq Nothing . concatMap (wrapIndent 2 cols) =<< descThreads
 debugThreads (WithArgs i mq cols as) = do logPlaExecArgs (prefixDebugCmd "threads") as i
                                           dispMatches i mq cols 2 IsRegex as =<< descThreads
-debugThreads p                       = patternMatchFail "debugThreads" . showTxt $ p
+debugThreads p                       = pmf "debugThreads" p
 
 
 descThreads :: HasCallStack => MudStack [Text]

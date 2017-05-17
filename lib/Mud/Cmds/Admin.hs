@@ -46,8 +46,8 @@ import           Mud.TheWorld.Zones.AdminZoneIds (iLoggedOut, iNecropolis, iRoot
 import           Mud.TopLvlDefs.FilePaths
 import           Mud.TopLvlDefs.Misc
 import           Mud.Util.List
-import qualified Mud.Util.Misc as U (patternMatchFail)
-import           Mud.Util.Misc hiding (patternMatchFail)
+import qualified Mud.Util.Misc as U (pmf)
+import           Mud.Util.Misc hiding (pmf)
 import           Mud.Util.Operators
 import           Mud.Util.Padding
 import           Mud.Util.Quoting
@@ -99,8 +99,8 @@ import           System.Time.Utils (renderSecs)
 -----
 
 
-patternMatchFail :: (Show a) => PatternMatchFail a b -- TODO: Make a ver of this function that applies "showTxt"?
-patternMatchFail = U.patternMatchFail "Mud.Cmds.Admin"
+pmf :: (Show a) => PatternMatchFail a b
+pmf = U.pmf "Mud.Cmds.Admin"
 
 
 -----
@@ -268,7 +268,7 @@ adminAdmin (Msg i mq cols msg) = getState >>= \ms ->
         logHelper = liftIO mkTimestamp >>= \ts ->
             logMsg |#| ((>>) <$> logPlaOut (prefixAdminCmd "admin") i . pure
                              <*> withDbExHandler_ "adminAdmin" . insertDbTblAdminChan . AdminChanRec ts s)
-adminAdmin p = patternMatchFail "adminAdmin" . showTxt $ p
+adminAdmin p = pmf "adminAdmin" p
 
 
 -----
@@ -313,7 +313,7 @@ adminAnnounce   (Msg' i mq msg) = getState >>= \ms -> let s = getSing i ms in do
     logNotice "adminAnnounce"   $ s <> " is announcing, " <> dblQuote msg
     ok mq
     massSend . colorWith announceColor $ msg
-adminAnnounce p = patternMatchFail "adminAnnounce" . showTxt $ p
+adminAnnounce p = pmf "adminAnnounce" p
 
 
 -----
@@ -351,7 +351,7 @@ adminAs   (WithTarget i mq cols target rest) = getState >>= \ms ->
                        | not . hasType targetId $ ms -> sorryParse
                        | otherwise                   -> as targetId
       _                                              -> sorryParse
-adminAs p = patternMatchFail "adminAs" . showTxt $ p
+adminAs p = pmf "adminAs" p
 
 
 -----
@@ -369,7 +369,7 @@ adminBanHost   (MsgWithTarget i mq cols (uncapitalize -> target) msg) = getState
           let banHost = BanHostRec ts target newStatus msg
           withDbExHandler_ "adminBanHost" . insertDbTblBanHost $ banHost
           notifyBan i mq cols (getSing i ms) target newStatus banHost
-adminBanHost p = patternMatchFail "adminBanHost" . showTxt $ p
+adminBanHost p = pmf "adminBanHost" p
 
 
 notifyBan :: (HasCallStack, Pretty a) => Id -> MsgQueue -> Cols -> Sing -> Text -> Bool -> a -> MudStack ()
@@ -408,8 +408,8 @@ adminBanPC p@(MsgWithTarget i mq cols target msg) = getState >>= \ms ->
                          withDbExHandler_ "adminBanPC" . insertDbTblBanPC $ rec
                          notifyBan i mq cols selfSing strippedTarget newStatus rec
                          when (newStatus && isLoggedIn pla) . adminBoot $ p { args = strippedTarget : T.words bannedMsg }
-      xs      -> patternMatchFail fn . showTxt $ xs
-adminBanPC p = patternMatchFail "adminBanPC" . showTxt $ p
+      xs      -> pmf fn xs
+adminBanPC p = pmf "adminBanPC" p
 
 
 -----
@@ -427,7 +427,7 @@ adminBonus   (LowerNub i mq cols as) = getState >>= \ms ->
           = findFullNameForAbbrev target (mkAdminPlaIdSingList ms) |&| maybe notFound found
     in do logPlaExecArgs (prefixAdminCmd "bonus") as i
           pager i mq Nothing . concat . wrapLines cols . intercalateDivider cols =<< forM as (helper . capitalize)
-adminBonus p = patternMatchFail "adminBonus" . showTxt $ p
+adminBonus p = pmf "adminBonus" p
 
 
 -----
@@ -448,7 +448,7 @@ adminBoot   (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
                             sendFun . prd $ "You have booted " <> strippedTarget
                             sendMsgBoot bootMq =<< f bootId strippedTarget selfSing
                             bcastAdminsExcept [ i, bootId ] . T.concat $ [ selfSing, " booted ", strippedTarget, "." ]
-      xs       -> patternMatchFail "adminBoot" . showTxt $ xs
+      xs       -> pmf "adminBoot" xs
   where
     dfltMsg bootId target' s = emptied $ do
         logPla "adminBoot dfltMsg"   i      $ T.concat [ "booted ", target', " ", parensQuote "no message given", "." ]
@@ -457,7 +457,7 @@ adminBoot   (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
         logPla "adminBoot customMsg" i      $ T.concat [ "booted ", target', "; message: ", dblQuote msg ]
         logPla "adminBoot customMsg" bootId $ T.concat [ "booted by ", s,    "; message: ", dblQuote msg ]
         unadulterated msg
-adminBoot p = patternMatchFail "adminBoot" . showTxt $ p
+adminBoot p = pmf "adminBoot" p
 
 
 -----
@@ -487,7 +487,7 @@ adminChans (LowerNub i mq cols as) = getState >>= \ms ->
             sorry = pure . sorryParseChanId $ a
     in case views chanTbl IM.size ms of 0 -> informNoChans mq cols
                                         _ -> adminChanIOHelper i mq . map helper $ as
-adminChans p = patternMatchFail "adminChans" . showTxt $ p
+adminChans p = pmf "adminChans" p
 
 
 informNoChans :: HasCallStack => MsgQueue -> Cols -> MudStack ()
@@ -525,7 +525,7 @@ adminClone   (LowerNub i mq cols as) = modifyStateSeq $ \ms ->
             sorryId   = sorry . sorryParseId $ a
     in let (ms', fs, logMsgs) = foldl' f (ms, [], []) as & _2 <>~ pure (blankLine mq)
        in (ms', fs ++ pure (logPla "adminClone" i . prd $ "cloning " <> commas logMsgs))
-adminClone p = patternMatchFail "adminClone" . showTxt $ p
+adminClone p = pmf "adminClone" p
 
 
 -----
@@ -536,7 +536,7 @@ adminCount (NoArgs   i mq cols   ) = do logPlaExecArgs (prefixAdminCmd "count") 
                                         pager i mq Nothing . concatMap (wrapIndent 2 cols) =<< mkCountTxt
 adminCount (WithArgs i mq cols as) = do logPlaExecArgs (prefixAdminCmd "count") as i
                                         dispMatches i mq cols 2 IsRegex as =<< mkCountTxt
-adminCount p                       = patternMatchFail "adminCount" . showTxt $ p
+adminCount p                       = pmf "adminCount" p
 
 
 mkCountTxt :: HasCallStack => MudStack [Text]
@@ -663,7 +663,7 @@ adminDestroy   (LowerNub i mq cols as) = getState >>= \ms ->
             sorry   = wrapSend mq cols
             sorryId = sorry . sorryParseId $ a
     in mapM_ helper as
-adminDestroy p = patternMatchFail "adminDestroy" . showTxt $ p
+adminDestroy p = pmf "adminDestroy" p
 
 
 destroyer :: Id -> MsgQueue -> Cols -> Id -> MudStack ()
@@ -691,7 +691,7 @@ adminDiscover p@ActionParams { plaMsgQueue, plaCols } = dumpCmdHelper "discover"
 
 adminDispCmdList :: HasCallStack => ActionFun
 adminDispCmdList p@(LowerNub' i as) = logPlaExecArgs (prefixAdminCmd "?") as i >> dispCmdList adminCmds p
-adminDispCmdList p                  = patternMatchFail "adminDispCmdList" . showTxt $ p
+adminDispCmdList p                  = pmf "adminDispCmdList" p
 
 
 -----
@@ -708,7 +708,7 @@ adminExamine   (WithArgs i mq cols args@(a:as)) = getState >>= \ms -> do
       _                                              -> sorry
       where
         sorry = pure . sorryParseId $ a
-adminExamine p = patternMatchFail "adminExamine" . showTxt $ p
+adminExamine p = pmf "adminExamine" p
 
 
 examineHelper :: HasCallStack => MudState -> Id -> Text -> [Text]
@@ -1066,7 +1066,7 @@ adminFarewell   (LowerNub i mq cols as) = getState >>= \ms ->
                       = findFullNameForAbbrev target (mkAdminPlaIdSingList ms) |&| maybe notFound found
     in do logPlaExecArgs (prefixAdminCmd "farewell") as i
           pager i mq Nothing . concat . wrapLines cols . intercalateDivider cols . map (helper . capitalize) $ as
-adminFarewell p = patternMatchFail "adminFarewell" . showTxt $ p
+adminFarewell p = pmf "adminFarewell" p
 
 
 -----
@@ -1083,7 +1083,7 @@ foodsLiqsHelper cn ts (WithArgs i mq cols as) = do
     logPlaExecArgs (prefixAdminCmd cn) as i
     (sort ts |&|) $ case as of [] -> pager i mq Nothing . concatMap (wrapIndent 2 cols)
                                _  -> dispMatches i mq cols 2 IsRegex as
-foodsLiqsHelper p _ _ = patternMatchFail "foodsLiqshelper" . showTxt $ p
+foodsLiqsHelper p _ _ = pmf "foodsLiqshelper" p
 
 
 -----
@@ -1119,7 +1119,7 @@ adminHosts   (LowerNub i mq cols as) = getState >>= \ms -> do
     let helper target | (notFound, found) <- (pure . sorryPCName $ target, uncurry . mkHostReport ms now $ zone)
                       = findFullNameForAbbrev target (mkAdminPlaIdSingList ms) |&| maybe notFound found
     multiWrapSend mq cols . intercalate mMempty . map (helper . capitalize) $ as
-adminHosts p = patternMatchFail "adminHosts" . showTxt $ p
+adminHosts p = pmf "adminHosts" p
 
 
 mkHostReport :: HasCallStack => MudState -> UTCTime -> TimeZone -> Id -> Sing -> [Text]
@@ -1221,7 +1221,7 @@ adminKill   (LowerNub i mq cols as) = getState >>= \ms -> do
                          toOthers = g (nl . adminKillMsg $ serialize d <> " is", targetId `delete` desigIds d)
                      in [ toTarget, toOthers ]
         g          = first (colorWith adminKillColor)
-adminKill p = patternMatchFail "adminKill" . showTxt $ p
+adminKill p = pmf "adminKill" p
 
 
 -----
@@ -1242,7 +1242,7 @@ adminLinks   (LowerNub i mq cols as) = getState >>= \ms -> do
                                 mkCountSings = map (length &&& head) . sortGroup
                         in findFullNameForAbbrev target (mkAdminPlaIdSingList ms) |&| maybe notFound found
     pager i mq Nothing . noneOnNull . intercalateDivider cols =<< forM as (helper . capitalize)
-adminLinks p = patternMatchFail "adminLinks" . showTxt $ p
+adminLinks p = pmf "adminLinks" p
 
 
 -----
@@ -1269,7 +1269,7 @@ adminLocate   (LowerNub i mq cols as) = getState >>= \ms ->
                               in mkNameTypeIdDesc targetId ms <> (()!# desc |?| (", " <> desc))
     in do logPlaExecArgs (prefixAdminCmd "locate") as i
           multiWrapSend mq cols . intersperse "" . map helper $ as
-adminLocate p = patternMatchFail "adminLocate" . showTxt $ p
+adminLocate p = pmf "adminLocate" p
 
 
 -----
@@ -1401,9 +1401,9 @@ adminMsg   (MsgWithTarget i mq cols target msg) = getState >>= helper >>= (|#| m
                                return [ sentLogMsg, receivedLogMsg ]
                 sentLogMsg     = (i,        T.concat [ "sent message to ", targetSing, ": ", toSelf   ])
                 receivedLogMsg = (targetId, T.concat [ "received message from ", s,    ": ", toTarget ])
-            ioHelper _ xs = patternMatchFail "adminMsg helper ioHelper" . showTxt $ xs
+            ioHelper _ xs = pmf "adminMsg helper ioHelper" xs
         in findFullNameForAbbrev strippedTarget (mkPlaIdSingList ms) |&| maybe notFound found
-adminMsg p = patternMatchFail "adminMsg" . showTxt $ p
+adminMsg p = pmf "adminMsg" p
 
 
 firstAdminMsg :: HasCallStack => Id -> Sing -> MudStack [Text]
@@ -1428,7 +1428,7 @@ adminMyChans   (LowerNub i mq cols as) = getState >>= \ms ->
     in case views chanTbl IM.size ms of
       0 -> informNoChans mq cols
       _ -> logPlaExec (prefixAdminCmd "mychannels") i >> pager i mq Nothing allReports
-adminMyChans p = patternMatchFail "adminMyChans" . showTxt $ p
+adminMyChans p = pmf "adminMyChans" p
 
 
 -----
@@ -1461,11 +1461,11 @@ adminPassword p@(WithTarget i mq cols target pw)
           [targetId] -> let targetPla = getPla targetId ms in if | targetId == i     -> sendFun sorryAdminPasswordSelf
                                                                  | isAdmin targetPla -> sendFun sorryAdminPasswordAdmin
                                                                  | otherwise         -> changePW
-          xs         -> patternMatchFail "adminPassword" . showTxt $ xs
+          xs         -> pmf "adminPassword" xs
   where
     fn       = "adminPassword"
     helper f = ()# T.filter f pw
-adminPassword p = patternMatchFail "adminPassword" . showTxt $ p
+adminPassword p = pmf "adminPassword" p
 
 
 -----
@@ -1500,7 +1500,7 @@ adminPeep   (LowerNub i mq cols as) = do (msgs, unzip -> (logMsgsSelf, logMsgsOt
                 in findFullNameForAbbrev target apiss |&| maybe notFound found
             res = foldr (peep . capitalize) (ms^.plaTbl, [], []) as
         in (ms & plaTbl .~ res^._1, (_2 `fanView` _3) res)
-adminPeep p = patternMatchFail "adminPeep" . showTxt $ p
+adminPeep p = pmf "adminPeep" p
 
 
 -----
@@ -1553,7 +1553,7 @@ adminPrint   (Msg' i mq msg) = getState >>= \ms -> let s = getSing i ms in do
     logNotice "adminPrint"   $ s <> " printed, " <> dblQuote msg
     liftIO . T.putStrLn $ bracketQuote s |<>| colorWith printConsoleColor msg
     ok mq
-adminPrint p = patternMatchFail "adminPrint" . showTxt $ p
+adminPrint p = pmf "adminPrint" p
 
 
 -----
@@ -1588,7 +1588,7 @@ adminSearch   (WithArgs i mq cols (T.unwords -> a)) = do
                                               , x
                                               , colorWith regexMatchColor y
                                               , z ]
-adminSearch p = patternMatchFail "adminSearch" . showTxt $ p
+adminSearch p = pmf "adminSearch" p
 
 
 -----
@@ -1605,7 +1605,7 @@ adminSecurity   (LowerNub i mq cols as) = withDbExHandler "adminSecurity" (getDb
     helper recs target = case filter ((target `T.isPrefixOf`) . (dbName :: SecRec -> Text)) recs of
       []      -> pure . pure . prd $ "No records found for " <> dblQuote target
       matches -> map mkSecReport matches
-adminSecurity p = patternMatchFail "adminSecurity" . showTxt $ p
+adminSecurity p = pmf "adminSecurity" p
 
 
 mkSecReport :: HasCallStack => SecRec -> [Text]
@@ -1626,7 +1626,7 @@ adminSet   (WithArgs i mq cols (target:rest)) =
                 let f msg = (colorWith adminSetColor msg |&|) $ case getType targetId ms of
                         PlaType -> retainedMsg targetId ms
                         NpcType -> bcast . mkBcast targetId
-                        t       -> patternMatchFail "adminSet f" . showTxt $ t
+                        t       -> pmf "adminSet f" t
                 in do logMsgs |#| logPla (prefixAdminCmd "set") i . g . slashes
                       unless (isIncognitoId i ms || targetId == i) . mapM_ f . dropBlanks $ toTargetMsgs
                       sequence_ fs
@@ -1648,7 +1648,7 @@ adminSet   (WithArgs i mq cols (target:rest)) =
                                                                                 (ms, [], [], [], [])
                                                                                 rest'
                       in (ms', (toSelfMsgs, Just targetId, toTargetMsgs, logMsgs, fs))
-adminSet p = patternMatchFail "adminSet" . showTxt $ p
+adminSet p = pmf "adminSet" p
 
 
 setHelper :: HasCallStack => Id
@@ -1768,7 +1768,7 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
           "murgorhd"         -> setPCSacrificesHelper  t Murgorhd
           "rhayk"            -> setPCSacrificesHelper  t Rhayk
           "rumialys"         -> setPCSacrificesHelper  t Rumialys
-          x                  -> patternMatchFail "setHelper helper found" (x :: Text)
+          x                  -> pmf "setHelper helper found" x
         -----
         setEntMaybeTextHelper t k n getter setter
           | not . hasEnt $ t = sorryType
@@ -2182,7 +2182,7 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
 adminShutdown :: HasCallStack => ActionFun
 adminShutdown (NoArgs' i mq    ) = shutdownHelper i mq Nothing
 adminShutdown (Msg'    i mq msg) = shutdownHelper i mq . Just $ msg
-adminShutdown p                  = patternMatchFail "adminShutdown" . showTxt $ p
+adminShutdown p                  = pmf "adminShutdown" p
 
 
 shutdownHelper :: HasCallStack => Id -> MsgQueue -> Maybe Text -> MudStack ()
@@ -2233,7 +2233,7 @@ adminSudoer   (OneArgNubbed i mq cols target) = modifyStateSeq $ \ms ->
               | isSpiritId targetId ms -> sorry . sorrySudoerSpirit $ targetSing
               | otherwise              -> (upd ms [ plaTbl.ind targetId %~ setPlaFlag IsAdmin      (not ia)
                                                   , plaTbl.ind targetId %~ setPlaFlag IsTunedAdmin (not ia) ], fs)
-      xs -> patternMatchFail fn . showTxt $ xs
+      xs -> pmf fn xs
 adminSudoer p = advise p [] adviceASudoerExcessArgs
 
 
@@ -2422,7 +2422,7 @@ whoHelper inOrOut cn (NoArgs i mq cols) = do
 whoHelper inOrOut cn (WithArgs i mq cols as) = do
     logPlaExecArgs (prefixAdminCmd cn) as i
     dispMatches i mq cols 20 IsRegex as =<< mkCharListTxt inOrOut <$> getState
-whoHelper _ _ p = patternMatchFail "whoHelper" . showTxt $ p
+whoHelper _ _ p = pmf "whoHelper" p
 
 
 mkCharListTxt :: HasCallStack => LoggedInOrOut -> MudState -> [Text]
@@ -2484,4 +2484,4 @@ adminWire   (WithArgs i mq cols as) = views chanTbl IM.size <$> getState >>= \ca
                             , "You stop tapping the "  <> dblQuote cn <> " channel." )
                        else ( ms & chanTbl.ind ci.chanWiretappers <>~ pure s
                             , "You start tapping the " <> dblQuote cn <> " channel." )
-adminWire p = patternMatchFail "adminWire" . showTxt $ p
+adminWire p = pmf "adminWire" p

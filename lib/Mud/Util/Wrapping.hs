@@ -19,8 +19,8 @@ module Mud.Util.Wrapping ( adjustIndent
 import           Mud.Data.State.ActionParams.ActionParams
 import           Mud.Misc.ANSI
 import           Mud.TopLvlDefs.Chars
-import qualified Mud.Util.Misc as U (patternMatchFail)
-import           Mud.Util.Misc hiding (patternMatchFail)
+import qualified Mud.Util.Misc as U (pmf)
+import           Mud.Util.Misc hiding (pmf)
 import           Mud.Util.Operators
 import           Mud.Util.Text
 
@@ -33,8 +33,8 @@ import           GHC.Stack (HasCallStack)
 import qualified Data.Text as T
 
 
-patternMatchFail :: (Show a) => PatternMatchFail a b
-patternMatchFail = U.patternMatchFail "Mud.Util.Wrapping"
+pmf :: (Show a) => PatternMatchFail a b
+pmf = U.pmf "Mud.Util.Wrapping"
 
 
 -- ==================================================
@@ -154,7 +154,7 @@ wrapLineWithIndentTag cols (T.break (not . isDigit) . T.reverse . T.init -> brok
     readsRes                    = reads . T.unpack $ numTxt :: [(Int, String)]
     extractInt []               = 0
     extractInt [(x, _)] | x > 0 = x
-    extractInt xs               = patternMatchFail "wrapLineWithIndentTag extractInt" . showTxt $ xs
+    extractInt xs               = pmf "wrapLineWithIndentTag extractInt" xs
     indent                      = extractInt readsRes
     n | isZero indent           = calcIndent . dropANSI $ t
       | otherwise               = adjustIndent indent cols

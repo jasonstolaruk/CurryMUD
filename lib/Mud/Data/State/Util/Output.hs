@@ -52,8 +52,8 @@ import           Mud.Misc.Misc
 import           Mud.TopLvlDefs.Chars
 import           Mud.TopLvlDefs.Telnet.Chars
 import           Mud.Util.List (nubSort)
-import qualified Mud.Util.Misc as U (patternMatchFail)
-import           Mud.Util.Misc hiding (patternMatchFail)
+import qualified Mud.Util.Misc as U (pmf)
+import           Mud.Util.Misc hiding (pmf)
 import           Mud.Util.Operators
 import           Mud.Util.Quoting
 import           Mud.Util.Text
@@ -76,8 +76,8 @@ import qualified Data.IntMap.Strict as IM (elems, toList)
 import qualified Data.Text as T
 
 
-patternMatchFail :: (Show a) => PatternMatchFail a b
-patternMatchFail = U.patternMatchFail "Mud.Data.State.Util.Output"
+pmf :: (Show a) => PatternMatchFail a b
+pmf = U.pmf "Mud.Data.State.Util.Output"
 
 
 -- ============================================================
@@ -99,7 +99,7 @@ bcast bs = getState >>= \ms -> liftIO . atomically . forM_ bs . sendBcast $ ms
         helper targetId = case getType targetId ms of
           PlaType -> writeIt FromServer targetId
           NpcType -> maybeVoid (writeIt ToNpc) . getPossessor targetId $ ms
-          t       -> patternMatchFail "bcast sendBcast helper" . showTxt $ t
+          t       -> pmf "bcast sendBcast helper" t
         writeIt f i = let (mq, cols) = getMsgQueueColumns i ms
                       in writeTQueue mq . f . T.unlines . concatMap (wrap cols) . T.lines . parseDesig i ms $ msg
 
@@ -267,7 +267,7 @@ parseDesigHelper f i ms = loop (getIntroduced i ms)
                         loop intros rest
                       d@StdDesig { desigEntSing = Nothing,  .. } ->
                         left <> expandEntName i ms d <> loop intros rest
-                      _ -> patternMatchFail "parseDesigHelper loop" . showTxt $ desig
+                      _ -> pmf "parseDesigHelper loop" desig
                     | T.singleton nonStdDesigDelimiter `T.isInfixOf` txt
                     , (left, NonStdDesig { .. }, rest) <- extractDesig nonStdDesigDelimiter txt
                     = left <> (dEntSing `elem` intros ? dEntSing :? dDesc) <> loop intros rest
@@ -294,8 +294,8 @@ expandEntName i ms StdDesig { .. } = let f      = mkCapsFun desigCap
           in length matches > 1 |?| maybeEmp (spcR . mkOrdinal . succ) (elemIndex desigId matches)
     expandSex 'm' = "male"
     expandSex 'f' = "female"
-    expandSex x   = patternMatchFail "expandEntName expandSex" . T.singleton $ x
-expandEntName _ _ d = patternMatchFail "expandEntName" . showTxt $ d
+    expandSex x   = pmf "expandEntName expandSex" x
+expandEntName _ _ d = pmf "expandEntName" d
 
 
 -----

@@ -78,8 +78,8 @@ import           Mud.TopLvlDefs.Seconds
 import           Mud.TopLvlDefs.Vols
 import           Mud.TopLvlDefs.Weights
 import           Mud.Util.List
-import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
-import           Mud.Util.Misc hiding (blowUp, patternMatchFail)
+import qualified Mud.Util.Misc as U (blowUp, pmf)
+import           Mud.Util.Misc hiding (blowUp, pmf)
 import           Mud.Util.Operators
 import           Mud.Util.Text
 
@@ -105,8 +105,8 @@ blowUp :: BlowUp a
 blowUp = U.blowUp "Mud.Data.State.Util.Calc"
 
 
-patternMatchFail :: (Show a) => PatternMatchFail a b
-patternMatchFail = U.patternMatchFail "Mud.Data.State.Util.Calc"
+pmf :: (Show a) => PatternMatchFail a b
+pmf = U.pmf "Mud.Data.State.Util.Calc"
 
 
 -- ==================================================
@@ -302,7 +302,7 @@ calcLvl i = calcLvlForExp . getExp i
 calcLvlForExp :: HasCallStack => Exp -> Lvl
 calcLvlForExp amt = let helper ((l, x):rest) | amt < x   = pred l
                                              | otherwise = helper rest
-                        helper xs                        = patternMatchFail "calcLvlForExp" . showTxt $ xs
+                        helper xs                        = pmf "calcLvlForExp" xs
                     in helper calcLvlExps
 
 

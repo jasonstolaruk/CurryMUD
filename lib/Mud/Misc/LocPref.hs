@@ -8,9 +8,8 @@ module Mud.Misc.LocPref ( hasLocPref
 import           Mud.Data.Misc
 import           Mud.TopLvlDefs.Chars
 import           Mud.Util.Misc (PatternMatchFail)
-import qualified Mud.Util.Misc as U (patternMatchFail)
+import qualified Mud.Util.Misc as U (pmf)
 import           Mud.Util.Operators
-import           Mud.Util.Text
 
 import           Control.Lens (_1, _2, _3)
 import           Control.Lens.Operators ((&), (%~))
@@ -18,8 +17,8 @@ import           Data.Text (Text)
 import qualified Data.Text as T
 
 
-patternMatchFail :: (Show a) => PatternMatchFail a b
-patternMatchFail = U.patternMatchFail "Mud.Misc.LocPref"
+pmf :: (Show a) => PatternMatchFail a b
+pmf = U.pmf "Mud.Misc.LocPref"
 
 
 -- ==================================================
@@ -58,7 +57,7 @@ singleArgInvEqRm dflt arg = case sortArgsInvEqRm dflt . pure $ arg of
   ([a], [],  [] ) -> (InInv, a)
   ([],  [a], [] ) -> (InEq,  a)
   ([],  [],  [a]) -> (InRm,  a)
-  x               -> patternMatchFail "singleArgInvEqRm" . showTxt $ x
+  x               -> pmf "singleArgInvEqRm" x
 
 
 -----

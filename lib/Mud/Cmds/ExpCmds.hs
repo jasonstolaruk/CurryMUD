@@ -19,8 +19,8 @@ import           Mud.Data.State.Util.Misc
 import           Mud.Data.State.Util.Output
 import           Mud.Misc.LocPref
 import qualified Mud.Misc.Logging as L (logPlaOut)
-import qualified Mud.Util.Misc as U (patternMatchFail)
-import           Mud.Util.Misc hiding (patternMatchFail)
+import qualified Mud.Util.Misc as U (pmf)
+import           Mud.Util.Misc hiding (pmf)
 import           Mud.Util.Operators
 import           Mud.Util.Text
 
@@ -34,8 +34,8 @@ import qualified Data.Set as S (Set, filter, foldr, fromList, map, toList)
 import qualified Data.Text as T
 
 
-patternMatchFail :: (Show a) => PatternMatchFail a b
-patternMatchFail = U.patternMatchFail "Mud.Cmds.ExpCmds"
+pmf :: (Show a) => PatternMatchFail a b
+pmf = U.pmf "Mud.Cmds.ExpCmds"
 
 
 -----
@@ -1027,7 +1027,7 @@ expCmd (ExpCmd ecn ect          desc) (NoArgs i mq cols) = getState >>= \ms@(get
   (NoTarget  toSelf toOthers      ) | r `elem` furRaces -> wrapSend mq cols . sorryExpCmdBlush . pp $ r
                                     | otherwise         -> helper ms toSelf toOthers
   (Versatile toSelf toOthers _ _ _)                     -> helper ms toSelf toOthers
-  _                                                     -> patternMatchFail "expCmd" . showTxt $ ect
+  _                                                     -> pmf "expCmd" ect
   where
     furRaces                  = [ Felinoid, Lagomorph, Vulpenoid ]
     helper ms toSelf toOthers =
@@ -1042,7 +1042,7 @@ expCmd (ExpCmd ecn NoTarget {} _   ) p@(WithArgs     _ _  _    (_:_) ) = advise 
 expCmd (ExpCmd ecn ect         desc)   (OneArgNubbed i mq cols target) = case ect of
   (HasTarget     toSelf toTarget toOthers) -> helper toSelf toTarget toOthers
   (Versatile _ _ toSelf toTarget toOthers) -> helper toSelf toTarget toOthers
-  _                                        -> patternMatchFail "expCmd" . showTxt $ ect
+  _                                        -> pmf "expCmd" ect
   where
     helper toSelf toTarget toOthers = getState >>= \ms -> case singleArgInvEqRm InRm target of
       (InRm, target') ->
@@ -1077,7 +1077,7 @@ expCmd (ExpCmd ecn ect         desc)   (OneArgNubbed i mq cols target) = case ec
                 in if getType targetId ms `elem` [ PlaType, NpcType ]
                   then ioHelper . serialize . mkStdDesig targetId ms $ Don'tCap
                   else wrapSend mq cols sorryExpCmdTargetType
-              x -> patternMatchFail "expCmd helper" . showTxt $ x
+              x -> pmf "expCmd helper" x
             else wrapSend mq cols sorryNoOneHere
       (x, _) -> wrapSend mq cols . sorryExpCmdInInvEq $ x
 expCmd _ p = advise p [] adviceExpCmdExcessArgs

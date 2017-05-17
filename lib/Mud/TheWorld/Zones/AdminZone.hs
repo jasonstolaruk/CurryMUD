@@ -35,8 +35,8 @@ import           Mud.TopLvlDefs.Seconds
 import           Mud.TopLvlDefs.Vols
 import           Mud.TopLvlDefs.Weights
 import           Mud.Util.List
-import qualified Mud.Util.Misc as U (patternMatchFail)
-import           Mud.Util.Misc hiding (patternMatchFail)
+import qualified Mud.Util.Misc as U (pmf)
+import           Mud.Util.Misc hiding (pmf)
 import           Mud.Util.Operators
 import           Mud.Util.Quoting
 import           Mud.Util.Text
@@ -59,8 +59,8 @@ import qualified Data.Text as T
 -----
 
 
-patternMatchFail :: (Show a) => PatternMatchFail a b
-patternMatchFail = U.patternMatchFail "Mud.TheWorld.Zones.AdminZone"
+pmf :: (Show a) => PatternMatchFail a b
+pmf = U.pmf "Mud.TheWorld.Zones.AdminZone"
 
 
 -----
@@ -459,7 +459,7 @@ pick p@(LowerNub' i as) = genericActionWithHooks p helper "pick"
             mkMsgForArg arg | arg `elem` hookTriggers = head toSelfs
                             | otherwise               = sorryPickNotFlower arg
         in (ms', (sorrys ++ map mkMsgForArg inRms', bs, logMsgs, fs))
-pick p = patternMatchFail "pick" . showTxt $ p
+pick p = pmf "pick" p
 
 
 -- ==================================================

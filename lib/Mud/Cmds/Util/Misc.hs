@@ -114,8 +114,8 @@ import           Mud.TopLvlDefs.Padding
 import           Mud.TopLvlDefs.Vols
 import           Mud.TopLvlDefs.Weights
 import           Mud.Util.List hiding (headTail)
-import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
-import           Mud.Util.Misc hiding (blowUp, patternMatchFail)
+import qualified Mud.Util.Misc as U (blowUp, pmf)
+import           Mud.Util.Misc hiding (blowUp, pmf)
 import           Mud.Util.Operators
 import           Mud.Util.Padding
 import           Mud.Util.Quoting
@@ -160,8 +160,8 @@ blowUp :: BlowUp a
 blowUp = U.blowUp "Mud.Cmds.Util.Misc"
 
 
-patternMatchFail :: (Show a) => PatternMatchFail a b
-patternMatchFail = U.patternMatchFail "Mud.Cmds.Util.Misc"
+pmf :: (Show a) => PatternMatchFail a b
+pmf = U.pmf "Mud.Cmds.Util.Misc"
 
 
 -----
@@ -282,7 +282,7 @@ dispCmdList :: HasCallStack => [Cmd] -> ActionFun
 dispCmdList cmds (NoArgs i mq cols) =
     pager i mq Nothing . concatMap (wrapIndent (succ cmdNamePadding) cols) . mkCmdListTxt $ cmds
 dispCmdList cmds (LowerNub i mq cols as) = dispMatches i mq cols (succ cmdNamePadding) Isn'tRegex as . mkCmdListTxt $ cmds
-dispCmdList _    p                       = patternMatchFail "dispCmdList" . showTxt $ p
+dispCmdList _    p                       = pmf "dispCmdList" p
 
 
 mkCmdListTxt :: HasCallStack => [Cmd] -> [Text]
@@ -473,13 +473,13 @@ happyTimes ms xformed =
         extractIds [ForNonTargets _           ] acc = acc
         extractIds (ForTarget     _ targetId:_) acc = targetId : acc
         extractIds (ForTargetPoss _ targetId:_) acc = targetId : acc
-        extractIds xs                           _   = patternMatchFail "happyTimes extractIds" . showTxt $ xs
+        extractIds xs                           _   = pmf "happyTimes extractIds" xs
         msgMap  = foldr (\targetId -> at targetId ?~ []) IM.empty targetIds
         msgMap' = foldr consWord msgMap toTargets
         consWord [ ForNonTargets word                           ] = IM.map (word :)
         consWord [ ForTarget     p targetId, ForNonTargets word ] = selectiveCons p targetId False word
         consWord [ ForTargetPoss p targetId, ForNonTargets word ] = selectiveCons p targetId True  word
-        consWord xs = const . patternMatchFail "happyTimes consWord" . showTxt $ xs
+        consWord xs                                               = const . pmf "happyTimes consWord" $ xs
         selectiveCons p targetId isPoss word = IM.mapWithKey helper
           where
             helper k v = let targetSing = onTrue isPoss (<> "'s") . getSing k $ ms
@@ -772,7 +772,7 @@ mkHolySymbolWeight Rumialys  = 15
 
 mkInterfaceList :: HasCallStack => IO Text
 mkInterfaceList = NI.getNetworkInterfaces >>= \ns ->
-    return . commas $ [ quoteWith' ((T.pack *** showTxt) . (NI.name &&& NI.ipv4) $ n) $ ": " | n <- ns ]
+    return . commas $ [ quoteWith' ((T.pack *** showTxt) . (NI.name &&& NI.ipv4) $ n) ": " | n <- ns ]
 
 
 -----
@@ -1020,7 +1020,7 @@ mkTimeDescDay {- afternoon -} 14 = mkTimeDescDayHelper "it's late afternoon."
 mkTimeDescDay {- evening   -} 15 = mkTimeDescDayHelper "it's now evening, or about 15:00."
 mkTimeDescDay {- evening   -} 16 = mkTimeDescDayHelper "it's mid evening."
 mkTimeDescDay {- evening   -} 17 = mkTimeDescDayHelper "it's late in the evening."
-mkTimeDescDay                 x  = patternMatchFail "mkTimeDescDay" . showTxt $ x
+mkTimeDescDay                 x  = pmf "mkTimeDescDay" x
 
 
 mkTimeDescDayHelper :: Text -> Text
@@ -1037,7 +1037,7 @@ mkTimeDescNight phase   4  = mkTimeDescNightHelper phase "it's less than 2 hours
 mkTimeDescNight phase   5  = mkTimeDescNightHelper phase "the sun will soon be rising."
 mkTimeDescNight _       18 = "The sun has finished setting. It's about 18:00."
 mkTimeDescNight phase   19 = mkTimeDescNightHelper phase "night has only just begun."
-mkTimeDescNight _       x  = patternMatchFail "mkTimeDescNight" . showTxt $ x
+mkTimeDescNight _       x  = pmf "mkTimeDescNight" x
 
 
 mkTimeDescNightHelper :: MoonPhase -> Text -> Text
@@ -1066,7 +1066,7 @@ tunedInOutColorize False = tunedInOutHelper id                       False
 unmsg :: [Text] -> [Text]
 unmsg [cn        ] = [ T.init cn, ""            ]
 unmsg [cn, target] = [ cn,        T.init target ]
-unmsg xs           = patternMatchFail "unmsg" . showTxt $ xs
+unmsg xs           = pmf "unmsg" xs
 
 
 -----
@@ -1118,4 +1118,4 @@ withoutArgs f p = ignore p >> f p { args = [] }
 
 ignore :: HasCallStack => ActionFun
 ignore (Ignoring mq cols as) = wrapSend1Nl mq cols . parensQuote . thrice prd $ "Ignoring " <> as
-ignore p                     = patternMatchFail "ignore" . showTxt $ p
+ignore p                     = pmf "ignore" p

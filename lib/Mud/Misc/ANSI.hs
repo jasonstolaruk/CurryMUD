@@ -76,8 +76,8 @@ module Mud.Misc.ANSI ( abbrevColor
                      , zingColor ) where
 
 import           Mud.TopLvlDefs.Chars
-import qualified Mud.Util.Misc as U (patternMatchFail)
-import           Mud.Util.Misc hiding (patternMatchFail)
+import qualified Mud.Util.Misc as U (pmf)
+import           Mud.Util.Misc hiding (pmf)
 import           Mud.Util.Operators
 import           Mud.Util.Quoting
 import           Mud.Util.Text
@@ -88,8 +88,8 @@ import qualified Data.Text as T
 import           System.Console.ANSI (BlinkSpeed(..), Color(..), ColorIntensity(..), ConsoleLayer(..), SGR(..), Underlining(..), setSGRCode)
 
 
-patternMatchFail :: (Show a) => PatternMatchFail a b
-patternMatchFail = U.patternMatchFail "Mud.Misc.ANSI"
+pmf :: (Show a) => PatternMatchFail a b
+pmf = U.pmf "Mud.Misc.ANSI"
 
 
 -- ==================================================
@@ -426,7 +426,7 @@ loopOverExtractedList ((xs, escSeq):rest) ys
   | ()# xs = escSeq <> loopOverExtractedList rest ys
   | left         <- loopOverExtractedTxt xs ys
   , (Just right) <- left `T.stripPrefix` ys = left <> escSeq <> loopOverExtractedList rest right
-loopOverExtractedList xs _ = patternMatchFail "loopOverExtractedList" . showTxt $ xs
+loopOverExtractedList xs _ = pmf "loopOverExtractedList" xs
 
 
 loopOverExtractedTxt :: Text -> Text -> Text
@@ -435,4 +435,4 @@ loopOverExtractedTxt a@(T.uncons -> Just (x, xs)) (T.uncons -> Just (y, ys))
   | y == indentFiller = indentFiller `T.cons` loopOverExtractedTxt a  ys
   | y == breakMarker  = breakMarker  `T.cons` loopOverExtractedTxt a  ys
 loopOverExtractedTxt "" _ = ""
-loopOverExtractedTxt a  b = patternMatchFail "loopOverExtractedTxt" . showTxt $ (a, b)
+loopOverExtractedTxt a  b = pmf "loopOverExtractedTxt" (a, b)

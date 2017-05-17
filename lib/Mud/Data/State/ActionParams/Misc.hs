@@ -6,7 +6,7 @@ module Mud.Data.State.ActionParams.Misc ( capitalizeMsg
                                         , punctuateMsg ) where
 
 import           Mud.Util.Misc (PatternMatchFail)
-import qualified Mud.Util.Misc as U (patternMatchFail)
+import qualified Mud.Util.Misc as U (pmf)
 import           Mud.Util.Text
 
 import           Data.Char (isLetter)
@@ -14,8 +14,8 @@ import           Data.Text (Text)
 import qualified Data.Text as T
 
 
-patternMatchFail :: (Show a) => PatternMatchFail a b
-patternMatchFail = U.patternMatchFail "Mud.Data.State.ActionParams.Misc"
+pmf :: (Show a) => PatternMatchFail a b
+pmf = U.pmf "Mud.Data.State.ActionParams.Misc"
 
 
 -- ==================================================
@@ -52,4 +52,4 @@ punctuateMsg = \case "" -> ""
 
 formatMsgWithTargetArgs :: Args -> (Text, Text)
 formatMsgWithTargetArgs ((capitalize . T.toLower -> target):(formatMsgArgs -> msg)) = (target, msg)
-formatMsgWithTargetArgs as = patternMatchFail "formatMsgWithTargetArgs" . showTxt $ as
+formatMsgWithTargetArgs as                                                          = pmf "formatMsgWithTargetArgs" as

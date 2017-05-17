@@ -60,13 +60,13 @@ module Mud.Util.Misc ( BlowUp
                      , onFalse
                      , onTrue
                      , panicMsg
-                     , patternMatchFail
                      , percent
                      , plusFifth
                      , plusHalf
                      , plusQuarter
                      , plusTenth
                      , plusThird
+                     , pmf
                      , printPanicMsg
                      , safeCoerce
                      , safeHead
@@ -138,7 +138,7 @@ concatMapM  :: (Monad m, Traversable t) => (a -> m [b]) -> t a -> m [b]
 concatMapM f = fmap concat . mapM f
 
 
-type BlowUp a = Text -> Text -> Text -> a
+type BlowUp a = Text -> Text -> Text -> a -- TODO: Why do we need this?
 
 
 blowUp :: Text -> BlowUp a
@@ -360,13 +360,6 @@ panicMsg :: Text
 panicMsg = "panic! " <> parensQuote ("the " <> singleQuote "impossible" <> " happened")
 
 
-type PatternMatchFail a b = Text -> a -> b
-
-
-patternMatchFail :: (Show a) => Text -> PatternMatchFail a b
-patternMatchFail modName funName = blowUp modName funName "pattern match failure" . T.pack . show
-
-
 percent :: Int -> Int -> Int
 percent x y = 100 * x `divideRound` y
 
@@ -389,6 +382,13 @@ plusTenth x = round (fromIntegral x * 1.10 :: Double)
 
 plusThird :: Int -> Int
 plusThird x = round (fromIntegral x * 1.33 :: Double)
+
+
+type PatternMatchFail a b = Text -> a -> b -- TODO: Why do we need this?
+
+
+pmf :: (Show a) => Text -> PatternMatchFail a b
+pmf modName funName = blowUp modName funName "pattern match failure" . T.pack . show
 
 
 printPanicMsg :: IO ()

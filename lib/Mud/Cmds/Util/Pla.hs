@@ -135,8 +135,8 @@ import           Mud.TopLvlDefs.Padding
 import           Mud.TopLvlDefs.Vols
 import           Mud.TopLvlDefs.Weights
 import           Mud.Util.List
-import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
-import           Mud.Util.Misc hiding (blowUp, patternMatchFail)
+import qualified Mud.Util.Misc as U (blowUp, pmf)
+import           Mud.Util.Misc hiding (blowUp, pmf)
 import           Mud.Util.Operators
 import           Mud.Util.Padding
 import           Mud.Util.Quoting
@@ -175,8 +175,8 @@ blowUp :: BlowUp a
 blowUp = U.blowUp "Mud.Cmds.Util.Pla"
 
 
-patternMatchFail :: (Show a) => PatternMatchFail a b
-patternMatchFail = U.patternMatchFail "Mud.Cmds.Util.Pla"
+pmf :: (Show a) => PatternMatchFail a b
+pmf = U.pmf "Mud.Cmds.Util.Pla"
 
 
 -----
@@ -254,7 +254,7 @@ bugTypoLogger (Msg' i mq msg) wl = getState >>= \ms ->
                                           in [ withDbExHandler_ "bugTypoLogger" . insertDbTblTypo $ t
                                              , bcastOtherAdmins i $ s <> " has logged a typo: " <> pp t ]
         send mq . nlnl $ "Thank you."
-bugTypoLogger p _ = patternMatchFail "bugTypoLogger" . showTxt $ p
+bugTypoLogger p _ = pmf "bugTypoLogger" p
 
 
 -----
@@ -442,7 +442,7 @@ disconnectHelper i (target, as) idNamesTbl ms =
                                                 & _1.mobTbl.ind i.curPp -~ 3
                                                 & _2 <>~ pure (Right (targetId, targetSing, targetName))
                                          , b )
-                     xs -> patternMatchFail "disconnectHelper found" . showTxt $ xs
+                     xs -> pmf "disconnectHelper found" xs
                      where
                        hint = onFalse b ((<> hintDisconnect) . spcR)
                    ci               = c^.chanId
@@ -477,7 +477,7 @@ execIfPossessed :: HasCallStack => ActionParams -> CmdName -> (Id -> ActionFun) 
 execIfPossessed p@(WithArgs i mq cols _) cn f = getState >>= \ms -> let s = getSing i ms in case getPossessor i ms of
       Nothing -> wrapSend mq cols (sorryNotPossessed s cn)
       Just i' -> f i' p
-execIfPossessed p _ _ = patternMatchFail "execIfPossessed" . showTxt $ p
+execIfPossessed p _ _ = pmf "execIfPossessed" p
 
 
 -----
@@ -494,7 +494,7 @@ expandLinkName "w"  = "west"
 expandLinkName "nw" = "northwest"
 expandLinkName "u"  = "up"
 expandLinkName "d"  = "down"
-expandLinkName x    = patternMatchFail "expandLinkName" x
+expandLinkName x    = pmf "expandLinkName" x
 
 
 expandOppLinkName :: HasCallStack => Text -> Text
@@ -508,7 +508,7 @@ expandOppLinkName "w"  = "the east"
 expandOppLinkName "nw" = "the southeast"
 expandOppLinkName "u"  = "below"
 expandOppLinkName "d"  = "above"
-expandOppLinkName x    = patternMatchFail "expandOppLinkName" x
+expandOppLinkName x    = pmf "expandOppLinkName" x
 
 
 -----
@@ -811,7 +811,7 @@ mkCanCan'tCoins :: Coins -> Int -> (Coins, Coins)
 mkCanCan'tCoins (Coins (c, 0, 0)) n = (Coins (n, 0, 0), Coins (c - n, 0,     0    ))
 mkCanCan'tCoins (Coins (0, s, 0)) n = (Coins (0, n, 0), Coins (0,     s - n, 0    ))
 mkCanCan'tCoins (Coins (0, 0, g)) n = (Coins (0, 0, n), Coins (0,     0,     g - n))
-mkCanCan'tCoins c                 _ = patternMatchFail "mkCanCan'tCoins" . showTxt $ c
+mkCanCan'tCoins c                 _ = pmf "mkCanCan'tCoins" c
 
 
 mkGetDropCoinsDescOthers :: HasCallStack => Id -> Desig -> GetOrDrop -> Coins -> [Broadcast]
@@ -1254,7 +1254,7 @@ helperSettings i ms a (T.breakOn "=" -> (name, T.tail -> value)) =
                         "mp"       -> alterPts "mp" IsShowingMp
                         "pp"       -> alterPts "pp" IsShowingPp
                         "fp"       -> alterPts "fp" IsShowingFp
-                        t          -> patternMatchFail "helperSettings found" t
+                        t          -> pmf "helperSettings found" t
       where
         procEither f = parseInt |&| either appendMsg f
         parseInt     = case (reads . T.unpack $ value :: [(Int, String)]) of [(x, "")] -> Right x
@@ -1386,7 +1386,7 @@ mkUnreadyDescs i ms d targetIds = unzip [ helper icb | icb <- mkIdCountBothList 
         Feet   -> mkVerbTakeOff person
         Shield -> mkVerbUnready person
         _      -> mkVerbDoff    person
-      t -> patternMatchFail "mkUnreadyDescs mkVerb" . showTxt $ t
+      t -> pmf "mkUnreadyDescs mkVerb" t
     mkVerbRemove  = \case SndPer -> "remove"
                           ThrPer -> "removes"
     mkVerbTakeOff = \case SndPer -> "take off"
@@ -2231,7 +2231,7 @@ stopDrinking (WithArgs i mq cols _) ms =
         msg         = T.concat [ serialize d, " stops drinking from ", aOrAn s, "." ]
         bcastHelper = bcastIfNotIncogNl i . pure $ (msg, i `delete` desigIds d)
     in stopAct i Drinking >> wrapSend mq cols toSelf >> bcastHelper
-stopDrinking p _ = patternMatchFail "stopDrinking" . showTxt $ p
+stopDrinking p _ = pmf "stopDrinking" p
 
 
 stopEating :: HasCallStack => ActionParams -> MudState -> MudStack ()
@@ -2241,7 +2241,7 @@ stopEating (WithArgs i mq cols _) ms = let Just s      = getNowEating i ms
                                            msg         = T.concat [ serialize d, " stops eating ", aOrAn s, "." ]
                                            bcastHelper = bcastIfNotIncogNl i . pure $ (msg, i `delete` desigIds d)
                                        in stopAct i Eating >> wrapSend mq cols toSelf >> bcastHelper
-stopEating p _                       = patternMatchFail "stopEating" . showTxt $ p
+stopEating p _                       = pmf "stopEating" p
 
 
 stopSacrificing :: HasCallStack => ActionParams -> MudState -> MudStack ()
@@ -2250,4 +2250,4 @@ stopSacrificing (WithArgs i mq cols _) ms = let toSelf      = "You stop sacrific
                                                 msg         = serialize d <> " stops sacrificing a corpse."
                                                 bcastHelper = bcastIfNotIncogNl i . pure $ (msg, i `delete` desigIds d)
                                             in stopAct i Sacrificing >> wrapSend mq cols toSelf >> bcastHelper
-stopSacrificing p _ = patternMatchFail "stopSacrificing" . showTxt $ p
+stopSacrificing p                      _  = pmf "stopSacrificing" p

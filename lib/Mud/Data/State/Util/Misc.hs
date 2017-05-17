@@ -81,8 +81,8 @@ import           Mud.TopLvlDefs.Chars
 import           Mud.TopLvlDefs.Misc
 import           Mud.TopLvlDefs.Seconds
 import           Mud.Util.List hiding (countOcc)
-import qualified Mud.Util.Misc as U (blowUp, patternMatchFail)
-import           Mud.Util.Misc hiding (blowUp, patternMatchFail)
+import qualified Mud.Util.Misc as U (blowUp, pmf)
+import           Mud.Util.Misc hiding (blowUp, pmf)
 import           Mud.Util.Operators
 import           Mud.Util.Quoting
 import           Mud.Util.Text
@@ -121,8 +121,8 @@ blowUp :: BlowUp a
 blowUp = U.blowUp "Mud.Data.State.Util.Misc"
 
 
-patternMatchFail :: (Show a) => PatternMatchFail a b
-patternMatchFail = U.patternMatchFail "Mud.Data.State.Util.Misc"
+pmf :: (Show a) => PatternMatchFail a b
+pmf = U.pmf "Mud.Data.State.Util.Misc"
 
 
 -- ==================================================
@@ -612,7 +612,7 @@ procHooks i ms v cn as | initAcc <- (as, (ms, [], [], []), []) = case lookupHook
           -> case filter (\Hook { hookTriggers } -> a `elem` hookTriggers) hooks of
                []  -> initAcc
                [h] -> getHookFun (hookName h) ms i h v (initAcc & _1 .~ pure rest)
-               xs  -> patternMatchFail "procHooks" . showTxt $ xs
+               xs  -> pmf "procHooks" xs
     -- Process hooks whose triggers match on any single argument.
     _ -> let helper acc arg = case filter (\Hook { hookTriggers } -> arg `elem` hookTriggers) hooks of
                []        -> acc

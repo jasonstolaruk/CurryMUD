@@ -5,10 +5,9 @@ module Mud.Util.Telnet where
 import           Mud.Data.Misc
 import           Mud.TopLvlDefs.Telnet.Chars
 import           Mud.TopLvlDefs.Telnet.CodeMap
-import qualified Mud.Util.Misc as U (patternMatchFail)
-import           Mud.Util.Misc hiding (patternMatchFail)
+import qualified Mud.Util.Misc as U (pmf)
+import           Mud.Util.Misc hiding (pmf)
 import           Mud.Util.Operators
-import           Mud.Util.Text
 
 import           Data.Char (ord)
 import           Data.Monoid ((<>))
@@ -17,8 +16,8 @@ import qualified Data.IntMap.Strict as IM (lookup)
 import qualified Data.Text as T
 
 
-patternMatchFail :: (Show a) => PatternMatchFail a b
-patternMatchFail = U.patternMatchFail "Mud.Util.Telnet"
+pmf :: (Show a) => PatternMatchFail a b
+pmf = U.pmf "Mud.Util.Telnet"
 
 
 -- ==================================================
@@ -56,7 +55,7 @@ parseTelnet = f ("", [])
                              | T.length right == 2 = let telnets = TCode TelnetIAC : mkTelnetDatas others
                                                          others  = T.unpack . T.drop 1 $ right
                                                      in (msg <> left, td ++ telnets)
-        helper pair = patternMatchFail "parseTelnet f helper" . showTxt $ pair
+        helper pair = pmf "parseTelnet f helper" pair
     mkTelnetDatas = map g
       where
         g c = case ord c `IM.lookup` telnetCodeMap of Nothing -> TOther c

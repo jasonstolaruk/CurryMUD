@@ -22,8 +22,8 @@ import           Mud.Misc.ANSI
 import           Mud.TopLvlDefs.Chars
 import           Mud.TopLvlDefs.Misc
 import           Mud.Util.List hiding (headTail)
-import qualified Mud.Util.Misc as U (patternMatchFail)
-import           Mud.Util.Misc hiding (patternMatchFail)
+import qualified Mud.Util.Misc as U (pmf)
+import           Mud.Util.Misc hiding (pmf)
 import           Mud.Util.Operators
 import           Mud.Util.Quoting
 import           Mud.Util.Text
@@ -42,8 +42,8 @@ import           GHC.Stack (HasCallStack)
 import qualified Data.Text as T
 
 
-patternMatchFail :: (Show a) => PatternMatchFail a b
-patternMatchFail = U.patternMatchFail "Mud.Cmds.Util.EmoteExp.EmoteExp"
+pmf :: (Show a) => PatternMatchFail a b
+pmf = U.pmf "Mud.Cmds.Util.EmoteExp.EmoteExp"
 
 
 -- ==================================================
@@ -71,7 +71,7 @@ procChanTarget i cc triples ((T.toLower -> target):rest)
                         , (formatMsg . colorWith emoteTargetColor $ "you", pure targetId) ]
   where
     getIdForMatch match  = view _1 . head . filter (views _2 ((== match) . T.toLower)) $ triples
-procChanTarget _ _ _ as = patternMatchFail "procChanTarget" . showTxt $ as
+procChanTarget _ _ _ as = pmf "procChanTarget" as
 
 
 -----
@@ -183,7 +183,7 @@ procExpCmd i ms cc triples (map T.toLower . unmsg -> [cn, target]) =
         helper w = let (a, b) = T.break isLetter w
                        (c, d) = T.span  isLetter b
                    in bool w (a <> colorWith emoteTargetColor c <> d) $ T.toLower c `elem` yous
-procExpCmd _ _ _ _ as = patternMatchFail "procExpCmd" . showTxt $ as
+procExpCmd _ _ _ _ as = pmf "procExpCmd" as
 
 
 -----
@@ -210,7 +210,7 @@ adminChanProcChanTarget tunedIds tunedSings ((capitalize . T.toLower -> target):
                        in Right [ (formatMsg targetSing,                           targetId `delete` tunedIds)
                                 , (formatMsg . colorWith emoteTargetColor $ "you", pure targetId             ) ]
     sorry = Left . sorryAdminChanTargetName $ target
-adminChanProcChanTarget _ _ as = patternMatchFail "adminChanProcChanTarget" . showTxt $ as
+adminChanProcChanTarget _ _ as = pmf "adminChanProcChanTarget" as
 
 
 -----
@@ -324,4 +324,4 @@ adminChanProcExpCmd i ms tunedIds tunedSings (map T.toLower . unmsg -> [cn, targ
         helper w = let (a, b) = T.break isLetter w
                        (c, d) = T.span  isLetter b
                    in bool w (a <> colorWith emoteTargetColor c <> d) $ T.toLower c `elem` yous
-adminChanProcExpCmd _ _ _ _ as = patternMatchFail "adminChanProcExpCmd" . showTxt $ as
+adminChanProcExpCmd _ _ _ _ as = pmf "adminChanProcExpCmd" as

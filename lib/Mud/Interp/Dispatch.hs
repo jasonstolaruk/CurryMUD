@@ -10,7 +10,7 @@ import           Mud.Data.State.Util.Get
 import           Mud.Data.State.Util.Misc
 import           Mud.Data.State.Util.Output
 import           Mud.Util.Misc (PatternMatchFail)
-import qualified Mud.Util.Misc as U (patternMatchFail)
+import qualified Mud.Util.Misc as U (pmf)
 import           Mud.Util.Text hiding (none)
 
 import           Control.Lens (view)
@@ -20,8 +20,8 @@ import           Data.Maybe (isNothing)
 import           GHC.Stack (HasCallStack)
 
 
-patternMatchFail :: (Show a) => PatternMatchFail a b
-patternMatchFail = U.patternMatchFail "Mud.Interp.Dispatch"
+pmf :: (Show a) => PatternMatchFail a b
+pmf = U.pmf "Mud.Interp.Dispatch"
 
 
 -- ==================================================
@@ -51,4 +51,4 @@ findActionHelper i ms cn cmds =
     in return $ case [ ra | ra <- view rmActions r, cn == rmActionCmdName ra ] of
       []   -> cmdAction . fst <$> findFullNameForAbbrev cn [ (cmd, cmdName cmd) | cmd <- cmds' ]
       [ra] -> Just . Action (getRmActionFun (rmActionFunName ra) ms) $ True
-      xs   -> patternMatchFail "findActionHelper" . showTxt $ xs
+      xs   -> pmf "findActionHelper" xs

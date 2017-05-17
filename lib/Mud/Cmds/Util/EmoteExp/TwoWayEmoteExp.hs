@@ -13,8 +13,8 @@ import           Mud.Data.State.MudData
 import           Mud.Data.State.Util.Get
 import           Mud.TopLvlDefs.Chars
 import           Mud.TopLvlDefs.Misc
-import qualified Mud.Util.Misc as U (patternMatchFail)
-import           Mud.Util.Misc hiding (patternMatchFail)
+import qualified Mud.Util.Misc as U (pmf)
+import           Mud.Util.Misc hiding (pmf)
 import           Mud.Util.Operators
 import           Mud.Util.Quoting
 import           Mud.Util.Text
@@ -30,8 +30,8 @@ import           GHC.Stack (HasCallStack)
 import qualified Data.Text as T
 
 
-patternMatchFail :: (Show a) => PatternMatchFail a b
-patternMatchFail = U.patternMatchFail "Mud.Cmds.Util.EmoteExp.TwoWayEmoteExp"
+pmf :: (Show a) => PatternMatchFail a b
+pmf = U.pmf "Mud.Cmds.Util.EmoteExp.TwoWayEmoteExp"
 
 
 -- ==================================================
@@ -108,4 +108,4 @@ procExpCmdTwoWay i ms targetId targetSing (map T.toLower . unmsg -> [cn, target]
                            in replace (substitutions ++ maybeEmp (const . pure $ ("@", targetSing)) maybeTargetId)
     s                    = getSing i ms
     (heShe, hisHer, himHerself) = mkPros . getSex i $ ms
-procExpCmdTwoWay _ _ _ _ as = patternMatchFail "procExpCmdTwoWay" . showTxt $ as
+procExpCmdTwoWay _ _ _ _ as = pmf "procExpCmdTwoWay" as
