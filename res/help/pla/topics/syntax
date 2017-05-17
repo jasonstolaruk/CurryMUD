@@ -1,6 +1,6 @@
 \h SYNTAX \d
 
-Command "syntax" is concerned with the structure of commands, in terms of what sort of arguments are expected where, and what those arguments should look like. Here, we discuss CurryMUD's command syntax: first we address some key points to keep in mind, then we examine how CurryMUD commands are structured according to a handful of patterns.
+Command "syntax" is concerned with the structure of commands, in terms of what sort of arguments are expected where and what those arguments should look like. Here we discuss CurryMUD's command syntax: first we address some key points to keep in mind, then we examine how CurryMUD commands are structured according to a handful of patterns.
 
 -
 
@@ -8,9 +8,9 @@ Command "syntax" is concerned with the structure of commands, in terms of what s
 CurryMUD commands aim to be concise. To this end, commands do not accept grammatical articles ("a," "the," etc.) or prepositions ("to," "from," etc.). Rather than "give an apple to Taro", we simply have \qgive apple taro\d.
 
 \uABBREVIATION\d
-The names of commands themselves, and the names of just about everything else, may be abbreviated. You may, for example, simply type \qeq\d instead of the much longer \qequipment\d.
+The names of commands themselves - and the names of just about everything else - may be abbreviated. You may, for example, simply type \qeq\d instead of the much longer \qequipment\d.
 
-The subject of abbreviation is fully covered in its own help topic (type \qhelp abbreviation\d - or just \qh a\d - for more information).
+The subject of abbreviation is thoroughly covered in its own help topic (type \qhelp abbreviation\d - or just \qh a\d - for more information).
 
 \uPREFIXES\d
 You can add prefixes to the names of things in your commands so as to indicate location, ordinal number, and amount. Here are some example use cases:
@@ -24,18 +24,18 @@ You can add prefixes to the names of things in your commands so as to indicate l
 * You want to give all of your bread to the male dwarf... use the \p#a\d (all) prefix:
   \qgive \p#a\qbread mdwarf\d2`
 
-The subject of prefixes is fully covered in its own help topic (type \qhelp prefixes\d for more information).
+The subject of prefixes is thoroughly covered in its own help topic (type \qhelp prefixes\d for more information).
 
 -
 
 \uSYNTACTIC PATTERNS\d
 
-While there are many commands available to you in CurryMUD, each command is structured according to one of a handful of syntactic patterns. Taking a few minutes to review the most significant patterns will help you to remember the many commands and how to use them.
+While there are many commands available in CurryMUD, each command is structured according to one of a handful of syntactic patterns. Taking a few minutes to review the most significant patterns will help you to remember the many commands and how to use them.
 
 NO ARGUMENTS
 
-Many commands do not accept arguments, and will simply ignore them when provided.
-Examples include "bars", "color", "exits", "motd", "stats", "uptime", and "whoami".
+Some commands do not accept arguments, and will simply ignore them when provided.
+Examples include "color", "exits", "motd", "stats", "uptime", and "whoami".
 
 ONE OR MORE
 
@@ -79,7 +79,7 @@ There are two commands of note that follow this pattern: "say" and "question".
 \qsay nice to meet you, too\d (everyone in the room will hear you)2`
 \qquestion how can I see which administrators are currently logged in?\d (to ask a question on the question channel)2`
 
-Note that it is possible to address your message to a particular person, like so:
+Note that it's possible to address your message to a particular person, like so:
 \qsay \l#t\qmelf hello\d (to say hello to the male elf in the room)2`
 \qquestion \l#h\qdog welcome back!\d (to greet \udog\n on the question channel)2`
 
@@ -99,7 +99,7 @@ The "eat" and "drink" commands require that you specify the number of mouthfuls 
 
 SETTING=VALUE
 
-The "set" and "tune" commands accept arguments in the form of "setting=command":
+The "set" and "tune" commands accept arguments in the form of "setting=value":
 \qset columns=40 lines=20\d (to change your columns setting to 40 and your lines setting to 20)2`
 \qtune taro=in hanako=out\d (to tune Taro in and Hanako out)2`
 
