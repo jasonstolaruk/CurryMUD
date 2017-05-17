@@ -184,7 +184,7 @@ import           Network (HostName)
 import           Prelude hiding (exp)
 
 
-blowUp :: HasCallStack => BlowUp a
+blowUp :: BlowUp a
 blowUp = U.blowUp "Mud.Data.State.Util.Get"
 
 
