@@ -240,7 +240,6 @@ sacrificeAct i mq ci gn = handle (die (Just i) . pp $ Sacrificing) $ do
             sacrificesTblHelper = pcTbl.ind i.sacrificesTbl %~ f
               where
                 f tbl = maybe (M.insert gn 1 tbl) (flip (M.insert gn) tbl . succ) . M.lookup gn $ tbl
-            foldHelper    targetId = (mkBcastHelper targetId :)
             mkBcastHelper targetId = ( "The " <> mkCorpseAppellation targetId ms ci <> " fades away and disappears."
                                      , pure targetId )
         in if ((&&) <$> uncurry hasType <*> (== CorpseType) . uncurry getType) (ci, ms)
@@ -249,7 +248,7 @@ sacrificeAct i mq ci gn = handle (die (Just i) . pp $ Sacrificing) $ do
                                    let mobIds = findMobIds ms . getInv invId $ ms
                                    in bcastNl $ if ((&&) <$> (`isIncognitoId` ms) <*> (`elem` mobIds)) i
                                      then pure . mkBcastHelper $ i
-                                     else foldr foldHelper [] mobIds
+                                     else map mkBcastHelper mobIds
                              | isNpcPla invId ms -> bcastNl . pure . mkBcastHelper $ invId
                              | otherwise         -> unit
             Nothing    -> unit
@@ -300,11 +299,10 @@ applyBonus i s gn now = do
                   Rumialys  -> maxXp curFp maxFp >>  effectHelper Nothing     (5,  15) Ht
     f gn
   where
-    mkXpPairs   = let helper ptsType acc = (: acc) $ case ptsType of Hp -> (curHp, maxHp)
-                                                                     Mp -> (curMp, maxMp)
-                                                                     Pp -> (curPp, maxPp)
-                                                                     Fp -> (curFp, maxFp)
-                  in foldr helper []
+    mkXpPairs   = map (\case Hp -> (curHp, maxHp)
+                             Mp -> (curMp, maxMp)
+                             Pp -> (curPp, maxPp)
+                             Fp -> (curFp, maxFp))
     maxXpHelper = uncurry maxXp =<< rndmElem (mkXpPairs [ Hp, Fp ])
     effectHelper effTagSuff range attrib = let tag     = "sacrificeBonus" <> pp gn <> fromMaybeEmp effTagSuff
                                                effSub  = MobEffectAttrib attrib

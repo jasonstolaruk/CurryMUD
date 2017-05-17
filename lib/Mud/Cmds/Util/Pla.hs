@@ -2071,15 +2071,15 @@ sacrificeHelper p@(ActionParams i mq cols _) ci gn = getState >>= \ms ->
                                    , gn == Murgorhd |?| murgorhdMsg
                                    , ". You say a prayer..." ]
         d               = mkStdDesig i ms DoCap
-        helper targetId = ((T.concat [ serialize d
-                                     , " kneels before the "
-                                     , mkCorpseAppellation targetId ms ci
-                                     , " and says a prayer to "
-                                     , pp gn
-                                     , "." ], pure targetId) :)
+        helper targetId = (T.concat [ serialize d
+                                    , " kneels before the "
+                                    , mkCorpseAppellation targetId ms ci
+                                    , " and says a prayer to "
+                                    , pp gn
+                                    , "." ], pure targetId)
     in checkActing p ms (Left Sacrificing) allValues $ do logHelper ms
                                                           wrapSend1Nl mq cols toSelf
-                                                          bcastIfNotIncogNl i . foldr helper [] $ i `delete` desigIds d
+                                                          bcastIfNotIncogNl i . map helper $ i `delete` desigIds d
                                                           startAct i Sacrificing . sacrificeAct i mq ci $ gn
   where
     logHelper ms = let msg = T.concat [ "sacrificing a ", descSingId ci ms, t, " using a holy symbol of ", pp gn, "." ]

@@ -75,9 +75,7 @@ instance Exception PlsDie
 
 
 concurrentTree :: HasCallStack => [IO a] -> IO [a]
-concurrentTree = foldr helper mMempty
-  where
-    helper ioa ioas = uncurry (:) <$> concurrently ioa ioas
+concurrentTree = foldr (\a -> fmap (uncurry (:)) . concurrently a) mMempty
 
 
 -----

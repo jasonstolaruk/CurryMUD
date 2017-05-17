@@ -393,7 +393,7 @@ getAllChanIdNames :: HasCallStack => Id -> MudState -> MudStack (IM.IntMap [(Id,
 getAllChanIdNames i ms = let tunedChans = foldr helper [] . getPCChans i $ ms in
     IM.fromList . zipWith (\chan -> (chan^.chanId, )) tunedChans <$> forM tunedChans (flip (getChanIdNames i) ms)
   where
-    helper chan acc = views chanConnTbl (M.! getSing i ms) chan ? (chan : acc) :? acc
+    helper chan = views chanConnTbl (M.! getSing i ms) chan ? (chan :) :? id
 
 
 getChanIdNames :: HasCallStack => Id -> Chan -> MudState -> MudStack [(Id, Text)]
