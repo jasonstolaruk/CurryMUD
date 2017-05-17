@@ -159,7 +159,7 @@ commas = T.intercalate ", "
 -----
 
 
-concatMapTxt :: (a -> Text) -> [a] -> Text -- TODO: Use this.
+concatMapTxt :: (a -> Text) -> [a] -> Text
 concatMapTxt f = T.concat . map f
 
 

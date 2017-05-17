@@ -1855,8 +1855,8 @@ link p@(LowerNub i mq cols as) = getState >>= \ms -> if
                     sorryInEq               = inEqs  |!| (mkBcast i . nlnl $ sorryLinkInEq )
                     invCoins                = first (i `delete`) . getMobRmVisibleInvCoins i $ ms
                     (eiss, ecs)             = uncurry (resolveRmInvCoins i ms inRms) invCoins
-                    (ms', bs,  logMsgs, fs) = foldl' helperLinkEitherInv (ms, [], [], []) eiss
-                    (     bs', logMsgs'   ) = foldl' helperLinkEitherCoins (bs, logMsgs) ecs
+                    (ms', bs,  logMsgs, fs) = foldl' helperLinkEitherInv   (ms, [], [], []) eiss
+                    (     bs', logMsgs'   ) = foldl' helperLinkEitherCoins (bs, logMsgs)    ecs
                 in if ()!# invCoins
                   then (ms', (sorryInInv ++ sorryInEq ++ bs',        logMsgs', fs))
                   else (ms,  (mkBcast i . nlnl $ sorryLinkNoOneHere, [],       []))
@@ -1982,8 +1982,8 @@ look (LowerNub i mq cols as) = mkRndmVector >>= \v ->
     -----
     invCoinsHelper ms args invCoins =
         let (eiss, ecs)  = uncurry (resolveRmInvCoins i ms args) invCoins
-            invDesc      = foldl' (helperLookEitherInv ms) "" eiss
-            coinsDesc    = foldl' helperLookEitherCoins    "" ecs
+            invDesc      = concatMapTxt (helperLookEitherInv ms) eiss
+            coinsDesc    = concatMapTxt helperLookEitherCoins    ecs
             selfDesig    = mkStdDesig i ms DoCap
             selfDesig'   = serialize selfDesig
             is           = i `delete` desigIds selfDesig
@@ -1995,10 +1995,10 @@ look (LowerNub i mq cols as) = mkRndmVector >>= \v ->
                                , targetId `delete` is)
                 in toTarget : toOthers : acc
         in (invDesc <> coinsDesc, foldr mkBsForTarget [] targetDesigs, targetDesigs |!| Just targetDesigs)
-    helperLookEitherInv _  acc (Left  msg ) = acc <> wrapUnlinesNl cols msg
-    helperLookEitherInv ms acc (Right is  ) = nl $ acc <> mkEntDescs i cols ms is
-    helperLookEitherCoins  acc (Left  msgs) = (acc <>) . multiWrapNl cols . intersperse "" $ msgs
-    helperLookEitherCoins  acc (Right c   ) = nl $ acc <> mkCoinsDesc cols c
+    helperLookEitherInv _  (Left  msg ) = wrapUnlinesNl cols msg
+    helperLookEitherInv ms (Right is  ) = nl . mkEntDescs i cols ms $ is
+    helperLookEitherCoins  (Left  msgs) = multiWrapNl cols . intersperse "" $ msgs
+    helperLookEitherCoins  (Right c   ) = nl . mkCoinsDesc cols $ c
     -----
     hooksHelper ms v args = procHooks i ms v "look" args & _2._2 %~ (T.unlines . map (multiWrap cols . T.lines))
                                                          & _2._4 %~ slashes
@@ -3022,7 +3022,7 @@ setAction p = pmf "setAction" p
 -----
 
 
-showAction :: HasCallStack => ActionFun
+showAction :: HasCallStack => ActionFun -- TODO: Consider revealing the liquid in a vessel.
 showAction p@AdviseNoArgs         = advise p ["show"] adviceShowNoArgs
 showAction p@AdviseOneArg         = advise p ["show"] adviceShowNoName
 showAction p@(Lower i mq cols as) = getState >>= \ms ->
@@ -3086,23 +3086,23 @@ showAction p@(Lower i mq cols as) = getState >>= \ms ->
                                      , let n = if getType itemId ms == CorpseType
                                                  then mkCorpseAppellation i ms itemId
                                                  else getSing itemId ms ]
-              mkToTargetBs = foldl' f []
+              mkToTargetBs = map f
                 where
-                  f acc itemId = let (n, t) | getType itemId ms == CorpseType
-                                            , ca <- mkCorpseAppellation theId ms itemId
-                                            = (ca, expandCorpseTxt ca . getCorpseDesc itemId $ ms)
-                                            | otherwise = (getSing `fanUncurry` getEntDesc) (itemId, ms)
-                                 in acc ++ pure ( T.concat [ serialize d
-                                                           , " shows you "
-                                                           , underline . aOrAn $ n
-                                                           , " "
-                                                           , parensQuote "carried"
-                                                           , nl ":"
-                                                           , t ]
-                                                , pure theId )
-              mkToOthersBs itemIds = concat . foldr f [] $ desigIds d \\ [ i, theId ]
+                  f itemId = let (n, t) | getType itemId ms == CorpseType
+                                        , ca <- mkCorpseAppellation theId ms itemId
+                                        = (ca, expandCorpseTxt ca . getCorpseDesc itemId $ ms)
+                                        | otherwise = (getSing `fanUncurry` getEntDesc) (itemId, ms)
+                             in ( T.concat [ serialize d
+                                           , " shows you "
+                                           , underline . aOrAn $ n
+                                           , " "
+                                           , parensQuote "carried"
+                                           , nl ":"
+                                           , t ]
+                                , pure theId )
+              mkToOthersBs itemIds = concatMap f $ desigIds d \\ [ i, theId ]
                 where
-                  f targetId = (foldl' g [] itemIds :)
+                  f targetId = foldl' g [] itemIds
                     where
                       g acc itemId = let n | getType itemId ms == CorpseType = mkCorpseAppellation targetId ms itemId
                                            | otherwise                       = getSing itemId ms
@@ -3243,14 +3243,14 @@ smell p@(OneArgLower i mq cols a) = getState >>= \ms ->
                                           Nothing     -> "The " <> getSing targetId ms <> " is empty."
                                           Just (l, _) -> l^.liqSmellDesc
                                         _ -> getEntSmell targetId ms
-                                      bs = foldr f [] $ i `delete` desigIds d
+                                      bs = map f $ i `delete` desigIds d
                                         where
-                                          f i' = ((T.concat [ serialize d
-                                                            , " smells "
-                                                            , aOrAn (ic ? mkCorpseAppellation i' ms targetId :? targetSing)
-                                                            , " "
-                                                            , parensQuote "carried"
-                                                            , "." ], pure i') :)
+                                          f i' = (T.concat [ serialize d
+                                                           , " smells "
+                                                           , aOrAn (ic ? mkCorpseAppellation i' ms targetId :? targetSing)
+                                                           , " "
+                                                           , parensQuote "carried"
+                                                           , "." ], pure i')
                                       logMsg = T.concat [ "smelled ", aOrAn targetSing, " ", parensQuote "carried", "." ]
                                   in ioHelper smellDesc bs logMsg
               Right _          -> sorry sorrySmellExcessTargets
@@ -3314,14 +3314,14 @@ smell p@(OneArgLower i mq cols a) = getState >>= \ms ->
                                                 , (serialize d <> " smells you.", pure targetId) ]
                                   logMsg      = parseExpandDesig i ms . prd $ "smelled " <> targetDesig
                                   smellMob    = ioHelper smellDesc bs logMsg
-                                  smellCorpse = let corpseBs = foldr f [] $ i `delete` desigIds d
+                                  smellCorpse = let corpseBs = map f $ i `delete` desigIds d
                                                       where
-                                                        f i' = ((T.concat [ serialize d
-                                                                          , " smells "
-                                                                          , aOrAn . mkCorpseAppellation i' ms $ targetId
-                                                                          , " "
-                                                                          , parensQuote "on the ground"
-                                                                          , "." ], pure i') :)
+                                                        f i' = (T.concat [ serialize d
+                                                                         , " smells "
+                                                                         , aOrAn . mkCorpseAppellation i' ms $ targetId
+                                                                         , " "
+                                                                         , parensQuote "on the ground"
+                                                                         , "." ], pure i')
                                                     corpseLogMsg = T.concat [ "smelled "
                                                                             , aOrAn targetSing
                                                                             , " "
@@ -3453,14 +3453,14 @@ taste p@(OneArgLower i mq cols a) = getState >>= \ms ->
                                         Nothing     -> "The " <> targetSing <> " is empty."
                                         Just (l, _) -> l^.liqTasteDesc
                                       _ -> getObjTaste targetId ms
-                                    bs = foldr f [] $ i `delete` desigIds d
+                                    bs = map f $ i `delete` desigIds d
                                       where
-                                        f i' = ((T.concat [ serialize d
-                                                          , " tastes "
-                                                          , aOrAn (ic ? mkCorpseAppellation i' ms targetId :? targetSing)
-                                                          , " "
-                                                          , parensQuote "carried"
-                                                          , "." ], pure i') :)
+                                        f i' = (T.concat [ serialize d
+                                                         , " tastes "
+                                                         , aOrAn (ic ? mkCorpseAppellation i' ms targetId :? targetSing)
+                                                         , " "
+                                                         , parensQuote "carried"
+                                                         , "." ], pure i')
                                     logMsg = T.concat [ "tasted ", aOrAn targetSing, " ", parensQuote "carried", "." ]
                                 in ioHelper tasteDesc bs logMsg
             Right _          -> sorry sorryTasteExcessTargets
@@ -3570,7 +3570,7 @@ tune (NoArgs i mq cols) = getState >>= \ms ->
     let linkPairs   = map (dupFirst (`getIdForPCSing` ms)) . getLinked i $ ms
         linkSings   = sort . map snd . filter (isDblLinked ms . (i, ) . fst) $ linkPairs
         styleds     = styleAbbrevs Don'tQuote linkSings
-        linkTunings = foldr (\s -> (linkTbl M.! s :)) [] linkSings
+        linkTunings = map (linkTbl M.!) linkSings
         linkTbl     = getTeleLinkTbl i ms
         (chanNames, chanTunings)   = mkChanNamesTunings i ms
         helper title names tunings = let txts = mkConnTxts in [ title, ()!# txts ? commas txts :? none ]
