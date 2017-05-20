@@ -20,8 +20,8 @@ module Mud.Cmds.Msgs.Advice ( adviceAAnnounceNoArgs
                             , adviceALocateNoArgs
                             , adviceAMkFoodExcessArgs
                             , adviceAMkFoodNoArgs
-                            , adviceAMkHolySymbolExcessArgs
-                            , adviceAMkHolySymbolNoArgs
+                            , adviceAMkHolyExcessArgs
+                            , adviceAMkHolyNoArgs
                             , adviceAMsgNoArgs
                             , adviceAMsgNoMsg
                             , adviceAMyChansNoArgs
@@ -277,14 +277,14 @@ adviceAMkFoodNoArgs = "Please provide two arguments: the quantity of food object
                       colorWith quoteColor (prefixAdminCmd "mkfood" <> " 5 apple")
 
 
-adviceAMkHolySymbolExcessArgs :: Text
-adviceAMkHolySymbolExcessArgs = adviceAMkHolySymbolNoArgs
+adviceAMkHolyExcessArgs :: Text
+adviceAMkHolyExcessArgs = adviceAMkHolyNoArgs
 
 
-adviceAMkHolySymbolNoArgs :: Text
-adviceAMkHolySymbolNoArgs = "Please provide two arguments: the quantity of holy symbols to make, followed by the name \
-                            \of a god, as in " <>
-                            colorWith quoteColor (prefixAdminCmd "mkholysymbol" <> " 5 aule")
+adviceAMkHolyNoArgs :: Text
+adviceAMkHolyNoArgs = "Please provide two arguments: the quantity of holy symbols to make, followed by the name of a \
+                      \god, as in " <>
+                      colorWith quoteColor (prefixAdminCmd "mkholy" <> " 5 aule")
 
 
 adviceAMsgNoArgs :: Text

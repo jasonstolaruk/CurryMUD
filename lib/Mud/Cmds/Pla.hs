@@ -164,6 +164,7 @@ regularCmds = map (uncurry4 mkRegularCmd) regularCmdTuples
 
 
 -- TODO: "buy" and "sell".
+-- TODO: Use "display cmd list" cmds to confirm cmd length vs. truncate.
 regularCmdTuples :: HasCallStack => [(CmdFullName, ActionFun, Bool, CmdDesc)]
 regularCmdTuples =
     [ ("?",          plaDispCmdList,     True,  cmdDescDispCmdList)
@@ -3190,7 +3191,6 @@ smell (NoArgs i mq cols) = getState >>= \ms ->
           multiWrapSend mq cols ts
           let d = mkStdDesig i ms DoCap
           bcastIfNotIncogNl i . pure . ((<> " smells the air.") . serialize &&& (i `delete`) . desigIds) $ d
-          sendDfltPrompt mq i
   where
     mkCorpseMsgs ms = concatMap (helper ms) [ (getInv, f "carried"), (getMobRmInv, f "on the ground") ]
       where
@@ -3213,7 +3213,7 @@ smell p@(OneArgLower i mq cols a) = getState >>= \ms ->
                                          | otherwise                      -> smellRm ms d rmInvCoins maybeHooks target
     in checkActing p ms (Right "smell an item") [ Drinking, Eating, Sacrificing ] f
   where
-    sorry msg                     = wrapSend mq cols msg >> sendDfltPrompt mq i
+    sorry                         = wrapSend mq cols
     smellInv ms d invCoins target =
         let pair@(eiss, ecs) = uncurry (resolveMobInvCoins i ms . pure $ target) invCoins
         in if uncurry (&&) . ((()!#) *** (()!#)) $ pair
@@ -3288,8 +3288,7 @@ smell p@(OneArgLower i mq cols a) = getState >>= \ms ->
                                                         , sorryMsgs    |#| multiWrapSend mq cols
                                                         , hooksToSelfs |#| multiWrapSend mq cols
                                                         , bcastIfNotIncogNl i hooksBs
-                                                        , sequence_ fs
-                                                        , sendDfltPrompt mq i ])
+                                                        , sequence_ fs ])
                               in mkRndmVector >>= \v -> helper v |&| modifyState >=> sequence_
             (True,  True ) -> let helper v ms' | tuple <- procHooks i ms' v "smell" . pure $ target
                                                , (targets', (ms'', hooksToSelfs, hooksBs, hooksLogMsgs), fs) <- tuple
@@ -3297,8 +3296,7 @@ smell p@(OneArgLower i mq cols a) = getState >>= \ms ->
                                                    then (ms'', [ hooksLogMsgs |#| logPla "smell" i . prd . slashes
                                                                , hooksToSelfs |#| multiWrapSend mq cols
                                                                , bcastIfNotIncogNl i hooksBs
-                                                               , sequence_ fs
-                                                               , sendDfltPrompt mq i ])
+                                                               , sequence_ fs ])
                                                    else (ms', pure . smellRmHelper $ eis)
                               in mkRndmVector >>= \v -> helper v |&| modifyState >=> sequence_
             x              -> pmf "smell smellRm" x
@@ -3440,7 +3438,7 @@ taste p@(OneArgLower i mq cols a) = getState >>= \ms ->
                                 (InRm,  _     )                -> sorry sorryTasteInRm
     in checkActing p ms (Right "taste an item") [ Drinking, Eating, Sacrificing ] f
   where
-    sorry msg                     = wrapSend mq cols msg >> sendDfltPrompt mq i
+    sorry                         = wrapSend mq cols
     tasteInv ms d invCoins target =
         let pair@(eiss, ecs) = uncurry (resolveMobInvCoins i ms . pure $ target) invCoins
         in (uncurry (&&) . ((()!#) *** (()!#)) $ pair) ? sorry sorryTasteExcessTargets :? case eiss of

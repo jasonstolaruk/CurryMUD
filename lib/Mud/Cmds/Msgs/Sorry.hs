@@ -178,8 +178,8 @@ module Mud.Cmds.Msgs.Sorry ( sorryActing
                            , sorryLookEmptyRmWithHooks
                            , sorryMkFoodAmt
                            , sorryMkFoodName
-                           , sorryMkHolySymbolAmt
-                           , sorryMkHolySymbolGodName
+                           , sorryMkHolyAmt
+                           , sorryMkHolyGodName
                            , sorryMsgIncog
                            , sorryNewChanExisting
                            , sorryNewChanName
@@ -1324,14 +1324,14 @@ sorryMkFoodName a = dblQuote a <> " is not a valid distinct food name."
 -----
 
 
-sorryMkHolySymbolAmt :: Text -> Text
-sorryMkHolySymbolAmt a = dblQuote a                                   <>
-                         " is not a valid quantity of holy symbols. " <>
-                         parensQuote "You can create between 1 and 100 holy symbols."
+sorryMkHolyAmt :: Text -> Text
+sorryMkHolyAmt a = dblQuote a                                   <>
+                   " is not a valid quantity of holy symbols. " <>
+                   parensQuote "You can create between 1 and 100 holy symbols."
 
 
-sorryMkHolySymbolGodName :: Text -> Text
-sorryMkHolySymbolGodName a = dblQuote a <> " is not a valid god name."
+sorryMkHolyGodName :: Text -> Text
+sorryMkHolyGodName a = dblQuote a <> " is not a valid god name."
 
 
 -----

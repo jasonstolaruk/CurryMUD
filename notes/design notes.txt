@@ -102,7 +102,7 @@ PCs may have pets. Make pet shops where pets are sold.
 
 Implement, in moderation, "environmental" affects, such as making PCs involuntarily sneeze when in a dusty room.
 
-To sacrifice a corpse, a PC must have in their possession the holy symbol of a deity. Devotees with the necessary skills may produce holy symbols; holy symbols are readily made available for free at places of worship. New characters may start with the holy symbol of their deity of choice.
+To sacrifice a corpse, a PC must have in their possession the holy symbol of a deity. Devotees with the necessary skills may produce holy symbols; holy symbols are readily made available for free at places of worship.
 
 Corpses that are not sacrificed may be "claimed" by Murgorhd. These corpses transform into zombies.
 
@@ -138,11 +138,12 @@ Objects have wear and tear.
 
 GEOGRAPHY:
 
-Divide the overall geography into the world, regions (large swaths of territory that have distinct, thematic differences), areas/zones (functional partitions imposed for technical reasons; these often coincide with and fit nicely inside regions), and rooms. The world should be partitioned such that it clusters players.
+Divide the geography of the world into regions (large swaths of territory that have distinct, thematic differences), areas/zones (functional partitions imposed for technical reasons; these often coincide with and fit nicely inside regions), and rooms. The world should be partitioned such that it clusters players.
 
 Where the map ends, consider creating insurmountable physical boundaries. p.275
 
 The size of the virtual world should be proportionate to the number of players. A rule of thumb is to aim for 40 rooms per player. 20 rooms per player is crowded, while 60 rooms per player is sparse. The actual number of rooms need not coincide with the perceived size of the virtual world.
+20 players * 60 rooms = 1,200 rooms
 
 Provide both verbose and brief descriptions of rooms.
 

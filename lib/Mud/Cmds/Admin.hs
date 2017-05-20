@@ -139,73 +139,73 @@ massLogPla = L.massLogPla "Mud.Cmds.Admin"
 
 adminCmds :: HasCallStack => [Cmd]
 adminCmds =
-    [ mkAdminCmd "?"            adminDispCmdList  True  cmdDescDispCmdList
-    , mkAdminCmd "admin"        adminAdmin        True  ("Send a message on the admin channel " <> plusRelatedMsg)
-    , mkAdminCmd "alertexec"    adminAlertExec    True  "Dump the alert exec database."
-    , mkAdminCmd "alertmsg"     adminAlertMsg     True  "Dump the alert msg database."
-    , mkAdminCmd "announce"     adminAnnounce     True  "Send a message to all players."
-    , mkAdminCmd "as"           adminAs           False "Execute a command as someone else."
-    , mkAdminCmd "banhost"      adminBanHost      True  "Dump the banned hostname database, or ban/unban a host."
-    , mkAdminCmd "banpc"        adminBanPC        True  "Dump the banned PC database, or ban/unban a PC."
-    , mkAdminCmd "bonus"        adminBonus        True  "Dump the bonus records for one or more PCs."
-    , mkAdminCmd "boot"         adminBoot         True  "Boot a player, optionally with a custom message."
-    , mkAdminCmd "bug"          adminBug          True  "Dump the bug database."
-    , mkAdminCmd "channels"     adminChans        True  "Display information about one or more telepathic channels."
-    , mkAdminCmd "clone"        adminClone        True  "Clone one or more things by ID."
-    , mkAdminCmd "count"        adminCount        True  "Display or regex search a list of miscellaneous running totals."
-    , mkAdminCmd "currytime"    adminCurryTime    True  "Display the current Curry Time."
-    , mkAdminCmd "date"         adminDate         True  "Display the current system date."
-    , mkAdminCmd "destroy"      adminDestroy      True  "Silently destroy one or more things by ID."
-    , mkAdminCmd "discover"     adminDiscover     True  "Dump the discover database."
-    , mkAdminCmd "examine"      adminExamine      True  "Display or regex search the properties of a given ID."
-    , mkAdminCmd "experience"   adminExp          True  "Display the experience table."
-    , mkAdminCmd "exself"       adminExamineSelf  True  "Self-examination."
-    , mkAdminCmd "farewell"     adminFarewell     True  "Display the farewell stats for one or more PCs."
-    , mkAdminCmd "foods"        adminFoods        True  "Display or regex search a list of hard-coded foods."
-    , mkAdminCmd "gods"         adminGods         True  "Display a list of the gods."
-    , mkAdminCmd "hash"         adminHash         True  "Compare a plain-text password with a hashed password."
-    , mkAdminCmd "hosts"        adminHosts        True  "Display a report of connection statistics for one or more \
-                                                        \players."
-    , mkAdminCmd "incognito"    adminIncognito    True  "Toggle your incognito status."
-    , mkAdminCmd "ip"           adminIp           True  "Display the server's IP addresses and listening port."
-    , mkAdminCmd "kill"         adminKill         True  "Instantly kill one or more mobiles by ID."
-    , mkAdminCmd "links"        adminLinks        True  "Display two-way links for one or more PCs, sorted by volume of \
-                                                        \messages in descending order."
-    , mkAdminCmd "liquids"      adminLiqs         True  "Display or regex search a list of hard-coded liquids."
-    , mkAdminCmd "locate"       adminLocate       True  "Locate one or more IDs."
-    , mkAdminCmd "message"      adminMsg          True  "Send a message to a regular player."
-    , mkAdminCmd "mkfood"       adminMkFood       True  "Create a given quantity of a given type of food by distinct \
-                                                        \food name."
-    , mkAdminCmd "mkholysymbol" adminMkHolySymbol True  "Create a given quantity of holy symbols of a given god by god \
-                                                        \name."
-    , mkAdminCmd "moon"         adminMoon         True  "Display the current phase of the moon."
-    , mkAdminCmd "mychannels"   adminMyChans      True  "Display information about telepathic channels for one or more \
-                                                        \players."
-    , mkAdminCmd "password"     adminPassword     True  "Change a player's password."
-    , mkAdminCmd "peep"         adminPeep         True  "Start or stop peeping one or more players."
-    , mkAdminCmd "persist"      adminPersist      True  "Persist the world (save the current world state to disk)."
-    , mkAdminCmd "possess"      adminPossess      False "Temporarily take control of an NPC."
-    , mkAdminCmd "print"        adminPrint        True  "Print a message to the server console."
-    , mkAdminCmd "profanity"    adminProfanity    True  "Dump the profanity database."
-    , mkAdminCmd "search"       adminSearch       True  "Regex search for entity and room names."
-    , mkAdminCmd "security"     adminSecurity     True  "Display security Q&A for one or more players."
-    , mkAdminCmd "set"          adminSet          True  "Set one or more values for a given ID."
-    , mkAdminCmd "shutdown"     adminShutdown     False "Shut down CurryMUD, optionally with a custom message."
-    , mkAdminCmd "sudoer"       adminSudoer       True  "Toggle a player's admin status."
-    , mkAdminCmd "summon"       adminSummon       True  "Teleport a PC to your current room."
-    , mkAdminCmd "teleid"       adminTeleId       True  "Teleport to an entity or room by ID."
-    , mkAdminCmd "telepc"       adminTelePC       True  "Teleport to a PC by name."
-    , mkAdminCmd "telerm"       adminTeleRm       True  "Display a list of named rooms to which you may teleport, or \
-                                                        \teleport to a room by name."
-    , mkAdminCmd "time"         adminTime         True  "Display the current system time."
-    , mkAdminCmd "ttype"        adminTType        True  "Display a report of hosts by terminal type."
-    , mkAdminCmd "typo"         adminTypo         True  "Dump the typo database."
-    , mkAdminCmd "uptime"       adminUptime       True  "Display the system uptime."
-    , mkAdminCmd "whoin"        adminWhoIn        True  "Display or regex search a list of all the PCs that are currently \
-                                                        \logged in."
-    , mkAdminCmd "whoout"       adminWhoOut       True  "Display or regex search a list of all the PCs that are currently \
-                                                        \logged out."
-    , mkAdminCmd "wiretap"      adminWire         True  "Start or stop tapping one or more telepathic channels." ]
+    [ mkAdminCmd "?"          adminDispCmdList True  cmdDescDispCmdList
+    , mkAdminCmd "admin"      adminAdmin       True  ("Send a message on the admin channel " <> plusRelatedMsg)
+    , mkAdminCmd "alertexec"  adminAlertExec   True  "Dump the alert exec database."
+    , mkAdminCmd "alertmsg"   adminAlertMsg    True  "Dump the alert msg database."
+    , mkAdminCmd "announce"   adminAnnounce    True  "Send a message to all players."
+    , mkAdminCmd "as"         adminAs          False "Execute a command as someone else."
+    , mkAdminCmd "banhost"    adminBanHost     True  "Dump the banned hostname database, or ban/unban a host."
+    , mkAdminCmd "banpc"      adminBanPC       True  "Dump the banned PC database, or ban/unban a PC."
+    , mkAdminCmd "bonus"      adminBonus       True  "Dump the bonus records for one or more PCs."
+    , mkAdminCmd "boot"       adminBoot        True  "Boot a player, optionally with a custom message."
+    , mkAdminCmd "bug"        adminBug         True  "Dump the bug database."
+    , mkAdminCmd "channels"   adminChans       True  "Display information about one or more telepathic channels."
+    , mkAdminCmd "clone"      adminClone       True  "Clone one or more things by ID."
+    , mkAdminCmd "count"      adminCount       True  "Display or regex search a list of miscellaneous running totals."
+    , mkAdminCmd "currytime"  adminCurryTime   True  "Display the current Curry Time."
+    , mkAdminCmd "date"       adminDate        True  "Display the current system date."
+    , mkAdminCmd "destroy"    adminDestroy     True  "Silently destroy one or more things by ID."
+    , mkAdminCmd "discover"   adminDiscover    True  "Dump the discover database."
+    , mkAdminCmd "examine"    adminExamine     True  "Display or regex search the properties of a given ID."
+    , mkAdminCmd "experience" adminExp         True  "Display the experience table."
+    , mkAdminCmd "exself"     adminExamineSelf True  "Self-examination."
+    , mkAdminCmd "farewell"   adminFarewell    True  "Display the farewell stats for one or more PCs."
+    , mkAdminCmd "foods"      adminFoods       True  "Display or regex search a list of hard-coded foods."
+    , mkAdminCmd "gods"       adminGods        True  "Display a list of the gods."
+    , mkAdminCmd "hash"       adminHash        True  "Compare a plain-text password with a hashed password."
+    , mkAdminCmd "hosts"      adminHosts       True  "Display a report of connection statistics for one or more \
+                                                     \players."
+    , mkAdminCmd "incognito"  adminIncognito   True  "Toggle your incognito status."
+    , mkAdminCmd "ip"         adminIp          True  "Display the server's IP addresses and listening port."
+    , mkAdminCmd "kill"       adminKill        True  "Instantly kill one or more mobiles by ID."
+    , mkAdminCmd "links"      adminLinks       True  "Display two-way links for one or more PCs, sorted by volume of \
+                                                     \messages in descending order."
+    , mkAdminCmd "liquids"    adminLiqs        True  "Display or regex search a list of hard-coded liquids."
+    , mkAdminCmd "locate"     adminLocate      True  "Locate one or more IDs."
+    , mkAdminCmd "message"    adminMsg         True  "Send a message to a regular player."
+    , mkAdminCmd "mkfood"     adminMkFood      True  "Create a given quantity of a given type of food by distinct food \
+                                                     \name."
+    , mkAdminCmd "mkholy"     adminMkHoly      True  "Create a given quantity of holy symbols of a given god by god \
+                                                     \name."
+    , mkAdminCmd "moon"       adminMoon        True  "Display the current phase of the moon."
+    , mkAdminCmd "mychannels" adminMyChans     True  "Display information about telepathic channels for one or more \
+                                                     \players."
+    , mkAdminCmd "password"   adminPassword    True  "Change a player's password."
+    , mkAdminCmd "peep"       adminPeep        True  "Start or stop peeping one or more players."
+    , mkAdminCmd "persist"    adminPersist     True  "Persist the world (save the current world state to disk)."
+    , mkAdminCmd "possess"    adminPossess     False "Temporarily take control of an NPC."
+    , mkAdminCmd "print"      adminPrint       True  "Print a message to the server console."
+    , mkAdminCmd "profanity"  adminProfanity   True  "Dump the profanity database."
+    , mkAdminCmd "search"     adminSearch      True  "Regex search for entity and room names."
+    , mkAdminCmd "security"   adminSecurity    True  "Display security Q&A for one or more players."
+    , mkAdminCmd "set"        adminSet         True  "Set one or more values for a given ID."
+    , mkAdminCmd "shutdown"   adminShutdown    False "Shut down CurryMUD, optionally with a custom message."
+    , mkAdminCmd "sudoer"     adminSudoer      True  "Toggle a player's admin status."
+    , mkAdminCmd "summon"     adminSummon      True  "Teleport a PC to your current room."
+    , mkAdminCmd "teleid"     adminTeleId      True  "Teleport to an entity or room by ID."
+    , mkAdminCmd "telepc"     adminTelePC      True  "Teleport to a PC by name."
+    , mkAdminCmd "telerm"     adminTeleRm      True  "Display a list of named rooms to which you may teleport, or \
+                                                     \teleport to a room by name."
+    , mkAdminCmd "time"       adminTime        True  "Display the current system time."
+    , mkAdminCmd "ttype"      adminTType       True  "Display a report of hosts by terminal type."
+    , mkAdminCmd "typo"       adminTypo        True  "Dump the typo database."
+    , mkAdminCmd "uptime"     adminUptime      True  "Display the system uptime."
+    , mkAdminCmd "whoin"      adminWhoIn       True  "Display or regex search a list of all the PCs that are currently \
+                                                     \logged in."
+    , mkAdminCmd "whoout"     adminWhoOut      True  "Display or regex search a list of all the PCs that are currently \
+                                                     \logged out."
+    , mkAdminCmd "wiretap"    adminWire        True  "Start or stop tapping one or more telepathic channels." ]
 
 
 mkAdminCmd :: HasCallStack => Text -> ActionFun -> Bool -> CmdDesc -> Cmd
@@ -1302,9 +1302,9 @@ adminMkFood p = advise p [ prefixAdminCmd "mkfood" ] adviceAMkFoodExcessArgs
 -----
 
 
-adminMkHolySymbol :: HasCallStack => ActionFun
-adminMkHolySymbol p@AdviseNoArgs                                = advise p [ prefixAdminCmd "mkholysymbol" ] adviceAMkHolySymbolNoArgs
-adminMkHolySymbol   (WithArgs i mq cols [ numTxt, godNameTxt ]) = case reads . T.unpack $ numTxt :: [(Int, String)] of
+adminMkHoly :: HasCallStack => ActionFun
+adminMkHoly p@AdviseNoArgs                                = advise p [ prefixAdminCmd "mkholy" ] adviceAMkHolyNoArgs
+adminMkHoly   (WithArgs i mq cols [ numTxt, godNameTxt ]) = case reads . T.unpack $ numTxt :: [(Int, String)] of
   [(n, "")] | not . inRange (1, 100) $ n -> sorryAmt
             | otherwise                  -> modifyStateSeq $ \ms ->
                 let sorry         = (ms, ) . pure . wrapSend mq cols
@@ -1333,15 +1333,15 @@ adminMkHolySymbol   (WithArgs i mq cols [ numTxt, godNameTxt ]) = case reads . T
                                                                 then newVessel     ms' et ot vt i
                                                                 else newHolySymbol ms' et ot h  i
                                                    in helper (pred x) . second (++ fs) $ pair
-                          in second (++ [ logPlaOut (prefixAdminCmd "mkholysymbol") i . pure $ msg
+                          in second (++ [ logPlaOut (prefixAdminCmd "mkholy") i . pure $ msg
                                         , wrapSend mq cols msg ]) . helper n $ (ms, [])
-                    notFound    = sorry . sorryMkHolySymbolGodName $ godNameTxt
+                    notFound    = sorry . sorryMkHolyGodName $ godNameTxt
                     allGodNames = allValues
                 in findFullNameForAbbrev (capitalize . T.toLower $ godNameTxt) (map pp allGodNames) |&| maybe notFound found
   _ -> sorryAmt
   where
-    sorryAmt = wrapSend mq cols . sorryMkHolySymbolAmt $ numTxt
-adminMkHolySymbol p = advise p [ prefixAdminCmd "mkholysymbol" ] adviceAMkHolySymbolExcessArgs
+    sorryAmt = wrapSend mq cols . sorryMkHolyAmt $ numTxt
+adminMkHoly p = advise p [ prefixAdminCmd "mkholy" ] adviceAMkHolyExcessArgs
 
 
 -----
