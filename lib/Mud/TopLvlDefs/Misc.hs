@@ -167,6 +167,9 @@ maxChanNameLen :: Int
 maxChanNameLen = 12
 
 
+-- "lagomorphean" and "vulepnoidean" are both 12 characters long.
+-- Admin and debug commands should be at most 11 characters long, leaving 1 character to account for the prefix.
+-- "!coercepenny" is 12 characters long.
 maxCmdLen :: Int
 maxCmdLen = 12
 
