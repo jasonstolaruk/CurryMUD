@@ -164,7 +164,6 @@ regularCmds = map (uncurry4 mkRegularCmd) regularCmdTuples
 
 
 -- TODO: "buy" and "sell".
--- TODO: Use "display cmd list" cmds to confirm cmd length vs. truncate.
 regularCmdTuples :: HasCallStack => [(CmdFullName, ActionFun, Bool, CmdDesc)]
 regularCmdTuples =
     [ ("?",          plaDispCmdList,     True,  cmdDescDispCmdList)
@@ -3023,7 +3022,7 @@ setAction p = pmf "setAction" p
 -----
 
 
-showAction :: HasCallStack => ActionFun -- TODO: Consider revealing the liquid in a vessel.
+showAction :: HasCallStack => ActionFun
 showAction p@AdviseNoArgs         = advise p ["show"] adviceShowNoArgs
 showAction p@AdviseOneArg         = advise p ["show"] adviceShowNoName
 showAction p@(Lower i mq cols as) = getState >>= \ms ->
