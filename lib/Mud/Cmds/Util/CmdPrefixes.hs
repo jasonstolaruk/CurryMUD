@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module Mud.Cmds.Util.CmdPrefixes where
 
 import           Mud.Data.State.MudData

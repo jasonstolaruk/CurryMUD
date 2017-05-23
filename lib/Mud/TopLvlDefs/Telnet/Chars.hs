@@ -1,15 +1,7 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module Mud.TopLvlDefs.Telnet.Chars where
 
 import           Data.Text (Text)
 import qualified Data.Text as T
-
-
-{-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
-
-
--- ==================================================
 
 
 telnetAYT, telnetDO, telnetDON'T, telnetECHO, telnetEOR, telnetGA, telnetGMCP, telnetIAC, telnetIS, telnetNOP, telnetSB, telnetSE, telnetSEND, telnetSUPPRESS_GA, telnetTTYPE, telnetWILL, telnetWON'T :: Char

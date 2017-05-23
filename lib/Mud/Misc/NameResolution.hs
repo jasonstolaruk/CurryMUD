@@ -45,11 +45,6 @@ import qualified Data.Text as T
 import qualified Prelude ((>>))
 
 
-{-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
-
------
-
-
 (>>) :: Format (Text -> r) a -> Format r' r -> Format r' a
 a >> b = a % stext % b
 

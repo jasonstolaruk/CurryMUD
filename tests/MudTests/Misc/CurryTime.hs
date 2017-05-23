@@ -1,17 +1,9 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module MudTests.Misc.CurryTime where
 
 import Mud.Data.Misc
 import Mud.Misc.CurryTime
 
 import Test.Tasty.HUnit ((@?=), Assertion)
-
-
-{-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
-
-
--- ==================================================
 
 
 ct :: CurryTime

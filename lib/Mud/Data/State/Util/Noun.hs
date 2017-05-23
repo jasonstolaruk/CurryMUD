@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module Mud.Data.State.Util.Noun ( renderLiqNoun
                                 , renderNoun ) where
 

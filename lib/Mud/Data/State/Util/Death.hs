@@ -50,12 +50,6 @@ import qualified Data.Map.Strict as M (delete, elems, filter, filterWithKey, key
 import qualified Data.Text as T
 
 
-{-# ANN module ("HLint: ignore Use &&" :: String) #-}
-
-
------
-
-
 logNotice :: Text -> Text -> MudStack ()
 logNotice = L.logNotice "Mud.Data.State.Util.Death"
 

@@ -17,12 +17,6 @@ import           Test.Tasty.HUnit ((@?=), Assertion)
 import           Test.Tasty.QuickCheck ((==>), Property)
 
 
-{-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
-
-
--- ==================================================
-
-
 prop_aOrAn :: Text -> Property
 prop_aOrAn t = (()!# T.strip t) ==>
     let (a, b) = T.break isSpace . aOrAn $ t

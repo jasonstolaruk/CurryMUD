@@ -110,13 +110,6 @@ import qualified Data.Vector.Unboxed as V (Vector)
 import           Text.Regex.PCRE ((=~))
 
 
-{-# ANN module ("HLint: ignore Use &&"        :: String) #-}
-{-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
-
-
------
-
-
 blowUp :: BlowUp a
 blowUp = U.blowUp "Mud.Data.State.Util.Misc"
 

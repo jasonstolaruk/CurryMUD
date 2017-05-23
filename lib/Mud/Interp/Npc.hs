@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, ViewPatterns #-}
+{-# LANGUAGE ViewPatterns #-}
 
 module Mud.Interp.Npc (npcInterp) where
 

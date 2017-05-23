@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
-{-# LANGUAGE LambdaCase, OverloadedStrings, TupleSections, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, OverloadedStrings, ViewPatterns #-}
 
 module Mud.TheWorld.TheWorld ( initMudData
                              , initWorld ) where

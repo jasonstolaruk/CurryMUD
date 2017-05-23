@@ -54,12 +54,6 @@ import qualified Data.Text.IO as T (hPutStr, hPutStrLn, readFile)
 import           System.IO (Handle, hFlush, hShow)
 
 
-{-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
-
-
------
-
-
 logNotice :: Text -> Text -> MudStack ()
 logNotice = L.logNotice "Mud.Threads.Server"
 

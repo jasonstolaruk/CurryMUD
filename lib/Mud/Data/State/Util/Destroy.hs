@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module Mud.Data.State.Util.Destroy where
 
 import           Mud.Data.State.MudData

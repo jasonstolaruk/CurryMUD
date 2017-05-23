@@ -1,5 +1,4 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
-{-# LANGUAGE OverloadedStrings #-}
 
 module Mud.Data.State.Util.Clone where
 

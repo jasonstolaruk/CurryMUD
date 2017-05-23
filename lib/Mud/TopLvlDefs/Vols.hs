@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module Mud.TopLvlDefs.Vols where
 
 import Mud.Data.State.MudData
@@ -45,7 +43,6 @@ bootsVol :: Vol
 bootsVol = 3 * 2 * 4 * 100
 
 
-{-# ANN braceletVol ("HLint: ignore" :: String) #-}
 braceletVol :: Vol
 braceletVol = 3 * 1 * 3 * 100
 
@@ -172,7 +169,6 @@ shirtVol :: Vol
 shirtVol = round (12 * 8 * 0.25 * 100 :: Double)
 
 
-{-# ANN swordVol ("HLint: ignore" :: String) #-}
 swordVol, swordLongVol :: Vol
 swordVol     = 6 * 1 * 30 * 100
 swordLongVol = plusQuarter swordVol

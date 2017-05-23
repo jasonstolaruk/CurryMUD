@@ -1,4 +1,4 @@
-{-# LANGUAGE LambdaCase, MultiWayIf, OverloadedStrings, TupleSections, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, MultiWayIf, OverloadedStrings, ViewPatterns #-}
 
 module Mud.Misc.Logging ( closeLogs
                         , closePlaLog

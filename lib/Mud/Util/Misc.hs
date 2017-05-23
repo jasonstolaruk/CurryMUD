@@ -412,7 +412,6 @@ safePerformIO :: HasCallStack => IO a -> IO a
 safePerformIO = (return =<<)
 
 
-{-# ANN strictId ("HLint: ignore Redundant seq" :: String) #-}
 strictId :: HasCallStack => a -> a
 strictId = join seq
 

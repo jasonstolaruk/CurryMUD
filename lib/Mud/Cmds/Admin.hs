@@ -94,12 +94,6 @@ import           System.Process (readProcess)
 import           System.Time.Utils (renderSecs)
 
 
-{-# ANN module ("HLint: ignore Use ||" :: String) #-}
-
-
------
-
-
 pmf :: PatternMatchFail
 pmf = U.pmf "Mud.Cmds.Admin"
 

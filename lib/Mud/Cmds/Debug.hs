@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
-{-# LANGUAGE ExistentialQuantification, LambdaCase, MonadComprehensions, NamedFieldPuns, OverloadedStrings, PatternSynonyms, ScopedTypeVariables, TupleSections, ViewPatterns #-}
+{-# LANGUAGE ExistentialQuantification, LambdaCase, MonadComprehensions, NamedFieldPuns, OverloadedStrings, PatternSynonyms, ScopedTypeVariables, ViewPatterns #-}
 
 module Mud.Cmds.Debug ( debugCmds
                       , purgeThreadTbls
@@ -86,13 +86,6 @@ import           System.Directory (getTemporaryDirectory, removeFile)
 import           System.Environment (getEnvironment)
 import           System.IO (hClose, hGetBuffering, openTempFile)
 import           Unsafe.Coerce (unsafeCoerce)
-
-
-{-# ANN module ("HLint: ignore Redundant where" :: String) #-}
-{-# ANN module ("HLint: ignore Use camelCase"   :: String) #-}
-
-
--- ==================================================
 
 
 pmf :: PatternMatchFail

@@ -352,12 +352,6 @@ import           Data.Text (Text)
 import qualified Data.Text as T
 
 
-{-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
-
-
------
-
-
 pmf :: PatternMatchFail
 pmf = U.pmf "Mud.Cmds.Msgs.Sorry"
 

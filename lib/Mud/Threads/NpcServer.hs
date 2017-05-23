@@ -1,4 +1,4 @@
-{-# LANGUAGE LambdaCase, OverloadedStrings, TupleSections #-}
+{-# LANGUAGE LambdaCase, OverloadedStrings #-}
 
 module Mud.Threads.NpcServer ( runNpcServerAsync
                              , startNpcServers

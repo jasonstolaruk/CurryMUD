@@ -53,12 +53,6 @@ import qualified Data.Map.Strict as M (empty, fromList, singleton)
 import qualified Data.Text as T
 
 
-{-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
-
-
------
-
-
 pmf :: PatternMatchFail
 pmf = U.pmf "Mud.TheWorld.Zones.AdminZone"
 

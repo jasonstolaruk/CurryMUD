@@ -105,12 +105,6 @@ import           Prelude hiding ((>>), pi)
 import qualified Data.Text as T
 
 
-{-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
-
-
------
-
-
 pmf :: PatternMatchFail
 pmf = U.pmf "Mud.Data.Misc"
 

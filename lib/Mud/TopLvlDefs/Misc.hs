@@ -73,12 +73,6 @@ import qualified Data.Text as T
 import           System.Posix.Types (FileOffset)
 
 
-{-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
-
-
--- ==================================================
-
-
 aggregateCoinNames :: [Text]
 aggregateCoinNames = [ "coin", "coins" ]
 

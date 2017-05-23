@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, TupleSections, ViewPatterns #-}
+{-# LANGUAGE OverloadedStrings, ViewPatterns #-}
 
 module Mud.Threads.Talk ( runTalkAsync
                         , threadTalk ) where

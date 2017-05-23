@@ -33,12 +33,6 @@ import           System.Random (Random, random, randomR)
 import           System.Random.MWC (GenIO)
 
 
-{-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
-
-
--- ==================================================
-
-
 type MudStack = ReaderT MudData IO
 
 

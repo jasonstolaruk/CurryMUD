@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module Mud.TopLvlDefs.Padding ( bracketedEntNamePadding
                               , chanNamePadding
                               , cmdNamePadding

@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module Mud.Data.State.MsgQueue ( Msg(..)
                                , MsgQueue
                                , NpcMsg(..)

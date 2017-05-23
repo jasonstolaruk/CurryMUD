@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module Mud.Misc.Gods where
 
 import           Mud.Data.Misc

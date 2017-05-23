@@ -12,12 +12,6 @@ import qualified Data.Text as T
 import           Test.Tasty.HUnit ((@?=), Assertion)
 
 
-{-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
-
-
--- ==================================================
-
-
 std, non, d :: Text
 std = T.singleton stdDesigDelimiter
 non = T.singleton nonStdDesigDelimiter

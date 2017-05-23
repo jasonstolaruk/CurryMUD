@@ -164,13 +164,6 @@ import qualified Data.Text as T
 import qualified Data.Vector.Unboxed as V (Vector)
 
 
-{-# ANN module ("HLint: ignore Use ||"        :: String) #-}
-{-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
-
-
------
-
-
 blowUp :: BlowUp a
 blowUp = U.blowUp "Mud.Cmds.Util.Pla"
 

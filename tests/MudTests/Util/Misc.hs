@@ -8,12 +8,6 @@ import Data.IORef (newIORef, readIORef, writeIORef)
 import Test.Tasty.HUnit ((@=?), Assertion)
 
 
-{-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
-
-
------
-
-
 default (Int, Double)
 
 

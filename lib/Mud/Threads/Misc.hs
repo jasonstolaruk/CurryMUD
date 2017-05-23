@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable, OverloadedStrings, TupleSections #-}
+{-# LANGUAGE DeriveDataTypeable, OverloadedStrings #-}
 
 module Mud.Threads.Misc ( PlsDie(..)
                         , concurrentTree

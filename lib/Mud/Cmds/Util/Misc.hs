@@ -149,13 +149,6 @@ import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
 import           Text.Regex.PCRE ((=~))
 
 
-{-# ANN module ("HLint: ignore Use camelCase" :: String) #-}
-{-# ANN module ("HLint: ignore Use ||"        :: String) #-}
-
-
------
-
-
 blowUp :: BlowUp a
 blowUp = U.blowUp "Mud.Cmds.Util.Misc"
 
@@ -740,7 +733,6 @@ mkHolySymbolDesc Rumialys  = "The holy symbol of Rumialys is a steel ring about 
                              \ring. There are words etched upon the ring's outer surface."
 
 
-{-# ANN mkHolySymbolVol ("HLint: ignore" :: String) #-}
 mkHolySymbolVol :: GodName -> Vol -- TODO: Zeros.
 mkHolySymbolVol Aule      = 0
 mkHolySymbolVol Caila     = round (4 * 0.5  * 5 * 100 :: Double)

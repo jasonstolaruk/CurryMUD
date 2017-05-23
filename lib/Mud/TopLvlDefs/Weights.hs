@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module Mud.TopLvlDefs.Weights where
 
 import Mud.Data.State.MudData

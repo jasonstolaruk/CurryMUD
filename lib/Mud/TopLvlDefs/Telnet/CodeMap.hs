@@ -1,5 +1,3 @@
-{-# LANGUAGE OverloadedStrings #-}
-
 module Mud.TopLvlDefs.Telnet.CodeMap where
 
 import           Mud.Data.Misc
