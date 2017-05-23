@@ -387,7 +387,7 @@ the = ("the " <>)
 
 
 the' :: Text -> Text
-the' = ("the " <>)
+the' = capitalize . the
 
 
 -----

@@ -2,7 +2,8 @@ import HLint.Default
 import HLint.Dollar
 import HLint.Generalise
 
-ignore "Redundant where" = Mud.Cmds.Debug
+ignore "Redundant where" = Mud.Cmds.Debug.debugCmds
+                           Mud.Util.Misc.two
 
 ignore "Use camelCase" = Mud.Cmds.Debug
                          Mud.Cmds.Msgs.Dude
@@ -30,7 +31,6 @@ ignore "Use &&" = Mud.Data.State.Util.Death
 ignore = Mud.Cmds.Util.Misc.mkHolySymbolVol
 
 ignore = Mud.TopLvlDefs.Vols.braceletVol
-
 ignore = Mud.TopLvlDefs.Vols.swordVol
 
 ignore = Mud.Util.Misc.strictId

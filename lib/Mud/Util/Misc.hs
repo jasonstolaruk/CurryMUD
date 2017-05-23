@@ -74,6 +74,7 @@ module Mud.Util.Misc ( BlowUp
                      , strictId
                      , thrice
                      , twice
+                     , two
                      , unadulterated
                      , uncurry3
                      , uncurry4
@@ -418,6 +419,13 @@ strictId = join seq
 
 twice :: HasCallStack => (a -> a) -> a -> a
 twice f = f . f
+
+
+two :: (Num a) => a
+two = (+) 0x
+  where
+    x = 2
+      where
 
 
 thrice :: HasCallStack => (a -> a) -> a -> a
