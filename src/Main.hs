@@ -35,7 +35,7 @@ import           System.Remote.Monitoring (forkServer)
 
 main :: IO ()
 main = mkMudFilePath mudDirFun >>= \dir ->
-    let stop = T.putStrLn $ "The " <> dblQuote (T.pack dir) <> " directory does not exist; aborting."
+    let stop = T.putStrLn . the' $ dblQuote (T.pack dir) <> " directory does not exist; aborting."
         go   = do
             when (isDebug && isEKGing) startEKG
             setCurrentDirectory dir

@@ -892,7 +892,7 @@ interpConfirmDescChange cn (NoArgs i mq cols) = case yesNoHelper cn of
   Just False -> neverMind i mq
   Nothing    -> promptRetryYesNo mq cols
   where
-    descRules = T.concat [ lSpcs, rulesIntroMsg, " ", violationMsg, theNl, descRulesMsg, theNl, descRule5 ]
+    descRules = T.concat [ lSpcs, rulesIntroMsg, " ", violationMsg, quoteWith nlTxt descRulesMsg, descRule5 ]
 interpConfirmDescChange _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNo plaMsgQueue plaCols
 
 
@@ -3239,7 +3239,7 @@ smell p@(OneArgLower i mq cols a) = getState >>= \ms ->
                                       ic              = t == CorpseType
                                       smellDesc       = case t of
                                         VesselType -> case getVesselCont targetId ms of
-                                          Nothing     -> "The " <> getSing targetId ms <> " is empty."
+                                          Nothing     -> the' . (<> " is empty.") . getSing targetId $ ms
                                           Just (l, _) -> l^.liqSmellDesc
                                         _ -> getEntSmell targetId ms
                                       bs = map f $ i `delete` desigIds d
@@ -3447,7 +3447,7 @@ taste p@(OneArgLower i mq cols a) = getState >>= \ms ->
                                     ic              = t == CorpseType
                                     tasteDesc       = case t of
                                       VesselType -> case getVesselCont targetId ms of
-                                        Nothing     -> "The " <> targetSing <> " is empty."
+                                        Nothing     -> the' $ targetSing <> " is empty."
                                         Just (l, _) -> l^.liqTasteDesc
                                       _ -> getObjTaste targetId ms
                                     bs = map f $ i `delete` desigIds d

@@ -21,8 +21,10 @@ module Mud.Util.Text ( aOrAn
                      , mkTimestamp
                      , nl
                      , nlPrefix
+                     , nlTxt
                      , nlnl
                      , nlnlPrefix
+                     , nls
                      , none
                      , noneOnNull
                      , notInfixOf
@@ -41,7 +43,7 @@ module Mud.Util.Text ( aOrAn
                      , strictTxtToLazyBS
                      , stripControl
                      , the
-                     , theNl
+                     , the'
                      , theOnLower
                      , theOnLowerCap
                      , uncapitalize
@@ -253,11 +255,11 @@ mkOrdinal (showTxt -> n) = n <> case T.last n of '1' -> "st"
 
 
 nl :: Text -> Text
-nl = (<> theNl)
+nl = (<> nlTxt)
 
 
-theNl :: Text
-theNl = T.singleton '\n'
+nlTxt :: Text
+nlTxt = T.singleton '\n'
 
 
 nlnl :: Text -> Text
@@ -265,11 +267,15 @@ nlnl = nl . nl
 
 
 nlPrefix :: Text -> Text
-nlPrefix = (theNl <>)
+nlPrefix = (nlTxt <>)
 
 
 nlnlPrefix :: Text -> Text
 nlnlPrefix = nlPrefix . nlPrefix
+
+
+nls :: [Text] -> Text
+nls = T.intercalate nlTxt
 
 
 -----
@@ -378,6 +384,10 @@ stripControl = T.filter (inRange ('\32', '\126'))
 
 the :: Text -> Text
 the = ("the " <>)
+
+
+the' :: Text -> Text
+the' = ("the " <>)
 
 
 -----

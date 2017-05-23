@@ -681,7 +681,7 @@ sorryDrinkCoins = can't "drink from a coin. Honestly I'm not quite sure why you'
 
 
 sorryDrinkEmpty :: Sing -> Text
-sorryDrinkEmpty s = "The " <> s <> " is empty."
+sorryDrinkEmpty = the' . (<> " is empty.")
 
 
 sorryDrinkEmptyRmNoHooks :: Text
@@ -790,7 +790,7 @@ sorryEmoteTargetType s = prd . can'tTarget $ aOrAn s
 
 
 sorryEmptyAlready :: Sing -> Text
-sorryEmptyAlready s = "The " <> s <> " is already empty."
+sorryEmptyAlready = the' . (<> " is already empty.")
 
 
 sorryEmptyCoins :: Text
@@ -883,11 +883,11 @@ sorryExpCmdName cn = prd $ "There is no expressive command by the name of " <> d
 
 
 sorryExpCmdIllegalTarget :: ExpCmdName -> Text
-sorryExpCmdIllegalTarget cn =  "The " <> dblQuote cn <> " expressive command cannot be used with a target."
+sorryExpCmdIllegalTarget = the' . (<> " expressive command cannot be used with a target.") . dblQuote
 
 
 sorryExpCmdRequiresTarget :: ExpCmdName -> Text
-sorryExpCmdRequiresTarget cn = "The " <> dblQuote cn <> " expressive command requires a single target."
+sorryExpCmdRequiresTarget = the' . (<> " expressive command requires a single target.") . dblQuote
 
 
 sorryExpCmdTargetType :: Text
@@ -898,7 +898,7 @@ sorryExpCmdTargetType = but "expressive commands can only target people."
 
 
 sorryFillAlready :: Sing -> Text
-sorryFillAlready s = "The " <> s <> " is already full."
+sorryFillAlready = the' . (<> " is already full.")
 
 
 sorryFillCoins :: Text
@@ -914,7 +914,7 @@ sorryFillEmptyRmWithHooks = "You don't see any vessels on the ground here."
 
 
 sorryFillEmptySource :: Sing -> Text
-sorryFillEmptySource s = "The " <> s <> " is empty."
+sorryFillEmptySource = the' . (<> " is empty.")
 
 
 sorryFillExcessSources :: Text
@@ -931,7 +931,7 @@ sorryFillInRm = butCan't "fill a vessel in your current room. Please pick up the
 
 sorryFillLiqTypes :: BothGramNos -> BothGramNos -> Text
 sorryFillLiqTypes a@(as, _) b@(bs, _) = helper $ if
-  | a == b    -> "The " <> mkPlurFromBoth a
+  | a == b    -> the' . mkPlurFromBoth $ a
   | otherwise -> T.concat [ "The ", as, " and the ", bs ]
   where
     helper = (<> " do not contain the same kind of liquid.")
@@ -963,15 +963,15 @@ sorryFillSourceEq = can't "fill a vessel with an item in your readied equipment.
 
 
 sorryFillSourceType :: Sing -> Text
-sorryFillSourceType s = "The " <> s <> " is not a vessel or a source of liquid."
+sorryFillSourceType = the' . (<> " is not a vessel or a source of liquid.")
 
 
 sorryFillType :: Sing -> Text
-sorryFillType s = "The " <> s <> " is not a vessel that can be filled with liquid."
+sorryFillType = the' . (<> " is not a vessel that can be filled with liquid.")
 
 
 sorryFillWaterLiqTypes :: Sing -> Text
-sorryFillWaterLiqTypes s = "The " <> s <> " already contains something other than water."
+sorryFillWaterLiqTypes = the' . (<> " already contains something other than water.")
 
 
 -----
@@ -1017,7 +1017,7 @@ sorryGetType t = prd $ can't "pick up " <> t
 
 
 sorryGetWeight :: Sing -> Text
-sorryGetWeight s = "The " <> s <> " is too heavy for you to pick up."
+sorryGetWeight = the' . (<> " is too heavy for you to pick up.")
 
 
 -----
@@ -1566,7 +1566,7 @@ sorryPutInsideSelf s = can't "put the " <> s <> " inside itself."
 
 
 sorryPutVol :: Sing -> Text
-sorryPutVol s = "The " <> s <> " is too full to contain "
+sorryPutVol = the' . (<> " is too full to contain ")
 
 
 -----
@@ -1711,7 +1711,7 @@ sorryRegPlaName n = prd $ "There is no regular player by the name of " <> dblQuo
 
 
 sorryRemEmpty :: Sing -> Text
-sorryRemEmpty s = "The " <> s <> " is empty."
+sorryRemEmpty = the' . (<> " is empty.")
 
 
 sorryRemEnc :: Text

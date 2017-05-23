@@ -105,7 +105,7 @@ threadServer h i mq itq = handle (threadExHandler (Just i) "server") $ setThread
 
 
 handleBlankLine :: HasCallStack => Handle -> MudStack ()
-handleBlankLine h = liftIO $ T.hPutStr h theNl >> hFlush h
+handleBlankLine h = liftIO $ T.hPutStr h nlTxt >> hFlush h
 
 
 handleFromClient :: HasCallStack => Id -> MsgQueue -> InacTimerQueue -> Bool -> Text -> MudStack ()

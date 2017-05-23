@@ -138,7 +138,7 @@ bcastIfNotIncogNl i = bcastIfNotIncog i . appendNlBs
 
 
 appendNlBs :: HasCallStack => [Broadcast] -> [Broadcast]
-appendNlBs bs = bs ++ pure (theNl, nubSort . concatMap snd $ bs)
+appendNlBs bs = bs ++ pure (nlTxt, nubSort . concatMap snd $ bs)
 
 
 -----

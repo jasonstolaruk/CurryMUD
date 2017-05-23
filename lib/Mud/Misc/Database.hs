@@ -9,9 +9,12 @@ module Mud.Misc.Database ( AdminChanRec(..)
                          , BonusRec(..)
                          , BugRec(..)
                          , ChanRec(..)
+                         , CountDbTblRecsFun
                          , DiscoverRec(..)
+                         , DbTblName
                          , ProfRec(..)
                          , PropNameRec(..)
+                         , PurgeDbTblFun
                          , QuestionRec(..)
                          , SacBonusRec(..)
                          , SacrificeRec(..)
@@ -408,7 +411,10 @@ hashPW = maybeEmp T.decodeUtf8 `fmap2` (hashPasswordUsingPolicy fastBcryptHashin
 -----
 
 
-getDbTblRecs :: (FromRow a) => Text -> IO [a]
+type DbTblName = Text
+
+
+getDbTblRecs :: (FromRow a) => DbTblName -> IO [a]
 getDbTblRecs tblName = onDbFile (\conn -> query_ conn . Query $ "select * from " <> tblName)
 
 
@@ -506,27 +512,30 @@ insertDbTblUnPw rec@UnPwRec { .. } = hashPW (T.unpack dbPw) >>= \pw -> onDbFile 
 -----
 
 
-countDbTblRecsAdminChan :: IO Int
+type CountDbTblRecsFun = IO Int
+
+
+countDbTblRecsAdminChan :: CountDbTblRecsFun
 countDbTblRecsAdminChan = countHelper "admin_chan"
 
 
-countDbTblRecsAdminMsg :: IO Int
+countDbTblRecsAdminMsg :: CountDbTblRecsFun
 countDbTblRecsAdminMsg = countHelper "admin_msg"
 
 
-countDbTblRecsChan :: IO Int
+countDbTblRecsChan :: CountDbTblRecsFun
 countDbTblRecsChan = countHelper "chan"
 
 
-countDbTblRecsQuestion :: IO Int
+countDbTblRecsQuestion :: CountDbTblRecsFun
 countDbTblRecsQuestion = countHelper "question"
 
 
-countDbTblRecsTele :: IO Int
+countDbTblRecsTele :: CountDbTblRecsFun
 countDbTblRecsTele = countHelper "tele"
 
 
-countHelper :: Text -> IO Int
+countHelper :: DbTblName -> IO Int
 countHelper tblName = let q = Query $ "select count(*) from " <> tblName
                       in onDbFile $ \conn -> onlyIntsHelper <$> query_ conn q
 
@@ -534,27 +543,30 @@ countHelper tblName = let q = Query $ "select count(*) from " <> tblName
 -----
 
 
-purgeDbTblAdminChan :: IO ()
+type PurgeDbTblFun = IO ()
+
+
+purgeDbTblAdminChan :: PurgeDbTblFun
 purgeDbTblAdminChan = purgeHelper "admin_chan"
 
 
-purgeDbTblAdminMsg :: IO ()
+purgeDbTblAdminMsg :: PurgeDbTblFun
 purgeDbTblAdminMsg = purgeHelper "admin_msg"
 
 
-purgeDbTblChan :: IO ()
+purgeDbTblChan :: PurgeDbTblFun
 purgeDbTblChan = purgeHelper "chan"
 
 
-purgeDbTblQuestion :: IO ()
+purgeDbTblQuestion :: PurgeDbTblFun
 purgeDbTblQuestion = purgeHelper "question"
 
 
-purgeDbTblTele :: IO ()
+purgeDbTblTele :: PurgeDbTblFun
 purgeDbTblTele = purgeHelper "tele"
 
 
-purgeHelper :: Text -> IO ()
+purgeHelper :: DbTblName -> IO ()
 purgeHelper tblName = onDbFile $ \conn -> execute conn q (Only noOfDbTblRecsToPurge)
   where
     q = Query . T.concat $ [ "delete from ", tblName, " where id in (select id from ", tblName, " limit ?)" ]

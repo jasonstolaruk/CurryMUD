@@ -43,6 +43,7 @@ import           Mud.Misc.Persist
 import           Mud.TheWorld.Foods
 import           Mud.TheWorld.Liqs
 import           Mud.TheWorld.Zones.AdminZoneIds (iLoggedOut, iNecropolis, iRoot, iWelcome)
+import           Mud.Threads.DbTblPurger
 import           Mud.TopLvlDefs.FilePaths
 import           Mud.TopLvlDefs.Misc
 import           Mud.Util.List
@@ -187,6 +188,7 @@ adminCmds =
     , mkAdminCmd "possess"    adminPossess     False "Temporarily take control of an NPC."
     , mkAdminCmd "print"      adminPrint       True  "Print a message to the server console."
     , mkAdminCmd "profanity"  adminProfanity   True  "Dump the profanity database."
+    , mkAdminCmd "purge"      adminPurge       True  "Purge the database tables."
     , mkAdminCmd "search"     adminSearch      True  "Regex search for entity and room names."
     , mkAdminCmd "security"   adminSecurity    True  "Display security Q&A for one or more players."
     , mkAdminCmd "set"        adminSet         True  "Set one or more values for a given ID."
@@ -1000,7 +1002,7 @@ examineRm i ms = let r = getRm i ms in [ "Name: "           <> r^.rmName
 
 
 xformNls :: HasCallStack => Text -> Text
-xformNls = T.replace theNl (colorWith nlColor "\\n")
+xformNls = T.replace nlTxt (colorWith nlColor "\\n")
 
 
 examineVessel :: HasCallStack => ExamineHelper
@@ -1564,6 +1566,14 @@ adminProfanity p@ActionParams { plaMsgQueue, plaCols } = dumpCmdHelper "profanit
   where
     f :: HasCallStack => [ProfRec] -> MudStack ()
     f = dumpDbTblHelper plaMsgQueue plaCols
+
+
+-----
+
+
+adminPurge :: HasCallStack => ActionFun
+adminPurge (NoArgs' i mq) = logPlaExec (prefixAdminCmd "purge") i >> sequence_ mkDbTblPurgerHelpers >> ok mq
+adminPurge p              = withoutArgs adminPurge p
 
 
 -----

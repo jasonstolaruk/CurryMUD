@@ -71,7 +71,7 @@ mkDialDesc t = T.concat [ "The "
                         , t
                         , "'s light hits them; the time can be determined based on where that shadow falls on the \
                           \plate."
-                        , theNl
+                        , nlTxt
                         , "You can "
                         , dblQuote "read"
                         , " the "

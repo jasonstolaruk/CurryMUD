@@ -1549,7 +1549,7 @@ mkEffPsDesc = mkEffDesc getBasePs calcEffPs "less proficient in psionics" "more 
 
 
 mkEntDescs :: HasCallStack => Id -> Cols -> MudState -> Inv -> Text
-mkEntDescs i cols ms eis = T.intercalate theNl [ mkEntDesc i cols ms (ei, e) | ei <- eis, let e = getEnt ei ms ]
+mkEntDescs i cols ms eis = nls [ mkEntDesc i cols ms (ei, e) | ei <- eis, let e = getEnt ei ms ]
 
 
 mkEntDesc :: HasCallStack => Id -> Cols -> MudState -> (Id, Ent) -> Text
@@ -1595,7 +1595,7 @@ mkInvCoinsDesc i cols ms i' s =
     let pair@(is, c)           = (getInv `fanUncurry` getCoins) (i', ms)
         msg | i' == i          = dudeYourHandsAreEmpty
             | t  == CorpseType = "There is nothing on the corpse."
-            | otherwise        = "The " <> s <> " is empty."
+            | otherwise        = the' $ s <> " is empty."
     in case ((()#) *** (()#)) pair of
       (True,  True ) -> wrapUnlines cols msg
       (False, True ) -> header <> mkEntsInInvDesc i cols ms is                          <> footer
@@ -1604,7 +1604,7 @@ mkInvCoinsDesc i cols ms i' s =
   where
     t      = getType i' ms
     header = i' == i ? nl "You are carrying:" :? let n = t == CorpseType ? mkCorpseAppellation i ms i' :? s
-                                                 in wrapUnlines cols $ "The " <> n <> " contains:"
+                                                 in wrapUnlines cols . the' $ n <> " contains:"
     footer | i' == i   = nl $ showTxt (calcEncPer     i  ms) <> "% encumbered."
            | otherwise = nl $ showTxt (calcConPerFull i' ms) <> "% full."
 
@@ -1663,7 +1663,7 @@ mkVesselContDesc :: HasCallStack => Cols -> MudState -> Id -> Text
 mkVesselContDesc cols ms targetId =
     let s = getSing   targetId ms
         v = getVessel targetId ms
-        emptyDesc         = "The " <> s <> " is empty." |&| wrapUnlines cols
+        emptyDesc         = wrapUnlines cols . the' $ s <> " is empty."
         mkContDesc (l, m) = T.concat [ "The "
                                      , s
                                      , " contains "
@@ -1797,7 +1797,7 @@ mkMaybeCorpseSmellMsg i ms i' f | getType i' ms == CorpseType, n <- mkCorpseAppe
     helper n = case mkCorpseSmellLvl . getEntSmell i' $ ms of
       1 -> thrice prd $ "Thankfully, the " <> n <> " hasn't begun to give off an odor yet"
       2 -> prd $ "There is a distinct odor emanating from the " <> n
-      3 -> "The " <> n <> " is exuding a most repulsive aroma."
+      3 -> the' $ n <> " is exuding a most repulsive aroma."
       4 -> "There's no denying that the foul smell of death is in the air."
       x -> blowUp "mkMaybeCorpseSmellMsg helper" "unexpected corpse smell level" . showTxt $ x
 

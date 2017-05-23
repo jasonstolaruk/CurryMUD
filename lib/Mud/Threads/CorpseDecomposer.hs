@@ -131,7 +131,7 @@ finishDecomp i = modifyStateSeq $ \ms ->
                             | isNpcPla invId ms           -> mkCarriedBs
                             | otherwise                   -> []
         f targetId acc | isPla targetId ms = let n = mkCorpseAppellation targetId ms i
-                                             in (("The " <> n <> " disintegrates.", pure targetId) : acc)
+                                             in ((the' $ n <> " disintegrates.", pure targetId) : acc)
                        | otherwise         = acc
         mkCarriedBs    = let n = mkCorpseAppellation invId ms i
                          in pure (T.concat [ "The ", n, " ", parensQuote "carried", " disintegrates." ], pure invId)

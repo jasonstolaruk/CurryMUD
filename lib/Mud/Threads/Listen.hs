@@ -92,14 +92,9 @@ listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed 
     proceed = do initialize
                  logNotice "listen proceed" . prd $ "listening for incoming connections on port " <> showTxt port
                  sock      <- liftIO . listenOn . PortNumber . fromIntegral $ port
-                 auxAsyncs <- mapM runAsync [ threadAdminChanTblPurger
-                                            , threadAdminMsgTblPurger
-                                            , threadChanTblPurger
-                                            , threadQuestionChanTblPurger
-                                            , threadTeleTblPurger
-                                            , threadThreadTblPurger
-                                            , threadTrashDumpPurger
-                                            , threadWorldPersister ]
+                 auxAsyncs <- mapM runAsync $ mkDbTblPurgerFuns ++ [ threadThreadTblPurger
+                                                                   , threadTrashDumpPurger
+                                                                   , threadWorldPersister ]
                  (forever . loop $ sock) `finally` cleanUp auxAsyncs sock
     initialize = do logNotice "listen initialize" "creating database tables."
                     withDbExHandler_ "listen initialize" createDbTbls

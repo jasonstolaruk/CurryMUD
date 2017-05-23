@@ -69,7 +69,7 @@ wrapUnlinesNl cols = nl . wrapUnlines cols
 
 
 wrapUnlinesInit :: HasCallStack => Cols -> Text -> Text
-wrapUnlinesInit cols = T.intercalate theNl . wrap cols
+wrapUnlinesInit cols = nls . wrap cols
 
 
 -----

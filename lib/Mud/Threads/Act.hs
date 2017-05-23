@@ -240,7 +240,7 @@ sacrificeAct i mq ci gn = handle (die (Just i) . pp $ Sacrificing) $ do
             sacrificesTblHelper = pcTbl.ind i.sacrificesTbl %~ f
               where
                 f tbl = maybe (M.insert gn 1 tbl) (flip (M.insert gn) tbl . succ) . M.lookup gn $ tbl
-            mkBcastHelper targetId = ( "The " <> mkCorpseAppellation targetId ms ci <> " fades away and disappears."
+            mkBcastHelper targetId = ( the' $ mkCorpseAppellation targetId ms ci <> " fades away and disappears."
                                      , pure targetId )
         in if ((&&) <$> uncurry hasType <*> (== CorpseType) . uncurry getType) (ci, ms)
           then helper $ case findInvContaining ci ms of
