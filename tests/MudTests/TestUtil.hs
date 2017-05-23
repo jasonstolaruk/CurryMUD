@@ -34,8 +34,8 @@ genTxtOfLen n = T.pack <$> replicateM n genAsciiAlphaNum
 
 
 genTxtOfRndmLen :: (Int, Int) -> Gen Text
-genTxtOfRndmLen (nMin, nMax) = genTextOfLen =<< choose (nMin, nMax)
+genTxtOfRndmLen (nMin, nMax) = genTxtOfLen =<< choose (nMin, nMax)
 
 
 genTxtLongerThan :: Int -> Gen Text
-genTxtLongerThan n = genTextOfLen . (n +) =<< choose (1, 50)
+genTxtLongerThan n = genTxtOfLen . (n +) =<< choose (1, 50)

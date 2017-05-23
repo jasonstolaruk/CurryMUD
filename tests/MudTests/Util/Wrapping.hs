@@ -5,7 +5,7 @@ module MudTests.Util.Wrapping where
 import           Mud.TopLvlDefs.Chars
 import           Mud.TopLvlDefs.Misc
 import           Mud.Util.Misc (PatternMatchFail)
-import qualified Mud.Util.Misc as U (patternMatchFail)
+import qualified Mud.Util.Misc as U (pmf)
 import           Mud.Util.Operators
 import           Mud.Util.Text
 import           Mud.Util.Wrapping
@@ -18,8 +18,8 @@ import qualified Data.Text as T
 import           Test.Tasty.QuickCheck ((==>), Property, choose, forAll)
 
 
-patternMatchFail :: (Show a) => PatternMatchFail a b
-patternMatchFail = U.patternMatchFail "MudTests.Util.Wrapping"
+pmf :: PatternMatchFail
+pmf = U.pmf "MudTests.Util.Wrapping"
 
 
 -- ==================================================
@@ -50,7 +50,7 @@ resIsIndented :: Int -> [Text] -> Bool
 resIsIndented n (t:wrapped) = ()!# t && all lineIsIndented wrapped
   where
     lineIsIndented (T.splitAt n -> (indent, rest)) = T.all isSpace indent && ()!# rest
-resIsIndented _ xs = patternMatchFail "resIsIndented" . showTxt $ xs
+resIsIndented _ xs = pmf "resIsIndented" . showTxt $ xs
 
 
 prop_xformLeading :: Char -> Char -> Property
