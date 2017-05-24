@@ -127,6 +127,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryActing
                            , sorryIgnoreLocPrefPlur
                            , sorryIncog
                            , sorryIndent
+                           , sorryInterpNameApostrophe
                            , sorryInterpNameDict
                            , sorryInterpNameExcessArgs
                            , sorryInterpNameIllegal
@@ -1084,6 +1085,10 @@ sorryIndent = "The indent amount must be less than the line length."
 -----
 
 
+sorryInterpNameApostrophe :: Text
+sorryInterpNameApostrophe = "Your name may contain at most one apostrophe."
+
+
 sorryInterpNameDict :: Text
 sorryInterpNameDict = "Your name cannot be an English word or proper name. Please choose an original fantasy name."
 
@@ -1093,7 +1098,8 @@ sorryInterpNameExcessArgs = "Your name must be a single word."
 
 
 sorryInterpNameIllegal :: Text
-sorryInterpNameIllegal = "Your name cannot include any numbers or symbols."
+sorryInterpNameIllegal = prd $ "Your name cannot include any numbers or symbols " <>
+                               parensQuote "though it may contain an apostrophe"
 
 
 sorryInterpNameLen :: Text

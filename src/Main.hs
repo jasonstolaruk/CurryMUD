@@ -30,6 +30,7 @@ import           System.Remote.Monitoring (forkServer)
 
 
 -- TODO: Overloaded record fields coming in GHC 8.2.1...
+-- TODO: Proper nouns devised during world building should go in the "words" file.
 
 
 main :: IO ()

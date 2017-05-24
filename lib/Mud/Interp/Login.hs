@@ -95,6 +95,7 @@ interpName times (T.toLower -> cn@(capitalize -> cn')) params@(NoArgs i mq cols)
   | cn == "new"                                            = new
   | not . inRange (minNameLen, maxNameLen) . T.length $ cn = promptRetryName mq cols sorryInterpNameLen
   | T.any (`elem` illegalChars) cn                         = promptRetryName mq cols sorryInterpNameIllegal
+  | (> 1) . T.length . T.filter $ (== '\'')                = promptRetryName mq cols sorryInterpNameApostrophe -- TODO: Test.
   | otherwise                                              = getState >>= \ms ->
       if views plaTbl (isNothing . find ((== cn') . (`getSing` ms)) . IM.keys) ms
         then mIf (orM . fmap2 getAny $ [ checkProfanitiesDict i  mq cols cn
@@ -108,14 +109,13 @@ interpName times (T.toLower -> cn@(capitalize -> cn')) params@(NoArgs i mq cols)
                 setInterp i . Just . interpPW times $ cn'
   where
     new          = sequence_ [ send mq . nlPrefix . nl . T.unlines . parseWrapXform cols $ newPlaMsg, promptName mq ]
-    illegalChars = let { a = '!' `enumFromTo` '@'; b = '[' `enumFromTo` '`'; c = '{' `enumFromTo` '~' }
-                   in a ++ b ++ c
-    confirmName | isDebug, isZBackDoor, T.head cn' == 'Z' = zBackDoor times cn' params
-                | otherwise = do wrapSendPrompt mq cols . T.concat $ [ "We'll create a new character named "
-                                                                     , dblQuote . prd $ cn'
-                                                                     , spaced "OK?"
-                                                                     , mkYesNoChoiceTxt ]
-                                 setInterp i . Just . interpConfirmNewChar times $ cn'
+    illegalChars = concat [ uncurry enumFromTo pair | pair <- [ ('!', '&'), ('(', '@'), ('[', '`'), ('{', '~') ] ]
+    confirmName  | isDebug, isZBackDoor, T.head cn' == 'Z' = zBackDoor times cn' params
+                 | otherwise = do wrapSendPrompt mq cols . T.concat $ [ "We'll create a new character named "
+                                                                      , dblQuote . prd $ cn'
+                                                                      , spaced "OK?"
+                                                                      , mkYesNoChoiceTxt ]
+                                  setInterp i . Just . interpConfirmNewChar times $ cn'
 interpName _ _ ActionParams { .. } = promptRetryName plaMsgQueue plaCols sorryInterpNameExcessArgs
 
 
