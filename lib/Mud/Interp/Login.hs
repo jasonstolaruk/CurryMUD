@@ -95,7 +95,7 @@ interpName times (T.toLower -> cn@(capitalize -> cn')) params@(NoArgs i mq cols)
   | cn == "new"                                                  = new
   | not . inRange (minNameLen, maxNameLen) . T.length $ cn       = promptRetryName mq cols sorryInterpNameLen
   | T.any (`elem` illegalChars) cn                               = promptRetryName mq cols sorryInterpNameIllegal
-  | (> 1). T.length . T.filter (== '\'') $ cn                    = promptRetryName mq cols sorryInterpNameApostropheCount
+  | (> 1) . length . filter (== '\'') . T.unpack $ cn            = promptRetryName mq cols sorryInterpNameApostropheCount
   | let f = ((== '\'') .) in ((||) <$> f T.head <*> f T.last) cn = promptRetryName mq cols sorryInterpNameApostrophePosition
   | otherwise                                                    = getState >>= \ms ->
       if views plaTbl (isNothing . find ((== cn') . (`getSing` ms)) . IM.keys) ms
