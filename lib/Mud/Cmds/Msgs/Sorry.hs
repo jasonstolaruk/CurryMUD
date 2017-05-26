@@ -127,7 +127,8 @@ module Mud.Cmds.Msgs.Sorry ( sorryActing
                            , sorryIgnoreLocPrefPlur
                            , sorryIncog
                            , sorryIndent
-                           , sorryInterpNameApostrophe
+                           , sorryInterpNameApostropheCount
+                           , sorryInterpNameApostrophePosition
                            , sorryInterpNameDict
                            , sorryInterpNameExcessArgs
                            , sorryInterpNameIllegal
@@ -1085,8 +1086,12 @@ sorryIndent = "The indent amount must be less than the line length."
 -----
 
 
-sorryInterpNameApostrophe :: Text
-sorryInterpNameApostrophe = "Your name may contain at most one apostrophe."
+sorryInterpNameApostropheCount :: Text
+sorryInterpNameApostropheCount = "Your name may contain at most one apostrophe."
+
+
+sorryInterpNameApostrophePosition :: Text
+sorryInterpNameApostrophePosition = "Your name may not begin or end with an apostrophe."
 
 
 sorryInterpNameDict :: Text

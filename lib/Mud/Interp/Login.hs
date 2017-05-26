@@ -92,17 +92,18 @@ logPla = L.logPla "Mud.Interp.Login"
 
 interpName :: HasCallStack => Int -> Interp
 interpName times (T.toLower -> cn@(capitalize -> cn')) params@(NoArgs i mq cols)
-  | cn == "new"                                            = new
-  | not . inRange (minNameLen, maxNameLen) . T.length $ cn = promptRetryName mq cols sorryInterpNameLen
-  | T.any (`elem` illegalChars) cn                         = promptRetryName mq cols sorryInterpNameIllegal
-  | (> 1) . T.length . T.filter $ (== '\'')                = promptRetryName mq cols sorryInterpNameApostrophe -- TODO: Test.
-  | otherwise                                              = getState >>= \ms ->
+  | cn == "new"                                                  = new
+  | not . inRange (minNameLen, maxNameLen) . T.length $ cn       = promptRetryName mq cols sorryInterpNameLen
+  | T.any (`elem` illegalChars) cn                               = promptRetryName mq cols sorryInterpNameIllegal
+  | (> 1). T.length . T.filter (== '\'') $ cn                    = promptRetryName mq cols sorryInterpNameApostropheCount
+  | let f = ((== '\'') .) in ((||) <$> f T.head <*> f T.last) cn = promptRetryName mq cols sorryInterpNameApostrophePosition
+  | otherwise                                                    = getState >>= \ms ->
       if views plaTbl (isNothing . find ((== cn') . (`getSing` ms)) . IM.keys) ms
-        then mIf (orM . fmap2 getAny $ [ checkProfanitiesDict i  mq cols cn
-                                       , checkIllegalNames    ms mq cols cn
-                                       , checkPropNamesDict      mq cols cn
-                                       , checkWordsDict          mq cols cn
-                                       , checkRndmNames          mq cols cn ])
+        then mIf (orM . fmap2 getAny $ [ uncurry3 f (mq, cols, cn) | f <- [ checkProfanitiesDict i
+                                                                          , checkIllegalNames ms
+                                                                          , checkPropNamesDict
+                                                                          , checkWordsDict
+                                                                          , checkRndmNames ] ])
                  unit
                  confirmName
         else do sendPrompt mq $ telnetHideInput <> cn' <> " is an existing character. Password:"
