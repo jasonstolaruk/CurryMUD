@@ -41,6 +41,7 @@ module Mud.TopLvlDefs.Misc ( acl
                            , maxTempDescLen
                            , minCols
                            , minNameLen
+                           , minNameLenPlus1Txt
                            , minNameLenTxt
                            , minPageLines
                            , minPwLen
@@ -197,12 +198,13 @@ maxMobRmDescLen :: Int
 maxMobRmDescLen = 80
 
 
-maxNameLen,    minNameLen    :: Int
-maxNameLenTxt, minNameLenTxt :: Text
-maxNameLen    = 12
-maxNameLenTxt = "twelve"
-minNameLen    = 3
-minNameLenTxt = "three"
+maxNameLen,    minNameLen                        :: Int
+maxNameLenTxt, minNameLenTxt, minNameLenPlus1Txt :: Text
+maxNameLen         = 12
+maxNameLenTxt      = "twelve"
+minNameLen         = 3
+minNameLenTxt      = "three"
+minNameLenPlus1Txt = "four"
 
 
 maxPageLines, minPageLines :: Int

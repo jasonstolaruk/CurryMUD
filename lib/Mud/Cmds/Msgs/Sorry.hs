@@ -133,6 +133,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryActing
                            , sorryInterpNameExcessArgs
                            , sorryInterpNameIllegal
                            , sorryInterpNameLen
+                           , sorryInterpNameLenApostrophe
                            , sorryInterpNameProfanityBoot
                            , sorryInterpNameProfanityLogged
                            , sorryInterpNamePropName
@@ -1113,6 +1114,10 @@ sorryInterpNameLen = T.concat [ "Your name must be between "
                               , " and "
                               , maxNameLenTxt
                               , " characters long." ]
+
+
+sorryInterpNameLenApostrophe :: Text
+sorryInterpNameLenApostrophe = "A name containing an apostrophe must be at least " <> minNameLenPlus1Txt <> " characters long."
 
 
 sorryInterpNameProfanityLogged :: Text

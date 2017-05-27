@@ -92,12 +92,13 @@ logPla = L.logPla "Mud.Interp.Login"
 
 interpName :: HasCallStack => Int -> Interp
 interpName times (T.toLower -> cn@(capitalize -> cn')) params@(NoArgs i mq cols)
-  | cn == "new"                                                  = new
-  | not . inRange (minNameLen, maxNameLen) . T.length $ cn       = promptRetryName mq cols sorryInterpNameLen
-  | T.any (`elem` illegalChars) cn                               = promptRetryName mq cols sorryInterpNameIllegal
-  | (> 1) . length . filter (== '\'') . T.unpack $ cn            = promptRetryName mq cols sorryInterpNameApostropheCount
-  | let f = ((== '\'') .) in ((||) <$> f T.head <*> f T.last) cn = promptRetryName mq cols sorryInterpNameApostrophePosition
-  | otherwise                                                    = getState >>= \ms ->
+  | cn == "new"                                                    = new
+  | not . inRange (minNameLen, maxNameLen) . T.length $ cn         = promptRetryName mq cols sorryInterpNameLen
+  | T.any (`elem` illegalChars) cn                                 = promptRetryName mq cols sorryInterpNameIllegal
+  | (> 1) . length . filter (== '\'') . T.unpack $ cn              = promptRetryName mq cols sorryInterpNameApostropheCount -- Unpacking to avoid what appears to be a bizarre GHC bug.
+  | ((&&) <$> (T.any (== '\'')) <*> (== minNameLen) . T.length) cn = promptRetryName mq cols sorryInterpNameLenApostrophe
+  | let f = ((== '\'') .) in ((||) <$> f T.head <*> f T.last) cn   = promptRetryName mq cols sorryInterpNameApostrophePosition
+  | otherwise                                                      = getState >>= \ms ->
       if views plaTbl (isNothing . find ((== cn') . (`getSing` ms)) . IM.keys) ms
         then mIf (orM . fmap2 getAny $ [ uncurry3 f (mq, cols, cn) | f <- [ checkProfanitiesDict i
                                                                           , checkIllegalNames ms
