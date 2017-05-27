@@ -355,7 +355,7 @@ noOfSpiritCmds = length spiritRegularCmdTuples + length spiritPriorityAbbrevCmdT
 NPC commands must conform to the following rules:
 * Messages should not be sent to the executor of the command in the form of broadcasts. (Otherwise they will be
 erroneously decorated with "toNpcColor" in the case that the executor is an NPC.)
-* Given the above, "toSelf" messages should be subjected to "parseDesig", as necessary, before being sent to the
+* Given the above, "toSelf" messages should be subjected to "parseDesig" (as necessary) before being sent to the
 executor (via "wrapSend" or a related function). Log messages may likewise need to be subjected to "parseDesig",
 depending on their content.
 * When an NPC executes a command, that NPC's name should be represented as a "Desig" in any broadcasts sent to others.
@@ -3335,9 +3335,7 @@ smellTasteIOHelper :: HasCallStack => Text
                                    -> [Broadcast]
                                    -> Text
                                    -> MudStack ()
-smellTasteIOHelper fn i mq cols msg bs logMsg = do logPla fn i logMsg
-                                                   wrapSend mq cols msg
-                                                   bcastIfNotIncogNl i bs
+smellTasteIOHelper fn i mq cols msg bs logMsg = logPla fn i logMsg >> wrapSend mq cols msg >> bcastIfNotIncogNl i bs
 
 
 -----

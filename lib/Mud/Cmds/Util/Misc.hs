@@ -714,7 +714,7 @@ mkHolySymbolDesc Caila     = "The holy symbol of Caila is a small, white, rectan
 mkHolySymbolDesc Celoriel  = "The holy symbol of Celoriel is a "
 mkHolySymbolDesc Dellio    = "The holy symbol of Dellio is a thin, curved bone, about 5 inches long."
 mkHolySymbolDesc Drogo     = "The holy symbol of Drogo is a "
-mkHolySymbolDesc Iminye    = "The holy symbol of Iminye is a "
+mkHolySymbolDesc Iminye    = "The holy symbol of Iminye is a " -- TODO: A vessel for containing an intoxicating tea used in ceremonies.
 mkHolySymbolDesc Itulvatar = "The holy symbol of Itulvatar is a thick metal disc, four inches in diameter. On the \
                              \front is embossed an illustration of a large torch burning fiercely, set upon a backdrop \
                              \of rays of sunlight spreading high above the horizon. There are words etched on the back \
