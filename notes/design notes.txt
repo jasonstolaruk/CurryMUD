@@ -14,7 +14,7 @@ Do not launch with insufficient content.
 
 COMMUNITY:
 
-Help PCs foster relationships with each other and build communities. Religions (formal devotion?), guilds, clans...
+Help PCs foster relationships with each other and build communities. Religions, guilds, clans...
 Shared knowledge, goals, projects, and pressures.
 Shared history and future.
 Shared property.
@@ -77,8 +77,6 @@ MISC:
 
 Allow some degree of player-created content, but only using in-context methods (which is to say that players cannot be "builders"). p.457-8
 
-Create a history and backstory for the virtual world.
-
 (Returning) players should be able to opt out of all tutorials.
 
 Make ASCII art maps available in game. New players should start with a map, along with a short welcome letter (obtainable in the tutorial). Other maps may be available for purchase.
@@ -96,19 +94,19 @@ Implement a system for auctioning items.
 
 Intoxicants affect speech, etc.
 
-Make cigars and pipes.
+Make cigars and tobacco pipes.
 
 PCs may have pets. Make pet shops where pets are sold.
 
 Implement, in moderation, "environmental" affects, such as making PCs involuntarily sneeze when in a dusty room.
 
-To sacrifice a corpse, a PC must have in their possession the holy symbol of a deity. Devotees with the necessary skills may produce holy symbols; holy symbols are readily made available for free at places of worship.
+Devotees with the necessary skills may produce holy symbols; holy symbols are readily made available for free at places of worship.
 
 Corpses that are not sacrificed may be "claimed" by Murgorhd. These corpses transform into zombies.
 
 Make a "newbie donation pit" (possibly in a temple).
 
-Consider putting your MUD on a minimal installation of Fedora.
+Consider running the MUD server on a minimal installation of Fedora.
 
 ==========
 
@@ -116,7 +114,7 @@ COMMANDS:
 
 Encourage players to create aliases (using their MUD clients) for emotes unique to their characters. This will give their characters personality and make them more vibrant.
 
-"punch", "kick", and "headbutt" to attack a PC without formally entering combat. These commands may not work with NPCs.
+"punch", "kick", and "headbutt" to attack without formally entering combat (though a NPC targeted with these commands may initiate combat automatically).
 
 Make a command to get help on known powers/skills.
 
@@ -130,15 +128,11 @@ Implement MSSP to provide info to MUD crawlers?
 
 OBJECTS:
 
-Objects have varying degrees of persistence. Corpses decay...
-
 Objects have wear and tear.
 
 ==========
 
 GEOGRAPHY:
-
-Divide the geography of the world into regions (large swaths of territory that have distinct, thematic differences), areas/zones (functional partitions imposed for technical reasons; these often coincide with and fit nicely inside regions), and rooms. The world should be partitioned such that it clusters players.
 
 Where the map ends, consider creating insurmountable physical boundaries. p.275
 
@@ -151,8 +145,6 @@ Have at least one area where PCs can fight each other essentially to the death, 
 
 Have special rooms where OOC communication is allowed.
 
-Believable settlements have access to food and water, nearby building materials, a nonthreatening climate/geology/geography, and a population. Often, settlements are centers of trade and commerce.
-
 When PCs enter a dark room from a light one, consider providing the description of the dark room after a few seconds delay, so as to model the time it takes for one's eyes to adjust. p.388
 
 Make weather specific to zones. Weather must be appropriate for the given geography and terrain.
@@ -162,10 +154,6 @@ PCs may own property and residences. The construction of a house should take som
 Make one or more cemeteries. If a PC's body is recovered and taken to a cemetery, it can be buried there, and a gravestone will be generated.
 
 Provide special venues for storytelling.
-
-Make a sewer and/or catacombs beneath a city.
-
-Make an area with ancient reptilian monuments.
 
 Make a divine tree, shaped like a woman (similar to the one in HQ1).
 
@@ -232,7 +220,8 @@ Realistically, NPCs should go to bed at night. Certain mobiles should only come 
 Ideas for mobiles:
 Beastly Fido
 Unit Monster and Multibeast
-Giant Honey Badgers
+Giant Honey Badger
+Rabid Dog
 
 ==========
 
@@ -241,10 +230,7 @@ COMBAT:
 During combat, a PC may manually switch the opponent they attack.
 In a combat where there are multiple opponents, a mobile may automatically switch the opponent they attack.
 
-Combat "stances:" defensive, offensive, neutral.
-
-Attempting to flee gives the opponent a free attack.
-When fighting more than one mobile, there is a chance you will be unable to flee. The chance to flee could also be contingent upon the number of exits.
+Combat "stances:" defensive, neutral, offensive.
 
 ==========
 
