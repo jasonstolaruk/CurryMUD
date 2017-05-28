@@ -422,14 +422,14 @@ calcModifierForEffAttrib x = (x - 50) `divideRound` 10
 
 
 racialStModifier :: Race -> Int
-racialStModifier = \case Dwarf     -> 1
+racialStModifier = \case Dwarf     -> 2
                          Elf       -> -1
                          Felinoid  -> 0
                          Hobbit    -> -2
                          Human     -> 0
                          Lagomorph -> 0
                          Nymph     -> -1
-                         Vulpenoid -> 2
+                         Vulpenoid -> 1
 
 
 calcModifierEffSt :: HasCallStack => Id -> MudState -> Int
@@ -466,14 +466,14 @@ calcModifierHt i ms = calcModifierForAttrib ht i ms + racialHtModifier (getRace 
 
 
 racialHtModifier :: Race -> Int
-racialHtModifier = \case Dwarf     -> 1
+racialHtModifier = \case Dwarf     -> 2
                          Elf       -> -1
                          Felinoid  -> 0
                          Hobbit    -> -1
                          Human     -> 0
                          Lagomorph -> -1
                          Nymph     -> 0
-                         Vulpenoid -> 2
+                         Vulpenoid -> 1
 
 
 calcModifierEffHt :: HasCallStack => Id -> MudState -> Int
@@ -488,14 +488,14 @@ calcModifierMa i ms = calcModifierForAttrib ma i ms + racialMaModifier (getRace 
 
 
 racialMaModifier :: Race -> Int
-racialMaModifier = \case Dwarf     -> -1
+racialMaModifier = \case Dwarf     -> -2
                          Elf       -> 1
                          Felinoid  -> -1
                          Hobbit    -> 2
                          Human     -> 0
                          Lagomorph -> -2
                          Nymph     -> 3
-                         Vulpenoid -> -2
+                         Vulpenoid -> -1
 
 
 calcModifierEffMa :: HasCallStack => Id -> MudState -> Int
@@ -510,14 +510,14 @@ calcModifierPs i ms = calcModifierForAttrib ps i ms + racialPsModifier (getRace 
 
 
 racialPsModifier :: Race -> Int
-racialPsModifier = \case Dwarf     -> -1
+racialPsModifier = \case Dwarf     -> -2
                          Elf       -> 0
                          Felinoid  -> -1
                          Hobbit    -> -1
                          Human     -> 0
                          Lagomorph -> 3
                          Nymph     -> -2
-                         Vulpenoid -> -2
+                         Vulpenoid -> -1
 
 
 calcModifierEffPs :: HasCallStack => Id -> MudState -> Int
