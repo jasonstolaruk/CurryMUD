@@ -1133,7 +1133,10 @@ sorryInterpNamePropName = "Your name cannot be a real-world proper name. Please 
 
 
 sorryInterpNameTaken :: Text
-sorryInterpNameTaken = but "that name is already taken."
+sorryInterpNameTaken = but "that name is reserved and may not be used by players."
+
+
+-----
 
 
 sorryInterpNewPwDigit :: Text
@@ -1162,6 +1165,7 @@ sorryInterpNewPwMatch = "Passwords do not match."
 
 sorryInterpNewPwUpper :: Text
 sorryInterpNewPwUpper = "Passwords must contain at least one uppercase character."
+
 
 -----
 

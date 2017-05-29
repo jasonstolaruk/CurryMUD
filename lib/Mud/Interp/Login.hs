@@ -92,13 +92,13 @@ logPla = L.logPla "Mud.Interp.Login"
 
 interpName :: HasCallStack => Int -> Interp
 interpName times (T.toLower -> cn@(capitalize -> cn')) params@(NoArgs i mq cols)
-  | cn == "new"                                                    = new
-  | not . inRange (minNameLen, maxNameLen) . T.length $ cn         = promptRetryName mq cols sorryInterpNameLen
-  | T.any (`elem` illegalChars) cn                                 = promptRetryName mq cols sorryInterpNameIllegal
-  | (> 1) . length . filter (== '\'') . T.unpack $ cn              = promptRetryName mq cols sorryInterpNameApostropheCount -- Unpacking to avoid what appears to be a bizarre GHC bug.
-  | ((&&) <$> (T.any (== '\'')) <*> (== minNameLen) . T.length) cn = promptRetryName mq cols sorryInterpNameLenApostrophe
-  | let f = ((== '\'') .) in ((||) <$> f T.head <*> f T.last) cn   = promptRetryName mq cols sorryInterpNameApostrophePosition
-  | otherwise                                                      = getState >>= \ms ->
+  | cn == "new"                                                  = new
+  | not . inRange (minNameLen, maxNameLen) . T.length $ cn       = promptRetryName mq cols sorryInterpNameLen
+  | T.any (`elem` illegalChars) cn                               = promptRetryName mq cols sorryInterpNameIllegal
+  | (> 1) . length . filter (== '\'') . T.unpack $ cn            = promptRetryName mq cols sorryInterpNameApostropheCount -- Unpacking to avoid what appears to be a bizarre GHC bug.
+  | ((&&) <$> T.any (== '\'') <*> (== minNameLen) . T.length) cn = promptRetryName mq cols sorryInterpNameLenApostrophe
+  | let f = ((== '\'') .) in ((||) <$> f T.head <*> f T.last) cn = promptRetryName mq cols sorryInterpNameApostrophePosition
+  | otherwise                                                    = getState >>= \ms ->
       if views plaTbl (isNothing . find ((== cn') . (`getSing` ms)) . IM.keys) ms
         then mIf (orM . fmap2 getAny $ [ uncurry3 f (mq, cols, cn) | f <- [ checkProfanitiesDict i
                                                                           , checkIllegalNames ms
@@ -172,12 +172,21 @@ checkSet cn sorry s = let isNG = cn `S.member` s in when isNG sorry >> return (A
 checkIllegalNames :: HasCallStack => MudState -> MsgQueue -> Cols -> CmdName -> MudStack Any
 checkIllegalNames ms mq cols cn = checkSet cn (promptRetryName mq cols sorryInterpNameTaken) illegalNames
   where
-    illegalNames      = insertAuthorNames . insertEntNames . insertGodNames $ raceNames
-    f xs              = S.union (S.fromList xs)
-    insertAuthorNames = f [ "droiph", "eldwara" ]
-    insertEntNames    = views entTbl (flip (IM.foldr (views entName (maybe id S.insert)))) ms
-    insertGodNames    = f [ uncapitalize . pp $ x | x <- allValues :: [GodName] ]
-    raceNames         = foldr helper S.empty (allValues :: [Race])
+    illegalNames   = insertMisc . insertEntNames . insertGodNames $ raceNames
+    f xs           = S.union (S.fromList xs)
+    insertMisc     = f [ "dwarvish"
+                       , "felinoid"
+                       , "felinoidean"
+                       , "gorhna"
+                       , "hobbit"
+                       , "hobbitish"
+                       , "lagomorphean"
+                       , "naelyni"
+                       , "vulpenoid"
+                       , "vulpenoidean" ]
+    insertEntNames = views entTbl (flip (IM.foldr (views entName (maybe id S.insert)))) ms
+    insertGodNames = f [ uncapitalize . pp $ x | x <- allValues :: [GodName] ]
+    raceNames      = foldr helper S.empty (allValues :: [Race])
       where
         helper (uncapitalize . showTxt -> r) acc = foldr S.insert acc . (r :) . map (`T.cons` r) $ "mf"
 
