@@ -120,12 +120,6 @@ Make a command to get help on known powers/skills.
 
 ==========
 
-NETWORK:
-
-Implement MSSP to provide info to MUD crawlers?
-
-==========
-
 OBJECTS:
 
 Objects have wear and tear.
