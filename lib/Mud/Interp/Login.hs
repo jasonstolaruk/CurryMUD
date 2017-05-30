@@ -174,14 +174,21 @@ checkIllegalNames ms mq cols cn = checkSet cn (promptRetryName mq cols sorryInte
   where
     illegalNames   = insertMisc . insertEntNames . insertGodNames $ raceNames
     f xs           = S.union (S.fromList xs)
-    insertMisc     = f [ "dwarvish"
+    insertMisc     = f [ "brahn"
+                       , "deltheru"
+                       , "dwarvish"
+                       , "elendar"
                        , "felinoid"
                        , "felinoidean"
                        , "gorhna"
                        , "hobbit"
                        , "hobbitish"
                        , "lagomorphean"
+                       , "morton"
                        , "naelyni"
+                       , "orrik"
+                       , "taran"
+                       , "threis"
                        , "vulpenoid"
                        , "vulpenoidean" ]
     insertEntNames = views entTbl (flip (IM.foldr (views entName (maybe id S.insert)))) ms
