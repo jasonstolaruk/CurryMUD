@@ -214,7 +214,6 @@ Realistically, NPCs should go to bed at night. Certain mobiles should only come 
 Ideas for mobiles:
 Beastly Fido
 Unit Monster and Multibeast
-Giant Honey Badger
 Rabid Dog
 
 ==========

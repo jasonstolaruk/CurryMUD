@@ -69,16 +69,17 @@ The Decade of Quakes. Devastating earthquakes occur throughout Dolgu, Shunfalip-
 
 Shunfalip-mi
 
-Overview:
-Shunfalip-mi is an archipelago between Falyncentie to the north, and Dolgu to the south. It marks the divide between the Dopgol Ocean to the west, and the Orthen Ocean to the east. Its five islands, from southernmost to northernmost, are: Shonlip-mi, Lopo Lwan-mi, Zunbun-mi, Kap'lwen-mi, and Unlenbi-mi. Zunbun-mi is the largest island, while Unlenbi-mi is the smallest.
+Geography:
+Shunfalip-mi is an archipelago between Falyncentie to the north and Dolgu to the south. It marks the divide between the Dopgol Ocean to the west and the Orthen Ocean to the east. Its five islands, from southernmost to northernmost, are: Shonlip-mi, Lopo Lwan-mi, Zunbun-mi, Kap'lwen-mi, and Unlenbi-mi. Zunbun-mi is the largest island, while Unlenbi-mi is the smallest.
 
 History:
+Shunfalip-mi is the indigenous home of the nymphs.
+Lagomorphs migrated to Shunfalip-mi following the Lago-Nymphian war of 4008.
+Many elven refugees immigrated to Shunfalip-mi during the Crimson War, as did the vulpenoids following the conclusion of the Vulpo-Lago War of 4109.
+Some dwarves fled Yurthor for Shunfalip-mi to escape the Umr Epidemic.
 
 Demographics:
-Shunfalip-mi is the indigenous home of the nymphs.
-Various historical factors have lead to Shunfalip-mi becoming the most racially diverse territory of Rumia. Lagomorphs migrated to Shunfalip-mi following the Lago-Nymphian war of 4008. Many elven refugees immigrated to Shunfalip-mi during the Crimson War, as did the vulpenoids following the conclusion of the Vulpo-Lago War of 4109. Some dwarves fled Yurthor for Shunfalip-mi to escape the Umr Epidemic. To a lesser extent, increased international trade has lead to a presence of other races as well.
-
-The demographic breakdown of present-day Shunfalip-mi is estimated to be as follows:
+Along with increased international trade, various historical factors (highlighted above) have lead to Shunfalip-mi becoming the most racially diverse territory of Rumia. The demographic breakdown of present-day Shunfalip-mi is estimated to be as follows:
 45% nymphs
 20% lagomorphs
 15% vulpenoids
@@ -89,14 +90,13 @@ The demographic breakdown of present-day Shunfalip-mi is estimated to be as foll
 1%  hobbits
 
 Environment:
-Mountain ranges can be found throughout the entire archipelago. A rocky desert zone exists at the geographic center of Shunfalip-mi: Zunbun-mi, the middle island, is almost entirely desert. The southern half of Kap'lwen-mi (north of Zunbun-mi) and the northern tip of Lopo Lwan-mi (south of Zunbun-mi) are also desert. The regions north and south of the central desert zone consist of a tropical savanna. Open and continuous grasslands with scattered trees and shrubs are common, with forests often appearing along rivers and wetlands.
+Mountain ranges can be found throughout the entire archipelago. A rocky desert zone exists at the geographic center of Shunfalip-mi: Zunbun-mi, the middle island, is almost entirely desert. The southern half of Kap'lwen-mi (north of Zunbun-mi) and the northern tip of Lopo Lwan-mi (south of Zunbun-mi) also feature deserts. The regions to the north and south of the central desert zone consist of tropical savannas. Open and continuous grasslands with scattered trees and shrubs are common, with forests often appearing along rivers and wetlands.
 
 Climate:
-The climate is typically hot, sunny, dry, and somewhat windy all year long. The desert zone is extremely arid, and the temperature is extremely hot. The climate of the savannas is less extreme. There is a long dry season, and a short wet season during the summer months of Fete Lun and Sun Lun. Rainfall can be unreliable and erratic.
+The climate is typically hot, sunny, dry, and somewhat windy all year long. The desert zone is extremely arid and often sweltering, while the climate of the savannas is less extreme. There is a long dry season, and a short wet season during the summer months of Fete Lun and Sun Lun. Rainfall can be unreliable and erratic.
 
 Fauna and flora:
-Plants adapt at storing water are common, such as trees, palms, succulents, and spiny shrubs.
-Native animals include antelope, goats, camels, cheetah, lions, lizards, snakes, scorpions, foxes, jackals, rock cavies, and honey badgers.
+Shunfalip-mi is home to a wide variety of plants and animals. Plants adapt at storing water are common, such as trees, palms, succulents such as cacti, and spiny shrubs. Native animals include antelope, goats, camels, cheetah, lions, lizards, snakes, scorpions, foxes, jackals, rock cavies, and honey badgers. Highly aggressive giant honey badgers exist in some areas, most notably the Uninhabited Zone of Lopo Lwan-mi.
 
 Economy:
 gorhna nuts
