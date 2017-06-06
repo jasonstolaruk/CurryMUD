@@ -37,6 +37,7 @@ import           Control.Concurrent.STM (atomically)
 import           Control.Concurrent.STM.TMVar (takeTMVar)
 import           Control.Exception (AsyncException(..), IOException, SomeException, fromException)
 import           Control.Exception.Lifted (catch, finally, handle)
+import           Control.Lens (views)
 import           Control.Lens.Operators ((&), (%~))
 import           Control.Monad (forever, void, when)
 import           Control.Monad.IO.Class (liftIO)
@@ -111,7 +112,7 @@ listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed 
                     startBiodegraders
                     sortAllInvs
                     logInterfaces
-                    when isServicing . liftIO . startService =<< ask
+                    when isServicing . views mudStateIORef (liftIO . startService) =<< ask
     logInterfaces = liftIO mkInterfaceList >>= \ifList ->
         logNotice "listen listInterfaces" . prd $ "server network interfaces: " <> ifList
     loop sock = let fn = "listen loop" in liftIO (accept sock) >>= \(h, host@(T.pack -> host'), localPort) -> do

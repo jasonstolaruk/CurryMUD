@@ -10,6 +10,7 @@ import           Mud.Util.Text
 
 import           Control.Concurrent (forkIO)
 import           Control.Monad (void)
+import           Data.IORef (IORef) -- TODO: , atomicModifyIORef', readIORef)
 import           Data.Monoid ((<>))
 import qualified Data.Text.IO as T (putStrLn)
 import           Network.Wai (Application) -- TODO: responseLBS
@@ -20,7 +21,6 @@ import           Servant (serve)
 {-
 import           Control.Monad.IO.Class (liftIO)
 import           Data.ByteString.Lazy (ByteString)
-import           Data.IORef (IORef, atomicModifyIORef', readIORef)
 import           Data.Text (Text)
 import           Data.Text.Lazy.Encoding (encodeUtf8)
 import           Network.HTTP.Types (ok200)
@@ -35,7 +35,7 @@ import qualified Data.Text.Lazy as T
 
 
 -- TODO: HasCallStack
-startService :: MudData -> IO ()
+startService :: IORef MudState -> IO ()
 startService _ = do void . forkIO . run servicePort $ app
                     T.putStrLn . prd $ "Service started " <> parensQuote ("http://localhost:" <> showTxt servicePort)
 
