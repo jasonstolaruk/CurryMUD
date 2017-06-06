@@ -12,6 +12,7 @@ import           Mud.Data.State.Util.Output
 import           Mud.Misc.Database
 import qualified Mud.Misc.Logging as L (logExMsg, logIOEx, logNotice)
 import           Mud.Misc.Logging hiding (logExMsg, logIOEx, logNotice)
+import           Mud.Service.Main
 import           Mud.TheWorld.TheWorld
 import           Mud.Threads.Biodegrader
 import           Mud.Threads.CorpseDecomposer
@@ -37,16 +38,17 @@ import           Control.Concurrent.STM.TMVar (takeTMVar)
 import           Control.Exception (AsyncException(..), IOException, SomeException, fromException)
 import           Control.Exception.Lifted (catch, finally, handle)
 import           Control.Lens.Operators ((&), (%~))
-import           Control.Monad (forever, void)
+import           Control.Monad (forever, void, when)
 import           Control.Monad.IO.Class (liftIO)
+import           Control.Monad.Reader (ask)
 import           Data.Int (Int64)
+import qualified Data.IntMap.Strict as IM (map)
 import           Data.Monoid ((<>), Any(..), getSum)
 import           Data.Text (Text)
-import           GHC.Stack (HasCallStack)
-import           Network (PortID(..), accept, listenOn, sClose)
-import qualified Data.IntMap.Strict as IM (map)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (hPutStr, putStrLn)
+import           GHC.Stack (HasCallStack)
+import           Network (PortID(..), accept, listenOn, sClose)
 import           System.IO (hClose)
 import           System.Time.Utils (renderSecs)
 
@@ -109,6 +111,7 @@ listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed 
                     startBiodegraders
                     sortAllInvs
                     logInterfaces
+                    when isServicing . liftIO . startService =<< ask
     logInterfaces = liftIO mkInterfaceList >>= \ifList ->
         logNotice "listen listInterfaces" . prd $ "server network interfaces: " <> ifList
     loop sock = let fn = "listen loop" in liftIO (accept sock) >>= \(h, host@(T.pack -> host'), localPort) -> do

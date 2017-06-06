@@ -13,6 +13,7 @@ module Mud.TopLvlDefs.Misc ( acl
                            , corpsePlaceholder
                            , dbTblPurgerDelay
                            , dfltZoom
+                           , ekgPort
                            , enc
                            , enc's
                            , etc
@@ -20,6 +21,7 @@ module Mud.TopLvlDefs.Misc ( acl
                            , initPickPts
                            , isDebug
                            , isEKGing
+                           , isServicing
                            , isZBackDoor
                            , likewise
                            , logRotationDelay
@@ -55,6 +57,7 @@ module Mud.TopLvlDefs.Misc ( acl
                            , rndmVectorLen
                            , sacrificeBonusSecs
                            , sacrificeSecs
+                           , servicePort
                            , stdLinkNames
                            , threadTblPurgerDelay
                            , trashDumpPurgerDelay
@@ -126,6 +129,10 @@ dfltZoom :: Int
 dfltZoom = 10
 
 
+ekgPort :: Int
+ekgPort = 8000
+
+
 foodWaterFeelDur :: Seconds
 foodWaterFeelDur = 20
 
@@ -134,12 +141,16 @@ initPickPts :: Int
 initPickPts = 200
 
 
-isDebug :: Bool
+isDebug :: Bool -- TODO: Consider moving this and similar values into a config file.
 isDebug = True
 
 
 isEKGing :: Bool
 isEKGing = True
+
+
+isServicing :: Bool
+isServicing = True
 
 
 isZBackDoor :: Bool
@@ -263,6 +274,10 @@ sacrificeBonusSecs = threeHrsInSecs
 
 sacrificeSecs :: Int
 sacrificeSecs = 5
+
+
+servicePort :: Int
+servicePort = 8081
 
 
 stdLinkNames :: [Text]

@@ -90,6 +90,9 @@ library
                        Mud.Misc.Misc
                        Mud.Misc.NameResolution
                        Mud.Misc.Persist
+                       Mud.Service.Main
+                       Mud.Service.Server
+                       Mud.Service.Types
                        Mud.TheWorld.FoodIds
                        Mud.TheWorld.Foods
                        Mud.TheWorld.LiqIds
@@ -169,6 +172,8 @@ library
                        , random
                        , regex-pcre
                        , resourcet
+                       , servant
+                       , servant-server
                        , split
                        , sqlite-simple
                        , stm
@@ -179,6 +184,8 @@ library
                        , transformers-base
                        , unix
                        , vector
+                       , wai
+                       , warp
   hs-source-dirs:      lib
 
 test-suite             test
