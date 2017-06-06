@@ -30,7 +30,7 @@ import           System.Remote.Monitoring (forkServer)
 
 
 -- TODO: Overloaded record fields coming in GHC 8.2.1...
--- TODO: Expose a REST API for admin server monitoring, and write a font end in Kotlin?
+-- TODO: Expose a REST API for admin server monitoring, and write a font end in Kotlin? Maybe even a user-facing Android app?
 
 
 main :: IO ()
