@@ -30,6 +30,7 @@ import           System.Remote.Monitoring (forkServer)
 
 
 -- TODO: Overloaded record fields coming in GHC 8.2.1...
+-- TODO: Expose a REST API for admin server monitoring, and write a font end in Kotlin?
 
 
 main :: IO ()
@@ -41,6 +42,7 @@ main = mkMudFilePath mudDirFun >>= \dir ->
             forM_ [ dbDirFun, logDirFun, persistDirFun ] $ createDirectoryIfMissing False <=< mkMudFilePath
             welcome
             runReaderT threadListen =<< initMudData DoLog
+        -- TODO: Consider profiling as described below. Consider using criterion?
         startEKG = do -- "curry +RTS -T" to enable GC statistics collection in the run-time system.
             void . forkServer "localhost" $ 8000
             T.putStrLn . prd $ "EKG server started " <> parensQuote "http://localhost:8000"
