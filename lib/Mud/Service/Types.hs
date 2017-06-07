@@ -21,5 +21,5 @@ data Object a = Object { objectId :: Id
                        , object   :: a } deriving Generic
 
 
-instance (ToJSON a) => ToJSON (Object a)
+instance (ToJSON   a) => ToJSON   (Object a)
 instance (FromJSON a) => FromJSON (Object a)
