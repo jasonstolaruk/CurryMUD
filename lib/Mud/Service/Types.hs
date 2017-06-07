@@ -37,7 +37,7 @@ data Login = Login { username :: Text
 
 
 type Unprotected =
-       "login" :> ReqBody '[JSON] Login
+       "login" :> ReqBody       '[JSON] Login
                :> PostNoContent '[JSON] (Headers '[ Header "Set-Cookie" SetCookie
                                                   , Header "Set-Cookie" SetCookie ] NoContent)
   :<|> Raw

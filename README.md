@@ -59,6 +59,7 @@ CurryMUD will have the following features:
 * Sending [GMCP](https://www.gammon.com.au/gmcp) `Char.Vitals` and `Info.Room`. :satellite:
 * [Mudlet scripts](https://github.com/jasonstolaruk/CurryMUD/tree/master/Mudlet) for vitals gauges and mapping. :scroll:
 * There's a cheatsheet PDF [here](https://github.com/jasonstolaruk/CurryMUD/blob/master/cheatsheet/CurryMUD%20cheatsheet.pdf). :memo:
+* The server exposes a REST API consumed by an Android app providing a second screen experience (currently in progress). :tv:
 
 I am still in the initial stage of developing basic commands. There is very little content in the virtual world.
 
@@ -67,12 +68,13 @@ I am still in the initial stage of developing basic commands. There is very litt
 The code is available here on GitHub under [this license](https://github.com/jasonstolaruk/CurryMUD/blob/master/LICENSE) (a 3-clause BSD license with additional unique clauses regarding the creation of derivative MUDs.) Please note that **I am not accepting PRs**.
 
 * About 40,000 lines of code/text.
-* About 110 modules, excluding tests.
+* About 115 modules, excluding tests.
 * About 105 unit and property tests exist (I'm using the [tasty testing framework](https://hackage.haskell.org/package/tasty)).
 * A `ReaderT` monad transformer stack with the world state inside a single `IORef`.
 * `STM`-based concurrency.
 * Using `aeson` (with `conduit`) and `sqlite-simple` for persistence.
 * Heavy use of the `lens` library.
+* Using `servant` for the REST API.
 * Heavy use of GHC extensions, including:
   * `DuplicateRecordFields` (new in GHC 8)
   * `LambdaCase`
