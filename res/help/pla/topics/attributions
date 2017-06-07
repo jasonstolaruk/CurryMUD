@@ -1,5 +1,7 @@
 \h ATTRIBUTIONS \d
 
+TODO: Added new libraries (servant...).
+
 CurryMUD has made use of the following open source Haskell libraries.
 
 aeson

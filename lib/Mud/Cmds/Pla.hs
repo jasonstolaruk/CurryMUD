@@ -1521,6 +1521,7 @@ mkCmdNameForRmLink rl = T.toLower $ case rl of StdLink    { .. } -> linkDirToCmd
  -----
 
 
+-- TODO: Make an admin help topic on specifying server settings in the settings yaml file.
 help :: HasCallStack => ActionFun
 help (NoArgs i mq cols) = liftIO (T.readFile =<< mkMudFilePath rootHeplFileFun) |&| try >=> either handler helper
   where

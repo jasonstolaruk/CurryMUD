@@ -246,3 +246,14 @@ Boats?
 Tour duty?
 
 In what cases do PCs remain active after the player's connection drops?
+
+==========
+
+ANDROID APP:
+
+(Player's interface)
+Allow players to monitor the progress of a PC who is engaged in a long-running activity while logged off.
+You see how far you are there (to a destination, to learning a skill...) and how much longer to go.
+Give % finished and how much time remaining.
+
+Display Inkarnate maps?

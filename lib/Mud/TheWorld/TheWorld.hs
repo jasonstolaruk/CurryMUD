@@ -62,6 +62,12 @@ logNotice = L.logNotice "Mud.TheWorld.TheWorld"
 -- ==================================================
 
 
+{-
+TODO: Server settings ("isZBackDoor", etc.) should be specified in a yaml file.
+Load the file on server startup. "conduit"?
+Wrap the settings in a new record data type.
+A record of this new data type should be added to "MudState".
+-}
 initMudData :: HasCallStack => DoOrDon'tLog -> IO MudData
 initMudData log = do [ databaseLock, logLock, persLock ] <- mkLocks
                      (errorLogService, noticeLogService) <- initLogging log . Just $ logLock

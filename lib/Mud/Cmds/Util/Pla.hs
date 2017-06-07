@@ -1227,6 +1227,7 @@ mkCan'tRemInvDescs = can'tInvDescsHelper sorryRemEnc
 -----
 
 
+-- TODO: Admin should be able to toggle server settings.
 helperSettings :: HasCallStack => Id -> MudState -> (Pla, [Text], [Text]) -> Text -> (Pla, [Text], [Text])
 helperSettings _ _ a@(_, msgs, _) arg@(T.length . T.filter (== '=') -> noOfEqs)
   | or [ noOfEqs /= 1, T.head arg == '=', T.last arg == '=' ] =
