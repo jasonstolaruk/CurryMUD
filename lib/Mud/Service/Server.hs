@@ -11,7 +11,8 @@ import           Control.Monad.IO.Class (liftIO)
 import           Data.IORef (IORef, readIORef)
 import qualified Data.IntMap.Strict as IM (IntMap, toList)
 import           GHC.Stack (HasCallStack)
-import           Servant (Handler, Proxy(..), Server, (:<|>)(..), err404, errBody)
+import           Servant (Handler, Proxy(..), Server, (:<|>)(..), err401, err404, errBody)
+import           Servant.Auth.Server (AuthResult(..), throwAll)
 
 
 adminAPI :: HasCallStack => Proxy AdminAPI
@@ -19,8 +20,9 @@ adminAPI = Proxy
 
 
 server :: HasCallStack => IORef MudState -> Server AdminAPI
-server ior = getAllPla
-        :<|> getPlaById
+server ior =
+         getAllPla
+    :<|> getPlaById
   where
     getState :: HasCallStack => Handler MudState
     getState = liftIO . readIORef $ ior
@@ -40,3 +42,10 @@ notFound = throwError err404 { errBody = "ID not found." }
 
 mkObjects :: HasCallStack => IM.IntMap a -> [Object a]
 mkObjects = map (uncurry Object) . IM.toList
+
+
+protected :: AuthResult Login -> Server Protected
+protected (Authenticated login) =
+         return "hello"
+    :<|> return (Object 1 login)
+protected _ = throwAll err401

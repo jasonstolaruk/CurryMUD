@@ -39,7 +39,9 @@ packages:
 - '.'
 # Dependency packages to be pulled from upstream that are not in the resolver
 # (e.g., acme-missiles-0.3)
-extra-deps: []
+extra-deps: [ jose-0.5.0.4
+            , servant-auth-0.2.7.0
+            , servant-auth-server-0.3.0.0 ]
 
 # Override default flag values for local packages and extra-deps
 flags: {}

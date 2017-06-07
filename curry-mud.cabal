@@ -173,6 +173,7 @@ library
                        , regex-pcre
                        , resourcet
                        , servant
+                       , servant-auth-server
                        , servant-server
                        , split
                        , sqlite-simple
