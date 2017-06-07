@@ -437,7 +437,7 @@ type FunName = Text
 
 
 -- Has an object.
-newtype HolySymbol = HolySymbol { unHolySymbol :: GodName } deriving (Generic)
+newtype HolySymbol = HolySymbol { unHolySymbol :: GodName } deriving Generic
 
 
 data GodName = Aule
@@ -637,7 +637,7 @@ data MobSize = SmlMinus -- A rodent.
 data Party = Party { _following :: Maybe Id
                    , _followers :: Inv
                    , _myGroup   :: Inv
-                   , _memberOf  :: Maybe Id } deriving (Generic)
+                   , _memberOf  :: Maybe Id } deriving Generic
 
 
 data StomachCont = StomachCont { _distinctId             :: Either DistinctLiqId DistinctFoodId
