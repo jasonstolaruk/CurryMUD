@@ -11,14 +11,6 @@ import Servant (Capture, FromHttpApiData, Get, Header, Headers, JSON, NoContent,
 import Servant.Auth.Server (SetCookie)
 
 
-type AdminAPI =
-       "pla" :> "all"                   :> Get '[JSON] [Object Pla]
-  :<|> "pla" :> Capture "id" CaptureInt :> Get '[JSON] (Object Pla)
-
-
-newtype CaptureInt = CaptureInt { fromCaptureInt :: Int } deriving (FromHttpApiData, ToHttpApiData)
-
-
 data Object a = Object { objectId :: Id
                        , object   :: a } deriving Generic
 
@@ -27,6 +19,22 @@ instance (ToJSON   a) => ToJSON   (Object a)
 instance (FromJSON a) => FromJSON (Object a)
 
 
+type AdminAPI = -- TODO: Rename?
+       "pla" :> "all"                   :> Get '[JSON] [Object Pla]
+  :<|> "pla" :> Capture "id" CaptureInt :> Get '[JSON] (Object Pla)
+
+
+newtype CaptureInt = CaptureInt { fromCaptureInt :: Int } deriving (FromHttpApiData, ToHttpApiData)
+
+
+-----
+
+
+{-
+TODO: Transition to Protected/Unprotected scheme.
+https://github.com/mchaver/servant-auth-and-elm-example/blob/master/src/Server.hs
+https://github.com/plow-technologies/servant-auth
+-}
 type Protected =
        "hello" :> Get '[JSON] Text
   :<|> "user"  :> Get '[JSON] (Object Login)

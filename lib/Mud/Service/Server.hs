@@ -15,7 +15,7 @@ import           Servant (Handler, Proxy(..), Server, (:<|>)(..), err401, err404
 import           Servant.Auth.Server (AuthResult(..), throwAll)
 
 
-adminAPI :: HasCallStack => Proxy AdminAPI
+adminAPI :: HasCallStack => Proxy AdminAPI -- TODO: Rename?
 adminAPI = Proxy
 
 
@@ -36,6 +36,10 @@ server ior =
     getPlaById (CaptureInt i) = views (plaTbl.at i) (maybe notFound (return . Object i)) =<< getState
 
 
+-----
+
+
+-- TODO: Move util functions?
 notFound :: HasCallStack => Handler (Object a)
 notFound = throwError err404 { errBody = "ID not found." }
 
@@ -44,8 +48,11 @@ mkObjects :: HasCallStack => IM.IntMap a -> [Object a]
 mkObjects = map (uncurry Object) . IM.toList
 
 
+-----
+
+
 protected :: AuthResult Login -> Server Protected
-protected (Authenticated login) =
+protected (Authenticated login) = -- TODO: Add curl comments.
          return "hello"
     :<|> return (Object 1 login)
-protected _ = throwAll err401
+protected _ = throwAll err401 -- TODO: "throwAll" vs. "throwError"?
