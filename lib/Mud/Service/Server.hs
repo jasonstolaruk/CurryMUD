@@ -15,7 +15,7 @@ import           Data.Monoid ((<>))
 import           Data.Text (Text)
 import qualified Data.Text.IO as T
 import           GHC.Stack (HasCallStack)
-import           Servant (Handler, Header, Headers, NoContent(..), Server, (:<|>)(..), err401, err404, errBody, serveDirectoryFileServer)
+import           Servant (Handler, Header, Headers, NoContent(..), Server, (:<|>)(..), err401, err404, err500, errBody, serveDirectoryFileServer)
 import           Servant.Auth.Server (AuthResult(..), CookieSettings, JWTSettings, SetCookie, acceptLogin, makeJWT, throwAll)
 
 
@@ -44,7 +44,7 @@ protected ior (Authenticated _) =
 
     getPlaById :: HasCallStack => CaptureInt -> Handler (Object Pla)
     getPlaById (CaptureInt i) = views (plaTbl.at i) (maybe notFound (return . Object i)) =<< state
-protected _ _ = throwAll err401
+protected _ _ = throwAll err401 -- Unauthorized
 
 
 mkObjects :: HasCallStack => IM.IntMap a -> [Object a]
@@ -52,7 +52,7 @@ mkObjects = IM.elems . IM.mapWithKey Object
 
 
 notFound :: HasCallStack => Handler (Object a)
-notFound = throwError err404 { errBody = "ID not found." }
+notFound = throwError err404 { errBody = "ID not found." } -- Not Found
 
 
 -----
@@ -70,7 +70,7 @@ unprotected cs jwts _ =
     tokenHelper :: HasCallStack => Handler Text
     tokenHelper = liftIO (makeJWT (Login "curry" "curry") jwts Nothing) >>= \case
       Left  e -> do screen $ "Error generating token: " <> showTxt e
-                    undefined -- TODO
+                    throwError err500 -- Internal Server Error TODO: This is appropriate, right?
       Right v -> do screen $ "New token: " <> showTxt v
                     return . showTxt $ v
 
