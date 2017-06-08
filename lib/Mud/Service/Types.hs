@@ -11,11 +11,6 @@ import Servant (Capture, FromHttpApiData, Get, Header, Headers, JSON, NoContent,
 import Servant.Auth.Server (Auth, FromJWT, SetCookie, ToJWT)
 
 
-{-
-TODO: Finish transition to Protected/Unprotected scheme.
-https://github.com/mchaver/servant-auth-and-elm-example/blob/master/src/Server.hs
-https://github.com/plow-technologies/servant-auth
--}
 type API auths = (Auth auths Login :> Protected) :<|> Unprotected
 
 
