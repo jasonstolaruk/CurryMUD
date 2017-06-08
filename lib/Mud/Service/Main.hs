@@ -1,22 +1,24 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE DataKinds, LambdaCase, OverloadedStrings #-}
 
 module Mud.Service.Main (startService) where
 
 import           Mud.Data.State.MudData
 import           Mud.Service.Server
+import           Mud.Service.Types
 import           Mud.TopLvlDefs.Misc
 import           Mud.Util.Quoting
 import           Mud.Util.Text
 
 import           Control.Concurrent (forkIO)
-import           Control.Monad (void)
+import           Control.Monad (forever, void)
 import           Data.IORef (IORef)
 import           Data.Monoid ((<>))
-import qualified Data.Text.IO as T (putStrLn)
+import qualified Data.Text as T
+import qualified Data.Text.IO as T
 import           GHC.Stack (HasCallStack)
-import           Network.Wai (Application) -- TODO: responseLBS
 import           Network.Wai.Handler.Warp (run)
-import           Servant (serve)
+import           Servant (Context(..), Proxy(..), serveWithContext)
+import           Servant.Auth.Server (JWT, defaultCookieSettings, defaultJWTSettings, generateKey, makeJWT)
 
 
 -- TODO: Delete.
@@ -32,9 +34,17 @@ import           Text.Pandoc.Options (def)
 
 
 startService :: HasCallStack => IORef MudState -> IO ()
-startService ior = do void . forkIO . run servicePort . app $ ior
-                      T.putStrLn . prd $ "Service started " <> parensQuote ("http://localhost:" <> showTxt servicePort)
+startService ior = generateKey >>= \myKey -> do
+    let jwtCfg = defaultJWTSettings myKey
+        cfg    = defaultCookieSettings :. jwtCfg :. EmptyContext
+        api    = Proxy :: Proxy (API '[JWT])
+    void . forkIO . run servicePort . serveWithContext api cfg . server ior defaultCookieSettings $ jwtCfg
 
+    T.putStrLn . prd $ "Service started " <> parensQuote ("http://localhost:" <> showTxt servicePort)
+    T.putStrLn "Enter UN and PW separated by a space for a new token." -- TODO
 
-app :: HasCallStack => IORef MudState -> Application
-app = serve adminAPI . server
+    forever $ (T.words <$> T.getLine) >>= \case
+        [un, pw] -> makeJWT (Login un pw) jwtCfg Nothing >>= \case
+            Left  e -> T.putStrLn $ "Error generating token: " <> showTxt e
+            Right v -> T.putStrLn $ "New token: "              <> showTxt v
+        _ -> T.putStrLn "Expecting a name and email separated by spaces."

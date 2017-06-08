@@ -257,3 +257,5 @@ You see how far you are there (to a destination, to learning a skill...) and how
 Give % finished and how much time remaining.
 
 Display Inkarnate maps?
+
+Players can read help and books?

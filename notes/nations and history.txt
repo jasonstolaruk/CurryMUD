@@ -1,39 +1,3 @@
-TODO: What to do with this, if anything?
-
-Belsula (hobbits)
-kingdom: King Morton
-capital: Gamwich
-
-Cloessess (felinoids)
-kingdom: King Deltheru
-capital: Echdel
-
-Dolgu (vulpenoids)
-empire: Emperor Brahn
-capital: Aldos
-
-Falyncentie and Emiai (lagomorphs)
-kingdom: King Threis
-capital: Llar
-
-Melarue (elves)
-colony of the Brahnian Empire (elf king: King Elendar II)
-capital: Idril
-
-Shunfalip-mi (nymphs)
-Unlenbi-mi, Kap'lwen-mi, and Zunbun-mi islands are part of Falyncentie
-Lopo Lwan-mi and Shonlip-mi islands are colonies of the Brahnian Empire
-
-Wyning (humans)
-democracy: Premier Taran
-capital: Kilagore
-
-Yurthor (dwarves)
-kingdom: King Orrik
-capital: Zirak
-
------
-
 RUMIA: A Modern History
 from [the encyclopedia on Rumia by a human academic from the university in Wyning]
 
