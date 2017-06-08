@@ -20,18 +20,6 @@ import           Servant (Context(..), Proxy(..), serveWithContext)
 import           Servant.Auth.Server (JWT, defaultCookieSettings, defaultJWTSettings, generateKey)
 
 
--- TODO: Delete.
-{-
-import           Data.ByteString.Lazy (ByteString)
-import           Data.Text.Lazy.Encoding (encodeUtf8)
-import           Network.HTTP.Types (ok200)
-import           Servant.Docs (DocIntro(..), docsWithIntros)
-import           Servant.Docs.Pandoc (pandoc)
-import           Text.Pandoc (writeHtmlString)
-import           Text.Pandoc.Options (def)
--}
-
-
 startService :: HasCallStack => IORef MudState -> IO ()
 startService ior = (defaultJWTSettings <$> generateKey) >>= \jwtCfg ->
     let cfg = defaultCookieSettings :. jwtCfg :. EmptyContext
