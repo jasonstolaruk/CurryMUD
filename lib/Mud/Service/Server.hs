@@ -66,12 +66,12 @@ unprotected cs jwts _ =
          -- curl -H "Authorization: Bearer tokenHere" localhost:7249/login -v
          tokenHelper
     :<|> loginHelper cs jwts
-    :<|> serveDirectoryFileServer "example/static"
+    :<|> serveDirectoryFileServer "example/static" -- TODO: Test this.
   where
     tokenHelper :: HasCallStack => Handler Text
-    tokenHelper = liftIO (makeJWT (Login "curry" "curry") jwts Nothing) >>= \case
+    tokenHelper = (liftIO . makeJWT (Login "curry" "curry") jwts $ Nothing) >>= \case
       Left  e -> do liftIO . T.putStrLn $ "Error generating token: " <> showTxt e
-                    undefined -- TODO: "throwError err401"?
+                    undefined -- TODO
       Right v -> do liftIO . T.putStrLn $ "New token: "              <> showTxt v
                     return . showTxt $ v
 
@@ -82,10 +82,13 @@ loginHelper :: HasCallStack => CookieSettings
                             -> Login
                             -> Handler (Headers '[ Header "Set-Cookie" SetCookie
                                                  , Header "Set-Cookie" SetCookie ] NoContent)
-loginHelper cookieSettings jwtSettings (Login un pw) =
+loginHelper cs jwts login@(Login un pw) =
     -- TODO: Usually you would ask a database for the user info. This is just a
     -- regular servant handler, so you can follow your normal database access
     -- patterns (including using 'enter').
-    liftIO (acceptLogin cookieSettings jwtSettings . Login un $ pw) >>= \case
-      Nothing           -> throwError err401
-      Just applyCookies -> return . applyCookies $ NoContent
+  let maybeLogin | un == "curry", pw == "curry" = Just login
+                 | otherwise                    = Nothing
+  in case maybeLogin of Nothing    -> throwError err401
+                        Just user' -> liftIO (acceptLogin cs jwts user') >>= \case
+                                        Nothing           -> throwError err401
+                                        Just applyCookies -> return . applyCookies $ NoContent
