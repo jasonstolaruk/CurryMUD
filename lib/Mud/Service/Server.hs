@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeOperators, OverloadedStrings #-}
+{-# LANGUAGE DataKinds, LambdaCase, OverloadedStrings, TypeOperators #-}
 
 module Mud.Service.Server where
 
@@ -11,8 +11,8 @@ import           Control.Monad.IO.Class (liftIO)
 import           Data.IORef (IORef, readIORef)
 import qualified Data.IntMap.Strict as IM (IntMap, elems, mapWithKey)
 import           GHC.Stack (HasCallStack)
-import           Servant (Handler, Server, (:<|>)(..), err401, err404, errBody)
-import           Servant.Auth.Server (AuthResult(..), CookieSettings, JWTSettings, throwAll)
+import           Servant (Handler, Header, Headers, NoContent(..), Server, (:<|>)(..), err401, err404, errBody, serveDirectoryFileServer)
+import           Servant.Auth.Server (AuthResult(..), CookieSettings, JWTSettings, SetCookie, acceptLogin, throwAll)
 
 
 server :: HasCallStack => IORef MudState -> CookieSettings -> JWTSettings -> Server (API auths)
@@ -35,7 +35,7 @@ protected ior (Authenticated login) =
     -- curl http://localhost:8081/pla/0
     getPlaById :: HasCallStack => CaptureInt -> Handler (Object Pla)
     getPlaById (CaptureInt i) = views (plaTbl.at i) (maybe notFound (return . Object i)) =<< getState
-protected _ _ = throwAll err401 -- TODO: "throwAll" vs. "throwError"?
+protected _ _ = throwAll err401 -- TODO: "throwAll" vs. "throwError"? "throwError" can be found below...
 
 
 mkObjects :: HasCallStack => IM.IntMap a -> [Object a]
@@ -47,5 +47,23 @@ notFound = throwError err404 { errBody = "ID not found." }
 
 
  -- TODO: Add curl comments.
-unprotected :: HasCallStack => CookieSettings -> JWTSettings -> IORef MudState -> Server Unprotected
-unprotected _ _ _ = undefined -- TODO: checkCreds cs jwts :<|> serveDirectory "example/static"
+unprotected :: HasCallStack => CookieSettings
+                            -> JWTSettings
+                            -> IORef MudState
+                            -> Server Unprotected
+unprotected cs jwts _ = checkCreds cs jwts :<|> serveDirectoryFileServer "example/static"
+
+
+checkCreds :: HasCallStack => CookieSettings
+                           -> JWTSettings
+                           -> Login
+                           -> Handler (Headers '[ Header "Set-Cookie" SetCookie
+                                                , Header "Set-Cookie" SetCookie ] NoContent)
+checkCreds cookieSettings jwtSettings (Login un pw) =
+   -- TODO: Usually you would ask a database for the user info. This is just a
+   -- regular servant handler, so you can follow your normal database access
+   -- patterns (including using 'enter').
+   liftIO (acceptLogin cookieSettings jwtSettings . Login un $ pw) >>= \case
+     Nothing           -> throwError err401
+     Just applyCookies -> return . applyCookies $ NoContent
+-- TODO: checkCreds _ _ _ = throwError err401
