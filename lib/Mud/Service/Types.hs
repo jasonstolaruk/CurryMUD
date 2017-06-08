@@ -16,13 +16,11 @@ TODO: Finish transition to Protected/Unprotected scheme.
 https://github.com/mchaver/servant-auth-and-elm-example/blob/master/src/Server.hs
 https://github.com/plow-technologies/servant-auth
 -}
-type API auths =
-       (Auth auths Login :> Protected)
-  :<|> Unprotected
+type API auths = (Auth auths Login :> Protected) :<|> Unprotected
 
 
 data Login = Login { username :: Text
-                   , password :: Text } deriving (Eq, Show, Read, Generic) -- TODO: Are all needed?
+                   , password :: Text } deriving Generic
 
 
 instance FromJSON Login
@@ -32,7 +30,7 @@ instance ToJWT    Login
 
 
 type Protected =
-       "user"                            :> Get '[JSON] (Object Login)
+       "user"                            :> Get '[JSON] Login
   :<|> "pla"  :> "all"                   :> Get '[JSON] [Object Pla]
   :<|> "pla"  :> Capture "id" CaptureInt :> Get '[JSON] (Object Pla)
 

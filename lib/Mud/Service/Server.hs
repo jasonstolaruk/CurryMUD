@@ -19,27 +19,33 @@ import           Servant (Handler, Header, Headers, NoContent(..), Server, (:<|>
 import           Servant.Auth.Server (AuthResult(..), CookieSettings, JWTSettings, SetCookie, acceptLogin, makeJWT, throwAll)
 
 
-server :: HasCallStack => IORef MudState -> CookieSettings -> JWTSettings -> Server (API auths)
-server ior cs jwts = ((:<|>) <$> protected <*> unprotected cs jwts) ior
+server :: HasCallStack => CookieSettings -> JWTSettings -> IORef MudState -> Server (API auths)
+server cs jwts = (:<|>) <$> protected <*> unprotected cs jwts
 
 
 protected :: HasCallStack => IORef MudState -> AuthResult Login -> Server Protected
 protected ior (Authenticated login) =
-         return (Object 1 login)
+         return login
     :<|> getAllPla
     :<|> getPlaById
   where
     getState :: HasCallStack => Handler MudState
     getState = liftIO . readIORef $ ior
 
-    -- curl http://localhost:7249/pla/all
+    -- TODO: curl http://localhost:7249/pla/all
     getAllPla :: HasCallStack => Handler [Object Pla]
     getAllPla = views plaTbl mkObjects <$> liftIO (readIORef ior)
 
-    -- curl http://localhost:7249/pla/0
+    -- TODO: curl http://localhost:7249/pla/0
     getPlaById :: HasCallStack => CaptureInt -> Handler (Object Pla)
     getPlaById (CaptureInt i) = views (plaTbl.at i) (maybe notFound (return . Object i)) =<< getState
-protected _ _ = throwAll err401 -- TODO: "throwAll" vs. "throwError"? "throwError" can be found below...
+protected _ _ = throwAll err401
+{-
+TODO
+"throwAll" vs. "throwError"? "throwError" can be found below...
+"throwError" is from "Control.Monad.Error.Class".
+"throwAll" is from "Servant.Auth.Server".
+-}
 
 
 mkObjects :: HasCallStack => IM.IntMap a -> [Object a]

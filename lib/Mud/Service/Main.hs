@@ -36,5 +36,5 @@ startService :: HasCallStack => IORef MudState -> IO ()
 startService ior = (defaultJWTSettings <$> generateKey) >>= \jwtCfg ->
     let cfg = defaultCookieSettings :. jwtCfg :. EmptyContext
         api = Proxy :: Proxy (API '[JWT])
-    in do void . forkIO . run servicePort . serveWithContext api cfg . server ior defaultCookieSettings $ jwtCfg
+    in do void . forkIO . run servicePort . serveWithContext api cfg . server defaultCookieSettings jwtCfg $ ior
           T.putStrLn . prd $ "Service started " <> parensQuote ("http://localhost:" <> showTxt servicePort)
