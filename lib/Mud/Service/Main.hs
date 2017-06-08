@@ -1,4 +1,4 @@
-{-# LANGUAGE DataKinds, LambdaCase, OverloadedStrings #-}
+{-# LANGUAGE DataKinds, OverloadedStrings #-}
 
 module Mud.Service.Main (startService) where
 
@@ -33,16 +33,8 @@ import           Text.Pandoc.Options (def)
 
 
 startService :: HasCallStack => IORef MudState -> IO ()
-startService ior = generateKey >>= \myKey -> do
-    let jwtCfg = defaultJWTSettings myKey
-        cfg    = defaultCookieSettings :. jwtCfg :. EmptyContext
-        api    = Proxy :: Proxy (API '[JWT])
-    void . forkIO . run servicePort . serveWithContext api cfg . server ior defaultCookieSettings $ jwtCfg
-    T.putStrLn . prd $ "Service started " <> parensQuote ("http://localhost:" <> showTxt servicePort)
-
-{-
-TODO: Use this?
-    makeJWT (Login un pw) jwtCfg Nothing >>= \case
-      Left  e -> T.putStrLn $ "Error generating token: " <> showTxt e
-      Right v -> T.putStrLn $ "New token: "              <> showTxt v
--}
+startService ior = (defaultJWTSettings <$> generateKey) >>= \jwtCfg ->
+    let cfg = defaultCookieSettings :. jwtCfg :. EmptyContext
+        api = Proxy :: Proxy (API '[JWT])
+    in do void . forkIO . run servicePort . serveWithContext api cfg . server ior defaultCookieSettings $ jwtCfg
+          T.putStrLn . prd $ "Service started " <> parensQuote ("http://localhost:" <> showTxt servicePort)
