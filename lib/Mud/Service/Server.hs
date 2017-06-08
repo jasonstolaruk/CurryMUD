@@ -23,29 +23,28 @@ server :: HasCallStack => CookieSettings -> JWTSettings -> IORef MudState -> Ser
 server cs jwts = (:<|>) <$> protected <*> unprotected cs jwts
 
 
+-----
+
+
+{-
+curl -H "Content-Type: application/json" \
+     -H "Authorization: Bearer putTokenHere" \
+     localhost:7249/pla/all -v
+-}
 protected :: HasCallStack => IORef MudState -> AuthResult Login -> Server Protected
-protected ior (Authenticated login) =
-         return login
-    :<|> getAllPla
+protected ior (Authenticated _) =
+         getAllPla
     :<|> getPlaById
   where
-    getState :: HasCallStack => Handler MudState
-    getState = liftIO . readIORef $ ior
+    state :: HasCallStack => Handler MudState
+    state = liftIO . readIORef $ ior
 
-    -- TODO: curl http://localhost:7249/pla/all
     getAllPla :: HasCallStack => Handler [Object Pla]
-    getAllPla = views plaTbl mkObjects <$> liftIO (readIORef ior)
+    getAllPla = views plaTbl mkObjects <$> state
 
-    -- TODO: curl http://localhost:7249/pla/0
     getPlaById :: HasCallStack => CaptureInt -> Handler (Object Pla)
-    getPlaById (CaptureInt i) = views (plaTbl.at i) (maybe notFound (return . Object i)) =<< getState
+    getPlaById (CaptureInt i) = views (plaTbl.at i) (maybe notFound (return . Object i)) =<< state
 protected _ _ = throwAll err401
-{-
-TODO
-"throwAll" vs. "throwError"? "throwError" can be found below...
-"throwError" is from "Control.Monad.Error.Class".
-"throwAll" is from "Servant.Auth.Server".
--}
 
 
 mkObjects :: HasCallStack => IM.IntMap a -> [Object a]
@@ -56,25 +55,28 @@ notFound :: HasCallStack => Handler (Object a)
 notFound = throwError err404 { errBody = "ID not found." }
 
 
-unprotected :: HasCallStack => CookieSettings
-                            -> JWTSettings
-                            -> IORef MudState
-                            -> Server Unprotected
+-----
+
+
+unprotected :: HasCallStack => CookieSettings -> JWTSettings -> IORef MudState -> Server Unprotected
 unprotected cs jwts _ =
-         -- TODO: curl http://localhost:7249/login
-         -- curl localhost:7249/login -v # Gives an error.
-         -- curl -H "Authorization: Bearer tokenHere" localhost:7249/login -v
+         -- curl http://localhost:7249/token
          tokenHelper
+         -- curl -H "Content-Type: application/json" -d '{"username":"curry","password":"curry"}' localhost:7249/login -v
     :<|> loginHelper cs jwts
-    :<|> serveDirectoryFileServer "example/static" -- TODO: Test this.
+         -- Open "http://localhost:7249/" in a browser.
+    :<|> serveDirectoryFileServer "notes"
   where
     tokenHelper :: HasCallStack => Handler Text
-    tokenHelper = (liftIO . makeJWT (Login "curry" "curry") jwts $ Nothing) >>= \case
-      Left  e -> do liftIO . T.putStrLn $ "Error generating token: " <> showTxt e
+    tokenHelper = liftIO (makeJWT (Login "curry" "curry") jwts Nothing) >>= \case
+      Left  e -> do screen $ "Error generating token: " <> showTxt e
                     undefined -- TODO
-      Right v -> do liftIO . T.putStrLn $ "New token: "              <> showTxt v
+      Right v -> do screen $ "New token: " <> showTxt v
                     return . showTxt $ v
 
+
+screen :: HasCallStack => Text -> Handler ()
+screen = liftIO . T.putStrLn
 
 
 loginHelper :: HasCallStack => CookieSettings
@@ -82,13 +84,8 @@ loginHelper :: HasCallStack => CookieSettings
                             -> Login
                             -> Handler (Headers '[ Header "Set-Cookie" SetCookie
                                                  , Header "Set-Cookie" SetCookie ] NoContent)
-loginHelper cs jwts login@(Login un pw) =
-    -- TODO: Usually you would ask a database for the user info. This is just a
-    -- regular servant handler, so you can follow your normal database access
-    -- patterns (including using 'enter').
-  let maybeLogin | un == "curry", pw == "curry" = Just login
-                 | otherwise                    = Nothing
-  in case maybeLogin of Nothing    -> throwError err401
-                        Just user' -> liftIO (acceptLogin cs jwts user') >>= \case
-                                        Nothing           -> throwError err401
-                                        Just applyCookies -> return . applyCookies $ NoContent
+loginHelper cs jwts login@(Login un pw)
+  | un == "curry", pw == "curry" = screen "Bad creds." >> throwError err401
+  | otherwise                    = liftIO (acceptLogin cs jwts login) >>= \case
+    Nothing           -> throwError err401
+    Just applyCookies -> screen "Authenticated." >> return (applyCookies NoContent)

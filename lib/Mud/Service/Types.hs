@@ -30,8 +30,7 @@ instance ToJWT    Login
 
 
 type Protected =
-       "user"                            :> Get '[JSON] Login
-  :<|> "pla"  :> "all"                   :> Get '[JSON] [Object Pla]
+       "pla"  :> "all"                   :> Get '[JSON] [Object Pla]
   :<|> "pla"  :> Capture "id" CaptureInt :> Get '[JSON] (Object Pla)
 
 
