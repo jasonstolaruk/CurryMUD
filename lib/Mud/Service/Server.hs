@@ -51,7 +51,9 @@ unprotected :: HasCallStack => CookieSettings
                             -> JWTSettings
                             -> IORef MudState
                             -> Server Unprotected
-unprotected cs jwts _ = checkCreds cs jwts :<|> serveDirectoryFileServer "example/static"
+unprotected cs jwts _ =
+         checkCreds cs jwts
+    :<|> serveDirectoryFileServer "example/static"
 
 
 checkCreds :: HasCallStack => CookieSettings
@@ -60,10 +62,10 @@ checkCreds :: HasCallStack => CookieSettings
                            -> Handler (Headers '[ Header "Set-Cookie" SetCookie
                                                 , Header "Set-Cookie" SetCookie ] NoContent)
 checkCreds cookieSettings jwtSettings (Login un pw) =
-   -- TODO: Usually you would ask a database for the user info. This is just a
-   -- regular servant handler, so you can follow your normal database access
-   -- patterns (including using 'enter').
-   liftIO (acceptLogin cookieSettings jwtSettings . Login un $ pw) >>= \case
-     Nothing           -> throwError err401
-     Just applyCookies -> return . applyCookies $ NoContent
--- TODO: checkCreds _ _ _ = throwError err401
+    -- TODO: Usually you would ask a database for the user info. This is just a
+    -- regular servant handler, so you can follow your normal database access
+    -- patterns (including using 'enter').
+    liftIO (acceptLogin cookieSettings jwtSettings . Login un $ pw) >>= \case
+      Nothing           -> throwError err401
+      Just applyCookies -> return . applyCookies $ NoContent
+-- TODO: throwError err401

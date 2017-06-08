@@ -10,15 +10,14 @@ import           Mud.Util.Quoting
 import           Mud.Util.Text
 
 import           Control.Concurrent (forkIO)
-import           Control.Monad (forever, void)
+import           Control.Monad (void)
 import           Data.IORef (IORef)
 import           Data.Monoid ((<>))
-import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import           GHC.Stack (HasCallStack)
 import           Network.Wai.Handler.Warp (run)
 import           Servant (Context(..), Proxy(..), serveWithContext)
-import           Servant.Auth.Server (JWT, defaultCookieSettings, defaultJWTSettings, generateKey, makeJWT)
+import           Servant.Auth.Server (JWT, defaultCookieSettings, defaultJWTSettings, generateKey)
 
 
 -- TODO: Delete.
@@ -39,12 +38,11 @@ startService ior = generateKey >>= \myKey -> do
         cfg    = defaultCookieSettings :. jwtCfg :. EmptyContext
         api    = Proxy :: Proxy (API '[JWT])
     void . forkIO . run servicePort . serveWithContext api cfg . server ior defaultCookieSettings $ jwtCfg
-
     T.putStrLn . prd $ "Service started " <> parensQuote ("http://localhost:" <> showTxt servicePort)
-    T.putStrLn "Enter UN and PW separated by a space for a new token." -- TODO
 
-    forever $ (T.words <$> T.getLine) >>= \case
-        [un, pw] -> makeJWT (Login un pw) jwtCfg Nothing >>= \case
-            Left  e -> T.putStrLn $ "Error generating token: " <> showTxt e
-            Right v -> T.putStrLn $ "New token: "              <> showTxt v
-        _ -> T.putStrLn "Expecting a name and email separated by spaces."
+{-
+TODO: Use this?
+    makeJWT (Login un pw) jwtCfg Nothing >>= \case
+      Left  e -> T.putStrLn $ "Error generating token: " <> showTxt e
+      Right v -> T.putStrLn $ "New token: "              <> showTxt v
+-}
