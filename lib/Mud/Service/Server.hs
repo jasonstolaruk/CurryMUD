@@ -35,6 +35,7 @@ protected ior (Authenticated _) =
          getAllPla
     :<|> getPlaById
     :<|> getAllAlertExecRec
+    :<|> deleteAlertExecRec
   where
     state :: HasCallStack => Handler MudState
     state = liftIO . readIORef $ ior
@@ -47,6 +48,9 @@ protected ior (Authenticated _) =
 
     getAllAlertExecRec :: HasCallStack => Handler [AlertExecRec]
     getAllAlertExecRec = liftIO . getDbTblRecs $ "alert_exec"
+
+    deleteAlertExecRec :: HasCallStack => CaptureInt -> Handler NoContent
+    deleteAlertExecRec (CaptureInt i) = liftIO $ deleteDbTblRec "alert_exec" i >> return NoContent
 protected _ _ = throwAll err401 -- Unauthorized
 
 

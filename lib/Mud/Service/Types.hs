@@ -8,7 +8,7 @@ import Mud.Misc.Database
 import Data.Aeson (FromJSON(..), ToJSON(..))
 import Data.Text (Text)
 import GHC.Generics (Generic)
-import Servant (Capture, FromHttpApiData, Get, Header, Headers, JSON, NoContent, PostNoContent, Raw, ReqBody, ToHttpApiData, (:<|>)(..), (:>))
+import Servant (Capture, DeleteNoContent, FromHttpApiData, Get, Header, Headers, JSON, NoContent, PostNoContent, Raw, ReqBody, ToHttpApiData, (:<|>)(..), (:>))
 import Servant.Auth.Server (Auth, FromJWT, SetCookie, ToJWT)
 
 
@@ -26,9 +26,10 @@ instance ToJWT    Login
 
 
 type Protected =
-       "pla" :> "all"                   :> Get '[JSON] [Object Pla]
-  :<|> "pla" :> Capture "id" CaptureInt :> Get '[JSON] (Object Pla)
-  :<|> "db"  :> "alertexecrec" :> "all" :> Get '[JSON] [AlertExecRec]
+       "pla"                  :> "all"                   :> Get             '[JSON] [Object Pla]
+  :<|> "pla"                  :> Capture "id" CaptureInt :> Get             '[JSON] (Object Pla)
+  :<|> "db" :> "alertexecrec" :> "all"                   :> Get             '[JSON] [AlertExecRec]
+  :<|> "db" :> "alertexecrec" :> Capture "id" CaptureInt :> DeleteNoContent '[JSON] NoContent
 
 
 data Object a = Object { objectId :: Id
