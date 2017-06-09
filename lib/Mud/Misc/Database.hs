@@ -107,19 +107,22 @@ data    AlertExecRec   = AlertExecRec   { dbId          :: Int
                                         , dbCmdName     :: Text
                                         , dbTarget      :: Text
                                         , dbArgs        :: Text } deriving Generic
-data    AlertMsgRec    = AlertMsgRec    { dbTimestamp   :: Text
+data    AlertMsgRec    = AlertMsgRec    { dbId          :: Int
+                                        , dbTimestamp   :: Text
                                         , dbName        :: Text
                                         , dbCmdName     :: Text
                                         , dbTrigger     :: Text
-                                        , dbMsg         :: Text }
-data    BanHostRec     = BanHostRec     { dbTimestamp   :: Text
+                                        , dbMsg         :: Text } deriving Generic
+data    BanHostRec     = BanHostRec     { dbId          :: Int
+                                        , dbTimestamp   :: Text
                                         , dbHost        :: Text
                                         , dbIsBanned    :: Bool
-                                        , dbReason      :: Text }
-data    BanPCRec       = BanPCRec       { dbTimestamp   :: Text
+                                        , dbReason      :: Text } deriving Generic
+data    BanPCRec       = BanPCRec       { dbId          :: Int
+                                        , dbTimestamp   :: Text
                                         , dbName        :: Text
                                         , dbIsBanned    :: Bool
-                                        , dbReason      :: Text }
+                                        , dbReason      :: Text } deriving Generic
 data    BonusRec       = BonusRec       { dbTimestamp   :: Text
                                         , dbFromName    :: Text
                                         , dbToName      :: Text
@@ -187,15 +190,15 @@ instance FromRow AlertExecRec where
 
 
 instance FromRow AlertMsgRec where
-  fromRow = AlertMsgRec <$ (field :: RowParser Int) <*> field <*> field <*> field <*> field <*> field
+  fromRow = AlertMsgRec <$> (field :: RowParser Int) <*> field <*> field <*> field <*> field <*> field
 
 
 instance FromRow BanHostRec where
-  fromRow = BanHostRec <$ (field :: RowParser Int) <*> field <*> field <*> field <*> field
+  fromRow = BanHostRec <$> (field :: RowParser Int) <*> field <*> field <*> field <*> field
 
 
 instance FromRow BanPCRec where
-  fromRow = BanPCRec <$ (field :: RowParser Int) <*> field <*> field <*> field <*> field
+  fromRow = BanPCRec <$> (field :: RowParser Int) <*> field <*> field <*> field <*> field
 
 
 instance FromRow BonusRec where
@@ -278,15 +281,15 @@ instance ToRow AlertExecRec where
 
 
 instance ToRow AlertMsgRec where
-  toRow (AlertMsgRec a b c d e) = toRow (a, b, c, d, e)
+  toRow (AlertMsgRec _ a b c d e) = toRow (a, b, c, d, e)
 
 
 instance ToRow BanHostRec where
-  toRow (BanHostRec a b c d) = toRow (a, b, c, d)
+  toRow (BanHostRec _ a b c d) = toRow (a, b, c, d)
 
 
 instance ToRow BanPCRec where
-  toRow (BanPCRec a b c d) = toRow (a, b, c, d)
+  toRow (BanPCRec _ a b c d) = toRow (a, b, c, d)
 
 
 instance ToRow BonusRec where
@@ -357,7 +360,13 @@ instance ToRow WordRec where
 
 
 instance FromJSON AlertExecRec
+instance FromJSON AlertMsgRec
+instance FromJSON BanHostRec
+instance FromJSON BanPCRec
 instance ToJSON   AlertExecRec
+instance ToJSON   AlertMsgRec
+instance ToJSON   BanHostRec
+instance ToJSON   BanPCRec
 
 
 -----

@@ -30,9 +30,22 @@ protected :: HasCallStack => IORef MudState -> AuthResult Login -> Server Protec
 protected ior (Authenticated _) =
          getPlaAll
     :<|> getPla
+    -----
     :<|> getAlertExecRecAll
     :<|> postAlertExecRec
     :<|> deleteAlertExecRec
+    -----
+    :<|> getAlertMsgRecAll
+    :<|> postAlertMsgRec
+    :<|> deleteAlertMsgRec
+    -----
+    :<|> getBanHostRecAll
+    :<|> postBanHostRec
+    :<|> deleteBanHostRec
+    -----
+    :<|> getBanPCRecAll
+    :<|> postBanPCRec
+    :<|> deleteBanPCRec
   where
     state :: HasCallStack => Handler MudState
     state = liftIO . readIORef $ ior
@@ -53,20 +66,22 @@ curl -H "Content-Type: application/json" \
     getPla :: HasCallStack => CaptureInt -> Handler (Object Pla)
     getPla (CaptureInt i) = views (plaTbl.at i) (maybe notFound (return . Object i)) =<< state
 
+    -----
+
 {-
 curl -H "Content-Type: application/json" \
      -H "Authorization: Bearer tokenHere" \
-     localhost:7249/db/alertexecrec/all -v
+     localhost:7249/db/alertexec/all -v
 -}
     getAlertExecRecAll :: HasCallStack => Handler [AlertExecRec]
-    getAlertExecRecAll = liftIO . getDbTblRecs $ "alert_exec" -- Don't try and factor out into a "getRecs" similar to "deleteRec" and "insertRec".
+    getAlertExecRecAll = liftIO . getDbTblRecs $ "alert_exec"
 
 {-
 curl -X POST \
      -H "Content-Type: application/json" \
      -H "Authorization: Bearer tokenHere" \
      -d '{"dbTimestamp":"timestamp","dbCmdName":"cmdName","dbArgs":"args","dbTarget":"target","dbId":0,"dbName":"name"}' \
-     localhost:7249/db/alertexecrec -v
+     localhost:7249/db/alertexec -v
 -}
     postAlertExecRec :: HasCallStack => AlertExecRec -> Handler NoContent
     postAlertExecRec = insertRec insertDbTblAlertExec
@@ -75,10 +90,97 @@ curl -X POST \
 curl -X DELETE \
      -H "Content-Type: application/json" \
      -H "Authorization: Bearer tokenHere" \
-     localhost:7249/db/alertexecrec/1 -v
+     localhost:7249/db/alertexec/1 -v
 -}
     deleteAlertExecRec :: HasCallStack => CaptureInt -> Handler NoContent
     deleteAlertExecRec (CaptureInt i) = deleteRec "alert_exec" i
+
+    -----
+
+{-
+curl -H "Content-Type: application/json" \
+     -H "Authorization: Bearer tokenHere" \
+     localhost:7249/db/alertmsg/all -v
+-}
+    getAlertMsgRecAll :: HasCallStack => Handler [AlertMsgRec]
+    getAlertMsgRecAll = liftIO . getDbTblRecs $ "alert_msg"
+
+{-
+curl -X POST \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer tokenHere" \
+     -d '{"dbTimestamp":"timestamp","dbCmdName":"cmdName","dbArgs":"args","dbTarget":"target","dbId":0,"dbName":"name"}' \
+     localhost:7249/db/alertmsg -v
+-}
+    postAlertMsgRec :: HasCallStack => AlertMsgRec -> Handler NoContent
+    postAlertMsgRec = insertRec insertDbTblAlertMsg
+
+{-
+curl -X DELETE \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer tokenHere" \
+     localhost:7249/db/alertmsg/1 -v
+-}
+    deleteAlertMsgRec :: HasCallStack => CaptureInt -> Handler NoContent
+    deleteAlertMsgRec (CaptureInt i) = deleteRec "alert_msg" i
+
+    -----
+
+{-
+curl -H "Content-Type: application/json" \
+     -H "Authorization: Bearer tokenHere" \
+     localhost:7249/db/banhost/all -v
+-}
+    getBanHostRecAll :: HasCallStack => Handler [BanHostRec]
+    getBanHostRecAll = liftIO . getDbTblRecs $ "ban_host"
+
+{-
+curl -X POST \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer tokenHere" \
+     -d '{}' \
+     localhost:7249/db/banhost -v
+-}
+    postBanHostRec :: HasCallStack => BanHostRec -> Handler NoContent
+    postBanHostRec = insertRec insertDbTblBanHost
+
+{-
+curl -X DELETE \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer tokenHere" \
+     localhost:7249/db/banhost/1 -v
+-}
+    deleteBanHostRec :: HasCallStack => CaptureInt -> Handler NoContent
+    deleteBanHostRec (CaptureInt i) = deleteRec "ban_host" i
+
+    -----
+
+{-
+curl -H "Content-Type: application/json" \
+     -H "Authorization: Bearer tokenHere" \
+     localhost:7249/db/banpc/all -v
+-}
+    getBanPCRecAll :: HasCallStack => Handler [BanPCRec]
+    getBanPCRecAll = liftIO . getDbTblRecs $ "ban_pc"
+
+{-
+curl -X POST \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer tokenHere" \
+     -d '{}' \
+     localhost:7249/db/banpc -v
+-}
+    postBanPCRec :: HasCallStack => BanPCRec -> Handler NoContent
+    postBanPCRec = insertRec insertDbTblBanPC
+
+{-
+curl -X DELETE \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer tokenHere" \
+     localhost:7249/db/banpc/1 -v
+-}
+    deleteBanPCRec :: HasCallStack => CaptureInt -> Handler NoContent
+    deleteBanPCRec (CaptureInt i) = deleteRec "ban_pc" i
 protected _ _ = throwAll err401 -- Unauthorized
 
 

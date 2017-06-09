@@ -206,7 +206,7 @@ alertMsgHelper i cn txt = getState >>= \ms -> if isAdminId i ms
                                    , ": "
                                    , txt ]
                  outIds = (iRoot `delete`) $ getAdminIds ms \\ getLoggedInAdminIds ms
-                 rec    = AlertMsgRec ts s cn match txt
+                 rec    = AlertMsgRec 0 ts s cn match txt
              in do logNotice        fn   msg
                    logPla           fn i msg
                    bcastAdmins msg
