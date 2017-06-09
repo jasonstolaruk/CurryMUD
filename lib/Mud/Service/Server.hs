@@ -6,11 +6,14 @@ import           Mud.Data.State.MudData
 import           Mud.Misc.Database
 import           Mud.Service.Types
 
-import           Control.Lens (at, views)
+import           Control.Lens (at, both, views)
+import           Control.Lens.Operators ((&), (%~))
 import           Control.Monad.Error.Class (throwError)
 import           Control.Monad.IO.Class (liftIO)
+import           Crypto.BCrypt (validatePassword)
 import           Data.IORef (IORef, readIORef)
 import qualified Data.IntMap.Strict as IM (IntMap, elems, mapWithKey)
+import qualified Data.Text.Encoding as T
 import           GHC.Stack (HasCallStack)
 import           Servant (Handler, Header, Headers, NoContent(..), Server, (:<|>)(..), err401, err404, errBody, serveDirectoryFileServer)
 import           Servant.Auth.Server (AuthResult(..), CookieSettings, JWTSettings, SetCookie, acceptLogin, throwAll)
@@ -92,7 +95,7 @@ notFound = throwError err404 { errBody = "ID not found." } -- Not Found
 
 unprotected :: HasCallStack => CookieSettings -> JWTSettings -> IORef MudState -> Server Unprotected
 unprotected cs jwts _ =
-         -- curl -H "Content-Type: application/json" -d '{"username":"curry","password":"curry"}' localhost:7249/login -v
+         -- curl -H "Content-Type: application/json" -d '{"username":"Curry","password":"curry"}' localhost:7249/login -v
          handleLogin cs jwts
          -- Open "http://localhost:7249/" in a browser.
     :<|> serveDirectoryFileServer "notes"
@@ -103,8 +106,9 @@ handleLogin :: HasCallStack => CookieSettings
                             -> Login
                             -> Handler (Headers '[ Header "Set-Cookie" SetCookie
                                                  , Header "Set-Cookie" SetCookie ] NoContent)
-handleLogin cs jwts login@(Login un pw)
-  | un == "curry", pw == "curry" = liftIO (acceptLogin cs jwts login) >>= \case
-    Nothing           -> throwError err401
-    Just applyCookies -> return (applyCookies NoContent)
-  | otherwise = throwError err401
+handleLogin cs jwts login@(Login un pw) = liftIO (lookupPW un) >>= \case
+  Just pw' | uncurry validatePassword ((pw', pw) & both %~ T.encodeUtf8) -> liftIO (acceptLogin cs jwts login) >>= \case
+               Just applyCookies -> return . applyCookies $ NoContent
+               Nothing           -> throwError err401
+           | otherwise -> throwError err401
+  Nothing -> throwError err401
