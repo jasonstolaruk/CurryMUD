@@ -73,8 +73,8 @@ The code is available here on GitHub under [this license](https://github.com/jas
 * A `ReaderT` monad transformer stack with the world state inside a single `IORef`.
 * `STM`-based concurrency.
 * Using `aeson` (with `conduit`) and `sqlite-simple` for persistence.
-* Heavy use of the `lens` library.
 * Using `servant` for the REST API.
+* Heavy use of the `lens` library.
 * Heavy use of GHC extensions, including:
   * `DuplicateRecordFields` (new in GHC 8)
   * `LambdaCase`
