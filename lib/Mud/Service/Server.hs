@@ -69,7 +69,7 @@ curl -X POST \
      localhost:7249/db/alertexecrec -v
 -}
     postAlertExecRec :: HasCallStack => AlertExecRec -> Handler NoContent
-    postAlertExecRec rec = liftIO $ insertDbTblAlertExec rec >> return NoContent
+    postAlertExecRec = noContentOp . insertDbTblAlertExec
 
 {-
 curl -X DELETE \
@@ -78,8 +78,8 @@ curl -X DELETE \
      localhost:7249/db/alertexecrec/1 -v
 -}
     deleteAlertExecRec :: HasCallStack => CaptureInt -> Handler NoContent
-    deleteAlertExecRec (CaptureInt i) = liftIO $ deleteDbTblRec "alert_exec" i >> return NoContent
-protected _ _ = throwAll err401 -- Unauthorized
+    deleteAlertExecRec (CaptureInt i) = noContentOp . deleteDbTblRec "alert_exec" $ i
+protected _ _ = throwAll err401
 
 
 mkObjects :: HasCallStack => IM.IntMap a -> [Object a]
@@ -88,6 +88,10 @@ mkObjects = IM.elems . IM.mapWithKey Object
 
 notFound :: HasCallStack => Handler (Object a)
 notFound = throwError err404 { errBody = "ID not found." } -- Not Found
+
+
+noContentOp :: HasCallStack => IO a -> Handler NoContent
+noContentOp = (>> return NoContent) . liftIO
 
 
 -----
@@ -107,8 +111,10 @@ handleLogin :: HasCallStack => CookieSettings
                             -> Handler (Headers '[ Header "Set-Cookie" SetCookie
                                                  , Header "Set-Cookie" SetCookie ] NoContent)
 handleLogin cs jwts login@(Login un pw) = liftIO (lookupPW un) >>= \case
-  Just pw' | uncurry validatePassword ((pw', pw) & both %~ T.encodeUtf8) -> liftIO (acceptLogin cs jwts login) >>= \case
-               Just applyCookies -> return . applyCookies $ NoContent
-               Nothing           -> throwError err401
-           | otherwise -> throwError err401
-  Nothing -> throwError err401
+    Just pw' | uncurry validatePassword ((pw', pw) & both %~ T.encodeUtf8) -> liftIO (acceptLogin cs jwts login) >>= \case
+                 Just applyCookies -> return . applyCookies $ NoContent
+                 Nothing           -> throw401
+             | otherwise -> throw401
+    Nothing -> throw401
+  where
+    throw401 = throwError err401 -- Unauthorized
