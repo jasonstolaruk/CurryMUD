@@ -79,7 +79,7 @@ curl -X DELETE \
 -}
     deleteAlertExecRec :: HasCallStack => CaptureInt -> Handler NoContent
     deleteAlertExecRec (CaptureInt i) = noContentOp . deleteDbTblRec "alert_exec" $ i
-protected _ _ = throwAll err401
+protected _ _ = throwAll err401 -- Unauthorized
 
 
 mkObjects :: HasCallStack => IM.IntMap a -> [Object a]
