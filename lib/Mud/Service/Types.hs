@@ -28,7 +28,7 @@ instance ToJWT    Login
 type Protected =
        "pla" :> "all"                   :> Get '[JSON] [Object Pla]
   :<|> "pla" :> Capture "id" CaptureInt :> Get '[JSON] (Object Pla)
-  :<|> "db"  :> "alertexecrec" :> "all" :> Get '[JSON] [Object AlertExecRec]
+  :<|> "db"  :> "alertexecrec" :> "all" :> Get '[JSON] [AlertExecRec]
 
 
 data Object a = Object { objectId :: Id
@@ -43,8 +43,7 @@ newtype CaptureInt = CaptureInt { fromCaptureInt :: Int } deriving (FromHttpApiD
 
 
 type Unprotected =
-       "token" :> Get '[JSON] Text
-  :<|> "login" :> ReqBody       '[JSON] Login
+       "login" :> ReqBody       '[JSON] Login
                :> PostNoContent '[JSON] (Headers '[ Header "Set-Cookie" SetCookie
                                                   , Header "Set-Cookie" SetCookie ] NoContent)
   :<|> Raw
