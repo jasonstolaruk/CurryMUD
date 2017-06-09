@@ -277,7 +277,7 @@ sacrificeSecs = 5
 
 
 servicePort :: Int
-servicePort = 7249 -- TODO: Why this port number?
+servicePort = 7249
 
 
 stdLinkNames :: [Text]
