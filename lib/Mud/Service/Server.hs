@@ -19,8 +19,8 @@ import           Servant (Handler, Header, Headers, NoContent(..), Server, (:<|>
 import           Servant.Auth.Server (AuthResult(..), CookieSettings, JWTSettings, SetCookie, acceptLogin, throwAll)
 
 
-server :: HasCallStack => CookieSettings -> JWTSettings -> IORef MudState -> Server (API auths)
-server cs jwts ior = protected ior :<|> unprotected cs jwts
+server :: HasCallStack => IORef MudState -> CookieSettings -> JWTSettings -> Server (API auths)
+server ior cs jwts = protected ior :<|> unprotected cs jwts
 
 
 -----
@@ -59,7 +59,7 @@ curl -H "Content-Type: application/json" \
      localhost:7249/db/alertexecrec/all -v
 -}
     getAlertExecRecAll :: HasCallStack => Handler [AlertExecRec]
-    getAlertExecRecAll = liftIO . getDbTblRecs $ "alert_exec"
+    getAlertExecRecAll = liftIO . getDbTblRecs $ "alert_exec" -- Don't try and factor out into a "getRecs" similar to "deleteRec" and "insertRec".
 
 {-
 curl -X POST \
@@ -69,7 +69,7 @@ curl -X POST \
      localhost:7249/db/alertexecrec -v
 -}
     postAlertExecRec :: HasCallStack => AlertExecRec -> Handler NoContent
-    postAlertExecRec = noContentOp . insertDbTblAlertExec
+    postAlertExecRec = insertRec insertDbTblAlertExec
 
 {-
 curl -X DELETE \
@@ -78,7 +78,7 @@ curl -X DELETE \
      localhost:7249/db/alertexecrec/1 -v
 -}
     deleteAlertExecRec :: HasCallStack => CaptureInt -> Handler NoContent
-    deleteAlertExecRec (CaptureInt i) = noContentOp . deleteDbTblRec "alert_exec" $ i
+    deleteAlertExecRec (CaptureInt i) = deleteRec "alert_exec" i
 protected _ _ = throwAll err401 -- Unauthorized
 
 
@@ -92,6 +92,14 @@ notFound = throwError err404 { errBody = "ID not found." } -- Not Found
 
 noContentOp :: HasCallStack => IO a -> Handler NoContent
 noContentOp = (>> return NoContent) . liftIO
+
+
+insertRec :: HasCallStack => (a -> IO ()) -> a -> Handler NoContent
+insertRec = (noContentOp .)
+
+
+deleteRec :: HasCallStack => DbTblName -> Int -> Handler NoContent
+deleteRec tblName = noContentOp . deleteDbTblRec tblName
 
 
 -----
