@@ -20,7 +20,7 @@ import           Servant.Auth.Server (AuthResult(..), CookieSettings, JWTSetting
 
 
 server :: HasCallStack => CookieSettings -> JWTSettings -> IORef MudState -> Server (API auths)
-server cs jwts = (:<|>) <$> protected <*> unprotected cs jwts
+server cs jwts ior = protected ior :<|> unprotected cs jwts
 
 
 -----
@@ -97,9 +97,9 @@ noContentOp = (>> return NoContent) . liftIO
 -----
 
 
-unprotected :: HasCallStack => CookieSettings -> JWTSettings -> IORef MudState -> Server Unprotected
-unprotected cs jwts _ =
-         -- curl -H "Content-Type: application/json" -d '{"username":"Curry","password":"curry"}' localhost:7249/login -v
+unprotected :: HasCallStack => CookieSettings -> JWTSettings -> Server Unprotected
+unprotected cs jwts =
+         -- curl -H "Content-Type: application/json" -d '{"username":"Curry","password":"curry"}' localhost:7249/login -v # "username" must be capitalized!
          handleLogin cs jwts
          -- Open "http://localhost:7249/" in a browser.
     :<|> serveDirectoryFileServer "notes"
