@@ -81,14 +81,15 @@ import           Mud.Util.Text
 import           Control.Monad (forM_, when)
 import           Control.Monad.IO.Class (liftIO)
 import           Crypto.BCrypt (fastBcryptHashingPolicy, hashPasswordUsingPolicy)
+import           Data.Aeson (FromJSON(..), ToJSON(..), (.:), (.=), object, withObject)
+import qualified Data.ByteString.Char8 as B
 import           Data.Monoid ((<>))
 import           Data.Text (Text)
+import qualified Data.Text as T
+import qualified Data.Text.Encoding as T
 import           Data.Time (UTCTime)
 import           Database.SQLite.Simple (Connection, FromRow, Only(..), Query(..), ToRow, execute, execute_, field, fromRow, query, query_, toRow, withConnection)
 import           Database.SQLite.Simple.FromRow (RowParser)
-import qualified Data.ByteString.Char8 as B
-import qualified Data.Text as T
-import qualified Data.Text.Encoding as T
 
 
 data    AdminChanRec   = AdminChanRec   { dbTimestamp   :: Text
@@ -347,6 +348,25 @@ instance ToRow UnPwRec where
 
 instance ToRow WordRec where
   toRow (WordRec a) = toRow . Only $ a
+
+
+-----
+
+
+instance FromJSON AlertExecRec where
+  parseJSON = withObject "AlertExecRec" $ \o -> AlertExecRec <$> o .: "timestamp"
+                                                             <*> o .: "name"
+                                                             <*> o .: "cmdName"
+                                                             <*> o .: "target"
+                                                             <*> o .: "args"
+
+
+instance ToJSON   AlertExecRec where
+  toJSON (AlertExecRec ts n cn target args) = object [ "timestamp" .= ts
+                                                     , "name"      .= n
+                                                     , "cmdName"   .= cn
+                                                     , "target"    .= target
+                                                     , "args"      .= args ]
 
 
 -----

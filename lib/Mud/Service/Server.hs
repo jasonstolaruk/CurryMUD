@@ -3,6 +3,7 @@
 module Mud.Service.Server where
 
 import           Mud.Data.State.MudData
+import           Mud.Misc.Database
 import           Mud.Service.Types
 import           Mud.Util.Text
 
@@ -35,6 +36,7 @@ protected :: HasCallStack => IORef MudState -> AuthResult Login -> Server Protec
 protected ior (Authenticated _) =
          getAllPla
     :<|> getPlaById
+    :<|> getAllAlertExecRec
   where
     state :: HasCallStack => Handler MudState
     state = liftIO . readIORef $ ior
@@ -44,6 +46,9 @@ protected ior (Authenticated _) =
 
     getPlaById :: HasCallStack => CaptureInt -> Handler (Object Pla)
     getPlaById (CaptureInt i) = views (plaTbl.at i) (maybe notFound (return . Object i)) =<< state
+
+    getAllAlertExecRec :: HasCallStack => Handler [Object AlertExecRec]
+    getAllAlertExecRec = map (uncurry Object) . zip [1..] <$> liftIO (getDbTblRecs "alert_exec")
 protected _ _ = throwAll err401 -- Unauthorized
 
 

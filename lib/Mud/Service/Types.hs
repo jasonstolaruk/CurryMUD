@@ -3,6 +3,7 @@
 module Mud.Service.Types where
 
 import Mud.Data.State.MudData
+import Mud.Misc.Database
 
 import Data.Aeson (FromJSON(..), ToJSON(..))
 import Data.Text (Text)
@@ -25,8 +26,9 @@ instance ToJWT    Login
 
 
 type Protected =
-       "pla"  :> "all"                   :> Get '[JSON] [Object Pla]
-  :<|> "pla"  :> Capture "id" CaptureInt :> Get '[JSON] (Object Pla)
+       "pla" :> "all"                   :> Get '[JSON] [Object Pla]
+  :<|> "pla" :> Capture "id" CaptureInt :> Get '[JSON] (Object Pla)
+  :<|> "db"  :> "alertexecrec" :> "all" :> Get '[JSON] [Object AlertExecRec]
 
 
 data Object a = Object { objectId :: Id
