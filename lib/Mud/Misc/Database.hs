@@ -361,12 +361,28 @@ instance FromJSON AlertExecRec where
                                                              <*> o .: "args"
 
 
-instance ToJSON   AlertExecRec where
+instance ToJSON AlertExecRec where
   toJSON (AlertExecRec ts n cn target args) = object [ "timestamp" .= ts
                                                      , "name"      .= n
                                                      , "cmdName"   .= cn
                                                      , "target"    .= target
                                                      , "args"      .= args ]
+
+
+instance FromJSON AlertMsgRec where
+  parseJSON = withObject "AlertMsgRec" $ \o -> AlertMsgRec <$> o .: "timestamp"
+                                                           <*> o .: "name"
+                                                           <*> o .: "cmdName"
+                                                           <*> o .: "trigger"
+                                                           <*> o .: "msg"
+
+
+instance ToJSON AlertMsgRec where
+  toJSON (AlertMsgRec ts n cn trigger msg) = object [ "timestamp" .= ts
+                                                    , "name"      .= n
+                                                    , "cmdName"   .= cn
+                                                    , "trigger"  .= trigger
+                                                    , "msg"      .= msg ]
 
 
 -----

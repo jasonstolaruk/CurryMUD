@@ -90,7 +90,7 @@ loginHelper :: HasCallStack => CookieSettings
                             -> Handler (Headers '[ Header "Set-Cookie" SetCookie
                                                  , Header "Set-Cookie" SetCookie ] NoContent)
 loginHelper cs jwts login@(Login un pw)
-  | un == "curry", pw == "curry" = screen "Bad creds." >> throwError err401
-  | otherwise                    = liftIO (acceptLogin cs jwts login) >>= \case
+  | un == "curry", pw == "curry" = liftIO (acceptLogin cs jwts login) >>= \case
     Nothing           -> throwError err401
     Just applyCookies -> screen "Authenticated." >> return (applyCookies NoContent)
+  | otherwise = screen "Bad creds." >> throwError err401
