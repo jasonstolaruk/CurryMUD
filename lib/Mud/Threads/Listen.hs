@@ -112,7 +112,7 @@ listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed 
                     startBiodegraders
                     sortAllInvs
                     logInterfaces
-                    when isServicing . views mudStateIORef (liftIO . startService) =<< ask
+                    when isRestServicing . views mudStateIORef (liftIO . startService) =<< ask
     logInterfaces = liftIO mkInterfaceList >>= \ifList ->
         logNotice "listen listInterfaces" . prd $ "server network interfaces: " <> ifList
     loop sock = let fn = "listen loop" in liftIO (accept sock) >>= \(h, host@(T.pack -> host'), localPort) -> do

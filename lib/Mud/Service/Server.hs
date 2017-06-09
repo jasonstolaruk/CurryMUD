@@ -80,7 +80,7 @@ curl -H "Content-Type: application/json" \
 curl -X POST \
      -H "Content-Type: application/json" \
      -H "Authorization: Bearer tokenHere" \
-     -d '{"dbTimestamp":"timestamp","dbCmdName":"cmdName","dbArgs":"args","dbTarget":"target","dbId":0,"dbName":"name"}' \
+     -d '{"dbTimestamp":"[2017-06-09 16:00:52]","dbCmdName":"rape","dbArgs":"mh","dbTarget":"Curry","dbId":0,"dbName":"Zappy"}' \
      localhost:7249/db/alertexec -v
 -}
     postAlertExecRec :: HasCallStack => AlertExecRec -> Handler NoContent
@@ -109,7 +109,7 @@ curl -H "Content-Type: application/json" \
 curl -X POST \
      -H "Content-Type: application/json" \
      -H "Authorization: Bearer tokenHere" \
-     -d '{"dbTimestamp":"timestamp","dbCmdName":"cmdName","dbArgs":"args","dbTarget":"target","dbId":0,"dbName":"name"}' \
+     -d '{"dbMsg":"You say, \"Rape.\"","dbTimestamp":"[2017-06-09 16:07:54]","dbCmdName":"say","dbTrigger":"rape","dbId":0,"dbName":"Zappy"}' \
      localhost:7249/db/alertmsg -v
 -}
     postAlertMsgRec :: HasCallStack => AlertMsgRec -> Handler NoContent
@@ -138,7 +138,7 @@ curl -H "Content-Type: application/json" \
 curl -X POST \
      -H "Content-Type: application/json" \
      -H "Authorization: Bearer tokenHere" \
-     -d '{}' \
+     -d '{"dbTimestamp":"[2017-06-09 16:11:26]","dbIsBanned":true,"dbHost":"127.0.0.1","dbReason":"Used by Taro.","dbId":0}' \
      localhost:7249/db/banhost -v
 -}
     postBanHostRec :: HasCallStack => BanHostRec -> Handler NoContent
@@ -167,7 +167,7 @@ curl -H "Content-Type: application/json" \
 curl -X POST \
      -H "Content-Type: application/json" \
      -H "Authorization: Bearer tokenHere" \
-     -d '{}' \
+     -d '{"dbTimestamp":"[2017-06-09 17:02:57]","dbIsBanned":true,"dbReason":"For harassment.","dbId":0,"dbName":"Zappy"}' \
      localhost:7249/db/banpc -v
 -}
     postBanPCRec :: HasCallStack => BanPCRec -> Handler NoContent

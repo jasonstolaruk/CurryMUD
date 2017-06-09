@@ -21,7 +21,7 @@ module Mud.TopLvlDefs.Misc ( acl
                            , initPickPts
                            , isDebug
                            , isEKGing
-                           , isServicing
+                           , isRestServicing
                            , isZBackDoor
                            , likewise
                            , logRotationDelay
@@ -53,11 +53,11 @@ module Mud.TopLvlDefs.Misc ( acl
                            , noOfTitles
                            , port
                            , potFeelDur
+                           , restServicePort
                            , rmDescIndentAmt
                            , rndmVectorLen
                            , sacrificeBonusSecs
                            , sacrificeSecs
-                           , servicePort
                            , stdLinkNames
                            , threadTblPurgerDelay
                            , trashDumpPurgerDelay
@@ -149,8 +149,8 @@ isEKGing :: Bool
 isEKGing = True
 
 
-isServicing :: Bool
-isServicing = True
+isRestServicing :: Bool
+isRestServicing = True
 
 
 isZBackDoor :: Bool
@@ -260,6 +260,10 @@ potFeelDur :: Seconds
 potFeelDur = 30
 
 
+restServicePort :: Int
+restServicePort = 7249
+
+
 rmDescIndentAmt :: Int
 rmDescIndentAmt = 2
 
@@ -274,10 +278,6 @@ sacrificeBonusSecs = threeHrsInSecs
 
 sacrificeSecs :: Int
 sacrificeSecs = 5
-
-
-servicePort :: Int
-servicePort = 7249
 
 
 stdLinkNames :: [Text]
