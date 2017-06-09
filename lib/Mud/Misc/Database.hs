@@ -435,7 +435,7 @@ insertDbTblHelper :: (ToRow a) => Query -> a -> IO ()
 insertDbTblHelper q x = onDbFile $ \conn -> execute conn q x
 
 
-insertDbTblAdminChan :: AdminChanRec -> IO () -- TODO: Have REST API return records.
+insertDbTblAdminChan :: AdminChanRec -> IO ()
 insertDbTblAdminChan = insertDbTblHelper "insert into admin_chan (timestamp, name, msg) values (?, ?, ?)"
 
 
