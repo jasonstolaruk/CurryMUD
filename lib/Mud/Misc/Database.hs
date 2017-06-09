@@ -1,4 +1,4 @@
-{-# LANGUAGE DuplicateRecordFields, OverloadedStrings, RecordWildCards, ScopedTypeVariables, ViewPatterns #-}
+{-# LANGUAGE DeriveGeneric, DuplicateRecordFields, OverloadedStrings, RecordWildCards, ScopedTypeVariables, ViewPatterns #-}
 
 module Mud.Misc.Database ( AdminChanRec(..)
                          , AdminMsgRec(..)
@@ -81,7 +81,7 @@ import           Mud.Util.Text
 import           Control.Monad (forM_, when)
 import           Control.Monad.IO.Class (liftIO)
 import           Crypto.BCrypt (fastBcryptHashingPolicy, hashPasswordUsingPolicy)
-import           Data.Aeson (FromJSON(..), ToJSON(..), (.:), (.=), object, withObject)
+import           Data.Aeson (FromJSON(..), ToJSON(..))
 import qualified Data.ByteString.Char8 as B
 import           Data.Monoid ((<>))
 import           Data.Text (Text)
@@ -90,6 +90,7 @@ import qualified Data.Text.Encoding as T
 import           Data.Time (UTCTime)
 import           Database.SQLite.Simple (Connection, FromRow, Only(..), Query(..), ToRow, execute, execute_, field, fromRow, query, query_, toRow, withConnection)
 import           Database.SQLite.Simple.FromRow (RowParser)
+import           GHC.Generics (Generic)
 
 
 data    AdminChanRec   = AdminChanRec   { dbTimestamp   :: Text
@@ -104,7 +105,7 @@ data    AlertExecRec   = AlertExecRec   { dbId          :: Int
                                         , dbName        :: Text
                                         , dbCmdName     :: Text
                                         , dbTarget      :: Text
-                                        , dbArgs        :: Text }
+                                        , dbArgs        :: Text } deriving Generic
 data    AlertMsgRec    = AlertMsgRec    { dbTimestamp   :: Text
                                         , dbName        :: Text
                                         , dbCmdName     :: Text
@@ -354,22 +355,8 @@ instance ToRow WordRec where
 -----
 
 
-instance FromJSON AlertExecRec where
-  parseJSON = withObject "AlertExecRec" $ \o -> AlertExecRec <$> o .: "id"
-                                                             <*> o .: "timestamp"
-                                                             <*> o .: "name"
-                                                             <*> o .: "cmdName"
-                                                             <*> o .: "target"
-                                                             <*> o .: "args"
-
-
-instance ToJSON AlertExecRec where
-  toJSON (AlertExecRec i ts n cn target args) = object [ "id"        .= i
-                                                       , "timestamp" .= ts
-                                                       , "name"      .= n
-                                                       , "cmdName"   .= cn
-                                                       , "target"    .= target
-                                                       , "args"      .= args ]
+instance FromJSON AlertExecRec
+instance ToJSON   AlertExecRec
 
 
 -----
