@@ -26,10 +26,11 @@ instance ToJWT    Login
 
 
 type Protected =
-       "pla"                  :> "all"                   :> Get             '[JSON] [Object Pla]
-  :<|> "pla"                  :> Capture "id" CaptureInt :> Get             '[JSON] (Object Pla)
-  :<|> "db" :> "alertexecrec" :> "all"                   :> Get             '[JSON] [AlertExecRec]
-  :<|> "db" :> "alertexecrec" :> Capture "id" CaptureInt :> DeleteNoContent '[JSON] NoContent
+       "pla"                  :> "all"                        :> Get             '[JSON] [Object Pla]
+  :<|> "pla"                  :> Capture "id" CaptureInt      :> Get             '[JSON] (Object Pla)
+  :<|> "db" :> "alertexecrec" :> "all"                        :> Get             '[JSON] [AlertExecRec]
+  :<|> "db" :> "alertexecrec" :> ReqBody '[JSON] AlertExecRec :> PostNoContent   '[JSON] NoContent
+  :<|> "db" :> "alertexecrec" :> Capture "id" CaptureInt      :> DeleteNoContent '[JSON] NoContent
 
 
 data Object a = Object { objectId :: Id

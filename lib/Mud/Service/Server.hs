@@ -25,9 +25,10 @@ server cs jwts = (:<|>) <$> protected <*> unprotected cs jwts
 
 protected :: HasCallStack => IORef MudState -> AuthResult Login -> Server Protected
 protected ior (Authenticated _) =
-         getAllPla
-    :<|> getPlaById
-    :<|> getAllAlertExecRec
+         getPlaAll
+    :<|> getPla
+    :<|> getAlertExecRecAll
+    :<|> postAlertExecRec
     :<|> deleteAlertExecRec
   where
     state :: HasCallStack => Handler MudState
@@ -38,24 +39,34 @@ curl -H "Content-Type: application/json" \
      -H "Authorization: Bearer tokenHere" \
      localhost:7249/pla/all -v
 -}
-    getAllPla :: HasCallStack => Handler [Object Pla]
-    getAllPla = views plaTbl mkObjects <$> state
+    getPlaAll :: HasCallStack => Handler [Object Pla]
+    getPlaAll = views plaTbl mkObjects <$> state
 
 {-
 curl -H "Content-Type: application/json" \
      -H "Authorization: Bearer tokenHere" \
      localhost:7249/pla/0 -v
 -}
-    getPlaById :: HasCallStack => CaptureInt -> Handler (Object Pla)
-    getPlaById (CaptureInt i) = views (plaTbl.at i) (maybe notFound (return . Object i)) =<< state
+    getPla :: HasCallStack => CaptureInt -> Handler (Object Pla)
+    getPla (CaptureInt i) = views (plaTbl.at i) (maybe notFound (return . Object i)) =<< state
 
 {-
 curl -H "Content-Type: application/json" \
      -H "Authorization: Bearer tokenHere" \
      localhost:7249/db/alertexecrec/all -v
 -}
-    getAllAlertExecRec :: HasCallStack => Handler [AlertExecRec]
-    getAllAlertExecRec = liftIO . getDbTblRecs $ "alert_exec"
+    getAlertExecRecAll :: HasCallStack => Handler [AlertExecRec]
+    getAlertExecRecAll = liftIO . getDbTblRecs $ "alert_exec"
+
+{-
+curl -X POST \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer tokenHere" \
+     -d '{"dbTimestamp":"timestamp","dbCmdName":"cmdName","dbArgs":"args","dbTarget":"target","dbId":0,"dbName":"name"}' \
+     localhost:7249/db/alertexecrec -v
+-}
+    postAlertExecRec :: HasCallStack => AlertExecRec -> Handler NoContent
+    postAlertExecRec rec = liftIO $ insertDbTblAlertExec rec >> return NoContent
 
 {-
 curl -X DELETE \
@@ -82,17 +93,17 @@ notFound = throwError err404 { errBody = "ID not found." } -- Not Found
 unprotected :: HasCallStack => CookieSettings -> JWTSettings -> IORef MudState -> Server Unprotected
 unprotected cs jwts _ =
          -- curl -H "Content-Type: application/json" -d '{"username":"curry","password":"curry"}' localhost:7249/login -v
-         loginHelper cs jwts
+         handleLogin cs jwts
          -- Open "http://localhost:7249/" in a browser.
     :<|> serveDirectoryFileServer "notes"
 
 
-loginHelper :: HasCallStack => CookieSettings
+handleLogin :: HasCallStack => CookieSettings
                             -> JWTSettings
                             -> Login
                             -> Handler (Headers '[ Header "Set-Cookie" SetCookie
                                                  , Header "Set-Cookie" SetCookie ] NoContent)
-loginHelper cs jwts login@(Login un pw)
+handleLogin cs jwts login@(Login un pw)
   | un == "curry", pw == "curry" = liftIO (acceptLogin cs jwts login) >>= \case
     Nothing           -> throwError err401
     Just applyCookies -> return (applyCookies NoContent)
