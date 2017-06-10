@@ -101,24 +101,24 @@ data    AdminMsgRec    = AdminMsgRec    { dbTimestamp   :: Text
                                         , dbFromName    :: Text
                                         , dbToName      :: Text
                                         , dbMsg         :: Text }
-data    AlertExecRec   = AlertExecRec   { dbId          :: Int
+data    AlertExecRec   = AlertExecRec   { dbId          :: Maybe Int
                                         , dbTimestamp   :: Text
                                         , dbName        :: Text
                                         , dbCmdName     :: Text
                                         , dbTarget      :: Text
                                         , dbArgs        :: Text } deriving Generic
-data    AlertMsgRec    = AlertMsgRec    { dbId          :: Int
+data    AlertMsgRec    = AlertMsgRec    { dbId          :: Maybe Int
                                         , dbTimestamp   :: Text
                                         , dbName        :: Text
                                         , dbCmdName     :: Text
                                         , dbTrigger     :: Text
                                         , dbMsg         :: Text } deriving Generic
-data    BanHostRec     = BanHostRec     { dbId          :: Int
+data    BanHostRec     = BanHostRec     { dbId          :: Maybe Int
                                         , dbTimestamp   :: Text
                                         , dbHost        :: Text
                                         , dbIsBanned    :: Bool
                                         , dbReason      :: Text } deriving Generic
-data    BanPCRec       = BanPCRec       { dbId          :: Int
+data    BanPCRec       = BanPCRec       { dbId          :: Maybe Int
                                         , dbTimestamp   :: Text
                                         , dbName        :: Text
                                         , dbIsBanned    :: Bool
@@ -186,19 +186,19 @@ instance FromRow AdminMsgRec where
 
 
 instance FromRow AlertExecRec where
-  fromRow = AlertExecRec <$> (field :: RowParser Int) <*> field <*> field <*> field <*> field <*> field
+  fromRow = AlertExecRec <$> (field :: RowParser (Maybe Int)) <*> field <*> field <*> field <*> field <*> field
 
 
 instance FromRow AlertMsgRec where
-  fromRow = AlertMsgRec <$> (field :: RowParser Int) <*> field <*> field <*> field <*> field <*> field
+  fromRow = AlertMsgRec <$> (field :: RowParser (Maybe Int)) <*> field <*> field <*> field <*> field <*> field
 
 
 instance FromRow BanHostRec where
-  fromRow = BanHostRec <$> (field :: RowParser Int) <*> field <*> field <*> field <*> field
+  fromRow = BanHostRec <$> (field :: RowParser (Maybe Int)) <*> field <*> field <*> field <*> field
 
 
 instance FromRow BanPCRec where
-  fromRow = BanPCRec <$> (field :: RowParser Int) <*> field <*> field <*> field <*> field
+  fromRow = BanPCRec <$> (field :: RowParser (Maybe Int)) <*> field <*> field <*> field <*> field
 
 
 instance FromRow BonusRec where

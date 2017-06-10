@@ -30,8 +30,9 @@ server ior cs jwts = protected ior :<|> unprotected cs jwts
 
 protected :: HasCallStack => IORef MudState -> AuthResult Login -> Server Protected
 protected ior (Authenticated (Login un _)) =
-         getPlaAll
-    :<|> getPla
+         getPla
+    -- ==========
+    :<|> getPlaAll
     -----
     :<|> getAlertExecRecAll
     :<|> postAlertExecRec
@@ -53,9 +54,20 @@ protected ior (Authenticated (Login un _)) =
     state = liftIO . readIORef $ ior
 
     doIfAdmin :: HasCallStack => Handler a -> Handler a
-    doIfAdmin = flip (mIf (uncurry isAdminId . ((,) <$> getIdForPCSing un <*> id) <$> state)) (throwError err401)
+    doIfAdmin = flip (mIf (uncurry isAdminId . ((,) <$> getIdForPCSing un <*> id) <$> state)) (throwError err401) -- Unauthorized
 
     -----
+
+{-
+curl -H "Content-Type: application/json" \
+     -H "Authorization: Bearer tokenHere" \
+     localhost:7249/pla -v
+-}
+    getPla :: HasCallStack => Handler (Object Pla)
+    getPla = state >>= \ms -> let i = getIdForPCSing un ms
+                              in views (plaTbl.at i) (maybe notFound (return . Object i)) ms
+
+    -- ==========
 
 {-
 curl -H "Content-Type: application/json" \
@@ -63,15 +75,7 @@ curl -H "Content-Type: application/json" \
      localhost:7249/pla/all -v
 -}
     getPlaAll :: HasCallStack => Handler [Object Pla]
-    getPlaAll = views plaTbl mkObjects <$> state
-
-{-
-curl -H "Content-Type: application/json" \
-     -H "Authorization: Bearer tokenHere" \
-     localhost:7249/pla/0 -v
--}
-    getPla :: HasCallStack => CaptureInt -> Handler (Object Pla)
-    getPla (CaptureInt i) = views (plaTbl.at i) (maybe notFound (return . Object i)) =<< state
+    getPlaAll = doIfAdmin (views plaTbl mkObjects <$> state)
 
     -----
 
@@ -87,7 +91,7 @@ curl -H "Content-Type: application/json" \
 curl -X POST \
      -H "Content-Type: application/json" \
      -H "Authorization: Bearer tokenHere" \
-     -d '{"dbTimestamp":"[2017-06-09 16:00:52]","dbCmdName":"rape","dbArgs":"mh","dbTarget":"Curry","dbId":0,"dbName":"Zappy"}' \
+     -d '{"dbTimestamp":"[2017-06-09 16:00:52]","dbCmdName":"rape","dbArgs":"mh","dbTarget":"Curry","dbName":"Zappy"}' \
      localhost:7249/db/alertexec -v
 -}
     postAlertExecRec :: HasCallStack => AlertExecRec -> Handler NoContent
@@ -116,7 +120,7 @@ curl -H "Content-Type: application/json" \
 curl -X POST \
      -H "Content-Type: application/json" \
      -H "Authorization: Bearer tokenHere" \
-     -d '{"dbMsg":"You say, \"Rape.\"","dbTimestamp":"[2017-06-09 16:07:54]","dbCmdName":"say","dbTrigger":"rape","dbId":0,"dbName":"Zappy"}' \
+     -d '{"dbMsg":"You say, \"Rape.\"","dbTimestamp":"[2017-06-09 16:07:54]","dbCmdName":"say","dbTrigger":"rape","dbName":"Zappy"}' \
      localhost:7249/db/alertmsg -v
 -}
     postAlertMsgRec :: HasCallStack => AlertMsgRec -> Handler NoContent
@@ -145,7 +149,7 @@ curl -H "Content-Type: application/json" \
 curl -X POST \
      -H "Content-Type: application/json" \
      -H "Authorization: Bearer tokenHere" \
-     -d '{"dbTimestamp":"[2017-06-09 16:11:26]","dbIsBanned":true,"dbHost":"127.0.0.1","dbReason":"Used by Taro.","dbId":0}' \
+     -d '{"dbTimestamp":"[2017-06-09 16:11:26]","dbIsBanned":true,"dbHost":"127.0.0.1","dbReason":"Used by Taro."}' \
      localhost:7249/db/banhost -v
 -}
     postBanHostRec :: HasCallStack => BanHostRec -> Handler NoContent
@@ -174,7 +178,7 @@ curl -H "Content-Type: application/json" \
 curl -X POST \
      -H "Content-Type: application/json" \
      -H "Authorization: Bearer tokenHere" \
-     -d '{"dbTimestamp":"[2017-06-09 17:02:57]","dbIsBanned":true,"dbReason":"For harassment.","dbId":0,"dbName":"Zappy"}' \
+     -d '{"dbTimestamp":"[2017-06-09 17:02:57]","dbIsBanned":true,"dbReason":"For harassment.","dbName":"Zappy"}' \
      localhost:7249/db/banpc -v
 -}
     postBanPCRec :: HasCallStack => BanPCRec -> Handler NoContent
@@ -216,7 +220,7 @@ deleteRec tblName = noContentOp . deleteDbTblRec tblName
 
 unprotected :: HasCallStack => CookieSettings -> JWTSettings -> Server Unprotected
 unprotected cs jwts =
-         -- curl -H "Content-Type: application/json" -d '{"username":"Curry","password":"curry"}' localhost:7249/login -v # "username" must be capitalized!
+         -- curl -H "Content-Type: application/json" -d '{"username":"Curry","password":"curry"}' localhost:7249/login -v # Username must be capitalized!
          handleLogin cs jwts
          -- Open "http://localhost:7249/" in a browser.
     :<|> serveDirectoryFileServer "notes"

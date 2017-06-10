@@ -26,8 +26,9 @@ instance ToJWT    Login
 
 
 type Protected =
-       "pla"               :> "all"                        :> Get             '[JSON] [Object Pla]
-  :<|> "pla"               :> Capture "id" CaptureInt      :> Get             '[JSON] (Object Pla)
+       "pla"                                               :> Get             '[JSON] (Object Pla)
+  -- ==========
+  :<|> "pla"               :> "all"                        :> Get             '[JSON] [Object Pla]
   -----
   :<|> "db" :> "alertexec" :> "all"                        :> Get             '[JSON] [AlertExecRec]
   :<|> "db" :> "alertexec" :> ReqBody '[JSON] AlertExecRec :> PostNoContent   '[JSON] NoContent

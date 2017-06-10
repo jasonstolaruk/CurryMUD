@@ -362,7 +362,7 @@ adminBanHost   (MsgWithTarget i mq cols (uncapitalize -> target) msg) = getState
     withDbExHandler "adminBanHost" (isHostBanned target) >>= \case
       Nothing      -> dbError mq cols
       Just (Any b) -> let newStatus = not b in liftIO mkTimestamp >>= \ts -> do
-          let banHost = BanHostRec 0 ts target newStatus msg
+          let banHost = BanHostRec Nothing ts target newStatus msg
           withDbExHandler_ "adminBanHost" . insertDbTblBanHost $ banHost
           notifyBan i mq cols (getSing i ms) target newStatus banHost
 adminBanHost p = pmf "adminBanHost" p
@@ -400,7 +400,7 @@ adminBanPC p@(MsgWithTarget i mq cols target msg) = getState >>= \ms ->
                    | otherwise        -> withDbExHandler "adminBanPC" (isPCBanned strippedTarget) >>= \case
                      Nothing      -> dbError mq cols
                      Just (Any b) -> let newStatus = not b in liftIO mkTimestamp >>= \ts -> do
-                         let rec = BanPCRec 0 ts strippedTarget newStatus msg
+                         let rec = BanPCRec Nothing ts strippedTarget newStatus msg
                          withDbExHandler_ "adminBanPC" . insertDbTblBanPC $ rec
                          notifyBan i mq cols selfSing strippedTarget newStatus rec
                          when (newStatus && isLoggedIn pla) . adminBoot $ p { args = strippedTarget : T.words bannedMsg }
