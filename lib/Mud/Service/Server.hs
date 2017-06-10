@@ -6,7 +6,7 @@ import           Mud.Data.State.MudData
 import           Mud.Data.State.Util.Get hiding (getPla)
 import           Mud.Misc.Database
 import           Mud.Service.Types
-import           Mud.Util.Operators
+import           Mud.Util.Misc
 
 import           Control.Lens (at, both, views)
 import           Control.Lens.Operators ((&), (%~))
@@ -53,7 +53,7 @@ protected ior (Authenticated (Login un _)) =
     state = liftIO . readIORef $ ior
 
     doIfAdmin :: HasCallStack => Handler a -> Handler a
-    doIfAdmin f = state >>= \s -> ((,) <$> getIdForPCSing un <*> id) s |&| uncurry isAdminId ? f :? throwError err404
+    doIfAdmin = flip (mIf (uncurry isAdminId . ((,) <$> getIdForPCSing un <*> id) <$> state)) (throwError err401)
 
     -----
 
