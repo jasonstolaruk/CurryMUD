@@ -8,7 +8,7 @@ import Mud.Misc.Database
 import Data.Aeson (FromJSON(..), ToJSON(..))
 import Data.Text (Text)
 import GHC.Generics (Generic)
-import Servant (Capture, DeleteNoContent, FromHttpApiData, Get, Header, Headers, JSON, NoContent, PostNoContent, Raw, ReqBody, ToHttpApiData, (:<|>)(..), (:>))
+import Servant (Capture, DeleteNoContent, FromHttpApiData, Get, Header, Headers, JSON, NoContent, PostNoContent, ReqBody, ToHttpApiData, (:<|>)(..), (:>))
 import Servant.Auth.Server (Auth, FromJWT, SetCookie, ToJWT)
 
 
@@ -62,4 +62,3 @@ type Unprotected =
        "login" :> ReqBody       '[JSON] Login
                :> PostNoContent '[JSON] (Headers '[ Header "Set-Cookie" SetCookie
                                                   , Header "Set-Cookie" SetCookie ] NoContent)
-  :<|> Raw

@@ -17,7 +17,7 @@ import           Data.IORef (IORef, readIORef)
 import qualified Data.IntMap.Strict as IM (IntMap, elems, mapWithKey)
 import qualified Data.Text.Encoding as T
 import           GHC.Stack (HasCallStack)
-import           Servant (Handler, Header, Headers, NoContent(..), Server, (:<|>)(..), err401, err404, errBody, serveDirectoryFileServer)
+import           Servant (Handler, Header, Headers, NoContent(..), Server, (:<|>)(..), err401, err404, errBody)
 import           Servant.Auth.Server (AuthResult(..), CookieSettings, JWTSettings, SetCookie, acceptLogin, throwAll)
 
 
@@ -222,8 +222,6 @@ unprotected :: HasCallStack => CookieSettings -> JWTSettings -> Server Unprotect
 unprotected cs jwts =
          -- curl -H "Content-Type: application/json" -d '{"username":"Curry","password":"curry"}' localhost:7249/login -v # Username must be capitalized!
          handleLogin cs jwts
-         -- Open "http://localhost:7249/" in a browser.
-    :<|> serveDirectoryFileServer "notes"
 
 
 handleLogin :: HasCallStack => CookieSettings
