@@ -76,6 +76,7 @@ data MudState = MudState { _armTbl                 :: ArmTbl
                          , _pickPtsTbl             :: PickPtsTbl
                          , _plaLogTbl              :: PlaLogTbl
                          , _plaTbl                 :: PlaTbl
+                         , _restServiceLogService  :: Maybe LogService
                          , _rmActionFunTbl         :: RmActionFunTbl
                          , _rmTbl                  :: RmTbl
                          , _rmTeleNameTbl          :: RmTeleNameTbl

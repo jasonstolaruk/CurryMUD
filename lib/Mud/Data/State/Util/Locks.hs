@@ -2,6 +2,7 @@
 {-# LANGUAGE RankNTypes #-}
 
 module Mud.Data.State.Util.Locks ( getLock
+                                 , mkLock
                                  , mkLocks
                                  , withLock ) where
 
@@ -20,8 +21,12 @@ getLock :: HasCallStack => Getter Locks Lock -> MudStack Lock
 getLock l = asks . view $ locks.l
 
 
+mkLock :: HasCallStack => IO Lock
+mkLock = newTMVarIO Done
+
+
 mkLocks :: HasCallStack => IO [Lock]
-mkLocks = replicateM 3 . newTMVarIO $ Done
+mkLocks = replicateM 3 mkLock
 
 
 withLock :: HasCallStack => Lock -> IO a -> IO a

@@ -15,6 +15,7 @@ module Mud.Misc.Logging ( closeLogs
                         , logPlaExecArgs
                         , logPlaOut
                         , massLogPla
+                        , spawnLogger
                         , writeLog ) where
 
 import           Mud.Data.Misc

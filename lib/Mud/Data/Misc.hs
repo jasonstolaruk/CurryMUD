@@ -904,7 +904,7 @@ data DoOrDon'tCap = DoCap | Don'tCap deriving (Eq, Read, Show)
 -----
 
 
-data DoOrDon'tLog = DoLog | Don'tLog deriving Show
+data DoOrDon'tLog = DoLog | Don'tLog deriving (Eq, Show)
 
 
 -----

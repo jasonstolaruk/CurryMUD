@@ -218,10 +218,9 @@ deleteRec tblName = noContentOp . deleteDbTblRec tblName
 -----
 
 
+-- curl -H "Content-Type: application/json" -d '{"username":"Curry","password":"curry"}' localhost:7249/login -v # Username must be capitalized!
 unprotected :: HasCallStack => CookieSettings -> JWTSettings -> Server Unprotected
-unprotected cs jwts =
-         -- curl -H "Content-Type: application/json" -d '{"username":"Curry","password":"curry"}' localhost:7249/login -v # Username must be capitalized!
-         handleLogin cs jwts
+unprotected = handleLogin
 
 
 handleLogin :: HasCallStack => CookieSettings
