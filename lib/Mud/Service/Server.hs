@@ -8,9 +8,11 @@ import           Mud.Misc.Database
 import           Mud.Service.Logging
 import           Mud.Service.Types
 import           Mud.Util.Misc
+import           Mud.Util.Operators
 import           Mud.Util.Quoting
 import           Mud.Util.Text
 
+import           Control.Arrow (second)
 import           Control.Lens (at, both, views)
 import           Control.Lens.Operators ((&), (%~))
 import           Control.Monad.Error.Class (throwError)
@@ -18,6 +20,7 @@ import           Control.Monad.IO.Class (liftIO)
 import           Crypto.BCrypt (validatePassword)
 import           Data.IORef (IORef, readIORef)
 import qualified Data.IntMap.Strict as IM (IntMap, elems, mapWithKey)
+import           Data.Monoid ((<>))
 import           Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T (encodeUtf8)
@@ -58,8 +61,19 @@ protected ior (Authenticated (Login un _)) =
     -- ==========
     -- Helper functions:
 
+    deleteHelper :: HasCallStack => CaptureInt -> Text -> Text -> Handler NoContent
+    deleteHelper (CaptureInt i') funName tblName = doIfAdmin $ getMudStateId >>= \(ms, i) -> do
+        logHelper ms funName i . prd $ "deleting " <> showTxt i'
+        deleteRec tblName i'
+
     doIfAdmin :: HasCallStack => Handler a -> Handler a
     doIfAdmin = flip (mIf (uncurry isAdminId . ((,) <$> getIdForPCSing un <*> id) <$> state)) (throwError err401) -- Unauthorized
+
+    getMudStateId :: Handler (MudState, Id)
+    getMudStateId = second (|&| getIdForPCSing un) . dup <$> state
+
+    getPostHelper :: HasCallStack => Text -> (MudState -> Handler a) -> Handler a
+    getPostHelper fn f = doIfAdmin $ getMudStateId >>= \(ms, i) -> logExecuted ms fn i >> f ms
 
     logExecuted :: HasCallStack => MudState -> Text -> Id -> Handler ()
     logExecuted ms fn i = logHelper ms fn i ""
@@ -84,10 +98,9 @@ curl -H "Content-Type: application/json" \
      localhost:7249/pla -v
 -}
     getPla :: HasCallStack => Handler (Object Pla)
-    getPla = state >>= \ms -> let fn      = "getPla"
-                                  i       = getIdForPCSing un ms
-                                  found p = logExecuted ms fn i >> return (Object i p)
-                              in views (plaTbl.at i) (maybe (notFoundHelper ms fn "plaTbl" i) found) ms
+    getPla = getMudStateId >>= \(ms, i) -> let fn    = "getPla"
+                                               found = (logExecuted ms fn i >>) . return . Object i
+                                           in views (plaTbl.at i) (maybe (notFoundHelper ms fn "plaTbl" i) found) ms
 
     -- ==========
     -- Admin endpoints:
@@ -98,9 +111,7 @@ curl -H "Content-Type: application/json" \
      localhost:7249/pla/all -v
 -}
     getPlaAll :: HasCallStack => Handler [Object Pla]
-    getPlaAll = state >>= \ms -> let fn = "getPlaAll"
-                                     i  = getIdForPCSing un ms
-                                 in doIfAdmin $ logExecuted ms fn i >> return (views plaTbl mkObjects ms)
+    getPlaAll = getPostHelper "getPlaAll" $ return . views plaTbl mkObjects
 
     -----
 
@@ -110,9 +121,7 @@ curl -H "Content-Type: application/json" \
      localhost:7249/db/alertexec/all -v
 -}
     getAlertExecRecAll :: HasCallStack => Handler [AlertExecRec]
-    getAlertExecRecAll = state >>= \ms -> let fn = "getAlertExecRecAll"
-                                              i  = getIdForPCSing un ms
-                                          in doIfAdmin $ logExecuted ms fn i >> liftIO (getDbTblRecs "alert_exec")
+    getAlertExecRecAll = getPostHelper "getAlertExecRecAll" . const . liftIO . getDbTblRecs $ "alert_exec"
 
 {-
 curl -X POST \
@@ -122,7 +131,7 @@ curl -X POST \
      localhost:7249/db/alertexec -v
 -}
     postAlertExecRec :: HasCallStack => AlertExecRec -> Handler NoContent
-    postAlertExecRec = doIfAdmin . insertRec insertDbTblAlertExec
+    postAlertExecRec = getPostHelper "postAlertExecRec" . const . insertRec insertDbTblAlertExec
 
 {-
 curl -X DELETE \
@@ -131,7 +140,7 @@ curl -X DELETE \
      localhost:7249/db/alertexec/1 -v
 -}
     deleteAlertExecRec :: HasCallStack => CaptureInt -> Handler NoContent
-    deleteAlertExecRec (CaptureInt i) = doIfAdmin . deleteRec "alert_exec" $ i
+    deleteAlertExecRec ci = deleteHelper ci "deleteAlertExecRec" "alert_exec"
 
     -----
 
@@ -141,7 +150,7 @@ curl -H "Content-Type: application/json" \
      localhost:7249/db/alertmsg/all -v
 -}
     getAlertMsgRecAll :: HasCallStack => Handler [AlertMsgRec]
-    getAlertMsgRecAll = doIfAdmin . liftIO . getDbTblRecs $ "alert_msg"
+    getAlertMsgRecAll = getPostHelper "getAlertMsgRecAll" . const . liftIO . getDbTblRecs $ "alert_msg"
 
 {-
 curl -X POST \
@@ -151,7 +160,7 @@ curl -X POST \
      localhost:7249/db/alertmsg -v
 -}
     postAlertMsgRec :: HasCallStack => AlertMsgRec -> Handler NoContent
-    postAlertMsgRec = doIfAdmin . insertRec insertDbTblAlertMsg
+    postAlertMsgRec = getPostHelper "postAlertMsgRec" . const . insertRec insertDbTblAlertMsg
 
 {-
 curl -X DELETE \
@@ -160,7 +169,7 @@ curl -X DELETE \
      localhost:7249/db/alertmsg/1 -v
 -}
     deleteAlertMsgRec :: HasCallStack => CaptureInt -> Handler NoContent
-    deleteAlertMsgRec (CaptureInt i) = doIfAdmin . deleteRec "alert_msg" $ i
+    deleteAlertMsgRec ci = deleteHelper ci "deleteAlertMsgRec" "alert_msg"
 
     -----
 
@@ -170,7 +179,7 @@ curl -H "Content-Type: application/json" \
      localhost:7249/db/banhost/all -v
 -}
     getBanHostRecAll :: HasCallStack => Handler [BanHostRec]
-    getBanHostRecAll = doIfAdmin . liftIO . getDbTblRecs $ "ban_host"
+    getBanHostRecAll = getPostHelper "getBanHostRecAll" . const . liftIO . getDbTblRecs $ "ban_host"
 
 {-
 curl -X POST \
@@ -180,7 +189,7 @@ curl -X POST \
      localhost:7249/db/banhost -v
 -}
     postBanHostRec :: HasCallStack => BanHostRec -> Handler NoContent
-    postBanHostRec = doIfAdmin . insertRec insertDbTblBanHost
+    postBanHostRec = getPostHelper "postBanHostRec" . const . insertRec insertDbTblBanHost
 
 {-
 curl -X DELETE \
@@ -189,7 +198,7 @@ curl -X DELETE \
      localhost:7249/db/banhost/1 -v
 -}
     deleteBanHostRec :: HasCallStack => CaptureInt -> Handler NoContent
-    deleteBanHostRec (CaptureInt i) = doIfAdmin . deleteRec "ban_host" $ i
+    deleteBanHostRec ci = deleteHelper ci "deleteBanHostRec" "ban_host"
 
     -----
 
@@ -199,7 +208,7 @@ curl -H "Content-Type: application/json" \
      localhost:7249/db/banpc/all -v
 -}
     getBanPCRecAll :: HasCallStack => Handler [BanPCRec]
-    getBanPCRecAll = doIfAdmin . liftIO . getDbTblRecs $ "ban_pc"
+    getBanPCRecAll = getPostHelper "getBanPCRecAll" . const . liftIO . getDbTblRecs $ "ban_pc"
 
 {-
 curl -X POST \
@@ -209,7 +218,7 @@ curl -X POST \
      localhost:7249/db/banpc -v
 -}
     postBanPCRec :: HasCallStack => BanPCRec -> Handler NoContent
-    postBanPCRec = doIfAdmin . insertRec insertDbTblBanPC
+    postBanPCRec = getPostHelper "postBanPCRec" . const . insertRec insertDbTblBanPC
 
 {-
 curl -X DELETE \
@@ -218,7 +227,7 @@ curl -X DELETE \
      localhost:7249/db/banpc/1 -v
 -}
     deleteBanPCRec :: HasCallStack => CaptureInt -> Handler NoContent
-    deleteBanPCRec (CaptureInt i) = doIfAdmin . deleteRec "ban_pc" $ i
+    deleteBanPCRec ci = deleteHelper ci "deleteBanPCRec" "ban_pc"
 protected _ _ = throwAll err401 -- Unauthorized
 
 
