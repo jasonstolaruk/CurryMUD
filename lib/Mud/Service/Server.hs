@@ -29,11 +29,40 @@ import           Servant (Handler, Header, Headers, NoContent(..), Server, (:<|>
 import           Servant.Auth.Server (AuthResult(..), CookieSettings, JWTSettings, SetCookie, acceptLogin, throwAll)
 
 
+-- ==========
+-- Utility functions:
+
+
+deleteRec :: HasCallStack => DbTblName -> Int -> Handler NoContent
+deleteRec tblName = noContentOp . deleteDbTblRec tblName
+
+
+insertRec :: HasCallStack => (a -> IO ()) -> a -> Handler NoContent
+insertRec = (noContentOp .)
+
+
+mkObjects :: HasCallStack => IM.IntMap a -> [Object a]
+mkObjects = IM.elems . IM.mapWithKey Object
+
+
+noContentOp :: HasCallStack => IO a -> Handler NoContent
+noContentOp = (>> return NoContent) . liftIO
+
+
+notFound :: HasCallStack => Handler (Object a)
+notFound = throwError err404 { errBody = "ID not found." } -- Not Found
+
+
+-- ==========
+-- Server:
+
+
 server :: HasCallStack => IORef MudState -> CookieSettings -> JWTSettings -> Server (API auths)
 server ior cs jwts = protected ior :<|> unprotected ior cs jwts
 
 
------
+-- ==========
+-- Protected:
 
 
 protected :: HasCallStack => IORef MudState -> AuthResult Login -> Server Protected
@@ -231,34 +260,15 @@ curl -X DELETE \
 protected _ _ = throwAll err401 -- Unauthorized
 
 
-mkObjects :: HasCallStack => IM.IntMap a -> [Object a]
-mkObjects = IM.elems . IM.mapWithKey Object
+-- ==========
+-- Unprotected:
 
 
-notFound :: HasCallStack => Handler (Object a)
-notFound = throwError err404 { errBody = "ID not found." } -- Not Found
-
-
-noContentOp :: HasCallStack => IO a -> Handler NoContent
-noContentOp = (>> return NoContent) . liftIO
-
-
-insertRec :: HasCallStack => (a -> IO ()) -> a -> Handler NoContent
-insertRec = (noContentOp .)
-
-
-deleteRec :: HasCallStack => DbTblName -> Int -> Handler NoContent
-deleteRec tblName = noContentOp . deleteDbTblRec tblName
-
-
------
-
-
--- curl -H "Content-Type: application/json" -d '{"username":"Curry","password":"curry"}' localhost:7249/login -v # Username must be capitalized!
 unprotected :: HasCallStack => IORef MudState -> CookieSettings -> JWTSettings -> Server Unprotected
 unprotected = loginHandler
 
 
+-- curl -H "Content-Type: application/json" -d '{"username":"Curry","password":"curry"}' localhost:7249/login -v # Username must be capitalized!
 loginHandler :: HasCallStack => IORef MudState
                              -> CookieSettings
                              -> JWTSettings
