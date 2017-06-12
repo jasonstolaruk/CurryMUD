@@ -30,7 +30,7 @@ import           Servant.Auth.Server (AuthResult(..), CookieSettings, JWTSetting
 
 
 server :: HasCallStack => IORef MudState -> CookieSettings -> JWTSettings -> Server (API auths)
-server ior cs jwts = protected ior :<|> unprotected cs jwts
+server ior cs jwts = protected ior :<|> unprotected ior cs jwts
 
 
 -----
@@ -255,20 +255,22 @@ deleteRec tblName = noContentOp . deleteDbTblRec tblName
 
 
 -- curl -H "Content-Type: application/json" -d '{"username":"Curry","password":"curry"}' localhost:7249/login -v # Username must be capitalized!
-unprotected :: HasCallStack => CookieSettings -> JWTSettings -> Server Unprotected
-unprotected = handleLogin
+unprotected :: HasCallStack => IORef MudState -> CookieSettings -> JWTSettings -> Server Unprotected
+unprotected = loginHandler
 
 
-handleLogin :: HasCallStack => CookieSettings
-                            -> JWTSettings
-                            -> Login
-                            -> Handler (Headers '[ Header "Set-Cookie" SetCookie
-                                                 , Header "Set-Cookie" SetCookie ] NoContent)
-handleLogin cs jwts login@(Login un pw) = liftIO (lookupPW un) >>= \case -- TODO: Logging.
+loginHandler :: HasCallStack => IORef MudState
+                             -> CookieSettings
+                             -> JWTSettings
+                             -> Login
+                             -> Handler (Headers '[ Header "Set-Cookie" SetCookie
+                                                  , Header "Set-Cookie" SetCookie ] NoContent)
+loginHandler ior cs jwts login@(Login un pw) = liftIO (lookupPW un) >>= \case
     Just pw' | uncurry validatePassword ((pw', pw) & both %~ T.encodeUtf8) -> liftIO (acceptLogin cs jwts login) >>= \case
-                 Just applyCookies -> return . applyCookies $ NoContent
+                 Just applyCookies -> logHelper "" >> return (applyCookies NoContent)
                  Nothing           -> throw401
              | otherwise -> throw401
     Nothing -> throw401
   where
-    throw401 = throwError err401 -- Unauthorized
+    throw401      = logHelper "unauthorized." >> throwError err401 -- Unauthorized
+    logHelper msg = liftIO $ readIORef ior >>= \ms -> logRestService ms "login" (Just un) Nothing msg

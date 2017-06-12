@@ -107,6 +107,7 @@ Corpses that are not sacrificed may be "claimed" by Murgorhd. These corpses tran
 Make a "newbie donation pit" (possibly in a temple).
 
 Consider running the MUD server on a minimal installation of Fedora.
+You can get a good server of most Linux flavors for $5.00 a month at "digitalocean.com".
 
 ==========
 
