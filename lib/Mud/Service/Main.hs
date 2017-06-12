@@ -1,4 +1,4 @@
-{-# LANGUAGE DataKinds, OverloadedStrings, TupleSections #-}
+{-# LANGUAGE DataKinds, OverloadedStrings #-}
 
 module Mud.Service.Main (startRestService) where
 
@@ -8,13 +8,14 @@ import           Mud.Service.Logging
 import           Mud.Service.Server
 import           Mud.Service.Types
 import           Mud.TopLvlDefs.Misc
+import           Mud.Util.Misc
 import           Mud.Util.Quoting
 import           Mud.Util.Text
 
 import           Control.Concurrent (forkIO)
 import           Control.Lens.Operators ((.~))
 import           Control.Monad (void, when)
-import           Data.IORef (IORef, atomicModifyIORef')
+import           Data.IORef (IORef, atomicModifyIORef)
 import           Data.Monoid ((<>))
 import qualified Data.Text.IO as T
 import           GHC.Stack (HasCallStack)
@@ -29,6 +30,8 @@ startRestService log ior = defaultJWTSettings <$> generateKey >>= \jwtCfg ->
     let cfg = defaultCookieSettings :. jwtCfg :. EmptyContext
         api = Proxy :: Proxy (API '[JWT])
     in do void . forkIO . run restServicePort . serveWithContext api cfg . server ior defaultCookieSettings $ jwtCfg
-          T.putStrLn . prd $ "REST API service started " <> parensQuote ("http://localhost:" <> showTxt restServicePort)
-          when (log == DoLog) $ initRestServiceLogging log >>= \logService ->
-              atomicModifyIORef' ior ((, ()) . (restServiceLogService .~ logService))
+          let msg = prd $ "REST API service started " <> parensQuote ("http://localhost:" <> showTxt restServicePort)
+          T.putStrLn msg
+          when (log == DoLog) $ do logService <- initRestServiceLogging log
+                                   ms         <- atomicModifyIORef ior (dup . (restServiceLogService .~ logService))
+                                   logRestServiceSimple ms "startRestService" msg

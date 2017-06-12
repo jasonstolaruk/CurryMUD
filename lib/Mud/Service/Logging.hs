@@ -1,17 +1,26 @@
 {-# LANGUAGE OverloadedStrings, TupleSections #-}
 
-module Mud.Service.Logging (initRestServiceLogging) where
+module Mud.Service.Logging ( initRestServiceLogging
+                           , logRestService
+                           , logRestServiceSimple ) where
 
-import Mud.Data.Misc
-import Mud.Data.State.MudData
-import Mud.Data.State.Util.Locks
-import Mud.Misc.Logging (spawnLogger)
-import Mud.TopLvlDefs.FilePaths
+import           Mud.Data.Misc
+import           Mud.Data.State.MudData
+import           Mud.Data.State.Util.Locks
+import           Mud.Misc.Logging (spawnLogger)
+import           Mud.TopLvlDefs.FilePaths
+import           Mud.Util.Misc
+import           Mud.Util.Quoting
+import           Mud.Util.Text
 
-import Control.Concurrent.STM.TQueue (newTQueueIO)
-import GHC.Stack (HasCallStack)
-import System.Log (Priority(..))
-import System.Log.Logger (noticeM)
+import           Control.Concurrent.STM (atomically)
+import           Control.Concurrent.STM.TQueue (newTQueueIO, writeTQueue)
+import           Control.Lens (views)
+import           Data.Text (Text)
+import qualified Data.Text as T
+import           GHC.Stack (HasCallStack)
+import           System.Log (Priority(..))
+import           System.Log.Logger (noticeM)
 
 
 initRestServiceLogging :: HasCallStack => DoOrDon'tLog -> IO (Maybe LogService)
@@ -20,3 +29,27 @@ initRestServiceLogging DoLog = ((,,) <$> mkLock
                                      <*> newTQueueIO) >>= \(lock, logFile, q) ->
     Just . (, q) <$> spawnLogger logFile NOTICE "currymud.service" noticeM q lock
 initRestServiceLogging Don'tLog = return Nothing
+
+
+logRestService :: HasCallStack => MudState -> Text -> Maybe Text -> Maybe Id -> Text -> IO ()
+logRestService ms funName un i msg = doIfLogging ms . registerMsg $ msg'
+  where
+    msg' = T.concat [ bracketQuote funName, " ", f un dblQuote, f i (parensQuote . showTxt), msg ]
+    f (Just x) g            = spcR . g $ x
+    f Nothing  _            = ""
+
+
+logRestServiceSimple :: HasCallStack => MudState -> Text -> Text -> IO ()
+logRestServiceSimple ms funName = logRestService ms funName Nothing Nothing
+
+
+doIfLogging :: HasCallStack => MudState -> (LogQueue -> IO ()) -> IO ()
+doIfLogging ms f = views restServiceLogService (maybeVoid (f . snd)) ms
+
+
+registerMsg :: HasCallStack => Text -> LogQueue -> IO ()
+registerMsg msg = flip writeLog (LogMsg msg)
+
+
+writeLog :: HasCallStack => LogQueue -> LogCmd -> IO ()
+writeLog lq = atomically . writeTQueue lq

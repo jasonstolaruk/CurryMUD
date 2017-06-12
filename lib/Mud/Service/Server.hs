@@ -5,8 +5,11 @@ module Mud.Service.Server where
 import           Mud.Data.State.MudData
 import           Mud.Data.State.Util.Get hiding (getPla)
 import           Mud.Misc.Database
+import           Mud.Service.Logging
 import           Mud.Service.Types
 import           Mud.Util.Misc
+import           Mud.Util.Quoting
+import           Mud.Util.Text
 
 import           Control.Lens (at, both, views)
 import           Control.Lens.Operators ((&), (%~))
@@ -15,7 +18,9 @@ import           Control.Monad.IO.Class (liftIO)
 import           Crypto.BCrypt (validatePassword)
 import           Data.IORef (IORef, readIORef)
 import qualified Data.IntMap.Strict as IM (IntMap, elems, mapWithKey)
-import qualified Data.Text.Encoding as T
+import           Data.Text (Text)
+import qualified Data.Text as T
+import qualified Data.Text.Encoding as T (encodeUtf8)
 import           GHC.Stack (HasCallStack)
 import           Servant (Handler, Header, Headers, NoContent(..), Server, (:<|>)(..), err401, err404, errBody)
 import           Servant.Auth.Server (AuthResult(..), CookieSettings, JWTSettings, SetCookie, acceptLogin, throwAll)
@@ -50,13 +55,28 @@ protected ior (Authenticated (Login un _)) =
     :<|> postBanPCRec
     :<|> deleteBanPCRec
   where
-    state :: HasCallStack => Handler MudState
-    state = liftIO . readIORef $ ior
+    -- ==========
+    -- Helper functions:
 
     doIfAdmin :: HasCallStack => Handler a -> Handler a
     doIfAdmin = flip (mIf (uncurry isAdminId . ((,) <$> getIdForPCSing un <*> id) <$> state)) (throwError err401) -- Unauthorized
 
-    -----
+    logExecuted :: HasCallStack => MudState -> Text -> Id -> Handler ()
+    logExecuted ms fn i = logHelper ms fn i ""
+
+    logHelper :: HasCallStack => MudState -> Text -> Id -> Text -> Handler ()
+    logHelper ms fn i = liftIO . logRestService ms fn (Just un) (Just i)
+
+    notFoundHelper :: HasCallStack => MudState -> Text -> Text -> Id -> Handler (Object a)
+    notFoundHelper ms funName tblName i =
+        let msg = T.concat [ "ID ", showTxt i, " not found in ", dblQuote tblName, "." ]
+        in logHelper ms funName i msg >> notFound
+
+    state :: HasCallStack => Handler MudState
+    state = liftIO . readIORef $ ior
+
+    -- ==========
+    -- Player endpoints:
 
 {-
 curl -H "Content-Type: application/json" \
@@ -64,10 +84,13 @@ curl -H "Content-Type: application/json" \
      localhost:7249/pla -v
 -}
     getPla :: HasCallStack => Handler (Object Pla)
-    getPla = state >>= \ms -> let i = getIdForPCSing un ms
-                              in views (plaTbl.at i) (maybe notFound (return . Object i)) ms
+    getPla = state >>= \ms -> let fn      = "getPla"
+                                  i       = getIdForPCSing un ms
+                                  found p = logExecuted ms fn i >> return (Object i p)
+                              in views (plaTbl.at i) (maybe (notFoundHelper ms fn "plaTbl" i) found) ms
 
     -- ==========
+    -- Admin endpoints:
 
 {-
 curl -H "Content-Type: application/json" \
@@ -75,7 +98,9 @@ curl -H "Content-Type: application/json" \
      localhost:7249/pla/all -v
 -}
     getPlaAll :: HasCallStack => Handler [Object Pla]
-    getPlaAll = doIfAdmin (views plaTbl mkObjects <$> state)
+    getPlaAll = state >>= \ms -> let fn = "getPlaAll"
+                                     i  = getIdForPCSing un ms
+                                 in doIfAdmin $ logExecuted ms fn i >> return (views plaTbl mkObjects ms)
 
     -----
 
@@ -85,7 +110,9 @@ curl -H "Content-Type: application/json" \
      localhost:7249/db/alertexec/all -v
 -}
     getAlertExecRecAll :: HasCallStack => Handler [AlertExecRec]
-    getAlertExecRecAll = doIfAdmin . liftIO . getDbTblRecs $ "alert_exec"
+    getAlertExecRecAll = state >>= \ms -> let fn = "getAlertExecRecAll"
+                                              i  = getIdForPCSing un ms
+                                          in doIfAdmin $ logExecuted ms fn i >> liftIO (getDbTblRecs "alert_exec")
 
 {-
 curl -X POST \
