@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings, TupleSections #-}
 
-module Mud.Service.Logging ( initRestServiceLogging
+module Mud.Service.Logging ( closeRestServiceLog
+                           , initRestServiceLogging
                            , logRestService
                            , logRestServiceSimple ) where
 
@@ -13,6 +14,7 @@ import           Mud.Util.Misc
 import           Mud.Util.Quoting
 import           Mud.Util.Text
 
+import           Control.Concurrent.Async (wait)
 import           Control.Concurrent.STM (atomically)
 import           Control.Concurrent.STM.TQueue (newTQueueIO, writeTQueue)
 import           Control.Lens (views)
@@ -23,12 +25,34 @@ import           System.Log (Priority(..))
 import           System.Log.Logger (noticeM)
 
 
+closeRestServiceLog :: MudState -> IO ()
+closeRestServiceLog ms = views restServiceLogService helper ms
+  where
+    helper (Just (la, lq)) = do logRestServiceSimple ms "closeRestServiceLog" "closing the log."
+                                writeLog lq StopLog
+                                wait la
+    helper Nothing         = return ()
+
+
+-----
+
+
+doIfLogging :: HasCallStack => MudState -> (LogQueue -> IO ()) -> IO ()
+doIfLogging ms f = views restServiceLogService (maybeVoid (f . snd)) ms
+
+
+-----
+
+
 initRestServiceLogging :: HasCallStack => DoOrDon'tLog -> IO (Maybe LogService)
 initRestServiceLogging DoLog = ((,,) <$> mkLock
                                      <*> mkMudFilePath restServiceLogFileFun
                                      <*> newTQueueIO) >>= \(lock, logFile, q) ->
     Just . (, q) <$> spawnLogger logFile NOTICE "currymud.service" noticeM q lock
 initRestServiceLogging Don'tLog = return Nothing
+
+
+-----
 
 
 logRestService :: HasCallStack => MudState -> Text -> Maybe Text -> Maybe Id -> Text -> IO ()
@@ -43,8 +67,7 @@ logRestServiceSimple :: HasCallStack => MudState -> Text -> Text -> IO ()
 logRestServiceSimple ms funName = logRestService ms funName Nothing Nothing
 
 
-doIfLogging :: HasCallStack => MudState -> (LogQueue -> IO ()) -> IO ()
-doIfLogging ms f = views restServiceLogService (maybeVoid (f . snd)) ms
+-----
 
 
 registerMsg :: HasCallStack => Text -> LogQueue -> IO ()

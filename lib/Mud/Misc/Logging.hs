@@ -165,7 +165,7 @@ doIfLogging i f = getState >>= \ms ->
     in views typeTbl (maybeVoid helper . (i `IM.lookup`)) ms
 
 
-closeLogs :: MudStack ()
+closeLogs :: MudStack () -- Close the rest service log first (this "closeLogs" function removes the log handlers).
 closeLogs = asks (errorLog `fanView` noticeLog) >>= \case
   (Just (ea, eq), Just (na, nq)) -> do logNotice "Mud.Logging" "closeLogs" "closing the logs."
                                        helper ([ ea, na ], [ eq, nq ])

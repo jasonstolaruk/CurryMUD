@@ -13,6 +13,7 @@ import           Mud.Data.State.Util.Output
 import           Mud.Misc.Database
 import qualified Mud.Misc.Logging as L (logExMsg, logIOEx, logNotice)
 import           Mud.Misc.Logging hiding (logExMsg, logIOEx, logNotice)
+import           Mud.Service.Logging
 import           Mud.Service.Main
 import           Mud.TheWorld.TheWorld
 import           Mud.Threads.Biodegrader
@@ -74,7 +75,7 @@ threadListen :: HasCallStack => MudStack ()
 threadListen = a `finally` b
   where
     a = logNotice "threadListen" "server started." >> listen
-    b = sequence_ [ getUptime >>= saveUptime, closeLogs, liftIO . T.putStrLn . nl $ "Goodbye!" ]
+    b = sequence_ [ getUptime >>= saveUptime, liftIO . closeRestServiceLog =<< getState, closeLogs, liftIO . T.putStrLn . nl $ "Goodbye!" ]
 
 
 saveUptime :: HasCallStack => Int64 -> MudStack ()
