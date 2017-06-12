@@ -69,7 +69,7 @@ protected ior (Authenticated (Login un _)) =
     doIfAdmin :: HasCallStack => Handler a -> Handler a
     doIfAdmin = flip (mIf (uncurry isAdminId . ((,) <$> getIdForPCSing un <*> id) <$> state)) (throwError err401) -- Unauthorized
 
-    getMudStateId :: Handler (MudState, Id)
+    getMudStateId :: HasCallStack => Handler (MudState, Id)
     getMudStateId = second (|&| getIdForPCSing un) . dup <$> state
 
     getPostHelper :: HasCallStack => Text -> (MudState -> Handler a) -> Handler a
@@ -264,7 +264,7 @@ handleLogin :: HasCallStack => CookieSettings
                             -> Login
                             -> Handler (Headers '[ Header "Set-Cookie" SetCookie
                                                  , Header "Set-Cookie" SetCookie ] NoContent)
-handleLogin cs jwts login@(Login un pw) = liftIO (lookupPW un) >>= \case
+handleLogin cs jwts login@(Login un pw) = liftIO (lookupPW un) >>= \case -- TODO: Logging.
     Just pw' | uncurry validatePassword ((pw', pw) & both %~ T.encodeUtf8) -> liftIO (acceptLogin cs jwts login) >>= \case
                  Just applyCookies -> return . applyCookies $ NoContent
                  Nothing           -> throw401
