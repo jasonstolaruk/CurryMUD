@@ -143,7 +143,7 @@ data    DiscoverRec    = DiscoverRec    { dbTimestamp   :: Text
 data    ProfRec        = ProfRec        { dbTimestamp   :: Text
                                         , dbHost        :: Text
                                         , dbProfanity   :: Text } deriving Generic
-newtype PropNameRec    = PropNameRec    { dbWord        :: Text }
+newtype PropNameRec    = PropNameRec    { dbWord        :: Text } deriving Generic
 data    QuestionRec    = QuestionRec    { dbTimestamp   :: Text
                                         , dbName        :: Text
                                         , dbMsg         :: Text }
@@ -367,6 +367,7 @@ instance FromJSON BanPCRec
 instance FromJSON BugRec
 instance FromJSON DiscoverRec
 instance FromJSON ProfRec
+instance FromJSON PropNameRec
 instance ToJSON   AlertExecRec
 instance ToJSON   AlertMsgRec
 instance ToJSON   BanHostRec
@@ -374,6 +375,7 @@ instance ToJSON   BanPCRec
 instance ToJSON   BugRec
 instance ToJSON   DiscoverRec
 instance ToJSON   ProfRec
+instance ToJSON   PropNameRec
 
 
 -----

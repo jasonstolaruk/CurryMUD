@@ -52,6 +52,9 @@ type Protected =
   -----
   :<|> "db" :> "prof"      :> "all"                        :> Get             '[JSON] [ProfRec]
   :<|> "db" :> "prof"      :> "all"                        :> DeleteNoContent '[JSON] NoContent
+  -----
+  :<|> "db" :> "propname"  :> "all"                        :> Get             '[JSON] [PropNameRec]
+  :<|> "db" :> "propname"  :> "all"                        :> DeleteNoContent '[JSON] NoContent
 
 
 data Object a = Object { objectId :: Id

@@ -73,30 +73,33 @@ protected :: HasCallStack => IORef MudState -> AuthResult Login -> Server Protec
 protected ior (Authenticated (Login un _)) =
          getPla
     -- ==========
-    :<|> getPlaAll
+    :<|> getAllPla
     -----
-    :<|> getAlertExecRecAll
+    :<|> getAllAlertExecRec
     :<|> deleteAlertExecRec
     -----
-    :<|> getAlertMsgRecAll
+    :<|> getAllAlertMsgRec
     :<|> deleteAlertMsgRec
     -----
-    :<|> getBanHostRecAll
+    :<|> getAllBanHostRec
     :<|> postBanHostRec
     :<|> deleteBanHostRec
     -----
-    :<|> getBanPCRecAll
+    :<|> getAllBanPCRec
     :<|> postBanPCRec
     :<|> deleteBanPCRec
     -----
-    :<|> getBugRecAll
+    :<|> getAllBugRec
     :<|> deleteBugRec
     -----
-    :<|> getDiscoverRecAll
-    :<|> deleteAllDiscoverRecs
+    :<|> getAllDiscoverRec
+    :<|> deleteAllDiscoverRec
     -----
-    :<|> getProfRecAll
-    :<|> deleteAllProfRecs
+    :<|> getAllProfRec
+    :<|> deleteAllProfRec
+    -----
+    :<|> getAllPropNameRec
+    :<|> deleteAllPropNameRec
   where
     -- ==========
     -- Helper functions:
@@ -153,8 +156,8 @@ curl -H "Content-Type: application/json" \
      -H "Authorization: Bearer tokenHere" \
      localhost:7249/pla/all -v
 -}
-    getPlaAll :: HasCallStack => Handler [Object Pla]
-    getPlaAll = genericHelper "getPlaAll" $ return . views plaTbl mkObjects
+    getAllPla :: HasCallStack => Handler [Object Pla]
+    getAllPla = genericHelper "getAllPla" $ return . views plaTbl mkObjects
 
     -----
 
@@ -163,8 +166,8 @@ curl -H "Content-Type: application/json" \
      -H "Authorization: Bearer tokenHere" \
      localhost:7249/db/alertexec/all -v
 -}
-    getAlertExecRecAll :: HasCallStack => Handler [AlertExecRec]
-    getAlertExecRecAll = genericHelper "getAlertExecRecAll" . const . liftIO . getDbTblRecs $ "alert_exec"
+    getAllAlertExecRec :: HasCallStack => Handler [AlertExecRec]
+    getAllAlertExecRec = genericHelper "getAllAlertExecRec" . const . liftIO . getDbTblRecs $ "alert_exec"
 
 {-
 curl -X DELETE \
@@ -182,8 +185,8 @@ curl -H "Content-Type: application/json" \
      -H "Authorization: Bearer tokenHere" \
      localhost:7249/db/alertmsg/all -v
 -}
-    getAlertMsgRecAll :: HasCallStack => Handler [AlertMsgRec]
-    getAlertMsgRecAll = genericHelper "getAlertMsgRecAll" . const . liftIO . getDbTblRecs $ "alert_msg"
+    getAllAlertMsgRec :: HasCallStack => Handler [AlertMsgRec]
+    getAllAlertMsgRec = genericHelper "getAllAlertMsgRec" . const . liftIO . getDbTblRecs $ "alert_msg"
 
 {-
 curl -X DELETE \
@@ -201,8 +204,8 @@ curl -H "Content-Type: application/json" \
      -H "Authorization: Bearer tokenHere" \
      localhost:7249/db/banhost/all -v
 -}
-    getBanHostRecAll :: HasCallStack => Handler [BanHostRec]
-    getBanHostRecAll = genericHelper "getBanHostRecAll" . const . liftIO . getDbTblRecs $ "ban_host"
+    getAllBanHostRec :: HasCallStack => Handler [BanHostRec]
+    getAllBanHostRec = genericHelper "getAllBanHostRec" . const . liftIO . getDbTblRecs $ "ban_host"
 
 {-
 curl -X POST \
@@ -230,8 +233,8 @@ curl -H "Content-Type: application/json" \
      -H "Authorization: Bearer tokenHere" \
      localhost:7249/db/banpc/all -v
 -}
-    getBanPCRecAll :: HasCallStack => Handler [BanPCRec]
-    getBanPCRecAll = genericHelper "getBanPCRecAll" . const . liftIO . getDbTblRecs $ "ban_pc"
+    getAllBanPCRec :: HasCallStack => Handler [BanPCRec]
+    getAllBanPCRec = genericHelper "getAllBanPCRec" . const . liftIO . getDbTblRecs $ "ban_pc"
 
 {-
 curl -X POST \
@@ -259,8 +262,8 @@ curl -H "Content-Type: application/json" \
      -H "Authorization: Bearer tokenHere" \
      localhost:7249/db/bug/all -v
 -}
-    getBugRecAll :: HasCallStack => Handler [BugRec]
-    getBugRecAll = genericHelper "getBugRecAll" . const . liftIO . getDbTblRecs $ "bug"
+    getAllBugRec :: HasCallStack => Handler [BugRec]
+    getAllBugRec = genericHelper "getAllBugRec" . const . liftIO . getDbTblRecs $ "bug"
 
 {-
 curl -X DELETE \
@@ -278,8 +281,8 @@ curl -H "Content-Type: application/json" \
      -H "Authorization: Bearer tokenHere" \
      localhost:7249/db/discover/all -v
 -}
-    getDiscoverRecAll :: HasCallStack => Handler [DiscoverRec]
-    getDiscoverRecAll = genericHelper "getDiscoverRecAll" . const . liftIO . getDbTblRecs $ "discover"
+    getAllDiscoverRec :: HasCallStack => Handler [DiscoverRec]
+    getAllDiscoverRec = genericHelper "getAllDiscoverRec" . const . liftIO . getDbTblRecs $ "discover"
 
 {-
 curl -X DELETE \
@@ -287,8 +290,8 @@ curl -X DELETE \
      -H "Authorization: Bearer tokenHere" \
      localhost:7249/db/discover/all -v
 -}
-    deleteAllDiscoverRecs :: HasCallStack => Handler NoContent
-    deleteAllDiscoverRecs = deleteAllHelper "deleteAllDiscoverRecs" "discover"
+    deleteAllDiscoverRec :: HasCallStack => Handler NoContent
+    deleteAllDiscoverRec = deleteAllHelper "deleteAllDiscoverRec" "discover"
 
     -----
 
@@ -297,8 +300,8 @@ curl -H "Content-Type: application/json" \
      -H "Authorization: Bearer tokenHere" \
      localhost:7249/db/prof/all -v
 -}
-    getProfRecAll :: HasCallStack => Handler [ProfRec]
-    getProfRecAll = genericHelper "getProfRecAll" . const . liftIO . getDbTblRecs $ "prof"
+    getAllProfRec :: HasCallStack => Handler [ProfRec]
+    getAllProfRec = genericHelper "getAllProfRec" . const . liftIO . getDbTblRecs $ "prof"
 
 {-
 curl -X DELETE \
@@ -306,8 +309,27 @@ curl -X DELETE \
      -H "Authorization: Bearer tokenHere" \
      localhost:7249/db/prof/all -v
 -}
-    deleteAllProfRecs :: HasCallStack => Handler NoContent
-    deleteAllProfRecs = deleteAllHelper "deleteAllProfRecs" "prof"
+    deleteAllProfRec :: HasCallStack => Handler NoContent
+    deleteAllProfRec = deleteAllHelper "deleteAllProfRec" "prof"
+
+    -----
+
+{-
+curl -H "Content-Type: application/json" \
+     -H "Authorization: Bearer tokenHere" \
+     localhost:7249/db/propname/all -v
+-}
+    getAllPropNameRec :: HasCallStack => Handler [PropNameRec]
+    getAllPropNameRec = genericHelper "getAllPropNameRec" . const . liftIO . getDbTblRecs $ "prop_names"
+
+{-
+curl -X DELETE \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer tokenHere" \
+     localhost:7249/db/propname/all -v
+-}
+    deleteAllPropNameRec :: HasCallStack => Handler NoContent
+    deleteAllPropNameRec = deleteAllHelper "deleteAllPropNameRec" "prop_names"
 protected _ _ = throwAll err401 -- Unauthorized
 
 
