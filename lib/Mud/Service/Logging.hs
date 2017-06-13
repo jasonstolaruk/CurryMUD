@@ -31,7 +31,7 @@ closeRestServiceLog ms = views restServiceLogService helper ms
     helper (Just (la, lq)) = do logRestServiceSimple ms "closeRestServiceLog" "closing the log."
                                 writeLog lq StopLog
                                 wait la
-    helper Nothing         = return ()
+    helper Nothing         = unit
 
 
 -----
@@ -58,7 +58,7 @@ initRestServiceLogging Don'tLog = return Nothing
 logRestService :: HasCallStack => MudState -> Text -> Maybe Text -> Maybe Id -> Text -> IO ()
 logRestService ms funName un i msg = doIfLogging ms . registerMsg $ msg'
   where
-    msg' = T.concat [ bracketQuote funName, " ", f un dblQuote, f i (parensQuote . showTxt), msg ]
+    msg'         = T.concat [ bracketQuote funName, " ", f un dblQuote, f i (parensQuote . showTxt), msg ]
     f (Just x) g = spcR . g $ x
     f Nothing  _ = ""
 
