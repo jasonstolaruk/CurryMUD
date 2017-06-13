@@ -1,6 +1,6 @@
 RUMIA: A Modern History
 from The Cyclopedia Rumia
-by _, a human professor of _ at the University of Kilagore
+by _, a human professor of history at the University of Kilagore
 written in the year _
 
 MAP
@@ -43,7 +43,7 @@ The Decade of Quakes. Devastating earthquakes occur throughout Dolgu, Shunfalip-
 
 SHUNFALIP-MI
 from The Cyclopedia Rumia
-by _, a human professor of _ at the University of Kilagore
+by _, a human professor of history at the University of Kilagore
 written in the year _
 
 Geography:
@@ -95,6 +95,6 @@ Economy:
 
 LOPO LWAN-MI
 from The Cyclopedia Rumia
-by _, a human professor of _ at the University of Kilagore
+by _, a human professor of history at the University of Kilagore
 written in the year _
 TODO: This book should include a URL to the map of Lopo Lwan-mi.
