@@ -45,6 +45,10 @@ type Protected =
   :<|> "db" :> "banpc"     :> "all"                        :> Get             '[JSON] [BanPCRec]
   :<|> "db" :> "banpc"     :> ReqBody '[JSON] BanPCRec     :> PostNoContent   '[JSON] NoContent
   :<|> "db" :> "banpc"     :> Capture "id" CaptureInt      :> DeleteNoContent '[JSON] NoContent
+  -----
+  :<|> "db" :> "bug"        :> "all"                        :> Get             '[JSON] [BugRec]
+  :<|> "db" :> "bug"        :> ReqBody '[JSON] BugRec       :> PostNoContent   '[JSON] NoContent
+  :<|> "db" :> "bug"        :> Capture "id" CaptureInt      :> DeleteNoContent '[JSON] NoContent
 
 
 data Object a = Object { objectId :: Id

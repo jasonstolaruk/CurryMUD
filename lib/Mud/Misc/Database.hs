@@ -130,7 +130,7 @@ data    BonusRec       = BonusRec       { dbTimestamp   :: Text
 data    BugRec         = BugRec         { dbTimestamp   :: Text
                                         , dbName        :: Text
                                         , dbLoc         :: Text
-                                        , dbDesc        :: Text }
+                                        , dbDesc        :: Text } deriving Generic
 data    ChanRec        = ChanRec        { dbTimestamp   :: Text
                                         , dbChanId      :: Int
                                         , dbChanName    :: Text
@@ -363,10 +363,12 @@ instance FromJSON AlertExecRec
 instance FromJSON AlertMsgRec
 instance FromJSON BanHostRec
 instance FromJSON BanPCRec
+instance FromJSON BugRec
 instance ToJSON   AlertExecRec
 instance ToJSON   AlertMsgRec
 instance ToJSON   BanHostRec
 instance ToJSON   BanPCRec
+instance ToJSON   BugRec
 
 
 -----

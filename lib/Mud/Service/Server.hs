@@ -86,6 +86,10 @@ protected ior (Authenticated (Login un _)) =
     :<|> getBanPCRecAll
     :<|> postBanPCRec
     :<|> deleteBanPCRec
+    -----
+    :<|> getBugRecAll
+    :<|> postBugRec
+    :<|> deleteBugRec
   where
     -- ==========
     -- Helper functions:
@@ -257,6 +261,35 @@ curl -X DELETE \
 -}
     deleteBanPCRec :: HasCallStack => CaptureInt -> Handler NoContent
     deleteBanPCRec ci = deleteHelper ci "deleteBanPCRec" "ban_pc"
+
+    -----
+
+{-
+curl -H "Content-Type: application/json" \
+     -H "Authorization: Bearer tokenHere" \
+     localhost:7249/db/bug/all -v
+-}
+    getBugRecAll :: HasCallStack => Handler [BugRec]
+    getBugRecAll = getPostHelper "getBugRecAll" . const . liftIO . getDbTblRecs $ "bug"
+
+{-
+curl -X POST \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer tokenHere" \
+     -d '{}' \ -- TODO
+     localhost:7249/db/bug -v
+-}
+    postBugRec :: HasCallStack => BugRec -> Handler NoContent
+    postBugRec = getPostHelper "postBugRec" . const . insertRec insertDbTblBug
+
+{-
+curl -X DELETE \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer tokenHere" \
+     localhost:7249/db/bug/1 -v
+-}
+    deleteBugRec :: HasCallStack => CaptureInt -> Handler NoContent
+    deleteBugRec ci = deleteHelper ci "deleteBugRec" "bug"
 protected _ _ = throwAll err401 -- Unauthorized
 
 
