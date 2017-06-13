@@ -141,7 +141,7 @@ initPickPts :: Int
 initPickPts = 200
 
 
-isDebug :: Bool -- TODO: Consider moving this and similar values into a config file.
+isDebug :: Bool -- TODO: Consider moving this and similar values into server settings yaml file.
 isDebug = True
 
 
