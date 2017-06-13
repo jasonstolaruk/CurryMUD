@@ -25,7 +25,7 @@ import           Servant (Context(..), Proxy(..), serveWithContext)
 import           Servant.Auth.Server (JWT, defaultCookieSettings, defaultJWTSettings, generateKey)
 
 
-startRestService :: HasCallStack => DoOrDon'tLog -> IORef MudState -> IO () -- TODO: Exception handling.
+startRestService :: HasCallStack => DoOrDon'tLog -> IORef MudState -> IO ()
 startRestService log ior = defaultJWTSettings <$> generateKey >>= \jwtCfg ->
     let cfg = defaultCookieSettings :. jwtCfg :. EmptyContext
         api = Proxy :: Proxy (API '[JWT])
