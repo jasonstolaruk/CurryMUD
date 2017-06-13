@@ -25,6 +25,7 @@ import           Servant (Context(..), Proxy(..), serveWithContext)
 import           Servant.Auth.Server (JWT, defaultCookieSettings, defaultJWTSettings, generateKey)
 
 
+-- TODO: The key for signing tokens should be persisted and kept safely.
 startRestService :: HasCallStack => DoOrDon'tLog -> IORef MudState -> IO ()
 startRestService log ior = defaultJWTSettings <$> generateKey >>= \jwtCfg ->
     let cfg = defaultCookieSettings :. jwtCfg :. EmptyContext

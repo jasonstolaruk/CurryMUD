@@ -15,6 +15,15 @@ import Servant.Auth.Server (Auth, FromJWT, SetCookie, ToJWT)
 type API auths = (Auth auths Login :> Protected) :<|> Unprotected
 
 
+-----
+
+
+newtype CaptureInt = CaptureInt { fromCaptureInt :: Int } deriving (FromHttpApiData, ToHttpApiData)
+
+
+-----
+
+
 data Login = Login { username :: Text
                    , password :: Text } deriving Generic
 
@@ -23,6 +32,20 @@ instance FromJSON Login
 instance ToJSON   Login
 instance FromJWT  Login
 instance ToJWT    Login
+
+
+-----
+
+
+data Object a = Object { objectId :: Id
+                       , object   :: a } deriving Generic
+
+
+instance (ToJSON   a) => ToJSON   (Object a)
+instance (FromJSON a) => FromJSON (Object a)
+
+
+-- ==========
 
 
 type Protected =
@@ -67,17 +90,6 @@ type Protected =
   -----
   :<|> "db" :> "word"        :> "all"                      :> Get             '[JSON] [WordRec]
   :<|> "db" :> "word"        :> "all"                      :> DeleteNoContent '[JSON] NoContent
-
-
-data Object a = Object { objectId :: Id
-                       , object   :: a } deriving Generic
-
-
-instance (ToJSON   a) => ToJSON   (Object a)
-instance (FromJSON a) => FromJSON (Object a)
-
-
-newtype CaptureInt = CaptureInt { fromCaptureInt :: Int } deriving (FromHttpApiData, ToHttpApiData)
 
 
 type Unprotected =

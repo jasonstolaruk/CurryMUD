@@ -59,12 +59,12 @@ logRestService :: HasCallStack => MudState -> Text -> Maybe Text -> Maybe Id -> 
 logRestService ms funName un i msg = doIfLogging ms . registerMsg $ msg'
   where
     msg' = T.concat [ bracketQuote funName, " ", f un dblQuote, f i (parensQuote . showTxt), msg ]
-    f (Just x) g            = spcR . g $ x
-    f Nothing  _            = ""
+    f (Just x) g = spcR . g $ x
+    f Nothing  _ = ""
 
 
 logRestServiceSimple :: HasCallStack => MudState -> Text -> Text -> IO ()
-logRestServiceSimple ms funName = logRestService ms funName Nothing Nothing
+logRestServiceSimple ms fn = logRestService ms fn Nothing Nothing
 
 
 -----
