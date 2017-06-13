@@ -37,6 +37,10 @@ deleteRec :: HasCallStack => DbTblName -> Int -> Handler NoContent
 deleteRec tblName = noContentOp . deleteDbTblRec tblName
 
 
+deleteRecs :: HasCallStack => DbTblName -> Handler NoContent
+deleteRecs = noContentOp . deleteDbTblRecs
+
+
 insertRec :: HasCallStack => (a -> IO ()) -> a -> Handler NoContent
 insertRec = (noContentOp .)
 
@@ -89,13 +93,16 @@ protected ior (Authenticated (Login un _)) =
     :<|> deleteBugRec
     -----
     :<|> getDiscoverRecAll
-    :<|> deleteDiscoverRec -- TODO: Delete all the records in the table.
+    :<|> deleteAllDiscoverRecs
     -----
     :<|> getProfRecAll
-    :<|> deleteProfRec -- TODO: Delete all the records in the table.
+    :<|> deleteAllProfRecs
   where
     -- ==========
     -- Helper functions:
+
+    deleteAllHelper :: HasCallStack => Text -> Text -> Handler NoContent
+    deleteAllHelper funName = genericHelper funName . const . deleteRecs
 
     deleteHelper :: HasCallStack => CaptureInt -> Text -> Text -> Handler NoContent
     deleteHelper (CaptureInt i') funName tblName = doIfAdmin $ getMudStateId >>= \(ms, i) -> do
@@ -105,11 +112,11 @@ protected ior (Authenticated (Login un _)) =
     doIfAdmin :: HasCallStack => Handler a -> Handler a
     doIfAdmin = flip (mIf (uncurry isAdminId . ((,) <$> getIdForPCSing un <*> id) <$> state)) (throwError err401) -- Unauthorized
 
+    genericHelper :: HasCallStack => Text -> (MudState -> Handler a) -> Handler a
+    genericHelper fn f = doIfAdmin $ getMudStateId >>= \(ms, i) -> logExecuted ms fn i >> f ms
+
     getMudStateId :: HasCallStack => Handler (MudState, Id)
     getMudStateId = second (|&| getIdForPCSing un) . dup <$> state
-
-    getPostHelper :: HasCallStack => Text -> (MudState -> Handler a) -> Handler a
-    getPostHelper fn f = doIfAdmin $ getMudStateId >>= \(ms, i) -> logExecuted ms fn i >> f ms
 
     logExecuted :: HasCallStack => MudState -> Text -> Id -> Handler ()
     logExecuted ms fn i = logHelper ms fn i ""
@@ -147,7 +154,7 @@ curl -H "Content-Type: application/json" \
      localhost:7249/pla/all -v
 -}
     getPlaAll :: HasCallStack => Handler [Object Pla]
-    getPlaAll = getPostHelper "getPlaAll" $ return . views plaTbl mkObjects
+    getPlaAll = genericHelper "getPlaAll" $ return . views plaTbl mkObjects
 
     -----
 
@@ -157,7 +164,7 @@ curl -H "Content-Type: application/json" \
      localhost:7249/db/alertexec/all -v
 -}
     getAlertExecRecAll :: HasCallStack => Handler [AlertExecRec]
-    getAlertExecRecAll = getPostHelper "getAlertExecRecAll" . const . liftIO . getDbTblRecs $ "alert_exec"
+    getAlertExecRecAll = genericHelper "getAlertExecRecAll" . const . liftIO . getDbTblRecs $ "alert_exec"
 
 {-
 curl -X DELETE \
@@ -176,7 +183,7 @@ curl -H "Content-Type: application/json" \
      localhost:7249/db/alertmsg/all -v
 -}
     getAlertMsgRecAll :: HasCallStack => Handler [AlertMsgRec]
-    getAlertMsgRecAll = getPostHelper "getAlertMsgRecAll" . const . liftIO . getDbTblRecs $ "alert_msg"
+    getAlertMsgRecAll = genericHelper "getAlertMsgRecAll" . const . liftIO . getDbTblRecs $ "alert_msg"
 
 {-
 curl -X DELETE \
@@ -195,7 +202,7 @@ curl -H "Content-Type: application/json" \
      localhost:7249/db/banhost/all -v
 -}
     getBanHostRecAll :: HasCallStack => Handler [BanHostRec]
-    getBanHostRecAll = getPostHelper "getBanHostRecAll" . const . liftIO . getDbTblRecs $ "ban_host"
+    getBanHostRecAll = genericHelper "getBanHostRecAll" . const . liftIO . getDbTblRecs $ "ban_host"
 
 {-
 curl -X POST \
@@ -205,7 +212,7 @@ curl -X POST \
      localhost:7249/db/banhost -v
 -}
     postBanHostRec :: HasCallStack => BanHostRec -> Handler NoContent
-    postBanHostRec = getPostHelper "postBanHostRec" . const . insertRec insertDbTblBanHost
+    postBanHostRec = genericHelper "postBanHostRec" . const . insertRec insertDbTblBanHost
 
 {-
 curl -X DELETE \
@@ -224,7 +231,7 @@ curl -H "Content-Type: application/json" \
      localhost:7249/db/banpc/all -v
 -}
     getBanPCRecAll :: HasCallStack => Handler [BanPCRec]
-    getBanPCRecAll = getPostHelper "getBanPCRecAll" . const . liftIO . getDbTblRecs $ "ban_pc"
+    getBanPCRecAll = genericHelper "getBanPCRecAll" . const . liftIO . getDbTblRecs $ "ban_pc"
 
 {-
 curl -X POST \
@@ -234,7 +241,7 @@ curl -X POST \
      localhost:7249/db/banpc -v
 -}
     postBanPCRec :: HasCallStack => BanPCRec -> Handler NoContent
-    postBanPCRec = getPostHelper "postBanPCRec" . const . insertRec insertDbTblBanPC
+    postBanPCRec = genericHelper "postBanPCRec" . const . insertRec insertDbTblBanPC
 
 {-
 curl -X DELETE \
@@ -253,7 +260,7 @@ curl -H "Content-Type: application/json" \
      localhost:7249/db/bug/all -v
 -}
     getBugRecAll :: HasCallStack => Handler [BugRec]
-    getBugRecAll = getPostHelper "getBugRecAll" . const . liftIO . getDbTblRecs $ "bug"
+    getBugRecAll = genericHelper "getBugRecAll" . const . liftIO . getDbTblRecs $ "bug"
 
 {-
 curl -X DELETE \
@@ -272,16 +279,16 @@ curl -H "Content-Type: application/json" \
      localhost:7249/db/discover/all -v
 -}
     getDiscoverRecAll :: HasCallStack => Handler [DiscoverRec]
-    getDiscoverRecAll = getPostHelper "getDiscoverRecAll" . const . liftIO . getDbTblRecs $ "discover"
+    getDiscoverRecAll = genericHelper "getDiscoverRecAll" . const . liftIO . getDbTblRecs $ "discover"
 
 {-
 curl -X DELETE \
      -H "Content-Type: application/json" \
      -H "Authorization: Bearer tokenHere" \
-     localhost:7249/db/discover/1 -v
+     localhost:7249/db/discover/all -v
 -}
-    deleteDiscoverRec :: HasCallStack => CaptureInt -> Handler NoContent
-    deleteDiscoverRec ci = deleteHelper ci "deleteDiscoverRec" "discover"
+    deleteAllDiscoverRecs :: HasCallStack => Handler NoContent
+    deleteAllDiscoverRecs = deleteAllHelper "deleteAllDiscoverRecs" "discover"
 
     -----
 
@@ -291,16 +298,16 @@ curl -H "Content-Type: application/json" \
      localhost:7249/db/prof/all -v
 -}
     getProfRecAll :: HasCallStack => Handler [ProfRec]
-    getProfRecAll = getPostHelper "getProfRecAll" . const . liftIO . getDbTblRecs $ "prof"
+    getProfRecAll = genericHelper "getProfRecAll" . const . liftIO . getDbTblRecs $ "prof"
 
 {-
 curl -X DELETE \
      -H "Content-Type: application/json" \
      -H "Authorization: Bearer tokenHere" \
-     localhost:7249/db/prof/1 -v
+     localhost:7249/db/prof/all -v
 -}
-    deleteProfRec :: HasCallStack => CaptureInt -> Handler NoContent
-    deleteProfRec ci = deleteHelper ci "deleteProfRec" "prof"
+    deleteAllProfRecs :: HasCallStack => Handler NoContent
+    deleteAllProfRecs = deleteAllHelper "deleteAllProfRecs" "prof"
 protected _ _ = throwAll err401 -- Unauthorized
 
 

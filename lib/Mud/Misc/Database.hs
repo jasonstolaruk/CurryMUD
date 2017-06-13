@@ -33,6 +33,7 @@ module Mud.Misc.Database ( AdminChanRec(..)
                          , createDbTbls
                          , dbOperation
                          , deleteDbTblRec
+                         , deleteDbTblRecs
                          , getDbTblRecs
                          , insertDbTblAdminChan
                          , insertDbTblAdminMsg
@@ -446,6 +447,10 @@ getDbTblRecs tblName = onDbFile (\conn -> query_ conn . Query $ "select * from "
 
 deleteDbTblRec :: DbTblName -> Int -> IO ()
 deleteDbTblRec tblName i = onDbFile $ \conn -> execute conn (Query $ "delete from " <> tblName <> " where id=?") . Only $ i
+
+
+deleteDbTblRecs :: DbTblName -> IO ()
+deleteDbTblRecs tblName = onDbFile (\conn -> execute_ conn . Query $ "delete from " <> tblName)
 
 
 -----

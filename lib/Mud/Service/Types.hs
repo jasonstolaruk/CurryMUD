@@ -48,10 +48,10 @@ type Protected =
   :<|> "db" :> "bug"       :> Capture "id" CaptureInt      :> DeleteNoContent '[JSON] NoContent
   -----
   :<|> "db" :> "discover"  :> "all"                        :> Get             '[JSON] [DiscoverRec]
-  :<|> "db" :> "discover"  :> Capture "id" CaptureInt      :> DeleteNoContent '[JSON] NoContent
+  :<|> "db" :> "discover"  :> "all"                        :> DeleteNoContent '[JSON] NoContent
   -----
   :<|> "db" :> "prof"      :> "all"                        :> Get             '[JSON] [ProfRec]
-  :<|> "db" :> "prof"      :> Capture "id" CaptureInt      :> DeleteNoContent '[JSON] NoContent
+  :<|> "db" :> "prof"      :> "all"                        :> DeleteNoContent '[JSON] NoContent
 
 
 data Object a = Object { objectId :: Id
