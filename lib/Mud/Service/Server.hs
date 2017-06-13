@@ -72,11 +72,9 @@ protected ior (Authenticated (Login un _)) =
     :<|> getPlaAll
     -----
     :<|> getAlertExecRecAll
-    :<|> postAlertExecRec
     :<|> deleteAlertExecRec
     -----
     :<|> getAlertMsgRecAll
-    :<|> postAlertMsgRec
     :<|> deleteAlertMsgRec
     -----
     :<|> getBanHostRecAll
@@ -88,8 +86,13 @@ protected ior (Authenticated (Login un _)) =
     :<|> deleteBanPCRec
     -----
     :<|> getBugRecAll
-    :<|> postBugRec
     :<|> deleteBugRec
+    -----
+    :<|> getDiscoverRecAll
+    :<|> deleteDiscoverRec -- TODO: Delete all the records in the table.
+    -----
+    :<|> getProfRecAll
+    :<|> deleteProfRec -- TODO: Delete all the records in the table.
   where
     -- ==========
     -- Helper functions:
@@ -157,16 +160,6 @@ curl -H "Content-Type: application/json" \
     getAlertExecRecAll = getPostHelper "getAlertExecRecAll" . const . liftIO . getDbTblRecs $ "alert_exec"
 
 {-
-curl -X POST \
-     -H "Content-Type: application/json" \
-     -H "Authorization: Bearer tokenHere" \
-     -d '{"dbTimestamp":"[2017-06-09 16:00:52]","dbCmdName":"rape","dbArgs":"mh","dbTarget":"Curry","dbName":"Zappy"}' \
-     localhost:7249/db/alertexec -v
--}
-    postAlertExecRec :: HasCallStack => AlertExecRec -> Handler NoContent
-    postAlertExecRec = getPostHelper "postAlertExecRec" . const . insertRec insertDbTblAlertExec
-
-{-
 curl -X DELETE \
      -H "Content-Type: application/json" \
      -H "Authorization: Bearer tokenHere" \
@@ -184,16 +177,6 @@ curl -H "Content-Type: application/json" \
 -}
     getAlertMsgRecAll :: HasCallStack => Handler [AlertMsgRec]
     getAlertMsgRecAll = getPostHelper "getAlertMsgRecAll" . const . liftIO . getDbTblRecs $ "alert_msg"
-
-{-
-curl -X POST \
-     -H "Content-Type: application/json" \
-     -H "Authorization: Bearer tokenHere" \
-     -d '{"dbMsg":"You say, \"Rape.\"","dbTimestamp":"[2017-06-09 16:07:54]","dbCmdName":"say","dbTrigger":"rape","dbName":"Zappy"}' \
-     localhost:7249/db/alertmsg -v
--}
-    postAlertMsgRec :: HasCallStack => AlertMsgRec -> Handler NoContent
-    postAlertMsgRec = getPostHelper "postAlertMsgRec" . const . insertRec insertDbTblAlertMsg
 
 {-
 curl -X DELETE \
@@ -273,16 +256,6 @@ curl -H "Content-Type: application/json" \
     getBugRecAll = getPostHelper "getBugRecAll" . const . liftIO . getDbTblRecs $ "bug"
 
 {-
-curl -X POST \
-     -H "Content-Type: application/json" \
-     -H "Authorization: Bearer tokenHere" \
-     -d '{}' \ -- TODO
-     localhost:7249/db/bug -v
--}
-    postBugRec :: HasCallStack => BugRec -> Handler NoContent
-    postBugRec = getPostHelper "postBugRec" . const . insertRec insertDbTblBug
-
-{-
 curl -X DELETE \
      -H "Content-Type: application/json" \
      -H "Authorization: Bearer tokenHere" \
@@ -290,6 +263,44 @@ curl -X DELETE \
 -}
     deleteBugRec :: HasCallStack => CaptureInt -> Handler NoContent
     deleteBugRec ci = deleteHelper ci "deleteBugRec" "bug"
+
+    -----
+
+{-
+curl -H "Content-Type: application/json" \
+     -H "Authorization: Bearer tokenHere" \
+     localhost:7249/db/discover/all -v
+-}
+    getDiscoverRecAll :: HasCallStack => Handler [DiscoverRec]
+    getDiscoverRecAll = getPostHelper "getDiscoverRecAll" . const . liftIO . getDbTblRecs $ "discover"
+
+{-
+curl -X DELETE \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer tokenHere" \
+     localhost:7249/db/discover/1 -v
+-}
+    deleteDiscoverRec :: HasCallStack => CaptureInt -> Handler NoContent
+    deleteDiscoverRec ci = deleteHelper ci "deleteDiscoverRec" "discover"
+
+    -----
+
+{-
+curl -H "Content-Type: application/json" \
+     -H "Authorization: Bearer tokenHere" \
+     localhost:7249/db/prof/all -v
+-}
+    getProfRecAll :: HasCallStack => Handler [ProfRec]
+    getProfRecAll = getPostHelper "getProfRecAll" . const . liftIO . getDbTblRecs $ "prof"
+
+{-
+curl -X DELETE \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer tokenHere" \
+     localhost:7249/db/prof/1 -v
+-}
+    deleteProfRec :: HasCallStack => CaptureInt -> Handler NoContent
+    deleteProfRec ci = deleteHelper ci "deleteProfRec" "prof"
 protected _ _ = throwAll err401 -- Unauthorized
 
 

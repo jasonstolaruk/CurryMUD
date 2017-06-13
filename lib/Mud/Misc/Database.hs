@@ -138,10 +138,10 @@ data    ChanRec        = ChanRec        { dbTimestamp   :: Text
                                         , dbMsg         :: Text }
 data    DiscoverRec    = DiscoverRec    { dbTimestamp   :: Text
                                         , dbHost        :: Text
-                                        , dbMsg         :: Text }
+                                        , dbMsg         :: Text } deriving Generic
 data    ProfRec        = ProfRec        { dbTimestamp   :: Text
                                         , dbHost        :: Text
-                                        , dbProfanity   :: Text }
+                                        , dbProfanity   :: Text } deriving Generic
 newtype PropNameRec    = PropNameRec    { dbWord        :: Text }
 data    QuestionRec    = QuestionRec    { dbTimestamp   :: Text
                                         , dbName        :: Text
@@ -364,11 +364,15 @@ instance FromJSON AlertMsgRec
 instance FromJSON BanHostRec
 instance FromJSON BanPCRec
 instance FromJSON BugRec
+instance FromJSON DiscoverRec
+instance FromJSON ProfRec
 instance ToJSON   AlertExecRec
 instance ToJSON   AlertMsgRec
 instance ToJSON   BanHostRec
 instance ToJSON   BanPCRec
 instance ToJSON   BugRec
+instance ToJSON   DiscoverRec
+instance ToJSON   ProfRec
 
 
 -----

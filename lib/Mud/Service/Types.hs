@@ -31,11 +31,9 @@ type Protected =
   :<|> "pla"               :> "all"                        :> Get             '[JSON] [Object Pla]
   -----
   :<|> "db" :> "alertexec" :> "all"                        :> Get             '[JSON] [AlertExecRec]
-  :<|> "db" :> "alertexec" :> ReqBody '[JSON] AlertExecRec :> PostNoContent   '[JSON] NoContent
   :<|> "db" :> "alertexec" :> Capture "id" CaptureInt      :> DeleteNoContent '[JSON] NoContent
   -----
   :<|> "db" :> "alertmsg"  :> "all"                        :> Get             '[JSON] [AlertMsgRec]
-  :<|> "db" :> "alertmsg"  :> ReqBody '[JSON] AlertMsgRec  :> PostNoContent   '[JSON] NoContent
   :<|> "db" :> "alertmsg"  :> Capture "id" CaptureInt      :> DeleteNoContent '[JSON] NoContent
   -----
   :<|> "db" :> "banhost"   :> "all"                        :> Get             '[JSON] [BanHostRec]
@@ -46,9 +44,14 @@ type Protected =
   :<|> "db" :> "banpc"     :> ReqBody '[JSON] BanPCRec     :> PostNoContent   '[JSON] NoContent
   :<|> "db" :> "banpc"     :> Capture "id" CaptureInt      :> DeleteNoContent '[JSON] NoContent
   -----
-  :<|> "db" :> "bug"        :> "all"                        :> Get             '[JSON] [BugRec]
-  :<|> "db" :> "bug"        :> ReqBody '[JSON] BugRec       :> PostNoContent   '[JSON] NoContent
-  :<|> "db" :> "bug"        :> Capture "id" CaptureInt      :> DeleteNoContent '[JSON] NoContent
+  :<|> "db" :> "bug"       :> "all"                        :> Get             '[JSON] [BugRec]
+  :<|> "db" :> "bug"       :> Capture "id" CaptureInt      :> DeleteNoContent '[JSON] NoContent
+  -----
+  :<|> "db" :> "discover"  :> "all"                        :> Get             '[JSON] [DiscoverRec]
+  :<|> "db" :> "discover"  :> Capture "id" CaptureInt      :> DeleteNoContent '[JSON] NoContent
+  -----
+  :<|> "db" :> "prof"      :> "all"                        :> Get             '[JSON] [ProfRec]
+  :<|> "db" :> "prof"      :> Capture "id" CaptureInt      :> DeleteNoContent '[JSON] NoContent
 
 
 data Object a = Object { objectId :: Id
