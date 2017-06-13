@@ -43,8 +43,6 @@ CurryMUD will have the following features:
 * Players can create their own ad-hoc channels. :busts_in_silhouette:
 * Free-form emotes and built-in emotes may be used in "tells" and channel communications. :clap:
 * Functionality enabling one-on-one communication between players and administrators. :speech_balloon:
-* Gods. An origin myth describing the creation of the universe. :godmode:
-* An in-game calendar. :calendar:
 * Weight and encumbrance. :chart_with_downwards_trend:
 * Volume and container capacity. :school_satchel:
 * Vessels for containing liquids. Vessels may be filled and emptied. :wine_glass:
@@ -56,9 +54,13 @@ CurryMUD will have the following features:
 * PC and NPC death. Corpse decomposition. :skull:
 * Corpses may be sacrificed using the holy symbol of a particular god. :pray:
 * Upon death, PCs may have a limited amount of time to exist in the virtual world as a spirit. :angel:
+* [Maps of the game world.](https://github.com/jasonstolaruk/CurryMUD/tree/master/maps) :earth_americas:
+* A history of the game world. :books:
+* Gods. An origin myth describing the creation of the universe. :godmode:
+* An in-game calendar. :calendar:
 * Sending [GMCP](https://www.gammon.com.au/gmcp) `Char.Vitals` and `Info.Room`. :satellite:
 * [Mudlet scripts](https://github.com/jasonstolaruk/CurryMUD/tree/master/Mudlet) for vitals gauges and mapping. :scroll:
-* There's a cheatsheet PDF [here](https://github.com/jasonstolaruk/CurryMUD/blob/master/cheatsheet/CurryMUD%20cheatsheet.pdf). :memo:
+* [A cheatsheet PDF.](https://github.com/jasonstolaruk/CurryMUD/blob/master/cheatsheet/CurryMUD%20cheatsheet.pdf) :memo:
 * The server exposes a REST API to be consumed by an Android app providing a second screen experience (in progress, still in early stages). :tv:
 
 I am still in the initial stage of developing basic commands. There is very little content in the virtual world.
