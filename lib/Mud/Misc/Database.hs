@@ -162,17 +162,17 @@ data    TeleRec        = TeleRec        { dbTimestamp   :: Text
                                         , dbMsg         :: Text }
 data    TelnetCharsRec = TelnetCharsRec { dbTimestamp   :: Text
                                         , dbHost        :: Text
-                                        , dbTelnetChars :: Text }
+                                        , dbTelnetChars :: Text } deriving Generic
 data    TTypeRec       = TTypeRec       { dbTimestamp   :: Text
                                         , dbHost        :: Text
-                                        , dbTType       :: Text }
+                                        , dbTType       :: Text } deriving Generic
 data    TypoRec        = TypoRec        { dbTimestamp   :: Text
                                         , dbName        :: Text
                                         , dbLoc         :: Text
-                                        , dbDesc        :: Text }
+                                        , dbDesc        :: Text } deriving Generic
 data    UnPwRec        = UnPwRec        { dbUn          :: Text
                                         , dbPw          :: Text }
-newtype WordRec        = WordRec        { dbWord        :: Text }
+newtype WordRec        = WordRec        { dbWord        :: Text } deriving Generic
 
 
 -----
@@ -368,6 +368,10 @@ instance FromJSON BugRec
 instance FromJSON DiscoverRec
 instance FromJSON ProfRec
 instance FromJSON PropNameRec
+instance FromJSON TelnetCharsRec
+instance FromJSON TTypeRec
+instance FromJSON TypoRec
+instance FromJSON WordRec
 instance ToJSON   AlertExecRec
 instance ToJSON   AlertMsgRec
 instance ToJSON   BanHostRec
@@ -376,6 +380,10 @@ instance ToJSON   BugRec
 instance ToJSON   DiscoverRec
 instance ToJSON   ProfRec
 instance ToJSON   PropNameRec
+instance ToJSON   TelnetCharsRec
+instance ToJSON   TTypeRec
+instance ToJSON   TypoRec
+instance ToJSON   WordRec
 
 
 -----

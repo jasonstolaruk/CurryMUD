@@ -100,6 +100,18 @@ protected ior (Authenticated (Login un _)) =
     -----
     :<|> getAllPropNameRec
     :<|> deleteAllPropNameRec
+    -----
+    :<|> getAllTelnetCharsRec
+    :<|> deleteAllTelnetCharsRec
+    -----
+    :<|> getAllTTypeRec
+    :<|> deleteAllTTypeRec
+    -----
+    :<|> getAllTypoRec
+    :<|> deleteTypoRec
+    -----
+    :<|> getAllWordRec
+    :<|> deleteAllWordRec
   where
     -- ==========
     -- Helper functions:
@@ -330,6 +342,82 @@ curl -X DELETE \
 -}
     deleteAllPropNameRec :: HasCallStack => Handler NoContent
     deleteAllPropNameRec = deleteAllHelper "deleteAllPropNameRec" "prop_names"
+
+    -----
+
+{-
+curl -H "Content-Type: application/json" \
+     -H "Authorization: Bearer tokenHere" \
+     localhost:7249/db/telnetchars/all -v
+-}
+    getAllTelnetCharsRec :: HasCallStack => Handler [TelnetCharsRec]
+    getAllTelnetCharsRec = genericHelper "getAllTelnetCharsRec" . const . liftIO . getDbTblRecs $ "telnet_chars"
+
+{-
+curl -X DELETE \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer tokenHere" \
+     localhost:7249/db/telnetchars/all -v
+-}
+    deleteAllTelnetCharsRec :: HasCallStack => Handler NoContent
+    deleteAllTelnetCharsRec = deleteAllHelper "deleteAllTelnetCharsRec" "telnet_chars"
+
+    -----
+
+{-
+curl -H "Content-Type: application/json" \
+     -H "Authorization: Bearer tokenHere" \
+     localhost:7249/db/ttype/all -v
+-}
+    getAllTTypeRec :: HasCallStack => Handler [TTypeRec]
+    getAllTTypeRec = genericHelper "getAllTTypeRec" . const . liftIO . getDbTblRecs $ "ttype"
+
+{-
+curl -X DELETE \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer tokenHere" \
+     localhost:7249/db/ttype/all -v
+-}
+    deleteAllTTypeRec :: HasCallStack => Handler NoContent
+    deleteAllTTypeRec = deleteAllHelper "deleteAllTTypeRec" "ttype"
+
+    -----
+
+{-
+curl -H "Content-Type: application/json" \
+     -H "Authorization: Bearer tokenHere" \
+     localhost:7249/db/typo/all -v
+-}
+    getAllTypoRec :: HasCallStack => Handler [TypoRec]
+    getAllTypoRec = genericHelper "getAllTypoRec" . const . liftIO . getDbTblRecs $ "typo"
+
+{-
+curl -X DELETE \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer tokenHere" \
+     localhost:7249/db/typo/1 -v
+-}
+    deleteTypoRec :: HasCallStack => CaptureInt -> Handler NoContent
+    deleteTypoRec ci = deleteHelper ci "deleteTypoRec" "typo"
+
+    -----
+
+{-
+curl -H "Content-Type: application/json" \
+     -H "Authorization: Bearer tokenHere" \
+     localhost:7249/db/word/all -v
+-}
+    getAllWordRec :: HasCallStack => Handler [WordRec]
+    getAllWordRec = genericHelper "getAllWordRec" . const . liftIO . getDbTblRecs $ "words"
+
+{-
+curl -X DELETE \
+     -H "Content-Type: application/json" \
+     -H "Authorization: Bearer tokenHere" \
+     localhost:7249/db/word/all -v
+-}
+    deleteAllWordRec :: HasCallStack => Handler NoContent
+    deleteAllWordRec = deleteAllHelper "deleteAllWordRec" "words"
 protected _ _ = throwAll err401 -- Unauthorized
 
 
