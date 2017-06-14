@@ -531,7 +531,7 @@ adminClone p = pmf "adminClone" p
 
 adminConfig :: HasCallStack => ActionFun
 adminConfig (NoArgs' i mq) = do logPlaExec (prefixAdminCmd "config") i
-                                send mq . T.decodeUtf8 . encode =<< getServerSettings
+                                send mq . nl . T.decodeUtf8 . encode =<< getServerSettings
 adminConfig p              = withoutArgs adminConfig p
 
 
