@@ -118,8 +118,12 @@ dbFileFun = under dbDirFun $ "CurryMUD" <.> "sqlite3"
 -- Books:
 
 
-creationFileFun :: FilePathFun
-creationFileFun = under booksDirFun "creation"
+bookCreationFileFun, bookHolySymbolsFileFun, bookLopoLwanmiFileFun, bookRumiaFileFun, bookShunfalipmiFileFun :: FilePathFun
+bookCreationFileFun    = under booksDirFun "creation"
+bookHolySymbolsFileFun = under booksDirFun "holysymbols"
+bookLopoLwanmiFileFun  = under booksDirFun "lopolwanmi"
+bookRumiaFileFun       = under booksDirFun "rumia"
+bookShunfalipmiFileFun = under booksDirFun "shunfalipmi"
 
 
 -- ==================================================
