@@ -85,7 +85,7 @@ lookTrashHookFun = mkGenericHookFun trashDesc "looks at the trash bin." "looked 
                 \hinges. Affixed to the lid is a bronze plate, on which the following has been neatly etched:\n\
                 \\"Magic Trash Bin: you may dispose of unwanted items by 'trash'ing them here. Items placed in this \
                 \bin are magically expunged, and entirely unrecoverable.\n\
-                \Thank you for keeping Dalben clean.\"\n\
+                \Thank you for keeping Lop'len-ko clean.\"\n\
                 \Carefully lifting open the lid and peaking inside, you find only an ominous darkness; not even the \
                 \bottom of the bin is visible."
 

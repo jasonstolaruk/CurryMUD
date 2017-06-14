@@ -27,7 +27,7 @@ import qualified Mud.Misc.Logging as L (logNotice, logPla)
 import           Mud.Misc.Logging hiding (logNotice, logPla)
 import           Mud.Misc.Misc
 import           Mud.TheWorld.Zones.AdminZoneIds (iCentral, iLoggedOut, iWelcome)
-import           Mud.TheWorld.Zones.DalbenIds (iDalbenWelcome)
+import           Mud.TheWorld.Zones.LoplenkoIds (iLoplenkoWelcome)
 import           Mud.Threads.Digester
 import           Mud.Threads.Effect
 import           Mud.Threads.Misc
@@ -791,7 +791,7 @@ logIn newId ms oldSing newHost newTime originId = upd adoptNewId [ movePC, peepN
       where
         e    = getEnt   originId ms
         gmcp = isGmcpId newId    ms
-    movePC ms' = let newRmId = fromMaybe iDalbenWelcome . getLogoutRmId newId $ ms'
+    movePC ms' = let newRmId = fromMaybe iLoplenkoWelcome . getLogoutRmId newId $ ms'
                  in upd ms' [ invTbl.ind iWelcome         %~ (newId    `delete`)
                             , invTbl.ind iLoggedOut       %~ (originId `delete`)
                             , invTbl.ind newRmId          %~ addToInv ms' (pure newId)

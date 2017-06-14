@@ -156,8 +156,6 @@ Make a forest where players can forage for mushrooms.
 
 Make underground settlements, perhaps with secret/hidden entrances.
 
-Make settlements built above ground, in trees.
-
 ==========
 
 ECONOMICS:

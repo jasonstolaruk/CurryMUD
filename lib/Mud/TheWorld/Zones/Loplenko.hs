@@ -1,8 +1,8 @@
 {-# LANGUAGE OverloadedStrings, RecordWildCards #-}
 
-module Mud.TheWorld.Zones.Dalben ( createDalben
-                                 , dalbenHooks
-                                 , dalbenRmActionFuns ) where
+module Mud.TheWorld.Zones.Loplenko ( createLoplenko
+                                   , loplenkoHooks
+                                   , loplenkoRmActionFuns ) where
 
 import qualified Data.Text as T
 import           Mud.Data.Misc
@@ -15,7 +15,7 @@ import           Mud.Data.State.Util.Put
 import           Mud.Misc.CurryTime
 import qualified Mud.Misc.Logging as L (logNotice)
 import           Mud.TheWorld.Misc
-import           Mud.TheWorld.Zones.DalbenIds
+import           Mud.TheWorld.Zones.LoplenkoIds
 import           Mud.Util.Operators
 import           Mud.Util.Padding
 import           Mud.Util.Quoting
@@ -32,18 +32,18 @@ import qualified Data.Map.Strict as M (fromList)
 
 
 logNotice :: Text -> Text -> MudStack ()
-logNotice = L.logNotice "Mud.TheWorld.Zones.Dalben"
+logNotice = L.logNotice "Mud.TheWorld.Zones.Loplenko"
 
 
 -- ==================================================
 -- Hooks:
 
 
-dalbenHooks :: [(HookName, HookFun)]
-dalbenHooks = [ (lookMoondialHookName, lookMoondialHookFun)
-              , (lookSundialHookName,  lookSundialHookFun )
-              , (readMoondialHookName, readMoondialHookFun)
-              , (readSundialHookName,  readSundialHookFun ) ]
+loplenkoHooks :: [(HookName, HookFun)]
+loplenkoHooks = [ (lookMoondialHookName, lookMoondialHookFun)
+                , (lookSundialHookName,  lookSundialHookFun )
+                , (readMoondialHookName, readMoondialHookFun)
+                , (readSundialHookName,  readSundialHookFun ) ]
 
 
 -----
@@ -54,7 +54,7 @@ lookMoondialHook = Hook lookMoondialHookName . pure $ "moondial"
 
 
 lookMoondialHookName :: HookName
-lookMoondialHookName = "Dalben_iDalbenWelcome_lookMoondial"
+lookMoondialHookName = "Loplenko_iLoplenkoWelcome_lookMoondial"
 
 
 lookMoondialHookFun :: HookFun
@@ -87,7 +87,7 @@ lookSundialHook = Hook lookSundialHookName . pure $ "sundial"
 
 
 lookSundialHookName :: HookName
-lookSundialHookName = "Dalben_iDalbenWelcome_lookSundial"
+lookSundialHookName = "Loplenko_iLoplenkoWelcome_lookSundial"
 
 
 lookSundialHookFun :: HookFun
@@ -102,7 +102,7 @@ readMoondialHook = Hook readMoondialHookName . pure $ "moondial"
 
 
 readMoondialHookName :: HookName
-readMoondialHookName = "Dalben_iDalbenWelcome_readMoondial"
+readMoondialHookName = "Loplenko_iLoplenkoWelcome_readMoondial"
 
 
 readMoondialHookFun :: HookFun
@@ -133,7 +133,7 @@ readSundialHook = Hook readSundialHookName . pure $ "sundial"
 
 
 readSundialHookName :: HookName
-readSundialHookName = "Dalben_iDalbenWelcome_readSundial"
+readSundialHookName = "Loplenko_iLoplenkoWelcome_readSundial"
 
 
 readSundialHookFun :: HookFun
@@ -155,22 +155,22 @@ readSundialHookFun i Hook { .. } _ a@(_, (ms, _, _, _), _) =
 -- Room action functions:
 
 
-dalbenRmActionFuns :: [(FunName, RmActionFun)]
-dalbenRmActionFuns = []
+loplenkoRmActionFuns :: [(FunName, RmActionFun)]
+loplenkoRmActionFuns = []
 
 
 -- ==================================================
 -- Zone definition:
 
 
-createDalben :: MudStack ()
-createDalben = do
-  logNotice "createDalben" "creating Dalben."
+createLoplenko :: MudStack ()
+createLoplenko = do
+  logNotice "createLoplenko" "creating Loplenko."
 
-  putRm iDalbenWelcome
+  putRm iLoplenkoWelcome
         []
         mempty
-        (mkRm (RmTemplate "Welcome to Dalben"
+        (mkRm (RmTemplate "Welcome to Loplenko"
             "Hello!\n\
             \A few feet from a sundial stands a similar moondial.\n\
             \There is a trash bin here."
@@ -187,4 +187,4 @@ createDalben = do
             [ trashRmAction ]
             []))
 
-  putRmTeleName iDalbenWelcome "dalben"
+  putRmTeleName iLoplenkoWelcome "loplenko"

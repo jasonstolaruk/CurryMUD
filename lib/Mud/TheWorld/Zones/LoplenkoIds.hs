@@ -1,8 +1,8 @@
 {-# OPTIONS_GHC -fno-warn-missing-signatures #-}
 
-module Mud.TheWorld.Zones.DalbenIds where
+module Mud.TheWorld.Zones.LoplenkoIds where
 
 import Mud.Data.State.MudData (Id)
 
 
-iDalbenWelcome = 1000 :: Id
+iLoplenkoWelcome = 1000 :: Id

@@ -20,8 +20,8 @@ import           Mud.TheWorld.Liqs
 import           Mud.TheWorld.Misc
 import           Mud.TheWorld.Zones.AdminZone
 import           Mud.TheWorld.Zones.AdminZoneIds (iLoggedOut, iNecropolis, iWelcome)
-import           Mud.TheWorld.Zones.Dalben
-import           Mud.TheWorld.Zones.DalbenIds (iDalbenWelcome)
+import           Mud.TheWorld.Zones.Loplenko
+import           Mud.TheWorld.Zones.LoplenkoIds (iLoplenkoWelcome)
 import           Mud.TheWorld.Zones.Tutorial
 import           Mud.TheWorld.Zones.TutorialIds (iTutWelcome)
 import           Mud.TopLvlDefs.FilePaths
@@ -165,7 +165,7 @@ initFeelingFunTbl = tweak $ feelingFunTbl .~ M.fromList list
 initHookFunTbl :: HasCallStack => MudStack ()
 initHookFunTbl = tweak $ hookFunTbl .~ M.fromList list
   where
-    list = concat [ commonHooks, adminZoneHooks, tutorialHooks, dalbenHooks ]
+    list = concat [ commonHooks, adminZoneHooks, loplenkoHooks, tutorialHooks ]
 
 
 initRmActionFunTbl :: HasCallStack => MudStack ()
@@ -183,9 +183,9 @@ initDistinctLiqTbl = tweak $ distinctLiqTbl .~ IM.fromList (map dropThr liqList)
 
 
 createWorld :: HasCallStack => MudStack ()
-createWorld = getState >>= \ms -> let pairs = [ (iWelcome,       createAdminZone)
-                                              , (iTutWelcome,    createTutorial )
-                                              , (iDalbenWelcome, createDalben   ) ]
+createWorld = getState >>= \ms -> let pairs = [ (iWelcome,         createAdminZone)
+                                              , (iLoplenkoWelcome, createLoplenko )
+                                              , (iTutWelcome,      createTutorial ) ]
                                   in do logNotice "createWorld" "creating the world."
                                         forM_ pairs $ \(i, f) -> unless (hasType i ms) f
 
