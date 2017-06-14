@@ -19,29 +19,29 @@ import           Control.Lens.Operators ((&), (%~))
 import           Control.Monad.Reader (ReaderT)
 import           Data.Aeson ((.:), (.=), FromJSON(..), FromJSONKey(..), ToJSON(..), ToJSONKey(..), Value(..), genericParseJSON, genericToJSON, object)
 import           Data.Aeson.Types (Options, Parser, defaultOptions, fieldLabelModifier)
-import           Data.Int (Int16)
 import           Data.IORef (IORef)
-import           Data.Text (Text)
-import           Data.Time (UTCTime)
-import           GHC.Generics (Generic)
-import           Network (HostName)
+import           Data.Int (Int16)
 import qualified Data.IntMap.Strict as IM (IntMap)
 import qualified Data.Map.Strict as M (Map, empty)
+import           Data.Text (Text)
+import           Data.Time (UTCTime)
 import qualified Data.Vector.Unboxed as V (Vector)
+import           GHC.Generics (Generic)
+import           Network (HostName)
 import           System.Clock (TimeSpec)
 import           System.Random (Random, random, randomR)
 import           System.Random.MWC (GenIO)
 
-
 type MudStack = ReaderT MudData IO
 
 
-data MudData = MudData { _errorLog      :: Maybe LogService
-                       , _noticeLog     :: Maybe LogService
-                       , _gen           :: GenIO
-                       , _locks         :: Locks
-                       , _startTime     :: TimeSpec
-                       , _mudStateIORef :: IORef MudState }
+data MudData = MudData { _serverSettings :: ServerSettings
+                       , _errorLog       :: Maybe LogService
+                       , _noticeLog      :: Maybe LogService
+                       , _gen            :: GenIO
+                       , _locks          :: Locks
+                       , _startTime      :: TimeSpec
+                       , _mudStateIORef  :: IORef MudState }
 
 
 data MudState = MudState { _armTbl                 :: ArmTbl
@@ -1117,6 +1117,16 @@ type RndmNamesTbl = M.Map Sing Sing
 -- ==================================================
 
 
+data ServerSettings = ServerSettings { settingDebug     :: Bool
+                                     , settingEKG       :: Bool
+                                     , settingLog       :: Bool
+                                     , settingRest      :: Bool
+                                     , settingZBackDoor :: Bool } deriving Generic
+
+
+-- ==================================================
+
+
 type TalkAsync = Async ()
 
 
@@ -1301,6 +1311,19 @@ instance ToJSON Vessel           where toJSON    = genericToJSON    dropUndersco
 instance ToJSON Wpn              where toJSON    = genericToJSON    dropUnderscore
 instance ToJSON WpnSub
 instance ToJSON Writable         where toJSON    = genericToJSON    dropUnderscore
+
+
+instance FromJSON ServerSettings where parseJSON = jsonToServerSettings
+
+
+jsonToServerSettings :: Value -> Parser ServerSettings
+jsonToServerSettings (Object o) = ServerSettings <$> o .: "debug"
+                                                 <*> o .: "ekg"
+                                                 <*> o .: "log"
+                                                 <*> o .: "rest"
+                                                 <*> o .: "zBackDoor"
+jsonToServerSettings _          = empty
+
 
 instance FromJSONKey GodName
 instance ToJSONKey   GodName

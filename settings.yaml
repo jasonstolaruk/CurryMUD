@@ -1,0 +1,5 @@
+debug: true
+ekg: true
+log: true
+rest: true
+zBackDoor: true

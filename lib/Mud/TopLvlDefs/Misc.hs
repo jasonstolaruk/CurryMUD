@@ -19,10 +19,6 @@ module Mud.TopLvlDefs.Misc ( acl
                            , etc
                            , foodWaterFeelDur
                            , initPickPts
-                           , isDebug
-                           , isEKGing
-                           , isRestServicing
-                           , isZBackDoor
                            , likewise
                            , logRotationDelay
                            , maxBonuses
@@ -139,22 +135,6 @@ foodWaterFeelDur = 20
 
 initPickPts :: Int
 initPickPts = 200
-
-
-isDebug :: Bool -- TODO: Consider moving this and similar values into server settings yaml file.
-isDebug = True
-
-
-isEKGing :: Bool
-isEKGing = True
-
-
-isRestServicing :: Bool
-isRestServicing = True
-
-
-isZBackDoor :: Bool
-isZBackDoor = True
 
 
 likewise :: Bool

@@ -878,9 +878,9 @@ description p = withoutArgs description p
 
 interpConfirmDescChange :: HasCallStack => Interp
 interpConfirmDescChange cn (NoArgs i mq cols) = case yesNoHelper cn of
-  Just True -> do blankLine mq
-                  send mq . T.unlines . parseWrapXform cols $ descRules
-                  pause i mq . Just . descHelper i mq $ cols
+  Just True  -> getServerSettings >>= \s -> do blankLine mq
+                                               send mq . T.unlines . parseWrapXform s cols $ descRules
+                                               pause i mq . Just . descHelper s i mq $ cols
   Just False -> neverMind i mq
   Nothing    -> promptRetryYesNo mq cols
   where
@@ -888,10 +888,10 @@ interpConfirmDescChange cn (NoArgs i mq cols) = case yesNoHelper cn of
 interpConfirmDescChange _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNo plaMsgQueue plaCols
 
 
-descHelper :: HasCallStack => Id -> MsgQueue -> Cols -> MudStack ()
-descHelper i mq cols = sequence_ [ writeMsg mq . InacSecs $ maxInacSecsCompose
-                                 , send mq . nl . T.unlines . parseWrapXform cols $ enterDescMsg
-                                 , setInterp i . Just . interpMutliLine f $ [] ]
+descHelper :: HasCallStack => ServerSettings -> Id -> MsgQueue -> Cols -> MudStack ()
+descHelper s i mq cols = sequence_ [ writeMsg mq . InacSecs $ maxInacSecsCompose
+                                   , send mq . nl . T.unlines . parseWrapXform s cols $ enterDescMsg
+                                   , setInterp i . Just . interpMutliLine f $ [] ]
   where
     f desc = case spaces . dropBlanks . map T.strip $ desc of
       ""    -> neverMind i mq
@@ -1526,7 +1526,7 @@ help :: HasCallStack => ActionFun
 help (NoArgs i mq cols) = liftIO (T.readFile =<< mkMudFilePath rootHeplFileFun) |&| try >=> either handler helper
   where
     handler e          = fileIOExHandler "help" e >> wrapSend mq cols helpRootErrorMsg
-    helper rootHelpTxt = getState >>= \ms -> do
+    helper rootHelpTxt = ((,) <$> getState <*> getServerSettings) >>= \(ms, s) -> do
         logPla "help" i "reading the root help file."
         let (is, ia, ls) = mkHelpTriple i ms
         hs <- sortBy (compare `on` helpName) <$> liftIO (mkHelpData ls is ia)
@@ -1538,15 +1538,15 @@ help (NoArgs i mq cols) = liftIO (T.readFile =<< mkMudFilePath rootHeplFileFun) 
                                               , nl "TOPICS:"
                                               , topicNames
                                               , ia |?| footnote ]
-        pager i mq Nothing . parseHelpTxt (mkPlaCmds i ms) cols $ helpTxt
+        pager i mq Nothing . parseHelpTxt s (mkPlaCmds i ms) cols $ helpTxt
     mkHelpNames zipped    = [ padHelpTopic . (styled <>) $ isAdminHelp h |?| asterisk | (styled, h) <- zipped ]
     formatHelpNames names = let wordsPerLine = cols `div` helpTopicPadding
                             in T.unlines . map T.concat . chunksOf wordsPerLine $ names
     footnote              = nlPrefix $ asterisk <> " indicates help that is available only to administrators."
-help (LowerNub i mq cols as) = getState >>= \ms -> do
+help (LowerNub i mq cols as) = ((,) <$> getState <*> getServerSettings) >>= \(ms, s) -> do
     let (is, ia, ls) = mkHelpTriple i ms
     hs <- liftIO . mkHelpData ls is $ ia
-    (map (parseHelpTxt (mkPlaCmds i ms) cols) -> helpTxts, dropBlanks -> hns) <- unzip <$> forM as (getHelpByName cols hs)
+    (map (parseHelpTxt s (mkPlaCmds i ms) cols) -> helpTxts, dropBlanks -> hns) <- unzip <$> forM as (getHelpByName cols hs)
     hns |#| logPla "help" i . prd . ("reading help on: " <>) . commas
     pager i mq Nothing . intercalateDivider cols $ helpTxts
 help p = pmf "help" p
@@ -1600,8 +1600,8 @@ mkHelpData ls is ia = do
     filterSpiritCmds cns = [ cn | cn <- cns, let scns = map cmdName spiritCmds, T.pack cn `elem` scns ]
 
 
-parseHelpTxt :: HasCallStack => [Cmd] -> Cols -> Text -> [Text]
-parseHelpTxt cmds cols txt = [ procCmdTokens . xformLeadingSpaceChars . expandDividers $ t | t <- parseWrap cols txt ]
+parseHelpTxt :: HasCallStack => ServerSettings -> [Cmd] -> Cols -> Text -> [Text]
+parseHelpTxt s cmds cols txt = [ procCmdTokens . xformLeadingSpaceChars . expandDividers $ t | t <- parseWrap s cols txt ]
   where
     expandDividers l | l == T.singleton dividerToken         = T.replicate cols "-"
                      | otherwise                             = l

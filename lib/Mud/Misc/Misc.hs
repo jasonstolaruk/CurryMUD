@@ -61,12 +61,12 @@ mkPlurFromBoth (_, p ) = p
 -----
 
 
-parseWrap :: Cols -> Text -> [Text]
-parseWrap cols = concat . wrapLines cols . T.lines . parseTokens
+parseWrap :: ServerSettings -> Cols -> Text -> [Text]
+parseWrap s cols = concat . wrapLines cols . T.lines . parseTokens s
 
 
-parseWrapXform :: Cols -> Text -> [Text]
-parseWrapXform cols = map xformLeadingSpaceChars . parseWrap cols
+parseWrapXform :: ServerSettings -> Cols -> Text -> [Text]
+parseWrapXform s cols = map xformLeadingSpaceChars . parseWrap s cols
 
 
 -----

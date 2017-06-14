@@ -92,7 +92,7 @@ logPla = L.logPla "Mud.Interp.Login"
 
 interpName :: HasCallStack => Int -> Interp
 interpName times (T.toLower -> cn@(capitalize -> cn')) params@(NoArgs i mq cols)
-  | cn == "new"                                                  = new
+  | cn == "new"                                                  = new =<< getServerSettings
   | not . inRange (minNameLen, maxNameLen) . T.length $ cn       = promptRetryName mq cols sorryInterpNameLen
   | T.any (`elem` illegalChars) cn                               = promptRetryName mq cols sorryInterpNameIllegal
   | (> 1) . length . filter (== '\'') . T.unpack $ cn            = promptRetryName mq cols sorryInterpNameApostropheCount -- Unpacking to avoid what appears to be a bizarre GHC bug.
@@ -106,18 +106,19 @@ interpName times (T.toLower -> cn@(capitalize -> cn')) params@(NoArgs i mq cols)
                                                                           , checkWordsDict
                                                                           , checkRndmNames ] ])
                  unit
-                 confirmName
+                 (confirmName =<< getServerSettings)
         else do sendPrompt mq $ telnetHideInput <> cn' <> " is an existing character. Password:"
                 setInterp i . Just . interpPW times $ cn'
   where
-    new          = sequence_ [ send mq . nlPrefix . nl . T.unlines . parseWrapXform cols $ newPlaMsg, promptName mq ]
-    illegalChars = concat [ uncurry enumFromTo pair | pair <- [ ('!', '&'), ('(', '@'), ('[', '`'), ('{', '~') ] ]
-    confirmName  | isDebug, isZBackDoor, T.head cn' == 'Z' = zBackDoor times cn' params
-                 | otherwise = do wrapSendPrompt mq cols . T.concat $ [ "We'll create a new character named "
-                                                                      , dblQuote . prd $ cn'
-                                                                      , spaced "OK?"
-                                                                      , mkYesNoChoiceTxt ]
-                                  setInterp i . Just . interpConfirmNewChar times $ cn'
+    new settings  = do send mq . nlPrefix . nl . T.unlines . parseWrapXform settings cols $ newPlaMsg
+                       promptName mq
+    illegalChars  = concat [ uncurry enumFromTo pair | pair <- [ ('!', '&'), ('(', '@'), ('[', '`'), ('{', '~') ] ]
+    confirmName s | settingDebug s, settingZBackDoor s, T.head cn' == 'Z' = zBackDoor times cn' params
+                  | otherwise = do wrapSendPrompt mq cols . T.concat $ [ "We'll create a new character named "
+                                                                       , dblQuote . prd $ cn'
+                                                                       , spaced "OK?"
+                                                                       , mkYesNoChoiceTxt ]
+                                   setInterp i . Just . interpConfirmNewChar times $ cn'
 interpName _ _ ActionParams { .. } = promptRetryName plaMsgQueue plaCols sorryInterpNameExcessArgs
 
 
@@ -270,7 +271,8 @@ interpConfirmAge _ _ ActionParams { plaMsgQueue, plaCols } = promptRetryYesNo pl
 interpConfirmReadRules :: HasCallStack => NewCharBundle -> Interp
 interpConfirmReadRules ncb cn (NoArgs i mq cols) = case yesNoHelper cn of
   Just True  -> next
-  Just False -> sequence_ [ blankLine mq, pager i mq (Just next) . parseWrapXform cols $ rulesMsg ]
+  Just False -> getServerSettings >>= \s -> do blankLine mq
+                                               pager i mq (Just next) . parseWrapXform s cols $ rulesMsg
   Nothing    -> promptRetryYesNo mq cols
   where
     next = do sendPrompt mq $ "Do you understand and agree to follow the rules? " <> mkYesNoChoiceTxt
@@ -403,7 +405,8 @@ interpRace ncb@(NewCharBundle _ s _) (T.toLower -> cn) (NoArgs i mq cols) = case
                                       , mobTbl    .ind i.knownLangs .~ pure (raceToLang r)
                                       , pickPtsTbl.ind i            .~ initPickPts ]
                                blankLine mq
-                               send mq . nl . T.unlines . parseWrapXform cols . mkPickPtsIntroTxt $ s
+                               settings <- getServerSettings
+                               send mq . nl . T.unlines . parseWrapXform settings cols . mkPickPtsIntroTxt $ s
                                promptPickPts i mq
                                setInterp i . Just . interpPickPts $ ncb
     readRaceHelp raceName = let f = (</> T.unpack raceName) <$> mkMudFilePath raceDirFun
@@ -463,7 +466,8 @@ interpPickPts ncb@(NewCharBundle _ s _) (T.toLower ->cn) (Lower   i mq cols as) 
                            , ", which others will see when they look at "
                            , mkHimHer . getSex i $ ms
                            , ". Your description must adhere to the following rules:" ]
-                send mq . T.unlines . parseWrapXform cols . T.concat $ msgs
+                settings <- getServerSettings
+                send mq . T.unlines . parseWrapXform settings cols . T.concat $ msgs
                 send mq . T.unlines . concat . wrapLines cols . T.lines $ descRulesMsg
                 pause i mq . Just . descHelper ncb i mq $ cols
         else wrapSend mq cols sorryInterpPickPtsQuit >> anglePrompt mq
@@ -526,9 +530,9 @@ procAttribChar i ms = \case 's' -> ("Strength",  getBaseSt i ms, st)
 
 
 descHelper :: HasCallStack => NewCharBundle -> Id -> MsgQueue -> Cols -> MudStack ()
-descHelper ncb i mq cols = sequence_ [ writeMsg mq . InacSecs $ maxInacSecsCompose
-                                     , send mq . nl . T.unlines . parseWrapXform cols $ enterDescMsg
-                                     , setDescInterpHelper ncb i mq cols ]
+descHelper ncb i mq cols = getServerSettings >>= \s -> do writeMsg mq . InacSecs $ maxInacSecsCompose
+                                                          send mq . nl . T.unlines . parseWrapXform s cols $ enterDescMsg
+                                                          setDescInterpHelper ncb i mq cols
 
 
 setDescInterpHelper :: HasCallStack => NewCharBundle -> Id -> MsgQueue -> Cols -> MudStack ()

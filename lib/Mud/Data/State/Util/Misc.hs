@@ -32,6 +32,7 @@ module Mud.Data.State.Util.Misc ( addToInv
                                 , getNonIncogLoggedInAdminIds
                                 , getNpcIds
                                 , getRmActionFun
+                                , getServerSettings
                                 , getState
                                 , getUnusedId
                                 , getVisibleInv
@@ -344,6 +345,13 @@ getRmActionFun :: HasCallStack => FunName -> MudState -> RmActionFun
 getRmActionFun n = views (rmActionFunTbl.at n) (fromMaybe oops)
   where
     oops = blowUp "getRmActionFun" "function name not found in room action function table" n
+
+
+-----
+
+
+getServerSettings :: HasCallStack => MudStack ServerSettings
+getServerSettings = asks (view serverSettings)
 
 
 -----

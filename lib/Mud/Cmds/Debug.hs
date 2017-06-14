@@ -66,22 +66,22 @@ import           Control.Monad.IO.Class (liftIO)
 import           Data.Bits (zeroBits)
 import           Data.Char (ord, digitToInt, isDigit, toLower)
 import           Data.Function (on)
+import qualified Data.IntMap.Strict as IM (IntMap, assocs, filter, keys, notMember, toList)
 import           Data.Ix (inRange)
 import           Data.List (delete, intercalate, sort)
+import qualified Data.Map.Strict as M (assocs, elems, filter, keys, keysSet, toList)
 import           Data.Maybe (catMaybes)
 import           Data.Monoid ((<>), Sum(..))
+import qualified Data.Set as S (toAscList)
 import           Data.Text (Text)
+import qualified Data.Text as T
 import           Data.Time (getCurrentTime)
 import           GHC.Conc (threadStatus)
 import           GHC.Stack (HasCallStack)
 import           Numeric (readInt)
 import           Prelude hiding (pi)
-import qualified Data.IntMap.Strict as IM (IntMap, assocs, filter, keys, notMember, toList)
-import qualified Data.Map.Strict as M (assocs, elems, filter, keys, keysSet, toList)
-import qualified Data.Set as S (toAscList)
-import qualified Data.Text as T
-import           System.Console.ANSI (Color(..), ColorIntensity(..))
 import           System.CPUTime (getCPUTime)
+import           System.Console.ANSI (Color(..), ColorIntensity(..))
 import           System.Directory (getTemporaryDirectory, removeFile)
 import           System.Environment (getEnvironment)
 import           System.IO (hClose, hGetBuffering, openTempFile)
@@ -921,8 +921,8 @@ debugRotate p              = withoutArgs debugRotate p
 
 
 debugRules :: HasCallStack => ActionFun
-debugRules (NoArgs i mq cols) = do logPlaExec (prefixDebugCmd "rules") i'
-                                   pager i' mq Nothing . parseWrapXform cols $ rulesMsg
+debugRules (NoArgs i mq cols) = getServerSettings >>= \s -> do logPlaExec (prefixDebugCmd "rules") i'
+                                                               pager i' mq Nothing . parseWrapXform s cols $ rulesMsg
   where
     i' = safeCoerce (i :: Id) :: Int
 debugRules p = withoutArgs debugRules p
@@ -1072,7 +1072,8 @@ debugTinnitus p = withoutArgs debugTinnitus p
 
 debugToken :: HasCallStack => ActionFun
 debugToken (NoArgs i mq cols) = do logPlaExec (prefixDebugCmd "token") i
-                                   multiWrapSend mq cols . T.lines . parseTokens . T.unlines $ tokenTxts
+                                   s <- getServerSettings
+                                   multiWrapSend mq cols . T.lines . parseTokens s . T.unlines $ tokenTxts
   where
     tokenTxts = [ charTokenDelimiter  `T.cons` charTokenDelimiter `T.cons` " literal charTokenDelimiter"
                 , charTokenDelimiter  `T.cons` "a allChar"

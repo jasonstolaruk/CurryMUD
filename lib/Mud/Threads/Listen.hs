@@ -41,7 +41,7 @@ import           Control.Exception (AsyncException(..), IOException, SomeExcepti
 import           Control.Exception.Lifted (catch, finally, handle)
 import           Control.Lens (views)
 import           Control.Lens.Operators ((&), (%~))
-import           Control.Monad (forever, void, when)
+import           Control.Monad (forever, void)
 import           Control.Monad.IO.Class (liftIO)
 import           Control.Monad.Reader (ask)
 import           Data.Int (Int64)
@@ -114,7 +114,7 @@ listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed 
                     startBiodegraders
                     sortAllInvs
                     logInterfaces
-                    when isRestServicing startRestServiceHelper
+                    mWhen (settingRest <$> getServerSettings) startRestServiceHelper
     logInterfaces = liftIO mkInterfaceList >>= \ifList ->
         logNotice "listen listInterfaces" . prd $ "server network interfaces: " <> ifList
     startRestServiceHelper = views mudStateIORef (liftIO . startRestService DoLog) =<< ask -- TODO: "DoOrDon'tLog" value should be a server setting.

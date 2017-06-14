@@ -3,6 +3,7 @@
 module Mud.Util.Token (parseTokens) where
 
 import           Mud.Cmds.Msgs.Misc
+import           Mud.Data.State.MudData
 import           Mud.Misc.ANSI
 import           Mud.TopLvlDefs.Chars
 import           Mud.TopLvlDefs.Misc
@@ -23,8 +24,8 @@ pmf = U.pmf "Mud.Util.Token"
 -- ==================================================
 
 
-parseTokens :: Text -> Text
-parseTokens = parseCharTokens . parseStyleTokens . parseMiscTokens
+parseTokens :: ServerSettings -> Text -> Text
+parseTokens s = parseCharTokens . parseStyleTokens . parseMiscTokens s
 
 
 -----
@@ -71,8 +72,8 @@ expandCharCode (toLower -> code)           = T.singleton $ case code of
 -----
 
 
-parseMiscTokens :: Text -> Text
-parseMiscTokens = miscTokenParser expandMiscCode miscTokenDelimiter
+parseMiscTokens :: ServerSettings -> Text -> Text
+parseMiscTokens s = miscTokenParser (expandMiscCode s) miscTokenDelimiter
   where
     miscTokenParser :: (Char -> Text) -> Delimiter -> Text -> Text -- The expanded text itself may contain a misc token.
     miscTokenParser f d t
@@ -83,12 +84,12 @@ parseMiscTokens = miscTokenParser expandMiscCode miscTokenDelimiter
           in left <> expanded' <> miscTokenParser f d right
 
 
-expandMiscCode :: Char -> Text -- '@'
-expandMiscCode c | c == miscTokenDelimiter = T.singleton miscTokenDelimiter
-expandMiscCode (toLower -> code)           = case code of
+expandMiscCode :: ServerSettings -> Char -> Text -- '@'
+expandMiscCode _ c | c == miscTokenDelimiter = T.singleton miscTokenDelimiter
+expandMiscCode s (toLower -> code)           = case code of
   'b' -> dfltBootMsg
   'c' -> descRule5
-  'd' -> yesNo isDebug
+  'd' -> yesNo . settingDebug $ s
   'e' -> descRulesMsg
   'l' -> T.singleton leadingSpaceChar
   'o' -> showTxt dfltZoom
@@ -97,7 +98,7 @@ expandMiscCode (toLower -> code)           = case code of
   's' -> dfltShutdownMsg
   'u' -> rulesMsg
   'v' -> violationMsg
-  'z' -> yesNo $ isDebug && isZBackDoor
+  'z' -> yesNo . ((&&) <$> settingDebug <*> settingZBackDoor) $ s
   x   -> pmf "expandMiscCode" x
 
 

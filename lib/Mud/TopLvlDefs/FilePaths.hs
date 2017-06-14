@@ -26,11 +26,12 @@ mudDirFun :: FilePathFun
 mudDirFun = (</> "CurryMUD")
 
 
-dbDirFun, logDirFun, persistDirFun, resDirFun :: FilePathFun
-dbDirFun      = under mudDirFun "db"
-logDirFun     = under mudDirFun "logs"
-persistDirFun = under mudDirFun "persist"
-resDirFun     = under mudDirFun "res"
+dbDirFun, logDirFun, persistDirFun, resDirFun, serverSettingsFun :: FilePathFun
+dbDirFun          = under mudDirFun "db"
+logDirFun         = under mudDirFun "logs"
+persistDirFun     = under mudDirFun "persist"
+resDirFun         = under mudDirFun "res"
+serverSettingsFun = under mudDirFun $ "settings" <.> "yaml"
 
 
 booksDirFun, dictDirFun, helpDirFun, miscDirFun, raceDirFun, titleDirFun :: FilePathFun

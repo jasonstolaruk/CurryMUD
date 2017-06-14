@@ -26,6 +26,7 @@ executable             curry
                        , mtl
                        , network
                        , text
+                       , yaml
   hs-source-dirs:      src
 
 library
