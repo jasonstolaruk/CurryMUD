@@ -32,6 +32,7 @@ import           Mud.Threads.WorldPersister
 import           Mud.TopLvlDefs.FilePaths
 import           Mud.TopLvlDefs.Misc
 import           Mud.Util.Misc
+import           Mud.Util.Operators
 import           Mud.Util.Quoting
 import           Mud.Util.Text
 
@@ -39,9 +40,9 @@ import           Control.Concurrent.STM (atomically)
 import           Control.Concurrent.STM.TMVar (takeTMVar)
 import           Control.Exception (AsyncException(..), IOException, SomeException, fromException)
 import           Control.Exception.Lifted (catch, finally, handle)
-import           Control.Lens (views)
+import           Control.Lens (view, views)
 import           Control.Lens.Operators ((&), (%~))
-import           Control.Monad (forever, void)
+import           Control.Monad (forever, void, when)
 import           Control.Monad.IO.Class (liftIO)
 import           Control.Monad.Reader (ask)
 import           Data.Int (Int64)
@@ -114,10 +115,11 @@ listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed 
                     startBiodegraders
                     sortAllInvs
                     logInterfaces
-                    mWhen (settingRest <$> getServerSettings) startRestServiceHelper
+                    startRest
     logInterfaces = liftIO mkInterfaceList >>= \ifList ->
         logNotice "listen listInterfaces" . prd $ "server network interfaces: " <> ifList
-    startRestServiceHelper = views mudStateIORef (liftIO . startRestService DoLog) =<< ask -- TODO: "DoOrDon'tLog" value should be a server setting.
+    startRest = ask >>= \md@(view serverSettings -> s) ->
+        when (settingRest s) . views mudStateIORef (liftIO . startRestService (settingLog s ? DoLog :? Don'tLog)) $ md
     loop sock = let fn = "listen loop" in liftIO (accept sock) >>= \(h, host@(T.pack -> host'), localPort) -> do
         logNotice fn . T.concat $ [ "connected to ", showTxt host, " on local port ", showTxt localPort, "." ]
         (withDbExHandler "listen loop" . isHostBanned . T.toLower . T.pack $ host) >>= \case
