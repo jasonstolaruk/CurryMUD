@@ -4,7 +4,7 @@ by Lalia Bolger, a hobbit professor of history at the University of Kilagore
 written in the year 4166
 
 MAP
-TODO: This book (section?) should consist primarily of a URL to the map of Rumia.
+https://github.com/jasonstolaruk/CurryMUD/raw/master/maps/Rumia.png
 
 TIMELINE
 (The current year is about 4170.)
@@ -98,4 +98,5 @@ from The Cyclopedia Rumia
 by Lalia Bolger, a hobbit professor of history at the University of Kilagore
 written in the year 4168
 
-TODO: This book should include a URL to the map of Lopo Lwan-mi.
+MAP
+https://github.com/jasonstolaruk/CurryMUD/raw/master/maps/Lopo%20Lwan-mi.png
