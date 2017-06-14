@@ -1,6 +1,5 @@
 module MudTests.TestUtil where
 
-import           Mud.Data.Misc
 import           Mud.Data.State.MudData
 import           Mud.TheWorld.TheWorld
 import           Mud.TopLvlDefs.Misc
@@ -18,7 +17,8 @@ import           Test.QuickCheck.Monadic (PropertyM, run)
 inWorld :: MudStack a -> PropertyM IO a
 inWorld f = run helper
   where
-    helper = runReaderT (initWorld >> f) =<< (liftIO . initMudData $ Don'tLog)
+    helper   = runReaderT (initWorld >> f) =<< (liftIO . initMudData $ settings)
+    settings = ServerSettings False False False False False
 
 
 genAsciiAlphaNum :: Gen Char
