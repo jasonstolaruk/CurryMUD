@@ -2999,7 +2999,7 @@ interpSecurityCreateA _ _  p                       = pmf "interpSecurityCreateA"
 -----
 
 
-setAction :: HasCallStack => ActionFun -- TODO: Allow player to toggle hints.
+setAction :: HasCallStack => ActionFun
 setAction (NoArgs i mq cols) = getState >>= \ms ->
     let (styleAbbrevs Don'tQuote -> names, values) = unzip . mkSettingPairs i $ ms
     in logPlaExecArgs "set" [] i >> multiWrapSend mq cols [ padSettingName (n <> ": ") <> v | n <- names | v <- values ]
