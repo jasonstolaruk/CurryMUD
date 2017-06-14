@@ -4,6 +4,6 @@ The "Z back door" allows you to quickly enter the virtual world as a new charact
 
 This feature can be quite useful when you are testing new functionality, debugging, etc. In such a case, one often wants to enter the virtual world with a new character but doesn't want or need to spend time in character creation.
 
-The back door is enabled if 1) debug commands are turned on, and 2) the "isZBackDoor" binding (set in Haskell code prior to compilation) is set to "True".
+The back door is enabled if the "debug" and "zBackDoor" server settings are both true.
 
 Is the Z back door enabled? \e@z\d

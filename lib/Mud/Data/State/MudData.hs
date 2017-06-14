@@ -1314,6 +1314,7 @@ instance ToJSON Writable         where toJSON    = genericToJSON    dropUndersco
 
 
 instance FromJSON ServerSettings where parseJSON = jsonToServerSettings
+instance ToJSON   ServerSettings where toJSON    = serverSettingsToJSON
 
 
 jsonToServerSettings :: Value -> Parser ServerSettings
@@ -1323,6 +1324,14 @@ jsonToServerSettings (Object o) = ServerSettings <$> o .: "debug"
                                                  <*> o .: "rest"
                                                  <*> o .: "zBackDoor"
 jsonToServerSettings _          = empty
+
+
+serverSettingsToJSON :: ServerSettings -> Value
+serverSettingsToJSON ServerSettings { .. } = object [ "debug"     .= settingDebug
+                                                    , "ekg"       .= settingEKG
+                                                    , "log"       .= settingLog
+                                                    , "rest"      .= settingRest
+                                                    , "zBackDoor" .= settingZBackDoor ]
 
 
 instance FromJSONKey GodName

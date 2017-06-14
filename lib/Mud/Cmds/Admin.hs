@@ -84,6 +84,7 @@ import qualified Data.Text.Encoding as T
 import qualified Data.Text.IO as T (putStrLn)
 import           Data.Time (TimeZone, UTCTime, defaultTimeLocale, diffUTCTime, formatTime, getCurrentTime, getCurrentTimeZone, getZonedTime, utcToLocalTime, utcToZonedTime)
 import           Data.Tuple (swap)
+import           Data.Yaml (encode)
 import           Database.SQLite.Simple (FromRow)
 import           GHC.Conc (ThreadStatus(..), threadStatus)
 import           GHC.Exts (sortWith)
@@ -147,6 +148,7 @@ adminCmds =
     , mkAdminCmd "bug"        adminBug         True  "Dump the bug database."
     , mkAdminCmd "channels"   adminChans       True  "Display information about one or more telepathic channels."
     , mkAdminCmd "clone"      adminClone       True  "Clone one or more things by ID."
+    , mkAdminCmd "config"     adminConfig      True  "Display the server settings."
     , mkAdminCmd "count"      adminCount       True  "Display or regex search a list of miscellaneous running totals."
     , mkAdminCmd "currytime"  adminCurryTime   True  "Display the current Curry Time."
     , mkAdminCmd "date"       adminDate        True  "Display the current system date."
@@ -522,6 +524,15 @@ adminClone   (LowerNub i mq cols as) = modifyStateSeq $ \ms ->
     in let (ms', fs, logMsgs) = foldl' f (ms, [], []) as & _2 <>~ pure (blankLine mq)
        in (ms', fs ++ pure (logPla "adminClone" i . prd $ "cloning " <> commas logMsgs))
 adminClone p = pmf "adminClone" p
+
+
+-----
+
+
+adminConfig :: HasCallStack => ActionFun
+adminConfig (NoArgs' i mq) = do logPlaExec (prefixAdminCmd "config") i
+                                send mq . T.decodeUtf8 . encode =<< getServerSettings
+adminConfig p              = withoutArgs adminConfig p
 
 
 -----

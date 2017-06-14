@@ -189,6 +189,7 @@ library
                        , vector
                        , wai
                        , warp
+                       , yaml
   hs-source-dirs:      lib
 
 test-suite             test
