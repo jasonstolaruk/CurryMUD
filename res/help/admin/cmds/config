@@ -1,0 +1,8 @@
+\h #dCONFIG \d
+
+\uUSAGE\n
+#dconfig
+
+\uDESCRIPTION\n
+Display the server settings.
+See "help settings" for more information.

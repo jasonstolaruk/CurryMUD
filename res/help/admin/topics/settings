@@ -1,11 +1,10 @@
-\h DEBUG \d
+\h SETTINGS \d
 
-During the development of CurryMUD, many commands were written with the purpose of testing new functionality, or to aid in tracking down bugs. These "debug" commands may be available for use by administrators, depending on the value of the "debug" server setting.
+Server settings are specified in the "settings.yaml" file. The file is read immediately at server startup; settings may not be changed once the server has started.
 
-Are debug commands available? \e@d\d
-
-If available, you may feel free to try out and play with the debug commands (though many of them have little or no practical use when it comes to CurryMUD administration). But be careful: some debug commands are designed to crash the server or put it in an undesirable state!
-
-Debug commands begin with a "#b" prefix. \q#b?\d will give you the debug command list.
-
-(Sorry, but there is no help available on individual debug commands.)
+The following boolean settings exist:
+"debug": enable debug commands (see "help debug")
+"ekg": start the EKG server (effective only when "debug" is also true)
+"log": enable logging
+"rest": start the REST service
+"zBackDoor": enable the back door (effective only when "debug" is also true; see "help zbackdoor")
