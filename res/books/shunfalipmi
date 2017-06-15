@@ -35,7 +35,8 @@ Language:
 "-bi" mountain range
 "-ji" river
 "-ko" village/settlement
-"-mi" island(s)
+"-mi" island
+"-no" forest
 "-to" lake
 
 Environment:

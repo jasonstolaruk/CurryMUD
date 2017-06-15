@@ -6,3 +6,5 @@ import Mud.Data.State.MudData (Id)
 
 
 iLoplenkoWelcome = 1000 :: Id
+
+iLibrary = 1001 :: Id

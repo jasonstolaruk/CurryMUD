@@ -40,10 +40,26 @@ logNotice = L.logNotice "Mud.TheWorld.Zones.Loplenko"
 
 
 loplenkoHooks :: [(HookName, HookFun)]
-loplenkoHooks = [ (lookMoondialHookName, lookMoondialHookFun)
+loplenkoHooks = [ (lookBooksHookName,    lookBooksHookFun   )
+                , (lookMoondialHookName, lookMoondialHookFun)
                 , (lookSundialHookName,  lookSundialHookFun )
                 , (readMoondialHookName, readMoondialHookFun)
                 , (readSundialHookName,  readSundialHookFun ) ]
+
+
+-----
+
+
+lookBooksHook :: Hook
+lookBooksHook = Hook lookBooksHookName [ "book", "books", "bookshelf", "bookshelves", "shelf", "shelves" ]
+
+
+lookBooksHookName :: HookName
+lookBooksHookName = "Loplenko_iLibrary_lookBooks"
+
+
+lookBooksHookFun :: HookFun
+lookBooksHookFun = undefined -- TODO
 
 
 -----
@@ -156,7 +172,23 @@ readSundialHookFun i Hook { .. } _ a@(_, (ms, _, _, _), _) =
 
 
 loplenkoRmActionFuns :: [(FunName, RmActionFun)]
-loplenkoRmActionFuns = []
+loplenkoRmActionFuns = pure (readRmActionFunName, readBook)
+
+
+-----
+
+
+readRmAction :: RmAction
+readRmAction = RmAction "read" readRmActionFunName -- TODO: Does this "read" clash with the usual "read"?
+
+
+readRmActionFunName :: FunName
+readRmActionFunName = "LoplenkoZone_iLibrary_read"
+
+
+
+readBook :: RmActionFun
+readBook = undefined -- TODO
 
 
 -- ==================================================
@@ -165,12 +197,14 @@ loplenkoRmActionFuns = []
 
 createLoplenko :: MudStack ()
 createLoplenko = do
-  logNotice "createLoplenko" "creating Loplenko."
+  logNotice "createLoplenko" "creating Lop'len-ko."
 
+  -- ==================================================
+  -- Rooms:
   putRm iLoplenkoWelcome
         []
         mempty
-        (mkRm (RmTemplate "Welcome to Loplenko"
+        (mkRm (RmTemplate "Welcome to Lop'len-ko"
             "Hello!\n\
             \A few feet from a sundial stands a similar moondial.\n\
             \There is a trash bin here."
@@ -185,6 +219,24 @@ createLoplenko = do
                         , ("put",  [ putTrashHook                                     ])
                         , ("read", [ readSundialHook, readMoondialHook                ]) ])
             [ trashRmAction ]
+            []))
+
+  putRm iLibrary
+        []
+        mempty
+        (mkRm (RmTemplate "Library"
+            "This is the library.\n\
+            \There is a trash bin here."
+            Nothing
+            Nothing
+            zeroBits
+            []
+            (0, 0, -1)
+            InsideEnv
+            (Just "Library")
+            (M.fromList [ ("look", [ lookBooksHook ])
+                        , ("put",  [ putTrashHook  ]) ])
+            [ readRmAction ]
             []))
 
   putRmTeleName iLoplenkoWelcome "loplenko"

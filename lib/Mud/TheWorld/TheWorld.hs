@@ -171,7 +171,10 @@ initHookFunTbl = tweak $ hookFunTbl .~ M.fromList list
 initRmActionFunTbl :: HasCallStack => MudStack ()
 initRmActionFunTbl = tweak $ rmActionFunTbl .~ M.fromList list
   where
-    list = concat [ commonRmActionFuns, adminZoneRmActionFuns, tutorialRmActionFuns ]
+    list = concat [ commonRmActionFuns
+                  , adminZoneRmActionFuns
+                  , loplenkoRmActionFuns
+                  , tutorialRmActionFuns ]
 
 
 initDistinctFoodTbl :: HasCallStack => MudStack ()
