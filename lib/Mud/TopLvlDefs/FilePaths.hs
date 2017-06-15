@@ -34,12 +34,12 @@ resDirFun         = under mudDirFun "res"
 serverSettingsFun = under mudDirFun $ "settings" <.> "yaml"
 
 
-booksDirFun, dictDirFun, helpDirFun, miscDirFun, raceDirFun, titleDirFun :: FilePathFun
-booksDirFun = under resDirFun "books"
+bookDirFun, dictDirFun, helpDirFun, miscDirFun, raceDirFun, titleDirFun :: FilePathFun
+bookDirFun  = under resDirFun "books"
 dictDirFun  = under resDirFun "dict"
 helpDirFun  = under resDirFun "help"
 miscDirFun  = under resDirFun "misc"
-raceDirFun  = under resDirFun "races"
+raceDirFun  = bookDirFun
 titleDirFun = under resDirFun "titles"
 
 
@@ -119,11 +119,11 @@ dbFileFun = under dbDirFun $ "CurryMUD" <.> "sqlite3"
 
 
 bookCreationFileFun, bookHolySymbolsFileFun, bookLopoLwanmiFileFun, bookRumiaFileFun, bookShunfalipmiFileFun :: FilePathFun
-bookCreationFileFun    = under booksDirFun "creation"
-bookHolySymbolsFileFun = under booksDirFun "holysymbols"
-bookLopoLwanmiFileFun  = under booksDirFun "lopolwanmi"
-bookRumiaFileFun       = under booksDirFun "rumia"
-bookShunfalipmiFileFun = under booksDirFun "shunfalipmi"
+bookCreationFileFun    = under bookDirFun "creation"
+bookHolySymbolsFileFun = under bookDirFun "holysymbols"
+bookLopoLwanmiFileFun  = under bookDirFun "lopolwanmi"
+bookRumiaFileFun       = under bookDirFun "rumia"
+bookShunfalipmiFileFun = under bookDirFun "shunfalipmi"
 
 
 -- ==================================================
