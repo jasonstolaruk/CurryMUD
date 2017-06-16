@@ -40,13 +40,25 @@ logNotice = L.logNotice "Mud.TheWorld.Zones.Loplenko"
 
 
 loplenkoHooks :: [(HookName, HookFun)]
-loplenkoHooks = [ (lookBookshelvesHookName, lookBookshelvesHookFun)
-                , (lookMoondialHookName,    lookMoondialHookFun )
-                , (lookSundialHookName,     lookSundialHookFun  )
-                , (readBookHolyHookName,    readBookHolyHookFun )
-                , (readBookHumanHookName,   readBookHumanHookFun)
-                , (readMoondialHookName,    readMoondialHookFun )
-                , (readSundialHookName,     readSundialHookFun  ) ]
+loplenkoHooks = [ (lookBookshelvesHookName,     lookBookshelvesHookFun    )
+                , (lookMoondialHookName,        lookMoondialHookFun       )
+                , (lookSundialHookName,         lookSundialHookFun        )
+                , (readBookCreationHookName,    readBookCreationHookFun   )
+                , (readBookDwarfHookName,       readBookDwarfHookFun      )
+                , (readBookElfHookName,         readBookElfHookFun        )
+                , (readBookFelinoidHookName,    readBookFelinoidHookFun   )
+                , (readBookHobbitHookName,      readBookHobbitHookFun     )
+                , (readBookHolyHookName,        readBookHolyHookFun       )
+                , (readBookHumanHookName,       readBookHumanHookFun      )
+                , (readBookLagomorphHookName,   readBookLagomorphHookFun  )
+                , (readBookLopolwanmiHookName,  readBookLopolwanmiHookFun )
+                , (readBookNymphHookName,       readBookNymphHookFun      )
+                , (readBookRacesHookName,       readBookRacesHookFun      )
+                , (readBookRumiaHookName,       readBookRumiaHookFun      )
+                , (readBookShunfalipmiHookName, readBookShunfalipmiHookFun)
+                , (readBookVulpenoidHookName,   readBookVulpenoidHookFun  )
+                , (readMoondialHookName,        readMoondialHookFun       )
+                , (readSundialHookName,         readSundialHookFun        ) ]
 
 
 -----
@@ -117,7 +129,7 @@ lookSundialHookFun = mkGenericHookFun (mkDialDesc "sun") "looks at the sundial."
 -----
 
 
-readBookHelper :: Book -> HookFun
+readBookHelper :: Book -> HookFun -- TODO: Set room desc.
 readBookHelper b i Hook { .. } _ a@(_, (ms, _, _, _), _) =
     a & _1    %~  (\\ hookTriggers)
       & _2._3 <>~ ( let selfDesig = mkStdDesig i ms DoCap
@@ -132,8 +144,83 @@ readBookHelper b i Hook { .. } _ a@(_, (ms, _, _, _), _) =
 -----
 
 
+readBookCreationHook :: Hook
+readBookCreationHook = Hook readBookCreationHookName ["creation"]
+
+
+readBookCreationHookName :: HookName
+readBookCreationHookName = "Loplenko_iLibrary_readBookCreation"
+
+
+readBookCreationHookFun :: HookFun
+readBookCreationHookFun = readBookHelper BookCreation
+
+
+-----
+
+
+readBookDwarfHook :: Hook
+readBookDwarfHook = Hook readBookDwarfHookName ["dwarf"]
+
+
+readBookDwarfHookName :: HookName
+readBookDwarfHookName = "Loplenko_iLibrary_readBookDwarf"
+
+
+readBookDwarfHookFun :: HookFun
+readBookDwarfHookFun = readBookHelper BookDwarf
+
+
+-----
+
+
+readBookElfHook :: Hook
+readBookElfHook = Hook readBookElfHookName ["elf"]
+
+
+readBookElfHookName :: HookName
+readBookElfHookName = "Loplenko_iLibrary_readBookElf"
+
+
+readBookElfHookFun :: HookFun
+readBookElfHookFun = readBookHelper BookElf
+
+
+-----
+
+
+readBookFelinoidHook :: Hook
+readBookFelinoidHook = Hook readBookFelinoidHookName ["felinoid"]
+
+
+readBookFelinoidHookName :: HookName
+readBookFelinoidHookName = "Loplenko_iLibrary_readBookFelinoid"
+
+
+readBookFelinoidHookFun :: HookFun
+readBookFelinoidHookFun = readBookHelper BookFelinoid
+
+
+-----
+
+
+readBookHobbitHook :: Hook
+readBookHobbitHook = Hook readBookHobbitHookName ["hobbit"]
+
+
+readBookHobbitHookName :: HookName
+readBookHobbitHookName = "Loplenko_iLibrary_readBookHobbit"
+
+
+readBookHobbitHookFun :: HookFun
+readBookHobbitHookFun = readBookHelper BookHobbit
+
+
+-----
+
+
 readBookHolyHook :: Hook
-readBookHolyHook = Hook readBookHolyHookName [ "holy" ]
+readBookHolyHook = Hook readBookHolyHookName ["holy"]
 
 
 readBookHolyHookName :: HookName
@@ -148,7 +235,7 @@ readBookHolyHookFun = readBookHelper BookHoly
 
 
 readBookHumanHook :: Hook
-readBookHumanHook = Hook readBookHumanHookName [ "human" ]
+readBookHumanHook = Hook readBookHumanHookName ["human"]
 
 
 readBookHumanHookName :: HookName
@@ -157,6 +244,111 @@ readBookHumanHookName = "Loplenko_iLibrary_readBookHuman"
 
 readBookHumanHookFun :: HookFun
 readBookHumanHookFun = readBookHelper BookHuman
+
+
+-----
+
+
+readBookLagomorphHook :: Hook
+readBookLagomorphHook = Hook readBookLagomorphHookName ["lagomorph"]
+
+
+readBookLagomorphHookName :: HookName
+readBookLagomorphHookName = "Loplenko_iLibrary_readBookLagomorph"
+
+
+readBookLagomorphHookFun :: HookFun
+readBookLagomorphHookFun = readBookHelper BookLagomorph
+
+
+-----
+
+
+readBookLopolwanmiHook :: Hook
+readBookLopolwanmiHook = Hook readBookLopolwanmiHookName ["lopolwanmi"]
+
+
+readBookLopolwanmiHookName :: HookName
+readBookLopolwanmiHookName = "Loplenko_iLibrary_readBookLopolwanmi"
+
+
+readBookLopolwanmiHookFun :: HookFun
+readBookLopolwanmiHookFun = readBookHelper BookLopolwanmi
+
+
+-----
+
+
+readBookNymphHook :: Hook
+readBookNymphHook = Hook readBookNymphHookName ["nymph"]
+
+
+readBookNymphHookName :: HookName
+readBookNymphHookName = "Loplenko_iLibrary_readBookNymph"
+
+
+readBookNymphHookFun :: HookFun
+readBookNymphHookFun = readBookHelper BookNymph
+
+
+-----
+
+
+readBookRacesHook :: Hook
+readBookRacesHook = Hook readBookRacesHookName ["races"]
+
+
+readBookRacesHookName :: HookName
+readBookRacesHookName = "Loplenko_iLibrary_readBookRaces"
+
+
+readBookRacesHookFun :: HookFun
+readBookRacesHookFun = readBookHelper BookRaces
+
+
+-----
+
+
+readBookRumiaHook :: Hook
+readBookRumiaHook = Hook readBookRumiaHookName ["rumia"]
+
+
+readBookRumiaHookName :: HookName
+readBookRumiaHookName = "Loplenko_iLibrary_readBookRumia"
+
+
+readBookRumiaHookFun :: HookFun
+readBookRumiaHookFun = readBookHelper BookRumia
+
+
+-----
+
+
+readBookShunfalipmiHook :: Hook
+readBookShunfalipmiHook = Hook readBookShunfalipmiHookName ["shunfalipmi"]
+
+
+readBookShunfalipmiHookName :: HookName
+readBookShunfalipmiHookName = "Loplenko_iLibrary_readBookShunfalipmi"
+
+
+readBookShunfalipmiHookFun :: HookFun
+readBookShunfalipmiHookFun = readBookHelper BookShunfalipmi
+
+
+-----
+
+
+readBookVulpenoidHook :: Hook
+readBookVulpenoidHook = Hook readBookVulpenoidHookName ["vulpenoid"]
+
+
+readBookVulpenoidHookName :: HookName
+readBookVulpenoidHookName = "Loplenko_iLibrary_readBookVulpenoid"
+
+
+readBookVulpenoidHookFun :: HookFun
+readBookVulpenoidHookFun = readBookHelper BookVulpenoid
 
 
 -----
@@ -269,7 +461,20 @@ createLoplenko = do
             (Just "Library")
             (M.fromList [ ("look", [ lookBookshelvesHook                 ])
                         , ("put",  [ putTrashHook                        ])
-                        , ("read", [ readBookHolyHook, readBookHumanHook ]) ])
+                        , ("read", [ readBookCreationHook
+                                   , readBookDwarfHook
+                                   , readBookElfHook
+                                   , readBookFelinoidHook
+                                   , readBookHobbitHook
+                                   , readBookHolyHook
+                                   , readBookHumanHook
+                                   , readBookLagomorphHook
+                                   , readBookLopolwanmiHook
+                                   , readBookNymphHook
+                                   , readBookRacesHook
+                                   , readBookRumiaHook
+                                   , readBookShunfalipmiHook
+                                   , readBookVulpenoidHook ]) ])
             []
             []))
 

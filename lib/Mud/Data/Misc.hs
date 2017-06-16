@@ -293,8 +293,21 @@ instance Pretty BonusRec where
 
 
 instance Pretty Book where
-  pp BookHoly  = "holy"
-  pp BookHuman = "human"
+  pp BookCreation    = "creation"
+  pp BookDwarf       = "dwarf"
+  pp BookElf         = "elf"
+  pp BookFelinoid    = "felinoid"
+  pp BookHobbit      = "hobbit"
+  pp BookHoly        = "holy"
+  pp BookHuman       = "human"
+  pp BookLagomorph   = "lagomorph"
+  pp BookLopolwanmi  = "lopolwanmi"
+  pp BookNymph       = "nymph"
+  pp BookRaces       = "races"
+  pp BookRumia       = "rumia"
+  pp BookShunfalipmi = "shunfalipmi"
+  pp BookVulpenoid   = "vulpenoid"
+
 
 
 instance Pretty BugRec where
@@ -801,8 +814,20 @@ data AOrThe = A | The
 -----
 
 
-data Book = BookHoly
-          | BookHuman deriving (Eq, Ord)
+data Book = BookCreation
+          | BookDwarf
+          | BookElf
+          | BookFelinoid
+          | BookHobbit
+          | BookHoly
+          | BookHuman
+          | BookLagomorph
+          | BookLopolwanmi
+          | BookNymph
+          | BookRaces
+          | BookRumia
+          | BookShunfalipmi
+          | BookVulpenoid deriving (Eq, Ord)
 
 
 -----
