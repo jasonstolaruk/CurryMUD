@@ -1,3 +1,5 @@
+-- TODO: Add a sponsor badge. http://help.detroitlabs.com/what-we-do/
+
 # CurryMUD
 
 A textual Multi-User Dungeon ("MUD") server in Haskell. (If you are unfamiliar with the term "MUD," please refer to [this Wikipedia article](http://en.wikipedia.org/wiki/MUD).)

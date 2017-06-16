@@ -6,6 +6,7 @@ module Mud.Data.Misc ( AOrThe(..)
                      , Amount
                      , Args
                      , BanRecord(..)
+                     , Book(..)
                      , ChanContext(..)
                      , ClassifiedBcast(..)
                      , Cmd(..)
@@ -289,6 +290,11 @@ instance Pretty BonusRec where
                                , dbFromName
                                , dbToName
                                , commaShow dbAmt ]
+
+
+instance Pretty Book where
+  pp BookHoly  = "holy"
+  pp BookHuman = "human"
 
 
 instance Pretty BugRec where
@@ -790,6 +796,13 @@ instance Ord ExpCmd where
 
 
 data AOrThe = A | The
+
+
+-----
+
+
+data Book = BookHoly
+          | BookHuman deriving (Eq, Ord)
 
 
 -----

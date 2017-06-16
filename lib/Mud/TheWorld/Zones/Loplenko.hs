@@ -4,7 +4,6 @@ module Mud.TheWorld.Zones.Loplenko ( createLoplenko
                                    , loplenkoHooks
                                    , loplenkoRmActionFuns ) where
 
-import qualified Data.Text as T
 import           Mud.Data.Misc
 import           Mud.Data.State.MudData
 import           Mud.Data.State.Util.Get
@@ -26,9 +25,10 @@ import           Control.Lens.Operators ((.~), (&), (%~), (<>~))
 import           Control.Monad.IO.Class (liftIO)
 import           Data.Bits (zeroBits)
 import           Data.List ((\\), delete)
+import qualified Data.Map.Strict as M (fromList)
 import           Data.Monoid ((<>))
 import           Data.Text (Text)
-import qualified Data.Map.Strict as M (fromList)
+import qualified Data.Text as T
 
 
 logNotice :: Text -> Text -> MudStack ()
@@ -40,26 +40,30 @@ logNotice = L.logNotice "Mud.TheWorld.Zones.Loplenko"
 
 
 loplenkoHooks :: [(HookName, HookFun)]
-loplenkoHooks = [ (lookBooksHookName,    lookBooksHookFun   )
-                , (lookMoondialHookName, lookMoondialHookFun)
-                , (lookSundialHookName,  lookSundialHookFun )
-                , (readMoondialHookName, readMoondialHookFun)
-                , (readSundialHookName,  readSundialHookFun ) ]
+loplenkoHooks = [ (lookBookshelvesHookName, lookBookshelvesHookFun)
+                , (lookMoondialHookName,    lookMoondialHookFun )
+                , (lookSundialHookName,     lookSundialHookFun  )
+                , (readBookHolyHookName,    readBookHolyHookFun )
+                , (readBookHumanHookName,   readBookHumanHookFun)
+                , (readMoondialHookName,    readMoondialHookFun )
+                , (readSundialHookName,     readSundialHookFun  ) ]
 
 
 -----
 
 
-lookBooksHook :: Hook
-lookBooksHook = Hook lookBooksHookName [ "book", "books", "bookshelf", "bookshelves", "shelf", "shelves" ]
+lookBookshelvesHook :: Hook
+lookBookshelvesHook = Hook lookBookshelvesHookName [ "book", "books", "bookshelf", "bookshelves", "shelf", "shelves" ]
 
 
-lookBooksHookName :: HookName
-lookBooksHookName = "Loplenko_iLibrary_lookBooks"
+lookBookshelvesHookName :: HookName
+lookBookshelvesHookName = "Loplenko_iLibrary_lookBookshelves"
 
 
-lookBooksHookFun :: HookFun
-lookBooksHookFun = undefined -- TODO
+lookBookshelvesHookFun :: HookFun
+lookBookshelvesHookFun = mkGenericHookFun "You browse the books on the bookshelves."
+                                          "peruses the books on the bookshelves."
+                                          "looked at bookshelves"
 
 
 -----
@@ -108,6 +112,51 @@ lookSundialHookName = "Loplenko_iLoplenkoWelcome_lookSundial"
 
 lookSundialHookFun :: HookFun
 lookSundialHookFun = mkGenericHookFun (mkDialDesc "sun") "looks at the sundial." "looked at sundial"
+
+
+-----
+
+
+readBookHelper :: Book -> HookFun
+readBookHelper b i Hook { .. } _ a@(_, (ms, _, _, _), _) =
+    a & _1    %~  (\\ hookTriggers)
+      & _2._3 <>~ ( let selfDesig = mkStdDesig i ms DoCap
+                    in pure ( serialize selfDesig <> " reads a book."
+                            , i `delete` desigIds selfDesig ) )
+      & _2._4 <>~ pure (T.concat [ bracketQuote hookName, " ", dblQuote . pp $ b, " book" ])
+      & _3    <>~ fs
+  where
+    fs = [ getMsgQueueColumns i <$> getState >>= \(mq, cols) -> wrapSend mq cols . prd $ "You read " <> dblQuote (pp b) ] -- TODO
+
+
+-----
+
+
+readBookHolyHook :: Hook
+readBookHolyHook = Hook readBookHolyHookName [ "holy" ]
+
+
+readBookHolyHookName :: HookName
+readBookHolyHookName = "Loplenko_iLibrary_readBookHoly"
+
+
+readBookHolyHookFun :: HookFun
+readBookHolyHookFun = readBookHelper BookHoly
+
+
+-----
+
+
+readBookHumanHook :: Hook
+readBookHumanHook = Hook readBookHumanHookName [ "human" ]
+
+
+readBookHumanHookName :: HookName
+readBookHumanHookName = "Loplenko_iLibrary_readBookHuman"
+
+
+readBookHumanHookFun :: HookFun
+readBookHumanHookFun = readBookHelper BookHuman
 
 
 -----
@@ -172,23 +221,7 @@ readSundialHookFun i Hook { .. } _ a@(_, (ms, _, _, _), _) =
 
 
 loplenkoRmActionFuns :: [(FunName, RmActionFun)]
-loplenkoRmActionFuns = pure (readRmActionFunName, readBook)
-
-
------
-
-
-readRmAction :: RmAction
-readRmAction = RmAction "read" readRmActionFunName -- TODO: Does this "read" clash with the usual "read"?
-
-
-readRmActionFunName :: FunName
-readRmActionFunName = "LoplenkoZone_iLibrary_read"
-
-
-
-readBook :: RmActionFun
-readBook = undefined -- TODO
+loplenkoRmActionFuns = []
 
 
 -- ==================================================
@@ -225,7 +258,7 @@ createLoplenko = do
         []
         mempty
         (mkRm (RmTemplate "Library"
-            "This is the library.\n\
+            "This is the library. There are a number of bookshelves.\n\
             \There is a trash bin here."
             Nothing
             Nothing
@@ -234,9 +267,11 @@ createLoplenko = do
             (0, 0, -1)
             InsideEnv
             (Just "Library")
-            (M.fromList [ ("look", [ lookBooksHook ])
-                        , ("put",  [ putTrashHook  ]) ])
-            [ readRmAction ]
+            (M.fromList [ ("look", [ lookBookshelvesHook                 ])
+                        , ("put",  [ putTrashHook                        ])
+                        , ("read", [ readBookHolyHook, readBookHumanHook ]) ])
+            []
             []))
 
   putRmTeleName iLoplenkoWelcome "loplenko"
+  putRmTeleName iLibrary         "library"
