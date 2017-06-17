@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, RecordWildCards #-}
+{-# LANGUAGE MonadComprehensions, OverloadedStrings, RecordWildCards #-}
 
 module Mud.TheWorld.Zones.Loplenko ( createLoplenko
                                    , loplenkoHooks
@@ -82,10 +82,20 @@ lookBookshelvesHookName :: HookName
 lookBookshelvesHookName = "Loplenko_iLibrary_lookBookshelves"
 
 
-lookBookshelvesHookFun :: HookFun -- TODO: Read the "booklist" file.
-lookBookshelvesHookFun = mkGenericHookFun "You browse the books on the bookshelves."
-                                          "peruses the books on the bookshelves."
-                                          "looked at bookshelves"
+lookBookshelvesHookFun :: HookFun
+lookBookshelvesHookFun i Hook { .. } _ a@(_, (ms, _, _, _), _) =
+    a & _1    %~  (\\ hookTriggers)
+      & _2._3 <>~ ( let selfDesig = mkStdDesig i ms DoCap
+                    in pure ( serialize selfDesig <> " peruses the books on the bookshelves."
+                            , i `delete` desigIds selfDesig ) )
+      & _2._4 <>~ pure (bracketQuote hookName <> " bookshelves")
+      & _3    <>~ pure (send mq =<< helper)
+  where
+    helper       = liftIO readBookList |&| try >=> eitherRet handler
+    readBookList = [ multiWrap cols . T.lines $ cont | file <- mkMudFilePath bookListFileFun
+                                                     , cont <- T.readFile file ]
+    handler e    = fileIOExHandler "lookBookshelvesHookFun" e >> return (wrapUnlinesNl cols bookListErrorMsg)
+    (mq, cols)   = getMsgQueueColumns i ms
 
 
 -----

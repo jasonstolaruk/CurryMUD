@@ -118,6 +118,10 @@ dbFileFun = under dbDirFun $ "CurryMUD" <.> "sqlite3"
 -- Books:
 
 
+bookListFileFun :: FilePathFun
+bookListFileFun = under bookDirFun "booklist"
+
+
 -- Races:
 bookDwarfFileFun, bookElfFileFun, bookFelinoidFileFun, bookHobbitFileFun, bookHumanFileFun, bookLagomorphFileFun, bookNymphFileFun, bookRacesFileFun, bookVulpenoidFileFun :: FilePathFun
 bookDwarfFileFun     = under bookDirFun "dwarf"

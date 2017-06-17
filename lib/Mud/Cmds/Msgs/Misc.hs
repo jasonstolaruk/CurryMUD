@@ -41,6 +41,10 @@ bookFileErrorMsg :: Text -> Text
 bookFileErrorMsg n = "Unfortunately, the " <> n <> " book file could not be read."
 
 
+bookListErrorMsg :: Text
+bookListErrorMsg = "Unfortunately, the book list could not be retrieved."
+
+
 corpseSmellLvl1, corpseSmellLvl2, corpseSmellLvl3, corpseSmellLvl4 :: Text
 corpseSmellLvl1 = "Due to the lack of an offensive odor, it's clear that the deceased expired recently."
 corpseSmellLvl2 = "There is an unpleasant scent akin to that of rotting fruit."
