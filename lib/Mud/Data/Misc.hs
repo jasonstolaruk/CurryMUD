@@ -297,6 +297,7 @@ instance Pretty Book where
   pp BookDwarf       = "dwarf"
   pp BookElf         = "elf"
   pp BookFelinoid    = "felinoid"
+  pp BookHistory     = "history"
   pp BookHobbit      = "hobbit"
   pp BookHoly        = "holy"
   pp BookHuman       = "human"
@@ -304,7 +305,6 @@ instance Pretty Book where
   pp BookLopolwanmi  = "lopolwanmi"
   pp BookNymph       = "nymph"
   pp BookRaces       = "races"
-  pp BookRumia       = "rumia"
   pp BookShunfalipmi = "shunfalipmi"
   pp BookVulpenoid   = "vulpenoid"
 
@@ -818,6 +818,7 @@ data Book = BookCreation
           | BookDwarf
           | BookElf
           | BookFelinoid
+          | BookHistory
           | BookHobbit
           | BookHoly
           | BookHuman
@@ -825,7 +826,6 @@ data Book = BookCreation
           | BookLopolwanmi
           | BookNymph
           | BookRaces
-          | BookRumia
           | BookShunfalipmi
           | BookVulpenoid deriving (Eq, Ord)
 

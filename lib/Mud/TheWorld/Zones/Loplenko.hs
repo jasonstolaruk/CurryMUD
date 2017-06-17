@@ -57,6 +57,7 @@ loplenkoHooks = [ (lookBookshelvesHookName,     lookBookshelvesHookFun    )
                 , (readBookDwarfHookName,       readBookDwarfHookFun      )
                 , (readBookElfHookName,         readBookElfHookFun        )
                 , (readBookFelinoidHookName,    readBookFelinoidHookFun   )
+                , (readBookHistoryHookName,     readBookHistoryHookFun    )
                 , (readBookHobbitHookName,      readBookHobbitHookFun     )
                 , (readBookHolyHookName,        readBookHolyHookFun       )
                 , (readBookHumanHookName,       readBookHumanHookFun      )
@@ -64,7 +65,6 @@ loplenkoHooks = [ (lookBookshelvesHookName,     lookBookshelvesHookFun    )
                 , (readBookLopolwanmiHookName,  readBookLopolwanmiHookFun )
                 , (readBookNymphHookName,       readBookNymphHookFun      )
                 , (readBookRacesHookName,       readBookRacesHookFun      )
-                , (readBookRumiaHookName,       readBookRumiaHookFun      )
                 , (readBookShunfalipmiHookName, readBookShunfalipmiHookFun)
                 , (readBookVulpenoidHookName,   readBookVulpenoidHookFun  )
                 , (readMoondialHookName,        readMoondialHookFun       )
@@ -183,6 +183,7 @@ getBookTxt b cols = liftIO (T.readFile =<< mkFilePath) |&| try >=> eitherRet han
                                            BookDwarf       -> bookDwarfFileFun
                                            BookElf         -> bookElfFileFun
                                            BookFelinoid    -> bookFelinoidFileFun
+                                           BookHistory     -> bookHistoryFileFun
                                            BookHobbit      -> bookHobbitFileFun
                                            BookHoly        -> bookHolyFileFun
                                            BookHuman       -> bookHumanFileFun
@@ -190,10 +191,9 @@ getBookTxt b cols = liftIO (T.readFile =<< mkFilePath) |&| try >=> eitherRet han
                                            BookLopolwanmi  -> bookLopoLwanmiFileFun
                                            BookNymph       -> bookNymphFileFun
                                            BookRaces       -> bookRacesFileFun
-                                           BookRumia       -> bookRumiaFileFun
                                            BookShunfalipmi -> bookShunfalipmiFileFun
                                            BookVulpenoid   -> bookVulpenoidFileFun
-    handler e = do fileIOExHandler "getBookTxtByName" e
+    handler e = do fileIOExHandler "getBookTxt" e
                    return . wrapUnlines cols . bookFileErrorMsg . dblQuote . pp $ b
 
 
@@ -255,6 +255,21 @@ readBookFelinoidHookName = "Loplenko_iLibrary_readBookFelinoid"
 
 readBookFelinoidHookFun :: HookFun
 readBookFelinoidHookFun = readBookHelper BookFelinoid
+
+
+-----
+
+
+readBookHistoryHook :: Hook
+readBookHistoryHook = Hook readBookHistoryHookName ["history"]
+
+
+readBookHistoryHookName :: HookName
+readBookHistoryHookName = "Loplenko_iLibrary_readBookHistory"
+
+
+readBookHistoryHookFun :: HookFun
+readBookHistoryHookFun = readBookHelper BookHistory
 
 
 -----
@@ -360,21 +375,6 @@ readBookRacesHookName = "Loplenko_iLibrary_readBookRaces"
 
 readBookRacesHookFun :: HookFun
 readBookRacesHookFun = readBookHelper BookRaces
-
-
------
-
-
-readBookRumiaHook :: Hook
-readBookRumiaHook = Hook readBookRumiaHookName ["rumia"]
-
-
-readBookRumiaHookName :: HookName
-readBookRumiaHookName = "Loplenko_iLibrary_readBookRumia"
-
-
-readBookRumiaHookFun :: HookFun
-readBookRumiaHookFun = readBookHelper BookRumia
 
 
 -----
@@ -521,6 +521,7 @@ createLoplenko = do
                                    , readBookDwarfHook
                                    , readBookElfHook
                                    , readBookFelinoidHook
+                                   , readBookHistoryHook
                                    , readBookHobbitHook
                                    , readBookHolyHook
                                    , readBookHumanHook
@@ -528,7 +529,6 @@ createLoplenko = do
                                    , readBookLopolwanmiHook
                                    , readBookNymphHook
                                    , readBookRacesHook
-                                   , readBookRumiaHook
                                    , readBookShunfalipmiHook
                                    , readBookVulpenoidHook ]) ])
             []
