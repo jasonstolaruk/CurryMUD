@@ -1228,7 +1228,7 @@ mkCan'tRemInvDescs = can'tInvDescsHelper sorryRemEnc
 
 
 helperSettings :: HasCallStack => Id -> MudState -> (Pla, [Text], [Text]) -> Text -> (Pla, [Text], [Text])
-helperSettings _ _ a@(_, msgs, _) arg@(T.length . T.filter (== '=') -> noOfEqs)
+helperSettings _ _ a@(_, msgs, _) arg@(length . filter (== '=') . T.unpack -> noOfEqs)
   | or [ noOfEqs /= 1, T.head arg == '=', T.last arg == '=' ] =
       let msg    = sorryParseArg arg
           f      = any (adviceSettingsInvalid `T.isInfixOf`) msgs ?  (++ pure msg)
