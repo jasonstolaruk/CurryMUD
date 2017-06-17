@@ -89,12 +89,13 @@ lookBookshelvesHookFun i Hook { .. } _ a@(_, (ms, _, _, _), _) =
                     in pure ( serialize selfDesig <> " peruses the books on the bookshelves."
                             , i `delete` desigIds selfDesig ) )
       & _2._4 <>~ pure (bracketQuote hookName <> " bookshelves")
-      & _3    <>~ pure (send mq =<< helper)
+      & _3    <>~ pure helper
   where
-    helper       = liftIO readBookList |&| try >=> eitherRet handler
-    readBookList = [ multiWrap cols . T.lines $ cont | file <- mkMudFilePath bookListFileFun
-                                                     , cont <- T.readFile file ]
-    handler e    = fileIOExHandler "lookBookshelvesHookFun" e >> return (wrapUnlinesNl cols bookListErrorMsg)
+    helper       = pager i mq Nothing =<< eitherRet handler =<< try readBookList
+    readBookList = [ map xformLeadingSpaceChars . parseWrap s cols $ cont | file <- liftIO . mkMudFilePath $ bookListFileFun
+                                                                          , cont <- liftIO . T.readFile $ file
+                                                                          , s    <- getServerSettings ]
+    handler e    = fileIOExHandler "lookBookshelvesHookFun" e >> return (wrap cols bookListErrorMsg)
     (mq, cols)   = getMsgQueueColumns i ms
 
 
@@ -508,8 +509,8 @@ createLoplenko = do
             (0, 0, -1)
             InsideEnv
             (Just "Library")
-            (M.fromList [ ("look", [ lookBookshelvesHook ])
-                        , ("put",  [ putTrashHook        ])
+            (M.fromList [ ("look", [ lookBookshelvesHook, lookTrashHook ])
+                        , ("put",  [ putTrashHook                       ])
                         , ("read", [ readBookCreationHook
                                    , readBookDwarfHook
                                    , readBookElfHook

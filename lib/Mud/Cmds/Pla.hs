@@ -2997,7 +2997,7 @@ interpSecurityCreateA _ _  p                       = pmf "interpSecurityCreateA"
 -----
 
 
-setAction :: HasCallStack => ActionFun
+setAction :: HasCallStack => ActionFun -- TODO: "set columns=40" and others aren't working.
 setAction (NoArgs i mq cols) = getState >>= \ms ->
     let (styleAbbrevs Don'tQuote -> names, values) = unzip . mkSettingPairs i $ ms
     in logPlaExecArgs "set" [] i >> multiWrapSend mq cols [ padSettingName (n <> ": ") <> v | n <- names | v <- values ]
