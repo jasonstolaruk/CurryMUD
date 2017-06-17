@@ -160,10 +160,16 @@ readBookHelper b i Hook { .. } _ a@(_, (ms, _, _, _), _) =
       & _3    <>~ pure (readABook i b)
 
 
-readABook :: Id -> Book -> MudStack () -- TODO: Set and unset room desc.
+readABook :: Id -> Book -> MudStack ()
 readABook i b = ((,) <$> getState <*> getServerSettings) >>= \(ms, s) ->
-    let (mq, cols) = getMsgQueueColumns i ms
-    in pager i mq Nothing =<< parseBookTxt s cols <$> getBookTxt b cols
+    let (mq, cols)     = getMsgQueueColumns i ms
+        rmDescHelper x = tweak $ mobTbl.ind i.mobRmDesc .~ x
+        next           = rmDescHelper Nothing >> setInterp i Nothing >> sendDfltPrompt mq i >> bcastNl bs
+        bs             = pure ( serialize selfDesig <> " finishes reading a book."
+                              , i `delete` desigIds selfDesig )
+        selfDesig      = mkStdDesig i ms DoCap
+    in do rmDescHelper . Just $ "reading a book"
+          pager i mq (Just next) =<< parseBookTxt s cols <$> getBookTxt b cols
 
 
 parseBookTxt :: ServerSettings -> Cols -> Text -> [Text]
