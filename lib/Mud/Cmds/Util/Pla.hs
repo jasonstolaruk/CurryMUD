@@ -1285,7 +1285,7 @@ mkSettingPairs i ms = let p = getPla i ms
 
 
 helperTune :: HasCallStack => Sing -> (TeleLinkTbl, [Chan], [Text], [Text]) -> Text -> (TeleLinkTbl, [Chan], [Text], [Text])
-helperTune _ a arg@(T.length . T.filter (== '=') -> noOfEqs)
+helperTune _ a arg@(length . filter (== '=') . T.unpack -> noOfEqs)
   | or [ noOfEqs /= 1, T.head arg == '=', T.last arg == '=' ] = a & _3 %~ tuneInvalidArg arg
 helperTune s a@(linkTbl, chans, _, _) arg@(T.breakOn "=" -> (name, T.tail -> value)) = case lookup value inOutOnOffs of
   Nothing  -> a & _3 %~ tuneInvalidArg arg
