@@ -4,6 +4,8 @@ module Mud.TheWorld.Zones.Loplenko ( createLoplenko
                                    , loplenkoHooks
                                    , loplenkoRmActionFuns ) where
 
+import           Mud.Cmds.Msgs.Misc
+import           Mud.Cmds.Util.Misc
 import           Mud.Data.Misc
 import           Mud.Data.State.MudData
 import           Mud.Data.State.Util.Get
@@ -13,15 +15,22 @@ import           Mud.Data.State.Util.Output
 import           Mud.Data.State.Util.Put
 import           Mud.Misc.CurryTime
 import qualified Mud.Misc.Logging as L (logNotice)
+import           Mud.Misc.Misc
 import           Mud.TheWorld.Misc
 import           Mud.TheWorld.Zones.LoplenkoIds
+import           Mud.Threads.Misc
+import           Mud.TopLvlDefs.FilePaths
+import           Mud.Util.Misc
 import           Mud.Util.Operators
 import           Mud.Util.Padding
 import           Mud.Util.Quoting
 import           Mud.Util.Text
+import           Mud.Util.Wrapping
 
+import           Control.Exception.Lifted (try)
 import           Control.Lens (_1, _2, _3, _4)
 import           Control.Lens.Operators ((.~), (&), (%~), (<>~))
+import           Control.Monad ((>=>))
 import           Control.Monad.IO.Class (liftIO)
 import           Data.Bits (zeroBits)
 import           Data.List ((\\), delete)
@@ -29,6 +38,7 @@ import qualified Data.Map.Strict as M (fromList)
 import           Data.Monoid ((<>))
 import           Data.Text (Text)
 import qualified Data.Text as T
+import qualified Data.Text.IO as T (readFile)
 
 
 logNotice :: Text -> Text -> MudStack ()
@@ -72,7 +82,7 @@ lookBookshelvesHookName :: HookName
 lookBookshelvesHookName = "Loplenko_iLibrary_lookBookshelves"
 
 
-lookBookshelvesHookFun :: HookFun
+lookBookshelvesHookFun :: HookFun -- TODO: Read the "booklist" file.
 lookBookshelvesHookFun = mkGenericHookFun "You browse the books on the bookshelves."
                                           "peruses the books on the bookshelves."
                                           "looked at bookshelves"
@@ -129,16 +139,45 @@ lookSundialHookFun = mkGenericHookFun (mkDialDesc "sun") "looks at the sundial."
 -----
 
 
-readBookHelper :: Book -> HookFun -- TODO: Set room desc.
+readBookHelper :: Book -> HookFun
 readBookHelper b i Hook { .. } _ a@(_, (ms, _, _, _), _) =
     a & _1    %~  (\\ hookTriggers)
       & _2._3 <>~ ( let selfDesig = mkStdDesig i ms DoCap
                     in pure ( serialize selfDesig <> " reads a book."
                             , i `delete` desigIds selfDesig ) )
       & _2._4 <>~ pure (T.concat [ bracketQuote hookName, " ", dblQuote . pp $ b, " book" ])
-      & _3    <>~ fs
+      & _3    <>~ pure (readABook i b)
+
+
+readABook :: Id -> Book -> MudStack () -- TODO: Set and unset room desc.
+readABook i b = ((,) <$> getState <*> getServerSettings) >>= \(ms, s) ->
+    let (mq, cols) = getMsgQueueColumns i ms
+    in pager i mq Nothing =<< parseBookTxt s cols <$> getBookTxt b cols
+
+
+parseBookTxt :: ServerSettings -> Cols -> Text -> [Text]
+parseBookTxt s cols = map (xformLeadingSpaceChars . expandDividers cols) . parseWrap s cols
+
+
+getBookTxt :: Book -> Cols -> MudStack Text
+getBookTxt b cols = liftIO (T.readFile =<< mkFilePath) |&| try >=> eitherRet handler
   where
-    fs = [ getMsgQueueColumns i <$> getState >>= \(mq, cols) -> wrapSend mq cols . prd $ "You read " <> dblQuote (pp b) ] -- TODO
+    mkFilePath = mkMudFilePath $ case b of BookCreation    -> bookCreationFileFun
+                                           BookDwarf       -> bookDwarfFileFun
+                                           BookElf         -> bookElfFileFun
+                                           BookFelinoid    -> bookFelinoidFileFun
+                                           BookHobbit      -> bookHobbitFileFun
+                                           BookHoly        -> bookHolyFileFun
+                                           BookHuman       -> bookHumanFileFun
+                                           BookLagomorph   -> bookLagomorphFileFun
+                                           BookLopolwanmi  -> bookLopoLwanmiFileFun
+                                           BookNymph       -> bookNymphFileFun
+                                           BookRaces       -> bookRacesFileFun
+                                           BookRumia       -> bookRumiaFileFun
+                                           BookShunfalipmi -> bookShunfalipmiFileFun
+                                           BookVulpenoid   -> bookVulpenoidFileFun
+    handler e = do fileIOExHandler "getBookTxtByName" e
+                   return . wrapUnlines cols . bookFileErrorMsg . dblQuote . pp $ b
 
 
 -----
@@ -459,8 +498,8 @@ createLoplenko = do
             (0, 0, -1)
             InsideEnv
             (Just "Library")
-            (M.fromList [ ("look", [ lookBookshelvesHook                 ])
-                        , ("put",  [ putTrashHook                        ])
+            (M.fromList [ ("look", [ lookBookshelvesHook ])
+                        , ("put",  [ putTrashHook        ])
                         , ("read", [ readBookCreationHook
                                    , readBookDwarfHook
                                    , readBookElfHook

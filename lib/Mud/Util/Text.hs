@@ -10,6 +10,7 @@ module Mud.Util.Text ( aOrAn
                      , countOcc
                      , divider
                      , dropBlanks
+                     , expandDividers
                      , fillerToSpcs
                      , findFullNameForAbbrev
                      , frame
@@ -195,6 +196,14 @@ dropBlanks :: [Text] -> [Text]
 dropBlanks []      = []
 dropBlanks ("":xs) =     dropBlanks xs
 dropBlanks ( x:xs) = x : dropBlanks xs
+
+
+-----
+
+
+expandDividers :: Cols -> Text -> Text
+expandDividers cols t | t == T.singleton dividerToken = T.replicate cols "-"
+                      | otherwise                     = t
 
 
 -----

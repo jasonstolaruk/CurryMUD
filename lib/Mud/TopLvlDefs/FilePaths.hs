@@ -118,9 +118,23 @@ dbFileFun = under dbDirFun $ "CurryMUD" <.> "sqlite3"
 -- Books:
 
 
-bookCreationFileFun, bookHolySymbolsFileFun, bookLopoLwanmiFileFun, bookRumiaFileFun, bookShunfalipmiFileFun :: FilePathFun
+-- Races:
+bookDwarfFileFun, bookElfFileFun, bookFelinoidFileFun, bookHobbitFileFun, bookHumanFileFun, bookLagomorphFileFun, bookNymphFileFun, bookRacesFileFun, bookVulpenoidFileFun :: FilePathFun
+bookDwarfFileFun     = under bookDirFun "dwarf"
+bookElfFileFun       = under bookDirFun "elf"
+bookFelinoidFileFun  = under bookDirFun "felinoid"
+bookHobbitFileFun    = under bookDirFun "hobbit"
+bookHumanFileFun     = under bookDirFun "human"
+bookLagomorphFileFun = under bookDirFun "lagomorph"
+bookNymphFileFun     = under bookDirFun "nymph"
+bookRacesFileFun     = under bookDirFun "races"
+bookVulpenoidFileFun = under bookDirFun "vulpenoid"
+
+
+-- Other:
+bookCreationFileFun, bookHolyFileFun, bookLopoLwanmiFileFun, bookRumiaFileFun, bookShunfalipmiFileFun :: FilePathFun
 bookCreationFileFun    = under bookDirFun "creation"
-bookHolySymbolsFileFun = under bookDirFun "holysymbols"
+bookHolyFileFun        = under bookDirFun "holy"
 bookLopoLwanmiFileFun  = under bookDirFun "lopolwanmi"
 bookRumiaFileFun       = under bookDirFun "rumia"
 bookShunfalipmiFileFun = under bookDirFun "shunfalipmi"

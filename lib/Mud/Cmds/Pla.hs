@@ -1600,10 +1600,8 @@ mkHelpData ls is ia = do
 
 
 parseHelpTxt :: HasCallStack => ServerSettings -> [Cmd] -> Cols -> Text -> [Text]
-parseHelpTxt s cmds cols txt = [ procCmdTokens . xformLeadingSpaceChars . expandDividers $ t | t <- parseWrap s cols txt ]
+parseHelpTxt s cmds cols txt = [ procCmdTokens . xformLeadingSpaceChars . expandDividers cols $ t | t <- parseWrap s cols txt ]
   where
-    expandDividers l | l == T.singleton dividerToken         = T.replicate cols "-"
-                     | otherwise                             = l
     procCmdTokens (T.uncons -> Just (x, xs)) | x == cmdToken = helper
       where
         helper                = let (cn, rest) = T.break isSpace xs
