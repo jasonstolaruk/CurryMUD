@@ -64,10 +64,10 @@ import           Data.Ix (inRange)
 import           Data.List (intercalate, sortBy)
 import           Data.Monoid ((<>))
 import           Data.Text (Text)
-import qualified Data.ByteString.Lazy as B
+import qualified Data.ByteString.Lazy as LB
 import qualified Data.Text as T
 import qualified Data.Text.Lazy as LT
-import qualified Data.Text.Lazy.Encoding as LT
+import qualified Data.Text.Lazy.Encoding as LTE
 
 
 blowUp :: BlowUp a
@@ -377,8 +377,8 @@ spcR = (<> " ")
 -----
 
 
-strictTxtToLazyBS :: Text -> B.ByteString
-strictTxtToLazyBS = LT.encodeUtf8 . LT.fromStrict
+strictTxtToLazyBS :: Text -> LB.ByteString
+strictTxtToLazyBS = LTE.encodeUtf8 . LT.fromStrict
 
 
 -----

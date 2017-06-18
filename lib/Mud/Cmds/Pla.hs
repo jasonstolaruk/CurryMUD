@@ -98,7 +98,7 @@ import qualified Data.IntMap.Strict as IM ((!), keys)
 import qualified Data.Map.Strict as M ((!), elems, filter, foldrWithKey, keys, lookup, singleton, size, toList)
 import qualified Data.Set as S (filter, toList)
 import qualified Data.Text as T
-import qualified Data.Text.Encoding as T
+import qualified Data.Text.Encoding as TE
 import qualified Data.Text.IO as T (readFile)
 import           System.Clock (Clock(..), TimeSpec(..), getTime)
 import           System.Console.ANSI (ColorIntensity(..), clearScreenCode)
@@ -2190,7 +2190,7 @@ interpCurrPW cn (WithArgs i mq cols as)
   | ()# cn || ()!# as = pwSorryHelper i mq cols sorryInterpPW
   | otherwise         = getState >>= fmap join . withDbExHandler "interpCurrPW" . lookupPW . getSing i >>= \case
     Nothing -> pwSorryHelper i mq cols sorryInterpPW
-    Just pw -> if uncurry validatePassword ((pw, cn) & both %~ T.encodeUtf8)
+    Just pw -> if uncurry validatePassword ((pw, cn) & both %~ TE.encodeUtf8)
       then do blankLine        mq
               multiWrapSend1Nl mq cols . pwMsg $ "Please choose a new password."
               sendPrompt       mq "New password:"

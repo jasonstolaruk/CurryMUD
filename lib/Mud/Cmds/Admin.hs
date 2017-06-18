@@ -80,7 +80,7 @@ import           Data.Monoid ((<>), Any(..), Sum(..), getSum)
 import qualified Data.Set as S (toList)
 import           Data.Text (Text)
 import qualified Data.Text as T
-import qualified Data.Text.Encoding as T
+import qualified Data.Text.Encoding as TE
 import qualified Data.Text.IO as T (putStrLn)
 import           Data.Time (TimeZone, UTCTime, defaultTimeLocale, diffUTCTime, formatTime, getCurrentTime, getCurrentTimeZone, getZonedTime, utcToLocalTime, utcToZonedTime)
 import           Data.Tuple (swap)
@@ -531,7 +531,7 @@ adminClone p = pmf "adminClone" p
 
 adminConfig :: HasCallStack => ActionFun
 adminConfig (NoArgs' i mq) = do logPlaExec (prefixAdminCmd "config") i
-                                send mq . nl . T.decodeUtf8 . encode =<< getServerSettings
+                                send mq . nl . TE.decodeUtf8 . encode =<< getServerSettings
 adminConfig p              = withoutArgs adminConfig p
 
 
@@ -1109,7 +1109,7 @@ adminHash p@AdviseNoArgs                      = advise p [ prefixAdminCmd "hash"
 adminHash p@AdviseOneArg                      = advise p [ prefixAdminCmd "hash" ] adviceAHashNoHash
 adminHash   (WithArgs i mq cols [ pw, hash ]) = do
     logPlaExec (prefixAdminCmd "hash") i
-    wrapSend mq cols $ if uncurry validatePassword ((hash, pw) & both %~ T.encodeUtf8)
+    wrapSend mq cols $ if uncurry validatePassword ((hash, pw) & both %~ TE.encodeUtf8)
       then "It's a match!"
       else "The plain-text password does not match the hashed password."
 adminHash p = advise p [ prefixAdminCmd "hash" ] adviceAHashExcessArgs

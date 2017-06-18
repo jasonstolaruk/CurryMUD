@@ -25,7 +25,7 @@ import           Data.Conduit (($$), (=$), yield)
 import           Data.List (sort)
 import           Data.Text (Text)
 import           Data.Tuple (swap)
-import qualified Data.ByteString.Lazy as B (toStrict)
+import qualified Data.ByteString.Lazy as LB (toStrict)
 import qualified Data.Conduit.Binary as CB (sinkFile)
 import qualified Data.Conduit.List as CL (map)
 import qualified Data.IntMap.Strict as IM (fromList, map)
@@ -90,7 +90,7 @@ persistHelper l ms = withLock l $ do
     getNonExistingPath path = mIf (doesDirectoryExist path)
                                   (getNonExistingPath $ path ++ "_")
                                   (return path)
-    write tbl file = yield (toJSON tbl) $$ CL.map (B.toStrict . encode) =$ CB.sinkFile file
+    write tbl file = yield (toJSON tbl) $$ CL.map (LB.toStrict . encode) =$ CB.sinkFile file
     eqTblHelper    = views eqTbl convertEqMaps
     convertEqMaps  = IM.map (IM.fromList . map swap . M.toList)
 

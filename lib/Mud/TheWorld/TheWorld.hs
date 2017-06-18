@@ -35,7 +35,7 @@ import           Control.Lens.Operators ((?~), (.~), (&), (%~), (^.))
 import           Control.Monad (forM_, unless)
 import           Control.Monad.IO.Class (liftIO)
 import           Data.Aeson (FromJSON, eitherDecode)
-import qualified Data.ByteString.Lazy as B (readFile)
+import qualified Data.ByteString.Lazy as LB (readFile)
 import           Data.IORef (newIORef)
 import qualified Data.IntMap.Strict as IM (empty, foldrWithKey, fromList, keys, toList, map)
 import           Data.List (delete, sort)
@@ -231,7 +231,7 @@ loadWorld dir = (</> dir) <$> liftIO (mkMudFilePath persistDirFun) >>= \path -> 
 
 
 loadEqTbl :: HasCallStack => FilePath -> MudStack Bool
-loadEqTbl ((</> eqTblFile) -> absolute) = eitherDecode <$> liftIO (B.readFile absolute) >>= \case
+loadEqTbl ((</> eqTblFile) -> absolute) = eitherDecode <$> liftIO (LB.readFile absolute) >>= \case
   Left err                                                  -> sorry absolute err
   Right (IM.map (M.fromList . map swap . IM.toList) -> tbl) -> tweak (eqTbl .~ tbl) >> return True
 
@@ -241,7 +241,7 @@ sorry absolute (T.pack -> err) = logErrorMsg "sorry" (loadTblErrorMsg absolute e
 
 
 loadTbl :: (HasCallStack, FromJSON b) => FilePath -> ASetter MudState MudState a b -> FilePath -> MudStack Bool
-loadTbl tblFile lens path = let absolute = path </> tblFile in eitherDecode <$> liftIO (B.readFile absolute) >>= \case
+loadTbl tblFile lens path = let absolute = path </> tblFile in eitherDecode <$> liftIO (LB.readFile absolute) >>= \case
   Left  err -> sorry absolute err
   Right tbl -> tweak (lens .~ tbl) >> return True
 

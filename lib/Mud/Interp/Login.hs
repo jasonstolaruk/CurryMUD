@@ -66,7 +66,7 @@ import           Prelude hiding (pi)
 import qualified Data.IntMap.Strict as IM (foldr, keys, toList)
 import qualified Data.Set as S (Set, empty, fromList, insert, member, union)
 import qualified Data.Text as T
-import qualified Data.Text.Encoding as T
+import qualified Data.Text.Encoding as TE
 import qualified Data.Text.IO as T (readFile)
 import qualified Data.Vector.Unboxed as V (Vector, length, toList)
 import           System.FilePath ((</>))
@@ -701,7 +701,7 @@ interpPW times targetSing cn params@(WithArgs i mq cols as) = getState >>= \ms -
       then sorryPW oldSing
       else join <$> withDbExHandler "interpPW" (lookupPW targetSing) >>= \case
         Nothing -> sorryPW oldSing
-        Just pw -> if uncurry validatePassword ((pw, cn) & both %~ T.encodeUtf8)
+        Just pw -> if uncurry validatePassword ((pw, cn) & both %~ TE.encodeUtf8)
           then let mkMsg t = T.concat [ oldSing
                                       , " has entered the correct password for "
                                       , targetSing

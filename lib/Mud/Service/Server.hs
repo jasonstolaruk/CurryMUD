@@ -23,7 +23,7 @@ import qualified Data.IntMap.Strict as IM (IntMap, elems, mapWithKey)
 import           Data.Monoid ((<>))
 import           Data.Text (Text)
 import qualified Data.Text as T
-import qualified Data.Text.Encoding as T (encodeUtf8)
+import qualified Data.Text.Encoding as TE (encodeUtf8)
 import           GHC.Stack (HasCallStack)
 import           Servant (Handler, Header, Headers, NoContent(..), Server, (:<|>)(..), err401, err404, errBody)
 import           Servant.Auth.Server (AuthResult(..), CookieSettings, JWTSettings, SetCookie, acceptLogin, throwAll)
@@ -437,7 +437,7 @@ loginHandler :: HasCallStack => IORef MudState
                              -> Handler (Headers '[ Header "Set-Cookie" SetCookie
                                                   , Header "Set-Cookie" SetCookie ] NoContent)
 loginHandler ior cs jwts login@(Login un pw) = liftIO (lookupPW un) >>= \case
-    Just pw' | uncurry validatePassword ((pw', pw) & both %~ T.encodeUtf8) -> liftIO (acceptLogin cs jwts login) >>= \case
+    Just pw' | uncurry validatePassword ((pw', pw) & both %~ TE.encodeUtf8) -> liftIO (acceptLogin cs jwts login) >>= \case
                  Just applyCookies -> logHelper "" >> return (applyCookies NoContent)
                  Nothing           -> throw401
              | otherwise -> throw401

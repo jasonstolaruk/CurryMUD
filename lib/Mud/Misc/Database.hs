@@ -88,7 +88,7 @@ import qualified Data.ByteString.Char8 as B
 import           Data.Monoid ((<>))
 import           Data.Text (Text)
 import qualified Data.Text as T
-import qualified Data.Text.Encoding as T
+import qualified Data.Text.Encoding as TE
 import           Data.Time (UTCTime)
 import           Database.SQLite.Simple (Connection, FromRow, Only(..), Query(..), ToRow, execute, execute_, field, fromRow, query, query_, toRow, withConnection)
 import           Database.SQLite.Simple.FromRow (RowParser)
@@ -442,7 +442,7 @@ onlyIntsHelper (Only x:_) = x
 
 
 hashPW :: String -> IO Text
-hashPW = maybeEmp T.decodeUtf8 `fmap2` (hashPasswordUsingPolicy fastBcryptHashingPolicy . B.pack)
+hashPW = maybeEmp TE.decodeUtf8 `fmap2` (hashPasswordUsingPolicy fastBcryptHashingPolicy . B.pack)
 
 
 -----
