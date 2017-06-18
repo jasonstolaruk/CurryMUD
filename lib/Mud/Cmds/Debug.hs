@@ -145,7 +145,7 @@ debugCmds =
     , mkDebugCmd "gmcpwill"    debugGmcpWill    "Send IAC WILL GMCP."
     , mkDebugCmd "handle"      debugHandle      "Display information about the handle for your network connection."
     , mkDebugCmd "id"          debugId          "Search the \"MudState\" tables for a given ID."
-    , mkDebugCmd "jwt"         debugJWT         "Generate a JWT key and deserialize it to JSON."
+    , mkDebugCmd "jwt"         debugJWT         "Generate a JWT key and serialize it to JSON."
     , mkDebugCmd "keys"        debugKeys        "Dump a list of \"MudState\" \"IntMap\" keys."
     , mkDebugCmd "liquid"      debugLiq         "Consume a given amount (in mouthfuls) of a given liquid (by distinct \
                                                 \liquid ID)."
