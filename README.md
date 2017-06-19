@@ -1,4 +1,4 @@
--- TODO: Add a sponsor badge. http://help.detroitlabs.com/what-we-do/
+![Test](http://help.detroitlabs.com/what-we-do/)
 
 # CurryMUD
 
