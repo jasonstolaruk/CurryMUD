@@ -63,6 +63,7 @@ loplenkoHooks = [ (lookBookshelvesHookName,     lookBookshelvesHookFun    )
                 , (readBookHumanHookName,       readBookHumanHookFun      )
                 , (readBookLagomorphHookName,   readBookLagomorphHookFun  )
                 , (readBookLopolwanmiHookName,  readBookLopolwanmiHookFun )
+                , (readBookMapsHookName,        readBookMapsHookFun       )
                 , (readBookNymphHookName,       readBookNymphHookFun      )
                 , (readBookRacesHookName,       readBookRacesHookFun      )
                 , (readBookShunfalipmiHookName, readBookShunfalipmiHookFun)
@@ -189,6 +190,7 @@ getBookTxt b cols = liftIO (T.readFile =<< mkFilePath) |&| try >=> eitherRet han
                                            BookHuman       -> bookHumanFileFun
                                            BookLagomorph   -> bookLagomorphFileFun
                                            BookLopolwanmi  -> bookLopoLwanmiFileFun
+                                           BookMaps        -> bookMapsFileFun
                                            BookNymph       -> bookNymphFileFun
                                            BookRaces       -> bookRacesFileFun
                                            BookShunfalipmi -> bookShunfalipmiFileFun
@@ -345,6 +347,21 @@ readBookLopolwanmiHookName = "Loplenko_iLibrary_readBookLopolwanmi"
 
 readBookLopolwanmiHookFun :: HookFun
 readBookLopolwanmiHookFun = readBookHelper BookLopolwanmi
+
+
+-----
+
+
+readBookMapsHook :: Hook
+readBookMapsHook = Hook readBookMapsHookName ["maps"]
+
+
+readBookMapsHookName :: HookName
+readBookMapsHookName = "Loplenko_iLibrary_readBookMaps"
+
+
+readBookMapsHookFun :: HookFun
+readBookMapsHookFun = readBookHelper BookMaps
 
 
 -----
@@ -527,6 +544,7 @@ createLoplenko = do
                                    , readBookHumanHook
                                    , readBookLagomorphHook
                                    , readBookLopolwanmiHook
+                                   , readBookMapsHook
                                    , readBookNymphHook
                                    , readBookRacesHook
                                    , readBookShunfalipmiHook

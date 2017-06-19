@@ -136,11 +136,12 @@ bookVulpenoidFileFun = under bookDirFun "vulpenoid"
 
 
 -- Other:
-bookCreationFileFun, bookHistoryFileFun, bookHolyFileFun, bookLopoLwanmiFileFun, bookShunfalipmiFileFun :: FilePathFun
+bookCreationFileFun, bookHistoryFileFun, bookHolyFileFun, bookLopoLwanmiFileFun, bookMapsFileFun, bookShunfalipmiFileFun :: FilePathFun
 bookCreationFileFun    = under bookDirFun "creation"
 bookHistoryFileFun     = under bookDirFun "history"
 bookHolyFileFun        = under bookDirFun "holy"
 bookLopoLwanmiFileFun  = under bookDirFun "lopolwanmi"
+bookMapsFileFun        = under bookDirFun "maps"
 bookShunfalipmiFileFun = under bookDirFun "shunfalipmi"
 
 

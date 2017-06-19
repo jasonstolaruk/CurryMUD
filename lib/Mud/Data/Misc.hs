@@ -303,6 +303,7 @@ instance Pretty Book where
   pp BookHuman       = "human"
   pp BookLagomorph   = "lagomorph"
   pp BookLopolwanmi  = "lopolwanmi"
+  pp BookMaps        = "maps"
   pp BookNymph       = "nymph"
   pp BookRaces       = "races"
   pp BookShunfalipmi = "shunfalipmi"
@@ -824,6 +825,7 @@ data Book = BookCreation
           | BookHuman
           | BookLagomorph
           | BookLopolwanmi
+          | BookMaps
           | BookNymph
           | BookRaces
           | BookShunfalipmi
