@@ -518,7 +518,6 @@ createLoplenko = do
                         , ("read", [ readSundialHook, readMoondialHook                ]) ])
             [ trashRmAction ]
             []))
-
   putRm iLibrary
         []
         mempty
