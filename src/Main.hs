@@ -44,7 +44,6 @@ main = mkMudFilePath mudDirFun >>= \dir ->
                   welcome
                   when (s |&| ((&&) <$> settingDebug <*> settingEKG)) startEKG
                   runReaderT threadListen =<< initMudData s
-        -- TODO: Consider profiling as described below. Use criterion?
         startEKG = do -- "curry +RTS -T" to enable GC statistics collection in the run-time system.
             void . forkServer "localhost" $ ekgPort
             T.putStrLn . prd $ "EKG server started " <> parensQuote ("http://localhost:" <> showTxt ekgPort)
