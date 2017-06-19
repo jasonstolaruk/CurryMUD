@@ -145,7 +145,7 @@ debugCmds =
     , mkDebugCmd "gmcpwill"    debugGmcpWill    "Send IAC WILL GMCP."
     , mkDebugCmd "handle"      debugHandle      "Display information about the handle for your network connection."
     , mkDebugCmd "id"          debugId          "Search the \"MudState\" tables for a given ID."
-    , mkDebugCmd "jwt"         debugJWT         "Generate a JWT key and serialize it to JSON."
+    , mkDebugCmd "jwk"         debugJWK         "Generate a JWK key and serialize it to JSON."
     , mkDebugCmd "keys"        debugKeys        "Dump a list of \"MudState\" \"IntMap\" keys."
     , mkDebugCmd "liquid"      debugLiq         "Consume a given amount (in mouthfuls) of a given liquid (by distinct \
                                                 \liquid ID)."
@@ -611,11 +611,10 @@ tblKeys lens = views lens IM.keys
 -----
 
 
-debugJWT :: HasCallStack => ActionFun
-debugJWT (NoArgs i mq cols) = do
-    logPlaExec (prefixDebugCmd "jwt") i
-    wrapSend mq cols . LT.toStrict . LTE.decodeUtf8 . encode . toJSON =<< liftIO generateKey
-debugJWT p = withoutArgs debugJWT p
+debugJWK :: HasCallStack => ActionFun
+debugJWK (NoArgs i mq cols) = do logPlaExec (prefixDebugCmd "jwK") i
+                                 wrapSend mq cols . LT.toStrict . LTE.decodeUtf8 . encode . toJSON =<< liftIO generateKey
+debugJWK p = withoutArgs debugJWK p
 
 
 -----

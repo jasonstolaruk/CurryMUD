@@ -39,10 +39,10 @@ main :: HasCallStack => IO ()
 main = mkMudFilePath mudDirFun >>= \dir ->
     let stop = T.putStrLn . the' $ dblQuote (T.pack dir) <> " directory does not exist; aborting."
         go   = do s <- loadServerSettings
-                  when (s |&| ((&&) <$> settingDebug <*> settingEKG)) startEKG
                   setCurrentDirectory dir
                   forM_ [ dbDirFun, logDirFun, persistDirFun ] $ createDirectoryIfMissing False <=< mkMudFilePath
                   welcome
+                  when (s |&| ((&&) <$> settingDebug <*> settingEKG)) startEKG
                   runReaderT threadListen =<< initMudData s
         -- TODO: Consider profiling as described below. Use criterion?
         startEKG = do -- "curry +RTS -T" to enable GC statistics collection in the run-time system.

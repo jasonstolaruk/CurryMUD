@@ -161,6 +161,7 @@ library
                        , filepath
                        , formatting
                        , hslogger
+                       , jose
                        , lens
                        , lifted-base
                        , MissingH
