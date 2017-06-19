@@ -514,7 +514,7 @@ data Liq = Liq { _liqId        :: DistinctLiqId
 newtype DistinctLiqId = DistinctLiqId Id  deriving (Eq, Generic, Ord, Show)
 
 
-data DistinctLiq = DistinctLiq { _liqName :: LiqName -- To aid in identifying a distinct liquid. Not seen by players.
+data DistinctLiq = DistinctLiq { _liqName          :: LiqName -- To aid in identifying a distinct liquid. Not seen by players.
                                , _liqEdibleEffects :: EdibleEffects }
 
 
