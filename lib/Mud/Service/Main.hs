@@ -48,3 +48,10 @@ getJWK = generateKey >>= \dflt ->
       Nothing -> oops $ "Environment variable " <> dblQuote "JWK" <> " not found"
       Just x  -> let oops' = oops $ "Unable to decode the value of the " <> dblQuote "JWK" <> " environment variable"
                  in maybeRet oops' . decode . BL.pack $ x
+{-
+Example value of the "JWK" environment variable:
+{
+  "k": "09LQ0GWUDYQlwqzcN3IHYvGistot0VAtYRSiNmC6K_O-e9GLZbCEFVI-VBdDzuzxHyPm-eVHtNL4uWDH33DCqbuguhILI0Vq4Dtnyl7S0SevfqS0wKuIWPkwFCopVm-tv2F_5V4W07OtusnwDFxYg5gPCM8uYH6XAUR72mmn2I9H2HAwWU3olELeggh1gppWO7s1hqQLxDKMBtGhSIvwt5k1T6v-mHNbYl4QC1xITuU1ipLHgDLamb7pF1mrYzxK7I0GZgxC72M9IjE53hRaSwPm4gH4WdeAVwOggbTrMMm2t0BQ_OfP_5euHnpLdvEpQ1zHcuZWoDX0HEWRPQoANA",
+  "kty": "oct"
+}
+-}
