@@ -316,7 +316,7 @@ readLookPaperHookFun i Hook { .. } (V.head -> r) a@(_, (ms, _, _, _), _) =
                             , i `delete` desigIds selfDesig ) )
       & _2._4 <>~ pure (bracketQuote hookName <> " read paper")
   where
-    signDesc = "Scrawled on the piece of paper is the following message:\n\"Your lucky number is " <> x <> ".\""
+    signDesc = dblQuote . prd $ "Your lucky number is " <> x
     x        = showTxt . rndmIntToPer $ r
 
 
@@ -398,7 +398,8 @@ readLookSign_iTutEntranceHookFun :: HookFun
 readLookSign_iTutEntranceHookFun = mkGenericHookFun signDesc "reads the sign floating above the portal." "read sign"
   where
     signDesc = "The sign reads, \"Tutorial this way. No re-entry!\"\n\
-               \A small, square piece of paper has been nailed to the bottom-right corner of the sign."
+               \A small, square piece of paper has been nailed to the bottom-right corner of the sign. There is a \
+               \number written on it... and the number appears to be changing!"
 
 
 -----
