@@ -664,7 +664,7 @@ adminDestroy   (LowerNub i mq cols as) = getState >>= \ms ->
           [(targetId, "")] | targetId < 0                -> sorry sorryWtf
                            | targetId == i               -> sorry "Feeling suicidal?"
                            | not . hasType targetId $ ms -> sorryId
-                           | otherwise                   -> destroyer i mq cols targetId
+                           | otherwise                   -> adminDestroyHelper i mq cols targetId
           _                                              -> sorryId
           where
             sorry   = wrapSend mq cols
@@ -673,11 +673,11 @@ adminDestroy   (LowerNub i mq cols as) = getState >>= \ms ->
 adminDestroy p = pmf "adminDestroy" p
 
 
-destroyer :: Id -> MsgQueue -> Cols -> Id -> MudStack ()
-destroyer i mq cols targetId = getState >>= \ms -> let t = getType targetId ms in if t `elem` sorryTypes
+adminDestroyHelper :: Id -> MsgQueue -> Cols -> Id -> MudStack ()
+adminDestroyHelper i mq cols targetId = getState >>= \ms -> let t = getType targetId ms in if t `elem` sorryTypes
   then f . sorryDestroyType $ t
   else let msg = T.concat [ "destroying ", pp t, ": ", descSingId targetId ms, "." ]
-       in logPla "destroyer" i msg >> f (capitalize msg) >> destroy (pure targetId)
+       in logPla "adminDestroyHelper" i msg >> f (capitalize msg) >> destroy (pure targetId)
   where
     sorryTypes = [ NpcType, PlaType, RmType ]
     f          = wrapSend mq cols

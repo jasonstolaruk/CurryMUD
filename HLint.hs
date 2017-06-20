@@ -13,6 +13,7 @@ ignore "Use camelCase" = Mud.Cmds.Debug
                          Mud.Cmds.Util.Pla
                          Mud.Data.Misc
                          Mud.Data.State.MudData
+                         Mud.Data.State.Util.Destroy
                          Mud.Data.State.Util.Misc
                          Mud.Misc.NameResolution
                          Mud.TheWorld.Zones.AdminZone

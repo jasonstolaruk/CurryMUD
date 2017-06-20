@@ -91,7 +91,7 @@ corpseDecomp i pair = getObjWeight i <$> getState >>= \w -> catch <$> loop w <*>
     handler ref = const $ liftIO (readIORef ref) >>= \secs ->
       let msg = prd $ "pausing corpse decomposer for ID " <> showTxt i |<>| mkSecsTxt secs
       in logHelper msg >> tweak (pausedCorpseDecompsTbl.ind i .~ secs)
-    logHelper = logNotice "corpseDecomp finish"
+    logHelper = logNotice "corpseDecomp"
 
 
 corpseDecompHelper :: HasCallStack => Id -> Weight -> SecondsPair -> MudStack ()
@@ -136,7 +136,7 @@ finishDecomp i = modifyStateSeq $ \ms ->
         mkCarriedBs    = let n = mkCorpseAppellation invId ms i
                          in pure (T.concat [ "The ", n, " ", parensQuote "carried", " disintegrates." ], pure invId)
         oops           = blowUp "finishDecomp" (descSingId i ms <> " is in limbo") ""
-    in (ms, [ destroy . pure $ i, bcastNl bs ])
+    in (ms, [ destroyDisintegratedCorpse i, bcastNl bs ])
 
 
 -----

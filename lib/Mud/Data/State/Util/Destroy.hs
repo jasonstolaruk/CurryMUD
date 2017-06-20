@@ -10,19 +10,30 @@ import           Mud.Util.Misc
 
 import           Control.Lens (at, to)
 import           Control.Lens.Operators ((.~), (%~), (^.))
-import           Control.Monad (forM_)
+import           Control.Monad (forM_, when)
 import           Data.List (delete)
 import           GHC.Stack (HasCallStack)
 import qualified Data.IntMap.Strict as IM (map)
 
 
+type DoOrDon'tStopDecomposers = Bool
+
+
 destroy :: HasCallStack => Inv -> MudStack ()
-destroy is = do ((>>) <$> stopBiodegraders <*> stopCorpseDecomposers) =<< getState
-                mapM_ stopEffects is
-                tweak . destroyHelper $ is
+destroy = destroyer True
+
+
+destroyDisintegratedCorpse :: HasCallStack => Id -> MudStack ()
+destroyDisintegratedCorpse = destroyer False . pure
+
+
+destroyer :: HasCallStack => DoOrDon'tStopDecomposers -> Inv -> MudStack ()
+destroyer b is = do ((>>) <$> stopBiodegraders <*> stopCorpseDecomposers) =<< getState
+                    mapM_ stopEffects is
+                    tweak . destroyHelper $ is
   where
     stopBiodegraders      ms = forM_ (filter (`hasObjId` ms) is) $ maybeVoid throwDeath . (`getObjBiodegAsync` ms)
-    stopCorpseDecomposers ms = forM_ is $ \i -> ms^.corpseDecompAsyncTbl.at i.to (maybeVoid throwDeath)
+    stopCorpseDecomposers ms = when b . forM_ is $ \i -> ms^.corpseDecompAsyncTbl.at i.to (maybeVoid throwDeath)
 
 
 destroyHelper :: HasCallStack => Inv -> MudState -> MudState -- The caller is responsible for stopping the biodegrader, corpse decomposer, and effects.
