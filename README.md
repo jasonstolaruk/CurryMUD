@@ -63,8 +63,8 @@ CurryMUD will have the following features:
 * Server settings are specified in a YAML file. :no_bell:
 * Sending [GMCP](https://www.gammon.com.au/gmcp) `Char.Vitals` and `Info.Room`. :satellite:
 * [Mudlet scripts](https://github.com/jasonstolaruk/CurryMUD/tree/master/Mudlet) for vitals gauges and mapping. :scroll:
+* The server exposes a REST API to be consumed by an Android app providing a second screen experience. (The Android app is presently in progress.) :iphone:
 * [A cheatsheet PDF.](https://github.com/jasonstolaruk/CurryMUD/blob/master/cheatsheet/CurryMUD%20cheatsheet.pdf) :memo:
-* The server exposes a REST API to be consumed by an Android app providing a second screen experience (in progress, still in early stages). :iphone:
 
 I am still in the initial stage of developing basic commands. There is very little content in the virtual world.
 
