@@ -206,10 +206,13 @@ mkGorhnaEdibleEffects :: EdibleEffects
 mkGorhnaEdibleEffects = EdibleEffects { _digestEffects  = Just de
                                       , _consumpEffects = Nothing }
   where
-    de = EffectList . pure . Left $ ie
-    ie = InstaEffect { _instaEffectSub     = MobInstaEffectPts Hp
-                     , _instaEffectVal     = Just . EffectFixedVal $ 2
-                     , _instaEffectFeeling = mkGorhnaEffectFeeling }
+    de    = EffectList [ Left effHp, Left effFp ]
+    effHp = InstaEffect { _instaEffectSub     = MobInstaEffectPts Hp
+                        , _instaEffectVal     = Just . EffectFixedVal $ 2
+                        , _instaEffectFeeling = mkGorhnaEffectFeeling }
+    effFp = InstaEffect { _instaEffectSub     = MobInstaEffectPts Fp
+                        , _instaEffectVal     = Just . EffectFixedVal $ 2
+                        , _instaEffectFeeling = mkGorhnaEffectFeeling }
 
 
 mkGorhnaEffectFeeling :: Maybe EffectFeeling
