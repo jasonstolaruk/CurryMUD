@@ -1,6 +1,7 @@
 {-# LANGUAGE LambdaCase, MultiWayIf, OverloadedStrings, ViewPatterns #-}
 
-module Mud.Misc.Logging ( closeLogs
+module Mud.Misc.Logging ( DoOrDon'tLog
+                        , closeLogs
                         , closePlaLog
                         , initLogging
                         , initPlaLog
@@ -69,9 +70,12 @@ blowUp = U.blowUp "Mud.Misc.Logging"
 -- Starting logs:
 
 
+type DoOrDon'tLog = Bool
+
+
 initLogging :: DoOrDon'tLog -> Maybe Lock -> IO (Maybe LogService, Maybe LogService)
-initLogging Don'tLog _                = return (Nothing, Nothing)
-initLogging DoLog    (Just logExLock) = do
+initLogging False _                = return (Nothing, Nothing)
+initLogging True  (Just logExLock) = do
     updateGlobalLogger rootLoggerName removeHandler
     (errorFile, noticeFile) <- (,) <$> mkMudFilePath errorLogFileFun
                                    <*> mkMudFilePath noticeLogFileFun
@@ -80,7 +84,7 @@ initLogging DoLog    (Just logExLock) = do
     (ea,  na) <- (,) <$> spawnLogger errorFile  ERROR  "currymud.error"  errorM  eq logExLock
                      <*> spawnLogger noticeFile NOTICE "currymud.notice" noticeM nq logExLock
     return ((,) (ea, eq) (na, nq) & both %~ Just)
-initLogging DoLog Nothing = blowUp "initLogging" "missing lock" ""
+initLogging True Nothing = blowUp "initLogging" "missing lock" ""
 
 
 type LogName    = Text

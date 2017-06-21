@@ -2,7 +2,6 @@
 
 module Mud.Service.Main (startRestService) where
 
-import           Mud.Data.Misc
 import           Mud.Data.State.MudData
 import           Mud.Service.Logging
 import           Mud.Service.Server
@@ -33,6 +32,6 @@ startRestService s ior =
     in do void . forkIO . run restServicePort . serveWithContext api cfg . server ior defaultCookieSettings $ jwtCfg
           let msg = prd $ "REST API service started " <> parensQuote ("http://localhost:" <> showTxt restServicePort)
           T.putStrLn msg
-          when (settingLog s) $ do logService <- initRestServiceLogging DoLog
+          when (settingLog s) $ do logService <- initRestServiceLogging True
                                    ms         <- atomicModifyIORef ior (dup . (restServiceLogService .~ logService))
                                    logRestServiceSimple ms "startRestService" msg

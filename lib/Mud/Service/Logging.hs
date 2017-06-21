@@ -5,10 +5,9 @@ module Mud.Service.Logging ( closeRestServiceLog
                            , logRestService
                            , logRestServiceSimple ) where
 
-import           Mud.Data.Misc
 import           Mud.Data.State.MudData
 import           Mud.Data.State.Util.Locks
-import           Mud.Misc.Logging (spawnLogger)
+import           Mud.Misc.Logging (DoOrDon'tLog, spawnLogger)
 import           Mud.TopLvlDefs.FilePaths
 import           Mud.Util.Misc
 import           Mud.Util.Quoting
@@ -45,11 +44,11 @@ doIfLogging ms f = views restServiceLogService (maybeVoid (f . snd)) ms
 
 
 initRestServiceLogging :: HasCallStack => DoOrDon'tLog -> IO (Maybe LogService)
-initRestServiceLogging DoLog = ((,,) <$> mkLock
-                                     <*> mkMudFilePath restServiceLogFileFun
-                                     <*> newTQueueIO) >>= \(lock, logFile, q) ->
+initRestServiceLogging True = ((,,) <$> mkLock
+                                    <*> mkMudFilePath restServiceLogFileFun
+                                    <*> newTQueueIO) >>= \(lock, logFile, q) ->
     Just . (, q) <$> spawnLogger logFile NOTICE "currymud.service" noticeM q lock
-initRestServiceLogging Don'tLog = return Nothing
+initRestServiceLogging False = return Nothing
 
 
 -----

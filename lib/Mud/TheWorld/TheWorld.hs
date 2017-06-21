@@ -6,7 +6,6 @@ module Mud.TheWorld.TheWorld ( initMudData
 
 import           Mud.Cmds.Msgs.Misc
 import           Mud.Cmds.Util.Misc
-import           Mud.Data.Misc
 import           Mud.Data.State.MudData
 import           Mud.Data.State.Util.Get
 import           Mud.Data.State.Util.Locks
@@ -119,7 +118,7 @@ initMudData s = do [ databaseLock, logLock, persLock ] <- mkLocks
                                   , _startTime      = start
                                   , _mudStateIORef  = msIORef }
   where
-    loggingHelper = initLogging (settingLog s ? DoLog :? Don'tLog) . Just
+    loggingHelper = initLogging (settingLog s) . Just
 
 
 initWorld :: HasCallStack => MudStack Bool

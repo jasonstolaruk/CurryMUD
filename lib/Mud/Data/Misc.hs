@@ -20,7 +20,6 @@ module Mud.Data.Misc ( AOrThe(..)
                      , Day
                      , Desig(..)
                      , DoOrDon'tCap(..)
-                     , DoOrDon'tLog(..)
                      , DoOrDon'tQuote(..)
                      , DrinkBundle(..)
                      , EatBundle(..)
@@ -939,12 +938,6 @@ data Desig = StdDesig    { desigEntSing :: Maybe Text
 
 
 data DoOrDon'tCap = DoCap | Don'tCap deriving (Eq, Read, Show)
-
-
------
-
-
-data DoOrDon'tLog = DoLog | Don'tLog deriving (Eq, Show)
 
 
 -----
