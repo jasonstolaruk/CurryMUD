@@ -17,6 +17,7 @@ import           Control.Concurrent.STM.TQueue (TQueue)
 import           Control.Lens (both, makeLenses)
 import           Control.Lens.Operators ((&), (%~))
 import           Control.Monad.Reader (ReaderT)
+import           Crypto.JOSE.JWK (JWK)
 import           Data.Aeson ((.:), (.=), FromJSON(..), FromJSONKey(..), ToJSON(..), ToJSONKey(..), Value(..), genericParseJSON, genericToJSON, object)
 import           Data.Aeson.Types (Options, Parser, defaultOptions, fieldLabelModifier)
 import           Data.IORef (IORef)
@@ -1119,6 +1120,7 @@ type RndmNamesTbl = M.Map Sing Sing
 
 data ServerSettings = ServerSettings { settingDebug     :: Bool
                                      , settingEKG       :: Bool
+                                     , settingJWK       :: JWK
                                      , settingLog       :: Bool
                                      , settingRest      :: Bool
                                      , settingZBackDoor :: Bool } deriving Generic
@@ -1320,6 +1322,7 @@ instance ToJSON   ServerSettings where toJSON    = serverSettingsToJSON
 jsonToServerSettings :: Value -> Parser ServerSettings
 jsonToServerSettings (Object o) = ServerSettings <$> o .: "debug"
                                                  <*> o .: "ekg"
+                                                 <*> o .: "jwk"
                                                  <*> o .: "log"
                                                  <*> o .: "rest"
                                                  <*> o .: "zBackDoor"
@@ -1329,6 +1332,7 @@ jsonToServerSettings _          = empty
 serverSettingsToJSON :: ServerSettings -> Value
 serverSettingsToJSON ServerSettings { .. } = object [ "debug"     .= settingDebug
                                                     , "ekg"       .= settingEKG
+                                                    , "jwk"       .= settingJWK
                                                     , "log"       .= settingLog
                                                     , "rest"      .= settingRest
                                                     , "zBackDoor" .= settingZBackDoor ]

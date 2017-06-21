@@ -179,6 +179,10 @@ unix
 Copyright The University Court of the University of Glasgow.
 https://github.com/haskell/unix
 
+unordered-containers
+Johan Tibell, Edward Z. Yang.
+https://github.com/tibbe/unordered-containers
+
 vector
 Copyright Roman Leshchinskiy.
 https://github.com/haskell/vector

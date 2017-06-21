@@ -5,7 +5,6 @@ module Mud.Threads.Listen (threadListen) where
 import           Mud.Cmds.Msgs.Misc
 import           Mud.Cmds.Pla
 import           Mud.Cmds.Util.Misc
-import           Mud.Data.Misc
 import           Mud.Data.State.MudData
 import           Mud.Data.State.Util.Locks
 import           Mud.Data.State.Util.Misc
@@ -32,7 +31,6 @@ import           Mud.Threads.WorldPersister
 import           Mud.TopLvlDefs.FilePaths
 import           Mud.TopLvlDefs.Misc
 import           Mud.Util.Misc
-import           Mud.Util.Operators
 import           Mud.Util.Quoting
 import           Mud.Util.Text
 
@@ -119,7 +117,7 @@ listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed 
     logInterfaces = liftIO mkInterfaceList >>= \ifList ->
         logNotice "listen listInterfaces" . prd $ "server network interfaces: " <> ifList
     startRest = ask >>= \md@(view serverSettings -> s) ->
-        when (settingRest s) . views mudStateIORef (liftIO . startRestService (settingLog s ? DoLog :? Don'tLog)) $ md
+        when (settingRest s) . views mudStateIORef (liftIO . startRestService s) $ md
     loop sock = let fn = "listen loop" in liftIO (accept sock) >>= \(h, host@(T.pack -> host'), localPort) -> do
         logNotice fn . T.concat $ [ "connected to ", showTxt host, " on local port ", showTxt localPort, "." ]
         (withDbExHandler "listen loop" . isHostBanned . T.toLower . T.pack $ host) >>= \case

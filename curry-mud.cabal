@@ -25,6 +25,7 @@ executable             curry
                        , ekg
                        , mtl
                        , network
+                       , servant-auth-server
                        , text
                        , yaml
   hs-source-dirs:      src
@@ -187,6 +188,7 @@ library
                        , transformers
                        , transformers-base
                        , unix
+                       , unordered-containers
                        , vector
                        , wai
                        , warp

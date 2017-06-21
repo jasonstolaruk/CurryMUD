@@ -66,11 +66,12 @@ import           Control.Lens.Operators ((?~), (.~), (&), (%~), (^.), (<>~))
 import           Control.Monad ((<=<), (>=>), forM, forM_, join, unless, when)
 import           Control.Monad.IO.Class (liftIO)
 import           Crypto.BCrypt (validatePassword)
-import           Data.Aeson (eitherDecode)
+import           Data.Aeson (Value(..), eitherDecode, toJSON)
 import           Data.Bits (setBit, zeroBits)
 import           Data.Char (isDigit, isLower, isUpper)
 import           Data.Either (rights)
 import           Data.Function (on)
+import qualified Data.HashMap.Lazy as HM (delete)
 import qualified Data.IntMap.Strict as IM (elems, filter, filterWithKey, keys, lookup, notMember, size, toList)
 import           Data.Ix (inRange)
 import           Data.List ((\\), delete, foldl', groupBy, intercalate, intersperse, nub, partition, sort, sortBy)
@@ -529,10 +530,12 @@ adminClone p = pmf "adminClone" p
 -----
 
 
-adminConfig :: HasCallStack => ActionFun
-adminConfig (NoArgs' i mq) = do logPlaExec (prefixAdminCmd "config") i
-                                send mq . nl . TE.decodeUtf8 . encode =<< getServerSettings
-adminConfig p              = withoutArgs adminConfig p
+adminConfig :: HasCallStack => ActionFun -- TODO: Revise help.
+adminConfig (NoArgs' i mq) = getServerSettings >>= \s -> do
+    logPlaExec (prefixAdminCmd "config") i
+    send mq . nl . TE.decodeUtf8 . encode $ case toJSON s of Object hashMap -> Object $ "jwk" `HM.delete` hashMap
+                                                             x              -> x
+adminConfig p = withoutArgs adminConfig p
 
 
 -----

@@ -27,6 +27,7 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T (putStrLn)
 import           Data.Yaml (decodeFile)
 import           GHC.Stack (HasCallStack)
+import           Servant.Auth.Server (generateKey)
 import           System.Directory (createDirectoryIfMissing, doesDirectoryExist, setCurrentDirectory)
 import           System.Environment (getEnv, getProgName)
 import           System.Remote.Monitoring (forkServer)
@@ -62,4 +63,5 @@ welcome = (,) <$> getEnv "USER" <*> what'sMyName >>= \(userName, progName) ->
 loadServerSettings :: HasCallStack => IO ServerSettings
 loadServerSettings = maybeRet helper =<< decodeFile =<< mkMudFilePath serverSettingsFun
   where
-    helper = T.putStrLn "Error reading the server settings file." >> return (ServerSettings True True True True True)
+    helper = generateKey >>= \jwk -> do T.putStrLn "Error reading the server settings file."
+                                        return (ServerSettings True True jwk True True True)
