@@ -149,6 +149,7 @@ library
                        Mud.Util.Wrapping
   other-modules:       Paths_curry_mud
   build-depends:         base >=4.8 && <5.0
+                       , MissingH
                        , aeson
                        , ansi-terminal
                        , async
@@ -165,7 +166,6 @@ library
                        , jose
                        , lens
                        , lifted-base
-                       , MissingH
                        , monad-control
                        , monad-loops
                        , mtl
@@ -214,12 +214,13 @@ test-suite             test
                        MudTests.Util.Text
                        MudTests.Util.Wrapping
   build-depends:         base >=4.8 && <5.0
+                       , QuickCheck
                        , containers
                        , curry-mud
                        , lens
                        , mtl
-                       , QuickCheck
                        , quickcheck-instances
+                       , servant-auth-server
                        , tasty
                        , tasty-hunit
                        , tasty-quickcheck
