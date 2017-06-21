@@ -9,4 +9,4 @@ The following boolean settings exist:
 "rest": start the REST service
 "zBackDoor": enable the back door (effective only when "debug" is also true; see "help zbackdoor")
 
-In addition to the above there is also a "jwt" setting, for which you should specify in JSON the value of the Java Web Key utilized by the REST service.
+In addition to the above there is also a "jwk" setting, for which you should specify in JSON the value of the Java Web Key utilized by the REST service.
