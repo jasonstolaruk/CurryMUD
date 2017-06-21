@@ -530,7 +530,7 @@ adminClone p = pmf "adminClone" p
 -----
 
 
-adminConfig :: HasCallStack => ActionFun -- TODO: Revise help.
+adminConfig :: HasCallStack => ActionFun
 adminConfig (NoArgs' i mq) = getServerSettings >>= \s -> do
     logPlaExec (prefixAdminCmd "config") i
     send mq . nl . TE.decodeUtf8 . encode $ case toJSON s of Object hashMap -> Object $ "jwk" `HM.delete` hashMap

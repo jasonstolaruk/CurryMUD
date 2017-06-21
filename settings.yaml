@@ -1,5 +1,4 @@
 # Server settings are defined here.
-# See "~/CurryMUD/res/help/admin/topics/settings" for more info.
 
 # Enable debug commands?
 debug: true
