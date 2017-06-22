@@ -12,7 +12,7 @@ The following chart illustrates the value of each coin type:
 
 These identifiers may be used to target coins in commands:
 "cp", "sp", "gp", "coins"
-"coins" may be abbreviated to "coin". The other identifiers may not be abbreviated.
+"coin" is equivalent to "coins". The other identifiers may not be abbreviated.
 
 The following examples illustrate how to use the coin identifiers with the "get" command:
 \qget cp\d to pick up a single copper piece.2`

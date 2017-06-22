@@ -224,6 +224,8 @@ In a combat where there are multiple opponents, a mobile may automatically switc
 
 Combat "stances:" defensive, neutral, offensive.
 
+Felinoids and vulpenoids (but not lagomorphs) have retractable claws that can be utilized as an attack.
+
 ==========
 
 MAGIC/PSIONICS:
