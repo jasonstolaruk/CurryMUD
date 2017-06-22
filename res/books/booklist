@@ -1,24 +1,24 @@
 You browse the bookshelves. Among the many books, the following look particularly interesting:
 
 \e-~-~- The Cyclopedia Rumia -~-~-\d2`
-MAPS [maps]2`
-RUMIA: A Timeline Of Modern History [history]2`
-SHUNFALIP-MI [shunfalipmi]2`
-LOPO LWAN-MI [lopolwanmi]2`
+MAPS [\amaps\d]2`
+RUMIA: A Timeline Of Modern History [\ahistory\d]2`
+SHUNFALIP-MI [\ashunfalipmi\d]2`
+LOPO LWAN-MI [\alopolwanmi\d]2`
 
 \e-~-~- THE BIPEDAL RACES OF RUMIA: An Encyclopedia -~-~-\d2`
-INTRODUCTION [races]2`
-ON DWARVES [dwarf]2`
-ON ELVES [elf]2`
-ON FELINOIDS [felinoid]2`
-ON HOBBITS [hobbit]2`
-ON HUMANS [human]2`
-ON LAGOMORPHS [lagomorph]2`
-ON NYMPHS [nymph]2`
-ON VULPENOIDS [vulpenoid]2`
+INTRODUCTION [\araces\d]2`
+ON DWARVES [\adwarf\d]2`
+ON ELVES [\aelf\d]2`
+ON FELINOIDS [\afelinoid\d]2`
+ON HOBBITS [\ahobbit\d]2`
+ON HUMANS [\ahuman\d]2`
+ON LAGOMORPHS [\alagomorph\d]2`
+ON NYMPHS [\anymph\d]2`
+ON VULPENOIDS [\avulpenoid\d]2`
 
 \e-~-~- Others -~-~-\d2`
-IN THE BEGINNING: the story of our dimension and the gods that shape it [creation]2`
-UNDERSTANDING HOLY SYMBOLS: The Illustrated Guide [holy]2`
+IN THE BEGINNING: the story of our dimension and the gods that shape it [\acreation\d]2`
+UNDERSTANDING HOLY SYMBOLS: The Illustrated Guide [\aholy\d]2`
 
-(To read a book, type \qread r-book\d, where "book" is a book name given above in square brackets.)
+(To read a book, type \qread r-book\d, where "book" is a book name given above in square brackets. The book name may not be abbreviated.)
