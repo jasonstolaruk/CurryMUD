@@ -25,7 +25,7 @@ import           Servant.Auth.Server (JWT, defaultCookieSettings, defaultJWTSett
 
 
 startRestService :: HasCallStack => ServerSettings -> IORef MudState -> IO ()
-startRestService s ior =
+startRestService s ior = -- TODO: Investigate these default settings. Are there knobs to turn?
     let jwtCfg = defaultJWTSettings . settingJWK $ s
         cfg    = defaultCookieSettings :. jwtCfg :. EmptyContext
         api    = Proxy :: Proxy (API '[JWT])
