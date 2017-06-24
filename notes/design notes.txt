@@ -193,9 +193,6 @@ Charge for PC advancement.
 
 PCs:
 
-For players who want to try out the game and start playing quickly, offer "character kits."
-Character kits need not correspond to traditional classes. Consider defining kits only after you have designed races and skills.
-
 Perhaps make the composing of a background story/"character essay" an optional endeavor that awards experience points.
 
 PCs can spend points to (magically?) learn extra languages, though it should be difficult to find NPC "trainers" who teach them.
