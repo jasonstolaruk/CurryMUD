@@ -2062,7 +2062,7 @@ sacrificeHelper p@(ActionParams i mq cols _) ci gn = getState >>= \ms ->
                                    , ", laying upon it the holy symbol of "
                                    , pp gn
                                    , gn == Murgorhd |?| murgorhdMsg
-                                   , ". You say a prayer..." ]
+                                   , thrice prd ". You say a prayer" ]
         d               = mkStdDesig i ms DoCap
         helper targetId = (T.concat [ serialize d
                                     , " kneels before the "

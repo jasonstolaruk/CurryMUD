@@ -522,7 +522,7 @@ potInstantPsLiq = Liq (DistinctLiqId iLiqPotInstantPs)
                       (DoArticle "incandescent, sky-blue liquid")
                       "There is a striking scent of mist on a cold morning."
                       "The liquid itself might be tasteless. The smell, however, is pronounced."
-                      "The liquid doesn't taste like much... until the smell of cold rain hits you like a thick fog."
+                      (thrice prd "The liquid doesn't taste like much" <> " until the smell of cold rain hits you like a thick fog.")
 
 
 potInstantPsDistinctLiq :: DistinctLiq
