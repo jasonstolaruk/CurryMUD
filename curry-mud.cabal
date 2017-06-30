@@ -92,6 +92,7 @@ library
                        Mud.Misc.Misc
                        Mud.Misc.NameResolution
                        Mud.Misc.Persist
+                       Mud.Misc.Readymade
                        Mud.Service.Logging
                        Mud.Service.Main
                        Mud.Service.Server

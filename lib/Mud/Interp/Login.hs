@@ -26,6 +26,7 @@ import           Mud.Misc.Database
 import qualified Mud.Misc.Logging as L (logNotice, logPla)
 import           Mud.Misc.Logging hiding (logNotice, logPla)
 import           Mud.Misc.Misc
+import           Mud.Misc.Readymade
 import           Mud.TheWorld.Zones.AdminZoneIds (iCentral, iLoggedOut, iWelcome)
 import           Mud.TheWorld.Zones.LoplenkoIds (iLoplenkoWelcome)
 import           Mud.Threads.Digester
@@ -583,7 +584,7 @@ readymadePromptTxt = "Enter a number to make your selection, or enter the first 
 interpReadymadePC :: HasCallStack => NewCharBundle -> Interp
 interpReadymadePC _   "" (NoArgs _ mq cols) = promptRetryReadymadePC mq cols
 interpReadymadePC ncb cn (NoArgs i mq cols) = case cn of
-  "1" -> next
+  "1" -> readymadeDwarf i >> next
   t   -> sequence_ [ wrapSend1Nl mq cols . sorryWut $ t, promptReadymadePC mq cols ]
   where
     next = promptDesc ncb i mq cols
