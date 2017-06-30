@@ -3357,7 +3357,7 @@ stats (NoArgs i mq cols) = getState >>= \ms ->
                                 , prd $ "Level " <> showTxt l
                                 , commaShow expr <> " experience points."
                                 , commaShow nxt  <> " experience points to next level."
-                                , skillPtsHelper
+                                , commaShow (getSkillPts i ms) <> " unspent skill points."
                                 , mobRmDescHelper
                                 , tempDescHelper ]
         top       = underline . onTrue (isPla i ms) (quoteWith' (spiritTxt, sexRace)) . getSing i $ ms
@@ -3370,7 +3370,6 @@ stats (NoArgs i mq cols) = getState >>= \ms ->
             f a pair@(both %~ commaShow -> (x, y)) = T.concat [ colorWith (mkColorTxtForXps pair) x, "/", y, a, "p" ]
         (l, expr)       = getLvlExp i ms
         nxt             = subtract expr . snd $ calcLvlExps !! l
-        skillPtsHelper  = let pts = getSkillPts i ms in pts > 0 |?| (commaShow pts <> " unspent skill points")
         mobRmDescHelper = maybeEmp (prd . ("Your room description is " <>))        $ dblQuote <$> getMobRmDesc i ms
         tempDescHelper  = maybeEmp ("Your temporary character description is " <>) $ dblQuote <$> getTempDesc  i ms
     in logPlaExec "stats" i >> multiWrapSend mq cols mkStats
