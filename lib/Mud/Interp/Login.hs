@@ -345,18 +345,50 @@ promptRetryNewPwMatch _ p = pmf "promptRetryNewPwMatch" p
 
 
 interpSex :: HasCallStack => NewCharBundle -> Interp
-interpSex _                         ""                ActionParams { .. } = promptRetrySex plaMsgQueue plaCols
-interpSex ncb@(NewCharBundle _ s _) (T.toLower -> cn) (NoArgs i mq cols)
+interpSex _   ""                ActionParams { .. } = promptRetrySex plaMsgQueue plaCols
+interpSex ncb (T.toLower -> cn) (NoArgs i mq cols)
   | cn `T.isPrefixOf` "male"   = helper Male
   | cn `T.isPrefixOf` "female" = helper Female
   | otherwise                  = promptRetrySex mq cols
   where
     helper sexy = do tweak $ mobTbl.ind i.sex .~ sexy
-                     blankLine     mq
-                     multiWrapSend mq cols $ "Next we'll choose " <> s <> "'s race." : raceTxt
-                     promptRace    mq cols
-                     setInterp i . Just . interpRace $ ncb
+                     blankLine       mq
+                     promptReadymade ncb mq cols
+                     setInterp i . Just . interpReadymade $ ncb
 interpSex _ _ ActionParams { .. } = promptRetrySex plaMsgQueue plaCols
+
+
+promptRetrySex :: HasCallStack => MsgQueue -> Cols -> MudStack ()
+promptRetrySex mq cols =
+    wrapSendPrompt mq cols . T.concat $ [ "Please answer ", dblQuote "male", " or ", dblQuote "female", "." ]
+
+
+promptReadymade :: HasCallStack => NewCharBundle -> MsgQueue -> Cols -> MudStack ()
+promptReadymade (NewCharBundle _ s _) mq cols = multiWrapSend1Nl mq cols ts >> anglePrompt mq
+  where
+    ts = [ "Would you like to:"
+         , "1) Go through the steps of creating a new character for " <> s <> ", or"
+         , "2) Choose a \"readymade\" character for " <> s <> "?" ]
+
+
+-- ==================================================
+
+
+interpReadymade :: HasCallStack => NewCharBundle -> Interp
+interpReadymade _                         "" (NoArgs _ mq cols) = promptRetryReadymade mq cols
+interpReadymade ncb@(NewCharBundle _ s _) cn (NoArgs i mq cols) = case cn of
+  "1" -> do multiWrapSend mq cols $ "" : "Next we'll choose " <> s <> "'s race." : raceTxt
+            promptRace    mq cols
+            setInterp i . Just . interpRace $ ncb
+  "2" -> do promptReadymadePC mq cols
+            setInterp i . Just . interpReadymadePC $ ncb
+  _   -> promptRetryReadymade mq cols
+interpReadymade _ _ ActionParams { .. } = promptRetryReadymade plaMsgQueue plaCols
+
+
+promptRetryReadymade :: HasCallStack => MsgQueue -> Cols -> MudStack ()
+promptRetryReadymade mq cols =
+    wrapSendPrompt mq cols . T.concat $ [ "Please answer ", dblQuote "1", " or ", dblQuote "2", "." ]
 
 
 raceTxt :: [Text]
@@ -376,11 +408,6 @@ promptRace mq cols = wrapSend1Nl mq cols txt >> anglePrompt mq
     txt = "Enter a number to make your selection, or enter the first letter" <>
           parensQuote (T.singleton 's')                                      <>
           " of the name of a race to learn more."
-
-
-promptRetrySex :: HasCallStack => MsgQueue -> Cols -> MudStack ()
-promptRetrySex mq cols =
-    wrapSendPrompt mq cols . T.concat $ [ "Please answer ", dblQuote "male", " or ", dblQuote "female", "." ]
 
 
 -- ==================================================
@@ -456,20 +483,11 @@ showAttribs i mq = getState >>= \ms -> multiSend mq . footer ms . map helper . g
 
 
 interpPickPts :: HasCallStack => NewCharBundle -> Interp
-interpPickPts _                         ""               (NoArgs' i mq        ) = promptPickPts i mq
-interpPickPts ncb@(NewCharBundle _ s _) (T.toLower ->cn) (Lower   i mq cols as) = getState >>= \ms ->
+interpPickPts _   ""               (NoArgs' i mq        ) = promptPickPts i mq
+interpPickPts ncb (T.toLower ->cn) (Lower   i mq cols as) = getState >>= \ms ->
     let pts = getPickPts i ms in if
       | cn `T.isPrefixOf` "quit" -> if isZero pts
-        then do blankLine mq
-                let msgs = [ lSpcs <> "Next you'll write a description of "
-                           , s
-                           , ", which others will see when they look at "
-                           , mkHimHer . getSex i $ ms
-                           , ". Your description must adhere to the following rules:" ]
-                settings <- getServerSettings
-                send mq . T.unlines . parseWrapXform settings cols . T.concat $ msgs
-                send mq . T.unlines . concat . wrapLines cols . T.lines $ descRulesMsg
-                pause i mq . Just . descHelper ncb i mq $ cols
+        then promptDesc ncb i mq cols
         else wrapSend mq cols sorryInterpPickPtsQuit >> anglePrompt mq
       | otherwise -> helper |&| modifyState >=> \msgs -> multiWrapSend mq cols msgs >> promptPickPts i mq
   where
@@ -517,6 +535,20 @@ interpPickPts ncb@(NewCharBundle _ s _) (T.toLower ->cn) (Lower   i mq cols as) 
 interpPickPts _ _ p = pmf "interpPickPts" p
 
 
+promptDesc :: HasCallStack => NewCharBundle -> Id -> MsgQueue -> Cols -> MudStack ()
+promptDesc ncb@(NewCharBundle _ s _) i mq cols = mkHimHer . getSex i <$> getState >>= \himHer -> do
+    blankLine mq
+    let msgs = [ lSpcs <> "Next you'll write a description of "
+               , s
+               , ", which others will see when they look at "
+               , himHer
+               , ". Your description must adhere to the following rules:" ]
+    settings <- getServerSettings
+    send mq . T.unlines . parseWrapXform settings cols . T.concat $ msgs
+    send mq . T.unlines . concat . wrapLines cols . T.lines $ descRulesMsg
+    pause i mq . Just . descHelper ncb i mq $ cols
+
+
 procAttribChar :: HasCallStack => Id -> MudState -> Char -> (Text, Int, ASetter Mob Mob Int Int)
 procAttribChar i ms = \case 's' -> ("Strength",  getBaseSt i ms, st)
                             'd' -> ("Dexterity", getBaseDx i ms, dx)
@@ -524,6 +556,42 @@ procAttribChar i ms = \case 's' -> ("Strength",  getBaseSt i ms, st)
                             'm' -> ("Magic",     getBaseMa i ms, ma)
                             'p' -> ("Psionics",  getBasePs i ms, ps)
                             c   -> pmf "procAttribChar" c
+
+
+-- ==================================================
+
+
+promptReadymadePC :: HasCallStack => MsgQueue -> Cols -> MudStack ()
+promptReadymadePC mq cols = multiWrapSend1Nl mq cols ts >> anglePrompt mq
+  where
+    ts  = "" : (readymadeTxt ++ pure mempty ++ pure readymadePromptTxt)
+
+
+readymadeTxt :: [Text]
+readymadeTxt | f <- colorWith abbrevColor = [ "You may choose from one of the following readymade characters:"
+                                            , "1) " <> f "D" <> "warf warrior"
+                                            , "2) " <> f "F" <> "elinoid thief"
+                                            , "3) " <> f "L" <> "agomoprh psionicist"
+                                            , "4) " <> f "N" <> "ymph mage"
+                                            , "5) " <> f "V" <> "ulpenoid warrior" ]
+
+
+readymadePromptTxt :: Text
+readymadePromptTxt = "Enter a number to make your selection, or enter the first letter of the name of a race to learn more."
+
+
+interpReadymadePC :: HasCallStack => NewCharBundle -> Interp
+interpReadymadePC _   "" (NoArgs _ mq cols) = promptRetryReadymadePC mq cols
+interpReadymadePC ncb cn (NoArgs i mq cols) = case cn of
+  "1" -> next
+  t   -> sequence_ [ wrapSend1Nl mq cols . sorryWut $ t, promptReadymadePC mq cols ]
+  where
+    next = promptDesc ncb i mq cols
+interpReadymadePC _ _ ActionParams { .. } = promptRetryReadymadePC plaMsgQueue plaCols
+
+
+promptRetryReadymadePC :: HasCallStack => MsgQueue -> Cols -> MudStack ()
+promptRetryReadymadePC mq cols = wrapSend1Nl mq cols readymadePromptTxt >> anglePrompt mq
 
 
 -- ==================================================
