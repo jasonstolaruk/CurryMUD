@@ -3355,9 +3355,9 @@ stats (NoArgs i mq cols) = getState >>= \ms ->
                                 , prd . capitalize . pp . getHand i $ ms
                                 , prd $ "Known languages: " <> commas [ pp lang | lang <- sort . getKnownLangs i $ ms ]
                                 , prd $ "Level " <> showTxt l
-                                , commaShow expr <> " experience points."
-                                , commaShow nxt  <> " experience points to next level."
-                                , commaShow (getSkillPts i ms) <> " unspent skill points."
+                                , prd $ commaShow expr <> " experience point" <> sOnNon1 expr
+                                , T.concat [ commaShow nxt, " experience point", sOnNon1 nxt, " to next level." ]
+                                , let pts = getSkillPts i ms in prd $ commaShow pts <> " unspent skill point" <> sOnNon1 pts
                                 , mobRmDescHelper
                                 , tempDescHelper ]
         top       = underline . onTrue (isPla i ms) (quoteWith' (spiritTxt, sexRace)) . getSing i $ ms
