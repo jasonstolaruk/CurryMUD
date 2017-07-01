@@ -404,11 +404,13 @@ raceTxt | f <- colorWith abbrevColor = [ "1) " <> f "D"  <> "warf"
 
 
 promptRace :: HasCallStack => MsgQueue -> Cols -> MudStack ()
-promptRace mq cols = wrapSend1Nl mq cols txt >> anglePrompt mq
-  where
-    txt = "Enter a number to make your selection, or enter the first letter" <>
-          parensQuote (T.singleton 's')                                      <>
-          " of the name of a race to learn more."
+promptRace mq cols = wrapSend1Nl mq cols racePromptTxt >> anglePrompt mq
+
+
+racePromptTxt :: Text
+racePromptTxt = "Enter a number to make your selection, or enter the first letter" <>
+                parensQuote (T.singleton 's')                                      <>
+                " of the name of a race to learn more."
 
 
 -- ==================================================
@@ -565,26 +567,32 @@ procAttribChar i ms = \case 's' -> ("Strength",  getBaseSt i ms, st)
 promptReadymadePC :: HasCallStack => MsgQueue -> Cols -> MudStack ()
 promptReadymadePC mq cols = multiWrapSend1Nl mq cols ts >> anglePrompt mq
   where
-    ts  = "" : (readymadeTxt ++ pure mempty ++ pure readymadePromptTxt)
+    ts  = "" : (readymadeTxt ++ pure mempty ++ pure racePromptTxt)
 
 
 readymadeTxt :: [Text]
 readymadeTxt | f <- colorWith abbrevColor = [ "You may choose from one of the following readymade characters:"
-                                            , "1) " <> f "D" <> "warf warrior"
-                                            , "2) " <> f "F" <> "elinoid thief"
-                                            , "3) " <> f "L" <> "agomoprh psionicist"
-                                            , "4) " <> f "N" <> "ymph mage"
-                                            , "5) " <> f "V" <> "ulpenoid warrior" ]
-
-
-readymadePromptTxt :: Text
-readymadePromptTxt = "Enter a number to make your selection, or enter the first letter of the name of a race to learn more."
+                                            , "1) " <> f "D"  <> "warf warrior"
+                                            , "2) " <> f "E"  <> "lf mage/psionicist"
+                                            , "3) " <> f "F"  <> "elinoid thief"
+                                            , "4) " <> f "H"  <> "obbit mage/thief"
+                                            , "5) " <> f "Hu" <> "man psionicist/warrior"
+                                            , "6) " <> f "L"  <> "agomorph psionicist"
+                                            , "7) " <> f "N"  <> "ymph mage"
+                                            , "8) " <> f "V"  <> "ulpenoid warrior" ]
 
 
 interpReadymadePC :: HasCallStack => NewCharBundle -> Interp
 interpReadymadePC _   "" (NoArgs _ mq cols) = promptRetryReadymadePC mq cols
 interpReadymadePC ncb cn (NoArgs i mq cols) = case cn of
-  "1" -> readymadeDwarf i >> next
+  "1" -> readymadeDwarf     i >> next
+  "2" -> readymadeElf       i >> next
+  "3" -> readymadeFelinoid  i >> next
+  "4" -> readymadeHobbit    i >> next
+  "5" -> readymadeHuman     i >> next
+  "6" -> readymadeLagomorph i >> next
+  "7" -> readymadeNymph     i >> next
+  "8" -> readymadeVulpenoid i >> next
   t   -> sequence_ [ wrapSend1Nl mq cols . sorryWut $ t, promptReadymadePC mq cols ]
   where
     next = promptDesc ncb i mq cols
@@ -592,7 +600,7 @@ interpReadymadePC _ _ ActionParams { .. } = promptRetryReadymadePC plaMsgQueue p
 
 
 promptRetryReadymadePC :: HasCallStack => MsgQueue -> Cols -> MudStack ()
-promptRetryReadymadePC mq cols = wrapSend1Nl mq cols readymadePromptTxt >> anglePrompt mq
+promptRetryReadymadePC mq cols = wrapSend1Nl mq cols racePromptTxt >> anglePrompt mq
 
 
 -- ==================================================
