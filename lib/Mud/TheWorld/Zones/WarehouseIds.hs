@@ -22,3 +22,5 @@ iLagomorphKit = 10006 :: Id
 iNymphKit = 10007 :: Id
 
 iVulpenoidKit = 10008 :: Id
+
+iCommonKit = 10009 :: Id

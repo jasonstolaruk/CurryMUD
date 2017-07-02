@@ -90,7 +90,8 @@ tutorialZone = zip rmIds . repeat $ "Tutorial"
 warehouseZone :: [(Id, Zone)]
 warehouseZone = zip rmIds . repeat $ "Warehouse"
   where
-    rmIds = [ iDwarfKit
+    rmIds = [ iCommonKit
+            , iDwarfKit
             , iElfKit
             , iFelinoidKit
             , iHobbitKit

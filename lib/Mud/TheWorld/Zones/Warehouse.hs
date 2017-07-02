@@ -43,7 +43,7 @@ createWarehouse = do
         []
         mempty
         (mkRm (RmTemplate "Dwarf kit"
-            "This room holds the dwarf kit."
+            "This room holds items unique to the dwarf kit."
             Nothing
             Nothing
             zeroBits
@@ -57,7 +57,7 @@ createWarehouse = do
         []
         mempty
         (mkRm (RmTemplate "Elf kit"
-            "This room holds the elf kit."
+            "This room holds items unique to the elf kit."
             Nothing
             Nothing
             zeroBits
@@ -71,7 +71,7 @@ createWarehouse = do
         []
         mempty
         (mkRm (RmTemplate "Felinoid kit"
-            "This room holds the felinoid kit."
+            "This room holds items unique to the felinoid kit."
             Nothing
             Nothing
             zeroBits
@@ -85,7 +85,7 @@ createWarehouse = do
         []
         mempty
         (mkRm (RmTemplate "Hobbit kit"
-            "This room holds the hobbit kit."
+            "This room holds items unique to the hobbit kit."
             Nothing
             Nothing
             zeroBits
@@ -99,7 +99,7 @@ createWarehouse = do
         []
         mempty
         (mkRm (RmTemplate "Human kit"
-            "This room holds the human kit."
+            "This room holds items unique to the human kit."
             Nothing
             Nothing
             zeroBits
@@ -113,7 +113,7 @@ createWarehouse = do
         []
         mempty
         (mkRm (RmTemplate "Lagomorph kit"
-            "This room holds the lagomorph kit."
+            "This room holds items unique to the lagomorph kit."
             Nothing
             Nothing
             zeroBits
@@ -127,7 +127,7 @@ createWarehouse = do
         []
         mempty
         (mkRm (RmTemplate "Nymph kit"
-            "This rooms holds the nymph kit."
+            "This rooms holds items unique to the nymph kit."
             Nothing
             Nothing
             zeroBits
@@ -140,15 +140,29 @@ createWarehouse = do
   putRm iVulpenoidKit
         []
         mempty
-        (mkRm (RmTemplate "Vulpenoid"
-            "This room holds the vulpenoid kit."
+        (mkRm (RmTemplate "Vulpenoid kit"
+            "This room holds items unique to the vulpenoid kit."
             Nothing
             Nothing
             zeroBits
-            [ StdLink North iNymphKit 0 ]
+            [ StdLink North iNymphKit  0
+            , StdLink South iCommonKit 0 ]
             (0, -8, -0)
             InsideEnv
             (Just "Vulpenoid")
+            M.empty [] []))
+  putRm iCommonKit
+        []
+        mempty
+        (mkRm (RmTemplate "Common kit"
+            "This room holds items found in more than one kit."
+            Nothing
+            Nothing
+            zeroBits
+            [ StdLink North iVulpenoidKit 0 ]
+            (0, -9, -0)
+            InsideEnv
+            (Just "Common")
             M.empty [] []))
 
   putRmTeleName iWarehouseWelcome "warehouse"
