@@ -10,6 +10,7 @@ import Mud.Util.Misc
 import GHC.Stack (HasCallStack)
 
 
+-- TODO: Include light source and holy symbol.
 kit :: HasCallStack => Id -> MudStack ()
 kit i = modifyStateSeq helper
   where
