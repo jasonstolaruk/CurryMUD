@@ -93,7 +93,7 @@ expandMiscCode s (toLower -> code)           = case code of
   'e' -> descRulesMsg
   'l' -> T.singleton leadingSpaceChar
   'o' -> showTxt dfltZoom
-  'p' -> pwWarningMsg
+  'p' -> pwWarningTxt
   'r' -> rulesIntroMsg
   's' -> dfltShutdownMsg
   'u' -> rulesMsg

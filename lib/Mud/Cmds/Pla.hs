@@ -2230,7 +2230,7 @@ interpVerifyNewPW oldPW pass cn (NoArgs i mq cols)
       withDbExHandler_ "interpVerifyNewPW" . insertDbTblUnPw . UnPwRec s $ pass
       send mq telnetShowInput
       blankLine mq
-      wrapSend  mq cols $ "Password changed. " <> pwWarningMsg
+      wrapSend  mq cols $ "Password changed. " <> pwWarningTxt
       sendDfltPrompt mq i
       resetInterp i
   | otherwise = pwSorryHelper i mq cols sorryInterpNewPwMatch

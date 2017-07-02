@@ -218,18 +218,8 @@ pwMsg t = [ T.concat [ t
           , "* 0 whitespace characters" ]
 
 
-pwWarningMsg :: Text
-pwWarningMsg = pwWarningTxt <> ".)"
-
-
-pwWarningLoginMsg :: Text
-pwWarningLoginMsg = pwWarningTxt <> " once inside the game.)"
-
-
 pwWarningTxt :: Text -- Do not indent with leading spaces.
-pwWarningTxt = "Please make a note of your new password. If you lose your password, you may lose your character! \
-               \(To safeguard against this unfortunate situation, use the " <> dblQuote "security" <> " command to \
-               \provide a security Q&A"
+pwWarningTxt = "Please make a note of your new password. If you lose your password, you may lose your character!"
 
 
 rethrowExMsg :: Text -> Text
