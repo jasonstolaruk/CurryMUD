@@ -22,8 +22,7 @@ readymadeHelper i r a b c d e = tweaks [ pcTbl     .ind i.race       .~ r
                                        , mobTbl    .ind i.dx         .~ b
                                        , mobTbl    .ind i.ht         .~ c
                                        , mobTbl    .ind i.ma         .~ d
-                                       , mobTbl    .ind i.ps         .~ e
-                                       , pickPtsTbl.ind i            .~ 0 ]
+                                       , mobTbl    .ind i.ps         .~ e ]
 
 
 readymadeDwarf :: Id -> MudStack ()
