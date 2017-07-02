@@ -27,6 +27,7 @@ import qualified Mud.Misc.Logging as L (logNotice, logPla)
 import           Mud.Misc.Logging hiding (logNotice, logPla)
 import           Mud.Misc.Misc
 import           Mud.Misc.Readymade
+-- import           Mud.TheWorld.Kits -- TODO
 import           Mud.TheWorld.Zones.AdminZoneIds (iCentral, iLoggedOut, iWelcome)
 import           Mud.TheWorld.Zones.LoplenkoIds (iLoplenkoWelcome)
 import           Mud.Threads.Digester

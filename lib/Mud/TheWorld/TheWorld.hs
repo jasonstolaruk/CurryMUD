@@ -23,6 +23,8 @@ import           Mud.TheWorld.Zones.Loplenko
 import           Mud.TheWorld.Zones.LoplenkoIds (iLoplenkoWelcome)
 import           Mud.TheWorld.Zones.Tutorial
 import           Mud.TheWorld.Zones.TutorialIds (iTutWelcome)
+import           Mud.TheWorld.Zones.Warehouse
+import           Mud.TheWorld.Zones.WarehouseIds (iWarehouseWelcome)
 import           Mud.TopLvlDefs.FilePaths
 import           Mud.Util.Misc
 import           Mud.Util.Operators
@@ -185,9 +187,10 @@ initDistinctLiqTbl = tweak $ distinctLiqTbl .~ IM.fromList (map dropThr liqList)
 
 
 createWorld :: HasCallStack => MudStack ()
-createWorld = getState >>= \ms -> let pairs = [ (iWelcome,         createAdminZone)
-                                              , (iLoplenkoWelcome, createLoplenko )
-                                              , (iTutWelcome,      createTutorial ) ]
+createWorld = getState >>= \ms -> let pairs = [ (iWelcome,          createAdminZone)
+                                              , (iLoplenkoWelcome,  createLoplenko )
+                                              , (iTutWelcome,       createTutorial )
+                                              , (iWarehouseWelcome, createWarehouse)]
                                   in do logNotice "createWorld" "creating the world."
                                         forM_ pairs $ \(i, f) -> unless (hasType i ms) f
 

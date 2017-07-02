@@ -99,6 +99,7 @@ library
                        Mud.Service.Types
                        Mud.TheWorld.FoodIds
                        Mud.TheWorld.Foods
+                       Mud.TheWorld.Kits
                        Mud.TheWorld.LiqIds
                        Mud.TheWorld.Liqs
                        Mud.TheWorld.Misc
@@ -109,6 +110,8 @@ library
                        Mud.TheWorld.Zones.LoplenkoIds
                        Mud.TheWorld.Zones.Tutorial
                        Mud.TheWorld.Zones.TutorialIds
+                       Mud.TheWorld.Zones.Warehouse
+                       Mud.TheWorld.Zones.WarehouseIds
                        Mud.TheWorld.Zones.ZoneMap
                        Mud.Threads.Act
                        Mud.Threads.Biodegrader
