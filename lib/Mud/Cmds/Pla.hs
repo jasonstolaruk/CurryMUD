@@ -11,6 +11,7 @@ module Mud.Cmds.Pla ( getRecordUptime
                     , noOfSpiritCmds
                     , npcCmds
                     , plaCmds
+                    , ready
                     , showDate
                     , showMotd
                     , spiritCmds ) where

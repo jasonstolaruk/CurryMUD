@@ -7,6 +7,8 @@ import           Mud.Data.State.Util.Make
 import           Mud.Data.State.Util.Put
 import qualified Mud.Misc.Logging as L (logNotice)
 import           Mud.TheWorld.Zones.WarehouseIds
+import           Mud.TopLvlDefs.Vols
+import           Mud.TopLvlDefs.Weights
 
 import           Data.Bits (zeroBits)
 import           Data.Text (Text)
@@ -25,6 +27,8 @@ createWarehouse :: MudStack ()
 createWarehouse = do
   logNotice "createWarehouse" "creating the warehouse."
 
+  -----
+
   putRm iWarehouseWelcome
         []
         mempty
@@ -39,6 +43,9 @@ createWarehouse = do
             InsideEnv
             (Just "Welcome")
             M.empty [] []))
+
+  -----
+
   putRm iDwarfKit
         []
         mempty
@@ -53,6 +60,9 @@ createWarehouse = do
             InsideEnv
             (Just "Dwarf")
             M.empty [] []))
+
+  -----
+
   putRm iElfKit
         []
         mempty
@@ -67,6 +77,9 @@ createWarehouse = do
             InsideEnv
             (Just "Elf")
             M.empty [] []))
+
+  -----
+
   putRm iFelinoidKit
         []
         mempty
@@ -81,6 +94,9 @@ createWarehouse = do
             InsideEnv
             (Just "Felinoid")
             M.empty [] []))
+
+  -----
+
   putRm iHobbitKit
         []
         mempty
@@ -95,6 +111,9 @@ createWarehouse = do
             InsideEnv
             (Just "Hobbit")
             M.empty [] []))
+
+  -----
+
   putRm iHumanKit
         []
         mempty
@@ -109,6 +128,19 @@ createWarehouse = do
             InsideEnv
             (Just "Human")
             M.empty [] []))
+
+  putArm iBoots
+         (Ent iBoots
+              (Just "boots")
+              "pair of leather boots" "pairs of leather boots"
+              "These rugged, sturdy boots make excellent footwear for traveling across a variety of terrain."
+              Nothing
+              zeroBits)
+         (mkObj . ObjTemplate bootsWeight bootsVol Nothing $ zeroBits)
+         (Arm Feet 1)
+
+  -----
+
   putRm iLagomorphKit
         []
         mempty
@@ -123,6 +155,9 @@ createWarehouse = do
             InsideEnv
             (Just "Lagomorph")
             M.empty [] []))
+
+  -----
+
   putRm iNymphKit
         []
         mempty
@@ -137,6 +172,9 @@ createWarehouse = do
             InsideEnv
             (Just "Nymph")
             M.empty [] []))
+
+  -----
+
   putRm iVulpenoidKit
         []
         mempty
@@ -151,6 +189,9 @@ createWarehouse = do
             InsideEnv
             (Just "Vulpenoid")
             M.empty [] []))
+
+  -----
+
   putRm iCommonKit
         []
         mempty
@@ -164,5 +205,8 @@ createWarehouse = do
             InsideEnv
             (Just "Common")
             M.empty [] []))
+
+
+  -----
 
   putRmTeleName iWarehouseWelcome "warehouse"

@@ -27,7 +27,7 @@ import qualified Mud.Misc.Logging as L (logNotice, logPla)
 import           Mud.Misc.Logging hiding (logNotice, logPla)
 import           Mud.Misc.Misc
 import           Mud.Misc.Readymade
--- import           Mud.TheWorld.Kits -- TODO
+import           Mud.TheWorld.Kits
 import           Mud.TheWorld.Zones.AdminZoneIds (iCentral, iLoggedOut, iWelcome)
 import           Mud.TheWorld.Zones.LoplenkoIds (iLoplenkoWelcome)
 import           Mud.Threads.Digester
@@ -665,19 +665,22 @@ interpDiscover _ _ p = pmf "interpDiscover" p
 finishNewChar :: HasCallStack => NewCharBundle -> ActionParams -> MudStack ()
 finishNewChar ncb@(NewCharBundle _ s pass) params@(NoArgs'' i) = do
     withDbExHandler_ "unpw" . insertDbTblUnPw . UnPwRec s $ pass
-    mkRndmVector >>= \v -> helper v |&| modifyState >=> \ms@(getPla i -> p) -> do
-        initPlaLog i s
-        logPla "finishNewChar" i . prd $ "new character logged in from " <> views currHostName T.pack p
-        handleLogin ncb True params
-        notifyQuestion i ms
+    tweak . helper =<< mkRndmVector
+    kit i
+    ms@(getPla i -> p) <- getState
+    initPlaLog i s
+    logPla "finishNewChar" i . prd $ "new character logged in from " <> views currHostName T.pack p
+    handleLogin ncb True params
+    notifyQuestion i ms
+    ready . mkActionParams i ms . pure . T.singleton $ allChar
   where
-    helper v ms | ms' <- upd ms [ pickPtsTbl.at  i        .~ Nothing -- TODO: Starting equipment. Include a light source and a holy symbol.
+    helper v ms | ms' <- upd ms [ pickPtsTbl.at  i        .~ Nothing
                                 , invTbl    .ind iWelcome %~ (i `delete`)
                                 , mobTbl    .ind i.rmId   .~ iCentral
                                 , mobTbl    .ind i.interp .~ Nothing
                                 , plaTbl    .ind i        %~ setPlaFlag IsTunedQuestion True ]
-                = dup $ upd ms' [ invTbl    .ind iCentral %~ addToInv ms' (pure i)
-                                , newChar i v ]
+                = upd ms' [ invTbl    .ind iCentral %~ addToInv ms' (pure i)
+                          , newChar i v ]
 finishNewChar _ p = pmf "finishNewChar" p
 
 
