@@ -25,6 +25,10 @@ iVulpenoidKit = 10008 :: Id
 
 iCommonKit = 10009 :: Id
 
-iSack = 10010 :: Id
+iBread = 10010 :: Id
 
-iSandals = 10011 :: Id
+iSack = 10011 :: Id
+
+iSandals = 10012 :: Id
+
+iWaterskin = 10013 :: Id

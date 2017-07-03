@@ -6,6 +6,8 @@ import           Mud.Data.State.MudData
 import           Mud.Data.State.Util.Make
 import           Mud.Data.State.Util.Put
 import qualified Mud.Misc.Logging as L (logNotice)
+import           Mud.TheWorld.Foods
+import           Mud.TheWorld.Liqs
 import           Mud.TheWorld.Zones.WarehouseIds
 import           Mud.TopLvlDefs.Vols
 import           Mud.TopLvlDefs.Weights
@@ -183,7 +185,7 @@ createWarehouse = do
   -----
 
   putRm iCommonKit
-      [ iSack, iSandals ]
+      [ iBread, iSack, iSandals, iWaterskin ]
       mempty
       (mkRm (RmTemplate "Common kit"
           "This room holds items found in all kits."
@@ -195,6 +197,11 @@ createWarehouse = do
           InsideEnv
           (Just "Common")
           M.empty [] []))
+
+  putFood iBread
+          (mkEnt iBread breadEntTemplate)
+          (mkObj breadObjTemplate)
+          breadFood
 
   putCon iSack
       (Ent iSack
@@ -219,6 +226,18 @@ createWarehouse = do
           zeroBits)
       (mkObj . ObjTemplate sandalsWeight sandalsVol Nothing $ zeroBits)
       (Arm Feet 1)
+
+  putVessel iWaterskin
+      (Ent iWaterskin
+          (Just "waterskin")
+          "waterskin" ""
+          "The handy waterskin, crafted from the bladder of a bovine animal, is an indispensable piece of equipment \
+          \when it comes to travel and, often, everyday life."
+          Nothing
+          zeroBits)
+      (mkObj . ObjTemplate waterskinWeight waterskinVol Nothing $ zeroBits)
+      (Just (waterLiq, maxBound))
+      Nothing
 
   -----
 
