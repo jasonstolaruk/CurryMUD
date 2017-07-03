@@ -49,7 +49,7 @@ import           Mud.Util.Wrapping
 import           Control.Applicative (liftA2)
 import           Control.Arrow (first)
 import           Control.Exception.Lifted (try)
-import           Control.Lens (ASetter, at, both, set, views)
+import           Control.Lens (ASetter, at, both, set, view, views)
 import           Control.Lens.Operators ((-~), (?~), (.~), (&), (%~), (^.), (+~))
 import           Control.Monad ((>=>), join, unless, void, when)
 import           Control.Monad.IO.Class (liftIO)
@@ -663,7 +663,7 @@ interpDiscover _ _ p = pmf "interpDiscover" p
 
 
 finishNewChar :: HasCallStack => NewCharBundle -> ActionParams -> MudStack ()
-finishNewChar ncb@(NewCharBundle _ s pass) params@(NoArgs'' i) = do
+finishNewChar ncb@(NewCharBundle _ s pass) params@(NoArgs' i mq) = do
     withDbExHandler_ "unpw" . insertDbTblUnPw . UnPwRec s $ pass
     tweak . helper =<< mkRndmVector
     kit i
@@ -672,7 +672,12 @@ finishNewChar ncb@(NewCharBundle _ s pass) params@(NoArgs'' i) = do
     logPla "finishNewChar" i . prd $ "new character logged in from " <> views currHostName T.pack p
     handleLogin ncb True params
     notifyQuestion i ms
-    ready . mkActionParams i ms . pure . T.singleton $ allChar
+    let f i' | getType i' ms `elem` [ ArmType, ClothType, WpnType ]
+             , Just n <- view entName . getEnt i' $ ms
+             = (n :)
+        f _  = id
+    ready . mkActionParams i ms . foldr f [] . getInv i $ ms
+    sendDfltPrompt mq i
   where
     helper v ms | ms' <- upd ms [ pickPtsTbl.at  i        .~ Nothing
                                 , invTbl    .ind iWelcome %~ (i `delete`)
@@ -898,7 +903,7 @@ handleLogin (NewCharBundle oldSing s _) isNew params@ActionParams { .. } = let p
     showElapsedTime
     showRetainedMsgs
     look params
-    sendDfltPrompt plaMsgQueue myId
+    unless isNew . sendDfltPrompt plaMsgQueue $ myId
   where
     setLoginTime = liftIO getCurrentTime >>= \ct -> do
         logPla "handleLogin setLoginTime" myId . prd $ "setting login time to " <> showTxt ct
