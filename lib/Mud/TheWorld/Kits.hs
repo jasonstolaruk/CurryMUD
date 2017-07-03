@@ -14,15 +14,15 @@ import GHC.Stack (HasCallStack)
 kit :: HasCallStack => Id -> MudStack ()
 kit i = modifyStateSeq helper
   where
-    helper ms = case getRace i ms of Dwarf     -> (ms, [])
-                                     Elf       -> (ms, [])
-                                     Felinoid  -> (ms, [])
-                                     Hobbit    -> (ms, [])
-                                     Human     -> handleHuman
-                                     Lagomorph -> (ms, [])
-                                     Nymph     -> (ms, [])
-                                     Vulpenoid -> (ms, [])
-      where
-        f           = dropFst . clone i ([], ms, [])
-        handleHuman = let is = pure iBoots
-                      in f is
+    helper ms = dropFst . cloneCommon . clone i ([], ms, []) . (`getInvHelper` ms) $ case getRace i ms of
+        Dwarf     -> iDwarfKit
+        Elf       -> iElfKit
+        Felinoid  -> iFelinoidKit
+        Hobbit    -> iHobbitKit
+        Human     -> iHumanKit
+        Lagomorph -> iLagomorphKit
+        Nymph     -> iNymphKit
+        Vulpenoid -> iVulpenoidKit
+    cloneCommon triple@(_, ms, _) = clone i triple . getInvHelper iCommonKit $ ms
+    getInvHelper targetId ms      = let is = getInv targetId ms
+                                    in filter ((`notElem` [ CorpseType, NpcType, PlaType ]) . (`getType` ms)) is

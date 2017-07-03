@@ -17,12 +17,14 @@ iHobbitKit = 10004 :: Id
 
 iHumanKit = 10005 :: Id
 
-iBoots = 10006 :: Id
+iLagomorphKit = 10006 :: Id
 
-iLagomorphKit = 10007 :: Id
+iNymphKit = 10007 :: Id
 
-iNymphKit = 10008 :: Id
+iVulpenoidKit = 10008 :: Id
 
-iVulpenoidKit = 10009 :: Id
+iCommonKit = 10009 :: Id
 
-iCommonKit = 10010 :: Id
+iSack = 10010 :: Id
+
+iSandals = 10011 :: Id
