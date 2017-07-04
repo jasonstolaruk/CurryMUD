@@ -67,7 +67,7 @@ import           Control.Monad ((<=<), (>=>), forM, forM_, join, unless, when)
 import           Control.Monad.IO.Class (liftIO)
 import           Crypto.BCrypt (validatePassword)
 import           Data.Aeson (Value(..), eitherDecode, toJSON)
-import           Data.Bits (setBit, zeroBits)
+import           Data.Bits (zeroBits)
 import           Data.Char (isDigit, isLower, isUpper)
 import           Data.Either (rights)
 import           Data.Function (on)
@@ -1321,30 +1321,10 @@ adminMkHoly   (WithArgs i mq cols [ numTxt, godNameTxt ]) = case reads . T.unpac
                     found godName = case filter ((== godName) . snd) [ (x, pp x) | x <- allGodNames ] of
                       []          -> notFound
                       ((gn, _):_) ->
-                          let (gn', desc, w, v, god, h) = ((,,,,,) <$> pp
-                                                                   <*> mkHolySymbolDesc
-                                                                   <*> mkHolySymbolWeight
-                                                                   <*> mkHolySymbolVol
-                                                                   <*> maybe "unknown" pp . getGodForGodName
-                                                                   <*> HolySymbol) gn
-                              et  = EntTemplate (Just "holy")
-                                                ("holy symbol of " <> gn') ("holy symbols of " <> gn')
-                                                desc
-                                                Nothing
-                                                zeroBits
-                              ot  = ObjTemplate w
-                                                v
-                                                Nothing
-                                                (setBit zeroBits . fromEnum $ IsBiodegradable)
-                              vt  = VesselTemplate Nothing . Just $ h
+                          let god = maybe "unknown" pp . getGodForGodName $ gn
                               msg = T.concat [ "Created ", showTxt n, " holy symbol", sOnNon1 n, " of ", god, "." ]
-                              helper 0 pair      = pair
-                              helper x (ms', fs) = let pair = dropFst $ if gn == Iminye
-                                                                then newVessel     ms' et ot vt i
-                                                                else newHolySymbol ms' et ot h  i
-                                                   in helper (pred x) . second (++ fs) $ pair
                           in second (++ [ logPlaOut (prefixAdminCmd "mkholy") i . pure $ msg
-                                        , wrapSend mq cols msg ]) . helper n $ (ms, [])
+                                        , wrapSend mq cols msg ]) . holySymbolFactory i ms n $ gn
                     notFound    = sorry . sorryMkHolyGodName $ godNameTxt
                     allGodNames = allValues
                 in findFullNameForAbbrev (capitalize . T.toLower $ godNameTxt) (map pp allGodNames) |&| maybe notFound found

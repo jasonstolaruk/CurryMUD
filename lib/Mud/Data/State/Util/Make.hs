@@ -7,6 +7,7 @@ module Mud.Data.State.Util.Make ( EntTemplate(..)
                                 , PlaTemplate(..)
                                 , RmTemplate(..)
                                 , VesselTemplate(..)
+                                , holySymbolFactory
                                 , mkEnt
                                 , mkMob
                                 , mkObj
@@ -24,6 +25,8 @@ module Mud.Data.State.Util.Make ( EntTemplate(..)
                                 , newWpn
                                 , newWritable ) where
 
+import           Mud.Cmds.Util.Misc
+import           Mud.Data.Misc
 import           Mud.Data.State.MudData
 import           Mud.Data.State.Util.Calc
 import           Mud.Data.State.Util.Get
@@ -40,8 +43,10 @@ import           Control.Arrow (second)
 import           Control.Lens (_2, _3, at)
 import           Control.Lens.Operators ((.~), (&), (%~), (<>~))
 import           Control.Monad (when)
+import           Data.Bits (setBit, zeroBits)
 import qualified Data.Map.Strict as M (empty)
 import           Data.Maybe (isJust)
+import           Data.Monoid ((<>))
 import           Data.Text (Text)
 
 
@@ -179,6 +184,30 @@ newHolySymbol :: MudState -> EntTemplate -> ObjTemplate -> HolySymbol -> InvId -
 newHolySymbol ms et ot h invId =
     let (i, typeTbl.ind i .~ HolySymbolType -> ms', fs) = createHolySymbol ms et ot h
     in (i, ms' & invTbl.ind invId %~ addToInv ms' (pure i), fs)
+
+
+holySymbolFactory :: Id -> MudState -> Int -> GodName -> (MudState, Funs)
+holySymbolFactory i ms n gn = let (gn', desc, w, v, h) = ((,,,,) <$> pp
+                                                                 <*> mkHolySymbolDesc
+                                                                 <*> mkHolySymbolWeight
+                                                                 <*> mkHolySymbolVol
+                                                                 <*> HolySymbol) gn
+                                  et  = EntTemplate (Just "holy")
+                                                    ("holy symbol of " <> gn') ("holy symbols of " <> gn')
+                                                    desc
+                                                    Nothing
+                                                    zeroBits
+                                  ot  = ObjTemplate w
+                                                    v
+                                                    Nothing
+                                                    (setBit zeroBits . fromEnum $ IsBiodegradable)
+                                  vt  = VesselTemplate Nothing . Just $ h
+                                  helper 0 pair      = pair
+                                  helper x (ms', fs) = let pair = dropFst $ if gn == Iminye
+                                                                    then newVessel     ms' et ot vt i
+                                                                    else newHolySymbol ms' et ot h  i
+                                                       in helper (pred x) . second (++ fs) $ pair
+                              in helper n (ms, [])
 
 
 -- ==================================================

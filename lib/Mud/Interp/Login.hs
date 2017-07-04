@@ -665,8 +665,7 @@ interpDiscover _ _ p = pmf "interpDiscover" p
 finishNewChar :: HasCallStack => NewCharBundle -> ActionParams -> MudStack ()
 finishNewChar ncb@(NewCharBundle _ s pass) params@(NoArgs' i mq) = do
     withDbExHandler_ "unpw" . insertDbTblUnPw . UnPwRec s $ pass
-    tweak . helper =<< mkRndmVector
-    kit i
+    ((>>) <$> tweak . helper . fst <*> kit i . snd) =<< (,) <$> mkRndmVector <*> mkRndmVector
     ms@(getPla i -> p) <- getState
     initPlaLog i s
     logPla "finishNewChar" i . prd $ "new character logged in from " <> views currHostName T.pack p
@@ -684,7 +683,7 @@ finishNewChar ncb@(NewCharBundle _ s pass) params@(NoArgs' i mq) = do
                                 , mobTbl    .ind i.rmId   .~ iCentral
                                 , mobTbl    .ind i.interp .~ Nothing
                                 , plaTbl    .ind i        %~ setPlaFlag IsTunedQuestion True ]
-                = upd ms' [ invTbl    .ind iCentral %~ addToInv ms' (pure i)
+                = upd ms' [ invTbl.ind iCentral %~ addToInv ms' (pure i)
                           , newChar i v ]
 finishNewChar _ p = pmf "finishNewChar" p
 
