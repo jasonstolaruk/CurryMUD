@@ -32,3 +32,21 @@ iSack = 10011 :: Id
 iSandals = 10012 :: Id
 
 iWaterskin = 10013 :: Id
+
+iBonusKit = 10014 :: Id
+
+iPotInstantHp = 10015 :: Id
+
+iPotInstantFp = 10016 :: Id
+
+iPotInstantSt = 10017 :: Id
+
+iNoseRing = 10018 :: Id
+
+iAmethystRing = 10019 :: Id
+
+iAquamarineRing = 10020 :: Id
+
+iEmeraldRing = 10021 :: Id
+
+iGarnetRing = 10022 :: Id

@@ -17,6 +17,7 @@ import           Mud.Data.State.Util.Get
 import           Mud.Data.State.Util.Lang
 import           Mud.Data.State.Util.Misc
 import           Mud.Data.State.Util.Output
+import           Mud.Data.State.Util.Random
 import           Mud.Interp.Misc
 import           Mud.Interp.MultiLine
 import           Mud.Interp.Pause
@@ -665,7 +666,7 @@ interpDiscover _ _ p = pmf "interpDiscover" p
 finishNewChar :: HasCallStack => NewCharBundle -> ActionParams -> MudStack ()
 finishNewChar ncb@(NewCharBundle _ s pass) params@(NoArgs' i mq) = do
     withDbExHandler_ "unpw" . insertDbTblUnPw . UnPwRec s $ pass
-    ((>>) <$> tweak . helper . fst <*> kit i . snd) =<< (,) <$> mkRndmVector <*> mkRndmVector
+    ((>>) <$> tweak . helper . fst <*> kit i . snd) =<< (,) <$> mkRndmVector <*> rndmVector 9
     ms@(getPla i -> p) <- getState
     initPlaLog i s
     logPla "finishNewChar" i . prd $ "new character logged in from " <> views currHostName T.pack p

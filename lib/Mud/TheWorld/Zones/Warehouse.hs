@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE TupleSections, OverloadedStrings #-}
 
 module Mud.TheWorld.Zones.Warehouse (createWarehouse) where
 
@@ -12,9 +12,11 @@ import           Mud.TheWorld.Zones.WarehouseIds
 import           Mud.TopLvlDefs.Vols
 import           Mud.TopLvlDefs.Weights
 
+import           Control.Monad (forM_)
 import           Data.Bits (zeroBits)
-import           Data.Text (Text)
 import qualified Data.Map.Strict as M (empty)
+import           Data.Monoid ((<>))
+import           Data.Text (Text)
 
 
 logNotice :: Text -> Text -> MudStack ()
@@ -192,7 +194,8 @@ createWarehouse = do
           Nothing
           Nothing
           zeroBits
-          [ StdLink North iVulpenoidKit 0 ]
+          [ StdLink North iVulpenoidKit 0
+          , StdLink South iBonusKit     0 ]
           (0, -9, -0)
           InsideEnv
           (Just "Common")
@@ -238,6 +241,62 @@ createWarehouse = do
       (mkObj . ObjTemplate waterskinWeight waterskinVol Nothing $ zeroBits)
       (Just (waterLiq, maxBound))
       Nothing
+
+  -----
+
+  let bonusPotionIds = [ iPotInstantHp, iPotInstantFp, iPotInstantSt ]
+      bonusRingIds   = [ iNoseRing, iAmethystRing, iAquamarineRing, iEmeraldRing, iGarnetRing ]
+  putRm iBonusKit
+      (bonusPotionIds ++ bonusRingIds)
+      mempty
+      (mkRm (RmTemplate "Bonus kit"
+          "This room holds bonus items."
+          Nothing
+          Nothing
+          zeroBits
+          [ StdLink North iCommonKit 0 ]
+          (0, -10, -0)
+          InsideEnv
+          (Just "Bonus")
+          M.empty [] []))
+
+  let flaskConts = (++ repeat Nothing) . map (Just . (, maxBound)) $ [ potInstantHpLiq, potInstantFpLiq, potInstantStLiq ]
+  forM_ (zip bonusPotionIds flaskConts) $ \(i, mc) ->
+      putVessel i
+          (Ent i
+              (Just "flask")
+              "large potion flask" ""
+              "This glass flask complete with cork stopper is the ideal vessel for potion storage and transportation."
+              Nothing
+              zeroBits)
+          (mkObj . ObjTemplate potionFlaskLrgWeight potionFlaskLrgVol Nothing $ zeroBits)
+          mc
+          Nothing
+
+  putCloth iNoseRing
+      (Ent iNoseRing
+          (Just "nose")
+          "nose ring" ""
+          "It's a plain copper stud intended to be worn on the nose."
+          Nothing
+          zeroBits)
+      (mkObj . ObjTemplate noseWeight noseVol Nothing $ zeroBits)
+      NoseRing
+
+  let ringTuples = [ (iAmethystRing,   "amethyst"  )
+                   , (iAquamarineRing, "aquamarine")
+                   , (iEmeraldRing,    "emerald"   )
+                   , (iGarnetRing,     "garnet"    ) ]
+  forM_ ringTuples $ \(i, t) ->
+      putCloth i
+          (Ent i
+              (Just "ring")
+              (t <> " ring") ""
+              ("It's a simple copper band prominently featuring a beautiful " <> t <> " stone.")
+              Nothing
+              zeroBits)
+          (mkObj . ObjTemplate ringWeight ringVol Nothing $ zeroBits)
+          Ring
 
   -----
 
