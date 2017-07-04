@@ -11,6 +11,8 @@ import           Mud.TheWorld.Liqs
 import           Mud.TheWorld.Zones.WarehouseIds
 import           Mud.TopLvlDefs.Vols
 import           Mud.TopLvlDefs.Weights
+import           Mud.Util.Misc
+import           Mud.Util.Text
 
 import           Control.Monad (forM_)
 import           Data.Bits (zeroBits)
@@ -211,9 +213,11 @@ createWarehouse = do
           (Just "sack")
           "sack" ""
           "The durable sack is made from a coarse, woven fabric."
-          Nothing
+          (Just "The sack smells like burlap. It's a bit reminiscent of the smell of a barn or a farmyard.")
           zeroBits)
-      (mkObj . ObjTemplate sackWeight sackVol Nothing $ zeroBits)
+      (let taste = thrice prd "Munching on the sack, you experience firsthand the earthy taste of burlap. You begin \
+                              \to suspect that the taste could linger in your mouth for some time"
+       in mkObj . ObjTemplate sackWeight sackVol (Just taste) $ zeroBits)
       []
       mempty
       Nothing
@@ -225,9 +229,10 @@ createWarehouse = do
           "pair of simple leather sandals" "pairs of simple leather sandals"
           "These humble leather sandals offer little in the way of fashion; they will, however, adequately protect the \
           \soles of your feet."
-          Nothing
+          (Just "The sandals smell like leather, and not much else.")
           zeroBits)
-      (mkObj . ObjTemplate sandalsWeight sandalsVol Nothing $ zeroBits)
+      (let taste = "You chew on the sandals. The leather tastes a bit salty. Probably from foot sweat."
+       in mkObj . ObjTemplate sandalsWeight sandalsVol (Just taste) $ zeroBits)
       (Arm Feet 1)
 
   putVessel iWaterskin

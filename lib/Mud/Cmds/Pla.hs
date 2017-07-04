@@ -1037,7 +1037,7 @@ drink p = advise p ["drink"] adviceDrinkExcessArgs
 -----
 
 
-dropAction :: HasCallStack => ActionFun
+dropAction :: HasCallStack => ActionFun -- TODO: You can drop a food while eating it. As for drinking: "You can't drop an item while drinking."
 dropAction p@AdviseNoArgs     = advise p ["drop"] adviceDropNoArgs
 dropAction p@(LowerNub' i as) = genericAction p helper "drop"
   where
