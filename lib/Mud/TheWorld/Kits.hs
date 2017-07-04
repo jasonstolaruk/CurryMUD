@@ -54,7 +54,7 @@ kit i (V.toList -> [ va, vb, vc, vd, ve, vf, vg, vh, vi ]) = modifyStateSeq help
     potionsHelper triple = clone i triple . mapMaybe f $ [ (ve, iPotInstantHp), (vf, iPotInstantFp), (vg, iPotInstantSt) ]
       where
         f (vx, potId) = onTrue (rndmIntToRange vx (1, 20) == 1) (const . Just $ potId) Nothing
-    ringHelper triple = clone i triple . onTrue (rndmIntToRange vh (1, 12) == 1) (ringId :) $ []
+    ringHelper triple = clone i triple . onTrue (rndmIntToRange vh (1, 20) == 1) (ringId :) $ []
       where
         ringId = rndmIntToElem vi [ iNoseRing, iAmethystRing, iAquamarineRing, iEmeraldRing, iGarnetRing ]
     holySymbolHelper (ms, fs) = second (fs ++) . holySymbolFactory i ms 1 . rndmIntToElem va $ gns
