@@ -53,7 +53,7 @@ createWarehouse = do
   -----
 
   putRm iDwarfKit
-      []
+      [ iDwarfApple1, iDwarfApple2 ]
       mempty
       (mkRm (RmTemplate "Dwarf kit"
           "This room holds items unique to the dwarf kit."
@@ -67,10 +67,15 @@ createWarehouse = do
           (Just "Dwarf")
           M.empty [] []))
 
+  forM_ [ iDwarfApple1, iDwarfApple2 ] $ \i -> putFood i
+      (mkEnt i appleEntTemplate)
+      (mkObj appleObjTemplate)
+      appleFood
+
   -----
 
   putRm iElfKit
-      []
+      [ iElfBanana1, iElfBanana2 ]
       mempty
       (mkRm (RmTemplate "Elf kit"
           "This room holds items unique to the elf kit."
@@ -83,6 +88,11 @@ createWarehouse = do
           InsideEnv
           (Just "Elf")
           M.empty [] []))
+
+  forM_ [ iElfBanana1, iElfBanana2 ] $ \i -> putFood i
+      (mkEnt i bananaEntTemplate)
+      (mkObj bananaObjTemplate)
+      bananaFood
 
   -----
 
@@ -104,7 +114,7 @@ createWarehouse = do
   -----
 
   putRm iHobbitKit
-      []
+      [ iHobbitApple, iHobbitBanana, iHobbitOrange ]
       mempty
       (mkRm (RmTemplate "Hobbit kit"
           "This room holds items unique to the hobbit kit."
@@ -118,10 +128,25 @@ createWarehouse = do
           (Just "Hobbit")
           M.empty [] []))
 
+  putFood iHobbitApple
+      (mkEnt iHobbitApple appleEntTemplate)
+      (mkObj appleObjTemplate)
+      appleFood
+
+  putFood iHobbitBanana
+      (mkEnt iHobbitBanana bananaEntTemplate)
+      (mkObj bananaObjTemplate)
+      bananaFood
+
+  putFood iHobbitOrange
+      (mkEnt iHobbitOrange orangeEntTemplate)
+      (mkObj orangeObjTemplate)
+      orangeFood
+
   -----
 
   putRm iHumanKit
-      []
+      [ iHumanApple, iHumanBanana, iHumanOrange ]
       mempty
       (mkRm (RmTemplate "Human kit"
           "This room holds items unique to the human kit."
@@ -135,10 +160,25 @@ createWarehouse = do
           (Just "Human")
           M.empty [] []))
 
+  putFood iHumanApple
+      (mkEnt iHumanApple appleEntTemplate)
+      (mkObj appleObjTemplate)
+      appleFood
+
+  putFood iHumanBanana
+      (mkEnt iHumanBanana bananaEntTemplate)
+      (mkObj bananaObjTemplate)
+      bananaFood
+
+  putFood iHumanOrange
+      (mkEnt iHumanOrange orangeEntTemplate)
+      (mkObj orangeObjTemplate)
+      orangeFood
+
   -----
 
   putRm iLagomorphKit
-      []
+      [ iLagomorphOrange1, iLagomorphOrange2 ]
       mempty
       (mkRm (RmTemplate "Lagomorph kit"
           "This room holds items unique to the lagomorph kit."
@@ -152,10 +192,15 @@ createWarehouse = do
           (Just "Lagomorph")
           M.empty [] []))
 
+  forM_ [ iLagomorphOrange1, iLagomorphOrange2 ] $ \i -> putFood i
+      (mkEnt i orangeEntTemplate)
+      (mkObj orangeObjTemplate)
+      orangeFood
+
   -----
 
   putRm iNymphKit
-      []
+      [ iGorhna1..iGorhna1 + 49 ]
       mempty
       (mkRm (RmTemplate "Nymph kit"
           "This rooms holds items unique to the nymph kit."
@@ -168,6 +213,11 @@ createWarehouse = do
           InsideEnv
           (Just "Nymph")
           M.empty [] []))
+
+  forM_ [iGorhna1..iGorhna1 + 49] $ \i -> putFood i
+      (mkEnt i gorhnaEntTemplate)
+      (mkObj gorhnaObjTemplate)
+      gorhnaFood
 
   -----
 

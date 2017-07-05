@@ -405,7 +405,6 @@ readLookSign_iTutEntranceHookFun = mkGenericHookFun signDesc "reads the sign flo
 -----
 
 
-
 smellFlowerbedHook :: Hook
 smellFlowerbedHook = Hook smellFlowerbedHookName [ "flowerbed", "flower", "flowers" ]
 
