@@ -21,60 +21,62 @@ iElfBanana1 = 10006 :: Id
 
 iElfBanana2 = 10007 :: Id
 
-iFelinoidKit = 10008 :: Id
+iQuarterstaff = 10008 :: Id
 
-iHobbitKit = 10009 :: Id
+iFelinoidKit = 10009 :: Id
 
-iHobbitApple = 10010 :: Id
+iHobbitKit = 10010 :: Id
 
-iHobbitBanana = 10011 :: Id
+iHobbitApple = 10011 :: Id
 
-iHobbitOrange = 10012 :: Id
+iHobbitBanana = 10012 :: Id
 
-iHumanKit = 10013 :: Id
+iHobbitOrange = 10013 :: Id
 
-iHumanApple = 10014 :: Id
+iHumanKit = 10014 :: Id
 
-iHumanBanana = 10015 :: Id
+iHumanApple = 10015 :: Id
 
-iHumanOrange = 10016 :: Id
+iHumanBanana = 10016 :: Id
 
-iLagomorphKit = 10017 :: Id
+iHumanOrange = 10017 :: Id
 
-iLagomorphOrange1 = 10018 :: Id
+iLagomorphKit = 10018 :: Id
 
-iLagomorphOrange2 = 10019 :: Id
+iLagomorphOrange1 = 10019 :: Id
 
-iNymphKit = 10020 :: Id
+iLagomorphOrange2 = 10020 :: Id
 
-iGorhna1 = 10021 :: Id -- 50
+iNymphKit = 10021 :: Id
 
-iVulpenoidKit = 10071 :: Id
+iGorhna1 = 10022 :: Id -- 50
 
-iCommonKit = 10072 :: Id
+iVulpenoidKit = 10072 :: Id
 
-iBread = 10073 :: Id
+iCommonKit = 10073 :: Id
 
-iSack = 10074 :: Id
+iBread = 10074 :: Id
 
-iSandals = 10075 :: Id
+iSack = 10075 :: Id
 
-iWaterskin = 10076 :: Id
+iSandals = 10076 :: Id
 
-iBonusKit = 10077 :: Id
+iWaterskin = 10077 :: Id
 
-iPotInstantHp = 10078 :: Id
+iBonusKit = 10078 :: Id
 
-iPotInstantFp = 10079 :: Id
+iPotInstantHp = 10079 :: Id
 
-iPotInstantSt = 10080 :: Id
+iPotInstantFp = 10080 :: Id
 
-iNoseRing = 10081 :: Id
+iPotInstantSt = 10081 :: Id
 
-iAmethystRing = 10082 :: Id
+iNoseRing = 10082 :: Id
 
-iAquamarineRing = 10083 :: Id
+iAmethystRing = 10083 :: Id
 
-iEmeraldRing = 10084 :: Id
+iAquamarineRing = 10084 :: Id
 
-iGarnetRing = 10085 :: Id
+iEmeraldRing = 10085 :: Id
+
+iGarnetRing = 10086 :: Id

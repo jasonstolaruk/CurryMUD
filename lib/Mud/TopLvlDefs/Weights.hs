@@ -130,6 +130,10 @@ potionFlaskWeight    = 30
 potionFlaskLrgWeight = potionFlaskWeight * 2
 
 
+quarterstaffWeight :: Weight
+quarterstaffWeight = 400
+
+
 ringWeight :: Weight
 ringWeight = 2
 

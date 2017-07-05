@@ -141,6 +141,10 @@ potionFlaskVol    = mouthfulVol    * 4 -- 1/2 cup
 potionFlaskLrgVol = potionFlaskVol * 2
 
 
+quarterstaffVol :: Vol
+quarterstaffVol = round (1.25 * 1.25 * 60 :: Double)
+
+
 ringVol :: Vol
 ringVol = round (0.75 * 0.25 * 0.75 * 100 :: Double)
 

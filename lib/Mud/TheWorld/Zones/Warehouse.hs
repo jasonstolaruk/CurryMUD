@@ -87,7 +87,7 @@ createWarehouse = do
   -----
 
   putRm iElfKit
-      [ iElfBanana1, iElfBanana2 ]
+      [ iElfBanana1, iElfBanana2, iQuarterstaff ]
       mempty
       (mkRm (RmTemplate "Elf kit"
           "This room holds items unique to the elf kit."
@@ -105,6 +105,17 @@ createWarehouse = do
       (mkEnt i bananaEntTemplate)
       (mkObj bananaObjTemplate)
       bananaFood
+
+  putWpn iQuarterstaff
+      (Ent iQuarterstaff
+          (Just "staff")
+          "quarterstaff" "quarterstaves"
+          "The quarterstaff is a balanced, wooden pole, about 5 feet long and wielded with two hands."
+          (Just "The polished wood of the quarterstaff doesn't have a detectable smell.")
+          zeroBits)
+      (let taste = "You lick the end of the quarterstaff. If anything, it might taste a little grimy."
+       in mkObj . ObjTemplate quarterstaffWeight quarterstaffVol (Just taste) $ zeroBits)
+      (Wpn TwoHanded 1 10)
 
   -----
 
