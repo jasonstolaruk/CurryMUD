@@ -245,7 +245,7 @@ createWarehouse = do
   -----
 
   putRm iVulpenoidKit
-      []
+      [ iBroadsword ]
       mempty
       (mkRm (RmTemplate "Vulpenoid kit"
           "This room holds items unique to the vulpenoid kit."
@@ -258,6 +258,18 @@ createWarehouse = do
           InsideEnv
           (Just "Vulpenoid")
           M.empty [] []))
+
+  putWpn iBroadsword
+      (Ent iBroadsword
+          (Just "sword")
+          "broadsword" ""
+          "The blade of the broadsword is straight, double-edged, and pointed. It's about 3.5 feet long including the \
+          \handle. Although there's nothing extraordinary about the sword, it's a decent, solid weapon."
+          (Just "The blade of the sword smells like metal.")
+          zeroBits)
+      (let taste = "You lick the blade of the sword, taking care not to cut your tongue. It tastes metallic."
+       in mkObj . ObjTemplate broadswordWeight broadswordVol (Just taste) $ zeroBits)
+      (Wpn OneHanded 1 10)
 
   -----
 

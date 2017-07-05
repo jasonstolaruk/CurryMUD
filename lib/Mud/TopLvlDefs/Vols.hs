@@ -55,6 +55,10 @@ breadVol :: Vol
 breadVol = round (7.25 * 5.5 * 4.25 * 100 :: Double)
 
 
+broadswordVol :: Vol
+broadswordVol = round (3 * 1.5 * 42 * 100 :: Double)
+
+
 clubVol :: Vol
 clubVol = swordVol
 

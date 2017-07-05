@@ -34,6 +34,10 @@ breadWeight :: Weight
 breadWeight = 120
 
 
+broadswordWeight :: Weight
+broadswordWeight = 300
+
+
 bootsWeight :: Weight
 bootsWeight = 250
 
