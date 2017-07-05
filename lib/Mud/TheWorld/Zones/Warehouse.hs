@@ -21,6 +21,9 @@ import           Data.Monoid ((<>))
 import           Data.Text (Text)
 
 
+-- TODO: Review your descriptions.
+
+
 logNotice :: Text -> Text -> MudStack ()
 logNotice = L.logNotice "Mud.TheWorld.Zones.Warehouse"
 
@@ -44,7 +47,8 @@ createWarehouse = do
           Nothing
           Nothing
           zeroBits
-          [ StdLink South iDwarfKit 0 ]
+          [ StdLink East  iTunnel1  0
+          , StdLink South iDwarfKit 0 ]
           (0, 0, 0)
           InsideEnv
           (Just "Welcome")
@@ -53,7 +57,7 @@ createWarehouse = do
   -----
 
   putRm iDwarfKit
-      [ iDwarfApple1, iDwarfApple2, iAxeSml ]
+      [ iDwarfApple1, iDwarfApple2 ]
       mempty
       (mkRm (RmTemplate "Dwarf kit"
           "This room holds items unique to the dwarf kit."
@@ -72,21 +76,10 @@ createWarehouse = do
       (mkObj appleObjTemplate)
       appleFood
 
-  putWpn iAxeSml
-      (Ent iAxeSml
-          (Just "axe")
-          "small axe" ""
-          "The axe has a bronze head fashioned into a sharp, curved blade. The handle is ash. It's a sturdy, reliable \
-          \weapon."
-          (mkWpnSmell "axe")
-          zeroBits)
-      (mkObj . ObjTemplate axeSmlWeight axeSmlVol (mkWpnTaste "axe") $ zeroBits)
-      (Wpn OneHanded 1 10)
-
   -----
 
   putRm iElfKit
-      [ iElfBanana1, iElfBanana2, iQuarterstaff ]
+      [ iElfBanana1, iElfBanana2 ]
       mempty
       (mkRm (RmTemplate "Elf kit"
           "This room holds items unique to the elf kit."
@@ -105,21 +98,10 @@ createWarehouse = do
       (mkObj bananaObjTemplate)
       bananaFood
 
-  putWpn iQuarterstaff
-      (Ent iQuarterstaff
-          (Just "staff")
-          "quarterstaff" "quarterstaves"
-          "The quarterstaff is a balanced, wooden pole, about 5 feet long and wielded with two hands."
-          (Just "The polished wood of the quarterstaff doesn't have a detectable smell.")
-          zeroBits)
-      (let taste = "You lick the end of the quarterstaff. If anything, it might taste a little grimy."
-       in mkObj . ObjTemplate quarterstaffWeight quarterstaffVol (Just taste) $ zeroBits)
-      (Wpn TwoHanded 1 10)
-
   -----
 
   putRm iFelinoidKit
-      [ iMace ]
+      []
       mempty
       (mkRm (RmTemplate "Felinoid kit"
           "This room holds items unique to the felinoid kit."
@@ -133,21 +115,10 @@ createWarehouse = do
           (Just "Felinoid")
           M.empty [] []))
 
-  putWpn iMace
-      (Ent iMace
-          (Just "mace")
-          "mace" ""
-          "The mace is essentially a war club with a heavy, round head of iron. You could really hurt someone with \
-          \this thing."
-          (mkWpnSmell "mace")
-          zeroBits)
-      (mkObj . ObjTemplate maceWeight maceVol (mkWpnTaste "mace") $ zeroBits)
-      (Wpn OneHanded 1 10)
-
   -----
 
   putRm iHobbitKit
-      [ iHobbitApple, iHobbitBanana, iHobbitOrange, iShortsword ]
+      [ iHobbitApple, iHobbitBanana, iHobbitOrange ]
       mempty
       (mkRm (RmTemplate "Hobbit kit"
           "This room holds items unique to the hobbit kit."
@@ -175,16 +146,6 @@ createWarehouse = do
       (mkEnt iHobbitOrange orangeEntTemplate)
       (mkObj orangeObjTemplate)
       orangeFood
-
-  putWpn iShortsword
-      (Ent iShortsword
-          (Just "sword")
-          "shortsword" ""
-          "The shortsword is a straightforward, cut-and-thrust sword and a trusty weapon. It's about 20 inches long."
-          swordSmell
-          zeroBits)
-      (mkObj . ObjTemplate shortswordWeight shortswordVol swordTaste $ zeroBits)
-      (Wpn OneHanded 1 10)
 
   -----
 
@@ -243,7 +204,7 @@ createWarehouse = do
   -----
 
   putRm iNymphKit
-      ([ iGorhna1..iGorhna1 + 49 ] ++ [ iSpear ])
+      [ iNymphGorhna1..iNymphGorhna1 + 49 ]
       mempty
       (mkRm (RmTemplate "Nymph kit"
           "This room holds items unique to the nymph kit."
@@ -257,28 +218,15 @@ createWarehouse = do
           (Just "Nymph")
           M.empty [] []))
 
-  forM_ [iGorhna1..iGorhna1 + 49] $ \i -> putFood i
+  forM_ [ iNymphGorhna1..iNymphGorhna1 + 49 ] $ \i -> putFood i
       (mkEnt i gorhnaEntTemplate)
       (mkObj gorhnaObjTemplate)
       gorhnaFood
 
-  putWpn iSpear
-      (Ent iSpear
-          (Just "spear")
-          "spear" ""
-          "The wooden spear has a straight, double-edged, and pointed blade at its tip. The deadly weapon is about 4 \
-          \feet long."
-          (Just "You keep your nose clear of the blade and sniff the handle instead. There is no detectable smell.")
-          zeroBits)
-      (let taste = "You don't dare taste the blade: you'd certainly cut up your mouth and tongue! You decide to lick \
-                   \the polished, wooden handle instead. Sadly, it doesn't taste like much at all."
-       in mkObj . ObjTemplate spearWeight spearVol (Just taste) $ zeroBits)
-      (Wpn OneHanded 1 10)
-
   -----
 
   putRm iVulpenoidKit
-      [ iBroadsword ]
+      []
       mempty
       (mkRm (RmTemplate "Vulpenoid kit"
           "This room holds items unique to the vulpenoid kit."
@@ -291,17 +239,6 @@ createWarehouse = do
           InsideEnv
           (Just "Vulpenoid")
           M.empty [] []))
-
-  putWpn iBroadsword
-      (Ent iBroadsword
-          (Just "sword")
-          "broadsword" ""
-          "The blade of the broadsword is straight, double-edged, and pointed. It's about 3.5 feet long including the \
-          \handle. Although there's nothing extraordinary about the sword, it's a decent, solid weapon."
-          swordSmell
-          zeroBits)
-      (mkObj . ObjTemplate broadswordWeight broadswordVol swordTaste $ zeroBits)
-      (Wpn OneHanded 1 10)
 
   -----
 
@@ -422,6 +359,123 @@ createWarehouse = do
 
   -----
 
+  putRm iTunnel1
+      []
+      mempty
+      (mkRm (RmTemplate "Tunnel"
+          tunnelDesc
+          Nothing
+          Nothing
+          zeroBits
+          [ StdLink West iWarehouseWelcome 0
+          , StdLink East iTunnel2          0 ]
+          (1, 0, 0)
+          InsideEnv
+          Nothing
+          M.empty [] []))
+
+  -----
+
+  putRm iTunnel2
+      []
+      mempty
+      (mkRm (RmTemplate "Tunnel"
+          tunnelDesc
+          Nothing
+          Nothing
+          zeroBits
+          [ StdLink West  iTunnel1 0
+          , StdLink South iWpnsRm  0 ]
+          (2, 0, 0)
+          InsideEnv
+          Nothing
+          M.empty [] []))
+
+  -----
+
+  putRm iWpnsRm
+      [ iAxeSml, iBroadsword, iMace, iQuarterstaff, iShortsword, iSpear ]
+      mempty
+      (mkRm (RmTemplate "Weapons room"
+          "This room holds weapons."
+          Nothing
+          Nothing
+          zeroBits
+          [ StdLink North iTunnel2 0 ]
+          (2, -1, 0)
+          InsideEnv
+          (Just "Weapons")
+          M.empty [] []))
+
+  putWpn iAxeSml
+      (Ent iAxeSml
+          (Just "axe")
+          "small axe" ""
+          "The axe has a bronze head fashioned into a sharp, curved blade. The handle is ash. It's a sturdy, reliable \
+          \weapon."
+          (mkWpnSmell "axe")
+          zeroBits)
+      (mkObj . ObjTemplate axeSmlWeight axeSmlVol (mkWpnTaste "axe") $ zeroBits)
+      (Wpn OneHanded 1 10)
+
+  putWpn iBroadsword
+      (Ent iBroadsword
+          (Just "sword")
+          "broadsword" ""
+          "The blade of the broadsword is straight, double-edged, and pointed. It's about 3.5 feet long including the \
+          \handle. Although there's nothing extraordinary about the sword, it's a decent, solid weapon."
+          swordSmell
+          zeroBits)
+      (mkObj . ObjTemplate broadswordWeight broadswordVol swordTaste $ zeroBits)
+      (Wpn OneHanded 1 10)
+
+  putWpn iMace
+      (Ent iMace
+          (Just "mace")
+          "mace" ""
+          "The mace is essentially a war club with a heavy, round head of iron. You could really hurt someone with \
+          \this thing."
+          (mkWpnSmell "mace")
+          zeroBits)
+      (mkObj . ObjTemplate maceWeight maceVol (mkWpnTaste "mace") $ zeroBits)
+      (Wpn OneHanded 1 10)
+
+  putWpn iQuarterstaff
+      (Ent iQuarterstaff
+          (Just "staff")
+          "quarterstaff" "quarterstaves"
+          "The quarterstaff is a balanced, wooden pole, about 5 feet long and wielded with two hands."
+          (Just "The polished wood of the quarterstaff doesn't have a detectable smell.")
+          zeroBits)
+      (let taste = "You lick the end of the quarterstaff. If anything, it might taste a little grimy."
+       in mkObj . ObjTemplate quarterstaffWeight quarterstaffVol (Just taste) $ zeroBits)
+      (Wpn TwoHanded 1 10)
+
+  putWpn iShortsword
+      (Ent iShortsword
+          (Just "sword")
+          "shortsword" ""
+          "The shortsword is a straightforward, cut-and-thrust sword and a trusty weapon. It's about 20 inches long."
+          swordSmell
+          zeroBits)
+      (mkObj . ObjTemplate shortswordWeight shortswordVol swordTaste $ zeroBits)
+      (Wpn OneHanded 1 10)
+
+  putWpn iSpear
+      (Ent iSpear
+          (Just "spear")
+          "spear" ""
+          "The wooden spear has a straight, double-edged, and pointed blade at its tip. The deadly weapon is about 4 \
+          \feet long."
+          (Just "You keep your nose clear of the blade and sniff the handle instead. There is no detectable smell.")
+          zeroBits)
+      (let taste = "You don't dare taste the blade: you'd certainly cut up your mouth and tongue! You decide to lick \
+                   \the polished, wooden handle instead. Sadly, it doesn't taste like much at all."
+       in mkObj . ObjTemplate spearWeight spearVol (Just taste) $ zeroBits)
+      (Wpn OneHanded 1 10)
+
+  -----
+
   putRmTeleName iWarehouseWelcome "warehouse"
 
 
@@ -439,3 +493,7 @@ swordSmell = Just "The blade of the sword smells like metal."
 
 swordTaste :: Maybe Text
 swordTaste = Just "You lick the blade of the sword, taking care not to cut your tongue. It tastes metallic."
+
+
+tunnelDesc :: Text
+tunnelDesc = "This tunnel provides access to the different areas of the warehouse."

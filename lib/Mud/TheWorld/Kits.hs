@@ -31,19 +31,19 @@ pmf = U.pmf "Mud.TheWorld.Kits"
 kit :: HasCallStack => Id -> V.Vector Int -> MudStack ()
 kit i (V.toList -> [ va, vb, vc, vd, ve, vf, vg, vh, vi ]) = modifyStateSeq helper
   where
-    helper ms = coinsHelper . holySymbolHelper . dropFst . ringHelper . potionsHelper . cloneCommon . clone i ([], ms, []) . getInvHelper $ case r of
-        Dwarf     -> iDwarfKit
-        Elf       -> iElfKit
-        Felinoid  -> iFelinoidKit
-        Hobbit    -> iHobbitKit
-        Human     -> iHumanKit
-        Lagomorph -> iLagomorphKit
-        Nymph     -> iNymphKit
-        Vulpenoid -> iVulpenoidKit
+    helper ms = coinsHelper . holySymbolHelper . dropFst . ringHelper . potionsHelper . cloneCommon . clone i ([], ms, []) $ case r of
+        Dwarf     -> [ iDwarfApple1, iDwarfApple2 ]
+        Elf       -> [ iElfBanana1, iElfBanana2 ]
+        Felinoid  -> []
+        Hobbit    -> [ iHobbitApple, iHobbitBanana, iHobbitOrange ]
+        Human     -> [ iHumanApple, iHumanBanana, iHumanOrange ]
+        Lagomorph -> [ iLagomorphOrange1, iLagomorphOrange2 ]
+        Nymph     -> [ iNymphGorhna1..iNymphGorhna1 + 49 ]
+        Vulpenoid -> []
       where
         r                  = getRace i ms
-        getInvHelper       = filter ((`notElem` [ CorpseType, NpcType, PlaType ]) . (`getType` ms)) . (`getInv` ms)
         cloneCommon triple = clone i triple . getInvHelper $ iCommonKit
+        getInvHelper       = filter ((`notElem` [ CorpseType, NpcType, PlaType ]) . (`getType` ms)) . (`getInv` ms)
         coinsHelper        = _1.coinsTbl.ind i .~ f (Coins (x, y, z))
           where
             x = rndmIntToRange vb (1,  50)

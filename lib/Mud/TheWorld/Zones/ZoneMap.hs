@@ -99,5 +99,8 @@ warehouseZone = zip rmIds . repeat $ "Warehouse"
             , iHumanKit
             , iLagomorphKit
             , iNymphKit
+            , iTunnel1
+            , iTunnel2
             , iVulpenoidKit
-            , iWarehouseWelcome ]
+            , iWarehouseWelcome
+            , iWpnsRm ]

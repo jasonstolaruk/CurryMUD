@@ -53,7 +53,7 @@ iLagomorphOrange2 = 10022 :: Id
 
 iNymphKit = 10023 :: Id
 
-iGorhna1 = 10024 :: Id -- 50
+iNymphGorhna1 = 10024 :: Id -- 50
 
 iSpear = 10074 :: Id
 
@@ -88,3 +88,9 @@ iAquamarineRing = 10088 :: Id
 iEmeraldRing = 10089 :: Id
 
 iGarnetRing = 10090 :: Id
+
+iTunnel1 = 10091 :: Id
+
+iTunnel2 = 10092 :: Id
+
+iWpnsRm = 10093 :: Id

@@ -77,6 +77,7 @@ adminZoneHooks = [ (drinkPoolHookName,                    drinkPoolHookFun      
                  , (lookWallsHookName,                    lookWallsHookFun                   )
                  , (readLookPaperHookName,                readLookPaperHookFun               )
                  , (readLookPosterHookName,               readLookPosterHookFun              )
+                 , (readLookSign_iBasementHookName,       readLookSign_iBasementHookFun      )
                  , (readLookSign_iEmptyHookName,          readLookSign_iEmptyHookFun         )
                  , (readLookSign_iLoungeEntranceHookName, readLookSign_iLoungeEntranceHookFun)
                  , (readLookSign_iTutEntranceHookName,    readLookSign_iTutEntranceHookFun   )
@@ -344,6 +345,28 @@ readLookPosterHookFun = mkGenericHookFun posterDesc "reads the poster on the wal
         \just the notion that players would likely never step foot in it (hence the name). As such, it kind of has the \
         \vibe of a makeshift fun house; in the very least, it's a restricted area where admins can hang out.\n\
         \-Jason"
+
+
+-----
+
+
+readLookSign_iBasementHook :: Hook
+readLookSign_iBasementHook = Hook readLookSign_iBasementHookName ["sign"]
+
+
+readLookSign_iBasementHookName :: HookName
+readLookSign_iBasementHookName = "AdminZone_iBasement_readLookSign"
+
+
+readLookSign_iBasementHookFun :: HookFun
+readLookSign_iBasementHookFun = mkGenericHookFun signDesc
+                                                 "reads the sign on the stand in the center of the room."
+                                                 "read sign"
+  where
+    signDesc = "The sign reads:\n\
+               \\"THIS IS THE BASEMENT\n\
+               \Here you'll find rooms containing various items that were created during the early stages of CurryMUD \
+               \development.\""
 
 
 -----
@@ -1187,7 +1210,8 @@ createAdminZone = do
         (mkRm (RmTemplate "Basement"
             "This dusty, unfinished basement smells of mold. You spot several cobwebs hanging from the ceiling.\n\
             \Eight doors are positioned about the round, stucco wall at even intervals. A spiral staircase leads up. \
-            \Next to the staircase lies an open manhole."
+            \Next to the staircase lies an open manhole.\n\
+            \There is a sign affixed to a stand in the center of the round room."
             Nothing
             (Just "The unmistakable scent of mildew fills your nostrils. This room really ought to be ventilated \
                   \better.")
@@ -1205,7 +1229,9 @@ createAdminZone = do
             (0, 0, -1)
             InsideEnv
             Nothing
-            M.empty [] []))
+            (M.fromList [ ("look", [ readLookSign_iBasementHook ])
+                        , ("read", [ readLookSign_iBasementHook ]) ])
+            [] []))
   putRm iWeightRm
         [ i190Lb
         , i100Lb
