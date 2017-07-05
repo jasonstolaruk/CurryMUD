@@ -181,6 +181,10 @@ shirtVol :: Vol
 shirtVol = round (12 * 8 * 0.25 * 100 :: Double)
 
 
+shortswordVol :: Vol
+shortswordVol = round (3 * 1.5 * 20 * 100 :: Double)
+
+
 swordVol, swordLongVol :: Vol
 swordVol     = 6 * 1 * 30 * 100
 swordLongVol = plusQuarter swordVol

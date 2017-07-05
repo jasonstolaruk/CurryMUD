@@ -160,6 +160,10 @@ shirtWeight :: Weight
 shirtWeight = 35
 
 
+shortswordWeight :: Weight
+shortswordWeight = 200
+
+
 swordWeight, swordLongWeight :: Weight
 swordWeight     = 300
 swordLongWeight = plusQuarter swordWeight

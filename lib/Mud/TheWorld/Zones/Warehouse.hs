@@ -137,7 +137,7 @@ createWarehouse = do
   -----
 
   putRm iHobbitKit
-      [ iHobbitApple, iHobbitBanana, iHobbitOrange ]
+      [ iHobbitApple, iHobbitBanana, iHobbitOrange, iShortsword ]
       mempty
       (mkRm (RmTemplate "Hobbit kit"
           "This room holds items unique to the hobbit kit."
@@ -165,6 +165,16 @@ createWarehouse = do
       (mkEnt iHobbitOrange orangeEntTemplate)
       (mkObj orangeObjTemplate)
       orangeFood
+
+  putWpn iShortsword
+      (Ent iShortsword
+          (Just "sword")
+          "shortsword" ""
+          "The shortsword is a straightforward, cut-and-thrust sword and a trusty weapon. It's about 20 inches long."
+          swordSmell
+          zeroBits)
+      (mkObj . ObjTemplate shortswordWeight shortswordVol swordTaste $ zeroBits)
+      (Wpn OneHanded 1 10)
 
   -----
 
@@ -265,10 +275,9 @@ createWarehouse = do
           "broadsword" ""
           "The blade of the broadsword is straight, double-edged, and pointed. It's about 3.5 feet long including the \
           \handle. Although there's nothing extraordinary about the sword, it's a decent, solid weapon."
-          (Just "The blade of the sword smells like metal.")
+          swordSmell
           zeroBits)
-      (let taste = "You lick the blade of the sword, taking care not to cut your tongue. It tastes metallic."
-       in mkObj . ObjTemplate broadswordWeight broadswordVol (Just taste) $ zeroBits)
+      (mkObj . ObjTemplate broadswordWeight broadswordVol swordTaste $ zeroBits)
       (Wpn OneHanded 1 10)
 
   -----
@@ -391,3 +400,11 @@ createWarehouse = do
   -----
 
   putRmTeleName iWarehouseWelcome "warehouse"
+
+
+swordSmell :: Maybe Text
+swordSmell = Just "The blade of the sword smells like metal."
+
+
+swordTaste :: Maybe Text
+swordTaste = Just "You lick the blade of the sword, taking care not to cut your tongue. It tastes metallic."
