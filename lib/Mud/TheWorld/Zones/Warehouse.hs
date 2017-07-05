@@ -53,7 +53,7 @@ createWarehouse = do
   -----
 
   putRm iDwarfKit
-      [ iDwarfApple1, iDwarfApple2 ]
+      [ iDwarfApple1, iDwarfApple2, iAxeSml ]
       mempty
       (mkRm (RmTemplate "Dwarf kit"
           "This room holds items unique to the dwarf kit."
