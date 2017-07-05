@@ -16,6 +16,10 @@ apronWeight      = 75
 apronHeavyWeight = plusQuarter apronWeight
 
 
+axeSmlWeight :: Weight
+axeSmlWeight = 400
+
+
 backSmlWeight, backWeight, backLrgWeight :: Weight
 backSmlWeight = minusQuarter backWeight
 backWeight    = 100

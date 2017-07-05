@@ -72,6 +72,18 @@ createWarehouse = do
       (mkObj appleObjTemplate)
       appleFood
 
+  putWpn iAxeSml
+      (Ent iAxeSml
+          (Just "axe")
+          "small axe" ""
+          "The axe has a bronze head fashioned into a sharp, curved blade. The handle is ash. It's a sturdy, reliable \
+          \weapon."
+          (Just "The head of the axe smells like metal. The handle doesn't smell like much at all.")
+          zeroBits)
+      (let taste = "You lick the head of the axe. It tastes metallic."
+       in mkObj . ObjTemplate axeSmlWeight axeSmlVol (Just taste) $ zeroBits)
+      (Wpn OneHanded 1 10)
+
   -----
 
   putRm iElfKit
@@ -203,7 +215,7 @@ createWarehouse = do
       [ iGorhna1..iGorhna1 + 49 ]
       mempty
       (mkRm (RmTemplate "Nymph kit"
-          "This rooms holds items unique to the nymph kit."
+          "This room holds items unique to the nymph kit."
           Nothing
           Nothing
           zeroBits

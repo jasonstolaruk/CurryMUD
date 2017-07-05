@@ -17,6 +17,10 @@ apronVol      = round (12 * 8 * 0.25 * 100 :: Double)
 apronHeavyVol = plusQuarter apronVol
 
 
+axeSmlVol :: Vol
+axeSmlVol = 4 * 2 * 13 * 100
+
+
 backSmlCap, backCap, backLrgCap :: Vol
 backSmlCap = minusQuarter backCap
 backCap    = 2450 * 100
