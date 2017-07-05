@@ -233,7 +233,7 @@ createWarehouse = do
   -----
 
   putRm iNymphKit
-      [ iGorhna1..iGorhna1 + 49 ]
+      ([ iGorhna1..iGorhna1 + 49 ] ++ [ iSpear ])
       mempty
       (mkRm (RmTemplate "Nymph kit"
           "This room holds items unique to the nymph kit."
@@ -251,6 +251,19 @@ createWarehouse = do
       (mkEnt i gorhnaEntTemplate)
       (mkObj gorhnaObjTemplate)
       gorhnaFood
+
+  putWpn iSpear
+      (Ent iSpear
+          (Just "spear")
+          "spear" ""
+          "The wooden spear has a straight, double-edged, and pointed blade at its tip. The deadly weapon is about 4 \
+          \feet long."
+          (Just "You keep your nose clear of the blade and sniff the handle instead. There is no detectable smell.")
+          zeroBits)
+      (let taste = "You don't dare taste the blade: you'd certainly cut up your mouth and tongue! You decide to lick \
+                   \the polished, wooden handle instead. Sadly, it doesn't taste like much at all."
+       in mkObj . ObjTemplate spearWeight spearVol (Just taste) $ zeroBits)
+      (Wpn OneHanded 1 10)
 
   -----
 

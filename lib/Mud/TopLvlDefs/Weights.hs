@@ -164,6 +164,10 @@ shortswordWeight :: Weight
 shortswordWeight = 200
 
 
+spearWeight :: Weight
+spearWeight = 400
+
+
 swordWeight, swordLongWeight :: Weight
 swordWeight     = 300
 swordLongWeight = plusQuarter swordWeight

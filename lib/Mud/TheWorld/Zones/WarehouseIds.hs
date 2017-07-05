@@ -53,34 +53,36 @@ iNymphKit = 10022 :: Id
 
 iGorhna1 = 10023 :: Id -- 50
 
-iVulpenoidKit = 10073 :: Id
+iSpear = 10073 :: Id
 
-iBroadsword = 10074 :: Id
+iVulpenoidKit = 10074 :: Id
 
-iCommonKit = 10075 :: Id
+iBroadsword = 10075 :: Id
 
-iBread = 10076 :: Id
+iCommonKit = 10076 :: Id
 
-iSack = 10077 :: Id
+iBread = 10077 :: Id
 
-iSandals = 10078 :: Id
+iSack = 10078 :: Id
 
-iWaterskin = 10079 :: Id
+iSandals = 10079 :: Id
 
-iBonusKit = 10080 :: Id
+iWaterskin = 10080 :: Id
 
-iPotInstantHp = 10081 :: Id
+iBonusKit = 10081 :: Id
 
-iPotInstantFp = 10082 :: Id
+iPotInstantHp = 10082 :: Id
 
-iPotInstantSt = 10083 :: Id
+iPotInstantFp = 10083 :: Id
 
-iNoseRing = 10084 :: Id
+iPotInstantSt = 10084 :: Id
 
-iAmethystRing = 10085 :: Id
+iNoseRing = 10085 :: Id
 
-iAquamarineRing = 10086 :: Id
+iAmethystRing = 10086 :: Id
 
-iEmeraldRing = 10087 :: Id
+iAquamarineRing = 10087 :: Id
 
-iGarnetRing = 10088 :: Id
+iEmeraldRing = 10088 :: Id
+
+iGarnetRing = 10089 :: Id
