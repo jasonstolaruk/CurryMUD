@@ -78,10 +78,9 @@ createWarehouse = do
           "small axe" ""
           "The axe has a bronze head fashioned into a sharp, curved blade. The handle is ash. It's a sturdy, reliable \
           \weapon."
-          (Just "The head of the axe smells like metal. The handle doesn't smell like much at all.")
+          (mkWpnSmell "axe")
           zeroBits)
-      (let taste = "You lick the head of the axe. It tastes metallic."
-       in mkObj . ObjTemplate axeSmlWeight axeSmlVol (Just taste) $ zeroBits)
+      (mkObj . ObjTemplate axeSmlWeight axeSmlVol (mkWpnTaste "axe") $ zeroBits)
       (Wpn OneHanded 1 10)
 
   -----
@@ -120,7 +119,7 @@ createWarehouse = do
   -----
 
   putRm iFelinoidKit
-      []
+      [ iMace ]
       mempty
       (mkRm (RmTemplate "Felinoid kit"
           "This room holds items unique to the felinoid kit."
@@ -133,6 +132,17 @@ createWarehouse = do
           InsideEnv
           (Just "Felinoid")
           M.empty [] []))
+
+  putWpn iMace
+      (Ent iMace
+          (Just "mace")
+          "mace" ""
+          "The mace is essentially a war club with a heavy, round head of iron. You could really hurt someone with \
+          \this thing."
+          (mkWpnSmell "mace")
+          zeroBits)
+      (mkObj . ObjTemplate maceWeight maceVol (mkWpnTaste "mace") $ zeroBits)
+      (Wpn OneHanded 1 10)
 
   -----
 
@@ -413,6 +423,14 @@ createWarehouse = do
   -----
 
   putRmTeleName iWarehouseWelcome "warehouse"
+
+
+mkWpnSmell :: Text -> Maybe Text
+mkWpnSmell t = Just $ "The head of the " <> t <> " smells like metal. The handle doesn't smell like much at all."
+
+
+mkWpnTaste :: Text -> Maybe Text
+mkWpnTaste t = Just $ "You lick the head of the " <> t <> ". It tastes metallic."
 
 
 swordSmell :: Maybe Text

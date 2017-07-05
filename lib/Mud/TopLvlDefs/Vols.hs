@@ -115,6 +115,9 @@ knifeVol = round (0.75 * 0.75 * 7 * 100 :: Double)
 knitCapVol :: Vol
 knitCapVol = round (7 * 7 * 0.25 * 100 :: Double)
 
+maceVol :: Vol
+maceVol = round (2 * 2 * 12 * 100 :: Double)
+
 
 mouthfulVol :: Vol
 mouthfulVol = 175 -- 1/8th cup

@@ -105,6 +105,10 @@ knitCapWeight :: Weight
 knitCapWeight = 5
 
 
+maceWeight :: Weight
+maceWeight = 500
+
+
 mouthfulWeight :: Weight
 mouthfulWeight = 6
 
