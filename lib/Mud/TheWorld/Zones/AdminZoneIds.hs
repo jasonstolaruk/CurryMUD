@@ -5,6 +5,10 @@ module Mud.TheWorld.Zones.AdminZoneIds where
 import Mud.Data.State.MudData (Id)
 
 
+-- TODO: Room IDs should come first.
+-- TODO: Renumber IDs.
+
+
 iRoot = 0 :: Id
 
 -----
@@ -119,93 +123,9 @@ iParchment5 = 59 :: Id
 
 iClothCloset = 60 :: Id
 
-iChemise = 61 :: Id
-
-iTunic = 62 :: Id
-
-iApron = 63 :: Id
-
-iTabard = 64 :: Id
-
-iGreyCoat = 65 :: Id
-
-iFrockCoat = 66 :: Id
-
-iBreeches1 = 67 :: Id
-
-iBreeches2 = 68 :: Id
-
-iTrousers1 = 69 :: Id
-
-iTrousers2 = 70 :: Id
-
 -----
 
 iAccessoriesCloset = 71 :: Id
-
-iEar1 = 72 :: Id
-
-iEar2 = 73 :: Id
-
-iEar3 = 74 :: Id
-
-iEar4 = 75 :: Id
-
-iEar5 = 76 :: Id
-
-iEar6 = 77 :: Id
-
-iEar7 = 78 :: Id
-
-iEar8 = 79 :: Id
-
-iNoseRing1 = 80 :: Id
-
-iNoseRing2 = 81 :: Id
-
-iNoseRing3 = 82 :: Id
-
-iNeck1 = 83 :: Id
-
-iNeck2 = 84 :: Id
-
-iNeck3 = 85 :: Id
-
-iNeck4 = 86 :: Id
-
-iBracelet1 = 87 :: Id
-
-iBracelet2 = 88 :: Id
-
-iBracelet3 = 89 :: Id
-
-iBracelet4 = 90 :: Id
-
-iBracelet5 = 91 :: Id
-
-iBracelet6 = 92 :: Id
-
-iBracelet7 = 93 :: Id
-
-iBracelet8 = 94 :: Id
-
-iRing1 = 95 :: Id
-
-iRing2 = 96 :: Id
-
-iRing3 = 97 :: Id
-
-iRing4 = 98 :: Id
-
-iRing5 = 99 :: Id
-
-iRing6 = 100 :: Id
-
-iRing7 = 101 :: Id
-
-iRing8 = 102 :: Id
-
-iRing9 = 103 :: Id
 
 -----
 
@@ -261,18 +181,7 @@ iBottleLrg = 164 :: Id
 
 iPantry = 165 :: Id
 
-iApple = 166 :: Id
-
-iBanana = 167 :: Id
-
-iBread = 168 :: Id
-
-iOrange = 169 :: Id
-
-iGorhna1 = 170 :: Id -- 10
-
 -----
-
 
 iWpnCloset = 180 :: Id
 
@@ -291,16 +200,6 @@ iKnife2 = 186 :: Id
 -----
 
 iArmCloset = 187 :: Id
-
-iCap = 188 :: Id
-
-iHelm = 189 :: Id
-
-iSandals1 = 190 :: Id
-
-iSandals2 = 191 :: Id
-
-iBoots = 192 :: Id
 
 -----
 
@@ -341,10 +240,6 @@ iLoungeEntrance = 206 :: Id
 -----
 
 iLounge = 207 :: Id
-
------
-
-iHolySymbol1 = 208 :: Id -- 10
 
 -----
 

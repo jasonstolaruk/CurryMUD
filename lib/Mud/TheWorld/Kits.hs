@@ -29,22 +29,26 @@ pmf = U.pmf "Mud.TheWorld.Kits"
 
 -- TODO: Include light source.
 kit :: HasCallStack => Id -> V.Vector Int -> MudStack ()
-kit i (V.toList -> [ va, vb, vc, vd, ve, vf, vg, vh, vi ]) = modifyStateSeq helper
+kit i (V.toList -> [ va, vb, vc, vd, ve, vf, vg, vh, vi, vj ]) = modifyStateSeq helper
   where
-    helper ms = coinsHelper . holySymbolHelper . dropFst . ringHelper . potionsHelper . cloneCommon . clone i ([], ms, []) $ case r of
-        Dwarf     -> [ iDwarfApple1, iDwarfApple2 ]
-        Elf       -> [ iElfBanana1, iElfBanana2 ]
+    helper ms = coinsHelper . holySymbolHelper . dropFst . ringHelper . potionsHelper . clone i ([], ms, []) . (commonIds ++) $ case r of
+        Dwarf     -> []
+        Elf       -> []
         Felinoid  -> []
-        Hobbit    -> [ iHobbitApple, iHobbitBanana, iHobbitOrange ]
-        Human     -> [ iHumanApple, iHumanBanana, iHumanOrange ]
-        Lagomorph -> [ iLagomorphOrange1, iLagomorphOrange2 ]
-        Nymph     -> [ iNymphGorhna1..iNymphGorhna1 + 49 ]
+        Hobbit    -> []
+        Human     -> []
+        Lagomorph -> []
+        Nymph     -> []
         Vulpenoid -> []
       where
-        r                  = getRace i ms
-        cloneCommon triple = clone i triple . getInvHelper $ iCommonKit
-        getInvHelper       = filter ((`notElem` [ CorpseType, NpcType, PlaType ]) . (`getType` ms)) . (`getInv` ms)
-        coinsHelper        = _1.coinsTbl.ind i .~ f (Coins (x, y, z))
+        r           = getRace i ms
+        commonIds   = let fruitIds = [ iApple1, iBanana1, iOrange1 ]
+                          is       = case r of Hobbit -> fruitIds
+                                               Human  -> pure . succ $ iBread1
+                                               Nymph  -> [ iGorhna1..iGorhna1 + 49 ]
+                                               _      -> pure . rndmIntToElem vj $ fruitIds
+                      in [ iBread1, iSack, iLeatherSandals, iWaterskin ] ++ is
+        coinsHelper = _1.coinsTbl.ind i .~ f (Coins (x, y, z))
           where
             x = rndmIntToRange vb (1,  50)
             y = rndmIntToRange vc (5,  15)

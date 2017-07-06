@@ -10,7 +10,6 @@ module Mud.TheWorld.Zones.AdminZone ( adminZoneHooks
 import qualified Data.Vector.Unboxed as V (Vector, head)
 import           Mud.Cmds.Msgs.Advice
 import           Mud.Cmds.Msgs.Sorry
-import           Mud.Cmds.Util.Misc
 import           Mud.Cmds.Util.Pla
 import           Mud.Data.Misc
 import           Mud.Data.State.ActionParams.ActionParams
@@ -24,7 +23,6 @@ import           Mud.Data.State.Util.Random
 import           Mud.Misc.LocPref
 import qualified Mud.Misc.Logging as L (logNotice)
 import           Mud.Misc.Misc
-import           Mud.TheWorld.Foods
 import           Mud.TheWorld.Liqs
 import           Mud.TheWorld.Misc
 import           Mud.TheWorld.Zones.AdminZoneIds
@@ -77,7 +75,6 @@ adminZoneHooks = [ (drinkPoolHookName,                    drinkPoolHookFun      
                  , (lookWallsHookName,                    lookWallsHookFun                   )
                  , (readLookPaperHookName,                readLookPaperHookFun               )
                  , (readLookPosterHookName,               readLookPosterHookFun              )
-                 , (readLookSign_iBasementHookName,       readLookSign_iBasementHookFun      )
                  , (readLookSign_iEmptyHookName,          readLookSign_iEmptyHookFun         )
                  , (readLookSign_iLoungeEntranceHookName, readLookSign_iLoungeEntranceHookFun)
                  , (readLookSign_iTutEntranceHookName,    readLookSign_iTutEntranceHookFun   )
@@ -350,28 +347,6 @@ readLookPosterHookFun = mkGenericHookFun posterDesc "reads the poster on the wal
 -----
 
 
-readLookSign_iBasementHook :: Hook
-readLookSign_iBasementHook = Hook readLookSign_iBasementHookName ["sign"]
-
-
-readLookSign_iBasementHookName :: HookName
-readLookSign_iBasementHookName = "AdminZone_iBasement_readLookSign"
-
-
-readLookSign_iBasementHookFun :: HookFun
-readLookSign_iBasementHookFun = mkGenericHookFun signDesc
-                                                 "reads the sign on the stand in the center of the room."
-                                                 "read sign"
-  where
-    signDesc = "The sign reads:\n\
-               \\"THIS IS THE BASEMENT\n\
-               \Here you'll find rooms containing various items that were created during the early stages of CurryMUD \
-               \development.\""
-
-
------
-
-
 readLookSign_iEmptyHook :: Hook
 readLookSign_iEmptyHook = Hook readLookSign_iEmptyHookName ["sign"]
 
@@ -531,219 +506,6 @@ createAdminZone = do
   logNotice "createAdminZone" "creating the admin zone."
 
   -- ==================================================
-  -- Armor:
-  putArm iCap
-         (Ent iCap
-              (Just "cap")
-              "knit cap" ""
-              "It's a simple knit cap, designed to keep your head warm in cold weather."
-              Nothing
-              zeroBits)
-         (mkObj . ObjTemplate knitCapWeight knitCapVol Nothing $ zeroBits)
-         (Arm Head 1)
-  putArm iHelm
-         (Ent iHelm
-              (Just "helmet")
-              "leather helmet" ""
-              "The functional leather helmet provides a comfortable fit."
-              Nothing
-              zeroBits)
-         (mkObj . ObjTemplate helmLeatherWeight helmLeatherVol Nothing $ zeroBits)
-         (Arm Head 1)
-  forM_ [ iSandals1, iSandals2 ] $ \i ->
-      putArm i
-             (Ent i
-                  (Just "sandals")
-                  "pair of leather sandals" "pairs of leather sandals"
-                  "These humble leather sandals offer little in the way of fashion; they will, however, adequately \
-                  \protect the soles of your feet."
-                  Nothing
-                  zeroBits)
-             (mkObj . ObjTemplate sandalsWeight sandalsVol Nothing $ zeroBits)
-             (Arm Feet 1)
-  putArm iBoots
-         (Ent iBoots
-              (Just "boots")
-              "pair of leather boots" "pairs of leather boots"
-              "These rugged, sturdy boots make excellent footwear for traveling across a variety of terrain."
-              Nothing
-              zeroBits)
-         (mkObj . ObjTemplate bootsWeight bootsVol Nothing $ zeroBits)
-         (Arm Feet 1)
-
-  -- ==================================================
-  -- Clothing:
-  let earTuples = [ (iEar1, "azure"    )
-                  , (iEar2, "crimson"  )
-                  , (iEar3, "sea green")
-                  , (iEar4, "onyx"     )
-                  , (iEar5, "azure"    )
-                  , (iEar6, "crimson"  )
-                  , (iEar7, "sea green")
-                  , (iEar8, "onyx"     ) ]
-  forM_ earTuples $ \(i, t) ->
-      putCloth i
-               (Ent i
-                    (Just "earring")
-                    (t <> " earring") ""
-                    "It's a small, but tasteful, nondescript hoop."
-                    Nothing
-                    zeroBits)
-               (mkObj . ObjTemplate earWeight earVol Nothing $ zeroBits)
-               Earring
-  forM_ [ iNoseRing1, iNoseRing2, iNoseRing3 ] $ \i ->
-      putCloth i
-               (Ent i
-                    (Just "nose")
-                    "nose ring" ""
-                    "It's a plain copper stud intended to be worn on the nose."
-                    Nothing
-                    zeroBits)
-               (mkObj . ObjTemplate noseWeight noseVol Nothing $ zeroBits)
-               NoseRing
-  let neckTuples = [ (iNeck1, "bronze"  )
-                   , (iNeck2, "silver"  )
-                   , (iNeck3, "gold"    )
-                   , (iNeck4, "platinum") ]
-  forM_ neckTuples $ \(i, t) ->
-      putCloth i
-               (Ent i
-                    (Just "necklace")
-                    (t <> " necklace") ""
-                    ("It's a simple " <> t <> " chain.")
-                    Nothing
-                    zeroBits)
-               (mkObj . ObjTemplate neckWeight neckVol Nothing $ zeroBits)
-               Necklace
-  let charmBraceletDesc  = "The bracelet is adorned with a variety of quaint charms in the shape of musical \
-                           \instruments, fashioned out of pewter."
-      bangleBraceletDesc = "The bangle bracelet is made of smooth polished wood, stained an earthy shade of brown, and \
-                           \about half an inch wide."
-      beadedBraceletDesc = "This classic bracelet consist of small, spherical wooden beads, alternating black and \
-                           \white in color."
-      pearlBraceletDesc = "Lustrous white pearls are strung together to make an eye-catching, fashionable accessory."
-      braceletTuples    = [ (iBracelet1, "charm",         charmBraceletDesc,  10)
-                          , (iBracelet2, "wooden bangle", bangleBraceletDesc, 1 )
-                          , (iBracelet3, "beaded",        beadedBraceletDesc, 2 )
-                          , (iBracelet4, "pearl",         pearlBraceletDesc,  4 )
-                          , (iBracelet5, "charm",         charmBraceletDesc,  10)
-                          , (iBracelet6, "wooden bangle", bangleBraceletDesc, 1 )
-                          , (iBracelet7, "beaded",        beadedBraceletDesc, 2 )
-                          , (iBracelet8, "pearl",         pearlBraceletDesc,  4 ) ]
-  forM_ braceletTuples $ \(i, t, d, w) ->
-      putCloth i
-               (Ent i
-                    (Just "bracelet")
-                    (t <> " bracelet") ""
-                    d
-                    Nothing
-                    zeroBits)
-               (mkObj . ObjTemplate w braceletVol Nothing $ zeroBits)
-               Bracelet
-  let ringTuples = [ (iRing1, "garnet"    )
-                   , (iRing2, "amethyst"  )
-                   , (iRing3, "aquamarine")
-                   , (iRing4, "diamond"   )
-                   , (iRing5, "garnet"    )
-                   , (iRing6, "amethyst"  )
-                   , (iRing7, "aquamarine")
-                   , (iRing8, "diamond"   )
-                   , (iRing9, "emerald"   ) ]
-  forM_ ringTuples $ \(i, t) ->
-      putCloth i
-               (Ent i
-                    (Just "ring")
-                    (t <> " ring") ""
-                    ("It's a simple copper band prominently featuring a beautiful " <> t <> " stone.")
-                    Nothing
-                    zeroBits)
-               (mkObj . ObjTemplate ringWeight ringVol Nothing $ zeroBits)
-               Ring
-  putCloth iChemise
-           (Ent iChemise
-                (Just "chemise")
-                "fine white chemise" ""
-                "This voluminous frock, worn on the upper body, is fashioned out of thin, smooth linen. It hangs just \
-                \below the waist while its loose-cut, wide sleeves are elbow length."
-                Nothing
-                zeroBits)
-           (mkObj . ObjTemplate shirtWeight shirtVol Nothing $ zeroBits)
-           Shirt
-  putCloth iTunic
-           (Ent iTunic
-                (Just "tunic")
-                "cobalt blue wool tunic" ""
-                "This heavy wool tunic is waist length and short-sleeved. Decorative white embroidery along the neck, \
-                \sleeves, and waist adds an eye-catching touch."
-                Nothing
-                zeroBits)
-           (mkObj . ObjTemplate tunicHeavyWeight tunicHeavyVol Nothing $ zeroBits)
-           Shirt
-  putCloth iApron
-           (Ent iApron
-                (Just "apron")
-                "heavy brown apron" ""
-                "This sturdy padded utility apron provides adequate protection while its wearer labors and toils."
-                Nothing
-                zeroBits)
-           (mkObj . ObjTemplate apronHeavyWeight apronHeavyVol Nothing $ zeroBits)
-           Smock
-  putCloth iTabard
-           (Ent iTabard
-                (Just "tabard")
-                "sleeveless blue tabard" ""
-                "This sleeveless overgarment is open at both sides and extends down to the thigh. Dyed a deep shade of \
-                \blue, a contrasting bright orange trim adds a distinct accent along the hems. There is a short collar \
-                \around the neck complete with a small decorative yellow bowtie."
-                Nothing
-                zeroBits)
-           (mkObj . ObjTemplate tabardWeight tabardVol Nothing $ zeroBits)
-           Smock
-  putCloth iGreyCoat
-           (Ent iGreyCoat
-                (Just "coat")
-                "mouse-grey coat" ""
-                "Sure to keep its wearer warm in all but the coldest of weather, this heavy, long-sleeved coat reaches \
-                \the knees, and features a tall collar followed by ten large silver buttons along its length."
-                Nothing
-                zeroBits)
-           (mkObj . ObjTemplate coatHeavyWeight coatHeavyVol Nothing $ zeroBits)
-           Coat
-  putCloth iFrockCoat
-           (Ent iFrockCoat
-                (Just "coat")
-                "woman's red frock coat" ""
-                "This fashionable long-sleeved coat is made of soft, bright-red fabric decorated with a fine, rich \
-                \floral brocade. Six black buttons from the collar down the chest, when fastened, make this a \
-                \particularly figure-flattering garment."
-                Nothing
-                zeroBits)
-           (mkObj . ObjTemplate coatWeight coatVol Nothing $ zeroBits)
-           Coat
-  forM_ [ iBreeches1, iBreeches2 ] $ \i ->
-      putCloth i
-               (Ent i
-                    (Just "breeches")
-                    "pair of knee-length yellow breeches" "pairs of knee-length yellow breeches"
-                    "These thin, tight-fitting breeches extend just past the knees, where short drawstrings allow them \
-                    \to be neatly secured to the legs."
-                    Nothing
-                    zeroBits)
-               (mkObj . ObjTemplate trousersWeight trousersVol Nothing $ zeroBits)
-               Trousers
-  forM_ [ iTrousers1, iTrousers2 ] $ \i ->
-      putCloth i
-               (Ent i
-                    (Just "trousers")
-                    "pair of baggy beige trousers" "pairs of baggy beige trousers"
-                    "These wool trousers are loose-fitting so as to grant uninhibited movement. A rugged hemp \
-                    \drawstring allows them to be snugly tightened at the waist."
-                    Nothing
-                    zeroBits)
-               (mkObj . ObjTemplate trousersBaggyWeight trousersBaggyVol Nothing $ zeroBits)
-               Trousers
-
-  -- ==================================================
   -- Containers:
   let mkClothSackDesc t = prd $ "It's a typical cloth sack, perfect for holding your treasure. It's " <> t
       mkWovenSackDesc t = "The durable sack is made from a coarse, woven fabric, dyed " <> t <> " so as to give it \
@@ -782,50 +544,6 @@ createAdminZone = do
              mempty
              (Just Backpack)
              (Con True c zeroBits)
-
-  -- ==================================================
-  -- Foods:
-  putFood iApple
-          (mkEnt iApple appleEntTemplate)
-          (mkObj appleObjTemplate)
-          appleFood
-  putFood iBanana
-          (mkEnt iBanana bananaEntTemplate)
-          (mkObj bananaObjTemplate)
-          bananaFood
-  putFood iBread
-          (mkEnt iBread breadEntTemplate)
-          (mkObj breadObjTemplate)
-          breadFood
-  putFood iOrange
-          (mkEnt iOrange orangeEntTemplate)
-          (mkObj orangeObjTemplate)
-          orangeFood
-  forM_ [iGorhna1..iGorhna1 + 9] $ \i -> putFood i
-                                                 (mkEnt i gorhnaEntTemplate)
-                                                 (mkObj gorhnaObjTemplate)
-                                                 gorhnaFood
-
-  -- ==================================================
-  -- Holy symbols:
-  forM_ (zip [iHolySymbol1..iHolySymbol1 + 9] allValues) $ \(i, gn) ->
-      let (gn', desc, w, v, h) = ((,,,,) <$> pp <*> mkHolySymbolDesc <*> mkHolySymbolWeight <*> mkHolySymbolVol <*> HolySymbol) gn
-          e                    = Ent i
-                                     (Just "holy")
-                                     ("holy symbol of " <> gn') ("holy symbols of " <> gn')
-                                     desc
-                                     Nothing
-                                     zeroBits
-          o                    = mkObj . ObjTemplate w v Nothing . setBit zeroBits . fromEnum $ IsBiodegradable
-      in case gn of Iminye -> putVessel     i
-                                            e
-                                            o
-                                            (Just (waterLiq, maxBound)) -- TODO: Liquid.
-                                            (Just h)
-                    _      -> putHolySymbol i
-                                            e
-                                            o
-                                            h
 
   -- ==================================================
   -- Mobs:
@@ -1229,8 +947,7 @@ createAdminZone = do
             (0, 0, -1)
             InsideEnv
             Nothing
-            (M.fromList [ ("look", [ readLookSign_iBasementHook ])
-                        , ("read", [ readLookSign_iBasementHook ]) ])
+            M.empty
             [] []))
   putRm iWeightRm
         [ i190Lb
@@ -1280,7 +997,7 @@ createAdminZone = do
             (Just "Attic")
             M.empty [] []))
   putRm iObjCloset
-        ([ iKewpie1, iKewpie2, iPaperSml, iParchment1, iParchment2, iParchment3, iParchment4, iParchment5 ] ++ [iHolySymbol1..iHolySymbol1 + 9])
+        [ iKewpie1, iKewpie2, iPaperSml, iParchment1, iParchment2, iParchment3, iParchment4, iParchment5 ]
         mempty
         (mkRm (RmTemplate "Object closet"
             "This closet holds objects."
@@ -1293,7 +1010,7 @@ createAdminZone = do
             (Just "Objects")
             M.empty [] []))
   putRm iClothCloset
-        [ iChemise, iTunic, iApron, iTabard, iGreyCoat, iFrockCoat, iBreeches1, iBreeches2, iTrousers1, iTrousers2 ]
+        []
         mempty
         (mkRm (RmTemplate "Clothing closet"
             "This closet holds clothing."
@@ -1307,38 +1024,7 @@ createAdminZone = do
             (Just "Clothing")
             M.empty [] []))
   putRm iAccessoriesCloset
-        [ iEar1
-        , iEar2
-        , iEar3
-        , iEar4
-        , iEar5
-        , iEar6
-        , iEar7
-        , iEar8
-        , iNoseRing1
-        , iNoseRing2
-        , iNoseRing3
-        , iNeck1
-        , iNeck2
-        , iNeck3
-        , iNeck4
-        , iBracelet1
-        , iBracelet2
-        , iBracelet3
-        , iBracelet4
-        , iBracelet5
-        , iBracelet6
-        , iBracelet7
-        , iBracelet8
-        , iRing1
-        , iRing2
-        , iRing3
-        , iRing4
-        , iRing5
-        , iRing6
-        , iRing7
-        , iRing8
-        , iRing9 ]
+        []
         mempty
         (mkRm (RmTemplate "Accessories closet"
             "This closet holds accessories."
@@ -1391,7 +1077,7 @@ createAdminZone = do
             (Just "Containers")
             M.empty [] []))
   putRm iPantry
-        ([ iApple, iBanana, iBread, iOrange ] ++ [iGorhna1..iGorhna1 + 9])
+        []
         mempty
         (mkRm (RmTemplate "Pantry"
             "This walk-in pantry is designed to store a large amount of food."
@@ -1417,7 +1103,7 @@ createAdminZone = do
             (Just "Weapons")
             M.empty [] []))
   putRm iArmCloset
-        [ iCap, iHelm, iSandals1, iSandals2, iBoots ]
+        []
         mempty
         (mkRm (RmTemplate "Armor closet"
             "This closet holds armor."
