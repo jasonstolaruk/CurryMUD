@@ -487,7 +487,7 @@ createWarehouse = do
   -----
 
   putRm iNpcRm
-      [ iPidge, iSkeleton1, iSkeleton2, iSkeleton3 ]
+      [ iPidge, iSkeleton ]
       mempty
       (mkRm (RmTemplate "NPC room"
           "This room holds NPCs."
@@ -529,28 +529,27 @@ createWarehouse = do
 
   let skeletonCorpseWeight = round $ fromIntegral (calcCorpseWeight Human) * (0.15 :: Double)
 
-  forM_ [ iSkeleton1, iSkeleton2, iSkeleton3 ] $ \i ->
-      putNpc i
-          (Ent i
-              (Just "skeleton")
-              "undead skeleton" ""
-              "This mindless, bipedal skeleton has been animated and tasked with doing its master's bidding."
-              Nothing
-              zeroBits)
+  putNpc iSkeleton
+      (Ent iSkeleton
+          (Just "skeleton")
+          "undead skeleton" ""
+          "This mindless, bipedal skeleton has been animated and tasked with doing its master's bidding."
+          Nothing
+          zeroBits)
+      []
+      mempty
+      M.empty
+      (mkMob (MobTemplate NoSex
+          50 50 50 50 50
+          10 10 10 10
+          10 0
+          RHand
           []
-          mempty
-          M.empty
-          (mkMob (MobTemplate NoSex
-              50 50 50 50 50
-              10 10 10 10
-              10 0
-              RHand
-              []
-              iNpcRm
-              (Just MedMinus)
-              skeletonCorpseWeight (calcCorpseVol Human) (calcCorpseCapacity Human)
-              fiveMinsInSecs
-              dfltParty))
+          iNpcRm
+          (Just MedMinus)
+          skeletonCorpseWeight (calcCorpseVol Human) (calcCorpseCapacity Human)
+          fiveMinsInSecs
+          dfltParty))
 
   -----
 
@@ -591,16 +590,16 @@ createWarehouse = do
           (Just "Vessels")
           M.empty [] []))
 
-  let mkBottleDesc a b =
+  let bottelTuples = [ (iBottleSml, "small ", ("small, ", "light brown"),  bottleSmlWeight, bottleSmlVol)
+                     , (iBottle,    "",       ("",        "mixed azure"),  bottleWeight,    bottleVol   )
+                     , (iBottleLrg, "large ", ("large, ", "rusty orange"), bottleLrgWeight, bottleLrgVol) ]
+
+      mkBottleDesc a b =
           T.concat [ "This "
                    , a
                    , "earthenware bottle is designed to be as portable and practical as possible. A glaze of "
                    , b
                    , " hues gives the vessel a glossy finish and makes it impermeable." ]
-
-      bottelTuples = [ (iBottleSml, "small ", ("small, ", "light brown"),  bottleSmlWeight, bottleSmlVol)
-                     , (iBottle,    "",       ("",        "mixed azure"),  bottleWeight,    bottleVol   )
-                     , (iBottleLrg, "large ", ("large, ", "rusty orange"), bottleLrgWeight, bottleLrgVol) ]
 
   forM_ bottelTuples $ \(i, t, d, w, v) ->
       putVessel i
@@ -614,38 +613,21 @@ createWarehouse = do
           Nothing
           Nothing
 
-  putVessel iJarSml
-      (Ent iJarSml
-          (Just "jar")
-          "small jar" ""
-          "This versatile, small glass jar comes affixed with an airtight lid."
-          Nothing
-          zeroBits)
-      (mkObj . ObjTemplate jarSmlWeight jarSmlVol Nothing $ zeroBits)
-      Nothing
-      Nothing
+  let jarTuples = [ (iJarSml, "small ", ", small", jarSmlWeight, jarSmlVol)
+                  , (iJar,    "",       "",        jarWeight,    jarVol   )
+                  , (iJarLrg, "large ", ", large", jarLrgWeight, jarLrgVol) ]
 
-  putVessel iJar
-      (Ent iJar
-          (Just "jar")
-          "jar" ""
-          "This versatile glass jar comes affixed with an airtight lid."
+  forM_ jarTuples $ \(i, t, d, w, v) ->
+      putVessel i
+          (Ent i
+              (Just "jar")
+              (t <> "jar") ""
+              ("This versatile" <> d <> " glass jar comes affixed with an airtight lid.")
+              Nothing
+              zeroBits)
+          (mkObj . ObjTemplate w v Nothing $ zeroBits)
           Nothing
-          zeroBits)
-      (mkObj . ObjTemplate jarWeight jarVol Nothing $ zeroBits)
-      Nothing
-      Nothing
-
-  putVessel iJarLrg
-      (Ent iJarLrg
-          (Just "jar")
-          "large jar" ""
-          "This versatile, large glass jar comes affixed with an airtight lid."
           Nothing
-          zeroBits)
-      (mkObj . ObjTemplate jarLrgWeight jarLrgVol Nothing $ zeroBits)
-      Nothing
-      Nothing
 
   let jugTuples = [ (iJugSml, "small ", jugSmlWeight, jugSmlVol)
                   , (iJug,     "",      jugWeight,    jugVol   )
@@ -820,6 +802,10 @@ createWarehouse = do
   -----
 
   putRmTeleName iWarehouseWelcome "warehouse"
+
+
+-- ==================================================
+-- Zone definition helper functions:
 
 
 mkLeatherSmell :: Text -> Maybe Text
