@@ -26,7 +26,6 @@ import qualified Data.Text as T
 
 -- TODO: Review your descriptions.
 -- TODO: Some things lack smell and taste.
--- TODO: Check string lengths.
 
 
 logNotice :: Text -> Text -> MudStack ()
@@ -238,8 +237,8 @@ createWarehouse = do
       (Ent iShirtPeasant
           (Just "shirt")
           "white peasant's shirt" ""
-          "This shirt, favored by skilled laborers and lowly bumpkins alike, represents the epitome of function \
-          \over fashion."
+          "This shirt, favored by skilled laborers and lowly bumpkins alike, represents the epitome of function over \
+          \fashion."
           Nothing
           zeroBits)
       (mkObj . ObjTemplate shirtWeight shirtVol Nothing $ zeroBits)
@@ -430,7 +429,7 @@ createWarehouse = do
               (Just "The sack smells like burlap. It's a bit reminiscent of the smell of a barn or a farmyard.")
               zeroBits)
           (let taste = thrice prd "Munching on the sack, you experience firsthand the earthy taste of burlap. You begin \
-                                  \to suspect that the taste could linger in your mouth for some time"
+                                  \to suspect the taste could linger in your mouth for some time"
            in mkObj . ObjTemplate w v (Just taste) $ zeroBits)
           []
           mempty
@@ -506,8 +505,8 @@ createWarehouse = do
       (Ent iPidge
           (Just "pidge")
           "Pidge" ""
-          "Pidge is a female hobbit with walnut-colored skin and large, brown eyes. She wears her silver-white \
-          \hair in shoulder-length pigtails. Her small, round face is positively adorable."
+          "Pidge is a female hobbit with walnut-colored skin and large, brown eyes. She wears her silver-white hair in \
+          \shoulder-length pigtails. Her small, round face is positively adorable."
           Nothing
           zeroBits)
       []
@@ -591,12 +590,13 @@ createWarehouse = do
           (Just "Vessels")
           M.empty [] []))
 
-  let mkBottleDesc a b = T.concat [ "This "
-                                  , a
-                                  , "earthenware bottle is designed to be as portable and practical as possible. A \
-                                    \glaze of "
-                                  , b
-                                  , " hues gives the vessel a glossy finish and makes it impermeable." ]
+  let mkBottleDesc a b =
+          T.concat [ "This "
+                   , a
+                   , "earthenware bottle is designed to be as portable and practical as possible. A glaze of "
+                   , b
+                   , " hues gives the vessel a glossy finish and makes it impermeable." ]
+
       bottelTuples = [ (iBottleSml, "small ", ("small, ", "light brown"),  bottleSmlWeight, bottleSmlVol)
                      , (iBottle,    "",       ("",        "mixed azure"),  bottleWeight,    bottleVol   )
                      , (iBottleLrg, "large ", ("large, ", "rusty orange"), bottleLrgWeight, bottleLrgVol) ]
@@ -655,8 +655,7 @@ createWarehouse = do
           (Ent i
               (Just "jug")
               (t <> "jug") ""
-              "While capable of containing a large amount of liquid, this corked, ceramic jug is rather \
-              \cumbersome."
+              "While capable of containing a large amount of liquid, this corked, ceramic jug is rather cumbersome."
               Nothing
               zeroBits)
           (mkObj . ObjTemplate w v Nothing $ zeroBits)
