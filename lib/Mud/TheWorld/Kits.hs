@@ -47,7 +47,7 @@ kit i (V.toList -> [ va, vb, vc, vd, ve, vf, vg, vh, vi, vj ]) = modifyStateSeq 
                                                Human  -> pure . succ $ iBread1
                                                Nymph  -> [ iGorhna1..iGorhna1 + 49 ]
                                                _      -> pure . rndmIntToElem vj $ fruitIds
-                      in [ iBread1, iSack, iSandalsLeather, iWaterskin ] ++ is
+                      in [ iBread1, iSack, iSandalsLeather, iWaterskinWithWater ] ++ is
         coinsHelper = _1.coinsTbl.ind i .~ f (Coins (x, y, z))
           where
             x = rndmIntToRange vb (1,  50)

@@ -572,7 +572,11 @@ createWarehouse = do
   -----
 
   putRm iVesselRm
-      [ iWaterskin ]
+      [ iBottleSml, iBottle, iBottleLrg
+      , iJarSml, iJar, iJarLrg
+      , iJugSml, iJug, iJugLrg
+      , iPotionFlask, iPotionFlaskLrg
+      , iWaterskin, iWaterskinWithWater, iWaterskinLrg ]
       mempty
       (mkRm (RmTemplate "Vessels room"
           "This room holds vessels."
@@ -587,16 +591,91 @@ createWarehouse = do
           (Just "Vessels")
           M.empty [] []))
 
-  putVessel iWaterskin
-      (Ent iWaterskin
-          (Just "waterskin")
-          "waterskin" ""
-          "The handy waterskin, crafted from the bladder of a bovine animal, is an indispensable piece of equipment \
-          \when it comes to travel and, often, everyday life."
+  let mkBottleDesc a b = T.concat [ "This "
+                                  , a
+                                  , "earthenware bottle is designed to be as portable and practical as possible. A \
+                                    \glaze of "
+                                  , b
+                                  , " hues gives the vessel a glossy finish and makes it impermeable." ]
+      bottelTuples = [ (iBottleSml, "small ", ("small, ", "light brown"),  bottleSmlWeight, bottleSmlVol)
+                     , (iBottle,    "",       ("",        "mixed azure"),  bottleWeight,    bottleVol   )
+                     , (iBottleLrg, "large ", ("large, ", "rusty orange"), bottleLrgWeight, bottleLrgVol) ]
+
+  forM_ bottelTuples $ \(i, t, d, w, v) ->
+      putVessel i
+          (Ent i
+              (Just "bottle")
+              (t <> "bottle") ""
+              (uncurry mkBottleDesc d)
+              Nothing
+              zeroBits)
+          (mkObj . ObjTemplate w v Nothing $ zeroBits)
+          Nothing
+          Nothing
+
+  putVessel iJarSml
+      (Ent iJarSml
+          (Just "jar")
+          "small jar" ""
+          "This versatile, small glass jar comes affixed with an airtight lid."
           Nothing
           zeroBits)
-      (mkObj . ObjTemplate waterskinWeight waterskinVol Nothing $ zeroBits)
-      (Just (waterLiq, maxBound))
+      (mkObj . ObjTemplate jarSmlWeight jarSmlVol Nothing $ zeroBits)
+      Nothing
+      Nothing
+
+  putVessel iJar
+      (Ent iJar
+          (Just "jar")
+          "jar" ""
+          "This versatile glass jar comes affixed with an airtight lid."
+          Nothing
+          zeroBits)
+      (mkObj . ObjTemplate jarWeight jarVol Nothing $ zeroBits)
+      Nothing
+      Nothing
+
+  putVessel iJarLrg
+      (Ent iJarLrg
+          (Just "jar")
+          "large jar" ""
+          "This versatile, large glass jar comes affixed with an airtight lid."
+          Nothing
+          zeroBits)
+      (mkObj . ObjTemplate jarLrgWeight jarLrgVol Nothing $ zeroBits)
+      Nothing
+      Nothing
+
+  let jugTuples = [ (iJugSml, "small ", jugSmlWeight, jugSmlVol)
+                  , (iJug,     "",      jugWeight,    jugVol   )
+                  , (iJugLrg, "large ", jugLrgWeight, jugLrgVol) ]
+
+  forM_ jugTuples $ \(i, t, w, v) ->
+      putVessel i
+          (Ent i
+              (Just "jug")
+              (t <> "jug") ""
+              "While capable of containing a large amount of liquid, this corked, ceramic jug is rather \
+              \cumbersome."
+              Nothing
+              zeroBits)
+          (mkObj . ObjTemplate w v Nothing $ zeroBits)
+          Nothing
+          Nothing
+
+  mkWaterskin iWaterskin          Nothing
+
+  mkWaterskin iWaterskinWithWater (Just (waterLiq, maxBound))
+
+  putVessel iWaterskinLrg
+      (Ent iWaterskinLrg
+          (Just "waterskin")
+          "large waterskin" ""
+          (waterskinDesc <> " This waterskin is particularly large, making it suitable for long journeys.")
+          Nothing
+          zeroBits)
+      (mkObj . ObjTemplate waterskinLrgWeight waterskinLrgVol Nothing $ zeroBits)
+      Nothing
       Nothing
 
   -----
@@ -757,6 +836,19 @@ mkWpnSmell :: Text -> Maybe Text
 mkWpnSmell t = Just $ "The head of the " <> t <> " smells like metal. The handle doesn't smell like much at all."
 
 
+mkWaterskin :: Id -> Maybe VesselCont -> MudStack ()
+mkWaterskin i l = putVessel i
+    (Ent i
+        (Just "waterskin")
+        "waterskin" ""
+        waterskinDesc
+        Nothing
+        zeroBits)
+    (mkObj . ObjTemplate waterskinWeight waterskinVol Nothing $ zeroBits)
+    l
+    Nothing
+
+
 mkWpnTaste :: Text -> Maybe Text
 mkWpnTaste t = Just $ "You lick the head of the " <> t <> ". It tastes metallic."
 
@@ -767,3 +859,8 @@ swordSmell = Just "The blade of the sword smells like metal."
 
 swordTaste :: Maybe Text
 swordTaste = Just "You lick the blade of the sword, taking care not to cut your tongue. It tastes slightly metallic."
+
+
+waterskinDesc :: Text
+waterskinDesc = "The handy waterskin, crafted from the bladder of a bovine animal, is an indispensable piece of \
+                \equipment when it comes to travel and, often, everyday life."

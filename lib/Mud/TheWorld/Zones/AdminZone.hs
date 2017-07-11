@@ -846,17 +846,7 @@ createAdminZone = do
             (Just "Objects")
             M.empty [] []))
   let vesselIds = [iPotionFlask1   ..iPotionFlask1    + 19] ++
-                  [iPotionFlaskLrg1..iPotionFlaskLrg1 + 19] ++ [ iWaterskin
-                                                               , iWaterskinLrg
-                                                               , iJarSml
-                                                               , iJar
-                                                               , iJarLrg
-                                                               , iJugSml
-                                                               , iJug
-                                                               , iJugLrg
-                                                               , iBottleSml
-                                                               , iBottle
-                                                               , iBottleLrg ]
+                  [iPotionFlaskLrg1..iPotionFlaskLrg1 + 19]
   putRm iConCloset
         vesselIds
         mempty
@@ -1045,8 +1035,6 @@ createAdminZone = do
   putRmTeleName iLounge    "lounge"
   putRmTeleName iTrashDump "trash"
 
-  -- ==================================================
-  -- Vessels:
   let flaskIds    = [ iPotionFlask1    + i | i <- [0..19] ]
       flaskLrgIds = [ iPotionFlaskLrg1 + i | i <- [0..19] ]
       flaskConts  = (++ repeat Nothing) . map (Just . (, maxBound)) $ [ potHpLiq, potInstantHpLiq
@@ -1081,93 +1069,6 @@ createAdminZone = do
                      zeroBits)
                 (mkObj . ObjTemplate potionFlaskLrgWeight potionFlaskLrgVol Nothing $ zeroBits)
                 mc
-                Nothing
-  let waterskinDesc = "The handy waterskin, crafted from the bladder of a bovine animal, is an indispensable piece of \
-                      \equipment when it comes to travel and, often, everyday life."
-  putVessel iWaterskin
-            (Ent iWaterskin
-                 (Just "waterskin")
-                 "waterskin" ""
-                 waterskinDesc
-                 Nothing
-                 zeroBits)
-            (mkObj . ObjTemplate waterskinWeight waterskinVol Nothing $ zeroBits)
-            (Just (waterLiq, maxBound))
-            Nothing
-  putVessel iWaterskinLrg
-            (Ent iWaterskinLrg
-                 (Just "waterskin")
-                 "large waterskin" ""
-                 (waterskinDesc <> " This waterskin is particularly large, making it suitable for long journeys.")
-                 Nothing
-                 zeroBits)
-            (mkObj . ObjTemplate waterskinLrgWeight waterskinLrgVol Nothing $ zeroBits)
-            (Just (waterLiq, maxBound))
-            Nothing
-  putVessel iJarSml
-            (Ent iJarSml
-                 (Just "jar")
-                 "small jar" ""
-                 "This versatile, small glass jar comes affixed with an airtight lid."
-                 Nothing
-                 zeroBits)
-            (mkObj . ObjTemplate jarSmlWeight jarSmlVol Nothing $ zeroBits)
-            (Just (potHpLiq, maxBound))
-            Nothing
-  putVessel iJar
-            (Ent iJar
-                 (Just "jar")
-                 "jar" ""
-                 "This versatile glass jar comes affixed with an airtight lid."
-                 Nothing
-                 zeroBits)
-            (mkObj . ObjTemplate jarWeight jarVol Nothing $ zeroBits)
-            (Just (potInstantHpLiq, maxBound))
-            Nothing
-  putVessel iJarLrg
-            (Ent iJarLrg
-                 (Just "jar")
-                 "large jar" ""
-                 "This versatile, large glass jar comes affixed with an airtight lid."
-                 Nothing
-                 zeroBits)
-            (mkObj . ObjTemplate jarLrgWeight jarLrgVol Nothing $ zeroBits)
-            Nothing
-            Nothing
-  let jugTuples = [ (iJugSml, "small ", jugSmlWeight, jugSmlVol, Just potStLiq          )
-                  , (iJug,     "",      jugWeight,    jugVol,    Just potInstantStLiq   )
-                  , (iJugLrg, "large ", jugLrgWeight, jugLrgVol, Nothing) ]
-  forM_ jugTuples $ \(i, t, w, v, l) ->
-      putVessel i
-                (Ent i
-                     (Just "jug")
-                     (t <> "jug") ""
-                     "While capable of containing a large amount of liquid, this corked, ceramic jug is rather \
-                     \cumbersome."
-                     Nothing
-                     zeroBits)
-                (mkObj . ObjTemplate w v Nothing $ zeroBits)
-                ((, maxBound) <$> l)
-                Nothing
-  let mkBottleDesc a b = T.concat [ "This "
-                                  , a
-                                  , "earthenware bottle is designed to be as portable and practical as possible. A \
-                                    \glaze of "
-                                  , b
-                                  , " hues gives the vessel a glossy finish and makes it impermeable." ]
-      bottelTuples = [ (iBottleSml, "small ", ("small, ", "light brown"),  bottleSmlWeight, bottleSmlVol, potTinnitusLiq       )
-                     , (iBottle,    "",       ("",        "mixed azure"),  bottleWeight,    bottleVol,    potInstantTinnitusLiq)
-                     , (iBottleLrg, "large ", ("large, ", "rusty orange"), bottleLrgWeight, bottleLrgVol, potInstantTinnitusLiq) ]
-  forM_ bottelTuples $ \(i, t, d, w, v, l) ->
-      putVessel i
-                (Ent i
-                     (Just "bottle")
-                     (t <> "bottle") ""
-                     (uncurry mkBottleDesc d)
-                     Nothing
-                     zeroBits)
-                (mkObj . ObjTemplate w v Nothing $ zeroBits)
-                (Just (l, maxBound))
                 Nothing
 
   -- ==================================================

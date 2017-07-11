@@ -159,33 +159,59 @@ iSkeleton3 = 10304 :: Id
 
 -- Vessels:
 
-iWaterskin = 10305 :: Id
+iBottleSml = 10305 :: Id
+
+iBottle = 10306 :: Id
+
+iBottleLrg = 10307 :: Id
+
+iJarSml = 10308 :: Id
+
+iJar = 10309 :: Id
+
+iJarLrg = 10310 :: Id
+
+iJugSml = 10311 :: Id
+
+iJug = 10312 :: Id
+
+iJugLrg = 10313 :: Id
+
+iPotionFlask = 10314 :: Id
+
+iPotionFlaskLrg = 10315 :: Id
+
+iWaterskin = 10316 :: Id
+
+iWaterskinWithWater = 10317 :: Id
+
+iWaterskinLrg = 10318 :: Id
 
 -----
 
 -- Potions:
 
-iPotInstantHp = 10306 :: Id
+iPotInstantHp = 10319 :: Id
 
-iPotInstantFp = 10307 :: Id
+iPotInstantFp = 10320 :: Id
 
-iPotInstantSt = 10308 :: Id
+iPotInstantSt = 10321 :: Id
 
 -----
 
 -- Weapons:
 
-iAxeSml = 10309 :: Id
+iAxeSml = 10322 :: Id
 
-iMace = 10311 :: Id
+iMace = 10323 :: Id
 
-iSpear = 10314 :: Id
+iSpear = 10324 :: Id
 
-iStaffQuarter = 10312 :: Id
+iStaffQuarter = 10325 :: Id
 
-iSwordBroad = 10310 :: Id
+iSwordBroad = 10326 :: Id
 
-iSwordShort = 10313 :: Id
+iSwordShort = 10327 :: Id
 
 -----
 

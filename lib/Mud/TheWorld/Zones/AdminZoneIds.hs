@@ -130,28 +130,6 @@ iPotionFlask1 = 114 :: Id -- 20
 
 iPotionFlaskLrg1 = 134 :: Id -- 20
 
-iWaterskin = 154 :: Id
-
-iWaterskinLrg = 155 :: Id
-
-iJarSml = 156 :: Id
-
-iJar = 157 :: Id
-
-iJarLrg = 158 :: Id
-
-iJugSml = 159 :: Id
-
-iJug = 160 :: Id
-
-iJugLrg = 161 :: Id
-
-iBottleSml = 162 :: Id
-
-iBottle = 163 :: Id
-
-iBottleLrg = 164 :: Id
-
 -----
 
 iSword1 = 181 :: Id
