@@ -5,11 +5,11 @@ module Mud.TheWorld.Zones.WarehouseIds where
 import Mud.Data.State.MudData (Id)
 
 
+iPidge = 10000 :: Id
+
 -- Rooms:
 
-iWarehouseWelcome = 10000 :: Id
-
-iTunnel1 = 10001 :: Id
+iWarehouseWelcome = 10001 :: Id
 
 iArmRm = 10002 :: Id
 
@@ -33,103 +33,123 @@ iWpnRm = 10011 :: Id
 
 iWritableRm = 10012 :: Id
 
-iTunnel2 = 10013 :: Id
-
-iTunnel3 = 10014 :: Id
-
 -----
 
 -- Armor:
 
-iKnitCap = 10015 :: Id
+iBootsLeather = 10013 :: Id
 
-iLeatherHelm = 10016 :: Id
+iBootsThigh = 10014 :: Id
 
-iLeatherSandals = 10017 :: Id
+iCapKnit = 10015 :: Id
 
-iLeatherBoots = 10018 :: Id
+iHelmLeather = 10016 :: Id
+
+iSandalsLeather = 10017 :: Id
 
 -----
 
 -- Clothing:
 
-iChemise = 10019 :: Id
+iApronBrown = 10018 :: Id
 
-iTunic = 10020 :: Id
+iApronLeather = 10019 :: Id
 
-iApron = 10021 :: Id
+iBreeches = 10020 :: Id
 
-iTabard = 10022 :: Id
+iChemise = 10021 :: Id
 
-iGreyCoat = 10023 :: Id
+iCoatFrock = 10022 :: Id
 
-iFrockCoat = 10024 :: Id
+iCoatGrey = 10023 :: Id
 
-iBreeches = 10025 :: Id
+iOveralls = 10024 :: Id
 
-iTrousers = 10026 :: Id
+iShirtPeasant = 10025 :: Id
+
+iTabard = 10026 :: Id
+
+iTrousers = 10027 :: Id
+
+iTunic = 10028 :: Id
 
 -----
 
 -- Accessories:
 
-iAmethystRing = 10027 :: Id
+iBraceletBangle = 10029 :: Id
 
-iAquamarineRing = 10028 :: Id
+iBraceletBeaded = 10030 :: Id
 
-iEmeraldRing = 10029 :: Id
+iBraceletCharm = 10031 :: Id
 
-iGarnetRing = 10030 :: Id
+iBraceletPearl = 10032 :: Id
 
-iNoseRing = 10031 :: Id
+iEarAzure = 10033 :: Id
 
-iAzureEar = 10032 :: Id
+iEarCrimson = 10034 :: Id
 
-iCrimsonEar = 10033 :: Id
+iEarOnyx = 10035 :: Id
 
-iSeaGreenEar = 10034 :: Id
+iEarSeaGreen = 10036 :: Id
 
-iOnyxEar = 10035 :: Id
+iNeckBronze = 10037 :: Id
 
-iBronzeNeck = 10036 :: Id
+iNeckGold = 10038 :: Id
 
-iSilverNeck = 10037 :: Id
+iNeckPlatinum = 10039 :: Id
 
-iGoldNeck = 10038 :: Id
+iNeckSilver = 10040 :: Id
 
-iPlatinumNeck = 10039 :: Id
+iNoseRing = 10041 :: Id
 
-iCharmBracelet = 10040 :: Id
+iRingAmethyst = 10042 :: Id
 
-iBangleBracelet = 10041 :: Id
+iRingAquamarine = 10043 :: Id
 
-iBeadedBracelet = 10042 :: Id
+iRingEmerald = 10044 :: Id
 
-iPearlBracelet = 10043 :: Id
+iRingGarnet = 10045 :: Id
 
 -----
 
 -- Containers:
 
-iSack = 10044 :: Id
+iBackSml = 10046 :: Id
+
+iBack = 10047 :: Id
+
+iBackLrg = 10048 :: Id
+
+iSackSml = 10049 :: Id
+
+iSack = 10050 :: Id
+
+iSackLrg = 10051 :: Id
 
 -----
 
 -- Food:
 
-iBread1 = 10045 :: Id -- 50
+iApple1 = 10052 :: Id -- 50
 
-iApple1 = 10095 :: Id -- 50
+iBanana1 = 10102 :: Id -- 50
 
-iBanana1 = 10145 :: Id -- 50
+iBread1 = 10152 :: Id -- 50
 
-iOrange1 = 10195 :: Id -- 50
+iGorhna1 = 10202 :: Id -- 50
 
-iGorhna1 = 10245 :: Id -- 50
+iOrange1 = 10252 :: Id -- 50
 
 -----
 
 -- NPCs:
+
+iSkeleton1 = 10302 :: Id
+
+iSkeleton2 = 10303 :: Id
+
+iSkeleton3 = 10304 :: Id
 
 -----
 
@@ -139,33 +159,33 @@ iGorhna1 = 10245 :: Id -- 50
 
 -- Vessels:
 
-iWaterskin = 10295 :: Id
+iWaterskin = 10305 :: Id
 
 -----
 
 -- Potions:
 
-iPotInstantHp = 10296 :: Id
+iPotInstantHp = 10306 :: Id
 
-iPotInstantFp = 10297 :: Id
+iPotInstantFp = 10307 :: Id
 
-iPotInstantSt = 10298 :: Id
+iPotInstantSt = 10308 :: Id
 
 -----
 
 -- Weapons:
 
-iAxeSml = 10299 :: Id
+iAxeSml = 10309 :: Id
 
-iBroadsword = 10300 :: Id
+iMace = 10311 :: Id
 
-iMace = 10301 :: Id
+iSpear = 10314 :: Id
 
-iQuarterstaff = 10302 :: Id
+iStaffQuarter = 10312 :: Id
 
-iShortsword = 10303 :: Id
+iSwordBroad = 10310 :: Id
 
-iSpear = 10304 :: Id
+iSwordShort = 10313 :: Id
 
 -----
 

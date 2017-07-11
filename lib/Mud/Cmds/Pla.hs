@@ -52,7 +52,8 @@ import qualified Mud.Misc.Logging as L (logNotice, logPla, logPlaExec, logPlaExe
 import           Mud.Misc.Misc
 import           Mud.Misc.NameResolution
 import           Mud.TheWorld.Liqs
-import           Mud.TheWorld.Zones.AdminZoneIds (iPidge, iRoot)
+import           Mud.TheWorld.Zones.AdminZoneIds (iRoot)
+import           Mud.TheWorld.Zones.WarehouseIds (iPidge)
 import           Mud.Threads.Act
 import           Mud.Threads.Misc
 import           Mud.Threads.SpiritTimer
@@ -513,7 +514,7 @@ admin   (MsgWithTarget i mq cols target msg) = getState >>= helper >>= \logMsgs 
                 receivedLogMsg = (adminId, T.concat [ "received message from ", s,   ": ", toAdmin ])
             ioHelper _ xs      = pmf "admin helper ioHelper" xs
             filterRoot idSings | isAdminId i ms = idSings
-                               | otherwise      = isAwake iRoot ms ? idSings :? filter ((/= iRoot) . fst) idSings
+                               | otherwise      = isAwake iRoot ms ? idSings :? filter ((/= iRoot) . fst) idSings -- Root's ID can change.
         in (findFullNameForAbbrev strippedTarget . filterRoot . mkAdminIdSingList $ ms) |&| maybe notFound found
 admin p = pmf "admin" p
 
@@ -555,7 +556,7 @@ alertExecHelper i mq cols cn target args = do
     let s          = getSing i ms
         targetSing = alertExecFindTargetSing i ms target
         msg        = T.concat [ s, " attempted to execute ", dblQuote cn, targetingMsg targetSing, " ", argsMsg, "." ]
-        outIds     = (iRoot `delete`) $ getAdminIds ms \\ getLoggedInAdminIds ms
+        outIds     = (iRoot `delete`) $ getAdminIds ms \\ getLoggedInAdminIds ms -- TODO: Root's ID can change.
         rec        = AlertExecRec Nothing ts s cn targetSing args
     logNotice fn   msg
     logPla    fn i msg

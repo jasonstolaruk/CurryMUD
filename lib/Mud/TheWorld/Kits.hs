@@ -47,7 +47,7 @@ kit i (V.toList -> [ va, vb, vc, vd, ve, vf, vg, vh, vi, vj ]) = modifyStateSeq 
                                                Human  -> pure . succ $ iBread1
                                                Nymph  -> [ iGorhna1..iGorhna1 + 49 ]
                                                _      -> pure . rndmIntToElem vj $ fruitIds
-                      in [ iBread1, iSack, iLeatherSandals, iWaterskin ] ++ is
+                      in [ iBread1, iSack, iSandalsLeather, iWaterskin ] ++ is
         coinsHelper = _1.coinsTbl.ind i .~ f (Coins (x, y, z))
           where
             x = rndmIntToRange vb (1,  50)
@@ -55,12 +55,12 @@ kit i (V.toList -> [ va, vb, vc, vd, ve, vf, vg, vh, vi, vj ]) = modifyStateSeq 
             z = rndmIntToRange vd (10, 20)
             f coins@(Coins triple) | r == Human = Coins (triple & each %~ (* 2))
                                    | otherwise  = coins
-    potionsHelper triple = clone i triple . mapMaybe f $ [ (ve, iPotInstantHp), (vf, iPotInstantFp), (vg, iPotInstantSt) ]
+    potionsHelper triple = clone i triple . mapMaybe f $ [ (ve, iPotInstantFp), (vf, iPotInstantHp), (vg, iPotInstantSt) ]
       where
         f (vx, potId) = onTrue (rndmIntToRange vx (1, 20) == 1) (const . Just $ potId) Nothing
     ringHelper triple = clone i triple . onTrue (rndmIntToRange vh (1, 20) == 1) (ringId :) $ []
       where
-        ringId = rndmIntToElem vi [ iNoseRing, iAmethystRing, iAquamarineRing, iEmeraldRing, iGarnetRing ]
+        ringId = rndmIntToElem vi [ iRingAmethyst, iRingAquamarine, iRingEmerald, iRingGarnet, iNoseRing ]
     holySymbolHelper (ms, fs) = second (fs ++) . holySymbolFactory i ms 1 . rndmIntToElem va $ gns
       where
         gns     = case catMaybes [ checkSt, checkMa, checkPs ] of [] -> [ Aule, Caila, Iminye, Itulvatar, Rumialys ]

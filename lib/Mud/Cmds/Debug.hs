@@ -33,7 +33,8 @@ import qualified Mud.Misc.Logging as L (logAndDispIOEx, logNotice, logPlaExec, l
 import           Mud.Misc.Misc
 import           Mud.Misc.Persist
 import           Mud.TheWorld.Liqs
-import           Mud.TheWorld.Zones.AdminZoneIds (iLoggedOut, iPidge)
+import           Mud.TheWorld.Zones.AdminZoneIds (iLoggedOut)
+import           Mud.TheWorld.Zones.WarehouseIds (iPidge)
 import           Mud.Threads.Effect
 import           Mud.Threads.Misc
 import           Mud.Threads.NpcServer

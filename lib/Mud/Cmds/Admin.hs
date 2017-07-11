@@ -1369,7 +1369,7 @@ adminMsg   (MsgWithTarget i mq cols target msg) = getState >>= helper >>= (|#| m
               | isLoggedIn targetPla                     ->
                   let (targetMq, targetCols) = getMsgQueueColumns targetId ms
                       adminSings             = map snd . filter f . mkAdminIdSingList $ ms
-                      f (_, "Root")          = isAwake iRoot ms
+                      f (_, "Root")          = isAwake iRoot ms -- TODO: Root's ID can change.
                       f _                    = True
                       me                     = head . filter g . styleAbbrevs Don'tQuote $ adminSings
                       g                      = (== s) . dropANSI

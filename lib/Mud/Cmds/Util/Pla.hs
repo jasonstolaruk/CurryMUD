@@ -205,7 +205,7 @@ alertMsgHelper i cn txt = getState >>= \ms -> if isAdminId i ms
                                    , dblQuote match
                                    , ": "
                                    , txt ]
-                 outIds = (iRoot `delete`) $ getAdminIds ms \\ getLoggedInAdminIds ms
+                 outIds = (iRoot `delete`) $ getAdminIds ms \\ getLoggedInAdminIds ms -- TODO: Root's ID can change.
                  rec    = AlertMsgRec Nothing ts s cn match txt
              in do logNotice        fn   msg
                    logPla           fn i msg

@@ -506,167 +506,7 @@ createAdminZone = do
   logNotice "createAdminZone" "creating the admin zone."
 
   -- ==================================================
-  -- Containers:
-  let mkClothSackDesc t = prd $ "It's a typical cloth sack, perfect for holding your treasure. It's " <> t
-      mkWovenSackDesc t = "The durable sack is made from a coarse, woven fabric, dyed " <> t <> " so as to give it \
-                          \some flair."
-      sackTuples        = [ (iSack1,   "cloth", mkClothSackDesc "red",        sackWeight,    sackVol,    sackCap   )
-                          , (iSack2,   "cloth", mkClothSackDesc "blue",       sackWeight,    sackVol,    sackCap   )
-                          , (iSackSml, "small", mkWovenSackDesc "light red",  sackSmlWeight, sackSmlVol, sackSmlCap)
-                          , (iSackLrg, "large", mkWovenSackDesc "light blue", sackLrgWeight, sackLrgVol, sackLrgCap) ]
-  forM_ sackTuples $ \(i, t, d, w, v, c) ->
-      putCon i
-             (Ent i
-                  (Just "sack")
-                  (t <> " sack") ""
-                  d
-                  Nothing
-                  zeroBits)
-             (mkObj . ObjTemplate w v Nothing $ zeroBits)
-             []
-             mempty
-             Nothing
-             (Con False c zeroBits)
-  let backTuples = [ (iBack1,   "",       backWeight,    backVol,    backCap   )
-                   , (iBack2,   "",       backWeight,    backVol,    backCap   )
-                   , (iBackSml, "small ", backSmlWeight, backSmlVol, backSmlCap)
-                   , (iBackLrg, "large ", backLrgWeight, backLrgVol, backLrgCap) ]
-  forM_ backTuples $ \(i, t, w, v, c) ->
-      putCon i
-             (Ent i
-                  (Just "back")
-                  (t <> "backpack") ""
-                  "The sturdy backpack is made of leather."
-                  Nothing
-                  zeroBits)
-             (mkObj . ObjTemplate w v Nothing $ zeroBits)
-             []
-             mempty
-             (Just Backpack)
-             (Con True c zeroBits)
-
-  -- ==================================================
-  -- Mobs:
-  forM_ [ iRockCavy1, iRockCavy2 ] $ \i ->
-      putNpc i
-             (Ent i
-                  (Just "rock")
-                  "rock cavy" "rock cavies"
-                  "It looks like a slightly oversized guinea pig with soft, grey fur. You imagine that the rock cavy \
-                  \would prefer dry, rocky areas (with low, scrubby vegetation), close to stony mountains and hills."
-                  Nothing
-                  zeroBits)
-             []
-             mempty
-             M.empty
-             (mkMob (MobTemplate Male
-                                 50 50 50 50 50
-                                 10 10 10 10
-                                 10 0
-                                 NoHand
-                                 []
-                                 iMobCloset
-                                 (Just SmlMinus)
-                                 rockCavyCorpseWeight rockCavyCorpseVol rockCavyCorpseCap
-                                 (calcCorpseDecompSecsForMobSize SmlMinus)
-                                 dfltParty))
-  putNpc iPidge
-         (Ent iPidge
-              (Just "pidge")
-              "Pidge" ""
-              "Pidge is a female hobbit with walnut-colored skin and large, brown eyes. She wears her silver-white \
-              \hair in shoulder-length pigtails. Her small, round face is positively adorable."
-              Nothing
-              zeroBits)
-         []
-         mempty
-         (M.fromList [ (ShirtS,    iPeasant'sShirt )
-                     , (SmockS,    iLeatherApron   )
-                     , (TrousersS, iOveralls       )
-                     , (FeetS,     iTraveler'sBoots) ])
-         (mkMob (MobTemplate Female
-                             50 50 50 50 50
-                             100 100 100 100
-                             0 0
-                             RHand
-                             [ HobbitLang ]
-                             iMobCloset
-                             (Just MedMinus)
-                             (calcCorpseWeight Hobbit) (calcCorpseVol Hobbit) (calcCorpseCapacity Hobbit)
-                             (calcCorpseDecompSecs Hobbit)
-                             dfltParty))
-  putCloth iPeasant'sShirt
-           (Ent iPeasant'sShirt
-                (Just "shirt")
-                "white peasant's shirt" ""
-                "This shirt, favored by skilled laborers and lowly bumpkins alike, represents the epitome of function \
-                \over fashion."
-                Nothing
-                zeroBits)
-           (mkObj . ObjTemplate shirtWeight shirtVol Nothing $ zeroBits)
-           Shirt
-  putCloth iOveralls
-           (Ent iOveralls
-                (Just "overalls")
-                "pair of many-pocketed brown overalls" "pairs of many-pocketed brown overalls"
-                "These durable overalls are adorned with a multitude of little pockets."
-                Nothing
-                zeroBits)
-           (mkObj . ObjTemplate overallsWeight overallsVol Nothing $ zeroBits)
-           Trousers
-  putCloth iLeatherApron
-           (Ent iLeatherApron
-                (Just "apron")
-                "leather apron" ""
-                "This heavy apron, though bulky, is a must for those who undertake dirty and dangerous chores."
-                Nothing
-                zeroBits)
-           (mkObj . ObjTemplate apronHeavyWeight apronHeavyVol Nothing $ zeroBits)
-           Smock
-  putArm iTraveler'sBoots
-         (Ent iTraveler'sBoots
-              (Just "boots")
-              "pair of jet-black traveler's boots" "pair of jet-black traveler's boots"
-              "These well-crafted, thigh-high boots are rugged and durable."
-              Nothing
-              zeroBits)
-         (mkObj . ObjTemplate bootsWeight bootsVol Nothing $ zeroBits)
-         (Arm Feet 1)
-  let skeletonCorpseWeight = round $ fromIntegral (calcCorpseWeight Human) * (0.15 :: Double)
-  forM_ [ iSkeleton1, iSkeleton2, iSkeleton3 ] $ \i ->
-      putNpc i
-             (Ent i
-                  (Just "skeleton")
-                  "undead skeleton" ""
-                  "This mindless, bipedal skeleton has been animated and tasked with doing its master's bidding."
-                  Nothing
-                  zeroBits)
-             []
-             mempty
-             M.empty
-             (mkMob (MobTemplate NoSex
-                                 50 50 50 50 50
-                                 10 10 10 10
-                                 10 0
-                                 RHand
-                                 []
-                                 iMobCloset
-                                 (Just MedMinus)
-                                 skeletonCorpseWeight (calcCorpseVol Human) (calcCorpseCapacity Human)
-                                 fiveMinsInSecs
-                                 dfltParty))
-
-  -- ==================================================
   -- Objects:
-  forM_ [ iKewpie1, iKewpie2 ] $ \i ->
-      putObj i
-             (Ent i
-                  (Just "doll")
-                  "kewpie doll" ""
-                  "The kewpie doll is disgustingly cute."
-                  Nothing
-                  zeroBits)
-             (mkObj . ObjTemplate dollWeight dollVol Nothing $ zeroBits)
   let weightTuples = [ (i190Lb, "190", 19000, 66995)
                      , (i100Lb, "100", 10000, 35260)
                      , (i75Lb,  "75",  7500,  26445)
@@ -924,7 +764,7 @@ createAdminZone = do
             [ beeBuzzRmFunName ]))
   putRm iBasement
         []
-        mempty
+        (Coins (1000, 1000, 1000))
         (mkRm (RmTemplate "Basement"
             "This dusty, unfinished basement smells of mold. You spot several cobwebs hanging from the ceiling.\n\
             \Eight doors are positioned about the round, stucco wall at even intervals. A spiral staircase leads up. \
@@ -936,12 +776,8 @@ createAdminZone = do
             zeroBits
             [ StdLink    North     iWeightRm    1
             , StdLink    Northeast iObjCloset   1
-            , StdLink    East      iClothCloset 1
-            , StdLink    Southeast iCoinsCloset 1
             , StdLink    South     iConCloset   1
             , StdLink    Southwest iWpnCloset   1
-            , StdLink    West      iArmCloset   1
-            , StdLink    Northwest iMobCloset   1
             , StdLink    Up        iCentral     1
             , NonStdLink "manhole" iVoid        1 "% climbs into the manhole." "% climbs out of the manhole." ]
             (0, 0, -1)
@@ -997,7 +833,7 @@ createAdminZone = do
             (Just "Attic")
             M.empty [] []))
   putRm iObjCloset
-        [ iKewpie1, iKewpie2, iPaperSml, iParchment1, iParchment2, iParchment3, iParchment4, iParchment5 ]
+        [ iPaperSml, iParchment1, iParchment2, iParchment3, iParchment4, iParchment5 ]
         mempty
         (mkRm (RmTemplate "Object closet"
             "This closet holds objects."
@@ -1009,48 +845,7 @@ createAdminZone = do
             InsideEnv
             (Just "Objects")
             M.empty [] []))
-  putRm iClothCloset
-        []
-        mempty
-        (mkRm (RmTemplate "Clothing closet"
-            "This closet holds clothing."
-            Nothing
-            Nothing
-            zeroBits
-            [ StdLink West iBasement          1
-            , StdLink Down iAccessoriesCloset 1 ]
-            (1, 0, -1)
-            InsideEnv
-            (Just "Clothing")
-            M.empty [] []))
-  putRm iAccessoriesCloset
-        []
-        mempty
-        (mkRm (RmTemplate "Accessories closet"
-            "This closet holds accessories."
-            Nothing
-            Nothing
-            zeroBits
-            [ StdLink Up iClothCloset 1 ]
-            (1, 0, -2)
-            InsideEnv
-            (Just "Accessories")
-            M.empty [] []))
-  putRm iCoinsCloset
-        []
-        (Coins (1000, 1000, 1000))
-        (mkRm (RmTemplate "Coin closet"
-            "This closet holds coins."
-            Nothing
-            Nothing
-            zeroBits
-            [ StdLink Northwest iBasement 1 ]
-            (1, -1, -1)
-            InsideEnv
-            (Just "Coins")
-            M.empty [] []))
-  let conIds    = [ iSack1, iSack2, iSackSml, iSackLrg, iBack1, iBack2, iBackSml, iBackLrg ]
-      vesselIds = [iPotionFlask1   ..iPotionFlask1    + 19] ++
+  let vesselIds = [iPotionFlask1   ..iPotionFlask1    + 19] ++
                   [iPotionFlaskLrg1..iPotionFlaskLrg1 + 19] ++ [ iWaterskin
                                                                , iWaterskinLrg
                                                                , iJarSml
@@ -1063,31 +858,17 @@ createAdminZone = do
                                                                , iBottle
                                                                , iBottleLrg ]
   putRm iConCloset
-        (conIds ++ vesselIds)
+        vesselIds
         mempty
         (mkRm (RmTemplate "Container closet"
             "This closet holds containers."
             Nothing
             Nothing
             zeroBits
-            [ StdLink North iBasement 1
-            , StdLink Up    iPantry   1 ]
+            [ StdLink North iBasement 1 ]
             (0, -1, -1)
             InsideEnv
             (Just "Containers")
-            M.empty [] []))
-  putRm iPantry
-        []
-        mempty
-        (mkRm (RmTemplate "Pantry"
-            "This walk-in pantry is designed to store a large amount of food."
-            Nothing
-            Nothing
-            zeroBits
-            [ StdLink Down iConCloset 1 ]
-            (0, -1, 0)
-            InsideEnv
-            (Just "Pantry")
             M.empty [] []))
   putRm iWpnCloset
         [ iSword1, iSword2, iLongSword, iClub, iKnife1, iKnife2 ]
@@ -1101,32 +882,6 @@ createAdminZone = do
             (-1, -1, -1)
             InsideEnv
             (Just "Weapons")
-            M.empty [] []))
-  putRm iArmCloset
-        []
-        mempty
-        (mkRm (RmTemplate "Armor closet"
-            "This closet holds armor."
-            Nothing
-            Nothing
-            zeroBits
-            [ StdLink East iBasement 1 ]
-            (-1, 0, -1)
-            InsideEnv
-            (Just "Armor")
-            M.empty [] []))
-  putRm iMobCloset
-        [ iPidge, iRockCavy1, iRockCavy2, iSkeleton1, iSkeleton2, iSkeleton3 ]
-        mempty
-        (mkRm (RmTemplate "Mob closet"
-            "This closet holds mobs."
-            Nothing
-            Nothing
-            zeroBits
-            [ StdLink Southeast iBasement 1 ]
-            (-1, 1, -1)
-            InsideEnv
-            (Just "Mobs")
             M.empty [] []))
   let voidListen = Just "It's eerily silent here."
       voidSmell  = Just "Strangely, the air here is utterly devoid of scent."

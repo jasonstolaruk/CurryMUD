@@ -33,14 +33,11 @@ zoneMap = IM.fromList . concat $ [ adminZone
 adminZone :: [(Id, Zone)]
 adminZone = zip rmIds . repeat $ "Admin zone"
   where
-    rmIds = [ iAccessoriesCloset
-            , iArmCloset
-            , iAtrium
+    rmIds = [ iAtrium
             , iAttic
             , iBasement
             , iCentral
             , iClone
-            , iClothCloset
             , iCoinsCloset
             , iConCloset
             , iCottage
@@ -50,12 +47,10 @@ adminZone = zip rmIds . repeat $ "Admin zone"
             , iInside
             , iLounge
             , iLoungeEntrance
-            , iMobCloset
             , iNecropolis
             , iNoEnv
             , iObjCloset
             , iOutside
-            , iPantry
             , iShop
             , iSpecial
             , iTrashDump
@@ -98,9 +93,6 @@ warehouseZone = zip rmIds . repeat $ "Warehouse"
             , iNpcRm
             , iObjRm
             , iPotionRm
-            , iTunnel1
-            , iTunnel2
-            , iTunnel3
             , iVesselRm
             , iWarehouseWelcome
             , iWpnRm
