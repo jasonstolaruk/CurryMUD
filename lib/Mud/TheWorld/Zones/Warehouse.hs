@@ -306,7 +306,7 @@ createWarehouse = do
                            \white in color."
       pearlBraceletDesc  = "Lustrous white pearls are strung together to make an eye-catching, fashionable accessory."
 
-  let braceletTuples = [ (iBraceletBangle, "wooden bangle", bangleBraceletDesc, 1 )
+      braceletTuples = [ (iBraceletBangle, "wooden bangle", bangleBraceletDesc, 1 )
                        , (iBraceletBeaded, "beaded",        beadedBraceletDesc, 2 )
                        , (iBraceletCharm,  "charm",         charmBraceletDesc,  10)
                        , (iBraceletPearl,  "pearl",         pearlBraceletDesc,  4 ) ]
@@ -528,6 +528,7 @@ createWarehouse = do
           dfltParty))
 
   let skeletonCorpseWeight = round $ fromIntegral (calcCorpseWeight Human) * (0.15 :: Double)
+
   forM_ [ iSkeleton1, iSkeleton2, iSkeleton3 ] $ \i ->
       putNpc i
           (Ent i
@@ -679,7 +680,9 @@ createWarehouse = do
 
   -----
 
-  let potionIds = [ iPotInstantFp, iPotInstantHp, iPotInstantSt ]
+  let potionIds = [ iPotInstantFp
+                  , iPotInstantHp
+                  , iPotInstantSt ]
 
   putRm iPotionRm
       potionIds
