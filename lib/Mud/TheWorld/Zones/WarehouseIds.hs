@@ -187,27 +187,61 @@ iWaterskinLrg = 10316 :: Id
 
 -- Potions:
 
-iPotInstantHp = 10317 :: Id
+iPotHp = 10317 :: Id
 
-iPotInstantFp = 10318 :: Id
+iPotInstantHp = 10318 :: Id
 
-iPotInstantSt = 10319 :: Id
+iPotMp = 10319 :: Id
+
+iPotInstantMp = 10320 :: Id
+
+iPotPp = 10321 :: Id
+
+iPotInstantPp = 10322 :: Id
+
+iPotFp = 10323 :: Id
+
+iPotInstantFp = 10324 :: Id
+
+iPotSt = 10325 :: Id
+
+iPotInstantSt = 10326 :: Id
+
+iPotDx = 10327 :: Id
+
+iPotInstantDx = 10328 :: Id
+
+iPotHt = 10329 :: Id
+
+iPotInstantHt = 10330 :: Id
+
+iPotMa = 10331 :: Id
+
+iPotInstantMa = 10332 :: Id
+
+iPotPs = 10333 :: Id
+
+iPotInstantPs = 10334 :: Id
+
+iPotTinnitus = 10335 :: Id
+
+iPotInstantTinnitus = 10336 :: Id
 
 -----
 
 -- Weapons:
 
-iAxeSml = 10320 :: Id
+iAxeSml = 10337 :: Id
 
-iMace = 10321 :: Id
+iMace = 10338 :: Id
 
-iSpear = 10322 :: Id
+iSpear = 10339 :: Id
 
-iStaffQuarter = 10323 :: Id
+iStaffQuarter = 10340 :: Id
 
-iSwordBroad = 10324 :: Id
+iSwordBroad = 10341 :: Id
 
-iSwordShort = 10325 :: Id
+iSwordShort = 10342 :: Id
 
 -----
 

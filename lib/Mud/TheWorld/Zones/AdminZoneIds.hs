@@ -40,8 +40,6 @@ iObjCloset = 51 :: Id
 
 iCoinsCloset = 104 :: Id
 
-iConCloset = 105 :: Id
-
 iWpnCloset = 180 :: Id
 
 iVoid = 204 :: Id
@@ -123,12 +121,6 @@ iParchment3 = 57 :: Id
 iParchment4 = 58 :: Id
 
 iParchment5 = 59 :: Id
-
------
-
-iPotionFlask1 = 114 :: Id -- 20
-
-iPotionFlaskLrg1 = 134 :: Id -- 20
 
 -----
 

@@ -776,7 +776,6 @@ createAdminZone = do
             zeroBits
             [ StdLink    North     iWeightRm    1
             , StdLink    Northeast iObjCloset   1
-            , StdLink    South     iConCloset   1
             , StdLink    Southwest iWpnCloset   1
             , StdLink    Up        iCentral     1
             , NonStdLink "manhole" iVoid        1 "% climbs into the manhole." "% climbs out of the manhole." ]
@@ -844,21 +843,6 @@ createAdminZone = do
             (1, 1, -1)
             InsideEnv
             (Just "Objects")
-            M.empty [] []))
-  let vesselIds = [iPotionFlask1   ..iPotionFlask1    + 19] ++
-                  [iPotionFlaskLrg1..iPotionFlaskLrg1 + 19]
-  putRm iConCloset
-        vesselIds
-        mempty
-        (mkRm (RmTemplate "Container closet"
-            "This closet holds containers."
-            Nothing
-            Nothing
-            zeroBits
-            [ StdLink North iBasement 1 ]
-            (0, -1, -1)
-            InsideEnv
-            (Just "Containers")
             M.empty [] []))
   putRm iWpnCloset
         [ iSword1, iSword2, iLongSword, iClub, iKnife1, iKnife2 ]
@@ -1034,42 +1018,6 @@ createAdminZone = do
   putRmTeleName iInside    "test"
   putRmTeleName iLounge    "lounge"
   putRmTeleName iTrashDump "trash"
-
-  let flaskIds    = [ iPotionFlask1    + i | i <- [0..19] ]
-      flaskLrgIds = [ iPotionFlaskLrg1 + i | i <- [0..19] ]
-      flaskConts  = (++ repeat Nothing) . map (Just . (, maxBound)) $ [ potHpLiq, potInstantHpLiq
-                                                                      , potMpLiq, potInstantMpLiq
-                                                                      , potPpLiq, potInstantPpLiq
-                                                                      , potFpLiq, potInstantFpLiq
-                                                                      , potStLiq, potInstantStLiq
-                                                                      , potDxLiq, potInstantDxLiq
-                                                                      , potHtLiq, potInstantHtLiq
-                                                                      , potMaLiq, potInstantMaLiq
-                                                                      , potPsLiq, potInstantPsLiq ]
-  forM_ (zip flaskIds flaskConts) $ \(i, mc) ->
-      putVessel i
-                (Ent i
-                     (Just "flask")
-                     "potion flask" ""
-                     "This small, glass flask complete with cork stopper is the ideal vessel for potion storage and \
-                     \transportation."
-                     Nothing
-                     zeroBits)
-                (mkObj . ObjTemplate potionFlaskWeight potionFlaskVol Nothing $ zeroBits)
-                mc
-                Nothing
-  forM_ (zip flaskLrgIds flaskConts) $ \(i, mc) ->
-      putVessel i
-                (Ent i
-                     (Just "flask")
-                     "large potion flask" ""
-                     "This glass flask complete with cork stopper is the ideal vessel for potion storage and \
-                     \transportation."
-                     Nothing
-                     zeroBits)
-                (mkObj . ObjTemplate potionFlaskLrgWeight potionFlaskLrgVol Nothing $ zeroBits)
-                mc
-                Nothing
 
   -- ==================================================
   -- Weapons:

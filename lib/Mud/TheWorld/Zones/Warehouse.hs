@@ -16,6 +16,7 @@ import           Mud.TopLvlDefs.Weights
 import           Mud.Util.Misc
 import           Mud.Util.Text
 
+import           Control.Arrow (second)
 import           Control.Monad (forM_)
 import           Data.Bits (zeroBits)
 import qualified Data.Map.Strict as M (empty, fromList)
@@ -645,8 +646,10 @@ createWarehouse = do
           Nothing
           Nothing
 
-  mkWaterskin iWaterskin          Nothing
+  mkPotionFlask False iPotionFlask    Nothing
+  mkPotionFlask True  iPotionFlaskLrg Nothing
 
+  mkWaterskin iWaterskin          Nothing
   mkWaterskin iWaterskinWithWater (Just (waterLiq, maxBound))
 
   putVessel iWaterskinLrg
@@ -662,12 +665,29 @@ createWarehouse = do
 
   -----
 
-  let potionIds = [ iPotInstantFp
-                  , iPotInstantHp
-                  , iPotInstantSt ]
+  let potionTuples = [ (iPotHp,              potHpLiq             )
+                     , (iPotInstantHp,       potInstantHpLiq      )
+                     , (iPotMp,              potMpLiq             )
+                     , (iPotInstantMp,       potInstantMpLiq      )
+                     , (iPotPp,              potPpLiq             )
+                     , (iPotInstantPp,       potInstantPpLiq      )
+                     , (iPotFp,              potFpLiq             )
+                     , (iPotInstantFp,       potInstantFpLiq      )
+                     , (iPotSt,              potStLiq             )
+                     , (iPotInstantSt,       potInstantStLiq      )
+                     , (iPotDx,              potDxLiq             )
+                     , (iPotInstantDx,       potInstantDxLiq      )
+                     , (iPotHt,              potHtLiq             )
+                     , (iPotInstantHt,       potInstantHtLiq      )
+                     , (iPotMa,              potMaLiq             )
+                     , (iPotInstantMa,       potInstantMaLiq      )
+                     , (iPotPs,              potPsLiq             )
+                     , (iPotInstantPs,       potInstantPsLiq      )
+                     , (iPotTinnitus,        potTinnitusLiq       )
+                     , (iPotInstantTinnitus, potInstantTinnitusLiq) ]
 
   putRm iPotionRm
-      potionIds
+      (map fst potionTuples)
       mempty
       (mkRm (RmTemplate "Potions room"
           "This room holds vessels containing potions."
@@ -680,19 +700,7 @@ createWarehouse = do
           (Just "Potions")
           M.empty [] []))
 
-  let flaskConts = (++ repeat Nothing) . map (Just . (, maxBound)) $ [ potInstantHpLiq, potInstantFpLiq, potInstantStLiq ]
-
-  forM_ (zip potionIds flaskConts) $ \(i, mc) ->
-      putVessel i
-          (Ent i
-              (Just "flask")
-              "potion flask" ""
-              "This glass flask complete with cork stopper is the ideal vessel for potion storage and transportation."
-              Nothing
-              zeroBits)
-          (mkObj . ObjTemplate potionFlaskWeight potionFlaskVol Nothing $ zeroBits)
-          mc
-          Nothing
+  forM_ potionTuples $ uncurry (mkPotionFlask False) . second (Just . (, maxBound))
 
   -----
 
@@ -820,12 +828,28 @@ mkLeatherTaste a b = Just . T.concat $ [ "You chew on the "
                                        , " sweat." ]
 
 
+mkPotionFlask :: Bool -> Id -> Maybe VesselCont -> MudStack ()
+mkPotionFlask isLrg i mc = putVessel i
+    (Ent i
+        (Just "flask")
+        (onTrue isLrg ("large " <>) "potion flask") ""
+        ("This " <> t <> "glass flask complete with cork stopper is the ideal vessel for potion storage and transportation.")
+        Nothing
+        zeroBits)
+    (mkObj . ObjTemplate potionFlaskWeight potionFlaskVol Nothing $ zeroBits)
+    mc
+    Nothing
+  where
+    t | isLrg     = ""
+      | otherwise = "small, "
+
+
 mkWpnSmell :: Text -> Maybe Text
 mkWpnSmell t = Just $ "The head of the " <> t <> " smells like metal. The handle doesn't smell like much at all."
 
 
 mkWaterskin :: Id -> Maybe VesselCont -> MudStack ()
-mkWaterskin i l = putVessel i
+mkWaterskin i mc = putVessel i
     (Ent i
         (Just "waterskin")
         "waterskin" ""
@@ -833,7 +857,7 @@ mkWaterskin i l = putVessel i
         Nothing
         zeroBits)
     (mkObj . ObjTemplate waterskinWeight waterskinVol Nothing $ zeroBits)
-    l
+    mc
     Nothing
 
 
