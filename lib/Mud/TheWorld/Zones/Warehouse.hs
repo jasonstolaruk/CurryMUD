@@ -797,7 +797,8 @@ createWarehouse = do
       (Ent iSword
           (Just "sword")
           "sword" ""
-          "sword desc" -- TODO
+          "The sword has a straight blade and a pointed tip. The hilt is metal, with a generic, round pommel at the \
+          \top. It is a humble sword; there are no engravings or embellishments to speak of."
           swordSmell
           zeroBits)
       (mkObj . ObjTemplate swordWeight swordVol swordTaste $ zeroBits)
@@ -808,7 +809,7 @@ createWarehouse = do
           (Just "sword")
           "broadsword" ""
           "The blade of the broadsword is straight, double-edged, and pointed. It's about 3.5 feet long including the \
-          \handle. Although there's nothing extraordinary about the sword, it's a decent, solid weapon."
+          \hilt. Although there's nothing extraordinary about the sword, it's a decent, solid weapon."
           swordSmell
           zeroBits)
       (mkObj . ObjTemplate broadswordWeight broadswordVol swordTaste $ zeroBits)
