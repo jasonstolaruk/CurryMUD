@@ -8,57 +8,105 @@ import Mud.Data.State.MudData (Id)
 -- TODO: Renumber IDs.
 
 
--- Rooms:
-
 iWelcome = 1 :: Id
+
+-----
 
 iLoggedOut = 2 :: Id
 
+-----
+
 iEmpty = 3 :: Id
+
+-----
 
 iTrashDump = 4 :: Id
 
+-----
+
 iNecropolis = 5 :: Id
+
+-----
 
 iClone = 6 :: Id
 
+-----
+
 iCentral = 7 :: Id
+
+-----
 
 iHallwayWest = 8 :: Id
 
+-----
+
 iHallwayEast = 9 :: Id
+
+-----
 
 iAtrium = 10 :: Id
 
+-----
+
 iBasement = 11 :: Id
+
+-----
 
 iWeightRm = 12 :: Id
 
+-----
+
 iAttic = 30 :: Id
+
+-----
 
 iObjCloset = 51 :: Id
 
+-----
+
 iCoinsCloset = 104 :: Id
+
+-----
 
 iWpnCloset = 180 :: Id
 
+-----
+
 iVoid = 204 :: Id
+
+-----
 
 iTutEntrance = 205 :: Id
 
+-----
+
 iLoungeEntrance = 206 :: Id
+
+-----
 
 iLounge = 207 :: Id
 
+-----
+
 iInside = 218 :: Id
+
+-----
 
 iOutside = 219 :: Id
 
+-----
+
 iShop = 220 :: Id
+
+-----
 
 iSpecial = 221 :: Id
 
+-----
+
 iNoEnv = 222 :: Id
+
+-----
 
 iCottage = 223 :: Id
 
@@ -121,17 +169,3 @@ iParchment3 = 57 :: Id
 iParchment4 = 58 :: Id
 
 iParchment5 = 59 :: Id
-
------
-
-iSword1 = 181 :: Id
-
-iSword2 = 182 :: Id
-
-iLongSword = 183 :: Id
-
-iClub = 184 :: Id
-
-iKnife1 = 185 :: Id
-
-iKnife2 = 186 :: Id

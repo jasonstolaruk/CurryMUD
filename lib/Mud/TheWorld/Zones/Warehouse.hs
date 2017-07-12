@@ -709,6 +709,7 @@ createWarehouse = do
       , iMace
       , iSpear
       , iStaffQuarter
+      , iSword
       , iSwordBroad
       , iSwordShort ]
       mempty
@@ -733,6 +734,26 @@ createWarehouse = do
           (mkWpnSmell "axe")
           zeroBits)
       (mkObj . ObjTemplate axeSmlWeight axeSmlVol (mkWpnTaste "axe") $ zeroBits)
+      (Wpn OneHanded 1 10)
+
+  putWpn iClub
+      (Ent iClub
+          (Just "club")
+          "wooden club" ""
+          "It's a crude wooden club, the type a neanderthal might use to great effect."
+          Nothing
+          zeroBits)
+      (mkObj . ObjTemplate clubWeight clubVol Nothing $ zeroBits)
+      (Wpn OneHanded 1 10)
+
+  putWpn iKnife
+      (Ent iKnife
+          (Just "knife")
+          "utility knife" "utility knives"
+          "This small knife could be useful in a pinch."
+          Nothing
+          zeroBits)
+      (mkObj . ObjTemplate knifeWeight knifeVol Nothing $ zeroBits)
       (Wpn OneHanded 1 10)
 
   putWpn iMace
@@ -770,6 +791,16 @@ createWarehouse = do
        in mkObj . ObjTemplate quarterstaffWeight quarterstaffVol (Just taste) $ zeroBits)
       (Wpn TwoHanded 1 10)
 
+  putWpn iSword
+      (Ent iSword
+          (Just "sword")
+          "sword" ""
+          "" -- TODO
+          swordSmell
+          zeroBits)
+      (mkObj . ObjTemplate swordWeight swordVol Nothing $ zeroBits)
+      (Wpn OneHanded 1 10)
+
   putWpn iSwordBroad
       (Ent iSwordBroad
           (Just "sword")
@@ -779,6 +810,16 @@ createWarehouse = do
           swordSmell
           zeroBits)
       (mkObj . ObjTemplate broadswordWeight broadswordVol swordTaste $ zeroBits)
+      (Wpn OneHanded 1 10)
+
+  putWpn iSwordLong
+      (Ent iSwordLong
+          (Just "sword")
+          "longsword" ""
+          "" -- TODO
+          swordSmell
+          zeroBits)
+      (mkObj . ObjTemplate swordLongWeight swordLongVol Nothing $ zeroBits)
       (Wpn OneHanded 1 10)
 
   putWpn iSwordShort

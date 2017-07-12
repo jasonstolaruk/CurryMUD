@@ -1,4 +1,4 @@
-{-# LANGUAGE MultiWayIf, OverloadedStrings, RecordWildCards, TupleSections, ViewPatterns #-}
+{-# LANGUAGE MultiWayIf, OverloadedStrings, RecordWildCards, ViewPatterns #-}
 
 module Mud.TheWorld.Zones.AdminZone ( adminZoneHooks
                                     , adminZoneRmActionFuns
@@ -776,7 +776,6 @@ createAdminZone = do
             zeroBits
             [ StdLink    North     iWeightRm    1
             , StdLink    Northeast iObjCloset   1
-            , StdLink    Southwest iWpnCloset   1
             , StdLink    Up        iCentral     1
             , NonStdLink "manhole" iVoid        1 "% climbs into the manhole." "% climbs out of the manhole." ]
             (0, 0, -1)
@@ -843,19 +842,6 @@ createAdminZone = do
             (1, 1, -1)
             InsideEnv
             (Just "Objects")
-            M.empty [] []))
-  putRm iWpnCloset
-        [ iSword1, iSword2, iLongSword, iClub, iKnife1, iKnife2 ]
-        mempty
-        (mkRm (RmTemplate "Weapon closet"
-            "This closet holds weapons."
-            Nothing
-            Nothing
-            zeroBits
-            [ StdLink Northeast iBasement 1 ]
-            (-1, -1, -1)
-            InsideEnv
-            (Just "Weapons")
             M.empty [] []))
   let voidListen = Just "It's eerily silent here."
       voidSmell  = Just "Strangely, the air here is utterly devoid of scent."
@@ -1018,48 +1004,6 @@ createAdminZone = do
   putRmTeleName iInside    "test"
   putRmTeleName iLounge    "lounge"
   putRmTeleName iTrashDump "trash"
-
-  -- ==================================================
-  -- Weapons:
-  forM_ [ iSword1, iSword2 ] $ \i ->
-      putWpn i
-             (Ent i
-                  (Just "sword")
-                  "short sword" ""
-                   "It's a sword; short but still sharp!"
-                  Nothing
-                  zeroBits)
-             (mkObj . ObjTemplate swordWeight swordVol Nothing $ zeroBits)
-             (Wpn OneHanded 1 10)
-  putWpn iLongSword
-         (Ent iLongSword
-              (Just "sword")
-              "two-handed long sword" ""
-              "With the right technique, this bulky sword can do a great deal of damage."
-              Nothing
-              zeroBits)
-         (mkObj . ObjTemplate swordLongWeight swordLongVol Nothing $ zeroBits)
-         (Wpn TwoHanded 1 10)
-  putWpn iClub
-         (Ent iClub
-              (Just "club")
-              "wooden club" ""
-              "It's a crude wooden club, the type a neanderthal might use to great effect."
-              Nothing
-              zeroBits)
-         (mkObj . ObjTemplate clubWeight clubVol Nothing $ zeroBits)
-         (Wpn OneHanded 1 10)
-  let mkKnifeFlags i = onTrue (i == iKnife1) (`setBit` fromEnum IsHumming) zeroBits
-  forM_ [ iKnife1, iKnife2 ] $ \i ->
-      putWpn i
-             (Ent i
-                  (Just "knife")
-                  "utility knife" "utility knives"
-                  "This small knife could be useful in a pinch."
-                  Nothing
-                  zeroBits)
-             (mkObj . ObjTemplate knifeWeight knifeVol Nothing . mkKnifeFlags $ i)
-             (Wpn OneHanded 1 10)
 
   -- ==================================================
   -- Writables:
