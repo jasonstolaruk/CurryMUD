@@ -128,7 +128,6 @@ import           Mud.Misc.LocPref
 import qualified Mud.Misc.Logging as L (logNotice, logPla, logPlaOut)
 import           Mud.Misc.Misc
 import           Mud.Misc.NameResolution
-import           Mud.TheWorld.Zones.AdminZoneIds (iRoot)
 import           Mud.Threads.Act
 import           Mud.TopLvlDefs.Misc
 import           Mud.TopLvlDefs.Padding
@@ -205,7 +204,7 @@ alertMsgHelper i cn txt = getState >>= \ms -> if isAdminId i ms
                                    , dblQuote match
                                    , ": "
                                    , txt ]
-                 outIds = (iRoot `delete`) $ getAdminIds ms \\ getLoggedInAdminIds ms -- TODO: Root's ID can change.
+                 outIds = (getIdForRoot ms `delete`) $ getAdminIds ms \\ getLoggedInAdminIds ms
                  rec    = AlertMsgRec Nothing ts s cn match txt
              in do logNotice        fn   msg
                    logPla           fn i msg

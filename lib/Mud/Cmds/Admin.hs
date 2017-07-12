@@ -42,7 +42,7 @@ import           Mud.Misc.Misc
 import           Mud.Misc.Persist
 import           Mud.TheWorld.Foods
 import           Mud.TheWorld.Liqs
-import           Mud.TheWorld.Zones.AdminZoneIds (iLoggedOut, iNecropolis, iRoot, iWelcome)
+import           Mud.TheWorld.Zones.AdminZoneIds (iLoggedOut, iNecropolis, iWelcome)
 import           Mud.Threads.DbTblPurger
 import           Mud.TopLvlDefs.FilePaths
 import           Mud.TopLvlDefs.Misc
@@ -1369,7 +1369,7 @@ adminMsg   (MsgWithTarget i mq cols target msg) = getState >>= helper >>= (|#| m
               | isLoggedIn targetPla                     ->
                   let (targetMq, targetCols) = getMsgQueueColumns targetId ms
                       adminSings             = map snd . filter f . mkAdminIdSingList $ ms
-                      f (_, "Root")          = isAwake iRoot ms -- TODO: Root's ID can change.
+                      f (_, "Root")          = getIdForRoot ms `isAwake` ms
                       f _                    = True
                       me                     = head . filter g . styleAbbrevs Don'tQuote $ adminSings
                       g                      = (== s) . dropANSI

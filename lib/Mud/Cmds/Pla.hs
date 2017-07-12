@@ -556,7 +556,7 @@ alertExecHelper i mq cols cn target args = do
     let s          = getSing i ms
         targetSing = alertExecFindTargetSing i ms target
         msg        = T.concat [ s, " attempted to execute ", dblQuote cn, targetingMsg targetSing, " ", argsMsg, "." ]
-        outIds     = (iRoot `delete`) $ getAdminIds ms \\ getLoggedInAdminIds ms -- TODO: Root's ID can change.
+        outIds     = (getIdForRoot ms `delete`) $ getAdminIds ms \\ getLoggedInAdminIds ms
         rec        = AlertExecRec Nothing ts s cn targetSing args
     logNotice fn   msg
     logPla    fn i msg

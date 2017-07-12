@@ -51,6 +51,7 @@ module Mud.Data.State.Util.Get ( getActMap
                                , getHostMap
                                , getHps
                                , getIdForPCSing
+                               , getIdForRoot
                                , getInterp
                                , getIntroduced
                                , getInv
@@ -554,6 +555,10 @@ getIdForPCSing :: HasCallStack => Sing -> MudState -> Id
 getIdForPCSing s = views (pcSingTbl.at s) (fromMaybe oops)
   where
     oops = blowUp "getIdForPCSing" "PC sing not found in the PC sing table" s
+
+
+getIdForRoot :: HasCallStack => MudState -> Id
+getIdForRoot = getIdForPCSing "Root"
 
 
 -----
