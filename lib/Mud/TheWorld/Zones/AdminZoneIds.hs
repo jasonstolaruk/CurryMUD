@@ -5,14 +5,15 @@ module Mud.TheWorld.Zones.AdminZoneIds where
 import Mud.Data.State.MudData (Id)
 
 
--- TODO: Renumber IDs.
-
-
-iWelcome = 1 :: Id
+iWelcome = 0 :: Id
 
 -----
 
-iLoggedOut = 2 :: Id
+iLoggedOut = 1 :: Id
+
+-----
+
+iNecropolis = 2 :: Id
 
 -----
 
@@ -24,148 +25,114 @@ iTrashDump = 4 :: Id
 
 -----
 
-iNecropolis = 5 :: Id
+iClone = 5 :: Id
 
 -----
 
-iClone = 6 :: Id
+iCentral = 6 :: Id
 
 -----
 
-iCentral = 7 :: Id
+iHallwayWest = 7 :: Id
 
 -----
 
-iHallwayWest = 8 :: Id
+iHallwayEast = 8 :: Id
 
 -----
 
-iHallwayEast = 9 :: Id
+iAtrium = 9 :: Id
 
 -----
 
-iAtrium = 10 :: Id
+iBasement = 10 :: Id
 
 -----
 
-iBasement = 11 :: Id
+iWeightRm = 11 :: Id
+
+i190Lb = 12 :: Id
+
+i100Lb = 13 :: Id
+
+i75Lb = 14 :: Id
+
+i50Lb1 = 15 :: Id
+
+i50Lb2 = 16 :: Id
+
+i25Lb1 = 17 :: Id
+
+i25Lb2 = 18 :: Id
+
+i10Lb1 = 19 :: Id
+
+i10Lb2 = 20 :: Id
+
+i5Lb1 = 21 :: Id
+
+i5Lb2 = 22 :: Id
+
+i1Lb1 = 23 :: Id
+
+i1Lb2 = 24 :: Id
+
+i1Lb3 = 25 :: Id
+
+i1Lb4 = 26 :: Id
+
+i1Lb5 = 27 :: Id
+
+iSlab = 28 :: Id
 
 -----
 
-iWeightRm = 12 :: Id
+iAttic = 29 :: Id
+
+iCube1 = 30 :: Id -- 20
 
 -----
 
-iAttic = 30 :: Id
+iVoid = 50 :: Id
 
 -----
 
-iObjCloset = 51 :: Id
+iTutEntrance = 51 :: Id
 
 -----
 
-iCoinsCloset = 104 :: Id
+iLoungeEntrance = 52 :: Id
 
 -----
 
-iWpnCloset = 180 :: Id
+iLounge = 53 :: Id
 
 -----
 
-iVoid = 204 :: Id
+iInside = 54 :: Id
 
 -----
 
-iTutEntrance = 205 :: Id
+iOutside = 55 :: Id
 
 -----
 
-iLoungeEntrance = 206 :: Id
+iShop = 56 :: Id
 
 -----
 
-iLounge = 207 :: Id
+iSpecial = 57 :: Id
 
 -----
 
-iInside = 218 :: Id
+iNoEnv = 58 :: Id
 
 -----
 
-iOutside = 219 :: Id
+iCottage = 59 :: Id
 
 -----
 
-iShop = 220 :: Id
+iRoot = 60 :: Id
 
------
-
-iSpecial = 221 :: Id
-
------
-
-iNoEnv = 222 :: Id
-
------
-
-iCottage = 223 :: Id
-
------
-
-iRoot = 0 :: Id
-
-iCurry = 224 :: Id
-
------
-
-i190Lb = 13 :: Id
-
-i100Lb = 14 :: Id
-
-i75Lb = 15 :: Id
-
-i50Lb1 = 16 :: Id
-
-i50Lb2 = 17 :: Id
-
-i25Lb1 = 18 :: Id
-
-i25Lb2 = 19 :: Id
-
-i10Lb1 = 20 :: Id
-
-i10Lb2 = 21 :: Id
-
-i5Lb1 = 22 :: Id
-
-i5Lb2 = 23 :: Id
-
-i1Lb1 = 24 :: Id
-
-i1Lb2 = 25 :: Id
-
-i1Lb3 = 26 :: Id
-
-i1Lb4 = 27 :: Id
-
-i1Lb5 = 28 :: Id
-
-iSlab = 29 :: Id
-
------
-
-iCube1 = 31 :: Id -- 20
-
------
-
-iPaperSml = 54 :: Id
-
-iParchment1 = 55 :: Id
-
-iParchment2 = 56 :: Id
-
-iParchment3 = 57 :: Id
-
-iParchment4 = 58 :: Id
-
-iParchment5 = 59 :: Id
+iCurry = 61 :: Id

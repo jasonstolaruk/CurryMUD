@@ -774,10 +774,9 @@ createAdminZone = do
             (Just "The unmistakable scent of mildew fills your nostrils. This room really ought to be ventilated \
                   \better.")
             zeroBits
-            [ StdLink    North     iWeightRm    1
-            , StdLink    Northeast iObjCloset   1
-            , StdLink    Up        iCentral     1
-            , NonStdLink "manhole" iVoid        1 "% climbs into the manhole." "% climbs out of the manhole." ]
+            [ StdLink    North     iWeightRm 1
+            , StdLink    Up        iCentral  1
+            , NonStdLink "manhole" iVoid     1 "% climbs into the manhole." "% climbs out of the manhole." ]
             (0, 0, -1)
             InsideEnv
             Nothing
@@ -829,19 +828,6 @@ createAdminZone = do
             (0, 1, 0)
             InsideEnv
             (Just "Attic")
-            M.empty [] []))
-  putRm iObjCloset
-        [ iPaperSml, iParchment1, iParchment2, iParchment3, iParchment4, iParchment5 ]
-        mempty
-        (mkRm (RmTemplate "Object closet"
-            "This closet holds objects."
-            Nothing
-            Nothing
-            zeroBits
-            [ StdLink Southwest iBasement 1 ]
-            (1, 1, -1)
-            InsideEnv
-            (Just "Objects")
             M.empty [] []))
   let voidListen = Just "It's eerily silent here."
       voidSmell  = Just "Strangely, the air here is utterly devoid of scent."
@@ -1004,38 +990,3 @@ createAdminZone = do
   putRmTeleName iInside    "test"
   putRmTeleName iLounge    "lounge"
   putRmTeleName iTrashDump "trash"
-
-  -- ==================================================
-  -- Writables:
-  putWritable iPaperSml
-              (Ent iPaperSml
-                   (Just "paper")
-                   "small piece of paper" "small pieces of paper"
-                   "It's a rectangular piece of plain white paper."
-                   Nothing
-                   zeroBits)
-              (mkObj . ObjTemplate paperWeight paperVol Nothing $ zeroBits)
-              (Writable (Just ( "CurryMUD - A Multi-User Dungeon by Jason Stolaruk\n\
-                                \Copyright (c) 2013-2017 Jason Stolaruk and Detroit Labs LLC\n\
-                                \Version 0.1.0.0\n\
-                                \CurryMUD@gmail.com"
-                              , CommonLang ))
-                        Nothing)
-  let putParchment i = putWritable i
-                                   (Ent i
-                                        (Just "parchment")
-                                        "piece of parchment" "pieces of parchment"
-                                        "It's an everyday piece of parchment made from processed animal skin."
-                                        Nothing
-                                        zeroBits)
-                                   (mkObj . ObjTemplate paperWeight paperVol Nothing $ zeroBits)
-  putParchment iParchment1 (Writable Nothing Nothing)
-  putParchment iParchment2 (Writable (Just (thrice prd "You've lost it! You'll never get out of this maze", CommonLang))
-                                     Nothing)
-  putParchment iParchment3 (Writable (Just ("Whatever you do, take care of your shoes.", DwarfLang))
-                                     Nothing)
-  putParchment iParchment4 (Writable (Just ("An asteroid crashed and nothing burned. It made me wonder.", CommonLang))
-                                     (Just "Root"))
-  putParchment iParchment5 (Writable (Just ("Toss away stuff you don't need in the end, but keep what's important and \
-                                            \know who's your friend.", DwarfLang))
-                                     (Just "Root"))

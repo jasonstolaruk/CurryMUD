@@ -3,14 +3,14 @@ import Data.List
 import System.Directory
 
 main :: IO ()
-main = do writeFile  path' . unlines . snd . foldl' helper (10000, []) . lines =<< readFile path
+main = do writeFile  path' . unlines . snd . foldl' helper (0, []) . lines =<< readFile path
           copyFile   path' path
           removeFile path'
   where
     path' = path ++ "'"
 
 path :: FilePath
-path = "/Users/jasonstolaruk/CurryMUD/lib/Mud/TheWorld/Zones/WarehouseIds.hs"
+path = "/Users/jasonstolaruk/CurryMUD/lib/Mud/TheWorld/Zones/AdminZoneIds.hs"
 
 helper :: (Int, [String]) -> String -> (Int, [String])
 helper (x, ts) t | " :: Id" `isInfixOf` t = let w                  = last . words $ t

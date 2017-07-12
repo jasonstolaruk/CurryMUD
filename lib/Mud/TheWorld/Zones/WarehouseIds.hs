@@ -230,3 +230,5 @@ iSwordShort = 10345 :: Id
 -----
 
 iWritableRm = 10346 :: Id
+
+iParchment1 = 10347 :: Id -- 10

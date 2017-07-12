@@ -750,7 +750,7 @@ createWarehouse = do
       (Ent iKnife
           (Just "knife")
           "utility knife" "utility knives"
-          "This small knife could be useful in a pinch."
+          "This small knife doesn't make much of a weapon, but it could be useful in a pinch."
           Nothing
           zeroBits)
       (mkObj . ObjTemplate knifeWeight knifeVol Nothing $ zeroBits)
@@ -795,7 +795,7 @@ createWarehouse = do
       (Ent iSword
           (Just "sword")
           "sword" ""
-          "" -- TODO
+          "sword desc" -- TODO
           swordSmell
           zeroBits)
       (mkObj . ObjTemplate swordWeight swordVol Nothing $ zeroBits)
@@ -816,7 +816,7 @@ createWarehouse = do
       (Ent iSwordLong
           (Just "sword")
           "longsword" ""
-          "" -- TODO
+          "longsword desc" -- TODO
           swordSmell
           zeroBits)
       (mkObj . ObjTemplate swordLongWeight swordLongVol Nothing $ zeroBits)
@@ -847,6 +847,16 @@ createWarehouse = do
           InsideEnv
           (Just "Writables")
           M.empty [] []))
+
+  forM_ [ iParchment1..iParchment1 + 9 ] $ \i -> putWritable i
+      (Ent i
+          (Just "parchment")
+          "piece of parchment" "pieces of parchment"
+          "It's an everyday piece of parchment made from processed animal skin."
+          Nothing
+          zeroBits)
+      (mkObj . ObjTemplate paperWeight paperVol Nothing $ zeroBits)
+      (Writable Nothing Nothing)
 
   -----
 
