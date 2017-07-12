@@ -291,7 +291,7 @@ lookWallsHookName = "AdminZone_iEmpty_lookWalls"
 lookWallsHookFun :: HookFun
 lookWallsHookFun = mkGenericHookFun wallsDesc "looks at the walls." "looked at walls"
   where
-    wallsDesc = "You are enclosed by four stark, while walls, with no means of exit in sight."
+    wallsDesc = "You are enclosed by four stark, while walls, with no apparent means of exit."
 
 
 -----
@@ -334,14 +334,8 @@ readLookPosterHookFun = mkGenericHookFun posterDesc "reads the poster on the wal
   where
     posterDesc =
         "The poster reads:\n\
-        \WELCOME TO THE ADMIN ZONE - What is this place?\n\
-        \Greetings, admin! (You're an admin, aren't you? If not, what are you doing here?) Anyway, let me tell you \
-        \about this area. The Admin Zone was written incrementally during the early stages of CurryMUD development. \
-        \Whenever I came up with new core functionality, I'd need a way to test it. Often that meant tacking on a room \
-        \to this zone - the only zone that existed at the time. There was never any unifying theme for the Admin Zone, \
-        \just the notion that players would likely never step foot in it (hence the name). As such, it kind of has the \
-        \vibe of a makeshift fun house; in the very least, it's a restricted area where admins can hang out.\n\
-        \-Jason"
+        \WELCOME TO THE ADMIN ZONE\n\
+        \This is a restricted area where admins can hang out."
 
 
 -----
@@ -694,8 +688,8 @@ createAdminZone = do
             \electronic displays and control panels, used by the admins to monitor and supervise the daily operations \
             \of CurryMUD.\n\
             \There is a large poster on the wall.\n\
-            \A spiral staircase leads down, while a door opens to a hallway leading east. A trash bin sits adjacent \
-            \to the spiral staircase."
+            \Near the center of the room, a spiral staircase leads down. A trash bin sits adjacent to the stairs. To \
+            \the east a door opens to a hallway."
             (Just "The cooling fans spinning inside the control panels give off a soothing, whirring sound.")
             (Just "You vaguely detect the chemical scents of plastic and cleaning solutions.")
             zeroBits
@@ -764,13 +758,13 @@ createAdminZone = do
             [ beeBuzzRmFunName ]))
   putRm iBasement
         []
-        (Coins (1000, 1000, 1000))
+        mempty
         (mkRm (RmTemplate "Basement"
-            "This dusty, unfinished basement smells of mold. You spot several cobwebs hanging from the ceiling.\n\
-            \Eight doors are positioned about the round, stucco wall at even intervals. A spiral staircase leads up. \
-            \Next to the staircase lies an open manhole.\n\
-            \There is a sign affixed to a stand in the center of the round room."
-            Nothing
+            "You are in a dusty, unfinished basement room with round, stucco walls. It smells of mold, and you spot \
+            \several old cobwebs hanging from the ceiling.\n\
+            \There is a single door to the north. Near the center of the room, a spiral staircase leads up. Next to the \
+            \staircase lies an open manhole."
+            (Just "There is a lone cricket chirping hesitantly.")
             (Just "The unmistakable scent of mildew fills your nostrils. This room really ought to be ventilated \
                   \better.")
             zeroBits
@@ -803,9 +797,9 @@ createAdminZone = do
         mempty
         (mkRm (RmTemplate "Weight room"
             "Feel free to lift some weights and work out!\n\
-            \There is a ladder leading up through a hole in the ceiling."
+            \There is a narrow ladder leading up through an elliptical hole in the ceiling."
             Nothing
-            Nothing
+            (Just "There is a lingering scent of sweat and body odor.")
             zeroBits
             [ StdLink    South iBasement 1
             , NonStdLink "u"   iAttic    1 "% climbs up the ladder and into the hole in the ceiling."
@@ -816,10 +810,10 @@ createAdminZone = do
             M.empty [] []))
   putRm iAttic
         [iCube1..iCube1 + 19]
-        mempty
+        (Coins (1000, 1000, 1000))
         (mkRm (RmTemplate "Attic"
             "Though the confined attic is dusty, its cozy atmosphere creates an oddly welcoming space.\n\
-            \There is a hole in the floor with a ladder leading down."
+            \There is an elliptical hole in the floor through which a narrow ladder leads down."
             (Just . thrice prd $ "Is that the soft squeak of a mouse you hear? Maybe you're just hearing things")
             (Just "The air here is dusty and a little stale, though not stifling.")
             zeroBits
@@ -889,7 +883,7 @@ createAdminZone = do
         mempty
         (mkRm (RmTemplate "Admin lounge"
             "Welcome, admin! This is your private space where you can relax and take it easy."
-            Nothing
+            (Just . thrice prd $ "You can almost hear the crackle of a fire")
             (Just "There is a lingering scent of pipe tobacco in the air.")
             zeroBits
             [ NonStdLink "out" iLoungeEntrance 1 "% exits the lounge." "% exits the lounge." ]
