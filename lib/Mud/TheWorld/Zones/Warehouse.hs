@@ -26,7 +26,6 @@ import qualified Data.Text as T
 
 
 -- TODO: Review your descriptions.
--- TODO: Some things lack smell and taste.
 
 
 logNotice :: Text -> Text -> MudStack ()
@@ -410,9 +409,9 @@ createWarehouse = do
               (Just "back")
               (t <> "backpack") ""
               "The sturdy backpack is made of leather."
-              Nothing
+              (mkLeatherSmell "backpack")
               zeroBits)
-          (mkObj . ObjTemplate w v Nothing $ zeroBits)
+          (mkObj . ObjTemplate w v (mkLeatherTaste "backpack") $ zeroBits)
           []
           mempty
           (Just Backpack)
@@ -430,8 +429,7 @@ createWarehouse = do
               "The durable sack is made from a coarse, woven fabric."
               (Just "The sack smells like burlap. It's a bit reminiscent of the smell of a barn or a farmyard.")
               zeroBits)
-          (let taste = thrice prd "Munching on the sack, you experience firsthand the earthy taste of burlap. You begin \
-                                  \to suspect the taste could linger in your mouth for some time"
+          (let taste = "Munching on the sack, you experience firsthand the earthy taste of burlap."
            in mkObj . ObjTemplate w v (Just taste) $ zeroBits)
           []
           mempty
@@ -742,9 +740,10 @@ createWarehouse = do
           (Just "club")
           "wooden club" ""
           "It's a crude wooden club, the type a neanderthal might use to great effect."
-          Nothing
+          (Just "The club smells like wood.")
           zeroBits)
-      (mkObj . ObjTemplate clubWeight clubVol Nothing $ zeroBits)
+      (let taste = "You lick the club so as to discern its taste. It has a somewhat woody flavor."
+       in mkObj . ObjTemplate clubWeight clubVol (Just taste) $ zeroBits)
       (Wpn OneHanded 1 10)
 
   putWpn iKnife
@@ -754,7 +753,9 @@ createWarehouse = do
           "This small knife doesn't make much of a weapon, but it could be useful in a pinch."
           Nothing
           zeroBits)
-      (mkObj . ObjTemplate knifeWeight knifeVol Nothing $ zeroBits)
+      (let taste = "You don't dare taste the blade: you'd certainly cut up your mouth and tongue! You decide to lick \
+                   \the handle instead. It tastes a little salty."
+       in mkObj . ObjTemplate knifeWeight knifeVol (Just taste) $ zeroBits)
       (Wpn OneHanded 1 10)
 
   putWpn iMace
@@ -799,7 +800,7 @@ createWarehouse = do
           "sword desc" -- TODO
           swordSmell
           zeroBits)
-      (mkObj . ObjTemplate swordWeight swordVol Nothing $ zeroBits)
+      (mkObj . ObjTemplate swordWeight swordVol swordTaste $ zeroBits)
       (Wpn OneHanded 1 10)
 
   putWpn iSwordBroad
@@ -820,7 +821,7 @@ createWarehouse = do
           "longsword desc" -- TODO
           swordSmell
           zeroBits)
-      (mkObj . ObjTemplate swordLongWeight swordLongVol Nothing $ zeroBits)
+      (mkObj . ObjTemplate swordLongWeight swordLongVol swordTaste $ zeroBits)
       (Wpn OneHanded 1 10)
 
   putWpn iSwordShort
