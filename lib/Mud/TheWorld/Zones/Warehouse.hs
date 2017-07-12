@@ -86,7 +86,7 @@ createWarehouse = do
           "These rugged, sturdy boots make excellent footwear for traveling across a variety of terrain."
           (mkLeatherSmell "boots smell")
           zeroBits)
-      (mkObj . ObjTemplate bootsWeight bootsVol (mkLeatherTaste "boots" "foot") $ zeroBits)
+      (mkObj . ObjTemplate bootsWeight bootsVol (mkLeatherTasteSalty "boots" "foot") $ zeroBits)
       (Arm Feet 1)
 
   putArm iBootsThigh
@@ -117,7 +117,7 @@ createWarehouse = do
           "This soft leather helmet covers the skull, providing moderate protection."
           (mkLeatherSmell "helmet smells")
           zeroBits)
-      (mkObj . ObjTemplate helmLeatherWeight helmLeatherVol (mkLeatherTaste "helmet" "head") $ zeroBits)
+      (mkObj . ObjTemplate helmLeatherWeight helmLeatherVol (mkLeatherTasteSalty "helmet" "head") $ zeroBits)
       (Arm Head 1)
 
   putArm iSandalsLeather
@@ -128,7 +128,7 @@ createWarehouse = do
           \soles of your feet."
           (mkLeatherSmell "sandals smell")
           zeroBits)
-      (mkObj . ObjTemplate sandalsWeight sandalsVol (mkLeatherTaste "sandals" "foot") $ zeroBits)
+      (mkObj . ObjTemplate sandalsWeight sandalsVol (mkLeatherTasteSalty "sandals" "foot") $ zeroBits)
       (Arm Feet 1)
 
   -----
@@ -164,9 +164,10 @@ createWarehouse = do
           (Just "apron")
           "heavy brown apron" ""
           "This sturdy padded utility apron provides adequate protection while its wearer labors and toils."
-          Nothing
+          (Just "The apron smells like the cloth from which its padding is constructed.")
           zeroBits)
-      (mkObj . ObjTemplate apronHeavyWeight apronHeavyVol Nothing $ zeroBits)
+      (let taste = "You put the apron in your mouth. You wisely conclude that it tastes like cloth."
+       in mkObj . ObjTemplate apronHeavyWeight apronHeavyVol (Just taste) $ zeroBits)
       Smock
 
   putCloth iApronLeather
@@ -174,9 +175,9 @@ createWarehouse = do
           (Just "apron")
           "leather apron" ""
           "This heavy apron, though bulky, is a must for those who undertake dirty and dangerous chores."
-          Nothing
+          (mkLeatherSmell "apron")
           zeroBits)
-      (mkObj . ObjTemplate apronHeavyWeight apronHeavyVol Nothing $ zeroBits)
+      (mkObj . ObjTemplate apronHeavyWeight apronHeavyVol (mkLeatherTaste "apron") $ zeroBits)
       Smock
 
   putCloth iBreeches
@@ -185,9 +186,9 @@ createWarehouse = do
           "pair of knee-length yellow breeches" "pairs of knee-length yellow breeches"
           "These thin, tight-fitting breeches extend just past the knees, where short drawstrings allow them to be \
           \neatly secured to the legs."
-          Nothing
+          (mkFabricSmell False "breeches")
           zeroBits)
-      (mkObj . ObjTemplate trousersWeight trousersVol Nothing $ zeroBits)
+      (mkObj . ObjTemplate trousersWeight trousersVol (mkFabricTaste False "breeches") $ zeroBits)
       Trousers
 
   putCloth iChemise
@@ -196,9 +197,9 @@ createWarehouse = do
           "fine white chemise" ""
           "This voluminous frock, worn on the upper body, is fashioned out of thin, smooth linen. It hangs just below \
           \the waist while its loose-cut, wide sleeves are elbow length."
-          Nothing
+          (mkFabricSmell True "chemise")
           zeroBits)
-      (mkObj . ObjTemplate shirtWeight shirtVol Nothing $ zeroBits)
+      (mkObj . ObjTemplate shirtWeight shirtVol (mkFabricTaste True "chemise") $ zeroBits)
       Shirt
 
   putCloth iCoatFrock
@@ -208,9 +209,9 @@ createWarehouse = do
           "This fashionable long-sleeved coat is made of soft, bright-red fabric decorated with a fine, rich floral \
           \brocade. Six black buttons from the collar down the chest, when fastened, make this a particularly \
           \figure-flattering garment."
-          Nothing
+          (mkFabricSmell True "coat")
           zeroBits)
-      (mkObj . ObjTemplate coatWeight coatVol Nothing $ zeroBits)
+      (mkObj . ObjTemplate coatWeight coatVol (mkFabricTaste True "coat") $ zeroBits)
       Coat
 
   putCloth iCoatGrey
@@ -219,9 +220,9 @@ createWarehouse = do
           "mouse-grey coat" ""
           "Sure to keep its wearer warm in all but the coldest of weather, this heavy, long-sleeved coat reaches the \
           \knees, and features a tall collar followed by ten large silver buttons along its length."
-          Nothing
+          (mkFabricSmell True "coat")
           zeroBits)
-      (mkObj . ObjTemplate coatHeavyWeight coatHeavyVol Nothing $ zeroBits)
+      (mkObj . ObjTemplate coatHeavyWeight coatHeavyVol (mkFabricTaste True "coat") $ zeroBits)
       Coat
 
   putCloth iOveralls
@@ -229,9 +230,9 @@ createWarehouse = do
           (Just "overalls")
           "pair of many-pocketed brown overalls" "pairs of many-pocketed brown overalls"
           "These durable overalls are adorned with a multitude of little pockets."
-          Nothing
+          (mkFabricSmell False "overalls")
           zeroBits)
-      (mkObj . ObjTemplate overallsWeight overallsVol Nothing $ zeroBits)
+      (mkObj . ObjTemplate overallsWeight overallsVol (mkFabricTaste False "overalls") $ zeroBits)
       Trousers
 
   putCloth iShirtPeasant
@@ -240,9 +241,9 @@ createWarehouse = do
           "white peasant's shirt" ""
           "This shirt, favored by skilled laborers and lowly bumpkins alike, represents the epitome of function over \
           \fashion."
-          Nothing
+          (mkFabricSmell True "shirt")
           zeroBits)
-      (mkObj . ObjTemplate shirtWeight shirtVol Nothing $ zeroBits)
+      (mkObj . ObjTemplate shirtWeight shirtVol (mkFabricTaste True "shirt") $ zeroBits)
       Shirt
 
   putCloth iTabard
@@ -252,9 +253,9 @@ createWarehouse = do
           "This sleeveless overgarment is open at both sides and extends down to the thigh. Dyed a deep shade of blue, \
           \a contrasting bright orange trim adds a distinct accent along the hems. There is a short collar around the \
           \neck complete with a small decorative yellow bowtie."
-          Nothing
+          (mkFabricSmell True "tabard")
           zeroBits)
-      (mkObj . ObjTemplate tabardWeight tabardVol Nothing $ zeroBits)
+      (mkObj . ObjTemplate tabardWeight tabardVol (mkFabricTaste True "tabard") $ zeroBits)
       Smock
 
   putCloth iTrousers
@@ -263,9 +264,9 @@ createWarehouse = do
           "pair of baggy beige trousers" "pairs of baggy beige trousers"
           "These wool trousers are loose-fitting so as to grant uninhibited movement. A rugged hemp drawstring allows \
           \them to be snugly tightened at the waist."
-          Nothing
+          (mkFabricSmell False "trousers")
           zeroBits)
-      (mkObj . ObjTemplate trousersBaggyWeight trousersBaggyVol Nothing $ zeroBits)
+      (mkObj . ObjTemplate trousersBaggyWeight trousersBaggyVol (mkFabricTaste False "trousers") $ zeroBits)
       Trousers
 
   putCloth iTunic
@@ -274,9 +275,9 @@ createWarehouse = do
           "cobalt blue wool tunic" ""
           "This heavy wool tunic is waist length and short-sleeved. Decorative white embroidery along the neck, \
           \sleeves, and waist adds an eye-catching touch."
-          Nothing
+          (mkFabricSmell True "tunic")
           zeroBits)
-      (mkObj . ObjTemplate tunicHeavyWeight tunicHeavyVol Nothing $ zeroBits)
+      (mkObj . ObjTemplate tunicHeavyWeight tunicHeavyVol (mkFabricTaste True "tunic") $ zeroBits)
       Shirt
 
   -----
@@ -867,16 +868,34 @@ createWarehouse = do
 -- Zone definition helper functions:
 
 
+type IsSing = Bool
+
+
+mkFabricSmell :: IsSing -> Text -> Maybe Text
+mkFabricSmell b t = Just . T.concat $ [ "The ", t, " smell", sOnTrue b, " like fabric." ]
+
+
+mkFabricTaste :: IsSing -> Text -> Maybe Text
+mkFabricTaste b t = Just . T.concat $ [ "You munch on the ", t, ". ", txt, " taste", sOnTrue b, " like fabric." ]
+  where
+    txt | b         = "It"
+        | otherwise = "They"
+
+
 mkLeatherSmell :: Text -> Maybe Text
-mkLeatherSmell t = Just $ "The " <> t <> " like leather, and not much else."
+mkLeatherSmell t = Just $ "The " <> t <> " smells like leather, and not much else."
 
 
-mkLeatherTaste :: Text -> Text -> Maybe Text
-mkLeatherTaste a b = Just . T.concat $ [ "You chew on the "
-                                       , a
-                                       , ". The leather tastes a bit salty. Probably from "
-                                       , b
-                                       , " sweat." ]
+mkLeatherTaste :: Text -> Maybe Text
+mkLeatherTaste t = Just $ "You chew on the " <> t <> ". It tastes like leather."
+
+
+mkLeatherTasteSalty :: Text -> Text -> Maybe Text
+mkLeatherTasteSalty a b = Just . T.concat $ [ "You chew on the "
+                                            , a
+                                            , ". The leather tastes a bit salty. Probably from "
+                                            , b
+                                            , " sweat." ]
 
 
 mkPotionFlask :: Bool -> Id -> Maybe VesselCont -> MudStack ()
