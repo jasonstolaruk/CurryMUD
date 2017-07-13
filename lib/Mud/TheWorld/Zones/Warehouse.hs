@@ -819,11 +819,12 @@ createWarehouse = do
       (Ent iSwordLong
           (Just "sword")
           "longsword" ""
-          "longsword desc" -- TODO
+          "The longsword is a big weapon: not only is the straight blade long, but the hilt is lengthy enough to \
+          \accommodate the required two hands. Despite its size, the sword is well balanced and not particularly heavy."
           swordSmell
           zeroBits)
       (mkObj . ObjTemplate swordLongWeight swordLongVol swordTaste $ zeroBits)
-      (Wpn OneHanded 1 10)
+      (Wpn TwoHanded 1 10)
 
   putWpn iSwordShort
       (Ent iSwordShort
