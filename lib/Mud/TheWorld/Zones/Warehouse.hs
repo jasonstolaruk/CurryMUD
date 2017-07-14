@@ -163,7 +163,7 @@ createWarehouse = do
           (Just "apron")
           "heavy brown apron" ""
           "This sturdy padded utility apron provides adequate protection while its wearer labors and toils."
-          (Just "The apron smells like the cloth from which its padding is constructed.")
+          (Just "The apron smells like the layered cloth from which its padding is constructed.")
           zeroBits)
       (let taste = "You put the apron in your mouth. You wisely conclude that it tastes like cloth."
        in mkObj . ObjTemplate apronHeavyWeight apronHeavyVol (Just taste) $ zeroBits)
@@ -174,7 +174,7 @@ createWarehouse = do
           (Just "apron")
           "leather apron" ""
           "This heavy apron, though bulky, is a must for those who undertake dirty and dangerous chores."
-          (mkLeatherSmell "apron")
+          (mkLeatherSmell "apron smells")
           zeroBits)
       (mkObj . ObjTemplate apronHeavyWeight apronHeavyVol (mkLeatherTaste "apron") $ zeroBits)
       Smock
@@ -409,7 +409,7 @@ createWarehouse = do
               (Just "back")
               (t <> "backpack") ""
               "The sturdy backpack is made of leather."
-              (mkLeatherSmell "backpack")
+              (mkLeatherSmell "backpack smells")
               zeroBits)
           (mkObj . ObjTemplate w v (mkLeatherTaste "backpack") $ zeroBits)
           []
@@ -839,7 +839,7 @@ createWarehouse = do
   -----
 
   putRm iWritableRm
-      []
+      [ iParchment1..iParchment1 + 9 ]
       mempty
       (mkRm (RmTemplate "Writables room"
           "This room holds writables."
@@ -857,7 +857,7 @@ createWarehouse = do
           (Just "parchment")
           "piece of parchment" "pieces of parchment"
           "It's an everyday piece of parchment made from processed animal skin."
-          Nothing
+          Nothing -- Ancient parchment did not have a smell.
           zeroBits)
       (mkObj . ObjTemplate paperWeight paperVol Nothing $ zeroBits)
       (Writable Nothing Nothing)
@@ -886,7 +886,7 @@ mkFabricTaste b t = Just . T.concat $ [ "You munch on the ", t, ". ", txt, " tas
 
 
 mkLeatherSmell :: Text -> Maybe Text
-mkLeatherSmell t = Just $ "The " <> t <> " smells like leather and not much else."
+mkLeatherSmell t = Just $ "The " <> t <> " like leather and not much else."
 
 
 mkLeatherTaste :: Text -> Maybe Text
