@@ -301,8 +301,8 @@ createWarehouse = do
                            \instruments."
       bangleBraceletDesc = "The bangle bracelet is made of smooth, polished wood stained an earthy shade of brown. It's \
                            \about half an inch wide."
-      beadedBraceletDesc = "This classic bracelet consist of small, spherical wooden beads, alternating black and \
-                           \white in color."
+      beadedBraceletDesc = "This classic bracelet consists of small, spherical wooden beads alternating black and white \
+                           \in color."
       pearlBraceletDesc  = "Lustrous white pearls are strung together to make an eye-catching, fashionable accessory."
 
       braceletTuples = [ (iBraceletBangle, "wooden bangle", bangleBraceletDesc, 1 )
@@ -347,7 +347,7 @@ createWarehouse = do
           (Ent i
               (Just "necklace")
               (t <> " necklace") ""
-              ("It's a simple " <> t <> " chain.")
+              ("It's an artless " <> t <> " chain fashioned out of tiny rectangular links.")
               Nothing
               zeroBits)
           (mkObj . ObjTemplate neckWeight neckVol Nothing $ zeroBits)
@@ -357,7 +357,7 @@ createWarehouse = do
       (Ent iNoseRing
           (Just "nose")
           "nose ring" ""
-          "It's a plain copper stud intended to be worn on the nose."
+          "It's a round copper stud intended to be worn on the nose."
           Nothing
           zeroBits)
       (mkObj . ObjTemplate noseWeight noseVol Nothing $ zeroBits)
@@ -373,7 +373,7 @@ createWarehouse = do
           (Ent i
               (Just "ring")
               (t <> " ring") ""
-              ("It's a simple copper band prominently featuring a beautiful " <> t <> " stone.")
+              ("A simple copper band prominently features a beautiful " <> t <> " stone.")
               Nothing
               zeroBits)
           (mkObj . ObjTemplate ringWeight ringVol Nothing $ zeroBits)
