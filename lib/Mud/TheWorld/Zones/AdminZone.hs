@@ -229,7 +229,7 @@ mkFlower i v = modifyStateSeq $ \ms -> let et = EntTemplate (Just "flower")
     (desc, smell, taste) = rndmIntToElem (V.head v) tuples
     tuples = [ ( "It's a fragrant daffodil sporting a collar of white petals."
                , "The powerful fragrance of the daffodil is nearly intoxicating."
-               , "The petals have a pleasant, floral taste. You could garnish a salad with these." )
+               , "The petals have a pleasant floral taste. You could garnish a salad with these." )
              , ( "It's a hardy hibiscus with pink-tinged pedals surrounding a distinctly red center."
                , "The beautiful hibiscus gives off a mildly sweet fragrance."
                , "The petals have a somewhat spicy, somewhat sour taste." )
@@ -390,7 +390,7 @@ readLookSign_iTutEntranceHookFun :: HookFun
 readLookSign_iTutEntranceHookFun = mkGenericHookFun signDesc "reads the sign floating above the portal." "read sign"
   where
     signDesc = "The sign reads, \"Tutorial this way. No re-entry!\"\n\
-               \A small, square piece of paper has been nailed to the bottom-right corner of the sign. There is a \
+               \A small square piece of paper has been nailed to the bottom-right corner of the sign. There is a \
                \number written on it... and the number appears to be changing!"
 
 
@@ -408,7 +408,7 @@ smellFlowerbedHookName = "AdminZone_iAtrium_smellFlowerbed"
 smellFlowerbedHookFun :: HookFun
 smellFlowerbedHookFun = mkGenericHookFun smellDesc "smells the flowerbed." "smelled flowerbed"
   where
-    smellDesc = "You are greeted by the gentle, organic scents of florets and soil."
+    smellDesc = "You are greeted by the gentle organic scents of florets and soil."
 
 
 -- ==================================================
@@ -539,7 +539,7 @@ createAdminZone = do
              (Ent i
                   (Just "cube")
                   "cube" ""
-                  "The solid, white cube measures 6\" x 6\" x 6\"."
+                  "The solid white cube measures 6\" x 6\" x 6\"."
                   Nothing
                   zeroBits)
              (mkObj . ObjTemplate cubeWeight cubeVol Nothing $ zeroBits)
@@ -642,7 +642,7 @@ createAdminZone = do
         []
         mempty
         (mkRm (RmTemplate "The empty room"
-            "This small, square room is strikingly barren. There doesn't appear to be a door or any means of exit. \
+            "This small square room is strikingly barren. There doesn't appear to be a door or any means of exit. \
             \Notably, there is a small wooden sign affixed to the north wall."
             Nothing
             (Just "On account of there being no ventilation to speak of, the air here is markedly stale and stuffy.")
@@ -684,13 +684,13 @@ createAdminZone = do
         []
         mempty
         (mkRm (RmTemplate "Central control room"
-            "Welcome to the heart of the machine! Sprawled about this dome-shaped, white room is a cluster of \
-            \electronic displays and control panels, used by the admins to monitor and supervise the daily operations \
+            "Welcome to the heart of the machine! Sprawled about this white, dome-shaped room is a cluster of \
+            \electronic displays and control panels used by the admins to monitor and supervise the daily operations \
             \of CurryMUD.\n\
             \There is a large poster on the wall.\n\
             \Near the center of the room, a spiral staircase leads down. A trash bin sits adjacent to the stairs. To \
             \the east a door opens to a hallway."
-            (Just "The cooling fans spinning inside the control panels give off a soothing, whirring sound.")
+            (Just "The cooling fans spinning inside the control panels give off a soothing whirring sound.")
             (Just "You vaguely detect the chemical scents of plastic and cleaning solutions.")
             zeroBits
             [ StdLink Down iBasement    1
@@ -742,7 +742,7 @@ createAdminZone = do
             \benches.\n\
             \An opening in the west wall leads out into a hallway."
             (Just "You hear the sound of trees blowing in the breeze coming through the opening in the ceiling.")
-            (Just "The scent of fresh air wafting in from the ceiling combines the with sweet, grassy smells of the \
+            (Just "The scent of fresh air wafting in from the ceiling combines the with sweet grassy smells of the \
                   \flowerbed.")
             zeroBits
             [ StdLink West iHallwayEast 1 ]
@@ -760,7 +760,7 @@ createAdminZone = do
         []
         mempty
         (mkRm (RmTemplate "Basement"
-            "You are in a dusty, unfinished basement room with round, stucco walls. It smells of mold, and you spot \
+            "You are in a dusty, unfinished basement room with round stucco walls. It smells of mold, and you spot \
             \several old cobwebs hanging from the ceiling.\n\
             \There is a single door to the north. Near the center of the room, a spiral staircase leads up. Next to the \
             \staircase lies an open manhole."
@@ -829,7 +829,7 @@ createAdminZone = do
         []
         mempty
         (mkRm (RmTemplate "The void"
-            "You have stumbled into a vast, empty space. You are floating.\n\
+            "You have stumbled into a vast empty space. You are floating.\n\
             \An open manhole hovers above you. You see a colorful round shape some distance off to the north, while to \
             \the south a door floats innocuously."
             voidListen

@@ -299,9 +299,9 @@ createWarehouse = do
           (Just "Accessories")
           M.empty [] []))
 
-  let charmBraceletDesc  = "The bracelet is adorned with a variety of quaint charms in the shape of musical \
-                           \instruments, fashioned out of pewter."
-      bangleBraceletDesc = "The bangle bracelet is made of smooth polished wood, stained an earthy shade of brown, and \
+  let charmBraceletDesc  = "The bracelet is adorned with a variety of quaint pewter charms in the shape of musical \
+                           \instruments."
+      bangleBraceletDesc = "The bangle bracelet is made of smooth, polished wood stained an earthy shade of brown. It's \
                            \about half an inch wide."
       beadedBraceletDesc = "This classic bracelet consist of small, spherical wooden beads, alternating black and \
                            \white in color."
@@ -426,7 +426,7 @@ createWarehouse = do
           (Ent i
               (Just "sack")
               (t <> "sack") ""
-              "The durable sack is made from a coarse, woven fabric."
+              "The durable sack is made from a coarse woven fabric."
               (Just "The sack smells like burlap. It's a bit reminiscent of the smell of a barn or a farmyard.")
               zeroBits)
           (let taste = "Munching on the sack, you experience firsthand the earthy taste of burlap."
@@ -505,7 +505,7 @@ createWarehouse = do
       (Ent iPidge
           (Just "pidge")
           "Pidge" ""
-          "Pidge is a female hobbit with walnut-colored skin and large, brown eyes. She wears her silver-white hair in \
+          "Pidge is a female hobbit with walnut-colored skin and large brown eyes. She wears her silver-white hair in \
           \shoulder-length pigtails. Her small, round face is positively adorable."
           Nothing
           zeroBits)
@@ -533,7 +533,7 @@ createWarehouse = do
       (Ent iSkeleton
           (Just "skeleton")
           "undead skeleton" ""
-          "This mindless, bipedal skeleton has been animated and tasked with doing its master's bidding."
+          "This mindless bipedal skeleton has been animated and tasked with doing its master's bidding."
           Nothing
           zeroBits)
       []
@@ -638,7 +638,7 @@ createWarehouse = do
           (Ent i
               (Just "jug")
               (t <> "jug") ""
-              "While capable of containing a large amount of liquid, this corked, ceramic jug is rather cumbersome."
+              "While capable of containing a large amount of liquid, this corked ceramic jug is rather cumbersome."
               Nothing
               zeroBits)
           (mkObj . ObjTemplate w v Nothing $ zeroBits)
@@ -778,7 +778,7 @@ createWarehouse = do
           (Just "You keep your nose clear of the blade and sniff the handle instead. There is no detectable smell.")
           zeroBits)
       (let taste = "You don't dare taste the blade: you'd certainly cut up your mouth and tongue! You decide to lick \
-                   \the polished, wooden handle instead. Sadly, it doesn't taste like much at all."
+                   \the polished wooden handle instead. Sadly, it doesn't taste like much at all."
        in mkObj . ObjTemplate spearWeight spearVol (Just taste) $ zeroBits)
       (Wpn OneHanded 1 10)
 
@@ -786,7 +786,7 @@ createWarehouse = do
       (Ent iStaffQuarter
           (Just "staff")
           "quarterstaff" "quarterstaves"
-          "The quarterstaff is a balanced, wooden pole, about 5 feet long and wielded with two hands."
+          "The quarterstaff is a balanced wooden pole, about 5 feet long and wielded with two hands."
           (Just "The polished wood of the quarterstaff doesn't have a detectable smell.")
           zeroBits)
       (let taste = "You lick the end of the quarterstaff. If anything, it might taste a little grimy."
@@ -797,7 +797,7 @@ createWarehouse = do
       (Ent iSword
           (Just "sword")
           "sword" ""
-          "The sword has a straight blade and a pointed tip. The hilt is metal, with a generic, round pommel at the \
+          "The sword has a straight blade and a pointed tip. The hilt is metal with a generic round pommel at the \
           \top. It is a humble sword; there are no engravings or embellishments to speak of."
           swordSmell
           zeroBits)
@@ -819,7 +819,7 @@ createWarehouse = do
       (Ent iSwordLong
           (Just "sword")
           "longsword" ""
-          "The longsword is a big weapon: not only is the straight blade long, but the hilt is lengthy enough to \
+          "The longsword is a big weapon: not only is the straight blade quite long, but the hilt is lengthy enough to \
           \accommodate the required two hands. Despite its size, the sword is well balanced and not particularly heavy."
           swordSmell
           zeroBits)
@@ -830,7 +830,7 @@ createWarehouse = do
       (Ent iSwordShort
           (Just "sword")
           "shortsword" ""
-          "The shortsword is a straightforward, cut-and-thrust sword and a trusty weapon. It's about 20 inches long."
+          "The shortsword is a straightforward cut-and-thrust blade and a trusty weapon. It's about 20 inches long."
           swordSmell
           zeroBits)
       (mkObj . ObjTemplate shortswordWeight shortswordVol swordTaste $ zeroBits)
@@ -886,7 +886,7 @@ mkFabricTaste b t = Just . T.concat $ [ "You munch on the ", t, ". ", txt, " tas
 
 
 mkLeatherSmell :: Text -> Maybe Text
-mkLeatherSmell t = Just $ "The " <> t <> " smells like leather, and not much else."
+mkLeatherSmell t = Just $ "The " <> t <> " smells like leather and not much else."
 
 
 mkLeatherTaste :: Text -> Maybe Text
