@@ -98,8 +98,7 @@ The code is available here on GitHub under [this license](https://github.com/jas
 
 Linux and macOS are supported. Sorry, but Windows is _not_ supported.
 
-Please build with [stack](http://docs.haskellstack.org/en/stable/README.html) (otherwise I cannot guarantee that CurryMUD will build on your machine).
-
+Please build with [stack](http://docs.haskellstack.org/en/stable/README.html):
 1. [Install stack.](http://docs.haskellstack.org/en/stable/install_and_upgrade/)
 1. Clone the repo from your home directory (the server expects to find various folders under `$HOME/CurryMUD`).
 1. Inside `$HOME/CurryMUD`, run `stack setup` to get GHC 8 on your machine. (The `stack.yaml` file points to [a recent resolver](https://www.stackage.org/snapshots) which uses GHC 8.)

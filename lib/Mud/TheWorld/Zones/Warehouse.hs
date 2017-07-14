@@ -917,10 +917,6 @@ mkPotionFlask isLrg i mc = putVessel i
       | otherwise = "small, "
 
 
-mkWpnSmell :: Text -> Maybe Text
-mkWpnSmell t = Just $ "The head of the " <> t <> " smells like metal. The handle doesn't smell like much at all."
-
-
 mkWaterskin :: Id -> Maybe VesselCont -> MudStack ()
 mkWaterskin i mc = putVessel i
     (Ent i
@@ -932,6 +928,10 @@ mkWaterskin i mc = putVessel i
     (mkObj . ObjTemplate waterskinWeight waterskinVol Nothing $ zeroBits)
     mc
     Nothing
+
+
+mkWpnSmell :: Text -> Maybe Text
+mkWpnSmell t = Just $ "The head of the " <> t <> " smells like metal. The handle doesn't smell like much at all."
 
 
 mkWpnTaste :: Text -> Maybe Text
