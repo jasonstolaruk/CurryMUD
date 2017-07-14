@@ -25,9 +25,6 @@ import           Data.Text (Text)
 import qualified Data.Text as T
 
 
--- TODO: Review your descriptions.
-
-
 logNotice :: Text -> Text -> MudStack ()
 logNotice = L.logNotice "Mud.TheWorld.Zones.Warehouse"
 
@@ -91,7 +88,7 @@ createWarehouse = do
   putArm iBootsThigh
       (Ent iBootsThigh
           (Just "boots")
-          "pair of jet-black traveler's boots" "pair of jet-black traveler's boots"
+          "pair of jet-black, thigh-high boots" "pairs of jet-black, thigh-high boots"
           "These well-crafted, thigh-high boots are rugged and durable."
           Nothing
           zeroBits)
@@ -102,7 +99,8 @@ createWarehouse = do
       (Ent iCapKnit
           (Just "cap")
           "knit cap" ""
-          "It's a simple knit cap, designed to keep your head warm in cold weather."
+          "Constructed out of yellow and blue yarn, this simple knit cap is designed to keep your head warm in cold \
+          \weather."
           (Just "There is a faint scent of yarn.")
           zeroBits)
       (let taste = "It pretty much just tastes like yarn."
@@ -113,7 +111,7 @@ createWarehouse = do
       (Ent iHelmLeather
           (Just "helmet")
           "leather helmet" ""
-          "This soft leather helmet covers the skull, providing moderate protection."
+          "This soft leather helmet covers the skull and is secured with a strap across the chin."
           (mkLeatherSmell "helmet smells")
           zeroBits)
       (mkObj . ObjTemplate helmLeatherWeight helmLeatherVol (mkLeatherTasteSalty "helmet" "head") $ zeroBits)
@@ -162,7 +160,7 @@ createWarehouse = do
       (Ent iApronBrown
           (Just "apron")
           "heavy brown apron" ""
-          "This sturdy padded utility apron provides adequate protection while its wearer labors and toils."
+          "This padded utility apron provides adequate protection while its wearer labors and toils."
           (Just "The apron smells like the layered cloth from which its padding is constructed.")
           zeroBits)
       (let taste = "You put the apron in your mouth. You wisely conclude that it tastes like cloth."
@@ -195,7 +193,7 @@ createWarehouse = do
           (Just "chemise")
           "fine white chemise" ""
           "This voluminous frock, worn on the upper body, is fashioned out of thin, smooth linen. It hangs just below \
-          \the waist while its loose-cut, wide sleeves are elbow length."
+          \the waist. Its loose-cut, wide sleeves are elbow length."
           (mkFabricSmell True "chemise")
           zeroBits)
       (mkObj . ObjTemplate shirtWeight shirtVol (mkFabricTaste True "chemise") $ zeroBits)
@@ -206,7 +204,7 @@ createWarehouse = do
           (Just "coat")
           "woman's red frock coat" ""
           "This fashionable long-sleeved coat is made of soft, bright-red fabric decorated with a fine, rich floral \
-          \brocade. Six black buttons from the collar down the chest, when fastened, make this a particularly \
+          \brocade. There are six black buttons from the collar down the chest. When fastened, this is a particularly \
           \figure-flattering garment."
           (mkFabricSmell True "coat")
           zeroBits)
@@ -218,7 +216,7 @@ createWarehouse = do
           (Just "coat")
           "mouse-grey coat" ""
           "Sure to keep its wearer warm in all but the coldest of weather, this heavy, long-sleeved coat reaches the \
-          \knees, and features a tall collar followed by ten large silver buttons along its length."
+          \knees. A tall collar is followed by ten large silver buttons along its length."
           (mkFabricSmell True "coat")
           zeroBits)
       (mkObj . ObjTemplate coatHeavyWeight coatHeavyVol (mkFabricTaste True "coat") $ zeroBits)
@@ -251,7 +249,7 @@ createWarehouse = do
           "sleeveless blue tabard" ""
           "This sleeveless overgarment is open at both sides and extends down to the thigh. Dyed a deep shade of blue, \
           \a contrasting bright orange trim adds a distinct accent along the hems. There is a short collar around the \
-          \neck complete with a small decorative yellow bowtie."
+          \neck complete with a small yellow bowtie."
           (mkFabricSmell True "tabard")
           zeroBits)
       (mkObj . ObjTemplate tabardWeight tabardVol (mkFabricTaste True "tabard") $ zeroBits)
@@ -272,7 +270,7 @@ createWarehouse = do
       (Ent iTunic
           (Just "tunic")
           "cobalt blue wool tunic" ""
-          "This heavy wool tunic is waist length and short-sleeved. Decorative white embroidery along the neck, \
+          "This heavy wool tunic is waist-length and short-sleeved. Decorative white embroidery along the neck, \
           \sleeves, and waist adds an eye-catching touch."
           (mkFabricSmell True "tunic")
           zeroBits)
@@ -408,7 +406,8 @@ createWarehouse = do
           (Ent i
               (Just "back")
               (t <> "backpack") ""
-              "The sturdy backpack is made of leather."
+              "The sturdy backpack is made of leather. A wide flap, secured with two straps, closes over its sole \
+              \compartment."
               (mkLeatherSmell "backpack smells")
               zeroBits)
           (mkObj . ObjTemplate w v (mkLeatherTaste "backpack") $ zeroBits)
@@ -590,9 +589,9 @@ createWarehouse = do
           (Just "Vessels")
           M.empty [] []))
 
-  let bottelTuples = [ (iBottleSml, "small ", ("small, ", "light brown"),  bottleSmlWeight, bottleSmlVol)
-                     , (iBottle,    "",       ("",        "mixed azure"),  bottleWeight,    bottleVol   )
-                     , (iBottleLrg, "large ", ("large, ", "rusty orange"), bottleLrgWeight, bottleLrgVol) ]
+  let bottelTuples = [ (iBottleSml, "small ", ("small ", "light brown"),  bottleSmlWeight, bottleSmlVol)
+                     , (iBottle,    "",       ("",       "mixed azure"),  bottleWeight,    bottleVol   )
+                     , (iBottleLrg, "large ", ("large ", "rusty orange"), bottleLrgWeight, bottleLrgVol) ]
 
       mkBottleDesc a b =
           T.concat [ "This "
@@ -613,16 +612,16 @@ createWarehouse = do
           Nothing
           Nothing
 
-  let jarTuples = [ (iJarSml, "small ", ", small", jarSmlWeight, jarSmlVol)
-                  , (iJar,    "",       "",        jarWeight,    jarVol   )
-                  , (iJarLrg, "large ", ", large", jarLrgWeight, jarLrgVol) ]
+  let jarTuples = [ (iJarSml, "small ", "small and ", jarSmlWeight, jarSmlVol)
+                  , (iJar,    "",       "",           jarWeight,    jarVol   )
+                  , (iJarLrg, "large ", "large and ", jarLrgWeight, jarLrgVol) ]
 
   forM_ jarTuples $ \(i, t, d, w, v) ->
       putVessel i
           (Ent i
               (Just "jar")
               (t <> "jar") ""
-              ("This versatile" <> d <> " glass jar comes affixed with an airtight lid.")
+              ("This " <> d <> "versatile glass jar comes affixed with an airtight lid.")
               Nothing
               zeroBits)
           (mkObj . ObjTemplate w v Nothing $ zeroBits)
@@ -762,7 +761,7 @@ createWarehouse = do
       (Ent iMace
           (Just "mace")
           "mace" ""
-          "The mace is essentially a war club with a heavy, round head of iron. You could really hurt someone with \
+          "The mace is essentially a war club with a heavy round head of iron. You could really hurt someone with \
           \this thing."
           (mkWpnSmell "mace")
           zeroBits)
@@ -786,7 +785,8 @@ createWarehouse = do
       (Ent iStaffQuarter
           (Just "staff")
           "quarterstaff" "quarterstaves"
-          "The quarterstaff is a balanced wooden pole, about 5 feet long and wielded with two hands."
+          "The quarterstaff is a balanced wooden pole, about 5 feet in length. The correct technique requires a \
+          \two-handed grip."
           (Just "The polished wood of the quarterstaff doesn't have a detectable smell.")
           zeroBits)
       (let taste = "You lick the end of the quarterstaff. If anything, it might taste a little grimy."
@@ -914,7 +914,7 @@ mkPotionFlask isLrg i mc = putVessel i
     Nothing
   where
     t | isLrg     = ""
-      | otherwise = "small, "
+      | otherwise = "small "
 
 
 mkWaterskin :: Id -> Maybe VesselCont -> MudStack ()
@@ -948,4 +948,4 @@ swordTaste = Just "You lick the blade of the sword, taking care not to cut your 
 
 waterskinDesc :: Text
 waterskinDesc = "The handy waterskin, crafted from the bladder of a bovine animal, is an indispensable piece of \
-                \equipment when it comes to travel and, often, everyday life."
+                \equipment when it comes to travel, and often to everyday life."
