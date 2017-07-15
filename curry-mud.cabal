@@ -140,7 +140,9 @@ library
                        Mud.TopLvlDefs.Seconds
                        Mud.TopLvlDefs.Telnet.Chars
                        Mud.TopLvlDefs.Telnet.CodeMap
+                       Mud.TopLvlDefs.Vals
                        Mud.TopLvlDefs.Vols
+                       Mud.TopLvlDefs.Wear
                        Mud.TopLvlDefs.Weights
                        Mud.Util.List
                        Mud.Util.Misc

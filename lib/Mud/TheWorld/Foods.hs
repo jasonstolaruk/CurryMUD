@@ -29,6 +29,7 @@ import Mud.Data.State.MudData
 import Mud.Data.State.Util.Make
 import Mud.TheWorld.FoodIds
 import Mud.TopLvlDefs.Misc
+import Mud.TopLvlDefs.Vals
 import Mud.TopLvlDefs.Vols
 import Mud.TopLvlDefs.Weights
 
@@ -91,6 +92,8 @@ appleObjTemplate :: ObjTemplate
 appleObjTemplate = ObjTemplate appleWeight
                                appleVol
                                (Just "You sample a small morsel of the ripe apple. It's delectable!")
+                               fruitVal
+                               Nothing
                                zeroBits
 
 
@@ -123,6 +126,8 @@ bananaObjTemplate :: ObjTemplate
 bananaObjTemplate = ObjTemplate bananaWeight
                                 bananaVol
                                 (Just "You take a nibble off the ripe banana. The pulpous fruit is sufficiently tasty.")
+                                fruitVal
+                                Nothing
                                 zeroBits
 
 
@@ -157,6 +162,8 @@ breadObjTemplate = ObjTemplate breadWeight
                                breadVol
                                (Just "You sample the bread. It's light and airy, a bit on the dry side, and not \
                                      \particularly tasty.")
+                               breadVal
+                               Nothing
                                zeroBits
 
 
@@ -189,6 +196,8 @@ gorhnaObjTemplate :: ObjTemplate
 gorhnaObjTemplate = ObjTemplate gorhnaWeight
                                 gorhnaVol
                                 (Just "You sample the nut. It's not particularly appetizing. Is this what worms taste like?")
+                                gorhnaVal
+                                Nothing
                                 zeroBits
 
 
@@ -243,6 +252,8 @@ orangeObjTemplate = ObjTemplate orangeWeight
                                 orangeVol
                                 (Just "The orange has a familiar citrus taste. This one might be a bit on the bitter \
                                       \side.")
+                                fruitVal
+                                Nothing
                                 zeroBits
 
 

@@ -121,12 +121,6 @@ Make a command to get help on known powers/skills.
 
 ==========
 
-OBJECTS:
-
-Objects have wear and tear.
-
-==========
-
 GEOGRAPHY:
 
 Where the map ends, consider creating insurmountable physical boundaries. p.275

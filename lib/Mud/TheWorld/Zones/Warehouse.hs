@@ -11,7 +11,9 @@ import           Mud.TheWorld.Foods
 import           Mud.TheWorld.Liqs
 import           Mud.TheWorld.Zones.WarehouseIds
 import           Mud.TopLvlDefs.Seconds
+import           Mud.TopLvlDefs.Vals
 import           Mud.TopLvlDefs.Vols
+import           Mud.TopLvlDefs.Wear
 import           Mud.TopLvlDefs.Weights
 import           Mud.Util.Misc
 import           Mud.Util.Text
@@ -82,7 +84,13 @@ createWarehouse = do
           "These rugged, sturdy boots make excellent footwear for traveling across a variety of terrain."
           (mkLeatherSmell "boots smell")
           zeroBits)
-      (mkObj . ObjTemplate bootsWeight bootsVol (mkLeatherTasteSalty "boots" "foot") $ zeroBits)
+      (let ot = ObjTemplate bootsWeight
+                            bootsVol
+                            (mkLeatherTasteSalty "boots" "foot")
+                            bootsLeatherVal
+                            Nothing
+                            zeroBits
+       in mkObj ot)
       (Arm Feet 1)
 
   putArm iBootsThigh
@@ -92,7 +100,13 @@ createWarehouse = do
           "These well-crafted, thigh-high boots are rugged and durable."
           Nothing
           zeroBits)
-      (mkObj . ObjTemplate bootsWeight bootsVol Nothing $ zeroBits)
+      (let ot = ObjTemplate bootsWeight
+                            bootsVol
+                            Nothing
+                            bootsThighVal
+                            Nothing
+                            zeroBits
+       in mkObj ot)
       (Arm Feet 1)
 
   putArm iCapKnit
@@ -103,8 +117,13 @@ createWarehouse = do
           \weather."
           (Just "There is a faint scent of yarn.")
           zeroBits)
-      (let taste = "It pretty much just tastes like yarn."
-       in mkObj . ObjTemplate knitCapWeight knitCapVol (Just taste) $ zeroBits)
+      (let ot = ObjTemplate knitCapWeight
+                            knitCapVol
+                            (Just "It pretty much just tastes like yarn.")
+                            capKnitVal
+                            Nothing
+                            zeroBits
+       in mkObj ot)
       (Arm Head 1)
 
   putArm iHelmLeather
@@ -114,7 +133,13 @@ createWarehouse = do
           "This soft leather helmet covers the skull and is secured with a strap across the chin."
           (mkLeatherSmell "helmet smells")
           zeroBits)
-      (mkObj . ObjTemplate helmLeatherWeight helmLeatherVol (mkLeatherTasteSalty "helmet" "head") $ zeroBits)
+      (let ot = ObjTemplate helmLeatherWeight
+                            helmLeatherVol
+                            (mkLeatherTasteSalty "helmet" "head")
+                            helmLeatherVal
+                            helmWear
+                            zeroBits
+       in mkObj ot)
       (Arm Head 1)
 
   putArm iSandalsLeather
@@ -125,13 +150,19 @@ createWarehouse = do
           \soles of your feet."
           (mkLeatherSmell "sandals smell")
           zeroBits)
-      (mkObj . ObjTemplate sandalsWeight sandalsVol (mkLeatherTasteSalty "sandals" "foot") $ zeroBits)
+      (let ot = ObjTemplate sandalsWeight
+                            sandalsVol
+                            (mkLeatherTasteSalty "sandals" "foot")
+                            sandalsLeatherVal
+                            Nothing
+                            zeroBits
+       in mkObj ot)
       (Arm Feet 1)
 
   -----
 
   putRm iClothRm
-      [ iApronBrown
+      [ iApronHeavy
       , iApronLeather
       , iBreeches
       , iChemise
@@ -141,7 +172,7 @@ createWarehouse = do
       , iShirtPeasant
       , iTabard
       , iTrousers
-      , iTunic ]
+      , iTunicHeavy ]
       mempty
       (mkRm (RmTemplate "Clothing room"
           "This room holds clothing."
@@ -156,15 +187,20 @@ createWarehouse = do
           (Just "Clothing")
           M.empty [] []))
 
-  putCloth iApronBrown
-      (Ent iApronBrown
+  putCloth iApronHeavy
+      (Ent iApronHeavy
           (Just "apron")
           "heavy brown apron" ""
           "This padded utility apron provides adequate protection while its wearer labors and toils."
           (Just "The apron smells like the layered cloth from which its padding is constructed.")
           zeroBits)
-      (let taste = "You put the apron in your mouth. You wisely conclude that it tastes like cloth."
-       in mkObj . ObjTemplate apronHeavyWeight apronHeavyVol (Just taste) $ zeroBits)
+      (let ot = ObjTemplate apronWeight
+                            apronVol
+                            (Just "You put the apron in your mouth. You wisely conclude that it tastes like cloth.")
+                            apronVal
+                            Nothing
+                            zeroBits
+       in mkObj ot)
       Smock
 
   putCloth iApronLeather
@@ -174,7 +210,13 @@ createWarehouse = do
           "This heavy apron, though bulky, is a must for those who undertake dirty and dangerous chores."
           (mkLeatherSmell "apron smells")
           zeroBits)
-      (mkObj . ObjTemplate apronHeavyWeight apronHeavyVol (mkLeatherTaste "apron") $ zeroBits)
+      (let ot = ObjTemplate apronWeight
+                            apronVol
+                            (mkLeatherTaste "apron")
+                            apronVal
+                            Nothing
+                            zeroBits
+       in mkObj ot)
       Smock
 
   putCloth iBreeches
@@ -185,7 +227,13 @@ createWarehouse = do
           \neatly secured to the legs."
           (mkFabricSmell False "breeches")
           zeroBits)
-      (mkObj . ObjTemplate trousersWeight trousersVol (mkFabricTaste False "breeches") $ zeroBits)
+      (let ot = ObjTemplate trousersWeight
+                            trousersVol
+                            (mkFabricTaste False "breeches")
+                            breechesVal
+                            Nothing
+                            zeroBits
+       in mkObj ot)
       Trousers
 
   putCloth iChemise
@@ -196,7 +244,13 @@ createWarehouse = do
           \the waist. Its loose-cut, wide sleeves are elbow length."
           (mkFabricSmell True "chemise")
           zeroBits)
-      (mkObj . ObjTemplate shirtWeight shirtVol (mkFabricTaste True "chemise") $ zeroBits)
+      (let ot = ObjTemplate shirtWeight
+                            shirtVol
+                            (mkFabricTaste True "chemise")
+                            chemiseVal
+                            Nothing
+                            zeroBits
+       in mkObj ot)
       Shirt
 
   putCloth iCoatFrock
@@ -208,7 +262,13 @@ createWarehouse = do
           \figure-flattering garment."
           (mkFabricSmell True "coat")
           zeroBits)
-      (mkObj . ObjTemplate coatWeight coatVol (mkFabricTaste True "coat") $ zeroBits)
+      (let ot = ObjTemplate coatWeight
+                            coatVol
+                            (mkFabricTaste True "coat")
+                            coatFrockVal
+                            Nothing
+                            zeroBits
+       in mkObj ot)
       Coat
 
   putCloth iCoatGrey
@@ -219,7 +279,13 @@ createWarehouse = do
           \knees. A tall collar is followed by ten large silver buttons along its length."
           (mkFabricSmell True "coat")
           zeroBits)
-      (mkObj . ObjTemplate coatHeavyWeight coatHeavyVol (mkFabricTaste True "coat") $ zeroBits)
+      (let ot = ObjTemplate coatHeavyWeight
+                            coatHeavyVol
+                            (mkFabricTaste True "coat")
+                            coatHeavyVal
+                            Nothing
+                            zeroBits
+       in mkObj ot)
       Coat
 
   putCloth iOveralls
@@ -229,7 +295,13 @@ createWarehouse = do
           "These durable overalls are adorned with a multitude of little pockets."
           (mkFabricSmell False "overalls")
           zeroBits)
-      (mkObj . ObjTemplate overallsWeight overallsVol (mkFabricTaste False "overalls") $ zeroBits)
+      (let ot = ObjTemplate overallsWeight
+                            overallsVol
+                            (mkFabricTaste False "overalls")
+                            overallsVal
+                            Nothing
+                            zeroBits
+       in mkObj ot)
       Trousers
 
   putCloth iShirtPeasant
@@ -240,7 +312,13 @@ createWarehouse = do
           \fashion."
           (mkFabricSmell True "shirt")
           zeroBits)
-      (mkObj . ObjTemplate shirtWeight shirtVol (mkFabricTaste True "shirt") $ zeroBits)
+      (let ot = ObjTemplate shirtWeight
+                            shirtVol
+                            (mkFabricTaste True "shirt")
+                            shirtPeasantVal
+                            Nothing
+                            zeroBits
+       in mkObj ot)
       Shirt
 
   putCloth iTabard
@@ -252,7 +330,13 @@ createWarehouse = do
           \neck complete with a small yellow bowtie."
           (mkFabricSmell True "tabard")
           zeroBits)
-      (mkObj . ObjTemplate tabardWeight tabardVol (mkFabricTaste True "tabard") $ zeroBits)
+      (let ot = ObjTemplate tabardWeight
+                            tabardVol
+                            (mkFabricTaste True "tabard")
+                            tabardVal
+                            Nothing
+                            zeroBits
+       in mkObj ot)
       Smock
 
   putCloth iTrousers
@@ -263,18 +347,30 @@ createWarehouse = do
           \them to be snugly tightened at the waist."
           (mkFabricSmell False "trousers")
           zeroBits)
-      (mkObj . ObjTemplate trousersBaggyWeight trousersBaggyVol (mkFabricTaste False "trousers") $ zeroBits)
+      (let ot = ObjTemplate trousersBaggyWeight
+                            trousersBaggyVol
+                            (mkFabricTaste False "trousers")
+                            trousersVal
+                            Nothing
+                            zeroBits
+       in mkObj ot)
       Trousers
 
-  putCloth iTunic
-      (Ent iTunic
+  putCloth iTunicHeavy
+      (Ent iTunicHeavy
           (Just "tunic")
           "cobalt blue wool tunic" ""
           "This heavy wool tunic is waist-length and short-sleeved. Decorative white embroidery along the neck, \
           \sleeves, and waist adds an eye-catching touch."
           (mkFabricSmell True "tunic")
           zeroBits)
-      (mkObj . ObjTemplate tunicHeavyWeight tunicHeavyVol (mkFabricTaste True "tunic") $ zeroBits)
+      (let ot = ObjTemplate tunicHeavyWeight
+                            tunicHeavyVol
+                            (mkFabricTaste True "tunic")
+                            tunicHeavyVal
+                            Nothing
+                            zeroBits
+       in mkObj ot)
       Shirt
 
   -----
@@ -305,12 +401,12 @@ createWarehouse = do
                            \in color."
       pearlBraceletDesc  = "Lustrous white pearls are strung together to make an eye-catching, fashionable accessory."
 
-      braceletTuples = [ (iBraceletBangle, "wooden bangle", bangleBraceletDesc, 1 )
-                       , (iBraceletBeaded, "beaded",        beadedBraceletDesc, 2 )
-                       , (iBraceletCharm,  "charm",         charmBraceletDesc,  10)
-                       , (iBraceletPearl,  "pearl",         pearlBraceletDesc,  4 ) ]
+      braceletTuples = [ (iBraceletBangle, "wooden bangle", bangleBraceletDesc, 1,  braceletVal     )
+                       , (iBraceletBeaded, "beaded",        beadedBraceletDesc, 2,  braceletVal     )
+                       , (iBraceletCharm,  "charm",         charmBraceletDesc,  10, braceletCharmVal)
+                       , (iBraceletPearl,  "pearl",         pearlBraceletDesc,  4,  braceletPearlVal) ]
 
-  forM_ braceletTuples $ \(i, t, d, w) ->
+  forM_ braceletTuples $ \(i, t, d, w, val) ->
       putCloth i
           (Ent i
               (Just "bracelet")
@@ -318,7 +414,7 @@ createWarehouse = do
               d
               Nothing
               zeroBits)
-          (mkObj . ObjTemplate w braceletVol Nothing $ zeroBits)
+          (mkObj . ObjTemplate w braceletVol Nothing val Nothing $ zeroBits)
           Bracelet
 
   let earTuples = [ (iEarAzure,    "azure"    )
@@ -334,15 +430,15 @@ createWarehouse = do
               "It's a small, but tasteful, nondescript hoop."
               Nothing
               zeroBits)
-          (mkObj . ObjTemplate earWeight earVol Nothing $ zeroBits)
+          (mkObj . ObjTemplate earWeight earVol Nothing earVal Nothing $ zeroBits)
           Earring
 
-  let neckTuples = [ (iNeckBronze,   "bronze"  )
-                   , (iNeckGold,     "gold"    )
-                   , (iNeckPlatinum, "platinum")
-                   , (iNeckSilver,   "silver"  ) ]
+  let neckTuples = [ (iNeckBronze,   "bronze",   neckBronzeVal  )
+                   , (iNeckGold,     "gold",     neckGoldVal    )
+                   , (iNeckPlatinum, "platinum", neckPlatinumVal)
+                   , (iNeckSilver,   "silver",   neckSilverVal  ) ]
 
-  forM_ neckTuples $ \(i, t) ->
+  forM_ neckTuples $ \(i, t, val) ->
       putCloth i
           (Ent i
               (Just "necklace")
@@ -350,7 +446,7 @@ createWarehouse = do
               ("It's an artless " <> t <> " chain fashioned out of tiny rectangular links.")
               Nothing
               zeroBits)
-          (mkObj . ObjTemplate neckWeight neckVol Nothing $ zeroBits)
+          (mkObj . ObjTemplate neckWeight neckVol Nothing val Nothing $ zeroBits)
           Necklace
 
   putCloth iNoseRing
@@ -360,7 +456,7 @@ createWarehouse = do
           "It's a round copper stud intended to be worn on the nose."
           Nothing
           zeroBits)
-      (mkObj . ObjTemplate noseWeight noseVol Nothing $ zeroBits)
+      (mkObj . ObjTemplate noseWeight noseVol Nothing noseVal Nothing $ zeroBits)
       NoseRing
 
   let ringTuples = [ (iRingAmethyst,   "amethyst"  )
@@ -376,7 +472,7 @@ createWarehouse = do
               ("A simple copper band prominently features a beautiful " <> t <> " stone.")
               Nothing
               zeroBits)
-          (mkObj . ObjTemplate ringWeight ringVol Nothing $ zeroBits)
+          (mkObj . ObjTemplate ringWeight ringVol Nothing ringVal Nothing $ zeroBits)
           Ring
 
   -----
@@ -397,11 +493,11 @@ createWarehouse = do
           (Just "Containers")
           M.empty [] []))
 
-  let backTuples = [ (iBackSml, "small ", backSmlWeight, backSmlVol, backSmlCap)
-                   , (iBack,    "",       backWeight,    backVol,    backCap   )
-                   , (iBackLrg, "large ", backLrgWeight, backLrgVol, backLrgCap) ]
+  let backTuples = [ (iBackSml, "small ", backSmlWeight, backSmlVol, backSmlVal, backSmlCap)
+                   , (iBack,    "",       backWeight,    backVol,    backVal,    backCap   )
+                   , (iBackLrg, "large ", backLrgWeight, backLrgVol, backLrgVal, backLrgCap) ]
 
-  forM_ backTuples $ \(i, t, w, v, c) ->
+  forM_ backTuples $ \(i, t, w, v, val, c) ->
       putCon i
           (Ent i
               (Just "back")
@@ -410,17 +506,23 @@ createWarehouse = do
               \compartment."
               (mkLeatherSmell "backpack smells")
               zeroBits)
-          (mkObj . ObjTemplate w v (mkLeatherTaste "backpack") $ zeroBits)
+          (let ot = ObjTemplate w
+                                v
+                                (mkLeatherTaste "backpack")
+                                val
+                                Nothing
+                                zeroBits
+           in mkObj ot)
           []
           mempty
           (Just Backpack)
           (Con True c zeroBits)
 
-  let sackTuples = [ (iSackSml, "small ", sackSmlWeight, sackSmlVol, sackSmlCap)
-                   , (iSack,    "",       sackWeight,    sackVol,    sackCap   )
-                   , (iSackLrg, "large ", sackLrgWeight, sackLrgVol, sackLrgCap) ]
+  let sackTuples = [ (iSackSml, "small ", sackSmlWeight, sackSmlVol, sackSmlVal, sackSmlCap)
+                   , (iSack,    "",       sackWeight,    sackVol,    sackVal,    sackCap   )
+                   , (iSackLrg, "large ", sackLrgWeight, sackLrgVol, sackLrgVal, sackLrgCap) ]
 
-  forM_ sackTuples $ \(i, t, w, v, c) ->
+  forM_ sackTuples $ \(i, t, w, v, val, c) ->
       putCon i
           (Ent i
               (Just "sack")
@@ -428,8 +530,13 @@ createWarehouse = do
               "The durable sack is made from a coarse woven fabric."
               (Just "The sack smells like burlap. It's a bit reminiscent of the smell of a barn or a farmyard.")
               zeroBits)
-          (let taste = "Munching on the sack, you experience firsthand the earthy taste of burlap."
-           in mkObj . ObjTemplate w v (Just taste) $ zeroBits)
+          (let ot = ObjTemplate w
+                                v
+                                (Just "Munching on the sack, you experience firsthand the earthy taste of burlap.")
+                                val
+                                Nothing
+                                zeroBits
+           in mkObj ot)
           []
           mempty
           Nothing
@@ -589,9 +696,9 @@ createWarehouse = do
           (Just "Vessels")
           M.empty [] []))
 
-  let bottelTuples = [ (iBottleSml, "small ", ("small ", "light brown"),  bottleSmlWeight, bottleSmlVol)
-                     , (iBottle,    "",       ("",       "mixed azure"),  bottleWeight,    bottleVol   )
-                     , (iBottleLrg, "large ", ("large ", "rusty orange"), bottleLrgWeight, bottleLrgVol) ]
+  let bottelTuples = [ (iBottleSml, "small ", ("small ", "light brown"),  bottleSmlWeight, bottleSmlVol, bottleSmlVal)
+                     , (iBottle,    "",       ("",       "mixed azure"),  bottleWeight,    bottleVol,    bottleVal   )
+                     , (iBottleLrg, "large ", ("large ", "rusty orange"), bottleLrgWeight, bottleLrgVol, bottleLrgVal) ]
 
       mkBottleDesc a b =
           T.concat [ "This "
@@ -600,7 +707,7 @@ createWarehouse = do
                    , b
                    , " hues gives the vessel a glossy finish and makes it impermeable." ]
 
-  forM_ bottelTuples $ \(i, t, d, w, v) ->
+  forM_ bottelTuples $ \(i, t, d, w, v, val) ->
       putVessel i
           (Ent i
               (Just "bottle")
@@ -608,15 +715,15 @@ createWarehouse = do
               (uncurry mkBottleDesc d)
               Nothing
               zeroBits)
-          (mkObj . ObjTemplate w v Nothing $ zeroBits)
+          (mkObj . ObjTemplate w v Nothing val Nothing $ zeroBits)
           Nothing
           Nothing
 
-  let jarTuples = [ (iJarSml, "small ", "small and ", jarSmlWeight, jarSmlVol)
-                  , (iJar,    "",       "",           jarWeight,    jarVol   )
-                  , (iJarLrg, "large ", "large and ", jarLrgWeight, jarLrgVol) ]
+  let jarTuples = [ (iJarSml, "small ", "small and ", jarSmlWeight, jarSmlVol, jarSmlVal)
+                  , (iJar,    "",       "",           jarWeight,    jarVol,    jarVal   )
+                  , (iJarLrg, "large ", "large and ", jarLrgWeight, jarLrgVol, jarLrgVal) ]
 
-  forM_ jarTuples $ \(i, t, d, w, v) ->
+  forM_ jarTuples $ \(i, t, d, w, v, val) ->
       putVessel i
           (Ent i
               (Just "jar")
@@ -624,15 +731,15 @@ createWarehouse = do
               ("This " <> d <> "versatile glass jar comes affixed with an airtight lid.")
               Nothing
               zeroBits)
-          (mkObj . ObjTemplate w v Nothing $ zeroBits)
+          (mkObj . ObjTemplate w v Nothing val Nothing $ zeroBits)
           Nothing
           Nothing
 
-  let jugTuples = [ (iJugSml, "small ", jugSmlWeight, jugSmlVol)
-                  , (iJug,     "",      jugWeight,    jugVol   )
-                  , (iJugLrg, "large ", jugLrgWeight, jugLrgVol) ]
+  let jugTuples = [ (iJugSml, "small ", jugSmlWeight, jugSmlVol, jugSmlVal)
+                  , (iJug,     "",      jugWeight,    jugVol,    jugVal   )
+                  , (iJugLrg, "large ", jugLrgWeight, jugLrgVol, jugLrgVal) ]
 
-  forM_ jugTuples $ \(i, t, w, v) ->
+  forM_ jugTuples $ \(i, t, w, v, val) ->
       putVessel i
           (Ent i
               (Just "jug")
@@ -640,7 +747,7 @@ createWarehouse = do
               "While capable of containing a large amount of liquid, this corked ceramic jug is rather cumbersome."
               Nothing
               zeroBits)
-          (mkObj . ObjTemplate w v Nothing $ zeroBits)
+          (mkObj . ObjTemplate w v Nothing val Nothing $ zeroBits)
           Nothing
           Nothing
 
@@ -657,7 +764,7 @@ createWarehouse = do
           (waterskinDesc <> " This waterskin is particularly large, making it suitable for long journeys.")
           Nothing
           zeroBits)
-      (mkObj . ObjTemplate waterskinLrgWeight waterskinLrgVol Nothing $ zeroBits)
+      (mkObj . ObjTemplate waterskinLrgWeight waterskinLrgVol Nothing waterskinLrgVal Nothing $ zeroBits)
       Nothing
       Nothing
 
@@ -731,18 +838,29 @@ createWarehouse = do
           \weapon."
           (mkWpnSmell "axe")
           zeroBits)
-      (mkObj . ObjTemplate axeSmlWeight axeSmlVol (mkWpnTaste "axe") $ zeroBits)
+      (let ot = ObjTemplate axeSmlWeight
+                            axeSmlVol
+                            (mkWpnTaste "axe")
+                            axeSmlVal
+                            axeWear
+                            zeroBits
+       in mkObj ot)
       (Wpn OneHanded 1 10)
 
   putWpn iClub
       (Ent iClub
           (Just "club")
           "wooden club" ""
-          "It's a crude wooden club, the type a neanderthal might use to great effect."
+          "It's a crude wooden club, the type a neanderthal might use to great effect." -- TODO: Remove reference to neanderthals.
           (Just "The club smells like wood.")
           zeroBits)
-      (let taste = "You lick the club so as to discern its taste. It has a somewhat woody flavor."
-       in mkObj . ObjTemplate clubWeight clubVol (Just taste) $ zeroBits)
+      (let ot = ObjTemplate clubWeight
+                            clubVol
+                            (Just "You lick the club so as to discern its taste. It has a somewhat woody flavor.")
+                            clubVal
+                            clubWear
+                            zeroBits
+       in mkObj ot)
       (Wpn OneHanded 1 10)
 
   putWpn iKnife
@@ -754,7 +872,13 @@ createWarehouse = do
           zeroBits)
       (let taste = "You don't dare taste the blade: you'd certainly cut up your mouth and tongue! You decide to lick \
                    \the handle instead. It tastes a little salty."
-       in mkObj . ObjTemplate knifeWeight knifeVol (Just taste) $ zeroBits)
+           ot    = ObjTemplate knifeWeight
+                               knifeVol
+                               (Just taste)
+                               knifeVal
+                               knifeWear
+                               zeroBits
+       in mkObj ot)
       (Wpn OneHanded 1 10)
 
   putWpn iMace
@@ -765,7 +889,13 @@ createWarehouse = do
           \this thing."
           (mkWpnSmell "mace")
           zeroBits)
-      (mkObj . ObjTemplate maceWeight maceVol (mkWpnTaste "mace") $ zeroBits)
+      (let ot = ObjTemplate maceWeight
+                            maceVol
+                            (mkWpnTaste "mace")
+                            maceVal
+                            maceWear
+                            zeroBits
+       in mkObj ot)
       (Wpn OneHanded 1 10)
 
   putWpn iSpear
@@ -778,7 +908,13 @@ createWarehouse = do
           zeroBits)
       (let taste = "You don't dare taste the blade: you'd certainly cut up your mouth and tongue! You decide to lick \
                    \the polished wooden handle instead. Sadly, it doesn't taste like much at all."
-       in mkObj . ObjTemplate spearWeight spearVol (Just taste) $ zeroBits)
+           ot    = ObjTemplate spearWeight
+                               spearVol
+                               (Just taste)
+                               spearVal
+                               spearWear
+                               zeroBits
+       in mkObj ot)
       (Wpn OneHanded 1 10)
 
   putWpn iStaffQuarter
@@ -789,8 +925,13 @@ createWarehouse = do
           \two-handed grip."
           (Just "The polished wood of the quarterstaff doesn't have a detectable smell.")
           zeroBits)
-      (let taste = "You lick the end of the quarterstaff. If anything, it might taste a little grimy."
-       in mkObj . ObjTemplate quarterstaffWeight quarterstaffVol (Just taste) $ zeroBits)
+      (let ot = ObjTemplate staffQuarterWeight
+                            staffQuarterVol
+                            (Just "You lick the end of the quarterstaff. If anything, it might taste a little grimy.")
+                            staffQuarterVal
+                            staffQuarterWear
+                            zeroBits
+       in mkObj ot)
       (Wpn TwoHanded 1 10)
 
   putWpn iSword
@@ -801,7 +942,13 @@ createWarehouse = do
           \top. It is a humble sword; there are no engravings or embellishments to speak of."
           swordSmell
           zeroBits)
-      (mkObj . ObjTemplate swordWeight swordVol swordTaste $ zeroBits)
+      (let ot = ObjTemplate swordWeight
+                            swordVol
+                            swordTaste
+                            swordVal
+                            swordWear
+                            zeroBits
+       in mkObj ot)
       (Wpn OneHanded 1 10)
 
   putWpn iSwordBroad
@@ -812,7 +959,13 @@ createWarehouse = do
           \hilt. Although there's nothing extraordinary about the sword, it's a decent, solid weapon."
           swordSmell
           zeroBits)
-      (mkObj . ObjTemplate broadswordWeight broadswordVol swordTaste $ zeroBits)
+      (let ot = ObjTemplate swordBroadWeight
+                            swordBroadVol
+                            swordTaste
+                            swordBroadVal
+                            swordWear
+                            zeroBits
+       in mkObj ot)
       (Wpn OneHanded 1 10)
 
   putWpn iSwordLong
@@ -823,7 +976,13 @@ createWarehouse = do
           \accommodate the required two hands. Despite its size, the sword is well balanced and not particularly heavy."
           swordSmell
           zeroBits)
-      (mkObj . ObjTemplate swordLongWeight swordLongVol swordTaste $ zeroBits)
+      (let ot = ObjTemplate swordLongWeight
+                            swordLongVol
+                            swordTaste
+                            swordLongVal
+                            swordWear
+                            zeroBits
+       in mkObj ot)
       (Wpn TwoHanded 1 10)
 
   putWpn iSwordShort
@@ -833,7 +992,13 @@ createWarehouse = do
           "The shortsword is a straightforward cut-and-thrust blade and a trusty weapon. It's about 20 inches long."
           swordSmell
           zeroBits)
-      (mkObj . ObjTemplate shortswordWeight shortswordVol swordTaste $ zeroBits)
+      (let ot = ObjTemplate swordShortWeight
+                            swordShortVol
+                            swordTaste
+                            swordShortVal
+                            swordWear
+                            zeroBits
+       in mkObj ot)
       (Wpn OneHanded 1 10)
 
   -----
@@ -859,7 +1024,13 @@ createWarehouse = do
           "It's an everyday piece of parchment made from processed animal skin."
           Nothing -- Ancient parchment did not have a smell.
           zeroBits)
-      (mkObj . ObjTemplate paperWeight paperVol Nothing $ zeroBits)
+      (let ot = ObjTemplate parchmentWeight
+                            parchmentVol
+                            Nothing
+                            parchmentVal
+                            Nothing
+                            zeroBits
+       in mkObj ot)
       (Writable Nothing Nothing)
 
   -----
@@ -906,15 +1077,24 @@ mkPotionFlask isLrg i mc = putVessel i
     (Ent i
         (Just "flask")
         (onTrue isLrg ("large " <>) "potion flask") ""
-        ("This " <> t <> "glass flask complete with cork stopper is the ideal vessel for potion storage and transportation.")
+        ("This " <> t <> "glass flask complete with cork stopper is the ideal vessel for potion storage and \
+                         \transportation.")
         Nothing
         zeroBits)
-    (mkObj . ObjTemplate potionFlaskWeight potionFlaskVol Nothing $ zeroBits)
+    (let ot = ObjTemplate (f potionFlaskLrgWeight potionFlaskWeight)
+                          (f potionFlaskLrgVol    potionFlaskVol   )
+                          Nothing
+                          (f potionFlaskLrgVal    potionFlaskVal   )
+                          Nothing
+                          zeroBits
+     in mkObj ot)
     mc
     Nothing
   where
-    t | isLrg     = ""
-      | otherwise = "small "
+    t     | isLrg     = ""
+          | otherwise = "small "
+    f a b | isLrg     = a
+          | otherwise = b
 
 
 mkWaterskin :: Id -> Maybe VesselCont -> MudStack ()
@@ -925,7 +1105,13 @@ mkWaterskin i mc = putVessel i
         waterskinDesc
         Nothing
         zeroBits)
-    (mkObj . ObjTemplate waterskinWeight waterskinVol Nothing $ zeroBits)
+    (let ot = ObjTemplate waterskinWeight
+                          waterskinVol
+                          Nothing
+                          waterskinVal
+                          Nothing
+                          zeroBits
+     in mkObj ot)
     mc
     Nothing
 

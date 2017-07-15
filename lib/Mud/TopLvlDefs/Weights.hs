@@ -11,9 +11,8 @@ appleWeight :: Weight
 appleWeight = 50
 
 
-apronWeight, apronHeavyWeight :: Weight
-apronWeight      = 75
-apronHeavyWeight = plusQuarter apronWeight
+apronWeight :: Weight
+apronWeight = 75
 
 
 axeSmlWeight :: Weight
@@ -32,10 +31,6 @@ bananaWeight = 30
 
 breadWeight :: Weight
 breadWeight = 120
-
-
-broadswordWeight :: Weight
-broadswordWeight = 300
 
 
 bootsWeight :: Weight
@@ -129,17 +124,13 @@ overallsWeight :: Weight
 overallsWeight = tabardWeight + trousersWeight
 
 
-paperWeight :: Weight
-paperWeight = 1
+parchmentWeight :: Weight
+parchmentWeight = 1
 
 
 potionFlaskWeight, potionFlaskLrgWeight :: Weight
 potionFlaskWeight    = 30
 potionFlaskLrgWeight = potionFlaskWeight * 2
-
-
-quarterstaffWeight :: Weight
-quarterstaffWeight = 400
 
 
 ringWeight :: Weight
@@ -164,17 +155,19 @@ shirtWeight :: Weight
 shirtWeight = 35
 
 
-shortswordWeight :: Weight
-shortswordWeight = 200
-
-
 spearWeight :: Weight
 spearWeight = 400
 
 
-swordWeight, swordLongWeight :: Weight
-swordWeight     = 300
-swordLongWeight = plusQuarter swordWeight
+staffQuarterWeight :: Weight
+staffQuarterWeight = 400
+
+
+swordBroadWeight, swordLongWeight, swordShortWeight, swordWeight :: Weight
+swordBroadWeight = 300
+swordLongWeight  = plusQuarter swordWeight
+swordShortWeight = 200
+swordWeight      = 300
 
 
 tabardWeight :: Weight

@@ -793,11 +793,25 @@ type NpcServerAsync = Async ()
 data Obj = Obj { _objWeight      :: Weight
                , _objVol         :: Vol
                , _objTaste       :: Maybe Text
+               , _objVal         :: Val
+               , _objWear        :: Wear
                , _objFlags       :: Flags
                , _objBiodegAsync :: Maybe BiodegAsync }
 
 
 type Weight = Int -- 100 "Weight" = 1 lb
+
+
+type Val = Maybe Cop
+
+
+type Wear = Maybe (RemainingUses, TotalUses)
+
+
+type RemainingUses = Int
+
+
+type TotalUses = Int
 
 
 data ObjFlags = IsBiodegradable
@@ -815,6 +829,8 @@ objToJSON :: Obj -> Value
 objToJSON Obj { .. } = object [ "objWeight" .= _objWeight
                               , "objVol"    .= _objVol
                               , "objTaste"  .= _objTaste
+                              , "objVal"    .= _objVal
+                              , "objWear"   .= _objWear
                               , "objFlags"  .= _objFlags ]
 
 
@@ -822,6 +838,8 @@ jsonToObj :: Value -> Parser Obj
 jsonToObj (Object o) = Obj <$> o .: "objWeight"
                            <*> o .: "objVol"
                            <*> o .: "objTaste"
+                           <*> o .: "objVal"
+                           <*> o .: "objWear"
                            <*> o .: "objFlags"
                            <*> pure Nothing
 jsonToObj _          = empty

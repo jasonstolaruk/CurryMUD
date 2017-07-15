@@ -149,7 +149,7 @@ mkCorpse i ms =
                           zeroBits
         ot  = ObjTemplate (getCorpseWeight i ms)
                           (getCorpseVol    i ms)
-                          Nothing
+                          Nothing Nothing Nothing
                           (onTrue (ip && r == Nymph) (`setBit` fromEnum IsHumming) zeroBits)
         con = Con False cap zeroBits
         cap = uncurry max . (getCorpseCapacity `fanUncurry` calcCarriedVol) $ (i, ms)

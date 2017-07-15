@@ -700,7 +700,7 @@ debugMkKewpie (NoArgs' i mq) = do
                                                  zeroBits
                                 ot = ObjTemplate dollWeight
                                                  dollVol
-                                                 Nothing
+                                                 Nothing Nothing Nothing
                                                  zeroBits
                             in second (++ pure (ok mq)) . dropFst . newObj ms et ot . getRmId i $ ms
 debugMkKewpie p = withoutArgs debugMkKewpie p

@@ -12,9 +12,8 @@ appleVol :: Vol
 appleVol = 3 * 3 * 3
 
 
-apronVol, apronHeavyVol :: Vol
-apronVol      = round (12 * 8 * 0.25 * 100 :: Double)
-apronHeavyVol = plusQuarter apronVol
+apronVol :: Vol
+apronVol = round (12 * 8 * 0.25 * 100 :: Double)
 
 
 axeSmlVol :: Vol
@@ -53,10 +52,6 @@ braceletVol = 3 * 1 * 3 * 100
 
 breadVol :: Vol
 breadVol = round (7.25 * 5.5 * 4.25 * 100 :: Double)
-
-
-broadswordVol :: Vol
-broadswordVol = round (3 * 1.5 * 42 * 100 :: Double)
 
 
 clubVol :: Vol
@@ -115,6 +110,7 @@ knifeVol = round (0.75 * 0.75 * 7 * 100 :: Double)
 knitCapVol :: Vol
 knitCapVol = round (7 * 7 * 0.25 * 100 :: Double)
 
+
 maceVol :: Vol
 maceVol = round (2 * 2 * 12 * 100 :: Double)
 
@@ -139,17 +135,13 @@ overallsVol :: Vol
 overallsVol = tabardVol + trousersVol
 
 
-paperVol :: Vol
-paperVol = round (8.5 * 0.002 * 11 * 100 :: Double)
+parchmentVol :: Vol
+parchmentVol = round (8.5 * 0.002 * 11 * 100 :: Double)
 
 
 potionFlaskVol, potionFlaskLrgVol :: Vol
 potionFlaskVol    = mouthfulVol    * 4 -- 1/2 cup
 potionFlaskLrgVol = potionFlaskVol * 2
-
-
-quarterstaffVol :: Vol
-quarterstaffVol = round (1.25 * 1.25 * 60 :: Double)
 
 
 ringVol :: Vol
@@ -184,17 +176,19 @@ shirtVol :: Vol
 shirtVol = round (12 * 8 * 0.25 * 100 :: Double)
 
 
-shortswordVol :: Vol
-shortswordVol = round (3 * 1.5 * 20 * 100 :: Double)
-
-
 spearVol :: Vol
 spearVol = round (1.5 * 1.5 * 48 * 100 :: Double)
 
 
-swordVol, swordLongVol :: Vol
-swordVol     = 6 * 1 * 30 * 100
-swordLongVol = plusQuarter swordVol
+staffQuarterVol :: Vol
+staffQuarterVol = round (1.25 * 1.25 * 60 :: Double)
+
+
+swordBroadVol, swordLongVol, swordShortVol, swordVol :: Vol
+swordBroadVol = round (3 * 1.5 * 42 * 100 :: Double)
+swordLongVol  = plusQuarter swordVol
+swordShortVol = round (3 * 1.5 * 20 * 100 :: Double)
+swordVol      = 6 * 1 * 30 * 100
 
 
 tabardVol :: Vol

@@ -222,6 +222,8 @@ mkFlower i v = modifyStateSeq $ \ms -> let et = EntTemplate (Just "flower")
                                            ot = ObjTemplate flowerWeight
                                                             flowerVol
                                                             (Just taste)
+                                                            Nothing
+                                                            Nothing
                                                             (setBit zeroBits . fromEnum $ IsBiodegradable)
                                            (_, ms', fs) = newObj ms et ot i
                                        in (ms', fs)
@@ -525,7 +527,7 @@ createAdminZone = do
                   "It's a hunk of metal cut into a rounded shape."
                   Nothing
                   zeroBits)
-             (mkObj . ObjTemplate w v Nothing $ zeroBits)
+             (mkObj . ObjTemplate w v Nothing Nothing Nothing $ zeroBits)
   putObj iSlab
          (Ent iSlab
               (Just "slab")
@@ -533,7 +535,7 @@ createAdminZone = do
               "It's a hunk of grey rock cut into a rectangular block."
               Nothing
               zeroBits)
-         (mkObj . ObjTemplate 19300 67000 Nothing $ zeroBits)
+         (mkObj . ObjTemplate 19300 67000 Nothing Nothing Nothing $ zeroBits)
   forM_ [iCube1..iCube1 + 19] $ \i ->
       putObj i
              (Ent i
@@ -542,7 +544,7 @@ createAdminZone = do
                   "The solid white cube measures 6\" x 6\" x 6\"."
                   Nothing
                   zeroBits)
-             (mkObj . ObjTemplate cubeWeight cubeVol Nothing $ zeroBits)
+             (mkObj . ObjTemplate cubeWeight cubeVol Nothing Nothing Nothing $ zeroBits)
 
   -- ==================================================
   -- Players:

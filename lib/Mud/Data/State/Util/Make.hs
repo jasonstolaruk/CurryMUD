@@ -199,7 +199,7 @@ holySymbolFactory i ms n gn = let (gn', desc, w, v, h) = ((,,,,) <$> pp
                                                     zeroBits
                                   ot  = ObjTemplate w
                                                     v
-                                                    Nothing
+                                                    Nothing Nothing Nothing
                                                     (setBit zeroBits . fromEnum $ IsBiodegradable)
                                   vt  = VesselTemplate Nothing . Just $ h
                                   helper 0 pair      = pair
@@ -320,6 +320,8 @@ newNpc ms et ic em mt npcCreator invId =
 data ObjTemplate = ObjTemplate { otWeight :: Weight
                                , otVol    :: Vol
                                , otTaste  :: Maybe Text
+                               , otVal    :: Val
+                               , otWear   :: Wear
                                , otFlags  :: Flags }
 
 
@@ -327,6 +329,8 @@ mkObj :: ObjTemplate -> Obj
 mkObj ObjTemplate { .. } = Obj { _objWeight      = otWeight
                                , _objVol         = otVol
                                , _objTaste       = otTaste
+                               , _objVal         = otVal
+                               , _objWear        = otWear
                                , _objFlags       = otFlags
                                , _objBiodegAsync = Nothing }
 

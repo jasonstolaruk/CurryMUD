@@ -917,8 +917,11 @@ examineObj :: HasCallStack => ExamineHelper
 examineObj i ms = let o = getObj i ms in [ "Weight: "       <> o^.objWeight.to commaShow
                                          , "Volume: "       <> o^.objVol   .to commaShow
                                          , "Taste: "        <> o^.objTaste .to (fromMaybe none)
+                                         , "Value: "        <> o^.objVal   .to (maybe none showTxt)
+                                         , "Wear: "         <> o^.objWear  .to (maybe none descWear)
                                          , "Object flags: " <> (commas . dropBlanks . descFlags $ o) ]
   where
+    descWear (x, y) = parensQuote . commas . map showTxt $ [ x, y ]
     descFlags o | o^.objFlags == zeroBits = none
                 | otherwise               = let pairs = [ (isBiodegradable, "biodegradable")
                                                         , (isHumming,       "humming"      ) ]

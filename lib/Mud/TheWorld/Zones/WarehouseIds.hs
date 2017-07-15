@@ -25,7 +25,7 @@ iSandalsLeather = 10006 :: Id
 
 iClothRm = 10007 :: Id
 
-iApronBrown = 10008 :: Id
+iApronHeavy = 10008 :: Id
 
 iApronLeather = 10009 :: Id
 
@@ -45,7 +45,7 @@ iTabard = 10016 :: Id
 
 iTrousers = 10017 :: Id
 
-iTunic = 10018 :: Id
+iTunicHeavy = 10018 :: Id
 
 -----
 

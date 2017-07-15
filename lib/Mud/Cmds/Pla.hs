@@ -2316,7 +2316,7 @@ razzle :: HasCallStack => ActionFun
 razzle p@(WithArgs i mq cols [ "dazzle", "root", "beer" ]) = mIf (hasRazzledId i <$> getState)
     (cmdNotFoundAction p)
     (do logPlaExec "razzle" i
-        modifyStateSeq $ \ms ->
+        modifyStateSeq $ \ms -> -- TODO: Clone the tinnitus flask in the warehouse.
             let et  = EntTemplate (Just "flask")
                                   "large potion flask" ""
                                   "This glass flask complete with cork stopper is the ideal vessel for potion storage \
@@ -2325,7 +2325,7 @@ razzle p@(WithArgs i mq cols [ "dazzle", "root", "beer" ]) = mIf (hasRazzledId i
                                   zeroBits
                 ot  = ObjTemplate potionFlaskLrgWeight
                                   potionFlaskLrgVol
-                                  Nothing
+                                  Nothing Nothing Nothing
                                   (setBit zeroBits . fromEnum $ IsBiodegradable)
                 vt  = VesselTemplate (Just (potTinnitusLiq, maxBound)) Nothing
                 res = dropFst . newVessel (ms & plaTbl.ind i %~ setPlaFlag HasRazzled True) et ot vt $ i
