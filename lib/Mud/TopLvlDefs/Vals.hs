@@ -6,13 +6,13 @@ import Mud.Data.State.MudData
 -- $1 = 100 copper
 
 
-apronVal, apronHeavyVal :: Val
-apronVal      = Just 1 -- TODO: Define values.
-apronHeavyVal = Just 1
+apronHeavyVal, apronLeatherVal :: Val
+apronHeavyVal   = Just 4000
+apronLeatherVal = Just 6000
 
 
 axeSmlVal :: Val
-axeSmlVal = Just 1
+axeSmlVal = Just 4500
 
 
 backSmlVal, backVal, backLrgVal :: Val
@@ -22,89 +22,89 @@ backLrgVal = Just 1
 
 
 bottleSmlVal, bottleVal, bottleLrgVal :: Val
-bottleSmlVal = Just 1
-bottleVal    = Just 1
-bottleLrgVal = Just 1
+bottleSmlVal = Just 200
+bottleVal    = Just 375
+bottleLrgVal = Just 560
 
 
 bootsLeatherVal, bootsThighVal :: Val
-bootsLeatherVal = Just 1
-bootsThighVal   = Just 1
+bootsLeatherVal = Just 6500
+bootsThighVal   = Just 8000
 
 
 braceletVal, braceletCharmVal, braceletPearlVal :: Val
-braceletVal      = Just 1
-braceletCharmVal = Just 1
-braceletPearlVal = Just 1
+braceletVal      = Just 500
+braceletCharmVal = Just 700
+braceletPearlVal = Just 38500
 
 
 breadVal :: Val
-breadVal = Just 1
+breadVal = Just 100
 
 
 breechesVal :: Val
-breechesVal = Just 1
+breechesVal = Just 2000
 
 
 capKnitVal :: Val
-capKnitVal = Just 1
+capKnitVal = Just 600
 
 
 chemiseVal :: Val
-chemiseVal = Just 1
+chemiseVal = Just 800
 
 
 clubVal :: Val
-clubVal = Just 1
+clubVal = Just 500
 
 
 coatFrockVal, coatHeavyVal :: Val
-coatFrockVal = Just 1
-coatHeavyVal = Just 1
+coatFrockVal = Just 12000
+coatHeavyVal = Just 9500
 
 
 earVal :: Val
-earVal = Just 1
+earVal = Just 300
 
 
 flowerVal :: Val
-flowerVal = Just 1
+flowerVal = Just 10
 
 
 fruitVal :: Val
-fruitVal = Just 1
+fruitVal = Just 25
 
 
 gorhnaVal :: Val
-gorhnaVal = Just 1
+gorhnaVal = Just 5
 
 
 helmLeatherVal :: Val
-helmLeatherVal = Just 1
+helmLeatherVal = Just 1000
 
 
 jarSmlVal, jarVal, jarLrgVal :: Val
-jarSmlVal = Just 1
-jarVal    = Just 1
-jarLrgVal = Just 1
+jarSmlVal = Just 250
+jarVal    = Just 300
+jarLrgVal = Just 500
 
 
 jugSmlVal, jugVal, jugLrgVal :: Val
-jugSmlVal = Just 1
-jugVal    = Just 1
-jugLrgVal = Just 1
+jugSmlVal = Just 500
+jugVal    = Just 600
+jugLrgVal = Just 800
 
 
 knifeVal :: Val
-knifeVal = Just 1
+knifeVal = Just 725
 
 
 maceVal :: Val
-maceVal = Just 1
+maceVal = Just 5000
 
 
 neckBronzeVal, neckGoldVal, neckPlatinumVal, neckSilverVal :: Val
-neckBronzeVal   = Just 1
+neckBronzeVal   = Just 1 -- TODO: Continue from here.
 neckGoldVal     = Just 1
 neckPlatinumVal = Just 1
 neckSilverVal   = Just 1
@@ -132,9 +132,9 @@ ringVal = Just 1
 
 
 sackSmlVal, sackVal, sackLrgVal :: Val
-sackSmlVal = Just 1
-sackVal    = Just 1
-sackLrgVal = Just 1
+sackSmlVal = Just 275
+sackVal    = Just 400
+sackLrgVal = Just 550
 
 
 sandalsLeatherVal :: Val

@@ -197,7 +197,7 @@ createWarehouse = do
       (let ot = ObjTemplate apronWeight
                             apronVol
                             (Just "You put the apron in your mouth. You wisely conclude that it tastes like cloth.")
-                            apronVal
+                            apronHeavyVal
                             Nothing
                             zeroBits
        in mkObj ot)
@@ -213,7 +213,7 @@ createWarehouse = do
       (let ot = ObjTemplate apronWeight
                             apronVol
                             (mkLeatherTaste "apron")
-                            apronVal
+                            apronLeatherVal
                             Nothing
                             zeroBits
        in mkObj ot)
