@@ -378,7 +378,7 @@ createWarehouse = do
   putRm iAccessoriesRm
       [ iBraceletBangle, iBraceletBeaded, iBraceletCharm, iBraceletPearl
       , iEarAzure, iEarCrimson, iEarOnyx, iEarSeaGreen
-      , iNeckBronze, iNeckGold, iNeckPlatinum, iNeckSilver
+      , iNeckBronze, iNeckGold, iNeckSilver
       , iNoseRing
       , iRingAmethyst, iRingAquamarine, iRingEmerald, iRingGarnet ]
       mempty
@@ -435,7 +435,6 @@ createWarehouse = do
 
   let neckTuples = [ (iNeckBronze,   "bronze",   neckBronzeVal  )
                    , (iNeckGold,     "gold",     neckGoldVal    )
-                   , (iNeckPlatinum, "platinum", neckPlatinumVal)
                    , (iNeckSilver,   "silver",   neckSilverVal  ) ]
 
   forM_ neckTuples $ \(i, t, val) ->
@@ -915,7 +914,7 @@ createWarehouse = do
                                spearWear
                                zeroBits
        in mkObj ot)
-      (Wpn OneHanded 1 10)
+      (Wpn TwoHanded 1 10)
 
   putWpn iStaffQuarter
       (Ent iStaffQuarter

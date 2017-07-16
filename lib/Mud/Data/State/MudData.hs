@@ -802,7 +802,7 @@ data Obj = Obj { _objWeight      :: Weight
 type Weight = Int -- 100 "Weight" = 1 lb
 
 
-type Val = Maybe Cop
+type Val = Maybe Cop -- The price that a shop would sell the item for.
 
 
 type Wear = Maybe (RemainingUses, TotalUses)

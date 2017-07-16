@@ -71,164 +71,162 @@ iNeckBronze = 10028 :: Id
 
 iNeckGold = 10029 :: Id
 
-iNeckPlatinum = 10030 :: Id
+iNeckSilver = 10030 :: Id
 
-iNeckSilver = 10031 :: Id
+iNoseRing = 10031 :: Id
 
-iNoseRing = 10032 :: Id
+iRingAmethyst = 10032 :: Id
 
-iRingAmethyst = 10033 :: Id
+iRingAquamarine = 10033 :: Id
 
-iRingAquamarine = 10034 :: Id
+iRingEmerald = 10034 :: Id
 
-iRingEmerald = 10035 :: Id
-
-iRingGarnet = 10036 :: Id
+iRingGarnet = 10035 :: Id
 
 -----
 
-iConRm = 10037 :: Id
+iConRm = 10036 :: Id
 
-iBackSml = 10038 :: Id
+iBackSml = 10037 :: Id
 
-iBack = 10039 :: Id
+iBack = 10038 :: Id
 
-iBackLrg = 10040 :: Id
+iBackLrg = 10039 :: Id
 
-iSackSml = 10041 :: Id
+iSackSml = 10040 :: Id
 
-iSack = 10042 :: Id
+iSack = 10041 :: Id
 
-iSackLrg = 10043 :: Id
-
------
-
-iFoodRm = 10044 :: Id
-
-iApple1 = 10045 :: Id -- 50
-
-iBanana1 = 10095 :: Id -- 50
-
-iBread1 = 10145 :: Id -- 50
-
-iGorhna1 = 10195 :: Id -- 50
-
-iOrange1 = 10245 :: Id -- 50
+iSackLrg = 10042 :: Id
 
 -----
 
-iNpcRm = 10295 :: Id
+iFoodRm = 10043 :: Id
 
-iPidge = 10296 :: Id
+iApple1 = 10044 :: Id -- 50
 
-iSkeleton = 10297 :: Id
+iBanana1 = 10094 :: Id -- 50
 
------
+iBread1 = 10144 :: Id -- 50
 
-iObjRm = 10298 :: Id
+iGorhna1 = 10194 :: Id -- 50
 
------
-
-iVesselRm = 10299 :: Id
-
-iBottleSml = 10300 :: Id
-
-iBottle = 10301 :: Id
-
-iBottleLrg = 10302 :: Id
-
-iJarSml = 10303 :: Id
-
-iJar = 10304 :: Id
-
-iJarLrg = 10305 :: Id
-
-iJugSml = 10306 :: Id
-
-iJug = 10307 :: Id
-
-iJugLrg = 10308 :: Id
-
-iPotionFlask = 10309 :: Id
-
-iPotionFlaskLrg = 10310 :: Id
-
-iWaterskin = 10311 :: Id
-
-iWaterskinWithWater = 10312 :: Id
-
-iWaterskinLrg = 10313 :: Id
+iOrange1 = 10244 :: Id -- 50
 
 -----
 
-iPotionRm = 10314 :: Id
+iNpcRm = 10294 :: Id
 
-iPotHp = 10315 :: Id
+iPidge = 10295 :: Id
 
-iPotInstantHp = 10316 :: Id
-
-iPotMp = 10317 :: Id
-
-iPotInstantMp = 10318 :: Id
-
-iPotPp = 10319 :: Id
-
-iPotInstantPp = 10320 :: Id
-
-iPotFp = 10321 :: Id
-
-iPotInstantFp = 10322 :: Id
-
-iPotSt = 10323 :: Id
-
-iPotInstantSt = 10324 :: Id
-
-iPotDx = 10325 :: Id
-
-iPotInstantDx = 10326 :: Id
-
-iPotHt = 10327 :: Id
-
-iPotInstantHt = 10328 :: Id
-
-iPotMa = 10329 :: Id
-
-iPotInstantMa = 10330 :: Id
-
-iPotPs = 10331 :: Id
-
-iPotInstantPs = 10332 :: Id
-
-iPotTinnitus = 10333 :: Id
-
-iPotInstantTinnitus = 10334 :: Id
+iSkeleton = 10296 :: Id
 
 -----
 
-iWpnRm = 10335 :: Id
-
-iAxeSml = 10336 :: Id
-
-iClub = 10337 :: Id
-
-iKnife = 10338 :: Id
-
-iMace = 10339 :: Id
-
-iSpear = 10340 :: Id
-
-iStaffQuarter = 10341 :: Id
-
-iSword = 10342 :: Id
-
-iSwordBroad = 10343 :: Id
-
-iSwordLong = 10344 :: Id
-
-iSwordShort = 10345 :: Id
+iObjRm = 10297 :: Id
 
 -----
 
-iWritableRm = 10346 :: Id
+iVesselRm = 10298 :: Id
 
-iParchment1 = 10347 :: Id -- 10
+iBottleSml = 10299 :: Id
+
+iBottle = 10300 :: Id
+
+iBottleLrg = 10301 :: Id
+
+iJarSml = 10302 :: Id
+
+iJar = 10303 :: Id
+
+iJarLrg = 10304 :: Id
+
+iJugSml = 10305 :: Id
+
+iJug = 10306 :: Id
+
+iJugLrg = 10307 :: Id
+
+iPotionFlask = 10308 :: Id
+
+iPotionFlaskLrg = 10309 :: Id
+
+iWaterskin = 10310 :: Id
+
+iWaterskinWithWater = 10311 :: Id
+
+iWaterskinLrg = 10312 :: Id
+
+-----
+
+iPotionRm = 10313 :: Id
+
+iPotHp = 10314 :: Id
+
+iPotInstantHp = 10315 :: Id
+
+iPotMp = 10316 :: Id
+
+iPotInstantMp = 10317 :: Id
+
+iPotPp = 10318 :: Id
+
+iPotInstantPp = 10319 :: Id
+
+iPotFp = 10320 :: Id
+
+iPotInstantFp = 10321 :: Id
+
+iPotSt = 10322 :: Id
+
+iPotInstantSt = 10323 :: Id
+
+iPotDx = 10324 :: Id
+
+iPotInstantDx = 10325 :: Id
+
+iPotHt = 10326 :: Id
+
+iPotInstantHt = 10327 :: Id
+
+iPotMa = 10328 :: Id
+
+iPotInstantMa = 10329 :: Id
+
+iPotPs = 10330 :: Id
+
+iPotInstantPs = 10331 :: Id
+
+iPotTinnitus = 10332 :: Id
+
+iPotInstantTinnitus = 10333 :: Id
+
+-----
+
+iWpnRm = 10334 :: Id
+
+iAxeSml = 10335 :: Id
+
+iClub = 10336 :: Id
+
+iKnife = 10337 :: Id
+
+iMace = 10338 :: Id
+
+iSpear = 10339 :: Id
+
+iStaffQuarter = 10340 :: Id
+
+iSword = 10341 :: Id
+
+iSwordBroad = 10342 :: Id
+
+iSwordLong = 10343 :: Id
+
+iSwordShort = 10344 :: Id
+
+-----
+
+iWritableRm = 10345 :: Id
+
+iParchment1 = 10346 :: Id -- 10

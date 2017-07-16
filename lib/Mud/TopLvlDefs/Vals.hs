@@ -16,15 +16,15 @@ axeSmlVal = Just 4500
 
 
 backSmlVal, backVal, backLrgVal :: Val
-backSmlVal = Just 1
-backVal    = Just 1
-backLrgVal = Just 1
+backSmlVal = Just 7500
+backVal    = Just 10000
+backLrgVal = Just 12500
 
 
 bottleSmlVal, bottleVal, bottleLrgVal :: Val
-bottleSmlVal = Just 200
+bottleSmlVal = Just 250
 bottleVal    = Just 375
-bottleLrgVal = Just 560
+bottleLrgVal = Just 500
 
 
 bootsLeatherVal, bootsThighVal :: Val
@@ -34,7 +34,7 @@ bootsThighVal   = Just 8000
 
 braceletVal, braceletCharmVal, braceletPearlVal :: Val
 braceletVal      = Just 500
-braceletCharmVal = Just 700
+braceletCharmVal = Just 850
 braceletPearlVal = Just 38500
 
 
@@ -51,7 +51,7 @@ capKnitVal = Just 600
 
 
 chemiseVal :: Val
-chemiseVal = Just 800
+chemiseVal = Just 2000
 
 
 clubVal :: Val
@@ -64,15 +64,11 @@ coatHeavyVal = Just 9500
 
 
 earVal :: Val
-earVal = Just 300
-
-
-flowerVal :: Val
-flowerVal = Just 10
+earVal = Just 325
 
 
 fruitVal :: Val
-fruitVal = Just 25
+fruitVal = Just 75
 
 
 gorhnaVal :: Val
@@ -80,17 +76,17 @@ gorhnaVal = Just 5
 
 
 helmLeatherVal :: Val
-helmLeatherVal = Just 1000
+helmLeatherVal = Just 1200
 
 
 jarSmlVal, jarVal, jarLrgVal :: Val
-jarSmlVal = Just 250
+jarSmlVal = Just 200
 jarVal    = Just 300
-jarLrgVal = Just 500
+jarLrgVal = Just 400
 
 
 jugSmlVal, jugVal, jugLrgVal :: Val
-jugSmlVal = Just 500
+jugSmlVal = Just 400
 jugVal    = Just 600
 jugLrgVal = Just 800
 
@@ -103,75 +99,74 @@ maceVal :: Val
 maceVal = Just 5000
 
 
-neckBronzeVal, neckGoldVal, neckPlatinumVal, neckSilverVal :: Val
-neckBronzeVal   = Just 1 -- TODO: Continue from here.
-neckGoldVal     = Just 1
-neckPlatinumVal = Just 1
-neckSilverVal   = Just 1
+neckBronzeVal, neckGoldVal, neckSilverVal :: Val
+neckBronzeVal = Just 500
+neckGoldVal   = Just 50000
+neckSilverVal = Just 5000
 
 
 noseVal :: Val
-noseVal = Just 1
+noseVal = Just 350
 
 
 overallsVal :: Val
-overallsVal = Just 1
+overallsVal = Just 3500
 
 
 parchmentVal :: Val
-parchmentVal = Just 1
+parchmentVal = Just 75
 
 
 potionFlaskVal, potionFlaskLrgVal :: Val
-potionFlaskVal    = Just 1
-potionFlaskLrgVal = Just 1
+potionFlaskVal    = Just 100
+potionFlaskLrgVal = Just 175
 
 
 ringVal :: Val
-ringVal = Just 1
+ringVal = Just 35000
 
 
 sackSmlVal, sackVal, sackLrgVal :: Val
-sackSmlVal = Just 275
+sackSmlVal = Just 300
 sackVal    = Just 400
-sackLrgVal = Just 550
+sackLrgVal = Just 500
 
 
 sandalsLeatherVal :: Val
-sandalsLeatherVal = Just 1
+sandalsLeatherVal = Just 1800
 
 
 shirtPeasantVal :: Val
-shirtPeasantVal = Just 1
+shirtPeasantVal = Just 1500
 
 
 spearVal :: Val
-spearVal = Just 1
+spearVal = Just 4000
 
 
 staffQuarterVal :: Val
-staffQuarterVal = Just 1
+staffQuarterVal = Just 1000
 
 
 swordBroadVal, swordLongVal, swordShortVal, swordVal :: Val
-swordBroadVal = Just 1
-swordLongVal  = Just 1
-swordShortVal = Just 1
-swordVal      = Just 1
+swordBroadVal = Just 50000
+swordLongVal  = Just 70000
+swordShortVal = Just 40000
+swordVal      = Just 47500
 
 
 tabardVal :: Val
-tabardVal = Just 1
+tabardVal = Just 6500
 
 
 trousersVal :: Val
-trousersVal = Just 1
+trousersVal = Just 3200
 
 
 tunicHeavyVal :: Val
-tunicHeavyVal = Just 1
+tunicHeavyVal = Just 3000
 
 
 waterskinVal, waterskinLrgVal :: Val
-waterskinVal    = Just 1
-waterskinLrgVal = Just 1
+waterskinVal    = Just 750
+waterskinLrgVal = Just 1500
