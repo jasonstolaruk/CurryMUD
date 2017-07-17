@@ -850,7 +850,8 @@ createWarehouse = do
       (Ent iClub
           (Just "club")
           "wooden club" ""
-          "It's a crude wooden club, the type a neanderthal might use to great effect." -- TODO: Remove reference to neanderthals.
+          "It's a crude wooden club, one of the simplest and oldest of weapons. This club is little more than a thick \
+          \stick with a comfortable handle."
           (Just "The club smells like wood.")
           zeroBits)
       (let ot = ObjTemplate clubWeight
