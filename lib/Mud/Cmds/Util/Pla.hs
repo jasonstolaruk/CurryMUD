@@ -643,19 +643,19 @@ helperDropEitherInv :: HasCallStack => Id
                                     -> GenericIntermediateRes
 helperDropEitherInv i d fromId toId a@(ms, _, _, _) = \case
   Left  msg -> a & _2 <>~ pure msg
-  Right is  -> let (is',     sorrys) = checkNowEating i ms "drop" is
+  Right is  -> let (is',     sorrys) = checkNowEating i ms "drop" "" is
                    (toSelfs, bs    ) = mkGetDropInvDescs i ms d Drop is'
                in a & _1.invTbl.ind fromId %~  (\\ is')
                     & _1.invTbl.ind toId   %~  addToInv ms is'
-                    & _2                   <>~ (sorrys ++ toSelfs)
+                    & _2                   <>~ sorrys ++ toSelfs
                     & _3                   <>~ bs
                     & _4                   <>~ toSelfs
 
 
-checkNowEating :: HasCallStack => Id -> MudState -> Text -> Inv -> (Inv, [Text]) -- TODO: Use this elsewhere ("give", for example).
-checkNowEating i ms t is = let pair = (is, []) in case getNowEating i ms of
+checkNowEating :: HasCallStack => Id -> MudState -> Text -> Text -> Inv -> (Inv, [Text])
+checkNowEating i ms a b is = let pair = (is, []) in case getNowEating i ms of
   Nothing                                 -> pair
-  Just (eatId, eatSing) | eatId `elem` is -> (eatId `delete` is, pure . sorryEating t $ eatSing)
+  Just (eatId, eatSing) | eatId `elem` is -> (eatId `delete` is, pure . sorryEating a b $ eatSing)
                         | otherwise       -> pair
 
 
@@ -950,13 +950,15 @@ helperGiveEitherInv :: HasCallStack => Id
 helperGiveEitherInv i d toId a@(ms, _, _, _) = \case
   Left  msg -> a & _2 <>~ pure msg
   Right is  ->
-    let (_, cans, can'ts) = foldl' (partitionInvByEnc ms . calcMaxEnc toId $ ms) (calcWeight toId ms, [], []) is
+    let (is', sorrys)     = checkNowEating i ms "give" "to someone" is
+        (_, cans, can'ts) = foldl' (partitionInvByEnc ms . calcMaxEnc toId $ ms) (calcWeight toId ms, [], []) is'
         (toSelfs, bs    ) = mkGiveInvDescs i ms d toId (serialize toDesig) cans
         toDesig           = mkStdDesig toId ms Don'tCap
     in a & _1.invTbl.ind i    %~  (\\ cans)
          & _1.invTbl.ind toId %~  addToInv ms cans
-         & _2                 <>~ toSelfs ++
-                                  mkCan'tGiveInvDescs (serialize toDesig { desigCap = DoCap }) i ms can'ts
+         & _2                 <>~ concat [ sorrys
+                                         , toSelfs
+                                         , mkCan'tGiveInvDescs (serialize toDesig { desigCap = DoCap }) i ms can'ts ]
          & _3                 <>~ bs
          & _4                 <>~ toSelfs
 
@@ -1104,15 +1106,16 @@ helperPutEitherInv :: HasCallStack => Id
 helperPutEitherInv i d mnom toId toSing a@(ms, origToSelfs, _, _) = \case
   Left  msg -> a & _2 <>~ pure msg
   Right is  ->
-    let (is',      toSelfs) = onTrue (toId `elem` is) f (is, origToSelfs)
-        f                   = filter (/= toId) *** (<> pure (sorryPutInsideSelf toSing))
-        (_, cans,  can'ts ) = foldl' (partitionInvByVol ms . getConCapacity toId $ ms)
-                                     (calcInvCoinsVol toId ms, [], [])
-                                     is'
-        (toSelfs', bs     ) = mkPutRemInvDescs i ms d Put mnom (mkMaybeCorpseId toId ms) toSing cans
+    let (is',  sorrys )   = checkNowEating i ms "put" "in a container" is
+        (is'', toSelfs)   = onTrue (toId `elem` is') f (is', origToSelfs)
+        f                 = filter (/= toId) *** (<> pure (sorryPutInsideSelf toSing))
+        (_, cans, can'ts) = foldl' (partitionInvByVol ms . getConCapacity toId $ ms)
+                                   (calcInvCoinsVol toId ms, [], [])
+                                   is''
+        (toSelfs', bs)    = mkPutRemInvDescs i ms d Put mnom (mkMaybeCorpseId toId ms) toSing cans
     in a & _1.invTbl.ind i    %~  (\\ cans)
          & _1.invTbl.ind toId %~  addToInv ms cans
-         & _2                 .~  concat [ toSelfs, toSelfs', mkCan'tPutInvDescs toSing i ms can'ts ]
+         & _2                 .~  concat [ sorrys, toSelfs, toSelfs', mkCan'tPutInvDescs toSing i ms can'ts ]
          & _3                 <>~ bs
          & _4                 <>~ toSelfs'
 

@@ -757,8 +757,11 @@ sorryEatType :: Sing -> Text
 sorryEatType s = prd $ can't "eat " <> aOrAn s
 
 
-sorryEating :: Text -> Sing -> Text
-sorryEating t s = T.concat [ "You can't ", t, " the ", s, " while you're eating it." ]
+sorryEating :: Text -> Text -> Sing -> Text
+sorryEating a b s =
+    T.concat [ "You can't ", a, " the ", s, " ", b', "while you're eating it. Please stop eating the ", s, " first." ]
+  where
+    b' = onTrue (()!# b) spcR b
 
 
 -----
