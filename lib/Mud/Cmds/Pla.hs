@@ -2316,7 +2316,7 @@ razzle :: HasCallStack => ActionFun
 razzle p@(WithArgs i mq cols [ "dazzle", "root", "beer" ]) = mIf (hasRazzledId i <$> getState)
     (cmdNotFoundAction p)
     (do logPlaExec "razzle" i
-        modifyStateSeq $ \ms -> -- TODO: Clone the tinnitus flask in the warehouse.
+        modifyStateSeq $ \ms ->
             let et  = EntTemplate (Just "flask")
                                   "large potion flask" ""
                                   "This glass flask complete with cork stopper is the ideal vessel for potion storage \
