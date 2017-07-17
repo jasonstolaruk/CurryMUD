@@ -682,7 +682,7 @@ data ActType = Attacking
 type ActAsync = Async ()
 
 
-type NowEating = Sing
+type NowEating = (Id, Sing)
 
 
 type NowDrinking = (Liq, Sing)

@@ -643,12 +643,20 @@ helperDropEitherInv :: HasCallStack => Id
                                     -> GenericIntermediateRes
 helperDropEitherInv i d fromId toId a@(ms, _, _, _) = \case
   Left  msg -> a & _2 <>~ pure msg
-  Right is  -> let (toSelfs, bs) = mkGetDropInvDescs i ms d Drop is
-               in a & _1.invTbl.ind fromId %~  (\\ is)
-                    & _1.invTbl.ind toId   %~  addToInv ms is
-                    & _2                   <>~ toSelfs
+  Right is  -> let (is',     sorrys) = checkNowEating i ms "drop" is
+                   (toSelfs, bs    ) = mkGetDropInvDescs i ms d Drop is'
+               in a & _1.invTbl.ind fromId %~  (\\ is')
+                    & _1.invTbl.ind toId   %~  addToInv ms is'
+                    & _2                   <>~ (sorrys ++ toSelfs)
                     & _3                   <>~ bs
                     & _4                   <>~ toSelfs
+
+
+checkNowEating :: HasCallStack => Id -> MudState -> Text -> Inv -> (Inv, [Text]) -- TODO: Use this elsewhere ("give", for example).
+checkNowEating i ms t is = let pair = (is, []) in case getNowEating i ms of
+  Nothing                                 -> pair
+  Just (eatId, eatSing) | eatId `elem` is -> (eatId `delete` is, pure . sorryEating t $ eatSing)
+                        | otherwise       -> pair
 
 
 mkGetDropInvDescs :: HasCallStack => Id -> MudState -> Desig -> GetOrDrop -> Inv -> ([Text], [Broadcast])
@@ -2227,13 +2235,14 @@ stopDrinking p _ = pmf "stopDrinking" p
 
 
 stopEating :: HasCallStack => ActionParams -> MudState -> MudStack ()
-stopEating (WithArgs i mq cols _) ms = let Just s      = getNowEating i ms
-                                           toSelf      = prd $ "You stop eating " <> theOnLower s
-                                           d           = mkStdDesig i ms DoCap
-                                           msg         = T.concat [ serialize d, " stops eating ", aOrAn s, "." ]
-                                           bcastHelper = bcastIfNotIncogNl i . pure $ (msg, i `delete` desigIds d)
-                                       in stopAct i Eating >> wrapSend mq cols toSelf >> bcastHelper
-stopEating p _                       = pmf "stopEating" p
+stopEating (WithArgs i mq cols _) ms = maybeVoid helper . getNowEating i $ ms
+  where
+    helper (_, s) = let toSelf      = prd $ "You stop eating " <> theOnLower s
+                        d           = mkStdDesig i ms DoCap
+                        msg         = T.concat [ serialize d, " stops eating ", aOrAn s, "." ]
+                        bcastHelper = bcastIfNotIncogNl i . pure $ (msg, i `delete` desigIds d)
+                    in stopAct i Eating >> wrapSend mq cols toSelf >> bcastHelper
+stopEating p _ = pmf "stopEating" p
 
 
 stopSacrificing :: HasCallStack => ActionParams -> MudState -> MudStack ()

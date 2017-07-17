@@ -182,7 +182,7 @@ eatAct EatBundle { .. } = modifyStateSeq f `finally` tweak (mobTbl.ind eaterId.n
                gs = [ multiWrapSend1Nl eaterMq eaterCols . dropEmpties $ [ t, eatFood^.foodEatDesc ]
                     , bcastIfNotIncogNl eaterId bs
                     , loop 1 ]
-           in (ms & mobTbl.ind eaterId.nowEating ?~ eatFoodSing, fs)
+           in (ms & mobTbl.ind eaterId.nowEating ?~ (eatFoodId, eatFoodSing), fs)
     loop x = do
         liftIO . delaySecs =<< view foodSecsPerMouthful . getDistinctFood i <$> getState
         now <- liftIO getCurrentTime

@@ -51,8 +51,8 @@ kit i (V.toList -> [ va, vb, vc, vd, ve, vf, vg, vh, vi, vj ]) = modifyStateSeq 
         coinsHelper = _1.coinsTbl.ind i .~ f (Coins (x, y, z))
           where
             x = rndmIntToRange vb (1,  50)
-            y = rndmIntToRange vc (5,  15)
-            z = rndmIntToRange vd (10, 20)
+            y = rndmIntToRange vc (1,  50)
+            z = rndmIntToRange vd (20, 50)
             f coins@(Coins triple) | r == Human = Coins (triple & each %~ (* 2))
                                    | otherwise  = coins
     potionsHelper triple = clone i triple . mapMaybe f $ [ (ve, iPotInstantHp), (vf, iPotInstantFp), (vg, iPotInstantSt) ]

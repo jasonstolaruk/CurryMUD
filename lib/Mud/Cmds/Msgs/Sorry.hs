@@ -63,6 +63,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryActing
                            , sorryEatInRm
                            , sorryEatMouthfuls
                            , sorryEatType
+                           , sorryEating
                            , sorryEmoteExcessTargets
                            , sorryEmoteTargetCoins
                            , sorryEmoteTargetInEq
@@ -754,6 +755,10 @@ sorryEatMouthfuls = can't "eat less than one mouthful."
 
 sorryEatType :: Sing -> Text
 sorryEatType s = prd $ can't "eat " <> aOrAn s
+
+
+sorryEating :: Text -> Sing -> Text
+sorryEating t s = T.concat [ "You can't ", t, " the ", s, " while you're eating it." ]
 
 
 -----

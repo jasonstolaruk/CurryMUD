@@ -893,11 +893,12 @@ examineMob i ms =
                                    in T.concat [ mouths, " / ", size, " ", parensQuote $ perFull <> "%" ]
        , "Feeling map: "        <> let f tag feel = (tag |<>| pp feel :)
                                    in noneOnNull . commas . views feelingMap (M.foldrWithKey f []) $ m
-       , "Now eating: "         <> m^.nowEating  .to (fromMaybe none)
+       , "Now eating: "         <> m^.nowEating  .to (maybe none eatHelper  )
        , "Now drinking: "       <> m^.nowDrinking.to (maybe none drinkHelper)
        , encHelper i ms ]
   where
     rmHelper ri                        = getRmName ri ms |<>| parensQuote (showTxt ri)
+    eatHelper (eatId, eatSing)         = parensQuote . commas $ [ showTxt eatId, eatSing ]
     drinkHelper (view liqNoun -> n, s) = f n |<>| parensQuote s
       where
         f (DoArticle    t) = t
