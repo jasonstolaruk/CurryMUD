@@ -87,21 +87,22 @@ import           Data.Char (isDigit, isLetter, isLower, isSpace, isUpper)
 import           Data.Either (lefts, partitionEithers)
 import           Data.Function (on)
 import           Data.Int (Int64)
+import qualified Data.IntMap.Strict as IM ((!), keys)
 import           Data.Ix (inRange)
 import           Data.List ((\\), delete, foldl', intercalate, intersperse, nub, partition, sort, sortBy, unfoldr)
 import           Data.List.Split (chunksOf)
+import qualified Data.Map.Strict as M ((!), elems, filter, foldrWithKey, keys, lookup, singleton, size, toList)
+import           Data.Maybe (fromMaybe)
 import           Data.Monoid ((<>), All(..), Sum(..))
+import qualified Data.Set as S (filter, toList)
 import           Data.Text (Text)
+import qualified Data.Text as T
+import qualified Data.Text.Encoding as TE
+import qualified Data.Text.IO as T (readFile)
 import           Data.Time (diffUTCTime, getCurrentTime)
 import           Data.Tuple (swap)
 import           GHC.Stack (HasCallStack)
 import           Prelude hiding (log, pi)
-import qualified Data.IntMap.Strict as IM ((!), keys)
-import qualified Data.Map.Strict as M ((!), elems, filter, foldrWithKey, keys, lookup, singleton, size, toList)
-import qualified Data.Set as S (filter, toList)
-import qualified Data.Text as T
-import qualified Data.Text.Encoding as TE
-import qualified Data.Text.IO as T (readFile)
 import           System.Clock (Clock(..), TimeSpec(..), getTime)
 import           System.Console.ANSI (ColorIntensity(..), clearScreenCode)
 import           System.Directory (doesFileExist, getDirectoryContents)
@@ -3189,8 +3190,7 @@ smell (NoArgs i mq cols) = getState >>= \ms ->
         f t = let t' = spcL . parensQuote $ t in (<> t')
     helper ms (f, g) = foldr (\i' acc -> maybe acc (: acc) . mkMaybeCorpseSmellMsg i ms i' $ g) [] . uncurry f $ (i, ms)
 smell p@(OneArgLower i mq cols a) = getState >>= \ms ->
-    let invCoins   = getInvCoins i ms
-        eqMap      = getEqMap    i ms
+    let (invCoins, eqMap) = (getInvCoins `fanUncurry` getEqMap) (i, ms)
         rmInvCoins = first (i `delete`) . getMobRmVisibleInvCoins i $ ms
         maybeHooks = lookupHooks i ms "smell"
         d          = mkStdDesig  i ms DoCap
@@ -3254,16 +3254,18 @@ smell p@(OneArgLower i mq cols a) = getState >>= \ms ->
           then sorry sorryEquipCoins
           else case eis of
             Left  msg        -> sorry msg
-            Right [targetId] -> let (targetSing, smellDesc) = (getSing `fanUncurry` getEntSmell) (targetId, ms)
-                                    slotDesc = descSlotForId i ms targetId eqMap
-                                    bs       = pure (T.concat [ serialize d
-                                                              , " smells "
-                                                              , aOrAn targetSing
-                                                              , slotDesc |!| spcL slotDesc
-                                                              , "." ], i `delete` desigIds d)
-                                    logMsg   = T.concat [ "smelled ", aOrAn targetSing, " ", slotDesc, "." ]
-                                in ioHelper smellDesc bs logMsg
-            Right _          -> sorry sorrySmellExcessTargets
+            Right [targetId] ->
+                let (targetSing, smellDesc) = (getSing `fanUncurry` getEntSmell) (targetId, ms)
+                    slotDesc = descSlotForId i ms targetId eqMap
+                    bs       = pure (T.concat [ serialize d
+                                              , " smells "
+                                              , aOrAn targetSing
+                                              , slotDesc |!| spcL slotDesc
+                                              , "." ], i `delete` desigIds d)
+                    logMsg   = T.concat [ "smelled ", aOrAn targetSing, " ", slotDesc, "." ]
+                    res      = join (checkSlotSmellTaste targetSing <$> lookupMapValue targetId eqMap)
+                in uncurry3 ioHelper . (, bs, logMsg) . fromMaybe smellDesc $ res
+            Right _ -> sorry sorrySmellExcessTargets
     -----
     smellRm ms d invCoins maybeHooks target = -- You can smell a mob or a corpse in your current room.
         let pair@(eiss, ecs) = uncurry (resolveRmInvCoins i ms . pure $ target) invCoins
@@ -3477,7 +3479,8 @@ taste p@(OneArgLower i mq cols a) = getState >>= \ms ->
                                                               , slotDesc |!| spcL slotDesc
                                                               , "." ], i `delete` desigIds d)
                                     logMsg   = T.concat [ "tasted ", aOrAn targetSing, " ", slotDesc, "." ]
-                                in ioHelper tasteDesc bs logMsg
+                                    res      = join (checkSlotSmellTaste targetSing <$> lookupMapValue targetId eqMap)
+                                in uncurry3 ioHelper . (, bs, logMsg) . fromMaybe tasteDesc $ res
             Right _          -> sorry sorryTasteExcessTargets
     -----
     ioHelper = smellTasteIOHelper "taste" i mq cols

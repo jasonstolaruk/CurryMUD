@@ -12,6 +12,7 @@ module Mud.Cmds.Util.Pla ( InvWithCon
                          , bugTypoLogger
                          , checkActing
                          , checkMutuallyTuned
+                         , checkSlotSmellTaste
                          , clothToSlot
                          , connectHelper
                          , descSlotForId
@@ -288,6 +289,16 @@ checkMutuallyTuned i ms targetSing = case areMutuallyTuned of
                      , b <- (M.! s         ) . getTeleLinkTbl targetId $ ms
                      = (a, b, targetId)
     s                = getSing i ms
+
+
+-----
+
+
+checkSlotSmellTaste :: Sing -> Slot -> Maybe Text
+checkSlotSmellTaste s slot | slot `elem` ngSlots = Just . sorrySmellTasteSlot $ s
+                           | otherwise           = Nothing
+  where
+    ngSlots = [ EarringR1S .. NoseRing2S ] ++ [ HeadS, TorsoS, TrousersS, LowerBodyS, FeetS, BackpackS ]
 
 
 -----

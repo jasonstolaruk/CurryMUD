@@ -285,6 +285,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryActing
                            , sorrySmellEmptyRmNoHooks
                            , sorrySmellEmptyRmWithHooks
                            , sorrySmellExcessTargets
+                           , sorrySmellTasteSlot
                            , sorrySmellNothingToSmell
                            , sorrySmellRmCoins
                            , sorrySmellRmNoHooks
@@ -1912,6 +1913,10 @@ sorrySmellRmCoins (coinTxt, isPlur) = T.concat [ "You must pick up the "
 
 sorrySmellRmNoHooks :: Sing -> Text
 sorrySmellRmNoHooks s = "You must pick up the " <> s <> " before you can smell it."
+
+
+sorrySmellTasteSlot :: Sing -> Text
+sorrySmellTasteSlot s = "You'll have to unready the " <> s <> " first."
 
 
 -----
