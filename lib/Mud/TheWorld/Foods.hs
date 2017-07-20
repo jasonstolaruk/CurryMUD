@@ -104,7 +104,7 @@ appleFood = Food (DistinctFoodId iFoodApple)
 
 
 appleDistinctFood :: DistinctFood
-appleDistinctFood = DistinctFood "apple" 7 30 mkFoodEdibleEffects
+appleDistinctFood = DistinctFood "apple" 7 15 mkFoodEdibleEffects
 
 
 newFoodApple :: NewFoodFun
@@ -138,7 +138,7 @@ bananaFood = Food (DistinctFoodId iFoodBanana)
 
 
 bananaDistinctFood :: DistinctFood
-bananaDistinctFood = DistinctFood "banana" 5 12 mkFoodEdibleEffects
+bananaDistinctFood = DistinctFood "banana" 5 6 mkFoodEdibleEffects
 
 
 newFoodBanana :: NewFoodFun
@@ -174,7 +174,7 @@ breadFood = Food (DistinctFoodId iFoodBread)
 
 
 breadDistinctFood :: DistinctFood
-breadDistinctFood = DistinctFood "bread" 64 {- 8 slices, 8 mouthfuls per slice -} 30 mkFoodEdibleEffects
+breadDistinctFood = DistinctFood "bread" 64 {- 8 slices, 8 mouthfuls per slice -} 15 mkFoodEdibleEffects
 
 
 newFoodBread :: NewFoodFun
@@ -260,11 +260,11 @@ orangeObjTemplate = ObjTemplate orangeWeight
 orangeFood :: Food
 orangeFood = Food (DistinctFoodId iFoodOrange)
                   "Tart, tangy, and more than a little juicy!"
-                  5 -- TODO: Accurate number(s).
+                  6
 
 
 orangeDistinctFood :: DistinctFood
-orangeDistinctFood = DistinctFood "orange" 5 30 mkFoodEdibleEffects -- TODO: Accurate number(s).
+orangeDistinctFood = DistinctFood "orange" 6 15 mkFoodEdibleEffects
 
 
 newFoodOrange :: NewFoodFun

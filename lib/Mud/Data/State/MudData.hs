@@ -416,7 +416,7 @@ newtype DistinctFoodId = DistinctFoodId Id deriving (Eq, Generic, Ord, Show)
 
 data DistinctFood = DistinctFood { _foodName            :: FoodName -- To aid in identifying a distinct food. Not seen by players.
                                  , _foodMouthfuls       :: Mouthfuls
-                                 , _foodSecsPerMouthful :: Seconds
+                                 , _foodSecsPerMouthful :: Seconds -- Half the number of seconds it takes to eat a mouthful in real life.
                                  , _foodEdibleEffects   :: EdibleEffects }
 
 

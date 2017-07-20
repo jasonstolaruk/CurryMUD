@@ -128,7 +128,7 @@ noseVol = earVol
 
 
 orangeVol :: Vol
-orangeVol = appleVol -- TODO
+orangeVol = appleVol
 
 
 overallsVol :: Vol

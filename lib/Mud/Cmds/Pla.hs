@@ -3174,7 +3174,7 @@ showAction p = pmf "showAction" p
 -----
 
 
-smell :: HasCallStack => ActionFun -- TODO: You shouldn't be able to smell/taste items that are equipped in certain slots.
+smell :: HasCallStack => ActionFun
 smell (NoArgs i mq cols) = getState >>= \ms ->
     let corpseMsgs = mkCorpseMsgs ms
         ts         = views rmSmell (maybe a b) . getMobRm i $ ms

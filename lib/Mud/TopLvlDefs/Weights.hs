@@ -117,7 +117,7 @@ noseWeight = earWeight
 
 
 orangeWeight :: Weight
-orangeWeight = appleWeight -- TODO
+orangeWeight = appleWeight
 
 
 overallsWeight :: Weight
