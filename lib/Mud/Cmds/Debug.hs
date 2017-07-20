@@ -398,7 +398,7 @@ debugEffect (NoArgs' i mq) = do
     logPlaExec (prefixDebugCmd "effect") i
     ok mq
     let tag     = Just "debugEffect"
-        effSub  = MobEffectAttrib St
+        effSub  = EffectAttrib St
         effVal  = Just . EffectRangedVal $ (10, 20)
         effDur  = 30
         effFeel = Nothing

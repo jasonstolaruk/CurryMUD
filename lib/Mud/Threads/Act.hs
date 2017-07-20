@@ -305,7 +305,7 @@ applyBonus i s gn now = do
                              Fp -> (curFp, maxFp))
     maxXpHelper = uncurry maxXp =<< rndmElem (mkXpPairs [ Hp, Fp ])
     effectHelper effTagSuff range attrib = let tag     = "sacrificeBonus" <> pp gn <> fromMaybeEmp effTagSuff
-                                               effSub  = MobEffectAttrib attrib
+                                               effSub  = EffectAttrib attrib
                                                effVal  = Just . EffectRangedVal $ range
                                                effFeel = Just . EffectFeeling tag $ sacrificeBonusSecs
                                            in startEffect i . Effect (Just tag) effSub effVal sacrificeBonusSecs $ effFeel

@@ -283,9 +283,8 @@ data Effect = Effect { _effectTag     :: Maybe EffectTag
 type EffectTag = Text
 
 
-data EffectSub = ArmEffectAC
-               | MobEffectAttrib Attrib
-               | MobEffectAC
+data EffectSub = EffectAttrib Attrib
+               | EffectLight
                | EffectOther FunName -- Function is run every second.
                deriving (Eq, Generic, Show)
 

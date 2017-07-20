@@ -420,10 +420,9 @@ instance Pretty EffectFeeling where
 
 
 instance Pretty EffectSub where
-  pp ArmEffectAC              = "armor AC"
-  pp (MobEffectAttrib attrib) = "mob "   <> pp attrib
-  pp MobEffectAC              = "mob AC"
-  pp (EffectOther fn)         = "other " <> parensQuote fn
+  pp (EffectAttrib attrib) = "attrib " <> pp attrib
+  pp EffectLight           = "light"
+  pp (EffectOther fn)      = "other "  <> parensQuote fn
 
 
 instance Pretty EffectVal where

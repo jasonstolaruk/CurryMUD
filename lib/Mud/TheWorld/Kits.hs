@@ -27,7 +27,7 @@ pmf = U.pmf "Mud.TheWorld.Kits"
 -- ==================================================
 
 
--- TODO: Include light source.
+-- TODO: Include a light source. Light sources must be readied and lit.
 kit :: HasCallStack => Id -> V.Vector Int -> MudStack ()
 kit i (V.toList -> [ va, vb, vc, vd, ve, vf, vg, vh, vi, vj ]) = modifyStateSeq helper
   where
