@@ -125,7 +125,8 @@ bananaEntTemplate = EntTemplate (Just "banana")
 bananaObjTemplate :: ObjTemplate
 bananaObjTemplate = ObjTemplate bananaWeight
                                 bananaVol
-                                (Just "You take a nibble off the ripe banana. The pulpous fruit is sufficiently tasty.")
+                                (Just "You pull back the peel a bit and take a nibble off the ripe banana. The pulpous \
+                                      \fruit is sufficiently tasty.")
                                 fruitVal
                                 Nothing
                                 zeroBits
@@ -250,8 +251,8 @@ orangeEntTemplate = EntTemplate (Just "orange")
 orangeObjTemplate :: ObjTemplate
 orangeObjTemplate = ObjTemplate orangeWeight
                                 orangeVol
-                                (Just "The orange has a familiar citrus taste. This one might be a bit on the bitter \
-                                      \side.")
+                                (Just "You pull back the peel a bit and sample the orange. There's that familiar citrus \
+                                      \taste, with somewhat bitter overtones.")
                                 fruitVal
                                 Nothing
                                 zeroBits
