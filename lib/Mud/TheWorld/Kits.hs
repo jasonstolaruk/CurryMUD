@@ -31,15 +31,16 @@ pmf = U.pmf "Mud.TheWorld.Kits"
 kit :: HasCallStack => Id -> V.Vector Int -> MudStack ()
 kit i (V.toList -> [ va, vb, vc, vd, ve, vf, vg, vh, vi, vj ]) = modifyStateSeq helper
   where
-    helper ms = coinsHelper . holySymbolHelper . dropFst . ringHelper . potionsHelper . clone i ([], ms, []) . (commonIds ++) $ case r of
-        Dwarf     -> []
-        Elf       -> []
-        Felinoid  -> []
-        Hobbit    -> []
-        Human     -> []
-        Lagomorph -> []
-        Nymph     -> []
-        Vulpenoid -> []
+    helper ms =
+        let f = coinsHelper . holySymbolHelper . dropFst . ringHelper . potionsHelper . clone i ([], ms, []) . (commonIds ++)
+        in f $ case r of Dwarf     -> []
+                         Elf       -> []
+                         Felinoid  -> []
+                         Hobbit    -> []
+                         Human     -> []
+                         Lagomorph -> []
+                         Nymph     -> []
+                         Vulpenoid -> []
       where
         r           = getRace i ms
         commonIds   = let fruitIds = [ iApple1, iBanana1, iOrange1 ]
