@@ -95,6 +95,10 @@ knifeVal :: Val
 knifeVal = Just 725
 
 
+lanternVal :: Val
+lanternVal = Just 4000
+
+
 maceVal :: Val
 maceVal = Just 5000
 
@@ -157,6 +161,10 @@ swordVal      = Just 47500
 
 tabardVal :: Val
 tabardVal = Just 6500
+
+
+torchVal :: Val
+torchVal = Just 525
 
 
 trousersVal :: Val

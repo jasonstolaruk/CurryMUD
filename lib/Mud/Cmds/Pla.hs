@@ -158,6 +158,7 @@ regularCmds :: HasCallStack => [Cmd]
 regularCmds = map (uncurry4 mkRegularCmd) regularCmdTuples
 
 
+-- TODO: "light" and "unlight".
 -- TODO: "buy" and "sell".
 -- TODO: "shout". Consider indoor vs. outdoor. Update the "communication" help topic.
 regularCmdTuples :: HasCallStack => [(CmdFullName, ActionFun, Bool, CmdDesc)]
@@ -2438,6 +2439,7 @@ readyDispatcher i ms d mrol a targetId =
       ConType        -> getConIsCloth targetId ms ? Right readyCloth :? sorry
       HolySymbolType | getHolySymbolGodName targetId ms == Rhayk -> Left sorryReadyHolySymbolRhayk
                      | otherwise                                 -> sorry
+      LightType      -> Right readyLight
       WpnType        -> Right readyWpn
       _             -> sorry
     sorry      = Left . sorryReadyType $ targetSing
@@ -2567,8 +2569,8 @@ readyWpn :: HasCallStack => Id
                          -> (EqTbl, InvTbl, [Text], [Broadcast], [Text])
 readyWpn i ms d mrol a@(et, _, _, _, _) wpnId wpnSing | em <- et IM.! i, wpn <- getWpn wpnId ms, sub <- wpn^.wpnSub =
     if not . isSlotAvail em $ BothHandsS
-      then sorry sorryReadyAlreadyWieldingTwoHanded
-      else case mrol |&| maybe (getAvailWpnSlot ms i em) (getDesigWpnSlot ms wpnSing em) of
+      then sorry sorryReadyHandsFull
+      else case mrol |&| maybe (getAvailHandSlot ms i em) (getDesigHandSlot ms wpnSing em) of
         Left  msg  -> sorry msg
         Right slot -> case sub of
           OneHanded -> let readyMsgs = (   T.concat [ "You wield the ", wpnSing, " with your ", pp slot, "." ]
@@ -2595,24 +2597,24 @@ readyWpn i ms d mrol a@(et, _, _, _, _) wpnId wpnSing | em <- et IM.! i, wpn <- 
     otherPCIds = i `delete` desigIds d
 
 
-getAvailWpnSlot :: HasCallStack => MudState -> Id -> EqMap -> Either Text Slot
-getAvailWpnSlot ms i em = let h@(otherHand -> oh) = getHand i ms in
-    (findAvailSlot em . map getSlotForHand $ [ h, oh ]) |&| maybe (Left sorryReadyAlreadyWieldingTwoWpns) Right
+getAvailHandSlot :: HasCallStack => MudState -> Id -> EqMap -> Either Text Slot
+getAvailHandSlot ms i em = let h@(otherHand -> oh) = getHand i ms in
+    (findAvailSlot em . map getSlotForHand $ [ h, oh ]) |&| maybe (Left sorryReadyHandsFull) Right
   where
     getSlotForHand h = case h of RHand  -> RHandS
                                  LHand  -> LHandS
                                  NoHand -> RHandS
 
 
-getDesigWpnSlot :: HasCallStack => MudState -> Sing -> EqMap -> RightOrLeft -> Either Text Slot
-getDesigWpnSlot ms wpnSing em rol
+getDesigHandSlot :: HasCallStack => MudState -> Sing -> EqMap -> RightOrLeft -> Either Text Slot
+getDesigHandSlot ms wpnSing em rol
   | isRingRol rol = Left . sorryReadyWpnRol $ wpnSing
   | otherwise     = M.lookup desigSlot em |&| maybe (Right desigSlot) (Left . sorry)
   where
     desigSlot = case rol of R -> RHandS
                             L -> LHandS
-                            _ -> pmf "getDesigWpnSlot desigSlot" rol
-    sorry i   = sorryReadyAlreadyWielding (getSing i ms) desigSlot
+                            _ -> pmf "getDesigHandSlot desigSlot" rol
+    sorry i   = sorryReadyHand (getSing i ms) desigSlot
 
 
 -- Readying armor:
@@ -2644,6 +2646,38 @@ getAvailArmSlot :: HasCallStack => MudState -> ArmSub -> EqMap -> Either Text Sl
 getAvailArmSlot ms (armSubToSlot -> slot) em = maybeSingleSlot em slot |&| maybe (Left sorry) Right
   where
     sorry | i <- em M.! slot = sorryReadyAlreadyWearing . getSing i $ ms
+
+
+-- Readying light sources:
+
+
+readyLight :: HasCallStack => Id
+                           -> MudState
+                           -> Desig
+                           -> Maybe RightOrLeft
+                           -> (EqTbl, InvTbl, [Text], [Broadcast], [Text])
+                           -> Id
+                           -> Sing
+                           -> (EqTbl, InvTbl, [Text], [Broadcast], [Text])
+readyLight i ms d mrol a@(et, _, _, _, _) lightId lightSing | em <- et IM.! i =
+    if not . isSlotAvail em $ BothHandsS
+      then sorry . sorryReadyLight $ lightSing
+      else case mrol |&| maybe (getAvailHandSlot ms i em) (getDesigHandSlot ms lightSing em) of
+        Left  msg  -> sorry msg
+        Right slot -> let readyMsgs = (   T.concat [ "You hold the ", lightSing, " in your ", pp slot, "." ]
+                                      , ( T.concat [ serialize d
+                                                   , " holds "
+                                                   , aOrAn lightSing
+                                                   , " in "
+                                                   , poss
+                                                   , " "
+                                                   , pp slot
+                                                   , "." ]
+                                        , i `delete` desigIds d ) )
+                       in moveReadiedItem i a slot lightId readyMsgs
+  where
+    sorry msg = a & _3 <>~ pure msg
+    poss      = mkPossPro . getSex i $ ms
 
 
 -----

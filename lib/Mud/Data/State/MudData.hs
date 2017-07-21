@@ -33,6 +33,7 @@ import           System.Clock (TimeSpec)
 import           System.Random (Random, random, randomR)
 import           System.Random.MWC (GenIO)
 
+
 type MudStack = ReaderT MudData IO
 
 
@@ -66,6 +67,7 @@ data MudState = MudState { _armTbl                 :: ArmTbl
                          , _hostTbl                :: HostTbl
                          , _instaEffectFunTbl      :: InstaEffectFunTbl
                          , _invTbl                 :: InvTbl
+                         , _lightTbl               :: LightTbl
                          , _mobTbl                 :: MobTbl
                          , _msgQueueTbl            :: MsgQueueTbl
                          , _npcTbl                 :: NpcTbl
@@ -112,6 +114,7 @@ type HookFunTbl             = M.Map HookName HookFun
 type HostTbl                = M.Map Sing HostMap
 type InstaEffectFunTbl      = M.Map FunName InstaEffectFun
 type InvTbl                 = IM.IntMap Inv
+type LightTbl               = IM.IntMap Light
 type MobTbl                 = IM.IntMap Mob
 type MsgQueueTbl            = IM.IntMap MsgQueue
 type NpcTbl                 = IM.IntMap Npc
@@ -312,7 +315,7 @@ type EffectAsync = Async ()
 type EffectQueue = TQueue EffectCmd
 
 
-data EffectCmd = PauseEffect        (TMVar Seconds)
+data EffectCmd = PauseEffect        (TMVar Seconds) -- TODO: Lanterns will need the ability to add time.
                | QueryRemEffectTime (TMVar Seconds)
                | StopEffect
 
@@ -388,8 +391,8 @@ data Slot = HeadS                                   -- armor
           | RingRIS | RingRMS | RingRRS | RingRPS   -- clothing
           | RingLIS | RingLMS | RingLRS | RingLPS   -- clothing
           | HandsS                                  -- armor
-          | RHandS                                  -- weapon/shield
-          | LHandS                                  -- weapon/shield
+          | RHandS                                  -- weapon/shield/light
+          | LHandS                                  -- weapon/shield/light
           | BothHandsS                              -- weapon
           | TrousersS                               -- clothing
           | SkirtS                                  -- clothing
@@ -398,7 +401,7 @@ data Slot = HeadS                                   -- armor
           | FullBodyS                               -- clothing
           | FeetS                                   -- armor
           | BackpackS                               -- container/clothing
-          deriving (Enum, Eq, Generic, Ord)
+          deriving (Enum, Eq, Generic, Ord, Show)
 
 
 -- ==================================================
@@ -438,7 +441,7 @@ type FunName = Text
 
 
 -- Has an object.
-newtype HolySymbol = HolySymbol { unHolySymbol :: GodName } deriving Generic
+newtype HolySymbol = HolySymbol { unHolySymbol :: GodName } deriving (Eq, Generic, Show)
 
 
 data GodName = Aule
@@ -542,6 +545,16 @@ data Done = Done
 -- ==================================================
 
 
+-- Has an object.
+newtype Light = Light { unLight :: LightSub } deriving (Eq, Generic, Show)
+
+
+data LightSub = Torch | Lantern deriving (Eq, Generic, Show)
+
+
+-- ==================================================
+
+
 type LogService = (LogAsync, LogQueue)
 
 
@@ -638,7 +651,7 @@ data MobSize = SmlMinus -- A rodent.
 data Party = Party { _following :: Maybe Id
                    , _followers :: Inv
                    , _myGroup   :: Inv
-                   , _memberOf  :: Maybe Id } deriving Generic
+                   , _memberOf  :: Maybe Id } deriving (Eq, Generic, Show)
 
 
 data StomachCont = StomachCont { _distinctId             :: Either DistinctLiqId DistinctFoodId
@@ -660,7 +673,7 @@ data Feeling = Feeling { feelingVal   :: FeelingVal
                        , feelingAsync :: FeelingAsync }
 
 
-data FeelingVal = FeelingNoVal | FeelingFixedVal Int deriving Eq
+data FeelingVal = FeelingNoVal | FeelingFixedVal Int deriving (Eq, Generic, Show)
 
 
 type FeelingAsync = Async ()
@@ -675,7 +688,7 @@ type ActMap = M.Map ActType ActAsync
 data ActType = Attacking
              | Drinking
              | Eating
-             | Sacrificing deriving (Bounded, Enum, Eq, Ord)
+             | Sacrificing deriving (Bounded, Enum, Eq, Generic, Ord, Show)
 
 
 type ActAsync = Async ()
@@ -911,7 +924,7 @@ data Pla = Pla { _currHostName   :: HostName
                , _retainedMsgs   :: [Text]
                , _logoutRmId     :: Maybe Id
                , _bonusTime      :: Maybe UTCTime
-               , _spiritAsync    :: Maybe SpiritAsync } deriving Eq
+               , _spiritAsync    :: Maybe SpiritAsync } deriving (Eq, Generic)
 
 
 data PlaFlags = HasRazzled
@@ -1140,7 +1153,7 @@ data ServerSettings = ServerSettings { settingDebug     :: Bool
                                      , settingJWK       :: JWK
                                      , settingLog       :: Bool
                                      , settingRest      :: Bool
-                                     , settingZBackDoor :: Bool } deriving Generic
+                                     , settingZBackDoor :: Bool } deriving (Eq, Generic, Show)
 
 
 -- ==================================================
@@ -1185,7 +1198,7 @@ data ThreadType = AttackingThread   Id
                 | Talk              Id
                 | ThreadTblPurger
                 | TrashDumpPurger
-                | WorldPersister deriving (Eq, Ord, Show)
+                | WorldPersister deriving (Eq, Generic, Ord, Show)
 
 
 -- ==================================================
@@ -1197,6 +1210,7 @@ data Type = ArmType
           | CorpseType
           | FoodType
           | HolySymbolType
+          | LightType
           | NpcType
           | ObjType
           | PlaType
@@ -1266,6 +1280,8 @@ instance FromJSON HostRecord     where parseJSON = genericParseJSON dropUndersco
 instance FromJSON InstaEffect    where parseJSON = genericParseJSON dropUnderscore
 instance FromJSON InstaEffectSub
 instance FromJSON Lang
+instance FromJSON Light
+instance FromJSON LightSub
 instance FromJSON LinkDir
 instance FromJSON Liq            where parseJSON = genericParseJSON dropUnderscore
 instance FromJSON MobSize        where parseJSON = genericParseJSON dropUnderscore
@@ -1310,6 +1326,8 @@ instance ToJSON HostRecord       where toJSON    = genericToJSON    dropUndersco
 instance ToJSON InstaEffect      where toJSON    = genericToJSON    dropUnderscore
 instance ToJSON InstaEffectSub
 instance ToJSON Lang
+instance ToJSON Light
+instance ToJSON LightSub
 instance ToJSON LinkDir
 instance ToJSON Liq              where toJSON    = genericToJSON    dropUnderscore
 instance ToJSON MobSize          where toJSON    = genericToJSON    dropUnderscore

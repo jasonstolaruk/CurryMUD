@@ -89,6 +89,7 @@ initMudData s = do [ databaseLock, logLock, persLock ] <- mkLocks
                                                 , _hostTbl                =  M.empty
                                                 , _instaEffectFunTbl      =  M.empty
                                                 , _invTbl                 = IM.empty
+                                                , _lightTbl               = IM.empty
                                                 , _mobTbl                 = IM.empty
                                                 , _msgQueueTbl            = IM.empty
                                                 , _npcTbl                 = IM.empty
@@ -211,6 +212,7 @@ loadWorld dir = (</> dir) <$> liftIO (mkMudFilePath persistDirFun) >>= \path -> 
                                                  , loadTbl holySymbolTblFile          holySymbolTbl
                                                  , loadTbl hostTblFile                hostTbl
                                                  , loadTbl invTblFile                 invTbl
+                                                 , loadTbl lightTblFile               lightTbl
                                                  , loadTbl mobTblFile                 mobTbl
                                                  , loadTbl objTblFile                 objTbl
                                                  , loadTbl pausedCorpseDecompsTblFile pausedCorpseDecompsTbl

@@ -71,6 +71,7 @@ persistHelper l ms = withLock l $ do
                                              , write (ms^.holySymbolTbl         ) $ path </> holySymbolTblFile
                                              , write (ms^.hostTbl               ) $ path </> hostTblFile
                                              , write (ms^.invTbl                ) $ path </> invTblFile
+                                             , write (ms^.lightTbl              ) $ path </> lightTblFile
                                              , write (ms^.mobTbl                ) $ path </> mobTblFile
                                              , write (ms^.objTbl                ) $ path </> objTblFile
                                              , write (ms^.pausedCorpseDecompsTbl) $ path </> pausedCorpseDecompsTblFile

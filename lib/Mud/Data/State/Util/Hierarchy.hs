@@ -13,7 +13,7 @@ entTypes = objTypes ++ mobTypes
 
 
 objTypes :: [Type]
-objTypes = [ ArmType, ClothType, FoodType, ObjType, VesselType, WpnType, WritableType ] ++ conTypes
+objTypes = [ ArmType, ClothType, FoodType, LightType, ObjType, VesselType, WpnType, WritableType ] ++ conTypes
 
 
 invCoinsTypes :: [Type]

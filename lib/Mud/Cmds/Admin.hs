@@ -575,6 +575,7 @@ mkCountTxt = (uncurry mappend . second commaShow) `fmap2` helper
                , ("Containers: ",       countType ConType             )
                , ("Corpses: ",          countType CorpseType          )
                , ("Foods: ",            countType FoodType            )
+               , ("Lights: ",           countType LightType           )
                , ("NPCs: ",             countType NpcType             )
                , ("Objects: ",          countType ObjType             )
                , ("Players: ",          countType PlaType             )
@@ -731,6 +732,7 @@ examineHelper ms targetId regex =
   CorpseType     -> [ examineEnt, examineObj,   examineInv,   examineCoins, examineCon, examineCorpse ]
   FoodType       -> [ examineEnt, examineObj,   examineFood       ]
   HolySymbolType -> [ examineEnt, examineObj,   examineHolySymbol ]
+  LightType      -> [ examineEnt, examineObj,   examineLight      ]
   NpcType        -> [ examineEnt, examineInv,   examineCoins, examineEqMap, examineMob, examineNpc    ]
   ObjType        -> [ examineEnt, examineObj ]
   PlaType        -> [ examineEnt, examineInv,   examineCoins, examineEqMap, examineMob, examinePC, examinePla, examinePickPts ]
@@ -851,6 +853,10 @@ examineInv :: HasCallStack => ExamineHelper
 examineInv i ms = let is  = getInv i ms
                       txt = commas . map (`descSingId` ms) $ is
                   in [ "Contents: " <> noneOnNull txt ]
+
+
+examineLight :: HasCallStack => ExamineHelper
+examineLight i ms = let sub = getLightSub i ms in pure $ "Type: " <> pp sub
 
 
 examineMob :: HasCallStack => ExamineHelper

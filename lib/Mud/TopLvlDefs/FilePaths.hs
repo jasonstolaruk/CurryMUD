@@ -76,7 +76,7 @@ typoLogFileFun        = under logDirFun $ "typo"                     <.> "log"
 -- Persistence files:
 
 
-armTblFile, chanTblFile, clothTblFile, coinsTblFile, conTblFile, corpseTblFile, entTblFile, eqTblFile, foodTblFile, holySymbolTblFile, hostTblFile, invTblFile, mobTblFile, objTblFile, pausedCorpseDecompsTblFile, pausedEffectTblFile, pcSingTblFile, pcTblFile, plaTblFile, rmTblFile, rmTeleNameTblFile, rndmNamesMstrTblFile, teleLinkMstrTblFile, typeTblFile, vesselTblFile, wpnTblFile, writableTblFile :: FilePath
+armTblFile, chanTblFile, clothTblFile, coinsTblFile, conTblFile, corpseTblFile, entTblFile, eqTblFile, foodTblFile, holySymbolTblFile, hostTblFile, invTblFile, lightTblFile, mobTblFile, objTblFile, pausedCorpseDecompsTblFile, pausedEffectTblFile, pcSingTblFile, pcTblFile, plaTblFile, rmTblFile, rmTeleNameTblFile, rndmNamesMstrTblFile, teleLinkMstrTblFile, typeTblFile, vesselTblFile, wpnTblFile, writableTblFile :: FilePath
 armTblFile                 = "armTbl"                 <.> "json"
 chanTblFile                = "chanTbl"                <.> "json"
 clothTblFile               = "clothTbl"               <.> "json"
@@ -89,6 +89,7 @@ foodTblFile                = "foodTbl"                <.> "json"
 holySymbolTblFile          = "holySymbolTbl"          <.> "json"
 hostTblFile                = "hostTbl"                <.> "json"
 invTblFile                 = "invTbl"                 <.> "json"
+lightTblFile               = "lightTbl"               <.> "json"
 mobTblFile                 = "mobTbl"                 <.> "json"
 objTblFile                 = "objTbl"                 <.> "json"
 pausedCorpseDecompsTblFile = "pausedCorpseDecompsTbl" <.> "json"

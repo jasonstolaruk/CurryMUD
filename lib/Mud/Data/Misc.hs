@@ -505,6 +505,11 @@ instance Pretty Lang where
   pp VulpenoidLang = "vulpenoidean"
 
 
+instance Pretty LightSub where
+  pp Torch   = "torch"
+  pp Lantern = "lantern"
+
+
 instance Pretty LinkDir where
   pp = uncapitalize . showTxt
 
@@ -687,6 +692,7 @@ instance Pretty Type where
   pp CorpseType     = "corpse"
   pp FoodType       = "food"
   pp HolySymbolType = "holy symbol"
+  pp LightType      = "light"
   pp NpcType        = "NPC"
   pp ObjType        = "object"
   pp PlaType        = "player"

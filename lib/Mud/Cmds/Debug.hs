@@ -139,7 +139,7 @@ debugCmds =
     , mkDebugCmd "effect"      debugEffect      "Add 10-20 to your ST for 30 seconds."
     , mkDebugCmd "env"         debugEnv         "Display or regex search system environment variables."
     , mkDebugCmd "exp"         debugExp         "Award yourself 5,000 exp."
-    , mkDebugCmd "fun"         debugFun         "Dump the keys of the function tables."
+    , mkDebugCmd "function"    debugFun         "Dump the keys of the function tables."
     , mkDebugCmd "gmcpdo"      debugGmcpDo      "Send IAC DO GMCP."
     , mkDebugCmd "gmcproom"    debugGmcpRm      "Send GMCP Room Info."
     , mkDebugCmd "gmcpvitals"  debugGmcpVitals  "Send GMCP Vitals."
@@ -151,7 +151,7 @@ debugCmds =
     , mkDebugCmd "liquid"      debugLiq         "Consume a given amount (in mouthfuls) of a given liquid (by distinct \
                                                 \liquid ID)."
     , mkDebugCmd "log"         debugLog         "Put the logging service under heavy load."
-    , mkDebugCmd "missing"     debugMissing     "Attempt to look up the ent description of a nonexistent ID."
+    , mkDebugCmd "missing"     debugMissing     "Attempt to look up the entity description of a nonexistent ID."
     , mkDebugCmd "mkkewpie"    debugMkKewpie    "Create a kewpie doll."
     , mkDebugCmd "multiline"   debugMultiLine   "Test multi-line input."
     , mkDebugCmd "nop"         debugNOP         "Send IAC NOP."
@@ -585,6 +585,7 @@ mkTblNameKeysList ms = [ ("Arm",                 tblKeys armTbl                 
                        , ("Food",                tblKeys foodTbl                ms)
                        , ("HolySymbol",          tblKeys holySymbolTbl          ms)
                        , ("Inv",                 tblKeys invTbl                 ms)
+                       , ("Light",               tblKeys lightTbl               ms)
                        , ("Mob",                 tblKeys mobTbl                 ms)
                        , ("MsgQueue",            tblKeys msgQueueTbl            ms)
                        , ("Npc",                 tblKeys npcTbl                 ms)

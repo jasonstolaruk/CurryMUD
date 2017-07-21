@@ -1383,6 +1383,12 @@ mkUnreadyDescs i ms d targetIds = unzip [ helper icb | icb <- mkIdCountBothList 
                                       , "." ]
            in ((toOthersMsg, otherPCIds), toSelfMsg)
     mkVerb targetId person = case getType targetId ms of
+      ArmType -> case getArmSub targetId ms of
+        Head   -> mkVerbTakeOff person
+        Hands  -> mkVerbTakeOff person
+        Feet   -> mkVerbTakeOff person
+        Shield -> mkVerbUnready person
+        _      -> mkVerbDoff    person
       ClothType -> case getCloth targetId ms of
         Earring  -> mkVerbRemove  person
         NoseRing -> mkVerbRemove  person
@@ -1394,13 +1400,7 @@ mkUnreadyDescs i ms d targetIds = unzip [ helper icb | icb <- mkIdCountBothList 
       ConType -> mkVerbTakeOff person
       WpnType | person == SndPer -> "stop wielding"
               | otherwise        -> "stops wielding"
-      ArmType -> case getArmSub targetId ms of
-        Head   -> mkVerbTakeOff person
-        Hands  -> mkVerbTakeOff person
-        Feet   -> mkVerbTakeOff person
-        Shield -> mkVerbUnready person
-        _      -> mkVerbDoff    person
-      t -> pmf "mkUnreadyDescs mkVerb" t
+      _ -> mkVerbUnready person
     mkVerbRemove  = \case SndPer -> "remove"
                           ThrPer -> "removes"
     mkVerbTakeOff = \case SndPer -> "take off"

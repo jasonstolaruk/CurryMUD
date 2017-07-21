@@ -557,8 +557,8 @@ createWarehouse = do
           Nothing
           Nothing
           zeroBits
-          [ StdLink North iConRm 0
-          , StdLink South iNpcRm 0 ]
+          [ StdLink North iConRm   0
+          , StdLink South iLightRm 0 ]
           (0, -4, 0)
           InsideEnv
           (Just "Food")
@@ -591,6 +591,56 @@ createWarehouse = do
 
   -----
 
+  putRm iLightRm
+      (iLantern : [ iTorch1..iTorch1 + 9 ])
+      mempty
+      (mkRm (RmTemplate "Light source room"
+          "This room holds light sources."
+          Nothing
+          Nothing
+          zeroBits
+          [ StdLink North iFoodRm 0
+          , StdLink South iNpcRm  0 ]
+          (0, -5, 0)
+          InsideEnv
+          (Just "Light")
+          M.empty [] []))
+
+  forM_ [ iTorch1..iTorch1 + 9 ] $ \i -> putLight i -- TODO: A torch with pitch should provide two hours of light.
+      (Ent i
+          (Just "torch")
+          "torch" "torches"
+          "The torch is a bundle of rushes that provides illumination when set aflame. It's been dipped in pitch so as \
+          \to encourage a long, steady burn."
+          Nothing -- TODO: Smell.
+          zeroBits)
+      (let ot = ObjTemplate torchWeight
+                            torchVol
+                            Nothing -- TODO: Taste.
+                            torchVal
+                            Nothing
+                            zeroBits
+       in mkObj ot)
+      (Light Torch)
+
+  putLight iLantern
+      (Ent iLantern
+          (Just "lantern")
+          "lantern" ""
+          "lantern desc" -- TODO
+          Nothing -- TODO: Smell.
+          zeroBits)
+      (let ot = ObjTemplate lanternWeight
+                            lanternVol
+                            Nothing -- TODO: Taste.
+                            lanternVal
+                            Nothing
+                            zeroBits
+       in mkObj ot)
+      (Light Lantern)
+
+  -----
+
   putRm iNpcRm
       [ iPidge, iSkeleton ]
       mempty
@@ -599,9 +649,9 @@ createWarehouse = do
           Nothing
           Nothing
           zeroBits
-          [ StdLink North iFoodRm 0
-          , StdLink South iObjRm  0 ]
-          (0, -5, 0)
+          [ StdLink North iLightRm 0
+          , StdLink South iObjRm   0 ]
+          (0, -6, 0)
           InsideEnv
           (Just "NPCs")
           M.empty [] []))
@@ -668,7 +718,7 @@ createWarehouse = do
           zeroBits
           [ StdLink North iNpcRm    0
           , StdLink South iVesselRm 0 ]
-          (0, -6, 0)
+          (0, -7, 0)
           InsideEnv
           (Just "Objects")
           M.empty [] []))
@@ -690,12 +740,12 @@ createWarehouse = do
           [ StdLink North iObjRm    0
           , StdLink South iWpnRm    0
           , StdLink Down  iPotionRm 0 ]
-          (0, -7, 0)
+          (0, -8, 0)
           InsideEnv
           (Just "Vessels")
           M.empty [] []))
 
-  let bottelTuples = [ (iBottleSml, "small ", ("small ", "light brown"),  bottleSmlWeight, bottleSmlVol, bottleSmlVal)
+  let bottleTuples = [ (iBottleSml, "small ", ("small ", "light brown"),  bottleSmlWeight, bottleSmlVol, bottleSmlVal)
                      , (iBottle,    "",       ("",       "mixed azure"),  bottleWeight,    bottleVol,    bottleVal   )
                      , (iBottleLrg, "large ", ("large ", "rusty orange"), bottleLrgWeight, bottleLrgVol, bottleLrgVal) ]
 
@@ -706,7 +756,7 @@ createWarehouse = do
                    , b
                    , " hues gives the vessel a glossy finish and makes it impermeable." ]
 
-  forM_ bottelTuples $ \(i, t, d, w, v, val) ->
+  forM_ bottleTuples $ \(i, t, d, w, v, val) ->
       putVessel i
           (Ent i
               (Just "bottle")
@@ -799,7 +849,7 @@ createWarehouse = do
           Nothing
           zeroBits
           [ StdLink Up iVesselRm 0 ]
-          (0, -7, -1)
+          (0, -8, -1)
           InsideEnv
           (Just "Potions")
           M.empty [] []))
@@ -810,11 +860,14 @@ createWarehouse = do
 
   putRm iWpnRm
       [ iAxeSml
+      , iClub
+      , iKnife
       , iMace
       , iSpear
       , iStaffQuarter
       , iSword
       , iSwordBroad
+      , iSwordLong
       , iSwordShort ]
       mempty
       (mkRm (RmTemplate "Weapons room"
@@ -824,7 +877,7 @@ createWarehouse = do
           zeroBits
           [ StdLink North iVesselRm   0
           , StdLink South iWritableRm 0 ]
-          (0, -8, 0)
+          (0, -9, 0)
           InsideEnv
           (Just "Weapons")
           M.empty [] []))
@@ -1012,7 +1065,7 @@ createWarehouse = do
           Nothing
           zeroBits
           [ StdLink North iWpnRm 0 ]
-          (0, -9, 0)
+          (0, -10, 0)
           InsideEnv
           (Just "Writables")
           M.empty [] []))

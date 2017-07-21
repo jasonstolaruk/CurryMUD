@@ -90,6 +90,7 @@ clone destId = foldl' helper
                               -- decomposer at).
           FoodType       -> f . newFood       ms mkEntTemplate mkObjTemplate (getFood       targetId ms) $ destId
           HolySymbolType -> f . newHolySymbol ms mkEntTemplate mkObjTemplate (getHolySymbol targetId ms) $ destId
+          LightType      -> f . newLight      ms mkEntTemplate mkObjTemplate (getLight      targetId ms) $ destId
           NpcType        ->
               let ((is, coins), em) = (getInvCoins `fanUncurry` getEqMap) (targetId, ms)
                   (newId, ms', fs)  = newNpc ms

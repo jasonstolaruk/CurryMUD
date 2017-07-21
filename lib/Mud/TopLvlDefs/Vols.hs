@@ -111,6 +111,10 @@ knitCapVol :: Vol
 knitCapVol = round (7 * 7 * 0.25 * 100 :: Double)
 
 
+lanternVol :: Vol
+lanternVol = 5 * 5 * 7 * 100
+
+
 maceVol :: Vol
 maceVol = round (2 * 2 * 12 * 100 :: Double)
 
@@ -193,6 +197,10 @@ swordVol      = 6 * 1 * 30 * 100
 
 tabardVol :: Vol
 tabardVol = shirtVol
+
+
+torchVol :: Vol
+torchVol = round (2.75 * 2.75 * 14 * 100 :: Double)
 
 
 trousersVol, trousersBaggyVol :: Vol

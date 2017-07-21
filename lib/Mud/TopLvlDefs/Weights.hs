@@ -100,6 +100,10 @@ knitCapWeight :: Weight
 knitCapWeight = 5
 
 
+lanternWeight :: Weight
+lanternWeight = 250
+
+
 maceWeight :: Weight
 maceWeight = 500
 
@@ -172,6 +176,10 @@ swordWeight      = 300
 
 tabardWeight :: Weight
 tabardWeight = 50
+
+
+torchWeight :: Weight
+torchWeight = 100
 
 
 trousersWeight, trousersBaggyWeight :: Weight

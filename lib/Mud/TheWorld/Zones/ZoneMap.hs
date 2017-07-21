@@ -86,6 +86,7 @@ warehouseZone = zip rmIds . repeat $ "Warehouse"
             , iClothRm
             , iConRm
             , iFoodRm
+            , iLightRm
             , iNpcRm
             , iObjRm
             , iPotionRm

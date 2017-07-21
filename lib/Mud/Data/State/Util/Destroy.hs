@@ -61,6 +61,7 @@ destroyHelper = flip . foldr $ helper
                                , rest ]
       FoodType       -> upd ms [ destroyEnt, destroyObj, destoryFood,                      rest ]
       HolySymbolType -> upd ms [ destroyEnt, destroyObj, destroyHolySymbol,                rest ]
+      LightType      -> upd ms [ destroyEnt, destroyObj, destroyLight,                     rest ]
       ObjType        -> upd ms [ destroyEnt, destroyObj,                                   rest ]
       VesselType     -> upd ms [ destroyEnt, destroyObj, destroyVessel, destroyVesselHoly, rest ]
       WpnType        -> upd ms [ destroyEnt, destroyObj, destroyWpn,                       rest ]
@@ -81,6 +82,7 @@ destroyHelper = flip . foldr $ helper
         destoryFood         = foodTbl      .at i .~ Nothing
         destroyHolySymbol   = holySymbolTbl.at i .~ Nothing
         destroyInv          = invTbl       .at i .~ Nothing
+        destroyLight        = lightTbl     .at i .~ Nothing
         destroyObj          = objTbl       .at i .~ Nothing
         destroyType         = typeTbl      .at i .~ Nothing
         destroyVessel       = vesselTbl    .at i .~ Nothing

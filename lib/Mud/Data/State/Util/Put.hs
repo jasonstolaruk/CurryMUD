@@ -78,6 +78,18 @@ putHolySymbol i e o h = tweaks [ durationalEffectTbl.ind i .~ []
 -----
 
 
+putLight :: Id -> Ent -> Obj -> Light -> MudStack ()
+putLight i e o l = tweaks [ lightTbl           .ind i .~ l
+                          , durationalEffectTbl.ind i .~ []
+                          , entTbl             .ind i .~ e
+                          , objTbl             .ind i .~ o
+                          , pausedEffectTbl    .ind i .~ []
+                          , typeTbl            .ind i .~ LightType ]
+
+
+-----
+
+
 putNpc :: Id -> Ent -> Inv -> Coins -> EqMap -> Mob -> MudStack ()
 putNpc i e is c em m = tweaks [ coinsTbl           .ind i .~ c
                               , durationalEffectTbl.ind i .~ []

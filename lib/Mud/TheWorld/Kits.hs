@@ -27,7 +27,6 @@ pmf = U.pmf "Mud.TheWorld.Kits"
 -- ==================================================
 
 
--- TODO: Include a light source. Light sources must be readied and lit.
 kit :: HasCallStack => Id -> V.Vector Int -> MudStack ()
 kit i (V.toList -> [ va, vb, vc, vd, ve, vf, vg, vh, vi, vj ]) = modifyStateSeq helper
   where
@@ -48,7 +47,7 @@ kit i (V.toList -> [ va, vb, vc, vd, ve, vf, vg, vh, vi, vj ]) = modifyStateSeq 
                                                Human  -> pure . succ $ iBread1
                                                Nymph  -> [ iGorhna1..iGorhna1 + 49 ]
                                                _      -> pure . rndmIntToElem vj $ fruitIds
-                      in [ iBread1, iSack, iSandalsLeather, iWaterskinWithWater ] ++ is
+                      in [ iBread1, iSack, iSandalsLeather, iTorch1, iWaterskinWithWater ] ++ is
         coinsHelper = _1.coinsTbl.ind i .~ f (Coins (x, y, z))
           where
             x = rndmIntToRange vb (1,  50)

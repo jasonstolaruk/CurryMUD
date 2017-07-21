@@ -238,15 +238,15 @@ module Mud.Cmds.Msgs.Sorry ( sorryActing
                            , sorryReadWithHooks
                            , sorryReadyAlreadyWearing
                            , sorryReadyAlreadyWearingRing
-                           , sorryReadyAlreadyWielding
-                           , sorryReadyAlreadyWieldingTwoHanded
-                           , sorryReadyAlreadyWieldingTwoWpns
                            , sorryReadyClothFull
                            , sorryReadyClothFullOneSide
                            , sorryReadyCoins
+                           , sorryReadyHand
+                           , sorryReadyHandsFull
                            , sorryReadyHolySymbolRhayk
                            , sorryReadyInEq
                            , sorryReadyInRm
+                           , sorryReadyLight
                            , sorryReadyRol
                            , sorryReadyType
                            , sorryReadyWpnHands
@@ -285,10 +285,10 @@ module Mud.Cmds.Msgs.Sorry ( sorryActing
                            , sorrySmellEmptyRmNoHooks
                            , sorrySmellEmptyRmWithHooks
                            , sorrySmellExcessTargets
-                           , sorrySmellTasteSlot
                            , sorrySmellNothingToSmell
                            , sorrySmellRmCoins
                            , sorrySmellRmNoHooks
+                           , sorrySmellTasteSlot
                            , sorryStopActName
                            , sorryStopNotDoing
                            , sorryStopNotDoingAnything
@@ -1671,18 +1671,6 @@ sorryReadyAlreadyWearingRing sl s = T.concat [ "You're already wearing "
                                              , "." ]
 
 
-sorryReadyAlreadyWielding :: Sing -> Slot -> Text
-sorryReadyAlreadyWielding s sl = T.concat [ "You're already wielding ", aOrAn s, " with your ", pp sl, "." ]
-
-
-sorryReadyAlreadyWieldingTwoHanded :: Text
-sorryReadyAlreadyWieldingTwoHanded = "You're already wielding a two-handed weapon."
-
-
-sorryReadyAlreadyWieldingTwoWpns :: Text
-sorryReadyAlreadyWieldingTwoWpns = "You're already wielding two weapons."
-
-
 sorryReadyClothFull :: Text -> Text
 sorryReadyClothFull t = can't "wear any more " <> t <> "s."
 
@@ -1695,6 +1683,14 @@ sorryReadyCoins :: Text
 sorryReadyCoins = can't "ready coins."
 
 
+sorryReadyHand :: Sing -> Slot -> Text
+sorryReadyHand s sl = T.concat [ "You already have ", aOrAn s, " in your ", pp sl, "." ]
+
+
+sorryReadyHandsFull :: Text
+sorryReadyHandsFull = "You don't have a free hand."
+
+
 sorryReadyHolySymbolRhayk :: Text
 sorryReadyHolySymbolRhayk = "The holy symbol of Rhayk is strictly a ceremonial object; it may not be used as a weapon."
 
@@ -1705,6 +1701,10 @@ sorryReadyInEq = can't "ready an item that's already in your readied equipment."
 
 sorryReadyInRm :: Text
 sorryReadyInRm = butCan't "ready an item in your current room. Please pick up the item(s) first."
+
+
+sorryReadyLight :: Sing -> Text
+sorryReadyLight s = prd $ "You don't have a free hand to hold the " <> s
 
 
 sorryReadyRol :: Sing -> RightOrLeft -> Text

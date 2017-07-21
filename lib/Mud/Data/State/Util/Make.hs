@@ -19,6 +19,7 @@ module Mud.Data.State.Util.Make ( EntTemplate(..)
                                 , newCorpse
                                 , newFood
                                 , newHolySymbol
+                                , newLight
                                 , newNpc
                                 , newObj
                                 , newVessel
@@ -208,6 +209,20 @@ holySymbolFactory i ms n gn = let (gn', desc, w, v, h) = ((,,,,) <$> pp
                                                                     else newHolySymbol ms' et ot h  i
                                                        in helper (pred x) . second (++ fs) $ pair
                               in helper n (ms, [])
+
+
+-- ==================================================
+-- Light
+
+
+createLight :: MudState -> EntTemplate -> ObjTemplate -> Light -> (Id, MudState, Funs)
+createLight ms et ot l = let tuple@(i, _, _) = createObj ms et ot
+                         in tuple & _2.lightTbl.ind i .~ l
+
+
+newLight :: MudState -> EntTemplate -> ObjTemplate -> Light -> InvId -> (Id, MudState, Funs)
+newLight ms et ot l invId = let (i, typeTbl.ind i .~ LightType -> ms', fs) = createLight ms et ot l
+                            in (i, ms' & invTbl.ind invId %~ addToInv ms' (pure i), fs)
 
 
 -- ==================================================
