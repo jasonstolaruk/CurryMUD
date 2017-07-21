@@ -158,7 +158,13 @@ regularCmds :: HasCallStack => [Cmd]
 regularCmds = map (uncurry4 mkRegularCmd) regularCmdTuples
 
 
--- TODO: "light" and "unlight".
+{-
+TODO:
+light lightSource tinderbox
+unlight lightSource -- "lightSource" arg may be omitted.
+fill lantern oil -- This adds time to the illumination effect.
+A "tinderbox" is a tinderbox with flint and steel strikers in a single object.
+-}
 -- TODO: "buy" and "sell".
 -- TODO: "shout". Consider indoor vs. outdoor. Update the "communication" help topic.
 regularCmdTuples :: HasCallStack => [(CmdFullName, ActionFun, Bool, CmdDesc)]
@@ -1337,7 +1343,7 @@ felinoidean = sayHelper FelinoidLang
 -----
 
 
-fill :: HasCallStack => RmActionFun
+fill :: HasCallStack => RmActionFun -- TODO: Filling lanterns with oil. Update help.
 fill p@AdviseNoArgs  = advise p [] adviceFillNoArgs
 fill p@AdviseOneArg  = advise p [] adviceFillNoSource
 fill p@(Lower' i as) = getState >>= \ms ->
@@ -2569,8 +2575,8 @@ readyWpn :: HasCallStack => Id
                          -> (EqTbl, InvTbl, [Text], [Broadcast], [Text])
 readyWpn i ms d mrol a@(et, _, _, _, _) wpnId wpnSing | em <- et IM.! i, wpn <- getWpn wpnId ms, sub <- wpn^.wpnSub =
     if not . isSlotAvail em $ BothHandsS
-      then sorry sorryReadyHandsFull
-      else case mrol |&| maybe (getAvailHandSlot ms i em) (getDesigHandSlot ms wpnSing em) of
+      then sorry . sorryReadyHandsFull $ wpnSing
+      else case mrol |&| maybe (getAvailHandSlot ms i wpnSing em) (getDesigHandSlot ms wpnSing em) of
         Left  msg  -> sorry msg
         Right slot -> case sub of
           OneHanded -> let readyMsgs = (   T.concat [ "You wield the ", wpnSing, " with your ", pp slot, "." ]
@@ -2597,9 +2603,9 @@ readyWpn i ms d mrol a@(et, _, _, _, _) wpnId wpnSing | em <- et IM.! i, wpn <- 
     otherPCIds = i `delete` desigIds d
 
 
-getAvailHandSlot :: HasCallStack => MudState -> Id -> EqMap -> Either Text Slot
-getAvailHandSlot ms i em = let h@(otherHand -> oh) = getHand i ms in
-    (findAvailSlot em . map getSlotForHand $ [ h, oh ]) |&| maybe (Left sorryReadyHandsFull) Right
+getAvailHandSlot :: HasCallStack => MudState -> Id -> Sing -> EqMap -> Either Text Slot
+getAvailHandSlot ms i s em = let h@(otherHand -> oh) = getHand i ms in
+    (findAvailSlot em . map getSlotForHand $ [ h, oh ]) |&| maybe (Left . sorryReadyHandsFull $ s) Right
   where
     getSlotForHand h = case h of RHand  -> RHandS
                                  LHand  -> LHandS
@@ -2662,7 +2668,7 @@ readyLight :: HasCallStack => Id
 readyLight i ms d mrol a@(et, _, _, _, _) lightId lightSing | em <- et IM.! i =
     if not . isSlotAvail em $ BothHandsS
       then sorry . sorryReadyLight $ lightSing
-      else case mrol |&| maybe (getAvailHandSlot ms i em) (getDesigHandSlot ms lightSing em) of
+      else case mrol |&| maybe (getAvailHandSlot ms i lightSing em) (getDesigHandSlot ms lightSing em) of
         Left  msg  -> sorry msg
         Right slot -> let readyMsgs = (   T.concat [ "You hold the ", lightSing, " in your ", pp slot, "." ]
                                       , ( T.concat [ serialize d

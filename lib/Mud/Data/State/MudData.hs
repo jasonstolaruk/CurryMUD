@@ -287,7 +287,7 @@ type EffectTag = Text
 
 
 data EffectSub = EffectAttrib Attrib
-               | EffectLight
+               | EffectIllumination
                | EffectOther FunName -- Function is run every second.
                deriving (Eq, Generic, Show)
 
@@ -315,7 +315,7 @@ type EffectAsync = Async ()
 type EffectQueue = TQueue EffectCmd
 
 
-data EffectCmd = PauseEffect        (TMVar Seconds) -- TODO: Lanterns will need the ability to add time.
+data EffectCmd = PauseEffect        (TMVar Seconds) -- TODO: Lanterns will need the ability to add time. Update your handwritten notes.
                | QueryRemEffectTime (TMVar Seconds)
                | StopEffect
 
@@ -827,7 +827,8 @@ type TotalUses = Int
 
 
 data ObjFlags = IsBiodegradable
-              | IsHumming deriving Enum
+              | IsHumming
+              | IsTinderbox deriving Enum
 
 
 type BiodegAsync = Async ()

@@ -46,7 +46,7 @@ import Data.Monoid ((<>))
 import Data.Text (Text)
 
 
-liqList :: [(Id, DistinctLiq, Liq)]
+liqList :: [(Id, DistinctLiq, Liq)] -- TODO: Oil.
 liqList = [ (iLiqPotDx,              potDxDistinctLiq,              potDxLiq             )
           , (iLiqPotFp,              potFpDistinctLiq,              potFpLiq             )
           , (iLiqPotHp,              potHpDistinctLiq,              potHpLiq             )

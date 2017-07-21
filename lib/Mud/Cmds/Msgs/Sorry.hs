@@ -1687,8 +1687,8 @@ sorryReadyHand :: Sing -> Slot -> Text
 sorryReadyHand s sl = T.concat [ "You already have ", aOrAn s, " in your ", pp sl, "." ]
 
 
-sorryReadyHandsFull :: Text
-sorryReadyHandsFull = "You don't have a free hand."
+sorryReadyHandsFull :: Sing -> Text
+sorryReadyHandsFull s = prd $ "You don't have a free hand in which to hold the " <> s
 
 
 sorryReadyHolySymbolRhayk :: Text
@@ -1704,7 +1704,7 @@ sorryReadyInRm = butCan't "ready an item in your current room. Please pick up th
 
 
 sorryReadyLight :: Sing -> Text
-sorryReadyLight s = prd $ "You don't have a free hand to hold the " <> s
+sorryReadyLight = sorryReadyHandsFull
 
 
 sorryReadyRol :: Sing -> RightOrLeft -> Text

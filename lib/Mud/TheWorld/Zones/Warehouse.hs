@@ -612,11 +612,11 @@ createWarehouse = do
           "torch" "torches"
           "The torch is a bundle of rushes that provides illumination when set aflame. It's been dipped in pitch so as \
           \to encourage a long, steady burn."
-          Nothing -- TODO: Smell.
+          Nothing -- TODO: Smell. (When lit?)
           zeroBits)
       (let ot = ObjTemplate torchWeight
                             torchVol
-                            Nothing -- TODO: Taste.
+                            Nothing -- TODO: Taste. (When lit?)
                             torchVal
                             Nothing
                             zeroBits
@@ -628,11 +628,11 @@ createWarehouse = do
           (Just "lantern")
           "lantern" ""
           "lantern desc" -- TODO
-          Nothing -- TODO: Smell.
+          Nothing -- TODO: Smell. (When lit?)
           zeroBits)
       (let ot = ObjTemplate lanternWeight
                             lanternVol
-                            Nothing -- TODO: Taste.
+                            Nothing -- TODO: Taste. (When lit?)
                             lanternVal
                             Nothing
                             zeroBits
@@ -708,7 +708,7 @@ createWarehouse = do
 
   -----
 
-  putRm iObjRm
+  putRm iObjRm -- TODO: Tinderbox.
       []
       mempty
       (mkRm (RmTemplate "Objects room"

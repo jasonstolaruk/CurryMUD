@@ -157,6 +157,8 @@ module Mud.Data.State.Util.Get ( getActMap
                                , isShowingPpId
                                , isSpirit
                                , isSpiritId
+                               , isTinderbox
+                               , isTinderboxId
                                , isTunedAdmin
                                , isTunedAdminId
                                , isTunedQuestion
@@ -1112,6 +1114,17 @@ isHumming = getObjFlag IsHumming
 
 isHummingId :: HasCallStack => Id -> MudState -> Bool
 isHummingId = objFlagHelper IsHumming
+
+
+-----
+
+
+isTinderbox :: Obj -> Bool
+isTinderbox = getObjFlag IsTinderbox
+
+
+isTinderboxId :: HasCallStack => Id -> MudState -> Bool
+isTinderboxId = objFlagHelper IsTinderbox
 
 
 -- ==================================================
