@@ -315,7 +315,8 @@ type EffectAsync = Async ()
 type EffectQueue = TQueue EffectCmd
 
 
-data EffectCmd = PauseEffect        (TMVar Seconds) -- TODO: Lanterns will need the ability to add time. Update your handwritten notes.
+data EffectCmd = AddEffectTime      Seconds
+               | PauseEffect        (TMVar Seconds)
                | QueryRemEffectTime (TMVar Seconds)
                | StopEffect
 

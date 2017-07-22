@@ -25,7 +25,7 @@ import           Mud.Util.Text
 import           Control.Concurrent (myThreadId)
 import           Control.Concurrent.Async (asyncThreadId, cancel, wait)
 import           Control.Concurrent.STM (atomically)
-import           Control.Concurrent.STM.TMVar (newEmptyTMVarIO, putTMVar, takeTMVar)
+import           Control.Concurrent.STM.TMVar (newEmptyTMVarIO, putTMVar, takeTMVar, tryReadTMVar)
 import           Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
 import           Control.Exception.Lifted (finally, handle)
 import           Control.Lens (_1, view, views)
@@ -82,17 +82,20 @@ threadEffect :: HasCallStack => Id -> Effect -> EffectQueue -> MudStack ()
 threadEffect i (Effect _ effSub _ secs _) q = handle (threadExHandler (Just i) "effect") $ ask >>= \md -> do
     setThreadType . EffectThread $ i
     logHelper "has started."
-    (ti, ior) <- (,) <$> liftIO myThreadId <*> liftIO (newIORef secs)
+    (ti, ior, addSecsTMVar) <- liftIO ((,,) <$> myThreadId <*> newIORef secs <*> newEmptyTMVarIO)
     let effectTimer = setThreadType (EffectTimer i) >> loop secs
           where
-            loop x = liftIO (atomicWriteIORef' ior x) >> if isZero x
-              then unit
-              else let f = case effSub of EffectOther fn -> runEffectFun fn i x
-                                          _              -> unit
-                   in sequence_ [ liftIO . delaySecs $ 1, f, loop . pred $ x ]
+            loop x = do x' <- maybe x (+ x) <$> (liftIO . atomically . tryReadTMVar $ addSecsTMVar)
+                        liftIO . atomicWriteIORef' ior $ x'
+                        if isZero x'
+                          then unit
+                          else let f = case effSub of EffectOther fn -> runEffectFun fn i x'
+                                                      _              -> unit
+                               in sequence_ [ liftIO . delaySecs $ 1, f, loop . pred $ x' ]
         queueListener = setThreadType (EffectListener i) >> loop
           where
             loop = q |&| liftIO . atomically . readTQueue >=> \case
+              AddEffectTime      x   -> sequence_ [ liftIO . atomically . putTMVar addSecsTMVar $ x, loop ]
               PauseEffect        tmv -> putTMVarHelper tmv
               QueryRemEffectTime tmv -> putTMVarHelper tmv >> loop
               StopEffect             -> logPla "threadEffect queueListener loop" i "received the signal to stop effect."

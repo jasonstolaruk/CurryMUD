@@ -34,7 +34,7 @@ import           Mud.Misc.Misc
 import           Mud.Misc.Persist
 import           Mud.TheWorld.Liqs
 import           Mud.TheWorld.Zones.AdminZoneIds (iLoggedOut)
-import           Mud.TheWorld.Zones.WarehouseIds (iPidge)
+import           Mud.TheWorld.Zones.WarehouseIds (iLantern, iPidge)
 import           Mud.Threads.Effect
 import           Mud.Threads.Misc
 import           Mud.Threads.NpcServer
@@ -58,10 +58,12 @@ import           Control.Applicative (Const)
 import           Control.Arrow ((***), first, second)
 import           Control.Concurrent (ThreadId, getNumCapabilities, myThreadId)
 import           Control.Concurrent.Async (asyncThreadId, poll)
+import           Control.Concurrent.STM (atomically)
+import           Control.Concurrent.STM.TQueue (writeTQueue)
 import           Control.Exception (ArithException(..), IOException)
 import           Control.Exception.Lifted (throwIO, try)
-import           Control.Lens (Optical, both, views)
-import           Control.Lens.Operators ((&), (%~))
+import           Control.Lens (Optical, _2, both, views)
+import           Control.Lens.Operators ((&), (%~), (^.))
 import           Control.Monad ((>=>), replicateM_)
 import           Control.Monad.IO.Class (liftIO)
 import           Data.Aeson (encode, toJSON)
@@ -148,6 +150,9 @@ debugCmds =
     , mkDebugCmd "id"          debugId          "Search the \"MudState\" tables for a given ID."
     , mkDebugCmd "jwk"         debugJWK         "Generate a JWK and serialize it to JSON."
     , mkDebugCmd "keys"        debugKeys        "Dump a list of \"MudState\" \"IntMap\" keys."
+    , mkDebugCmd "light"       debugLight       "Start an illumination effect for \"iLantern\". In the case that the \
+                                                \effect already exists, query its remaining time."
+    , mkDebugCmd "lightadd"    debugLightAdd    "Add 5 seconds to the illumination effect for \"iLantern\"."
     , mkDebugCmd "liquid"      debugLiq         "Consume a given amount (in mouthfuls) of a given liquid (by distinct \
                                                 \liquid ID)."
     , mkDebugCmd "log"         debugLog         "Put the logging service under heavy load."
@@ -627,6 +632,35 @@ debugKeys (NoArgs i mq cols) = getState >>= \ms -> let mkKeysTxt (tblName, ks) =
     logPlaExec (prefixDebugCmd "keys") i
     pager i mq Nothing . concat . wrapLines cols . intercalate mMempty . map mkKeysTxt . mkTblNameKeysList $ ms
 debugKeys p = withoutArgs debugKeys p
+
+
+-----
+
+
+debugLight :: HasCallStack => ActionFun
+debugLight (NoArgs' i mq) = do -- TODO: Only start the illumination effect if it doesn't already exist. If it does exist, query it's remaining time and display the result. Consider using "modifyState".
+    logPlaExec (prefixDebugCmd "light") i
+    ok mq
+    let tag     = Nothing
+        effSub  = EffectIllumination
+        effVal  = Nothing
+        effDur  = oneMinInSecs
+        effFeel = Nothing
+    startEffect iLantern . Effect tag effSub effVal effDur $ effFeel
+debugLight p = withoutArgs debugLight p
+
+
+-----
+
+
+debugLightAdd :: HasCallStack => ActionFun
+debugLightAdd (NoArgs i mq cols) = do
+    logPlaExec (prefixDebugCmd "lightadd") i
+    filter (views (effect.effectSub) (== EffectIllumination)) . getDurEffects iLantern <$> getState >>= \case
+      (de:_) -> let q = de^.effectService._2
+                in sequence_ [ liftIO . atomically . writeTQueue q . AddEffectTime $ 5, ok mq ]
+      _      -> wrapSend mq cols "No illumination effect found for \"iLantern\"."
+debugLightAdd p = withoutArgs debugLightAdd p
 
 
 -----
