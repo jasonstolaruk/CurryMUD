@@ -59,6 +59,7 @@ import           Control.Arrow ((***), first, second)
 import           Control.Concurrent (ThreadId, getNumCapabilities, myThreadId)
 import           Control.Concurrent.Async (asyncThreadId, poll)
 import           Control.Concurrent.STM (atomically)
+import           Control.Concurrent.STM.TMVar (newEmptyTMVarIO, takeTMVar)
 import           Control.Concurrent.STM.TQueue (writeTQueue)
 import           Control.Exception (ArithException(..), IOException)
 import           Control.Exception.Lifted (throwIO, try)
@@ -638,15 +639,23 @@ debugKeys p = withoutArgs debugKeys p
 
 
 debugLight :: HasCallStack => ActionFun
-debugLight (NoArgs' i mq) = do -- TODO: Only start the illumination effect if it doesn't already exist. If it does exist, query it's remaining time and display the result. Consider using "modifyState".
+debugLight (NoArgs i mq cols) = do
     logPlaExec (prefixDebugCmd "light") i
-    ok mq
-    let tag     = Nothing
-        effSub  = EffectIllumination
-        effVal  = Nothing
-        effDur  = oneMinInSecs
-        effFeel = Nothing
-    startEffect iLantern . Effect tag effSub effVal effDur $ effFeel
+    modifyStateSeq $ \ms ->
+        case filter (views (effect.effectSub) (== EffectIllumination)) . getDurEffects iLantern $ ms of
+          (de:_) -> let q = de^.effectService._2
+                        f = do secs <- liftIO $ do tmv <- newEmptyTMVarIO
+                                                   atomically . writeTQueue q . QueryRemEffectTime $ tmv
+                                                   atomically . takeTMVar $ tmv
+                               wrapSend mq cols $ commaShow secs <> " seconds remain."
+                    in (ms, pure f)
+          _      -> let tag     = Nothing
+                        effSub  = EffectIllumination
+                        effVal  = Nothing
+                        effDur  = oneMinInSecs
+                        effFeel = Nothing
+                    in (ms, [ startEffect iLantern . Effect tag effSub effVal effDur $ effFeel
+                            , wrapSend mq cols "Started an illumination effect on \"iLantern\"." ])
 debugLight p = withoutArgs debugLight p
 
 
