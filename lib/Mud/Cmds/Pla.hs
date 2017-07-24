@@ -1346,7 +1346,7 @@ fill :: HasCallStack => RmActionFun
 fill p@AdviseNoArgs  = advise p [] adviceFillNoArgs
 fill p@AdviseOneArg  = advise p [] adviceFillNoSource
 fill p@(Lower' i as) = getState >>= \ms ->
-    checkActing p ms (Right "fill a vessel") [ Attacking, Drinking, Sacrificing ] . genericActionWithHooks p helper $ "fill"
+    checkActing p ms (Right "fill something") [ Attacking, Drinking, Sacrificing ] . genericActionWithHooks p helper $ "fill"
   where
     helper v ms =
         let b@LastArgIsTargetBindings { .. } = mkLastArgIsTargetBindings i ms as

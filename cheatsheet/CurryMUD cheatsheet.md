@@ -29,7 +29,7 @@ Command | Example | Result
 Prefix | Location | Example | Result
 --- | --- | --- | ---
 `i-` | inventory | `smell i-flask` | smell the (contents of the) flask in your inventory
-`e-` | equipment | `smell e-boots` | smell the boots you're wearing
+`e-` | equipment | `smell e-shirt` | smell the shirt you're wearing
 `r-` | room | `smell r-flower` | smell the flower in the room
 
 ## Other Prefixes

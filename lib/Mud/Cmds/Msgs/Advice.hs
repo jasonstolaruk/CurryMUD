@@ -727,6 +727,9 @@ adviceFillHelper t = T.concat [ t
                               , colorWith quoteColor "fill waterskin jug"
                               , " "
                               , parensQuote "to fill your waterskin with the contents of your jug"
+                              , ". You may also refuel a lantern, as in "
+                              , colorWith quoteColor "fill lantern bottle "
+                              , parensQuote "to fill your lantern with the oil in your bottle"
                               , "." ]
 
 
