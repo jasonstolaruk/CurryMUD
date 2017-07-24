@@ -89,7 +89,7 @@ cmdDescFeeling = "Check how you're feeling."
 
 cmdDescFill :: Text
 cmdDescFill = "Fill one or more vessels with a) the contents of another vessel, or b) a source of liquid in your \
-              \current room."
+              \current room. Alternatively, fill a lantern with oil."
 
 
 cmdDescGet :: Text

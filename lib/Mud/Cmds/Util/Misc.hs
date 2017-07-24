@@ -18,6 +18,7 @@ module Mud.Cmds.Util.Misc ( applyRegex
                           , getAllChanIdNames
                           , getChanIdNames
                           , getChanStyleds
+                          , getIlluminationEffect
                           , getPCChans
                           , getQuestionStyleds
                           , getTunedQuestionIds
@@ -417,6 +418,14 @@ getChanStyleds i c ms = let (linkeds, nonLinkedIds) = getChanLinkeds_nonLinkedId
               where
                 a = (x, y, styled)
         in return . zipWith helper combo $ styleds
+
+
+-----
+
+
+getIlluminationEffect :: HasCallStack => Id -> MudState -> Maybe DurationalEffect
+getIlluminationEffect i = let f = views (effect.effectSub) (== EffectIllumination)
+                          in listToMaybe . filter f . getDurEffects i
 
 
 -----

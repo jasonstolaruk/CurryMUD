@@ -162,7 +162,6 @@ regularCmds = map (uncurry4 mkRegularCmd) regularCmdTuples
 TODO:
 light lightSource tinderbox
 unlight lightSource -- "lightSource" arg may be omitted.
-fill lantern oil -- This adds time to the illumination effect.
 A "tinderbox" is a tinderbox with flint and steel strikers in a single object.
 -}
 -- TODO: "buy" and "sell".
@@ -1343,7 +1342,7 @@ felinoidean = sayHelper FelinoidLang
 -----
 
 
-fill :: HasCallStack => RmActionFun -- TODO: Filling lanterns with oil. Update help.
+fill :: HasCallStack => RmActionFun
 fill p@AdviseNoArgs  = advise p [] adviceFillNoArgs
 fill p@AdviseOneArg  = advise p [] adviceFillNoSource
 fill p@(Lower' i as) = getState >>= \ms ->

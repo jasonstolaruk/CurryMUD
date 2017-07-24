@@ -71,7 +71,7 @@ headTail :: [a] -> (,) a ([] a)
 headTail = (,) <$> head <*> tail
 
 
-listToMaybe :: (Show a) => [a] -> Maybe a
+listToMaybe :: [a] -> Maybe a
 listToMaybe []    = Nothing
 listToMaybe (a:_) = Just a
 

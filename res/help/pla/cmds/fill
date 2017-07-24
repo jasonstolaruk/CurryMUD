@@ -5,6 +5,7 @@
 
 \uDESCRIPTION\n
 Fill one or more vessels with a) the contents of another vessel, or b) a source of liquid in your current room.
+Alternatively, fill a lantern with oil.
 
 To fill your waterskin with the contents of the jug in your inventory:
 \qfill waterskin \li#l\qjug\d4`
@@ -15,6 +16,12 @@ To fill your waterskin with water from the fountain in the room:
 \qfill waterskin \lr#l\qfountain\d4`
 (To fill something with the contents of a vessel on the ground in your current room, you must first pick the vessel up.)
 
+To fill the lantern in your inventory with the oil in your bottle:
+\qfill lantern bottle\d4`
+
+To fill the lantern in your readied equipment with the oil in your bottle:
+\qfill \le#l\qlantern bottle\d4`
+
 \uEXAMPLES\n
 \qfill bottle jar jug\d to fill your bottle and your jar with the contents of the jug your inventory.4`
 \qfill \p2#i\qbottle jug\d to fill your second bottle with the contents of the jug your inventory.4`
@@ -23,4 +30,4 @@ To fill your waterskin with water from the fountain in the room:
 \qfill \p#a\qwaterskin \lr#l\qfountain\d to fill all of your waterskins with water from the from the fountain in the room.4`
 
 \uSEE ALSO\n
-abbreviation, empty, get, inventory, prefixes, put, remove, take
+abbreviation, empty, get, inventory, light, prefixes, put, remove, unlight, take

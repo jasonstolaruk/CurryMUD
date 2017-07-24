@@ -95,7 +95,7 @@ threadEffect i (Effect _ effSub _ secs _) q = handle (threadExHandler (Just i) "
             getAddedSecs = helper 0
               where
                 helper x = tryReadTQueue addSecsQueue >>= \case Nothing -> return x
-                                                                Just x' -> helper $ x + x'
+                                                                Just y  -> helper $ x + y
         queueListener = setThreadType (EffectListener i) >> loop
           where
             loop = q |&| liftIO . atomically . readTQueue >=> \case

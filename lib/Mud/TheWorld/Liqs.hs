@@ -46,28 +46,54 @@ import Data.Monoid ((<>))
 import Data.Text (Text)
 
 
-liqList :: [(Id, DistinctLiq, Liq)] -- TODO: Oil.
-liqList = [ (iLiqPotDx,              potDxDistinctLiq,              potDxLiq             )
-          , (iLiqPotFp,              potFpDistinctLiq,              potFpLiq             )
+liqList :: [(Id, DistinctLiq, Liq)]
+liqList = [ (iLiqOil,                oilDistinctLiq,                oilLiq               )
+          , (iLiqWater,              waterDistinctLiq,              waterLiq             )
           , (iLiqPotHp,              potHpDistinctLiq,              potHpLiq             )
-          , (iLiqPotHt,              potHtDistinctLiq,              potHtLiq             )
-          , (iLiqPotInstantDx,       potInstantDxDistinctLiq,       potInstantDxLiq      )
-          , (iLiqPotInstantFp,       potInstantFpDistinctLiq,       potInstantFpLiq      )
           , (iLiqPotInstantHp,       potInstantHpDistinctLiq,       potInstantHpLiq      )
-          , (iLiqPotInstantHt,       potInstantHtDistinctLiq,       potInstantHtLiq      )
-          , (iLiqPotInstantMa,       potInstantMaDistinctLiq,       potInstantMaLiq      )
-          , (iLiqPotInstantMp,       potInstantMpDistinctLiq,       potInstantMpLiq      )
-          , (iLiqPotInstantPp,       potInstantPpDistinctLiq,       potInstantPpLiq      )
-          , (iLiqPotInstantPs,       potInstantPsDistinctLiq,       potInstantPsLiq      )
-          , (iLiqPotInstantSt,       potInstantStDistinctLiq,       potInstantStLiq      )
-          , (iLiqPotInstantTinnitus, potInstantTinnitusDistinctLiq, potInstantTinnitusLiq)
-          , (iLiqPotMa,              potMaDistinctLiq,              potMaLiq             )
           , (iLiqPotMp,              potMpDistinctLiq,              potMpLiq             )
+          , (iLiqPotInstantMp,       potInstantMpDistinctLiq,       potInstantMpLiq      )
           , (iLiqPotPp,              potPpDistinctLiq,              potPpLiq             )
-          , (iLiqPotPs,              potPsDistinctLiq,              potPsLiq             )
+          , (iLiqPotInstantPp,       potInstantPpDistinctLiq,       potInstantPpLiq      )
+          , (iLiqPotFp,              potFpDistinctLiq,              potFpLiq             )
+          , (iLiqPotInstantFp,       potInstantFpDistinctLiq,       potInstantFpLiq      )
           , (iLiqPotSt,              potStDistinctLiq,              potStLiq             )
+          , (iLiqPotInstantSt,       potInstantStDistinctLiq,       potInstantStLiq      )
+          , (iLiqPotDx,              potDxDistinctLiq,              potDxLiq             )
+          , (iLiqPotInstantDx,       potInstantDxDistinctLiq,       potInstantDxLiq      )
+          , (iLiqPotHt,              potHtDistinctLiq,              potHtLiq             )
+          , (iLiqPotInstantHt,       potInstantHtDistinctLiq,       potInstantHtLiq      )
+          , (iLiqPotMa,              potMaDistinctLiq,              potMaLiq             )
+          , (iLiqPotInstantMa,       potInstantMaDistinctLiq,       potInstantMaLiq      )
+          , (iLiqPotPs,              potPsDistinctLiq,              potPsLiq             )
+          , (iLiqPotInstantPs,       potInstantPsDistinctLiq,       potInstantPsLiq      )
           , (iLiqPotTinnitus,        potTinnitusDistinctLiq,        potTinnitusLiq       )
-          , (iLiqWater,              waterDistinctLiq,              waterLiq             ) ]
+          , (iLiqPotInstantTinnitus, potInstantTinnitusDistinctLiq, potInstantTinnitusLiq) ]
+
+
+-----
+
+
+oilLiq :: Liq
+oilLiq = Liq (DistinctLiqId iLiqOil)
+             (Don'tArticle "oil")
+             "oil smell" -- TODO
+             "oil taste"
+             "oil drink"
+
+
+oilDistinctLiq :: DistinctLiq -- TODO
+oilDistinctLiq = DistinctLiq "oil" EdibleEffects { _digestEffects  = Just de
+                                                 , _consumpEffects = Nothing }
+  where
+    de = EffectList . pure . Left $ ie
+    ie = InstaEffect { _instaEffectSub     = MobInstaEffectPts Fp
+                     , _instaEffectVal     = Just . EffectFixedVal $ 2
+                     , _instaEffectFeeling = Just . EffectFeeling oilTag $ foodWaterFeelDur }
+
+
+oilTag :: FeelingTag
+oilTag = "oil"
 
 
 -----
