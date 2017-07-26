@@ -89,7 +89,7 @@ cmdDescFeeling = "Check how you're feeling."
 
 cmdDescFill :: Text
 cmdDescFill = "Fill one or more vessels with a) the contents of another vessel, or b) a source of liquid in your \
-              \current room. Alternatively, fill a lantern with oil."
+              \current room."
 
 
 cmdDescGet :: Text
@@ -183,6 +183,10 @@ cmdDescRead = "Read the text that is written on a) an item in your inventory, or
 
 cmdDescReady :: Text
 cmdDescReady = "Ready one or more items in your inventory."
+
+
+cmdDescRefuel :: Text
+cmdDescRefuel = "Add oil to a lantern."
 
 
 cmdDescRemove :: Text

@@ -1566,7 +1566,7 @@ mkEntDescs :: HasCallStack => Id -> Cols -> MudState -> Inv -> Text
 mkEntDescs i cols ms eis = nls [ mkEntDesc i cols ms (ei, e) | ei <- eis, let e = getEnt ei ms ]
 
 
-mkEntDesc :: HasCallStack => Id -> Cols -> MudState -> (Id, Ent) -> Text
+mkEntDesc :: HasCallStack => Id -> Cols -> MudState -> (Id, Ent) -> Text -- TODO: Display remaining oil for lanterns.
 mkEntDesc i cols ms (ei, e) =
     case t of ConType      ->                  (ed <>) . mkInvCoinsDesc i cols ms ei $ s
               CorpseType   -> (corpseTxt <>)           . mkInvCoinsDesc i cols ms ei $ s
@@ -1795,9 +1795,8 @@ mkLastArgIsTargetBindings i ms as | (lastArg, others) <- mkLastArgWithNubbedOthe
 
 mkLastArgWithNubbedOthers :: HasCallStack => Args -> (Text, Args)
 mkLastArgWithNubbedOthers as = let lastArg = last as
-                                   otherArgs = init $ case as of
-                                     [_, _] -> as
-                                     _      -> (++ pure lastArg) . nub . init $ as
+                                   otherArgs = init $ case as of [_, _] -> as
+                                                                 _      -> (++ pure lastArg) . nub . init $ as
                                in (lastArg, otherArgs)
 
 

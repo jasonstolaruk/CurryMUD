@@ -21,6 +21,7 @@ module Mud.Data.State.Util.Calc ( calcBarLen
                                 , calcEncPer
                                 , calcFoodPerRem
                                 , calcInvCoinsVol
+                                , calcLanternSecsForMouthfulsOfOil
                                 , calcLvl
                                 , calcLvlExps
                                 , calcLvlForExp
@@ -290,6 +291,20 @@ calcFoodPerRem :: HasCallStack => Id -> MudState -> Int
 calcFoodPerRem i ms | f@(view foodRemMouthfuls -> x) <- getFood i ms
                     , y                              <- view foodMouthfuls . getDistinctFoodForFood f $ ms
                     = x `percent` y
+
+
+-----
+
+
+{-
+A lantern burns for 24 hours on a pint of fuel.
+There are 2,888 "Vol"s in a pint.
+If there are 175 "Vol"s in a mouthful, then there are 17 mouthfuls in a pint and about 1.4 hours of light per mouthful.
+-}
+calcLanternSecsForMouthfulsOfOil :: HasCallStack => Mouthfuls -> Seconds
+calcLanternSecsForMouthfulsOfOil x = let mouthfulsPerPint = 2888 `divide` mouthfulVol
+                                         secsPerMouthful  = fromIntegral oneDayInSecs / mouthfulsPerPint
+                                     in round $ fromIntegral x * secsPerMouthful
 
 
 -----

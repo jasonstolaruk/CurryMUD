@@ -642,20 +642,15 @@ debugLight :: HasCallStack => ActionFun
 debugLight (NoArgs i mq cols) = do
     logPlaExec (prefixDebugCmd "light") i
     modifyStateSeq $ \ms ->
-        case getIlluminationEffect iLantern ms of
+        case getIlluminationDurationalEffect iLantern ms of
           Just de -> let q = de^.effectService._2
                          f = do secs <- liftIO $ do tmv <- newEmptyTMVarIO
                                                     atomically . writeTQueue q . QueryRemEffectTime $ tmv
                                                     atomically . takeTMVar $ tmv
                                 wrapSend mq cols $ commaShow secs <> " seconds remain."
                      in (ms, pure f)
-          Nothing -> let tag     = Nothing
-                         effSub  = EffectIllumination
-                         effVal  = Nothing
-                         effDur  = oneMinInSecs
-                         effFeel = Nothing
-                     in (ms, [ startEffect iLantern . Effect tag effSub effVal effDur $ effFeel
-                            , wrapSend mq cols "Started an illumination effect on \"iLantern\"." ])
+          Nothing -> (ms, [ startEffect iLantern . mkIlluminationEffect $ oneMinInSecs
+                          , wrapSend mq cols "Started an illumination effect on \"iLantern\"." ])
 debugLight p = withoutArgs debugLight p
 
 
@@ -665,7 +660,7 @@ debugLight p = withoutArgs debugLight p
 debugLightAdd :: HasCallStack => ActionFun
 debugLightAdd (NoArgs i mq cols) = do
     logPlaExec (prefixDebugCmd "lightadd") i
-    getIlluminationEffect iLantern <$> getState >>= \case
+    getIlluminationDurationalEffect iLantern <$> getState >>= \case
       Just de -> let q = de^.effectService._2
                  in sequence_ [ liftIO . atomically . writeTQueue q . AddEffectTime $ 5, ok mq ]
       Nothing -> wrapSend mq cols "No illumination effect found for \"iLantern\"."

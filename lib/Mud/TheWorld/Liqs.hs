@@ -1,6 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Mud.TheWorld.Liqs ( liqList
+                         , oilLiq
+                         , oilTag
                          , potDxLiq
                          , potFpLiq
                          , potFpTag

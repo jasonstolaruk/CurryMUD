@@ -197,6 +197,7 @@ regularCmdTuples =
     , ("razzl",      cmdNotFoundAction,  True,  "")
     , ("razzle",     razzle,             True,  "")
     , ("read",       readAction,         True,  cmdDescRead)
+    , ("refuel",     refuel,             True,  cmdDescRefuel)
     , ("remove",     remove,             True,  cmdDescRemove)
     , ("s",          go "s",             True,  cmdDescGoSouth)
     , ("sacrifice",  sacrifice,          False, "Sacrifice a corpse using a holy symbol.")
@@ -401,6 +402,7 @@ npcRegularCmdTuples =
     , ("ne",         go "ne",        True,  cmdDescGoNortheast)
     , ("nw",         go "nw",        True,  cmdDescGoNorthwest)
     , ("read",       readAction,     True,  cmdDescRead)
+    , ("refuel",     refuel,         True,  cmdDescRefuel)
     , ("remove",     remove,         True,  cmdDescRemove)
     , ("s",          go "s",         True,  cmdDescGoSouth)
     , ("se",         go "se",        True,  cmdDescGoSoutheast)
@@ -1346,7 +1348,7 @@ fill :: HasCallStack => RmActionFun
 fill p@AdviseNoArgs  = advise p [] adviceFillNoArgs
 fill p@AdviseOneArg  = advise p [] adviceFillNoSource
 fill p@(Lower' i as) = getState >>= \ms ->
-    checkActing p ms (Right "fill something") [ Attacking, Drinking, Sacrificing ] . genericActionWithHooks p helper $ "fill"
+    checkActing p ms (Right "fill a vessel") [ Attacking, Drinking, Sacrificing ] . genericActionWithHooks p helper $ "fill"
   where
     helper v ms =
         let b@LastArgIsTargetBindings { .. } = mkLastArgIsTargetBindings i ms as
@@ -2683,6 +2685,53 @@ readyLight i ms d mrol a@(et, _, _, _, _) lightId lightSing | em <- et IM.! i =
   where
     sorry msg = a & _3 <>~ pure msg
     poss      = mkPossPro . getSex i $ ms
+
+
+-----
+
+
+refuel :: HasCallStack => RmActionFun -- TODO: Help.
+refuel p@AdviseNoArgs                        = advise p [] adviceRefuelNoArgs
+refuel p@AdviseOneArg                        = advise p [] adviceRefuelNoSource
+refuel p@(Lower i mq cols [lantern, vessel]) = getState >>= \ms ->
+    checkActing p ms (Right "refuel a lantern") [ Attacking, Drinking, Sacrificing ] helper
+  where
+    helper = modifyStateSeq $ \ms ->
+        let (inInvs, inEqs, _) = sortArgsInvEqRm InInv . pure $ lantern
+            (invCoins, eqMap)  = (getInvCoins `fanUncurry` getEqMap) (i, ms)
+            -- d                  = mkStdDesig  i ms DoCap
+            sorry              = (ms, ) . pure . wrapSend mq cols
+            refuelInv = let (eiss, _) = uncurry (resolveMobInvCoins i ms inInvs) invCoins
+                        in f eiss
+            refuelEq  = let (gecrs, miss, _) = resolveEntCoinNames i ms inEqs (M.elems eqMap) mempty
+                            eiss             = zipWith (curry procGecrMisMobEq) gecrs miss
+                        in f eiss
+            f eiss    = case eiss of []      -> sorry sorryRefuelLanternCoins
+                                     (eis:_) -> either sorry refueler eis
+            refueler [lanternId] = case (getSing `fanUncurry` getType) (lanternId, ms) of
+              (s, LightType) | getLightSub lanternId ms == Lantern
+                             , (inInvs', inEqs', inRms) <- sortArgsInvEqRm InInv . pure $ vessel
+                             -> if | ()!# inEqs' -> sorry sorryRefuelVesselInEq
+                                   | ()!# inRms  -> sorry sorryRefuelVesselInRm
+                                   | otherwise   -> let (eiss, _) = uncurry (resolveMobInvCoins i ms inInvs') invCoins
+                                                    in case eiss of []      -> sorry sorryRefuelVesselCoins
+                                                                    (eis:_) -> either sorry (refuelerHelper s) eis
+              (s, _        ) -> sorry . sorryRefuelLanternType $ s
+              where
+                refuelerHelper _ {- lanternSing -} [vesselId] =
+                    let vesselSing = getSing vesselId ms
+                    in case getVesselCont vesselId ms of
+                      Nothing -> sorry . sorryRefuelVesselEmpty $ vesselSing
+                      Just (liq, _ {- mouths -})
+                        | liq == oilLiq -> undefined
+                        | otherwise -> sorry . sorryRefuelLiq $ vesselSing
+                refuelerHelper _ _ = sorry sorryRefuelExcessVessels
+            refueler _ = sorry sorryRefuelExcessLanterns
+        in if | ()#  invCoins -> sorry dudeYourHandsAreEmpty
+              | ()!# inInvs   -> refuelInv
+              | ()!# inEqs    -> refuelEq
+              | otherwise     -> sorry sorryRefuelLanternInRm
+refuel p = advise p ["refuel"] adviceRefuelExcessArgs
 
 
 -----

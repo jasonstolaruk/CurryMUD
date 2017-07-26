@@ -112,6 +112,9 @@ module Mud.Cmds.Msgs.Advice ( adviceAAnnounceNoArgs
                             , adviceQuitExcessArgs
                             , adviceReadNoArgs
                             , adviceReadyNoArgs
+                            , adviceRefuelExcessArgs
+                            , adviceRefuelNoArgs
+                            , adviceRefuelNoSource
                             , adviceRemoveNoArgs
                             , adviceRemoveNoCon
                             , adviceSacrificeExcessArgs
@@ -727,9 +730,6 @@ adviceFillHelper t = T.concat [ t
                               , colorWith quoteColor "fill waterskin jug"
                               , " "
                               , parensQuote "to fill your waterskin with the contents of your jug"
-                              , ". You may also refuel a lantern, as in "
-                              , colorWith quoteColor "fill lantern bottle "
-                              , parensQuote "to fill your lantern with the oil in your bottle"
                               , "." ]
 
 
@@ -798,6 +798,20 @@ adviceReadNoArgs = prd $ "Please specify the names of one or more things to read
 
 adviceReadyNoArgs :: Text
 adviceReadyNoArgs = prd $ "Please specify one or more items to ready, as in " <> colorWith quoteColor "ready sword"
+
+
+adviceRefuelExcessArgs :: Text
+adviceRefuelExcessArgs = adviceRefuelNoArgs
+
+
+adviceRefuelNoArgs :: Text
+adviceRefuelNoArgs = prd $ "Please specify the lantern to be refueled followed by a vessel containing oil, as in " <>
+                           colorWith quoteColor "refuel lantern bottle"
+
+
+adviceRefuelNoSource :: Text
+adviceRefuelNoSource = prd $ "Please also specify a vessel vessel containing oil, as in " <>
+                             colorWith quoteColor "refuel lantern bottle"
 
 
 adviceRemoveNoArgs :: Text

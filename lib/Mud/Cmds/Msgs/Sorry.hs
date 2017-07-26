@@ -251,6 +251,16 @@ module Mud.Cmds.Msgs.Sorry ( sorryActing
                            , sorryReadyType
                            , sorryReadyWpnHands
                            , sorryReadyWpnRol
+                           , sorryRefuelExcessLanterns
+                           , sorryRefuelExcessVessels
+                           , sorryRefuelLanternCoins
+                           , sorryRefuelLanternInRm
+                           , sorryRefuelLanternType
+                           , sorryRefuelLiq
+                           , sorryRefuelVesselCoins
+                           , sorryRefuelVesselEmpty
+                           , sorryRefuelVesselInEq
+                           , sorryRefuelVesselInRm
                            , sorryRegPlaName
                            , sorryRemCoin
                            , sorryRemEmpty
@@ -1721,6 +1731,50 @@ sorryReadyWpnHands s = prd $ "Both hands are required to wield the " <> s
 
 sorryReadyWpnRol :: Sing -> Text
 sorryReadyWpnRol s = can't "wield " <> aOrAn s <> " with your finger!"
+
+
+-----
+
+
+sorryRefuelExcessLanterns :: Text
+sorryRefuelExcessLanterns = but "you can only refuel one lantern at a time."
+
+
+sorryRefuelExcessVessels :: Text
+sorryRefuelExcessVessels = but "you can only specify a single source of oil at a time."
+
+
+sorryRefuelLanternCoins :: Text
+sorryRefuelLanternCoins = can't "refuel a coin."
+
+
+sorryRefuelLanternInRm :: Text
+sorryRefuelLanternInRm = can't "refuel a lantern in your current room. Please pick up the lantern first."
+
+
+sorryRefuelLanternType :: Sing -> Text
+sorryRefuelLanternType s = prd $ can't "refuel " <> aOrAn s
+
+
+sorryRefuelLiq :: Sing -> Text
+sorryRefuelLiq = the' . (<> " doesn't contain oil.")
+
+
+sorryRefuelVesselCoins :: Text
+sorryRefuelVesselCoins = butCan't "refuel a lantern with coins."
+
+
+sorryRefuelVesselEmpty :: Sing -> Text
+sorryRefuelVesselEmpty = the' . (<> " is empty.")
+
+
+sorryRefuelVesselInEq :: Text
+sorryRefuelVesselInEq = can't "refuel a lantern with an item in your readied equipment."
+
+
+sorryRefuelVesselInRm :: Text
+sorryRefuelVesselInRm = butCan't "refuel a lantern with the contents of a vessel in your current room. Please pick up \
+                                 \the vessel first."
 
 
 -----

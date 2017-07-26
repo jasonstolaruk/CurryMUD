@@ -874,7 +874,7 @@ type TotalSeconds = Seconds
 -- ==================================================
 
 
-newtype PausedEffect = PausedEffect Effect deriving (Eq, Generic, Show)
+newtype PausedEffect = PausedEffect { unPausedEffect :: Effect } deriving (Eq, Generic, Show)
 
 
 -- ==================================================

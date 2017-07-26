@@ -22,6 +22,9 @@ module Mud.Data.State.Util.Misc ( addToInv
                                 , getFeelingFun
                                 , getFun
                                 , getHookFun
+                                , getIlluminationDurationalEffect
+                                , getIlluminationEffect
+                                , getIlluminationPausedEffect
                                 , getInstaEffectFun
                                 , getListenThreadId
                                 , getLogAsyncs
@@ -51,6 +54,7 @@ module Mud.Data.State.Util.Misc ( addToInv
                                 , mkCorpseAppellation
                                 , mkCorpseTxt
                                 , mkEntName
+                                , mkIlluminationEffect
                                 , mkMaybeCorpseId
                                 , mkNameCountBothList
                                 , mkName_maybeCorpseId_count_bothList
@@ -269,6 +273,27 @@ getHookFun :: HasCallStack => HookName -> MudState -> HookFun
 getHookFun n = views (hookFunTbl.at n) (fromMaybe oops)
   where
     oops = blowUp "getHookFun" "hook name not found in hook function table" n
+
+
+-----
+
+
+getIlluminationEffect :: HasCallStack => Id -> MudState -> Either PausedEffect DurationalEffect
+getIlluminationEffect i ms = case getIlluminationDurationalEffect i ms of
+  Just de -> Right de
+  Nothing -> case getIlluminationPausedEffect i ms of
+    Just pe -> Left pe
+    Nothing -> blowUp "getIlluminationEffect" ("no illumination effect found for ID " <> showTxt i) ""
+
+
+getIlluminationDurationalEffect :: HasCallStack => Id -> MudState -> Maybe DurationalEffect
+getIlluminationDurationalEffect i = let f = views (effect.effectSub) (== EffectIllumination)
+                                    in listToMaybe . filter f . getDurEffects i
+
+
+getIlluminationPausedEffect :: HasCallStack => Id -> MudState -> Maybe PausedEffect
+getIlluminationPausedEffect i = let f = views effectSub (== EffectIllumination) . unPausedEffect
+                                in listToMaybe . filter f . getPausedEffects i
 
 
 -----
@@ -517,6 +542,18 @@ mkCorpseTxt = uncurry (middle (<>) . T.singleton $ corpseNameMarker)
 
 mkEntName :: Ent -> Text
 mkEntName = views entName (fromMaybe "unknown")
+
+
+-----
+
+
+mkIlluminationEffect :: HasCallStack => Seconds -> Effect
+mkIlluminationEffect secs = let tag     = Nothing
+                                effSub  = EffectIllumination
+                                effVal  = Nothing
+                                effDur  = secs
+                                effFeel = Nothing
+                            in Effect tag effSub effVal effDur effFeel
 
 
 -----
