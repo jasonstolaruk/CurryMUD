@@ -34,7 +34,7 @@ CurryMUD will have the following features:
 * Nearly everything may be abbreviated. :abc:
 * Logging. :scroll:
 * ANSI color. :red_circle:
-* Character creation. :runner:
+* Character creation with optonal "readymade character" templates. :runner:
 * The virtual world is automatically persisted at regular intervals and at shutdown. :floppy_disk:
 * Systems for reporting bugs and typos. :bug:
 * Commands to aid in the process of resetting a forgotten password. :passport_control:
@@ -48,7 +48,7 @@ CurryMUD will have the following features:
 * Weight and encumbrance. :chart_with_downwards_trend:
 * Volume and container capacity. :school_satchel:
 * Vessels for containing liquids. Vessels may be filled and emptied. :wine_glass:
-* Light sources. :bulb:
+* Light sources. Lanterns may be refueled. :bulb:
 * Players can interact with permanent room fixtures that are not listed in a room's inventory. :fountain:
 * Objects can be configured to automatically disappear when left on the ground for some time. :boom:
 * Smell and taste. Listen. :nose::tongue::ear:
