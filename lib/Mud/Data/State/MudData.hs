@@ -547,7 +547,9 @@ data Done = Done
 
 
 -- Has an object.
-newtype Light = Light { unLight :: LightSub } deriving (Eq, Generic, Show)
+data Light = Light { _lightSub   :: LightSub
+                   , _lightIsLit :: Bool } -- Set before persisting, and referenced when mass restarting paused effects. Use "getIlluminationEffect" to determine whether or not a light is lit.
+                   deriving (Eq, Generic, Show)
 
 
 data LightSub = Torch | Lantern deriving (Eq, Generic, Show)
@@ -1282,7 +1284,7 @@ instance FromJSON HostRecord     where parseJSON = genericParseJSON dropUndersco
 instance FromJSON InstaEffect    where parseJSON = genericParseJSON dropUnderscore
 instance FromJSON InstaEffectSub
 instance FromJSON Lang
-instance FromJSON Light
+instance FromJSON Light          where parseJSON = genericParseJSON dropUnderscore
 instance FromJSON LightSub
 instance FromJSON LinkDir
 instance FromJSON Liq            where parseJSON = genericParseJSON dropUnderscore
@@ -1328,7 +1330,7 @@ instance ToJSON HostRecord       where toJSON    = genericToJSON    dropUndersco
 instance ToJSON InstaEffect      where toJSON    = genericToJSON    dropUnderscore
 instance ToJSON InstaEffectSub
 instance ToJSON Lang
-instance ToJSON Light
+instance ToJSON Light            where toJSON    = genericToJSON    dropUnderscore
 instance ToJSON LightSub
 instance ToJSON LinkDir
 instance ToJSON Liq              where toJSON    = genericToJSON    dropUnderscore
@@ -1400,6 +1402,7 @@ makeLenses ''Ent
 makeLenses ''Food
 makeLenses ''HostRecord
 makeLenses ''InstaEffect
+makeLenses ''Light
 makeLenses ''Liq
 makeLenses ''Locks
 makeLenses ''Mob

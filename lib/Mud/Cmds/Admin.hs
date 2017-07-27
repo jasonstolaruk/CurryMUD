@@ -856,7 +856,10 @@ examineInv i ms = let is  = getInv i ms
 
 
 examineLight :: HasCallStack => ExamineHelper
-examineLight i ms = let sub = getLightSub i ms in pure $ "Type: " <> pp sub
+examineLight i = helper . getLight i
+  where
+    helper (Light sub b) = [ "Type: "   <> pp sub
+                           , "Is lit: " <> showTxt b ]
 
 
 examineMob :: HasCallStack => ExamineHelper

@@ -251,6 +251,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryActing
                            , sorryReadyType
                            , sorryReadyWpnHands
                            , sorryReadyWpnRol
+                           , sorryRefuelAlready
                            , sorryRefuelExcessLanterns
                            , sorryRefuelExcessVessels
                            , sorryRefuelLanternCoins
@@ -1736,6 +1737,10 @@ sorryReadyWpnRol s = can't "wield " <> aOrAn s <> " with your finger!"
 -----
 
 
+sorryRefuelAlready :: Sing -> Text
+sorryRefuelAlready = the' . (<> " is already full.")
+
+
 sorryRefuelExcessLanterns :: Text
 sorryRefuelExcessLanterns = but "you can only refuel one lantern at a time."
 
@@ -1761,7 +1766,7 @@ sorryRefuelLiq = the' . (<> " doesn't contain oil.")
 
 
 sorryRefuelVesselCoins :: Text
-sorryRefuelVesselCoins = butCan't "refuel a lantern with coins."
+sorryRefuelVesselCoins = can't "refuel a lantern with coins."
 
 
 sorryRefuelVesselEmpty :: Sing -> Text

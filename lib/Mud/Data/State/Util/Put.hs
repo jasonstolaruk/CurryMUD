@@ -84,11 +84,11 @@ putLight i e o l = tweaks [ lightTbl           .ind i .~ l
                           , durationalEffectTbl.ind i .~ []
                           , entTbl             .ind i .~ e
                           , objTbl             .ind i .~ o
-                          , pausedEffectTbl    .ind i .~ xs
+                          , pausedEffectTbl    .ind i .~ [ PausedEffect . mkIlluminationEffect $ secs ]
                           , typeTbl            .ind i .~ LightType ]
   where
-    xs = case unLight l of Torch   -> []
-                           Lantern -> pure . PausedEffect . mkIlluminationEffect $ maxLanternSecs
+    secs = case l^.lightSub of Torch   -> torchSecs
+                               Lantern -> 100 -- TODO: maxLanternSecs
 
 
 -----

@@ -57,6 +57,7 @@ module Mud.TopLvlDefs.Misc ( acl
                            , sacrificeSecs
                            , stdLinkNames
                            , threadTblPurgerDelay
+                           , torchSecs
                            , trashDumpPurgerDelay
                            , ver
                            , worldPersisterDelay
@@ -271,6 +272,10 @@ stdLinkNames = [ "n", "ne", "e", "se", "s", "sw", "w", "nw", "u", "d" ]
 
 threadTblPurgerDelay :: Seconds
 threadTblPurgerDelay = fiveMinsInSecs
+
+
+torchSecs :: Seconds
+torchSecs = twoHrsInSecs
 
 
 trashDumpPurgerDelay :: Seconds

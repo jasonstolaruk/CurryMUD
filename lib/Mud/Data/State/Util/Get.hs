@@ -618,7 +618,7 @@ getLight i = view (lightTbl.ind i)
 
 
 getLightSub :: HasCallStack => Id -> MudState -> LightSub
-getLightSub i = unLight . getLight i
+getLightSub i = view lightSub . getLight i
 
 
 -----

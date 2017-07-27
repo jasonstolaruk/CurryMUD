@@ -2718,12 +2718,32 @@ refuel p@(Lower i mq cols [lantern, vessel]) = getState >>= \ms ->
                                                                     (eis:_) -> either sorry (refuelerHelper s) eis
               (s, _        ) -> sorry . sorryRefuelLanternType $ s
               where
-                refuelerHelper _ {- lanternSing -} [vesselId] =
+                refuelerHelper lanternSing [vesselId] =
                     let vesselSing = getSing vesselId ms
                     in case getVesselCont vesselId ms of
                       Nothing -> sorry . sorryRefuelVesselEmpty $ vesselSing
-                      Just (liq, _ {- mouths -})
-                        | liq == oilLiq -> undefined
+                      Just (liq, mouths)
+                        | liq == oilLiq -> case getIlluminationEffect lanternId ms of
+                            Right (DurationalEffect _ {- eff -} (_, _ {- q -})) -> undefined
+                            Left (PausedEffect eff) -> -- TODO: Test.
+                              let effs             = filter ((/= eff) . unPausedEffect) . getPausedEffects lanternId $ ms
+                                  effSecs          = eff^.effectDur
+                                  vesselSecs       = calcLanternSecsPerMouthfulOfOil * mouths
+                                  lanternAvailSecs = maxLanternSecs - effSecs
+                              in if effSecs < maxLanternSecs
+                                then if vesselSecs >= lanternAvailSecs
+                                  then let eff'          = PausedEffect (eff & effectDur .~ maxLanternSecs) -- There is enough oil in the vessel to fill the lantern.
+                                           vesselRemSecs = vesselSecs - lanternAvailSecs
+                                           mouths'       = floor $ vesselRemSecs `divide` calcLanternSecsPerMouthfulOfOil
+                                           newCont | vesselRemSecs == 0 = Nothing
+                                                   | otherwise          = Just (liq, mouths')
+                                       in (ms & pausedEffectTbl.ind lanternId           .~ (eff' : effs)
+                                              & vesselTbl      .ind vesselId.vesselCont .~ newCont, [])
+                                  else let eff'     = PausedEffect (eff & effectDur .~ effSecs') -- There is not enough oil in the vessel to fill the lantern.
+                                           effSecs' = mouths * calcLanternSecsPerMouthfulOfOil
+                                       in (ms & pausedEffectTbl.ind lanternId           .~ (eff' : effs)
+                                              & vesselTbl      .ind vesselId.vesselCont .~ Nothing, [])
+                                else sorry . sorryRefuelAlready $ lanternSing
                         | otherwise -> sorry . sorryRefuelLiq $ vesselSing
                 refuelerHelper _ _ = sorry sorryRefuelExcessVessels
             refueler _ = sorry sorryRefuelExcessLanterns

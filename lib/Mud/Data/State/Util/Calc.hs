@@ -21,7 +21,7 @@ module Mud.Data.State.Util.Calc ( calcBarLen
                                 , calcEncPer
                                 , calcFoodPerRem
                                 , calcInvCoinsVol
-                                , calcLanternSecsForMouthfulsOfOil
+                                , calcLanternSecsPerMouthfulOfOil
                                 , calcLvl
                                 , calcLvlExps
                                 , calcLvlForExp
@@ -301,10 +301,9 @@ A lantern burns for 24 hours on a pint of fuel.
 There are 2,888 "Vol"s in a pint.
 If there are 175 "Vol"s in a mouthful, then there are 17 mouthfuls in a pint and about 1.4 hours of light per mouthful.
 -}
-calcLanternSecsForMouthfulsOfOil :: HasCallStack => Mouthfuls -> Seconds
-calcLanternSecsForMouthfulsOfOil x = let mouthfulsPerPint = 2888 `divide` mouthfulVol
-                                         secsPerMouthful  = fromIntegral oneDayInSecs / mouthfulsPerPint
-                                     in round $ fromIntegral x * secsPerMouthful
+calcLanternSecsPerMouthfulOfOil :: HasCallStack => Seconds
+calcLanternSecsPerMouthfulOfOil = let mouthfulsPerPint = 2888 `divide` mouthfulVol
+                                  in round $ fromIntegral oneDayInSecs / mouthfulsPerPint
 
 
 -----

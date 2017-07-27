@@ -39,5 +39,9 @@ threeHrsInSecs :: Seconds
 threeHrsInSecs = 3 {- hrs -} * 60 {- mins -} * 60 {- secs -}
 
 
+twoHrsInSecs :: Seconds
+twoHrsInSecs = 2 {- hrs -} * 60 {- mins -} * 60 {- secs -}
+
+
 twoMinsInSecs :: Seconds
 twoMinsInSecs = 2 {- mins -} * 60 {- secs -}

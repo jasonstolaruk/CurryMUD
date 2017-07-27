@@ -16,6 +16,7 @@ import           Mud.TopLvlDefs.Vols
 import           Mud.TopLvlDefs.Wear
 import           Mud.TopLvlDefs.Weights
 import           Mud.Util.Misc
+import           Mud.Util.Operators
 import           Mud.Util.Text
 
 import           Control.Arrow (second)
@@ -606,7 +607,7 @@ createWarehouse = do
           (Just "Light")
           M.empty [] []))
 
-  forM_ [ iTorch1..iTorch1 + 9 ] $ \i -> putLight i -- TODO: A torch with pitch should provide two hours of light.
+  forM_ [ iTorch1..iTorch1 + 9 ] $ \i -> putLight i
       (Ent i
           (Just "torch")
           "torch" "torches"
@@ -621,7 +622,7 @@ createWarehouse = do
                             Nothing
                             zeroBits
        in mkObj ot)
-      (Light Torch)
+      (Light Torch False)
 
   putLight iLantern
       (Ent iLantern
@@ -637,7 +638,7 @@ createWarehouse = do
                             Nothing
                             zeroBits
        in mkObj ot)
-      (Light Lantern)
+      (Light Lantern False)
 
   -----
 
@@ -726,11 +727,11 @@ createWarehouse = do
   -----
 
   putRm iVesselRm
-      [ iBottleSml, iBottle, iBottleLrg
+      [ iBottleSml, iBottle, iBottleLrg, iBottleWithOil
       , iJarSml, iJar, iJarLrg
       , iJugSml, iJug, iJugLrg
       , iPotionFlask, iPotionFlaskLrg
-      , iWaterskin, iWaterskinWithWater, iWaterskinLrg ]
+      , iWaterskin, iWaterskinLrg, iWaterskinWithWater  ]
       mempty
       (mkRm (RmTemplate "Vessels room"
           "This room holds vessels."
@@ -745,9 +746,10 @@ createWarehouse = do
           (Just "Vessels")
           M.empty [] []))
 
-  let bottleTuples = [ (iBottleSml, "small ", ("small ", "light brown"),  bottleSmlWeight, bottleSmlVol, bottleSmlVal)
-                     , (iBottle,    "",       ("",       "mixed azure"),  bottleWeight,    bottleVol,    bottleVal   )
-                     , (iBottleLrg, "large ", ("large ", "rusty orange"), bottleLrgWeight, bottleLrgVol, bottleLrgVal) ]
+  let bottleTuples = [ (iBottleSml,     "small ", ("small ", "light brown" ), bottleSmlWeight, bottleSmlVol, bottleSmlVal)
+                     , (iBottle,        "",       ("",       "mixed azure" ), bottleWeight,    bottleVol,    bottleVal   )
+                     , (iBottleLrg,     "large ", ("large ", "rusty orange"), bottleLrgWeight, bottleLrgVol, bottleLrgVal)
+                     , (iBottleWithOil, "",       ("",       "murky green" ), bottleWeight,    bottleVol,    bottleVal   ) ]
 
       mkBottleDesc a b =
           T.concat [ "This "
@@ -765,7 +767,7 @@ createWarehouse = do
               Nothing
               zeroBits)
           (mkObj . ObjTemplate w v Nothing val Nothing $ zeroBits)
-          Nothing
+          (i == iBottleWithOil ? Just (oilLiq, maxBound) :? Nothing)
           Nothing
 
   let jarTuples = [ (iJarSml, "small ", "small and ", jarSmlWeight, jarSmlVol, jarSmlVal)

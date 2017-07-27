@@ -73,6 +73,11 @@ Examples of this common pattern:
 \qconnect taro hunt\d (to connect Taro to the "hunt" channel)2`
 \qdisconnect taro hunt\d2`
 
+COMMAND_NAME + TARGET + SOURCE
+
+The "refuel" command follows this pattern.
+\qrefuel lantern bottle\d (to refill your lantern with the oil in your bottle)2`
+
 COMMAND_NAME + MESSAGE
 
 There are two commands of note that follow this pattern: "say" and "question".
