@@ -76,7 +76,7 @@ import           Mud.Util.Wrapping
 import           Control.Arrow ((***), (&&&), first, second)
 import           Control.Exception.Lifted (catch, try)
 import           Control.Lens (_1, _2, _3, _4, at, both, each, to, view, views)
-import           Control.Lens.Operators ((-~), (?~), (.~), (&), (%~), (^.), (<>~))
+import           Control.Lens.Operators ((-~), (?~), (.~), (&), (%~), (^.), (<>~), (+~))
 import           Control.Monad ((>=>), foldM, forM, forM_, guard, join, mplus, unless, when)
 import           Control.Monad.IO.Class (liftIO)
 import           Control.Monad.Reader (asks)
@@ -2725,23 +2725,22 @@ refuel p@(Lower i mq cols [lantern, vessel]) = getState >>= \ms ->
                       Just (liq, mouths)
                         | liq == oilLiq -> case getIlluminationEffect lanternId ms of
                             Right (DurationalEffect _ {- eff -} (_, _ {- q -})) -> undefined
-                            Left (PausedEffect eff) -> -- TODO: Test.
-                              let effs             = filter ((/= eff) . unPausedEffect) . getPausedEffects lanternId $ ms
+                            Left (PausedEffect eff) ->
+                              let pes              = filter ((/= eff) . unPausedEffect) . getPausedEffects lanternId $ ms
                                   effSecs          = eff^.effectDur
-                                  vesselSecs       = calcLanternSecsPerMouthfulOfOil * mouths
+                                  vesselSecs       = mouths * calcLanternSecsPerMouthfulOfOil
                                   lanternAvailSecs = maxLanternSecs - effSecs
                               in if effSecs < maxLanternSecs
                                 then if vesselSecs >= lanternAvailSecs
-                                  then let eff'          = PausedEffect (eff & effectDur .~ maxLanternSecs) -- There is enough oil in the vessel to fill the lantern.
+                                  then let pe            = PausedEffect (eff & effectDur .~ maxLanternSecs) -- There is enough oil in the vessel to fill the lantern.
                                            vesselRemSecs = vesselSecs - lanternAvailSecs
                                            mouths'       = floor $ vesselRemSecs `divide` calcLanternSecsPerMouthfulOfOil
                                            newCont | vesselRemSecs == 0 = Nothing
                                                    | otherwise          = Just (liq, mouths')
-                                       in (ms & pausedEffectTbl.ind lanternId           .~ (eff' : effs)
+                                       in (ms & pausedEffectTbl.ind lanternId           .~ (pe : pes)
                                               & vesselTbl      .ind vesselId.vesselCont .~ newCont, [])
-                                  else let eff'     = PausedEffect (eff & effectDur .~ effSecs') -- There is not enough oil in the vessel to fill the lantern.
-                                           effSecs' = mouths * calcLanternSecsPerMouthfulOfOil
-                                       in (ms & pausedEffectTbl.ind lanternId           .~ (eff' : effs)
+                                  else let pe = PausedEffect (eff & effectDur +~ vesselSecs) -- There is not enough oil in the vessel to fill the lantern.
+                                       in (ms & pausedEffectTbl.ind lanternId           .~ (pe : pes)
                                               & vesselTbl      .ind vesselId.vesselCont .~ Nothing, [])
                                 else sorry . sorryRefuelAlready $ lanternSing
                         | otherwise -> sorry . sorryRefuelLiq $ vesselSing

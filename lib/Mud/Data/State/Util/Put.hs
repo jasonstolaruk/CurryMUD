@@ -88,7 +88,7 @@ putLight i e o l = tweaks [ lightTbl           .ind i .~ l
                           , typeTbl            .ind i .~ LightType ]
   where
     secs = case l^.lightSub of Torch   -> torchSecs
-                               Lantern -> 100 -- TODO: maxLanternSecs
+                               Lantern -> maxLanternSecs
 
 
 -----

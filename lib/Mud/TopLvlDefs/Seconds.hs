@@ -4,9 +4,6 @@ module Mud.TopLvlDefs.Seconds where
 type Seconds = Int -- 10^6 microseconds (the unit used by "threadDelay").
 
 
-type Milliseconds = Int -- 10^-3 or 1/1000 or 0.001 seconds.
-
-
 fifteenMinsInSecs :: Seconds
 fifteenMinsInSecs = 15 {- mins -} * 60 {- secs -}
 
