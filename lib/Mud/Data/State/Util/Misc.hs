@@ -726,7 +726,7 @@ removeAdHoc i = flip upd [ coinsTbl           .at  i        .~ Nothing
 
 
 runEffectFun :: HasCallStack => FunName -> Id -> Seconds -> MudStack ()
-runEffectFun n i secs = views (effectFunTbl.at n) (maybe oops (\f -> f i secs)) =<< getState
+runEffectFun n i secs = views (effectFunTbl.at n) (maybe oops (\f -> f i secs)) =<< getState -- TODO: Run effect function on its own thread.
   where
     oops = blowUp "runEffectFun" "function name not found in effect function table" n
 

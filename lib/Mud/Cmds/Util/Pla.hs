@@ -1325,14 +1325,10 @@ helperTune s a@(linkTbl, chans, _, _) arg@(T.breakOn "=" -> (name, T.tail -> val
                              in a & _3 <>~ pure msg
                                   & _4 <>~ pure msg
         foundHelper
-          | n `elem` linkNames = foundLink
-          | n `elem` chanNames = foundChan
-          | otherwise          = blowUp "helperTune found foundHelper" "connection name not found" n
-          where
-            foundLink = let n' = capitalize n in appendMsg n' & _1.at n' ?~ val
-            foundChan =
-                let ([match], others) = partition (views chanName ((== n) . T.toLower)) chans
-                in appendMsg (views chanName dblQuote match) & _2 .~ (match & chanConnTbl.at s ?~ val) : others
+          | n `elem` linkNames = let n' = capitalize n in appendMsg n' & _1.at n' ?~ val
+          | otherwise          = case partition (views chanName ((== n) . T.toLower)) chans of
+            (match:_, others) -> appendMsg (views chanName dblQuote match) & _2 .~ (match & chanConnTbl.at s ?~ val) : others
+            _                 -> blowUp "helperTune found foundHelper" "connection name not found" n
 
 
 tuneInvalidArg :: HasCallStack => Text -> [Text] -> [Text]
@@ -2237,13 +2233,13 @@ stopAttacking _ _ = undefined -- TODO
 
 
 stopDrinking :: HasCallStack => ActionParams -> MudState -> MudStack ()
-stopDrinking (WithArgs i mq cols _) ms =
-    let Just (l, s) = getNowDrinking i ms
-        toSelf      = T.concat [ "You stop drinking ", renderLiqNoun l the, " from the ", s, "." ]
-        d           = mkStdDesig i ms DoCap
-        msg         = T.concat [ serialize d, " stops drinking from ", aOrAn s, "." ]
-        bcastHelper = bcastIfNotIncogNl i . pure $ (msg, i `delete` desigIds d)
-    in stopAct i Drinking >> wrapSend mq cols toSelf >> bcastHelper
+stopDrinking (WithArgs i mq cols _) ms = case getNowDrinking i ms of
+  Just (l, s) -> let toSelf      = T.concat [ "You stop drinking ", renderLiqNoun l the, " from the ", s, "." ]
+                     d           = mkStdDesig i ms DoCap
+                     msg         = T.concat [ serialize d, " stops drinking from ", aOrAn s, "." ]
+                     bcastHelper = bcastIfNotIncogNl i . pure $ (msg, i `delete` desigIds d)
+                 in stopAct i Drinking >> wrapSend mq cols toSelf >> bcastHelper
+  Nothing     -> unit
 stopDrinking p _ = pmf "stopDrinking" p
 
 

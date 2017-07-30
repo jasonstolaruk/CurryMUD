@@ -96,10 +96,10 @@ corpseDecomp i pair = getObjWeight i <$> getState >>= \w -> catch <$> loop w <*>
 
 corpseDecompHelper :: HasCallStack => Id -> Weight -> SecondsPair -> MudStack ()
 corpseDecompHelper i w (x, total) = getState >>= \ms ->
-    let step           = total `intDivide` 4
-        [ a, b, c, d ] = [ step, step * 2, step * 3, total ]
-        ipc            = isPCCorpse . getCorpse i $ ms
-        lens           = bool npcCorpseDesc pcCorpseDesc ipc
+    let step         = total `intDivide` 4
+        (a, b, c, d) = (step, step * 2, step * 3, total)
+        ipc          = isPCCorpse . getCorpse i $ ms
+        lens         = bool npcCorpseDesc pcCorpseDesc ipc
     in tweaks $ if
       | x == d -> [ corpseTbl.ind i.lens      .~ mkCorpseTxt ("You see the lifeless ", ".")
                   , entTbl   .ind i.entSmell  ?~ corpseSmellLvl1

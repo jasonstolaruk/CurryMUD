@@ -160,7 +160,7 @@ regularCmds = map (uncurry4 mkRegularCmd) regularCmdTuples
 
 {-
 TODO:
-light lightSource tinderbox
+light lightSource tinderbox -- Delete the paused effect!
 unlight lightSource -- "lightSource" arg may be omitted.
 A "tinderbox" is a tinderbox with flint and steel strikers in a single object.
 -}
@@ -706,7 +706,7 @@ chan (OneArg i mq cols a@(T.toLower -> a')) = getState >>= \ms ->
     let notFound    = wrapSend mq cols . sorryChanName $ a
         found match =
             let (cn, c)                  = getMatchingChanWithName match cns cs
-                ([(_, isTuned)], others) = partition ((== s) . fst) $ c^.chanConnTbl.to M.toList
+                ((_, isTuned):_, others) = partition ((== s) . fst) $ c^.chanConnTbl.to M.toList
                 (linkeds, nonLinkeds)    = partition (views _1 (isLinked ms . (i, ))) . filter f . map mkTriple $ others
                 f                        = views _1 (`isAwake` ms)
             in mapM (updateRndmName i . view _1) nonLinkeds >>= \rndmNames ->
@@ -2702,12 +2702,12 @@ refuel p@(Lower i mq cols [lantern, vessel]) = getState >>= \ms ->
             -- d                  = mkStdDesig  i ms DoCap
             sorry              = (ms, ) . pure . wrapSend mq cols
             refuelInv = let (eiss, _) = uncurry (resolveMobInvCoins i ms inInvs) invCoins
-                        in f eiss
+                        in procEiss eiss
             refuelEq  = let (gecrs, miss, _) = resolveEntCoinNames i ms inEqs (M.elems eqMap) mempty
                             eiss             = zipWith (curry procGecrMisMobEq) gecrs miss
-                        in f eiss
-            f eiss    = case eiss of []      -> sorry sorryRefuelLanternCoins
-                                     (eis:_) -> either sorry refueler eis
+                        in procEiss eiss
+            procEiss eiss        = case eiss of []      -> sorry sorryRefuelLanternCoins
+                                                (eis:_) -> either sorry refueler eis
             refueler [lanternId] = case (getSing `fanUncurry` getType) (lanternId, ms) of
               (s, LightType) | getLightSub lanternId ms == Lantern
                              , (inInvs', inEqs', inRms) <- sortArgsInvEqRm InInv . pure $ vessel
@@ -2724,7 +2724,9 @@ refuel p@(Lower i mq cols [lantern, vessel]) = getState >>= \ms ->
                       Nothing -> sorry . sorryRefuelVesselEmpty $ vesselSing
                       Just (liq, mouths)
                         | liq == oilLiq -> case getIlluminationEffect lanternId ms of
-                            Right (DurationalEffect _ {- eff -} (_, _ {- q -})) -> undefined
+                            Right (DurationalEffect _ {-eff-} (_, _ {-q-})) ->
+                              let f = undefined
+                              in (ms, pure f)
                             Left (PausedEffect eff) ->
                               let pes              = filter ((/= eff) . unPausedEffect) . getPausedEffects lanternId $ ms
                                   effSecs          = eff^.effectDur
@@ -3612,15 +3614,15 @@ tele   (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
                          Right (Left  ()) -> case expCmdifyTwoWay i ms targetId targetSing msg of
                            Left  errorMsg -> sendFun errorMsg
                            Right bs       -> ioHelper targetId bs
-                       ioHelper targetId bs = let bs'@[(toSelf, _), _] = formatBs targetId bs in do
+                       ioHelper targetId bs = let (b1@(toSelf, _), b2) = formatBs targetId bs in do
                            logPlaOut "telepathy" i . pure $ toSelf
-                           bcastNl . consLocPrefBcast i $ bs'
+                           bcastNl . consLocPrefBcast i $ [ b1, b2 ]
                            alertMsgHelper i "telepathy" toSelf
                            ts <- liftIO mkTimestamp
                            withDbExHandler_ "tele" . insertDbTblTele . TeleRec ts s targetSing $ toSelf
                        formatBs targetId [toMe, toTarget] = let f n m = bracketQuote n |<>| m
-                                                            in [ toMe     & _1 %~ f s
-                                                               , toTarget & _1 %~ f (mkStyled targetId) ]
+                                                            in ( toMe     & _1 %~ f s
+                                                               , toTarget & _1 %~ f (mkStyled targetId) )
                        formatBs _        bs               = pmf "tele found formatBs" bs
                        mkStyled targetId = let (target'sAwakes, _) = getDblLinkedSings targetId ms
                                                styleds             = styleAbbrevs Don'tQuote target'sAwakes

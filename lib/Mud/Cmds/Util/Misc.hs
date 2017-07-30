@@ -220,14 +220,17 @@ lvlUp i = helper
   where
     helper ms v oldLvl newLvl
       | oldLvl >= newLvl = ms
-      | otherwise        = let (V.toList -> [ a, b, c, d, e ], v') = V.splitAt noOfLvlUpRndmInts v
-                               myMob = mobTbl.ind i
-                               ms'   = upd ms [ myMob.maxHp          +~ calcLvlUpHp       i ms a
-                                              , myMob.maxMp          +~ calcLvlUpMp       i ms b
-                                              , myMob.maxPp          +~ calcLvlUpPp       i ms c
-                                              , myMob.maxFp          +~ calcLvlUpFp       i ms d
-                                              , pcTbl.ind i.skillPts +~ calcLvlUpSkillPts i ms e ]
-                           in helper ms' v' (succ oldLvl) newLvl
+      | otherwise        =
+          let (vLeft, vRight) = V.splitAt noOfLvlUpRndmInts v
+          in case V.toList vLeft of (a:b:c:d:e:_) ->
+                                        let myMob = mobTbl.ind i
+                                            ms'   = upd ms [ myMob.maxHp          +~ calcLvlUpHp       i ms a
+                                                           , myMob.maxMp          +~ calcLvlUpMp       i ms b
+                                                           , myMob.maxPp          +~ calcLvlUpPp       i ms c
+                                                           , myMob.maxFp          +~ calcLvlUpFp       i ms d
+                                                           , pcTbl.ind i.skillPts +~ calcLvlUpSkillPts i ms e ]
+                                        in helper ms' vRight (succ oldLvl) newLvl
+                                    xs -> pmf "lvlUp" xs
 
 
 -----
