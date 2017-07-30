@@ -60,7 +60,7 @@ import           Control.Concurrent (ThreadId, getNumCapabilities, myThreadId)
 import           Control.Concurrent.Async (asyncThreadId, poll)
 import           Control.Concurrent.STM (atomically)
 import           Control.Concurrent.STM.TMVar (newEmptyTMVarIO, takeTMVar)
-import           Control.Concurrent.STM.TQueue (writeTQueue)
+import           Control.Concurrent.STM.TMQueue (isClosedTMQueue, writeTMQueue)
 import           Control.Exception (ArithException(..), IOException)
 import           Control.Exception.Lifted (throwIO, try)
 import           Control.Lens (Optical, _2, both, views)
@@ -639,18 +639,23 @@ debugKeys p = withoutArgs debugKeys p
 
 
 debugLight :: HasCallStack => ActionFun
-debugLight (NoArgs i mq cols) = do
+debugLight (NoArgs i mq cols) = getState >>= \ms -> do
     logPlaExec (prefixDebugCmd "light") i
-    modifyStateSeq $ \ms ->
-        case getIlluminationDurationalEffect iLantern ms of
-          Just de -> let q = de^.effectService._2
-                         f = do secs <- liftIO $ do tmv <- newEmptyTMVarIO
-                                                    atomically . writeTQueue q . QueryRemEffectTime $ tmv
-                                                    atomically . takeTMVar $ tmv
-                                wrapSend mq cols $ commaShow secs <> " seconds remain."
-                     in (ms, pure f)
-          Nothing -> (ms, [ startEffect iLantern . mkIlluminationEffect $ oneMinInSecs
-                          , wrapSend mq cols "Started an illumination effect on \"iLantern\"." ])
+    case getIlluminationDurationalEffect iLantern ms of
+      Just de -> let q = de^.effectService._2
+                 in liftIO newEmptyTMVarIO >>= \tmv -> mIf (liftIO . atomically . writeTMQueueHelper q $ tmv)
+                                                           (do secs <- liftIO . atomically . takeTMVar $ tmv
+                                                               wrapSend mq cols $ commaShow secs <> " seconds remain.")
+                                                           startEffectHelper
+      Nothing -> startEffectHelper
+  where
+    writeTMQueueHelper q tmv = mIf (isClosedTMQueue q)
+                                   (return False)
+                                   (writeTMQueue q (QueryRemEffectTime tmv) >> return True)
+    startEffectHelper        = do startEffect iLantern . mkIlluminationEffect $ 30
+                                  let f (PausedEffect eff) = views effectSub (/= EffectIllumination) eff
+                                  tweak $ pausedEffectTbl.ind iLantern %~ filter f
+                                  wrapSend mq cols "Started an illumination effect on \"iLantern\"."
 debugLight p = withoutArgs debugLight p
 
 
@@ -662,7 +667,7 @@ debugLightAdd (NoArgs i mq cols) = do
     logPlaExec (prefixDebugCmd "lightadd") i
     getIlluminationDurationalEffect iLantern <$> getState >>= \case
       Just de -> let q = de^.effectService._2
-                 in sequence_ [ liftIO . atomically . writeTQueue q . AddEffectTime $ 5, ok mq ]
+                 in sequence_ [ liftIO . atomically . writeTMQueue q . AddEffectTime $ 10, ok mq ]
       Nothing -> wrapSend mq cols "No illumination effect found for \"iLantern\"."
 debugLightAdd p = withoutArgs debugLightAdd p
 
@@ -1060,7 +1065,7 @@ descThreads = do logAsyncKvs <- getLogThreadIds >>= \case [ a, b ] -> return [ (
                  let plaLogTblKvs = [ (asyncThreadId . fst $ v, PlaLog k) | (k, v) <- IM.assocs plt ]
                  mapM mkDesc . sort . concat $ [ logAsyncKvs, threadTblKvs, plaLogTblKvs ]
   where
-    mkDesc (ti, bracketPad 20 . mkTypeName -> tn) = [ T.concat [ padOrTrunc 16 . showTxt $ ti, tn, ts ]
+    mkDesc (ti, bracketPad 21 . mkTypeName -> tn) = [ T.concat [ padOrTrunc 16 . showTxt $ ti, tn, ts ]
                                                     | (showTxt -> ts) <- liftIO . threadStatus $ ti ]
     f pi t                            = padOrTrunc padAmt t <> showTxt pi
     mkTypeName (AttackingThread   pi) = f pi "Attacking"

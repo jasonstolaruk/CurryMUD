@@ -26,14 +26,15 @@ import           Control.Concurrent (myThreadId)
 import           Control.Concurrent.Async (asyncThreadId, cancel, wait)
 import           Control.Concurrent.STM (atomically)
 import           Control.Concurrent.STM.TMVar (newEmptyTMVarIO, putTMVar, takeTMVar)
-import           Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, tryReadTQueue, writeTQueue)
+import           Control.Concurrent.STM.TQueue (newTQueueIO, tryReadTQueue, writeTQueue)
+import           Control.Concurrent.STM.TMQueue (closeTMQueue, isClosedTMQueue, newTMQueueIO, readTMQueue, writeTMQueue)
 import           Control.Exception.Lifted (finally, handle)
 import           Control.Lens (_1, view, views)
 import           Control.Lens.Operators ((?~), (.~), (&), (%~), (^.), (<>~))
 import           Control.Monad ((>=>), forM_, unless, when)
 import           Control.Monad.IO.Class (liftIO)
-import           Control.Monad.Reader (ask)
 import           Data.IORef (newIORef, readIORef)
+import           Data.Maybe (catMaybes)
 import           Data.Monoid ((<>))
 import           Data.Text (Text)
 import           GHC.Stack (HasCallStack)
@@ -67,7 +68,7 @@ startEffectHelper i e = getDurEffects i <$> getState >>= \durEffs -> do
       xs -> do logHelper . prd $ "stopping existing effect with tag " <> dblQuote tag
                forM_ xs ((>>) <$> stopEffect i <*> views (effectService._1) (liftIO . wait))
     logHelper . prd $ "starting effect: " <> pp e
-    q <- liftIO newTQueueIO
+    q <- liftIO newTMQueueIO
     a <- runAsync . threadEffect i e $ q
     views effectFeeling (maybeVoid (flip (startFeeling i) FeelingNoVal)) e
     tweak $ durationalEffectTbl.ind i <>~ pure (DurationalEffect e (a, q))
@@ -79,7 +80,7 @@ startEffectHelper i e = getDurEffects i <$> getState >>= \durEffs -> do
 
 
 threadEffect :: HasCallStack => Id -> Effect -> EffectQueue -> MudStack ()
-threadEffect i (Effect _ effSub _ secs _) q = handle (threadExHandler (Just i) "effect") $ ask >>= \md -> do
+threadEffect i e@(Effect _ effSub _ secs _) q = handle (threadExHandler (Just i) "effect") $ do
     setThreadType . EffectThread $ i
     logHelper "has started."
     (ti, ior, addSecsQueue) <- liftIO ((,,) <$> myThreadId <*> newIORef secs <*> newTQueueIO)
@@ -88,7 +89,7 @@ threadEffect i (Effect _ effSub _ secs _) q = handle (threadExHandler (Just i) "
             loop x = do x' <- (x +) <$> liftIO (atomically getAddedSecs)
                         liftIO . atomicWriteIORef' ior $ x'
                         if isZero x'
-                          then unit
+                          then liftIO . atomically . writeTMQueue q $ StopEffect
                           else let f = case effSub of EffectOther fn -> runEffectFun fn i x'
                                                       _              -> unit
                                in sequence_ [ liftIO . delaySecs $ 1, f, loop . pred $ x' ]
@@ -96,16 +97,22 @@ threadEffect i (Effect _ effSub _ secs _) q = handle (threadExHandler (Just i) "
               where
                 helper x = tryReadTQueue addSecsQueue >>= \case Nothing -> return x
                                                                 Just y  -> helper $ x + y
-        queueListener = setThreadType (EffectListener i) >> loop
+        queueListener timerAsync = setThreadType (EffectListener i) >> loop `finally` done
           where
-            loop = q |&| liftIO . atomically . readTQueue >=> \case
-              AddEffectTime      x   -> sequence_ [ liftIO . atomically . writeTQueue addSecsQueue $ x, loop ]
-              PauseEffect        tmv -> putTMVarHelper tmv
-              QueryRemEffectTime tmv -> putTMVarHelper tmv >> loop
-              StopEffect             -> logPla "threadEffect queueListener loop" i "received the signal to stop effect."
-            putTMVarHelper tmv = liftIO (atomically . putTMVar tmv =<< readIORef ior)
-        done = tweak $ durationalEffectTbl.ind i %~ filter (views effectService ((/= ti) . asyncThreadId . fst))
-    racer md effectTimer queueListener `finally` done
+            loop = q |&| liftIO . atomically . readTMQueue >=> \case
+              Nothing                       -> unit
+              Just (AddEffectTime      x  ) -> sequence_ [ liftIO . atomically . writeTQueue addSecsQueue $ x, loop ]
+              Just (PauseEffect        tmv) -> putTMVarHelper tmv
+              Just (QueryRemEffectTime tmv) -> putTMVarHelper tmv >> loop
+              Just StopEffect               -> unit
+            putTMVarHelper tmv = liftIO $ atomically . putTMVar tmv =<< readIORef ior
+            done = do x <- liftIO $ atomically (closeTMQueue q) >> cancel timerAsync >> readIORef ior
+                      tweak $ \ms -> let ms' = ms & durationalEffectTbl.ind i %~ f
+                                         f   = filter (views effectService ((/= ti) . asyncThreadId . fst))
+                                     in (ms' |&|) $ if effSub == EffectIllumination && isZero x
+                                                      then pausedEffectTbl.ind i %~ (PausedEffect (e & effectDur .~ 0) :)
+                                                      else id
+    liftIO . wait =<< runAsync . queueListener =<< runAsync effectTimer
     logHelper "is finishing."
   where
     logHelper rest = logNotice "threadEffect" . T.concat $ [ "effect thread for ID ", showTxt i, " ", rest ]
@@ -117,16 +124,19 @@ threadEffect i (Effect _ effSub _ secs _) q = handle (threadExHandler (Just i) "
 pauseEffects :: HasCallStack => Id -> MudStack () -- When a player logs out.
 pauseEffects i = getDurEffects i <$> getState >>= \es ->
     unless (null es) $ do logNotice "pauseEffects" . prd $ "pausing effects for ID " <> showTxt i
-                          pes <- mapM helper es
+                          pes <- catMaybes <$> mapM helper es
                           tweaks [ durationalEffectTbl.ind i .~  []
                                  , pausedEffectTbl    .ind i <>~ pes ]
   where
-    helper (DurationalEffect e (_, q)) = do
-        tmv <- liftIO newEmptyTMVarIO
-        liftIO . atomically . writeTQueue q . PauseEffect $ tmv
-        secs <- liftIO . atomically . takeTMVar $ tmv
-        return . PausedEffect $ e & effectDur     .~ secs
-                                  & effectFeeling %~ fmap (\effFeel -> effFeel { efDur = secs })
+    helper (DurationalEffect e (_, q)) = liftIO newEmptyTMVarIO >>= \tmv ->
+        mIf (liftIO . atomically . writeTMQueueHelper q $ tmv)
+            (do secs <- liftIO . atomically . takeTMVar $ tmv
+                return . Just . PausedEffect $ e & effectDur     .~ secs
+                                                 & effectFeeling %~ fmap (\effFeel -> effFeel { efDur = secs }))
+            (return Nothing)
+    writeTMQueueHelper q tmv = mIf (isClosedTMQueue q)
+                                   (return False)
+                                   (writeTMQueue q (PauseEffect tmv) >> return True)
 
 
 massPauseEffects :: HasCallStack => MudStack () -- At server shutdown, after everyone has been disconnected.
@@ -161,7 +171,7 @@ massRestartPausedEffects = getState >>= \ms -> do logNotice "massRestartPausedEf
 
 
 stopEffect :: HasCallStack => Id -> DurationalEffect -> MudStack ()
-stopEffect i (DurationalEffect e (_, q)) = sequence_ [ liftIO . atomically . writeTQueue q $ StopEffect, stopFeeling i e ]
+stopEffect i (DurationalEffect e (_, q)) = sequence_ [ liftIO . atomically . writeTMQueue q $ StopEffect, stopFeeling i e ]
 
 
 stopFeeling :: HasCallStack => Id -> Effect -> MudStack ()

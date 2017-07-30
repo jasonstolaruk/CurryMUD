@@ -312,10 +312,10 @@ type EffectService = (EffectAsync, EffectQueue)
 type EffectAsync = Async ()
 
 
-type EffectQueue = TQueue EffectCmd
+type EffectQueue = TMQueue EffectCmd
 
 
-data EffectCmd = AddEffectTime      Seconds
+data EffectCmd = AddEffectTime      Seconds -- When a lantern is refueled.
                | PauseEffect        (TMVar Seconds)
                | QueryRemEffectTime (TMVar Seconds)
                | StopEffect

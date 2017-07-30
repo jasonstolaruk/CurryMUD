@@ -271,7 +271,7 @@ stdLinkNames = [ "n", "ne", "e", "se", "s", "sw", "w", "nw", "u", "d" ]
 
 
 threadTblPurgerDelay :: Seconds
-threadTblPurgerDelay = fiveMinsInSecs
+threadTblPurgerDelay = tenMinsInSecs
 
 
 torchSecs :: Seconds
