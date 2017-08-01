@@ -421,7 +421,6 @@ instance Pretty EffectFeeling where
 
 instance Pretty EffectSub where
   pp (EffectAttrib attrib) = "attrib " <> pp attrib
-  pp EffectIllumination    = "illumination"
   pp (EffectOther fn)      = "other "  <> parensQuote fn
 
 

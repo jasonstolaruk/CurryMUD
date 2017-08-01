@@ -16,7 +16,7 @@ import           Control.Concurrent.Async (wait, withAsync)
 import           Control.Exception (SomeException)
 import           Control.Exception.Lifted (catch)
 import           Control.Lens (views)
-import           Control.Lens.Operators ((.~), (^.))
+import           Control.Lens.Operators ((^.))
 import           Control.Monad (when)
 import           Control.Monad.IO.Class (liftIO)
 import           Control.Monad.Trans.Resource (runResourceT)
@@ -97,10 +97,7 @@ persistHelper l ms = withLock l $ do
         f = IM.map (IM.fromList . map swap . M.toList)
     lightTblHelper = views lightTbl (IM.mapWithKey f) ms
       where
-        f i = let b = case getIlluminationEffect i ms of Right _ -> True
-                                                         Left  _ -> False
-              in lightIsLit .~ b
-
+        f _ = id -- TODO
 
 
 persistExHandler :: SomeException -> MudStack ()

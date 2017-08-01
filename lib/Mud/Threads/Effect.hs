@@ -26,7 +26,6 @@ import           Control.Concurrent (myThreadId)
 import           Control.Concurrent.Async (asyncThreadId, cancel, wait)
 import           Control.Concurrent.STM (atomically)
 import           Control.Concurrent.STM.TMVar (newEmptyTMVarIO, putTMVar, takeTMVar)
-import           Control.Concurrent.STM.TQueue (newTQueueIO, tryReadTQueue, writeTQueue)
 import           Control.Concurrent.STM.TMQueue (closeTMQueue, isClosedTMQueue, newTMQueueIO, readTMQueue, writeTMQueue)
 import           Control.Exception.Lifted (finally, handle)
 import           Control.Lens (_1, view, views)
@@ -80,38 +79,25 @@ startEffectHelper i e = getDurEffects i <$> getState >>= \durEffs -> do
 
 
 threadEffect :: HasCallStack => Id -> Effect -> EffectQueue -> MudStack ()
-threadEffect i e@(Effect _ effSub _ secs _) q = handle (threadExHandler (Just i) "effect") $ do
+threadEffect i (Effect _ effSub _ secs _) q = handle (threadExHandler (Just i) "effect") $ do
     setThreadType . EffectThread $ i
     logHelper "has started."
-    (ti, ior, addSecsQueue) <- liftIO ((,,) <$> myThreadId <*> newIORef secs <*> newTQueueIO)
+    (ti, ior) <- liftIO ((,) <$> myThreadId <*> newIORef secs)
     let effectTimer = setThreadType (EffectTimer i) >> loop secs
           where
-            loop x = do x' <- (x +) <$> liftIO (atomically getAddedSecs)
-                        liftIO . atomicWriteIORef' ior $ x'
-                        if isZero x'
-                          then liftIO . atomically . writeTMQueue q $ StopEffect
-                          else let f = case effSub of EffectOther fn -> runEffectFun fn i x'
-                                                      _              -> unit
-                               in sequence_ [ liftIO . delaySecs $ 1, f, loop . pred $ x' ]
-            getAddedSecs = helper 0
-              where
-                helper x = tryReadTQueue addSecsQueue >>= \case Nothing -> return x
-                                                                Just y  -> helper $ x + y
+            loop x = liftIO (atomicWriteIORef' ior x) >> if isZero x
+                       then liftIO . atomically . writeTMQueue q $ StopEffect
+                       else let f = case effSub of EffectOther fn -> runEffectFun fn i x
+                                                   _              -> unit
+                            in sequence_ [ liftIO . delaySecs $ 1, f, loop . pred $ x ]
         queueListener timerAsync = setThreadType (EffectListener i) >> loop `finally` done
           where
             loop = q |&| liftIO . atomically . readTMQueue >=> \case
-              Nothing                       -> unit
-              Just (AddEffectTime      x  ) -> sequence_ [ liftIO . atomically . writeTQueue addSecsQueue $ x, loop ]
-              Just (PauseEffect        tmv) -> putTMVarHelper tmv
-              Just (QueryRemEffectTime tmv) -> putTMVarHelper tmv >> loop
-              Just StopEffect               -> unit
-            putTMVarHelper tmv = liftIO $ atomically . putTMVar tmv =<< readIORef ior
-            done = do x <- liftIO $ atomically (closeTMQueue q) >> cancel timerAsync >> readIORef ior
-                      tweak $ \ms -> let ms' = ms & durationalEffectTbl.ind i %~ f
-                                         f   = filter (views effectService ((/= ti) . asyncThreadId . fst))
-                                     in (ms' |&|) $ if effSub == EffectIllumination && isZero x
-                                                      then pausedEffectTbl.ind i %~ (PausedEffect (e & effectDur .~ 0) :)
-                                                      else id
+              Just (PauseEffect tmv) -> liftIO $ atomically . putTMVar tmv =<< readIORef ior
+              Just StopEffect        -> unit
+              Nothing                -> unit
+            done = do tweak $ durationalEffectTbl.ind i %~ filter (views effectService ((/= ti) . asyncThreadId . fst))
+                      liftIO $ atomically (closeTMQueue q) >> cancel timerAsync
     liftIO . wait =<< runAsync . queueListener =<< runAsync effectTimer
     logHelper "is finishing."
   where
@@ -161,10 +147,9 @@ massRestartPausedEffects :: HasCallStack => MudStack () -- At server startup.
 massRestartPausedEffects = getState >>= \ms -> do logNotice "massRestartPausedEffects" "mass restarting paused effects."
                                                   mapM_ (helper ms) . views pausedEffectTbl IM.toList $ ms
   where
-    helper _  (_, [] )                             = unit
-    helper ms (i, _  ) | getType i ms == PlaType   = unit
-    helper ms (i, pes) | getType i ms == LightType = when (view lightIsLit . getLight i $ ms) . restartPausedHelper i $ pes
-    helper _  (i, pes)                             = restartPausedHelper i pes
+    helper _  (_, [] )                           = unit
+    helper ms (i, _  ) | getType i ms == PlaType = unit
+    helper _  (i, pes)                           = restartPausedHelper i pes
 
 
 -----

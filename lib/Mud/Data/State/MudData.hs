@@ -287,7 +287,6 @@ type EffectTag = Text
 
 
 data EffectSub = EffectAttrib Attrib
-               | EffectIllumination
                | EffectOther FunName -- Function is run every second.
                deriving (Eq, Generic, Show)
 
@@ -315,9 +314,7 @@ type EffectAsync = Async ()
 type EffectQueue = TMQueue EffectCmd
 
 
-data EffectCmd = AddEffectTime      Seconds -- When a lantern is refueled.
-               | PauseEffect        (TMVar Seconds)
-               | QueryRemEffectTime (TMVar Seconds)
+data EffectCmd = PauseEffect (TMVar Seconds)
                | StopEffect
 
 
@@ -547,9 +544,7 @@ data Done = Done
 
 
 -- Has an object.
-data Light = Light { _lightSub   :: LightSub
-                   , _lightIsLit :: Bool } -- Set before persisting, and referenced when mass restarting paused effects. Use "getIlluminationEffect" to determine whether or not a light is lit.
-                   deriving (Eq, Generic, Show)
+data Light = Light { _lightSub :: LightSub } deriving (Eq, Generic, Show)
 
 
 data LightSub = Torch | Lantern deriving (Eq, Generic, Show)

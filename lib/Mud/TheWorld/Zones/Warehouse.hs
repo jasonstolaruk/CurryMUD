@@ -622,7 +622,7 @@ createWarehouse = do
                             Nothing
                             zeroBits
        in mkObj ot)
-      (Light Torch False)
+      (Light Torch)
 
   putLight iLantern
       (Ent iLantern
@@ -638,7 +638,7 @@ createWarehouse = do
                             Nothing
                             zeroBits
        in mkObj ot)
-      (Light Lantern False)
+      (Light Lantern)
 
   -----
 

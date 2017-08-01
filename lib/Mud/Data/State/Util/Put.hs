@@ -3,7 +3,6 @@ module Mud.Data.State.Util.Put where
 import Mud.Data.State.MudData
 import Mud.Data.State.Util.Calc
 import Mud.Data.State.Util.Misc
-import Mud.TopLvlDefs.Misc
 import Mud.Util.Misc
 
 import Control.Arrow (second)
@@ -84,11 +83,8 @@ putLight i e o l = tweaks [ lightTbl           .ind i .~ l
                           , durationalEffectTbl.ind i .~ []
                           , entTbl             .ind i .~ e
                           , objTbl             .ind i .~ o
-                          , pausedEffectTbl    .ind i .~ [ PausedEffect . mkIlluminationEffect $ secs ]
+                          , pausedEffectTbl    .ind i .~ []
                           , typeTbl            .ind i .~ LightType ]
-  where
-    secs = case l^.lightSub of Torch   -> torchSecs
-                               Lantern -> maxLanternSecs
 
 
 -----
