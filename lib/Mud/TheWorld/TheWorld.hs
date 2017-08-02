@@ -89,6 +89,7 @@ initMudData s = do [ databaseLock, logLock, persLock ] <- mkLocks
                                                 , _hostTbl                =  M.empty
                                                 , _instaEffectFunTbl      =  M.empty
                                                 , _invTbl                 = IM.empty
+                                                , _lightAsyncTbl          = IM.empty
                                                 , _lightTbl               = IM.empty
                                                 , _mobTbl                 = IM.empty
                                                 , _msgQueueTbl            = IM.empty

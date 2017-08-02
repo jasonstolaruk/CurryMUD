@@ -28,7 +28,7 @@ import           Data.Tuple (swap)
 import qualified Data.ByteString.Lazy as LB (toStrict)
 import qualified Data.Conduit.Binary as CB (sinkFile)
 import qualified Data.Conduit.List as CL (map)
-import qualified Data.IntMap.Strict as IM (fromList, map, mapWithKey)
+import qualified Data.IntMap.Strict as IM (fromList, map)
 import qualified Data.Map.Strict as M (toList)
 import qualified Data.Text as T
 import           System.Directory (createDirectory, doesDirectoryExist, getDirectoryContents, removeDirectoryRecursive)
@@ -66,12 +66,12 @@ persistHelper l ms = withLock l $ do
                                              , write (ms^.conTbl                ) $ path </> conTblFile
                                              , write (ms^.corpseTbl             ) $ path </> corpseTblFile
                                              , write (ms^.entTbl                ) $ path </> entTblFile
-                                             , write  eqTblHelper                 $ path </> eqTblFile
+                                             , write eqTblHelper                  $ path </> eqTblFile
                                              , write (ms^.foodTbl               ) $ path </> foodTblFile
                                              , write (ms^.holySymbolTbl         ) $ path </> holySymbolTblFile
                                              , write (ms^.hostTbl               ) $ path </> hostTblFile
                                              , write (ms^.invTbl                ) $ path </> invTblFile
-                                             , write  lightTblHelper              $ path </> lightTblFile
+                                             , write (ms^.lightTbl              ) $ path </> lightTblFile
                                              , write (ms^.mobTbl                ) $ path </> mobTblFile
                                              , write (ms^.objTbl                ) $ path </> objTblFile
                                              , write (ms^.pausedCorpseDecompsTbl) $ path </> pausedCorpseDecompsTblFile
@@ -91,13 +91,8 @@ persistHelper l ms = withLock l $ do
     getNonExistingPath path = mIf (doesDirectoryExist path)
                                   (getNonExistingPath $ path ++ "_")
                                   (return path)
-    write tbl file = yield (toJSON tbl) $$ CL.map (LB.toStrict . encode) =$ CB.sinkFile file
-    eqTblHelper    = views eqTbl f ms
-      where
-        f = IM.map (IM.fromList . map swap . M.toList)
-    lightTblHelper = views lightTbl (IM.mapWithKey f) ms
-      where
-        f _ = id -- TODO
+    write tbl file          = yield (toJSON tbl) $$ CL.map (LB.toStrict . encode) =$ CB.sinkFile file
+    eqTblHelper             = views eqTbl (IM.map (IM.fromList . map swap . M.toList)) ms
 
 
 persistExHandler :: SomeException -> MudStack ()

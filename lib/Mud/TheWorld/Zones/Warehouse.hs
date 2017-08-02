@@ -10,6 +10,7 @@ import qualified Mud.Misc.Logging as L (logNotice)
 import           Mud.TheWorld.Foods
 import           Mud.TheWorld.Liqs
 import           Mud.TheWorld.Zones.WarehouseIds
+import           Mud.TopLvlDefs.Misc
 import           Mud.TopLvlDefs.Seconds
 import           Mud.TopLvlDefs.Vals
 import           Mud.TopLvlDefs.Vols
@@ -622,7 +623,7 @@ createWarehouse = do
                             Nothing
                             zeroBits
        in mkObj ot)
-      (Light Torch)
+      (Light Torch torchSecs False)
 
   putLight iLantern
       (Ent iLantern
@@ -638,7 +639,7 @@ createWarehouse = do
                             Nothing
                             zeroBits
        in mkObj ot)
-      (Light Lantern)
+      (Light Lantern maxLanternSecs False)
 
   -----
 

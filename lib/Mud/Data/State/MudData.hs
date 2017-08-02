@@ -67,6 +67,7 @@ data MudState = MudState { _armTbl                 :: ArmTbl
                          , _hostTbl                :: HostTbl
                          , _instaEffectFunTbl      :: InstaEffectFunTbl
                          , _invTbl                 :: InvTbl
+                         , _lightAsyncTbl          :: LightAsyncTbl
                          , _lightTbl               :: LightTbl
                          , _mobTbl                 :: MobTbl
                          , _msgQueueTbl            :: MsgQueueTbl
@@ -114,6 +115,7 @@ type HookFunTbl             = M.Map HookName HookFun
 type HostTbl                = M.Map Sing HostMap
 type InstaEffectFunTbl      = M.Map FunName InstaEffectFun
 type InvTbl                 = IM.IntMap Inv
+type LightAsyncTbl          = IM.IntMap LightAsync
 type LightTbl               = IM.IntMap Light
 type MobTbl                 = IM.IntMap Mob
 type MsgQueueTbl            = IM.IntMap MsgQueue
@@ -543,8 +545,16 @@ data Done = Done
 -- ==================================================
 
 
+type LightAsync = Async ()
+
+
+-- ==================================================
+
+
 -- Has an object.
-data Light = Light { _lightSub :: LightSub } deriving (Eq, Generic, Show)
+data Light = Light { _lightSub   :: LightSub
+                   , _lightSecs  :: Seconds
+                   , _lightIsLit :: Bool } deriving (Eq, Generic, Show)
 
 
 data LightSub = Torch | Lantern deriving (Eq, Generic, Show)
