@@ -66,7 +66,6 @@ module Mud.Data.State.Util.Misc ( addToInv
                                 , procHooks
                                 , procQuoteChars
                                 , removeAdHoc
-                                , runEffectFun
                                 , setInterp
                                 , sortInv
                                 , tweak
@@ -80,7 +79,6 @@ import           Mud.Misc.Misc
 import           Mud.TheWorld.Zones.AdminZoneIds (iNecropolis, iWelcome)
 import           Mud.TopLvlDefs.Chars
 import           Mud.TopLvlDefs.Misc
-import           Mud.TopLvlDefs.Seconds
 import           Mud.Util.List hiding (countOcc)
 import qualified Mud.Util.Misc as U (blowUp, pmf)
 import           Mud.Util.Misc hiding (blowUp, pmf)
@@ -683,15 +681,6 @@ removeAdHoc i = flip upd [ coinsTbl           .at  i        .~ Nothing
                          , rndmNamesMstrTbl   .at  i        .~ Nothing
                          , teleLinkMstrTbl    .at  i        .~ Nothing
                          , typeTbl            .at  i        .~ Nothing ]
-
-
------
-
-
-runEffectFun :: HasCallStack => FunName -> Id -> Seconds -> MudStack ()
-runEffectFun n i secs = views (effectFunTbl.at n) (maybe oops (\f -> f i secs)) =<< getState -- TODO: Run effect function on its own thread.
-  where
-    oops = blowUp "runEffectFun" "function name not found in effect function table" n
 
 
 -----

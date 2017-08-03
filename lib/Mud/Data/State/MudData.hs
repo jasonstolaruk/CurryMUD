@@ -289,7 +289,7 @@ type EffectTag = Text
 
 
 data EffectSub = EffectAttrib Attrib
-               | EffectOther FunName -- Function is run every second.
+               | EffectOther FunName -- Function is run on a new thread every second.
                deriving (Eq, Generic, Show)
 
 

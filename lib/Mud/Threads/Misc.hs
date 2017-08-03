@@ -10,6 +10,7 @@ module Mud.Threads.Misc ( PlsDie(..)
                         , plaThreadExHandler
                         , racer
                         , runAsync
+                        , runEffectFun
                         , setThreadType
                         , threadExHandler
                         , threadStarterExHandler
@@ -22,7 +23,9 @@ import           Mud.Data.State.MudData
 import           Mud.Data.State.Util.Misc
 import qualified Mud.Misc.Logging as L (logExMsg, logIOEx, logNotice, logPla)
 import           Mud.Misc.Logging hiding (logExMsg, logIOEx, logNotice, logPla)
-import           Mud.Util.Misc
+import           Mud.TopLvlDefs.Seconds
+import qualified Mud.Util.Misc as U (blowUp)
+import           Mud.Util.Misc hiding (blowUp)
 import           Mud.Util.Operators
 import           Mud.Util.Quoting
 import           Mud.Util.Text
@@ -44,6 +47,13 @@ import           GHC.Stack (HasCallStack)
 import qualified Data.IntMap.Strict as IM (member)
 import qualified Data.Text as T
 import           System.IO.Error (isAlreadyInUseError, isDoesNotExistError, isPermissionError)
+
+
+blowUp :: BlowUp a
+blowUp = U.blowUp "Mud.Threads.Misc"
+
+
+-----
 
 
 logExMsg :: Text -> Text -> SomeException -> MudStack ()
@@ -135,6 +145,15 @@ racer md a b = liftIO . race_ (runReaderT a md) . runReaderT b $ md
 
 runAsync :: HasCallStack => Fun -> MudStack (Async ())
 runAsync f = liftIO . async . runReaderT f =<< ask
+
+
+-----
+
+
+runEffectFun :: HasCallStack => FunName -> Id -> Seconds -> MudStack ()
+runEffectFun n i secs = views (effectFunTbl.at n) (maybe oops (\f -> onNewThread . f i $ secs)) =<< getState
+  where
+    oops = blowUp "runEffectFun" "function name not found in effect function table" n
 
 
 -----
