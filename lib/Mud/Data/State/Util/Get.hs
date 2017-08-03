@@ -59,6 +59,8 @@ module Mud.Data.State.Util.Get ( getActMap
                                , getKnownLangs
                                , getLastRmId
                                , getLight
+                               , getLightIsLit
+                               , getLightSecs
                                , getLightSub
                                , getLinked
                                , getLogQueue
@@ -612,6 +614,20 @@ getLastRmId i = view lastRmId . getMob i
 
 getLight :: HasCallStack => Id -> MudState -> Light
 getLight i = view (lightTbl.ind i)
+
+
+-----
+
+
+getLightIsLit :: HasCallStack => Id -> MudState -> Bool
+getLightIsLit i = view lightIsLit . getLight i
+
+
+-----
+
+
+getLightSecs :: HasCallStack => Id -> MudState -> Seconds
+getLightSecs i = view lightSecs . getLight i
 
 
 -----

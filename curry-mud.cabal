@@ -121,6 +121,7 @@ library
                        Mud.Threads.Effect
                        Mud.Threads.FeelingTimer
                        Mud.Threads.InacTimer
+                       Mud.Threads.LightTimer
                        Mud.Threads.Listen
                        Mud.Threads.Misc
                        Mud.Threads.NpcServer

@@ -10,10 +10,10 @@ import           Mud.Util.Misc
 
 import           Control.Lens (at, to)
 import           Control.Lens.Operators ((.~), (%~), (^.))
-import           Control.Monad (forM_, when)
+import           Control.Monad (forM_, mapM_, when)
+import qualified Data.IntMap.Strict as IM (map)
 import           Data.List (delete)
 import           GHC.Stack (HasCallStack)
-import qualified Data.IntMap.Strict as IM (map)
 
 
 type DoOrDon'tStopDecomposers = Bool
@@ -27,16 +27,18 @@ destroyDisintegratedCorpse :: HasCallStack => Id -> MudStack ()
 destroyDisintegratedCorpse = destroyer False . pure
 
 
-destroyer :: HasCallStack => DoOrDon'tStopDecomposers -> Inv -> MudStack ()
-destroyer b is = do ((>>) <$> stopBiodegraders <*> stopCorpseDecomposers) =<< getState
-                    mapM_ stopEffects is
-                    tweak . destroyHelper $ is
+destroyer :: HasCallStack => DoOrDon'tStopDecomposers -> Inv -> MudStack () -- TODO: modifyStateSeq
+destroyer b is = getState >>= \ms -> do stopBiodegraders      ms
+                                        stopCorpseDecomposers ms
+                                        stopLightTimers       ms
+                                        ((>>) <$> mapM_ stopEffects <*> tweak . destroyHelper) is
   where
     stopBiodegraders      ms = forM_ (filter (`hasObjId` ms) is) $ maybeVoid throwDeath . (`getObjBiodegAsync` ms)
     stopCorpseDecomposers ms = when b . forM_ is $ \i -> ms^.corpseDecompAsyncTbl.at i.to (maybeVoid throwDeath)
+    stopLightTimers       ms =          forM_ is $ \i -> ms^.lightAsyncTbl       .at i.to (maybeVoid throwDeath)
 
 
-destroyHelper :: HasCallStack => Inv -> MudState -> MudState -- The caller is responsible for stopping the biodegrader, corpse decomposer, and effects.
+destroyHelper :: HasCallStack => Inv -> MudState -> MudState -- The caller is responsible for stopping the biodegrader, corpse decomposer, light timer, and effects.
 destroyHelper = flip . foldr $ helper
   where
     helper i ms = case getType i ms of

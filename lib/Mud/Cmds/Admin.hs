@@ -569,7 +569,7 @@ mkCountTxt = (uncurry mappend . second commaShow) `fmap2` helper
         let plaLogThrIds = views plaLogTbl (map (asyncThreadId . fst) . IM.elems) ms
             otherThrIds  = views threadTbl M.keys ms
             threadIds    = concat [ noticeErrorThrIds, plaLogThrIds, otherThrIds ]
-        noOfThreads <- length . filterThreads <$> mapM (liftIO . threadStatus) threadIds
+        noOfThreads <- liftIO $ length . filterThreads <$> mapM threadStatus threadIds
         return [ ("Armor: ",            countType ArmType             )
                , ("Clothing: ",         countType ClothType           )
                , ("Containers: ",       countType ConType             )

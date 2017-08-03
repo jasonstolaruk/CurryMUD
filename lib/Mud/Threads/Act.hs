@@ -32,7 +32,7 @@ import           Mud.Util.Quoting
 import           Mud.Util.Text
 
 import           Control.Arrow ((***))
-import           Control.Exception.Lifted (finally, handle)
+import           Control.Exception.Lifted (catch, finally, handle)
 import           Control.Lens (at, view, views)
 import           Control.Lens.Operators ((%~), (&), (.~), (<-~), (?~), (^.))
 import           Control.Monad (join, when)
@@ -108,7 +108,7 @@ drinkAct DrinkBundle { .. } = modifyStateSeq f `finally` tweak (mobTbl.ind drink
                d  = mkStdDesig drinkerId ms DoCap
                bs = pure ( T.concat [ serialize d, " begins drinking from ", renderVesselSing, "." ]
                          , drinkerId `delete` desigIds d )
-               fs = pure . handle (die (Just drinkerId) . pp $ Drinking) . sequence_ $ gs
+               fs = pure $ sequence_ gs `catch` die (Just drinkerId) (pp Drinking)
                gs = [ multiWrapSend1Nl drinkerMq drinkerCols . dropEmpties $ [ t, drinkLiq^.liqDrinkDesc ]
                     , bcastIfNotIncogNl drinkerId bs
                     , loop 1 ]
@@ -178,7 +178,7 @@ eatAct EatBundle { .. } = modifyStateSeq f `finally` tweak (mobTbl.ind eaterId.n
                d  = mkStdDesig eaterId ms DoCap
                bs = pure ( T.concat [ serialize d, " begins eating ", aOrAn eatFoodSing, "." ]
                          , eaterId `delete` desigIds d )
-               fs = pure . handle (die (Just eaterId) . pp $ Eating) . sequence_ $ gs
+               fs = pure $ sequence_ gs `catch` die (Just eaterId) (pp Eating)
                gs = [ multiWrapSend1Nl eaterMq eaterCols . dropEmpties $ [ t, eatFood^.foodEatDesc ]
                     , bcastIfNotIncogNl eaterId bs
                     , loop 1 ]

@@ -70,5 +70,5 @@ threadFeelingTimer i tag dur = sequence_ [ setThreadType . FeelingTimer $ i, loo
 -- To stop a single feeling, cancel the async and remove the entry in the mob's feeling map. See "stopFeeling" in
 -- module "Mud.Threads.Effect".
 stopFeelings :: HasCallStack => Id -> MudStack ()
-stopFeelings i = sequence_ [ getFeelingMap i <$> getState >>= mapM_ (liftIO . cancel . feelingAsync) . M.elems
+stopFeelings i = sequence_ [ getFeelingMap i <$> getState >>= liftIO . mapM_ (cancel . feelingAsync) . M.elems
                            , tweak $ mobTbl.ind i.feelingMap .~ M.empty ]

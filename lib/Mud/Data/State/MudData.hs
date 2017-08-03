@@ -1193,6 +1193,7 @@ data ThreadType = AttackingThread   Id
                 | Error
                 | FeelingTimer      Id
                 | InacTimer         Id
+                | LightTimer        Id
                 | Listen
                 | Notice
                 | NpcServer         Id

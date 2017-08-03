@@ -17,7 +17,7 @@ import           Mud.Util.Text
 
 import           Control.Concurrent.STM (atomically)
 import           Control.Concurrent.STM.TMQueue (closeTMQueue, tryReadTMQueue)
-import           Control.Exception.Lifted (handle, finally)
+import           Control.Exception.Lifted (catch, finally)
 import           Control.Monad ((>=>))
 import           Control.Monad.IO.Class (liftIO)
 import           Data.Monoid ((<>))
@@ -39,7 +39,7 @@ logPla = L.logPla "Mud.Threads.InacTimer"
 
 
 threadInacTimer :: HasCallStack => Id -> MsgQueue -> InacTimerQueue -> MudStack ()
-threadInacTimer i mq q = let f    = handle (threadExHandler (Just i) "inactivity timer") . sequence_ $ funs
+threadInacTimer i mq q = let f    = sequence_ funs `catch` threadExHandler (Just i) "inactivity timer"
                              funs = [ setThreadType . InacTimer $ i, loop maxInacSecs 0 ]
                          in f `finally` stopInacTimer q
   where
