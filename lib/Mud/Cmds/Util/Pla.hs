@@ -1562,7 +1562,7 @@ mkEntDescs :: HasCallStack => Id -> Cols -> MudState -> Inv -> Text
 mkEntDescs i cols ms eis = nls [ mkEntDesc i cols ms (ei, e) | ei <- eis, let e = getEnt ei ms ]
 
 
-mkEntDesc :: HasCallStack => Id -> Cols -> MudState -> (Id, Ent) -> Text -- TODO: Display remaining torch/lantern.
+mkEntDesc :: HasCallStack => Id -> Cols -> MudState -> (Id, Ent) -> Text
 mkEntDesc i cols ms (ei, e) =
     case t of ConType      ->                  (ed <>) . mkInvCoinsDesc i cols ms ei $ s
               CorpseType   -> (corpseTxt <>)           . mkInvCoinsDesc i cols ms ei $ s
@@ -1572,8 +1572,9 @@ mkEntDesc i cols ms (ei, e) =
               WritableType ->                  (ed <>) . mkWritableMsgDesc cols ms $ ei
               _            -> ed
   where
-    ed                  = let foodRemTxt = t == FoodType |?| spcL (mkFoodRemTxt ei ms)
-                              desc       = views entDesc (<> foodRemTxt) e
+    ed                  = let foodRemTxt  = t == FoodType  |?| spcL (mkFoodRemTxt  ei ms)
+                              lightRemTxt = t == LightType |?| spcL (mkLightRemTxt ei ms)
+                              desc        = T.concat [ e^.entDesc, lightRemTxt, foodRemTxt ]
                           in wrapUnlines cols desc <> mkAuxDesc i cols ms ei
     (s, t)              = (getSing `fanUncurry` getType) (ei, ms)
     corpseTxt           = let txt = expandCorpseTxt (mkCorpseAppellation i ms ei) . getCorpseDesc ei $ ms
@@ -1642,7 +1643,15 @@ mkCoinsSummary cols = helper . zipWith mkNameAmt coinNames . coinsToList
 
 
 mkFoodRemTxt :: HasCallStack => Id -> MudState -> Text
-mkFoodRemTxt i ms = parensQuote $ showTxt (calcFoodPerRem i ms) <> "% remaining"
+mkFoodRemTxt i = perRemHelper . calcFoodPerRem i
+
+
+perRemHelper :: HasCallStack => Int -> Text
+perRemHelper = parensQuote . (<> "% remaining") . showTxt
+
+
+mkLightRemTxt :: HasCallStack => Id -> MudState -> Text
+mkLightRemTxt i = perRemHelper . calcLightPerRem i
 
 
 mkEqDesc :: HasCallStack => Id -> Cols -> MudState -> Id -> Sing -> Type -> Text

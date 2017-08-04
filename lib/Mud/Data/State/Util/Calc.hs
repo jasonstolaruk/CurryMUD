@@ -22,6 +22,7 @@ module Mud.Data.State.Util.Calc ( calcBarLen
                                 , calcFoodPerRem
                                 , calcInvCoinsVol
                                 , calcLanternSecsPerMouthfulOfOil
+                                , calcLightPerRem
                                 , calcLvl
                                 , calcLvlExps
                                 , calcLvlForExp
@@ -303,6 +304,16 @@ If there are 175 "Vol"s in a mouthful, then there are 17 mouthfuls in a pint and
 calcLanternSecsPerMouthfulOfOil :: HasCallStack => Seconds
 calcLanternSecsPerMouthfulOfOil = let mouthfulsPerPint = 2888 `divideRound` mouthfulVol
                                   in oneDayInSecs `divideRound` mouthfulsPerPint
+
+
+-----
+
+
+calcLightPerRem :: HasCallStack => Id -> MudState -> Int
+calcLightPerRem i ms | x <- getLightSecs i ms
+                     , y <- case getLightSub i ms of Torch   -> torchSecs
+                                                     Lantern -> maxLanternSecs
+                     = x `percent` y
 
 
 -----

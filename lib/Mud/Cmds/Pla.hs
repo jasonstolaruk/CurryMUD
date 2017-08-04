@@ -2699,8 +2699,8 @@ refuel p@(Lower i mq cols [lantern, vessel]) = getState >>= \ms ->
     helper = modifyStateSeq $ \ms ->
         let (inInvs, inEqs, _) = sortArgsInvEqRm InInv . pure $ lantern
             (invCoins, eqMap)  = (getInvCoins `fanUncurry` getEqMap) (i, ms)
-            -- d                  = mkStdDesig  i ms DoCap
-            sorry              = (ms, ) . pure . wrapSend mq cols
+            -- d         = mkStdDesig  i ms DoCap
+            sorry     = (ms, ) . pure . wrapSend mq cols
             refuelInv = let (eiss, _) = uncurry (resolveMobInvCoins i ms inInvs) invCoins
                         in procEiss eiss
             refuelEq  = let (gecrs, miss, _) = resolveEntCoinNames i ms inEqs (M.elems eqMap) mempty
@@ -2733,11 +2733,11 @@ refuel p@(Lower i mq cols [lantern, vessel]) = getState >>= \ms ->
                                                | otherwise          = Just (liq, mouths')
                                    in ( ms & lightTbl .ind lanternId.lightSecs  .~ maxLanternSecs
                                            & vesselTbl.ind vesselId .vesselCont .~ newCont
-                                      , [] )
+                                      , [] ) -- TODO: Output.
                               else -- There is not enough oil in the vessel to fill the lantern.
                                    ( ms & lightTbl .ind lanternId.lightSecs  +~ vesselSecs
                                         & vesselTbl.ind vesselId .vesselCont .~ Nothing
-                                   , [] )
+                                   , [] ) -- TODO: Output.
                             | otherwise ->  sorry . sorryRefuelAlready $ lanternSing
                     | otherwise -> sorry . sorryRefuelLiq $ vesselSing
                 refuelerHelper _ _ = sorry sorryRefuelExcessVessels
