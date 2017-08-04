@@ -76,7 +76,7 @@ import           Mud.Util.Wrapping
 import           Control.Arrow ((***), (&&&), first, second)
 import           Control.Exception.Lifted (catch, try)
 import           Control.Lens (_1, _2, _3, _4, at, both, each, to, view, views)
-import           Control.Lens.Operators ((-~), (?~), (.~), (&), (%~), (^.), (<>~))
+import           Control.Lens.Operators ((%~), (&), (+~), (-~), (.~), (<>~), (?~), (^.))
 import           Control.Monad ((>=>), foldM, forM, forM_, guard, join, mplus, unless, when)
 import           Control.Monad.IO.Class (liftIO)
 import           Control.Monad.Reader (asks)
@@ -161,7 +161,7 @@ regularCmds = map (uncurry4 mkRegularCmd) regularCmdTuples
 {-
 TODO:
 light lightSource tinderbox
-unlight lightSource -- "lightSource" arg may be omitted.
+extinguish lightSource -- "lightSource" arg may be omitted.
 A "tinderbox" is a tinderbox with flint and steel strikers in a single object.
 -}
 -- TODO: "buy" and "sell".
@@ -2690,7 +2690,7 @@ readyLight i ms d mrol a@(et, _, _, _, _) lightId lightSing | em <- et IM.! i =
 -----
 
 
-refuel :: HasCallStack => RmActionFun -- TODO: Help.
+refuel :: HasCallStack => RmActionFun
 refuel p@AdviseNoArgs                        = advise p [] adviceRefuelNoArgs
 refuel p@AdviseOneArg                        = advise p [] adviceRefuelNoSource
 refuel p@(Lower i mq cols [lantern, vessel]) = getState >>= \ms ->
@@ -2718,12 +2718,28 @@ refuel p@(Lower i mq cols [lantern, vessel]) = getState >>= \ms ->
                                                                     (eis:_) -> either sorry (refuelerHelper s) eis
               (s, _        ) -> sorry . sorryRefuelLanternType $ s
               where
-                refuelerHelper _{-lanternSing-} [vesselId] =
-                    let vesselSing = getSing vesselId ms
-                    in case getVesselCont vesselId ms of
-                      Nothing -> sorry . sorryRefuelVesselEmpty $ vesselSing
-                      Just (liq, _) | liq == oilLiq -> undefined
-                                    | otherwise -> sorry . sorryRefuelLiq $ vesselSing
+                refuelerHelper lanternSing [vesselId] | vesselSing <- getSing vesselId ms = case getVesselCont vesselId ms of
+                  Nothing -> sorry . sorryRefuelVesselEmpty $ vesselSing
+                  Just (liq, mouths)
+                    | liq == oilLiq ->
+                      let secs             = getLightSecs lanternId ms
+                          vesselSecs       = mouths * calcLanternSecsPerMouthfulOfOil
+                          lanternAvailSecs = maxLanternSecs - secs
+                      in if | secs < maxLanternSecs -> if vesselSecs >= lanternAvailSecs
+                              then -- There is enough oil in the vessel to fill the lantern.
+                                   let vesselRemSecs = vesselSecs - lanternAvailSecs
+                                       mouths'       = floor $ vesselRemSecs `divide` calcLanternSecsPerMouthfulOfOil
+                                       newCont | vesselRemSecs == 0 = Nothing
+                                               | otherwise          = Just (liq, mouths')
+                                   in ( ms & lightTbl .ind lanternId.lightSecs  .~ maxLanternSecs
+                                           & vesselTbl.ind vesselId .vesselCont .~ newCont
+                                      , [] )
+                              else -- There is not enough oil in the vessel to fill the lantern.
+                                   ( ms & lightTbl .ind lanternId.lightSecs  +~ vesselSecs
+                                        & vesselTbl.ind vesselId .vesselCont .~ Nothing
+                                   , [] )
+                            | otherwise ->  sorry . sorryRefuelAlready $ lanternSing
+                    | otherwise -> sorry . sorryRefuelLiq $ vesselSing
                 refuelerHelper _ _ = sorry sorryRefuelExcessVessels
             refueler _ = sorry sorryRefuelExcessLanterns
         in if | ()#  invCoins -> sorry dudeYourHandsAreEmpty
@@ -2731,31 +2747,6 @@ refuel p@(Lower i mq cols [lantern, vessel]) = getState >>= \ms ->
               | ()!# inEqs    -> refuelEq
               | otherwise     -> sorry sorryRefuelLanternInRm
 refuel p = advise p ["refuel"] adviceRefuelExcessArgs
-
-
-{-
-refuelPausedEffect :: MsgQueue -> Cols -> Id -> Id -> Sing -> VesselCont -> Effect -> MudState -> (MudState, Funs)
-refuelPausedEffect mq cols vesselId lanternId lanternSing (liq, mouths) eff ms =
-    let effSecs          = eff^.effectDur
-        vesselSecs       = mouths * calcLanternSecsPerMouthfulOfOil
-        lanternAvailSecs = maxLanternSecs - effSecs
-        pes              = filter ((/= eff) . unPausedEffect) . getPausedEffects lanternId $ ms
-    in if effSecs < maxLanternSecs
-      then if vesselSecs >= lanternAvailSecs
-        then let pe            = PausedEffect (eff & effectDur .~ maxLanternSecs) -- There is enough oil in the vessel to fill the lantern.
-                 vesselRemSecs = vesselSecs - lanternAvailSecs
-                 mouths'       = floor $ vesselRemSecs `divide` calcLanternSecsPerMouthfulOfOil
-                 newCont | vesselRemSecs == 0 = Nothing
-                         | otherwise          = Just (liq, mouths')
-             in (ms & pausedEffectTbl.ind lanternId           .~ (pe : pes)
-                    & vesselTbl      .ind vesselId.vesselCont .~ newCont, [])
-        else let pe = PausedEffect (eff & effectDur +~ vesselSecs) -- There is not enough oil in the vessel to fill the lantern.
-             in (ms & pausedEffectTbl.ind lanternId           .~ (pe : pes)
-                    & vesselTbl      .ind vesselId.vesselCont .~ Nothing, [])
-      else sorry . sorryRefuelAlready $ lanternSing
-  where
-    sorry = (ms, ) . pure . wrapSend mq cols
--}
 
 
 -----

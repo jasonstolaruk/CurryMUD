@@ -1,0 +1,25 @@
+\h REFUEL \d
+
+\uUSAGE\n
+!refuel lantern vessel
+
+\uDESCRIPTION\n
+Add oil to a lantern.
+The lantern may be lit or unlit, and it may be in your inventory or your readied equipment. You must specify a vessel in your inventory containing oil.
+
+To refuel the lantern in your inventory with the oil in your bottle:
+\qrefuel \li#l\qlantern bottle\d4`
+...or just...
+\qrefuel lantern bottle\d4`
+
+To refuel the lantern in your readied equipment with the oil in your bottle:
+\qrefuel \le#l\qlantern bottle\d4`
+
+\uEXAMPLES\n
+\qrefuel \p2#i\qlantern bottle\d to refuel the second lantern in your inventory with the oil in your bottle.4`
+\qrefuel lantern \p2#i\qbottle\d to refuel the lantern in your inventory with the oil in your second bottle.4`
+\qrefuel \le#l\qlantern bottle\d to refuel the lantern in your readied equipment with the oil in your bottle.4`
+\qrefuel \le#l\p2#i\qlantern bottle\d to refuel the second lantern in your readied equipment with the oil in your bottle.4`
+
+\uSEE ALSO\n
+extinguish, light, prefixes
