@@ -2699,7 +2699,6 @@ refuel p@(Lower i mq cols [lantern, vessel]) = getState >>= \ms ->
     helper = modifyStateSeq $ \ms ->
         let (inInvs, inEqs, _) = sortArgsInvEqRm InInv . pure $ lantern
             (invCoins, eqMap)  = (getInvCoins `fanUncurry` getEqMap) (i, ms)
-            -- d         = mkStdDesig  i ms DoCap
             sorry     = (ms, ) . pure . wrapSend mq cols
             refuelInv = let (eiss, _) = uncurry (resolveMobInvCoins i ms inInvs) invCoins
                         in procEiss eiss
@@ -2731,13 +2730,23 @@ refuel p@(Lower i mq cols [lantern, vessel]) = getState >>= \ms ->
                                        mouths'       = floor $ vesselRemSecs `divide` calcLanternSecsPerMouthfulOfOil
                                        newCont | vesselRemSecs == 0 = Nothing
                                                | otherwise          = Just (liq, mouths')
+                                       toSelf  = T.concat [ "You refuel the "
+                                                          , lanternSing
+                                                          , " with the oil from the "
+                                                          , vesselSing
+                                                          , "." ]
                                    in ( ms & lightTbl .ind lanternId.lightSecs  .~ maxLanternSecs
                                            & vesselTbl.ind vesselId .vesselCont .~ newCont
-                                      , [] ) -- TODO: Output.
+                                      , ioHelper ms lanternSing vesselSing toSelf False )
                               else -- There is not enough oil in the vessel to fill the lantern.
-                                   ( ms & lightTbl .ind lanternId.lightSecs  +~ vesselSecs
-                                        & vesselTbl.ind vesselId .vesselCont .~ Nothing
-                                   , [] ) -- TODO: Output.
+                                   let toSelf = T.concat [ "You empty the contents of the "
+                                                         , vesselSing
+                                                         , " into the "
+                                                         , lanternSing
+                                                         , "." ]
+                                   in ( ms & lightTbl .ind lanternId.lightSecs  +~ vesselSecs
+                                           & vesselTbl.ind vesselId .vesselCont .~ Nothing
+                                      , ioHelper ms lanternSing vesselSing toSelf True )
                             | otherwise ->  sorry . sorryRefuelAlready $ lanternSing
                     | otherwise -> sorry . sorryRefuelLiq $ vesselSing
                 refuelerHelper _ _ = sorry sorryRefuelExcessVessels
@@ -2746,6 +2755,23 @@ refuel p@(Lower i mq cols [lantern, vessel]) = getState >>= \ms ->
               | ()!# inInvs   -> refuelInv
               | ()!# inEqs    -> refuelEq
               | otherwise     -> sorry sorryRefuelLanternInRm
+    ioHelper ms lanternSing vesselSing toSelf b =
+        let bs     = pure (T.concat [ serialize d
+                                    , " refuels "
+                                    , aOrAn lanternSing
+                                    , " with the oil from "
+                                    , aOrAn vesselSing
+                                    , "." ], i `delete` desigIds d)
+            d      = mkStdDesig  i ms DoCap
+            logMsg = T.concat [ "refueled "
+                              , aOrAn lanternSing
+                              , " with "
+                              , aOrAn vesselSing
+                              , b |?| ", emptying it"
+                              , "." ]
+        in [ wrapSend mq cols toSelf
+           , bcastIfNotIncogNl i bs
+           , logPla "refuel helper refuelerHelper" i logMsg ]
 refuel p = advise p ["refuel"] adviceRefuelExcessArgs
 
 
