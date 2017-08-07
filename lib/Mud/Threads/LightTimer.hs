@@ -52,7 +52,7 @@ threadLightTimer i = helper `catch` threadExHandler (Just i) "light timer"
                in if hasMobId locId ms
                     then let (mq, cols) = getMsgQueueColumns locId ms
                              toSelf     = "Your " <> s <> " goes out."
-                             d          = mkStdDesig locId ms DoCap -- TODO: Or nonstandard?
+                             d          = mkStdDesig locId ms DoCap
                              bs         = pure (serialize d, locId `delete` desigIds d)
                              logMsg     = "The " <> s <> " goes out."
                          in do wrapSend mq cols toSelf

@@ -1675,7 +1675,7 @@ mkEqDesc i cols ms descId descSing descType = let descs = bool mkDescsOther mkDe
       | descId   == i       -> "You have readied the following equipment:"
       | descType == PlaType -> parseDesig i ms $ d    <> " has readied the following equipment:"
       | otherwise           -> theOnLowerCap descSing <> " has readied the following equipment:"
-    d = mkSerializedNonStdDesig descId ms descSing The DoCap
+    d = serialize . mkStdDesig descId ms $ DoCap
 
 
 mkVesselContDesc :: HasCallStack => Cols -> MudState -> Id -> Text
