@@ -260,10 +260,10 @@ parseDesigHelper f i ms = loop (getIntroduced i ms)
                     , (left, desig, rest) <- extractDesig stdDesigDelimiter txt
                     = case desig of
                       d@StdDesig { desigEntSing = Just es, .. } ->
-                        left                                                               <>
+                        left                                                              <>
                         (if es `elem` intros
                            then es
-                           else expandEntName i ms d ^.to (isPla desigId ms ? f es :? id)) <>
+                           else expandEntName i ms d |&| (isPla desigId ms ? f es :? id)) <>
                         loop intros rest
                       d@StdDesig { desigEntSing = Nothing,  .. } ->
                         left <> expandEntName i ms d <> loop intros rest

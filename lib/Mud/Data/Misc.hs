@@ -936,7 +936,7 @@ data Desig = StdDesig    { desigEntSing :: Maybe Text
                          , desigEntName :: Text
                          , desigId      :: Id
                          , desigIds     :: Inv }
-           | NonStdDesig { dEntSing     :: Text
+           | NonStdDesig { dEntSing     :: Text -- Expand to the value of "dEntSing" if it's in introduced names. Otherwise, expand to the value of "dDesc".
                          , dDesc        :: Text }
            | CorpseDesig Id deriving (Eq, Show)
 

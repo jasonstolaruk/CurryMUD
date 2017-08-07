@@ -2762,7 +2762,7 @@ refuel p@(Lower i mq cols [lantern, vessel]) = getState >>= \ms ->
                                     , " with the oil from "
                                     , aOrAn vesselSing
                                     , "." ], i `delete` desigIds d)
-            d      = mkStdDesig  i ms DoCap
+            d      = mkStdDesig i ms DoCap
             logMsg = T.concat [ "refueled "
                               , aOrAn lanternSing
                               , " with "

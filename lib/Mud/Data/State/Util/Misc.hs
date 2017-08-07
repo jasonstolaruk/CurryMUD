@@ -24,6 +24,7 @@ module Mud.Data.State.Util.Misc ( addToInv
                                 , getHookFun
                                 , getInstaEffectFun
                                 , getListenThreadId
+                                , getLocation
                                 , getLogAsyncs
                                 , getLogThreadIds
                                 , getLoggedInAdminIds
@@ -91,7 +92,7 @@ import           Control.Concurrent (ThreadId)
 import           Control.Concurrent.Async (asyncThreadId)
 import           Control.Lens (_1, _2, at, both, view, views)
 import           Control.Lens.Operators ((.~), (&), (%~), (^.))
-import           Control.Monad ((>=>))
+import           Control.Monad ((>=>), mplus)
 import           Control.Monad.IO.Class (liftIO)
 import           Control.Monad.Reader (ask, asks)
 import           Data.Bool (bool)
@@ -103,7 +104,7 @@ import           Data.Text (Text)
 import           GHC.Exts (sortWith)
 import           GHC.Stack (HasCallStack)
 import qualified Data.IntMap.Strict as IM ((!), filter, keys)
-import qualified Data.Map.Strict as M (lookup)
+import qualified Data.Map.Strict as M (elems, lookup)
 import qualified Data.Text as T
 import qualified Data.Vector.Unboxed as V (Vector)
 import           Text.Regex.PCRE ((=~))
@@ -283,6 +284,17 @@ getInstaEffectFun n = views (instaEffectFunTbl.at n) (fromMaybe oops)
 
 getListenThreadId :: HasCallStack => MudState -> Maybe ThreadId
 getListenThreadId = lookupMapValue Listen . view threadTbl
+
+
+-----
+
+
+getLocation :: HasCallStack => Id -> MudState -> Id
+getLocation i ms = fromMaybe oops $ searchInvs `mplus` searchEqs
+  where
+    searchInvs = views invTbl (listToMaybe . IM.keys . IM.filter ( i `elem`)           ) ms
+    searchEqs  = views eqTbl  (listToMaybe . IM.keys . IM.filter ((i `elem`) . M.elems)) ms
+    oops       = blowUp "getLocation" "ID is in limbo" . showTxt $ i
 
 
 -----
