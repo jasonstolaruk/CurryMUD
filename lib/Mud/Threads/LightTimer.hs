@@ -41,15 +41,15 @@ threadLightTimer i = helper `catch` threadExHandler (Just i) "light timer"
               tweak $ lightTbl.ind i.lightSecs %~ pred
               loop
       else let (locId, s) = (getLocation `fanUncurry` getSing) (i, ms)
+               d          = mkStdDesig locId ms DoCap
            in if hasMobId locId ms
              then let (mq, cols) = getMsgQueueColumns locId ms
                       toSelf     = "Your " <> s <> " goes out."
-                      d          = mkStdDesig locId ms DoCap
                       bs         = pure ( T.concat [ serialize d, "'s ", s, " goes out." ]
                                         , locId `delete` desigIds d )
                       logMsg     = "The " <> s <> " goes out."
                   in do wrapSend mq cols toSelf
                         bcastIfNotIncogNl locId bs
                         logPla "threadLightTimer loop" locId logMsg
-             else bcastNl . pure $ ("The " <> s <> " goes out.", findMobIds ms . getInv locId $ ms)
+             else bcastNl . pure $ ("The " <> s <> " goes out.", desigIds d)
     cleanUp = tweaks [ lightTbl.ind i.lightIsLit .~ False, lightAsyncTbl.at i .~ Nothing ]
