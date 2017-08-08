@@ -691,7 +691,7 @@ createWarehouse = do
           (Just "skeleton")
           "undead skeleton" ""
           "This mindless bipedal skeleton has been animated and tasked with doing its master's bidding."
-          Nothing
+          Nothing -- TODO: Smell.
           zeroBits)
       []
       mempty
@@ -710,8 +710,8 @@ createWarehouse = do
 
   -----
 
-  putRm iObjRm -- TODO: Tinderbox.
-      []
+  putRm iObjRm
+      [ iTinderbox ]
       mempty
       (mkRm (RmTemplate "Objects room"
           "This room holds objects."
@@ -724,6 +724,21 @@ createWarehouse = do
           InsideEnv
           (Just "Objects")
           M.empty [] []))
+
+  putObj iTinderbox
+      (Ent iTinderbox
+          (Just "tinderbox")
+          "tinderbox" "tinderboxes"
+          "tinderbox desc" -- TODO
+          Nothing -- TODO: Smell.
+          zeroBits)
+      (let ot = ObjTemplate 1 -- tinderboxWeight
+                            1 -- tinderboxVol
+                            Nothing -- TODO: Taste.
+                            (Just 1) -- tinderoboxVal
+                            (Just (1, 1)) -- tinderboxWear
+                            zeroBits
+       in mkObj ot)
 
   -----
 

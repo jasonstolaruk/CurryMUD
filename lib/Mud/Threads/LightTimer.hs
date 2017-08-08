@@ -48,8 +48,8 @@ threadLightTimer i = helper `catch` threadExHandler (Just i) "light timer"
                       bs         = pure ( T.concat [ serialize d, "'s ", s, " goes out." ]
                                         , locId `delete` desigIds d )
                       logMsg     = "The " <> s <> " goes out."
-                  in do wrapSend mq cols toSelf
+                  in do wrapSend mq cols toSelf -- TODO: Test.
                         bcastIfNotIncogNl locId bs
                         logPla "threadLightTimer loop" locId logMsg
-             else bcastNl . pure $ ("The " <> s <> " goes out.", desigIds d)
+             else bcastNl . pure $ ("The " <> s <> " goes out.", desigIds d) -- TODO: Test.
     cleanUp = tweaks [ lightTbl.ind i.lightIsLit .~ False, lightAsyncTbl.at i .~ Nothing ]
