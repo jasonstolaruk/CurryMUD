@@ -1829,7 +1829,7 @@ light p                         = advise p ["light"] adviceLightExcessArgs
 lightUp :: HasCallStack => ActionParams -> Text -> Maybe Text -> MudStack ()
 lightUp p@(WithArgs i _ _ _) lightArg tinderArg = getState >>= \ms ->
     let f = genericActionWithHooks p helper "light"
-    in checkActing p ms (Right "light a torch or lantern") [ Attacking, Drinking, Sacrificing ] $ f
+    in checkActing p ms (Right "light a torch or lamp") [ Attacking, Drinking, Sacrificing ] f
   where
     helper _ ms =
         let (invCoins@(is, _), eqMap) = (getInvCoins `fanUncurry` getEqMap) (i, ms)
@@ -1845,8 +1845,8 @@ lightUp p@(WithArgs i _ _ _) lightArg tinderArg = getState >>= \ms ->
               | ((||) <$> (/= ObjType) . uncurry getType <*> (/= "tinderbox") . uncurry getSing) (tinderId, ms)
               = sorry sorryLightTinderboxType
               | getLightIsLit lightId ms = sorry . sorryLightLit $ lightSing
-              | secs <= 0                = sorry $ case sub of Torch   -> sorryLightTorchSecs
-                                                               Lantern -> sorryLightLanternSecs
+              | secs <= 0                = sorry $ case sub of Torch -> sorryLightTorchSecs
+                                                               Lamp  -> sorryLightLampSecs
               | otherwise =
                   let toSelf = prd $ "You light the " <> lightSing
                       d      = mkStdDesig i ms DoCap
@@ -2758,13 +2758,13 @@ readyLight i ms d mrol a@(et, _, _, _, _) lightId lightSing | em <- et IM.! i =
 
 
 refuel :: HasCallStack => RmActionFun
-refuel p@AdviseNoArgs                        = advise p [] adviceRefuelNoArgs
-refuel p@AdviseOneArg                        = advise p [] adviceRefuelNoSource
-refuel p@(Lower i mq cols [lantern, vessel]) = getState >>= \ms ->
-    checkActing p ms (Right "refuel a lantern") [ Attacking, Drinking, Sacrificing ] helper
+refuel p@AdviseNoArgs                     = advise p [] adviceRefuelNoArgs
+refuel p@AdviseOneArg                     = advise p [] adviceRefuelNoSource
+refuel p@(Lower i mq cols [lamp, vessel]) = getState >>= \ms ->
+    checkActing p ms (Right "refuel a lamp") [ Attacking, Drinking, Sacrificing ] helper
   where
     helper = modifyStateSeq $ \ms ->
-        let (inInvs, inEqs, _) = sortArgsInvEqRm InInv . pure $ lantern
+        let (inInvs, inEqs, _) = sortArgsInvEqRm InInv . pure $ lamp
             (invCoins, eqMap)  = (getInvCoins `fanUncurry` getEqMap) (i, ms)
             sorry     = (ms, ) . pure . wrapSend mq cols
             refuelInv = let (eiss, _) = uncurry (resolveMobInvCoins i ms inInvs) invCoins
@@ -2772,66 +2772,66 @@ refuel p@(Lower i mq cols [lantern, vessel]) = getState >>= \ms ->
             refuelEq  = let (gecrs, miss, _) = resolveEntCoinNames i ms inEqs (M.elems eqMap) mempty
                             eiss             = zipWith (curry procGecrMisMobEq) gecrs miss
                         in procEiss eiss
-            procEiss eiss        = case eiss of []      -> sorry sorryRefuelLanternCoins
-                                                (eis:_) -> either sorry refueler eis
-            refueler [lanternId] = case (getSing `fanUncurry` getType) (lanternId, ms) of
-              (s, LightType) | getLightSub lanternId ms == Lantern
+            procEiss eiss     = case eiss of []      -> sorry sorryRefuelLampCoins
+                                             (eis:_) -> either sorry refueler eis
+            refueler [lampId] = case (getSing `fanUncurry` getType) (lampId, ms) of
+              (s, LightType) | getLightSub lampId ms == Lamp
                              , (inInvs', inEqs', inRms) <- sortArgsInvEqRm InInv . pure $ vessel
                              -> if | ()!# inEqs' -> sorry sorryRefuelVesselInEq
                                    | ()!# inRms  -> sorry sorryRefuelVesselInRm
                                    | otherwise   -> let (eiss, _) = uncurry (resolveMobInvCoins i ms inInvs') invCoins
                                                     in case eiss of []      -> sorry sorryRefuelVesselCoins
                                                                     (eis:_) -> either sorry (refuelerHelper s) eis
-              (s, _        ) -> sorry . sorryRefuelLanternType $ s
+              (s, _        ) -> sorry . sorryRefuelLampType $ s
               where
-                refuelerHelper lanternSing [vesselId] | vesselSing <- getSing vesselId ms = case getVesselCont vesselId ms of
+                refuelerHelper lampSing [vesselId] | vesselSing <- getSing vesselId ms = case getVesselCont vesselId ms of
                   Nothing -> sorry . sorryRefuelVesselEmpty $ vesselSing
                   Just (liq, mouths)
                     | liq == oilLiq ->
-                      let secs             = getLightSecs lanternId ms
-                          vesselSecs       = mouths * calcLanternSecsPerMouthfulOfOil
-                          lanternAvailSecs = maxLanternSecs - secs
-                      in if | secs < maxLanternSecs -> if vesselSecs >= lanternAvailSecs
-                              then -- There is enough oil in the vessel to fill the lantern.
-                                   let vesselRemSecs = vesselSecs - lanternAvailSecs
-                                       mouths'       = floor $ vesselRemSecs `divide` calcLanternSecsPerMouthfulOfOil
+                      let secs          = getLightSecs lampId ms
+                          vesselSecs    = mouths * calcLampSecsPerMouthfulOfOil
+                          lampAvailSecs = maxLampSecs - secs
+                      in if | secs < maxLampSecs -> if vesselSecs >= lampAvailSecs
+                              then -- There is enough oil in the vessel to fill the lamp.
+                                   let vesselRemSecs = vesselSecs - lampAvailSecs
+                                       mouths'       = floor $ vesselRemSecs `divide` calcLampSecsPerMouthfulOfOil
                                        newCont | vesselRemSecs == 0 = Nothing
                                                | otherwise          = Just (liq, mouths')
                                        toSelf  = T.concat [ "You refuel the "
-                                                          , lanternSing
+                                                          , lampSing
                                                           , " with the oil from the "
                                                           , vesselSing
                                                           , "." ]
-                                   in ( ms & lightTbl .ind lanternId.lightSecs  .~ maxLanternSecs
-                                           & vesselTbl.ind vesselId .vesselCont .~ newCont
-                                      , ioHelper ms lanternSing vesselSing toSelf False )
-                              else -- There is not enough oil in the vessel to fill the lantern.
+                                   in ( ms & lightTbl .ind lampId  .lightSecs  .~ maxLampSecs
+                                           & vesselTbl.ind vesselId.vesselCont .~ newCont
+                                      , ioHelper ms lampSing vesselSing toSelf False )
+                              else -- There is not enough oil in the vessel to fill the lamp.
                                    let toSelf = T.concat [ "You empty the contents of the "
                                                          , vesselSing
                                                          , " into the "
-                                                         , lanternSing
+                                                         , lampSing
                                                          , "." ]
-                                   in ( ms & lightTbl .ind lanternId.lightSecs  +~ vesselSecs
-                                           & vesselTbl.ind vesselId .vesselCont .~ Nothing
-                                      , ioHelper ms lanternSing vesselSing toSelf True )
-                            | otherwise ->  sorry . sorryRefuelAlready $ lanternSing
+                                   in ( ms & lightTbl .ind lampId  .lightSecs  +~ vesselSecs
+                                           & vesselTbl.ind vesselId.vesselCont .~ Nothing
+                                      , ioHelper ms lampSing vesselSing toSelf True )
+                            | otherwise -> sorry . sorryRefuelAlready $ lampSing
                     | otherwise -> sorry . sorryRefuelLiq $ vesselSing
                 refuelerHelper _ _ = sorry sorryRefuelExcessVessels
-            refueler _ = sorry sorryRefuelExcessLanterns
+            refueler _ = sorry sorryRefuelExcessLamps
         in if | ()#  invCoins -> sorry dudeYourHandsAreEmpty
               | ()!# inInvs   -> refuelInv
               | ()!# inEqs    -> refuelEq
-              | otherwise     -> sorry sorryRefuelLanternInRm
-    ioHelper ms lanternSing vesselSing toSelf b =
+              | otherwise     -> sorry sorryRefuelLampInRm
+    ioHelper ms lampSing vesselSing toSelf b =
         let bs     = pure (T.concat [ serialize d
                                     , " refuels "
-                                    , aOrAn lanternSing
+                                    , aOrAn lampSing
                                     , " with the oil from "
                                     , aOrAn vesselSing
                                     , "." ], i `delete` desigIds d)
             d      = mkStdDesig i ms DoCap
             logMsg = T.concat [ "refueled "
-                              , aOrAn lanternSing
+                              , aOrAn lampSing
                               , " with "
                               , aOrAn vesselSing
                               , b |?| ", emptying it"

@@ -48,7 +48,7 @@ CurryMUD will have the following features:
 * Weight and encumbrance. :chart_with_downwards_trend:
 * Volume and container capacity. :school_satchel:
 * Vessels for containing liquids. Vessels may be filled and emptied. :wine_glass:
-* Light sources. Lanterns may be refueled. :bulb:
+* Light sources. Lamps may be refueled. :bulb:
 * Players can interact with permanent room fixtures that are not listed in a room's inventory. :fountain:
 * Objects can be configured to automatically disappear when left on the ground for some time. :boom:
 * Smell and taste. Listen. :nose::tongue::ear:

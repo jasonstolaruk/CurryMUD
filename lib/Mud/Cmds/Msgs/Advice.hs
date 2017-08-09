@@ -816,13 +816,13 @@ adviceRefuelExcessArgs = adviceRefuelNoArgs
 
 
 adviceRefuelNoArgs :: Text
-adviceRefuelNoArgs = prd $ "Please specify the lantern to be refueled followed by a vessel containing oil, as in " <>
-                           colorWith quoteColor "refuel lantern bottle"
+adviceRefuelNoArgs = prd $ "Please specify the lamp to be refueled followed by a vessel containing oil, as in " <>
+                           colorWith quoteColor "refuel lamp bottle"
 
 
 adviceRefuelNoSource :: Text
 adviceRefuelNoSource = prd $ "Please also specify a vessel containing oil, as in " <>
-                             colorWith quoteColor "refuel lantern bottle"
+                             colorWith quoteColor "refuel lamp bottle"
 
 
 adviceRemoveNoArgs :: Text

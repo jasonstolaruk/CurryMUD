@@ -119,7 +119,7 @@ iLightRm = 10294 :: Id
 
 iTorch1 = 10295 :: Id -- 10
 
-iLantern = 10305 :: Id
+iLamp = 10305 :: Id
 
 -----
 

@@ -21,7 +21,7 @@ module Mud.Data.State.Util.Calc ( calcBarLen
                                 , calcEncPer
                                 , calcFoodPerRem
                                 , calcInvCoinsVol
-                                , calcLanternSecsPerMouthfulOfOil
+                                , calcLampSecsPerMouthfulOfOil
                                 , calcLightPerRem
                                 , calcLvl
                                 , calcLvlExps
@@ -297,13 +297,13 @@ calcFoodPerRem i ms | f@(view foodRemMouthfuls -> x) <- getFood i ms
 
 
 {-
-A lantern burns for 24 hours on a pint of fuel.
+A pint of oil burns for 24 hours.
 There are 2,888 "Vol"s in a pint.
 If there are 175 "Vol"s in a mouthful, then there are 17 mouthfuls in a pint and about 1.4 hours of light per mouthful (5,082 seconds).
 -}
-calcLanternSecsPerMouthfulOfOil :: HasCallStack => Seconds
-calcLanternSecsPerMouthfulOfOil = let mouthfulsPerPint = 2888 `divideRound` mouthfulVol
-                                  in oneDayInSecs `divideRound` mouthfulsPerPint
+calcLampSecsPerMouthfulOfOil :: HasCallStack => Seconds
+calcLampSecsPerMouthfulOfOil = let mouthfulsPerPint = 2888 `divideRound` mouthfulVol
+                               in oneDayInSecs `divideRound` mouthfulsPerPint
 
 
 -----
@@ -311,8 +311,8 @@ calcLanternSecsPerMouthfulOfOil = let mouthfulsPerPint = 2888 `divideRound` mout
 
 calcLightPerRem :: HasCallStack => Id -> MudState -> Int
 calcLightPerRem i ms | x <- getLightSecs i ms
-                     , y <- case getLightSub i ms of Torch   -> torchSecs
-                                                     Lantern -> maxLanternSecs
+                     , y <- case getLightSub i ms of Torch -> torchSecs
+                                                     Lamp  -> maxLampSecs
                      = x `percent` y
 
 

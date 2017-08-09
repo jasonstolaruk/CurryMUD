@@ -505,8 +505,8 @@ instance Pretty Lang where
 
 
 instance Pretty LightSub where
-  pp Torch   = "torch"
-  pp Lantern = "lantern"
+  pp Torch = "torch"
+  pp Lamp  = "lamp"
 
 
 instance Pretty LinkDir where

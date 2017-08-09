@@ -111,8 +111,8 @@ knitCapVol :: Vol
 knitCapVol = round (7 * 7 * 0.25 * 100 :: Double)
 
 
-lanternVol :: Vol
-lanternVol = 5 * 5 * 7 * 100
+lampVol :: Vol
+lampVol = 5 * 5 * 7 * 100
 
 
 maceVol :: Vol

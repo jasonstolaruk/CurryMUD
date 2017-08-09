@@ -557,7 +557,7 @@ data Light = Light { _lightSub   :: LightSub
                    , _lightIsLit :: Bool } deriving (Eq, Generic, Show)
 
 
-data LightSub = Torch | Lantern deriving (Eq, Generic, Show)
+data LightSub = Torch | Lamp deriving (Eq, Generic, Show)
 
 
 -- ==================================================

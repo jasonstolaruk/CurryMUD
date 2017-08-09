@@ -173,7 +173,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryActing
                            , sorryLightExcessTinderboxes
                            , sorryLightInInv
                            , sorryLightInRm
-                           , sorryLightLanternSecs
+                           , sorryLightLampSecs
                            , sorryLightLightType
                            , sorryLightLit
                            , sorryLightTinderboxCoins
@@ -265,11 +265,11 @@ module Mud.Cmds.Msgs.Sorry ( sorryActing
                            , sorryReadyWpnHands
                            , sorryReadyWpnRol
                            , sorryRefuelAlready
-                           , sorryRefuelExcessLanterns
+                           , sorryRefuelExcessLamps
                            , sorryRefuelExcessVessels
-                           , sorryRefuelLanternCoins
-                           , sorryRefuelLanternInRm
-                           , sorryRefuelLanternType
+                           , sorryRefuelLampCoins
+                           , sorryRefuelLampInRm
+                           , sorryRefuelLampType
                            , sorryRefuelLiq
                            , sorryRefuelVesselCoins
                            , sorryRefuelVesselEmpty
@@ -1321,8 +1321,8 @@ sorryLightInRm :: Text
 sorryLightInRm = can't "ignite a light source in your current room. Please pick up and ready the light source first."
 
 
-sorryLightLanternSecs :: Text
-sorryLightLanternSecs = "The lantern is out of oil."
+sorryLightLampSecs :: Text
+sorryLightLampSecs = "The lamp is out of oil."
 
 
 sorryLightLightType :: Sing -> Text
@@ -1812,24 +1812,24 @@ sorryRefuelAlready :: Sing -> Text
 sorryRefuelAlready = the' . (<> " is already full.")
 
 
-sorryRefuelExcessLanterns :: Text
-sorryRefuelExcessLanterns = but "you can only refuel one lantern at a time."
+sorryRefuelExcessLamps :: Text
+sorryRefuelExcessLamps = but "you can only refuel one lamp at a time."
 
 
 sorryRefuelExcessVessels :: Text
 sorryRefuelExcessVessels = but "you can only specify a single source of oil at a time."
 
 
-sorryRefuelLanternCoins :: Text
-sorryRefuelLanternCoins = can't "refuel a coin."
+sorryRefuelLampCoins :: Text
+sorryRefuelLampCoins = can't "refuel a coin."
 
 
-sorryRefuelLanternInRm :: Text
-sorryRefuelLanternInRm = can't "refuel a lantern in your current room. Please pick up the lantern first."
+sorryRefuelLampInRm :: Text
+sorryRefuelLampInRm = can't "refuel a lamp in your current room. Please pick up the lamp first."
 
 
-sorryRefuelLanternType :: Sing -> Text
-sorryRefuelLanternType s = prd $ can't "refuel " <> aOrAn s
+sorryRefuelLampType :: Sing -> Text
+sorryRefuelLampType s = prd $ can't "refuel " <> aOrAn s
 
 
 sorryRefuelLiq :: Sing -> Text
@@ -1837,7 +1837,7 @@ sorryRefuelLiq = the' . (<> " doesn't contain oil.")
 
 
 sorryRefuelVesselCoins :: Text
-sorryRefuelVesselCoins = can't "refuel a lantern with coins."
+sorryRefuelVesselCoins = can't "refuel a lamp with coins."
 
 
 sorryRefuelVesselEmpty :: Sing -> Text
@@ -1845,12 +1845,12 @@ sorryRefuelVesselEmpty = the' . (<> " is empty.")
 
 
 sorryRefuelVesselInEq :: Text
-sorryRefuelVesselInEq = can't "refuel a lantern with an item in your readied equipment."
+sorryRefuelVesselInEq = can't "refuel a lamp with an item in your readied equipment."
 
 
 sorryRefuelVesselInRm :: Text
-sorryRefuelVesselInRm = butCan't "refuel a lantern with the contents of a vessel in your current room. Please pick up \
-                                 \the vessel first."
+sorryRefuelVesselInRm = butCan't "refuel a lamp with the contents of a vessel in your current room. Please pick up the \
+                                 \vessel first."
 
 
 -----

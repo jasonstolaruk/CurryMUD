@@ -29,7 +29,7 @@ module Mud.TopLvlDefs.Misc ( acl
                            , maxHelpTopicLen
                            , maxInacSecs
                            , maxInacSecsCompose
-                           , maxLanternSecs
+                           , maxLampSecs
                            , maxLogSize
                            , maxMobRmDescLen
                            , maxNameLen
@@ -183,8 +183,8 @@ maxInacSecsCompose :: Seconds -- When a player is composing their PC description
 maxInacSecsCompose = oneHrInSecs
 
 
-maxLanternSecs :: Seconds
-maxLanternSecs = oneDayInSecs -- A lantern burns for 24 hours on a pint of fuel.
+maxLampSecs :: Seconds -- TODO: Can all lamps hold a pint of oil?
+maxLampSecs = oneDayInSecs -- A lamp burns for 24 hours on a pint of oil.
 
 
 maxLogSize :: FileOffset

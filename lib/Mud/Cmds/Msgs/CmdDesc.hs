@@ -190,7 +190,7 @@ cmdDescReady = "Ready one or more items in your inventory."
 
 
 cmdDescRefuel :: Text
-cmdDescRefuel = "Add oil to a lantern."
+cmdDescRefuel = "Add oil to a lamp."
 
 
 cmdDescRemove :: Text

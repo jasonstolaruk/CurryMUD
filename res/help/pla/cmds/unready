@@ -5,7 +5,7 @@
 
 \uDESCRIPTION\n
 Unready one or more items; move item(s) from your readied equipment to your inventory.
-Note that unreadying a lit source of light (a torch or lantern) will extinguish it.
+Note that unreadying a lit source of light (a torch or lamp) will extinguish it.
 
 \uEXAMPLES\n
 \qunready sword\d to stop wielding your sword.4`

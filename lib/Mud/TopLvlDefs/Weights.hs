@@ -100,8 +100,8 @@ knitCapWeight :: Weight
 knitCapWeight = 5
 
 
-lanternWeight :: Weight
-lanternWeight = 250
+lampWeight :: Weight
+lampWeight = 250
 
 
 maceWeight :: Weight

@@ -75,8 +75,9 @@ Examples of this common pattern:
 
 COMMAND_NAME + TARGET + SOURCE
 
-The "refuel" command follows this pattern.
-\qrefuel lantern bottle\d (to refill your lantern with the oil in your bottle)2`
+The "light" and "refuel" commands follow this pattern.
+\qlight torch tinderbox\d2`
+\qrefuel lamp bottle\d (to refill your lamp with the oil in your bottle)2`
 
 COMMAND_NAME + MESSAGE
 

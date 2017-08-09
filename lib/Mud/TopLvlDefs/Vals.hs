@@ -95,8 +95,8 @@ knifeVal :: Val
 knifeVal = Just 725
 
 
-lanternVal :: Val
-lanternVal = Just 4000
+lampVal :: Val
+lampVal = Just 4000
 
 
 maceVal :: Val

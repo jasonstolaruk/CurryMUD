@@ -594,7 +594,7 @@ createWarehouse = do
   -----
 
   putRm iLightRm
-      (iLantern : [ iTorch1..iTorch1 + 9 ])
+      (iLamp : [ iTorch1..iTorch1 + 9 ])
       mempty
       (mkRm (RmTemplate "Light source room"
           "This room holds light sources."
@@ -625,21 +625,21 @@ createWarehouse = do
        in mkObj ot)
       (Light Torch torchSecs False)
 
-  putLight iLantern
-      (Ent iLantern
-          (Just "lantern")
-          "lantern" ""
-          "lantern desc" -- TODO
+  putLight iLamp
+      (Ent iLamp
+          (Just "lamp")
+          "lamp" ""
+          "lamp desc" -- TODO
           Nothing -- TODO: Smell. (When lit?)
           zeroBits)
-      (let ot = ObjTemplate lanternWeight
-                            lanternVol
+      (let ot = ObjTemplate lampWeight
+                            lampVol
                             Nothing -- TODO: Taste. (When lit?)
-                            lanternVal
+                            lampVal
                             Nothing
                             zeroBits
        in mkObj ot)
-      (Light Lantern maxLanternSecs False)
+      (Light Lamp maxLampSecs False)
 
   -----
 
