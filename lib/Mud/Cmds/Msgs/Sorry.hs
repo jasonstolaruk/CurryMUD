@@ -168,6 +168,19 @@ module Mud.Cmds.Msgs.Sorry ( sorryActing
                            , sorryKillSelf
                            , sorryKillSpirit
                            , sorryKillType
+                           , sorryLightCoins
+                           , sorryLightExcessLights
+                           , sorryLightExcessTinderboxes
+                           , sorryLightInInv
+                           , sorryLightInRm
+                           , sorryLightLanternSecs
+                           , sorryLightLightType
+                           , sorryLightLit
+                           , sorryLightTinderboxCoins
+                           , sorryLightTinderboxInEq
+                           , sorryLightTinderboxInRm
+                           , sorryLightTinderboxType
+                           , sorryLightTorchSecs
                            , sorryLinkAlready
                            , sorryLinkCoin
                            , sorryLinkInEq
@@ -1283,6 +1296,64 @@ sorryKillSpirit t = prd $ t <> " has already died " <> parensQuote "and is prese
 
 sorryKillType :: Id -> Text
 sorryKillType i = "ID " <> showTxt i <> " is not a mobile."
+
+
+-----
+
+
+sorryLightCoins :: Text
+sorryLightCoins = can't "light a coin."
+
+
+sorryLightExcessLights :: Text
+sorryLightExcessLights = but "you can only ignite a single light source at a time."
+
+
+sorryLightExcessTinderboxes :: Text
+sorryLightExcessTinderboxes = can't "ignite a light source using more than one tinderbox."
+
+
+sorryLightInInv :: Text
+sorryLightInInv = but "you can't ignite a light source in your inventory. Please ready the light source first."
+
+
+sorryLightInRm :: Text
+sorryLightInRm = can't "ignite a light source in your current room. Please pick up and ready the light source first."
+
+
+sorryLightLanternSecs :: Text
+sorryLightLanternSecs = "The lantern is out of oil."
+
+
+sorryLightLightType :: Sing -> Text
+sorryLightLightType s = prd $ can't "light " <> aOrAn s
+
+
+sorryLightLit :: Sing -> Text
+sorryLightLit s = "The " <> s <> " is already lit."
+
+
+sorryLightTinderboxCoins :: Text
+sorryLightTinderboxCoins = can't "ignite a light source with a coin."
+
+
+sorryLightTinderboxInEq :: Text
+sorryLightTinderboxInEq = can't "ignite a light source using an item in your readied equipment. Please specify a \
+                                \tinderbox in your inventory."
+
+
+sorryLightTinderboxInRm :: Text
+sorryLightTinderboxInRm = butCan't "ignite a light source using a tinderbox in your current room. Please pick up the \
+                                   \tinderbox first."
+
+
+sorryLightTinderboxType :: Text
+sorryLightTinderboxType = "You don't have a tinderbox in your inventory. " <>
+                          parensQuote "You need a tinderbox to ignite a light source."
+
+
+sorryLightTorchSecs :: Text
+sorryLightTorchSecs = "The torch is spent and cannot be lit again."
 
 
 -----

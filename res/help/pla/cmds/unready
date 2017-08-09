@@ -5,6 +5,7 @@
 
 \uDESCRIPTION\n
 Unready one or more items; move item(s) from your readied equipment to your inventory.
+Note that unreadying a lit source of light (a torch or lantern) will extinguish it.
 
 \uEXAMPLES\n
 \qunready sword\d to stop wielding your sword.4`
@@ -16,4 +17,4 @@ Unready one or more items; move item(s) from your readied equipment to your inve
 \qunready \p#a\d to unready all of your equipment. (You'll be naked!)4`
 
 \uSEE ALSO\n
-abbreviation, equipment, inventory, prefixes, ready
+abbreviation, equipment, extinguish, inventory, prefixes, ready

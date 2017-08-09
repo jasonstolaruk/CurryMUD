@@ -1,0 +1,17 @@
+\h LIGHT \d
+
+\uUSAGE\n
+!light lightSource \s[\dtinderbox\s]\d
+
+\uDESCRIPTION\n
+Ignite a light source using a tinderbox.
+The light source must be in your readied equipment.
+You may omit the second argument, in which case the first tinderbox in your inventory will be used.
+
+\uEXAMPLES\n
+\qlight torch\d to light your torch (in your readied equipment) using your tinderbox (in your inventory).4`
+\qlight \p2#i\qtorch\d to light your second torch.4`
+\qlight torch \p2#i\qtinderbox\d to light your torch using your second tinderbox.4`
+
+\uSEE ALSO\n
+extinguish, prefixes, refuel

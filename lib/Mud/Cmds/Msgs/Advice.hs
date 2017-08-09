@@ -105,6 +105,8 @@ module Mud.Cmds.Msgs.Advice ( adviceAAnnounceNoArgs
                             , adviceGiveNoArgs
                             , adviceGiveNoName
                             , adviceLeaveNoArgs
+                            , adviceLightNoArgs
+                            , adviceLightExcessArgs
                             , adviceNewChanNoArgs
                             , advicePickNoArgs
                             , advicePutNoArgs
@@ -757,6 +759,15 @@ adviceGiveNoName = prd $ "Please also provide the name of a person, as in " <> a
 adviceLeaveNoArgs :: Text
 adviceLeaveNoArgs = prd $ "Please specify the names of one or more channels to leave, as in " <>
                           colorWith quoteColor "leave hunt"
+
+
+adviceLightExcessArgs :: Text
+adviceLightExcessArgs = adviceLightNoArgs
+
+
+adviceLightNoArgs :: Text
+adviceLightNoArgs = prd $ "Please specify the light source to ignite optionally followed by the tinderbox to use, as in " <>
+                           colorWith quoteColor "light torch tinderbox"
 
 
 adviceNewChanNoArgs :: Text

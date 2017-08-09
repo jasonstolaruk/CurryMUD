@@ -148,6 +148,10 @@ cmdDescInv :: Text
 cmdDescInv = "Display your inventory, or examine one or more items in your inventory."
 
 
+cmdDescLight :: Text
+cmdDescLight = "Ignite a light source using a tinderbox."
+
+
 cmdDescLink :: Text
 cmdDescLink = "Display a list of the people with whom you have established a telepathic link, or establish a \
               \telepathic link with one or more people."

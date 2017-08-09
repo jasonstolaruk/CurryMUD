@@ -160,7 +160,6 @@ regularCmds = map (uncurry4 mkRegularCmd) regularCmdTuples
 
 {-
 TODO:
-light lightSource tinderbox
 extinguish lightSource -- "lightSource" arg may be omitted.
 A "tinderbox" is a tinderbox with flint and steel strikers in a single object.
 -}
@@ -180,6 +179,7 @@ regularCmdTuples =
     , ("equipment",  equip,              True,  cmdDescEquip)
     , ("expressive", expCmdList,         True,  cmdDescExpCmdList)
     , ("feeling",    feeling,            True,  cmdDescFeeling)
+    , ("light",      light,              True,  cmdDescLight)
     , ("listen",     listen,             True,  cmdDescListen)
     , ("lookself",   lookSelf,           True,  cmdDescLookSelf)
     , ("moles",      cmdNotFoundAction,  True,  "")
@@ -396,6 +396,7 @@ npcRegularCmdTuples =
     , ("equipment",  equip,          True,  cmdDescEquip)
     , ("expressive", expCmdList,     True,  cmdDescExpCmdList)
     , ("feeling",    feeling,        True,  cmdDescFeeling)
+    , ("light",      light,          True,  cmdDescLight)
     , ("listen",     listen,         True,  cmdDescListen)
     , ("lookself",   lookSelf,       True,  cmdDescLookSelf)
     , ("n",          go "n",         True,  cmdDescGoNorth)
@@ -1812,6 +1813,70 @@ leave p@(WithArgs i mq cols (nub -> as)) =
                  , isPlur ? (nl "following channels:" <> commas ns) :? (head ns <> " channel")
                  , "." ]
 leave p = pmf "leave" p
+
+
+-----
+
+
+light :: HasCallStack => ActionFun
+light p@AdviseNoArgs            = advise p ["light"] adviceLightNoArgs
+light p@(OneArgLower' _ a     ) = lightUp p a Nothing
+light p@(WithArgs _ _ _ [a, b]) = lightUp p a . Just $ b
+light p                         = advise p ["light"] adviceLightExcessArgs
+
+
+lightUp :: HasCallStack => ActionParams -> Text -> Maybe Text -> MudStack ()
+lightUp p@(WithArgs i _ _ _) lightArg tinderArg = genericAction p helper "light"
+  where
+    helper ms =
+        let (invCoins@(is, _), eqMap) = (getInvCoins `fanUncurry` getEqMap) (i, ms)
+            (inInvs, inEqs, inRms)    = sortArgsInvEqRm InEq . pure $ lightArg
+            sorryInInv       = inInvs |!| sorryLightInInv
+            sorryInRm        = inRms  |!| sorryLightInRm
+            (gecrs, miss, _) = resolveEntCoinNames i ms inEqs (M.elems eqMap) mempty
+            eiss             = zipWith (curry procGecrMisMobEq) gecrs miss
+            next             = case eiss of []      -> sorry sorryLightCoins
+                                            (eis:_) -> either sorry f eis
+            f [lightId]      = either sorry (g lightId) procTinderArg
+            f _              = sorry sorryLightExcessLights
+            g lightId [tinderId]
+              | getType lightId ms /= LightType = sorry . sorryLightLightType $ lightSing
+              | ((||) <$> (/= ObjType) . uncurry getType <*> (/= "tinderbox") . uncurry getSing) (tinderId, ms)
+              = sorry sorryLightTinderboxType
+              | getLightIsLit lightId ms = sorry . sorryLightLit $ lightSing
+              | secs <= 0                = sorry $ case sub of Torch   -> sorryLightTorchSecs
+                                                               Lantern -> sorryLightLanternSecs
+              | otherwise =
+                  let toSelf = prd $ "You light the " <> lightSing
+                      d      = mkStdDesig i ms DoCap
+                      bs     = pure ( T.concat [ serialize d, " lights ", mkPossPro . getSex i $ ms, " ", lightSing, "." ]
+                                    , i `delete` desigIds d )
+                      logMsg = prd $ "lighting " <> aOrAn lightSing
+                  in ( ms & lightTbl.ind lightId.lightIsLit .~ True
+                     , ( dropBlanks [ sorryInInv, sorryInRm, toSelf ]
+                       , bs
+                       , pure logMsg ) )
+              where
+                (lightSing, sub, secs) = ((,,) <$> uncurry getSing <*> uncurry getLightSub <*> uncurry getLightSecs)
+                                         (lightId, ms)
+            g _ _ = sorry sorryLightExcessTinderboxes
+            procTinderArg = case tinderArg of
+              Nothing     -> let h i' = getType i' ms == ObjType && getSing i' ms == "tinderbox"
+                             in case filter h is of (x:_) -> Right . pure $ x
+                                                    []    -> Left sorryLightTinderboxType
+              Just tinder -> let (inInvs', inEqs', inRms') = sortArgsInvEqRm InInv . pure $ tinder
+                             in if | ()!# inEqs' -> Left sorryLightTinderboxInEq
+                                   | ()!# inRms' -> Left sorryLightTinderboxInRm
+                                   | otherwise   -> case fst . uncurry (resolveMobInvCoins i ms inInvs') $ invCoins of
+                                     []       -> Left sorryLightTinderboxCoins
+                                     (eis':_) -> eis'
+            sorry = genericSorry ms
+        in genericCheckActing i ms (Right "light a torch or lantern") [ Attacking, Drinking, Sacrificing ] $ if
+             | ()# invCoins            -> sorry dudeYourHandsAreEmpty
+             | ()# eqMap               -> sorry dudeYou'reNaked
+             | ()# invCoins, ()# eqMap -> sorry dudeYou'reScrewed
+             | otherwise               -> next
+lightUp p _ _ = pmf "lightUp" p
 
 
 -----
@@ -3771,7 +3836,7 @@ unlink p = pmf "unlink" p
 -----
 
 
-unready :: HasCallStack => ActionFun
+unready :: HasCallStack => ActionFun -- TODO: Unreadying a lit light source should extinguish it.
 unready p@AdviseNoArgs     = advise p ["unready"] adviceUnreadyNoArgs
 unready p@(LowerNub' i as) = genericAction p helper "unready"
   where
