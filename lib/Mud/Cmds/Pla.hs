@@ -55,6 +55,7 @@ import           Mud.TheWorld.Liqs
 import           Mud.TheWorld.Zones.AdminZoneIds (iRoot)
 import           Mud.TheWorld.Zones.WarehouseIds (iPidge)
 import           Mud.Threads.Act
+import           Mud.Threads.LightTimer
 import           Mud.Threads.Misc
 import           Mud.Threads.SpiritTimer
 import           Mud.TopLvlDefs.Chars
@@ -1826,17 +1827,17 @@ light p                         = advise p ["light"] adviceLightExcessArgs
 
 
 lightUp :: HasCallStack => ActionParams -> Text -> Maybe Text -> MudStack ()
-lightUp p@(WithArgs i _ _ _) lightArg tinderArg = genericAction p helper "light"
+lightUp p@(WithArgs i _ _ _) lightArg tinderArg = getState >>= \ms ->
+    let f = genericActionWithHooks p helper "light"
+    in checkActing p ms (Right "light a torch or lantern") [ Attacking, Drinking, Sacrificing ] $ f
   where
-    helper ms =
+    helper _ ms =
         let (invCoins@(is, _), eqMap) = (getInvCoins `fanUncurry` getEqMap) (i, ms)
             (inInvs, inEqs, inRms)    = sortArgsInvEqRm InEq . pure $ lightArg
             sorryInInv       = inInvs |!| sorryLightInInv
             sorryInRm        = inRms  |!| sorryLightInRm
             (gecrs, miss, _) = resolveEntCoinNames i ms inEqs (M.elems eqMap) mempty
             eiss             = zipWith (curry procGecrMisMobEq) gecrs miss
-            next             = case eiss of []      -> sorry sorryLightCoins
-                                            (eis:_) -> either sorry f eis
             f [lightId]      = either sorry (g lightId) procTinderArg
             f _              = sorry sorryLightExcessLights
             g lightId [tinderId]
@@ -1855,7 +1856,8 @@ lightUp p@(WithArgs i _ _ _) lightArg tinderArg = genericAction p helper "light"
                   in ( ms & lightTbl.ind lightId.lightIsLit .~ True
                      , ( dropBlanks [ sorryInInv, sorryInRm, toSelf ]
                        , bs
-                       , pure logMsg ) )
+                       , pure logMsg
+                       , pure . startLightTimer $ lightId ) )
               where
                 (lightSing, sub, secs) = ((,,) <$> uncurry getSing <*> uncurry getLightSub <*> uncurry getLightSecs)
                                          (lightId, ms)
@@ -1870,12 +1872,12 @@ lightUp p@(WithArgs i _ _ _) lightArg tinderArg = genericAction p helper "light"
                                    | otherwise   -> case fst . uncurry (resolveMobInvCoins i ms inInvs') $ invCoins of
                                      []       -> Left sorryLightTinderboxCoins
                                      (eis':_) -> eis'
-            sorry = genericSorry ms
-        in genericCheckActing i ms (Right "light a torch or lantern") [ Attacking, Drinking, Sacrificing ] $ if
-             | ()# invCoins            -> sorry dudeYourHandsAreEmpty
-             | ()# eqMap               -> sorry dudeYou'reNaked
-             | ()# invCoins, ()# eqMap -> sorry dudeYou'reScrewed
-             | otherwise               -> next
+            sorry = genericSorryWithHooks ms
+        in if | ()# invCoins            -> sorry dudeYourHandsAreEmpty
+              | ()# eqMap               -> sorry dudeYou'reNaked
+              | ()# invCoins, ()# eqMap -> sorry dudeYou'reScrewed
+              | otherwise               -> case eiss of []      -> sorry sorryLightCoins
+                                                        (eis:_) -> either sorry f eis
 lightUp p _ _ = pmf "lightUp" p
 
 

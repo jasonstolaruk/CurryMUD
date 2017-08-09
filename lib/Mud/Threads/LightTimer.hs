@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Mud.Threads.LightTimer (threadLightTimer) where
+module Mud.Threads.LightTimer ( startLightTimer
+                              , threadLightTimer ) where
 
 import           Mud.Data.Misc
 import           Mud.Data.State.MudData
@@ -28,6 +29,11 @@ logPla = L.logPla "Mud.Threads.LightTimer"
 
 
 -- ==================================================
+
+
+startLightTimer :: HasCallStack => Id -> MudStack ()
+startLightTimer i = runAsync (threadLightTimer i) >>= \a ->
+    tweak $ lightAsyncTbl.ind i .~ a
 
 
 threadLightTimer :: HasCallStack => Id -> MudStack ()
