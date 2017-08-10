@@ -1873,9 +1873,9 @@ lightUp p@(WithArgs i _ _ _) lightArg tinderArg = getState >>= \ms ->
                                      []       -> Left sorryLightTinderboxCoins
                                      (eis':_) -> eis'
             sorry = genericSorryWithHooks ms
-        in if | ()# invCoins            -> sorry dudeYourHandsAreEmpty
+        in if | ()# invCoins, ()# eqMap -> sorry dudeYou'reScrewed
+              | ()# invCoins            -> sorry dudeYourHandsAreEmpty
               | ()# eqMap               -> sorry dudeYou'reNaked
-              | ()# invCoins, ()# eqMap -> sorry dudeYou'reScrewed
               | otherwise               -> case eiss of []      -> sorry sorryLightCoins
                                                         (eis:_) -> either sorry f eis
 lightUp p _ _ = pmf "lightUp" p

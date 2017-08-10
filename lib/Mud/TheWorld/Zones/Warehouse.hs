@@ -45,7 +45,7 @@ createWarehouse = do
 
   putRm iWarehouseWelcome
       []
-      mempty
+      (Coins (1000, 1000, 1000))
       (mkRm (RmTemplate "Welcome to the warehouse"
           "This is the warehouse. Items to be cloned are stored here.\n\
           \There's just one rule: you can look, but don't touch!"
