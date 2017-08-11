@@ -17,7 +17,7 @@ import           Mud.Util.Operators
 import           Control.Concurrent.Async (cancel)
 import           Control.Concurrent.STM (atomically)
 import           Control.Concurrent.STM.TQueue (newTQueueIO, readTQueue, writeTQueue)
-import           Control.Exception.Lifted (handle)
+import           Control.Exception.Lifted (catch)
 import           Control.Lens (Getter, Lens')
 import           Control.Lens.Operators ((?~), (.~), (&), (^.))
 import           Control.Monad ((>=>), forever, void)
@@ -65,23 +65,22 @@ stopRegen i = do logPla "stopRegen" i "stopping regen."
 
 
 threadRegen :: HasCallStack => Id -> RegenQueue -> MudStack ()
-threadRegen i tq = let regens = [ regen curHp maxHp calcRegenHpAmt calcRegenHpDelay
-                                , regen curMp maxMp calcRegenMpAmt calcRegenMpDelay
-                                , regen curPp maxPp calcRegenPpAmt calcRegenPpDelay
-                                , regen curFp maxFp calcRegenFpAmt calcRegenFpDelay ]
-                   in handle (threadStarterExHandler i fn Nothing) $ do
-                          setThreadType . RegenParent $ i
-                          logPla fn i "regen started."
-                          asyncs <- mapM runAsync regens
-                          liftIO $ (void . atomically . readTQueue $ tq) >> mapM_ cancel asyncs
+threadRegen i tq = helper `catch` threadStarterExHandler i fn Nothing
   where
-    fn = "threadRegen"
+    helper = let regens = [ regen curHp maxHp calcRegenHpAmt calcRegenHpDelay
+                          , regen curMp maxMp calcRegenMpAmt calcRegenMpDelay
+                          , regen curPp maxPp calcRegenPpAmt calcRegenPpDelay
+                          , regen curFp maxFp calcRegenFpAmt calcRegenFpDelay ]
+             in do setThreadType . RegenParent $ i
+                   logPla fn i "regen started."
+                   asyncs <- mapM runAsync regens
+                   liftIO $ (void . atomically . readTQueue $ tq) >> mapM_ cancel asyncs
     regen :: HasCallStack => Lens' Mob Int
                           -> Getter Mob Int
                           -> (Id -> MudState -> Int)
                           -> (Id -> MudState -> Int)
                           -> MudStack ()
-    regen curLens maxLens calcAmt calcDelay = setThreadType (RegenChild i) >> forever loop
+    regen curLens maxLens calcAmt calcDelay = setThreadType (RegenChild i) >> forever loop -- TODO: Needs an exception handler.
       where
         loop  = delay >> modifyStateSeq f
         delay = liftIO . delaySecs . calcDelay i =<< getState
@@ -94,3 +93,4 @@ threadRegen i tq = let regens = [ regen curHp maxHp calcRegenHpAmt calcRegenHpDe
                 in if isPla i ms
                   then isLoggedIn (getPla i ms) ? res :? (ms, pure . stopRegen $ i)
                   else res
+    fn = "threadRegen"

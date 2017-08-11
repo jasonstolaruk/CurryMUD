@@ -79,7 +79,7 @@ Those links with the greatest volume of messages are retained. If the deceased P
 -}
 
 
-handleDeath :: HasCallStack => Id -> MudStack ()
+handleDeath :: HasCallStack => Id -> MudStack () -- TODO: Lit light sources should be put in the room's inventory ("dropped") so they may continue to provide illumination.
 handleDeath i = isNpc i <$> getState >>= \npc -> do
     logPla "handleDeath" i "handling death."
     stopActs i

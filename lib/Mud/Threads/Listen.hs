@@ -71,27 +71,21 @@ logNotice = L.logNotice "Mud.Threads.Listen"
 
 
 threadListen :: HasCallStack => MudStack ()
-threadListen = a `finally` b
+threadListen = handle listenExHandler $ a `finally` b
   where
     a = logNotice "threadListen" "server started." >> listen
     b = sequence_ [ getUptime >>= saveUptime, liftIO . closeRestServiceLog =<< getState, closeLogs, liftIO . T.putStrLn . nl $ "Goodbye!" ]
 
 
-saveUptime :: HasCallStack => Int64 -> MudStack ()
-saveUptime up@(T.pack . renderSecs . fromIntegral -> upTxt) =
-    maybe (saveIt >> logIt) checkRecord =<< getSum `fmap2` getRecordUptime
-  where
-    saveIt            = liftIO saveHelper `catch` logIOEx "saveUptime saveIt"
-    saveHelper        = flip writeFile (show up) =<< mkMudFilePath uptimeFileFun
-    logIt             = logHelper "."
-    checkRecord recUp = case up `compare` recUp of GT -> saveIt >> logRec
-                                                   _  -> logIt
-    logRec            = logHelper " - it's a new record!"
-    logHelper         = logNotice "saveUptime" . ("CurryMUD was up for " <>) . (upTxt <>)
+listenExHandler :: SomeException -> MudStack ()
+listenExHandler e = let fn = "listenExHandler" in case fromException e of
+  Just UserInterrupt -> logNotice fn "exiting on user interrupt."
+  Just ThreadKilled  -> logNotice fn "thread killed."
+  _                  -> logExMsg  fn "exception caught on listen thread" e >> liftIO printPanicMsg
 
 
 listen :: HasCallStack => MudStack ()
-listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed halt
+listen = setThreadType Listen >> mIf initWorld proceed halt
   where
     proceed = do initialize
                  logNotice "listen proceed" . prd $ "listening for incoming connections on port " <> showTxt port
@@ -135,14 +129,18 @@ listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed 
     halt = liftIO . T.putStrLn $ loadWorldErrorMsg
 
 
-listenExHandler :: SomeException -> MudStack ()
-listenExHandler e = case fromException e of
-  Just UserInterrupt -> logNotice fn "exiting on user interrupt."
-  Just ThreadKilled  -> logNotice fn "thread killed."
-  _                  -> logExMsg  fn "exception caught on listen thread" e >> liftIO printPanicMsg
-  where
-    fn = "listenExHandler"
-
-
 sortAllInvs :: HasCallStack => MudStack ()
 sortAllInvs = logNotice "sortAllInvs" "sorting all inventories." >> tweak (\ms -> ms & invTbl %~ IM.map (sortInv ms))
+
+
+saveUptime :: HasCallStack => Int64 -> MudStack ()
+saveUptime up@(T.pack . renderSecs . fromIntegral -> upTxt) =
+    maybe (saveIt >> logIt) checkRecord =<< getSum `fmap2` getRecordUptime
+  where
+    saveIt            = liftIO saveHelper `catch` logIOEx "saveUptime saveIt"
+    saveHelper        = flip writeFile (show up) =<< mkMudFilePath uptimeFileFun
+    logIt             = logHelper "."
+    checkRecord recUp = case up `compare` recUp of GT -> saveIt >> logRec
+                                                   _  -> logIt
+    logRec            = logHelper " - it's a new record!"
+    logHelper         = logNotice "saveUptime" . ("CurryMUD was up for " <>) . (upTxt <>)

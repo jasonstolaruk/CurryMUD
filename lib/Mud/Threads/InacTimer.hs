@@ -38,7 +38,7 @@ logPla = L.logPla "Mud.Threads.InacTimer"
 -- ==================================================
 
 
-threadInacTimer :: HasCallStack => Id -> MsgQueue -> InacTimerQueue -> MudStack ()
+threadInacTimer :: HasCallStack => Id -> MsgQueue -> InacTimerQueue -> MudStack () -- TODO: Needs an exception handler, right?
 threadInacTimer i mq q = let f    = sequence_ funs `catch` threadExHandler (Just i) "inactivity timer"
                              funs = [ setThreadType . InacTimer $ i, loop maxInacSecs 0 ]
                          in f `finally` stopInacTimer q

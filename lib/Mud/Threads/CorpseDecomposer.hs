@@ -65,7 +65,7 @@ startCorpseDecomp :: HasCallStack => Id -> SecondsPair -> MudStack ()
 startCorpseDecomp i secs = runAsync (threadCorpseDecomp i secs) >>= \a -> tweak $ corpseDecompAsyncTbl.ind i .~ a
 
 
-threadCorpseDecomp :: Id -> SecondsPair -> MudStack ()
+threadCorpseDecomp :: HasCallStack => Id -> SecondsPair -> MudStack ()
 threadCorpseDecomp i secs = handle (threadExHandler (Just i) "corpse decomposer") $ do
     setThreadType . CorpseDecomposer $ i
     singId <- descSingId i <$> getState

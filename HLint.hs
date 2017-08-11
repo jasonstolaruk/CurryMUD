@@ -19,6 +19,7 @@ ignore "Use camelCase" = Mud.Cmds.Debug
                          Mud.Misc.NameResolution
                          Mud.TheWorld.Zones.AdminZone
                          Mud.TheWorld.Zones.AdminZoneIds
+                         Mud.Threads.LightTimer
                          Mud.TopLvlDefs.Misc
                          Mud.TopLvlDefs.Telnet.Chars
 

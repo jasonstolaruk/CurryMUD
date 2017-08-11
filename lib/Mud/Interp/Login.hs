@@ -33,6 +33,7 @@ import           Mud.TheWorld.Zones.AdminZoneIds (iCentral, iLoggedOut, iWelcome
 import           Mud.TheWorld.Zones.LoplenkoIds (iLoplenkoWelcome)
 import           Mud.Threads.Digester
 import           Mud.Threads.Effect
+import           Mud.Threads.LightTimer
 import           Mud.Threads.Misc
 import           Mud.Threads.Regen
 import           Mud.TopLvlDefs.Chars
@@ -895,7 +896,7 @@ handleLogin (NewCharBundle oldSing s _) isNew params@ActionParams { .. } = let p
     ms <- getState
     sendGmcpRmInfo (Just dfltZoom) myId ms
     when (isAdminId myId ms) stopInacTimer
-    mapM_ (myId |&|) [ runDigesterAsync, runRegenAsync, restartPausedEffects ]
+    mapM_ (myId |&|) [ runDigesterAsync, runRegenAsync, restartPausedEffects, restartLightTimers ]
     notifyArrival
     greet
     ((>>) <$> uncurry showMotd <*> void . uncurry showDate) pair

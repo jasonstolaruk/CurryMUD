@@ -19,6 +19,7 @@ import           Mud.Threads.Act
 import           Mud.Threads.Digester
 import           Mud.Threads.Effect
 import           Mud.Threads.FeelingTimer
+import           Mud.Threads.LightTimer
 import           Mud.Threads.Regen
 import           Mud.Util.Misc
 import           Mud.Util.Operators
@@ -69,10 +70,11 @@ handleEgress i mq isDropped = egressHelper `finally` writeMsg mq FinishedEgress
                           forM_ logMsgs . uncurry . logPla $ "handleEgress egressHelper helper"
                           if spirit
                             then theBeyond i mq s isDropped
-                            else do pauseEffects      i -- Already done for spirits in "handleDeath".
-                                    stopFeelings      i
-                                    stopRegen         i
-                                    throwWaitDigester i
+                            else mapM_ (i |&|) [ stopLightTimers
+                                               , pauseEffects -- Already done for spirits in "handleDeath".
+                                               , stopFeelings
+                                               , stopRegen
+                                               , throwWaitDigester ]
                           closePlaLog i
                           bcast bs
                           bcastAdmins $ s <> " has left CurryMUD."

@@ -41,9 +41,9 @@ logNotice = L.logNotice "Mud.Threads.NpcServer"
 
 
 runNpcServerAsync :: HasCallStack => Id -> MudStack ()
-runNpcServerAsync i = do npcMq <- liftIO newTQueueIO
-                         a     <- runAsync . threadNpcServer i $ npcMq
-                         tweak $ npcTbl.ind i .~ Npc npcMq a Nothing
+runNpcServerAsync i = do mq <- liftIO newTQueueIO
+                         a  <- runAsync . threadNpcServer i $ mq
+                         tweak $ npcTbl.ind i .~ Npc mq a Nothing
 
 
 startNpcServers :: HasCallStack => MudStack ()

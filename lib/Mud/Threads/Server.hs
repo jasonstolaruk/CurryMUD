@@ -63,8 +63,8 @@ logNotice = L.logNotice "Mud.Threads.Server"
 
 {-
 CurryMUD doesn't send GA or EOR. Furthermore, prompts always end with a newline character.
-This prompting and handle-flushing scheme (implemented below) produces an experience that looks the same on both Mudlet
-and TinTin+++. Other options were tried (such as one-line prompts with GA), but this approach produces the most
+This, along with the handle-flushing scheme implemented below, produces an experience that looks the same on both Mudlet
+and TinTin+++. Other options were tried (such as one-line prompts with GA), but the approach used here produces the most
 consistency.
 -}
 
@@ -86,7 +86,7 @@ threadServer h i mq itq = handle (threadExHandler (Just i) "server") $ setThread
       Prompt p       -> promptHelper i h p                  >> loop     isDropped
       Quit           -> cowbye h                            >> sayonara isDropped
       ShowHandle     -> handleShowHandle i h                >> loop     isDropped
-      Shutdown       -> shutDown                            >> loop     isDropped
+      ShutDown       -> shutDown                            >> loop     isDropped
       SilentBoot     ->                                        sayonara isDropped
       FinishedSpirit -> nonSpiritEgress isDropped
       FinishedEgress -> unit
@@ -169,7 +169,7 @@ cowbye h = liftIO takeADump `catch` fileIOExHandler "cowbye"
 
 
 shutDown :: HasCallStack => MudStack ()
-shutDown = massMsg SilentBoot >> onNewThread commitSuicide
+shutDown = massMsg SilentBoot >> onNewThread commitSuicide -- TODO: Should this really be on a new thread?
   where
     commitSuicide = do liftIO . mapM_ wait . M.elems . view talkAsyncTbl =<< getState
                        logNotice "shutDown commitSuicide" "everyone has been disconnected."

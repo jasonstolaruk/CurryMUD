@@ -5,7 +5,6 @@
 
 \uDESCRIPTION\n
 Ignite a light source using a tinderbox.
-The light source must be in your readied equipment.
 You may omit the second argument, in which case the first tinderbox in your inventory will be used.
 
 \uEXAMPLES\n

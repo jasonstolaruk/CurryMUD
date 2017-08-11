@@ -162,9 +162,8 @@ drinkAct DrinkBundle { .. } = modifyStateSeq f `finally` tweak (mobTbl.ind drink
                       sendDfltPrompt drinkerMq drinkerId
 
 
-mkMouthfulTxt :: Mouthfuls -> Text
-mkMouthfulTxt x | x <= 8    = showTxt x
-                | otherwise = "many"
+mkMouthfulTxt :: HasCallStack => Mouthfuls -> Text
+mkMouthfulTxt x | x <= 8 = showTxt x | otherwise = "many"
 
 
 -----

@@ -24,6 +24,7 @@ import           Control.Monad.IO.Class (liftIO)
 import           Data.Bool (bool)
 import           Data.Monoid ((<>))
 import           Data.Text (Text)
+import           GHC.Stack (HasCallStack)
 
 
 logNotice :: Text -> Text -> MudStack ()
@@ -33,21 +34,21 @@ logNotice = L.logNotice "Mud.Threads.Biodegrader"
 -- ==================================================
 
 
-runBiodegAsync :: Id -> MudStack ()
+runBiodegAsync :: HasCallStack => Id -> MudStack ()
 runBiodegAsync i = runAsync (threadBiodegrader i) >>= \a -> tweak $ objTbl.ind i.objBiodegAsync ?~ a
 
 
-startBiodegraders :: MudStack ()
+startBiodegraders :: HasCallStack => MudStack ()
 startBiodegraders = do logNotice "startBiodegraders" "starting biodegraders."
                        mapM_ runBiodegAsync . findBiodegradableIds =<< getState
 
 
-stopBiodegraders :: MudStack ()
+stopBiodegraders :: HasCallStack => MudStack ()
 stopBiodegraders = do logNotice "stopBiodegraders"  "stopping biodegraders."
                       mapM_ throwWaitBiodegrader . findBiodegradableIds =<< getState
 
 
-throwWaitBiodegrader :: Id -> MudStack ()
+throwWaitBiodegrader :: HasCallStack => Id -> MudStack ()
 throwWaitBiodegrader i = helper |&| modifyState >=> maybeVoid throwWait
   where
     helper ms = let a = ms^.objTbl.ind i.objBiodegAsync
@@ -57,7 +58,7 @@ throwWaitBiodegrader i = helper |&| modifyState >=> maybeVoid throwWait
 -----
 
 
-threadBiodegrader :: Id -> MudStack ()
+threadBiodegrader :: HasCallStack => Id -> MudStack ()
 threadBiodegrader i = handle (threadExHandler (Just i) "biodegrader") $ descSingId i <$> getState >>= \singId -> do
     setThreadType . Biodegrader $ i
     logNotice "threadBiodegrader" . prd $ "biodegrader started for " <> singId

@@ -17,6 +17,7 @@ import           Control.Lens.Operators ((.~))
 import           Control.Monad (forever)
 import           Control.Monad.IO.Class (liftIO)
 import           Data.Text (Text)
+import           GHC.Stack (HasCallStack)
 
 
 logNotice :: Text -> Text -> MudStack ()
@@ -26,7 +27,7 @@ logNotice = L.logNotice "Mud.Threads.TrashDumpPurger"
 -- ==================================================
 
 
-threadTrashDumpPurger :: MudStack ()
+threadTrashDumpPurger :: HasCallStack => MudStack ()
 threadTrashDumpPurger = handle (threadExHandler Nothing "trash dump purger") $ do
     setThreadType TrashDumpPurger
     logNotice "threadTrashDumpPurger" "trash dump purger started."
@@ -34,7 +35,7 @@ threadTrashDumpPurger = handle (threadExHandler Nothing "trash dump purger") $ d
     forever loop `catch` die Nothing "trash dump purger"
 
 
-purgeTrashDump :: MudStack ()
+purgeTrashDump :: HasCallStack => MudStack ()
 purgeTrashDump = getState >>= \ms -> do logNotice "purgeTrashDump" "purging the trash dump."
                                         destroy . filter (not . (`isPla` ms)) . getInv iTrashDump $ ms
                                         tweak $ coinsTbl.ind iTrashDump .~ mempty

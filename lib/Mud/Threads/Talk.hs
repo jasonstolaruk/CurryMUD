@@ -171,15 +171,15 @@ adHoc mq host = do
         in (ms' & invTbl.ind iWelcome %~ addToInv ms' (pure i), (i, s))
 
 
-randomSex :: IO Sex
+randomSex :: HasCallStack => IO Sex
 randomSex = ([ Male, Female ] !!) . fromEnum <$> (randomIO :: IO Bool)
 
 
-randomRace :: IO Race
+randomRace :: HasCallStack => IO Race
 randomRace = randomIO
 
 
-initPlaFlags :: Flags
+initPlaFlags :: HasCallStack => Flags
 initPlaFlags = foldl setBit zeroBits . map fromEnum $ [ IsShowingHp
                                                       , IsShowingMp
                                                       , IsShowingPp

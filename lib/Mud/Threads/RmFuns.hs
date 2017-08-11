@@ -13,8 +13,9 @@ import           Mud.Util.Operators
 import           Control.Arrow (second)
 import           Control.Lens (view, views)
 import           Control.Lens.Operators ((.~), (<>~))
-import           Data.Text (Text)
 import qualified Data.IntMap.Strict as IM (filter, toList)
+import           Data.Text (Text)
+import           GHC.Stack (HasCallStack)
 
 
 logNotice :: Text -> Text -> MudStack ()
@@ -24,22 +25,22 @@ logNotice = L.logNotice "Mud.Threads.RmFuns"
 -- ==================================================
 
 
-runRmFunAsync :: Id -> Fun -> MudStack ()
-runRmFunAsync i fun = runAsync fun >>= \a -> tweak $ rmTbl.ind i.rmFunAsyncs <>~ pure a
+runRmFunAsync :: HasCallStack => Id -> Fun -> MudStack () -- TODO: Do room functions have their own exception handlers?
+runRmFunAsync i f = runAsync f >>= \a -> tweak $ rmTbl.ind i.rmFunAsyncs <>~ pure a
 
 
-startRmFuns :: MudStack ()
+startRmFuns :: HasCallStack => MudStack ()
 startRmFuns = getState >>= \ms -> do logNotice "startRmFuns" "starting room functions."
                                      mapM_ (\(i, fns) -> mapM_ (runRmFunAsync i . (`getFun` ms)) fns) . helper $ ms
   where
     helper = views rmTbl (map (second (view rmFunNames)) . IM.toList . IM.filter (views rmFunNames (()!#)))
 
 
-stopRmFuns :: MudStack ()
+stopRmFuns :: HasCallStack => MudStack ()
 stopRmFuns = do
     logNotice "stopRmFuns" "stopping room functions."
     mapM_ (uncurry throwWaitRmFuns) . views rmTbl (IM.toList . IM.filter (views rmFunAsyncs (()!#))) =<< getState
 
 
-throwWaitRmFuns :: Id -> Rm -> MudStack ()
+throwWaitRmFuns :: HasCallStack => Id -> Rm -> MudStack ()
 throwWaitRmFuns i r = views rmFunAsyncs (mapM_ throwWait) r >> tweak (rmTbl.ind i.rmFunAsyncs .~ [])

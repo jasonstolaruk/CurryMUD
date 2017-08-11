@@ -189,7 +189,7 @@ adminCmds =
     , mkAdminCmd "search"     adminSearch      True  "Regex search for entity and room names."
     , mkAdminCmd "security"   adminSecurity    True  "Display security Q&A for one or more players."
     , mkAdminCmd "set"        adminSet         True  "Set one or more values for a given ID."
-    , mkAdminCmd "shutdown"   adminShutdown    False "Shut down CurryMUD, optionally with a custom message."
+    , mkAdminCmd "shutdown"   adminShutDown    False "Shut down CurryMUD, optionally with a custom message."
     , mkAdminCmd "sudoer"     adminSudoer      True  "Toggle a player's admin status."
     , mkAdminCmd "summon"     adminSummon      True  "Teleport a PC to your current room."
     , mkAdminCmd "teleid"     adminTeleId      True  "Teleport to an entity or room by ID."
@@ -2191,10 +2191,10 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
 -----
 
 
-adminShutdown :: HasCallStack => ActionFun
-adminShutdown (NoArgs' i mq    ) = shutdownHelper i mq Nothing
-adminShutdown (Msg'    i mq msg) = shutdownHelper i mq . Just $ msg
-adminShutdown p                  = pmf "adminShutdown" p
+adminShutDown :: HasCallStack => ActionFun
+adminShutDown (NoArgs' i mq    ) = shutdownHelper i mq Nothing
+adminShutDown (Msg'    i mq msg) = shutdownHelper i mq . Just $ msg
+adminShutDown p                  = pmf "adminShutDown" p
 
 
 shutdownHelper :: HasCallStack => Id -> MsgQueue -> Maybe Text -> MudStack ()
@@ -2205,7 +2205,7 @@ shutdownHelper i mq maybeMsg = getState >>= \ms ->
           massLogPla fn   $ "closing connection due to server shutdown initiated by " <> s <> rest
           logNotice  fn   $ "server shutdown initiated by "                           <> s <> rest
           massSend . colorWith shutdownMsgColor . fromMaybe dfltShutdownMsg $ maybeMsg
-          writeMsg mq Shutdown
+          writeMsg mq ShutDown
   where
     fn = "shutdownHelper"
 

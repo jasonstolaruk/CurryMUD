@@ -20,6 +20,7 @@ import qualified Data.Map.Strict as M (Map, fromList, toList)
 import           Data.Monoid ((<>))
 import           Data.Text (Text)
 import qualified Data.Text as T
+import           GHC.Stack (HasCallStack)
 
 
 logNotice :: Text -> Text -> MudStack ()
@@ -29,7 +30,7 @@ logNotice = L.logNotice "Mud.Threads.DbTblPurger"
 -- ==================================================
 
 
-mkTblPurgerMap :: M.Map DbTblName (CountDbTblRecsFun, PurgeDbTblFun)
+mkTblPurgerMap :: HasCallStack => M.Map DbTblName (CountDbTblRecsFun, PurgeDbTblFun)
 mkTblPurgerMap = M.fromList [ ("admin_chan", (countDbTblRecsAdminChan, purgeDbTblAdminChan))
                             , ("admin_msg",  (countDbTblRecsAdminMsg,  purgeDbTblAdminMsg ))
                             , ("chan",       (countDbTblRecsChan,      purgeDbTblChan     ))
@@ -40,23 +41,23 @@ mkTblPurgerMap = M.fromList [ ("admin_chan", (countDbTblRecsAdminChan, purgeDbTb
 type DbTblPurger = DbTblName -> CountDbTblRecsFun -> PurgeDbTblFun -> MudStack ()
 
 
-mkPurger :: DbTblPurger -> Funs
+mkPurger :: HasCallStack => DbTblPurger -> Funs
 mkPurger f = let g (tblName, pair) = uncurry (f tblName) pair
              in map g . M.toList $ mkTblPurgerMap
 
 
-mkDbTblPurgerFuns :: Funs
+mkDbTblPurgerFuns :: HasCallStack => Funs
 mkDbTblPurgerFuns = mkPurger dbTblPurger
 
 
-mkDbTblPurgerHelpers :: Funs
+mkDbTblPurgerHelpers :: HasCallStack => Funs
 mkDbTblPurgerHelpers = mkPurger dbTblPurgerHelper
 
 
 -----
 
 
-dbTblPurger :: DbTblPurger
+dbTblPurger :: HasCallStack => DbTblPurger
 dbTblPurger tblName countFun purgeFun = handle (threadExHandler Nothing threadName) $ do
     setThreadType DbTblPurger
     logNotice "dbTblPurger" $ "database table purger started for the " <> dblQuote tblName <> " table."
@@ -66,7 +67,7 @@ dbTblPurger tblName countFun purgeFun = handle (threadExHandler Nothing threadNa
     threadName = "database table purger " <> parensQuote tblName
 
 
-dbTblPurgerHelper :: DbTblPurger
+dbTblPurgerHelper :: HasCallStack => DbTblPurger
 dbTblPurgerHelper tblName countFun purgeFun = let fn = "dbTblPurgerHelper" in withDbExHandler fn countFun >>= \case
   Just count -> if count > maxDbTblRecs
     then do logNotice fn . T.concat $ [ the . dblQuote $ tblName
@@ -78,4 +79,4 @@ dbTblPurgerHelper tblName countFun purgeFun = let fn = "dbTblPurgerHelper" in wi
                                    , " table presently contains "
                                    , showTxt count
                                    , " records." ]
-  _ -> unit
+  Nothing -> unit

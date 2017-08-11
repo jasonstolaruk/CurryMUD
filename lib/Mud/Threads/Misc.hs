@@ -167,8 +167,7 @@ setThreadType threadType = do ti <- liftIO $ myThreadId >>= \ti -> labelThread t
 -----
 
 
-threadExHandler :: HasCallStack => Maybe Id -> Text -> SomeException -> MudStack () -- The "Maybe Id" parameter is used
-                                                                                    -- to decorate the thread name.
+threadExHandler :: HasCallStack => Maybe Id -> Text -> SomeException -> MudStack () -- The "Maybe Id" parameter is used to decorate the thread name.
 threadExHandler mi threadName e = f >>= \threadName' -> do
     logExMsg "threadExHandler" (rethrowExMsg $ "on " <> threadName' <> " thread") e
     throwToListenThread e

@@ -163,6 +163,7 @@ regularCmds = map (uncurry4 mkRegularCmd) regularCmdTuples
 TODO:
 extinguish lightSource -- "lightSource" arg may be omitted.
 A "tinderbox" is a tinderbox with flint and steel strikers in a single object.
+Spirits can see in the dark?
 -}
 -- TODO: "buy" and "sell".
 -- TODO: "shout". Consider indoor vs. outdoor. Update the "communication" help topic.
@@ -1826,20 +1827,19 @@ light p@(WithArgs _ _ _ [a, b]) = lightUp p a . Just $ b
 light p                         = advise p ["light"] adviceLightExcessArgs
 
 
-lightUp :: HasCallStack => ActionParams -> Text -> Maybe Text -> MudStack ()
+lightUp :: HasCallStack => ActionParams -> Text -> Maybe Text -> MudStack () -- TODO: Update help: light source may be in one's inventory.
 lightUp p@(WithArgs i _ _ _) lightArg tinderArg = getState >>= \ms ->
     let f = genericActionWithHooks p helper "light"
     in checkActing p ms (Right "light a torch or lamp") [ Attacking, Drinking, Sacrificing ] f
   where
     helper _ ms =
-        let (invCoins@(is, _), eqMap) = (getInvCoins `fanUncurry` getEqMap) (i, ms)
-            (inInvs, inEqs, inRms)    = sortArgsInvEqRm InEq . pure $ lightArg
-            sorryInInv       = inInvs |!| sorryLightInInv
-            sorryInRm        = inRms  |!| sorryLightInRm
-            (gecrs, miss, _) = resolveEntCoinNames i ms inEqs (M.elems eqMap) mempty
-            eiss             = zipWith (curry procGecrMisMobEq) gecrs miss
-            f [lightId]      = either sorry (g lightId) procTinderArg
-            f _              = sorry sorryLightExcessLights
+        let (invCoins@(is, _), eqMap) = (getInvCoins `fanUncurry` getEqMap) (i, ms) -- TODO: One can light a light source in one's inventory, but the light source must be readied for it to illuminate a room.
+            ({-inInvs-}_, inEqs, inRms)    = sortArgsInvEqRm InEq . pure $ lightArg
+            sorryInRm                 = inRms |!| sorryLightInRm
+            (gecrs, miss, _)          = resolveEntCoinNames i ms inEqs (M.elems eqMap) mempty
+            eiss                      = zipWith (curry procGecrMisMobEq) gecrs miss
+            f [lightId]               = either sorry (g lightId) procTinderArg
+            f _                       = sorry sorryLightExcessLights
             g lightId [tinderId]
               | getType lightId ms /= LightType = sorry . sorryLightLightType $ lightSing
               | ((||) <$> (/= ObjType) . uncurry getType <*> (/= "tinderbox") . uncurry getSing) (tinderId, ms)
@@ -1854,7 +1854,7 @@ lightUp p@(WithArgs i _ _ _) lightArg tinderArg = getState >>= \ms ->
                                     , i `delete` desigIds d )
                       logMsg = prd $ "lighting " <> aOrAn lightSing
                   in ( ms & lightTbl.ind lightId.lightIsLit .~ True
-                     , ( dropBlanks [ sorryInInv, sorryInRm, toSelf ]
+                     , ( dropBlanks [ sorryInRm, toSelf ]
                        , bs
                        , pure logMsg
                        , pure . startLightTimer $ lightId ) )
@@ -1863,7 +1863,8 @@ lightUp p@(WithArgs i _ _ _) lightArg tinderArg = getState >>= \ms ->
                                          (lightId, ms)
             g _ _ = sorry sorryLightExcessTinderboxes
             procTinderArg = case tinderArg of
-              Nothing     -> let h i' = getType i' ms == ObjType && getSing i' ms == "tinderbox"
+              Nothing     -> let h i' = ((&&) <$> (== ObjType) . uncurry getType <*> (== "tinderbox") . uncurry getSing)
+                                        (i', ms)
                              in case filter h is of (x:_) -> Right . pure $ x
                                                     []    -> Left sorryLightTinderboxType
               Just tinder -> let (inInvs', inEqs', inRms') = sortArgsInvEqRm InInv . pure $ tinder
@@ -3838,7 +3839,7 @@ unlink p = pmf "unlink" p
 -----
 
 
-unready :: HasCallStack => ActionFun -- TODO: Unreadying a lit light source should extinguish it.
+unready :: HasCallStack => ActionFun
 unready p@AdviseNoArgs     = advise p ["unready"] adviceUnreadyNoArgs
 unready p@(LowerNub' i as) = genericAction p helper "unready"
   where
