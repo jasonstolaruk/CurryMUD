@@ -171,7 +171,6 @@ module Mud.Cmds.Msgs.Sorry ( sorryActing
                            , sorryLightCoins
                            , sorryLightExcessLights
                            , sorryLightExcessTinderboxes
-                           , sorryLightInInv
                            , sorryLightInRm
                            , sorryLightLampSecs
                            , sorryLightLightType
@@ -1311,10 +1310,6 @@ sorryLightExcessLights = but "you can only ignite a single light source at a tim
 
 sorryLightExcessTinderboxes :: Text
 sorryLightExcessTinderboxes = can't "ignite a light source using more than one tinderbox."
-
-
-sorryLightInInv :: Text
-sorryLightInInv = but "you can't ignite a light source in your inventory. Please ready the light source first."
 
 
 sorryLightInRm :: Text

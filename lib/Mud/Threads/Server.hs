@@ -171,7 +171,7 @@ cowbye h = liftIO takeADump `catch` fileIOExHandler "cowbye"
 shutDown :: HasCallStack => MudStack ()
 shutDown = massMsg SilentBoot >> onNewThread commitSuicide -- TODO: Should this really be on a new thread?
   where
-    commitSuicide = do liftIO . mapM_ wait . M.elems . view talkAsyncTbl =<< getState
+    commitSuicide = do liftIO . mapM_ wait . M.elems . view talkAsyncTbl =<< getState -- TODO: We should formally stop all light timers that have not been canceled after everyone has been disconnected.
                        logNotice "shutDown commitSuicide" "everyone has been disconnected."
                        stopNpcActs
                        stopBiodegraders

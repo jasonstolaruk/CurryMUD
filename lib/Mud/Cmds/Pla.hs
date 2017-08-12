@@ -1827,17 +1827,18 @@ light p@(WithArgs _ _ _ [a, b]) = lightUp p a . Just $ b
 light p                         = advise p ["light"] adviceLightExcessArgs
 
 
-lightUp :: HasCallStack => ActionParams -> Text -> Maybe Text -> MudStack () -- TODO: Update help: light source may be in one's inventory.
+lightUp :: HasCallStack => ActionParams -> Text -> Maybe Text -> MudStack ()
 lightUp p@(WithArgs i _ _ _) lightArg tinderArg = getState >>= \ms ->
     let f = genericActionWithHooks p helper "light"
     in checkActing p ms (Right "light a torch or lamp") [ Attacking, Drinking, Sacrificing ] f
   where
     helper _ ms =
-        let (invCoins@(is, _), eqMap) = (getInvCoins `fanUncurry` getEqMap) (i, ms) -- TODO: One can light a light source in one's inventory, but the light source must be readied for it to illuminate a room.
-            ({-inInvs-}_, inEqs, inRms)    = sortArgsInvEqRm InEq . pure $ lightArg
+        let (invCoins@(is, _), eqMap) = (getInvCoins `fanUncurry` getEqMap) (i, ms)
+            (inInvs, inEqs, inRms)    = sortArgsInvEqRm InEq . pure $ lightArg
             sorryInRm                 = inRms |!| sorryLightInRm
             (gecrs, miss, _)          = resolveEntCoinNames i ms inEqs (M.elems eqMap) mempty
             eiss                      = zipWith (curry procGecrMisMobEq) gecrs miss
+            (eiss', _)                = uncurry (resolveMobInvCoins i ms inInvs) invCoins
             f [lightId]               = either sorry (g lightId) procTinderArg
             f _                       = sorry sorryLightExcessLights
             g lightId [tinderId]
@@ -1876,9 +1877,10 @@ lightUp p@(WithArgs i _ _ _) lightArg tinderArg = getState >>= \ms ->
             sorry = genericSorryWithHooks ms
         in if | ()# invCoins, ()# eqMap -> sorry dudeYou'reScrewed
               | ()# invCoins            -> sorry dudeYourHandsAreEmpty
-              | ()# eqMap               -> sorry dudeYou'reNaked
-              | otherwise               -> case eiss of []      -> sorry sorryLightCoins
-                                                        (eis:_) -> either sorry f eis
+              | otherwise               -> let h = either sorry f
+                                           in case eiss of []      -> case eiss' of []      -> sorry sorryLightCoins
+                                                                                    (eis:_) -> h eis
+                                                           (eis:_) -> h eis
 lightUp p _ _ = pmf "lightUp" p
 
 

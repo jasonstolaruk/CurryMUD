@@ -45,7 +45,7 @@ startLightTimer i = runAsync (threadLightTimer i) >>= \a -> tweak $ lightAsyncTb
 -----
 
 
-threadLightTimer :: HasCallStack => Id -> MudStack ()
+threadLightTimer :: HasCallStack => Id -> MudStack () -- TODO: Consider notifying the user when their light source is about to go out.
 threadLightTimer i = helper `catch` threadExHandler (Just i) "light timer"
   where
     helper = descSingId i <$> getState >>= \singId ->
