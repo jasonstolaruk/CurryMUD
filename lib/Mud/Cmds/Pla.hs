@@ -2224,7 +2224,7 @@ plaDispCmdList p                  = pmf "plaDispCmdList" p
 -----
 
 
-putAction :: HasCallStack => ActionFun
+putAction :: HasCallStack => ActionFun -- TODO: You shouldn't be able to put a lit light source into a container.
 putAction p@AdviseNoArgs  = advise p ["put"] advicePutNoArgs
 putAction p@AdviseOneArg  = advise p ["put"] advicePutNoCon
 putAction p@(Lower' i as) = getState >>= \ms ->
