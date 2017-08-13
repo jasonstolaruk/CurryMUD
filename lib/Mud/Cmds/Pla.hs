@@ -1850,13 +1850,13 @@ lightUp p@(WithArgs i _ _ _) lightArg tinderArg = getState >>= \ms ->
               | otherwise =
                   let toSelf  = prd $ "You light the " <> lightSing
                       d       = mkStdDesig i ms DoCap
-                      bs      = let t   = isInInv |?| (spcL . parensQuote $ "in " <> pro <> " inventory")
-                                    pro = mkPossPro . getSex i $ ms
-                                in pure ( T.concat [ serialize d, " lights ", pro, " ", lightSing, t, "." ]
-                                        , i `delete` desigIds d )
-                      logMsg  = let t = parensQuote . (spaced "in" <>) $ (isInInv ? "inventory" :? "readied equipment")
-                                in prd $ "lighting " <> aOrAn lightSing <> t
                       isInInv = lightId `elem` is
+                      bs      = let t1  = isInInv ? aOrAn lightSing :? (pro |<>| lightSing)
+                                    t2  = isInInv |?| (spcL . parensQuote $ "in " <> pro <> " inventory")
+                                    pro = mkPossPro . getSex i $ ms
+                                in pure (T.concat [ serialize d, " lights ", t1, t2, "." ], i `delete` desigIds d)
+                      logMsg  = let t = spcL . parensQuote . ("in " <>) $ (isInInv ? "inventory" :? "readied equipment")
+                                in prd $ "lighting " <> aOrAn lightSing <> t
                   in ( ms & lightTbl.ind lightId.lightIsLit .~ True
                      , ( pure toSelf, bs, pure logMsg, pure . startLightTimer $ lightId ) )
               where

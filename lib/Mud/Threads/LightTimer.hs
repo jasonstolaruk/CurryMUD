@@ -5,7 +5,6 @@ module Mud.Threads.LightTimer ( restartLightTimers
                               , stopLightTimers
                               , threadLightTimer ) where
 
-import           Mud.Cmds.Util.Misc
 import           Mud.Data.Misc
 import           Mud.Data.State.MudData
 import           Mud.Data.State.Util.Get
@@ -58,19 +57,18 @@ threadLightTimer i = helper `catch` threadExHandler (Just i) "light timer"
               loop
       else let (locId, s) = (getLocation `fanUncurry` getSing) (i, ms)
                d          = mkStdDesig locId ms DoCap
+               is         = getInv locId ms
            in if hasMobId locId ms
              then let (mq, cols) = getMsgQueueColumns locId ms
                       toSelf     = T.concat [ "Your ", s, mkAux "in your inventory", " goes out." ]
                       mkAux txt  = isInInv |?| (spcL . parensQuote $ txt)
-                      isInInv    = i `elem` getInv locId ms
-                      bs         = pure ( T.concat [ serialize d, "'s ", s, t, " goes out." ]
-                                        , locId `delete` desigIds d )
-                      t          = mkAux $ "in " <> mkPossPro (getSex locId ms) <> " inventory"
+                      isInInv    = i `elem` is
+                      bs         = pure (T.concat [ serialize d, "'s ", s, " goes out." ], locId `delete` desigIds d)
                       logMsg     = T.concat [ "The light timer for the ", s, mkAux "in inventory", " is expiring." ]
-                  in do logPla "threadLightTimer loop" locId logMsg -- TODO: Test.
+                  in do logPla "threadLightTimer loop" locId logMsg
                         wrapSend mq cols toSelf
                         unless isInInv . bcastIfNotIncogNl locId $ bs
-             else bcastNl . pure $ ("The " <> s <> " goes out.", desigIds d) -- TODO: Test.
+             else bcastNl . pure $ ("The " <> s <> " goes out.", findMobIds ms is)
     cleanUp = tweaks [ lightTbl.ind i.lightIsLit .~ False, lightAsyncTbl.at i .~ Nothing ]
 
 
