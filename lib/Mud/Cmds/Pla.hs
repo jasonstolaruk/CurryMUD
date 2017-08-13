@@ -1829,7 +1829,7 @@ light p                         = advise p ["light"] adviceLightExcessArgs
 
 lightUp :: HasCallStack => ActionParams -> Text -> Maybe Text -> MudStack ()
 lightUp p@(WithArgs i _ _ _) lightArg tinderArg = getState >>= \ms ->
-    let f = genericActionWithHooks p helper "light"
+    let f = genericActionWithHooks p helper "light" -- TODO: Technically we're not concerned with hooks here...
     in checkActing p ms (Right "light a torch or lamp") [ Attacking, Drinking, Sacrificing ] f
   where
     helper _ ms =
@@ -1848,9 +1848,9 @@ lightUp p@(WithArgs i _ _ _) lightArg tinderArg = getState >>= \ms ->
               | secs <= 0                = sorry $ case sub of Torch -> sorryLightTorchSecs
                                                                Lamp  -> sorryLightLampSecs
               | otherwise =
-                  let toSelf = prd $ "You light the " <> lightSing
+                  let toSelf = prd $ "You light the " <> lightSing -- TODO: Continue testing from here.
                       d      = mkStdDesig i ms DoCap
-                      bs     = pure ( T.concat [ serialize d, " lights ", mkPossPro . getSex i $ ms, " ", lightSing, "." ]
+                      bs     = pure ( T.concat [ serialize d, " lights ", mkPossPro . getSex i $ ms, " ", lightSing, "." ] -- TODO: Indicate when a light source is in inventory.
                                     , i `delete` desigIds d )
                       logMsg = prd $ "lighting " <> aOrAn lightSing
                   in ( ms & lightTbl.ind lightId.lightIsLit .~ True

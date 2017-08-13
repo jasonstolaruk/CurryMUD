@@ -62,7 +62,7 @@ threadLightTimer i = helper `catch` threadExHandler (Just i) "light timer"
                       toSelf     = T.concat [ "Your ", s, mkAux "in your inventory", " goes out." ]
                       mkAux txt  = isInInv |?| (spcL . parensQuote $ txt)
                       isInInv    = i `elem` getInv locId ms
-                      bs         = pure ( T.concat [ serialize d, "'s ", s, " goes out." ]
+                      bs         = pure ( T.concat [ serialize d, "'s ", s, " goes out." ] -- TODO: Indicate when a light source is in inventory.
                                         , locId `delete` desigIds d )
                       logMsg     = T.concat [ "The light timer for the ", s, mkAux "in inventory", " is expiring." ]
                   in do logPla "threadLightTimer loop" locId logMsg -- TODO: Test.
