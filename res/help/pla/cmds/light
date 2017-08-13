@@ -4,20 +4,18 @@
 !light lightSource \s[\dtinderbox\s]\d
 
 \uDESCRIPTION\n
-Ignite a light source using a tinderbox.
+Ignite a light source (a torch or oil lamp) using a tinderbox.
 You may omit the second argument, in which case the first tinderbox in your inventory will be used.
 
 To light the torch in your readied equipment:
-\qlight \le#l\qtorch tinderbox\d4`
+\qlight \le#l\qtorch\d4`
 ...or just...
 \qlight torch\d4`
 
 To light the torch in your inventory:
-\qlight \li#l\qtorch tinderbox\d4`
-...or just...
 \qlight \li#l\qtorch\d4`
 
-Note that a lit source of light in your inventory will not be effective: you must ready the light source or drop it on the ground for it to illuminate the room.
+Note that a lit torch or lamp in your inventory will not illuminate the room: you must ready the light source or drop it on the ground.
 
 \uEXAMPLES\n
 \qlight torch\d to light your torch (in your readied equipment) using your tinderbox (in your inventory).4`

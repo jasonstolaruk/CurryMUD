@@ -1313,7 +1313,7 @@ sorryLightExcessTinderboxes = can't "ignite a light source using more than one t
 
 
 sorryLightInRm :: Text
-sorryLightInRm = can't "ignite a light source in your current room. Please pick up and ready the light source first."
+sorryLightInRm = can't "ignite a light source in your current room. Please pick up the light source first."
 
 
 sorryLightLampSecs :: Text
