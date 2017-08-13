@@ -175,6 +175,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryActing
                            , sorryLightLampSecs
                            , sorryLightLightType
                            , sorryLightLit
+                           , sorryLightTinderbox
                            , sorryLightTinderboxCoins
                            , sorryLightTinderboxInEq
                            , sorryLightTinderboxInRm
@@ -1342,9 +1343,13 @@ sorryLightTinderboxInRm = butCan't "ignite a light source using a tinderbox in y
                                    \tinderbox first."
 
 
-sorryLightTinderboxType :: Text
-sorryLightTinderboxType = "You don't have a tinderbox in your inventory. " <>
-                          parensQuote "You need a tinderbox to ignite a light source."
+sorryLightTinderbox :: Text
+sorryLightTinderbox = "You don't have a tinderbox in your inventory. " <>
+                      parensQuote "You need a tinderbox to ignite a light source."
+
+
+sorryLightTinderboxType :: Sing -> Text
+sorryLightTinderboxType s = the' s <> " is not a tinderbox."
 
 
 sorryLightTorchSecs :: Text

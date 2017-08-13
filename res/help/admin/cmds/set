@@ -47,6 +47,20 @@ Examples:4`
 \qentSmell=null\d (to set to Nothing)4`
 \l#q\qentSmell="The breeches smell freshly laundered."\l#q\d (to set to Just "The breeches smell freshly laundered.")4`
 
+Key name: lightSecs4`
+Property of: Light4`
+Value type: Seconds4`
+Examples:4`
+\qlightSecs=60\d (to set to 60)4`
+\qlightSecs+=10\d (to add 10)4`
+\qlightSecs-=10\d (to subtract 10)4`
+
+Key name: lightIsLit4`
+Property of: Light4`
+Value type: Bool4`
+Example:4`
+\qlightIsLit=true\d4`
+
 Key name: sex4`
 Property of: Mob4`
 Value type: Sex - Male | Female | NoSex4`

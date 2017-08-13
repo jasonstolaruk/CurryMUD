@@ -1688,6 +1688,8 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
                       , "plur"
                       , "entdesc"
                       , "entsmell"
+                      , "lightsecs"
+                      , "lightislit"
                       , "sex"
                       , "st"
                       , "dx"
@@ -1738,6 +1740,8 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
           "plur"             -> setEntTextHelper       t "plur"     "plural"      plur     plur
           "entdesc"          -> setEntTextHelper       t "entDesc"  "description" entDesc  entDesc
           "entsmell"         -> setEntMaybeTextHelper  t "entSmell" "smell"       entSmell entSmell
+          "lightsecs"        -> setLightSecsHelper     t
+          "lightislit"       -> setLightIsLitHelper    t
           "sex"              -> setMobSexHelper        t
           "st"               -> setMobAttribHelper     t "st" "ST" st st
           "dx"               -> setMobAttribHelper     t "dx" "DX" dx dx
@@ -1826,6 +1830,38 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
                         in a & _1.entTbl.ind targetId.setter .~ x
                              & _2 <>~ toSelf
                              & _3 <>~ ((isNpcPla targetId ms && isDiff) |?| toTarget)
+                             & _4 <>~ (isDiff |?| toSelf)
+              _      -> sorryOp k
+        -----
+        setLightSecsHelper t
+          | t /= LightType = sorryType
+          | otherwise      = let k = "lightSecs" in case eitherDecode value' of
+            Left  _ -> appendMsg . sorryAdminSetValue k $ value
+            Right x -> let prev                 = getLightSecs targetId ms
+                           addSubAssignHelper g = let new    = prev `g` x
+                                                      diff   = new - prev
+                                                      toSelf = mkToSelfForInt k new diff
+                                                  in a & _1.lightTbl.ind targetId.lightSecs .~ new
+                                                       & _2 <>~ toSelf
+                                                       & _4 <>~ (Sum diff |!| toSelf)
+                       in case op of Assign    -> let diff   = x - prev
+                                                      toSelf = mkToSelfForInt k x diff
+                                                  in a & _1.lightTbl.ind targetId.lightSecs .~ x
+                                                       & _2 <>~ toSelf
+                                                       & _4 <>~ (Sum diff |!| toSelf)
+                                     AddAssign -> addSubAssignHelper (+)
+                                     SubAssign -> addSubAssignHelper (-)
+        -----
+        setLightIsLitHelper t
+          | t /= LightType = sorryType
+          | otherwise      = let k = "lightIsLit" in case eitherDecode value' of
+            Left  _ -> appendMsg . sorryAdminSetValue k $ value
+            Right b -> case op of
+              Assign -> let toSelf = pure . T.concat $ [ "Set lightIsLit to ", showTxt b, mkDiffTxt isDiff, "." ]
+                            prev   = getLightIsLit targetId ms
+                            isDiff = b /= prev
+                        in a & _1.lightTbl.ind targetId.lightIsLit .~ b
+                             & _2 <>~ toSelf
                              & _4 <>~ (isDiff |?| toSelf)
               _      -> sorryOp k
         -----

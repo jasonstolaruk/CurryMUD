@@ -1834,8 +1834,7 @@ lightUp p@(WithArgs i _ _ _) lightArg tinderArg = getState >>= \ms ->
   where
     helper _ ms =
         let (invCoins@(is, _), eqMap) = (getInvCoins `fanUncurry` getEqMap) (i, ms)
-            (inInvs, inEqs, inRms)    = sortArgsInvEqRm InEq . pure $ lightArg
-            sorryInRm                 = inRms |!| sorryLightInRm
+            (inInvs, inEqs, _)        = sortArgsInvEqRm InEq . pure $ lightArg
             (gecrs, miss, _)          = resolveEntCoinNames i ms inEqs (M.elems eqMap) mempty
             eiss                      = zipWith (curry procGecrMisMobEq) gecrs miss
             (eiss', rcs)              = uncurry (resolveMobInvCoins i ms inInvs) invCoins
@@ -1844,7 +1843,7 @@ lightUp p@(WithArgs i _ _ _) lightArg tinderArg = getState >>= \ms ->
             g lightId [tinderId]
               | getType lightId ms /= LightType = sorry . sorryLightLightType $ lightSing
               | ((||) <$> (/= ObjType) . uncurry getType <*> (/= "tinderbox") . uncurry getSing) (tinderId, ms)
-              = sorry sorryLightTinderboxType
+              = sorry . sorryLightTinderboxType . getSing tinderId $ ms
               | getLightIsLit lightId ms = sorry . sorryLightLit $ lightSing
               | secs <= 0                = sorry $ case sub of Torch -> sorryLightTorchSecs
                                                                Lamp  -> sorryLightLampSecs
@@ -1855,10 +1854,7 @@ lightUp p@(WithArgs i _ _ _) lightArg tinderArg = getState >>= \ms ->
                                     , i `delete` desigIds d )
                       logMsg = prd $ "lighting " <> aOrAn lightSing
                   in ( ms & lightTbl.ind lightId.lightIsLit .~ True
-                     , ( dropBlanks [ sorryInRm, toSelf ]
-                       , bs
-                       , pure logMsg
-                       , pure . startLightTimer $ lightId ) )
+                     , ( pure toSelf, bs, pure logMsg, pure . startLightTimer $ lightId ) )
               where
                 (lightSing, sub, secs) = ((,,) <$> uncurry getSing <*> uncurry getLightSub <*> uncurry getLightSecs)
                                          (lightId, ms)
@@ -1867,7 +1863,7 @@ lightUp p@(WithArgs i _ _ _) lightArg tinderArg = getState >>= \ms ->
               Nothing     -> let h i' = ((&&) <$> (== ObjType) . uncurry getType <*> (== "tinderbox") . uncurry getSing)
                                         (i', ms)
                              in case filter h is of (x:_) -> Right . pure $ x
-                                                    []    -> Left sorryLightTinderboxType
+                                                    []    -> Left sorryLightTinderbox
               Just tinder -> let (inInvs', inEqs', inRms') = sortArgsInvEqRm InInv . pure $ tinder
                              in if | ()!# inEqs' -> Left sorryLightTinderboxInEq
                                    | ()!# inRms' -> Left sorryLightTinderboxInRm
@@ -1881,7 +1877,7 @@ lightUp p@(WithArgs i _ _ _) lightArg tinderArg = getState >>= \ms ->
               | otherwise               -> let h = either sorry f
                                            in case (eiss, eiss') of (eis:_, _    ) -> h eis
                                                                     ([],    eis:_) -> h eis
-                                                                    pair           -> pmf "lightUp" pair
+                                                                    ([],    []   ) -> sorry sorryLightInRm
 lightUp p _ _ = pmf "lightUp" p
 
 
