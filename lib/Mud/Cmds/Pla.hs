@@ -1878,9 +1878,9 @@ lightUp p@(WithArgs i _ _ _) lightArg tinderArg = getState >>= \ms ->
         in if | ()# invCoins, ()# eqMap -> sorry dudeYou'reScrewed
               | ()# invCoins            -> sorry dudeYourHandsAreEmpty
               | otherwise               -> let h = either sorry f
-                                           in case (eiss, eiss') of ([],      []     ) -> sorry sorryLightCoins
-                                                                    ((eis:_), _      ) -> h eis
-                                                                    ([],      (eis:_)) -> h eis
+                                           in case (eiss, eiss') of ([],    []   ) -> sorry sorryLightCoins
+                                                                    (eis:_, _    ) -> h eis
+                                                                    ([],    eis:_) -> h eis
 lightUp p _ _ = pmf "lightUp" p
 
 

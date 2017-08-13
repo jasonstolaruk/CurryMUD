@@ -142,7 +142,6 @@ import           Mud.Util.Padding
 import           Mud.Util.Quoting
 import           Mud.Util.Text
 import           Mud.Util.Wrapping
-import           Prelude hiding (pi)
 
 import           Control.Arrow ((***), (&&&), first, second)
 import           Control.Lens (Getter, _1, _2, _3, _4, _5, at, both, each, to, view, views)
@@ -152,16 +151,17 @@ import           Control.Monad.IO.Class (liftIO)
 import           Data.Bool (bool)
 import           Data.Char (isLower)
 import           Data.Function (on)
+import qualified Data.IntMap.Strict as IM (IntMap, (!), keys)
 import           Data.Ix (inRange)
 import           Data.List ((\\), delete, elemIndex, find, foldl', group, intercalate, nub, nubBy, partition, sortBy, zip4)
+import qualified Data.Map.Strict as M ((!), filter, keys, map, member, notMember, toList)
 import           Data.Maybe (isNothing)
 import           Data.Monoid ((<>), Sum(..))
 import           Data.Text (Text)
-import           GHC.Stack (HasCallStack)
-import qualified Data.IntMap.Strict as IM (IntMap, (!), keys)
-import qualified Data.Map.Strict as M ((!), filter, keys, map, member, notMember, toList)
 import qualified Data.Text as T
 import qualified Data.Vector.Unboxed as V (Vector)
+import           GHC.Stack (HasCallStack)
+import           Prelude hiding (pi)
 
 
 blowUp :: BlowUp a
@@ -1562,7 +1562,7 @@ mkEntDescs :: HasCallStack => Id -> Cols -> MudState -> Inv -> Text
 mkEntDescs i cols ms eis = nls [ mkEntDesc i cols ms (ei, e) | ei <- eis, let e = getEnt ei ms ]
 
 
-mkEntDesc :: HasCallStack => Id -> Cols -> MudState -> (Id, Ent) -> Text -- TODO: Auxiliary info for light sources: is lit, % remaining.
+mkEntDesc :: HasCallStack => Id -> Cols -> MudState -> (Id, Ent) -> Text
 mkEntDesc i cols ms (ei, e) =
     case t of ConType      ->                  (ed <>) . mkInvCoinsDesc i cols ms ei $ s
               CorpseType   -> (corpseTxt <>)           . mkInvCoinsDesc i cols ms ei $ s
@@ -1572,9 +1572,9 @@ mkEntDesc i cols ms (ei, e) =
               WritableType ->                  (ed <>) . mkWritableMsgDesc cols ms $ ei
               _            -> ed
   where
-    ed                  = let foodRemTxt  = t == FoodType  |?| spcL (mkFoodRemTxt  ei ms)
-                              lightRemTxt = t == LightType |?| spcL (mkLightRemTxt ei ms)
-                              desc        = T.concat [ e^.entDesc, lightRemTxt, foodRemTxt ]
+    ed                  = let foodTxt  = t == FoodType  |?| spcL (mkFoodRemTxt         ei ms)
+                              lightTxt = t == LightType |?| spcL (mkLight_rem_isLitTxt ei ms)
+                              desc     = T.concat [ e^.entDesc, foodTxt, lightTxt ]
                           in wrapUnlines cols desc <> mkAuxDesc i cols ms ei
     (s, t)              = (getSing `fanUncurry` getType) (ei, ms)
     corpseTxt           = let txt = expandCorpseTxt (mkCorpseAppellation i ms ei) . getCorpseDesc ei $ ms
@@ -1643,15 +1643,19 @@ mkCoinsSummary cols = helper . zipWith mkNameAmt coinNames . coinsToList
 
 
 mkFoodRemTxt :: HasCallStack => Id -> MudState -> Text
-mkFoodRemTxt i = perRemHelper . calcFoodPerRem i
+mkFoodRemTxt i ms = perRemHelper (calcFoodPerRem i ms) Nothing
 
 
-perRemHelper :: HasCallStack => Int -> Text
-perRemHelper = parensQuote . (<> "% remaining") . showTxt
+perRemHelper :: HasCallStack => Int -> Maybe Text -> Text
+perRemHelper x = helper . fromMaybeEmp
+  where
+    helper t = parensQuote $ showTxt x <> "% remaining" <> t
 
 
-mkLightRemTxt :: HasCallStack => Id -> MudState -> Text
-mkLightRemTxt i = perRemHelper . calcLightPerRem i
+mkLight_rem_isLitTxt :: HasCallStack => Id -> MudState -> Text
+mkLight_rem_isLitTxt i ms = perRemHelper (calcLightPerRem i ms) $ if getLightIsLit i ms
+  then Just $ ", " <> colorWith emphasisColor "lit"
+  else Nothing
 
 
 mkEqDesc :: HasCallStack => Id -> Cols -> MudState -> Id -> Sing -> Type -> Text
