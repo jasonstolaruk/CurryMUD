@@ -15,6 +15,9 @@ import Data.Time (UTCTime(..), diffUTCTime, fromGregorian, getCurrentTime)
 import Prelude hiding (min)
 
 
+-- TODO: Players who are outside should get messages declaring, in the very least, when it is nearing darkness.
+
+
 initCurryYear :: Year
 initCurryYear = 4171 -- Approximately the same number of seconds in 1600 earth years.
 

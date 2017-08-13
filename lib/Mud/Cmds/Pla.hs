@@ -1848,11 +1848,15 @@ lightUp p@(WithArgs i _ _ _) lightArg tinderArg = getState >>= \ms ->
               | secs <= 0                = sorry $ case sub of Torch -> sorryLightTorchSecs
                                                                Lamp  -> sorryLightLampSecs
               | otherwise =
-                  let toSelf = prd $ "You light the " <> lightSing -- TODO: Continue testing from here.
-                      d      = mkStdDesig i ms DoCap
-                      bs     = pure ( T.concat [ serialize d, " lights ", mkPossPro . getSex i $ ms, " ", lightSing, "." ] -- TODO: Indicate when a light source is in inventory.
-                                    , i `delete` desigIds d )
-                      logMsg = prd $ "lighting " <> aOrAn lightSing
+                  let toSelf  = prd $ "You light the " <> lightSing
+                      d       = mkStdDesig i ms DoCap
+                      bs      = let t   = isInInv |?| (spcL . parensQuote $ "in " <> pro <> " inventory")
+                                    pro = mkPossPro . getSex i $ ms
+                                in pure ( T.concat [ serialize d, " lights ", pro, " ", lightSing, t, "." ]
+                                        , i `delete` desigIds d )
+                      logMsg  = let t = parensQuote . (spaced "in" <>) $ (isInInv ? "inventory" :? "readied equipment")
+                                in prd $ "lighting " <> aOrAn lightSing <> t
+                      isInInv = lightId `elem` is
                   in ( ms & lightTbl.ind lightId.lightIsLit .~ True
                      , ( pure toSelf, bs, pure logMsg, pure . startLightTimer $ lightId ) )
               where
@@ -1871,13 +1875,13 @@ lightUp p@(WithArgs i _ _ _) lightArg tinderArg = getState >>= \ms ->
                                      []       -> Left sorryLightTinderboxCoins
                                      (eis':_) -> eis'
             sorry = genericSorryWithHooks ms
-        in if | ()# invCoins, ()# eqMap -> sorry dudeYou'reScrewed
-              | ()# invCoins            -> sorry dudeYourHandsAreEmpty
-              | ()!# rcs                -> sorry sorryLightCoins
-              | otherwise               -> let h = either sorry f
-                                           in case (eiss, eiss') of (eis:_, _    ) -> h eis
-                                                                    ([],    eis:_) -> h eis
-                                                                    ([],    []   ) -> sorry sorryLightInRm
+        in if | ()#  invCoins, ()# eqMap -> sorry dudeYou'reScrewed
+              | ()#  invCoins            -> sorry dudeYourHandsAreEmpty
+              | ()!# rcs                 -> sorry sorryLightCoins
+              | otherwise                -> let h = either sorry f
+                                            in case (eiss, eiss') of (eis:_, _    ) -> h eis
+                                                                     ([],    eis:_) -> h eis
+                                                                     ([],    []   ) -> sorry sorryLightInRm
 lightUp p _ _ = pmf "lightUp" p
 
 
