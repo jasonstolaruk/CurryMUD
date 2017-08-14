@@ -64,15 +64,15 @@ threadLightTimer i = helper `catch` threadExHandler (Just i) "light timer"
             mkBs t       = pure (t, locId `delete` desigIds d)
             d            = mkStdDesig locId ms DoCap
             mobIdsInRm   = findMobIds ms locInv
-            leadTxt      | isInMobInv = the' s
-                         | otherwise  = "Your " <> s
-            inInvTxt     = mkInInvTxt "in your inventory"
+            leadTxt      = x <> y where x | isInMobInv = the' s
+                                          | otherwise  = "Your " <> s
+                                        y              = mkInInvTxt "in your inventory"
             mkInInvTxt t = isInMobInv |?| (spcL . parensQuote $ t)
             notify           | secs == 10 = notifyHelper " is about to go out."                              True
                              | secs == 15 = notifyHelper " only has a few minutes of light left."            False
                              | secs == 20 = notifyHelper " has perhaps about fifteen minutes of light left." False
                              | otherwise  = unit
-            notifyHelper t b | locIsMob   = do ioHelper $ leadTxt <> inInvTxt <> t
+            notifyHelper t b | locIsMob   = do ioHelper $ leadTxt <> t
                                                when b . bcastHelper . mkBs . T.concat $ [ serialize d, "'s ", s, t ]
                              | otherwise  = bcastNl . pure $ (the' s <> t, mobIdsInRm)
         in if secs > 0
@@ -81,15 +81,14 @@ threadLightTimer i = helper `catch` threadExHandler (Just i) "light timer"
                   tweak $ lightTbl.ind i.lightSecs %~ pred
                   loop
           else if -- Exit the loop.
-            | locIsMob  -> let toSelf = leadTxt <> inInvTxt <> " goes out."
+            | locIsMob  -> let toSelf = leadTxt <> " goes out."
                                bs     = mkBs . T.concat $ [ serialize d, "'s ", s, " goes out." ]
                                logMsg = T.concat [ "The light timer for the ", s, mkInInvTxt "in inventory", " is expiring." ]
                            in do logPla "threadLightTimer loop" locId logMsg
                                  setNotLit
                                  ioHelper toSelf
                                  bcastHelper bs
-            | otherwise -> do setNotLit
-                              bcastNl . pure $ ("The " <> s <> " goes out.", mobIdsInRm)
+            | otherwise -> sequence_ [ setNotLit, bcastNl . pure $ (the' s <> " goes out.", mobIdsInRm) ]
     setNotLit = tweak $ lightTbl     .ind i.lightIsLit .~ False
     cleanUp   = tweak $ lightAsyncTbl.at  i            .~ Nothing
 
