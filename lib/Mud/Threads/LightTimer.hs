@@ -67,7 +67,6 @@ threadLightTimer i = helper `catch` threadExHandler (Just i) "light timer"
             leadTxt     | isInMobInv = the' s
                         | otherwise  = "Your " <> s
             inInvTxt    = isInMobInv |?| (spcL . parensQuote $ "in your inventory")
-            setNotLit   = tweak $ lightTbl.ind i.lightIsLit .~ False
             notify | secs == 10 = if | locIsMob  -> do ioHelper . T.concat $ [ leadTxt, inInvTxt, " is about to go out." ] -- TODO
                                                        bcastHelper . mkBs . T.concat $ [ serialize d, "'s ", s, " is about to go out." ]
                                      | otherwise -> bcastNl . pure $ (T.concat [ the' s <> " is about to go out." ], mobIdsInRm)
@@ -88,7 +87,8 @@ threadLightTimer i = helper `catch` threadExHandler (Just i) "light timer"
                                  bcastHelper bs
             | otherwise -> do setNotLit
                               bcastNl . pure $ ("The " <> s <> " goes out.", mobIdsInRm)
-    cleanUp = tweak $ lightAsyncTbl.at i .~ Nothing
+    setNotLit = tweak $ lightTbl     .ind i.lightIsLit .~ False
+    cleanUp   = tweak $ lightAsyncTbl.at  i            .~ Nothing
 
 
  -----
