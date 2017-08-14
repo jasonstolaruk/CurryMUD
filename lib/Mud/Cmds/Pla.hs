@@ -1351,12 +1351,12 @@ fill :: HasCallStack => RmActionFun
 fill p@AdviseNoArgs  = advise p [] adviceFillNoArgs
 fill p@AdviseOneArg  = advise p [] adviceFillNoSource
 fill p@(Lower' i as) = getState >>= \ms ->
-    checkActing p ms (Right "fill a vessel") [ Attacking, Drinking, Sacrificing ] . genericActionWithHooks p helper $ "fill"
+    checkActing p ms (Right "fill a vessel") [ Attacking, Drinking, Sacrificing ] . genericActionWithFuns p helper $ "fill"
   where
     helper v ms =
         let b@LastArgIsTargetBindings { .. } = mkLastArgIsTargetBindings i ms as
             maybeHooks                       = lookupHooks i ms "fill"
-            sorry                            = genericSorryWithHooks ms
+            sorry                            = genericSorryWithFuns ms
         in if ()# srcInvCoins
           then sorry dudeYourHandsAreEmpty
           else case singleArgInvEqRm InInv targetArg of
@@ -1394,7 +1394,7 @@ getAction :: HasCallStack => ActionFun
 getAction p@AdviseNoArgs         = advise p ["get"] adviceGetNoArgs
 getAction p@(Lower i mq cols as) = getState >>= \ms -> case reverse as of
   (_:"from":_:_) -> wrapSend mq cols hintGet
-  _              -> let f = genericActionWithHooks p helper "get"
+  _              -> let f = genericActionWithFuns p helper "get"
                     in checkActing p ms (Right "pick up an item") [ Drinking, Sacrificing ] f
   where
     helper v ms =
@@ -1829,7 +1829,7 @@ light p                         = advise p ["light"] adviceLightExcessArgs
 
 lightUp :: HasCallStack => ActionParams -> Text -> Maybe Text -> MudStack ()
 lightUp p@(WithArgs i _ _ _) lightArg tinderArg = getState >>= \ms ->
-    let f = genericActionWithHooks p helper "light" -- TODO: Technically we're not concerned with hooks here...
+    let f = genericActionWithFuns p helper "light"
     in checkActing p ms (Right "light a torch or lamp") [ Attacking, Drinking, Sacrificing ] f
   where
     helper _ ms =
@@ -1874,7 +1874,7 @@ lightUp p@(WithArgs i _ _ _) lightArg tinderArg = getState >>= \ms ->
                                    | otherwise   -> case fst . uncurry (resolveMobInvCoins i ms inInvs') $ invCoins of
                                      []       -> Left sorryLightTinderboxCoins
                                      (eis':_) -> eis'
-            sorry = genericSorryWithHooks ms
+            sorry = genericSorryWithFuns ms
         in if | ()#  invCoins, ()# eqMap -> sorry dudeYou'reScrewed
               | ()#  invCoins            -> sorry dudeYourHandsAreEmpty
               | ()!# rcs                 -> sorry sorryLightCoins
@@ -2229,7 +2229,7 @@ putAction :: HasCallStack => ActionFun -- TODO: You shouldn't be able to put a l
 putAction p@AdviseNoArgs  = advise p ["put"] advicePutNoArgs
 putAction p@AdviseOneArg  = advise p ["put"] advicePutNoCon
 putAction p@(Lower' i as) = getState >>= \ms ->
-    let f = genericActionWithHooks p helper "put"
+    let f = genericActionWithFuns p helper "put"
     in checkActing p ms (Right "put an item into a container") [ Drinking, Sacrificing ] f
   where
     helper v ms =
@@ -2239,16 +2239,16 @@ putAction p@(Lower' i as) = getState >>= \ms ->
               in (ms', (toSelfs, bs, logMsgs, []))
       in case singleArgInvEqRm InInv targetArg of
         (InInv, target) -> shuffler target False srcInvCoins procGecrMisMobInv
-        (InEq,  _     ) -> genericSorryWithHooks ms . sorryConInEq $ Put
+        (InEq,  _     ) -> genericSorryWithFuns ms . sorryConInEq $ Put
         (InRm,  target) ->
             let invCoinsHelper = shuffler target True rmInvCoins procGecrMisRm
                 f hooks g      = case filter ((dropPrefixes target `elem`) . hookTriggers) hooks of
                                    []      -> g
                                    matches -> hooksHelper otherArgs matches
             in case (()!# rmInvCoins, lookupHooks i ms "put") of
-              (False, Nothing   ) -> genericSorryWithHooks ms sorryNoConHere
+              (False, Nothing   ) -> genericSorryWithFuns ms sorryNoConHere
               (True,  Nothing   ) -> invCoinsHelper
-              (False, Just hooks) -> f hooks . genericSorryWithHooks ms . sorryPutEmptyRmWithHooks $ target
+              (False, Just hooks) -> f hooks . genericSorryWithFuns ms . sorryPutEmptyRmWithHooks $ target
               (True,  Just hooks) -> f hooks invCoinsHelper
       where
         hooksHelper args matches =

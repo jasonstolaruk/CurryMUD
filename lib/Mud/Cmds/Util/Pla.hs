@@ -26,10 +26,10 @@ module Mud.Cmds.Util.Pla ( InvWithCon
                          , fillerToSpcs
                          , findAvailSlot
                          , genericAction
-                         , genericActionWithHooks
+                         , genericActionWithFuns
                          , genericCheckActing
                          , genericSorry
-                         , genericSorryWithHooks
+                         , genericSorryWithFuns
                          , getActs
                          , getDblLinkedSings
                          , getMatchingChanWithName
@@ -527,7 +527,7 @@ extractMobIdsFromEiss ms = foldl' helper []
 -----
 
 
-fillHelper :: HasCallStack => Id -> MudState -> LastArgIsTargetBindings -> Id -> GenericResWithHooks
+fillHelper :: HasCallStack => Id -> MudState -> LastArgIsTargetBindings -> Id -> GenericResWithFuns
 fillHelper i ms LastArgIsTargetBindings { .. } targetId =
     let (inInvs, inEqs, inRms)      = sortArgsInvEqRm InInv otherArgs
         sorryInEq                   = inEqs |!| sorryFillInEq
@@ -556,11 +556,11 @@ genericActionHelper ActionParams { .. } fn toSelfs bs logMsgs = getState >>= \ms
     bcastIfNotIncogNl myId bs
 
 
-genericActionWithHooks :: HasCallStack => ActionParams
-                       -> (V.Vector Int -> MudState -> GenericResWithHooks)
-                       -> Text
-                       -> MudStack ()
-genericActionWithHooks p helper fn = mkRndmVector >>= \v ->
+genericActionWithFuns :: HasCallStack => ActionParams
+                      -> (V.Vector Int -> MudState -> GenericResWithFuns)
+                      -> Text
+                      -> MudStack ()
+genericActionWithFuns p helper fn = mkRndmVector >>= \v ->
     helper v |&| modifyState >=> \(toSelfs, bs, logMsgs, fs) -> do genericActionHelper p fn toSelfs bs logMsgs
                                                                    sequence_ fs
 
@@ -572,8 +572,8 @@ genericSorry :: MudState -> Text -> GenericRes
 genericSorry ms = (ms, ) . (, [], []) . pure
 
 
-genericSorryWithHooks :: MudState -> Text -> GenericResWithHooks
-genericSorryWithHooks ms = (ms, ) . (, [], [], []) . pure
+genericSorryWithFuns :: MudState -> Text -> GenericResWithFuns
+genericSorryWithFuns ms = (ms, ) . (, [], [], []) . pure
 
 
 -----

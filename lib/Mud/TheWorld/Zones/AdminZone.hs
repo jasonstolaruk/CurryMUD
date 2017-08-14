@@ -434,7 +434,7 @@ pickRmActionFunName = "AdminZone_iAtrium_pick"
 
 pick :: RmActionFun
 pick p@AdviseNoArgs     = advise p [] advicePickNoArgs
-pick p@(LowerNub' i as) = genericActionWithHooks p helper "pick"
+pick p@(LowerNub' i as) = genericActionWithFuns p helper "pick"
   where
     helper v ms =
         let (inInvs, inEqs, inRms) = sortArgsInvEqRm InRm as

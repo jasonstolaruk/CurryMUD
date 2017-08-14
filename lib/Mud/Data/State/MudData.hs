@@ -1093,7 +1093,7 @@ type GenericIntermediateRes = (MudState,  [Text], [Broadcast], [Text])
 type GenericRes             = (MudState, ([Text], [Broadcast], [Text]))
 
 
-type GenericResWithHooks    = (MudState, ([Text], [Broadcast], [Text], Funs))
+type GenericResWithFuns     = (MudState, ([Text], [Broadcast], [Text], Funs))
 
 
 type Broadcast = (Text, Inv)
