@@ -22,7 +22,7 @@ import           Mud.Util.Text
 import           Control.Exception.Lifted (catch, finally, handle)
 import           Control.Lens (at, views)
 import           Control.Lens.Operators ((%~), (.~))
-import           Control.Monad (unless)
+import           Control.Monad (unless, when)
 import           Control.Monad.IO.Class (liftIO)
 import           Data.List (delete)
 import qualified Data.Map.Strict as M (elems, filterWithKey)
@@ -58,29 +58,32 @@ threadLightTimer i = helper `catch` threadExHandler (Just i) "light timer"
             (locIsMob, (mq, cols), locInv) = ((,,) <$> uncurry hasMobId
                                                    <*> uncurry getMsgQueueColumns
                                                    <*> uncurry getInv) (locId, ms)
-            ioHelper    = wrapSend mq cols
-            bcastHelper = unless isInMobInv . bcastIfNotIncogNl locId
-            isInMobInv  = i `elem` locInv
-            mkBs t      = pure (t, locId `delete` desigIds d)
-            d           = mkStdDesig locId ms DoCap
-            mobIdsInRm  = findMobIds ms locInv
-            leadTxt     | isInMobInv = the' s
-                        | otherwise  = "Your " <> s
-            inInvTxt    = isInMobInv |?| (spcL . parensQuote $ "in your inventory")
-            notify | secs == 10 = if | locIsMob  -> do ioHelper . T.concat $ [ leadTxt, inInvTxt, " is about to go out." ] -- TODO
-                                                       bcastHelper . mkBs . T.concat $ [ serialize d, "'s ", s, " is about to go out." ]
-                                     | otherwise -> bcastNl . pure $ (T.concat [ the' s <> " is about to go out." ], mobIdsInRm)
-                   | otherwise = unit
+            ioHelper     = wrapSend mq cols
+            bcastHelper  = unless isInMobInv . bcastIfNotIncogNl locId
+            isInMobInv   = i `elem` locInv
+            mkBs t       = pure (t, locId `delete` desigIds d)
+            d            = mkStdDesig locId ms DoCap
+            mobIdsInRm   = findMobIds ms locInv
+            leadTxt      | isInMobInv = the' s
+                         | otherwise  = "Your " <> s
+            inInvTxt     = mkInInvTxt "in your inventory"
+            mkInInvTxt t = isInMobInv |?| (spcL . parensQuote $ t)
+            notify           | secs == 10 = notifyHelper " is about to go out."                              True
+                             | secs == 15 = notifyHelper " only has a few minutes of light left."            False
+                             | secs == 20 = notifyHelper " has perhaps about fifteen minutes of light left." False
+                             | otherwise  = unit
+            notifyHelper t b | locIsMob   = do ioHelper $ leadTxt <> inInvTxt <> t
+                                               when b . bcastHelper . mkBs . T.concat $ [ serialize d, "'s ", s, t ]
+                             | otherwise  = bcastNl . pure $ (the' s <> t, mobIdsInRm)
         in if secs > 0
           then do notify
                   liftIO . delaySecs $ 1
                   tweak $ lightTbl.ind i.lightSecs %~ pred
                   loop
           else if -- Exit the loop.
-            | locIsMob  -> let toSelf  = T.concat [ "Your ", s, mkAux "in your inventory", " goes out." ]
-                               mkAux t = isInMobInv |?| (spcL . parensQuote $ t)
-                               bs      = mkBs . T.concat $ [ serialize d, "'s ", s, " goes out." ]
-                               logMsg  = T.concat [ "The light timer for the ", s, mkAux "in inventory", " is expiring." ]
+            | locIsMob  -> let toSelf = leadTxt <> inInvTxt <> " goes out."
+                               bs     = mkBs . T.concat $ [ serialize d, "'s ", s, " goes out." ]
+                               logMsg = T.concat [ "The light timer for the ", s, mkInInvTxt "in inventory", " is expiring." ]
                            in do logPla "threadLightTimer loop" locId logMsg
                                  setNotLit
                                  ioHelper toSelf
@@ -91,7 +94,7 @@ threadLightTimer i = helper `catch` threadExHandler (Just i) "light timer"
     cleanUp   = tweak $ lightAsyncTbl.at  i            .~ Nothing
 
 
- -----
+-----
 
 
 stopLightTimers :: HasCallStack => Id -> MudStack () -- When a player logs out. The caller is responsible for setting "lightIsLit" to "False" when applicable.
