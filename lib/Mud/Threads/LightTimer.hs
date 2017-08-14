@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE MultiWayIf, OverloadedStrings #-}
 
 module Mud.Threads.LightTimer ( restartLightTimers
                               , startLightTimer
@@ -13,6 +13,7 @@ import           Mud.Data.State.Util.Misc
 import           Mud.Data.State.Util.Output
 import qualified Mud.Misc.Logging as L (logPla)
 import           Mud.Threads.Misc
+-- import           Mud.TopLvlDefs.Seconds
 import           Mud.Util.Misc
 import           Mud.Util.Operators
 import           Mud.Util.Quoting
@@ -45,31 +46,49 @@ startLightTimer i = runAsync (threadLightTimer i) >>= \a -> tweak $ lightAsyncTb
 -----
 
 
-threadLightTimer :: HasCallStack => Id -> MudStack () -- TODO: Consider notifying the user when their light source is about to go out.
+threadLightTimer :: HasCallStack => Id -> MudStack ()
 threadLightTimer i = helper `catch` threadExHandler (Just i) "light timer"
   where
     helper = descSingId i <$> getState >>= \singId ->
         let f = sequence_ [ setThreadType . LightTimer $ i, loop ]
         in handle (die Nothing ("light timer for " <> singId)) $ f `finally` cleanUp
-    loop = getState >>= \ms -> let secs = getLightSecs i ms in if secs > 0
-      then do liftIO . delaySecs $ 1
-              tweak $ lightTbl.ind i.lightSecs %~ pred
-              loop
-      else let (locId, s) = (getLocation `fanUncurry` getSing) (i, ms)
-               d          = mkStdDesig locId ms DoCap
-               is         = getInv locId ms
-           in if hasMobId locId ms
-             then let (mq, cols) = getMsgQueueColumns locId ms
-                      toSelf     = T.concat [ "Your ", s, mkAux "in your inventory", " goes out." ]
-                      mkAux txt  = isInInv |?| (spcL . parensQuote $ txt)
-                      isInInv    = i `elem` is
-                      bs         = pure (T.concat [ serialize d, "'s ", s, " goes out." ], locId `delete` desigIds d)
-                      logMsg     = T.concat [ "The light timer for the ", s, mkAux "in inventory", " is expiring." ]
-                  in do logPla "threadLightTimer loop" locId logMsg
-                        wrapSend mq cols toSelf
-                        unless isInInv . bcastIfNotIncogNl locId $ bs
-             else bcastNl . pure $ ("The " <> s <> " goes out.", findMobIds ms is)
-    cleanUp = tweak $ lightAsyncTbl.at i .~ Nothing -- Don't set "lightIslit" to "False" here.
+    loop = getState >>= \ms ->
+        let secs       = getLightSecs i ms
+            (locId, s) = (getLocation `fanUncurry` getSing) (i, ms)
+            (locIsMob, (mq, cols), locInv) = ((,,) <$> uncurry hasMobId
+                                                   <*> uncurry getMsgQueueColumns
+                                                   <*> uncurry getInv) (locId, ms)
+            ioHelper    = wrapSend mq cols
+            bcastHelper = unless isInMobInv . bcastIfNotIncogNl locId
+            isInMobInv  = i `elem` locInv
+            mkBs t      = pure (t, locId `delete` desigIds d)
+            d           = mkStdDesig locId ms DoCap
+            mobIdsInRm  = findMobIds ms locInv
+            leadTxt     | isInMobInv = the' s
+                        | otherwise  = "Your " <> s
+            inInvTxt    = isInMobInv |?| (spcL . parensQuote $ "in your inventory")
+            setNotLit   = tweak $ lightTbl.ind i.lightIsLit .~ False
+            notify | secs == 10 = if | locIsMob  -> do ioHelper . T.concat $ [ leadTxt, inInvTxt, " is about to go out." ] -- TODO
+                                                       bcastHelper . mkBs . T.concat $ [ serialize d, "'s ", s, " is about to go out." ]
+                                     | otherwise -> bcastNl . pure $ (T.concat [ the' s <> " is about to go out." ], mobIdsInRm)
+                   | otherwise = unit
+        in if secs > 0
+          then do notify
+                  liftIO . delaySecs $ 1
+                  tweak $ lightTbl.ind i.lightSecs %~ pred
+                  loop
+          else if -- Exit the loop.
+            | locIsMob  -> let toSelf  = T.concat [ "Your ", s, mkAux "in your inventory", " goes out." ]
+                               mkAux t = isInMobInv |?| (spcL . parensQuote $ t)
+                               bs      = mkBs . T.concat $ [ serialize d, "'s ", s, " goes out." ]
+                               logMsg  = T.concat [ "The light timer for the ", s, mkAux "in inventory", " is expiring." ]
+                           in do logPla "threadLightTimer loop" locId logMsg
+                                 setNotLit
+                                 ioHelper toSelf
+                                 bcastHelper bs
+            | otherwise -> do setNotLit
+                              bcastNl . pure $ ("The " <> s <> " goes out.", mobIdsInRm)
+    cleanUp = tweak $ lightAsyncTbl.at i .~ Nothing
 
 
  -----
