@@ -1117,18 +1117,25 @@ helperPutEitherInv :: HasCallStack => Id
 helperPutEitherInv i d mnom toId toSing a@(ms, origToSelfs, _, _) = \case
   Left  msg -> a & _2 <>~ pure msg
   Right is  ->
-    let (is',  sorrys )   = checkNowEating i ms "put" "in a container" is
-        (is'', toSelfs)   = onTrue (toId `elem` is') f (is', origToSelfs)
+    let (is', toSelfs)    | pair   <- checkNowEating i ms "put" "in a container" is
+                          , (x, y) <- checkIsLitLight pair
+                          = second (++ y) . onTrue (toId `elem` x) f $ (x, origToSelfs)
         f                 = filter (/= toId) *** (<> pure (sorryPutInsideSelf toSing))
         (_, cans, can'ts) = foldl' (partitionInvByVol ms . getConCapacity toId $ ms)
                                    (calcInvCoinsVol toId ms, [], [])
-                                   is''
+                                   is'
         (toSelfs', bs)    = mkPutRemInvDescs i ms d Put mnom (mkMaybeCorpseId toId ms) toSing cans
     in a & _1.invTbl.ind i    %~  (\\ cans)
          & _1.invTbl.ind toId %~  addToInv ms cans
-         & _2                 .~  concat [ sorrys, toSelfs, toSelfs', mkCan'tPutInvDescs toSing i ms can'ts ]
+         & _2                 .~  concat [ toSelfs, toSelfs', mkCan'tPutInvDescs toSing i ms can'ts ]
          & _3                 <>~ bs
          & _4                 <>~ toSelfs'
+  where
+    checkIsLitLight pair = let f pair' i' | getType i' ms == LightType, getLightIsLit i' ms
+                                          , msg <- sorryPutLitLight (getSing i' ms) toSing
+                                          = ((i' `delete`) *** (++ pure msg)) pair'
+                                          | otherwise = pair'
+                           in foldl' f pair . fst $ pair
 
 
 partitionInvByVol :: HasCallStack => MudState -> Vol -> (Vol, Inv, Inv) -> Id -> (Vol, Inv, Inv)

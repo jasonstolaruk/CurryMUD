@@ -237,6 +237,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryActing
                            , sorryPutInEq
                            , sorryPutInRm
                            , sorryPutInsideSelf
+                           , sorryPutLitLight
                            , sorryPutVol
                            , sorryQuitCan'tAbbrev
                            , sorryQuoteChars
@@ -1668,6 +1669,14 @@ sorryPutInRm = butCan't "put item in your current room into a container. Please 
 
 sorryPutInsideSelf :: Sing -> Text
 sorryPutInsideSelf s = can't "put the " <> s <> " inside itself."
+
+
+sorryPutLitLight :: Sing -> Sing -> Text
+sorryPutLitLight lightSing conSing = T.concat [ "You think twice about putting the lit "
+                                              , lightSing
+                                              , " in the "
+                                              , conSing
+                                              , "." ]
 
 
 sorryPutVol :: Sing -> Text
