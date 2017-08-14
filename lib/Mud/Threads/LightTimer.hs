@@ -69,14 +69,14 @@ threadLightTimer i = helper `catch` threadExHandler (Just i) "light timer"
                         wrapSend mq cols toSelf
                         unless isInInv . bcastIfNotIncogNl locId $ bs
              else bcastNl . pure $ ("The " <> s <> " goes out.", findMobIds ms is)
-    cleanUp = tweaks [ lightTbl.ind i.lightIsLit .~ False, lightAsyncTbl.at i .~ Nothing ]
+    cleanUp = tweak $ lightAsyncTbl.at i .~ Nothing -- Don't set "lightIslit" to "False" here.
 
 
  -----
 
 
 stopLightTimers :: HasCallStack => Id -> MudStack () -- When a player logs out. The caller is responsible for setting "lightIsLit" to "False" when applicable.
-stopLightTimers i = getState >>= \ms -> let is        = getMob'sLights i ms -- TODO: Test.
+stopLightTimers i = getState >>= \ms -> let is        = getMob'sLights i ms
                                             f lightId = views (lightAsyncTbl.at lightId) (maybeVoid throwDeath) ms
                                         in logPla "stopLightTimers" i "stopping light timers." >> mapM_ f is
 
@@ -93,7 +93,7 @@ getMob'sLights i ms = lightsInEq ++ lightsInInv
 
 
 restartLightTimers :: HasCallStack => Id -> MudStack () -- When a player logs in.
-restartLightTimers i = getState >>= \ms -> -- TODO: Test.
+restartLightTimers i = getState >>= \ms ->
     let f lightId | ((&&) <$> uncurry getLightIsLit <*> (> 0) . uncurry getLightSecs) (lightId, ms)
                   = startLightTimer lightId
                   | otherwise = unit
