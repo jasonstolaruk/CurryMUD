@@ -1024,10 +1024,11 @@ getExpCmdByName cn = head . S.toList . S.filter (\(ExpCmd cn' _ _) -> cn' == cn)
 expCmd :: HasCallStack => ExpCmd -> ActionFun
 expCmd (ExpCmd ecn HasTarget {} _   ) p@NoArgs {}        = advise p [] . sorryExpCmdRequiresTarget $ ecn
 expCmd (ExpCmd ecn ect          desc) (NoArgs i mq cols) = getState >>= \ms@(getRace i -> r) -> case ect of
-  (NoTarget  toSelf toOthers      ) | r `elem` furRaces -> wrapSend mq cols . sorryExpCmdBlush . pp $ r
-                                    | otherwise         -> helper ms toSelf toOthers
-  (Versatile toSelf toOthers _ _ _)                     -> helper ms toSelf toOthers
-  _                                                     -> pmf "expCmd" ect
+  (NoTarget  toSelf toOthers      ) | r `elem` furRaces
+                                    , ecn == "blush" -> wrapSend mq cols . sorryExpCmdBlush . pp $ r
+                                    | otherwise      -> helper ms toSelf toOthers
+  (Versatile toSelf toOthers _ _ _)                  -> helper ms toSelf toOthers
+  _                                                  -> pmf "expCmd" ect
   where
     furRaces                  = [ Felinoid, Lagomorph, Vulpenoid ]
     helper ms toSelf toOthers =
