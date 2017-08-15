@@ -21,6 +21,7 @@ Note that a lit torch or lamp in your inventory will not illuminate the room: yo
 \qlight torch\d to light your torch (in your readied equipment) using your tinderbox (in your inventory).4`
 \qlight \p2#i\qtorch\d to light your second torch.4`
 \qlight torch \p2#i\qtinderbox\d to light your torch using your second tinderbox.4`
+\qlight \li#l\p2#i\qtorch\d to light your second torch (in your inventory).4`
 
 \uSEE ALSO\n
 drop, extinguish, prefixes, ready, refuel

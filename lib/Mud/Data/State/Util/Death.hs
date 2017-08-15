@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
-{-# LANGUAGE LambdaCase, MonadComprehensions, OverloadedStrings, TupleSections, ViewPatterns #-}
+{-# LANGUAGE FlexibleContexts, LambdaCase, MonadComprehensions, OverloadedStrings, TupleSections, ViewPatterns #-}
 
 module Mud.Data.State.Util.Death (handleDeath) where
 
@@ -33,14 +33,14 @@ import           Mud.Util.Operators
 import           Mud.Util.Quoting
 import           Mud.Util.Text
 
-import           Control.Arrow ((***), first)
-import           Control.Lens (_1, _2, _3, at, view, views)
+import           Control.Arrow ((&&&), (***), first)
+import           Control.Lens (_1, _2, _3, at, both, view, views)
 import           Control.Lens.Operators ((.~), (&), (%~), (^.), (<>~))
-import           Control.Monad (forM_, unless, when)
+import           Control.Monad ((>=>), forM_, unless, when)
 import           Control.Monad.IO.Class (liftIO)
 import           Data.Bits (setBit, zeroBits)
 import           Data.Function (on)
-import           Data.List (delete, sortBy)
+import           Data.List ((\\), delete, sortBy)
 import           Data.Monoid ((<>))
 import           Data.Text (Text)
 import           GHC.Stack (HasCallStack)
@@ -63,13 +63,14 @@ logPla = L.logPla "Mud.Data.State.Util.Death"
 
 {-
 When Taro (a PC) dies:
-1) Taro's corpse is created.
-2) Taro's inventory, equipment, and coins are cloned; the clones are placed on Taro's corpse.
-3) Taro's PC becomes a disembodied spirit (see below).
-4) When the allotted time is up, Taro's spirit passes into the beyond.
-5) Taro's PC is sent to the Necropolis.
-6) Taro's player is shown Taro's stats.
-7) Taro's player is disconnected.
+1) Taro drops all lit lights.
+2) Taro's corpse is created.
+3) Taro's inventory, equipment, and coins are cloned; the clones are placed on Taro's corpse.
+4) Taro's PC becomes a disembodied spirit (see below).
+5) When the allotted time is up, Taro's spirit passes into the beyond.
+6) Taro's PC is sent to the Necropolis.
+7) Taro's player is shown Taro's stats.
+8) Taro's player is disconnected.
 
 About spirits:
 A player has a certain amount of time as a spirit, depending on level.
@@ -79,22 +80,38 @@ Those links with the greatest volume of messages are retained. If the deceased P
 -}
 
 
-handleDeath :: HasCallStack => Id -> MudStack () -- TODO: Lit light sources should be put in the room's inventory ("dropped") so they may continue to provide illumination.
+handleDeath :: HasCallStack => Id -> MudStack ()
 handleDeath i = isNpc i <$> getState >>= \npc -> do
     logPla "handleDeath" i "handling death."
     stopActs i
+    dropLitLights |&| modifyState >=> \(bs, logMsgs) -> do logPla "handleEgress egressHelper" i . slashes $ logMsgs
+                                                           bcastNl bs
     tweaks [ leaveParty i
            , mobTbl.ind i.mobRmDesc .~ Nothing
            , mobTbl.ind i.tempDesc  .~ Nothing
            , mobTbl.ind i.stomach   .~ [] ]
-    when   npc . possessHelper $ i
-    unless npc . leaveChans    $ i
-    pauseEffects                 i
-    stopFeelings                 i
-    stopRegen                    i
-    throwWaitDigester            i
-    modifyStateSeq . mkCorpse  $ i
-    i |&| (npc ? deleteNpc :? spiritize)
+    mapM_ (i |&|) [ when   npc . possessHelper
+                  , unless npc . leaveChans
+                  , pauseEffects
+                  , stopFeelings
+                  , stopRegen
+                  , throwWaitDigester
+                  , modifyStateSeq . mkCorpse
+                  , npc ? deleteNpc :? spiritize ]
+  where
+    dropLitLights ms = let lightIds  = (uncurry getInv &&& (M.elems . uncurry getEqMap)) (i, ms) & both %~ filter f
+                                                                                                 & uncurry (++)
+                           f         = ((&&) <$> ((== LightType) . uncurry getType) <*> uncurry getLightIsLit) . (, ms)
+                           g i' pair | s <- getSing i' ms
+                                     = pair & _1 %~ ((prd $ "You drop your lit " <> s,           pure i               ) :)
+                                            & _1 %~ ((prd $ serialize d <> " drops a lit " <> s, i `delete` desigIds d) :)
+                                            & _2 %~ ((prd $ "Dropped a lit " <> s) :)
+                           d         = mkStdDesig i ms DoCap
+                           ri        = getRmId i ms
+                       in ( ms & invTbl.ind ri %~ addToInv ms lightIds
+                               & invTbl.ind i  %~ (\\ lightIds)
+                               & eqTbl .ind i  %~ M.filter (`notElem` lightIds)
+                          , foldr g ([], []) lightIds )
 
 
 possessHelper :: HasCallStack => Id -> MudStack ()
