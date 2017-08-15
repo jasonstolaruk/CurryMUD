@@ -22,6 +22,7 @@ import           Mud.Threads.CorpseDecomposer
 import           Mud.Threads.Digester
 import           Mud.Threads.Effect
 import           Mud.Threads.InacTimer
+import           Mud.Threads.LightTimer
 import           Mud.Threads.Misc
 import           Mud.Threads.NpcServer
 import           Mud.Threads.Regen
@@ -169,11 +170,12 @@ cowbye h = liftIO takeADump `catch` fileIOExHandler "cowbye"
 
 
 shutDown :: HasCallStack => MudStack ()
-shutDown = massMsg SilentBoot >> onNewThread commitSuicide -- TODO: Should this really be on a new thread?
+shutDown = massMsg SilentBoot >> onNewThread commitSuicide
   where
-    commitSuicide = do liftIO . mapM_ wait . M.elems . view talkAsyncTbl =<< getState -- TODO: We should formally stop all light timers that have not been canceled after everyone has been disconnected.
+    commitSuicide = do liftIO . mapM_ wait . M.elems . view talkAsyncTbl =<< getState
                        logNotice "shutDown commitSuicide" "everyone has been disconnected."
                        stopNpcActs
+                       massStopLightTimers
                        stopBiodegraders
                        stopRmFuns
                        massPauseEffects

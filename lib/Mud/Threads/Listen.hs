@@ -20,6 +20,7 @@ import           Mud.Threads.CorpseDecomposer
 import           Mud.Threads.DbTblPurger
 import           Mud.Threads.Digester
 import           Mud.Threads.Effect
+import           Mud.Threads.LightTimer
 import           Mud.Threads.Misc
 import           Mud.Threads.NpcServer
 import           Mud.Threads.Regen
@@ -105,6 +106,7 @@ listen = setThreadType Listen >> mIf initWorld proceed halt
                     massRestartPausedEffects
                     startRmFuns
                     startBiodegraders
+                    massRestartLightTimers
                     sortAllInvs
                     logInterfaces
                     startRest

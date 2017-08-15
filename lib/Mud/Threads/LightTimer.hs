@@ -1,6 +1,8 @@
 {-# LANGUAGE MultiWayIf, OverloadedStrings #-}
 
-module Mud.Threads.LightTimer ( restartLightTimers
+module Mud.Threads.LightTimer ( massRestartLightTimers
+                              , massStopLightTimers
+                              , restartLightTimers
                               , startLightTimer
                               , stopLightTimers
                               , threadLightTimer ) where
@@ -11,25 +13,31 @@ import           Mud.Data.State.Util.Get
 import           Mud.Data.State.Util.Hierarchy
 import           Mud.Data.State.Util.Misc
 import           Mud.Data.State.Util.Output
-import qualified Mud.Misc.Logging as L (logPla)
+import qualified Mud.Misc.Logging as L (logNotice, logPla)
 import           Mud.Threads.Misc
--- import           Mud.TopLvlDefs.Seconds
+import           Mud.TopLvlDefs.Seconds
 import           Mud.Util.Misc
 import           Mud.Util.Operators
 import           Mud.Util.Quoting
 import           Mud.Util.Text
 
+import           Control.Concurrent.Async (cancel)
 import           Control.Exception.Lifted (catch, finally, handle)
 import           Control.Lens (at, views)
 import           Control.Lens.Operators ((%~), (.~))
 import           Control.Monad (unless, when)
 import           Control.Monad.IO.Class (liftIO)
+import qualified Data.IntMap.Strict as IM (elems)
 import           Data.List (delete)
 import qualified Data.Map.Strict as M (elems, filterWithKey)
 import           Data.Monoid ((<>))
 import           Data.Text (Text)
 import qualified Data.Text as T
 import           GHC.Stack (HasCallStack)
+
+
+logNotice :: Text -> Text -> MudStack ()
+logNotice = L.logNotice "Mud.Threads.LightTimer"
 
 
 logPla :: Text -> Id -> Text -> MudStack ()
@@ -68,10 +76,10 @@ threadLightTimer i = helper `catch` threadExHandler (Just i) "light timer"
                                           | otherwise  = "Your " <> s
                                         y              = mkInInvTxt "in your inventory"
             mkInInvTxt t = isInMobInv |?| (spcL . parensQuote $ t)
-            notify           | secs == 10 = notifyHelper " is about to go out."                              True
-                             | secs == 15 = notifyHelper " only has a few minutes of light left."            False
-                             | secs == 20 = notifyHelper " has perhaps about fifteen minutes of light left." False
-                             | otherwise  = unit
+            notify           | secs == oneMinInSecs      = notifyHelper " is about to go out."                              True
+                             | secs == fiveMinsInSecs    = notifyHelper " only has a few minutes of light left."            False
+                             | secs == fifteenMinsInSecs = notifyHelper " has perhaps about fifteen minutes of light left." False
+                             | otherwise                 = unit
             notifyHelper t b | locIsMob   = do ioHelper $ leadTxt <> t
                                                when b . bcastHelper . mkBs . T.concat $ [ serialize d, "'s ", s, t ]
                              | otherwise  = bcastNl . pure $ (the' s <> t, mobIdsInRm)
@@ -119,3 +127,18 @@ restartLightTimers i = getState >>= \ms ->
                   = startLightTimer lightId
                   | otherwise = unit
     in logPla "restartLightTimers" i "restarting light timers." >> mapM_ f (getMob'sLights i ms)
+
+
+-----
+
+
+massRestartLightTimers :: HasCallStack => MudStack () -- At server startup.
+massRestartLightTimers = logNotice "massRestartLightTimers" "mass restarting light timers."
+
+
+-----
+
+
+massStopLightTimers :: HasCallStack => MudStack () -- At server shutdown, after everyone has been disconnected.
+massStopLightTimers = do logNotice "massStopLightTimers" "mass stopping light timers."
+                         views lightAsyncTbl (mapM_ (liftIO . cancel) . IM.elems) =<< getState
