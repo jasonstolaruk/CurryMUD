@@ -1,6 +1,6 @@
-{-# LANGUAGE MultiWayIf, OverloadedStrings #-}
+{-# LANGUAGE MultiWayIf, OverloadedStrings, TupleSections #-}
 
-module Mud.Threads.LightTimer ( massRestartLightTimers
+module Mud.Threads.LightTimer ( massRestartNpcLightTimers
                               , massStopLightTimers
                               , restartLightTimers
                               , startLightTimer
@@ -21,13 +21,12 @@ import           Mud.Util.Operators
 import           Mud.Util.Quoting
 import           Mud.Util.Text
 
-import           Control.Concurrent.Async (cancel)
-import           Control.Exception.Lifted (catch, finally, handle)
-import           Control.Lens (at, views)
+import           Control.Exception.Lifted (finally, handle)
+import           Control.Lens (at, to, views)
 import           Control.Lens.Operators ((%~), (.~))
 import           Control.Monad (unless, when)
 import           Control.Monad.IO.Class (liftIO)
-import qualified Data.IntMap.Strict as IM (elems)
+import qualified Data.IntMap.Strict as IM (elems, keys)
 import           Data.List (delete)
 import qualified Data.Map.Strict as M (elems, filterWithKey)
 import           Data.Monoid ((<>))
@@ -55,34 +54,30 @@ startLightTimer i = runAsync (threadLightTimer i) >>= \a -> tweak $ lightAsyncTb
 
 
 threadLightTimer :: HasCallStack => Id -> MudStack ()
-threadLightTimer i = helper `catch` threadExHandler (Just i) "light timer"
+threadLightTimer i = descSingId i <$> getState >>= \singId ->
+    let f = sequence_ [ setThreadType . LightTimer $ i, loop ]
+    in handle (die Nothing ("light timer for " <> singId)) $ f `finally` cleanUp
   where
-    helper = descSingId i <$> getState >>= \singId ->
-        let f = sequence_ [ setThreadType . LightTimer $ i, loop ]
-        in handle (die Nothing ("light timer for " <> singId)) $ f `finally` cleanUp
     loop = getState >>= \ms ->
-        let secs       = getLightSecs i ms
-            (locId, s) = (getLocation `fanUncurry` getSing) (i, ms)
-            (locIsMob, (mq, cols), locInv) = ((,,) <$> uncurry hasMobId
-                                                   <*> uncurry getMsgQueueColumns
-                                                   <*> uncurry getInv) (locId, ms)
-            ioHelper     = wrapSend mq cols
-            bcastHelper  = unless isInMobInv . bcastIfNotIncogNl locId
-            isInMobInv   = i `elem` locInv
-            mkBs t       = pure (t, locId `delete` desigIds d)
-            d            = mkStdDesig locId ms DoCap
-            mobIdsInRm   = findMobIds ms locInv
-            leadTxt      = x <> y where x | isInMobInv = the' s
-                                          | otherwise  = "Your " <> s
-                                        y              = mkInInvTxt "in your inventory"
-            mkInInvTxt t = isInMobInv |?| (spcL . parensQuote $ t)
-            notify           | secs == oneMinInSecs      = notifyHelper " is about to go out."                              True
-                             | secs == fiveMinsInSecs    = notifyHelper " only has a few minutes of light left."            False
-                             | secs == fifteenMinsInSecs = notifyHelper " has perhaps about fifteen minutes of light left." False
-                             | otherwise                 = unit
-            notifyHelper t b | locIsMob   = do ioHelper $ leadTxt <> t
-                                               when b . bcastHelper . mkBs . T.concat $ [ serialize d, "'s ", s, t ]
-                             | otherwise  = bcastNl . pure $ (the' s <> t, mobIdsInRm)
+        let (secs, locId, s)   = ((,,) <$> uncurry getLightSecs <*> uncurry getLocation <*> uncurry getSing) (i, ms)
+            (locIsMob, locInv) = ((,)  <$> uncurry hasMobId     <*> uncurry getInv) (locId, ms)
+            bcastSelf   = bcastNl . pure . (, pure locId)
+            bcastHelper = unless isInMobInv . bcastIfNotIncogNl locId
+            isInMobInv  = i `elem` locInv
+            mkBs        = pure . (, locId `delete` desigIds d)
+            d           = mkStdDesig locId ms DoCap
+            mobIdsInRm  = findMobIds ms locInv
+            leadTxt     = x <> y where x | isInMobInv = the' s
+                                         | otherwise  = "Your " <> s
+                                       y              = mkInInvTxt "in your inventory"
+            mkInInvTxt t = isInMobInv |?| spcL (parensQuote t)
+            notify | secs == oneMinInSecs      = notifyHelper " is about to go out."                              True
+                   | secs == fiveMinsInSecs    = notifyHelper " only has a few minutes of light left."            False
+                   | secs == fifteenMinsInSecs = notifyHelper " has perhaps about fifteen minutes of light left." False
+                   | otherwise                 = unit
+            notifyHelper t b | locIsMob  = do bcastSelf $ leadTxt <> t
+                                              when b . bcastHelper . mkBs . T.concat $ [ serialize d, "'s ", s, t ]
+                             | otherwise = bcastNl . pure $ (the' s <> t, mobIdsInRm)
         in if secs > 0
           then do notify
                   liftIO . delaySecs $ 1
@@ -94,7 +89,7 @@ threadLightTimer i = helper `catch` threadExHandler (Just i) "light timer"
                                logMsg = T.concat [ "The light timer for the ", s, mkInInvTxt "in inventory", " is expiring." ]
                            in do logPla "threadLightTimer loop" locId logMsg
                                  setNotLit
-                                 ioHelper toSelf
+                                 bcastSelf toSelf
                                  bcastHelper bs
             | otherwise -> sequence_ [ setNotLit, bcastNl . pure $ (the' s <> " goes out.", mobIdsInRm) ]
     setNotLit = tweak $ lightTbl     .ind i.lightIsLit .~ False
@@ -113,9 +108,10 @@ stopLightTimers i = getState >>= \ms -> let is        = getMob'sLights i ms
 getMob'sLights :: HasCallStack => Id -> MudState -> Inv
 getMob'sLights i ms = lightsInEq ++ lightsInInv
   where
-    lightsInEq  = let f k v | k `elem` [ RHandS, LHandS ] = getType v ms == LightType | otherwise = False
+    lightsInEq  = let f k v | k `elem` [ RHandS, LHandS ] = isLight v | otherwise = False
                   in M.elems . M.filterWithKey f . getEqMap i $ ms
-    lightsInInv = filter ((== LightType) . (`getType` ms)) . getInv i $ ms
+    lightsInInv = filter isLight . getInv i $ ms
+    isLight     = (== LightType) . (`getType` ms)
 
 
 -----
@@ -123,17 +119,24 @@ getMob'sLights i ms = lightsInEq ++ lightsInInv
 
 restartLightTimers :: HasCallStack => Id -> MudStack () -- When a player logs in.
 restartLightTimers i = getState >>= \ms ->
-    let f lightId | ((&&) <$> uncurry getLightIsLit <*> (> 0) . uncurry getLightSecs) (lightId, ms)
-                  = startLightTimer lightId
-                  | otherwise = unit
+    let f lightId | getLightIsLitHelper lightId ms = startLightTimer lightId
+                  | otherwise                      = unit
     in logPla "restartLightTimers" i "restarting light timers." >> mapM_ f (getMob'sLights i ms)
+
+
+getLightIsLitHelper :: HasCallStack => Id -> MudState -> Bool
+getLightIsLitHelper i = ((&&) <$> uncurry getLightIsLit <*> ((> 0) . uncurry getLightSecs)) . (i , )
 
 
 -----
 
 
-massRestartLightTimers :: HasCallStack => MudStack () -- At server startup.
-massRestartLightTimers = logNotice "massRestartLightTimers" "mass restarting light timers."
+massRestartNpcLightTimers :: HasCallStack => MudStack () -- At server startup.
+massRestartNpcLightTimers = getState >>= \ms ->
+    let helper npcIds | litLightIds <- filter (`getLightIsLitHelper` ms) . concatMap (`getMob'sLights` ms) $ npcIds
+                      = mapM_ startLightTimer litLightIds
+    in do logNotice "massRestartNpcLightTimers" "mass restarting NPC light timers."
+          views (npcTbl.to IM.keys) helper ms
 
 
 -----
@@ -141,4 +144,4 @@ massRestartLightTimers = logNotice "massRestartLightTimers" "mass restarting lig
 
 massStopLightTimers :: HasCallStack => MudStack () -- At server shutdown, after everyone has been disconnected.
 massStopLightTimers = do logNotice "massStopLightTimers" "mass stopping light timers."
-                         views lightAsyncTbl (mapM_ (liftIO . cancel) . IM.elems) =<< getState
+                         views lightAsyncTbl (mapM_ throwDeath . IM.elems) =<< getState

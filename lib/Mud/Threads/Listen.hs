@@ -72,21 +72,14 @@ logNotice = L.logNotice "Mud.Threads.Listen"
 
 
 threadListen :: HasCallStack => MudStack ()
-threadListen = handle listenExHandler $ a `finally` b
+threadListen = a `finally` b
   where
     a = logNotice "threadListen" "server started." >> listen
     b = sequence_ [ getUptime >>= saveUptime, liftIO . closeRestServiceLog =<< getState, closeLogs, liftIO . T.putStrLn . nl $ "Goodbye!" ]
 
 
-listenExHandler :: SomeException -> MudStack ()
-listenExHandler e = let fn = "listenExHandler" in case fromException e of
-  Just UserInterrupt -> logNotice fn "exiting on user interrupt."
-  Just ThreadKilled  -> logNotice fn "thread killed."
-  _                  -> logExMsg  fn "exception caught on listen thread" e >> liftIO printPanicMsg
-
-
 listen :: HasCallStack => MudStack ()
-listen = setThreadType Listen >> mIf initWorld proceed halt
+listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed halt -- Keep this exception handler here.
   where
     proceed = do initialize
                  logNotice "listen proceed" . prd $ "listening for incoming connections on port " <> showTxt port
@@ -106,7 +99,7 @@ listen = setThreadType Listen >> mIf initWorld proceed halt
                     massRestartPausedEffects
                     startRmFuns
                     startBiodegraders
-                    massRestartLightTimers
+                    massRestartNpcLightTimers
                     sortAllInvs
                     logInterfaces
                     startRest
@@ -129,6 +122,13 @@ listen = setThreadType Listen >> mIf initWorld proceed halt
                                 mapM_ throwWait auxAsyncs
                                 liftIO . atomically . void . takeTMVar =<< getLock persistLock
     halt = liftIO . T.putStrLn $ loadWorldErrorMsg
+
+
+listenExHandler :: HasCallStack => SomeException -> MudStack ()
+listenExHandler e = let fn = "listenExHandler" in case fromException e of
+  Just UserInterrupt -> logNotice fn "exiting on user interrupt."
+  Just ThreadKilled  -> logNotice fn "thread killed."
+  _                  -> logExMsg  fn "exception caught on listen thread" e >> liftIO printPanicMsg
 
 
 sortAllInvs :: HasCallStack => MudStack ()
