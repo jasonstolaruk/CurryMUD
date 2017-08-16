@@ -145,7 +145,7 @@ restartPausedHelper i pes = sequence_ [ forM_ pes $ \(PausedEffect e) -> startEf
 
 massRestartPausedEffects :: HasCallStack => MudStack () -- At server startup.
 massRestartPausedEffects = getState >>= \ms -> do logNotice "massRestartPausedEffects" "mass restarting paused effects."
-                                                  views pausedEffectTbl (mapM_ (helper ms) . IM.toList) $ ms
+                                                  views pausedEffectTbl (mapM_ (helper ms) . IM.toList) ms
   where
     helper _  (_, [] )                           = unit
     helper ms (i, _  ) | getType i ms == PlaType = unit
