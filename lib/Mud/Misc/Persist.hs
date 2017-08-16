@@ -21,16 +21,17 @@ import           Control.Monad (when)
 import           Control.Monad.IO.Class (liftIO)
 import           Control.Monad.Trans.Resource (runResourceT)
 import           Data.Aeson (encode, toJSON)
-import           Data.Conduit (($$), (=$), yield)
-import           Data.List (sort)
-import           Data.Text (Text)
-import           Data.Tuple (swap)
 import qualified Data.ByteString.Lazy as LB (toStrict)
+import           Data.Conduit (($$), (=$), yield)
 import qualified Data.Conduit.Binary as CB (sinkFile)
 import qualified Data.Conduit.List as CL (map)
 import qualified Data.IntMap.Strict as IM (fromList, map)
+import           Data.List (sort)
 import qualified Data.Map.Strict as M (toList)
+import           Data.Text (Text)
 import qualified Data.Text as T
+import           Data.Tuple (swap)
+import           GHC.Stack (HasCallStack)
 import           System.Directory (createDirectory, doesDirectoryExist, getDirectoryContents, removeDirectoryRecursive)
 import           System.FilePath ((</>))
 
@@ -46,13 +47,13 @@ logNotice = L.logNotice "Mud.Misc.Persist"
 -- ==================================================
 
 
-persist :: MudStack ()
+persist :: HasCallStack => MudStack ()
 persist = do logNotice "persist" "persisting the world."
              pair <- (,) <$> getLock persistLock <*> getState
              liftIO (uncurry persistHelper pair) `catch` persistExHandler
 
 
-persistHelper :: Lock -> MudState -> IO ()
+persistHelper :: HasCallStack => Lock -> MudState -> IO ()
 persistHelper l ms = withLock l $ do
     dir  <- mkMudFilePath persistDirFun
     path <- getNonExistingPath =<< (dir </>) . T.unpack . T.replace ":" "-" <$> mkTimestamp
@@ -95,6 +96,6 @@ persistHelper l ms = withLock l $ do
     eqTblHelper             = views eqTbl (IM.map (IM.fromList . map swap . M.toList)) ms
 
 
-persistExHandler :: SomeException -> MudStack ()
+persistExHandler :: HasCallStack => SomeException -> MudStack ()
 persistExHandler e = do logExMsg "persistExHandler" (rethrowExMsg "while persisting the world") e
                         throwToListenThread e

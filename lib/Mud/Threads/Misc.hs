@@ -181,7 +181,7 @@ threadExHandler mi threadName e = f >>= \threadName' -> do
 -----
 
 
-threadStarterExHandler :: Id -> FunName -> Maybe Text -> SomeException -> MudStack ()
+threadStarterExHandler :: HasCallStack => Id -> FunName -> Maybe Text -> SomeException -> MudStack ()
 threadStarterExHandler i fn maybeName e = case fromException e of
   Just ThreadKilled -> logPla fn i $ fn <> onFalse (()# name) spcR name <> " has been killed prematurely."
   _                 -> do t <- descSingId i <$> getState
