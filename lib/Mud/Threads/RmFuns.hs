@@ -25,7 +25,7 @@ logNotice = L.logNotice "Mud.Threads.RmFuns"
 -- ==================================================
 
 
-runRmFunAsync :: HasCallStack => Id -> Fun -> MudStack () -- TODO: Do room functions have their own exception handlers?
+runRmFunAsync :: HasCallStack => Id -> Fun -> MudStack () -- Room functions should have their own exception handlers.
 runRmFunAsync i f = runAsync f >>= \a -> tweak $ rmTbl.ind i.rmFunAsyncs <>~ pure a
 
 
