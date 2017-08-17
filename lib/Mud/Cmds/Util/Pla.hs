@@ -1670,15 +1670,17 @@ mkEqDesc i cols ms descId descSing descType = let descs = bool mkDescsOther mkDe
     ()# descs ? noDescs :? ((header <>) . T.unlines . concatMap (wrapIndent 15 cols) $ descs)
   where
     mkDescsSelf =
-        let (slotNames,  es ) = unzip [ (pp slot, getEnt ei ms)     | (slot, ei) <- M.toList . getEqMap i $ ms ]
-            (sings,      ens) = unzip [ view sing &&& mkEntName $ e | e          <- es                         ]
-        in map helper . zip3 slotNames sings . styleAbbrevs DoQuote $ ens
+        let (is, slotNames, es) = unzip3 [ (ei, pp slot, getEnt ei ms) | (slot, ei) <- M.toList . getEqMap i $ ms ]
+            (sings, ens)        = unzip  [ view sing &&& mkEntName $ e | e          <- es                         ]
+        in map helper . zip4 is slotNames sings . styleAbbrevs DoQuote $ ens
       where
-        helper (T.breakOn (spcL "finger") -> (slotName, _), s, styled) = T.concat [ parensPad 15 slotName, s, " ", styled ]
-    mkDescsOther = map helper [ (pp slot, getSing ei ms) | (slot, ei) <- M.toList . getEqMap descId $ ms ]
+        helper (ei, T.breakOn (spcL "finger") -> (slotName, _), s, styled) =
+            T.concat [ parensPad 15 slotName, s, mkAux ei, " ", styled ]
+    mkDescsOther = map helper [ (pp slot, getSing ei ms, mkAux ei) | (slot, ei) <- M.toList . getEqMap descId $ ms ]
       where
-        helper (T.breakOn (spcL "finger") -> (slotName, _), s) = parensPad 15 slotName <> s
-    noDescs = wrapUnlines cols $ if
+        helper (T.breakOn (spcL "finger") -> (slotName, _), s, aux) = parensPad 15 slotName <> s <> aux
+    mkAux ei = isLitLight ei ms |?| (spcL . parensQuote . colorWith emphasisColor $ "lit")
+    noDescs  = wrapUnlines cols $ if
       | descId   == i       -> dudeYou'reNaked
       | descType == PlaType -> parseDesig i ms $ d    <> " doesn't have anything readied."
       | otherwise           -> theOnLowerCap descSing <> " doesn't have anything readied."
@@ -1687,6 +1689,10 @@ mkEqDesc i cols ms descId descSing descType = let descs = bool mkDescsOther mkDe
       | descType == PlaType -> parseDesig i ms $ d    <> " has readied the following equipment:"
       | otherwise           -> theOnLowerCap descSing <> " has readied the following equipment:"
     d = serialize . mkStdDesig descId ms $ DoCap
+
+
+isLitLight :: Id -> MudState -> Bool
+isLitLight i = ((&&) <$> ((== LightType) . uncurry getType) <*> uncurry getLightIsLit) . (i, )
 
 
 mkVesselContDesc :: HasCallStack => Cols -> MudState -> Id -> Text
