@@ -1,3 +1,5 @@
+{-# LANGUAGE TupleSections #-}
+
 module Mud.Data.State.Util.Destroy where
 
 import           Mud.Data.State.MudData
@@ -7,6 +9,7 @@ import           Mud.Data.State.Util.Misc
 import           Mud.Threads.Effect
 import           Mud.Threads.Misc
 import           Mud.Util.Misc
+import           Mud.Util.Operators
 
 import           Control.Lens (at, to)
 import           Control.Lens.Operators ((.~), (%~), (^.))
@@ -27,11 +30,12 @@ destroyDisintegratedCorpse :: HasCallStack => Id -> MudStack ()
 destroyDisintegratedCorpse = destroyer False . pure
 
 
-destroyer :: HasCallStack => DoOrDon'tStopDecomposers -> Inv -> MudStack () -- TODO: modifyStateSeq
-destroyer b is = getState >>= \ms -> do stopBiodegraders      ms
-                                        stopCorpseDecomposers ms
-                                        stopLightTimers       ms
-                                        ((>>) <$> mapM_ stopEffects <*> tweak . destroyHelper) is
+destroyer :: HasCallStack => DoOrDon'tStopDecomposers -> Inv -> MudStack ()
+destroyer b is = let helper ms = (ms, ) . pure $ do mapM_ (ms |&|) [ stopBiodegraders
+                                                                   , stopCorpseDecomposers
+                                                                   , stopLightTimers ]
+                                                    ((>>) <$> mapM_ stopEffects <*> tweak . destroyHelper) is
+                 in modifyStateSeq helper
   where
     stopBiodegraders      ms = forM_ (filter (`hasObjId` ms) is) $ maybeVoid throwDeath . (`getObjBiodegAsync` ms)
     stopCorpseDecomposers ms = when b . forM_ is $ \i -> ms^.corpseDecompAsyncTbl.at i.to (maybeVoid throwDeath)
