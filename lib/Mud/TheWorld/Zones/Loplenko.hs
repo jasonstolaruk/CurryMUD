@@ -476,9 +476,9 @@ readSundialHookFun i Hook { .. } _ a@(_, (ms, _, _, _), _) =
   where
     helper = do (ms', CurryTime { .. }) <- (,) <$> getState <*> liftIO getCurryTime
                 let (mq, cols) = getMsgQueueColumns i ms'
-                wrapSend mq cols $ if isNight curryHour
-                  then "Alas, you'll have to wait for the sun to come out."
-                  else T.concat [ "The sundial reads ", showTxt curryHour, ":", formatMins curryMin, "." ]
+                wrapSend mq cols $ if isDay curryHour
+                  then T.concat [ "The sundial reads ", showTxt curryHour, ":", formatMins curryMin, "." ]
+                  else "Alas, you'll have to wait for the sun to come out."
 
 
 -- ==================================================

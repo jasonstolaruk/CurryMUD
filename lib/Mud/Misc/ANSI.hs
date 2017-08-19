@@ -62,6 +62,7 @@ module Mud.Misc.ANSI ( abbrevColor
                      , spiritMsgColor
                      , syntaxSymbolColor
                      , tempDescColor
+                     , timeNotificationColor
                      , toNpcColor
                      , toPeepedColor
                      , tunedInColor
@@ -335,6 +336,10 @@ syntaxSymbolColor = yellow
 
 tempDescColor :: Text
 tempDescColor = cyan
+
+
+timeNotificationColor :: Text
+timeNotificationColor = yellow
 
 
 toNpcColor :: Text

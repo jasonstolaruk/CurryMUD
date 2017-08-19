@@ -73,7 +73,7 @@ stopAct i actType = views (at actType) (maybeVoid throwDeath) . getActMap i =<< 
 
 
 stopActs :: HasCallStack => Id -> MudStack ()
-stopActs i = sequence_ [ logPla "stopActs" i "stopping all acts.", mapM_ throwWait . M.elems . getActMap i =<< getState ]
+stopActs i = sequence_ [ logPla "stopActs" i "stopping all acts.", mapM_ throwDeathWait . M.elems . getActMap i =<< getState ]
 
 
 stopNpcActs :: HasCallStack => MudStack ()

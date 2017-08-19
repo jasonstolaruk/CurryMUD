@@ -1014,7 +1014,7 @@ mkTimeDescDay {- afternoon -} 13 = mkTimeDescDayHelper "it's past mid-afternoon.
 mkTimeDescDay {- afternoon -} 14 = mkTimeDescDayHelper "it's late afternoon."
 mkTimeDescDay {- evening   -} 15 = mkTimeDescDayHelper "it's now evening, or about 15:00."
 mkTimeDescDay {- evening   -} 16 = mkTimeDescDayHelper "it's mid evening."
-mkTimeDescDay {- evening   -} 17 = mkTimeDescDayHelper "it's late in the evening."
+mkTimeDescDay {- evening   -} 17 = mkTimeDescDayHelper "it's late in the evening and will be dark soon."
 mkTimeDescDay                 x  = pmf "mkTimeDescDay" x
 
 
@@ -1023,7 +1023,8 @@ mkTimeDescDayHelper = ("Judging by the position of the sun in the sky, " <>)
 
 
 mkTimeDescNight :: MoonPhase -> Hour -> Text
-mkTimeDescNight NewMoon _  = "Given that the moon is altogether absent in the sky, you can't tell what time of night it is."
+mkTimeDescNight NewMoon _  = "Given that the moon is altogether absent from the sky, you can't tell what time of night \
+                             \it is."
 mkTimeDescNight phase   0  = mkTimeDescNightHelper phase "it's about midnight."
 mkTimeDescNight phase   1  = mkTimeDescNightHelper phase "it's shortly after midnight."
 mkTimeDescNight phase   2  = mkTimeDescNightHelper phase "it's the middle of the night."

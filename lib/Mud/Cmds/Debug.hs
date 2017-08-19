@@ -35,6 +35,7 @@ import           Mud.Misc.Persist
 import           Mud.TheWorld.Liqs
 import           Mud.TheWorld.Zones.AdminZoneIds (iLoggedOut)
 import           Mud.TheWorld.Zones.WarehouseIds (iPidge)
+import           Mud.Threads.CurryTime
 import           Mud.Threads.Effect
 import           Mud.Threads.Misc
 import           Mud.Threads.NpcServer
@@ -155,6 +156,7 @@ debugCmds =
     , mkDebugCmd "mkkewpie"    debugMkKewpie    "Create a kewpie doll."
     , mkDebugCmd "multiline"   debugMultiLine   "Test multi-line input."
     , mkDebugCmd "nop"         debugNOP         "Send IAC NOP."
+    , mkDebugCmd "notifytime"  debugNotifyTime  "Send time notifications to all outside mobs."
     , mkDebugCmd "npcserver"   debugNpcServer   "Stop all NPC server threads."
     , mkDebugCmd "number"      debugNumber      "Display the decimal equivalent of a given number in a given base."
     , mkDebugCmd "out"         debugOut         "Dump the inventory of the logged out room."
@@ -730,6 +732,18 @@ debugNOP (NoArgs' i mq) = do logPlaExec (prefixDebugCmd "nop") i
                              send mq . T.pack $ [ telnetIAC, telnetNOP ]
                              ok mq
 debugNOP p              = withoutArgs debugNOP p
+
+
+-----
+
+
+debugNotifyTime :: HasCallStack => ActionFun
+debugNotifyTime (NoArgs' i mq) = do logPlaExec (prefixDebugCmd "notifytime") i
+                                    ct <- liftIO getCurryTime
+                                    curryTime ct { curryHour = 17, curryMin = 15, currySec = 0 }
+                                    curryTime ct { curryHour = 17, curryMin = 45, currySec = 0 }
+                                    ok mq
+debugNotifyTime p              = withoutArgs debugNotifyTime p
 
 
 -----

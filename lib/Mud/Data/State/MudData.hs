@@ -1183,6 +1183,7 @@ type TeleLinkTbl = M.Map Sing IsTuned
 data ThreadType = AttackingThread   Id
                 | Biodegrader       Id
                 | CorpseDecomposer  Id
+                | CurryTimeThread
                 | DbTblPurger
                 | Digester          Id
                 | DrinkingThread    Id

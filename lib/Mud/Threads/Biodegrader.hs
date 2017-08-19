@@ -49,7 +49,7 @@ stopBiodegraders = do logNotice "stopBiodegraders"  "stopping biodegraders."
 
 
 throwWaitBiodegrader :: HasCallStack => Id -> MudStack ()
-throwWaitBiodegrader i = helper |&| modifyState >=> maybeVoid throwWait
+throwWaitBiodegrader i = helper |&| modifyState >=> maybeVoid throwDeathWait
   where
     helper ms = let a = ms^.objTbl.ind i.objBiodegAsync
                 in (ms & objTbl.ind i.objBiodegAsync .~ Nothing, a)

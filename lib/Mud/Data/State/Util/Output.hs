@@ -10,6 +10,7 @@ module Mud.Data.State.Util.Output ( anglePrompt
                                   , bcastNl
                                   , bcastOtherAdmins
                                   , bcastOthersInRm
+                                  , bcastToOutsideMobs
                                   , blankLine
                                   , dbError
                                   , frame
@@ -72,7 +73,7 @@ import           Data.Monoid ((<>))
 import           Data.Text (Text)
 import           GHC.Stack (HasCallStack)
 import           Prelude hiding (pi)
-import qualified Data.IntMap.Strict as IM (elems, toList)
+import qualified Data.IntMap.Strict as IM (elems, keys, toList)
 import qualified Data.Text as T
 
 
@@ -163,6 +164,15 @@ bcastOthersInRm i msg = getState >>= \ms ->
     let helper = let ((i `delete`) -> ris) = getMobRmInv i ms
                  in bcast . pure $ (msg, findMobIds ms ris)
     in isPla i ms ? unless (isIncognito . getPla i $ ms) helper :? helper
+
+
+-----
+
+
+bcastToOutsideMobs :: HasCallStack => Text -> MudStack () -- TODO: Test.
+bcastToOutsideMobs msg = getState >>= \ms -> let is  = views mobTbl IM.keys ms
+                                                 f i = views rmEnv (== OutsideEnv) . getMobRm i $ ms
+                                             in bcastNl . pure $ (msg, filter f is)
 
 
 -----

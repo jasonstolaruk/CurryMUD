@@ -1088,9 +1088,9 @@ data LoggedInOrOut = LoggedIn | LoggedOut deriving Eq
 data MoonPhase = NewMoon        -- the moon is not visible
                | WaxingCrescent -- sliver on the right is visible
                | FirstQuarter   -- right half is visible
-               | WaxingGibbous  -- greater than half (from right) is visible
-               | FullMoon       -- sun, earth, and moon are aligned in a straight line
-               | WaningGibbous  -- greater than half (from left) is visible
+               | WaxingGibbous  -- greater than half (originating from right) is visible
+               | FullMoon       -- sun, earth (Rumia), and moon are aligned in a straight line
+               | WaningGibbous  -- greater than half (originating from left) is visible
                | ThirdQuarter   -- left half is visible
                | WaningCrescent {- sliver on left is visible -} deriving Eq
 

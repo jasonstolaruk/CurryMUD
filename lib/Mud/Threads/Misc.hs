@@ -15,8 +15,8 @@ module Mud.Threads.Misc ( PlsDie(..)
                         , threadExHandler
                         , threadStarterExHandler
                         , throwDeath
-                        , throwToListenThread
-                        , throwWait ) where
+                        , throwDeathWait
+                        , throwToListenThread ) where
 
 import           Mud.Cmds.Msgs.Misc
 import           Mud.Data.State.MudData
@@ -201,12 +201,12 @@ throwDeath a = throwTo (asyncThreadId a) PlsDie
 -----
 
 
-throwToListenThread :: HasCallStack => SomeException -> MudStack ()
-throwToListenThread e = maybeVoid (`throwTo` e) . getListenThreadId =<< getState
+throwDeathWait :: HasCallStack => Async () -> MudStack ()
+throwDeathWait a = sequence_ [ throwDeath a, liftIO . void . wait $ a ]
 
 
 -----
 
 
-throwWait :: HasCallStack => Async () -> MudStack ()
-throwWait a = sequence_ [ throwDeath a, liftIO . void . wait $ a ]
+throwToListenThread :: HasCallStack => SomeException -> MudStack ()
+throwToListenThread e = maybeVoid (`throwTo` e) . getListenThreadId =<< getState

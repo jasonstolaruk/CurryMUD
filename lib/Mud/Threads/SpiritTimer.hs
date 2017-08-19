@@ -45,7 +45,7 @@ runSpiritTimerAsync i secs = runAsync (threadSpiritTimer i secs) >>= \a -> tweak
 
 -- Note that "threadSpiritTimer" sets "spiritAsync" to "Nothing" when the timer finishes.
 throwWaitSpiritTimer :: HasCallStack => Id -> MudStack ()
-throwWaitSpiritTimer i = views (plaTbl.ind i.spiritAsync) (maybeVoid throwWait) =<< getState
+throwWaitSpiritTimer i = views (plaTbl.ind i.spiritAsync) (maybeVoid throwDeathWait) =<< getState
 
 
 -----

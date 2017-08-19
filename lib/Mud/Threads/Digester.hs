@@ -55,7 +55,7 @@ stopNpcDigesters =
 
 
 throwWaitDigester :: HasCallStack => Id -> MudStack ()
-throwWaitDigester i = helper |&| modifyState >=> maybeVoid throwWait
+throwWaitDigester i = helper |&| modifyState >=> maybeVoid throwDeathWait
   where
     helper ms = let a = ms^.mobTbl.ind i.digesterAsync
                 in (ms & mobTbl.ind i.digesterAsync .~ Nothing, a)

@@ -38,9 +38,8 @@ logPla = L.logPla "Mud.Threads.Regen"
 
 
 runRegenAsync :: HasCallStack => Id -> MudStack ()
-runRegenAsync i = liftIO newTQueueIO >>= \tq -> do
-    tweak $ mobTbl.ind i.regenQueue ?~ tq
-    onNewThread . threadRegen i $ tq
+runRegenAsync i = liftIO newTQueueIO >>= \tq -> do tweak $ mobTbl.ind i.regenQueue ?~ tq
+                                                   onNewThread . threadRegen i $ tq
 
 
 startNpcRegens :: HasCallStack => MudStack ()
@@ -80,7 +79,7 @@ threadRegen i tq = helper `catch` threadStarterExHandler i fn Nothing
                           -> (Id -> MudState -> Int)
                           -> (Id -> MudState -> Int)
                           -> MudStack ()
-    regen curLens maxLens calcAmt calcDelay = setThreadType (RegenChild i) >> forever loop -- TODO: Needs an exception handler.
+    regen curLens maxLens calcAmt calcDelay = setThreadType (RegenChild i) >> forever loop
       where
         loop  = delay >> modifyStateSeq f
         delay = liftIO . delaySecs . calcDelay i =<< getState

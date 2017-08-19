@@ -116,6 +116,7 @@ library
                        Mud.Threads.Act
                        Mud.Threads.Biodegrader
                        Mud.Threads.CorpseDecomposer
+                       Mud.Threads.CurryTime
                        Mud.Threads.DbTblPurger
                        Mud.Threads.Digester
                        Mud.Threads.Effect

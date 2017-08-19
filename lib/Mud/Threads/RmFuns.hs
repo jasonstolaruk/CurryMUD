@@ -43,4 +43,4 @@ stopRmFuns = do
 
 
 throwWaitRmFuns :: HasCallStack => Id -> Rm -> MudStack ()
-throwWaitRmFuns i r = views rmFunAsyncs (mapM_ throwWait) r >> tweak (rmTbl.ind i.rmFunAsyncs .~ [])
+throwWaitRmFuns i r = views rmFunAsyncs (mapM_ throwDeathWait) r >> tweak (rmTbl.ind i.rmFunAsyncs .~ [])

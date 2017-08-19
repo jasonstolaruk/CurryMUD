@@ -17,6 +17,7 @@ import           Mud.Service.Main
 import           Mud.TheWorld.TheWorld
 import           Mud.Threads.Biodegrader
 import           Mud.Threads.CorpseDecomposer
+import           Mud.Threads.CurryTime
 import           Mud.Threads.DbTblPurger
 import           Mud.Threads.Digester
 import           Mud.Threads.Effect
@@ -84,7 +85,8 @@ listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed 
     proceed = do initialize
                  logNotice "listen proceed" . prd $ "listening for incoming connections on port " <> showTxt port
                  sock      <- liftIO . listenOn . PortNumber . fromIntegral $ port
-                 auxAsyncs <- mapM runAsync $ mkDbTblPurgerFuns ++ [ threadThreadTblPurger
+                 auxAsyncs <- mapM runAsync $ mkDbTblPurgerFuns ++ [ threadCurryTime
+                                                                   , threadThreadTblPurger
                                                                    , threadTrashDumpPurger
                                                                    , threadWorldPersister ]
                  (forever . loop $ sock) `finally` cleanUp auxAsyncs sock
@@ -119,7 +121,7 @@ listen = handle listenExHandler $ setThreadType Listen >> mIf initWorld proceed 
               logNotice fn . uncapitalize $ msg
     cleanUp auxAsyncs sock = do logNotice "listen cleanUp" "closing the socket."
                                 liftIO . sClose $ sock
-                                mapM_ throwWait auxAsyncs
+                                mapM_ throwDeathWait auxAsyncs
                                 liftIO . atomically . void . takeTMVar =<< getLock persistLock
     halt = liftIO . T.putStrLn $ loadWorldErrorMsg
 
