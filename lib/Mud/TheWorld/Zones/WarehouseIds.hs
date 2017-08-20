@@ -119,126 +119,130 @@ iLightRm = 10294 :: Id
 
 iTorch1 = 10295 :: Id -- 10
 
-iLamp = 10305 :: Id
+iLampSml = 10305 :: Id
+
+iLamp = 10306 :: Id
+
+iLampLrg = 10307 :: Id
 
 -----
 
-iNpcRm = 10306 :: Id
+iNpcRm = 10308 :: Id
 
-iPidge = 10307 :: Id
+iPidge = 10309 :: Id
 
-iSkeleton = 10308 :: Id
-
------
-
-iObjRm = 10309 :: Id
-
-iTinderbox = 10310 :: Id
+iSkeleton = 10310 :: Id
 
 -----
 
-iVesselRm = 10311 :: Id
+iObjRm = 10311 :: Id
 
-iBottleSml = 10312 :: Id
-
-iBottle = 10313 :: Id
-
-iBottleLrg = 10314 :: Id
-
-iBottleWithOil = 10315 :: Id
-
-iJarSml = 10316 :: Id
-
-iJar = 10317 :: Id
-
-iJarLrg = 10318 :: Id
-
-iJugSml = 10319 :: Id
-
-iJug = 10320 :: Id
-
-iJugLrg = 10321 :: Id
-
-iPotionFlask = 10322 :: Id
-
-iPotionFlaskLrg = 10323 :: Id
-
-iWaterskin = 10324 :: Id
-
-iWaterskinLrg = 10325 :: Id
-
-iWaterskinWithWater = 10326 :: Id
+iTinderbox = 10312 :: Id
 
 -----
 
-iPotionRm = 10327 :: Id
+iVesselRm = 10313 :: Id
 
-iPotHp = 10328 :: Id
+iBottleSml = 10314 :: Id
 
-iPotInstantHp = 10329 :: Id
+iBottle = 10315 :: Id
 
-iPotMp = 10330 :: Id
+iBottleLrg = 10316 :: Id
 
-iPotInstantMp = 10331 :: Id
+iBottleWithOil = 10317 :: Id
 
-iPotPp = 10332 :: Id
+iJarSml = 10318 :: Id
 
-iPotInstantPp = 10333 :: Id
+iJar = 10319 :: Id
 
-iPotFp = 10334 :: Id
+iJarLrg = 10320 :: Id
 
-iPotInstantFp = 10335 :: Id
+iJugSml = 10321 :: Id
 
-iPotSt = 10336 :: Id
+iJug = 10322 :: Id
 
-iPotInstantSt = 10337 :: Id
+iJugLrg = 10323 :: Id
 
-iPotDx = 10338 :: Id
+iPotionFlask = 10324 :: Id
 
-iPotInstantDx = 10339 :: Id
+iPotionFlaskLrg = 10325 :: Id
 
-iPotHt = 10340 :: Id
+iWaterskin = 10326 :: Id
 
-iPotInstantHt = 10341 :: Id
+iWaterskinLrg = 10327 :: Id
 
-iPotMa = 10342 :: Id
-
-iPotInstantMa = 10343 :: Id
-
-iPotPs = 10344 :: Id
-
-iPotInstantPs = 10345 :: Id
-
-iPotTinnitus = 10346 :: Id
-
-iPotInstantTinnitus = 10347 :: Id
+iWaterskinWithWater = 10328 :: Id
 
 -----
 
-iWpnRm = 10348 :: Id
+iPotionRm = 10329 :: Id
 
-iAxeSml = 10349 :: Id
+iPotHp = 10330 :: Id
 
-iClub = 10350 :: Id
+iPotInstantHp = 10331 :: Id
 
-iKnife = 10351 :: Id
+iPotMp = 10332 :: Id
 
-iMace = 10352 :: Id
+iPotInstantMp = 10333 :: Id
 
-iSpear = 10353 :: Id
+iPotPp = 10334 :: Id
 
-iStaffQuarter = 10354 :: Id
+iPotInstantPp = 10335 :: Id
 
-iSword = 10355 :: Id
+iPotFp = 10336 :: Id
 
-iSwordBroad = 10356 :: Id
+iPotInstantFp = 10337 :: Id
 
-iSwordLong = 10357 :: Id
+iPotSt = 10338 :: Id
 
-iSwordShort = 10358 :: Id
+iPotInstantSt = 10339 :: Id
+
+iPotDx = 10340 :: Id
+
+iPotInstantDx = 10341 :: Id
+
+iPotHt = 10342 :: Id
+
+iPotInstantHt = 10343 :: Id
+
+iPotMa = 10344 :: Id
+
+iPotInstantMa = 10345 :: Id
+
+iPotPs = 10346 :: Id
+
+iPotInstantPs = 10347 :: Id
+
+iPotTinnitus = 10348 :: Id
+
+iPotInstantTinnitus = 10349 :: Id
 
 -----
 
-iWritableRm = 10359 :: Id
+iWpnRm = 10350 :: Id
 
-iParchment1 = 10360 :: Id -- 10
+iAxeSml = 10351 :: Id
+
+iClub = 10352 :: Id
+
+iKnife = 10353 :: Id
+
+iMace = 10354 :: Id
+
+iSpear = 10355 :: Id
+
+iStaffQuarter = 10356 :: Id
+
+iSword = 10357 :: Id
+
+iSwordBroad = 10358 :: Id
+
+iSwordLong = 10359 :: Id
+
+iSwordShort = 10360 :: Id
+
+-----
+
+iWritableRm = 10361 :: Id
+
+iParchment1 = 10362 :: Id -- 10
