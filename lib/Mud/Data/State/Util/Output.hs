@@ -169,7 +169,7 @@ bcastOthersInRm i msg = getState >>= \ms ->
 -----
 
 
-bcastToOutsideMobs :: HasCallStack => Text -> MudStack () -- TODO: Test.
+bcastToOutsideMobs :: HasCallStack => Text -> MudStack ()
 bcastToOutsideMobs msg = getState >>= \ms -> let is  = views mobTbl IM.keys ms
                                                  f i = views rmEnv (== OutsideEnv) . getMobRm i $ ms
                                              in bcastNl . pure $ (msg, filter f is)

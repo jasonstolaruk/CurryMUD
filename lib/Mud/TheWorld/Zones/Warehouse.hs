@@ -54,7 +54,7 @@ createWarehouse = do
           zeroBits
           [ StdLink South iArmRm 0 ]
           (0, 0, 0)
-          InsideEnv
+          OutsideEnv
           (Just "Welcome")
           M.empty [] []))
 
