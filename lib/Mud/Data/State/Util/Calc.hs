@@ -311,8 +311,8 @@ calcLampSecsPerMouthfulOfOil = let mouthfulsPerPint = 2888 `divideRound` mouthfu
 
 calcLightPerRem :: HasCallStack => Id -> MudState -> Int
 calcLightPerRem i ms | x <- getLightSecs i ms
-                     , y <- case getLightSub i ms of Torch -> torchSecs
-                                                     Lamp  -> maxLampSecs
+                     , y <- case getLightSub i ms of Torch       -> torchSecs
+                                                     (Lamp secs) -> secs
                      = x `percent` y
 
 

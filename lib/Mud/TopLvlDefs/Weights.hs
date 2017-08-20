@@ -100,8 +100,10 @@ knitCapWeight :: Weight
 knitCapWeight = 5
 
 
-lampWeight :: Weight
-lampWeight = 250
+lampSmlWeight, lampWeight, lampLrgWeight :: Weight
+lampSmlWeight = round (fromIntegral jarLrgWeight * 0.25 :: Double) + 25
+lampWeight    = round (fromIntegral jarLrgWeight * 0.5  :: Double) + 50
+lampLrgWeight = jarLrgWeight + 100 -- 1 pint of oil is about 1 lb.
 
 
 maceWeight :: Weight

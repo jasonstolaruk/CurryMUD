@@ -639,7 +639,7 @@ createWarehouse = do
                             Nothing
                             zeroBits
        in mkObj ot)
-      (Light Lamp maxLampSecs False)
+      (Light (Lamp oneDayInSecs) oneDayInSecs False) -- TODO: Fix.
 
   -----
 

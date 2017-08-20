@@ -858,9 +858,9 @@ examineInv i ms = let is  = getInv i ms
 examineLight :: HasCallStack => ExamineHelper
 examineLight i = helper . getLight i
   where
-    helper (Light sub secs isLit) = [ "Type: "    <> pp sub
-                                    , "Seconds: " <> commaShow secs
-                                    , "Is lit: "  <> showTxt isLit ]
+    helper (Light sub secs isLit) = [ "Type: "          <> pp sub
+                                    , "Light seconds: " <> commaShow secs
+                                    , "Is lit: "        <> showTxt isLit ]
 
 
 examineMob :: HasCallStack => ExamineHelper

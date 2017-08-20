@@ -111,8 +111,10 @@ knitCapVol :: Vol
 knitCapVol = round (7 * 7 * 0.25 * 100 :: Double)
 
 
-lampVol :: Vol
-lampVol = 5 * 5 * 7 * 100
+lampSmlVol, lampVol, lampLrgVol :: Vol
+lampSmlVol = 722  -- 1/4 pint.
+lampVol    = 1444 -- 1/2 pint.
+lampLrgVol = 2888 -- 1 pint.
 
 
 maceVol :: Vol

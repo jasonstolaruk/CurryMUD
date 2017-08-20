@@ -19,6 +19,9 @@ module Mud.TopLvlDefs.Misc ( acl
                            , etc
                            , foodWaterFeelDur
                            , initPickPts
+                           , lampLrgSecs
+                           , lampSecs
+                           , lampSmlSecs
                            , likewise
                            , logRotationDelay
                            , maxBonuses
@@ -29,7 +32,6 @@ module Mud.TopLvlDefs.Misc ( acl
                            , maxHelpTopicLen
                            , maxInacSecs
                            , maxInacSecsCompose
-                           , maxLampSecs
                            , maxLogSize
                            , maxMobRmDescLen
                            , maxNameLen
@@ -143,6 +145,12 @@ likewise :: Bool
 likewise = not otherwise
 
 
+lampSmlSecs, lampSecs, lampLrgSecs :: Seconds
+lampSmlSecs = sixHrsInSecs    -- 1/4 pint.
+lampSecs    = twelveHrsInSecs -- 1/2 pint.
+lampLrgSecs = oneDayInSecs    -- 1 pint.
+
+
 logRotationDelay :: Seconds
 logRotationDelay = oneHrInSecs
 
@@ -181,10 +189,6 @@ maxInacSecs = tenMinsInSecs
 
 maxInacSecsCompose :: Seconds -- When a player is composing their PC description.
 maxInacSecsCompose = oneHrInSecs
-
-
-maxLampSecs :: Seconds -- TODO: Can all lamps hold a pint of oil?
-maxLampSecs = oneDayInSecs -- A lamp burns for 24 hours on a pint of oil.
 
 
 maxLogSize :: FileOffset

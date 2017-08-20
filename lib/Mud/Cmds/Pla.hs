@@ -1845,8 +1845,8 @@ lightUp p@(WithArgs i _ _ _) lightArg tinderArg = getState >>= \ms ->
               | ((||) <$> (/= ObjType) . uncurry getType <*> (/= "tinderbox") . uncurry getSing) (tinderId, ms)
               = sorry . sorryLightTinderboxType . getSing tinderId $ ms
               | getLightIsLit lightId ms = sorry . sorryLightLit $ lightSing
-              | secs <= 0                = sorry $ case sub of Torch -> sorryLightTorchSecs
-                                                               Lamp  -> sorryLightLampSecs
+              | secs <= 0                = sorry $ case sub of Torch    -> sorryLightTorchSecs
+                                                               (Lamp _) -> sorryLightLampSecs
               | otherwise =
                   let toSelf  = prd $ "You light the " <> lightSing
                       d       = mkStdDesig i ms DoCap
@@ -2779,16 +2779,16 @@ refuel p@(Lower i mq cols [lamp, vessel]) = getState >>= \ms ->
             procEiss eiss     = case eiss of []      -> sorry sorryRefuelLampCoins
                                              (eis:_) -> either sorry refueler eis
             refueler [lampId] = case (getSing `fanUncurry` getType) (lampId, ms) of
-              (s, LightType) | getLightSub lampId ms == Lamp
+              (s, LightType) | (Lamp maxLampSecs)       <- getLightSub lampId ms
                              , (inInvs', inEqs', inRms) <- sortArgsInvEqRm InInv . pure $ vessel
                              -> if | ()!# inEqs' -> sorry sorryRefuelVesselInEq
                                    | ()!# inRms  -> sorry sorryRefuelVesselInRm
                                    | otherwise   -> let (eiss, _) = uncurry (resolveMobInvCoins i ms inInvs') invCoins
                                                     in case eiss of []      -> sorry sorryRefuelVesselCoins
-                                                                    (eis:_) -> either sorry (refuelerHelper s) eis
+                                                                    (eis:_) -> either sorry (refuelerHelper s maxLampSecs) eis
               (s, _        ) -> sorry . sorryRefuelLampType $ s
               where
-                refuelerHelper lampSing [vesselId] | vesselSing <- getSing vesselId ms = case getVesselCont vesselId ms of
+                refuelerHelper lampSing maxLampSecs [vesselId] | vesselSing <- getSing vesselId ms = case getVesselCont vesselId ms of
                   Nothing -> sorry . sorryRefuelVesselEmpty $ vesselSing
                   Just (liq, mouths)
                     | liq == oilLiq ->
@@ -2820,7 +2820,7 @@ refuel p@(Lower i mq cols [lamp, vessel]) = getState >>= \ms ->
                                       , ioHelper ms lampSing vesselSing toSelf True )
                             | otherwise -> sorry . sorryRefuelAlready $ lampSing
                     | otherwise -> sorry . sorryRefuelLiq $ vesselSing
-                refuelerHelper _ _ = sorry sorryRefuelExcessVessels
+                refuelerHelper _ _ _ = sorry sorryRefuelExcessVessels
             refueler _ = sorry sorryRefuelExcessLamps
         in if | ()#  invCoins -> sorry dudeYourHandsAreEmpty
               | ()!# inInvs   -> refuelInv
