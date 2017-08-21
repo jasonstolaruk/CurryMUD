@@ -614,11 +614,11 @@ createWarehouse = do
           "torch" "torches"
           "The torch is a bundle of rushes that provides illumination when set aflame. It's been dipped in pitch so as \
           \to encourage a long, steady burn."
-          Nothing -- TODO: Smell. (When lit?)
+          Nothing -- TODO: Smell.
           zeroBits)
       (let ot = ObjTemplate torchWeight
                             torchVol
-                            Nothing -- TODO: Taste. (When lit?)
+                            Nothing -- TODO: Taste.
                             torchVal
                             Nothing
                             zeroBits
@@ -630,11 +630,11 @@ createWarehouse = do
           (Just "small lamp")
           "lamp" ""
           "small lamp desc" -- TODO
-          Nothing -- TODO: Smell. (When lit?)
+          Nothing -- TODO: Smell.
           zeroBits)
       (let ot = ObjTemplate lampSmlWeight
                             lampSmlVol
-                            Nothing -- TODO: Taste. (When lit?)
+                            Nothing -- TODO: Taste.
                             lampSmlVal
                             Nothing
                             zeroBits
@@ -646,11 +646,11 @@ createWarehouse = do
           (Just "lamp")
           "lamp" ""
           "lamp desc" -- TODO
-          Nothing -- TODO: Smell. (When lit?)
+          Nothing -- TODO: Smell.
           zeroBits)
       (let ot = ObjTemplate lampWeight
                             lampVol
-                            Nothing -- TODO: Taste. (When lit?)
+                            Nothing -- TODO: Taste.
                             lampVal
                             Nothing
                             zeroBits
@@ -662,11 +662,11 @@ createWarehouse = do
           (Just "large lamp")
           "lamp" ""
           "large lamp desc" -- TODO
-          Nothing -- TODO: Smell. (When lit?)
+          Nothing -- TODO: Smell.
           zeroBits)
       (let ot = ObjTemplate lampLrgWeight
                             lampLrgVol
-                            Nothing -- TODO: Taste. (When lit?)
+                            Nothing -- TODO: Taste.
                             lampLrgVal
                             Nothing
                             zeroBits

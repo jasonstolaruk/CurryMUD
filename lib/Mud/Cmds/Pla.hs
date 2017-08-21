@@ -3431,7 +3431,8 @@ smell p@(OneArgLower i mq cols a) = getState >>= \ms ->
               Right [targetId] -> let (targetSing, t) = (getSing `fanUncurry` getType) (targetId, ms)
                                       ic              = t == CorpseType
                                       smellDesc       = case t of
-                                        VesselType -> case getVesselCont targetId ms of
+                                        LightType | getLightIsLit targetId ms -> sorrySmellLitLight targetSing
+                                        VesselType                            -> case getVesselCont targetId ms of
                                           Nothing     -> the' . (<> " is empty.") . getSing targetId $ ms
                                           Just (l, _) -> l^.liqSmellDesc
                                         _ -> getEntSmell targetId ms
@@ -3464,7 +3465,9 @@ smell p@(OneArgLower i mq cols a) = getState >>= \ms ->
                                               , "." ], i `delete` desigIds d)
                     logMsg   = T.concat [ "smelled ", aOrAn targetSing, " ", slotDesc, "." ]
                     res      = join (checkSlotSmellTaste targetSing <$> lookupMapValue targetId eqMap)
-                in uncurry3 ioHelper . (, bs, logMsg) . fromMaybe smellDesc $ res
+                in case getType targetId ms of
+                  LightType | getLightIsLit targetId ms -> sorry . sorrySmellLitLight $ targetSing
+                  _ -> uncurry3 ioHelper . (, bs, logMsg) . fromMaybe smellDesc $ res
             Right _ -> sorry sorrySmellExcessTargets
     -----
     smellRm ms d invCoins maybeHooks target = -- You can smell a mob or a corpse in your current room.
@@ -3638,7 +3641,8 @@ taste p@(OneArgLower i mq cols a) = getState >>= \ms ->
             Right [targetId] -> let (targetSing, t) = (getSing `fanUncurry` getType) (targetId, ms)
                                     ic              = t == CorpseType
                                     tasteDesc       = case t of
-                                      VesselType -> case getVesselCont targetId ms of
+                                      LightType | getLightIsLit targetId ms -> sorryTasteLitLight targetSing
+                                      VesselType                            -> case getVesselCont targetId ms of
                                         Nothing     -> the' $ targetSing <> " is empty."
                                         Just (l, _) -> l^.liqTasteDesc
                                       _ -> getObjTaste targetId ms
@@ -3680,7 +3684,9 @@ taste p@(OneArgLower i mq cols a) = getState >>= \ms ->
                                                               , "." ], i `delete` desigIds d)
                                     logMsg   = T.concat [ "tasted ", aOrAn targetSing, " ", slotDesc, "." ]
                                     res      = join (checkSlotSmellTaste targetSing <$> lookupMapValue targetId eqMap)
-                                in uncurry3 ioHelper . (, bs, logMsg) . fromMaybe tasteDesc $ res
+                                in case getType targetId ms of
+                                  LightType | getLightIsLit targetId ms -> sorry . sorryTasteLitLight $ targetSing
+                                  _ -> uncurry3 ioHelper . (, bs, logMsg) . fromMaybe tasteDesc $ res
             Right _          -> sorry sorryTasteExcessTargets
     -----
     ioHelper = smellTasteIOHelper "taste" i mq cols

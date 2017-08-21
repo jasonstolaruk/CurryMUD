@@ -310,6 +310,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryActing
                            , sorrySmellEmptyRmNoHooks
                            , sorrySmellEmptyRmWithHooks
                            , sorrySmellExcessTargets
+                           , sorrySmellLitLight
                            , sorrySmellNothingToSmell
                            , sorrySmellRmCoins
                            , sorrySmellRmNoHooks
@@ -327,6 +328,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryActing
                            , sorrySummonSelf
                            , sorryTasteExcessTargets
                            , sorryTasteInRm
+                           , sorryTasteLitLight
                            , sorryTasteNothingToTaste
                            , sorryTasteType
                            , sorryTeleAlready
@@ -2038,6 +2040,10 @@ sorrySmellExcessTargets :: Text
 sorrySmellExcessTargets = but "you can only smell one thing at a time."
 
 
+sorrySmellLitLight :: Sing -> Text
+sorrySmellLitLight s = prd $ "You think twice about putting your nose near the lit " <> s
+
+
 sorrySmellNothingToSmell :: Text
 sorrySmellNothingToSmell = "There isn't anything to smell."
 
@@ -2134,6 +2140,10 @@ sorryTasteExcessTargets = but "you can only taste one thing at a time."
 
 sorryTasteInRm :: Text
 sorryTasteInRm = butCan't "taste an item in your current room. Please pick up the item first."
+
+
+sorryTasteLitLight :: Sing -> Text
+sorryTasteLitLight s = prd $ "You think twice about putting your mouth near the lit " <> s
 
 
 sorryTasteNothingToTaste :: Text
