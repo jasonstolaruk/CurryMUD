@@ -631,11 +631,11 @@ createWarehouse = do
           "lamp" ""
           "The portable oil lamp consists of a round covered vessel (containing the oil) from which a triangular spout \
           \extends. It may be comfortably carried by its curved metal handle."
-          Nothing -- TODO: Smell.
+          (mkLampSmell "metal")
           zeroBits)
       (let ot = ObjTemplate lampSmlWeight
                             lampSmlVol
-                            Nothing -- TODO: Taste.
+                            (Just "You lick the oil lamp. It tastes of grimy metal.")
                             lampSmlVal
                             Nothing
                             zeroBits
@@ -648,11 +648,11 @@ createWarehouse = do
           "ceramic oil lamp" ""
           "The reddish brown oil lamp is oblong and spherical in shape. A wick is threaded through the center of a cork \
           \at the top. There is a small round handle with which to carry it by."
-          Nothing -- TODO: Smell.
+          (mkLampSmell "ceramics")
           zeroBits)
       (let ot = ObjTemplate lampWeight
                             lampVol
-                            Nothing -- TODO: Taste.
+                            lampCeramicTaste
                             lampVal
                             Nothing
                             zeroBits
@@ -666,11 +666,11 @@ createWarehouse = do
           "Three chains are attached to a large ceramic vessel in which the oil is contained. A wick is threaded \
           \through a round stopper at the top. Although the lamp is on the bulky side, it may be freely carried by its \
           \chains."
-          Nothing -- TODO: Smell.
+          (mkLampSmell "ceramics")
           zeroBits)
       (let ot = ObjTemplate lampLrgWeight
                             lampLrgVol
-                            Nothing -- TODO: Taste.
+                            lampCeramicTaste
                             lampLrgVal
                             Nothing
                             zeroBits
@@ -1147,6 +1147,14 @@ createWarehouse = do
 
 -- ==================================================
 -- Zone definition helper functions:
+
+
+lampCeramicTaste :: Maybe Text
+lampCeramicTaste = Just "You feel the coarse ceramic surface of the lamp with your tongue."
+
+
+mkLampSmell :: Text -> Maybe Text
+mkLampSmell t = Just $ "There is a slight smell of " <> t <> " and a lingering scent of oil."
 
 
 type IsSing = Bool
