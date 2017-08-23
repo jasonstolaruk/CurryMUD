@@ -627,9 +627,10 @@ createWarehouse = do
 
   putLight iLampSml
       (Ent iLampSml
-          (Just "small lamp")
+          (Just "small bronze lamp")
           "lamp" ""
-          "small lamp desc" -- TODO
+          "The portable oil lamp consists of a round, covered vessel (containing the oil) from which a triangular spout \
+          \extends. There is a curved handle with which the lamp may be easily carried."
           Nothing -- TODO: Smell.
           zeroBits)
       (let ot = ObjTemplate lampSmlWeight
@@ -644,8 +645,9 @@ createWarehouse = do
   putLight iLamp
       (Ent iLamp
           (Just "lamp")
-          "lamp" ""
-          "lamp desc" -- TODO
+          "ceramic oil lamp" ""
+          "The oil lamp is an oblong spherical shape and earthy reddish brown in color. A wick extends from the \
+          \center of a cork at the top. There is a small round handle with which to carry it by."
           Nothing -- TODO: Smell.
           zeroBits)
       (let ot = ObjTemplate lampWeight
@@ -659,7 +661,7 @@ createWarehouse = do
 
   putLight iLampLrg
       (Ent iLampLrg
-          (Just "large lamp")
+          (Just "large hanging lamp")
           "lamp" ""
           "large lamp desc" -- TODO
           Nothing -- TODO: Smell.
