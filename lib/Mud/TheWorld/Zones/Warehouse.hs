@@ -663,7 +663,7 @@ createWarehouse = do
       (Ent iLampLrg
           (Just "large hanging lamp")
           "lamp" ""
-          "large lamp desc" -- TODO
+          "lamp desc" -- TODO
           Nothing -- TODO: Smell.
           zeroBits)
       (let ot = ObjTemplate lampLrgWeight
