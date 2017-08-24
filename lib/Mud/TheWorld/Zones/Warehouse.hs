@@ -614,7 +614,7 @@ createWarehouse = do
           "torch" "torches"
           "The torch is a bundle of rushes that provides illumination when set aflame. It's been dipped in pitch so as \
           \to encourage a long, steady burn."
-          Nothing -- TODO: Smell.
+          (Just "There is a subdued grassy smell emanating from the rushes, along with the scent of resin and tar.")
           zeroBits)
       (let ot = ObjTemplate torchWeight
                             torchVol

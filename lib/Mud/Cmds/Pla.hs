@@ -180,6 +180,7 @@ regularCmdTuples =
     , ("empty",      emptyAction,        True,  cmdDescEmpty)
     , ("equipment",  equip,              True,  cmdDescEquip)
     , ("expressive", expCmdList,         True,  cmdDescExpCmdList)
+    , ("extinguish", extinguish,         True,  cmdDescExtinguish)
     , ("feeling",    feeling,            True,  cmdDescFeeling)
     , ("light",      light,              True,  cmdDescLight)
     , ("listen",     listen,             True,  cmdDescListen)
@@ -397,6 +398,7 @@ npcRegularCmdTuples =
     , ("empty",      emptyAction,    True,  cmdDescEmpty)
     , ("equipment",  equip,          True,  cmdDescEquip)
     , ("expressive", expCmdList,     True,  cmdDescExpCmdList)
+    , ("extinguish", extinguish,     True,  cmdDescExtinguish)
     , ("feeling",    feeling,        True,  cmdDescFeeling)
     , ("light",      light,          True,  cmdDescLight)
     , ("listen",     listen,         True,  cmdDescListen)
@@ -1304,6 +1306,18 @@ mkExpCmdListTxt i ms =
           Nothing    -> ""
           (Just "" ) -> (indent <>) . parensQuote $ ecn' <> " clears room description."
           (Just txt) -> (indent <>) . parensQuote $ T.concat [ ecn', " sets room description to ", dblQuote txt, "." ]
+
+
+-----
+
+
+extinguish :: HasCallStack => ActionFun -- TODO
+extinguish p@(LowerNub' _ _ {-i as-}) = getState >>= \ms ->
+    let f = genericActionWithFuns p helper "extinguish"
+    in checkActing p ms (Right "extinguish a torch or lamp") [ Attacking, Drinking, Sacrificing ] f
+  where
+    helper _ _ {-ms-} = undefined
+extinguish p = pmf "extinguish" p
 
 
 -----

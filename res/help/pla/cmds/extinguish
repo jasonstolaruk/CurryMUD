@@ -1,0 +1,30 @@
+\h EXTINGUISH \d
+
+\uUSAGE\n
+!extinguish \s[\dlightSource \s...]\d
+
+\uDESCRIPTION\n
+Extinguish one or more lit light sources.
+
+To extinguish the first lit torch or lamp in your readied equipment:
+\qextinguish\d4`
+
+To extinguish the torch in your readied equipment:
+\qextinguish \le#l\qtorch\d4`
+...or just...
+\qextinguish torch\d4`
+
+To extinguish the torch in your inventory:
+\qextinguish \li#l\qtorch\d4`
+
+\uEXAMPLES\n
+\qextinguish torch lamp\d to extinguish the torch and the lamp in your readied equipment.4`
+\qextinguish \p2#i\qtorch\d to extinguish the second torch in your readied equipment.4`
+\qextinguish \li#l\p2#i\qlamp\d to extinguish the second lamp in your inventory.4`
+\qextinguish \p2#m\qtorch\d to extinguish both of the torches in your readied equipment.4`
+\qextinguish \li#l\p2#m\qlamp\d to extinguish the first two lamps in your inventory.4`
+\qextinguish \p#a\qtorch\d to extinguish all of torches in your readied equipment.4`
+\qextinguish \li#l\p#a\qtorch\d to extinguish all of torches in your inventory.4`
+
+\uSEE ALSO\n
+light, prefixes, refuel
