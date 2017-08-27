@@ -87,6 +87,10 @@ module Mud.Cmds.Msgs.Sorry ( sorryActing
                            , sorryExpCmdName
                            , sorryExpCmdRequiresTarget
                            , sorryExpCmdTargetType
+                           , sorryExtinguishCoins
+                           , sorryExtinguishInRm
+                           , sorryExtinguishNotLit
+                           , sorryExtinguishType
                            , sorryFillAlready
                            , sorryFillCoins
                            , sorryFillEmptyRmNoHooks
@@ -925,6 +929,25 @@ sorryExpCmdRequiresTarget = the' . (<> " expressive command requires a single ta
 
 sorryExpCmdTargetType :: Text
 sorryExpCmdTargetType = but "expressive commands can only target people."
+
+
+-----
+
+
+sorryExtinguishCoins :: Text
+sorryExtinguishCoins = can't "extinguish a coin."
+
+
+sorryExtinguishInRm :: Text
+sorryExtinguishInRm = can't "extinguish a light source in your current room. Please pick up the light source first."
+
+
+sorryExtinguishNotLit :: Sing -> Text
+sorryExtinguishNotLit s = "The " <> s <> " is already lit."
+
+
+sorryExtinguishType :: Sing -> Text
+sorryExtinguishType s = prd $ can't "extinguish " <> aOrAn s
 
 
 -----

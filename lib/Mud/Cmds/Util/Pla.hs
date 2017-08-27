@@ -557,9 +557,9 @@ genericActionHelper ActionParams { .. } fn toSelfs bs logMsgs = getState >>= \ms
 
 
 genericActionWithFuns :: HasCallStack => ActionParams
-                      -> (V.Vector Int -> MudState -> GenericResWithFuns)
-                      -> Text
-                      -> MudStack ()
+                                      -> (V.Vector Int -> MudState -> GenericResWithFuns)
+                                      -> Text
+                                      -> MudStack ()
 genericActionWithFuns p helper fn = mkRndmVector >>= \v ->
     helper v |&| modifyState >=> \(toSelfs, bs, logMsgs, fs) -> do genericActionHelper p fn toSelfs bs logMsgs
                                                                    sequence_ fs
