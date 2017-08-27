@@ -174,7 +174,7 @@ closeLogs :: HasCallStack => MudStack () -- Close the rest service log first (th
 closeLogs = asks (errorLog `fanView` noticeLog) >>= \case
   (Just (ea, eq), Just (na, nq)) -> do logNotice "Mud.Logging" "closeLogs" "closing the logs."
                                        helper ([ ea, na ], [ eq, nq ])
-  _                              -> helper ([], [])
+  _                              -> helper mempty
   where
     helper (asyncs, queues) = views plaLogTbl (unzip . IM.elems) <$> getState >>= \(as, qs) ->
         liftIO $ do mapM_ (atomically . (`writeTQueue` StopLog)) (queues ++ qs)

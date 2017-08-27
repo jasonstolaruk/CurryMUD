@@ -111,7 +111,7 @@ handleDeath i = isNpc i <$> getState >>= \npc -> do
                        in ( ms & invTbl.ind ri %~ addToInv ms lightIds
                                & invTbl.ind i  %~ (\\ lightIds)
                                & eqTbl .ind i  %~ M.filter (`notElem` lightIds)
-                          , foldr g ([], []) lightIds )
+                          , foldr g mempty lightIds )
 
 
 possessHelper :: HasCallStack => Id -> MudStack ()

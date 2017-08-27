@@ -123,7 +123,7 @@ import           Mud.Util.Text
 import           Mud.Util.Wrapping
 
 import           Control.Applicative (liftA2)
-import           Control.Arrow ((***), (&&&), first)
+import           Control.Arrow ((***), (&&&), first, second)
 import           Control.Exception.Lifted (catch, try)
 import           Control.Lens (_1, _2, _3, at, both, each, to, view, views)
 import           Control.Lens.Operators ((?~), (.~), (&), (%~), (^.), (+~), (<>~))
@@ -259,7 +259,7 @@ consume i newScs = do now <- liftIO getCurrentTime
               where
                 isNotExpired (view consumpTime -> t, ConsumpEffects _ secs _) = round (now `diffUTCTime` t) <= secs
             groups     = groupBy ((==) `on` (view distinctId . fst)) valids
-            (scs', el) = foldr h ([], EffectList []) groups
+            (scs', el) = foldr h (second EffectList mempty) groups
             h [] acc = acc
             h grp@((sc, ConsumpEffects amt _ (EffectList thisEl)):_) acc@(_, EffectList accEl)
               | length grp >= amt = let (x, m) = length grp `divMod` amt
