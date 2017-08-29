@@ -101,7 +101,7 @@ threadLightTimer i = descSingId i <$> getState >>= \singId ->
 
 stopLightTimers :: HasCallStack => Id -> MudStack () -- When a player logs out. The caller is responsible for setting "lightIsLit" to "False" when applicable.
 stopLightTimers i = getState >>= \ms -> let is        = getMob'sLights i ms
-                                            f lightId = views (lightAsyncTbl.at lightId) (maybeVoid throwDeath) ms
+                                            f lightId = views (lightAsyncTbl.at lightId) maybeThrowDeath ms
                                         in logPla "stopLightTimers" i "stopping light timers." >> mapM_ f is
 
 

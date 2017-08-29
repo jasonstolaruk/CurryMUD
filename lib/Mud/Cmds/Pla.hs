@@ -1311,12 +1311,23 @@ mkExpCmdListTxt i ms =
 -----
 
 
-extinguish :: HasCallStack => ActionFun -- TODO
-extinguish p@(LowerNub' _ _ {-i as-}) = getState >>= \ms ->
+extinguish :: HasCallStack => ActionFun -- TODO: When there are no args.
+extinguish p@(LowerNub' i as) = getState >>= \ms ->
     let f = genericActionWithFuns p helper "extinguish"
     in checkActing p ms (Right "extinguish a torch or lamp") [ Attacking, Drinking, Sacrificing ] f
   where
-    helper _ _ {-ms-} = undefined
+    helper _ ms = let (inInvs, inEqs, inRms) = sortArgsInvEqRm InEq as
+                      sorryInRm              = inRms |!| sorryExtinguishInRm
+                      (invCoins, eqMap)      = ((,) <$> uncurry getInvCoins <*> uncurry getEqMap) (i, ms)
+                      d                      = mkStdDesig i ms DoCap
+                      (gecrs, miss, rcs)     = resolveEntCoinNames i ms inEqs (M.elems eqMap) mempty
+                      eiss                   = zipWith (curry procGecrMisMobEq) gecrs miss
+                      (eiss', rcs')          = uncurry (resolveMobInvCoins i ms inInvs) invCoins
+                      sorrys                 = [ ()!# rcs || ()!# rcs' |?| sorryExtinguishCoins, sorryInRm ]
+                  in if | ()# invCoins, ()# eqMap -> genericSorryWithFuns ms dudeYou'reScrewed
+                        | otherwise               -> foldl' (helperExtinguishEitherInv i d)
+                                                            (ms, (dropBlanks sorrys, [], [], []))
+                                                            (repeat |&| ((++) <$> zip eiss . (TheEq |&|) <*> zip eiss' . (TheInv |&|)))
 extinguish p = pmf "extinguish" p
 
 
@@ -3281,7 +3292,7 @@ showAction p@(Lower i mq cols as) = getState >>= \ms ->
     showInv ms d invCoins inInvs IdSingTypeDesig { .. }
       | ()!# invCoins =
           let (eiss, ecs)                         = uncurry (resolveMobInvCoins i ms inInvs) invCoins
-              showInvHelper                       = foldl' helperEitherInv ([], [], []) eiss
+              showInvHelper                       = foldl' helperEitherInv mempty eiss
               helperEitherInv acc (Left  msg    ) = acc & _1 <>~ pure msg
               helperEitherInv acc (Right itemIds) = acc & _1 <>~ mkToSelfMsgs itemIds
                                                         & _2 <>~ mkBs
@@ -3351,7 +3362,7 @@ showAction p@(Lower i mq cols as) = getState >>= \ms ->
       | ()!# eqMap =
           let (gecrs, miss, rcs)                  = resolveEntCoinNames i ms inEqs (M.elems eqMap) mempty
               eiss                                = zipWith (curry procGecrMisMobEq) gecrs miss
-              showEqHelper                        = foldl' helperEitherInv ([], [], []) eiss
+              showEqHelper                        = foldl' helperEitherInv mempty eiss
               helperEitherInv acc (Left  msg    ) = acc & _1 <>~ pure msg
               helperEitherInv acc (Right itemIds) = acc & _1 <>~ mkToSelfMsgs itemIds
                                                         & _2 <>~ mkBs

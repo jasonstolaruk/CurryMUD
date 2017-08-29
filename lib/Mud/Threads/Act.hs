@@ -69,7 +69,7 @@ startAct i actType f = handle (threadStarterExHandler i fn . Just . pp $ actType
 
 
 stopAct :: HasCallStack => Id -> ActType -> MudStack ()
-stopAct i actType = views (at actType) (maybeVoid throwDeath) . getActMap i =<< getState
+stopAct i actType = views (at actType) maybeThrowDeath . getActMap i =<< getState
 
 
 stopActs :: HasCallStack => Id -> MudStack ()

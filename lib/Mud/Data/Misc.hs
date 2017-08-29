@@ -41,6 +41,7 @@ module Mud.Data.Misc ( AOrThe(..)
                      , Hour
                      , IdSingTypeDesig(..)
                      , InInvEqRm(..)
+                     , InvOrEq(..)
                      , Index
                      , IsOrIsn'tRegex(..)
                      , LastArgIsTargetBindings(..)
@@ -1058,6 +1059,12 @@ data IdSingTypeDesig = IdSingTypeDesig { theId    :: Id
 
 
 data InInvEqRm = InInv | InEq | InRm deriving Show
+
+
+-----
+
+
+data InvOrEq = TheInv | TheEq deriving Eq
 
 
 -----

@@ -8,7 +8,6 @@ import           Mud.Data.State.Util.Hierarchy
 import           Mud.Data.State.Util.Misc
 import           Mud.Threads.Effect
 import           Mud.Threads.Misc
-import           Mud.Util.Misc
 import           Mud.Util.Operators
 
 import           Control.Lens (at, to)
@@ -37,9 +36,9 @@ destroyer b is = let helper ms = (ms, ) . pure $ do mapM_ (ms |&|) [ stopBiodegr
                                                     ((>>) <$> mapM_ stopEffects <*> tweak . destroyHelper) is
                  in modifyStateSeq helper
   where
-    stopBiodegraders      ms = forM_ (filter (`hasObjId` ms) is) $ maybeVoid throwDeath . (`getObjBiodegAsync` ms)
-    stopCorpseDecomposers ms = when b . forM_ is $ \i -> ms^.corpseDecompAsyncTbl.at i.to (maybeVoid throwDeath)
-    stopLightTimers       ms =          forM_ is $ \i -> ms^.lightAsyncTbl       .at i.to (maybeVoid throwDeath)
+    stopBiodegraders      ms = forM_ (filter (`hasObjId` ms) is) $ maybeThrowDeath . (`getObjBiodegAsync` ms)
+    stopCorpseDecomposers ms = when b . forM_ is $ \i -> ms^.corpseDecompAsyncTbl.at i.to maybeThrowDeath
+    stopLightTimers       ms =          forM_ is $ \i -> ms^.lightAsyncTbl       .at i.to maybeThrowDeath
 
 
 destroyHelper :: HasCallStack => Inv -> MudState -> MudState -- The caller is responsible for stopping the biodegrader, corpse decomposer, light timer, and effects.

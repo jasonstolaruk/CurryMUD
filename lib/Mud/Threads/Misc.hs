@@ -6,6 +6,8 @@ module Mud.Threads.Misc ( PlsDie(..)
                         , die
                         , dieSilently
                         , fileIOExHandler
+                        , maybeThrowDeath
+                        , maybeThrowDeathWait
                         , onNewThread
                         , plaThreadExHandler
                         , racer
@@ -198,11 +200,19 @@ throwDeath :: HasCallStack => Async () -> MudStack ()
 throwDeath a = throwTo (asyncThreadId a) PlsDie
 
 
+maybeThrowDeath :: HasCallStack => Maybe (Async ()) -> MudStack ()
+maybeThrowDeath = maybeVoid throwDeath
+
+
 -----
 
 
 throwDeathWait :: HasCallStack => Async () -> MudStack ()
 throwDeathWait a = sequence_ [ throwDeath a, liftIO . void . wait $ a ]
+
+
+maybeThrowDeathWait :: HasCallStack => Maybe (Async ()) -> MudStack ()
+maybeThrowDeathWait = maybeVoid throwDeathWait
 
 
 -----

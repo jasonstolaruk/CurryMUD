@@ -39,6 +39,7 @@ module Mud.Cmds.Util.Pla ( InvWithCon
                          , hasMp
                          , hasPp
                          , helperDropEitherInv
+                         , helperExtinguishEitherInv
                          , helperFillEitherInv
                          , helperGetDropEitherCoins
                          , helperGetEitherInv
@@ -130,6 +131,7 @@ import qualified Mud.Misc.Logging as L (logNotice, logPla, logPlaOut)
 import           Mud.Misc.Misc
 import           Mud.Misc.NameResolution
 import           Mud.Threads.Act
+import           Mud.Threads.Misc
 import           Mud.TopLvlDefs.Misc
 import           Mud.TopLvlDefs.Padding
 import           Mud.TopLvlDefs.Vols
@@ -692,6 +694,42 @@ mkGodVerb Get  SndPer = "pick up"
 mkGodVerb Get  ThrPer = "picks up"
 mkGodVerb Drop SndPer = "drop"
 mkGodVerb Drop ThrPer = "drops"
+
+
+-----
+
+
+helperExtinguishEitherInv :: HasCallStack => Id
+                                          -> Desig
+                                          -> GenericResWithFuns
+                                          -> (Either Text Inv, InvOrEq)
+                                          -> GenericResWithFuns
+helperExtinguishEitherInv i d a@(ms, (_, _, _, _)) = \case
+  (Left  msg, _) -> a & _2._1 <>~ pure msg
+  (Right is,  x) -> let (is', toSelfs, bs) = mkExtinguishDescs i ms d (is, x)
+                    in a & _1.lightTbl %~  flip (foldr $ \i' -> ind i'.lightIsLit .~ False ) is'
+                         & _2._1       <>~ toSelfs
+                         & _2._2       <>~ bs
+                         & _2._3       <>~ toSelfs
+                         & _2._4       <>~ (pure . forM_ is' $ \i' -> views (lightAsyncTbl.at i') maybeThrowDeath ms)
+
+
+mkExtinguishDescs :: HasCallStack => Id -> MudState -> Desig -> (Inv, InvOrEq) -> (Inv, [Text], [Broadcast])
+mkExtinguishDescs i ms d (is, x) = foldr f mempty is
+  where
+    f targetId tuple =
+        let s       = getSing targetId ms
+            isInInv = x == TheInv
+            sorry g = tuple & _2 %~ (g s :)
+        in if | getType targetId ms /= LightType              -> sorry sorryExtinguishType
+              | views lightIsLit not . getLight targetId $ ms -> sorry sorryExtinguishNotLit
+              | otherwise -> tuple & _1 %~ (targetId :)
+                                   & _2 %~ ((prd $ "You extinguish the " <> s) :)
+                                   & _3 %~ (let msg = T.concat [ serialize d, " extinguishes ", t1, t2, "." ]
+                                                t1  = isInInv ? aOrAn s :? (pro |<>| s)
+                                                t2  = isInInv |?| (spcL . parensQuote $ "in " <> pro <> " inventory")
+                                                pro = mkPossPro . getSex i $ ms
+                                            in ((msg, i `delete` desigIds d) :))
 
 
 -----
