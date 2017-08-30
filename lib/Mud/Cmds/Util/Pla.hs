@@ -699,7 +699,7 @@ mkGodVerb Drop ThrPer = "drops"
 -----
 
 
-helperExtinguishEitherInv :: HasCallStack => Id
+helperExtinguishEitherInv :: HasCallStack => Id -- TODO: Continue testing from here.
                                           -> Desig
                                           -> GenericResWithFuns
                                           -> (Either Text Inv, InvOrEq)

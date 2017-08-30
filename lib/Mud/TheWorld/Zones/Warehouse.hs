@@ -627,8 +627,8 @@ createWarehouse = do
 
   putLight iLampSml
       (Ent iLampSml
-          (Just "small bronze lamp")
-          "lamp" ""
+          (Just "lamp")
+          "small bronze lamp" ""
           "The portable oil lamp consists of a round covered vessel (containing the oil) from which a triangular spout \
           \extends. It may be comfortably carried by its curved metal handle."
           (mkLampSmell "metal")
@@ -661,8 +661,8 @@ createWarehouse = do
 
   putLight iLampLrg
       (Ent iLampLrg
-          (Just "large hanging lamp")
-          "lamp" ""
+          (Just "lamp")
+          "large hanging lamp" ""
           "Three chains are attached to a large ceramic vessel in which the oil is contained. A wick is threaded \
           \through a round stopper at the top. Although the lamp is on the bulky side, it may be freely carried by its \
           \chains."

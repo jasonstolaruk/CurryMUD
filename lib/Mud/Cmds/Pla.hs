@@ -1327,7 +1327,8 @@ extinguish p@(LowerNub' i as) = getState >>= \ms ->
                   in if | ()# invCoins, ()# eqMap -> genericSorryWithFuns ms dudeYou'reScrewed
                         | otherwise               -> foldl' (helperExtinguishEitherInv i d)
                                                             (ms, (dropBlanks sorrys, [], [], []))
-                                                            (repeat |&| ((++) <$> zip eiss . (TheEq |&|) <*> zip eiss' . (TheInv |&|)))
+                                                            (repeat |&| ((++) <$> zip eiss  . (TheEq  |&|)
+                                                                              <*> zip eiss' . (TheInv |&|)))
 extinguish p = pmf "extinguish" p
 
 

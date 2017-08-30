@@ -943,7 +943,7 @@ sorryExtinguishInRm = can't "extinguish a light source in your current room. Ple
 
 
 sorryExtinguishNotLit :: Sing -> Text
-sorryExtinguishNotLit s = "The " <> s <> " is already lit."
+sorryExtinguishNotLit s = "The " <> s <> " is not lit."
 
 
 sorryExtinguishType :: Sing -> Text
