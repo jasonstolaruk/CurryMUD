@@ -235,3 +235,7 @@ test-suite             test
                        , text
                        , transformers
                        , vector
+
+source-repository      head
+  type:                git
+  location:            https://github.com/jasonstolaruk/CurryMUD
