@@ -707,7 +707,7 @@ helperExtinguishEitherInv :: HasCallStack => Id -- TODO: Continue testing from h
 helperExtinguishEitherInv i d a@(ms, (_, _, _, _)) = \case
   (Left  msg, _) -> a & _2._1 <>~ pure msg
   (Right is,  x) -> let (is', toSelfs, bs) = mkExtinguishDescs i ms d (is, x)
-                    in a & _1.lightTbl %~  flip (foldr $ \i' -> ind i'.lightIsLit .~ False ) is'
+                    in a & _1.lightTbl %~  flip (foldr $ \i' -> ind i'.lightIsLit .~ False) is'
                          & _2._1       <>~ toSelfs
                          & _2._2       <>~ bs
                          & _2._3       <>~ toSelfs
