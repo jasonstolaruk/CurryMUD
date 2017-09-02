@@ -1838,9 +1838,7 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
           | otherwise      = let k = "lightSecs" in case eitherDecode value' of
             Left  _ -> appendMsg . sorryAdminSetValue k $ value
             Right x -> let prev                 = getLightSecs targetId ms
-                           addSubAssignHelper g = let new    = prev `g` x
-                                                      diff   = new - prev
-                                                      toSelf = mkToSelfForInt k new diff
+                           addSubAssignHelper g = let (new, diff, toSelf) = mkTupleForVals prev g x k
                                                   in a & _1.lightTbl.ind targetId.lightSecs .~ new
                                                        & _2 <>~ toSelf
                                                        & _4 <>~ (Sum diff |!| toSelf)
@@ -1910,9 +1908,7 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
           | otherwise        = case eitherDecode value' of
             Left  _ -> appendMsg . sorryAdminSetValue k $ value
             Right x -> let prev                 = f targetId ms
-                           addSubAssignHelper g = let new    = prev `g` x
-                                                      diff   = new - prev
-                                                      toSelf = mkToSelfForInt k new diff
+                           addSubAssignHelper g = let (new, diff, toSelf) = mkTupleForVals prev g x k
                                                   in a & _1.mobTbl.ind targetId.setter .~ new
                                                        & _2 <>~ toSelf
                                                        & _3 <>~ (Sum diff |!| mkToTarget diff)
@@ -1970,25 +1966,25 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
         setMobKnownLangsHelper t
           | not . hasMob $ t = sorryType
           | otherwise        = case eitherDecode value' of
-            Left  _              -> appendMsg . sorryAdminSetValue "knownLangs" $ value
-            Right (nubSort -> x) ->
+            Left  _               -> appendMsg . sorryAdminSetValue "knownLangs" $ value
+            Right (nubSort -> xs) ->
                 let prev                 = getKnownLangs targetId ms
-                    addSubAssignHelper f = let (new, toSelf, isDiff) = mkTupleForList prev f x mkToSelf
+                    addSubAssignHelper f = let (new, toSelf, isDiff) = mkTupleForList prev f xs mkToSelf
                                            in a & _1.mobTbl.ind targetId.knownLangs .~ new
                                                 & _2 <>~ toSelf
                                                 & _3 <>~ (isDiff |?| mkToTarget new)
                                                 & _4 <>~ (isDiff |?| toSelf)
-                in case op of Assign    -> let toSelf = mkToSelf x isDiff
-                                               isDiff = x /= prev
-                                           in a & _1.mobTbl.ind targetId.knownLangs .~ x
+                in case op of Assign    -> let toSelf = mkToSelf xs isDiff
+                                               isDiff = xs /= prev
+                                           in a & _1.mobTbl.ind targetId.knownLangs .~ xs
                                                 & _2 <>~ toSelf
-                                                & _3 <>~ (isDiff |?| mkToTarget x)
+                                                & _3 <>~ (isDiff |?| mkToTarget xs)
                                                 & _4 <>~ (isDiff |?| toSelf)
                               AddAssign -> addSubAssignHelper (++)
                               SubAssign -> addSubAssignHelper (\\)
           where
-            mkToSelf   x isDiff = pure . T.concat $ [ "Set knownLangs to ", ppList x, mkDiffTxt isDiff, "." ]
-            mkToTarget x        = pure . prd $ "Your known languages have changed to " <> ppList x
+            mkToSelf   xs isDiff = pure . T.concat $ [ "Set knownLangs to ", ppList xs, mkDiffTxt isDiff, "." ]
+            mkToTarget xs        = pure . prd $ "Your known languages have changed to " <> ppList xs
         -----
         setMobRmDescHelper t
           | not . hasMob $ t = sorryType
@@ -2081,31 +2077,31 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
         setMobInvHelper t k n getter setter
           | not . hasMob $ t = sorryType
           | otherwise        = case eitherDecode value' of
-            Left  _              -> appendMsg . sorryAdminSetValue k $ value
-            Right (nubSort -> x) ->
+            Left  _               -> appendMsg . sorryAdminSetValue k $ value
+            Right (nubSort -> xs) ->
                 let prev                 = view getter . getMob targetId $ ms
-                    addSubAssignHelper f = let (new, toSelf, isDiff) = mkTupleForList prev f x mkToSelf
+                    addSubAssignHelper f = let (new, toSelf, isDiff) = mkTupleForList prev f xs mkToSelf
                                            in a & _1.mobTbl.ind targetId.setter .~ new
                                                 & _2 <>~ toSelf
                                                 & _3 <>~ (isDiff |?| mkToTarget new)
                                                 & _4 <>~ (isDiff |?| toSelf)
-                in case op of Assign    -> let toSelf = mkToSelf x isDiff
-                                               isDiff = x /= prev
-                                           in a & _1.mobTbl.ind targetId.setter .~ x
+                in case op of Assign    -> let toSelf = mkToSelf xs isDiff
+                                               isDiff = xs /= prev
+                                           in a & _1.mobTbl.ind targetId.setter .~ xs
                                                 & _2 <>~ toSelf
-                                                & _3 <>~ (isDiff |?| mkToTarget x)
+                                                & _3 <>~ (isDiff |?| mkToTarget xs)
                                                 & _4 <>~ (isDiff |?| toSelf)
                               AddAssign -> addSubAssignHelper (++)
                               SubAssign -> addSubAssignHelper (\\)
           where
-            mkToSelf   x isDiff = pure . T.concat $ [ "Set "
+            mkToSelf   xs isDiff = pure . T.concat $ [ "Set "
                                                     , k
                                                     , " to "
-                                                    , mkValueTxt (`descSingId` ms) x
+                                                    , mkValueTxt (`descSingId` ms) xs
                                                     , mkDiffTxt isDiff
                                                     , "." ]
-            mkToTarget x        = pure . T.concat $ [ "Your ", n, " changed to ", mkValueTxt (`getSing` ms) x, "." ]
-            mkValueTxt f        = noneOnNull . commas . map f
+            mkToTarget xs        = pure . T.concat $ [ "Your ", n, " changed to ", mkValueTxt (`getSing` ms) xs, "." ]
+            mkValueTxt f         = noneOnNull . commas . map f
         -----
         setMobMemberOfHelper t
           | not . hasMob $ t = sorryType
@@ -2142,26 +2138,26 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
         setPCSingListHelper t k n getter setter
           | t /= PlaType = sorryType
           | otherwise    = case eitherDecode value' of
-            Left  _              -> appendMsg . sorryAdminSetValue k $ value
-            Right (nubSort -> x) ->
+            Left  _               -> appendMsg . sorryAdminSetValue k $ value
+            Right (nubSort -> xs) ->
                 let prev                 = view getter . getPC targetId $ ms
-                    addSubAssignHelper f = let (new, toSelf, isDiff) = mkTupleForList prev f x mkToSelf
+                    addSubAssignHelper f = let (new, toSelf, isDiff) = mkTupleForList prev f xs mkToSelf
                                            in a & _1.pcTbl.ind targetId.setter .~ new
                                                 & _2 <>~ toSelf
                                                 & _3 <>~ (isDiff |?| mkToTarget new)
                                                 & _4 <>~ (isDiff |?| toSelf)
-                in case op of Assign    -> let toSelf = mkToSelf x isDiff
-                                               isDiff = x /= prev
-                                           in a & _1.pcTbl.ind targetId.setter .~ x
+                in case op of Assign    -> let toSelf = mkToSelf xs isDiff
+                                               isDiff = xs /= prev
+                                           in a & _1.pcTbl.ind targetId.setter .~ xs
                                                 & _2 <>~ toSelf
-                                                & _3 <>~ (isDiff |?| mkToTarget x)
+                                                & _3 <>~ (isDiff |?| mkToTarget xs)
                                                 & _4 <>~ (isDiff |?| toSelf)
                               AddAssign -> addSubAssignHelper (++)
                               SubAssign -> addSubAssignHelper (\\)
           where
-            mkToSelf   x isDiff = pure . T.concat $ [ "Set ", k, " to ", mkValueTxt x, mkDiffTxt isDiff, "." ]
-            mkToTarget x        = pure . T.concat $ [ "Your ", n, " have changed to ", mkValueTxt x, "."     ]
-            mkValueTxt          = noneOnNull . commas
+            mkToSelf   xs isDiff = pure . T.concat $ [ "Set ", k, " to ", mkValueTxt xs, mkDiffTxt isDiff, "." ]
+            mkToTarget xs        = pure . T.concat $ [ "Your ", n, " have changed to ", mkValueTxt xs, "."     ]
+            mkValueTxt           = noneOnNull . commas
         -----
         setPCSkillPtsHelper t
           | t /= PlaType = sorryType
@@ -2222,6 +2218,10 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
                                         toSelf = g new isDiff
                                         isDiff = new /= prev
                                     in (new, toSelf, isDiff)
+        mkTupleForVals prev f x k = let new    = prev `f` x
+                                        diff   = new - prev
+                                        toSelf = mkToSelfForInt k new diff
+                                    in (new, diff, toSelf)
 
 
 -----

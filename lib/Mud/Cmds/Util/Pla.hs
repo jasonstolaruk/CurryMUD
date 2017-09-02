@@ -418,7 +418,7 @@ mkSlotDesc i ms s = case s of
     hisHer = mkPossPro . getSex i $ ms
     wornOn = T.concat [ "worn on ", hisHer, " ", pp s ]
     wornAs = "worn as " <> aOrAn (pp s)
-    heldIn = "held in " <> hisHer <> pp s
+    heldIn = "held in " <> hisHer |<>| pp s
 
 
 -----
@@ -699,7 +699,7 @@ mkGodVerb Drop ThrPer = "drops"
 -----
 
 
-helperExtinguishEitherInv :: HasCallStack => Id -- TODO: Continue testing from here.
+helperExtinguishEitherInv :: HasCallStack => Id
                                           -> Desig
                                           -> GenericResWithFuns
                                           -> (Either Text Inv, InvOrEq)
@@ -726,9 +726,8 @@ mkExtinguishDescs i ms d (is, x) = foldr f mempty is
               | otherwise -> tuple & _1 %~ (targetId :)
                                    & _2 %~ ((prd $ "You extinguish the " <> s) :)
                                    & _3 %~ (let msg = T.concat [ serialize d, " extinguishes ", t1, t2, "." ]
-                                                t1  = isInInv ? aOrAn s :? (pro |<>| s)
-                                                t2  = isInInv |?| (spcL . parensQuote $ "in " <> pro <> " inventory")
-                                                pro = mkPossPro . getSex i $ ms
+                                                t1  = isInInv ? aOrAn s :? (mkPossPro (getSex i ms) |<>| s)
+                                                t2  = isInInv |?| spcL (parensQuote "carried")
                                             in ((msg, i `delete` desigIds d) :))
 
 
@@ -1758,7 +1757,7 @@ mkWritableMsgDesc cols ms targetId = case getWritable targetId ms of
 
 
 adminTagTxt :: Text
-adminTagTxt = colorWith adminTagColor (parensQuote "admin")
+adminTagTxt = parensQuote . colorWith adminTagColor $ "admin"
 
 
 -----

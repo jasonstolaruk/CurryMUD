@@ -1877,9 +1877,8 @@ lightUp p@(WithArgs i _ _ _) lightArg tinderArg = getState >>= \ms ->
                   let toSelf  = prd $ "You light the " <> lightSing
                       d       = mkStdDesig i ms DoCap
                       isInInv = lightId `elem` is
-                      bs      = let t1  = isInInv ? aOrAn lightSing :? (pro |<>| lightSing)
-                                    t2  = isInInv |?| (spcL . parensQuote $ "in " <> pro <> " inventory")
-                                    pro = mkPossPro . getSex i $ ms
+                      bs      = let t1  = isInInv ? aOrAn lightSing :? (mkPossPro (getSex i ms) |<>| lightSing)
+                                    t2  = isInInv |?| spcL (parensQuote "carried")
                                 in pure (T.concat [ serialize d, " lights ", t1, t2, "." ], i `delete` desigIds d)
                       logMsg  = let t = spcL . parensQuote . ("in " <>) $ (isInInv ? "inventory" :? "readied equipment")
                                 in prd $ "lighting " <> aOrAn lightSing <> t
