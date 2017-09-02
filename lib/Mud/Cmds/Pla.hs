@@ -1348,9 +1348,8 @@ feeling (NoArgs i mq cols) = spiritHelper i a b
                                                         , mkEffMaDesc
                                                         , mkEffPsDesc
                                                         , mkFullDesc ] ] ++ mkFeelingDescs i ms
-           in logPla "feeling" i (dropANSI . slashes $ txts) >> multiWrapSend mq cols txts
-    f [] = pure "You feel fine."
-    f ts = ts
+           in sequence_ [ logPla "feeling" i . dropANSI . slashes $ txts, multiWrapSend mq cols txts ]
+    f ts = ()# ts ? pure "You feel fine." :? ts
     b    = const . wrapSend mq cols $ msg
     msg  = "You can still feel emotions, and your sense of self remains intact. At the same time, you are entirely \
            \detached from your body. The whole experience is quite surreal."
