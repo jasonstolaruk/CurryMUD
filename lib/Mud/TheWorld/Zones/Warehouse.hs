@@ -765,7 +765,7 @@ createWarehouse = do
       (Ent iTinderbox
           (Just "tinderbox")
           "tinderbox" "tinderboxes"
-          "tinderbox desc" -- TODO
+          "tinderbox desc" -- TODO: A "tinderbox" is a tinderbox with flint and steel strikers combined into a single object.
           Nothing -- TODO: Smell.
           zeroBits)
       (let ot = ObjTemplate 1 -- tinderboxWeight

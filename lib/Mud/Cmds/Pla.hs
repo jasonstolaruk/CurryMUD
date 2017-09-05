@@ -159,13 +159,9 @@ regularCmds :: HasCallStack => [Cmd]
 regularCmds = map (uncurry4 mkRegularCmd) regularCmdTuples
 
 
-{-
-TODO:
-A "tinderbox" is a tinderbox with flint and steel strikers combined into a single object.
-Spirits can see in the dark?
--}
 -- TODO: "buy" and "sell".
 -- TODO: "shout". Consider indoor vs. outdoor. Update the "communication" help topic.
+-- TODO: Spirits can see in the dark.
 regularCmdTuples :: HasCallStack => [(CmdFullName, ActionFun, Bool, CmdDesc)]
 regularCmdTuples =
     [ ("?",          plaDispCmdList,     True,  cmdDescDispCmdList)
