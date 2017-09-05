@@ -161,8 +161,7 @@ regularCmds = map (uncurry4 mkRegularCmd) regularCmdTuples
 
 {-
 TODO:
-extinguish lightSource -- "lightSource" arg may be omitted.
-A "tinderbox" is a tinderbox with flint and steel strikers in a single object.
+A "tinderbox" is a tinderbox with flint and steel strikers combined into a single object.
 Spirits can see in the dark?
 -}
 -- TODO: "buy" and "sell".
