@@ -89,6 +89,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryActing
                            , sorryExpCmdTargetType
                            , sorryExtinguishCoins
                            , sorryExtinguishInRm
+                           , sorryExtinguishLight
                            , sorryExtinguishNotLit
                            , sorryExtinguishType
                            , sorryFillAlready
@@ -942,6 +943,10 @@ sorryExtinguishInRm :: Text
 sorryExtinguishInRm = can't "extinguish a light source in your current room. Please pick up the light source first."
 
 
+sorryExtinguishLight :: Text
+sorryExtinguishLight = "You don't have a lit source of light in your readied equipment."
+
+
 sorryExtinguishNotLit :: Sing -> Text
 sorryExtinguishNotLit s = "The " <> s <> " is not lit."
 
@@ -1355,6 +1360,11 @@ sorryLightLit :: Sing -> Text
 sorryLightLit s = "The " <> s <> " is already lit."
 
 
+sorryLightTinderbox :: Text
+sorryLightTinderbox = "You don't have a tinderbox in your inventory. " <>
+                      parensQuote "You need a tinderbox to ignite a light source."
+
+
 sorryLightTinderboxCoins :: Text
 sorryLightTinderboxCoins = can't "ignite a light source with a coin."
 
@@ -1367,11 +1377,6 @@ sorryLightTinderboxInEq = can't "ignite a light source using an item in your rea
 sorryLightTinderboxInRm :: Text
 sorryLightTinderboxInRm = butCan't "ignite a light source using a tinderbox in your current room. Please pick up the \
                                    \tinderbox first."
-
-
-sorryLightTinderbox :: Text
-sorryLightTinderbox = "You don't have a tinderbox in your inventory. " <>
-                      parensQuote "You need a tinderbox to ignite a light source."
 
 
 sorryLightTinderboxType :: Sing -> Text

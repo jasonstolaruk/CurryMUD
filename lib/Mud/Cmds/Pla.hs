@@ -1311,7 +1311,7 @@ mkExpCmdListTxt i ms =
 -----
 
 
-extinguish :: HasCallStack => ActionFun -- TODO: When there are no args.
+extinguish :: HasCallStack => ActionFun
 extinguish p@(LowerNub' i as) = getState >>= \ms ->
     let f = genericActionWithFuns p helper "extinguish"
     in checkActing p ms (Right "extinguish a torch or lamp") [ Attacking, Drinking, Sacrificing ] f
@@ -1324,11 +1324,19 @@ extinguish p@(LowerNub' i as) = getState >>= \ms ->
                       eiss                   = zipWith (curry procGecrMisMobEq) gecrs miss
                       (eiss', rcs')          = uncurry (resolveMobInvCoins i ms inInvs) invCoins
                       sorrys                 = [ ()!# rcs || ()!# rcs' |?| sorryExtinguishCoins, sorryInRm ]
-                  in if | ()# invCoins, ()# eqMap -> genericSorryWithFuns ms dudeYou'reScrewed
-                        | otherwise               -> foldl' (helperExtinguishEitherInv i d)
-                                                            (ms, (dropBlanks sorrys, [], [], []))
-                                                            (repeat |&| ((++) <$> zip eiss  . (TheEq  |&|)
-                                                                              <*> zip eiss' . (TheInv |&|)))
+                      extinguisher           = foldl' (helperExtinguishEitherInv i d)
+                                                      (ms, (dropBlanks sorrys, [], [], []))
+                      sorry                  = genericSorryWithFuns ms
+                  in if | ()# invCoins, ()# eqMap -> sorry dudeYou'reScrewed
+                        | ()# as,       ()# eqMap -> sorry dudeYou'reNaked
+                        | ()# as                  -> case findLitReadiedLight ms eqMap of
+                                                       Nothing -> sorry sorryExtinguishLight
+                                                       Just i' -> extinguisher . pure $ (Right . pure $ i', TheEq)
+                        | otherwise               -> extinguisher $ zip eiss (repeat TheEq) ++ zip eiss' (repeat TheInv)
+    findLitReadiedLight ms eqMap = (mplus <$> (LHandS |&|) <*> (RHandS |&|)) g
+      where
+        g slot = case slot `M.lookup` eqMap of Nothing -> Nothing
+                                               Just i' | getLightIsLit i' ms -> Just i' | otherwise -> Nothing
 extinguish p = pmf "extinguish" p
 
 
