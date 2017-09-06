@@ -161,7 +161,7 @@ regularCmds = map (uncurry4 mkRegularCmd) regularCmdTuples
 
 -- TODO: "buy" and "sell".
 -- TODO: "shout". Consider indoor vs. outdoor. Update the "communication" help topic.
--- TODO: Spirits can see in the dark.
+-- TODO: Implement darkness. Spirits can see in the dark.
 regularCmdTuples :: HasCallStack => [(CmdFullName, ActionFun, Bool, CmdDesc)]
 regularCmdTuples =
     [ ("?",          plaDispCmdList,     True,  cmdDescDispCmdList)

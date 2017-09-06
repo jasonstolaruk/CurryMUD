@@ -79,9 +79,10 @@ liqList = [ (iLiqOil,                oilDistinctLiq,                oilLiq      
 oilLiq :: Liq
 oilLiq = Liq (DistinctLiqId iLiqOil)
              (Don'tArticle "oil")
-             "oil smell" -- TODO
-             "oil taste"
-             "oil drink"
+             "There is a decidedly fishy smell with nutty overtones."
+             "The heavy, greasy oil isn't appetizing in the least."
+             "The unquestionably disagreeable taste of the lamp oil suggests that it might not be entirely suitable for \
+             \consumption. You suppress the urge to gag."
 
 
 oilDistinctLiq :: DistinctLiq -- TODO
