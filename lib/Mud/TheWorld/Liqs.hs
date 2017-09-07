@@ -85,14 +85,14 @@ oilLiq = Liq (DistinctLiqId iLiqOil)
              \consumption. You suppress the urge to gag."
 
 
-oilDistinctLiq :: DistinctLiq -- TODO
+oilDistinctLiq :: DistinctLiq
 oilDistinctLiq = DistinctLiq "oil" EdibleEffects { _digestEffects  = Just de
                                                  , _consumpEffects = Nothing }
   where
     de = EffectList . pure . Left $ ie
-    ie = InstaEffect { _instaEffectSub     = MobInstaEffectPts Fp
-                     , _instaEffectVal     = Just . EffectFixedVal $ 2
-                     , _instaEffectFeeling = Just . EffectFeeling oilTag $ foodWaterFeelDur }
+    ie = InstaEffect { _instaEffectSub     = InstaEffectOther oilTag
+                     , _instaEffectVal     = Nothing
+                     , _instaEffectFeeling = mkPotEffectFeeling oilTag }
 
 
 oilTag :: FeelingTag
@@ -578,7 +578,7 @@ potTinnitusLiq :: Liq
 potTinnitusLiq = Liq (DistinctLiqId iLiqPotTinnitus)
                      (DoArticle "olive-green liquid")
                      "The tonic smells pleasingly sweet."
-                     "A vague, leafy-green taste is offset by a palatable sweetness that is far from overpowering."
+                     "A vague, leafy-green taste is offset by a palatable sweetness."
                      "The thirst-quenching draft leaves you feeling refreshed."
 
 

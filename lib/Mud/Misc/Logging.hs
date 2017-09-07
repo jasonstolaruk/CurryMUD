@@ -80,10 +80,10 @@ initLogging True  (Just logExLock) = do
     updateGlobalLogger rootLoggerName removeHandler
     (errorFile, noticeFile) <- (,) <$> mkMudFilePath errorLogFileFun
                                    <*> mkMudFilePath noticeLogFileFun
-    (eq,  nq) <- (,) <$> newTQueueIO
-                     <*> newTQueueIO
-    (ea,  na) <- (,) <$> spawnLogger errorFile  ERROR  "currymud.error"  errorM  eq logExLock
-                     <*> spawnLogger noticeFile NOTICE "currymud.notice" noticeM nq logExLock
+    (eq, nq) <- (,) <$> newTQueueIO
+                    <*> newTQueueIO
+    (ea, na) <- (,) <$> spawnLogger errorFile  ERROR  "currymud.error"  errorM  eq logExLock
+                    <*> spawnLogger noticeFile NOTICE "currymud.notice" noticeM nq logExLock
     return ((,) (ea, eq) (na, nq) & both %~ Just)
 initLogging True Nothing = blowUp "initLogging" "missing lock" ""
 

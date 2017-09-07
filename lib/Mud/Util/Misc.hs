@@ -97,15 +97,15 @@ import           Control.Monad.Reader.Class (MonadReader)
 import           Data.Bool (bool)
 import           Data.Function (on)
 import           Data.IORef (IORef, atomicWriteIORef)
+import qualified Data.IntMap.Strict as IM (IntMap, insert, lookup)
 import           Data.List (delete)
+import qualified Data.Map.Strict as M (Map, assocs)
 import           Data.Maybe (fromMaybe)
 import           Data.Monoid (Sum(..), (<>))
 import           Data.Text (Text)
+import qualified Data.Text as T
 import           Data.Time (FormatTime, defaultTimeLocale, formatTime, getZonedTime)
 import           GHC.Stack (HasCallStack, callStack, prettyCallStack)
-import qualified Data.IntMap.Strict as IM (IntMap, insert, lookup)
-import qualified Data.Map.Strict as M (Map, assocs)
-import qualified Data.Text as T
 import           System.IO (hPutStrLn, stderr)
 
 

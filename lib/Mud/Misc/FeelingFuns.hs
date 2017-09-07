@@ -17,7 +17,7 @@ import qualified Data.Text as T
 data DxOrHt = IsDx | IsHt
 
 
-feelingFuns :: [(FeelingTag, FeelingFun)]
+feelingFuns :: [(FeelingTag, FeelingFun)] -- TODO: oilTag
 feelingFuns = [ ("sacrificeBonusAule",      sacrificeBonusFeelingFun Aule      )
               , ("sacrificeBonusCaila",     sacrificeBonusFeelingFun Caila     )
               , ("sacrificeBonusCeloriel",  sacrificeBonusFeelingFun Celoriel  )
