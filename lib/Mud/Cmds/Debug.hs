@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
-{-# LANGUAGE ExistentialQuantification, LambdaCase, MonadComprehensions, NamedFieldPuns, OverloadedStrings, PatternSynonyms, ScopedTypeVariables, ViewPatterns #-}
+{-# LANGUAGE BangPatterns, ExistentialQuantification, LambdaCase, MonadComprehensions, NamedFieldPuns, OverloadedStrings, PatternSynonyms, ScopedTypeVariables, ViewPatterns #-}
 
 module Mud.Cmds.Debug ( debugCmds
                       , purgeThreadTbls
@@ -63,7 +63,7 @@ import           Control.Exception (ArithException(..), IOException)
 import           Control.Exception.Lifted (throwIO, try)
 import           Control.Lens (Optical, both, views)
 import           Control.Lens.Operators ((&), (%~))
-import           Control.Monad ((>=>), replicateM_)
+import           Control.Monad ((>=>), replicateM_, void)
 import           Control.Monad.IO.Class (liftIO)
 import           Data.Aeson (encode, toJSON)
 import           Data.Bits (zeroBits)
@@ -152,7 +152,8 @@ debugCmds =
     , mkDebugCmd "liquid"      debugLiq         "Consume a given amount (in mouthfuls) of a given liquid (by distinct \
                                                 \liquid ID)."
     , mkDebugCmd "log"         debugLog         "Put the logging service under heavy load."
-    , mkDebugCmd "missing"     debugMissing     "Attempt to look up the entity description of a nonexistent ID."
+    , mkDebugCmd "missingent"  debugMissingEnt  "Attempt to look up the entity description for a nonexistent ID."
+    , mkDebugCmd "missingfeel" debugMissingFeel "Attempt to look up the feeling function for a nonexistent tag."
     , mkDebugCmd "mkkewpie"    debugMkKewpie    "Create a kewpie doll."
     , mkDebugCmd "multiline"   debugMultiLine   "Test multi-line input."
     , mkDebugCmd "nop"         debugNOP         "Send IAC NOP."
@@ -684,10 +685,21 @@ debugLog p = withoutArgs debugLog p
 -----
 
 
-debugMissing :: HasCallStack => ActionFun
-debugMissing (NoArgs i mq cols) = do logPlaExec (prefixDebugCmd "missing") i
-                                     wrapSend mq cols =<< getEntDesc (-1) <$> getState
-debugMissing p                  = withoutArgs debugMissing p
+debugMissingEnt :: HasCallStack => ActionFun
+debugMissingEnt (NoArgs i mq cols) = do logPlaExec (prefixDebugCmd "missingent") i
+                                        wrapSend mq cols =<< getEntDesc (-1) <$> getState
+debugMissingEnt p                  = withoutArgs debugMissingEnt p
+
+
+-----
+
+
+debugMissingFeel :: HasCallStack => ActionFun
+debugMissingFeel (NoArgs'' i) = do logPlaExec (prefixDebugCmd "missingfeel") i
+                                   ms <- getState
+                                   let !x = getFeelingFun "missing" ms
+                                   void . return $ x -- Suppress the "unused local binds" warning.
+debugMissingFeel p            = withoutArgs debugMissingFeel p
 
 
 -----
