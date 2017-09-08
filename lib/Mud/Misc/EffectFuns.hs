@@ -47,7 +47,7 @@ oilEffectFun i secs = let f = getState >>= \ms -> when (isLoggedIn . getPla i $ 
     helper ms = let (mq, cols) = getMsgQueueColumns i ms
                     d          = mkStdDesig i ms DoCap
                     bs         = pure (serialize d <> "'s stomach rumbles loudly.", i `delete` desigIds d)
-                in do logPla "oilEffectFun" i "stomach rumbling due to consumption of lamp oil."
+                in do logPla "oilEffectFun" i "stomach rumbling."
                       wrapSend mq cols "Your stomach rumbles loudly."
                       bcastIfNotIncogNl i bs
 

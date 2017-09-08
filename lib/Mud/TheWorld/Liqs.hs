@@ -86,13 +86,18 @@ oilLiq = Liq (DistinctLiqId iLiqOil)
 
 
 oilDistinctLiq :: DistinctLiq
-oilDistinctLiq = DistinctLiq "oil" EdibleEffects { _digestEffects  = Just de
-                                                 , _consumpEffects = Nothing }
+oilDistinctLiq = DistinctLiq "oil" EdibleEffects { _digestEffects  = Nothing
+                                                 , _consumpEffects = Just ce }
   where
-    de = EffectList . pure . Left $ ie
-    ie = InstaEffect { _instaEffectSub     = InstaEffectOther oilTag
-                     , _instaEffectVal     = Nothing
-                     , _instaEffectFeeling = mkPotEffectFeeling oilTag }
+    ce = ConsumpEffects { _consumpAmt        = 1
+                        , _consumpInterval   = 0
+                        , _consumpEffectList = es }
+    es = EffectList . pure . Right $ e
+    e  = Effect { _effectTag     = Just oilTag
+                , _effectSub     = EffectOther oilTag
+                , _effectVal     = Nothing
+                , _effectDur     = twoMinsInSecs
+                , _effectFeeling = Just . EffectFeeling oilTag $ twoMinsInSecs }
 
 
 oilTag :: FeelingTag
