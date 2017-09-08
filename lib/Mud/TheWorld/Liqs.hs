@@ -96,8 +96,8 @@ oilDistinctLiq = DistinctLiq "oil" EdibleEffects { _digestEffects  = Nothing
     e  = Effect { _effectTag     = Just oilTag
                 , _effectSub     = EffectOther oilTag
                 , _effectVal     = Nothing
-                , _effectDur     = twoMinsInSecs
-                , _effectFeeling = Just . EffectFeeling oilTag $ twoMinsInSecs }
+                , _effectDur     = threeMinsInSecs
+                , _effectFeeling = Just . EffectFeeling oilTag $ threeMinsInSecs }
 
 
 oilTag :: FeelingTag

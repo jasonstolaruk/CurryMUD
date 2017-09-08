@@ -67,6 +67,7 @@ module Mud.Util.Misc ( BlowUp
                      , plusTenth
                      , plusThird
                      , pmf
+                     , printErrorMsg
                      , printPanicMsg
                      , safeCoerce
                      , safeHead
@@ -392,8 +393,12 @@ pmf :: Text -> PatternMatchFail
 pmf modName funName = blowUp modName funName "pattern match failure" . T.pack . show
 
 
+printErrorMsg :: HasCallStack => Text -> IO ()
+printErrorMsg = hPutStrLn stderr . T.unpack
+
+
 printPanicMsg :: HasCallStack => IO ()
-printPanicMsg = hPutStrLn stderr . T.unpack $ panicMsg <> ": see the logs for details"
+printPanicMsg = printErrorMsg $ panicMsg <> ": see the logs for details"
 
 
 lookupMapValue :: (HasCallStack, Eq v) => v -> M.Map k v -> Maybe k
@@ -417,6 +422,10 @@ strictId :: HasCallStack => a -> a
 strictId = join seq
 
 
+thrice :: HasCallStack => (a -> a) -> a -> a
+thrice f = f . f . f
+
+
 twice :: HasCallStack => (a -> a) -> a -> a
 twice f = f . f
 
@@ -426,10 +435,6 @@ two = (+) 0x
   where
     x = 2
       where
-
-
-thrice :: HasCallStack => (a -> a) -> a -> a
-thrice f = f . twice f
 
 
 unadulterated :: (HasCallStack, Monad m, Applicative f) => a -> m (f a)

@@ -695,11 +695,11 @@ debugMissingEnt p                  = withoutArgs debugMissingEnt p
 
 
 debugMissingFeel :: HasCallStack => ActionFun
-debugMissingFeel (NoArgs'' i) = do logPlaExec (prefixDebugCmd "missingfeel") i
-                                   ms <- getState
-                                   let !x = getFeelingFun "missing" ms
-                                   void . return $ x -- Suppress the "unused local binds" warning.
-debugMissingFeel p            = withoutArgs debugMissingFeel p
+debugMissingFeel (NoArgs'' i) = getState >>= \ms -> do
+    logPlaExec (prefixDebugCmd "missingfeel") i
+    let !x = getFeelingFun "missing" ms
+    void . return $ x -- Suppress the "unused local binds" warning.
+debugMissingFeel p = withoutArgs debugMissingFeel p
 
 
 -----

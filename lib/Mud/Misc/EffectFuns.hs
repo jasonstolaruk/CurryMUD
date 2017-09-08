@@ -42,7 +42,7 @@ instaEffectFuns = pure (potTinnitusTag, tinnitusInstaEffectFun)
 
 oilEffectFun :: EffectFun
 oilEffectFun i secs = let f = getState >>= \ms -> when (isLoggedIn . getPla i $ ms) . rndmDo_ 25 . helper $ ms
-                      in when (isZero $ secs `mod` 5) f
+                      in when (isZero $ secs `mod` 10) f
   where
     helper ms = let (mq, cols) = getMsgQueueColumns i ms
                     d          = mkStdDesig i ms DoCap

@@ -17,7 +17,7 @@ import qualified Data.Text as T
 data DxOrHt = IsDx | IsHt
 
 
-feelingFuns :: [(FeelingTag, FeelingFun)] -- TODO: oilTag
+feelingFuns :: [(FeelingTag, FeelingFun)]
 feelingFuns = [ ("sacrificeBonusAule",      sacrificeBonusFeelingFun Aule      )
               , ("sacrificeBonusCaila",     sacrificeBonusFeelingFun Caila     )
               , ("sacrificeBonusCeloriel",  sacrificeBonusFeelingFun Celoriel  )
@@ -31,6 +31,7 @@ feelingFuns = [ ("sacrificeBonusAule",      sacrificeBonusFeelingFun Aule      )
               , ("sacrificeBonusRumialys",  sacrificeBonusFeelingFun Rumialys  )
               , (foodTag,                   foodFeelingFun                     )
               , (gorhnaTag,                 gorhnaFeelingFun                   )
+              , (oilTag,                    oilFeelingFun                      )
               , (potFpTag,                  potFpFeelingFun                    )
               , (potHpTag,                  potHpFeelingFun                    )
               , (potMpTag,                  potMpFeelingFun                    )
@@ -61,6 +62,13 @@ gorhnaFeelingFun (FeelingFixedVal _) = prd $ "You feel an odd, uneven throbbing 
 -----
 
 
+oilFeelingFun :: FeelingFun
+oilFeelingFun = const "You are nauseated."
+
+
+-----
+
+
 sacrificeBonusFeelingFun :: GodName -> FeelingFun
 sacrificeBonusFeelingFun gn =
     const . T.concat $ [ "You have the extraordinary feeling that "
@@ -83,8 +91,8 @@ sacrificeBonusFeelingFun gn =
 
 sacrificeBonusIminyeFeelingFun :: DxOrHt -> FeelingFun
 sacrificeBonusIminyeFeelingFun = const . \case
-  IsDx -> "You are overwhelmed by the vast intricacies of the universe. Somehow you feel both important and \
-          \insignificant at the same time."
+  IsDx -> "You are overwhelmed by the vast intricacies of the universe. You simultaneously feel both powerful and \
+          \insignificant."
   IsHt -> "" -- Intentionally blank.
 
 
