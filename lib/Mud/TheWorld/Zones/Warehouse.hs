@@ -767,13 +767,14 @@ createWarehouse = do
           (Just "tinderbox")
           "tinderbox" "tinderboxes"
           "tinderbox desc" -- TODO: A "tinderbox" is a tinderbox with flint and steel strikers combined into a single object.
-          Nothing -- TODO: Smell.
+          (Just "You detect the lingering scent of burnt tinder.")
           zeroBits)
-      (let ot = ObjTemplate 1 -- tinderboxWeight
-                            1 -- tinderboxVol
-                            Nothing -- TODO: Taste.
-                            (Just 1) -- tinderoboxVal
-                            (Just (1, 1)) -- tinderboxWear
+      (let ot = ObjTemplate tinderboxWeight
+                            tinderboxVol
+                            (Just "You lick the flint and steel strikers. The indistinct taste isn't anything to write \
+                                  \home about.")
+                            tinderboxVal
+                            tinderboxWear
                             zeroBits
        in mkObj ot)
 

@@ -165,8 +165,12 @@ tabardVal :: Val
 tabardVal = Just 6500
 
 
+tinderboxVal :: Val
+tinderboxVal = Just 500
+
+
 torchVal :: Val
-torchVal = Just 525
+torchVal = Just 480
 
 
 trousersVal :: Val

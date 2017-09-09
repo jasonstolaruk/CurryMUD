@@ -180,6 +180,10 @@ tabardWeight :: Weight
 tabardWeight = 50
 
 
+tinderboxWeight :: Weight
+tinderboxWeight = 25
+
+
 torchWeight :: Weight
 torchWeight = 100
 

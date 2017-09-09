@@ -201,6 +201,10 @@ tabardVol :: Vol
 tabardVol = shirtVol
 
 
+tinderboxVol :: Vol
+tinderboxVol = 1 -- TODO
+
+
 torchVol :: Vol
 torchVol = round (2.75 * 2.75 * 14 * 100 :: Double)
 

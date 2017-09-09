@@ -36,3 +36,7 @@ staffQuarterWear = Just (1, 1)
 
 swordWear :: Wear
 swordWear = Just (1, 1)
+
+
+tinderboxWear :: Wear
+tinderboxWear = Just (1, 1)
