@@ -618,7 +618,8 @@ createWarehouse = do
           zeroBits)
       (let ot = ObjTemplate torchWeight
                             torchVol
-                            Nothing -- TODO: Taste.
+                            (Just "The rushes that comprise the torch have a grassy taste, while the pitch in which \
+                                  \they have dipped has a sour, woody taste.")
                             torchVal
                             Nothing
                             zeroBits
@@ -727,7 +728,7 @@ createWarehouse = do
           (Just "skeleton")
           "undead skeleton" ""
           "This mindless bipedal skeleton has been animated and tasked with doing its master's bidding."
-          Nothing -- TODO: Smell.
+          (Just "The dry, fleshless bones of the skeleton are scentless.")
           zeroBits)
       []
       mempty
