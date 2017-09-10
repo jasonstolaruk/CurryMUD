@@ -202,7 +202,7 @@ tabardVol = shirtVol
 
 
 tinderboxVol :: Vol
-tinderboxVol = 1 -- TODO
+tinderboxVol = round (8.5 * 4 * 1.75 :: Double)
 
 
 torchVol :: Vol
