@@ -766,12 +766,14 @@ createWarehouse = do
       (Ent iTinderbox
           (Just "tinderbox")
           "tinderbox" "tinderboxes"
-          "tinderbox desc" -- TODO: A "tinderbox" is a tinderbox with flint and steel strikers combined into a single object.
+          "The tinderbox is a set of tools for firemaking. It's a box with two compartments: one containing charcloth \
+          \tinder and another containing flint and steel strikers. The steel is struck against the flint to produce a \
+          \shower of sparks, igniting the tinder. The burning tinder may be used to light a torch or an oil lamp."
           (Just "You detect the lingering scent of burnt tinder.")
           zeroBits)
       (let ot = ObjTemplate tinderboxWeight
                             tinderboxVol
-                            (Just "You lick the flint and steel strikers. The indistinct taste isn't anything to write \
+                            (Just "You lick the flint and steel strikers. The metallic taste isn't anything to write \
                                   \home about.")
                             tinderboxVal
                             tinderboxWear

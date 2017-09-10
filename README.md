@@ -56,7 +56,7 @@ CurryMUD will have the following features:
 * Durational effects that can be paused and resumed. Corresponding feelings. :dizzy:
 * PC and NPC death. Corpse decomposition. :skull:
 * Corpses may be sacrificed using the holy symbol of a particular god. :pray:
-* Upon death, PCs may have a limited amount of time to exist in the virtual world as a spirit. :angel:
+* Upon death, PCs may have a limited amount of time to exist in the virtual world as spirits. :angel:
 * [Maps of the game world.](https://github.com/jasonstolaruk/CurryMUD/tree/master/maps) :earth_americas:
 * A history of the game world. :books:
 * Gods. An origin myth describing the creation of the universe. :godmode:
