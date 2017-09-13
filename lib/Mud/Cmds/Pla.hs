@@ -1848,7 +1848,7 @@ leave p = pmf "leave" p
 -----
 
 
-light :: HasCallStack => ActionFun
+light :: HasCallStack => ActionFun -- TODO: A lit torch or lamp may be used to light another torch or lamp.
 light p@AdviseNoArgs            = advise p ["light"] adviceLightNoArgs
 light p@(OneArgLower' _ a     ) = lightUp p a Nothing
 light p@(WithArgs _ _ _ [a, b]) = lightUp p a . Just $ b
@@ -1879,8 +1879,8 @@ lightUp p@(WithArgs i _ _ _) lightArg tinderArg = getState >>= \ms ->
                   let toSelf  = prd $ "You light the " <> lightSing
                       d       = mkStdDesig i ms DoCap
                       isInInv = lightId `elem` is
-                      bs      = let t1  = isInInv ? aOrAn lightSing :? (mkPossPro (getSex i ms) |<>| lightSing)
-                                    t2  = isInInv |?| spcL (parensQuote "carried")
+                      bs      = let t1 = isInInv ? aOrAn lightSing :? (mkPossPro (getSex i ms) |<>| lightSing)
+                                    t2 = isInInv |?| spcL (parensQuote "carried")
                                 in pure (T.concat [ serialize d, " lights ", t1, t2, "." ], i `delete` desigIds d)
                       logMsg  = let t = spcL . parensQuote . ("in " <>) $ (isInInv ? "inventory" :? "readied equipment")
                                 in prd $ "lighting " <> aOrAn lightSing <> t

@@ -1,5 +1,7 @@
 \h LIGHT \d
 
+TODO: A lit torch or lamp may be used to light another torch or lamp.
+
 \uUSAGE\n
 !light lightSource \s[\dtinderbox\s]\d
 
