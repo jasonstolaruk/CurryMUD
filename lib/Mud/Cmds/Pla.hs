@@ -1848,7 +1848,7 @@ leave p = pmf "leave" p
 -----
 
 
-light :: HasCallStack => ActionFun -- TODO: A lit torch or lamp may be used to light another torch or lamp.
+light :: HasCallStack => ActionFun -- TODO: A lit torch or lamp may be used to light another torch or lamp. Update help.
 light p@AdviseNoArgs            = advise p ["light"] adviceLightNoArgs
 light p@(OneArgLower' _ a     ) = lightUp p a Nothing
 light p@(WithArgs _ _ _ [a, b]) = lightUp p a . Just $ b
@@ -1905,10 +1905,9 @@ lightUp p@(WithArgs i _ _ _) lightArg tinderArg = getState >>= \ms ->
         in if | ()#  invCoins, ()# eqMap -> sorry dudeYou'reScrewed
               | ()#  invCoins            -> sorry dudeYourHandsAreEmpty
               | ()!# rcs                 -> sorry sorryLightCoins
-              | otherwise                -> let h = either sorry f
-                                            in case (eiss, eiss') of (eis:_, _    ) -> h eis
-                                                                     ([],    eis:_) -> h eis
-                                                                     ([],    []   ) -> sorry sorryLightInRm
+              | h <- either sorry f      -> case (eiss, eiss') of (eis:_, _    ) -> h eis
+                                                                  ([],    eis:_) -> h eis
+                                                                  ([],    []   ) -> sorry sorryLightInRm
 lightUp p _ _ = pmf "lightUp" p
 
 

@@ -7,15 +7,15 @@
 Ignite a light source (a torch or oil lamp) using a) a tinderbox, or b) a lit torch or oil lamp.
 You may omit the second argument, in which case the first tinderbox in your inventory will be used.
 
-To light the torch in your readied equipment:
+To light the torch in your readied equipment (using your tinderbox):
 \qlight \le#l\qtorch\d4`
 ...or just...
 \qlight torch\d4`
 
-To light the torch in your inventory:
+To light the torch in your inventory (using your tinderbox):
 \qlight \li#l\qtorch\d4`
 
-Note that a lit torch or lamp in your inventory will not illuminate the room: you must ready the light source or drop it on the ground.
+Note that a lit torch or lamp in your inventory will not illuminate a room: you must either ready the light source or drop it on the ground.
 
 \uEXAMPLES\n
 \qlight torch\d to light your torch (in your readied equipment) using your tinderbox (in your inventory).4`
