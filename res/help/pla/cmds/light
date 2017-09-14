@@ -1,12 +1,10 @@
 \h LIGHT \d
 
-TODO: A lit torch or lamp may be used to light another torch or lamp.
-
 \uUSAGE\n
-!light lightSource \s[\dtinderbox\s]\d
+!light lightSource \s[\dfireSource\s]\d
 
 \uDESCRIPTION\n
-Ignite a light source (a torch or oil lamp) using a tinderbox.
+Ignite a light source (a torch or oil lamp) using a) a tinderbox, or b) a lit torch or oil lamp.
 You may omit the second argument, in which case the first tinderbox in your inventory will be used.
 
 To light the torch in your readied equipment:
