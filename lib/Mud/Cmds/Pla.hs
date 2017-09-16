@@ -1920,11 +1920,10 @@ link (NoArgs i mq cols) = do
     ms  <- getState
     res <- helperLinkUnlink ms i mq cols
     flip maybeVoid res $ \(meLinkedToOthers, othersLinkedToMe, twoWays) ->
-        let msgs             = intercalate mMempty . dropEmpties $ [ twoWays       |!| twoWayMsgs
-                                                                   , oneWaysFromMe |!| oneWayFromMeMsgs
-                                                                   , oneWaysToMe   |!| oneWayToMeMsgs ]
-            oneWaysFromMe    = meLinkedToOthers \\ twoWays
-            oneWaysToMe      = othersLinkedToMe \\ twoWays
+        let msgs                         = intercalate mMempty . dropEmpties $ [ twoWays       |!| twoWayMsgs
+                                                                               , oneWaysFromMe |!| oneWayFromMeMsgs
+                                                                               , oneWaysToMe   |!| oneWayToMeMsgs ]
+            (oneWaysFromMe, oneWaysToMe) = ((,) <$> (meLinkedToOthers \\) <*> (othersLinkedToMe \\)) twoWays
             twoWayMsgs       = [ "Two-way links:",                mkSingsList True  twoWays       ]
             oneWayFromMeMsgs = [ "One-way links from your mind:", mkSingsList False oneWaysFromMe ]
             oneWayToMeMsgs   = [ "One-way links to your mind:",   mkSingsList False oneWaysToMe   ]
