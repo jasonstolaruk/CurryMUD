@@ -1332,6 +1332,7 @@ sorryKillType i = "ID " <> showTxt i <> " is not a mobile."
 -----
 
 
+-- TODO: Do any messages need to be revised?
 sorryLightCoins :: Text
 sorryLightCoins = can't "light a coin."
 

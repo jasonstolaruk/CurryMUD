@@ -1848,7 +1848,7 @@ leave p = pmf "leave" p
 -----
 
 
-light :: HasCallStack => ActionFun -- TODO: A lit torch or lamp may be used to light another torch or lamp. Update help.
+light :: HasCallStack => ActionFun -- TODO: Update help.
 light p@AdviseNoArgs            = advise p ["light"] adviceLightNoArgs
 light p@(OneArgLower' _ a     ) = lightUp p a Nothing
 light p@(WithArgs _ _ _ [a, b]) = lightUp p a . Just $ b
@@ -1868,24 +1868,26 @@ lightUp p@(WithArgs i _ _ _) lightArg tinderArg = getState >>= \ms ->
             (eiss', rcs)              = uncurry (resolveMobInvCoins i ms inInvs) invCoins
             f [lightId]               = either sorry (g lightId) procTinderArg
             f _                       = sorry sorryLightExcessLights
-            g lightId [tinderId]
-              | getType lightId ms /= LightType = sorry . sorryLightLightType $ lightSing
-              | ((||) <$> (/= ObjType) . uncurry getType <*> (/= "tinderbox") . uncurry getSing) (tinderId, ms)
-              = sorry . sorryLightTinderboxType . getSing tinderId $ ms
-              | getLightIsLit lightId ms = sorry . sorryLightLit $ lightSing
-              | secs <= 0                = sorry $ case sub of Torch    -> sorryLightTorchSecs
-                                                               (Lamp _) -> sorryLightLampSecs
-              | otherwise =
-                  let toSelf  = prd $ "You light the " <> lightSing
-                      d       = mkStdDesig i ms DoCap
-                      isInInv = lightId `elem` is
-                      bs      = let t1 = isInInv ? aOrAn lightSing :? (mkPossPro (getSex i ms) |<>| lightSing)
-                                    t2 = isInInv |?| spcL (parensQuote "carried")
-                                in pure (T.concat [ serialize d, " lights ", t1, t2, "." ], i `delete` desigIds d)
-                      logMsg  = let t = spcL . parensQuote . ("in " <>) $ (isInInv ? "inventory" :? "readied equipment")
-                                in prd $ "lighting " <> aOrAn lightSing <> t
-                  in ( ms & lightTbl.ind lightId.lightIsLit .~ True
-                     , ( pure toSelf, bs, pure logMsg, pure . startLightTimer $ lightId ) )
+            g lightId [tinderId]      =
+              let (tinderType, tinderSing) = ((,) <$> uncurry getType <*> uncurry getSing) (tinderId, ms)
+              in if -- TODO: sorryLightTinderboxType is presently unused...
+                | getType lightId ms /= LightType -> sorry . sorryLightLightType $ lightSing
+                | tinderType == ObjType, tinderSing /= "tinderbox"           -> sorry undefined -- TODO
+                | tinderType == LightType, not . getLightIsLit tinderId $ ms -> sorry undefined -- TODO
+                | getLightIsLit lightId ms -> sorry . sorryLightLit $ lightSing
+                | secs <= 0                -> sorry $ case sub of Torch    -> sorryLightTorchSecs
+                                                                  (Lamp _) -> sorryLightLampSecs
+                | otherwise ->
+                    let toSelf  = prd $ "You light the " <> lightSing
+                        d       = mkStdDesig i ms DoCap
+                        isInInv = lightId `elem` is
+                        bs      = let t1 = isInInv ? aOrAn lightSing :? (mkPossPro (getSex i ms) |<>| lightSing)
+                                      t2 = isInInv |?| spcL (parensQuote "carried")
+                                  in pure (T.concat [ serialize d, " lights ", t1, t2, "." ], i `delete` desigIds d)
+                        logMsg  = let t = spcL . parensQuote . ("in " <>) $ (isInInv ? "inventory" :? "readied equipment")
+                                  in prd $ "lighting " <> aOrAn lightSing <> t
+                    in ( ms & lightTbl.ind lightId.lightIsLit .~ True
+                       , ( pure toSelf, bs, pure logMsg, pure . startLightTimer $ lightId ) )
               where
                 (lightSing, sub, secs) = ((,,) <$> uncurry getSing <*> uncurry getLightSub <*> uncurry getLightSecs)
                                          (lightId, ms)
@@ -1895,7 +1897,7 @@ lightUp p@(WithArgs i _ _ _) lightArg tinderArg = getState >>= \ms ->
                                         (i', ms)
                              in case filter h is of (x:_) -> Right . pure $ x
                                                     []    -> Left sorryLightTinderbox
-              Just tinder -> let (inInvs', inEqs', inRms') = sortArgsInvEqRm InInv . pure $ tinder
+              Just tinder -> let (inInvs', inEqs', inRms') = sortArgsInvEqRm InInv . pure $ tinder -- TODO: Could be a lit light source in eq.
                              in if | ()!# inEqs' -> Left sorryLightTinderboxInEq
                                    | ()!# inRms' -> Left sorryLightTinderboxInRm
                                    | otherwise   -> case fst . uncurry (resolveMobInvCoins i ms inInvs') $ invCoins of
