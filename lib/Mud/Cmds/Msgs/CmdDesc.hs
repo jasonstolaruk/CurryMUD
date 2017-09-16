@@ -153,7 +153,7 @@ cmdDescInv = "Display your inventory, or examine one or more items in your inven
 
 
 cmdDescLight :: Text
-cmdDescLight = "Ignite a light source using a) a tinderbox, or b) a lit torch or oil lamp."
+cmdDescLight = "Ignite a torch or oil lamp."
 
 
 cmdDescLink :: Text

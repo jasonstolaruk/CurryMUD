@@ -4,7 +4,8 @@
 !light lightSource \s[\dfireSource\s]\d
 
 \uDESCRIPTION\n
-Ignite a light source (a torch or oil lamp) using a) a tinderbox, or b) a lit torch or oil lamp.
+Ignite a torch or oil lamp.
+A source of fire is required: this may be a tinderbox or a lit torch/oil lamp.
 You may omit the second argument, in which case the first tinderbox in your inventory will be used.
 
 To light the torch in your readied equipment (using your tinderbox):

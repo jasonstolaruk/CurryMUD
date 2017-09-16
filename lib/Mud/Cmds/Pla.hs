@@ -1848,7 +1848,7 @@ leave p = pmf "leave" p
 -----
 
 
-light :: HasCallStack => ActionFun -- TODO: Update help.
+light :: HasCallStack => ActionFun -- TODO: Finish updating help.
 light p@AdviseNoArgs            = advise p ["light"] adviceLightNoArgs
 light p@(OneArgLower' _ a     ) = lightUp p a Nothing
 light p@(WithArgs _ _ _ [a, b]) = lightUp p a . Just $ b
@@ -1856,7 +1856,7 @@ light p                         = advise p ["light"] adviceLightExcessArgs
 
 
 lightUp :: HasCallStack => ActionParams -> Text -> Maybe Text -> MudStack ()
-lightUp p@(WithArgs i _ _ _) lightArg tinderArg = getState >>= \ms ->
+lightUp p@(WithArgs i _ _ _) lightArg fireArg = getState >>= \ms ->
     let f = genericActionWithFuns p helper "light"
     in checkActing p ms (Right "light a torch or lamp") [ Attacking, Drinking, Sacrificing ] f
   where
@@ -1866,14 +1866,14 @@ lightUp p@(WithArgs i _ _ _) lightArg tinderArg = getState >>= \ms ->
             (gecrs, miss, _)          = resolveEntCoinNames i ms inEqs (M.elems eqMap) mempty
             eiss                      = zipWith (curry procGecrMisMobEq) gecrs miss
             (eiss', rcs)              = uncurry (resolveMobInvCoins i ms inInvs) invCoins
-            f [lightId]               = either sorry (g lightId) procTinderArg
+            f [lightId]               = either sorry (g lightId) procFireArg
             f _                       = sorry sorryLightExcessLights
-            g lightId [tinderId]      =
-              let (tinderType, tinderSing) = ((,) <$> uncurry getType <*> uncurry getSing) (tinderId, ms)
-              in if -- TODO: sorryLightTinderboxType is presently unused...
+            g lightId [fireId]        =
+              let (fireType, fireSing) = ((,) <$> uncurry getType <*> uncurry getSing) (fireId, ms)
+              in if
                 | getType lightId ms /= LightType -> sorry . sorryLightLightType $ lightSing
-                | tinderType == ObjType, tinderSing /= "tinderbox"           -> sorry undefined -- TODO
-                | tinderType == LightType, not . getLightIsLit tinderId $ ms -> sorry undefined -- TODO
+                | fireType == ObjType, fireSing /= "tinderbox"           -> sorry . sorryLightFireType  $ fireSing
+                | fireType == LightType, not . getLightIsLit fireId $ ms -> sorry . sorryLightFireUnlit $ fireSing
                 | getLightIsLit lightId ms -> sorry . sorryLightLit $ lightSing
                 | secs <= 0                -> sorry $ case sub of Torch    -> sorryLightTorchSecs
                                                                   (Lamp _) -> sorryLightLampSecs
@@ -1891,17 +1891,16 @@ lightUp p@(WithArgs i _ _ _) lightArg tinderArg = getState >>= \ms ->
               where
                 (lightSing, sub, secs) = ((,,) <$> uncurry getSing <*> uncurry getLightSub <*> uncurry getLightSecs)
                                          (lightId, ms)
-            g _ _ = sorry sorryLightExcessTinderboxes
-            procTinderArg = case tinderArg of
-              Nothing     -> let h i' = ((&&) <$> (== ObjType) . uncurry getType <*> (== "tinderbox") . uncurry getSing)
-                                        (i', ms)
-                             in case filter h is of (x:_) -> Right . pure $ x
-                                                    []    -> Left sorryLightTinderbox
-              Just tinder -> let (inInvs', inEqs', inRms') = sortArgsInvEqRm InInv . pure $ tinder -- TODO: Could be a lit light source in eq.
-                             in if | ()!# inEqs' -> Left sorryLightTinderboxInEq
-                                   | ()!# inRms' -> Left sorryLightTinderboxInRm
+            g _ _ = sorry sorryLightExcessFires
+            procFireArg = case fireArg of
+              Nothing   -> let h i' = ((&&) <$> (== ObjType) . uncurry getType <*> (== "tinderbox") . uncurry getSing) (i', ms)
+                           in case filter h is of (x:_) -> Right . pure $ x
+                                                  []    -> Left sorryLightTinderbox
+              Just fire -> let (inInvs', _ {-inEqs'-}, inRms') = sortArgsInvEqRm InInv . pure $ fire -- TODO: The fire source could be in eq.
+                             in if -- | ()!# inEqs' -> Left sorryLightFireInEq
+                                   | ()!# inRms' -> Left sorryLightFireInRm
                                    | otherwise   -> case fst . uncurry (resolveMobInvCoins i ms inInvs') $ invCoins of
-                                     []       -> Left sorryLightTinderboxCoins
+                                     []       -> Left sorryLightFireCoins
                                      (eis':_) -> eis'
             sorry = genericSorryWithFuns ms
         in if | ()#  invCoins, ()# eqMap -> sorry dudeYou'reScrewed

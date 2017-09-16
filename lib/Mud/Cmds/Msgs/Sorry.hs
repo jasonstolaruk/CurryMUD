@@ -174,17 +174,17 @@ module Mud.Cmds.Msgs.Sorry ( sorryActing
                            , sorryKillSpirit
                            , sorryKillType
                            , sorryLightCoins
+                           , sorryLightExcessFires
                            , sorryLightExcessLights
-                           , sorryLightExcessTinderboxes
+                           , sorryLightFireCoins
+                           , sorryLightFireInRm
+                           , sorryLightFireType
+                           , sorryLightFireUnlit
                            , sorryLightInRm
                            , sorryLightLampSecs
                            , sorryLightLightType
                            , sorryLightLit
                            , sorryLightTinderbox
-                           , sorryLightTinderboxCoins
-                           , sorryLightTinderboxInEq
-                           , sorryLightTinderboxInRm
-                           , sorryLightTinderboxType
                            , sorryLightTorchSecs
                            , sorryLinkAlready
                            , sorryLinkCoin
@@ -1332,17 +1332,33 @@ sorryKillType i = "ID " <> showTxt i <> " is not a mobile."
 -----
 
 
--- TODO: Do any messages need to be revised?
 sorryLightCoins :: Text
 sorryLightCoins = can't "light a coin."
+
+
+sorryLightExcessFires :: Text
+sorryLightExcessFires = can't "ignite a light source using more than one fire source."
 
 
 sorryLightExcessLights :: Text
 sorryLightExcessLights = but "you can only ignite a single light source at a time."
 
 
-sorryLightExcessTinderboxes :: Text
-sorryLightExcessTinderboxes = can't "ignite a light source using more than one tinderbox."
+sorryLightFireCoins :: Text
+sorryLightFireCoins = can't "ignite a light source using a coin."
+
+
+sorryLightFireInRm :: Text
+sorryLightFireInRm = butCan't "ignite a light source using a fire source in your current room. Please pick up the fire \
+                              \source first."
+
+
+sorryLightFireType :: Sing -> Text
+sorryLightFireType s = the' s <> " is not a fire source."
+
+
+sorryLightFireUnlit :: Sing -> Text
+sorryLightFireUnlit s = the' s <> " is not lit."
 
 
 sorryLightInRm :: Text
@@ -1362,26 +1378,7 @@ sorryLightLit s = "The " <> s <> " is already lit."
 
 
 sorryLightTinderbox :: Text
-sorryLightTinderbox = "You don't have a tinderbox in your inventory. " <>
-                      parensQuote "You need a tinderbox to ignite a light source."
-
-
-sorryLightTinderboxCoins :: Text
-sorryLightTinderboxCoins = can't "ignite a light source with a coin."
-
-
-sorryLightTinderboxInEq :: Text
-sorryLightTinderboxInEq = can't "ignite a light source using an item in your readied equipment. Please specify a \
-                                \tinderbox in your inventory."
-
-
-sorryLightTinderboxInRm :: Text
-sorryLightTinderboxInRm = butCan't "ignite a light source using a tinderbox in your current room. Please pick up the \
-                                   \tinderbox first."
-
-
-sorryLightTinderboxType :: Sing -> Text
-sorryLightTinderboxType s = the' s <> " is not a tinderbox."
+sorryLightTinderbox = "You don't have a tinderbox in your inventory. " <> parensQuote "A fire source is required."
 
 
 sorryLightTorchSecs :: Text
