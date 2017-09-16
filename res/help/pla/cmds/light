@@ -5,24 +5,32 @@
 
 \uDESCRIPTION\n
 Ignite a torch or oil lamp.
-A source of fire is required: this may be a tinderbox or a lit torch/oil lamp.
-You may omit the second argument, in which case the first tinderbox in your inventory will be used.
+A source of fire is required; this may be a tinderbox or a lit torch/oil lamp. You may omit the second argument, in which case the first tinderbox in your inventory will be used.
 
-To light the torch in your readied equipment (using your tinderbox):
+Note that a lit torch/oil lamp in your inventory will not illuminate a room: you must either ready the light source or drop it on the ground.
+
+To light the torch in your readied equipment using your tinderbox:
 \qlight \le#l\qtorch\d4`
 ...or just...
 \qlight torch\d4`
 
-To light the torch in your inventory (using your tinderbox):
+To light the torch in your inventory using your tinderbox:
 \qlight \li#l\qtorch\d4`
 
-Note that a lit torch or lamp in your inventory will not illuminate a room: you must either ready the light source or drop it on the ground.
+To light the torch in your readied equipment using the lamp in your inventory:
+\qlight torch \li#l\qlamp\d4`
+...or just...
+\qlight torch lamp\d4`
+
+To light the torch in your readied equipment using the lamp in your readied equipment:
+\qlight torch \le#l\qlamp\d4`
 
 \uEXAMPLES\n
-\qlight torch\d to light your torch (in your readied equipment) using your tinderbox (in your inventory).4`
-\qlight \p2#i\qtorch\d to light your second torch.4`
-\qlight torch \p2#i\qtinderbox\d to light your torch using your second tinderbox.4`
-\qlight \li#l\p2#i\qtorch\d to light your second torch (in your inventory).4`
+\qlight \p2#i\qtorch\d to light the second torch in your readied equipment using your tinderbox.4`
+\qlight \li#l\p2#i\qtorch\d to light the second torch in your inventory using your tinderbox.4`
+\qlight torch \p2#i\qtinderbox\d to light the torch in your readied equipment using your second tinderbox.4`
+\qlight torch \p2#i\qlamp\d to light the torch in your readied equipment using the second lamp in your inventory.4`
+\qlight \p2#i\qtorch \le#l\qtorch\d to light the second torch in your readied equipment using the first torch in your readied equipment.4`
 
 \uSEE ALSO\n
 drop, extinguish, prefixes, ready, refuel

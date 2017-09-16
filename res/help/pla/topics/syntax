@@ -1,6 +1,6 @@
 \h SYNTAX \d
 
-Command "syntax" is concerned with the structure of commands, in terms of what sort of arguments are expected where and what those arguments should look like. Here we discuss CurryMUD's command syntax: first we address some key points to keep in mind, then we examine how CurryMUD commands are structured according to a handful of patterns.
+The "syntax" of a command concerns its structure, in terms of what sort of arguments are expected and what those arguments should look like. Here we discuss CurryMUD's command syntax: first we address some key points to keep in mind, then we examine how CurryMUD commands are structured according to a handful of patterns.
 
 -
 
@@ -39,13 +39,13 @@ Examples include "color", "exits", "motd", "stats", "uptime", and "whoami".
 
 ONE OR MORE
 
-The majority of CurryMUD commands allow you to specify one or more things. While \qgive apple taro\d is perfectly fine, \qgive apple orange pear taro\d is also legal.
+Many commands allow you to specify one or more things. While \qgive apple taro\d is perfectly fine, \qgive apple orange pear taro\d is also legal.
 
 GET A LIST, OR GET DESCRIPTIONS
 
 The "inventory", "equipment", and "look" commands have been designed to reflect the fact that in the virtual world, entities may exist in one of three places: one's inventory, one's readied equipment, or a room ("on the ground"). These three commands have the following in common:
 1) When executed without arguments, they show you a list of things (in the case of the "look" command, you get the description of your current room along with a list of what's in the room).3`
-2) When you specify the names of one or more things in the list, you get the description(s) of those things.3`
+2) When you specify the names of one or more things found in that list, you get the description(s) of those things.3`
 
 Consider the following example:
 * You type \ql\d ("look") and see that there is a ring in the room. Typing \ql ring\d gives you a description of the ring.2`
@@ -59,7 +59,7 @@ The "?", "expressive", and "who" commands have the following in common:
    \q?\d will give you a list of available commands along with short descriptions of what they do.
    \qexpressive\d will give you a list of available expressive commands along with illustrations of what they do.
    \qwho\d will give you a list of all the people that are currently "awake" (logged in).
-2) When you specify one or more terms, the list is searched for those terms and you see the results.3`
+2) When you specify one or more terms, the list is searched for those terms.3`
    \qexpressive laugh\d will display entries in the expressive command list containing the word "laugh."
 
 COMMAND_NAME + OBJECT(S) + TARGET
@@ -76,7 +76,7 @@ Examples of this common pattern:
 COMMAND_NAME + TARGET + SOURCE
 
 The "light" and "refuel" commands follow this pattern.
-\qlight torch tinderbox\d2`
+\qlight torch tinderbox\d (to ignite the torch in your readied equipment using the tinderbox in your inventory)2`
 \qrefuel lamp bottle\d (to refill your lamp with the oil in your bottle)2`
 
 COMMAND_NAME + MESSAGE
@@ -99,7 +99,7 @@ Examples of this pattern:
 
 COMMAND_NAME + MOUTHFULS + CONSUMABLE
 
-The "eat" and "drink" commands require that you specify the number of mouthfuls to consume:
+The "eat" and "drink" commands require you to specify the number of mouthfuls to consume:
 \qeat 2 bread\d (to eat two mouthfuls of your bread)2`
 \qdrink 4 waterskin\d (to drink four mouthfuls from your waterskin)2`
 

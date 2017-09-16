@@ -4,7 +4,7 @@ Mudlet users will want to take advantage of our custom scripts for displaying vi
 
 1) Open your web browser and navigate to the following URL:4`
 https://gist.githubusercontent.com/jasonstolaruk/4e287f5e7125bdba4c0578e8462291a1/raw/896c0199c5eee9d5388d6f08307eb616c0ae42a9/CurryMUD.xml
-2)  Save the content on your computer in a file named "CurryMUD.xml". (In Chrome, select "File" -> "Save Page As...")4`
+2)  Save the content on your computer in a file named "CurryMUD.xml". (In Chrome, select "File" -> "Save Page As..." In Safari, select "File" -> "Save As..." and choose "Page Source" as the format.)4`
 3)  Open Mudlet and connect to CurryMUD as usual.4`
 4)  Open the Mudlet preferences. Under "Game protocols," check "Enable GMCP."4`
 5)  Reconnect to CurryMUD.4`

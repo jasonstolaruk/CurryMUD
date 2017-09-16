@@ -1848,7 +1848,7 @@ leave p = pmf "leave" p
 -----
 
 
-light :: HasCallStack => ActionFun -- TODO: Finish updating help.
+light :: HasCallStack => ActionFun
 light p@AdviseNoArgs            = advise p ["light"] adviceLightNoArgs
 light p@(OneArgLower' _ a     ) = lightUp p a Nothing
 light p@(WithArgs _ _ _ [a, b]) = lightUp p a . Just $ b
@@ -4026,4 +4026,4 @@ zoom p = advise p ["zoom"] adviceZoomExcessArgs
 
 zoomHelper :: HasCallStack => Id -> MsgQueue -> Cols -> Int -> MudStack ()
 zoomHelper i mq cols x = do sendGmcpRmInfo (Just x) i =<< getState
-                            wrapSend mq cols . prd $ "Set zoom level to " <> showTxt x
+                            wrapSend mq cols . prd $ "Set map zoom level to " <> showTxt x
