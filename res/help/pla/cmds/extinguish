@@ -4,7 +4,7 @@
 !extinguish \s[\dlightSource \s...]\d
 
 \uDESCRIPTION\n
-Extinguish one or more lit light sources.
+Extinguish one or more light sources.
 
 To extinguish the first lit torch or lamp in your readied equipment:
 \qextinguish\d4`

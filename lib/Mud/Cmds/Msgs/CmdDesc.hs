@@ -84,7 +84,7 @@ cmdDescExpCmdList = "Display or search a list of available expressive commands a
 
 
 cmdDescExtinguish :: Text
-cmdDescExtinguish = "Extinguish one or more lit light sources."
+cmdDescExtinguish = "Extinguish one or more light sources."
 
 
 cmdDescFeeling :: Text

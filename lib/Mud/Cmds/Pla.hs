@@ -92,7 +92,7 @@ import qualified Data.IntMap.Strict as IM ((!), keys)
 import           Data.Ix (inRange)
 import           Data.List ((\\), delete, foldl', intercalate, intersperse, nub, partition, sort, sortBy, unfoldr)
 import           Data.List.Split (chunksOf)
-import qualified Data.Map.Strict as M ((!), elems, filter, foldrWithKey, keys, lookup, singleton, size, toList)
+import qualified Data.Map.Strict as M ((!), elems, filter, foldrWithKey, keys, lookup, null, singleton, size, toList)
 import           Data.Maybe (fromMaybe)
 import           Data.Monoid ((<>), All(..), Sum(..))
 import qualified Data.Set as S (filter, toList)
@@ -1862,56 +1862,63 @@ lightUp p@(WithArgs i _ _ _) lightArg fireArg = getState >>= \ms ->
   where
     helper _ ms =
         let (invCoins@(is, _), eqMap) = (getInvCoins `fanUncurry` getEqMap) (i, ms)
-            (inInvs, inEqs, _)        = sortArgsInvEqRm InEq . pure $ lightArg
+            (inInvs, inEqs, inRms)    = sortArgsInvEqRm InEq . pure $ lightArg
             (gecrs, miss, _)          = resolveEntCoinNames i ms inEqs (M.elems eqMap) mempty
             eqEiss                    = zipWith (curry procGecrMisMobEq) gecrs miss
-            (invEiss, rcs)            = uncurry (resolveMobInvCoins i ms inInvs) invCoins
+            (invEiss, _)              = uncurry (resolveMobInvCoins i ms inInvs) invCoins
             f [lightId]               = either sorry (g lightId) procFireArg
             f _                       = sorry sorryLightExcessLights
-            g lightId [fireId]        =
-              let (fireType, fireSing) = ((,) <$> uncurry getType <*> uncurry getSing) (fireId, ms)
-              in if
-                | getType lightId ms /= LightType -> sorry . sorryLightLightType $ lightSing
-                | fireType == ObjType, fireSing /= "tinderbox"           -> sorry . sorryLightFireType  $ fireSing
-                | fireType == LightType, not . getLightIsLit fireId $ ms -> sorry . sorryLightFireUnlit $ fireSing
-                | getLightIsLit lightId ms -> sorry . sorryLightLit $ lightSing
-                | secs <= 0                -> sorry $ case sub of Torch    -> sorryLightTorchSecs
-                                                                  (Lamp _) -> sorryLightLampSecs
-                | otherwise ->
-                    let toSelf  = prd $ "You light the " <> lightSing
-                        d       = mkStdDesig i ms DoCap
-                        isInInv = lightId `elem` is
-                        bs      = let t1 = isInInv ? aOrAn lightSing :? (mkPossPro (getSex i ms) |<>| lightSing)
+            g lightId [fireId]        = if
+              | getType lightId ms /= LightType -> sorry . sorryLightLightType $ lightSing
+              | getLightIsLit lightId ms        -> sorry . sorryLightLit $ lightSing
+              | secs <= 0                       -> sorry $ case sub of Torch    -> sorryLightTorchSecs
+                                                                       (Lamp _) -> sorryLightLampSecs
+              | otherwise ->
+                  let (fireType, fireSing) = ((,) <$> uncurry getType <*> uncurry getSing) (fireId, ms)
+                      toSelf    = prd $ "You light the " <> lightSing
+                      d         = mkStdDesig i ms DoCap
+                      isInInv   = lightId `elem` is
+                      bs        = let t1 = isInInv ? aOrAn lightSing :? (mkPossPro (getSex i ms) |<>| lightSing)
                                       t2 = isInInv |?| spcL (parensQuote "carried")
                                   in pure (T.concat [ serialize d, " lights ", t1, t2, "." ], i `delete` desigIds d)
-                        logMsg  = let t = spcL . parensQuote . ("in " <>) $ (isInInv ? "inventory" :? "readied equipment")
+                      logMsg    = let t = spcL . parensQuote . ("in " <>) $ (isInInv ? "inventory" :? "readied equipment")
                                   in prd $ "lighting " <> aOrAn lightSing <> t
-                    in ( ms & lightTbl.ind lightId.lightIsLit .~ True
-                       , ( pure toSelf, bs, pure logMsg, pure . startLightTimer $ lightId ) )
+                      res       = ( ms & lightTbl.ind lightId.lightIsLit .~ True
+                                  , (pure toSelf, bs, pure logMsg, pure . startLightTimer $ lightId) )
+                      sorryFire = sorry . sorryLightFireType $ fireSing
+                  in case fireType of ObjType   | fireSing /= "tinderbox"         -> sorryFire
+                                                | otherwise                       -> res
+                                      LightType | fireId == lightId               -> sorry . sorryLightSelf      $ lightSing
+                                                | not . getLightIsLit fireId $ ms -> sorry . sorryLightFireUnlit $ fireSing
+                                                | otherwise                       -> res
+                                      _                                           -> sorryFire
               where
                 (lightSing, sub, secs) = ((,,) <$> uncurry getSing <*> uncurry getLightSub <*> uncurry getLightSecs)
                                          (lightId, ms)
             g _ _ = sorry sorryLightExcessFires
             procFireArg = case fireArg of
-              Nothing   -> let h i' = ((&&) <$> (== ObjType) . uncurry getType <*> (== "tinderbox") . uncurry getSing) (i', ms)
+              Nothing   -> let h i' = ((&&) <$> (== ObjType) . uncurry getType <*> (== "tinderbox") . uncurry getSing)
+                                      (i', ms)
                            in case filter h is of (x:_) -> Right . pure $ x
                                                   []    -> Left sorryLightTinderbox
-              Just fire -> let (inInvs', inEqs', _) = sortArgsInvEqRm InInv . pure $ fire
-                               (invEiss', invRcs)     = uncurry (resolveMobInvCoins i ms inInvs') invCoins
-                               (gecrs', miss', eqRcs) = resolveEntCoinNames i ms inEqs' (M.elems eqMap) mempty
-                               eqEiss'                = zipWith (curry procGecrMisMobEq) gecrs' miss'
-                           in if ()!# invRcs || ()!# eqRcs
-                             then Left sorryLightFireCoins
-                             else case (eqEiss', invEiss') of (eis:_, []   ) -> eis
-                                                              ([],    eis:_) -> eis
-                                                              _              -> Left sorryLightFireInRm
+              Just fire -> let (inInvs', inEqs', inRms') = sortArgsInvEqRm InInv . pure $ fire
+                               (invEiss', _)             = uncurry (resolveMobInvCoins i ms inInvs') invCoins
+                               (gecrs', miss', _)        = resolveEntCoinNames i ms inEqs' (M.elems eqMap) mempty
+                               eqEiss'                   = zipWith (curry procGecrMisMobEq) gecrs' miss'
+                           in if | ()!# inInvs', ()# invCoins -> Left dudeYourHandsAreEmpty
+                                 | ()!# inEqs',  M.null eqMap -> Left dudeYou'reNaked
+                                 | ()!# inRms'                -> Left sorryLightFireInRm
+                                 | otherwise                  -> case (eqEiss', invEiss') of (eis:_, []   ) -> eis
+                                                                                             ([],    eis:_) -> eis
+                                                                                             _              -> Left sorryLightFireCoins
             sorry = genericSorryWithFuns ms
-        in if | ()#  invCoins, ()# eqMap -> sorry dudeYou'reScrewed
-              | ()#  invCoins            -> sorry dudeYourHandsAreEmpty
-              | ()!# rcs                 -> sorry sorryLightCoins
-              | h <- either sorry f      -> case (eqEiss, invEiss) of (eis:_, _    ) -> h eis
-                                                                      ([],    eis:_) -> h eis
-                                                                      ([],    []   ) -> sorry sorryLightInRm
+        in if | ()#  invCoins, ()# eqMap    -> sorry dudeYou'reScrewed
+              | ()!# inInvs,   ()# invCoins -> sorry dudeYourHandsAreEmpty
+              | ()!# inEqs,    M.null eqMap -> sorry dudeYou'reNaked
+              | ()!# inRms                  -> sorry sorryLightInRm
+              | h <- either sorry f         -> case (eqEiss, invEiss) of (eis:_, []   ) -> h eis
+                                                                         ([],    eis:_) -> h eis
+                                                                         _              -> sorry sorryLightCoins
 lightUp p _ _ = pmf "lightUp" p
 
 

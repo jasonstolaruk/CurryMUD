@@ -766,8 +766,13 @@ adviceLightExcessArgs = adviceLightNoArgs
 
 
 adviceLightNoArgs :: Text
-adviceLightNoArgs = prd $ "Please specify the light source to ignite optionally followed by the tinderbox to use, as in " <>
-                           colorWith quoteColor "light torch tinderbox"
+adviceLightNoArgs = T.concat [ "Please specify the light source to ignite followed by a fire source, as in "
+                             , colorWith quoteColor "light torch lamp"
+                             , " "
+                             , parensQuote "to light the torch in your readied equipment using the lit oil lamp in your \
+                                           \inventory"
+                             , ". The second argument may be omitted when the fire source is a tinderbox in your \
+                               \inventory." ]
 
 
 adviceNewChanNoArgs :: Text

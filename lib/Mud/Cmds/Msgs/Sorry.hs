@@ -184,6 +184,7 @@ module Mud.Cmds.Msgs.Sorry ( sorryActing
                            , sorryLightLampSecs
                            , sorryLightLightType
                            , sorryLightLit
+                           , sorryLightSelf
                            , sorryLightTinderbox
                            , sorryLightTorchSecs
                            , sorryLinkAlready
@@ -1337,7 +1338,7 @@ sorryLightCoins = can't "light a coin."
 
 
 sorryLightExcessFires :: Text
-sorryLightExcessFires = can't "ignite a light source using more than one fire source."
+sorryLightExcessFires = butCan't "ignite a light source using more than one fire source."
 
 
 sorryLightExcessLights :: Text
@@ -1377,8 +1378,12 @@ sorryLightLit :: Sing -> Text
 sorryLightLit s = "The " <> s <> " is already lit."
 
 
+sorryLightSelf :: Sing -> Text
+sorryLightSelf s = "The " <> s <> " can't light itself."
+
+
 sorryLightTinderbox :: Text
-sorryLightTinderbox = "You don't have a tinderbox in your inventory. " <> parensQuote "A fire source is required."
+sorryLightTinderbox = prd $ "You don't have a tinderbox in your inventory " <> parensQuote "a fire source is required"
 
 
 sorryLightTorchSecs :: Text
