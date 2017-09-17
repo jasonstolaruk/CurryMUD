@@ -1864,8 +1864,8 @@ lightUp p@(WithArgs i _ _ _) lightArg fireArg = getState >>= \ms ->
         let (invCoins@(is, _), eqMap) = (getInvCoins `fanUncurry` getEqMap) (i, ms)
             (inInvs, inEqs, _)        = sortArgsInvEqRm InEq . pure $ lightArg
             (gecrs, miss, _)          = resolveEntCoinNames i ms inEqs (M.elems eqMap) mempty
-            eiss                      = zipWith (curry procGecrMisMobEq) gecrs miss
-            (eiss', rcs)              = uncurry (resolveMobInvCoins i ms inInvs) invCoins
+            eqEiss                    = zipWith (curry procGecrMisMobEq) gecrs miss
+            (invEiss, rcs)            = uncurry (resolveMobInvCoins i ms inInvs) invCoins
             f [lightId]               = either sorry (g lightId) procFireArg
             f _                       = sorry sorryLightExcessLights
             g lightId [fireId]        =
@@ -1896,19 +1896,22 @@ lightUp p@(WithArgs i _ _ _) lightArg fireArg = getState >>= \ms ->
               Nothing   -> let h i' = ((&&) <$> (== ObjType) . uncurry getType <*> (== "tinderbox") . uncurry getSing) (i', ms)
                            in case filter h is of (x:_) -> Right . pure $ x
                                                   []    -> Left sorryLightTinderbox
-              Just fire -> let (inInvs', _ {-inEqs'-}, inRms') = sortArgsInvEqRm InInv . pure $ fire -- TODO: The fire source could be in eq.
-                             in if -- | ()!# inEqs' -> Left sorryLightFireInEq
-                                   | ()!# inRms' -> Left sorryLightFireInRm
-                                   | otherwise   -> case fst . uncurry (resolveMobInvCoins i ms inInvs') $ invCoins of
-                                     []       -> Left sorryLightFireCoins
-                                     (eis':_) -> eis'
+              Just fire -> let (inInvs', inEqs', _) = sortArgsInvEqRm InInv . pure $ fire
+                               (invEiss', invRcs)     = uncurry (resolveMobInvCoins i ms inInvs') invCoins
+                               (gecrs', miss', eqRcs) = resolveEntCoinNames i ms inEqs' (M.elems eqMap) mempty
+                               eqEiss'                = zipWith (curry procGecrMisMobEq) gecrs' miss'
+                           in if ()!# invRcs || ()!# eqRcs
+                             then Left sorryLightFireCoins
+                             else case (eqEiss', invEiss') of (eis:_, []   ) -> eis
+                                                              ([],    eis:_) -> eis
+                                                              _              -> Left sorryLightFireInRm
             sorry = genericSorryWithFuns ms
         in if | ()#  invCoins, ()# eqMap -> sorry dudeYou'reScrewed
               | ()#  invCoins            -> sorry dudeYourHandsAreEmpty
               | ()!# rcs                 -> sorry sorryLightCoins
-              | h <- either sorry f      -> case (eiss, eiss') of (eis:_, _    ) -> h eis
-                                                                  ([],    eis:_) -> h eis
-                                                                  ([],    []   ) -> sorry sorryLightInRm
+              | h <- either sorry f      -> case (eqEiss, invEiss) of (eis:_, _    ) -> h eis
+                                                                      ([],    eis:_) -> h eis
+                                                                      ([],    []   ) -> sorry sorryLightInRm
 lightUp p _ _ = pmf "lightUp" p
 
 
