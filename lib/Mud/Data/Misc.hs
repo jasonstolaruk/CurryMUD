@@ -582,11 +582,12 @@ instance Pretty RightOrLeft where
 
 
 instance Pretty RmEnv where
-  pp InsideEnv  = "inside"
-  pp OutsideEnv = "outside"
-  pp ShopEnv    = "shop"
-  pp SpecialEnv = "special"
-  pp NoEnv      = "none"
+  pp InsideUnlitEnv = "inside"
+  pp InsideLitEnv   = "inside"
+  pp OutsideEnv     = "outside"
+  pp ShopEnv        = "shop"
+  pp SpecialEnv     = "special"
+  pp NoEnv          = "none"
 
 
 instance Pretty SetOp where

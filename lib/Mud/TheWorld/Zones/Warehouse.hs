@@ -75,7 +75,7 @@ createWarehouse = do
           [ StdLink North iWarehouseWelcome 0
           , StdLink South iClothRm          0 ]
           (0, -1, 0)
-          InsideEnv
+          InsideLitEnv
           (Just "Armor")
           M.empty [] []))
 
@@ -185,7 +185,7 @@ createWarehouse = do
           , StdLink South iConRm         0
           , StdLink Down  iAccessoriesRm 0 ]
           (0, -2, 0)
-          InsideEnv
+          InsideLitEnv
           (Just "Clothing")
           M.empty [] []))
 
@@ -391,7 +391,7 @@ createWarehouse = do
           zeroBits
           [ StdLink Up iClothRm 0 ]
           (0, -2, -1)
-          InsideEnv
+          InsideLitEnv
           (Just "Accessories")
           M.empty [] []))
 
@@ -490,7 +490,7 @@ createWarehouse = do
           [ StdLink North iClothRm 0
           , StdLink South iFoodRm  0 ]
           (0, -3, 0)
-          InsideEnv
+          InsideLitEnv
           (Just "Containers")
           M.empty [] []))
 
@@ -562,7 +562,7 @@ createWarehouse = do
           [ StdLink North iConRm   0
           , StdLink South iLightRm 0 ]
           (0, -4, 0)
-          InsideEnv
+          InsideLitEnv
           (Just "Food")
           M.empty [] []))
 
@@ -604,7 +604,7 @@ createWarehouse = do
           [ StdLink North iFoodRm 0
           , StdLink South iNpcRm  0 ]
           (0, -5, 0)
-          InsideEnv
+          InsideLitEnv
           (Just "Light")
           M.empty [] []))
 
@@ -691,7 +691,7 @@ createWarehouse = do
           [ StdLink North iLightRm 0
           , StdLink South iObjRm   0 ]
           (0, -6, 0)
-          InsideEnv
+          InsideLitEnv
           (Just "NPCs")
           M.empty [] []))
 
@@ -758,7 +758,7 @@ createWarehouse = do
           [ StdLink North iNpcRm    0
           , StdLink South iVesselRm 0 ]
           (0, -7, 0)
-          InsideEnv
+          InsideLitEnv
           (Just "Objects")
           M.empty [] []))
 
@@ -798,7 +798,7 @@ createWarehouse = do
           , StdLink South iWpnRm    0
           , StdLink Down  iPotionRm 0 ]
           (0, -8, 0)
-          InsideEnv
+          InsideLitEnv
           (Just "Vessels")
           M.empty [] []))
 
@@ -908,7 +908,7 @@ createWarehouse = do
           zeroBits
           [ StdLink Up iVesselRm 0 ]
           (0, -8, -1)
-          InsideEnv
+          InsideLitEnv
           (Just "Potions")
           M.empty [] []))
 
@@ -936,7 +936,7 @@ createWarehouse = do
           [ StdLink North iVesselRm   0
           , StdLink South iWritableRm 0 ]
           (0, -9, 0)
-          InsideEnv
+          InsideLitEnv
           (Just "Weapons")
           M.empty [] []))
 
@@ -1124,7 +1124,7 @@ createWarehouse = do
           zeroBits
           [ StdLink North iWpnRm 0 ]
           (0, -10, 0)
-          InsideEnv
+          InsideLitEnv
           (Just "Writables")
           M.empty [] []))
 

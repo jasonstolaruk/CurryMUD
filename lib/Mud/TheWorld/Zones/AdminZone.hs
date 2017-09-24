@@ -698,7 +698,7 @@ createAdminZone = do
             [ StdLink Down iBasement    1
             , StdLink East iHallwayWest 1 ]
             (0, 0, 0)
-            InsideEnv
+            InsideLitEnv
             (Just "Central")
             (M.fromList [ ("look", [ lookTrashHook, readLookPosterHook ])
                         , ("put",  [ putTrashHook                      ])
@@ -716,7 +716,7 @@ createAdminZone = do
             [ StdLink West iCentral     1
             , StdLink East iHallwayEast 1 ]
             (1, 0, 0)
-            InsideEnv
+            InsideLitEnv
             Nothing
             M.empty [] []))
   putRm iHallwayEast
@@ -730,7 +730,7 @@ createAdminZone = do
             [ StdLink West iHallwayWest 1
             , StdLink East iAtrium      1 ]
             (2, 0, 0)
-            InsideEnv
+            InsideLitEnv
             Nothing
             M.empty [] []))
   putRm iAtrium
@@ -749,7 +749,7 @@ createAdminZone = do
             zeroBits
             [ StdLink West iHallwayEast 1 ]
             (3, 0, 0)
-            InsideEnv
+            InsideLitEnv
             (Just "Atrium")
             (M.fromList [ ("drink", [ drinkPoolHook      ])
                         , ("fill",  [ fillPoolHook       ])
@@ -774,7 +774,7 @@ createAdminZone = do
             , StdLink    Up        iCentral  1
             , NonStdLink "manhole" iVoid     1 "% climbs into the manhole." "% climbs out of the manhole." ]
             (0, 0, -1)
-            InsideEnv
+            InsideLitEnv
             Nothing
             M.empty
             [] []))
@@ -807,7 +807,7 @@ createAdminZone = do
             , NonStdLink "u"   iAttic    1 "% climbs up the ladder and into the hole in the ceiling."
                                            "% climbs up the ladder and out of the hole in the floor." ]
             (0, 1, -1)
-            InsideEnv
+            InsideLitEnv
             (Just "Weights")
             M.empty [] []))
   putRm iAttic
@@ -822,7 +822,7 @@ createAdminZone = do
             [ NonStdLink "d" iWeightRm 1 "% climbs down the ladder and into the hole in the floor."
                                          "% climbs down the ladder and out of the hole in the ceiling." ]
             (0, 1, 0)
-            InsideEnv
+            InsideLitEnv
             (Just "Attic")
             M.empty [] []))
   let voidListen = Just "It's eerily silent here."
@@ -841,7 +841,7 @@ createAdminZone = do
             , StdLink    South     iLoungeEntrance 0
             , NonStdLink "manhole" iBasement       0 "% climbs into the manhole." "% climbs out of the manhole." ]
             (0, 0, -2)
-            InsideEnv
+            InsideLitEnv
             Nothing
             M.empty [] []))
   putRm iTutEntrance
@@ -858,7 +858,7 @@ createAdminZone = do
             , NonStdLink "portal" iTutWelcome 0 "% floats into the portal and promptly disappears."
                                                 "% arrives in the tutorial." ]
             (0, 1, -2)
-            InsideEnv
+            InsideLitEnv
             (Just "Tutorial entrance")
             (M.fromList [ ("look", [ readLookSign_iTutEntranceHook, readLookPaperHook ])
                         , ("read", [ readLookSign_iTutEntranceHook, readLookPaperHook ]) ])
@@ -875,7 +875,7 @@ createAdminZone = do
             [ StdLink    North    iVoid   0
             , NonStdLink "lounge" iLounge 0 "% enters the lounge." "% enters the lounge." ]
             (0, -1, -2)
-            InsideEnv
+            InsideLitEnv
             Nothing
             (M.fromList [ ("look", [ readLookSign_iLoungeEntranceHook ])
                         , ("read", [ readLookSign_iLoungeEntranceHook ]) ])
@@ -903,7 +903,7 @@ createAdminZone = do
             zeroBits
             [ StdLink South iOutside 5 ]
             (-2, 1, -2)
-            InsideEnv
+            InsideUnlitEnv
             (Just "Inside")
             M.empty [] []))
   putRm iOutside
@@ -973,7 +973,7 @@ createAdminZone = do
             zeroBits
             [ NonStdLink "out" iNoEnv 1 "% exits the cottage." "% exits the cottage." ]
             (-2, -4, -2)
-            InsideEnv
+            InsideLitEnv
             (Just "Cottage")
             M.empty [] []))
 

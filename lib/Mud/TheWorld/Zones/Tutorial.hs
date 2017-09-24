@@ -55,7 +55,7 @@ createTutorial = do
             zeroBits
             []
             (0, 0, 0)
-            InsideEnv
+            InsideLitEnv
             (Just "Entrance")
             (M.fromList [ ("look", [ lookTrashHook ])
                         , ("put",  [ putTrashHook  ]) ])

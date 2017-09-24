@@ -1059,7 +1059,8 @@ type YCoord = Int
 type ZCoord = Int
 
 
-data RmEnv = InsideEnv
+data RmEnv = InsideUnlitEnv
+           | InsideLitEnv
            | OutsideEnv
            | ShopEnv
            | SpecialEnv

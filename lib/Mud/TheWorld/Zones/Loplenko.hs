@@ -529,7 +529,7 @@ createLoplenko = do
             zeroBits
             []
             (0, 0, -1)
-            InsideEnv
+            InsideLitEnv
             (Just "Library")
             (M.fromList [ ("look", [ lookBookshelvesHook, lookTrashHook ])
                         , ("put",  [ putTrashHook                       ])
