@@ -49,6 +49,7 @@ module Mud.Data.Misc ( AOrThe(..)
                      , Min
                      , Month
                      , MoonPhase(..)
+                     , MsgTxt(..)
                      , NewCharBundle(..)
                      , Pretty
                      , PutOrRem(..)
@@ -1102,6 +1103,13 @@ data MoonPhase = NewMoon        -- the moon is not visible
                | ThirdQuarter   -- left half is visible
                | WaningCrescent {- sliver on left is visible -} deriving Eq
 
+
+-----
+
+
+data MsgTxt = AnyLight Text -- TODO: Use this saucy bastard.
+            | LitUnlit { litTxt   :: Text
+                       , unlitTxt :: Text }
 
 
 -----

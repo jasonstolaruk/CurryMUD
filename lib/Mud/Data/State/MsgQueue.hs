@@ -12,7 +12,7 @@ import Data.Text (Text)
 type MsgQueue = TQueue Msg
 
 
-data Msg = AsSelf     Text
+data Msg = AsSelf Text
          | BlankLine
          | Dropped
          | FinishedEgress
@@ -20,16 +20,16 @@ data Msg = AsSelf     Text
          | FromClient Text
          | FromServer Text
          | InacBoot
-         | InacSecs   Seconds
+         | InacSecs Seconds
          | InacStop
-         | MsgBoot    Text
-         | Peeped     Text
-         | Prompt     Text
+         | MsgBoot Text
+         | Peeped  Text
+         | Prompt  Text
          | Quit
          | ShowHandle
          | ShutDown
          | SilentBoot
-         | ToNpc      Text
+         | ToNpc Text
 
 
 -----
