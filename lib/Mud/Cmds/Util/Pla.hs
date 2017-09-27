@@ -1728,10 +1728,6 @@ mkEqDesc i cols ms descId descSing descType = let descs = bool mkDescsOther mkDe
     d = serialize . mkStdDesig descId ms $ DoCap
 
 
-isLitLight :: Id -> MudState -> Bool
-isLitLight i = ((&&) <$> ((== LightType) . uncurry getType) <*> uncurry getLightIsLit) . (i, )
-
-
 mkVesselContDesc :: HasCallStack => Cols -> MudState -> Id -> Text
 mkVesselContDesc cols ms targetId =
     let s = getSing   targetId ms

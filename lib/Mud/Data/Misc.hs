@@ -583,8 +583,8 @@ instance Pretty RightOrLeft where
 
 
 instance Pretty RmEnv where
-  pp InsideUnlitEnv = "inside"
-  pp InsideLitEnv   = "inside"
+  pp InsideUnlitEnv = "inside (unlit)"
+  pp InsideLitEnv   = "inside (lit)"
   pp OutsideEnv     = "outside"
   pp ShopEnv        = "shop"
   pp SpecialEnv     = "special"
@@ -1107,7 +1107,7 @@ data MoonPhase = NewMoon        -- the moon is not visible
 -----
 
 
-data MsgTxt = AnyLight Text -- TODO: Use this saucy bastard.
+data MsgTxt = AnyLight Text
             | LitUnlit { litTxt   :: Text
                        , unlitTxt :: Text }
 

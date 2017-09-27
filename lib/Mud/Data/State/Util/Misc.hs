@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
-{-# LANGUAGE FlexibleContexts, LambdaCase, NamedFieldPuns, OverloadedStrings, TransformListComp, TupleSections, ViewPatterns #-}
+{-# LANGUAGE FlexibleContexts, LambdaCase, MultiWayIf, NamedFieldPuns, OverloadedStrings, TransformListComp, TupleSections, ViewPatterns #-}
 
 -- This module contains state-related functions used by multiple modules.
 
@@ -42,8 +42,10 @@ module Mud.Data.State.Util.Misc ( addToInv
                                 , isAwake
                                 , isDead
                                 , isKnownLang
+                                , isLitLight
                                 , isLoggedIn
                                 , isPCCorpse
+                                , isRmIlluminated
                                 , leaveParty
                                 , linkDirToCmdName
                                 , lookupHooks
@@ -76,6 +78,8 @@ module Mud.Data.State.Util.Misc ( addToInv
 import           Mud.Data.Misc
 import           Mud.Data.State.MudData
 import           Mud.Data.State.Util.Get
+import           Mud.Data.State.Util.Hierarchy
+import           Mud.Misc.CurryTime
 import           Mud.Misc.Misc
 import           Mud.TheWorld.Zones.AdminZoneIds (iNecropolis, iWelcome)
 import           Mud.TopLvlDefs.Chars
@@ -104,7 +108,7 @@ import           Data.Text (Text)
 import           GHC.Exts (sortWith)
 import           GHC.Stack (HasCallStack)
 import qualified Data.IntMap.Strict as IM ((!), filter, keys)
-import qualified Data.Map.Strict as M (elems, lookup)
+import qualified Data.Map.Strict as M (elems, filterWithKey, lookup)
 import qualified Data.Text as T
 import qualified Data.Vector.Unboxed as V (Vector)
 import           Text.Regex.PCRE ((=~))
@@ -433,9 +437,31 @@ isKnownLang i ms lang | lang == CommonLang = True
 -----
 
 
+isLitLight :: Id -> MudState -> Bool
+isLitLight i = ((&&) <$> ((== LightType) . uncurry getType) <*> uncurry getLightIsLit) . (i, )
+
+
+-----
+
+
 isPCCorpse :: Corpse -> Bool
 isPCCorpse PCCorpse  {} = True
 isPCCorpse NpcCorpse {} = False
+
+
+-----
+
+
+isRmIlluminated :: HasCallStack => Id -> MudState -> CurryTime -> Bool
+isRmIlluminated i ms (isDay . curryHour -> day) = let env    = view rmEnv . getRm i $ ms
+                                                      mobIds = filter ((&&) <$> (`hasMobId` ms) <*> f) . getInv i $ ms
+                                                      f i'   = let g k v = k `elem` [ RHandS, LHandS ] && isLitLight v ms
+                                                               in (()!#) . M.filterWithKey g . getEqMap i' $ ms
+                                                      b      = ()!# mobIds
+                                                  in case env of InsideUnlitEnv         -> b
+                                                                 OutsideEnv | day       -> True
+                                                                            | otherwise -> b
+                                                                 _                      -> True
 
 
 -----

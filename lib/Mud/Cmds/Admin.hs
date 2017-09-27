@@ -710,20 +710,20 @@ adminDispCmdList p                  = pmf "adminDispCmdList" p
 
 adminExamine :: HasCallStack => ActionFun
 adminExamine p@AdviseNoArgs                     = advise p [ prefixAdminCmd "examine" ] adviceAExamineNoArgs
-adminExamine   (WithArgs i mq cols args@(a:as)) = getState >>= \ms -> do
+adminExamine   (WithArgs i mq cols args@(a:as)) = (,) <$> getState <*> liftIO getCurryTime >>= \(ms, ct) -> do
     logPlaExecArgs (prefixAdminCmd "examine") args i
     pager i mq Nothing . concatMap (wrapIndent 2 cols) $ case reads . T.unpack $ a :: [(Int, String)] of
       [(targetId, "")] | targetId < 0                -> pure sorryWtf
                        | not . hasType targetId $ ms -> sorry
-                       | otherwise                   -> examineHelper ms targetId . T.unwords $ as
+                       | otherwise                   -> examineHelper ms targetId ct . T.unwords $ as
       _                                              -> sorry
       where
         sorry = pure . sorryParseId $ a
 adminExamine p = pmf "adminExamine" p
 
 
-examineHelper :: HasCallStack => MudState -> Id -> Text -> [Text]
-examineHelper ms targetId regex =
+examineHelper :: HasCallStack => MudState -> Id -> CurryTime -> Text -> [Text]
+examineHelper ms targetId ct regex =
     let (t, isCloth, isHoly) = ((,,) <$> uncurry getType <*> uncurry getConIsCloth <*> uncurry getVesselIsHoly) (targetId, ms)
     in helper (pp t) $ case t of
   ArmType        -> [ examineEnt, examineObj,   examineArm        ]
@@ -736,7 +736,7 @@ examineHelper ms targetId regex =
   NpcType        -> [ examineEnt, examineInv,   examineCoins, examineEqMap, examineMob, examineNpc    ]
   ObjType        -> [ examineEnt, examineObj ]
   PlaType        -> [ examineEnt, examineInv,   examineCoins, examineEqMap, examineMob, examinePC, examinePla, examinePickPts ]
-  RmType         -> [ examineInv, examineCoins, examineRm         ]
+  RmType         -> [ examineInv, examineCoins, examineRm ct      ]
   VesselType     -> [ examineEnt, examineObj,   examineVessel     ] ++ (isHoly |?| pure examineHolySymbol)
   WpnType        -> [ examineEnt, examineObj,   examineWpn        ]
   WritableType   -> [ examineEnt, examineObj,   examineWritable   ]
@@ -993,18 +993,19 @@ examinePla i ms = let p = getPla i ms
     helper = noneOnNull . commas . map (`descSingId` ms)
 
 
-examineRm :: HasCallStack => ExamineHelper
-examineRm i ms = let r = getRm i ms in [ "Name: "           <> r^.rmName
-                                       , "Description: "    <> r^.rmDesc  .to xformNls
-                                       , "Listen: "         <> r^.rmListen.to (fromMaybe none)
-                                       , "Smell: "          <> r^.rmSmell .to (fromMaybe none)
-                                       , "Room flags: "     <> (commas . dropBlanks . descFlags $ r)
-                                       , "Links: "          <> r^.rmLinks   .to (noneOnNull . commas . map linkHelper)
-                                       , "Coordinates: "    <> r^.rmCoords  .to showTxt
-                                       , "Environment: "    <> r^.rmEnv     .to pp
-                                       , "Label: "          <> r^.rmLabel   .to (fromMaybe none)
-                                       , "Hooks: "          <> r^.rmHookMap .to hookHelper
-                                       , "Room functions: " <> r^.rmFunNames.to (noneOnNull . commas) ]
+examineRm :: HasCallStack => CurryTime -> ExamineHelper
+examineRm ct i ms = let r = getRm i ms in [ "Name: "           <> r^.rmName
+                                          , "Description: "    <> r^.rmDesc  .to xformNls
+                                          , "Listen: "         <> r^.rmListen.to (fromMaybe none)
+                                          , "Smell: "          <> r^.rmSmell .to (fromMaybe none)
+                                          , "Room flags: "     <> (commas . dropBlanks . descFlags $ r)
+                                          , "Links: "          <> r^.rmLinks   .to (noneOnNull . commas . map linkHelper)
+                                          , "Coordinates: "    <> r^.rmCoords  .to showTxt
+                                          , "Environment: "    <> r^.rmEnv     .to pp
+                                          , "Label: "          <> r^.rmLabel   .to (fromMaybe none)
+                                          , "Hooks: "          <> r^.rmHookMap .to hookHelper
+                                          , "Room functions: " <> r^.rmFunNames.to (noneOnNull . commas)
+                                          , "Is illuminated: " <> showTxt (isRmIlluminated i ms ct) ]
   where
     descFlags r | r^.rmFlags == zeroBits = none
                 | otherwise              = none -- TODO: Rm flags.

@@ -39,6 +39,10 @@ curryTime :: HasCallStack => CurryTime -> MudStack ()
 curryTime = maybeVoid bcastToOutsideMobs . mkTimeNotification
 
 
+{-
+It's light out from 6:00 to 17:59 (12 hours).
+It's dark out from 18:00 to 5:59 (8 hours).
+-}
 mkTimeNotification :: HasCallStack => CurryTime -> Maybe Text
 mkTimeNotification ct | isHourMin ct 17 45 = helper . thrice prd $ "Very soon now it's going to be too dark outside to \
                                                                    \see without aid"
@@ -48,10 +52,6 @@ mkTimeNotification ct | isHourMin ct 17 45 = helper . thrice prd $ "Very soon no
     helper = Just . colorWith timeNotificationColor
 
 
-{-
-It's light out from 6:00 to 17:59 (12 hours).
-It's dark out from 18:00 to 5:59 (8 hours).
--}
 isHourMin :: HasCallStack => CurryTime -> Hour -> Min -> Bool
 isHourMin CurryTime { .. } h m | curryHour == h, curryMin == m = currySec == 0
                                | otherwise                     = False

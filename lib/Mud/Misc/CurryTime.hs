@@ -118,12 +118,12 @@ getSecsFromCurryEpoch = round . (`diffUTCTime` curryEpoch) <$> getCurrentTime
 -----
 
 
-isDay :: Hour -> Bool -- Day hours are 6:00-17:59 (12 hours).
+isDay :: Hour -> Bool -- Day (light) hours are 6:00-17:59 (12 hours).
 isDay = inRange (6, 17)
 
 
 isNight :: Hour -> Bool
-isNight = not . isDay -- Night hours are 18:00-5:59 (8 hours).
+isNight = not . isDay -- Night (dark) hours are 18:00-5:59 (8 hours).
 
 
 -----

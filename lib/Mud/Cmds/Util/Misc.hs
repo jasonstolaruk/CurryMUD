@@ -171,6 +171,7 @@ logNotice = L.logNotice "Mud.Cmds.Util.Misc"
 -- ==================================================
 
 
+-- TODO: Crashes on invalid regex, such as "[" without "]".
 applyRegex :: HasCallStack => Text -> Text -> (Text, Text, Text) -- Note that TinTin++ interprets "\" as escape.
 applyRegex needle haystack = let (🍩) = (=~) `on` T.unpack in haystack 🍩 needle |&| each %~ T.pack
 
