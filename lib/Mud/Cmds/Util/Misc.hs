@@ -133,19 +133,19 @@ import           Data.Bool (bool)
 import           Data.Char (isDigit, isLetter)
 import           Data.Either (rights)
 import           Data.Function (on)
+import qualified Data.IntMap.Strict as IM (IntMap, empty, filter, foldlWithKey', foldr, fromList, keys, map, mapWithKey, member)
 import           Data.List (delete, groupBy, intercalate, nub, partition, sortBy, unfoldr)
+import qualified Data.Map.Strict as M ((!), elems, keys, lookup, member, null, toList)
 import           Data.Maybe (fromMaybe)
 import           Data.Monoid ((<>), Any(..), Sum(..))
 import           Data.Text (Text)
-import           Data.Time (diffUTCTime, getCurrentTime)
-import           GHC.Stack (HasCallStack)
-import           Prelude hiding (exp)
-import qualified Data.IntMap.Strict as IM (IntMap, empty, filter, foldlWithKey', foldr, fromList, keys, map, mapWithKey, member)
-import qualified Data.Map.Strict as M ((!), elems, keys, lookup, member, null, toList)
 import qualified Data.Text as T
 import qualified Data.Text.IO as T (readFile)
+import           Data.Time (diffUTCTime, getCurrentTime)
 import qualified Data.Vector.Unboxed as V (Vector, splitAt, toList)
+import           GHC.Stack (HasCallStack)
 import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
+import           Prelude hiding (exp)
 import           Text.Regex.PCRE ((=~))
 
 
@@ -171,7 +171,6 @@ logNotice = L.logNotice "Mud.Cmds.Util.Misc"
 -- ==================================================
 
 
--- TODO: Crashes on invalid regex, such as "[" without "]".
 applyRegex :: HasCallStack => Text -> Text -> (Text, Text, Text) -- Note that TinTin++ interprets "\" as escape.
 applyRegex needle haystack = let (🍩) = (=~) `on` T.unpack in haystack 🍩 needle |&| each %~ T.pack
 
