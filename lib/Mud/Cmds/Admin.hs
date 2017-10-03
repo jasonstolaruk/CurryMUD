@@ -1583,7 +1583,7 @@ adminPurge p              = withoutArgs adminPurge p
 -----
 
 
-adminSearch :: HasCallStack => ActionFun
+adminSearch :: HasCallStack => ActionFun -- TODO: Test regexes.
 adminSearch p@AdviseNoArgs                          = advise p [ prefixAdminCmd "search" ] adviceASearchNoArgs
 adminSearch   (WithArgs i mq cols (T.unwords -> a)) = getState >>= \ms -> do
     logPlaExecArgs (prefixAdminCmd "search") (pure a) i

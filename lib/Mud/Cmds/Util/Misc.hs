@@ -172,6 +172,7 @@ logNotice = L.logNotice "Mud.Cmds.Util.Misc"
 -- ==================================================
 
 
+-- TODO: Move?
 applyRegex :: HasCallStack => Text -> Text -> IO (Text, Text, Text) -- Note that TinTin++ interprets "\" as escape.
 applyRegex needle haystack = handle handler $ let (🍩) = (=~) `on` T.unpack
                                               in return . (each %~ T.pack) $ haystack 🍩 needle
