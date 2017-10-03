@@ -712,43 +712,44 @@ adminExamine :: HasCallStack => ActionFun
 adminExamine p@AdviseNoArgs                     = advise p [ prefixAdminCmd "examine" ] adviceAExamineNoArgs
 adminExamine   (WithArgs i mq cols args@(a:as)) = (,) <$> getState <*> liftIO getCurryTime >>= \(ms, ct) -> do
     logPlaExecArgs (prefixAdminCmd "examine") args i
-    pager i mq Nothing . concatMap (wrapIndent 2 cols) $ case reads . T.unpack $ a :: [(Int, String)] of
-      [(targetId, "")] | targetId < 0                -> pure sorryWtf
+    pager i mq Nothing . concatMap (wrapIndent 2 cols) =<< case reads . T.unpack $ a :: [(Int, String)] of
+      [(targetId, "")] | targetId < 0                -> unadulterated sorryWtf
                        | not . hasType targetId $ ms -> sorry
-                       | otherwise                   -> examineHelper ms targetId ct . T.unwords $ as
+                       | otherwise                   -> liftIO . examineHelper ms targetId ct . T.unwords $ as
       _                                              -> sorry
       where
-        sorry = pure . sorryParseId $ a
+        sorry = unadulterated . sorryParseId $ a
 adminExamine p = pmf "adminExamine" p
 
 
-examineHelper :: HasCallStack => MudState -> Id -> CurryTime -> Text -> [Text]
-examineHelper ms targetId ct regex =
-    let (t, isCloth, isHoly) = ((,,) <$> uncurry getType <*> uncurry getConIsCloth <*> uncurry getVesselIsHoly) (targetId, ms)
-    in helper (pp t) $ case t of
-  ArmType        -> [ examineEnt, examineObj,   examineArm        ]
-  ClothType      -> [ examineEnt, examineObj,   examineCloth      ]
-  ConType        -> [ examineEnt, examineObj,   examineInv,   examineCoins, examineCon ] ++ (isCloth |?| pure examineCloth)
-  CorpseType     -> [ examineEnt, examineObj,   examineInv,   examineCoins, examineCon, examineCorpse ]
-  FoodType       -> [ examineEnt, examineObj,   examineFood       ]
-  HolySymbolType -> [ examineEnt, examineObj,   examineHolySymbol ]
-  LightType      -> [ examineEnt, examineObj,   examineLight      ]
-  NpcType        -> [ examineEnt, examineInv,   examineCoins, examineEqMap, examineMob, examineNpc    ]
-  ObjType        -> [ examineEnt, examineObj ]
-  PlaType        -> [ examineEnt, examineInv,   examineCoins, examineEqMap, examineMob, examinePC, examinePla, examinePickPts ]
-  RmType         -> [ examineInv, examineCoins, examineRm ct      ]
-  VesselType     -> [ examineEnt, examineObj,   examineVessel     ] ++ (isHoly |?| pure examineHolySymbol)
-  WpnType        -> [ examineEnt, examineObj,   examineWpn        ]
-  WritableType   -> [ examineEnt, examineObj,   examineWritable   ]
+examineHelper :: HasCallStack => MudState -> Id -> CurryTime -> Text -> IO [Text]
+examineHelper ms targetId ct regex
+  | (t, isCloth, isHoly) <- ((,,) <$> uncurry getType <*> uncurry getConIsCloth <*> uncurry getVesselIsHoly) (targetId, ms)
+  = helper (pp t) $ case t of
+      ArmType        -> [ examineEnt, examineObj,   examineArm        ]
+      ClothType      -> [ examineEnt, examineObj,   examineCloth      ]
+      ConType        -> [ examineEnt, examineObj,   examineInv,   examineCoins, examineCon ] ++ (isCloth |?| pure examineCloth)
+      CorpseType     -> [ examineEnt, examineObj,   examineInv,   examineCoins, examineCon, examineCorpse ]
+      FoodType       -> [ examineEnt, examineObj,   examineFood       ]
+      HolySymbolType -> [ examineEnt, examineObj,   examineHolySymbol ]
+      LightType      -> [ examineEnt, examineObj,   examineLight      ]
+      NpcType        -> [ examineEnt, examineInv,   examineCoins, examineEqMap, examineMob, examineNpc    ]
+      ObjType        -> [ examineEnt, examineObj ]
+      PlaType        -> [ examineEnt, examineInv,   examineCoins, examineEqMap, examineMob, examinePC, examinePla, examinePickPts ]
+      RmType         -> [ examineInv, examineCoins, examineRm ct      ]
+      VesselType     -> [ examineEnt, examineObj,   examineVessel     ] ++ (isHoly |?| pure examineHolySymbol)
+      WpnType        -> [ examineEnt, examineObj,   examineWpn        ]
+      WritableType   -> [ examineEnt, examineObj,   examineWritable   ]
   where
+    helper :: HasCallStack => Text -> [ExamineHelper] -> IO [Text]
     helper typeTxt fs =
         let haystack   = concatMap (((targetId, ms) |&|) . uncurry) fs
-            search hay = case regex `applyRegex` hay of (_, "", _) -> ""
-                                                        (a, b,  c) -> a <> colorWith regexMatchColor b <> c
-        in showTxt targetId |<>| parensQuote typeTxt : "" : if ()# regex
-             then haystack
-             else case dropBlanks . map search $ haystack of []   -> pure sorrySearch
-                                                             msgs -> msgs
+            search hay = (\case (_, "", _) -> ""
+                                (a, b,  c) -> a <> colorWith regexMatchColor b <> c) <$> (regex `applyRegex` hay)
+        in ([ showTxt targetId |<>| parensQuote typeTxt, "" ] ++) <$> if ()# regex
+          then return haystack
+          else (dropBlanks . \case []   -> pure sorrySearch
+                                   msgs -> msgs) <$> mapM search haystack
 
 
 type ExamineHelper = Id -> MudState -> [Text]
@@ -1594,7 +1595,9 @@ adminSearch   (WithArgs i mq cols (T.unwords -> a)) = do
     descMatchingRmNames ms =
       let idNames = views rmTbl (map (_2 %~ view rmName) . IM.toList) ms
       in "Room IDs with matching room names:" : (noneOnNull . map (descMatch ms False) . getMatches $ idNames)
-    getMatches haystack = [ match | match@(_, (_, x, _)) <- map (second (a `applyRegex`)) haystack, ()!# x ]
+    -- TODO
+    -- getMatches haystack            = [ match | match@(_, (_, x, _)) <- map (second (a `applyRegex`)) haystack, ()!# x ]
+    getMatches _                   = undefined
     descMatch ms b (i', (x, y, z)) = T.concat [ padId . showTxt $ i'
                                               , " "
                                               , b |?| spcR . parensQuote . pp . getType i' $ ms
