@@ -1585,19 +1585,25 @@ adminPurge p              = withoutArgs adminPurge p
 
 adminSearch :: HasCallStack => ActionFun
 adminSearch p@AdviseNoArgs                          = advise p [ prefixAdminCmd "search" ] adviceASearchNoArgs
-adminSearch   (WithArgs i mq cols (T.unwords -> a)) = do
+adminSearch   (WithArgs i mq cols (T.unwords -> a)) = getState >>= \ms -> do
     logPlaExecArgs (prefixAdminCmd "search") (pure a) i
-    multiWrapSend mq cols =<< (middle (++) mMempty <$> descMatchingSings <*> descMatchingRmNames) <$> getState
+    xs <- liftIO . descMatchingSings   $ ms
+    ys <- liftIO . descMatchingRmNames $ ms
+    multiWrapSend mq cols . middle (++) mMempty xs $ ys
   where
+    descMatchingSings :: MudState -> IO [Text]
     descMatchingSings ms =
       let idSings = views entTbl (map (_2 %~ view sing) . IM.toList) ms
-      in "IDs with matching entity names:" : (noneOnNull . map (descMatch ms True) . getMatches $ idSings)
+      in ("IDs with matching entity names:" :) . noneOnNull . map (descMatch ms True) <$> getMatches idSings
+
+    descMatchingRmNames :: MudState -> IO [Text]
     descMatchingRmNames ms =
       let idNames = views rmTbl (map (_2 %~ view rmName) . IM.toList) ms
-      in "Room IDs with matching room names:" : (noneOnNull . map (descMatch ms False) . getMatches $ idNames)
-    -- TODO
-    -- getMatches haystack            = [ match | match@(_, (_, x, _)) <- map (second (a `applyRegex`)) haystack, ()!# x ]
-    getMatches _                   = undefined
+      in ("Room IDs with matching room names:" :) . noneOnNull . map (descMatch ms False) <$> getMatches idNames
+
+    getMatches :: [(Id, Text)] -> IO [(Id, (Text, Text, Text))]
+    getMatches = fmap (filter (views (_2._2) (()!#))) . mapM (\(i', s) -> (i', ) <$> a `applyRegex` s)
+
     descMatch ms b (i', (x, y, z)) = T.concat [ padId . showTxt $ i'
                                               , " "
                                               , b |?| spcR . parensQuote . pp . getType i' $ ms
