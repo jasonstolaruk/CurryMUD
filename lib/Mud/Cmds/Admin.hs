@@ -748,8 +748,8 @@ examineHelper ms targetId ct regex
                                 (a, b,  c) -> a <> colorWith regexMatchColor b <> c) <$> (regex `applyRegex` hay)
         in ([ showTxt targetId |<>| parensQuote typeTxt, "" ] ++) <$> if ()# regex
           then return haystack
-          else (dropBlanks . \case []   -> pure sorrySearch
-                                   msgs -> msgs) <$> mapM search haystack
+          else (\case []   -> pure sorrySearch
+                      msgs -> msgs) . dropBlanks <$> mapM search haystack
 
 
 type ExamineHelper = Id -> MudState -> [Text]
@@ -1583,7 +1583,7 @@ adminPurge p              = withoutArgs adminPurge p
 -----
 
 
-adminSearch :: HasCallStack => ActionFun -- TODO: Test regexes.
+adminSearch :: HasCallStack => ActionFun
 adminSearch p@AdviseNoArgs                          = advise p [ prefixAdminCmd "search" ] adviceASearchNoArgs
 adminSearch   (WithArgs i mq cols (T.unwords -> a)) = getState >>= \ms -> do
     logPlaExecArgs (prefixAdminCmd "search") (pure a) i

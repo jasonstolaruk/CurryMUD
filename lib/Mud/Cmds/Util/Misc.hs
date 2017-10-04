@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
-{-# LANGUAGE FlexibleContexts, LambdaCase, MultiWayIf, NamedFieldPuns, OverloadedStrings, ParallelListComp, PatternSynonyms, RecordWildCards, TupleSections, ViewPatterns #-}
+{-# LANGUAGE BangPatterns, FlexibleContexts, LambdaCase, MultiWayIf, NamedFieldPuns, OverloadedStrings, ParallelListComp, PatternSynonyms, RecordWildCards, TupleSections, ViewPatterns #-}
 
 -- This module contains helper functions used by multiple modules under "Mud.Cmds".
 
@@ -175,9 +175,10 @@ logNotice = L.logNotice "Mud.Cmds.Util.Misc"
 -- TODO: Move?
 applyRegex :: HasCallStack => Text -> Text -> IO (Text, Text, Text) -- Note that TinTin++ interprets "\" as escape.
 applyRegex needle haystack = handle handler $ let (🍩) = (=~) `on` T.unpack
-                                              in return . (each %~ T.pack) $ haystack 🍩 needle
+                                                  !x = haystack 🍩 needle
+                                              in return . (each %~ T.pack) $ x
   where
-    handler :: HasCallStack => IOException -> IO (Text, Text, Text)
+    handler :: IOException -> IO (Text, Text, Text)
     handler = const . return $ (haystack, "", "")
 
 
