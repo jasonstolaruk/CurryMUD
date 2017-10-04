@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
-{-# LANGUAGE BangPatterns, FlexibleContexts, LambdaCase, MultiWayIf, NamedFieldPuns, OverloadedStrings, ParallelListComp, PatternSynonyms, RecordWildCards, TupleSections, ViewPatterns #-}
+{-# LANGUAGE FlexibleContexts, LambdaCase, MultiWayIf, NamedFieldPuns, OverloadedStrings, ParallelListComp, PatternSynonyms, RecordWildCards, TupleSections, ViewPatterns #-}
 
 -- This module contains helper functions used by multiple modules under "Mud.Cmds".
 
@@ -124,8 +124,7 @@ import           Mud.Util.Wrapping
 
 import           Control.Applicative (liftA2)
 import           Control.Arrow ((***), (&&&), first, second)
-import           Control.Exception (IOException)
-import           Control.Exception.Lifted (catch, handle, try)
+import           Control.Exception.Lifted (catch, try)
 import           Control.Lens (_1, _2, _3, at, both, each, to, view, views)
 import           Control.Lens.Operators ((?~), (.~), (&), (%~), (^.), (+~), (<>~))
 import           Control.Monad ((>=>), forM, join, mplus, when)
@@ -147,7 +146,6 @@ import qualified Data.Vector.Unboxed as V (Vector, splitAt, toList)
 import           GHC.Stack (HasCallStack)
 import qualified Network.Info as NI (getNetworkInterfaces, ipv4, name)
 import           Prelude hiding (exp)
-import           Text.Regex.PCRE ((=~))
 
 
 blowUp :: BlowUp a
@@ -170,19 +168,6 @@ logNotice = L.logNotice "Mud.Cmds.Util.Misc"
 
 
 -- ==================================================
-
-
--- TODO: Move?
-applyRegex :: HasCallStack => Text -> Text -> IO (Text, Text, Text) -- Note that TinTin++ interprets "\" as escape.
-applyRegex needle haystack = handle handler $ let (🍩) = (=~) `on` T.unpack
-                                                  !x = haystack 🍩 needle
-                                              in return . (each %~ T.pack) $ x
-  where
-    handler :: IOException -> IO (Text, Text, Text)
-    handler = const . return $ (haystack, "", "")
-
-
------
 
 
 asterisk :: Text

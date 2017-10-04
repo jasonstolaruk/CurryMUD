@@ -1,8 +1,9 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
-{-# LANGUAGE MonadComprehensions, OverloadedStrings, RankNTypes, TypeFamilies #-}
+{-# LANGUAGE BangPatterns, MonadComprehensions, OverloadedStrings, RankNTypes, TypeFamilies #-}
 
 module Mud.Util.Misc ( BlowUp
                      , PatternMatchFail
+                     , applyRegex
                      , atLst1
                      , atomicWriteIORef'
                      , blowUp
@@ -91,8 +92,11 @@ import           Mud.Util.Quoting
 
 import           Control.Arrow ((&&&), Arrow, first, second)
 import           Control.Concurrent (threadDelay)
-import           Control.Lens (Lens', lens, view)
+import           Control.Exception (IOException)
+import           Control.Exception.Lifted (handle)
+import           Control.Lens (Lens', each, lens, view)
 import           Control.Lens.Getter (Getting)
+import           Control.Lens.Operators ((%~))
 import           Control.Monad (guard, join)
 import           Control.Monad.Reader.Class (MonadReader)
 import           Data.Bool (bool)
@@ -108,7 +112,7 @@ import qualified Data.Text as T
 import           Data.Time (FormatTime, defaultTimeLocale, formatTime, getZonedTime)
 import           GHC.Stack (HasCallStack, callStack, prettyCallStack)
 import           System.IO (hPutStrLn, stderr)
-
+import           Text.Regex.PCRE ((=~))
 
 default (Int, Double)
 
@@ -120,6 +124,15 @@ infixl 7 `divide`, `divideRound`, `intDivide`, `percent`
 
 
 -- ==================================================
+
+
+applyRegex :: HasCallStack => Text -> Text -> IO (Text, Text, Text) -- Note that TinTin++ interprets "\" as escape.
+applyRegex needle haystack = handle handler $ let (🍩) = (=~) `on` T.unpack
+                                                  !x = haystack 🍩 needle
+                                              in return . (each %~ T.pack) $ x
+  where
+    handler :: IOException -> IO (Text, Text, Text)
+    handler = const . return $ (haystack, "", "")
 
 
 atLst1 :: (HasCallStack, Eq a, Num a) => a -> a
