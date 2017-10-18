@@ -912,14 +912,17 @@ descHelper s i mq cols = sequence_ [ writeMsg mq . InacSecs $ maxInacSecsCompose
                   setInterp i . Just . interpConfirmDesc $ desc'
 
 
-interpConfirmDesc :: HasCallStack => Text -> Interp -- TODO: Consider notify admins when a player changes their description.
+interpConfirmDesc :: HasCallStack => Text -> Interp
 interpConfirmDesc desc cn (NoArgs i mq cols) = case yesNoHelper cn of
-  Just True  -> do logPla "description" i . prd $ "changing description to " <> dblQuote desc
-                   tweak $ entTbl.ind i.entDesc .~ desc
-                   ok mq
-                   sendDfltPrompt mq i
-                   resetInterp i
-                   resetInacTimer
+  Just True  -> getState >>= \ms -> do
+      logPla "description" i . prd $ "changing description to " <> dblQuote desc
+      tweak $ entTbl.ind i.entDesc .~ desc
+      ok mq
+      sendDfltPrompt mq i
+      resetInterp i
+      resetInacTimer
+      let poss = mkPossPro . getSex i $ ms
+      bcastAdminsExcept (pure i) . T.concat $ [ descSingId i ms, " has changed ", poss, " description." ]
   Just False -> resetInacTimer >> neverMind i mq
   Nothing    -> promptRetryYesNo mq cols
   where

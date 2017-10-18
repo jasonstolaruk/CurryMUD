@@ -209,8 +209,8 @@ alertMsgHelper i cn txt = getState >>= \ms -> if isAdminId i ms
                                    , txt ]
                  outIds = (getIdForRoot ms `delete`) $ getAdminIds ms \\ getLoggedInAdminIds ms
                  rec    = AlertMsgRec Nothing ts s cn match txt
-             in do logNotice        fn   msg
-                   logPla           fn i msg
+             in do logNotice fn   msg
+                   logPla    fn i msg
                    bcastAdmins msg
                    forM_ outIds (\adminId -> retainedMsg adminId ms . mkRetainedMsgFromPerson s $ msg)
                    withDbExHandler_ fn . insertDbTblAlertMsg $ rec
