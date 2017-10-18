@@ -9,7 +9,7 @@ Note that you can only connect to a channel those people with whom you have esta
 
 \uEXAMPLES\n
 \qconnect taro hunt\d to connect Taro to the "hunt" channel.4`
-\qconnect taro hanako hunt\d to connect both Taro and Hanako to "hunt".4`
+\qconnect taro hanako hunt\d to connect both Taro and Hanako to the "hunt" channel.4`
 
 \uSEE ALSO\n
 abbreviation, channel, disconnect, leave, link, telepathy, tune, unlink

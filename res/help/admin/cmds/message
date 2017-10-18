@@ -17,7 +17,7 @@ Notice how in the above example we have \l#x\qgives you\d, as opposed to \l#x\qg
 You can send an expressive command in a message. Expressive commands must begin with a \l#p\d. For example, if you type \q#dmessage hanako \l#p\qcomfort\d, Hanako's player will see the following (assuming your name is Taro):
 __Taro__ <Taro comforts you.>
 
-Notice how in the above example we have just \l#p\qcomfort\d, as opposed to \l#p\qcomfort hanako\d. Due to the fact that the "comfort" expressive command requires a target, and there is only one possible target in this case, the name may be omitted.
+Notice how in the above example we have just \l#p\qcomfort\d, as opposed to \l#p\qcomfort hanako\d. Although the "comfort" expressive command requires a target, in this case it may be omitted.
 
 \uEXAMPLES\n
 \q#dmessage hanako thank you for reporting the bug you found\d4`

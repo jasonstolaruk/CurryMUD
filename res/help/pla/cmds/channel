@@ -11,7 +11,7 @@ When one argument - the name of a channel - is provided, you'll get a list of th
 Telepathic channels - somewhat analogous to chat rooms - provide a means for three or more people to communicate with each other telepathically. Telepathic channels are strictly for In-Character (IC) communication only. (Note that the question channel, on the other hand, is strictly OOC.)
 
 \uRANDOM NAMES\n
-Within communication over telepathic channels, random names are automatically assigned to people with whom you have not established a telepathic link. Random names always start with a lowercase character and appear underlined. For example, a message from a person whose name you do not know may appear like so (here, "dog" is a randomly assigned name; "hunt" is the channel name):
+Random names are automatically assigned to people with whom you have not established a telepathic link. Random names always start with a lowercase character and appear underlined. For example, a message from a person with whom you have not linked may appear like so (here, "dog" is a randomly assigned name; "hunt" is the channel name):
 (hunt) \udog\n: I'm lost! Where did everybody go?
 
 \uADDRESSING A MESSAGE\d

@@ -5,21 +5,24 @@
 
 \uDESCRIPTION\n
 Display a list of administrators, or send a message to an administrator.
+
 When no arguments are provided, you'll get a list of CurryMUD administrators, indicating whether each administrator is currently logged in or out.
 
-To send a message to an administrator, provide the administrator's name followed by a message. If the administrator is currently logged in, the message will be delivered immediately. If the administrator is logged out, the message will be retained (the administrator will see it the next time he/she logs in).
+To send a message to an administrator, provide the administrator's name followed by your message. If the administrator is currently logged in, the message will be delivered immediately. If the administrator is logged out, the message will be retained (the administrator will see it the next time he/she logs in).
 
 \uEMOTES\n
-You can send an emote in a message. Emotes must begin with a \l#x\d. As with the "emote" command, you may optionally specify where your character's name should appear using \l#e\d. For example, if you type \qadmin jason \l#x\qgives you his full attention\d, Jason will see the following (assuming your name is Taro):
+You can send an emote in a message. Emotes must begin with a \l#x\d. For example, if you type \qadmin jason \l#x\qgives you his full attention\d, Jason will see the following (assuming your name is Taro):
 __Taro__ [Taro gives you his full attention.]
 
 Notice how in the above example we have \l#x\qgives you\d, as opposed to \l#x\qgives \l#r\qjason\d. It is legal to use forms of the word "you" in emotes here and, as there is only one possible target, there is no need for "#rjason".
+
+As with the "emote" command, you may optionally specify where your character's name should appear using \l#e\d.
 
 \uEXPRESSIVE COMMANDS\n
 You can send an expressive command in a message. Expressive commands must begin with a \l#p\d. For example, if you type \qadmin jason \l#p\qcomfort\d, Jason will see the following (assuming your name is Taro):
 __Taro__ <Taro comforts you.>
 
-Notice how in the above example we have just \l#p\qcomfort\d, as opposed to \l#p\qcomfort jason\d. Due to the fact that the "comfort" expressive command requires a target, and there is only one possible target in this case, the name may be omitted.
+Notice how in the above example we have just \l#p\qcomfort\d, as opposed to \l#p\qcomfort jason\d. Although the "comfort" expressive command requires a target, in this case it may be omitted.
 
 \uEXAMPLES\n
 \qadmin\d to get a list of CurryMUD administrators.4`

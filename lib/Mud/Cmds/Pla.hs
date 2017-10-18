@@ -912,7 +912,7 @@ descHelper s i mq cols = sequence_ [ writeMsg mq . InacSecs $ maxInacSecsCompose
                   setInterp i . Just . interpConfirmDesc $ desc'
 
 
-interpConfirmDesc :: HasCallStack => Text -> Interp
+interpConfirmDesc :: HasCallStack => Text -> Interp -- TODO: Consider notify admins when a player changes their description.
 interpConfirmDesc desc cn (NoArgs i mq cols) = case yesNoHelper cn of
   Just True  -> do logPla "description" i . prd $ "changing description to " <> dblQuote desc
                    tweak $ entTbl.ind i.entDesc .~ desc

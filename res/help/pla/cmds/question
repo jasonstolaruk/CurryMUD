@@ -11,7 +11,7 @@ When no arguments are provided, you'll get a list of all the people who are curr
 The "question channel" is strictly for the purpose of asking and answering newbie questions related to game play. Discussions on the question channel are Out-Of-Character (OOC); In-Character (IC) knowledge that can and should be discovered in game may not be disclosed. (Note that telepathic channels, on the other hand, are strictly IC.) Appropriate topics of discussion are how to use a command, how to configure client software, how to contact an administrator, etc. "Which weapon does more damage, x or y?" is an example of an inappropriate question.
 
 \uRANDOM NAMES\n
-Within communication over the question channel, random names are automatically assigned to people with whom you have not established a telepathic link. Random names always start with a lowercase character and appear underlined. For example, a message from a person whose name you do not know may appear like so (here, "dog" is a randomly assigned name):
+Random names are automatically assigned to people with whom you have not established a telepathic link. Random names always start with a lowercase character and appear underlined. For example, a message from a person with whom you have not linked may appear like so (here, "dog" is a randomly assigned name):
 (Question) \udog\n: How do I wield a weapon?
 
 \uADDRESSING A MESSAGE\d
