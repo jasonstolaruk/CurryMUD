@@ -6,7 +6,7 @@
 \uDESCRIPTION\n
 Eat a given number of mouthfuls of a food. The food must be in your inventory.
 
-To consume an entire piece of a food (in this example, an apple), you may type either \qeat all apple\d or \qeat \p#a\q apple\d.
+To consume an entire piece of a food (in this case, an apple), you may type either \qeat all apple\d or \qeat \p#a\q apple\d.
 
 Eating takes time, depending on the number of mouthfuls one consumes. You will be informed when your character has finished eating. If you wish to cut short your consumption, type \qstop eating\d.
 

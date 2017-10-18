@@ -4,7 +4,7 @@
 !get item \s...\d
 
 \uDESCRIPTION\n
-Pick up one or more items in your current room; move item(s) from your current room to your inventory.
+Pick up one or more items in your current room; transfer item(s) from your current room to your inventory.
 
 \uEXAMPLES\n
 \qget sword\d to pick up the sword in the room.4`

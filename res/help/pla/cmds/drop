@@ -4,7 +4,7 @@
 !drop item \s...\d
 
 \uDESCRIPTION\n
-Drop one or more items; move item(s) from your inventory to your current room.
+Drop one or more items; transfer item(s) from your inventory to your current room.
 
 \uEXAMPLES\n
 \qdrop sword\d to drop your sword.4`

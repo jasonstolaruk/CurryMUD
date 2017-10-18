@@ -4,7 +4,7 @@
 !ready item\s[\d#slocation\s] ...\d
 
 \uDESCRIPTION\n
-Ready one or more items; move item(s) from your inventory to your readied equipment.
+Ready one or more items; transfer item(s) from your inventory to your readied equipment.
 
 You may optionally specify where to ready an item by appending a suffix to the item name:
 \l#sr\d for right (hand, wrist, or ear)2`
