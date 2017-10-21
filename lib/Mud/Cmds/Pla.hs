@@ -1221,11 +1221,12 @@ emptyAction   (LowerNub i mq cols as) = helper |&| modifyState >=> \(toSelfs, bs
       where
         f a'@(ms, _, _, _) targetId =
             let s            = getSing targetId ms
+                poss         = mkPossPro . getSex i $ ms
+                t            = T.concat [ serialize d, " empties the contents of ", poss, " ", s, "." ]
                 alreadyEmpty = a' & _2 <>~ pure (sorryEmptyAlready s)
                 emptyIt      = a' & _1 .~  (ms & vesselTbl.ind targetId.vesselCont .~ Nothing)
                                   & _2 <>~ pure (prd $ "You empty the contents of the " <> s)
-                                  & _3 <>~ pure ( T.concat [ serialize d, " empties the contents of ", aOrAn s, "." ]
-                                                , i `delete` desigIds d )
+                                  & _3 <>~ pure (t, i `delete` desigIds d)
                                   & _4 <>~ pure s
             in case getType targetId ms of
               VesselType -> maybe alreadyEmpty (const emptyIt) . getVesselCont targetId $ ms

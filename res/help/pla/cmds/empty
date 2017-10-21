@@ -5,7 +5,7 @@
 
 \uDESCRIPTION\n
 Empty the liquid contents of one or more vessels.
-The contents will be unrecoverable, so please proceed with caution.
+Once emptied the contents are unrecoverable, so please proceed with caution.
 
 \uEXAMPLES\n
 \qempty flask\d to empty your flask.4`
