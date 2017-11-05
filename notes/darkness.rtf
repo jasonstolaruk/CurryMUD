@@ -1,5 +1,6 @@
 {\rtf1\ansi\ansicpg1252\cocoartf1504\cocoasubrtf830
-{\fonttbl\f0\fswiss\fcharset0 Helvetica;\f1\fnil\fcharset0 Monaco;}
+{\fonttbl\f0\fswiss\fcharset0 Helvetica;\f1\fnil\fcharset0 Menlo-Regular;\f2\fnil\fcharset0 Monaco;
+}
 {\colortbl;\red255\green255\blue255;\red242\green242\blue242;\red0\green0\blue0;\red47\green180\blue29;
 }
 {\*\expandedcolortbl;;\csgray\c95825;\csgray\c0\c85000;\cssrgb\c20239\c73899\c14948;
@@ -16,83 +17,94 @@ When dark, consider changing mob names to \'93someone\'94 and \'93object\'94 nam
 Do we really need a \'93Msg\'94 data type with \'93Lit\'94 and \'93Unlit\'94 constructors? Or is this ^^ enough? (In any case, there may be some changes in the git stash that you\'92ll want to keep.)\
 Mobs may be \'93invisible.\'94 The concept of invisibility is different from that of existing in darkness. For example, when an invisible mob moves, \ul no message\ulnone  should be emitted.\
 Hooks and room functions will also have to be considered.\
+We may want to disallow 
+\f1 \'91
+\f0  and 
+\f1 r-\'91
+\f0  in some cases (for example, 
+\f1 get \'91
+\f0 ).\
 Distinguish between \'93visible\'94 and \'93audible\'94 expressive commands.\
 \
 down\
 \pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
-\f1\fs24 \cf2 \cb3 \CocoaLigature0 The female vulpenoid heads down.\
+\f2\fs24 \cf2 \cb3 \CocoaLigature0 The female vulpenoid heads down.\
 A male human arrives from above.\
 
 \f0\fs32 \cf0 \cb1 \CocoaLigature1 \
 drink\
 
-\f1\fs24 \cf2 \cb3 \CocoaLigature0 The female vulpenoid begins drinking from a waterskin.\
+\f2\fs24 \cf2 \cb3 \CocoaLigature0 The female vulpenoid begins drinking from a waterskin.\
 The female vulpenoid finishes drinking from a waterskin.
 \f0\fs32 \cf0 \cb1 \CocoaLigature1 \
 \
 drop\
 
-\f1\fs24 \cf2 \cb3 \CocoaLigature0 The female vulpenoid drops an apple.\
+\f2\fs24 \cf2 \cb3 \CocoaLigature0 The female vulpenoid drops an apple.\
 The female vulpenoid drops 2 bananas.\
 The female vulpenoid drops some coins.
 \f0\fs32 \cf0 \cb1 \CocoaLigature1 \
 \
 eat\
 
-\f1\fs24 \cf2 \cb3 \CocoaLigature0 The female vulpenoid begins eating an apple.\
+\f2\fs24 \cf2 \cb3 \CocoaLigature0 The female vulpenoid begins eating an apple.\
 The female vulpenoid finishes eating an apple.
 \f0\fs32 \cf0 \cb1 \CocoaLigature1 \
 \
 emote\
 
-\f1\fs24 \cf2 \cb3 \CocoaLigature0 [The male vulpenoid laughs with relief as tears roll down her face.]\
+\f2\fs24 \cf2 \cb3 \CocoaLigature0 [The male vulpenoid laughs with relief as tears roll down her face.]\
 [Shielding his eyes from the sun, the male vulpenoid looks out across the \
 plains.]
 \f0\fs32 \cf0 \cb1 \CocoaLigature1 \
 
-\f1\fs24 \cf2 \cb3 \CocoaLigature0 [The male vulpenoid's leg twitches involuntarily as he laughs with gusto.]
+\f2\fs24 \cf2 \cb3 \CocoaLigature0 [The male vulpenoid's leg twitches involuntarily as he laughs with gusto.]
 \f0\fs32 \cf0 \cb1 \CocoaLigature1 \
 
-\f1\fs24 \cf2 \cb3 \CocoaLigature0 [The male vulpenoid slowly turns his head to look directly at \cf4 Curry\cf2 .]
+\f2\fs24 \cf2 \cb3 \CocoaLigature0 [The male vulpenoid slowly turns his head to look directly at \cf4 Curry\cf2 .]
 \f0\fs32 \cf0 \cb1 \CocoaLigature1 \
 
-\f1\fs24 \cf2 \cb3 \CocoaLigature0 [The male vulpenoid places his hand firmly on \cf4 Curry's\cf2  shoulder.]
+\f2\fs24 \cf2 \cb3 \CocoaLigature0 [The male vulpenoid places his hand firmly on \cf4 Curry's\cf2  shoulder.]
 \f0\fs32 \cf0 \cb1 \CocoaLigature1 \
 
-\f1\fs24 \cf2 \cb3 \CocoaLigature0 [Ignoring the male elf, the male vulpenoid takes \cf4 Curry's\cf2  hand and gestures \
+\f2\fs24 \cf2 \cb3 \CocoaLigature0 [Ignoring the male elf, the male vulpenoid takes \cf4 Curry's\cf2  hand and gestures \
 eastward.]
 \f0\fs32 \cf0 \cb1 \CocoaLigature1 \
 \
 empty\
 
-\f1\fs24 \cf2 \cb3 \CocoaLigature0 The male vulpenoid empties the contents of his waterskin.
+\f2\fs24 \cf2 \cb3 \CocoaLigature0 The male vulpenoid empties the contents of his waterskin.
 \f0\fs32 \cf0 \cb1 \CocoaLigature1 \
 \
 extinguish\
 
-\f1\fs24 \cf2 \cb3 \CocoaLigature0 The male lagomorph extinguishes his torch.
+\f2\fs24 \cf2 \cb3 \CocoaLigature0 The male lagomorph extinguishes his torch.
 \f0\fs32 \cf0 \cb1 \CocoaLigature1 \
 (Should display regardless of room light.)\
 \
 fill\
 
-\f1\fs24 \cf2 \cb3 \CocoaLigature0 The male lagomorph transfers liquid from a bottle to a bottle.\
+\f2\fs24 \cf2 \cb3 \CocoaLigature0 The male lagomorph transfers liquid from a bottle to a bottle.\
 The male lagomorph fills a bottle with water from the pool.
 \f0\fs32 \cf0 \cb1 \CocoaLigature1 \
 \
 get\
-\
+
+\f2\fs24 \cf2 \cb3 \CocoaLigature0 The female hobbit drops an apple.\
+The female hobbit drops 2 bananas.\
+The female hobbit drops some coins.
+\f0\fs32 \cf0 \cb1 \CocoaLigature1 \
 \
 light\
 
-\f1\fs24 \cf2 \cb3 \CocoaLigature0 The male lagomorph lights his torch.
+\f2\fs24 \cf2 \cb3 \CocoaLigature0 The male lagomorph lights his torch.
 \f0\fs32 \cf0 \cb1 \CocoaLigature1 \
 (Should display regardless of room light.)\
 \
 south\
 
-\f1\fs24 \cf2 \cb3 \CocoaLigature0 The female vulpenoid leaves south.\
+\f2\fs24 \cf2 \cb3 \CocoaLigature0 The female vulpenoid leaves south.\
 A female vulpenoid arrives from the south.
 \f0\fs32 \cf0 \cb1 \CocoaLigature1 \
 \
