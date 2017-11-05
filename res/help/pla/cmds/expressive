@@ -6,7 +6,7 @@
 \uDESCRIPTION\n
 Display a list of available expressive commands and their results. Optionally, search the list for one or more terms.
 
-Note that certain expressive commands will set or clear your room description for you. Special note is made where this is the case in the expressive command list. \qexpressive room\d will display those expressive commands that set room description. (Please see \qhelp roomdesc\d for more information.)
+Note that certain expressive commands will set or clear your room description for you (this is noted in the expressive command list). \qexpressive room\d will display those expressive commands that set room description. (Please see \qhelp roomdesc\d for more information.)
 
 \uEXAMPLES\n
 \qexpressive\d to display the full command list.4`
