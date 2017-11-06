@@ -14,7 +14,7 @@ This command may take the following forms:
 \qstop all\d (or \qstop \p#a\d) to stop doing all of the above.4`
 \qstop\d with no arguments.4`
 
-When no arguments are provided, you will stop carrying out a single action; the action you stop depends on what you are doing at the time. Namely, if currently sacrificing, you will stop sacrificing; if currently drinking, you will stop drinking; if currently eating, you will stop eating; otherwise, otherwise, if currently attacking, you will stop attacking.
+When no arguments are provided, you will stop carrying out a single action; the action you stop depends on what you are doing at the time. Namely, if currently sacrificing, you will stop sacrificing; if currently drinking, you will stop drinking; if currently eating, you will stop eating; otherwise, if currently attacking, you will stop attacking.
 
 \uSEE ALSO\n
 attack, drink, eat, sacrifice

@@ -2,13 +2,14 @@
 
 module Mud.Cmds.Msgs.CmdDesc where
 
-import Mud.Data.State.MudData
-import Mud.Data.State.Util.Lang
-import Mud.Util.Quoting
-import Mud.Util.Text
+import           Mud.Data.State.MudData
+import           Mud.Data.State.Util.Lang
+import           Mud.Util.Quoting
+import           Mud.Util.Text
 
-import Data.Monoid ((<>))
-import Data.Text (Text)
+import           Data.Monoid ((<>))
+import           Data.Text (Text)
+import qualified Data.Text as T
 
 
 cmdDescAbout :: Text
@@ -182,7 +183,7 @@ cmdDescPut = "Put one or more items into a) a container in your inventory, or b)
 
 
 cmdDescQuit :: Text
-cmdDescQuit = prd $ dblQuote "Go to sleep" <> spcL (parensQuote "quit playing CurryMUD")
+cmdDescQuit = prd $ dblQuote "Go to sleep " <> parensQuote "quit playing CurryMUD"
 
 
 cmdDescRead :: Text
@@ -228,7 +229,7 @@ cmdDescStats = "Display your stats."
 
 
 cmdDescStop :: Text
-cmdDescStop = "Stop eating, drinking, or attacking."
+cmdDescStop = "Stop sacrificing a corpse, drinking, eating, or attacking."
 
 
 cmdDescTaste :: Text
@@ -272,7 +273,10 @@ cmdDescWhisper = "Whisper something to someone in your current room."
 
 
 cmdDescWho :: Text
-cmdDescWho = "Display or search a list of who is currently awake."
+cmdDescWho = prd . T.concat $ [ "Display or search a list of who is currently "
+                              , dblQuote "awake"
+                              , " "
+                              , parensQuote "logged in" ]
 
 
 cmdDescWhoAmI :: Text
@@ -280,4 +284,4 @@ cmdDescWhoAmI = "Confirm your name, sex, and race."
 
 
 cmdDescZoom :: Text
-cmdDescZoom = "Set the zoom of the Mudlet mapper to the default level or a specified zoom level."
+cmdDescZoom = "Set the zoom level of the Mudlet mapper."

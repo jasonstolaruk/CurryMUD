@@ -200,10 +200,9 @@ adminCmds =
     , mkAdminCmd "ttype"      adminTType       True  "Display a report of hosts by terminal type."
     , mkAdminCmd "typo"       adminTypo        True  "Dump the typo database."
     , mkAdminCmd "uptime"     adminUptime      True  "Display the system uptime."
-    , mkAdminCmd "whoin"      adminWhoIn       True  "Display or regex search a list of all the PCs that are currently \
-                                                     \logged in."
-    , mkAdminCmd "whoout"     adminWhoOut      True  "Display or regex search a list of all the PCs that are currently \
-                                                     \logged out."
+    , mkAdminCmd "whoin"      adminWhoIn       True  "Display or regex search a list of PCs who are currently logged in."
+    , mkAdminCmd "whoout"     adminWhoOut      True  "Display or regex search a list of PCs who are currently logged \
+                                                     \out."
     , mkAdminCmd "wiretap"    adminWire        True  "Start or stop tapping one or more telepathic channels." ]
 
 

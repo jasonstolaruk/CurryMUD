@@ -4,9 +4,9 @@
 !say \s[\d#oadverb#c\s]\d \s[\d#ttarget\s]\d \s[\d#oadverb#c\s]\d utterance
 
 \uDESCRIPTION\n
-Say something out loud, such that everyone else in your current room will hear you.
-You may optionally provide a "target," so as to indicate that you are speaking directly to the specified individual.
-Furthermore, you may optionally provide at most one "adverbial phrase" (surrounded in square brackets) so as to illustrate the manner in which you speak.
+Say something out loud, such that everyone in your current room will hear you.
+You may optionally provide a "target" so as to indicate that you are speaking directly to the specified individual.
+Furthermore, you may optionally provide at most one "adverbial phrase" (in square brackets) so as to illustrate the manner in which you speak.
 
 \uEXAMPLES\n
 \qsay nice to meet you, too\d \r->\d You say, "Nice to meet you, too."4`

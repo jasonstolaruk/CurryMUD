@@ -11,7 +11,7 @@ There are two categories of communication commands: Out-Of-Character (OOC) and I
     Note: use the "set" command to tune the question channel (here "tune" means to set whether or not you receive messages).
 
 \uIC COMMUNICATION\d
-\qsay\d - Say something out loud in common, such that everyone else in your current room will hear you.4`
+\qsay\d - Say something out loud in common, such that everyone in your current room will hear you.4`
     Note that there exist commands to speak in languages other than common. These commands are named for the language in which the utterance is spoken (for example, use the "elvish" command to speak in elvish).
 
 \qwhisper\d - Whisper something to someone in your current room, such that only the target will hear you.4`

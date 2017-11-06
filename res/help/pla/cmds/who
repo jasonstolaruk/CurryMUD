@@ -4,8 +4,8 @@
 !who \s[\dterm \s...]\d
 
 \uDESCRIPTION\n
-Display a list of all the people that are currently "awake" (logged in). Optionally, search the list for one or more terms.
-Note that the list does not include administrators (use the "admin" command to get a list of administrators, indicating whether they are currently logged in or out).
+Display a list of who is currently "awake" (logged in). Optionally, search the list for one or more terms.
+Note that the list does not include administrators: use the "admin" command to get a list of administrators, indicating whether they are currently logged in or out.
 
 In the list you will see the names of those people with whom you have established a telepathic link; the names of all others are displayed as "?".
 Your name will not appear in the list, though you are included in the number of people awake as indicated at the bottom.

@@ -4,7 +4,7 @@
 #dwhoin \s[\dregex \s...]\d
 
 \uDESCRIPTION\n
-Display a list of all the PCs that are currently logged in. Optionally, search the list for one or more regex patterns.
+Display a list of PCs who are currently logged in. Optionally, search the list for one or more regex patterns.
 * denotes an admin.
 @@ denotes an incognito admin.
 $ denotes a spirit.

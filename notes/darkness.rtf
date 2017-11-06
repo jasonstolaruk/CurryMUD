@@ -15,7 +15,6 @@ Goal: review the various messages I\'92ve already implemented, and devise a blan
 Points to consider:\
 When dark, consider changing mob names to \'93someone\'94 and \'93object\'94 names to \'93something.\'94\
 Do we really need a \'93Msg\'94 data type with \'93Lit\'94 and \'93Unlit\'94 constructors? Or is this ^^ enough? (In any case, there may be some changes in the git stash that you\'92ll want to keep.)\
-Mobs may be \'93invisible.\'94 The concept of invisibility is different from that of existing in darkness. For example, when an invisible mob moves, \ul no message\ulnone  should be emitted.\
 Hooks and room functions will also have to be considered.\
 We may want to disallow 
 \f1 \'91
@@ -25,6 +24,13 @@ We may want to disallow
 \f1 get \'91
 \f0 ).\
 Distinguish between \'93visible\'94 and \'93audible\'94 expressive commands.\
+\
+Examining an item (look, inventory, equipment)?\
+\
+Invisibility:\
+Mobs may be \'93invisible.\'94 The concept of invisibility is different from that of existing in darkness. For example, when an invisible mob moves, \ul no message\ulnone  should be emitted.\
+How to implement invisibility? Seeing invisible?\
+\'93Hiding?\'94\
 \
 down\
 \pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
@@ -101,6 +107,9 @@ light\
 \f2\fs24 \cf2 \cb3 \CocoaLigature0 The male lagomorph lights his torch.
 \f0\fs32 \cf0 \cb1 \CocoaLigature1 \
 (Should display regardless of room light.)\
+\
+show\
+Disallow this command when in a dark room.\
 \
 south\
 
