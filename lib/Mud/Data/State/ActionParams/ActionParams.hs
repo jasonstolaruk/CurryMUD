@@ -1,6 +1,7 @@
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 {-# LANGUAGE OverloadedStrings, PatternSynonyms, RebindableSyntax, RecordWildCards, ViewPatterns #-}
 
+-- TODO: We might be able to use GHC 8's new export syntax: http://mpickering.github.io/posts/2015-12-12-pattern-synonyms-8.html
 module Mud.Data.State.ActionParams.ActionParams ( ActionParams(..)
                                                 , Cols
                                                 , pattern AdviseNoArgs
