@@ -8,11 +8,13 @@
 \margl1440\margr1440\vieww15800\viewh8400\viewkind0
 \pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
 
-\f0\fs32 \cf0 How to handle darkness\
+\f0\b\fs32 \cf0 \ul \ulc0 Handling darkness and invisibility
+\b0 \ulnone \
 \
-Goal: review the various messages I\'92ve already implemented, and devise a blanket \'93retrofit\'94 solution.\
+=====\
 \
-Points to consider:\
+Darkness:\
+\
 When dark, consider changing mob names to \'93someone\'94 and \'93object\'94 names to \'93something.\'94\
 Do we really need a \'93Msg\'94 data type with \'93Lit\'94 and \'93Unlit\'94 constructors? Or is this ^^ enough? (In any case, there may be some changes in the git stash that you\'92ll want to keep.)\
 Hooks and room functions will also have to be considered.\
@@ -27,10 +29,17 @@ Distinguish between \'93visible\'94 and \'93audible\'94 expressive commands.\
 \
 Examining an item (look, inventory, equipment)?\
 \
+=====\
+\
 Invisibility:\
-Mobs may be \'93invisible.\'94 The concept of invisibility is different from that of existing in darkness. For example, when an invisible mob moves, \ul no message\ulnone  should be emitted.\
+\
+Mobs may be \'93invisible.\'94 Is the concept of invisibility different from that of existing in darkness?\
 How to implement invisibility? Seeing invisible?\
 \'93Hiding?\'94\
+\
+=====\
+\
+Reviewing various messages I\'92ve already implemented:\
 \
 down\
 \pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
@@ -117,7 +126,7 @@ south\
 A female vulpenoid arrives from the south.
 \f0\fs32 \cf0 \cb1 \CocoaLigature1 \
 \
--=-=-=-=-=-=-=-=-=-=\
+=====\
 \
 \pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
 \cf0 Emotes may be used in the following commands:\
