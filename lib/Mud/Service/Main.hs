@@ -24,6 +24,9 @@ import           Servant (Context(..), Proxy(..), serveWithContext)
 import           Servant.Auth.Server (JWT, defaultCookieSettings, defaultJWTSettings)
 
 
+-- TODO: https://ibnuda.gitlab.io/636452721192300168_authorizationinservant.html
+
+
 startRestService :: HasCallStack => ServerSettings -> IORef MudState -> IO ()
 startRestService s ior =
     let jwtCfg = defaultJWTSettings . settingJWK $ s
