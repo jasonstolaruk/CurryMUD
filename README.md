@@ -108,7 +108,7 @@ Please build with [stack](http://docs.haskellstack.org/en/stable/README.html):
 1. Run `stack build` to compile the `curry` binary and libraries.
 1. Run `stack install` to copy the `curry` binary to `$HOME/.local/bin`.
 1. Execute the `curry` binary.
-1. Telnet to `localhost` port 9696 to play (better yet, use a MUD client).
+1. Telnet to `localhost` port 9696 to play. (Better yet, use a MUD client.)
 
 ## How to contact me
 

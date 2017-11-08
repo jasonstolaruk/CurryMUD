@@ -49,7 +49,6 @@ module Mud.Data.Misc ( AOrThe(..)
                      , Min
                      , Month
                      , MoonPhase(..)
-                     , MsgTxt(..)
                      , NewCharBundle(..)
                      , Pretty
                      , PutOrRem(..)
@@ -939,7 +938,7 @@ data Desig = StdDesig    { desigEntSing :: Maybe Text
                          , desigEntName :: Text
                          , desigId      :: Id
                          , desigIds     :: Inv }
-           | NonStdDesig { dEntSing     :: Text -- Expand to the value of "dEntSing" if it's in introduced names. Otherwise, expand to the value of "dDesc".
+           | NonStdDesig { dEntSing     :: Text -- Expand to the value of "dEntSing" if it's among introduced names. Otherwise, expand to the value of "dDesc".
                          , dDesc        :: Text }
            | CorpseDesig Id deriving (Eq, Show)
 
@@ -1102,14 +1101,6 @@ data MoonPhase = NewMoon        -- the moon is not visible
                | WaningGibbous  -- greater than half (originating from left) is visible
                | ThirdQuarter   -- left half is visible
                | WaningCrescent {- sliver on left is visible -} deriving Eq
-
-
------
-
-
-data MsgTxt = AnyLight Text
-            | LitUnlit { litTxt   :: Text
-                       , unlitTxt :: Text }
 
 
 -----

@@ -135,18 +135,18 @@ bcastIfNotIncog i bs = getState >>= \ms -> onTrue (isPla i ms) (unless (isIncogn
 
 
 bcastIfNotIncogNl :: HasCallStack => Id -> [Broadcast] -> MudStack ()
-bcastIfNotIncogNl i = bcastIfNotIncog i . appendNlBs
+bcastIfNotIncogNl i = bcastIfNotIncog i . appendNlToBs
 
 
-appendNlBs :: HasCallStack => [Broadcast] -> [Broadcast]
-appendNlBs bs = bs ++ pure (nlTxt, nubSort . concatMap snd $ bs)
+appendNlToBs :: HasCallStack => [Broadcast] -> [Broadcast]
+appendNlToBs bs = bs ++ pure (nlTxt, nubSort . concatMap snd $ bs)
 
 
 -----
 
 
 bcastNl :: HasCallStack => [Broadcast] -> MudStack ()
-bcastNl = bcast . appendNlBs
+bcastNl = bcast . appendNlToBs
 
 
 -----
@@ -161,8 +161,7 @@ bcastOtherAdmins = bcastAdminsHelper . delete
 
 bcastOthersInRm :: HasCallStack => Id -> Text -> MudStack ()
 bcastOthersInRm i msg = getState >>= \ms ->
-    let helper = let ((i `delete`) -> ris) = getMobRmInv i ms
-                 in bcast . pure $ (msg, findMobIds ms ris)
+    let helper = bcast . pure $ (msg, findMobIds ms . delete i . getMobRmInv i $ ms)
     in isPla i ms ? unless (isIncognito . getPla i $ ms) helper :? helper
 
 
@@ -192,10 +191,10 @@ dbError mq cols = wrapSend mq cols dbErrorMsg >> sendSilentBoot mq
 -----
 
 
-massMsg :: HasCallStack => Msg -> MudStack ()
-massMsg msg = liftIO . atomically . helper =<< getState
+massMsg :: HasCallStack => ThreadMsg -> MudStack ()
+massMsg tm = liftIO . atomically . helper =<< getState
   where
-    helper (views msgQueueTbl IM.elems -> mqs) = forM_ mqs . flip writeTQueue $ msg
+    helper (views msgQueueTbl IM.elems -> mqs) = forM_ mqs . flip writeTQueue $ tm
 
 
 -----
@@ -440,5 +439,5 @@ wrapSendPrompt mq cols = sendPrompt mq . wrapUnlinesInit cols
 -----
 
 
-writeMsg :: HasCallStack => MsgQueue -> Msg -> MudStack ()
+writeMsg :: HasCallStack => MsgQueue -> ThreadMsg -> MudStack ()
 writeMsg mq = liftIO . atomically . writeTQueue mq

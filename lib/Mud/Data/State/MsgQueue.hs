@@ -1,7 +1,7 @@
-module Mud.Data.State.MsgQueue ( Msg(..)
-                               , MsgQueue
-                               , NpcMsg(..)
-                               , NpcMsgQueue ) where
+module Mud.Data.State.MsgQueue ( MsgQueue
+                               , NpcMsgQueue
+                               , NpcThreadMsg(..)
+                               , ThreadMsg(..) ) where
 
 import Mud.TopLvlDefs.Seconds
 
@@ -9,37 +9,37 @@ import Control.Concurrent.STM.TQueue (TQueue)
 import Data.Text (Text)
 
 
-type MsgQueue = TQueue Msg
+type MsgQueue = TQueue ThreadMsg
 
 
-data Msg = AsSelf Text
-         | BlankLine
-         | Dropped
-         | FinishedEgress
-         | FinishedSpirit
-         | FromClient Text
-         | FromServer Text
-         | InacBoot
-         | InacSecs Seconds
-         | InacStop
-         | MsgBoot Text
-         | Peeped  Text
-         | Prompt  Text
-         | Quit
-         | ShowHandle
-         | ShutDown
-         | SilentBoot
-         | ToNpc Text
+data ThreadMsg = AsSelf Text
+               | BlankLine
+               | Dropped
+               | FinishedEgress
+               | FinishedSpirit
+               | FromClient Text
+               | FromServer Text
+               | InacBoot
+               | InacSecs Seconds
+               | InacStop
+               | MsgBoot Text
+               | Peeped  Text
+               | Prompt  Text
+               | Quit
+               | ShowHandle
+               | ShutDown
+               | SilentBoot
+               | ToNpc Text
 
 
 -----
 
 
-type NpcMsgQueue = TQueue NpcMsg
+type NpcMsgQueue = TQueue NpcThreadMsg
 
 
-data NpcMsg = ExternCmd MsgQueue Cols Text
-            | StopNpcServer
+data NpcThreadMsg = ExternCmd MsgQueue Cols Text
+                  | StopNpcServer
 
 
 type Cols = Int

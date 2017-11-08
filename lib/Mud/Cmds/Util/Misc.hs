@@ -321,9 +321,9 @@ embedId = quoteWith (T.singleton plaIdDelimiter) . showTxt
 expandEmbeddedIds :: HasCallStack => MudState -> ChanContext -> [Broadcast] -> MudStack [Broadcast]
 expandEmbeddedIds ms ChanContext { revealAdminNames } = concatMapM helper
   where
-    helper a@(msg, is) = case breakIt msg of
-      (_, "")                                        -> unadulterated a
-      (x, breakIt . T.tail -> (numTxt, T.tail -> y)) ->
+    helper a@(msg, is) = case breakOnDelim msg of
+      (_, "")                                             -> unadulterated a
+      (x, breakOnDelim . T.tail -> (numTxt, T.tail -> y)) ->
           let embeddedId = read . T.unpack $ numTxt :: Int
               f i | g . isLinked ms $ (i, embeddedId) = return (rebuild . getSing embeddedId $ ms, pure i)
                   | otherwise = ((, pure i) . rebuild . underline) <$> updateRndmName i embeddedId
@@ -332,17 +332,17 @@ expandEmbeddedIds ms ChanContext { revealAdminNames } = concatMapM helper
           in mapM f is >>= concatMapM helper
 
 
-breakIt :: Text -> (Text, Text)
-breakIt = T.break (== plaIdDelimiter)
+breakOnDelim :: Text -> (Text, Text)
+breakOnDelim = T.break (== plaIdDelimiter)
 
 
 expandEmbeddedIdsToSings :: HasCallStack => MudState -> Text -> Text
 expandEmbeddedIdsToSings ms = helper
   where
-    helper msg = case breakIt msg of
-      (_, ""                                       ) -> msg
-      (x, breakIt . T.tail -> (numTxt, T.tail -> y)) -> let embeddedId = read . T.unpack $ numTxt :: Int
-                                                        in helper . quoteWith' (x, y) . getSing embeddedId $ ms
+    helper msg = case breakOnDelim msg of
+      (_, ""                                            ) -> msg
+      (x, breakOnDelim . T.tail -> (numTxt, T.tail -> y)) -> let embeddedId = read . T.unpack $ numTxt :: Int
+                                                             in helper . quoteWith' (x, y) . getSing embeddedId $ ms
 
 
 -----
