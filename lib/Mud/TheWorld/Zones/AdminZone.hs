@@ -66,6 +66,7 @@ logNotice = L.logNotice "Mud.TheWorld.Zones.AdminZone"
 -- Hooks:
 
 
+-- TODO: Consider visibility (here and in other zones).
 adminZoneHooks :: [(HookName, HookFun)]
 adminZoneHooks = [ (drinkPoolHookName,                    drinkPoolHookFun                   )
                  , (fillPoolHookName,                     fillPoolHookFun                    )
@@ -417,6 +418,7 @@ smellFlowerbedHookFun = mkGenericHookFun smellDesc "smells the flowerbed." "smel
 -- Room action functions:
 
 
+-- TODO: Consider visibility (here and in other zones).
 adminZoneRmActionFuns :: [(FunName, RmActionFun)]
 adminZoneRmActionFuns = pure (pickRmActionFunName, pick)
 

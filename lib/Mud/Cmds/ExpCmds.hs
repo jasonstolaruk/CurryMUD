@@ -48,6 +48,7 @@ logPlaOut = L.logPlaOut "Mud.Cmds.ExpCmds"
 -- ==================================================
 
 
+-- TODO: Distinguish between “visible” and “audible” expressive commands.
 expCmdSet :: HasCallStack => S.Set ExpCmd
 expCmdSet = S.fromList
     [ ExpCmd "admire"       (HasTarget "You admire @."
