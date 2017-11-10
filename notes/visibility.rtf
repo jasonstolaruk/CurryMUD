@@ -5,34 +5,47 @@
 }
 {\*\expandedcolortbl;;\csgray\c95825;\csgray\c0\c85000;\cssrgb\c20239\c73899\c14948;
 }
-\margl1440\margr1440\vieww15800\viewh8400\viewkind0
+\margl1440\margr1440\vieww15800\viewh19800\viewkind0
 \pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
 
 \f0\b\fs32 \cf0 \ul \ulc0 Handling darkness and invisibility
 \b0 \ulnone \
 \
-=====\
-\
 Darkness:\
 \
-When dark, consider changing mob names to \'93someone\'94 and \'93object\'94 names to \'93something.\'94\
-We may want to disallow 
+Change mob names to \'93someone\'94 and \'91object\'92 names to \'93something.\'94\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf0 \
+Examining an item (
+\f1 look
+\f0 , 
+\f1 inventory
+\f0 , 
+\f1 equipment
+\f0 ) should be impossible.\
+\
+\pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardirnatural\partightenfactor0
+\cf0 We may want to disallow 
 \f1 \'91
 \f0  and 
 \f1 r-\'91
-\f0  in some cases (for example, 
-\f1 get \'91
-\f0 ).\
-\
-Examining an item (look, inventory, equipment)?\
+\f0  in some cases.\
 \
 =====\
 \
 Invisibility:\
 \
-Mobs may be \'93invisible.\'94 Is the concept of invisibility different from that of existing in darkness?\
-How to implement invisibility? Seeing invisible?\
-\'93Hiding?\'94\
+Mobs may be \'93invisible.\'94 A mob may be able to \'93see invisible.\'94\
+\
+Similar to darkness, change invisible mob names to \'93someone\'94 and \'91object\'92 names to \'93something.\'94\
+\
+=====\
+\
+Hiding:\
+\
+A hidden mob\'92s name is not displayed in the room inventory list.\
+\
+When a hidden mob executes a command that displays a message to the other mobs in the room, that mob is no longer hidden. \'93A female vulpenoid steps out of the shadows.\'94\
 \
 =====\
 \
@@ -93,7 +106,7 @@ extinguish\
 
 \f2\fs24 \cf2 \cb3 \CocoaLigature0 The male lagomorph extinguishes his torch.
 \f0\fs32 \cf0 \cb1 \CocoaLigature1 \
-(Should display regardless of room light.)\
+(In darkness, message should display regardless of room light.)\
 \
 fill\
 
@@ -101,23 +114,18 @@ fill\
 The male lagomorph fills a bottle with water from the pool.
 \f0\fs32 \cf0 \cb1 \CocoaLigature1 \
 \
-get\
-
-\f2\fs24 \cf2 \cb3 \CocoaLigature0 The female hobbit drops an apple.\
-The female hobbit drops 2 bananas.\
-The female hobbit drops some coins.
-\f0\fs32 \cf0 \cb1 \CocoaLigature1 \
-\
 light\
 
 \f2\fs24 \cf2 \cb3 \CocoaLigature0 The male lagomorph lights his torch.
 \f0\fs32 \cf0 \cb1 \CocoaLigature1 \
-(Should display regardless of room light.)\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
+\cf0 (In darkness, message should display regardless of room light.)\
 \
 show\
 Disallow this command when in a dark room.\
 \
 south\
+\pard\tx560\tx1120\tx1680\tx2240\tx2800\tx3360\tx3920\tx4480\tx5040\tx5600\tx6160\tx6720\pardirnatural\partightenfactor0
 
 \f2\fs24 \cf2 \cb3 \CocoaLigature0 The female vulpenoid leaves south.\
 A female vulpenoid arrives from the south.
