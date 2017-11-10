@@ -474,11 +474,11 @@ readSundialHookFun i Hook { .. } _ a@(_, (ms, _, _, _), _) =
       & _2._4 <>~ pure (bracketQuote hookName <> " read sundial")
       & _3    .~  pure helper
   where
-    helper = do (ms', CurryTime { .. }) <- (,) <$> getState <*> liftIO getCurryTime
-                let (mq, cols) = getMsgQueueColumns i ms'
-                wrapSend mq cols $ if isDay curryHour
-                  then T.concat [ "The sundial reads ", showTxt curryHour, ":", formatMins curryMin, "." ]
-                  else "Alas, you'll have to wait for the sun to come out."
+    helper = getStateAndTime >>= \(ms', CurryTime { .. }) ->
+        let (mq, cols) = getMsgQueueColumns i ms'
+        in wrapSend mq cols $ if isDay curryHour
+          then T.concat [ "The sundial reads ", showTxt curryHour, ":", formatMins curryMin, "." ]
+          else "Alas, you'll have to wait for the sun to come out."
 
 
 -- ==================================================

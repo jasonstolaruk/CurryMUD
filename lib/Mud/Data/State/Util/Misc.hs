@@ -35,6 +35,7 @@ module Mud.Data.State.Util.Misc ( addToInv
                                 , getRmActionFun
                                 , getServerSettings
                                 , getState
+                                , getStateAndTime
                                 , getUnusedId
                                 , getVisibleInv
                                 , getVisibleInvCoins
@@ -373,6 +374,13 @@ getServerSettings = asks (view serverSettings)
 
 getState :: HasCallStack => MudStack MudState
 getState = liftIO . readIORef =<< asks (view mudStateIORef)
+
+
+-----
+
+
+getStateAndTime :: HasCallStack => MudStack (MudState, CurryTime)
+getStateAndTime = (,) <$> getState <*> liftIO getCurryTime
 
 
 -----

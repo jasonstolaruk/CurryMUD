@@ -710,7 +710,7 @@ adminDispCmdList p                  = pmf "adminDispCmdList" p
 
 adminExamine :: HasCallStack => ActionFun
 adminExamine p@AdviseNoArgs                     = advise p [ prefixAdminCmd "examine" ] adviceAExamineNoArgs
-adminExamine   (WithArgs i mq cols args@(a:as)) = (,) <$> getState <*> liftIO getCurryTime >>= \(ms, ct) -> do
+adminExamine   (WithArgs i mq cols args@(a:as)) = getStateAndTime >>= \(ms, ct) -> do
     logPlaExecArgs (prefixAdminCmd "examine") args i
     pager i mq Nothing . concatMap (wrapIndent 2 cols) =<< case reads . T.unpack $ a :: [(Int, String)] of
       [(targetId, "")] | targetId < 0                -> unadulterated sorryWtf
