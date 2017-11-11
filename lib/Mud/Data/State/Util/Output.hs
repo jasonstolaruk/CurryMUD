@@ -258,7 +258,7 @@ parseDesig :: HasCallStack => Id -> MudState -> Text -> Text
 parseDesig = parseDesigHelper (const id)
 
 
-parseExpandDesig :: HasCallStack => Id -> MudState -> Text -> Text
+parseExpandDesig :: HasCallStack => Id -> MudState -> Text -> Text -- Tack on a suffix consisting of the ent sing in parens (for example, "the 1st female nymph(Zappy)"). Used in logging.
 parseExpandDesig = parseDesigHelper (\es -> (<> parensQuote es))
 
 

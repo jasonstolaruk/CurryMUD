@@ -53,7 +53,7 @@ data MudState = MudState { _armTbl                 :: ArmTbl
                          , _conTbl                 :: ConTbl
                          , _corpseDecompAsyncTbl   :: CorpseDecompAsyncTbl
                          , _corpseTbl              :: CorpseTbl
-                         , _curryTime              :: CurryTime
+                         , _curryTime              :: CurryTime -- The "getState" function overwrites this field with the current time.
                          , _distinctFoodTbl        :: DistinctFoodTbl
                          , _distinctLiqTbl         :: DistinctLiqTbl
                          , _durationalEffectTbl    :: DurationalEffectTbl
