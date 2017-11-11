@@ -93,7 +93,7 @@ anglePrompt = flip sendPrompt ">"
 
 bcast :: HasCallStack => [Broadcast] -> MudStack ()
 bcast [] = unit
-bcast bs = getState >>= \ms -> liftIO . atomically . forM_ bs . sendBcast $ ms
+bcast bs = liftIO . atomically . forM_ bs . sendBcast =<< getState
   where
     sendBcast ms (msg, is) = mapM_ helper is
       where
@@ -270,11 +270,11 @@ parseDesigHelper f i ms = loop (getIntroduced i ms)
                     = case desig of
                       d@StdDesig { desigEntSing = Just es, .. } ->
                         left                                                              <>
-                        (if es `elem` intros
+                        (if es `elem` intros -- TODO: Handle darkness here...
                            then es
                            else expandEntName i ms d |&| (isPla desigId ms ? f es :? id)) <>
                         loop intros rest
-                      d@StdDesig { desigEntSing = Nothing,  .. } ->
+                      d@StdDesig { desigEntSing = Nothing, .. } ->
                         left <> expandEntName i ms d <> loop intros rest
                       _ -> pmf "parseDesigHelper loop" desig
                     | T.singleton nonStdDesigDelimiter `T.isInfixOf` txt

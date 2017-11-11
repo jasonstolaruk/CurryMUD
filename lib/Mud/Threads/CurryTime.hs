@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings, RecordWildCards #-}
 
-module Mud.Threads.CurryTime ( curryTime
+module Mud.Threads.CurryTime ( notifyTime
                              , threadCurryTime ) where
 
 import           Mud.Data.Misc
@@ -31,23 +31,23 @@ threadCurryTime :: HasCallStack => MudStack ()
 threadCurryTime = handle (threadExHandler Nothing "curry time") $ do
     setThreadType CurryTimeThread
     logNotice "threadCurryTime" "curry time thread started."
-    let loop = sequence_ [ liftIO . delaySecs $ 1, curryTime =<< liftIO getCurryTime ]
+    let loop = sequence_ [ liftIO . delaySecs $ 1, notifyTime =<< liftIO getCurryTime ]
     forever loop `catch` die Nothing "curry time"
 
 
-curryTime :: HasCallStack => CurryTime -> MudStack ()
-curryTime = maybeVoid bcastToOutsideMobs . mkTimeNotification
+notifyTime :: HasCallStack => CurryTime -> MudStack ()
+notifyTime = maybeVoid bcastToOutsideMobs . mkNotification
 
 
 {-
 It's light out from 6:00 to 17:59 (12 hours).
 It's dark out from 18:00 to 5:59 (8 hours).
 -}
-mkTimeNotification :: HasCallStack => CurryTime -> Maybe Text
-mkTimeNotification ct | isHourMin ct 17 45 = helper . thrice prd $ "Very soon now it will be too dark outside to see \
-                                                                   \without aid"
-                      | isHourMin ct 17 15 = helper "You figure there's about 45 minutes of daylight left."
-                      | otherwise          = Nothing
+mkNotification :: HasCallStack => CurryTime -> Maybe Text
+mkNotification ct | isHourMin ct 17 45 = helper . thrice prd $ "Very soon now it will be too dark outside to see \
+                                                               \without aid"
+                  | isHourMin ct 17 15 = helper "You figure there's about 45 minutes of daylight left."
+                  | otherwise          = Nothing
   where
     helper = Just . colorWith timeNotificationColor
 

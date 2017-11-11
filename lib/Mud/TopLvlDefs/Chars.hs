@@ -43,7 +43,7 @@ ansiSGRDelimiter = '\x6D' -- 109
 
 
 -- ============================================================
--- Characters used in the serialization of "PCDesig":
+-- Characters used in the serialization of "Desig":
 
 
 corpseDesigDelimiter, desigDelimiter, stdDesigDelimiter, nonStdDesigDelimiter :: Char

@@ -750,12 +750,12 @@ debugNOP p              = withoutArgs debugNOP p
 
 
 debugNotifyTime :: HasCallStack => ActionFun
-debugNotifyTime (NoArgs' i mq) = do logPlaExec (prefixDebugCmd "notifytime") i
-                                    ct <- liftIO getCurryTime
-                                    curryTime ct { curryHour = 17, curryMin = 15, currySec = 0 }
-                                    curryTime ct { curryHour = 17, curryMin = 45, currySec = 0 }
-                                    ok mq
-debugNotifyTime p              = withoutArgs debugNotifyTime p
+debugNotifyTime (NoArgs' i mq) = liftIO getCurryTime >>= \ct -> do
+    logPlaExec (prefixDebugCmd "notifytime") i
+    notifyTime ct { curryHour = 17, curryMin = 15, currySec = 0 }
+    notifyTime ct { curryHour = 17, curryMin = 45, currySec = 0 }
+    ok mq
+debugNotifyTime p = withoutArgs debugNotifyTime p
 
 
 -----

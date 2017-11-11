@@ -15,7 +15,6 @@ module Mud.Data.Misc ( AOrThe(..)
                      , CmdPriorityAbbrevTxt
                      , Cols
                      , CurryMonth
-                     , CurryTime(..)
                      , CurryWeekday
                      , Day
                      , Desig(..)
@@ -894,28 +893,6 @@ data CurryMonth = DunLun
                 | SunLun
                 | LeafLun
                 | NutLun deriving (Enum, Eq)
-
-
------
-
-
-type Year  = Int
-type Month = Int
-type Week  = Int
-type Day   = Int
-type Hour  = Int
-type Min   = Int
-type Sec   = Int
-
-
-data CurryTime = CurryTime { curryYear       :: Year
-                           , curryMonth      :: Month
-                           , curryWeek       :: Week
-                           , curryDayOfMonth :: Day
-                           , curryDayOfWeek  :: Day
-                           , curryHour       :: Hour
-                           , curryMin        :: Min
-                           , currySec        :: Sec } deriving (Eq, Show)
 
 
 -----

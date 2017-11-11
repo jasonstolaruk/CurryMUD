@@ -10,6 +10,7 @@ import           Mud.Data.State.MudData
 import           Mud.Data.State.Util.Get
 import           Mud.Data.State.Util.Locks
 import           Mud.Data.State.Util.Misc
+import           Mud.Misc.CurryTime
 import           Mud.Misc.EffectFuns
 import           Mud.Misc.FeelingFuns
 import qualified Mud.Misc.Logging as L (logErrorMsg, logNotice)
@@ -64,10 +65,11 @@ logNotice = L.logNotice "Mud.TheWorld.TheWorld"
 
 
 initMudData :: HasCallStack => ServerSettings -> IO MudData
-initMudData s = do [ databaseLock, logLock, persLock ] <- mkLocks
+initMudData s = do ct                                  <- getCurryTime
+                   [ databaseLock, logLock, persLock ] <- mkLocks
                    (errorLogService, noticeLogService) <- loggingHelper logLock
-                   genIO   <- createSystemRandom
-                   start   <- getTime Monotonic
+                   genIO                               <- createSystemRandom
+                   start                               <- getTime Monotonic
                    msIORef <- newIORef MudState { _armTbl                 = IM.empty
                                                 , _chanTbl                = IM.empty
                                                 , _clothTbl               = IM.empty
@@ -75,6 +77,7 @@ initMudData s = do [ databaseLock, logLock, persLock ] <- mkLocks
                                                 , _conTbl                 = IM.empty
                                                 , _corpseDecompAsyncTbl   = IM.empty
                                                 , _corpseTbl              = IM.empty
+                                                , _curryTime              = ct
                                                 , _distinctFoodTbl        = IM.empty
                                                 , _distinctLiqTbl         = IM.empty
                                                 , _durationalEffectTbl    = IM.empty

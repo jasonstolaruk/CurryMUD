@@ -53,6 +53,7 @@ data MudState = MudState { _armTbl                 :: ArmTbl
                          , _conTbl                 :: ConTbl
                          , _corpseDecompAsyncTbl   :: CorpseDecompAsyncTbl
                          , _corpseTbl              :: CorpseTbl
+                         , _curryTime              :: CurryTime
                          , _distinctFoodTbl        :: DistinctFoodTbl
                          , _distinctLiqTbl         :: DistinctLiqTbl
                          , _durationalEffectTbl    :: DurationalEffectTbl
@@ -269,6 +270,28 @@ data Corpse = PCCorpse  { _pcCorpseSing  :: Sing
 
 
 type CorpseDecompAsync = Async ()
+
+
+-- ==================================================
+
+
+data CurryTime = CurryTime { curryYear       :: Year
+                           , curryMonth      :: Month
+                           , curryWeek       :: Week
+                           , curryDayOfMonth :: Day
+                           , curryDayOfWeek  :: Day
+                           , curryHour       :: Hour
+                           , curryMin        :: Min
+                           , currySec        :: Sec } deriving (Eq, Show)
+
+
+type Year  = Int
+type Month = Int
+type Week  = Int
+type Day   = Int
+type Hour  = Int
+type Min   = Int
+type Sec   = Int
 
 
 -- ==================================================

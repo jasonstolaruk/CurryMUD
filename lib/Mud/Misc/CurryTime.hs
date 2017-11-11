@@ -3,6 +3,7 @@
 module Mud.Misc.CurryTime where
 
 import Mud.Data.Misc
+import Mud.Data.State.MudData
 import Mud.Util.Operators
 import Mud.Util.Quoting
 import Mud.Util.Text
@@ -16,7 +17,7 @@ import Prelude hiding (min)
 
 
 initCurryYear :: Year
-initCurryYear = 4171 -- Approximately the same number of seconds in 1600 earth years.
+initCurryYear = 4171 -- Approximately the same number of seconds as 1600 earth years.
 
 
 -- ==================================================
