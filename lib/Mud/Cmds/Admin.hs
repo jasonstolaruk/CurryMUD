@@ -1006,7 +1006,7 @@ examineRm i ms = let r = getRm i ms in [ "Name: "           <> r^.rmName
                                        , "Label: "          <> r^.rmLabel   .to (fromMaybe none)
                                        , "Hooks: "          <> r^.rmHookMap .to hookHelper
                                        , "Room functions: " <> r^.rmFunNames.to (noneOnNull . commas)
-                                       , "Is illuminated: " <> showTxt (isRmIlluminated i ms) ]
+                                       , "Is lit: "         <> showTxt (isRmLit i ms) ]
   where
     descFlags r | r^.rmFlags == zeroBits = none
                 | otherwise              = none -- TODO: Rm flags.

@@ -44,8 +44,9 @@ module Mud.Data.State.Util.Misc ( addToInv
                                 , isKnownLang
                                 , isLitLight
                                 , isLoggedIn
+                                , isMobRmLit
                                 , isPCCorpse
-                                , isRmIlluminated
+                                , isRmLit
                                 , leaveParty
                                 , linkDirToCmdName
                                 , lookupHooks
@@ -454,18 +455,20 @@ isPCCorpse NpcCorpse {} = False
 -----
 
 
-isRmIlluminated :: HasCallStack => Id -> MudState -> Bool
-isRmIlluminated i ms = let env    = view rmEnv . getRm i $ ms
-                           mobIds = filter ((&&) <$> (`hasMobId` ms) <*> f) . getInv i $ ms
-                           f i'   = let g k v = k `elem` [ RHandS, LHandS ] && isLitLight v ms
-                                    in (()!#) . M.filterWithKey g . getEqMap i' $ ms
-                           b      = ()!# mobIds
-                       in case env of InsideUnlitEnv         -> b
-                                      OutsideEnv | day       -> True
-                                                 | otherwise -> b
-                                      _                      -> True
-  where
-    day = ms^.curryTime.to (isDay . curryHour)
+isRmLit :: HasCallStack => Id -> MudState -> Bool
+isRmLit i ms = let env    = view rmEnv . getRm i $ ms
+                   mobIds = filter ((&&) <$> (`hasMobId` ms) <*> f) . getInv i $ ms
+                   f i'   = let g k v = k `elem` [ RHandS, LHandS ] && isLitLight v ms
+                            in (()!#) . M.filterWithKey g . getEqMap i' $ ms
+                   b      = ()!# mobIds
+               in case env of InsideUnlitEnv                                    -> b
+                              OutsideEnv | ms^.curryTime.to (isDay . curryHour) -> True
+                                         | otherwise                            -> b
+                              _                                                 -> True
+
+
+isMobRmLit :: HasCallStack => Id -> MudState -> Bool
+isMobRmLit i ms = isRmLit (getRmId i ms) ms
 
 
 -----
@@ -609,11 +612,11 @@ mkPrettySexRaceLvl i ms = let ((s, r), l) = (mkPrettySexRace `fanUncurry` getLvl
 
 
 mkSerializedNonStdDesig :: HasCallStack => Id -> MudState -> Sing -> AOrThe -> DoOrDon'tCap -> Text
-mkSerializedNonStdDesig i ms s aot (mkCapsFun -> f) = serialize NonStdDesig { dEntSing = s, dDesc = helper }
+mkSerializedNonStdDesig i ms s aot cap = serialize NonStdDesig { dEntSing = s, dDesc = helper, dCap = cap }
   where
     helper | isPla i ms = g . uncurry (|<>|) . mkPrettySexRace i $ ms
            | otherwise  = onFalse (isCapital s) g s
-    g                   = f . (pp aot <>) . spcL
+    g                   = mkCapsFun cap . (pp aot <>) . spcL
 
 
 -----
@@ -621,8 +624,8 @@ mkSerializedNonStdDesig i ms s aot (mkCapsFun -> f) = serialize NonStdDesig { dE
 
 mkStdDesig :: HasCallStack => Id -> MudState -> DoOrDon'tCap -> Desig
 mkStdDesig i ms cap = StdDesig { desigEntSing = Just . getSing i $ ms
-                               , desigCap     = cap
                                , desigEntName = views entName (fromMaybe (mkUnknownPCEntName i ms)) . getEnt i $ ms
+                               , desigCap     = cap
                                , desigId      = i
                                , desigIds     = findMobIds ms . getMobRmInv i $ ms }
 

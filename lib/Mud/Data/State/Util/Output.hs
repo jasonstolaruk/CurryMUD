@@ -60,7 +60,7 @@ import           Mud.Util.Quoting
 import           Mud.Util.Text
 import           Mud.Util.Wrapping
 
-import           Control.Arrow ((***))
+import           Control.Arrow ((***), first)
 import           Control.Concurrent.STM (atomically)
 import           Control.Concurrent.STM.TQueue (writeTQueue)
 import           Control.Lens (each, to, views)
@@ -258,53 +258,63 @@ parseDesig :: HasCallStack => Id -> MudState -> Text -> Text
 parseDesig = parseDesigHelper (const id)
 
 
-parseExpandDesig :: HasCallStack => Id -> MudState -> Text -> Text -- Tack on a suffix consisting of the ent sing in parens (for example, "the 1st female nymph(Zappy)"). Used in logging.
+parseExpandDesig :: HasCallStack => Id -> MudState -> Text -> Text -- Tack on a suffix consisting of the ent sing in parenthesis (for example, "the 1st female nymph(Zappy)"). Used in logging.
 parseExpandDesig = parseDesigHelper (\es -> (<> parensQuote es))
 
 
 parseDesigHelper :: HasCallStack => (Sing -> Text -> Text) -> Id -> MudState -> Text -> Text
-parseDesigHelper f i ms = loop (getIntroduced i ms)
+parseDesigHelper suffixer i ms = loop
   where
-    loop intros txt | T.singleton stdDesigDelimiter `T.isInfixOf` txt
-                    , (left, desig, rest) <- extractDesig stdDesigDelimiter txt
-                    = case desig of
-                      d@StdDesig { desigEntSing = Just es, .. } ->
-                        left                                                              <>
-                        (if es `elem` intros -- TODO: Handle darkness here...
-                           then es
-                           else expandEntName i ms d |&| (isPla desigId ms ? f es :? id)) <>
-                        loop intros rest
-                      d@StdDesig { desigEntSing = Nothing, .. } ->
-                        left <> expandEntName i ms d <> loop intros rest
-                      _ -> pmf "parseDesigHelper loop" desig
-                    | T.singleton nonStdDesigDelimiter `T.isInfixOf` txt
-                    , (left, NonStdDesig { .. }, rest) <- extractDesig nonStdDesigDelimiter txt
-                    = left <> (dEntSing `elem` intros ? dEntSing :? dDesc) <> loop intros rest
-                    | T.singleton corpseDesigDelimiter `T.isInfixOf` txt
-                    , (left, CorpseDesig ci, rest) <- extractDesig corpseDesigDelimiter txt
-                    = left <> mkCorpseAppellation i ms ci <> loop intros rest
-                    | otherwise = txt
-    extractDesig (T.singleton -> c) (T.breakOn c -> (left, T.breakOn c . T.tail -> (desigTxt, T.tail -> rest)))
-      | desig <- deserialize . quoteWith c $ desigTxt :: Desig
-      = (left, desig, rest)
+    loop txt = helper pairs
+      where
+        helper ((delim, expander):xs) | delim `T.isInfixOf` txt = let (left, d, rest) = extractDesig delim txt
+                                                                  in left <> expander i ms d <> loop rest
+                                      | otherwise               = helper xs
+        helper []                                               = txt
+    pairs = [ (stdDesigDelimiter,    expandStdDesig suffixer)
+            , (nonStdDesigDelimiter, expandNonStdDesig      )
+            , (corpseDesigDelimiter, expandCorpseDesig      ) ] |&| map (first T.singleton)
+    extractDesig delim (T.breakOn delim -> (left, T.breakOn delim . T.tail -> (desigTxt, T.tail -> rest))) =
+        (left, deserialize . quoteWith delim $ desigTxt :: Desig, rest)
 
 
-expandEntName :: HasCallStack => Id -> MudState -> Desig -> Text
-expandEntName i ms StdDesig { .. } = let f      = mkCapsFun desigCap
-                                         (h, t) = headTail desigEntName
-                                         s      = getSing desigId ms
-                                     in if isPla desigId ms
-                                       then f . T.concat $ [ the xth, expandSex h, " ", t ]
-                                       else onFalse (isCapital s) (f . the) s
+expandStdDesig :: HasCallStack => (Sing -> Text -> Text) -> Id -> MudState -> Desig -> Text
+expandStdDesig f i ms d@StdDesig { .. }
+  | not . isMobRmLit i $ ms = mkCapsFun desigCap "someone"
+  | otherwise = let intros = getIntroduced i ms
+                in case desigEntSing of Just es -> if es `elem` intros
+                                                     then es
+                                                     else expandEntName i ms d intros |&| (isPla desigId ms ? f es :? id)
+                                        Nothing -> expandEntName i ms d intros
+expandStdDesig _ _ _ d = pmf "expandStdDesig" d
+
+
+expandEntName :: HasCallStack => Id -> MudState -> Desig -> [Sing] -> Text
+expandEntName i ms StdDesig { .. } intros | f      <- mkCapsFun desigCap
+                                          , (h, t) <- headTail desigEntName
+                                          , s      <- getSing desigId ms = if isPla desigId ms
+                                            then f . T.concat $ [ the xth, expandSex h, " ", t ]
+                                            else onFalse (isCapital s) (f . the) s
   where
-    xth = let intros  = getIntroduced i ms
-              idsInRm = filter ((`notElem` intros) . (`getSing` ms)) $ i `delete` desigIds
+    xth = let idsInRm = filter ((`notElem` intros) . (`getSing` ms)) $ i `delete` desigIds
               matches = foldr (\pi -> onTrue (mkUnknownPCEntName pi ms == desigEntName) (pi :)) [] idsInRm
           in length matches > 1 |?| maybeEmp (spcR . mkOrdinal . succ) (elemIndex desigId matches)
     expandSex 'm' = "male"
     expandSex 'f' = "female"
     expandSex x   = pmf "expandEntName expandSex" x
-expandEntName _ _ d = pmf "expandEntName" d
+expandEntName _ _ d _ = pmf "expandEntName" d
+
+
+expandNonStdDesig :: HasCallStack => Id -> MudState -> Desig -> Text
+expandNonStdDesig i ms NonStdDesig { .. }
+  | isMobRmLit i ms = dEntSing `elem` getIntroduced i ms ? dEntSing :? dDesc
+  | otherwise       = mkCapsFun dCap "someone"
+expandNonStdDesig _ _ d = pmf "expandNonStdDesig" d
+
+
+expandCorpseDesig :: HasCallStack => Id -> MudState -> Desig -> Text
+expandCorpseDesig i ms (CorpseDesig ci) = mkCorpseAppellation i ms ci
+expandCorpseDesig _ _  d                = pmf "expandCorpseDesig" d
 
 
 -----

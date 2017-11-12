@@ -1,6 +1,6 @@
 module MudTests.Misc.CurryTime where
 
-import Mud.Data.Misc
+import Mud.Data.State.MudData
 import Mud.Misc.CurryTime
 
 import Test.Tasty.HUnit ((@?=), Assertion)

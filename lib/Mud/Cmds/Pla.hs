@@ -1726,8 +1726,8 @@ intro p@(LowerNub i mq cols as) = getState >>= \ms ->
                          srcMsg      = nlnl msg
                          is          = findMobIds ms ris
                          srcDesig    = StdDesig { desigEntSing = Nothing
-                                                , desigCap     = DoCap
                                                 , desigEntName = mkUnknownPCEntName i ms
+                                                , desigCap     = DoCap
                                                 , desigId      = i
                                                 , desigIds     = is }
                          himHerself  = mkReflexPro . getSex i $ ms

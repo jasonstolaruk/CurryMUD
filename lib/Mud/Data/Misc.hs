@@ -729,7 +729,7 @@ class Serializable a where
 
 instance Serializable Desig where
   serialize StdDesig { .. }
-    | fields <- [ serMaybeText desigEntSing, showTxt desigCap, desigEntName, showTxt desigId, showTxt desigIds ]
+    | fields <- [ serMaybeText desigEntSing, desigEntName, showTxt desigCap, showTxt desigId, showTxt desigIds ]
     = quoteWith sdd . T.intercalate dd $ fields
     where
       serMaybeText Nothing    = ""
@@ -738,6 +738,8 @@ instance Serializable Desig where
   serialize NonStdDesig { .. } = quoteWith nsdd $ do dEntSing
                                                      dd
                                                      dDesc
+                                                     dd
+                                                     showTxt dCap
     where
       (>>)       = (<>)
       (nsdd, dd) = (nonStdDesigDelimiter, desigDelimiter) & both %~ T.singleton
@@ -746,15 +748,15 @@ instance Serializable Desig where
       cdd = T.singleton corpseDesigDelimiter
   deserialize a@(headTail -> (c, T.init -> t))
     | c == stdDesigDelimiter
-    , [ es, cap, en, i, is ] <- T.splitOn dd t
+    , [ es, en, cap, i, is ] <- T.splitOn dd t
     = StdDesig { desigEntSing = deserMaybeText es
-               , desigCap     = read . T.unpack $ cap
                , desigEntName = en
+               , desigCap     = read . T.unpack $ cap
                , desigId      = read . T.unpack $ i
                , desigIds     = read . T.unpack $ is }
     | c == nonStdDesigDelimiter
-    , [ es, nsd ] <- T.splitOn dd t
-    = NonStdDesig { dEntSing = es, dDesc = nsd }
+    , [ es, nsd, cap ] <- T.splitOn dd t
+    = NonStdDesig { dEntSing = es, dDesc = nsd, dCap = read . T.unpack $ cap }
     | c == corpseDesigDelimiter
     = CorpseDesig . read . T.unpack $ t
     | otherwise = pmf "deserialize" a
@@ -911,12 +913,13 @@ data CurryWeekday = SunDay
 
 
 data Desig = StdDesig    { desigEntSing :: Maybe Text
-                         , desigCap     :: DoOrDon'tCap
                          , desigEntName :: Text
+                         , desigCap     :: DoOrDon'tCap -- Whether or not to capitalize "desigEntName" and "someone".
                          , desigId      :: Id
                          , desigIds     :: Inv }
            | NonStdDesig { dEntSing     :: Text -- Expand to the value of "dEntSing" if it's among introduced names. Otherwise, expand to the value of "dDesc".
-                         , dDesc        :: Text }
+                         , dDesc        :: Text
+                         , dCap         :: DoOrDon'tCap } -- Whether or not to capitalize "someone".
            | CorpseDesig Id deriving (Eq, Show)
 
 
