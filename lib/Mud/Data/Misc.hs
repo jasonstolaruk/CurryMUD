@@ -1,8 +1,6 @@
 {-# LANGUAGE DuplicateRecordFields, OverloadedStrings, ParallelListComp, RebindableSyntax, RecordWildCards, ViewPatterns #-}
 
 module Mud.Data.Misc ( AOrThe(..)
-                     , Action(..)
-                     , ActionFun
                      , Amount
                      , Args
                      , BanRecord(..)
@@ -16,7 +14,6 @@ module Mud.Data.Misc ( AOrThe(..)
                      , Cols
                      , CurryMonth
                      , CurryWeekday
-                     , Day
                      , Desig(..)
                      , DoOrDon'tCap(..)
                      , DoOrDon'tQuote(..)
@@ -29,31 +26,26 @@ module Mud.Data.Misc ( AOrThe(..)
                      , ExpCmdFun
                      , ExpCmdName
                      , ExpCmdType(..)
-                     , GenericRes
+                     , FromRol
                      , GetEntsCoinsRes(..)
                      , GetOrDrop(..)
                      , God(..)
-                     , GodName(..)
                      , GodOf(..)
                      , Help(..)
                      , HelpName
-                     , Hour
                      , IdSingTypeDesig(..)
                      , InInvEqRm(..)
-                     , InvOrEq(..)
                      , Index
+                     , InvOrEq(..)
                      , IsOrIsn'tRegex(..)
                      , LastArgIsTargetBindings(..)
                      , LoggedInOrOut(..)
-                     , Min
-                     , Month
                      , MoonPhase(..)
                      , NewCharBundle(..)
-                     , Pretty
+                     , Pretty(..)
                      , PutOrRem(..)
                      , RightOrLeft(..)
-                     , Sec
-                     , Serializable
+                     , Serializable(..)
                      , SetOp(..)
                      , SingleTarget(..)
                      , TelnetCode(..)
@@ -61,17 +53,13 @@ module Mud.Data.Misc ( AOrThe(..)
                      , ToOrFromThePeeped(..)
                      , ToWhom(..)
                      , Verb(..)
-                     , Week
+                     , VerbObj(..)
                      , WhichLog(..)
-                     , Year
-                     , deserialize
                      , fromRol
                      , getEntFlag
                      , getObjFlag
                      , getPlaFlag
                      , getRmFlag
-                     , pp
-                     , serialize
                      , setEntFlag
                      , setObjFlag
                      , setPlaFlag
@@ -1165,6 +1153,12 @@ data ToWhom = Plaに | Npcに
 
 
 data Verb = SndPer | ThrPer deriving Eq
+
+
+-----
+
+
+data VerbObj = VerbObj { verbObjTxt :: Text } -- The object of the verb in command output.
 
 
 -----

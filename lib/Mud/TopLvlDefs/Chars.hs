@@ -43,14 +43,15 @@ ansiSGRDelimiter = '\x6D' -- 109
 
 
 -- ============================================================
--- Characters used in the serialization of "Desig":
+-- Delimiters:
 
 
-corpseDesigDelimiter, desigDelimiter, stdDesigDelimiter, nonStdDesigDelimiter :: Char
+corpseDesigDelimiter, desigDelimiter, nonStdDesigDelimiter, stdDesigDelimiter, verbObjDelimiter  :: Char
 corpseDesigDelimiter = '\128'
-desigDelimiter       = '\129'
+desigDelimiter       = '\129' -- Separates distinct sections of a single serialized desig.
 nonStdDesigDelimiter = '\130'
 stdDesigDelimiter    = '\131'
+verbObjDelimiter     = '\132'
 
 
 -- ==================================================
@@ -58,9 +59,9 @@ stdDesigDelimiter    = '\131'
 
 
 breakMarker, indentFiller, leadingSpaceChar :: Char
-breakMarker      = '\132'
-indentFiller     = '\133'
-leadingSpaceChar = '\134'
+breakMarker      = '\133'
+indentFiller     = '\134'
+leadingSpaceChar = '\135'
 
 
 -- ==================================================
@@ -81,16 +82,16 @@ styleTokenDelimiter = '\\'
 
 
 corpseNameMarker :: Char
-corpseNameMarker = '\135'
+corpseNameMarker = '\136'
 
 
 fromPersonMarker :: Char
-fromPersonMarker = '\136'
+fromPersonMarker = '\137'
 
 
 hookArgDelimiter :: Char
-hookArgDelimiter = '\137'
+hookArgDelimiter = '\138'
 
 
 plaIdDelimiter :: Char
-plaIdDelimiter = '\138'
+plaIdDelimiter = '\139'

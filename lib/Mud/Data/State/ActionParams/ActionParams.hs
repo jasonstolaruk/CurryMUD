@@ -55,11 +55,10 @@ instance Show ActionParams where
   show ActionParams { .. } = showIt (show myId) (show plaCols) (show args)
     where
       showIt i cols = T.unpack . sformat m i cols
-      m = do
-          "ActionParams {myId = "
-          ", plaMsgQueue = elided, plaCols = "
-          ", args = "
-          "}"
+      m = do "ActionParams {myId = "
+             ", plaMsgQueue = elided, plaCols = "
+             ", args = "
+             "}"
       a >> b = a % string % b
 
 
