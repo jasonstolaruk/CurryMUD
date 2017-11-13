@@ -1163,7 +1163,7 @@ data Verb = SndPer | ThrPer deriving Eq
 -----
 
 
-newtype VerbObj = VerbObj { verbObjTxt :: Text } -- The object of the verb in command output.
+newtype VerbObj = VerbObj { verbObjTxt :: Text }
 
 
 -----
