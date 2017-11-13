@@ -161,7 +161,7 @@ regularCmds = map (uncurry4 mkRegularCmd) regularCmdTuples
 
 -- TODO: "buy" and "sell".
 -- TODO: "shout". Consider indoor vs. outdoor. Update the "communication" help topic.
--- TODO: Implement darkness. Spirits can see in the dark.
+-- TODO: Spirits can see in the dark.
 regularCmdTuples :: HasCallStack => [(CmdFullName, ActionFun, Bool, CmdDesc)]
 regularCmdTuples =
     [ ("?",          plaDispCmdList,     True,  cmdDescDispCmdList)
@@ -365,7 +365,7 @@ NPC commands must conform to the following rules:
 * Messages should not be sent to the executor of the command in the form of broadcasts. (Otherwise they will be
 erroneously decorated with "toNpcColor" in the case that the executor is an NPC.)
 * Given the above, "toSelf" messages should be subjected to "parseDesig" (as necessary) before being sent to the
-executor (via "wrapSend" or a related function). Log messages may likewise need to be subjected to "parseDesig",
+executor (via "wrapSend" or a related function). Log messages may likewise need to be subjected to "parseExpandDesig",
 depending on their content.
 * When an NPC executes a command, that NPC's name should be represented as a "Desig" in any broadcasts sent to others.
 -}

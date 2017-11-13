@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults -Wno-redundant-constraints #-}
-{-# LANGUAGE LambdaCase, MultiWayIf, OverloadedStrings, RecordWildCards, TupleSections, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, MultiWayIf, OverloadedStrings, RecordWildCards, ScopedTypeVariables, TupleSections, ViewPatterns #-}
 
 module Mud.Data.State.Util.Output ( anglePrompt
                                   , bcast
@@ -25,6 +25,7 @@ module Mud.Data.State.Util.Output ( anglePrompt
                                   , ok
                                   , parseDesig
                                   , parseExpandDesig
+                                  , parseVerbObj
                                   , retainedMsg
                                   , send
                                   , sendCmdNotFound
@@ -102,7 +103,7 @@ bcast bs = liftIO . atomically . forM_ bs . sendBcast =<< getState
           NpcType -> maybeVoid (writeIt ToNpc) . getPossessor targetId $ ms
           t       -> pmf "bcast sendBcast helper" t
         writeIt f i = let (mq, cols) = getMsgQueueColumns i ms
-                      in writeTQueue mq . f . T.unlines . concatMap (wrap cols) . T.lines . parseDesig i ms $ msg
+                      in writeTQueue mq . f . T.unlines . concatMap (wrap cols) . T.lines . parseVerbObj i ms . parseDesig i ms $ msg -- TODO: Determine where else "parseVerbObj" should be used.
 
 
 -----
@@ -254,10 +255,12 @@ ok mq = send mq . nlnl $ "OK!"
 -----
 
 
-parseDesig :: HasCallStack => Id -> MudState -> Text -> Text
+-- TODO: Spirits can see in the dark.
+parseDesig :: HasCallStack => Id -> MudState -> Text -> Text -- TODO: Possessed NPCs aren't seeing "someone" in place of mob name.
 parseDesig = parseDesigHelper (const id)
 
 
+-- TODO: Can the suffix be applied to "someone"?
 parseExpandDesig :: HasCallStack => Id -> MudState -> Text -> Text -- Tack on a suffix consisting of the ent sing in parenthesis (for example, "the 1st female nymph(Zappy)"). Used in logging.
 parseExpandDesig = parseDesigHelper (\es -> (<> parensQuote es))
 
@@ -267,15 +270,19 @@ parseDesigHelper suffixer i ms = loop
   where
     loop txt = helper pairs
       where
-        helper ((delim, expander):xs) | delim `T.isInfixOf` txt = let (left, d, rest) = extractDesig delim txt
-                                                                  in left <> expander i ms d <> loop rest
+        helper ((delim, expander):xs) | delim `T.isInfixOf` txt
+                                      , (left, d :: Desig, rest) <- extractDelimited delim txt
+                                      = left <> expander i ms d <> loop rest
                                       | otherwise               = helper xs
-        helper []                                               = txt
+        helper []                     = txt
     pairs = [ (stdDesigDelimiter,    expandStdDesig suffixer)
             , (nonStdDesigDelimiter, expandNonStdDesig      )
             , (corpseDesigDelimiter, expandCorpseDesig      ) ] |&| map (first T.singleton)
-    extractDesig delim (T.breakOn delim -> (left, T.breakOn delim . T.tail -> (desigTxt, T.tail -> rest))) =
-        (left, deserialize . quoteWith delim $ desigTxt :: Desig, rest)
+
+
+extractDelimited :: (HasCallStack, Serializable a) => Text -> Text -> (Text, a, Text)
+extractDelimited delim (T.breakOn delim -> (left, T.breakOn delim . T.tail -> (txt, T.tail -> rest))) =
+    (left, deserialize . quoteWith delim $ txt, rest)
 
 
 expandStdDesig :: HasCallStack => (Sing -> Text -> Text) -> Id -> MudState -> Desig -> Text
@@ -315,6 +322,19 @@ expandNonStdDesig _ _ d = pmf "expandNonStdDesig" d
 expandCorpseDesig :: HasCallStack => Id -> MudState -> Desig -> Text
 expandCorpseDesig i ms (CorpseDesig ci) = mkCorpseAppellation i ms ci
 expandCorpseDesig _ _  d                = pmf "expandCorpseDesig" d
+
+
+-----
+
+
+parseVerbObj :: HasCallStack => Id -> MudState -> Text -> Text
+parseVerbObj i ms txt | delim `T.isInfixOf` txt = let (left, vo :: VerbObj, right) = extractDelimited delim txt
+                                                  in left <> expander vo <> right
+                      | otherwise               = txt
+  where
+    expander (VerbObj t) | isMobRmLit i ms = t
+                         | otherwise       = "something"
+    delim = T.singleton verbObjDelimiter
 
 
 -----

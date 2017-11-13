@@ -106,15 +106,15 @@ drinkAct DrinkBundle { .. } = modifyStateSeq f `finally` tweak (mobTbl.ind drink
                                             , " from the "
                                             , drinkVesselSing ]
                d  = mkStdDesig drinkerId ms DoCap
-               bs = pure ( T.concat [ serialize d, " begins drinking from ", renderVesselSing, "." ]
+               bs = pure ( T.concat [ serialize d, " begins drinking from ", serialize . VerbObj $ renderVesselSing, "." ] -- TODO: Continue from here.
                          , drinkerId `delete` desigIds d )
                fs = pure $ sequence_ gs `catch` die (Just drinkerId) (pp Drinking)
                gs = [ multiWrapSend1Nl drinkerMq drinkerCols . dropEmpties $ [ t, drinkLiq^.liqDrinkDesc ]
                     , bcastIfNotIncogNl drinkerId bs
                     , loop 1 ]
            in (ms & mobTbl.ind drinkerId.nowDrinking ?~ (drinkLiq, drinkVesselSing), fs)
-    renderVesselSing    = drinkVesselSing |&| (isJust drinkVesselId ? aOrAn :? the)
-    loop x = do
+    renderVesselSing = drinkVesselSing |&| (isJust drinkVesselId ? aOrAn :? the)
+    loop x           = do
         liftIO . delaySecs $ 1
         now <- liftIO getCurrentTime
         consume drinkerId . pure . StomachCont (Left distId) now $ False

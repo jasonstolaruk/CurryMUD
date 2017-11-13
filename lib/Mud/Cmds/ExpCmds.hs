@@ -26,12 +26,10 @@ import           Mud.Util.Text
 
 import           Control.Arrow (first)
 import           Control.Lens.Operators ((?~), (.~))
-import           Data.Bool (bool)
 import           Data.List ((\\), delete)
 import           Data.Text (Text)
 import           GHC.Stack (HasCallStack)
 import qualified Data.Set as S (Set, filter, foldr, fromList, map, toList)
-import qualified Data.Text as T
 
 
 pmf :: PatternMatchFail
@@ -1083,10 +1081,6 @@ expCmd (ExpCmd ecn ect         desc)   (OneArgNubbed i mq cols target) = case ec
             else wrapSend mq cols sorryNoOneHere
       (x, _) -> wrapSend mq cols . sorryExpCmdInInvEq $ x
 expCmd _ p = advise p [] adviceExpCmdExcessArgs
-
-
-mkSerializedDesig :: HasCallStack => Desig -> Text -> Text
-mkSerializedDesig d toOthers = serialize . bool d { desigCap = Don'tCap } d $ T.head toOthers == '%'
 
 
 expCmdHelper :: HasCallStack => ExpCmdFun

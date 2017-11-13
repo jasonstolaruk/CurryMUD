@@ -754,6 +754,11 @@ instance Serializable Desig where
       dd                 = T.singleton desigDelimiter
 
 
+instance Serializable VerbObj where
+  serialize (VerbObj t) = quoteWith (T.singleton verbObjDelimiter) t
+  deserialize           = VerbObj . T.dropEnd 1 . T.drop 1
+
+
 -- ==================================================
 -- Data types:
 
@@ -1158,7 +1163,7 @@ data Verb = SndPer | ThrPer deriving Eq
 -----
 
 
-data VerbObj = VerbObj { verbObjTxt :: Text } -- The object of the verb in command output.
+newtype VerbObj = VerbObj { verbObjTxt :: Text } -- The object of the verb in command output.
 
 
 -----

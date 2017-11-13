@@ -61,6 +61,7 @@ module Mud.Data.State.Util.Misc ( addToInv
                                 , mkPlaIdSingList
                                 , mkPrettySexRace
                                 , mkPrettySexRaceLvl
+                                , mkSerializedDesig
                                 , mkSerializedNonStdDesig
                                 , mkStdDesig
                                 , mkUnknownPCEntName
@@ -606,6 +607,13 @@ mkPrettySexRace i = (pp *** pp) . getSexRace i
 mkPrettySexRaceLvl :: HasCallStack => Id -> MudState -> (Text, Text, Text)
 mkPrettySexRaceLvl i ms = let ((s, r), l) = (mkPrettySexRace `fanUncurry` getLvl) (i, ms)
                           in (s, r, showTxt l)
+
+
+-----
+
+
+mkSerializedDesig :: HasCallStack => Desig -> Text -> Text
+mkSerializedDesig d toOthers = serialize . bool d { desigCap = Don'tCap } d $ T.head toOthers == '%'
 
 
 -----
