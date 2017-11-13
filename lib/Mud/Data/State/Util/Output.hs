@@ -256,7 +256,7 @@ ok mq = send mq . nlnl $ "OK!"
 
 
 -- TODO: Spirits can see in the dark.
-parseDesig :: HasCallStack => Id -> MudState -> Text -> Text -- TODO: Possessed NPCs aren't seeing "someone" in place of mob name.
+parseDesig :: HasCallStack => Id -> MudState -> Text -> Text -- TODO: Possessed NPCs aren't seeing "someone" in place of mob name. The ID passed in is the admin's ID, not the mob's.
 parseDesig = parseDesigHelper (const id)
 
 
@@ -273,7 +273,7 @@ parseDesigHelper suffixer i ms = loop
         helper ((delim, expander):xs) | delim `T.isInfixOf` txt
                                       , (left, d :: Desig, rest) <- extractDelimited delim txt
                                       = left <> expander i ms d <> loop rest
-                                      | otherwise               = helper xs
+                                      | otherwise = helper xs
         helper []                     = txt
     pairs = [ (stdDesigDelimiter,    expandStdDesig suffixer)
             , (nonStdDesigDelimiter, expandNonStdDesig      )
