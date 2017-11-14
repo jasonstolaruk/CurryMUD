@@ -1050,7 +1050,7 @@ drink p = advise p ["drink"] adviceDrinkExcessArgs
 -----
 
 
-dropAction :: HasCallStack => ActionFun
+dropAction :: HasCallStack => ActionFun -- TODO: Continue from here with "VerbObj".
 dropAction p@AdviseNoArgs     = advise p ["drop"] adviceDropNoArgs
 dropAction p@(LowerNub' i as) = genericAction p helper "drop"
   where

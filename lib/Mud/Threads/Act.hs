@@ -106,13 +106,14 @@ drinkAct DrinkBundle { .. } = modifyStateSeq f `finally` tweak (mobTbl.ind drink
                                             , " from the "
                                             , drinkVesselSing ]
                d  = mkStdDesig drinkerId ms DoCap
-               bs = pure ( T.concat [ serialize d, " begins drinking from ", serialize . VerbObj $ renderVesselSing, "." ] -- TODO: Continue with verb objects from here.
+               bs = pure ( T.concat [ serialize d, " begins drinking from ", mkVerbObj, "." ]
                          , drinkerId `delete` desigIds d )
                fs = pure $ sequence_ gs `catch` die (Just drinkerId) (pp Drinking)
                gs = [ multiWrapSend1Nl drinkerMq drinkerCols . dropEmpties $ [ t, drinkLiq^.liqDrinkDesc ]
                     , bcastIfNotIncogNl drinkerId bs
                     , loop 1 ]
            in (ms & mobTbl.ind drinkerId.nowDrinking ?~ (drinkLiq, drinkVesselSing), fs)
+    mkVerbObj        = serialize . VerbObj $ renderVesselSing
     renderVesselSing = drinkVesselSing |&| (isJust drinkVesselId ? aOrAn :? the)
     loop x           = do
         liftIO . delaySecs $ 1
@@ -128,7 +129,7 @@ drinkAct DrinkBundle { .. } = modifyStateSeq f `finally` tweak (mobTbl.ind drink
             d              = mkStdDesig drinkerId ms DoCap
             bcastHelper b  = bcastIfNotIncogNl drinkerId . pure $ ( T.concat [ serialize d
                                                                              , " finishes drinking from "
-                                                                             , renderVesselSing
+                                                                             , mkVerbObj
                                                                              , b |?| " after draining it dry"
                                                                              , "." ]
                                                                   , drinkerId `delete` desigIds d )
