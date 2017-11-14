@@ -26,10 +26,12 @@ import           Mud.Util.Text
 
 import           Control.Arrow (first)
 import           Control.Lens.Operators ((?~), (.~))
+import           Data.Bool
 import           Data.List ((\\), delete)
-import           Data.Text (Text)
-import           GHC.Stack (HasCallStack)
 import qualified Data.Set as S (Set, filter, foldr, fromList, map, toList)
+import           Data.Text (Text)
+import qualified Data.Text as T
+import           GHC.Stack (HasCallStack)
 
 
 pmf :: PatternMatchFail
@@ -46,7 +48,7 @@ logPlaOut = L.logPlaOut "Mud.Cmds.ExpCmds"
 -- ==================================================
 
 
--- TODO: Distinguish between “visible” and “audible” expressive commands.
+-- TODO: Distinguish between “visible” and “audible” expressive cmds.
 expCmdSet :: HasCallStack => S.Set ExpCmd
 expCmdSet = S.fromList
     [ ExpCmd "admire"       (HasTarget "You admire @."
@@ -1022,8 +1024,10 @@ getExpCmdByName cn = head . S.toList . S.filter (\(ExpCmd cn' _ _) -> cn' == cn)
 
 expCmd :: HasCallStack => ExpCmd -> ActionFun
 expCmd (ExpCmd ecn HasTarget {} _   ) p@NoArgs {}        = advise p [] . sorryExpCmdRequiresTarget $ ecn
-expCmd (ExpCmd ecn ect          desc) (NoArgs i mq cols) = getState >>= \ms@(getRace i -> r) -> case ect of
-  (NoTarget  toSelf toOthers      ) | r `elem` furRaces
+expCmd (ExpCmd ecn ect          desc) (NoArgs i mq cols) = getState >>= \ms -> case ect of
+  (NoTarget  toSelf toOthers      ) | isPla i ms
+                                    , r <- getRace i ms
+                                    , r `elem` furRaces
                                     , ecn == "blush" -> wrapSend mq cols . sorryExpCmdBlush . pp $ r
                                     | otherwise      -> helper ms toSelf toOthers
   (Versatile toSelf toOthers _ _ _)                  -> helper ms toSelf toOthers
@@ -1032,7 +1036,7 @@ expCmd (ExpCmd ecn ect          desc) (NoArgs i mq cols) = getState >>= \ms@(get
     furRaces                  = [ Felinoid, Lagomorph, Vulpenoid ]
     helper ms toSelf toOthers =
         let d                           = mkStdDesig i ms DoCap
-            serialized                  = mkSerializedDesig d toOthers
+            serialized                  = serializeDesigHelper d toOthers
             (heShe, hisHer, himHerself) = mkPros . getSex i $ ms
             substitutions               = [ ("%", serialized), ("^", heShe), ("&", hisHer), ("*", himHerself) ]
             toOthersBcast               = pure (nlnl . replace substitutions $ toOthers, i `delete` desigIds d)
@@ -1063,9 +1067,9 @@ expCmd (ExpCmd ecn ect         desc)   (OneArgNubbed i mq cols target) = case ec
                             tuple         = (toSelf', [ toTargetBcast, toOthersBcast ], desc, logMsg)
                         in expCmdHelper i mq cols ecn tuple
                     mkBindings targetTxt = let msg                         = replace (pure ("@", targetTxt)) toSelf
-                                               toSelf'                     = parseDesig       i ms msg
-                                               logMsg                      = parseExpandDesig i ms msg
-                                               serialized                  = mkSerializedDesig d toOthers
+                                               toSelf'                     = parseInBands       i ms msg
+                                               logMsg                      = parseInBandsSuffix i ms msg
+                                               serialized                  = serializeDesigHelper d toOthers
                                                (heShe, hisHer, himHerself) = mkPros . getSex i $ ms
                                                toOthers'                   = replace substitutions toOthers
                                                substitutions               = [ ("@", targetTxt)
@@ -1090,11 +1094,14 @@ expCmdHelper i mq cols ecn (toSelf, bs, desc, logMsg) = do logPlaOut ecn i . pur
                                                            mobRmDescHelper i desc
 
 
-
 mobRmDescHelper :: HasCallStack => Id -> MobRmDesc -> MudStack ()
 mobRmDescHelper _ Nothing    = unit
 mobRmDescHelper i (Just "" ) = tweak $ mobTbl.ind i.mobRmDesc .~ Nothing
 mobRmDescHelper i (Just txt) = tweak $ mobTbl.ind i.mobRmDesc ?~ txt
+
+
+serializeDesigHelper :: HasCallStack => Desig -> Text -> Text
+serializeDesigHelper d toOthers = serialize . bool d { desigCap = Don'tCap } d $ T.head toOthers == '%'
 
 
 -----

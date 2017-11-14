@@ -578,7 +578,8 @@ getInterp i = view interp . getMob i
 
 
 getIntroduced :: HasCallStack => Id -> MudState -> [Sing]
-getIntroduced = onPC (view introduced) []
+getIntroduced i ms | isNpc i ms = []
+                   | otherwise  = view introduced . getPC i $ ms
 
 
 -----

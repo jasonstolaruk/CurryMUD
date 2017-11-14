@@ -362,11 +362,11 @@ noOfSpiritCmds = length spiritRegularCmdTuples + length spiritPriorityAbbrevCmdT
 
 {-
 NPC commands must conform to the following rules:
-* Messages should not be sent to the executor of the command in the form of broadcasts. (Otherwise they will be
-erroneously decorated with "toNpcColor" in the case that the executor is an NPC.)
-* Given the above, "toSelf" messages should be subjected to "parseDesig" (as necessary) before being sent to the
-executor (via "wrapSend" or a related function). Log messages may likewise need to be subjected to "parseExpandDesig",
-depending on their content.
+* Messages should not be sent to the executor of the command in the form of broadcasts (otherwise they will be
+erroneously decorated with "toNpcColor".)
+* Given the above, "toSelf" messages should be explicitly subjected to "parseInBands" (as necessary) before being sent
+to the executor (via "wrapSend" or a related function). Log messages may likewise need to be subjected to
+"parseInBandsSuffix", depending on their content.
 * When an NPC executes a command, that NPC's name should be represented as a "Desig" in any broadcasts sent to others.
 -}
 
@@ -1155,8 +1155,8 @@ emote   (WithArgs i mq cols as) = getState >>= \ms ->
         mkMyName  isHead = onTrue isHead capitalize . onTrue (isNpc i ms) theOnLower . getSing i $ ms
     in case lefts xformed of
       []      -> let (msg, toOthers, targetIds, toTargetBs) = happyTimes ms xformed
-                     toSelf                                 = parseDesig       i ms msg
-                     logMsg                                 = parseExpandDesig i ms msg
+                     toSelf                                 = parseInBands       i ms msg
+                     logMsg                                 = parseInBandsSuffix i ms msg
                  in do logPlaOut "emote" i . pure $ logMsg
                        wrapSend mq cols toSelf
                        bcastIfNotIncogNl i $ (toOthers, desigIds d \\ (i : targetIds)) : toTargetBs
@@ -1725,19 +1725,19 @@ intro p@(LowerNub i mq cols as) = getState >>= \ms ->
                          logMsg      = prd $ "Introduced to " <> targetSing
                          srcMsg      = nlnl msg
                          is          = findMobIds ms ris
-                         srcDesig    = StdDesig { desigEntSing = Nothing
-                                                , desigEntName = mkUnknownPCEntName i ms
-                                                , desigCap     = DoCap
-                                                , desigId      = i
-                                                , desigIds     = is }
+                         srcDesig    = StdDesig { desigDoExpandSing = False
+                                                , desigEntName      = mkUnknownPCEntName i ms
+                                                , desigCap          = DoCap
+                                                , desigId           = i
+                                                , desigIds          = is }
                          himHerself  = mkReflexPro . getSex i $ ms
-                         targetMsg   = nlnl . T.concat $ [ parseDesig targetId ms . serialize $ srcDesig
+                         targetMsg   = nlnl . T.concat $ [ parseInBands targetId ms . serialize $ srcDesig
                                                          , " introduces "
                                                          , himHerself
                                                          , " to you as "
                                                          , colorWith knownNameColor s
                                                          , "." ]
-                         othersMsg   = nlnl . T.concat $ [ serialize srcDesig { desigEntSing = Just s }
+                         othersMsg   = nlnl . T.concat $ [ serialize srcDesig { desigDoExpandSing = True }
                                                          , " introduces "
                                                          , himHerself
                                                          , " to "
@@ -2060,7 +2060,7 @@ look (NoArgs i mq cols) = getState >>= \ms ->
 look (LowerNub i mq cols as) = mkRndmVector >>= \v ->
     helper v |&| modifyState >=> \(toSelf, bs, hookLogMsg, maybeTargetDesigs, fs) -> do
         ms <- getState
-        let mkLogMsgForDesigs targetDesigs | targetSings <- [ parseExpandDesig i ms . serialize $ targetDesig
+        let mkLogMsgForDesigs targetDesigs | targetSings <- [ parseInBandsSuffix i ms . serialize $ targetDesig
                                                             | targetDesig <- targetDesigs ]
                                            = "looking at " <> commas targetSings
             logMsg = T.intercalate " / " . dropBlanks $ [ maybeEmp mkLogMsgForDesigs maybeTargetDesigs, hookLogMsg ]
@@ -3091,8 +3091,8 @@ sayHelper l p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms ->
                                    , toSelfMsg ))
     sayTo _ msg _ = pmf "sayHelper sayTo" msg
     formatMsg     = dblQuote . capitalizeMsg . punctuateMsg
-    ioHelper ms triple@(x:xs, _, _) | (toSelfs, bs, logMsg) <- triple & _1 .~ parseDesig       i ms x : xs
-                                                                      & _3 %~ parseExpandDesig i ms
+    ioHelper ms triple@(x:xs, _, _) | (toSelfs, bs, logMsg) <- triple & _1 .~ parseInBands       i ms x : xs
+                                                                      & _3 %~ parseInBandsSuffix i ms
                                     = do multiWrapSend mq cols toSelfs
                                          bcastIfNotIncogNl i bs
                                          logMsg |#| logPlaOut (mkCmdNameForLang l) i . pure
@@ -3297,7 +3297,7 @@ showAction p@(Lower i mq cols as) = getState >>= \ms ->
                                logMsg |#| logPla "show" i . (T.concat [ "showing to "
                                                                       , theSing theTarget
                                                                       , ": " ] <>)
-                               multiWrapSend mq cols . dropBlanks $ sorryRmMsg : [ parseDesig i ms msg
+                               multiWrapSend mq cols . dropBlanks $ sorryRmMsg : [ parseInBands i ms msg
                                                                                  | msg <- invToSelfs ++ eqToSelfs ]
                                bcastNl $ invBs ++ eqBs
                        Right _ -> wrapSend mq cols sorryShowExcessTargets
@@ -3547,7 +3547,7 @@ smell p@(OneArgLower i mq cols a) = getState >>= \ms ->
                                                             , targetDesig
                                                             , "." ], desigIds d \\ [ i, targetId ])
                                                 , (serialize d <> " smells you.", pure targetId) ]
-                                  logMsg      = parseExpandDesig i ms . prd $ "smelled " <> targetDesig
+                                  logMsg      = parseInBandsSuffix i ms . prd $ "smelled " <> targetDesig
                                   smellMob    = ioHelper smellDesc bs logMsg
                                   smellCorpse = let corpseBs = map f $ i `delete` desigIds d
                                                       where
@@ -3987,8 +3987,8 @@ whisper p@(WithArgs i mq cols (target:(T.unwords -> rest))) = getState >>= \ms -
                 toOthersBcast = (nl toOthersMsg, desigIds d \\ [ i, targetId ])
             in (ms, (pure toSelfMsg, [ toTargetBcast, toOthersBcast ], toSelfMsg))
     formatMsg = dblQuote . capitalizeMsg . punctuateMsg
-    ioHelper ms triple@(x:xs, _, _) | (toSelfs, bs, logMsg) <- triple & _1 .~ parseDesig       i ms x : xs
-                                                                      & _3 %~ parseExpandDesig i ms
+    ioHelper ms triple@(x:xs, _, _) | (toSelfs, bs, logMsg) <- triple & _1 .~ parseInBands       i ms x : xs
+                                                                      & _3 %~ parseInBandsSuffix i ms
                                     = do logMsg |#| logPlaOut "whisper" i . pure
                                          logMsg |#| alertMsgHelper i "whisper"
                                          multiWrapSend mq cols toSelfs

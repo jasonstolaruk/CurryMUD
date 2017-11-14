@@ -45,10 +45,10 @@ parseTelnet = f ("", [])
                       others  = y : T.unpack codes ++ pure telnetSE
                   in f (msg <> left, td ++ telnets) rest'
           | x `elem` [ telnetWILL, telnetWON'T, telnetDO, telnetDON'T ] =
-              -- It's a 3-byte command (including the IAC).
+              -- It's a 3-byte cmd (including the IAC).
               f (msg <> left, td ++ pure (TCode TelnetIAC) ++ mkTelnetDatas [ x, y ]) rest
           | otherwise =
-              -- It's a 2-byte command (including the IAC).
+              -- It's a 2-byte cmd (including the IAC).
               f (msg <> left, td ++ pure (TCode TelnetIAC) ++ mkTelnetDatas (pure x)) $ y `T.cons` rest
         -- There is a single IAC and nothing else, or an IAC followed by just one byte.
         helper (left, right) | right == T.singleton telnetIAC = (msg <> left, td ++ pure (TCode TelnetIAC))

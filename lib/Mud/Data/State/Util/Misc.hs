@@ -61,7 +61,6 @@ module Mud.Data.State.Util.Misc ( addToInv
                                 , mkPlaIdSingList
                                 , mkPrettySexRace
                                 , mkPrettySexRaceLvl
-                                , mkSerializedDesig
                                 , mkSerializedNonStdDesig
                                 , mkStdDesig
                                 , mkUnknownPCEntName
@@ -612,13 +611,6 @@ mkPrettySexRaceLvl i ms = let ((s, r), l) = (mkPrettySexRace `fanUncurry` getLvl
 -----
 
 
-mkSerializedDesig :: HasCallStack => Desig -> Text -> Text
-mkSerializedDesig d toOthers = serialize . bool d { desigCap = Don'tCap } d $ T.head toOthers == '%'
-
-
------
-
-
 mkSerializedNonStdDesig :: HasCallStack => Id -> MudState -> Sing -> AOrThe -> DoOrDon'tCap -> Text
 mkSerializedNonStdDesig i ms s aot cap = serialize NonStdDesig { dEntSing = s, dDesc = helper, dCap = cap }
   where
@@ -631,11 +623,11 @@ mkSerializedNonStdDesig i ms s aot cap = serialize NonStdDesig { dEntSing = s, d
 
 
 mkStdDesig :: HasCallStack => Id -> MudState -> DoOrDon'tCap -> Desig
-mkStdDesig i ms cap = StdDesig { desigEntSing = Just . getSing i $ ms
-                               , desigEntName = views entName (fromMaybe (mkUnknownPCEntName i ms)) . getEnt i $ ms
-                               , desigCap     = cap
-                               , desigId      = i
-                               , desigIds     = findMobIds ms . getMobRmInv i $ ms }
+mkStdDesig i ms cap = StdDesig { desigDoExpandSing = True
+                               , desigEntName      = views entName (fromMaybe (mkUnknownPCEntName i ms)) . getEnt i $ ms
+                               , desigCap          = cap
+                               , desigId           = i
+                               , desigIds          = findMobIds ms . getMobRmInv i $ ms }
 
 
 -----

@@ -23,9 +23,8 @@ module Mud.Data.State.Util.Output ( anglePrompt
                                   , multiWrapSend
                                   , multiWrapSend1Nl
                                   , ok
-                                  , parseDesig
-                                  , parseExpandDesig
-                                  , parseVerbObj
+                                  , parseInBands
+                                  , parseInBandsSuffix
                                   , retainedMsg
                                   , send
                                   , sendCmdNotFound
@@ -98,12 +97,10 @@ bcast bs = liftIO . atomically . forM_ bs . sendBcast =<< getState
   where
     sendBcast ms (msg, is) = mapM_ helper is
       where
-        helper targetId = case getType targetId ms of
-          PlaType -> writeIt FromServer targetId
-          NpcType -> maybeVoid (writeIt ToNpc) . getPossessor targetId $ ms
-          t       -> pmf "bcast sendBcast helper" t
+        helper targetId | isNpc targetId ms = maybeVoid (writeIt ToNpc) . getPossessor targetId $ ms
+                        | otherwise         = writeIt FromServer targetId
         writeIt f i = let (mq, cols) = getMsgQueueColumns i ms
-                      in writeTQueue mq . f . T.unlines . concatMap (wrap cols) . T.lines . parseVerbObj i ms . parseDesig i ms $ msg -- TODO: Determine where else "parseVerbObj" should be used.
+                      in writeTQueue mq . f . T.unlines . concatMap (wrap cols) . T.lines . parseInBands i ms $ msg
 
 
 -----
@@ -256,17 +253,24 @@ ok mq = send mq . nlnl $ "OK!"
 
 
 -- TODO: Spirits can see in the dark.
-parseDesig :: HasCallStack => Id -> MudState -> Text -> Text -- TODO: Possessed NPCs aren't seeing "someone" in place of mob name. The ID passed in is the admin's ID, not the mob's.
-parseDesig = parseDesigHelper (const id)
+parseInBands :: HasCallStack => Id -> MudState -> Text -> Text
+parseInBands = parseInBandsHelper (const id)
+
+
+parseInBandsSuffix :: HasCallStack => Id -> MudState -> Text -> Text -- Tack on a suffix. Used when logging cmd output.
+parseInBandsSuffix = parseInBandsHelper (\es -> (<> parensQuote es))
+
+
+parseInBandsHelper :: HasCallStack => (Sing -> Text -> Text) -> Id -> MudState -> Text -> Text
+parseInBandsHelper suffixer i ms = parseVerbObj isLit . parseDesig i ms suffixer isLit
+  where
+    isLit = let i' = fromMaybe i . getPossessing i $ ms
+            in isMobRmLit i' ms
 
 
 -- TODO: Can the suffix be applied to "someone"?
-parseExpandDesig :: HasCallStack => Id -> MudState -> Text -> Text -- Tack on a suffix consisting of the ent sing in parenthesis (for example, "the 1st female nymph(Zappy)"). Used in logging.
-parseExpandDesig = parseDesigHelper (\es -> (<> parensQuote es))
-
-
-parseDesigHelper :: HasCallStack => (Sing -> Text -> Text) -> Id -> MudState -> Text -> Text
-parseDesigHelper suffixer i ms = loop
+parseDesig :: HasCallStack => Id -> MudState -> (Sing -> Text -> Text) -> Bool -> Text -> Text
+parseDesig i ms suffixer isLit = loop
   where
     loop txt = helper pairs
       where
@@ -275,9 +279,9 @@ parseDesigHelper suffixer i ms = loop
                                       = left <> expander i ms d <> loop rest
                                       | otherwise = helper xs
         helper []                     = txt
-    pairs = [ (stdDesigDelimiter,    expandStdDesig suffixer)
-            , (nonStdDesigDelimiter, expandNonStdDesig      )
-            , (corpseDesigDelimiter, expandCorpseDesig      ) ] |&| map (first T.singleton)
+    pairs = [ (stdDesigDelimiter,    expandStdDesig suffixer isLit)
+            , (nonStdDesigDelimiter, expandNonStdDesig isLit      )
+            , (corpseDesigDelimiter, expandCorpseDesig            ) ] |&| map (first T.singleton)
 
 
 extractDelimited :: (HasCallStack, Serializable a) => Text -> Text -> (Text, a, Text)
@@ -285,15 +289,16 @@ extractDelimited delim (T.breakOn delim -> (left, T.breakOn delim . T.tail -> (t
     (left, deserialize . quoteWith delim $ txt, rest)
 
 
-expandStdDesig :: HasCallStack => (Sing -> Text -> Text) -> Id -> MudState -> Desig -> Text
-expandStdDesig f i ms d@StdDesig { .. }
-  | not . isMobRmLit i $ ms = mkCapsFun desigCap "someone"
-  | otherwise = let intros = getIntroduced i ms
-                in case desigEntSing of Just es -> if es `elem` intros
-                                                     then es
-                                                     else expandEntName i ms d intros |&| (isPla desigId ms ? f es :? id)
-                                        Nothing -> expandEntName i ms d intros
-expandStdDesig _ _ _ d = pmf "expandStdDesig" d
+expandStdDesig :: HasCallStack => (Sing -> Text -> Text) -> Bool -> Id -> MudState -> Desig -> Text
+expandStdDesig f isLit i ms d@StdDesig { .. }
+  | isLit, desigDoExpandSing = s `elem` intros ? s :? (expanded |&| if isPla desigId ms then f s else id)
+  | isLit                    = expanded
+  | otherwise                = mkCapsFun desigCap "someone"
+  where
+    s        = getSing desigId ms
+    intros   = getIntroduced i ms
+    expanded = expandEntName i ms d intros
+expandStdDesig _ _ _ _ d = pmf "expandStdDesig" d
 
 
 expandEntName :: HasCallStack => Id -> MudState -> Desig -> [Sing] -> Text
@@ -312,11 +317,11 @@ expandEntName i ms StdDesig { .. } intros | f      <- mkCapsFun desigCap
 expandEntName _ _ d _ = pmf "expandEntName" d
 
 
-expandNonStdDesig :: HasCallStack => Id -> MudState -> Desig -> Text
-expandNonStdDesig i ms NonStdDesig { .. }
-  | isMobRmLit i ms = dEntSing `elem` getIntroduced i ms ? dEntSing :? dDesc
-  | otherwise       = mkCapsFun dCap "someone"
-expandNonStdDesig _ _ d = pmf "expandNonStdDesig" d
+expandNonStdDesig :: HasCallStack => Bool -> Id -> MudState -> Desig -> Text
+expandNonStdDesig isLit i ms NonStdDesig { .. }
+  | isLit     = dEntSing `elem` getIntroduced i ms ? dEntSing :? dDesc
+  | otherwise = mkCapsFun dCap "someone"
+expandNonStdDesig _ _ _ d = pmf "expandNonStdDesig" d
 
 
 expandCorpseDesig :: HasCallStack => Id -> MudState -> Desig -> Text
@@ -324,17 +329,14 @@ expandCorpseDesig i ms (CorpseDesig ci) = mkCorpseAppellation i ms ci
 expandCorpseDesig _ _  d                = pmf "expandCorpseDesig" d
 
 
------
-
-
-parseVerbObj :: HasCallStack => Id -> MudState -> Text -> Text
-parseVerbObj i ms txt | delim `T.isInfixOf` txt = let (left, vo :: VerbObj, right) = extractDelimited delim txt
-                                                  in left <> expander vo <> right
-                      | otherwise               = txt
+-- TODO: Apply a suffix?
+parseVerbObj :: HasCallStack => Bool -> Text -> Text
+parseVerbObj isLit txt | delim `T.isInfixOf` txt = let (left, vo :: VerbObj, right) = extractDelimited delim txt
+                                                   in left <> expander vo <> right
+                       | otherwise               = txt
   where
-    expander (VerbObj t) | isMobRmLit i ms = t
-                         | otherwise       = "something"
-    delim = T.singleton verbObjDelimiter
+    expander (VerbObj t) = isLit ? t :? "something"
+    delim                = T.singleton verbObjDelimiter
 
 
 -----

@@ -717,12 +717,10 @@ class Serializable a where
 
 instance Serializable Desig where
   serialize StdDesig { .. }
-    | fields <- [ serMaybeText desigEntSing, desigEntName, showTxt desigCap, showTxt desigId, showTxt desigIds ]
+    | fields <- [ showTxt desigDoExpandSing, desigEntName, showTxt desigCap, showTxt desigId, showTxt desigIds ]
     = quoteWith sdd . T.intercalate dd $ fields
     where
-      serMaybeText Nothing    = ""
-      serMaybeText (Just txt) = txt
-      (sdd, dd)               = (stdDesigDelimiter, desigDelimiter) & both %~ T.singleton
+      (sdd, dd) = (stdDesigDelimiter, desigDelimiter) & both %~ T.singleton
   serialize NonStdDesig { .. } = quoteWith nsdd $ do dEntSing
                                                      dd
                                                      dDesc
@@ -736,12 +734,12 @@ instance Serializable Desig where
       cdd = T.singleton corpseDesigDelimiter
   deserialize a@(headTail -> (c, T.init -> t))
     | c == stdDesigDelimiter
-    , [ es, en, cap, i, is ] <- T.splitOn dd t
-    = StdDesig { desigEntSing = deserMaybeText es
-               , desigEntName = en
-               , desigCap     = read . T.unpack $ cap
-               , desigId      = read . T.unpack $ i
-               , desigIds     = read . T.unpack $ is }
+    , [ b, en, cap, i, is ] <- T.splitOn dd t
+    = StdDesig { desigDoExpandSing = read . T.unpack $ b
+               , desigEntName      = en
+               , desigCap          = read . T.unpack $ cap
+               , desigId           = read . T.unpack $ i
+               , desigIds          = read . T.unpack $ is }
     | c == nonStdDesigDelimiter
     , [ es, nsd, cap ] <- T.splitOn dd t
     = NonStdDesig { dEntSing = es, dDesc = nsd, dCap = read . T.unpack $ cap }
@@ -749,10 +747,7 @@ instance Serializable Desig where
     = CorpseDesig . read . T.unpack $ t
     | otherwise = pmf "deserialize" a
     where
-      deserMaybeText ""  = Nothing
-      deserMaybeText txt = Just txt
-      dd                 = T.singleton desigDelimiter
-
+      dd = T.singleton desigDelimiter
 
 instance Serializable VerbObj where
   serialize (VerbObj t) = quoteWith (T.singleton verbObjDelimiter) t
@@ -905,14 +900,14 @@ data CurryWeekday = SunDay
 -----
 
 
-data Desig = StdDesig    { desigEntSing :: Maybe Text
-                         , desigEntName :: Text
-                         , desigCap     :: DoOrDon'tCap -- Whether or not to capitalize "desigEntName" and "someone".
-                         , desigId      :: Id
-                         , desigIds     :: Inv }
-           | NonStdDesig { dEntSing     :: Text -- Expand to the value of "dEntSing" if it's among introduced names. Otherwise, expand to the value of "dDesc".
-                         , dDesc        :: Text
-                         , dCap         :: DoOrDon'tCap } -- Whether or not to capitalize "someone".
+data Desig = StdDesig    { desigDoExpandSing :: Bool -- The "intro" cmd presents a scenario in which we actually don't want to expand to ent sing.
+                         , desigEntName      :: Text
+                         , desigCap          :: DoOrDon'tCap -- Whether or not to capitalize "desigEntName" and "someone".
+                         , desigId           :: Id
+                         , desigIds          :: Inv }
+           | NonStdDesig { dEntSing          :: Text -- Expand to the value of "dEntSing" if it's among introduced names. Otherwise, expand to the value of "dDesc".
+                         , dDesc             :: Text
+                         , dCap              :: DoOrDon'tCap } -- Whether or not to capitalize "someone".
            | CorpseDesig Id deriving (Eq, Show)
 
 
@@ -1127,7 +1122,7 @@ data TelnetCode = TelnetAYT         -- 246
                 | TelnetEOR         -- 239
                 | TelnetGA          -- 249
                 | TelnetGMCP        -- 201
-                | TelnetIAC         -- 255 Interpret as command
+                | TelnetIAC         -- 255 Interpret as cmd
                 | TelnetIS          -- 0
                 | TelnetNOP         -- 241
                 | TelnetSB          -- 250 Begin subnegotiation

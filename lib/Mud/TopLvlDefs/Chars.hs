@@ -2,7 +2,7 @@ module Mud.TopLvlDefs.Chars where
 
 
 -- ==================================================
--- Command prefixes:
+-- Cmd prefixes:
 
 
 adminCmdChar, debugCmdChar :: Char
@@ -11,7 +11,7 @@ debugCmdChar = '!'
 
 
 -- ==================================================
--- Denotative characters used in commands:
+-- Denotative characters used in cmds:
 
 
 adverbCloseChar, adverbOpenChar, allChar, amountChar, chanTargetChar, emoteChar, emoteNameChar, emoteTargetChar, expCmdChar, indexChar, multiLineEndChar, quoteChar, sayToChar, selectorChar, slotChar :: Char
