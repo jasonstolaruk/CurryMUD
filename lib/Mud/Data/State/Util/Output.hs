@@ -265,10 +265,20 @@ type Suffixer = (Sing -> Text -> Text)
 
 
 parseInBandsHelper :: HasCallStack => Suffixer -> Id -> MudState -> Text -> Text
-parseInBandsHelper suffixer i ms = parseVerbObj isLit . parseDesig i ms suffixer isLit
+parseInBandsHelper suffixer i ms = parseDesig i ms suffixer isLit . parseVerbObj isLit -- Parse verb objects before desigs: a verb object may contain a corpse desig.
   where
-    isLit = let i' = fromMaybe i . getPossessing i $ ms
+    isLit = let i' | isNpc i ms = i
+                   | otherwise  = fromMaybe i . getPossessing i $ ms
             in isMobRmLit i' ms
+
+
+parseVerbObj :: HasCallStack => Bool -> Text -> Text
+parseVerbObj isLit txt | delim `T.isInfixOf` txt = let (left, vo :: VerbObj, right) = extractDelimited delim txt
+                                                   in left <> expander vo <> right
+                       | otherwise               = txt
+  where
+    expander (VerbObj t) = isLit ? t :? "something"
+    delim                = T.singleton verbObjDelimiter
 
 
 parseDesig :: HasCallStack => Id -> MudState -> Suffixer -> Bool -> Text -> Text
@@ -329,15 +339,6 @@ expandNonStdDesig _ _ _ _ d = pmf "expandNonStdDesig" d
 expandCorpseDesig :: HasCallStack => Id -> MudState -> Desig -> Text
 expandCorpseDesig i ms (CorpseDesig ci) = mkCorpseAppellation i ms ci
 expandCorpseDesig _ _  d                = pmf "expandCorpseDesig" d
-
-
-parseVerbObj :: HasCallStack => Bool -> Text -> Text
-parseVerbObj isLit txt | delim `T.isInfixOf` txt = let (left, vo :: VerbObj, right) = extractDelimited delim txt
-                                                   in left <> expander vo <> right
-                       | otherwise               = txt
-  where
-    expander (VerbObj t) = isLit ? t :? "something"
-    delim                = T.singleton verbObjDelimiter
 
 
 -----

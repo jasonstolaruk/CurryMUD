@@ -679,13 +679,13 @@ mkGetDropInvDescs i ms d god (mkName_maybeCorpseId_count_bothList i ms -> tuple)
         (  T.concat [ "You ",               mkGodVerb god SndPer,   " the ", s,          "." ]
         , (T.concat [ serialize d, spaced . mkGodVerb god $ ThrPer, renderMaybeCorpseId, "." ], otherIds) )
       where
-        renderMaybeCorpseId = case mci of (Just ci) -> the . serialize . CorpseDesig $ ci
-                                          Nothing   -> aOrAn s
+        renderMaybeCorpseId = serialize . VerbObj $ case mci of (Just ci) -> the . serialize . CorpseDesig $ ci
+                                                                Nothing   -> aOrAn s
     helper (_, _, c, b) =
-        (  T.concat [ "You ",           mkGodVerb god SndPer, rest ]
-        , (T.concat [ serialize d, " ", mkGodVerb god ThrPer, rest ], otherIds) )
+        (  T.concat [ "You ",           mkGodVerb god SndPer, " ",                       objTxt, "." ]
+        , (T.concat [ serialize d, " ", mkGodVerb god ThrPer, " ", serialize . VerbObj $ objTxt, "." ], otherIds) )
       where
-        rest = prd $ spaced (showTxt c) <> mkPlurFromBoth b
+        objTxt = showTxt c |<>| mkPlurFromBoth b
     otherIds = i `delete` desigIds d
 
 
@@ -862,7 +862,7 @@ mkCanCan'tCoins (Coins (0, 0, g)) n = (Coins (0, 0, n), Coins (0,     0,     g -
 mkCanCan'tCoins c                 _ = pmf "mkCanCan'tCoins" c
 
 
-mkGetDropCoinsDescOthers :: HasCallStack => Id -> Desig -> GetOrDrop -> Coins -> [Broadcast]
+mkGetDropCoinsDescOthers :: HasCallStack => Id -> Desig -> GetOrDrop -> Coins -> [Broadcast] -- TODO: Continue from here with "VerbObj".
 mkGetDropCoinsDescOthers i d god c =
   c |!| [ (T.concat [ serialize d, spaced . mkGodVerb god $ ThrPer, aCoinSomeCoins c, "." ], i `delete` desigIds d) ]
 
