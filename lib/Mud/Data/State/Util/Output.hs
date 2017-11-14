@@ -261,15 +261,17 @@ parseInBandsSuffix :: HasCallStack => Id -> MudState -> Text -> Text -- Tack on 
 parseInBandsSuffix = parseInBandsHelper (\es -> (<> parensQuote es))
 
 
-parseInBandsHelper :: HasCallStack => (Sing -> Text -> Text) -> Id -> MudState -> Text -> Text
+type Suffixer = (Sing -> Text -> Text)
+
+
+parseInBandsHelper :: HasCallStack => Suffixer -> Id -> MudState -> Text -> Text
 parseInBandsHelper suffixer i ms = parseVerbObj isLit . parseDesig i ms suffixer isLit
   where
     isLit = let i' = fromMaybe i . getPossessing i $ ms
             in isMobRmLit i' ms
 
 
--- TODO: Can the suffix be applied to "someone"?
-parseDesig :: HasCallStack => Id -> MudState -> (Sing -> Text -> Text) -> Bool -> Text -> Text
+parseDesig :: HasCallStack => Id -> MudState -> Suffixer -> Bool -> Text -> Text
 parseDesig i ms suffixer isLit = loop
   where
     loop txt = helper pairs
@@ -279,9 +281,9 @@ parseDesig i ms suffixer isLit = loop
                                       = left <> expander i ms d <> loop rest
                                       | otherwise = helper xs
         helper []                     = txt
-    pairs = [ (stdDesigDelimiter,    expandStdDesig suffixer isLit)
-            , (nonStdDesigDelimiter, expandNonStdDesig isLit      )
-            , (corpseDesigDelimiter, expandCorpseDesig            ) ] |&| map (first T.singleton)
+    pairs = [ (stdDesigDelimiter,    expandStdDesig    suffixer isLit)
+            , (nonStdDesigDelimiter, expandNonStdDesig suffixer isLit)
+            , (corpseDesigDelimiter, expandCorpseDesig               ) ] |&| map (first T.singleton)
 
 
 extractDelimited :: (HasCallStack, Serializable a) => Text -> Text -> (Text, a, Text)
@@ -289,11 +291,11 @@ extractDelimited delim (T.breakOn delim -> (left, T.breakOn delim . T.tail -> (t
     (left, deserialize . quoteWith delim $ txt, rest)
 
 
-expandStdDesig :: HasCallStack => (Sing -> Text -> Text) -> Bool -> Id -> MudState -> Desig -> Text
+expandStdDesig :: HasCallStack => Suffixer -> Bool -> Id -> MudState -> Desig -> Text
 expandStdDesig f isLit i ms d@StdDesig { .. }
   | isLit, desigDoExpandSing = s `elem` intros ? s :? (expanded |&| if isPla desigId ms then f s else id)
   | isLit                    = expanded
-  | otherwise                = mkCapsFun desigCap "someone"
+  | otherwise                = f s . mkCapsFun desigCap $ "someone"
   where
     s        = getSing desigId ms
     intros   = getIntroduced i ms
@@ -317,11 +319,11 @@ expandEntName i ms StdDesig { .. } intros | f      <- mkCapsFun desigCap
 expandEntName _ _ d _ = pmf "expandEntName" d
 
 
-expandNonStdDesig :: HasCallStack => Bool -> Id -> MudState -> Desig -> Text
-expandNonStdDesig isLit i ms NonStdDesig { .. }
+expandNonStdDesig :: HasCallStack => Suffixer -> Bool -> Id -> MudState -> Desig -> Text
+expandNonStdDesig f isLit i ms NonStdDesig { .. }
   | isLit     = dEntSing `elem` getIntroduced i ms ? dEntSing :? dDesc
-  | otherwise = mkCapsFun dCap "someone"
-expandNonStdDesig _ _ _ d = pmf "expandNonStdDesig" d
+  | otherwise = f dEntSing . mkCapsFun dCap $ "someone"
+expandNonStdDesig _ _ _ _ d = pmf "expandNonStdDesig" d
 
 
 expandCorpseDesig :: HasCallStack => Id -> MudState -> Desig -> Text
@@ -329,7 +331,6 @@ expandCorpseDesig i ms (CorpseDesig ci) = mkCorpseAppellation i ms ci
 expandCorpseDesig _ _  d                = pmf "expandCorpseDesig" d
 
 
--- TODO: Apply a suffix?
 parseVerbObj :: HasCallStack => Bool -> Text -> Text
 parseVerbObj isLit txt | delim `T.isInfixOf` txt = let (left, vo :: VerbObj, right) = extractDelimited delim txt
                                                    in left <> expander vo <> right
