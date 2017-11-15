@@ -95,12 +95,10 @@ bcast :: HasCallStack => [Broadcast] -> MudStack ()
 bcast [] = unit
 bcast bs = liftIO . atomically . forM_ bs . sendBcast =<< getState
   where
-    sendBcast ms (msg, is) = mapM_ helper is
-      where
-        helper targetId | isNpc targetId ms = maybeVoid (writeIt ToNpc) . getPossessor targetId $ ms
-                        | otherwise         = writeIt FromServer targetId
-        writeIt f i = let (mq, cols) = getMsgQueueColumns i ms
-                      in writeTQueue mq . f . T.unlines . concatMap (wrap cols) . T.lines . parseInBands i ms $ msg
+    sendBcast ms (msg, is) = forM_ is $ \i ->
+        let f g i' | (mq, cols) <- getMsgQueueColumns i' ms
+                   = writeTQueue mq . g . T.unlines . concatMap (wrap cols) . T.lines . parseInBands i ms $ msg
+        in isNpc i ms ? (maybeVoid (f ToNpc) . getPossessor i $ ms) :? f FromServer i
 
 
 -----
@@ -265,11 +263,8 @@ type Suffixer = (Sing -> Text -> Text)
 
 
 parseInBandsHelper :: HasCallStack => Suffixer -> Id -> MudState -> Text -> Text
-parseInBandsHelper suffixer i ms = parseDesig i ms suffixer isLit . parseVerbObj isLit -- Parse verb objects before desigs: a verb object may contain a corpse desig.
-  where
-    isLit = let i' | isNpc i ms = i
-                   | otherwise  = fromMaybe i . getPossessing i $ ms
-            in isMobRmLit i' ms
+parseInBandsHelper suffixer i ms = let isLit = isMobRmLit i ms
+                                   in parseDesig i ms suffixer isLit . parseVerbObj isLit -- Parse verb objects before desigs: a verb object may contain a corpse desig.
 
 
 parseVerbObj :: HasCallStack => Bool -> Text -> Text
