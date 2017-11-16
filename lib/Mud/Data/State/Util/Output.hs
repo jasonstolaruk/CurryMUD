@@ -49,6 +49,7 @@ import           Mud.Data.State.Util.GMCP
 import           Mud.Data.State.Util.Get
 import           Mud.Data.State.Util.Misc
 import           Mud.Misc.ANSI
+import           Mud.Misc.CurryTime
 import           Mud.Misc.Misc
 import           Mud.TopLvlDefs.Chars
 import           Mud.TopLvlDefs.Telnet.Chars
@@ -91,13 +92,17 @@ anglePrompt = flip sendPrompt ">"
 -----
 
 
+-- Because "bcast" calls "parseInBands" with "CurryTime", it should not be used to send a "toSelf" message to the
+-- executor of a cmd in the case that said "toSelf" message contains a serialized "Desig" or "VerbObj".
+-- TODO: Review uses of "bcast".
 bcast :: HasCallStack => [Broadcast] -> MudStack ()
 bcast [] = unit
-bcast bs = liftIO . atomically . forM_ bs . sendBcast =<< getState
+bcast bs = ((,) <$> getState <*> liftIO getCurryTime) >>= \(ms, ct) -> liftIO . atomically . forM_ bs . sendBcast ms $ ct
   where
-    sendBcast ms (msg, is) = forM_ is $ \i ->
+    sendBcast ms ct (msg, is) = forM_ is $ \i ->
         let f g i' | (mq, cols) <- getMsgQueueColumns i' ms
-                   = writeTQueue mq . g . T.unlines . concatMap (wrap cols) . T.lines . parseInBands i ms $ msg
+                   = writeTQueue mq . g . T.unlines . concatMap (wrap cols) . T.lines $ msg'
+            msg'   = parseInBands (Just ct) i ms msg
         in isNpc i ms ? (maybeVoid (f ToNpc) . getPossessor i $ ms) :? f FromServer i
 
 
@@ -251,20 +256,20 @@ ok mq = send mq . nlnl $ "OK!"
 
 
 -- TODO: Spirits can see in the dark.
-parseInBands :: HasCallStack => Id -> MudState -> Text -> Text
+parseInBands :: HasCallStack => Maybe CurryTime -> Id -> MudState -> Text -> Text
 parseInBands = parseInBandsHelper (const id)
 
 
 parseInBandsSuffix :: HasCallStack => Id -> MudState -> Text -> Text -- Tack on a suffix. Used when logging cmd output.
-parseInBandsSuffix = parseInBandsHelper (\es -> (<> parensQuote es))
+parseInBandsSuffix = parseInBandsHelper (\es -> (<> parensQuote es)) Nothing
 
 
 type Suffixer = (Sing -> Text -> Text)
 
 
-parseInBandsHelper :: HasCallStack => Suffixer -> Id -> MudState -> Text -> Text
-parseInBandsHelper suffixer i ms = let isLit = isMobRmLit i ms
-                                   in parseDesig i ms suffixer isLit . parseVerbObj isLit -- Parse verb objects before desigs: a verb object may contain a corpse desig.
+parseInBandsHelper :: HasCallStack => Suffixer -> Maybe CurryTime -> Id -> MudState -> Text -> Text
+parseInBandsHelper suffixer mct i ms = let isLit = maybe True (\ct -> isMobRmLit ct i ms) mct
+                                       in parseDesig i ms suffixer isLit . parseVerbObj isLit -- Parse verb objects before desigs: a verb object may contain a corpse desig.
 
 
 parseVerbObj :: HasCallStack => Bool -> Text -> Text

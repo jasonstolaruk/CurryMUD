@@ -554,7 +554,7 @@ genericAction p helper fn = helper |&| modifyState >=> \(toSelfs, bs, logMsgs) -
 genericActionHelper :: HasCallStack => ActionParams -> Text -> [Text] -> [Broadcast] -> [Text] -> MudStack ()
 genericActionHelper ActionParams { .. } fn toSelfs bs logMsgs = getState >>= \ms -> do
     logMsgs |#| logPlaOut fn myId . map (parseInBandsSuffix myId ms)
-    multiWrapSend plaMsgQueue plaCols [ parseInBands myId ms msg | msg <- toSelfs ]
+    multiWrapSend plaMsgQueue plaCols [ parseInBands Nothing myId ms msg | msg <- toSelfs ]
     bcastIfNotIncogNl myId bs
 
 
@@ -1719,12 +1719,12 @@ mkEqDesc i cols ms descId descSing descType = let descs = bool mkDescsOther mkDe
     mkAux ei = isLitLight ei ms |?| (spcL . parensQuote . colorWith emphasisColor $ "lit")
     noDescs  = wrapUnlines cols $ if
       | descId   == i       -> dudeYou'reNaked
-      | descType == PlaType -> parseInBands i ms $ d  <> " doesn't have anything readied."
-      | otherwise           -> theOnLowerCap descSing <> " doesn't have anything readied."
+      | descType == PlaType -> parseInBands Nothing i ms $ d <> " doesn't have anything readied."
+      | otherwise           -> theOnLowerCap descSing        <> " doesn't have anything readied."
     header = wrapUnlines cols $ if
       | descId   == i       -> "You have readied the following equipment:"
-      | descType == PlaType -> parseInBands i ms $ d  <> " has readied the following equipment:"
-      | otherwise           -> theOnLowerCap descSing <> " has readied the following equipment:"
+      | descType == PlaType -> parseInBands Nothing i ms $ d <> " has readied the following equipment:"
+      | otherwise           -> theOnLowerCap descSing        <> " has readied the following equipment:"
     d = serialize . mkStdDesig descId ms $ DoCap
 
 
@@ -2275,7 +2275,7 @@ shuffleRem i ms d conName icir as invCoinsWithCon@(invWithCon, _) f =
 
 sorryConHelper :: HasCallStack => Id -> MudState -> Id -> Sing -> Text
 sorryConHelper i ms conId conSing
-  | isNpcPla conId ms = sorryCon . parseInBands i ms . serialize . mkStdDesig conId ms $ Don'tCap
+  | isNpcPla conId ms = sorryCon . parseInBands Nothing i ms . serialize . mkStdDesig conId ms $ Don'tCap
   | otherwise         = sorryCon conSing
 
 

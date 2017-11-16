@@ -13,7 +13,9 @@ module Mud.Data.Misc ( AOrThe(..)
                      , CmdPriorityAbbrevTxt
                      , Cols
                      , CurryMonth
+                     , CurryTime(..)
                      , CurryWeekday
+                     , Day
                      , Desig(..)
                      , DoOrDon'tCap(..)
                      , DoOrDon'tQuote(..)
@@ -33,6 +35,7 @@ module Mud.Data.Misc ( AOrThe(..)
                      , GodOf(..)
                      , Help(..)
                      , HelpName
+                     , Hour
                      , IdSingTypeDesig(..)
                      , InInvEqRm(..)
                      , Index
@@ -40,11 +43,14 @@ module Mud.Data.Misc ( AOrThe(..)
                      , IsOrIsn'tRegex(..)
                      , LastArgIsTargetBindings(..)
                      , LoggedInOrOut(..)
+                     , Min
+                     , Month
                      , MoonPhase(..)
                      , NewCharBundle(..)
                      , Pretty(..)
                      , PutOrRem(..)
                      , RightOrLeft(..)
+                     , Sec
                      , Serializable(..)
                      , SetOp(..)
                      , SingleTarget(..)
@@ -54,7 +60,9 @@ module Mud.Data.Misc ( AOrThe(..)
                      , ToWhom(..)
                      , Verb(..)
                      , VerbObj(..)
+                     , Week
                      , WhichLog(..)
+                     , Year
                      , fromRol
                      , getEntFlag
                      , getObjFlag
@@ -883,6 +891,28 @@ data CurryMonth = DunLun
                 | SunLun
                 | LeafLun
                 | NutLun deriving (Enum, Eq)
+
+
+-----
+
+
+type Year  = Int
+type Month = Int
+type Week  = Int
+type Day   = Int
+type Hour  = Int
+type Min   = Int
+type Sec   = Int
+
+
+data CurryTime = CurryTime { curryYear       :: Year
+                           , curryMonth      :: Month
+                           , curryWeek       :: Week
+                           , curryDayOfMonth :: Day
+                           , curryDayOfWeek  :: Day
+                           , curryHour       :: Hour
+                           , curryMin        :: Min
+                           , currySec        :: Sec } deriving (Eq, Show)
 
 
 -----

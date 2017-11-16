@@ -94,17 +94,16 @@ drinkPoolHookName = "AdminZone_iAtrium_drinkPool"
 
 
 drinkPoolHookFun :: HookFun
-drinkPoolHookFun i _ _ a@(as, (ms, _, _, _), _)
-  | fst (calcStomachAvailSize i ms) <= 0 = a & _2._2 <>~ pure sorryFull
-  | db <- DrinkBundle { drinkerId       = i
-                      , drinkerMq       = getMsgQueue i ms
-                      , drinkerCols     = getColumns  i ms
-                      , drinkVesselId   = Nothing
-                      , drinkVesselSing = "pool"
-                      , drinkLiq        = waterLiq
-                      , drinkAmt        = read . T.unpack . head $ as }
-  = a & _1 .~ []
-      & _3 .~ (pure . startAct i Drinking . drinkAct $ db)
+drinkPoolHookFun i _ _ a@(as, (ms, _, _, _), _) | fst (calcStomachAvailSize i ms) <= 0 = a & _2._2 <>~ pure sorryFull
+                                                | db <- DrinkBundle { drinkerId       = i
+                                                                    , drinkerMq       = getMsgQueue i ms
+                                                                    , drinkerCols     = getColumns  i ms
+                                                                    , drinkVesselId   = Nothing
+                                                                    , drinkVesselSing = "pool"
+                                                                    , drinkLiq        = waterLiq
+                                                                    , drinkAmt        = read . T.unpack . head $ as }
+                                                = a & _1 .~ []
+                                                    & _3 .~ (pure . startAct i Drinking . drinkAct $ db)
 
 
 -----

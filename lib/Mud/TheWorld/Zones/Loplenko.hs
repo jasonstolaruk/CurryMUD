@@ -27,9 +27,8 @@ import           Mud.Util.Quoting
 import           Mud.Util.Text
 import           Mud.Util.Wrapping
 
-import           Control.Arrow ((&&&))
 import           Control.Exception.Lifted (try)
-import           Control.Lens (_1, _2, _3, _4, view)
+import           Control.Lens (_1, _2, _3, _4)
 import           Control.Lens.Operators ((.~), (&), (%~), (<>~))
 import           Control.Monad ((>=>))
 import           Control.Monad.IO.Class (liftIO)
@@ -444,6 +443,7 @@ readMoondialHookFun i Hook { .. } _ a@(_, (ms, _, _, _), _) =
       & _2._4 <>~ pure (bracketQuote hookName <> " read moondial")
       & _3    .~  pure (uncurry helper . getMsgQueueColumns i $ ms)
   where
+    -- TODO: If we were to pass in "CurryTime", then perhaps "HookFunRes" wouldn't even need a "Funs"...
     helper mq cols = liftIO getCurryTime >>= \CurryTime { .. } ->
         let f msg = isNight curryHour ? msg :? "Alas, you'll have to wait for the moon to come out."
         in wrapSend mq cols . f $ case getMoonPhaseForDayOfMonth curryDayOfMonth of
@@ -473,13 +473,12 @@ readSundialHookFun i Hook { .. } _ a@(_, (ms, _, _, _), _) =
       & _2._3 <>~ ( let selfDesig = mkStdDesig i ms DoCap
                     in pure (serialize selfDesig <> " reads the sundial.", i `delete` desigIds selfDesig) )
       & _2._4 <>~ pure (bracketQuote hookName <> " read sundial")
-      & _3    .~  pure helper
+      & _3    .~  pure (uncurry helper . getMsgQueueColumns i $ ms)
   where
-    helper = getState >>= \ms' ->
-        let ((mq, cols), CurryTime { curryMin, curryHour }) = (getMsgQueueColumns i &&& view curryTime) ms'
-        in wrapSend mq cols $ if isDay curryHour
-          then T.concat [ "The sundial reads ", showTxt curryHour, ":", formatMins curryMin, "." ]
-          else "Alas, you'll have to wait for the sun to come out."
+    -- TODO: If we were to pass in "CurryTime", then perhaps "HookFunRes" wouldn't even need a "Funs"...
+    helper mq cols = liftIO getCurryTime >>= \CurryTime { .. } -> wrapSend mq cols $ if isDay curryHour
+      then T.concat [ "The sundial reads ", showTxt curryHour, ":", formatMins curryMin, "." ]
+      else "Alas, you'll have to wait for the sun to come out."
 
 
 -- ==================================================

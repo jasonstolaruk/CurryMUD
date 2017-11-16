@@ -723,9 +723,9 @@ adminExamine p = pmf "adminExamine" p
 
 
 examineHelper :: HasCallStack => MudState -> Id -> Text -> IO [Text]
-examineHelper ms targetId regex
-  | (t, isCloth, isHoly) <- ((,,) <$> uncurry getType <*> uncurry getConIsCloth <*> uncurry getVesselIsHoly) (targetId, ms)
-  = helper (pp t) $ case t of
+examineHelper ms targetId regex = getCurryTime >>= \ct ->
+    let (t, isCloth, isHoly) = ((,,) <$> uncurry getType <*> uncurry getConIsCloth <*> uncurry getVesselIsHoly) (targetId, ms)
+    in helper (pp t) $ case t of
       ArmType        -> [ examineEnt, examineObj,   examineArm        ]
       ClothType      -> [ examineEnt, examineObj,   examineCloth      ]
       ConType        -> [ examineEnt, examineObj,   examineInv,   examineCoins, examineCon ] ++ (isCloth |?| pure examineCloth)
@@ -736,7 +736,7 @@ examineHelper ms targetId regex
       NpcType        -> [ examineEnt, examineInv,   examineCoins, examineEqMap, examineMob, examineNpc    ]
       ObjType        -> [ examineEnt, examineObj ]
       PlaType        -> [ examineEnt, examineInv,   examineCoins, examineEqMap, examineMob, examinePC, examinePla, examinePickPts ]
-      RmType         -> [ examineInv, examineCoins, examineRm         ]
+      RmType         -> [ examineInv, examineCoins, examineRm ct      ]
       VesselType     -> [ examineEnt, examineObj,   examineVessel     ] ++ (isHoly |?| pure examineHolySymbol)
       WpnType        -> [ examineEnt, examineObj,   examineWpn        ]
       WritableType   -> [ examineEnt, examineObj,   examineWritable   ]
@@ -994,19 +994,19 @@ examinePla i ms = let p = getPla i ms
     helper = noneOnNull . commas . map (`descSingId` ms)
 
 
-examineRm :: HasCallStack => ExamineHelper
-examineRm i ms = let r = getRm i ms in [ "Name: "           <> r^.rmName
-                                       , "Description: "    <> r^.rmDesc  .to xformNls
-                                       , "Listen: "         <> r^.rmListen.to (fromMaybe none)
-                                       , "Smell: "          <> r^.rmSmell .to (fromMaybe none)
-                                       , "Room flags: "     <> (commas . dropBlanks . descFlags $ r)
-                                       , "Links: "          <> r^.rmLinks   .to (noneOnNull . commas . map linkHelper)
-                                       , "Coordinates: "    <> r^.rmCoords  .to showTxt
-                                       , "Environment: "    <> r^.rmEnv     .to pp
-                                       , "Label: "          <> r^.rmLabel   .to (fromMaybe none)
-                                       , "Hooks: "          <> r^.rmHookMap .to hookHelper
-                                       , "Room functions: " <> r^.rmFunNames.to (noneOnNull . commas)
-                                       , "Is lit: "         <> showTxt (isRmLit i ms) ]
+examineRm :: HasCallStack => CurryTime -> ExamineHelper
+examineRm ct i ms = let r = getRm i ms in [ "Name: "           <> r^.rmName
+                                          , "Description: "    <> r^.rmDesc  .to xformNls
+                                          , "Listen: "         <> r^.rmListen.to (fromMaybe none)
+                                          , "Smell: "          <> r^.rmSmell .to (fromMaybe none)
+                                          , "Room flags: "     <> (commas . dropBlanks . descFlags $ r)
+                                          , "Links: "          <> r^.rmLinks   .to (noneOnNull . commas . map linkHelper)
+                                          , "Coordinates: "    <> r^.rmCoords  .to showTxt
+                                          , "Environment: "    <> r^.rmEnv     .to pp
+                                          , "Label: "          <> r^.rmLabel   .to (fromMaybe none)
+                                          , "Hooks: "          <> r^.rmHookMap .to hookHelper
+                                          , "Room functions: " <> r^.rmFunNames.to (noneOnNull . commas)
+                                          , "Is lit: "         <> showTxt (isRmLit ct i ms) ]
   where
     descFlags r | r^.rmFlags == zeroBits = none
                 | otherwise              = none -- TODO: Rm flags.

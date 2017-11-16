@@ -3,7 +3,6 @@
 module Mud.Misc.CurryTime where
 
 import Mud.Data.Misc
-import Mud.Data.State.MudData
 import Mud.Util.Operators
 import Mud.Util.Quoting
 import Mud.Util.Text

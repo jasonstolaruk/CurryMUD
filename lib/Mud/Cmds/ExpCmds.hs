@@ -1067,8 +1067,8 @@ expCmd (ExpCmd ecn ect         desc)   (OneArgNubbed i mq cols target) = case ec
                             tuple         = (toSelf', [ toTargetBcast, toOthersBcast ], desc, logMsg)
                         in expCmdHelper i mq cols ecn tuple
                     mkBindings targetTxt = let msg                         = replace (pure ("@", targetTxt)) toSelf
-                                               toSelf'                     = parseInBands       i ms msg
-                                               logMsg                      = parseInBandsSuffix i ms msg
+                                               toSelf'                     = parseInBands Nothing i ms msg
+                                               logMsg                      = parseInBandsSuffix   i ms msg
                                                serialized                  = serializeDesigHelper d toOthers
                                                (heShe, hisHer, himHerself) = mkPros . getSex i $ ms
                                                toOthers'                   = replace substitutions toOthers

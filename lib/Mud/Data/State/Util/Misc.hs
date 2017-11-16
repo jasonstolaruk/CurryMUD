@@ -95,7 +95,7 @@ import           Mud.Util.Text
 import           Control.Arrow ((***), (&&&), first)
 import           Control.Concurrent (ThreadId)
 import           Control.Concurrent.Async (asyncThreadId)
-import           Control.Lens (_1, _2, at, both, to, view, views)
+import           Control.Lens (_1, _2, at, both, view, views)
 import           Control.Lens.Operators ((.~), (&), (%~), (^.))
 import           Control.Monad ((>=>), mplus)
 import           Control.Monad.IO.Class (liftIO)
@@ -373,9 +373,7 @@ getServerSettings = asks (view serverSettings)
 
 
 getState :: HasCallStack => MudStack MudState
-getState = do ior      <- asks . view $ mudStateIORef
-              (ms, ct) <- liftIO $ (,) <$> readIORef ior <*> getCurryTime
-              return (ms & curryTime .~ ct)
+getState = liftIO . readIORef =<< asks (view mudStateIORef)
 
 
 -----
@@ -455,20 +453,20 @@ isPCCorpse NpcCorpse {} = False
 -----
 
 
-isRmLit :: HasCallStack => Id -> MudState -> Bool
-isRmLit i ms = let env    = view rmEnv . getRm i $ ms
-                   mobIds = filter ((&&) <$> (`hasMobId` ms) <*> f) . getInv i $ ms
-                   f i'   = let g k v = k `elem` [ RHandS, LHandS ] && isLitLight v ms
-                            in (()!#) . M.filterWithKey g . getEqMap i' $ ms
-                   b      = ()!# mobIds
-               in case env of InsideUnlitEnv                                    -> b
-                              OutsideEnv | ms^.curryTime.to (isDay . curryHour) -> True
-                                         | otherwise                            -> b
-                              _                                                 -> True
+isRmLit :: HasCallStack => CurryTime -> Id -> MudState -> Bool
+isRmLit ct i ms = let env    = view rmEnv . getRm i $ ms
+                      mobIds = filter ((&&) <$> (`hasMobId` ms) <*> f) . getInv i $ ms
+                      f i'   = let g k v = k `elem` [ RHandS, LHandS ] && isLitLight v ms
+                               in (()!#) . M.filterWithKey g . getEqMap i' $ ms
+                      b      = ()!# mobIds
+                  in case env of InsideUnlitEnv                      -> b
+                                 OutsideEnv | isDay . curryHour $ ct -> True
+                                            | otherwise              -> b
+                                 _                                   -> True
 
 
-isMobRmLit :: HasCallStack => Id -> MudState -> Bool
-isMobRmLit i ms = isRmLit (getRmId i ms) ms
+isMobRmLit :: HasCallStack => CurryTime -> Id -> MudState -> Bool
+isMobRmLit ct i ms = isRmLit ct (getRmId i ms) ms
 
 
 -----
@@ -655,7 +653,8 @@ procHooks i ms v cn as | initAcc <- (as, (ms, [], [], []), []) = case lookupHook
           , (dropPrefixes -> a, T.tail -> rest) <- T.breakOn delim arg
           -> case filter (\Hook { hookTriggers } -> a `elem` hookTriggers) hooks of
                []  -> initAcc
-               [h] -> getHookFun (hookName h) ms i h v (initAcc & _1 .~ pure rest)
+               [h] -> let f = getHookFun (hookName h) ms
+                      in f i h v (initAcc & _1 .~ pure rest)
                xs  -> pmf "procHooks" xs
     -- Process hooks whose triggers match on any single argument.
     _ -> let helper acc arg = case filter (\Hook { hookTriggers } -> arg `elem` hookTriggers) hooks of
@@ -666,7 +665,8 @@ procHooks i ms v cn as | initAcc <- (as, (ms, [], [], []), []) = case lookupHook
            []      -> initAcc
            matches ->
              let xformedArgs    = foldr (\Hook { hookTriggers } -> dropSynonyms hookTriggers) as' matches
-                 hookHelper a h = getHookFun (hookName h) (a^._2._1) i h v a
+                 hookHelper a h = let f = getHookFun (hookName h) (a^._2._1)
+                                  in f i h v a
              in foldl' hookHelper (initAcc & _1 .~ xformedArgs) . nub $ matches
 
 

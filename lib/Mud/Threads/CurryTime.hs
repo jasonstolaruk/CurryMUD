@@ -3,6 +3,7 @@
 module Mud.Threads.CurryTime ( notifyTime
                              , threadCurryTime ) where
 
+import           Mud.Data.Misc
 import           Mud.Data.State.MudData
 import           Mud.Data.State.Util.Output
 import           Mud.Misc.ANSI
