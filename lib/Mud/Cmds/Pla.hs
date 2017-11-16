@@ -1687,36 +1687,35 @@ intro (NoArgs i mq cols) = getState >>= \ms -> let intros = getIntroduced i ms i
        in logPlaOut "intro" i (pure introsTxt) >> wrapSend mq cols introsTxt
   else let introsTxt = commas intros in do logPla "intro" i $ "known names: " <> introsTxt
                                            multiWrapSend mq cols [ "You know the following names:", introsTxt ]
-intro p@(LowerNub i mq cols as) = getState >>= \ms ->
+intro p@(LowerNub i mq cols as) = (,) <$> getState <*> liftIO getCurryTime >>= \(ms, ct) ->
     checkActing p ms (Right "introduce yourself") [ Attacking, Drinking, Sacrificing ] $ if isIncognitoId i ms
       then wrapSend mq cols . sorryIncog $ "intro"
-      else helper |&| modifyState >=> \(map fromClassifiedBcast . sort -> bs, logMsgs, intro'dIds) -> do
-        logMsgs |#| logPla "intro" i . slashes
-        bcast bs
-        mapM_ (awardExp 50 (getSing i ms <> " introduced")) intro'dIds
+      else helper ct |&| modifyState >=> \(map fromClassifiedBcast . sort -> bs, logMsgs, intro'dIds) -> do
+          logMsgs |#| logPla "intro" i . slashes
+          bcast bs
+          mapM_ (awardExp 50 (getSing i ms <> " introduced")) intro'dIds
   where
-    helper ms =
+    helper ct ms =
         let (inInvs, inEqs, inRms) = sortArgsInvEqRm InRm as
             sorryInInv = inInvs |!| mkNTB sorryIntroInInv
             sorryInEq  = inEqs  |!| mkNTB sorryIntroInEq
             invCoins@(first (i `delete`) -> invCoins') = getMobRmVisibleInvCoins i ms
             (eiss, ecs) = uncurry (resolveRmInvCoins i ms inRms) invCoins'
             ris         = fst invCoins
-            (pt, cbs,  logMsgs, intro'dIds) = foldl' (helperIntroEitherInv ms ris) (ms^.pcTbl, [], [], []) eiss
-            (    cbs', logMsgs'           ) = foldl' helperIntroEitherCoins        (cbs, logMsgs         ) ecs
+            (pt, cbs,  logMsgs, intro'dIds) = foldl' (helperIntroEitherInv ct ms ris) (ms^.pcTbl, [], [], []) eiss
+            (    cbs', logMsgs'           ) = foldl' helperIntroEitherCoins           (cbs, logMsgs         ) ecs
         in if ()!# invCoins'
           then (ms & pcTbl .~ pt, (sorryInInv ++ sorryInEq ++ cbs', logMsgs', intro'dIds))
           else (ms,               (mkNTB sorryIntroNoOneHere,       [],       []        ))
     mkNTB                                           = mkNTBcast i . nlnl
-    helperIntroEitherInv _  _   a (Left msg       ) = ()# msg ? a :? (a & _2 <>~ mkNTB msg)
-    helperIntroEitherInv ms ris a (Right targetIds) = foldl' tryIntro a targetIds
+    helperIntroEitherInv _  _  _   a (Left msg       ) = ()# msg ? a :? (a & _2 <>~ mkNTB msg)
+    helperIntroEitherInv ct ms ris a (Right targetIds) = foldl' tryIntro a targetIds
       where
         tryIntro a'@(pt, _, _, _) targetId = let targetSing = getSing targetId ms in case getType targetId ms of
           PlaType -> let s           = getSing i ms
                          targetDesig = serialize . mkStdDesig targetId ms $ Don'tCap
-                         msg         = prd $ "You introduce yourself to " <> targetDesig
-                         logMsg      = prd $ "Introduced to " <> targetSing
-                         srcMsg      = nlnl msg
+                         toSelf      = nlnl . prd $ "You introduce yourself to " <> targetDesig
+                         logMsg      = prd $ "introduced to " <> targetSing
                          is          = findMobIds ms ris
                          srcDesig    = StdDesig { desigDoExpandSing = False
                                                 , desigEntName      = mkUnknownPCEntName i ms
@@ -1724,21 +1723,21 @@ intro p@(LowerNub i mq cols as) = getState >>= \ms ->
                                                 , desigId           = i
                                                 , desigIds          = is }
                          himHerself  = mkReflexPro . getSex i $ ms
-                         targetMsg   = nlnl . T.concat $ [ serialize srcDesig -- TODO: Was "parseInBands targetId ms . serialize $ srcDesig", but I don't think we need to parse here...
+                         toTarget    = nlnl . T.concat $ [ parseInBands (Just ct) targetId ms . serialize $ srcDesig -- We need to parse here in order to produce "The 1st" in "The 1st male human introduces himself to you as..."
                                                          , " introduces "
                                                          , himHerself
                                                          , " to you as "
                                                          , colorWith knownNameColor s
                                                          , "." ]
-                         othersMsg   = nlnl . T.concat $ [ serialize srcDesig { desigDoExpandSing = True }
+                         toOthers    = nlnl . T.concat $ [ serialize srcDesig { desigDoExpandSing = True }
                                                          , " introduces "
                                                          , himHerself
                                                          , " to "
                                                          , targetDesig
                                                          , "." ]
-                         cbs         = [ NonTargetBcast (srcMsg,    pure i               )
-                                       , TargetBcast    (targetMsg, pure targetId        )
-                                       , NonTargetBcast (othersMsg, is \\ [ i, targetId ]) ]
+                         cbs         = [ NonTargetBcast (toSelf,   pure i               ) -- TODO: "You introduce yourself to someone."
+                                       , TargetBcast    (toTarget, pure targetId        )
+                                       , NonTargetBcast (toOthers, is \\ [ i, targetId ]) ]
                      in if s `elem` pt^.ind targetId.introduced
                        then let sorry = nlnl . sorryIntroAlready $ targetDesig
                             in a' & _2 <>~ mkNTBcast i sorry
@@ -1983,7 +1982,7 @@ link p@(LowerNub i mq cols as) = getState >>= \ms -> if
                                               , twoWayMsg ]
                 twoWayMsg = isTwoWay |?| " This completes the psionic circuit."
                 isTwoWay  = targetSing `elem` srcLinks
-                logMsg    = T.concat [ "Established a ", oneTwoWay, " link with ", targetSing, "." ]
+                logMsg    = T.concat [ "established a ", oneTwoWay, " link with ", targetSing, "." ]
                 oneTwoWay | isTwoWay  = "two-way"
                           | otherwise = "one-way"
                 targetMsg = nlnl . T.concat $ [ "You sense an ephemeral blip in your psionic energy field as "
@@ -2038,7 +2037,7 @@ listen p = withoutArgs listen p
 -----
 
 
-look :: HasCallStack => ActionFun
+look :: HasCallStack => ActionFun -- TODO: Darkness.
 look (NoArgs i mq cols) = getState >>= \ms ->
     let ri        = getRmId i  ms
         r         = getRm   ri ms
