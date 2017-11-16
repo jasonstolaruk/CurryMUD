@@ -2055,7 +2055,7 @@ look (LowerNub i mq cols as) = mkRndmVector >>= \v ->
         let mkLogMsgForDesigs targetDesigs | targetSings <- [ parseInBandsSuffix i ms . serialize $ targetDesig
                                                             | targetDesig <- targetDesigs ]
                                            = "looking at " <> commas targetSings
-            logMsg = T.intercalate " / " . dropBlanks $ [ maybeEmp mkLogMsgForDesigs maybeTargetDesigs, hookLogMsg ]
+            logMsg = slashes . dropBlanks $ [ maybeEmp mkLogMsgForDesigs maybeTargetDesigs, hookLogMsg ]
         logMsg |#| logPla "look" i . prd
         send mq toSelf
         unless (isSpiritId i ms) . bcastIfNotIncogNl i $ bs
