@@ -92,8 +92,9 @@ anglePrompt = flip sendPrompt ">"
 -----
 
 
--- Because "bcast" calls "parseInBands" with "CurryTime", it should not be used to send a "toSelf" message to the
--- executor of a cmd in the case that said message contains a serialized "Desig" or "VerbObj".
+-- Because "bcast" calls "parseInBands" with "CurryTime", it should not be used to send a message to the executor of a
+-- cmd in the case that said message contains a serialized "Desig". Otherwise, a player whose PC is in the dark would
+-- see a message such as, "You give the loaf of bread to someone."
 -- TODO: Review uses of "bcast".
 bcast :: HasCallStack => [Broadcast] -> MudStack ()
 bcast [] = unit

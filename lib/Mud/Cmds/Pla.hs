@@ -1707,7 +1707,7 @@ intro p@(LowerNub i mq cols as) = (,) <$> getState <*> liftIO getCurryTime >>= \
         in if ()!# invCoins'
           then (ms & pcTbl .~ pt, (sorryInInv ++ sorryInEq ++ cbs', logMsgs', intro'dIds))
           else (ms,               (mkNTB sorryIntroNoOneHere,       [],       []        ))
-    mkNTB                                           = mkNTBcast i . nlnl
+    mkNTB                                              = mkNTBcast i . nlnl
     helperIntroEitherInv _  _  _   a (Left msg       ) = ()# msg ? a :? (a & _2 <>~ mkNTB msg)
     helperIntroEitherInv ct ms ris a (Right targetIds) = foldl' tryIntro a targetIds
       where
@@ -1739,7 +1739,7 @@ intro p@(LowerNub i mq cols as) = (,) <$> getState <*> liftIO getCurryTime >>= \
                                        , TargetBcast    (toTarget, pure targetId        )
                                        , NonTargetBcast (toOthers, is \\ [ i, targetId ]) ]
                      in if s `elem` pt^.ind targetId.introduced
-                       then let sorry = nlnl . sorryIntroAlready $ targetDesig
+                       then let sorry = nlnl . sorryIntroAlready $ targetDesig -- TODO: "You've already introduced yourself to someone."
                             in a' & _2 <>~ mkNTBcast i sorry
                        else a' & _1.ind targetId.introduced %~ (sort . (s :))
                                & _2 <>~ cbs
