@@ -845,7 +845,9 @@ data ChanContext = ChanContext { someCmdName      :: Text
 -----
 
 
--- A means for broadcasts to be sorted based on whether or not they are meant for the target of a cmd. Used by the "intro" cmd.
+-- A means for broadcasts to be sorted such that those messages meant for a single target of a single iteration of a cmd
+-- ("TargetBcast"s) may be dispatched before other messages (those meant for the executor and those meant for others).
+-- Used by the "intro" cmd.
 data ClassifiedBcast = TargetBcast    Broadcast
                      | NonTargetBcast Broadcast deriving Eq
 

@@ -1680,7 +1680,9 @@ hominal = sayHelper HumanLang
 
 -----
 
-
+-- The "intro" cmd uses the "ClassifiedBcast" data type to achieve this effect: when a player introduces himself to more
+-- than one target with a single execution of the cmd, it will appear to each target as if they were the first person to
+-- which the player introduced himself.
 intro :: HasCallStack => ActionFun
 intro (NoArgs i mq cols) = getState >>= \ms -> let intros = getIntroduced i ms in if ()# intros
   then let introsTxt = "No one has introduced themselves to you yet."
@@ -1714,7 +1716,8 @@ intro p@(LowerNub i mq cols as) = (,) <$> getState <*> liftIO getCurryTime >>= \
         tryIntro a'@(pt, _, _, _) targetId = let targetSing = getSing targetId ms in case getType targetId ms of
           PlaType -> let s           = getSing i ms
                          targetDesig = serialize . mkStdDesig targetId ms $ Don'tCap
-                         toSelf      = nlnl . prd $ "You introduce yourself to " <> targetDesig
+                         targetTxt   = parseInBands Nothing i ms targetDesig
+                         toSelf      = nlnl . prd $ "You introduce yourself to " <> targetTxt
                          logMsg      = prd $ "introduced to " <> targetSing
                          is          = findMobIds ms ris
                          srcDesig    = StdDesig { desigDoExpandSing = False
@@ -1735,11 +1738,11 @@ intro p@(LowerNub i mq cols as) = (,) <$> getState <*> liftIO getCurryTime >>= \
                                                          , " to "
                                                          , targetDesig
                                                          , "." ]
-                         cbs         = [ NonTargetBcast (toSelf,   pure i               ) -- TODO: "You introduce yourself to someone."
+                         cbs         = [ NonTargetBcast (toSelf,   pure i               )
                                        , TargetBcast    (toTarget, pure targetId        )
                                        , NonTargetBcast (toOthers, is \\ [ i, targetId ]) ]
                      in if s `elem` pt^.ind targetId.introduced
-                       then let sorry = nlnl . sorryIntroAlready $ targetDesig -- TODO: "You've already introduced yourself to someone."
+                       then let sorry = nlnl . sorryIntroAlready $ targetTxt
                             in a' & _2 <>~ mkNTBcast i sorry
                        else a' & _1.ind targetId.introduced %~ (sort . (s :))
                                & _2 <>~ cbs
