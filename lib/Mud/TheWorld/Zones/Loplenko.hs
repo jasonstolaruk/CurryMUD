@@ -51,7 +51,6 @@ logNotice = L.logNotice "Mud.TheWorld.Zones.Loplenko"
 
 loplenkoHooks :: [(HookName, HookFun)]
 loplenkoHooks = [ (lookBookshelvesHookName,     lookBookshelvesHookFun    )
-                , (lookMoondialHookName,        lookMoondialHookFun       )
                 , (lookSundialHookName,         lookSundialHookFun        )
                 , (readBookCreationHookName,    readBookCreationHookFun   )
                 , (readBookDwarfHookName,       readBookDwarfHookFun      )
@@ -68,7 +67,6 @@ loplenkoHooks = [ (lookBookshelvesHookName,     lookBookshelvesHookFun    )
                 , (readBookRacesHookName,       readBookRacesHookFun      )
                 , (readBookShunfalipmiHookName, readBookShunfalipmiHookFun)
                 , (readBookVulpenoidHookName,   readBookVulpenoidHookFun  )
-                , (readMoondialHookName,        readMoondialHookFun       )
                 , (readSundialHookName,         readSundialHookFun        ) ]
 
 
@@ -103,41 +101,8 @@ lookBookshelvesHookFun i Hook { .. } _ a@(_, (ms, _, _, _), _) =
 -----
 
 
-lookMoondialHook :: Hook
-lookMoondialHook = Hook lookMoondialHookName . pure $ "moondial"
-
-
-lookMoondialHookName :: HookName
-lookMoondialHookName = "Loplenko_iLoplenkoWelcome_lookMoondial"
-
-
-lookMoondialHookFun :: HookFun
-lookMoondialHookFun = mkGenericHookFun (mkDialDesc "moon") "looks at the moondial." "looked at moondial"
-
-
-mkDialDesc :: Text -> Text
-mkDialDesc t = T.concat [ "The "
-                        , t
-                        , "dial is inlaid into a 3-foot-high square base of white marble. Two triangles affixed \
-                          \perpendicular to the "
-                        , t
-                        , "dial's flat plate cast a shadow when the "
-                        , t
-                        , "'s light hits them; the time can be determined based on where that shadow falls on the \
-                          \plate."
-                        , nlTxt
-                        , "You can "
-                        , dblQuote "read"
-                        , " the "
-                        , t
-                        , "dial to tell the time." ]
-
-
------
-
-
 lookSundialHook :: Hook
-lookSundialHook = Hook lookSundialHookName . pure $ "sundial"
+lookSundialHook = Hook lookSundialHookName [ "sundial", "dial", "sun" ]
 
 
 lookSundialHookName :: HookName
@@ -145,7 +110,15 @@ lookSundialHookName = "Loplenko_iLoplenkoWelcome_lookSundial"
 
 
 lookSundialHookFun :: HookFun
-lookSundialHookFun = mkGenericHookFun (mkDialDesc "sun") "looks at the sundial." "looked at sundial"
+lookSundialHookFun = mkGenericHookFun t "looks at the sundial." "looked at sundial"
+  where
+    t = T.concat [ "The sundial is inlaid into a 3-foot-high square base of white marble. A triangle affixed \
+                   \perpendicular to the sundial's flat plate casts a shadow when the sun's light hits it; the time can \
+                   \be determined based on where that shadow falls on the plate."
+                 , nlTxt
+                 , "You can "
+                 , dblQuote "read"
+                 , " the sundial to tell the time." ]
 
 
 -----
@@ -203,7 +176,7 @@ getBookTxt b cols = liftIO (T.readFile =<< mkFilePath) |&| try >=> eitherRet han
 
 
 readBookCreationHook :: Hook
-readBookCreationHook = Hook readBookCreationHookName ["creation"]
+readBookCreationHook = Hook readBookCreationHookName . pure $ "creation"
 
 
 readBookCreationHookName :: HookName
@@ -218,7 +191,7 @@ readBookCreationHookFun = readBookHelper BookCreation
 
 
 readBookDwarfHook :: Hook
-readBookDwarfHook = Hook readBookDwarfHookName ["dwarf"]
+readBookDwarfHook = Hook readBookDwarfHookName . pure $ "dwarf"
 
 
 readBookDwarfHookName :: HookName
@@ -233,7 +206,7 @@ readBookDwarfHookFun = readBookHelper BookDwarf
 
 
 readBookElfHook :: Hook
-readBookElfHook = Hook readBookElfHookName ["elf"]
+readBookElfHook = Hook readBookElfHookName . pure $ "elf"
 
 
 readBookElfHookName :: HookName
@@ -248,7 +221,7 @@ readBookElfHookFun = readBookHelper BookElf
 
 
 readBookFelinoidHook :: Hook
-readBookFelinoidHook = Hook readBookFelinoidHookName ["felinoid"]
+readBookFelinoidHook = Hook readBookFelinoidHookName . pure $ "felinoid"
 
 
 readBookFelinoidHookName :: HookName
@@ -263,7 +236,7 @@ readBookFelinoidHookFun = readBookHelper BookFelinoid
 
 
 readBookHistoryHook :: Hook
-readBookHistoryHook = Hook readBookHistoryHookName ["history"]
+readBookHistoryHook = Hook readBookHistoryHookName . pure $ "history"
 
 
 readBookHistoryHookName :: HookName
@@ -278,7 +251,7 @@ readBookHistoryHookFun = readBookHelper BookHistory
 
 
 readBookHobbitHook :: Hook
-readBookHobbitHook = Hook readBookHobbitHookName ["hobbit"]
+readBookHobbitHook = Hook readBookHobbitHookName . pure $ "hobbit"
 
 
 readBookHobbitHookName :: HookName
@@ -293,7 +266,7 @@ readBookHobbitHookFun = readBookHelper BookHobbit
 
 
 readBookHolyHook :: Hook
-readBookHolyHook = Hook readBookHolyHookName ["holy"]
+readBookHolyHook = Hook readBookHolyHookName . pure $ "holy"
 
 
 readBookHolyHookName :: HookName
@@ -308,7 +281,7 @@ readBookHolyHookFun = readBookHelper BookHoly
 
 
 readBookHumanHook :: Hook
-readBookHumanHook = Hook readBookHumanHookName ["human"]
+readBookHumanHook = Hook readBookHumanHookName . pure $ "human"
 
 
 readBookHumanHookName :: HookName
@@ -323,7 +296,7 @@ readBookHumanHookFun = readBookHelper BookHuman
 
 
 readBookLagomorphHook :: Hook
-readBookLagomorphHook = Hook readBookLagomorphHookName ["lagomorph"]
+readBookLagomorphHook = Hook readBookLagomorphHookName . pure $ "lagomorph"
 
 
 readBookLagomorphHookName :: HookName
@@ -338,7 +311,7 @@ readBookLagomorphHookFun = readBookHelper BookLagomorph
 
 
 readBookLopolwanmiHook :: Hook
-readBookLopolwanmiHook = Hook readBookLopolwanmiHookName ["lopolwanmi"]
+readBookLopolwanmiHook = Hook readBookLopolwanmiHookName . pure $ "lopolwanmi"
 
 
 readBookLopolwanmiHookName :: HookName
@@ -353,7 +326,7 @@ readBookLopolwanmiHookFun = readBookHelper BookLopolwanmi
 
 
 readBookMapsHook :: Hook
-readBookMapsHook = Hook readBookMapsHookName ["maps"]
+readBookMapsHook = Hook readBookMapsHookName . pure $ "maps"
 
 
 readBookMapsHookName :: HookName
@@ -368,7 +341,7 @@ readBookMapsHookFun = readBookHelper BookMaps
 
 
 readBookNymphHook :: Hook
-readBookNymphHook = Hook readBookNymphHookName ["nymph"]
+readBookNymphHook = Hook readBookNymphHookName . pure $ "nymph"
 
 
 readBookNymphHookName :: HookName
@@ -383,7 +356,7 @@ readBookNymphHookFun = readBookHelper BookNymph
 
 
 readBookRacesHook :: Hook
-readBookRacesHook = Hook readBookRacesHookName ["races"]
+readBookRacesHook = Hook readBookRacesHookName . pure $ "races"
 
 
 readBookRacesHookName :: HookName
@@ -398,7 +371,7 @@ readBookRacesHookFun = readBookHelper BookRaces
 
 
 readBookShunfalipmiHook :: Hook
-readBookShunfalipmiHook = Hook readBookShunfalipmiHookName ["shunfalipmi"]
+readBookShunfalipmiHook = Hook readBookShunfalipmiHookName . pure $ "shunfalipmi"
 
 
 readBookShunfalipmiHookName :: HookName
@@ -413,7 +386,7 @@ readBookShunfalipmiHookFun = readBookHelper BookShunfalipmi
 
 
 readBookVulpenoidHook :: Hook
-readBookVulpenoidHook = Hook readBookVulpenoidHookName ["vulpenoid"]
+readBookVulpenoidHook = Hook readBookVulpenoidHookName . pure $ "vulpenoid"
 
 
 readBookVulpenoidHookName :: HookName
@@ -427,39 +400,8 @@ readBookVulpenoidHookFun = readBookHelper BookVulpenoid
 -----
 
 
-readMoondialHook :: Hook
-readMoondialHook = Hook readMoondialHookName . pure $ "moondial"
-
-
-readMoondialHookName :: HookName
-readMoondialHookName = "Loplenko_iLoplenkoWelcome_readMoondial"
-
-
-readMoondialHookFun :: HookFun
-readMoondialHookFun i Hook { .. } _ a@(_, (ms, _, _, _), _) =
-    a & _1    %~  (\\ hookTriggers)
-      & _2._3 <>~ ( let selfDesig = mkStdDesig i ms DoCap
-                    in pure (serialize selfDesig <> " reads the moondial.", i `delete` desigIds selfDesig) )
-      & _2._4 <>~ pure (bracketQuote hookName <> " read moondial")
-      & _3    .~  pure (uncurry helper . getMsgQueueColumns i $ ms)
-  where
-    helper mq cols = liftIO getCurryTime >>= \CurryTime { .. } ->
-        let f msg = isNight curryHour ? msg :? "Alas, you'll have to wait for the moon to come out."
-        in wrapSend mq cols . f $ case getMoonPhaseForDayOfMonth curryDayOfMonth of
-          Just NewMoon -> "On account of the moon being absent from the sky tonight, you can't take a reading off the \
-                          \moondial."
-          _            -> T.concat [ "The moondial reads ", showTxt curryHour, ":", formatMins curryMin, "." ]
-
-
-formatMins :: Min -> Text
-formatMins x = padTwoDigits $ (x `div` 5) * 5
-
-
------
-
-
 readSundialHook :: Hook
-readSundialHook = Hook readSundialHookName . pure $ "sundial"
+readSundialHook = Hook readSundialHookName [ "sundial", "dial", "sun" ]
 
 
 readSundialHookName :: HookName
@@ -475,7 +417,7 @@ readSundialHookFun i Hook { .. } _ a@(_, (ms, _, _, _), _) =
       & _3    .~  pure (uncurry helper . getMsgQueueColumns i $ ms)
   where
     helper mq cols = liftIO getCurryTime >>= \CurryTime { .. } -> wrapSend mq cols $ if isDay curryHour
-      then T.concat [ "The sundial reads ", showTxt curryHour, ":", formatMins curryMin, "." ]
+      then T.concat [ "The sundial reads ", showTxt curryHour, ":", padTwoDigits $ (curryMin `div` 5) * 5, "." ]
       else "Alas, you'll have to wait for the sun to come out."
 
 
@@ -502,7 +444,7 @@ createLoplenko = do
         mempty
         (mkRm (RmTemplate "Welcome to Lop'len-ko"
             "Hello!\n\
-            \A few feet from a sundial stands a similar moondial.\n\
+            \There is a sundial here.\n\
             \There is a trash bin here."
             Nothing
             Nothing
@@ -511,9 +453,9 @@ createLoplenko = do
             (0, 0, 0)
             OutsideEnv
             (Just "Welcome")
-            (M.fromList [ ("look", [ lookSundialHook, lookMoondialHook, lookTrashHook ])
-                        , ("put",  [ putTrashHook                                     ])
-                        , ("read", [ readSundialHook, readMoondialHook                ]) ])
+            (M.fromList [ ("look", [ lookSundialHook, lookTrashHook ])
+                        , ("put",  [ putTrashHook                   ])
+                        , ("read", [ readSundialHook                ]) ])
             [ trashRmAction ]
             []))
   putRm iLibrary

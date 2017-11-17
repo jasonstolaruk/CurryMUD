@@ -300,7 +300,7 @@ lookWallsHookFun = mkGenericHookFun wallsDesc "looks at the walls." "looked at w
 
 
 readLookPaperHook :: Hook
-readLookPaperHook = Hook readLookPaperHookName ["paper"]
+readLookPaperHook = Hook readLookPaperHookName . pure $ "paper"
 
 
 readLookPaperHookName :: HookName
@@ -324,7 +324,7 @@ readLookPaperHookFun i Hook { .. } (V.head -> r) a@(_, (ms, _, _, _), _) =
 
 
 readLookPosterHook :: Hook
-readLookPosterHook = Hook readLookPosterHookName ["poster"]
+readLookPosterHook = Hook readLookPosterHookName . pure $ "poster"
 
 
 readLookPosterHookName :: HookName
@@ -344,7 +344,7 @@ readLookPosterHookFun = mkGenericHookFun posterDesc "reads the poster on the wal
 
 
 readLookSign_iEmptyHook :: Hook
-readLookSign_iEmptyHook = Hook readLookSign_iEmptyHookName ["sign"]
+readLookSign_iEmptyHook = Hook readLookSign_iEmptyHookName . pure $ "sign"
 
 
 readLookSign_iEmptyHookName :: HookName
@@ -364,7 +364,7 @@ readLookSign_iEmptyHookFun = mkGenericHookFun signDesc "reads the sign on the wa
 
 
 readLookSign_iLoungeEntranceHook :: Hook
-readLookSign_iLoungeEntranceHook = Hook readLookSign_iLoungeEntranceHookName ["sign"]
+readLookSign_iLoungeEntranceHook = Hook readLookSign_iLoungeEntranceHookName . pure $ "sign"
 
 
 readLookSign_iLoungeEntranceHookName :: HookName
@@ -381,7 +381,7 @@ readLookSign_iLoungeEntranceHookFun = mkGenericHookFun signDesc "reads the sign 
 
 
 readLookSign_iTutEntranceHook :: Hook
-readLookSign_iTutEntranceHook = Hook readLookSign_iTutEntranceHookName ["sign"]
+readLookSign_iTutEntranceHook = Hook readLookSign_iTutEntranceHookName . pure $ "sign"
 
 
 readLookSign_iTutEntranceHookName :: HookName
