@@ -2100,7 +2100,7 @@ look (LowerNub i mq cols as) = mkRndmVector >>= \v ->
                 let targetId = desigId targetDesig
                     toTarget = (nl $ selfDesig' <> " looks at you.", pure targetId)
                     toOthers = ( nl . T.concat $ [ selfDesig', " looks at ", serialize targetDesig, "." ]
-                               , targetId `delete` is)
+                               , targetId `delete` is )
                 in toTarget : toOthers : acc
         in (invDesc <> coinsDesc, foldr mkBsForTarget [] targetDesigs, targetDesigs |!| Just targetDesigs)
     helperLookEitherInv _  (Left  msg ) = wrapUnlinesNl cols msg
