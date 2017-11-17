@@ -49,7 +49,6 @@ import           Mud.Data.State.Util.GMCP
 import           Mud.Data.State.Util.Get
 import           Mud.Data.State.Util.Misc
 import           Mud.Misc.ANSI
-import           Mud.Misc.CurryTime
 import           Mud.Misc.Misc
 import           Mud.TopLvlDefs.Chars
 import           Mud.TopLvlDefs.Telnet.Chars
@@ -98,7 +97,7 @@ anglePrompt = flip sendPrompt ">"
 -- TODO: Review uses of "bcast".
 bcast :: HasCallStack => [Broadcast] -> MudStack ()
 bcast [] = unit
-bcast bs = ((,) <$> getState <*> liftIO getCurryTime) >>= \(ms, ct) -> liftIO . atomically . forM_ bs . sendBcast ms $ ct
+bcast bs = getStateTime >>= \(ms, ct) -> liftIO . atomically . forM_ bs . sendBcast ms $ ct
   where
     sendBcast ms ct (msg, is) = forM_ is $ \i ->
         let f g i' | (mq, cols) <- getMsgQueueColumns i' ms

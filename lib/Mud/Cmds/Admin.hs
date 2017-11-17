@@ -710,20 +710,20 @@ adminDispCmdList p                  = pmf "adminDispCmdList" p
 
 adminExamine :: HasCallStack => ActionFun
 adminExamine p@AdviseNoArgs                     = advise p [ prefixAdminCmd "examine" ] adviceAExamineNoArgs
-adminExamine   (WithArgs i mq cols args@(a:as)) = getState >>= \ms -> do
+adminExamine   (WithArgs i mq cols args@(a:as)) = getStateTime >>= \(ms, ct) -> do
     logPlaExecArgs (prefixAdminCmd "examine") args i
     pager i mq Nothing . concatMap (wrapIndent 2 cols) =<< case reads . T.unpack $ a :: [(Int, String)] of
       [(targetId, "")] | targetId < 0                -> unadulterated sorryWtf
                        | not . hasType targetId $ ms -> sorry
-                       | otherwise                   -> liftIO . examineHelper ms targetId . T.unwords $ as
+                       | otherwise                   -> liftIO . examineHelper ms ct targetId . T.unwords $ as
       _                                              -> sorry
       where
         sorry = unadulterated . sorryParseId $ a
 adminExamine p = pmf "adminExamine" p
 
 
-examineHelper :: HasCallStack => MudState -> Id -> Text -> IO [Text]
-examineHelper ms targetId regex = getCurryTime >>= \ct ->
+examineHelper :: HasCallStack => MudState -> CurryTime -> Id -> Text -> IO [Text]
+examineHelper ms ct targetId regex =
     let (t, isCloth, isHoly) = ((,,) <$> uncurry getType <*> uncurry getConIsCloth <*> uncurry getVesselIsHoly) (targetId, ms)
     in helper (pp t) $ case t of
       ArmType        -> [ examineEnt, examineObj,   examineArm        ]

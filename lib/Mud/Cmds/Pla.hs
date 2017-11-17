@@ -1689,7 +1689,7 @@ intro (NoArgs i mq cols) = getState >>= \ms -> let intros = getIntroduced i ms i
        in logPlaOut "intro" i (pure introsTxt) >> wrapSend mq cols introsTxt
   else let introsTxt = commas intros in do logPla "intro" i $ "known names: " <> introsTxt
                                            multiWrapSend mq cols [ "You know the following names:", introsTxt ]
-intro p@(LowerNub i mq cols as) = (,) <$> getState <*> liftIO getCurryTime >>= \(ms, ct) ->
+intro p@(LowerNub i mq cols as) = getStateTime >>= \(ms, ct) ->
     checkActing p ms (Right "introduce yourself") [ Attacking, Drinking, Sacrificing ] $ if isIncognitoId i ms
       then wrapSend mq cols . sorryIncog $ "intro"
       else helper ct |&| modifyState >=> \(map fromClassifiedBcast . sort -> bs, logMsgs, intro'dIds) -> do
