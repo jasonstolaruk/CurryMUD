@@ -53,6 +53,10 @@ corpseSmellLvl3 = "The multifaceted odor is truly putrid."
 corpseSmellLvl4 = ((<>) <$> ("Oh my" |&|) <*> (" so rank, so sickeningly sweet" |&|)) (thrice prd)
 
 
+darkMsg :: Text
+darkMsg = "It's too dark to make out much at all."
+
+
 dbEmptyMsg :: Text
 dbEmptyMsg = "The database is empty."
 

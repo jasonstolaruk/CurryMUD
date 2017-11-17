@@ -11,6 +11,7 @@ module Mud.Cmds.Util.Pla ( InvWithCon
                          , armSubToSlot
                          , bugTypoLogger
                          , checkActing
+                         , checkDark
                          , checkMutuallyTuned
                          , checkSlotSmellTaste
                          , clothToSlot
@@ -222,7 +223,7 @@ alertMsgHelper i cn txt = getState >>= \ms -> if isAdminId i ms
 -----
 
 
-armSubToSlot :: ArmSub -> Slot
+armSubToSlot :: HasCallStack => ArmSub -> Slot
 armSubToSlot = \case Head      -> HeadS
                      Torso     -> TorsoS
                      Arms      -> ArmsS
@@ -260,7 +261,7 @@ checkActing (ActionParams i mq cols _) ms attempting ngActs f =
     maybe f (wrapSend mq cols) . checkActingHelper i ms attempting $ ngActs
 
 
-checkActingHelper :: Id -> MudState -> Either ActType Text -> [ActType] -> Maybe Text
+checkActingHelper :: HasCallStack => Id -> MudState -> Either ActType Text -> [ActType] -> Maybe Text
 checkActingHelper i ms attempting ngActs = case filter (`M.member` getActMap i ms) ngActs of
   []                -> Nothing
   matches@(match:_) ->
@@ -273,8 +274,15 @@ checkActingHelper i ms attempting ngActs = case filter (`M.member` getActMap i m
       in Just . either f (`sorryActing` match) $ attempting
 
 
-genericCheckActing :: Id -> MudState -> Either ActType Text -> [ActType] -> GenericRes -> GenericRes
+genericCheckActing :: HasCallStack => Id -> MudState -> Either ActType Text -> [ActType] -> GenericRes -> GenericRes
 genericCheckActing i ms attempting ngActs a = maybe a (genericSorry ms) . checkActingHelper i ms attempting $ ngActs
+
+
+-----
+
+
+checkDark :: HasCallStack => ActionParams -> Fun -> MudStack ()
+checkDark (ActionParams i mq cols _) f = getStateTime >>= \(ms, ct) -> isMobRmLit ct i ms ? f :? wrapSend mq cols darkMsg
 
 
 -----
@@ -290,13 +298,13 @@ checkMutuallyTuned i ms targetSing = case areMutuallyTuned of
                      , a <- (M.! targetSing) . getTeleLinkTbl i        $ ms
                      , b <- (M.! s         ) . getTeleLinkTbl targetId $ ms
                      = (a, b, targetId)
-    s                = getSing i ms
+    s = getSing i ms
 
 
 -----
 
 
-checkSlotSmellTaste :: Sing -> Slot -> Maybe Text
+checkSlotSmellTaste :: HasCallStack => Sing -> Slot -> Maybe Text
 checkSlotSmellTaste s slot | slot `elem` ngSlots = Just . sorrySmellTasteSlot $ s
                            | otherwise           = Nothing
   where
@@ -306,7 +314,7 @@ checkSlotSmellTaste s slot | slot `elem` ngSlots = Just . sorrySmellTasteSlot $ 
 -----
 
 
-clothToSlot :: Cloth -> Slot
+clothToSlot :: HasCallStack => Cloth -> Slot
 clothToSlot = \case Shirt    -> ShirtS
                     Smock    -> SmockS
                     Coat     -> CoatS
@@ -570,11 +578,11 @@ genericActionWithFuns p helper fn = mkRndmVector >>= \v ->
 -----
 
 
-genericSorry :: MudState -> Text -> GenericRes
+genericSorry :: HasCallStack => MudState -> Text -> GenericRes
 genericSorry ms = (ms, ) . (, [], []) . pure
 
 
-genericSorryWithFuns :: MudState -> Text -> GenericResWithFuns
+genericSorryWithFuns :: HasCallStack => MudState -> Text -> GenericResWithFuns
 genericSorryWithFuns ms = (ms, ) . (, [], [], []) . pure
 
 
@@ -689,7 +697,7 @@ mkGetDropInvDescs i ms d god (mkName_maybeCorpseId_count_bothList i ms -> tuple)
     otherIds = i `delete` desigIds d
 
 
-mkGodVerb :: GetOrDrop -> Verb -> Text
+mkGodVerb :: HasCallStack => GetOrDrop -> Verb -> Text
 mkGodVerb Get  SndPer = "pick up"
 mkGodVerb Get  ThrPer = "picks up"
 mkGodVerb Drop SndPer = "drop"
@@ -855,7 +863,7 @@ partitionCoinsHelper calcMax calcCurr factor i ms coins = let maxAmt    = calcMa
                                                                  in mkCanCan'tCoins coins canNoOfCoins
 
 
-mkCanCan'tCoins :: Coins -> Int -> (Coins, Coins)
+mkCanCan'tCoins :: HasCallStack => Coins -> Int -> (Coins, Coins)
 mkCanCan'tCoins (Coins (c, 0, 0)) n = (Coins (n, 0, 0), Coins (c - n, 0,     0    ))
 mkCanCan'tCoins (Coins (0, s, 0)) n = (Coins (0, n, 0), Coins (0,     s - n, 0    ))
 mkCanCan'tCoins (Coins (0, 0, g)) n = (Coins (0, 0, n), Coins (0,     0,     g - n))
@@ -1101,7 +1109,7 @@ mkPutRemCoinsDescsSelf por mnom mci conSing = mkCoinsMsgs helper
     partB                = prd $ mkPorPrep por SndPer mnom mci conSing <> onTheGround mnom
 
 
-mkPorVerb :: PutOrRem -> Verb -> Text
+mkPorVerb :: HasCallStack => PutOrRem -> Verb -> Text
 mkPorVerb Put SndPer = "put"
 mkPorVerb Put ThrPer = "puts"
 mkPorVerb Rem SndPer = "remove"
@@ -1127,12 +1135,12 @@ mkPorPrep Put ThrPer (Just (n, m)) (Just i) = const $ "on the "   <> descNthOfM 
 mkPorPrep Rem ThrPer (Just (n, m)) (Just i) = const $ "from the " <> descNthOfM n m <> serialize (CorpseDesig i)
 
 
-descNthOfM :: Int -> Int -> Text
+descNthOfM :: HasCallStack => Int -> Int -> Text
 descNthOfM 1 1 = ""
 descNthOfM n _ = spcR . mkOrdinal $ n
 
 
-onTheGround :: Maybe NthOfM -> Text
+onTheGround :: HasCallStack => Maybe NthOfM -> Text
 onTheGround = (|!| " on the ground") . ((both %~ Sum) <$>)
 
 
@@ -1461,7 +1469,7 @@ mkIdCountBothList i ms targetIds =
 -----
 
 
-inOutOnOffs :: [(Text, Bool)]
+inOutOnOffs :: HasCallStack => [(Text, Bool)]
 inOutOnOffs = [ ("i",   otherwise)
               , ("in",  otherwise)
               , ("o",   likewise )
@@ -1475,7 +1483,7 @@ inOutOnOffs = [ ("i",   otherwise)
 -----
 
 
-isRingRol :: RightOrLeft -> Bool
+isRingRol :: HasCallStack => RightOrLeft -> Bool
 isRingRol = \case R -> False
                   L -> False
                   _ -> True
@@ -1484,25 +1492,25 @@ isRingRol = \case R -> False
 -----
 
 
-isRndmName :: Text -> Bool
+isRndmName :: HasCallStack => Text -> Bool
 isRndmName = isLower . T.head . dropANSI
 
 
 -----
 
 
-isSlotAvail :: EqMap -> Slot -> Bool
+isSlotAvail :: HasCallStack => EqMap -> Slot -> Bool
 isSlotAvail = flip M.notMember
 
 
-findAvailSlot :: EqMap -> [Slot] -> Maybe Slot
+findAvailSlot :: HasCallStack => EqMap -> [Slot] -> Maybe Slot
 findAvailSlot em = find (isSlotAvail em)
 
 
 -----
 
 
-maybeSingleSlot :: EqMap -> Slot -> Maybe Slot
+maybeSingleSlot :: HasCallStack => EqMap -> Slot -> Maybe Slot
 maybeSingleSlot em s = boolToMaybe (isSlotAvail em s) s
 
 
@@ -1539,7 +1547,7 @@ mkCoinsDesc cols (Coins (each %~ Sum -> (cop, sil, gol))) =
 -----
 
 
-mkCorpseSmellLvl :: Text -> Int
+mkCorpseSmellLvl :: HasCallStack => Text -> Int
 mkCorpseSmellLvl t = if | t == corpseSmellLvl1 -> 1
                         | t == corpseSmellLvl2 -> 2
                         | t == corpseSmellLvl3 -> 3
@@ -1752,7 +1760,7 @@ mkWritableMsgDesc cols ms targetId = case getWritable targetId ms of
     helper txt = wrapUnlines cols . prd $ "There is something written on it in " <> txt
 
 
-adminTagTxt :: Text
+adminTagTxt :: HasCallStack => Text
 adminTagTxt = parensQuote . colorWith adminTagColor $ "admin"
 
 
@@ -1769,7 +1777,7 @@ mkExitsSummary cols (view rmLinks -> rls) =
     summarize std cus = commas . (std ++) $ cus
 
 
-isNonStdLink :: RmLink -> Bool
+isNonStdLink :: HasCallStack => RmLink -> Bool
 isNonStdLink NonStdLink {} = True
 isNonStdLink _             = False
 
@@ -2004,7 +2012,7 @@ notFoundSuggestAsleeps a@(capitalize . T.toLower -> a') asleepSings ms =
 -----
 
 
-onOffs :: [(Text, Bool)]
+onOffs :: HasCallStack => [(Text, Bool)]
 onOffs = [ ("o",   likewise )
          , ("of",  likewise )
          , ("off", likewise )
@@ -2014,7 +2022,7 @@ onOffs = [ ("o",   likewise )
 -----
 
 
-otherHand :: Hand -> Hand
+otherHand :: HasCallStack => Hand -> Hand
 otherHand RHand  = LHand
 otherHand LHand  = RHand
 otherHand NoHand = LHand

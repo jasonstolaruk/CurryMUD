@@ -1120,7 +1120,7 @@ elvish = sayHelper ElfLang
 -----
 
 
-emote :: HasCallStack => ActionFun
+emote :: HasCallStack => ActionFun -- TODO: Consider creating an additional rule concerning darkness.
 emote p@AdviseNoArgs                                                       = advise p ["emote"] adviceEmoteNoArgs
 emote p@ActionParams { args }   | any (`elem` yous) . map T.toLower $ args = advise p ["emote"] adviceYouEmote
 emote   (WithArgs i mq cols as) = getState >>= \ms ->
@@ -1233,8 +1233,8 @@ emptyAction p = pmf "emptyAction" p
 
 
 equip :: HasCallStack => ActionFun
-equip (NoArgs   i mq cols   ) = getState >>= \ms -> send mq . nl . mkEqDesc i cols ms i (getSing i ms) $ PlaType
-equip (LowerNub i mq cols as) = getState >>= \ms ->
+equip   (NoArgs   i mq cols   ) = getState >>= \ms -> send mq . nl . mkEqDesc i cols ms i (getSing i ms) $ PlaType
+equip p@(LowerNub i mq cols as) = checkDark p $ getState >>= \ms ->
     let em@(M.elems -> is) = getEqMap i ms in send mq $ if ()!# em
       then let (inInvs, inEqs, inRms)            = sortArgsInvEqRm InEq as
                (gecrs, miss, rcs)                = resolveEntCoinNames i ms inEqs is mempty
@@ -1762,8 +1762,8 @@ intro p = pmf "intro" p
 
 
 inv :: HasCallStack => ActionFun
-inv (NoArgs   i mq cols   ) = getState >>= \ms@(getSing i -> s) -> send mq . nl . mkInvCoinsDesc i cols ms i $ s
-inv (LowerNub i mq cols as) = getState >>= \ms ->
+inv   (NoArgs   i mq cols   ) = getState >>= \ms@(getSing i -> s) -> send mq . nl . mkInvCoinsDesc i cols ms i $ s
+inv p@(LowerNub i mq cols as) = checkDark p $ getState >>= \ms ->
     let (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv as
         invCoins               = getInvCoins i ms
         (eiss, ecs)            = uncurry (resolveMobInvCoins i ms inInvs) invCoins
@@ -2040,10 +2040,10 @@ listen p = withoutArgs listen p
 -----
 
 
-look :: HasCallStack => ActionFun -- TODO: Darkness.
-look (NoArgs i mq cols) = getState >>= \ms ->
-    let ri        = getRmId i  ms
-        r         = getRm   ri ms
+look :: HasCallStack => ActionFun
+look p@(NoArgs i mq cols) = checkDark p $ getState >>= \ms ->
+    let ri        = getRmId i ms
+        r         = getRm ri ms
         top       = fillerToSpcs . multiWrap cols $ theRmName : theRmDesc
         theRmName = views rmName (underline . quoteWith filler) r
         theRmDesc = views rmDesc formatRmDesc r
@@ -2052,7 +2052,7 @@ look (NoArgs i mq cols) = getState >>= \ms ->
   where
     filler       = T.singleton indentFiller
     formatRmDesc = map (T.replicate rmDescIndentAmt filler <>) . T.lines
-look (LowerNub i mq cols as) = mkRndmVector >>= \v ->
+look p@(LowerNub i mq cols as) = checkDark p $ mkRndmVector >>= \v ->
     helper v |&| modifyState >=> \(toSelf, bs, hookLogMsg, maybeTargetDesigs, fs) -> do
         ms <- getState
         let mkLogMsgForDesigs targetDesigs | targetSings <- [ parseInBandsSuffix i ms . serialize $ targetDesig
