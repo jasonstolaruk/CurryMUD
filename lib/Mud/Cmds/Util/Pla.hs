@@ -870,9 +870,10 @@ mkCanCan'tCoins (Coins (0, 0, g)) n = (Coins (0, 0, n), Coins (0,     0,     g -
 mkCanCan'tCoins c                 _ = pmf "mkCanCan'tCoins" c
 
 
-mkGetDropCoinsDescOthers :: HasCallStack => Id -> Desig -> GetOrDrop -> Coins -> [Broadcast] -- TODO: Continue from here with "VerbObj".
+mkGetDropCoinsDescOthers :: HasCallStack => Id -> Desig -> GetOrDrop -> Coins -> [Broadcast]
 mkGetDropCoinsDescOthers i d god c =
-  c |!| [ (T.concat [ serialize d, spaced . mkGodVerb god $ ThrPer, aCoinSomeCoins c, "." ], i `delete` desigIds d) ]
+  c |!| [ ( T.concat [ serialize d, spaced . mkGodVerb god $ ThrPer, serialize . VerbObj . aCoinSomeCoins $ c, "." ]
+          , i `delete` desigIds d ) ]
 
 
 mkGetDropCoinsDescsSelf :: HasCallStack => GetOrDrop -> Coins -> [Text]
