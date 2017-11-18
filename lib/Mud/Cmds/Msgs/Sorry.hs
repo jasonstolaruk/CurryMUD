@@ -1393,8 +1393,8 @@ sorryLightTorchSecs = "The torch is spent and cannot be lit again."
 -----
 
 
-sorryLinkAlready :: Text -> Text -> Text
-sorryLinkAlready t n = T.concat [ "You've already established a ", t, " link with ", n, "." ]
+sorryLinkAlready :: Text -> Sing -> Text
+sorryLinkAlready t s = T.concat [ "You've already established a ", parensQuote t, " link with ", s, "." ]
 
 
 sorryLinkCoin :: Text
@@ -1414,7 +1414,7 @@ sorryLinkIntroSelf s = prd $ "You must first introduce yourself to " <> s
 
 
 sorryLinkIntroTarget :: Text -> Text
-sorryLinkIntroTarget n = "You don't know the " <> n <> "'s name."
+sorryLinkIntroTarget t = "You don't know " <> t <> "'s name."
 
 
 sorryLinkNoOneHere :: Text

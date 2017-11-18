@@ -750,16 +750,14 @@ chan (MsgWithTarget i mq cols target msg) = getState >>= \ms ->
                      cc   = ChanContext "chan" (Just cn) False
                      f bs = let msg' = dropANSI . fst . head $ bs in ioHelper msg' =<< g bs
                      g    = concatMapM format
-                     ws   = wrapSend      mq cols
-                     mws  = multiWrapSend mq cols
                  in case targetify i cc triples msg of
-                   Left  errorMsg   -> ws errorMsg
+                   Left  errorMsg   -> wrapSend mq cols errorMsg
                    Right (Right bs) -> f bs
                    Right (Left  ()) -> case emotify i ms cc triples msg of
-                     Left  errorMsgs  -> mws errorMsgs
+                     Left  errorMsgs  -> multiWrapSend mq cols errorMsgs
                      Right (Right bs) -> f bs
                      Right (Left  ()) -> case expCmdify i ms cc triples msg of
-                       Left  errorMsg   -> ws errorMsg
+                       Left  errorMsg   -> wrapSend mq cols errorMsg
                        Right (bs, msg') -> ioHelper msg' =<< g bs
         (cs, cns, s) = mkChanBindings i ms
     in findFullNameForAbbrev (T.toLower target) (map T.toLower cns) |&| maybe notFound found
@@ -819,12 +817,12 @@ connect p@(Lower i mq cols as) = getState >>= \ms ->
                              in views chanConnTbl f c
               , toTargets <- (T.concat [ getSing i ms', " has connected you to the ", dblQuote cn, " channel." ], targetIds)
               , toSelf    <- (focusingInnateMsg <>) $ case targetSings of
-                [one] -> T.concat [ "you connect ", one, " to the ", dblQuote cn, " channel." ]
-                _     -> T.concat [ "you connect the following people to the "
-                                  , dblQuote cn
-                                  , " channel: "
-                                  , commas targetSings
-                                  , "." ]
+                [n] -> T.concat [ "you connect ", n, " to the ", dblQuote cn, " channel." ]
+                _   -> T.concat [ "you connect the following people to the "
+                                , dblQuote cn
+                                , " channel: "
+                                , commas targetSings
+                                , "." ]
               -> do logPla "connect" i $ "connected to " <> dblQuote cn <> ": " <> commas targetSings
                     toOthers <- mkToOthers ms' otherIds targetIds cn
                     bcastNl $ toTargets : toOthers ++ (()!# targetSings |?| mkBcast i toSelf) ++ sorryBs
@@ -1255,8 +1253,9 @@ equip p = pmf "equip" p
 
 
 exits :: HasCallStack => ActionFun
-exits (NoArgs i mq cols) = sequence_ [ logPlaExec "exits" i, send mq . nl . mkExitsSummary cols . getMobRm i =<< getState ]
-exits p                  = withoutArgs exits p
+exits p@(NoArgs i mq cols) = checkDark p $ do logPlaExec "exits" i
+                                              send mq . nl . mkExitsSummary cols . getMobRm i =<< getState
+exits p                    = withoutArgs exits p
 
 
 -----
@@ -1977,7 +1976,6 @@ link p@(LowerNub i mq cols as) = getState >>= \ms -> if
                 (srcLinks,  targetLinks ) = f getLinked
                 f g                       = ((i |&|) &&& (targetId |&|)) (uncurry g . (, ms))
                 s                         = getSing i ms
-                targetDesig               = serialize . mkStdDesig targetId ms $ Don'tCap
                 srcMsg    = nlnl . T.concat $ [ focusingInnateMsg
                                               , "you establish a telepathic connection from your mind to "
                                               , targetSing
@@ -1996,10 +1994,11 @@ link p@(LowerNub i mq cols as) = getState >>= \ms -> if
                                               , twoWayMsg ]
                 bs            = [ (srcMsg, pure i), (targetMsg, pure targetId) ]
                 msgHelper txt = a' & _2 <>~ mkBcast i (nlnl txt)
-            in if | targetSing `notElem` srcIntros    -> msgHelper . sorryLinkIntroTarget       $ targetDesig
+                targetTxt     = parseInBands Nothing i ms . serialize . mkStdDesig targetId ms $ Don'tCap
+            in if | targetSing `notElem` srcIntros    -> msgHelper . sorryLinkIntroTarget       $ targetTxt
                   | s          `notElem` targetIntros -> msgHelper . sorryLinkIntroSelf         $ targetSing
-                  | s             `elem` targetLinks  -> msgHelper . sorryLinkAlready oneTwoWay $ targetDesig
-                  | not . hasPp i ms $ 10             -> msgHelper . sorryPp $ "link with " <> targetDesig
+                  | s             `elem` targetLinks  -> msgHelper . sorryLinkAlready oneTwoWay $ targetSing
+                  | not . hasPp i ms $ 10             -> msgHelper . sorryPp $ "link with " <> targetSing
                   | otherwise                         ->
                       let g a'' | isTwoWay  = a''
                                 | otherwise = a'' & _1.rndmNamesMstrTbl.ind i       .at targetSing .~ Nothing
@@ -2392,16 +2391,14 @@ question (Msg i mq cols msg) = getState >>= \ms -> if
              s    = getSing i ms
              f bs = ioHelper (dropANSI . fst . head $ bs) =<< g bs
              g    = concatMapM (formatQuestion i ms)
-             ws   = wrapSend      mq cols
-             mws  = multiWrapSend mq cols
           in case targetify i questionChanContext triples msg of
-            Left  errorMsg   -> ws errorMsg
+            Left  errorMsg   -> wrapSend mq cols errorMsg
             Right (Right bs) -> f bs
             Right (Left  ()) -> case emotify i ms questionChanContext triples msg of
-              Left  errorMsgs  -> mws errorMsgs
+              Left  errorMsgs  -> multiWrapSend mq cols errorMsgs
               Right (Right bs) -> f bs
               Right (Left  ()) -> case expCmdify i ms questionChanContext triples msg of
-                Left  errorMsg     -> ws errorMsg
+                Left  errorMsg     -> wrapSend mq cols errorMsg
                 Right (bs, logMsg) -> ioHelper logMsg =<< g bs
 question p = pmf "question" p
 
@@ -3254,7 +3251,7 @@ setAction p = pmf "setAction" p
 showAction :: HasCallStack => ActionFun
 showAction p@AdviseNoArgs         = advise p ["show"] adviceShowNoArgs
 showAction p@AdviseOneArg         = advise p ["show"] adviceShowNoName
-showAction p@(Lower i mq cols as) = getState >>= \ms ->
+showAction p@(Lower i mq cols as) = checkDark p $ getState >>= \ms ->
   let next = if isIncognitoId i ms
         then wrapSend mq cols . sorryIncog $ "show"
         else let eqMap      = getEqMap    i ms

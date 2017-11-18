@@ -1648,7 +1648,7 @@ adminSet   (WithArgs i mq cols (target:rest)) =
                 let f msg = (colorWith adminSetColor msg |&|) $ case getType targetId ms of
                         PlaType -> retainedMsg targetId ms
                         NpcType -> bcast . mkBcast targetId
-                        t       -> pmf "adminSet f" t
+                        t       -> pmf "adminSet ioHelper f" t
                 in do logMsgs |#| logPla (prefixAdminCmd "set") i . g . slashes
                       unless (isIncognitoId i ms || targetId == i) . mapM_ f . dropBlanks $ toTargetMsgs
                       sequence_ fs
