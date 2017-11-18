@@ -3408,10 +3408,10 @@ showAction p = pmf "showAction" p
 
 smell :: HasCallStack => ActionFun
 smell (NoArgs i mq cols) = getState >>= \ms ->
-    let corpseMsgs = mkCorpseMsgs ms
-        ts         = views rmSmell (maybe a b) . getMobRm i $ ms
+    let ts         = views rmSmell (maybe a b) . getMobRm i $ ms
         a          = ()# corpseMsgs ? pure noSmellMsg :? corpseMsgs
         b          = onFalse (()# corpseMsgs) (++ corpseMsgs) . pure
+        corpseMsgs = mkCorpseMsgs ms
     in do logPlaExec "smell" i
           multiWrapSend mq cols ts
           let d = mkStdDesig i ms DoCap
