@@ -101,19 +101,16 @@ drinkAct :: HasCallStack => DrinkBundle -> MudStack ()
 drinkAct DrinkBundle { .. } = modifyStateSeq f `finally` tweak (mobTbl.ind drinkerId.nowDrinking .~ Nothing)
   where
     distId@(DistinctLiqId i) = drinkLiq^.liqId
-    f ms = let t  = thrice prd . T.concat $ [ "You begin drinking "
-                                            , renderLiqNoun drinkLiq the
-                                            , " from the "
-                                            , drinkVesselSing ]
+    f ms = let t  | xs <- [ "You begin drinking ", renderLiqNoun drinkLiq the, " from the ", drinkVesselSing ]
+                  = thrice prd . T.concat $ xs
                d  = mkStdDesig drinkerId ms DoCap
-               bs = pure ( T.concat [ serialize d, " begins drinking from ", mkVerbObj, "." ]
-                         , drinkerId `delete` desigIds d )
+               bs = pure (T.concat [ serialize d, " begins drinking from ", vo, "." ], drinkerId `delete` desigIds d)
                fs = pure $ sequence_ gs `catch` die (Just drinkerId) (pp Drinking)
                gs = [ multiWrapSend1Nl drinkerMq drinkerCols . dropEmpties $ [ t, drinkLiq^.liqDrinkDesc ]
                     , bcastIfNotIncogNl drinkerId bs
                     , loop 1 ]
            in (ms & mobTbl.ind drinkerId.nowDrinking ?~ (drinkLiq, drinkVesselSing), fs)
-    mkVerbObj        = serialize . VerbObj $ renderVesselSing
+    vo               = serialize . VerbObj $ renderVesselSing
     renderVesselSing = drinkVesselSing |&| (isJust drinkVesselId ? aOrAn :? the)
     loop x           = do
         liftIO . delaySecs $ 1
@@ -127,25 +124,15 @@ drinkAct DrinkBundle { .. } = modifyStateSeq f `finally` tweak (mobTbl.ind drink
           Nothing -> (, Left ()) <$> getState
         let (stomAvail, _) = calcStomachAvailSize drinkerId ms
             d              = mkStdDesig drinkerId ms DoCap
-            bcastHelper b  = bcastIfNotIncogNl drinkerId . pure $ ( T.concat [ serialize d
-                                                                             , " finishes drinking from "
-                                                                             , mkVerbObj
-                                                                             , b |?| " after draining it dry"
-                                                                             , "." ]
-                                                                  , drinkerId `delete` desigIds d )
-        if | newCont == Right Nothing -> (>> bcastHelper True) . ioHelper x . T.concat $ [ "You drain the "
-                                                                                         , drinkVesselSing
-                                                                                         , " dry after "
-                                                                                         , mkMouthfulTxt x
-                                                                                         , " mouthful"
-                                                                                         , sOnNon1 x
-                                                                                         , "." ]
-           | isZero stomAvail -> let t = thrice prd " that you have to stop drinking. You don't feel so good"
-                                 in (>> bcastHelper False) . ioHelper x . T.concat $ [ "You are so full after "
-                                                                                     , mkMouthfulTxt x
-                                                                                     , " mouthful"
-                                                                                     , sOnNon1 x
-                                                                                     , t ]
+            bcastHelper b  | xs <- [ serialize d, " finishes drinking from ", vo, b |?| " after draining it dry", "." ]
+                           = bcastIfNotIncogNl drinkerId . pure $ (T.concat xs, drinkerId `delete` desigIds d)
+        if | newCont == Right Nothing ->
+               let xs = [ "You drain the ", drinkVesselSing, " dry after ", mkMouthfulTxt x, " mouthful", sOnNon1 x, "." ]
+               in (>> bcastHelper True) . ioHelper x . T.concat $ xs
+           | isZero stomAvail ->
+               let xs = [ "You are so full after ", mkMouthfulTxt x, " mouthful", sOnNon1 x, t ]
+                   t  = thrice prd " that you have to stop drinking. You don't feel so good"
+               in (>> bcastHelper False) . ioHelper x . T.concat $ xs
            | x == drinkAmt    -> (>> bcastHelper False) . ioHelper x $ "You finish drinking."
            | otherwise        -> loop . succ $ x
     ioHelper m t = do logPla "drinkAct ioHelper" drinkerId . T.concat $ [ "drank "
@@ -176,13 +163,13 @@ eatAct EatBundle { .. } = modifyStateSeq f `finally` tweak (mobTbl.ind eaterId.n
     distId@(DistinctFoodId i) = eatFood^.foodId
     f ms = let t  = thrice prd $ "You begin eating the " <> eatFoodSing
                d  = mkStdDesig eaterId ms DoCap
-               bs = pure ( T.concat [ serialize d, " begins eating ", aOrAn eatFoodSing, "." ]
-                         , eaterId `delete` desigIds d )
+               bs = pure (T.concat [ serialize d, " begins eating ", vo, "." ], eaterId `delete` desigIds d)
                fs = pure $ sequence_ gs `catch` die (Just eaterId) (pp Eating)
                gs = [ multiWrapSend1Nl eaterMq eaterCols . dropEmpties $ [ t, eatFood^.foodEatDesc ]
                     , bcastIfNotIncogNl eaterId bs
                     , loop 1 ]
            in (ms & mobTbl.ind eaterId.nowEating ?~ (eatFoodId, eatFoodSing), fs)
+    vo     = serialize . VerbObj . aOrAn $ eatFoodSing
     loop x = do
         liftIO . delaySecs =<< view foodSecsPerMouthful . getDistinctFood i <$> getState
         now <- liftIO getCurrentTime
@@ -191,40 +178,24 @@ eatAct EatBundle { .. } = modifyStateSeq f `finally` tweak (mobTbl.ind eaterId.n
                                         in (ms', pair)
         let (stomAvail, _) = calcStomachAvailSize eaterId ms
             d              = mkStdDesig eaterId ms DoCap
-            bcastHelper b  = bcastIfNotIncogNl eaterId . pure $ ( T.concat [ serialize d
-                                                                           , " finishes eating "
-                                                                           , b |?| "all of "
-                                                                           , aOrAn eatFoodSing
-                                                                           , "." ]
-                                                                , eaterId `delete` desigIds d )
-        if | m <= 0 -> do destroy . pure $ eatFoodId
-                          ioHelper x . T.concat $ [ "You finish eating all of the "
-                                                  , eatFoodSing
-                                                  , " after "
-                                                  , mkMouthfulTxt x
-                                                  , " mouthful"
-                                                  , sOnNon1 x
-                                                  , "." ]
-                          bcastHelper True
-           | isZero stomAvail -> let t = thrice prd " that you have to stop eating. You don't feel so good"
-                                 in (>> bcastHelper False) . ioHelper x . T.concat $ [ "You are so full after "
-                                                                                     , mkMouthfulTxt x
-                                                                                     , " mouthful"
-                                                                                     , sOnNon1 x
-                                                                                     , t ]
-           | x == eatAmt      -> (>> bcastHelper False) . ioHelper x $ "You finish eating."
-           | otherwise        -> loop . succ $ x
-    ioHelper m t = do logPla "eatAct ioHelper" eaterId . T.concat $ [ "ate "
-                                                                    , showTxt m
-                                                                    , " mouthful"
-                                                                    , sOnNon1 m
-                                                                    , " of "
-                                                                    , aOrAn eatFoodSing
-                                                                    , " "
-                                                                    , parensQuote . showTxt $ i
-                                                                    , "." ]
-                      wrapSend eaterMq eaterCols t
-                      sendDfltPrompt eaterMq eaterId
+            bcastHelper b  | xs <- [ serialize d, " finishes eating ", b |?| "all of ", vo, "." ]
+                           = bcastIfNotIncogNl eaterId . pure $ (T.concat xs, eaterId `delete` desigIds d)
+        if | m <= 0 -> do
+               destroy . pure $ eatFoodId
+               let xs = [ "You finish eating all of the ", eatFoodSing, " after ", mkMouthfulTxt x, " mouthful", sOnNon1 x, "." ]
+               ioHelper x . T.concat $ xs
+               bcastHelper True
+           | isZero stomAvail ->
+               let xs = [ "You are so full after ", mkMouthfulTxt x, " mouthful", sOnNon1 x, t ]
+                   t  = thrice prd " that you have to stop eating. You don't feel so good"
+               in (>> bcastHelper False) . ioHelper x . T.concat $ xs
+           | x == eatAmt -> (>> bcastHelper False) . ioHelper x $ "You finish eating."
+           | otherwise   -> loop . succ $ x
+    ioHelper m t = do
+        let xs = [ "ate ", showTxt m, " mouthful", sOnNon1 m, " of ", aOrAn eatFoodSing, " ", parensQuote . showTxt $ i, "." ]
+        logPla "eatAct ioHelper" eaterId . T.concat $ xs
+        wrapSend eaterMq eaterCols t
+        sendDfltPrompt eaterMq eaterId
 
 
 -----
