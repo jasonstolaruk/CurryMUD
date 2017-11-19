@@ -47,22 +47,20 @@ emotifyTwoWay cn i ms targetId msg@(T.words -> ws@(headTail . head -> (c, rest))
 
 procTwoWayEmote :: HasCallStack => Text -> Id -> MudState -> Id -> Args -> Either [Text] [Broadcast]
 procTwoWayEmote cn i ms targetId as =
-    let s       = getSing i ms
-        xformed = xformArgs True as
-        xformArgs _      []     = []
-        xformArgs _      [x]
-          | (h, t) <- headTail x
-          , h == emoteNameChar
-          , all isPunc . T.unpack $ t
-          = pure . Right $ s <> t
-        xformArgs isHead (x:xs) = (: xformArgs False xs) $ if
-          | x == enc            -> Right s
-          | x == enc's          -> Right $ s <> "'s"
-          | enc `T.isInfixOf` x -> Left . adviceEnc $ cn'
-          | etc `T.isInfixOf` x -> Left . adviceEtcInTwoWay cn $ cn'
-          | isHead, hasEnc as   -> Right . capitalizeMsg $ x
-          | isHead              -> Right $ s |<>| x
-          | otherwise           -> Right x
+    let s               = getSing i ms
+        xformed         = xformArgs True as
+        xformArgs _ []  = []
+        xformArgs _ [x] | (h, t) <- headTail x
+                        , h == emoteNameChar
+                        , all isPunc . T.unpack $ t
+                        = pure . Right $ s <> t
+        xformArgs isHead (x:xs) = (: xformArgs False xs) $ if | x == enc            -> Right s
+                                                              | x == enc's          -> Right $ s <> "'s"
+                                                              | enc `T.isInfixOf` x -> Left . adviceEnc $ cn'
+                                                              | etc `T.isInfixOf` x -> Left . adviceEtcInTwoWay cn $ cn'
+                                                              | isHead, hasEnc as   -> Right . capitalizeMsg $ x
+                                                              | isHead              -> Right $ s |<>| x
+                                                              | otherwise           -> Right x
     in case lefts xformed of
       []      -> let msg = bracketQuote . T.unwords . rights $ xformed
                  in Right [ (msg, pure i), (msg, pure targetId) ]

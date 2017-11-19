@@ -1118,7 +1118,7 @@ elvish = sayHelper ElfLang
 -----
 
 
-emote :: HasCallStack => ActionFun -- TODO: Consider creating an additional rule concerning darkness.
+emote :: HasCallStack => ActionFun
 emote p@AdviseNoArgs                                                       = advise p ["emote"] adviceEmoteNoArgs
 emote p@ActionParams { args }   | any (`elem` yous) . map T.toLower $ args = advise p ["emote"] adviceYouEmote
 emote   (WithArgs i mq cols as) = getState >>= \ms ->
