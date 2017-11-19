@@ -1212,8 +1212,9 @@ emptyAction   (LowerNub i mq cols as) = helper |&| modifyState >=> \(toSelfs, bs
       where
         f a'@(ms, _, _, _) targetId =
             let s            = getSing targetId ms
+                vo           = serialize . VerbObj $ poss |<>| s
                 poss         = mkPossPro . getSex i $ ms
-                t            = T.concat [ serialize d, " empties the contents of ", poss, " ", s, "." ]
+                t            = T.concat [ serialize d, " empties the contents of ", vo, "." ]
                 alreadyEmpty = a' & _2 <>~ pure (sorryEmptyAlready s)
                 emptyIt      = a' & _1 .~  (ms & vesselTbl.ind targetId.vesselCont .~ Nothing)
                                   & _2 <>~ pure (prd $ "You empty the contents of the " <> s)
