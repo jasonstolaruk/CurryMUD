@@ -37,7 +37,7 @@ import           Control.Lens (_1, _2, _3, _4)
 import           Control.Lens.Operators ((.~), (&), (%~), (<>~))
 import           Control.Monad ((>=>), unless)
 import           Control.Monad.IO.Class (liftIO)
-import           Data.List ((\\), delete, foldl')
+import           Data.List ((\\), foldl')
 import           Data.Monoid ((<>))
 import           Data.Text (Text)
 import qualified Data.Text as T
@@ -97,8 +97,7 @@ mkGenericHookFun toSelf bcastTxt logMsgTxt = f
         let selfDesig = mkStdDesig i ms DoCap
         in a &    _1 %~  (\\ hookTriggers)
              & _2._2 <>~ pure toSelf
-             & _2._3 <>~ pure ( serialize selfDesig |<>| bcastTxt
-                              , i `delete` desigIds selfDesig )
+             & _2._3 <>~ pure (serialize selfDesig |<>| bcastTxt, desigOtherIds selfDesig)
              & _2._4 <>~ pure (bracketQuote hookName |<>| parseInBandsSuffix i ms logMsgTxt)
 
 
@@ -189,13 +188,12 @@ mkTrashInvDescs :: Id -> MudState -> Desig -> Inv -> ([Text], [Broadcast])
 mkTrashInvDescs i ms d (mkNameCountBothList i ms -> ncbs) = unzip . map helper $ ncbs
   where
     helper (_, c, (s, _)) | c == 1 =
-        ("You place the " <> s <> rest, (T.concat [ serialize d, " places ", aOrAn s, rest ], otherIds))
+        ("You place the " <> s <> rest, (T.concat [ serialize d, " places ", aOrAn s, rest ], desigOtherIds d))
     helper (_, c, b) =
-        ("You place " <> rest', (serialize d <> " places " <> rest', otherIds))
+        ("You place " <> rest', (serialize d <> " places " <> rest', desigOtherIds d))
       where
         rest' = T.concat [ showTxt c, " ", mkPlurFromBoth b, rest ]
-    rest     = " into the trash bin."
-    otherIds = i `delete` desigIds d
+    rest = " into the trash bin."
 
 
 helperTrashEitherCoins :: Id
@@ -205,7 +203,7 @@ helperTrashEitherCoins :: Id
                        -> GenericIntermediateRes
 helperTrashEitherCoins i d (ms, toSelfs, bs, logMsgs) ecs =
     let (ms', toSelfs', logMsgs', c) = foldl' helper (ms, toSelfs, logMsgs, mempty) ecs
-    in (ms', toSelfs', bs ++ mkTrashCoinsDescOthers i d c, logMsgs')
+    in (ms', toSelfs', bs ++ mkTrashCoinsDescOthers d c, logMsgs')
   where
     helper a = \case
       Left  msgs -> a & _2 <>~ msgs
@@ -217,9 +215,9 @@ helperTrashEitherCoins i d (ms, toSelfs, bs, logMsgs) ecs =
                          & _4                         <>~ c
 
 
-mkTrashCoinsDescOthers :: Id -> Desig -> Coins -> [Broadcast]
-mkTrashCoinsDescOthers i d c =
-  c |!| [ (T.concat [ serialize d, " deposits ", aCoinSomeCoins c, " into the trash bin." ], i `delete` desigIds d) ]
+mkTrashCoinsDescOthers :: Desig -> Coins -> [Broadcast]
+mkTrashCoinsDescOthers d c =
+  c |!| [ (T.concat [ serialize d, " deposits ", aCoinSomeCoins c, " into the trash bin." ], desigOtherIds d) ]
 
 
 mkTrashCoinsDescsSelf :: Coins -> [Text]

@@ -85,7 +85,6 @@ import           Mud.Misc.CurryTime
 import           Mud.Misc.Misc
 import           Mud.TheWorld.Zones.AdminZoneIds (iNecropolis, iWelcome)
 import           Mud.TopLvlDefs.Chars
-import           Mud.TopLvlDefs.Misc
 import           Mud.Util.List hiding (countOcc)
 import qualified Mud.Util.Misc as U (blowUp, pmf)
 import           Mud.Util.Misc hiding (blowUp, pmf)
@@ -394,10 +393,10 @@ getUnusedId = views typeTbl (head . (enumFrom 0 \\) . IM.keys)
 getVisibleInv :: HasCallStack => Id -> MudState -> Inv
 getVisibleInv i ms = filter isVisible . getInv i $ ms
   where
-    isVisible targetId | not . isPla targetId $ ms         = otherwise
-                       | isSpiritId targetId ms            = likewise
-                       | not . isIncognitoId targetId $ ms = otherwise
-                       | otherwise                         = likewise
+    isVisible targetId | not . isPla targetId $ ms         = True
+                       | isSpiritId targetId ms            = False
+                       | not . isIncognitoId targetId $ ms = True
+                       | otherwise                         = False
 
 
 -----
@@ -629,7 +628,7 @@ mkStdDesig :: HasCallStack => Id -> MudState -> DoOrDon'tCap -> Desig
 mkStdDesig i ms cap = StdDesig { desigEntName      = views entName (fromMaybe (mkUnknownPCEntName i ms)) . getEnt i $ ms
                                , desigCap          = cap
                                , desigId           = i
-                               , desigIds          = findMobIds ms . getMobRmInv i $ ms
+                               , desigOtherIds     = i `delete` findMobIds ms (getMobRmInv i ms)
                                , desigDoMaskInDark = True
                                , desigDoExpandSing = True }
 

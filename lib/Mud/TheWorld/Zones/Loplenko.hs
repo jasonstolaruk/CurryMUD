@@ -33,7 +33,7 @@ import           Control.Lens.Operators ((.~), (&), (%~), (<>~))
 import           Control.Monad ((>=>))
 import           Control.Monad.IO.Class (liftIO)
 import           Data.Bits (zeroBits)
-import           Data.List ((\\), delete)
+import           Data.List ((\\))
 import qualified Data.Map.Strict as M (fromList)
 import           Data.Monoid ((<>))
 import           Data.Text (Text)
@@ -85,8 +85,7 @@ lookBookshelvesHookFun :: HookFun
 lookBookshelvesHookFun i Hook { .. } _ a@(_, (ms, _, _, _), _) =
     a & _1    %~  (\\ hookTriggers)
       & _2._3 <>~ ( let selfDesig = mkStdDesig i ms DoCap
-                    in pure ( serialize selfDesig <> " peruses the books on the bookshelves."
-                            , i `delete` desigIds selfDesig ) )
+                    in pure (serialize selfDesig <> " peruses the books on the bookshelves.", desigOtherIds selfDesig) )
       & _2._4 <>~ pure (bracketQuote hookName <> " bookshelves")
       & _3    <>~ pure helper
   where
@@ -128,8 +127,7 @@ readBookHelper :: Book -> HookFun
 readBookHelper b i Hook { .. } _ a@(_, (ms, _, _, _), _) =
     a & _1    %~  (\\ hookTriggers)
       & _2._3 <>~ ( let selfDesig = mkStdDesig i ms DoCap
-                    in pure ( serialize selfDesig <> " reads a book."
-                            , i `delete` desigIds selfDesig ) )
+                    in pure (serialize selfDesig <> " reads a book.", desigOtherIds selfDesig) )
       & _2._4 <>~ pure (T.concat [ bracketQuote hookName, " ", dblQuote . pp $ b, " book" ])
       & _3    <>~ pure (readABook i b)
 
@@ -139,8 +137,7 @@ readABook i b = ((,) <$> getState <*> getServerSettings) >>= \(ms, s) ->
     let (mq, cols)     = getMsgQueueColumns i ms
         rmDescHelper x = tweak $ mobTbl.ind i.mobRmDesc .~ x
         next           = rmDescHelper Nothing >> setInterp i Nothing >> sendDfltPrompt mq i >> bcastNl bs
-        bs             = pure ( serialize selfDesig <> " finishes reading a book."
-                              , i `delete` desigIds selfDesig )
+        bs             = pure (serialize selfDesig <> " finishes reading a book.", desigOtherIds selfDesig)
         selfDesig      = mkStdDesig i ms DoCap
     in do rmDescHelper . Just $ "reading a book"
           pager i mq (Just next) =<< parseBookTxt s cols <$> getBookTxt b cols
@@ -412,7 +409,7 @@ readSundialHookFun :: HookFun
 readSundialHookFun i Hook { .. } _ a@(_, (ms, _, _, _), _) =
     a & _1    %~  (\\ hookTriggers)
       & _2._3 <>~ ( let selfDesig = mkStdDesig i ms DoCap
-                    in pure (serialize selfDesig <> " reads the sundial.", i `delete` desigIds selfDesig) )
+                    in pure (serialize selfDesig <> " reads the sundial.", desigOtherIds selfDesig) )
       & _2._4 <>~ pure (bracketQuote hookName <> " read sundial")
       & _3    .~  pure (uncurry helper . getMsgQueueColumns i $ ms)
   where

@@ -103,8 +103,8 @@ handleDeath i = isNpc i <$> getState >>= \npc -> do
                                                                                                  & uncurry (++)
                            f         = ((&&) <$> ((== LightType) . uncurry getType) <*> uncurry getLightIsLit) . (, ms)
                            g i' pair | s <- getSing i' ms
-                                     = pair & _1 %~ ((prd $ "You drop your lit " <> s,           pure i               ) :)
-                                            & _1 %~ ((prd $ serialize d <> " drops a lit " <> s, i `delete` desigIds d) :)
+                                     = pair & _1 %~ ((prd $ "You drop your lit " <> s,           pure i         ) :)
+                                            & _1 %~ ((prd $ serialize d <> " drops a lit " <> s, desigOtherIds d) :)
                                             & _2 %~ ((prd $ "Dropped a lit " <> s) :)
                            d         = mkStdDesig i ms DoCap
                            ri        = getRmId i ms

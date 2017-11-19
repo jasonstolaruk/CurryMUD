@@ -23,7 +23,7 @@ test_serializeStdDesig = actual @?= expected
     actual   = serialize StdDesig { desigEntName      = "mhuman"
                                   , desigCap          = Don'tCap
                                   , desigId           = 50
-                                  , desigIds          = [50..55]
+                                  , desigOtherIds     = [50..55]
                                   , desigDoMaskInDark = True
                                   , desigDoExpandSing = False }
     expected = quoteWith std . T.intercalate d $ [ "mhuman", "Don'tCap", "50", "[50,51,52,53,54,55]", "True", "False" ]

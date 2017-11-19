@@ -44,13 +44,7 @@ module Mud.Cmds.Util.Pla ( InvWithCon
                          , helperFillEitherInv
                          , helperGetDropEitherCoins
                          , helperGetEitherInv
-                         , helperGiveEitherCoins
-                         , helperGiveEitherInv
                          , helperLinkUnlink
-                         , helperPutEitherCoins
-                         , helperPutEitherInv
-                         , helperRemEitherCoins
-                         , helperRemEitherInv
                          , helperSettings
                          , helperTune
                          , helperUnready
@@ -470,7 +464,7 @@ disconnectHelper i (target, as) idNamesTbl ms =
 -----
 
 
-donMsgs :: HasCallStack => Id -> Desig -> Sing -> (Text, Broadcast)
+donMsgs :: HasCallStack => Desig -> Sing -> (Text, Broadcast)
 donMsgs = mkReadyMsgs "don" "dons"
 
 
@@ -478,9 +472,9 @@ type SndPerVerb = Text
 type ThrPerVerb = Text
 
 
-mkReadyMsgs :: HasCallStack => SndPerVerb -> ThrPerVerb -> Id -> Desig -> Sing -> (Text, Broadcast)
-mkReadyMsgs spv tpv i d s = (  T.concat [ "You ", spv, " the ", s, "." ]
-                            , (T.concat [ serialize d, spaced tpv, aOrAn s, "." ], i `delete` desigIds d) )
+mkReadyMsgs :: HasCallStack => SndPerVerb -> ThrPerVerb -> Desig -> Sing -> (Text, Broadcast)
+mkReadyMsgs spv tpv d s = ( T.concat [ "You ", spv, " the ", s, "." ]
+                          , (T.concat [ serialize d, spaced tpv, aOrAn s, "." ], desigOtherIds d) )
 
 
 -----
@@ -684,17 +678,16 @@ mkGetDropInvDescs :: HasCallStack => Id -> MudState -> Desig -> GetOrDrop -> Inv
 mkGetDropInvDescs i ms d god (mkName_maybeCorpseId_count_bothList i ms -> tuple) = unzip . map helper $ tuple
   where
     helper (_, mci, c, (s, _)) | c == 1 =
-        (  T.concat [ "You ",               mkGodVerb god SndPer,   " the ", s,          "." ]
-        , (T.concat [ serialize d, spaced . mkGodVerb god $ ThrPer, renderMaybeCorpseId, "." ], otherIds) )
+        ( T.concat  [ "You ",               mkGodVerb god SndPer,   " the ", s,          "." ]
+        , (T.concat [ serialize d, spaced . mkGodVerb god $ ThrPer, renderMaybeCorpseId, "." ], desigOtherIds d) )
       where
         renderMaybeCorpseId = serialize . VerbObj $ case mci of (Just ci) -> the . serialize . CorpseDesig $ ci
                                                                 Nothing   -> aOrAn s
     helper (_, _, c, b) =
-        (  T.concat [ "You ",           mkGodVerb god SndPer, " ",                       objTxt, "." ]
-        , (T.concat [ serialize d, " ", mkGodVerb god ThrPer, " ", serialize . VerbObj $ objTxt, "." ], otherIds) )
+        ( T.concat  [ "You ",           mkGodVerb god SndPer, " ",                       objTxt, "." ]
+        , (T.concat [ serialize d, " ", mkGodVerb god ThrPer, " ", serialize . VerbObj $ objTxt, "." ], desigOtherIds d) )
       where
         objTxt = showTxt c |<>| mkPlurFromBoth b
-    otherIds = i `delete` desigIds d
 
 
 mkGodVerb :: HasCallStack => GetOrDrop -> Verb -> Text
@@ -707,7 +700,7 @@ mkGodVerb Drop ThrPer = "drops"
 -----
 
 
-helperExtinguishEitherInv :: HasCallStack => Id -- TODO: Here.
+helperExtinguishEitherInv :: HasCallStack => Id
                                           -> Desig
                                           -> GenericResWithFuns
                                           -> (Either Text Inv, InvOrEq)
@@ -736,7 +729,7 @@ mkExtinguishDescs i ms d (is, x) = foldr f mempty is
               | views lightIsLit not . getLight targetId $ ms -> sorry sorryExtinguishNotLit
               | otherwise -> tuple & _1 %~ (targetId :)
                                    & _2 %~ ((prd $ "You extinguish the " <> s) :)
-                                   & _3 %~ ((x == TheInv ? inInvMsg :? inEqMsg, i `delete` desigIds d) :)
+                                   & _3 %~ ((x == TheInv ? inInvMsg :? inEqMsg, desigOtherIds d) :)
 
 
 -----
@@ -762,7 +755,7 @@ helperFillEitherInv i srcDesig targetId (eis:eiss) a@(ms, _, _, _) = case getVes
       | isNothing . getVesselCont targetId $ ms' = a'
       | vi == targetId                           = helper cont vis . sorry' . sorryFillSelf $ vs
       | getType vi ms' /= VesselType             = helper cont vis . sorry' . sorryFillType $ vs
-      | otherwise                                = helper cont vis . (_3 <>~ bcastHelper) $ case getVesselCont vi ms' of
+      | otherwise                                = helper cont vis . (_3 <>~ bs) $ case getVesselCont vi ms' of
           Nothing | vmm <  targetMouths ->
                       a' & _1.vesselTbl.ind targetId.vesselCont ?~ (targetLiq, targetMouths - vmm)
                          & _1.vesselTbl.ind vi      .vesselCont ?~ (targetLiq, vmm)
@@ -806,12 +799,12 @@ helperFillEitherInv i srcDesig targetId (eis:eiss) a@(ms, _, _, _) = case getVes
                                              , ", emptying it." ]
         mkXferEmptyMsg   = pure . T.concat $ [ "You transfer ", n, " to the ", vs,  " from the ", targetSing
                                              , ", emptying it." ]
-        bcastHelper      = pure (T.concat [ serialize srcDesig
+        bs               = pure (T.concat [ serialize srcDesig
                                           , " transfers liquid from "
                                           , aOrAn targetSing
                                           , " to "
                                           , aOrAn vs
-                                          , "." ], i `delete` desigIds srcDesig)
+                                          , "." ], desigOtherIds srcDesig)
 
 
 -----
@@ -827,7 +820,7 @@ helperGetDropEitherCoins :: HasCallStack => Id
                                          -> GenericIntermediateRes
 helperGetDropEitherCoins i d god fromId toId (ms, toSelfs, bs, logMsgs) ecs =
     let (ms', toSelfs', logMsgs', canCoins) = foldl' helper (ms, toSelfs, logMsgs, mempty) ecs
-    in (ms', toSelfs', bs ++ mkGetDropCoinsDescOthers i d god canCoins, logMsgs')
+    in (ms', toSelfs', bs ++ mkGetDropCoinsDescOthers d god canCoins, logMsgs')
   where
     helper a@(ms', _, _, _) = \case
       Left  msgs -> a & _2 <>~ msgs
@@ -870,10 +863,10 @@ mkCanCan'tCoins (Coins (0, 0, g)) n = (Coins (0, 0, n), Coins (0,     0,     g -
 mkCanCan'tCoins c                 _ = pmf "mkCanCan'tCoins" c
 
 
-mkGetDropCoinsDescOthers :: HasCallStack => Id -> Desig -> GetOrDrop -> Coins -> [Broadcast]
-mkGetDropCoinsDescOthers i d god c =
+mkGetDropCoinsDescOthers :: HasCallStack => Desig -> GetOrDrop -> Coins -> [Broadcast]
+mkGetDropCoinsDescOthers d god c =
   c |!| [ ( T.concat [ serialize d, spaced . mkGodVerb god $ ThrPer, serialize . VerbObj . aCoinSomeCoins $ c, "." ]
-          , i `delete` desigIds d ) ]
+          , desigOtherIds d ) ]
 
 
 mkGetDropCoinsDescsSelf :: HasCallStack => GetOrDrop -> Coins -> [Text]
@@ -952,97 +945,6 @@ can'tInvDescsHelper t i ms = map helper . mkNameCountBothList i ms
 -----
 
 
-helperGiveEitherCoins :: HasCallStack => Id
-                                      -> Desig
-                                      -> ToId
-                                      -> GenericIntermediateRes
-                                      -> [Either [Text] Coins]
-                                      -> GenericIntermediateRes
-helperGiveEitherCoins i d toId (ms, toSelfs, bs, logMsgs) ecs =
-    let toDesig                             = serialize . mkStdDesig toId ms $ Don'tCap
-        (ms', toSelfs', logMsgs', canCoins) = foldl' (helper toDesig) (ms, toSelfs, logMsgs, mempty) ecs
-    in (ms', toSelfs', bs ++ mkGiveCoinsDescOthers i d toId toDesig canCoins, logMsgs')
-  where
-    helper toDesig a@(ms', _, _, _) = \case
-      Left  msgs -> a & _2 <>~ msgs
-      Right c    -> let (can, can't) = partitionCoinsByEnc toId ms' c
-                        toSelfs'     = mkGiveCoinsDescsSelf toDesig can
-                    in a & _1.coinsTbl.ind i    %~  (<> negateCoins can)
-                         & _1.coinsTbl.ind toId %~  (<>             can)
-                         & _2                   <>~ toSelfs' ++ mkCan'tGiveCoinsDesc toDesig can't
-                         & _3                   <>~ toSelfs'
-                         & _4                   <>~ can
-
-
-mkGiveCoinsDescOthers :: HasCallStack => Id -> Desig -> ToId -> Text -> Coins -> [Broadcast]
-mkGiveCoinsDescOthers i d toId toDesig c = c |!| toOthersBcast : [ (msg, pure toId) | msg <- toTargetMsgs ]
-  where
-    toOthersBcast = ( T.concat [ serialize d, " gives ", aCoinSomeCoins c, " to ", toDesig, "." ]
-                    , desigIds d \\ [ i, toId ] )
-    toTargetMsgs  = mkCoinsMsgs helper c
-    helper 1 cn   = T.concat [ serialize d, " gives you ", aOrAn cn,                 "."  ]
-    helper a cn   = T.concat [ serialize d, " gives you",  spaced . showTxt $ a, cn, "s." ]
-
-
-mkGiveCoinsDescsSelf :: HasCallStack => Text -> Coins -> [Text]
-mkGiveCoinsDescsSelf targetDesig = mkCoinsMsgs helper
-  where
-    helper 1 cn = T.concat [ "You give ", aOrAn cn,                 " to ",  targetDesig, "." ]
-    helper a cn = T.concat [ "You give",  spaced . showTxt $ a, cn, "s to ", targetDesig, "." ]
-
-
-mkCan'tGiveCoinsDesc :: HasCallStack => Text -> Coins -> [Text]
-mkCan'tGiveCoinsDesc targetDesig = mkCoinsMsgs (can'tCoinsDescHelper . sorryGiveEnc $ targetDesig)
-
-
------
-
-
-helperGiveEitherInv :: HasCallStack => Id
-                                    -> Desig
-                                    -> ToId
-                                    -> GenericIntermediateRes
-                                    -> Either Text Inv
-                                    -> GenericIntermediateRes
-helperGiveEitherInv i d toId a@(ms, _, _, _) = \case
-  Left  msg -> a & _2 <>~ pure msg
-  Right is  ->
-    let (is', sorrys)     = checkNowEating i ms "give" "to someone" is
-        (_, cans, can'ts) = foldl' (partitionInvByEnc ms . calcMaxEnc toId $ ms) (calcWeight toId ms, [], []) is'
-        (toSelfs, bs    ) = mkGiveInvDescs i ms d toId (serialize toDesig) cans
-        toDesig           = mkStdDesig toId ms Don'tCap
-    in a & _1.invTbl.ind i    %~  (\\ cans)
-         & _1.invTbl.ind toId %~  addToInv ms cans
-         & _2                 <>~ concat [ sorrys
-                                         , toSelfs
-                                         , mkCan'tGiveInvDescs (serialize toDesig { desigCap = DoCap }) i ms can'ts ]
-         & _3                 <>~ bs
-         & _4                 <>~ toSelfs
-
-
-mkGiveInvDescs :: HasCallStack => Id -> MudState -> Desig -> ToId -> Text -> Inv -> ([Text], [Broadcast])
-mkGiveInvDescs i ms d toId toDesig = second concat . unzip . map helper . mkNameCountBothList i ms
-  where
-    helper (_, c, (s, _)) | c == 1 =
-        ( T.concat [ "You give the ", s, " to ", toDesig, "." ]
-        , [ (T.concat [ serialize d, " gives ",     aOrAn s, " to ", toDesig, "." ], otherIds )
-          , (T.concat [ serialize d, " gives you ", aOrAn s,                  "." ], pure toId) ] )
-    helper (_, c, b) =
-        ( T.concat [ "You give", stuff, " to ", toDesig, "." ]
-        , [ (T.concat [ serialize d, " gives",     stuff, " to ", toDesig, "." ], otherIds )
-          , (T.concat [ serialize d, " gives you", stuff,                  "." ], pure toId) ] )
-      where
-        stuff = spaced (showTxt c) <> mkPlurFromBoth b
-    otherIds = desigIds d \\ [ i, toId ]
-
-
-mkCan'tGiveInvDescs :: HasCallStack => Text -> Id -> MudState -> Inv -> [Text]
-mkCan'tGiveInvDescs = can'tInvDescsHelper
-
-
------
-
-
 helperLinkUnlink :: HasCallStack => MudState -> Id -> MsgQueue -> Cols -> MudStack (Maybe ([Text], [Text], [Text]))
 helperLinkUnlink ms i mq cols =
     let s                = getSing   i ms
@@ -1055,247 +957,6 @@ helperLinkUnlink ms i mq cols =
       then emptied $ do logPlaOut "helperLinkUnlink" i . pure $ sorryNoLinks
                         wrapSend mq cols (isSpiritId i ms ? sorryNoLinksSpirit :? sorryNoLinks)
       else unadulterated (meLinkedToOthers, othersLinkedToMe, twoWays)
-
-
------
-
-
-type NthOfM = (Int, Int)
-
-
-helperPutEitherCoins :: HasCallStack => Id
-                                     -> Desig
-                                     -> Maybe NthOfM
-                                     -> ToId
-                                     -> ToSing
-                                     -> GenericIntermediateRes
-                                     -> [Either [Text] Coins]
-                                     -> GenericIntermediateRes
-helperPutEitherCoins i d mnom toId toSing (ms, toSelfs, bs, logMsgs) ecs =
-    let (ms', toSelfs', logMsgs', canCoins) = foldl' helper (ms, toSelfs, logMsgs, mempty) ecs
-    in (ms', toSelfs', bs ++ mkPutRemCoinsDescOthers i d Put mnom mci toSing canCoins, logMsgs')
-  where
-    mci                     = mkMaybeCorpseId toId ms
-    helper a@(ms', _, _, _) = \case
-      Left  msgs -> a & _2 <>~ msgs
-      Right c    -> let (can, can't) = partitionCoinsByVol toId ms' c
-                        toSelfs'     = mkPutRemCoinsDescsSelf Put mnom mci toSing can
-                    in a & _1.coinsTbl.ind i    %~  (<> negateCoins can)
-                         & _1.coinsTbl.ind toId %~  (<>             can)
-                         & _2                   <>~ toSelfs' ++ mkCan'tPutCoinsDesc toSing can't
-                         & _3                   <>~ toSelfs'
-                         & _4                   <>~ can
-
-
-partitionCoinsByVol :: HasCallStack => Id -> MudState -> Coins -> (Coins, Coins)
-partitionCoinsByVol = partitionCoinsHelper getConCapacity calcInvCoinsVol coinVol
-
-
-mkPutRemCoinsDescOthers :: HasCallStack => Id -> Desig -> PutOrRem -> Maybe NthOfM -> Maybe Id -> Sing -> Coins -> [Broadcast]
-mkPutRemCoinsDescOthers i d por mnom mci conSing c = c |!| pure ( T.concat [ serialize d
-                                                                           , spaced . mkPorVerb por $ ThrPer
-                                                                           , aCoinSomeCoins c
-                                                                           , " "
-                                                                           , mkPorPrep por ThrPer mnom mci conSing
-                                                                           , prd . onTheGround $ mnom ]
-                                                               , i `delete` desigIds d )
-
-
-mkPutRemCoinsDescsSelf :: HasCallStack => PutOrRem -> Maybe NthOfM -> Maybe Id -> Sing -> Coins -> [Text]
-mkPutRemCoinsDescsSelf por mnom mci conSing = mkCoinsMsgs helper
-  where
-    helper a cn | a == 1 = T.concat [ partA, aOrAn cn,  " ",           partB ]
-    helper a cn          = T.concat [ partA, showTxt a, " ", cn, "s ", partB ]
-    partA                = spcR $ "You " <> mkPorVerb por SndPer
-    partB                = prd $ mkPorPrep por SndPer mnom mci conSing <> onTheGround mnom
-
-
-mkPorVerb :: HasCallStack => PutOrRem -> Verb -> Text
-mkPorVerb Put SndPer = "put"
-mkPorVerb Put ThrPer = "puts"
-mkPorVerb Rem SndPer = "remove"
-mkPorVerb Rem ThrPer = "removes"
-
-
-mkPorPrep :: HasCallStack => PutOrRem -> Verb -> Maybe NthOfM -> Maybe Id -> Sing -> Text
-mkPorPrep Put SndPer Nothing       Nothing  = ("in the "   <>)
-mkPorPrep Rem SndPer Nothing       Nothing  = ("from the " <>)
-mkPorPrep Put ThrPer Nothing       Nothing  = ("in "       <>) . aOrAn
-mkPorPrep Rem ThrPer Nothing       Nothing  = ("from "     <>) . aOrAn
-mkPorPrep Put SndPer Nothing       (Just i) = const $ "on the "   <> serialize (CorpseDesig i)
-mkPorPrep Rem SndPer Nothing       (Just i) = const $ "from the " <> serialize (CorpseDesig i)
-mkPorPrep Put ThrPer Nothing       (Just i) = const $ "on the "   <> serialize (CorpseDesig i)
-mkPorPrep Rem ThrPer Nothing       (Just i) = const $ "from the " <> serialize (CorpseDesig i)
-mkPorPrep Put SndPer (Just (n, m)) Nothing  = ("in the "   <>) . (descNthOfM n m <>)
-mkPorPrep Rem SndPer (Just (n, m)) Nothing  = ("from the " <>) . (descNthOfM n m <>)
-mkPorPrep Put ThrPer (Just (n, m)) Nothing  = ("in the "   <>) . (descNthOfM n m <>)
-mkPorPrep Rem ThrPer (Just (n, m)) Nothing  = ("from the " <>) . (descNthOfM n m <>)
-mkPorPrep Put SndPer (Just (n, m)) (Just i) = const $ "on the "   <> descNthOfM n m <> serialize (CorpseDesig i)
-mkPorPrep Rem SndPer (Just (n, m)) (Just i) = const $ "from the " <> descNthOfM n m <> serialize (CorpseDesig i)
-mkPorPrep Put ThrPer (Just (n, m)) (Just i) = const $ "on the "   <> descNthOfM n m <> serialize (CorpseDesig i)
-mkPorPrep Rem ThrPer (Just (n, m)) (Just i) = const $ "from the " <> descNthOfM n m <> serialize (CorpseDesig i)
-
-
-descNthOfM :: HasCallStack => Int -> Int -> Text
-descNthOfM 1 1 = ""
-descNthOfM n _ = spcR . mkOrdinal $ n
-
-
-onTheGround :: HasCallStack => Maybe NthOfM -> Text
-onTheGround = (|!| " on the ground") . ((both %~ Sum) <$>)
-
-
-mkCan'tPutCoinsDesc :: HasCallStack => Sing -> Coins -> [Text]
-mkCan'tPutCoinsDesc conSing = mkCoinsMsgs (can'tCoinsDescHelper . sorryPutVol $ conSing)
-
-
------
-
-
-helperPutEitherInv :: HasCallStack => Id
-                                   -> Desig
-                                   -> Maybe NthOfM
-                                   -> ToId
-                                   -> ToSing
-                                   -> GenericIntermediateRes
-                                   -> Either Text Inv
-                                   -> GenericIntermediateRes
-helperPutEitherInv i d mnom toId toSing a@(ms, origToSelfs, _, _) = \case
-  Left  msg -> a & _2 <>~ pure msg
-  Right is  ->
-    let (is', toSelfs)    | pair   <- checkNowEating i ms "put" "in a container" is
-                          , (x, y) <- checkIsLitLight pair
-                          = second (++ y) . onTrue (toId `elem` x) f $ (x, origToSelfs)
-        f                 = filter (/= toId) *** (<> pure (sorryPutInsideSelf toSing))
-        (_, cans, can'ts) = foldl' (partitionInvByVol ms . getConCapacity toId $ ms)
-                                   (calcInvCoinsVol toId ms, [], [])
-                                   is'
-        (toSelfs', bs)    = mkPutRemInvDescs i ms d Put mnom (mkMaybeCorpseId toId ms) toSing cans
-    in a & _1.invTbl.ind i    %~  (\\ cans)
-         & _1.invTbl.ind toId %~  addToInv ms cans
-         & _2                 .~  concat [ toSelfs, toSelfs', mkCan'tPutInvDescs toSing i ms can'ts ]
-         & _3                 <>~ bs
-         & _4                 <>~ toSelfs'
-  where
-    checkIsLitLight pair = let f pair' i' | getType i' ms == LightType, getLightIsLit i' ms
-                                          , msg <- sorryPutLitLight (getSing i' ms) toSing
-                                          = ((i' `delete`) *** (++ pure msg)) pair'
-                                          | otherwise = pair'
-                           in foldl' f pair . fst $ pair
-
-
-partitionInvByVol :: HasCallStack => MudState -> Vol -> (Vol, Inv, Inv) -> Id -> (Vol, Inv, Inv)
-partitionInvByVol = partitionInvHelper calcVol
-
-
-mkPutRemInvDescs :: HasCallStack => Id
-                                 -> MudState
-                                 -> Desig
-                                 -> PutOrRem
-                                 -> Maybe NthOfM
-                                 -> Maybe Id
-                                 -> Sing
-                                 -> Inv
-                                 -> ([Text], [Broadcast])
-mkPutRemInvDescs i ms d por mnom mci conSing = unzip . map helper . mkNameCountBothList i ms
-  where
-    helper (_, c, (s, _)) | c == 1 =
-        (  T.concat [ "You "
-                    , mkPorVerb por SndPer
-                    , spaced withArticle
-                    , mkPorPrep por SndPer mnom mci conSing
-                    , rest ]
-        , (T.concat [ serialize d
-                    , spaced . mkPorVerb por $ ThrPer
-                    , aOrAn s
-                    , " "
-                    , mkPorPrep por ThrPer mnom mci conSing
-                    , rest ], otherIds) )
-      where
-        withArticle = bool (aOrAn s) (the s) $ por == Put
-    helper (_, c, b) =
-        (  T.concat [ "You "
-                    , mkPorVerb por SndPer
-                    , spaced . showTxt $ c
-                    , mkPlurFromBoth b
-                    , " "
-                    , mkPorPrep por SndPer mnom mci conSing
-                    , rest ]
-        , (T.concat [ serialize d
-                    , spaced . mkPorVerb por $ ThrPer
-                    , showTxt c
-                    , spaced . mkPlurFromBoth $ b
-                    , mkPorPrep por ThrPer mnom mci conSing
-                    , rest ], otherIds) )
-    rest     = prd . onTheGround $ mnom
-    otherIds = i `delete` desigIds d
-
-
-mkCan'tPutInvDescs :: HasCallStack => ToSing -> Id -> MudState -> Inv -> [Text]
-mkCan'tPutInvDescs = can'tInvDescsHelper . sorryPutVol
-
-
------
-
-
-helperRemEitherCoins :: HasCallStack => Id
-                                     -> Desig
-                                     -> Maybe NthOfM
-                                     -> FromId
-                                     -> FromSing
-                                     -> IsConInRm
-                                     -> GenericIntermediateRes
-                                     -> [Either [Text] Coins]
-                                     -> GenericIntermediateRes
-helperRemEitherCoins i d mnom fromId fromSing icir (ms, toSelfs, bs, logMsgs) ecs =
-    let (ms', toSelfs', logMsgs', canCoins) = foldl' helper (ms, toSelfs, logMsgs, mempty) ecs
-    in (ms', toSelfs', bs ++ mkPutRemCoinsDescOthers i d Rem mnom mci fromSing canCoins, logMsgs')
-  where
-    mci                     = mkMaybeCorpseId fromId ms
-    helper a@(ms', _, _, _) = \case
-      Left  msgs -> a & _2 <>~ msgs
-      Right c    -> let (can, can't)  = f c
-                        f | icir      = partitionCoinsByEnc i ms'
-                          | otherwise = (, mempty)
-                        toSelfs'      = mkPutRemCoinsDescsSelf Rem mnom mci fromSing can
-                    in a & _1.coinsTbl.ind fromId %~ (<> negateCoins can)
-                         & _1.coinsTbl.ind i      %~ (<>             can)
-                         & _2 <>~ toSelfs' ++ mkCan'tRemCoinsDesc can't
-                         & _3 <>~ toSelfs'
-                         & _4 <>~ c
-
-
-mkCan'tRemCoinsDesc :: HasCallStack => Coins -> [Text]
-mkCan'tRemCoinsDesc = mkCoinsMsgs (can'tCoinsDescHelper sorryRemEnc)
-
-
------
-
-
-helperRemEitherInv :: HasCallStack => Id
-                                   -> Desig
-                                   -> Maybe NthOfM
-                                   -> FromId
-                                   -> FromSing
-                                   -> IsConInRm
-                                   -> GenericIntermediateRes
-                                   -> Either Text Inv
-                                   -> GenericIntermediateRes
-helperRemEitherInv i d mnom fromId fromSing icir a@(ms, _, _, _) = \case
-  Left  msg -> a & _2 <>~ pure msg
-  Right is  -> let (_, cans, can'ts) = f is
-                   f | icir          = foldl' (partitionInvByEnc ms . calcMaxEnc i $ ms) (calcWeight i ms, [], [])
-                     | otherwise     = (0, , [])
-                   (toSelfs, bs)     = mkPutRemInvDescs i ms d Rem mnom (mkMaybeCorpseId fromId ms) fromSing cans
-               in a & _1.invTbl.ind fromId %~  (\\ cans)
-                    & _1.invTbl.ind i      %~  addToInv ms cans
-                    & _2                   <>~ toSelfs ++ mkCan'tRemInvDescs i ms can'ts
-                    & _3                   <>~ bs
-                    & _4                   <>~ toSelfs
-
-
-mkCan'tRemInvDescs :: HasCallStack => Id -> MudState -> Inv -> [Text]
-mkCan'tRemInvDescs = can'tInvDescsHelper sorryRemEnc
 
 
 -----
@@ -1418,7 +1079,7 @@ mkUnreadyDescs i ms d targetIds = unzip [ helper icb | icb <- mkIdCountBothList 
     helper (targetId, count, b@(targetSing, _)) = if count == 1
       then let toSelfMsg   = T.concat [ "You ", mkVerb targetId SndPer, " the ", targetSing, "." ]
                toOthersMsg = T.concat [ serialize d, spaced . mkVerb targetId $ ThrPer, aOrAn targetSing,  "." ]
-           in ((toOthersMsg, otherPCIds), toSelfMsg)
+           in ((toOthersMsg, desigOtherIds d), toSelfMsg)
       else let toSelfMsg   = T.concat [ "You "
                                       , mkVerb targetId SndPer
                                       , spaced . showTxt $ count
@@ -1430,7 +1091,7 @@ mkUnreadyDescs i ms d targetIds = unzip [ helper icb | icb <- mkIdCountBothList 
                                       , " "
                                       , mkPlurFromBoth b
                                       , "." ]
-           in ((toOthersMsg, otherPCIds), toSelfMsg)
+           in ((toOthersMsg, desigOtherIds d), toSelfMsg)
     mkVerb targetId person = case getType targetId ms of
       ArmType -> case getArmSub targetId ms of
         Head   -> mkVerbTakeOff person
@@ -1458,7 +1119,6 @@ mkUnreadyDescs i ms d targetIds = unzip [ helper icb | icb <- mkIdCountBothList 
                           ThrPer -> "doffs"
     mkVerbUnready = \case SndPer -> "unready"
                           ThrPer -> "unreadies"
-    otherPCIds    = i `delete` desigIds d
 
 
 mkIdCountBothList :: HasCallStack => Id -> MudState -> Inv -> [(Id, Int, BothGramNos)]
@@ -1471,14 +1131,14 @@ mkIdCountBothList i ms targetIds =
 
 
 inOutOnOffs :: HasCallStack => [(Text, Bool)]
-inOutOnOffs = [ ("i",   otherwise)
-              , ("in",  otherwise)
-              , ("o",   likewise )
-              , ("of",  likewise )
-              , ("off", likewise )
-              , ("on",  otherwise)
-              , ("ou",  likewise )
-              , ("out", likewise ) ]
+inOutOnOffs = [ ("i",   True )
+              , ("in",  True )
+              , ("o",   False)
+              , ("of",  False)
+              , ("off", False)
+              , ("on",  True )
+              , ("ou",  False)
+              , ("out", False) ]
 
 
 -----
@@ -2014,10 +1674,10 @@ notFoundSuggestAsleeps a@(capitalize . T.toLower -> a') asleepSings ms =
 
 
 onOffs :: HasCallStack => [(Text, Bool)]
-onOffs = [ ("o",   likewise )
-         , ("of",  likewise )
-         , ("off", likewise )
-         , ("on",  otherwise) ]
+onOffs = [ ("o",   False)
+         , ("of",  False)
+         , ("off", False)
+         , ("on",  True ) ]
 
 
 -----
@@ -2032,7 +1692,7 @@ otherHand NoHand = LHand
 -----
 
 
-putOnMsgs :: HasCallStack => Id -> Desig -> Sing -> (Text, Broadcast)
+putOnMsgs :: HasCallStack => Desig -> Sing -> (Text, Broadcast)
 putOnMsgs = mkReadyMsgs "put on" "puts on"
 
 
@@ -2051,8 +1711,7 @@ readHelper i cols ms d = foldl' helper
     helper acc targetId =
         let s                 = getSing targetId ms
             readIt txt header = acc & _1 <>~ (multiWrapNl cols . T.lines $ header <> txt)
-                                    & _2 <>~ pure ( T.concat [ serialize d, " reads ", aOrAn s, "." ]
-                                                  , i `delete` desigIds d )
+                                    & _2 <>~ pure (T.concat [ serialize d, " reads ", aOrAn s, "." ], desigOtherIds d)
                                     & _3 <>~ pure (s |<>| parensQuote (showTxt targetId))
         in case getType targetId ms of
           WritableType ->
@@ -2072,7 +1731,7 @@ readHelper i cols ms d = foldl' helper
               let langs         = getKnownLangs i ms
                   holyHelper ts = acc & _1 <>~ multiWrapNl cols ts
                                       & _2 <>~ pure ( T.concat [ serialize d, " reads the writing on ", aOrAn s, "." ]
-                                                    , i `delete` desigIds d )
+                                                    , desigOtherIds d )
                                       & _3 <>~ pure (s |<>| parensQuote (showTxt targetId))
               in either f holyHelper $ case getHolySymbolGodName targetId ms of
                 Caila     | uncurry (&&) . second (== Human) . (isPla `fanUncurry` getRace) $ (i, ms)
@@ -2156,7 +1815,7 @@ sacrificeHelper p@(ActionParams i mq cols _) ci gn = getState >>= \ms ->
                                     , "." ], pure targetId)
     in checkActing p ms (Left Sacrificing) allValues $ do logHelper ms
                                                           wrapSend1Nl mq cols toSelf
-                                                          bcastIfNotIncogNl i . map helper $ i `delete` desigIds d
+                                                          bcastIfNotIncogNl i . map helper . desigOtherIds $ d
                                                           startAct i Sacrificing . sacrificeAct i mq ci $ gn
   where
     logHelper ms = let msg = T.concat [ "sacrificing a ", descSingId ci ms, t, " using a holy symbol of ", pp gn, "." ]
@@ -2192,6 +1851,91 @@ shuffleGive i ms LastArgIsTargetBindings { .. } =
                          , map (parseInBandsSuffix i ms) logMsgs' ))
           else genericSorry ms . sorryGiveType . getSing targetId $ ms
         Right {} -> genericSorry ms sorryGiveExcessTargets
+
+
+helperGiveEitherInv :: HasCallStack => Id
+                                    -> Desig
+                                    -> ToId
+                                    -> GenericIntermediateRes
+                                    -> Either Text Inv
+                                    -> GenericIntermediateRes
+helperGiveEitherInv i d toId a@(ms, _, _, _) = \case
+  Left  msg -> a & _2 <>~ pure msg
+  Right is  ->
+    let (is', sorrys)     = checkNowEating i ms "give" "to someone" is
+        (_, cans, can'ts) = foldl' (partitionInvByEnc ms . calcMaxEnc toId $ ms) (calcWeight toId ms, [], []) is'
+        (toSelfs, bs    ) = mkGiveInvDescs i ms d toId (serialize toDesig) cans
+        toDesig           = mkStdDesig toId ms Don'tCap
+    in a & _1.invTbl.ind i    %~  (\\ cans)
+         & _1.invTbl.ind toId %~  addToInv ms cans
+         & _2                 <>~ concat [ sorrys
+                                         , toSelfs
+                                         , mkCan'tGiveInvDescs (serialize toDesig { desigCap = DoCap }) i ms can'ts ]
+         & _3                 <>~ bs
+         & _4                 <>~ toSelfs
+
+
+mkGiveInvDescs :: HasCallStack => Id -> MudState -> Desig -> ToId -> Text -> Inv -> ([Text], [Broadcast])
+mkGiveInvDescs i ms d toId toDesig = second concat . unzip . map helper . mkNameCountBothList i ms
+  where
+    helper (_, c, (s, _)) | c == 1 =
+        ( T.concat [ "You give the ", s, " to ", toDesig, "." ]
+        , [ (T.concat [ serialize d, " gives ",     aOrAn s, " to ", toDesig, "." ], otherIds )
+          , (T.concat [ serialize d, " gives you ", aOrAn s,                  "." ], pure toId) ] )
+    helper (_, c, b) =
+        ( T.concat [ "You give", stuff, " to ", toDesig, "." ]
+        , [ (T.concat [ serialize d, " gives",     stuff, " to ", toDesig, "." ], otherIds )
+          , (T.concat [ serialize d, " gives you", stuff,                  "." ], pure toId) ] )
+      where
+        stuff = spaced (showTxt c) <> mkPlurFromBoth b
+    otherIds = toId `delete` desigOtherIds d
+
+
+mkCan'tGiveInvDescs :: HasCallStack => Text -> Id -> MudState -> Inv -> [Text]
+mkCan'tGiveInvDescs = can'tInvDescsHelper
+
+
+helperGiveEitherCoins :: HasCallStack => Id
+                                      -> Desig
+                                      -> ToId
+                                      -> GenericIntermediateRes
+                                      -> [Either [Text] Coins]
+                                      -> GenericIntermediateRes
+helperGiveEitherCoins i d toId (ms, toSelfs, bs, logMsgs) ecs =
+    let toDesig                             = serialize . mkStdDesig toId ms $ Don'tCap
+        (ms', toSelfs', logMsgs', canCoins) = foldl' (helper toDesig) (ms, toSelfs, logMsgs, mempty) ecs
+    in (ms', toSelfs', bs ++ mkGiveCoinsDescOthers d toId toDesig canCoins, logMsgs')
+  where
+    helper toDesig a@(ms', _, _, _) = \case
+      Left  msgs -> a & _2 <>~ msgs
+      Right c    -> let (can, can't) = partitionCoinsByEnc toId ms' c
+                        toSelfs'     = mkGiveCoinsDescsSelf toDesig can
+                    in a & _1.coinsTbl.ind i    %~  (<> negateCoins can)
+                         & _1.coinsTbl.ind toId %~  (<>             can)
+                         & _2                   <>~ toSelfs' ++ mkCan'tGiveCoinsDesc toDesig can't
+                         & _3                   <>~ toSelfs'
+                         & _4                   <>~ can
+
+
+mkGiveCoinsDescOthers :: HasCallStack => Desig -> ToId -> Text -> Coins -> [Broadcast]
+mkGiveCoinsDescOthers d toId toDesig c = c |!| toOthersBcast : [ (msg, pure toId) | msg <- toTargetMsgs ]
+  where
+    toOthersBcast = ( T.concat [ serialize d, " gives ", aCoinSomeCoins c, " to ", toDesig, "." ]
+                    , toId `delete` desigOtherIds d )
+    toTargetMsgs  = mkCoinsMsgs helper c
+    helper 1 cn   = T.concat [ serialize d, " gives you ", aOrAn cn,                 "."  ]
+    helper a cn   = T.concat [ serialize d, " gives you",  spaced . showTxt $ a, cn, "s." ]
+
+
+mkGiveCoinsDescsSelf :: HasCallStack => Text -> Coins -> [Text]
+mkGiveCoinsDescsSelf targetDesig = mkCoinsMsgs helper
+  where
+    helper 1 cn = T.concat [ "You give ", aOrAn cn,                 " to ",  targetDesig, "." ]
+    helper a cn = T.concat [ "You give",  spaced . showTxt $ a, cn, "s to ", targetDesig, "." ]
+
+
+mkCan'tGiveCoinsDesc :: HasCallStack => Text -> Coins -> [Text]
+mkCan'tGiveCoinsDesc targetDesig = mkCoinsMsgs (can'tCoinsDescHelper . sorryGiveEnc $ targetDesig)
 
 
 -----
@@ -2234,6 +1978,176 @@ shufflePut i ms d conName icir as invCoinsWithCon@(invWithCon, _) mobInvCoins f 
                                                                 ecs
                    in (ms'', (dropBlanks $ [ sorryInEq, sorryInRm ] ++ toSelfs', bs', logMsgs'))
         Right {} -> genericSorry ms sorryPutExcessCon
+
+
+helperPutEitherInv :: HasCallStack => Id
+                                   -> Desig
+                                   -> Maybe NthOfM
+                                   -> ToId
+                                   -> ToSing
+                                   -> GenericIntermediateRes
+                                   -> Either Text Inv
+                                   -> GenericIntermediateRes
+helperPutEitherInv i d mnom toId toSing a@(ms, origToSelfs, _, _) = \case
+  Left  msg -> a & _2 <>~ pure msg
+  Right is  ->
+    let (is', toSelfs)    | pair   <- checkNowEating i ms "put" "in a container" is
+                          , (x, y) <- checkIsLitLight pair
+                          = second (++ y) . onTrue (toId `elem` x) f $ (x, origToSelfs)
+        f                 = filter (/= toId) *** (<> pure (sorryPutInsideSelf toSing))
+        (_, cans, can'ts) = foldl' (partitionInvByVol ms . getConCapacity toId $ ms)
+                                   (calcInvCoinsVol toId ms, [], [])
+                                   is'
+        (toSelfs', bs)    = mkPutRemInvDescs i ms d Put mnom (mkMaybeCorpseId toId ms) toSing cans
+    in a & _1.invTbl.ind i    %~  (\\ cans)
+         & _1.invTbl.ind toId %~  addToInv ms cans
+         & _2                 .~  concat [ toSelfs, toSelfs', mkCan'tPutInvDescs toSing i ms can'ts ]
+         & _3                 <>~ bs
+         & _4                 <>~ toSelfs'
+  where
+    checkIsLitLight pair = let f pair' i' | getType i' ms == LightType, getLightIsLit i' ms
+                                          , msg <- sorryPutLitLight (getSing i' ms) toSing
+                                          = ((i' `delete`) *** (++ pure msg)) pair'
+                                          | otherwise = pair'
+                           in foldl' f pair . fst $ pair
+
+
+partitionInvByVol :: HasCallStack => MudState -> Vol -> (Vol, Inv, Inv) -> Id -> (Vol, Inv, Inv)
+partitionInvByVol = partitionInvHelper calcVol
+
+
+mkPutRemInvDescs :: HasCallStack => Id
+                                 -> MudState
+                                 -> Desig
+                                 -> PutOrRem
+                                 -> Maybe NthOfM
+                                 -> Maybe Id
+                                 -> Sing
+                                 -> Inv
+                                 -> ([Text], [Broadcast])
+mkPutRemInvDescs i ms d por mnom mci conSing = unzip . map helper . mkNameCountBothList i ms
+  where
+    helper (_, c, (s, _)) | c == 1 =
+        (  T.concat [ "You "
+                    , mkPorVerb por SndPer
+                    , spaced withArticle
+                    , mkPorPrep por SndPer mnom mci conSing
+                    , rest ]
+        , (T.concat [ serialize d
+                    , spaced . mkPorVerb por $ ThrPer
+                    , aOrAn s
+                    , " "
+                    , mkPorPrep por ThrPer mnom mci conSing
+                    , rest ], desigOtherIds d) )
+      where
+        withArticle = bool (aOrAn s) (the s) $ por == Put
+    helper (_, c, b) =
+        (  T.concat [ "You "
+                    , mkPorVerb por SndPer
+                    , spaced . showTxt $ c
+                    , mkPlurFromBoth b
+                    , " "
+                    , mkPorPrep por SndPer mnom mci conSing
+                    , rest ]
+        , (T.concat [ serialize d
+                    , spaced . mkPorVerb por $ ThrPer
+                    , showTxt c
+                    , spaced . mkPlurFromBoth $ b
+                    , mkPorPrep por ThrPer mnom mci conSing
+                    , rest ], desigOtherIds d) )
+    rest = prd . onTheGround $ mnom
+
+
+mkCan'tPutInvDescs :: HasCallStack => ToSing -> Id -> MudState -> Inv -> [Text]
+mkCan'tPutInvDescs = can'tInvDescsHelper . sorryPutVol
+
+
+type NthOfM = (Int, Int)
+
+
+helperPutEitherCoins :: HasCallStack => Id
+                                     -> Desig
+                                     -> Maybe NthOfM
+                                     -> ToId
+                                     -> ToSing
+                                     -> GenericIntermediateRes
+                                     -> [Either [Text] Coins]
+                                     -> GenericIntermediateRes
+helperPutEitherCoins i d mnom toId toSing (ms, toSelfs, bs, logMsgs) ecs =
+    let (ms', toSelfs', logMsgs', canCoins) = foldl' helper (ms, toSelfs, logMsgs, mempty) ecs
+    in (ms', toSelfs', bs ++ mkPutRemCoinsDescOthers d Put mnom mci toSing canCoins, logMsgs')
+  where
+    mci                     = mkMaybeCorpseId toId ms
+    helper a@(ms', _, _, _) = \case
+      Left  msgs -> a & _2 <>~ msgs
+      Right c    -> let (can, can't) = partitionCoinsByVol toId ms' c
+                        toSelfs'     = mkPutRemCoinsDescsSelf Put mnom mci toSing can
+                    in a & _1.coinsTbl.ind i    %~  (<> negateCoins can)
+                         & _1.coinsTbl.ind toId %~  (<>             can)
+                         & _2                   <>~ toSelfs' ++ mkCan'tPutCoinsDesc toSing can't
+                         & _3                   <>~ toSelfs'
+                         & _4                   <>~ can
+
+
+partitionCoinsByVol :: HasCallStack => Id -> MudState -> Coins -> (Coins, Coins)
+partitionCoinsByVol = partitionCoinsHelper getConCapacity calcInvCoinsVol coinVol
+
+
+mkPutRemCoinsDescOthers :: HasCallStack => Desig -> PutOrRem -> Maybe NthOfM -> Maybe Id -> Sing -> Coins -> [Broadcast]
+mkPutRemCoinsDescOthers d por mnom mci conSing c = c |!| pure (T.concat [ serialize d
+                                                                        , spaced . mkPorVerb por $ ThrPer
+                                                                        , aCoinSomeCoins c
+                                                                        , " "
+                                                                        , mkPorPrep por ThrPer mnom mci conSing
+                                                                        , prd . onTheGround $ mnom ], desigOtherIds d)
+
+
+mkPutRemCoinsDescsSelf :: HasCallStack => PutOrRem -> Maybe NthOfM -> Maybe Id -> Sing -> Coins -> [Text]
+mkPutRemCoinsDescsSelf por mnom mci conSing = mkCoinsMsgs helper
+  where
+    helper a cn | a == 1 = T.concat [ partA, aOrAn cn,  " ",           partB ]
+    helper a cn          = T.concat [ partA, showTxt a, " ", cn, "s ", partB ]
+    partA                = spcR $ "You " <> mkPorVerb por SndPer
+    partB                = prd $ mkPorPrep por SndPer mnom mci conSing <> onTheGround mnom
+
+
+mkPorVerb :: HasCallStack => PutOrRem -> Verb -> Text
+mkPorVerb Put SndPer = "put"
+mkPorVerb Put ThrPer = "puts"
+mkPorVerb Rem SndPer = "remove"
+mkPorVerb Rem ThrPer = "removes"
+
+
+mkPorPrep :: HasCallStack => PutOrRem -> Verb -> Maybe NthOfM -> Maybe Id -> Sing -> Text
+mkPorPrep Put SndPer Nothing       Nothing  = ("in the "   <>)
+mkPorPrep Rem SndPer Nothing       Nothing  = ("from the " <>)
+mkPorPrep Put ThrPer Nothing       Nothing  = ("in "       <>) . aOrAn
+mkPorPrep Rem ThrPer Nothing       Nothing  = ("from "     <>) . aOrAn
+mkPorPrep Put SndPer Nothing       (Just i) = const $ "on the "   <> serialize (CorpseDesig i)
+mkPorPrep Rem SndPer Nothing       (Just i) = const $ "from the " <> serialize (CorpseDesig i)
+mkPorPrep Put ThrPer Nothing       (Just i) = const $ "on the "   <> serialize (CorpseDesig i)
+mkPorPrep Rem ThrPer Nothing       (Just i) = const $ "from the " <> serialize (CorpseDesig i)
+mkPorPrep Put SndPer (Just (n, m)) Nothing  = ("in the "   <>) . (descNthOfM n m <>)
+mkPorPrep Rem SndPer (Just (n, m)) Nothing  = ("from the " <>) . (descNthOfM n m <>)
+mkPorPrep Put ThrPer (Just (n, m)) Nothing  = ("in the "   <>) . (descNthOfM n m <>)
+mkPorPrep Rem ThrPer (Just (n, m)) Nothing  = ("from the " <>) . (descNthOfM n m <>)
+mkPorPrep Put SndPer (Just (n, m)) (Just i) = const $ "on the "   <> descNthOfM n m <> serialize (CorpseDesig i)
+mkPorPrep Rem SndPer (Just (n, m)) (Just i) = const $ "from the " <> descNthOfM n m <> serialize (CorpseDesig i)
+mkPorPrep Put ThrPer (Just (n, m)) (Just i) = const $ "on the "   <> descNthOfM n m <> serialize (CorpseDesig i)
+mkPorPrep Rem ThrPer (Just (n, m)) (Just i) = const $ "from the " <> descNthOfM n m <> serialize (CorpseDesig i)
+
+
+descNthOfM :: HasCallStack => Int -> Int -> Text
+descNthOfM 1 1 = ""
+descNthOfM n _ = spcR . mkOrdinal $ n
+
+
+onTheGround :: HasCallStack => Maybe NthOfM -> Text
+onTheGround = (|!| " on the ground") . ((both %~ Sum) <$>)
+
+
+mkCan'tPutCoinsDesc :: HasCallStack => Sing -> Coins -> [Text]
+mkCan'tPutCoinsDesc conSing = mkCoinsMsgs (can'tCoinsDescHelper . sorryPutVol $ conSing)
 
 
 -----
@@ -2279,6 +2193,63 @@ shuffleRem i ms d conName icir as invCoinsWithCon@(invWithCon, _) f =
                          & _2 .~ pure sorryRemIgnore
 
 
+helperRemEitherInv :: HasCallStack => Id
+                                   -> Desig
+                                   -> Maybe NthOfM
+                                   -> FromId
+                                   -> FromSing
+                                   -> IsConInRm
+                                   -> GenericIntermediateRes
+                                   -> Either Text Inv
+                                   -> GenericIntermediateRes
+helperRemEitherInv i d mnom fromId fromSing icir a@(ms, _, _, _) = \case
+  Left  msg -> a & _2 <>~ pure msg
+  Right is  -> let (_, cans, can'ts) = f is
+                   f | icir          = foldl' (partitionInvByEnc ms . calcMaxEnc i $ ms) (calcWeight i ms, [], [])
+                     | otherwise     = (0, , [])
+                   (toSelfs, bs)     = mkPutRemInvDescs i ms d Rem mnom (mkMaybeCorpseId fromId ms) fromSing cans
+               in a & _1.invTbl.ind fromId %~  (\\ cans)
+                    & _1.invTbl.ind i      %~  addToInv ms cans
+                    & _2                   <>~ toSelfs ++ mkCan'tRemInvDescs i ms can'ts
+                    & _3                   <>~ bs
+                    & _4                   <>~ toSelfs
+
+
+mkCan'tRemInvDescs :: HasCallStack => Id -> MudState -> Inv -> [Text]
+mkCan'tRemInvDescs = can'tInvDescsHelper sorryRemEnc
+
+
+helperRemEitherCoins :: HasCallStack => Id
+                                     -> Desig
+                                     -> Maybe NthOfM
+                                     -> FromId
+                                     -> FromSing
+                                     -> IsConInRm
+                                     -> GenericIntermediateRes
+                                     -> [Either [Text] Coins]
+                                     -> GenericIntermediateRes
+helperRemEitherCoins i d mnom fromId fromSing icir (ms, toSelfs, bs, logMsgs) ecs =
+    let (ms', toSelfs', logMsgs', canCoins) = foldl' helper (ms, toSelfs, logMsgs, mempty) ecs
+    in (ms', toSelfs', bs ++ mkPutRemCoinsDescOthers d Rem mnom mci fromSing canCoins, logMsgs')
+  where
+    mci                     = mkMaybeCorpseId fromId ms
+    helper a@(ms', _, _, _) = \case
+      Left  msgs -> a & _2 <>~ msgs
+      Right c    -> let (can, can't)  = f c
+                        f | icir      = partitionCoinsByEnc i ms'
+                          | otherwise = (, mempty)
+                        toSelfs'      = mkPutRemCoinsDescsSelf Rem mnom mci fromSing can
+                    in a & _1.coinsTbl.ind fromId %~ (<> negateCoins can)
+                         & _1.coinsTbl.ind i      %~ (<>             can)
+                         & _2 <>~ toSelfs' ++ mkCan'tRemCoinsDesc can't
+                         & _3 <>~ toSelfs'
+                         & _4 <>~ c
+
+
+mkCan'tRemCoinsDesc :: HasCallStack => Coins -> [Text]
+mkCan'tRemCoinsDesc = mkCoinsMsgs (can'tCoinsDescHelper sorryRemEnc)
+
+
 -----
 
 
@@ -2307,7 +2278,7 @@ stopDrinking (WithArgs i mq cols _) ms = case getNowDrinking i ms of
   Just (l, s) -> let toSelf      = T.concat [ "You stop drinking ", renderLiqNoun l the, " from the ", s, "." ]
                      d           = mkStdDesig i ms DoCap
                      msg         = T.concat [ serialize d, " stops drinking from ", aOrAn s, "." ]
-                     bcastHelper = bcastIfNotIncogNl i . pure $ (msg, i `delete` desigIds d)
+                     bcastHelper = bcastIfNotIncogNl i . pure $ (msg, desigOtherIds d)
                  in stopAct i Drinking >> wrapSend mq cols toSelf >> bcastHelper
   Nothing     -> unit
 stopDrinking p _ = pmf "stopDrinking" p
@@ -2319,7 +2290,7 @@ stopEating (WithArgs i mq cols _) ms = maybeVoid helper . getNowEating i $ ms
     helper (_, s) = let toSelf      = prd $ "You stop eating " <> theOnLower s
                         d           = mkStdDesig i ms DoCap
                         msg         = T.concat [ serialize d, " stops eating ", aOrAn s, "." ]
-                        bcastHelper = bcastIfNotIncogNl i . pure $ (msg, i `delete` desigIds d)
+                        bcastHelper = bcastIfNotIncogNl i . pure $ (msg, desigOtherIds d)
                     in stopAct i Eating >> wrapSend mq cols toSelf >> bcastHelper
 stopEating p _ = pmf "stopEating" p
 
@@ -2328,6 +2299,6 @@ stopSacrificing :: HasCallStack => ActionParams -> MudState -> MudStack ()
 stopSacrificing (WithArgs i mq cols _) ms = let toSelf      = "You stop sacrificing the corpse."
                                                 d           = mkStdDesig i ms DoCap
                                                 msg         = serialize d <> " stops sacrificing a corpse."
-                                                bcastHelper = bcastIfNotIncogNl i . pure $ (msg, i `delete` desigIds d)
+                                                bcastHelper = bcastIfNotIncogNl i . pure $ (msg, desigOtherIds d)
                                             in stopAct i Sacrificing >> wrapSend mq cols toSelf >> bcastHelper
 stopSacrificing p                      _  = pmf "stopSacrificing" p

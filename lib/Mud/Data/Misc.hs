@@ -728,7 +728,7 @@ instance Serializable Desig where
     | fields <- [ desigEntName
                 , showTxt desigCap
                 , showTxt desigId
-                , showTxt desigIds
+                , showTxt desigOtherIds
                 , showTxt desigDoMaskInDark
                 , showTxt desigDoExpandSing ]
     = quoteWith sdd . T.intercalate dd $ fields
@@ -751,7 +751,7 @@ instance Serializable Desig where
     = StdDesig { desigEntName      = en
                , desigCap          = read . T.unpack $ cap
                , desigId           = read . T.unpack $ i
-               , desigIds          = read . T.unpack $ is
+               , desigOtherIds     = read . T.unpack $ is
                , desigDoMaskInDark = read . T.unpack $ b1
                , desigDoExpandSing = read . T.unpack $ b2 }
     | c == nonStdDesigDelimiter
@@ -942,7 +942,7 @@ data CurryWeekday = SunDay
 data Desig = StdDesig    { desigEntName      :: Text
                          , desigCap          :: DoOrDon'tCap -- Whether or not to capitalize "desigEntName" and "someone".
                          , desigId           :: Id
-                         , desigIds          :: Inv
+                         , desigOtherIds     :: Inv
                          , desigDoMaskInDark :: Bool -- Whether or not to expand to "someone" in the dark.
                          , desigDoExpandSing :: Bool } -- The "intro" cmd presents a scenario in which we actually don't want to expand to ent sing.
            | NonStdDesig { dEntSing          :: Text -- Expand to the value of "dEntSing" if it's among introduced names. Otherwise, expand to the value of "dDesc".

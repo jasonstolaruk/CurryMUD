@@ -1243,8 +1243,8 @@ adminKill   (LowerNub i mq cols as) = getState >>= \ms -> do
     mkBs ms = concatMap f
       where
         f targetId = let d        = mkStdDesig targetId ms Don'tCap
-                         toTarget = g (nl $ adminKillMsg "you are",              pure targetId               )
-                         toOthers = g (nl . adminKillMsg $ serialize d <> " is", targetId `delete` desigIds d)
+                         toTarget = g (nl $ adminKillMsg "you are",              pure targetId  )
+                         toOthers = g (nl . adminKillMsg $ serialize d <> " is", desigOtherIds d)
                      in [ toTarget, toOthers ]
         g          = first (colorWith adminKillColor)
 adminKill p = pmf "adminKill" p
@@ -2356,16 +2356,15 @@ teleHelper :: HasCallStack => ActionParams
 teleHelper p@ActionParams { myId } ms originId destId destName mt f sorry =
     let g            = maybe strictId ((:) . (, pure myId) . nlnl) mt
         originDesig  = mkStdDesig myId ms Don'tCap
-        originMobIds = myId `delete` desigIds originDesig
         destDesig    = mkSerializedNonStdDesig myId ms (getSing myId ms) A Don'tCap
         destMobIds   = views (invTbl.ind destId) (findMobIds ms) ms
         ms'          = ms & mobTbl.ind myId.rmId     .~ destId
                           & mobTbl.ind myId.lastRmId .~ originId
                           & invTbl.ind originId      %~ (myId `delete`)
                           & invTbl.ind destId        %~ addToInv ms (pure myId)
-        bs           = map (first nlnl) [ (teleDescMsg,                             pure myId   )
-                                        , (teleOriginMsg . serialize $ originDesig, originMobIds)
-                                        , (teleDestMsg destDesig,                   destMobIds  ) ]
+        bs           = map (first nlnl) [ (teleDescMsg,                             pure myId                )
+                                        , (teleOriginMsg . serialize $ originDesig, desigOtherIds originDesig)
+                                        , (teleDestMsg destDesig,                   destMobIds               ) ]
     in if | destId == originId    -> sorry sorryTeleAlready
           | destId == iWelcome    -> sorry sorryTeleWelcomeRm
           | destId == iLoggedOut  -> sorry sorryTeleLoggedOutRm

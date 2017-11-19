@@ -27,7 +27,6 @@ import           Control.Lens.Operators ((%~), (.~))
 import           Control.Monad (unless, when)
 import           Control.Monad.IO.Class (liftIO)
 import qualified Data.IntMap.Strict as IM (elems, keys)
-import           Data.List (delete)
 import qualified Data.Map.Strict as M (elems, filterWithKey)
 import           Data.Monoid ((<>))
 import           Data.Text (Text)
@@ -64,7 +63,7 @@ threadLightTimer i = descSingId i <$> getState >>= \singId ->
             bcastSelf   = bcastNl . pure . (, pure locId)
             bcastHelper = unless isInMobInv . bcastIfNotIncogNl locId
             isInMobInv  = i `elem` locInv
-            mkBs        = pure . (, locId `delete` desigIds d)
+            mkBs        = pure . (, desigOtherIds d)
             d           = mkStdDesig locId ms DoCap
             mobIdsInRm  = findMobIds ms locInv
             leadTxt     = x <> y where x | isInMobInv = the' s

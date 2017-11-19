@@ -22,7 +22,6 @@ module Mud.TopLvlDefs.Misc ( acl
                            , lampLrgSecs
                            , lampSecs
                            , lampSmlSecs
-                           , likewise
                            , logRotationDelay
                            , maxBonuses
                            , maxChanNameLen
@@ -139,10 +138,6 @@ foodWaterFeelDur = 20
 
 initPickPts :: Int
 initPickPts = 200
-
-
-likewise :: Bool
-likewise = not otherwise
 
 
 lampSmlSecs, lampSecs, lampLrgSecs :: Seconds

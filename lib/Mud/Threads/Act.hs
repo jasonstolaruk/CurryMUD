@@ -37,7 +37,6 @@ import           Control.Lens (at, view, views)
 import           Control.Lens.Operators ((%~), (&), (.~), (<-~), (?~), (^.))
 import           Control.Monad (join, when)
 import           Control.Monad.IO.Class (liftIO)
-import           Data.List (delete)
 import qualified Data.Map.Strict as M (elems, insert, lookup)
 import           Data.Maybe (isJust)
 import           Data.Monoid ((<>))
@@ -104,7 +103,7 @@ drinkAct DrinkBundle { .. } = modifyStateSeq f `finally` tweak (mobTbl.ind drink
     f ms = let t  | xs <- [ "You begin drinking ", renderLiqNoun drinkLiq the, " from the ", drinkVesselSing ]
                   = thrice prd . T.concat $ xs
                d  = mkStdDesig drinkerId ms DoCap
-               bs = pure (T.concat [ serialize d, " begins drinking from ", vo, "." ], drinkerId `delete` desigIds d)
+               bs = pure (T.concat [ serialize d, " begins drinking from ", vo, "." ], desigOtherIds d)
                fs = pure $ sequence_ gs `catch` die (Just drinkerId) (pp Drinking)
                gs = [ multiWrapSend1Nl drinkerMq drinkerCols . dropEmpties $ [ t, drinkLiq^.liqDrinkDesc ]
                     , bcastIfNotIncogNl drinkerId bs
@@ -125,7 +124,7 @@ drinkAct DrinkBundle { .. } = modifyStateSeq f `finally` tweak (mobTbl.ind drink
         let (stomAvail, _) = calcStomachAvailSize drinkerId ms
             d              = mkStdDesig drinkerId ms DoCap
             bcastHelper b  | xs <- [ serialize d, " finishes drinking from ", vo, b |?| " after draining it dry", "." ]
-                           = bcastIfNotIncogNl drinkerId . pure $ (T.concat xs, drinkerId `delete` desigIds d)
+                           = bcastIfNotIncogNl drinkerId . pure $ (T.concat xs, desigOtherIds d)
         if | newCont == Right Nothing ->
                let xs = [ "You drain the ", drinkVesselSing, " dry after ", mkMouthfulTxt x, " mouthful", sOnNon1 x, "." ]
                in (>> bcastHelper True) . ioHelper x . T.concat $ xs
@@ -163,7 +162,7 @@ eatAct EatBundle { .. } = modifyStateSeq f `finally` tweak (mobTbl.ind eaterId.n
     distId@(DistinctFoodId i) = eatFood^.foodId
     f ms = let t  = thrice prd $ "You begin eating the " <> eatFoodSing
                d  = mkStdDesig eaterId ms DoCap
-               bs = pure (T.concat [ serialize d, " begins eating ", vo, "." ], eaterId `delete` desigIds d)
+               bs = pure (T.concat [ serialize d, " begins eating ", vo, "." ], desigOtherIds d)
                fs = pure $ sequence_ gs `catch` die (Just eaterId) (pp Eating)
                gs = [ multiWrapSend1Nl eaterMq eaterCols . dropEmpties $ [ t, eatFood^.foodEatDesc ]
                     , bcastIfNotIncogNl eaterId bs
@@ -179,7 +178,7 @@ eatAct EatBundle { .. } = modifyStateSeq f `finally` tweak (mobTbl.ind eaterId.n
         let (stomAvail, _) = calcStomachAvailSize eaterId ms
             d              = mkStdDesig eaterId ms DoCap
             bcastHelper b  | xs <- [ serialize d, " finishes eating ", b |?| "all of ", vo, "." ]
-                           = bcastIfNotIncogNl eaterId . pure $ (T.concat xs, eaterId `delete` desigIds d)
+                           = bcastIfNotIncogNl eaterId . pure $ (T.concat xs, desigOtherIds d)
         if | m <= 0 -> do
                destroy . pure $ eatFoodId
                let xs = [ "You finish eating all of the ", eatFoodSing, " after ", mkMouthfulTxt x, " mouthful", sOnNon1 x, "." ]

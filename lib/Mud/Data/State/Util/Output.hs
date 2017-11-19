@@ -322,7 +322,7 @@ expandEntName i ms StdDesig { .. } intros | f      <- mkCapsFun desigCap
                                             then f . T.concat $ [ the xth, expandSex h, " ", t ]
                                             else onFalse (isCapital s) (f . the) s
   where
-    xth = let idsInRm = filter ((`notElem` intros) . (`getSing` ms)) $ i `delete` desigIds
+    xth = let idsInRm = filter ((`notElem` intros) . (`getSing` ms)) $ i `delete` findMobIds ms (getMobRmInv desigId ms)
               matches = foldr (\pi -> onTrue (mkUnknownPCEntName pi ms == desigEntName) (pi :)) [] idsInRm
           in length matches > 1 |?| maybeEmp (spcR . mkOrdinal . succ) (elemIndex desigId matches)
     expandSex 'm' = "male"

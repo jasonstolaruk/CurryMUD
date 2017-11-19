@@ -44,7 +44,7 @@ import           Control.Lens.Operators ((?~), (.~), (&), (%~), (<>~))
 import           Control.Monad (forM_)
 import           Data.Bits (setBit, zeroBits)
 import           Data.Function (on)
-import           Data.List ((\\), delete)
+import           Data.List ((\\))
 import           Data.Monoid ((<>))
 import           Data.Text (Text)
 import qualified Data.Map.Strict as M (empty, fromList, singleton)
@@ -185,7 +185,7 @@ helperFillWaterRmEitherInv i srcDesig (eis:eiss) a = next $ case eis of
         bcastHelper        = pure (T.concat [ serialize srcDesig
                                             , " fills "
                                             , aOrAn vs
-                                            , " with water from the pool." ], i `delete` desigIds srcDesig)
+                                            , " with water from the pool." ], desigOtherIds srcDesig)
 
 
 -----
@@ -205,7 +205,7 @@ getFlowerHookFun i Hook { .. } v a@(_, (ms, _, _, _), _) = if calcWeight i ms + 
   else a & _1    %~  (\\ hookTriggers)
          & _2._2 <>~ pure msg
          & _2._3 <>~ ( let selfDesig = mkStdDesig i ms DoCap
-                       in pure (serialize selfDesig <> " picks " <> rest, i `delete` desigIds selfDesig) )
+                       in pure (serialize selfDesig <> " picks " <> rest, desigOtherIds selfDesig) )
          & _2._4 <>~ pure (bracketQuote hookName <> " picked flower")
          & _3    .~  pure (mkFlower i v)
   where
@@ -313,7 +313,7 @@ readLookPaperHookFun i Hook { .. } (V.head -> r) a@(_, (ms, _, _, _), _) =
       & _2._2 <>~ pure signDesc
       & _2._3 <>~ ( let selfDesig = mkStdDesig i ms DoCap
                     in pure ( serialize selfDesig <> " reads the piece of paper nailed to the sign."
-                            , i `delete` desigIds selfDesig ) )
+                            , desigOtherIds selfDesig ) )
       & _2._4 <>~ pure (bracketQuote hookName <> " read paper")
   where
     signDesc = dblQuote . prd $ "Your lucky number is " <> x

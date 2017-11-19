@@ -27,7 +27,7 @@ import           Mud.Util.Text
 import           Control.Arrow (first)
 import           Control.Lens.Operators ((?~), (.~))
 import           Data.Bool
-import           Data.List ((\\), delete)
+import           Data.List (delete)
 import qualified Data.Set as S (Set, filter, foldr, fromList, map, toList)
 import           Data.Text (Text)
 import qualified Data.Text as T
@@ -1039,7 +1039,7 @@ expCmd (ExpCmd ecn ect          desc) (NoArgs i mq cols) = getState >>= \ms -> c
             serialized                  = serializeDesigHelper d toOthers
             (heShe, hisHer, himHerself) = mkPros . getSex i $ ms
             substitutions               = [ ("%", serialized), ("^", heShe), ("&", hisHer), ("*", himHerself) ]
-            toOthersBcast               = pure (nlnl . replace substitutions $ toOthers, i `delete` desigIds d)
+            toOthersBcast               = pure (nlnl . replace substitutions $ toOthers, desigOtherIds d)
             tuple                       = (toSelf, toOthersBcast, desc, toSelf)
         in expCmdHelper i mq cols ecn tuple
 expCmd (ExpCmd ecn NoTarget {} _   ) p@(WithArgs     _ _  _    (_:_) ) = advise p [] . sorryExpCmdIllegalTarget $ ecn
@@ -1063,7 +1063,7 @@ expCmd (ExpCmd ecn ect         desc)   (OneArgNubbed i mq cols target) = case ec
                         let (toSelf', toOthers', logMsg, substitutions) = mkBindings targetDesigTxt
                             toTarget'     = replace substitutions toTarget
                             toTargetBcast = (nlnl toTarget', pure targetId)
-                            toOthersBcast = (nlnl toOthers', desigIds d \\ [ i, targetId ])
+                            toOthersBcast = (nlnl toOthers', targetId `delete` desigOtherIds d)
                             tuple         = (toSelf', [ toTargetBcast, toOthersBcast ], desc, logMsg)
                         in expCmdHelper i mq cols ecn tuple
                     mkBindings targetTxt = let msg                         = replace (pure ("@", targetTxt)) toSelf

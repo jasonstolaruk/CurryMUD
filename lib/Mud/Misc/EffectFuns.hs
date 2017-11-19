@@ -14,7 +14,6 @@ import           Mud.TheWorld.Liqs
 import           Mud.Util.Misc
 
 import           Control.Monad (when)
-import           Data.List (delete)
 import           Data.Monoid ((<>))
 import           Data.Text (Text)
 
@@ -46,7 +45,7 @@ oilEffectFun i secs = let f = getState >>= \ms -> when (isLoggedIn . getPla i $ 
   where
     helper ms = let (mq, cols) = getMsgQueueColumns i ms
                     d          = mkStdDesig i ms DoCap
-                    bs         = pure (serialize d <> "'s stomach rumbles loudly.", i `delete` desigIds d)
+                    bs         = pure (serialize d <> "'s stomach rumbles loudly.", desigOtherIds d)
                 in do logPla "oilEffectFun" i "stomach rumbling."
                       wrapSend mq cols "Your stomach rumbles loudly."
                       bcastIfNotIncogNl i bs
