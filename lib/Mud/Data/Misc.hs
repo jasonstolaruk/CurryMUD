@@ -725,7 +725,12 @@ class Serializable a where
 
 instance Serializable Desig where
   serialize StdDesig { .. }
-    | fields <- [ showTxt desigDoExpandSing, desigEntName, showTxt desigCap, showTxt desigId, showTxt desigIds ]
+    | fields <- [ desigEntName
+                , showTxt desigCap
+                , showTxt desigId
+                , showTxt desigIds
+                , showTxt desigDoMaskInDark
+                , showTxt desigDoExpandSing ]
     = quoteWith sdd . T.intercalate dd $ fields
     where
       (sdd, dd) = (stdDesigDelimiter, desigDelimiter) & both %~ T.singleton
@@ -742,12 +747,13 @@ instance Serializable Desig where
       cdd = T.singleton corpseDesigDelimiter
   deserialize a@(headTail -> (c, T.init -> t))
     | c == stdDesigDelimiter
-    , [ b, en, cap, i, is ] <- T.splitOn dd t
-    = StdDesig { desigDoExpandSing = read . T.unpack $ b
-               , desigEntName      = en
+    , [ en, cap, i, is, b1, b2 ] <- T.splitOn dd t
+    = StdDesig { desigEntName      = en
                , desigCap          = read . T.unpack $ cap
                , desigId           = read . T.unpack $ i
-               , desigIds          = read . T.unpack $ is }
+               , desigIds          = read . T.unpack $ is
+               , desigDoMaskInDark = read . T.unpack $ b1
+               , desigDoExpandSing = read . T.unpack $ b2 }
     | c == nonStdDesigDelimiter
     , [ es, nsd, cap ] <- T.splitOn dd t
     = NonStdDesig { dEntSing = es, dDesc = nsd, dCap = read . T.unpack $ cap }
@@ -933,11 +939,12 @@ data CurryWeekday = SunDay
 -----
 
 
-data Desig = StdDesig    { desigDoExpandSing :: Bool -- The "intro" cmd presents a scenario in which we actually don't want to expand to ent sing.
-                         , desigEntName      :: Text
+data Desig = StdDesig    { desigEntName      :: Text
                          , desigCap          :: DoOrDon'tCap -- Whether or not to capitalize "desigEntName" and "someone".
                          , desigId           :: Id
-                         , desigIds          :: Inv }
+                         , desigIds          :: Inv
+                         , desigDoMaskInDark :: Bool -- Whether or not to expand to "someone" in the dark.
+                         , desigDoExpandSing :: Bool } -- The "intro" cmd presents a scenario in which we actually don't want to expand to ent sing.
            | NonStdDesig { dEntSing          :: Text -- Expand to the value of "dEntSing" if it's among introduced names. Otherwise, expand to the value of "dDesc".
                          , dDesc             :: Text
                          , dCap              :: DoOrDon'tCap } -- Whether or not to capitalize "someone".

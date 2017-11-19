@@ -1720,11 +1720,12 @@ intro p@(LowerNub i mq cols as) = getStateTime >>= \(ms, ct) ->
                          toSelf      = nlnl . prd $ "You introduce yourself to " <> targetTxt
                          logMsg      = prd $ "introduced to " <> targetSing
                          is          = findMobIds ms ris
-                         srcDesig    = StdDesig { desigDoExpandSing = False
-                                                , desigEntName      = mkUnknownPCEntName i ms
+                         srcDesig    = StdDesig { desigEntName      = mkUnknownPCEntName i ms
                                                 , desigCap          = DoCap
                                                 , desigId           = i
-                                                , desigIds          = is }
+                                                , desigIds          = is
+                                                , desigDoMaskInDark = True
+                                                , desigDoExpandSing = False }
                          himHerself  = mkReflexPro . getSex i $ ms
                          toTarget    = nlnl . T.concat $ [ parseInBands (Just ct) targetId ms . serialize $ srcDesig -- We need to parse here in order to produce "The 1st" in "The 1st male human introduces himself to you as..."
                                                          , " introduces "
@@ -3881,6 +3882,7 @@ unlink p = pmf "unlink" p
 -----
 
 
+-- TODO: "Someone unreadies a torch."
 unready :: HasCallStack => ActionFun
 unready p@AdviseNoArgs     = advise p ["unready"] adviceUnreadyNoArgs
 unready p@(LowerNub' i as) = genericAction p helper "unready"

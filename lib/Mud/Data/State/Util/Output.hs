@@ -92,8 +92,8 @@ anglePrompt = flip sendPrompt ">"
 
 
 -- Because "bcast" calls "parseInBands" with "CurryTime", it should not be used to send a message to the executor of a
--- cmd in the case that said message contains a serialized "Desig". Otherwise, a player whose PC is in the dark would
--- see a message such as, "You give the loaf of bread to someone."
+-- cmd in the case that said message contains a serialized "Desig" for which "desigDoMaskInDark" is "True". Otherwise, a
+-- player whose PC is in the dark would see a message such as, "You give the loaf of bread to someone."
 bcast :: HasCallStack => [Broadcast] -> MudStack ()
 bcast [] = unit
 bcast bs = getStateTime >>= \(ms, ct) -> liftIO . atomically . forM_ bs . sendBcast ms $ ct
@@ -302,13 +302,16 @@ extractDelimited delim (T.breakOn delim -> (left, T.breakOn delim . T.tail -> (t
 
 expandStdDesig :: HasCallStack => Suffixer -> Bool -> Id -> MudState -> Desig -> Text
 expandStdDesig f isLit i ms d@StdDesig { .. }
-  | isLit, desigDoExpandSing = s `elem` intros ? s :? (expanded |&| if isPla desigId ms then f s else id)
-  | isLit                    = expanded
-  | otherwise                = f s . mkCapsFun desigCap $ "someone"
+  | isLit, desigDoExpandSing = x
+  | isLit                    = y
+  | desigDoMaskInDark        = f s . mkCapsFun desigCap $ "someone"
+  | desigDoExpandSing        = x
+  | otherwise                = y
   where
-    s        = getSing desigId ms
-    intros   = getIntroduced i ms
-    expanded = expandEntName i ms d intros
+    x      = s `elem` intros ? s :? (y |&| if isPla desigId ms then f s else id)
+    y      = expandEntName i ms d intros
+    s      = getSing desigId ms
+    intros = getIntroduced i ms
 expandStdDesig _ _ _ _ d = pmf "expandStdDesig" d
 
 

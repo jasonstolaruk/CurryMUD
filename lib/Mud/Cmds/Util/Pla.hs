@@ -707,7 +707,7 @@ mkGodVerb Drop ThrPer = "drops"
 -----
 
 
-helperExtinguishEitherInv :: HasCallStack => Id
+helperExtinguishEitherInv :: HasCallStack => Id -- TODO: Here.
                                           -> Desig
                                           -> GenericResWithFuns
                                           -> (Either Text Inv, InvOrEq)

@@ -626,11 +626,12 @@ mkSerializedNonStdDesig i ms s aot cap = serialize NonStdDesig { dEntSing = s, d
 
 
 mkStdDesig :: HasCallStack => Id -> MudState -> DoOrDon'tCap -> Desig
-mkStdDesig i ms cap = StdDesig { desigDoExpandSing = True
-                               , desigEntName      = views entName (fromMaybe (mkUnknownPCEntName i ms)) . getEnt i $ ms
+mkStdDesig i ms cap = StdDesig { desigEntName      = views entName (fromMaybe (mkUnknownPCEntName i ms)) . getEnt i $ ms
                                , desigCap          = cap
                                , desigId           = i
-                               , desigIds          = findMobIds ms . getMobRmInv i $ ms }
+                               , desigIds          = findMobIds ms . getMobRmInv i $ ms
+                               , desigDoMaskInDark = True
+                               , desigDoExpandSing = True }
 
 
 -----
