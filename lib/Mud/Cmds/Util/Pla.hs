@@ -726,17 +726,17 @@ mkExtinguishDescs :: HasCallStack => Id -> MudState -> Desig -> (Inv, InvOrEq) -
 mkExtinguishDescs i ms d (is, x) = foldr f mempty is
   where
     f targetId tuple =
-        let s       = getSing targetId ms
-            isInInv = x == TheInv
-            sorry g = tuple & _2 %~ (g s :)
+        let s        = getSing targetId ms
+            inInvMsg | vo <- serialize . VerbObj . aOrAn $ s
+                     = T.concat [ serialize d, " extinguishes ", vo, " ", parensQuote "carried", "." ]
+            inEqMsg  | d' <- serialize d { desigDoMaskInDark = False }
+                     = T.concat [ d', " extinguishes ", mkPossPro . getSex i $ ms, " ", s, "." ]
+            sorry g  = tuple & _2 %~ (g s :)
         in if | getType targetId ms /= LightType              -> sorry sorryExtinguishType
               | views lightIsLit not . getLight targetId $ ms -> sorry sorryExtinguishNotLit
               | otherwise -> tuple & _1 %~ (targetId :)
                                    & _2 %~ ((prd $ "You extinguish the " <> s) :)
-                                   & _3 %~ (let msg = T.concat [ serialize d, " extinguishes ", t1, t2, "." ]
-                                                t1  = isInInv ? aOrAn s :? (mkPossPro (getSex i ms) |<>| s)
-                                                t2  = isInInv |?| spcL (parensQuote "carried")
-                                            in ((msg, i `delete` desigIds d) :))
+                                   & _3 %~ ((x == TheInv ? inInvMsg :? inEqMsg, i `delete` desigIds d) :)
 
 
 -----
