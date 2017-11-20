@@ -178,14 +178,9 @@ helperFillWaterRmEitherInv i srcDesig (eis:eiss) a = next $ case eis of
                                 & _4 <>~ mkFillUpMsg
         partialMsgHelper   = (_4 <>~ mkPartialFillUpMsg) . (_2 <>~ mkPartialFillUpMsg)
         mkFillUpMsg        = pure $ "You fill up the " <> vs <> " with water from the pool."
-        mkPartialFillUpMsg = pure . T.concat $ [ "You partially fill the "
-                                               , vs
-                                               , " with water from the pool. "
-                                               , head sorryEnc ]
-        bcastHelper        = pure (T.concat [ serialize srcDesig
-                                            , " fills "
-                                            , aOrAn vs
-                                            , " with water from the pool." ], desigOtherIds srcDesig)
+        mkPartialFillUpMsg = pure . T.concat $ [ "You partially fill the ", vs, " with water from the pool. ", head sorryEnc ]
+        bcastHelper        = pure ( T.concat [ serialize srcDesig, " fills ", aOrAn vs, " with water from the pool." ]
+                                  , desigOtherIds srcDesig )
 
 
 -----

@@ -123,11 +123,7 @@ spawnLogger fn p (T.unpack -> ln) f q logExLock =
 loggingThreadExHandler :: HasCallStack => Lock -> Text -> SomeException -> IO ()
 loggingThreadExHandler logExLock n e = guard (fromException e /= Just ThreadKilled) >> mkTimestamp >>= \ts ->
     let txt = "Mud.Logging loggingThreadExHandler: exception caught on logging thread"
-        msg = T.concat [ ts
-                       , spaced txt
-                       , parensQuote $ "inside " <> dblQuote n
-                       , ". "
-                       , dblQuote . showTxt $ e ]
+        msg = T.concat [ ts, spaced txt, parensQuote $ "inside " <> dblQuote n, ". ", dblQuote . showTxt $ e ]
     in do liftIO . printErrorMsg $ txt
           file <- mkMudFilePath loggingExLogFileFun
           handle (handler msg) . withLock logExLock . T.appendFile file . nl $ msg

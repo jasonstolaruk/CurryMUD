@@ -71,9 +71,7 @@ oilFeelingFun = const "You are nauseated."
 
 sacrificeBonusFeelingFun :: GodName -> FeelingFun
 sacrificeBonusFeelingFun gn =
-    const . T.concat $ [ "You have the extraordinary feeling that "
-                       , pp gn
-                       , " has blessed you. "
+    const . T.concat $ [ "You have the extraordinary feeling that ", pp gn, " has blessed you. "
                        , case gn of Aule      -> "You're feeling confident and reassured."
                                     Caila     -> "The air is seemingly crackling with energy!"
                                     Celoriel  -> "Your brain is tingling."
