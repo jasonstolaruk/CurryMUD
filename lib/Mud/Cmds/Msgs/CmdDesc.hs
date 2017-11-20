@@ -273,10 +273,7 @@ cmdDescWhisper = "Whisper something to someone in your current room."
 
 
 cmdDescWho :: Text
-cmdDescWho = prd . T.concat $ [ "Display or search a list of who is currently "
-                              , dblQuote "awake"
-                              , " "
-                              , parensQuote "logged in" ]
+cmdDescWho = prd . T.concat $ [ "Display or search a list of who is currently ", dblQuote "awake", " ", parensQuote "logged in" ]
 
 
 cmdDescWhoAmI :: Text
