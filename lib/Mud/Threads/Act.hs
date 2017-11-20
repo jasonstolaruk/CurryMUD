@@ -100,8 +100,8 @@ drinkAct :: HasCallStack => DrinkBundle -> MudStack ()
 drinkAct DrinkBundle { .. } = modifyStateSeq f `finally` tweak (mobTbl.ind drinkerId.nowDrinking .~ Nothing)
   where
     distId@(DistinctLiqId i) = drinkLiq^.liqId
-    f ms = let t  | xs <- [ "You begin drinking ", renderLiqNoun drinkLiq the, " from the ", drinkVesselSing ]
-                  = thrice prd . T.concat $ xs
+    f ms = let t  | ts <- [ "You begin drinking ", renderLiqNoun drinkLiq the, " from the ", drinkVesselSing ]
+                  = thrice prd . T.concat $ ts
                d  = mkStdDesig drinkerId ms DoCap
                bs = pure (T.concat [ serialize d, " begins drinking from ", vo, "." ], desigOtherIds d)
                fs = pure $ sequence_ gs `catch` die (Just drinkerId) (pp Drinking)
@@ -123,8 +123,8 @@ drinkAct DrinkBundle { .. } = modifyStateSeq f `finally` tweak (mobTbl.ind drink
           Nothing -> (, Left ()) <$> getState
         let (stomAvail, _) = calcStomachAvailSize drinkerId ms
             d              = mkStdDesig drinkerId ms DoCap
-            bcastHelper b  | xs <- [ serialize d, " finishes drinking from ", vo, b |?| " after draining it dry", "." ]
-                           = bcastIfNotIncogNl drinkerId . pure $ (T.concat xs, desigOtherIds d)
+            bcastHelper b  | ts <- [ serialize d, " finishes drinking from ", vo, b |?| " after draining it dry", "." ]
+                           = bcastIfNotIncogNl drinkerId . pure $ (T.concat ts, desigOtherIds d)
         if | newCont == Right Nothing ->
                let xs = [ "You drain the ", drinkVesselSing, " dry after ", mkMouthfulTxt x, " mouthful", sOnNon1 x, "." ]
                in (>> bcastHelper True) . ioHelper x . T.concat $ xs
@@ -177,8 +177,8 @@ eatAct EatBundle { .. } = modifyStateSeq f `finally` tweak (mobTbl.ind eaterId.n
                                         in (ms', pair)
         let (stomAvail, _) = calcStomachAvailSize eaterId ms
             d              = mkStdDesig eaterId ms DoCap
-            bcastHelper b  | xs <- [ serialize d, " finishes eating ", b |?| "all of ", vo, "." ]
-                           = bcastIfNotIncogNl eaterId . pure $ (T.concat xs, desigOtherIds d)
+            bcastHelper b  | ts <- [ serialize d, " finishes eating ", b |?| "all of ", vo, "." ]
+                           = bcastIfNotIncogNl eaterId . pure $ (T.concat ts, desigOtherIds d)
         if | m <= 0 -> do
                destroy . pure $ eatFoodId
                let xs = [ "You finish eating all of the ", eatFoodSing, " after ", mkMouthfulTxt x, " mouthful", sOnNon1 x, "." ]

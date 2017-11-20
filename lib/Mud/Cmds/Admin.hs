@@ -512,11 +512,8 @@ adminClone   (LowerNub i mq cols as) = modifyStateSeq $ \ms ->
             | t `elem` [ CorpseType, PlaType, RmType ] -> sorry . sorryCloneType $ t
             | otherwise                                ->
                 let ([newId], ms'', fs') = clone (getRmId i ms') ([], ms', fs) . pure $ targetId
-                    msg                  = T.concat [ aOrAnOnLower . descSingId targetId $ ms
-                                                    , " "
-                                                    , bracketQuote . pp $ t
-                                                    , ": "
-                                                    , showTxt newId ]
+                    msg                  | txt <- aOrAnOnLower . descSingId targetId $ ms
+                                         = T.concat [ txt, " ", bracketQuote . pp $ t, ": ", showTxt newId ]
                 in (ms'', fs' ++ pure (wrapSend1Nl mq cols . prd $ "Cloning " <> msg), logMsgs ++ pure msg)
           _ -> sorryId
           where
@@ -1161,17 +1158,11 @@ mkHostReport ms now zone i s = case getHostMap s ms of Nothing      -> pure . pr
         ili      = isLoggedIn . getPla i $ ms
         duration = Sum . round $ now `diffUTCTime` ct
         renderIt = T.pack . renderSecs
-        header   =
-            [ s <> ": "
-            , let ts = [ "in from ", T.pack . getCurrHostName i $ ms, " ", parensQuote . renderIt . getSum $ duration, "." ]
-              in "Currently logged " <> (ili ? T.concat ts :? "out.") ]
-        f host r = (T.concat [ T.pack host
-                             , ": "
-                             , let { n = r^.noOfLogouts; suffix = n > 1 |?| "s" } in showTxt n <> " time" <> suffix
-                             , ", "
-                             , views secsConnected renderIt r
-                             , ", "
-                             , views lastLogout (showTxt . utcToLocalTime zone) r ] :)
+        header   | ts <- [ "in from ", T.pack . getCurrHostName i $ ms, " ", parensQuote . renderIt . getSum $ duration, "." ]
+                 = [ s <> ": ", "Currently logged " <> (ili ? T.concat ts :? "out.") ]
+        f host r | a <- let n = r^.noOfLogouts in showTxt n <> " time" <> sOnNon1 n
+                 , b <- views lastLogout (showTxt . utcToLocalTime zone) r
+                 = (T.concat [ T.pack host, ": ", a, ", ", views secsConnected renderIt r, ", ", b ] :)
 
 
 -----
@@ -1604,12 +1595,9 @@ adminSearch   (WithArgs i mq cols (T.unwords -> a)) = getState >>= \ms -> do
     getMatches :: [(Id, Text)] -> IO [(Id, (Text, Text, Text))]
     getMatches = fmap (filter (views (_2._2) (()!#))) . mapM (\(i', s) -> (i', ) <$> a `applyRegex` s)
 
-    descMatch ms b (i', (x, y, z)) = T.concat [ padId . showTxt $ i'
-                                              , " "
-                                              , b |?| spcR . parensQuote . pp . getType i' $ ms
-                                              , x
-                                              , colorWith regexMatchColor y
-                                              , z ]
+    descMatch ms b (i', (x, y, z))
+      | ts <- [ padId . showTxt $ i', " ", b |?| spcR . parensQuote . pp . getType i' $ ms, x, colorWith regexMatchColor y, z ]
+      = T.concat ts
 adminSearch p = pmf "adminSearch" p
 
 
@@ -1631,9 +1619,7 @@ adminSecurity p = pmf "adminSecurity" p
 
 
 mkSecReport :: HasCallStack => SecRec -> [Text]
-mkSecReport SecRec { .. } = [ "Name: "     <> dbName
-                            , "Question: " <> dbQ
-                            , "Answer: "   <> dbA ]
+mkSecReport SecRec { .. } = [ "Name: " <> dbName, "Question: " <> dbQ, "Answer: " <> dbA ]
 
 
 -----
@@ -2019,9 +2005,8 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
               Assign -> let toSelf   = pure . T.concat $ [ "Set tempDesc to ", showMaybe x, mkDiffTxt isDiff, "." ]
                             prev     = getTempDesc targetId ms
                             isDiff   = x /= prev
-                            toTarget = pure . T.concat $ [ "Your temporary character description has changed to "
-                                                         , showMaybe x
-                                                         , "." ]
+                            toTarget | ts <- [ "Your temporary character description has changed to ", showMaybe x, "." ]
+                                     = pure . T.concat $ ts
                         in a & _1.mobTbl.ind targetId.tempDesc .~ x
                              & _2 <>~ toSelf
                              & _3 <>~ (isDiff |?| toTarget)
@@ -2104,12 +2089,8 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
                               AddAssign -> addSubAssignHelper (++)
                               SubAssign -> addSubAssignHelper (\\)
           where
-            mkToSelf   xs isDiff = pure . T.concat $ [ "Set "
-                                                    , k
-                                                    , " to "
-                                                    , mkValueTxt (`descSingId` ms) xs
-                                                    , mkDiffTxt isDiff
-                                                    , "." ]
+            mkToSelf   xs isDiff | ts <- [ "Set ", k, " to ", mkValueTxt (`descSingId` ms) xs, mkDiffTxt isDiff, "." ]
+                                 = pure . T.concat $ ts
             mkToTarget xs        = pure . T.concat $ [ "Your ", n, " changed to ", mkValueTxt (`getSing` ms) xs, "." ]
             mkValueTxt f         = noneOnNull . commas . map f
         -----
@@ -2205,13 +2186,10 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
                                      AddAssign -> addSubAssignHelper (+)
                                      SubAssign -> addSubAssignHelper (-)
           where
-            mkToTarget diff = pure . T.concat $ [ "The number of corpses you have sacrificed to "
-                                                , pp gn
-                                                , " has "
-                                                , diff > 0 ? "increased" :? "decreased"
-                                                , " by "
-                                                , commaShow . abs $ diff
-                                                , "." ]
+            mkToTarget diff | x <- "The number of corpses you have sacrificed to "
+                            , y <- diff > 0 ? "increased" :? "decreased"
+                            , z <- commaShow . abs $ diff
+                            = pure . T.concat $ [ x, pp gn, " has ", y, " by ", z, "." ]
         -----
         sorryType               = appendMsg . sorryAdminSetType $ targetId
         sorryOp                 = appendMsg . sorryAdminSetOp (pp op)
@@ -2491,10 +2469,8 @@ mkCharListTxt inOrOut ms =
                                name      = mkAnnotatedName i a
                            in T.concat [ padName name, padId . showTxt $ i, padSex s, padRace r, l ]
         nop              = length is
-    in mkWhoHeader True ++ map mkCharTxt ias ++ (pure .  T.concat $ [ showTxt nop
-                                                                    , spaced . pluralize ("person", "people") $ nop
-                                                                    , pp inOrOut
-                                                                    , "." ])
+        xs               = [ showTxt nop, spaced . pluralize ("person", "people") $ nop, pp inOrOut, "." ]
+    in mkWhoHeader True ++ map mkCharTxt ias ++ (pure . T.concat $ xs)
   where
     f i p               = case inOrOut of LoggedIn  -> isLoggedIn p
                                           LoggedOut -> ((&&) <$> (`isAlive` ms) . fst <*> not . isLoggedIn . snd) (i, p)

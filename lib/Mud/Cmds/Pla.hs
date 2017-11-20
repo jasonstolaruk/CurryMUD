@@ -111,9 +111,6 @@ import           System.FilePath ((</>))
 import           System.Time.Utils (renderSecs)
 
 
--- TODO: Consider refactoring where lists passed to "T.concat" are split across multiple lines.
-
-
 default (Int, Double)
 
 
