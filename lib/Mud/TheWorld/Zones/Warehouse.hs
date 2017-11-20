@@ -808,11 +808,9 @@ createWarehouse = do
                      , (iBottleWithOil, "",       ("",       "murky green" ), bottleWeight,    bottleVol,    bottleVal   ) ]
 
       mkBottleDesc a b =
-          T.concat [ "This "
-                   , a
+          T.concat [ "This " <> a
                    , "earthenware bottle is designed to be as portable and practical as possible. A glaze of "
-                   , b
-                   , " hues gives the vessel a glossy finish and makes it impermeable." ]
+                   , b <> " hues gives the vessel a glossy finish and makes it impermeable." ]
 
   forM_ bottleTuples $ \(i, t, d, w, v, val) ->
       putVessel i
