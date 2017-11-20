@@ -776,7 +776,7 @@ interpPW times targetSing cn params@(WithArgs i mq cols as) = getState >>= \ms -
       else join <$> withDbExHandler "interpPW" (lookupPW targetSing) >>= \case
         Nothing -> sorryPW oldSing
         Just pw -> if uncurry validatePassword ((pw, cn) & both %~ TE.encodeUtf8)
-          then let mkMsg t | ts = [ oldSing, " has entered the correct password for ", targetSing, "; however, ", targetSing, t ]
+          then let mkMsg t | ts <- [ oldSing, " has entered the correct password for ", targetSing, "; however, ", targetSing, t ]
                            = T.concat ts
                in if
                  | isDead targetId ms   -> sorry oldSing (sorryInterpPwDead     targetSing) . mkMsg $ " is deceased."
