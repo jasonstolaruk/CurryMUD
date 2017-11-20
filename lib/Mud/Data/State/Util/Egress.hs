@@ -94,7 +94,7 @@ handleEgress i mq isDropped = egressHelper `finally` writeMsg mq FinishedEgress
 peepHelper :: HasCallStack => Id -> MudState -> Sing -> Bool -> (MudState, [Broadcast], [(Id, Text)])
 peepHelper i ms s spirit =
     let (peeperIds, peepingIds) = getPeepersPeeping i ms
-        bs      = [ (nlnl .    T.concat $ [ "You are no longer peeping "
+        bs      = [ (nlnl .    T.concat $ [ "You are no longer peeping " -- TODO: Here.
                                           , s
                                           , " "
                                           , parensQuote $ s <> spaced "has" <> txt
