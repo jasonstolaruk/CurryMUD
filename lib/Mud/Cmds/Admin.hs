@@ -512,8 +512,8 @@ adminClone   (LowerNub i mq cols as) = modifyStateSeq $ \ms ->
             | t `elem` [ CorpseType, PlaType, RmType ] -> sorry . sorryCloneType $ t
             | otherwise                                ->
                 let ([newId], ms'', fs') = clone (getRmId i ms') ([], ms', fs) . pure $ targetId
-                    msg                  | txt <- aOrAnOnLower . descSingId targetId $ ms
-                                         = T.concat [ txt, " ", bracketQuote . pp $ t, ": ", showTxt newId ]
+                    msg                  = T.concat [ aOrAnOnLower . descSingId targetId $ ms, " ", bracketQuote . pp $ t
+                                                    , ": ", showTxt newId ]
                 in (ms'', fs' ++ pure (wrapSend1Nl mq cols . prd $ "Cloning " <> msg), logMsgs ++ pure msg)
           _ -> sorryId
           where
@@ -1595,9 +1595,8 @@ adminSearch   (WithArgs i mq cols (T.unwords -> a)) = getState >>= \ms -> do
     getMatches :: [(Id, Text)] -> IO [(Id, (Text, Text, Text))]
     getMatches = fmap (filter (views (_2._2) (()!#))) . mapM (\(i', s) -> (i', ) <$> a `applyRegex` s)
 
-    descMatch ms b (i', (x, y, z))
-      | ts <- [ padId . showTxt $ i', " ", b |?| spcR . parensQuote . pp . getType i' $ ms, x, colorWith regexMatchColor y, z ]
-      = T.concat ts
+    descMatch ms b (i', (x, y, z)) = T.concat [ padId . showTxt $ i', " ", b |?| spcR . parensQuote . pp . getType i' $ ms
+                                              , x, colorWith regexMatchColor y, z ]
 adminSearch p = pmf "adminSearch" p
 
 
@@ -2005,8 +2004,7 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
               Assign -> let toSelf   = pure . T.concat $ [ "Set tempDesc to ", showMaybe x, mkDiffTxt isDiff, "." ]
                             prev     = getTempDesc targetId ms
                             isDiff   = x /= prev
-                            toTarget | ts <- [ "Your temporary character description has changed to ", showMaybe x, "." ]
-                                     = pure . T.concat $ ts
+                            toTarget = pure . prd $ "Your temporary character description has changed to " <> showMaybe x
                         in a & _1.mobTbl.ind targetId.tempDesc .~ x
                              & _2 <>~ toSelf
                              & _3 <>~ (isDiff |?| toTarget)
@@ -2186,9 +2184,8 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
                                      AddAssign -> addSubAssignHelper (+)
                                      SubAssign -> addSubAssignHelper (-)
           where
-            mkToTarget diff | x <- "The number of corpses you have sacrificed to "
-                            , y <- diff > 0 ? "increased" :? "decreased", z <- commaShow . abs $ diff
-                            = pure . T.concat $ [ x, pp gn, " has ", y, " by ", z, "." ]
+            mkToTarget diff = pure . T.concat $ [ "The number of corpses you have sacrificed to ", pp gn, " has "
+                                                , diff > 0 ? "increased" :? "decreased", " by ", commaShow . abs $ diff, "." ]
         -----
         sorryType               = appendMsg . sorryAdminSetType $ targetId
         sorryOp                 = appendMsg . sorryAdminSetOp (pp op)

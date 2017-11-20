@@ -60,21 +60,21 @@ hintDisconnect = specifyFullHelper "name of the person you would like to disconn
 
 
 hintGet :: Text
-hintGet | a <- "it appears that you want to remove an object from a container. In that case, please use the "
-        , b <- " command. For example, to remove a ring from your sack, type "
-        = hintHelper [ a, dblQuote "remove", b, colorWith quoteColor "remove ring sack", "." ]
+hintGet = hintHelper [ "it appears that you want to remove an object from a container. In that case, please use the "
+                     , dblQuote "remove", " command. For example, to remove a ring from your sack, type "
+                     , colorWith quoteColor "remove ring sack", "." ]
 
 
 hintSay :: Text
-hintSay | a <- "when communicating with non-player characters, you may also try the "
-        , b <- " command. For example, to ask a city guard about crime, type "
-        = hintHelper [ a, dblQuote "ask", b, colorWith quoteColor "ask guard crime", "." ]
+hintSay = hintHelper [ "when communicating with non-player characters, you may also try the ", dblQuote "ask"
+                     , " command. For example, to ask a city guard about crime, type "
+                     , colorWith quoteColor "ask guard crime", "." ]
 
 
 hintSpiritCmdNotFound :: Text
-hintSpiritCmdNotFound
-  | a <- "you have died and become a disembodied spirit. As a spirit, the commands that you may use are limited. Type "
-  = hintHelper [ a, dblQuote "?", " to see a list of the commands available to you." ]
+hintSpiritCmdNotFound =
+    hintHelper [ "you have died and become a disembodied spirit. As a spirit, the commands that you may use are limited. Type "
+               , dblQuote "?", " to see a list of the commands available to you." ]
 
 
 hintUnlink :: Text

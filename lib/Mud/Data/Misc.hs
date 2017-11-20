@@ -472,8 +472,8 @@ instance Pretty Hand where
 
 
 instance Pretty InstaEffect where
-  pp (InstaEffect effSub effVal effFeeling) =
-      T.concat [ bracketQuote "instantaneous", " ", pp effSub, " by ", effectValHelper effVal, effectFeelingHelper effFeeling ]
+  pp (InstaEffect effSub effVal effFeeling) = T.concat [ bracketQuote "instantaneous", " ", pp effSub, " by "
+                                                       , effectValHelper effVal, effectFeelingHelper effFeeling ]
 
 
 instance Pretty InstaEffectSub where

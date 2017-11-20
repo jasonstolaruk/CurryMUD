@@ -210,12 +210,12 @@ plusRelatedMsg = prd . parensQuote $ "plus related functionality"
 
 
 pwMsg :: Text -> [Text]
-pwMsg t | ts <- [ t, " Passwords must be ", showTxt minPwLen, "-", showTxt maxPwLen, " characters in length and contain:" ]
-        = [ T.concat ts
-          , "* 1 or more lowercase characters"
-          , "* 1 or more uppercase characters"
-          , "* 1 or more digits"
-          , "* 0 whitespace characters" ]
+pwMsg t =
+    [ T.concat [ t, " Passwords must be ", showTxt minPwLen, "-", showTxt maxPwLen, " characters in length and contain:" ]
+    , "* 1 or more lowercase characters"
+    , "* 1 or more uppercase characters"
+    , "* 1 or more digits"
+    , "* 0 whitespace characters" ]
 
 
 pwWarningTxt :: Text -- Do not indent with leading spaces.
@@ -303,8 +303,8 @@ theBeyondMsg = thrice prd "Your spirit passes into the beyond. A hand reaches ou
 
 
 unlinkMsg :: Text -> Sing -> Text
-unlinkMsg t s | a <- "You suddenly feel a slight tingle ", b <- "; you sense that your telepathic link with "
-              = T.concat [ a, t, b, s, " has been severed." ]
+unlinkMsg t s = T.concat [ "You suddenly feel a slight tingle ", t, "; you sense that your telepathic link with ", s
+                         , " has been severed." ]
 
 
 violationMsg :: Text

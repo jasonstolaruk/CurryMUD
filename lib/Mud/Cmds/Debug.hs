@@ -886,9 +886,8 @@ debugRegen   (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)]
                                               , ("mp", calcRegenMpAmt, calcRegenMpDelay)
                                               , ("pp", calcRegenPpAmt, calcRegenPpDelay)
                                               , ("fp", calcRegenFpAmt, calcRegenFpDelay) ]
-        descRegen t calcAmt calcDelay
-          | ts <- [ t, ": ", showTxt . calcAmt   targetId $ ms, " / ", showTxt . calcDelay targetId $ ms, " sec" ]
-          = T.concat ts
+        descRegen t calcAmt calcDelay = T.concat [ t, ": ", showTxt . calcAmt   targetId $ ms, " / "
+                                                 , showTxt . calcDelay targetId $ ms, " sec" ]
 debugRegen p = advise p [] adviceDRegenExcessArgs
 
 
@@ -1238,7 +1237,7 @@ wrapMsg = T.unwords wordy <> dfltColor
   where
     wordy :: HasCallStack => [] Text
     wordy = [ T.concat [ u, mkFgColorANSI (Dull, c), "This is ", showTxt c, " text." ]
-            | c <- Black `delete` colors, u <- [ underlineANSI, noUnderlineANSI ] ]
+            | u <- [ underlineANSI, noUnderlineANSI ], c <- Black `delete` colors ]
 
 
 -----

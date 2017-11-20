@@ -173,9 +173,8 @@ pmf = U.pmf "Mud.Cmds.Msgs.Advice"
 
 advise :: ActionParams -> [HelpName] -> Text -> MudStack ()
 advise (Advising mq cols) []  msg = wrapSend mq cols msg
-advise (Advising mq cols) [h] msg = multiWrapSend mq cols [ msg
-                                                          , prd $ "For more information, type "<>
-                                                                  colorWith quoteColor ("help " <> h) ]
+advise (Advising mq cols) [h] msg | ts <- [ msg, prd $ "For more information, type " <> colorWith quoteColor ("help " <> h) ]
+                                  = multiWrapSend mq cols ts
 advise (Advising mq cols) (dblQuote . T.intercalate (dblQuote ", ") -> helpTopics) msg =
     multiWrapSend mq cols [ msg, prd $ "For more information, see the following help articles: " <> helpTopics ]
 advise p _ _ = pmf "advise" p
@@ -561,8 +560,8 @@ adviceAsSelfNoArgs = prd $ "Please provide a command to execute, as in " <> colo
 
 
 adviceBlankAdverb :: Lang -> Text
-adviceBlankAdverb l | a  <- "Please provide an adverbial phrase between "
-                    , ts <- [ a, dblQuote aop, " and ", dblQuote acl, adverbExample l, "." ] = T.concat ts
+adviceBlankAdverb l = T.concat [ "Please provide an adverbial phrase between ", dblQuote aop, " and ", dblQuote acl
+                               , adverbExample l, "." ]
 
 
 adviceBonusExcessArgs :: Text
@@ -676,9 +675,8 @@ adviceEtc cn = T.concat [ dblQuote etc
 
 
 adviceEtcBlankPoss :: Text
-adviceEtcBlankPoss
-  | ts <- [ "You must specify the name of the person you want to target between ", dblQuote etc, " and ", dblQuote "'s", "." ]
-  = T.concat ts
+adviceEtcBlankPoss = T.concat [ "You must specify the name of the person you want to target between ", dblQuote etc
+                              , " and ", dblQuote "'s", "." ]
 
 
 adviceEtcHead :: Text
@@ -710,8 +708,9 @@ adviceFillNoArgs = adviceFillHelper "Please specify one or more vessels to fill 
 
 adviceFillHelper :: Text -> Text
 adviceFillHelper t | a <- " the name of a) another vessel, or b) a source of liquid in your current room, as in "
-                   , b <- parensQuote "to fill your waterskin with the contents of your jug"
-                   = T.concat [ t, a, colorWith quoteColor "fill waterskin jug", " ", b, "." ]
+                   , b <- colorWith quoteColor "fill waterskin jug"
+                   , c <- parensQuote "to fill your waterskin with the contents of your jug"
+                   = T.concat [ t, a, b, " ", c, "." ]
 
 
 adviceFillNoSource :: Text
@@ -775,8 +774,8 @@ advicePutNoCon = prd $ "Please also specify where you want to put it, as in " <>
 
 
 adviceQuitExcessArgs :: Text
-adviceQuitExcessArgs | a <- colorWith quoteColor "quit", b <- dblQuote "go to sleep", c <- parensQuote "quit CurryMUD"
-                     = prd . T.concat $ [ "Type ", a, " with no arguments to ", b, " ", c ]
+adviceQuitExcessArgs = prd . T.concat $ [ "Type ", colorWith quoteColor "quit", " with no arguments to "
+                                        , dblQuote "go to sleep", spcL . parensQuote $ "quit CurryMUD" ]
 
 
 adviceReadNoArgs :: Text
@@ -828,8 +827,8 @@ adviceSayAdverbNoUtterance l = prd $ "Please also specify what you'd like to say
 
 
 adviceSayNoArgs :: Lang -> Text
-adviceSayNoArgs l | a <- mkInLangTxtForLang l, b <- colorWith quoteColor $ mkCmdNameForLang l <> " nice to meet you, too"
-                  = T.concat [ "Please specify what you'd like to say", a, ", as in ", b, "." ]
+adviceSayNoArgs l = T.concat [ "Please specify what you'd like to say", mkInLangTxtForLang l, ", as in "
+                             , colorWith quoteColor $ mkCmdNameForLang l <> " nice to meet you, too", "." ]
 
 
 adviceSayToNoUtterance :: Lang -> Text
@@ -842,9 +841,9 @@ adviceSayToNoUtterance l = T.concat [ "Please also specify what you'd like to sa
 
 
 adviceSettingsInvalid :: Text
-adviceSettingsInvalid | a <- " Please specify the setting you want to change, followed immediately by "
-                      , b <- ", followed immediately by the new value you want to assign, as in "
-                      = T.concat [ a, dblQuote "=", b, colorWith quoteColor "set columns=80", "." ]
+adviceSettingsInvalid = T.concat [ " Please specify the setting you want to change, followed immediately by "
+                                 , dblQuote "=", ", followed immediately by the new value you want to assign, as in "
+                                 , colorWith quoteColor "set columns=80", "." ]
 
 
 adviceShowNoArgs :: Text
@@ -954,17 +953,14 @@ adviceYouEmote = T.concat [ "Sorry, but you can't use a form of the word "
 
 adviceYouEmoteChar :: Text -> Text
 adviceYouEmoteChar cn =
-    T.concat [ "Sorry, but you can't use a form of the word "
-             , dblQuote "you"
-             , " in an emote. Instead, you must specify who you wish to target using "
-             , dblQuote etc
-             , ", as in "
+    T.concat [ "Sorry, but you can't use a form of the word ", dblQuote "you"
+             , " in an emote. Instead, you must specify who you wish to target using ", dblQuote etc, ", as in "
              , let ts = [ cn, " ", T.singleton emoteChar, "slowly turns her head to look directly at ", etc, "taro" ]
                in colorWith quoteColor . T.concat $ ts
              , "." ]
 
 
 adviceZoomExcessArgs :: Text
-adviceZoomExcessArgs
-  | a <- parensQuote $ "to zoom to the default level of " <> showTxt dfltZoom, b <- colorWith quoteColor "zoom 20"
-  = T.concat [ "Please either provide no arguments ", a, ", or a single argument: the zoom level, as in ", b, "." ]
+adviceZoomExcessArgs =
+    T.concat [ "Please either provide no arguments ", parensQuote $ "to zoom to the default level of " <> showTxt dfltZoom
+             , ", or a single argument: the zoom level, as in ", colorWith quoteColor "zoom 20", "." ]

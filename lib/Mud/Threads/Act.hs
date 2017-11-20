@@ -134,8 +134,8 @@ drinkAct DrinkBundle { .. } = modifyStateSeq f `finally` tweak (mobTbl.ind drink
                in (>> bcastHelper False) . ioHelper x . T.concat $ xs
            | x == drinkAmt    -> (>> bcastHelper False) . ioHelper x $ "You finish drinking."
            | otherwise        -> loop . succ $ x
-    ioHelper m t | a <- renderLiqNoun drinkLiq aOrAn, b <- parensQuote . showTxt $ i
-                 , ts <- [ "drank ", showTxt m, " mouthful", sOnNon1 m, " of ", a, " ", b, " from ", renderVesselSing, "." ]
+    ioHelper m t | ts <- [ "drank ", showTxt m, " mouthful", sOnNon1 m, " of ", renderLiqNoun drinkLiq aOrAn, " "
+                         , parensQuote . showTxt $ i, " from ", renderVesselSing, "." ]
                  = do logPla "drinkAct ioHelper" drinkerId . T.concat $ ts
                       wrapSend drinkerMq drinkerCols t
                       sendDfltPrompt drinkerMq drinkerId
@@ -230,8 +230,8 @@ sacrificeBonus i gn@(pp -> gn') = getSing i <$> getState >>= \s -> do
                 then join <$> withDbExHandler "sac_bonus" (lookupSacBonusTime s gn') >>= \case
                   Nothing   -> applyBonus i s gn now
                   Just time | diff@(T.pack . renderSecs -> secs) <- round $ now `diffUTCTime` time
-                            , a  <- "not enough time has passed since the last bonus ", b <- " seconds since last bonus"
-                            , ts <- [ msg, a, parensQuote $ secs <> b, "." ]
+                            , ts <- [ msg, "not enough time has passed since the last bonus "
+                                    , parensQuote $ secs <> " seconds since last bonus", "." ]
                             -> diff > fromIntegral oneDayInSecs ? applyBonus i s gn now :? logHelper (T.concat ts)
                 else logHelper $ msg <> "no bonus yet."
     maybeVoid next =<< withDbExHandler "sacrifice" operation

@@ -534,8 +534,8 @@ interpPickPts _ _ p = pmf "interpPickPts" p
 promptDesc :: HasCallStack => NewCharBundle -> Id -> MsgQueue -> Cols -> MudStack ()
 promptDesc ncb@(NewCharBundle _ s _) i mq cols = mkHimHer . getSex i <$> getState >>= \himHer -> do
     blankLine mq
-    let msgs | a <- "Next you'll write a description of ", b <- ", which others will see when they look at "
-             = [ lSpcs <> a, s, b, himHer, ". Your description must adhere to the following rules:" ]
+    let msgs = [ lSpcs <> "Next you'll write a description of ", s, ", which others will see when they look at ", himHer
+               , ". Your description must adhere to the following rules:" ]
     settings <- getServerSettings
     send mq . T.unlines . parseWrapXform settings cols . T.concat $ msgs
     send mq . T.unlines . concat . wrapLines cols . T.lines $ descRulesMsg
@@ -776,8 +776,8 @@ interpPW times targetSing cn params@(WithArgs i mq cols as) = getState >>= \ms -
       else join <$> withDbExHandler "interpPW" (lookupPW targetSing) >>= \case
         Nothing -> sorryPW oldSing
         Just pw -> if uncurry validatePassword ((pw, cn) & both %~ TE.encodeUtf8)
-          then let mkMsg t | ts <- [ oldSing, " has entered the correct password for ", targetSing, "; however, ", targetSing, t ]
-                           = T.concat ts
+          then let mkMsg t = T.concat [ oldSing, " has entered the correct password for ", targetSing, "; however, "
+                                      , targetSing, t ]
                in if
                  | isDead targetId ms   -> sorry oldSing (sorryInterpPwDead     targetSing) . mkMsg $ " is deceased."
                  | isLoggedIn targetPla -> sorry oldSing (sorryInterpPwLoggedIn targetSing) . mkMsg $ " is already logged in."
@@ -801,15 +801,16 @@ interpPW times targetSing cn params@(WithArgs i mq cols as) = getState >>= \ms -
                                      else do promptRetryName mq cols sorryMsg
                                              setInterp i . Just . interpName $ succ times
     handleBanned (T.pack . getCurrHostName i -> host) oldSing = do
-        let msg | a <- " has been booted at login upon entering the correct password for ", b <- parensQuote "player is banned"
-                = T.concat [ oldSing, a, targetSing, " ", b, "." ]
+        let msg = T.concat [ oldSing, " has been booted at login upon entering the correct password for ", targetSing
+                           , " ", parensQuote "player is banned", "." ]
         logNotice "interpPW handleBanned" msg
         bcastAdmins . prd $ msg <> " Consider also banning host " <> dblQuote host
         sendMsgBoot mq . Just . sorryInterpPwBanned $ targetSing
     handleNotBanned ((i `getPla`) -> newPla) oldSing targetId =
         let helper ms = dup . logIn i ms oldSing (newPla^.currHostName) (newPla^.connectTime) $ targetId
+            ts        = [ oldSing, " has logged in as ", targetSing, ". Id ", showTxt targetId, " has been changed to "
+                        , showTxt i, "." ]
         in helper |&| modifyState >=> \ms -> do
-            let ts = [ oldSing, " has logged in as ", targetSing, ". Id ", showTxt targetId, " has been changed to ", showTxt i, "." ]
             logNotice "interpPW handleNotBanned" . T.concat $ ts
             initPlaLog i targetSing
             logPla "interpPW handleNotBanned" i . prd $ "logged in from " <> T.pack (getCurrHostName i ms)

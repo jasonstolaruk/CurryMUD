@@ -426,8 +426,8 @@ sorryInterpPickPtsMax t = T.concat [ can't "add any more to ", t, " ", parensQuo
 
 
 sorryInterpPickPtsMin :: Text -> Text
-sorryInterpPickPtsMin t | a <- "subtract any more from", b <- "it's set to the minimum value of 10"
-                        = T.concat [ can't a, " ", t, " ", parensQuote b, "." ]
+sorryInterpPickPtsMin t = T.concat [ can't "subtract any more from ", t, " "
+                                   , parensQuote "it's set to the minimum value of 10", "." ]
 
 
 sorryInterpPickPtsPts :: Text
@@ -611,8 +611,8 @@ sorryChanNoOneListening t = "You are the only person tuned in to the " <> t <> "
 
 
 sorryChanTargetName :: Text -> Text -> Text
-sorryChanTargetName cn n | a <- "There is no one by the name of ", b <- " currently tuned in to the "
-                         = T.concat [ a, dblQuote n, b, cn, " channel." ]
+sorryChanTargetName cn n = T.concat [ "There is no one by the name of ", dblQuote n, " currently tuned in to the ", cn
+                                    , " channel." ]
 
 
 sorryChanTargetNameFromContext :: Text -> ChanContext -> Text
@@ -648,11 +648,9 @@ sorryCon s = theOnLowerCap s <> " isn't a container."
 
 sorryConInEq :: PutOrRem -> Text
 sorryConInEq por =
-    let (a, b) = expand por
+    let (a, b) = case por of Put -> ("put",    "into")
+                             Rem -> ("remove", "from")
     in butCan't . T.concat $ [ a, " an item ", b, " a container in your readied equipment. Please unready the container first." ]
-  where
-    expand = \case Put -> ("put",    "into")
-                   Rem -> ("remove", "from")
 
 
 butCan't :: Text -> Text
@@ -728,9 +726,8 @@ sorryDrinkRmNoHooks = butCan't "drink from a vessel in your current room. Please
 
 
 sorryDrinkRmWithHooks :: Text -> Text
-sorryDrinkRmWithHooks t
-  | a <- "If you'd like to drink from a vessel on the ground, please pick up the vessel first."
-  = T.concat [ "You don't see ", aOrAn t, " here. ", parensQuote a ]
+sorryDrinkRmWithHooks t | a <- "If you'd like to drink from a vessel on the ground, please pick up the vessel first."
+                        = T.concat [ "You don't see ", aOrAn t, " here. ", parensQuote a ]
 
 
 sorryDrinkType :: Sing -> Text
@@ -826,10 +823,8 @@ sorryEmptyCon = sorryEmptyHelper "container"
 
 
 sorryEmptyHelper :: Text -> Text
-sorryEmptyHelper t
-  | a  <- dblQuote "empty", b <- dblQuote "remove"
-  , ts <- [ "empty a ", t, " with the ", a, " command. Please use the ", b, " command to remove items from a ", t, "." ]
-  = butCan't . T.concat $ ts
+sorryEmptyHelper t = butCan't . T.concat $ [ "empty a ", t, " with the ", dblQuote "empty", " command. Please use the "
+                                           , dblQuote "remove", " command to remove items from a ", t, "." ]
 
 
 sorryEmptyCorpse :: Text
@@ -1541,8 +1536,8 @@ sorryParseId a = dblQuote a <> " is not a valid ID."
 
 
 sorryParseInOut :: Text -> Text -> Text
-sorryParseInOut value n | a <- " is not a valid value for the ", b <- " setting. Please specify one of the following: "
-                        = T.concat [ dblQuote value, a, dblQuote n, b, inOutOrOnOff, "." ]
+sorryParseInOut value n = T.concat [ dblQuote value, " is not a valid value for the ", dblQuote n
+                                   , " setting. Please specify one of the following: ", inOutOrOnOff, "." ]
   where
     inOutOrOnOff = T.concat [ dblQuote "in", "/", dblQuote "out", " or ", dblQuote "on", "/", dblQuote "off" ]
 
@@ -1564,8 +1559,8 @@ sorryParseNum numTxt base = T.concat [ dblQuote numTxt, " is not a valid number 
 
 
 sorryParseOnOff :: Text -> Text -> Text
-sorryParseOnOff value n | a <- " is not a valid value for the ", b <- " setting. Please specify "
-                        = T.concat [ dblQuote value, a, dblQuote n, b, dblQuote "on", " or ", dblQuote "off", "." ]
+sorryParseOnOff value n = T.concat [ dblQuote value, " is not a valid value for the ", dblQuote n
+                                   , " setting. Please specify ", dblQuote "on", " or ", dblQuote "off", "." ]
 
 
 sorryParseSeconds :: Text -> Text
@@ -1663,8 +1658,8 @@ sorryPutVol = the' . (<> " is too full to contain ")
 
 
 sorryQuitCan'tAbbrev :: Text
-sorryQuitCan'tAbbrev | a <- " command may not be abbreviated. Type ", b <- " with no arguments to quit CurryMUD."
-                     = T.concat [ "The ", dblQuote "quit", a, dblQuote "quit", b ]
+sorryQuitCan'tAbbrev = T.concat [ "The ", dblQuote "quit", " command may not be abbreviated. Type ", dblQuote "quit"
+                                , " with no arguments to quit CurryMUD." ]
 
 
 -----
@@ -1690,8 +1685,8 @@ sorryReadInEq = can't "read an item in your readied equipment."
 
 
 sorryReadLang :: Sing -> Lang -> Text
-sorryReadLang s lang | a <- "Although you recognize that the text on the ", b <- ", you can't make heads or tails of it."
-                     = T.concat [ a, s, " is written in ", pp lang, b ]
+sorryReadLang s lang = T.concat [ "Although you recognize that the text on the ", s, " is written in ", pp lang
+                                , ", you can't make heads or tails of it." ]
 
 
 sorryReadNoHooks :: Text
@@ -2127,8 +2122,9 @@ sorryTeleNecropolis = can't "teleport to the necropolis."
 
 
 sorryTeleRmName :: Text -> Text
-sorryTeleRmName n | a <- " is not a valid room name. Type ", b <- " with no arguments to get a list of valid room names."
-                  = T.concat [ dblQuote n, a, colorWith quoteColor . prefixAdminCmd $ "telerm", b ]
+sorryTeleRmName n =
+    T.concat [ dblQuote n, " is not a valid room name. Type ", colorWith quoteColor . prefixAdminCmd $ "telerm"
+             , " with no arguments to get a list of valid room names." ]
 
 
 sorryTeleSelf :: Text
@@ -2179,9 +2175,9 @@ sorryTunedOutICChan = sorryTunedOutChan "tune" DoQuote
 
 
 sorryTunedOutChan :: CmdName -> DoOrDon'tQuote -> Text -> Text
-sorryTunedOutChan x quote y | a <- onTrue (quote == DoQuote) dblQuote y
-                            , b <- colorWith quoteColor . T.concat $ [ x, " ", y, "=in" ]
-                            = T.concat [ "You have tuned out the ", a, " channel. Type ", b, " to tune it back in." ]
+sorryTunedOutChan x quote y =
+    T.concat [ "You have tuned out the ", onTrue (quote == DoQuote) dblQuote y, " channel. Type "
+             , colorWith quoteColor . T.concat $ [ x, " ", y, "=in" ], " to tune it back in." ]
 
 
 sorryTunedOutOOCChan :: Text -> Text
