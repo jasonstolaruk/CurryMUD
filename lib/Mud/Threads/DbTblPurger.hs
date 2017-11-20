@@ -70,13 +70,7 @@ dbTblPurger tblName countFun purgeFun = handle (threadExHandler Nothing threadNa
 dbTblPurgerHelper :: HasCallStack => DbTblPurger
 dbTblPurgerHelper tblName countFun purgeFun = let fn = "dbTblPurgerHelper" in withDbExHandler fn countFun >>= \case
   Just count -> if count > maxDbTblRecs
-    then do logNotice fn . T.concat $ [ the . dblQuote $ tblName
-                                      , " table is being purged of "
-                                      , showTxt noOfDbTblRecsToPurge
-                                      , " records." ]
-            withDbExHandler_ fn purgeFun
-    else logNotice fn . T.concat $ [ the . dblQuote $ tblName
-                                   , " table presently contains "
-                                   , showTxt count
-                                   , " records." ]
+    then let ts = [ the . dblQuote $ tblName, " table is being purged of ", showTxt noOfDbTblRecsToPurge, " records." ]
+         in logNotice fn (T.concat ts) >> withDbExHandler_ fn purgeFun
+    else logNotice fn . T.concat $ [ the . dblQuote $ tblName, " table presently contains ", showTxt count, " records." ]
   Nothing -> unit
