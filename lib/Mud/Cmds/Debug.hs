@@ -288,11 +288,7 @@ debugCins   (OneArg i mq cols a) = getState >>= \ms -> case reads . T.unpack $ a
       | otherwise = do logPlaExecArgs (prefixDebugCmd "cins") (pure a) i
                        multiWrapSend mq cols . (header :) . pure . showTxt =<< getAllChanIdNames i ms
       where
-        header = T.concat [ "All channel ID/names "
-                          , parensQuote "IM.IntMap [(Id, Text)]"
-                          , " for ID "
-                          , targetIdTxt
-                          , ":" ]
+        header = T.concat [ "All channel ID/names ", parensQuote "IM.IntMap [(Id, Text)]", " for ID ", targetIdTxt, ":" ]
 debugCins p = advise p [] adviceDCinsExcessArgs
 
 
@@ -890,12 +886,9 @@ debugRegen   (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)]
                                               , ("mp", calcRegenMpAmt, calcRegenMpDelay)
                                               , ("pp", calcRegenPpAmt, calcRegenPpDelay)
                                               , ("fp", calcRegenFpAmt, calcRegenFpDelay) ]
-        descRegen t calcAmt calcDelay = T.concat [ t
-                                                 , ": "
-                                                 , showTxt . calcAmt   targetId $ ms
-                                                 , " / "
-                                                 , showTxt . calcDelay targetId $ ms
-                                                 , " sec" ]
+        descRegen t calcAmt calcDelay
+          | ts <- [ t, ": ", showTxt . calcAmt   targetId $ ms, " / ", showTxt . calcDelay targetId $ ms, " sec" ]
+          = T.concat ts
 debugRegen p = advise p [] adviceDRegenExcessArgs
 
 
@@ -1244,11 +1237,8 @@ wrapMsg :: HasCallStack => Text
 wrapMsg = T.unwords wordy <> dfltColor
   where
     wordy :: HasCallStack => [] Text
-    wordy = [ T.concat [ u
-                       , mkFgColorANSI (Dull, c)
-                       , "This is "
-                       , showTxt c
-                       , " text." ] | c <- Black `delete` colors, u <- [ underlineANSI, noUnderlineANSI ] ]
+    wordy = [ T.concat [ u, mkFgColorANSI (Dull, c), "This is ", showTxt c, " text." ]
+            | c <- Black `delete` colors, u <- [ underlineANSI, noUnderlineANSI ] ]
 
 
 -----
