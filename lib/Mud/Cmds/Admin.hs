@@ -2187,8 +2187,7 @@ setHelper targetId a@(ms, toSelfMsgs, _, _, _) arg = if
                                      SubAssign -> addSubAssignHelper (-)
           where
             mkToTarget diff | x <- "The number of corpses you have sacrificed to "
-                            , y <- diff > 0 ? "increased" :? "decreased"
-                            , z <- commaShow . abs $ diff
+                            , y <- diff > 0 ? "increased" :? "decreased", z <- commaShow . abs $ diff
                             = pure . T.concat $ [ x, pp gn, " has ", y, " by ", z, "." ]
         -----
         sorryType               = appendMsg . sorryAdminSetType $ targetId
@@ -2469,8 +2468,8 @@ mkCharListTxt inOrOut ms =
                                name      = mkAnnotatedName i a
                            in T.concat [ padName name, padId . showTxt $ i, padSex s, padRace r, l ]
         nop              = length is
-        xs               = [ showTxt nop, spaced . pluralize ("person", "people") $ nop, pp inOrOut, "." ]
-    in mkWhoHeader True ++ map mkCharTxt ias ++ (pure . T.concat $ xs)
+        ts               = [ showTxt nop, spaced . pluralize ("person", "people") $ nop, pp inOrOut, "." ]
+    in mkWhoHeader True ++ map mkCharTxt ias ++ (pure . T.concat $ ts)
   where
     f i p               = case inOrOut of LoggedIn  -> isLoggedIn p
                                           LoggedOut -> ((&&) <$> (`isAlive` ms) . fst <*> not . isLoggedIn . snd) (i, p)

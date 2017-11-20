@@ -775,8 +775,7 @@ advicePutNoCon = prd $ "Please also specify where you want to put it, as in " <>
 
 
 adviceQuitExcessArgs :: Text
-adviceQuitExcessArgs | a <- colorWith quoteColor "quit"
-                     , b <- dblQuote "go to sleep"
+adviceQuitExcessArgs | a <- colorWith quoteColor "quit", b <- dblQuote "go to sleep"
                      = prd . T.concat $ [ "Type ", a, " with no arguments to ", b, " ", parensQuote "quit CurryMUD" ]
 
 
@@ -829,8 +828,7 @@ adviceSayAdverbNoUtterance l = prd $ "Please also specify what you'd like to say
 
 
 adviceSayNoArgs :: Lang -> Text
-adviceSayNoArgs l | a <- mkInLangTxtForLang l
-                  , b <- colorWith quoteColor $ mkCmdNameForLang l <> " nice to meet you, too"
+adviceSayNoArgs l | a <- mkInLangTxtForLang l, b <- colorWith quoteColor $ mkCmdNameForLang l <> " nice to meet you, too"
                   = T.concat [ "Please specify what you'd like to say", a, ", as in ", b, "." ]
 
 
@@ -968,6 +966,5 @@ adviceYouEmoteChar cn =
 
 adviceZoomExcessArgs :: Text
 adviceZoomExcessArgs
-  | a <- parensQuote $ "to zoom to the default level of " <> showTxt dfltZoom
-  , b <- colorWith quoteColor "zoom 20"
+  | a <- parensQuote $ "to zoom to the default level of " <> showTxt dfltZoom, b <- colorWith quoteColor "zoom 20"
   = T.concat [ "Please either provide no arguments ", a, ", or a single argument: the zoom level, as in ", b, "." ]

@@ -422,19 +422,12 @@ sorryIgnoreLocPrefPlur msg = parensQuote $ msg <> " need not be given location p
 
 
 sorryInterpPickPtsMax :: Text -> Text
-sorryInterpPickPtsMax t = T.concat [ can't "add any more to "
-                                   , t
-                                   , " "
-                                   , parensQuote "it's set to the maximum value of 100"
-                                   , "." ]
+sorryInterpPickPtsMax t = T.concat [ can't "add any more to ", t, " ", parensQuote "it's set to the maximum value of 100", "." ]
 
 
 sorryInterpPickPtsMin :: Text -> Text
-sorryInterpPickPtsMin t = T.concat [ can't "subtract any more from "
-                                   , t
-                                   , " "
-                                   , parensQuote "it's set to the minimum value of 10"
-                                   , "." ]
+sorryInterpPickPtsMin t | a <- "subtract any more from", b <- "it's set to the minimum value of 10"
+                        = T.concat [ can't a, " ", t, " ", parensQuote b, "." ]
 
 
 sorryInterpPickPtsPts :: Text
