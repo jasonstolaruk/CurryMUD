@@ -180,12 +180,8 @@ asterisk = colorWith asteriskColor "*"
 awardExp :: HasCallStack => Exp -> Text -> Id -> MudStack ()
 awardExp amt reason i = getLvlExp i <$> getState >>= \(l, x) -> let diff = calcLvlForExp (x + amt) - l in
     rndmVector (diff * noOfLvlUpRndmInts) >>= \v -> helper v |&| modifyState >=> \(ms, (msgs, logMsgs)) -> do
-        let logMsg = T.concat [ "awarded "
-                              , commaShow amt
-                              , " exp "
-                              , parensQuote reason
-                              , "."
-                              , logMsgs |!| (spcL . capitalize . prd . slashes $ logMsgs) ]
+        let logMsg | a <- logMsgs |!| (spcL . capitalize . prd . slashes $ logMsgs)
+                   = T.concat [ "awarded ", commaShow amt, " exp ", parensQuote reason, ".", a ]
         when (isNpc i ms || isLoggedIn (getPla i ms)) . logPla "awardExp" i $ logMsg
         mapM_ (retainedMsg i ms) msgs
   where
@@ -566,9 +562,7 @@ isAlive i = (i `notElem`) . getInv iNecropolis
 
 
 isBracketed :: [Text] -> Bool
-isBracketed ws = or [ T.head (head ws) `elem` ("[<" :: String)
-                    , "]." `T.isSuffixOf` last ws
-                    , ">." `T.isSuffixOf` last ws ]
+isBracketed ws = or [ T.head (head ws) `elem` ("[<" :: String), "]." `T.isSuffixOf` last ws, ">." `T.isSuffixOf` last ws ]
 
 
 -----
@@ -909,10 +903,8 @@ mkWhoFooter i ms = let plaIds@(length -> x) = [ i' | i' <- getLoggedInPlaIds ms
                                , pluralize ("person", "people") x
                                , " awake"
                                , plaIds == pure i |?| ": you"
-                               , isNonZero y |?| spcL . parensQuote . T.concat $ [ "excluding "
-                                                                                 , showTxt y
-                                                                                 , " administrator"
-                                                                                 , pluralize ("", "s") y ]
+                               , let ts = [ "excluding ", showTxt y, " administrator", pluralize ("", "s") y ]
+                                 in isNonZero y |?| spcL . parensQuote . T.concat $ ts
                                , "." ]
 
 
