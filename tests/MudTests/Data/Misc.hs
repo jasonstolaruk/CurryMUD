@@ -41,12 +41,8 @@ test_serializeNonStdDesig = actual @?= expected
 test_deserializeStdDesig :: Assertion
 test_deserializeStdDesig = actual @?= expected
   where
-    actual   = deserialize . quoteWith std . T.intercalate d $ [ "fhuman"
-                                                               , "DoCap"
-                                                               , "55"
-                                                               , "[55,54,53,52,51,50]"
-                                                               , "True"
-                                                               , "False" ]
+    ts       = [ "fhuman", "DoCap", "55", "[55,54,53,52,51,50]", "True", "False" ]
+    actual   = deserialize . quoteWith std . T.intercalate d $ ts
     expected = StdDesig "fhuman" DoCap 55 [ 55, 54..50 ] True False
 
 

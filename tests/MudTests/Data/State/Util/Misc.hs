@@ -71,8 +71,7 @@ test_dropPrefixesForHooks_abbrev = actual @?= expected
     args     = [ attachPrefix "" allChar "flowe"
                , attachPrefix "" allChar "flower" ]
     actual   = dropPrefixesForHooks [ getFlowerHook, lookFlowerbedHook ] args
-    expected = [ attachPrefix "" allChar "flowe"
-               , "flower" ]
+    expected = [ attachPrefix "" allChar "flowe", "flower" ]
 
 
 test_procQuoteChars_null :: Assertion
