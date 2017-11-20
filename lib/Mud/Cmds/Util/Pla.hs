@@ -193,15 +193,10 @@ alertMsgHelper i cn txt = getState >>= \ms -> if isAdminId i ms
   else let matches = filter (`T.isInfixOf` T.toLower txt) alertMsgTriggers
        in if ()!# matches
          then liftIO mkTimestamp >>= \ts ->
-             let match = head matches
+             let match  = head matches
                  s      = getSing i ms
-                 msg    = T.concat [ s
-                                   , " issued a message via the "
-                                   , dblQuote cn
-                                   , " command containing the word "
-                                   , dblQuote match
-                                   , ": "
-                                   , txt ]
+                 msg    | a <- " issued a message via the ", b <- " command containing the word "
+                        = T.concat [ s, a, dblQuote cn, b, dblQuote match, ": ", txt ]
                  outIds = (getIdForRoot ms `delete`) $ getAdminIds ms \\ getLoggedInAdminIds ms
                  rec    = AlertMsgRec Nothing ts s cn match txt
              in do logNotice fn   msg
@@ -795,16 +790,10 @@ helperFillEitherInv i srcDesig targetId (eis:eiss) a@(ms, _, _, _) = case getVes
         (vs, vmm)        = (getSing `fanUncurry` getMaxMouthfuls) (vi, ms')
         n                = renderLiqNoun targetLiq id
         mkFillUpMsg      = pure . T.concat $ [ "You fill up the ", vs, " with ", n, " from the ", targetSing, "." ]
-        mkFillUpEmptyMsg = pure . T.concat $ [ "You fill up the ", vs, " with ", n, " from the ", targetSing
-                                             , ", emptying it." ]
-        mkXferEmptyMsg   = pure . T.concat $ [ "You transfer ", n, " to the ", vs,  " from the ", targetSing
-                                             , ", emptying it." ]
-        bs               = pure (T.concat [ serialize srcDesig
-                                          , " transfers liquid from "
-                                          , aOrAn targetSing
-                                          , " to "
-                                          , aOrAn vs
-                                          , "." ], desigOtherIds srcDesig)
+        mkFillUpEmptyMsg = pure . T.concat $ [ "You fill up the ", vs, " with ", n, " from the ", targetSing, ", emptying it." ]
+        mkXferEmptyMsg   = pure . T.concat $ [ "You transfer ", n, " to the ", vs,  " from the ", targetSing, ", emptying it." ]
+        bs               = pure ( T.concat [ serialize srcDesig, " transfers liquid from ", aOrAn targetSing, " to ", aOrAn vs, "." ]
+                                , desigOtherIds srcDesig )
 
 
 -----
@@ -1080,17 +1069,8 @@ mkUnreadyDescs i ms d targetIds = unzip [ helper icb | icb <- mkIdCountBothList 
       then let toSelfMsg   = T.concat [ "You ", mkVerb targetId SndPer, " the ", targetSing, "." ]
                toOthersMsg = T.concat [ serialize d, spaced . mkVerb targetId $ ThrPer, aOrAn targetSing,  "." ]
            in ((toOthersMsg, desigOtherIds d), toSelfMsg)
-      else let toSelfMsg   = T.concat [ "You "
-                                      , mkVerb targetId SndPer
-                                      , spaced . showTxt $ count
-                                      , mkPlurFromBoth b
-                                      , "." ]
-               toOthersMsg = T.concat [ serialize d
-                                      , spaced . mkVerb targetId $ ThrPer
-                                      , showTxt count
-                                      , " "
-                                      , mkPlurFromBoth b
-                                      , "." ]
+      else let toSelfMsg   = T.concat [ "You ", mkVerb targetId SndPer, spaced . showTxt $ count, mkPlurFromBoth b, "." ]
+               toOthersMsg = T.concat [ serialize d, spaced . mkVerb targetId $ ThrPer, showTxt count, " ", mkPlurFromBoth b, "." ]
            in ((toOthersMsg, desigOtherIds d), toSelfMsg)
     mkVerb targetId person = case getType targetId ms of
       ArmType -> case getArmSub targetId ms of
@@ -1402,13 +1382,8 @@ mkVesselContDesc cols ms targetId =
     let s = getSing   targetId ms
         v = getVessel targetId ms
         emptyDesc         = wrapUnlines cols . the' $ s <> " is empty."
-        mkContDesc (l, m) = T.concat [ "The "
-                                     , s
-                                     , " contains "
-                                     , renderLiqNoun l aOrAn
-                                     , " "
-                                     , parensQuote $ showTxt (calcVesselPerFull v m) <> "% full"
-                                     , "." ] |&| wrapUnlines cols
+        mkContDesc (l, m) | a <- renderLiqNoun l aOrAn, b <- parensQuote $ showTxt (calcVesselPerFull v m) <> "% full"
+                          = wrapUnlines cols . T.concat $ [ "The ", s, " contains ", a, " ", b, "." ]
     in views vesselCont (maybe emptyDesc mkContDesc) v
 
 
@@ -1663,10 +1638,7 @@ notFoundSuggestAsleeps a@(capitalize . T.toLower -> a') asleepSings ms =
       Just asleepTarget ->
           let heShe = mkThrPerPro . getSex (getIdForPCSing asleepTarget ms) $ ms
               guess = a' /= asleepTarget |?| ("Perhaps you mean " <> asleepTarget <> "? ")
-          in T.concat [ guess
-                      , "Unfortunately, "
-                      , bool heShe asleepTarget $ ()# guess
-                      , thrice prd " is sleeping at the moment" ]
+          in T.concat [ guess, "Unfortunately, ", bool heShe asleepTarget $ ()# guess, thrice prd " is sleeping at the moment" ]
       Nothing -> sorryTwoWayLink a
 
 
@@ -1754,10 +1726,9 @@ readHelper i cols ms d = foldl' helper
                        , "I humbly offer myself to You,"
                        , "that your Light may guide me"
                        , "through all darkness and calamity." ]
-        rumialysOK   = T.concat [ "The following is etched upon the surface of the metal ring in "
-                                , pp NymphLang
-                                , ": "
-                                , dblQuote "Mother of Life, Architect of All." ]
+        rumialysOK   | a <- "The following is etched upon the surface of the metal ring in "
+                     , b <- dblQuote "Mother of Life, Architect of All."
+                     = T.concat [ a, pp NymphLang, ": ", b ]
         rumialysNG   = "You recognize that the language etched on upon the metal ring is " <>
                        pp NymphLang                                                        <>
                        ", but you can't read the words."
@@ -1800,19 +1771,11 @@ resolveRmInvCoins i ms = resolveHelper i ms procGecrMisRm procReconciledCoinsRm
 
 sacrificeHelper :: HasCallStack => ActionParams -> Id -> GodName -> MudStack ()
 sacrificeHelper p@(ActionParams i mq cols _) ci gn = getState >>= \ms ->
-    let toSelf          = T.concat [ "You kneel before the "
-                                   , mkCorpseAppellation i ms ci
-                                   , ", laying upon it the holy symbol of "
-                                   , pp gn
-                                   , gn == Murgorhd |?| murgorhdMsg
-                                   , thrice prd ". You say a prayer" ]
-        d               = mkStdDesig i ms DoCap
-        helper targetId = (T.concat [ serialize d
-                                    , " kneels before the "
-                                    , mkCorpseAppellation targetId ms ci
-                                    , " and says a prayer to "
-                                    , pp gn
-                                    , "." ], pure targetId)
+    let toSelf | a <- "You kneel before the ", b <- ", laying upon it the holy symbol of ", c <- ". You say a prayer"
+               = T.concat [ a, mkCorpseAppellation i ms ci, b, pp gn, gn == Murgorhd |?| murgorhdMsg, thrice prd c ]
+        d      = mkStdDesig i ms DoCap
+        helper targetId | a <- " kneels before the ", b <- " and says a prayer to "
+                        = (T.concat [ serialize d, a, mkCorpseAppellation targetId ms ci, b, pp gn, "." ], pure targetId)
     in checkActing p ms (Left Sacrificing) allValues $ do logHelper ms
                                                           wrapSend1Nl mq cols toSelf
                                                           bcastIfNotIncogNl i . map helper . desigOtherIds $ d
@@ -2028,17 +1991,9 @@ mkPutRemInvDescs :: HasCallStack => Id
 mkPutRemInvDescs i ms d por mnom mci conSing = unzip . map helper . mkNameCountBothList i ms
   where
     helper (_, c, (s, _)) | c == 1 =
-        (  T.concat [ "You "
-                    , mkPorVerb por SndPer
-                    , spaced withArticle
-                    , mkPorPrep por SndPer mnom mci conSing
-                    , rest ]
-        , (T.concat [ serialize d
-                    , spaced . mkPorVerb por $ ThrPer
-                    , aOrAn s
-                    , " "
-                    , mkPorPrep por ThrPer mnom mci conSing
-                    , rest ], desigOtherIds d) )
+        ( T.concat [ "You ", mkPorVerb por SndPer, spaced withArticle, mkPorPrep por SndPer mnom mci conSing, rest ]
+        , ( T.concat [ serialize d, spaced . mkPorVerb por $ ThrPer, aOrAn s, " ", mkPorPrep por ThrPer mnom mci conSing, rest ]
+          , desigOtherIds d ) )
       where
         withArticle = bool (aOrAn s) (the s) $ por == Put
     helper (_, c, b) =

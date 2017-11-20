@@ -335,9 +335,8 @@ instance Pretty Cloth where
 
 
 instance Pretty ConsumpEffects where
-  pp (ConsumpEffects mouths secs effectList) = commas [ "mouthfuls: " <> commaShow mouths
-                                                      , "seconds: "   <> commaShow secs
-                                                      , "effects: "   <> pp effectList ]
+  pp (ConsumpEffects mouths secs effectList) =
+      commas [ "mouthfuls: " <> commaShow mouths, "seconds: " <> commaShow secs, "effects: " <> pp effectList ]
 
 
 instance Pretty CurryMonth where
@@ -473,12 +472,8 @@ instance Pretty Hand where
 
 
 instance Pretty InstaEffect where
-  pp (InstaEffect effSub effVal effFeeling) = T.concat [ bracketQuote "instantaneous"
-                                                       , " "
-                                                       , pp effSub
-                                                       , " by "
-                                                       , effectValHelper effVal
-                                                       , effectFeelingHelper effFeeling ]
+  pp (InstaEffect effSub effVal effFeeling) =
+      T.concat [ bracketQuote "instantaneous", " ", pp effSub, " by ", effectValHelper effVal, effectFeelingHelper effFeeling ]
 
 
 instance Pretty InstaEffectSub where

@@ -188,8 +188,7 @@ mkCorpse i ms =
       else (ms', fs)
   where
     ip        = isPla i ms
-    (s, p)    | ip = ( "corpse of a " <> sexy |<>| pp r
-                     , "corpses of "  <> sexy |<>| plurRace r )
+    (s, p)    | ip = ("corpse of a " <> sexy |<>| pp r, "corpses of " <> sexy |<>| plurRace r)
               | bgns <- getBothGramNos i ms
               = (("corpse of " <>) *** ("corpses of " <>)) . first aOrAnOnLower $ bgns & _2 .~ mkPlurFromBoth bgns
     (sexy, r) = first pp . getSexRace i $ ms
