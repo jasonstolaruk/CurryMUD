@@ -94,16 +94,10 @@ handleEgress i mq isDropped = egressHelper `finally` writeMsg mq FinishedEgress
 peepHelper :: HasCallStack => Id -> MudState -> Sing -> Bool -> (MudState, [Broadcast], [(Id, Text)])
 peepHelper i ms s spirit =
     let (peeperIds, peepingIds) = getPeepersPeeping i ms
-        bs      = [ (nlnl .    T.concat $ [ "You are no longer peeping " -- TODO: Here.
-                                          , s
-                                          , " "
-                                          , parensQuote $ s <> spaced "has" <> txt
-                                          , "." ], pure peeperId) | peeperId <- peeperIds ]
-        logMsgs = [ (peeperId, T.concat   [ "no longer peeping "
-                                          , s
-                                          , " "
-                                          , parensQuote $ s <> spaced "has" <> txt
-                                          , "." ]) | peeperId <- peeperIds ]
+        bs      | a <- "You are no longer peeping ", b <- parensQuote $ s <> spaced "has" <> txt
+                = [ (nlnl . T.concat $ [ a, s, " ", b, "." ], pure peeperId) | peeperId <- peeperIds ]
+        logMsgs | a <- "no longer peeping ", b <- parensQuote $ s <> spaced "has" <> txt
+                = [ (peeperId, T.concat [ a, s, " ", b, "." ]) | peeperId <- peeperIds ]
         txt     = spirit ? "passed into the beyond" :? "disconnected"
     in (upd ms [ plaTbl %~ stopPeeping     peepingIds
                , plaTbl %~ stopBeingPeeped peeperIds
@@ -173,12 +167,7 @@ farewell i mq cols = multiWrapSend mq cols . mkFarewellStats i =<< getState
 mkFarewellStats :: HasCallStack => Id -> MudState -> [Text]
 mkFarewellStats i ms = concat [ header, ts, footer ]
   where
-    header = [ T.concat [ "Sadly, "
-                        , s
-                        , " has passed away. Here is a final summary of "
-                        , s
-                        , "'s stats:" ]
-             , "" ]
+    header = [ T.concat [ "Sadly, ", s, " has passed away. Here is a final summary of ", s, "'s stats:" ], "" ]
     ts     = [ T.concat [ s, ", the ", sexy, " ", r ]
              , f "Strength: "   <> str
              , f "Dexterity: "  <> dex
