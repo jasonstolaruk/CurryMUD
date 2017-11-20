@@ -611,11 +611,8 @@ sorryChanNoOneListening t = "You are the only person tuned in to the " <> t <> "
 
 
 sorryChanTargetName :: Text -> Text -> Text
-sorryChanTargetName cn n = T.concat [ "There is no one by the name of "
-                                    , dblQuote n
-                                    , " currently tuned in to the "
-                                    , cn
-                                    , " channel." ]
+sorryChanTargetName cn n | a <- "There is no one by the name of ", b <- " currently tuned in to the "
+                         = T.concat [ a, dblQuote n, b, cn, " channel." ]
 
 
 sorryChanTargetNameFromContext :: Text -> ChanContext -> Text
@@ -652,10 +649,7 @@ sorryCon s = theOnLowerCap s <> " isn't a container."
 sorryConInEq :: PutOrRem -> Text
 sorryConInEq por =
     let (a, b) = expand por
-    in butCan't . T.concat $ [ a
-                             , " an item "
-                             , b
-                             , " a container in your readied equipment. Please unready the container first." ]
+    in butCan't . T.concat $ [ a, " an item ", b, " a container in your readied equipment. Please unready the container first." ]
   where
     expand = \case Put -> ("put",    "into")
                    Rem -> ("remove", "from")
@@ -734,11 +728,9 @@ sorryDrinkRmNoHooks = butCan't "drink from a vessel in your current room. Please
 
 
 sorryDrinkRmWithHooks :: Text -> Text
-sorryDrinkRmWithHooks t = T.concat [ "You don't see "
-                                   , aOrAn t
-                                   , " here. "
-                                   , parensQuote "If you'd like to drink from a vessel on the ground, please pick up \
-                                                 \the vessel first." ]
+sorryDrinkRmWithHooks t
+  | a <- "If you'd like to drink from a vessel on the ground, please pick up the vessel first."
+  = T.concat [ "You don't see ", aOrAn t, " here. ", parensQuote a ]
 
 
 sorryDrinkType :: Sing -> Text
@@ -834,15 +826,10 @@ sorryEmptyCon = sorryEmptyHelper "container"
 
 
 sorryEmptyHelper :: Text -> Text
-sorryEmptyHelper t = butCan't . T.concat $ [ "empty a "
-                                           , t
-                                           , " with the "
-                                           , dblQuote "empty"
-                                           , " command. Please use the "
-                                           , dblQuote "remove"
-                                           , " command to remove items from a "
-                                           , t
-                                           , "." ]
+sorryEmptyHelper t
+  | a  <- dblQuote "empty", b <- dblQuote "remove"
+  , ts <- [ "empty a ", t, " with the ", a, " command. Please use the ", b, " command to remove items from a ", t, "." ]
+  = butCan't . T.concat $ ts
 
 
 sorryEmptyCorpse :: Text
@@ -998,11 +985,9 @@ sorryFillRmNoHooks = butCan't "fill something with the contents of a vessel in y
 
 
 sorryFillRmWithHooks :: Text -> Text
-sorryFillRmWithHooks t = T.concat [ "You don't see "
-                                  , aOrAn t
-                                  , " here. "
-                                  , parensQuote "If you'd like to fill something with the contents of a vessel on the \
-                                                \ground, please pick up the vessel first." ]
+sorryFillRmWithHooks t
+  | a <- "If you'd like to fill something with the contents of a vessel on the ground, please pick up the vessel first."
+  = T.concat [ "You don't see ", aOrAn t, " here. ", parensQuote a ]
 
 
 sorryFillSelf :: Text -> Text
@@ -1167,11 +1152,7 @@ sorryInterpNameIllegal = prd $ "Your name cannot include any numbers or symbols 
 
 
 sorryInterpNameLen :: Text
-sorryInterpNameLen = T.concat [ "Your name must be between "
-                              , minNameLenTxt
-                              , " and "
-                              , maxNameLenTxt
-                              , " characters long." ]
+sorryInterpNameLen = T.concat [ "Your name must be between ", minNameLenTxt, " and ", maxNameLenTxt, " characters long." ]
 
 
 sorryInterpNameLenApostrophe :: Text
@@ -1206,11 +1187,7 @@ sorryInterpNewPwExcessArgs = "Passwords may not contain whitespace."
 
 
 sorryInterpNewPwLen :: Text
-sorryInterpNewPwLen = T.concat [ "Passwords must be "
-                               , showTxt minPwLen
-                               , "-"
-                               , showTxt maxPwLen
-                               , " characters in length." ]
+sorryInterpNewPwLen = T.concat [ "Passwords must be ", showTxt minPwLen, "-", showTxt maxPwLen, " characters in length." ]
 
 
 sorryInterpNewPwLower :: Text
@@ -1229,13 +1206,9 @@ sorryInterpNewPwUpper = "Passwords must contain at least one uppercase character
 
 
 sorryInterpPager :: Text
-sorryInterpPager = T.concat [ "Enter a blank line or "
-                            , dblQuote "n"
-                            , " for the next page, "
-                            , dblQuote "b"
-                            , " for the previous page, or "
-                            , dblQuote "q"
-                            , " to stop reading." ]
+sorryInterpPager
+  | a <- dblQuote "n", b <- dblQuote "b", c <- dblQuote "q"
+  = T.concat [ "Enter a blank line or ", a, " for the next page, ", b, " for the previous page, or ", c, " to stop reading." ]
 
 
 -----
@@ -1518,11 +1491,8 @@ sorryNonexistentId i ts = T.concat [ "ID ", showTxt i, " does not exist in ", ca
 
 
 sorryNotPossessed :: Sing -> CmdName -> Text
-sorryNotPossessed s cn = T.concat [ "You must first possess "
-                                  , theOnLower s
-                                  , " before you can use the "
-                                  , dblQuote cn
-                                  , " command." ]
+sorryNotPossessed s cn =
+    T.concat [ "You must first possess ", theOnLower s, " before you can use the ", dblQuote cn, " command." ]
 
 
 -----
@@ -1571,20 +1541,10 @@ sorryParseId a = dblQuote a <> " is not a valid ID."
 
 
 sorryParseInOut :: Text -> Text -> Text
-sorryParseInOut value n = T.concat [ dblQuote value
-                                   , " is not a valid value for the "
-                                   , dblQuote n
-                                   , " setting. Please specify one of the following: "
-                                   , inOutOrOnOff
-                                   , "." ]
+sorryParseInOut value n | a <- " is not a valid value for the ", b <- " setting. Please specify one of the following: "
+                        = T.concat [ dblQuote value, a, dblQuote n, b, inOutOrOnOff, "." ]
   where
-    inOutOrOnOff = T.concat [ dblQuote "in"
-                            , "/"
-                            , dblQuote "out"
-                            , " or "
-                            , dblQuote "on"
-                            , "/"
-                            , dblQuote "off" ]
+    inOutOrOnOff = T.concat [ dblQuote "in", "/", dblQuote "out", " or ", dblQuote "on", "/", dblQuote "off" ]
 
 
 sorryParseIndent :: Text -> Text
@@ -1604,14 +1564,8 @@ sorryParseNum numTxt base = T.concat [ dblQuote numTxt, " is not a valid number 
 
 
 sorryParseOnOff :: Text -> Text -> Text
-sorryParseOnOff value n = T.concat [ dblQuote value
-                                   , " is not a valid value for the "
-                                   , dblQuote n
-                                   , " setting. Please specify "
-                                   , dblQuote "on"
-                                   , " or "
-                                   , dblQuote "off"
-                                   , "." ]
+sorryParseOnOff value n | a <- " is not a valid value for the ", b <- " setting. Please specify "
+                        = T.concat [ dblQuote value, a, dblQuote n, b, dblQuote "on", " or ", dblQuote "off", "." ]
 
 
 sorryParseSeconds :: Text -> Text
@@ -1698,11 +1652,7 @@ sorryPutInsideSelf s = can't "put the " <> s <> " inside itself."
 
 
 sorryPutLitLight :: Sing -> Sing -> Text
-sorryPutLitLight lightSing conSing = T.concat [ "You think twice about putting the lit "
-                                              , lightSing
-                                              , " in the "
-                                              , conSing
-                                              , "." ]
+sorryPutLitLight lightSing conSing = T.concat [ "You think twice about putting the lit ", lightSing, " in the ", conSing, "." ]
 
 
 sorryPutVol :: Sing -> Text
@@ -1713,11 +1663,8 @@ sorryPutVol = the' . (<> " is too full to contain ")
 
 
 sorryQuitCan'tAbbrev :: Text
-sorryQuitCan'tAbbrev = T.concat [ "The "
-                                , dblQuote "quit"
-                                , " command may not be abbreviated. Type "
-                                , dblQuote "quit"
-                                , " with no arguments to quit CurryMUD." ]
+sorryQuitCan'tAbbrev | a <- " command may not be abbreviated. Type ", b <- " with no arguments to quit CurryMUD."
+                     = T.concat [ "The ", dblQuote "quit", a, dblQuote "quit", b ]
 
 
 -----
@@ -1743,11 +1690,8 @@ sorryReadInEq = can't "read an item in your readied equipment."
 
 
 sorryReadLang :: Sing -> Lang -> Text
-sorryReadLang s lang = T.concat [ "Although you recognize that the text on the "
-                                , s
-                                , " is written in "
-                                , pp lang
-                                , ", you can't make heads or tails of it." ]
+sorryReadLang s lang | a <- "Although you recognize that the text on the ", b <- ", you can't make heads or tails of it."
+                     = T.concat [ a, s, " is written in ", pp lang, b ]
 
 
 sorryReadNoHooks :: Text
@@ -1781,11 +1725,7 @@ sorryReadyAlreadyWearing t = prd $ "You're already wearing " <> aOrAn t
 
 
 sorryReadyAlreadyWearingRing :: Slot -> Sing -> Text
-sorryReadyAlreadyWearingRing sl s = T.concat [ "You're already wearing "
-                                             , aOrAn s
-                                             , " on your "
-                                             , pp sl
-                                             , "." ]
+sorryReadyAlreadyWearingRing sl s = T.concat [ "You're already wearing ", aOrAn s, " on your ", pp sl, "." ]
 
 
 sorryReadyClothFull :: Text -> Text
@@ -2026,12 +1966,8 @@ sorrySetName n = dblQuote n <> " is not a valid setting name."
 
 
 sorrySetRange :: Text -> Int -> Int -> Text
-sorrySetRange settingName minVal maxVal = T.concat [ capitalize settingName
-                                                   , " must be between "
-                                                   , showTxt minVal
-                                                   , " and "
-                                                   , showTxt maxVal
-                                                   , "." ]
+sorrySetRange settingName minVal maxVal =
+    T.concat [ capitalize settingName, " must be between ", showTxt minVal, " and ", showTxt maxVal, "." ]
 
 
 -----
@@ -2073,11 +2009,8 @@ sorrySmellNothingToSmell = "There isn't anything to smell."
 
 
 sorrySmellRmCoins :: (Text, Bool) -> Text
-sorrySmellRmCoins (coinTxt, isPlur) = T.concat [ "You must pick up the "
-                                               , coinTxt
-                                               , " before you can smell "
-                                               , isPlur ? "them" :? "it"
-                                               , "." ]
+sorrySmellRmCoins (coinTxt, isPlur) =
+    T.concat [ "You must pick up the ", coinTxt, " before you can smell ", isPlur ? "them" :? "it", "." ]
 
 
 sorrySmellRmNoHooks :: Sing -> Text
@@ -2194,10 +2127,8 @@ sorryTeleNecropolis = can't "teleport to the necropolis."
 
 
 sorryTeleRmName :: Text -> Text
-sorryTeleRmName n = T.concat [ dblQuote n
-                             , " is not a valid room name. Type "
-                             , colorWith quoteColor . prefixAdminCmd $ "telerm"
-                             , " with no arguments to get a list of valid room names." ]
+sorryTeleRmName n | a <- " is not a valid room name. Type ", b <- " with no arguments to get a list of valid room names."
+                  = T.concat [ dblQuote n, a, colorWith quoteColor . prefixAdminCmd $ "telerm", b ]
 
 
 sorryTeleSelf :: Text
@@ -2248,11 +2179,9 @@ sorryTunedOutICChan = sorryTunedOutChan "tune" DoQuote
 
 
 sorryTunedOutChan :: CmdName -> DoOrDon'tQuote -> Text -> Text
-sorryTunedOutChan x quote y = T.concat [ "You have tuned out the "
-                                       , onTrue (quote == DoQuote) dblQuote y
-                                       , " channel. Type "
-                                       , colorWith quoteColor . T.concat $ [ x, " ", y, "=in" ]
-                                       , " to tune it back in." ]
+sorryTunedOutChan x quote y | a <- onTrue (quote == DoQuote) dblQuote y
+                            , b <- colorWith quoteColor . T.concat $ [ x, " ", y, "=in" ]
+                            = T.concat [ "You have tuned out the ", a, " channel. Type ", b, " to tune it back in." ]
 
 
 sorryTunedOutOOCChan :: Text -> Text
@@ -2280,10 +2209,8 @@ sorryTwoWayTargetName cn s = T.concat [ "In a telepathic message to "
                                       , ", the only possible target is "
                                       , s
                                       , ". Please try "
-                                      , colorWith quoteColor . T.concat $ [ T.singleton expCmdChar
-                                                                          , cn
-                                                                          , " "
-                                                                          , T.singleton . toLower . T.head $ s ]
+                                      , let ts = [ T.singleton expCmdChar, cn, " ", T.singleton . toLower . T.head $ s ]
+                                        in colorWith quoteColor . T.concat $ ts
                                       , " instead." ]
 
 
@@ -2351,11 +2278,7 @@ sorryWireAlready cn = "As you are already connected to the " <> dblQuote cn <> "
 
 
 sorryWrapLineLen :: Text
-sorryWrapLineLen = T.concat [ "The line length must be between "
-                            , showTxt minCols
-                            , " and "
-                            , showTxt maxCols
-                            , " characters." ]
+sorryWrapLineLen = T.concat [ "The line length must be between ", showTxt minCols, " and ", showTxt maxCols, " characters." ]
 
 
 -----

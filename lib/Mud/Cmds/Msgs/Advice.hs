@@ -775,8 +775,8 @@ advicePutNoCon = prd $ "Please also specify where you want to put it, as in " <>
 
 
 adviceQuitExcessArgs :: Text
-adviceQuitExcessArgs | a <- colorWith quoteColor "quit", b <- dblQuote "go to sleep"
-                     = prd . T.concat $ [ "Type ", a, " with no arguments to ", b, " ", parensQuote "quit CurryMUD" ]
+adviceQuitExcessArgs | a <- colorWith quoteColor "quit", b <- dblQuote "go to sleep", c <- parensQuote "quit CurryMUD"
+                     = prd . T.concat $ [ "Type ", a, " with no arguments to ", b, " ", c ]
 
 
 adviceReadNoArgs :: Text

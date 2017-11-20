@@ -600,11 +600,8 @@ bars (LowerNub i mq cols as) = getState >>= \ms ->
           (match:_) -> Right . uncurry (mkBar . calcBarLen $ cols) $ match
     in logPlaExecArgs "bars" as i >> multiWrapSend mq cols mkBars
   where
-    hint = T.concat [ "Please specify any of the following: "
-                    , commas . map dblQuote $ [ "hp", "mp", "pp" ]
-                    , ", or "
-                    , dblQuote "fp"
-                    , "." ]
+    hint | a <- commas . map dblQuote $ [ "hp", "mp", "pp" ]
+         = T.concat [ "Please specify any of the following: ", a, ", or ", dblQuote "fp", "." ]
 bars p = pmf "bars" p
 
 
@@ -612,13 +609,9 @@ mkBar :: HasCallStack => Int -> Text -> (Int, Int) -> Text
 mkBar x txt (c, m) = let ratio  = c `divide` m
                          greens = round $ fromIntegral x * ratio
                          reds   = x - greens
-                     in T.concat [ T.toUpper txt
-                                 , ": "
-                                 , colorWith greenBarColor . T.replicate greens $ " "
-                                 , colorWith redBarColor   . T.replicate reds   $ " "
-                                 , " "
-                                 , showTxt . round $ 100 * ratio
-                                 , "%" ]
+                         a      = colorWith greenBarColor . T.replicate greens $ " "
+                         b      = colorWith redBarColor   . T.replicate reds   $ " "
+                     in T.concat [ T.toUpper txt, ": ", a, b, " ", showTxt . round $ 100 * ratio, "%" ]
 
 
 mkPtPairs :: HasCallStack => Id -> MudState -> [(Text, (Int, Int))]
@@ -1727,12 +1720,8 @@ intro p@(LowerNub i mq cols as) = getStateTime >>= \(ms, ct) ->
                                                          , " to you as "
                                                          , colorWith knownNameColor s
                                                          , "." ]
-                         toOthers    = nlnl . T.concat $ [ serialize srcDesig
-                                                         , " introduces "
-                                                         , himHerself
-                                                         , " to "
-                                                         , targetDesig
-                                                         , "." ]
+                         toOthers    | ts <- [ serialize srcDesig, " introduces ", himHerself, " to ", targetDesig, "." ]
+                                     = nlnl . T.concat $ ts
                          cbs         = [ NonTargetBcast (toSelf,   pure i                                  )
                                        , TargetBcast    (toTarget, pure targetId                           )
                                        , NonTargetBcast (toOthers, targetId `delete` desigOtherIds srcDesig) ]
@@ -1829,13 +1818,10 @@ leave p@(WithArgs i mq cols (nub -> as)) =
     mkLeaveMsg []     = []
     mkLeaveMsg ns@[_] = pure    . mkMsgHelper False $ ns
     mkLeaveMsg ns     = T.lines . mkMsgHelper True  $ ns
-    mkMsgHelper isPlur (map dblQuote -> ns) =
-        T.concat [ focusingInnateMsg
-                 , "you sever your telepathic connection"
-                 , sOnTrue isPlur
-                 , " to the "
-                 , isPlur ? (nl "following channels:" <> commas ns) :? (head ns <> " channel")
-                 , "." ]
+    mkMsgHelper isPlur (map dblQuote -> ns)
+      | a <- "you sever your telepathic connection"
+      , b <- isPlur ? (nl "following channels:" <> commas ns) :? (head ns <> " channel")
+      = T.concat [ focusingInnateMsg, a, sOnTrue isPlur, " to the ", b, "." ]
 leave p = pmf "leave" p
 
 
@@ -1972,23 +1958,18 @@ link p@(LowerNub i mq cols as) = getState >>= \ms -> if
                 (srcLinks,  targetLinks ) = f getLinked
                 f g                       = ((i |&|) &&& (targetId |&|)) (uncurry g . (, ms))
                 s                         = getSing i ms
-                srcMsg    = nlnl . T.concat $ [ focusingInnateMsg
-                                              , "you establish a telepathic connection from your mind to "
-                                              , targetSing
-                                              , "'s mind."
-                                              , twoWayMsg ]
+                srcMsg    | t <- "you establish a telepathic connection from your mind to "
+                          = nlnl . T.concat $ [ focusingInnateMsg, t, targetSing, "'s mind.", twoWayMsg ]
                 twoWayMsg = isTwoWay |?| " This completes the psionic circuit."
                 isTwoWay  = targetSing `elem` srcLinks
                 logMsg    = T.concat [ "established a ", oneTwoWay, " link with ", targetSing, "." ]
                 oneTwoWay | isTwoWay  = "two-way"
                           | otherwise = "one-way"
-                targetMsg = nlnl . T.concat $ [ "You sense an ephemeral blip in your psionic energy field as "
-                                              , colorWith knownNameColor s
-                                              , " establishes a telepathic connection from "
-                                              , mkPossPro . getSex i $ ms
-                                              , " mind to yours."
-                                              , twoWayMsg ]
-                bs            = [ (srcMsg, pure i), (targetMsg, pure targetId) ]
+                targetMsg | x <- "You sense an ephemeral blip in your psionic energy field as "
+                          , y <- " establishes a telepathic connection from "
+                          , z <- " mind to yours."
+                          = nlnl . T.concat $ [ x, colorWith knownNameColor s, y, mkPossPro . getSex i $ ms, z, twoWayMsg ]
+                bs        = [ (srcMsg, pure i), (targetMsg, pure targetId) ]
                 msgHelper txt = a' & _2 <>~ mkBcast i (nlnl txt)
                 targetTxt     = parseInBands Nothing i ms . serialize . mkStdDesig targetId ms $ Don'tCap
             in if | targetSing `notElem` srcIntros    -> msgHelper . sorryLinkIntroTarget       $ targetTxt
@@ -2678,14 +2659,8 @@ readyWpn i ms d mrol a@(et, _, _, _, _) wpnId wpnSing | em <- et IM.! i, wpn <- 
         Left  msg  -> sorry msg
         Right slot -> case sub of
           OneHanded -> let readyMsgs = ( T.concat [ "You wield the ", wpnSing, " with your ", pp slot, "." ]
-                                       , (T.concat [ serialize d
-                                                    , " wields "
-                                                    , aOrAn wpnSing
-                                                    , " with "
-                                                    , poss
-                                                    , " "
-                                                    , pp slot
-                                                    , "." ], desigOtherIds d) )
+                                       , (T.concat ts, desigOtherIds d) )
+                           ts        = [ serialize d, " wields ", aOrAn wpnSing, " with ", poss, " ", pp slot, "." ]
                        in moveReadiedItem i a slot wpnId readyMsgs
           TwoHanded
             | all (isSlotAvail em) [ RHandS, LHandS ] ->
@@ -2767,15 +2742,9 @@ readyLight i ms d mrol a@(et, _, _, _, _) lightId lightSing | em <- et IM.! i =
       else case mrol |&| maybe (getAvailHandSlot ms i lightSing em) (getDesigHandSlot ms lightSing em) of
         Left  msg  -> sorry msg
         Right slot -> let readyMsgs = ( T.concat [ "You hold the ", lightSing, " in your ", pp slot, "." ]
-                                      , (T.concat [ serialize d
-                                                   , " holds "
-                                                   , aOrAn lightSing
-                                                   , " in "
-                                                   , poss
-                                                   , " "
-                                                   , pp slot
-                                                   , "." ], desigOtherIds d) )
-                       in moveReadiedItem i a slot lightId readyMsgs
+                                      , (T.concat ts, desigOtherIds d) )
+                          ts        = [ serialize d, " holds ", aOrAn lightSing, " in ", poss, " ", pp slot, "." ]
+                      in moveReadiedItem i a slot lightId readyMsgs
   where
     sorry msg = a & _3 <>~ pure msg
     poss      = mkPossPro . getSex i $ ms
@@ -2824,20 +2793,12 @@ refuel p@(Lower i mq cols [lamp, vessel]) = getState >>= \ms ->
                                        mouths'       = floor $ vesselRemSecs `divide` calcLampSecsPerMouthfulOfOil
                                        newCont | vesselRemSecs == 0 = Nothing
                                                | otherwise          = Just (liq, mouths')
-                                       toSelf  = T.concat [ "You refuel the "
-                                                          , lampSing
-                                                          , " with the oil from the "
-                                                          , vesselSing
-                                                          , "." ]
+                                       toSelf  = T.concat [ "You refuel the ", lampSing, " with the oil from the ", vesselSing, "." ]
                                    in ( ms & lightTbl .ind lampId  .lightSecs  .~ maxLampSecs
                                            & vesselTbl.ind vesselId.vesselCont .~ newCont
                                       , ioHelper ms lampSing vesselSing toSelf False )
                               else -- There is not enough oil in the vessel to fill the lamp.
-                                   let toSelf = T.concat [ "You empty the contents of the "
-                                                         , vesselSing
-                                                         , " into the "
-                                                         , lampSing
-                                                         , "." ]
+                                   let toSelf = T.concat [ "You empty the contents of the ", vesselSing, " into the ", lampSing, "." ]
                                    in ( ms & lightTbl .ind lampId  .lightSecs  +~ vesselSecs
                                            & vesselTbl.ind vesselId.vesselCont .~ Nothing
                                       , ioHelper ms lampSing vesselSing toSelf True )
@@ -2850,19 +2811,10 @@ refuel p@(Lower i mq cols [lamp, vessel]) = getState >>= \ms ->
               | ()!# inEqs    -> refuelEq
               | otherwise     -> sorry sorryRefuelLampInRm
     ioHelper ms lampSing vesselSing toSelf b =
-        let bs     = pure (T.concat [ serialize d
-                                    , " refuels "
-                                    , aOrAn lampSing
-                                    , " with the oil from "
-                                    , aOrAn vesselSing
-                                    , "." ], desigOtherIds d)
+        let bs     = pure ( T.concat [ serialize d, " refuels ", aOrAn lampSing, " with the oil from ", aOrAn vesselSing, "." ]
+                          , desigOtherIds d)
             d      = mkStdDesig i ms DoCap
-            logMsg = T.concat [ "refueled "
-                              , aOrAn lampSing
-                              , " with "
-                              , aOrAn vesselSing
-                              , b |?| ", emptying it"
-                              , "." ]
+            logMsg = T.concat [ "refueled ", aOrAn lampSing, " with ", aOrAn vesselSing, b |?| ", emptying it", "." ]
         in [ wrapSend mq cols toSelf
            , bcastIfNotIncogNl i bs
            , logPla "refuel helper refuelerHelper" i logMsg ]
@@ -3046,24 +2998,9 @@ sayHelper l p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms ->
                                  = T.concat [ serialize d, " says something ", frontAdv, "to you", inLang, rearAdv, "." ]
                 toTargetBcast    = (nl toTargetMsg, pure targetId)
                 mkToOthersMsg i' | isKnownLang i' ms l
-                                 = T.concat [ serialize d
-                                            , " says "
-                                            , frontAdv
-                                            , "to "
-                                            , targetDesig
-                                            , inLang
-                                            , rearAdv
-                                            , ", "
-                                            , msg ]
+                                 = T.concat [ serialize d, " says ", frontAdv, "to ", targetDesig, inLang, rearAdv, ", ", msg ]
                                  | otherwise
-                                 = T.concat [ serialize d
-                                            , " says something "
-                                            , frontAdv
-                                            , "to "
-                                            , targetDesig
-                                            , inLang
-                                            , rearAdv
-                                            , "." ]
+                                 = T.concat [ serialize d, " says something ", frontAdv, "to ", targetDesig, inLang, rearAdv, "." ]
                 toOthersBcasts   = [ (nl . mkToOthersMsg $ i', pure i') | i' <- targetId `delete` desigOtherIds d ]
                 f                | isNpc i        ms = (, [])
                                  | isNpc targetId ms = firstMobSay i
@@ -3086,11 +3023,7 @@ sayHelper l p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms ->
                      inLang           = mkInLangTxtForLang l
                      toSelfMsg        = T.concat [ "You say", inLang, adverb, ", ", msg ]
                      mkToOthersMsg i' | isKnownLang i' ms l = T.concat [ serialize d, " says", adverb, inLang, ", ", msg ]
-                                      | otherwise           = T.concat [ serialize d
-                                                                       , " says something"
-                                                                       , adverb
-                                                                       , inLang
-                                                                       , "." ]
+                                      | otherwise           = T.concat [ serialize d, " says something", adverb, inLang, "." ]
                      toOthersBcasts   = [ (nl . mkToOthersMsg $ i', pure i') | i' <- desigOtherIds d ]
                  in (pure toSelfMsg, toOthersBcasts, toSelfMsg)
 sayHelper _ p = pmf "sayHelper" p
@@ -3110,11 +3043,11 @@ security (NoArgs i mq cols) = getSing i <$> getState >>= \s ->
                                                        Just recs -> securityChange . last $ recs
                                                        Nothing   -> dbError mq cols
   where
-    securityChange SecRec { dbQ, dbA } = do multiWrapSend mq cols [ "You have set your security Q&A as follows:"
-                                                                  , "Question: " <> dbQ
-                                                                  , "Answer: "   <> dbA ]
-                                            promptChangeIt mq cols
-                                            setInterp i . Just $ interpConfirmSecurityChange
+    securityChange SecRec { dbQ, dbA }
+      | ts <- [ "You have set your security Q&A as follows:", "Question: " <> dbQ, "Answer: " <> dbA ]
+      = do multiWrapSend mq cols ts
+           promptChangeIt mq cols
+           setInterp i . Just $ interpConfirmSecurityChange
 security p = withoutArgs security p
 
 
@@ -3277,9 +3210,7 @@ showAction p@(Lower i mq cols as) = checkDark p $ getState >>= \ms ->
                            else do
                                let logMsg = slashes . dropBlanks $ [ invLogMsg |!| parensQuote "inv" |<>| invLogMsg
                                                                    , eqLogMsg  |!| parensQuote "eq"  |<>| eqLogMsg ]
-                               logMsg |#| logPla "show" i . (T.concat [ "showing to "
-                                                                      , theSing theTarget
-                                                                      , ": " ] <>)
+                               logMsg |#| logPla "show" i . (T.concat [ "showing to ", theSing theTarget, ": " ] <>)
                                multiWrapSend mq cols . dropBlanks $ sorryRmMsg : [ parseInBands Nothing i ms msg
                                                                                  | msg <- invToSelfs ++ eqToSelfs ]
                                bcastNl $ invBs ++ eqBs
@@ -3309,47 +3240,25 @@ showAction p@(Lower i mq cols as) = checkDark p $ getState >>= \ms ->
                                         , ca <- mkCorpseAppellation theId ms itemId
                                         = (ca, expandCorpseTxt ca . getCorpseDesc itemId $ ms)
                                         | otherwise = (getSing `fanUncurry` getEntDesc) (itemId, ms)
-                             in (T.concat [ serialize d
-                                          , " shows you "
-                                          , underline . aOrAn $ n
-                                          , " "
-                                          , parensQuote "carried"
-                                          , nl ":"
-                                          , t ], pure theId)
+                             in ( T.concat [ serialize d, " shows you ", underline . aOrAn $ n, " ", parensQuote "carried", nl ":", t ]
+                                , pure theId)
               mkToOthersBs itemIds = concatMap f $ theId `delete` desigOtherIds d
                 where
                   f targetId = foldl' g [] itemIds
                     where
-                      g acc itemId = let n | getType itemId ms == CorpseType = mkCorpseAppellation targetId ms itemId
-                                           | otherwise                       = getSing itemId ms
-                                     in acc ++ pure (T.concat [ serialize d
-                                                              , " shows "
-                                                              , aOrAn n
-                                                              , " "
-                                                              , parensQuote "carried"
-                                                              , " to "
-                                                              , theDesig
-                                                              , "." ], pure targetId)
+                      g acc itemId = let n  | getType itemId ms == CorpseType = mkCorpseAppellation targetId ms itemId
+                                            | otherwise                       = getSing itemId ms
+                                         ts = [ serialize d, " shows ", aOrAn n, " ", parensQuote "carried", " to ", theDesig, "." ]
+                                     in acc ++ pure (T.concat ts, pure targetId)
               -----
               (canCoins, can'tCoinMsgs) = distillEcs ecs
               showCoinsHelper           = ( can'tCoinMsgs     ++ pure mkToSelfCoinsMsg
                                           , mkToTargetCoinsBs ++ mkToOthersCoinsBs )
               coinTxt           = mkCoinTxt canCoins
-              mkToSelfCoinsMsg  = coinTxt |!|                 T.concat   [ "You show "
-                                                                         , coinTxt
-                                                                         , " to "
-                                                                         , theDesig
-                                                                         , "." ]
-              mkToTargetCoinsBs = coinTxt |!| mkBcast theId . T.concat $ [ serialize d
-                                                                         , " shows you "
-                                                                         , underline coinTxt
-                                                                         , "." ]
-              mkToOthersCoinsBs = coinTxt |!| [ (T.concat [ serialize d
-                                                          , " shows "
-                                                          , aCoinSomeCoins canCoins
-                                                          , " to "
-                                                          , theDesig
-                                                          , "." ], theId `delete` desigOtherIds d) ]
+              mkToSelfCoinsMsg  = coinTxt |!|                 T.concat   [ "You show ", coinTxt, " to ", theDesig, "." ]
+              mkToTargetCoinsBs = coinTxt |!| mkBcast theId . T.concat $ [ serialize d, " shows you ", underline coinTxt, "." ]
+              mkToOthersCoinsBs = coinTxt |!| [ ( T.concat [ serialize d, " shows ", aCoinSomeCoins canCoins, " to ", theDesig, "." ]
+                                                , theId `delete` desigOtherIds d ) ]
           in let (toSelfMsgs, bs, logMsgs)  = showInvHelper
                  (toSelfCoinsMsgs, coinsBs) = showCoinsHelper
              in (toSelfMsgs ++ toSelfCoinsMsgs, bs ++ coinsBs, slashes . dropEmpties $ [ slashes logMsgs, coinTxt ])
@@ -3366,23 +3275,23 @@ showAction p@(Lower i mq cols as) = checkDark p $ getState >>= \ms ->
                 where
                   mkBs     = mkToTargetBs itemIds ++ mkToOthersBs itemIds
                   mkLogMsg = commas . map (`getSing` ms) $ itemIds
-              mkToSelfMsgs     itemIds = [ T.concat [ "You show the ", getSing itemId ms, " to ", theDesig, "." ]
-                                         | itemId <- itemIds ]
-              mkToTargetBs     itemIds = [ (T.concat [ serialize d
-                                                     , " shows you "
-                                                     , underline . aOrAn . getSing itemId $ ms
-                                                     , let t = descSlotForId i ms itemId eqMap in t |!| spcL t
-                                                     , nl ":"
-                                                     , getEntDesc itemId ms ], pure theId)
-                                         | itemId <- itemIds ]
-              mkToOthersBs     itemIds = [ (T.concat [ serialize d
-                                                     , " shows "
-                                                     , aOrAn . getSing itemId $ ms
-                                                     , let t = descSlotForId i ms itemId eqMap in t |!| spcL t
-                                                     , " to "
-                                                     , theDesig
-                                                     , "." ], theId `delete` desigOtherIds d)
-                                         | itemId <- itemIds ]
+              mkToSelfMsgs itemIds = [ T.concat [ "You show the ", getSing itemId ms, " to ", theDesig, "." ]
+                                     | itemId <- itemIds ]
+              mkToTargetBs itemIds = [ (T.concat [ serialize d
+                                                 , " shows you "
+                                                 , underline . aOrAn . getSing itemId $ ms
+                                                 , let t = descSlotForId i ms itemId eqMap in t |!| spcL t
+                                                 , nl ":"
+                                                 , getEntDesc itemId ms ], pure theId)
+                                     | itemId <- itemIds ]
+              mkToOthersBs itemIds = [ (T.concat [ serialize d
+                                                 , " shows "
+                                                 , aOrAn . getSing itemId $ ms
+                                                 , let t = descSlotForId i ms itemId eqMap in t |!| spcL t
+                                                 , " to "
+                                                 , theDesig
+                                                 , "." ], theId `delete` desigOtherIds d)
+                                     | itemId <- itemIds ]
               -----
               showCoinsInEqHelper = rcs |!| sorryEquipCoins
           in let (toSelfMsgs, bs, logMsgs) = showEqHelper in (showCoinsInEqHelper : toSelfMsgs, bs, slashes logMsgs)
