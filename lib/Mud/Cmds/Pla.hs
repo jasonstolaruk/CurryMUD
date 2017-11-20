@@ -811,11 +811,7 @@ connect p@(Lower i mq cols as) = getState >>= \ms ->
               , toTargets <- (T.concat [ getSing i ms', " has connected you to the ", dblQuote cn, " channel." ], targetIds)
               , toSelf    <- (focusingInnateMsg <>) $ case targetSings of
                 [n] -> T.concat [ "you connect ", n, " to the ", dblQuote cn, " channel." ]
-                _   -> T.concat [ "you connect the following people to the "
-                                , dblQuote cn
-                                , " channel: "
-                                , commas targetSings
-                                , "." ]
+                _   -> T.concat [ "you connect the following people to the ", dblQuote cn, " channel: ", commas targetSings, "." ]
               -> do logPla "connect" i $ "connected to " <> dblQuote cn <> ": " <> commas targetSings
                     toOthers <- mkToOthers ms' otherIds targetIds cn
                     bcastNl $ toTargets : toOthers ++ (()!# targetSings |?| mkBcast i toSelf) ++ sorryBs
@@ -939,15 +935,12 @@ disconnect p@(Lower i mq cols as) = getState >>= \ms ->
                                  , targetIds )
                   , toSelf    <- (focusingInnateMsg <>) $ case targetNames of
                     [n] -> T.concat [ "you disconnect ", format n, " from the ", dblQuote cn, " channel." ]
-                    _   -> T.concat [ "you disconnect the following people from the "
-                                    , dblQuote cn
-                                    , " channel: "
-                                    , commas . map format $ targetNames
-                                    , "." ] -> do
-                      toOthers <- mkToOthers ms otherIds targetIds cn
-                      bcastNl $ toTargets : toOthers ++ (()!# targetNames |?| mkBcast i toSelf) ++ sorryBs
-                      targetSings |#| let msg = T.concat [ "disconnected from ", dblQuote cn, ": ", commas targetSings ]
-                                      in const . logPla "disconnect" i $ msg
+                    _   | a <- "you disconnect the following people from the "
+                        -> T.concat [ a, dblQuote cn, " channel: ", commas . map format $ targetNames, "." ]
+                  -> do toOthers <- mkToOthers ms otherIds targetIds cn
+                        bcastNl $ toTargets : toOthers ++ (()!# targetNames |?| mkBcast i toSelf) ++ sorryBs
+                        targetSings |#| let msg = T.concat [ "disconnected from ", dblQuote cn, ": ", commas targetSings ]
+                                        in const . logPla "disconnect" i $ msg
                 xs -> pmf "disconnect" xs
     in checkActing p ms (Right "disconnect a person to a telepathic channel") (pure Sacrificing) next
   where
@@ -3342,16 +3335,11 @@ smell p@(OneArgLower i mq cols a) = getState >>= \ms ->
             [] -> let (canCoins, can'tCoinMsgs) = distillEcs ecs
                   in case can'tCoinMsgs of
                     []    -> let (coinTxt, isPlur) = mkCoinPieceTxt canCoins
-                                 smellDesc         = T.concat [ "The "
-                                                              , coinTxt
-                                                              , " smell"
-                                                              , not isPlur |?| "s"
-                                                              , " of metal, with just a hint of grime." ]
-                                 bs                = pure (T.concat [ serialize d
-                                                                    , " smells "
-                                                                    , aCoinSomeCoins canCoins
-                                                                    , "." ], desigOtherIds d)
-                                 logMsg            = prd $ "smelled " <> aCoinSomeCoins canCoins
+                                 smellDesc | x <- " of metal, with just a hint of grime."
+                                           = T.concat [ "The ", coinTxt, " smell", not isPlur |?| "s", x ]
+                                 bs        = pure ( T.concat [ serialize d, " smells ", aCoinSomeCoins canCoins, "." ]
+                                                  , desigOtherIds d )
+                                 logMsg    = prd $ "smelled " <> aCoinSomeCoins canCoins
                              in ioHelper smellDesc bs logMsg
                     (t:_) -> sorry t
             (eis:_) -> case eis of
@@ -3366,12 +3354,9 @@ smell p@(OneArgLower i mq cols a) = getState >>= \ms ->
                                         _ -> getEntSmell targetId ms
                                       bs = map f . desigOtherIds $ d
                                         where
-                                          f i' = (T.concat [ serialize d
-                                                           , " smells "
-                                                           , aOrAn (ic ? mkCorpseAppellation i' ms targetId :? targetSing)
-                                                           , " "
-                                                           , parensQuote "carried"
-                                                           , "." ], pure i')
+                                          f i' | x <- aOrAn (ic ? mkCorpseAppellation i' ms targetId :? targetSing)
+                                               = ( T.concat [ serialize d, " smells ", x, " ", parensQuote "carried", "." ]
+                                                 , pure i' )
                                       logMsg = T.concat [ "smelled ", aOrAn targetSing, " ", parensQuote "carried", "." ]
                                   in ioHelper smellDesc bs logMsg
               Right _          -> sorry sorrySmellExcessTargets
@@ -3386,11 +3371,7 @@ smell p@(OneArgLower i mq cols a) = getState >>= \ms ->
             Right [targetId] ->
                 let (targetSing, smellDesc) = (getSing `fanUncurry` getEntSmell) (targetId, ms)
                     slotDesc = descSlotForId i ms targetId eqMap
-                    bs       = pure (T.concat [ serialize d
-                                              , " smells "
-                                              , aOrAn targetSing
-                                              , slotDesc |!| spcL slotDesc
-                                              , "." ], desigOtherIds d)
+                    bs       = pure (T.concat [ serialize d, " smells ", aOrAn targetSing, slotDesc |!| spcL slotDesc, "." ], desigOtherIds d)
                     logMsg   = T.concat [ "smelled ", aOrAn targetSing, " ", slotDesc, "." ]
                     res      = join (checkSlotSmellTaste targetSing <$> lookupMapValue targetId eqMap)
                 in case getType targetId ms of
@@ -3430,26 +3411,18 @@ smell p@(OneArgLower i mq cols a) = getState >>= \ms ->
           Left  msg        -> sorry msg
           Right [targetId] -> let (targetSing, smellDesc) = (getSing `fanUncurry` getEntSmell) (targetId, ms)
                                   targetDesig = serialize . mkStdDesig targetId ms $ Don'tCap
-                                  bs          = [ (T.concat [ serialize d
-                                                            , " smells "
-                                                            , targetDesig
-                                                            , "." ], targetId `delete` desigOtherIds d)
+                                  bs          = [ ( T.concat [ serialize d, " smells ", targetDesig, "." ]
+                                                  , targetId `delete` desigOtherIds d )
                                                 , (serialize d <> " smells you.", pure targetId) ]
                                   logMsg      = parseInBandsSuffix i ms . prd $ "smelled " <> targetDesig
                                   smellMob    = ioHelper smellDesc bs logMsg
                                   smellCorpse = let corpseBs = map f . desigOtherIds $ d
                                                       where
-                                                        f i' = (T.concat [ serialize d
-                                                                         , " smells "
-                                                                         , aOrAn . mkCorpseAppellation i' ms $ targetId
-                                                                         , " "
-                                                                         , parensQuote "on the ground"
-                                                                         , "." ], pure i')
-                                                    corpseLogMsg = T.concat [ "smelled "
-                                                                            , aOrAn targetSing
-                                                                            , " "
-                                                                            , parensQuote "on the ground"
-                                                                            , "." ]
+                                                        f i' | x <- aOrAn . mkCorpseAppellation i' ms $ targetId
+                                                             , y <- parensQuote "on the ground"
+                                                             = (T.concat [ serialize d, " smells ", x, " ", y, "." ], pure i')
+                                                    corpseLogMsg | x <- aOrAn targetSing, y <- parensQuote "on the ground"
+                                                                 = T.concat [ "smelled ", x, " ", y, "." ]
                                                 in ioHelper smellDesc corpseBs corpseLogMsg
                               in case getType targetId ms of NpcType    -> smellMob
                                                              PlaType    -> smellMob
@@ -3576,12 +3549,9 @@ taste p@(OneArgLower i mq cols a) = getState >>= \ms ->
                                       _ -> getObjTaste targetId ms
                                     bs = map f . desigOtherIds $ d
                                       where
-                                        f i' = (T.concat [ serialize d
-                                                         , " tastes "
-                                                         , aOrAn (ic ? mkCorpseAppellation i' ms targetId :? targetSing)
-                                                         , " "
-                                                         , parensQuote "carried"
-                                                         , "." ], pure i')
+                                        f i' | x <- aOrAn (ic ? mkCorpseAppellation i' ms targetId :? targetSing)
+                                             = ( T.concat [ serialize d, " tastes ", x, " ", parensQuote "carried", "." ]
+                                               , pure i' )
                                     logMsg = T.concat [ "tasted ", aOrAn targetSing, " ", parensQuote "carried", "." ]
                                 in ioHelper tasteDesc bs logMsg
             Right _          -> sorry sorryTasteExcessTargets
@@ -3590,11 +3560,8 @@ taste p@(OneArgLower i mq cols a) = getState >>= \ms ->
                          tasteDesc    = "You are first struck by an unmistakably metallic taste, followed soon by the \
                                         \salty essence of sweat and waxy residue left by the hands of the many people \
                                         \who handled the " <> coinTxt <> " before you."
-                         bs           = pure (T.concat [ serialize d
-                                                       , " tastes "
-                                                       , aCoinSomeCoins canCoins
-                                                       , "." ], desigOtherIds d)
-                         logMsg       = prd $ "tasted " <> aCoinSomeCoins canCoins
+                         bs     = pure (T.concat [ serialize d, " tastes ", aCoinSomeCoins canCoins, "." ], desigOtherIds d)
+                         logMsg = prd $ "tasted " <> aCoinSomeCoins canCoins
                      in ioHelper tasteDesc bs logMsg
             (t:_) -> sorry t
     -----
@@ -3605,11 +3572,8 @@ taste p@(OneArgLower i mq cols a) = getState >>= \ms ->
             Left  msg        -> sorry msg
             Right [targetId] -> let (targetSing, tasteDesc) = (getSing `fanUncurry` getObjTaste) (targetId, ms)
                                     slotDesc = descSlotForId i ms targetId eqMap
-                                    bs       = pure (T.concat [ serialize d
-                                                              , " tastes "
-                                                              , aOrAn targetSing
-                                                              , slotDesc |!| spcL slotDesc
-                                                              , "." ], desigOtherIds d)
+                                    bs       | x <- aOrAn targetSing, y <- slotDesc |!| spcL slotDesc
+                                             = pure (T.concat [ serialize d, " tastes ", x, y, "." ], desigOtherIds d)
                                     logMsg   = T.concat [ "tasted ", aOrAn targetSing, " ", slotDesc, "." ]
                                     res      = join (checkSlotSmellTaste targetSing <$> lookupMapValue targetId eqMap)
                                 in case getType targetId ms of
