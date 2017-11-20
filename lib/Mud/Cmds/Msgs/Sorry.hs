@@ -1033,9 +1033,7 @@ sorryGetEnc = "You are too encumbered to carry "
 
 sorryGetInEq :: Text
 sorryGetInEq = butCan't "get an item in your readied equipment. If you want to move a readied item to your inventory, \
-                        \use the "         <>
-                        dblQuote "unready" <>
-                        " command."
+                        \use the " <> dblQuote "unready" <> " command."
 
 
 sorryGetInInv :: Text
@@ -1142,8 +1140,8 @@ sorryInterpNameExcessArgs = "Your name must be a single word."
 
 
 sorryInterpNameIllegal :: Text
-sorryInterpNameIllegal = prd $ "Your name cannot include any numbers or symbols " <>
-                               parensQuote "though it may contain an apostrophe"
+sorryInterpNameIllegal =
+    prd $ "Your name cannot include any numbers or symbols " <> parensQuote "though it may contain an apostrophe"
 
 
 sorryInterpNameLen :: Text
@@ -1412,8 +1410,7 @@ sorryLookEmptyRmWithHooks = "You don't see anything to look at on the ground her
 
 
 sorryMkFoodAmt :: Text -> Text
-sorryMkFoodAmt a = dblQuote a                           <>
-                   " is not a valid quantity of food. " <>
+sorryMkFoodAmt a = dblQuote a <> " is not a valid quantity of food. " <>
                    parensQuote "You can create between 1 and 100 food objects."
 
 
@@ -1425,8 +1422,7 @@ sorryMkFoodName a = dblQuote a <> " is not a valid distinct food name."
 
 
 sorryMkHolyAmt :: Text -> Text
-sorryMkHolyAmt a = dblQuote a                                   <>
-                   " is not a valid quantity of holy symbols. " <>
+sorryMkHolyAmt a = dblQuote a <> " is not a valid quantity of holy symbols. " <>
                    parensQuote "You can create between 1 and 100 holy symbols."
 
 
@@ -1707,8 +1703,7 @@ sorryReadUnknownLang s = "The text written on the " <> s <> " is in a language y
 
 
 sorryReadWithHooks :: Text -> Text
-sorryReadWithHooks t = dblQuote t                                                      <>
-                       " does not match the name of a readable fixture of this room. " <>
+sorryReadWithHooks t = dblQuote t <> " does not match the name of a readable fixture of this room. " <>
                        parensQuote "If you'd like to read an item on the ground, please pick up the item first."
 
 
@@ -2041,8 +2036,8 @@ sorryStopNotDoing actType = "You're not " <> pp actType <> " anything at the mom
 
 
 sorryStopNotDoingAnything :: Text
-sorryStopNotDoingAnything = prd $ "You're not doing anything that can be stopped " <>
-                                  parensQuote "sacrificing, eating, drinking, or attacking"
+sorryStopNotDoingAnything =
+    prd $ "You're not doing anything that can be stopped " <> parensQuote "sacrificing, eating, drinking, or attacking"
 
 
 -----

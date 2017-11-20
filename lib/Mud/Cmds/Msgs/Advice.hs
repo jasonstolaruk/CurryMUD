@@ -184,9 +184,9 @@ advise p _ _ = pmf "advise" p
 
 
 adviceAAnnounceNoArgs :: Text
-adviceAAnnounceNoArgs = let msg = "CurryMUD will be shutting down for maintenance in 30 minutes"
-                        in prd $ "You must provide a message to send, as in " <>
-                                 colorWith quoteColor (prefixAdminCmd "announce" |<>| msg)
+adviceAAnnounceNoArgs
+  | msg <- "CurryMUD will be shutting down for maintenance in 30 minutes"
+  = prd $ "You must provide a message to send, as in " <> colorWith quoteColor (prefixAdminCmd "announce" |<>| msg)
 
 
 adviceAAsNoArgs :: Text
@@ -241,8 +241,8 @@ adviceAHashExcessArgs = adviceAHashNoArgs
 
 
 adviceAHashNoArgs :: Text
-adviceAHashNoArgs = prd $ "Please provide two arguments: a plain-text password, followed by a hashed password, as in " <>
-                          adviceAHashEx
+adviceAHashNoArgs =
+    prd $ "Please provide two arguments: a plain-text password, followed by a hashed password, as in " <> adviceAHashEx
 
 
 adviceAHashEx :: Text
@@ -277,8 +277,7 @@ adviceAMkFoodExcessArgs = adviceAMkFoodNoArgs
 
 adviceAMkFoodNoArgs :: Text
 adviceAMkFoodNoArgs = "Please provide two arguments: the quantity of food objects to make, followed by the distinct \
-                      \name of the food, as in " <>
-                      colorWith quoteColor (prefixAdminCmd "mkfood" <> " 5 apple")
+                      \name of the food, as in " <> colorWith quoteColor (prefixAdminCmd "mkfood" <> " 5 apple")
 
 
 adviceAMkHolyExcessArgs :: Text
@@ -287,8 +286,7 @@ adviceAMkHolyExcessArgs = adviceAMkHolyNoArgs
 
 adviceAMkHolyNoArgs :: Text
 adviceAMkHolyNoArgs = "Please provide two arguments: the quantity of holy symbols to make, followed by the name of a \
-                      \god, as in " <>
-                      colorWith quoteColor (prefixAdminCmd "mkholy" <> " 5 aule")
+                      \god, as in " <> colorWith quoteColor (prefixAdminCmd "mkholy" <> " 5 aule")
 
 
 adviceAMsgNoArgs :: Text
@@ -309,8 +307,7 @@ adviceAMyChansNoArgs = "Please specify the PC names of one or more players whose
 
 adviceAPasswordExcessArgs :: Text
 adviceAPasswordExcessArgs = prd $ "Please provide two arguments: the full PC name of the player whose password you \
-                                  \wish to change, followed by a new password, as in " <>
-                                  adviceAPasswordEx
+                                  \wish to change, followed by a new password, as in " <> adviceAPasswordEx
 
 
 adviceAPasswordEx :: Text
@@ -319,8 +316,7 @@ adviceAPasswordEx = colorWith quoteColor $ prefixAdminCmd "password" <> " taro A
 
 adviceAPasswordNoArgs :: Text
 adviceAPasswordNoArgs = prd $ "Please specify the full PC name of the player whose password you wish to change, \
-                              \followed by a new password, as in " <>
-                              adviceAPasswordEx
+                              \followed by a new password, as in " <> adviceAPasswordEx
 
 
 adviceAPasswordNoPw :: Text
@@ -428,8 +424,8 @@ adviceDBonusNoArgs = adviceDBonusExcessArgs
 
 
 adviceDCinsExcessArgs :: Text
-adviceDCinsExcessArgs = prd $ "Please provide one argument: the target ID, as in " <>
-                              colorWith quoteColor (prefixDebugCmd "cins" <> " 100")
+adviceDCinsExcessArgs =
+    prd $ "Please provide one argument: the target ID, as in " <> colorWith quoteColor (prefixDebugCmd "cins" <> " 100")
 
 
 adviceDCinsNoArgs :: Text
@@ -451,8 +447,8 @@ adviceDIdNoArgs = adviceDIdExcessArgs
 
 
 adviceDLiqExcessArgs :: Text
-adviceDLiqExcessArgs = prd $ "Please provide two arguments: the amount in mouthfuls and the distinct liquid ID, as in " <>
-                             adviceDLiqEx
+adviceDLiqExcessArgs =
+    prd $ "Please provide two arguments: the amount in mouthfuls and the distinct liquid ID, as in " <> adviceDLiqEx
 
 
 adviceDLiqEx :: Text
@@ -481,8 +477,8 @@ adviceDNumberNoBase = prd $ "Please also specify base, as in " <> colorWith quot
 
 
 adviceDRegenExcessArgs :: Text
-adviceDRegenExcessArgs = prd $ "Please provide one argument: the target ID, as in " <>
-                               colorWith quoteColor (prefixDebugCmd "regen" <> " 100")
+adviceDRegenExcessArgs =
+    prd $ "Please provide one argument: the target ID, as in " <> colorWith quoteColor (prefixDebugCmd "regen" <> " 100")
 
 
 adviceDRegenNoArgs :: Text
@@ -495,8 +491,7 @@ adviceDRntExcessArgs = "Sorry, but you can only generate a random name for one P
 
 adviceDVolumeExcessArgs :: Text
 adviceDVolumeExcessArgs = prd $ "Please provide one argument: the ID for which you would like to calculate carried \
-                                \volume, as in " <>
-                                colorWith quoteColor (prefixDebugCmd "volume" <> " 100")
+                                \volume, as in " <> colorWith quoteColor (prefixDebugCmd "volume" <> " 100")
 
 
 adviceDVolumeNoArgs :: Text
@@ -513,8 +508,8 @@ adviceDWeightNoArgs = adviceDWeightExcessArgs
 
 
 adviceDWrapExcessArgs :: Text
-adviceDWrapExcessArgs = prd $ "Please provide one argument: line length, as in " <>
-                              colorWith quoteColor (prefixDebugCmd "wrap" <> " 40")
+adviceDWrapExcessArgs =
+    prd $ "Please provide one argument: line length, as in " <> colorWith quoteColor (prefixDebugCmd "wrap" <> " 40")
 
 
 adviceDWrapNoArgs :: Text
@@ -522,8 +517,8 @@ adviceDWrapNoArgs = adviceDWrapExcessArgs
 
 
 adviceDWrapIndentExcessArgs :: Text
-adviceDWrapIndentExcessArgs = prd $ "Please provide two arguments: line length and indent amount, as in " <>
-                                    adviceDWrapIndentEx
+adviceDWrapIndentExcessArgs =
+    prd $ "Please provide two arguments: line length and indent amount, as in " <> adviceDWrapIndentEx
 
 
 adviceDWrapIndentEx :: Text
@@ -569,19 +564,18 @@ adviceBonusExcessArgs = "You can only give a bonus to one player at a time."
 
 
 adviceBonusNoArgs :: Text
-adviceBonusNoArgs = prd $ "Please provide the name of the character whose player you would like to give a bonus to, as in " <>
-                          colorWith quoteColor "bonus hanako"
+adviceBonusNoArgs = prd $ "Please provide the name of the character whose player you would like to give a bonus to, as \
+                          \in " <> colorWith quoteColor "bonus hanako"
 
 
 adviceBugNoArgs :: Text
-adviceBugNoArgs = prd $ "Please describe the bug you've found, as in " <>
-                        colorWith quoteColor "bug i've fallen and I can't get up!"
+adviceBugNoArgs =
+    prd $ "Please describe the bug you've found, as in " <> colorWith quoteColor "bug i've fallen and I can't get up!"
 
 
 adviceConnectNoArgs :: Text
 adviceConnectNoArgs = prd $ "Please specify the names of one or more people followed by the name of a telepathic \
-                            \channel to connect them to, as in " <>
-                            adviceConnectEx
+                            \channel to connect them to, as in " <> adviceConnectEx
 
 
 adviceConnectEx :: Text
@@ -594,8 +588,7 @@ adviceConnectNoChan = prd $ "Please also specify the name of a telepathic channe
 
 adviceDisconnectNoArgs :: Text
 adviceDisconnectNoArgs = prd $ "Please provide the full names of one or more people followed by the name of a \
-                               \telepathic channel to disconnect them from, as in " <>
-                               adviceDisconnectEx
+                               \telepathic channel to disconnect them from, as in " <> adviceDisconnectEx
 
 
 adviceDisconnectEx :: Text
@@ -620,8 +613,7 @@ adviceDrinkNoVessel = adviceDrinkNoArgs
 
 
 adviceDropNoArgs :: Text
-adviceDropNoArgs = prd $ "Please specify one or more items to drop, as in " <>
-                         colorWith quoteColor "drop sword"
+adviceDropNoArgs = prd $ "Please specify one or more items to drop, as in " <> colorWith quoteColor "drop sword"
 
 
 adviceEatExcessArgs :: Text
@@ -629,8 +621,8 @@ adviceEatExcessArgs = adviceEatNoArgs
 
 
 adviceEatNoArgs :: Text
-adviceEatNoArgs = prd $ "Please specify a number of mouthfuls followed by the food to eat, as in " <>
-                        colorWith quoteColor "eat 4 bread"
+adviceEatNoArgs =
+    prd $ "Please specify a number of mouthfuls followed by the food to eat, as in " <> colorWith quoteColor "eat 4 bread"
 
 
 adviceEatNoFood :: Text
@@ -643,22 +635,17 @@ adviceEmoteNoArgs = prd $ "Please provide a description of an action, as in " <>
 
 
 adviceEmptyNoArgs :: Text
-adviceEmptyNoArgs = prd $ "Please specify one or more vessels to empty, as in " <>
-                          colorWith quoteColor "empty waterskin"
+adviceEmptyNoArgs = prd $ "Please specify one or more vessels to empty, as in " <> colorWith quoteColor "empty waterskin"
 
 
 adviceEnc :: Text -> Text
-adviceEnc cn = T.concat [ dblQuote enc
-                        , " must either be used alone, or with a "
-                        , dblQuote "'s"
-                        , " suffix "
-                        , parensQuote "to create a possessive noun"
-                        , ", as in "
-                        , let ts = [ cn, "shielding her eyes from the sun, ", enc, " looks out across the plains" ]
-                          in colorWith quoteColor . T.concat $ ts
-                        , ", or "
-                        , colorWith quoteColor $ cn <> enc <> "'s leg twitches involuntarily as she laughs with gusto"
-                        , "." ]
+adviceEnc cn =
+    T.concat [ dblQuote enc, " must either be used alone, or with a ", dblQuote "'s", " suffix "
+             , parensQuote "to create a possessive noun", ", as in "
+             , let ts = [ cn, "shielding her eyes from the sun, ", enc, " looks out across the plains" ]
+               in colorWith quoteColor . T.concat $ ts
+             , ", or ", colorWith quoteColor $ cn <> enc <> "'s leg twitches involuntarily as she laughs with gusto"
+             , "." ]
 
 
 adviceEtc :: Text -> Text
@@ -666,9 +653,7 @@ adviceEtc cn = T.concat [ dblQuote etc
                         , " must be immediately followed by the name of the person you wish to target, as in "
                         , let ts = [ cn, "slowly turns her head to look directly at ", etc, "taro" ]
                           in colorWith quoteColor . T.concat $ ts
-                        , ". To create a possessive noun, append "
-                        , dblQuote "'s"
-                        , " to the target name, as in "
+                        , ". To create a possessive noun, append ", dblQuote "'s", " to the target name, as in "
                         , let ts = [ cn, "places her hand firmly on ", etc, "taro's shoulder" ]
                           in colorWith quoteColor . T.concat $ ts
                         , "." ]
@@ -752,8 +737,8 @@ adviceLightNoArgs = T.concat [ "Please specify the light source to ignite follow
 
 
 adviceNewChanNoArgs :: Text
-adviceNewChanNoArgs = prd $ "Please specify one or more new channel names, as in " <>
-                            colorWith quoteColor "newchannel hunt"
+adviceNewChanNoArgs =
+    prd $ "Please specify one or more new channel names, as in " <> colorWith quoteColor "newchannel hunt"
 
 
 advicePickNoArgs :: Text
@@ -779,8 +764,8 @@ adviceQuitExcessArgs = prd . T.concat $ [ "Type ", colorWith quoteColor "quit", 
 
 
 adviceReadNoArgs :: Text
-adviceReadNoArgs = prd $ "Please specify the names of one or more things to read, as in " <>
-                         colorWith quoteColor "read parchment"
+adviceReadNoArgs =
+    prd $ "Please specify the names of one or more things to read, as in " <> colorWith quoteColor "read parchment"
 
 
 
@@ -821,8 +806,7 @@ adviceSacrificeExcessArgs = "Please provide at most two arguments: the holy symb
 
 
 adviceSayAdverbNoUtterance :: Lang -> Text
-adviceSayAdverbNoUtterance l = prd $ "Please also specify what you'd like to say" <>
-                                     mkInLangTxtForLang l                         <>
+adviceSayAdverbNoUtterance l = prd $ "Please also specify what you'd like to say" <> mkInLangTxtForLang l <>
                                      adverbExample l
 
 
@@ -929,8 +913,8 @@ adviceUnreadyNoArgs = prd $ "Please specify one or more items to unready, as in 
 
 
 adviceWhisperNoArgs :: Text
-adviceWhisperNoArgs = prd $ "Please provide the name of a person followed by what you'd like to whisper, as in " <>
-                            adviceWhisperEx
+adviceWhisperNoArgs =
+    prd $ "Please provide the name of a person followed by what you'd like to whisper, as in " <> adviceWhisperEx
 
 
 adviceWhisperEx :: Text

@@ -1272,8 +1272,7 @@ mkExpCmdListTxt i ms =
       (HasTarget toSelf _ _) -> [ paddedName <> mkInitialTxt (ecn <> " hanako") <> T.replace "@" "Hanako" toSelf
                                 , mobRmDescHelper ]
       (Versatile toSelf _ toSelfWithTarget _ _) -> [ paddedName <> mkInitialTxt ecn <> toSelf
-                                                   , indent                          <>
-                                                     mkInitialTxt (ecn <> " hanako") <>
+                                                   , indent <> mkInitialTxt (ecn <> " hanako") <>
                                                      T.replace "@" "Hanako" toSelfWithTarget
                                                    , mobRmDescHelper ]
       where

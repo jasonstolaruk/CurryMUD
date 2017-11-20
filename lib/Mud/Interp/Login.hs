@@ -411,8 +411,7 @@ promptRace mq cols = wrapSend1Nl mq cols racePromptTxt >> anglePrompt mq
 
 
 racePromptTxt :: Text
-racePromptTxt = "Enter a number to make your selection, or enter the first letter" <>
-                parensQuote (T.singleton 's')                                      <>
+racePromptTxt = "Enter a number to make your selection, or enter the first letter" <> parensQuote (T.singleton 's') <>
                 " of the name of a race to learn more."
 
 
