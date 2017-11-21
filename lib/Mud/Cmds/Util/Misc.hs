@@ -21,7 +21,6 @@ module Mud.Cmds.Util.Misc ( applyRegex
                           , getPCChans
                           , getQuestionStyleds
                           , getTunedQuestionIds
-                          , happyTimes
                           , hasEnc
                           , hasType
                           , hasYou
@@ -50,6 +49,7 @@ module Mud.Cmds.Util.Misc ( applyRegex
                           , mkChanReport
                           , mkCmdListTxt
                           , mkCmdTriplesForStyling
+                          , mkEmoteMsgs
                           , mkHimHer
                           , mkHolySymbolDesc
                           , mkHolySymbolVol
@@ -449,37 +449,6 @@ getTunedQuestionIds i ms =
 -----
 
 
-happyTimes :: HasCallStack => MudState -> [Either Text (Text, [EmoteWord], Text)] -> (Text, Text, Inv, [Broadcast])
-happyTimes ms xformed =
-    let (toSelf, toTargets, toOthers)               = unzip3 . rights $ xformed
-        targetIds                                   = nub . foldr extractIds [] $ toTargets
-        extractIds [ForNonTargets _           ] acc = acc
-        extractIds (ForTarget     _ targetId:_) acc = targetId : acc
-        extractIds (ForTargetPoss _ targetId:_) acc = targetId : acc
-        extractIds xs                           _   = pmf "happyTimes extractIds" xs
-        msgMap  = foldr (\targetId -> at targetId ?~ []) IM.empty targetIds
-        msgMap' = foldr consWord msgMap toTargets
-        consWord [ ForNonTargets word                           ] = IM.map (word :)
-        consWord [ ForTarget     p targetId, ForNonTargets word ] = selectiveCons p targetId False word
-        consWord [ ForTargetPoss p targetId, ForNonTargets word ] = selectiveCons p targetId True  word
-        consWord xs                                               = const . pmf "happyTimes consWord" $ xs
-        selectiveCons p targetId isPoss word = IM.mapWithKey helper
-          where
-            helper k v = let targetSing = onTrue isPoss (<> "'s") . getSing k $ ms
-                         in (: v) $ if k == targetId
-                           then colorWith emoteTargetColor targetSing <> p
-                           else word
-        toTargetBs = IM.foldlWithKey' helper [] msgMap'
-          where
-            helper acc k = (: acc) . (formatMsg *** pure) . (, k)
-        formatMsg = bracketQuote . punctuateMsg . T.unwords
-        _ = ()
-    in (formatMsg toSelf, formatMsg toOthers, targetIds, toTargetBs)
-
-
------
-
-
 hasEnc :: HasCallStack => Args -> Bool
 hasEnc [] = False
 hasEnc as = ((||) <$> any (`elem` [ enc, enc's ]) <*> (== prd enc) . last) as
@@ -683,6 +652,36 @@ mkChanReport i ms (Chan ci cn cct tappers) =
 
 -----
 
+
+mkEmoteMsgs :: HasCallStack => MudState -> [Either Text (Text, [EmoteWord], Text)] -> (Text, Text, Inv, [Broadcast])
+mkEmoteMsgs ms xformed =
+    let (toSelf, toTargets, toOthers)               = unzip3 . rights $ xformed
+        targetIds                                   = nub . foldr extractIds [] $ toTargets
+        extractIds [ForNonTargets _           ] acc = acc
+        extractIds (ForTarget     _ targetId:_) acc = targetId : acc
+        extractIds (ForTargetPoss _ targetId:_) acc = targetId : acc
+        extractIds xs                           _   = pmf "mkEmoteMsgs extractIds" xs
+        msgMap  = foldr (\targetId -> at targetId ?~ []) IM.empty targetIds
+        msgMap' = foldr consWord msgMap toTargets
+        consWord [ ForNonTargets word                           ] = IM.map (word :)
+        consWord [ ForTarget     p targetId, ForNonTargets word ] = selectiveCons p targetId False word
+        consWord [ ForTargetPoss p targetId, ForNonTargets word ] = selectiveCons p targetId True  word
+        consWord xs                                               = const . pmf "mkEmoteMsgs consWord" $ xs
+        selectiveCons p targetId isPoss word = IM.mapWithKey helper
+          where
+            helper k v = let targetSing = onTrue isPoss (<> "'s") . getSing k $ ms
+                         in (: v) $ if k == targetId
+                           then colorWith emoteTargetColor targetSing <> p
+                           else word
+        toTargetBs = IM.foldlWithKey' helper [] msgMap'
+          where
+            helper acc k = (: acc) . (formatMsg *** pure) . (, k)
+        formatMsg = bracketQuote . punctuateMsg . T.unwords
+        _ = ()
+    in (formatMsg toSelf, formatMsg toOthers, targetIds, toTargetBs)
+
+
+-----
 
 
 mkHimHer :: Sex -> Text

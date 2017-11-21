@@ -1131,7 +1131,7 @@ emote   (WithArgs i mq cols as) = getState >>= \ms ->
         expandEnc isHead = (isHead ? dup ser :? dup ser') |&| uncurry (mkMyName isHead, , )
         mkMyName  isHead = onTrue isHead capitalize . onTrue (isNpc i ms) theOnLower . getSing i $ ms
     in case lefts xformed of
-      []      -> let (msg, toOthers, targetIds, toTargetBs) = happyTimes ms xformed
+      []      -> let (msg, toOthers, targetIds, toTargetBs) = mkEmoteMsgs ms xformed
                      toSelf                                 = parseInBands Nothing i ms msg
                      logMsg                                 = parseInBandsSuffix   i ms msg
                  in do logPlaOut "emote" i . pure $ logMsg
