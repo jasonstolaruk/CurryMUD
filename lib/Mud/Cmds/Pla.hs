@@ -1826,7 +1826,7 @@ light p@(WithArgs _ _ _ [a, b]) = lightUp p a . Just $ b
 light p                         = advise p ["light"] adviceLightExcessArgs
 
 
-lightUp :: HasCallStack => ActionParams -> Text -> Maybe Text -> MudStack ()
+lightUp :: HasCallStack => ActionParams -> Text -> Maybe Text -> MudStack () -- TODO: Already fixed for darkness.
 lightUp p@(WithArgs i _ _ _) lightArg fireArg = getState >>= \ms ->
     let f = genericActionWithFuns p helper "light"
     in checkActing p ms (Right "light a torch or lamp") [ Attacking, Drinking, Sacrificing ] f
@@ -1848,10 +1848,12 @@ lightUp p@(WithArgs i _ _ _) lightArg fireArg = getState >>= \ms ->
                   let (fireType, fireSing) = ((,) <$> uncurry getType <*> uncurry getSing) (fireId, ms)
                       toSelf    = prd $ "You light the " <> lightSing
                       d         = mkStdDesig i ms DoCap
+                      mkMsg     = T.concat . (serialize d <> " lights " :)
+                      inInvMsg  | vo <- serialize . VerbObj . aOrAn $ lightSing
+                                = mkMsg [ vo, " ", parensQuote "carried", "." ]
+                      inEqMsg   = mkMsg [ mkPossPro . getSex i $ ms, " ", lightSing, "." ]
                       isInInv   = lightId `elem` is
-                      bs        = let t1 = isInInv ? aOrAn lightSing :? (mkPossPro (getSex i ms) |<>| lightSing)
-                                      t2 = isInInv |?| spcL (parensQuote "carried")
-                                  in pure (T.concat [ serialize d, " lights ", t1, t2, "." ], desigOtherIds d)
+                      bs        = pure (isInInv ? inInvMsg :? inEqMsg, desigOtherIds d)
                       logMsg    = let t = spcL . parensQuote . ("in " <>) $ (isInInv ? "inventory" :? "readied equipment")
                                   in prd $ "lighting " <> aOrAn lightSing <> t
                       res       = ( ms & lightTbl.ind lightId.lightIsLit .~ True
@@ -1879,9 +1881,10 @@ lightUp p@(WithArgs i _ _ _) lightArg fireArg = getState >>= \ms ->
                            in if | ()!# inInvs', ()# invCoins -> Left dudeYourHandsAreEmpty
                                  | ()!# inEqs',  M.null eqMap -> Left dudeYou'reNaked
                                  | ()!# inRms'                -> Left sorryLightFireInRm
-                                 | otherwise                  -> case (eqEiss', invEiss') of (eis:_, []   ) -> eis
-                                                                                             ([],    eis:_) -> eis
-                                                                                             _              -> Left sorryLightFireCoins
+                                 | otherwise                  -> case (eqEiss', invEiss') of
+                                                                   (eis:_, []   ) -> eis
+                                                                   ([],    eis:_) -> eis
+                                                                   _              -> Left sorryLightFireCoins
             sorry = genericSorryWithFuns ms
         in if | ()#  invCoins, ()# eqMap    -> sorry dudeYou'reScrewed
               | ()!# inInvs,   ()# invCoins -> sorry dudeYourHandsAreEmpty
