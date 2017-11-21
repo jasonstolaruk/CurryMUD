@@ -1852,12 +1852,9 @@ lightUp p@(WithArgs i _ _ _) lightArg fireArg = getState >>= \ms ->
                       inInvMsg  | vo <- serialize . VerbObj . aOrAn $ lightSing
                                 = mkMsg [ vo, " ", parensQuote "carried", "." ]
                       inEqMsg   = mkMsg [ mkPossPro . getSex i $ ms, " ", lightSing, "." ]
-                      isInInv   = lightId `elem` is
-                      bs        = pure (isInInv ? inInvMsg :? inEqMsg, desigOtherIds d)
-                      logMsg    = let t = spcL . parensQuote . ("in " <>) $ (isInInv ? "inventory" :? "readied equipment")
-                                  in prd $ "lighting " <> aOrAn lightSing <> t
+                      bs        = pure (lightId `elem` is ? inInvMsg :? inEqMsg, desigOtherIds d)
                       res       = ( ms & lightTbl.ind lightId.lightIsLit .~ True
-                                  , (pure toSelf, bs, pure logMsg, pure . startLightTimer $ lightId) )
+                                  , (pure toSelf, bs, pure toSelf, pure . startLightTimer $ lightId) )
                       sorryFire = sorry . sorryLightFireType $ fireSing
                   in case fireType of ObjType   | fireSing /= "tinderbox"         -> sorryFire
                                                 | otherwise                       -> res
