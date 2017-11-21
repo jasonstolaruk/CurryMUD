@@ -600,8 +600,9 @@ helperFillEitherInv i srcDesig targetId (eis:eiss) a@(ms, _, _, _) = case getVes
                                              , ", emptying it." ]
         mkXferEmptyMsg   = pure . T.concat $ [ "You transfer ", n, " to the ", vs,  " from the ", targetSing
                                              , ", emptying it." ]
-        bs               = pure (T.concat [ serialize srcDesig, " transfers liquid from ", aOrAn targetSing, " to "
-                                          , aOrAn vs, "." ], desigOtherIds srcDesig)
+        bs               | (vo1, vo2) <- ((targetSing |&|) &&& (vs |&|)) aOrAn & both %~ serialize . VerbObj
+                         = pure ( T.concat [ serialize srcDesig, " transfers liquid from ", vo1, " to ", vo2, "." ]
+                                , desigOtherIds srcDesig )
 
 
 -----

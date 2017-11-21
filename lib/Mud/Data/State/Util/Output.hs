@@ -272,10 +272,11 @@ parseInBandsHelper suffixer mct i ms = let isLit = maybe True (\ct -> isMobRmLit
 
 
 parseVerbObj :: HasCallStack => Bool -> Text -> Text
-parseVerbObj isLit txt | delim `T.isInfixOf` txt = let (left, vo :: VerbObj, right) = extractDelimited delim txt
-                                                   in left <> expander vo <> right
-                       | otherwise               = txt
+parseVerbObj isLit = loop
   where
+    loop txt | delim `T.isInfixOf` txt = let (left, vo :: VerbObj, right) = extractDelimited delim txt
+                                         in left <> expander vo <> loop right
+             | otherwise               = txt
     expander (VerbObj t) = isLit ? t :? "something"
     delim                = T.singleton verbObjDelimiter
 
@@ -286,8 +287,8 @@ parseDesig i ms suffixer isLit = loop
     loop txt = helper pairs
       where
         helper ((delim, expander):xs) | delim `T.isInfixOf` txt
-                                      , (left, d :: Desig, rest) <- extractDelimited delim txt
-                                      = left <> expander i ms d <> loop rest
+                                      , (left, d :: Desig, right) <- extractDelimited delim txt
+                                      = left <> expander i ms d <> loop right
                                       | otherwise = helper xs
         helper []                     = txt
     pairs = [ (stdDesigDelimiter,    expandStdDesig    suffixer isLit)
@@ -296,8 +297,8 @@ parseDesig i ms suffixer isLit = loop
 
 
 extractDelimited :: (HasCallStack, Serializable a) => Text -> Text -> (Text, a, Text)
-extractDelimited delim (T.breakOn delim -> (left, T.breakOn delim . T.tail -> (txt, T.tail -> rest))) =
-    (left, deserialize . quoteWith delim $ txt, rest)
+extractDelimited delim (T.breakOn delim -> (left, T.breakOn delim . T.tail -> (txt, T.tail -> right))) =
+    (left, deserialize . quoteWith delim $ txt, right)
 
 
 expandStdDesig :: HasCallStack => Suffixer -> Bool -> Id -> MudState -> Desig -> Text
