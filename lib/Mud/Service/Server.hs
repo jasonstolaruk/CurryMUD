@@ -12,7 +12,6 @@ import           Mud.Util.Operators
 import           Mud.Util.Quoting
 import           Mud.Util.Text
 
-import           Control.Arrow (second)
 import           Control.Lens (at, both, views)
 import           Control.Lens.Operators ((&), (%~))
 import           Control.Monad.Error.Class (throwError)
@@ -29,7 +28,7 @@ import           Servant (Handler, Header, Headers, NoContent(..), Server, (:<|>
 import           Servant.Auth.Server (AuthResult(..), CookieSettings, JWTSettings, SetCookie, acceptLogin, throwAll)
 
 
--- ==========
+-- ==============================
 -- Utility functions:
 
 
@@ -57,7 +56,7 @@ notFound :: HasCallStack => Handler (Object a)
 notFound = throwError err404 { errBody = "ID not found." } -- Not Found
 
 
--- ==========
+-- ==============================
 -- Server:
 
 
@@ -65,14 +64,14 @@ server :: HasCallStack => IORef MudState -> CookieSettings -> JWTSettings -> Ser
 server ior cs jwts = protected ior :<|> unprotected ior cs jwts
 
 
--- ==========
+-- ==============================
 -- Protected:
 
 
 protected :: HasCallStack => IORef MudState -> AuthResult Login -> Server Protected
 protected ior (Authenticated (Login un _)) =
          getPla
-    -- ==========
+    -- ==============================
     :<|> getAllPla
     -----
     :<|> getAllAlertExecRec
@@ -113,7 +112,7 @@ protected ior (Authenticated (Login un _)) =
     :<|> getAllWordRec
     :<|> deleteAllWordRec
   where
-    -- ==========
+    -- ==============================
     -- Helper functions:
 
     deleteAllHelper :: HasCallStack => Text -> Text -> Handler NoContent
@@ -131,7 +130,7 @@ protected ior (Authenticated (Login un _)) =
     genericHelper fn f = doIfAdmin $ getMudStateId >>= \(ms, i) -> logExecuted ms fn i >> f ms
 
     getMudStateId :: HasCallStack => Handler (MudState, Id)
-    getMudStateId = second (|&| getIdForPCSing un) . dup <$> state
+    getMudStateId = dupSecond (|&| getIdForPCSing un) <$> state
 
     logExecuted :: HasCallStack => MudState -> Text -> Id -> Handler ()
     logExecuted ms fn i = logHelper ms fn i ""
@@ -147,7 +146,7 @@ protected ior (Authenticated (Login un _)) =
     state :: HasCallStack => Handler MudState
     state = liftIO . readIORef $ ior
 
-    -- ==========
+    -- ==============================
     -- Player endpoints:
 
 {-
@@ -160,7 +159,7 @@ curl -H "Content-Type: application/json" \
                                                found = (logExecuted ms fn i >>) . return . Object i
                                            in views (plaTbl.at i) (maybe (notFoundHelper ms fn "plaTbl" i) found) ms
 
-    -- ==========
+    -- ==============================
     -- Admin endpoints:
 
 {-
@@ -421,7 +420,7 @@ curl -X DELETE \
 protected _ _ = throwAll err401 -- Unauthorized
 
 
--- ==========
+-- ==============================
 -- Unprotected:
 
 

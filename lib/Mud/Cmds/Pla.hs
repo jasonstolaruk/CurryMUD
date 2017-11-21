@@ -1823,7 +1823,7 @@ light p@(WithArgs _ _ _ [a, b]) = lightUp p a . Just $ b
 light p                         = advise p ["light"] adviceLightExcessArgs
 
 
-lightUp :: HasCallStack => ActionParams -> Text -> Maybe Text -> MudStack () -- TODO: Already fixed for darkness.
+lightUp :: HasCallStack => ActionParams -> Text -> Maybe Text -> MudStack ()
 lightUp p@(WithArgs i _ _ _) lightArg fireArg = getState >>= \ms ->
     let f = genericActionWithFuns p helper "light"
     in checkActing p ms (Right "light a torch or lamp") [ Attacking, Drinking, Sacrificing ] f
@@ -2082,7 +2082,7 @@ look p = pmf "look" p
 lookSelf :: HasCallStack => ActionFun
 lookSelf (NoArgs i mq cols) = spiritHelper i a b
   where
-    a ms = send mq . nl . mkEntDesc iPidge cols ms . dupSecond (`getEnt` ms) $ i
+    a ms = sequence_ [ logPlaExec "lookself" i, send mq . nl . mkEntDesc iPidge cols ms . dupSecond (`getEnt` ms) $ i ]
     b    = const . wrapSend mq cols $ "You are an invisible spirit, detached from your body and floating."
 lookSelf p = withoutArgs lookSelf p
 
@@ -2157,19 +2157,11 @@ newChan p@(WithArgs i mq cols (nub -> as)) = getState >>= \ms ->
     mkNewChanMsg []     = []
     mkNewChanMsg ns@[_] = pure    . mkMsgHelper False $ ns
     mkNewChanMsg ns     = T.lines . mkMsgHelper True  $ ns
-    mkMsgHelper isPlur (map dblQuote -> ns) = T.concat [ focusingInnateMsg
-                                                       , "you create a "
-                                                       , isPlur |?| "group of "
-                                                       , "telepathic network"
-                                                       , sOnTrue isPlur
-                                                       , " to which others may be connected. To "
-                                                       , isPlur ? "these " :? "this "
-                                                       , dblQuote . ("channel" <>) . sOnTrue $ isPlur
-                                                       , " you assign the "
-                                                       , isPlur |?| "following "
-                                                       , "name"
-                                                       , isPlur ? nl "s:" <> commas ns :? spcL (head ns)
-                                                       , "." ]
+    mkMsgHelper isPlur (map dblQuote -> ns) =
+        T.concat [ focusingInnateMsg, "you create a ", isPlur |?| "group of ", "telepathic network", sOnTrue isPlur
+                 , " to which others may be connected. To ", isPlur ? "these " :? "this "
+                 , dblQuote . ("channel" <>) . sOnTrue $ isPlur, " you assign the ", isPlur |?| "following ", "name"
+                 , isPlur ? nl "s:" <> commas ns :? spcL (head ns), "." ]
 newChan p = pmf "newChan" p
 
 

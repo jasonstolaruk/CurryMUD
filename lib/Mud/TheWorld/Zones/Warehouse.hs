@@ -695,7 +695,7 @@ createWarehouse = do
           (Just "NPCs")
           M.empty [] []))
 
-  putNpc iPidge
+  putNpc iPidge -- The "lookself" cmd depends on Pidge.
       (Ent iPidge
           (Just "pidge")
           "Pidge" ""
