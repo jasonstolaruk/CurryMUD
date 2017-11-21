@@ -1707,11 +1707,8 @@ intro p@(LowerNub i mq cols as) = getStateTime >>= \(ms, ct) ->
                          srcDesig'   = srcDesig { desigDoExpandSing = False }
                          himHerself  = mkReflexPro . getSex i $ ms
                          toTarget    = nlnl . T.concat $ [ parseInBands (Just ct) targetId ms . serialize $ srcDesig' -- We need to parse here in order to produce "The 1st" in "The 1st male human introduces himself to you as..."
-                                                         , " introduces "
-                                                         , himHerself
-                                                         , " to you as "
-                                                         , colorWith knownNameColor s
-                                                         , "." ]
+                                                         , " introduces ", himHerself, " to you as "
+                                                         , colorWith knownNameColor s, "." ]
                          toOthers    | ts <- [ serialize srcDesig, " introduces ", himHerself, " to ", targetDesig, "." ]
                                      = nlnl . T.concat $ ts
                          cbs         = [ NonTargetBcast (toSelf,   pure i                                  )

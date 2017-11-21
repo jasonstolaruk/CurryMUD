@@ -1842,14 +1842,17 @@ mkGiveInvDescs i ms d toId toDesig = second concat . unzip . map helper . mkName
   where
     helper (_, c, (s, _)) | c == 1 =
         ( T.concat [ "You give the ", s, " to ", toDesig, "." ]
-        , [ (T.concat [ serialize d, " gives ",     aOrAn s, " to ", toDesig, "." ], otherIds )
-          , (T.concat [ serialize d, " gives you ", aOrAn s,                  "." ], pure toId) ] )
-    helper (_, c, b) =
-        ( T.concat [ "You give", stuff, " to ", toDesig, "." ]
-        , [ (T.concat [ serialize d, " gives",     stuff, " to ", toDesig, "." ], otherIds )
-          , (T.concat [ serialize d, " gives you", stuff,                  "." ], pure toId) ] )
+        , [ (T.concat [ serialize d, " gives ", vo, " to ", toDesig, "." ], otherIds )
+          , (T.concat [ serialize d, " gives you ", aOrAn s,         "." ], pure toId) ] )
       where
-        stuff = spaced (showTxt c) <> mkPlurFromBoth b
+        vo = serialize . VerbObj . aOrAn $ s
+    helper (_, c, b) =
+        ( T.concat [ "You give ", stuff, " to ", toDesig, "." ]
+        , [ (T.concat [ serialize d, " gives ", vo, " to ", toDesig, "." ], otherIds )
+          , (T.concat [ serialize d, " gives you ", stuff,           "." ], pure toId) ] )
+      where
+        stuff = showTxt c |<>| mkPlurFromBoth b
+        vo    = serialize . VerbObj $ stuff
     otherIds = toId `delete` desigOtherIds d
 
 
@@ -1882,7 +1885,7 @@ helperGiveEitherCoins i d toId (ms, toSelfs, bs, logMsgs) ecs =
 mkGiveCoinsDescOthers :: HasCallStack => Desig -> ToId -> Text -> Coins -> [Broadcast]
 mkGiveCoinsDescOthers d toId toDesig c = c |!| toOthersBcast : [ (msg, pure toId) | msg <- toTargetMsgs ]
   where
-    toOthersBcast = ( T.concat [ serialize d, " gives ", aCoinSomeCoins c, " to ", toDesig, "." ]
+    toOthersBcast = ( T.concat [ serialize d, " gives ", serialize . VerbObj . aCoinSomeCoins $ c, " to ", toDesig, "." ]
                     , toId `delete` desigOtherIds d )
     toTargetMsgs  = mkCoinsMsgs helper c
     helper 1 cn   = T.concat [ serialize d, " gives you ", aOrAn cn,                 "."  ]
