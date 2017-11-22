@@ -91,18 +91,20 @@ anglePrompt = flip sendPrompt ">"
 -----
 
 
--- Because "bcast" calls "parseInBands" with "CurryTime", it should not be used to send a message to the executor of a
--- cmd in the case that said message contains a serialized "Desig" for which "desigDoMaskInDark" is "True". Otherwise, a
+-- Because "bcast" calls "parseDesig" with "CurryTime", it should not be used to send a message to the executor of a cmd
+-- in the case that said message contains a serialized "Desig" for which "desigDoMaskInDark" is "True". Otherwise, a
 -- player whose PC is in the dark would see a message such as, "You give the loaf of bread to someone."
+-- TODO: ^^ Revise?
 bcast :: HasCallStack => [Broadcast] -> MudStack ()
 bcast [] = unit
 bcast bs = getStateTime >>= \(ms, ct) -> liftIO . atomically . forM_ bs . sendBcast ms $ ct
   where
-    sendBcast ms ct (msg, is) = forM_ is $ \i ->
+    sendBcast ms ct (msg, is@(targetId:_)) | isLit <- isMobRmLit ct targetId ms = forM_ is $ \i ->
         let f g i' | (mq, cols) <- getMsgQueueColumns i' ms
-                   = writeTQueue mq . g . T.unlines . concatMap (wrap cols) . T.lines $ msg'
-            msg'   = parseInBands (Just ct) i ms msg
+                   = writeTQueue mq . g . T.unlines . concatMap (wrap cols) . T.lines $ parsed
+            parsed = parseDesig i ms (const id) isLit . parseVerbObj isLit $ msg
         in isNpc i ms ? (maybeVoid (f ToNpc) . getPossessor i $ ms) :? f FromServer i
+    sendBcast _ _ (_, []) = unit
 
 
 -----
