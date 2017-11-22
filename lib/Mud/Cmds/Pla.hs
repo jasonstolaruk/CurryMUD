@@ -2806,7 +2806,7 @@ refuel p = advise p ["refuel"] adviceRefuelExcessArgs
 -----
 
 
-remove :: HasCallStack => ActionFun
+remove :: HasCallStack => ActionFun -- TODO: Already fixed for darkness.
 remove p@AdviseNoArgs  = advise p ["remove"] adviceRemoveNoArgs
 remove p@AdviseOneArg  = advise p ["remove"] adviceRemoveNoCon
 remove p@(Lower' i as) = genericAction p helper "remove"

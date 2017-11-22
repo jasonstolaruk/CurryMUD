@@ -1994,15 +1994,18 @@ mkPutRemInvDescs i ms d por mnom mci conSing = unzip . map helper . mkNameCountB
   where
     helper (_, c, (s, _)) | c == 1 =
         (  T.concat [ "You ", mkPorVerb por SndPer, spaced withArticle, mkPorPrep por SndPer mnom mci conSing, rest ]
-        , (T.concat [ serialize d, spaced . mkPorVerb por $ ThrPer, aOrAn s, " ", mkPorPrep por ThrPer mnom mci conSing
+        , (T.concat [ serialize d, spaced . mkPorVerb por $ ThrPer, vo, " ", mkPorPrep por ThrPer mnom mci conSing
                     , rest ], desigOtherIds d) )
       where
-        withArticle = bool (aOrAn s) (the s) $ por == Put
+        withArticle = s |&| bool aOrAn the (por == Put)
+        vo          = serialize . VerbObj . aOrAn $ s
     helper (_, c, b) =
         (  T.concat [ "You ", mkPorVerb por SndPer, spaced . showTxt $ c, mkPlurFromBoth b, " "
                     , mkPorPrep por SndPer mnom mci conSing, rest ]
-        , (T.concat [ serialize d, spaced . mkPorVerb por $ ThrPer, showTxt c, spaced . mkPlurFromBoth $ b
-                    , mkPorPrep por ThrPer mnom mci conSing, rest ], desigOtherIds d) )
+        , (T.concat [ serialize d, spaced . mkPorVerb por $ ThrPer, vo, " ", mkPorPrep por ThrPer mnom mci conSing
+                    , rest ], desigOtherIds d) )
+      where
+        vo = serialize . VerbObj $ showTxt c |<>| mkPlurFromBoth b
     rest = prd . onTheGround $ mnom
 
 
@@ -2042,12 +2045,10 @@ partitionCoinsByVol = partitionCoinsHelper getConCapacity calcInvCoinsVol coinVo
 
 
 mkPutRemCoinsDescOthers :: HasCallStack => Desig -> PutOrRem -> Maybe NthOfM -> Maybe Id -> Sing -> Coins -> [Broadcast]
-mkPutRemCoinsDescOthers d por mnom mci conSing c = c |!| pure (T.concat [ serialize d
-                                                                        , spaced . mkPorVerb por $ ThrPer
-                                                                        , aCoinSomeCoins c
-                                                                        , " "
-                                                                        , mkPorPrep por ThrPer mnom mci conSing
-                                                                        , prd . onTheGround $ mnom ], desigOtherIds d)
+mkPutRemCoinsDescOthers d por mnom mci conSing c
+  | ts <- [ serialize d, spaced . mkPorVerb por $ ThrPer, serialize . VerbObj . aCoinSomeCoins $ c, " "
+          , mkPorPrep por ThrPer mnom mci conSing, prd . onTheGround $ mnom ]
+  = c |!| pure (T.concat ts, desigOtherIds d)
 
 
 mkPutRemCoinsDescsSelf :: HasCallStack => PutOrRem -> Maybe NthOfM -> Maybe Id -> Sing -> Coins -> [Text]
@@ -2067,22 +2068,31 @@ mkPorVerb Rem ThrPer = "removes"
 
 
 mkPorPrep :: HasCallStack => PutOrRem -> Verb -> Maybe NthOfM -> Maybe Id -> Sing -> Text
-mkPorPrep Put SndPer Nothing       Nothing  = ("in the "   <>)
-mkPorPrep Rem SndPer Nothing       Nothing  = ("from the " <>)
-mkPorPrep Put ThrPer Nothing       Nothing  = ("in "       <>) . aOrAn
-mkPorPrep Rem ThrPer Nothing       Nothing  = ("from "     <>) . aOrAn
-mkPorPrep Put SndPer Nothing       (Just i) = const $ "on the "   <> serialize (CorpseDesig i)
-mkPorPrep Rem SndPer Nothing       (Just i) = const $ "from the " <> serialize (CorpseDesig i)
-mkPorPrep Put ThrPer Nothing       (Just i) = const $ "on the "   <> serialize (CorpseDesig i)
-mkPorPrep Rem ThrPer Nothing       (Just i) = const $ "from the " <> serialize (CorpseDesig i)
-mkPorPrep Put SndPer (Just (n, m)) Nothing  = ("in the "   <>) . (descNthOfM n m <>)
-mkPorPrep Rem SndPer (Just (n, m)) Nothing  = ("from the " <>) . (descNthOfM n m <>)
-mkPorPrep Put ThrPer (Just (n, m)) Nothing  = ("in the "   <>) . (descNthOfM n m <>)
-mkPorPrep Rem ThrPer (Just (n, m)) Nothing  = ("from the " <>) . (descNthOfM n m <>)
-mkPorPrep Put SndPer (Just (n, m)) (Just i) = const $ "on the "   <> descNthOfM n m <> serialize (CorpseDesig i)
-mkPorPrep Rem SndPer (Just (n, m)) (Just i) = const $ "from the " <> descNthOfM n m <> serialize (CorpseDesig i)
-mkPorPrep Put ThrPer (Just (n, m)) (Just i) = const $ "on the "   <> descNthOfM n m <> serialize (CorpseDesig i)
-mkPorPrep Rem ThrPer (Just (n, m)) (Just i) = const $ "from the " <> descNthOfM n m <> serialize (CorpseDesig i)
+mkPorPrep Put x@SndPer Nothing       Nothing  s = "in "   <>  mkVO x ("the " <> s)
+mkPorPrep Rem x@SndPer Nothing       Nothing  s = "from " <>  mkVO x ("the " <> s)
+mkPorPrep Put x@ThrPer Nothing       Nothing  s = "in "   <> (mkVO x . aOrAn $  s)
+mkPorPrep Rem x@ThrPer Nothing       Nothing  s = "from " <> (mkVO x . aOrAn $  s)
+mkPorPrep Put x@SndPer Nothing       (Just i) _ = "on "   <> (mkVO x . ("the " <>) . mkCD $ i)
+mkPorPrep Rem x@SndPer Nothing       (Just i) _ = "from " <> (mkVO x . ("the " <>) . mkCD $ i)
+mkPorPrep Put x@ThrPer Nothing       (Just i) _ = "on "   <> (mkVO x . ("the " <>) . mkCD $ i)
+mkPorPrep Rem x@ThrPer Nothing       (Just i) _ = "from " <> (mkVO x . ("the " <>) . mkCD $ i)
+mkPorPrep Put x@SndPer (Just (n, m)) Nothing  s = "in "   <> (mkVO x . ("the " <>) . (descNthOfM n m <>) $ s)
+mkPorPrep Rem x@SndPer (Just (n, m)) Nothing  s = "from " <> (mkVO x . ("the " <>) . (descNthOfM n m <>) $ s)
+mkPorPrep Put x@ThrPer (Just (n, m)) Nothing  s = "in "   <> (mkVO x . ("the " <>) . (descNthOfM n m <>) $ s)
+mkPorPrep Rem x@ThrPer (Just (n, m)) Nothing  s = "from " <> (mkVO x . ("the " <>) . (descNthOfM n m <>) $ s)
+mkPorPrep Put x@SndPer (Just (n, m)) (Just i) _ = "on "   <> (mkVO x . ("the " <>) . (descNthOfM n m <>) . mkCD $ i)
+mkPorPrep Rem x@SndPer (Just (n, m)) (Just i) _ = "from " <> (mkVO x . ("the " <>) . (descNthOfM n m <>) . mkCD $ i)
+mkPorPrep Put x@ThrPer (Just (n, m)) (Just i) _ = "on "   <> (mkVO x . ("the " <>) . (descNthOfM n m <>) . mkCD $ i)
+mkPorPrep Rem x@ThrPer (Just (n, m)) (Just i) _ = "from " <> (mkVO x . ("the " <>) . (descNthOfM n m <>) . mkCD $ i)
+
+
+mkVO :: HasCallStack => Verb -> Text -> Text
+mkVO SndPer = id
+mkVO ThrPer = serialize . VerbObj
+
+
+mkCD :: HasCallStack => Id -> Text
+mkCD = serialize . CorpseDesig
 
 
 descNthOfM :: HasCallStack => Int -> Int -> Text
