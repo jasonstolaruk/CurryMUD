@@ -56,7 +56,6 @@ module Mud.Data.State.Util.Misc ( addToInv
                                 , mkCorpseAppellation
                                 , mkCorpseTxt
                                 , mkEntName
-                                , mkMaybeCorpseId
                                 , mkNameCountBothList
                                 , mkName_maybeCorpseId_count_bothList
                                 , mkPlaIdSingList

@@ -1963,7 +1963,7 @@ helperPutEitherInv i d mnom toId toSing a@(ms, origToSelfs, _, _) = \case
         (_, cans, can'ts) = foldl' (partitionInvByVol ms . getConCapacity toId $ ms)
                                    (calcInvCoinsVol toId ms, [], [])
                                    is'
-        (toSelfs', bs)    = mkPutRemInvDescs i ms d Put mnom (mkMaybeCorpseId toId ms) toSing cans
+        (toSelfs', bs)    = mkPutRemInvDescs i ms d Put mnom (mkIsOrIsn'tCorpse toId ms) toSing cans
     in a & _1.invTbl.ind i    %~  (\\ cans)
          & _1.invTbl.ind toId %~  addToInv ms cans
          & _2                 .~  concat [ toSelfs, toSelfs', mkCan'tPutInvDescs toSing i ms can'ts ]
@@ -1981,28 +1981,34 @@ partitionInvByVol :: HasCallStack => MudState -> Vol -> (Vol, Inv, Inv) -> Id ->
 partitionInvByVol = partitionInvHelper calcVol
 
 
+mkIsOrIsn'tCorpse :: HasCallStack => Id -> MudState -> IsOrIsn'tCorpse
+mkIsOrIsn'tCorpse i ms | getType i ms == CorpseType = IsCorpse $ case getCorpse i ms of PCCorpse  {} -> Just i
+                                                                                        NpcCorpse {} -> Nothing
+                       | otherwise                  = Isn'tCorpse
+
+
 mkPutRemInvDescs :: HasCallStack => Id
                                  -> MudState
                                  -> Desig
                                  -> PutOrRem
                                  -> Maybe NthOfM
-                                 -> Maybe Id
+                                 -> IsOrIsn'tCorpse
                                  -> Sing
                                  -> Inv
                                  -> ([Text], [Broadcast])
-mkPutRemInvDescs i ms d por mnom mci conSing = unzip . map helper . mkNameCountBothList i ms
+mkPutRemInvDescs i ms d por mnom ioic conSing = unzip . map helper . mkNameCountBothList i ms
   where
     helper (_, c, (s, _)) | c == 1 =
-        (  T.concat [ "You ", mkPorVerb por SndPer, spaced withArticle, mkPorPrep por SndPer mnom mci conSing, rest ]
-        , (T.concat [ serialize d, spaced . mkPorVerb por $ ThrPer, vo, " ", mkPorPrep por ThrPer mnom mci conSing
+        (  T.concat [ "You ", mkPorVerb por SndPer, spaced withArticle, mkPorPrep por SndPer mnom ioic conSing, rest ]
+        , (T.concat [ serialize d, spaced . mkPorVerb por $ ThrPer, vo, " ", mkPorPrep por ThrPer mnom ioic conSing
                     , rest ], desigOtherIds d) )
       where
         withArticle = s |&| bool aOrAn the (por == Put)
         vo          = serialize . VerbObj . aOrAn $ s
     helper (_, c, b) =
         (  T.concat [ "You ", mkPorVerb por SndPer, spaced . showTxt $ c, mkPlurFromBoth b, " "
-                    , mkPorPrep por SndPer mnom mci conSing, rest ]
-        , (T.concat [ serialize d, spaced . mkPorVerb por $ ThrPer, vo, " ", mkPorPrep por ThrPer mnom mci conSing
+                    , mkPorPrep por SndPer mnom ioic conSing, rest ]
+        , (T.concat [ serialize d, spaced . mkPorVerb por $ ThrPer, vo, " ", mkPorPrep por ThrPer mnom ioic conSing
                     , rest ], desigOtherIds d) )
       where
         vo = serialize . VerbObj $ showTxt c |<>| mkPlurFromBoth b
@@ -2026,13 +2032,13 @@ helperPutEitherCoins :: HasCallStack => Id
                                      -> GenericIntermediateRes
 helperPutEitherCoins i d mnom toId toSing (ms, toSelfs, bs, logMsgs) ecs =
     let (ms', toSelfs', logMsgs', canCoins) = foldl' helper (ms, toSelfs, logMsgs, mempty) ecs
-    in (ms', toSelfs', bs ++ mkPutRemCoinsDescOthers d Put mnom mci toSing canCoins, logMsgs')
+    in (ms', toSelfs', bs ++ mkPutRemCoinsDescOthers d Put mnom ioic toSing canCoins, logMsgs')
   where
-    mci                     = mkMaybeCorpseId toId ms
+    ioic                    = mkIsOrIsn'tCorpse toId ms
     helper a@(ms', _, _, _) = \case
       Left  msgs -> a & _2 <>~ msgs
       Right c    -> let (can, can't) = partitionCoinsByVol toId ms' c
-                        toSelfs'     = mkPutRemCoinsDescsSelf Put mnom mci toSing can
+                        toSelfs'     = mkPutRemCoinsDescsSelf Put mnom ioic toSing can
                     in a & _1.coinsTbl.ind i    %~  (<> negateCoins can)
                          & _1.coinsTbl.ind toId %~  (<>             can)
                          & _2                   <>~ toSelfs' ++ mkCan'tPutCoinsDesc toSing can't
@@ -2044,20 +2050,20 @@ partitionCoinsByVol :: HasCallStack => Id -> MudState -> Coins -> (Coins, Coins)
 partitionCoinsByVol = partitionCoinsHelper getConCapacity calcInvCoinsVol coinVol
 
 
-mkPutRemCoinsDescOthers :: HasCallStack => Desig -> PutOrRem -> Maybe NthOfM -> Maybe Id -> Sing -> Coins -> [Broadcast]
-mkPutRemCoinsDescOthers d por mnom mci conSing c
+mkPutRemCoinsDescOthers :: HasCallStack => Desig -> PutOrRem -> Maybe NthOfM -> IsOrIsn'tCorpse -> Sing -> Coins -> [Broadcast]
+mkPutRemCoinsDescOthers d por mnom ioic conSing c
   | ts <- [ serialize d, spaced . mkPorVerb por $ ThrPer, serialize . VerbObj . aCoinSomeCoins $ c, " "
-          , mkPorPrep por ThrPer mnom mci conSing, prd . onTheGround $ mnom ]
+          , mkPorPrep por ThrPer mnom ioic conSing, prd . onTheGround $ mnom ]
   = c |!| pure (T.concat ts, desigOtherIds d)
 
 
-mkPutRemCoinsDescsSelf :: HasCallStack => PutOrRem -> Maybe NthOfM -> Maybe Id -> Sing -> Coins -> [Text]
-mkPutRemCoinsDescsSelf por mnom mci conSing = mkCoinsMsgs helper
+mkPutRemCoinsDescsSelf :: HasCallStack => PutOrRem -> Maybe NthOfM -> IsOrIsn'tCorpse -> Sing -> Coins -> [Text]
+mkPutRemCoinsDescsSelf por mnom ioic conSing = mkCoinsMsgs helper
   where
     helper a cn | a == 1 = T.concat [ partA, aOrAn cn,  " ",           partB ]
     helper a cn          = T.concat [ partA, showTxt a, " ", cn, "s ", partB ]
     partA                = spcR $ "You " <> mkPorVerb por SndPer
-    partB                = prd $ mkPorPrep por SndPer mnom mci conSing <> onTheGround mnom
+    partB                = prd $ mkPorPrep por SndPer mnom ioic conSing <> onTheGround mnom
 
 
 mkPorVerb :: HasCallStack => PutOrRem -> Verb -> Text
@@ -2067,23 +2073,27 @@ mkPorVerb Rem SndPer = "remove"
 mkPorVerb Rem ThrPer = "removes"
 
 
-mkPorPrep :: HasCallStack => PutOrRem -> Verb -> Maybe NthOfM -> Maybe Id -> Sing -> Text
-mkPorPrep Put x@SndPer Nothing       Nothing  s = "in "   <>  mkVO x ("the " <> s)
-mkPorPrep Rem x@SndPer Nothing       Nothing  s = "from " <>  mkVO x ("the " <> s)
-mkPorPrep Put x@ThrPer Nothing       Nothing  s = "in "   <> (mkVO x . aOrAn $  s)
-mkPorPrep Rem x@ThrPer Nothing       Nothing  s = "from " <> (mkVO x . aOrAn $  s)
-mkPorPrep Put x@SndPer Nothing       (Just i) _ = "on "   <> (mkVO x . ("the " <>) . mkCD $ i)
-mkPorPrep Rem x@SndPer Nothing       (Just i) _ = "from " <> (mkVO x . ("the " <>) . mkCD $ i)
-mkPorPrep Put x@ThrPer Nothing       (Just i) _ = "on "   <> (mkVO x . ("the " <>) . mkCD $ i)
-mkPorPrep Rem x@ThrPer Nothing       (Just i) _ = "from " <> (mkVO x . ("the " <>) . mkCD $ i)
-mkPorPrep Put x@SndPer (Just (n, m)) Nothing  s = "in "   <> (mkVO x . ("the " <>) . (descNthOfM n m <>) $ s)
-mkPorPrep Rem x@SndPer (Just (n, m)) Nothing  s = "from " <> (mkVO x . ("the " <>) . (descNthOfM n m <>) $ s)
-mkPorPrep Put x@ThrPer (Just (n, m)) Nothing  s = "in "   <> (mkVO x . ("the " <>) . (descNthOfM n m <>) $ s)
-mkPorPrep Rem x@ThrPer (Just (n, m)) Nothing  s = "from " <> (mkVO x . ("the " <>) . (descNthOfM n m <>) $ s)
-mkPorPrep Put x@SndPer (Just (n, m)) (Just i) _ = "on "   <> (mkVO x . ("the " <>) . (descNthOfM n m <>) . mkCD $ i)
-mkPorPrep Rem x@SndPer (Just (n, m)) (Just i) _ = "from " <> (mkVO x . ("the " <>) . (descNthOfM n m <>) . mkCD $ i)
-mkPorPrep Put x@ThrPer (Just (n, m)) (Just i) _ = "on "   <> (mkVO x . ("the " <>) . (descNthOfM n m <>) . mkCD $ i)
-mkPorPrep Rem x@ThrPer (Just (n, m)) (Just i) _ = "from " <> (mkVO x . ("the " <>) . (descNthOfM n m <>) . mkCD $ i)
+data IsOrIsn'tCorpse = IsCorpse (Maybe Id)
+                     | Isn'tCorpse deriving (Eq, Show)
+
+
+mkPorPrep :: HasCallStack => PutOrRem -> Verb -> Maybe NthOfM -> IsOrIsn'tCorpse -> Sing -> Text
+mkPorPrep Put x@SndPer Nothing       Isn'tCorpse s = "in "   <>  mkVO x ("the " <> s)
+mkPorPrep Rem x@SndPer Nothing       Isn'tCorpse s = "from " <>  mkVO x ("the " <> s)
+mkPorPrep Put x@ThrPer Nothing       Isn'tCorpse s = "in "   <> (mkVO x . aOrAn $  s)
+mkPorPrep Rem x@ThrPer Nothing       Isn'tCorpse s = "from " <> (mkVO x . aOrAn $  s)
+mkPorPrep Put x@SndPer Nothing       y           s = "on "   <> (mkVO x . ("the " <>) . mkCD y $ s)
+mkPorPrep Rem x@SndPer Nothing       y           s = "from " <> (mkVO x . ("the " <>) . mkCD y $ s)
+mkPorPrep Put x@ThrPer Nothing       y           s = "on "   <> (mkVO x . ("the " <>) . mkCD y $ s)
+mkPorPrep Rem x@ThrPer Nothing       y           s = "from " <> (mkVO x . ("the " <>) . mkCD y $ s)
+mkPorPrep Put x@SndPer (Just (n, m)) Isn'tCorpse s = "in "   <> (mkVO x . ("the " <>) . (descNthOfM n m <>) $ s)
+mkPorPrep Rem x@SndPer (Just (n, m)) Isn'tCorpse s = "from " <> (mkVO x . ("the " <>) . (descNthOfM n m <>) $ s)
+mkPorPrep Put x@ThrPer (Just (n, m)) Isn'tCorpse s = "in "   <> (mkVO x . ("the " <>) . (descNthOfM n m <>) $ s)
+mkPorPrep Rem x@ThrPer (Just (n, m)) Isn'tCorpse s = "from " <> (mkVO x . ("the " <>) . (descNthOfM n m <>) $ s)
+mkPorPrep Put x@SndPer (Just (n, m)) y           s = "on "   <> (mkVO x . ("the " <>) . (descNthOfM n m <>) . mkCD y $ s)
+mkPorPrep Rem x@SndPer (Just (n, m)) y           s = "from " <> (mkVO x . ("the " <>) . (descNthOfM n m <>) . mkCD y $ s)
+mkPorPrep Put x@ThrPer (Just (n, m)) y           s = "on "   <> (mkVO x . ("the " <>) . (descNthOfM n m <>) . mkCD y $ s)
+mkPorPrep Rem x@ThrPer (Just (n, m)) y           s = "from " <> (mkVO x . ("the " <>) . (descNthOfM n m <>) . mkCD y $ s)
 
 
 mkVO :: HasCallStack => Verb -> Text -> Text
@@ -2091,8 +2101,10 @@ mkVO SndPer = id
 mkVO ThrPer = serialize . VerbObj
 
 
-mkCD :: HasCallStack => Id -> Text
-mkCD = serialize . CorpseDesig
+mkCD :: HasCallStack => IsOrIsn'tCorpse -> Sing -> Text
+mkCD (IsCorpse (Just i)) _ = serialize . CorpseDesig $ i
+mkCD (IsCorpse Nothing ) s = s
+mkCD x                   _ = pmf "mkCD" x
 
 
 descNthOfM :: HasCallStack => Int -> Int -> Text
@@ -2165,7 +2177,7 @@ helperRemEitherInv i d mnom fromId fromSing icir a@(ms, _, _, _) = \case
   Right is  -> let (_, cans, can'ts) = f is
                    f | icir          = foldl' (partitionInvByEnc ms . calcMaxEnc i $ ms) (calcWeight i ms, [], [])
                      | otherwise     = (0, , [])
-                   (toSelfs, bs)     = mkPutRemInvDescs i ms d Rem mnom (mkMaybeCorpseId fromId ms) fromSing cans
+                   (toSelfs, bs)     = mkPutRemInvDescs i ms d Rem mnom (mkIsOrIsn'tCorpse fromId ms) fromSing cans
                in a & _1.invTbl.ind fromId %~  (\\ cans)
                     & _1.invTbl.ind i      %~  addToInv ms cans
                     & _2                   <>~ toSelfs ++ mkCan'tRemInvDescs i ms can'ts
@@ -2188,15 +2200,15 @@ helperRemEitherCoins :: HasCallStack => Id
                                      -> GenericIntermediateRes
 helperRemEitherCoins i d mnom fromId fromSing icir (ms, toSelfs, bs, logMsgs) ecs =
     let (ms', toSelfs', logMsgs', canCoins) = foldl' helper (ms, toSelfs, logMsgs, mempty) ecs
-    in (ms', toSelfs', bs ++ mkPutRemCoinsDescOthers d Rem mnom mci fromSing canCoins, logMsgs')
+    in (ms', toSelfs', bs ++ mkPutRemCoinsDescOthers d Rem mnom ioic fromSing canCoins, logMsgs')
   where
-    mci                     = mkMaybeCorpseId fromId ms
+    ioic                    = mkIsOrIsn'tCorpse fromId ms
     helper a@(ms', _, _, _) = \case
       Left  msgs -> a & _2 <>~ msgs
       Right c    -> let (can, can't)  = f c
                         f | icir      = partitionCoinsByEnc i ms'
                           | otherwise = (, mempty)
-                        toSelfs'      = mkPutRemCoinsDescsSelf Rem mnom mci fromSing can
+                        toSelfs'      = mkPutRemCoinsDescsSelf Rem mnom ioic fromSing can
                     in a & _1.coinsTbl.ind fromId %~ (<> negateCoins can)
                          & _1.coinsTbl.ind i      %~ (<>             can)
                          & _2 <>~ toSelfs' ++ mkCan'tRemCoinsDesc can't
