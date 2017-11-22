@@ -618,8 +618,8 @@ genericAction p helper fn = helper |&| modifyState >=> \(toSelfs, bs, logMsgs) -
 
 genericActionHelper :: HasCallStack => ActionParams -> Text -> [Text] -> [Broadcast] -> [Text] -> MudStack ()
 genericActionHelper ActionParams { .. } fn toSelfs bs logMsgs = getState >>= \ms -> do
-    logMsgs |#| logPlaOut fn myId . map (parseInBandsSuffix myId ms)
-    multiWrapSend plaMsgQueue plaCols [ parseInBands Nothing myId ms msg | msg <- toSelfs ]
+    logMsgs |#| logPlaOut fn myId . map (parseDesigSuffix myId ms)
+    multiWrapSend plaMsgQueue plaCols [ parseDesig Nothing myId ms msg | msg <- toSelfs ]
     bcastIfNotIncogNl myId bs
 
 
@@ -1368,12 +1368,12 @@ mkEqDesc i cols ms descId descSing descType = let descs = bool mkDescsOther mkDe
     mkAux ei = isLitLight ei ms |?| (spcL . parensQuote . colorWith emphasisColor $ "lit")
     noDescs  = wrapUnlines cols $ if
       | descId   == i       -> dudeYou'reNaked
-      | descType == PlaType -> parseInBands Nothing i ms $ d <> " doesn't have anything readied."
-      | otherwise           -> theOnLowerCap descSing        <> " doesn't have anything readied."
+      | descType == PlaType -> parseDesig Nothing i ms $ d <> " doesn't have anything readied."
+      | otherwise           -> theOnLowerCap descSing      <> " doesn't have anything readied."
     header = wrapUnlines cols $ if
       | descId   == i       -> "You have readied the following equipment:"
-      | descType == PlaType -> parseInBands Nothing i ms $ d <> " has readied the following equipment:"
-      | otherwise           -> theOnLowerCap descSing        <> " has readied the following equipment:"
+      | descType == PlaType -> parseDesig Nothing i ms $ d <> " has readied the following equipment:"
+      | otherwise           -> theOnLowerCap descSing      <> " has readied the following equipment:"
     d = serialize . mkStdDesig descId ms $ DoCap
 
 
@@ -1810,7 +1810,7 @@ shuffleGive i ms LastArgIsTargetBindings { .. } =
                                                             ecs
                in (ms'', ( dropBlanks $ [ sorryInEq, sorryInRm ] ++ toSelfs'
                          , bs'
-                         , map (parseInBandsSuffix i ms) logMsgs' ))
+                         , map (parseDesigSuffix i ms) logMsgs' ))
           else genericSorry ms . sorryGiveType . getSing targetId $ ms
         Right {} -> genericSorry ms sorryGiveExcessTargets
 
@@ -2225,7 +2225,7 @@ mkCan'tRemCoinsDesc = mkCoinsMsgs (can'tCoinsDescHelper sorryRemEnc)
 
 sorryConHelper :: HasCallStack => Id -> MudState -> Id -> Sing -> Text
 sorryConHelper i ms conId conSing
-  | isNpcPla conId ms = sorryCon . parseInBands Nothing i ms . serialize . mkStdDesig conId ms $ Don'tCap
+  | isNpcPla conId ms = sorryCon . parseDesig Nothing i ms . serialize . mkStdDesig conId ms $ Don'tCap
   | otherwise         = sorryCon conSing
 
 

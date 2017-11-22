@@ -23,8 +23,8 @@ module Mud.Data.State.Util.Output ( anglePrompt
                                   , multiWrapSend
                                   , multiWrapSend1Nl
                                   , ok
-                                  , parseInBands
-                                  , parseInBandsSuffix
+                                  , parseDesig
+                                  , parseDesigSuffix
                                   , retainedMsg
                                   , send
                                   , sendCmdNotFound
@@ -94,17 +94,15 @@ anglePrompt = flip sendPrompt ">"
 -- Because "bcast" calls "parseDesig" with "CurryTime", it should not be used to send a message to the executor of a cmd
 -- in the case that said message contains a serialized "Desig" for which "desigDoMaskInDark" is "True". Otherwise, a
 -- player whose PC is in the dark would see a message such as, "You give the loaf of bread to someone."
--- TODO: ^^ Revise?
 bcast :: HasCallStack => [Broadcast] -> MudStack ()
 bcast [] = unit
-bcast bs = getStateTime >>= \(ms, ct) -> liftIO . atomically . forM_ bs . sendBcast ms $ ct
+bcast bs = liftIO . atomically . forM_ bs . sendBcast =<< getStateTime
   where
-    sendBcast ms ct (msg, is@(targetId:_)) | isLit <- isMobRmLit ct targetId ms = forM_ is $ \i ->
+    sendBcast (ms, ct) (msg, is) = forM_ is $ \i ->
         let f g i' | (mq, cols) <- getMsgQueueColumns i' ms
                    = writeTQueue mq . g . T.unlines . concatMap (wrap cols) . T.lines $ parsed
-            parsed = parseDesig i ms (const id) isLit . parseVerbObj isLit $ msg
+            parsed = parseDesig (Just ct) i ms . parseVerbObj ct i ms $ msg -- Parse verb objects before desigs: a verb object may contain a corpse desig.
         in isNpc i ms ? (maybeVoid (f ToNpc) . getPossessor i $ ms) :? f FromServer i
-    sendBcast _ _ (_, []) = unit
 
 
 -----
@@ -257,34 +255,19 @@ ok mq = send mq . nlnl $ "OK!"
 
 
 -- TODO: Spirits can see in the dark.
-parseInBands :: HasCallStack => Maybe CurryTime -> Id -> MudState -> Text -> Text
-parseInBands = parseInBandsHelper (const id)
+parseDesig :: HasCallStack => Maybe CurryTime -> Id -> MudState -> Text -> Text
+parseDesig = parseDesigHelper (const id)
 
 
-parseInBandsSuffix :: HasCallStack => Id -> MudState -> Text -> Text -- Tack on a suffix. Used when logging cmd output.
-parseInBandsSuffix = parseInBandsHelper (\es -> (<> parensQuote es)) Nothing
+parseDesigSuffix :: HasCallStack => Id -> MudState -> Text -> Text -- Tack on a suffix. Used when logging cmd output.
+parseDesigSuffix = parseDesigHelper (\es -> (<> parensQuote es)) Nothing
 
 
 type Suffixer = (Sing -> Text -> Text)
 
 
-parseInBandsHelper :: HasCallStack => Suffixer -> Maybe CurryTime -> Id -> MudState -> Text -> Text
-parseInBandsHelper suffixer mct i ms = let isLit = maybe True (\ct -> isMobRmLit ct i ms) mct
-                                       in parseDesig i ms suffixer isLit . parseVerbObj isLit -- Parse verb objects before desigs: a verb object may contain a corpse desig.
-
-
-parseVerbObj :: HasCallStack => Bool -> Text -> Text
-parseVerbObj isLit = loop
-  where
-    loop txt | delim `T.isInfixOf` txt = let (left, vo :: VerbObj, right) = extractDelimited delim txt
-                                         in left <> expander vo <> loop right
-             | otherwise               = txt
-    expander (VerbObj t) = isLit ? t :? "something"
-    delim                = T.singleton verbObjDelimiter
-
-
-parseDesig :: HasCallStack => Id -> MudState -> Suffixer -> Bool -> Text -> Text
-parseDesig i ms suffixer isLit = loop
+parseDesigHelper :: HasCallStack => Suffixer -> Maybe CurryTime -> Id -> MudState -> Text -> Text
+parseDesigHelper suffixer mct i ms = loop
   where
     loop txt = helper pairs
       where
@@ -296,6 +279,7 @@ parseDesig i ms suffixer isLit = loop
     pairs = [ (stdDesigDelimiter,    expandStdDesig    suffixer isLit)
             , (nonStdDesigDelimiter, expandNonStdDesig suffixer isLit)
             , (corpseDesigDelimiter, expandCorpseDesig               ) ] |&| map (first T.singleton)
+    isLit = maybe True (\ct -> isMobRmLit ct i ms) mct
 
 
 extractDelimited :: (HasCallStack, Serializable a) => Text -> Text -> (Text, a, Text)
@@ -344,6 +328,17 @@ expandNonStdDesig _ _ _ _ d = pmf "expandNonStdDesig" d
 expandCorpseDesig :: HasCallStack => Id -> MudState -> Desig -> Text
 expandCorpseDesig i ms (CorpseDesig ci) = mkCorpseAppellation i ms ci
 expandCorpseDesig _ _  d                = pmf "expandCorpseDesig" d
+
+
+parseVerbObj :: HasCallStack => CurryTime -> Id -> MudState -> Text -> Text
+parseVerbObj ct i ms = loop
+  where
+    loop txt | delim `T.isInfixOf` txt = let (left, vo :: VerbObj, right) = extractDelimited delim txt
+                                         in left <> expander vo <> loop right
+             | otherwise               = txt
+    delim                = T.singleton verbObjDelimiter
+    expander (VerbObj t) = isLit ? t :? "something"
+    isLit                = isMobRmLit ct i ms
 
 
 -----

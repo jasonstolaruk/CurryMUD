@@ -1132,8 +1132,8 @@ emote   (WithArgs i mq cols as) = getState >>= \ms ->
         mkMyName  isHead = onTrue isHead capitalize . onTrue (isNpc i ms) theOnLower . getSing i $ ms
     in case lefts xformed of
       []      -> let (msg, toOthers, targetIds, toTargetBs) = mkEmoteMsgs ms xformed
-                     toSelf                                 = parseInBands Nothing i ms msg
-                     logMsg                                 = parseInBandsSuffix   i ms msg
+                     toSelf                                 = parseDesig Nothing i ms msg
+                     logMsg                                 = parseDesigSuffix   i ms msg
                  in do logPlaOut "emote" i . pure $ logMsg
                        wrapSend mq cols toSelf
                        bcastIfNotIncogNl i $ (toOthers, desigOtherIds d \\ targetIds) : toTargetBs
@@ -1700,13 +1700,13 @@ intro p@(LowerNub i mq cols as) = getStateTime >>= \(ms, ct) ->
         tryIntro a'@(pt, _, _, _) targetId = let targetSing = getSing targetId ms in case getType targetId ms of
           PlaType -> let s           = getSing i ms
                          targetDesig = serialize . mkStdDesig targetId ms $ Don'tCap
-                         targetTxt   = parseInBands Nothing i ms targetDesig
-                         toSelf      = nlnl . prd $ "You introduce yourself to " <> targetTxt
+                         targetName  = parseDesig Nothing i ms targetDesig
+                         toSelf      = nlnl . prd $ "You introduce yourself to " <> targetName
                          logMsg      = prd $ "introduced to " <> targetSing
                          srcDesig    = mkStdDesig i ms DoCap
                          srcDesig'   = srcDesig { desigDoExpandSing = False }
                          himHerself  = mkReflexPro . getSex i $ ms
-                         toTarget    = nlnl . T.concat $ [ parseInBands (Just ct) targetId ms . serialize $ srcDesig' -- We need to parse here in order to produce "The 1st" in "The 1st male human introduces himself to you as..."
+                         toTarget    = nlnl . T.concat $ [ parseDesig (Just ct) targetId ms . serialize $ srcDesig' -- We need to parse here in order to produce "The 1st" in "The 1st male human introduces himself to you as..."
                                                          , " introduces ", himHerself, " to you as "
                                                          , colorWith knownNameColor s, "." ]
                          toOthers    | ts <- [ serialize srcDesig, " introduces ", himHerself, " to ", targetDesig, "." ]
@@ -1715,7 +1715,7 @@ intro p@(LowerNub i mq cols as) = getStateTime >>= \(ms, ct) ->
                                        , TargetBcast    (toTarget, pure targetId                           )
                                        , NonTargetBcast (toOthers, targetId `delete` desigOtherIds srcDesig) ]
                      in if s `elem` pt^.ind targetId.introduced
-                       then let sorry = nlnl . sorryIntroAlready $ targetTxt
+                       then let sorry = nlnl . sorryIntroAlready $ targetName
                             in a' & _2 <>~ mkNTBcast i sorry
                        else a' & _1.ind targetId.introduced %~ (sort . (s :))
                                & _2 <>~ cbs
@@ -1959,8 +1959,8 @@ link p@(LowerNub i mq cols as) = getState >>= \ms -> if
                           = nlnl . T.concat $ [ x, colorWith knownNameColor s, y, mkPossPro . getSex i $ ms, z, twoWayMsg ]
                 bs        = [ (srcMsg, pure i), (targetMsg, pure targetId) ]
                 msgHelper txt = a' & _2 <>~ mkBcast i (nlnl txt)
-                targetTxt     = parseInBands Nothing i ms . serialize . mkStdDesig targetId ms $ Don'tCap
-            in if | targetSing `notElem` srcIntros    -> msgHelper . sorryLinkIntroTarget       $ targetTxt
+                targetName    = parseDesig Nothing i ms . serialize . mkStdDesig targetId ms $ Don'tCap
+            in if | targetSing `notElem` srcIntros    -> msgHelper . sorryLinkIntroTarget       $ targetName
                   | s          `notElem` targetIntros -> msgHelper . sorryLinkIntroSelf         $ targetSing
                   | s             `elem` targetLinks  -> msgHelper . sorryLinkAlready oneTwoWay $ targetSing
                   | not . hasPp i ms $ 10             -> msgHelper . sorryPp $ "link with " <> targetSing
@@ -2019,9 +2019,9 @@ look p@(NoArgs i mq cols) = checkDark p $ getState >>= \ms ->
 look p@(LowerNub i mq cols as) = checkDark p $ mkRndmVector >>= \v ->
     helper v |&| modifyState >=> \(toSelf, bs, hookLogMsg, maybeTargetDesigs, fs) -> do
         ms <- getState
-        let mkLogMsgForDesigs targetDesigs | targetSings <- [ parseInBandsSuffix i ms . serialize $ targetDesig
+        let mkLogMsgForDesigs targetDesigs | targetNames <- [ parseDesigSuffix i ms . serialize $ targetDesig
                                                             | targetDesig <- targetDesigs ]
-                                           = "looking at " <> commas targetSings
+                                           = "looking at " <> commas targetNames
             logMsg = slashes . dropBlanks $ [ maybeEmp mkLogMsgForDesigs maybeTargetDesigs, hookLogMsg ]
         logMsg |#| logPla "look" i . prd
         send mq toSelf
@@ -2993,8 +2993,8 @@ sayHelper l p@(WithArgs i mq cols args@(a:_)) = getState >>= \ms ->
                                    , toSelfMsg ))
     sayTo _ msg _ = pmf "sayHelper sayTo" msg
     formatMsg     = dblQuote . capitalizeMsg . punctuateMsg
-    ioHelper ms triple@(x:xs, _, _) | (toSelfs, bs, logMsg) <- triple & _1 .~ parseInBands Nothing i ms x : xs
-                                                                      & _3 %~ parseInBandsSuffix   i ms
+    ioHelper ms triple@(x:xs, _, _) | (toSelfs, bs, logMsg) <- triple & _1 .~ parseDesig Nothing i ms x : xs
+                                                                      & _3 %~ parseDesigSuffix   i ms
                                     = do multiWrapSend mq cols toSelfs
                                          bcastIfNotIncogNl i bs
                                          logMsg |#| logPlaOut (mkCmdNameForLang l) i . pure
@@ -3193,7 +3193,7 @@ showAction p@(Lower i mq cols as) = checkDark p $ getState >>= \ms ->
                                let logMsg = slashes . dropBlanks $ [ invLogMsg |!| parensQuote "inv" |<>| invLogMsg
                                                                    , eqLogMsg  |!| parensQuote "eq"  |<>| eqLogMsg ]
                                logMsg |#| logPla "show" i . (T.concat [ "showing to ", theSing theTarget, ": " ] <>)
-                               multiWrapSend mq cols . dropBlanks $ sorryRmMsg : [ parseInBands Nothing i ms msg
+                               multiWrapSend mq cols . dropBlanks $ sorryRmMsg : [ parseDesig Nothing i ms msg
                                                                                  | msg <- invToSelfs ++ eqToSelfs ]
                                bcastNl $ invBs ++ eqBs
                        Right _ -> wrapSend mq cols sorryShowExcessTargets
@@ -3400,7 +3400,7 @@ smell p@(OneArgLower i mq cols a) = getState >>= \ms ->
                                   bs          = [ ( T.concat [ serialize d, " smells ", targetDesig, "." ]
                                                   , targetId `delete` desigOtherIds d )
                                                 , (serialize d <> " smells you.", pure targetId) ]
-                                  logMsg      = parseInBandsSuffix i ms . prd $ "smelled " <> targetDesig
+                                  logMsg      = parseDesigSuffix i ms . prd $ "smelled " <> targetDesig
                                   smellMob    = ioHelper smellDesc bs logMsg
                                   smellCorpse = let corpseBs = map f . desigOtherIds $ d
                                                     f i' = (T.concat [ serialize d, " smells "
@@ -3825,8 +3825,8 @@ whisper p@(WithArgs i mq cols (target:(T.unwords -> rest))) = getState >>= \ms -
                 toOthersBcast = (nl toOthersMsg, targetId `delete` desigOtherIds d)
             in (ms, (pure toSelfMsg, [ toTargetBcast, toOthersBcast ], toSelfMsg))
     formatMsg = dblQuote . capitalizeMsg . punctuateMsg
-    ioHelper ms triple@(x:xs, _, _) | (toSelfs, bs, logMsg) <- triple & _1 .~ parseInBands Nothing i ms x : xs
-                                                                      & _3 %~ parseInBandsSuffix   i ms
+    ioHelper ms triple@(x:xs, _, _) | (toSelfs, bs, logMsg) <- triple & _1 .~ parseDesig Nothing i ms x : xs
+                                                                      & _3 %~ parseDesigSuffix   i ms
                                     = do logMsg |#| logPlaOut "whisper" i . pure
                                          logMsg |#| alertMsgHelper i "whisper"
                                          multiWrapSend mq cols toSelfs

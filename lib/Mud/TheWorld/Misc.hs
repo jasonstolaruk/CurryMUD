@@ -98,7 +98,7 @@ mkGenericHookFun toSelf bcastTxt logMsgTxt = f
         in a &    _1 %~  (\\ hookTriggers)
              & _2._2 <>~ pure toSelf
              & _2._3 <>~ pure (serialize selfDesig |<>| bcastTxt, desigOtherIds selfDesig)
-             & _2._4 <>~ pure (bracketQuote hookName |<>| parseInBandsSuffix i ms logMsgTxt)
+             & _2._4 <>~ pure (bracketQuote hookName |<>| parseDesigSuffix i ms logMsgTxt)
 
 
 -----
