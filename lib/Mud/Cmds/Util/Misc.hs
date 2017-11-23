@@ -360,7 +360,7 @@ formatChanMsg cn n msg = T.concat [ parensQuote cn, " ", n, ": ", msg ]
 
 formatQuestion :: HasCallStack => Id  -> MudState -> Broadcast -> MudStack [Broadcast]
 formatQuestion i ms (txt, is)
-  | i `elem` is = let pair = i |&| (flip (formatChanMsg "Question") txt . (`getSing` ms) &&& pure)
+  | i `elem` is = let pair = (flip (formatChanMsg "Question") txt . (`getSing` ms) &&& pure) i
                   in (pair :) <$> mkBsWithStyled (i `delete` is)
   | otherwise   = mkBsWithStyled is
   where

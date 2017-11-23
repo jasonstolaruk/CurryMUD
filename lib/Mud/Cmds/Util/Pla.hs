@@ -467,8 +467,9 @@ type ThrPerVerb = Text
 
 
 mkReadyMsgs :: HasCallStack => SndPerVerb -> ThrPerVerb -> Desig -> Sing -> (Text, Broadcast)
-mkReadyMsgs spv tpv d s = ( T.concat [ "You ", spv, " the ", s, "." ]
-                          , (T.concat [ serialize d, spaced tpv, aOrAn s, "." ], desigOtherIds d) )
+mkReadyMsgs spv tpv d s =
+    (  T.concat [ "You ", spv, " the ", s, "." ]
+    , (T.concat [ serialize d, spaced tpv, serialize . VerbObj . aOrAn $ s, "." ], desigOtherIds d) )
 
 
 -----
@@ -600,7 +601,7 @@ helperFillEitherInv i srcDesig targetId (eis:eiss) a@(ms, _, _, _) = case getVes
                                              , ", emptying it." ]
         mkXferEmptyMsg   = pure . T.concat $ [ "You transfer ", n, " to the ", vs,  " from the ", targetSing
                                              , ", emptying it." ]
-        bs               | (vo1, vo2) <- ((targetSing |&|) &&& (vs |&|)) aOrAn & both %~ serialize . VerbObj
+        bs               | (vo1, vo2) <- (targetSing, vs) & both %~ serialize . VerbObj . aOrAn
                          = pure ( T.concat [ serialize srcDesig, " transfers liquid from ", vo1, " to ", vo2, "." ]
                                 , desigOtherIds srcDesig )
 

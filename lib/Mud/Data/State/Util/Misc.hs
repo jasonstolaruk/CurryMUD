@@ -133,7 +133,7 @@ addToInv ms addThese toThese = sortInv ms $ toThese ++ addThese
 
 
 descSingId :: HasCallStack => Id -> MudState -> Text
-descSingId i ms = quoteWith' (i |&| ((`getSing` ms) &&& parensQuote . showTxt)) " "
+descSingId i ms = quoteWith' (((`getSing` ms) &&& parensQuote . showTxt) i) " "
 
 
 descMaybeId :: HasCallStack => MudState -> Maybe Id -> Text
@@ -208,7 +208,7 @@ getEffBothGramNos i ms targetId =
       Nothing -> let (pp -> targetSexy, targetRace) = getSexRace targetId ms
                  in if targetSing `elem` getIntroduced i ms
                    then (targetSing,    ""                 )
-                   else (pp targetRace, plurRace targetRace) & both %~ ((targetSexy <>) . spcL)
+                   else (pp targetRace, plurRace targetRace) & both %~ (targetSexy <>) . spcL
       Just {} | getType targetId ms == CorpseType
               , isPCCorpse . getCorpse targetId $ ms -> pair & _1 .~ mkCorpseAppellation i ms targetId
               | otherwise                            -> pair

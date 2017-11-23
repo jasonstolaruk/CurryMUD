@@ -1555,7 +1555,7 @@ help (NoArgs i mq cols) = liftIO (T.readFile =<< mkMudFilePath rootHeplFileFun) 
         let (is, ia, ls) = mkHelpTriple i ms
         hs <- sortBy (compare `on` helpName) <$> liftIO (mkHelpData ls is ia)
         let zipped                 = zip (styleAbbrevs Don'tQuote [ helpName h | h <- hs ]) hs
-            (cmdNames, topicNames) = partition (isCmdHelp . snd) zipped & both %~ (formatHelpNames . mkHelpNames)
+            (cmdNames, topicNames) = partition (isCmdHelp . snd) zipped & both %~ formatHelpNames . mkHelpNames
             helpTxt                = T.concat [ nl rootHelpTxt
                                               , nl "COMMANDS:"
                                               , nl cmdNames
@@ -1944,7 +1944,7 @@ link p@(LowerNub i mq cols as) = getState >>= \ms -> if
           PlaType ->
             let (srcIntros, targetIntros) = f getIntroduced
                 (srcLinks,  targetLinks ) = f getLinked
-                f g                       = ((i |&|) &&& (targetId |&|)) (uncurry g . (, ms))
+                f g                       = (i, targetId) & both %~ uncurry g . (, ms)
                 s                         = getSing i ms
                 srcMsg    = nlnl . T.concat $ [ focusingInnateMsg, "you establish a telepathic connection from your mind to "
                                               , targetSing, "'s mind.", twoWayMsg ]
@@ -2507,7 +2507,7 @@ readyDispatcher i ms d mrol a targetId =
                      | otherwise                                 -> sorry
       LightType      -> Right readyLight
       WpnType        -> Right readyWpn
-      _             -> sorry
+      _              -> sorry
     sorry      = Left . sorryReadyType $ targetSing
     targetSing = getSing targetId ms
 
@@ -2537,12 +2537,10 @@ readyCloth i ms d mrol a@(et, _, _, _, _) clothId clothSing | em <- et IM.! i, c
       Backpack -> putOnMsgs d clothSing
       _        -> donMsgs   d clothSing
       where
-        wearMsgs  = (   T.concat [ "You wear the ",  clothSing, " on your ", slot, "." ]
-                    , ( T.concat [ serialize d, " wears ",  aOrAn clothSing, " on ", poss, " ", slot, "." ]
-                      , desigOtherIds d ) )
-        slideMsgs = (   T.concat [ "You slide the ", clothSing, " on your ", slot, "." ]
-                    , ( T.concat [ serialize d, " slides ", aOrAn clothSing, " on ", poss, " ", slot, "." ]
-                      , desigOtherIds d ) )
+        (wearMsgs, slideMsgs) = ("wear", "slide") & both %~ mkMsgs
+        mkMsgs v  = (  T.concat [ "You ", v, " the ", clothSing, " on your ", slot, "." ]
+                    , (T.concat [ serialize d, " ", v, "s ", vo, " on ", poss, " ", slot, "." ], desigOtherIds d) )
+        vo        = serialize . VerbObj . aOrAn $ clothSing
         poss      = mkPossPro . getSex i $ ms
 
 
@@ -2640,18 +2638,18 @@ readyWpn i ms d mrol a@(et, _, _, _, _) wpnId wpnSing | em <- et IM.! i, wpn <- 
         Right slot -> case sub of
           OneHanded -> let readyMsgs = ( T.concat [ "You wield the ", wpnSing, " with your ", pp slot, "." ]
                                        , (T.concat ts, desigOtherIds d) )
-                           ts        = [ serialize d, " wields ", aOrAn wpnSing, " with ", poss, " ", pp slot, "." ]
+                           ts        = [ serialize d, " wields ", vo, " with ", poss, " ", pp slot, "." ]
                        in moveReadiedItem i a slot wpnId readyMsgs
           TwoHanded
             | all (isSlotAvail em) [ RHandS, LHandS ] ->
                 let readyMsgs = ( "You wield the " <> wpnSing <> " with both hands."
-                                , ( T.concat [ serialize d, " wields ", aOrAn wpnSing, " with both hands." ]
-                                  , desigOtherIds d ) )
+                                , (T.concat [ serialize d, " wields ", vo, " with both hands." ], desigOtherIds d) )
                 in moveReadiedItem i a BothHandsS wpnId readyMsgs
             | otherwise -> sorry . sorryReadyWpnHands $ wpnSing
   where
-    sorry msg  = a & _3 <>~ pure msg
-    poss       = mkPossPro . getSex i $ ms
+    sorry msg = a & _3 <>~ pure msg
+    vo        = serialize . VerbObj . aOrAn $ wpnSing
+    poss      = mkPossPro . getSex i $ ms
 
 
 getAvailHandSlot :: HasCallStack => MudState -> Id -> Sing -> EqMap -> Either Text Slot
@@ -2723,17 +2721,18 @@ readyLight i ms d mrol a@(et, _, _, _, _) lightId lightSing | em <- et IM.! i =
         Left  msg  -> sorry msg
         Right slot -> let readyMsgs = ( T.concat [ "You hold the ", lightSing, " in your ", pp slot, "." ]
                                       , (T.concat ts, desigOtherIds d) )
-                          ts        = [ serialize d, " holds ", aOrAn lightSing, " in ", poss, " ", pp slot, "." ]
+                          ts        = [ serialize d, " holds ", vo, " in ", poss, " ", pp slot, "." ]
                       in moveReadiedItem i a slot lightId readyMsgs
   where
     sorry msg = a & _3 <>~ pure msg
+    vo        = serialize . VerbObj . aOrAn $ lightSing
     poss      = mkPossPro . getSex i $ ms
 
 
 -----
 
 
-refuel :: HasCallStack => RmActionFun
+refuel :: HasCallStack => RmActionFun -- TODO: Here.
 refuel p@AdviseNoArgs                     = advise p [] adviceRefuelNoArgs
 refuel p@AdviseOneArg                     = advise p [] adviceRefuelNoSource
 refuel p@(Lower i mq cols [lamp, vessel]) = getState >>= \ms ->
