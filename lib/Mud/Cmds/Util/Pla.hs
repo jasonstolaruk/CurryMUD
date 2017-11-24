@@ -1773,8 +1773,8 @@ sacrificeHelper p@(ActionParams i mq cols _) ci gn = getState >>= \ms ->
     let toSelf = T.concat [ "You kneel before the ", mkCorpseAppellation i ms ci, ", laying upon it the holy symbol of "
                           , pp gn, gn == Murgorhd |?| murgorhdMsg, thrice prd ". You say a prayer" ]
         d      = mkStdDesig i ms DoCap
-        helper targetId | ts <- [ serialize d, " kneels before the ", mkCorpseAppellation targetId ms ci
-                                , " and says a prayer to ", pp gn, "." ]
+        helper targetId | vo <- serialize . VerbObj . the . mkCorpseAppellation targetId ms $ ci
+                        , ts <- [ serialize d, " kneels before ", vo, " and says a prayer to ", pp gn, "." ]
                         = (T.concat ts, pure targetId)
     in checkActing p ms (Left Sacrificing) allValues $ do logHelper ms
                                                           wrapSend1Nl mq cols toSelf
@@ -2079,22 +2079,22 @@ data IsOrIsn'tCorpse = IsCorpse (Maybe Id)
 
 
 mkPorPrep :: HasCallStack => PutOrRem -> Verb -> Maybe NthOfM -> IsOrIsn'tCorpse -> Sing -> Text
-mkPorPrep Put x@SndPer Nothing       Isn'tCorpse s = "in "   <>  mkVO x ("the " <> s)
-mkPorPrep Rem x@SndPer Nothing       Isn'tCorpse s = "from " <>  mkVO x ("the " <> s)
-mkPorPrep Put x@ThrPer Nothing       Isn'tCorpse s = "in "   <> (mkVO x . aOrAn $  s)
-mkPorPrep Rem x@ThrPer Nothing       Isn'tCorpse s = "from " <> (mkVO x . aOrAn $  s)
-mkPorPrep Put x@SndPer Nothing       y           s = "on "   <> (mkVO x . ("the " <>) . mkCD y $ s)
-mkPorPrep Rem x@SndPer Nothing       y           s = "from " <> (mkVO x . ("the " <>) . mkCD y $ s)
-mkPorPrep Put x@ThrPer Nothing       y           s = "on "   <> (mkVO x . ("the " <>) . mkCD y $ s)
-mkPorPrep Rem x@ThrPer Nothing       y           s = "from " <> (mkVO x . ("the " <>) . mkCD y $ s)
-mkPorPrep Put x@SndPer (Just (n, m)) Isn'tCorpse s = "in "   <> (mkVO x . ("the " <>) . (descNthOfM n m <>) $ s)
-mkPorPrep Rem x@SndPer (Just (n, m)) Isn'tCorpse s = "from " <> (mkVO x . ("the " <>) . (descNthOfM n m <>) $ s)
-mkPorPrep Put x@ThrPer (Just (n, m)) Isn'tCorpse s = "in "   <> (mkVO x . ("the " <>) . (descNthOfM n m <>) $ s)
-mkPorPrep Rem x@ThrPer (Just (n, m)) Isn'tCorpse s = "from " <> (mkVO x . ("the " <>) . (descNthOfM n m <>) $ s)
-mkPorPrep Put x@SndPer (Just (n, m)) y           s = "on "   <> (mkVO x . ("the " <>) . (descNthOfM n m <>) . mkCD y $ s)
-mkPorPrep Rem x@SndPer (Just (n, m)) y           s = "from " <> (mkVO x . ("the " <>) . (descNthOfM n m <>) . mkCD y $ s)
-mkPorPrep Put x@ThrPer (Just (n, m)) y           s = "on "   <> (mkVO x . ("the " <>) . (descNthOfM n m <>) . mkCD y $ s)
-mkPorPrep Rem x@ThrPer (Just (n, m)) y           s = "from " <> (mkVO x . ("the " <>) . (descNthOfM n m <>) . mkCD y $ s)
+mkPorPrep Put x@SndPer Nothing       Isn'tCorpse s = ("in "   <>) . mkVO x . the   $ s
+mkPorPrep Rem x@SndPer Nothing       Isn'tCorpse s = ("from " <>) . mkVO x . the   $ s
+mkPorPrep Put x@ThrPer Nothing       Isn'tCorpse s = ("in "   <>) . mkVO x . aOrAn $ s
+mkPorPrep Rem x@ThrPer Nothing       Isn'tCorpse s = ("from " <>) . mkVO x . aOrAn $ s
+mkPorPrep Put x@SndPer Nothing       y           s = ("on "   <>) . mkVO x . the . mkCD y $ s
+mkPorPrep Rem x@SndPer Nothing       y           s = ("from " <>) . mkVO x . the . mkCD y $ s
+mkPorPrep Put x@ThrPer Nothing       y           s = ("on "   <>) . mkVO x . the . mkCD y $ s
+mkPorPrep Rem x@ThrPer Nothing       y           s = ("from " <>) . mkVO x . the . mkCD y $ s
+mkPorPrep Put x@SndPer (Just (n, m)) Isn'tCorpse s = ("in "   <>) . mkVO x . the . (descNthOfM n m <>) $ s
+mkPorPrep Rem x@SndPer (Just (n, m)) Isn'tCorpse s = ("from " <>) . mkVO x . the . (descNthOfM n m <>) $ s
+mkPorPrep Put x@ThrPer (Just (n, m)) Isn'tCorpse s = ("in "   <>) . mkVO x . the . (descNthOfM n m <>) $ s
+mkPorPrep Rem x@ThrPer (Just (n, m)) Isn'tCorpse s = ("from " <>) . mkVO x . the . (descNthOfM n m <>) $ s
+mkPorPrep Put x@SndPer (Just (n, m)) y           s = ("on "   <>) . mkVO x . the . (descNthOfM n m <>) . mkCD y $ s
+mkPorPrep Rem x@SndPer (Just (n, m)) y           s = ("from " <>) . mkVO x . the . (descNthOfM n m <>) . mkCD y $ s
+mkPorPrep Put x@ThrPer (Just (n, m)) y           s = ("on "   <>) . mkVO x . the . (descNthOfM n m <>) . mkCD y $ s
+mkPorPrep Rem x@ThrPer (Just (n, m)) y           s = ("from " <>) . mkVO x . the . (descNthOfM n m <>) . mkCD y $ s
 
 
 mkVO :: HasCallStack => Verb -> Text -> Text

@@ -924,7 +924,7 @@ sorryExtinguishLight = "You don't have a lit source of light in your readied equ
 
 
 sorryExtinguishNotLit :: Sing -> Text
-sorryExtinguishNotLit s = "The " <> s <> " is not lit."
+sorryExtinguishNotLit s = the' s <> " is not lit."
 
 
 sorryExtinguishType :: Sing -> Text
@@ -1334,11 +1334,11 @@ sorryLightLightType s = prd $ can't "light " <> aOrAn s
 
 
 sorryLightLit :: Sing -> Text
-sorryLightLit s = "The " <> s <> " is already lit."
+sorryLightLit s = the' s <> " is already lit."
 
 
 sorryLightSelf :: Sing -> Text
-sorryLightSelf s = "The " <> s <> " can't light itself."
+sorryLightSelf s = the' s <> " can't light itself."
 
 
 sorryLightTinderbox :: Text

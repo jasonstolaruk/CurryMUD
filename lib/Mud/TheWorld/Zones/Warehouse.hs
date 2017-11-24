@@ -1174,7 +1174,7 @@ mkFabricTaste b t = Just . T.concat $ [ "You munch on the ", t, ". ", txt, " tas
 
 
 mkLeatherSmell :: Text -> Maybe Text
-mkLeatherSmell t = Just $ "The " <> t <> " like leather and not much else."
+mkLeatherSmell t = Just . the' $ t <> " like leather and not much else."
 
 
 mkLeatherTaste :: Text -> Maybe Text

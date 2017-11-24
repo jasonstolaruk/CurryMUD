@@ -173,8 +173,8 @@ eatAct EatBundle { .. } = modifyStateSeq f `finally` tweak (mobTbl.ind eaterId.n
                            = bcastIfNotIncogNl eaterId . pure $ (T.concat ts, desigOtherIds d)
         if | m <= 0 -> do
                destroy . pure $ eatFoodId
-               let xs = [ "You finish eating all of the ", eatFoodSing, " after ", mkMouthfulTxt x, " mouthful", sOnNon1 x, "." ]
-               ioHelper x . T.concat $ xs
+               ioHelper x . T.concat $ [ "You finish eating all of the ", eatFoodSing, " after ", mkMouthfulTxt x
+                                       , " mouthful", sOnNon1 x, "." ]
                bcastHelper True
            | isZero stomAvail ->
                let xs = [ "You are so full after ", mkMouthfulTxt x, " mouthful", sOnNon1 x, t ]
@@ -183,8 +183,8 @@ eatAct EatBundle { .. } = modifyStateSeq f `finally` tweak (mobTbl.ind eaterId.n
            | x == eatAmt -> (>> bcastHelper False) . ioHelper x $ "You finish eating."
            | otherwise   -> loop . succ $ x
     ioHelper m t = do
-        let xs = [ "ate ", showTxt m, " mouthful", sOnNon1 m, " of ", aOrAn eatFoodSing, " ", parensQuote . showTxt $ i, "." ]
-        logPla "eatAct ioHelper" eaterId . T.concat $ xs
+        logPla "eatAct ioHelper" eaterId . T.concat $ [ "ate ", showTxt m, " mouthful", sOnNon1 m, " of "
+                                                      , aOrAn eatFoodSing, " ", parensQuote . showTxt $ i, "." ]
         wrapSend eaterMq eaterCols t
         sendDfltPrompt eaterMq eaterId
 
@@ -202,7 +202,7 @@ sacrificeAct i mq ci gn = handle (die (Just i) . pp $ Sacrificing) $ do
             sacrificesTblHelper = pcTbl.ind i.sacrificesTbl %~ f
               where
                 f tbl = maybe (M.insert gn 1 tbl) (flip (M.insert gn) tbl . succ) . M.lookup gn $ tbl
-            mkBcastHelper targetId = ( the' $ mkCorpseAppellation targetId ms ci <> " fades away and disappears."
+            mkBcastHelper targetId = ( the' $ mkCorpseAppellation targetId ms ci <> " fades away and disappears." -- TODO: Here.
                                      , pure targetId )
         in if ((&&) <$> uncurry hasType <*> (== CorpseType) . uncurry getType) (ci, ms)
           then helper $ case findInvContaining ci ms of

@@ -2839,7 +2839,7 @@ roomDesc p = pmf "roomDesc" p
 -----
 
 
-sacrifice :: HasCallStack => ActionFun -- TODO: Here.
+sacrifice :: HasCallStack => ActionFun
 sacrifice p@(NoArgs i mq cols) = getState >>= \ms ->
     case (findHolySymbolGodName `fanUncurry` findCorpseIdInMobRm) (i, ms) of
       (Just gn, Just ci) -> sacrificeHelper p ci gn
