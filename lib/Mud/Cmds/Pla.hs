@@ -2732,7 +2732,7 @@ readyLight i ms d mrol a@(et, _, _, _, _) lightId lightSing | em <- et IM.! i =
 -----
 
 
-refuel :: HasCallStack => RmActionFun -- TODO: Here.
+refuel :: HasCallStack => RmActionFun
 refuel p@AdviseNoArgs                     = advise p [] adviceRefuelNoArgs
 refuel p@AdviseOneArg                     = advise p [] adviceRefuelNoSource
 refuel p@(Lower i mq cols [lamp, vessel]) = getState >>= \ms ->
@@ -2754,37 +2754,38 @@ refuel p@(Lower i mq cols [lamp, vessel]) = getState >>= \ms ->
                              , (inInvs', inEqs', inRms) <- sortArgsInvEqRm InInv . pure $ vessel
                              -> if | ()!# inEqs' -> sorry sorryRefuelVesselInEq
                                    | ()!# inRms  -> sorry sorryRefuelVesselInRm
-                                   | otherwise   -> let (eiss, _) = uncurry (resolveMobInvCoins i ms inInvs') invCoins
-                                                    in case eiss of []      -> sorry sorryRefuelVesselCoins
-                                                                    (eis:_) -> either sorry (refuelerHelper s maxLampSecs) eis
+                                   | (eiss, _) <- uncurry (resolveMobInvCoins i ms inInvs') invCoins -> case eiss of
+                                     []      -> sorry sorryRefuelVesselCoins
+                                     (eis:_) -> either sorry (refuelerHelper s maxLampSecs) eis
               (s, _        ) -> sorry . sorryRefuelLampType $ s
               where
-                refuelerHelper lampSing maxLampSecs [vesselId] | vesselSing <- getSing vesselId ms = case getVesselCont vesselId ms of
-                  Nothing -> sorry . sorryRefuelVesselEmpty $ vesselSing
-                  Just (liq, mouths)
-                    | liq == oilLiq ->
-                      let secs          = getLightSecs lampId ms
-                          vesselSecs    = mouths * calcLampSecsPerMouthfulOfOil
-                          lampAvailSecs = maxLampSecs - secs
-                      in if | secs < maxLampSecs -> if vesselSecs >= lampAvailSecs
-                              then -- There is enough oil in the vessel to fill the lamp.
-                                   let vesselRemSecs = vesselSecs - lampAvailSecs
-                                       mouths'       = floor $ vesselRemSecs `divide` calcLampSecsPerMouthfulOfOil
-                                       newCont | vesselRemSecs == 0 = Nothing
-                                               | otherwise          = Just (liq, mouths')
-                                       toSelf  = T.concat [ "You refuel the ", lampSing, " with the oil from the "
-                                                          , vesselSing, "." ]
-                                   in ( ms & lightTbl .ind lampId  .lightSecs  .~ maxLampSecs
-                                           & vesselTbl.ind vesselId.vesselCont .~ newCont
-                                      , ioHelper ms lampSing vesselSing toSelf False )
-                              else -- There is not enough oil in the vessel to fill the lamp.
-                                   let toSelf = T.concat [ "You empty the contents of the ", vesselSing, " into the "
-                                                         , lampSing, "." ]
-                                   in ( ms & lightTbl .ind lampId  .lightSecs  +~ vesselSecs
-                                           & vesselTbl.ind vesselId.vesselCont .~ Nothing
-                                      , ioHelper ms lampSing vesselSing toSelf True )
-                            | otherwise -> sorry . sorryRefuelAlready $ lampSing
-                    | otherwise -> sorry . sorryRefuelLiq $ vesselSing
+                refuelerHelper lampSing maxLampSecs [vesselId] | vesselSing <- getSing vesselId ms =
+                    case getVesselCont vesselId ms of
+                      Nothing -> sorry . sorryRefuelVesselEmpty $ vesselSing
+                      Just (liq, mouths)
+                        | liq == oilLiq ->
+                          let secs          = getLightSecs lampId ms
+                              vesselSecs    = mouths * calcLampSecsPerMouthfulOfOil
+                              lampAvailSecs = maxLampSecs - secs
+                          in if | secs < maxLampSecs -> if vesselSecs >= lampAvailSecs
+                                  then -- There is enough oil in the vessel to fill the lamp.
+                                       let vesselRemSecs = vesselSecs - lampAvailSecs
+                                           mouths'       = floor $ vesselRemSecs `divide` calcLampSecsPerMouthfulOfOil
+                                           newCont | vesselRemSecs == 0 = Nothing
+                                                   | otherwise          = Just (liq, mouths')
+                                           toSelf  = T.concat [ "You refuel the ", lampSing, " with the oil from the "
+                                                              , vesselSing, "." ]
+                                       in ( ms & lightTbl .ind lampId  .lightSecs  .~ maxLampSecs
+                                               & vesselTbl.ind vesselId.vesselCont .~ newCont
+                                          , ioHelper ms lampSing vesselSing toSelf False )
+                                  else -- There is not enough oil in the vessel to fill the lamp.
+                                       let toSelf = T.concat [ "You empty the contents of the ", vesselSing, " into the "
+                                                             , lampSing, "." ]
+                                       in ( ms & lightTbl .ind lampId  .lightSecs  +~ vesselSecs
+                                               & vesselTbl.ind vesselId.vesselCont .~ Nothing
+                                          , ioHelper ms lampSing vesselSing toSelf True )
+                                | otherwise -> sorry . sorryRefuelAlready $ lampSing
+                        | otherwise -> sorry . sorryRefuelLiq $ vesselSing
                 refuelerHelper _ _ _ = sorry sorryRefuelExcessVessels
             refueler _ = sorry sorryRefuelExcessLamps
         in if | ()#  invCoins -> sorry dudeYourHandsAreEmpty
@@ -2792,20 +2793,18 @@ refuel p@(Lower i mq cols [lamp, vessel]) = getState >>= \ms ->
               | ()!# inEqs    -> refuelEq
               | otherwise     -> sorry sorryRefuelLampInRm
     ioHelper ms lampSing vesselSing toSelf b =
-        let bs     = pure ( T.concat [ serialize d, " refuels ", aOrAn lampSing, " with the oil from ", aOrAn vesselSing, "." ]
-                          , desigOtherIds d)
-            d      = mkStdDesig i ms DoCap
-            logMsg = T.concat [ "refueled ", aOrAn lampSing, " with ", aOrAn vesselSing, b |?| ", emptying it", "." ]
-        in [ wrapSend mq cols toSelf
-           , bcastIfNotIncogNl i bs
-           , logPla "refuel helper refuelerHelper" i logMsg ]
+        let bs = pure (T.concat [ serialize d, " refuels ", vo1, " with the oil from ", vo2, "." ], desigOtherIds d)
+            d  = mkStdDesig i ms DoCap
+            (vo1, vo2) = (lampSing, vesselSing) & both %~ serialize . VerbObj . aOrAn
+            logMsg     = T.concat [ "refueled ", aOrAn lampSing, " with ", aOrAn vesselSing, b |?| ", emptying it", "." ]
+        in [ wrapSend mq cols toSelf, bcastIfNotIncogNl i bs, logPla "refuel helper refuelerHelper" i logMsg ]
 refuel p = advise p ["refuel"] adviceRefuelExcessArgs
 
 
 -----
 
 
-remove :: HasCallStack => ActionFun -- TODO: Already fixed for darkness.
+remove :: HasCallStack => ActionFun
 remove p@AdviseNoArgs  = advise p ["remove"] adviceRemoveNoArgs
 remove p@AdviseOneArg  = advise p ["remove"] adviceRemoveNoCon
 remove p@(Lower' i as) = genericAction p helper "remove"
@@ -2840,7 +2839,7 @@ roomDesc p = pmf "roomDesc" p
 -----
 
 
-sacrifice :: HasCallStack => ActionFun
+sacrifice :: HasCallStack => ActionFun -- TODO: Here.
 sacrifice p@(NoArgs i mq cols) = getState >>= \ms ->
     case (findHolySymbolGodName `fanUncurry` findCorpseIdInMobRm) (i, ms) of
       (Just gn, Just ci) -> sacrificeHelper p ci gn
