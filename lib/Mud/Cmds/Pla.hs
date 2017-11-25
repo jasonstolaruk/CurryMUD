@@ -1824,16 +1824,16 @@ light p                         = advise p ["light"] adviceLightExcessArgs
 
 
 lightUp :: HasCallStack => ActionParams -> Text -> Maybe Text -> MudStack ()
-lightUp p@(WithArgs i _ _ _) lightArg fireArg = getState >>= \ms ->
+lightUp p@ActionParams { myId } lightArg fireArg = getState >>= \ms ->
     let f = genericActionWithFuns p helper "light"
     in checkActing p ms (Right "light a torch or lamp") [ Attacking, Drinking, Sacrificing ] f
   where
     helper _ ms =
-        let (invCoins@(is, _), eqMap) = (getInvCoins `fanUncurry` getEqMap) (i, ms)
+        let (invCoins@(is, _), eqMap) = (getInvCoins `fanUncurry` getEqMap) (myId, ms)
             (inInvs, inEqs, inRms)    = sortArgsInvEqRm InEq . pure $ lightArg
-            (gecrs, miss, _)          = resolveEntCoinNames i ms inEqs (M.elems eqMap) mempty
+            (gecrs, miss, _)          = resolveEntCoinNames myId ms inEqs (M.elems eqMap) mempty
             eqEiss                    = zipWith (curry procGecrMisMobEq) gecrs miss
-            (invEiss, _)              = uncurry (resolveMobInvCoins i ms inInvs) invCoins
+            (invEiss, _)              = uncurry (resolveMobInvCoins myId ms inInvs) invCoins
             f [lightId]               = either sorry (g lightId) procFireArg
             f _                       = sorry sorryLightExcessLights
             g lightId [fireId]        = if
@@ -1844,11 +1844,11 @@ lightUp p@(WithArgs i _ _ _) lightArg fireArg = getState >>= \ms ->
               | otherwise ->
                   let (fireType, fireSing) = ((,) <$> uncurry getType <*> uncurry getSing) (fireId, ms)
                       toSelf    = prd $ "You light the " <> lightSing
-                      d         = mkStdDesig i ms DoCap
+                      d         = mkStdDesig myId ms DoCap
                       mkMsg     = T.concat . (serialize d <> " lights " :)
                       inInvMsg  | vo <- serialize . VerbObj . aOrAn $ lightSing
                                 = mkMsg [ vo, " ", parensQuote "carried", "." ]
-                      inEqMsg   = mkMsg [ mkPossPro . getSex i $ ms, " ", lightSing, "." ]
+                      inEqMsg   = mkMsg [ mkPossPro . getSex myId $ ms, " ", lightSing, "." ]
                       bs        = pure (lightId `elem` is ? inInvMsg :? inEqMsg, desigOtherIds d)
                       res       = ( ms & lightTbl.ind lightId.lightIsLit .~ True
                                   , (pure toSelf, bs, pure toSelf, pure . startLightTimer $ lightId) )
@@ -1864,13 +1864,12 @@ lightUp p@(WithArgs i _ _ _) lightArg fireArg = getState >>= \ms ->
                                          (lightId, ms)
             g _ _ = sorry sorryLightExcessFires
             procFireArg = case fireArg of
-              Nothing   -> let h i' = ((&&) <$> (== ObjType) . uncurry getType <*> (== "tinderbox") . uncurry getSing)
-                                      (i', ms)
+              Nothing   -> let h i = ((&&) <$> (== ObjType) . uncurry getType <*> (== "tinderbox") . uncurry getSing) (i, ms)
                            in case filter h is of (x:_) -> Right . pure $ x
                                                   []    -> Left sorryLightTinderbox
               Just fire -> let (inInvs', inEqs', inRms') = sortArgsInvEqRm InInv . pure $ fire
-                               (invEiss', _)             = uncurry (resolveMobInvCoins i ms inInvs') invCoins
-                               (gecrs', miss', _)        = resolveEntCoinNames i ms inEqs' (M.elems eqMap) mempty
+                               (invEiss', _)             = uncurry (resolveMobInvCoins myId ms inInvs') invCoins
+                               (gecrs', miss', _)        = resolveEntCoinNames myId ms inEqs' (M.elems eqMap) mempty
                                eqEiss'                   = zipWith (curry procGecrMisMobEq) gecrs' miss'
                            in if | ()!# inInvs', ()# invCoins -> Left dudeYourHandsAreEmpty
                                  | ()!# inEqs',  M.null eqMap -> Left dudeYou'reNaked
@@ -1887,7 +1886,6 @@ lightUp p@(WithArgs i _ _ _) lightArg fireArg = getState >>= \ms ->
               | h <- either sorry f         -> case (eqEiss, invEiss) of (eis:_, []   ) -> h eis
                                                                          ([],    eis:_) -> h eis
                                                                          _              -> sorry sorryLightCoins
-lightUp p _ _ = pmf "lightUp" p
 
 
 -----
@@ -2259,7 +2257,7 @@ password p = withoutArgs password p
 
 
 interpCurrPW :: HasCallStack => Interp
-interpCurrPW cn (WithArgs i mq cols as)
+interpCurrPW cn (ActionParams i mq cols as)
   | ()# cn || ()!# as = pwSorryHelper i mq cols sorryInterpPW
   | otherwise         = getState >>= fmap join . withDbExHandler "interpCurrPW" . lookupPW . getSing i >>= \case
     Nothing -> pwSorryHelper i mq cols sorryInterpPW
@@ -2269,7 +2267,6 @@ interpCurrPW cn (WithArgs i mq cols as)
               sendPrompt       mq "New password:"
               setInterp i . Just . interpNewPW $ pw
       else pwSorryHelper i mq cols sorryInterpPW
-interpCurrPW _ p = pmf "interpCurrPW" p
 
 
 pwSorryHelper :: HasCallStack => Id -> MsgQueue -> Cols -> Text -> MudStack ()
@@ -2381,7 +2378,7 @@ quitCan'tAbbrev p                  = withoutArgs quitCan'tAbbrev p
 
 
 razzle :: HasCallStack => ActionFun
-razzle p@(WithArgs i mq cols [ "dazzle", "root", "beer" ]) = mIf (hasRazzledId i <$> getState)
+razzle p@(ActionParams i mq cols [ "dazzle", "root", "beer" ]) = mIf (hasRazzledId i <$> getState)
     (cmdNotFoundAction p)
     (do logPlaExec "razzle" i
         modifyStateSeq $ \ms ->
@@ -2840,23 +2837,28 @@ roomDesc p = pmf "roomDesc" p
 
 
 sacrifice :: HasCallStack => ActionFun
-sacrifice p@(NoArgs i mq cols) = getState >>= \ms ->
-    case (findHolySymbolGodName `fanUncurry` findCorpseIdInMobRm) (i, ms) of
-      (Just gn, Just ci) -> sacrificeHelper p ci gn
-      (Nothing, Just _ ) -> sorry sorrySacrificeHolySymbol
-      (Just _,  Nothing) -> sorry sorrySacrificeCorpse
-      (Nothing, Nothing) -> sorry sorrySacrificeHolySymbolCorpse
+sacrifice p@ActionParams { .. } = getState >>= \ms -> if isIncognitoId myId ms
+  then wrapSend plaMsgQueue plaCols . sorryIncog $ "sacrifice"
+  else sacrificer ms p
+
+
+sacrificer :: HasCallStack => MudState -> ActionFun
+sacrificer ms p@(NoArgs i mq cols) = case (findHolySymbolGodName `fanUncurry` findCorpseIdInMobRm) (i, ms) of
+  (Just gn, Just ci) -> sacrificeHelper p ci gn
+  (Nothing, Just _ ) -> sorry sorrySacrificeHolySymbol
+  (Just _,  Nothing) -> sorry sorrySacrificeCorpse
+  (Nothing, Nothing) -> sorry sorrySacrificeHolySymbolCorpse
   where
     sorry msg = wrapSend mq cols msg >> sendDfltPrompt mq i
-sacrifice p@(OneArgLower i mq cols a) = getState >>= \ms -> case findCorpseIdInMobRm i ms of
+sacrificer ms p@(OneArgLower i mq cols a) = case findCorpseIdInMobRm i ms of
   Nothing -> sorry sorrySacrificeCorpse
   Just ci -> either id (sacrificeHelper p ci) . sacrificeHolySymbol i mq cols a $ ms
   where
     sorry msg = wrapSend mq cols msg >> sendDfltPrompt mq i
-sacrifice p@(Lower i mq cols [a, b]) = getState >>= \ms -> case sacrificeHolySymbol i mq cols a ms of
+sacrificer ms p@(Lower i mq cols [a, b]) = case sacrificeHolySymbol i mq cols a ms of
   Left  f  -> f
   Right gn -> either id (flip (sacrificeHelper p) gn) . sacrificeCorpse i mq cols b $ ms
-sacrifice p = advise p ["sacrifice"] adviceSacrificeExcessArgs
+sacrificer _ p = advise p ["sacrifice"] adviceSacrificeExcessArgs
 
 
 findHolySymbolGodName :: HasCallStack => Id -> MudState -> Maybe GodName
@@ -3278,7 +3280,7 @@ showAction p = pmf "showAction" p
 -----
 
 
-smell :: HasCallStack => ActionFun
+smell :: HasCallStack => ActionFun -- TODO: Here.
 smell (NoArgs i mq cols) = getState >>= \ms ->
     let ts         = views rmSmell (maybe a b) . getMobRm i $ ms
         a          = ()# corpseMsgs ? pure noSmellMsg :? corpseMsgs

@@ -24,8 +24,6 @@ executable             curry
                        , directory
                        , ekg
                        , mtl
-                       , network
-                       , servant-auth-server
                        , text
                        , yaml
   hs-source-dirs:      src
@@ -93,10 +91,6 @@ library
                        Mud.Misc.NameResolution
                        Mud.Misc.Persist
                        Mud.Misc.Readymade
-                       Mud.Service.Logging
-                       Mud.Service.Main
-                       Mud.Service.Server
-                       Mud.Service.Types
                        Mud.TheWorld.FoodIds
                        Mud.TheWorld.Foods
                        Mud.TheWorld.Kits
@@ -171,7 +165,6 @@ library
                        , filepath
                        , formatting
                        , hslogger
-                       , jose
                        , lens
                        , lifted-base
                        , monad-control
@@ -184,9 +177,6 @@ library
                        , random
                        , regex-pcre
                        , resourcet
-                       , servant
-                       , servant-auth-server
-                       , servant-server
                        , split
                        , sqlite-simple
                        , stm
@@ -196,10 +186,7 @@ library
                        , transformers
                        , transformers-base
                        , unix
-                       , unordered-containers
                        , vector
-                       , wai
-                       , warp
                        , yaml
   hs-source-dirs:      lib
 
@@ -228,7 +215,6 @@ test-suite             test
                        , lens
                        , mtl
                        , quickcheck-instances
-                       , servant-auth-server
                        , tasty
                        , tasty-hunit
                        , tasty-quickcheck

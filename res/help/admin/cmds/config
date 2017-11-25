@@ -4,6 +4,6 @@
 #dconfig
 
 \uDESCRIPTION\n
-Display the server settings. The "jwk" setting is redacted for security purposes.
+Display the server settings.
 
 See "help settings" for more information.

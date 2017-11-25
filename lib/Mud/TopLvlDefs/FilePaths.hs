@@ -63,13 +63,12 @@ adminHelpTopicsDirFun = under adminHelpDirFun "topics"
 -- Log files:
 
 
-bugLogFileFun, errorLogFileFun, loggingExLogFileFun, noticeLogFileFun, restServiceLogFileFun, typoLogFileFun :: FilePathFun
-bugLogFileFun         = under logDirFun $ "bug"                      <.> "log"
-errorLogFileFun       = under logDirFun $ "error"                    <.> "log"
-loggingExLogFileFun   = under logDirFun $ "logging thread exception" <.> "log"
-noticeLogFileFun      = under logDirFun $ "notice"                   <.> "log"
-restServiceLogFileFun = under logDirFun $ "rest service"             <.> "log"
-typoLogFileFun        = under logDirFun $ "typo"                     <.> "log"
+bugLogFileFun, errorLogFileFun, loggingExLogFileFun, noticeLogFileFun, typoLogFileFun :: FilePathFun
+bugLogFileFun       = under logDirFun $ "bug"                      <.> "log"
+errorLogFileFun     = under logDirFun $ "error"                    <.> "log"
+loggingExLogFileFun = under logDirFun $ "logging thread exception" <.> "log"
+noticeLogFileFun    = under logDirFun $ "notice"                   <.> "log"
+typoLogFileFun      = under logDirFun $ "typo"                     <.> "log"
 
 
 -- ==================================================

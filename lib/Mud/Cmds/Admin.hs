@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
-{-# LANGUAGE DuplicateRecordFields, FlexibleContexts, LambdaCase, MonadComprehensions, MultiWayIf, NamedFieldPuns, OverloadedStrings, PatternSynonyms, RecordWildCards, ScopedTypeVariables, TransformListComp, TupleSections, ViewPatterns #-}
+{-# LANGUAGE AllowAmbiguousTypes, DuplicateRecordFields, FlexibleContexts, LambdaCase, MonadComprehensions, MultiWayIf, NamedFieldPuns, OverloadedStrings, PatternSynonyms, RecordWildCards, ScopedTypeVariables, TransformListComp, TupleSections, ViewPatterns #-}
 
 module Mud.Cmds.Admin (adminCmds) where
 
@@ -66,12 +66,11 @@ import           Control.Lens.Operators ((?~), (.~), (&), (%~), (^.), (<>~))
 import           Control.Monad ((<=<), (>=>), forM, forM_, join, unless, when)
 import           Control.Monad.IO.Class (liftIO)
 import           Crypto.BCrypt (validatePassword)
-import           Data.Aeson (Value(..), eitherDecode, toJSON)
+import           Data.Aeson (eitherDecode, toJSON)
 import           Data.Bits (zeroBits)
 import           Data.Char (isDigit, isLower, isUpper)
 import           Data.Either (rights)
 import           Data.Function (on)
-import qualified Data.HashMap.Lazy as HM (delete)
 import qualified Data.IntMap.Strict as IM (elems, filter, filterWithKey, keys, lookup, notMember, size, toList)
 import           Data.Ix (inRange)
 import           Data.List ((\\), delete, foldl', groupBy, intercalate, intersperse, nub, partition, sort, sortBy)
@@ -528,11 +527,9 @@ adminClone p = pmf "adminClone" p
 
 
 adminConfig :: HasCallStack => ActionFun
-adminConfig (NoArgs' i mq) = getServerSettings >>= \s -> do
-    logPlaExec (prefixAdminCmd "config") i
-    send mq . nl . TE.decodeUtf8 . encode $ case toJSON s of Object hashMap -> Object $ "jwk" `HM.delete` hashMap
-                                                             x              -> x
-adminConfig p = withoutArgs adminConfig p
+adminConfig (NoArgs' i mq) = do logPlaExec (prefixAdminCmd "config") i
+                                send mq . nl . TE.decodeUtf8 . encode . toJSON =<< getServerSettings
+adminConfig p              = withoutArgs adminConfig p
 
 
 -----
@@ -1102,11 +1099,10 @@ adminFoods p =
 
 
 foodsLiqsHelper :: HasCallStack => CmdName -> [Text] -> ActionFun
-foodsLiqsHelper cn ts (WithArgs i mq cols as) = do
+foodsLiqsHelper cn ts (ActionParams i mq cols as) = do
     logPlaExecArgs (prefixAdminCmd cn) as i
     (sort ts |&|) $ case as of [] -> pager i mq Nothing . concatMap (wrapIndent 2 cols)
                                _  -> dispMatches i mq cols 2 IsRegex as
-foodsLiqsHelper p _ _ = pmf "foodsLiqshelper" p
 
 
 -----

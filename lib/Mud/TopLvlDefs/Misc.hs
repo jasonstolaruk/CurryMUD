@@ -51,7 +51,6 @@ module Mud.TopLvlDefs.Misc ( acl
                            , noOfTitles
                            , port
                            , potFeelDur
-                           , restServicePort
                            , rmDescIndentAmt
                            , rndmVectorLen
                            , sacrificeBonusSecs
@@ -243,10 +242,6 @@ port = 9696
 
 potFeelDur :: Seconds
 potFeelDur = 30
-
-
-restServicePort :: Int
-restServicePort = 7249
 
 
 rmDescIndentAmt :: Int

@@ -57,10 +57,6 @@ hslogger
 Copyright John Goerzen.
 https://github.com/jgoerzen/hslogger
 
-jose
-Copyright Fraser Tweedale.
-https://github.com/frasertweedale/hs-jose
-
 lens
 Copyright Edward Kmett.
 https://github.com/ekmett/lens
@@ -119,18 +115,6 @@ resourcet
 Copyright Michael Snoyman.
 https://github.com/snoyberg/conduit
 
-servant
-Copyright Zalora South East Asia Pte Ltd, Servant Contributors.
-https://github.com/haskell-servant/servant
-
-servant-auth-server
-Copyright Julian K. Arni.
-https://github.com/plow-technologies/servant-auth
-
-servant-server
-Copyright Zalora South East Asia Pte Ltd, Servant Contributors.
-https://github.com/haskell-servant/servant
-
 split
 Copyright Brent Yorgey, Louis Wasserman.
 http://hub.darcs.net/byorgey/split
@@ -179,21 +163,9 @@ unix
 Copyright The University Court of the University of Glasgow.
 https://github.com/haskell/unix
 
-unordered-containers
-Johan Tibell, Edward Z. Yang.
-https://github.com/tibbe/unordered-containers
-
 vector
 Copyright Roman Leshchinskiy.
 https://github.com/haskell/vector
-
-wai
-Copyright Michael Snoyman.
-https://github.com/yesodweb/wai
-
-warp
-Copyright Michael Snoyman, Kazu Yamamoto, Matt Brown.
-https://github.com/yesodweb/wai
 
 \uSEE ALSO\n
 about

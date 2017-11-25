@@ -37,6 +37,7 @@ import           Control.Lens (at, view, views)
 import           Control.Lens.Operators ((%~), (&), (.~), (<-~), (?~), (^.))
 import           Control.Monad (join, when)
 import           Control.Monad.IO.Class (liftIO)
+import           Data.List (delete)
 import qualified Data.Map.Strict as M (elems, insert, lookup)
 import           Data.Maybe (isJust)
 import           Data.Monoid ((<>))
@@ -202,16 +203,15 @@ sacrificeAct i mq ci gn = handle (die (Just i) . pp $ Sacrificing) $ do
             sacrificesTblHelper = pcTbl.ind i.sacrificesTbl %~ f
               where
                 f tbl = maybe (M.insert gn 1 tbl) (flip (M.insert gn) tbl . succ) . M.lookup gn $ tbl
-            mkBcastHelper targetId = ( the' $ mkCorpseAppellation targetId ms ci <> " fades away and disappears." -- TODO: Here.
-                                     , pure targetId )
+            mkBcastHelper b i' | txt <- onTrue b (serialize . VerbObj) . the' . mkCorpseAppellation i' ms $ ci -- TODO: We need to capitalize "something" here.
+                               = (txt <> " fades away and disappears.", pure i')
         in if ((&&) <$> uncurry hasType <*> (== CorpseType) . uncurry getType) (ci, ms)
           then helper $ case findInvContaining ci ms of
-            Just invId -> if | getType invId ms == RmType ->
-                                   let mobIds = findMobIds ms . getInv invId $ ms
-                                   in bcastNl $ if ((&&) <$> (`isIncognitoId` ms) <*> (`elem` mobIds)) i
-                                     then pure . mkBcastHelper $ i
-                                     else map mkBcastHelper mobIds
-                             | isNpcPla invId ms -> bcastNl . pure . mkBcastHelper $ invId
+            Just invId -> if | getType invId ms == RmType, mobIds <- findMobIds ms . getInv invId $ ms ->
+                               bcastNl $ if i `elem` mobIds
+                                 then mkBcastHelper False i : map (mkBcastHelper True) (i `delete` mobIds)
+                                 else map (mkBcastHelper True) mobIds
+                             | isNpcPla invId ms -> bcastNl . pure . mkBcastHelper False $ invId
                              | otherwise         -> unit
             Nothing    -> unit
           else (ms, [])

@@ -6,18 +6,8 @@ debug: true
 # Start the EKG server? (Effective only when "debug" is also true.)
 ekg: true
 
-# The Java Web Key used by the REST service.
-# (The following value is provided only as an example.)
-jwk: {
-  "k": "09LQ0GWUDYQlwqzcN3IHYvGistot0VAtYRSiNmC6K_O-e9GLZbCEFVI-VBdDzuzxHyPm-eVHtNL4uWDH33DCqbuguhILI0Vq4Dtnyl7S0SevfqS0wKuIWPkwFCopVm-tv2F_5V4W07OtusnwDFxYg5gPCM8uYH6XAUR72mmn2I9H2HAwWU3olELeggh1gppWO7s1hqQLxDKMBtGhSIvwt5k1T6v-mHNbYl4QC1xITuU1ipLHgDLamb7pF1mrYzxK7I0GZgxC72M9IjE53hRaSwPm4gH4WdeAVwOggbTrMMm2t0BQ_OfP_5euHnpLdvEpQ1zHcuZWoDX0HEWRPQoANA",
-  "kty": "oct"
-}
-
 # Enable logging?
 log: true
-
-# Start the REST service?
-rest: true
 
 # Enable the back door? (Effective only when "debug" is also true.)
 zBackDoor: true

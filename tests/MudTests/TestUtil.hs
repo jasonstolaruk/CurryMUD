@@ -10,7 +10,6 @@ import           Control.Monad.Reader (runReaderT)
 import           Data.Char (chr)
 import           Data.Text (Text)
 import qualified Data.Text as T
-import           Servant.Auth.Server (generateKey)
 import           Test.QuickCheck (Gen, choose)
 import           Test.QuickCheck.Monadic (PropertyM, run)
 
@@ -18,8 +17,7 @@ import           Test.QuickCheck.Monadic (PropertyM, run)
 inWorld :: MudStack a -> PropertyM IO a
 inWorld f = run helper
   where
-    helper     = runReaderT (initWorld >> f) =<< liftIO . initMudData =<< mkSettings
-    mkSettings = generateKey >>= \jwk -> return . ServerSettings False False jwk False False $ False
+    helper = runReaderT (initWorld >> f) =<< (liftIO . initMudData . ServerSettings False False False $ False)
 
 
 genAsciiAlphaNum :: Gen Char

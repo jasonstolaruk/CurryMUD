@@ -17,7 +17,6 @@ import           Control.Concurrent.STM.TQueue (TQueue)
 import           Control.Lens (both, makeLenses)
 import           Control.Lens.Operators ((&), (%~))
 import           Control.Monad.Reader (ReaderT)
-import           Crypto.JOSE.JWK (JWK)
 import           Data.Aeson ((.:), (.=), FromJSON(..), FromJSONKey(..), ToJSON(..), ToJSONKey(..), Value(..), genericParseJSON, genericToJSON, object)
 import           Data.Aeson.Types (Options, Parser, defaultOptions, fieldLabelModifier)
 import           Data.IORef (IORef)
@@ -80,7 +79,6 @@ data MudState = MudState { _armTbl                 :: ArmTbl
                          , _pickPtsTbl             :: PickPtsTbl
                          , _plaLogTbl              :: PlaLogTbl
                          , _plaTbl                 :: PlaTbl
-                         , _restServiceLogService  :: Maybe LogService
                          , _rmActionFunTbl         :: RmActionFunTbl
                          , _rmTbl                  :: RmTbl
                          , _rmTeleNameTbl          :: RmTeleNameTbl
@@ -1161,9 +1159,7 @@ type RndmNamesTbl = M.Map Sing Sing
 
 data ServerSettings = ServerSettings { settingDebug     :: Bool
                                      , settingEKG       :: Bool
-                                     , settingJWK       :: JWK
                                      , settingLog       :: Bool
-                                     , settingRest      :: Bool
                                      , settingZBackDoor :: Bool } deriving (Eq, Generic, Show)
 
 
@@ -1370,9 +1366,7 @@ instance ToJSON   ServerSettings where toJSON    = serverSettingsToJSON
 jsonToServerSettings :: Value -> Parser ServerSettings
 jsonToServerSettings (Object o) = ServerSettings <$> o .: "debug"
                                                  <*> o .: "ekg"
-                                                 <*> o .: "jwk"
                                                  <*> o .: "log"
-                                                 <*> o .: "rest"
                                                  <*> o .: "zBackDoor"
 jsonToServerSettings _          = empty
 
@@ -1380,9 +1374,7 @@ jsonToServerSettings _          = empty
 serverSettingsToJSON :: ServerSettings -> Value
 serverSettingsToJSON ServerSettings { .. } = object [ "debug"     .= settingDebug
                                                     , "ekg"       .= settingEKG
-                                                    , "jwk"       .= settingJWK
                                                     , "log"       .= settingLog
-                                                    , "rest"      .= settingRest
                                                     , "zBackDoor" .= settingZBackDoor ]
 
 

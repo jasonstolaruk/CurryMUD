@@ -65,7 +65,6 @@ import           Control.Lens (Optical, both, views)
 import           Control.Lens.Operators ((%~), (&))
 import           Control.Monad ((>=>), replicateM_, void)
 import           Control.Monad.IO.Class (liftIO)
-import           Data.Aeson (encode, toJSON)
 import           Data.Bits (zeroBits)
 import           Data.Char (ord, digitToInt, isDigit, toLower)
 import           Data.Function (on)
@@ -78,14 +77,11 @@ import           Data.Monoid ((<>), Sum(..))
 import qualified Data.Set as S (toAscList)
 import           Data.Text (Text)
 import qualified Data.Text as T
-import qualified Data.Text.Lazy as LT
-import qualified Data.Text.Lazy.Encoding as LTE (decodeUtf8)
 import           Data.Time (getCurrentTime)
 import           GHC.Conc (threadStatus)
 import           GHC.Stack (HasCallStack)
 import           Numeric (readInt)
 import           Prelude hiding (pi)
-import           Servant.Auth.Server (generateKey)
 import           System.CPUTime (getCPUTime)
 import           System.Console.ANSI (Color(..), ColorIntensity(..))
 import           System.Directory (getTemporaryDirectory, removeFile)
@@ -147,7 +143,6 @@ debugCmds =
     , mkDebugCmd "gmcpwill"    debugGmcpWill    "Send IAC WILL GMCP."
     , mkDebugCmd "handle"      debugHandle      "Display information about the handle for your network connection."
     , mkDebugCmd "id"          debugId          "Search the \"MudState\" tables for a given ID."
-    , mkDebugCmd "jwk"         debugJWK         "Generate a JWK and serialize it to JSON."
     , mkDebugCmd "keys"        debugKeys        "Dump a list of \"MudState\" \"IntMap\" keys."
     , mkDebugCmd "liquid"      debugLiq         "Consume a given amount (in mouthfuls) of a given liquid (by distinct \
                                                 \liquid ID)."
@@ -205,8 +200,7 @@ mkDebugCmd (prefixDebugCmd -> cn) f cd = Cmd { cmdName           = cn
 
 
 debugAp :: HasCallStack => ActionFun
-debugAp p@(WithArgs i mq cols _) = logPlaExec (prefixDebugCmd "ap") i >> wrapSend mq cols (showTxt p)
-debugAp p                        = pmf "debugAp" p
+debugAp p@(ActionParams i mq cols _) = logPlaExec (prefixDebugCmd "ap") i >> wrapSend mq cols (showTxt p)
 
 
 -----
@@ -607,15 +601,6 @@ mkTblNameKeysList ms = [ ("Arm",                 tblKeys armTbl                 
 
 tblKeys :: HasCallStack => Optical (->) (->) (Const Inv) MudState MudState (IM.IntMap a) (IM.IntMap a) -> MudState -> Inv
 tblKeys lens = views lens IM.keys
-
-
------
-
-
-debugJWK :: HasCallStack => ActionFun
-debugJWK (NoArgs i mq cols) = do logPlaExec (prefixDebugCmd "jwK") i
-                                 wrapSend mq cols . LT.toStrict . LTE.decodeUtf8 . encode . toJSON =<< liftIO generateKey
-debugJWK p = withoutArgs debugJWK p
 
 
 -----

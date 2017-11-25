@@ -27,13 +27,12 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T (putStrLn)
 import           Data.Yaml (decodeFile)
 import           GHC.Stack (HasCallStack)
-import           Servant.Auth.Server (generateKey)
 import           System.Directory (createDirectoryIfMissing, doesDirectoryExist, setCurrentDirectory)
 import           System.Environment (getEnv, getProgName)
 import           System.Remote.Monitoring (forkServer)
 
 
--- TODO: Overloaded record fields coming in GHC 8.2.1...
+-- TODO: Upgraded from 8.0.2 to GHC 8.2.2. Overloaded record fields in GHC 8.2.1...
 
 
 main :: HasCallStack => IO ()
@@ -63,5 +62,4 @@ welcome = (,) <$> getEnv "USER" <*> what'sMyName >>= \(userName, progName) ->
 loadServerSettings :: HasCallStack => IO ServerSettings
 loadServerSettings = maybeRet helper =<< decodeFile =<< mkMudFilePath serverSettingsFun
   where
-    helper = generateKey >>= \jwk -> do T.putStrLn "Error reading the server settings file."
-                                        return (ServerSettings True True jwk True True True)
+    helper = T.putStrLn "Error reading the server settings file." >> return (ServerSettings True True True True)

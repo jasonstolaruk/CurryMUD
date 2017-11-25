@@ -102,7 +102,6 @@ initMudData s = do [ databaseLock, logLock, persLock ] <- mkLocks
                                                 , _pickPtsTbl             = IM.empty
                                                 , _plaLogTbl              = IM.empty
                                                 , _plaTbl                 = IM.empty
-                                                , _restServiceLogService  = Nothing
                                                 , _rmActionFunTbl         =  M.empty
                                                 , _rmTbl                  = IM.empty
                                                 , _rmTeleNameTbl          = IM.empty

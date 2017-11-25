@@ -7,11 +7,4 @@ There are six fields specified in the YAML file. Five of them are booleans:
 "debug": enable debug commands (see "help debug")
 "ekg": start the EKG server (effective only when "debug" is also true)
 "log": enable logging
-"rest": start the REST service
 "zBackDoor": enable the back door (effective only when "debug" is also true; see "help zbackdoor")
-
-"jwk" is the sixth field. Here you should specify in JSON the value of the Java Web Key utilized by the REST service. The following is an example:
-jwk: {
-  "k": "09LQ0GWUDYQlwqzcN3IHYvGistot0VAtYRSiNmC6K_O-e9GLZbCEFVI-VBdDzuzxHyPm-eVHtNL4uWDH33DCqbuguhILI0Vq4Dtnyl7S0SevfqS0wKuIWPkwFCopVm-tv2F_5V4W07OtusnwDFxYg5gPCM8uYH6XAUR72mmn2I9H2HAwWU3olELeggh1gppWO7s1hqQLxDKMBtGhSIvwt5k1T6v-mHNbYl4QC1xITuU1ipLHgDLamb7pF1mrYzxK7I0GZgxC72M9IjE53hRaSwPm4gH4WdeAVwOggbTrMMm2t0BQ_OfP_5euHnpLdvEpQ1zHcuZWoDX0HEWRPQoANA",
-  "kty": "oct"
-}
