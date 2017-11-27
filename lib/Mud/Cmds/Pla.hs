@@ -3284,8 +3284,7 @@ smell (NoArgs i mq cols) = getState >>= \ms ->
         corpseMsgs = mkCorpseMsgs ms
     in do logPlaExec "smell" i
           multiWrapSend mq cols ts
-          let d = mkStdDesig i ms DoCap
-          bcastIfNotIncogNl i . pure . ((<> " smells the air.") . serialize &&& desigOtherIds) $ d
+          bcastIfNotIncogNl i . pure . ((<> " smells the air.") . serialize &&& desigOtherIds) . mkStdDesig i ms $ DoCap
   where
     mkCorpseMsgs ms = concatMap (helper ms) [ (getInv, f "carried"), (getMobRmInv, f "on the ground") ]
       where
