@@ -33,6 +33,13 @@ import           System.Remote.Monitoring (forkServer)
 
 
 -- TODO: Upgraded from 8.0.2 to GHC 8.2.2. Overloaded record fields in GHC 8.2.1...
+{-
+https://ghc.haskell.org/trac/ghc/wiki/LanguagePragmaHistory
+https://ghc.haskell.org/trac/ghc/blog/ghc-8.0.1-released
+https://downloads.haskell.org/~ghc/master/users-guide/8.0.1-notes.html
+https://ghc.haskell.org/trac/ghc/blog/ghc-8.2.11-released
+https://downloads.haskell.org/~ghc/master/users-guide/8.2.1-notes.html
+-}
 
 
 main :: HasCallStack => IO ()
