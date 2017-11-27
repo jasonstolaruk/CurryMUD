@@ -3307,7 +3307,7 @@ smell p@(OneArgLower i mq cols a) = getState >>= \ms ->
                                          | otherwise                      -> smellRm ms d rmInvCoins maybeHooks target
     in checkActing p ms (Right "smell an item") [ Drinking, Eating, Sacrificing ] f
   where
-    sorry                         = wrapSend mq cols
+    sorry = wrapSend mq cols
     smellInv ms d invCoins target =
         let pair@(eiss, ecs) = uncurry (resolveMobInvCoins i ms . pure $ target) invCoins
         in if uncurry (&&) . ((()!#) *** (()!#)) $ pair
