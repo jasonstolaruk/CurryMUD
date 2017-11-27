@@ -46,10 +46,10 @@ ansiSGRDelimiter = '\x6D' -- 109
 -- Delimiters:
 
 
-corpseDesigDelimiter, desigDelimiter, nonStdDesigDelimiter, stdDesigDelimiter, verbObjDelimiter  :: Char
+corpseDesigDelimiter, nonStdDesigDelimiter, sectionDelimiter, stdDesigDelimiter, verbObjDelimiter :: Char
 corpseDesigDelimiter = '\128'
-desigDelimiter       = '\129' -- Separates distinct sections of a single serialized desig.
-nonStdDesigDelimiter = '\130'
+nonStdDesigDelimiter = '\129'
+sectionDelimiter     = '\130'
 stdDesigDelimiter    = '\131'
 verbObjDelimiter     = '\132'
 

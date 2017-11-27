@@ -2326,7 +2326,7 @@ teleHelper :: HasCallStack => ActionParams
 teleHelper p@ActionParams { myId } ms originId destId destName mt f sorry =
     let g            = maybe strictId ((:) . (, pure myId) . nlnl) mt
         originDesig  = mkStdDesig myId ms Don'tCap
-        destDesig    = mkSerializedNonStdDesig myId ms (getSing myId ms) A Don'tCap
+        destDesig    = mkSerNonStdDesig myId ms (getSing myId ms) A Don'tCap
         destMobIds   = views (invTbl.ind destId) (findMobIds ms) ms
         ms'          = ms & mobTbl.ind myId.rmId     .~ destId
                           & mobTbl.ind myId.lastRmId .~ originId

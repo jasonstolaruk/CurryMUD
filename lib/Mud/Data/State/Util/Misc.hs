@@ -61,7 +61,8 @@ module Mud.Data.State.Util.Misc ( addToInv
                                 , mkPlaIdSingList
                                 , mkPrettySexRace
                                 , mkPrettySexRaceLvl
-                                , mkSerializedNonStdDesig
+                                , mkSerNonStdDesig
+                                , mkSerVerbObj
                                 , mkStdDesig
                                 , mkUnknownPCEntName
                                 , modifyState
@@ -612,12 +613,19 @@ mkPrettySexRaceLvl i ms = let ((s, r), l) = (mkPrettySexRace `fanUncurry` getLvl
 -----
 
 
-mkSerializedNonStdDesig :: HasCallStack => Id -> MudState -> Sing -> AOrThe -> DoOrDon'tCap -> Text
-mkSerializedNonStdDesig i ms s aot cap = serialize NonStdDesig { dEntSing = s, dDesc = helper, dCap = cap }
+mkSerNonStdDesig :: HasCallStack => Id -> MudState -> Sing -> AOrThe -> DoOrDon'tCap -> Text
+mkSerNonStdDesig i ms s aot cap = serialize NonStdDesig { dEntSing = s, dDesc = helper, dCap = cap }
   where
     helper | isPla i ms = g . uncurry (|<>|) . mkPrettySexRace i $ ms
            | otherwise  = onFalse (isCapital s) g s
     g                   = mkCapsFun cap . (pp aot <>) . spcL
+
+
+-----
+
+
+mkSerVerbObj :: HasCallStack => Text -> Text
+mkSerVerbObj t = serialize VerbObj { verbObjTxt = t, verbObjCap = Don'tCap }
 
 
 -----

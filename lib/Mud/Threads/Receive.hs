@@ -54,7 +54,8 @@ threadReceive h i mq = handle (plaThreadExHandler i "receive") $ setThreadType (
         remDelimiters = T.foldr helper ""
         helper c acc  | T.singleton c `notInfixOf` delimiters = c `T.cons` acc
                       | otherwise                             = acc
-        delimiters    = T.pack [ stdDesigDelimiter, nonStdDesigDelimiter, desigDelimiter ]
+        delimiters    = T.pack [ corpseDesigDelimiter, nonStdDesigDelimiter, sectionDelimiter, stdDesigDelimiter
+                               , verbObjDelimiter ]
 
 
 interpTelnet :: HasCallStack => Id -> [TelnetData] -> MudStack ()

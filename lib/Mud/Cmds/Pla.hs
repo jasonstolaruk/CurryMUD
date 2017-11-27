@@ -1198,9 +1198,8 @@ emptyAction   (LowerNub i mq cols as) = helper |&| modifyState >=> \(toSelfs, bs
       where
         f a'@(ms, _, _, _) targetId =
             let s            = getSing targetId ms
-                vo           = serialize . VerbObj $ poss |<>| s
                 poss         = mkPossPro . getSex i $ ms
-                t            = T.concat [ serialize d, " empties the contents of ", vo, "." ]
+                t            = T.concat [ serialize d, " empties the contents of ", mkSerVerbObj $ poss |<>| s, "." ]
                 alreadyEmpty = a' & _2 <>~ pure (sorryEmptyAlready s)
                 emptyIt      = a' & _1 .~  (ms & vesselTbl.ind targetId.vesselCont .~ Nothing)
                                   & _2 <>~ pure (prd $ "You empty the contents of the " <> s)
@@ -1492,7 +1491,7 @@ tryMove i mq cols dir = helper |&| modifyState >=> \case Left  msg          -> w
               msgAtOrigin = nlnl $ case maybeOriginMsg of
                               Nothing  -> T.concat [ serialize originDesig, spaced verb, expandLinkName dir, "." ]
                               Just msg -> T.replace "%" (serialize originDesig) msg
-              msgAtDest   = let destDesig = mkSerializedNonStdDesig i ms s A DoCap in nlnl $ case maybeDestMsg of
+              msgAtDest   = let destDesig = mkSerNonStdDesig i ms s A DoCap in nlnl $ case maybeDestMsg of
                               Nothing  -> T.concat [ destDesig, " arrives from ", expandOppLinkName dir, "." ]
                               Just msg -> T.replace "%" destDesig msg
               bs          = [ (msgAtOrigin, desigOtherIds originDesig), (msgAtDest, destMobIds) ]
@@ -1846,8 +1845,7 @@ lightUp p@ActionParams { myId } lightArg fireArg = getState >>= \ms ->
                       toSelf    = prd $ "You light the " <> lightSing
                       d         = mkStdDesig myId ms DoCap
                       mkMsg     = T.concat . (serialize d <> " lights " :)
-                      inInvMsg  | vo <- serialize . VerbObj . aOrAn $ lightSing
-                                = mkMsg [ vo, " ", parensQuote "carried", "." ]
+                      inInvMsg  = mkMsg [ mkSerVerbObj . aOrAn $ lightSing, " ", parensQuote "carried", "." ]
                       inEqMsg   = mkMsg [ mkPossPro . getSex myId $ ms, " ", lightSing, "." ]
                       bs        = pure (lightId `elem` is ? inInvMsg :? inEqMsg, desigOtherIds d)
                       res       = ( ms & lightTbl.ind lightId.lightIsLit .~ True
@@ -2537,7 +2535,7 @@ readyCloth i ms d mrol a@(et, _, _, _, _) clothId clothSing | em <- et IM.! i, c
         (wearMsgs, slideMsgs) = ("wear", "slide") & both %~ mkMsgs
         mkMsgs v  = (  T.concat [ "You ", v, " the ", clothSing, " on your ", slot, "." ]
                     , (T.concat [ serialize d, " ", v, "s ", vo, " on ", poss, " ", slot, "." ], desigOtherIds d) )
-        vo        = serialize . VerbObj . aOrAn $ clothSing
+        vo        = mkSerVerbObj . aOrAn $ clothSing
         poss      = mkPossPro . getSex i $ ms
 
 
@@ -2645,7 +2643,7 @@ readyWpn i ms d mrol a@(et, _, _, _, _) wpnId wpnSing | em <- et IM.! i, wpn <- 
             | otherwise -> sorry . sorryReadyWpnHands $ wpnSing
   where
     sorry msg = a & _3 <>~ pure msg
-    vo        = serialize . VerbObj . aOrAn $ wpnSing
+    vo        = mkSerVerbObj . aOrAn $ wpnSing
     poss      = mkPossPro . getSex i $ ms
 
 
@@ -2711,19 +2709,17 @@ readyLight :: HasCallStack => Id
                            -> Id
                            -> Sing
                            -> (EqTbl, InvTbl, [Text], [Broadcast], [Text])
-readyLight i ms d mrol a@(et, _, _, _, _) lightId lightSing | em <- et IM.! i =
-    if not . isSlotAvail em $ BothHandsS
-      then sorry . sorryReadyLight $ lightSing
-      else case mrol |&| maybe (getAvailHandSlot ms i lightSing em) (getDesigHandSlot ms lightSing em) of
-        Left  msg  -> sorry msg
-        Right slot -> let readyMsgs = ( T.concat [ "You hold the ", lightSing, " in your ", pp slot, "." ]
-                                      , (T.concat ts, desigOtherIds d) )
-                          ts        = [ serialize d, " holds ", vo, " in ", poss, " ", pp slot, "." ]
-                      in moveReadiedItem i a slot lightId readyMsgs
+readyLight i ms d mrol a@(et, _, _, _, _) lightId lightSing | em <- et IM.! i = if not . isSlotAvail em $ BothHandsS
+  then sorry . sorryReadyLight $ lightSing
+  else case mrol |&| maybe (getAvailHandSlot ms i lightSing em) (getDesigHandSlot ms lightSing em) of
+    Left  msg  -> sorry msg
+    Right slot -> let readyMsgs = ( T.concat [ "You hold the ", lightSing, " in your ", pp slot, "." ]
+                                  , (T.concat ts, desigOtherIds d) )
+                      ts        = [ serialize d, " holds ", mkSerVerbObj . aOrAn $ lightSing, " in "
+                                  , mkPossPro . getSex i $ ms, " ", pp slot, "." ]
+                  in moveReadiedItem i a slot lightId readyMsgs
   where
     sorry msg = a & _3 <>~ pure msg
-    vo        = serialize . VerbObj . aOrAn $ lightSing
-    poss      = mkPossPro . getSex i $ ms
 
 
 -----
@@ -2792,7 +2788,7 @@ refuel p@(Lower i mq cols [lamp, vessel]) = getState >>= \ms ->
     ioHelper ms lampSing vesselSing toSelf b =
         let bs = pure (T.concat [ serialize d, " refuels ", vo1, " with the oil from ", vo2, "." ], desigOtherIds d)
             d  = mkStdDesig i ms DoCap
-            (vo1, vo2) = (lampSing, vesselSing) & both %~ serialize . VerbObj . aOrAn
+            (vo1, vo2) = (lampSing, vesselSing) & both %~ mkSerVerbObj . aOrAn
             logMsg     = T.concat [ "refueled ", aOrAn lampSing, " with ", aOrAn vesselSing, b |?| ", emptying it", "." ]
         in [ wrapSend mq cols toSelf, bcastIfNotIncogNl i bs, logPla "refuel helper refuelerHelper" i logMsg ]
 refuel p = advise p ["refuel"] adviceRefuelExcessArgs

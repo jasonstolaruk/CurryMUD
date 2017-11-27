@@ -467,9 +467,8 @@ type ThrPerVerb = Text
 
 
 mkReadyMsgs :: HasCallStack => SndPerVerb -> ThrPerVerb -> Desig -> Sing -> (Text, Broadcast)
-mkReadyMsgs spv tpv d s =
-    (  T.concat [ "You ", spv, " the ", s, "." ]
-    , (T.concat [ serialize d, spaced tpv, serialize . VerbObj . aOrAn $ s, "." ], desigOtherIds d) )
+mkReadyMsgs spv tpv d s = (  T.concat [ "You ", spv, " the ", s, "." ]
+                          , (T.concat [ serialize d, spaced tpv, mkSerVerbObj . aOrAn $ s, "." ], desigOtherIds d) )
 
 
 -----
@@ -601,7 +600,7 @@ helperFillEitherInv i srcDesig targetId (eis:eiss) a@(ms, _, _, _) = case getVes
                                              , ", emptying it." ]
         mkXferEmptyMsg   = pure . T.concat $ [ "You transfer ", n, " to the ", vs,  " from the ", targetSing
                                              , ", emptying it." ]
-        bs               | (vo1, vo2) <- (targetSing, vs) & both %~ serialize . VerbObj . aOrAn
+        bs               | (vo1, vo2) <- (targetSing, vs) & both %~ mkSerVerbObj . aOrAn
                          = pure ( T.concat [ serialize srcDesig, " transfers liquid from ", vo1, " to ", vo2, "." ]
                                 , desigOtherIds srcDesig )
 
@@ -745,11 +744,11 @@ mkGetDropInvDescs i ms d god (mkName_maybeCorpseId_count_bothList i ms -> tuple)
         ( T.concat  [ "You ",               mkGodVerb god SndPer,   " the ", s,          "." ]
         , (T.concat [ serialize d, spaced . mkGodVerb god $ ThrPer, renderMaybeCorpseId, "." ], desigOtherIds d) )
       where
-        renderMaybeCorpseId = serialize . VerbObj $ case mci of (Just ci) -> the . serialize . CorpseDesig $ ci
-                                                                Nothing   -> aOrAn s
+        renderMaybeCorpseId = mkSerVerbObj $ case mci of (Just ci) -> the . serialize . CorpseDesig $ ci
+                                                         Nothing   -> aOrAn s
     helper (_, _, c, b) =
-        ( T.concat  [ "You ",           mkGodVerb god SndPer, " ",                       objTxt, "." ]
-        , (T.concat [ serialize d, " ", mkGodVerb god ThrPer, " ", serialize . VerbObj $ objTxt, "." ], desigOtherIds d) )
+        ( T.concat  [ "You ",           mkGodVerb god SndPer, " ",              objTxt, "." ]
+        , (T.concat [ serialize d, " ", mkGodVerb god ThrPer, " ", mkSerVerbObj objTxt, "." ], desigOtherIds d) )
       where
         objTxt = showTxt c |<>| mkPlurFromBoth b
 
@@ -784,7 +783,7 @@ mkExtinguishDescs i ms d (is, x) = foldr f mempty is
   where
     f targetId tuple =
         let s        = getSing targetId ms
-            inInvMsg | vo <- serialize . VerbObj . aOrAn $ s
+            inInvMsg | vo <- mkSerVerbObj . aOrAn $ s
                      = T.concat [ serialize d, " extinguishes ", vo, " ", parensQuote "carried", "." ]
             inEqMsg  | d' <- serialize d { desigDoMaskInDark = False }
                      = T.concat [ d', " extinguishes ", mkPossPro . getSex i $ ms, " ", s, "." ]
@@ -854,7 +853,7 @@ mkCanCan'tCoins c                 _ = pmf "mkCanCan'tCoins" c
 
 mkGetDropCoinsDescOthers :: HasCallStack => Desig -> GetOrDrop -> Coins -> [Broadcast]
 mkGetDropCoinsDescOthers d god c =
-  c |!| [ ( T.concat [ serialize d, spaced . mkGodVerb god $ ThrPer, serialize . VerbObj . aCoinSomeCoins $ c, "." ]
+  c |!| [ ( T.concat [ serialize d, spaced . mkGodVerb god $ ThrPer, mkSerVerbObj . aCoinSomeCoins $ c, "." ]
           , desigOtherIds d ) ]
 
 
@@ -1578,15 +1577,9 @@ mkRmInvCoinsDesc i cols ms ri =
     mkPCDesc (ia, (en, (s, _), d, c)) | c == 1 = T.concat [ (s |&|) $ if isKnownPCSing s
                                                               then colorWith knownNameColor
                                                               else colorWith unknownNameColor . aOrAn
-                                                          , rmDescHepler d
-                                                          , adminTagHelper ia
-                                                          , " "
-                                                          , en ]
+                                                          , rmDescHepler d, adminTagHelper ia, " ", en ]
     mkPCDesc (ia, (en, b,      d, c))          = T.concat [ colorWith unknownNameColor $ commaShow c |<>| mkPlurFromBoth b
-                                                          , rmDescHepler d
-                                                          , adminTagHelper ia
-                                                          , " "
-                                                          , en ]
+                                                          , rmDescHepler d, adminTagHelper ia, " ", en ]
     mkOtherDesc (en, (s, _), _, c) | c == 1 = aOrAnOnLower s |<>| en
     mkOtherDesc (en, b,      _, c)          = T.concat [ commaShow c, spaced . mkPlurFromBoth $ b, en ]
     adminTagHelper False = ""
@@ -1773,7 +1766,7 @@ sacrificeHelper p@(ActionParams i mq cols _) ci gn = getState >>= \ms ->
     let toSelf = T.concat [ "You kneel before the ", mkCorpseAppellation i ms ci, ", laying upon it the holy symbol of "
                           , pp gn, gn == Murgorhd |?| murgorhdMsg, thrice prd ". You say a prayer" ]
         d      = mkStdDesig i ms DoCap
-        helper targetId | vo <- serialize . VerbObj . the . mkCorpseAppellation targetId ms $ ci
+        helper targetId | vo <- mkSerVerbObj . the . mkCorpseAppellation targetId ms $ ci
                         , ts <- [ serialize d, " kneels before ", vo, " and says a prayer to ", pp gn, "." ]
                         = (T.concat ts, pure targetId)
     in checkActing p ms (Left Sacrificing) allValues $ do logHelper ms
@@ -1833,7 +1826,7 @@ helperGiveEitherInv i d toId a@(ms, _, _, _) = \case
          & _1.invTbl.ind toId %~  addToInv ms cans
          & _2                 <>~ concat [ sorrys
                                          , toSelfs
-                                         , mkCan'tGiveInvDescs (serialize toDesig { desigCap = DoCap }) i ms can'ts ]
+                                         , can'tInvDescsHelper (serialize toDesig { desigCap = DoCap }) i ms can'ts ]
          & _3                 <>~ bs
          & _4                 <>~ toSelfs
 
@@ -1843,22 +1836,14 @@ mkGiveInvDescs i ms d toId toDesig = second concat . unzip . map helper . mkName
   where
     helper (_, c, (s, _)) | c == 1 =
         ( T.concat [ "You give the ", s, " to ", toDesig, "." ]
-        , [ (T.concat [ serialize d, " gives ", vo, " to ", toDesig, "." ], otherIds )
-          , (T.concat [ serialize d, " gives you ", aOrAn s,         "." ], pure toId) ] )
+        , [ (T.concat [ serialize d, " gives ", mkSerVerbObj . aOrAn $ s, " to ", toDesig, "." ], otherIds )
+          , (T.concat [ serialize d, " gives you ", aOrAn s, "." ]                              , pure toId) ] )
       where
-        vo = serialize . VerbObj . aOrAn $ s
-    helper (_, c, b) =
+    helper (_, c, b) = let stuff = showTxt c |<>| mkPlurFromBoth b in
         ( T.concat [ "You give ", stuff, " to ", toDesig, "." ]
-        , [ (T.concat [ serialize d, " gives ", vo, " to ", toDesig, "." ], otherIds )
-          , (T.concat [ serialize d, " gives you ", stuff,           "." ], pure toId) ] )
-      where
-        stuff = showTxt c |<>| mkPlurFromBoth b
-        vo    = serialize . VerbObj $ stuff
+        , [ (T.concat [ serialize d, " gives ", mkSerVerbObj stuff, " to ", toDesig, "." ], otherIds )
+          , (T.concat [ serialize d, " gives you ", stuff, "." ]                          , pure toId) ] )
     otherIds = toId `delete` desigOtherIds d
-
-
-mkCan'tGiveInvDescs :: HasCallStack => Text -> Id -> MudState -> Inv -> [Text]
-mkCan'tGiveInvDescs = can'tInvDescsHelper
 
 
 helperGiveEitherCoins :: HasCallStack => Id
@@ -1886,7 +1871,7 @@ helperGiveEitherCoins i d toId (ms, toSelfs, bs, logMsgs) ecs =
 mkGiveCoinsDescOthers :: HasCallStack => Desig -> ToId -> Text -> Coins -> [Broadcast]
 mkGiveCoinsDescOthers d toId toDesig c = c |!| toOthersBcast : [ (msg, pure toId) | msg <- toTargetMsgs ]
   where
-    toOthersBcast = ( T.concat [ serialize d, " gives ", serialize . VerbObj . aCoinSomeCoins $ c, " to ", toDesig, "." ]
+    toOthersBcast = ( T.concat [ serialize d, " gives ", mkSerVerbObj . aCoinSomeCoins $ c, " to ", toDesig, "." ]
                     , toId `delete` desigOtherIds d )
     toTargetMsgs  = mkCoinsMsgs helper c
     helper 1 cn   = T.concat [ serialize d, " gives you ", aOrAn cn,                 "."  ]
@@ -2000,19 +1985,15 @@ mkPutRemInvDescs :: HasCallStack => Id
 mkPutRemInvDescs i ms d por mnom ioic conSing = unzip . map helper . mkNameCountBothList i ms
   where
     helper (_, c, (s, _)) | c == 1 =
-        (  T.concat [ "You ", mkPorVerb por SndPer, spaced withArticle, mkPorPrep por SndPer mnom ioic conSing, rest ]
-        , (T.concat [ serialize d, spaced . mkPorVerb por $ ThrPer, vo, " ", mkPorPrep por ThrPer mnom ioic conSing
-                    , rest ], desigOtherIds d) )
-      where
-        withArticle = s |&| bool aOrAn the (por == Put)
-        vo          = serialize . VerbObj . aOrAn $ s
+        (  T.concat [ "You ", mkPorVerb por SndPer, spaced (s |&| bool aOrAn the (por == Put))
+                    , mkPorPrep por SndPer mnom ioic conSing, rest ]
+        , (T.concat [ serialize d, spaced . mkPorVerb por $ ThrPer, mkSerVerbObj . aOrAn $ s, " "
+                    , mkPorPrep por ThrPer mnom ioic conSing, rest ], desigOtherIds d) )
     helper (_, c, b) =
         (  T.concat [ "You ", mkPorVerb por SndPer, spaced . showTxt $ c, mkPlurFromBoth b, " "
                     , mkPorPrep por SndPer mnom ioic conSing, rest ]
-        , (T.concat [ serialize d, spaced . mkPorVerb por $ ThrPer, vo, " ", mkPorPrep por ThrPer mnom ioic conSing
-                    , rest ], desigOtherIds d) )
-      where
-        vo = serialize . VerbObj $ showTxt c |<>| mkPlurFromBoth b
+        , (T.concat [ serialize d, spaced . mkPorVerb por $ ThrPer, mkSerVerbObj $ showTxt c |<>| mkPlurFromBoth b, " "
+                    , mkPorPrep por ThrPer mnom ioic conSing, rest ], desigOtherIds d) )
     rest = prd . onTheGround $ mnom
 
 
@@ -2053,7 +2034,7 @@ partitionCoinsByVol = partitionCoinsHelper getConCapacity calcInvCoinsVol coinVo
 
 mkPutRemCoinsDescOthers :: HasCallStack => Desig -> PutOrRem -> Maybe NthOfM -> IsOrIsn'tCorpse -> Sing -> Coins -> [Broadcast]
 mkPutRemCoinsDescOthers d por mnom ioic conSing c
-  | ts <- [ serialize d, spaced . mkPorVerb por $ ThrPer, serialize . VerbObj . aCoinSomeCoins $ c, " "
+  | ts <- [ serialize d, spaced . mkPorVerb por $ ThrPer, mkSerVerbObj . aCoinSomeCoins $ c, " "
           , mkPorPrep por ThrPer mnom ioic conSing, prd . onTheGround $ mnom ]
   = c |!| pure (T.concat ts, desigOtherIds d)
 
@@ -2079,27 +2060,22 @@ data IsOrIsn'tCorpse = IsCorpse (Maybe Id)
 
 
 mkPorPrep :: HasCallStack => PutOrRem -> Verb -> Maybe NthOfM -> IsOrIsn'tCorpse -> Sing -> Text
-mkPorPrep Put x@SndPer Nothing       Isn'tCorpse s = ("in "   <>) . mkVO x . the   $ s
-mkPorPrep Rem x@SndPer Nothing       Isn'tCorpse s = ("from " <>) . mkVO x . the   $ s
-mkPorPrep Put x@ThrPer Nothing       Isn'tCorpse s = ("in "   <>) . mkVO x . aOrAn $ s
-mkPorPrep Rem x@ThrPer Nothing       Isn'tCorpse s = ("from " <>) . mkVO x . aOrAn $ s
-mkPorPrep Put x@SndPer Nothing       y           s = ("on "   <>) . mkVO x . the . mkCD y $ s
-mkPorPrep Rem x@SndPer Nothing       y           s = ("from " <>) . mkVO x . the . mkCD y $ s
-mkPorPrep Put x@ThrPer Nothing       y           s = ("on "   <>) . mkVO x . the . mkCD y $ s
-mkPorPrep Rem x@ThrPer Nothing       y           s = ("from " <>) . mkVO x . the . mkCD y $ s
-mkPorPrep Put x@SndPer (Just (n, m)) Isn'tCorpse s = ("in "   <>) . mkVO x . the . (descNthOfM n m <>) $ s
-mkPorPrep Rem x@SndPer (Just (n, m)) Isn'tCorpse s = ("from " <>) . mkVO x . the . (descNthOfM n m <>) $ s
-mkPorPrep Put x@ThrPer (Just (n, m)) Isn'tCorpse s = ("in "   <>) . mkVO x . the . (descNthOfM n m <>) $ s
-mkPorPrep Rem x@ThrPer (Just (n, m)) Isn'tCorpse s = ("from " <>) . mkVO x . the . (descNthOfM n m <>) $ s
-mkPorPrep Put x@SndPer (Just (n, m)) y           s = ("on "   <>) . mkVO x . the . (descNthOfM n m <>) . mkCD y $ s
-mkPorPrep Rem x@SndPer (Just (n, m)) y           s = ("from " <>) . mkVO x . the . (descNthOfM n m <>) . mkCD y $ s
-mkPorPrep Put x@ThrPer (Just (n, m)) y           s = ("on "   <>) . mkVO x . the . (descNthOfM n m <>) . mkCD y $ s
-mkPorPrep Rem x@ThrPer (Just (n, m)) y           s = ("from " <>) . mkVO x . the . (descNthOfM n m <>) . mkCD y $ s
-
-
-mkVO :: HasCallStack => Verb -> Text -> Text
-mkVO SndPer = id
-mkVO ThrPer = serialize . VerbObj
+mkPorPrep Put SndPer Nothing       Isn'tCorpse s = ("in "   <>) . the $ s
+mkPorPrep Rem SndPer Nothing       Isn'tCorpse s = ("from " <>) . the $ s
+mkPorPrep Put ThrPer Nothing       Isn'tCorpse s = ("in "   <>) . mkSerVerbObj . aOrAn $ s
+mkPorPrep Rem ThrPer Nothing       Isn'tCorpse s = ("from " <>) . mkSerVerbObj . aOrAn $ s
+mkPorPrep Put SndPer Nothing       x           s = ("on "   <>) . the . mkCD x $ s
+mkPorPrep Rem SndPer Nothing       x           s = ("from " <>) . the . mkCD x $ s
+mkPorPrep Put ThrPer Nothing       x           s = ("on "   <>) . mkSerVerbObj . the . mkCD x $ s
+mkPorPrep Rem ThrPer Nothing       x           s = ("from " <>) . mkSerVerbObj . the . mkCD x $ s
+mkPorPrep Put SndPer (Just (n, m)) Isn'tCorpse s = ("in "   <>) . the . (descNthOfM n m <>) $ s
+mkPorPrep Rem SndPer (Just (n, m)) Isn'tCorpse s = ("from " <>) . the . (descNthOfM n m <>) $ s
+mkPorPrep Put ThrPer (Just (n, m)) Isn'tCorpse s = ("in "   <>) . mkSerVerbObj . the . (descNthOfM n m <>) $ s
+mkPorPrep Rem ThrPer (Just (n, m)) Isn'tCorpse s = ("from " <>) . mkSerVerbObj . the . (descNthOfM n m <>) $ s
+mkPorPrep Put SndPer (Just (n, m)) x           s = ("on "   <>) . the . (descNthOfM n m <>) . mkCD x $ s
+mkPorPrep Rem SndPer (Just (n, m)) x           s = ("from " <>) . the . (descNthOfM n m <>) . mkCD x $ s
+mkPorPrep Put ThrPer (Just (n, m)) x           s = ("on "   <>) . mkSerVerbObj . the . (descNthOfM n m <>) . mkCD x $ s
+mkPorPrep Rem ThrPer (Just (n, m)) x           s = ("from " <>) . mkSerVerbObj . the . (descNthOfM n m <>) . mkCD x $ s
 
 
 mkCD :: HasCallStack => IsOrIsn'tCorpse -> Sing -> Text

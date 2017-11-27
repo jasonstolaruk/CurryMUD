@@ -110,7 +110,7 @@ drinkAct DrinkBundle { .. } = modifyStateSeq f `finally` tweak (mobTbl.ind drink
                     , bcastIfNotIncogNl drinkerId bs
                     , loop 1 ]
            in (ms & mobTbl.ind drinkerId.nowDrinking ?~ (drinkLiq, drinkVesselSing), fs)
-    vo               = serialize . VerbObj $ renderVesselSing
+    vo               = mkSerVerbObj renderVesselSing
     renderVesselSing = drinkVesselSing |&| (isJust drinkVesselId ? aOrAn :? the)
     loop x           = do
         liftIO . delaySecs $ 1
@@ -161,7 +161,7 @@ eatAct EatBundle { .. } = modifyStateSeq f `finally` tweak (mobTbl.ind eaterId.n
                     , bcastIfNotIncogNl eaterId bs
                     , loop 1 ]
            in (ms & mobTbl.ind eaterId.nowEating ?~ (eatFoodId, eatFoodSing), fs)
-    vo     = serialize . VerbObj . aOrAn $ eatFoodSing
+    vo     = mkSerVerbObj . aOrAn $ eatFoodSing
     loop x = do
         liftIO . delaySecs =<< view foodSecsPerMouthful . getDistinctFood i <$> getState
         now <- liftIO getCurrentTime
@@ -203,8 +203,8 @@ sacrificeAct i mq ci gn = handle (die (Just i) . pp $ Sacrificing) $ do
             sacrificesTblHelper = pcTbl.ind i.sacrificesTbl %~ f
               where
                 f tbl = maybe (M.insert gn 1 tbl) (flip (M.insert gn) tbl . succ) . M.lookup gn $ tbl
-            mkBcastHelper b i' | txt <- onTrue b (serialize . VerbObj) . the' . mkCorpseAppellation i' ms $ ci -- TODO: We need to capitalize "something" here.
-                               = (txt <> " fades away and disappears.", pure i')
+            mkBcastHelper b i' | t <- the' . mkCorpseAppellation i' ms $ ci, vo <- serialize . VerbObj t $ DoCap
+                               = ((b ? vo :? t) <> " fades away and disappears.", pure i')
         in if ((&&) <$> uncurry hasType <*> (== CorpseType) . uncurry getType) (ci, ms)
           then helper $ case findInvContaining ci ms of
             Just invId -> if | getType invId ms == RmType, mobIds <- findMobIds ms . getInv invId $ ms ->

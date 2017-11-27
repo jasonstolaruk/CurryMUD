@@ -907,4 +907,4 @@ handleLogin (NewCharBundle oldSing s _) isNew params@ActionParams { .. } = let p
         bcastOtherAdmins myId $ if isNew
           then T.concat [ s, " has arrived in Rumia ", parensQuote ("was " <> oldSing), "." ]
           else T.concat [ oldSing, " has logged in as ", s, "." ]
-        bcastOthersInRm myId . nlnl . notifyArrivalMsg . mkSerializedNonStdDesig myId ms s A $ DoCap
+        bcastOthersInRm myId . nlnl . notifyArrivalMsg . mkSerNonStdDesig myId ms s A $ DoCap

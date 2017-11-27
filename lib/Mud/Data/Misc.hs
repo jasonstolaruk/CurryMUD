@@ -87,8 +87,8 @@ import           Mud.Util.Quoting
 import           Mud.Util.Text
 
 import           Control.Arrow ((***))
-import           Control.Lens (Getting, Setting, both)
-import           Control.Lens.Operators ((&), (%~), (^.))
+import           Control.Lens (Getting, Setting)
+import           Control.Lens.Operators ((%~), (^.))
 import           Data.Bits (clearBit, setBit, testBit)
 import           Data.Bool (bool)
 import           Data.Char (ord)
@@ -719,48 +719,54 @@ class Serializable a where
 
 
 instance Serializable Desig where
-  serialize StdDesig { .. }
-    | fields <- [ desigEntName
-                , showTxt desigCap
-                , showTxt desigId
-                , showTxt desigOtherIds
-                , showTxt desigDoMaskInDark
-                , showTxt desigDoExpandSing ]
-    = quoteWith sdd . T.intercalate dd $ fields
-    where
-      (sdd, dd) = (stdDesigDelimiter, desigDelimiter) & both %~ T.singleton
+  serialize StdDesig { .. }    | fields <- [ desigEntName
+                                           , showTxt desigCap
+                                           , showTxt desigId
+                                           , showTxt desigOtherIds
+                                           , showTxt desigDoMaskInDark
+                                           , showTxt desigDoExpandSing ]
+                               = quoteWith sdd . T.intercalate sd $ fields
   serialize NonStdDesig { .. } = quoteWith nsdd $ do dEntSing
-                                                     dd
+                                                     sd
                                                      dDesc
-                                                     dd
+                                                     sd
                                                      showTxt dCap
     where
-      (>>)       = (<>)
-      (nsdd, dd) = (nonStdDesigDelimiter, desigDelimiter) & both %~ T.singleton
+      (>>) = (<>)
   serialize (CorpseDesig i) = quoteWith cdd . showTxt $ i
-    where
-      cdd = T.singleton corpseDesigDelimiter
-  deserialize a@(headTail -> (c, T.init -> t))
-    | c == stdDesigDelimiter
-    , [ en, cap, i, is, b1, b2 ] <- T.splitOn dd t
-    = StdDesig { desigEntName      = en
-               , desigCap          = read . T.unpack $ cap
-               , desigId           = read . T.unpack $ i
-               , desigOtherIds     = read . T.unpack $ is
-               , desigDoMaskInDark = read . T.unpack $ b1
-               , desigDoExpandSing = read . T.unpack $ b2 }
-    | c == nonStdDesigDelimiter
-    , [ es, nsd, cap ] <- T.splitOn dd t
-    = NonStdDesig { dEntSing = es, dDesc = nsd, dCap = read . T.unpack $ cap }
-    | c == corpseDesigDelimiter
-    = CorpseDesig . read . T.unpack $ t
-    | otherwise = pmf "deserialize" a
-    where
-      dd = T.singleton desigDelimiter
+  deserialize a@(headTail -> (c, T.init -> t)) | T.singleton c == sdd
+                                               , [ en, cap, i, is, b1, b2 ] <- T.splitOn sd t
+                                               = StdDesig { desigEntName      = en
+                                                          , desigCap          = read . T.unpack $ cap
+                                                          , desigId           = read . T.unpack $ i
+                                                          , desigOtherIds     = read . T.unpack $ is
+                                                          , desigDoMaskInDark = read . T.unpack $ b1
+                                                          , desigDoExpandSing = read . T.unpack $ b2 }
+                                               | T.singleton c == nsdd
+                                               , [ es, desc, cap ] <- T.splitOn sd t
+                                               = NonStdDesig { dEntSing = es, dDesc = desc, dCap = read . T.unpack $ cap }
+                                               | T.singleton c == cdd
+                                               = CorpseDesig . read . T.unpack $ t
+                                               | otherwise = pmf "deserialize" a
+
 
 instance Serializable VerbObj where
-  serialize (VerbObj t) = quoteWith (T.singleton verbObjDelimiter) t
-  deserialize           = VerbObj . T.dropEnd 1 . T.drop 1
+  serialize VerbObj { .. } = quoteWith vod $ do verbObjTxt
+                                                sd
+                                                showTxt verbObjCap
+    where
+      (>>) = (<>)
+  deserialize a@(T.dropEnd 1 . T.drop 1 -> t) | [ txt, cap ] <- T.splitOn sd t
+                                              = VerbObj { verbObjTxt = txt, verbObjCap = read . T.unpack $ cap }
+                                              | otherwise = pmf "deserialize" a
+
+
+cdd, nsdd, sd, sdd, vod :: Text
+cdd  = T.singleton corpseDesigDelimiter
+nsdd = T.singleton nonStdDesigDelimiter
+sd   = T.singleton sectionDelimiter
+sdd  = T.singleton stdDesigDelimiter
+vod  = T.singleton verbObjDelimiter
 
 
 -- ==================================================
@@ -1193,7 +1199,8 @@ data Verb = SndPer | ThrPer deriving Eq
 -----
 
 
-newtype VerbObj = VerbObj { verbObjTxt :: Text }
+data VerbObj = VerbObj { verbObjTxt :: Text
+                       , verbObjCap :: DoOrDon'tCap } -- Whether or not to capitalize "someone".
 
 
 -----

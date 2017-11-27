@@ -336,9 +336,9 @@ parseVerbObj ct i ms = loop
     loop txt | delim `T.isInfixOf` txt = let (left, vo :: VerbObj, right) = extractDelimited delim txt
                                          in left <> expander vo <> loop right
              | otherwise               = txt
-    delim                = T.singleton verbObjDelimiter
-    expander (VerbObj t) = isLit ? t :? "something"
-    isLit                = isMobRmLit ct i ms
+    delim                   = T.singleton verbObjDelimiter
+    expander VerbObj { .. } = isLit ? verbObjTxt :? mkCapsFun verbObjCap "something"
+    isLit                   = isMobRmLit ct i ms
 
 
 -----
