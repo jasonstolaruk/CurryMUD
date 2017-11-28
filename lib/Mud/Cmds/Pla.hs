@@ -1540,7 +1540,7 @@ mkCmdNameForRmLink rl = T.toLower $ case rl of StdLink    { .. } -> linkDirToCmd
                                                NonStdLink { .. } -> _nslName
 
 
- -----
+-----
 
 
 help :: HasCallStack => ActionFun
