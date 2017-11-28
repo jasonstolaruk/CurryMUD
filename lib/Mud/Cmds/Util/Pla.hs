@@ -1838,7 +1838,6 @@ mkGiveInvDescs i ms d toId toDesig = second concat . unzip . map helper . mkName
         ( T.concat [ "You give the ", s, " to ", toDesig, "." ]
         , [ (T.concat [ serialize d, " gives ", mkSerVerbObj . aOrAn $ s, " to ", toDesig, "." ], otherIds )
           , (T.concat [ serialize d, " gives you ", aOrAn s, "." ]                              , pure toId) ] )
-      where
     helper (_, c, b) = let stuff = showTxt c |<>| mkPlurFromBoth b in
         ( T.concat [ "You give ", stuff, " to ", toDesig, "." ]
         , [ (T.concat [ serialize d, " gives ", mkSerVerbObj stuff, " to ", toDesig, "." ], otherIds )
