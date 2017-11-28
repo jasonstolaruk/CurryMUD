@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, RecordWildCards #-}
+{-# LANGUAGE OverloadedStrings, RecordWildCards, TypeApplications #-}
 
 module Mud.Misc.CurryTime where
 
@@ -130,14 +130,14 @@ isNight = not . isDay -- Night (dark) hours are 18:00-5:59 (8 hours).
 
 
 ppMonthForMonthNum :: Month -> Text
-ppMonthForMonthNum = pp . (toEnum :: Int -> CurryMonth) . pred
+ppMonthForMonthNum = pp @CurryMonth . toEnum . pred
 
 
 -----
 
 
 ppWeekdayForDayOfWeek :: Day -> Text
-ppWeekdayForDayOfWeek = pp . (toEnum :: Int -> CurryWeekday) . pred
+ppWeekdayForDayOfWeek = pp @CurryWeekday . toEnum . pred
 
 
 -----

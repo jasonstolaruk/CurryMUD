@@ -973,8 +973,8 @@ helperSettings i ms a (T.breakOn "=" -> (name, T.tail -> value)) =
                         t          -> pmf "helperSettings found" t
       where
         procEither f = parseInt |&| either appendMsg f
-        parseInt     = case (reads . T.unpack $ value :: [(Int, String)]) of [(x, "")] -> Right x
-                                                                             _         -> sorryParse
+        parseInt     = case reads . T.unpack $ value of [(x, "")] -> Right x
+                                                        _         -> sorryParse
         sorryParse   = Left . sorryParseSetting value $ name
     alterNumeric minVal maxVal settingName lens x
       | not . inRange (minVal, maxVal) $ x = appendMsg . sorrySetRange settingName minVal $ maxVal

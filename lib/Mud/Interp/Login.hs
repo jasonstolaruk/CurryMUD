@@ -1,4 +1,4 @@
-{-# LANGUAGE LambdaCase, MonadComprehensions, MultiWayIf, NamedFieldPuns, OverloadedStrings, PatternSynonyms, RecordWildCards, TupleSections, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, MonadComprehensions, MultiWayIf, NamedFieldPuns, OverloadedStrings, PatternSynonyms, RecordWildCards, TupleSections, TypeApplications, ViewPatterns #-}
 
 module Mud.Interp.Login ( interpName
                         , promptName ) where
@@ -199,8 +199,8 @@ checkIllegalNames ms mq cols cn = checkSet cn (promptRetryName mq cols sorryInte
                        , "vulpenoid"
                        , "vulpenoidean" ]
     insertEntNames = views entTbl (flip (IM.foldr (views entName (maybe id S.insert)))) ms
-    insertGodNames = f [ uncapitalize . pp $ x | x <- allValues :: [GodName] ]
-    raceNames      = foldr helper S.empty (allValues :: [Race])
+    insertGodNames = f [ uncapitalize . pp $ x | x <- allValues @GodName ]
+    raceNames      = foldr helper S.empty (allValues @Race)
       where
         helper (uncapitalize . showTxt -> r) acc = foldr S.insert acc . (r :) . map (`T.cons` r) $ "mf"
 
@@ -429,7 +429,7 @@ interpRace ncb@(NewCharBundle _ s _) (T.toLower -> cn) (NoArgs i mq cols) = case
   "6" -> helper Lagomorph
   "7" -> helper Nymph
   "8" -> helper Vulpenoid
-  _   -> case [ x | x <- map pp (allValues :: [Race]), cn `T.isPrefixOf` x ] of
+  _   -> case [ x | x <- map pp (allValues @Race), cn `T.isPrefixOf` x ] of
     (raceName:_) -> readRaceHelp raceName >>= multiWrapSend mq cols . T.lines >> promptRace mq cols
     _            -> sorryRace mq cols cn
   where
@@ -502,10 +502,10 @@ interpPickPts ncb (T.toLower ->cn) (Lower   i mq cols as) = getState >>= \ms ->
       | op <- T.head . T.tail $ arg, liftA2 (&&) (/= '+') (/= '-') op  -> sorry
       | otherwise ->
           let { (c, rest) = headTail arg; (op, amt) = headTail rest }
-          in if c `notElem` ("sdhmp" :: String)
+          in if notElem @[] c "sdhmp"
             then sorry
             else let (attribTxt, x, setter) = procAttribChar i ms c
-                 in case reads . T.unpack $ amt :: [(Int, String)] of
+                 in case reads . T.unpack $ amt of
                    [(y, "")] | y < 0    -> sorryHelper sorryWtf
                              | isZero y -> a
                              | otherwise -> case op of

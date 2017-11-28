@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
-{-# LANGUAGE FlexibleContexts, LambdaCase, MultiWayIf, NamedFieldPuns, OverloadedStrings, ParallelListComp, PatternSynonyms, RecordWildCards, TupleSections, ViewPatterns #-}
+{-# LANGUAGE FlexibleContexts, LambdaCase, MultiWayIf, NamedFieldPuns, OverloadedStrings, ParallelListComp, PatternSynonyms, RecordWildCards, TupleSections, TypeApplications, ViewPatterns #-}
 
 -- This module contains helper functions used by multiple modules under "Mud.Cmds".
 
@@ -232,7 +232,7 @@ consume i newScs = do now <- liftIO getCurrentTime
   where
     helper now ms =
         let scs   = getStomach i ms ++ newScs
-            pairs = map (dupSecond getConsumpEffects) scs :: [(StomachCont, Maybe ConsumpEffects)]
+            pairs = map (dupSecond getConsumpEffects) scs
             getConsumpEffects sc = case sc^.distinctId of
               Left  (DistinctLiqId  x) -> f liqEdibleEffects  . getDistinctLiq  $ x
               Right (DistinctFoodId x) -> f foodEdibleEffects . getDistinctFood $ x
@@ -320,7 +320,7 @@ expandEmbeddedIds ms ChanContext { revealAdminNames } = concatMapM helper
     helper a@(msg, is) = case breakOnDelim msg of
       (_, "")                                             -> unadulterated a
       (x, breakOnDelim . T.tail -> (numTxt, T.tail -> y)) ->
-          let embeddedId = read . T.unpack $ numTxt :: Int
+          let embeddedId = read . T.unpack $ numTxt
               f i | g . isLinked ms $ (i, embeddedId) = return (rebuild . getSing embeddedId $ ms, pure i)
                   | otherwise = ((, pure i) . rebuild . underline) <$> updateRndmName i embeddedId
               g       = onTrue revealAdminNames (isAdminId embeddedId ms ||)
@@ -337,7 +337,7 @@ expandEmbeddedIdsToSings ms = helper
   where
     helper msg = case breakOnDelim msg of
       (_, ""                                            ) -> msg
-      (x, breakOnDelim . T.tail -> (numTxt, T.tail -> y)) -> let embeddedId = read . T.unpack $ numTxt :: Int
+      (x, breakOnDelim . T.tail -> (numTxt, T.tail -> y)) -> let embeddedId = read . T.unpack $ numTxt
                                                              in helper . quoteWith' (x, y) . getSing embeddedId $ ms
 
 
@@ -531,7 +531,7 @@ isAlive i = (i `notElem`) . getInv iNecropolis
 
 
 isBracketed :: [Text] -> Bool
-isBracketed ws = or [ T.head (head ws) `elem` ("[<" :: String), "]." `T.isSuffixOf` last ws, ">." `T.isSuffixOf` last ws ]
+isBracketed ws = or [ elem @[] (T.head . head $ ws) "[<", "]." `T.isSuffixOf` last ws, ">." `T.isSuffixOf` last ws ]
 
 
 -----
@@ -545,7 +545,7 @@ isHeDon't c = (== prd (T.singleton c))
 
 
 isHostBanned :: HasCallStack => Text -> IO Any
-isHostBanned host = isBanned host <$> (getDbTblRecs "ban_host" :: IO [BanHostRec])
+isHostBanned host = isBanned host <$> getDbTblRecs @BanHostRec "ban_host"
 
 
 isBanned :: (HasCallStack, BanRecord a) => Text -> [a] -> Any
@@ -588,7 +588,7 @@ isOutside i = views rmEnv (== OutsideEnv) . getMobRm i
 
 
 isPCBanned :: HasCallStack => Sing -> IO Any
-isPCBanned banSing = isBanned banSing <$> (getDbTblRecs "ban_pc" :: IO [BanPCRec])
+isPCBanned banSing = isBanned banSing <$> getDbTblRecs @BanPCRec "ban_pc"
 
 
 -----

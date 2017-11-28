@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults -Wno-redundant-constraints #-}
-{-# LANGUAGE LambdaCase, MultiWayIf, OverloadedStrings, RankNTypes, TupleSections, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, MultiWayIf, OverloadedStrings, RankNTypes, TupleSections, TypeApplications, ViewPatterns #-}
 
 module Mud.Data.State.Util.Calc ( calcBarLen
                                 , calcBonus
@@ -406,7 +406,7 @@ calcLvlUpSkillPts i ms x = rndmIntToRange x (20, 30) + y
 
 
 calcMaxGodNameLen :: HasCallStack => Int
-calcMaxGodNameLen = calcMaxHelper (allValues :: [GodName])
+calcMaxGodNameLen = calcMaxHelper (allValues @GodName)
 
 
 -----
@@ -427,7 +427,7 @@ calcMaxMouthfuls = views objVol (`divideRound` mouthfulVol)
 
 
 calcMaxRaceLen :: HasCallStack => Int
-calcMaxRaceLen = calcMaxHelper (allValues :: [Race])
+calcMaxRaceLen = calcMaxHelper (allValues @Race)
 
 
 -----

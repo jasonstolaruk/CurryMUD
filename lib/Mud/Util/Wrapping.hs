@@ -151,7 +151,7 @@ wrapLineWithIndentTag :: HasCallStack => Cols -> Text -> [Text]
 wrapLineWithIndentTag cols (T.break (not . isDigit) . T.reverse . T.init -> broken) = wrapIndent n cols t
   where
     (numTxt, t)                 = broken & both %~ T.reverse
-    readsRes                    = reads . T.unpack $ numTxt :: [(Int, String)]
+    readsRes                    = reads . T.unpack $ numTxt
     extractInt []               = 0
     extractInt [(x, _)] | x > 0 = x
     extractInt xs               = pmf "wrapLineWithIndentTag extractInt" xs

@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults -Wno-redundant-constraints #-}
-{-# LANGUAGE DuplicateRecordFields, FlexibleContexts, LambdaCase, MonadComprehensions, MultiWayIf, NamedFieldPuns, OverloadedStrings, ParallelListComp, PatternSynonyms, RecordWildCards, TupleSections, TypeFamilies, ViewPatterns #-}
+{-# LANGUAGE DuplicateRecordFields, FlexibleContexts, LambdaCase, MonadComprehensions, MultiWayIf, NamedFieldPuns, OverloadedStrings, ParallelListComp, PatternSynonyms, RecordWildCards, TupleSections, TypeApplications, ViewPatterns #-}
 
 module Mud.Cmds.Pla ( getRecordUptime
                     , getUptime
@@ -966,10 +966,9 @@ drink p@(Lower   i mq cols [amt, target]) = getState >>= \ms ->
     in checkActing p ms (Left Drinking) [ Drinking, Eating, Sacrificing ] f
   where
     helper v ms | amt `T.isPrefixOf` "all" || amt == T.singleton allChar = next maxBound
-                | otherwise = case reads . T.unpack $ amt :: [(Int, String)] of
-                  [(x, "")] | x <= 0    -> sorry sorryDrinkMouthfuls
-                            | otherwise -> next x
-                  _                     -> sorry . sorryParseMouthfuls $ amt
+                | otherwise = case reads . T.unpack $ amt of [(x, "")] | x <= 0    -> sorry sorryDrinkMouthfuls
+                                                                       | otherwise -> next x
+                                                             _                     -> sorry . sorryParseMouthfuls $ amt
       where
         sorry  = (ms, ) . (: pure (sendDfltPrompt mq i)) . wrapSend mq cols
         next x =
@@ -1063,10 +1062,9 @@ eat p@(Lower   i mq cols [amt, target]) = getState >>= \ms ->
     checkActing p ms (Left Eating) [ Drinking, Eating, Sacrificing ] (helper |&| modifyState >=> sequence_)
   where
     helper ms | amt `T.isPrefixOf` "all" || amt == T.singleton allChar = next maxBound
-              | otherwise = case reads . T.unpack $ amt :: [(Int, String)] of
-                [(x, "")] | x <= 0    -> sorry sorryEatMouthfuls
-                          | otherwise -> next x
-                _                     -> sorry . sorryParseMouthfuls $ amt
+              | otherwise = case reads . T.unpack $ amt of [(x, "")] | x <= 0    -> sorry sorryEatMouthfuls
+                                                                     | otherwise -> next x
+                                                           _                     -> sorry . sorryParseMouthfuls $ amt
       where
         sorry  = (ms, ) . (: pure (sendDfltPrompt mq i)) . wrapSend mq cols
         next x = let (inInvs, inEqs, inRms) = sortArgsInvEqRm InInv . pure $ target
@@ -2123,7 +2121,7 @@ newChan p@(WithArgs i mq cols (nub -> as)) = getState >>= \ms ->
         in do newChanNames |#| logPla "newChan" i . commas
               multiWrapSend mq cols msgs
               ts <- liftIO mkTimestamp
-              let f cr = withDbExHandler_ "newChan" . insertDbTblChan $ (cr { dbTimestamp = ts } :: ChanRec)
+              let f cr = withDbExHandler_ "newChan" . insertDbTblChan $ (cr { dbTimestamp = ts } :: ChanRec) -- TODO: No way around it?
               mapM_ f chanRecs
     helper ms = let s                              = getSing i ms
                     (ms', newChanNames, sorryMsgs) = foldl' (f s) (ms, [], []) as
@@ -2611,7 +2609,7 @@ getDesigClothSlot ms clothSing cloth em rol
     sorryRol         = Left . sorryReadyRol clothSing $ rol
     sorryEarring     = sorryReadyClothFullOneSide cloth . getSlotFromList rEarringSlots  $ lEarringSlots
     sorryBracelet    = sorryReadyClothFullOneSide cloth . getSlotFromList rBraceletSlots $ lBraceletSlots
-    slotFromRol      = fromRol rol :: Slot
+    slotFromRol      = fromRol @Slot rol
 
 
 -- Readying weapons:
@@ -3861,10 +3859,9 @@ whoAmI p = withoutArgs whoAmI p
 
 zoom :: HasCallStack => ActionFun
 zoom (NoArgs i mq cols  ) = zoomHelper i mq cols dfltZoom
-zoom (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
-  [(x, "")] | x <= 0    -> sorry
-            | otherwise -> zoomHelper i mq cols x
-  _                     -> sorry
+zoom (OneArg i mq cols a) = case reads . T.unpack $ a of [(x, "")] | x <= 0    -> sorry
+                                                                   | otherwise -> zoomHelper i mq cols x
+                                                         _                     -> sorry
   where
     sorry = wrapSend mq cols . sorryParseZoom $ a
 zoom p = advise p ["zoom"] adviceZoomExcessArgs

@@ -228,7 +228,7 @@ spiritize i = do
              , [ logPla "spiritize" i . prd $ "spirit created " <> parensQuote (commaShow secs <> " seconds")
                , forM_ asleepIds $ \targetId -> retainedMsg targetId ms . linkMissingMsg $ s
                , bcast bs
-               , sequence_ (fs :: Funs)
+               , sequence_ fs
                , runSpiritTimerAsync i secs ] )
   where
     procOnlySings xs = map snd . sortBy (flip compare `on` fst) $ [ (length g, s) | g@(s:_) <- sortGroup xs ]

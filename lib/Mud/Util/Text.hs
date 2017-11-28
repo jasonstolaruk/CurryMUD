@@ -318,10 +318,9 @@ prd = (<> ".")
 -----
 
 
-readNum :: Text -> Int
-readNum txt = case reads . T.unpack $ txt :: [(Int, String)] of
-  [(x, "")] -> x
-  _         -> blowUp "readNum" "parse failed" txt
+readNum :: Text -> Int -- TODO: Use this?
+readNum txt = case reads . T.unpack $ txt of [(x, "")] -> x
+                                             _         -> blowUp "readNum" "parse failed" txt
 
 
 -----

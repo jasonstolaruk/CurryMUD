@@ -93,4 +93,4 @@ test_stripControl = actual @?= expected
   where
     actual       = stripControl . quoteWith controlCodes $ "test"
     expected     = "test"
-    controlCodes = T.pack $ [ '\0' .. '\31' ] ++ [ '\127' .. (maxBound :: Char) ]
+    controlCodes = T.pack $ [ '\0' .. '\31' ] ++ [ '\127' .. maxBound ]

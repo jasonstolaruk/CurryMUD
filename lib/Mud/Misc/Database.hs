@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveGeneric, DuplicateRecordFields, OverloadedStrings, RecordWildCards, ScopedTypeVariables, ViewPatterns #-}
+{-# LANGUAGE DeriveGeneric, DuplicateRecordFields, OverloadedStrings, RecordWildCards, TypeApplications, ViewPatterns #-}
 
 module Mud.Misc.Database ( AdminChanRec(..)
                          , AdminMsgRec(..)
@@ -91,7 +91,6 @@ import qualified Data.Text as T
 import qualified Data.Text.Encoding as TE
 import           Data.Time (UTCTime)
 import           Database.SQLite.Simple (Connection, FromRow, Only(..), Query(..), ToRow, execute, execute_, field, fromRow, query, query_, toRow, withConnection)
-import           Database.SQLite.Simple.FromRow (RowParser)
 import           GHC.Generics (Generic)
 
 
@@ -179,91 +178,91 @@ newtype WordRec        = WordRec        { dbWord        :: Text } deriving Gener
 
 
 instance FromRow AdminChanRec where
-  fromRow = AdminChanRec <$ (field :: RowParser Int) <*> field <*> field <*> field
+  fromRow = AdminChanRec <$ field @Int <*> field <*> field <*> field
 
 
 instance FromRow AdminMsgRec where
-  fromRow = AdminMsgRec <$ (field :: RowParser Int) <*> field <*> field <*> field <*> field
+  fromRow = AdminMsgRec <$ field @Int <*> field <*> field <*> field <*> field
 
 
 instance FromRow AlertExecRec where
-  fromRow = AlertExecRec <$> (field :: RowParser (Maybe Int)) <*> field <*> field <*> field <*> field <*> field
+  fromRow = AlertExecRec <$> field @(Maybe Int) <*> field <*> field <*> field <*> field <*> field
 
 
 instance FromRow AlertMsgRec where
-  fromRow = AlertMsgRec <$> (field :: RowParser (Maybe Int)) <*> field <*> field <*> field <*> field <*> field
+  fromRow = AlertMsgRec <$> field @(Maybe Int) <*> field <*> field <*> field <*> field <*> field
 
 
 instance FromRow BanHostRec where
-  fromRow = BanHostRec <$> (field :: RowParser (Maybe Int)) <*> field <*> field <*> field <*> field
+  fromRow = BanHostRec <$> field @(Maybe Int) <*> field <*> field <*> field <*> field
 
 
 instance FromRow BanPCRec where
-  fromRow = BanPCRec <$> (field :: RowParser (Maybe Int)) <*> field <*> field <*> field <*> field
+  fromRow = BanPCRec <$> field @(Maybe Int) <*> field <*> field <*> field <*> field
 
 
 instance FromRow BonusRec where
-  fromRow = BonusRec <$ (field :: RowParser Int) <*> field <*> field <*> field <*> field
+  fromRow = BonusRec <$ field @Int <*> field <*> field <*> field <*> field
 
 
 instance FromRow BugRec where
-  fromRow = BugRec <$ (field :: RowParser Int) <*> field <*> field <*> field <*> field
+  fromRow = BugRec <$ field @Int <*> field <*> field <*> field <*> field
 
 
 instance FromRow ChanRec where
-  fromRow = ChanRec <$ (field :: RowParser Int) <*> field <*> field <*> field <*> field <*> field
+  fromRow = ChanRec <$ field @Int <*> field <*> field <*> field <*> field <*> field
 
 
 instance FromRow DiscoverRec where
-  fromRow = DiscoverRec <$ (field :: RowParser Int) <*> field <*> field <*> field
+  fromRow = DiscoverRec <$ field @Int <*> field <*> field <*> field
 
 
 instance FromRow ProfRec where
-  fromRow = ProfRec <$ (field :: RowParser Int) <*> field <*> field <*> field
+  fromRow = ProfRec <$ field @Int <*> field <*> field <*> field
 
 
 instance FromRow PropNameRec where
-  fromRow = PropNameRec <$ (field :: RowParser Int) <*> field
+  fromRow = PropNameRec <$ field @Int <*> field
 
 
 instance FromRow QuestionRec where
-  fromRow = QuestionRec <$ (field :: RowParser Int) <*> field <*> field <*> field
+  fromRow = QuestionRec <$ field @Int <*> field <*> field <*> field
 
 
 instance FromRow SacBonusRec where
-  fromRow = SacBonusRec <$ (field :: RowParser Int) <*> field <*> field <*> field
+  fromRow = SacBonusRec <$ field @Int <*> field <*> field <*> field
 
 
 instance FromRow SacrificeRec where
-  fromRow = SacrificeRec <$ (field :: RowParser Int) <*> field <*> field <*> field
+  fromRow = SacrificeRec <$ field @Int <*> field <*> field <*> field
 
 
 instance FromRow SecRec where
-  fromRow = SecRec <$ (field :: RowParser Int) <*> field <*> field <*> field
+  fromRow = SecRec <$ field @Int <*> field <*> field <*> field
 
 
 instance FromRow TeleRec where
-  fromRow = TeleRec <$ (field :: RowParser Int) <*> field <*> field <*> field <*> field
+  fromRow = TeleRec <$ field @Int <*> field <*> field <*> field <*> field
 
 
 instance FromRow TelnetCharsRec where
-  fromRow = TelnetCharsRec <$ (field :: RowParser Int) <*> field <*> field <*> field
+  fromRow = TelnetCharsRec <$ field @Int <*> field <*> field <*> field
 
 
 instance FromRow TTypeRec where
-  fromRow = TTypeRec <$ (field :: RowParser Int) <*> field <*> field <*> field
+  fromRow = TTypeRec <$ field @Int <*> field <*> field <*> field
 
 
 instance FromRow TypoRec where
-  fromRow = TypoRec <$ (field :: RowParser Int) <*> field <*> field <*> field <*> field
+  fromRow = TypoRec <$ field @Int <*> field <*> field <*> field <*> field
 
 
 instance FromRow UnPwRec where
-  fromRow = UnPwRec <$ (field :: RowParser Int) <*> field <*> field
+  fromRow = UnPwRec <$ field @Int <*> field <*> field
 
 
 instance FromRow WordRec where
-  fromRow = WordRec <$ (field :: RowParser Int) <*> field
+  fromRow = WordRec <$ field @Int <*> field
 
 
 -----
@@ -647,8 +646,8 @@ lookupSacBonusTime :: Sing -> Text -> IO (Maybe UTCTime) -- When was the last sa
 lookupSacBonusTime s gn = let q = Query "select utc_time from sac_bonus where name = ? and god_name = ?"
                           in onDbFile $ \conn -> f <$> query conn q (s, gn)
   where
-    f (reverse -> (Only t:_)) = case reads t :: [(UTCTime, String)] of [(time, "")] -> Just time
-                                                                       _            -> Nothing
+    f (reverse -> (Only t:_)) = case reads t of [(time, "")] -> Just time
+                                                _            -> Nothing
     f _                       = Nothing
 
 

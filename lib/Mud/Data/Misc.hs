@@ -1,4 +1,4 @@
-{-# LANGUAGE DuplicateRecordFields, OverloadedStrings, ParallelListComp, RebindableSyntax, RecordWildCards, ViewPatterns #-}
+{-# LANGUAGE DuplicateRecordFields, OverloadedStrings, ParallelListComp, RebindableSyntax, RecordWildCards, TypeApplications, ViewPatterns #-}
 
 module Mud.Data.Misc ( AOrThe(..)
                      , Amount
@@ -568,7 +568,7 @@ instance Pretty Race where
 instance Pretty RightOrLeft where
   pp R   = "right"
   pp L   = "left"
-  pp rol = pp (fromRol rol :: Slot)
+  pp rol = pp . fromRol @Slot $ rol
 
 
 instance Pretty RmEnv where

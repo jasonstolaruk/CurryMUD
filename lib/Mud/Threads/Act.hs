@@ -1,4 +1,4 @@
-{-# LANGUAGE LambdaCase, MultiWayIf, OverloadedStrings, RecordWildCards, TupleSections, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, MultiWayIf, OverloadedStrings, RecordWildCards, TupleSections, TypeApplications, ViewPatterns #-}
 
 module Mud.Threads.Act ( drinkAct
                        , eatAct
@@ -243,7 +243,7 @@ applyBonus :: HasCallStack => Id -> Sing -> GodName -> UTCTime -> MudStack ()
 applyBonus i s gn now = do
     logPla "applyBonus" i "applying bonus."
     withDbExHandler_ "sac_bonus" . insertDbTblSacBonus . SacBonusRec (showTxt now) s . pp $ gn
-    let f = \case Aule      -> let a = (,) <$> rndmElem (mkXpPairs allValues) <*> rndmElem (allValues :: [Attrib])
+    let f = \case Aule      -> let a = (,) <$> rndmElem (mkXpPairs allValues) <*> rndmElem (allValues @Attrib)
                                    b = ((>>) <$> uncurry maxXp . fst <*> effectHelper Nothing (15, 15) . snd)
                                in a >>= b
                   Caila     -> f Aule

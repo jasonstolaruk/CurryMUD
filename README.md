@@ -91,6 +91,7 @@ The code is available here on GitHub under [this license](https://github.com/jas
   * `RebindableSyntax`
   * `RecordWildCards`
   * `TupleSections`
+  * `TypeApplications`
   * `ViewPatterns`
 * Many functions are decorated with [the `HasCallStack` constraint](http://hackage.haskell.org/package/base-4.9.0.0/docs/GHC-Stack.html#t:HasCallStack). I hope to remove these when I'm convinced that the code is stable.
 

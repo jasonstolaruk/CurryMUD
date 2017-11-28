@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
-{-# LANGUAGE BangPatterns, ExistentialQuantification, LambdaCase, MonadComprehensions, NamedFieldPuns, OverloadedStrings, PatternSynonyms, ScopedTypeVariables, ViewPatterns #-}
+{-# LANGUAGE BangPatterns, ExistentialQuantification, LambdaCase, MonadComprehensions, NamedFieldPuns, OverloadedStrings, PatternSynonyms, ViewPatterns #-}
 
 module Mud.Cmds.Debug ( debugCmds
                       , purgeThreadTbls
@@ -57,7 +57,7 @@ import           Mud.Util.Wrapping
 
 import           Control.Applicative (Const)
 import           Control.Arrow ((***), first, second)
-import           Control.Concurrent (ThreadId, getNumCapabilities, myThreadId)
+import           Control.Concurrent (getNumCapabilities, myThreadId)
 import           Control.Concurrent.Async (asyncThreadId, poll)
 import           Control.Exception (ArithException(..), IOException)
 import           Control.Exception.Lifted (throwIO, try)
@@ -272,7 +272,7 @@ debugBuffCheck p = withoutArgs debugBuffCheck p
 
 debugCins :: HasCallStack => ActionFun
 debugCins p@AdviseNoArgs         = advise p [] adviceDCinsNoArgs
-debugCins   (OneArg i mq cols a) = getState >>= \ms -> case reads . T.unpack $ a :: [(Int, String)] of
+debugCins   (OneArg i mq cols a) = getState >>= \ms -> case reads . T.unpack $ a of
   [(targetId, "")] -> helper ms targetId
   _                -> wrapSend mq cols . sorryParseId $ a
   where
@@ -345,7 +345,7 @@ debugCPU p = withoutArgs debugCPU p
 
 
 debugCurryTime :: HasCallStack => ActionFun
-debugCurryTime (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
+debugCurryTime (OneArg i mq cols a) = case reads . T.unpack $ a of
   [(secs, "")] -> helper secs
   _            -> wrapSend mq cols . sorryParseSeconds $ a
   where
@@ -495,9 +495,8 @@ debugHandle p              = withoutArgs debugHandle p
 
 debugId :: HasCallStack => ActionFun
 debugId p@AdviseNoArgs         = advise p [] adviceDIdNoArgs
-debugId   (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
-  [(searchId, "")] -> helper searchId
-  _                -> wrapSend mq cols . sorryParseId $ a
+debugId   (OneArg i mq cols a) = case reads . T.unpack $ a of [(searchId, "")] -> helper searchId
+                                                              _                -> wrapSend mq cols . sorryParseId $ a
   where
     helper searchId@(showTxt -> searchIdTxt)
       | searchId < 0 = wrapSend mq cols sorryWtf
@@ -645,9 +644,8 @@ parseTwoIntArgs mq cols [a, b] sorryParseA sorryParseB helper =
                                                                                            _      -> unit
   where
     parse :: HasCallStack => (Text, Text -> Text) -> MudStack (Maybe (Sum Int))
-    parse (txt, sorry) = case reads . T.unpack $ txt :: [(Int, String)] of
-      [(x, "")] -> unadulterated . Sum $ x
-      _         -> emptied . wrapSend mq cols . sorry $ txt
+    parse (txt, sorry) = case reads . T.unpack $ txt of [(x, "")] -> unadulterated . Sum $ x
+                                                        _         -> emptied . wrapSend mq cols . sorry $ txt
 parseTwoIntArgs _ _ as _ _ _ = pmf "parseTwoIntArgs" as
 
 
@@ -756,13 +754,13 @@ type Base = Int
 debugNumber :: HasCallStack => ActionFun
 debugNumber p@AdviseNoArgs                             = advise p [] adviceDNumberNoArgs
 debugNumber p@AdviseOneArg                             = advise p [] adviceDNumberNoBase
-debugNumber   (WithArgs i mq cols [ numTxt, baseTxt ]) = case reads . T.unpack $ baseTxt :: [(Base, String)] of
-      [(base, "")] | not . inRange (2, 36) $ base -> wrapSend mq cols . sorryParseBase $ baseTxt
-                   | otherwise -> case numTxt `inBase` base of
-                     [(res, "")] -> do logPlaExecArgs (prefixDebugCmd "number") [ numTxt, baseTxt ] i
-                                       send mq $ fmap nlnl showTxt res
-                     _ -> wrapSend mq cols . sorryParseNum numTxt . showTxt $ base
-      _ -> wrapSend mq cols . sorryParseBase $ baseTxt
+debugNumber   (WithArgs i mq cols [ numTxt, baseTxt ]) = case reads . T.unpack $ baseTxt of
+  [(base, "")] | not . inRange (2, 36) $ base -> wrapSend mq cols . sorryParseBase $ baseTxt
+               | otherwise                    -> case numTxt `inBase` base of
+                 [(res, "")] -> do logPlaExecArgs (prefixDebugCmd "number") [ numTxt, baseTxt ] i
+                                   send mq $ fmap nlnl showTxt res
+                 _ -> wrapSend mq cols . sorryParseNum numTxt . showTxt $ base
+  _ -> wrapSend mq cols . sorryParseBase $ baseTxt
 debugNumber p = advise p [] adviceDNumberExcessArgs
 
 
@@ -857,9 +855,8 @@ debugRandom p                  = withoutArgs debugRandom p
 
 debugRegen :: HasCallStack => ActionFun
 debugRegen p@AdviseNoArgs         = advise p [] adviceDRegenNoArgs
-debugRegen   (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
-  [(targetId, "")] -> helper targetId =<< getState
-  _                -> wrapSend mq cols . sorryParseId $ a
+debugRegen   (OneArg i mq cols a) = case reads . T.unpack $ a of [(targetId, "")] -> helper targetId =<< getState
+                                                                 _                -> wrapSend mq cols . sorryParseId $ a
   where
     helper targetId ms
       | targetId < 0 = wrapSend mq cols sorryWtf
@@ -943,7 +940,7 @@ debugRules :: HasCallStack => ActionFun
 debugRules (NoArgs i mq cols) = getServerSettings >>= \s -> do logPlaExec (prefixDebugCmd "rules") i'
                                                                pager i' mq Nothing . parseWrapXform s cols $ rulesMsg
   where
-    i' = safeCoerce (i :: Id) :: Int
+    i' = safeCoerce i
 debugRules p = withoutArgs debugRules p
 
 
@@ -970,7 +967,7 @@ debugStopEffects p              = withoutArgs debugStopEffects p
 
 
 debugTalk :: HasCallStack => ActionFun
-debugTalk (NoArgs i mq cols) = views talkAsyncTbl M.toList <$> getState >>= \(pairs :: [(ThreadId, TalkAsync)]) -> do
+debugTalk (NoArgs i mq cols) = views talkAsyncTbl M.toList <$> getState >>= \pairs -> do
     logPlaExec (prefixDebugCmd "talk") i
     pager i mq Nothing =<< [ concatMap (wrapIndent 2 cols) descs | descs <- mapM mkDesc pairs ]
   where
@@ -1164,9 +1161,8 @@ debugUnderline p = withoutArgs debugUnderline p
 
 debugVolume :: HasCallStack => ActionFun
 debugVolume p@AdviseNoArgs         = advise p [] adviceDVolumeNoArgs
-debugVolume   (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
-  [(searchId, "")] -> helper searchId =<< getState
-  _                -> wrapSend mq cols . sorryParseId $ a
+debugVolume   (OneArg i mq cols a) = case reads . T.unpack $ a of [(searchId, "")] -> helper searchId =<< getState
+                                                                  _                -> wrapSend mq cols . sorryParseId $ a
   where
     helper searchId ms
       | searchId < 0                              = wrapSend mq cols sorryWtf
@@ -1181,9 +1177,8 @@ debugVolume p = advise p [] adviceDVolumeExcessArgs
 
 debugWeight :: HasCallStack => ActionFun
 debugWeight p@AdviseNoArgs         = advise p [] adviceDWeightNoArgs
-debugWeight   (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
-  [(searchId, "")] -> helper searchId =<< getState
-  _                -> wrapSend mq cols . sorryParseId $ a
+debugWeight   (OneArg i mq cols a) = case reads . T.unpack $ a of [(searchId, "")] -> helper searchId =<< getState
+                                                                  _                -> wrapSend mq cols . sorryParseId $ a
   where
     helper searchId ms
       | searchId < 0                              = wrapSend mq cols sorryWtf
@@ -1206,7 +1201,7 @@ debugWords p              = withoutArgs debugWords p
 
 debugWrap :: HasCallStack => ActionFun
 debugWrap p@AdviseNoArgs         = advise p [] adviceDWrapNoArgs
-debugWrap   (OneArg i mq cols a) = case reads . T.unpack $ a :: [(Int, String)] of
+debugWrap   (OneArg i mq cols a) = case reads . T.unpack $ a of
   [(lineLen, "")] -> helper lineLen
   _               -> wrapSend mq cols . sorryParseLineLen $ a
   where

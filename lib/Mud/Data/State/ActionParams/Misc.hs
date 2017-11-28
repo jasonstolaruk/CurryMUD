@@ -1,4 +1,4 @@
-{-# LANGUAGE LambdaCase, OverloadedStrings, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, OverloadedStrings, TypeApplications, ViewPatterns #-}
 
 module Mud.Data.State.ActionParams.Misc ( capitalizeMsg
                                         , formatMsgArgs
@@ -47,7 +47,7 @@ punctuateMsg = \case "" -> ""
                      x@(T.last   -> c)            | isPunc c  -> x
                                                   | otherwise -> prd x
   where
-    isPunc = (`elem` (".?!" :: String))
+    isPunc = flip (elem @[]) ".?!"
 
 
 formatMsgWithTargetArgs :: Args -> (Text, Text)

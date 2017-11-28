@@ -155,7 +155,7 @@ mkGecr i ms searchIs searchCoins searchName@(headTail -> (h, t))
                                                       , nameSearchedFor = searchName
                                                       , entsRes         = Just allEs
                                                       , coinsRes        = Just . SomeOf $ searchCoins }
-  | h == allChar = mkGecrMult i ms (maxBound :: Int) t searchIs searchCoins
+  | h == allChar = mkGecrMult i ms maxBound t searchIs searchCoins
   | isDigit h
   , (numText, rest) <- T.span isDigit searchName
   , numInt <- decimal numText |&| either (oops numText) fst
@@ -182,20 +182,20 @@ mkGecrMultForCoins a n c@(Coins (cop, sil, gol)) = Mult { amount          = a
                                                         , coinsRes        = Just helper }
   where
     helper | ()# c                       = Empty
-           | n `elem` aggregateCoinNames = SomeOf $ if a == (maxBound :: Int)
+           | n `elem` aggregateCoinNames = SomeOf $ if a == maxBound
              then c
              else coinsFromList . distributeAmt a . coinsToList $ c
            | otherwise = case n of
-             "cp" | isZero cop             -> NoneOf . Coins $ (a,   0,   0  )
-                  | a == (maxBound :: Int) -> SomeOf . Coins $ (cop, 0,   0  )
-                  | otherwise              -> SomeOf . Coins $ (a,   0,   0  )
-             "sp" | isZero sil             -> NoneOf . Coins $ (0,   a,   0  )
-                  | a == (maxBound :: Int) -> SomeOf . Coins $ (0,   sil, 0  )
-                  | otherwise              -> SomeOf . Coins $ (0,   a,   0  )
-             "gp" | isZero gol             -> NoneOf . Coins $ (0,   0,   a  )
-                  | a == (maxBound :: Int) -> SomeOf . Coins $ (0,   0,   gol)
-                  | otherwise              -> SomeOf . Coins $ (0,   0,   a  )
-             _                             -> pmf "mkGecrMultForCoins helper" n
+             "cp" | isZero cop    -> NoneOf . Coins $ (a,   0,   0  )
+                  | a == maxBound -> SomeOf . Coins $ (cop, 0,   0  )
+                  | otherwise     -> SomeOf . Coins $ (a,   0,   0  )
+             "sp" | isZero sil    -> NoneOf . Coins $ (0,   a,   0  )
+                  | a == maxBound -> SomeOf . Coins $ (0,   sil, 0  )
+                  | otherwise     -> SomeOf . Coins $ (0,   a,   0  )
+             "gp" | isZero gol    -> NoneOf . Coins $ (0,   0,   a  )
+                  | a == maxBound -> SomeOf . Coins $ (0,   0,   gol)
+                  | otherwise     -> SomeOf . Coins $ (0,   0,   a  )
+             _                    -> pmf "mkGecrMultForCoins helper" n
 
 
 distributeAmt :: Int -> [Int] -> [Int]
@@ -246,9 +246,8 @@ mkGecrWithRol :: Id -> MudState -> Inv -> Coins -> Text -> (GetEntsCoinsRes, May
 mkGecrWithRol i ms is c n@(T.breakOn (T.singleton slotChar) -> (a, b))
   | ()# b           = (mkGecr i ms is c n, Nothing)
   | T.length b == 1 = sorry
-  | parsed <- reads (T.unpack . T.toUpper . T.drop 1 $ b) :: [(RightOrLeft, String)] =
-      case parsed of [(rol, _)] -> (mkGecr i ms is c a, Just rol)
-                     _          -> sorry
+  | parsed <- reads . T.unpack . T.toUpper . T.drop 1 $ b = case parsed of [(rol, _)] -> (mkGecr i ms is c a, Just rol)
+                                                                           _          -> sorry
   where
     sorry = (Sorry n, Nothing)
 

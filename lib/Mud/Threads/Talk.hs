@@ -1,4 +1,4 @@
-{-# LANGUAGE OverloadedStrings, ViewPatterns #-}
+{-# LANGUAGE OverloadedStrings, ViewPatterns, TypeApplications #-}
 
 module Mud.Threads.Talk ( runTalkAsync
                         , threadTalk ) where
@@ -172,7 +172,7 @@ adHoc mq host = do
 
 
 randomSex :: HasCallStack => IO Sex
-randomSex = ([ Male, Female ] !!) . fromEnum <$> (randomIO :: IO Bool)
+randomSex = ([ Male, Female ] !!) . fromEnum <$> randomIO @Bool
 
 
 randomRace :: HasCallStack => IO Race

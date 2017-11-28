@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults -Wno-redundant-constraints #-}
-{-# LANGUAGE LambdaCase, MultiWayIf, OverloadedStrings, RecordWildCards, ScopedTypeVariables, TupleSections, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, MultiWayIf, OverloadedStrings, RecordWildCards, TupleSections, ViewPatterns #-}
 
 module Mud.Data.State.Util.Output ( anglePrompt
                                   , bcast
@@ -272,7 +272,7 @@ parseDesigHelper suffixer mct i ms = loop
     loop txt = helper pairs
       where
         helper ((delim, expander):xs) | delim `T.isInfixOf` txt
-                                      , (left, d :: Desig, right) <- extractDelimited delim txt
+                                      , (left, d, right) <- extractDelimited delim txt
                                       = left <> expander i ms d <> loop right
                                       | otherwise = helper xs
         helper []                     = txt
@@ -333,7 +333,7 @@ expandCorpseDesig _ _  d                = pmf "expandCorpseDesig" d
 parseVerbObj :: HasCallStack => CurryTime -> Id -> MudState -> Text -> Text
 parseVerbObj ct i ms = loop
   where
-    loop txt | delim `T.isInfixOf` txt = let (left, vo :: VerbObj, right) = extractDelimited delim txt
+    loop txt | delim `T.isInfixOf` txt = let (left, vo, right) = extractDelimited delim txt
                                          in left <> expander vo <> loop right
              | otherwise               = txt
     delim                   = T.singleton verbObjDelimiter

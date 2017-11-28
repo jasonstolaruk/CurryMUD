@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
-{-# LANGUAGE BangPatterns, MonadComprehensions, OverloadedStrings, RankNTypes, TypeFamilies #-}
+{-# LANGUAGE BangPatterns, MonadComprehensions, OverloadedStrings, RankNTypes, TypeApplications, TypeFamilies #-}
 
 module Mud.Util.Misc ( BlowUp
                      , PatternMatchFail
@@ -280,7 +280,7 @@ isNonZero = not . isZero
 
 
 isVowel :: HasCallStack => Char -> Bool
-isVowel = (`elem` ("aeiou" :: String))
+isVowel = flip (elem @[]) "aeiou"
 
 
 isZero :: (HasCallStack, Eq a, Num a) => a -> Bool
