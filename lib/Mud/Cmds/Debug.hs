@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
-{-# LANGUAGE BangPatterns, ExistentialQuantification, LambdaCase, MonadComprehensions, NamedFieldPuns, OverloadedStrings, PatternSynonyms, ViewPatterns #-}
+{-# LANGUAGE BangPatterns, ExistentialQuantification, LambdaCase, MonadComprehensions, NamedFieldPuns, OverloadedStrings, PatternSynonyms, TypeApplications, ViewPatterns #-}
 
 module Mud.Cmds.Debug ( debugCmds
                       , purgeThreadTbls
@@ -940,7 +940,7 @@ debugRules :: HasCallStack => ActionFun
 debugRules (NoArgs i mq cols) = getServerSettings >>= \s -> do logPlaExec (prefixDebugCmd "rules") i'
                                                                pager i' mq Nothing . parseWrapXform s cols $ rulesMsg
   where
-    i' = safeCoerce i
+    i' = safeCoerce @Int (i :: Id)
 debugRules p = withoutArgs debugRules p
 
 
