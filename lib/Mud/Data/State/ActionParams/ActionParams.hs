@@ -34,10 +34,10 @@ import           Mud.Util.Quoting
 import           Data.List (nub)
 import           Data.String (fromString)
 import           Data.Text (Text)
+import qualified Data.Text as T
 import           Formatting ((%), sformat)
 import           Formatting.Formatters (string)
 import           Prelude hiding ((>>))
-import qualified Data.Text as T
 
 
 type Id   = Int

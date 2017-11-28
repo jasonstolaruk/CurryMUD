@@ -92,7 +92,6 @@ import           Control.Lens.Operators ((&), (%~))
 import           Data.List (foldl')
 import           Data.Maybe (fromMaybe)
 import           GHC.Stack (HasCallStack)
-import           Prelude hiding (getContents)
 import qualified Data.Map.Strict as M (elems)
 import qualified Data.Text as T
 

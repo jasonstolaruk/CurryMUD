@@ -29,7 +29,6 @@ import           Mud.TopLvlDefs.FilePaths
 import           Mud.Util.Misc
 import           Mud.Util.Operators
 import           Mud.Util.Text
-import           Prelude hiding (log)
 
 import           Control.Lens (ASetter, views)
 import           Control.Lens.Operators ((?~), (.~), (&), (%~), (^.))

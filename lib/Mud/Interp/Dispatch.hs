@@ -11,7 +11,7 @@ import           Mud.Data.State.Util.Misc
 import           Mud.Data.State.Util.Output
 import           Mud.Util.Misc (PatternMatchFail)
 import qualified Mud.Util.Misc as U (pmf)
-import           Mud.Util.Text hiding (none)
+import           Mud.Util.Text
 
 import           Control.Lens (view)
 import           Control.Monad (when)

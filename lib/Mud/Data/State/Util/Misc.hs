@@ -525,10 +525,8 @@ mkAdminIdSingList = mkIdSingListHelper id
 
 
 mkIdSingListHelper :: HasCallStack => (Bool -> Bool) -> MudState -> [(Id, Sing)]
-mkIdSingListHelper f ms@(view plaTbl -> pt) = [ (i, s) | i <- IM.keys pt
-                                                       , f . isAdmin $ pt IM.! i
-                                                       , let s = getSing i ms
-                                                       , then sortWith by s ]
+mkIdSingListHelper f ms@(view plaTbl -> pt) =
+    [ (i, s) | i <- IM.keys pt , f . isAdmin $ pt IM.! i , let s = getSing i ms , then sortWith by s ]
 
 
 -----

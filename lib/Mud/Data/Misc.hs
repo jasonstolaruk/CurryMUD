@@ -96,9 +96,9 @@ import           Data.Function (on)
 import           Data.Monoid ((<>))
 import           Data.String (fromString)
 import           Data.Text (Text)
-import           Data.Time (UTCTime, defaultTimeLocale, formatTime)
-import           Prelude hiding ((>>), pi)
 import qualified Data.Text as T
+import           Data.Time (UTCTime, defaultTimeLocale, formatTime)
+import           Prelude hiding ((>>))
 
 
 pmf :: PatternMatchFail

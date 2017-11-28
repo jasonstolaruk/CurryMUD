@@ -113,7 +113,7 @@ import           Mud.TopLvlDefs.Misc
 import           Mud.TopLvlDefs.Padding
 import           Mud.TopLvlDefs.Vols
 import           Mud.TopLvlDefs.Weights
-import           Mud.Util.List hiding (headTail)
+import           Mud.Util.List
 import qualified Mud.Util.Misc as U (blowUp, pmf)
 import           Mud.Util.Misc hiding (blowUp, pmf)
 import           Mud.Util.Operators
