@@ -759,7 +759,7 @@ debugNumber   (WithArgs i mq cols [ numTxt, baseTxt ]) = case reads . T.unpack $
                | otherwise                    -> case numTxt `inBase` base of
                  [(res, "")] -> do logPlaExecArgs (prefixDebugCmd "number") [ numTxt, baseTxt ] i
                                    send mq $ fmap nlnl showTxt res
-                 _ -> wrapSend mq cols . sorryParseNum numTxt . showTxt $ base
+                 _           -> wrapSend mq cols . sorryParseNum numTxt . showTxt $ base
   _ -> wrapSend mq cols . sorryParseBase $ baseTxt
 debugNumber p = advise p [] adviceDNumberExcessArgs
 

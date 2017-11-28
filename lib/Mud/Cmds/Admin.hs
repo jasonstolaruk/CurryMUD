@@ -2492,7 +2492,7 @@ adminWire   (WithArgs i mq cols as) = views chanTbl IM.size <$> getState >>= \ca
                            [(ci, "")] | ci < 0                                      -> sorry sorryWtf
                                       | views chanTbl ((ci `notElem`) . IM.keys) ms -> sorry . sorryParseChanId $ a
                                       | otherwise                                   -> checkAlreadyConn ci
-                           _ -> sorry . sorryParseChanId $ a
+                           _                                                        -> sorry . sorryParseChanId $ a
             checkAlreadyConn ci | s <- getSing i  ms, c <- getChan ci ms = if views (chanConnTbl.at s) isJust c
               then sorry . sorryWireAlready $ c^.chanName
               else toggle ms ci s & _2 %~ Right
