@@ -1,30 +1,29 @@
 {-# OPTIONS_GHC -fno-warn-unused-do-bind #-}
 {-# LANGUAGE OverloadedStrings, PatternSynonyms, RebindableSyntax, RecordWildCards, ViewPatterns #-}
 
--- TODO: We might be able to use GHC 8's new export syntax: http://mpickering.github.io/posts/2015-12-12-pattern-synonyms-8.html
-module Mud.Data.State.ActionParams.ActionParams ( ActionParams(..)
-                                                , Cols
-                                                , pattern AdviseNoArgs
-                                                , pattern AdviseOneArg
-                                                , pattern Advising
-                                                , pattern Ignoring
-                                                , pattern Lower
-                                                , pattern Lower'
-                                                , pattern LowerNub
-                                                , pattern LowerNub'
-                                                , pattern Msg
-                                                , pattern Msg'
-                                                , pattern MsgWithTarget
-                                                , pattern NoArgs
-                                                , pattern NoArgs'
-                                                , pattern NoArgs''
-                                                , pattern OneArg
-                                                , pattern OneArg'
-                                                , pattern OneArgLower
-                                                , pattern OneArgLower'
-                                                , pattern OneArgNubbed
-                                                , pattern WithArgs
-                                                , pattern WithTarget ) where
+module Mud.Data.State.ActionParams.ActionParams ( ActionParams( ..
+                                                              , AdviseNoArgs
+                                                              , AdviseOneArg
+                                                              , Advising
+                                                              , Ignoring
+                                                              , Lower
+                                                              , Lower'
+                                                              , LowerNub
+                                                              , LowerNub'
+                                                              , Msg
+                                                              , Msg'
+                                                              , MsgWithTarget
+                                                              , NoArgs
+                                                              , NoArgs'
+                                                              , NoArgs''
+                                                              , OneArg
+                                                              , OneArg'
+                                                              , OneArgLower
+                                                              , OneArgLower'
+                                                              , OneArgNubbed
+                                                              , WithArgs
+                                                              , WithTarget )
+                                                , Cols ) where
 
 import           Mud.Data.State.ActionParams.Misc
 import           Mud.Data.State.MsgQueue

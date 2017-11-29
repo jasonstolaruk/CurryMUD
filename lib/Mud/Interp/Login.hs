@@ -1,4 +1,4 @@
-{-# LANGUAGE LambdaCase, MonadComprehensions, MultiWayIf, NamedFieldPuns, OverloadedStrings, PatternSynonyms, RecordWildCards, TupleSections, TypeApplications, ViewPatterns #-}
+{-# LANGUAGE LambdaCase, MonadComprehensions, MultiWayIf, NamedFieldPuns, OverloadedStrings, RecordWildCards, TupleSections, TypeApplications, ViewPatterns #-}
 
 module Mud.Interp.Login ( interpName
                         , promptName ) where

@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults -Wno-redundant-constraints #-}
-{-# LANGUAGE DuplicateRecordFields, FlexibleContexts, LambdaCase, MonadComprehensions, MultiWayIf, NamedFieldPuns, OverloadedStrings, ParallelListComp, PatternSynonyms, RecordWildCards, TupleSections, TypeApplications, ViewPatterns #-}
+{-# LANGUAGE DuplicateRecordFields, FlexibleContexts, LambdaCase, MonadComprehensions, MultiWayIf, NamedFieldPuns, OverloadedStrings, ParallelListComp, RecordWildCards, TupleSections, TypeApplications, ViewPatterns #-}
 
 module Mud.Cmds.Pla ( getRecordUptime
                     , getUptime

@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
-{-# LANGUAGE AllowAmbiguousTypes, DuplicateRecordFields, FlexibleContexts, LambdaCase, MonadComprehensions, MultiWayIf, NamedFieldPuns, OverloadedStrings, PatternSynonyms, RecordWildCards, TransformListComp, TupleSections, TypeApplications, ViewPatterns #-}
+{-# LANGUAGE AllowAmbiguousTypes, DuplicateRecordFields, FlexibleContexts, LambdaCase, MonadComprehensions, MultiWayIf, NamedFieldPuns, OverloadedStrings, RecordWildCards, TransformListComp, TupleSections, TypeApplications, ViewPatterns #-}
 
 module Mud.Cmds.Admin (adminCmds) where
 

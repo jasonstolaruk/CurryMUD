@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -fno-warn-type-defaults #-}
-{-# LANGUAGE BangPatterns, ExistentialQuantification, LambdaCase, MonadComprehensions, NamedFieldPuns, OverloadedStrings, PatternSynonyms, TypeApplications, ViewPatterns #-}
+{-# LANGUAGE BangPatterns, ExistentialQuantification, LambdaCase, MonadComprehensions, NamedFieldPuns, OverloadedStrings, TypeApplications, ViewPatterns #-}
 
 module Mud.Cmds.Debug ( debugCmds
                       , purgeThreadTbls
