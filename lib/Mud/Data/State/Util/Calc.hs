@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -fno-warn-type-defaults -Wno-redundant-constraints #-}
+{-# OPTIONS_GHC -Wno-type-defaults #-}
 {-# LANGUAGE LambdaCase, MultiWayIf, OverloadedStrings, RankNTypes, TupleSections, TypeApplications, ViewPatterns #-}
 
 module Mud.Data.State.Util.Calc ( calcBarLen

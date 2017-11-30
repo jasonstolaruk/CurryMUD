@@ -1,4 +1,3 @@
-{-# OPTIONS_GHC -fno-warn-type-defaults -Wno-redundant-constraints #-}
 {-# LANGUAGE NamedFieldPuns, OverloadedStrings, ViewPatterns #-}
 
 module Mud.Cmds.ExpCmds ( expCmdNames

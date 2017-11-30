@@ -1,5 +1,3 @@
-{-# OPTIONS_GHC -fno-warn-type-defaults #-}
-
 module MudTests.Util.Misc where
 
 import Mud.Util.Misc
@@ -30,9 +28,8 @@ data AOrB = A | B deriving (Eq, Show)
 
 
 helper :: (IO Bool -> IO () -> IO ()) -> Bool -> AOrB -> Assertion
-helper f b aOrB = newIORef A >>= \ref -> do
-    f (return b) . writeIORef ref $ B
-    (aOrB @=?) =<< readIORef ref
+helper f b aOrB = newIORef A >>= \ref -> do f (return b) . writeIORef ref $ B
+                                            (aOrB @=?) =<< readIORef ref
 
 
 test_mWhen_IOTrue :: Assertion

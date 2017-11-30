@@ -1,4 +1,4 @@
-{-# OPTIONS_GHC -fno-warn-type-defaults #-}
+{-# OPTIONS_GHC -Wno-type-defaults #-}
 {-# LANGUAGE BangPatterns, MonadComprehensions, OverloadedStrings, RankNTypes, TypeApplications, TypeFamilies #-}
 
 module Mud.Util.Misc ( BlowUp
