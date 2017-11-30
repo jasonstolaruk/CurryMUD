@@ -18,7 +18,7 @@ prop_countOcc needle hay = countOcc needle hay == matches
 
 prop_dropElemAt :: NonNegative Int -> [Int] -> Property
 prop_dropElemAt (NonNegative i) xs = i < length xs &&
-                                   countOcc x xs == 1 ==>
+                                     countOcc x xs == 1 ==>
     liftA2 (&&) ((== length xs - 1) . length) (x `notElem`) res
   where
     x   = xs !! i

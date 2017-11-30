@@ -13,6 +13,5 @@ import           Test.Tasty.QuickCheck (Property)
 
 
 prop_noDupIds :: Property
-prop_noDupIds = monadicIO $ do
-    ms <- inWorld getState
-    assert . not . any ((> 1) . length) . group . concat $ ms^.invTbl.to IM.elems
+prop_noDupIds = monadicIO $ do ms <- inWorld getState
+                               assert . not . any ((> 1) . length) . group . concat $ ms^.invTbl.to IM.elems

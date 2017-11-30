@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -Wno-type-defaults #-}
+
 module MudTests.Util.Misc where
 
 import Mud.Util.Misc

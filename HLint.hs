@@ -30,6 +30,7 @@ ignore "Use ||" = Mud.Cmds.Util.Misc
 
 ignore "Use &&" = Mud.Data.State.Util.Death
                   Mud.Data.State.Util.Misc
+                  MudTests.Util.Wrapping
 
 ignore = Mud.Cmds.Util.Misc.mkHolySymbolVol
 
