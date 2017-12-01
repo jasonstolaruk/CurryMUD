@@ -19,7 +19,7 @@ executable             curry
   ghc-options:         -Wall -Werror -threaded -rtsopts "-with-rtsopts=-N -T"
   -- ghc-options:         -Wall -Werror -threaded -rtsopts "-with-rtsopts=-N -T" -O2 -optc-O3
   main-is:             Main.hs
-  build-depends:         base >=4.8 && <5.0
+  build-depends:         base >=4.10 && <5.0
                        , curry-mud
                        , directory
                        , ekg
@@ -150,7 +150,7 @@ library
                        Mud.Util.Token
                        Mud.Util.Wrapping
   other-modules:       Paths_curry_mud
-  build-depends:         base >=4.8 && <5.0
+  build-depends:         base >=4.10 && <5.0
                        , MissingH
                        , aeson
                        , ansi-terminal
@@ -208,7 +208,7 @@ test-suite             test
                        MudTests.Util.Telnet
                        MudTests.Util.Text
                        MudTests.Util.Wrapping
-  build-depends:         base >=4.8 && <5.0
+  build-depends:         base >=4.10 && <5.0
                        , QuickCheck
                        , containers
                        , curry-mud
