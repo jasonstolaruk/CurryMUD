@@ -2121,7 +2121,7 @@ newChan p@(WithArgs i mq cols (nub -> as)) = getState >>= \ms ->
         in do newChanNames |#| logPla "newChan" i . commas
               multiWrapSend mq cols msgs
               ts <- liftIO mkTimestamp
-              let f cr = withDbExHandler_ "newChan" . insertDbTblChan $ (cr { dbTimestamp = ts } :: ChanRec) -- TODO: No way around it?
+              let f cr = withDbExHandler_ "newChan" . insertDbTblChan $ (cr { dbTimestamp = ts } :: ChanRec)
               mapM_ f chanRecs
     helper ms = let s                              = getSing i ms
                     (ms', newChanNames, sorryMsgs) = foldl' (f s) (ms, [], []) as
@@ -2373,7 +2373,7 @@ quitCan'tAbbrev p                  = withoutArgs quitCan'tAbbrev p
 -----
 
 
-razzle :: HasCallStack => ActionFun
+razzle :: HasCallStack => ActionFun -- TODO: Can we clone?
 razzle p@(ActionParams i mq cols [ "dazzle", "root", "beer" ]) = mIf (hasRazzledId i <$> getState)
     (cmdNotFoundAction p)
     (do logPlaExec "razzle" i

@@ -1,5 +1,5 @@
 {-# OPTIONS_GHC -Wno-redundant-constraints #-}
-{-# LANGUAGE AllowAmbiguousTypes, DuplicateRecordFields, FlexibleContexts, LambdaCase, MonadComprehensions, MultiWayIf, NamedFieldPuns, OverloadedStrings, RecordWildCards, TransformListComp, TupleSections, TypeApplications, ViewPatterns #-}
+{-# LANGUAGE AllowAmbiguousTypes, DataKinds, DuplicateRecordFields, FlexibleContexts, LambdaCase, MonadComprehensions, MultiWayIf, NamedFieldPuns, OverloadedStrings, RecordWildCards, TransformListComp, TupleSections, TypeApplications, ViewPatterns #-}
 
 module Mud.Cmds.Admin (adminCmds) where
 
@@ -88,6 +88,7 @@ import           Data.Yaml (encode)
 import           Database.SQLite.Simple (FromRow)
 import           GHC.Conc (ThreadStatus(..), threadStatus)
 import           GHC.Exts (sortWith)
+import           GHC.Records (getField)
 import           GHC.Stack (HasCallStack)
 import           Prelude hiding (exp, pi)
 import           System.Directory (getDirectoryContents)
@@ -1603,7 +1604,7 @@ adminSecurity   (LowerNub i mq cols as) = withDbExHandler "adminSecurity" (getDb
                   multiWrapSend mq cols . intercalateDivider cols . concatMap (helper recs . capitalize . T.toLower) $ as
   Nothing   -> dbError mq cols
   where
-    helper recs target = case filter ((target `T.isPrefixOf`) . (dbName :: SecRec -> Text)) recs of -- TODO: No way around it?
+    helper recs target = case filter ((target `T.isPrefixOf`) . getField @"dbName") recs of
       []      -> pure . pure . prd $ "No records found for " <> dblQuote target
       matches -> map mkSecReport matches
 adminSecurity p = pmf "adminSecurity" p
@@ -2397,7 +2398,7 @@ adminTType :: HasCallStack => ActionFun
 adminTType (NoArgs i mq cols) = withDbExHandler "adminTType" (getDbTblRecs "ttype") >>= \case
   Just xs ->
     let grouped = groupBy ((==) `on` dbTType) xs
-        mapped  = map ((dbTType . head) &&& (nubSort . map (dbHost :: TTypeRec -> Text))) grouped -- TODO: No way around it?
+        mapped  = map ((dbTType . head) &&& (nubSort . map (getField @"dbHost"))) grouped
         ts      = [ uncurry (:) . first (<> msg) $ pair
                   | pair@(_, hosts) <- mapped, let l   = length hosts
                                              , let msg = T.concat [ ": ", showTxt l, " host", pluralize ("", "s") l ] ]
