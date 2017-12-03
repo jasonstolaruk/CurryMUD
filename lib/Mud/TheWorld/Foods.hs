@@ -153,8 +153,8 @@ breadEntTemplate :: EntTemplate
 breadEntTemplate = EntTemplate (Just "bread")
                                "loaf of bread" "loaves of bread"
                                "It's a loaf of common white bread made from wheat-flower dough."
-                               (Just "The bread gives off the familiar inviting smell of baked goods. You don't detect \
-                                     \the sourness associated with certain types of bread.") -- TODO: Comma between adjectives?
+                               (Just "The bread gives off the familiar, inviting smell of baked goods. You don't detect \
+                                     \the sourness associated with certain types of bread.")
                                zeroBits
 
 
