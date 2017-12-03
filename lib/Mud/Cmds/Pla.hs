@@ -1660,9 +1660,10 @@ hominal = sayHelper HumanLang
 
 -----
 
--- The "intro" cmd uses the "ClassifiedBcast" data type to achieve this effect: when a player introduces himself to more
--- than one target with a single execution of the cmd, it will appear to each target as if they were the first person to
--- which the player introduced himself.
+
+-- The "intro" cmd uses the "ClassifiedBcast" data type to achieve the following effect: when a player introduces himself
+-- to more than one target with a single execution of the cmd, it will appear to each target as if they were the first
+-- person to which the player introduced himself.
 intro :: HasCallStack => ActionFun
 intro (NoArgs i mq cols) = getState >>= \ms -> let intros = getIntroduced i ms in if ()# intros
   then let introsTxt = "No one has introduced themselves to you yet."
