@@ -2372,7 +2372,7 @@ quitCan'tAbbrev p                  = withoutArgs quitCan'tAbbrev p
 -----
 
 
-razzle :: HasCallStack => ActionFun -- TODO: Test.
+razzle :: HasCallStack => ActionFun
 razzle p@(ActionParams i mq cols [ "dazzle", "root", "beer" ]) = mIf (hasRazzledId i <$> getState)
     (cmdNotFoundAction p)
     (do logPlaExec "razzle" i
@@ -3265,7 +3265,7 @@ showAction p = pmf "showAction" p
 -----
 
 
-smell :: HasCallStack => ActionFun -- TODO: Test darkness.
+smell :: HasCallStack => ActionFun
 smell (NoArgs i mq cols) = getState >>= \ms ->
     let ts         = views rmSmell (maybe a b) . getMobRm i $ ms
         a          = ()# corpseMsgs ? pure noSmellMsg :? corpseMsgs
@@ -3488,7 +3488,7 @@ mkStopTuples p@ActionParams { myId } ms = map (\(a, b, c) -> (pp a, a, uncurry b
 -----
 
 
-taste :: HasCallStack => ActionFun
+taste :: HasCallStack => ActionFun -- TODO: Here.
 taste p@AdviseNoArgs              = advise p ["taste"] adviceTasteNoArgs
 taste p@(OneArgLower i mq cols a) = getState >>= \ms ->
     let (invCoins, eqMap) = (getInvCoins `fanUncurry` getEqMap) (i, ms)

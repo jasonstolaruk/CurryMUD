@@ -2223,7 +2223,7 @@ stopDrinking :: HasCallStack => ActionParams -> MudState -> MudStack ()
 stopDrinking (WithArgs i mq cols _) ms = case getNowDrinking i ms of
   Just (l, s) -> let toSelf      = T.concat [ "You stop drinking ", renderLiqNoun l the, " from the ", s, "." ]
                      d           = mkStdDesig i ms DoCap
-                     msg         = T.concat [ serialize d, " stops drinking from ", aOrAn s, "." ]
+                     msg         = T.concat [ serialize d, " stops drinking from ", mkSerVerbObj . aOrAn $ s, "." ]
                      bcastHelper = bcastIfNotIncogNl i . pure $ (msg, desigOtherIds d)
                  in stopAct i Drinking >> wrapSend mq cols toSelf >> bcastHelper
   Nothing     -> unit
@@ -2235,7 +2235,7 @@ stopEating (WithArgs i mq cols _) ms = maybeVoid helper . getNowEating i $ ms
   where
     helper (_, s) = let toSelf      = prd $ "You stop eating " <> theOnLower s
                         d           = mkStdDesig i ms DoCap
-                        msg         = T.concat [ serialize d, " stops eating ", aOrAn s, "." ]
+                        msg         = T.concat [ serialize d, " stops eating ", mkSerVerbObj . aOrAn $ s, "." ]
                         bcastHelper = bcastIfNotIncogNl i . pure $ (msg, desigOtherIds d)
                     in stopAct i Eating >> wrapSend mq cols toSelf >> bcastHelper
 stopEating p _ = pmf "stopEating" p
@@ -2244,7 +2244,8 @@ stopEating p _ = pmf "stopEating" p
 stopSacrificing :: HasCallStack => ActionParams -> MudState -> MudStack ()
 stopSacrificing (WithArgs i mq cols _) ms = let toSelf      = "You stop sacrificing the corpse."
                                                 d           = mkStdDesig i ms DoCap
-                                                msg         = serialize d <> " stops sacrificing a corpse."
+                                                msg         | vo <- mkSerVerbObj "a corpse"
+                                                            = prd $ serialize d <> " stops sacrificing " <> vo
                                                 bcastHelper = bcastIfNotIncogNl i . pure $ (msg, desigOtherIds d)
                                             in stopAct i Sacrificing >> wrapSend mq cols toSelf >> bcastHelper
 stopSacrificing p                      _  = pmf "stopSacrificing" p

@@ -769,7 +769,7 @@ createWarehouse = do
           "The tinderbox is a sturdy wooden box with two compartments: one containing charcloth tinder and another \
           \containing flint and steel strikers. The steel is struck against the flint to produce a shower of sparks, \
           \igniting the tinder and thereby providing a source of fire."
-          (Just "You detect the lingering scent of burnt tinder.")
+          (Just "You detect a lingering scent of burnt tinder.")
           zeroBits)
       (let ot = ObjTemplate tinderboxWeight
                             tinderboxVol
