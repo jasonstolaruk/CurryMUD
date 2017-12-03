@@ -3264,7 +3264,7 @@ showAction p = pmf "showAction" p
 -----
 
 
-smell :: HasCallStack => ActionFun -- TODO: Here.
+smell :: HasCallStack => ActionFun -- TODO: Test darkness.
 smell (NoArgs i mq cols) = getState >>= \ms ->
     let ts         = views rmSmell (maybe a b) . getMobRm i $ ms
         a          = ()# corpseMsgs ? pure noSmellMsg :? corpseMsgs
@@ -3305,8 +3305,8 @@ smell p@(OneArgLower i mq cols a) = getState >>= \ms ->
                     []    -> let (coinTxt, isPlur) = mkCoinPieceTxt canCoins
                                  smellDesc = T.concat [ "The ", coinTxt, " smell", not isPlur |?| "s"
                                                       , " of metal, with just a hint of grime." ]
-                                 bs        = pure ( T.concat [ serialize d, " smells ", aCoinSomeCoins canCoins, "." ]
-                                                  , desigOtherIds d )
+                                 bs        = pure (T.concat [ serialize d, " smells ", vo, "." ], desigOtherIds d)
+                                 vo        = mkSerVerbObj . aCoinSomeCoins $ canCoins
                                  logMsg    = prd $ "smelled " <> aCoinSomeCoins canCoins
                              in ioHelper smellDesc bs logMsg
                     (t:_) -> sorry t
@@ -3322,9 +3322,9 @@ smell p@(OneArgLower i mq cols a) = getState >>= \ms ->
                                         _ -> getEntSmell targetId ms
                                       bs = map f . desigOtherIds $ d
                                         where
-                                          f i' | x <- aOrAn (ic ? mkCorpseAppellation i' ms targetId :? targetSing)
-                                               = ( T.concat [ serialize d, " smells ", x, " ", parensQuote "carried", "." ]
-                                                 , pure i' )
+                                          f i' | x  <- aOrAn (ic ? mkCorpseAppellation i' ms targetId :? targetSing)
+                                               , vo <- mkSerVerbObj $ x |<>| parensQuote "carried"
+                                               = (prd $ serialize d <> " smells " <> vo, pure i')
                                       logMsg = T.concat [ "smelled ", aOrAn targetSing, " ", parensQuote "carried", "." ]
                                   in ioHelper smellDesc bs logMsg
               Right _          -> sorry sorrySmellExcessTargets
@@ -3338,9 +3338,9 @@ smell p@(OneArgLower i mq cols a) = getState >>= \ms ->
             Left  msg        -> sorry msg
             Right [targetId] ->
                 let (targetSing, smellDesc) = (getSing `fanUncurry` getEntSmell) (targetId, ms)
+                    bs       = pure (prd $ serialize d <> " smells " <> vo, desigOtherIds d)
+                    vo       = mkSerVerbObj $ aOrAn targetSing <> (slotDesc |!| spcL slotDesc)
                     slotDesc = descSlotForId i ms targetId eqMap
-                    bs       = pure ( T.concat [ serialize d, " smells ", aOrAn targetSing, slotDesc |!| spcL slotDesc, "." ]
-                                    , desigOtherIds d )
                     logMsg   = T.concat [ "smelled ", aOrAn targetSing, " ", slotDesc, "." ]
                     res      = join (checkSlotSmellTaste targetSing <$> lookupMapValue targetId eqMap)
                 in case getType targetId ms of
@@ -3378,25 +3378,26 @@ smell p@(OneArgLower i mq cols a) = getState >>= \ms ->
       where
         smellRmHelper = \case
           Left  msg        -> sorry msg
-          Right [targetId] -> let (targetSing, smellDesc) = (getSing `fanUncurry` getEntSmell) (targetId, ms)
-                                  targetDesig = serialize . mkStdDesig targetId ms $ Don'tCap
-                                  bs          = [ ( T.concat [ serialize d, " smells ", targetDesig, "." ]
-                                                  , targetId `delete` desigOtherIds d )
-                                                , (serialize d <> " smells you.", pure targetId) ]
-                                  logMsg      = parseDesigSuffix i ms . prd $ "smelled " <> targetDesig
-                                  smellMob    = ioHelper smellDesc bs logMsg
-                                  smellCorpse = let corpseBs = map f . desigOtherIds $ d
-                                                    f i' = (T.concat [ serialize d, " smells "
-                                                                     , aOrAn . mkCorpseAppellation i' ms $ targetId
-                                                                     , " ", parensQuote "on the ground", "." ], pure i')
-                                                    corpseLogMsg = T.concat [ "smelled ", aOrAn targetSing, " "
-                                                                            , parensQuote "on the ground", "." ]
-                                                in ioHelper smellDesc corpseBs corpseLogMsg
-                              in case getType targetId ms of NpcType    -> smellMob
-                                                             PlaType    -> smellMob
-                                                             CorpseType -> smellCorpse
-                                                             _          -> sorry . sorrySmellRmNoHooks $ targetSing
-          Right _          -> sorry sorrySmellExcessTargets
+          Right [targetId] ->
+            let (targetSing, smellDesc) = (getSing `fanUncurry` getEntSmell) (targetId, ms)
+                targetDesig = serialize . mkStdDesig targetId ms $ Don'tCap
+                bs          = [ ( T.concat [ serialize d, " smells ", targetDesig, "." ]
+                                , targetId `delete` desigOtherIds d )
+                              , (serialize d <> " smells you.", pure targetId) ]
+                logMsg      = parseDesigSuffix i ms . prd $ "smelled " <> targetDesig
+                smellMob    = ioHelper smellDesc bs logMsg
+                smellCorpse = let corpseBs = map f . desigOtherIds $ d
+                                  f i'     | vo <- mkSerVerbObj . aOrAn . mkCorpseAppellation i' ms $ targetId
+                                           = (T.concat [ serialize d, " smells ", vo , " ", parensQuote "on the ground"
+                                                       , "." ], pure i')
+                                  corpseLogMsg = T.concat [ "smelled ", aOrAn targetSing, " "
+                                                          , parensQuote "on the ground", "." ]
+                              in ioHelper smellDesc corpseBs corpseLogMsg
+            in case getType targetId ms of NpcType    -> smellMob
+                                           PlaType    -> smellMob
+                                           CorpseType -> smellCorpse
+                                           _          -> sorry . sorrySmellRmNoHooks $ targetSing
+          Right _ -> sorry sorrySmellExcessTargets
     -----
     ioHelper = smellTasteIOHelper "smell" i mq cols
 smell p = advise p ["smell"] adviceSmellExcessArgs
