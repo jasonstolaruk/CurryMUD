@@ -303,16 +303,14 @@ createMob ms et (is, c) em mt = let (i, ms') = createEnt ms et
 -- NPC
 
 
- -- The caller should pass in "runNpcServerAsync" from "Mud.Threads.NpcServer" as the "ncpCreator" parameter.
 createNpc :: MudState
           -> EntTemplate
           -> (Inv, Coins)
           -> EqMap
           -> MobTemplate
-          -> (Id -> MudStack ())
           -> (Id, MudState, Funs)
-createNpc ms et ic em mt npcCreator = let (i, ms') = createMob ms et ic em mt
-                                      in (i, ms', map (i |&|) [ npcCreator, runDigesterAsync, runRegenAsync ])
+createNpc ms et ic em mt = let (i, ms') = createMob ms et ic em mt
+                           in (i, ms', map (i |&|) [ {-runNpcServerAsync,-} runDigesterAsync, runRegenAsync ]) -- TODO: Fix import cycle.
 
 
 newNpc :: MudState
@@ -320,11 +318,10 @@ newNpc :: MudState
        -> (Inv, Coins)
        -> EqMap
        -> MobTemplate
-       -> (Id -> MudStack ())
        -> InvId
        -> (Id, MudState, Funs)
-newNpc ms et ic em mt npcCreator invId =
-    let (i, typeTbl.ind i .~ NpcType -> ms', fs) = createNpc ms et ic em mt npcCreator
+newNpc ms et ic em mt invId =
+    let (i, typeTbl.ind i .~ NpcType -> ms', fs) = createNpc ms et ic em mt
     in (i, ms' & invTbl.ind invId %~ addToInv ms' (pure i), fs)
 
 

@@ -7,7 +7,6 @@ import           Mud.Data.State.Util.Get
 import           Mud.Data.State.Util.Make
 import           Mud.Data.State.Util.Misc
 import           Mud.TheWorld.Zones.AdminZoneIds (iClone)
-import           Mud.Threads.NpcServer
 import           Mud.Util.Misc
 
 import           Control.Lens (_1, _2, _3, view, views)
@@ -99,7 +98,6 @@ clone destId = foldl' helper
                                              mempties
                                              M.empty
                                              mkMobTemplate
-                                             runNpcServerAsync
                                              destId
               in h newId coins . cloneEqMap em . clone newId ([], ms', fs) $ is
           ObjType        -> f . newObj ms mkEntTemplate mkObjTemplate $ destId

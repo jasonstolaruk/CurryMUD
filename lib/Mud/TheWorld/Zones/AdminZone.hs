@@ -669,7 +669,7 @@ createAdminZone = do
         []
         mempty
         (mkRm (RmTemplate "Clone room"
-            "Cloned things are temporarily placed here."
+            "Cloned items are temporarily placed here when a PC dies."
             Nothing
             Nothing
             zeroBits

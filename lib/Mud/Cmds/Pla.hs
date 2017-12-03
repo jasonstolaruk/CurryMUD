@@ -34,10 +34,10 @@ import           Mud.Data.State.ActionParams.Misc
 import           Mud.Data.State.MsgQueue
 import           Mud.Data.State.MudData
 import           Mud.Data.State.Util.Calc
+import           Mud.Data.State.Util.Clone
 import           Mud.Data.State.Util.Coins
 import           Mud.Data.State.Util.Get
 import           Mud.Data.State.Util.Lang
-import           Mud.Data.State.Util.Make
 import           Mud.Data.State.Util.Misc
 import           Mud.Data.State.Util.Output
 import           Mud.Data.State.Util.Random
@@ -53,8 +53,9 @@ import           Mud.Misc.Misc
 import           Mud.Misc.NameResolution
 import           Mud.TheWorld.Liqs
 import           Mud.TheWorld.Zones.AdminZoneIds (iRoot)
-import           Mud.TheWorld.Zones.WarehouseIds (iPidge)
+import           Mud.TheWorld.Zones.WarehouseIds (iPidge, iPotTinnitus)
 import           Mud.Threads.Act
+import           Mud.Threads.Biodegrader
 import           Mud.Threads.LightTimer
 import           Mud.Threads.Misc
 import           Mud.Threads.SpiritTimer
@@ -63,8 +64,6 @@ import           Mud.TopLvlDefs.FilePaths
 import           Mud.TopLvlDefs.Misc
 import           Mud.TopLvlDefs.Padding
 import           Mud.TopLvlDefs.Telnet.Chars
-import           Mud.TopLvlDefs.Vols
-import           Mud.TopLvlDefs.Weights
 import           Mud.Util.List hiding (headTail)
 import qualified Mud.Util.Misc as U (pmf)
 import           Mud.Util.Misc hiding (pmf)
@@ -82,7 +81,6 @@ import           Control.Monad ((>=>), foldM, forM, forM_, guard, join, mplus, u
 import           Control.Monad.IO.Class (liftIO)
 import           Control.Monad.Reader (asks)
 import           Crypto.BCrypt (validatePassword)
-import           Data.Bits (setBit, zeroBits)
 import           Data.Bool (bool)
 import           Data.Char (isDigit, isLetter, isLower, isSpace, isUpper)
 import           Data.Either (lefts, partitionEithers)
@@ -2373,26 +2371,18 @@ quitCan'tAbbrev p                  = withoutArgs quitCan'tAbbrev p
 -----
 
 
-razzle :: HasCallStack => ActionFun -- TODO: Can we clone?
+razzle :: HasCallStack => ActionFun -- TODO: Test.
 razzle p@(ActionParams i mq cols [ "dazzle", "root", "beer" ]) = mIf (hasRazzledId i <$> getState)
     (cmdNotFoundAction p)
     (do logPlaExec "razzle" i
         modifyStateSeq $ \ms ->
-            let et  = EntTemplate (Just "flask")
-                                  "large potion flask" ""
-                                  "This glass flask complete with cork stopper is the ideal vessel for potion storage \
-                                  \and transportation."
-                                  Nothing
-                                  zeroBits
-                ot  = ObjTemplate potionFlaskLrgWeight
-                                  potionFlaskLrgVol
-                                  Nothing Nothing Nothing
-                                  (setBit zeroBits . fromEnum $ IsBiodegradable)
-                vt  = VesselTemplate (Just (potTinnitusLiq, maxBound)) Nothing
-                res = dropFst . newVessel (ms & plaTbl.ind i %~ setPlaFlag HasRazzled True) et ot vt $ i
-                f   = bcastOtherAdmins i . prd $ getSing i ms <> " has executed " <> dblQuote "razzle dazzle root beer"
-            in second (++ pure f) res
-        wrapSend mq cols "A potion flask materializes in your hands.")
+            let s                  = getSing i ms
+                ([potId], ms', fs) = clone i ([], ms, []) . pure $ iPotTinnitus
+            in ( upd ms' [ objTbl.ind potId %~ setObjFlag IsBiodegradable True
+                         , plaTbl.ind i     %~ setPlaFlag HasRazzled      True ]
+               , fs ++ [ runBiodegAsync potId
+                       , wrapSend mq cols "A potion flask materializes in your hands."
+                       , bcastOtherAdmins i . prd $ s <> " has executed " <> dblQuote "razzle dazzle root beer" ] ))
 razzle p = cmdNotFoundAction p
 
 
