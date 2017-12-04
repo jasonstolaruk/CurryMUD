@@ -78,13 +78,12 @@ threadNpcServer i npcMq = handle (threadExHandler (Just i) "NPC server") $ setTh
 
 handleExternCmd :: HasCallStack => Id -> MsgQueue -> Cols -> Text -> MudStack ()
 handleExternCmd i mq cols msg = getState >>= \ms ->
-    let (cn, as)      = ()# msg ? ("", []) :? (headTail . T.words $ msg)
-        mkWithArgs i' = WithArgs i' mq cols as
-        -----
-        notPossessed  = helper toNpcInterp
-        helper dflt   = maybe dflt (toOther i) . getInterp i $ ms
-        toOther i'    = ((cn, mkWithArgs i') |&|) . uncurry
-        toNpcInterp   = unless (()# msg) . npcInterp cn . mkWithArgs $ i
-        -----
-        possessed pi  = helper . maybe toNpcInterp (toOther pi) . getInterp pi $ ms
+    let notPossessed = helper toNpcInterp
+        helper dflt  = maybe dflt (toOther i) . getInterp i $ ms
+        toOther i'   = ((cn, mkWithArgs i') |&|) . uncurry
+        toNpcInterp  = unless (()# msg) . npcInterp cn . mkWithArgs $ i
+        possessed pi = helper . maybe toNpcInterp (toOther pi) . getInterp pi $ ms
     in maybe notPossessed possessed . getPossessor i $ ms
+  where
+    (cn, as)      = ()# msg ? mempty :? (headTail . T.words $ msg)
+    mkWithArgs i' = WithArgs i' mq cols as
