@@ -35,6 +35,7 @@ import           Mud.Data.State.Util.Misc
 import           Mud.Threads.Biodegrader
 import           Mud.Threads.CorpseDecomposer
 import           Mud.Threads.Digester
+-- import           Mud.Threads.NpcServer -- TODO
 import           Mud.Threads.Regen
 import           Mud.TopLvlDefs.Seconds
 import           Mud.Util.Misc
