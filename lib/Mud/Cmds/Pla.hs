@@ -3485,7 +3485,7 @@ mkStopTuples p@ActionParams { myId } ms = map (\(a, b, c) -> (pp a, a, uncurry b
 -----
 
 
-taste :: HasCallStack => ActionFun -- TODO: Here.
+taste :: HasCallStack => ActionFun
 taste p@AdviseNoArgs              = advise p ["taste"] adviceTasteNoArgs
 taste p@(OneArgLower i mq cols a) = getState >>= \ms ->
     let (invCoins, eqMap) = (getInvCoins `fanUncurry` getEqMap) (i, ms)
