@@ -218,8 +218,8 @@ pwMsg t =
     , "* 0 whitespace characters" ]
 
 
-pwWarningTxt :: Text -- Do not indent with leading spaces.
-pwWarningTxt = "Please make a note of your new password. If you lose your password, you may lose your character!"
+pwWarningMsg :: Text -- Do not indent with leading spaces.
+pwWarningMsg = "Please make a note of your new password. If you lose your password, you may lose your character!"
 
 
 rethrowExMsg :: Text -> Text
@@ -277,12 +277,21 @@ sleepMsg :: Text
 sleepMsg = thrice prd "You go to sleep"
 
 
+smellCoinMsg :: Text -> Bool -> Text
+smellCoinMsg t isPlur = T.concat [ "The ", t, " smell", not isPlur |?| "s", " of metal, with just a hint of grime." ]
+
+
 spiritDetachMsg :: Text
 spiritDetachMsg = "Your spirit detaches from your dead body!"
 
 
 sudoMsg :: Text
 sudoMsg = thrice prd "HELLO, ROOT! We trust you have received the usual lecture from the local System Administrator"
+
+
+tasteCoinMsg :: Text -> Text
+tasteCoinMsg t = "You are first struck by an unmistakably metallic taste, followed soon by the salty essence of sweat \
+                 \and waxy residue from the hands of the many people who handled the " <> t <> " before you."
 
 
 teleDescMsg :: Text

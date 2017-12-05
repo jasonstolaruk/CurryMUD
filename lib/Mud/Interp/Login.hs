@@ -326,7 +326,7 @@ promptRetryNewPW mq cols msg = do msg |#| wrapSend mq cols
 interpVerifyNewPW :: HasCallStack => NewCharBundle -> Interp
 interpVerifyNewPW ncb@(NewCharBundle _ _ pass) cn params@(NoArgs i mq cols)
   | cn == pass = do send      mq telnetShowInput
-                    wrapSend  mq cols pwWarningTxt
+                    wrapSend  mq cols pwWarningMsg
                     promptSex ncb mq cols
                     setInterp i . Just . interpSex $ ncb
   | otherwise  = promptRetryNewPwMatch ncb params

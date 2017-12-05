@@ -618,8 +618,8 @@ createWarehouse = do
           zeroBits)
       (let ot = ObjTemplate torchWeight
                             torchVol
-                            (Just "The rushes that comprise the torch have a grassy taste, while the pitch in which \
-                                  \they have dipped has a sour, woody taste.")
+                            (Just "The rushes that comprise the torch have a grassy taste, while the pitch (in which \
+                                  \they have been dipped) has a sour, woody taste.")
                             torchVal
                             Nothing
                             zeroBits

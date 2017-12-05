@@ -2294,7 +2294,7 @@ interpVerifyNewPW oldPW pass cn (NoArgs i mq cols)
       withDbExHandler_ "interpVerifyNewPW" . insertDbTblUnPw . UnPwRec s $ pass
       send mq telnetShowInput
       blankLine mq
-      wrapSend  mq cols $ "Password changed. " <> pwWarningTxt
+      wrapSend  mq cols $ "Password changed. " <> pwWarningMsg
       sendDfltPrompt mq i
       resetInterp i
   | otherwise = pwSorryHelper i mq cols sorryInterpNewPwMatch
@@ -3303,13 +3303,10 @@ smell p@(OneArgLower i mq cols a) = getState >>= \ms ->
           else case eiss of
             [] -> let (canCoins, can'tCoinMsgs) = distillEcs ecs
                   in case can'tCoinMsgs of
-                    []    -> let (coinTxt, isPlur) = mkCoinPieceTxt canCoins
-                                 smellDesc = T.concat [ "The ", coinTxt, " smell", not isPlur |?| "s"
-                                                      , " of metal, with just a hint of grime." ]
-                                 bs        = pure (T.concat [ serialize d, " smells ", vo, "." ], desigOtherIds d)
-                                 vo        = mkSerVerbObj . aCoinSomeCoins $ canCoins
-                                 logMsg    = prd $ "smelled " <> aCoinSomeCoins canCoins
-                             in ioHelper smellDesc bs logMsg
+                    []    -> let bs     = pure (prd $ serialize d <> " smells " <> vo, desigOtherIds d)
+                                 vo     = mkSerVerbObj . aCoinSomeCoins $ canCoins
+                                 logMsg = prd $ "smelled " <> aCoinSomeCoins canCoins
+                             in ioHelper (uncurry smellCoinMsg . mkCoinPieceTxt $ canCoins) bs logMsg
                     (t:_) -> sorry t
             (eis:_) -> case eis of
               Left  msg        -> sorry msg
@@ -3519,20 +3516,17 @@ taste p@(OneArgLower i mq cols a) = getState >>= \ms ->
                                       _ -> getObjTaste targetId ms
                                     bs = map f . desigOtherIds $ d
                                       where
-                                        f i' = (T.concat [ serialize d, " tastes "
-                                                         , aOrAn (ic ? mkCorpseAppellation i' ms targetId :? targetSing)
-                                                         , " ", parensQuote "carried", "." ], pure i' )
+                                        f i' | txt <- aOrAn (ic ? mkCorpseAppellation i' ms targetId :? targetSing)
+                                             , vo  <- mkSerVerbObj $ txt |<>| parensQuote "carried"
+                                             = (prd $ serialize d <> " tastes " <> vo, pure i')
                                     logMsg = T.concat [ "tasted ", aOrAn targetSing, " ", parensQuote "carried", "." ]
                                 in ioHelper tasteDesc bs logMsg
             Right _          -> sorry sorryTasteExcessTargets
           _ -> let (canCoins, can'tCoinMsgs) = distillEcs ecs in case can'tCoinMsgs of
-            []    -> let (coinTxt, _) = mkCoinPieceTxt canCoins
-                         tasteDesc    = "You are first struck by an unmistakably metallic taste, followed soon by the \
-                                        \salty essence of sweat and waxy residue left by the hands of the many people \
-                                        \who handled the " <> coinTxt <> " before you."
-                         bs     = pure (T.concat [ serialize d, " tastes ", aCoinSomeCoins canCoins, "." ], desigOtherIds d)
+            []    -> let bs     = pure ( prd $ serialize d <> " tastes " <> mkSerVerbObj (aCoinSomeCoins canCoins)
+                                       , desigOtherIds d )
                          logMsg = prd $ "tasted " <> aCoinSomeCoins canCoins
-                     in ioHelper tasteDesc bs logMsg
+                     in ioHelper (tasteCoinMsg . fst . mkCoinPieceTxt $ canCoins) bs logMsg
             (t:_) -> sorry t
     -----
     tasteEq ms d eqMap target | (gecrs, miss, _) <- resolveEntCoinNames i ms (pure target) (M.elems eqMap) mempty =
@@ -3540,16 +3534,17 @@ taste p@(OneArgLower i mq cols a) = getState >>= \ms ->
           []       -> sorry sorryEquipCoins
           (pair:_) -> case procGecrMisMobEq pair of
             Left  msg        -> sorry msg
-            Right [targetId] -> let (targetSing, tasteDesc) = (getSing `fanUncurry` getObjTaste) (targetId, ms)
-                                    slotDesc = descSlotForId i ms targetId eqMap
-                                    bs       = pure (T.concat [ serialize d, " tastes ", aOrAn targetSing
-                                                              , slotDesc |!| spcL slotDesc, "." ], desigOtherIds d)
-                                    logMsg   = T.concat [ "tasted ", aOrAn targetSing, " ", slotDesc, "." ]
-                                    res      = join (checkSlotSmellTaste targetSing <$> lookupMapValue targetId eqMap)
-                                in case getType targetId ms of
-                                  LightType | getLightIsLit targetId ms -> sorry . sorryTasteLitLight $ targetSing
-                                  _ -> uncurry3 ioHelper . (, bs, logMsg) . fromMaybe tasteDesc $ res
-            Right _          -> sorry sorryTasteExcessTargets
+            Right [targetId] ->
+              let (targetSing, tasteDesc) = (getSing `fanUncurry` getObjTaste) (targetId, ms)
+                  slotDesc = descSlotForId i ms targetId eqMap
+                  bs       = pure (prd $ serialize d <> " tastes " <> vo, desigOtherIds d)
+                  vo       = mkSerVerbObj $ aOrAn targetSing <> (slotDesc |!| spcL slotDesc)
+                  logMsg   = T.concat [ "tasted ", aOrAn targetSing, " ", slotDesc, "." ]
+                  res      = join (checkSlotSmellTaste targetSing <$> lookupMapValue targetId eqMap)
+              in case getType targetId ms of
+                LightType | getLightIsLit targetId ms -> sorry . sorryTasteLitLight $ targetSing
+                _                                     -> uncurry3 ioHelper . (, bs, logMsg) . fromMaybe tasteDesc $ res
+            Right _ -> sorry sorryTasteExcessTargets
     -----
     ioHelper = smellTasteIOHelper "taste" i mq cols
 taste p = advise p ["taste"] adviceTasteExcessArgs
