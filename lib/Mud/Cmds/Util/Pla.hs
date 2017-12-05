@@ -753,6 +753,23 @@ mkGetDropInvDescs i ms d god (mkName_maybeCorpseId_count_bothList i ms -> tuple)
         objTxt = showTxt c |<>| mkPlurFromBoth b
 
 
+mkName_maybeCorpseId_count_bothList :: HasCallStack => Id -> MudState -> Inv -> [(Text, Maybe Id, Int, BothGramNos)]
+mkName_maybeCorpseId_count_bothList i ms targetIds =
+    let ens   = [ getEffName i ms targetId        | targetId <- targetIds ]
+        mcis  = [ mkMaybeCorpseId targetId ms     | targetId <- targetIds ]
+        cs    = mkCountList ebgns
+        ebgns = [ getEffBothGramNos i ms targetId | targetId <- targetIds ]
+    in nubBy f . zip4 ens mcis cs $ ebgns
+  where
+    (a, _, c, d) `f` (a', _, c', d') = (a, c, d) == (a', c', d')
+
+
+mkMaybeCorpseId :: HasCallStack => Id -> MudState -> Maybe Id
+mkMaybeCorpseId i ms | getType i ms == CorpseType = case getCorpse i ms of PCCorpse  {} -> Just i
+                                                                           NpcCorpse {} -> Nothing
+                     | otherwise                  = Nothing
+
+
 mkGodVerb :: HasCallStack => GetOrDrop -> Verb -> Text
 mkGodVerb Get  SndPer = "pick up"
 mkGodVerb Get  ThrPer = "picks up"
@@ -1062,7 +1079,7 @@ mkUnreadyDescs :: HasCallStack => Id
                                -> Desig
                                -> Inv
                                -> ([Broadcast], [Text])
-mkUnreadyDescs i ms d targetIds = unzip [ helper icb | icb <- mkIdCountBothList i ms targetIds ]
+mkUnreadyDescs i ms d targetIds = unzip [ helper icb | icb <- mkIdCountBothList i ms targetIds ] -- TODO: d { desigDoMaskInDark = False }
   where
     helper (targetId, count, b@(targetSing, _)) = if count == 1
       then let toSelfMsg   = T.concat [ "You ", mkVerb targetId SndPer, " the ", targetSing, "." ]
@@ -1099,7 +1116,7 @@ mkUnreadyDescs i ms d targetIds = unzip [ helper icb | icb <- mkIdCountBothList 
                           ThrPer -> "unreadies"
 
 
-mkIdCountBothList :: HasCallStack => Id -> MudState -> Inv -> [(Id, Int, BothGramNos)]
+mkIdCountBothList :: HasCallStack => Id -> MudState -> Inv -> [(Id, Int, BothGramNos)] -- TODO: Only used by "mkUnreadyDescs".
 mkIdCountBothList i ms targetIds =
     let boths@(mkCountList -> counts) = [ getEffBothGramNos i ms targetId | targetId <- targetIds ]
     in nubBy ((==) `on` dropFst) . zip3 targetIds counts $ boths

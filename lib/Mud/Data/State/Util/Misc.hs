@@ -57,7 +57,6 @@ module Mud.Data.State.Util.Misc ( addToInv
                                 , mkCorpseTxt
                                 , mkEntName
                                 , mkNameCountBothList
-                                , mkName_maybeCorpseId_count_bothList
                                 , mkPlaIdSingList
                                 , mkPrettySexRace
                                 , mkPrettySexRaceLvl
@@ -102,7 +101,7 @@ import           Control.Monad.IO.Class (liftIO)
 import           Control.Monad.Reader (ask, asks)
 import           Data.Bool (bool)
 import           Data.IORef (atomicModifyIORef', readIORef)
-import           Data.List ((\\), delete, foldl', nub, nubBy, sortBy, zip4)
+import           Data.List ((\\), delete, foldl', nub, sortBy)
 import           Data.Maybe (fromMaybe)
 import           Data.Monoid (Sum(..), (<>))
 import           Data.Text (Text)
@@ -529,11 +528,12 @@ mkIdSingListHelper f ms@(view plaTbl -> pt) =
     [ (i, s) | i <- IM.keys pt , f . isAdmin $ pt IM.! i , let s = getSing i ms , then sortWith by s ]
 
 
------
-
-
 mkAdminPlaIdSingList :: HasCallStack => MudState -> [(Id, Sing)]
 mkAdminPlaIdSingList = mkIdSingListHelper (const True)
+
+
+mkPlaIdSingList :: HasCallStack => MudState -> [(Id, Sing)]
+mkPlaIdSingList = mkIdSingListHelper not
 
 
 -----
@@ -570,30 +570,6 @@ mkNameCountBothList i ms targetIds = let ens   = [ getEffName        i ms target
                                          cs    = mkCountList ebgns
                                          ebgns = [ getEffBothGramNos i ms targetId | targetId <- targetIds ]
                                      in nub . zip3 ens cs $ ebgns
-
-
-mkName_maybeCorpseId_count_bothList :: HasCallStack => Id -> MudState -> Inv -> [(Text, Maybe Id, Int, BothGramNos)]
-mkName_maybeCorpseId_count_bothList i ms targetIds =
-    let ens   = [ getEffName i ms targetId        | targetId <- targetIds ]
-        mcis  = [ mkMaybeCorpseId targetId ms     | targetId <- targetIds ]
-        cs    = mkCountList ebgns
-        ebgns = [ getEffBothGramNos i ms targetId | targetId <- targetIds ]
-    in nubBy f . zip4 ens mcis cs $ ebgns
-  where
-    (a, _, c, d) `f` (a', _, c', d') = (a, c, d) == (a', c', d')
-
-
-mkMaybeCorpseId :: HasCallStack => Id -> MudState -> Maybe Id
-mkMaybeCorpseId i ms | getType i ms == CorpseType = case getCorpse i ms of PCCorpse  {} -> Just i
-                                                                           NpcCorpse {} -> Nothing
-                     | otherwise                  = Nothing
-
-
------
-
-
-mkPlaIdSingList :: HasCallStack => MudState -> [(Id, Sing)]
-mkPlaIdSingList = mkIdSingListHelper not
 
 
 -----
