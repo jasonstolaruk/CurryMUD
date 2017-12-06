@@ -755,11 +755,10 @@ mkGetDropInvDescs i ms d god (mkName_maybeCorpseId_count_bothList i ms -> tuple)
 
 mkName_maybeCorpseId_count_bothList :: HasCallStack => Id -> MudState -> Inv -> [(Text, Maybe Id, Int, BothGramNos)]
 mkName_maybeCorpseId_count_bothList i ms targetIds =
-    let ens   = [ getEffName i ms targetId        | targetId <- targetIds ]
-        mcis  = [ mkMaybeCorpseId targetId ms     | targetId <- targetIds ]
-        cs    = mkCountList ebgns
-        ebgns = [ getEffBothGramNos i ms targetId | targetId <- targetIds ]
-    in nubBy ((==) `on` dropSndOfQuad) . zip4 ens mcis cs $ ebgns
+    let names                         = [ getEffName i ms targetId        | targetId <- targetIds ]
+        corpseIds                     = [ mkMaybeCorpseId targetId ms     | targetId <- targetIds ]
+        boths@(mkCountList -> counts) = [ getEffBothGramNos i ms targetId | targetId <- targetIds ]
+    in nubBy ((==) `on` dropSndOfQuad) . zip4 names corpseIds counts $ boths
 
 
 mkMaybeCorpseId :: HasCallStack => Id -> MudState -> Maybe Id
@@ -1082,7 +1081,7 @@ mkUnreadyDescs i ms d = unzipAndSort . map helper . mkId_count_both_isLitLightLi
   where
     helper (targetId, count, b@(targetSing, _), isLit) = if count == 1
       then let toSelfMsg   = T.concat [ "You ", mkVerb targetId SndPer, " the ", targetSing, "." ]
-               toOthersMsg = T.concat [ serialize d, spaced . mkVerb targetId $ ThrPer, aOrAn targetSing,  "." ]
+               toOthersMsg = T.concat [ serialize d, spaced . mkVerb targetId $ ThrPer, aOrAn targetSing, "." ]
            in (((toOthersMsg, desigOtherIds d), isLit), toSelfMsg)
       else let toSelfMsg   = T.concat [ "You ", mkVerb targetId SndPer, spaced . showTxt $ count, mkPlurFromBoth b, "." ]
                toOthersMsg = T.concat [ serialize d, spaced . mkVerb targetId $ ThrPer, showTxt count, " "
@@ -1113,15 +1112,25 @@ mkUnreadyDescs i ms d = unzipAndSort . map helper . mkId_count_both_isLitLightLi
                           ThrPer -> "doffs"
     mkVerbUnready = \case SndPer -> "unready"
                           ThrPer -> "unreadies"
-    -- Sort the broadcasts such that lit lights will appear to be unreadied first.
+    -- Sort the broadcasts such that lit light sources will appear to be unreadied first (this is important in the case
+    -- that the unreadying of a lit light source plunges the room into darkness).
     unzipAndSort = first (map fst) . first (sortBy (flip compare `on` snd)) . unzip
 
 
 mkId_count_both_isLitLightList :: HasCallStack => Id -> MudState -> Inv -> [(Id, Int, BothGramNos, Bool)]
 mkId_count_both_isLitLightList i ms targetIds =
-    let boths@(mkCountList -> counts) = [ getEffBothGramNos i ms targetId | targetId <- targetIds ] -- TODO: Counting like this probably isn't correct...
+    let boths@(mkCountList -> counts) = [ getEffBothGramNos i ms targetId | targetId <- targetIds ]
         isLitLights                   = [ isLitLight targetId ms          | targetId <- targetIds ]
-    in nubBy ((==) `on` dropFstOfQuad) . zip4 targetIds counts boths $ isLitLights
+    in filterThem . nubBy ((==) `on` dropFstOfQuad) . zip4 targetIds counts boths $ isLitLights
+  where
+    -- In the case that the player is unreadying two light sources of the same name, and one of them is lit while the
+    -- other is not, there will exist one tuple for the lit light source and another tuple for the unlit light source
+    -- (the tuples will have the same "count" and "both grammar numbers"). We only want to keep the tuple for which the
+    -- "is lit light" boolean is "True".
+    filterThem xs = let f xs' []                     = xs'
+                        f xs' ((_, c, b, True):rest) = f (filter ((/= (c, b, False)) . dropFstOfQuad) xs') rest
+                        f xs' (_              :rest) = f xs' rest
+                    in f xs xs
 
 
 -----

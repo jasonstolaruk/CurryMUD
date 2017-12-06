@@ -566,10 +566,10 @@ mkEntName = views entName (fromMaybe "unknown")
 
 
 mkNameCountBothList :: HasCallStack => Id -> MudState -> Inv -> [(Text, Int, BothGramNos)]
-mkNameCountBothList i ms targetIds = let ens   = [ getEffName        i ms targetId | targetId <- targetIds ]
-                                         cs    = mkCountList ebgns
-                                         ebgns = [ getEffBothGramNos i ms targetId | targetId <- targetIds ]
-                                     in nub . zip3 ens cs $ ebgns
+mkNameCountBothList i ms targetIds =
+    let names                         = [ getEffName        i ms targetId | targetId <- targetIds ]
+        boths@(mkCountList -> counts) = [ getEffBothGramNos i ms targetId | targetId <- targetIds ]
+    in nub . zip3 names counts $ boths
 
 
 -----
