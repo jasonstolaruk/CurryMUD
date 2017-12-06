@@ -8,7 +8,7 @@ CurryMUD is essentially the hobby project and brainchild of a single developer. 
 
 ## My goals
 
-My aim is to create a unique, playable MUD named "CurryMUD." I am writing this MUD entirely in Haskell, from scratch.
+My aim is to create a unique, playable MUD. I am writing this MUD entirely in Haskell, from scratch.
 
 Creating a framework which others can leverage to develop their own MUDs is _not_ an explicit goal of mine, nor is this a collaborative effort (I am not accepting PRs). Having said that, the code is available here on GitHub, so other parties are free to examine the code and develop their own forks. [Please refer to the license](https://github.com/jasonstolaruk/CurryMUD/blob/master/LICENSE), which is a 3-clause BSD license with additional unique clauses regarding the creation of derivative MUDs.
 
@@ -75,8 +75,8 @@ The code is available here on GitHub under [this license](https://github.com/jas
 
 * About 48,000 lines of code/text.
 * About 120 modules, excluding tests.
-* About 105 unit and property tests exist (I'm using the [tasty testing framework](https://hackage.haskell.org/package/tasty)).
-* A `ReaderT` monad transformer stack with the world state inside a single `IORef`.
+* About 105 unit and property tests (I'm using the [tasty testing framework](https://hackage.haskell.org/package/tasty)).
+* A `ReaderT` monad transformer stack with the entire world state inside a single `IORef`.
 * `STM`-based concurrency.
 * Using `aeson` (with `conduit`) and `sqlite-simple` for persistence.
 * Heavy use of the `lens` library.
@@ -100,7 +100,7 @@ The code is available here on GitHub under [this license](https://github.com/jas
 Linux and macOS are supported. Sorry, but Windows is _not_ supported.
 
 Please build with [stack](http://docs.haskellstack.org/en/stable/README.html):
-1. [Install the pcre library](http://www.pcre.org) if necessary. (On a Mac, `brew install pcre` should be sufficient.)
+1. [Install the pcre library](http://www.pcre.org) if necessary. (On macOS, `brew install pcre` should be sufficient.)
 1. [Install stack.](http://docs.haskellstack.org/en/stable/install_and_upgrade/)
 1. Clone the repo from your home directory (the server expects to find various folders under `$HOME/CurryMUD`).
 1. Inside `$HOME/CurryMUD`, run `stack setup` to get GHC 8 on your machine. (The `stack.yaml` file points to [a recent resolver](https://www.stackage.org/snapshots) using GHC 8.)
