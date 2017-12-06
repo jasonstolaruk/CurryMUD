@@ -1073,22 +1073,21 @@ helperUnready i ms d a = \case
 
 
 -- TODO: Here.
--- TODO: "Someone unreadies a torch."
 mkUnreadyDescs :: HasCallStack => Id -- TODO: d { desigDoMaskInDark = False }
                                -> MudState
                                -> Desig
                                -> Inv
                                -> ([Broadcast], [Text])
-mkUnreadyDescs i ms d targetIds = unzip [ helper icb | icb <- map dropFrtOfQuad . mkId_count_both_isLitLightList i ms $ targetIds ] -- TODO: Use the "isLitLight" bool.
+mkUnreadyDescs i ms d = unzipAndSort . map helper . mkId_count_both_isLitLightList i ms
   where
-    helper (targetId, count, b@(targetSing, _)) = if count == 1
+    helper (targetId, count, b@(targetSing, _), isLit) = if count == 1
       then let toSelfMsg   = T.concat [ "You ", mkVerb targetId SndPer, " the ", targetSing, "." ]
                toOthersMsg = T.concat [ serialize d, spaced . mkVerb targetId $ ThrPer, aOrAn targetSing,  "." ]
-           in ((toOthersMsg, desigOtherIds d), toSelfMsg)
+           in (((toOthersMsg, desigOtherIds d), isLit), toSelfMsg)
       else let toSelfMsg   = T.concat [ "You ", mkVerb targetId SndPer, spaced . showTxt $ count, mkPlurFromBoth b, "." ]
                toOthersMsg = T.concat [ serialize d, spaced . mkVerb targetId $ ThrPer, showTxt count, " "
                                       , mkPlurFromBoth b, "." ]
-           in ((toOthersMsg, desigOtherIds d), toSelfMsg)
+           in (((toOthersMsg, desigOtherIds d), isLit), toSelfMsg)
     mkVerb targetId person = case getType targetId ms of
       ArmType   -> case getArmSub targetId ms of Head     -> mkVerbTakeOff person
                                                  Hands    -> mkVerbTakeOff person
@@ -1114,11 +1113,13 @@ mkUnreadyDescs i ms d targetIds = unzip [ helper icb | icb <- map dropFrtOfQuad 
                           ThrPer -> "doffs"
     mkVerbUnready = \case SndPer -> "unready"
                           ThrPer -> "unreadies"
+    -- Sort the broadcasts such that lit lights will appear to be unreadied first.
+    unzipAndSort = first (map fst) . first (sortBy (flip compare `on` snd)) . unzip
 
 
 mkId_count_both_isLitLightList :: HasCallStack => Id -> MudState -> Inv -> [(Id, Int, BothGramNos, Bool)]
 mkId_count_both_isLitLightList i ms targetIds =
-    let boths@(mkCountList -> counts) = [ getEffBothGramNos i ms targetId | targetId <- targetIds ]
+    let boths@(mkCountList -> counts) = [ getEffBothGramNos i ms targetId | targetId <- targetIds ] -- TODO: Counting like this probably isn't correct...
         isLitLights                   = [ isLitLight targetId ms          | targetId <- targetIds ]
     in nubBy ((==) `on` dropFstOfQuad) . zip4 targetIds counts boths $ isLitLights
 
