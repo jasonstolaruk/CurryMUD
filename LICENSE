@@ -20,10 +20,13 @@ modification, are permitted provided that the following conditions are met:
 If you intend to run this software on a public-facing server:
 
     * You may not continue to use the CurryMUD name. You must devise
-      an original name for your MUD.
+      an original name for the software, and modify the software such
+      that the CurryMUD name is no longer used to identify the
+      software/game.
 
-    * You must make it clear that your MUD is a fork of/is derived
-      from CurryMUD.
+    * You must make it clear to users of the software and players of
+      the game that the software/game is a fork of/is derived from
+      CurryMUD.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
