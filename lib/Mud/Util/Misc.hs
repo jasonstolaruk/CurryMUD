@@ -36,6 +36,7 @@ module Mud.Util.Misc ( BlowUp
                      , formatTimeHelper
                      , fromEither
                      , fromMaybeEmp
+                     , ifThenElse
                      , ind
                      , intDivide
                      , isNonZero
@@ -326,6 +327,14 @@ formatTimeHelper = T.pack . formatTime defaultTimeLocale "%Z: %F %T"
 fromEither :: HasCallStack => Either a a -> a
 fromEither (Right a) = a
 fromEither (Left  a) = a
+
+
+-----
+
+
+ifThenElse :: HasCallStack => Bool -> a -> a -> a
+ifThenElse True  x _ = x
+ifThenElse False _ y = y
 
 
 -----
