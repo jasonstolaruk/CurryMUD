@@ -20,10 +20,9 @@ import Data.Text (Text)
 infixl 0 ?
 infixl 0 |&|
 infixl 1 :?, |!|, |?|
+infixr 6 |<>|
 infixl 8 |#|
 infixl 9 !#, #
-
-infixr 6 |<>|
 
 
 -- ==================================================

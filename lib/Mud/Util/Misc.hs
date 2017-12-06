@@ -36,7 +36,6 @@ module Mud.Util.Misc ( BlowUp
                      , formatTimeHelper
                      , fromEither
                      , fromMaybeEmp
-                     , ifThenElse
                      , ind
                      , intDivide
                      , isNonZero
@@ -258,15 +257,15 @@ dropIrrelevantFiles = foldr ((.) . delete) id [ ".", "..", ".DS_Store" ]
 
 
 dup :: HasCallStack => a -> (a, a)
-dup x = (x, x)
+dup x = (,) x x
 
 
 dup3 :: HasCallStack => a -> (a, a, a)
-dup3 x = (x, x, x)
+dup3 x = (,,) x x x
 
 
 dup4 :: HasCallStack => a -> (a, a, a, a)
-dup4 x = (x, x, x, x)
+dup4 x = (,,,) x x x x
 
 
 dupFirst :: HasCallStack => (a -> b) -> a -> (b, a)
@@ -327,14 +326,6 @@ formatTimeHelper = T.pack . formatTime defaultTimeLocale "%Z: %F %T"
 fromEither :: HasCallStack => Either a a -> a
 fromEither (Right a) = a
 fromEither (Left  a) = a
-
-
------
-
-
-ifThenElse :: HasCallStack => Bool -> a -> a -> a
-ifThenElse True  x _ = x
-ifThenElse False _ y = y
 
 
 -----
@@ -457,13 +448,11 @@ mkTimestamp = [ bracketQuote . uncurry (|<>|) $ pair | pair <- mkDateTimeTxt ]
 
 
 onTrue :: HasCallStack => Bool -> (a -> a) -> a -> a
-onTrue b f x | b         = f x
-             | otherwise = x
+onTrue b f x | b = f x | otherwise = x
 
 
 onFalse :: HasCallStack => Bool -> (a -> a) -> a -> a
-onFalse b f x | b         = x
-              | otherwise = f x
+onFalse b f x | b = x | otherwise = f x
 
 
 -----
