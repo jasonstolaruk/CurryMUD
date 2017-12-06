@@ -759,9 +759,7 @@ mkName_maybeCorpseId_count_bothList i ms targetIds =
         mcis  = [ mkMaybeCorpseId targetId ms     | targetId <- targetIds ]
         cs    = mkCountList ebgns
         ebgns = [ getEffBothGramNos i ms targetId | targetId <- targetIds ]
-    in nubBy f . zip4 ens mcis cs $ ebgns
-  where
-    (a, _, c, d) `f` (a', _, c', d') = (a, c, d) == (a', c', d')
+    in nubBy ((==) `on` dropSndOfQuad) . zip4 ens mcis cs $ ebgns
 
 
 mkMaybeCorpseId :: HasCallStack => Id -> MudState -> Maybe Id
@@ -1074,12 +1072,14 @@ helperUnready i ms d a = \case
                           & _5 <>~ msgs
 
 
-mkUnreadyDescs :: HasCallStack => Id
+-- TODO: Here.
+-- TODO: "Someone unreadies a torch."
+mkUnreadyDescs :: HasCallStack => Id -- TODO: d { desigDoMaskInDark = False }
                                -> MudState
                                -> Desig
                                -> Inv
                                -> ([Broadcast], [Text])
-mkUnreadyDescs i ms d targetIds = unzip [ helper icb | icb <- mkIdCountBothList i ms targetIds ] -- TODO: d { desigDoMaskInDark = False }
+mkUnreadyDescs i ms d targetIds = unzip [ helper icb | icb <- map dropFrtOfQuad . mkId_count_both_isLitLightList i ms $ targetIds ] -- TODO: Use the "isLitLight" bool.
   where
     helper (targetId, count, b@(targetSing, _)) = if count == 1
       then let toSelfMsg   = T.concat [ "You ", mkVerb targetId SndPer, " the ", targetSing, "." ]
@@ -1116,10 +1116,11 @@ mkUnreadyDescs i ms d targetIds = unzip [ helper icb | icb <- mkIdCountBothList 
                           ThrPer -> "unreadies"
 
 
-mkIdCountBothList :: HasCallStack => Id -> MudState -> Inv -> [(Id, Int, BothGramNos)] -- TODO: Only used by "mkUnreadyDescs".
-mkIdCountBothList i ms targetIds =
+mkId_count_both_isLitLightList :: HasCallStack => Id -> MudState -> Inv -> [(Id, Int, BothGramNos, Bool)]
+mkId_count_both_isLitLightList i ms targetIds =
     let boths@(mkCountList -> counts) = [ getEffBothGramNos i ms targetId | targetId <- targetIds ]
-    in nubBy ((==) `on` dropFst) . zip3 targetIds counts $ boths
+        isLitLights                   = [ isLitLight targetId ms          | targetId <- targetIds ]
+    in nubBy ((==) `on` dropFstOfQuad) . zip4 targetIds counts boths $ isLitLights
 
 
 -----
