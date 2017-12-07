@@ -1318,21 +1318,14 @@ extinguish p = pmf "extinguish" p
 feeling :: HasCallStack => ActionFun
 feeling (NoArgs i mq cols) = spiritHelper i a b
   where
-    a ms = let txts = f . dropEmpties $ [ g i ms | g <- [ mkHpDesc
-                                                        , mkMpDesc
-                                                        , mkPpDesc
-                                                        , mkFpDesc
-                                                        , mkEffStDesc
-                                                        , mkEffDxDesc
-                                                        , mkEffHtDesc
-                                                        , mkEffMaDesc
-                                                        , mkEffPsDesc
-                                                        , mkFullDesc ] ] ++ mkFeelingDescs i ms
-           in sequence_ [ logPla "feeling" i . dropANSI . slashes $ txts, multiWrapSend mq cols txts ]
-    f ts = ()# ts ? pure "You feel fine." :? ts
-    b    = const . wrapSend mq cols $ msg
-    msg  = "You can still feel emotions, and your sense of self remains intact. At the same time, you are entirely \
-           \detached from your body. The whole experience is quite surreal."
+    a ms     = let txts = f . dropEmpties $ [ g i ms | g <- descFuns ] ++ mkFeelingDescs i ms
+               in sequence_ [ logPla "feeling" i . dropANSI . slashes $ txts, multiWrapSend mq cols txts ]
+    f ts     = ()# ts ? pure "You feel fine." :? ts
+    descFuns = [ mkHpDesc, mkMpDesc, mkPpDesc, mkFpDesc, mkEffStDesc, mkEffDxDesc, mkEffHtDesc, mkEffMaDesc, mkEffPsDesc
+               , mkFullDesc ]
+    b        = const . wrapSend mq cols $ msg
+    msg      = "You can still feel emotions, and your sense of self remains intact. At the same time, you are entirely \
+               \detached from your body. The whole experience is quite surreal."
 feeling p = withoutArgs feeling p
 
 
