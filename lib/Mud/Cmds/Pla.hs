@@ -3705,7 +3705,6 @@ unlink p = pmf "unlink" p
 -----
 
 
--- TODO: Here.
 unready :: HasCallStack => ActionFun
 unready p@AdviseNoArgs     = advise p ["unready"] adviceUnreadyNoArgs
 unready p@(LowerNub' i as) = genericAction p helper "unready"

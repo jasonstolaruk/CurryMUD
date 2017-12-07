@@ -1071,8 +1071,7 @@ helperUnready i ms d a = \case
                           & _5 <>~ msgs
 
 
--- TODO: Here.
-mkUnreadyDescs :: HasCallStack => Id -- TODO: d { desigDoMaskInDark = False }
+mkUnreadyDescs :: HasCallStack => Id
                                -> MudState
                                -> Desig
                                -> Inv
@@ -1081,12 +1080,14 @@ mkUnreadyDescs i ms d = unzipAndSort . map helper . mkId_count_both_isLitLightLi
   where
     helper (targetId, count, b@(targetSing, _), isLit) = if count == 1
       then let toSelfMsg   = T.concat [ "You ", mkVerb targetId SndPer, " the ", targetSing, "." ]
-               toOthersMsg = T.concat [ serialize d, spaced . mkVerb targetId $ ThrPer, aOrAn targetSing, "." ]
+               toOthersMsg = prd $ d' |<>| mkVerb targetId ThrPer |<>| f (aOrAn targetSing)
            in (((toOthersMsg, desigOtherIds d), isLit), toSelfMsg)
       else let toSelfMsg   = T.concat [ "You ", mkVerb targetId SndPer, spaced . showTxt $ count, mkPlurFromBoth b, "." ]
-               toOthersMsg = T.concat [ serialize d, spaced . mkVerb targetId $ ThrPer, showTxt count, " "
-                                      , mkPlurFromBoth b, "." ]
+               toOthersMsg = prd $ d' |<>| mkVerb targetId ThrPer |<>| f (showTxt count |<>| mkPlurFromBoth b)
            in (((toOthersMsg, desigOtherIds d), isLit), toSelfMsg)
+      where
+        d' = serialize (isLit ? d { desigDoMaskInDark = False } :? d)
+        f  = onFalse isLit mkSerVerbObj
     mkVerb targetId person = case getType targetId ms of
       ArmType   -> case getArmSub targetId ms of Head     -> mkVerbTakeOff person
                                                  Hands    -> mkVerbTakeOff person
