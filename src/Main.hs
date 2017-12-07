@@ -31,7 +31,6 @@ import           System.Directory (createDirectoryIfMissing, doesDirectoryExist,
 import           System.Environment (getEnv, getProgName)
 import           System.Remote.Monitoring (forkServer)
 
-
 main :: HasCallStack => IO ()
 main = mkMudFilePath mudDirFun >>= \dir ->
     let stop = T.putStrLn . the' $ dblQuote (T.pack dir) <> " directory does not exist; aborting."
@@ -46,7 +45,6 @@ main = mkMudFilePath mudDirFun >>= \dir ->
             T.putStrLn . prd $ "EKG server started " <> parensQuote ("http://localhost:" <> showTxt ekgPort)
     in mIf (not <$> doesDirectoryExist dir) stop go
 
-
 welcome :: HasCallStack => IO ()
 welcome = (,) <$> getEnv "USER" <*> what'sMyName >>= \(userName, progName) ->
     T.putStrLn . T.concat $ [ "Hello, ", T.pack userName, "! Welcome to ", progName, " ver ", ver, "." ]
@@ -54,7 +52,6 @@ welcome = (,) <$> getEnv "USER" <*> what'sMyName >>= \(userName, progName) ->
     what'sMyName = mIf ((== "<interactive>") <$> getProgName)
       (return . dblQuote $ "Y U NO COMPILE ME?")
       (return "CurryMUD")
-
 
 loadServerSettings :: HasCallStack => IO ServerSettings
 loadServerSettings = maybeRet helper =<< decodeFile =<< mkMudFilePath serverSettingsFun
