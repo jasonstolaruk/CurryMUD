@@ -512,21 +512,18 @@ helperFillEitherInv i srcDesig targetId (eis:eiss) a@(ms, _, _, _) = case getVes
       | vi == targetId                           = helper cont vis . sorry' . sorryFillSelf $ vs
       | getType vi ms' /= VesselType             = helper cont vis . sorry' . sorryFillType $ vs
       | otherwise                                = helper cont vis . (_3 <>~ bs) $ case getVesselCont vi ms' of
-          Nothing | vmm <  targetMouths ->
-                      a' & _1.vesselTbl.ind targetId.vesselCont ?~ (targetLiq, targetMouths - vmm)
-                         & _1.vesselTbl.ind vi      .vesselCont ?~ (targetLiq, vmm)
-                         & _2 <>~ mkFillUpMsg
-                         & _4 <>~ mkFillUpMsg
-                  | vmm == targetMouths ->
-                      a' & _1.vesselTbl.ind targetId.vesselCont .~ Nothing
-                         & _1.vesselTbl.ind vi      .vesselCont ?~ (targetLiq, vmm)
-                         & _2 <>~ mkFillUpEmptyMsg
-                         & _4 <>~ mkFillUpEmptyMsg
-                  | otherwise           ->
-                      a' & _1.vesselTbl.ind targetId.vesselCont .~ Nothing
-                         & _1.vesselTbl.ind vi      .vesselCont ?~ (targetLiq, targetMouths)
-                         & _2 <>~ mkXferEmptyMsg
-                         & _4 <>~ mkXferEmptyMsg
+          Nothing | vmm <  targetMouths -> a' & _1.vesselTbl.ind targetId.vesselCont ?~ (targetLiq, targetMouths - vmm)
+                                              & _1.vesselTbl.ind vi      .vesselCont ?~ (targetLiq, vmm)
+                                              & _2 <>~ mkFillUpMsg
+                                              & _4 <>~ mkFillUpMsg
+                  | vmm == targetMouths -> a' & _1.vesselTbl.ind targetId.vesselCont .~ Nothing
+                                              & _1.vesselTbl.ind vi      .vesselCont ?~ (targetLiq, vmm)
+                                              & _2 <>~ mkFillUpEmptyMsg
+                                              & _4 <>~ mkFillUpEmptyMsg
+                  | otherwise           -> a' & _1.vesselTbl.ind targetId.vesselCont .~ Nothing
+                                              & _1.vesselTbl.ind vi      .vesselCont ?~ (targetLiq, targetMouths)
+                                              & _2 <>~ mkXferEmptyMsg
+                                              & _4 <>~ mkXferEmptyMsg
           Just (vl, vm)
             | vl 🍰 targetLiq    -> sorry' . uncurry sorryFillLiqTypes $ (targetId, vi) & both %~ flip getBothGramNos ms'
             | vm >= vmm          -> sorry' . sorryFillAlready $ vs

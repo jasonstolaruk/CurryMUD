@@ -125,14 +125,14 @@ helperFillWaterRmEitherInv i srcDesig (eis:eiss) a = helperFillWaterRmEitherInv 
     Left msg -> a & _2 <>~ pure msg
     Right is -> helper is a
   where
-    helper []       a'                = a'
-    helper (vi:vis) a'@(ms', _, _, _)
-      | getType vi ms' /= VesselType = helper vis . sorry . sorryFillType $ vs
-      | otherwise                    = helper vis $ case getVesselCont vi ms' of
+    helper []       a'               = a'
+    helper (vi:vis) a'@(ms, _, _, _)
+      | getType vi ms /= VesselType = helper vis . sorry . sorryFillType $ vs
+      | otherwise                   = helper vis $ case getVesselCont vi ms of
           Nothing -> let cans = calcCanCarryMouthfuls vmm in if | cans < 1   -> sorry sorryEnc
                                                                 | vmm > cans -> partialMsgHelper cans
                                                                 | otherwise  -> fillUp
-          Just (vl, vm) | vl 🍧 waterLiq -> sorry . sorryFillWaterLiqTypes . getSing vi $ ms'
+          Just (vl, vm) | vl 🍧 waterLiq -> sorry . sorryFillWaterLiqTypes . getSing vi $ ms
                         | vm >= vmm -> sorry . sorryFillAlready $ vs
                         | vAvail <- vmm - vm, cans <- calcCanCarryMouthfuls vAvail
                         -> if | cans < 1      -> sorry sorryEnc
@@ -142,8 +142,8 @@ helperFillWaterRmEitherInv i srcDesig (eis:eiss) a = helperFillWaterRmEitherInv 
         (🍧) = (/=) `on` view liqId
         sorry msg = a' & _2 <>~ pure msg
         sorryEnc  = sorryGetEnc <> "any more water."
-        (vs, vmm) = (getSing `fanUncurry` getMaxMouthfuls) (vi, ms')
-        calcCanCarryMouthfuls amt = let (myWeight, myMaxEnc) = (calcWeight `fanUncurry` calcMaxEnc) (i, ms')
+        (vs, vmm) = (getSing `fanUncurry` getMaxMouthfuls) (vi, ms)
+        calcCanCarryMouthfuls amt = let (myWeight, myMaxEnc) = (calcWeight `fanUncurry` calcMaxEnc) (i, ms)
                                     in if | myWeight + (amt * mouthfulWeight) > myMaxEnc
                                           , margin <- myMaxEnc - myWeight
                                           -> floor (margin `divide` mouthfulWeight :: Double)
