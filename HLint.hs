@@ -5,6 +5,9 @@ import HLint.Generalise
 ignore "Redundant where" = Mud.Cmds.Debug.debugCmds
                            Mud.Util.Misc.two
 
+ignore "Unnecessary hiding" = Mud.Data.Misc
+                              Mud.Data.State.ActionParams.ActionParams
+
 ignore "Use camelCase" = Mud.Cmds.Debug
                          Mud.Cmds.Msgs.Dude
                          Mud.Cmds.Msgs.Sorry
