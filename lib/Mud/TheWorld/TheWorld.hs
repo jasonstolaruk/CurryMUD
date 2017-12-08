@@ -180,7 +180,6 @@ createWorld = getState >>= \ms -> let pairs = [ (iWelcome,          createAdminZ
                                   in do logNotice "createWorld" "creating the world."
                                         forM_ pairs $ \(i, f) -> unless (hasType i ms) f
 
-
 loadWorld :: HasCallStack => FilePath -> MudStack Bool
 loadWorld dir = (</> dir) <$> liftIO (mkMudFilePath persistDirFun) >>= \path -> do
     logNotice "loadWorld" $ "loading the world from the " <> showTxt dir <> " directory."

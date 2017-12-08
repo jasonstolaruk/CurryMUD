@@ -970,7 +970,7 @@ dwarvish = sayHelper DwarfLang
 
 -----
 
-eat :: HasCallStack => ActionFun -- TODO: Consider creating a "hunger" help topic.
+eat :: HasCallStack => ActionFun
 eat p@(NoArgs' i mq                   ) = advise p ["eat"] adviceEatNoArgs >> sendDfltPrompt mq i
 eat p@(OneArg  i mq _    _            ) = advise p ["eat"] adviceEatNoFood >> sendDfltPrompt mq i
 eat p@(Lower   i mq cols [amt, target]) = getState >>= \ms ->

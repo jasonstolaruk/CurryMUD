@@ -153,7 +153,6 @@ showElapsedCurryTime a b = let CurryTime { .. } = secsToCurryTime . round $ a `d
                                                                 [y, x]   -> quoteWith' (x, y) . spaced $ "and"
                                                                 (x:rest) -> commas . reverse $ "and " <> x : rest
 
-
 -----
 
 showCurryTime :: CurryTime -> [Text]

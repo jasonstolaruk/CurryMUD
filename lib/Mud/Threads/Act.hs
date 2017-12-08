@@ -84,7 +84,6 @@ threadAct i actType f = handle (threadExHandler (Just i) . pp $ actType) $ a `fi
     b    = do logPla "threadAct" i $ pp actType <> " act finished."
               tweak $ mobTbl.ind i.actMap.at actType .~ Nothing
 
-
 -- ==================================================
 
 drinkAct :: HasCallStack => DrinkBundle -> MudStack ()

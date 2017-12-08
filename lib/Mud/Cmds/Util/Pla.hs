@@ -1318,7 +1318,6 @@ mkDescForPercent _ [(_, txt)]                  = txt
 mkDescForPercent x ((y, txt):rest) | x <= y    = txt
                                    | otherwise = mkDescForPercent x rest
 
-
 -----
 
 mkFullDesc :: HasCallStack => Id -> MudState -> Text

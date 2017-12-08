@@ -270,7 +270,6 @@ instance Pretty Book where
   pp BookShunfalipmi = "shunfalipmi"
   pp BookVulpenoid   = "vulpenoid"
 
-
 instance Pretty BugRec where
   pp BugRec { .. } = slashes [ dbTimestamp
                              , dbName
@@ -468,7 +467,6 @@ instance Pretty MoonPhase where
   pp WaningGibbous  = "waning gibbous"
   pp ThirdQuarter   = "third quarter"
   pp WaningCrescent = "waning crescent"
-
 
 instance Pretty PausedEffect where
   pp (PausedEffect e) = pp e

@@ -635,7 +635,6 @@ adviceReadNoArgs :: Text
 adviceReadNoArgs =
     prd $ "Please specify the names of one or more things to read, as in " <> colorWith quoteColor "read parchment"
 
-
 adviceReadyNoArgs :: Text
 adviceReadyNoArgs = prd $ "Please specify one or more items to ready, as in " <> colorWith quoteColor "ready sword"
 
